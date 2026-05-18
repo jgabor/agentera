@@ -254,7 +254,7 @@ the existing state seam with
 access.
 For normal ≡ planera execution, use `capability_context.startup_contract` from
 `agentera hej --format json --capability-context planera` before reading
-`skills/agentera/capabilities/planera/prose.md`. Read Planera prose only when
+`skills/agentera/capabilities/planera/instructions.md`. Read Planera prose only when
 editing Planera, resolving contradiction or ambiguity, validating detailed
 behavior not covered by the compact contract, or investigating benchmark/read-trigger
 evidence. This preserves Planera prose as detailed authority and does not add
@@ -266,7 +266,7 @@ returned `missing_fields`, `compacted`, `caveats`, and `satisfaction.review_need
 instead of raw-reading `.agentera/decisions.yaml` to reconstruct missing history.
 Raw decision artifact access is reserved for Resonera-owned writes/repairs,
 artifact corruption diagnostics, or CLI defect investigation.
-Reading a capability's `prose.md` file is not itself a capability invocation;
+Reading a capability's `instructions.md` file is not itself a capability invocation;
 invocation means routing to the capability, following its prose, and using the
 CLI state layer first for artifact-backed state.
 
@@ -434,14 +434,14 @@ skills/agentera/
   capability_schema_contract.yaml   # Self-referential schema contract
   capabilities/
     hej/
-      prose.md
+      instructions.md
       schemas/
         triggers.yaml
         artifacts.yaml
         validation.yaml
         exit.yaml
     resonera/
-      prose.md
+      instructions.md
       schemas/
         triggers.yaml
         artifacts.yaml

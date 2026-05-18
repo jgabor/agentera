@@ -1861,7 +1861,7 @@ class TestHej:
         assert contract["schemaVersion"] == "agentera.planeraStartup.v1"
         assert contract["canonical_surface"] == "agentera hej --format json --capability-context planera"
         assert contract["bounded"] is True
-        assert contract["prose_runtime_read_required"] is False
+        assert contract["instructions_runtime_read_required"] is False
         assert contract["planning"]["levels"] == ["skip", "light", "full"]
         assert contract["planning"]["required_steps"] == ["orient", "specify", "review", "audit", "write", "handoff"]
         assert contract["planning"]["full_plan_review_required"] is True
@@ -1875,7 +1875,7 @@ class TestHej:
         assert "does not require a separate pre-write confirmation" in archive_confirmation["direct_planera_invocation"]
         assert "Plan approval is still required" in archive_confirmation["human_initiated_plan_write"]
         assert "active or incomplete plan is not implicit" in archive_confirmation["active_or_incomplete_plan"]
-        assert "editing Planera behavior or prose" in contract["prose_authority"]["read_planera_prose_when"]
+        assert "editing Planera behavior or instructions" in contract["instructions_authority"]["read_planera_instructions_when"]
         assert "agentera planera" in contract["unsupported_command_boundary"]["forbidden_examples"]
         assert contract["unsupported_command_boundary"]["capability_cli_commands_added"] is False
         assert contract["seam_decision"]["selected"] == "hej capability_context"
@@ -1884,15 +1884,15 @@ class TestHej:
             "dispatcher guidance",
         }
 
-    def test_planera_compact_startup_context_does_not_require_prose_file(self, tmp_path):
+    def test_planera_compact_startup_context_does_not_require_instruction_file(self, tmp_path):
         app_home = tmp_path / "app-home"
         _install_runtime_surface(app_home)
-        planera_prose = app_home / "app" / "skills" / "agentera" / "capabilities" / "planera" / "prose.md"
-        planera_prose.unlink()
+        planera_instructions = app_home / "app" / "skills" / "agentera" / "capabilities" / "planera" / "instructions.md"
+        planera_instructions.unlink()
         project = tmp_path / "project"
         project.mkdir()
         _write_artifact(project, ".agentera/plan.yaml", {
-            "header": {"title": "No prose read", "status": "active"},
+            "header": {"title": "No instruction read", "status": "active"},
             "tasks": [{"number": 1, "name": "Plan", "status": "pending"}],
         })
         _write_artifact(project, ".agentera/docs.yaml", {
@@ -1904,7 +1904,7 @@ class TestHej:
         assert r.returncode == 0, r.stderr
         data = json.loads(r.stdout)
         contract = data["source_contract"]["capability_context"]["startup_contract"]
-        assert contract["prose_runtime_read_required"] is False
+        assert contract["instructions_runtime_read_required"] is False
         assert contract["canonical_surface"] == "agentera hej --format json --capability-context planera"
 
     def test_hej_orkestrera_context_reports_ready_blocked_and_selected_tasks(self, project):
@@ -2538,7 +2538,7 @@ class TestHej:
         assert all(command.startswith("agentera ") for command in contract["fallback_commands"])
         assert not any(".agentera/" in command or command.endswith(".md") for command in contract["fallback_commands"])
 
-        prose = (REPO_ROOT / "skills" / "agentera" / "capabilities" / "inspektera" / "prose.md").read_text(encoding="utf-8")
+        prose = (REPO_ROOT / "skills" / "agentera" / "capabilities" / "inspektera" / "instructions.md").read_text(encoding="utf-8")
         assert "If `evidence_context.source_contract.complete_for_evidence_context` is true" in prose
         assert "do not read raw PLAN, PROGRESS, DOCS, HEALTH, TODO, or DECISIONS artifacts" in prose
         assert "Raw artifact reads are last-resort diagnostics" in prose

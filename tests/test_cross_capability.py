@@ -6,7 +6,7 @@ Validates three dimensions of cross-capability integrity:
 2. Trigger routing: every capability's trigger patterns route to that capability
     (not hej fallback) per the Agentera routing layer routing logic.
 3. Inter-capability prose references: every capability name mentioned in a
-   prose.md file corresponds to an existing capability directory.
+   instructions.md file corresponds to an existing capability directory.
 
 Test proportionality: 1 test per capability for routing, 1 test for protocol
 reference resolution, plus collective checks for prose cross-references.
@@ -67,7 +67,7 @@ def _extract_protocol_refs_from_schemas(cap_dir: Path) -> set[str]:
 
 
 def _extract_capability_refs_from_prose(cap_dir: Path) -> set[str]:
-    prose_path = cap_dir / "prose.md"
+    prose_path = cap_dir / "instructions.md"
     if not prose_path.is_file():
         return set()
     text = prose_path.read_text()
@@ -211,7 +211,7 @@ def test_prose_capability_refs_exist(cap_name: str):
     refs = _extract_capability_refs_from_prose(cap_dir)
     for ref_name in refs:
         assert (CAPABILITIES_DIR / ref_name).is_dir(), (
-            f"{cap_name}/prose.md references '{ref_name}' "
+            f"{cap_name}/instructions.md references '{ref_name}' "
             f"but capabilities/{ref_name}/ does not exist"
         )
 
@@ -249,9 +249,9 @@ def test_master_skill_exposes_bare_agentera_dashboard_boundary():
 
 
 def test_routine_capability_guidance_uses_top_level_state_commands():
-    realisera = (CAPABILITIES_DIR / "realisera" / "prose.md").read_text(encoding="utf-8")
-    optimera = (CAPABILITIES_DIR / "optimera" / "prose.md").read_text(encoding="utf-8")
-    hej = (CAPABILITIES_DIR / "hej" / "prose.md").read_text(encoding="utf-8")
+    realisera = (CAPABILITIES_DIR / "realisera" / "instructions.md").read_text(encoding="utf-8")
+    optimera = (CAPABILITIES_DIR / "optimera" / "instructions.md").read_text(encoding="utf-8")
+    hej = (CAPABILITIES_DIR / "hej" / "instructions.md").read_text(encoding="utf-8")
 
     assert "scripts/agentera progress" in realisera
     assert "query progress" not in realisera
@@ -292,7 +292,7 @@ def test_master_skill_documents_route_alias_contract_boundary():
 
 def test_decision_context_consumers_preserve_cli_caveats():
     capability_text = "\n".join(
-        (CAPABILITIES_DIR / name / "prose.md").read_text(encoding="utf-8")
+        (CAPABILITIES_DIR / name / "instructions.md").read_text(encoding="utf-8")
         for name in (
             "planera",
             "realisera",
@@ -371,7 +371,7 @@ def test_installed_hej_entrypoint_resolves_app_home_before_script_expansion():
 
     surfaces = {
         "Agentera routing entry point": SKILL_MD_PATH.read_text(encoding="utf-8"),
-        "Hej capability": (CAPABILITIES_DIR / "hej" / "prose.md").read_text(encoding="utf-8"),
+        "Hej capability": (CAPABILITIES_DIR / "hej" / "instructions.md").read_text(encoding="utf-8"),
         "Upgrade guide": UPGRADE_MD_PATH.read_text(encoding="utf-8"),
     }
     for label, text in surfaces.items():

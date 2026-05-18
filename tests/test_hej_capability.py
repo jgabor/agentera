@@ -60,7 +60,7 @@ def test_broken_capability_fails_contract_validation(tmp_path):
     schemas_dir = cap_dir / "schemas"
     schemas_dir.mkdir()
 
-    (cap_dir / "prose.md").write_text("# Broken\n")
+    (cap_dir / "instructions.md").write_text("# Broken\n")
     (schemas_dir / "triggers.yaml").write_text(textwrap.dedent("""\
         TRIGGERS:
           bad_key:
@@ -122,12 +122,12 @@ def test_hej_trigger_patterns_route_to_hej():
 
 
 def test_hej_prose_exists_and_contains_workflow():
-    prose_path = HEJ_CAP_DIR / "prose.md"
-    assert prose_path.is_file(), "prose.md must exist"
+    prose_path = HEJ_CAP_DIR / "instructions.md"
+    assert prose_path.is_file(), "instructions.md must exist"
 
     content = prose_path.read_text()
     for required in ["Step 0: Detect mode", "Step 1a: Welcome", "Step 1b: Briefing", "Step 2: Route", "Safety rails", "Exit signals"]:
-        assert required in content, f"prose.md must contain section '{required}'"
+        assert required in content, f"instructions.md must contain section '{required}'"
 
 
 # ---------------------------------------------------------------------------
@@ -145,11 +145,11 @@ def test_hej_is_fallback_capability():
 # ---------------------------------------------------------------------------
 
 def test_upgrade_check_is_cli_owned_for_v1_detection():
-    prose_path = HEJ_CAP_DIR / "prose.md"
+    prose_path = HEJ_CAP_DIR / "instructions.md"
     content = prose_path.read_text()
     compact = content.replace("\n", " ")
 
-    assert "CLI-owned checks" in content, "prose.md must route v1 checks through the CLI"
+    assert "CLI-owned checks" in content, "instructions.md must route v1 checks through the CLI"
     assert "Do not run separate v1 artifact" in content, \
         "hej must not require separate v1 artifact discovery calls"
     assert "v1_migration.detected" in content, \
@@ -164,7 +164,7 @@ def test_upgrade_check_is_cli_owned_for_v1_detection():
 
 
 def test_bundle_status_check_is_cli_owned():
-    prose_path = HEJ_CAP_DIR / "prose.md"
+    prose_path = HEJ_CAP_DIR / "instructions.md"
     content = prose_path.read_text()
 
     assert "bundle.status" in content, "hej must inspect the CLI-provided bundle status"
@@ -177,7 +177,7 @@ def test_bundle_status_check_is_cli_owned():
 
 
 def test_hej_documents_visible_skill_update_is_not_app_refresh():
-    prose_path = HEJ_CAP_DIR / "prose.md"
+    prose_path = HEJ_CAP_DIR / "instructions.md"
     content = prose_path.read_text()
 
     assert "npx skills update" in content
@@ -186,7 +186,7 @@ def test_hej_documents_visible_skill_update_is_not_app_refresh():
 
 
 def test_upgrade_check_specifies_no_notice_when_no_v1():
-    prose_path = HEJ_CAP_DIR / "prose.md"
+    prose_path = HEJ_CAP_DIR / "instructions.md"
     content = prose_path.read_text()
 
     assert "no upgrade notice" in content.lower() or "emit no upgrade notice" in content.lower(), \
@@ -198,7 +198,7 @@ def test_upgrade_check_specifies_no_notice_when_no_v1():
 # ---------------------------------------------------------------------------
 
 def test_profile_status_check_no_warning_when_profile_present():
-    prose_path = HEJ_CAP_DIR / "prose.md"
+    prose_path = HEJ_CAP_DIR / "instructions.md"
     content = prose_path.read_text()
 
     profile_section = content[content.index("CLI-owned checks"):]
@@ -217,7 +217,7 @@ def test_profile_status_check_no_warning_when_profile_present():
 # ---------------------------------------------------------------------------
 
 def test_profile_status_check_flags_missing_profile_as_degraded():
-    prose_path = HEJ_CAP_DIR / "prose.md"
+    prose_path = HEJ_CAP_DIR / "instructions.md"
     content = prose_path.read_text()
 
     profile_section = content[content.index("CLI-owned checks"):]

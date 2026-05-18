@@ -51,7 +51,7 @@ def test_broken_resonera_fails_contract_validation(tmp_path):
     schemas_dir = cap_dir / "schemas"
     schemas_dir.mkdir()
 
-    (cap_dir / "prose.md").write_text("# Broken\n")
+    (cap_dir / "instructions.md").write_text("# Broken\n")
     (schemas_dir / "triggers.yaml").write_text(textwrap.dedent("""\
         TRIGGERS:
           bad_key:
@@ -112,16 +112,16 @@ def test_resonera_trigger_patterns_route_to_resonera():
 
 
 def test_resonera_prose_exists_and_contains_workflow():
-    prose_path = RESONERA_CAP_DIR / "prose.md"
-    assert prose_path.is_file(), "prose.md must exist"
+    prose_path = RESONERA_CAP_DIR / "instructions.md"
+    assert prose_path.is_file(), "instructions.md must exist"
 
     content = prose_path.read_text()
     for required in ["Starting a session", "Asking good questions", "When the user picks", "Safety rails", "Exit signals"]:
-        assert required in content, f"prose.md must contain section '{required}'"
+        assert required in content, f"instructions.md must contain section '{required}'"
 
 
 def test_resonera_requires_native_question_tool_after_routing():
-    content = (RESONERA_CAP_DIR / "prose.md").read_text(encoding="utf-8")
+    content = (RESONERA_CAP_DIR / "instructions.md").read_text(encoding="utf-8")
     normalized = " ".join(content.split())
 
     assert "Once routed to resonera" in normalized
@@ -136,7 +136,7 @@ def test_resonera_requires_native_question_tool_after_routing():
 
 
 def test_resonera_startup_uses_decisions_cli_source_contract():
-    content = (RESONERA_CAP_DIR / "prose.md").read_text(encoding="utf-8")
+    content = (RESONERA_CAP_DIR / "instructions.md").read_text(encoding="utf-8")
     normalized = " ".join(content.split())
 
     assert "Run `agentera decisions --format json` for prior decision context" in normalized
@@ -147,7 +147,7 @@ def test_resonera_startup_uses_decisions_cli_source_contract():
 
 
 def test_resonera_treats_compacted_decisions_as_caveats_not_raw_read_fallback():
-    content = (RESONERA_CAP_DIR / "prose.md").read_text(encoding="utf-8")
+    content = (RESONERA_CAP_DIR / "instructions.md").read_text(encoding="utf-8")
     normalized = " ".join(content.split())
 
     assert "When a returned decision is compacted or incomplete" in normalized

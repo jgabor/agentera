@@ -570,7 +570,7 @@ def _validate_install_root_documentation(root: Path = REPO_ROOT) -> list[str]:
     surfaces = {
         "UPGRADE.md": root / "UPGRADE.md",
         "skills/agentera/SKILL.md": root / "skills/agentera/SKILL.md",
-        "skills/agentera/capabilities/hej/prose.md": root / "skills/agentera/capabilities/hej/prose.md",
+        "skills/agentera/capabilities/hej/instructions.md": root / "skills/agentera/capabilities/hej/instructions.md",
         ".agentera/docs.yaml": root / ".agentera/docs.yaml",
         "TODO.md": root / "TODO.md",
         "runtime-feature-parity.md": root / "references/adapters/runtime-feature-parity.md",
@@ -1815,7 +1815,7 @@ class TestLegacyRuntimeCompatibility:
             "AGENTS.md",
             "UPGRADE.md",
             "skills/agentera/SKILL.md",
-            "skills/agentera/capabilities/hej/prose.md",
+            "skills/agentera/capabilities/hej/instructions.md",
             ".agentera/docs.yaml",
             "TODO.md",
             "references/adapters/runtime-feature-parity.md",

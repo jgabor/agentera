@@ -51,7 +51,7 @@ def test_broken_planera_fails_contract_validation(tmp_path):
     schemas_dir = cap_dir / "schemas"
     schemas_dir.mkdir()
 
-    (cap_dir / "prose.md").write_text("# Broken\n")
+    (cap_dir / "instructions.md").write_text("# Broken\n")
     (schemas_dir / "triggers.yaml").write_text(textwrap.dedent("""\
         TRIGGERS:
           bad_key:
@@ -109,16 +109,16 @@ def test_planera_trigger_patterns_route_to_planera():
 
 
 def test_planera_prose_exists_and_contains_workflow():
-    prose_path = PLANERA_CAP_DIR / "prose.md"
-    assert prose_path.is_file(), "prose.md must exist"
+    prose_path = PLANERA_CAP_DIR / "instructions.md"
+    assert prose_path.is_file(), "instructions.md must exist"
 
     content = prose_path.read_text()
     for required in ["Step 0: Detect level", "Step 1: Orient", "Step 2: Specify", "Step 5: Write PLAN.md", "Step 6: Handoff", "Safety rails", "Exit signals"]:
-        assert required in content, f"prose.md must contain section '{required}'"
+        assert required in content, f"instructions.md must contain section '{required}'"
 
 
 def test_planera_prose_uses_complete_plan_cli_state_before_raw_artifact_reads():
-    content = (PLANERA_CAP_DIR / "prose.md").read_text()
+    content = (PLANERA_CAP_DIR / "instructions.md").read_text()
 
     assert "agentera plan\n--format json" in content
     assert "source_contract.complete_for_plan_artifact" in content
@@ -132,7 +132,7 @@ def test_planera_prose_uses_complete_plan_cli_state_before_raw_artifact_reads():
 
 
 def test_planera_prose_defines_completed_plan_archive_confirmation_boundary():
-    content = (PLANERA_CAP_DIR / "prose.md").read_text()
+    content = (PLANERA_CAP_DIR / "instructions.md").read_text()
 
     assert "existing\nPLAN.md is already complete" in content
     assert "implicit in the direct Planera invocation" in content

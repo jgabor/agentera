@@ -99,12 +99,12 @@ ALLOWED_USES = (
         "Generated or legacy contract references preserve historical and compatibility vocabulary.",
     ),
     AllowedUse(
-        r"^skills/agentera/capabilities/(realisera|optimera)/prose\.md$",
+        r"^skills/agentera/capabilities/(realisera|optimera)/instructions\.md$",
         r"checkpoint before worktree dispatch|checkpoint commit",
         "Git checkpoint commit wording is explicitly allowed by Decision 44.",
     ),
     AllowedUse(
-        r"^skills/agentera/capabilities/inspektera/prose\.md$",
+        r"^skills/agentera/capabilities/inspektera/instructions\.md$",
         r"protected health dimension label|persisted health dimension label remains `Artifact freshness`|protected Artifact freshness health dimension",
         "Artifact freshness is preserved only as a persisted health dimension label with an inline rationale.",
     ),

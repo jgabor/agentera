@@ -59,7 +59,7 @@ def test_broken_orkestrera_fails_contract_validation(tmp_path):
     schemas_dir = cap_dir / "schemas"
     schemas_dir.mkdir()
 
-    (cap_dir / "prose.md").write_text("# Broken\n")
+    (cap_dir / "instructions.md").write_text("# Broken\n")
     (schemas_dir / "triggers.yaml").write_text(textwrap.dedent("""\
         TRIGGERS:
           bad_key:
@@ -121,8 +121,8 @@ def test_orkestrera_trigger_patterns_route_to_orkestrera():
 
 
 def test_orkestrera_prose_contains_orchestration_loop_workflow():
-    prose_path = ORK_CAP_DIR / "prose.md"
-    assert prose_path.is_file(), "prose.md must exist"
+    prose_path = ORK_CAP_DIR / "instructions.md"
+    assert prose_path.is_file(), "instructions.md must exist"
 
     content = prose_path.read_text()
     for required in [
@@ -137,11 +137,11 @@ def test_orkestrera_prose_contains_orchestration_loop_workflow():
         "Exit signals",
         "Cross-capability integration",
     ]:
-        assert required in content, f"prose.md must contain section '{required}'"
+        assert required in content, f"instructions.md must contain section '{required}'"
 
 
 def test_orkestrera_prose_closes_only_successfully_completed_plans():
-    content = (ORK_CAP_DIR / "prose.md").read_text()
+    content = (ORK_CAP_DIR / "instructions.md").read_text()
 
     for required in [
         "header.status: complete",
@@ -155,7 +155,7 @@ def test_orkestrera_prose_closes_only_successfully_completed_plans():
 
 
 def test_orkestrera_prose_uses_orchestration_context_before_raw_artifacts():
-    content = (ORK_CAP_DIR / "prose.md").read_text()
+    content = (ORK_CAP_DIR / "instructions.md").read_text()
     normalized = " ".join(content.split())
 
     for required in [

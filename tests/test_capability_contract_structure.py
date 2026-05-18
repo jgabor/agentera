@@ -16,7 +16,7 @@ def _load_yaml(path: Path) -> dict:
     return yaml.safe_load(path.read_text())
 
 
-def test_contract_structures_trigger_priority_rules_without_prose_parsing():
+def test_contract_structures_trigger_priority_rules_without_instruction_parsing():
     contract = _load_yaml(CONTRACT_PATH)
 
     priority_rule = contract["FIELD_RULES"]["TRIGGERS"]["priority"]
@@ -29,8 +29,8 @@ def test_contract_structures_directory_requirements():
     contract = _load_yaml(CONTRACT_PATH)
     directory = contract["DIRECTORY_REQUIREMENTS"]
 
-    assert directory["prose_file"] == {
-        "path": "prose.md",
+    assert directory["instruction_file"] == {
+        "path": "instructions.md",
         "type": "file",
         "required": True,
         "description": "Behavioral instructions the agent reads.",

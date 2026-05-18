@@ -57,7 +57,7 @@ def _run_validator(cap_dir: Path, *extra_args: str | Path) -> CliResult:
 def _write_capability(cap_dir: Path, schema_text: str | None, *, prose: bool = True) -> Path:
     cap_dir.mkdir(parents=True, exist_ok=True)
     if prose:
-        (cap_dir / "prose.md").write_text("# Fixture\n")
+        (cap_dir / "instructions.md").write_text("# Fixture\n")
     schemas = cap_dir / "schemas"
     schemas.mkdir()
     if schema_text is not None:
@@ -136,7 +136,7 @@ def test_validator_cli_characterizes_missing_directory_fixture(tmp_path):
     assert result.stdout == _expected_failure_stdout(cap_dir)
     assert result.stderr == [
         "FAILED:",
-        f"  V1 [error]: prose.md not found in {source}",
+        f"  V1 [error]: instructions.md not found in {source}",
         f"  V1 [error]: schemas/ directory not found in {source}",
     ]
 
@@ -340,7 +340,7 @@ def test_declared_contract_rules_are_recorded_as_preserve_standardize_or_defer()
         "directory_requirements": {
             "declared": contract["DIRECTORY_REQUIREMENTS"],
             "current_validator_owner": "CapabilitySchemaContract.directory_rules",
-            "current_behavior": "prose.md, schemas/, and at least one schemas/*.yaml are enforced from the loaded contract model",
+            "current_behavior": "instructions.md, schemas/, and at least one schemas/*.yaml are enforced from the loaded contract model",
             "decision": "standardize",
         },
         "routing_and_exit_vocabulary": {

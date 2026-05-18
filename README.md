@@ -232,12 +232,11 @@ uv run scripts/agentera validate capability <name-or-path>
 uv run scripts/agentera validate capability-contract --format json
 ```
 
-Every capability has `prose.md` plus `schemas/triggers.yaml`,
+Every capability has `instructions.md` plus `schemas/triggers.yaml`,
 `schemas/artifacts.yaml`, `schemas/validation.yaml`, and `schemas/exit.yaml`.
-The schema contract makes those files executable for validators and tests. Decision
-57's future contract renames the human-readable instruction file to
-`instructions.md` and adds `first_invocation_read`; today, `prose.md` remains the
-current compatibility file and the future metadata is not emitted by the CLI.
+The schema contract makes those files executable for validators and tests.
+Decision 57 also defines future `first_invocation_read` metadata; that future
+metadata is not emitted by the CLI yet.
 
 ## Upgrade from v1
 

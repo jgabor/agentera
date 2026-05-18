@@ -46,7 +46,7 @@ def _write_capability(tmp_path: Path, exit_signal: str, extra_text: str = "") ->
     cap_dir = tmp_path / "capability"
     schemas_dir = cap_dir / "schemas"
     schemas_dir.mkdir(parents=True)
-    (cap_dir / "prose.md").write_text("# Fixture\n")
+    (cap_dir / "instructions.md").write_text("# Fixture\n")
     (schemas_dir / "exit.yaml").write_text(
         textwrap.dedent(
             f"""\

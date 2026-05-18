@@ -63,7 +63,7 @@ def test_inspektera_broken_capability_fails_contract_validation(tmp_path):
     schemas_dir = cap_dir / "schemas"
     schemas_dir.mkdir()
 
-    (cap_dir / "prose.md").write_text("# Broken\n")
+    (cap_dir / "instructions.md").write_text("# Broken\n")
     (schemas_dir / "triggers.yaml").write_text(textwrap.dedent("""\
         TRIGGERS:
           bad_key:
@@ -128,8 +128,8 @@ def test_inspektera_trigger_patterns_route_to_inspektera():
 
 
 def test_inspektera_prose_exists_and_contains_workflow():
-    prose_path = INSPEKTERA_CAP_DIR / "prose.md"
-    assert prose_path.is_file(), "prose.md must exist"
+    prose_path = INSPEKTERA_CAP_DIR / "instructions.md"
+    assert prose_path.is_file(), "instructions.md must exist"
 
     content = prose_path.read_text()
     for required in [
@@ -143,11 +143,11 @@ def test_inspektera_prose_exists_and_contains_workflow():
         "Safety rails",
         "Exit signals",
     ]:
-        assert required in content, f"prose.md must contain section '{required}'"
+        assert required in content, f"instructions.md must contain section '{required}'"
 
 
 def test_inspektera_prose_requires_evidence_context_first():
-    content = (INSPEKTERA_CAP_DIR / "prose.md").read_text()
+    content = (INSPEKTERA_CAP_DIR / "instructions.md").read_text()
 
     for required in [
         "agentera hej --format json --capability-context inspektera",
@@ -161,7 +161,7 @@ def test_inspektera_prose_requires_evidence_context_first():
         "protected-state boundaries",
         "manual-check states",
     ]:
-        assert required in content, f"prose.md must preserve evidence-context guidance: {required!r}"
+        assert required in content, f"instructions.md must preserve evidence-context guidance: {required!r}"
 
 
 def test_inspektera_artifacts_schema_declares_evidence_context_consumption():

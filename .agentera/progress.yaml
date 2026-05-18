@@ -1,4 +1,35 @@
 cycles:
+- number: 569
+  timestamp: 2026-05-18 17:36
+  type: fix
+  phase: build
+  what: Renamed Agentera capability instruction files from prose.md to instructions.md.
+  commit: pending
+  inspiration: Realisera executed the active Capability Instructions File Rename plan,
+    treating the filename change as a contract migration across capability files,
+    validators, runtime descriptors, documentation, tests, and package-facing metadata
+    rather than a blind string replacement.
+  discovered: The documented validation command `agentera validate capability skills/agentera/capabilities`
+    needed first-class capability-root handling; the CLI now expands that directory
+    and validates all twelve capabilities. Installed and source descriptor validation
+    both passed while preserving the manual OpenCode direct-execution descriptor fix.
+  verified: '`uv run scripts/agentera validate capability-contract --format json`
+    passed. `uv run scripts/agentera validate capability skills/agentera/capabilities`
+    passed for all 12 capabilities. Focused rename/contract tests passed with 60 tests.
+    Source and installed `agentera validate descriptors --format json` passed. `uv
+    run pytest -q` passed with 1145 tests. Artifact validators for PLAN.md, TODO.md,
+    CHANGELOG.md, PROGRESS.md, and DOCS.md returned status=pass. `git diff --check`
+    passed.'
+  next: Ask whether to commit the completed capability instruction-file rename cycle.
+  context:
+    intent: Close the active `[fix:2.4.x]` capability instruction-file rename TODO
+      and plan.
+    constraints: No `.agentera/vision.yaml` edit, objective-state edit, installed
+      app/profile refresh, publication, push, tag, package-manager state change, broad
+      unrelated vocabulary sweep, or first_invocation_read metadata implementation.
+    scope: Capability instruction files, capability schema contract, validators/loaders,
+      Agentera CLI descriptor validation, runtime descriptors, SKILL.md, README, vocabulary
+      docs, compatibility authority, focused tests, TODO, CHANGELOG, PLAN, and PROGRESS.
 - number: 568
   timestamp: 2026-05-18 14:15
   type: fix
@@ -18,7 +49,7 @@ cycles:
     throughout the prose and schemas. Three pre-existing test adaptations were needed:
     the test_helper_script_policy.py tests required alignment with earlier uncommitted
     AGENTS.md changes, test_runtime_adapters.py needed an install-root surface adjustment,
-    and test_decision44_vocabulary.py needed a plan.yaml drift exemption.'
+    and test_decision44_vocabulary.py needed a plan.yaml wording exemption.'
   verified: '`uv run pytest -q` passed with 1144 tests. Artifact validators for PLAN.md,
     TODO.md, CHANGELOG.md, PROGRESS.md, and DOCS.md returned status=pass. `git diff
     --check` passed.'
@@ -55,9 +86,9 @@ cycles:
     tests/test_resonera_capability.py tests/test_runtime_adapters.py -q` passed with
     147 tests. `git diff --check` passed.'
   next: Continue with the still-open routing/execution vocabulary cleanup, capability
-    `prose.md` to `instructions.md` rename, Decision 57 metadata implementation, broad
-    vocabulary regressions, and 3.0.0 work; this cycle did not refresh installed apps
-    or profiles.
+    `instructions.md` to `instructions.md` rename, Decision 57 metadata implementation,
+    broad vocabulary regressions, and 3.0.0 work; this cycle did not refresh installed
+    apps or profiles.
   context:
     intent: Close the normal `[fix:2.4.x]` ambiguous `SKILL.md` prose cleanup TODO.
     constraints: Scope stayed limited to current docs, runtime guidance, capability
@@ -140,15 +171,15 @@ cycles:
     intent: Repair the full-suite regressions and serious review findings after the
       Agentera App Files Wording Cleanup work.
     constraints: Scope stayed limited to the two known failures and review fixes;
-      no broad vocabulary sweep, SKILL.md prose cleanup advancement, capability `prose.md`
+      no broad vocabulary sweep, SKILL.md prose cleanup advancement, capability `instructions.md`
       rename, `first_invocation_read`, 3.0.0 work, installed app/profile update, package-manager
       change, publication, push, tag, `.agentera/vision.yaml`, objective state, decision
       satisfaction state, or protected `.agentera/decisions.yaml`/`.agentera/session.yaml`
       edits.
     scope: '`docs/vocabulary.md`, `tests/test_skill_dispatch_contract.py`, `scripts/agentera_upgrade.py`,
       `tests/test_lifecycle_vocabulary_authority.py`, `references/cli/app-lifecycle-vocabulary.yaml`,
-      `skills/agentera/capabilities/realisera/prose.md`, TODO, CHANGELOG, PLAN, and
-      PROGRESS.'
+      `skills/agentera/capabilities/realisera/instructions.md`, TODO, CHANGELOG, PLAN,
+      and PROGRESS.'
 - number: 564
   timestamp: 2026-05-18 09:45
   type: fix
@@ -176,10 +207,10 @@ cycles:
     intent: Close the active Agentera App Files Wording Cleanup plan.
     constraints: Scope stayed limited to current user-facing/diagnostic installed-app
       wording and focused regressions; no SKILL.md cleanup, routing/execution cleanup,
-      capability `prose.md` rename, `first_invocation_read`, broad vocabulary sweep,
-      3.0.0 packaging, installed app/profile refresh, package-manager change, publication,
-      push, tag, `.agentera/vision.yaml`, objective state, decision satisfaction state,
-      or protected `.agentera/decisions.yaml`/`.agentera/session.yaml` edits.
+      capability `instructions.md` rename, `first_invocation_read`, broad vocabulary
+      sweep, 3.0.0 packaging, installed app/profile refresh, package-manager change,
+      publication, push, tag, `.agentera/vision.yaml`, objective state, decision satisfaction
+      state, or protected `.agentera/decisions.yaml`/`.agentera/session.yaml` edits.
     scope: '`scripts/agentera`, `scripts/agentera_upgrade.py`, `tests/test_bundle_skill_vocabulary_authority.py`,
       `tests/test_bundle_freshness.py`, `tests/test_query_cli.py`, TODO, CHANGELOG,
       PLAN, and PROGRESS.'
@@ -211,10 +242,10 @@ cycles:
     intent: Close the active Decision 54 App Lifecycle Metadata Alignment plan.
     constraints: Scope stayed limited to structured app lifecycle metadata for doctor,
       hej, and upgrade plus focused tests and closeout artifacts; no bundle/SKILL.md
-      prose cleanup, routing/execution vocabulary cleanup, capability `prose.md` rename,
-      `first_invocation_read`, 3.0.0 packaging, installed app/profile refresh, package-manager
-      change, publication, push, tag, `.agentera/vision.yaml`, objective state, or
-      decision satisfaction state change.
+      prose cleanup, routing/execution vocabulary cleanup, capability `instructions.md`
+      rename, `first_invocation_read`, 3.0.0 packaging, installed app/profile refresh,
+      package-manager change, publication, push, tag, `.agentera/vision.yaml`, objective
+      state, or decision satisfaction state change.
     scope: '`scripts/agentera_upgrade.py`, `scripts/agentera`, `tests/test_lifecycle_vocabulary_authority.py`,
       TODO, CHANGELOG, PLAN, and PROGRESS.'
 - number: 562
@@ -228,7 +259,7 @@ cycles:
     compact-startup exceptions, and compatibility preservation are documented before
     implementation.
   discovered: The safe P0 seam was a focused machine-readable authority plus docs
-    delegation and tests. Current `prose.md` files, validators, runtime descriptors,
+    delegation and tests. Current `instructions.md` files, validators, runtime descriptors,
     package metadata, and CLI outputs remain compatibility/current-state surfaces;
     the actual `instructions.md` rename, `first_invocation_read` metadata feature,
     runtime behavior, and validation/regression sweep remain open TODOs.
@@ -277,9 +308,10 @@ cycles:
     intent: Close the active Routing and Execution Vocabulary Collapse plan.
     constraints: Keep scope to documentation/authority, docs delegation, and focused
       tests; no broad prose rewrite, full repository occurrence rejection, capability
-      `prose.md` rename, `first_invocation_read`, installed app/profile refresh, package-manager
-      change, publication, push, tag, vision/objective edit, decision satisfaction
-      change, or protected `.agentera/decisions.yaml`/`.agentera/session.yaml` edits.
+      `instructions.md` rename, `first_invocation_read`, installed app/profile refresh,
+      package-manager change, publication, push, tag, vision/objective edit, decision
+      satisfaction change, or protected `.agentera/decisions.yaml`/`.agentera/session.yaml`
+      edits.
     scope: '`references/cli/routing-execution-vocabulary.yaml`, `tests/test_routing_execution_vocabulary_authority.py`,
       `docs/vocabulary.md`, TODO, CHANGELOG, PLAN, and PROGRESS.'
 - number: 560
@@ -310,33 +342,9 @@ cycles:
       publication, push, tag, vision/objective edit, or decision satisfaction change.
     scope: '`references/cli/bundle-skill-vocabulary.yaml`, `tests/test_bundle_skill_vocabulary_authority.py`,
       `docs/vocabulary.md`, TODO, CHANGELOG, PLAN, and PROGRESS.'
-- number: 559
-  timestamp: 2026-05-18 06:48
-  type: docs
-  phase: build
-  what: Added the Decision 54 app lifecycle vocabulary authority.
-  commit: pending
-  inspiration: Realisera executed the active Decision 54 App Lifecycle Vocabulary
-    Authority plan after Planera handoff so doctor, hej, upgrade, docs, and tests
-    share one structured app lifecycle source.
-  discovered: The implementation should be an authority and regression seam, not a
-    broader suite-wide rename. Compatibility identifiers such as `.agentera-bundle.json`,
-    `bundle.status`, `activeBundleRoot`, and `--only bundle` remain out of scope.
-  verified: '`uv run pytest tests/test_lifecycle_vocabulary_authority.py -q` passed
-    with 5 tests. `uv run pytest tests/test_lifecycle_vocabulary_authority.py tests/test_decision44_vocabulary.py
-    -q` passed with 8 tests. `uv run "$AGENTERA_HOME/app/scripts/agentera" validate
-    artifact --artifact PLAN.md`, `TODO.md`, `CHANGELOG.md`, `PROGRESS.md`, and `DOCS.md`
-    each returned `status=pass`. `git diff --check` passed.'
-  next: Apply the next P0 vocabulary authority extension for `bundle` and `SKILL.md`
-    concepts, or commit this completed Decision 54 authority batch first.
-  context:
-    intent: Close the active Decision 54 lifecycle vocabulary authority plan.
-    constraints: Keep the scope to app lifecycle vocabulary; no broader protocol rename,
-      installed app/profile refresh, package-manager change, publication, push, tag,
-      vision/objective edit, or decision satisfaction change.
-    scope: '`references/cli/app-lifecycle-vocabulary.yaml`, `tests/test_lifecycle_vocabulary_authority.py`,
-      `docs/vocabulary.md`, TODO, CHANGELOG, PLAN, and PROGRESS.'
 archive:
+- summary: 'Cycle 559 (2026-05-18): Added the Decision 54 app lifecycle vocabulary
+    authority.'
 - summary: 'Cycle 558 (2026-05-17): Documented the helper-script classification policy
     and canonical CLI examples.'
 - summary: 'Cycle 557 (2026-05-17): Added the privacy-gated `agentera stats` workflow.'
@@ -413,5 +421,3 @@ archive:
     planned `agentera verify` namespace.'
 - summary: 'Cycle 520 (2026-05-15): Synchronized PLAN Task 4 version and local state
     closeout for the D48 `agentera validate` namespace...'
-- summary: 'Cycle 519 (2026-05-15): Completed PLAN Task 3 validation coverage and
-    guidance alignment for the `agentera validate` namespace.'

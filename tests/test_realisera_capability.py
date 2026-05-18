@@ -51,7 +51,7 @@ def test_broken_realisera_fails_contract_validation(tmp_path):
     schemas_dir = cap_dir / "schemas"
     schemas_dir.mkdir()
 
-    (cap_dir / "prose.md").write_text("# Broken\n")
+    (cap_dir / "instructions.md").write_text("# Broken\n")
     (schemas_dir / "triggers.yaml").write_text(textwrap.dedent("""\
         TRIGGERS:
           bad_key:
@@ -108,16 +108,16 @@ def test_realisera_trigger_patterns_route_to_realisera():
 
 
 def test_realisera_prose_exists_and_contains_workflow():
-    prose_path = REALISERA_CAP_DIR / "prose.md"
-    assert prose_path.is_file(), "prose.md must exist"
+    prose_path = REALISERA_CAP_DIR / "instructions.md"
+    assert prose_path.is_file(), "instructions.md must exist"
 
     content = prose_path.read_text()
     for required in ["Step 1: Orient", "Step 2: Pick work", "Step 5: Dispatch", "Step 6: Verify", "Step 7: Commit", "Step 9: Log", "Safety rails", "Exit signals"]:
-        assert required in content, f"prose.md must contain section '{required}'"
+        assert required in content, f"instructions.md must contain section '{required}'"
 
 
 def test_realisera_prose_enforces_completed_plan_sweep_before_archival():
-    content = (REALISERA_CAP_DIR / "prose.md").read_text()
+    content = (REALISERA_CAP_DIR / "instructions.md").read_text()
 
     for required in [
         "header.status: complete",
