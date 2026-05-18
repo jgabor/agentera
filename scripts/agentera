@@ -154,7 +154,6 @@ VALIDATE_ARTIFACT_LABELS = [
     "HEALTH.md",
     "PLAN.md",
     "PROGRESS.md",
-    "SESSION.md",
     "TODO.md",
     "VISION.md",
 ]
@@ -465,7 +464,6 @@ V1_ARTIFACT_PAIRS = [
     (".agentera/PLAN.md", ".agentera/plan.yaml"),
     (".agentera/DECISIONS.md", ".agentera/decisions.yaml"),
     (".agentera/HEALTH.md", ".agentera/health.yaml"),
-    (".agentera/SESSION.md", ".agentera/session.yaml"),
     (".agentera/DOCS.md", ".agentera/docs.yaml"),
     ("VISION.md", ".agentera/vision.yaml"),
 ]
@@ -1493,6 +1491,62 @@ def _capability_artifact_needs(capability: str) -> tuple[list[str], str | None]:
     return needs, None
 
 
+def _capability_instruction_contract_path() -> Path:
+    active_path = _model_path(_active_app_model(), "authoritativeRoot") / "references" / "cli" / "capability-instruction-contract.yaml"
+    if active_path.is_file():
+        return active_path
+    return Path(__file__).resolve().parent.parent / "references" / "cli" / "capability-instruction-contract.yaml"
+
+
+def _capability_instruction_contract() -> dict[str, Any]:
+    path = _capability_instruction_contract_path()
+    if not path.is_file():
+        return {}
+    try:
+        data = yaml.safe_load(path.read_text(encoding="utf-8"))
+    except Exception:
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
+def _capability_instruction_target(capability: str) -> dict[str, Any]:
+    skill_root = _model_path(_active_app_model(), "skillRoot")
+    rel = f"skills/agentera/capabilities/{capability}/instructions.md"
+    installed_target = skill_root / "capabilities" / capability / "instructions.md"
+    return {
+        "path": rel,
+        "exists": installed_target.is_file(),
+        "runtime_path": str(installed_target),
+    }
+
+
+def _first_invocation_read_metadata(capability: str) -> dict[str, Any]:
+    authority = _capability_instruction_contract()
+    first_read = authority.get("first_invocation_read") if isinstance(authority, dict) else {}
+    if not isinstance(first_read, dict):
+        first_read = {}
+    allowed_values = first_read.get("allowed_values") if isinstance(first_read, dict) else {}
+    value = "compact_startup" if capability == "planera" else "full"
+    value_contract = allowed_values.get(value, {}) if isinstance(allowed_values, dict) else {}
+    full_contract = allowed_values.get("full", {}) if isinstance(allowed_values, dict) else {}
+    return {
+        "field": "first_invocation_read",
+        "value": value,
+        "allowed_values": list(allowed_values) if isinstance(allowed_values, dict) else [],
+        "default_rule": first_read.get("default_rule") or first_read.get("default_future_rule"),
+        "instruction_target": _capability_instruction_target(capability),
+        "obligation_summary": value_contract.get("obligation") or full_contract.get("obligation"),
+        "meaning": value_contract.get("meaning"),
+        "runtime_enforcement": False,
+        "provenance": {
+            "authority_path": "references/cli/capability-instruction-contract.yaml",
+            "authority_status": authority.get("status"),
+            "decision": authority.get("decision"),
+            "source_field": "first_invocation_read.allowed_values",
+        },
+    }
+
+
 def _planera_startup_contract() -> dict[str, Any]:
     return {
         "schemaVersion": PLANERA_STARTUP_CONTRACT_VERSION,
@@ -1571,6 +1625,7 @@ def _capability_context(capability: str | None) -> dict[str, Any] | None:
     ]
     context: dict[str, Any] = {
         "capability": capability,
+        "first_invocation_read": _first_invocation_read_metadata(capability),
         "declared_state_needs": needs,
         "included_state_families": [name for name in needs if name in STARTUP_ENVELOPE_STATE_FAMILIES],
         "missing_state_families": missing,
@@ -5567,24 +5622,6 @@ def _query_docs(args: argparse.Namespace, schemas: dict) -> int:
     return 0
 
 
-def _query_session(args: argparse.Namespace, schemas: dict) -> int:
-    info = schemas.get("session")
-    if not info:
-        print(_missing_schema_error("session"), file=sys.stderr)
-        return 1
-    data = _load_artifact(_artifact_path(info, "session"))
-    entries = _extract_entries(data)
-    if not entries:
-        return 0
-    limit = getattr(args, "limit", 5) or 5
-    for entry in entries[-limit:]:
-        print(_format_entry(entry, ["timestamp", "summary"]))
-        artifacts = entry.get("artifacts")
-        if artifacts:
-            print(f"  artifacts={_truncate(artifacts)}")
-    return 0
-
-
 def _query_design(args: argparse.Namespace, schemas: dict) -> int:
     info = schemas.get("design")
     if not info:
@@ -6617,7 +6654,6 @@ def cmd_query(args: argparse.Namespace) -> int:
         "last-phase": _query_last_phase,
         "design": _query_design,
         "open-todos": _query_open_todos,
-        "session": _query_session,
     }
     if query in handlers:
         if output_format != "text" and query in schemas:

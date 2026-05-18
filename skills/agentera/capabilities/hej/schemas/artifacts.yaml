@@ -67,9 +67,3 @@ ARTIFACTS:
     local_role: consumes
     description: >-
       Hej reads this to report profile status (loaded/not found) in the briefing.
-  12:
-    id: A12
-    artifact_id: session
-    local_role: consumes
-    description: >-
-      Hej reads this for returning-project continuity when present.

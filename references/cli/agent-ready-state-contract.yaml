@@ -667,7 +667,6 @@ validate_namespace:
         - HEALTH.md
         - PLAN.md
         - PROGRESS.md
-        - SESSION.md
         - TODO.md
         - VISION.md
       output_formats:

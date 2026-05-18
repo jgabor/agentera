@@ -3,9 +3,9 @@ status: active_authority
 decision: 57
 purpose: >-
   Define the Decision 57 capability instruction-file contract: the canonical
-  `instructions.md` file name, first-invocation read semantics, compact-startup
-  exception boundaries, and the implementation work that remains intentionally
-  unsupported.
+  `instructions.md` file name, implemented CLI/schema first-invocation read
+  discoverability, compact-startup exception boundaries, and runtime behavior
+  that remains intentionally unsupported.
 sources:
   decision: .agentera/decisions.yaml#decision-57
   prose:
@@ -13,13 +13,12 @@ sources:
     - README.md#for-capability-authors
 scope:
   includes:
-    - Documentation authority for the future capability instruction-file name.
-    - Startup-read semantics for first capability invocation.
+    - Documentation authority for the implemented capability instruction-file name.
+    - CLI/schema discoverability for first capability invocation startup-read metadata.
     - Compact-startup exception semantics and boundaries.
     - Current canonical references to existing `instructions.md` files.
-    - Explicit separation from later metadata and runtime behavior work.
+    - Explicit separation from runtime behavior work.
   excludes:
-    - Adding or emitting `first_invocation_read` metadata in CLI output or schemas.
     - Implementing first-invocation read behavior.
     - Marking Decision 57 satisfied or editing protected vision/objective/profile/installed-app state.
 current_state:
@@ -41,15 +40,16 @@ current_state:
     status: current_requirement_enforced
   cli_metadata:
     field: first_invocation_read
-    status: not_yet_emitted
+    status: emitted_in_hej_capability_context
     current_behavior: >-
-      `agentera hej --format json --capability-context <name>` does not emit this
-      field as part of this documentation-only contract authority.
+      `agentera hej --format json --capability-context <name>` emits
+      `source_contract.capability_context.first_invocation_read` for supported
+      capabilities.
 first_invocation_read:
-  field_status: future_metadata_not_yet_implemented
+  field_status: cli_schema_discoverability_implemented
   definition: >-
-    Future capability metadata declaring what instruction content an agent must
-    read on the first invocation of that capability in a session.
+    Capability metadata declaring what instruction content an agent must read on
+    the first invocation of that capability in a session.
   allowed_values:
     full:
       meaning: >-
@@ -68,13 +68,13 @@ first_invocation_read:
       caution: >-
         Reserved for narrow future surfaces; not a default and not implemented by
         this authority.
-  default_future_rule: full
+  default_rule: full
   full_read_obligation: >-
     On initial capability invocation, read `instructions.md` in full unless that
     capability declares a compact-startup exception with explicit coverage and
     escalation boundaries.
 compact_startup_exception:
-  status: future_exception_boundary_documented_not_implemented
+  status: implemented_for_planera_compact_startup_discoverability
   allowed_when:
     - A machine-readable startup contract is available through supported state access.
     - The compact contract states which instruction topics it covers.
@@ -88,8 +88,8 @@ compact_startup_exception:
 implementation_state:
   instructions_md_files: renamed
   validators_require_instructions_md: true
-  first_invocation_read_cli_metadata: false
-  first_invocation_read_schema_metadata: false
+  first_invocation_read_cli_metadata: true
+  first_invocation_read_schema_metadata: true
   runtime_first_invocation_behavior: false
   descriptors_rewritten_to_instructions_md: true
   package_metadata_rewritten_to_instructions_md: true
@@ -101,15 +101,15 @@ compatibility_preservation:
     - archived v1/v2 migration records and progress evidence
     - compatibility fixtures and tests that intentionally preserve old behavior evidence
     - README, AGENTS, and vocabulary references that explicitly describe the current canonical state
-  later_implementation_todos:
+  resolved_implementation_todos:
     metadata_feature: >-
-      Add `first_invocation_read` metadata and surface required instruction reads
-      through capability context output.
+      Added `first_invocation_read` metadata and surfaced required instruction
+      reads through capability context output.
     validation_regression: >-
       Prove capability directories require `instructions.md`, reject new `prose.md`
       conventions, emit required-read context, and preserve compact-startup exceptions.
 surface_inventory:
-  decision_57: future_canonical_contract_source
+  decision_57: current_canonical_contract_source
   todo_sequence: separates_docs_rename_metadata_and_validation_work
   docs_vocabulary: delegates_to_this_authority
   readme: concise_user_facing_current_and_future_authoring_seam

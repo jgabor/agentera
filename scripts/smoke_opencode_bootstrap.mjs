@@ -5,6 +5,7 @@
 import fs from "fs";
 import os from "os";
 import path from "path";
+import crypto from "crypto";
 import { execFileSync } from "child_process";
 import { fileURLToPath, pathToFileURL } from "url";
 
@@ -25,6 +26,12 @@ function fail(reason) {
 
 function assert(condition, reason) {
   if (!condition) fail(reason);
+}
+
+function runtimeSessionPath(agenteraHome, projectRoot) {
+  const digest = crypto.createHash("sha256").update(path.resolve(projectRoot)).digest("hex").slice(0, 16);
+  const slug = path.basename(projectRoot).replace(/[^A-Za-z0-9_.-]+/g, "-").replace(/^[.-]+|[.-]+$/g, "") || "project";
+  return path.join(agenteraHome, "sessions", `${slug}-${digest}`, "session.yaml");
 }
 
 try {
@@ -483,7 +490,7 @@ try {
     "writeSessionBookmark must no-op when hooks/session_stop.py is unavailable"
   );
 
-  // --- Test 8: event hook — idle writes session.yaml for modified artifacts ---
+  // --- Test 8: event hook — idle writes runtime-local session bookmark for modified artifacts ---
   const repoRoot = path.resolve(__dirname, "..");
   process.env.AGENTERA_HOME = repoRoot;
   const projectWithArtifact = path.join(tmpdir, "event-project");
@@ -492,11 +499,12 @@ try {
   fs.writeFileSync(path.join(projectWithArtifact, "TODO.md"), "# TODO\n\n## \u21f6 Critical\n\n## \u21c9 Degraded\n\n## \u2192 Normal\n\n- [ ] event smoke\n\n## \u21e2 Annoying\n\n## Resolved\n");
   const hooksForEvents = await Agentera({ worktree: projectWithArtifact }, {});
   await hooksForEvents.event({ event: { type: "session.idle", properties: { sessionID: "s1" } } });
-  const sessionPath = path.join(projectWithArtifact, ".agentera", "session.yaml");
-  assert(fs.existsSync(sessionPath), "session.idle event should write session.yaml when artifacts changed");
+  const sessionPath = runtimeSessionPath(repoRoot, projectWithArtifact);
+  assert(fs.existsSync(sessionPath), "session.idle event should write runtime-local session bookmark when artifacts changed");
+  assert(!fs.existsSync(path.join(projectWithArtifact, ".agentera", "session.yaml")), "session.idle event must not write project session.yaml");
   const sessionText = fs.readFileSync(sessionPath, "utf8");
-  assert(sessionText.includes("bookmarks:"), "session.yaml bookmark should include bookmarks list");
-  assert(sessionText.includes("TODO.md"), "session.yaml bookmark should name modified TODO.md");
+  assert(sessionText.includes("bookmarks:"), "runtime session bookmark should include bookmarks list");
+  assert(sessionText.includes("TODO.md"), "runtime session bookmark should name modified TODO.md");
 
   // --- Test 8a: compaction hook appends CLI-first Agentera state context ---
   const compactionOutput = { context: [] };
@@ -513,7 +521,7 @@ try {
       { tool: "write", sessionID: "s1", callID: "deny-artifact" },
       {
         args: {
-          filePath: ".agentera/session.yaml",
+          filePath: ".agentera/progress.yaml",
           content: "",
         },
       }
@@ -521,7 +529,7 @@ try {
   } catch (err) {
     denied = true;
     assert(
-      String(err.message || err).includes("session"),
+      String(err.message || err).includes("progress"),
       "invalid artifact denial should include the artifact name"
     );
   }
@@ -532,8 +540,8 @@ try {
     { tool: "write", sessionID: "s1", callID: "allow-artifact" },
     {
       args: {
-        filePath: ".agentera/session.yaml",
-        content: "bookmarks:\n  - timestamp: \"2026-05-05 12:00\"\n    artifacts:\n      - TODO.md\n",
+        filePath: ".agentera/progress.yaml",
+        content: "cycles:\n  - number: 1\n    timestamp: '2026-05-18 10:00'\n    type: test\n    phase: build\n    what: tested\n    commit: N/A\n    verified: smoke passed\n    context:\n      intent: validate smoke fixture\n",
       },
     }
   );
@@ -555,7 +563,7 @@ try {
   await hooksForEvents.event({});
   assert(
     fs.readFileSync(sessionPath, "utf8") === beforeCreated,
-    "session.created and malformed events must not write session.yaml bookmarks"
+    "session.created and malformed events must not write runtime session bookmarks"
   );
 
   // --- Test 10: event hook — idle no-op without modified artifacts ---
@@ -566,7 +574,11 @@ try {
   await cleanHooks.event({ event: { type: "session.idle", properties: { sessionID: "s2" } } });
   assert(
     !fs.existsSync(path.join(cleanProject, ".agentera", "session.yaml")),
-    "session.idle event must not create session.yaml when no artifacts changed"
+    "session.idle event must not create project session.yaml when no artifacts changed"
+  );
+  assert(
+    !fs.existsSync(runtimeSessionPath(repoRoot, cleanProject)),
+    "session.idle event must not create runtime session bookmark when no artifacts changed"
   );
   delete process.env.AGENTERA_HOME;
 

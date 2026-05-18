@@ -42,9 +42,7 @@ def _write_docs_mapping(project: Path, state_dir: str = "state") -> None:
         "- artifact: DECISIONS.md\n"
         f"  path: {state_dir}/decisions.yaml\n"
         "- artifact: HEALTH.md\n"
-        f"  path: {state_dir}/health.yaml\n"
-        "- artifact: SESSION.md\n"
-        f"  path: {state_dir}/session.yaml\n",
+        f"  path: {state_dir}/health.yaml\n",
         encoding="utf-8",
     )
 
@@ -72,7 +70,6 @@ def _write_compaction_project(project: Path, progress_cycles: int) -> None:
     )
     (state / "decisions.yaml").write_text("decisions:\n- number: 1\narchive: []\n", encoding="utf-8")
     (state / "health.yaml").write_text("audits:\n- number: 1\narchive: []\n", encoding="utf-8")
-    (state / "session.yaml").write_text("bookmarks:\n- timestamp: '2026-05-14 10:00'\narchive: []\n", encoding="utf-8")
 
 
 def test_compact_json_check_reports_over_limit_and_mapped_path(tmp_path: Path):

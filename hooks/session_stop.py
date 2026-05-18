@@ -3,15 +3,12 @@
 # requires-python = ">=3.10"
 # dependencies = ["pyyaml"]
 # ///
-"""Stop hook: writes session bookmarks to .agentera/session.yaml.
+"""Stop hook: writes runtime-local session bookmarks.
 
 Detects which operational artifacts were modified during the session
 (via git diff and git ls-files), and writes a timestamped bookmark to
-session.yaml. Stages the session file (git add) so it is never left
-dirty in the working tree. Compacts older bookmarks to one-line summaries
+the Agentera data home. Compacts older bookmarks to one-line summaries
 (keep 10 full entries, 40 one-line summaries, drop oldest beyond 50 total).
-
-Respects docs.yaml artifact path overrides.
 
 Receives JSON on stdin with fields: session_id, transcript_path, cwd,
 hook_event_name. Exit code 0 = success, exit code 1 = error.
@@ -22,7 +19,9 @@ Run standalone for testing:
 
 from __future__ import annotations
 
+import hashlib
 import json
+import os
 import re
 import subprocess
 import sys
@@ -32,7 +31,6 @@ from pathlib import Path
 import yaml
 
 from common import (
-    DEFAULT_PATHS,
     load_artifact_overrides,
     resolve_artifact_path,
 )
@@ -55,11 +53,24 @@ TRACKED_ARTIFACTS = [
     "HEALTH.md",
     "DESIGN.md",
     "DOCS.md",
-    "SESSION.md",
     "VISION.md",
     "TODO.md",
     "CHANGELOG.md",
 ]
+
+
+def resolve_session_path(project_root: Path) -> Path:
+    """Return the runtime-local session bookmark path for this project."""
+    base = os.environ.get("AGENTERA_HOME")
+    if base:
+        data_home = Path(base).expanduser()
+    else:
+        xdg_data_home = os.environ.get("XDG_DATA_HOME")
+        data_home = Path(xdg_data_home).expanduser() / "agentera" if xdg_data_home else Path.home() / ".local" / "share" / "agentera"
+    resolved = str(project_root.resolve())
+    digest = hashlib.sha256(resolved.encode("utf-8")).hexdigest()[:16]
+    slug = re.sub(r"[^A-Za-z0-9_.-]+", "-", project_root.name).strip(".-") or "project"
+    return data_home / "sessions" / f"{slug}-{digest}" / "session.yaml"
 
 
 # ---------------------------------------------------------------------------
@@ -160,11 +171,11 @@ def detect_modified_artifacts(
 
 
 # ---------------------------------------------------------------------------
-# SESSION.md parsing and writing
+# Session bookmark parsing and writing
 # ---------------------------------------------------------------------------
 
 def parse_session_entries(text: str) -> list[dict[str, object]]:
-    """Parse session.yaml or legacy SESSION.md into entry dicts.
+    """Parse runtime session bookmark text into entry dicts.
 
     Each entry has:
       - "timestamp": session timestamp
@@ -315,7 +326,7 @@ def build_bookmark(
 
 def write_session_bookmark(
     project_root: Path,
-    overrides: dict[str, str] | None,
+    _overrides: dict[str, str] | None,
     modified_artifacts: list[str],
     timestamp: datetime | None = None,
 ) -> bool:
@@ -328,7 +339,7 @@ def write_session_bookmark(
     if not modified_artifacts:
         return False
 
-    session_path = resolve_artifact_path(project_root, "SESSION.md", overrides)
+    session_path = resolve_session_path(project_root)
 
     # Read existing entries.
     existing_text = ""
@@ -347,13 +358,6 @@ def write_session_bookmark(
     # Write result.
     session_path.parent.mkdir(parents=True, exist_ok=True)
     session_path.write_text(format_session_yaml(compacted), encoding="utf-8")
-
-    # Stage the session file so it is never left dirty in the working tree.
-    try:
-        rel = str(session_path.relative_to(project_root))
-        _run_git(project_root, ["add", "--", rel])
-    except (ValueError, OSError):
-        pass
 
     return True
 

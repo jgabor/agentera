@@ -41,7 +41,6 @@ _CANONICAL_SCHEMA_NAMES = {
     "HEALTH.md": "health",
     "PLAN.md": "plan",
     "PROGRESS.md": "progress",
-    "SESSION.md": "session",
     "VISION.md": "vision",
 }
 
@@ -55,7 +54,6 @@ _DEFAULT_ARTIFACT_PATHS = {
     "HEALTH.md": ".agentera/health.yaml",
     "DOCS.md": ".agentera/docs.yaml",
     "DESIGN.md": "DESIGN.md",
-    "SESSION.md": ".agentera/session.yaml",
 }
 
 _ARTIFACT_BY_SCHEMA_NAME = {schema: artifact for artifact, schema in _CANONICAL_SCHEMA_NAMES.items()}

@@ -370,7 +370,6 @@ privacy_boundary:
     DOCS.md: DOCS.md
     DECISIONS.md: DECISIONS.md
     HEALTH.md: HEALTH.md
-    SESSION.md: SESSION.md
     VISION.md: VISION.md
     OBJECTIVE.md: OBJECTIVE.md
     EXPERIMENTS.md: EXPERIMENTS.md

@@ -172,9 +172,6 @@ required_artifact_identities:
     - artifact_id: vision
       display_name: VISION.md
       default_path: .agentera/vision.yaml
-    - artifact_id: session
-      display_name: SESSION.md
-      default_path: .agentera/session.yaml
   project_root:
     - artifact_id: todo
       display_name: TODO.md

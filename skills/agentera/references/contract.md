@@ -132,7 +132,6 @@ Three project-facing files at the project root; nine operational files in `.agen
 | EXPERIMENTS.md | Experiment log (per-objective, under `.agentera/optimera/<name>/`) |
 | DESIGN.md | Visual identity |
 | DOCS.md | Documentation contract + optional artifact path overrides |
-| SESSION.md | Timestamped session bookmarks with artifact change tracking |
 | archive/ | Completed plans, superseded visions and designs |
 
 **PROFILE.md** is global. Profilera determines the platform-appropriate data directory: `$PROFILERA_PROFILE_DIR/PROFILE.md` (defaulting to `$XDG_DATA_HOME/agentera/PROFILE.md` on Linux, `~/Library/Application Support/agentera/PROFILE.md` on macOS, `%APPDATA%/agentera/PROFILE.md` on Windows). <!-- platform: profile-path --> Skills read it from the profilera-determined path directly. PROFILERA_PROFILE_DIR is the sibling of AGENTERA_HOME (Section 7): both are adapter-injected env vars. PROFILERA_PROFILE_DIR scopes to profile data; AGENTERA_HOME scopes to the Agentera app home. User data such as PROFILE.md, USAGE.md, history, and intermediate corpus data stays at the app-home root; managed app code lives separately under `$AGENTERA_HOME/app`.
@@ -152,7 +151,6 @@ Three project-facing files at the project root; nine operational files in `.agen
 | EXPERIMENTS.md | .agentera/optimera/<name>/experiments.yaml | optimera | optimera | ## Experiment N · date, **Hypothesis/Method/Result/Conclusion**; ## Closure · date, **Final value/Target/Reason** |
 | DESIGN.md | DESIGN.md | visualisera | realisera, visionera | Standard design sections with embedded `design:` YAML blocks |
 | DOCS.md | .agentera/docs.yaml | dokumentera | all skills (path resolution) | conventions, mapping, index |
-| SESSION.md | .agentera/session.yaml | session stop hook | session start hook, hej | sessions entries; compaction: 10 full + 40 one-line, oldest dropped |
 | PROFILE.md | (profile-path capability) <!-- platform: profile-path --> | profilera | all skills (directly when present) | ## Category, ### Decision, inline conf metadata |
 
 **Dual-write**: realisera writes both CHANGELOG.md (public, version-level summaries for project contributors) AND `.agentera/progress.yaml` (operational cycle-level detail for consuming skills). Consuming skills that need cycle detail read `.agentera/progress.yaml`; project contributors read CHANGELOG.md.
@@ -304,16 +302,6 @@ Same logic: collapse oldest full-detail to one-line when >10 exist. Drop oldest 
 | Dropped | Items older than 50 | Removed entirely |
 
 Same logic: collapse oldest full-detail to one-line when >10 exist. Drop oldest one-line when >40 one-line entries exist. Compaction applies only within the `## Resolved` section; active severity sections are not affected.
-
-**SESSION.md**, compacted by the session stop hook when writing a new bookmark:
-
-| Tier | Entries | Format |
-|------|---------|--------|
-| Full detail | 10 most recent bookmarks | Standard bookmark format |
-| One-line archive | Bookmarks 11 through 50 | `## YYYY-MM-DD HH:MM (≤15-word summary)` |
-| Dropped | Bookmarks older than 50 | Removed entirely |
-
-Same logic: collapse oldest full-detail to one-line when >10 exist. Drop oldest one-line when >40 one-line entries exist. Compaction is implemented in `hooks/session_stop.py` (constants `MAX_FULL_ENTRIES`, `MAX_ONELINE_ENTRIES`).
 
 ## 5. Artifact Path Resolution
 

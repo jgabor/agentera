@@ -4,139 +4,184 @@ header:
   status: complete
   reviewed: 2026-05-18
   critic_issues: 2 found, 2 addressed, 0 dismissed
-  revised: Added explicit compatibility-fixture boundaries and split validation so the plan
-    does not imply a blind repository-wide text replacement or require the full suite before
-    focused contract checks have narrowed failures.
-  title: Capability Instructions File Rename
-what: Rename the canonical capability instruction files from `skills/agentera/capabilities/*/instructions.md`
-  to `instructions.md`, then update the Agentera skill entry point, schema contract, runtime
-  descriptors, scripts, docs, tests, package metadata, and compatibility fixtures so `instructions.md`
-  is the supported convention and `instructions.md` survives only where explicitly preserved
-  for historical or compatibility evidence.
-why: This is the highest-priority open TODO and the implementation step after Decision 57's
-  capability instruction contract. Agents need the repository, runtime descriptors, validators,
-  and docs to agree on the canonical file name before later `first_invocation_read` metadata
-  and validation-regression work can be completed without ambiguous startup-read behavior.
-constraints: Keep this plan scoped to the `instructions.md` to `instructions.md` rename and
-  direct reference updates. Do not implement `first_invocation_read` metadata emission, do
-  not close the later validation/regression TODO unless its explicit coverage is actually
-  added, do not perform broad unrelated vocabulary sweeps, do not rewrite historical archives
-  except preserving the completed prior plan, do not refresh installed apps/profiles, publish,
-  push, tag, change package-manager state, edit `.agentera/vision.yaml`, mutate objective
-  state, or change decision satisfaction state.
+  revised: Narrowed the plan to discoverable metadata rather than runtime read enforcement,
+    and separated this feature from the broader validation-regression TODO except for direct
+    tests proving the new metadata contract.
+  title: First Invocation Read Metadata
+what: Add machine-readable `first_invocation_read` capability metadata to the Decision 57
+  instruction contract and expose each capability's required startup instruction-read obligation
+  through `agentera hej --format json --capability-context <name>`. Agents should be able to
+  discover whether first invocation requires a full `instructions.md` read, can rely on a compact
+  startup contract, or is explicitly justified as skipped, without guessing capability directory
+  paths or inventing unsupported capability CLI commands.
+why: The instruction-file contract is now implemented, but the required-read obligation remains
+  discoverable only by reading contract prose and capability files directly. Surfacing the obligation
+  through the existing hej capability-context seam completes the next TODO in the Decision 57
+  sequence, reduces raw directory guessing at startup, and preserves the CLI-first state model
+  used by Planera, Orkestrera, Dokumentera, Inspektera, Optimera, and Realisera contexts.
+constraints: Keep the feature scoped to metadata declaration and CLI discoverability. Do not
+  implement runtime policing of whether an agent actually read `instructions.md`; do not add
+  unsupported commands such as `agentera planera`; do not duplicate contract-owned enum values
+  outside validation-tied tests; do not close the separate broad validation/vocabulary regression
+  TODO unless its full explicit scope is actually implemented; do not refresh installed apps/profiles,
+  publish, push, tag, edit `.agentera/vision.yaml`, mutate objective state, or change decision
+  satisfaction state.
 scope:
   included:
-  - '`skills/agentera/capabilities/*/instructions.md` file renames to `instructions.md`.'
-  - Current references in `skills/agentera/SKILL.md`, `skills/agentera/capability_schema_contract.yaml`,
-    runtime descriptors, scripts, docs, tests, package metadata, and compatibility fixtures.
-  - Validator and test expectations needed to treat `instructions.md` as canonical while preserving
-    explicit historical or compatibility records.
-  - Plan, progress, TODO, and changelog closeout metadata for this rename cycle.
+  - '`references/cli/capability-instruction-contract.yaml` as the source of truth for values,
+    default behavior, compact-startup exception boundaries, and implementation state.'
+  - '`agentera hej --format json --capability-context <name>` JSON metadata for required instruction-read
+    discovery.'
+  - Focused tests in `tests/test_capability_instruction_contract.py`, `tests/test_query_cli.py`,
+    and nearby CLI contract coverage proving the metadata shape, values, defaults, and compact-startup
+    exception behavior.
+  - Existing docs and source indexes that currently describe future or absent `first_invocation_read`
+    metadata.
+  - Version-policy and closeout metadata updates only if the repository's docs convention requires
+    them during implementation.
   excluded:
-  - Implementing `first_invocation_read` CLI metadata behavior or compact-startup exception
-    plumbing beyond direct references required by the rename.
-  - Broad route/router/orchestration vocabulary regression sweeps not directly caused by the
-    instruction-file rename.
-  - Rewriting archived historical records solely to remove old `instructions.md` mentions.
-  - Runtime app/profile refreshes, package publication, version bumps beyond the repository's
-    normal closeout requirements, protected vision/objective edits, and decision satisfaction
-    changes.
+  - Runtime enforcement of first-invocation reads by agent processes.
+  - New capability-name CLI commands such as `agentera planera` or `agentera realisera`.
+  - Broad vocabulary sweeps for app lifecycle status, bundle/SKILL.md wording, or dispatcher/router
+    wording that are already represented by separate TODO entries.
+  - Protected vision, objective, profile, installed-app, publication, push, tag, and decision-satisfaction
+    mutations.
   deferred:
-  - The open `first_invocation_read` metadata TODO.
-  - The open validation/regression TODO proving capability directories require `instructions.md`,
-    if its full scope is not completed as part of this implementation.
-design: Treat the rename as a contract migration, not a string replacement. First build an
-  inventory of canonical references, generated/package surfaces, tests, and historical fixtures.
-  Then move the real capability files and update loaders, descriptors, validators, and docs
-  through the contract-owned surfaces instead of duplicating directory rules. Finally, run
-  focused capability-contract validation before the broader suite so compatibility fixture
-  failures can be classified as intentional preservation or canonical mismatch.
+  - Post-3.0 legacy cleanup and single-name protocol removal.
+  - The broader validation-regression TODO beyond direct proof that required-read capability context
+    is emitted and compact-startup exceptions remain explicit.
+design: Treat `first_invocation_read` as capability metadata in the existing hej capability-context
+  contract. The contract authority defines the allowed values and default rule; the CLI reports
+  the resolved obligation for a requested capability alongside the existing `declared_state_needs`,
+  fallback commands, raw-artifact policy, and capability-specific context. Capabilities with no
+  explicit compact-startup exception report the default full-read obligation. Planera reports the
+  compact-startup obligation only because the existing startup contract is present and names covered
+  guidance plus escalation boundaries. Any future skip value must carry explicit justification before
+  it is exposed.
 tasks:
 - number: 1
-  name: Inventory rename surfaces and compatibility boundaries
+  name: Align the metadata authority
   depends_on: []
   status: complete
-  acceptance:
-  - GIVEN current files are searched for `instructions.md`, capability prose, and instruction-file
-    references WHEN the inventory is complete THEN each occurrence is classified as canonical
-    code/docs, runtime/package metadata, compatibility fixture, generated output, historical
-    archive, or unrelated prose.
-  - GIVEN Decision 57 and TODO sequencing are reviewed WHEN scope is recorded THEN `first_invocation_read`
-    behavior, broad vocabulary sweeps, and historical archive rewrites are explicitly excluded
-    unless directly required by the rename.
   evidence:
-  - Completed in this Realisera cycle; see PROGRESS cycle 569 for verification evidence.
+  - Updated `references/cli/capability-instruction-contract.yaml` to mark CLI/schema
+    discoverability implemented while keeping runtime enforcement false.
+  - Focused authority tests read allowed values from the contract and preserve the
+    separate broad validation-regression TODO.
+  acceptance:
+  - GIVEN the Decision 57 instruction contract is inspected WHEN the metadata feature is specified
+    THEN `references/cli/capability-instruction-contract.yaml` marks `first_invocation_read` CLI
+    and schema metadata as implemented for discoverability while leaving runtime first-invocation
+    enforcement false unless separately built.
+  - GIVEN the allowed values are consumed by tests or CLI metadata WHEN they are asserted THEN
+    `full`, `compact_startup`, and `skip` come from the contract authority or validation tied to
+    that authority, not from an unconnected duplicate list.
+  - GIVEN a capability has no compact-startup exception WHEN required-read metadata is resolved
+    THEN the default future rule is `full` and the obligation names `instructions.md` as the required
+    instruction file.
 - number: 2
-  name: Rename capability instruction files and update loaders
+  name: Expose capability required-read context
   depends_on:
   - 1
   status: complete
-  acceptance:
-  - GIVEN real capability directories under `skills/agentera/capabilities/` are inspected
-    WHEN the rename is applied THEN each supported capability uses `instructions.md` as its
-    instruction file and no real capability still depends on `instructions.md` as canonical.
-  - GIVEN scripts, validators, runtime loaders, and descriptor generation paths are inspected
-    WHEN they resolve capability instructions THEN they prefer `instructions.md` and preserve
-    only explicit compatibility fallbacks required by shipped behavior.
   evidence:
-  - Completed in this Realisera cycle; see PROGRESS cycle 569 for verification evidence.
+  - Added `source_contract.capability_context.first_invocation_read` to hej capability
+    context output with value, target, obligation, runtime boundary, and provenance.
+  - Planera reports `compact_startup`; default capabilities report `full`; no capability-name
+    CLI command was added.
+  acceptance:
+  - GIVEN `agentera hej --format json --capability-context <name>` is run for any supported capability
+    WHEN JSON is parsed THEN `source_contract.capability_context.first_invocation_read` exists with
+    a value from the contract enum, an `instructions.md` read target where applicable, an obligation
+    summary, and provenance pointing to `references/cli/capability-instruction-contract.yaml`.
+  - GIVEN `--capability-context planera` is run WHEN Planera's compact startup contract is present
+    THEN `first_invocation_read.value` is `compact_startup`, the response identifies the compact
+    startup contract as satisfying normal startup, and escalation rules still require reading
+    `planera/instructions.md` for uncovered, contradictory, safety-critical, validation, or editing
+    work.
+  - GIVEN a capability does not declare a valid compact-startup exception WHEN its context is requested
+    THEN `first_invocation_read.value` is `full` and agents can discover that a first invocation must
+    read that capability's `instructions.md` without raw directory guessing.
+  - GIVEN hej JSON or text output is inspected WHEN the feature is complete THEN no unsupported
+    capability command such as `agentera planera` is introduced or recommended.
 - number: 3
-  name: Update docs, descriptors, metadata, and compatibility fixtures
+  name: Prove the CLI JSON contract
   depends_on:
+  - 1
   - 2
   status: complete
-  acceptance:
-  - GIVEN `skills/agentera/SKILL.md`, `capability_schema_contract.yaml`, runtime descriptors,
-    docs, package metadata, and compatibility fixtures are inspected WHEN references are updated
-    THEN current user-facing and protocol references name `instructions.md` as canonical.
-  - GIVEN historical or compatibility fixtures still contain `prose.md` WHEN tests classify
-    them THEN those occurrences are justified as preserved evidence rather than unresolved
-    canonical mismatch.
   evidence:
-  - Completed in this Realisera cycle; see PROGRESS cycle 569 for verification evidence.
+  - Updated `tests/test_capability_instruction_contract.py` for implemented metadata
+    and runtime non-enforcement.
+  - Updated `tests/test_query_cli.py` for Planera, default full-read, and installed-app
+    compact-startup fixture behavior.
+  - >-
+    `uv run pytest tests/test_capability_instruction_contract.py tests/test_query_cli.py
+    -q` passed with 202 tests.
+  acceptance:
+  - GIVEN focused capability-instruction contract tests run WHEN metadata is implemented THEN they
+    prove the authority no longer describes CLI/schema metadata as absent and still preserves the
+    runtime-enforcement boundary.
+  - GIVEN `tests/test_query_cli.py` focused hej capability-context tests run WHEN Planera and a
+    default full-read capability are requested THEN the asserted JSON shape includes
+    `source_contract.capability_context.first_invocation_read` with the expected values and provenance.
+  - GIVEN installed-app fixture tests run WHEN `planera/instructions.md` is absent from the installed
+    app surface THEN Planera's compact startup metadata remains available through hej without raw
+    instruction-file reads.
+  - GIVEN invalid or unknown capability context behavior is covered by existing tests WHEN metadata
+    is added THEN error handling remains non-interactive and JSON stays parseable.
 - number: 4
-  name: Align tests and validation coverage
+  name: Update docs and source indexes
   depends_on:
+  - 1
   - 2
-  - 3
   status: complete
-  acceptance:
-  - GIVEN capability contract and validator tests run WHEN the rename is complete THEN they
-    encode `instructions.md` as the supported capability instruction filename and reject new
-    canonical `instructions.md` conventions where in scope.
-  - GIVEN focused regression tests inspect remaining `prose.md` occurrences WHEN they pass
-    THEN every survivor is classified as compatibility-preserved, historical, fixture-only,
-    generated-output evidence, or unrelated prose.
   evidence:
-  - Completed in this Realisera cycle; see PROGRESS cycle 569 for verification evidence.
+  - Updated README and vocabulary docs to describe emitted metadata and the runtime
+    enforcement boundary.
+  - Updated CHANGELOG, TODO, and docs audit metadata for the feature closeout.
+  acceptance:
+  - GIVEN `README.md`, `docs/vocabulary.md`, `.agentera/docs.yaml`, and `CHANGELOG.md` are reviewed
+    WHEN docs are updated THEN they no longer claim `first_invocation_read` is future or not emitted
+    by the CLI.
+  - GIVEN docs describe the startup-read seam WHEN agents follow them THEN they point to `agentera
+    hej --format json --capability-context <name>` and the contract authority rather than raw capability
+    directory guessing.
+  - GIVEN documentation examples mention compact startup WHEN they are read THEN they preserve the
+    boundary that compact startup is an explicit exception, not a default replacement for reading
+    `instructions.md`.
 - number: 5
-  name: Verify and close out rename cycle
+  name: Verify and close out metadata feature
   depends_on:
+  - 3
   - 4
   status: complete
-  acceptance:
-  - GIVEN focused validation runs WHEN implementation is complete THEN `uv run scripts/agentera
-    validate capability-contract --format json`, `uv run scripts/agentera validate capability
-    skills/agentera/capabilities`, and targeted rename/contract tests pass.
-  - GIVEN the full test suite and artifact validation run WHEN closeout is complete THEN `uv
-    run pytest -q`, PLAN/TODO/CHANGELOG/PROGRESS/DOCS artifact validation, and `git diff --check`
-    pass, and the `[fix:2.4.x]` rename TODO is resolved.
   evidence:
-  - Completed in this Realisera cycle; see PROGRESS cycle 569 for verification evidence.
+  - Capability-contract validation, capability directory validation, focused tests,
+    Planera hej JSON, artifact validation, and diff whitespace checks passed.
+  - Resolved only the `[feat:2.4.x]` metadata TODO; broad validation/vocabulary TODOs
+    remain open.
+  acceptance:
+  - GIVEN focused validation runs WHEN implementation is complete THEN `uv run scripts/agentera validate
+    capability-contract --format json`, `uv run scripts/agentera validate capability skills/agentera/capabilities`,
+    `uv run pytest tests/test_capability_instruction_contract.py tests/test_query_cli.py -q`, and
+    `uv run scripts/agentera hej --format json --capability-context planera` pass or return valid JSON.
+  - GIVEN repository closeout runs WHEN feature work is complete THEN `uv run scripts/agentera validate
+    artifact PLAN.md`, relevant changed artifact validators, and `git diff --check` pass.
+  - GIVEN TODO and versioning conventions are reviewed WHEN closeout metadata is updated THEN the
+    `[feat:2.4.x]` metadata TODO is resolved only if the CLI metadata, docs, tests, and validation
+    acceptance criteria are actually satisfied, and any required version/changelog updates are included.
 overall_acceptance:
-- All real Agentera capability instruction files use `instructions.md` as the canonical filename,
-  with loaders and validators aligned to that convention.
-- Current docs, schemas, runtime descriptors, scripts, package metadata, and tests no longer
-  present `instructions.md` as the canonical capability instruction path.
-- Any surviving `instructions.md` occurrence is explicitly compatibility-preserved, historical,
-  fixture-only, generated-output evidence, or unrelated prose.
-- The `[fix:2.4.x]` capability instruction rename TODO is resolved without implementing out-of-scope
-  `first_invocation_read` behavior or protected artifact mutations.
-surprises:
-- The documented required command `agentera validate capability skills/agentera/capabilities`
-  exposed that the CLI only validated a single capability path; it now expands the canonical
-  capabilities root and validates all twelve capabilities.
-- OpenCode and Codex descriptor validation had already been manually fixed for direct subagent
-  execution; this cycle preserved that behavior while updating descriptor instruction-file
-  paths.
-previous_plan_archived: .agentera/archive/PLAN-2026-05-18-routing-execution-vocabulary-cleanup.yaml
+- '`agentera hej --format json --capability-context <name>` exposes a stable, parseable
+  `source_contract.capability_context.first_invocation_read` object for requested capabilities.'
+- The emitted value is one of `full`, `compact_startup`, or `skip`, with `full` as the default
+  absent a valid compact-startup exception and Planera reporting `compact_startup` from its existing
+  startup contract.
+- The contract authority, CLI JSON, tests, and docs agree on metadata values, provenance, compact-startup
+  boundaries, and the separation between metadata discovery and runtime enforcement.
+- No unsupported `agentera planera` or other capability-name CLI command is added, recommended,
+  or required for discovery.
+- Focused contract/CLI tests, capability validation, plan/artifact validation, and diff whitespace
+  checks pass before handoff closes the TODO.
+surprises: []
+previous_plan_archived: .agentera/archive/PLAN-2026-05-18-capability-instructions-file-rename.yaml

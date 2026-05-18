@@ -56,7 +56,6 @@ needs, writes what it owns, and leaves evidence for the next session.
   decisions.yaml           durable reasoning trail
   health.yaml              architecture, test, dependency, and artifact health
   docs.yaml                documentation inventory and drift
-  session.yaml             session bookmarks from hooks
   optimera/<objective>/
     objective.yaml         metric, target, scope, constraints
     experiments.yaml       measurement history and closure
@@ -70,6 +69,8 @@ Human-facing artifacts stay at the project root when useful:
 | `CHANGELOG.md` | realisera | Contributor-facing release history. |
 | `DESIGN.md` | visualisera | Visual identity system. |
 | `PROFILE.md` | profilera | User decision profile, stored in the Agentera data directory by default. |
+
+Session hook bookmarks are runtime-local under the Agentera data directory, not committed project state.
 
 Before Agentera, every session has to rediscover intent:
 
@@ -235,8 +236,9 @@ uv run scripts/agentera validate capability-contract --format json
 Every capability has `instructions.md` plus `schemas/triggers.yaml`,
 `schemas/artifacts.yaml`, `schemas/validation.yaml`, and `schemas/exit.yaml`.
 The schema contract makes those files executable for validators and tests.
-Decision 57 also defines future `first_invocation_read` metadata; that future
-metadata is not emitted by the CLI yet.
+Decision 57 also defines `first_invocation_read` metadata emitted by
+`agentera hej --format json --capability-context <name>`. Planera reports its
+compact startup contract there; runtime enforcement is still false.
 
 ## Upgrade from v1
 

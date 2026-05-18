@@ -5,8 +5,8 @@
 # ///
 """SessionStart hook: preloads a compact digest of operational artifacts.
 
-Reads PROGRESS.md, HEALTH.md, PLAN.md, TODO.md, and SESSION.md from
-the target project, respecting DOCS.md artifact path overrides. Outputs
+Reads PROGRESS.md, HEALTH.md, PLAN.md, and TODO.md from the target project,
+plus runtime-local session bookmarks from Agentera's data home. Outputs
 a raw-state digest (artifact summaries, not interpreted routing) to
 stdout so Claude has immediate context at session start.
 
@@ -20,6 +20,8 @@ Run standalone for testing:
 from __future__ import annotations
 
 import json
+import hashlib
+import os
 import re
 import sys
 from pathlib import Path
@@ -27,11 +29,24 @@ from pathlib import Path
 import yaml
 
 from common import (
-    DEFAULT_PATHS,
     load_artifact_overrides,
     parse_artifact_mapping,
     resolve_artifact_path,
 )
+
+
+def resolve_session_path(project_root: Path) -> Path:
+    """Return the runtime-local session bookmark path for this project."""
+    base = os.environ.get("AGENTERA_HOME")
+    if base:
+        data_home = Path(base).expanduser()
+    else:
+        xdg_data_home = os.environ.get("XDG_DATA_HOME")
+        data_home = Path(xdg_data_home).expanduser() / "agentera" if xdg_data_home else Path.home() / ".local" / "share" / "agentera"
+    resolved = str(project_root.resolve())
+    digest = hashlib.sha256(resolved.encode("utf-8")).hexdigest()[:16]
+    slug = re.sub(r"[^A-Za-z0-9_.-]+", "-", project_root.name).strip(".-") or "project"
+    return data_home / "sessions" / f"{slug}-{digest}" / "session.yaml"
 
 
 # ---------------------------------------------------------------------------
@@ -122,12 +137,7 @@ def extract_critical_todos(text: str) -> list[str]:
 
 
 def extract_session_summary(text: str) -> str | None:
-    """Extract the latest entry from SESSION.md (future: Task 2).
-
-    SESSION.md will contain session summaries written by the Stop hook.
-    For now, we attempt to read the latest entry if the file exists.
-    """
-    # SESSION.md format TBD (Task 2). Best-effort: grab first ## section.
+    """Extract the latest entry from a legacy Markdown session bookmark."""
     pattern = re.compile(
         r"^##\s+.+?\n(.*?)(?=^## |\Z)",
         re.MULTILINE | re.DOTALL,
@@ -267,8 +277,8 @@ def build_digest(project_root: Path) -> str | None:
         if critical:
             sections.append(f"## Critical issues\n" + "\n".join(critical))
 
-    # SESSION.md: last session summary (future: Task 2).
-    session_path = resolve_artifact_path(project_root, "SESSION.md", overrides)
+    # Runtime-local session bookmarks.
+    session_path = resolve_session_path(project_root)
     if session_path.exists():
         if session_path.suffix == ".yaml":
             summary = extract_session_summary_yaml(_load_yaml(session_path))

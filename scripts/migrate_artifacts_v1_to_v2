@@ -42,7 +42,6 @@ AGENTERA_ARTIFACTS = [
     "PROGRESS.md",
     "DECISIONS.md",
     "HEALTH.md",
-    "SESSION.md",
     "PLAN.md",
     "DOCS.md",
 ]
@@ -393,46 +392,6 @@ def _parse_patterns(section: str) -> list[str]:
     return patterns
 
 
-def _parse_session(text: str) -> dict[str, Any]:
-    bookmarks: list[dict[str, Any]] = []
-    archive: list[str] = []
-    warnings: list[str] = []
-
-    bookmark_pattern = re.compile(r"##\s+(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2})")
-    sections = re.split(r"(?=^##\s+\d{4}-\d{2}-\d{2})", text, flags=re.MULTILINE)
-
-    for section in sections:
-        m = bookmark_pattern.match(section.strip())
-        if m:
-            timestamp = m.group(1)
-            artifacts_raw = _extract_bold_field(section, "Artifacts modified")
-            if not artifacts_raw:
-                am = re.search(r"Artifacts modified:\s*(.+)", section)
-                if am:
-                    artifacts_raw = am.group(1).strip()
-            artifacts = [a.strip() for a in artifacts_raw.split(",") if a.strip()] if artifacts_raw else []
-            summary = _extract_bold_field(section, "Summary")
-            if not summary:
-                sm = re.search(r"Summary:\s*(.+)", section)
-                if sm:
-                    summary = sm.group(1).strip()
-
-            bookmarks.append({
-                "timestamp": timestamp,
-                "artifacts": artifacts,
-                "summary": summary,
-            })
-
-    archive_match = re.search(r"##\s+Archived\s+Sessions\s*\n((?:- .+\n?)*)", text)
-    if archive_match:
-        for line in archive_match.group(1).strip().splitlines():
-            line = line.strip()
-            if line.startswith("- "):
-                archive.append(line[2:].strip())
-
-    return {"bookmarks": bookmarks, "archive": archive, "warnings": warnings}
-
-
 def _parse_plan(text: str) -> dict[str, Any]:
     warnings: list[str] = []
 
@@ -759,7 +718,6 @@ PARSERS = {
     "PROGRESS.md": _parse_progress,
     "DECISIONS.md": _parse_decisions,
     "HEALTH.md": _parse_health,
-    "SESSION.md": _parse_session,
     "PLAN.md": _parse_plan,
     "DOCS.md": _parse_docs,
     "VISION.md": _parse_vision,

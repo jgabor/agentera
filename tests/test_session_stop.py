@@ -8,6 +8,7 @@ smoke test with realistic stdin arguments. Edge cases for compaction
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
 from datetime import datetime, timezone
@@ -232,9 +233,10 @@ class TestBuildBookmark:
 class TestWriteSessionBookmark:
     """Branching: write with and without existing file. 1 pass + 1 fail."""
 
-    def test_writes_new_session_file(self, session_stop, tmp_path):
-        agentera_dir = tmp_path / ".agentera"
-        agentera_dir.mkdir()
+    def test_writes_new_session_file(self, session_stop, tmp_path, monkeypatch):
+        data_home = tmp_path / "data"
+        monkeypatch.delenv("AGENTERA_HOME", raising=False)
+        monkeypatch.setenv("XDG_DATA_HOME", str(data_home))
 
         ts = datetime(2026, 4, 3, 15, 0, tzinfo=timezone.utc)
         written = session_stop.write_session_bookmark(
@@ -242,46 +244,56 @@ class TestWriteSessionBookmark:
         )
         assert written is True
 
-        session_path = agentera_dir / "session.yaml"
+        session_path = session_stop.resolve_session_path(tmp_path)
         assert session_path.exists()
+        assert session_path.is_relative_to(data_home / "agentera" / "sessions")
         content = session_path.read_text(encoding="utf-8")
         assert "bookmarks:" in content
         assert "timestamp: 2026-04-03 15:00" in content
         assert "HEALTH.md" in content
 
-    def test_skips_write_when_no_artifacts(self, session_stop, tmp_path):
+    def test_skips_write_when_no_artifacts(self, session_stop, tmp_path, monkeypatch):
+        data_home = tmp_path / "data"
+        monkeypatch.delenv("AGENTERA_HOME", raising=False)
+        monkeypatch.setenv("XDG_DATA_HOME", str(data_home))
         written = session_stop.write_session_bookmark(
             tmp_path, None, [], timestamp=None,
         )
         assert written is False
-        session_path = tmp_path / ".agentera" / "session.yaml"
+        session_path = session_stop.resolve_session_path(tmp_path)
         assert not session_path.exists()
 
 
-class TestWriteSessionBookmarkWithCustomPaths:
-    """Verifies docs.yaml artifact mapping is respected for session.yaml."""
+class TestWriteSessionBookmarkIgnoresCustomPaths:
+    """Verifies docs.yaml no longer controls runtime-local session storage."""
 
-    def test_respects_custom_session_path(self, session_stop, tmp_path):
+    def test_ignores_custom_session_path(self, session_stop, tmp_path, monkeypatch):
+        data_home = tmp_path / "data"
+        monkeypatch.delenv("AGENTERA_HOME", raising=False)
+        monkeypatch.setenv("XDG_DATA_HOME", str(data_home))
         custom_dir = tmp_path / "custom"
         custom_dir.mkdir()
 
-        overrides = {"SESSION.md": "custom/session.yaml"}
+        overrides = {"PROGRESS.md": "custom/progress.yaml"}
         ts = datetime(2026, 4, 3, 15, 0, tzinfo=timezone.utc)
         written = session_stop.write_session_bookmark(
             tmp_path, overrides, ["HEALTH.md"], timestamp=ts,
         )
         assert written is True
-        assert (custom_dir / "session.yaml").exists()
-        # Default path should NOT exist.
+        assert not (custom_dir / "session.yaml").exists()
         assert not (tmp_path / ".agentera" / "session.yaml").exists()
+        assert session_stop.resolve_session_path(tmp_path).exists()
 
 
 class TestWriteSessionBookmarkCompaction:
     """Verifies compaction when appending to existing session.yaml."""
 
-    def test_compacts_old_entries(self, session_stop, tmp_path):
-        agentera_dir = tmp_path / ".agentera"
-        agentera_dir.mkdir()
+    def test_compacts_old_entries(self, session_stop, tmp_path, monkeypatch):
+        data_home = tmp_path / "data"
+        monkeypatch.delenv("AGENTERA_HOME", raising=False)
+        monkeypatch.setenv("XDG_DATA_HOME", str(data_home))
+        session_path = session_stop.resolve_session_path(tmp_path)
+        session_path.parent.mkdir(parents=True)
 
         # Pre-populate with 11 full entries (one more than MAX_FULL_ENTRIES).
         entries = [
@@ -293,7 +305,7 @@ class TestWriteSessionBookmarkCompaction:
             }
             for i in range(11)
         ]
-        (agentera_dir / "session.yaml").write_text(
+        session_path.write_text(
             session_stop.format_session_yaml(entries),
             encoding="utf-8",
         )
@@ -304,7 +316,7 @@ class TestWriteSessionBookmarkCompaction:
             tmp_path, None, ["HEALTH.md"], timestamp=ts,
         )
 
-        content = (agentera_dir / "session.yaml").read_text(encoding="utf-8")
+        content = session_path.read_text(encoding="utf-8")
         entries = session_stop.parse_session_entries(content)
 
         full_count = sum(1 for e in entries if e["kind"] == "full")
@@ -324,6 +336,7 @@ class TestEntryPoint:
 
     def test_with_modified_artifacts_writes_session(self, tmp_path):
         """Script with modified artifacts exits 0 and creates session.yaml."""
+        data_home = tmp_path / "data"
         agentera_dir = tmp_path / ".agentera"
         agentera_dir.mkdir()
 
@@ -386,12 +399,15 @@ class TestEntryPoint:
             input=hook_input,
             capture_output=True,
             text=True,
+            env={**{k: v for k, v in os.environ.items() if k != "AGENTERA_HOME"}, "XDG_DATA_HOME": str(data_home)},
             timeout=10,
         )
         assert result.returncode == 0
-        session_path = agentera_dir / "session.yaml"
+        session_path = data_home / "agentera" / "sessions"
         assert session_path.exists()
-        content = session_path.read_text(encoding="utf-8")
+        files = list(session_path.glob("*/session.yaml"))
+        assert len(files) == 1
+        content = files[0].read_text(encoding="utf-8")
         assert "HEALTH.md" in content
 
     def test_without_modified_artifacts_exits_cleanly(self, tmp_path):

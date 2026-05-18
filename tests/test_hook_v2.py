@@ -563,23 +563,6 @@ class TestValidateYamlHealth:
         assert any("missing required field" in v for v in violations)
 
 
-class TestValidateYamlSession:
-    def test_valid_session(self, hook):
-        schema = hook.load_schema("session")
-        content = yaml_dump({
-            "bookmarks": [
-                {"timestamp": "2026-05-04 10:00", "artifacts": ["PROGRESS"]}
-            ]
-        })
-        violations = hook.validate_yaml(content, schema, "session")
-        assert violations == []
-
-    def test_invalid_yaml_fails(self, hook):
-        schema = hook.load_schema("session")
-        violations = hook.validate_yaml("{{{\n  broken", schema, "session")
-        assert any("invalid YAML" in v for v in violations)
-
-
 class TestValidateYamlDocs:
     def test_valid_docs(self, hook):
         schema = hook.load_schema("docs")
@@ -743,7 +726,7 @@ class TestSchemaLoading:
 
 class TestHookCliAdapter:
     def test_run_reports_validation_violations(self, hook, project_dir):
-        artifact = project_dir / ".agentera" / "session.yaml"
+        artifact = project_dir / ".agentera" / "progress.yaml"
         artifact.write_text("{{{\n  broken yaml")
         payload = json.dumps({
             "tool_name": "Write",
@@ -818,9 +801,18 @@ def _run_main(hook, monkeypatch, data: dict, cwd: str):
 
 class TestMainYamlArtifact:
     def test_valid_yaml_passes(self, hook, project_dir, monkeypatch):
-        artifact = project_dir / ".agentera" / "session.yaml"
+        artifact = project_dir / ".agentera" / "progress.yaml"
         artifact.write_text(yaml_dump({
-            "bookmarks": [{"timestamp": "2026-05-04 10:00", "artifacts": ["PROGRESS"]}]
+            "cycles": [{
+                "number": 1,
+                "timestamp": "2026-05-18 10:00",
+                "type": "test",
+                "phase": "build",
+                "what": "tested",
+                "commit": "N/A",
+                "verified": "pytest passed",
+                "context": {"intent": "validate hook fixture"},
+            }]
         }))
         rc, err, out = _run_main(hook, monkeypatch, {
             "tool_name": "Edit",
@@ -829,7 +821,7 @@ class TestMainYamlArtifact:
         assert rc == 0
 
     def test_invalid_yaml_fails(self, hook, project_dir, monkeypatch):
-        artifact = project_dir / ".agentera" / "session.yaml"
+        artifact = project_dir / ".agentera" / "progress.yaml"
         artifact.write_text("{{{\n  broken yaml")
         rc, err, out = _run_main(hook, monkeypatch, {
             "tool_name": "Write",
@@ -935,9 +927,18 @@ class TestMainYamlArtifact:
 
 class TestMainAdapterFormats:
     def test_opencode_format(self, hook, project_dir, monkeypatch):
-        artifact = project_dir / ".agentera" / "session.yaml"
+        artifact = project_dir / ".agentera" / "progress.yaml"
         artifact.write_text(yaml_dump({
-            "bookmarks": [{"timestamp": "2026-05-04 10:00", "artifacts": ["PROGRESS"]}]
+            "cycles": [{
+                "number": 1,
+                "timestamp": "2026-05-18 10:00",
+                "type": "test",
+                "phase": "build",
+                "what": "tested",
+                "commit": "N/A",
+                "verified": "pytest passed",
+                "context": {"intent": "validate hook fixture"},
+            }]
         }))
         rc, err, out = _run_main(hook, monkeypatch, {
             "input": {"path": str(artifact)},
@@ -945,7 +946,7 @@ class TestMainAdapterFormats:
         assert rc == 0
 
     def test_copilot_format(self, hook, project_dir, monkeypatch):
-        artifact = project_dir / ".agentera" / "session.yaml"
+        artifact = project_dir / ".agentera" / "progress.yaml"
         artifact.write_text("not: [valid\n  yaml")
         rc, err, out = _run_main(hook, monkeypatch, {
             "tool_name": "create",
@@ -954,7 +955,7 @@ class TestMainAdapterFormats:
         assert rc == 2
 
     def test_codex_format(self, hook, project_dir, monkeypatch):
-        artifact = project_dir / ".agentera" / "session.yaml"
+        artifact = project_dir / ".agentera" / "progress.yaml"
         artifact.write_text("not: [valid\n  yaml")
         rc, err, out = _run_main(hook, monkeypatch, {
             "tool_name": "apply_patch",

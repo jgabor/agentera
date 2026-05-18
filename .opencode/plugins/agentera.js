@@ -1,6 +1,6 @@
 // Agentera plugin for OpenCode
 // Bootstraps slash commands at plugin init, injects AGENTERA_HOME via shell.env,
-// writes session.yaml bookmarks via the generic event hook, routes exact bare
+// writes runtime-local session bookmarks via the generic event hook, routes exact bare
 // `hej` messages through Agentera via chat.message, and validates artifact
 // writes via tool.execute.before plus tool.execute.after.
 // Install: copy to ~/.config/opencode/plugins/agentera.js or .opencode/plugins/agentera.js
@@ -404,7 +404,6 @@ function isArtifactPath(filePath, root) {
     path.join(".agentera", "plan.yaml"),
     path.join(".agentera", "health.yaml"),
     path.join(".agentera", "docs.yaml"),
-    path.join(".agentera", "session.yaml"),
   ];
   return artifacts.includes(rel)
     || (

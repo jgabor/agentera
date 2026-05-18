@@ -339,21 +339,18 @@ DEFAULT_ARTIFACT_PATHS: dict[str, str] = {
     "HEALTH.md": ".agentera/health.yaml",
     "DOCS.md": ".agentera/docs.yaml",
     "DESIGN.md": "DESIGN.md",
-    "SESSION.md": ".agentera/session.yaml",
 }
 
 COMPACTABLE_YAML_ARTIFACTS: dict[str, tuple[str, str]] = {
     "PROGRESS.md": ("cycles", "archive"),
     "DECISIONS.md": ("decisions", "archive"),
     "HEALTH.md": ("audits", "archive"),
-    "SESSION.md": ("bookmarks", "archive"),
 }
 
 YAML_SPEC_BY_ARTIFACT: dict[str, str] = {
     "PROGRESS.md": "progress",
     "DECISIONS.md": "decisions",
     "HEALTH.md": "health",
-    "SESSION.md": "session",
 }
 
 NON_COMPACTABLE_ARTIFACTS: dict[str, tuple[str, str]] = {

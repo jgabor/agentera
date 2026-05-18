@@ -89,44 +89,6 @@ decisions:
       app_home, managedAppRoot, and userDataRoot, scripts/validate_app_home_contract.py
       checks public surfaces, and the focused app-home/upgrade/legacy-default test
       set passed 9 tests on 2026-05-15.'
-- number: 50
-  date: '2026-05-12'
-  question: What should Agentera 2.3.0 include?
-  context: '2.2.3 release prep is complete and no open 2.2.x TODOs remain. Open degraded
-    items cluster around installed capability reliability: self-audit helper exposure,
-    schema discovery, and split install roots. Decision 47 requires app-home migration;
-    Decision 48 says expose self-audit via `agentera lint` without merging every script
-    into the CLI.'
-  alternatives:
-  - name: Focused reliability release
-    status: chosen
-    description: Anchor 2.3.0 on app-home migration, `agentera lint`, and installed-capability
-      diagnostics.
-  - name: Patch-only reliability
-    status: rejected
-    description: Fix helper/schema/root defects without app-home migration, leaving
-      the root ambiguity intact.
-  - name: Broad capability expansion
-    status: rejected
-    description: Include Profilera corpus parity too, increasing validation scope
-      before the app surface is coherent.
-  choice: Make 2.3.0 a focused reliability release. Include Decision 47 app-home migration
-    as a hard requirement; implement Decision 48 first through `agentera lint`; resolve
-    the degraded helper exposure/removal, schema discovery, and split-root doctor
-    checks. Defer Profilera corpus parity and broad script namespace promotion beyond
-    `lint`.
-  reasoning: 'The highest-friction failures share one cause: agents cannot confidently
-    locate the active app, helper scripts, schemas, and install roots. App-home migration
-    gives those surfaces one durable model, while `lint` solves the immediate self-audit
-    ergonomics without turning the CLI into a script dump.'
-  confidence: firm
-  feeds_into: TODO.md, .agentera/plan.yaml, scripts/install_root.py, scripts/agentera_upgrade.py,
-    scripts/agentera, README.md, UPGRADE.md, capability prose, tests
-  satisfaction:
-    state: user_confirmed_satisfied
-    user_confirmation:
-      confirmed_by: user
-      confirmed_at: '2026-05-15'
 - number: 51
   date: '2026-05-13'
   question: What should Agentera measure before optimizing capability startup state
@@ -463,36 +425,74 @@ decisions:
     README.md, AGENTS.md, docs/vocabulary.md
   satisfaction:
     state: open
+- number: 58
+  date: '2026-05-18'
+  question: What naming boundary must Agentera 3.0 enforce for artifacts, concepts,
+    primitives, and compatibility aliases?
+  context: Agentera v2 still exposes legacy Markdown-style canonical artifact labels
+    such as `PROGRESS.md`, `PLAN.md`, and `DECISIONS.md` while the actual v2 storage
+    paths are YAML files such as `.agentera/progress.yaml`. Similar compatibility
+    seams exist in vocabulary, runtime metadata, migration fixtures, direct-helper
+    commands, schema names, and historical alias surfaces. The user explicitly decided
+    that Agentera 3.0 must not preserve backwards-compatible or multiple names for
+    artifacts, concepts, primitives, or any equivalent protocol identity.
+  alternatives:
+  - name: Single-name 3.0 protocol
+    status: chosen
+    description: Agentera 3.0 has exactly one canonical name for every artifact, concept,
+      primitive, command surface, schema field, runtime metadata field, and protocol
+      identity. Legacy names are removed or migrated; they are not retained as aliases.
+  - name: Preserve compatibility aliases after 3.0
+    status: rejected
+    description: Keeping compatibility names after the 3.0 boundary would perpetuate
+      the current ambiguity and make agents choose between old and new protocol identities.
+  - name: Keep Markdown-style artifact labels as display names
+    status: rejected
+    description: Display names that differ from storage/protocol identities are still
+      multiple names. They are not allowed after the 3.0 boundary.
+  - name: Decide per surface later
+    status: rejected
+    description: The policy is already decided; implementation can sequence surfaces,
+      but cannot reopen whether aliases remain after 3.0.
+  choice: Agentera 3.0 must eliminate all backwards-compatible and multiple naming
+    surfaces. Zero artifacts, concepts, primitives, commands, schema fields, metadata
+    fields, runtime adapter surfaces, or protocol identities may retain legacy aliases,
+    parallel display names, compatibility names, deprecated names, or storage/protocol
+    name splits after the 3.0 boundary. Every retained surface must have one name,
+    and old names must be removed or migrated rather than supported alongside it.
+  reasoning: Agentera is agent-facing infrastructure; every duplicate name becomes
+    routing, validation, documentation, and implementation ambiguity. Compatibility
+    aliases were acceptable during v2 migration, but the 3.0 boundary exists to end
+    that ambiguity. A single-name protocol makes schemas, CLI output, docs, tests,
+    and runtime adapters mechanically consistent and easier for agents to follow.
+  confidence: firm
+  feeds_into: TODO.md, references/artifacts/artifact-registry-interface-model.yaml,
+    skills/agentera/schemas/artifacts, scripts/agentera, hooks, runtime adapters,
+    tests, README.md, UPGRADE.md, docs/vocabulary.md
+  satisfaction:
+    state: open
 archive:
-- summary: 'Decision 49 (2026-05-08): Use one mandatory TODO prefix tag: `[type]`
-    for untargeted items, `[type:X.Y.Z]` for exact release-targeted items,...'
-  number: 49
-  date: '2026-05-08'
-  choice: 'Use one mandatory TODO prefix tag: `[type]` for untargeted items, `[type:X.Y.Z]`
-    for exact release-targeted items, and `[type:X.Y.x]` for a patch-lane target whose
-    exact patch is intentionally not chosen yet. Type is one of `feat`, `fix`, `docs`,
-    `refactor`, `chore`, `test`, or `perf`; `X.Y.Z` is an exact semver target, and
-    `x` is allowed only in the patch position. Forbid scopes, `v` prefixes, minor/major
-    ranges like `2.x` or `2.2.*`, inequality ranges, multiple targets, and generated
-    item IDs. When the release is selected, convert `[type:X.Y.x]` to `[type:X.Y.Z]`.
-    Status comes from the checkbox, priority from the section, and identity from normalized
-    summary text.'
-  feeds_into: TODO.md, skills/agentera/references/contract.md, skills/agentera/schemas/artifacts/todo.yaml,
-    scripts/agentera, hooks/compaction.py, tests
+- summary: 'Decision 50 (2026-05-12): Make 2.3.0 a focused reliability release. Include
+    Decision 47 app-home migration as a hard requirement;...'
+  number: 50
+  date: '2026-05-12'
+  choice: Make 2.3.0 a focused reliability release. Include Decision 47 app-home migration
+    as a hard requirement; implement Decision 48 first through `agentera lint`; resolve
+    the degraded helper exposure/removal, schema discovery, and split-root doctor
+    checks. Defer Profilera corpus parity and broad script namespace promotion beyond
+    `lint`.
+  feeds_into: TODO.md, .agentera/plan.yaml, scripts/install_root.py, scripts/agentera_upgrade.py,
+    scripts/agentera, README.md, UPGRADE.md, capability prose, tests
   satisfaction:
     state: user_confirmed_satisfied
     user_confirmation:
       confirmed_by: user
       confirmed_at: '2026-05-15'
-  outcome: 'Use one mandatory TODO prefix tag: `[type]` for untargeted items, `[type:X.Y.Z]`
-    for exact release-targeted items, and `[type:X.Y.x]` for a patch-lane target whose
-    exact patch is intentionally not chosen yet. Type is one of `feat`, `fix`, `docs`,
-    `refactor`, `chore`, `test`, or `perf`; `X.Y.Z` is an exact semver target, and
-    `x` is allowed only in the patch position. Forbid scopes, `v` prefixes, minor/major
-    ranges like `2.x` or `2.2.*`, inequality ranges, multiple targets, and generated
-    item IDs. When the release is selected, convert `[type:X.Y.x]` to `[type:X.Y.Z]`.
-    Status comes from the checkbox, priority from the section, and identity from normalized
-    summary text.'
+  outcome: Make 2.3.0 a focused reliability release. Include Decision 47 app-home
+    migration as a hard requirement; implement Decision 48 first through `agentera
+    lint`; resolve the degraded helper exposure/removal, schema discovery, and split-root
+    doctor checks. Defer Profilera corpus parity and broad script namespace promotion
+    beyond `lint`.
 - summary: 'Decision 45 (2026-05-08): Build one phased agent-ready state interface
     plan for pending 2.2.0: keep routine state command names...'
   number: 45
@@ -534,6 +534,35 @@ archive:
     behind cohesive non-deferred namespaces: `agentera validate` for validators, `agentera
     verify` or `agentera smoke` for eval and smoke gates, and `agentera corpus`/`agentera
     usage` for profile analytics. Keep registry/model modules private.'
+- summary: 'Decision 49 (2026-05-08): Use one mandatory TODO prefix tag: `[type]`
+    for untargeted items, `[type:X.Y.Z]` for exact release-targeted items,...'
+  number: 49
+  date: '2026-05-08'
+  choice: 'Use one mandatory TODO prefix tag: `[type]` for untargeted items, `[type:X.Y.Z]`
+    for exact release-targeted items, and `[type:X.Y.x]` for a patch-lane target whose
+    exact patch is intentionally not chosen yet. Type is one of `feat`, `fix`, `docs`,
+    `refactor`, `chore`, `test`, or `perf`; `X.Y.Z` is an exact semver target, and
+    `x` is allowed only in the patch position. Forbid scopes, `v` prefixes, minor/major
+    ranges like `2.x` or `2.2.*`, inequality ranges, multiple targets, and generated
+    item IDs. When the release is selected, convert `[type:X.Y.x]` to `[type:X.Y.Z]`.
+    Status comes from the checkbox, priority from the section, and identity from normalized
+    summary text.'
+  feeds_into: TODO.md, skills/agentera/references/contract.md, skills/agentera/schemas/artifacts/todo.yaml,
+    scripts/agentera, hooks/compaction.py, tests
+  satisfaction:
+    state: user_confirmed_satisfied
+    user_confirmation:
+      confirmed_by: user
+      confirmed_at: '2026-05-15'
+  outcome: 'Use one mandatory TODO prefix tag: `[type]` for untargeted items, `[type:X.Y.Z]`
+    for exact release-targeted items, and `[type:X.Y.x]` for a patch-lane target whose
+    exact patch is intentionally not chosen yet. Type is one of `feat`, `fix`, `docs`,
+    `refactor`, `chore`, `test`, or `perf`; `X.Y.Z` is an exact semver target, and
+    `x` is allowed only in the patch position. Forbid scopes, `v` prefixes, minor/major
+    ranges like `2.x` or `2.2.*`, inequality ranges, multiple targets, and generated
+    item IDs. When the release is selected, convert `[type:X.Y.x]` to `[type:X.Y.Z]`.
+    Status comes from the checkbox, priority from the section, and identity from normalized
+    summary text.'
 - summary: 'Decision 44 (2026-05-07): Use plain English for capability/protocol prose
     and labels. Deprecate `freshness`; use current/up-to-date/out-of-date/synced/status
     wording. Keep `checkpoint`...'
@@ -691,7 +720,4 @@ archive:
 - summary: 'Decision 9 (2026-03-31): **Question**: What should this skill ecosystem
     be named? The current name "agent-skills" is generic and doesn''t represent what
     it is...'
-  satisfaction: *id001
-- summary: 'Decision 8 (2026-03-30): **Question**: Should the ecosystem unify its
-    confidence model, and if so, on what scale?'
   satisfaction: *id001

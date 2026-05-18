@@ -30,8 +30,7 @@
     "OBJECTIVE.md": ["target", "status", "objective", "measurement"],
     "EXPERIMENTS.md": ["experiments"],
     "DESIGN.md": ["^# .*Design"],
-    "DOCS.md": ["last_audit", "conventions", "mapping", "index"],
-    "SESSION.md": ["sessions"]
+    "DOCS.md": ["last_audit", "conventions", "mapping", "index"]
   },
   "severity_mappings": {
     "critical": "⇶",
@@ -51,7 +50,6 @@
     "EXPERIMENTS.md": ".agentera/optimera/<name>/experiments.yaml",
     "DESIGN.md": "DESIGN.md",
     "DOCS.md": ".agentera/docs.yaml",
-    "SESSION.md": ".agentera/session.yaml",
     "PROFILE.md": "(profile-path capability) <!-- platform: profile-path -->"
   },
   "todo_severity_headings": [
