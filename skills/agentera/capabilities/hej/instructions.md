@@ -77,11 +77,11 @@ uvx --from git+https://github.com/jgabor/agentera agentera upgrade --yes
 After apply, retry the installed command from the platform app home reported by
 the upgrade output, not from the old default directory. If the command exits
 successfully, inspect the CLI-provided `bundle.status` installed-app status
-object. Only `fresh` passes the installed Agentera app gate for normal briefing.
+object. Only `up_to_date` passes the installed Agentera app gate for normal briefing.
 The object also carries `appHome`, `managedAppRoot`, `userDataRoot`,
 `expectedVersionSource`, `bundle.dryRunCommand`, `bundle.applyCommand`, and
 approval text. If the installed command cannot execute, is out of date, missing
-`hej`, fails before argparse, or reports blocked/refresh-required status, tell
+`hej`, fails before argparse, or reports manual-review-needed/repair-needed status, tell
 the user `Agentera found an old or broken local copy of itself.` Then preview the
 repair with the CLI-provided command when present:
 

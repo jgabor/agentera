@@ -5,7 +5,7 @@ description: >
   /hej installs toward the Agentera v2 /agentera entry point and idempotent
   upgrade CLI. Do not use this skill for bare text `hej`; route that through
   the bundled agentera skill and the agentera hej dashboard path.
-version: "2.4.1"
+version: "2.5.0"
 legacy_bridge: true
 ---
 
@@ -39,7 +39,7 @@ dashboard. This bridge is an upgrade handoff.
    ```
 
 4. Ask before applying changes. Explain the apply step plainly: it installs or
-   repairs Agentera's local app, refreshes managed runtime surfaces, and converts
+   repairs Agentera's local app, updates managed runtime surfaces, and converts
    old Agentera project notes to the new format with backups. It will not edit
    shell startup files. After explicit confirmation, use:
 
@@ -50,7 +50,7 @@ dashboard. This bridge is an upgrade handoff.
    Add `--update-packages` only when the user explicitly approves package-manager
    commands such as `npx skills remove` or `npx skills add`.
 
-5. If no v1 project state is present, offer the package-only refresh only when
+5. If no v1 project state is present, offer the package-only update only when
    `/agentera` is not available and the user explicitly approves package-manager
    commands:
 

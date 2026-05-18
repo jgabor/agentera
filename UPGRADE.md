@@ -142,7 +142,7 @@ Apply local, idempotent upgrade actions:
 uv run scripts/agentera upgrade --project /path/to/project --yes
 ```
 
-The command migrates v1 project artifacts, installs or refreshes Agentera app
+The command migrates v1 project artifacts, installs or updates Agentera app
 files when needed, configures selected runtime surfaces, removes fixable outdated
 v1 runtime artifacts, and runs a final check. Re-running it after a successful
 apply should report that nothing else needs to change.

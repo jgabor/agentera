@@ -1016,7 +1016,7 @@ def test_runtime_preview_refreshes_stale_surface_with_agentera_ownership_reason(
     item = payload["phases"][0]["items"][0]
     assert item["status"] == "pending"
     assert item["action"] == "copy-plugin"
-    assert item["message"] == "will refresh stale Agentera-managed runtime surface"
+    assert item["message"] == "will update stale Agentera-managed runtime surface"
     assert item["ownership"] == {
         "status": "agentera-owned",
         "reason": "OpenCode plugin contains the Agentera plugin identity",

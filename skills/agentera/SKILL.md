@@ -7,7 +7,7 @@ description: >
   incoming requests to the right capability. Use this skill for /agentera,
   Agentera capability requests, and a complete user message exactly `hej`;
   bare `hej` runs the agentera hej dashboard path instead of a generic greeting.
-version: "2.4.1"
+version: "2.5.0"
 spec_sections: [1, 2, 3, 4, 5, 6, 11, 13, 18, 19, 20, 22, 23]
 ---
 
@@ -124,7 +124,7 @@ uvx --from git+https://github.com/jgabor/agentera agentera upgrade --yes
 After apply, retry the installed command from the platform app home reported by
 the upgrade output, not from the old default directory. If the command executes but
 fails before argparse, reports `invalid choice` for `hej`, or reports a status of
-`stale`, `blocked`, missing-command, or refresh-required:
+`outdated`, `manual_review_needed`, missing-command, or repair-needed:
 
 - Say `Agentera found an old or broken local copy of itself.`
 - Say whether the preview changed anything; preview commands change nothing.
@@ -336,7 +336,7 @@ when supplied by the CLI.
 Do not replace the CLI-owned preview with manual artifact inspection,
 hand-written migration steps, or raw YAML reads. Only the apply step requires confirmation.
 
-The upgrade command is idempotent. It installs or refreshes Agentera app files
+The upgrade command is idempotent. It installs or updates Agentera app files
 when invoked through `uvx`, migrates v1 artifacts, wires runtime config to that
 app home, and removes fixable outdated v1 runtime artifacts.
 The artifacts phase migrates supported v1 Markdown files to YAML with backups
@@ -344,7 +344,7 @@ after preview and confirmation. Package refreshes that run `npx skills remove`
 for v1 skill entries and `npx skills add` for `/agentera` remain explicit opt-in
 via `--update-packages`. `npx skills update` by itself updates only the visible
 skill; if `/agentera` then finds missing or out-of-date app files, run the
-plain-language repair preview above so upgrade refreshes the app and cleans up
+plain-language repair preview above so upgrade updates the app and cleans up
 the old default directory when it is recoverable.
 
 ### Layer 1: Bare `/agentera` or bare `hej` — delegate to hej
