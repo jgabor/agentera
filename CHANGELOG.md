@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [2.5.0] · 2026-05-18
+
 ### Changed
 
 - Added `first_invocation_read` capability metadata to `agentera hej --format json --capability-context <name>`, including Planera's compact startup exception and explicit non-enforcement of runtime reads.
@@ -17,6 +19,7 @@
 ### Fixed
 
 - Added lifecycle vocabulary regressions that keep doctor, hej, and upgrade app status metadata on Decision 54 canonical values while preserving compatibility prose and non-app `agentera stats refresh` wording.
+- Fixed the installed-app repair recommendation to use the full `agentera upgrade --install-root <dir> --dry-run` path so managed runtime surfaces such as the OpenCode plugin are repaired with app files instead of being left stale by narrow app-file-only work, and made app-file updates remove obsolete managed files from existing installs.
 - Fixed installed `hej` entrypoint command construction guidance so app-home resolution is assigned before expanding the managed app script path, preventing unset `AGENTERA_HOME`/`XDG_DATA_HOME` flows from collapsing to `/app/scripts/agentera` before Agentera can show the normal repair path.
 - Qualified ambiguous current `SKILL.md` prose in docs, runtime guidance, capability guidance, scripts, and tests so conceptual references use `Agentera skill dispatcher` or `skill entry file` while preserving literal paths and compatibility identifiers.
 - Renamed canonical capability instruction files from `prose.md` to `instructions.md` across real capability directories, validators, runtime descriptors, docs, and tests while preserving classified historical compatibility evidence.

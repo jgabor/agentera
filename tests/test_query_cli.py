@@ -1413,7 +1413,7 @@ class TestHej:
         assert r.returncode == 0
         assert "app_home: status=migration_needed" in r.stdout
         assert "app migration needed" in r.stdout
-        assert "upgrade --only bundle" in r.stdout
+        assert "agentera upgrade --install-root" in r.stdout
         assert str(install_root) in r.stdout
 
     def test_stale_bundle_structured_output_has_repair_contract(self, project):
@@ -1429,7 +1429,8 @@ class TestHej:
         assert bundle["expectedVersion"] == "2.0.0"
         assert bundle["markerVersion"] == "1.0.0"
         assert bundle["dryRunCommand"].startswith("uvx --from git+https://github.com/jgabor/agentera")
-        assert "--only bundle" in bundle["dryRunCommand"]
+        assert "--only bundle" not in bundle["dryRunCommand"]
+        assert "agentera upgrade --install-root" in bundle["dryRunCommand"]
         assert bundle["applyCommand"].endswith("--yes")
         assert bundle["approval"] == f"approve app files repair for {install_root}"
         assert bundle["appHome"] == str(install_root)

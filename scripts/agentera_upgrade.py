@@ -570,8 +570,6 @@ def build_doctor_status(
         "git+https://github.com/jgabor/agentera",
         "agentera",
         "upgrade",
-        "--only",
-        "bundle",
         "--install-root",
         str(install_root),
         "--dry-run",
@@ -582,8 +580,6 @@ def build_doctor_status(
         "git+https://github.com/jgabor/agentera",
         "agentera",
         "upgrade",
-        "--only",
-        "bundle",
         "--install-root",
         str(install_root),
         "--yes",
@@ -655,6 +651,34 @@ def _bundle_rel_paths(source_root: Path) -> list[Path]:
         if path.is_file() and not _skip_bundle_path(path, skip_parts, skip_suffixes):
             paths.add(path.relative_to(source_root))
     return sorted(paths)
+
+
+def _bundle_managed_directories(source_root: Path) -> tuple[Path, ...]:
+    pkg = _package_registry()
+    directories = []
+    for entry in pkg.get("agentera")["bundle_surfaces"]["directories"]:
+        rel_path = Path(entry["path"])
+        if (source_root / rel_path).is_dir():
+            directories.append(rel_path)
+    return tuple(directories)
+
+
+def _obsolete_bundle_rel_paths(source_root: Path, bundle_root: Path, rel_paths: list[Path]) -> list[Path]:
+    skip_parts = set(_package_registry().get("agentera")["bundle_surfaces"]["skip_parts"])
+    skip_suffixes = set(_package_registry().get("agentera")["bundle_surfaces"]["skip_suffixes"])
+    current = set(rel_paths)
+    obsolete: list[Path] = []
+    for directory in _bundle_managed_directories(source_root):
+        root = bundle_root / directory
+        if not root.is_dir():
+            continue
+        for path in root.rglob("*"):
+            if not path.is_file() or _skip_bundle_path(path, skip_parts, skip_suffixes):
+                continue
+            rel_path = path.relative_to(bundle_root)
+            if rel_path not in current:
+                obsolete.append(rel_path)
+    return sorted(obsolete)
 
 
 def _copy_bundle_file(source_root: Path, bundle_root: Path, rel_path: Path) -> None:
@@ -869,6 +893,7 @@ def plan_bundle_phase(source_root: Path, install_root: Path, home: Path, *, forc
         )
 
     rel_paths = _bundle_rel_paths(source_root)
+    obsolete = _obsolete_bundle_rel_paths(source_root, app_root, rel_paths)
     changed: list[str] = []
     for rel_path in rel_paths:
         source = source_root / rel_path
@@ -877,7 +902,7 @@ def plan_bundle_phase(source_root: Path, install_root: Path, home: Path, *, forc
             changed.append(str(rel_path))
 
     marker_missing = not _bundle_marker_path(app_root).is_file()
-    if not changed and not marker_missing:
+    if not changed and not marker_missing and not obsolete:
         status = "noop"
         message = "Agentera app files are already current"
     else:
@@ -893,6 +918,8 @@ def plan_bundle_phase(source_root: Path, install_root: Path, home: Path, *, forc
             "fileCount": len(rel_paths),
             "changedCount": len(changed),
             "changedPreview": changed[:20],
+            "obsoleteCount": len(obsolete),
+            "obsoletePreview": [str(path) for path in obsolete[:20]],
             "marker": str(_bundle_marker_path(app_root)),
             "message": message,
         }]
@@ -926,6 +953,7 @@ def plan_bundle_phase(source_root: Path, install_root: Path, home: Path, *, forc
 def apply_bundle_phase(phase: dict[str, Any], source_root: Path, install_root: Path, *, force: bool) -> None:
     app_root = _managed_app_root(install_root)
     rel_paths = _bundle_rel_paths(source_root)
+    obsolete = _obsolete_bundle_rel_paths(source_root, app_root, rel_paths)
     for item in phase["items"]:
         if item["status"] != "pending":
             continue
@@ -935,6 +963,10 @@ def apply_bundle_phase(phase: dict[str, Any], source_root: Path, install_root: P
                 item["message"] = "This directory already has files Agentera does not recognize. Agentera will not change it automatically."
                 continue
             if item["action"] == "install-bundle":
+                for rel_path in obsolete:
+                    target = app_root / rel_path
+                    target.unlink()
+                    _remove_empty_parents(target, app_root)
                 for rel_path in rel_paths:
                     _copy_bundle_file(source_root, app_root, rel_path)
                 marker = {
@@ -1141,7 +1173,7 @@ def _copy_item(runtime: str, source: Path, target: Path, *, force: bool, action:
     elif target.exists() and not force:
         status = "pending" if ownership["status"] == "agentera-owned" else "blocked"
         message = (
-            "will refresh stale Agentera-managed runtime surface"
+            "will update stale Agentera-managed runtime surface"
             if status == "pending"
             else "target exists without Agentera ownership proof; treating it as user-owned"
         )
@@ -1192,7 +1224,7 @@ def _copy_text_item(
     elif target.exists() and not force:
         status = "pending" if ownership["status"] == "agentera-owned" else "blocked"
         message = (
-            "will refresh stale Agentera-managed runtime surface"
+            "will update stale Agentera-managed runtime surface"
             if status == "pending"
             else "target exists without Agentera ownership proof; treating it as user-owned"
         )
@@ -1241,14 +1273,14 @@ def _opencode_skill_item(
     elif (target / "SKILL.md").is_file():
         if ownership["status"] == "agentera-owned" and target.resolve() != source.resolve():
             status = "pending"
-            message = "will refresh stale Agentera-managed OpenCode skill link"
+            message = "will update stale Agentera-managed OpenCode skill link"
         else:
             status = "noop"
             message = "target skill already resolves to SKILL.md"
     elif target.exists() or target.is_symlink():
         status = "pending" if force or ownership["status"] == "agentera-owned" else "blocked"
         message = (
-            "will refresh stale Agentera-managed OpenCode skill link"
+            "will update stale Agentera-managed OpenCode skill link"
             if status == "pending"
             else "target exists without Agentera ownership proof; treating it as user-owned"
         )

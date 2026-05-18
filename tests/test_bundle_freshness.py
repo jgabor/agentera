@@ -99,11 +99,11 @@ def test_doctor_reports_legacy_bundle_root_migration_required_with_exact_command
     assert any("hej" in signal.get("missingCommands", []) for signal in payload["signals"])
     assert payload["dryRunCommand"] == (
         "uvx --from git+https://github.com/jgabor/agentera agentera upgrade "
-        f"--only bundle --install-root {install_root} --dry-run"
+        f"--install-root {install_root} --dry-run"
     )
     assert payload["applyCommand"] == (
         "uvx --from git+https://github.com/jgabor/agentera agentera upgrade "
-        f"--only bundle --install-root {install_root} --yes"
+        f"--install-root {install_root} --yes"
     )
     assert payload["approval"] == f"approve app files repair for {install_root}"
     assert payload["retryCommand"].endswith(f"{install_root}/scripts/agentera hej")
@@ -257,6 +257,29 @@ def test_doctor_allows_user_data_only_platform_app_home_without_writes(tmp_path:
     assert payload["dryRunCommand"] is not None
     assert payload["applyCommand"] is not None
     assert sorted(path.relative_to(app_home) for path in app_home.rglob("*")) == before
+
+
+def test_bundle_update_removes_obsolete_managed_app_files(tmp_path: Path) -> None:
+    install_root = tmp_path / "home" / ".local" / "share" / "agentera"
+    initial = _run("upgrade", "--only", "bundle", "--install-root", str(install_root), "--yes", "--json")
+    assert initial.returncode == 0, initial.stderr
+
+    obsolete_name = "prose" + ".md"
+    obsolete = install_root / "app" / "skills" / "agentera" / "capabilities" / "hej" / obsolete_name
+    obsolete.write_text("old app file\n", encoding="utf-8")
+
+    preview = _run("upgrade", "--only", "bundle", "--install-root", str(install_root), "--dry-run", "--json")
+    assert preview.returncode == 1, preview.stderr
+    preview_payload = json.loads(preview.stdout)
+    item = preview_payload["phases"][0]["items"][0]
+    assert item["status"] == "pending"
+    assert item["obsoleteCount"] == 1
+    assert item["obsoletePreview"] == [f"skills/agentera/capabilities/hej/{obsolete_name}"]
+    assert obsolete.exists()
+
+    apply = _run("upgrade", "--only", "bundle", "--install-root", str(install_root), "--yes", "--json")
+    assert apply.returncode == 0, apply.stderr
+    assert not obsolete.exists()
 
 
 def test_doctor_recovers_runtime_injected_deprecated_default_without_unsetting_env(tmp_path: Path) -> None:

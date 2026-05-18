@@ -122,7 +122,7 @@ def test_app_home_contract_validator_inspects_upgrade_output(tmp_path: Path) -> 
     )
 
     assert result.returncode == 1
-    assert "agentera upgrade --only bundle --dry-run" in result.stderr
+    assert "--runtime claude --dry-run" in result.stderr
     assert "CLI output names app home as install root" in result.stderr
     assert "public JSON exposes installRoot instead of appHome" in result.stderr
 
