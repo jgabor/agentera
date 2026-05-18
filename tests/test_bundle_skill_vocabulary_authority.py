@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from pathlib import Path
+import re
 
 import yaml
 
@@ -56,9 +58,55 @@ AMBIGUOUS_CURRENT_SKILL_PROSE = [
     "keeps `SKILL.md` a dispatcher",
 ]
 
+VOCABULARY_RE = re.compile(r"bundle|SKILL\.md", re.IGNORECASE)
+
+
+@dataclass(frozen=True)
+class ClassifiedOccurrence:
+    path_pattern: str
+    text_pattern: str
+    classification: str
+    reason: str
+
+    def matches(self, relative_path: str, text: str) -> bool:
+        return re.search(self.path_pattern, relative_path) is not None and re.search(
+            self.text_pattern,
+            text,
+            re.IGNORECASE,
+        ) is not None
+
 
 def _authority() -> dict:
     return yaml.safe_load(AUTHORITY.read_text(encoding="utf-8"))
+
+
+def _focused_scan() -> list[tuple[str, int, str, str]]:
+    matches: list[tuple[str, int, str, str]] = []
+    for relative_path in _authority()["focused_scan"]["paths"]:
+        path = REPO_ROOT / relative_path
+        for line_number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+            if match := VOCABULARY_RE.search(line):
+                matches.append((relative_path, line_number, match.group(0), line.strip()))
+    return matches
+
+
+def _classified_occurrences() -> list[ClassifiedOccurrence]:
+    return [
+        ClassifiedOccurrence(
+            entry["path"],
+            entry["text"],
+            entry["classification"],
+            entry["reason"],
+        )
+        for entry in _authority()["focused_scan"]["allowed_occurrences"]
+    ]
+
+
+def _classification_for(relative_path: str, text: str) -> ClassifiedOccurrence | None:
+    for occurrence in _classified_occurrences():
+        if occurrence.matches(relative_path, text):
+            return occurrence
+    return None
 
 
 def test_canonical_bundle_and_skill_concepts_are_ordered_and_defined() -> None:
@@ -128,6 +176,43 @@ def test_classification_rules_are_closed_and_actionable() -> None:
 
     assert "Preserve" in authority["classification_rules"]["compatibility_identifier"]["action"]
     assert "Replace or qualify" in authority["classification_rules"]["ambiguous_current_prose"]["action"]
+
+
+def test_focused_scan_classifications_are_closed_and_reasoned() -> None:
+    focused_scan = _authority()["focused_scan"]
+    allowed_classifications = set(focused_scan["allowed_classifications"])
+
+    assert focused_scan["allowed_classifications"] == [
+        "canonical",
+        "compatibility-preserved",
+        "historical",
+        "fixture-only",
+        "generic",
+    ]
+    assert set(focused_scan["paths"]) == set(CURRENT_PROSE_FILES + ["docs/vocabulary.md"])
+    for occurrence in _classified_occurrences():
+        assert occurrence.classification in allowed_classifications
+        assert occurrence.reason.strip()
+
+
+def test_focused_bundle_and_skillmd_occurrences_are_classified() -> None:
+    unclassified = [
+        f"{path}:{line_number}: {term!r}: {text}"
+        for path, line_number, term, text in _focused_scan()
+        if _classification_for(path, text) is None
+    ]
+
+    assert unclassified == []
+
+
+def test_focused_scan_exercises_every_allowed_classification() -> None:
+    classifications = {
+        classification.classification
+        for path, _line_number, _term, text in _focused_scan()
+        if (classification := _classification_for(path, text)) is not None
+    }
+
+    assert classifications == set(_authority()["focused_scan"]["allowed_classifications"])
 
 
 def test_vocabulary_docs_delegate_bundle_skill_authority_to_yaml() -> None:

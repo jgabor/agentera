@@ -1,0 +1,82 @@
+header:
+  level: light
+  created: 2026-05-18
+  status: active
+  title: App Lifecycle Status Regression Coverage
+what: >-
+  Add focused regression coverage for the app lifecycle vocabulary boundary so
+  `fresh`, `stale`, `refresh`, `fixed`, `ready`, and `noop` cannot return as
+  canonical app lifecycle status values, while allowed plain-language prose and
+  non-app uses such as `agentera stats refresh` remain valid.
+why: >-
+  Recent vocabulary cleanup replaced internal app lifecycle language with the
+  Decision 54 status contract. The remaining risk is regression: tests must
+  reject the old lifecycle words at canonical status surfaces without creating
+  a crude global word ban that breaks user-facing prose, historical context, or
+  unrelated commands.
+constraints: >-
+  Scope this to regression coverage and any minimal contract/test fixture
+  adjustment required to make that coverage authoritative. Do not perform broad
+  wording cleanup, package refresh, installed-app repair, publication, push, tag,
+  `.agentera/vision.yaml` edits, objective-state mutation, or decision
+  satisfaction updates. Preserve legitimate plain-language prose and non-app
+  command vocabulary, especially `agentera stats refresh`.
+tasks:
+  - number: 1
+    name: Add lifecycle status vocabulary regressions
+    depends_on: []
+    status: complete
+    evidence:
+      - >-
+        Added authority-derived regression coverage in
+        `tests/test_lifecycle_vocabulary_authority.py` that rejects deprecated
+        aliases and non-lifecycle verbs as canonical app lifecycle statuses.
+      - >-
+        The regression observes doctor/hej status metadata, upgrade
+        `lifecycleStatus` metadata, signal statuses, and workflow-status mapping
+        outputs while leaving workflow `status` compatibility values untouched.
+      - >-
+        Allowed prose and compatibility/non-app vocabulary remain explicitly
+        preserved, including Decision 54 compatibility text, `agentera stats
+        refresh`, workflow `noop`, and plain-language `fixed`/`ready to fix`
+        rendering.
+      - >-
+        `uv run pytest tests/test_lifecycle_vocabulary_authority.py -q` passed
+        with 15 tests before task closeout; required artifact and diff checks are
+        recorded in PROGRESS.md for this cycle.
+    acceptance:
+      - >-
+        GIVEN the app lifecycle status authority and its focused tests are run
+        WHEN any canonical app lifecycle status surface emits or permits `fresh`,
+        `stale`, `refresh`, `fixed`, `ready`, or `noop` as status values THEN the
+        regression fails with a clear boundary around canonical status values.
+      - >-
+        GIVEN repository text contains allowed prose or unrelated vocabulary WHEN
+        the regression scan runs THEN plain-language explanatory prose, historical
+        records, compatibility identifiers, and non-app uses such as `agentera
+        stats refresh` are not rejected merely because they contain those words.
+      - >-
+        GIVEN the lifecycle status authority changes WHEN the focused tests run
+        THEN the rejected and allowed values are derived from or checked against
+        the authority rather than maintained as an unconnected duplicate list.
+      - >-
+        GIVEN focused validation is complete WHEN the task is closed THEN the
+        relevant pytest selection, `uv run scripts/agentera validate artifact
+        PLAN.md`, and `git diff --check` pass.
+overall_acceptance:
+  - >-
+    Focused regression coverage prevents the old words `fresh`, `stale`,
+    `refresh`, `fixed`, `ready`, and `noop` from being accepted as canonical app
+    lifecycle status values.
+  - >-
+    The same coverage preserves allowed prose and unrelated command vocabulary,
+    including `agentera stats refresh`.
+  - >-
+    The tests stay tied to the lifecycle vocabulary authority and do not become
+    a broad, brittle repository-wide word ban.
+surprises:
+  - >-
+    `uv run scripts/agentera validate artifact PLAN.md` is not accepted by the
+    current CLI; the supported `--artifact PLAN.md` form passed and no CLI
+    compatibility change was made in this test-scoped cycle.
+previous_plan_archived: .agentera/archive/PLAN-2026-05-18-first-invocation-read-metadata.yaml
