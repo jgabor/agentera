@@ -241,25 +241,25 @@ Be conservative early; escalate if conservative approaches plateau.
 
 ### Step 4: Implement
 
-**Pre-dispatch commit gate**: before creating the worktree, commit any pending artifact changes so the subagent branches from current state.
+**Pre-spawn Git commit**: before creating the worktree, commit any pending artifact changes so the subagent branches from current state.
 
-1. Run `git status --porcelain`. If empty, skip to dispatch.
+1. Run `git status --porcelain`. If empty, skip to spawn.
 2. Stage only the artifact files this session wrote.
 3. Commit with `chore(optimera): checkpoint before worktree dispatch`. Do not pass `--no-verify`.
-4. If pre-commit hooks reject the commit: fix and retry. If retry also fails, abort the dispatch.
+4. If pre-commit hooks reject the commit: fix and retry. If retry also fails, abort the spawn.
 
-**Stale-base awareness**: some harnesses create the worktree branch from `origin/main` rather than local `HEAD`. Before dispatch, run `git rev-list --count origin/main..HEAD`. If the count is greater than zero, the worktree will be based on a stale commit. Proceed with dispatch, but in Step 5 do NOT merge the worktree branch: fetch the diff and apply it to the main checkout. Re-run the eval harness in the main checkout.
+**Stale-base awareness**: some harnesses create the worktree branch from `origin/main` rather than local `HEAD`. Before spawning, run `git rev-list --count origin/main..HEAD`. If the count is greater than zero, the worktree will be based on a stale commit. Proceed with spawn, but in Step 5 do NOT merge the worktree branch: fetch the diff and apply it to the main checkout. Re-run the eval harness in the main checkout.
 
-Runtime dispatch substrates:
+Runtime subagent mechanisms:
 
 | Runtime | Substrate | Limitation |
 |---------|-----------|------------|
-| Claude Code | Task tool with worktree-aware prompt | Native in-session dispatch. |
+| Claude Code | Task tool with worktree-aware prompt | Native in-session spawn. |
 | OpenCode | `@<capability>` descriptors from `~/.config/opencode/agents/*.md` or a host Task subagent | Same working tree unless this step explicitly creates and targets a manual git worktree. |
 | Codex CLI | `~/.codex/agents/*.toml` descriptors plus `[agents]` limits | Agentera setup installs descriptor files; do not write legacy `[agents.<name>]` config blocks. |
-| Copilot CLI | User-driven `/fleet` or equivalent host action | No guaranteed programmatic in-session dispatch. |
+| Copilot CLI | User-driven `/fleet` or equivalent host action | No guaranteed programmatic in-session spawn. |
 
-Never dispatch by running unsupported capability-name CLI commands such as `agentera optimera`; use the runtime-native subagent surface with the experiment prompt below.
+Never spawn workers by running unsupported capability-name CLI commands such as `agentera optimera`; use the runtime-native subagent surface with the experiment prompt below.
 
 Spawn an implementation sub-agent in a worktree (`isolation: "worktree"`) with:
 

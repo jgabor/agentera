@@ -24,13 +24,13 @@ TRIGGERS:
   3:
     id: T3
     description: >-
-      Orchestration and dispatch signals. Matches when the user wants to
-      chain multiple capabilities, dispatch work, or coordinate multi-step
+      Orchestration and delegation signals. Matches when the user wants to
+      chain multiple capabilities, delegate work, or coordinate multi-step
       execution.
     priority: medium
     patterns:
       - "orchestrate"
-      - "dispatch skills"
+      - "orchestrate skills"
       - "multi-cycle"
   4:
     id: T4

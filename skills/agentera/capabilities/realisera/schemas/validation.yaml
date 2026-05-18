@@ -88,7 +88,7 @@ VALIDATION:
     rule: context_generation_readonly
     description: >-
       Generating execution_context is read-only. It MUST NOT refresh profile or
-      installed app state, edit vision or objective state, dispatch work, commit,
+      installed app state, edit vision or objective state, spawn workers, commit,
       push, tag, publish, or introduce unsupported capability-name CLI commands.
     severity: critical
     checks:

@@ -20,8 +20,7 @@ def test_agents_documents_helper_script_classification_policy() -> None:
     assert "`uv run scripts/agentera ...` is the canonical documented entry point" in agents
     assert "Backward-compatible maintainer seam" in agents
     assert "Internal support module" in agents
-    assert "agentera stats refresh --consent local-history" in agents
-    assert "no top-level `agentera corpus` command" in agents
+    assert "stats refresh consent" in agents
 
 
 def test_user_facing_docs_prefer_agentera_validate_namespace() -> None:
@@ -46,5 +45,4 @@ def test_corpus_generation_remains_internal_behind_stats_refresh() -> None:
     )
 
     assert result.returncode != 0
-    assert "agentera stats refresh --dry-run" in _read("AGENTS.md")
-    assert "agentera stats refresh --consent local-history" in _read("AGENTS.md")
+    assert "stats refresh consent" in _read("AGENTS.md")

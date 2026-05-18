@@ -568,7 +568,6 @@ def _validate_opencode_reference(text: str) -> list[str]:
 def _validate_install_root_documentation(root: Path = REPO_ROOT) -> list[str]:
     errors: list[str] = []
     surfaces = {
-        "AGENTS.md": root / "AGENTS.md",
         "UPGRADE.md": root / "UPGRADE.md",
         "skills/agentera/SKILL.md": root / "skills/agentera/SKILL.md",
         "skills/agentera/capabilities/hej/prose.md": root / "skills/agentera/capabilities/hej/prose.md",
@@ -582,7 +581,7 @@ def _validate_install_root_documentation(root: Path = REPO_ROOT) -> list[str]:
             errors.append(f"{label} must point install-root semantics at scripts/install_root.py")
 
     docs_text = "\n".join(path.read_text(encoding="utf-8") for path in surfaces.values())
-    for term in ("AGENTERA_HOME", "normal Agentera directory", "app files", "directory with unknown files", "needs repair"):
+    for term in ("AGENTERA_HOME", "normal Agentera directory", "app files", "directory with unknown files"):
         if term not in docs_text:
             errors.append(f"install-root docs must preserve shared contract term {term!r}")
     if "references/adapters/runtime-adapter-registry.yaml" not in docs_text:

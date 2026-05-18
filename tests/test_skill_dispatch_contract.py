@@ -1,4 +1,4 @@
-"""Regression tests for Agentera skill dispatch guidance."""
+"""Regression tests for Agentera skill routing guidance."""
 
 from __future__ import annotations
 
@@ -81,6 +81,7 @@ def test_master_skill_defines_capability_handoff_contract() -> None:
     assert "Ambiguous replies get one clarifying question" in normalized
     assert "`dispatch`: invoke another capability autonomously only when" in normalized
     assert "`chain`: dispatch multiple capabilities autonomously only inside" in normalized
+    assert "`route`: the user directly invoked a capability" in normalized
 
 
 def test_master_skill_routes_bare_hej_to_dashboard_path() -> None:
@@ -143,7 +144,7 @@ def test_capability_prose_distinguishes_handoff_verbs() -> None:
     assert "suggest ⎈ orkestrera to execute the entire plan and wait for confirmation" in planera
     assert "suggest ⎘ optimera for measurable metrics and wait for confirmation" in realisera
     assert "wait for confirmation before invoking it" in realisera
-    assert "instead of silently dispatching resonera" in realisera
+    assert "instead of silently delegating to resonera" in realisera
     assert "In orkestrera only, `dispatch` and `chain` are autonomous" in orkestrera
     assert "if the loop says `suggest`, wait for user confirmation" in orkestrera
 

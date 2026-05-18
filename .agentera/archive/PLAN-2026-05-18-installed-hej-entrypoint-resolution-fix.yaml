@@ -1,0 +1,120 @@
+header:
+  level: light
+  created: 2026-05-18
+  status: complete
+  title: Installed Hej Entrypoint Resolution Fix
+what: >-
+  Fix installed `hej` entrypoint command construction so app-home resolution happens
+  before expanding the managed app script path. Regression-cover the unset
+  `AGENTERA_HOME` and `XDG_DATA_HOME` path so inline assignment ordering cannot collapse
+  the invocation to `/app/scripts/agentera` with `Failed to spawn`.
+why: >-
+  The highest-priority TODO is critical because the installed `hej` path can fail before
+  Agentera reaches its own app-home safety gate when a command expands `$AGENTERA_HOME`
+  before assigning or resolving it. This breaks bare `hej`/Agentera startup for users
+  whose environment does not already export Agentera paths, and it bypasses the normal
+  repair wording and upgrade preview flow.
+constraints: >-
+  Keep this plan scoped to installed `hej` entrypoint command construction, app-home
+  resolution order, and regression coverage for unset `AGENTERA_HOME`/`XDG_DATA_HOME`.
+  Do not advance SKILL.md prose cleanup, routing/execution vocabulary cleanup, Decision 57
+  implementation, broad vocabulary tests, 3.0.0 packaging, app/profile refresh,
+  publication, push, tag, package-manager state changes, `.agentera/vision.yaml`,
+  objective state, or decision satisfaction changes. Preserve compatibility identifiers
+  and unrelated dirty state, including pre-existing `.agentera/decisions.yaml` and staged
+  `.agentera/session.yaml`.
+tasks:
+  - number: 1
+    name: Reproduce the unset-environment entrypoint failure
+    depends_on: []
+    status: complete
+    acceptance:
+      - >-
+        GIVEN installed `hej` entrypoint command surfaces, OpenCode adapter behavior,
+        dispatcher/hej guidance, and tests are inspected WHEN the failing path is
+        classified THEN the plan identifies the command that expands the managed app
+        script path before resolving the app home.
+      - >-
+        GIVEN `AGENTERA_HOME` and `XDG_DATA_HOME` are unset or empty WHEN the reproduction
+        is modeled THEN the expected failure mode is bounded to a premature `/app/scripts/agentera`
+        path expansion or equivalent pre-CLI spawn failure, not to normal app repair logic.
+  - number: 2
+    name: Fix app-home resolution before script-path expansion
+    depends_on:
+      - 1
+    status: complete
+    acceptance:
+      - >-
+        GIVEN installed `hej` is invoked from the affected adapter or command surface WHEN
+        no Agentera env vars are exported THEN the command first resolves the normal
+        Agentera directory/app home and only then constructs the managed app script path.
+      - >-
+        GIVEN app files are missing, stale, or repair-needed WHEN the resolved script path
+        cannot be run THEN user-facing behavior follows the existing safe repair preview
+        path instead of surfacing a raw `Failed to spawn /app/scripts/agentera` error.
+  - number: 3
+    name: Add focused entrypoint regressions
+    depends_on:
+      - 1
+      - 2
+    status: complete
+    acceptance:
+      - >-
+        GIVEN tests run with unset or empty `AGENTERA_HOME` and `XDG_DATA_HOME` WHEN the
+        installed `hej` command construction is exercised THEN they prove no command path
+        collapses to `/app/scripts/agentera` and the resolved path is based on the normal
+        Agentera directory.
+      - >-
+        GIVEN existing app-home and OpenCode adapter regressions run WHEN the fix is in
+        place THEN valid custom `AGENTERA_HOME`, default app home discovery, compatibility
+        identifiers, and local checkout development seams remain supported.
+  - number: 4
+    name: Verify and close entrypoint artifacts
+    depends_on:
+      - 3
+    status: complete
+    acceptance:
+      - >-
+        GIVEN focused verification completes WHEN the fix is ready THEN exact focused
+        pytest, full-suite decision if run, artifact validator, and `git diff --check`
+        evidence is recorded in PLAN and PROGRESS.
+      - >-
+        GIVEN TODO, CHANGELOG, PLAN, and PROGRESS are inspected WHEN closeout is complete
+        THEN the critical `[fix:2.5.x]` installed `hej` entrypoint TODO is resolved while
+        the normal SKILL.md, routing/execution, Decision 57, broad regression, and 3.0.0
+        TODOs remain open.
+    evidence:
+      reproduction: >-
+        `tests/test_cross_capability.py::test_installed_hej_entrypoint_resolves_app_home_before_script_expansion`
+        models shell expansion with unset `AGENTERA_HOME` and `XDG_DATA_HOME`: an
+        inline assignment plus `"$AGENTERA_HOME/app/scripts/agentera"` expands to
+        `/app/scripts/agentera`, while a prior `RESOLVED_AGENTERA_HOME` assignment
+        expands to the resolved app-home script path.
+      fix: >-
+        Installed hej guidance in the Agentera skill dispatcher, hej capability, and
+        upgrade retry path now uses `RESOLVED_AGENTERA_HOME` for executable command
+        construction and explicitly forbids combining app-home assignment with the
+        same shell command that expands the managed app script path.
+      verification: >-
+        `uv run pytest tests/test_cross_capability.py::test_installed_hej_entrypoint_resolves_app_home_before_script_expansion
+        tests/test_cross_capability.py::test_routine_capability_guidance_uses_top_level_state_commands
+        tests/test_cross_capability.py::test_master_bundle_health_gate_is_single_call
+        tests/test_cross_capability.py::test_upgrade_guide_documents_app_home_recovery_and_artifact_backups
+        -q` passed with 4 tests. `uv run pytest tests/test_cross_capability.py
+        tests/test_runtime_adapters.py -q` passed with 131 tests. `uv run pytest
+        tests/test_bundle_freshness.py tests/test_query_cli.py::TestHej -q` passed
+        with 89 tests. `uv run pytest -q` passed with 1143 tests. `uv run scripts/agentera
+        validate artifact --artifact PLAN.md`, `TODO.md`, `CHANGELOG.md`, `PROGRESS.md`,
+        and `DOCS.md` each returned `status=pass`. `git diff --check` passed.
+overall_acceptance:
+  - >-
+    Installed `hej` command construction cannot expand to `/app/scripts/agentera` when
+    `AGENTERA_HOME` and `XDG_DATA_HOME` are unset or empty.
+  - >-
+    The fix preserves app-home precedence, valid custom homes, default app-home discovery,
+    local checkout support, and safe repair-preview behavior.
+  - >-
+    The critical TODO is closed without changing unrelated vocabulary, Decision 57, 3.0.0,
+    publication, package-manager, protected-state, or installed-app refresh behavior.
+surprises: []
+previous_plan_archived: .agentera/archive/PLAN-2026-05-18-full-suite-and-review-fixes.yaml

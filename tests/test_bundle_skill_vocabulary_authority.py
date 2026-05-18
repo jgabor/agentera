@@ -15,7 +15,7 @@ EXPECTED_CONCEPTS = [
     "suite_package",
     "plugin_shipped_hooks",
     "removed_bundle_status_command",
-    "agentera_skill_dispatcher",
+    "agentera_routing_entry",
     "skill_entry_file",
     "v1_skill_entry_file",
     "legacy_hej_bridge",
@@ -88,10 +88,13 @@ def test_required_concepts_capture_allowed_and_forbidden_terms() -> None:
         in concepts["removed_bundle_status_command"]["allowed_terms"]
     )
     assert (
-        "Agentera skill dispatcher"
-        in concepts["agentera_skill_dispatcher"]["allowed_terms"]
+        "Agentera routing entry point"
+        in concepts["agentera_routing_entry"]["allowed_terms"]
     )
-    assert "SKILL.md" in concepts["agentera_skill_dispatcher"][
+    assert "Agentera skill dispatcher" in concepts["agentera_routing_entry"][
+        "forbidden_ambiguous_shortcuts"
+    ]
+    assert "SKILL.md" in concepts["agentera_routing_entry"][
         "forbidden_ambiguous_shortcuts"
     ]
     assert "skill entry file" in concepts["skill_entry_file"]["allowed_terms"]
@@ -137,7 +140,7 @@ def test_vocabulary_docs_delegate_bundle_skill_authority_to_yaml() -> None:
     assert "machine-readable authority" in section
     assert "Do not replace this with a parallel Markdown table" in section
     assert "Agentera app files" in section
-    assert "Agentera skill dispatcher" in section
+    assert "Agentera routing entry point" in section
     assert "legacy hej bridge" in section
     assert "| Concept |" not in section
     assert "| Allowed" not in section
@@ -187,7 +190,8 @@ def test_current_skill_dispatcher_prose_uses_qualified_terms() -> None:
         for path in CURRENT_PROSE_FILES
     )
 
-    assert "Agentera skill dispatcher" in current_prose
+    assert "Agentera skill dispatcher" not in current_prose
+    assert "routing layer" in current_prose or "Agentera routing entry point" in current_prose or "Agentera router" in current_prose
     assert "skill entry file" in current_prose
     for ambiguous in AMBIGUOUS_CURRENT_SKILL_PROSE:
         assert ambiguous not in current_prose

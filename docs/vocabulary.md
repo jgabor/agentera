@@ -20,7 +20,7 @@ included when they shape cross-suite usage.
 | `references/cli/bundle-skill-vocabulary.yaml` | Canonical concepts, compatibility boundaries, and classification rules for `bundle` and `SKILL.md` usage. |
 | `references/cli/capability-instruction-contract.yaml` | Decision 57 capability instruction-file contract, future `instructions.md`, current `prose.md` compatibility, and `first_invocation_read` semantics. |
 | `references/cli/routing-execution-vocabulary.yaml` | Canonical concepts, compatibility boundaries, and classification rules for routing, suggestions, delegation, worker spawning, runtime subagent mechanisms, and pre-spawn Git commits. |
-| `skills/agentera/SKILL.md` | Agentera skill dispatcher, routing model, CLI-first state access, installed-app status checks, and safety rails. |
+| `skills/agentera/SKILL.md` | Agentera routing entry point, routing model, CLI-first state access, installed-app status checks, and safety rails. |
 | `skills/agentera/capabilities/*/prose.md` | Capability behavior, workflow grammar, step markers, and cross-capability boundaries. |
 | `scripts/agentera` and `scripts/agentera_upgrade.py` | CLI-visible command labels, upgrade output, and doctor diagnostics. |
 | `README.md`, `UPGRADE.md`, `DESIGN.md`, `.agentera/*.yaml` | User-facing phrasing, design vocabulary, and current project-state examples. |
@@ -77,7 +77,7 @@ brand language before they can act.
 | --- | --- | --- |
 | Agentera | The open protocol for turning AI agents into engineering teams through shared project state, roles, decisions, and verification. | `README.md`, `.agentera/vision.yaml`, `skills/agentera/SKILL.md` |
 | Agentera v2 | The current architecture: one Agentera skill, one `/agentera` entry point, twelve capabilities, YAML project state, and CLI-first access. | `README.md`, `UPGRADE.md`, `.agentera/decisions.yaml` |
-| Agentera skill | The runtime-loaded Agentera skill at `skills/agentera/`. It contains the dispatcher and twelve capabilities. | `skills/agentera/SKILL.md` |
+| Agentera skill | The runtime-loaded Agentera skill at `skills/agentera/`. It contains the routing entry and twelve capabilities. | `skills/agentera/SKILL.md` |
 | Capability | A routed behavioral unit inside the Agentera skill, with `prose.md` plus `triggers.yaml`, `artifacts.yaml`, `validation.yaml`, and `exit.yaml`. | `AGENTS.md`, `skills/agentera/capabilities/*` |
 | Shared protocol | The primitive vocabulary in `protocol.yaml`: confidence, severity, decision labels, exits, visual tokens, glyphs, and phases. | `skills/agentera/protocol.yaml` |
 | Capability schema contract | The executable contract for capability schema groups, stable IDs, priorities, deprecations, and primitive references. | `skills/agentera/capability_schema_contract.yaml` |
@@ -467,7 +467,7 @@ references, generic plain language, and ambiguous current prose.
 
 Use this prose as guidance only: current conceptual docs should say the object
 they mean, such as Agentera app files, suite package, plugin-shipped hooks,
-removed `bundle-status` command, Agentera skill dispatcher, skill entry file,
+removed `bundle-status` command, Agentera routing entry point, skill entry file,
 v1 skill entry file, or legacy hej bridge. Preserve shipped identifiers and
 literal paths such as `.agentera-bundle.json`, `bundle.status`,
 `activeBundleRoot`, `--only bundle`, and `skills/agentera/SKILL.md` unless an
@@ -533,7 +533,7 @@ Visualisera owns visual identity in `DESIGN.md`. Protocol owns token meanings in
 | “Keep it DRY: reference, don’t repeat.” | Documentation maintenance rule. |
 | “The harness is the immutable ground truth.” | Optimera measurement rule. |
 | “Improve + pass regression = keep; everything else is discarded.” | Optimera experiment rule. |
-| “The conductor dispatches; it does not implement.” | Orkestrera role boundary. |
+| “The orchestrator delegates; it does not implement.” | Orkestrera role boundary. |
 
 ## Ambiguous terms to qualify
 
@@ -574,7 +574,7 @@ High-signal source surfaces for this vocabulary:
 
 | Source | Vocabulary surface |
 | --- | --- |
-| `skills/agentera/SKILL.md` | Dispatcher, routing layers, CLI-first access, installed-app status check, and v1 migration check. |
+| `skills/agentera/SKILL.md` | Routing entry, routing layers, CLI-first access, installed-app status check, and v1 migration check. |
 | `skills/agentera/protocol.yaml` | Protocol primitives, glyphs, phases, visual tokens, exit signals. |
 | `skills/agentera/capability_schema_contract.yaml` | Schema groups, priorities, stable IDs, primitive-reference fields. |
 | `skills/agentera/capabilities/*/prose.md` | Workflow grammar, capability roles, safety rails, exit marker forms. |

@@ -30,7 +30,7 @@ canonical_concept_order:
   - suite_package
   - plugin_shipped_hooks
   - removed_bundle_status_command
-  - agentera_skill_dispatcher
+  - agentera_routing_entry
   - skill_entry_file
   - v1_skill_entry_file
   - legacy_hej_bridge
@@ -91,16 +91,18 @@ canonical_concepts:
       - bundle status
       - bundle-status path
       - bundle status command
-  agentera_skill_dispatcher:
+  agentera_routing_entry:
     definition: >-
-      The v2 `skills/agentera/SKILL.md` dispatcher that describes the Agentera
+      The v2 `skills/agentera/SKILL.md` routing entry that describes the Agentera
       skill entry point, capability routing model, CLI-first state access, and
       safety rails.
     allowed_terms:
-      - Agentera skill dispatcher
-      - Agentera skill entry dispatcher
-      - "`skills/agentera/SKILL.md` dispatcher"
+      - Agentera routing entry point
+      - Agentera router
+      - routing layer
+      - "`skills/agentera/SKILL.md` routing entry"
     forbidden_ambiguous_shortcuts:
+      - Agentera skill dispatcher
       - SKILL.md
       - master dispatcher
       - skill dispatcher
@@ -196,6 +198,7 @@ historical_terms:
   - agentera bundle-status
   - bundle-status
   - single-bundle model
+  - Agentera skill dispatcher
 docs_delegation:
   document: docs/vocabulary.md
   required_anchor: Bundle and SKILL.md vocabulary

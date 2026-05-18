@@ -94,8 +94,8 @@ guessing from chat history.
 | Vector memory | Retrieved snippets | External index | Depends on integration |
 | Agentera | Capability-owned artifacts | Your repo and data directory | Claude Code, OpenCode, Copilot CLI, Codex CLI |
 
-Routing is deterministic before it is fuzzy. The Agentera skill dispatcher at
-`skills/agentera/SKILL.md` uses a five-layer dispatch model: bare `/agentera` or `hej`, exact capability or alias,
+Routing is deterministic before it is fuzzy. The Agentera routing entry point at
+`skills/agentera/SKILL.md` uses a five-layer routing model: bare `/agentera` or `hej`, exact capability or alias,
 high-confidence natural language, borderline disambiguation, and fallback to the
 dashboard. Capability trigger patterns live in each capability's schema, not in a
 single hardcoded prompt.
@@ -219,7 +219,7 @@ Core surfaces:
 
 | Surface | Path |
 |---|---|
-| Agentera skill dispatcher | [`skills/agentera/SKILL.md`](./skills/agentera/SKILL.md) |
+| Agentera routing entry point | [`skills/agentera/SKILL.md`](./skills/agentera/SKILL.md) |
 | Shared primitives | [`skills/agentera/protocol.yaml`](./skills/agentera/protocol.yaml) |
 | Schema contract | [`skills/agentera/capability_schema_contract.yaml`](./skills/agentera/capability_schema_contract.yaml) |
 | Instruction-file contract | [`references/cli/capability-instruction-contract.yaml`](./references/cli/capability-instruction-contract.yaml) |

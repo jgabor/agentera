@@ -46,7 +46,7 @@ ENTRY_SCHEMA:
       required: false
       description: >-
         Priority of this trigger entry for routing confidence. Used in the
-        five-layer dispatch model (Decision 42). Valid values: high, medium, low.
+        five-layer routing model (Decision 42). Valid values: high, medium, low.
         Required for all TRIGGERS entries.
     deprecated:
       type: boolean

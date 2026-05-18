@@ -51,7 +51,7 @@ TRIGGERS:
     description: >-
       Fallback. Hej is the default capability when no other capability's
       trigger patterns match. This entry documents the fallback behavior
-      defined in the Agentera skill dispatcher routing logic.
+      defined in the routing layer routing logic.
     patterns:
       - "*"
     fallback: true

@@ -115,7 +115,7 @@ Artifact writing follows contract Section 24 conventions: banned verbosity patte
 Skill introduction: `─── ⧉ realisera · cycle N ───`
 
 Step markers: display `── step N/9: verb` before each step.
-Steps: orient, select, research, plan, dispatch, verify, commit, audit, log.
+Steps: orient, select, research, plan, spawn, verify, commit, audit, log.
 
 ### Step 1: Orient
 
@@ -199,7 +199,7 @@ Write a 1-2 sentence rationale. Scope down aggressively.
 
 Compose a Context block for this cycle: intent, constraints, unknowns, and scope. Keep it ≤80 words.
 
-**Decision gate**: After selecting work, use `agentera decisions --format json` and check whether any `exploratory` (DL3) entries in DECISIONS.md relate to the selected work area. Preserve returned `missing_fields`, `compacted`, `caveats`, and `satisfaction.review_needed` pressure in the cycle context instead of raw-reading missing historical context. If an exploratory decision is found: flag the uncertain foundation, suggest ❈ resonera to firm up the decision, and wait for confirmation before invoking it. In autonomous mode, proceed with the work but log the risk instead of silently dispatching resonera.
+**Decision gate**: After selecting work, use `agentera decisions --format json` and check whether any `exploratory` (DL3) entries in DECISIONS.md relate to the selected work area. Preserve returned `missing_fields`, `compacted`, `caveats`, and `satisfaction.review_needed` pressure in the cycle context instead of raw-reading missing historical context. If an exploratory decision is found: flag the uncertain foundation, suggest ❈ resonera to firm up the decision, and wait for confirmation before invoking it. In autonomous mode, proceed with the work but log the risk instead of silently delegating to resonera.
 
 ### Step 3: Seek inspiration
 
@@ -220,25 +220,25 @@ Keep small enough for one agent session. Too large? Split and save the rest.
 
 ### Step 5: Dispatch
 
-**Pre-dispatch commit gate**: before creating the worktree, commit any pending artifact changes so the subagent branches from current state.
+**Pre-spawn Git commit**: before creating the worktree, commit any pending artifact changes so the subagent branches from current state.
 
-1. Run `git status --porcelain`. If empty, skip to dispatch.
+1. Run `git status --porcelain`. If empty, skip to spawn.
 2. Stage only the artifact files this session wrote.
 3. Commit with `chore(realisera): checkpoint before worktree dispatch`.
-4. If pre-commit hooks reject: fix, re-stage, retry. If retry fails, abort dispatch.
+4. If pre-commit hooks reject: fix, re-stage, retry. If retry fails, abort spawn.
 
-**Stale-base awareness**: Before dispatch, run `git rev-list --count origin/main..HEAD`. If count > 0, do not merge the worktree branch. Fetch the sub-agent's diff and apply it to the main checkout.
+**Stale-base awareness**: Before spawning, run `git rev-list --count origin/main..HEAD`. If count > 0, do not merge the worktree branch. Fetch the sub-agent's diff and apply it to the main checkout.
 
-Runtime dispatch substrates:
+Runtime subagent mechanisms:
 
 | Runtime | Substrate | Limitation |
 |---------|-----------|------------|
-| Claude Code | Task tool with worktree-aware prompt | Native in-session dispatch. |
+| Claude Code | Task tool with worktree-aware prompt | Native in-session spawn. |
 | OpenCode | `@<capability>` descriptors from `~/.config/opencode/agents/*.md` or a host Task subagent | Same working tree unless this step explicitly creates and targets a manual git worktree. |
 | Codex CLI | `~/.codex/agents/*.toml` descriptors plus `[agents]` limits | Agentera setup installs descriptor files; do not write legacy `[agents.<name>]` config blocks. |
-| Copilot CLI | User-driven `/fleet` or equivalent host action | No guaranteed programmatic in-session dispatch. |
+| Copilot CLI | User-driven `/fleet` or equivalent host action | No guaranteed programmatic in-session spawn. |
 
-Never dispatch by running unsupported capability-name CLI commands such as `agentera realisera`; use the runtime-native subagent surface with the implementation prompt below.
+Never spawn workers by running unsupported capability-name CLI commands such as `agentera realisera`; use the runtime-native subagent surface with the implementation prompt below.
 
 Spawn an implementation sub-agent in a worktree with:
 
