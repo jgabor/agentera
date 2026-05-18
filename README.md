@@ -222,6 +222,7 @@ Core surfaces:
 | Master dispatcher | [`skills/agentera/SKILL.md`](./skills/agentera/SKILL.md) |
 | Shared primitives | [`skills/agentera/protocol.yaml`](./skills/agentera/protocol.yaml) |
 | Schema contract | [`skills/agentera/capability_schema_contract.yaml`](./skills/agentera/capability_schema_contract.yaml) |
+| Instruction-file contract | [`references/cli/capability-instruction-contract.yaml`](./references/cli/capability-instruction-contract.yaml) |
 | Runtime parity | [`references/adapters/runtime-feature-parity.md`](./references/adapters/runtime-feature-parity.md) |
 
 Validate a capability through the canonical namespace:
@@ -233,7 +234,10 @@ uv run scripts/agentera validate capability-contract --format json
 
 Every capability has `prose.md` plus `schemas/triggers.yaml`,
 `schemas/artifacts.yaml`, `schemas/validation.yaml`, and `schemas/exit.yaml`.
-The schema contract makes those files executable for validators and tests.
+The schema contract makes those files executable for validators and tests. Decision
+57's future contract renames the human-readable instruction file to
+`instructions.md` and adds `first_invocation_read`; today, `prose.md` remains the
+current compatibility file and the future metadata is not emitted by the CLI.
 
 ## Upgrade from v1
 

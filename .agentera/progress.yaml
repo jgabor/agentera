@@ -1,4 +1,270 @@
 cycles:
+- number: 566
+  timestamp: 2026-05-18 13:01
+  type: fix
+  phase: build
+  what: Fixed installed hej entrypoint script-path construction for unset app-home
+    environments.
+  commit: pending
+  inspiration: Realisera executed the active Installed Hej Entrypoint Resolution Fix
+    plan after explicit user confirmation, limited to installed `hej` entrypoint command
+    construction, app-home resolution order, and regression coverage for unset or
+    empty `AGENTERA_HOME`/`XDG_DATA_HOME`.
+  discovered: A shell command that combines an app-home assignment with expansion
+    of `"$AGENTERA_HOME/app/scripts/agentera"` expands arguments before the assignment
+    takes effect, so an unset environment can collapse the executable path to `/app/scripts/agentera`
+    and fail before Agentera's own repair guidance. The OpenCode `shell.env` resolver
+    already preserved valid custom app homes and default app-home discovery; the live
+    gap was installed hej command/guidance surfaces that must construct the managed
+    app script path from a previously resolved variable.
+  verified: '`uv run pytest tests/test_cross_capability.py::test_installed_hej_entrypoint_resolves_app_home_before_script_expansion
+    tests/test_cross_capability.py::test_routine_capability_guidance_uses_top_level_state_commands
+    tests/test_cross_capability.py::test_master_bundle_health_gate_is_single_call
+    tests/test_cross_capability.py::test_upgrade_guide_documents_app_home_recovery_and_artifact_backups
+    -q` passed with 4 tests. `uv run pytest tests/test_cross_capability.py tests/test_runtime_adapters.py
+    -q` passed with 131 tests. `uv run pytest tests/test_bundle_freshness.py tests/test_query_cli.py::TestHej
+    -q` passed with 89 tests. `uv run pytest -q` passed with 1143 tests. `uv run scripts/agentera
+    validate artifact --artifact PLAN.md`, `TODO.md`, `CHANGELOG.md`, `PROGRESS.md`,
+    and `DOCS.md` each returned `status=pass`. `git diff --check` passed.'
+  next: Continue with the still-open normal SKILL.md prose cleanup, routing/execution
+    vocabulary cleanup, Decision 57 implementation, broad vocabulary regressions,
+    and 3.0.0 work; this plan did not refresh installed apps or profiles.
+  context:
+    intent: Close the critical installed `hej` entrypoint resolution TODO.
+    constraints: Scope stayed limited to installed `hej` command construction, app-home
+      resolution order, and unset/empty environment regressions; no SKILL.md prose
+      cleanup, routing/execution vocabulary cleanup, Decision 57 implementation, broad
+      vocabulary tests, 3.0.0 packaging, installed app/profile refresh, package-manager
+      change, publication, push, tag, `.agentera/vision.yaml`, objective state, decision
+      satisfaction state, or protected `.agentera/decisions.yaml`/`.agentera/session.yaml`
+      edits.
+    scope: UPGRADE, Agentera skill dispatcher, hej capability instructions, cross-capability
+      tests, TODO, CHANGELOG, PLAN, and PROGRESS.
+- number: 565
+  timestamp: 2026-05-18 12:44
+  type: fix
+  phase: build
+  what: Closed the full-suite and review repair plan after vocabulary and lifecycle
+    fixes.
+  commit: pending
+  inspiration: Realisera executed the active Full Suite and Review Fixes plan after
+    explicit user confirmation, staying limited to the two known full-suite failures
+    and serious review findings from the previous wording cleanup batch.
+  discovered: The prior full suite reported 1136 passing tests and 2 failures from
+    a Decision 44 current-state wording leak in PLAN evidence plus stale dispatch-contract
+    assertions expecting removed autonomous-dispatch prose. Review gaps also needed
+    lifecycle-status coverage for upgrade build/apply/public mapping, docs-delegation
+    metadata in the app lifecycle authority, stale-profile caveat wording that could
+    not imply app-file update approval, and truthful closeout evidence.
+  verified: '`uv run pytest tests/test_decision44_vocabulary.py::test_decision_44_deprecated_preferred_vocabulary_is_bounded
+    tests/test_skill_dispatch_contract.py::test_vocabulary_documents_handoff_and_route_boundary
+    tests/test_lifecycle_vocabulary_authority.py tests/test_upgrade_cli.py -q` passed
+    with 44 tests. `uv run pytest tests/test_query_cli.py::TestHej::test_stale_bundle_structured_output_has_repair_contract
+    tests/test_bundle_freshness.py -q` passed with 19 tests. `uv run pytest -q` passed
+    with 1142 tests. Artifact validators for PLAN.md, TODO.md, CHANGELOG.md, PROGRESS.md,
+    and DOCS.md each returned `status=pass`. `git diff --check` passed.'
+  next: Return to the still-open SKILL.md prose cleanup TODO only when explicitly
+    selected; keep Decision 57 implementation and 3.0.0 work out of this repair batch.
+  context:
+    intent: Repair the full-suite regressions and serious review findings after the
+      Agentera App Files Wording Cleanup work.
+    constraints: Scope stayed limited to the two known failures and review fixes;
+      no broad vocabulary sweep, SKILL.md prose cleanup advancement, capability `prose.md`
+      rename, `first_invocation_read`, 3.0.0 work, installed app/profile update, package-manager
+      change, publication, push, tag, `.agentera/vision.yaml`, objective state, decision
+      satisfaction state, or protected `.agentera/decisions.yaml`/`.agentera/session.yaml`
+      edits.
+    scope: '`docs/vocabulary.md`, `tests/test_skill_dispatch_contract.py`, `scripts/agentera_upgrade.py`,
+      `tests/test_lifecycle_vocabulary_authority.py`, `references/cli/app-lifecycle-vocabulary.yaml`,
+      `skills/agentera/capabilities/realisera/prose.md`, TODO, CHANGELOG, PLAN, and
+      PROGRESS.'
+- number: 564
+  timestamp: 2026-05-18 09:45
+  type: fix
+  phase: build
+  what: Cleaned up installed-app wording that described Agentera app files too vaguely.
+  commit: pending
+  inspiration: Realisera executed the active Agentera App Files Wording Cleanup plan
+    after explicit user confirmation so current diagnostics follow the bundle/SKILL.md
+    vocabulary authority without renaming compatibility surfaces.
+  discovered: Current code had no broad README or AGENTS installed-app bundle prose
+    to rewrite; the live risks were diagnostic caveats and repair approval text that
+    still used app-state/app-refresh wording instead of naming Agentera app files.
+    The existing `bundle` structured field, `.agentera-bundle.json`, `bundle.status`,
+    `activeBundleRoot`, `bundle.dryRunCommand`, `--only bundle`, command phases/actions,
+    fixtures, and historical records remain compatibility-preserved.
+  verified: '`uv run pytest tests/test_bundle_skill_vocabulary_authority.py tests/test_lifecycle_vocabulary_authority.py
+    tests/test_decision44_vocabulary.py tests/test_bundle_freshness.py tests/test_query_cli.py::TestHej::test_stale_bundle_structured_output_has_repair_contract
+    -q` passed with 37 tests. `uv run pytest tests/test_upgrade_cli.py tests/test_install_root_characterization.py
+    -q` passed with 40 tests. Artifact validators for PLAN.md, TODO.md, CHANGELOG.md,
+    PROGRESS.md, and DOCS.md each returned `status=pass`. `git diff --check` passed.'
+  next: Continue with the still-open SKILL.md prose cleanup, routing/execution prose
+    cleanup, Decision 57 implementation, broad vocabulary regression TODOs, and 3.0.0
+    work; full suite was not run for this focused wording cleanup.
+  context:
+    intent: Close the active Agentera App Files Wording Cleanup plan.
+    constraints: Scope stayed limited to current user-facing/diagnostic installed-app
+      wording and focused regressions; no SKILL.md cleanup, routing/execution cleanup,
+      capability `prose.md` rename, `first_invocation_read`, broad vocabulary sweep,
+      3.0.0 packaging, installed app/profile refresh, package-manager change, publication,
+      push, tag, `.agentera/vision.yaml`, objective state, decision satisfaction state,
+      or protected `.agentera/decisions.yaml`/`.agentera/session.yaml` edits.
+    scope: '`scripts/agentera`, `scripts/agentera_upgrade.py`, `tests/test_bundle_skill_vocabulary_authority.py`,
+      `tests/test_bundle_freshness.py`, `tests/test_query_cli.py`, TODO, CHANGELOG,
+      PLAN, and PROGRESS.'
+- number: 563
+  timestamp: 2026-05-18 09:12
+  type: fix
+  phase: build
+  what: Aligned doctor, hej, and upgrade app lifecycle metadata with Decision 54.
+  commit: pending
+  inspiration: Realisera executed the active Decision 54 App Lifecycle Metadata Alignment
+    plan after explicit user confirmation so shipped structured metadata follows the
+    authority rather than only documenting it.
+  discovered: Doctor and hej already emitted canonical app status values, but hej
+    capability contexts still treated `fresh` as the healthy `bundle.status` value.
+    Upgrade top-level `status` remains a workflow compatibility field used by existing
+    tests and exit behavior, so canonical lifecycle meaning now lives in `lifecycleStatus`
+    with `compatibilityStatus` preserving the old value explicitly.
+  verified: '`uv run pytest tests/test_lifecycle_vocabulary_authority.py tests/test_install_root_characterization.py
+    tests/test_upgrade_cli.py tests/test_query_cli.py::TestHej::test_stale_bundle_structured_output_has_repair_contract
+    tests/test_query_cli.py::TestHej::test_version_mismatch_reports_update_needed_not_repair
+    tests/test_query_cli.py::TestHej::test_runtime_injected_legacy_default_does_not_outrank_platform_home
+    -q` passed with 51 tests. `uv run scripts/agentera validate artifact --artifact
+    PLAN.md`, `TODO.md`, `CHANGELOG.md`, `PROGRESS.md`, and `DOCS.md` each returned
+    `status=pass`. `git diff --check` passed.'
+  next: Continue with the still-open bundle/SKILL.md prose cleanup, routing/execution
+    prose cleanup, Decision 57 implementation, and broad vocabulary regression TODOs;
+    full suite was not run for this focused fix.
+  context:
+    intent: Close the active Decision 54 App Lifecycle Metadata Alignment plan.
+    constraints: Scope stayed limited to structured app lifecycle metadata for doctor,
+      hej, and upgrade plus focused tests and closeout artifacts; no bundle/SKILL.md
+      prose cleanup, routing/execution vocabulary cleanup, capability `prose.md` rename,
+      `first_invocation_read`, 3.0.0 packaging, installed app/profile refresh, package-manager
+      change, publication, push, tag, `.agentera/vision.yaml`, objective state, or
+      decision satisfaction state change.
+    scope: '`scripts/agentera_upgrade.py`, `scripts/agentera`, `tests/test_lifecycle_vocabulary_authority.py`,
+      TODO, CHANGELOG, PLAN, and PROGRESS.'
+- number: 562
+  timestamp: 2026-05-18 08:33
+  type: docs
+  phase: build
+  what: Added the Decision 57 capability instruction contract authority.
+  commit: pending
+  inspiration: Realisera executed the active Decision 57 Capability Instruction Contract
+    plan after explicit confirmation so instruction-file rename, startup-read metadata,
+    compact-startup exceptions, and compatibility preservation are documented before
+    implementation.
+  discovered: The safe P0 seam was a focused machine-readable authority plus docs
+    delegation and tests. Current `prose.md` files, validators, runtime descriptors,
+    package metadata, and CLI outputs remain compatibility/current-state surfaces;
+    the actual `instructions.md` rename, `first_invocation_read` metadata feature,
+    runtime behavior, and validation/regression sweep remain open TODOs.
+  verified: '`uv run pytest tests/test_capability_instruction_contract.py tests/test_routing_execution_vocabulary_authority.py
+    tests/test_bundle_skill_vocabulary_authority.py tests/test_lifecycle_vocabulary_authority.py
+    tests/test_decision44_vocabulary.py -q` passed with 29 tests. Artifact validators
+    for PLAN.md, TODO.md, CHANGELOG.md, PROGRESS.md, and DOCS.md returned `status=pass`.
+    `git diff --check` passed.'
+  next: Continue with P1 vocabulary fixes; keep the Decision 57 capability file rename,
+    `first_invocation_read` feature, and validation/regression coverage TODOs open
+    until explicitly selected.
+  context:
+    intent: Close the active Decision 57 Capability Instruction Contract plan.
+    constraints: Documentation and contract authority only; no capability file rename,
+      validator requirement change, CLI/schema metadata emission, first-invocation
+      read behavior, runtime descriptor/package metadata rewrite, installed app/profile
+      refresh, package-manager change, publication, push, tag, vision/objective edit,
+      decision satisfaction change, or protected `.agentera/decisions.yaml`/`.agentera/session.yaml`
+      edits.
+    scope: '`references/cli/capability-instruction-contract.yaml`, `tests/test_capability_instruction_contract.py`,
+      `docs/vocabulary.md`, README, DOCS index, TODO, CHANGELOG, PLAN, and PROGRESS.'
+- number: 561
+  timestamp: 2026-05-18 07:42
+  type: docs
+  phase: build
+  what: Added the routing and execution vocabulary authority.
+  commit: pending
+  inspiration: Realisera executed the active Routing and Execution Vocabulary Collapse
+    plan after explicit confirmation so routing, recommendations, orchestration assignment,
+    worker launch, runtime support, and worker safety stop sharing ambiguous dispatcher/dispatch/conductor
+    terms.
+  discovered: The correct P0 seam was a narrow machine-readable authority plus docs
+    delegation and focused tests, not the later broad prose replacement or repository-wide
+    ambiguous-term sweep. Compatibility identifiers such as `subagent_dispatch`, historical
+    `pre-dispatch commit` records, fixture names, archived plans, and concrete path/code
+    identifiers remain preserved.
+  verified: '`uv run pytest tests/test_routing_execution_vocabulary_authority.py tests/test_bundle_skill_vocabulary_authority.py
+    tests/test_lifecycle_vocabulary_authority.py tests/test_decision44_vocabulary.py
+    -q` passed with 20 tests. `uv run scripts/agentera validate artifact --artifact
+    PLAN.md`, `TODO.md`, `CHANGELOG.md`, `PROGRESS.md`, and `DOCS.md` each returned
+    `status=pass`. `git diff --check` passed.'
+  next: Keep the later broad current-prose replacement, full ambiguous-term regression
+    sweep, Decision 57 instruction-file rename, and `first_invocation_read` work open
+    until explicitly selected.
+  context:
+    intent: Close the active Routing and Execution Vocabulary Collapse plan.
+    constraints: Keep scope to documentation/authority, docs delegation, and focused
+      tests; no broad prose rewrite, full repository occurrence rejection, capability
+      `prose.md` rename, `first_invocation_read`, installed app/profile refresh, package-manager
+      change, publication, push, tag, vision/objective edit, decision satisfaction
+      change, or protected `.agentera/decisions.yaml`/`.agentera/session.yaml` edits.
+    scope: '`references/cli/routing-execution-vocabulary.yaml`, `tests/test_routing_execution_vocabulary_authority.py`,
+      `docs/vocabulary.md`, TODO, CHANGELOG, PLAN, and PROGRESS.'
+- number: 560
+  timestamp: 2026-05-18 07:17
+  type: docs
+  phase: build
+  what: Added the bundle and SKILL.md vocabulary authority.
+  commit: pending
+  inspiration: Realisera executed the active Bundle and Skill Vocabulary Authority
+    plan after explicit confirmation so bundle/SKILL.md terminology has one machine-readable
+    classification source before later prose cleanup.
+  discovered: The right seam was a narrow authority plus docs/test delegation, not
+    broad current-prose replacement. Compatibility identifiers and path-like references
+    such as `.agentera-bundle.json`, `bundle.status`, `activeBundleRoot`, `--only
+    bundle`, and `skills/agentera/SKILL.md` remain preserved.
+  verified: '`uv run pytest tests/test_bundle_skill_vocabulary_authority.py tests/test_lifecycle_vocabulary_authority.py
+    tests/test_decision44_vocabulary.py -q` passed with 14 tests. `uv run scripts/agentera
+    validate artifact --artifact PLAN.md`, `TODO.md`, `CHANGELOG.md`, `PROGRESS.md`,
+    and `DOCS.md` each returned `status=pass`. `git diff --check` passed.'
+  next: Continue with the next open P0 vocabulary task for routing/execution terms;
+    do not implement Decision 57 instruction-file rename or `first_invocation_read`
+    work until explicitly selected.
+  context:
+    intent: Close the active bundle/SKILL.md vocabulary authority plan.
+    constraints: Keep the scope to classification authority, docs delegation, and
+      focused tests; no routing/execution vocabulary collapse, capability prose rename,
+      `first_invocation_read`, installed app/profile refresh, package-manager change,
+      publication, push, tag, vision/objective edit, or decision satisfaction change.
+    scope: '`references/cli/bundle-skill-vocabulary.yaml`, `tests/test_bundle_skill_vocabulary_authority.py`,
+      `docs/vocabulary.md`, TODO, CHANGELOG, PLAN, and PROGRESS.'
+- number: 559
+  timestamp: 2026-05-18 06:48
+  type: docs
+  phase: build
+  what: Added the Decision 54 app lifecycle vocabulary authority.
+  commit: pending
+  inspiration: Realisera executed the active Decision 54 App Lifecycle Vocabulary
+    Authority plan after Planera handoff so doctor, hej, upgrade, docs, and tests
+    share one structured app lifecycle source.
+  discovered: The implementation should be an authority and regression seam, not a
+    broader suite-wide rename. Compatibility identifiers such as `.agentera-bundle.json`,
+    `bundle.status`, `activeBundleRoot`, and `--only bundle` remain out of scope.
+  verified: '`uv run pytest tests/test_lifecycle_vocabulary_authority.py -q` passed
+    with 5 tests. `uv run pytest tests/test_lifecycle_vocabulary_authority.py tests/test_decision44_vocabulary.py
+    -q` passed with 8 tests. `uv run "$AGENTERA_HOME/app/scripts/agentera" validate
+    artifact --artifact PLAN.md`, `TODO.md`, `CHANGELOG.md`, `PROGRESS.md`, and `DOCS.md`
+    each returned `status=pass`. `git diff --check` passed.'
+  next: Apply the next P0 vocabulary authority extension for `bundle` and `SKILL.md`
+    concepts, or commit this completed Decision 54 authority batch first.
+  context:
+    intent: Close the active Decision 54 lifecycle vocabulary authority plan.
+    constraints: Keep the scope to app lifecycle vocabulary; no broader protocol rename,
+      installed app/profile refresh, package-manager change, publication, push, tag,
+      vision/objective edit, or decision satisfaction change.
+    scope: '`references/cli/app-lifecycle-vocabulary.yaml`, `tests/test_lifecycle_vocabulary_authority.py`,
+      `docs/vocabulary.md`, TODO, CHANGELOG, PLAN, and PROGRESS.'
 - number: 558
   timestamp: 2026-05-17 11:42
   type: docs
@@ -58,262 +324,23 @@ cycles:
       change, vision/objective edit, or decision satisfaction change.
     scope: '`scripts/agentera`, `tests/test_usage_namespace.py`, README, TODO, CHANGELOG,
       PLAN, DOCS, and PROGRESS.'
-- number: 556
-  timestamp: 2026-05-17 10:54
-  type: feat
-  phase: build
-  what: Extended `agentera validate` to cover the remaining stable validators.
-  commit: pending
-  inspiration: Orkestrera executed the Validate Namespace Stable Validator Coverage
-    plan to make `agentera` the canonical entry point for validator workflows before
-    the broader helper-script cleanup seam.
-  discovered: The existing helpers already had clean non-interactive behavior and
-    useful success output, so the minimal correct change was a set of thin validate
-    subcommands that delegate to the helpers and wrap their stdout/stderr/exit codes
-    for JSON mode. The capability contract case needed one aggregate command because
-    it combines `--self-validate` and `--validate-protocol` checks from the same direct
-    helper.
-  verified: '`uv run pytest tests/test_validate_namespace.py -q` passed with 9 tests.
-    `uv run scripts/agentera validate cross-capability --format json`, `uv run scripts/agentera
-    validate lifecycle-adapters`, `uv run scripts/agentera validate app-home-contract`,
-    and `uv run scripts/agentera validate capability-contract --format json` passed.
-    Direct helper compatibility checks for `validate_cross_capability.py`, `validate_lifecycle_adapters.py`,
-    `validate_app_home_contract.py`, `validate_capability.py --self-validate`, and
-    `validate_capability.py --validate-protocol` passed. `uv run pytest -q` passed
-    with 1097 tests. Touched artifact validators for TODO, CHANGELOG, PLAN, PROGRESS,
-    and DOCS passed. `uv run scripts/agentera compact --mode check --format json`
-    passed after safe compaction fix trimmed TODO/PROGRESS retained logs. `git diff
-    --check` passed.'
-  next: Commit this validate batch and continue the remaining 2.5.x stats/helper-script
-    seams.
-  context:
-    intent: Orkestrera execution of the Validate Namespace Stable Validator Coverage
-      plan.
-    constraints: Preserve direct helper compatibility; keep wrappers thin, JSON-capable,
-      and explicit about delegated engines; no installed app/profile refresh, publication,
-      push, tag, package-manager change, vision/objective edit, or decision satisfaction
-      change.
-    scope: '`scripts/agentera`, `tests/test_validate_namespace.py`, README, TODO,
-      CHANGELOG, PLAN, DOCS, and PROGRESS.'
-- number: 555
-  timestamp: 2026-05-17 10:40
-  type: feat
-  phase: build
-  what: Implemented OpenCode plugin packaging metadata and compaction context support.
-  commit: pending
-  inspiration: Orkestrera executed the OpenCode Plugin Packaging and Compaction Context
-    plan to close the related npm-loadable plugin, compaction context, and source-backed
-    hook coverage TODOs as one coherent 2.5.x adapter batch.
-  discovered: The production OpenCode adapter already registered the core `event`,
-    `shell.env`, `chat.message`, and tool hooks, so the clean seam was to expose the
-    same local plugin file through `.opencode/package.json` `main`/`exports`, add
-    `experimental.session.compacting`, and validate all hook keys against the installed
-    `@opencode-ai/plugin` Hooks interface. Compaction context can stay adapter-thin
-    by calling `agentera hej --format json` and formatting the bounded summary instead
-    of duplicating artifact reads in JavaScript.
-  verified: '`node scripts/smoke_opencode_bootstrap.mjs` passed. `uv run pytest tests/test_runtime_adapters.py
-    tests/test_runtime_adapter_registry.py -q` passed with 88 tests. `uv run scripts/validate_lifecycle_adapters.py`
-    passed. `uv run pytest tests/test_runtime_adapters.py tests/test_runtime_adapter_registry.py
-    tests/test_package_registry.py -q` passed with 100 tests. `uv run scripts/agentera
-    validate descriptors` passed with 24 checks. `uv run pytest -q` passed with 1094
-    tests. Touched artifact validators for TODO, CHANGELOG, PLAN, PROGRESS, and DOCS
-    passed. `uv run scripts/agentera compact --mode check --format json` passed after
-    safe compaction fix trimmed TODO/PROGRESS retained logs. `git diff --check` passed.'
-  next: Commit this OpenCode batch and continue the remaining 2.5.x validate/stats/helper-script
-    cleanup seams.
-  context:
-    intent: Orkestrera execution of the OpenCode Plugin Packaging and Compaction Context
-      plan.
-    constraints: Preserve project-local `.opencode/plugins/agentera.js`, keep `.opencode/package.json`
-      non-version-bearing, use CLI-first compaction summaries, and avoid installed
-      app/profile refresh, publication, push, tag, package-manager change, vision/objective
-      edit, or decision satisfaction change.
-    scope: '`.opencode/package.json`, `.opencode/package-lock.json`, `.opencode/plugins/agentera.js`,
-      `references/adapters/package-registry.yaml`, `references/adapters/runtime-adapter-registry.yaml`,
-      runtime adapter tests, OpenCode smoke, README, UPGRADE, runtime docs, TODO,
-      CHANGELOG, PLAN, DOCS, and PROGRESS.'
-- number: 554
-  timestamp: 2026-05-17 10:26
-  type: feat
-  phase: build
-  what: Implemented Codex hook packaging and copied-hook trust flow.
-  commit: pending
-  inspiration: Orkestrera executed the Codex Hook Packaging and Trust Flow plan to
-    close the related plugin-bundled hook, copied user-hook wiring, docs, and regression
-    coverage TODOs as one coherent 2.5.x batch.
-  discovered: The direct Codex setup helper already had trust-state primitives, but
-    upgrade needed to generate copied `~/.codex/hooks.json` content with the exact
-    resolved validator command instead of copying the AGENTERA_HOME-dependent template
-    verbatim. Plugin-bundled hooks needed a separate PLUGIN_ROOT-safe config so optional
-    Codex 0.130+ plugin hook discovery does not share copied-user-hook assumptions.
-  verified: '`uv run pytest tests/test_setup_codex.py tests/test_upgrade_cli.py tests/test_runtime_adapters.py
-    -q` passed with 125 tests. `uv run scripts/validate_lifecycle_adapters.py` passed.
-    `uv run scripts/agentera validate descriptors` passed with 24 checks. `uv run
-    pytest tests/test_runtime_adapter_registry.py tests/test_runtime_adapters.py tests/test_setup_codex.py
-    tests/test_upgrade_cli.py -q` passed with 130 tests. `git diff --check` passed.'
-  next: Continue the 2.5.x goal with OpenCode plugin packaging/compaction coverage
-    or CLI validate/stats/helper-script cleanup after full verification, artifact
-    validation, compaction, and commit.
-  context:
-    intent: Orkestrera execution of the Codex Hook Packaging and Trust Flow plan.
-    constraints: Preserve copied user-hook install as the reliable default; do not
-      assume hook subprocesses inherit shell_environment_policy; no installed app/profile
-      refresh, publication, push, tag, package-manager change, vision/objective edit,
-      or decision satisfaction change.
-    scope: '`.codex-plugin/plugin.json`, `hooks/codex-plugin-hooks.json`, `scripts/setup_codex.py`,
-      `scripts/agentera_upgrade.py`, Codex setup/upgrade/runtime tests, README, UPGRADE,
-      runtime parity docs, TODO, CHANGELOG, PLAN, and PROGRESS.'
-- number: 553
-  timestamp: 2026-05-17 10:10
-  type: fix
-  phase: build
-  what: Fixed 2.5.0 direct capability routing and Planera completed-plan archive boundaries.
-  commit: pending
-  inspiration: Planera scoped a light 2.5.0 batch for the two open routing and confirmation-boundary
-    TODOs, then Orkestrera executed the focused dispatcher, Planera, test, and artifact
-    closeout loop without nested subagents.
-  discovered: Canonical capability-name requests with trailing topic text needed to
-    be treated as direct routes, not generic natural-language analysis. Planera also
-    needed to state that archiving an already complete existing plan is implicit in
-    direct Planera replacement, while active or incomplete plan replacement still
-    requires explicit confirmation. The previously complete Runtime Docs Compatibility
-    Fix Plan was archived to `.agentera/archive/PLAN-2026-05-17-runtime-docs-compatibility-fix-plan.yaml`
-    before this completed light plan replaced it.
-  verified: '`uv run pytest tests/test_schema_backed_routing_interface.py tests/test_planera_capability.py
-    tests/test_query_cli.py::TestHej::test_hej_planera_context_exposes_compact_startup_contract
-    tests/test_skill_dispatch_contract.py -q` passed with 30 tests. `uv run scripts/validate_capability.py
-    skills/agentera/capabilities/planera` passed. Touched artifact validators for
-    TODO, CHANGELOG, PLAN, PROGRESS, and DOCS passed. `git diff --check` passed. `uv
-    run pytest -q` passed with 1090 tests.'
-  next: Continue the 2.5.x goal with Codex hook packaging/wiring tasks or OpenCode
-    plugin packaging/compaction tasks after artifact validation and commit. Do not
-    refresh installed apps/profiles, publish, push, tag, change package-manager state,
-    edit vision/objective state, or change decision satisfaction.
-  context:
-    intent: Orkestrera execution of the Capability Route and Planera Boundary Fix
-      plan.
-    constraints: No unsupported capability-name CLI commands, installed app/profile
-      refresh, publication, push, tag, package-manager change, vision/objective edit,
-      or decision satisfaction change.
-    scope: '`skills/agentera/SKILL.md`, `docs/vocabulary.md`, `scripts/agentera`,
-      Planera prose, routing/query/dispatch tests, TODO, CHANGELOG, PLAN, and PROGRESS.'
-- number: 552
-  timestamp: 2026-05-17 07:18
-  type: docs
-  phase: build
-  what: Closed out the Runtime Docs Compatibility Fix Plan.
-  commit: pending
-  inspiration: Orkestrera executed Task 6 after Tasks 1-5 completed the OpenCode and
-    Codex runtime docs compatibility fixes and focused regression coverage.
-  discovered: 'Closeout was limited to artifact synchronization: TODO and CHANGELOG
-    now record the compatibility fixes, PLAN is marked complete, the prior cross-runtime
-    dispatch plan remains archived at `.agentera/archive/PLAN-2026-05-16-cross-runtime-subagent-dispatch-plan.yaml`,
-    and protected vision/objective/decision satisfaction state plus release metadata
-    remained untouched.'
-  verified: '`uv run scripts/agentera validate artifact --artifact TODO.md --file
-    TODO.md` passed. `uv run scripts/agentera validate artifact --artifact CHANGELOG.md
-    --file CHANGELOG.md` passed. `uv run scripts/agentera validate artifact --artifact
-    PLAN.md --file .agentera/plan.yaml` passed. `uv run scripts/agentera validate
-    artifact --artifact PROGRESS.md --file .agentera/progress.yaml` passed. `git diff
-    --check` passed.'
-  next: Active Runtime Docs Compatibility Fix Plan is complete. Remaining open TODOs
-    are direct capability invocation routing and Planera confirmation-boundary guidance.
-    Do not refresh installed apps/profiles, publish, push, tag, change package-manager
-    state, edit vision/objective state, change decision satisfaction, or commit unless
-    explicitly requested.
-  context:
-    intent: Orkestrera execution of Runtime Docs Compatibility Fix Plan Task 6 closeout.
-    constraints: No unsupported capability-name CLI commands, installed app/profile
-      refresh, publication, push, tag, package-manager change, vision/objective edit,
-      decision satisfaction change, or commit.
-    scope: TODO, CHANGELOG, PLAN, and PROGRESS synchronization plus artifact validation.
-- number: 551
-  timestamp: 2026-05-17 07:18
-  type: test
-  phase: build
-  what: Refreshed compatibility regression coverage for plan Task 5.
-  commit: pending
-  inspiration: Orkestrera executed Runtime Docs Compatibility Fix Plan Task 5 after
-    Tasks 1-4 changed OpenCode hook evidence, OpenCode agent descriptors, Codex descriptor
-    paths, and OpenCode lifecycle classification.
-  discovered: 'Existing focused surfaces now cover the revised compatibility contract:
-    runtime adapter tests assert source-backed `chat.message` and direct session-hook
-    rejection, descriptor validation and OpenCode smoke assert documented agent frontmatter
-    plus body ownership markers, Codex setup/upgrade tests assert documented agent
-    directories, and lifecycle validation consumes the updated RuntimeAdapter registry
-    status for session event payloads.'
-  verified: '`uv run scripts/agentera validate descriptors` passed with 24 checks.
-    `uv run pytest tests/test_setup_codex.py tests/test_upgrade_cli.py -q` passed
-    with 42 tests. `uv run pytest tests/test_runtime_adapter_registry.py tests/test_runtime_adapters.py
-    -q` passed with 85 tests. `node scripts/smoke_opencode_bootstrap.mjs` passed.
-    `uv run scripts/validate_lifecycle_adapters.py` passed.'
-  next: Continue Runtime Docs Compatibility Fix Plan with Task 6 closeout. Do not
-    refresh installed apps/profiles, publish, push, tag, change package-manager state,
-    edit vision/objective state, change decision satisfaction, or commit unless explicitly
-    requested.
-  context:
-    intent: Orkestrera execution of Runtime Docs Compatibility Fix Plan Task 5.
-    constraints: No unsupported capability-name CLI commands, installed app/profile
-      refresh, publication, push, tag, package-manager change, vision/objective edit,
-      decision satisfaction change, or commit.
-    scope: Descriptor validation, Codex setup/upgrade tests, runtime-adapter tests,
-      lifecycle validation, OpenCode bootstrap smoke, PLAN, and PROGRESS.
-- number: 550
-  timestamp: 2026-05-17 07:16
-  type: fix
-  phase: build
-  what: Reclassified OpenCode session lifecycle events for plan Task 4.
-  commit: pending
-  inspiration: Orkestrera executed Runtime Docs Compatibility Fix Plan Task 4 after
-    official OpenCode plugin docs and local adapter code showed session lifecycle
-    events arrive through the generic `event` hook as `event.type` payloads.
-  discovered: RuntimeAdapter registry state was still marking `session.created` and
-    `session.idle` as unsupported phantom events even though the plugin handles both
-    through `event`. The registry now records them as supported via event payloads,
-    while lifecycle validation keeps direct hook keys rejected and still preserves
-    the separate session-preload context-injection caveat.
-  verified: '`uv run pytest tests/test_runtime_adapter_registry.py tests/test_runtime_adapters.py
-    -q` passed with 85 tests. `uv run scripts/validate_lifecycle_adapters.py` passed.
-    `node scripts/smoke_opencode_bootstrap.mjs` passed.'
-  next: Continue Runtime Docs Compatibility Fix Plan with Task 5. Do not refresh installed
-    apps/profiles, publish, push, tag, change package-manager state, edit vision/objective
-    state, change decision satisfaction, or commit unless explicitly requested.
-  context:
-    intent: Orkestrera execution of Runtime Docs Compatibility Fix Plan Task 4.
-    constraints: No unsupported capability-name CLI commands, installed app/profile
-      refresh, publication, push, tag, package-manager change, vision/objective edit,
-      decision satisfaction change, or commit.
-    scope: '`references/adapters/runtime-adapter-registry.yaml`, lifecycle validation,
-      runtime-adapter tests, OpenCode bootstrap smoke, PLAN, and PROGRESS.'
-- number: 549
-  timestamp: 2026-05-17 07:12
-  type: fix
-  phase: build
-  what: Constrained Codex descriptor discovery paths for plan Task 3.
-  commit: pending
-  inspiration: Orkestrera executed Runtime Docs Compatibility Fix Plan Task 3 after
-    official Codex subagent docs defined custom agent files under personal `~/.codex/agents/`
-    or project `.codex/agents/` directories.
-  discovered: '`setup_codex.py` was still deriving descriptor output from any arbitrary
-    `--config-file` parent. It now infers defaults only for documented `.codex/config.toml`
-    layouts and requires explicit `--agents-dir` for nonstandard config paths, while
-    upgrade keeps writing the documented managed `~/.codex/agents` runtime target.'
-  verified: '`uv run pytest tests/test_setup_codex.py -q` passed with 12 tests. `uv
-    run scripts/agentera validate descriptors` passed with 24 checks. `uv run pytest
-    tests/test_setup_codex.py tests/test_upgrade_cli.py -q` passed with 42 tests.
-    `uv run pytest tests/test_runtime_adapter_registry.py tests/test_runtime_adapters.py
-    -q` passed with 85 tests.'
-  next: Continue Runtime Docs Compatibility Fix Plan with Task 4. Do not refresh installed
-    apps/profiles, publish, push, tag, change package-manager state, edit vision/objective
-    state, change decision satisfaction, or commit unless explicitly requested.
-  context:
-    intent: Orkestrera execution of Runtime Docs Compatibility Fix Plan Task 3.
-    constraints: No unsupported capability-name CLI commands, installed app/profile
-      refresh, publication, push, tag, package-manager change, vision/objective edit,
-      decision satisfaction change, or commit.
-    scope: '`scripts/setup_codex.py`, `tests/test_setup_codex.py`, Codex upgrade/runtime
-      adapter tests, runtime feature parity docs, PLAN, and PROGRESS.'
 archive:
+- summary: 'Cycle 556 (2026-05-17): Extended `agentera validate` to cover the remaining
+    stable validators.'
+- summary: 'Cycle 555 (2026-05-17): Implemented OpenCode plugin packaging metadata
+    and compaction context support.'
+- summary: 'Cycle 554 (2026-05-17): Implemented Codex hook packaging and copied-hook
+    trust flow.'
+- summary: 'Cycle 553 (2026-05-17): Fixed 2.5.0 direct capability routing and Planera
+    completed-plan archive boundaries.'
+- summary: 'Cycle 552 (2026-05-17): Closed out the Runtime Docs Compatibility Fix
+    Plan.'
+- summary: 'Cycle 551 (2026-05-17): Refreshed compatibility regression coverage for
+    plan Task 5.'
+- summary: 'Cycle 550 (2026-05-17): Reclassified OpenCode session lifecycle events
+    for plan Task 4.'
+- summary: 'Cycle 549 (2026-05-17): Constrained Codex descriptor discovery paths for
+    plan Task 3.'
 - summary: 'Cycle 548 (2026-05-17): Normalized OpenCode managed agent descriptors
     for plan Task 2.'
 - summary: 'Cycle 547 (2026-05-16): Reconciled source-backed OpenCode bare-message
@@ -377,19 +404,3 @@ archive:
     validate` namespace.'
 - summary: 'Cycle 517 (2026-05-15): Defined the Task 1 command contract for the planned
     `agentera validate` namespace.'
-- summary: 'Cycle 516 (2026-05-15): Synchronized PLAN Task 4 version and local state
-    closeout for the Planera lint anchor false-positive...'
-- summary: 'Cycle 515 (2026-05-15): Completed PLAN Task 3 regression coverage and
-    guidance alignment for the Planera lint anchor fix.'
-- summary: 'Cycle 514 (2026-05-15): Completed PLAN Task 2 contract-preserving lint
-    anchor correction.'
-- summary: 'Cycle 513 (2026-05-15): Characterized PLAN Task 1 for the Planera lint
-    anchor false positive.'
-- summary: 'Cycle 512 (2026-05-15): Synchronized D47 PLAN Task 4 local metadata closeout
-    for the app-home vocabulary cleanup.'
-- summary: 'Cycle 511 (2026-05-15): Completed the D46 handoff wording enforcement
-    plan and local 2.3.14 closeout metadata sync.'
-- summary: 'Cycle 510 (2026-05-15): Synchronized PLAN Task 7 local closeout metadata
-    for the 2.3.13 Decision satisfaction tracking patch.'
-- summary: 'Cycle 509 (2026-05-15): Added PLAN Task 6 focused regression coverage
-    and prepared validation gates.'

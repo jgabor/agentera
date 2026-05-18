@@ -1,0 +1,110 @@
+header:
+  level: light
+  created: 2026-05-18
+  status: complete
+  title: Full Suite and Review Fixes
+what: >-
+  Repair the full-suite regressions and serious uncommitted-change review findings found
+  after the Agentera App Files Wording Cleanup work: Decision 44 vocabulary leakage in
+  PLAN/PROGRESS evidence, stale routing/handoff vocabulary test expectations, missing
+  lifecycle-status regression coverage, one stale-profile diagnostic wording leak, and
+  authority docs-delegation inconsistency.
+why: >-
+  The full suite reported 1136 passing tests and 2 failures, while two independent
+  reviewers found additional serious issues in the uncommitted changes. These fixes are
+  gating cleanup before advancing the next normal TODO, because the current working tree
+  should be brought back to truthful artifacts, passing tests, and authority-aligned
+  coverage first.
+constraints: >-
+  Keep this plan scoped to the two full-suite failures and the serious review findings
+  from Subagents A and B. Do not advance the next top SKILL.md prose cleanup TODO except
+  for the narrow `docs/vocabulary.md`/test synchronization needed to fix the existing
+  failing dispatch-contract test. Do not start broad vocabulary sweeps, capability
+  `prose.md` renames, `first_invocation_read` implementation, routing/execution prose
+  cleanup beyond the failing contract, 3.0.0 work, installed app/profile update,
+  publication, push, tag, package-manager state changes, `.agentera/vision.yaml`,
+  objective state, or decision satisfaction changes. Preserve unrelated dirty state,
+  including pre-existing `.agentera/decisions.yaml` and staged `.agentera/session.yaml`.
+tasks:
+  - number: 1
+    name: Reproduce and classify failing evidence
+    depends_on: []
+    status: complete
+    acceptance:
+      - >-
+        GIVEN the full-suite failures and reviewer reports are inspected WHEN the fix
+        scope is selected THEN each issue is classified as test regression, artifact
+        evidence inconsistency, missing regression coverage, diagnostic wording bug, or
+        authority schema inconsistency.
+      - >-
+        GIVEN adjacent open TODOs are reviewed WHEN implementation begins THEN SKILL.md
+        prose cleanup, broad vocabulary regression work, Decision 57 implementation, and
+        3.0.0 work remain out of scope.
+  - number: 2
+    name: Restore green suite for vocabulary and handoff contracts
+    depends_on:
+      - 1
+    status: complete
+    acceptance:
+      - >-
+        GIVEN `tests/test_decision44_vocabulary.py` runs WHEN PLAN and PROGRESS evidence
+        are updated THEN no unprotected deprecated current-state wording remains
+        in current artifacts, and closeout evidence truthfully records the prior failed
+        full-suite run before any new passing full-suite claim.
+      - >-
+        GIVEN `tests/test_skill_dispatch_contract.py` runs WHEN routing/handoff vocabulary
+        expectations are synchronized THEN docs and tests agree on the current canonical
+        route/suggest/delegate/spawn/subagent-mechanism vocabulary without reintroducing
+        deprecated ambiguous dispatch prose.
+  - number: 3
+    name: Harden reviewed lifecycle and authority gaps
+    depends_on:
+      - 1
+    status: complete
+    acceptance:
+      - >-
+        GIVEN `scripts/agentera_upgrade.py` emits canonical `lifecycleStatus` and
+        compatibility `status` metadata WHEN focused tests run THEN build and apply
+        upgrade paths cover `pending`, `noop`, `applied`, `blocked`, `failed`, `skipped`,
+        and unknown workflow-status mapping boundaries as appropriate.
+      - >-
+        GIVEN Realisera/Orkestrera/profile caveats are inspected WHEN wording is corrected
+        THEN a stale-profile caveat no longer implies approval to update app files.
+      - >-
+        GIVEN all machine-readable vocabulary authorities are inspected WHEN schema
+        consistency is enforced THEN `references/cli/app-lifecycle-vocabulary.yaml` has
+        docs-delegation metadata or equivalent focused coverage consistent with the other
+        authority files.
+  - number: 4
+    name: Verify and close repair artifacts
+    depends_on:
+      - 2
+      - 3
+    status: complete
+    acceptance:
+      - >-
+        GIVEN the repair is complete WHEN verification runs THEN the full pytest suite
+        passes, focused tests for changed surfaces pass, artifact validators for PLAN.md,
+        TODO.md, CHANGELOG.md, PROGRESS.md, and DOCS.md pass, and `git diff --check`
+        passes.
+      - >-
+        GIVEN closeout artifacts are updated WHEN PLAN and PROGRESS record evidence THEN
+        they include both the original full-suite failure summary and the final passing
+        verification, and TODO/CHANGELOG remain scoped to repair work rather than advancing
+        the next normal TODO.
+overall_acceptance:
+  - >-
+    The two known full-suite failures are fixed and the full suite passes.
+  - >-
+    Serious review findings are either fixed or explicitly recorded as intentionally
+    deferred with evidence and rationale; no stale passing-test claims remain.
+  - >-
+    The repair stays limited to review/test-failure cleanup and does not advance unrelated
+    vocabulary, Decision 57, 3.0.0, publication, package, protected-state, or installed-app
+    update work.
+surprises:
+  - >-
+    The prior full suite had already found the two expected regressions with 1136
+    passing tests and 2 failures; after the focused repairs and coverage additions,
+    the final full suite passed with 1142 tests.
+previous_plan_archived: .agentera/archive/PLAN-2026-05-18-agentera-app-files-wording-cleanup.yaml

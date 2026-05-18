@@ -2668,8 +2668,8 @@ def _dokumentera_closeout_context(
         decision_review_pressure,
     ):
         state_caveats.extend(component.get("caveats", []))
-    if bundle.get("status") != "fresh":
-        state_caveats.append("Agentera app state is not fresh; this is a caveat, not approval to refresh installed apps.")
+    if bundle.get("status") != "up_to_date":
+        state_caveats.append("Agentera app files are not up to date; this is a caveat, not approval to repair or update app files.")
     if profile.get("status") != "loaded":
         state_caveats.append("profile-derived state is unavailable in hej context.")
     elif profile.get("stale") is True:
@@ -3175,8 +3175,8 @@ def _inspektera_evidence_context(
             message,
             _source_provenance("hej", "agentera hej --format json --capability-context inspektera", "source_contract.capability_context.missing_state_families"),
         ))
-    if bundle.get("status") != "fresh":
-        message = "Agentera app state is not fresh; this is a caveat, not approval to refresh installed apps."
+    if bundle.get("status") != "up_to_date":
+        message = "Agentera app files are not up to date; this is a caveat, not approval to repair or update app files."
         state_caveats.append(message)
         attributed_risks.append(_residual_risk_entry(
             "installed_app_state",
@@ -3490,8 +3490,8 @@ def _realisera_execution_context(
         state_caveats.append("profile-derived state is unavailable in hej context.")
     elif profile.get("stale") is True:
         state_caveats.append("profile-derived state is stale; this is a caveat, not approval to refresh profile state.")
-    if bundle.get("status") != "fresh":
-        state_caveats.append("Agentera app state is not fresh; this is a caveat, not approval to refresh installed apps.")
+    if bundle.get("status") != "up_to_date":
+        state_caveats.append("Agentera app files are not up to date; this is a caveat, not approval to repair or update app files.")
     if _realisera_scope_boundary(plan, selected)["source_scope"]["status"] == "unspecified":
         state_caveats.append("source-file scope is unspecified; no allowed or prohibited source paths were inferred.")
 
@@ -3659,7 +3659,7 @@ def _orchestration_context(
     if profile.get("status") != "loaded":
         state_caveats.append("profile-derived state is unavailable in hej context.")
     elif profile.get("stale") is True:
-        state_caveats.append("profile-derived state is stale; this is a caveat, not approval to refresh installed apps or profile state.")
+        state_caveats.append("profile-derived state is stale; this is a caveat, not approval to refresh profile state.")
 
     fallback_commands = list(dict.fromkeys(fallback_commands))
     progress_verification = _progress_verification_summary(progress)

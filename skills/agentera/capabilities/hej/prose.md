@@ -42,6 +42,9 @@ when set, otherwise the platform data home, then run
 the installed command once. Do not preflight app health with `glob`, `grep`,
 `read`, `ls`, `python`, `doctor`, `--help`, `scripts/install_root.py`,
 `registry.json`, or `.agentera-bundle.json`.
+Never combine the app-home assignment with the same shell command that expands
+the managed app script path; shell expansion can otherwise turn an unset
+`AGENTERA_HOME` into `/app/scripts/agentera` before the assignment takes effect.
 
 Recovery copy must be plain-language and recommendation-first. Never ask users
 to choose between technical install concepts, internal directory states,

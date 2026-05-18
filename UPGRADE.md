@@ -114,8 +114,14 @@ preview proved Agentera owns. It does not run package updates unless
 Afterward, retry:
 
 ```bash
-uv run "$AGENTERA_HOME/app/scripts/agentera" hej
+RESOLVED_AGENTERA_HOME="<app home reported by upgrade>"
+uv run "$RESOLVED_AGENTERA_HOME/app/scripts/agentera" hej
 ```
+
+Set `RESOLVED_AGENTERA_HOME` before running the command. Never combine the
+app-home assignment with the same shell command that expands the managed app
+script path; shell expansion can otherwise turn an unset `AGENTERA_HOME` into
+`/app/scripts/agentera` before the assignment takes effect.
 
 If `AGENTERA_HOME` is unset, use the shared app-home contract's default platform
 data home. If it points at a missing path, a file, or a directory with unrelated

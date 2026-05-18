@@ -89,55 +89,6 @@ decisions:
       app_home, managedAppRoot, and userDataRoot, scripts/validate_app_home_contract.py
       checks public surfaces, and the focused app-home/upgrade/legacy-default test
       set passed 9 tests on 2026-05-15.'
-- number: 49
-  date: '2026-05-08'
-  question: What TODO.md item contract should replace ISS-N counters and bracketed
-    slug IDs?
-  context: '`skills/agentera/references/contract.md` still documents `ISS-N` TODO
-    identities while live `TODO.md` items use bracketed slugs such as `[agentera-221-...]`.
-    The user rejected both as volatile, duplicate-prone manual identity, but still
-    wants an optional exact release target such as `2.2.5` or patch-lane target such
-    as `2.2.x`.'
-  alternatives:
-  - name: Keep ISS-N counters
-    status: rejected
-    description: Requires a central counter and creates collision/renumbering risk
-      during concurrent artifact edits.
-  - name: Keep bracketed slug IDs
-    status: rejected
-    description: Human-generated slugs drift, duplicate easily, and make TODO lines
-      noisier than the work requires.
-  - name: Separate release-target tag
-    status: rejected
-    description: Parseable, but adds a second metadata token when one token can express
-      both required type and optional target.
-  - name: Single type-or-type-target tag
-    status: chosen
-    description: Use `[type]` for untargeted work, `[type:X.Y.Z]` for work targeted
-      at an exact release, and `[type:X.Y.x]` for work targeted at a patch lane whose
-      exact patch is intentionally not chosen yet.
-  choice: 'Use one mandatory TODO prefix tag: `[type]` for untargeted items, `[type:X.Y.Z]`
-    for exact release-targeted items, and `[type:X.Y.x]` for a patch-lane target whose
-    exact patch is intentionally not chosen yet. Type is one of `feat`, `fix`, `docs`,
-    `refactor`, `chore`, `test`, or `perf`; `X.Y.Z` is an exact semver target, and
-    `x` is allowed only in the patch position. Forbid scopes, `v` prefixes, minor/major
-    ranges like `2.x` or `2.2.*`, inequality ranges, multiple targets, and generated
-    item IDs. When the release is selected, convert `[type:X.Y.x]` to `[type:X.Y.Z]`.
-    Status comes from the checkbox, priority from the section, and identity from normalized
-    summary text.'
-  reasoning: Only change type and optional release target carry durable TODO metadata.
-    Patch-lane targets preserve useful release intent without forcing false precision
-    before the exact patch is selected. Content identity avoids counters and slug
-    churn, while the single prefix tag keeps `TODO.md` readable and deterministic
-    for `agentera todo`, compaction, and release queries.
-  confidence: firm
-  feeds_into: TODO.md, skills/agentera/references/contract.md, skills/agentera/schemas/artifacts/todo.yaml,
-    scripts/agentera, hooks/compaction.py, tests
-  satisfaction:
-    state: user_confirmed_satisfied
-    user_confirmation:
-      confirmed_by: user
-      confirmed_at: '2026-05-15'
 - number: 50
   date: '2026-05-12'
   question: What should Agentera 2.3.0 include?
@@ -465,31 +416,83 @@ decisions:
     adapters, tests, README.md, UPGRADE.md, release planning
   satisfaction:
     state: open
+- number: 57
+  date: '2026-05-18'
+  question: How should Agentera rename capability `prose.md` files and make first-invocation
+    instruction reading explicit?
+  context: The capability file name `prose.md` undersells its role as the behavioral
+    instruction source for each capability. The user asked how to rename it to `instructions.md`
+    and enforce full reading during initial capability invocation. The practical constraint
+    is that Agentera cannot technically force every runtime to read a file, but it
+    can make the requirement explicit through schema metadata, CLI capability context,
+    router guidance, descriptors, docs, and tests.
+  alternatives:
+  - name: Full instructions contract
+    status: chosen
+    description: Rename `skills/agentera/capabilities/*/prose.md` to `skills/agentera/capabilities/*/instructions.md`,
+      add first-invocation read metadata, surface required reads through CLI capability
+      context, and update the capability schema contract, router guidance, runtime
+      descriptors, docs, and tests.
+  - name: Rename only
+    status: rejected
+    description: Improves naming but leaves agents guessing whether instructions must
+      be read during startup.
+  - name: Metadata without rename
+    status: rejected
+    description: Adds startup-read semantics but keeps the misleading `prose.md` name
+      and preserves the old vocabulary debt.
+  - name: Runtime hook enforcement
+    status: rejected
+    description: Not portable because runtimes do not expose a shared, reliable conversation-state
+      proof that a file was read in full.
+  choice: Rename capability `prose.md` files to `instructions.md`, add `first_invocation_read`
+    metadata with values such as `full`, `compact_startup`, or `skip`, surface the
+    required reads through `agentera hej --format json --capability-context <name>`,
+    and update `skills/agentera/SKILL.md`, `skills/agentera/capability_schema_contract.yaml`,
+    `scripts/validate_capability.py`, runtime descriptors, tests, `README.md`, `AGENTS.md`,
+    and `docs/vocabulary.md` so first capability invocation reads `instructions.md`
+    in full unless an explicit compact-startup exception is declared.
+  reasoning: The `instructions.md` name states the file's purpose better than `prose.md`
+    and turns capability startup from an implicit convention into a contract. Full
+    technical enforcement across every runtime is unrealistic, so the durable implementation
+    should combine schema metadata, CLI visibility, Agentera router guidance, descriptor
+    updates, and regression coverage rather than relying on prose alone.
+  confidence: firm
+  feeds_into: TODO.md, skills/agentera/SKILL.md, skills/agentera/capability_schema_contract.yaml,
+    scripts/agentera, scripts/validate_capability.py, runtime descriptors, tests,
+    README.md, AGENTS.md, docs/vocabulary.md
+  satisfaction:
+    state: open
 archive:
-- summary: 'Decision 44 (2026-05-07): Use plain English for capability/protocol prose
-    and labels. Deprecate `freshness`; use current/up-to-date/out-of-date/synced/status
-    wording. Keep `checkpoint`...'
-  number: 44
-  date: '2026-05-07'
-  choice: Use plain English for capability/protocol prose and labels. Deprecate `freshness`;
-    use current/up-to-date/out-of-date/synced/status wording. Keep `checkpoint` only
-    for Git commits. Replace most `guard` with check/stop-condition wording; keep
-    `gate` only for hard pass/fail. Use `behavioral verification gate`, `orchestration
-    loop`, `saved project context`, mismatch/out-of-sync wording, and `docs-first`
-    workflow language.
-  feeds_into: docs/vocabulary.md, capability prose, safe labels/tests, active plan
-    wording, TODO.md
+- summary: 'Decision 49 (2026-05-08): Use one mandatory TODO prefix tag: `[type]`
+    for untargeted items, `[type:X.Y.Z]` for exact release-targeted items,...'
+  number: 49
+  date: '2026-05-08'
+  choice: 'Use one mandatory TODO prefix tag: `[type]` for untargeted items, `[type:X.Y.Z]`
+    for exact release-targeted items, and `[type:X.Y.x]` for a patch-lane target whose
+    exact patch is intentionally not chosen yet. Type is one of `feat`, `fix`, `docs`,
+    `refactor`, `chore`, `test`, or `perf`; `X.Y.Z` is an exact semver target, and
+    `x` is allowed only in the patch position. Forbid scopes, `v` prefixes, minor/major
+    ranges like `2.x` or `2.2.*`, inequality ranges, multiple targets, and generated
+    item IDs. When the release is selected, convert `[type:X.Y.x]` to `[type:X.Y.Z]`.
+    Status comes from the checkbox, priority from the section, and identity from normalized
+    summary text.'
+  feeds_into: TODO.md, skills/agentera/references/contract.md, skills/agentera/schemas/artifacts/todo.yaml,
+    scripts/agentera, hooks/compaction.py, tests
   satisfaction:
     state: user_confirmed_satisfied
     user_confirmation:
       confirmed_by: user
       confirmed_at: '2026-05-15'
-  outcome: Use plain English for capability/protocol prose and labels. Deprecate `freshness`;
-    use current/up-to-date/out-of-date/synced/status wording. Keep `checkpoint` only
-    for Git commits. Replace most `guard` with check/stop-condition wording; keep
-    `gate` only for hard pass/fail. Use `behavioral verification gate`, `orchestration
-    loop`, `saved project context`, mismatch/out-of-sync wording, and `docs-first`
-    workflow language.
+  outcome: 'Use one mandatory TODO prefix tag: `[type]` for untargeted items, `[type:X.Y.Z]`
+    for exact release-targeted items, and `[type:X.Y.x]` for a patch-lane target whose
+    exact patch is intentionally not chosen yet. Type is one of `feat`, `fix`, `docs`,
+    `refactor`, `chore`, `test`, or `perf`; `X.Y.Z` is an exact semver target, and
+    `x` is allowed only in the patch position. Forbid scopes, `v` prefixes, minor/major
+    ranges like `2.x` or `2.2.*`, inequality ranges, multiple targets, and generated
+    item IDs. When the release is selected, convert `[type:X.Y.x]` to `[type:X.Y.Z]`.
+    Status comes from the checkbox, priority from the section, and identity from normalized
+    summary text.'
 - summary: 'Decision 45 (2026-05-08): Build one phased agent-ready state interface
     plan for pending 2.2.0: keep routine state command names...'
   number: 45
@@ -531,6 +534,30 @@ archive:
     behind cohesive non-deferred namespaces: `agentera validate` for validators, `agentera
     verify` or `agentera smoke` for eval and smoke gates, and `agentera corpus`/`agentera
     usage` for profile analytics. Keep registry/model modules private.'
+- summary: 'Decision 44 (2026-05-07): Use plain English for capability/protocol prose
+    and labels. Deprecate `freshness`; use current/up-to-date/out-of-date/synced/status
+    wording. Keep `checkpoint`...'
+  number: 44
+  date: '2026-05-07'
+  choice: Use plain English for capability/protocol prose and labels. Deprecate `freshness`;
+    use current/up-to-date/out-of-date/synced/status wording. Keep `checkpoint` only
+    for Git commits. Replace most `guard` with check/stop-condition wording; keep
+    `gate` only for hard pass/fail. Use `behavioral verification gate`, `orchestration
+    loop`, `saved project context`, mismatch/out-of-sync wording, and `docs-first`
+    workflow language.
+  feeds_into: docs/vocabulary.md, capability prose, safe labels/tests, active plan
+    wording, TODO.md
+  satisfaction:
+    state: user_confirmed_satisfied
+    user_confirmation:
+      confirmed_by: user
+      confirmed_at: '2026-05-15'
+  outcome: Use plain English for capability/protocol prose and labels. Deprecate `freshness`;
+    use current/up-to-date/out-of-date/synced/status wording. Keep `checkpoint` only
+    for Git commits. Replace most `guard` with check/stop-condition wording; keep
+    `gate` only for hard pass/fail. Use `behavioral verification gate`, `orchestration
+    loop`, `saved project context`, mismatch/out-of-sync wording, and `docs-first`
+    workflow language.
 - summary: 'Decision 43 (2026-05-07): Keep Swedish `-era` names canonical and add
     one primary plain `/agentera <alias>` per capability.'
   satisfaction: &id001
@@ -667,8 +694,4 @@ archive:
   satisfaction: *id001
 - summary: 'Decision 8 (2026-03-30): **Question**: Should the ecosystem unify its
     confidence model, and if so, on what scale?'
-  satisfaction: *id001
-- summary: 'Decision 7 (2026-03-30): **Question**: How should the skill ecosystem
-    enforce cross-skill alignment and prevent shared primitives from diverging as
-    skills are added?'
   satisfaction: *id001

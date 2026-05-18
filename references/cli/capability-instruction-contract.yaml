@@ -1,0 +1,132 @@
+schema_version: agentera.capability_instruction_contract.v1
+status: active_authority
+decision: 57
+purpose: >-
+  Define the Decision 57 capability instruction-file contract before implementation:
+  the future canonical `instructions.md` file name, the current compatibility
+  `prose.md` state, first-invocation read semantics, compact-startup exception
+  boundaries, and the implementation work that remains intentionally unsupported.
+sources:
+  decision: .agentera/decisions.yaml#decision-57
+  prose:
+    - docs/vocabulary.md#capability-instruction-contract
+    - README.md#for-capability-authors
+scope:
+  includes:
+    - Documentation authority for the future capability instruction-file name.
+    - Startup-read semantics for first capability invocation.
+    - Compact-startup exception semantics and boundaries.
+    - Current compatibility references to existing `prose.md` files.
+    - Explicit separation from later rename, metadata, validation, runtime behavior, and descriptor work.
+  excludes:
+    - Renaming any `skills/agentera/capabilities/*/prose.md` files.
+    - Updating validators to require `instructions.md`.
+    - Adding or emitting `first_invocation_read` metadata in CLI output or schemas.
+    - Implementing first-invocation read behavior.
+    - Rewriting runtime descriptors, package metadata, or compatibility fixtures.
+    - Marking Decision 57 satisfied or editing protected vision/objective/profile/installed-app state.
+current_state:
+  canonical_instruction_file:
+    path: skills/agentera/capabilities/<name>/instructions.md
+    status: future_canonical_not_yet_implemented
+    definition: >-
+      The future human-readable instruction file for each capability. It replaces
+      the role currently carried by `prose.md` once the later rename and validator
+      TODOs are selected.
+  compatibility_instruction_file:
+    path: skills/agentera/capabilities/<name>/prose.md
+    status: current_supported_compatibility
+    definition: >-
+      The current capability instruction file used by the repository, validators,
+      runtime descriptors, tests, fixtures, archived plans, and installed app
+      pointers until the later implementation work migrates those surfaces.
+  validator_requirement:
+    current_required_path: prose.md
+    future_required_path: instructions.md
+    status: future_requirement_not_yet_enforced
+  cli_metadata:
+    field: first_invocation_read
+    status: not_yet_emitted
+    current_behavior: >-
+      `agentera hej --format json --capability-context <name>` does not emit this
+      field as part of this documentation-only contract authority.
+first_invocation_read:
+  field_status: future_metadata_not_yet_implemented
+  definition: >-
+    Future capability metadata declaring what instruction content an agent must
+    read on the first invocation of that capability in a session.
+  allowed_values:
+    full:
+      meaning: >-
+        The first capability invocation must read `instructions.md` in full before
+        executing capability-specific work.
+      obligation: full_instruction_file_read_required
+    compact_startup:
+      meaning: >-
+        A declared compact startup contract may satisfy initial orientation without
+        reading the full instruction file first.
+      obligation: compact_contract_must_name_covered_guidance_and_escalation_rules
+    skip:
+      meaning: >-
+        No first-invocation instruction read is required for the declared scope.
+      obligation: requires_explicit_contract_justification
+      caution: >-
+        Reserved for narrow future surfaces; not a default and not implemented by
+        this authority.
+  default_future_rule: full
+  full_read_obligation: >-
+    On initial capability invocation, read `instructions.md` in full unless that
+    capability declares a compact-startup exception with explicit coverage and
+    escalation boundaries.
+compact_startup_exception:
+  status: future_exception_boundary_documented_not_implemented
+  allowed_when:
+    - A machine-readable startup contract is available through supported state access.
+    - The compact contract states which instruction topics it covers.
+    - The compact contract states when the agent must escalate to a full instruction-file read.
+    - The compact contract preserves unsupported-command and raw-artifact-read boundaries.
+  not_allowed_when:
+    - The agent is editing the capability's own instructions or schemas.
+    - The compact contract is missing, incomplete, stale, or contradictory.
+    - The requested work touches behavior not covered by the compact contract.
+    - Safety rails, validation, exit semantics, or cross-capability boundaries are ambiguous.
+implementation_state:
+  instructions_md_files: not_renamed
+  validators_require_instructions_md: false
+  first_invocation_read_cli_metadata: false
+  first_invocation_read_schema_metadata: false
+  runtime_first_invocation_behavior: false
+  descriptors_rewritten_to_instructions_md: false
+  package_metadata_rewritten_to_instructions_md: false
+compatibility_preservation:
+  preserve_current_references_until_later_todo:
+    - skills/agentera/capabilities/*/prose.md paths
+    - skills/agentera/capability_schema_contract.yaml directory requirements
+    - runtime descriptors and generated agent guidance that point to `prose.md`
+    - archived v1/v2 migration records and progress evidence
+    - compatibility fixtures and tests that prove current behavior
+    - README, AGENTS, and vocabulary references that explicitly describe current state
+  later_implementation_todos:
+    rename_files: >-
+      Rename all capability `prose.md` files to `instructions.md` and update all
+      references across source, descriptors, scripts, docs, tests, package metadata,
+      and compatibility fixtures.
+    metadata_feature: >-
+      Add `first_invocation_read` metadata and surface required instruction reads
+      through capability context output.
+    validation_regression: >-
+      Prove capability directories require `instructions.md`, reject new `prose.md`
+      conventions, emit required-read context, and preserve compact-startup exceptions.
+surface_inventory:
+  decision_57: future_canonical_contract_source
+  todo_sequence: separates_docs_rename_metadata_and_validation_work
+  docs_vocabulary: delegates_to_this_authority
+  readme: concise_user_facing_current_and_future_authoring_seam
+  capability_schema_contract: current_compatibility_validator_reference
+  runtime_descriptors: current_compatibility_prose_md_pointers
+  capability_prose_files: current_compatibility_instruction_files
+docs_delegation:
+  document: docs/vocabulary.md
+  required_anchor: Capability instruction contract
+  authority_path: references/cli/capability-instruction-contract.yaml
+  must_not_duplicate_large_table: true

@@ -1,0 +1,203 @@
+schema_version: agentera.app_lifecycle_vocabulary.v1
+status: active_authority
+decision: 54
+purpose: >-
+  Define the app lifecycle vocabulary shared by doctor, hej, upgrade, docs,
+  and tests so structured status metadata, operation verbs, deprecated aliases,
+  and consumer ownership boundaries have one machine-readable source.
+sources:
+  decisions:
+    - .agentera/decisions.yaml#Decision-54
+  prose:
+    - docs/vocabulary.md#app-lifecycle-status-vocabulary
+scope:
+  includes:
+    - Agentera app lifecycle status metadata emitted by doctor, hej, and upgrade.
+    - Upgrade workflow operation verbs for app files, data migration, and no-change outcomes.
+    - Transitional deprecated aliases needed to classify shipped or historical consumers.
+  excludes:
+    - Capability names.
+    - Artifact names or paths.
+    - Exit signals.
+    - Task statuses.
+    - Health grades.
+    - General prose outside app lifecycle metadata.
+compatibility_boundary: >-
+  Compatibility identifiers such as `.agentera-bundle.json`, `bundle.status`,
+  `activeBundleRoot`, and `--only bundle` may remain until an explicit migration
+  exists. They do not make bundle/fresh/stale/refresh/fixed canonical app
+  lifecycle status vocabulary.
+canonical_status_order:
+  - up_to_date
+  - outdated
+  - repair_needed
+  - migration_needed
+  - manual_review_needed
+  - ready_to_apply
+  - applied
+  - no_changes_needed
+canonical_statuses:
+  up_to_date:
+    concept: installed_app_current
+    definition: Installed app matches the expected version and required commands are present.
+    deprecated_aliases:
+      - fresh
+      - current
+      - ready
+      - ok
+  outdated:
+    concept: installed_app_version_behind
+    definition: Installed app files are valid but older than the expected version.
+    deprecated_aliases:
+      - stale
+      - old
+      - update_needed
+  repair_needed:
+    concept: app_files_missing_incomplete_or_broken
+    definition: App files are missing, incomplete, or broken.
+    deprecated_aliases:
+      - refresh_required
+      - broken
+      - invalid
+      - app_refresh_required
+  migration_needed:
+    concept: compatibility_boundary_migration_required
+    definition: v1 project state or legacy app-home layout needs migration.
+    deprecated_aliases:
+      - upgrade_needed
+      - stale_v1
+  manual_review_needed:
+    concept: unsafe_to_choose_write_path_automatically
+    definition: Agentera cannot safely choose a write path without the user.
+    deprecated_aliases:
+      - blocked
+      - needs decision
+  ready_to_apply:
+    concept: dry_run_has_approved_safe_pending_work
+    definition: A no-write plan has pending approved-safe work.
+    deprecated_aliases:
+      - pending
+      - ready to fix
+  applied:
+    concept: approved_work_completed
+    definition: Approved work completed.
+    deprecated_aliases:
+      - fixed
+  no_changes_needed:
+    concept: idempotent_no_write_required
+    definition: No write is needed.
+    deprecated_aliases:
+      - noop
+      - already OK
+operation_verb_order:
+  - install
+  - repair
+  - update
+  - migrate
+  - upgrade
+  - refresh
+operation_verbs:
+  install:
+    scope: Put Agentera app files where they do not exist.
+    lifecycle_allowed: true
+  repair:
+    scope: Restore missing, incomplete, or broken Agentera app files.
+    lifecycle_allowed: true
+  update:
+    scope: Move existing Agentera app files from an older version to the expected version.
+    lifecycle_allowed: true
+  migrate:
+    scope: Change layout, data, or schema across a compatibility boundary.
+    lifecycle_allowed: true
+  upgrade:
+    scope: Umbrella CLI workflow that may install, repair, update, migrate, configure, or clean up.
+    lifecycle_allowed: true
+  refresh:
+    scope: Data regeneration only, such as `agentera stats refresh`; not app lifecycle state.
+    lifecycle_allowed: false
+consumer_order:
+  - doctor
+  - hej
+  - upgrade
+  - docs
+  - tests
+consumers:
+  doctor:
+    owns:
+      - structured app self-check status metadata.
+      - human-readable app lifecycle diagnostics derived from canonical status metadata.
+    may_emit_statuses:
+      - up_to_date
+      - outdated
+      - repair_needed
+      - migration_needed
+      - manual_review_needed
+    may_use_verbs:
+      - repair
+      - update
+      - migrate
+      - upgrade
+    may_define_new_statuses: false
+  hej:
+    owns:
+      - installed app gate summary exposed in the composite state briefing.
+      - recovery prompts derived from doctor and upgrade metadata.
+    may_emit_statuses:
+      - up_to_date
+      - outdated
+      - repair_needed
+      - migration_needed
+      - manual_review_needed
+    may_use_verbs:
+      - repair
+      - update
+      - migrate
+      - upgrade
+    may_define_new_statuses: false
+  upgrade:
+    owns:
+      - app lifecycle preview and apply workflow metadata.
+      - concrete operation item naming for install, repair, update, migrate, cleanup, and no-change outcomes.
+    may_emit_statuses:
+      - ready_to_apply
+      - applied
+      - no_changes_needed
+      - manual_review_needed
+    may_use_verbs:
+      - install
+      - repair
+      - update
+      - migrate
+      - upgrade
+    may_define_new_statuses: false
+  docs:
+    owns:
+      - human-readable explanation of this authority.
+      - plain-language recovery wording boundaries.
+    may_emit_statuses: []
+    may_use_verbs:
+      - install
+      - repair
+      - update
+      - migrate
+      - upgrade
+      - refresh
+    may_define_new_statuses: false
+  tests:
+    owns:
+      - regression coverage proving consumers remain synchronized with this authority.
+      - deprecated alias classification and rejection as canonical status values.
+    may_emit_statuses: []
+    may_use_verbs:
+      - install
+      - repair
+      - update
+      - migrate
+      - upgrade
+      - refresh
+    may_define_new_statuses: false
+docs_delegation:
+  document: docs/vocabulary.md
+  required_anchor: App lifecycle status vocabulary
+  authority_path: references/cli/app-lifecycle-vocabulary.yaml
+  must_not_duplicate_large_table: true

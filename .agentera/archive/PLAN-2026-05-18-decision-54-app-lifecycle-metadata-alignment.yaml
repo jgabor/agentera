@@ -1,0 +1,138 @@
+header:
+  level: light
+  created: 2026-05-18
+  status: complete
+  title: Decision 54 App Lifecycle Metadata Alignment
+what: >-
+  Align `agentera doctor`, `agentera hej`, and `agentera upgrade` structured app
+  lifecycle metadata with the canonical Decision 54 vocabulary from
+  `references/cli/app-lifecycle-vocabulary.yaml`: `up_to_date`, `outdated`,
+  `repair_needed`, `migration_needed`, `manual_review_needed`, `ready_to_apply`,
+  `applied`, and `no_changes_needed`.
+why: >-
+  The Decision 54 authority now exists, but the CLI implementation and tests still
+  contain compatibility vocabulary and upgrade workflow statuses such as `noop`,
+  `pending`, and broad `refresh` wording. The first P1 fix is to make the shipped
+  structured metadata follow the authority while preserving only proven compatibility
+  aliases and non-app uses such as `agentera stats refresh`.
+constraints: >-
+  Keep this plan scoped to structured app lifecycle metadata for doctor, hej, and
+  upgrade plus focused tests and closeout artifacts. Do not work on bundle/SKILL.md
+  prose cleanup, routing/execution vocabulary cleanup, capability `prose.md` rename,
+  `first_invocation_read`, 3.0.0 packaging, app/profile refresh, publication, push,
+  tag, package-manager state, `.agentera/vision.yaml`, objective state, or decision
+  satisfaction state. Preserve compatibility identifiers such as `.agentera-bundle.json`,
+  `bundle.status`, `activeBundleRoot`, `--only bundle`, historical records, and
+  non-app `refresh` command names unless a focused compatibility alias test proves a
+  safe migration.
+tasks:
+  - number: 1
+    name: Inventory lifecycle metadata emitters and consumers
+    depends_on: []
+    status: complete
+    acceptance:
+      - >-
+        GIVEN `references/cli/app-lifecycle-vocabulary.yaml`, Decision 54 context,
+        `scripts/agentera_upgrade.py`, doctor/hej/upgrade JSON outputs, and current
+        focused tests are inspected WHEN implementation scope is selected THEN each
+        status-producing surface is classified as canonical metadata, transitional
+        compatibility alias, human prose, historical fixture, or non-app vocabulary.
+      - >-
+        GIVEN adjacent TODOs are reviewed WHEN the scope is recorded THEN bundle/SKILL.md
+        cleanup, routing/execution cleanup, Decision 57 implementation, and the later
+        broad vocabulary regression TODOs remain explicitly out of scope.
+    evidence:
+      - >-
+        Inspected `references/cli/app-lifecycle-vocabulary.yaml`, doctor/hej/upgrade
+        emitters in `scripts/agentera_upgrade.py`, capability-context consumers in
+        `scripts/agentera`, install-root compatibility fields, focused tests, and TODO
+        scope. Classified `bundle.status` as a preserved compatibility key, upgrade
+        `status=pending|noop|applied` as workflow compatibility metadata, doctor/hej
+        app status as canonical lifecycle metadata, and `agentera stats refresh` plus
+        package/runtime refresh wording as non-app lifecycle vocabulary.
+  - number: 2
+    name: Align doctor, hej, and upgrade structured statuses
+    depends_on:
+      - 1
+    status: complete
+    acceptance:
+      - >-
+        GIVEN doctor and hej app-home/bundle status payloads are produced WHEN the
+        installed app is current, outdated, broken, migrated, or unsafe for automatic
+        repair THEN structured metadata uses only `up_to_date`, `outdated`,
+        `repair_needed`, `migration_needed`, or `manual_review_needed` as canonical
+        app lifecycle statuses.
+      - >-
+        GIVEN upgrade preview/apply/idempotent outputs are produced WHEN work is
+        pending, completed, or unnecessary THEN structured lifecycle metadata uses
+        `ready_to_apply`, `applied`, `no_changes_needed`, or `manual_review_needed`
+        where the status represents app lifecycle state, while preserving proven
+        compatibility aliases only behind explicit compatibility fields or tests.
+    evidence:
+      - >-
+        Added canonical upgrade `lifecycleStatus` values while preserving the existing
+        top-level upgrade workflow `status` through `compatibilityStatus`; fixed hej
+        capability contexts to treat `bundle.status=up_to_date` as healthy instead of
+        checking the deprecated `fresh` alias.
+  - number: 3
+    name: Add focused metadata regressions
+    depends_on:
+      - 1
+      - 2
+    status: complete
+    acceptance:
+      - >-
+        GIVEN the focused test suite runs WHEN doctor, hej, and upgrade emit structured
+        app lifecycle metadata THEN tests reject deprecated aliases such as `fresh`,
+        `stale`, `refresh_required`, `app_refresh_required`, `fixed`, `ready`, `pending`,
+        and `noop` as canonical app lifecycle statuses while allowing documented
+        compatibility aliases, historical fixtures, plain prose, and non-app `refresh`
+        command names.
+      - >-
+        GIVEN the lifecycle vocabulary authority changes or consumers drift WHEN tests
+        load the authority THEN doctor/hej/upgrade allowed status sets stay synchronized
+        with the authority's consumer ownership boundaries.
+    evidence:
+      - >-
+        Extended `tests/test_lifecycle_vocabulary_authority.py` to load the authority,
+        assert doctor and hej app metadata statuses stay inside their allowed sets,
+        assert upgrade `lifecycleStatus` maps `pending` to `ready_to_apply` and `noop`
+        to `no_changes_needed`, and reject the stale `bundle.get("status") != "fresh"`
+        consumer check.
+  - number: 4
+    name: Close the metadata alignment artifacts
+    depends_on:
+      - 3
+    status: complete
+    acceptance:
+      - >-
+        GIVEN focused verification completes WHEN the fix is ready THEN exact pytest,
+        artifact validator, and `git diff --check` evidence is recorded in PLAN and
+        PROGRESS.
+      - >-
+        GIVEN TODO, CHANGELOG, PLAN, and PROGRESS are inspected WHEN closeout is
+        complete THEN the top `[fix:2.4.x]` app lifecycle metadata TODO is resolved
+        while later bundle/SKILL.md cleanup, routing/execution cleanup, Decision 57
+        implementation, and broad vocabulary regression TODOs remain open.
+    evidence:
+      - >-
+        Verification before artifact closeout: `uv run pytest tests/test_lifecycle_vocabulary_authority.py
+        tests/test_install_root_characterization.py tests/test_upgrade_cli.py tests/test_query_cli.py::TestHej::test_stale_bundle_structured_output_has_repair_contract
+        tests/test_query_cli.py::TestHej::test_version_mismatch_reports_update_needed_not_repair
+        tests/test_query_cli.py::TestHej::test_runtime_injected_legacy_default_does_not_outrank_platform_home
+        -q` passed with 51 tests. Final artifact validators and `git diff --check`
+        are recorded in PROGRESS after artifact edits.
+overall_acceptance:
+  - >-
+    Doctor, hej, and upgrade structured app lifecycle metadata use the Decision 54
+    canonical status vocabulary for current app lifecycle state.
+  - >-
+    Transitional aliases are retained only where a concrete compatibility consumer
+    or historical fixture requires them, and those boundaries are covered by focused
+    tests.
+  - >-
+    The top TODO is closed without changing unrelated vocabulary cleanup, Decision 57
+    implementation, package/runtime state, publication state, protected artifacts, or
+    decision satisfaction state.
+surprises: []
+previous_plan_archived: .agentera/archive/PLAN-2026-05-18-decision-57-capability-instruction-contract.yaml

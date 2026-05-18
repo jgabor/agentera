@@ -69,6 +69,9 @@ when set, otherwise the platform data home. Do not run `glob`, `grep`, `read`,
 or `.agentera-bundle.json` preflight checks before this call. The CLI owns app
 validation, v1 detection, profile detection, artifact condensation, and the
 `source_contract` that tells the caller how to render the dashboard.
+Never combine the app-home assignment with the same shell command that expands
+the managed app script path; shell expansion can otherwise turn an unset
+`AGENTERA_HOME` into `/app/scripts/agentera` before the assignment takes effect.
 
 If the command exits successfully, inspect the CLI-provided `bundle.status`
 installed-app status object. If its value is `fresh`, treat the installed app gate as passed
