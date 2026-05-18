@@ -1,4 +1,32 @@
 cycles:
+- number: 571
+  timestamp: 2026-05-18 19:35
+  type: test
+  phase: build
+  what: Added Decision 54 app lifecycle status regression coverage.
+  commit: pending
+  inspiration: Realisera executed the active App Lifecycle Status Regression Coverage
+    plan, keeping the change to focused authority-backed tests and required execution
+    artifacts.
+  discovered: The current validate namespace requires `validate artifact --artifact
+    PLAN.md`; the requested positional form `validate artifact PLAN.md` exits with
+    argparse usage instead of validating. No CLI behavior was changed because this
+    cycle was scoped to lifecycle status regression coverage.
+  verified: '`uv run pytest tests/test_lifecycle_vocabulary_authority.py -q` passed
+    with 15 tests. `uv run scripts/agentera validate artifact PLAN.md` was run and
+    failed because the current CLI requires `--artifact`. `uv run scripts/agentera
+    validate artifact --artifact PLAN.md` passed with status=pass. `git diff --check`
+    passed.'
+  next: Decide whether to add positional artifact-name compatibility for the validate
+    namespace in a separate CLI-scoped task; otherwise continue with the remaining
+    vocabulary regression TODOs.
+  context:
+    intent: Close the active App Lifecycle Status Regression Coverage plan task.
+    constraints: No broad wording cleanup, installed app/profile refresh, package
+      refresh, publication, push, tag, vision edit, objective-state mutation, decision
+      satisfaction update, or unsupported capability-name CLI command.
+    scope: Focused Decision 54 lifecycle vocabulary tests plus PLAN, TODO, CHANGELOG,
+      and PROGRESS execution artifacts.
 - number: 570
   timestamp: 2026-05-18 18:20
   type: feat
@@ -310,40 +338,8 @@ cycles:
       edits.
     scope: '`references/cli/capability-instruction-contract.yaml`, `tests/test_capability_instruction_contract.py`,
       `docs/vocabulary.md`, README, DOCS index, TODO, CHANGELOG, PLAN, and PROGRESS.'
-- number: 561
-  timestamp: 2026-05-18 07:42
-  type: docs
-  phase: build
-  what: Added the routing and execution vocabulary authority.
-  commit: pending
-  inspiration: Realisera executed the active Routing and Execution Vocabulary Collapse
-    plan after explicit confirmation so routing, recommendations, orchestration assignment,
-    worker launch, runtime support, and worker safety stop sharing ambiguous dispatcher/dispatch/conductor
-    terms.
-  discovered: The correct P0 seam was a narrow machine-readable authority plus docs
-    delegation and focused tests, not the later broad prose replacement or repository-wide
-    ambiguous-term sweep. Compatibility identifiers such as `subagent_dispatch`, historical
-    `pre-dispatch commit` records, fixture names, archived plans, and concrete path/code
-    identifiers remain preserved.
-  verified: '`uv run pytest tests/test_routing_execution_vocabulary_authority.py tests/test_bundle_skill_vocabulary_authority.py
-    tests/test_lifecycle_vocabulary_authority.py tests/test_decision44_vocabulary.py
-    -q` passed with 20 tests. `uv run scripts/agentera validate artifact --artifact
-    PLAN.md`, `TODO.md`, `CHANGELOG.md`, `PROGRESS.md`, and `DOCS.md` each returned
-    `status=pass`. `git diff --check` passed.'
-  next: Keep the later broad current-prose replacement, full ambiguous-term regression
-    sweep, Decision 57 instruction-file rename, and `first_invocation_read` work open
-    until explicitly selected.
-  context:
-    intent: Close the active Routing and Execution Vocabulary Collapse plan.
-    constraints: Keep scope to documentation/authority, docs delegation, and focused
-      tests; no broad prose rewrite, full repository occurrence rejection, capability
-      `instructions.md` rename, `first_invocation_read`, installed app/profile refresh,
-      package-manager change, publication, push, tag, vision/objective edit, decision
-      satisfaction change, or protected `.agentera/decisions.yaml`/`.agentera/session.yaml`
-      edits.
-    scope: '`references/cli/routing-execution-vocabulary.yaml`, `tests/test_routing_execution_vocabulary_authority.py`,
-      `docs/vocabulary.md`, TODO, CHANGELOG, PLAN, and PROGRESS.'
 archive:
+- summary: 'Cycle 561 (2026-05-18): Added the routing and execution vocabulary authority.'
 - summary: 'Cycle 560 (2026-05-18): Added the bundle and SKILL.md vocabulary authority.'
 - summary: 'Cycle 559 (2026-05-18): Added the Decision 54 app lifecycle vocabulary
     authority.'
@@ -419,5 +415,3 @@ archive:
     guidance alignment for the D48 `agentera verify` namespace.'
 - summary: 'Cycle 522 (2026-05-15): Implemented PLAN Task 2 behavior for the D48 `agentera
     verify` namespace.'
-- summary: 'Cycle 521 (2026-05-15): Defined the PLAN Task 1 command contract for the
-    planned `agentera verify` namespace.'
