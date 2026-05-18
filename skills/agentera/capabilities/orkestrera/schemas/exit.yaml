@@ -20,7 +20,7 @@ EXIT_CONDITIONS:
     description: >-
       Cannot proceed. PLAN.md has circular dependencies preventing any task
       from becoming eligible, no target capabilities are available to
-      dispatch, or file access prevents reading or updating artifacts.
+      delegate, or file access prevents reading or updating artifacts.
       The exit marker explains what is blocking progress.
     exit_signal: stuck
   4:

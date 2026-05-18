@@ -4,7 +4,7 @@ Validates three dimensions of cross-capability integrity:
 1. Protocol ID resolution: every stable ID referenced in capability schemas
    resolves to a valid entry in protocol.yaml.
 2. Trigger routing: every capability's trigger patterns route to that capability
-   (not hej fallback) per the Agentera skill dispatcher routing logic.
+    (not hej fallback) per the Agentera routing layer routing logic.
 3. Inter-capability prose references: every capability name mentioned in a
    prose.md file corresponds to an existing capability directory.
 
@@ -370,7 +370,7 @@ def test_installed_hej_entrypoint_resolves_app_home_before_script_expansion():
     assert good == "/tmp/agentera/app/scripts/agentera"
 
     surfaces = {
-        "Agentera skill dispatcher": SKILL_MD_PATH.read_text(encoding="utf-8"),
+        "Agentera routing entry point": SKILL_MD_PATH.read_text(encoding="utf-8"),
         "Hej capability": (CAPABILITIES_DIR / "hej" / "prose.md").read_text(encoding="utf-8"),
         "Upgrade guide": UPGRADE_MD_PATH.read_text(encoding="utf-8"),
     }

@@ -89,7 +89,7 @@ The sharp colleague, here to help you think, not consult.
 - Once routed to resonera, ask every user-facing deliberation question through
   the runtime-native question tool: Claude Code `AskUserQuestion`, OpenCode
   `question`, Copilot `ask_user`, and Codex `request_user_input`.
-  **One per turn, no exceptions.** This overrides the Agentera skill dispatcher's
+  **One per turn, no exceptions.** This overrides the routing layer's
   generic hej/handoff question-tool gate.
 - Every question includes a `Done` option.
 - If the user asks for a recommendation, provide a provisional recommendation

@@ -10,7 +10,7 @@
 
 ### P1 — Fixes applying the vocabularies
 
-- [ ] [fix:2.4.x] Replace current prose that uses `master dispatcher`, `Agentera skill dispatcher`, bare `dispatch`, `runtime dispatch substrate`, `worktree dispatch`, `pre-dispatch commit gate`, or Orkestrera `conductor` metaphor with the canonical route/suggest/delegate/spawn/subagent-mechanism vocabulary, preserving qualified compatibility names only where shipped consumers require them.
+- [x] ~~[fix:2.4.x] Replace current prose that uses `master dispatcher`, `Agentera skill dispatcher`, bare `dispatch`, `runtime dispatch substrate`, `worktree dispatch`, `pre-dispatch commit gate`, or Orkestrera `conductor` metaphor with the canonical route/suggest/delegate/spawn/subagent-mechanism vocabulary, preserving qualified compatibility names only where shipped consumers require them.~~ · resolved by replacing legacy dispatch/conductor vocabulary with canonical route/suggest/delegate/spawn/subagent-mechanism terms across current SKILL.md, capability prose, schemas, scripts, tests, docs/vocabulary.md, and the bundle-skill vocabulary authority, while preserving compatibility identifiers (commit message formats, code identifiers, historical records, path references) and updating focused regression coverage.
 - [ ] [fix:2.4.x] Rename all `skills/agentera/capabilities/*/prose.md` files to `instructions.md` and update references across `skills/agentera/SKILL.md`, `capability_schema_contract.yaml`, runtime descriptors, scripts, docs, tests, package metadata, and compatibility fixtures.
 
 ### P2 — Feature work

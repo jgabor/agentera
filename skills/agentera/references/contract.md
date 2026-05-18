@@ -646,7 +646,7 @@ Each skill produces specific artifacts as part of its workflow. When a skill is 
 | visualisera | DESIGN.md |
 | profilera | (profile-path capability) <!-- platform: profile-path --> |
 | inspirera | (no owned artifact; findings are filed to TODO.md or fed into other skills) |
-| orkestrera | (conductor; updates .agentera/plan.yaml task statuses and dispatches other skills) |
+| orkestrera | (orchestrator; updates .agentera/plan.yaml task statuses and delegates to other skills) |
 | hej | (router; reads artifacts but produces none) |
 
 Skills that share an artifact (e.g., realisera and inspektera both write to TODO.md) are each expected to update it independently when dispatched. Staleness is checked per-skill, not per-artifact.
@@ -657,7 +657,7 @@ When a plan exists (.agentera/plan.yaml with an active status), staleness is mea
 
 **Detection rule**: after a plan completes (all tasks `■ complete` or `skipped`), compare each dispatched skill against its expected artifacts. An artifact is **stale** if its last modification date (via `git log -1 --format=%aI -- <path>`) predates the plan's creation date AND the skill was dispatched at least once during the plan.
 
-**What counts as dispatched**: a skill appears in at least one task's execution history during the plan. For orkestrera-driven plans, the dispatch log in PROGRESS.md cycle entries identifies which skills ran.
+**What counts as delegated**: a skill appears in at least one task's execution history during the plan. For orkestrera-driven plans, the delegation log in PROGRESS.md cycle entries identifies which skills ran.
 
 **Scope**: only artifacts listed in the mapping above are checked. Artifacts that a skill reads but does not produce (e.g., realisera reads VISION.md) are not staleness candidates for that skill.
 
@@ -735,9 +735,9 @@ The gate is enforced independently by two skills; each holds a different phase a
 | Skill | Role | Phase | What it enforces |
 |-------|------|-------|------------------|
 | realisera | Primary enforcer | Cycle close | Runs the primary entrypoint against real project state and writes the observed output into the cycle's `verified` field. Blocks cycle completion if the field cannot be populated with observed output, an allowlisted tag, or a qualifying free-form rationale |
-| orkestrera | Secondary enforcer | Task evaluation | Reads the latest PROGRESS.md cycle entry for the dispatched task, confirms the `verified` field is present and non-empty (artifact read only; no source code read), and extends its inspektera dispatch prompt to include the Section 20 evidence-format snippet so inspektera audits whether the recorded content corresponds to the task's acceptance criteria |
+| orkestrera | Secondary enforcer | Task evaluation | Reads the latest PROGRESS.md cycle entry for the delegated task, confirms the `verified` field is present and non-empty (artifact read only; no source code read), and extends its inspektera delegation prompt to include the Section 20 evidence-format snippet so inspektera audits whether the recorded content corresponds to the task's acceptance criteria |
 
-Realisera holds the primary enforcement contract because it is the skill that actually produces cycle entries. Orkestrera holds a lighter presence-and-quality check because it reads artifacts but never touches code; the full content audit is delegated to inspektera via the dispatch prompt.
+Realisera holds the primary enforcement contract because it is the skill that actually produces cycle entries. Orkestrera holds a lighter presence-and-quality check because it reads artifacts but never touches code; the full content audit is delegated to inspektera via the delegation prompt.
 
 **Linter check**: Deterministic. Realisera and orkestrera SKILL.md files must reference Section 20 by name and include the `verified` field in any PROGRESS.md cycle format examples they carry.
 
@@ -981,30 +981,30 @@ Profilera's portability status in the Section 21 table moves from "Host-specific
 
 **Linter check**: None. This section defines a runtime data contract for adapters, not a SKILL.md structural requirement. The existing linter checks for profilera's SKILL.md continue to apply independently.
 
-## 23. Pre-dispatch Commit Gate
+## 23. Pre-spawn Git Commit
 
-Git worktrees branch from HEAD (the last commit), not the working tree. When a dispatching skill writes artifacts during its orient or plan steps and then spawns a subagent in a worktree without committing, the subagent receives a stale snapshot missing those artifacts. The Pre-dispatch Commit Gate closes this gap by requiring a checkpoint commit before any `isolation: "worktree"` dispatch.
+Git worktrees branch from HEAD (the last commit), not the working tree. When a spawning skill writes artifacts during its orient or plan steps and then spawns a subagent in a worktree without committing, the subagent receives a stale snapshot missing those artifacts. The Pre-spawn Git Commit closes this gap by requiring a checkpoint commit before any `isolation: "worktree"` spawn.
 
-This gate is the entry-side complement to Section 20 (Behavioral Verification Gate). Section 20 gates the exit from a cycle: did the work actually run against real state? Section 23 gates the entry to a worktree: does the subagent start from current state? The two gates enforce different invariants at different boundaries and must both hold for worktree-dispatched cycles.
+This gate is the entry-side complement to Section 20 (Behavioral Verification Gate). Section 20 gates the exit from a cycle: did the work actually run against real state? Section 23 gates the entry to a worktree: does the subagent start from current state? The two gates enforce different invariants at different boundaries and must both hold for worktree-spawned cycles.
 
 ### Applicability
 
-The gate applies to any skill that dispatches a subagent with `isolation: "worktree"`. Currently two skills do this:
+The gate applies to any skill that spawns a subagent with `isolation: "worktree"`. Currently two skills do this:
 
-| Skill | Dispatch point | What it writes before dispatch |
+| Skill | Spawn point | What it writes before spawn |
 |-------|----------------|-------------------------------|
-| realisera | Step 5 (implementation dispatch) | PLAN.md status updates, PROGRESS.md cycle start, context files from orient/plan steps |
-| optimera | Experiment dispatch step | EXPERIMENTS.md updates, OBJECTIVE.md refinements, harness configuration changes |
+| realisera | Step 5 (implementation spawn) | PLAN.md status updates, PROGRESS.md cycle start, context files from orient/plan steps |
+| optimera | Experiment spawn step | EXPERIMENTS.md updates, OBJECTIVE.md refinements, harness configuration changes |
 
-orkestrera dispatches skills without worktree isolation (it runs realisera or other skills as background subagents in the same working directory). orkestrera is covered transitively: when realisera creates a worktree at its Step 5, the gate commits everything in the working tree, including any uncommitted changes orkestrera wrote before dispatching realisera.
+orkestrera delegates skills without worktree isolation (it runs realisera or other skills as background subagents in the same working directory). orkestrera is covered transitively: when realisera creates a worktree at its Step 5, the gate commits everything in the working tree, including any uncommitted changes orkestrera wrote before spawning realisera.
 
-Skills that do not dispatch to worktrees are unaffected. The gate is invisible to them.
+Skills that do not spawn to worktrees are unaffected. The gate is invisible to them.
 
 ### Gate procedure
 
-Before executing the `isolation: "worktree"` dispatch, the dispatching skill runs this procedure:
+Before executing the `isolation: "worktree"` spawn, the spawning skill runs this procedure:
 
-1. **Check working tree status.** If `git status --porcelain` returns empty output, the working tree is clean. The gate is a no-op: skip to dispatch.
+1. **Check working tree status.** If `git status --porcelain` returns empty output, the working tree is clean. The gate is a no-op: skip to spawn.
 
 2. **Stage artifact paths only.** Add only the files the skill wrote or modified during the current session. Use explicit paths (e.g., `git add .agentera/plan.yaml .agentera/progress.yaml`), not `git add -A` or `git add .`. This scoping prevents committing editor temp files, secrets, or unrelated changes.
 
@@ -1014,48 +1014,28 @@ Before executing the `isolation: "worktree"` dispatch, the dispatching skill run
    chore(<skill>): checkpoint before worktree dispatch
    ```
 
-   Where `<skill>` is the dispatching skill's name (e.g., `chore(realisera): checkpoint before worktree dispatch`). The `chore` type triggers no version bump per the semver_policy convention.
+   Where `<skill>` is the spawning skill's name (e.g., `chore(realisera): checkpoint before worktree dispatch`). The `chore` type triggers no version bump per the semver_policy convention.
 
-4. **Respect hook results.** Do not pass `--no-verify`. If pre-commit hooks reject the commit, the dispatch is blocked. Fix the issue (typically an artifact validation error) and retry the commit. Invalid artifacts must not be dispatched to a worktree where they would mislead the subagent.
+4. **Respect hook results.** Do not pass `--no-verify`. If pre-commit hooks reject the commit, the spawn is blocked. Fix the issue (typically an artifact validation error) and retry the commit. Invalid artifacts must not be spawned to a worktree where they would mislead the subagent.
 
-5. **Proceed with dispatch.** After the checkpoint commit succeeds (or was skipped as a no-op), the worktree branches from a HEAD that includes all current artifacts.
+5. **Proceed with spawn.** After the checkpoint commit succeeds (or was skipped as a no-op), the worktree branches from a HEAD that includes all current artifacts.
 
 ### Failure handling
 
-When a hook rejects the checkpoint commit, the dispatching skill must:
+When a hook rejects the checkpoint commit, the spawning skill must:
 
 1. Report the hook failure in its output (the specific error from the hook).
 2. Attempt to fix the issue (correct the artifact that failed validation).
 3. Re-stage and retry the checkpoint commit.
-4. If the retry also fails, abort the dispatch and report the failure. Do not proceed with a worktree that would branch from stale state.
+4. If the retry also fails, abort the spawn and report the failure. Do not proceed with a worktree that would branch from stale state.
 
-The skill does not silently skip the commit or bypass hooks. A blocked dispatch is preferable to a worktree operating on incorrect context.
+The skill does not silently skip the commit or bypass hooks. A blocked spawn is preferable to a worktree operating on incorrect context.
 
 ### Identifying checkpoint commits
 
 Checkpoint commits are identifiable in git history by their message format: `chore(<skill>): checkpoint before worktree dispatch`. Consuming tools (CHANGELOG generators, version bump scripts, inspektera audits) can filter these commits by the `chore` type and `checkpoint before worktree dispatch` description. They carry no behavioral change and should not appear in user-facing changelogs.
 
-### General commit message rules
-
-Commit messages must describe *what* changed and *why*, without referencing internal planning artifacts. A commit message is a permanent public record: it should make sense to someone who has never seen PLAN.md, TODO.md, or the current sprint's task list.
-
-**Prohibited patterns** (each with examples from real commit history):
-
-| Pattern | Example | Why |
-|---------|---------|-----|
-| `Task N` / `PLAN Task N` | `feat(resolve): add Rust import resolver (PLAN Task 5)` | Requires PLAN.md to interpret |
-| `Cycle N` | `feat(cli): default --max-files=8 for docs corpus (Cycle 114, B38 ship)` | Requires PROGRESS.md to interpret |
-| `Decision N` | `chore(bench): recall audit + calibration drift HALT (Decision 21)` | Requires DECISIONS.md to interpret |
-| `Surprise #N` | `chore(benchmarks): remove non-b*-* historical stragglers (Surprise #2)` | Requires PROGRESS.md to interpret |
-| `close Task N` / `mark PLAN Task N` / `record Task N` | `docs(plan): close Task 4 (B37 FAIL) + Cycle 112 PROGRESS` | Planning bookkeeping, not change description |
-| `PLAN.md` / `TODO.md` file references | `chore(plan): close PreToolUse interception plan — archive PLAN.md` | Internal artifact names |
-| `PROGRESS` / `DECISIONS` as commit focus | `docs: cycle 22 log, TODO resolved, changelog entry for edge weights` | Bookkeeping noise |
-
-**Permitted**: conventional commit prefixes (`feat`, `fix`, `docs`, `refactor`, `chore`, `test`), scope annotations (`feat(ui):`), imperative-mood summaries, explanatory bodies that describe the change in domain terms. Benchmark run identifiers like `B24` are permitted: they reference objective measurements, not planning state.
-
 This rule applies to all commits produced by any skill: checkpoint commits, realisera cycle commits, optimera experiment commits, and any other git operation the suite performs.
-
-**Linter check**: Deterministic. Regex for internal-reference patterns in commit message templates and guidance within SKILL.md files: `Task \d+`, `Cycle \d+`, `Decision \d+`, `Surprise #\d+`, `PLAN\.md`, `TODO\.md`, `PROGRESS` (as commit focus), `DECISIONS` (as commit focus).
 
 ### Relation to Section 20
 
@@ -1063,9 +1043,9 @@ The two gates form a coherent pair bracketing the worktree lifecycle:
 
 | Gate | Section | Boundary | Question it answers |
 |------|---------|----------|---------------------|
-| Pre-dispatch Commit Gate | 23 | Entry: before worktree creation | Does the subagent start from current state? |
+| Pre-spawn Git Commit | 23 | Entry: before worktree creation | Does the subagent start from current state? |
 | Behavioral Verification Gate | 20 | Exit: after implementation | Did the work actually run against real state? |
 
-Both gates are mandatory for worktree-dispatched cycles. A cycle that passes Section 20 verification but skipped the Section 23 gate may have verified behavior built on stale context. A cycle that passes the Section 23 gate but skips Section 20 verification has current context but unverified output.
+Both gates are mandatory for worktree-spawned cycles. A cycle that passes Section 20 verification but skipped the Section 23 gate may have verified behavior built on stale context. A cycle that passes the Section 23 gate but skips Section 20 verification has current context but unverified output.
 
-**Linter check**: None. This section defines a runtime convention for dispatching skills. Enforcement is per-skill: each dispatching skill's SKILL.md must include the gate procedure at its worktree dispatch point. The linter validates this through skill-specific checks, not a spec-level structural check.
+**Linter check**: None. This section defines a runtime convention for spawning skills. Enforcement is per-skill: each spawning skill's SKILL.md must include the gate procedure at its worktree spawn point. The linter validates this through skill-specific checks, not a spec-level structural check.

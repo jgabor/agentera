@@ -328,7 +328,7 @@ counted_event_classes:
   - class: raw_artifact_access
     description: Direct read, grep, or glob access to Agentera state artifacts after CLI state access.
   - class: capability_prose_read
-    description: Reads of capability prose, schemas, protocol, or skill dispatcher files.
+    description: Reads of capability prose, schemas, protocol, or routing entry files.
   - class: implementation_boundary
     description: Code edits, write/edit/apply_patch, non-state bash commands, tests, or analysis work after startup state gathering.
   - class: non_state_context

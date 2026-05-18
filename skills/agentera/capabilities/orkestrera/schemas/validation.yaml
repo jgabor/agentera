@@ -16,7 +16,7 @@ VALIDATION:
     rule: evaluation_gate_required
     description: >-
       Every completed task MUST be verified by inspektera before being marked
-      complete. The conductor MUST NOT skip evaluation. This rule verifies
+      complete. The orchestrator MUST NOT skip evaluation. This rule verifies
       the prose contains the never-skip-evaluation safety rail.
     severity: critical
     checks:
@@ -44,9 +44,9 @@ VALIDATION:
       - "prose.md references exit signals EX1-EX4"
   5:
     id: V5
-    rule: conductor_read_only_artifacts
+    rule: orchestrator_read_only_artifacts
     description: >-
-      The conductor reads artifacts and updates PLAN.md task statuses and
+      The orchestrator reads artifacts and updates PLAN.md task statuses and
       TODO.md blocked entries. It does NOT write to PROGRESS.md, CHANGELOG.md,
       or any other capability-owned artifact. This rule verifies the
       artifacts schema reflects this constraint.

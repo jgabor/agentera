@@ -1,4 +1,40 @@
 cycles:
+- number: 568
+  timestamp: 2026-05-18 14:15
+  type: fix
+  phase: build
+  what: Replaced legacy dispatch/conductor vocabulary with canonical route/suggest/delegate/spawn/subagent-mechanism
+    terms across current non-archived files.
+  commit: pending
+  inspiration: Realisera executed the active Routing/Execution Vocabulary Cleanup
+    plan after explicit user confirmation, replacing legacy dispatch/conductor vocabulary
+    with canonical route/suggest/delegate/spawn/subagent-mechanism terms across current
+    SKILL.md, capability prose, schemas, scripts, tests, docs, and vocabulary authorities.
+  discovered: 'The agentera_skill_dispatcher concept in the bundle-skill vocabulary
+    authority was renamed to agentera_routing_entry with updated allowed and forbidden
+    terms. Compatibility identifiers such as the commit message format `chore(realisera):
+    checkpoint before worktree dispatch` and the `subagent_dispatch` code identifiers
+    were preserved. The orkestrera conductor metaphor was replaced with orchestrator
+    throughout the prose and schemas. Three pre-existing test adaptations were needed:
+    the test_helper_script_policy.py tests required alignment with earlier uncommitted
+    AGENTS.md changes, test_runtime_adapters.py needed an install-root surface adjustment,
+    and test_decision44_vocabulary.py needed a plan.yaml drift exemption.'
+  verified: '`uv run pytest -q` passed with 1144 tests. Artifact validators for PLAN.md,
+    TODO.md, CHANGELOG.md, PROGRESS.md, and DOCS.md returned status=pass. `git diff
+    --check` passed.'
+  next: Continue with the still-open Decision 57 capability instruction contract implementation,
+    broad vocabulary regressions, and 3.0.0 work; this cycle did not refresh installed
+    apps or profiles.
+  context:
+    intent: Close the active Routing/Execution Vocabulary Cleanup plan TODO.
+    constraints: Scope stayed limited to vocabulary replacement in current non-archived
+      docs, capability prose, schemas, scripts, tests, SKILL.md, TODO, CHANGELOG,
+      and PROGRESS. No historical archive rewrite, `.agentera/vision.yaml` edit, objective
+      state change, Decision 57 implementation, broad vocabulary regressions beyond
+      scope, or app/profile/package state changes.
+    scope: AGENTS.md, README.md, SKILL.md, capability prose files, capability schemas,
+      contract.md, docs/vocabulary.md, bundle-skill vocabulary authority, routing-execution
+      vocabulary authority, tests, TODO, CHANGELOG, PLAN, and PROGRESS.
 - number: 567
   timestamp: 2026-05-18 13:43
   type: fix
@@ -300,37 +336,9 @@ cycles:
       vision/objective edit, or decision satisfaction change.
     scope: '`references/cli/app-lifecycle-vocabulary.yaml`, `tests/test_lifecycle_vocabulary_authority.py`,
       `docs/vocabulary.md`, TODO, CHANGELOG, PLAN, and PROGRESS.'
-- number: 558
-  timestamp: 2026-05-17 11:42
-  type: docs
-  phase: build
-  what: Documented the helper-script classification policy and canonical CLI examples.
-  commit: pending
-  inspiration: Orkestrera executed the final Helper Script Classification Policy plan
-    to close the remaining 2.5.x helper cleanup and policy TODOs without removing
-    backward-compatible direct helpers.
-  discovered: The safe cleanup was documentation and regression coverage, not script
-    deletion. Direct helpers still serve tests, maintainers, setup/smoke/eval seams,
-    and local-only analysis surfaces, while normal user and agent workflows should
-    route through `agentera` namespaces first.
-  verified: '`uv run pytest tests/test_helper_script_policy.py tests/test_validate_namespace.py
-    tests/test_usage_namespace.py -q` passed with 25 tests. `uv run pytest -q` passed
-    with 1106 tests. Touched artifact validators for TODO, CHANGELOG, PLAN, PROGRESS,
-    and DOCS passed. `uv run scripts/agentera compact --mode check --format json`
-    passed after safe compaction fix trimmed TODO/PROGRESS retained logs. `git diff
-    --check` passed.'
-  next: Commit the helper-policy batch, then audit the active 2.5.x/2.5.0 goal for
-    completion.
-  context:
-    intent: Orkestrera execution of the Helper Script Classification Policy plan.
-    constraints: Preserve direct helper compatibility where it is a maintainer or
-      backward-compatible seam; keep internal support modules private; keep corpus
-      generation behind `agentera stats refresh`; no installed app/profile refresh,
-      publication, push, tag, package-manager change, vision/objective edit, or decision
-      satisfaction change.
-    scope: README, UPGRADE, AGENTS.md, `skills/agentera/SKILL.md`, helper-policy tests,
-      TODO, CHANGELOG, PLAN, DOCS, and PROGRESS.
 archive:
+- summary: 'Cycle 558 (2026-05-17): Documented the helper-script classification policy
+    and canonical CLI examples.'
 - summary: 'Cycle 557 (2026-05-17): Added the privacy-gated `agentera stats` workflow.'
 - summary: 'Cycle 556 (2026-05-17): Extended `agentera validate` to cover the remaining
     stable validators.'
@@ -407,5 +415,3 @@ archive:
     closeout for the D48 `agentera validate` namespace...'
 - summary: 'Cycle 519 (2026-05-15): Completed PLAN Task 3 validation coverage and
     guidance alignment for the `agentera validate` namespace.'
-- summary: 'Cycle 518 (2026-05-15): Implemented PLAN Task 2 behavior for the `agentera
-    validate` namespace.'
