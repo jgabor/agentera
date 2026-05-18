@@ -1,82 +1,112 @@
 header:
   level: light
   created: 2026-05-18
-  status: active
-  title: App Lifecycle Status Regression Coverage
+  status: complete
+  title: Bundle and SKILL.md Vocabulary Regression Coverage
 what: >-
-  Add focused regression coverage for the app lifecycle vocabulary boundary so
-  `fresh`, `stale`, `refresh`, `fixed`, `ready`, and `noop` cannot return as
-  canonical app lifecycle status values, while allowed plain-language prose and
-  non-app uses such as `agentera stats refresh` remain valid.
+  Add focused regression coverage that classifies every surviving `bundle` and
+  `SKILL.md` occurrence as canonical, compatibility-preserved, historical,
+  fixture-only, or generic, and fails new ambiguous user-facing usage.
 why: >-
-  Recent vocabulary cleanup replaced internal app lifecycle language with the
-  Decision 54 status contract. The remaining risk is regression: tests must
-  reject the old lifecycle words at canonical status surfaces without creating
-  a crude global word ban that breaks user-facing prose, historical context, or
-  unrelated commands.
+  Decision 47 moved Agentera from bundle terminology toward app terminology, but
+  `bundle` remains legitimate in historical records, compatibility schema fields,
+  fixture names, and generic package-language contexts. The risk is not the word
+  itself; the risk is new ambiguous user-facing or protocol wording that
+  reintroduces bundle-vs-app confusion or treats `SKILL.md` as a vague
+  bundle/suite surface.
 constraints: >-
-  Scope this to regression coverage and any minimal contract/test fixture
-  adjustment required to make that coverage authoritative. Do not perform broad
-  wording cleanup, package refresh, installed-app repair, publication, push, tag,
-  `.agentera/vision.yaml` edits, objective-state mutation, or decision
-  satisfaction updates. Preserve legitimate plain-language prose and non-app
-  command vocabulary, especially `agentera stats refresh`.
+  Limit this to tests and the minimum fixture/authority adjustment needed to make
+  the classification enforceable. Do not perform broad wording cleanup, package
+  refresh, installed-app repair, publication, push, tag, `.agentera/vision.yaml`
+  edits, objective-state mutation, decision satisfaction updates, or 3.0
+  compatibility removal. Preserve legitimate historical records, compatibility
+  fields, fixture-only names, generic package vocabulary, and actual `SKILL.md`
+  file references.
 tasks:
   - number: 1
-    name: Add lifecycle status vocabulary regressions
+    name: Inventory vocabulary occurrences and define classifications
     depends_on: []
     status: complete
-    evidence:
-      - >-
-        Added authority-derived regression coverage in
-        `tests/test_lifecycle_vocabulary_authority.py` that rejects deprecated
-        aliases and non-lifecycle verbs as canonical app lifecycle statuses.
-      - >-
-        The regression observes doctor/hej status metadata, upgrade
-        `lifecycleStatus` metadata, signal statuses, and workflow-status mapping
-        outputs while leaving workflow `status` compatibility values untouched.
-      - >-
-        Allowed prose and compatibility/non-app vocabulary remain explicitly
-        preserved, including Decision 54 compatibility text, `agentera stats
-        refresh`, workflow `noop`, and plain-language `fixed`/`ready to fix`
-        rendering.
-      - >-
-        `uv run pytest tests/test_lifecycle_vocabulary_authority.py -q` passed
-        with 15 tests before task closeout; required artifact and diff checks are
-        recorded in PROGRESS.md for this cycle.
     acceptance:
       - >-
-        GIVEN the app lifecycle status authority and its focused tests are run
-        WHEN any canonical app lifecycle status surface emits or permits `fresh`,
-        `stale`, `refresh`, `fixed`, `ready`, or `noop` as status values THEN the
-        regression fails with a clear boundary around canonical status values.
+        GIVEN the focused vocabulary scan runs WHEN it encounters surviving
+        `bundle` or `SKILL.md` occurrences THEN each in-scope occurrence is
+        classified as canonical, compatibility-preserved, historical,
+        fixture-only, or generic.
       - >-
-        GIVEN repository text contains allowed prose or unrelated vocabulary WHEN
-        the regression scan runs THEN plain-language explanatory prose, historical
-        records, compatibility identifiers, and non-app uses such as `agentera
-        stats refresh` are not rejected merely because they contain those words.
+        GIVEN an occurrence does not fit an allowed classification WHEN the
+        focused test runs THEN it fails with enough path/context detail to decide
+        whether to reword, classify, or intentionally fixture the occurrence.
+    evidence:
       - >-
-        GIVEN the lifecycle status authority changes WHEN the focused tests run
-        THEN the rejected and allowed values are derived from or checked against
-        the authority rather than maintained as an unconnected duplicate list.
+        Inventory captured focused occurrences across AGENTS.md, README.md,
+        docs/vocabulary.md, references/adapters/opencode.md,
+        scripts/measure_token_payload.py, skills/agentera/SKILL.md, selected
+        capability files, and focused tests in
+        references/cli/bundle-skill-vocabulary.yaml focused_scan.
       - >-
-        GIVEN focused validation is complete WHEN the task is closed THEN the
-        relevant pytest selection, `uv run scripts/agentera validate artifact
-        PLAN.md`, and `git diff --check` pass.
+        `uv run pytest tests/test_bundle_skill_vocabulary_authority.py -q`
+        classified all focused `bundle` and `SKILL.md` matches with actionable
+        path, line, term, and text failure output.
+  - number: 2
+    name: Add regression coverage for ambiguous new usage
+    depends_on:
+      - 1
+    status: complete
+    acceptance:
+      - >-
+        GIVEN new user-facing or protocol text introduces unclassified `bundle`
+        or `SKILL.md` wording WHEN the focused test selection runs THEN the
+        regression fails instead of silently accepting ambiguous vocabulary.
+      - >-
+        GIVEN allowed historical records, compatibility fields, fixture-only
+        names, generic package vocabulary, and actual `SKILL.md` file references
+        remain in the repository WHEN the regression runs THEN those occurrences
+        are preserved by explicit classification rather than broad word bans.
+    evidence:
+      - >-
+        Added focused scan regressions in
+        tests/test_bundle_skill_vocabulary_authority.py for closed
+        classifications, classified occurrences, and exercise of every allowed
+        classification.
+      - >-
+        The authority preserves canonical, compatibility-preserved, historical,
+        fixture-only, and generic classifications without broad repository wording
+        cleanup.
+  - number: 3
+    name: Validate and record closeout evidence
+    depends_on:
+      - 2
+    status: complete
+    acceptance:
+      - >-
+        GIVEN implementation is complete WHEN the task closes THEN the focused
+        pytest selection for vocabulary authority passes.
+      - >-
+        GIVEN plan closeout is complete WHEN validation runs THEN `uv run
+        scripts/agentera validate artifact --artifact PLAN.md` and `git diff
+        --check` pass.
+    evidence:
+      - >-
+        `uv run pytest tests/test_bundle_skill_vocabulary_authority.py -q`
+        passed with 11 tests.
+      - >-
+        `uv run scripts/agentera validate artifact --artifact PLAN.md` passed
+        with status=pass.
+      - >-
+        `git diff --check` passed.
 overall_acceptance:
   - >-
-    Focused regression coverage prevents the old words `fresh`, `stale`,
-    `refresh`, `fixed`, `ready`, and `noop` from being accepted as canonical app
-    lifecycle status values.
+    Every in-scope surviving `bundle` and `SKILL.md` occurrence has an explicit
+    allowed classification or fails the focused regression with actionable
+    context.
   - >-
-    The same coverage preserves allowed prose and unrelated command vocabulary,
-    including `agentera stats refresh`.
+    New ambiguous user-facing or protocol vocabulary around bundle/app and
+    `SKILL.md` cannot be introduced without updating the classification authority
+    or rewording the text.
   - >-
-    The tests stay tied to the lifecycle vocabulary authority and do not become
-    a broad, brittle repository-wide word ban.
-surprises:
-  - >-
-    `uv run scripts/agentera validate artifact PLAN.md` is not accepted by the
-    current CLI; the supported `--artifact PLAN.md` form passed and no CLI
-    compatibility change was made in this test-scoped cycle.
-previous_plan_archived: .agentera/archive/PLAN-2026-05-18-first-invocation-read-metadata.yaml
+    Legitimate historical records, compatibility-preserved schema fields,
+    fixture-only names, generic package vocabulary, and actual `SKILL.md` file
+    references remain allowed by explicit classification.
+surprises: []
+previous_plan_archived: .agentera/archive/PLAN-2026-05-18-app-lifecycle-status-regression-coverage.yaml

@@ -179,6 +179,78 @@ classification_rules:
   ambiguous_current_prose:
     meaning: The occurrence uses bare `bundle` or bare `SKILL.md` as a conceptual noun in current user-facing prose.
     action: Replace or qualify with the relevant canonical concept term.
+focused_scan:
+  allowed_classifications:
+    - canonical
+    - compatibility-preserved
+    - historical
+    - fixture-only
+    - generic
+  paths:
+    - AGENTS.md
+    - README.md
+    - docs/vocabulary.md
+    - references/adapters/opencode.md
+    - scripts/measure_token_payload.py
+    - skills/agentera/SKILL.md
+    - skills/agentera/capabilities/hej/schemas/triggers.yaml
+    - skills/agentera/capabilities/resonera/instructions.md
+    - tests/test_cross_capability.py
+    - tests/test_resonera_capability.py
+    - tests/test_runtime_adapters.py
+  allowed_occurrences:
+    - path: ^AGENTS\.md$
+      text: skills/agentera/SKILL\.md|Agentera routing entry point
+      classification: canonical
+      reason: AGENTS guidance names the concrete Agentera routing entry point.
+    - path: ^README\.md$
+      text: skills/agentera/SKILL\.md|Agentera routing entry point
+      classification: canonical
+      reason: README names the canonical routing entry point and concrete linked path.
+    - path: ^docs/vocabulary\.md$
+      text: references/cli/bundle-skill-vocabulary\.yaml|Bundle and SKILL\.md vocabulary
+      classification: canonical
+      reason: Vocabulary docs delegate this exact concept family to this authority.
+    - path: ^docs/vocabulary\.md$
+      text: Agentera app files need repair|bundle freshness|bundle refresh|required repair Agentera app files|install status check failed
+      classification: historical
+      reason: Decision 44 replacement tables preserve deprecated bundle wording as historical examples.
+    - path: ^docs/vocabulary\.md$
+      text: skills/agentera/SKILL\.md|SKILL\.md`
+      classification: canonical
+      reason: Vocabulary docs use concrete skill entry file paths and source-index references.
+    - path: ^docs/vocabulary\.md$
+      text: --only bundle|\.agentera-bundle\.json|bundle\.status|activeBundleRoot|bundle-status
+      classification: compatibility-preserved
+      reason: Vocabulary docs preserve shipped compatibility identifiers and removed command references.
+    - path: ^references/adapters/opencode\.md$
+      text: bundled Agentera dashboard path|bundled `agentera` skill|bundled Agentera
+      classification: generic
+      reason: OpenCode adapter prose uses bundled in the ordinary package-shipping sense, not as Agentera app-file terminology.
+    - path: ^references/adapters/opencode\.md$
+      text: SKILL\.md files|<name>/SKILL\.md|skills/\*/SKILL\.md|skills/agentera/SKILL\.md
+      classification: compatibility-preserved
+      reason: OpenCode adapter prose documents concrete runtime skill entry file paths.
+    - path: ^scripts/measure_token_payload\.py$
+      text: 'v1 baseline: all 12 v1 SKILL\.md files|skill_root / "SKILL\.md"'
+      classification: historical
+      reason: Token payload measurement preserves the historical v1 SKILL.md baseline and concrete path construction.
+    - path: ^skills/agentera/SKILL\.md$
+      text: \.agentera-bundle\.json|bundle\.status|bundle\.dryRunCommand
+      classification: compatibility-preserved
+      reason: The routing entry documents CLI-provided compatibility fields and marker files that still exist.
+    - path: ^skills/agentera/SKILL\.md$
+      text: SKILL\.md\s+# This file
+      classification: canonical
+      reason: The directory listing names the actual Agentera routing entry file.
+    - path: ^tests/test_cross_capability\.py$
+      text: SKILL_MD_PATH|test_master_bundle_health_gate|bundle\.status|bundle\.dryRunCommand
+      classification: fixture-only
+      reason: Cross-capability tests assert compatibility wording and historical test names.
+    - path: ^tests/test_runtime_adapters\.py$
+      text: .
+      classification: fixture-only
+      reason: Runtime adapter tests use fixture paths, expected diagnostics, package metadata, and compatibility test class names.
 compatibility_identifiers:
   bundle:
     - .agentera-bundle.json

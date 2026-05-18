@@ -9,6 +9,7 @@
 - Changed `hej` next-action selection so complex TODOs with contract, schema, metadata, validation, migration, multi-surface, or acceptance-risk signals route to ≡ planera before ⧉ realisera, while narrow one-cycle TODOs still route directly to Realisera.
 - Moved session hook bookmarks out of committed project artifacts into runtime-local Agentera data-home storage and stopped treating `SESSION.md`/`.agentera/session.yaml` as a queryable, validated, compacted, or migrated state artifact.
 - Added a machine-readable bundle and `SKILL.md` vocabulary authority for canonical concept classification, compatibility preservation, and docs delegation without broad prose renames.
+- Added focused bundle and `SKILL.md` occurrence classification regressions that fail unclassified user-facing/protocol wording while preserving historical, compatibility, fixture, generic package, and concrete file-reference uses.
 - Added a machine-readable routing and execution vocabulary authority for Agentera router, suggest, delegate, spawn, subagent mechanism, and pre-spawn Git commit terminology without broad prose replacement.
 - Added a machine-readable Decision 54 app lifecycle vocabulary authority for canonical statuses, deprecated aliases, scoped operation verbs, and doctor/hej/upgrade/docs/tests ownership boundaries.
 

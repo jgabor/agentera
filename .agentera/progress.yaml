@@ -1,4 +1,27 @@
 cycles:
+- number: 572
+  timestamp: 2026-05-18 20:11
+  type: test
+  phase: build
+  what: Added bundle and SKILL.md vocabulary occurrence classification coverage.
+  commit: pending
+  inspiration: Realisera executed the active Bundle and SKILL.md Vocabulary Regression
+    Coverage plan with a focused scan instead of broad wording cleanup.
+  discovered: The existing authority already captured canonical concepts; the missing
+    regression was per-occurrence focused-scope classification with closed labels
+    and actionable unclassified-occurrence failures.
+  verified: '`uv run pytest tests/test_bundle_skill_vocabulary_authority.py -q` passed
+    with 11 tests. `uv run scripts/agentera validate artifact --artifact PLAN.md`
+    passed with status=pass. `git diff --check` passed.'
+  next: Review the diff and decide whether to commit the completed vocabulary regression
+    coverage.
+  context:
+    intent: Close the active Bundle and SKILL.md Vocabulary Regression Coverage plan.
+    constraints: No broad wording cleanup, package refresh, installed-app repair,
+      publication, push, tag, vision edit, objective-state mutation, decision satisfaction
+      update, or 3.0 compatibility removal.
+    scope: Focused vocabulary authority fixture data, regression tests, PLAN, CHANGELOG,
+      and PROGRESS execution artifacts.
 - number: 571
   timestamp: 2026-05-18 19:35
   type: test
@@ -305,40 +328,9 @@ cycles:
       state, or decision satisfaction state change.
     scope: '`scripts/agentera_upgrade.py`, `scripts/agentera`, `tests/test_lifecycle_vocabulary_authority.py`,
       TODO, CHANGELOG, PLAN, and PROGRESS.'
-- number: 562
-  timestamp: 2026-05-18 08:33
-  type: docs
-  phase: build
-  what: Added the Decision 57 capability instruction contract authority.
-  commit: pending
-  inspiration: Realisera executed the active Decision 57 Capability Instruction Contract
-    plan after explicit confirmation so instruction-file rename, startup-read metadata,
-    compact-startup exceptions, and compatibility preservation are documented before
-    implementation.
-  discovered: The safe P0 seam was a focused machine-readable authority plus docs
-    delegation and tests. Current `instructions.md` files, validators, runtime descriptors,
-    package metadata, and CLI outputs remain compatibility/current-state surfaces;
-    the actual `instructions.md` rename, `first_invocation_read` metadata feature,
-    runtime behavior, and validation/regression sweep remain open TODOs.
-  verified: '`uv run pytest tests/test_capability_instruction_contract.py tests/test_routing_execution_vocabulary_authority.py
-    tests/test_bundle_skill_vocabulary_authority.py tests/test_lifecycle_vocabulary_authority.py
-    tests/test_decision44_vocabulary.py -q` passed with 29 tests. Artifact validators
-    for PLAN.md, TODO.md, CHANGELOG.md, PROGRESS.md, and DOCS.md returned `status=pass`.
-    `git diff --check` passed.'
-  next: Continue with P1 vocabulary fixes; keep the Decision 57 capability file rename,
-    `first_invocation_read` feature, and validation/regression coverage TODOs open
-    until explicitly selected.
-  context:
-    intent: Close the active Decision 57 Capability Instruction Contract plan.
-    constraints: Documentation and contract authority only; no capability file rename,
-      validator requirement change, CLI/schema metadata emission, first-invocation
-      read behavior, runtime descriptor/package metadata rewrite, installed app/profile
-      refresh, package-manager change, publication, push, tag, vision/objective edit,
-      decision satisfaction change, or protected `.agentera/decisions.yaml`/`.agentera/session.yaml`
-      edits.
-    scope: '`references/cli/capability-instruction-contract.yaml`, `tests/test_capability_instruction_contract.py`,
-      `docs/vocabulary.md`, README, DOCS index, TODO, CHANGELOG, PLAN, and PROGRESS.'
 archive:
+- summary: 'Cycle 562 (2026-05-18): Added the Decision 57 capability instruction contract
+    authority.'
 - summary: 'Cycle 561 (2026-05-18): Added the routing and execution vocabulary authority.'
 - summary: 'Cycle 560 (2026-05-18): Added the bundle and SKILL.md vocabulary authority.'
 - summary: 'Cycle 559 (2026-05-18): Added the Decision 54 app lifecycle vocabulary
@@ -413,5 +405,3 @@ archive:
     closeout for the D48 `agentera verify` namespace...'
 - summary: 'Cycle 523 (2026-05-15): Completed PLAN Task 3 verification coverage and
     guidance alignment for the D48 `agentera verify` namespace.'
-- summary: 'Cycle 522 (2026-05-15): Implemented PLAN Task 2 behavior for the D48 `agentera
-    verify` namespace.'
