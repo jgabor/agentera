@@ -2,77 +2,79 @@ header:
   level: light
   created: 2026-05-18
   status: complete
-  title: Bundle and SKILL.md Vocabulary Regression Coverage
+  title: Routing and Execution Vocabulary Regression Coverage
 what: >-
-  Add focused regression coverage that classifies every surviving `bundle` and
-  `SKILL.md` occurrence as canonical, compatibility-preserved, historical,
-  fixture-only, or generic, and fails new ambiguous user-facing usage.
+  Add focused regression coverage that rejects new ambiguous
+  dispatcher/dispatch/router/conductor usage in user-facing and protocol prose
+  while allowing qualified compatibility names such as `subagent_dispatch` and
+  historical records.
 why: >-
-  Decision 47 moved Agentera from bundle terminology toward app terminology, but
-  `bundle` remains legitimate in historical records, compatibility schema fields,
-  fixture names, and generic package-language contexts. The risk is not the word
-  itself; the risk is new ambiguous user-facing or protocol wording that
-  reintroduces bundle-vs-app confusion or treats `SKILL.md` as a vague
-  bundle/suite surface.
+  The routing and execution vocabulary authority already defines canonical
+  concepts such as Agentera router, route, suggest, delegate, spawn, subagent
+  mechanism, and pre-spawn Git commit. The remaining release-blocking risk is
+  that new current prose can reintroduce ambiguous dispatcher, dispatch, router,
+  or conductor shortcuts unless focused tests classify allowed occurrences and
+  fail new ambiguous usage.
 constraints: >-
-  Limit this to tests and the minimum fixture/authority adjustment needed to make
-  the classification enforceable. Do not perform broad wording cleanup, package
-  refresh, installed-app repair, publication, push, tag, `.agentera/vision.yaml`
-  edits, objective-state mutation, decision satisfaction updates, or 3.0
-  compatibility removal. Preserve legitimate historical records, compatibility
-  fields, fixture-only names, generic package vocabulary, and actual `SKILL.md`
-  file references.
+  Keep scope to tests plus the minimum authority/fixture updates needed for
+  enforceable classification. Do not perform broad wording cleanup unless a test
+  exposes a current unclassified ambiguous occurrence that must be fixed. Do not
+  perform package refresh, publication, push, tag, `.agentera/vision.yaml` edits,
+  objective-state mutation, decision satisfaction updates, installed-app repair,
+  or 3.0 compatibility removal. Preserve historical archives, code identifiers,
+  explicit compatibility names, and current canonical vocabulary like Agentera
+  router, route, suggest, delegate, spawn, subagent mechanism, and pre-spawn Git
+  commit.
 tasks:
   - number: 1
-    name: Inventory vocabulary occurrences and define classifications
+    name: Inventory routing vocabulary occurrences and define classifications
     depends_on: []
     status: complete
     acceptance:
       - >-
         GIVEN the focused vocabulary scan runs WHEN it encounters surviving
-        `bundle` or `SKILL.md` occurrences THEN each in-scope occurrence is
-        classified as canonical, compatibility-preserved, historical,
-        fixture-only, or generic.
+        dispatcher, dispatch, router, or conductor occurrences in scoped current
+        surfaces THEN each in-scope occurrence is classified as canonical,
+        compatibility-preserved, historical, fixture-only, code identifier, or
+        allowed generic usage.
       - >-
         GIVEN an occurrence does not fit an allowed classification WHEN the
         focused test runs THEN it fails with enough path/context detail to decide
         whether to reword, classify, or intentionally fixture the occurrence.
     evidence:
       - >-
-        Inventory captured focused occurrences across AGENTS.md, README.md,
-        docs/vocabulary.md, references/adapters/opencode.md,
-        scripts/measure_token_payload.py, skills/agentera/SKILL.md, selected
-        capability files, and focused tests in
-        references/cli/bundle-skill-vocabulary.yaml focused_scan.
+        Added `focused_scan` classifications to
+        `references/cli/routing-execution-vocabulary.yaml` for scoped current
+        user-facing/protocol and fixture paths, with closed classification labels
+        covering canonical, compatibility-preserved, historical, fixture-only,
+        code-identifier, and generic usage.
       - >-
-        `uv run pytest tests/test_bundle_skill_vocabulary_authority.py -q`
-        classified all focused `bundle` and `SKILL.md` matches with actionable
-        path, line, term, and text failure output.
+        `tests/test_routing_execution_vocabulary_authority.py` now reports
+        unclassified occurrences with `path:line: term: text` context.
   - number: 2
-    name: Add regression coverage for ambiguous new usage
+    name: Add regression coverage for ambiguous routing vocabulary
     depends_on:
       - 1
     status: complete
     acceptance:
       - >-
-        GIVEN new user-facing or protocol text introduces unclassified `bundle`
-        or `SKILL.md` wording WHEN the focused test selection runs THEN the
-        regression fails instead of silently accepting ambiguous vocabulary.
+        GIVEN new user-facing or protocol text introduces unclassified
+        dispatcher, dispatch, router, or conductor wording WHEN the focused test
+        selection runs THEN the regression fails instead of silently accepting
+        ambiguous vocabulary.
       - >-
-        GIVEN allowed historical records, compatibility fields, fixture-only
-        names, generic package vocabulary, and actual `SKILL.md` file references
-        remain in the repository WHEN the regression runs THEN those occurrences
-        are preserved by explicit classification rather than broad word bans.
+        GIVEN allowed compatibility names such as `subagent_dispatch`, historical
+        archives, code identifiers, and fixture-only terms remain in the
+        repository WHEN the regression runs THEN those occurrences are preserved
+        by explicit classification rather than broad word bans.
     evidence:
       - >-
-        Added focused scan regressions in
-        tests/test_bundle_skill_vocabulary_authority.py for closed
-        classifications, classified occurrences, and exercise of every allowed
-        classification.
+        Added focused scan regression coverage for dispatcher/dispatch/router/
+        conductor, `subagent_dispatch`, pre-dispatch, worktree dispatch, and
+        runtime dispatch substrate occurrences.
       - >-
-        The authority preserves canonical, compatibility-preserved, historical,
-        fixture-only, and generic classifications without broad repository wording
-        cleanup.
+        `uv run pytest tests/test_routing_execution_vocabulary_authority.py -q`
+        passed with 9 tests.
   - number: 3
     name: Validate and record closeout evidence
     depends_on:
@@ -81,32 +83,30 @@ tasks:
     acceptance:
       - >-
         GIVEN implementation is complete WHEN the task closes THEN the focused
-        pytest selection for vocabulary authority passes.
+        pytest selection for routing vocabulary authority passes.
       - >-
-        GIVEN plan closeout is complete WHEN validation runs THEN `uv run
-        scripts/agentera validate artifact --artifact PLAN.md` and `git diff
-        --check` pass.
+        GIVEN plan closeout is complete WHEN validation runs THEN relevant
+        artifact validators and `git diff --check` pass.
     evidence:
       - >-
-        `uv run pytest tests/test_bundle_skill_vocabulary_authority.py -q`
-        passed with 11 tests.
+        Focused pytest passed before artifact closeout: `uv run pytest
+        tests/test_routing_execution_vocabulary_authority.py -q` reported 9
+        passed.
       - >-
-        `uv run scripts/agentera validate artifact --artifact PLAN.md` passed
-        with status=pass.
-      - >-
-        `git diff --check` passed.
+        Artifact validators passed for PLAN.md, TODO.md, PROGRESS.md, and
+        CHANGELOG.md; `git diff --check` passed.
 overall_acceptance:
   - >-
-    Every in-scope surviving `bundle` and `SKILL.md` occurrence has an explicit
-    allowed classification or fails the focused regression with actionable
-    context.
+    Every in-scope surviving dispatcher, dispatch, router, or conductor
+    occurrence has an explicit allowed classification or fails the focused
+    regression with actionable context.
   - >-
-    New ambiguous user-facing or protocol vocabulary around bundle/app and
-    `SKILL.md` cannot be introduced without updating the classification authority
-    or rewording the text.
+    New ambiguous user-facing or protocol vocabulary around routing and execution
+    cannot be introduced without updating the classification authority or
+    rewording the text.
   - >-
-    Legitimate historical records, compatibility-preserved schema fields,
-    fixture-only names, generic package vocabulary, and actual `SKILL.md` file
-    references remain allowed by explicit classification.
+    Historical archives, compatibility-preserved names, fixture-only terms, code
+    identifiers, and canonical route/suggest/delegate/spawn/subagent-mechanism
+    vocabulary remain allowed by explicit classification.
 surprises: []
-previous_plan_archived: .agentera/archive/PLAN-2026-05-18-app-lifecycle-status-regression-coverage.yaml
+previous_plan_archived: .agentera/archive/PLAN-2026-05-18-bundle-and-skill-vocabulary-regression-coverage.yaml

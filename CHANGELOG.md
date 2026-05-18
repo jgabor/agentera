@@ -11,6 +11,7 @@
 - Added a machine-readable bundle and `SKILL.md` vocabulary authority for canonical concept classification, compatibility preservation, and docs delegation without broad prose renames.
 - Added focused bundle and `SKILL.md` occurrence classification regressions that fail unclassified user-facing/protocol wording while preserving historical, compatibility, fixture, generic package, and concrete file-reference uses.
 - Added a machine-readable routing and execution vocabulary authority for Agentera router, suggest, delegate, spawn, subagent mechanism, and pre-spawn Git commit terminology without broad prose replacement.
+- Added focused routing and execution vocabulary occurrence regressions that fail unclassified dispatcher/dispatch/router/conductor wording while preserving explicit compatibility names, historical records, fixtures, code identifiers, and generic prose.
 - Added a machine-readable Decision 54 app lifecycle vocabulary authority for canonical statuses, deprecated aliases, scoped operation verbs, and doctor/hej/upgrade/docs/tests ownership boundaries.
 
 ### Fixed

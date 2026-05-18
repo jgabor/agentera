@@ -156,6 +156,96 @@ classification_rules:
   ambiguous_current_prose:
     meaning: The occurrence uses dispatcher, dispatch, router, conductor, worktree dispatch, runtime dispatch substrate, or pre-dispatch commit language as a conceptual shortcut in current prose.
     action: Replace or qualify with the relevant canonical concept term.
+focused_scan:
+  allowed_classifications:
+    - canonical
+    - compatibility-preserved
+    - historical
+    - fixture-only
+    - code-identifier
+    - generic
+  paths:
+    - AGENTS.md
+    - docs/vocabulary.md
+    - references/adapters/runtime-feature-parity.md
+    - scripts/measure_token_payload.py
+    - skills/agentera/SKILL.md
+    - skills/agentera/references/contract.md
+    - skills/agentera/capabilities/realisera/instructions.md
+    - skills/agentera/capabilities/optimera/instructions.md
+    - skills/agentera/capabilities/orkestrera/instructions.md
+    - tests/test_skill_dispatch_contract.py
+    - tests/test_runtime_adapters.py
+    - tests/test_runtime_adapter_registry.py
+  allowed_occurrences:
+    - path: ^AGENTS\.md$
+      text: Agentera router routes incoming requests
+      classification: canonical
+      reason: AGENTS names the canonical request-to-capability routing term.
+    - path: ^docs/vocabulary\.md$
+      text: Agentera router|request-to-capability routing|suggest|delegate|spawn|subagent mechanism|pre-spawn Git commit
+      classification: canonical
+      reason: Vocabulary docs present the canonical routing and execution terms.
+    - path: ^docs/vocabulary\.md$
+      text: pre-dispatch commit gate|pre-dispatch checkpoint commit|Conductor protocol|orchestration loop|The loop is select, dispatch, evaluate, resolve, and log
+      classification: historical
+      reason: Decision 44 and glossary tables preserve deprecated wording as historical examples.
+    - path: ^docs/vocabulary\.md$
+      text: dispatching cycles|dispatcher rule governs hej and capability handoff prompts
+      classification: canonical
+      reason: Handoff guidance uses dispatch only for the Orkestrera-owned autonomous orchestration flow.
+    - path: ^docs/vocabulary\.md$
+      text: subagent_dispatch|fixture names
+      classification: compatibility-preserved
+      reason: Routing vocabulary docs preserve explicit compatibility identifiers and fixture terminology.
+    - path: ^references/adapters/runtime-feature-parity\.md$
+      text: prompt rewrite router|Subagent Dispatch|Dispatch surface|Capability dispatch|subagent dispatch
+      classification: compatibility-preserved
+      reason: Runtime parity docs name concrete host and compatibility surfaces around descriptor dispatch support.
+    - path: ^scripts/measure_token_payload\.py$
+      text: static dispatch payload|Agentera router
+      classification: historical
+      reason: The payload metric retains the historical dispatch-payload measurement name while listing canonical contents.
+    - path: ^skills/agentera/SKILL\.md$
+      text: '`dispatch`: invoke another capability autonomously|`chain`: dispatch multiple capabilities autonomously'
+      classification: canonical
+      reason: Agentera router guidance reserves dispatch and chain for explicitly owned orchestration flows.
+    - path: ^skills/agentera/references/contract\.md$
+      text: '\| hej \| \(router; reads artifacts but produces none\) \|'
+      classification: canonical
+      reason: The contract uses router for the hej request-routing role.
+    - path: ^skills/agentera/references/contract\.md$
+      text: Dispatch the skill via the eval mechanism capability
+      classification: generic
+      reason: Evaluation-gate prose uses dispatch as ordinary test-run invocation wording, not Agentera routing authority.
+    - path: ^skills/agentera/references/contract\.md$
+      text: checkpoint before worktree dispatch
+      classification: compatibility-preserved
+      reason: The contract preserves the parseable historical checkpoint commit message string.
+    - path: ^skills/agentera/capabilities/realisera/instructions\.md$
+      text: 'Step 5: Dispatch|checkpoint before worktree dispatch'
+      classification: compatibility-preserved
+      reason: Realisera preserves the current step heading and checkpoint commit message compatibility string.
+    - path: ^skills/agentera/capabilities/optimera/instructions\.md$
+      text: checkpoint before worktree dispatch
+      classification: compatibility-preserved
+      reason: Optimera preserves the current checkpoint commit message compatibility string.
+    - path: ^skills/agentera/capabilities/orkestrera/instructions\.md$
+      text: review pressure in dispatch|dispatch/evaluation context|`dispatch` and `chain` are autonomous orchestration verbs
+      classification: canonical
+      reason: Orkestrera capability prose uses dispatch for its explicitly owned orchestration loop.
+    - path: ^tests/test_skill_dispatch_contract\.py$
+      text: '`dispatch`: invoke another capability autonomously|`chain`: dispatch multiple capabilities autonomously|In orkestrera only, `dispatch` and `chain` are autonomous'
+      classification: fixture-only
+      reason: Skill dispatch contract tests assert the canonical Orkestrera dispatch reservation.
+    - path: ^tests/test_runtime_adapters\.py$
+      text: opencode bare-hej router|routeBareHejMessage|subagent_dispatch
+      classification: fixture-only
+      reason: Runtime adapter tests assert plugin routing helpers and compatibility identifier fixtures.
+    - path: ^tests/test_runtime_adapter_registry\.py$
+      text: subagent_dispatch
+      classification: code-identifier
+      reason: Runtime adapter registry tests preserve the shipped subagent_dispatch field name.
 compatibility_identifiers:
   runtime_adapter:
     - subagent_dispatch
