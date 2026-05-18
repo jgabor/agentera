@@ -1,4 +1,29 @@
 cycles:
+- number: 573
+  timestamp: 2026-05-18 20:50
+  type: test
+  phase: build
+  what: Added routing and execution vocabulary occurrence classification coverage.
+  commit: pending
+  inspiration: Realisera executed the active Routing and Execution Vocabulary Regression
+    Coverage plan with a focused classified scan instead of broad wording cleanup.
+  discovered: Current scoped surfaces already contained canonical, compatibility,
+    historical, fixture-only, code-identifier, and generic uses; the missing guard
+    was failing unclassified new dispatcher/dispatch/router/conductor wording with
+    actionable path and line context.
+  verified: '`uv run pytest tests/test_routing_execution_vocabulary_authority.py -q`
+    passed with 9 tests. Artifact validators for PLAN.md, TODO.md, PROGRESS.md, and
+    CHANGELOG.md returned status=pass. `git diff --check` passed.'
+  next: Review the diff and decide whether to commit the completed routing vocabulary
+    regression coverage.
+  context:
+    intent: Close the active Routing and Execution Vocabulary Regression Coverage
+      plan.
+    constraints: No broad wording cleanup, package refresh, installed-app repair,
+      publication, push, tag, vision edit, objective-state mutation, decision satisfaction
+      update, installed-app repair, or 3.0 compatibility removal.
+    scope: Focused routing vocabulary authority fixture data, regression tests, TODO,
+      CHANGELOG, PLAN, and PROGRESS execution artifacts.
 - number: 572
   timestamp: 2026-05-18 20:11
   type: test
@@ -294,41 +319,9 @@ cycles:
     scope: '`scripts/agentera`, `scripts/agentera_upgrade.py`, `tests/test_bundle_skill_vocabulary_authority.py`,
       `tests/test_bundle_freshness.py`, `tests/test_query_cli.py`, TODO, CHANGELOG,
       PLAN, and PROGRESS.'
-- number: 563
-  timestamp: 2026-05-18 09:12
-  type: fix
-  phase: build
-  what: Aligned doctor, hej, and upgrade app lifecycle metadata with Decision 54.
-  commit: pending
-  inspiration: Realisera executed the active Decision 54 App Lifecycle Metadata Alignment
-    plan after explicit user confirmation so shipped structured metadata follows the
-    authority rather than only documenting it.
-  discovered: Doctor and hej already emitted canonical app status values, but hej
-    capability contexts still treated `fresh` as the healthy `bundle.status` value.
-    Upgrade top-level `status` remains a workflow compatibility field used by existing
-    tests and exit behavior, so canonical lifecycle meaning now lives in `lifecycleStatus`
-    with `compatibilityStatus` preserving the old value explicitly.
-  verified: '`uv run pytest tests/test_lifecycle_vocabulary_authority.py tests/test_install_root_characterization.py
-    tests/test_upgrade_cli.py tests/test_query_cli.py::TestHej::test_stale_bundle_structured_output_has_repair_contract
-    tests/test_query_cli.py::TestHej::test_version_mismatch_reports_update_needed_not_repair
-    tests/test_query_cli.py::TestHej::test_runtime_injected_legacy_default_does_not_outrank_platform_home
-    -q` passed with 51 tests. `uv run scripts/agentera validate artifact --artifact
-    PLAN.md`, `TODO.md`, `CHANGELOG.md`, `PROGRESS.md`, and `DOCS.md` each returned
-    `status=pass`. `git diff --check` passed.'
-  next: Continue with the still-open bundle/SKILL.md prose cleanup, routing/execution
-    prose cleanup, Decision 57 implementation, and broad vocabulary regression TODOs;
-    full suite was not run for this focused fix.
-  context:
-    intent: Close the active Decision 54 App Lifecycle Metadata Alignment plan.
-    constraints: Scope stayed limited to structured app lifecycle metadata for doctor,
-      hej, and upgrade plus focused tests and closeout artifacts; no bundle/SKILL.md
-      prose cleanup, routing/execution vocabulary cleanup, capability `instructions.md`
-      rename, `first_invocation_read`, 3.0.0 packaging, installed app/profile refresh,
-      package-manager change, publication, push, tag, `.agentera/vision.yaml`, objective
-      state, or decision satisfaction state change.
-    scope: '`scripts/agentera_upgrade.py`, `scripts/agentera`, `tests/test_lifecycle_vocabulary_authority.py`,
-      TODO, CHANGELOG, PLAN, and PROGRESS.'
 archive:
+- summary: 'Cycle 563 (2026-05-18): Aligned doctor, hej, and upgrade app lifecycle
+    metadata with Decision 54.'
 - summary: 'Cycle 562 (2026-05-18): Added the Decision 57 capability instruction contract
     authority.'
 - summary: 'Cycle 561 (2026-05-18): Added the routing and execution vocabulary authority.'
@@ -403,5 +396,3 @@ archive:
     namespace feature.'
 - summary: 'Cycle 524 (2026-05-15): Synchronized PLAN Task 4 version and local state
     closeout for the D48 `agentera verify` namespace...'
-- summary: 'Cycle 523 (2026-05-15): Completed PLAN Task 3 verification coverage and
-    guidance alignment for the D48 `agentera verify` namespace.'
