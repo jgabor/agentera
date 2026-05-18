@@ -5749,6 +5749,23 @@ TODO_SECTION_SEVERITIES = {
     "info": "info",
     "annoying": "annoying",
 }
+TODO_PLANERA_SIGNALS = {
+    "acceptance",
+    "artifact",
+    "capability",
+    "capability-context",
+    "compatibility",
+    "contract",
+    "cross-capability",
+    "docs",
+    "metadata",
+    "migration",
+    "schema",
+    "startup",
+    "surface",
+    "test",
+    "validation",
+}
 
 
 def _profilera_stale_threshold_days() -> int:
@@ -5861,6 +5878,12 @@ def _issue_counts(todo_items: list[dict[str, str]]) -> dict[str, int]:
         else:
             counts["normal"] += 1
     return counts
+
+
+def _todo_needs_planera(item: dict[str, str]) -> bool:
+    text = item["text"].lower()
+    signal_count = sum(1 for signal in TODO_PLANERA_SIGNALS if signal in text)
+    return signal_count >= 2 or (signal_count >= 1 and len(text) > 180)
 
 
 def _plan_summary(schemas: dict) -> dict[str, Any]:
@@ -6178,6 +6201,12 @@ def _select_hej_next_action(
             todo_items,
             key=lambda entry: TODO_SEVERITY_ORDER.get(entry["severity"], 2),
         )[0]
+        if _todo_needs_planera(item):
+            return {
+                "object": f"TODO: {item['text']}",
+                "capability": "planera",
+                "reason": "complex TODO needs planning",
+            }
         return {
             "object": f"TODO: {item['text']}",
             "capability": "realisera",

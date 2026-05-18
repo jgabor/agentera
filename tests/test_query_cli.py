@@ -3185,6 +3185,24 @@ class TestHej:
         assert "plan: status=complete" not in r.stdout
         assert "capability=visionera" not in r.stdout
 
+    def test_complex_todo_routes_to_planera_before_realisera(self, project):
+        _write_artifact(project, "TODO.md", {
+            "entries": [
+                {
+                    "severity": "normal",
+                    "status": "open",
+                    "description": "Add first_invocation_read capability metadata and surface required instruction reads through agentera hej --format json --capability-context <name> so agents can discover startup read obligations without raw directory guessing.",
+                },
+            ],
+        })
+
+        r = _run("hej", "--format", "json", cwd=project)
+
+        assert r.returncode == 0, r.stderr
+        data = json.loads(r.stdout)
+        assert data["next_action"]["capability"] == "planera"
+        assert data["next_action"]["reason"] == "complex TODO needs planning"
+
     def test_completed_plan_without_open_work_does_not_surface_stale_plan(self, project):
         _write_artifact(project, ".agentera/vision.yaml", {
             "principles": [{"name": "Reliable state", "description": "Keep routing current."}],
