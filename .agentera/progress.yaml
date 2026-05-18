@@ -1,4 +1,36 @@
 cycles:
+- number: 578
+  timestamp: 2026-05-18 22:12
+  type: test
+  phase: build
+  what: Closed stale 2.4.x instruction-validation TODO from committed regression evidence.
+  commit: pending
+  inspiration: User-approved Realisera closeout for the stale 2.4.x TODO after commit
+    9f8071a completed the regression coverage.
+  discovered: Commit 9f8071a already satisfied the open TODO by covering required
+    `instructions.md` validation, `prose.md` rejection, required-read capability context
+    emission, and Planera's compact-startup exception boundary. The remaining work
+    was metadata synchronization and release-readiness reassessment, not release execution.
+  verified: '`uv run scripts/agentera validate capability-contract --format json`,
+    `uv run pytest tests/test_capability_validator_characterization.py tests/test_capability_contract_loader.py
+    tests/test_capability_contract_structure.py tests/test_query_cli.py::TestHej::test_hej_capability_context_names_included_and_missing_state_families
+    tests/test_query_cli.py::TestHej::test_hej_realisera_execution_context_reports_plan_driven_startup
+    tests/test_query_cli.py::TestHej::test_hej_planera_context_exposes_compact_startup_contract
+    tests/test_query_cli.py::TestHej::test_planera_compact_startup_context_does_not_require_instruction_file
+    tests/test_query_cli.py::TestHej::test_compact_startup_exception_is_limited_to_planera`,
+    `uv run scripts/agentera validate capability skills/agentera/capabilities`, artifact
+    validators for TODO.md, PLAN.md, and PROGRESS.md, and `git diff --check` passed.'
+  next: 2.4.x appears ready for a separate release-prep decision; do not bump, tag,
+    promote changelog entries, publish, push, refresh packages, or edit protected
+    state without explicit approval.
+  context:
+    intent: Close stale TODO bookkeeping and reassess readiness after committed validation
+      coverage.
+    constraints: No release execution, version bump, changelog promotion, tag, push,
+      package refresh, installed-app refresh, protected vision/objective edit, or
+      decision-satisfaction update.
+    scope: TODO.md closeout, PLAN task completion, PROGRESS evidence, focused validation
+      reruns, and readiness report.
 - number: 577
   timestamp: 2026-05-18 23:03
   type: test
@@ -237,43 +269,10 @@ cycles:
     scope: Capability instruction files, capability schema contract, validators/loaders,
       Agentera CLI descriptor validation, runtime descriptors, SKILL.md, README, vocabulary
       docs, compatibility authority, focused tests, TODO, CHANGELOG, PLAN, and PROGRESS.
-- number: 568
-  timestamp: 2026-05-18 14:15
-  type: fix
-  phase: build
-  what: Replaced legacy dispatch/conductor vocabulary with canonical route/suggest/delegate/spawn/subagent-mechanism
-    terms across current non-archived files.
-  commit: pending
-  inspiration: Realisera executed the active Routing/Execution Vocabulary Cleanup
-    plan after explicit user confirmation, replacing legacy dispatch/conductor vocabulary
-    with canonical route/suggest/delegate/spawn/subagent-mechanism terms across current
-    SKILL.md, capability prose, schemas, scripts, tests, docs, and vocabulary authorities.
-  discovered: 'The agentera_skill_dispatcher concept in the bundle-skill vocabulary
-    authority was renamed to agentera_routing_entry with updated allowed and forbidden
-    terms. Compatibility identifiers such as the commit message format `chore(realisera):
-    checkpoint before worktree dispatch` and the `subagent_dispatch` code identifiers
-    were preserved. The orkestrera conductor metaphor was replaced with orchestrator
-    throughout the prose and schemas. Three pre-existing test adaptations were needed:
-    the test_helper_script_policy.py tests required alignment with earlier uncommitted
-    AGENTS.md changes, test_runtime_adapters.py needed an install-root surface adjustment,
-    and test_decision44_vocabulary.py needed a plan.yaml wording exemption.'
-  verified: '`uv run pytest -q` passed with 1144 tests. Artifact validators for PLAN.md,
-    TODO.md, CHANGELOG.md, PROGRESS.md, and DOCS.md returned status=pass. `git diff
-    --check` passed.'
-  next: Continue with the still-open Decision 57 capability instruction contract implementation,
-    broad vocabulary regressions, and 3.0.0 work; this cycle did not refresh installed
-    apps or profiles.
-  context:
-    intent: Close the active Routing/Execution Vocabulary Cleanup plan TODO.
-    constraints: Scope stayed limited to vocabulary replacement in current non-archived
-      docs, capability prose, schemas, scripts, tests, SKILL.md, TODO, CHANGELOG,
-      and PROGRESS. No historical archive rewrite, `.agentera/vision.yaml` edit, objective
-      state change, Decision 57 implementation, broad vocabulary regressions beyond
-      scope, or app/profile/package state changes.
-    scope: AGENTS.md, README.md, SKILL.md, capability prose files, capability schemas,
-      contract.md, docs/vocabulary.md, bundle-skill vocabulary authority, routing-execution
-      vocabulary authority, tests, TODO, CHANGELOG, PLAN, and PROGRESS.
 archive:
+- summary: 'Cycle 568 (2026-05-18): Replaced legacy dispatch/conductor vocabulary
+    with canonical route/suggest/delegate/spawn/subagent-mechanism terms across current
+    non-archived files.'
 - summary: 'Cycle 567 (2026-05-18): Qualified ambiguous current SKILL.md prose references.'
 - summary: 'Cycle 566 (2026-05-18): Fixed installed hej entrypoint script-path construction
     for unset app-home environments.'
@@ -347,5 +346,3 @@ archive:
     artifact-location discovery contract.'
 - summary: 'Cycle 529 (2026-05-16): Completed and synchronized the DECISIONS.md source-contract
     raw-read reduction.'
-- summary: 'Cycle 528 (2026-05-16): Completed and synchronized the Planera compact
-    startup contract.'
