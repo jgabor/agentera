@@ -260,6 +260,24 @@ def _check_directory_rules(
             errors.append(
                 f"bootstrap [error]: DIRECTORY_REQUIREMENTS.{section} in {source_label} must be a mapping"
             )
+    if "required_files" in directory:
+        errors.append(
+            f"bootstrap [error]: DIRECTORY_REQUIREMENTS.required_files in {source_label} duplicates instruction_file and schemas_directory authority"
+        )
+    instruction_file = directory.get("instruction_file")
+    if isinstance(instruction_file, dict):
+        if instruction_file.get("path") != "instructions.md":
+            errors.append(
+                f"bootstrap [error]: DIRECTORY_REQUIREMENTS.instruction_file.path in {source_label} must be instructions.md"
+            )
+        if instruction_file.get("type") != "file":
+            errors.append(
+                f"bootstrap [error]: DIRECTORY_REQUIREMENTS.instruction_file.type in {source_label} must be file"
+            )
+        if instruction_file.get("required") is not True:
+            errors.append(
+                f"bootstrap [error]: DIRECTORY_REQUIREMENTS.instruction_file.required in {source_label} must be true"
+            )
     schema_files = directory.get("schema_files")
     if isinstance(schema_files, dict):
         if not isinstance(schema_files.get("glob"), str) or not schema_files.get("glob"):

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import copy
 import importlib.util
+import subprocess
 import sys
 from pathlib import Path
 from types import ModuleType
@@ -30,6 +31,7 @@ def _load_module(name: str, path: Path) -> ModuleType:
 
 capability_contract = _load_module("capability_contract_loader_tests", CONTRACT_MODULE)
 validate_capability = _load_module("validate_capability_loader_tests", VALIDATOR)
+LEGACY_INSTRUCTION_FILE = "prose" + ".md"
 
 
 def _valid_contract_data() -> dict:
@@ -51,8 +53,11 @@ def _assert_has_error_containing(errors: list[str], message: str) -> None:
 
 
 def test_load_valid_contract_builds_single_model_for_capability_rules():
+    contract_data = _valid_contract_data()
     model = capability_contract.load_capability_schema_contract(CONTRACT_PATH)
 
+    assert model.directory_rules.instruction_path == contract_data["DIRECTORY_REQUIREMENTS"]["instruction_file"]["path"]
+    assert "required_files" not in contract_data["DIRECTORY_REQUIREMENTS"]
     assert model.required_groups == (
         "TRIGGERS",
         "ARTIFACTS",
@@ -140,6 +145,72 @@ def test_bootstrap_validation_rejects_malformed_contract_fixtures(mutate, messag
     mutate(data)
 
     _assert_has_error_containing(_bootstrap_errors(data), message)
+
+
+def test_contract_loader_rejects_legacy_prose_md_instruction_file(tmp_path):
+    data = copy.deepcopy(_valid_contract_data())
+    data["DIRECTORY_REQUIREMENTS"]["instruction_file"]["path"] = LEGACY_INSTRUCTION_FILE
+    path = _write_contract(tmp_path, data)
+
+    with pytest.raises(capability_contract.ContractBootstrapError) as error:
+        capability_contract.load_capability_schema_contract(path)
+
+    assert error.value.errors == [
+        f"bootstrap [error]: DIRECTORY_REQUIREMENTS.instruction_file.path in {path} must be instructions.md"
+    ]
+
+
+def test_contract_self_validation_rejects_legacy_prose_md_instruction_file(tmp_path):
+    data = copy.deepcopy(_valid_contract_data())
+    data["DIRECTORY_REQUIREMENTS"]["instruction_file"]["path"] = LEGACY_INSTRUCTION_FILE
+    path = _write_contract(tmp_path, data)
+
+    result = subprocess.run(
+        ["uv", "run", str(VALIDATOR), "--self-validate", "--contract", str(path)],
+        cwd=REPO_ROOT,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+    assert result.returncode == 1
+    assert "DIRECTORY_REQUIREMENTS.instruction_file.path" in result.stderr
+    assert "must be instructions.md" in result.stderr
+
+
+def test_contract_loader_rejects_required_files_as_duplicate_directory_authority(tmp_path):
+    data = copy.deepcopy(_valid_contract_data())
+    data["DIRECTORY_REQUIREMENTS"]["required_files"] = [
+        {"path": LEGACY_INSTRUCTION_FILE, "description": "Legacy duplicate authority."},
+    ]
+    path = _write_contract(tmp_path, data)
+
+    with pytest.raises(capability_contract.ContractBootstrapError) as error:
+        capability_contract.load_capability_schema_contract(path)
+
+    assert error.value.errors == [
+        f"bootstrap [error]: DIRECTORY_REQUIREMENTS.required_files in {path} duplicates instruction_file and schemas_directory authority"
+    ]
+
+
+def test_contract_self_validation_rejects_required_files_duplicate_authority(tmp_path):
+    data = copy.deepcopy(_valid_contract_data())
+    data["DIRECTORY_REQUIREMENTS"]["required_files"] = [
+        {"path": LEGACY_INSTRUCTION_FILE, "description": "Legacy duplicate authority."},
+    ]
+    path = _write_contract(tmp_path, data)
+
+    result = subprocess.run(
+        ["uv", "run", str(VALIDATOR), "--self-validate", "--contract", str(path)],
+        cwd=REPO_ROOT,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+    assert result.returncode == 1
+    assert "DIRECTORY_REQUIREMENTS.required_files" in result.stderr
+    assert "duplicates instruction_file and schemas_directory authority" in result.stderr
 
 
 @pytest.mark.parametrize(
