@@ -4,13 +4,13 @@ This file provides guidance to AI coding agents when working with code in this r
 
 ## What this is
 
-agentera v2: one Agentera skill (`skills/agentera/`) with twelve capabilities. Each capability is defined by human-readable prose (`prose.md`) and machine-readable schemas (`triggers.yaml`, `artifacts.yaml`, `validation.yaml`, `exit.yaml`). The agent reads `SKILL.md` to route incoming requests to the right capability.
+agentera v2: one Agentera skill (`skills/agentera/`) with twelve capabilities. Each capability is defined by human-readable prose (`prose.md`) and machine-readable schemas (`triggers.yaml`, `artifacts.yaml`, `validation.yaml`, `exit.yaml`). The Agentera skill dispatcher routes incoming requests to the right capability.
 
 ## Repository layout
 
 ```
 skills/agentera/
-  SKILL.md                          # Master dispatcher (frontmatter + routing + safety rails)
+  SKILL.md                          # Agentera skill dispatcher (frontmatter + routing + safety rails)
   protocol.yaml                     # Shared primitives (confidence, severity, phases, glyphs)
   capability_schema_contract.yaml   # Capability schema structure contract
   capabilities/
@@ -95,7 +95,7 @@ uv run scripts/agentera query decisions --topic <topic>
 
 ## Key conventions
 
-- `skills/agentera/SKILL.md` is the single entry point; capabilities live under `capabilities/`
+- The Agentera skill dispatcher at `skills/agentera/SKILL.md` is the single entry point; capabilities live under `capabilities/`
 - Shared primitives are defined in `protocol.yaml`, not per-skill specs
 - Skills never push to remote repos or modify `.agentera/vision.yaml` or objective state during execution cycles
 - Conventional commits: feat/fix/docs/refactor/chore/test; scopes follow the closed vocabulary below

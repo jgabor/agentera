@@ -1,4 +1,39 @@
 cycles:
+- number: 567
+  timestamp: 2026-05-18 13:43
+  type: fix
+  phase: build
+  what: Qualified ambiguous current SKILL.md prose references.
+  commit: pending
+  inspiration: Realisera continued with the highest-priority normal TODO after the
+    vocabulary authority and installed hej entrypoint batches were committed, focusing
+    only on current docs, runtime guidance, and tests that used bare or legacy SKILL.md
+    wording as a conceptual noun.
+  discovered: Literal paths such as `skills/agentera/SKILL.md` are compatibility and
+    path-like references that should stay intact, but current prose still used ambiguous
+    forms such as "Master dispatcher", "master SKILL.md", "SKILL.md source", "Agentera
+    SKILL.md", and "SKILL.md workflow behavior". Historical archives, vocabulary-authority
+    forbidden-term fixtures, and protected vision state still contain legacy wording
+    by design and were left unchanged.
+  verified: '`uv run pytest tests/test_bundle_skill_vocabulary_authority.py tests/test_cross_capability.py
+    tests/test_resonera_capability.py tests/test_runtime_adapters.py -q` passed with
+    147 tests. `git diff --check` passed.'
+  next: Continue with the still-open routing/execution vocabulary cleanup, capability
+    `prose.md` to `instructions.md` rename, Decision 57 metadata implementation, broad
+    vocabulary regressions, and 3.0.0 work; this cycle did not refresh installed apps
+    or profiles.
+  context:
+    intent: Close the normal `[fix:2.4.x]` ambiguous `SKILL.md` prose cleanup TODO.
+    constraints: Scope stayed limited to current docs, runtime guidance, capability
+      schemas/prose, scripts, tests, TODO, CHANGELOG, and PROGRESS; no historical
+      archive rewrite, `.agentera/vision.yaml` edit, routing/execution vocabulary
+      cleanup, capability instruction-file rename, `first_invocation_read` implementation,
+      broad vocabulary sweep, 3.0.0 work, installed app/profile update, package-manager
+      change, publication, push, tag, objective state edit, or decision satisfaction
+      change.
+    scope: AGENTS, README, OpenCode adapter docs, Agentera skill dispatcher, hej trigger
+      schema, resonera guidance, token measurement script, focused tests, TODO, CHANGELOG,
+      and PROGRESS.
 - number: 566
   timestamp: 2026-05-18 13:01
   type: fix
@@ -295,36 +330,8 @@ cycles:
       satisfaction change.
     scope: README, UPGRADE, AGENTS.md, `skills/agentera/SKILL.md`, helper-policy tests,
       TODO, CHANGELOG, PLAN, DOCS, and PROGRESS.
-- number: 557
-  timestamp: 2026-05-17 11:18
-  type: feat
-  phase: build
-  what: Added the privacy-gated `agentera stats` workflow.
-  commit: pending
-  inspiration: Orkestrera executed the Stats Privacy and Consent Workflow plan to
-    make stats the canonical user-facing usage analytics command while preserving
-    `agentera usage` compatibility.
-  discovered: The existing usage engine was already the right analysis layer, so the
-    safe seam was a thin `agentera stats` wrapper that reads only the existing internal
-    corpus and a separate `stats refresh` path that previews by default and requires
-    `--consent local-history` before delegating to `extract_corpus.py`.
-  verified: '`uv run pytest tests/test_usage_namespace.py tests/test_usage_stats.py
-    -q` passed with 59 tests. `uv run pytest -q` passed with 1103 tests. Touched artifact
-    validators for TODO, CHANGELOG, PLAN, PROGRESS, and DOCS passed. `uv run scripts/agentera
-    compact --mode check --format json` passed after safe compaction fix trimmed TODO/PROGRESS
-    retained logs. `git diff --check` passed.'
-  next: Commit the stats batch, then continue remaining 2.5.x helper-script cleanup
-    and classification-policy seams.
-  context:
-    intent: Orkestrera execution of the Stats Privacy and Consent Workflow plan.
-    constraints: Preserve `agentera usage` and direct `scripts/usage_stats.py` behavior;
-      do not expose `agentera corpus`; plain stats and refresh dry-runs must not read
-      runtime history or write corpus files; no installed app/profile refresh beyond
-      explicitly consented internal corpus, publication, push, tag, package-manager
-      change, vision/objective edit, or decision satisfaction change.
-    scope: '`scripts/agentera`, `tests/test_usage_namespace.py`, README, TODO, CHANGELOG,
-      PLAN, DOCS, and PROGRESS.'
 archive:
+- summary: 'Cycle 557 (2026-05-17): Added the privacy-gated `agentera stats` workflow.'
 - summary: 'Cycle 556 (2026-05-17): Extended `agentera validate` to cover the remaining
     stable validators.'
 - summary: 'Cycle 555 (2026-05-17): Implemented OpenCode plugin packaging metadata
@@ -402,5 +409,3 @@ archive:
     guidance alignment for the `agentera validate` namespace.'
 - summary: 'Cycle 518 (2026-05-15): Implemented PLAN Task 2 behavior for the `agentera
     validate` namespace.'
-- summary: 'Cycle 517 (2026-05-15): Defined the Task 1 command contract for the planned
-    `agentera validate` namespace.'

@@ -12,6 +12,7 @@
 ### Fixed
 
 - Fixed installed `hej` entrypoint command construction guidance so app-home resolution is assigned before expanding the managed app script path, preventing unset `AGENTERA_HOME`/`XDG_DATA_HOME` flows from collapsing to `/app/scripts/agentera` before Agentera can show the normal repair path.
+- Qualified ambiguous current `SKILL.md` prose in docs, runtime guidance, capability guidance, scripts, and tests so conceptual references use `Agentera skill dispatcher` or `skill entry file` while preserving literal paths and compatibility identifiers.
 - Repaired the post-cleanup full-suite regressions by bounding current-state wording in active evidence, synchronizing dispatch vocabulary tests with the current route/suggest/delegate/spawn/subagent-mechanism contract, and hardening upgrade lifecycle metadata coverage for build/apply/public output paths.
 - Replaced current installed-app diagnostic wording that implied a bundle/app refresh with authority-approved Agentera app files repair/update wording while preserving compatibility identifiers such as `.agentera-bundle.json`, `bundle.status`, `activeBundleRoot`, and `--only bundle`.
 - Aligned doctor, hej, and upgrade app lifecycle metadata with the Decision 54 authority: upgrade now emits canonical `lifecycleStatus` values while preserving workflow `status` compatibility, and hej capability contexts treat `up_to_date` app state as healthy instead of the deprecated `fresh` alias.

@@ -391,7 +391,7 @@ If no capability matches with sufficient confidence, route to hej for orientatio
 
 ### Trigger Pattern Discovery
 
-The trigger-to-capability map for Layers 3-4 is derived from each capability's `schemas/triggers.yaml`, not hardcoded here. Pattern matching, priority, thresholds, fallback, and disambiguation metadata belong to those trigger schemas and the capability schema contract. This keeps `SKILL.md` a dispatcher; capability directories and schemas remain the detailed Interface sources.
+The trigger-to-capability map for Layers 3-4 is derived from each capability's `schemas/triggers.yaml`, not hardcoded here. Pattern matching, priority, thresholds, fallback, and disambiguation metadata belong to those trigger schemas and the capability schema contract. This keeps the Agentera skill dispatcher focused on routing; capability directories and schemas remain the detailed Interface sources.
 
 ---
 
@@ -408,7 +408,7 @@ The trigger-to-capability map for Layers 3-4 is derived from each capability's `
 
 ## Exit signals
 
-All capabilities use the exit vocabulary defined by `protocol.yaml` `EXIT_SIGNALS`. Capability `schemas/exit.yaml` files reference that protocol authority; `SKILL.md` does not maintain a separate exit-signal table.
+All capabilities use the exit vocabulary defined by `protocol.yaml` `EXIT_SIGNALS`. Capability `schemas/exit.yaml` files reference that protocol authority; the Agentera skill dispatcher does not maintain a separate exit-signal table.
 
 ---
 

@@ -1,6 +1,6 @@
 # OpenCode Adapter
 
-Maps agentera's host adapter contract (SPEC.md Section 21) and session corpus contract (SPEC.md Section 22) to OpenCode's specific mechanisms. A developer reading only this document can implement portable-core agentera support and a profilera-compatible session corpus in OpenCode without reading any SKILL.md source code.
+Maps agentera's host adapter contract (SPEC.md Section 21) and session corpus contract (SPEC.md Section 22) to OpenCode's specific mechanisms. A developer reading only this document can implement portable-core agentera support and a profilera-compatible session corpus in OpenCode without reading any skill entry file source code.
 
 ---
 
@@ -56,7 +56,7 @@ OpenCode skill search paths:
 - Global install: `npx skills add jgabor/agentera -g -a opencode --skill agentera -y`
 - Project install: symlink or copy `skills/agentera/` into `.opencode/skills/agentera/` or `.agents/skills/agentera/`
 
-The temporary `skills/hej/` entry point is a v1 upgrade bridge, not a new-install target. Each Agentera SKILL.md already contains YAML frontmatter with `name` and `description`, which matches OpenCode's frontmatter requirements exactly. The OpenCode plugin adds one prompt transformation: when the complete user message is exactly bare text `hej`, `chat.message` rewrites it to load the bundled `agentera` skill and route through the `agentera hej` dashboard path. The match is exact except for OpenCode's CLI-added single trailing newline transport artifact, and does not apply to `/hej`, `Hej`, `hej there`, attachments, or other message parts.
+The temporary `skills/hej/` entry point is a v1 upgrade bridge, not a new-install target. Each Agentera skill entry file already contains YAML frontmatter with `name` and `description`, which matches OpenCode's frontmatter requirements exactly. The OpenCode plugin adds one prompt transformation: when the complete user message is exactly bare text `hej`, `chat.message` rewrites it to load the bundled `agentera` skill and route through the `agentera hej` dashboard path. The match is exact except for OpenCode's CLI-added single trailing newline transport artifact, and does not apply to `/hej`, `Hej`, `hej there`, attachments, or other message parts.
 
 **OpenCode frontmatter validation** requires: `name` (1-64 chars, lowercase alphanumeric with single hyphens), `description` (1-1024 chars). Agentera entry point names are lowercase, matching the validation regex `^[a-z0-9]+(-[a-z0-9]+)*$`.
 
@@ -525,6 +525,6 @@ To verify the adapter is sufficient, check each acceptance criterion from PLAN.m
 
 2. **Session Corpus Contract is mapped per record type**: Yes. All four portable record types are mapped. instruction_document and project_config_signal have immediate extraction paths. history_prompt and conversation_turn are extractable via `opencode export` CLI output. The memory_entry Claude Code extension does not apply to OpenCode.
 
-3. **A developer can implement OpenCode support without reading SKILL.md source**: Yes. This document specifies the adapter mapping, installation steps, extraction logic, and remaining gaps independently.
+3. **A developer can implement OpenCode support without reading skill entry file source**: Yes. This document specifies the adapter mapping, installation steps, extraction logic, and remaining gaps independently.
 
 4. **Every required capability and normalized corpus source family is addressed**: Yes. All six capabilities and all five record types are addressed, with explicit availability status and implementation paths for each.

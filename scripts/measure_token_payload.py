@@ -8,7 +8,7 @@
 Decision 41 used a byte-count proxy for the token target:
 
 - v1 baseline: all 12 v1 SKILL.md files plus SPEC.md
-- v2 payload: master SKILL.md, protocol.yaml, 12 capability prose.md files,
+- v2 payload: Agentera skill dispatcher, protocol.yaml, 12 capability prose.md files,
   and 48 capability schema YAML files
 
 This script re-runs the v2 side of that benchmark and compares it to the
