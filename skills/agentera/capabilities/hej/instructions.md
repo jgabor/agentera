@@ -270,7 +270,7 @@ Show where things stand.
    - Active PLAN with pending tasks → suggest ⎈ orkestrera for the first unblocked pending task.
    - Critical or degrading health → suggest ⛶ inspektera or ⧉ realisera for the named finding.
    - Active non-closed OBJECTIVE with stalled or missing metric evidence → suggest ⎘ optimera for that metric.
-   - TODO.md open items → suggest ⧉ realisera for the highest-severity open item; prefer items that unlock product evidence or future plans.
+   - TODO.md open items → select the highest-severity open item, then route by shape: narrow one-cycle TODOs suggest ⧉ realisera; contract-shaped, multi-surface, dependency-heavy, migration, schema, metadata, validation, or acceptance-risky TODOs suggest ≡ planera first. Prefer items that unlock product evidence or future plans.
    - Pending DECISIONS.md follow-up → suggest ❈ resonera for the named unresolved decision.
    - Vision exists but no plan, objective, decision follow-up, or TODO work is active → suggest ≡ planera.
    - No vision, no executable follow-ups, and no active plan → suggest ⛥ visionera to choose a direction.
