@@ -19,7 +19,7 @@
 
 ### P3 — Regression tests (after fixes are applied)
 
-- [ ] [test:2.4.x] Add regression coverage that rejects `fresh`, `stale`, `refresh`, `fixed`, `ready`, and `noop` as canonical app lifecycle status values while preserving allowed plain-language prose and non-app uses such as `agentera stats refresh`.
+- [x] ~~[test:2.4.x] Add regression coverage that rejects `fresh`, `stale`, `refresh`, `fixed`, `ready`, and `noop` as canonical app lifecycle status values while preserving allowed plain-language prose and non-app uses such as `agentera stats refresh`.~~ · resolved by deriving rejected lifecycle status values from the Decision 54 authority, checking doctor/hej/upgrade lifecycle metadata surfaces against canonical statuses, and preserving compatibility/plain-language/non-app uses including `agentera stats refresh`, workflow `noop`, and `fixed`/`ready to fix` display prose.
 - [ ] [test:2.4.x] Add vocabulary regression coverage that classifies every surviving `bundle` and `SKILL.md` occurrence as canonical, compatibility-preserved, historical, fixture-only, or generic, and fails new ambiguous user-facing usage.
 - [ ] [test:2.4.x] Add vocabulary regression coverage that rejects new ambiguous dispatcher/dispatch/router/conductor usage in user-facing and protocol prose while allowing qualified compatibility names such as `subagent_dispatch` and historical records.
 - [ ] [test:2.4.x] Add validation and regression coverage proving capability directories require `instructions.md`, reject new `prose.md` conventions, emit required-read capability context, and preserve explicit compact-startup exceptions where supported.

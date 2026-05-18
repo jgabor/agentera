@@ -14,6 +14,7 @@
 
 ### Fixed
 
+- Added lifecycle vocabulary regressions that keep doctor, hej, and upgrade app status metadata on Decision 54 canonical values while preserving compatibility prose and non-app `agentera stats refresh` wording.
 - Fixed installed `hej` entrypoint command construction guidance so app-home resolution is assigned before expanding the managed app script path, preventing unset `AGENTERA_HOME`/`XDG_DATA_HOME` flows from collapsing to `/app/scripts/agentera` before Agentera can show the normal repair path.
 - Qualified ambiguous current `SKILL.md` prose in docs, runtime guidance, capability guidance, scripts, and tests so conceptual references use `Agentera skill dispatcher` or `skill entry file` while preserving literal paths and compatibility identifiers.
 - Renamed canonical capability instruction files from `prose.md` to `instructions.md` across real capability directories, validators, runtime descriptors, docs, and tests while preserving classified historical compatibility evidence.

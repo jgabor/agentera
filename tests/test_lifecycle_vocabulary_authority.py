@@ -43,6 +43,25 @@ def _consumer_statuses(consumer: str) -> set[str]:
     return set(_authority()["consumers"][consumer]["may_emit_statuses"])
 
 
+def _canonical_statuses() -> set[str]:
+    return set(_authority()["canonical_statuses"])
+
+
+def _rejected_lifecycle_status_values() -> set[str]:
+    authority = _authority()
+    deprecated_aliases = {
+        alias
+        for status in authority["canonical_statuses"].values()
+        for alias in status["deprecated_aliases"]
+    }
+    non_lifecycle_verbs = {
+        verb
+        for verb, entry in authority["operation_verbs"].items()
+        if entry["lifecycle_allowed"] is False
+    }
+    return deprecated_aliases | non_lifecycle_verbs
+
+
 def _write_current_app_home(app_home: Path, *, version: str = "current") -> None:
     app_root = app_home / "app"
     (app_root / "scripts").mkdir(parents=True)
@@ -196,6 +215,82 @@ def test_upgrade_lifecycle_status_maps_workflow_boundaries() -> None:
     assert upgrade._upgrade_lifecycle_status("failed") == "manual_review_needed"
     assert upgrade._upgrade_lifecycle_status("skipped") == "no_changes_needed"
     assert upgrade._upgrade_lifecycle_status("surprise") == "manual_review_needed"
+
+
+def test_rejected_lifecycle_status_values_are_authority_derived() -> None:
+    rejected = _rejected_lifecycle_status_values()
+
+    assert {"fresh", "stale", "refresh", "fixed", "ready", "noop"} <= rejected
+    assert not rejected.intersection(_canonical_statuses())
+
+
+def test_app_lifecycle_status_surfaces_do_not_emit_rejected_values(tmp_path: Path) -> None:
+    upgrade = _load_upgrade_module()
+    project = tmp_path / "project"
+    home = tmp_path / "home"
+    current = tmp_path / "current"
+    outdated = tmp_path / "outdated"
+    project.mkdir()
+    _write_current_app_home(current)
+    _write_current_app_home(outdated, version="old")
+
+    doctor_statuses = [
+        upgrade.build_doctor_status(
+            current,
+            root_source="explicit --install-root",
+            source_root=REPO_ROOT,
+            home=home,
+            project=project,
+            expected_version="current",
+            probe_cli=False,
+        ),
+        upgrade.build_doctor_status(
+            outdated,
+            root_source="explicit --install-root",
+            source_root=REPO_ROOT,
+            home=home,
+            project=project,
+            expected_version="current",
+            probe_cli=False,
+        ),
+        upgrade.build_doctor_status(
+            tmp_path / "missing",
+            root_source="default app home",
+            source_root=REPO_ROOT,
+            home=home,
+            project=project,
+            expected_version="current",
+            probe_cli=False,
+        ),
+    ]
+    upgrade_plan_statuses = {
+        upgrade.build_upgrade_plan(_upgrade_args(tmp_path, install_root=tmp_path / "app-home"))["lifecycleStatus"],
+        upgrade.build_upgrade_plan(_upgrade_args(tmp_path, install_root=REPO_ROOT))["lifecycleStatus"],
+        *(upgrade._upgrade_lifecycle_status(status) for status in upgrade.STATUSES),
+    }
+    observed_statuses = (
+        {status["status"] for status in doctor_statuses}
+        | {signal["status"] for status in doctor_statuses for signal in status["signals"]}
+        | upgrade_plan_statuses
+    )
+
+    assert observed_statuses <= _canonical_statuses()
+    assert not observed_statuses.intersection(_rejected_lifecycle_status_values())
+    assert {status["status"] for status in doctor_statuses} <= _consumer_statuses("doctor")
+    assert upgrade_plan_statuses <= _consumer_statuses("upgrade")
+
+
+def test_rejected_words_remain_allowed_outside_status_metadata() -> None:
+    authority = _authority()
+    upgrade = _load_upgrade_module()
+
+    assert "fresh" in authority["compatibility_boundary"]
+    assert "stale" in authority["compatibility_boundary"]
+    assert "refresh" in authority["operation_verbs"]
+    assert "agentera stats refresh" in authority["operation_verbs"]["refresh"]["scope"]
+    assert "noop" in upgrade.STATUSES
+    assert "fixed" in upgrade.PLAIN_STATUS.values()
+    assert "ready to fix" in upgrade.PLAIN_STATUS.values()
 
 
 def test_apply_upgrade_path_updates_public_lifecycle_metadata(tmp_path: Path) -> None:
