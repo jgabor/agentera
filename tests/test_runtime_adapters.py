@@ -1498,7 +1498,7 @@ class TestSuiteBundleSurface:
                 "installRoot": os.path.relpath(root, manifest.parent),
                 "sharedPaths": shared_paths,
                 "singleSkillInstall": (
-                    "Single-skill installs keep core SKILL.md workflow behavior; "
+                    "Single-skill installs keep core skill entry file workflow behavior; "
                     "suite tools are bundle-only enhancements."
                 ),
             }

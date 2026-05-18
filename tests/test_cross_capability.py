@@ -4,7 +4,7 @@ Validates three dimensions of cross-capability integrity:
 1. Protocol ID resolution: every stable ID referenced in capability schemas
    resolves to a valid entry in protocol.yaml.
 2. Trigger routing: every capability's trigger patterns route to that capability
-   (not hej fallback) per the master SKILL.md routing logic.
+   (not hej fallback) per the Agentera skill dispatcher routing logic.
 3. Inter-capability prose references: every capability name mentioned in a
    prose.md file corresponds to an existing capability directory.
 

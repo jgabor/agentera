@@ -130,7 +130,7 @@ def test_resonera_requires_native_question_tool_after_routing():
     assert "OpenCode `question`" in normalized
     assert "Copilot `ask_user`" in content
     assert "Codex `request_user_input`" in content
-    assert "overrides the master dispatcher's generic hej/handoff question-tool gate" in normalized
+    assert "overrides the Agentera skill dispatcher's generic hej/handoff question-tool gate" in normalized
     assert "first user-facing action after the reflection" in normalized
     assert "provide a provisional recommendation in the question text" in normalized
 

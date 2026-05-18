@@ -32,6 +32,30 @@ EXPECTED_CLASSIFICATIONS = [
     "ambiguous_current_prose",
 ]
 
+CURRENT_PROSE_FILES = [
+    "AGENTS.md",
+    "README.md",
+    "references/adapters/opencode.md",
+    "scripts/measure_token_payload.py",
+    "skills/agentera/SKILL.md",
+    "skills/agentera/capabilities/hej/schemas/triggers.yaml",
+    "skills/agentera/capabilities/resonera/prose.md",
+    "tests/test_cross_capability.py",
+    "tests/test_resonera_capability.py",
+    "tests/test_runtime_adapters.py",
+]
+
+AMBIGUOUS_CURRENT_SKILL_PROSE = [
+    "Master dispatcher",
+    "master dispatcher",
+    "master SKILL.md",
+    "reads `SKILL.md`",
+    "SKILL.md source",
+    "Agentera SKILL.md",
+    "SKILL.md workflow behavior",
+    "keeps `SKILL.md` a dispatcher",
+]
+
 
 def _authority() -> dict:
     return yaml.safe_load(AUTHORITY.read_text(encoding="utf-8"))
@@ -155,3 +179,15 @@ def test_current_installed_app_diagnostics_use_authority_terms() -> None:
     assert "approve app refresh" not in diagnostics
     assert "bundle fresh" + "ness" not in diagnostics
     assert "bundle refresh" not in diagnostics
+
+
+def test_current_skill_dispatcher_prose_uses_qualified_terms() -> None:
+    current_prose = "\n".join(
+        (REPO_ROOT / path).read_text(encoding="utf-8")
+        for path in CURRENT_PROSE_FILES
+    )
+
+    assert "Agentera skill dispatcher" in current_prose
+    assert "skill entry file" in current_prose
+    for ambiguous in AMBIGUOUS_CURRENT_SKILL_PROSE:
+        assert ambiguous not in current_prose
