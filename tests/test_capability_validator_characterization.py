@@ -54,10 +54,33 @@ def _run_validator(cap_dir: Path, *extra_args: str | Path) -> CliResult:
     )
 
 
-def _write_capability(cap_dir: Path, schema_text: str | None, *, prose: bool = True) -> Path:
+def _run_agentera_validate(cap_dir: Path) -> CliResult:
+    result = subprocess.run(
+        ["uv", "run", "scripts/agentera", "validate", "capability", str(cap_dir)],
+        cwd=REPO_ROOT,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    return CliResult(
+        result.returncode,
+        result.stdout.splitlines(),
+        [line for line in result.stderr.splitlines() if not line.startswith("warning: `VIRTUAL_ENV=")],
+    )
+
+
+def _write_capability(
+    cap_dir: Path,
+    schema_text: str | None,
+    *,
+    instructions: bool = True,
+    prose: bool = False,
+) -> Path:
     cap_dir.mkdir(parents=True, exist_ok=True)
-    if prose:
+    if instructions:
         (cap_dir / "instructions.md").write_text("# Fixture\n")
+    if prose:
+        (cap_dir / ("prose" + ".md")).write_text("# Legacy fixture\n")
     schemas = cap_dir / "schemas"
     schemas.mkdir()
     if schema_text is not None:
@@ -157,6 +180,51 @@ def test_validator_cli_characterizes_empty_schemas_fixture(tmp_path):
         f"  V2 [error]: required group VALIDATION missing in {source}",
         f"  V2 [error]: required group EXIT_CONDITIONS missing in {source}",
     ]
+
+
+def test_validator_cli_requires_instructions_md_when_schemas_exist(tmp_path):
+    cap_dir = _write_capability(tmp_path / "missing-instructions", _valid_schema(), instructions=False)
+    source = str(cap_dir.resolve())
+
+    result = _run_validator(cap_dir)
+
+    assert result.exit_code == 1
+    assert result.stdout == _expected_failure_stdout(cap_dir)
+    assert result.stderr == [
+        "FAILED:",
+        f"  V1 [error]: instructions.md not found in {source}",
+    ]
+
+
+def test_validator_cli_rejects_legacy_prose_md_without_instructions_md(tmp_path):
+    cap_dir = _write_capability(
+        tmp_path / "legacy-prose-only",
+        _valid_schema(),
+        instructions=False,
+        prose=True,
+    )
+    source = str(cap_dir.resolve())
+
+    result = _run_validator(cap_dir)
+
+    assert result.exit_code == 1
+    assert (cap_dir / ("prose" + ".md")).is_file()
+    assert result.stdout == _expected_failure_stdout(cap_dir)
+    assert result.stderr == [
+        "FAILED:",
+        f"  V1 [error]: instructions.md not found in {source}",
+    ]
+
+
+def test_agentera_validate_capability_reports_same_missing_instructions_failure(tmp_path):
+    cap_dir = _write_capability(tmp_path / "agentera-missing-instructions", _valid_schema(), instructions=False)
+    direct_result = _run_validator(cap_dir)
+    agentera_result = _run_agentera_validate(cap_dir)
+
+    assert direct_result.exit_code == 1
+    assert agentera_result.exit_code == direct_result.exit_code
+    assert agentera_result.stderr == direct_result.stderr
+    assert "instructions.md not found" in "\n".join(agentera_result.stderr)
 
 
 def test_validator_cli_characterizes_missing_group_fixture(tmp_path):

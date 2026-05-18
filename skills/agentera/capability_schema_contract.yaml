@@ -83,12 +83,6 @@ DIRECTORY_REQUIREMENTS:
     glob: "*.yaml"
     minimum_count: 1
     description: Capability schema files whose union must satisfy REQUIRED_GROUPS.
-  required_files:
-    - path: instructions.md
-      description: Behavioral instructions the agent reads.
-    - path: schemas/
-      description: Directory containing YAML schema files.
-      type: directory
   optional_files: []
 
 ENTRY_REQUIREMENTS:

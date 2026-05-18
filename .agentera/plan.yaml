@@ -1,112 +1,220 @@
 header:
-  level: light
+  level: full
   created: 2026-05-18
   status: complete
-  title: Routing and Execution Vocabulary Regression Coverage
+  reviewed: 2026-05-18
+  critic_issues: 3 found, 3 addressed, 0 dismissed
+  title: Capability Instruction Validation Regression Coverage
 what: >-
-  Add focused regression coverage that rejects new ambiguous
-  dispatcher/dispatch/router/conductor usage in user-facing and protocol prose
-  while allowing qualified compatibility names such as `subagent_dispatch` and
-  historical records.
+  Add validation and regression coverage proving capability directories require
+  canonical `instructions.md` files, legacy `prose.md` conventions are rejected
+  for new capability structure, required-read capability context is emitted, and
+  explicit compact-startup exceptions continue to work where supported.
 why: >-
-  The routing and execution vocabulary authority already defines canonical
-  concepts such as Agentera router, route, suggest, delegate, spawn, subagent
-  mechanism, and pre-spawn Git commit. The remaining release-blocking risk is
-  that new current prose can reintroduce ambiguous dispatcher, dispatch, router,
-  or conductor shortcuts unless focused tests classify allowed occurrences and
-  fail new ambiguous usage.
+  Decision 57 moved capability instruction authority to `instructions.md` and
+  added first-invocation read discoverability. The remaining risk is regression:
+  future changes could silently reintroduce `prose.md`, weaken validator
+  enforcement, or break the compact Planera startup seam.
 constraints: >-
-  Keep scope to tests plus the minimum authority/fixture updates needed for
-  enforceable classification. Do not perform broad wording cleanup unless a test
-  exposes a current unclassified ambiguous occurrence that must be fixed. Do not
-  perform package refresh, publication, push, tag, `.agentera/vision.yaml` edits,
-  objective-state mutation, decision satisfaction updates, installed-app repair,
-  or 3.0 compatibility removal. Preserve historical archives, code identifiers,
-  explicit compatibility names, and current canonical vocabulary like Agentera
-  router, route, suggest, delegate, spawn, subagent mechanism, and pre-spawn Git
-  commit.
+  Keep this work limited to validation and regression coverage. Do not perform
+  broad wording cleanup, package refresh, publication, push, tag, vision or
+  objective mutation, decision satisfaction updates, installed-app repair, or
+  3.0 compatibility removal.
+scope:
+  included:
+    - Validator and contract regression coverage for `instructions.md` as the
+      required capability instruction file.
+    - Regression coverage rejecting `prose.md` as a new canonical capability
+      convention.
+    - Capability-context tests for `first_invocation_read` and required-read
+      metadata.
+    - Preservation tests for explicit compact-startup exceptions where supported.
+  excluded:
+    - Documentation rewrites unrelated to test authority.
+    - Runtime first-invocation behavior implementation.
+    - Release, package, publication, or installation work.
+    - Protected vision, objective, profile, decision-satisfaction, and TODO
+      completion mutations.
+  deferred:
+    - 3.0 compatibility removal.
+    - Runtime enforcement of first-invocation reads.
+design: >-
+  Treat `capability_schema_contract.yaml` and
+  `references/cli/capability-instruction-contract.yaml` as the authorities. Add
+  regression coverage at the validator, contract-loader, and hej
+  capability-context seams so failures are observable through supported CLI
+  surfaces rather than raw directory assumptions.
 tasks:
   - number: 1
-    name: Inventory routing vocabulary occurrences and define classifications
+    name: Lock validator requirement to instructions.md
     depends_on: []
     status: complete
     acceptance:
       - >-
-        GIVEN the focused vocabulary scan runs WHEN it encounters surviving
-        dispatcher, dispatch, router, or conductor occurrences in scoped current
-        surfaces THEN each in-scope occurrence is classified as canonical,
-        compatibility-preserved, historical, fixture-only, code identifier, or
-        allowed generic usage.
+        GIVEN a capability directory with schemas but no `instructions.md` WHEN
+        capability validation runs THEN validation fails with a message naming
+        `instructions.md`.
       - >-
-        GIVEN an occurrence does not fit an allowed classification WHEN the
-        focused test runs THEN it fails with enough path/context detail to decide
-        whether to reword, classify, or intentionally fixture the occurrence.
+        GIVEN a capability directory with `prose.md` but no `instructions.md`
+        WHEN capability validation runs THEN validation still fails instead of
+        accepting `prose.md`.
+      - >-
+        GIVEN the supported validate capability namespace WHEN the same invalid
+        fixture is validated THEN the CLI reports the same failure semantics.
+      - >-
+        GIVEN a valid real capability WHEN capability validation runs THEN it
+        still passes.
     evidence:
       - >-
-        Added `focused_scan` classifications to
-        `references/cli/routing-execution-vocabulary.yaml` for scoped current
-        user-facing/protocol and fixture paths, with closed classification labels
-        covering canonical, compatibility-preserved, historical, fixture-only,
-        code-identifier, and generic usage.
+        Added regression tests covering schemas without `instructions.md`,
+        legacy `prose.md` without `instructions.md`, and the supported
+        `agentera validate capability` namespace preserving the same failure.
       - >-
-        `tests/test_routing_execution_vocabulary_authority.py` now reports
-        unclassified occurrences with `path:line: term: text` context.
+        Focused tests passed: `uv run pytest
+        tests/test_capability_validator_characterization.py
+        tests/test_capability_contract_structure.py
+        tests/test_capability_contract_loader.py` reported 38 passed.
+      - >-
+        Acceptance CLI checks passed: direct validator and `agentera validate
+        capability` both failed invalid fixtures with `instructions.md not
+        found`; `agentera validate capability hej` passed.
   - number: 2
-    name: Add regression coverage for ambiguous routing vocabulary
+    name: Reject prose.md as a contract directory rule
     depends_on:
       - 1
     status: complete
     acceptance:
       - >-
-        GIVEN new user-facing or protocol text introduces unclassified
-        dispatcher, dispatch, router, or conductor wording WHEN the focused test
-        selection runs THEN the regression fails instead of silently accepting
-        ambiguous vocabulary.
+        GIVEN a capability schema contract whose instruction-file path is changed
+        to `prose.md` WHEN the contract model is loaded or self-validated THEN
+        validation fails.
       - >-
-        GIVEN allowed compatibility names such as `subagent_dispatch`, historical
-        archives, code identifiers, and fixture-only terms remain in the
-        repository WHEN the regression runs THEN those occurrences are preserved
-        by explicit classification rather than broad word bans.
+        GIVEN the canonical capability schema contract WHEN its directory rules
+        are loaded THEN the executable model reports `instructions.md`.
+      - >-
+        GIVEN tests assert the directory rule WHEN they need expected values THEN
+        the expected value is tied to the contract authority rather than
+        duplicated as an independent policy table.
     evidence:
       - >-
-        Added focused scan regression coverage for dispatcher/dispatch/router/
-        conductor, `subagent_dispatch`, pre-dispatch, worktree dispatch, and
-        runtime dispatch substrate occurrences.
+        Added contract bootstrap validation rejecting any instruction-file path
+        other than `instructions.md`, including the legacy `prose.md` fixture.
       - >-
-        `uv run pytest tests/test_routing_execution_vocabulary_authority.py -q`
-        passed with 9 tests.
+        Added loader and self-validation regression tests proving a mutated
+        contract with `prose.md` fails with a directory-rule error.
+      - >-
+        Tied executable model assertions to the canonical contract YAML path
+        before asserting the loaded model reports `instructions.md`.
   - number: 3
-    name: Validate and record closeout evidence
+    name: Prove required-read capability context emission
     depends_on:
-      - 2
+      - 1
     status: complete
     acceptance:
       - >-
-        GIVEN implementation is complete WHEN the task closes THEN the focused
-        pytest selection for routing vocabulary authority passes.
+        GIVEN `agentera hej` is invoked with capability context for a capability
+        requiring a full first read WHEN JSON output is inspected THEN
+        `source_contract.capability_context.first_invocation_read` names
+        `instructions.md` and the full-read obligation.
       - >-
-        GIVEN plan closeout is complete WHEN validation runs THEN relevant
-        artifact validators and `git diff --check` pass.
+        GIVEN required-read metadata is emitted WHEN the instruction target is
+        inspected THEN it includes the canonical capability `instructions.md`
+        path and provenance authority.
+      - >-
+        GIVEN unsupported capability-name CLI commands remain out of scope WHEN
+        startup context is tested THEN no regression requires or introduces
+        `agentera planera`, `agentera realisera`, or similar commands.
     evidence:
       - >-
-        Focused pytest passed before artifact closeout: `uv run pytest
-        tests/test_routing_execution_vocabulary_authority.py -q` reported 9
-        passed.
+        Strengthened hej capability-context tests for full first reads to assert
+        `instructions.md` instruction targets, full-read obligations, existence,
+        and Decision 57 provenance.
       - >-
-        Artifact validators passed for PLAN.md, TODO.md, PROGRESS.md, and
-        CHANGELOG.md; `git diff --check` passed.
+        Strengthened realisera startup context coverage to assert full
+        `first_invocation_read` metadata through the supported `agentera hej
+        --format json --capability-context realisera` seam.
+      - >-
+        Added regression assertions that startup context does not require or
+        introduce unsupported `agentera planera` or `agentera realisera` CLI
+        commands.
+  - number: 4
+    name: Preserve compact-startup exceptions
+    depends_on:
+      - 3
+    status: complete
+    acceptance:
+      - >-
+        GIVEN Planera capability context is requested WHEN JSON output is
+        inspected THEN `first_invocation_read` remains `compact_startup` and
+        names the compact obligation.
+      - >-
+        GIVEN Planera compact startup is available WHEN its `instructions.md`
+        file is absent in an installed-app fixture THEN the compact startup
+        contract still reports `instructions_runtime_read_required` as false.
+      - >-
+        GIVEN a capability does not declare compact startup WHEN its context is
+        requested THEN tests do not accidentally grant a compact-startup
+        exception.
+    evidence:
+      - >-
+        Existing Planera context coverage asserts `first_invocation_read` remains
+        `compact_startup`, names the compact obligation, and exposes the compact
+        startup contract.
+      - >-
+        Existing installed-app fixture coverage removes Planera `instructions.md`
+        and still verifies `instructions_runtime_read_required` remains false.
+      - >-
+        Added a focused boundary regression proving realisera and orkestrera stay
+        on `full` first reads and do not receive Planera's `startup_contract`.
+  - number: 5
+    name: Sync validation regression state
+    depends_on:
+      - 1
+      - 2
+      - 3
+      - 4
+    status: complete
+    acceptance:
+      - >-
+        GIVEN the targeted regression tests are implemented WHEN they run
+        individually THEN they pass.
+      - >-
+        GIVEN the canonical validators are run WHEN `agentera validate
+        capability-contract` and representative capability validation execute
+        THEN they pass.
+      - >-
+        GIVEN the diff is reviewed WHEN the task completes THEN changes remain
+        limited to validation or regression coverage and any minimal validator
+        behavior needed for that coverage.
+      - >-
+        GIVEN the plan scope excludes status mutation WHEN the task completes
+        THEN no vision, objective, package, publication, install-repair, tag,
+        push, or decision-satisfaction files were changed.
+    evidence:
+      - >-
+        Targeted regression selection passed with 45 tests across validator,
+        contract-loader, contract-structure, and hej capability-context coverage.
+      - >-
+        Canonical validators passed: `agentera validate capability-contract
+        --format json`, plus representative `hej`, `planera`, `realisera`, and
+        `orkestrera` capability validation.
+      - >-
+        Diff scope review found tracked changes only in validator/contract code,
+        regression tests, PLAN, and PROGRESS; protected vision, objective,
+        decisions, package, release, TODO, README, and changelog files were not
+        modified.
 overall_acceptance:
   - >-
-    Every in-scope surviving dispatcher, dispatch, router, or conductor
-    occurrence has an explicit allowed classification or fails the focused
-    regression with actionable context.
+    GIVEN a future change attempts to make `prose.md` the capability instruction
+    convention WHEN validator or contract tests run THEN the regression suite
+    fails.
   - >-
-    New ambiguous user-facing or protocol vocabulary around routing and execution
-    cannot be introduced without updating the classification authority or
-    rewording the text.
+    GIVEN capability-context startup metadata is requested WHEN supported CLI JSON
+    output is inspected THEN required-read obligations and compact exceptions are
+    explicit and stable.
   - >-
-    Historical archives, compatibility-preserved names, fixture-only terms, code
-    identifiers, and canonical route/suggest/delegate/spawn/subagent-mechanism
-    vocabulary remain allowed by explicit classification.
+    GIVEN the validation suite passes WHEN the work is reviewed THEN the coverage
+    proves Decision 57 validation behavior without broad documentation cleanup or
+    release work.
 surprises: []
-previous_plan_archived: .agentera/archive/PLAN-2026-05-18-bundle-and-skill-vocabulary-regression-coverage.yaml
+previous_plan_archived: .agentera/archive/PLAN-2026-05-18-routing-and-execution-vocabulary-regression-coverage.yaml

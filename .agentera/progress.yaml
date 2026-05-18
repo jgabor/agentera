@@ -1,4 +1,106 @@
 cycles:
+- number: 577
+  timestamp: 2026-05-18 23:03
+  type: test
+  phase: build
+  what: Completed capability instruction validation regression coverage.
+  commit: pending
+  inspiration: Orkestrera executed Task 5 and closed the active Capability Instruction
+    Validation Regression Coverage plan after all dependencies passed.
+  discovered: The final diff stayed within validator/contract code, regression tests,
+    PLAN, and PROGRESS. Protected vision, objective, decisions, package, release,
+    TODO, README, and changelog files were unchanged.
+  verified: '`uv run pytest tests/test_capability_validator_characterization.py tests/test_capability_contract_loader.py
+    tests/test_capability_contract_structure.py tests/test_query_cli.py::TestHej::test_hej_capability_context_names_included_and_missing_state_families
+    tests/test_query_cli.py::TestHej::test_hej_realisera_execution_context_reports_plan_driven_startup
+    tests/test_query_cli.py::TestHej::test_hej_planera_context_exposes_compact_startup_contract
+    tests/test_query_cli.py::TestHej::test_planera_compact_startup_context_does_not_require_instruction_file
+    tests/test_query_cli.py::TestHej::test_compact_startup_exception_is_limited_to_planera`
+    passed with 45 tests. `agentera validate capability-contract --format json`, representative
+    capability validation for hej, planera, realisera, and orkestrera, protected-state
+    status checks, artifact validators, and `git diff --check` passed.'
+  next: Review and commit the completed validation regression coverage when ready.
+  context:
+    intent: Complete Task 5 and close the active plan.
+    constraints: Validation and regression coverage only. No broad wording cleanup,
+      package refresh, publication, push, tag, vision or objective mutation, decision
+      satisfaction updates, installed-app repair, or 3.0 compatibility removal.
+    scope: Final validation, diff-scope review, PLAN closure, and PROGRESS evidence.
+- number: 576
+  timestamp: 2026-05-18 22:47
+  type: test
+  phase: build
+  what: Added compact-startup exception boundary regression coverage.
+  commit: pending
+  inspiration: Orkestrera executed Task 4 of the Capability Instruction Validation
+    Regression Coverage plan, preserving Planera's compact startup exception without
+    broadening it to other capabilities.
+  discovered: Planera already had direct compact-startup and missing-instructions
+    installed-app fixture coverage. The missing guard was an explicit negative boundary
+    proving non-Planera capability contexts do not inherit `compact_startup` or `startup_contract`.
+  verified: '`uv run pytest tests/test_query_cli.py::TestHej::test_hej_planera_context_exposes_compact_startup_contract
+    tests/test_query_cli.py::TestHej::test_planera_compact_startup_context_does_not_require_instruction_file
+    tests/test_query_cli.py::TestHej::test_compact_startup_exception_is_limited_to_planera`
+    passed with 3 tests. `agentera hej --format json --capability-context planera`,
+    `agentera validate capability-contract --format json`, `agentera validate capability
+    planera`, and `git diff --check` passed.'
+  next: Execute Task 5 to sync final validation regression state.
+  context:
+    intent: Complete Task 4, Preserve compact-startup exceptions.
+    constraints: Validation and regression coverage only. No broad wording cleanup,
+      package refresh, publication, push, tag, vision or objective mutation, decision
+      satisfaction updates, installed-app repair, or 3.0 compatibility removal.
+    scope: Focused hej capability-context regression tests plus PLAN and PROGRESS
+      evidence.
+- number: 575
+  timestamp: 2026-05-18 22:31
+  type: test
+  phase: build
+  what: Added contract and hej context regression coverage for instruction reads.
+  commit: pending
+  inspiration: Orkestrera continued the active Capability Instruction Validation Regression
+    Coverage plan by executing dependency-ready Tasks 2 and 3 only.
+  discovered: The contract loader needed an explicit bootstrap guard against changing
+    the required instruction-file path to legacy `prose.md`. Hej context already emitted
+    first-read metadata, and the regression now locks full-read targets and provenance.
+  verified: '`uv run pytest tests/test_capability_contract_loader.py tests/test_capability_contract_structure.py
+    tests/test_capability_validator_characterization.py tests/test_query_cli.py::TestHej::test_hej_capability_context_names_included_and_missing_state_families
+    tests/test_query_cli.py::TestHej::test_hej_realisera_execution_context_reports_plan_driven_startup`
+    passed with 42 tests. `agentera validate capability-contract --format json`, `agentera
+    validate capability hej`, `agentera hej --format json --capability-context realisera`,
+    and `git diff --check` passed.'
+  next: Execute Task 4, then Task 5 after dependencies are complete.
+  context:
+    intent: Complete Tasks 2 and 3 of Capability Instruction Validation Regression
+      Coverage.
+    constraints: Validation and regression coverage only. No broad wording cleanup,
+      package refresh, publication, push, tag, vision or objective mutation, decision
+      satisfaction updates, installed-app repair, or 3.0 compatibility removal.
+    scope: Contract loader bootstrap validation, focused regression tests, hej capability-context
+      assertions, PLAN, and PROGRESS evidence.
+- number: 574
+  timestamp: 2026-05-18 22:05
+  type: test
+  phase: build
+  what: Added capability validator regression coverage for required instructions.md.
+  commit: pending
+  inspiration: Orkestrera executed Task 1 of the active Capability Instruction Validation
+    Regression Coverage plan, limited to validator and CLI regression coverage.
+  discovered: The validator already enforces the contract-owned `instructions.md`
+    path; the missing piece was focused regression coverage proving schemas and legacy
+    `prose.md` alone are rejected through both validation surfaces.
+  verified: '`uv run pytest tests/test_capability_validator_characterization.py tests/test_capability_contract_structure.py
+    tests/test_capability_contract_loader.py` passed with 38 tests. Direct validator
+    and `agentera validate capability` invalid-fixture checks both failed with `instructions.md
+    not found`; `agentera validate capability hej` passed.'
+  next: Continue with Task 2 after Task 1 evaluation.
+  context:
+    intent: Complete Task 1, Lock validator requirement to instructions.md.
+    constraints: Validation and regression coverage only. No broad wording cleanup,
+      package refresh, publication, push, tag, vision or objective mutation, decision
+      satisfaction updates, installed-app repair, or 3.0 compatibility removal.
+    scope: Capability validator characterization tests plus PLAN and PROGRESS task
+      evidence.
 - number: 573
   timestamp: 2026-05-18 20:50
   type: test
@@ -171,155 +273,14 @@ cycles:
     scope: AGENTS.md, README.md, SKILL.md, capability prose files, capability schemas,
       contract.md, docs/vocabulary.md, bundle-skill vocabulary authority, routing-execution
       vocabulary authority, tests, TODO, CHANGELOG, PLAN, and PROGRESS.
-- number: 567
-  timestamp: 2026-05-18 13:43
-  type: fix
-  phase: build
-  what: Qualified ambiguous current SKILL.md prose references.
-  commit: pending
-  inspiration: Realisera continued with the highest-priority normal TODO after the
-    vocabulary authority and installed hej entrypoint batches were committed, focusing
-    only on current docs, runtime guidance, and tests that used bare or legacy SKILL.md
-    wording as a conceptual noun.
-  discovered: Literal paths such as `skills/agentera/SKILL.md` are compatibility and
-    path-like references that should stay intact, but current prose still used ambiguous
-    forms such as "Master dispatcher", "master SKILL.md", "SKILL.md source", "Agentera
-    SKILL.md", and "SKILL.md workflow behavior". Historical archives, vocabulary-authority
-    forbidden-term fixtures, and protected vision state still contain legacy wording
-    by design and were left unchanged.
-  verified: '`uv run pytest tests/test_bundle_skill_vocabulary_authority.py tests/test_cross_capability.py
-    tests/test_resonera_capability.py tests/test_runtime_adapters.py -q` passed with
-    147 tests. `git diff --check` passed.'
-  next: Continue with the still-open routing/execution vocabulary cleanup, capability
-    `instructions.md` to `instructions.md` rename, Decision 57 metadata implementation,
-    broad vocabulary regressions, and 3.0.0 work; this cycle did not refresh installed
-    apps or profiles.
-  context:
-    intent: Close the normal `[fix:2.4.x]` ambiguous `SKILL.md` prose cleanup TODO.
-    constraints: Scope stayed limited to current docs, runtime guidance, capability
-      schemas/prose, scripts, tests, TODO, CHANGELOG, and PROGRESS; no historical
-      archive rewrite, `.agentera/vision.yaml` edit, routing/execution vocabulary
-      cleanup, capability instruction-file rename, `first_invocation_read` implementation,
-      broad vocabulary sweep, 3.0.0 work, installed app/profile update, package-manager
-      change, publication, push, tag, objective state edit, or decision satisfaction
-      change.
-    scope: AGENTS, README, OpenCode adapter docs, Agentera skill dispatcher, hej trigger
-      schema, resonera guidance, token measurement script, focused tests, TODO, CHANGELOG,
-      and PROGRESS.
-- number: 566
-  timestamp: 2026-05-18 13:01
-  type: fix
-  phase: build
-  what: Fixed installed hej entrypoint script-path construction for unset app-home
-    environments.
-  commit: pending
-  inspiration: Realisera executed the active Installed Hej Entrypoint Resolution Fix
-    plan after explicit user confirmation, limited to installed `hej` entrypoint command
-    construction, app-home resolution order, and regression coverage for unset or
-    empty `AGENTERA_HOME`/`XDG_DATA_HOME`.
-  discovered: A shell command that combines an app-home assignment with expansion
-    of `"$AGENTERA_HOME/app/scripts/agentera"` expands arguments before the assignment
-    takes effect, so an unset environment can collapse the executable path to `/app/scripts/agentera`
-    and fail before Agentera's own repair guidance. The OpenCode `shell.env` resolver
-    already preserved valid custom app homes and default app-home discovery; the live
-    gap was installed hej command/guidance surfaces that must construct the managed
-    app script path from a previously resolved variable.
-  verified: '`uv run pytest tests/test_cross_capability.py::test_installed_hej_entrypoint_resolves_app_home_before_script_expansion
-    tests/test_cross_capability.py::test_routine_capability_guidance_uses_top_level_state_commands
-    tests/test_cross_capability.py::test_master_bundle_health_gate_is_single_call
-    tests/test_cross_capability.py::test_upgrade_guide_documents_app_home_recovery_and_artifact_backups
-    -q` passed with 4 tests. `uv run pytest tests/test_cross_capability.py tests/test_runtime_adapters.py
-    -q` passed with 131 tests. `uv run pytest tests/test_bundle_freshness.py tests/test_query_cli.py::TestHej
-    -q` passed with 89 tests. `uv run pytest -q` passed with 1143 tests. `uv run scripts/agentera
-    validate artifact --artifact PLAN.md`, `TODO.md`, `CHANGELOG.md`, `PROGRESS.md`,
-    and `DOCS.md` each returned `status=pass`. `git diff --check` passed.'
-  next: Continue with the still-open normal SKILL.md prose cleanup, routing/execution
-    vocabulary cleanup, Decision 57 implementation, broad vocabulary regressions,
-    and 3.0.0 work; this plan did not refresh installed apps or profiles.
-  context:
-    intent: Close the critical installed `hej` entrypoint resolution TODO.
-    constraints: Scope stayed limited to installed `hej` command construction, app-home
-      resolution order, and unset/empty environment regressions; no SKILL.md prose
-      cleanup, routing/execution vocabulary cleanup, Decision 57 implementation, broad
-      vocabulary tests, 3.0.0 packaging, installed app/profile refresh, package-manager
-      change, publication, push, tag, `.agentera/vision.yaml`, objective state, decision
-      satisfaction state, or protected `.agentera/decisions.yaml`/`.agentera/session.yaml`
-      edits.
-    scope: UPGRADE, Agentera skill dispatcher, hej capability instructions, cross-capability
-      tests, TODO, CHANGELOG, PLAN, and PROGRESS.
-- number: 565
-  timestamp: 2026-05-18 12:44
-  type: fix
-  phase: build
-  what: Closed the full-suite and review repair plan after vocabulary and lifecycle
-    fixes.
-  commit: pending
-  inspiration: Realisera executed the active Full Suite and Review Fixes plan after
-    explicit user confirmation, staying limited to the two known full-suite failures
-    and serious review findings from the previous wording cleanup batch.
-  discovered: The prior full suite reported 1136 passing tests and 2 failures from
-    a Decision 44 current-state wording leak in PLAN evidence plus stale dispatch-contract
-    assertions expecting removed autonomous-dispatch prose. Review gaps also needed
-    lifecycle-status coverage for upgrade build/apply/public mapping, docs-delegation
-    metadata in the app lifecycle authority, stale-profile caveat wording that could
-    not imply app-file update approval, and truthful closeout evidence.
-  verified: '`uv run pytest tests/test_decision44_vocabulary.py::test_decision_44_deprecated_preferred_vocabulary_is_bounded
-    tests/test_skill_dispatch_contract.py::test_vocabulary_documents_handoff_and_route_boundary
-    tests/test_lifecycle_vocabulary_authority.py tests/test_upgrade_cli.py -q` passed
-    with 44 tests. `uv run pytest tests/test_query_cli.py::TestHej::test_stale_bundle_structured_output_has_repair_contract
-    tests/test_bundle_freshness.py -q` passed with 19 tests. `uv run pytest -q` passed
-    with 1142 tests. Artifact validators for PLAN.md, TODO.md, CHANGELOG.md, PROGRESS.md,
-    and DOCS.md each returned `status=pass`. `git diff --check` passed.'
-  next: Return to the still-open SKILL.md prose cleanup TODO only when explicitly
-    selected; keep Decision 57 implementation and 3.0.0 work out of this repair batch.
-  context:
-    intent: Repair the full-suite regressions and serious review findings after the
-      Agentera App Files Wording Cleanup work.
-    constraints: Scope stayed limited to the two known failures and review fixes;
-      no broad vocabulary sweep, SKILL.md prose cleanup advancement, capability `instructions.md`
-      rename, `first_invocation_read`, 3.0.0 work, installed app/profile update, package-manager
-      change, publication, push, tag, `.agentera/vision.yaml`, objective state, decision
-      satisfaction state, or protected `.agentera/decisions.yaml`/`.agentera/session.yaml`
-      edits.
-    scope: '`docs/vocabulary.md`, `tests/test_skill_dispatch_contract.py`, `scripts/agentera_upgrade.py`,
-      `tests/test_lifecycle_vocabulary_authority.py`, `references/cli/app-lifecycle-vocabulary.yaml`,
-      `skills/agentera/capabilities/realisera/instructions.md`, TODO, CHANGELOG, PLAN,
-      and PROGRESS.'
-- number: 564
-  timestamp: 2026-05-18 09:45
-  type: fix
-  phase: build
-  what: Cleaned up installed-app wording that described Agentera app files too vaguely.
-  commit: pending
-  inspiration: Realisera executed the active Agentera App Files Wording Cleanup plan
-    after explicit user confirmation so current diagnostics follow the bundle/SKILL.md
-    vocabulary authority without renaming compatibility surfaces.
-  discovered: Current code had no broad README or AGENTS installed-app bundle prose
-    to rewrite; the live risks were diagnostic caveats and repair approval text that
-    still used app-state/app-refresh wording instead of naming Agentera app files.
-    The existing `bundle` structured field, `.agentera-bundle.json`, `bundle.status`,
-    `activeBundleRoot`, `bundle.dryRunCommand`, `--only bundle`, command phases/actions,
-    fixtures, and historical records remain compatibility-preserved.
-  verified: '`uv run pytest tests/test_bundle_skill_vocabulary_authority.py tests/test_lifecycle_vocabulary_authority.py
-    tests/test_decision44_vocabulary.py tests/test_bundle_freshness.py tests/test_query_cli.py::TestHej::test_stale_bundle_structured_output_has_repair_contract
-    -q` passed with 37 tests. `uv run pytest tests/test_upgrade_cli.py tests/test_install_root_characterization.py
-    -q` passed with 40 tests. Artifact validators for PLAN.md, TODO.md, CHANGELOG.md,
-    PROGRESS.md, and DOCS.md each returned `status=pass`. `git diff --check` passed.'
-  next: Continue with the still-open SKILL.md prose cleanup, routing/execution prose
-    cleanup, Decision 57 implementation, broad vocabulary regression TODOs, and 3.0.0
-    work; full suite was not run for this focused wording cleanup.
-  context:
-    intent: Close the active Agentera App Files Wording Cleanup plan.
-    constraints: Scope stayed limited to current user-facing/diagnostic installed-app
-      wording and focused regressions; no SKILL.md cleanup, routing/execution cleanup,
-      capability `instructions.md` rename, `first_invocation_read`, broad vocabulary
-      sweep, 3.0.0 packaging, installed app/profile refresh, package-manager change,
-      publication, push, tag, `.agentera/vision.yaml`, objective state, decision satisfaction
-      state, or protected `.agentera/decisions.yaml`/`.agentera/session.yaml` edits.
-    scope: '`scripts/agentera`, `scripts/agentera_upgrade.py`, `tests/test_bundle_skill_vocabulary_authority.py`,
-      `tests/test_bundle_freshness.py`, `tests/test_query_cli.py`, TODO, CHANGELOG,
-      PLAN, and PROGRESS.'
 archive:
+- summary: 'Cycle 567 (2026-05-18): Qualified ambiguous current SKILL.md prose references.'
+- summary: 'Cycle 566 (2026-05-18): Fixed installed hej entrypoint script-path construction
+    for unset app-home environments.'
+- summary: 'Cycle 565 (2026-05-18): Closed the full-suite and review repair plan after
+    vocabulary and lifecycle fixes.'
+- summary: 'Cycle 564 (2026-05-18): Cleaned up installed-app wording that described
+    Agentera app files too vaguely.'
 - summary: 'Cycle 563 (2026-05-18): Aligned doctor, hej, and upgrade app lifecycle
     metadata with Decision 54.'
 - summary: 'Cycle 562 (2026-05-18): Added the Decision 57 capability instruction contract
@@ -388,11 +349,3 @@ archive:
     raw-read reduction.'
 - summary: 'Cycle 528 (2026-05-16): Completed and synchronized the Planera compact
     startup contract.'
-- summary: 'Cycle 527 (2026-05-16): Completed and synchronized the plan source-contract
-    raw-read reduction.'
-- summary: 'Cycle 526 (2026-05-15): Completed and synchronized the `agentera hej`
-    decision-review attention feature.'
-- summary: 'Cycle 525 (2026-05-15): Completed and synchronized the D48 `agentera usage`
-    namespace feature.'
-- summary: 'Cycle 524 (2026-05-15): Synchronized PLAN Task 4 version and local state
-    closeout for the D48 `agentera verify` namespace...'

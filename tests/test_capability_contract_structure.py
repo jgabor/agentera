@@ -44,6 +44,7 @@ def test_contract_structures_directory_requirements():
     assert directory["schema_files"]["directory"] == "schemas"
     assert directory["schema_files"]["glob"] == "*.yaml"
     assert directory["schema_files"]["minimum_count"] == 1
+    assert "required_files" not in directory
 
 
 def test_contract_structures_per_group_entry_and_deprecation_rules():

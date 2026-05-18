@@ -1816,9 +1816,11 @@ class TestHej:
         assert context["capability"] == "orkestrera"
         assert first_read["value"] == "full"
         assert first_read["instruction_target"]["path"] == "skills/agentera/capabilities/orkestrera/instructions.md"
+        assert first_read["instruction_target"]["exists"] is True
         assert first_read["obligation_summary"] == "full_instruction_file_read_required"
         assert first_read["runtime_enforcement"] is False
         assert first_read["provenance"]["authority_path"] == "references/cli/capability-instruction-contract.yaml"
+        assert first_read["provenance"]["decision"] == 57
         assert context["declared_state_needs"] == [
             "plan",
             "progress",
@@ -1833,6 +1835,8 @@ class TestHej:
         assert context["missing_state_families"] == ["decisions", "vision", "profile"]
         assert context["cli_fallback"] == ["agentera decisions --format json"]
         assert "before raw file access" in context["raw_artifact_read_policy"]
+        assert "agentera planera" not in json.dumps(data["source_contract"])
+        assert "agentera realisera" not in json.dumps(data["source_contract"])
 
     def test_hej_planera_context_exposes_compact_startup_contract(self, project):
         _write_artifact(project, ".agentera/plan.yaml", {
@@ -1907,6 +1911,31 @@ class TestHej:
         assert first_read["instruction_target"]["exists"] is False
         assert contract["instructions_runtime_read_required"] is False
         assert contract["canonical_surface"] == "agentera hej --format json --capability-context planera"
+
+    def test_compact_startup_exception_is_limited_to_planera(self, project):
+        _write_artifact(project, ".agentera/plan.yaml", {
+            "header": {"title": "Compact exception boundary", "status": "active"},
+            "tasks": [{"number": 1, "name": "Boundary", "status": "pending"}],
+        })
+
+        capabilities = sorted(
+            path.name
+            for path in (REPO_ROOT / "skills" / "agentera" / "capabilities").iterdir()
+            if path.is_dir()
+        )
+        contexts = {}
+        for capability in capabilities:
+            result = _run("hej", "--format", "json", "--capability-context", capability, cwd=project)
+            assert result.returncode == 0, result.stderr
+            contexts[capability] = json.loads(result.stdout)["source_contract"]["capability_context"]
+
+        assert contexts["planera"]["first_invocation_read"]["value"] == "compact_startup"
+        assert contexts["planera"]["startup_contract"]["instructions_runtime_read_required"] is False
+        for capability, context in contexts.items():
+            if capability == "planera":
+                continue
+            assert context["first_invocation_read"]["value"] == "full"
+            assert "startup_contract" not in context
 
     def test_hej_orkestrera_context_reports_ready_blocked_and_selected_tasks(self, project):
         _write_artifact(project, ".agentera/plan.yaml", {
@@ -3061,7 +3090,12 @@ class TestHej:
         data = json.loads(r.stdout)
         assert "execution_context" in data["source_contract"]["fields"]
         capability_context = data["source_contract"]["capability_context"]
+        first_read = capability_context["first_invocation_read"]
         assert capability_context["capability"] == "realisera"
+        assert first_read["value"] == "full"
+        assert first_read["instruction_target"]["path"] == "skills/agentera/capabilities/realisera/instructions.md"
+        assert first_read["obligation_summary"] == "full_instruction_file_read_required"
+        assert first_read["provenance"]["authority_path"] == "references/cli/capability-instruction-contract.yaml"
         assert "agentera query changelog --format json" in capability_context["cli_fallback"]
         context = data["execution_context"]
         assert context["mode"] == "plan_driven"
