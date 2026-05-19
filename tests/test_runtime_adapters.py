@@ -199,6 +199,8 @@ def _validate_codex_marketplace(root: Path = REPO_ROOT) -> list[str]:
         if not isinstance(path, str):
             errors.append("codex marketplace agentera source path must be a string")
             continue
+        if path != "./plugins/agentera":
+            errors.append("codex marketplace agentera source path must be ./plugins/agentera")
         plugin_root = _resolve_inside(root, path)
         if plugin_root is None:
             errors.append("codex marketplace agentera path must stay inside repo root")
@@ -1079,6 +1081,30 @@ class TestCodexPackaging:
         assert "codex marketplace must expose the aggregate agentera plugin" in errors
         assert "codex marketplace agentera path must resolve to a plugin root" in errors
         assert "codex marketplace must not point directly at a skill directory" in errors
+
+    def test_codex_marketplace_fails_when_pointing_at_repo_root(self, tmp_path):
+        (tmp_path / ".agents/plugins").mkdir(parents=True)
+        (tmp_path / ".codex-plugin").mkdir()
+        (tmp_path / ".codex-plugin/plugin.json").write_text(
+            json.dumps({"name": "agentera", "version": "1.0.0"}),
+            encoding="utf-8",
+        )
+        (tmp_path / ".agents/plugins/marketplace.json").write_text(
+            json.dumps({
+                "name": "agentera",
+                "plugins": [{
+                    "name": "agentera",
+                    "source": {"source": "local", "path": "."},
+                    "policy": {"installation": "AVAILABLE", "authentication": "ON_USE"},
+                    "category": "Coding",
+                }],
+            }),
+            encoding="utf-8",
+        )
+
+        errors = _validate_codex_marketplace(tmp_path)
+
+        assert "codex marketplace agentera source path must be ./plugins/agentera" in errors
 
 
 class TestLifecycleAdapters:

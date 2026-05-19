@@ -8,7 +8,7 @@
       "name": "agentera",
       "source": {
         "source": "local",
-        "path": "."
+        "path": "./plugins/agentera"
       },
       "policy": {
         "installation": "AVAILABLE",
