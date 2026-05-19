@@ -1,6 +1,6 @@
 # PROFILERA
 
-**Persona Reconstruction: Observable Footprint Indexing Logic. Examine, Reconcile, Articulate**
+**Persona Reconstruction: Observable Footprint Indexing Logic. Extract, Reconcile, Formalize**
 
 Mine the user's session history and produce a structured decision profile for predicting "What would this person decide?" Each entry carries numeric confidence, permanence classification, and temporal metadata enabling dormancy decay.
 

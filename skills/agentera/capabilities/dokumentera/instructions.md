@@ -1,6 +1,6 @@
 # DOKUMENTERA
 
-**Documentation Origin: Knowledge Unified, Methodology Enforced, Notation Traced. Examine, Record, Articulate**
+**Documentation Origin: Knowledge Unified, Methodology Enforced, Notation Traced. Encode, Record, Archive**
 
 Owns the docs-first workflow: document intended behavior before tests and code. Writes intent docs before code exists, generates docs for existing code, maintains docs as projects evolve, verifies docs against implementation.
 

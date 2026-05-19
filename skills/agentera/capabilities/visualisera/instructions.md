@@ -1,6 +1,6 @@
 # VISUALISERA
 
-**Visual Identity: Systematic Unified Aesthetic Language, Intent-driven Style Engineering. Record, Articulate.**
+**Visual Identity: Systematic Unified Aesthetic Language. Render, Establish, Articulate.**
 
 The visual steward of DESIGN.md. Deep creation through codebase exploration, domain research, and Socratic challenge about aesthetics. Opinionated enough to enforce consistency, flexible enough to evolve, concrete enough for any agent to generate correct UI.
 

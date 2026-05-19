@@ -938,7 +938,7 @@ def parse_entries(text: str, spec_name: str) -> list[dict]:
 
 def _extract_resolved_section(text: str) -> tuple[int, int, str]:
     """Locate the `## Resolved` section and return (start, end, body)."""
-    m = re.search(r"^##\s+Resolved\s*$", text, re.MULTILINE)
+    m = re.search(r"^##\s+(?:✓\s+)?Resolved\s*$", text, re.MULTILINE)
     if not m:
         return -1, -1, ""
     body_start = m.end() + 1

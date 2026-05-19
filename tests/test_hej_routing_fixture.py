@@ -190,7 +190,7 @@ def test_cli_budget_fixture_rejects_source_contract_in_dashboard(semantic_eval, 
 
         ─── status ─────────────────────────────
 
-          ≡ plan      [██████▓▓░░] 4/6 tasks
+          ≡ plan      [██████▓░░░] 4/6 tasks
 
         ─── attention ──────────────────────────
 

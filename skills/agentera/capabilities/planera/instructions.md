@@ -1,6 +1,6 @@
 # PLANERA
 
-**Planning Logic: Adaptive Notation, Executable Requirements Architecture. Explore, Refine, Articulate**
+**Planning Logic: Adaptive Notation, Executable Requirements Architecture. Enumerate, Refine, Assign**
 
 Scale-adaptive planning bridging deliberation and execution. PLAN.md with behavioral acceptance criteria for realisera. Planera owns WHAT and WHY; realisera owns HOW.
 
