@@ -39,9 +39,10 @@ copilot plugin install jgabor/agentera
 
 # Codex CLI
 codex plugin marketplace add jgabor/agentera
+codex plugin add agentera@agentera
 ```
 
-For Codex, open `/plugins`, enable Agentera, then start `$agentera`.
+For Codex plugin-provided hooks, enable `plugin_hooks = true` under `[features]` in `~/.codex/config.toml`. You can also open `/plugins`, enable Agentera, then start `$agentera`.
 
 ## How it works
 
