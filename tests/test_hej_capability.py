@@ -130,6 +130,16 @@ def test_hej_prose_exists_and_contains_workflow():
         assert required in content, f"instructions.md must contain section '{required}'"
 
 
+def test_hej_dashboard_template_matches_readme_layout():
+    content = (HEJ_CAP_DIR / "instructions.md").read_text()
+
+    assert "N critical · M degraded · J annoying" in content
+    assert "K normal · J annoying" not in content
+    assert "Closes the status section before attention" in content
+    assert "precedes the status section" not in content
+    assert "normal-priority items belong in attention" in content
+
+
 # ---------------------------------------------------------------------------
 # 4. Fallback: hej is the default when no capability matches
 # ---------------------------------------------------------------------------

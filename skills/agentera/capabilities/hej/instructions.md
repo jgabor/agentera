@@ -214,17 +214,16 @@ Show where things stand.
    ├─┤│ ┬├┤ │││ │ ├┤ ├┬┘├─┤
    ┴ ┴└─┘└─┘┘└┘ ┴ └─┘┴└─┴ ┴
 
-   [1-2 sentence conversational opener: the colleague's read on
-   the situation. What shipped, what's moving, what needs eyes.
-   Interpretation, not metrics.]
-
    ─── status ─────────────────────────────
 
      ⛶ health    [⮉|⮋] [grade] ([worst dimension: grade])
-     ⇶ issues    N critical · M degraded · K normal · J annoying
-     ≡ plan      [██████▓▓░░] N/M tasks
+     ⇶ issues    N critical · M degraded · J annoying
+     ≡ plan      [██████▓░░░] N/M tasks
      ⎘ optim     [metric] [current] → [target]
      ♾ profile   [loaded | not found]
+
+     [1-2 sentence narrative read: what shipped, what's moving, what needs eyes.
+     Interpretation, not metrics. Closes the status section before attention.]
 
    ─── attention ──────────────────────────
 
@@ -248,7 +247,10 @@ Show where things stand.
    - Trend arrows (VT12/VT13) show health trajectory
    - Progress bars (VT18) show plan completion visually
    - The inline separator (VT16) joins counts on a single line
-   - The conversational opener precedes the status section. It's the colleague's interpretation; the dashboard below is the evidence
+   - Lead with status metrics, then the narrative read inside the status section
+   - The narrative read is colleague interpretation; metric lines above it are evidence
+   - The issues summary line lists critical, degraded, and annoying counts only;
+     normal-priority items belong in attention with → (SI3), not on the summary line
    - Omit any line whose source artifact is missing
    - Omit any section that would be empty (e.g., no attention items = no attention section)
 

@@ -4,8 +4,17 @@
 
 ## [2.5.0] · 2026-05-18
 
+### Key highlights
+
+- Capability instructions are now `instructions.md` with `first_invocation_read` discoverable through `agentera hej --capability-context`.
+- Machine-readable vocabulary authorities now govern app lifecycle, routing/execution, and bundle/skill-entry terminology with regression gates.
+- Legacy dispatch, bundle, and `SKILL.md` wording is replaced in current prose with canonical route/suggest/delegate/spawn and Agentera app files terms.
+- Session hook bookmarks no longer live in committed project artifacts; doctor, hej, and upgrade share Decision 54 lifecycle statuses.
+- Hej routes complex TODOs to Planera before Realisera; up-to-date doctor output no longer implies required repair action.
+
 ### Changed
 
+- Changed the Hej dashboard layout so status metrics lead, the narrative read sits inside `status`, the issues summary line lists `critical · degraded · annoying` only, and normal-priority items render in attention with `→`.
 - Added `first_invocation_read` capability metadata to `agentera hej --format json --capability-context <name>`, including Planera's compact startup exception and explicit non-enforcement of runtime reads.
 - Added a machine-readable Decision 57 capability instruction contract for current `instructions.md`, legacy `prose.md` compatibility, `first_invocation_read` values, full-read obligations, compact-startup exception boundaries, and explicit separation from runtime behavior work.
 - Changed `hej` next-action selection so complex TODOs with contract, schema, metadata, validation, migration, multi-surface, or acceptance-risk signals route to ≡ planera before ⧉ realisera, while narrow one-cycle TODOs still route directly to Realisera.

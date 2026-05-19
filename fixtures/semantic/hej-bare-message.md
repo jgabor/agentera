@@ -24,11 +24,11 @@ hej
 ├─┤│ ┬├┤ │││ │ ├┤ ├┬┘├─┤
 ┴ ┴└─┘└─┘┘└┘ ┴ └─┘┴└─┴ ┴
 
-The active plan has one concrete next step: verify the bare hej path.
-
 ─── status ─────────────────────────────
 
   ≡ plan      [░░░░░░░░░░] 0/1 tasks
+
+  The active plan has one concrete next step: verify the bare hej path.
 
 ─── attention ──────────────────────────
 

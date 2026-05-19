@@ -28,11 +28,11 @@ Run /agentera for this project and route to the most useful next action.
 ├─┤│ ┬├┤ │││ │ ├┤ ├┬┘├─┤
 ┴ ┴└─┘└─┘┘└┘ ┴ └─┘┴└─┴ ┴
 
-The active plan is moving; Task 5 is the next concrete checkpoint.
-
 ─── status ─────────────────────────────
 
-  ≡ plan      [██████▓▓░░] 4/6 tasks
+  ≡ plan      [██████▓░░░] 4/6 tasks
+
+  The active plan is moving; Task 5 is the next concrete checkpoint.
 
 ─── attention ──────────────────────────
 
@@ -63,7 +63,7 @@ Task 5 is ready to run from the active plan.
   "required_output": [
     "┌─┐┌─┐┌─┐",
     "─── status ─────────────────────────────",
-    "≡ plan      [██████▓▓░░] 4/6 tasks",
+    "≡ plan      [██████▓░░░] 4/6 tasks",
     "→ PLAN Task 5: Add Tool-Budget And Regression Tests",
     "suggested → ⎈ orkestrera (PLAN Task 5)",
     "⌂ hej · waiting"

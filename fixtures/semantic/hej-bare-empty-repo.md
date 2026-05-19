@@ -19,11 +19,11 @@ hej
 ├─┤│ ┬├┤ │││ │ ├┤ ├┬┘├─┤
 ┴ ┴└─┘└─┘┘└┘ ┴ └─┘┴└─┴ ┴
 
-No saved Agentera project state is present yet. Start by defining the project direction.
-
 ─── status ─────────────────────────────
 
   ⌂ project   new
+
+  No saved Agentera project state is present yet. Start by defining the project direction.
 
 ─── next ───────────────────────────────
 

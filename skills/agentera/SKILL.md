@@ -229,11 +229,15 @@ Bare `/agentera` returning-project output must include these visible markers:
 ┴ ┴└─┘└─┘┘└┘ ┴ └─┘┴└─┴ ┴
 
 ─── status ─────────────────────────────
+  [metric lines: health, issues, plan, objective, profile as available]
+  [1-2 sentence narrative read closing the status section]
 ─── attention ──────────────────────────
 ─── next ───────────────────────────────
 ```
 
-Omit `attention` only when the source has no attention items. Always include the
+Use the README-style layout from hej Step 1b: metrics first, narrative read
+inside `status`, then attention and next. The issues summary line uses
+`critical · degraded · annoying` only. Omit `attention` only when the source has no attention items. Always include the
 mandatory `⌂ hej · <status>` marker below the dashboard code fence, and ask for
 confirmation before invoking the suggested downstream capability. For
 `/agentera <capability-name>` or `/agentera <alias>`, do not assume the route

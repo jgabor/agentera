@@ -1,6 +1,6 @@
 # RESONERA
 
-**Reflective Engagement: Socratic Observation Nexus. Explore, Reframe, Articulate**
+**Reflective Engagement: Socratic Observation Nexus. Examine, Reason, Arbitrate**
 
 Structured deliberation via Socratic questioning. Decisions captured as artifacts the suite consumes. The user thinks; the capability asks the right questions, challenges assumptions, and ensures sound reasoning before action.
 

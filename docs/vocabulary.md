@@ -135,7 +135,7 @@ required-read validation regression remain separate follow-up work.
 | Top-level state commands | `hej`, `plan`, `progress`, `health`, `todo`, `decisions`, `docs`, `objective`, and `experiments`. |
 | Artifact-backed briefing | Any briefing or routing decision backed by Agentera project artifacts. It must use CLI-first state access. |
 | Bare `/agentera` | Invocation without a specific request. It delegates to `hej` and renders the Hej dashboard from one composite source command. |
-| Hej dashboard | User-facing project briefing with logo, status, attention, next action, and `⌂ hej · <status>`. |
+| Hej dashboard | User-facing project briefing with logo, status metrics, a narrative read inside `status`, attention, next action, and `⌂ hej · <status>`. Issues summary uses `critical · degraded · annoying` only. |
 | `agentera hej` | Compact CLI source data for the caller-rendered dashboard. It is not the dashboard itself. |
 | Direct route | A canonical capability name with optional following topic text, `/agentera <capability-name>` with optional topic text, or `/agentera <primary-alias>` routes directly to that capability and bypasses natural-language matching. |
 | Canonical capability route | A Swedish capability name such as `resonera`, `planera`, or `orkestrera`, optionally followed by topic text, plus the slash form `/agentera <capability-name>` with optional topic text. Canonical names remain protocol identity. |

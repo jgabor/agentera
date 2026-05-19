@@ -11,38 +11,147 @@ Agentera gives coding agents specialized roles, shared project artifacts,
 behavioral verification gates, and portable saved context across runtimes.
 
 <p>
-<a href="#quick-start">Quick start</a> ·
-<a href="#how-it-works">How it works</a> ·
+<a href="#try-it">Try it</a> ·
+<a href="#quick-start">Install</a> ·
 <a href="#capabilities">Capabilities</a> ·
+<a href="#agentera-cli">CLI</a> ·
+<a href="#troubleshooting">Troubleshooting</a> ·
+<a href="#for-capability-authors">Authors</a> ·
 <a href="#upgrade-from-v1">Upgrade</a>
 </p>
-
 </div>
+
+## Try it
+
+1. Install Agentera for your runtime ([Quick start](#quick-start)).
+2. Open a git project (existing repo or new).
+3. Run `/agentera` in the agent (`$agentera` in Codex).
+
+You do not need to create `.agentera/` by hand. The first briefing bootstraps
+project state as capabilities run; `PROFILE.md` stays optional until you use
+`profilera`.
+
+If hooks or the managed app look wrong, run
+[`agentera doctor`](#troubleshooting) before debugging install paths by hand.
+
+## What you see
+
+`/agentera` renders a project briefing and suggests the most useful next
+capability.
+
+```text
+┌─┐┌─┐┌─┐┌┐┌┌┬┐┌─┐┬─┐┌─┐
+├─┤│ ┬├┤ │││ │ ├┤ ├┬┘├─┤
+┴ ┴└─┘└─┘┘└┘ ┴ └─┘┴└─┴ ┴
+
+─── status ─────────────────────────────
+
+  ⛶ health    ⮉ B+ (testing: C)
+  ⇶ issues    0 critical · 2 degraded · 5 annoying
+  ≡ plan      [██████▓░░░] 6/10 tasks
+  ♾ profile   loaded
+
+  Shipped auth middleware and rate limiting last cycle.
+  Health trending up, test coverage still lagging.
+
+─── attention ──────────────────────────
+
+  ⇉ test coverage below 60%, degrading since cycle 8
+  ⇉ task 7 blocked on API schema decision
+
+─── next ───────────────────────────────
+
+  suggested → ❈ resonera (resolve API schema to unblock task 7)
+```
 
 ## Quick start
 
-Pick one runtime, install Agentera, then run `/agentera` (`$agentera` in Codex).
+Pick one runtime, install, then run `/agentera` (`$agentera` in Codex).
+
+<details>
+<summary><strong>Claude Code</strong></summary>
 
 ```bash
-# Claude Code
 npx skills add jgabor/agentera -g -a claude-code --skill agentera -y
+```
 
-# OpenCode
+</details>
+
+<details>
+<summary><strong>OpenCode</strong></summary>
+
+Install the skill and the plugin (both steps):
+
+```bash
 npx skills add jgabor/agentera -g -a opencode --skill agentera -y
 mkdir -p ~/.config/opencode/plugins
 curl -fsSL https://raw.githubusercontent.com/jgabor/agentera/main/.opencode/plugins/agentera.js \
   -o ~/.config/opencode/plugins/agentera.js
+```
 
-# Copilot CLI
+OpenCode also routes a bare message `hej` to the same dashboard.
+
+</details>
+
+<details>
+<summary><strong>Copilot CLI</strong></summary>
+
+```bash
 copilot plugin marketplace add jgabor/agentera
 copilot plugin install jgabor/agentera
+```
 
-# Codex CLI
+</details>
+
+<details>
+<summary><strong>Codex CLI</strong></summary>
+
+```bash
 codex plugin marketplace add jgabor/agentera
 codex plugin add agentera@agentera
 ```
 
-For Codex plugin-provided hooks, enable `plugin_hooks = true` under `[features]` in `~/.codex/config.toml`. You can also open `/plugins`, enable Agentera, then start `$agentera`.
+For plugin-provided hooks, enable `plugin_hooks = true` under `[features]` in
+`~/.codex/config.toml`. You can also open `/plugins`, enable Agentera, then start
+`$agentera`.
+
+</details>
+
+### Skill install vs local clone
+
+| You have | Use for day-to-day work | Use for upgrade, repair, validation |
+|---|---|---|
+| Skill or marketplace plugin only | `/agentera` (or `$agentera`) | `uvx --from git+https://github.com/jgabor/agentera agentera …` |
+| Git clone of this repo | `/agentera` plus hooks if configured | `uv run scripts/agentera …` |
+
+Agentera keeps a managed app under your Agentera data directory (app home). Skill
+installs load routing prose; upgrade and doctor refresh the managed app and wire
+runtime config. You rarely set paths manually—`agentera doctor` reports stale or
+missing app files and suggested repair commands.
+
+## Capabilities
+
+All twelve capabilities live inside one Agentera skill. Canonical Swedish names
+are the protocol identity; aliases are direct `/agentera <alias>` routes.
+
+| | Capability | Alias | Use it when you need... |
+|---|---|---|---|
+| ⌂ | hej | `status` | A project briefing and next best action. |
+| ⛥ | visionera | `vision` | Product direction in `.agentera/vision.yaml`. |
+| ❈ | resonera | `discuss` | Structured deliberation before consequential choices. |
+| ⬚ | inspirera | `research` | External pattern or reference analysis. |
+| ▤ | dokumentera | `document` | Documentation aligned with code and intent. |
+| ◰ | visualisera | `design` | Visual identity and design-token direction. |
+| ≡ | planera | `plan` | A scoped plan with behavioral acceptance criteria. |
+| ⎈ | orkestrera | `orchestrate` | Autonomous plan execution with evaluation and retry checks. |
+| ⧉ | realisera | `build` | One verified development cycle. |
+| ⎘ | optimera | `optimize` | Measured improvement of a concrete metric. |
+| ⛶ | inspektera | `audit` | Architecture, test, dependency, and artifact health audits. |
+| ♾ | profilera | `profile` | A reusable decision profile for future sessions. |
+
+You can also use plain language: `/agentera help me decide`, `/agentera plan
+this`, `/agentera run the plan`, `/agentera audit the codebase`, or `/agentera
+update docs`.
 
 ## How it works
 
@@ -71,7 +180,8 @@ Human-facing artifacts stay at the project root when useful:
 | `DESIGN.md` | visualisera | Visual identity system. |
 | `PROFILE.md` | profilera | User decision profile, stored in the Agentera data directory by default. |
 
-Session hook bookmarks are runtime-local under the Agentera data directory, not committed project state.
+Session hook bookmarks are runtime-local under the Agentera data directory, not
+committed project state.
 
 Before Agentera, every session has to rediscover intent:
 
@@ -94,13 +204,13 @@ guessing from chat history.
 | Prompt chains | Sequential prompts | Chat transcript | Low |
 | Agent platforms | Platform-owned workflows | Vendor service | Platform-bound |
 | Vector memory | Retrieved snippets | External index | Depends on integration |
-| Agentera | Capability-owned artifacts | Your repo and data directory | Claude Code, OpenCode, Copilot CLI, Codex CLI |
+| Agentera | Capability-owned artifacts with behavioral acceptance and health gates | Your repo and data directory | Claude Code, OpenCode, Copilot CLI, Codex CLI |
 
 Routing is deterministic before it is fuzzy. The Agentera routing entry point at
-`skills/agentera/SKILL.md` uses a five-layer routing model: bare `/agentera` or `hej`, exact capability or alias,
-high-confidence natural language, borderline disambiguation, and fallback to the
-dashboard. Capability trigger patterns live in each capability's schema, not in a
-single hardcoded prompt.
+`skills/agentera/SKILL.md` uses a five-layer routing model: bare `/agentera` or
+`hej`, exact capability or alias, high-confidence natural language, borderline
+disambiguation, and fallback to the dashboard. Capability trigger patterns live in
+each capability's schema, not in a single hardcoded prompt.
 
 ## Agentera CLI
 
@@ -108,6 +218,8 @@ The Agentera CLI is how agents read project state precisely. Instead of opening
 whole artifacts and spending context on irrelevant history, they ask targeted
 questions: what changed, what is next, what is blocked, what decisions matter,
 and whether the project is healthy.
+
+From a clone (Python 3.11+, [uv](https://docs.astral.sh/uv/)):
 
 ```bash
 uv run scripts/agentera hej --format json
@@ -118,70 +230,20 @@ uv run scripts/agentera health --format json
 uv run scripts/agentera doctor --format json
 ```
 
-That matters because startup context gets read again and again. Benchmarks track
-when agents still fall back to raw artifact reads after using the CLI, then use
-that evidence to improve the commands. The result is less token waste, fewer
-stale assumptions, and faster handoff between sessions because agents can read
-the right slice of state at the right time.
+Without a clone:
+
+```bash
+uvx --from git+https://github.com/jgabor/agentera agentera doctor --format json
+uvx --from git+https://github.com/jgabor/agentera agentera hej --format json
+```
+
+Startup context gets read again and again. Benchmarks measure when agents still
+fall back to raw artifact reads after using the CLI, then use that evidence to
+improve commands—less token waste, fewer stale assumptions, faster handoff. See
+[`docs/benchmark.md`](./docs/benchmark.md) for methodology.
 
 Slash routes and CLI commands are separate surfaces. `/agentera plan` routes to
 `planera`; `agentera plan` reads plan state.
-
-See [`docs/benchmark.md`](./docs/benchmark.md) for the benchmark methodology.
-
-## What you see
-
-Start with `/agentera`. It renders a project briefing and suggests the most useful
-next capability.
-
-```text
-┌─┐┌─┐┌─┐┌┐┌┌┬┐┌─┐┬─┐┌─┐
-├─┤│ ┬├┤ │││ │ ├┤ ├┬┘├─┤
-┴ ┴└─┘└─┘┘└┘ ┴ └─┘┴└─┴ ┴
-
-─── status ─────────────────────────────
-
-  ⛶ health    ⮉ B+ (testing: C)
-  ⇶ issues    0 critical · 2 degraded · 5 annoying
-  ≡ plan      [██████▓░░░] 6/10 tasks
-  ♾ profile   loaded
-
-  Shipped auth middleware and rate limiting last cycle.
-  Health trending up, test coverage still lagging.
-
-─── attention ──────────────────────────
-
-  ⇉ test coverage below 60%, degrading since cycle 8
-  ⇉ task 7 blocked on API schema decision
-
-─── next ───────────────────────────────
-
-  suggested → ❈ resonera (resolve API schema to unblock task 7)
-```
-
-## Capabilities
-
-All twelve capabilities live inside one Agentera skill. Canonical Swedish names
-are the protocol identity; aliases are direct `/agentera <alias>` routes.
-
-| | Capability | Alias | Use it when you need... |
-|---|---|---|---|
-| ⌂ | hej | `status` | A project briefing and next best action. |
-| ⛥ | visionera | `vision` | Product direction in `.agentera/vision.yaml`. |
-| ❈ | resonera | `discuss` | Structured deliberation before consequential choices. |
-| ⬚ | inspirera | `research` | External pattern or reference analysis. |
-| ▤ | dokumentera | `document` | Documentation aligned with code and intent. |
-| ◰ | visualisera | `design` | Visual identity and design-token direction. |
-| ≡ | planera | `plan` | A scoped plan with behavioral acceptance criteria. |
-| ⎈ | orkestrera | `orchestrate` | Autonomous plan execution with evaluation and retry checks. |
-| ⧉ | realisera | `build` | One verified development cycle. |
-| ⎘ | optimera | `optimize` | Measured improvement of a concrete metric. |
-| ⛶ | inspektera | `audit` | Architecture, test, dependency, and artifact health audits. |
-| ♾ | profilera | `profile` | A reusable decision profile for future sessions. |
-
-You can also use plain language: `/agentera help me decide`, `/agentera plan
-this`, `/agentera run the plan`, `/agentera audit the codebase`, or `/agentera
-update docs`.
 
 ## Saved project context
 
@@ -212,12 +274,38 @@ runtimes smoother. See
 [`references/adapters/runtime-feature-parity.md`](./references/adapters/runtime-feature-parity.md)
 for exact runtime behavior and hook surfaces.
 
+## Troubleshooting
+
+**Install or app home looks wrong**
+
+```bash
+uvx --from git+https://github.com/jgabor/agentera agentera doctor
+# or from a clone:
+uv run scripts/agentera doctor
+```
+
+Doctor checks the managed app, Agentera app files status, and runtime wiring. Follow the
+printed repair commands rather than guessing `AGENTERA_HOME` paths.
+
+**Migrating from Agentera v1**
+
+Preview, then apply (see [Upgrade from v1](#upgrade-from-v1) or [`UPGRADE.md`](./UPGRADE.md)):
+
+```bash
+uvx --from git+https://github.com/jgabor/agentera agentera upgrade --project "$PWD" --dry-run
+uvx --from git+https://github.com/jgabor/agentera agentera upgrade --project "$PWD" --yes
+```
+
+**Behavior differs by runtime**
+
+Validation strictness, session preload, and Codex hook setup vary by host. Use
+[`references/adapters/runtime-feature-parity.md`](./references/adapters/runtime-feature-parity.md)
+as the source of truth.
+
 ## For capability authors
 
 Agentera is also a reference implementation of a portable skill protocol. Build
 against the artifact contracts instead of one runtime.
-
-Core surfaces:
 
 | Surface | Path |
 |---|---|
@@ -226,6 +314,7 @@ Core surfaces:
 | Schema contract | [`skills/agentera/capability_schema_contract.yaml`](./skills/agentera/capability_schema_contract.yaml) |
 | Instruction-file contract | [`references/cli/capability-instruction-contract.yaml`](./references/cli/capability-instruction-contract.yaml) |
 | Runtime parity | [`references/adapters/runtime-feature-parity.md`](./references/adapters/runtime-feature-parity.md) |
+| Terminology | [`docs/vocabulary.md`](./docs/vocabulary.md) |
 
 Validate a capability through the canonical namespace:
 
@@ -243,7 +332,19 @@ the default profile keeps that metadata under `source_contract.capability_contex
 Use `--context-profile slim` for the compact startup capsule at top-level
 `capability_context`; Planera reports its startup contract at
 `capability_context.context.planning_context.startup_contract`. Runtime
-enforcement is still false.
+enforcement is still false. See
+[`AGENTS.md`](./AGENTS.md) for agent operating rules and
+[`references/cli/capability-instruction-contract.yaml`](./references/cli/capability-instruction-contract.yaml)
+for instruction-file contracts.
+
+## Development
+
+Requires Python 3.11+ and [uv](https://docs.astral.sh/uv/).
+
+```bash
+uv run --with pytest --with pyyaml pytest -q
+uv run scripts/agentera validate capability-contract --format json
+```
 
 ## Upgrade from v1
 
@@ -270,6 +371,8 @@ manager commands such as `npx skills add` or `npx skills remove`. See
 
 ## Uninstall
 
+For Codex, disable Agentera in `/plugins` before removing the marketplace entry.
+
 ```bash
 # Claude Code / OpenCode
 npx skills remove jgabor/agentera -g -y
@@ -278,6 +381,9 @@ npx skills remove jgabor/agentera -g -y
 copilot plugin uninstall jgabor/agentera
 
 # Codex CLI
-# First disable Agentera in /plugins, then:
 codex plugin marketplace remove jgabor/agentera
 ```
+
+---
+
+**License:** [Apache-2.0](./LICENSE) · **Changelog:** [`CHANGELOG.md`](./CHANGELOG.md) · **Version:** 2.5.0

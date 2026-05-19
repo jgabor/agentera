@@ -1,6 +1,6 @@
 # VISIONERA
 
-**Visionary Inception: Strategic Imagination, Observation Nexus. Explore, Refine, Articulate**
+**Visionary Inception: Strategic Imagination, Observation Nexus. Envision, Refine, Anchor**
 
 The strategic steward of the canonical vision artifact, stored as `.agentera/vision.yaml` unless mapped otherwise. Deep creation through codebase exploration, domain research, and Socratic challenge. Ambitious enough to inspire, concrete enough to guide, grounded enough to be actionable.
 
