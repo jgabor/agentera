@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+## [2.5.1] · 2026-05-21
+
+### Fixed
+
+- Fixed the Hej dashboard layout and README onboarding details for the 2.5.x release line.
+- Made Codex plugin-provided hooks the preferred upgrade path when the Agentera Codex plugin is installed and enabled, while preserving copied hooks as a fallback.
+
 ## [2.5.0] · 2026-05-18
 
 ### Key highlights

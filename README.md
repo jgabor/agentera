@@ -333,8 +333,7 @@ Decision 57 also defines `first_invocation_read` metadata emitted by
 the default profile keeps that metadata under `source_contract.capability_context`.
 Use `--context-profile slim` for the compact startup capsule at top-level
 `capability_context`; Planera reports its startup contract at
-`capability_context.context.planning_context.startup_contract`. Runtime
-enforcement is still false. See
+`capability_context.context.planning_context.startup_contract`, and runtime enforcement is still false. See
 [`AGENTS.md`](./AGENTS.md) for agent operating rules and
 [`references/cli/capability-instruction-contract.yaml`](./references/cli/capability-instruction-contract.yaml)
 for instruction-file contracts.
@@ -388,4 +387,4 @@ codex plugin marketplace remove jgabor/agentera
 
 ---
 
-**License:** [Apache-2.0](./LICENSE) · **Changelog:** [`CHANGELOG.md`](./CHANGELOG.md) · **Version:** 2.5.0
+**License:** [Apache-2.0](./LICENSE) · **Changelog:** [`CHANGELOG.md`](./CHANGELOG.md) · **Version:** 2.5.1
