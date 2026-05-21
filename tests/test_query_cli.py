@@ -1826,18 +1826,186 @@ class TestHej:
             "plan",
             "progress",
             "health",
-            "todo",
             "decisions",
             "vision",
             "profile",
             "docs",
         ]
-        assert {"plan", "progress", "health", "todo", "docs"}.issubset(context["included_state_families"])
+        assert context["declared_write_targets"] == ["plan", "todo"]
+        assert context["artifact_inventory"] == {
+            "read_needs": ["plan", "progress", "health", "decisions", "vision", "profile", "docs"],
+            "write_targets": ["plan", "todo"],
+        }
+        assert {"plan", "progress", "health", "docs"}.issubset(context["included_state_families"])
         assert context["missing_state_families"] == ["decisions", "vision", "profile"]
         assert context["cli_fallback"] == ["agentera decisions --format json"]
         assert "before raw file access" in context["raw_artifact_read_policy"]
         assert "agentera planera" not in json.dumps(data["source_contract"])
         assert "agentera realisera" not in json.dumps(data["source_contract"])
+
+    def test_hej_without_capability_context_keeps_full_dashboard_envelope(self, project):
+        _write_artifact(project, ".agentera/docs.yaml", {
+            "mapping": [{"artifact": "PLAN.md", "path": ".agentera/plan.yaml"}],
+        })
+
+        r = _run("hej", "--format", "json", cwd=project)
+
+        assert r.returncode == 0, r.stderr
+        data = json.loads(r.stdout)
+        assert data["command"] == "hej"
+        assert "plan" in data
+        assert "docs" in data
+        assert "source_contract" in data
+        assert "capability_context" not in data
+
+    def test_hej_capability_context_slim_profile_emits_startup_capsule(self, project):
+        _write_artifact(project, ".agentera/plan.yaml", {
+            "header": {"title": "Slim capability context", "status": "active"},
+            "tasks": [{"number": 1, "name": "Build", "status": "pending"}],
+        })
+        _write_artifact(project, ".agentera/docs.yaml", {
+            "mapping": [{"artifact": "PLAN.md", "path": ".agentera/plan.yaml"}],
+        })
+        _write_artifact(project, ".agentera/progress.yaml", {
+            "cycles": [{"number": 1, "timestamp": "2026-05-14", "verified": "seeded"}],
+        })
+
+        r = _run("hej", "--format", "json", "--capability-context", "orkestrera", "--context-profile", "slim", cwd=project)
+
+        assert r.returncode == 0, r.stderr
+        data = json.loads(r.stdout)
+        assert list(data) == ["command", "status", "capability_context"]
+        context = data["capability_context"]
+        assert context["schemaVersion"] == "agentera.capabilityContext.v1"
+        assert context["capability"] == "orkestrera"
+        assert context["state"]["declared_write_targets"] == ["plan", "todo"]
+        assert context["state"]["included"] == ["plan", "progress", "health", "docs"]
+        assert context["state"]["missing"] == ["decisions", "vision", "profile"]
+        assert context["state"]["fallback_commands"] == ["agentera decisions --format json"]
+        assert context["state"]["artifact_inventory"]["write_targets"] == ["plan", "todo"]
+        assert context["profile"]["status"] == "not found"
+        assert "profile-derived state is unavailable" in context["profile"]["caveats"][0]
+        assert "plan" not in data
+        assert "source_contract" not in data
+
+    def test_hej_capability_context_slim_profile_nests_existing_bespoke_contexts(self, project):
+        _write_artifact(project, ".agentera/plan.yaml", {
+            "header": {"title": "Slim bespoke contexts", "status": "active"},
+            "tasks": [{"number": 1, "name": "Build", "status": "pending", "acceptance": ["works"]}],
+        })
+        _write_artifact(project, ".agentera/docs.yaml", {
+            "mapping": [{"artifact": "PLAN.md", "path": ".agentera/plan.yaml"}],
+            "conventions": {"semver_policy": {"fix": "patch"}, "version_files": ["pyproject.toml"]},
+        })
+        _write_artifact(project, ".agentera/progress.yaml", {
+            "cycles": [{"number": 1, "timestamp": "2026-05-14", "verified": "seeded"}],
+        })
+        _write_artifact(project, ".agentera/health.yaml", {
+            "audits": [{"number": 1, "trajectory": "stable", "grades": {"Architecture": "B"}}],
+        })
+        _write_artifact(project, "TODO.md", {"entries": []})
+
+        expected = {
+            "realisera": "execution_context",
+            "optimera": "benchmark_context",
+            "inspektera": "evidence_context",
+            "dokumentera": "closeout_context",
+            "orkestrera": "orchestration_context",
+        }
+        for capability, context_key in expected.items():
+            r = _run("hej", "--format", "json", "--capability-context", capability, "--context-profile", "slim", cwd=project)
+
+            assert r.returncode == 0, r.stderr
+            data = json.loads(r.stdout)
+            context = data["capability_context"]
+            assert list(data) == ["command", "status", "capability_context"]
+            assert context["capability"] == capability
+            assert context_key in context["context"]
+            assert context["context"][context_key]["capability"] == capability
+            assert "source_contract" in context["context"][context_key]
+            assert "profile-derived state is unavailable" in context["profile"]["caveats"][0]
+
+    def test_hej_capability_context_slim_profile_adds_generic_capability_builders(self, project):
+        _write_artifact(project, ".agentera/plan.yaml", {
+            "header": {"title": "Slim generic contexts", "status": "active"},
+            "tasks": [{"number": 1, "name": "Plan", "status": "pending", "acceptance": ["planned"]}],
+        })
+        _write_artifact(project, ".agentera/docs.yaml", {
+            "mapping": [{"artifact": "PLAN.md", "path": ".agentera/plan.yaml"}],
+            "conventions": {"semver_policy": {"fix": "patch"}, "version_files": ["pyproject.toml"]},
+        })
+        _write_artifact(project, ".agentera/progress.yaml", {
+            "cycles": [{"number": 1, "timestamp": "2026-05-14", "verified": "seeded"}],
+        })
+        _write_artifact(project, ".agentera/health.yaml", {
+            "audits": [{"number": 1, "trajectory": "stable", "grades": {"Architecture": "B"}}],
+        })
+        _write_artifact(project, "TODO.md", {"entries": [{"title": "Known issue", "severity": "normal"}]})
+
+        expected = {
+            "visionera": "vision_startup_context",
+            "resonera": "deliberation_context",
+            "inspirera": "research_context",
+            "planera": "planning_context",
+            "profilera": "profile_context",
+            "visualisera": "design_context",
+        }
+        for capability, context_key in expected.items():
+            r = _run("hej", "--format", "json", "--capability-context", capability, "--context-profile", "slim", cwd=project)
+
+            assert r.returncode == 0, r.stderr
+            context = json.loads(r.stdout)["capability_context"]["context"]
+            assert context_key in context
+            generic = context[context_key]
+            assert "profile" in generic
+            assert generic["profile"]["status"] == "not found"
+
+        planera = json.loads(_run(
+            "hej",
+            "--format",
+            "json",
+            "--capability-context",
+            "planera",
+            "--context-profile",
+            "slim",
+            cwd=project,
+        ).stdout)["capability_context"]["context"]["planning_context"]
+        assert planera["startup_contract"]["schemaVersion"] == "agentera.planeraStartup.v1"
+        assert planera["docs"]["version_policy"]["semver_policy"] == {"fix": "patch"}
+        assert planera["todo"]["open_count"] == 1
+
+    def test_hej_capability_context_full_profile_keeps_compatibility_envelope(self, project):
+        _write_artifact(project, ".agentera/plan.yaml", {
+            "header": {"title": "Full capability context", "status": "active"},
+            "tasks": [{"number": 1, "name": "Build", "status": "pending"}],
+        })
+
+        r = _run("hej", "--format", "json", "--capability-context", "orkestrera", "--context-profile", "full", cwd=project)
+
+        assert r.returncode == 0, r.stderr
+        data = json.loads(r.stdout)
+        assert "plan" in data
+        assert "source_contract" in data
+        assert "capability_context" not in data
+        assert data["source_contract"]["capability_context"]["capability"] == "orkestrera"
+
+    def test_hej_slim_profile_rejects_unsupported_sparse_field_without_partial_stdout(self, project):
+        r = _run(
+            "hej",
+            "--format",
+            "json",
+            "--capability-context",
+            "orkestrera",
+            "--context-profile",
+            "slim",
+            "--fields",
+            "raw_yaml",
+            cwd=project,
+        )
+
+        assert r.returncode == 1
+        assert r.stdout == ""
+        assert "unsupported field 'raw_yaml' for hej" in r.stderr
 
     def test_hej_planera_context_exposes_compact_startup_contract(self, project):
         _write_artifact(project, ".agentera/plan.yaml", {
@@ -1856,6 +2024,9 @@ class TestHej:
         contract = context["startup_contract"]
         first_read = context["first_invocation_read"]
         assert context["capability"] == "planera"
+        assert "plan_archive" not in context["declared_state_needs"]
+        assert "plan_archive" not in context["missing_state_families"]
+        assert context["declared_write_targets"] == ["plan", "plan_archive"]
         assert first_read["value"] == "compact_startup"
         assert first_read["instruction_target"]["path"] == "skills/agentera/capabilities/planera/instructions.md"
         assert first_read["obligation_summary"] == "compact_contract_must_name_covered_guidance_and_escalation_rules"
@@ -1912,6 +2083,52 @@ class TestHej:
         assert first_read["instruction_target"]["exists"] is False
         assert contract["instructions_runtime_read_required"] is False
         assert contract["canonical_surface"] == "agentera hej --format json --capability-context planera"
+
+    def test_hej_capability_context_missing_artifact_schema_reports_error_without_state_needs(self, tmp_path):
+        app_home = tmp_path / "app-home"
+        _install_runtime_surface(app_home)
+        artifacts_path = app_home / "app" / "skills" / "agentera" / "capabilities" / "planera" / "schemas" / "artifacts.yaml"
+        artifacts_path.unlink()
+        project = tmp_path / "project"
+        project.mkdir()
+
+        r = _run_installed(app_home, "hej", "--format", "json", "--capability-context", "planera", cwd=project)
+
+        assert r.returncode == 0, r.stderr
+        context = json.loads(r.stdout)["source_contract"]["capability_context"]
+        assert context["schema_error"] == "No capability artifact schema found for planera."
+        assert context["declared_state_needs"] == []
+        assert context["declared_write_targets"] == []
+        assert context["missing_state_families"] == []
+
+    def test_hej_capability_context_malformed_artifact_schema_reports_error_without_fabricated_needs(self, tmp_path):
+        app_home = tmp_path / "app-home"
+        _install_runtime_surface(app_home)
+        artifacts_path = app_home / "app" / "skills" / "agentera" / "capabilities" / "planera" / "schemas" / "artifacts.yaml"
+        artifacts_path.write_text(
+            yaml.dump({
+                "ARTIFACTS": {
+                    1: {"artifact_id": "decisions", "local_role": "observes"},
+                    2: "not a mapping",
+                    3: {"local_role": "consumes"},
+                },
+            }),
+            encoding="utf-8",
+        )
+        project = tmp_path / "project"
+        project.mkdir()
+
+        r = _run_installed(app_home, "hej", "--format", "json", "--capability-context", "planera", cwd=project)
+
+        assert r.returncode == 0, r.stderr
+        context = json.loads(r.stdout)["source_contract"]["capability_context"]
+        assert "unsupported local_role 'observes'" in context["schema_error"]
+        assert "entry 2 is not a mapping" in context["schema_error"]
+        assert "entry 3 is missing artifact_id" in context["schema_error"]
+        assert context["declared_state_needs"] == []
+        assert context["declared_write_targets"] == []
+        assert context["included_state_families"] == []
+        assert context["missing_state_families"] == []
 
     def test_compact_startup_exception_is_limited_to_planera(self, project):
         _write_artifact(project, ".agentera/plan.yaml", {
@@ -2805,6 +3022,9 @@ class TestHej:
         capability_context = data["source_contract"]["capability_context"]
         assert capability_context["capability"] == "optimera"
         assert "benchmark_context" in capability_context["included_state_families"]
+        assert "optimera_harness" not in capability_context["declared_state_needs"]
+        assert "optimera_harness" not in capability_context["missing_state_families"]
+        assert "optimera_harness" in capability_context["declared_write_targets"]
         context = data["benchmark_context"]
         context_text = json.dumps(context, sort_keys=True)
         assert str(app_home) not in context_text

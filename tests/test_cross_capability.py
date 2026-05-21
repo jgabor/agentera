@@ -279,12 +279,13 @@ def test_master_skill_documents_route_alias_contract_boundary():
     assert "overall acceptance, surprises" in text
     assert "Raw mapped plan artifact access remains valid" in text
     assert "agentera hej --format json --capability-context <capability>" in text
-    assert "capability_context.startup_contract" in text
-    assert "agentera hej --format json --capability-context planera" in text
+    assert "--context-profile slim" in text
+    assert "capability_context.context.planning_context.startup_contract" in text
+    assert "agentera hej --format json --capability-context planera --context-profile slim" in text
     assert "Read Planera prose only when" in text
     assert "complete_for_normal_deliberation_context=true" in text
     assert "Raw decision artifact access is reserved" in text
-    assert "missing_state_families" in text
+    assert "capability_context.state.missing" in text
     assert "ROUTE_ALIASES.primary_aliases" in text
     assert "Canonical Swedish names remain the" in text
     assert "Secondary user wording stays in" in text

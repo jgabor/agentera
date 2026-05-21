@@ -93,6 +93,15 @@ def measure_token_payload():
 
 
 @pytest.fixture(scope="session")
+def measure_capability_context_payloads():
+    """Load scripts/measure_capability_context_payloads.py."""
+    return _load_module(
+        "measure_capability_context_payloads",
+        REPO_ROOT / "scripts" / "measure_capability_context_payloads.py",
+    )
+
+
+@pytest.fixture(scope="session")
 def startup_analysis_contract():
     """Load scripts/startup_analysis_contract.py."""
     return _load_module(
