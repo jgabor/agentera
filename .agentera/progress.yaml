@@ -1,4 +1,33 @@
 cycles:
+- number: 585
+  timestamp: 2026-05-21 18:31
+  type: feat
+  phase: build
+  what: Made Codex plugin-provided hooks primary when the Agentera Codex plugin is
+    enabled.
+  commit: pending
+  inspiration: Realisera executed the active Codex Plugin Hook Primary Transition
+    plan.
+  discovered: Runtime upgrade previously always planned copied `~/.codex/hooks.json`
+    hooks. The new branch can prove plugin eligibility from `[plugins."agentera@agentera"].enabled
+    = true`, trust plugin hook metadata, and retire only Agentera-owned copied hooks
+    after plugin trust config is applied or already current, while blocking mixed
+    or ambiguous user hook files.
+  verified: '`uv run --with pytest pytest tests/test_setup_codex.py tests/test_upgrade_cli.py
+    tests/test_runtime_adapters.py -q` passed with 130 tests. `uv run scripts/agentera
+    validate lifecycle-adapters`, artifact validators for PLAN and PROGRESS, `git
+    diff --check`, and `uv run scripts/agentera upgrade --runtime codex --only runtime
+    --dry-run --json` passed. The dry-run showed plugin hook trust plus `retire-hooks`
+    for the stale copied hook path.'
+  next: Review and commit the Codex plugin hook transition when ready.
+  context:
+    intent: Complete the plugin-primary Codex hook transition while preserving copied-hook
+      compatibility.
+    constraints: No Codex plugin installation, marketplace mutation, package refresh,
+      publication, push, tag, commit, protected vision/objective/profile edit, or
+      user-owned hook deletion.
+    scope: Codex runtime upgrade/setup helpers, focused tests, README/UPGRADE wording,
+      PLAN evidence, and PROGRESS evidence.
 - number: 584
   timestamp: 2026-05-21 12:48
   type: test

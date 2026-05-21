@@ -114,6 +114,10 @@ ENV_FALLBACKS: tuple[str, ...] = ("AGENTERA_HOME", "CLAUDE_PLUGIN_ROOT")
 # Codex user hooks are discovered from hooks.json, but current Codex requires
 # user-sourced hook handlers to be trusted through [hooks.state] before they run.
 CODEX_HOOK_COMMAND = 'uv run "${AGENTERA_HOME}/hooks/validate_artifact.py"'
+CODEX_PLUGIN_ID = "agentera@agentera"
+CODEX_PLUGIN_HOOKS_PATH = "hooks/codex-plugin-hooks.json"
+CODEX_PLUGIN_HOOK_SOURCE = f"{CODEX_PLUGIN_ID}:{CODEX_PLUGIN_HOOKS_PATH}"
+CODEX_PLUGIN_HOOK_COMMAND = 'uv run "${PLUGIN_ROOT}/hooks/validate_artifact.py"'
 CODEX_HOOK_MATCHER = "^apply_patch$"
 CODEX_HOOK_TIMEOUT = 10
 CODEX_HOOK_STATUS_MESSAGE = "validating artifact"
@@ -418,6 +422,34 @@ def codex_hook_state_entries(hooks_path: Path, command: str = CODEX_HOOK_COMMAND
     }
 
 
+def codex_plugin_hook_state_entries(command: str = CODEX_PLUGIN_HOOK_COMMAND) -> dict[str, str]:
+    """Return required [hooks.state] entries for Agentera plugin-bundled hooks."""
+    return {
+        f"{CODEX_PLUGIN_HOOK_SOURCE}:pre_tool_use:0:0": codex_hook_trusted_hash(
+            "pre_tool_use",
+            CODEX_HOOK_MATCHER,
+            command=command,
+        ),
+        f"{CODEX_PLUGIN_HOOK_SOURCE}:post_tool_use:0:0": codex_hook_trusted_hash(
+            "post_tool_use",
+            CODEX_HOOK_MATCHER,
+            command=command,
+        ),
+    }
+
+
+def codex_plugin_hooks_enabled(text: str | None) -> bool:
+    """Return true when Codex config proves the Agentera plugin is enabled."""
+    if not text or not text.strip():
+        return False
+    parsed = tomllib.loads(text)
+    plugins = parsed.get("plugins")
+    if not isinstance(plugins, dict):
+        return False
+    agentera = plugins.get(CODEX_PLUGIN_ID)
+    return isinstance(agentera, dict) and agentera.get("enabled") is True
+
+
 # ---------------------------------------------------------------------------
 # Line-based mutation helpers
 # ---------------------------------------------------------------------------
@@ -650,10 +682,10 @@ def _append_table(text: str, table: str, lines: list[str]) -> str:
     return prefix + f"[{table}]\n" + "\n".join(lines) + "\n"
 
 
-def _ensure_features_hooks_enabled(text: str) -> str:
+def _ensure_feature_enabled(text: str, key: str) -> str:
     parsed = tomllib.loads(text) if text.strip() else {}
     features = parsed.get("features")
-    if isinstance(features, dict) and features.get("hooks") is True:
+    if isinstance(features, dict) and features.get(key) is True:
         return text
 
     lines = [line.rstrip("\r\n") for line in text.splitlines(keepends=True)]
@@ -661,12 +693,20 @@ def _ensure_features_hooks_enabled(text: str) -> str:
     if table_idx is None:
         if isinstance(features, dict):
             raise ValueError("[features] uses an unsupported inline or dotted-table form")
-        return _append_table(text, "features", ["hooks = true"])
+        return _append_table(text, "features", [f"{key} = true"])
 
-    key_idx = _find_table_key_index(lines, table_idx, "hooks")
+    key_idx = _find_table_key_index(lines, table_idx, key)
     if key_idx is None:
-        return _insert_table_key_line(text, "features", "hooks = true")
-    return _replace_table_key_line(text, "features", "hooks", "hooks = true")
+        return _insert_table_key_line(text, "features", f"{key} = true")
+    return _replace_table_key_line(text, "features", key, f"{key} = true")
+
+
+def _ensure_features_hooks_enabled(text: str) -> str:
+    return _ensure_feature_enabled(text, "hooks")
+
+
+def _ensure_features_plugin_hooks_enabled(text: str) -> str:
+    return _ensure_feature_enabled(_ensure_features_hooks_enabled(text), "plugin_hooks")
 
 
 def _ensure_codex_agent_limits(text: str) -> str:
@@ -708,6 +748,15 @@ def _hook_state_line(key: str, trusted_hash: str) -> str:
 
 def _ensure_codex_hook_state(text: str, hooks_path: Path, command: str = CODEX_HOOK_COMMAND) -> str:
     entries = codex_hook_state_entries(hooks_path, command=command)
+    return _ensure_codex_hook_state_entries(text, entries)
+
+
+def _ensure_codex_plugin_hook_state(text: str, command: str = CODEX_PLUGIN_HOOK_COMMAND) -> str:
+    entries = codex_plugin_hook_state_entries(command=command)
+    return _ensure_codex_hook_state_entries(text, entries)
+
+
+def _ensure_codex_hook_state_entries(text: str, entries: dict[str, str]) -> str:
     parsed = tomllib.loads(text) if text.strip() else {}
     state = parsed.get("hooks", {}).get("state", {}) if isinstance(parsed.get("hooks"), dict) else {}
     if not isinstance(state, dict):
@@ -751,6 +800,51 @@ def ensure_codex_hook_trust(text: str, hooks_path: Path, command: str = CODEX_HO
     return _ensure_codex_hook_state(_ensure_features_hooks_enabled(text), hooks_path, command=command)
 
 
+def ensure_codex_plugin_hook_trust(text: str, command: str = CODEX_PLUGIN_HOOK_COMMAND) -> str:
+    """Ensure Codex will execute the Agentera plugin-bundled apply_patch hooks."""
+    return _ensure_codex_plugin_hook_state(_ensure_features_plugin_hooks_enabled(text), command=command)
+
+
+def codex_copied_hooks_are_agentera_only(text: str) -> bool:
+    """Return true when hooks.json contains only Agentera copied hook handlers."""
+    try:
+        payload = json.loads(text)
+    except json.JSONDecodeError:
+        return False
+    if not isinstance(payload, dict):
+        return False
+    description = payload.get("description")
+    if not isinstance(description, str) or "agentera v2 Codex hooks" not in description:
+        return False
+    hooks = payload.get("hooks")
+    if not isinstance(hooks, dict) or set(hooks) != {"PreToolUse", "PostToolUse"}:
+        return False
+    for event, entries in hooks.items():
+        if event not in {"PreToolUse", "PostToolUse"}:
+            return False
+        if not isinstance(entries, list) or len(entries) != 1:
+            return False
+        entry = entries[0]
+        if not isinstance(entry, dict) or entry.get("matcher") != CODEX_HOOK_MATCHER:
+            return False
+        handlers = entry.get("hooks")
+        if not isinstance(handlers, list) or len(handlers) != 1:
+            return False
+        handler = handlers[0]
+        if not isinstance(handler, dict):
+            return False
+        command = handler.get("command")
+        if handler.get("type") != "command" or not isinstance(command, str):
+            return False
+        if "hooks/validate_artifact.py" not in command:
+            return False
+        if handler.get("timeout") != CODEX_HOOK_TIMEOUT:
+            return False
+        if handler.get("statusMessage") != CODEX_HOOK_STATUS_MESSAGE:
+            return False
+    return True
+
+
 # ---------------------------------------------------------------------------
 # Top-level decision: read state, compute desired text, classify outcome
 # ---------------------------------------------------------------------------
@@ -779,6 +873,8 @@ def _with_codex_hook_trust(
     before_text: str | None,
     hooks_path: Path | None,
     hook_command: str = CODEX_HOOK_COMMAND,
+    *,
+    plugin_hooks: bool = False,
 ) -> Outcome:
     if outcome.action == "conflict":
         return outcome
@@ -808,11 +904,16 @@ def _with_codex_hook_trust(
             diff=_unified_diff(before, new_text),
         )
 
-    if hooks_path is None:
+    if hooks_path is None and not plugin_hooks:
         return outcome
 
     try:
-        new_text = ensure_codex_hook_trust(outcome.new_text, hooks_path, command=hook_command)
+        if plugin_hooks:
+            new_text = ensure_codex_plugin_hook_trust(outcome.new_text)
+        elif hooks_path is not None:
+            new_text = ensure_codex_hook_trust(outcome.new_text, hooks_path, command=hook_command)
+        else:
+            new_text = outcome.new_text
     except ValueError as exc:
         return Outcome(
             action="conflict",
@@ -826,9 +927,14 @@ def _with_codex_hook_trust(
 
     action = outcome.action if outcome.action != "noop" else "insert"
     if outcome.action == "noop":
-        message = "would trust Codex apply_patch hooks in config.toml"
+        message = (
+            "would trust Codex plugin apply_patch hooks in config.toml"
+            if plugin_hooks
+            else "would trust Codex apply_patch hooks in config.toml"
+        )
     else:
-        message = f"{outcome.message}; would trust Codex apply_patch hooks"
+        hook_label = "Codex plugin apply_patch hooks" if plugin_hooks else "Codex apply_patch hooks"
+        message = f"{outcome.message}; would trust {hook_label}"
     return Outcome(
         action=action,
         new_text=new_text,
@@ -844,6 +950,7 @@ def plan_change(
     force: bool,
     hooks_path: Path | None = None,
     hook_command: str = CODEX_HOOK_COMMAND,
+    plugin_hooks: bool = False,
 ) -> Outcome:
     """Inspect ``current_text`` and decide which write path applies.
 
@@ -868,7 +975,7 @@ def plan_change(
                 f"{SECTION_NAME}.set.{MANAGED_KEY} = {desired_path}"
             ),
             diff=diff,
-        ), current_text, hooks_path, hook_command)
+        ), current_text, hooks_path, hook_command, plugin_hooks=plugin_hooks)
 
     state = classify_toml(current_text)
 
@@ -892,7 +999,7 @@ def plan_change(
                 f"{MANAGED_KEY} = {desired_path}"
             ),
             diff=diff,
-        ), current_text, hooks_path, hook_command)
+        ), current_text, hooks_path, hook_command, plugin_hooks=plugin_hooks)
 
     # Branch 3a: section present, no set key → insert set line.
     if not state.set_present:
@@ -906,7 +1013,7 @@ def plan_change(
                 f"into [{SECTION_NAME}]"
             ),
             diff=diff,
-        ), current_text, hooks_path, hook_command)
+        ), current_text, hooks_path, hook_command, plugin_hooks=plugin_hooks)
 
     # Branch 3b: section + set + AGENTERA_HOME at correct value → noop.
     current_value = state.set_table.get(MANAGED_KEY)
@@ -918,7 +1025,7 @@ def plan_change(
                 f"{MANAGED_KEY} already set to {desired_path}; nothing to do"
             ),
             diff="",
-        ), current_text, hooks_path, hook_command)
+        ), current_text, hooks_path, hook_command, plugin_hooks=plugin_hooks)
 
     # Branch 3c: section + set, AGENTERA_HOME at wrong value or missing
     # alongside sibling keys → either merge (--force) or conflict.
@@ -951,7 +1058,7 @@ def plan_change(
                 f"{state.set_table[MANAGED_KEY]} to {desired_path}"
             ),
             diff=diff,
-        ), current_text, hooks_path, hook_command)
+        ), current_text, hooks_path, hook_command, plugin_hooks=plugin_hooks)
 
     # Sibling keys exist. Without --force, refuse.
     if not force:
@@ -990,7 +1097,7 @@ def plan_change(
             f"(siblings preserved: {', '.join(sorted(siblings))})"
         ),
         diff=diff,
-    ), current_text, hooks_path, hook_command)
+    ), current_text, hooks_path, hook_command, plugin_hooks=plugin_hooks)
 
 
 def _unified_diff(before: str, after: str) -> str:
