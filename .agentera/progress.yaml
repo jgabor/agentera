@@ -1,4 +1,172 @@
 cycles:
+- number: 584
+  timestamp: 2026-05-21 12:48
+  type: test
+  phase: audit
+  what: Synchronized slim capability-context contracts and validation evidence.
+  commit: pending
+  inspiration: Orkestrera Task 6 for the Slim Capability Context Payloads plan.
+  discovered: The static CLI contract and capability prose still named the legacy
+    full-envelope capability-context path as the only startup seam. They now
+    distinguish default full compatibility output from `--context-profile slim`
+    startup capsules and document Planera's slim
+    `capability_context.context.planning_context.startup_contract` path.
+  verified: >-
+    Focused pytest passed for slim hej contexts, payload measurement coverage,
+    Decision 45 contract text, Planera prose, and master skill route boundaries.
+    `uv run scripts/measure_capability_context_payloads.py --json
+    --enforce-budgets` passed with no violations. Capability validation for all
+    capabilities and capability-contract self-validation passed. PLAN and PROGRESS
+    artifact validation passed. Release metadata, publication, tag, push, and
+    installed-app refresh were deferred because this task had no explicit release
+    approval.
+  next: Review the completed slim capability-context payload changes and decide
+    whether to commit them.
+  context:
+    intent: Complete Task 6 by synchronizing contracts, prose, and validation.
+    constraints: No capability-name CLI commands, version bump, changelog promotion,
+      publication, tag, push, installed-app refresh, protected vision/objective
+      edits, or decision-satisfaction updates.
+    scope: CLI contract prose, Agentera skill guidance, Planera instruction guidance,
+      README note, focused tests, PLAN and PROGRESS closeout evidence.
+- number: 583
+  timestamp: 2026-05-21 12:28
+  type: test
+  phase: build
+  what: Added capability-context byte and GPT-5 token budget regression coverage.
+  commit: pending
+  inspiration: Orkestrera Task 5 for the Slim Capability Context Payloads plan.
+  discovered: 'Exact GPT-5 token measurement works through `npx tiktoken-cli -m gpt-5`,
+    but the Python wrapper must stream payload text through stdin rather than parse
+    the trailing `model: gpt-5` line as a count. Slim bespoke contexts also needed
+    startup-focused compaction to meet the declared budgets.'
+  verified: '`uv run --with pytest pytest tests/test_measure_capability_context_payloads.py
+    tests/test_query_cli.py::TestHej::test_hej_capability_context_slim_profile_emits_startup_capsule
+    tests/test_query_cli.py::TestHej::test_hej_capability_context_slim_profile_adds_generic_capability_builders
+    tests/test_query_cli.py::TestHej::test_hej_capability_context_slim_profile_nests_existing_bespoke_contexts`
+    passed. `uv run scripts/measure_capability_context_payloads.py --json --enforce-budgets`
+    passed with no violations; measured counts were hej 2183 bytes/530 tokens, visionera
+    5165/1187, resonera 4324/998, inspirera 2244/549, planera 9418/1997, realisera
+    16144/3439, optimera 14647/2900, inspektera 20017/3953, dokumentera 15926/3385,
+    profilera 2294/559, visualisera 4279/997, and orkestrera 10941/2296.'
+  next: Execute Task 6 to synchronize contracts, docs, and final validation.
+  context:
+    intent: Complete Task 5 by adding payload budget measurement and regression coverage.
+    constraints: Task 5 only. No contract documentation synchronization beyond the
+      measurement script, no capability-name CLI commands, release metadata, publication,
+      installed-app refresh, protected vision/objective edits, or decision-satisfaction
+      updates.
+    scope: capability-context payload measurement script, offline tests, slim bespoke
+      context compaction, PLAN and PROGRESS evidence.
+- number: 582
+  timestamp: 2026-05-21 12:28
+  type: test
+  phase: build
+  what: Added generic slim capability-context builders.
+  commit: pending
+  inspiration: Orkestrera Task 4 for the Slim Capability Context Payloads plan.
+  discovered: Generic capabilities can share compact plan, docs, progress, health,
+    TODO, and profile summaries while exposing capability-specific startup keys. Missing
+    vision, decisions, objective, and design state stay as CLI fallback pointers instead
+    of expanding the full hej dashboard envelope.
+  verified: '`uv run --with pytest pytest tests/test_query_cli.py::TestHej::test_hej_capability_context_slim_profile_adds_generic_capability_builders
+    tests/test_query_cli.py::TestHej::test_hej_capability_context_slim_profile_emits_startup_capsule
+    tests/test_query_cli.py::TestHej::test_hej_capability_context_slim_profile_nests_existing_bespoke_contexts`
+    passed. `uv run scripts/agentera hej --format json --capability-context planera
+    --context-profile slim --fields capability_context` emitted `planning_context`.
+    `uv run scripts/agentera hej --format json --capability-context visualisera --context-profile
+    slim --fields capability_context` emitted `design_context`.'
+  next: Execute Task 5 to add byte and GPT-5 token budget regression coverage.
+  context:
+    intent: Complete Task 4 by adding slim startup builders for generic capabilities.
+    constraints: Task 4 only. No token budget harness, contract documentation updates,
+      capability-name CLI commands, release metadata, publication, installed-app refresh,
+      protected vision/objective edits, or decision-satisfaction updates.
+    scope: scripts/agentera generic slim contexts, focused hej tests, PLAN and PROGRESS
+      evidence.
+- number: 581
+  timestamp: 2026-05-21 00:26
+  type: test
+  phase: build
+  what: Nested existing bespoke contexts in slim capability-context output.
+  commit: pending
+  inspiration: Orkestrera Task 3 for the Slim Capability Context Payloads plan.
+  discovered: The slim envelope can preserve compatibility metadata and add the existing
+    bespoke context payloads without moving or rewriting those builders. Non-null
+    `execution_context`, `benchmark_context`, `evidence_context`, `closeout_context`,
+    and `orchestration_context` values are copied under `capability_context.context`
+    in slim mode.
+  verified: '`uv run --with pytest pytest tests/test_query_cli.py::TestHej::test_hej_capability_context_slim_profile_emits_startup_capsule
+    tests/test_query_cli.py::TestHej::test_hej_capability_context_slim_profile_nests_existing_bespoke_contexts
+    tests/test_query_cli.py::TestHej::test_hej_capability_context_full_profile_keeps_compatibility_envelope
+    tests/test_query_cli.py::TestHej::test_hej_slim_profile_rejects_unsupported_sparse_field_without_partial_stdout`
+    passed. `uv run scripts/agentera hej --format json --capability-context realisera
+    --context-profile slim --fields capability_context` emitted nested `execution_context`.
+    `git diff --check` passed.'
+  next: Execute Task 4 to add slim builders for generic capabilities.
+  context:
+    intent: Complete Task 3 by nesting existing bespoke contexts inside the slim capability-context
+      capsule.
+    constraints: Task 3 only. No new generic capability builders, capability-name
+      CLI commands, release metadata, publication, installed-app refresh, protected
+      vision/objective edits, or decision-satisfaction updates.
+    scope: scripts/agentera slim context nesting, focused hej tests, PLAN and PROGRESS
+      evidence.
+- number: 580
+  timestamp: 2026-05-21 00:18
+  type: test
+  phase: build
+  what: Added slim capability-context envelope mode.
+  commit: pending
+  inspiration: Orkestrera Task 2 for the Slim Capability Context Payloads plan.
+  discovered: The safest compatibility boundary is an explicit `--context-profile`
+    switch. Full mode remains the default and preserves the current hej dashboard
+    JSON envelope, while slim mode is available for capability startup capsules without
+    relocating bespoke contexts yet.
+  verified: '`uv run --with pytest pytest tests/test_query_cli.py::TestHej::test_hej_without_capability_context_keeps_full_dashboard_envelope
+    tests/test_query_cli.py::TestHej::test_hej_capability_context_slim_profile_emits_startup_capsule
+    tests/test_query_cli.py::TestHej::test_hej_capability_context_full_profile_keeps_compatibility_envelope
+    tests/test_query_cli.py::TestHej::test_hej_slim_profile_rejects_unsupported_sparse_field_without_partial_stdout
+    tests/test_query_cli.py::TestHej::test_hej_capability_context_names_included_and_missing_state_families
+    tests/test_query_cli.py::TestHej::test_hej_planera_context_exposes_compact_startup_contract`
+    passed. Slim and full CLI spot checks passed. `git diff --check` passed.'
+  next: Execute Task 3 to move existing bespoke contexts into the slim capsule.
+  context:
+    intent: Complete Task 2 by adding an explicit slim capability-context envelope.
+    constraints: Task 2 only. No bespoke-context relocation beyond preserving the
+      compatibility context inside the slim capsule. No capability-name CLI commands,
+      release metadata, publication, installed-app refresh, protected vision/objective
+      edits, or decision-satisfaction updates.
+    scope: scripts/agentera context-profile handling, focused hej tests, PLAN and
+      PROGRESS evidence.
+- number: 579
+  timestamp: 2026-05-20 23:24
+  type: test
+  phase: build
+  what: Introduced role-aware capability state inventory.
+  commit: pending
+  inspiration: Orkestrera Task 1 for the Slim Capability Context Payloads plan.
+  discovered: Capability artifact inventory previously treated every `artifact_id`
+    as a startup read need. Produced-only artifacts such as Planera `plan_archive`
+    and Optimera `optimera_harness` now remain write targets instead of missing read-state
+    families. A broader `TestHej` run still has an unrelated macOS app-home expectation
+    failure in `test_runtime_injected_legacy_default_does_not_outrank_platform_home`.
+  verified: '`uv run --with pytest pytest tests/test_query_cli.py::TestHej::test_hej_capability_context_names_included_and_missing_state_families
+    tests/test_query_cli.py::TestHej::test_hej_planera_context_exposes_compact_startup_contract
+    tests/test_query_cli.py::TestHej::test_hej_capability_context_missing_artifact_schema_reports_error_without_state_needs
+    tests/test_query_cli.py::TestHej::test_hej_capability_context_malformed_artifact_schema_reports_error_without_fabricated_needs
+    tests/test_query_cli.py::TestHej::test_hej_optimera_benchmark_context_reports_retained_benchmark_summary`
+    passed. `uv run scripts/agentera validate capability skills/agentera/capabilities`,
+    `uv run scripts/agentera validate capability-contract --format json`, Planera
+    and Optimera context spot checks, and `git diff --check` passed.'
+  next: Execute Task 2 to add the slim capability-context envelope.
+  context:
+    intent: Complete Task 1 by separating capability startup reads from produced artifacts.
+    constraints: Task 1 only. No slim envelope implementation, capability-name CLI
+      commands, release metadata, publication, installed-app refresh, protected vision/objective
+      edits, or decision-satisfaction updates.
+    scope: scripts/agentera role-aware inventory, focused hej tests, PLAN and PROGRESS
+      evidence.
 - number: 578
   timestamp: 2026-05-18 22:12
   type: test
@@ -133,143 +301,17 @@ cycles:
       satisfaction updates, installed-app repair, or 3.0 compatibility removal.
     scope: Capability validator characterization tests plus PLAN and PROGRESS task
       evidence.
-- number: 573
-  timestamp: 2026-05-18 20:50
-  type: test
-  phase: build
-  what: Added routing and execution vocabulary occurrence classification coverage.
-  commit: pending
-  inspiration: Realisera executed the active Routing and Execution Vocabulary Regression
-    Coverage plan with a focused classified scan instead of broad wording cleanup.
-  discovered: Current scoped surfaces already contained canonical, compatibility,
-    historical, fixture-only, code-identifier, and generic uses; the missing guard
-    was failing unclassified new dispatcher/dispatch/router/conductor wording with
-    actionable path and line context.
-  verified: '`uv run pytest tests/test_routing_execution_vocabulary_authority.py -q`
-    passed with 9 tests. Artifact validators for PLAN.md, TODO.md, PROGRESS.md, and
-    CHANGELOG.md returned status=pass. `git diff --check` passed.'
-  next: Review the diff and decide whether to commit the completed routing vocabulary
-    regression coverage.
-  context:
-    intent: Close the active Routing and Execution Vocabulary Regression Coverage
-      plan.
-    constraints: No broad wording cleanup, package refresh, installed-app repair,
-      publication, push, tag, vision edit, objective-state mutation, decision satisfaction
-      update, installed-app repair, or 3.0 compatibility removal.
-    scope: Focused routing vocabulary authority fixture data, regression tests, TODO,
-      CHANGELOG, PLAN, and PROGRESS execution artifacts.
-- number: 572
-  timestamp: 2026-05-18 20:11
-  type: test
-  phase: build
-  what: Added bundle and SKILL.md vocabulary occurrence classification coverage.
-  commit: pending
-  inspiration: Realisera executed the active Bundle and SKILL.md Vocabulary Regression
-    Coverage plan with a focused scan instead of broad wording cleanup.
-  discovered: The existing authority already captured canonical concepts; the missing
-    regression was per-occurrence focused-scope classification with closed labels
-    and actionable unclassified-occurrence failures.
-  verified: '`uv run pytest tests/test_bundle_skill_vocabulary_authority.py -q` passed
-    with 11 tests. `uv run scripts/agentera validate artifact --artifact PLAN.md`
-    passed with status=pass. `git diff --check` passed.'
-  next: Review the diff and decide whether to commit the completed vocabulary regression
-    coverage.
-  context:
-    intent: Close the active Bundle and SKILL.md Vocabulary Regression Coverage plan.
-    constraints: No broad wording cleanup, package refresh, installed-app repair,
-      publication, push, tag, vision edit, objective-state mutation, decision satisfaction
-      update, or 3.0 compatibility removal.
-    scope: Focused vocabulary authority fixture data, regression tests, PLAN, CHANGELOG,
-      and PROGRESS execution artifacts.
-- number: 571
-  timestamp: 2026-05-18 19:35
-  type: test
-  phase: build
-  what: Added Decision 54 app lifecycle status regression coverage.
-  commit: pending
-  inspiration: Realisera executed the active App Lifecycle Status Regression Coverage
-    plan, keeping the change to focused authority-backed tests and required execution
-    artifacts.
-  discovered: The current validate namespace requires `validate artifact --artifact
-    PLAN.md`; the requested positional form `validate artifact PLAN.md` exits with
-    argparse usage instead of validating. No CLI behavior was changed because this
-    cycle was scoped to lifecycle status regression coverage.
-  verified: '`uv run pytest tests/test_lifecycle_vocabulary_authority.py -q` passed
-    with 15 tests. `uv run scripts/agentera validate artifact PLAN.md` was run and
-    failed because the current CLI requires `--artifact`. `uv run scripts/agentera
-    validate artifact --artifact PLAN.md` passed with status=pass. `git diff --check`
-    passed.'
-  next: Decide whether to add positional artifact-name compatibility for the validate
-    namespace in a separate CLI-scoped task; otherwise continue with the remaining
-    vocabulary regression TODOs.
-  context:
-    intent: Close the active App Lifecycle Status Regression Coverage plan task.
-    constraints: No broad wording cleanup, installed app/profile refresh, package
-      refresh, publication, push, tag, vision edit, objective-state mutation, decision
-      satisfaction update, or unsupported capability-name CLI command.
-    scope: Focused Decision 54 lifecycle vocabulary tests plus PLAN, TODO, CHANGELOG,
-      and PROGRESS execution artifacts.
-- number: 570
-  timestamp: 2026-05-18 18:20
-  type: feat
-  phase: build
-  what: Added first_invocation_read metadata to hej capability context output.
-  commit: pending
-  inspiration: Orkestrera executed the active First Invocation Read Metadata plan,
-    keeping the feature scoped to metadata declaration and CLI discoverability instead
-    of runtime policing.
-  discovered: Planera can report `compact_startup` from its existing compact startup
-    contract while default capabilities report `full`. The CLI reads allowed values
-    from the Decision 57 authority and leaves runtime enforcement false.
-  verified: '`uv run pytest tests/test_capability_instruction_contract.py tests/test_query_cli.py
-    -q` passed with 202 tests. `uv run scripts/agentera validate capability-contract
-    --format json` passed. `uv run scripts/agentera validate capability skills/agentera/capabilities`
-    passed for all 12 capabilities. `uv run scripts/agentera hej --format json --capability-context
-    planera` returned valid JSON with `first_invocation_read.value=compact_startup`.
-    Artifact validators for PLAN.md, TODO.md, CHANGELOG.md, PROGRESS.md, and DOCS.md
-    returned status=pass. `git diff --check` passed.'
-  next: Hand off without committing.
-  context:
-    intent: Close the active `[feat:2.4.x]` first_invocation_read metadata TODO and
-      plan.
-    constraints: No runtime first-invocation read enforcement, unsupported capability-name
-      CLI command, broad validation/vocabulary TODO closeout, installed app/profile
-      refresh, publication, push, tag, vision edit, objective edit, or decision satisfaction
-      change.
-    scope: Capability instruction contract, hej capability context metadata, focused
-      tests, README, vocabulary docs, docs registry, TODO, CHANGELOG, PLAN, and PROGRESS.
-- number: 569
-  timestamp: 2026-05-18 17:36
-  type: fix
-  phase: build
-  what: Renamed Agentera capability instruction files from prose.md to instructions.md.
-  commit: pending
-  inspiration: Realisera executed the active Capability Instructions File Rename plan,
-    treating the filename change as a contract migration across capability files,
-    validators, runtime descriptors, documentation, tests, and package-facing metadata
-    rather than a blind string replacement.
-  discovered: The documented validation command `agentera validate capability skills/agentera/capabilities`
-    needed first-class capability-root handling; the CLI now expands that directory
-    and validates all twelve capabilities. Installed and source descriptor validation
-    both passed while preserving the manual OpenCode direct-execution descriptor fix.
-  verified: '`uv run scripts/agentera validate capability-contract --format json`
-    passed. `uv run scripts/agentera validate capability skills/agentera/capabilities`
-    passed for all 12 capabilities. Focused rename/contract tests passed with 60 tests.
-    Source and installed `agentera validate descriptors --format json` passed. `uv
-    run pytest -q` passed with 1145 tests. Artifact validators for PLAN.md, TODO.md,
-    CHANGELOG.md, PROGRESS.md, and DOCS.md returned status=pass. `git diff --check`
-    passed.'
-  next: Ask whether to commit the completed capability instruction-file rename cycle.
-  context:
-    intent: Close the active `[fix:2.4.x]` capability instruction-file rename TODO
-      and plan.
-    constraints: No `.agentera/vision.yaml` edit, objective-state edit, installed
-      app/profile refresh, publication, push, tag, package-manager state change, broad
-      unrelated vocabulary sweep, or first_invocation_read metadata implementation.
-    scope: Capability instruction files, capability schema contract, validators/loaders,
-      Agentera CLI descriptor validation, runtime descriptors, SKILL.md, README, vocabulary
-      docs, compatibility authority, focused tests, TODO, CHANGELOG, PLAN, and PROGRESS.
 archive:
+- summary: 'Cycle 573 (2026-05-18): Added routing and execution vocabulary occurrence
+    classification coverage.'
+- summary: 'Cycle 572 (2026-05-18): Added bundle and SKILL.md vocabulary occurrence
+    classification coverage.'
+- summary: 'Cycle 571 (2026-05-18): Added Decision 54 app lifecycle status regression
+    coverage.'
+- summary: 'Cycle 570 (2026-05-18): Added first_invocation_read metadata to hej capability
+    context output.'
+- summary: 'Cycle 569 (2026-05-18): Renamed Agentera capability instruction files
+    from prose.md to instructions.md.'
 - summary: 'Cycle 568 (2026-05-18): Replaced legacy dispatch/conductor vocabulary
     with canonical route/suggest/delegate/spawn/subagent-mechanism terms across current
     non-archived files.'
@@ -336,13 +378,3 @@ archive:
     evidence.'
 - summary: 'Cycle 534 (2026-05-16): Took the no-threshold-change path and verified
     classifier regressions.'
-- summary: 'Cycle 533 (2026-05-16): Classified redacted threshold evidence for transcript
-    lint analysis.'
-- summary: 'Cycle 532 (2026-05-16): Built the redacted threshold-evidence scan for
-    transcript lint analysis.'
-- summary: 'Cycle 531 (2026-05-16): Completed Task 1 inventory for transcript lint
-    threshold analysis.'
-- summary: 'Cycle 530 (2026-05-16): Completed and synchronized the AGENTERA_ARTIFACTS
-    artifact-location discovery contract.'
-- summary: 'Cycle 529 (2026-05-16): Completed and synchronized the DECISIONS.md source-contract
-    raw-read reduction.'

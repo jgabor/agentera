@@ -814,6 +814,7 @@ HEJ_STRUCTURED_FIELDS = [
     "evidence_context",
     "benchmark_context",
     "execution_context",
+    "capability_context",
     "source",
     "source_contract",
 ]
@@ -1469,26 +1470,50 @@ def _startup_completeness_contract() -> dict[str, Any]:
     }
 
 
-def _capability_artifact_needs(capability: str) -> tuple[list[str], str | None]:
+def _append_unique(items: list[str], value: str) -> None:
+    if value and value not in items:
+        items.append(value)
+
+
+def _capability_artifact_inventory(capability: str) -> tuple[dict[str, list[str]], str | None]:
+    inventory: dict[str, list[str]] = {
+        "read_needs": [],
+        "write_targets": [],
+    }
     capability_dir = _model_path(_active_app_model(), "skillRoot") / "capabilities" / capability
     path = capability_dir / "schemas" / "artifacts.yaml"
     if not path.is_file():
-        return [], f"No capability artifact schema found for {capability}."
+        return inventory, f"No capability artifact schema found for {capability}."
     try:
         data = yaml.safe_load(path.read_text(encoding="utf-8"))
     except Exception as exc:
-        return [], f"Capability artifact schema for {capability} could not be read: {exc}"
+        return inventory, f"Capability artifact schema for {capability} could not be read: {exc}"
     artifacts = data.get("ARTIFACTS") if isinstance(data, dict) else None
     if not isinstance(artifacts, dict):
-        return [], f"Capability artifact schema for {capability} has no ARTIFACTS mapping."
-    needs: list[str] = []
-    for entry in artifacts.values():
+        return inventory, f"Capability artifact schema for {capability} has no ARTIFACTS mapping."
+    errors: list[str] = []
+    for key, entry in artifacts.items():
         if not isinstance(entry, dict):
+            errors.append(f"entry {key} is not a mapping")
             continue
         artifact_id = str(entry.get("artifact_id", "")).strip()
-        if artifact_id and artifact_id not in needs:
-            needs.append(artifact_id)
-    return needs, None
+        local_role = str(entry.get("local_role", "")).strip()
+        if not artifact_id:
+            errors.append(f"entry {key} is missing artifact_id")
+            continue
+        if local_role == "consumes":
+            _append_unique(inventory["read_needs"], artifact_id)
+        elif local_role == "produces":
+            _append_unique(inventory["write_targets"], artifact_id)
+        elif local_role == "produces_and_consumes":
+            _append_unique(inventory["read_needs"], artifact_id)
+            _append_unique(inventory["write_targets"], artifact_id)
+        else:
+            errors.append(f"entry {key} has unsupported local_role {local_role!r}")
+    error = None
+    if errors:
+        error = f"Capability artifact schema for {capability} has invalid ARTIFACTS entries: {'; '.join(errors)}."
+    return inventory, error
 
 
 def _capability_instruction_contract_path() -> Path:
@@ -1616,7 +1641,9 @@ def _planera_startup_contract() -> dict[str, Any]:
 def _capability_context(capability: str | None) -> dict[str, Any] | None:
     if not capability:
         return None
-    needs, error = _capability_artifact_needs(capability)
+    inventory, error = _capability_artifact_inventory(capability)
+    needs = inventory["read_needs"]
+    write_targets = inventory["write_targets"]
     missing = [name for name in needs if name not in STARTUP_ENVELOPE_STATE_FAMILIES]
     cli_fallback = [
         STATE_FAMILY_FALLBACK_COMMANDS[name]
@@ -1627,6 +1654,8 @@ def _capability_context(capability: str | None) -> dict[str, Any] | None:
         "capability": capability,
         "first_invocation_read": _first_invocation_read_metadata(capability),
         "declared_state_needs": needs,
+        "declared_write_targets": write_targets,
+        "artifact_inventory": inventory,
         "included_state_families": [name for name in needs if name in STARTUP_ENVELOPE_STATE_FAMILIES],
         "missing_state_families": missing,
         "cli_fallback": cli_fallback,
@@ -1639,6 +1668,398 @@ def _capability_context(capability: str | None) -> dict[str, Any] | None:
     if capability == "planera":
         context["startup_contract"] = _planera_startup_contract()
     return context
+
+
+def _capability_context_app_summary(app_home: dict[str, Any], bundle: dict[str, Any]) -> dict[str, Any]:
+    caveats: list[str] = []
+    if app_home.get("status") != "up_to_date":
+        caveats.append("Agentera app files are not up to date; this is a caveat, not approval to repair or update app files.")
+    return {
+        "status": app_home.get("status"),
+        "home": app_home.get("home"),
+        "source": app_home.get("source"),
+        "managed_app_root": app_home.get("managed_app_root"),
+        "user_data_root": app_home.get("user_data_root"),
+        "expected_version": bundle.get("expectedVersion"),
+        "caveats": caveats,
+    }
+
+
+def _capability_context_profile_summary(profile: dict[str, Any]) -> dict[str, Any]:
+    caveats: list[str] = []
+    if profile.get("status") != "loaded":
+        caveats.append("profile-derived state is unavailable in hej context.")
+    elif profile.get("stale") is True:
+        caveats.append("profile-derived state is stale; this is a caveat, not approval to refresh profile state.")
+    summary = {
+        key: profile.get(key)
+        for key in ("status", "path", "stale", "days_since_generated", "stale_threshold_days", "suggested_action")
+        if key in profile
+    }
+    summary["caveats"] = caveats
+    return summary
+
+
+def _slim_plan_state(plan: dict[str, Any]) -> dict[str, Any]:
+    first_pending = plan.get("first_pending")
+    return {
+        "exists": bool(plan.get("exists")),
+        "status": plan.get("status"),
+        "title": plan.get("title"),
+        "complete": plan.get("complete"),
+        "total": plan.get("total"),
+        "first_pending": _task_ref(first_pending) if isinstance(first_pending, dict) else None,
+        "source_provenance": _source_provenance("plan", "agentera plan --format json"),
+    }
+
+
+def _slim_docs_state(docs: dict[str, Any]) -> dict[str, Any]:
+    conventions = _docs_conventions(docs)
+    return {
+        "exists": bool(docs.get("exists")),
+        "status": docs.get("status"),
+        "mapping_entries": docs.get("mapping_entries", len(_as_list(docs.get("mapping")))),
+        "version_policy": {
+            "version_files": _as_list(conventions.get("version_files")),
+            "semver_policy": conventions.get("semver_policy") if isinstance(conventions.get("semver_policy"), dict) else {},
+        },
+        "source_provenance": _source_provenance("docs", "agentera docs --format json", "summary"),
+    }
+
+
+def _slim_progress_state(progress: dict[str, Any]) -> dict[str, Any]:
+    latest = progress.get("latest") if isinstance(progress.get("latest"), dict) else {}
+    return {
+        "exists": bool(progress.get("exists")),
+        "status": progress.get("status"),
+        "latest_cycle": {
+            key: latest.get(key)
+            for key in ("number", "timestamp", "type", "phase")
+            if latest.get(key) not in (None, "")
+        },
+        "verified_present": _has_recorded_value(latest.get("verified")),
+        "source_provenance": _source_provenance("progress", "agentera progress --format json"),
+    }
+
+
+def _slim_health_state(health: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "exists": bool(health.get("exists")),
+        "number": health.get("number"),
+        "grade": health.get("grade"),
+        "trajectory": health.get("trajectory"),
+        "worst": health.get("worst"),
+        "degrading": bool(health.get("degrading")),
+        "source_provenance": _source_provenance("health", "agentera health --format json"),
+    }
+
+
+def _slim_todo_state(todo_items: list[dict[str, str]]) -> dict[str, Any]:
+    severity_counts: dict[str, int] = {}
+    for item in todo_items:
+        severity = str(item.get("severity", "normal"))
+        severity_counts[severity] = severity_counts.get(severity, 0) + 1
+    return {
+        "open_count": len(todo_items),
+        "severity_counts": severity_counts,
+        "source_provenance": _source_provenance("todo", "agentera todo --format json"),
+    }
+
+
+def _fallback_state_pointer(artifact_id: str, command: str) -> dict[str, Any]:
+    return {
+        "status": "fallback_only",
+        "artifact_id": artifact_id,
+        "fallback_command": command,
+        "raw_artifact_reads_required": False,
+    }
+
+
+def _truncate_context_text(value: Any, max_chars: int = 240) -> Any:
+    if not isinstance(value, str) or len(value) <= max_chars:
+        return value
+    return value[: max_chars - 1].rstrip() + "…"
+
+
+def _compact_items_state(value: Any, *, max_items: int = 3, max_chars: int = 180) -> Any:
+    if not isinstance(value, dict):
+        return value
+    compact = {
+        key: item
+        for key, item in value.items()
+        if key not in {"items", "attributed_items", "summary"}
+    }
+    items = value.get("items")
+    if isinstance(items, list):
+        compact["item_count"] = len(items)
+        compact["items"] = [
+            {
+                key: _truncate_context_text(item_value, max_chars)
+                for key, item_value in item.items()
+            } if isinstance(item, dict) else _truncate_context_text(item, max_chars)
+            for item in items[:max_items]
+        ]
+        compact["truncated_item_count"] = max(len(items) - max_items, 0)
+    attributed = value.get("attributed_items")
+    if isinstance(attributed, list):
+        compact["attributed_item_count"] = len(attributed)
+    if isinstance(value.get("summary"), str):
+        compact["summary_present"] = True
+        compact["summary_excerpt"] = _truncate_context_text(value["summary"], max_chars)
+    return compact
+
+
+def _compact_progress_verification(value: Any) -> Any:
+    if not isinstance(value, dict):
+        return value
+    return {
+        key: value.get(key)
+        for key in (
+            "status",
+            "source_provenance",
+            "cycle",
+            "verified_present",
+            "non_empty_evidence_present",
+            "non_empty_evidence_fields",
+            "latest_progress_verification_pointer",
+            "caveats",
+        )
+        if key in value
+    }
+
+
+def _compact_version_checks(value: Any) -> Any:
+    if not isinstance(value, dict):
+        return value
+    compact = {
+        key: value.get(key)
+        for key in ("status", "allowed_status_values", "source_provenance", "caveats")
+        if key in value
+    }
+    checks = value.get("checks")
+    if isinstance(checks, list):
+        compact["checks"] = [
+            {
+                key: check.get(key)
+                for key in ("name", "status", "refresh_performed", "remote_checks_performed", "registry_checks_performed")
+                if isinstance(check, dict) and key in check
+            }
+            for check in checks
+        ]
+    return compact
+
+
+def _compact_task_summary_for_slim(task: Any) -> Any:
+    if not isinstance(task, dict):
+        return task
+    return {
+        "number": task.get("number"),
+        "name": task.get("name"),
+        "status": task.get("status"),
+        "depends_on": task.get("depends_on"),
+        "acceptance_count": task.get("acceptance_summary", {}).get("count")
+        if isinstance(task.get("acceptance_summary"), dict)
+        else None,
+        "evidence_count": task.get("evidence_summary", {}).get("count")
+        if isinstance(task.get("evidence_summary"), dict)
+        else None,
+        "blocked_reasons": task.get("blocked_reasons"),
+    }
+
+
+def _slim_evidence_context(value: dict[str, Any]) -> dict[str, Any]:
+    compact = dict(value)
+    compact["residual_risks"] = _compact_items_state(value.get("residual_risks"), max_items=15, max_chars=180)
+    compact["todo_state"] = _compact_items_state(value.get("todo_state"), max_items=3, max_chars=180)
+    compact["progress_verification"] = _compact_progress_verification(value.get("progress_verification"))
+    compact["version_checks"] = _compact_version_checks(value.get("version_checks"))
+    return compact
+
+
+def _slim_closeout_context(value: dict[str, Any]) -> dict[str, Any]:
+    compact = dict(value)
+    compact["benchmark_evidence"] = _compact_items_state(value.get("benchmark_evidence"), max_items=0, max_chars=220)
+    compact["todo_blockers"] = _compact_items_state(value.get("todo_blockers"), max_items=3, max_chars=160)
+    compact["progress_evidence"] = _compact_progress_verification(value.get("progress_evidence"))
+    return compact
+
+
+def _slim_orchestration_context(value: dict[str, Any]) -> dict[str, Any]:
+    compact = dict(value)
+    task_queue = value.get("task_queue") if isinstance(value.get("task_queue"), dict) else {}
+    compact["task_queue"] = {
+        "total": task_queue.get("total"),
+        "dependency_ready_tasks": [
+            _compact_task_summary_for_slim(task)
+            for task in _as_list(task_queue.get("dependency_ready_tasks"))
+        ],
+        "blocked_tasks": [
+            _compact_task_summary_for_slim(task)
+            for task in _as_list(task_queue.get("blocked_tasks"))
+        ],
+    }
+    compact["progress_verification"] = _compact_progress_verification(value.get("progress_verification"))
+    compact["task_summaries"] = [
+        _compact_task_summary_for_slim(task)
+        for task in _as_list(value.get("task_summaries"))
+    ]
+    return compact
+
+
+def _slim_bespoke_context(name: str, value: dict[str, Any]) -> dict[str, Any]:
+    if name == "evidence_context":
+        return _slim_evidence_context(value)
+    if name == "closeout_context":
+        return _slim_closeout_context(value)
+    if name == "orchestration_context":
+        return _slim_orchestration_context(value)
+    return value
+
+
+def _generic_slim_startup_context(
+    capability: str,
+    context: dict[str, Any],
+    plan: dict[str, Any],
+    docs: dict[str, Any],
+    progress: dict[str, Any],
+    health: dict[str, Any],
+    todo_items: list[dict[str, str]],
+    profile: dict[str, Any],
+) -> dict[str, Any]:
+    decisions_pointer = _fallback_state_pointer("decisions", "agentera decisions --format json")
+    docs_state = _slim_docs_state(docs)
+    profile_state = _capability_context_profile_summary(profile)
+    if capability == "visionera":
+        return {
+            "vision_startup_context": {
+                "vision": _fallback_state_pointer("vision", "agentera query vision --format json"),
+                "docs_mapping": docs_state,
+                "progress": _slim_progress_state(progress),
+                "health": _slim_health_state(health),
+                "todo": _slim_todo_state(todo_items),
+                "decisions": decisions_pointer,
+                "design": _fallback_state_pointer("design", "agentera query design --format json"),
+                "profile": profile_state,
+            }
+        }
+    if capability == "resonera":
+        return {
+            "deliberation_context": {
+                "decisions": decisions_pointer,
+                "vision": _fallback_state_pointer("vision", "agentera query vision --format json"),
+                "objective": _fallback_state_pointer("objective", "agentera objective --format json"),
+                "todo": _slim_todo_state(todo_items),
+                "docs_mapping": docs_state,
+                "profile": profile_state,
+                "protected_write_boundaries": ["vision", "todo", "objective"],
+            }
+        }
+    if capability == "inspirera":
+        return {
+            "research_context": {
+                "profile": profile_state,
+                "vision": _fallback_state_pointer("vision", "agentera query vision --format json"),
+                "write_boundaries": ["todo", "vision"],
+            }
+        }
+    if capability == "planera":
+        return {
+            "planning_context": {
+                "startup_contract": context.get("startup_contract"),
+                "plan": _slim_plan_state(plan),
+                "docs": docs_state,
+                "health": _slim_health_state(health),
+                "todo": _slim_todo_state(todo_items),
+                "progress": _slim_progress_state(progress),
+                "decisions": decisions_pointer,
+                "profile": profile_state,
+            }
+        }
+    if capability == "profilera":
+        return {
+            "profile_context": {
+                "profile": profile_state,
+                "decisions": decisions_pointer,
+                "raw_profile_body_emitted": False,
+            }
+        }
+    if capability == "visualisera":
+        return {
+            "design_context": {
+                "design": _fallback_state_pointer("design", "agentera query design --format json"),
+                "vision": _fallback_state_pointer("vision", "agentera query vision --format json"),
+                "progress": _slim_progress_state(progress),
+                "todo": _slim_todo_state(todo_items),
+                "docs_mapping": docs_state,
+                "profile": profile_state,
+            }
+        }
+    return {}
+
+
+def _slim_capability_context(
+    capability: str,
+    mode: str,
+    app_home: dict[str, Any],
+    bundle: dict[str, Any],
+    profile: dict[str, Any],
+    plan: dict[str, Any],
+    docs: dict[str, Any],
+    progress: dict[str, Any],
+    health: dict[str, Any],
+    todo_items: list[dict[str, str]],
+    bespoke_contexts: dict[str, dict[str, Any] | None] | None = None,
+) -> dict[str, Any]:
+    context = _capability_context(capability) or {
+        "capability": capability,
+        "declared_state_needs": [],
+        "declared_write_targets": [],
+        "artifact_inventory": {"read_needs": [], "write_targets": []},
+        "included_state_families": [],
+        "missing_state_families": [],
+        "cli_fallback": [],
+        "raw_artifact_read_policy": (
+            "Use the included state families from this hej response first. "
+            "If needed families are missing or CLI state is incomplete, run the CLI fallback commands before raw file access."
+        ),
+        "schema_error": f"No capability context found for {capability}.",
+    }
+    context_payload = {
+        "capability": capability,
+        "schema_error": context.get("schema_error"),
+    }
+    context_payload.update(_generic_slim_startup_context(
+        capability,
+        context,
+        plan,
+        docs,
+        progress,
+        health,
+        todo_items,
+        profile,
+    ))
+    if bespoke_contexts:
+        for name, value in bespoke_contexts.items():
+            if value is not None:
+                context_payload[name] = _slim_bespoke_context(name, value)
+    return {
+        "schemaVersion": "agentera.capabilityContext.v1",
+        "capability": capability,
+        "mode": mode,
+        "app": _capability_context_app_summary(app_home, bundle),
+        "profile": _capability_context_profile_summary(profile),
+        "state": {
+            "declared_read_needs": context.get("declared_state_needs", []),
+            "declared_write_targets": context.get("declared_write_targets", []),
+            "artifact_inventory": context.get("artifact_inventory", {"read_needs": [], "write_targets": []}),
+            "included": context.get("included_state_families", []),
+            "missing": context.get("missing_state_families", []),
+            "fallback_commands": context.get("cli_fallback", []),
+            "schema_error": context.get("schema_error"),
+        },
+        "context": context_payload,
+        "raw_artifact_read_policy": context.get("raw_artifact_read_policy"),
+    }
 
 
 def _task_ref(task: dict[str, Any]) -> dict[str, Any]:
@@ -6401,6 +6822,34 @@ def cmd_hej(_args: argparse.Namespace) -> int:
             "managed_app_root": bundle["managedAppRoot"],
             "user_data_root": bundle["userDataRoot"],
         }
+        if capability_name and getattr(_args, "context_profile", "full") == "slim":
+            return _emit_state_structured(
+                "hej",
+                {
+                    "command": "hej",
+                    "status": "ok",
+                    "capability_context": _slim_capability_context(
+                        capability_name,
+                        mode,
+                        app_home,
+                        bundle_public,
+                        profile_dict,
+                        plan,
+                        docs,
+                        progress,
+                        health,
+                        todo_items,
+                        {
+                            "orchestration_context": orchestration_context,
+                            "closeout_context": closeout_context,
+                            "evidence_context": evidence_context,
+                            "benchmark_context": benchmark_context,
+                            "execution_context": execution_context,
+                        },
+                    ),
+                },
+                _args,
+            )
         return _emit_state_structured(
             "hej",
             {
@@ -6718,6 +7167,12 @@ def build_parser() -> argparse.ArgumentParser:
         "--capability-context",
         type=_agent_command,
         help="Include capability-specific startup state needs in structured source_contract output",
+    )
+    hej.add_argument(
+        "--context-profile",
+        choices=["full", "slim"],
+        default="full",
+        help="Structured capability-context profile: full keeps the dashboard envelope; slim emits only the startup capsule",
     )
     add_structured_args(hej)
 

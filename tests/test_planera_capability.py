@@ -126,9 +126,10 @@ def test_planera_prose_uses_complete_plan_cli_state_before_raw_artifact_reads():
     assert "skip raw `.agentera/plan.yaml` reads" in content
     assert "writing a new plan, archiving a completed plan, artifact validation" in content
     assert "CLI-provided fallback before any\nlast-resort raw artifact read" in content
+    assert "capability_context.context.planning_context.startup_contract" in content
     assert "source_contract.capability_context.startup_contract" in content
-    assert "Use that compact context before rereading this prose" in content
-    assert "editing Planera, resolving contradiction or ambiguity" in content
+    assert "Use the compact\ncontext before rereading this prose" in content
+    assert "editing Planera,\nresolving contradiction or ambiguity" in content
 
 
 def test_planera_prose_defines_completed_plan_archive_confirmation_boundary():
