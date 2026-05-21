@@ -563,6 +563,143 @@ def test_runtime_upgrade_refreshes_codex_managed_entries_preserving_user_config(
     assert "${AGENTERA_HOME}" not in hooks_text
 
 
+def test_runtime_upgrade_prefers_codex_plugin_hooks_when_plugin_enabled(tmp_path: Path) -> None:
+    home = tmp_path / "home"
+    setup_codex = _load_upgrade_module()._setup_codex_module()
+    codex_config = home / ".codex" / "config.toml"
+    copied_hooks = home / ".codex" / "hooks.json"
+    codex_config.parent.mkdir(parents=True)
+    codex_config.write_text(
+        '[plugins."agentera@agentera"]\n'
+        'enabled = true\n'
+        '\n'
+        '[shell_environment_policy]\n'
+        f'set = {{ AGENTERA_HOME = "{REPO_ROOT}" }}\n',
+        encoding="utf-8",
+    )
+    copied_hooks.write_text(
+        setup_codex.render_codex_hooks_config(setup_codex.codex_validator_command(REPO_ROOT)),
+        encoding="utf-8",
+    )
+
+    result = _run(
+        "upgrade",
+        "--only",
+        "runtime",
+        "--runtime",
+        "codex",
+        "--home",
+        str(home),
+        "--yes",
+        "--json",
+    )
+
+    assert result.returncode == 0, result.stderr
+    payload = json.loads(result.stdout)
+    runtime_items = {(item["runtime"], item["action"]): item for item in payload["phases"][0]["items"]}
+    assert ("codex", "copy-hooks") not in runtime_items
+    assert runtime_items[("codex", "retire-hooks")]["status"] == "applied"
+    assert not copied_hooks.exists()
+    config = codex_config.read_text(encoding="utf-8")
+    assert "hooks = true" in config
+    assert "plugin_hooks = true" in config
+    assert "agentera@agentera:hooks/codex-plugin-hooks.json:pre_tool_use:0:0" in config
+    assert "agentera@agentera:hooks/codex-plugin-hooks.json:post_tool_use:0:0" in config
+    assert str(copied_hooks) not in config
+    assert setup_codex.codex_hook_trusted_hash(
+        "pre_tool_use",
+        setup_codex.CODEX_HOOK_MATCHER,
+        command=setup_codex.CODEX_PLUGIN_HOOK_COMMAND,
+    ) in config
+
+
+def test_runtime_upgrade_blocks_mixed_copied_hooks_when_plugin_enabled(tmp_path: Path) -> None:
+    home = tmp_path / "home"
+    project = tmp_path / "project"
+    setup_codex = _load_upgrade_module()._setup_codex_module()
+    codex_config = home / ".codex" / "config.toml"
+    copied_hooks = home / ".codex" / "hooks.json"
+    project_hooks = project / ".codex" / "hooks.json"
+    codex_config.parent.mkdir(parents=True)
+    project_hooks.parent.mkdir(parents=True)
+    codex_config.write_text(
+        '[plugins."agentera@agentera"]\n'
+        'enabled = true\n'
+        '\n'
+        '[shell_environment_policy]\n'
+        f'set = {{ AGENTERA_HOME = "{REPO_ROOT}" }}\n',
+        encoding="utf-8",
+    )
+    mixed = json.loads(setup_codex.render_codex_hooks_config(setup_codex.codex_validator_command(REPO_ROOT)))
+    mixed["hooks"]["UserPromptSubmit"] = [{"hooks": [{"type": "command", "command": "echo user"}]}]
+    copied_hooks.write_text(json.dumps(mixed, indent=2) + "\n", encoding="utf-8")
+    project_hooks.write_text('{"project": true}\n', encoding="utf-8")
+
+    result = _run(
+        "upgrade",
+        "--only",
+        "runtime",
+        "--runtime",
+        "codex",
+        "--home",
+        str(home),
+        "--project",
+        str(project),
+        "--json",
+    )
+
+    assert result.returncode == 1, result.stderr
+    payload = json.loads(result.stdout)
+    runtime_items = {(item["runtime"], item["action"]): item for item in payload["phases"][0]["items"]}
+    retire = runtime_items[("codex", "retire-hooks")]
+    assert retire["status"] == "blocked"
+    assert retire["ownership"]["status"] == "user-owned"
+    assert "review manually" in retire["message"]
+    assert json.loads(copied_hooks.read_text(encoding="utf-8"))["hooks"]["UserPromptSubmit"]
+    assert project_hooks.read_text(encoding="utf-8") == '{"project": true}\n'
+
+
+def test_runtime_upgrade_keeps_copied_hooks_when_plugin_trust_config_is_blocked(tmp_path: Path) -> None:
+    home = tmp_path / "home"
+    setup_codex = _load_upgrade_module()._setup_codex_module()
+    codex_config = home / ".codex" / "config.toml"
+    copied_hooks = home / ".codex" / "hooks.json"
+    codex_config.parent.mkdir(parents=True)
+    codex_config.write_text(
+        'features = { hooks = true }\n'
+        '\n'
+        '[plugins."agentera@agentera"]\n'
+        'enabled = true\n'
+        '\n'
+        '[shell_environment_policy]\n'
+        f'set = {{ AGENTERA_HOME = "{REPO_ROOT}" }}\n',
+        encoding="utf-8",
+    )
+    original_hooks = setup_codex.render_codex_hooks_config(setup_codex.codex_validator_command(REPO_ROOT))
+    copied_hooks.write_text(original_hooks, encoding="utf-8")
+
+    result = _run(
+        "upgrade",
+        "--only",
+        "runtime",
+        "--runtime",
+        "codex",
+        "--home",
+        str(home),
+        "--yes",
+        "--json",
+    )
+
+    assert result.returncode == 1, result.stdout
+    payload = json.loads(result.stdout)
+    runtime_items = {(item["runtime"], item["action"]): item for item in payload["phases"][0]["items"]}
+    assert runtime_items[("codex", "configure")]["status"] == "blocked"
+    retire = runtime_items[("codex", "retire-hooks")]
+    assert retire["status"] == "blocked"
+    assert "Codex config trust was not applied" in retire["message"]
+    assert copied_hooks.read_text(encoding="utf-8") == original_hooks
+
+
 def test_runtime_upgrade_plan_characterizes_runtime_and_package_items(tmp_path: Path) -> None:
     home = tmp_path / "home"
     shell_rc = home / ".bashrc"

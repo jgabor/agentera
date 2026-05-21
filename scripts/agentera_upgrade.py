@@ -1388,6 +1388,7 @@ def _plan_codex_config(
     force: bool,
     hooks_path: Path,
     hook_command: str,
+    plugin_hooks: bool,
 ) -> dict[str, Any]:
     setup_codex = _setup_codex_module()
     runtime_id = adapter["identity"]["runtime_id"]
@@ -1400,8 +1401,9 @@ def _plan_codex_config(
             current,
             install_root,
             force=force,
-            hooks_path=hooks_path,
+            hooks_path=None if plugin_hooks else hooks_path,
             hook_command=hook_command,
+            plugin_hooks=plugin_hooks,
         )
     except Exception as exc:  # noqa: BLE001
         return {
@@ -1431,6 +1433,57 @@ def _plan_codex_config(
         "ownership": ownership,
         "message": outcome.message,
         "newText": outcome.new_text,
+        "pluginHooksEligible": plugin_hooks,
+    }
+
+
+def _retire_codex_copied_hooks_item(target: Path) -> dict[str, Any]:
+    setup_codex = _setup_codex_module()
+    if not target.exists():
+        return {
+            "status": "noop",
+            "runtime": "codex",
+            "action": "retire-hooks",
+            "target": str(target),
+            "ownership": {"status": "agentera-owned", "reason": "copied Codex hooks are already absent"},
+            "message": "copied Codex hooks already absent; plugin hooks are primary",
+        }
+    if not target.is_file():
+        return {
+            "status": "blocked",
+            "runtime": "codex",
+            "action": "retire-hooks",
+            "target": str(target),
+            "ownership": {"status": "user-owned", "reason": "copied hook target exists but is not a regular file"},
+            "message": "plugin hooks are enabled, but copied hook target needs manual review",
+        }
+    try:
+        text = target.read_text(encoding="utf-8")
+    except OSError as exc:
+        return {
+            "status": "blocked",
+            "runtime": "codex",
+            "action": "retire-hooks",
+            "target": str(target),
+            "ownership": {"status": "user-owned", "reason": f"cannot read copied hooks to prove ownership: {exc}"},
+            "message": "plugin hooks are enabled, but copied hook target needs manual review",
+        }
+    if setup_codex.codex_copied_hooks_are_agentera_only(text):
+        return {
+            "status": "pending",
+            "runtime": "codex",
+            "action": "retire-hooks",
+            "target": str(target),
+            "ownership": {"status": "agentera-owned", "reason": "copied hooks contain only Agentera-managed handlers"},
+            "message": "will remove Agentera-owned copied Codex hooks because plugin hooks are enabled",
+        }
+    return {
+        "status": "blocked",
+        "runtime": "codex",
+        "action": "retire-hooks",
+        "target": str(target),
+        "ownership": {"status": "user-owned", "reason": "copied hooks contain user or ambiguous hook entries"},
+        "message": "plugin hooks are enabled, but ~/.codex/hooks.json contains user or ambiguous hooks; review manually",
     }
 
 
@@ -1496,6 +1549,12 @@ def plan_runtime_phase(
         labels = adapter["config_targets"]["write_safety_labels"]
         hook_target = _home_target(home, _first_target(adapter, "config_targets", "hook_targets"))
         hook_command = setup_codex.codex_validator_command(install_root)
+        codex_config_target = _home_target(home, _first_target(adapter, "config_targets", "runtime_config_files"))
+        try:
+            codex_config_text = _read_text_or_none(codex_config_target)
+            plugin_hooks_eligible = setup_codex.codex_plugin_hooks_enabled(codex_config_text)
+        except Exception:  # noqa: BLE001 - config parse errors are surfaced by _plan_codex_config.
+            plugin_hooks_eligible = False
         hook_text = setup_codex.render_codex_hooks_config(hook_command)
         items.append(_plan_codex_config(
             adapter,
@@ -1504,16 +1563,20 @@ def plan_runtime_phase(
             force=force,
             hooks_path=hook_target,
             hook_command=hook_command,
+            plugin_hooks=plugin_hooks_eligible,
         ))
-        items.append(_copy_text_item(
-            adapter["identity"]["runtime_id"],
-            runtime_source_root / "hooks" / "codex-hooks.json",
-            hook_target,
-            hook_text,
-            force=force,
-            action=labels[1] if len(labels) > 1 else "copy-hooks",
-            hook_command=hook_command,
-        ))
+        if plugin_hooks_eligible:
+            items.append(_retire_codex_copied_hooks_item(hook_target))
+        else:
+            items.append(_copy_text_item(
+                adapter["identity"]["runtime_id"],
+                runtime_source_root / "hooks" / "codex-hooks.json",
+                hook_target,
+                hook_text,
+                force=force,
+                action=labels[1] if len(labels) > 1 else "copy-hooks",
+                hook_command=hook_command,
+            ))
         codex_agents_dir = _home_target(home, adapter["subagent_dispatch"]["setup_targets"][0])
         codex_agent_action = labels[2] if len(labels) > 2 else "copy-agent"
         for agent_source in sorted((runtime_source_root / "skills" / "agentera" / "agents").glob("*.toml")):
@@ -1581,6 +1644,7 @@ def _replan_codex_config_item(item: dict[str, Any], install_root: Path, *, force
     target = Path(item["target"])
     hooks_path = None
     hook_command = setup_codex.codex_validator_command(install_root)
+    plugin_hooks = bool(item.get("pluginHooksEligible"))
     for candidate in item.get("phaseItems", []):
         if candidate.get("runtime") == "codex" and candidate.get("action") == "copy-hooks":
             hooks_path = Path(candidate["target"])
@@ -1590,12 +1654,19 @@ def _replan_codex_config_item(item: dict[str, Any], install_root: Path, *, force
         current = _read_text_or_none(target)
         if current is not None and current.strip():
             setup_codex.tomllib.loads(current)
+        if plugin_hooks and not setup_codex.codex_plugin_hooks_enabled(current):
+            return {
+                **item,
+                "status": "blocked",
+                "message": "runtime safety recheck blocked Codex config change: Agentera plugin is no longer enabled",
+            }
         outcome = setup_codex.plan_change(
             current,
             install_root,
             force=force,
-            hooks_path=hooks_path,
+            hooks_path=None if plugin_hooks else hooks_path,
             hook_command=hook_command,
+            plugin_hooks=plugin_hooks,
         )
     except Exception as exc:  # noqa: BLE001
         return {**item, "status": "blocked", "message": f"runtime safety recheck blocked Codex config change: {exc}"}
@@ -1607,6 +1678,21 @@ def _replan_codex_config_item(item: dict[str, Any], install_root: Path, *, force
 
 
 def _runtime_write_still_safe(item: dict[str, Any], install_root: Path, *, force: bool) -> dict[str, Any]:
+    if item["runtime"] == "codex" and item["action"] == "retire-hooks":
+        configure_items = [
+            candidate
+            for candidate in item.get("phaseItems", [])
+            if candidate.get("runtime") == "codex"
+            and candidate.get("action") == "configure"
+            and candidate.get("pluginHooksEligible")
+        ]
+        if configure_items and not any(candidate.get("status") in {"applied", "noop"} for candidate in configure_items):
+            return {
+                **item,
+                "status": "blocked",
+                "message": "plugin hooks are enabled, but copied hooks were preserved because Codex config trust was not applied",
+            }
+        return _retire_codex_copied_hooks_item(Path(item["target"]))
     if item["action"] == "copy-hooks" and "newText" in item:
         return _copy_text_item(
             item["runtime"],
@@ -1650,6 +1736,8 @@ def apply_runtime_phase(phase: dict[str, Any], install_root: Path, *, force: boo
                     target.write_text(str(item["newText"]), encoding="utf-8")
                 else:
                     shutil.copy2(Path(item["source"]), target)
+            elif item["action"] == "retire-hooks":
+                target.unlink()
             elif item["action"] == "link-skill":
                 if target.is_symlink() or target.is_file():
                     target.unlink()

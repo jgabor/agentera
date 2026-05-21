@@ -111,9 +111,11 @@ codex plugin marketplace add jgabor/agentera
 codex plugin add agentera@agentera
 ```
 
-For plugin-provided hooks, enable `plugin_hooks = true` under `[features]` in
-`~/.codex/config.toml`. You can also open `/plugins`, enable Agentera, then start
-`$agentera`.
+When the Agentera Codex plugin is installed and enabled, Agentera uses the
+plugin-provided hooks as the primary hook path and `agentera upgrade --runtime
+codex` trusts that plugin hook metadata. Copied `~/.codex/hooks.json` hooks are
+kept only as the compatibility fallback for non-plugin installs. You can also
+open `/plugins`, enable Agentera, then start `$agentera`.
 
 </details>
 

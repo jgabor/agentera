@@ -460,3 +460,28 @@ def test_codex_hook_trust_uses_exact_resolved_command(setup_codex: ModuleType, t
         setup_codex.CODEX_HOOK_MATCHER,
         command=command,
     )
+
+
+def test_codex_plugin_hook_trust_uses_plugin_source_when_enabled(setup_codex: ModuleType, install_root: Path):
+    current = (
+        '[plugins."agentera@agentera"]\n'
+        'enabled = true\n'
+        '\n'
+        '[shell_environment_policy]\n'
+        f'set = {{ AGENTERA_HOME = "{install_root}" }}\n'
+    )
+
+    assert setup_codex.codex_plugin_hooks_enabled(current)
+    outcome = setup_codex.plan_change(current, install_root, force=False, plugin_hooks=True)
+
+    assert outcome.action == "insert"
+    assert "hooks = true" in outcome.new_text
+    assert "plugin_hooks = true" in outcome.new_text
+    assert "agentera@agentera:hooks/codex-plugin-hooks.json:pre_tool_use:0:0" in outcome.new_text
+    assert "agentera@agentera:hooks/codex-plugin-hooks.json:post_tool_use:0:0" in outcome.new_text
+    assert "${PLUGIN_ROOT}/hooks/validate_artifact.py" not in outcome.new_text
+    assert setup_codex.codex_hook_trusted_hash(
+        "pre_tool_use",
+        setup_codex.CODEX_HOOK_MATCHER,
+        command=setup_codex.CODEX_PLUGIN_HOOK_COMMAND,
+    ) in outcome.new_text
