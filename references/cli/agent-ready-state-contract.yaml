@@ -586,6 +586,7 @@ field_selection:
         - evidence_context
         - benchmark_context
         - execution_context
+        - capability_context
         - source
         - source_contract
   retained_context:

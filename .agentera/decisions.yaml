@@ -435,7 +435,12 @@ decisions:
     seams exist in vocabulary, runtime metadata, migration fixtures, direct-helper
     commands, schema names, and historical alias surfaces. The user explicitly decided
     that Agentera 3.0 must not preserve backwards-compatible or multiple names for
-    artifacts, concepts, primitives, or any equivalent protocol identity.
+    artifacts, concepts, primitives, or any equivalent protocol identity. Follow-up
+    deliberation clarified that primary route aliases such as `/agentera build` and
+    `/agentera plan` are protocol identities, artifact IDs such as `plan`, `progress`,
+    and `decisions` become canonical instead of Markdown labels such as `PLAN.md`
+    or `DECISIONS.md`, storage paths must align with artifact IDs, and old names may
+    remain only in upgrade detection, migration notes, and historical evidence.
   alternatives:
   - name: Single-name 3.0 protocol
     status: chosen
@@ -454,17 +459,25 @@ decisions:
     status: rejected
     description: The policy is already decided; implementation can sequence surfaces,
       but cannot reopen whether aliases remain after 3.0.
+  - name: 3.x runtime warning window
+    status: rejected
+    description: Accepting old names with warnings after 3.0 would still preserve
+      aliases as supported runtime inputs.
   choice: Agentera 3.0 must eliminate all backwards-compatible and multiple naming
     surfaces. Zero artifacts, concepts, primitives, commands, schema fields, metadata
     fields, runtime adapter surfaces, or protocol identities may retain legacy aliases,
     parallel display names, compatibility names, deprecated names, or storage/protocol
     name splits after the 3.0 boundary. Every retained surface must have one name,
     and old names must be removed or migrated rather than supported alongside it.
+    This applies to routes, artifact IDs, paths, schema fields, runtime metadata,
+    adapters, package manifests, public docs, and command surfaces.
   reasoning: Agentera is agent-facing infrastructure; every duplicate name becomes
     routing, validation, documentation, and implementation ambiguity. Compatibility
     aliases were acceptable during v2 migration, but the 3.0 boundary exists to end
     that ambiguity. A single-name protocol makes schemas, CLI output, docs, tests,
     and runtime adapters mechanically consistent and easier for agents to follow.
+    Migration tooling can still recognize old names as inputs, but runtime behavior
+    and docs must not keep them alive as supported alternatives.
   confidence: firm
   feeds_into: TODO.md, references/artifacts/artifact-registry-interface-model.yaml,
     skills/agentera/schemas/artifacts, scripts/agentera, hooks, runtime adapters,
@@ -472,27 +485,35 @@ decisions:
   satisfaction:
     state: open
 archive:
-- summary: 'Decision 50 (2026-05-12): Make 2.3.0 a focused reliability release. Include
-    Decision 47 app-home migration as a hard requirement;...'
-  number: 50
-  date: '2026-05-12'
-  choice: Make 2.3.0 a focused reliability release. Include Decision 47 app-home migration
-    as a hard requirement; implement Decision 48 first through `agentera lint`; resolve
-    the degraded helper exposure/removal, schema discovery, and split-root doctor
-    checks. Defer Profilera corpus parity and broad script namespace promotion beyond
-    `lint`.
-  feeds_into: TODO.md, .agentera/plan.yaml, scripts/install_root.py, scripts/agentera_upgrade.py,
-    scripts/agentera, README.md, UPGRADE.md, capability prose, tests
+- 'Decision 19 (2026-04-02): **Question**: How should the ecosystem handle line-breaks
+  in prose text?'
+- 'Decision 30 (2026-04-12): **Question**: How should the realisera-token harness
+  be redesigned after three consecutive discarded experiments where run-to-run variance
+  (13-20%) drowned the optimization...'
+- summary: 'Decision 44 (2026-05-07): Use plain English for capability/protocol prose
+    and labels. Deprecate `freshness`; use current/up-to-date/out-of-date/synced/status
+    wording. Keep `checkpoint`...'
+  number: 44
+  date: '2026-05-07'
+  choice: Use plain English for capability/protocol prose and labels. Deprecate `freshness`;
+    use current/up-to-date/out-of-date/synced/status wording. Keep `checkpoint` only
+    for Git commits. Replace most `guard` with check/stop-condition wording; keep
+    `gate` only for hard pass/fail. Use `behavioral verification gate`, `orchestration
+    loop`, `saved project context`, mismatch/out-of-sync wording, and `docs-first`
+    workflow language.
+  feeds_into: docs/vocabulary.md, capability prose, safe labels/tests, active plan
+    wording, TODO.md
   satisfaction:
     state: user_confirmed_satisfied
     user_confirmation:
       confirmed_by: user
       confirmed_at: '2026-05-15'
-  outcome: Make 2.3.0 a focused reliability release. Include Decision 47 app-home
-    migration as a hard requirement; implement Decision 48 first through `agentera
-    lint`; resolve the degraded helper exposure/removal, schema discovery, and split-root
-    doctor checks. Defer Profilera corpus parity and broad script namespace promotion
-    beyond `lint`.
+  outcome: Use plain English for capability/protocol prose and labels. Deprecate `freshness`;
+    use current/up-to-date/out-of-date/synced/status wording. Keep `checkpoint` only
+    for Git commits. Replace most `guard` with check/stop-condition wording; keep
+    `gate` only for hard pass/fail. Use `behavioral verification gate`, `orchestration
+    loop`, `saved project context`, mismatch/out-of-sync wording, and `docs-first`
+    workflow language.
 - summary: 'Decision 45 (2026-05-08): Build one phased agent-ready state interface
     plan for pending 2.2.0: keep routine state command names...'
   number: 45
@@ -563,30 +584,27 @@ archive:
     item IDs. When the release is selected, convert `[type:X.Y.x]` to `[type:X.Y.Z]`.
     Status comes from the checkbox, priority from the section, and identity from normalized
     summary text.'
-- summary: 'Decision 44 (2026-05-07): Use plain English for capability/protocol prose
-    and labels. Deprecate `freshness`; use current/up-to-date/out-of-date/synced/status
-    wording. Keep `checkpoint`...'
-  number: 44
-  date: '2026-05-07'
-  choice: Use plain English for capability/protocol prose and labels. Deprecate `freshness`;
-    use current/up-to-date/out-of-date/synced/status wording. Keep `checkpoint` only
-    for Git commits. Replace most `guard` with check/stop-condition wording; keep
-    `gate` only for hard pass/fail. Use `behavioral verification gate`, `orchestration
-    loop`, `saved project context`, mismatch/out-of-sync wording, and `docs-first`
-    workflow language.
-  feeds_into: docs/vocabulary.md, capability prose, safe labels/tests, active plan
-    wording, TODO.md
+- summary: 'Decision 50 (2026-05-12): Make 2.3.0 a focused reliability release. Include
+    Decision 47 app-home migration as a hard requirement;...'
+  number: 50
+  date: '2026-05-12'
+  choice: Make 2.3.0 a focused reliability release. Include Decision 47 app-home migration
+    as a hard requirement; implement Decision 48 first through `agentera lint`; resolve
+    the degraded helper exposure/removal, schema discovery, and split-root doctor
+    checks. Defer Profilera corpus parity and broad script namespace promotion beyond
+    `lint`.
+  feeds_into: TODO.md, .agentera/plan.yaml, scripts/install_root.py, scripts/agentera_upgrade.py,
+    scripts/agentera, README.md, UPGRADE.md, capability prose, tests
   satisfaction:
     state: user_confirmed_satisfied
     user_confirmation:
       confirmed_by: user
       confirmed_at: '2026-05-15'
-  outcome: Use plain English for capability/protocol prose and labels. Deprecate `freshness`;
-    use current/up-to-date/out-of-date/synced/status wording. Keep `checkpoint` only
-    for Git commits. Replace most `guard` with check/stop-condition wording; keep
-    `gate` only for hard pass/fail. Use `behavioral verification gate`, `orchestration
-    loop`, `saved project context`, mismatch/out-of-sync wording, and `docs-first`
-    workflow language.
+  outcome: Make 2.3.0 a focused reliability release. Include Decision 47 app-home
+    migration as a hard requirement; implement Decision 48 first through `agentera
+    lint`; resolve the degraded helper exposure/removal, schema discovery, and split-root
+    doctor checks. Defer Profilera corpus parity and broad script namespace promotion
+    beyond `lint`.
 - summary: 'Decision 43 (2026-05-07): Keep Swedish `-era` names canonical and add
     one primary plain `/agentera <alias>` per capability.'
   satisfaction: &id001
@@ -644,9 +662,6 @@ archive:
 - summary: "Decision 31 (2026-04-12): [Named per-objective subdirs] \u2014 Self-contained\
     \ optimera objectives live under `.agentera/optimera/`."
   satisfaction: *id001
-- 'Decision 30 (2026-04-12): **Question**: How should the realisera-token harness
-  be redesigned after three consecutive discarded experiments where run-to-run variance
-  (13-20%) drowned the optimization...'
 - summary: 'Decision 29 (2026-04-11): **Question**: How should optimera handle measurement
     archetypes that go beyond thin command-wrapper harnesses, and what should the
     first such reference...'
@@ -679,8 +694,6 @@ archive:
 - summary: 'Decision 20 (2026-04-02): **Question**: Should the agentera ecosystem
     add an orchestration skill, and what should it own?'
   satisfaction: *id001
-- 'Decision 19 (2026-04-02): **Question**: How should the ecosystem handle line-breaks
-  in prose text?'
 - summary: 'Decision 18 (2026-04-02): **Question**: How should the ecosystem handle
     em-dashes and double dashes in all text?'
   satisfaction:
