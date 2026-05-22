@@ -1,0 +1,272 @@
+header:
+  level: full
+  created: 2026-05-20
+  status: active
+  reviewed: 2026-05-20
+  critic_issues: "1 found, 1 addressed, 0 dismissed"
+  revised: >-
+    Preserved full-mode compatibility as an explicit migration boundary before
+    making slim capability context the default.
+  title: Slim Capability Context Payloads
+what: >-
+  Change `agentera hej --format json --capability-context <capability>` from a
+  full hej dashboard envelope with optional bespoke context into a targeted
+  capability startup capsule. Keep the full `hej --format json` dashboard source
+  available, classify artifact needs by role, and add byte plus GPT-5 token
+  budget coverage for every capability context.
+why: >-
+  Current capability-context payloads repeat about 20 KB and 4.9k GPT-5 tokens of
+  dashboard state for every capability before adding useful capability-specific
+  context. The duplication bloats runtime context windows and makes the actual
+  startup contract harder to consume.
+constraints: >-
+  Keep `hej --format json` as the full dashboard source. Do not introduce
+  capability-name CLI commands such as `agentera planera`. Preserve compatibility
+  deliberately, preferably through an explicit full/slim context profile. Measure
+  tokens with `<output> | npx tiktoken-cli -m gpt-5`. Do not bump versions, tag,
+  publish, push, refresh app files, or edit protected vision/objective state
+  unless explicitly approved later.
+scope:
+  included:
+    - scripts/agentera capability-context JSON construction and field selection.
+    - Role-aware capability artifact inventory.
+    - Existing bespoke contexts for realisera, optimera, inspektera, dokumentera, and orkestrera.
+    - Slim startup capsules for visionera, resonera, inspirera, planera, profilera, and visualisera.
+    - Focused CLI contract tests and payload budget measurements.
+  excluded:
+    - Remote publication, package refresh, release tagging, or changelog promotion.
+    - New capability-name CLI commands.
+    - Profile content ingestion beyond status/path/staleness caveats.
+    - Raw artifact reads as normal startup recovery for compacted decision history.
+  deferred:
+    - Making slim mode the only supported shape after a compatibility release.
+design: >-
+  Add a v2 `capability_context` capsule that owns app/profile caveats, role-aware
+  state inventory, fallback commands, raw-read policy, and one targeted
+  capability-specific context. Keep the existing full hej JSON path for dashboard
+  rendering and compatibility. Existing bespoke context builders should move
+  under the capsule in slim mode while full mode can retain current top-level
+  keys. Generic capabilities get small builders that expose only the context they
+  actually need. Payload regression coverage should report both bytes and GPT-5
+  tokens so budget failures track context-window cost directly.
+overall_acceptance:
+  - >-
+    GIVEN `hej --format json` is run without `--capability-context` WHEN the
+    command emits JSON THEN the full dashboard source fields remain available.
+  - >-
+    GIVEN `hej --format json --capability-context <capability>` is run in slim
+    mode WHEN JSON is emitted THEN repeated dashboard sibling summaries are
+    absent unless explicitly requested for compatibility.
+  - >-
+    GIVEN all twelve capability contexts are measured WHEN byte and GPT-5 token
+    budgets are checked THEN generic contexts stay under 8 KB and 2k tokens,
+    Planera under 12 KB and 3k tokens, Orkestrera under 16 KB and 4k tokens,
+    Realisera/Optimera/Dokumentera under 20 KB and 5k tokens, and Inspektera
+    under 28 KB and 7k tokens.
+  - >-
+    GIVEN artifact schemas include produced-only artifacts WHEN startup inventory
+    is built THEN generated/write targets are not reported as missing read state.
+tasks:
+  - number: 1
+    name: Introduce role-aware capability state inventory
+    depends_on: []
+    status: complete
+    acceptance:
+      - >-
+        GIVEN a capability artifact schema entry with `local_role: produces`
+        WHEN startup read needs are computed THEN the artifact is reported as a
+        write or generated target, not as missing startup state.
+      - >-
+        GIVEN Planera declares `plan_archive` WHEN Planera context is emitted
+        THEN `plan_archive` is absent from missing read-state families.
+      - >-
+        GIVEN Optimera declares `optimera_harness` WHEN Optimera context is
+        emitted THEN `optimera_harness` is absent from missing read-state
+        families.
+      - >-
+        GIVEN malformed or missing artifact schemas WHEN inventory is computed
+        THEN schema errors remain explicit and do not fabricate state needs.
+    evidence:
+      - >-
+        `scripts/agentera` now builds role-aware capability artifact inventory
+        with read needs separated from declared write targets.
+      - >-
+        Focused hej context tests cover produced-only artifacts, Planera
+        `plan_archive`, Optimera `optimera_harness`, and malformed or missing
+        artifact schemas.
+      - >-
+        Verification passed: focused pytest targets, capability validation for
+        all capabilities, capability-contract self-validation, Planera/Optimera
+        context spot checks, and `git diff --check`.
+  - number: 2
+    name: Add slim capability-context envelope
+    depends_on: [1]
+    status: complete
+    acceptance:
+      - >-
+        GIVEN `agentera hej --format json` is run without capability context WHEN
+        JSON is emitted THEN the existing full dashboard envelope remains
+        available.
+      - >-
+        GIVEN capability context is requested in slim mode WHEN JSON is emitted
+        THEN the top-level payload contains `command`, `status`, and
+        `capability_context` as the primary startup capsule.
+      - >-
+        GIVEN compatibility mode is requested WHEN JSON is emitted THEN existing
+        top-level context keys remain available for current callers.
+      - >-
+        GIVEN unsupported sparse fields are requested WHEN validation fails THEN
+        no partial stdout is emitted.
+    evidence:
+      - >-
+        `scripts/agentera` now supports `--context-profile full|slim` for `hej`,
+        with `full` preserving the existing dashboard envelope and `slim`
+        emitting top-level `command`, `status`, and `capability_context`.
+      - >-
+        Slim capability context includes app/profile caveats, role-aware state
+        inventory, fallback commands, raw-read policy, and the existing
+        compatibility context under `capability_context.context`.
+      - >-
+        Verification passed: focused hej tests for default dashboard output,
+        slim capsule output, full compatibility output, unsupported sparse-field
+        rejection without partial stdout, existing capability-context inventory,
+        Planera context, slim/full CLI spot checks, and `git diff --check`.
+  - number: 3
+    name: Move existing bespoke contexts into slim mode
+    depends_on: [2]
+    status: complete
+    acceptance:
+      - >-
+        GIVEN Realisera context is requested WHEN slim JSON is emitted THEN
+        `execution_context` semantics, completeness flags, fallback commands, and
+        caveats are preserved under `capability_context.context`.
+      - >-
+        GIVEN Optimera, Inspektera, Dokumentera, or Orkestrera context is
+        requested WHEN slim JSON is emitted THEN each existing bespoke context
+        remains complete in the new capsule location.
+      - >-
+        GIVEN full compatibility output is requested WHEN existing context tests
+        run THEN legacy top-level paths still pass or have explicit migration
+        coverage.
+      - >-
+        GIVEN profile or app state is stale or missing WHEN bespoke contexts are
+        emitted THEN caveats are preserved and do not authorize refreshes.
+    evidence:
+      - >-
+        Slim mode now copies non-null bespoke contexts into
+        `capability_context.context`, preserving `execution_context`,
+        `benchmark_context`, `evidence_context`, `closeout_context`, and
+        `orchestration_context` source contracts.
+      - >-
+        Focused tests verify slim nesting for Realisera, Optimera, Inspektera,
+        Dokumentera, and Orkestrera while full compatibility output remains
+        unchanged.
+      - >-
+        Verification passed: focused bespoke-context slim tests, Realisera slim
+        CLI spot check, and `git diff --check`.
+  - number: 4
+    name: Add slim builders for generic capabilities
+    depends_on: [2]
+    status: complete
+    acceptance:
+      - >-
+        GIVEN Visionera context is requested WHEN slim JSON is emitted THEN it
+        includes vision status or pointer, docs mapping pointer, compact
+        progress/health/TODO summaries, decisions fallback, and design/profile
+        caveats.
+      - >-
+        GIVEN Resonera or Inspirera context is requested WHEN slim JSON is
+        emitted THEN it includes only deliberation or research startup needs,
+        fallback commands, and protected write boundaries.
+      - >-
+        GIVEN Planera context is requested WHEN slim JSON is emitted THEN the
+        existing startup contract appears as `planning_context` with compact
+        plan/docs/health/TODO/progress state and decisions fallback.
+      - >-
+        GIVEN Profilera or Visualisera context is requested WHEN slim JSON is
+        emitted THEN profile/design startup context is present without full hej
+        dashboard summaries.
+    evidence:
+      - >-
+        Slim mode now adds targeted generic contexts under
+        `capability_context.context`: `vision_startup_context`,
+        `deliberation_context`, `research_context`, `planning_context`,
+        `profile_context`, and `design_context`.
+      - >-
+        Generic builders reuse compact plan, docs, progress, health, TODO, and
+        profile summaries plus fallback pointers for missing vision, decisions,
+        objective, and design state.
+      - >-
+        Verification passed: focused generic/bespoke slim pytest targets and
+        Planera/Visualisera slim CLI spot checks.
+  - number: 5
+    name: Add byte and GPT-5 token budget regression coverage
+    depends_on: [2, 3, 4]
+    status: complete
+    acceptance:
+      - >-
+        GIVEN all twelve capability contexts are generated WHEN the budget check
+        runs THEN it records byte counts and GPT-5 token counts for each
+        capability.
+      - >-
+        GIVEN token counts are measured WHEN the check runs THEN it uses
+        `<output> | npx tiktoken-cli -m gpt-5` or a documented equivalent wrapper
+        around that command.
+      - >-
+        GIVEN a payload exceeds its budget WHEN tests run THEN the failure names
+        the capability, byte count, token count, and budget.
+      - >-
+        GIVEN no `npx` network is available in normal unit tests WHEN regression
+        coverage runs THEN the expensive tokenizer path is isolated or skipped
+        with a clear local benchmark command.
+    evidence:
+      - >-
+        Added `scripts/measure_capability_context_payloads.py`, which generates
+        all twelve slim capability contexts, records byte counts, and measures
+        GPT-5 tokens via `<output> | npx tiktoken-cli -m gpt-5`.
+      - >-
+        Added offline-safe tests for all-capability measurement, failure
+        diagnostics naming capability/counts/budgets, and skipped-token mode for
+        normal tests.
+      - >-
+        Real benchmark passed with no violations: hej 2183 bytes/530 tokens,
+        visionera 5165/1187, resonera 4324/998, inspirera 2244/549, planera
+        9418/1997, realisera 16144/3439, optimera 14647/2900, inspektera
+        20017/3953, dokumentera 15926/3385, profilera 2294/559, visualisera
+        4279/997, orkestrera 10941/2296.
+  - number: 6
+    name: Synchronize contracts, docs, and validation
+    depends_on: [1, 2, 3, 4, 5]
+    status: complete
+    acceptance:
+      - >-
+        GIVEN CLI structured contracts mention capability context WHEN docs or
+        contract tests run THEN they describe full dashboard mode, slim startup
+        mode, compatibility behavior, and no capability-name CLI commands.
+      - >-
+        GIVEN capability prose references context seams WHEN validation runs THEN
+        references match the new capsule path or documented compatibility path.
+      - >-
+        GIVEN final validation runs WHEN the plan is complete THEN focused CLI
+        tests, capability validation, payload budget checks, and `git diff
+        --check` pass.
+      - >-
+        GIVEN version or changelog policy applies WHEN closeout occurs THEN
+        release metadata work is either performed with explicit approval or
+        deferred with rationale.
+    evidence:
+      - >-
+        Updated `references/cli/agent-ready-state-contract.yaml`,
+        `skills/agentera/SKILL.md`, Planera instructions, and README guidance to
+        distinguish full compatibility output from slim startup capsules and to
+        document the slim Planera startup-contract path.
+      - >-
+        Focused contract/prose tests passed for the Decision 45 contract,
+        Planera instructions, master skill route boundary, slim hej contexts,
+        and payload measurement coverage.
+      - >-
+        Capability validation, capability-contract self-validation, artifact
+        validation, payload budget check, and `git diff --check` passed locally;
+        release metadata, publication, tag, push, and installed-app refresh were
+        deferred because this task had no explicit release approval.
+previous_plan_archived: .agentera/archive/PLAN-2026-05-20-close-stale-2-4-x-instruction-validation-todo.yaml
