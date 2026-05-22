@@ -89,58 +89,6 @@ decisions:
       app_home, managedAppRoot, and userDataRoot, scripts/validate_app_home_contract.py
       checks public surfaces, and the focused app-home/upgrade/legacy-default test
       set passed 9 tests on 2026-05-15.'
-- number: 51
-  date: '2026-05-13'
-  question: What should Agentera measure before optimizing capability startup state
-    access?
-  context: 'Decision 41 closed the v2.0 token benchmark against the revised -10% target,
-    but follow-up discussion identified a different pain: agents invoke Agentera capabilities,
-    run Agentera CLI state commands for compressed project state, and then still read,
-    grep, or glob raw `.agentera/*.yaml` or root artifact files before implementation
-    work begins. An uncommitted startup-window draft first tried to measure only slash-route
-    or exact intro-marker windows, found zero qualifying windows, and would have closed
-    the startup-envelope follow-up. That draft was too strict because real OpenCode
-    usage usually invokes capabilities through natural language such as `run orkestrera`
-    or bare names such as `planera`.'
-  alternatives:
-  - name: Keep the route/intro startup-window metric
-    status: rejected
-    description: It misses the observed OpenCode behavior because most follow-up capability
-      invocations do not use `/agentera` route text.
-  - name: Design a generic startup state envelope immediately
-    status: rejected
-    description: The direct session scan shows redundant state access exists, but
-      the interface should be driven by the retained artifact-overlap metric.
-  - name: Patch individual capability startup habits now
-    status: rejected
-    description: Lower scope, but it would likely fight symptoms while leaving the
-      CLI state surface insufficient for capability startup needs.
-  - name: Measure CLI-state-to-raw-artifact overlap
-    status: chosen
-    description: Count state-gathering sequences where an Agentera CLI state command
-      is followed by raw artifact read/grep/glob of the same state family before implementation
-      work.
-  choice: 'Replace the old startup-window metric with a state-access metric: after
-    a capability-related user turn, anchor on the first Agentera CLI state call, stop
-    at the first implementation boundary or next user turn, and count subsequent raw
-    artifact read/grep/glob access, especially when the raw artifact overlaps the
-    CLI state family already fetched.'
-  reasoning: 'Direct OpenCode inspection found the actual pattern: bare `planera`,
-    bare `resonera`, natural-language Orkestrera handoffs, and subagent prompts frequently
-    run `agentera plan`, `agentera progress`, `agentera docs`, or related state commands
-    and then read raw YAML/Markdown artifacts before work begins. The discarded route/intro
-    classifier therefore produced a false weak-evidence `close_without_implementation`
-    result by measuring the wrong anchor. The retained state-access metric measures
-    the product problem directly and can distinguish a broad CLI startup-envelope
-    need from narrower capability guidance fixes.'
-  confidence: firm
-  feeds_into: startup state-access analysis, scripts/agentera, scripts/extract_corpus.py,
-    capability prose, tests, TODO.md
-  satisfaction:
-    state: user_confirmed_satisfied
-    user_confirmation:
-      confirmed_by: user
-      confirmed_at: '2026-05-15'
 - number: 52
   date: '2026-05-13'
   question: How should Agentera run and retain startup state-access benchmark metrics?
@@ -484,6 +432,99 @@ decisions:
     tests, README.md, UPGRADE.md, docs/vocabulary.md
   satisfaction:
     state: open
+- number: 59
+  date: '2026-05-22'
+  question: How should Agentera 3.0 default and measure JSON context output?
+  context: >-
+    Agentera v2 added `--context-profile slim` for `agentera hej --format json
+    --capability-context <capability>` while preserving the full dashboard envelope
+    as the default compatibility profile. The user clarified that Agentera 3.0
+    should not keep that compatibility path: slim capability context should become
+    the only supported capability startup JSON shape, and every public JSON output
+    surface should be inventoried, measured, and reviewed for bloat and token
+    inefficiency. Follow-up deliberation clarified that 3.0 should make top-level
+    commands map directly to capabilities, with `prime` as the intentional
+    non-capability exception for central startup/context preparation. A second
+    follow-up selected the stronger consolidation: `prime` should be the single
+    non-capability control plane for initial session priming, project
+    orientation/dashboard mode, and capability startup context. Bare `prime` keeps
+    the static Agentera usage guide, a dashboard/orientation mode replaces the
+    long-term need for `hej` as a separate context-serving command, and a context
+    mode replaces `hej --capability-context`. The eventual dashboard/orientation
+    display label and exact flag spelling remain provisional. The D47 vocabulary
+    inventory provides the intended classification pattern: classify public surfaces
+    and protected compatibility/history before implementation rather than rewriting
+    opportunistically.
+  alternatives:
+  - name: Unified prime control plane
+    status: chosen
+    description: Remove full-profile capability-startup compatibility, make `capability_context`
+      the supported startup JSON shape, make `prime` the single non-capability command
+      for static priming, dashboard/orientation mode, and capability context mode,
+      inventory every public JSON output, and gate byte and GPT-5 token budgets with
+      measured results.
+  - name: Split prime and dashboard
+    status: rejected
+    description: Keeping `prime` for context while adding a separate dashboard command
+      would create a second non-capability command exception after 3.0 and weaken the
+      clean top-level capability map.
+  - name: Keep `hej --capability-context` as the central context seam
+    status: rejected
+    description: Keeping capability startup context under the orientation/dashboard
+      surface would preserve a misleading ownership boundary after 3.0, especially
+      if `hej` is renamed or narrowed to human-facing project orientation.
+  - name: Per-capability context commands
+    status: rejected
+    description: Commands such as `planera --context` would make each capability own
+      its own startup envelope, but would duplicate context mechanics and weaken
+      the single measured JSON budget surface.
+  - name: Compatibility-preserving default flip
+    status: rejected
+    description: Making slim the default while keeping `--context-profile full` would
+      preserve the duplicate JSON shape the 3.0 boundary is meant to remove.
+  - name: Capability startup only
+    status: rejected
+    description: Measuring only `hej --capability-context` would miss bloat in other
+      public JSON surfaces such as decisions, compact, validate, upgrade, describe,
+      lint, gate, and query outputs.
+  - name: Manual measurement review only
+    status: rejected
+    description: Manual measurements are useful evidence, but without budget enforcement
+      future JSON bloat can return unnoticed.
+  choice: >-
+    Agentera 3.0 should remove `--context-profile full` as a supported capability
+    startup compatibility path, make the slim `capability_context` capsule the only
+    supported capability startup JSON shape, and consolidate central non-capability
+    startup behavior under `prime`. Top-level commands should directly map to
+    capabilities, with `prime` as the intentional non-capability exception. Bare
+    `prime` should emit static Agentera usage for initial session priming. A
+    dashboard/orientation mode under `prime` should replace separate `hej` dashboard
+    ownership, with the final display label and exact flag spelling still provisional.
+    A context mode under `prime` should replace `hej --capability-context` for
+    preparing capability startup payloads. The implementation must require a
+    D47-style inventory of all public JSON output surfaces, measure bytes and GPT-5
+    tokens for every supported `--format json` or `--json` public CLI output surface,
+    and enforce budgets so bloated JSON fails tests.
+  reasoning: >-
+    Agent-facing JSON is protocol, not incidental formatting. Keeping both full and
+    slim startup shapes would preserve the ambiguity Decision 58 is trying to remove,
+    and keeping capability startup under `hej` would couple a central context API to
+    a human-facing orientation surface whose future name remains open. Consolidating
+    orientation and context under `prime` is stronger than adding a separate dashboard
+    command because it creates one explicit control-plane exception rather than two:
+    capability names run capabilities, while `prime` prepares the agent. Bare `prime`
+    already carries static priming guidance, so extending it to dashboard/orientation
+    mode and capability context mode makes the existing under-utilized command earn
+    its name. Per-capability `--context` commands would spread startup mechanics
+    across every capability and make measurement harder. A public-surface inventory
+    plus automated byte/token budgets gives Planera and Realisera concrete acceptance
+    criteria and prevents a clean 3.0 break from becoming another compatibility seam.
+  confidence: firm
+  feeds_into: TODO.md, PLAN.md, scripts/agentera, scripts/measure_capability_context_payloads.py,
+    references/cli/agent-ready-state-contract.yaml, tests, README.md, UPGRADE.md,
+    docs/d47-app-home-vocabulary-inventory.md
+  satisfaction:
+    state: open
 archive:
 - 'Decision 19 (2026-04-02): **Question**: How should the ecosystem handle line-breaks
   in prose text?'
@@ -605,6 +646,27 @@ archive:
     lint`; resolve the degraded helper exposure/removal, schema discovery, and split-root
     doctor checks. Defer Profilera corpus parity and broad script namespace promotion
     beyond `lint`.
+- summary: 'Decision 51 (2026-05-13): Replace the old startup-window metric with a
+    state-access metric: after a capability-related user turn, anchor...'
+  number: 51
+  date: '2026-05-13'
+  choice: 'Replace the old startup-window metric with a state-access metric: after
+    a capability-related user turn, anchor on the first Agentera CLI state call, stop
+    at the first implementation boundary or next user turn, and count subsequent raw
+    artifact read/grep/glob access, especially when the raw artifact overlaps the
+    CLI state family already fetched.'
+  feeds_into: startup state-access analysis, scripts/agentera, scripts/extract_corpus.py,
+    capability prose, tests, TODO.md
+  satisfaction:
+    state: user_confirmed_satisfied
+    user_confirmation:
+      confirmed_by: user
+      confirmed_at: '2026-05-15'
+  outcome: 'Replace the old startup-window metric with a state-access metric: after
+    a capability-related user turn, anchor on the first Agentera CLI state call, stop
+    at the first implementation boundary or next user turn, and count subsequent raw
+    artifact read/grep/glob access, especially when the raw artifact overlaps the
+    CLI state family already fetched.'
 - summary: 'Decision 43 (2026-05-07): Keep Swedish `-era` names canonical and add
     one primary plain `/agentera <alias>` per capability.'
   satisfaction: &id001
@@ -730,7 +792,3 @@ archive:
     user_confirmation:
       confirmed_by: user
       confirmed_at: '2026-05-15'
-- summary: 'Decision 9 (2026-03-31): **Question**: What should this skill ecosystem
-    be named? The current name "agent-skills" is generic and doesn''t represent what
-    it is...'
-  satisfaction: *id001
