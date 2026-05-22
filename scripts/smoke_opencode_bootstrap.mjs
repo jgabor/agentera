@@ -492,15 +492,60 @@ try {
 
   // --- Test 8: event hook — idle writes runtime-local session bookmark for modified artifacts ---
   const repoRoot = path.resolve(__dirname, "..");
-  process.env.AGENTERA_HOME = repoRoot;
+  for (const directory of [
+    "scripts",
+    "hooks",
+    "skills",
+    "references",
+    "agents",
+    ".agents/plugins",
+    ".codex-plugin",
+    ".claude-plugin",
+    ".github/hooks",
+    ".github/plugin",
+    ".opencode/commands",
+    ".opencode/agents",
+    ".opencode/plugins",
+  ]) {
+    const source = path.join(repoRoot, directory);
+    const target = path.join(documentedManagedApp, directory);
+    if (!fs.existsSync(source)) continue;
+    fs.mkdirSync(path.dirname(target), { recursive: true });
+    fs.cpSync(source, target, {
+      recursive: true,
+      force: true,
+    });
+  }
+  for (const filename of [
+    "registry.json",
+    "pyproject.toml",
+    "uv.lock",
+    "README.md",
+    "UPGRADE.md",
+    "CHANGELOG.md",
+    "DESIGN.md",
+    "LICENSE",
+    "plugin.json",
+    ".opencode/package.json",
+  ]) {
+    const source = path.join(repoRoot, filename);
+    const target = path.join(documentedManagedApp, filename);
+    if (!fs.existsSync(source)) continue;
+    fs.mkdirSync(path.dirname(target), { recursive: true });
+    fs.copyFileSync(source, target);
+  }
+  fs.writeFileSync(path.join(documentedManagedApp, ".agentera-bundle.json"), JSON.stringify({ version: AGENTERA_VERSION }));
+  process.env.AGENTERA_HOME = documentedAppHome;
   const projectWithArtifact = path.join(tmpdir, "event-project");
   fs.mkdirSync(path.join(projectWithArtifact, ".agentera"), { recursive: true });
   execFileSync("git", ["init", "-q"], { cwd: projectWithArtifact });
   fs.writeFileSync(path.join(projectWithArtifact, "TODO.md"), "# TODO\n\n## \u21f6 Critical\n\n## \u21c9 Degraded\n\n## \u2192 Normal\n\n- [ ] event smoke\n\n## \u21e2 Annoying\n\n## Resolved\n");
   const hooksForEvents = await Agentera({ worktree: projectWithArtifact }, {});
   await hooksForEvents.event({ event: { type: "session.idle", properties: { sessionID: "s1" } } });
-  const sessionPath = runtimeSessionPath(repoRoot, projectWithArtifact);
+  const sessionPath = runtimeSessionPath(documentedAppHome, projectWithArtifact);
+  const repoRootSessionPath = runtimeSessionPath(repoRoot, projectWithArtifact);
   assert(fs.existsSync(sessionPath), "session.idle event should write runtime-local session bookmark when artifacts changed");
+  assert(!fs.existsSync(repoRootSessionPath), "session.idle event must not write runtime session bookmarks under the checkout root");
   assert(!fs.existsSync(path.join(projectWithArtifact, ".agentera", "session.yaml")), "session.idle event must not write project session.yaml");
   const sessionText = fs.readFileSync(sessionPath, "utf8");
   assert(sessionText.includes("bookmarks:"), "runtime session bookmark should include bookmarks list");
@@ -577,7 +622,7 @@ try {
     "session.idle event must not create project session.yaml when no artifacts changed"
   );
   assert(
-    !fs.existsSync(runtimeSessionPath(repoRoot, cleanProject)),
+    !fs.existsSync(runtimeSessionPath(documentedAppHome, cleanProject)),
     "session.idle event must not create runtime session bookmark when no artifacts changed"
   );
   delete process.env.AGENTERA_HOME;
@@ -595,9 +640,16 @@ try {
 
   // --- Test 12: shell.env injection — not-discoverable branch ---
   // Move the marker script away so current app-home discovery returns null.
-  const stagedScript = path.join(documentedManagedApp, "scripts", "validate_capability.py");
-  const parkedScript = path.join(tmpdir, "_parked_validate_capability.py");
-  fs.renameSync(stagedScript, parkedScript);
+  const parkedScripts = [
+    ["validate_capability.py", "_parked_validate_capability.py"],
+    ["agentera", "_parked_agentera"],
+  ].map(([name, parked]) => [
+    path.join(documentedManagedApp, "scripts", name),
+    path.join(tmpdir, parked),
+  ]);
+  for (const [stagedScript, parkedScript] of parkedScripts) {
+    fs.renameSync(stagedScript, parkedScript);
+  }
   delete process.env.AGENTERA_HOME;
   const hooksMissing = await Agentera({}, {});
   const envOut2 = { env: {} };
@@ -607,7 +659,9 @@ try {
     "shell.env must leave AGENTERA_HOME unset (not empty string) when the app home is not discoverable"
   );
   // Restore for subsequent assertions.
-  fs.renameSync(parkedScript, stagedScript);
+  for (const [stagedScript, parkedScript] of parkedScripts) {
+    fs.renameSync(parkedScript, stagedScript);
+  }
 
   // --- Test 13: shell.env injection — user pre-set branch (process env) ---
   const userPreset = path.join(tmpdir, "user-chosen-root");
