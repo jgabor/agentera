@@ -36,26 +36,24 @@ cycles:
   commit: pending
   inspiration: Orkestrera Task 6 for the Slim Capability Context Payloads plan.
   discovered: The static CLI contract and capability prose still named the legacy
-    full-envelope capability-context path as the only startup seam. They now
-    distinguish default full compatibility output from `--context-profile slim`
-    startup capsules and document Planera's slim
-    `capability_context.context.planning_context.startup_contract` path.
-  verified: >-
-    Focused pytest passed for slim hej contexts, payload measurement coverage,
-    Decision 45 contract text, Planera prose, and master skill route boundaries.
-    `uv run scripts/measure_capability_context_payloads.py --json
-    --enforce-budgets` passed with no violations. Capability validation for all
-    capabilities and capability-contract self-validation passed. PLAN and PROGRESS
-    artifact validation passed. Release metadata, publication, tag, push, and
-    installed-app refresh were deferred because this task had no explicit release
-    approval.
-  next: Review the completed slim capability-context payload changes and decide
-    whether to commit them.
+    full-envelope capability-context path as the only startup seam. They now distinguish
+    default full compatibility output from `--context-profile slim` startup capsules
+    and document Planera's slim `capability_context.context.planning_context.startup_contract`
+    path.
+  verified: Focused pytest passed for slim hej contexts, payload measurement coverage,
+    Decision 45 contract text, Planera prose, and master skill route boundaries. `uv
+    run scripts/measure_capability_context_payloads.py --json --enforce-budgets` passed
+    with no violations. Capability validation for all capabilities and capability-contract
+    self-validation passed. PLAN and PROGRESS artifact validation passed. Release
+    metadata, publication, tag, push, and installed-app refresh were deferred because
+    this task had no explicit release approval.
+  next: Review the completed slim capability-context payload changes and decide whether
+    to commit them.
   context:
     intent: Complete Task 6 by synchronizing contracts, prose, and validation.
     constraints: No capability-name CLI commands, version bump, changelog promotion,
-      publication, tag, push, installed-app refresh, protected vision/objective
-      edits, or decision-satisfaction updates.
+      publication, tag, push, installed-app refresh, protected vision/objective edits,
+      or decision-satisfaction updates.
     scope: CLI contract prose, Agentera skill guidance, Planera instruction guidance,
       README note, focused tests, PLAN and PROGRESS closeout evidence.
 - number: 583
@@ -281,56 +279,11 @@ cycles:
       satisfaction updates, installed-app repair, or 3.0 compatibility removal.
     scope: Focused hej capability-context regression tests plus PLAN and PROGRESS
       evidence.
-- number: 575
-  timestamp: 2026-05-18 22:31
-  type: test
-  phase: build
-  what: Added contract and hej context regression coverage for instruction reads.
-  commit: pending
-  inspiration: Orkestrera continued the active Capability Instruction Validation Regression
-    Coverage plan by executing dependency-ready Tasks 2 and 3 only.
-  discovered: The contract loader needed an explicit bootstrap guard against changing
-    the required instruction-file path to legacy `prose.md`. Hej context already emitted
-    first-read metadata, and the regression now locks full-read targets and provenance.
-  verified: '`uv run pytest tests/test_capability_contract_loader.py tests/test_capability_contract_structure.py
-    tests/test_capability_validator_characterization.py tests/test_query_cli.py::TestHej::test_hej_capability_context_names_included_and_missing_state_families
-    tests/test_query_cli.py::TestHej::test_hej_realisera_execution_context_reports_plan_driven_startup`
-    passed with 42 tests. `agentera validate capability-contract --format json`, `agentera
-    validate capability hej`, `agentera hej --format json --capability-context realisera`,
-    and `git diff --check` passed.'
-  next: Execute Task 4, then Task 5 after dependencies are complete.
-  context:
-    intent: Complete Tasks 2 and 3 of Capability Instruction Validation Regression
-      Coverage.
-    constraints: Validation and regression coverage only. No broad wording cleanup,
-      package refresh, publication, push, tag, vision or objective mutation, decision
-      satisfaction updates, installed-app repair, or 3.0 compatibility removal.
-    scope: Contract loader bootstrap validation, focused regression tests, hej capability-context
-      assertions, PLAN, and PROGRESS evidence.
-- number: 574
-  timestamp: 2026-05-18 22:05
-  type: test
-  phase: build
-  what: Added capability validator regression coverage for required instructions.md.
-  commit: pending
-  inspiration: Orkestrera executed Task 1 of the active Capability Instruction Validation
-    Regression Coverage plan, limited to validator and CLI regression coverage.
-  discovered: The validator already enforces the contract-owned `instructions.md`
-    path; the missing piece was focused regression coverage proving schemas and legacy
-    `prose.md` alone are rejected through both validation surfaces.
-  verified: '`uv run pytest tests/test_capability_validator_characterization.py tests/test_capability_contract_structure.py
-    tests/test_capability_contract_loader.py` passed with 38 tests. Direct validator
-    and `agentera validate capability` invalid-fixture checks both failed with `instructions.md
-    not found`; `agentera validate capability hej` passed.'
-  next: Continue with Task 2 after Task 1 evaluation.
-  context:
-    intent: Complete Task 1, Lock validator requirement to instructions.md.
-    constraints: Validation and regression coverage only. No broad wording cleanup,
-      package refresh, publication, push, tag, vision or objective mutation, decision
-      satisfaction updates, installed-app repair, or 3.0 compatibility removal.
-    scope: Capability validator characterization tests plus PLAN and PROGRESS task
-      evidence.
 archive:
+- summary: 'Cycle 575 (2026-05-18): Added contract and hej context regression coverage
+    for instruction reads.'
+- summary: 'Cycle 574 (2026-05-18): Added capability validator regression coverage
+    for required instructions.md.'
 - summary: 'Cycle 573 (2026-05-18): Added routing and execution vocabulary occurrence
     classification coverage.'
 - summary: 'Cycle 572 (2026-05-18): Added bundle and SKILL.md vocabulary occurrence
@@ -403,7 +356,3 @@ archive:
 - summary: 'Cycle 537 (2026-05-16): Planned the doctor ready-state Next output fix.'
 - summary: 'Cycle 536 (2026-05-16): Closed out transcript lint threshold analysis
     with full-file PLAN.md lint behavior.'
-- summary: 'Cycle 535 (2026-05-16): Reworked threshold analysis around retained archive
-    evidence.'
-- summary: 'Cycle 534 (2026-05-16): Took the no-threshold-change path and verified
-    classifier regressions.'
