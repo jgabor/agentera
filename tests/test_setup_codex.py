@@ -103,8 +103,10 @@ def test_branch1_fresh_write(
     assert "set = {" in text
     assert f'AGENTERA_HOME = "{install_root}"' in text
     assert "[agents]" in text
-    assert "max_threads = 6" in text
+    assert "max_threads" not in text
     assert "max_depth = 1" in text
+    assert "[features.multi_agent_v2]" in text
+    assert "max_concurrent_threads_per_session = 6" in text
     assert "[agents." not in text
 
     agents_dir = target.parent / "agents"
@@ -194,8 +196,10 @@ def test_branch4_noop_byte_identical(
         f'set = {{ AGENTERA_HOME = "{install_root}" }}\n'
         '\n'
         '[agents]\n'
-        'max_threads = 6\n'
         'max_depth = 1\n'
+        '\n'
+        '[features.multi_agent_v2]\n'
+        'max_concurrent_threads_per_session = 6\n'
     )
     target.write_text(pre_existing, encoding="utf-8")
     before_bytes = target.read_bytes()
@@ -364,8 +368,10 @@ def test_dry_run_noop_exits_0(
         f'set = {{ AGENTERA_HOME = "{install_root}" }}\n'
         '\n'
         '[agents]\n'
-        'max_threads = 6\n'
         'max_depth = 1\n'
+        '\n'
+        '[features.multi_agent_v2]\n'
+        'max_concurrent_threads_per_session = 6\n'
     )
     target.write_text(pre_existing, encoding="utf-8")
     _write_current_descriptors(setup_codex, install_root, target.parent / "agents")
@@ -485,3 +491,89 @@ def test_codex_plugin_hook_trust_uses_plugin_source_when_enabled(setup_codex: Mo
         setup_codex.CODEX_HOOK_MATCHER,
         command=setup_codex.CODEX_PLUGIN_HOOK_COMMAND,
     ) in outcome.new_text
+
+
+def test_codex_plugin_hook_trust_retires_copied_hook_trust(setup_codex: ModuleType, install_root: Path, tmp_path: Path):
+    hooks_file = tmp_path / "hooks.json"
+    hooks_content = setup_codex.render_codex_hooks_config(setup_codex.CODEX_HOOK_COMMAND)
+    hooks_file.write_text(hooks_content, encoding="utf-8")
+    
+    current = (
+        '[plugins."agentera@agentera"]\n'
+        'enabled = true\n'
+        '\n'
+        '[shell_environment_policy]\n'
+        f'set = {{ AGENTERA_HOME = "{install_root}" }}\n'
+        '\n'
+        '[hooks.state]\n'
+        f'"{hooks_file}:pre_tool_use:0:0" = {{ trusted_hash = "abc", enabled = true }}\n'
+        f'"{hooks_file}:post_tool_use:0:0" = {{ trusted_hash = "def", enabled = true }}\n'
+        '"some_other_hook:pre_tool_use:0:0" = { trusted_hash = "xyz", enabled = true }\n'
+    )
+    
+    outcome = setup_codex.plan_change(current, install_root, force=False, hooks_path=hooks_file, plugin_hooks=True)
+    
+    assert f'"{hooks_file}:pre_tool_use:0:0"' not in outcome.new_text
+    assert f'"{hooks_file}:post_tool_use:0:0"' not in outcome.new_text
+    assert '"some_other_hook:pre_tool_use:0:0"' in outcome.new_text
+
+
+def test_codex_multi_agent_v2_regression_max_threads_removed(setup_codex: ModuleType, install_root: Path):
+    current = (
+        '[shell_environment_policy]\n'
+        f'set = {{ AGENTERA_HOME = "{install_root}" }}\n'
+        '\n'
+        '[agents]\n'
+        'max_threads = 12\n'
+        'max_depth = 1\n'
+    )
+    outcome = setup_codex.plan_change(current, install_root, force=False)
+    assert "max_threads" not in outcome.new_text
+    assert "[features.multi_agent_v2]" in outcome.new_text
+    assert "max_concurrent_threads_per_session = 12" in outcome.new_text
+
+
+def test_codex_multi_agent_v2_preserves_existing_limit_without_legacy_max_threads(
+    setup_codex: ModuleType,
+    install_root: Path,
+):
+    current = (
+        '[shell_environment_policy]\n'
+        f'set = {{ AGENTERA_HOME = "{install_root}" }}\n'
+        '\n'
+        '[agents]\n'
+        'max_depth = 1\n'
+        '\n'
+        '[features.multi_agent_v2]\n'
+        'max_concurrent_threads_per_session = 12\n'
+    )
+    outcome = setup_codex.plan_change(current, install_root, force=False)
+    assert outcome.action == "noop"
+    assert "max_concurrent_threads_per_session = 12" in outcome.new_text
+    assert "max_concurrent_threads_per_session = 6" not in outcome.new_text
+
+
+def test_codex_plugin_hook_trust_preserves_user_owned_copied_hook_trust(
+    setup_codex: ModuleType,
+    install_root: Path,
+    tmp_path: Path,
+):
+    hooks_file = tmp_path / "hooks.json"
+    mixed = json.loads(setup_codex.render_codex_hooks_config(setup_codex.CODEX_HOOK_COMMAND))
+    mixed["hooks"]["UserPromptSubmit"] = [{"hooks": [{"type": "command", "command": "echo user"}]}]
+    hooks_file.write_text(json.dumps(mixed, indent=2) + "\n", encoding="utf-8")
+
+    current = (
+        '[plugins."agentera@agentera"]\n'
+        'enabled = true\n'
+        '\n'
+        '[shell_environment_policy]\n'
+        f'set = {{ AGENTERA_HOME = "{install_root}" }}\n'
+        '\n'
+        '[hooks.state]\n'
+        f'"{hooks_file}:pre_tool_use:0:0" = {{ trusted_hash = "abc", enabled = true }}\n'
+    )
+
+    outcome = setup_codex.plan_change(current, install_root, force=False, hooks_path=hooks_file, plugin_hooks=True)
+
+    assert f'"{hooks_file}:pre_tool_use:0:0"' in outcome.new_text

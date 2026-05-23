@@ -91,7 +91,7 @@ DEFAULT_CONFIG_PATH = Path.home() / ".codex" / "config.toml"
 
 # Runtime-native subagent dispatch uses descriptor files under ~/.codex/agents
 # plus one bounded [agents] table. We never write legacy [agents.<name>] blocks.
-DEFAULT_AGENT_LIMITS = {"max_threads": 6, "max_depth": 1}
+DEFAULT_AGENT_LIMITS = {"max_depth": 1}
 CAPABILITY_AGENT_NAMES: tuple[str, ...] = (
     "hej",
     "visionera",
@@ -328,11 +328,17 @@ def render_fresh_config(install_root: Path) -> str:
     """Return the full text of a fresh ``~/.codex/config.toml``.
 
     Used when the file does not exist. Contains the managed
-    ``[shell_environment_policy]`` key and bounded ``[agents]`` settings, plus
-    a trailing newline so editors do not flag the file as missing-EOL.
+    ``[shell_environment_policy]`` key, bounded ``[agents]`` settings, and
+    ``[features.multi_agent_v2]`` setting, plus a trailing newline so editors
+    do not flag the file as missing-EOL.
     """
     set_value = emit_set_inline_table({MANAGED_KEY: str(install_root)})
-    return f"[{SECTION_NAME}]\nset = {set_value}\n\n{render_agents_config_section()}"
+    return (
+        f"[{SECTION_NAME}]\nset = {set_value}\n\n"
+        f"{render_agents_config_section()}\n"
+        f"[features.multi_agent_v2]\n"
+        f"max_concurrent_threads_per_session = 6\n"
+    )
 
 
 def codex_hook_trusted_hash(
@@ -692,7 +698,13 @@ def _ensure_feature_enabled(text: str, key: str) -> str:
     table_idx = _find_table_header_index(lines, "features")
     if table_idx is None:
         if isinstance(features, dict):
-            raise ValueError("[features] uses an unsupported inline or dotted-table form")
+            has_inline = False
+            for line in lines:
+                if re.match(r"^\s*features\s*=", line):
+                    has_inline = True
+                    break
+            if has_inline:
+                raise ValueError("[features] uses an unsupported inline or dotted-table form")
         return _append_table(text, "features", [f"{key} = true"])
 
     key_idx = _find_table_key_index(lines, table_idx, key)
@@ -709,33 +721,108 @@ def _ensure_features_plugin_hooks_enabled(text: str) -> str:
     return _ensure_feature_enabled(_ensure_features_hooks_enabled(text), "plugin_hooks")
 
 
-def _ensure_codex_agent_limits(text: str) -> str:
+def _remove_table_key_line(text: str, table: str, key: str) -> str:
+    lines_with_ends = text.splitlines(keepends=True)
+    plain_lines = [line_text.rstrip("\r\n") for line_text in lines_with_ends]
+    table_idx = _find_table_header_index(plain_lines, table)
+    if table_idx is None:
+        return text
+
+    key_literal = _toml_basic_string(key)
+    key_idx = _find_table_key_index(plain_lines, table_idx, key_literal)
+    if key_idx is None:
+        key_idx = _find_table_key_index(plain_lines, table_idx, key)
+
+    if key_idx is None:
+        return text
+
+    return "".join(
+        lines_with_ends[:key_idx] + lines_with_ends[key_idx + 1 :]
+    )
+
+
+def _codex_multi_agent_thread_limit(parsed: dict[str, object]) -> int:
+    """Return the thread limit to write under ``[features.multi_agent_v2]``."""
+    agents = parsed.get("agents", {})
+    if isinstance(agents, dict) and "max_threads" in agents:
+        try:
+            return int(agents["max_threads"])
+        except (ValueError, TypeError):
+            pass
+
+    features = parsed.get("features", {})
+    if isinstance(features, dict):
+        multi_agent_v2 = features.get("multi_agent_v2", {})
+        if isinstance(multi_agent_v2, dict) and "max_concurrent_threads_per_session" in multi_agent_v2:
+            try:
+                return int(multi_agent_v2["max_concurrent_threads_per_session"])
+            except (ValueError, TypeError):
+                pass
+
+    return 6
+
+
+def _ensure_codex_multi_agent_v2(text: str, max_threads_val: int) -> str:
     parsed = tomllib.loads(text) if text.strip() else {}
-    agents = parsed.get("agents")
-    if isinstance(agents, dict) and all(agents.get(key) == value for key, value in DEFAULT_AGENT_LIMITS.items()):
+    features = parsed.get("features", {})
+    multi_agent_v2 = {}
+    if isinstance(features, dict):
+        multi_agent_v2 = features.get("multi_agent_v2", {})
+        if not isinstance(multi_agent_v2, dict):
+            multi_agent_v2 = {}
+    
+    if isinstance(multi_agent_v2, dict) and multi_agent_v2.get("max_concurrent_threads_per_session") == max_threads_val:
         return text
 
     lines = [line.rstrip("\r\n") for line in text.splitlines(keepends=True)]
-    table_idx = _find_table_header_index(lines, "agents")
+    table_idx = _find_table_header_index(lines, "features.multi_agent_v2")
+    
+    key = "max_concurrent_threads_per_session"
+    line = f"{key} = {max_threads_val}"
+    
     if table_idx is None:
-        if isinstance(agents, dict) and agents:
-            raise ValueError("[agents] uses an unsupported inline or child-table-only form")
-        return _append_table(
-            text,
-            "agents",
-            [f"{key} = {value}" for key, value in DEFAULT_AGENT_LIMITS.items()],
-        )
+        return _append_table(text, "features.multi_agent_v2", [line])
+    
+    key_idx = _find_table_key_index(lines, table_idx, key)
+    if key_idx is None:
+        return _insert_table_key_line(text, "features.multi_agent_v2", line)
+    else:
+        return _replace_table_key_line(text, "features.multi_agent_v2", key, line)
 
-    for key, value in DEFAULT_AGENT_LIMITS.items():
-        line = f"{key} = {value}"
-        lines = [line_text.rstrip("\r\n") for line_text in text.splitlines(keepends=True)]
+
+def _ensure_codex_agent_limits(text: str) -> str:
+    parsed = tomllib.loads(text) if text.strip() else {}
+    max_threads_val = _codex_multi_agent_thread_limit(parsed)
+
+    text = _remove_table_key_line(text, "agents", "max_threads")
+    parsed = tomllib.loads(text) if text.strip() else {}
+    agents = parsed.get("agents")
+    if isinstance(agents, dict) and all(agents.get(key) == value for key, value in DEFAULT_AGENT_LIMITS.items()):
+        pass
+    else:
+        lines = [line.rstrip("\r\n") for line in text.splitlines(keepends=True)]
         table_idx = _find_table_header_index(lines, "agents")
         if table_idx is None:
-            raise ValueError("[agents] header disappeared during update")
-        if _find_table_key_index(lines, table_idx, key) is None:
-            text = _insert_table_key_line(text, "agents", line)
+            if isinstance(agents, dict) and agents:
+                raise ValueError("[agents] uses an unsupported inline or child-table-only form")
+            text = _append_table(
+                text,
+                "agents",
+                [f"{key} = {value}" for key, value in DEFAULT_AGENT_LIMITS.items()],
+            )
         else:
-            text = _replace_table_key_line(text, "agents", key, line)
+            for key, value in DEFAULT_AGENT_LIMITS.items():
+                line = f"{key} = {value}"
+                lines = [line_text.rstrip("\r\n") for line_text in text.splitlines(keepends=True)]
+                table_idx = _find_table_header_index(lines, "agents")
+                if table_idx is None:
+                    raise ValueError("[agents] header disappeared during update")
+                if _find_table_key_index(lines, table_idx, key) is None:
+                    text = _insert_table_key_line(text, "agents", line)
+                else:
+                    text = _replace_table_key_line(text, "agents", key, line)
+
+    text = _ensure_codex_multi_agent_v2(text, max_threads_val)
     return text
 
 
@@ -800,9 +887,35 @@ def ensure_codex_hook_trust(text: str, hooks_path: Path, command: str = CODEX_HO
     return _ensure_codex_hook_state(_ensure_features_hooks_enabled(text), hooks_path, command=command)
 
 
-def ensure_codex_plugin_hook_trust(text: str, command: str = CODEX_PLUGIN_HOOK_COMMAND) -> str:
+def retire_codex_copied_hook_trust(text: str, hooks_path: Path) -> str:
+    """Retire stale file-based Codex hook trust entries if they are Agentera-owned or hooks.json is absent."""
+    if hooks_path.exists():
+        try:
+            hooks_text = hooks_path.read_text(encoding="utf-8")
+        except OSError:
+            return text
+        if not codex_copied_hooks_are_agentera_only(hooks_text):
+            return text
+
+    # Remove the trust entries for this hooks_path
+    text = _remove_table_key_line(text, "hooks.state", f"{hooks_path}:pre_tool_use:0:0")
+    text = _remove_table_key_line(text, "hooks.state", f"{hooks_path}:post_tool_use:0:0")
+    return text
+
+
+def ensure_codex_plugin_hook_trust(
+    text: str,
+    command: str = CODEX_PLUGIN_HOOK_COMMAND,
+    hooks_path: Path | None = None,
+) -> str:
     """Ensure Codex will execute the Agentera plugin-bundled apply_patch hooks."""
-    return _ensure_codex_plugin_hook_state(_ensure_features_plugin_hooks_enabled(text), command=command)
+    text = _ensure_codex_plugin_hook_state(_ensure_features_plugin_hooks_enabled(text), command=command)
+    if hooks_path is not None:
+        text = retire_codex_copied_hook_trust(text, hooks_path)
+    else:
+        default_hooks_path = Path.home() / ".codex" / "hooks.json"
+        text = retire_codex_copied_hook_trust(text, default_hooks_path)
+    return text
 
 
 def codex_copied_hooks_are_agentera_only(text: str) -> bool:
@@ -909,7 +1022,7 @@ def _with_codex_hook_trust(
 
     try:
         if plugin_hooks:
-            new_text = ensure_codex_plugin_hook_trust(outcome.new_text)
+            new_text = ensure_codex_plugin_hook_trust(outcome.new_text, hooks_path=hooks_path)
         elif hooks_path is not None:
             new_text = ensure_codex_hook_trust(outcome.new_text, hooks_path, command=hook_command)
         else:

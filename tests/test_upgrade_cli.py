@@ -497,8 +497,10 @@ def test_runtime_upgrade_configures_codex_without_v1_agent_blocks(tmp_path: Path
     ) in config
     assert "enabled = true" in config
     assert "[agents]" in config
-    assert "max_threads = 6" in config
+    assert "max_threads" not in config
     assert "max_depth = 1" in config
+    assert "[features.multi_agent_v2]" in config
+    assert "max_concurrent_threads_per_session = 6" in config
     assert "[agents." not in config
     assert hooks_text == setup_codex.render_codex_hooks_config(hook_command)
     assert (home / ".codex" / "agents" / "planera.toml").is_file()
@@ -611,6 +613,46 @@ def test_runtime_upgrade_prefers_codex_plugin_hooks_when_plugin_enabled(tmp_path
         setup_codex.CODEX_HOOK_MATCHER,
         command=setup_codex.CODEX_PLUGIN_HOOK_COMMAND,
     ) in config
+
+
+def test_runtime_upgrade_apply_recheck_retires_stale_hook_trust_with_custom_home(tmp_path: Path) -> None:
+    home = tmp_path / "home"
+    setup_codex = _load_upgrade_module()._setup_codex_module()
+    codex_config = home / ".codex" / "config.toml"
+    copied_hooks = home / ".codex" / "hooks.json"
+    codex_config.parent.mkdir(parents=True)
+    hook_command = setup_codex.codex_validator_command(REPO_ROOT)
+    copied_hooks.write_text(setup_codex.render_codex_hooks_config(hook_command), encoding="utf-8")
+    codex_config.write_text(
+        '[plugins."agentera@agentera"]\n'
+        'enabled = true\n'
+        '\n'
+        '[shell_environment_policy]\n'
+        f'set = {{ AGENTERA_HOME = "{REPO_ROOT}" }}\n'
+        '\n'
+        '[hooks.state]\n'
+        f'"{copied_hooks}:pre_tool_use:0:0" = {{ trusted_hash = "abc", enabled = true }}\n'
+        f'"{copied_hooks}:post_tool_use:0:0" = {{ trusted_hash = "def", enabled = true }}\n',
+        encoding="utf-8",
+    )
+
+    result = _run(
+        "upgrade",
+        "--only",
+        "runtime",
+        "--runtime",
+        "codex",
+        "--home",
+        str(home),
+        "--yes",
+        "--json",
+    )
+
+    assert result.returncode == 0, result.stderr
+    config = codex_config.read_text(encoding="utf-8")
+    assert str(copied_hooks) not in config
+    assert "agentera@agentera:hooks/codex-plugin-hooks.json:pre_tool_use:0:0" in config
+    assert not copied_hooks.exists()
 
 
 def test_runtime_upgrade_blocks_mixed_copied_hooks_when_plugin_enabled(tmp_path: Path) -> None:

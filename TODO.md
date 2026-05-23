@@ -6,9 +6,6 @@
 
 ## → Normal
 
-- [fix] Update Codex setup/upgrade config generation for `multi_agent_v2`: stop writing legacy `[agents].max_threads`, translate the old default to `features.multi_agent_v2.max_concurrent_threads_per_session`, and add regression coverage for Codex 0.133.0 validation error `agents.max_threads cannot be set when multi_agent_v2 is enabled`.
-- [fix] Retire stale file-based Codex hook trust entries during plugin-primary upgrades: when `[plugins."agentera@agentera"].enabled = true` and plugin hook trust is written, remove Agentera-owned `[hooks.state."...hooks.json:pre_tool_use:0:0"]` and `[hooks.state."...hooks.json:post_tool_use:0:0"]` entries along with copied `hooks.json`, while preserving mixed or user-owned hook state for manual review.
-
 - [chore] Replace live `SPEC.md` references and migrate off `skills/agentera/references/contract.md` per Tier D in [`references/meta/documentation-inventory.md`](references/meta/documentation-inventory.md) (`UPGRADE.md`, `hooks/compaction.py`, adapter docs, capability instruction pointers).
 - [chore:3.0.0] Remove v1 legacy cruft after the 3.0 compatibility boundary (see also Tier C in [`references/meta/documentation-inventory.md`](references/meta/documentation-inventory.md)): delete obsolete migration paths, stale v1 runtime bridge behavior, v1 skill bundle/suite wording, legacy fixture assumptions, and compatibility-only docs/tests that no longer protect supported Agentera behavior.
 - [chore:3.0.0] Enforce Decision 58's single-name protocol boundary: remove every backwards-compatible, deprecated, parallel, display-only, or storage/protocol split name for artifacts, concepts, primitives, command surfaces, schema fields, metadata fields, runtime adapter surfaces, and protocol identities. Zero post-3.0 surfaces may retain legacy aliases or multiple names; old names must be removed or migrated, not supported alongside the canonical name.
@@ -20,6 +17,9 @@
 ## ⇢ Annoying
 
 ## ✓ Resolved
+
+- ~~[fix:2.6.2] Update Codex setup/upgrade config generation for `multi_agent_v2`: stop writing legacy `[agents].max_threads`, translate the old default to `features.multi_agent_v2.max_concurrent_threads_per_session`, and add regression coverage for Codex 0.133.0 validation error `agents.max_threads cannot be set when multi_agent_v2 is enabled`.~~ · resolved by updating config generation to use `[features.multi_agent_v2]` and removing the legacy `max_threads` key from `[agents]`.
+- ~~[fix:2.6.2] Retire stale file-based Codex hook trust entries during plugin-primary upgrades: when `[plugins."agentera@agentera"].enabled = true` and plugin hook trust is written, remove Agentera-owned `[hooks.state."...hooks.json:pre_tool_use:0:0"]` and `[hooks.state."...hooks.json:post_tool_use:0:0"]` entries along with copied `hooks.json`, while preserving mixed or user-owned hook state for manual review.~~ · resolved by unlinking copied `hooks.json` and removing its matching trust entries from the `[hooks.state]` configuration table when plugin hooks are enabled.
 
 - ~~[chore:2.6.1] Relocate vocabulary and benchmark authorities from `docs/` to `references/` (vocabulary → `references/cli/`, benchmark → `references/analysis/`).~~ · resolved in 2.6.1 by moving tracked docs, updating delegation paths, README, docs.yaml index, and regression tests.
 - ~~[chore:2.6.1] Add `references/cli/vocabulary-index.yaml` and migrate Decision 44 plus normalization rules off duplicated Markdown tables.~~ · resolved in 2.6.1 by `vocabulary-index.yaml`, slim `references/cli/vocabulary.md`, and `tests/test_decision44_vocabulary.py` loading the deprecated scan pattern from YAML.

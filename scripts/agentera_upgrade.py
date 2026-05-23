@@ -1398,7 +1398,7 @@ def _plan_codex_config(
             current,
             install_root,
             force=force,
-            hooks_path=None if plugin_hooks else hooks_path,
+            hooks_path=hooks_path,
             hook_command=hook_command,
             plugin_hooks=plugin_hooks,
         )
@@ -1615,9 +1615,14 @@ def _replan_codex_config_item(item: dict[str, Any], install_root: Path, *, force
     hook_command = setup_codex.codex_validator_command(install_root)
     plugin_hooks = bool(item.get("pluginHooksEligible"))
     for candidate in item.get("phaseItems", []):
-        if candidate.get("runtime") == "codex" and candidate.get("action") == "copy-hooks":
-            hooks_path = Path(candidate["target"])
-            hook_command = candidate.get("hookCommand", hook_command)
+        if candidate.get("runtime") != "codex":
+            continue
+        action = candidate.get("action")
+        if action not in {"copy-hooks", "retire-hooks"}:
+            continue
+        hooks_path = Path(candidate["target"])
+        hook_command = candidate.get("hookCommand", hook_command)
+        if action == "copy-hooks":
             break
     try:
         current = _read_text_or_none(target)
@@ -1633,7 +1638,7 @@ def _replan_codex_config_item(item: dict[str, Any], install_root: Path, *, force
             current,
             install_root,
             force=force,
-            hooks_path=None if plugin_hooks else hooks_path,
+            hooks_path=hooks_path,
             hook_command=hook_command,
             plugin_hooks=plugin_hooks,
         )
