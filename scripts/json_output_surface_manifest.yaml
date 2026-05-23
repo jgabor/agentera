@@ -8,10 +8,10 @@ scope:
 
     '
   excluded:
-  - classification: planned/future
+  - classification: historical
     examples:
-    - agentera prime JSON surfaces not implemented in v2
-    - direct capability-name top-level commands
+    - agentera hej --format json --capability-context (removed 3.0)
+    - agentera --context-profile full (removed 3.0)
   - classification: private/excluded
     examples:
     - scripts/setup_doctor.py --json
@@ -41,6 +41,21 @@ surfaces:
   enforcement_tier: enforce
   byte_budget: 115000
   token_budget: 26000
+- id: prime-dashboard
+  command: agentera prime
+  selector: --dashboard --format json
+  argv:
+  - prime
+  - --dashboard
+  - --format
+  - json
+  inventory_classification: change
+  budget_classification: unbudgeted
+  measurement_scope: primary
+  fixture: repo_root
+  enforcement_tier: enforce
+  byte_budget: 35000
+  token_budget: 8000
 - id: hej-dashboard
   command: agentera hej
   selector: --format json
@@ -72,35 +87,29 @@ surfaces:
   byte_budget: 28000
   token_budget: 6500
 - id: hej-capability-context-full
-  command: agentera hej --format json --capability-context {capability} --context-profile
-    full
-  selector: --format json --capability-context <capability> --context-profile full
+  command: agentera hej --format json --capability-context {capability}
+  selector: --format json --capability-context <capability> (removed 3.0)
   argv:
   - hej
   - --format
   - json
   - --capability-context
   - '{capability}'
-  - --context-profile
-  - full
   expand_by: capability
   inventory_classification: change
   budget_classification: unbudgeted
   measurement_scope: primary
   fixture: repo_root
   enforcement_tier: removed_3_0
-- id: hej-capability-context-slim
-  command: agentera hej --format json --capability-context {capability} --context-profile
-    slim --fields capability_context
-  selector: --format json --capability-context <capability> --context-profile slim
+- id: prime-capability-context
+  command: agentera prime --context {capability} --format json
+  selector: --context <capability> --format json
   argv:
-  - hej
+  - prime
+  - --context
+  - '{capability}'
   - --format
   - json
-  - --capability-context
-  - '{capability}'
-  - --context-profile
-  - slim
   - --fields
   - capability_context
   expand_by: capability

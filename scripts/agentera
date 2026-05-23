@@ -146,6 +146,16 @@ CAPABILITY_NAMES = [
     "orkestrera",
 ]
 
+REMOVED_3_0_HEJ_CAPABILITY_CONTEXT = (
+    "agentera hej --capability-context was removed in Agentera 3.0. "
+    "Use `agentera prime --context <capability> --format json` for capability startup context."
+)
+REMOVED_3_0_CONTEXT_PROFILE_FULL = (
+    "agentera --context-profile full was removed in Agentera 3.0. "
+    "Use `agentera prime --context <capability> --format json` for the slim startup capsule."
+)
+PRIME_CAPABILITY_CONTEXT_COMMAND = "agentera prime --context {capability} --format json"
+
 VALIDATE_ARTIFACT_LABELS = [
     "CHANGELOG.md",
     "DECISIONS.md",
@@ -995,7 +1005,11 @@ DOCTOR_SIGNAL_KINDS = [
 
 
 def _available_structured_fields(command: str) -> list[str]:
-    return HEJ_STRUCTURED_FIELDS if command == "hej" else ROUTINE_STRUCTURED_FIELDS
+    if command in {"hej", "prime"}:
+        return HEJ_STRUCTURED_FIELDS
+    if command in CAPABILITY_NAMES:
+        return ["command", "status", "capability", "routing"]
+    return ROUTINE_STRUCTURED_FIELDS
 
 
 def _requested_fields(args: argparse.Namespace) -> list[str]:
@@ -1018,8 +1032,23 @@ def _select_structured_fields(
     args: argparse.Namespace,
 ) -> dict[str, Any] | None:
     requested = _requested_fields(args)
+    working = value
+    if requested and command == "prime" and "capability_context" in value:
+        context = value["capability_context"].get("context")
+        if isinstance(context, dict):
+            working = dict(value)
+            for name in (
+                "orchestration_context",
+                "closeout_context",
+                "evidence_context",
+                "benchmark_context",
+                "execution_context",
+            ):
+                nested = context.get(name)
+                if nested is not None:
+                    working[name] = nested
     if not requested:
-        return value
+        return working
     available = _available_structured_fields(command)
     unsupported = [field for field in requested if field not in available]
     if unsupported:
@@ -1031,8 +1060,8 @@ def _select_structured_fields(
         return None
     selected: dict[str, Any] = {}
     for field in [*REQUIRED_SPARSE_CONTEXT_FIELDS, *requested]:
-        if field in value and field not in selected:
-            selected[field] = value[field]
+        if field in working and field not in selected:
+            selected[field] = working[field]
     return selected
 
 
@@ -1576,7 +1605,7 @@ def _planera_startup_contract() -> dict[str, Any]:
     return {
         "schemaVersion": PLANERA_STARTUP_CONTRACT_VERSION,
         "status": "implemented_compact_normal_startup_contract",
-        "canonical_surface": "agentera hej --format json --capability-context planera",
+        "canonical_surface": "agentera prime --context planera --format json",
         "bounded": True,
         "instructions_runtime_read_required": False,
         "instructions_authority": {
@@ -1618,12 +1647,15 @@ def _planera_startup_contract() -> dict[str, Any]:
             "full plans suggest ⎈ orkestrera and wait for confirmation",
         ],
         "unsupported_command_boundary": {
-            "capability_cli_commands_added": False,
-            "forbidden_examples": ["agentera planera"],
-            "route_boundary": "Use `/agentera plan` for routing and `agentera plan` for plan state.",
+            "capability_cli_commands_added": True,
+            "forbidden_examples": [],
+            "route_boundary": (
+                "Use `/agentera plan` for routing, `agentera plan` for plan state, "
+                "and `agentera planera` for capability routing guidance only."
+            ),
         },
         "seam_decision": {
-            "selected": "hej capability_context",
+            "selected": "prime --context",
             "not_changed": [
                 {
                     "surface": "agentera describe --format json",
@@ -1660,7 +1692,7 @@ def _capability_context(capability: str | None) -> dict[str, Any] | None:
         "missing_state_families": missing,
         "cli_fallback": cli_fallback,
         "raw_artifact_read_policy": (
-            "Use the included state families from this hej response first. "
+            "Use the included state families from this prime --context response first. "
             "If needed families are missing or CLI state is incomplete, run the CLI fallback commands before raw file access."
         ),
         "schema_error": error,
@@ -1688,7 +1720,7 @@ def _capability_context_app_summary(app_home: dict[str, Any], bundle: dict[str, 
 def _capability_context_profile_summary(profile: dict[str, Any]) -> dict[str, Any]:
     caveats: list[str] = []
     if profile.get("status") != "loaded":
-        caveats.append("profile-derived state is unavailable in hej context.")
+        caveats.append("profile-derived state is unavailable in prime --context response.")
     elif profile.get("stale") is True:
         caveats.append("profile-derived state is stale; this is a caveat, not approval to refresh profile state.")
     summary = {
@@ -2019,7 +2051,7 @@ def _slim_capability_context(
         "missing_state_families": [],
         "cli_fallback": [],
         "raw_artifact_read_policy": (
-            "Use the included state families from this hej response first. "
+            "Use the included state families from this prime --context response first. "
             "If needed families are missing or CLI state is incomplete, run the CLI fallback commands before raw file access."
         ),
         "schema_error": f"No capability context found for {capability}.",
@@ -2038,6 +2070,9 @@ def _slim_capability_context(
         todo_items,
         profile,
     ))
+    first_read = context.get("first_invocation_read")
+    if first_read is not None:
+        context_payload["first_invocation_read"] = first_read
     if bespoke_contexts:
         for name, value in bespoke_contexts.items():
             if value is not None:
@@ -2315,7 +2350,7 @@ def _closeout_benchmark_evidence(docs: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-BENCHMARK_CONTEXT_COMMAND = "agentera hej --format json --capability-context optimera"
+BENCHMARK_CONTEXT_COMMAND = "agentera prime --context optimera --format json"
 BENCHMARK_LATEST_REPORT_LABEL = "startup_benchmark_latest_report"
 BENCHMARK_HISTORY_LABEL = "startup_benchmark_history"
 BENCHMARK_CONTEXT_SOURCE_LABELS = [
@@ -2941,7 +2976,7 @@ def _optimera_benchmark_context(capability: str | None) -> dict[str, Any] | None
             "caveated": bool(caveats),
             "raw_artifact_reads_required": False,
             "raw_artifact_read_policy": (
-                "Use this benchmark_context from `agentera hej --format json --capability-context optimera` first. "
+                "Use this benchmark_context from `agentera prime --context optimera --format json` first. "
                 "If incomplete, follow fallback_commands and manual_refresh before any last-resort direct latest-report.json, "
                 "latest-report.md, or runs.jsonl diagnostic read."
             ),
@@ -3081,7 +3116,7 @@ def _closeout_release_boundary(changelog_boundary: dict[str, Any], bundle: dict[
             "registry_checks_performed": False,
             "source_provenance": _source_provenance(
                 "closeout_context",
-                "agentera hej --format json --capability-context dokumentera",
+                "agentera prime --context dokumentera --format json",
                 "release_boundary.publication_evidence",
             ),
             "caveats": ["Closeout context does not contact remotes or package registries."],
@@ -3132,7 +3167,7 @@ def _dokumentera_closeout_context(
 
     state_caveats: list[str] = []
     for family in capability_contract.get("missing_state_families", []):
-        state_caveats.append(f"{family} state is not included in hej startup context.")
+        state_caveats.append(f"{family} state is not included in prime --context startup context.")
     for component in (
         artifact_mappings,
         version_policy,
@@ -3147,7 +3182,7 @@ def _dokumentera_closeout_context(
     if bundle.get("status") != "up_to_date":
         state_caveats.append("Agentera app files are not up to date; this is a caveat, not approval to repair or update app files.")
     if profile.get("status") != "loaded":
-        state_caveats.append("profile-derived state is unavailable in hej context.")
+        state_caveats.append("profile-derived state is unavailable in prime --context response.")
     elif profile.get("stale") is True:
         state_caveats.append("profile-derived state is stale; this is a caveat, not approval to refresh profile state.")
     state_caveats = list(dict.fromkeys(state_caveats))
@@ -3379,7 +3414,7 @@ def _evidence_todo_state(schemas: dict, todo_items: list[dict[str, str]]) -> dic
 def _evidence_protected_state_checks() -> dict[str, Any]:
     source = _source_provenance(
         "evidence_context",
-        "agentera hej --format json --capability-context inspektera",
+        "agentera prime --context inspektera --format json",
         "protected_state_checks",
     )
     return {
@@ -3433,7 +3468,7 @@ def _evidence_version_checks(docs: dict[str, Any]) -> dict[str, Any]:
         {
             "name": "publication_evidence",
             "status": "requires_manual_check",
-            "source_provenance": _source_provenance("evidence_context", "agentera hej --format json --capability-context inspektera", "version_checks.publication_evidence"),
+            "source_provenance": _source_provenance("evidence_context", "agentera prime --context inspektera --format json", "version_checks.publication_evidence"),
             "remote_checks_performed": False,
             "registry_checks_performed": False,
             "caveats": ["Publication and registry evidence is not recorded in CLI evidence context and requires manual verification if needed."],
@@ -3441,14 +3476,14 @@ def _evidence_version_checks(docs: dict[str, Any]) -> dict[str, Any]:
         {
             "name": "remote_push_evidence",
             "status": "requires_manual_check",
-            "source_provenance": _source_provenance("evidence_context", "agentera hej --format json --capability-context inspektera", "version_checks.remote_push_evidence"),
+            "source_provenance": _source_provenance("evidence_context", "agentera prime --context inspektera --format json", "version_checks.remote_push_evidence"),
             "remote_checks_performed": False,
             "caveats": ["Remote push evidence is not recorded in CLI evidence context and requires manual verification if needed."],
         },
         {
             "name": "installed_app_refresh",
             "status": "not_checked_by_design",
-            "source_provenance": _source_provenance("evidence_context", "agentera hej --format json --capability-context inspektera", "version_checks.installed_app_refresh"),
+            "source_provenance": _source_provenance("evidence_context", "agentera prime --context inspektera --format json", "version_checks.installed_app_refresh"),
             "refresh_performed": False,
             "caveats": ["Installed app refresh state is deliberately not checked or changed by evidence context."],
         },
@@ -3643,13 +3678,13 @@ def _inspektera_evidence_context(
     state_caveats: list[str] = []
     attributed_risks: list[dict[str, Any]] = []
     for family in capability_contract.get("missing_state_families", []):
-        message = f"{family} state is not included in hej startup context."
+        message = f"{family} state is not included in prime --context startup context."
         state_caveats.append(message)
         attributed_risks.append(_residual_risk_entry(
             "missing_state_family",
             "caveated",
             message,
-            _source_provenance("hej", "agentera hej --format json --capability-context inspektera", "source_contract.capability_context.missing_state_families"),
+            _source_provenance("prime", "agentera prime --context inspektera --format json", "source_contract.capability_context.missing_state_families"),
         ))
     if bundle.get("status") != "up_to_date":
         message = "Agentera app files are not up to date; this is a caveat, not approval to repair or update app files."
@@ -3661,7 +3696,7 @@ def _inspektera_evidence_context(
             _source_provenance("hej", "agentera hej --format json", "bundle.status"),
         ))
     if profile.get("status") != "loaded":
-        message = "profile-derived state is unavailable in hej context."
+        message = "profile-derived state is unavailable in prime --context response."
         state_caveats.append(message)
         attributed_risks.append(_residual_risk_entry(
             "profile_state",
@@ -3685,7 +3720,7 @@ def _inspektera_evidence_context(
                 "evidence_family",
                 "caveated",
                 caveat,
-                component.get("source_provenance", _source_provenance("evidence_context", "agentera hej --format json --capability-context inspektera")),
+                component.get("source_provenance", _source_provenance("evidence_context", "agentera prime --context inspektera --format json")),
             ))
     if decision_context_risk.get("caveats"):
         for caveat in decision_context_risk["caveats"]:
@@ -3935,7 +3970,7 @@ def _realisera_execution_context(
     state_caveats: list[str] = []
     fallback_commands: list[str] = []
     for family in capability_contract.get("missing_state_families", []):
-        state_caveats.append(f"{family} state is not included in hej startup context.")
+        state_caveats.append(f"{family} state is not included in prime --context startup context.")
     fallback_commands.extend(capability_contract.get("cli_fallback", []))
 
     if not plan.get("exists"):
@@ -3957,13 +3992,13 @@ def _realisera_execution_context(
         state_caveats.append("docs mapping state is unavailable or incomplete.")
         fallback_commands.append("agentera docs --format json")
     if not todo_items:
-        state_caveats.append("todo state has no open entries in hej context; absence may mean none open or unavailable.")
+        state_caveats.append("todo state has no open entries in prime --context response; absence may mean none open or unavailable.")
         fallback_commands.append("agentera todo --format json")
     if changelog_boundary.get("status") != "available":
         state_caveats.extend(changelog_boundary.get("caveats", []))
         fallback_commands.append("agentera query changelog --format json")
     if profile.get("status") != "loaded":
-        state_caveats.append("profile-derived state is unavailable in hej context.")
+        state_caveats.append("profile-derived state is unavailable in prime --context response.")
     elif profile.get("stale") is True:
         state_caveats.append("profile-derived state is stale; this is a caveat, not approval to refresh profile state.")
     if bundle.get("status") != "up_to_date":
@@ -4037,7 +4072,7 @@ def _realisera_execution_context(
             "remote_push_allowed": False,
             "commit_allowed_only_with_explicit_user_request": True,
             "tag_or_publication_allowed": False,
-            "source_provenance": _source_provenance("execution_context", "agentera hej --format json --capability-context realisera", "git_boundary"),
+            "source_provenance": _source_provenance("execution_context", "agentera prime --context realisera --format json", "git_boundary"),
         },
         "plan_completion_sweep": sweep,
         "state_family_caveats": state_caveats,
@@ -4114,7 +4149,7 @@ def _orchestration_context(
     fallback_commands: list[str] = []
     capability_contract = _capability_context(capability) or {}
     for family in capability_contract.get("missing_state_families", []):
-        state_caveats.append(f"{family} state is not included in hej startup context.")
+        state_caveats.append(f"{family} state is not included in prime --context startup context.")
     fallback_commands.extend(capability_contract.get("cli_fallback", []))
 
     if not plan.get("exists"):
@@ -4130,10 +4165,10 @@ def _orchestration_context(
         state_caveats.append("docs mapping state is unavailable or incomplete.")
         fallback_commands.append("agentera docs --format json")
     if not todo_items:
-        state_caveats.append("todo state has no open entries in hej context; absence may mean none open or unavailable.")
+        state_caveats.append("todo state has no open entries in prime --context response; absence may mean none open or unavailable.")
         fallback_commands.append("agentera todo --format json")
     if profile.get("status") != "loaded":
-        state_caveats.append("profile-derived state is unavailable in hej context.")
+        state_caveats.append("profile-derived state is unavailable in prime --context response.")
     elif profile.get("stale") is True:
         state_caveats.append("profile-derived state is stale; this is a caveat, not approval to refresh profile state.")
 
@@ -4408,7 +4443,16 @@ def _command_description(name: str, *, kind: str, fields: list[str] | None = Non
 
 
 def _describe_commands() -> list[dict[str, Any]]:
-    commands = [_command_description("prime", kind="guidance")]
+    commands = [
+        _command_description("prime", kind="guidance"),
+        _command_description("hej", kind="orientation", fields=_available_structured_fields("hej")),
+    ]
+    for name in CAPABILITY_NAMES:
+        if name == "hej":
+            continue
+        commands.append(
+            _command_description(name, kind="capability_routing", fields=_available_structured_fields(name))
+        )
     for name in ROUTINE_STATE_COMMANDS:
         commands.append(_command_description(name, kind="routine_state", fields=_available_structured_fields(name)))
     commands.extend([
@@ -4481,8 +4525,8 @@ def _build_describe_payload() -> dict[str, Any]:
         "slash_route_aliases": {
             "status": (slash_aliases or {}).get("status", "unknown") if isinstance(slash_aliases, dict) else "unknown",
             "aliases": (slash_aliases or {}).get("aliases", {}) if isinstance(slash_aliases, dict) else {},
-            "cli_commands_added": False,
-            "note": "Decision 43 aliases are slash-route aliases only, not Agentera CLI commands.",
+            "cli_commands_added": True,
+            "note": "Decision 43 slash-route aliases map to direct capability-name routing guidance commands in Agentera 3.0.",
         },
         "artifact_schemas": artifact_schemas,
         "artifact_locations": artifact_locations_payload,
@@ -4504,8 +4548,318 @@ def cmd_describe(args: argparse.Namespace) -> int:
     return 0
 
 
-def cmd_prime(_args: argparse.Namespace) -> int:
+def _validate_prime_capability(capability: str) -> None:
+    _validate_agent_string(capability, "capability")
+    if capability not in CAPABILITY_NAMES:
+        valid = ", ".join(CAPABILITY_NAMES)
+        raise ValueError(
+            f"unsupported capability {capability!r}; valid capabilities: {valid}. "
+            f"Example: agentera prime --context planera --format json"
+        )
+
+
+def _collect_orientation_state(args: argparse.Namespace) -> dict[str, Any]:
+    schemas_dir = _discover_schemas_dir()
+    schemas = _load_schemas(schemas_dir)
+    bundle = _hej_bundle_status(args)
+    saved_context = any((Path.cwd() / ".agentera").glob("*.yaml"))
+    mode = "returning" if saved_context else "fresh"
+    profile = _registry_artifact_path("profile", schemas_dir)
+    profile_status = "loaded" if profile.exists() else "not found"
+    profile_staleness = _check_profilera_staleness(profile) if profile.exists() else None
+    profile_dict: dict[str, Any] = {"status": profile_status, "path": str(profile)}
+    if profile_status == "not found":
+        profile_dict["suggested_action"] = "Run profilera to generate PROFILE.md"
+    if profile_staleness is not None:
+        is_stale, days_since, stale_days = profile_staleness
+        profile_dict["days_since_generated"] = days_since
+        profile_dict["stale"] = is_stale
+        profile_dict["stale_threshold_days"] = stale_days
+        if is_stale:
+            profile_dict["suggested_action"] = "Run profilera to refresh PROFILE.md"
+    v1_artifacts = _detect_v1_artifacts()
+    v1_migration = _v1_migration_summary(v1_artifacts)
+    plan = _plan_summary(schemas)
+    docs = _docs_summary(schemas)
+    progress = _progress_summary(schemas)
+    health = _health_summary(schemas)
+    objective = _active_objective_summary()
+    state_presence = _state_presence(plan, docs, progress, health, objective)
+    todo_items = _load_todo_items(schemas)
+    counts = _issue_counts(todo_items)
+    decision = _decision_follow_up(schemas)
+    decision_attention = _decision_review_attention(schemas)
+    next_action = _select_hej_next_action(plan, health, objective, todo_items, decision, saved_context)
+    attention: list[str] = []
+    if bundle["status"] != "up_to_date":
+        attention.append(_app_status_attention(bundle))
+    if v1_migration["detected"]:
+        command = v1_migration["dry_run_command"]
+        attention.append(
+            f"degraded: v1 artifacts detected; preview `{command}`; files={', '.join(v1_artifacts)}"
+        )
+    if profile_status == "not found":
+        attention.append(
+            f"degraded: PROFILE.md not found at {profile}; suggest running profilera to generate PROFILE.md"
+        )
+    elif profile_staleness is not None and profile_staleness[0]:
+        _, days_since, stale_days = profile_staleness
+        attention.append(
+            f"normal: profilera profile stale ({days_since} days since generated; "
+            f"threshold={stale_days}); suggest running profilera to refresh PROFILE.md"
+        )
+    if health.get("degrading"):
+        worst = health.get("worst")
+        attention.append(
+            f"critical: health needs attention ({worst[0]}:{worst[1]})"
+            if worst
+            else "critical: health is degrading"
+        )
+    pending = plan.get("first_pending")
+    if isinstance(pending, dict):
+        title = _first_present(pending, ["name", "title"], "pending task")
+        attention.append(f"normal: PLAN Task {pending.get('number', '?')}: {title}")
+    if decision_attention is not None:
+        attention.append(str(decision_attention["attention"]))
+    if not isinstance(pending, dict) and todo_items:
+        first_todo = sorted(
+            todo_items,
+            key=lambda entry: TODO_SEVERITY_ORDER.get(entry["severity"], 2),
+        )[0]
+        attention.append(f"{first_todo['severity']}: TODO: {first_todo['text']}")
+    return {
+        "schemas_dir": schemas_dir,
+        "schemas": schemas,
+        "bundle": bundle,
+        "mode": mode,
+        "profile_dict": profile_dict,
+        "profile_status": profile_status,
+        "profile": profile,
+        "v1_migration": v1_migration,
+        "plan": plan,
+        "docs": docs,
+        "progress": progress,
+        "health": health,
+        "objective": objective,
+        "state_presence": state_presence,
+        "todo_items": todo_items,
+        "counts": counts,
+        "decision_attention": decision_attention,
+        "next_action": next_action,
+        "attention": attention,
+    }
+
+
+def _bespoke_capability_contexts(
+    capability_name: str | None,
+    state: dict[str, Any],
+) -> dict[str, dict[str, Any] | None]:
+    schemas = state["schemas"]
+    plan = state["plan"]
+    progress = state["progress"]
+    health = state["health"]
+    todo_items = state["todo_items"]
+    docs = state["docs"]
+    profile_dict = state["profile_dict"]
+    bundle = state["bundle"]
+    next_action = state["next_action"]
+    return {
+        "orchestration_context": _orchestration_context(
+            capability_name,
+            plan,
+            progress,
+            health,
+            todo_items,
+            docs,
+            profile_dict,
+            next_action,
+        ),
+        "closeout_context": _dokumentera_closeout_context(
+            capability_name,
+            schemas,
+            plan,
+            progress,
+            todo_items,
+            docs,
+            profile_dict,
+            bundle,
+        ),
+        "evidence_context": _inspektera_evidence_context(
+            capability_name,
+            schemas,
+            plan,
+            progress,
+            health,
+            todo_items,
+            docs,
+            profile_dict,
+            bundle,
+        ),
+        "benchmark_context": _optimera_benchmark_context(capability_name),
+        "execution_context": _realisera_execution_context(
+            capability_name,
+            schemas,
+            plan,
+            progress,
+            health,
+            todo_items,
+            docs,
+            profile_dict,
+            bundle,
+        ),
+    }
+
+
+def _orientation_app_home(bundle: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "status": bundle["status"],
+        "home": bundle["appHome"],
+        "source": bundle["appHomeSource"],
+        "managed_app_root": bundle["managedAppRoot"],
+        "user_data_root": bundle["userDataRoot"],
+    }
+
+
+def _build_orientation_json_payload(
+    state: dict[str, Any],
+    *,
+    command: str,
+    capability_name: str | None = None,
+) -> dict[str, Any]:
+    bundle = state["bundle"]
+    schemas_dir = state["schemas_dir"]
+    bundle_public = public_doctor_status(bundle)
+    app_home = _orientation_app_home(bundle)
+    bespoke = _bespoke_capability_contexts(capability_name, state)
+    render = (
+        "caller-owned README-style hej dashboard"
+        if command == "hej"
+        else "caller-owned README-style orientation dashboard"
+    )
+    access = (
+        "single installed CLI call; app/v1/profile safety included; no preflight glob/read/import/doctor calls during normal hej"
+        if command == "hej"
+        else "single installed CLI call; app/v1/profile safety included; no preflight glob/read/import/doctor calls during normal orientation"
+    )
+    return {
+        "command": command,
+        "status": "ok",
+        "app_home": app_home,
+        "bundle": bundle_public,
+        "mode": state["mode"],
+        "profile": state["profile_dict"],
+        "v1_migration": state["v1_migration"],
+        "health": state["health"],
+        "issues": state["counts"],
+        "plan": state["plan"],
+        "docs": state["docs"],
+        "progress": state["progress"],
+        "objective": state["objective"],
+        "state_presence": state["state_presence"],
+        "attention": state["attention"][:6],
+        "decision_attention": state["decision_attention"],
+        "next_action": state["next_action"],
+        "orchestration_context": bespoke["orchestration_context"],
+        "closeout_context": bespoke["closeout_context"],
+        "evidence_context": bespoke["evidence_context"],
+        "benchmark_context": bespoke["benchmark_context"],
+        "execution_context": bespoke["execution_context"],
+        "source": {
+            "schemas_dir": str(schemas_dir),
+            "project": str(Path.cwd()),
+            "artifacts_present": state["mode"] == "returning",
+        },
+        "source_contract": {
+            "fields": STARTUP_COMPLETENESS_AVAILABLE_STATE,
+            "render": render,
+            "access": access,
+            "empty_state": "fresh mode with missing artifact summaries and zero issue counts",
+            "capability_startup": _startup_completeness_contract(),
+            "capability_context": _capability_context(capability_name),
+        },
+    }
+
+
+def _build_prime_capability_context_payload(
+    state: dict[str, Any],
+    capability_name: str,
+) -> dict[str, Any]:
+    bundle_public = public_doctor_status(state["bundle"])
+    app_home = _orientation_app_home(state["bundle"])
+    bespoke = _bespoke_capability_contexts(capability_name, state)
+    return {
+        "command": "prime",
+        "status": "ok",
+        "capability_context": _slim_capability_context(
+            capability_name,
+            state["mode"],
+            app_home,
+            bundle_public,
+            state["profile_dict"],
+            state["plan"],
+            state["docs"],
+            state["progress"],
+            state["health"],
+            state["todo_items"],
+            bespoke,
+        ),
+    }
+
+
+def cmd_prime(args: argparse.Namespace) -> int:
+    capability = getattr(args, "context", None)
+    dashboard = bool(getattr(args, "dashboard", False) or getattr(args, "orientation", False))
+    if capability is not None and dashboard:
+        raise ValueError("prime --context and prime --dashboard/--orientation are mutually exclusive")
+    if capability is not None:
+        _validate_prime_capability(str(capability))
+        if _output_format(args) == "text":
+            raise ValueError("prime --context requires --format json")
+        state = _collect_orientation_state(args)
+        payload = _build_prime_capability_context_payload(state, str(capability))
+        return _emit_state_structured("prime", payload, args)
+    if dashboard:
+        if _output_format(args) == "text":
+            raise ValueError("prime --dashboard requires --format json")
+        state = _collect_orientation_state(args)
+        payload = _build_orientation_json_payload(state, command="prime")
+        return _emit_state_structured("prime", payload, args)
     print(PRIME_BLOB, end="")
+    return 0
+
+
+def cmd_capability(args: argparse.Namespace) -> int:
+    capability = str(args.command)
+    source_root = Path(__file__).resolve().parent.parent
+    instructions = source_root / "skills" / "agentera" / "capabilities" / capability / "instructions.md"
+    instructions_path = (
+        str(instructions.relative_to(source_root))
+        if instructions.exists()
+        else f"skills/agentera/capabilities/{capability}/instructions.md"
+    )
+    payload = {
+        "command": capability,
+        "status": "ok",
+        "capability": capability,
+        "routing": {
+            "skill_invocation": f"/agentera {capability}",
+            "instructions_path": instructions_path,
+            "startup_context": PRIME_CAPABILITY_CONTEXT_COMMAND.format(capability=capability),
+            "routine_state_reads": (
+                "Use top-level agentera state commands for artifact reads; "
+                f"agentera {capability} emits capability routing guidance only."
+            ),
+        },
+    }
+    if _output_format(args) == "json":
+        _emit_structured(payload, "json")
+    else:
+        print(f"agentera {capability}")
+        print(f"capability: {capability}")
+        print(f"invoke: /agentera {capability} via Agentera skill routing")
+        print(f"instructions: {instructions_path}")
+        print(f"startup context: {PRIME_CAPABILITY_CONTEXT_COMMAND.format(capability=capability)}")
+        print("note: capability routing guidance only; not a routine state read")
     return 0
 
 
@@ -6703,194 +7057,23 @@ def _select_hej_next_action(
 
 
 def cmd_hej(_args: argparse.Namespace) -> int:
-    schemas_dir = _discover_schemas_dir()
-    schemas = _load_schemas(schemas_dir)
-    bundle = _hej_bundle_status(_args)
-    saved_context = any((Path.cwd() / ".agentera").glob("*.yaml"))
-    mode = "returning" if saved_context else "fresh"
-    profile = _registry_artifact_path("profile", schemas_dir)
-    profile_status = "loaded" if profile.exists() else "not found"
-    profile_staleness = _check_profilera_staleness(profile) if profile.exists() else None
-    profile_dict: dict[str, Any] = {"status": profile_status, "path": str(profile)}
-    if profile_status == "not found":
-        profile_dict["suggested_action"] = "Run profilera to generate PROFILE.md"
-    if profile_staleness is not None:
-        is_stale, days_since, stale_days = profile_staleness
-        profile_dict["days_since_generated"] = days_since
-        profile_dict["stale"] = is_stale
-        profile_dict["stale_threshold_days"] = stale_days
-        if is_stale:
-            profile_dict["suggested_action"] = "Run profilera to refresh PROFILE.md"
-    v1_artifacts = _detect_v1_artifacts()
-    v1_migration = _v1_migration_summary(v1_artifacts)
-    plan = _plan_summary(schemas)
-    docs = _docs_summary(schemas)
-    progress = _progress_summary(schemas)
-    health = _health_summary(schemas)
-    objective = _active_objective_summary()
-    state_presence = _state_presence(plan, docs, progress, health, objective)
-    todo_items = _load_todo_items(schemas)
-    counts = _issue_counts(todo_items)
-    decision = _decision_follow_up(schemas)
-    decision_attention = _decision_review_attention(schemas)
-    next_action = _select_hej_next_action(plan, health, objective, todo_items, decision, saved_context)
-    attention = []
-    if bundle["status"] != "up_to_date":
-        attention.append(_app_status_attention(bundle))
-    if v1_migration["detected"]:
-        command = v1_migration["dry_run_command"]
-        attention.append(
-            f"degraded: v1 artifacts detected; preview `{command}`; files={', '.join(v1_artifacts)}"
-        )
-    if profile_status == "not found":
-        attention.append(f"degraded: PROFILE.md not found at {profile}; suggest running profilera to generate PROFILE.md")
-    elif profile_staleness is not None and profile_staleness[0]:
-        _, days_since, stale_days = profile_staleness
-        attention.append(
-            f"normal: profilera profile stale ({days_since} days since generated; "
-            f"threshold={stale_days}); suggest running profilera to refresh PROFILE.md"
-        )
-    if health.get("degrading"):
-        worst = health.get("worst")
-        attention.append(
-            f"critical: health needs attention ({worst[0]}:{worst[1]})"
-            if worst
-            else "critical: health is degrading"
-        )
-    pending = plan.get("first_pending")
-    if isinstance(pending, dict):
-        title = _first_present(pending, ["name", "title"], "pending task")
-        attention.append(f"normal: PLAN Task {pending.get('number', '?')}: {title}")
-    if decision_attention is not None:
-        attention.append(str(decision_attention["attention"]))
-    if not isinstance(pending, dict) and todo_items:
-        first_todo = sorted(
-            todo_items,
-            key=lambda entry: TODO_SEVERITY_ORDER.get(entry["severity"], 2),
-        )[0]
-        attention.append(f"{first_todo['severity']}: TODO: {first_todo['text']}")
-    capability_name = getattr(_args, "capability_context", None)
-    orchestration_context = _orchestration_context(
-        capability_name,
-        plan,
-        progress,
-        health,
-        todo_items,
-        docs,
-        profile_dict,
-        next_action,
-    )
-    closeout_context = _dokumentera_closeout_context(
-        capability_name,
-        schemas,
-        plan,
-        progress,
-        todo_items,
-        docs,
-        profile_dict,
-        bundle,
-    )
-    evidence_context = _inspektera_evidence_context(
-        capability_name,
-        schemas,
-        plan,
-        progress,
-        health,
-        todo_items,
-        docs,
-        profile_dict,
-        bundle,
-    )
-    benchmark_context = _optimera_benchmark_context(capability_name)
-    execution_context = _realisera_execution_context(
-        capability_name,
-        schemas,
-        plan,
-        progress,
-        health,
-        todo_items,
-        docs,
-        profile_dict,
-        bundle,
-    )
+    if getattr(_args, "capability_context", None):
+        raise ValueError(REMOVED_3_0_HEJ_CAPABILITY_CONTEXT)
+    state = _collect_orientation_state(_args)
+    bundle = state["bundle"]
+    mode = state["mode"]
+    profile_status = state["profile_status"]
+    profile = state["profile"]
+    health = state["health"]
+    counts = state["counts"]
+    plan = state["plan"]
+    objective = state["objective"]
+    state_presence = state["state_presence"]
+    attention = state["attention"]
+    next_action = state["next_action"]
     if _output_format(_args) != "text":
-        bundle_public = public_doctor_status(bundle)
-        app_home = {
-            "status": bundle["status"],
-            "home": bundle["appHome"],
-            "source": bundle["appHomeSource"],
-            "managed_app_root": bundle["managedAppRoot"],
-            "user_data_root": bundle["userDataRoot"],
-        }
-        if capability_name and getattr(_args, "context_profile", "full") == "slim":
-            return _emit_state_structured(
-                "hej",
-                {
-                    "command": "hej",
-                    "status": "ok",
-                    "capability_context": _slim_capability_context(
-                        capability_name,
-                        mode,
-                        app_home,
-                        bundle_public,
-                        profile_dict,
-                        plan,
-                        docs,
-                        progress,
-                        health,
-                        todo_items,
-                        {
-                            "orchestration_context": orchestration_context,
-                            "closeout_context": closeout_context,
-                            "evidence_context": evidence_context,
-                            "benchmark_context": benchmark_context,
-                            "execution_context": execution_context,
-                        },
-                    ),
-                },
-                _args,
-            )
-        return _emit_state_structured(
-            "hej",
-            {
-                "command": "hej",
-                "status": "ok",
-                "app_home": app_home,
-                "bundle": bundle_public,
-                "mode": mode,
-                "profile": profile_dict,
-                "v1_migration": v1_migration,
-                "health": health,
-                "issues": counts,
-                "plan": plan,
-                "docs": docs,
-                "progress": progress,
-                "objective": objective,
-                "state_presence": state_presence,
-                "attention": attention[:6],
-                "decision_attention": decision_attention,
-                "next_action": next_action,
-                "orchestration_context": orchestration_context,
-                "closeout_context": closeout_context,
-                "evidence_context": evidence_context,
-                "benchmark_context": benchmark_context,
-                "execution_context": execution_context,
-                "source": {
-                    "schemas_dir": str(schemas_dir),
-                    "project": str(Path.cwd()),
-                    "artifacts_present": mode == "returning",
-                },
-                "source_contract": {
-                    "fields": STARTUP_COMPLETENESS_AVAILABLE_STATE,
-                    "render": "caller-owned README-style hej dashboard",
-                    "access": "single installed CLI call; app/v1/profile safety included; no preflight glob/read/import/doctor calls during normal hej",
-                    "empty_state": "fresh mode with missing artifact summaries and zero issue counts",
-                    "capability_startup": _startup_completeness_contract(),
-                    "capability_context": _capability_context(capability_name),
-                },
-            },
-            _args,
-        )
+        payload = _build_orientation_json_payload(state, command="hej", capability_name=None)
+        return _emit_state_structured("hej", payload, _args)
 
     print("agentera hej")
     print(
@@ -6949,51 +7132,6 @@ def cmd_hej(_args: argparse.Namespace) -> int:
     print(f"- missing_state={missing_state}")
     print(f"- confidence_caveats={'; '.join(startup_contract['confidence_caveats'])}")
     print(f"- cli_fallback={'; '.join(startup_contract['cli_fallback'])}")
-    context = _capability_context(capability_name)
-    if context:
-        print("- capability_context="
-              f"capability={context['capability']} | "
-              f"included={', '.join(context['included_state_families']) or 'none'} | "
-              f"missing={', '.join(context['missing_state_families']) or 'none'} | "
-              f"cli_fallback={'; '.join(context['cli_fallback']) or 'none'}")
-    if closeout_context:
-        closeout_contract = closeout_context["source_contract"]
-        print("closeout_context:")
-        print(
-            "- "
-            f"complete_for_closeout_context={str(closeout_contract['complete_for_closeout_context']).lower()} | "
-            f"caveated={str(closeout_contract['caveated']).lower()} | "
-            f"fallback={'; '.join(closeout_context['fallback_commands'])}"
-        )
-    if evidence_context:
-        evidence_contract = evidence_context["source_contract"]
-        print("evidence_context:")
-        print(
-            "- "
-            f"complete_for_evidence_context={str(evidence_contract['complete_for_evidence_context']).lower()} | "
-            f"caveated={str(evidence_contract['caveated']).lower()} | "
-            f"fallback={'; '.join(evidence_context['fallback_commands'])}"
-        )
-    if benchmark_context:
-        benchmark_contract = benchmark_context["source_contract"]
-        print("benchmark_context:")
-        print(
-            "- "
-            f"complete_for_benchmark_context={str(benchmark_contract['complete_for_benchmark_context']).lower()} | "
-            f"caveated={str(benchmark_contract['caveated']).lower()} | "
-            f"manual_refresh={benchmark_contract['manual_refresh_status']} | "
-            f"fallback={'; '.join(benchmark_context['fallback_commands'])}"
-        )
-    if execution_context:
-        execution_contract = execution_context["source_contract"]
-        print("execution_context:")
-        print(
-            "- "
-            f"mode={execution_context['mode']} | "
-            f"complete_for_execution_context={str(execution_contract['complete_for_execution_context']).lower()} | "
-            f"caveated={str(execution_contract['caveated']).lower()} | "
-            f"fallback={'; '.join(execution_context['fallback_commands'])}"
-        )
     return 0
 
 
@@ -7130,10 +7268,44 @@ def build_parser() -> argparse.ArgumentParser:
         command_parser.add_argument("--format", choices=["text", "json", "yaml"], default="text", help="Output format")
         command_parser.add_argument("--fields", help="Comma-separated structured output fields to include with command/status context")
 
-    sub.add_parser(
+    prime = sub.add_parser(
         "prime",
-        help="Print agent-priming guidance (routing, recovery)",
+        help="Print agent-priming guidance, orientation JSON, or capability startup context",
     )
+    prime.add_argument(
+        "--context",
+        type=_agent_command,
+        help="Emit slim capability startup context JSON for the named capability",
+    )
+    prime.add_argument(
+        "--dashboard",
+        action="store_true",
+        help="Emit orientation dashboard JSON (provisional 3.0 spelling)",
+    )
+    prime.add_argument(
+        "--orientation",
+        action="store_true",
+        help="Alias for --dashboard",
+    )
+    prime.add_argument(
+        "--install-root",
+        type=_agent_path,
+        default=None,
+        help="Agentera app home to include in app status (default: AGENTERA_HOME, then platform data home)",
+    )
+    prime.add_argument(
+        "--home",
+        type=_agent_path,
+        default=Path.home(),
+        help="Home directory used for the default app home",
+    )
+    prime.add_argument(
+        "--expected-version",
+        type=_agent_version,
+        default=None,
+        help="Expected suite version for app status (default: AGENTERA_EXPECTED_VERSION, then registry.json in this source)",
+    )
+    add_structured_args(prime)
 
     describe = sub.add_parser(
         "describe",
@@ -7163,18 +7335,16 @@ def build_parser() -> argparse.ArgumentParser:
         default=None,
         help="Expected suite version for app status (default: AGENTERA_EXPECTED_VERSION, then registry.json in this source)",
     )
-    hej.add_argument(
-        "--capability-context",
-        type=_agent_command,
-        help="Include capability-specific startup state needs in structured source_contract output",
-    )
-    hej.add_argument(
-        "--context-profile",
-        choices=["full", "slim"],
-        default="full",
-        help="Structured capability-context profile: full keeps the dashboard envelope; slim emits only the startup capsule",
-    )
     add_structured_args(hej)
+
+    for capability_name in CAPABILITY_NAMES:
+        if capability_name == "hej":
+            continue
+        capability_parser = sub.add_parser(
+            capability_name,
+            help=f"Route to {capability_name} capability guidance",
+        )
+        add_structured_args(capability_parser)
 
     decisions = sub.add_parser("decisions", help="Decision log")
     decisions.add_argument("--topic", help="Filter by topic (substring match on text fields)")
@@ -7522,6 +7692,8 @@ def main(argv: list[str] | None = None) -> int:
             return cmd_describe(args)
         if args.command == "hej":
             return cmd_hej(args)
+        if args.command in CAPABILITY_NAMES and args.command != "hej":
+            return cmd_capability(args)
         if args.command in STATE_COMMAND_HANDLERS:
             return cmd_state(args)
         if args.command == "query":

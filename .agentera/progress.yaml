@@ -1,4 +1,33 @@
 cycles:
+- number: 589
+  timestamp: 2026-05-23 18:15
+  type: feat
+  phase: build
+  what: Introduced prime context control plane and removed hej capability-context
+    compatibility.
+  commit: pending
+  inspiration: Plan Task 4 for Agentera 3.0 prime control plane and JSON output budget
+    work.
+  discovered: Shared `_collect_orientation_state` now feeds both `prime --dashboard`
+    and `prime --context`; slim bespoke contexts hoist only when `--fields` requests
+    nested keys. Removed `--capability-context` / `--context-profile` from the hej
+    parser; full-profile rows stay in the manifest as `removed_3_0` with argparse
+    rejection classified as `generation_status=removed`.
+  verified: '`uv run --with pytest pytest tests/test_query_cli.py tests/test_measure_json_output_surfaces.py
+    tests/test_measure_capability_context_payloads.py tests/test_decision45_cli_contract.py
+    tests/test_cross_capability.py tests/test_planera_capability.py -q` passed (290
+    tests). `uv run scripts/measure_json_output_surfaces.py --json --token-mode skip
+    --enforce-budgets` passed with status=pass, budget_status=pass, 67 surfaces measured,
+    12 removed_3_0 rows, zero violations. `agentera prime --context planera --format
+    json` emits command/status/capability_context; bare `agentera prime` still prints
+    PRIME_BLOB; `agentera planera` emits routing guidance only.'
+  next: Proceed to Plan Task 5 caller/docs/contract sync for prime --context.
+  context:
+    intent: Satisfy Task 4 acceptance for prime context, dashboard mode, direct capability
+      commands, and removal of full-profile/hej capability-context startup compatibility.
+    constraints: No plan.yaml task status edits, no push.
+    scope: scripts/agentera, json_output_surface_manifest.yaml, measure scripts, tests/test_query_cli.py,
+      tests/test_measure_json_output_surfaces.py, and PROGRESS evidence.
 - number: 588
   timestamp: 2026-05-23 16:20
   type: feat
@@ -248,35 +277,8 @@ cycles:
       edits, or decision-satisfaction updates.
     scope: scripts/agentera context-profile handling, focused hej tests, PLAN and
       PROGRESS evidence.
-- number: 579
-  timestamp: 2026-05-20 23:24
-  type: test
-  phase: build
-  what: Introduced role-aware capability state inventory.
-  commit: pending
-  inspiration: Orkestrera Task 1 for the Slim Capability Context Payloads plan.
-  discovered: Capability artifact inventory previously treated every `artifact_id`
-    as a startup read need. Produced-only artifacts such as Planera `plan_archive`
-    and Optimera `optimera_harness` now remain write targets instead of missing read-state
-    families. A broader `TestHej` run still has an unrelated macOS app-home expectation
-    failure in `test_runtime_injected_legacy_default_does_not_outrank_platform_home`.
-  verified: '`uv run --with pytest pytest tests/test_query_cli.py::TestHej::test_hej_capability_context_names_included_and_missing_state_families
-    tests/test_query_cli.py::TestHej::test_hej_planera_context_exposes_compact_startup_contract
-    tests/test_query_cli.py::TestHej::test_hej_capability_context_missing_artifact_schema_reports_error_without_state_needs
-    tests/test_query_cli.py::TestHej::test_hej_capability_context_malformed_artifact_schema_reports_error_without_fabricated_needs
-    tests/test_query_cli.py::TestHej::test_hej_optimera_benchmark_context_reports_retained_benchmark_summary`
-    passed. `uv run scripts/agentera validate capability skills/agentera/capabilities`,
-    `uv run scripts/agentera validate capability-contract --format json`, Planera
-    and Optimera context spot checks, and `git diff --check` passed.'
-  next: Execute Task 2 to add the slim capability-context envelope.
-  context:
-    intent: Complete Task 1 by separating capability startup reads from produced artifacts.
-    constraints: Task 1 only. No slim envelope implementation, capability-name CLI
-      commands, release metadata, publication, installed-app refresh, protected vision/objective
-      edits, or decision-satisfaction updates.
-    scope: scripts/agentera role-aware inventory, focused hej tests, PLAN and PROGRESS
-      evidence.
 archive:
+- summary: 'Cycle 579 (2026-05-20): Introduced role-aware capability state inventory.'
 - summary: 'Cycle 578 (2026-05-18): Closed stale 2.4.x instruction-validation TODO
     from committed regression evidence.'
 - summary: 'Cycle 577 (2026-05-18): Completed capability instruction validation regression
@@ -352,5 +354,3 @@ archive:
     for Plan Task 1.'
 - summary: 'Cycle 540 (2026-05-16): Expanded Decision 54 with broader vocabulary inventory
     boundaries.'
-- summary: 'Cycle 539 (2026-05-16): Recorded Decision 54 for app metadata vocabulary
-    convergence.'

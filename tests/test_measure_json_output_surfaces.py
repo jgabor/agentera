@@ -12,7 +12,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 def test_manifest_expands_capability_context_rows(measure_json_output_surfaces):
     module = measure_json_output_surfaces
     specs = module.load_surface_specs(module.DEFAULT_MANIFEST, REPO_ROOT)
-    slim = [spec for spec in specs if spec.id.startswith("hej-capability-context-slim:")]
+    slim = [spec for spec in specs if spec.id.startswith("prime-capability-context:")]
     full = [spec for spec in specs if spec.id.startswith("hej-capability-context-full:")]
 
     assert len(specs) >= 60
@@ -97,8 +97,9 @@ def test_primary_surfaces_generate_json_without_profile_mutation(measure_json_ou
 
     assert len(measurements) == len(specs)
     assert not errors, [f"{row.id}: {row.error}" for row in errors]
-    assert all(row.bytes > 0 for row in measurements)
-    assert all(row.generation_status == "ok" for row in measurements)
+    assert all(row.bytes > 0 for row in measurements if row.generation_status == "ok")
+    assert all(row.generation_status in {"ok", "removed"} for row in measurements)
+    assert len([row for row in measurements if row.generation_status == "removed"]) == len(module.CAPABILITIES)
 
 
 def test_report_includes_scope_notes_from_manifest(measure_json_output_surfaces):
@@ -128,7 +129,7 @@ def test_report_includes_scope_notes_from_manifest(measure_json_output_surfaces)
 def test_manifest_surfaces_define_enforcement_tiers(measure_json_output_surfaces):
     module = measure_json_output_surfaces
     specs = module.load_surface_specs(module.DEFAULT_MANIFEST, REPO_ROOT)
-    assert len(specs) == 66
+    assert len(specs) == 67
     for spec in specs:
         assert spec.enforcement_tier in module.ENFORCEMENT_TIERS
         if spec.enforcement_tier == "enforce":
@@ -277,5 +278,7 @@ def test_primary_surfaces_pass_byte_budget_enforcement(measure_json_output_surfa
 
     errors = [row for row in measurements if row.generation_status == "error"]
     assert not errors, [f"{row.id}: {row.error}" for row in errors]
+    removed = [row for row in measurements if row.generation_status == "removed"]
+    assert len(removed) == len(module.CAPABILITIES)
     assert report["status"] == "pass"
     assert report["violation_count"] == 0

@@ -413,6 +413,29 @@ def measure_surface(
         )
 
     if error is not None:
+        if spec.enforcement_tier == "removed_3_0" and exit_code != 0:
+            detail = f"{error}\n{output}".lower()
+            if (
+                "removed in agentera 3.0" in detail
+                or "--capability-context" in detail
+                or "--context-profile" in detail
+            ):
+                return SurfaceMeasurement(
+                    id=spec.id,
+                    command=spec.command,
+                    selector=spec.selector,
+                    capability=spec.capability,
+                    profile=spec.profile,
+                    bytes=len(output.encode("utf-8")),
+                    gpt5_tokens=None,
+                    token_status="skipped" if token_counter is None else "unavailable",
+                    budget_classification=spec.budget_classification,
+                    inventory_classification=spec.inventory_classification,
+                    measurement_scope=spec.measurement_scope,
+                    generation_status="removed",
+                    exit_code=exit_code,
+                    skip_reason="removed_3_0",
+                )
         return SurfaceMeasurement(
             id=spec.id,
             command=spec.command,

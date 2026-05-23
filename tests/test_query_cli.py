@@ -28,7 +28,7 @@ def _run(*args: str, cwd: Path | None = None) -> subprocess.CompletedProcess:
     env = None
     if cwd is not None:
         import os
-        agentera_home = REPO_ROOT if args and args[0] == "hej" else cwd
+        agentera_home = REPO_ROOT if args and args[0] in {"hej", "prime"} else cwd
         env = {
             **os.environ,
             "AGENTERA_HOME": str(agentera_home),
@@ -57,6 +57,45 @@ def _run_installed(app_home: Path, *args: str, cwd: Path) -> subprocess.Complete
             "PROFILERA_PROFILE_DIR": str(cwd / ".xdg" / "agentera"),
         },
     )
+
+
+
+def _run_prime_context(capability: str, *, cwd: Path | None = None) -> subprocess.CompletedProcess:
+    return _run("prime", "--context", capability, "--format", "json", cwd=cwd)
+
+
+def _prime_startup_capsule(data: dict) -> dict:
+    return data["capability_context"]
+
+
+def _flat_capability_context(data: dict) -> dict:
+    capsule = _prime_startup_capsule(data)
+    context = capsule.get("context", {})
+    state = capsule.get("state", {})
+    flat = {
+        "capability": capsule.get("capability"),
+        "declared_state_needs": state.get("declared_read_needs", []),
+        "declared_write_targets": state.get("declared_write_targets", []),
+        "artifact_inventory": state.get("artifact_inventory", {}),
+        "included_state_families": state.get("included", []),
+        "missing_state_families": state.get("missing", []),
+        "cli_fallback": state.get("fallback_commands", []),
+        "raw_artifact_read_policy": capsule.get("raw_artifact_read_policy"),
+        "schema_error": state.get("schema_error"),
+    }
+    if context.get("first_invocation_read") is not None:
+        flat["first_invocation_read"] = context["first_invocation_read"]
+    planning = context.get("planning_context")
+    if isinstance(planning, dict) and planning.get("startup_contract") is not None:
+        flat["startup_contract"] = planning["startup_contract"]
+    return flat
+
+
+def _prime_bespoke_context(data: dict, name: str):
+    if name in data:
+        return data[name]
+    capsule = _prime_startup_capsule(data)
+    return capsule.get("context", {}).get(name)
 
 
 def _install_schema_surface(app_home: Path) -> Path:
@@ -1808,11 +1847,11 @@ class TestHej:
             "cycles": [{"number": 1, "timestamp": "2026-05-14", "verified": "seeded"}],
         })
 
-        r = _run("hej", "--format", "json", "--capability-context", "orkestrera", cwd=project)
+        r = _run("prime", "--context", "orkestrera", "--format", "json", cwd=project)
 
         assert r.returncode == 0
         data = json.loads(r.stdout)
-        context = data["source_contract"]["capability_context"]
+        context = _flat_capability_context(data)
         first_read = context["first_invocation_read"]
         assert context["capability"] == "orkestrera"
         assert first_read["value"] == "full"
@@ -1840,8 +1879,8 @@ class TestHej:
         assert context["missing_state_families"] == ["decisions", "vision", "profile"]
         assert context["cli_fallback"] == ["agentera decisions --format json"]
         assert "before raw file access" in context["raw_artifact_read_policy"]
-        assert "agentera planera" not in json.dumps(data["source_contract"])
-        assert "agentera realisera" not in json.dumps(data["source_contract"])
+        assert "agentera planera" not in r.stdout
+        assert "agentera realisera" not in r.stdout
 
     def test_hej_without_capability_context_keeps_full_dashboard_envelope(self, project):
         _write_artifact(project, ".agentera/docs.yaml", {
@@ -1870,7 +1909,7 @@ class TestHej:
             "cycles": [{"number": 1, "timestamp": "2026-05-14", "verified": "seeded"}],
         })
 
-        r = _run("hej", "--format", "json", "--capability-context", "orkestrera", "--context-profile", "slim", cwd=project)
+        r = _run("prime", "--context", "orkestrera", "--format", "json", cwd=project)
 
         assert r.returncode == 0, r.stderr
         data = json.loads(r.stdout)
@@ -1913,7 +1952,7 @@ class TestHej:
             "orkestrera": "orchestration_context",
         }
         for capability, context_key in expected.items():
-            r = _run("hej", "--format", "json", "--capability-context", capability, "--context-profile", "slim", cwd=project)
+            r = _run("prime", "--context", capability, "--format", "json", cwd=project)
 
             assert r.returncode == 0, r.stderr
             data = json.loads(r.stdout)
@@ -1951,7 +1990,7 @@ class TestHej:
             "visualisera": "design_context",
         }
         for capability, context_key in expected.items():
-            r = _run("hej", "--format", "json", "--capability-context", capability, "--context-profile", "slim", cwd=project)
+            r = _run("prime", "--context", capability, "--format", "json", cwd=project)
 
             assert r.returncode == 0, r.stderr
             context = json.loads(r.stdout)["capability_context"]["context"]
@@ -1961,43 +2000,30 @@ class TestHej:
             assert generic["profile"]["status"] == "not found"
 
         planera = json.loads(_run(
-            "hej",
+            "prime",
+            "--context",
+            "planera",
             "--format",
             "json",
-            "--capability-context",
-            "planera",
-            "--context-profile",
-            "slim",
             cwd=project,
         ).stdout)["capability_context"]["context"]["planning_context"]
         assert planera["startup_contract"]["schemaVersion"] == "agentera.planeraStartup.v1"
         assert planera["docs"]["version_policy"]["semver_policy"] == {"fix": "patch"}
         assert planera["todo"]["open_count"] == 1
 
-    def test_hej_capability_context_full_profile_keeps_compatibility_envelope(self, project):
-        _write_artifact(project, ".agentera/plan.yaml", {
-            "header": {"title": "Full capability context", "status": "active"},
-            "tasks": [{"number": 1, "name": "Build", "status": "pending"}],
-        })
+    def test_hej_capability_context_rejected_in_3_0(self, project):
+        r = _run("hej", "--format", "json", "--capability-context", "orkestrera", cwd=project)
 
-        r = _run("hej", "--format", "json", "--capability-context", "orkestrera", "--context-profile", "full", cwd=project)
+        assert r.returncode == 2
+        assert "unrecognized arguments: --capability-context" in r.stderr
 
-        assert r.returncode == 0, r.stderr
-        data = json.loads(r.stdout)
-        assert "plan" in data
-        assert "source_contract" in data
-        assert "capability_context" not in data
-        assert data["source_contract"]["capability_context"]["capability"] == "orkestrera"
-
-    def test_hej_slim_profile_rejects_unsupported_sparse_field_without_partial_stdout(self, project):
+    def test_prime_context_rejects_unsupported_sparse_field_without_partial_stdout(self, project):
         r = _run(
-            "hej",
+            "prime",
+            "--context",
+            "orkestrera",
             "--format",
             "json",
-            "--capability-context",
-            "orkestrera",
-            "--context-profile",
-            "slim",
             "--fields",
             "raw_yaml",
             cwd=project,
@@ -2005,7 +2031,7 @@ class TestHej:
 
         assert r.returncode == 1
         assert r.stdout == ""
-        assert "unsupported field 'raw_yaml' for hej" in r.stderr
+        assert "unsupported field 'raw_yaml' for prime" in r.stderr
 
     def test_hej_planera_context_exposes_compact_startup_contract(self, project):
         _write_artifact(project, ".agentera/plan.yaml", {
@@ -2016,11 +2042,11 @@ class TestHej:
             "mapping": [{"artifact": "PLAN.md", "path": ".agentera/plan.yaml"}],
         })
 
-        r = _run("hej", "--format", "json", "--capability-context", "planera", cwd=project)
+        r = _run("prime", "--context", "planera", "--format", "json", cwd=project)
 
         assert r.returncode == 0, r.stderr
         data = json.loads(r.stdout)
-        context = data["source_contract"]["capability_context"]
+        context = _flat_capability_context(data)
         contract = context["startup_contract"]
         first_read = context["first_invocation_read"]
         assert context["capability"] == "planera"
@@ -2032,7 +2058,7 @@ class TestHej:
         assert first_read["obligation_summary"] == "compact_contract_must_name_covered_guidance_and_escalation_rules"
         assert first_read["provenance"]["authority_path"] == "references/cli/capability-instruction-contract.yaml"
         assert contract["schemaVersion"] == "agentera.planeraStartup.v1"
-        assert contract["canonical_surface"] == "agentera hej --format json --capability-context planera"
+        assert contract["canonical_surface"] == "agentera prime --context planera --format json"
         assert contract["bounded"] is True
         assert contract["instructions_runtime_read_required"] is False
         assert contract["planning"]["levels"] == ["skip", "light", "full"]
@@ -2049,9 +2075,9 @@ class TestHej:
         assert "Plan approval is still required" in archive_confirmation["human_initiated_plan_write"]
         assert "active or incomplete plan is not implicit" in archive_confirmation["active_or_incomplete_plan"]
         assert "editing Planera behavior or instructions" in contract["instructions_authority"]["read_planera_instructions_when"]
-        assert "agentera planera" in contract["unsupported_command_boundary"]["forbidden_examples"]
-        assert contract["unsupported_command_boundary"]["capability_cli_commands_added"] is False
-        assert contract["seam_decision"]["selected"] == "hej capability_context"
+        assert contract["unsupported_command_boundary"]["forbidden_examples"] == []
+        assert contract["unsupported_command_boundary"]["capability_cli_commands_added"] is True
+        assert contract["seam_decision"]["selected"] == "prime --context"
         assert {entry["surface"] for entry in contract["seam_decision"]["not_changed"]} == {
             "agentera describe --format json",
             "dispatcher guidance",
@@ -2072,17 +2098,17 @@ class TestHej:
             "mapping": [{"artifact": "PLAN.md", "path": ".agentera/plan.yaml"}],
         })
 
-        r = _run_installed(app_home, "hej", "--format", "json", "--capability-context", "planera", cwd=project)
+        r = _run_installed(app_home, "prime", "--context", "planera", "--format", "json", cwd=project)
 
         assert r.returncode == 0, r.stderr
         data = json.loads(r.stdout)
-        context = data["source_contract"]["capability_context"]
+        context = _flat_capability_context(data)
         contract = context["startup_contract"]
         first_read = context["first_invocation_read"]
         assert first_read["value"] == "compact_startup"
         assert first_read["instruction_target"]["exists"] is False
         assert contract["instructions_runtime_read_required"] is False
-        assert contract["canonical_surface"] == "agentera hej --format json --capability-context planera"
+        assert contract["canonical_surface"] == "agentera prime --context planera --format json"
 
     def test_hej_capability_context_missing_artifact_schema_reports_error_without_state_needs(self, tmp_path):
         app_home = tmp_path / "app-home"
@@ -2092,10 +2118,10 @@ class TestHej:
         project = tmp_path / "project"
         project.mkdir()
 
-        r = _run_installed(app_home, "hej", "--format", "json", "--capability-context", "planera", cwd=project)
+        r = _run_installed(app_home, "prime", "--context", "planera", "--format", "json", cwd=project)
 
         assert r.returncode == 0, r.stderr
-        context = json.loads(r.stdout)["source_contract"]["capability_context"]
+        context = _flat_capability_context(json.loads(r.stdout))
         assert context["schema_error"] == "No capability artifact schema found for planera."
         assert context["declared_state_needs"] == []
         assert context["declared_write_targets"] == []
@@ -2118,10 +2144,10 @@ class TestHej:
         project = tmp_path / "project"
         project.mkdir()
 
-        r = _run_installed(app_home, "hej", "--format", "json", "--capability-context", "planera", cwd=project)
+        r = _run_installed(app_home, "prime", "--context", "planera", "--format", "json", cwd=project)
 
         assert r.returncode == 0, r.stderr
-        context = json.loads(r.stdout)["source_contract"]["capability_context"]
+        context = _flat_capability_context(json.loads(r.stdout))
         assert "unsupported local_role 'observes'" in context["schema_error"]
         assert "entry 2 is not a mapping" in context["schema_error"]
         assert "entry 3 is missing artifact_id" in context["schema_error"]
@@ -2143,9 +2169,9 @@ class TestHej:
         )
         contexts = {}
         for capability in capabilities:
-            result = _run("hej", "--format", "json", "--capability-context", capability, cwd=project)
+            result = _run("prime", "--context", capability, "--format", "json", cwd=project)
             assert result.returncode == 0, result.stderr
-            contexts[capability] = json.loads(result.stdout)["source_contract"]["capability_context"]
+            contexts[capability] = _flat_capability_context(json.loads(result.stdout))
 
         assert contexts["planera"]["first_invocation_read"]["value"] == "compact_startup"
         assert contexts["planera"]["startup_contract"]["instructions_runtime_read_required"] is False
@@ -2190,22 +2216,16 @@ class TestHej:
             "entries": [{"severity": "normal", "status": "open", "description": "Track orchestration"}],
         })
 
-        r = _run("hej", "--format", "json", "--capability-context", "orkestrera", cwd=project)
+        r = _run("prime", "--context", "orkestrera", "--format", "json", cwd=project)
 
         assert r.returncode == 0
         assert "agentera orkestrera" not in r.stdout
         data = json.loads(r.stdout)
-        context = data["orchestration_context"]
+        context = _prime_bespoke_context(data, "orchestration_context")
         assert context["capability"] == "orkestrera"
         assert context["task_queue"]["dependency_ready_tasks"][0]["number"] == 2
-        assert context["task_queue"]["dependency_ready_tasks"][0]["acceptance_summary"] == {
-            "count": 1,
-            "items": ["ready accepted"],
-        }
-        assert context["task_queue"]["dependency_ready_tasks"][0]["evidence_summary"] == {
-            "count": 1,
-            "items": [{"cycle": 7, "note": "ready evidence"}],
-        }
+        assert context["task_queue"]["dependency_ready_tasks"][0]["acceptance_count"] == 1
+        assert context["task_queue"]["dependency_ready_tasks"][0]["evidence_count"] == 1
         assert context["task_queue"]["blocked_tasks"][0]["number"] == 3
         assert context["task_queue"]["blocked_tasks"][0]["blocked_reasons"] == ["dependency 2 is pending"]
         assert context["selected_next_task"]["number"] == 2
@@ -2214,7 +2234,6 @@ class TestHej:
         assert verification["status"] == "available"
         assert verification["cycle"] == {"number": 7, "timestamp": "2026-05-14"}
         assert verification["verified_present"] is True
-        assert verification["verification_summary"] == "focused tests passed"
         assert verification["latest_progress_verification_pointer"] == {
             "source_family": "progress",
             "command": "agentera progress --format json",
@@ -2240,7 +2259,7 @@ class TestHej:
         assert "last-resort diagnostics" in contract["raw_artifact_read_policy"]
         assert contract["missing_state_families"] == ["decisions", "vision", "profile"]
         assert contract["fallback_commands"] == ["agentera decisions --format json"]
-        assert "profile-derived state is unavailable in hej context." in contract["caveats"]
+        assert "profile-derived state is unavailable in prime --context response." in contract["caveats"]
         assert "latest progress verification summary" in contract["owns"]
         assert "retry_state provenance" in contract["owns"]
         assert "evaluator handoff inputs" in contract["owns"]
@@ -2279,10 +2298,10 @@ class TestHej:
             "entries": [{"severity": "normal", "status": "open", "description": "Track validation"}],
         })
 
-        r = _run_installed(app_home, "hej", "--format", "json", "--capability-context", "orkestrera", cwd=project)
+        r = _run_installed(app_home, "prime", "--context", "orkestrera", "--format", "json", cwd=project)
 
         assert r.returncode == 0, r.stderr
-        context = json.loads(r.stdout)["orchestration_context"]
+        context = _prime_bespoke_context(json.loads(r.stdout), "orchestration_context")
         contract = context["source_contract"]
         assert context["selected_next_task"]["number"] == 1
         assert context["task_queue"]["blocked_tasks"] == []
@@ -2310,13 +2329,13 @@ class TestHej:
             "archive": [{"summary": "Decision 9 (2026-05-14): compacted orchestration caveat"}],
         })
 
-        context_result = _run("hej", "--format", "json", "--capability-context", "orkestrera", cwd=project)
+        context_result = _run("prime", "--context", "orkestrera", "--format", "json", cwd=project)
         decisions_result = _run("decisions", "--format", "json", cwd=project)
 
         assert context_result.returncode == 0
-        context = json.loads(context_result.stdout)["orchestration_context"]
+        context = _prime_bespoke_context(json.loads(context_result.stdout), "orchestration_context")
         assert "agentera decisions --format json" in context["fallback_commands"]
-        assert "decisions state is not included in hej startup context." in context["evaluator_handoff"]["evaluation_caveats"]
+        assert "decisions state is not included in prime --context startup context." in context["evaluator_handoff"]["evaluation_caveats"]
         assert context["source_contract"]["complete_for_orchestration_context"] is False
         assert context["source_contract"]["raw_artifact_reads_required"] is False
         assert decisions_result.returncode == 0
@@ -2340,16 +2359,14 @@ class TestHej:
             "cycles": [{"number": 8, "timestamp": "2026-05-14", "type": "fix", "phase": "build"}],
         })
 
-        r = _run("hej", "--format", "json", "--capability-context", "orkestrera", cwd=project)
+        r = _run("prime", "--context", "orkestrera", "--format", "json", cwd=project)
 
         assert r.returncode == 0
-        context = json.loads(r.stdout)["orchestration_context"]
+        context = _prime_bespoke_context(json.loads(r.stdout), "orchestration_context")
         verification = context["progress_verification"]
         assert verification["status"] == "available"
         assert verification["cycle"] == {"number": 8, "timestamp": "2026-05-14", "type": "fix", "phase": "build"}
         assert verification["verified_present"] is False
-        assert verification["verified"] is None
-        assert verification["verification_summary"] is None
         assert verification["caveats"] == ["Latest progress cycle has no non-empty verified evidence."]
         assert "Latest progress cycle has no non-empty verified evidence." in context["evaluator_handoff"]["evaluation_caveats"]
 
@@ -2359,10 +2376,10 @@ class TestHej:
             "tasks": [{"number": 1, "name": "Ready", "status": "pending", "acceptance": ["selected"]}],
         })
 
-        r = _run("hej", "--format", "json", "--capability-context", "orkestrera", cwd=project)
+        r = _run("prime", "--context", "orkestrera", "--format", "json", cwd=project)
 
         assert r.returncode == 0
-        context = json.loads(r.stdout)["orchestration_context"]
+        context = _prime_bespoke_context(json.loads(r.stdout), "orchestration_context")
         verification = context["progress_verification"]
         assert verification["status"] == "unavailable"
         assert verification["source_provenance"] == {
@@ -2382,11 +2399,11 @@ class TestHej:
             "tasks": [{"number": 1, "name": "Ready", "status": "pending"}],
         })
 
-        r = _run("hej", "--format", "json", "--capability-context", "orkestrera", cwd=project)
+        r = _run("prime", "--context", "orkestrera", "--format", "json", cwd=project)
 
         assert r.returncode == 0
         data = json.loads(r.stdout)
-        context = data["orchestration_context"]
+        context = _prime_bespoke_context(data, "orchestration_context")
         assert context["selected_next_task"]["number"] == 1
         assert context["source_contract"]["complete_for_orchestration_context"] is False
         assert context["fallback_commands"] == [
@@ -2430,17 +2447,17 @@ class TestHej:
             encoding="utf-8",
         )
 
-        r = _run("hej", "--format", "json", "--capability-context", "dokumentera", cwd=project)
+        r = _run("prime", "--context", "dokumentera", "--format", "json", cwd=project)
 
         assert r.returncode == 0, r.stderr
         assert "agentera dokumentera" not in r.stdout
         data = json.loads(r.stdout)
-        capability_context = data["source_contract"]["capability_context"]
+        capability_context = _flat_capability_context(data)
         assert capability_context["capability"] == "dokumentera"
         assert "changelog" in capability_context["declared_state_needs"]
         assert "agentera query changelog --format json" in capability_context["cli_fallback"]
 
-        context = data["closeout_context"]
+        context = _prime_bespoke_context(data, "closeout_context")
         assert context["capability"] == "dokumentera"
         assert context["artifact_mappings"]["entries"] == mapping
         assert context["version_policy"]["semver_policy"]["fix"] == "patch"
@@ -2475,10 +2492,10 @@ class TestHej:
         assert "truthful completeness flag" in contract["owns"]
 
     def test_hej_dokumentera_closeout_context_marks_required_missing_state_incomplete(self, project):
-        r = _run("hej", "--format", "json", "--capability-context", "dokumentera", cwd=project)
+        r = _run("prime", "--context", "dokumentera", "--format", "json", cwd=project)
 
         assert r.returncode == 0, r.stderr
-        context = json.loads(r.stdout)["closeout_context"]
+        context = _prime_bespoke_context(json.loads(r.stdout), "closeout_context")
         contract = context["source_contract"]
         assert contract["complete_for_closeout_context"] is False
         assert set(contract["missing_required_closeout_state"]) == {
@@ -2510,10 +2527,10 @@ class TestHej:
         _write_artifact(project, "TODO.md", {"entries": []})
         (project / "CHANGELOG.md").write_text("# Changelog\n\n## [Unreleased]\n", encoding="utf-8")
 
-        r = _run("hej", "--format", "json", "--capability-context", "dokumentera", cwd=project)
+        r = _run("prime", "--context", "dokumentera", "--format", "json", cwd=project)
 
         assert r.returncode == 0, r.stderr
-        context = json.loads(r.stdout)["closeout_context"]
+        context = _prime_bespoke_context(json.loads(r.stdout), "closeout_context")
         assert context["benchmark_evidence"]["status"] == "unavailable"
         assert context["benchmark_evidence"]["history_scope"] == "not_exposed_by_supported_cli_state"
         assert context["benchmark_evidence"]["user_local_benchmark_reads_required"] is False
@@ -2550,10 +2567,10 @@ class TestHej:
             encoding="utf-8",
         )
 
-        r = _run("hej", "--format", "json", "--capability-context", "dokumentera", cwd=project)
+        r = _run("prime", "--context", "dokumentera", "--format", "json", cwd=project)
 
         assert r.returncode == 0, r.stderr
-        release_boundary = json.loads(r.stdout)["closeout_context"]["release_boundary"]
+        release_boundary = _prime_bespoke_context(json.loads(r.stdout), "closeout_context")["release_boundary"]
         assert release_boundary["local_metadata_evidence"]["status"] == "recorded"
         assert release_boundary["local_tag_evidence"]["status"] == "available"
         assert release_boundary["local_tag_evidence"]["tag"] == "v2.3.9"
@@ -2595,10 +2612,10 @@ class TestHej:
         })
         (project / "CHANGELOG.md").write_text("# Changelog\n\n## [Unreleased]\n", encoding="utf-8")
 
-        r = _run("hej", "--format", "json", "--capability-context", "dokumentera", cwd=project)
+        r = _run("prime", "--context", "dokumentera", "--format", "json", cwd=project)
 
         assert r.returncode == 0, r.stderr
-        context = json.loads(r.stdout)["closeout_context"]
+        context = _prime_bespoke_context(json.loads(r.stdout), "closeout_context")
         pressure = context["decision_review_pressure"]
         assert pressure["status"] == "review_required"
         assert pressure["summary"]["protected_overflow_count"] == 1
@@ -2639,32 +2656,31 @@ class TestHej:
         })
         (project / "CHANGELOG.md").write_text("# Changelog\n\n## [Unreleased]\n", encoding="utf-8")
 
-        r = _run("hej", "--format", "json", "--capability-context", "dokumentera", cwd=project)
+        r = _run("prime", "--context", "dokumentera", "--format", "json", cwd=project)
 
         assert r.returncode == 0, r.stderr
-        context = json.loads(r.stdout)["closeout_context"]
+        context = _prime_bespoke_context(json.loads(r.stdout), "closeout_context")
         assert context["decision_review_pressure"]["status"] == "available"
         assert context["decision_review_pressure"]["caveats"] == []
         assert context["source_contract"]["complete_for_closeout_context"] is True
         assert "decision_review_pressure" not in context["source_contract"]["missing_required_closeout_state"]
         assert not any("10/40/50 compaction budget" in caveat for caveat in context["state_family_caveats"])
 
-    def test_dokumentera_closeout_context_does_not_add_capability_name_cli_command(self, project):
+    def test_dokumentera_capability_command_emits_routing_guidance(self, project):
         r = _run("dokumentera", cwd=project)
 
-        assert r.returncode != 0
-        assert "invalid choice" in r.stderr
+        assert r.returncode == 0
+        assert "startup context: agentera prime --context dokumentera --format json" in r.stdout
 
     def test_hej_inspektera_evidence_context_reports_required_evidence_state(self, project):
         _seed_inspektera_evidence_context(project)
 
-        r = _run("hej", "--format", "json", "--capability-context", "inspektera", cwd=project)
+        r = _run("prime", "--context", "inspektera", "--format", "json", cwd=project)
 
         assert r.returncode == 0, r.stderr
         assert "agentera inspektera" not in r.stdout
         data = json.loads(r.stdout)
-        assert "evidence_context" in data["source_contract"]["fields"]
-        context = data["evidence_context"]
+        context = _prime_bespoke_context(data, "evidence_context")
         assert set(context) == {
             "capability",
             "evaluation_target",
@@ -2739,7 +2755,7 @@ class TestHej:
         assert version_statuses["publication_evidence"] == "requires_manual_check"
         assert version_statuses["installed_app_refresh"] == "not_checked_by_design"
         assert "Retry attempt state is not recorded; no attempt count is exposed." in context["residual_risks"]["items"]
-        assert context["residual_risks"]["attributed_items"]
+        assert context["residual_risks"]["attributed_item_count"] >= 1
         assert "agentera plan --format json" in context["fallback_commands"]
         assert "agentera decisions --format json" in context["fallback_commands"]
         contract = context["source_contract"]
@@ -2766,18 +2782,18 @@ class TestHej:
         _seed_inspektera_evidence_context(project)
 
         r = _run(
-            "hej",
+            "prime",
+            "--context",
+            "inspektera",
             "--format",
             "json",
-            "--capability-context",
-            "inspektera",
             "--fields",
             "evidence_context,source_contract",
             cwd=project,
         )
 
         assert r.returncode == 0, r.stderr
-        context = json.loads(r.stdout)["evidence_context"]
+        context = _prime_bespoke_context(json.loads(r.stdout), "evidence_context")
         contract = context["source_contract"]
         assert contract["complete_for_evidence_context"] is True
         assert contract["missing_required_evidence_state"] == []
@@ -2820,10 +2836,10 @@ class TestHej:
             "entries": [{"severity": "normal", "status": "open", "description": "Track evidence"}],
         })
 
-        r = _run("hej", "--format", "json", "--capability-context", "inspektera", cwd=project)
+        r = _run("prime", "--context", "inspektera", "--format", "json", cwd=project)
 
         assert r.returncode == 0, r.stderr
-        context = json.loads(r.stdout)["evidence_context"]
+        context = _prime_bespoke_context(json.loads(r.stdout), "evidence_context")
         contract = context["source_contract"]
         assert contract["complete_for_evidence_context"] is False
         assert contract["missing_required_evidence_state"] == ["progress_verification"]
@@ -2836,10 +2852,10 @@ class TestHej:
     def test_hej_inspektera_evidence_context_marks_missing_plan_criteria_incomplete(self, project):
         _seed_inspektera_evidence_context(project, acceptance=[])
 
-        r = _run("hej", "--format", "json", "--capability-context", "inspektera", cwd=project)
+        r = _run("prime", "--context", "inspektera", "--format", "json", cwd=project)
 
         assert r.returncode == 0, r.stderr
-        context = json.loads(r.stdout)["evidence_context"]
+        context = _prime_bespoke_context(json.loads(r.stdout), "evidence_context")
         contract = context["source_contract"]
         assert context["plan_criteria"] == {
             "status": "incomplete",
@@ -2867,10 +2883,10 @@ class TestHej:
             health_timestamp="2026-01-01",
         )
 
-        r = _run("hej", "--format", "json", "--capability-context", "inspektera", cwd=project)
+        r = _run("prime", "--context", "inspektera", "--format", "json", cwd=project)
 
         assert r.returncode == 0, r.stderr
-        context = json.loads(r.stdout)["evidence_context"]
+        context = _prime_bespoke_context(json.loads(r.stdout), "evidence_context")
         contract = context["source_contract"]
         assert context["docs_state"]["status"] == "available"
         assert context["docs_state"]["current_state"] == "stale"
@@ -2880,22 +2896,14 @@ class TestHej:
         assert contract["missing_required_evidence_state"] == []
         assert any(caveat.startswith("Docs evidence is stale") for caveat in contract["caveats"])
         assert any(caveat.startswith("Health evidence is stale") for caveat in contract["caveats"])
-        assert any(
-            item["category"] == "evidence_family" and item["message"].startswith("Docs evidence is stale")
-            for item in context["residual_risks"]["attributed_items"]
-        )
-        assert any(
-            item["category"] == "evidence_family" and item["message"].startswith("Health evidence is stale")
-            for item in context["residual_risks"]["attributed_items"]
-        )
 
     def test_hej_inspektera_evidence_context_reports_protected_state_as_unknown_by_design(self, project):
         _seed_inspektera_evidence_context(project)
 
-        r = _run("hej", "--format", "json", "--capability-context", "inspektera", cwd=project)
+        r = _run("prime", "--context", "inspektera", "--format", "json", cwd=project)
 
         assert r.returncode == 0, r.stderr
-        protected = json.loads(r.stdout)["evidence_context"]["protected_state_checks"]
+        protected = _prime_bespoke_context(json.loads(r.stdout), "evidence_context")["protected_state_checks"]
         assert protected["status"] == "not_checked_by_design"
         assert protected["allowed_status_values"] == [
             "verified_local",
@@ -2905,7 +2913,7 @@ class TestHej:
         ]
         assert protected["source_provenance"] == {
             "source_family": "evidence_context",
-            "command": "agentera hej --format json --capability-context inspektera",
+            "command": "agentera prime --context inspektera --format json",
             "field": "protected_state_checks",
         }
         assert {check["name"] for check in protected["checks"]} == {"vision_state", "objective_state"}
@@ -2937,20 +2945,17 @@ class TestHej:
             "archive": [{"summary": "Decision 9 (2026-05-14): compacted evidence caveat"}],
         })
 
-        r = _run("hej", "--format", "json", "--capability-context", "inspektera", cwd=project)
+        r = _run("prime", "--context", "inspektera", "--format", "json", cwd=project)
 
         assert r.returncode == 0, r.stderr
-        context = json.loads(r.stdout)["evidence_context"]
+        context = _prime_bespoke_context(json.loads(r.stdout), "evidence_context")
         decision_context = context["decision_context"]
         assert decision_context["status"] == "caveated"
         assert decision_context["summary"]["compacted_entries"] == 1
         assert "Compacted archive decisions are not expanded" in " ".join(decision_context["caveats"])
-        attributed = context["residual_risks"]["attributed_items"]
-        categories = {item["category"] for item in attributed}
-        assert "decisions_context" in categories
-        assert "profile_state" in categories
-        assert any("profile-derived state is stale" in item["message"] for item in attributed)
-        assert any("Compacted archive decisions" in item["message"] for item in attributed)
+        caveats = context["state_family_caveats"]
+        assert any("profile-derived state is stale" in caveat for caveat in caveats)
+        assert any("Compacted archive decisions" in caveat for caveat in caveats)
 
     def test_hej_inspektera_evidence_context_attributes_stale_protected_decision_review_pressure(self, project):
         _seed_inspektera_evidence_context(project, decisions={
@@ -2968,18 +2973,15 @@ class TestHej:
             }],
         })
 
-        r = _run("hej", "--format", "json", "--capability-context", "inspektera", cwd=project)
+        r = _run("prime", "--context", "inspektera", "--format", "json", cwd=project)
 
         assert r.returncode == 0, r.stderr
-        context = json.loads(r.stdout)["evidence_context"]
+        context = _prime_bespoke_context(json.loads(r.stdout), "evidence_context")
         pressure = context["decision_review_pressure"]
         assert pressure["status"] == "review_required"
         assert pressure["stale_protected_decisions"][0]["reason"] == "review_date_elapsed"
         assert "satisfaction.review_date elapsed" in pressure["caveats"][0]
-        assert any(
-            item["category"] == "decision_review_pressure" and "satisfaction.review_date elapsed" in item["message"]
-            for item in context["residual_risks"]["attributed_items"]
-        )
+        assert any("satisfaction.review_date elapsed" in caveat for caveat in context["state_family_caveats"])
 
     def test_hej_inspektera_evidence_context_does_not_fabricate_decision_review_warnings(self, project):
         _seed_inspektera_evidence_context(project, decisions={
@@ -2997,35 +2999,31 @@ class TestHej:
             }],
         })
 
-        r = _run("hej", "--format", "json", "--capability-context", "inspektera", cwd=project)
+        r = _run("prime", "--context", "inspektera", "--format", "json", cwd=project)
 
         assert r.returncode == 0, r.stderr
-        context = json.loads(r.stdout)["evidence_context"]
+        context = _prime_bespoke_context(json.loads(r.stdout), "evidence_context")
         assert context["decision_review_pressure"]["status"] == "available"
         assert context["decision_review_pressure"]["caveats"] == []
-        assert not any(
-            item["category"] == "decision_review_pressure"
-            for item in context["residual_risks"]["attributed_items"]
-        )
+        assert "decision_review_pressure" not in json.dumps(context["residual_risks"])
 
     def test_hej_optimera_benchmark_context_reports_retained_benchmark_summary(self, project):
         app_home = project / "app-home"
         _install_runtime_surface(app_home)
         benchmark_dir = _write_startup_benchmark_fixture(app_home)
 
-        r = _run_installed(app_home, "hej", "--format", "json", "--capability-context", "optimera", cwd=project)
+        r = _run_installed(app_home, "prime", "--context", "optimera", "--format", "json", cwd=project)
 
         assert r.returncode == 0, r.stderr
         assert "agentera optimera" not in r.stdout
         data = json.loads(r.stdout)
-        assert "benchmark_context" in data["source_contract"]["fields"]
-        capability_context = data["source_contract"]["capability_context"]
+        capability_context = _flat_capability_context(data)
         assert capability_context["capability"] == "optimera"
         assert "benchmark_context" in capability_context["included_state_families"]
         assert "optimera_harness" not in capability_context["declared_state_needs"]
         assert "optimera_harness" not in capability_context["missing_state_families"]
         assert "optimera_harness" in capability_context["declared_write_targets"]
-        context = data["benchmark_context"]
+        context = _prime_bespoke_context(data, "benchmark_context")
         context_text = json.dumps(context, sort_keys=True)
         assert str(app_home) not in context_text
         assert str(benchmark_dir) not in context_text
@@ -3051,10 +3049,10 @@ class TestHej:
         app_home = project / "app-home"
         _install_runtime_surface(app_home)
 
-        r = _run_installed(app_home, "hej", "--format", "json", "--capability-context", "optimera", cwd=project)
+        r = _run_installed(app_home, "prime", "--context", "optimera", "--format", "json", cwd=project)
 
         assert r.returncode == 0, r.stderr
-        context = json.loads(r.stdout)["benchmark_context"]
+        context = _prime_bespoke_context(json.loads(r.stdout), "benchmark_context")
         contract = context["source_contract"]
         assert contract["complete_for_benchmark_context"] is False
         assert "latest_report" in contract["missing_required_benchmark_state"]
@@ -3077,10 +3075,10 @@ class TestHej:
             encoding="utf-8",
         )
 
-        r = _run_installed(app_home, "hej", "--format", "json", "--capability-context", "optimera", cwd=project)
+        r = _run_installed(app_home, "prime", "--context", "optimera", "--format", "json", cwd=project)
 
         assert r.returncode == 0, r.stderr
-        context = json.loads(r.stdout)["benchmark_context"]
+        context = _prime_bespoke_context(json.loads(r.stdout), "benchmark_context")
         assert context["latest_report"]["status"] == "malformed"
         assert context["source_contract"]["complete_for_benchmark_context"] is False
         assert "startup_benchmark_latest_report is malformed JSON." in context["source_contract"]["caveats"]
@@ -3091,10 +3089,10 @@ class TestHej:
         _install_runtime_surface(app_home)
         _write_startup_benchmark_fixture(app_home, history_text="")
 
-        r = _run_installed(app_home, "hej", "--format", "json", "--capability-context", "optimera", cwd=project)
+        r = _run_installed(app_home, "prime", "--context", "optimera", "--format", "json", cwd=project)
 
         assert r.returncode == 0, r.stderr
-        context = json.loads(r.stdout)["benchmark_context"]
+        context = _prime_bespoke_context(json.loads(r.stdout), "benchmark_context")
         assert context["history_summary"]["status"] == "empty"
         assert context["source_contract"]["complete_for_benchmark_context"] is True
         assert context["source_contract"]["caveated"] is True
@@ -3133,10 +3131,10 @@ class TestHej:
             "implementation_recommended": False,
         })
 
-        r = _run_installed(app_home, "hej", "--format", "json", "--capability-context", "optimera", cwd=project)
+        r = _run_installed(app_home, "prime", "--context", "optimera", "--format", "json", cwd=project)
 
         assert r.returncode == 0, r.stderr
-        context = json.loads(r.stdout)["benchmark_context"]
+        context = _prime_bespoke_context(json.loads(r.stdout), "benchmark_context")
         assert context["runtime_coverage"]["status"] == "degraded"
         assert "skipped" in context["runtime_coverage"]["status_counts"]
         assert "missing" in context["runtime_coverage"]["status_counts"]
@@ -3180,10 +3178,10 @@ class TestHej:
             "implementation_recommended": False,
         })
 
-        r = _run_installed(app_home, "hej", "--format", "json", "--capability-context", "optimera", cwd=project)
+        r = _run_installed(app_home, "prime", "--context", "optimera", "--format", "json", cwd=project)
 
         assert r.returncode == 0, r.stderr
-        context = json.loads(r.stdout)["benchmark_context"]
+        context = _prime_bespoke_context(json.loads(r.stdout), "benchmark_context")
         context_text = json.dumps(context, sort_keys=True)
         assert private_path not in context_text
         assert context["latest_report"]["contract_version"] is None
@@ -3213,22 +3211,21 @@ class TestHej:
 
         r = _run_installed(
             app_home,
-            "hej",
+            "prime",
+            "--context",
+            "optimera",
             "--format",
             "json",
-            "--capability-context",
-            "optimera",
             "--fields",
-            "benchmark_context,source_contract",
+            "benchmark_context",
             cwd=project,
         )
 
         assert r.returncode == 0, r.stderr
         data = json.loads(r.stdout)
-        assert list(data) == ["command", "status", "benchmark_context", "source_contract"]
+        assert list(data) == ["command", "status", "benchmark_context"]
         assert set(data).issubset(set(available) | {"command", "status"})
-        assert data["benchmark_context"]["source_contract"]["complete_for_benchmark_context"] is True
-        assert "benchmark_context" in data["source_contract"]["fields"]
+        assert _prime_bespoke_context(data, "benchmark_context")["source_contract"]["complete_for_benchmark_context"] is True
         assert "agentera optimera" not in r.stdout
 
     def test_sparse_hej_rejects_unsupported_benchmark_context_field_without_partial_stdout(self, project):
@@ -3238,11 +3235,11 @@ class TestHej:
 
         r = _run_installed(
             app_home,
-            "hej",
+            "prime",
+            "--context",
+            "optimera",
             "--format",
             "json",
-            "--capability-context",
-            "optimera",
             "--fields",
             "benchmark_context,raw_yaml",
             cwd=project,
@@ -3253,12 +3250,12 @@ class TestHej:
         assert "unsupported field 'raw_yaml'" in r.stderr
         assert "benchmark_context" in r.stderr
 
-    def test_optimera_capability_name_is_not_a_cli_command(self, project):
+    def test_optimera_capability_command_emits_routing_guidance(self, project):
         r = _run("optimera", cwd=project)
 
-        assert r.returncode != 0
-        assert r.stdout == ""
-        assert "invalid choice" in r.stderr
+        assert r.returncode == 0
+        assert "startup context: agentera prime --context optimera --format json" in r.stdout
+        assert "not a routine state read" in r.stdout
 
     def test_hej_realisera_execution_context_reports_plan_driven_startup(self, project):
         _write_artifact(project, ".agentera/plan.yaml", {
@@ -3295,13 +3292,13 @@ class TestHej:
         (project / "CHANGELOG.md").write_text("# Changelog\n\n## [Unreleased]\n", encoding="utf-8")
 
         r = _run(
-            "hej",
+            "prime",
+            "--context",
+            "realisera",
             "--format",
             "json",
-            "--capability-context",
-            "realisera",
             "--fields",
-            "execution_context,source_contract",
+            "execution_context",
             cwd=project,
         )
 
@@ -3309,8 +3306,8 @@ class TestHej:
         assert "agentera realisera" not in r.stdout
         assert "agentera build" not in r.stdout
         data = json.loads(r.stdout)
-        assert "execution_context" in data["source_contract"]["fields"]
-        capability_context = data["source_contract"]["capability_context"]
+        meta = json.loads(_run("prime", "--context", "realisera", "--format", "json", cwd=project).stdout)
+        capability_context = _flat_capability_context(meta)
         first_read = capability_context["first_invocation_read"]
         assert capability_context["capability"] == "realisera"
         assert first_read["value"] == "full"
@@ -3318,7 +3315,7 @@ class TestHej:
         assert first_read["obligation_summary"] == "full_instruction_file_read_required"
         assert first_read["provenance"]["authority_path"] == "references/cli/capability-instruction-contract.yaml"
         assert "agentera query changelog --format json" in capability_context["cli_fallback"]
-        context = data["execution_context"]
+        context = _prime_bespoke_context(data, "execution_context")
         assert context["mode"] == "plan_driven"
         assert context["work_selection"]["task"] == {"number": 2, "name": "Execution context output contract", "status": "pending"}
         assert context["constraints"]["plan_constraints_present"] is True
@@ -3338,10 +3335,10 @@ class TestHej:
             "tasks": [{"number": 1, "name": "Blocked", "status": "pending", "depends_on": [99]}],
         })
 
-        r = _run("hej", "--format", "json", "--capability-context", "realisera", cwd=project)
+        r = _run("prime", "--context", "realisera", "--format", "json", cwd=project)
 
         assert r.returncode == 0, r.stderr
-        context = json.loads(r.stdout)["execution_context"]
+        context = _prime_bespoke_context(json.loads(r.stdout), "execution_context")
         assert context["mode"] == "blocked_or_dependency_unready"
         assert context["source_contract"]["complete_for_execution_context"] is False
         assert set(context["source_contract"]["missing_required_execution_state"]) >= {
@@ -3370,39 +3367,36 @@ class TestHej:
         available = contract["field_selection"]["fields_by_command"]["hej"]["fields"]
 
         r = _run(
-            "hej",
+            "prime",
+            "--context",
+            "realisera",
             "--format",
             "json",
-            "--capability-context",
-            "realisera",
             "--fields",
-            "execution_context,source_contract",
+            "execution_context",
             cwd=project,
         )
 
         assert r.returncode == 0, r.stderr
         data = json.loads(r.stdout)
-        assert list(data) == ["command", "status", "execution_context", "source_contract"]
+        assert list(data) == ["command", "status", "execution_context"]
         assert set(data).issubset(set(available) | {"command", "status"})
-        assert data["execution_context"]["source_contract"]["raw_artifact_reads_required"] is False
+        assert _prime_bespoke_context(data, "execution_context")["source_contract"]["raw_artifact_reads_required"] is False
 
-    def test_realisera_capability_name_and_build_alias_are_not_cli_commands(self, project):
+    def test_realisera_capability_command_emits_routing_guidance(self, project):
         realisera = _run("realisera", cwd=project)
         build = _run("build", cwd=project)
 
-        assert realisera.returncode != 0
-        assert build.returncode != 0
-        assert realisera.stdout == ""
-        assert build.stdout == ""
-        assert "invalid choice" in realisera.stderr
+        assert realisera.returncode == 0
+        assert "startup context: agentera prime --context realisera --format json" in realisera.stdout
+        assert build.returncode == 2
         assert "invalid choice" in build.stderr
 
-    def test_inspektera_capability_name_is_not_a_cli_command(self, project):
+    def test_inspektera_capability_command_emits_routing_guidance(self, project):
         r = _run("inspektera", cwd=project)
 
-        assert r.returncode != 0
-        assert r.stdout == ""
-        assert "invalid choice" in r.stderr
+        assert r.returncode == 0
+        assert "startup context: agentera prime --context inspektera --format json" in r.stdout
 
     def test_fresh_hej_structured_output_explains_absent_state(self, project):
         r = _run("hej", "--format", "json", cwd=project)
@@ -4046,22 +4040,21 @@ class TestRoutineStructuredOutput:
         available = contract["field_selection"]["fields_by_command"]["hej"]["fields"]
 
         r = _run(
-            "hej",
+            "prime",
+            "--context",
+            "inspektera",
             "--format",
             "json",
-            "--capability-context",
-            "inspektera",
             "--fields",
-            "evidence_context,source_contract",
+            "evidence_context",
             cwd=project,
         )
 
         assert r.returncode == 0, r.stderr
         data = json.loads(r.stdout)
-        assert list(data) == ["command", "status", "evidence_context", "source_contract"]
+        assert list(data) == ["command", "status", "evidence_context"]
         assert set(data).issubset(set(available) | {"command", "status"})
-        assert data["evidence_context"]["source_contract"]["complete_for_evidence_context"] is True
-        assert "evidence_context" in data["source_contract"]["fields"]
+        assert _prime_bespoke_context(data, "evidence_context")["source_contract"]["complete_for_evidence_context"] is True
         assert "agentera inspektera" not in r.stdout
 
     def test_sparse_hej_rejects_unsupported_evidence_context_field_without_partial_stdout(self, project):
@@ -4070,11 +4063,11 @@ class TestRoutineStructuredOutput:
         available = contract["field_selection"]["fields_by_command"]["hej"]["fields"]
 
         r = _run(
-            "hej",
+            "prime",
+            "--context",
+            "inspektera",
             "--format",
             "json",
-            "--capability-context",
-            "inspektera",
             "--fields",
             "evidence_context,raw_yaml",
             cwd=project,
@@ -4176,18 +4169,18 @@ class TestDescribeIntrospection:
         assert {"query", "describe", "doctor", "upgrade", "prime"}.issubset(command_names)
         assert "bundle-status" not in command_names
         assert "build" not in command_names
-        assert "planera" not in command_names
+        assert "planera" in command_names
         assert "audit" not in command_names
         assert data["slash_route_aliases"]["aliases"]["build"] == "realisera"
         assert data["slash_route_aliases"]["aliases"]["plan"] == "planera"
-        assert data["slash_route_aliases"]["cli_commands_added"] is False
+        assert data["slash_route_aliases"]["cli_commands_added"] is True
 
-    def test_planera_capability_name_remains_unsupported_cli_command(self, project):
+    def test_planera_capability_command_emits_routing_guidance(self, project):
         r = _run("planera", cwd=project)
 
-        assert r.returncode == 2
-        assert r.stdout == ""
-        assert "invalid choice: 'planera'" in r.stderr
+        assert r.returncode == 0
+        assert "startup context: agentera prime --context planera --format json" in r.stdout
+        assert "not a routine state read" in r.stdout
 
     def test_describe_json_exposes_formats_fields_schemas_and_doctor_boundaries(self, project):
         r = _run("describe", "--format", "json", cwd=project)
