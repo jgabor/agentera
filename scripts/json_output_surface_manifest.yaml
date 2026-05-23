@@ -1,0 +1,459 @@
+version: 1
+scope:
+  in_scope: >
+    Live public JSON selectors from docs/d58-json-output-surface-inventory.md with
+    measurement_scope primary or diagnostic. Capability-context rows expand across
+    all twelve CAPABILITY_NAMES. Uses repo-root fixtures, isolated temp projects,
+    and AGENTERA_HOME / PROFILERA_PROFILE_DIR overrides so doctor, upgrade, hej,
+    compact, gate, and stats paths do not mutate the caller's app or profile state.
+  excluded:
+    - classification: planned/future
+      examples:
+        - agentera prime JSON surfaces not implemented in v2
+        - direct capability-name top-level commands
+    - classification: private/excluded
+      examples:
+        - scripts/setup_doctor.py --json
+        - scripts/measure_token_payload.py --json
+        - direct scripts/validate_*.py stdout
+    - classification: historical
+      examples:
+        - scripts/measure_token_payload.py
+    - classification: preserve
+      examples:
+        - agentera query routine-artifact redirect surfaces that do not emit JSON
+  notes:
+    - query design --format json routes to generic schema JSON when a design schema exists;
+      inventory defer row is retained for the text-only handler gap.
+
+surfaces:
+  - id: describe
+    command: agentera describe
+    selector: "--format json (default)"
+    argv: [describe, --format, json]
+    inventory_classification: change
+    budget_classification: unbudgeted
+    measurement_scope: primary
+    fixture: repo_root
+
+  - id: hej-dashboard
+    command: agentera hej
+    selector: "--format json"
+    argv: [hej, --format, json]
+    inventory_classification: change
+    budget_classification: unbudgeted
+    measurement_scope: primary
+    fixture: repo_root
+
+  - id: hej-fields-sparse
+    command: agentera hej
+    selector: "--format json --fields plan,progress,docs"
+    argv: [hej, --format, json, --fields, "plan,progress,docs"]
+    inventory_classification: change
+    budget_classification: unbudgeted
+    measurement_scope: primary
+    fixture: repo_root
+
+  - id: hej-capability-context-full
+    command: agentera hej --format json --capability-context {capability} --context-profile full
+    selector: "--format json --capability-context <capability> --context-profile full"
+    argv: [hej, --format, json, --capability-context, "{capability}", --context-profile, full]
+    expand_by: capability
+    inventory_classification: change
+    budget_classification: unbudgeted
+    measurement_scope: primary
+    fixture: repo_root
+
+  - id: hej-capability-context-slim
+    command: agentera hej --format json --capability-context {capability} --context-profile slim --fields capability_context
+    selector: "--format json --capability-context <capability> --context-profile slim"
+    argv:
+      - hej
+      - --format
+      - json
+      - --capability-context
+      - "{capability}"
+      - --context-profile
+      - slim
+      - --fields
+      - capability_context
+    expand_by: capability
+    profile: slim
+    inventory_classification: change
+    budget_classification: slim_capability
+    measurement_scope: primary
+    fixture: repo_root
+
+  - id: plan
+    command: agentera plan
+    selector: "--format json"
+    argv: [plan, --format, json]
+    inventory_classification: change
+    budget_classification: unbudgeted
+    measurement_scope: primary
+    fixture: repo_root
+
+  - id: progress
+    command: agentera progress
+    selector: "--format json"
+    argv: [progress, --format, json]
+    inventory_classification: change
+    budget_classification: unbudgeted
+    measurement_scope: primary
+    fixture: repo_root
+
+  - id: health
+    command: agentera health
+    selector: "--format json"
+    argv: [health, --format, json]
+    inventory_classification: change
+    budget_classification: unbudgeted
+    measurement_scope: primary
+    fixture: repo_root
+
+  - id: todo
+    command: agentera todo
+    selector: "--format json"
+    argv: [todo, --format, json]
+    inventory_classification: change
+    budget_classification: unbudgeted
+    measurement_scope: primary
+    fixture: repo_root
+
+  - id: decisions
+    command: agentera decisions
+    selector: "--format json"
+    argv: [decisions, --format, json]
+    inventory_classification: change
+    budget_classification: unbudgeted
+    measurement_scope: primary
+    fixture: repo_root
+
+  - id: docs
+    command: agentera docs
+    selector: "--format json"
+    argv: [docs, --format, json]
+    inventory_classification: change
+    budget_classification: unbudgeted
+    measurement_scope: primary
+    fixture: repo_root
+
+  - id: objective
+    command: agentera objective
+    selector: "--format json"
+    argv: [objective, --format, json]
+    inventory_classification: change
+    budget_classification: unbudgeted
+    measurement_scope: primary
+    fixture: repo_root
+
+  - id: experiments
+    command: agentera experiments
+    selector: "--format json"
+    argv: [experiments, --format, json]
+    inventory_classification: change
+    budget_classification: unbudgeted
+    measurement_scope: primary
+    fixture: repo_root
+
+  - id: query-list-artifacts
+    command: agentera query --list-artifacts
+    selector: "--list-artifacts --format json"
+    argv: [query, --list-artifacts, --format, json]
+    inventory_classification: change
+    budget_classification: unbudgeted
+    measurement_scope: primary
+    fixture: repo_root
+
+  - id: query-last-phase
+    command: agentera query last-phase
+    selector: "--format json"
+    argv: [query, last-phase, --format, json]
+    inventory_classification: change
+    budget_classification: unbudgeted
+    measurement_scope: primary
+    fixture: repo_root
+
+  - id: query-open-todos
+    command: agentera query open-todos
+    selector: "--format json"
+    argv: [query, open-todos, --format, json]
+    inventory_classification: change
+    budget_classification: unbudgeted
+    measurement_scope: primary
+    fixture: repo_root
+
+  - id: query-vision
+    command: agentera query vision
+    selector: "--format json"
+    argv: [query, vision, --format, json]
+    inventory_classification: change
+    budget_classification: unbudgeted
+    measurement_scope: primary
+    fixture: repo_root
+
+  - id: query-changelog
+    command: agentera query changelog
+    selector: "--format json"
+    argv: [query, changelog, --format, json]
+    inventory_classification: change
+    budget_classification: unbudgeted
+    measurement_scope: primary
+    fixture: repo_root
+
+  - id: query-design
+    command: agentera query design
+    selector: "--format json"
+    argv: [query, design, --format, json]
+    inventory_classification: defer
+    budget_classification: exempt
+    measurement_scope: primary
+    fixture: repo_root
+
+  - id: compact-check
+    command: agentera compact --mode check
+    selector: "--mode check --format json"
+    argv: [compact, --mode, check, --format, json]
+    inventory_classification: change
+    budget_classification: unbudgeted
+    measurement_scope: primary
+    fixture: isolated_compaction
+
+  - id: compact-fix
+    command: agentera compact --mode fix
+    selector: "--mode fix --format json"
+    argv: [compact, --mode, fix, --format, json]
+    inventory_classification: change
+    budget_classification: unbudgeted
+    measurement_scope: primary
+    fixture: isolated_compaction
+
+  - id: gate
+    command: agentera gate
+    selector: "--format json"
+    argv: [gate, --format, json]
+    inventory_classification: change
+    budget_classification: unbudgeted
+    measurement_scope: primary
+    fixture: isolated_compaction
+
+  - id: lint
+    command: agentera lint
+    selector: "--format json"
+    argv: [lint, --artifact, PROGRESS.md, --text, "# Progress", --format, json]
+    inventory_classification: change
+    budget_classification: unbudgeted
+    measurement_scope: primary
+    fixture: repo_root
+
+  - id: validate-capability
+    command: agentera validate capability hej
+    selector: "--format json"
+    argv: [validate, capability, hej, --format, json]
+    capability: hej
+    inventory_classification: change
+    budget_classification: unbudgeted
+    measurement_scope: primary
+    fixture: repo_root
+
+  - id: validate-artifact
+    command: agentera validate artifact --artifact PLAN.md
+    selector: "--format json"
+    argv:
+      - validate
+      - artifact
+      - --artifact
+      - PLAN.md
+      - --file
+      - .agentera/plan.yaml
+      - --format
+      - json
+    inventory_classification: change
+    budget_classification: unbudgeted
+    measurement_scope: primary
+    fixture: repo_root
+
+  - id: validate-descriptors
+    command: agentera validate descriptors
+    selector: "--format json"
+    argv: [validate, descriptors, --format, json]
+    inventory_classification: change
+    budget_classification: unbudgeted
+    measurement_scope: primary
+    fixture: repo_root
+
+  - id: validate-cross-capability
+    command: agentera validate cross-capability
+    selector: "--format json"
+    argv: [validate, cross-capability, --format, json]
+    inventory_classification: change
+    budget_classification: unbudgeted
+    measurement_scope: primary
+    fixture: repo_root
+
+  - id: validate-lifecycle-adapters
+    command: agentera validate lifecycle-adapters
+    selector: "--format json"
+    argv: [validate, lifecycle-adapters, --format, json]
+    inventory_classification: change
+    budget_classification: unbudgeted
+    measurement_scope: primary
+    fixture: repo_root
+
+  - id: validate-capability-contract
+    command: agentera validate capability-contract
+    selector: "--format json"
+    argv: [validate, capability-contract, --format, json]
+    inventory_classification: change
+    budget_classification: unbudgeted
+    measurement_scope: primary
+    fixture: repo_root
+
+  - id: upgrade-dry-run
+    command: agentera upgrade
+    selector: "--dry-run --json"
+    argv: [upgrade, --dry-run, --json]
+    inventory_classification: change
+    budget_classification: unbudgeted
+    measurement_scope: primary
+    fixture: repo_root
+
+  - id: doctor
+    command: agentera doctor
+    selector: "--json"
+    argv: [doctor, --json]
+    inventory_classification: change
+    budget_classification: unbudgeted
+    measurement_scope: primary
+    fixture: temp_app_home
+
+  - id: usage
+    command: agentera usage
+    selector: "--format json"
+    argv: [usage, --format, json]
+    inventory_classification: change
+    budget_classification: unbudgeted
+    measurement_scope: primary
+    fixture: repo_root
+
+  - id: stats-missing-corpus
+    command: agentera stats
+    selector: "--format json (corpus missing)"
+    argv: [stats, --format, json]
+    inventory_classification: change
+    budget_classification: unbudgeted
+    measurement_scope: primary
+    fixture: temp_profile_empty
+
+  - id: stats-ready-corpus
+    command: agentera stats
+    selector: "--format json (corpus ready)"
+    argv: [stats, --format, json]
+    inventory_classification: change
+    budget_classification: unbudgeted
+    measurement_scope: primary
+    fixture: temp_profile_with_corpus
+
+  - id: stats-refresh-dry-run
+    command: agentera stats refresh
+    selector: "--dry-run --format json"
+    argv: [stats, refresh, --dry-run, --format, json]
+    inventory_classification: change
+    budget_classification: unbudgeted
+    measurement_scope: primary
+    fixture: temp_profile_empty
+
+  - id: stats-refresh-consent
+    command: agentera stats refresh
+    selector: "--consent local-history --format json"
+    argv:
+      - stats
+      - refresh
+      - --consent
+      - local-history
+      - --format
+      - json
+      - --project-root
+      - "{repo_root}"
+    inventory_classification: change
+    budget_classification: unbudgeted
+    measurement_scope: primary
+    fixture: temp_profile_empty
+
+  - id: usage-stats-helper
+    command: scripts/usage_stats.py
+    selector: "--json"
+    argv: [usage_stats.py, --json]
+    inventory_classification: preserve
+    budget_classification: exempt
+    measurement_scope: primary
+    fixture: helper_usage_stats
+
+  - id: validate-app-home-contract
+    command: agentera validate app-home-contract
+    selector: "--format json"
+    argv: [validate, app-home-contract, --format, json]
+    inventory_classification: diagnostic
+    budget_classification: diagnostic
+    measurement_scope: diagnostic
+    fixture: repo_root
+
+  - id: verify-smoke-installed-skills
+    command: agentera verify smoke installed-skills
+    selector: "--format json"
+    argv: [verify, smoke, installed-skills, --format, json]
+    inventory_classification: diagnostic
+    budget_classification: diagnostic
+    measurement_scope: diagnostic
+    fixture: repo_root
+
+  - id: verify-smoke-live-hosts
+    command: agentera verify smoke live-hosts
+    selector: "--format json"
+    argv: [verify, smoke, live-hosts, --format, json]
+    inventory_classification: diagnostic
+    budget_classification: diagnostic
+    measurement_scope: diagnostic
+    fixture: repo_root
+
+  - id: verify-smoke-setup-helpers
+    command: agentera verify smoke setup-helpers
+    selector: "--format json"
+    argv: [verify, smoke, setup-helpers, --format, json]
+    inventory_classification: diagnostic
+    budget_classification: diagnostic
+    measurement_scope: diagnostic
+    fixture: repo_root
+
+  - id: verify-smoke-opencode-bootstrap
+    command: agentera verify smoke opencode-bootstrap
+    selector: "--format json"
+    argv: [verify, smoke, opencode-bootstrap, --format, json]
+    inventory_classification: diagnostic
+    budget_classification: diagnostic
+    measurement_scope: diagnostic
+    fixture: repo_root
+
+  - id: verify-eval-skills
+    command: agentera verify eval skills
+    selector: "--format json"
+    argv: [verify, eval, skills, --format, json]
+    inventory_classification: diagnostic
+    budget_classification: diagnostic
+    measurement_scope: diagnostic
+    fixture: repo_root
+
+  - id: verify-eval-semantic
+    command: agentera verify eval semantic
+    selector: "--format json"
+    argv:
+      - verify
+      - eval
+      - semantic
+      - fixtures/semantic/hej-bare-message.md
+      - --format
+      - json
+    inventory_classification: diagnostic
+    budget_classification: diagnostic
+    measurement_scope: diagnostic
+    fixture: repo_root
