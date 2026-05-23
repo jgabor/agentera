@@ -117,6 +117,21 @@ When adding a new helper, either expose a stable `agentera` namespace for normal
 use or document why the helper is internal/maintainer-only. Do not add broad new
 top-level CLI commands for implementation details.
 
+## Running tests
+
+Use the same command as lefthook pre-commit (`.lefthook.yml`). Do not run bare
+`uv run pytest` from the repo root.
+
+```bash
+uv run --with pytest --with pyyaml --with pytest-xdist pytest tests/ -q -n auto
+```
+
+Pitfalls:
+
+- **`uv run pytest` without `tests/`** discovers ~49k parametrized cases outside the intended suite and can run for many minutes or appear hung. Always pass `tests/`.
+- **Piping pytest through `tail`** buffers all output until the run finishes, which looks like a stall even when tests are progressing.
+- **`uv run pytest tests/` without `-n auto`** still passes (~1200 tests) but takes ~3 minutes instead of ~1 minute with xdist.
+
 ## Agentera commits
 
 - Commit messages should be concise, imperative descriptions of the actual product or project change, for example `add config file contract` or `fix: remove tui phase ownership`, depending on the active projects' conventions.

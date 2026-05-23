@@ -933,6 +933,32 @@ class TestHealth:
         assert "Freshness: B" in r.stdout
         assert "Freshness: D" not in r.stdout
 
+    def test_health_json_uses_highest_audit_number_when_list_ascending(self, project):
+        _write_artifact(project, ".agentera/health.yaml", {
+            "audits": [
+                {
+                    "number": 11,
+                    "date": "2026-04-24",
+                    "trajectory": "old",
+                    "grades": {"Freshness": "D"},
+                },
+                {
+                    "number": 20,
+                    "date": "2026-05-05",
+                    "trajectory": "current",
+                    "grades": {"Freshness": "B"},
+                },
+            ],
+        })
+
+        r = _run("health", "--format", "json", cwd=project)
+
+        assert r.returncode == 0
+        data = json.loads(r.stdout)
+        assert data["entries"][0]["number"] == 20
+        assert data["entries"][0]["date"] == "2026-05-05"
+        assert data["entries"][0]["trajectory"] == "current"
+
     def test_fail_missing_artifact(self, project):
         r = _run("health", cwd=project)
         assert r.returncode == 0
@@ -3659,6 +3685,161 @@ class TestHej:
         assert len(stale_attentions) > 0
         assert any("stale" in a for a in stale_attentions)
         assert any("suggest running profilera" in a for a in stale_attentions)
+
+    def _write_health_audit(
+        self,
+        project: Path,
+        number: int,
+        audit_date: str,
+        *,
+        trajectory: str = "stable",
+    ) -> None:
+        _write_artifact(project, ".agentera/health.yaml", {
+            "audits": [{
+                "number": number,
+                "date": audit_date,
+                "trajectory": trajectory,
+                "grades": {"Architecture": "B"},
+            }],
+        })
+
+    def _write_progress_cycles(self, project: Path, timestamps: list[str]) -> None:
+        _write_artifact(project, ".agentera/progress.yaml", {
+            "cycles": [
+                {
+                    "number": index + 1,
+                    "timestamp": timestamp,
+                    "type": "build",
+                    "phase": "build",
+                }
+                for index, timestamp in enumerate(timestamps)
+            ],
+        })
+
+    def test_hej_health_uses_highest_audit_when_list_ascending(self, project):
+        _write_artifact(project, ".agentera/health.yaml", {
+            "audits": [
+                {
+                    "number": 11,
+                    "date": "2026-04-24",
+                    "trajectory": "old",
+                    "grades": {"Architecture": "D"},
+                },
+                {
+                    "number": 20,
+                    "date": "2026-05-05",
+                    "trajectory": "current",
+                    "grades": {"Architecture": "B"},
+                },
+            ],
+        })
+        r = _run("hej", "--format", "json", cwd=project)
+        assert r.returncode == 0
+        data = json.loads(r.stdout)
+        assert data["health"]["number"] == 20
+        assert data["health"]["date"] == "2026-05-05"
+
+    def test_stale_health_audit_time_axis_shows_attention(self, project):
+        old_date = (date.today() - timedelta(days=35)).isoformat()
+        self._write_health_audit(project, 5, old_date)
+        r = _run("hej", cwd=project)
+        assert r.returncode == 0
+        assert "inspektera audit stale" in r.stdout
+        assert "suggest running inspektera" in r.stdout
+
+    def test_stale_health_audit_time_axis_structured_output(self, project):
+        old_date = (date.today() - timedelta(days=35)).isoformat()
+        self._write_health_audit(project, 5, old_date)
+        r = _run("hej", "--format", "json", cwd=project)
+        assert r.returncode == 0
+        data = json.loads(r.stdout)
+        assert data["health"]["stale"] is True
+        assert data["health"]["days_since_audit"] >= 35
+        assert data["health"]["stale_threshold_days"] == 30
+        assert data["health"]["triggering_axis"] == "time"
+        assert "Run inspektera" in data["health"]["suggested_action"]
+
+    def test_fresh_health_audit_no_stale_attention(self, project):
+        self._write_health_audit(project, 5, date.today().isoformat())
+        r = _run("hej", cwd=project)
+        assert r.returncode == 0
+        assert "inspektera audit stale" not in r.stdout
+
+    def test_stale_health_audit_cycles_axis(self, project):
+        audit_date = (date.today() - timedelta(days=1)).isoformat()
+        self._write_health_audit(project, 8, audit_date)
+        self._write_progress_cycles(
+            project,
+            [f"{date.today().isoformat()} {hour:02d}:00" for hour in range(11)],
+        )
+        r = _run("hej", "--format", "json", cwd=project)
+        assert r.returncode == 0
+        data = json.loads(r.stdout)
+        assert data["health"]["stale"] is True
+        assert data["health"]["triggering_axis"] == "cycles"
+        assert data["health"]["cycles_since_audit"] >= 10
+
+    def test_env_var_overrides_inspektera_age_threshold(self, project):
+        old_date = (date.today() - timedelta(days=15)).isoformat()
+        self._write_health_audit(project, 5, old_date)
+        env = {
+            **os.environ,
+            "AGENTERA_HOME": str(REPO_ROOT),
+            "AGENTERA_INSPEKTERA_MAX_AGE_DAYS": "14",
+        }
+        r = subprocess.run(
+            [sys.executable, CLI, "hej", "--format", "json"],
+            capture_output=True, text=True, cwd=project, env=env,
+        )
+        assert r.returncode == 0
+        data = json.loads(r.stdout)
+        assert data["health"]["stale"] is True
+        assert data["health"]["stale_threshold_days"] == 14
+        assert data["health"]["triggering_axis"] == "time"
+
+    def test_invalid_inspektera_env_threshold_uses_default(self, project):
+        old_date = (date.today() - timedelta(days=15)).isoformat()
+        self._write_health_audit(project, 5, old_date)
+        env = {
+            **os.environ,
+            "AGENTERA_HOME": str(REPO_ROOT),
+            "AGENTERA_INSPEKTERA_MAX_AGE_DAYS": "not-a-number",
+        }
+        r = subprocess.run(
+            [sys.executable, CLI, "hej", "--format", "json"],
+            capture_output=True, text=True, cwd=project, env=env,
+        )
+        assert r.returncode == 0
+        data = json.loads(r.stdout)
+        assert data["health"]["stale"] is False
+        assert data["health"]["stale_threshold_days"] == 30
+
+    def test_stale_audit_next_action_suggests_inspektera(self, project):
+        old_date = (date.today() - timedelta(days=35)).isoformat()
+        self._write_health_audit(project, 7, old_date)
+        _write_artifact(project, ".agentera/plan.yaml", {
+            "header": {"status": "active", "title": "completed plan"},
+            "tasks": [{"number": 1, "name": "done", "status": "complete"}],
+        })
+        r = _run("hej", "--format", "json", cwd=project)
+        assert r.returncode == 0
+        data = json.loads(r.stdout)
+        assert data["next_action"]["capability"] == "inspektera"
+        assert "Audit 7" in data["next_action"]["object"]
+
+    def test_prime_inspektera_health_state_matches_hej_audit_date(self, project):
+        _write_artifact(project, ".agentera/health.yaml", {
+            "audits": [
+                {"number": 11, "date": "2026-04-24", "trajectory": "old", "grades": {"Architecture": "D"}},
+                {"number": 20, "date": "2026-05-05", "trajectory": "current", "grades": {"Architecture": "B"}},
+            ],
+        })
+        hej = json.loads(_run("hej", "--format", "json", cwd=project).stdout)
+        prime = json.loads(_run("prime", "--context", "inspektera", "--format", "json", cwd=project).stdout)
+        evidence = prime["capability_context"]["context"]["evidence_context"]["health_state"]
+        assert hej["health"]["number"] == 20
+        assert evidence["audit_number"] == 20
+        assert evidence["date"] == "2026-05-05"
 
 
 # ---------------------------------------------------------------------------

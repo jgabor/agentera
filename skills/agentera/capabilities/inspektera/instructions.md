@@ -497,6 +497,8 @@ Run ⛶ inspektera every 5-10 realisera cycles, or when:
 - The codebase "feels" harder to work in
 - Before a major architectural decision (to understand current state)
 
+Hej mirrors this cadence through hybrid audit staleness: `agentera hej` marks a health audit stale when days since the latest audit date reach `AGENTERA_INSPEKTERA_MAX_AGE_DAYS` (default 30) or progress cycles after that audit date reach `AGENTERA_INSPEKTERA_MAX_CYCLES` (default 10). Either axis exceeding its threshold is enough; when progress is absent, time-only evaluation still applies.
+
 ### Targeted audits
 
 ```

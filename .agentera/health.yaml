@@ -1,427 +1,4 @@
 audits:
-- number: 11
-  date: '2026-04-24'
-  dimensions:
-  - architecture alignment
-  - pattern consistency
-  - coupling health
-  - complexity hotspots
-  - test health
-  - version health
-  - artifact freshness
-  - security hygiene
-  - dependency health
-  findings_summary:
-    critical: 0
-    warning: 9
-    info: 3
-    filtered_by_confidence: 0
-  trajectory: stable vs Audit 10. Runtime portability moved forward, but collector
-    validation and metadata drift guards need one cleanup pass.
-  grades:
-    Architecture: B
-    Patterns: B
-    Coupling: B
-    Complexity: B
-    Tests: B
-    Version: B
-    Freshness: B
-    Security: B
-    Deps: A
-  dimension_details:
-  - name: Architecture alignment
-    grade: B
-    summary: The plan matches VISION.md's portable-runtime direction. Shared skill
-      sources remain intact, and runtime adapters stay thin.
-    findings:
-    - heading: "\u21C9 Section 21 record shape conflicts with SPEC, warning (confidence:\
-        \ 80)"
-      severity: warning
-      confidence: 80
-      location: '`SPEC.md:1011`, `SPEC.md:1168`, `SPEC.md:1191`, `skills/profilera/scripts/extract_all.py:1105`
-
-        - **Evidence**: SPEC examples put domain fields at record top level. The extractor
-        wraps them under `data`.
-
-        - **Impact**: Consumers written against SPEC may miss record fields.
-
-        - **Suggested action**: Flatten records or update SPEC and consumers to bless
-        the `data` envelope.'
-      evidence: 'SPEC examples put domain fields at record top level. The extractor
-        wraps them under `data`.
-
-        - **Impact**: Consumers written against SPEC may miss record fields.
-
-        - **Suggested action**: Flatten records or update SPEC and consumers to bless
-        the `data` envelope.'
-      impact: 'Consumers written against SPEC may miss record fields.
-
-        - **Suggested action**: Flatten records or update SPEC and consumers to bless
-        the `data` envelope.'
-      suggested_action: Flatten records or update SPEC and consumers to bless the
-        `data` envelope.
-  - name: Pattern consistency
-    grade: B
-    summary: Adapter metadata is mostly consistent. The repeated Codex/profilera policy
-      fields remain a drift risk.
-    findings:
-    - heading: "\u21C9 Copilot profilera gating is documented but not present in Copilot\
-        \ metadata, warning (confidence: 90)"
-      severity: warning
-      confidence: 90
-      location: '`README.md:31`, `.github/plugin/plugin.json:1`, `.codex-plugin/plugin.json:63`
-
-        - **Evidence**: README says Copilot and Codex metadata gate profilera. Copilot
-        metadata only exposes package-level paths.
-
-        - **Impact**: Copilot users do not see the native profilera caveat through
-        metadata.
-
-        - **Suggested action**: Add supported Copilot metadata if available, or narrow
-        the README claim.'
-      evidence: 'README says Copilot and Codex metadata gate profilera. Copilot metadata
-        only exposes package-level paths.
-
-        - **Impact**: Copilot users do not see the native profilera caveat through
-        metadata.
-
-        - **Suggested action**: Add supported Copilot metadata if available, or narrow
-        the README claim.'
-      impact: 'Copilot users do not see the native profilera caveat through metadata.
-
-        - **Suggested action**: Add supported Copilot metadata if available, or narrow
-        the README claim.'
-      suggested_action: Add supported Copilot metadata if available, or narrow the
-        README claim.
-    - heading: "\u21C9 Codex profilera policy is duplicated across three surfaces,\
-        \ warning (confidence: 75)"
-      severity: warning
-      confidence: 75
-      location: '`.codex-plugin/plugin.json:63`, `agents/openai.yaml:31`, `skills/profilera/agents/openai.yaml:1`
-
-        - **Evidence**: Runtime support, implicit policy, and capability limits are
-        repeated manually.
-
-        - **Impact**: Capability wording can drift again.
-
-        - **Suggested action**: Validate these fields across all Codex metadata surfaces.'
-      evidence: 'Runtime support, implicit policy, and capability limits are repeated
-        manually.
-
-        - **Impact**: Capability wording can drift again.
-
-        - **Suggested action**: Validate these fields across all Codex metadata surfaces.'
-      impact: 'Capability wording can drift again.
-
-        - **Suggested action**: Validate these fields across all Codex metadata surfaces.'
-      suggested_action: Validate these fields across all Codex metadata surfaces.
-  - name: Coupling health
-    grade: B
-    summary: Runtime-specific files remain isolated. Two adapter assumptions should
-      be tightened before another runtime pass.
-    findings:
-    - heading: "\u21C9 OpenCode hook validation can no-op after documented manual\
-        \ install, warning (confidence: 85)"
-      severity: warning
-      confidence: 85
-      location: '`README.md:64`, `README.md:98`, `.opencode/plugins/agentera.js:175`
-
-        - **Evidence**: README clones to `~/.agents/agentera`; plugin defaults to
-        `~/.agents/skills/agentera` unless `AGENTERA_HOME` is set.
-
-        - **Impact**: Artifact validation can silently skip if the documented path
-        is used.
-
-        - **Suggested action**: Document `AGENTERA_HOME` or align the default path.'
-      evidence: 'README clones to `~/.agents/agentera`; plugin defaults to `~/.agents/skills/agentera`
-        unless `AGENTERA_HOME` is set.
-
-        - **Impact**: Artifact validation can silently skip if the documented path
-        is used.
-
-        - **Suggested action**: Document `AGENTERA_HOME` or align the default path.'
-      impact: 'Artifact validation can silently skip if the documented path is used.
-
-        - **Suggested action**: Document `AGENTERA_HOME` or align the default path.'
-      suggested_action: Document `AGENTERA_HOME` or align the default path.
-    - heading: "\u21C9 Lifecycle validator skips list-form Copilot hook paths, warning\
-        \ (confidence: 75)"
-      severity: warning
-      confidence: 75
-      location: '`scripts/validate_lifecycle_adapters.py:65`, `scripts/validate_lifecycle_adapters.py:74`
-
-        - **Evidence**: `hooks` may be a string or list. Hook file validation returns
-        unless it is a string.
-
-        - **Impact**: Future list-form hook metadata could bypass event and handler
-        checks.
-
-        - **Suggested action**: Normalize to a list and validate each path.'
-      evidence: '`hooks` may be a string or list. Hook file validation returns unless
-        it is a string.
-
-        - **Impact**: Future list-form hook metadata could bypass event and handler
-        checks.
-
-        - **Suggested action**: Normalize to a list and validate each path.'
-      impact: 'Future list-form hook metadata could bypass event and handler checks.
-
-        - **Suggested action**: Normalize to a list and validate each path.'
-      suggested_action: Normalize to a list and validate each path.
-  - name: Complexity hotspots
-    grade: B
-    summary: '`build_corpus()` now carries three runtimes, family status aggregation,
-      exception handling, and validation in one function.'
-    findings:
-    - heading: "\u21C9 build_corpus() is a growing orchestration hotspot, warning\
-        \ (confidence: 80)"
-      severity: warning
-      confidence: 80
-      location: '`skills/profilera/scripts/extract_all.py:1358`
-
-        - **Evidence**: One function orchestrates Claude, Copilot, Codex, statuses,
-        errors, and metadata assembly.
-
-        - **Impact**: New runtimes will add branch duplication and inconsistent status
-        handling risk.
-
-        - **Suggested action**: Extract a small runtime collector abstraction before
-        adding another runtime.'
-      evidence: 'One function orchestrates Claude, Copilot, Codex, statuses, errors,
-        and metadata assembly.
-
-        - **Impact**: New runtimes will add branch duplication and inconsistent status
-        handling risk.
-
-        - **Suggested action**: Extract a small runtime collector abstraction before
-        adding another runtime.'
-      impact: 'New runtimes will add branch duplication and inconsistent status handling
-        risk.
-
-        - **Suggested action**: Extract a small runtime collector abstraction before
-        adding another runtime.'
-      suggested_action: Extract a small runtime collector abstraction before adding
-        another runtime.
-  - name: Test health
-    grade: B
-    summary: The full suite passes with 337 tests. New collector tests cover core
-      paths, but validation remains looser than the contract.
-    findings:
-    - heading: "\u21C9 Corpus envelope validation is too shallow, warning (confidence:\
-        \ 85)"
-      severity: warning
-      confidence: 85
-      location: '`skills/profilera/scripts/extract_all.py:1300`, `tests/test_extract_all.py:690`
-
-        - **Evidence**: Validation checks counts and duplicate IDs, but not required
-        metadata fields or family shape.
-
-        - **Impact**: Invalid Section 21 metadata can pass Task 6 validation.
-
-        - **Suggested action**: Validate `extracted_at`, `adapter_version`, `families`,
-        statuses, and per-runtime consistency.'
-      evidence: 'Validation checks counts and duplicate IDs, but not required metadata
-        fields or family shape.
-
-        - **Impact**: Invalid Section 21 metadata can pass Task 6 validation.
-
-        - **Suggested action**: Validate `extracted_at`, `adapter_version`, `families`,
-        statuses, and per-runtime consistency.'
-      impact: 'Invalid Section 21 metadata can pass Task 6 validation.
-
-        - **Suggested action**: Validate `extracted_at`, `adapter_version`, `families`,
-        statuses, and per-runtime consistency.'
-      suggested_action: Validate `extracted_at`, `adapter_version`, `families`, statuses,
-        and per-runtime consistency.
-    - heading: "\u21E2 Collector tests miss secondary Copilot/Codex paths, info (confidence:\
-        \ 70)"
-      severity: info
-      confidence: 70
-      location: '`skills/profilera/scripts/extract_all.py:917`, `skills/profilera/scripts/extract_all.py:1081`,
-        `tests/test_extract_all.py:625`
-
-        - **Evidence**: Tests cover Copilot settings and Codex sessions, not Copilot
-        instruction docs, plugin manifests, Codex history, or config redaction.
-
-        - **Impact**: Regressions in advertised secondary surfaces could pass.
-
-        - **Suggested action**: Add targeted fixtures for each advertised source family
-        path.'
-      evidence: 'Tests cover Copilot settings and Codex sessions, not Copilot instruction
-        docs, plugin manifests, Codex history, or config redaction.
-
-        - **Impact**: Regressions in advertised secondary surfaces could pass.
-
-        - **Suggested action**: Add targeted fixtures for each advertised source family
-        path.'
-      impact: 'Regressions in advertised secondary surfaces could pass.
-
-        - **Suggested action**: Add targeted fixtures for each advertised source family
-        path.'
-      suggested_action: Add targeted fixtures for each advertised source family path.
-  - name: Version health
-    grade: B
-    summary: Version values are aligned at 1.18.0 where tests check them. The convention
-      omits one enforced target.
-    findings:
-    - heading: "\u21C9 OpenCode version signal is test-enforced but absent from DOCS\
-        \ version_files, warning (confidence: 80)"
-      severity: warning
-      confidence: 80
-      location: '`.agentera/DOCS.md:13`, `.opencode/plugins/agentera.js:9`, `tests/test_runtime_adapters.py:219`
-
-        - **Evidence**: Tests require `AGENTERA_VERSION` to match registry. DOCS version_files
-        does not list the OpenCode plugin.
-
-        - **Impact**: Release instructions can miss a CI-enforced version target.
-
-        - **Suggested action**: Add `.opencode/plugins/agentera.js` to DOCS version_files
-        or document the derived marker.'
-      evidence: 'Tests require `AGENTERA_VERSION` to match registry. DOCS version_files
-        does not list the OpenCode plugin.
-
-        - **Impact**: Release instructions can miss a CI-enforced version target.
-
-        - **Suggested action**: Add `.opencode/plugins/agentera.js` to DOCS version_files
-        or document the derived marker.'
-      impact: 'Release instructions can miss a CI-enforced version target.
-
-        - **Suggested action**: Add `.opencode/plugins/agentera.js` to DOCS version_files
-        or document the derived marker.'
-      suggested_action: Add `.opencode/plugins/agentera.js` to DOCS version_files
-        or document the derived marker.
-  - name: Artifact freshness
-    grade: B
-    summary: Task 8 refreshed TODO, CHANGELOG, PROGRESS, and DOCS. HEALTH needed this
-      audit to replace stale collector wording.
-    findings:
-    - heading: "\u21C9 DOCS Plan index is stale, warning (confidence: 95)"
-      severity: warning
-      confidence: 95
-      location: '`.agentera/DOCS.md:54`, `.agentera/PLAN.md:3`
-
-        - **Evidence**: DOCS says plan date `2026-04-23` and completed. PLAN is `Created:
-        2026-04-24` and top-level `Status: active`.
-
-        - **Impact**: Orientation consumers see contradictory plan state.
-
-        - **Suggested action**: Let orkestrera finish plan status, then refresh DOCS
-        Plan row.'
-      evidence: 'DOCS says plan date `2026-04-23` and completed. PLAN is `Created:
-        2026-04-24` and top-level `Status: active`.
-
-        - **Impact**: Orientation consumers see contradictory plan state.
-
-        - **Suggested action**: Let orkestrera finish plan status, then refresh DOCS
-        Plan row.'
-      impact: 'Orientation consumers see contradictory plan state.
-
-        - **Suggested action**: Let orkestrera finish plan status, then refresh DOCS
-        Plan row.'
-      suggested_action: Let orkestrera finish plan status, then refresh DOCS Plan
-        row.
-    - heading: "\u21E2 Historical HEALTH collector wording is stale, info (confidence:\
-        \ 90)"
-      severity: info
-      confidence: 90
-      location: '`.agentera/HEALTH.md:92`, `.agentera/PROGRESS.md:25`
-
-        - **Evidence**: Audit 10 says collectors do not exist. Cycles 137-140 record
-        Copilot/Codex collectors and validation.
-
-        - **Impact**: Reading only the prior audit can mislead.
-
-        - **Suggested action**: Treat this Audit 11 entry as the resolution marker.'
-      evidence: 'Audit 10 says collectors do not exist. Cycles 137-140 record Copilot/Codex
-        collectors and validation.
-
-        - **Impact**: Reading only the prior audit can mislead.
-
-        - **Suggested action**: Treat this Audit 11 entry as the resolution marker.'
-      impact: 'Reading only the prior audit can mislead.
-
-        - **Suggested action**: Treat this Audit 11 entry as the resolution marker.'
-      suggested_action: Treat this Audit 11 entry as the resolution marker.
-  - name: Security hygiene
-    grade: B
-    summary: No committed secrets were found. One collector can copy sensitive local
-      config values into generated corpus data.
-    findings:
-    - heading: "\u21C9 Copilot config extraction can copy sensitive primitive values,\
-        \ warning (confidence: 85)"
-      severity: warning
-      confidence: 85
-      location: '`skills/profilera/scripts/extract_all.py:902`, `skills/profilera/scripts/extract_all.py:949`,
-        `skills/profilera/scripts/extract_all.py:1066`
-
-        - **Evidence**: Copilot JSON signals include primitive values verbatim. Codex
-        config extraction filters sensitive key names.
-
-        - **Impact**: Tokens in `~/.copilot/settings.json` could be written to `corpus.json`.
-
-        - **Suggested action**: Reuse the Codex sensitive-key filter for Copilot JSON
-        signals and test it.'
-      evidence: 'Copilot JSON signals include primitive values verbatim. Codex config
-        extraction filters sensitive key names.
-
-        - **Impact**: Tokens in `~/.copilot/settings.json` could be written to `corpus.json`.
-
-        - **Suggested action**: Reuse the Codex sensitive-key filter for Copilot JSON
-        signals and test it.'
-      impact: 'Tokens in `~/.copilot/settings.json` could be written to `corpus.json`.
-
-        - **Suggested action**: Reuse the Codex sensitive-key filter for Copilot JSON
-        signals and test it.'
-      suggested_action: Reuse the Codex sensitive-key filter for Copilot JSON signals
-        and test it.
-  - name: Dependency health
-    grade: A
-    summary: "No new Python dependencies were added. Adapter validation and profilera\
-      \ collectors stay stdlib-only. OpenCode remains isolated behind its existing\
-      \ exact-pinned Node plugin package. ### Trends vs Audit 10 - **Improved**: DOCS\
-      \ coverage and test count are current at 337 tests. Runtime metadata validates\
-      \ across Claude, Copilot, Codex, and OpenCode local checks. - **Degraded**:\
-      \ Tests A\u2192B and Security A\u2192B because new collector breadth exposed\
-      \ validation and redaction gaps. - **New findings**: Copilot config redaction,\
-      \ Section 21 schema shape, shallow envelope validation, OpenCode version convention,\
-      \ DOCS Plan row. - **Resolved**: Audit 10 DOCS coverage warning and collector-unavailable\
-      \ wording are resolved by this plan. ### Patterns Observed - Module structure:\
-      \ shared skill sources with host adapters in `.claude-plugin/`, `.github/`,\
-      \ `.codex-plugin/`, `agents/`, and `.opencode/`. - Adapter strategy: local validators\
-      \ catch schema drift, while Copilot/Codex live host behavior remains metadata-level.\
-      \ - Testing approach: pytest validates metadata and extractor envelopes, but\
-      \ live host smoke tests are still unavailable. - Collector pattern: bounded\
-      \ runtime probes report missing families instead of inventing records."
-    findings: []
-  trends:
-    improved: "DOCS coverage and test count are current at 337 tests. Runtime metadata\
-      \ validates across Claude, Copilot, Codex, and OpenCode local checks.\n- **Degraded**:\
-      \ Tests A\u2192B and Security A\u2192B because new collector breadth exposed\
-      \ validation and redaction gaps.\n- **New findings**: Copilot config redaction,\
-      \ Section 21 schema shape, shallow envelope validation, OpenCode version convention,\
-      \ DOCS Plan row.\n- **Resolved**: Audit 10 DOCS coverage warning and collector-unavailable\
-      \ wording are resolved by this plan."
-    degraded: "Tests A\u2192B and Security A\u2192B because new collector breadth\
-      \ exposed validation and redaction gaps.\n- **New findings**: Copilot config\
-      \ redaction, Section 21 schema shape, shallow envelope validation, OpenCode\
-      \ version convention, DOCS Plan row.\n- **Resolved**: Audit 10 DOCS coverage\
-      \ warning and collector-unavailable wording are resolved by this plan."
-    new_findings: 'Copilot config redaction, Section 21 schema shape, shallow envelope
-      validation, OpenCode version convention, DOCS Plan row.
-
-      - **Resolved**: Audit 10 DOCS coverage warning and collector-unavailable wording
-      are resolved by this plan.'
-    resolved: Audit 10 DOCS coverage warning and collector-unavailable wording are
-      resolved by this plan.
-  patterns:
-  - 'Module structure: shared skill sources with host adapters in `.claude-plugin/`,
-    `.github/`, `.codex-plugin/`, `agents/`, and `.opencode/`.'
-  - 'Adapter strategy: local validators catch schema drift, while Copilot/Codex live
-    host behavior remains metadata-level.'
-  - 'Testing approach: pytest validates metadata and extractor envelopes, but live
-    host smoke tests are still unavailable.'
-  - 'Collector pattern: bounded runtime probes report missing families instead of
-    inventing records.'
 - number: 12
   date: '2026-04-25'
   dimensions:
@@ -1850,7 +1427,130 @@ audits:
   - 'Runtime pattern: packaging metadata targets Claude Code, OpenCode, Copilot, and
     Codex while shared bundle infrastructure lives under root `scripts/`, `hooks/`,
     and manifests.'
+- number: 21
+  date: '2026-05-23'
+  dimensions:
+  - architecture alignment
+  - pattern consistency
+  - coupling health
+  - complexity hotspots
+  - test health
+  - dependency health
+  - version health
+  - artifact freshness
+  - prose health
+  - security hygiene
+  findings_summary:
+    critical: 0
+    warning: 2
+    info: 1
+    filtered_by_confidence: 0
+  trajectory: improving vs Audit 20. Health CLI now selects the latest audit by number,
+    hej exposes hybrid inspektera staleness, and Audit 20 stale-history warning is
+    resolved; uncommitted feat work remains a release cleanup item.
+  grades:
+    Architecture: A
+    Patterns: A
+    Coupling: A
+    Complexity: B
+    Tests: A
+    Deps: B
+    Version: B
+    Freshness: A
+    Prose: A
+    Security: A
+  dimension_details:
+  - name: Architecture alignment
+    grade: A
+    summary: Hybrid audit staleness extends the profilera profile-age seam in scripts/agentera
+      without duplicating plan-relative artifact freshness in hej.
+    findings: []
+  - name: Pattern consistency
+    grade: A
+    summary: Inspektera staleness mirrors profilera env-threshold parsing, structured
+      hej metadata, and attention copy.
+    findings: []
+  - name: Coupling health
+    grade: A
+    summary: Latest-audit selection and staleness helpers stay inside scripts/agentera
+      and are shared by health, hej, and prime evidence state.
+    findings: []
+  - name: Complexity hotspots
+    grade: B
+    summary: scripts/agentera grew with hybrid staleness helpers, but responsibilities
+      remain sectioned and covered by focused regressions.
+    findings: []
+  - name: Test health
+    grade: A
+    summary: Full pytest reported 1199 passed, 1 failed before active plan removal;
+      nine hybrid-staleness regressions pass and Audit 20 health-selection gap is
+      closed.
+    findings: []
+  - name: Dependency health
+    grade: B
+    summary: 'Python dependency surface unchanged: pyproject.toml -> pyyaml 6.0.3.'
+    findings: []
+  - name: Version health
+    grade: B
+    summary: Release surfaces report 2.6.1, but uncommitted hybrid-staleness feat
+      work and post-2.6.1 fixes remain without a coordinated bump.
+    findings:
+    - heading: "\u21C9 Unreleased feat/fix work since 2.6.1, warning (confidence:\
+        \ 88)"
+      severity: warning
+      confidence: 88
+      location: '`pyproject.toml:7`, recent git history'
+      evidence: Checkout includes hybrid audit staleness CLI work and upgrade postflight
+        fixes after 2.6.1 release surfaces were aligned.
+      impact: Installed app metadata and changelog can drift from the working tree
+        until a release commit lands.
+      suggested_action: Fold hybrid staleness into one commit and run release metadata
+        sync when ready.
+  - name: Artifact freshness
+    grade: A
+    summary: _latest_health_audit and schema date fields now drive health, hej, and
+      prime evidence state; hej hybrid staleness surfaces overdue audits.
+    findings:
+    - heading: "\u21E2 Audit 20 stale health selection resolved, info (confidence:\
+        \ 96)"
+      severity: info
+      confidence: 96
+      location: '`scripts/agentera`, `tests/test_query_cli.py`'
+      evidence: uv run scripts/agentera health --format json returns Audit 20 from
+        ascending-order fixtures; hej reports Audit 20 with hybrid stale metadata.
+      impact: Orientation no longer misreads older audits when health.yaml lists audits
+        ascending by number.
+      suggested_action: Treat this Audit 21 entry as the resolution marker for Audit
+        20 artifact-freshness warning.
+  - name: Prose health
+    grade: A
+    summary: Hej and inspektera instruction updates stay compact and name the env-var
+      contract explicitly.
+    findings: []
+  - name: Security hygiene
+    grade: A
+    summary: Hybrid staleness changes add date parsing and progress counting only;
+      no new secret handling paths were introduced.
+    findings: []
+  trends:
+    improved: Health CLI and hej now agree on latest audit number and date; hybrid
+      inspektera staleness closes the orientation gap profilera already covered for
+      profiles.
+    degraded: None material beyond normal release-prep drift.
+    stable: Architecture, patterns, coupling, dependency, prose, and security remain
+      healthy.
+    new_findings: Unreleased post-2.6.1 feat/fix work.
+    resolved: Audit 20 direct health state command stale audit history warning.
+  patterns:
+  - 'Orientation staleness: profilera profile age and inspektera audit age both surface
+    through hej attention with env-configurable thresholds.'
+  - 'Health state: latest audit selection by number is shared across health, hej,
+    and prime evidence context in the checkout CLI.'
+  - 'Testing approach: hybrid staleness adds focused hej and health regressions alongside
+    the existing query-cli contract suite.'
 archive:
+- summary: 'Audit 11 (2026-04-24): stable vs Audit 10. Runtime portability moved forward,
+    but collector validation and metadata drift guards...'
 - summary: "Audit 10 (2026-04-23): \u2B89 improving vs Audit 9. Native Copilot and\
     \ Codex metadata extends the portability thesis without..."
 - "Audit 9 \xB7 2026-04-23 (\u2B89 improving vs Audit 8. Complexity C\u2192B (Audit\

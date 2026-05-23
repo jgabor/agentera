@@ -1,0 +1,133 @@
+header:
+  level: full
+  created: 2026-05-23
+  status: complete
+  reviewed: 2026-05-23
+  critic_issues: 3 found, 3 addressed, 0 dismissed
+  title: Inspektera hybrid audit staleness tracker
+what: >-
+  Add a hej-visible hybrid staleness tracker for inspektera health audits, mirroring
+  the profilera profile-age pattern. Fix health CLI state so the latest audit and its
+  date are authoritative, then surface overdue audits through both time-based and
+  progress-cycle signals with configurable thresholds.
+why: >-
+  Hej already nudges users when PROFILE.md is older than seven days, but it has no
+  equivalent for health audits even though inspektera prose recommends audits every
+  five to ten realisera cycles. Today hej can report Audit 11 while Audit 20 exists,
+  and health state reads a missing timestamp field instead of the schema-owned date.
+  Without a hybrid tracker, orientation misses overdue audits unless health is actively
+  degrading.
+constraints: >-
+  Mirror the profilera staleness contract shape in CLI and hej output; do not
+  reimplement plan-relative artifact freshness inside hej. Scope cli and hej
+  capability prose; fold progress/plan metadata into the implementation commit per
+  AGENTS.md. No vision or objective edits. Default thresholds: 30 days and 10 cycles.
+  Hybrid stale means either axis exceeds its threshold. Do not bump version until
+  release task explicitly scoped.
+scope:
+  included:
+    - Latest-audit selection and date-field correction in scripts/agentera health and hej summaries
+    - Time-based staleness via AGENTERA_INSPEKTERA_MAX_AGE_DAYS
+    - Cycle-based staleness via AGENTERA_INSPEKTERA_MAX_CYCLES counting progress entries after the latest audit date
+    - Hej structured health metadata, attention items, and optional next-action suggestion for stale audits
+    - Evidence-context health current-state alignment with corrected audit date
+    - Focused tests in tests/test_query_cli.py and related health/hej coverage
+    - Minimal contract notes in hej and inspektera capability instructions
+  excluded:
+    - Changes to inspektera audit dimensions or HEALTH.md write format during audits
+    - Plan-relative artifact staleness logic in hej (remains inspektera/orkestrera owned)
+    - Automatic audit dispatch or orkestrera chaining without user confirmation
+    - Package publication, tag, push, or installed bundle refresh
+  deferred:
+    - Per-project threshold profiles in PROFILE.md or docs.yaml conventions
+    - Hej attention for missing health artifact beyond a single degraded attention item
+design: >-
+  Prerequisite: treat the highest-numbered health audit as latest and read its date
+  field (HA2), not timestamp. Add _inspektera_stale_threshold_days() and
+  _inspektera_stale_threshold_cycles() with the same env-parse pattern as profilera.
+  _check_inspektera_audit_staleness() returns stale when days_since_audit >= age
+  threshold OR cycles_since_audit >= cycle threshold; when progress is absent, use
+  time-only; when health is absent, emit a missing-audit attention item analogous to
+  missing PROFILE.md. Extend hej health dict with stale, days_since_audit,
+  cycles_since_audit, stale_threshold_days, stale_threshold_cycles, triggering_axis,
+  and suggested_action. Attention copy follows profilera wording. Next-action ranks
+  stale audit below pending plan tasks and degrading health but above idle decision
+  follow-ups. _evidence_health_state() and agentera health --format json must use the
+  same latest-audit helper so prime/hej/health agree.
+tasks:
+  - number: 1
+    name: Fix latest audit selection and date in health state
+    depends_on: []
+    status: complete
+    evidence:
+      - _latest_health_audit selects highest audit number; health and hej JSON report Audit 20 from ascending fixtures
+    acceptance:
+      - GIVEN health.yaml lists audits 11 through 20 in ascending order WHEN agentera health --format json runs with latest-only semantics THEN the returned entry is Audit 20 with date 2026-05-05
+      - GIVEN the same fixture WHEN agentera hej --format json runs THEN health.number and days_since_audit derive from Audit 20 date, not Audit 11
+      - GIVEN a health entry with date but no timestamp WHEN health summary is built THEN the date field supplies current-state age calculations
+  - number: 2
+    name: Add hybrid staleness helpers and env thresholds
+    depends_on: [1]
+    status: complete
+    evidence:
+      - Added AGENTERA_INSPEKTERA_MAX_AGE_DAYS and AGENTERA_INSPEKTERA_MAX_CYCLES helpers with hybrid OR evaluation
+    acceptance:
+      - GIVEN latest audit date is 30+ days ago and cycle count since that date is below the cycle threshold WHEN staleness is evaluated THEN stale is true with triggering_axis time
+      - GIVEN latest audit date is recent but 10+ progress cycles occurred after that date WHEN staleness is evaluated THEN stale is true with triggering_axis cycles
+      - GIVEN both axes are under threshold WHEN staleness is evaluated THEN stale is false and triggering_axis is none
+      - GIVEN AGENTERA_INSPEKTERA_MAX_AGE_DAYS or AGENTERA_INSPEKTERA_MAX_CYCLES is set to a valid integer WHEN staleness is evaluated THEN the configured threshold overrides the default
+      - GIVEN progress artifact is absent WHEN staleness is evaluated THEN cycle axis is omitted and time-only evaluation still works
+  - number: 3
+    name: Wire hybrid staleness into hej output and routing
+    depends_on: [2]
+    status: complete
+    evidence:
+      - Hej attention, structured health metadata, and stale-audit next_action wired in _collect_orientation_state and _select_hej_next_action
+    acceptance:
+      - GIVEN a stale audit by either axis WHEN agentera hej runs THEN attention includes a normal-priority item naming audit number, days, cycles when available, thresholds, and suggest running inspektera
+      - GIVEN a fresh audit WHEN agentera hej runs THEN no inspektera audit stale attention item appears
+      - GIVEN stale audit, no pending plan task, and non-degrading health WHEN next_action is selected THEN capability inspektera is suggested with a concrete HEALTH object referencing the latest audit number
+      - GIVEN structured hej JSON WHEN audit is stale THEN health exposes stale metadata fields matching the profilera profile stale shape
+  - number: 4
+    name: Align evidence-context health current-state
+    depends_on: [1, 2]
+    status: complete
+    evidence:
+      - _evidence_health_state reads health.date; prime --context inspektera matches hej latest audit
+    acceptance:
+      - GIVEN agentera prime --context inspektera --format json WHEN evidence health_state is read THEN audit_number and current_state use the same latest audit date as hej
+      - GIVEN audit age exceeds the 30-day evidence current-state threshold WHEN prime inspektera context is built THEN health_state current_state is stale with an ISO-age caveat referencing audit date
+  - number: 5
+    name: Tests for health fix and hybrid staleness
+    depends_on: [3, 4]
+    status: complete
+    evidence:
+      - Added TestHealth ascending-order case and nine TestHej hybrid staleness regressions; 28 related tests pass
+    acceptance:
+      - GIVEN tests/test_query_cli.py WHEN executed after changes THEN profilera-style cases exist for inspektera stale and fresh audits including env overrides and invalid env fallback
+      - GIVEN a regression fixture with multiple audits WHEN hej health tests run THEN latest audit selection is covered by at least one failing-before/passing-after case
+      - GIVEN the proportionality target WHEN new tests are reviewed THEN each changed axis has one positive and one negative proof
+  - number: 6
+    name: Capability contract documentation
+    depends_on: [3]
+    status: complete
+    evidence:
+      - Updated hej attention/next-action rules and inspektera periodic guidance with CLI env contract
+    acceptance:
+      - GIVEN hej capability instructions WHEN attention rules are read THEN overdue health audits are documented with hybrid time/cycle semantics and env var names
+      - GIVEN inspektera capability instructions WHEN periodic guidance is read THEN it references the CLI/hej staleness contract instead of only prose cadence
+  - number: 7
+    name: Final state sync
+    depends_on: [5, 6]
+    status: complete
+    evidence:
+      - Plan tasks marked complete; progress cycle recorded; no release publication claimed
+    acceptance:
+      - GIVEN all prior tasks are complete WHEN agentera plan --format json is queried THEN tasks 1-6 are marked complete with evidence recorded
+      - GIVEN the plan completes WHEN TODO, progress, and docs state are checked THEN hybrid staleness work is reflected without claiming release publication
+overall_acceptance:
+  - GIVEN a returning project with an old latest audit and recent progress cycles WHEN agentera hej runs THEN the dashboard surfaces a hybrid stale audit attention item and structured health metadata without misreporting an older audit number
+  - GIVEN AGENTERA_INSPEKTERA_MAX_AGE_DAYS=14 on a fixture audit 15 days old and cycles under threshold WHEN agentera hej --format json runs THEN health.stale is true via the time axis only
+  - GIVEN corrected health state WHEN agentera health and hej are compared THEN both name the same latest audit number and date
+previous_plan_archived: .agentera/archive/PLAN-2026-05-23-upgrade-postflight-and-opencode-cleanup-alignment.yaml
+surprises: []

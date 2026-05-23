@@ -1,4 +1,21 @@
 cycles:
+- number: 594
+  timestamp: 2026-05-23 23:15
+  type: build
+  phase: build
+  what: Added hybrid inspektera audit staleness to hej and fixed latest health audit
+    selection.
+  commit: 71d1cd8
+  discovered: Hej reported Audit 11 while Audit 20 existed; health summary ignored
+    schema date and list order.
+  verified: Latest audit by number, hybrid time/cycle thresholds with env overrides,
+    hej attention and next_action, prime evidence alignment, nine focused regressions
+    pass.
+  next: Run inspektera when user approves; optional release metadata sync for feat
+    scope.
+  context:
+    scope: scripts/agentera, tests/test_query_cli.py, hej and inspektera capability
+      instructions.
 - number: 593
   timestamp: 2026-05-23 22:30
   type: release
@@ -232,35 +249,9 @@ cycles:
       user-owned hook deletion.
     scope: Codex runtime upgrade/setup helpers, focused tests, README/UPGRADE wording,
       PLAN evidence, and PROGRESS evidence.
-- number: 584
-  timestamp: 2026-05-21 12:48
-  type: test
-  phase: audit
-  what: Synchronized slim capability-context contracts and validation evidence.
-  commit: pending
-  inspiration: Orkestrera Task 6 for the Slim Capability Context Payloads plan.
-  discovered: The static CLI contract and capability prose still named the legacy
-    full-envelope capability-context path as the only startup seam. They now distinguish
-    default full compatibility output from `--context-profile slim` startup capsules
-    and document Planera's slim `capability_context.context.planning_context.startup_contract`
-    path.
-  verified: Focused pytest passed for slim hej contexts, payload measurement coverage,
-    Decision 45 contract text, Planera prose, and master skill route boundaries. `uv
-    run scripts/measure_capability_context_payloads.py --json --enforce-budgets` passed
-    with no violations. Capability validation for all capabilities and capability-contract
-    self-validation passed. PLAN and PROGRESS artifact validation passed. Release
-    metadata, publication, tag, push, and installed-app refresh were deferred because
-    this task had no explicit release approval.
-  next: Review the completed slim capability-context payload changes and decide whether
-    to commit them.
-  context:
-    intent: Complete Task 6 by synchronizing contracts, prose, and validation.
-    constraints: No capability-name CLI commands, version bump, changelog promotion,
-      publication, tag, push, installed-app refresh, protected vision/objective edits,
-      or decision-satisfaction updates.
-    scope: CLI contract prose, Agentera skill guidance, Planera instruction guidance,
-      README note, focused tests, PLAN and PROGRESS closeout evidence.
 archive:
+- summary: 'Cycle 584 (2026-05-21): Synchronized slim capability-context contracts
+    and validation evidence.'
 - summary: 'Cycle 583 (2026-05-21): Added capability-context byte and GPT-5 token
     budget regression coverage.'
 - summary: 'Cycle 582 (2026-05-21): Added generic slim capability-context builders.'
@@ -333,5 +324,3 @@ archive:
     Plan.'
 - summary: 'Cycle 545 (2026-05-16): Completed the Doctor Ready Next Output Plan verification
     closeout.'
-- summary: 'Cycle 544 (2026-05-16): Added doctor output regressions and synchronized
-    Task 5 artifacts.'

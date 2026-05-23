@@ -255,7 +255,7 @@ Show where things stand.
 
 3. **Attention items**: priority order with severity arrows (SI1-SI4):
    - ⇶ (SI1) Critical issues, degrading health dimensions
-   - ⇉ (SI2) Blocked/overdue plan tasks, stale artifacts (plan-relative per contract staleness detection; fall back to PROGRESS.md recency heuristic when no plan context exists), loop stop-condition triggers
+   - ⇉ (SI2) Blocked/overdue plan tasks, stale artifacts (plan-relative per contract staleness detection; fall back to PROGRESS.md recency heuristic when no plan context exists), overdue health audits (hybrid time/cycle staleness via `AGENTERA_INSPEKTERA_MAX_AGE_DAYS` default 30 and `AGENTERA_INSPEKTERA_MAX_CYCLES` default 10; stale when either axis exceeds its threshold), loop stop-condition triggers
    - → (SI3) Standard work: features, improvements, routine tasks
    - ⇢ (SI4) Unresolved exploratory decisions
 
@@ -270,6 +270,7 @@ Show where things stand.
     in user-facing handoff labels:
    - Active PLAN with pending tasks → suggest ⎈ orkestrera for the first unblocked pending task.
    - Critical or degrading health → suggest ⛶ inspektera or ⧉ realisera for the named finding.
+   - Stale health audit (CLI `health.stale=true`) with no higher-priority work → suggest ⛶ inspektera for `HEALTH: Audit N stale`.
    - Active non-closed OBJECTIVE with stalled or missing metric evidence → suggest ⎘ optimera for that metric.
    - TODO.md open items → select the highest-severity open item, then route by shape: narrow one-cycle TODOs suggest ⧉ realisera; contract-shaped, multi-surface, dependency-heavy, migration, schema, metadata, validation, or acceptance-risky TODOs suggest ≡ planera first. Prefer items that unlock product evidence or future plans.
    - Pending DECISIONS.md follow-up → suggest ❈ resonera for the named unresolved decision.

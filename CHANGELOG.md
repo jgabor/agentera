@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+### Added
+
+- `agentera hej` hybrid inspektera audit staleness via `AGENTERA_INSPEKTERA_MAX_AGE_DAYS` (default 30) and `AGENTERA_INSPEKTERA_MAX_CYCLES` (default 10); stale when either axis exceeds its threshold.
+
+### Fixed
+
+- `agentera health` and hej now select the latest health audit by highest audit number and read schema `date` instead of a missing `timestamp` field.
+
 ## [2.6.1] · 2026-05-23
 
 ### Changed

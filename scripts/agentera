@@ -3370,12 +3370,17 @@ def _evidence_health_state(health: dict[str, Any]) -> dict[str, Any]:
         field for field in ("audit_number", "trajectory", "grade")
         if _has_recorded_value({"audit_number": health.get("number"), **health}.get(field))
     ]
-    current_state, current_state_caveat = _current_state_status(health.get("timestamp"), "Health")
+    current_state, current_state_caveat = _current_state_status(
+        health.get("date") or health.get("timestamp"),
+        "Health",
+    )
+    audit_date = health.get("date") or health.get("timestamp")
     return {
         "status": "available" if available else "unavailable",
         "source_provenance": _source_provenance("health", "agentera health --format json"),
         "audit_number": health.get("number"),
-        "timestamp": health.get("timestamp"),
+        "date": audit_date,
+        "timestamp": audit_date,
         "trajectory": health.get("trajectory"),
         "grade": health.get("grade"),
         "degrading": bool(health.get("degrading")),
@@ -4611,6 +4616,19 @@ def _collect_orientation_state(args: argparse.Namespace) -> dict[str, Any]:
             f"normal: profilera profile stale ({days_since} days since generated; "
             f"threshold={stale_days}); suggest running profilera to refresh PROFILE.md"
         )
+    if health.get("stale"):
+        audit_number = health.get("number", "?")
+        days_since = health.get("days_since_audit", "?")
+        threshold_days = health.get("stale_threshold_days", "?")
+        threshold_cycles = health.get("stale_threshold_cycles", "?")
+        attention_text = (
+            f"normal: inspektera audit stale ({days_since} days since Audit {audit_number}; "
+            f"threshold days={threshold_days}, cycles={threshold_cycles}"
+        )
+        cycles_since = health.get("cycles_since_audit")
+        if cycles_since is not None:
+            attention_text += f"; {cycles_since} cycles since audit"
+        attention.append(f"{attention_text}); suggest running inspektera")
     if health.get("degrading"):
         worst = health.get("worst")
         attention.append(
@@ -6022,7 +6040,8 @@ def _query_health(args: argparse.Namespace, schemas: dict) -> int:
     data = _load_artifact(path)
     entries = _extract_entries(data)
     dimension = getattr(args, "dimension", None)
-    latest_entries = entries[:1]
+    latest = _latest_health_audit(entries)
+    latest_entries = [latest] if latest else []
     if dimension and latest_entries:
         latest = latest_entries[0]
         dim_lower = dimension.lower()
@@ -6049,7 +6068,9 @@ def _query_health(args: argparse.Namespace, schemas: dict) -> int:
         )
     if not entries:
         return 0
-    latest = entries[0]
+    latest = _latest_health_audit(entries)
+    if not latest:
+        return 0
     if dimension:
         dim_lower = dimension.lower()
         grades = latest.get("grades", {})
@@ -6548,6 +6569,10 @@ BLOCKED_STATUSES = {"blocked", "stuck"}
 
 _PROFILERA_STALE_DAYS_ENV = "AGENTERA_PROFILERA_MAX_AGE_DAYS"
 _DEFAULT_PROFILERA_STALE_DAYS = 7
+_INSPEKTERA_STALE_DAYS_ENV = "AGENTERA_INSPEKTERA_MAX_AGE_DAYS"
+_DEFAULT_INSPEKTERA_STALE_DAYS = 30
+_INSPEKTERA_STALE_CYCLES_ENV = "AGENTERA_INSPEKTERA_MAX_CYCLES"
+_DEFAULT_INSPEKTERA_STALE_CYCLES = 10
 TODO_SEVERITY_ORDER = {
     "critical": 0,
     "degraded": 1,
@@ -6609,6 +6634,118 @@ def _check_profilera_staleness(profile_path: Path) -> tuple[bool, int, int] | No
     stale_days = _profilera_stale_threshold_days()
     days_since = (date.today() - generated).days
     return days_since >= stale_days, days_since, stale_days
+
+
+def _inspektera_stale_threshold_days() -> int:
+    raw_value = os.environ.get(_INSPEKTERA_STALE_DAYS_ENV, str(_DEFAULT_INSPEKTERA_STALE_DAYS))
+    try:
+        stale_days = int(raw_value)
+    except ValueError:
+        return _DEFAULT_INSPEKTERA_STALE_DAYS
+    return stale_days if stale_days >= 0 else _DEFAULT_INSPEKTERA_STALE_DAYS
+
+
+def _inspektera_stale_threshold_cycles() -> int:
+    raw_value = os.environ.get(_INSPEKTERA_STALE_CYCLES_ENV, str(_DEFAULT_INSPEKTERA_STALE_CYCLES))
+    try:
+        stale_cycles = int(raw_value)
+    except ValueError:
+        return _DEFAULT_INSPEKTERA_STALE_CYCLES
+    return stale_cycles if stale_cycles >= 0 else _DEFAULT_INSPEKTERA_STALE_CYCLES
+
+
+def _health_audit_number(entry: dict) -> int | None:
+    number = entry.get("number")
+    if isinstance(number, int):
+        return number
+    if isinstance(number, str) and number.isdigit():
+        return int(number)
+    return None
+
+
+def _latest_health_audit(entries: list[dict]) -> dict | None:
+    if not entries:
+        return None
+    best: dict | None = None
+    best_number = -1
+    for entry in entries:
+        number = _health_audit_number(entry)
+        if number is None:
+            continue
+        if number > best_number:
+            best_number = number
+            best = entry
+    return best if best is not None else entries[-1]
+
+
+def _health_audit_date(entry: dict) -> date | None:
+    for key in ("date", "timestamp"):
+        value = entry.get(key)
+        if isinstance(value, str) and value.strip():
+            try:
+                return date.fromisoformat(value.strip()[:10])
+            except ValueError:
+                continue
+    return None
+
+
+def _progress_entry_date(entry: dict) -> date | None:
+    for key in ("timestamp", "date"):
+        value = entry.get(key)
+        if isinstance(value, str) and value.strip():
+            try:
+                return date.fromisoformat(value.strip()[:10])
+            except ValueError:
+                continue
+    return None
+
+
+def _cycles_since_health_audit(schemas: dict, audit_date: date) -> int | None:
+    entries = _extract_entries(_load_named_artifact(schemas, "progress"))
+    if not entries:
+        return None
+    return sum(
+        1
+        for entry in entries
+        if (entry_date := _progress_entry_date(entry)) is not None and entry_date > audit_date
+    )
+
+
+def _check_inspektera_audit_staleness(
+    schemas: dict,
+    latest: dict | None,
+    audit_date: date | None,
+) -> dict[str, Any] | None:
+    if latest is None or audit_date is None:
+        return None
+    stale_days_threshold = _inspektera_stale_threshold_days()
+    stale_cycles_threshold = _inspektera_stale_threshold_cycles()
+    days_since = (date.today() - audit_date).days
+    cycles_since = _cycles_since_health_audit(schemas, audit_date)
+    time_stale = days_since >= stale_days_threshold
+    cycle_stale = cycles_since is not None and cycles_since >= stale_cycles_threshold
+    is_stale = time_stale or cycle_stale
+    if is_stale:
+        if time_stale and cycle_stale:
+            triggering_axis = "both"
+        elif time_stale:
+            triggering_axis = "time"
+        else:
+            triggering_axis = "cycles"
+    else:
+        triggering_axis = "none"
+    result: dict[str, Any] = {
+        "stale": is_stale,
+        "days_since_audit": days_since,
+        "stale_threshold_days": stale_days_threshold,
+        "stale_threshold_cycles": stale_cycles_threshold,
+        "triggering_axis": triggering_axis,
+    }
+    if cycles_since is not None:
+        result["cycles_since_audit"] = cycles_since
+    if is_stale:
+        result["suggested_action"] = "Run inspektera to refresh health audit"
+    return result
 
 
 def _load_named_artifact(schemas: dict, name: str) -> Any:
@@ -6807,7 +6944,9 @@ def _health_summary(schemas: dict) -> dict[str, Any]:
     entries = _extract_entries(data)
     if not entries:
         return {"exists": False}
-    latest = entries[0]
+    latest = _latest_health_audit(entries)
+    if not latest:
+        return {"exists": False}
     grades = latest.get("grades") if isinstance(latest.get("grades"), dict) else {}
     grade_rank = {"A": 0, "B": 1, "C": 2, "D": 3, "F": 4}
     worst = None
@@ -6817,16 +6956,23 @@ def _health_summary(schemas: dict) -> dict[str, Any]:
         if worst is None or rank > worst[2]:
             worst = (name, grade, rank)
     trajectory = str(latest.get("trajectory", "") or "")
-    return {
+    audit_date = _health_audit_date(latest)
+    date_str = audit_date.isoformat() if audit_date else None
+    summary: dict[str, Any] = {
         "exists": True,
         "number": latest.get("number", "?"),
-        "timestamp": latest.get("timestamp"),
+        "date": date_str,
+        "timestamp": date_str or latest.get("timestamp"),
         "trajectory": trajectory,
         "grade": worst[1] if worst else "",
         "worst": worst,
         "degrading": trajectory.lower() in {"degrading", "declining", "worse"}
         or (worst is not None and worst[2] >= grade_rank["D"]),
     }
+    staleness = _check_inspektera_audit_staleness(schemas, latest, audit_date)
+    if staleness is not None:
+        summary.update(staleness)
+    return summary
 
 
 def _objective_status(data: dict) -> str:
@@ -7026,6 +7172,12 @@ def _select_hej_next_action(
             "object": f"TODO: {item['text']}",
             "capability": "realisera",
             "reason": "highest-priority open TODO",
+        }
+    if health.get("stale") and not health.get("degrading"):
+        return {
+            "object": f"HEALTH: Audit {health.get('number', '?')} stale",
+            "capability": "inspektera",
+            "reason": "stale health audit",
         }
     if decision:
         return {
