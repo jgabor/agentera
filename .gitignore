@@ -4,6 +4,7 @@
 docs/*
 !docs/benchmark.md
 !docs/d47-app-home-vocabulary-inventory.md
+!docs/d58-json-output-surface-inventory.md
 !docs/vocabulary.md
 __pycache__/
 *.pyc
