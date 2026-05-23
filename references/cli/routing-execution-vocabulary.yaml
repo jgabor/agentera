@@ -7,7 +7,7 @@ purpose: >-
   shipped compatibility identifiers or historical evidence.
 sources:
   prose:
-    - docs/vocabulary.md#routing-and-execution-vocabulary
+    - references/cli/vocabulary.md#routing-and-execution-vocabulary
 scope:
   includes:
     - Request-to-capability routing through the Agentera skill entry point.
@@ -166,7 +166,7 @@ focused_scan:
     - generic
   paths:
     - AGENTS.md
-    - docs/vocabulary.md
+    - references/cli/vocabulary.md
     - references/adapters/runtime-feature-parity.md
     - scripts/measure_token_payload.py
     - skills/agentera/SKILL.md
@@ -182,19 +182,19 @@ focused_scan:
       text: Agentera router routes incoming requests
       classification: canonical
       reason: AGENTS names the canonical request-to-capability routing term.
-    - path: ^docs/vocabulary\.md$
+    - path: ^references/cli/vocabulary\.md$
       text: Agentera router|request-to-capability routing|suggest|delegate|spawn|subagent mechanism|pre-spawn Git commit
       classification: canonical
       reason: Vocabulary docs present the canonical routing and execution terms.
-    - path: ^docs/vocabulary\.md$
+    - path: ^references/cli/vocabulary\.md$
       text: pre-dispatch commit gate|pre-dispatch checkpoint commit|Conductor protocol|orchestration loop|The loop is select, dispatch, evaluate, resolve, and log
       classification: historical
       reason: Decision 44 and glossary tables preserve deprecated wording as historical examples.
-    - path: ^docs/vocabulary\.md$
+    - path: ^references/cli/vocabulary\.md$
       text: dispatching cycles|dispatcher rule governs hej and capability handoff prompts
       classification: canonical
       reason: Handoff guidance uses dispatch only for the Orkestrera-owned autonomous orchestration flow.
-    - path: ^docs/vocabulary\.md$
+    - path: ^references/cli/vocabulary\.md$
       text: subagent_dispatch|fixture names
       classification: compatibility-preserved
       reason: Routing vocabulary docs preserve explicit compatibility identifiers and fixture terminology.
@@ -275,7 +275,7 @@ fixture_terms:
   - subagent_dispatch fixture
   - worktree dispatch fixture
 docs_delegation:
-  document: docs/vocabulary.md
+  document: references/cli/vocabulary.md
   required_anchor: Routing and execution vocabulary
   authority_path: references/cli/routing-execution-vocabulary.yaml
   must_not_duplicate_large_table: true

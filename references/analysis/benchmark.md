@@ -15,7 +15,7 @@ contract validators, and runtime smoke checks.
 | `scripts/startup_analysis_contract.py` | Startup analyzer implementation, report generation, aggregate row construction, and benchmark persistence. |
 | `magefile.go` | Manual benchmark command surface and non-interactive approval gate. |
 | `tests/test_startup_analysis_contract.py` | Fixture-backed consent, persistence, privacy, and no-repo-output checks. |
-| `docs/benchmark.md` | Human runbook, interpretation guide, and future benchmark documentation pattern. |
+| `references/analysis/benchmark.md` | Human runbook, interpretation guide, and future benchmark documentation pattern. |
 
 ## Benchmark surfaces
 

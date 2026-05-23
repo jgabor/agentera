@@ -19,7 +19,7 @@ from pathlib import Path
 TEXT_SURFACES = (
     "README.md",
     "UPGRADE.md",
-    "docs/vocabulary.md",
+    "references/cli/vocabulary.md",
     "plugin.json",
     ".github/plugin/plugin.json",
     ".codex-plugin/plugin.json",

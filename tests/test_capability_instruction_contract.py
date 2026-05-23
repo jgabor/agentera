@@ -115,7 +115,7 @@ def test_surface_inventory_classifies_decision_57_surfaces() -> None:
 
 
 def test_vocabulary_docs_delegate_instruction_contract_to_yaml() -> None:
-    vocabulary = (REPO_ROOT / "docs" / "vocabulary.md").read_text(encoding="utf-8")
+    vocabulary = (REPO_ROOT / "references" / "cli" / "vocabulary.md").read_text(encoding="utf-8")
     section = vocabulary.split("### Capability instruction contract", 1)[1].split(
         "## Invocation and routing grammar", 1
     )[0]
@@ -141,7 +141,7 @@ def test_readme_explains_current_metadata_without_claiming_runtime_enforcement()
 
 
 def test_source_indexes_point_to_instruction_contract_authority() -> None:
-    vocabulary = (REPO_ROOT / "docs" / "vocabulary.md").read_text(encoding="utf-8")
+    vocabulary = (REPO_ROOT / "references" / "cli" / "vocabulary.md").read_text(encoding="utf-8")
     docs = yaml.safe_load((REPO_ROOT / ".agentera" / "docs.yaml").read_text(encoding="utf-8"))
 
     assert (
@@ -153,7 +153,7 @@ def test_source_indexes_point_to_instruction_contract_authority() -> None:
         for item in docs["index"]
     )
     delegation = _authority()["docs_delegation"]
-    assert delegation["document"] == "docs/vocabulary.md"
+    assert delegation["document"] == "references/cli/vocabulary.md"
     assert delegation["authority_path"] == "references/cli/capability-instruction-contract.yaml"
     assert delegation["must_not_duplicate_large_table"] is True
 
@@ -167,12 +167,12 @@ def test_real_capabilities_and_current_surfaces_do_not_use_legacy_prose_md() -> 
     allowed_paths = {
         ".agentera/decisions.yaml",
         ".agentera/health.yaml",
-        ".agentera/gap-analysis-2026-05-05.md",
+        ".agentera/archive/gap-analysis-2026-05-05.md",
         ".agentera/plan.yaml",
         ".agentera/progress.yaml",
         ".agentera/routing_exit_drift_characterization.yaml",
         "CHANGELOG.md",
-        "docs/vocabulary.md",
+        "references/cli/vocabulary.md",
         "references/cli/capability-instruction-contract.yaml",
         "tests/test_capability_instruction_contract.py",
         "TODO.md",

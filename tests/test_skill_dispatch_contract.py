@@ -16,7 +16,7 @@ ORK_PROSE = CAPABILITIES_DIR / "orkestrera" / "instructions.md"
 PLANERA_PROSE = CAPABILITIES_DIR / "planera" / "instructions.md"
 REALISERA_PROSE = CAPABILITIES_DIR / "realisera" / "instructions.md"
 CLI = REPO_ROOT / "scripts" / "agentera"
-VOCABULARY_MD = REPO_ROOT / "docs" / "vocabulary.md"
+VOCABULARY_MD = REPO_ROOT / "references" / "cli" / "vocabulary.md"
 DIRECT_SLASH_CAPABILITIES = {
     "visionera",
     "resonera",

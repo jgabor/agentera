@@ -189,7 +189,7 @@ def test_focused_scan_classifications_are_closed_and_reasoned() -> None:
         "fixture-only",
         "generic",
     ]
-    assert set(focused_scan["paths"]) == set(CURRENT_PROSE_FILES + ["docs/vocabulary.md"])
+    assert set(focused_scan["paths"]) == set(CURRENT_PROSE_FILES + ["references/cli/vocabulary.md"])
     for occurrence in _classified_occurrences():
         assert occurrence.classification in allowed_classifications
         assert occurrence.reason.strip()
@@ -216,7 +216,7 @@ def test_focused_scan_exercises_every_allowed_classification() -> None:
 
 
 def test_vocabulary_docs_delegate_bundle_skill_authority_to_yaml() -> None:
-    vocabulary = (REPO_ROOT / "docs" / "vocabulary.md").read_text(encoding="utf-8")
+    vocabulary = (REPO_ROOT / "references" / "cli" / "vocabulary.md").read_text(encoding="utf-8")
     section = vocabulary.split("### Bundle and SKILL.md vocabulary", 1)[1].split(
         "## Evaluation and evidence grammar", 1
     )[0]
@@ -233,14 +233,14 @@ def test_vocabulary_docs_delegate_bundle_skill_authority_to_yaml() -> None:
 
 
 def test_source_index_points_to_bundle_skill_authority() -> None:
-    vocabulary = (REPO_ROOT / "docs" / "vocabulary.md").read_text(encoding="utf-8")
+    vocabulary = (REPO_ROOT / "references" / "cli" / "vocabulary.md").read_text(encoding="utf-8")
 
     assert (
         "| `references/cli/bundle-skill-vocabulary.yaml` | Bundle and `SKILL.md` concept classification authority. |"
         in vocabulary
     )
     delegation = _authority()["docs_delegation"]
-    assert delegation["document"] == "docs/vocabulary.md"
+    assert delegation["document"] == "references/cli/vocabulary.md"
     assert delegation["authority_path"] == "references/cli/bundle-skill-vocabulary.yaml"
     assert delegation["must_not_duplicate_large_table"] is True
 

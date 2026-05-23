@@ -7,7 +7,7 @@ purpose: >-
   renames of shipped surfaces.
 sources:
   prose:
-    - docs/vocabulary.md#bundle-and-skillmd-vocabulary
+    - references/cli/vocabulary.md#bundle-and-skillmd-vocabulary
 scope:
   includes:
     - Current user-facing and diagnostic prose that names Agentera app files.
@@ -189,7 +189,7 @@ focused_scan:
   paths:
     - AGENTS.md
     - README.md
-    - docs/vocabulary.md
+    - references/cli/vocabulary.md
     - references/adapters/opencode.md
     - scripts/measure_token_payload.py
     - skills/agentera/SKILL.md
@@ -207,19 +207,19 @@ focused_scan:
       text: skills/agentera/SKILL\.md|Agentera routing entry point
       classification: canonical
       reason: README names the canonical routing entry point and concrete linked path.
-    - path: ^docs/vocabulary\.md$
+    - path: ^references/cli/vocabulary\.md$
       text: references/cli/bundle-skill-vocabulary\.yaml|Bundle and SKILL\.md vocabulary
       classification: canonical
       reason: Vocabulary docs delegate this exact concept family to this authority.
-    - path: ^docs/vocabulary\.md$
+    - path: ^references/cli/vocabulary\.md$
       text: Agentera app files need repair|bundle freshness|bundle refresh|required repair Agentera app files|install status check failed
       classification: historical
       reason: Decision 44 replacement tables preserve deprecated bundle wording as historical examples.
-    - path: ^docs/vocabulary\.md$
+    - path: ^references/cli/vocabulary\.md$
       text: skills/agentera/SKILL\.md|SKILL\.md`
       classification: canonical
       reason: Vocabulary docs use concrete skill entry file paths and source-index references.
-    - path: ^docs/vocabulary\.md$
+    - path: ^references/cli/vocabulary\.md$
       text: --only bundle|\.agentera-bundle\.json|bundle\.status|activeBundleRoot|bundle-status
       classification: compatibility-preserved
       reason: Vocabulary docs preserve shipped compatibility identifiers and removed command references.
@@ -272,7 +272,7 @@ historical_terms:
   - single-bundle model
   - Agentera skill dispatcher
 docs_delegation:
-  document: docs/vocabulary.md
+  document: references/cli/vocabulary.md
   required_anchor: Bundle and SKILL.md vocabulary
   authority_path: references/cli/bundle-skill-vocabulary.yaml
   must_not_duplicate_large_table: true

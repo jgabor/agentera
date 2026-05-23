@@ -53,7 +53,7 @@ At 3.0 the sole supported capability startup selector is
 | Total GPT-5 tokens | 96,060 | 25,447 | **−70,613 (−73.5%)** |
 
 Archived full-profile baselines are from
-`docs/d59-json-output-budget-proposal.md` (pre-Task-4 exact measurement of
+`.agentera/archive/d59-json-output-budget-proposal.md` (pre-Task-4 exact measurement of
 `hej-capability-context-full:*` rows). Current slim figures are the sum of
 `prime-capability-context:*` rows from the final exact manifest run.
 
@@ -150,8 +150,8 @@ Harness: `uv run scripts/measure_json_output_surfaces.py --json --token-mode exa
 | Source | Role |
 |--------|------|
 | `.agentera/archive/PLAN-2026-05-22-agentera-3-0-json-output-budget.yaml` | Prior slim-context plan; superseded by prime control-plane plan |
-| `docs/d59-json-output-budget-proposal.md` | Proposed caps and archived full-profile byte/token baselines |
-| `docs/d58-json-output-surface-inventory.md` | Surface inventory and classification |
+| `.agentera/archive/d59-json-output-budget-proposal.md` | Proposed caps and archived full-profile byte/token baselines |
+| `.agentera/archive/d58-json-output-surface-inventory.md` | Surface inventory and classification |
 | Final exact run (this document) | Authoritative closeout measurements |
 
 ## Deferred (explicit approval required)
@@ -173,4 +173,4 @@ Related artifacts:
 
 - Active plan: `.agentera/plan.yaml` (Agentera 3.0 Prime Control Plane and JSON Budget)
 - Archived prior plan: `.agentera/archive/PLAN-2026-05-22-agentera-3-0-json-output-budget.yaml`
-- Budget proposal (wired): `docs/d59-json-output-budget-proposal.md`
+- Budget proposal (wired): `.agentera/archive/d59-json-output-budget-proposal.md`

@@ -117,21 +117,25 @@ index:
   last_updated: '2026-05-18'
   status: current
 - document: Vocabulary
-  path: docs/vocabulary.md
-  last_updated: '2026-05-18'
+  path: references/cli/vocabulary.md
+  last_updated: '2026-05-23'
+  status: current
+- document: Vocabulary index
+  path: references/cli/vocabulary-index.yaml
+  last_updated: '2026-05-23'
   status: current
 - document: Benchmark guide
-  path: docs/benchmark.md
-  last_updated: '2026-05-13'
+  path: references/analysis/benchmark.md
+  last_updated: '2026-05-23'
+  status: current
+- document: Documentation inventory
+  path: references/meta/documentation-inventory.md
+  last_updated: '2026-05-23'
   status: current
 - document: Gap analysis
-  path: .agentera/gap-analysis-2026-05-05.md
+  path: .agentera/archive/gap-analysis-2026-05-05.md
   last_updated: '2026-05-05'
-  status: current
-- document: Roadmap
-  path: ROADMAP.md
-  last_updated: '2026-05-07'
-  status: current
+  status: archived
 - document: Design
   path: DESIGN.md
   last_updated: '2026-05-05'

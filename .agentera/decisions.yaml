@@ -39,7 +39,7 @@ decisions:
     removes a runtime-convention burden from agents, makes handoffs more consistent,
     and keeps the release scope smaller than lifecycle archival or YAML write support.
   confidence: firm
-  feeds_into: SKILL.md, capability prose, tests, CHANGELOG.md, docs/vocabulary.md
+  feeds_into: SKILL.md, capability prose, tests, CHANGELOG.md, references/cli/vocabulary.md
   satisfaction:
     state: provisionally_satisfied
     evidence: "D46 handoff enforcement now has runtime-facing regression evidence:\
@@ -213,7 +213,7 @@ decisions:
     Do not rename capability names, artifact names or paths, exit signals, task statuses,
     health grades, or general prose as part of the doctor app-metadata implementation.
     Those broader targets require a thorough inventory, consumer review, and a separate
-    Resonera decision on whether a dedicated `vocabulary.yaml` should replace `docs/vocabulary.md`
+    Resonera decision on whether a dedicated `vocabulary.yaml` should replace `references/cli/vocabulary.md`
     as the structured vocabulary authority.
   reasoning: 'Agentera''s prior vocabulary drift made agents and users carry mapping
     tables between artifact names, app/bundle terminology, and CLI labels. App status
@@ -223,10 +223,10 @@ decisions:
     justify opportunistic suite-wide renames: capability names, artifact identifiers,
     exit signals, task statuses, and health grades are protocol identity surfaces
     with different compatibility costs. They need inventory-backed deliberation before
-    replacement, especially if the long-term authority moves from prose-only `docs/vocabulary.md`
+    replacement, especially if the long-term authority moves from prose-only `references/cli/vocabulary.md`
     to a machine-readable `vocabulary.yaml`.'
   confidence: firm
-  feeds_into: .agentera/plan.yaml, TODO.md, docs/vocabulary.md, vocabulary.yaml, scripts/agentera_upgrade.py,
+  feeds_into: .agentera/plan.yaml, TODO.md, references/cli/vocabulary.md, vocabulary.yaml, scripts/agentera_upgrade.py,
     scripts/agentera, references/cli/agent-ready-state-contract.yaml, tests, CHANGELOG.md,
     README.md, UPGRADE.md
   satisfaction:
@@ -360,7 +360,7 @@ decisions:
     required reads through `agentera hej --format json --capability-context <name>`,
     and update `skills/agentera/SKILL.md`, `skills/agentera/capability_schema_contract.yaml`,
     `scripts/validate_capability.py`, runtime descriptors, tests, `README.md`, `AGENTS.md`,
-    and `docs/vocabulary.md` so first capability invocation reads `instructions.md`
+    and `references/cli/vocabulary.md` so first capability invocation reads `instructions.md`
     in full unless an explicit compact-startup exception is declared.
   reasoning: The `instructions.md` name states the file's purpose better than `prose.md`
     and turns capability startup from an implicit convention into a contract. Full
@@ -370,7 +370,7 @@ decisions:
   confidence: firm
   feeds_into: TODO.md, skills/agentera/SKILL.md, skills/agentera/capability_schema_contract.yaml,
     scripts/agentera, scripts/validate_capability.py, runtime descriptors, tests,
-    README.md, AGENTS.md, docs/vocabulary.md
+    README.md, AGENTS.md, references/cli/vocabulary.md
   satisfaction:
     state: open
 - number: 58
@@ -429,7 +429,7 @@ decisions:
   confidence: firm
   feeds_into: TODO.md, references/artifacts/artifact-registry-interface-model.yaml,
     skills/agentera/schemas/artifacts, scripts/agentera, hooks, runtime adapters,
-    tests, README.md, UPGRADE.md, docs/vocabulary.md
+    tests, README.md, UPGRADE.md, references/cli/vocabulary.md
   satisfaction:
     state: open
 - number: 59
@@ -522,7 +522,7 @@ decisions:
   confidence: firm
   feeds_into: TODO.md, PLAN.md, scripts/agentera, scripts/measure_capability_context_payloads.py,
     references/cli/agent-ready-state-contract.yaml, tests, README.md, UPGRADE.md,
-    docs/d47-app-home-vocabulary-inventory.md
+    .agentera/archive/d47-app-home-vocabulary-inventory.md
   satisfaction:
     state: open
 archive:
@@ -542,7 +542,7 @@ archive:
     `gate` only for hard pass/fail. Use `behavioral verification gate`, `orchestration
     loop`, `saved project context`, mismatch/out-of-sync wording, and `docs-first`
     workflow language.
-  feeds_into: docs/vocabulary.md, capability prose, safe labels/tests, active plan
+  feeds_into: references/cli/vocabulary.md, capability prose, safe labels/tests, active plan
     wording, TODO.md
   satisfaction:
     state: user_confirmed_satisfied
@@ -564,7 +564,7 @@ archive:
     structured routine output, add runtime describe/schema introspection, add field
     selection, harden artifact/path inputs, and hard-rename `agentera bundle-status`
     to `agentera doctor` with no compatibility alias.'
-  feeds_into: PLAN.md, scripts/agentera, README.md, docs/vocabulary.md, tests
+  feeds_into: PLAN.md, scripts/agentera, README.md, references/cli/vocabulary.md, tests
   satisfaction:
     state: user_confirmed_satisfied
     user_confirmation:
