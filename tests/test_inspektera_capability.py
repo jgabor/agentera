@@ -150,10 +150,10 @@ def test_inspektera_prose_requires_evidence_context_first():
     content = (INSPEKTERA_CAP_DIR / "instructions.md").read_text()
 
     for required in [
-        "agentera hej --format json --capability-context inspektera",
+        "agentera prime --context inspektera --format json",
         "Use the returned `evidence_context` before raw plan, progress, docs, health, TODO, or decisions artifacts",
         "evidence_context.fallback_commands",
-        "source_contract.capability_context.cli_fallback",
+        "capability_context.state.fallback_commands",
         "Raw artifact reads are last-resort diagnostics",
         "state_family_caveats",
         "residual_risks.attributed_items",
@@ -186,12 +186,12 @@ def test_inspektera_validation_schema_enforces_context_first_rules():
 
     for required in [
         "evidence_context_first",
-        "agentera hej --format json",
-        "--capability-context inspektera",
+        "agentera prime --context",
+        "inspektera --format json",
         "raw plan, progress, docs, health, TODO, or decisions artifacts",
         "evidence_context_fallback_before_raw",
         "evidence_context.fallback_commands",
-        "source_contract.capability_context.cli_fallback",
+        "capability_context.state.fallback_commands",
         "evidence_context_caveats_preserved",
         "state_family_caveats",
         "residual_risks.attributed_items",

@@ -144,7 +144,7 @@ def test_dokumentera_prose_exists_and_contains_workflow():
 def test_dokumentera_prose_requires_closeout_context_before_raw_reads():
     content = (DOKUMENTERA_CAP_DIR / "instructions.md").read_text()
 
-    assert "agentera hej --format json --capability-context dokumentera" in content
+    assert "agentera prime --context dokumentera --format json" in content
     assert "complete_for_closeout_context: true" in content
     assert "Do not raw-read `TODO.md`, `.agentera/docs.yaml`, `CHANGELOG.md`, or `.agentera/progress.yaml`" in content
     assert "Run the listed `closeout_context.fallback_commands` before any raw artifact read" in content

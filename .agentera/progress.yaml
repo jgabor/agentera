@@ -1,4 +1,29 @@
 cycles:
+- number: 590
+  timestamp: 2026-05-23 19:45
+  type: docs
+  phase: build
+  what: Synced callers, contracts, docs, and tests to prime --context as sole 3.0
+    startup seam.
+  commit: pending
+  inspiration: Plan Task 5 for Agentera 3.0 JSON output budget work.
+  discovered: Capability instructions and validation schemas needed coordinated prime
+    command strings plus `capability_context.state.fallback_commands` where inspektera
+    previously cited `source_contract.capability_context.cli_fallback` from hej full
+    envelopes. D58 inventory rows for prime surfaces are implemented; hej capability-context
+    rows are historical only.
+  verified: '`uv run --with pytest pytest tests/test_decision45_cli_contract.py tests/test_query_cli.py
+    tests/test_cross_capability.py -q` passed (258 tests). `uv run scripts/agentera
+    validate capability orkestrera inspektera planera dokumentera realisera optimera`
+    passed for all six touched capabilities.'
+  next: Close Plan Task 5 and continue remaining 3.0 JSON budget tasks if any remain
+    open.
+  context:
+    intent: Teach `prime --context` as the single supported capability startup shape;
+      classify hej --capability-context and --context-profile as removed.
+    constraints: No plan.yaml task status edits, no push.
+    scope: agent-ready-state-contract, SKILL/README, capability prose/schemas, d58/d59
+      docs, decision45/cross-capability/capability tests, reference contracts.
 - number: 589
   timestamp: 2026-05-23 18:15
   type: feat
@@ -250,34 +275,8 @@ cycles:
       vision/objective edits, or decision-satisfaction updates.
     scope: scripts/agentera slim context nesting, focused hej tests, PLAN and PROGRESS
       evidence.
-- number: 580
-  timestamp: 2026-05-21 00:18
-  type: test
-  phase: build
-  what: Added slim capability-context envelope mode.
-  commit: pending
-  inspiration: Orkestrera Task 2 for the Slim Capability Context Payloads plan.
-  discovered: The safest compatibility boundary is an explicit `--context-profile`
-    switch. Full mode remains the default and preserves the current hej dashboard
-    JSON envelope, while slim mode is available for capability startup capsules without
-    relocating bespoke contexts yet.
-  verified: '`uv run --with pytest pytest tests/test_query_cli.py::TestHej::test_hej_without_capability_context_keeps_full_dashboard_envelope
-    tests/test_query_cli.py::TestHej::test_hej_capability_context_slim_profile_emits_startup_capsule
-    tests/test_query_cli.py::TestHej::test_hej_capability_context_full_profile_keeps_compatibility_envelope
-    tests/test_query_cli.py::TestHej::test_hej_slim_profile_rejects_unsupported_sparse_field_without_partial_stdout
-    tests/test_query_cli.py::TestHej::test_hej_capability_context_names_included_and_missing_state_families
-    tests/test_query_cli.py::TestHej::test_hej_planera_context_exposes_compact_startup_contract`
-    passed. Slim and full CLI spot checks passed. `git diff --check` passed.'
-  next: Execute Task 3 to move existing bespoke contexts into the slim capsule.
-  context:
-    intent: Complete Task 2 by adding an explicit slim capability-context envelope.
-    constraints: Task 2 only. No bespoke-context relocation beyond preserving the
-      compatibility context inside the slim capsule. No capability-name CLI commands,
-      release metadata, publication, installed-app refresh, protected vision/objective
-      edits, or decision-satisfaction updates.
-    scope: scripts/agentera context-profile handling, focused hej tests, PLAN and
-      PROGRESS evidence.
 archive:
+- summary: 'Cycle 580 (2026-05-21): Added slim capability-context envelope mode.'
 - summary: 'Cycle 579 (2026-05-20): Introduced role-aware capability state inventory.'
 - summary: 'Cycle 578 (2026-05-18): Closed stale 2.4.x instruction-validation TODO
     from committed regression evidence.'
@@ -352,5 +351,3 @@ archive:
     for Plan Task 2.'
 - summary: 'Cycle 541 (2026-05-16): Reproduced doctor ready-state output ambiguity
     for Plan Task 1.'
-- summary: 'Cycle 540 (2026-05-16): Expanded Decision 54 with broader vocabulary inventory
-    boundaries.'

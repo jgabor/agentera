@@ -68,12 +68,12 @@ Steps: orient, select, assess, distill, audit, report, connect.
 Before Step 1, start evaluation state gathering with:
 
 ```bash
-agentera hej --format json --capability-context inspektera
+agentera prime --context inspektera --format json
 ```
 
 Use the returned `evidence_context` before raw plan, progress, docs, health, TODO, or decisions artifacts. If `evidence_context.source_contract.complete_for_evidence_context` is true, do not read raw PLAN, PROGRESS, DOCS, HEALTH, TODO, or DECISIONS artifacts merely to reconstruct evaluation target, plan criteria, progress verification, docs state, health state, TODO state, protected-state checks, version checks, residual risks, fallback commands, caveats, provenance, or non-empty evidence flags.
 
-If `evidence_context` is absent, incomplete, or caveated for a state family you need, run the listed `evidence_context.fallback_commands` first. If those are unavailable, use `source_contract.capability_context.cli_fallback` from the same hej response. Raw artifact reads are last-resort diagnostics after listed CLI fallbacks, not normal evaluation startup behavior.
+If `evidence_context` is absent, incomplete, or caveated for a state family you need, run the listed `evidence_context.fallback_commands` first. If those are unavailable, use `capability_context.state.fallback_commands` from the same prime response. Raw artifact reads are last-resort diagnostics after listed CLI fallbacks, not normal evaluation startup behavior.
 
 Preserve caveats from `evidence_context.state_family_caveats`, `evidence_context.residual_risks.attributed_items`, `decision_context.caveats`, `protected_state_checks.caveats`, and `version_checks.caveats` when reporting evaluation results. Do not hide, flatten, or reconstruct stale app/profile state, compacted decisions, protected-state boundaries, unavailable version evidence, absent publication or remote evidence, manual-check states, or residual risks. These caveats calibrate confidence; they are not approval to refresh installed apps, refresh profile state, read or edit `.agentera/vision.yaml`, read or edit objective state, contact remotes or registries, or invent missing history.
 

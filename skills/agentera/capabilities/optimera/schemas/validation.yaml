@@ -65,8 +65,8 @@ VALIDATION:
     id: V7
     rule: benchmark_context_first
     description: >-
-      For benchmark-oriented startup, Optimera MUST start from `agentera hej
-      --format json --capability-context optimera` and consume complete
+      For benchmark-oriented startup, Optimera MUST start from `agentera prime
+      --context optimera --format json` and consume complete
       benchmark_context before direct retained benchmark file reads. Direct
       latest-report.json, latest-report.md, or runs.jsonl reads are last-resort
       diagnostics only when the CLI context is incomplete.

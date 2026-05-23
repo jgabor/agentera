@@ -55,14 +55,14 @@ exemptions in test code.
 
 | Command / Surface | Selector | Source file | Owner | Classification | Rationale | Planned Action |
 |---|---|---|---|---|---|---|
-| `agentera prime` | _(none — text only today)_ | `scripts/agentera` (`cmd_prime`) | cli | planned/future | Decision 59 makes bare `prime` the static session-priming surface. No JSON flag exists yet. | Keep text priming; add JSON only if 3.0 budget work requires structured priming metadata. |
-| `agentera prime` dashboard/orientation mode | `--format json` _(provisional)_ | `scripts/agentera` _(not implemented)_ | cli | planned/future | Decision 59 replaces long-term `hej` dashboard JSON ownership with a `prime` orientation mode; flag spelling is provisional. | Implement under `prime`; retire `hej --format json` full envelope. |
-| `agentera prime --context <capability>` | `--format json` _(provisional)_ | `scripts/agentera` _(not implemented)_ | cli | planned/future | Decision 59 replaces `hej --capability-context` with `prime --context`; slim `capability_context` becomes the only supported startup JSON shape. | Implement; remove `--context-profile full` compatibility path. |
-| Direct capability-name commands | `--format json` _(planned)_ | `scripts/agentera` _(not implemented)_ | cli | planned/future | Decision 59 expects top-level commands to map directly to capabilities. v2 routes capabilities through skill invocation, not standalone JSON CLI commands. | Add only if 3.0 command map requires capability-local JSON beyond `prime --context`. |
+| `agentera prime` | _(none — text priming)_ | `scripts/agentera` (`cmd_prime`) | cli | preserve | Bare `prime` prints static `PRIME_BLOB` session priming; no JSON flag. | Keep text priming; add structured JSON only if a future budget requires it. |
+| `agentera prime` | `--dashboard` / `--orientation` + `--format json` | `scripts/agentera` (`cmd_prime`, `_collect_orientation_state`) | cli | change | Decision 59 orientation JSON; replaces long-term `hej --format json` full dashboard envelope. | Budget orientation payload; retire `hej --format json` as dashboard owner. |
+| `agentera prime --context <capability>` | `--format json` | `scripts/agentera` (`cmd_prime`, `_slim_capability_context`) | cli | change | Sole supported 3.0 capability startup JSON shape (`command`, `status`, `capability_context`). | Budget per capability; keep slim-only (no profile flag). |
+| Direct capability-name commands | _(text routing guidance)_ | `scripts/agentera` (`cmd_capability_route`) | cli | preserve | Top-level capability names (`planera`, `realisera`, …) emit routing guidance to `prime --context` and skill invocation; no capability-local JSON. | Preserve guidance-only surface unless 3.0 map adds JSON beyond `prime --context`. |
 | `agentera describe` | `--format json` (default) | `scripts/agentera` (`cmd_describe`, `_build_describe_payload`) | cli | change | Public runtime introspection for commands, schemas, artifact locations, and Decision 45 contract sections. Carries legacy artifact labels and compatibility metadata Decision 58 removes. | Rewrite payload to single-name protocol IDs; budget and test. |
 | `agentera hej` | `--format json` | `scripts/agentera` (`cmd_hej`) | cli / hej | change | Full dashboard JSON envelope (`app_home`, `bundle`, nested state summaries, capability contexts). Decision 59 rejects keeping this alongside slim startup shape. | Move orientation JSON to `prime` dashboard mode; delete full-profile capability startup path. |
-| `agentera hej` | `--format json --capability-context <capability> --context-profile full` | `scripts/agentera` (`cmd_hej`) | cli / hej | change | Default compatibility profile embeds full dashboard plus capability startup contract. Decision 59 explicitly rejects preserving this path. | Remove at 3.0; callers migrate to `prime --context`. |
-| `agentera hej` | `--format json --capability-context <capability> --context-profile slim` | `scripts/agentera` (`cmd_hej`, `_slim_capability_context`) | cli / hej | change | Slim startup capsule is the target 3.0 shape but still emitted under `hej` with duplicate profile selector. Applies to all twelve capabilities in `CAPABILITY_NAMES`. | Relocate to `prime --context <capability> --format json`; drop profile flag. |
+| `agentera hej` | `--format json --capability-context <capability> --context-profile full` | `scripts/agentera` (`cmd_hej`) | cli / hej | historical | Removed in 3.0 (Task 4). Full-profile capability startup duplicated dashboard plus capability contract. | **Removed** — migrate to `prime --context`. |
+| `agentera hej` | `--format json --capability-context <capability> --context-profile slim` | `scripts/agentera` | cli / hej | historical | Removed in 3.0 (Task 4). Slim shape now lives only under `prime --context`. | **Removed** — use `agentera prime --context <capability> --format json`. |
 | `agentera hej` / routine state | `--format json --fields FIELD[,FIELD...]` | `scripts/agentera` (`_select_structured_fields`, `_emit_state_structured`) | cli | change | Field-sparse JSON variant for routine state commands and `hej`. Decision 59 requires measured budgets on all public JSON surfaces. | Retain sparse selection only if budgeted; align field names with Decision 58 canonical IDs. |
 | `agentera plan` | `--format json` | `scripts/agentera` (`_query_plan`, `cmd_state`) | cli | change | Agent-ready plan summary with `source_contract`, legacy `PLAN.md` metadata. High-traffic startup fallback surface. | Rewrite artifact IDs/paths; enforce byte/token budget. |
 | `agentera progress` | `--format json` | `scripts/agentera` (`_query_progress`) | cli | change | Recent cycle summary JSON; referenced by capability startup contracts. | Same as plan. |
@@ -110,24 +110,24 @@ exemptions in test code.
 | `scripts/smoke_*.py` / `smoke_opencode_bootstrap.mjs` | internal `--json` calls to `agentera upgrade --json` only | `scripts/smoke_live_hosts.py`, others | eval | private/excluded | Smoke harnesses consume upgrade JSON internally; public JSON is the `agentera verify … --format json` facade. | Exclude helper-internal consumption from public inventory except via verify rows. |
 | `scripts/extract_corpus.py` | _(writes corpus.json; no `--json` stdout flag)_ | `scripts/extract_corpus.py` | cli (internal) | private/excluded | Engine behind `agentera stats refresh`; structured output is stats JSON, not extract_corpus stdout. | Exclude. |
 
-## Capability-context matrix (current v2)
+## Capability-context matrix (3.0)
 
-All twelve capabilities in `CAPABILITY_NAMES` share the same JSON selectors today:
+All twelve capabilities in `CAPABILITY_NAMES` share one supported startup selector:
 
-| Capability | Current selector | 3.0 planned selector |
+| Capability | Supported 3.0 selector | Historical (removed) |
 |---|---|---|
-| hej, visionera, resonera, inspirera, planera, realisera, optimera, inspektera, dokumentera, profilera, visualisera, orkestrera | `agentera hej --format json --capability-context <name> --context-profile {full\|slim}` | `agentera prime --context <name> --format json` (slim-only) |
+| hej, visionera, resonera, inspirera, planera, realisera, optimera, inspektera, dokumentera, profilera, visualisera, orkestrera | `agentera prime --context <name> --format json` | `agentera hej --format json --capability-context <name> --context-profile {full\|slim}` |
 
-Specialized nested context blocks (`orchestration_context`, `closeout_context`, `evidence_context`, `benchmark_context`, `execution_context`) are embedded in full-profile `hej` JSON and slim capability capsules for subset of capabilities; budget work must cover each capability separately even though the CLI selector pattern is shared.
+Specialized nested context blocks (`orchestration_context`, `closeout_context`, `evidence_context`, `benchmark_context`, `execution_context`) live under `capability_context.context` in the prime response for applicable capabilities; budget work covers each capability separately even though the CLI selector pattern is shared.
 
 ## Notable gaps and inconsistencies
 
 1. **Flag inconsistency**: `doctor` and `upgrade` use `--json`; most other commands use `--format json`. `PRIME_BLOB` and some prose reference `agentera doctor --format json`, which is not supported by the parser.
 2. **`query design` JSON gap**: `--format json` is accepted but `_query_design` never emits JSON.
 3. **Envelope inconsistency**: Routine state commands use the `_structured_state` envelope (`command`, `status`, `entries`, `source_contract`, …); `query <artifact>` generic mode emits a bare entry array; `query last-phase` emits a minimal object.
-4. **`prime` has no JSON today**: Decision 59 planned surfaces (`prime` dashboard, `prime --context`) are not implemented; only text `cmd_prime` exists.
-5. **Direct capability commands absent**: No `agentera planera`, `agentera realisera`, etc. parsers exist; capability work remains skill-routed.
-6. **`--context-profile full` default**: Preserves duplicate startup shape Decision 59 rejects; slim profile requires explicit flag today.
+4. **`hej --capability-context` removed**: Parser rejects `--capability-context` and `--context-profile`; capability startup is `prime --context` only.
+5. **Direct capability commands are routing-only**: `agentera planera`, `agentera realisera`, etc. print guidance to `prime --context` and skill routes; no capability-local JSON.
+6. **Orientation JSON split**: Dashboard/orientation JSON is `prime --dashboard --format json`; capability startup is `prime --context` — not `hej`.
 
 ## High-risk JSON identifiers to preserve during rewrite
 
@@ -141,11 +141,11 @@ Specialized nested context blocks (`orchestration_context`, `closeout_context`, 
 | Category | Count |
 |---|---|
 | Implemented public JSON command patterns in `scripts/agentera` | **~38** distinct selectors (excluding yaml-only and text-only misparsed paths) |
-| Capability-context variants (`×12` capabilities, `×2` profiles) | **24** current startup shapes to collapse to **12** slim `prime --context` shapes |
-| Planned/future Decision 59 surfaces not yet emitting JSON | **3** (`prime` dashboard, `prime --context`, direct capability commands TBD) |
+| Capability-context variants (`×12` capabilities, slim-only) | **12** live `prime --context` shapes; **24** historical hej full/slim profiles removed |
+| Prime JSON surfaces (orientation + context) | **2** implemented (`prime --dashboard`, `prime --context`) plus text-only bare `prime` |
 | Helper/diagnostic/historical `--json` scripts outside canonical namespace | **4** (`usage_stats`, `setup_doctor`, `measure_capability_context_payloads`, `measure_token_payload`) |
 
-**Total inventoried selectors**: ~**42** live public patterns plus **3** planned/future groups and **4** helper classifications.
+**Total inventoried selectors**: ~**42** live public patterns plus **2** historical hej capability-context profiles and **4** helper classifications.
 
 ## Verification method
 

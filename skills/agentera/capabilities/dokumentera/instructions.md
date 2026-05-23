@@ -89,7 +89,7 @@ Determine what kind of documentation work is needed:
 Closeout synchronization uses the existing state seam:
 
 ```bash
-agentera hej --format json --capability-context dokumentera
+agentera prime --context dokumentera --format json
 ```
 
 When the response includes `closeout_context.source_contract.complete_for_closeout_context: true`, use `closeout_context` as the normal source for:

@@ -21,7 +21,7 @@ Glyph: **⎈** (protocol ref: SG12). Used in the mandatory exit marker.
 Orkestrera produces no new artifact files. It reads and updates existing artifacts maintained by other capabilities, but normal startup begins from the supported CLI state seam:
 
 ```bash
-agentera hej --format json --capability-context orkestrera
+agentera prime --context orkestrera --format json
 ```
 
 Use the returned `orchestration_context` before raw plan, progress, health, TODO, or decisions artifacts. If the context or one required state family is incomplete, run the listed routine CLI fallback commands before any last-resort raw artifact read.
@@ -42,7 +42,7 @@ Before a last-resort raw artifact read or any artifact write, prefer the CLI art
 
 ### Orchestration context source contract
 
-At session start, request `agentera hej --format json --capability-context orkestrera`. Do not run an unsupported capability-name command such as `agentera orkestrera`.
+At session start, request `agentera prime --context orkestrera --format json`. Do not run an unsupported capability-name command such as `agentera orkestrera`.
 
 Use these fields as the normal orchestrator source:
 
@@ -97,7 +97,7 @@ The orchestrator follows a deterministic state machine. It does not reason creat
 
 ### Step 0: Assess
 
-Start from `agentera hej --format json --capability-context orkestrera`. Check `orchestration_context.source_contract`, the returned plan summary, and `state_presence` before considering raw artifacts.
+Start from `agentera prime --context orkestrera --format json`. Check `orchestration_context.source_contract`, the returned plan summary, and `state_presence` before considering raw artifacts.
 
 - **No plan in returned state**: bootstrap mode. Delegate to inspirera for vision-gap analysis, then planera for plan creation. If VISION.md is also absent or caveated, suggest ⛥ visionera first and wait for user confirmation.
 - **Plan exists, `header.status: complete`, and all tasks complete**: completed-plan closure. Run the plan-completion sweep and staleness check, archive PLAN.md before removing active state, then spawn inspektera for a health check. If clean, chain inspirera then planera for the next plan. Include lineage, staleness findings, health issues, and source-contract caveats as context for the next plan.

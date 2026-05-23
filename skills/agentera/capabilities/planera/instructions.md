@@ -48,14 +48,11 @@ incomplete plan is not implicit; ask for explicit confirmation before the write.
 
 Use `agentera describe --format json` and its `artifact_schemas` entry for `plan` to locate the active installed schema; use `artifact_locations` or `agentera query --list-artifacts --format json` to locate the mapped plan path and raw-access boundary before any diagnostic raw read. Do not search Agentera directories manually. Existing plan artifacts provide repository-local examples of the shape.
 
-For normal Planera startup, `agentera hej --format json --capability-context
-planera --context-profile slim` exposes
-`capability_context.context.planning_context.startup_contract` as the compact
-read model for planning levels, step markers, CLI-first orientation, plan
+For normal Planera startup, `agentera prime --context planera --format json`
+exposes `capability_context.context.planning_context.startup_contract` as the
+compact read model for planning levels, step markers, CLI-first orientation, plan
 artifact boundaries, full-plan review/self-audit requirements, and handoff
-expectations. The full compatibility profile keeps the legacy
-`source_contract.capability_context.startup_contract` path. Use the compact
-context before rereading this prose. Read this file when editing Planera,
+expectations. Use that context before rereading this prose. Read this file when editing Planera,
 resolving contradiction or ambiguity, validating detailed behavior not covered
 by compact context, or investigating benchmark/read-trigger evidence.
 

@@ -159,7 +159,7 @@ def test_orkestrera_prose_uses_orchestration_context_before_raw_artifacts():
     normalized = " ".join(content.split())
 
     for required in [
-        "agentera hej --format json --capability-context orkestrera",
+        "agentera prime --context orkestrera --format json",
         "Use the returned `orchestration_context` before raw plan, progress, health, TODO, or decisions artifacts",
         "If `source_contract.complete_for_orchestration_context` is true, do not read raw plan, progress, health, TODO, or decisions artifacts",
         "run the listed routine CLI fallback commands",

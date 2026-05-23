@@ -235,7 +235,7 @@ explicit_special_cases:
     display_name: benchmark_context
     artifact_type: cli_context
     scope: cli_context
-    default_path: agentera hej --format json --capability-context optimera#benchmark_context
+    default_path: agentera prime --context optimera --format json#benchmark_context
     producers:
       - agentera_cli
     consumers:

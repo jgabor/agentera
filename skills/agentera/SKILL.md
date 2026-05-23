@@ -251,16 +251,14 @@ capability-name commands such as `agentera resonera`, `agentera planera`, or
 `agentera realisera` as a bootstrap step. Shared words stay split by interface:
 `/agentera plan` routes to planera, while `agentera plan` reads plan state from
 the CLI. When capability-specific startup context is needed, request it through
-the existing state seam with
-`agentera hej --format json --capability-context <capability> --context-profile
-slim`. Use returned `capability_context.state.included` directly, and for
+`agentera prime --context <capability> --format json`. Use returned
+`capability_context.state.included` directly, and for
 `capability_context.state.missing`, run the listed
-`capability_context.state.fallback_commands` before raw file access. The full
-compatibility profile remains available at the same command without
-`--context-profile slim`, with inventory under `source_contract.capability_context`.
+`capability_context.state.fallback_commands` before raw file access. Historical
+v2 paths `hej --capability-context` and `--context-profile` are removed in 3.0.
 For normal ≡ planera execution, use
 `capability_context.context.planning_context.startup_contract` from
-`agentera hej --format json --capability-context planera --context-profile slim`
+`agentera prime --context planera --format json`
 before reading `skills/agentera/capabilities/planera/instructions.md`. Read Planera prose only when
 editing Planera, resolving contradiction or ambiguity, validating detailed
 behavior not covered by the compact contract, or investigating benchmark/read-trigger

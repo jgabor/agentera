@@ -85,8 +85,8 @@ VALIDATION:
     id: V9
     rule: closeout_context_first
     description: >-
-      During final synchronization, Dokumentera MUST use `agentera hej
-      --format json --capability-context dokumentera` and its `closeout_context`
+      During final synchronization, Dokumentera MUST use `agentera prime
+      --context dokumentera --format json` and its `closeout_context`
       before reading TODO, docs, changelog, or progress artifacts directly.
       Complete closeout context is the normal source for mappings, version
       policy, blockers, boundaries, progress evidence, benchmark evidence,

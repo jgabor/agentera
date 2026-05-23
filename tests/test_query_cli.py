@@ -3441,7 +3441,7 @@ class TestHej:
                 {
                     "severity": "normal",
                     "status": "open",
-                    "description": "Add first_invocation_read capability metadata and surface required instruction reads through agentera hej --format json --capability-context <name> so agents can discover startup read obligations without raw directory guessing.",
+                    "description": "Add first_invocation_read capability metadata and surface required instruction reads through agentera prime --context <name> --format json so agents can discover startup read obligations without raw directory guessing.",
                 },
             ],
         })

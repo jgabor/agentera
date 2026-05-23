@@ -92,7 +92,7 @@ def test_startup_completeness_contract_preserves_cli_vocabulary():
     hej_contract = contract["structured_output"]["envelope"]["hej"]["source_contract"]["capability_startup"]
 
     assert startup["status"] == "implemented_complete_startup_envelope"
-    assert startup["owning_command"] == "hej"
+    assert startup["owning_command"] == "prime"
     assert startup["preserves_routine_state_commands"] is True
     assert startup["slash_route_alias_cli_commands_added"] is False
     assert startup["complete_output_requires"] == {
@@ -106,10 +106,11 @@ def test_startup_completeness_contract_preserves_cli_vocabulary():
         "agentera progress --format json",
     ]
     assert "capability_context" in hej_contract["fields"]
-    assert "--capability-context <capability>" in hej_contract["capability_context_semantics"]
-    assert "--context-profile slim" in hej_contract["capability_context_semantics"]
+    assert "agentera prime --context <capability> --format json" in hej_contract["capability_context_semantics"]
     assert "top-level `capability_context`" in hej_contract["capability_context_semantics"]
-    assert "--capability-context planera" in hej_contract["planera_startup_context_semantics"]
+    assert "Historical v2 paths" in hej_contract["capability_context_semantics"]
+    assert "--context-profile" in hej_contract["capability_context_semantics"]
+    assert "prime --context planera" in hej_contract["planera_startup_context_semantics"]
     assert "startup_contract" in hej_contract["planera_startup_context_semantics"]
     assert "capability_context.context.planning_context.startup_contract" in hej_contract["planera_startup_context_semantics"]
     assert "without reading `planera/instructions.md` at runtime" in hej_contract["planera_startup_context_semantics"]
@@ -120,17 +121,17 @@ def test_startup_completeness_contract_preserves_cli_vocabulary():
     assert "evidence_context" in contract["structured_output"]["envelope"]["hej"]["fields"]
     assert "benchmark_context" in contract["structured_output"]["envelope"]["hej"]["fields"]
     assert "execution_context" in contract["structured_output"]["envelope"]["hej"]["fields"]
-    assert "--capability-context dokumentera" in hej_contract["closeout_context_semantics"]
+    assert "prime --context dokumentera" in hej_contract["closeout_context_semantics"]
     assert "local metadata/tag versus publication boundary state" in hej_contract["closeout_context_semantics"]
     assert "must not introduce `agentera dokumentera`" in hej_contract["closeout_context_semantics"]
-    assert "--capability-context inspektera" in hej_contract["evidence_context_semantics"]
+    assert "prime --context inspektera" in hej_contract["evidence_context_semantics"]
     assert "provenance pointers" in hej_contract["evidence_context_semantics"]
     assert "non-empty evidence flags" in hej_contract["evidence_context_semantics"]
     assert "must not introduce `agentera inspektera`" in hej_contract["evidence_context_semantics"]
-    assert "--capability-context optimera" in hej_contract["benchmark_context_semantics"]
+    assert "prime --context optimera" in hej_contract["benchmark_context_semantics"]
     assert "comparison null reasons" in hej_contract["benchmark_context_semantics"]
     assert "must not introduce `agentera optimera`" in hej_contract["benchmark_context_semantics"]
-    assert "--capability-context realisera" in hej_contract["execution_context_semantics"]
+    assert "prime --context realisera" in hej_contract["execution_context_semantics"]
     assert "read-only plan-completion sweep metadata" in hej_contract["execution_context_semantics"]
     assert "must not introduce" in hej_contract["execution_context_semantics"]
     assert hej_contract["evidence_context_target_contract"] == "evidence_context_target_contract"
@@ -153,7 +154,7 @@ def test_evidence_context_target_contract_records_task_1_inventory_and_selection
     evidence = contract["evidence_context_target_contract"]
 
     assert evidence["status"] == "task_1_design_contract"
-    assert evidence["planned_invocation"] == "agentera hej --format json --capability-context inspektera"
+    assert evidence["planned_invocation"] == "agentera prime --context inspektera --format json"
     assert evidence["implementation_status"] == "implemented_provenance_and_boundary_contract"
     assert evidence["status_vocabulary"]["protected_and_version_boundaries"] == [
         "verified_local",

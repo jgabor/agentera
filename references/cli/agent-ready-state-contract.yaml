@@ -247,21 +247,20 @@ structured_output:
             and cli_fallback must be explicit. Agents should try the named CLI
             fallback commands before any last-resort raw artifact read.
           capability_context_semantics: >-
-            `agentera hej --format json --capability-context <capability>` defaults
-            to the full compatibility dashboard envelope and keeps capability
-            routing separate from CLI command vocabulary while returning declared
-            state needs, included startup state families, missing families, and CLI
-            fallback commands under `source_contract.capability_context`.
-            `--context-profile slim` emits only `command`, `status`, and top-level
-            `capability_context` as a startup capsule; its `state` block owns the
-            artifact inventory and its `context` block owns the specific startup
-            payload.
+            Agentera 3.0 capability startup uses
+            `agentera prime --context <capability> --format json` as the sole
+            supported seam. The response emits only `command`, `status`, and
+            top-level `capability_context` as a startup capsule; its `state` block
+            owns declared read needs, included and missing state families, artifact
+            inventory, and `fallback_commands`, while its `context` block owns
+            capability-specific startup payloads and `first_invocation_read`.
+            Historical v2 paths `agentera hej --format json --capability-context`,
+            `--context-profile full`, and `--context-profile slim` are removed and
+            must not be taught as supported behavior.
           planera_startup_context_semantics: >-
-            `agentera hej --format json --capability-context planera` may include a
-            bounded `startup_contract` for normal Planera execution startup. In full
-            compatibility mode the path is
-            `source_contract.capability_context.startup_contract`; in slim mode it
-            is `capability_context.context.planning_context.startup_contract`. The
+            `agentera prime --context planera --format json` may include a bounded
+            `startup_contract` for normal Planera execution startup at
+            `capability_context.context.planning_context.startup_contract`. The
             contract can summarize planning levels, step markers, CLI-first
             orientation, raw plan artifact boundaries, full-plan review/self-audit
             requirements, handoff expectations, and the Planera prose authority
@@ -270,13 +269,13 @@ structured_output:
             capability-name aliases; `agentera describe` remains runtime/schema
             introspection rather than a capability workflow payload.
           orchestration_context_semantics: >-
-            `agentera hej --format json --capability-context orkestrera` may include
+            `agentera prime --context orkestrera --format json` may include
             orchestration_context with dependency-ready tasks, blocked task reasons,
             selected next task, task acceptance/evidence summaries, caveats, fallback
             commands, and a source contract. It must not introduce `agentera
             orkestrera` or other capability-name CLI commands.
           closeout_context_semantics: >-
-            `agentera hej --format json --capability-context dokumentera` may include
+            `agentera prime --context dokumentera --format json` may include
             closeout_context with artifact mappings, version policy, TODO blockers,
             changelog boundary, progress evidence, benchmark evidence or an unavailable
             caveat, local metadata/tag versus publication boundary state, fallback
@@ -284,7 +283,7 @@ structured_output:
             raw-read-last-resort source contract. It must not introduce `agentera
             dokumentera`, new top-level commands, or new subcommands.
           evidence_context_semantics: >-
-            `agentera hej --format json --capability-context inspektera` may include
+            `agentera prime --context inspektera --format json` may include
             evidence_context with an evaluation target, plan criteria, progress
             verification, docs state, health state, TODO state, protected-state and
             version boundary status values, decision-context caveats, attributed
@@ -292,7 +291,7 @@ structured_output:
             evidence flags, and a raw-read-last-resort source contract. It must not
             introduce `agentera inspektera`, new top-level commands, or new subcommands.
           benchmark_context_semantics: >-
-            `agentera hej --format json --capability-context optimera` may include
+            `agentera prime --context optimera --format json` may include
             benchmark_context with retained startup benchmark source status, latest
             report summary, aggregate history summary, runtime coverage caveats,
             state-access rates, token-impact estimates, comparison null reasons,
@@ -300,7 +299,7 @@ structured_output:
             fallback commands, and a raw-read-last-resort source contract. It must
             not introduce `agentera optimera`, new top-level commands, or new subcommands.
           execution_context_semantics: >-
-            `agentera hej --format json --capability-context realisera` may include
+            `agentera prime --context realisera --format json` may include
             execution_context with selected work, task details, acceptance criteria,
             constraints, verification expectations, artifact update requirements,
             progress logging requirements, changelog boundary, scope boundary,
@@ -328,7 +327,7 @@ structured_output:
     useful human text output stable.
 startup_completeness:
   status: implemented_complete_startup_envelope
-  owning_command: hej
+  owning_command: prime
   preserves_routine_state_commands: true
   slash_route_alias_cli_commands_added: false
   complete_output_requires:
@@ -366,7 +365,7 @@ startup_completeness:
 evidence_context_target_contract:
   status: task_1_design_contract
   planned_context_name: evidence_context
-  planned_invocation: agentera hej --format json --capability-context inspektera
+  planned_invocation: agentera prime --context inspektera --format json
   implementation_status: implemented_provenance_and_boundary_contract
   status_vocabulary:
     protected_and_version_boundaries:
@@ -376,7 +375,7 @@ evidence_context_target_contract:
       - unavailable
   inventory:
     cli_first_sources:
-      - command: agentera hej --format json --capability-context orkestrera
+      - command: agentera prime --context orkestrera --format json
         included_state:
           - plan
           - progress

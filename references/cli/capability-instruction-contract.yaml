@@ -40,11 +40,11 @@ current_state:
     status: current_requirement_enforced
   cli_metadata:
     field: first_invocation_read
-    status: emitted_in_hej_capability_context
+    status: emitted_in_prime_capability_context
     current_behavior: >-
-      `agentera hej --format json --capability-context <name>` emits
-      `source_contract.capability_context.first_invocation_read` for supported
-      capabilities.
+      `agentera prime --context <name> --format json` emits
+      `capability_context` metadata including `first_invocation_read` for
+      supported capabilities. Historical `hej --capability-context` is removed in 3.0.
 first_invocation_read:
   field_status: cli_schema_discoverability_implemented
   definition: >-
