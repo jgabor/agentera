@@ -1,4 +1,34 @@
 cycles:
+- number: 586
+  timestamp: 2026-05-23 12:00
+  type: docs
+  phase: build
+  what: Verified D58 JSON output surface inventory against Plan Task 1 acceptance
+    criteria.
+  commit: pending
+  inspiration: Task evaluation retry for inventory commit 2593430 missing PROGRESS
+    verification.
+  discovered: The inventory at docs/d58-json-output-surface-inventory.md already lists
+    53 classification rows with command, selector, source file, owner, classification,
+    rationale, and planned action; the gap was only missing PROGRESS evidence.
+  verified: "Cross-checked docs/d58-json-output-surface-inventory.md against scripts/agentera\
+    \ parser and emitter paths: rg found 195 json/format references, 13 `--format`\
+    \ parser definitions in build_parser(), and upgrade/doctor `--json` flags at lines\
+    \ 7451/7508. Confirmed Plan Task 1 required surfaces are present \u2014 hej (4\
+    \ rows including capability-context profiles and --fields), decisions, compact\
+    \ check/fix, validate artifact, upgrade --json, describe (json default), and three\
+    \ planned/future prime rows (bare prime, dashboard mode, prime --context) plus\
+    \ direct capability-name commands. Inventory cites Decision 58/59 in Governing\
+    \ decisions, references docs/d47-app-home-vocabulary-inventory.md for the D47\
+    \ classification pattern, and uses change/preserve/defer/diagnostic/historical/private/planned\
+    \ legend. Surface-count summary reports ~38 live selectors plus 3 planned groups."
+  next: Proceed to Plan Task 2 whole-surface JSON measurement coverage.
+  context:
+    intent: Satisfy Task 1 acceptance verification without changing plan task status.
+    constraints: PROGRESS evidence only; no plan.yaml status edits or implementation
+      changes.
+    scope: docs/d58-json-output-surface-inventory.md verification and PROGRESS cycle
+      586.
 - number: 585
   timestamp: 2026-05-21 18:31
   type: feat
@@ -253,33 +283,9 @@ cycles:
       package refresh, publication, push, tag, vision or objective mutation, decision
       satisfaction updates, installed-app repair, or 3.0 compatibility removal.
     scope: Final validation, diff-scope review, PLAN closure, and PROGRESS evidence.
-- number: 576
-  timestamp: 2026-05-18 22:47
-  type: test
-  phase: build
-  what: Added compact-startup exception boundary regression coverage.
-  commit: pending
-  inspiration: Orkestrera executed Task 4 of the Capability Instruction Validation
-    Regression Coverage plan, preserving Planera's compact startup exception without
-    broadening it to other capabilities.
-  discovered: Planera already had direct compact-startup and missing-instructions
-    installed-app fixture coverage. The missing guard was an explicit negative boundary
-    proving non-Planera capability contexts do not inherit `compact_startup` or `startup_contract`.
-  verified: '`uv run pytest tests/test_query_cli.py::TestHej::test_hej_planera_context_exposes_compact_startup_contract
-    tests/test_query_cli.py::TestHej::test_planera_compact_startup_context_does_not_require_instruction_file
-    tests/test_query_cli.py::TestHej::test_compact_startup_exception_is_limited_to_planera`
-    passed with 3 tests. `agentera hej --format json --capability-context planera`,
-    `agentera validate capability-contract --format json`, `agentera validate capability
-    planera`, and `git diff --check` passed.'
-  next: Execute Task 5 to sync final validation regression state.
-  context:
-    intent: Complete Task 4, Preserve compact-startup exceptions.
-    constraints: Validation and regression coverage only. No broad wording cleanup,
-      package refresh, publication, push, tag, vision or objective mutation, decision
-      satisfaction updates, installed-app repair, or 3.0 compatibility removal.
-    scope: Focused hej capability-context regression tests plus PLAN and PROGRESS
-      evidence.
 archive:
+- summary: 'Cycle 576 (2026-05-18): Added compact-startup exception boundary regression
+    coverage.'
 - summary: 'Cycle 575 (2026-05-18): Added contract and hej context regression coverage
     for instruction reads.'
 - summary: 'Cycle 574 (2026-05-18): Added capability validator regression coverage
@@ -354,5 +360,3 @@ archive:
 - summary: 'Cycle 538 (2026-05-16): Tightened doctor plan around app metadata vocabulary
     convergence.'
 - summary: 'Cycle 537 (2026-05-16): Planned the doctor ready-state Next output fix.'
-- summary: 'Cycle 536 (2026-05-16): Closed out transcript lint threshold analysis
-    with full-file PLAN.md lint behavior.'
