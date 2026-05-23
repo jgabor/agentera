@@ -1,4 +1,24 @@
 cycles:
+- number: 592
+  timestamp: 2026-05-23 22:00
+  type: release
+  phase: build
+  what: Archived completed prime/JSON-budget plan and released 2.6.0 metadata.
+  commit: pending
+  inspiration: User-approved plan archive and 2.x release (not 3.0.0 semver).
+  discovered: "Plan archived to `.agentera/archive/PLAN-2026-05-23-agentera-3-0-prime-control-plane-and-json-budget.yaml`;\
+    \ active `.agentera/plan.yaml` removed. Version surfaces aligned to 2.6.0 per\
+    \ docs semver_policy feat\u2192minor from 2.5.1."
+  verified: Version-bearing files updated (registry, pyproject, lockfile, plugin manifests,
+    SKILL frontmatter, OpenCode AGENTERA_VERSION). CHANGELOG.md `[2.6.0]` section
+    added. README version line updated.
+  next: Tag v2.6.0 and publish only if explicitly requested; remaining Decision 58/59
+    3.0-boundary TODOs stay on `[chore:3.0.0]` track.
+  context:
+    intent: Close the completed orchestration plan and ship 2.x release metadata without
+      claiming the full Agentera 3.0 protocol boundary release.
+    constraints: No 3.0.0 version bump; no push unless requested.
+    scope: plan archive, version_files, CHANGELOG, PROGRESS evidence.
 - number: 591
   timestamp: 2026-05-23 21:30
   type: test
@@ -254,33 +274,8 @@ cycles:
       updates.
     scope: capability-context payload measurement script, offline tests, slim bespoke
       context compaction, PLAN and PROGRESS evidence.
-- number: 582
-  timestamp: 2026-05-21 12:28
-  type: test
-  phase: build
-  what: Added generic slim capability-context builders.
-  commit: pending
-  inspiration: Orkestrera Task 4 for the Slim Capability Context Payloads plan.
-  discovered: Generic capabilities can share compact plan, docs, progress, health,
-    TODO, and profile summaries while exposing capability-specific startup keys. Missing
-    vision, decisions, objective, and design state stay as CLI fallback pointers instead
-    of expanding the full hej dashboard envelope.
-  verified: '`uv run --with pytest pytest tests/test_query_cli.py::TestHej::test_hej_capability_context_slim_profile_adds_generic_capability_builders
-    tests/test_query_cli.py::TestHej::test_hej_capability_context_slim_profile_emits_startup_capsule
-    tests/test_query_cli.py::TestHej::test_hej_capability_context_slim_profile_nests_existing_bespoke_contexts`
-    passed. `uv run scripts/agentera hej --format json --capability-context planera
-    --context-profile slim --fields capability_context` emitted `planning_context`.
-    `uv run scripts/agentera hej --format json --capability-context visualisera --context-profile
-    slim --fields capability_context` emitted `design_context`.'
-  next: Execute Task 5 to add byte and GPT-5 token budget regression coverage.
-  context:
-    intent: Complete Task 4 by adding slim startup builders for generic capabilities.
-    constraints: Task 4 only. No token budget harness, contract documentation updates,
-      capability-name CLI commands, release metadata, publication, installed-app refresh,
-      protected vision/objective edits, or decision-satisfaction updates.
-    scope: scripts/agentera generic slim contexts, focused hej tests, PLAN and PROGRESS
-      evidence.
 archive:
+- summary: 'Cycle 582 (2026-05-21): Added generic slim capability-context builders.'
 - summary: 'Cycle 581 (2026-05-21): Nested existing bespoke contexts in slim capability-context
     output.'
 - summary: 'Cycle 580 (2026-05-21): Added slim capability-context envelope mode.'
@@ -354,5 +349,3 @@ archive:
     Task 5 artifacts.'
 - summary: 'Cycle 543 (2026-05-16): Implemented canonical doctor app metadata statuses
     for Plan Task 3.'
-- summary: 'Cycle 542 (2026-05-16): Defined the doctor app metadata vocabulary contract
-    for Plan Task 2.'

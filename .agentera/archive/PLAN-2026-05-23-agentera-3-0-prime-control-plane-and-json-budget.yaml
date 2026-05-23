@@ -1,7 +1,7 @@
 header:
   level: full
   created: 2026-05-22
-  status: active
+  status: complete
   reviewed: 2026-05-22
   critic_issues: "1 found, 1 addressed, 0 dismissed"
   revised: >-
@@ -93,7 +93,7 @@ tasks:
   - number: 1
     name: Inventory all public JSON output surfaces
     depends_on: []
-    status: pending
+    status: complete
     acceptance:
       - >-
         GIVEN `scripts/agentera` parser definitions and public helper scripts are
@@ -118,7 +118,7 @@ tasks:
   - number: 2
     name: Build whole-surface JSON measurement coverage
     depends_on: [1]
-    status: pending
+    status: complete
     acceptance:
       - >-
         GIVEN the inventory lists public JSON outputs WHEN the measurement command
@@ -139,7 +139,7 @@ tasks:
   - number: 3
     name: Define and enforce JSON budgets
     depends_on: [1, 2]
-    status: pending
+    status: complete
     acceptance:
       - >-
         GIVEN measured baselines exist WHEN budgets are defined THEN each public
@@ -157,7 +157,7 @@ tasks:
   - number: 4
     name: Introduce prime context and remove startup compatibility
     depends_on: [1, 2, 3]
-    status: pending
+    status: complete
     acceptance:
       - >-
         GIVEN `agentera prime --context <capability> --format json` runs WHEN output
@@ -193,7 +193,7 @@ tasks:
   - number: 5
     name: Update callers, contracts, docs, and tests
     depends_on: [4]
-    status: pending
+    status: complete
     acceptance:
       - >-
         GIVEN CLI contracts mention capability context WHEN contract tests run THEN
@@ -215,7 +215,7 @@ tasks:
   - number: 6
     name: Validate, report measurements, and prepare handoff
     depends_on: [1, 2, 3, 4, 5]
-    status: pending
+    status: complete
     acceptance:
       - >-
         GIVEN implementation is complete WHEN validation runs THEN focused JSON
