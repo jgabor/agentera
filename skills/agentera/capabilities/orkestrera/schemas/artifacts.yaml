@@ -5,7 +5,7 @@ ARTIFACTS:
     local_role: produces_and_consumes
     description: >-
       Orkestrera consumes plan task queue state through
-      `agentera hej --format json --capability-context orkestrera` before raw
+      `agentera prime --context orkestrera --format json` before raw
       artifact access, then updates status (pending -> complete/blocked) only
       when resolving a task.
   2:

@@ -829,7 +829,7 @@ def test_classifier_records_complete_dokumentera_closeout_without_raw_artifact_r
                 "tool-cli-closeout",
                 "2026-05-13T09:30:01Z",
                 "bash",
-                {"command": "uv run scripts/agentera hej --format json --capability-context dokumentera"},
+                {"command": "uv run scripts/agentera prime --context dokumentera --format json"},
             ),
             _fixture_tool("tool-impl", "2026-05-13T09:30:02Z", "apply_patch", {"patchText": "x"}),
         ]

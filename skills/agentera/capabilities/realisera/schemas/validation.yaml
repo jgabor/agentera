@@ -64,13 +64,13 @@ VALIDATION:
     id: V7
     rule: execution_context_first
     description: >-
-      Realisera startup SHOULD begin from `agentera hej --format json
-      --capability-context realisera` and consume complete execution_context
+      Realisera startup SHOULD begin from `agentera prime --context realisera
+      --format json` and consume complete execution_context
       state before direct reads of plan, progress, TODO, docs, health,
       decisions, changelog, vision, profile, or design artifacts.
     severity: warning
     checks:
-      - "execution_context requested through supported hej capability-context seam"
+      - "execution_context requested through supported prime --context seam"
       - "complete execution_context used before direct startup artifact reads"
   8:
     id: V8

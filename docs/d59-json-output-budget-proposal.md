@@ -108,20 +108,20 @@ and are already enforced by `measure_capability_context_payloads.py`.
 
 | Surface ID | Command / selector | Capability | Baseline B | Baseline tok | Proposed B | Proposed tok | Rationale |
 |------------|-------------------|------------|----------:|-------------:|-----------:|-------------:|-----------|
-| hej-capability-context-slim:hej | `hej --capability-context hej --context-profile slim` | hej | 2,194 | 548 | **8,000** | **2,000** | Existing generic cap; smallest capsule |
-| hej-capability-context-slim:visionera | slim context | visionera | 5,263 | 1,229 | **8,000** | **2,000** | Existing generic cap |
-| hej-capability-context-slim:resonera | slim context | resonera | 4,422 | 1,040 | **8,000** | **2,000** | Existing generic cap |
-| hej-capability-context-slim:inspirera | slim context | inspirera | 2,377 | 600 | **8,000** | **2,000** | Existing generic cap |
-| hej-capability-context-slim:profilera | slim context | profilera | 2,427 | 610 | **8,000** | **2,000** | Existing generic cap |
-| hej-capability-context-slim:visualisera | slim context | visualisera | 4,377 | 1,039 | **8,000** | **2,000** | Existing generic cap |
-| hej-capability-context-slim:planera | slim context | planera | 9,530 | 2,044 | **12,000** | **3,000** | Planning startup contract |
-| hej-capability-context-slim:orkestrera | slim context | orkestrera | 13,813 | 2,931 | **16,000** | **4,000** | Orchestration queue + handoff |
-| hej-capability-context-slim:optimera | slim context | optimera | 14,658 | 2,918 | **20,000** | **5,000** | Objective/experiment summaries |
-| hej-capability-context-slim:dokumentera | slim context | dokumentera | 15,139 | 3,227 | **20,000** | **5,000** | Closeout/docs context |
-| hej-capability-context-slim:realisera | slim context | realisera | 16,647 | 3,465 | **20,000** | **5,000** | Execution context |
-| hej-capability-context-slim:inspektera | slim context | inspektera | 19,512 | 3,874 | **28,000** | **7,000** | Largest legitimate startup capsule |
+| prime-capability-context:hej | `prime --context hej --format json` | hej | 2,194 | 548 | **8,000** | **2,000** | Existing generic cap; smallest capsule |
+| prime-capability-context:visionera | slim context | visionera | 5,263 | 1,229 | **8,000** | **2,000** | Existing generic cap |
+| prime-capability-context:resonera | slim context | resonera | 4,422 | 1,040 | **8,000** | **2,000** | Existing generic cap |
+| prime-capability-context:inspirera | slim context | inspirera | 2,377 | 600 | **8,000** | **2,000** | Existing generic cap |
+| prime-capability-context:profilera | slim context | profilera | 2,427 | 610 | **8,000** | **2,000** | Existing generic cap |
+| prime-capability-context:visualisera | slim context | visualisera | 4,377 | 1,039 | **8,000** | **2,000** | Existing generic cap |
+| prime-capability-context:planera | slim context | planera | 9,530 | 2,044 | **12,000** | **3,000** | Planning startup contract |
+| prime-capability-context:orkestrera | slim context | orkestrera | 13,813 | 2,931 | **16,000** | **4,000** | Orchestration queue + handoff |
+| prime-capability-context:optimera | slim context | optimera | 14,658 | 2,918 | **20,000** | **5,000** | Objective/experiment summaries |
+| prime-capability-context:dokumentera | slim context | dokumentera | 15,139 | 3,227 | **20,000** | **5,000** | Closeout/docs context |
+| prime-capability-context:realisera | slim context | realisera | 16,647 | 3,465 | **20,000** | **5,000** | Execution context |
+| prime-capability-context:inspektera | slim context | inspektera | 19,512 | 3,874 | **28,000** | **7,000** | Largest legitimate startup capsule |
 
-**Task 4 note:** migrate selector to `agentera prime --context <capability> --format json`; caps transfer unchanged.
+**Implemented (Task 4):** `agentera prime --context <capability> --format json` is the sole supported startup selector; manifest surface ids use `prime-capability-context:*`. Historical `hej-capability-context-*` ids remain in measurement reports as `removed_3_0` only.
 
 ---
 

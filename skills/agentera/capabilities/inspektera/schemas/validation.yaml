@@ -65,12 +65,12 @@ VALIDATION:
     id: V7
     rule: evidence_context_first
     description: >-
-      Inspektera evaluation startup MUST begin with `agentera hej --format json
-      --capability-context inspektera` and use complete CLI `evidence_context` before
+      Inspektera evaluation startup MUST begin with `agentera prime --context
+      inspektera --format json` and use complete CLI `evidence_context` before
       raw plan, progress, docs, health, TODO, or decisions artifacts.
     severity: critical
     checks:
-      - "Evidence context is requested through hej capability context before raw artifacts"
+      - "Evidence context is requested through prime --context before raw artifacts"
       - "Complete evidence_context is used for evaluation target, criteria, evidence, caveats, and residual risks"
   8:
     id: V8
@@ -82,7 +82,7 @@ VALIDATION:
     severity: critical
     checks:
       - "evidence_context.fallback_commands are attempted before raw artifact reads"
-      - "source_contract.capability_context.cli_fallback is used when evidence_context is unavailable"
+      - "capability_context.state.fallback_commands is used when evidence_context is unavailable"
       - "Raw artifact reads are last-resort diagnostics, not normal evaluation startup"
   9:
     id: V9

@@ -37,7 +37,7 @@ Before starting, read `references/contract.md` (at v2 skill location `skills/age
 For benchmark-oriented optimization work, start from:
 
 ```bash
-agentera hej --format json --capability-context optimera
+agentera prime --context optimera --format json
 ```
 
 Use `benchmark_context` before direct retained startup benchmark file access. If `benchmark_context.source_contract.complete_for_benchmark_context` is true, do not read `latest-report.json`, `latest-report.md`, or `runs.jsonl` during normal Optimera startup. Use the bounded fields in `benchmark_context.latest_report`, `benchmark_context.history_summary`, `benchmark_context.runtime_coverage`, `benchmark_context.state_access_metrics`, `benchmark_context.token_impact`, `benchmark_context.comparison`, `benchmark_context.recommendation`, and `benchmark_context.manual_refresh` instead.
@@ -179,7 +179,7 @@ Steps: orient, analyze, hypothesize, implement, measure, decide, audit, log.
 
 ### Step 1: Orient
 
-**Benchmark context**: for benchmark-oriented work, use `benchmark_context` from `agentera hej --format json --capability-context optimera` before direct retained benchmark files. Raw benchmark file reads are last-resort diagnostics.
+**Benchmark context**: for benchmark-oriented work, use `benchmark_context` from `agentera prime --context optimera --format json` before direct retained benchmark files. Raw benchmark file reads are last-resort diagnostics.
 
 **Active-objective inference**: before reading any per-objective artifact, determine which objective is active by inspecting `.agentera/optimera/`:
 

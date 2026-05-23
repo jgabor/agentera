@@ -121,6 +121,7 @@ RUNTIME_STORE_ARGUMENTS = {
 STATE_CLI_COMMANDS = frozenset(
     {
         "hej",
+        "prime",
         "plan",
         "progress",
         "health",
@@ -142,6 +143,7 @@ CLI_COMMAND_ARTIFACTS = {
     "objective": {"OBJECTIVE.md"},
     "experiments": {"EXPERIMENTS.md"},
     "hej": {"PLAN.md", "PROGRESS.md", "HEALTH.md", "TODO.md", "DOCS.md", "DECISIONS.md"},
+    "prime": {"PLAN.md", "PROGRESS.md", "HEALTH.md", "TODO.md", "DOCS.md", "DECISIONS.md", "CHANGELOG.md"},
 }
 QUERY_ARTIFACTS = {
     "plan": "PLAN.md",

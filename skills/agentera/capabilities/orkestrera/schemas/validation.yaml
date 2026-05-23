@@ -61,12 +61,12 @@ VALIDATION:
     rule: orchestration_context_first
     description: >-
       Orkestrera startup and evaluation MUST use
-      `agentera hej --format json --capability-context orkestrera` and the
+      `agentera prime --context orkestrera --format json` and the
       returned orchestration context before raw plan, progress, health, TODO,
       or decisions artifact reads.
     severity: critical
     checks:
-      - "instructions.md contains agentera hej --format json --capability-context orkestrera"
+      - "instructions.md contains agentera prime --context orkestrera --format json"
       - "instructions.md contains Use the returned `orchestration_context` before raw plan, progress, health, TODO, or decisions artifacts"
       - "instructions.md contains If `source_contract.complete_for_orchestration_context` is true, do not read raw plan, progress, health, TODO, or decisions artifacts"
   7:

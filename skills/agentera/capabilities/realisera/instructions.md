@@ -122,11 +122,11 @@ Steps: orient, select, research, plan, spawn, verify, commit, audit, log.
 Start from the supported Realisera execution-context seam:
 
 ```bash
-agentera hej --format json --capability-context realisera
+agentera prime --context realisera --format json
 ```
 
 If `execution_context.source_contract.complete_for_execution_context` is true,
-use `execution_context` and included `hej` state as normal startup context. Do
+use `execution_context` and included `capability_context.state` as normal startup context. Do
 not read raw PLAN, PROGRESS, TODO, DOCS, HEALTH, DECISIONS, CHANGELOG, VISION,
 PROFILE, or DESIGN artifacts just to re-check selected work, acceptance
 criteria, constraints, verification expectations, artifact update requirements,

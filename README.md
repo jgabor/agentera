@@ -328,12 +328,13 @@ uv run scripts/agentera validate capability-contract --format json
 Every capability has `instructions.md` plus `schemas/triggers.yaml`,
 `schemas/artifacts.yaml`, `schemas/validation.yaml`, and `schemas/exit.yaml`.
 The schema contract makes those files executable for validators and tests.
-Decision 57 also defines `first_invocation_read` metadata emitted by
-`agentera hej --format json --capability-context <name>`. For compatibility,
-the default profile keeps that metadata under `source_contract.capability_context`.
-Use `--context-profile slim` for the compact startup capsule at top-level
-`capability_context`; Planera reports its startup contract at
-`capability_context.context.planning_context.startup_contract`, and runtime enforcement is still false. See
+Decision 57 defines `first_invocation_read` metadata in the Agentera 3.0
+capability startup capsule from
+`agentera prime --context <name> --format json` (top-level `capability_context`,
+with Planera's startup contract at
+`capability_context.context.planning_context.startup_contract`). Historical
+`hej --capability-context` and `--context-profile` paths are removed.
+runtime enforcement is still false. See
 [`AGENTS.md`](./AGENTS.md) for agent operating rules and
 [`references/cli/capability-instruction-contract.yaml`](./references/cli/capability-instruction-contract.yaml)
 for instruction-file contracts.
