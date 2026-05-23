@@ -1,4 +1,37 @@
 cycles:
+- number: 591
+  timestamp: 2026-05-23 21:30
+  type: test
+  phase: build
+  what: Closed Agentera 3.0 JSON budget plan with full validation and measurement
+    closeout evidence.
+  commit: pending
+  inspiration: Plan Task 6 for Agentera 3.0 prime control plane and JSON output budget
+    work.
+  discovered: Exact tiktoken measurement available in this environment; skip-token
+    and exact-token budget enforcement both pass with zero violations across 67 manifest
+    surfaces and 12 capability-context capsules. Slim prime --context totals are ~72%
+    smaller than archived full-profile hej capability-context baselines.
+  verified: '`uv run --with pytest pytest tests/test_measure_json_output_surfaces.py
+    tests/test_measure_capability_context_payloads.py tests/test_decision45_cli_contract.py
+    tests/test_query_cli.py -q` passed (223 tests). `uv run scripts/agentera validate
+    capability orkestrera` passed. `uv run scripts/agentera validate capability-contract
+    --format json` passed (2/2). `uv run scripts/agentera validate artifact --artifact
+    PLAN.md --file .agentera/plan.yaml --format json` passed. `uv run scripts/agentera
+    gate --format json` passed. `git diff --check` passed. `uv run scripts/measure_json_output_surfaces.py
+    --json --token-mode skip --enforce-budgets` passed (67 surfaces, 0 violations).
+    `uv run scripts/measure_json_output_surfaces.py --json --token-mode exact --enforce-budgets`
+    passed (exact GPT-5 tokens, 0 violations). `uv run scripts/measure_capability_context_payloads.py
+    --json --enforce-budgets` passed (12 capabilities, 0 violations). Closeout doc:
+    docs/d59-json-output-closeout-measurements.md.'
+  next: Hand off to orkestrera for session closeout; defer release bumps and package
+    refresh until explicitly approved.
+  context:
+    intent: Satisfy Task 6 acceptance for validation, measurement reporting, and handoff
+      without plan.yaml task status edits or release metadata changes.
+    constraints: No plan.yaml task status edits, no version/changelog/release bumps,
+      no push.
+    scope: docs/d59-json-output-closeout-measurements.md and PROGRESS cycle 591 evidence.
 - number: 590
   timestamp: 2026-05-23 19:45
   type: docs
@@ -247,35 +280,9 @@ cycles:
       protected vision/objective edits, or decision-satisfaction updates.
     scope: scripts/agentera generic slim contexts, focused hej tests, PLAN and PROGRESS
       evidence.
-- number: 581
-  timestamp: 2026-05-21 00:26
-  type: test
-  phase: build
-  what: Nested existing bespoke contexts in slim capability-context output.
-  commit: pending
-  inspiration: Orkestrera Task 3 for the Slim Capability Context Payloads plan.
-  discovered: The slim envelope can preserve compatibility metadata and add the existing
-    bespoke context payloads without moving or rewriting those builders. Non-null
-    `execution_context`, `benchmark_context`, `evidence_context`, `closeout_context`,
-    and `orchestration_context` values are copied under `capability_context.context`
-    in slim mode.
-  verified: '`uv run --with pytest pytest tests/test_query_cli.py::TestHej::test_hej_capability_context_slim_profile_emits_startup_capsule
-    tests/test_query_cli.py::TestHej::test_hej_capability_context_slim_profile_nests_existing_bespoke_contexts
-    tests/test_query_cli.py::TestHej::test_hej_capability_context_full_profile_keeps_compatibility_envelope
-    tests/test_query_cli.py::TestHej::test_hej_slim_profile_rejects_unsupported_sparse_field_without_partial_stdout`
-    passed. `uv run scripts/agentera hej --format json --capability-context realisera
-    --context-profile slim --fields capability_context` emitted nested `execution_context`.
-    `git diff --check` passed.'
-  next: Execute Task 4 to add slim builders for generic capabilities.
-  context:
-    intent: Complete Task 3 by nesting existing bespoke contexts inside the slim capability-context
-      capsule.
-    constraints: Task 3 only. No new generic capability builders, capability-name
-      CLI commands, release metadata, publication, installed-app refresh, protected
-      vision/objective edits, or decision-satisfaction updates.
-    scope: scripts/agentera slim context nesting, focused hej tests, PLAN and PROGRESS
-      evidence.
 archive:
+- summary: 'Cycle 581 (2026-05-21): Nested existing bespoke contexts in slim capability-context
+    output.'
 - summary: 'Cycle 580 (2026-05-21): Added slim capability-context envelope mode.'
 - summary: 'Cycle 579 (2026-05-20): Introduced role-aware capability state inventory.'
 - summary: 'Cycle 578 (2026-05-18): Closed stale 2.4.x instruction-validation TODO
@@ -349,5 +356,3 @@ archive:
     for Plan Task 3.'
 - summary: 'Cycle 542 (2026-05-16): Defined the doctor app metadata vocabulary contract
     for Plan Task 2.'
-- summary: 'Cycle 541 (2026-05-16): Reproduced doctor ready-state output ambiguity
-    for Plan Task 1.'
