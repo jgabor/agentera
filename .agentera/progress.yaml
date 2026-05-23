@@ -1,4 +1,29 @@
 cycles:
+- number: 588
+  timestamp: 2026-05-23 16:20
+  type: feat
+  phase: build
+  what: Wired D59 JSON byte/token budgets into manifest and measurement harness enforcement.
+  commit: pending
+  inspiration: Plan Task 3 for Agentera 3.0 JSON output budget work.
+  discovered: "Manifest `budget_by_capability` rows require per-capability budget\
+    \ resolution during expansion \u2014 template-level `_resolve_surface_budget`\
+    \ must not run for `expand_by: capability` parents. Monitor-tier diagnostic surfaces\
+    \ emit warnings in the JSON report without failing CI; exempt rows carry inventory-linked\
+    \ `exemption_rationale` from the manifest."
+  verified: '`uv run --with pytest pytest tests/test_measure_json_output_surfaces.py
+    -q` passed (11 tests). `uv run scripts/measure_json_output_surfaces.py --json
+    --token-mode skip --enforce-budgets` passed with status=pass, budget_status=pass,
+    66 surfaces measured, zero violations, and violation rows naming command, selector,
+    capability/profile, byte_count, byte_budget, token_count, token_budget, enforcement_tier,
+    and surface id when budgets are exceeded in offline unit tests.'
+  next: Proceed to Plan Task 4 prime implementation and JSON output rewrites.
+  context:
+    intent: Satisfy Task 3 acceptance for explicit budgets, enforce diagnostics, and
+      inventory-traceable exemptions.
+    constraints: No plan.yaml task status edits, no Task 4 prime rewrites, no push.
+    scope: json_output_surface_manifest.yaml, measure_json_output_surfaces.py, d59
+      proposal, d58 cross-link, tests, and PROGRESS evidence.
 - number: 587
   timestamp: 2026-05-23 14:30
   type: test
@@ -251,39 +276,9 @@ cycles:
       edits, or decision-satisfaction updates.
     scope: scripts/agentera role-aware inventory, focused hej tests, PLAN and PROGRESS
       evidence.
-- number: 578
-  timestamp: 2026-05-18 22:12
-  type: test
-  phase: build
-  what: Closed stale 2.4.x instruction-validation TODO from committed regression evidence.
-  commit: pending
-  inspiration: User-approved Realisera closeout for the stale 2.4.x TODO after commit
-    9f8071a completed the regression coverage.
-  discovered: Commit 9f8071a already satisfied the open TODO by covering required
-    `instructions.md` validation, `prose.md` rejection, required-read capability context
-    emission, and Planera's compact-startup exception boundary. The remaining work
-    was metadata synchronization and release-readiness reassessment, not release execution.
-  verified: '`uv run scripts/agentera validate capability-contract --format json`,
-    `uv run pytest tests/test_capability_validator_characterization.py tests/test_capability_contract_loader.py
-    tests/test_capability_contract_structure.py tests/test_query_cli.py::TestHej::test_hej_capability_context_names_included_and_missing_state_families
-    tests/test_query_cli.py::TestHej::test_hej_realisera_execution_context_reports_plan_driven_startup
-    tests/test_query_cli.py::TestHej::test_hej_planera_context_exposes_compact_startup_contract
-    tests/test_query_cli.py::TestHej::test_planera_compact_startup_context_does_not_require_instruction_file
-    tests/test_query_cli.py::TestHej::test_compact_startup_exception_is_limited_to_planera`,
-    `uv run scripts/agentera validate capability skills/agentera/capabilities`, artifact
-    validators for TODO.md, PLAN.md, and PROGRESS.md, and `git diff --check` passed.'
-  next: 2.4.x appears ready for a separate release-prep decision; do not bump, tag,
-    promote changelog entries, publish, push, refresh packages, or edit protected
-    state without explicit approval.
-  context:
-    intent: Close stale TODO bookkeeping and reassess readiness after committed validation
-      coverage.
-    constraints: No release execution, version bump, changelog promotion, tag, push,
-      package refresh, installed-app refresh, protected vision/objective edit, or
-      decision-satisfaction update.
-    scope: TODO.md closeout, PLAN task completion, PROGRESS evidence, focused validation
-      reruns, and readiness report.
 archive:
+- summary: 'Cycle 578 (2026-05-18): Closed stale 2.4.x instruction-validation TODO
+    from committed regression evidence.'
 - summary: 'Cycle 577 (2026-05-18): Completed capability instruction validation regression
     coverage.'
 - summary: 'Cycle 576 (2026-05-18): Added compact-startup exception boundary regression
@@ -358,6 +353,4 @@ archive:
 - summary: 'Cycle 540 (2026-05-16): Expanded Decision 54 with broader vocabulary inventory
     boundaries.'
 - summary: 'Cycle 539 (2026-05-16): Recorded Decision 54 for app metadata vocabulary
-    convergence.'
-- summary: 'Cycle 538 (2026-05-16): Tightened doctor plan around app metadata vocabulary
     convergence.'

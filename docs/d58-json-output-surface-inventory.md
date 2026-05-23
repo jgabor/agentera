@@ -18,6 +18,13 @@ in this task.
   top-level commands map to capabilities with `prime` as the sole non-capability control
   plane; every public JSON surface must be inventoried, measured, and budgeted.
 
+Byte and GPT-5 token caps (or documented exemptions) live in
+`docs/d59-json-output-budget-proposal.md` and are enforced via
+`scripts/json_output_surface_manifest.yaml` plus
+`scripts/measure_json_output_surfaces.py --enforce-budgets`. Exempt rows cite
+inventory **defer** / **preserve** classifications here rather than hiding
+exemptions in test code.
+
 ## Search coverage
 
 - **Parser inspection**: `scripts/agentera` `build_parser()` and per-command handlers

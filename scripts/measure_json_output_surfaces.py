@@ -41,8 +41,9 @@ __all__ = [
 
 DEFAULT_MANIFEST = SCRIPT_DIR / "json_output_surface_manifest.yaml"
 DEFAULT_LOCAL_BENCHMARK_COMMAND = (
-    "uv run scripts/measure_json_output_surfaces.py --json --token-mode exact"
+    "uv run scripts/measure_json_output_surfaces.py --json --token-mode exact --enforce-budgets"
 )
+ENFORCEMENT_TIERS = frozenset({"enforce", "monitor", "exempt", "removed_3_0"})
 
 
 @dataclass(frozen=True)
@@ -55,6 +56,11 @@ class SurfaceSpec:
     budget_classification: str
     measurement_scope: str
     fixture: str
+    enforcement_tier: str
+    byte_budget: int | None
+    token_budget: int | None
+    exemption_rationale: str | None = None
+    monitor_byte_ceiling: int | None = None
     capability: str | None = None
     profile: str | None = None
 
@@ -78,6 +84,34 @@ class SurfaceMeasurement:
     error: str | None = None
 
 
+@dataclass(frozen=True)
+class BudgetViolation:
+    id: str
+    command: str
+    selector: str
+    capability: str | None
+    profile: str | None
+    byte_count: int
+    byte_budget: int
+    token_count: int | None
+    token_budget: int | None
+    enforcement_tier: str
+    reasons: list[str]
+
+
+@dataclass(frozen=True)
+class BudgetWarning:
+    id: str
+    command: str
+    selector: str
+    capability: str | None
+    profile: str | None
+    byte_count: int
+    monitor_byte_ceiling: int
+    enforcement_tier: str
+    reason: str
+
+
 def _load_manifest(path: Path) -> dict[str, Any]:
     with open(path, encoding="utf-8") as stream:
         data = yaml.safe_load(stream)
@@ -93,45 +127,106 @@ def _format_template(value: str, *, capability: str | None, repo_root: Path) -> 
     )
 
 
+def _resolve_surface_budget(
+    raw: dict[str, Any],
+    *,
+    capability: str | None,
+) -> tuple[str, int | None, int | None, str | None, int | None]:
+    tier = str(raw["enforcement_tier"])
+    if tier not in ENFORCEMENT_TIERS:
+        raise ValueError(f"surface {raw['id']!r}: invalid enforcement_tier {tier!r}")
+
+    exemption_rationale = raw.get("exemption_rationale")
+    if tier == "exempt" and not exemption_rationale:
+        raise ValueError(f"surface {raw['id']!r}: exempt tier requires exemption_rationale")
+
+    monitor_byte_ceiling = raw.get("monitor_byte_ceiling")
+    if tier == "monitor" and monitor_byte_ceiling is None:
+        raise ValueError(f"surface {raw['id']!r}: monitor tier requires monitor_byte_ceiling")
+
+    byte_budget: int | None
+    token_budget: int | None
+    budget_by_capability = raw.get("budget_by_capability")
+    if capability and budget_by_capability:
+        cap_budget = budget_by_capability.get(capability)
+        if cap_budget is None:
+            raise ValueError(
+                f"surface {raw['id']!r}: missing budget_by_capability entry for {capability!r}"
+            )
+        byte_budget = cap_budget.get("byte_budget")
+        token_budget = cap_budget.get("token_budget")
+    else:
+        byte_budget = raw.get("byte_budget")
+        token_budget = raw.get("token_budget")
+
+    if tier == "enforce":
+        if byte_budget is None or token_budget is None:
+            raise ValueError(f"surface {raw['id']!r}: enforce tier requires byte_budget and token_budget")
+    elif tier in {"exempt", "removed_3_0", "monitor"}:
+        byte_budget = None
+        token_budget = None
+
+    return tier, byte_budget, token_budget, exemption_rationale, monitor_byte_ceiling
+
+
 def _expand_surface(raw: dict[str, Any], repo_root: Path) -> list[SurfaceSpec]:
     argv = [_format_template(str(part), capability=None, repo_root=repo_root) for part in raw["argv"]]
     command = _format_template(str(raw["command"]), capability=None, repo_root=repo_root)
-    base = SurfaceSpec(
-        id=str(raw["id"]),
-        command=command,
-        selector=str(raw["selector"]),
-        argv=argv,
-        inventory_classification=str(raw["inventory_classification"]),
-        budget_classification=str(raw["budget_classification"]),
-        measurement_scope=str(raw["measurement_scope"]),
-        fixture=str(raw["fixture"]),
-        capability=raw.get("capability"),
-        profile=raw.get("profile"),
-    )
     expand_by = raw.get("expand_by")
-    if expand_by != "capability":
-        return [base]
-
-    expanded: list[SurfaceSpec] = []
-    for capability in CAPABILITIES:
-        expanded.append(
-            SurfaceSpec(
-                id=f"{base.id}:{capability}",
-                command=_format_template(base.command, capability=capability, repo_root=repo_root),
-                selector=base.selector,
-                argv=[
-                    _format_template(part, capability=capability, repo_root=repo_root)
-                    for part in raw["argv"]
-                ],
-                inventory_classification=base.inventory_classification,
-                budget_classification=base.budget_classification,
-                measurement_scope=base.measurement_scope,
-                fixture=base.fixture,
+    if expand_by == "capability":
+        expanded: list[SurfaceSpec] = []
+        for capability in CAPABILITIES:
+            cap_tier, cap_byte, cap_token, cap_exempt, cap_monitor = _resolve_surface_budget(
+                raw,
                 capability=capability,
-                profile=base.profile,
             )
+            expanded.append(
+                SurfaceSpec(
+                    id=f"{raw['id']}:{capability}",
+                    command=_format_template(str(raw["command"]), capability=capability, repo_root=repo_root),
+                    selector=str(raw["selector"]),
+                    argv=[
+                        _format_template(str(part), capability=capability, repo_root=repo_root)
+                        for part in raw["argv"]
+                    ],
+                    inventory_classification=str(raw["inventory_classification"]),
+                    budget_classification=str(raw["budget_classification"]),
+                    measurement_scope=str(raw["measurement_scope"]),
+                    fixture=str(raw["fixture"]),
+                    enforcement_tier=cap_tier,
+                    byte_budget=cap_byte,
+                    token_budget=cap_token,
+                    exemption_rationale=cap_exempt,
+                    monitor_byte_ceiling=cap_monitor,
+                    capability=capability,
+                    profile=raw.get("profile"),
+                )
+            )
+        return expanded
+
+    tier, byte_budget, token_budget, exemption_rationale, monitor_byte_ceiling = _resolve_surface_budget(
+        raw,
+        capability=raw.get("capability"),
+    )
+    return [
+        SurfaceSpec(
+            id=str(raw["id"]),
+            command=command,
+            selector=str(raw["selector"]),
+            argv=argv,
+            inventory_classification=str(raw["inventory_classification"]),
+            budget_classification=str(raw["budget_classification"]),
+            measurement_scope=str(raw["measurement_scope"]),
+            fixture=str(raw["fixture"]),
+            enforcement_tier=tier,
+            byte_budget=byte_budget,
+            token_budget=token_budget,
+            exemption_rationale=exemption_rationale,
+            monitor_byte_ceiling=monitor_byte_ceiling,
+            capability=raw.get("capability"),
+            profile=raw.get("profile"),
         )
-    return expanded
+    ]
 
 
 def load_surface_specs(
@@ -402,6 +497,79 @@ def measure_outputs(
     return measurements
 
 
+def check_budget_violations(
+    measurements: list[SurfaceMeasurement],
+    specs: list[SurfaceSpec],
+) -> tuple[list[BudgetViolation], list[BudgetWarning]]:
+    spec_by_id = {spec.id: spec for spec in specs}
+    violations: list[BudgetViolation] = []
+    warnings: list[BudgetWarning] = []
+
+    for measurement in measurements:
+        if measurement.generation_status != "ok":
+            continue
+        spec = spec_by_id[measurement.id]
+        tier = spec.enforcement_tier
+
+        if tier in {"exempt", "removed_3_0"}:
+            continue
+
+        if tier == "monitor":
+            if (
+                spec.monitor_byte_ceiling is not None
+                and measurement.bytes > spec.monitor_byte_ceiling
+            ):
+                warnings.append(
+                    BudgetWarning(
+                        id=measurement.id,
+                        command=measurement.command,
+                        selector=measurement.selector,
+                        capability=measurement.capability,
+                        profile=measurement.profile,
+                        byte_count=measurement.bytes,
+                        monitor_byte_ceiling=spec.monitor_byte_ceiling,
+                        enforcement_tier=tier,
+                        reason="monitor_ceiling_exceeded",
+                    )
+                )
+            continue
+
+        if tier != "enforce":
+            continue
+        if spec.byte_budget is None:
+            continue
+
+        reasons: list[str] = []
+        if measurement.bytes > spec.byte_budget:
+            reasons.append("bytes_exceeded")
+        if (
+            measurement.gpt5_tokens is not None
+            and spec.token_budget is not None
+            and measurement.gpt5_tokens > spec.token_budget
+        ):
+            reasons.append("tokens_exceeded")
+        if not reasons:
+            continue
+
+        violations.append(
+            BudgetViolation(
+                id=measurement.id,
+                command=measurement.command,
+                selector=measurement.selector,
+                capability=measurement.capability,
+                profile=measurement.profile,
+                byte_count=measurement.bytes,
+                byte_budget=spec.byte_budget,
+                token_count=measurement.gpt5_tokens,
+                token_budget=spec.token_budget,
+                enforcement_tier=tier,
+                reasons=reasons,
+            )
+        )
+
+    return violations, warnings
+
+
 def report_payload(
     measurements: list[SurfaceMeasurement],
     *,
@@ -410,24 +578,39 @@ def report_payload(
     token_mode: str,
     token_counter_command: list[str],
     scopes: list[str],
+    specs: list[SurfaceSpec],
+    enforce_budgets: bool,
 ) -> dict[str, Any]:
     manifest = _load_manifest(manifest_path)
     errors = [measurement for measurement in measurements if measurement.generation_status == "error"]
+    violations, warnings = check_budget_violations(measurements, specs)
+    budget_status = "fail" if enforce_budgets and violations else "pass"
+    if errors:
+        status = "fail"
+    elif enforce_budgets and violations:
+        status = "fail"
+    else:
+        status = "pass"
     return {
         "command": "measure-json-output-surfaces",
-        "status": "fail" if errors else "pass",
+        "status": status,
+        "budget_status": budget_status,
         "manifest": str(manifest_path),
         "repo_root": str(repo_root),
         "scopes": scopes,
         "scope_notes": manifest.get("scope", {}),
         "surface_count": len(measurements),
         "error_count": len(errors),
+        "violation_count": len(violations),
+        "warning_count": len(warnings),
         "token_counter": {
             "mode": token_mode,
             "command": token_counter_display(token_counter_command),
             "local_benchmark_command": DEFAULT_LOCAL_BENCHMARK_COMMAND,
         },
         "measurements": [asdict(measurement) for measurement in measurements],
+        "violations": [asdict(violation) for violation in violations],
+        "warnings": [asdict(warning) for warning in warnings],
     }
 
 
@@ -442,8 +625,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
             "Manual benchmark (exact GPT-5 tokens, requires npx tiktoken-cli):\n"
             f"  {DEFAULT_LOCAL_BENCHMARK_COMMAND}\n"
             "\n"
-            "CI-safe bytes-only run:\n"
-            "  uv run scripts/measure_json_output_surfaces.py --json --token-mode skip"
+            "CI-safe bytes-only run with budget enforcement:\n"
+            "  uv run scripts/measure_json_output_surfaces.py --json --token-mode skip --enforce-budgets"
         ),
     )
     parser.add_argument(
@@ -476,6 +659,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         default=shlex.join(DEFAULT_TOKEN_COUNTER_COMMAND),
         help="token counter command that reads payload text on stdin and emits an integer",
     )
+    parser.add_argument(
+        "--enforce-budgets",
+        action="store_true",
+        help="exit non-zero when enforce-tier byte or measured GPT-5 token budgets are exceeded",
+    )
     return parser.parse_args(argv)
 
 
@@ -501,6 +689,8 @@ def main(argv: list[str] | None = None) -> int:
         token_mode=args.token_mode,
         token_counter_command=token_counter_command,
         scopes=sorted(scopes),
+        specs=specs,
+        enforce_budgets=args.enforce_budgets,
     )
     if args.json:
         print(json.dumps(result, indent=2))
@@ -509,6 +699,11 @@ def main(argv: list[str] | None = None) -> int:
         print(f"manifest={result['manifest']}")
         print(f"scopes={','.join(result['scopes'])}")
         print(f"surfaces={result['surface_count']} errors={result['error_count']}")
+        if args.enforce_budgets:
+            print(
+                f"budget_status={result['budget_status']} "
+                f"violations={result['violation_count']} warnings={result['warning_count']}"
+            )
         print(f"token_counter={result['token_counter']['command']}")
         print(f"local_benchmark_command={DEFAULT_LOCAL_BENCHMARK_COMMAND}")
         for measurement in measurements:
@@ -524,7 +719,29 @@ def main(argv: list[str] | None = None) -> int:
             )
             if measurement.error:
                 print(f"  error={measurement.error}")
-    return 1 if result["status"] == "fail" else 0
+        if result["violations"]:
+            print("violations:")
+            for violation in result["violations"]:
+                print(
+                    f"{violation['id']}: command={violation['command']!r} "
+                    f"selector={violation['selector']!r} "
+                    f"bytes={violation['byte_count']}/{violation['byte_budget']} "
+                    f"gpt5_tokens={violation['token_count']}/{violation['token_budget']} "
+                    f"tier={violation['enforcement_tier']} "
+                    f"reasons={','.join(violation['reasons'])}"
+                )
+        if result["warnings"]:
+            print("warnings:")
+            for warning in result["warnings"]:
+                print(
+                    f"{warning['id']}: command={warning['command']!r} "
+                    f"selector={warning['selector']!r} "
+                    f"bytes={warning['byte_count']}/{warning['monitor_byte_ceiling']} "
+                    f"tier={warning['enforcement_tier']} reason={warning['reason']}"
+                )
+    if result["status"] == "fail":
+        return 1
+    return 0
 
 
 if __name__ == "__main__":
