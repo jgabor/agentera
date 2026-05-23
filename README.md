@@ -388,4 +388,4 @@ codex plugin marketplace remove jgabor/agentera
 
 ---
 
-**License:** [Apache-2.0](./LICENSE) · **Changelog:** [`CHANGELOG.md`](./CHANGELOG.md) · **Version:** 2.5.1
+**License:** [Apache-2.0](./LICENSE) · **Changelog:** [`CHANGELOG.md`](./CHANGELOG.md) · **Version:** 2.6.0
