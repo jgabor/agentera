@@ -147,6 +147,11 @@ files when needed, configures selected runtime surfaces, removes fixable outdate
 v1 runtime artifacts, and runs a final check. Re-running it after a successful
 apply should report that nothing else needs to change.
 
+`agentera upgrade` is the only repair command. When app files are version-behind,
+the work inside that command is an **update**; when files are missing or broken,
+it is a **repair**; when v1 project artifacts exist, it is a **migrate**. There
+is no separate `agentera update` subcommand.
+
 When `AGENTERA_HOME` is unset, Agentera uses the normal data directory for your
 operating system. If the old `~/.agents/agentera` directory still contains Agentera
 files, the preview says it will clean up that old directory, move known user data
@@ -192,13 +197,17 @@ uv run scripts/agentera upgrade --runtime codex --yes
 
 ### Copilot CLI
 
-The upgrade command does not edit Copilot shell startup files. If it detects old
-Agentera lines in `~/.bashrc`, `~/.zshrc`, `.profile`, or fish config, it reports
-that Agentera will not edit those files and treats removal as user-owned manual
-cleanup.
+Upgrade does not edit shell startup files. Pass app context per invocation:
 
 ```bash
-uv run scripts/agentera upgrade --runtime copilot --yes
+AGENTERA_HOME=/path/to/agentera copilot ...
+```
+
+To check for a leftover 1.x managed marker block in shell startup files, run the
+diagnostic helper (read-only; changes nothing):
+
+```bash
+uv run scripts/setup_copilot.py --install-root /path/to/agentera
 ```
 
 ## Focused phases

@@ -1502,7 +1502,7 @@ class TestHej:
             "actual": "1.0.0",
             "message": "Agentera app files are valid but need an update to the expected version",
         }]
-        assert any("app update needed" in item for item in data["attention"])
+        assert any("app files outdated" in item for item in data["attention"])
         assert all("repair" not in item for item in data["attention"])
 
     def test_version_mismatch_text_guidance_uses_update_wording(self, project):
@@ -1513,7 +1513,7 @@ class TestHej:
 
         assert r.returncode == 0
         assert "app_home: status=outdated" in r.stdout
-        assert "normal: app update needed" in r.stdout
+        assert "normal: app files outdated; run agentera upgrade" in r.stdout
         assert "repair" not in r.stdout
 
     def test_visible_skill_version_can_mark_bundle_stale_without_preflight(self, project):

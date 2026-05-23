@@ -1049,23 +1049,6 @@ def diagnose_copilot(install_root: Path, home: Path, env: Mapping[str, str]) -> 
         rc_text = rc_path.read_text(encoding="utf-8")
         marker_root = _extract_copilot_marker_root(rc_text)
         if marker_root is None:
-            if "AGENTERA_HOME" in rc_text:
-                return _runtime_result(
-                    "copilot",
-                    env,
-                    [
-                        _check(
-                            COPILOT_HOME_CHECK,
-                            COPILOT_WARN_STATUS,
-                            _copilot_shell_manual_boundary_message(
-                                "Legacy Agentera shell startup line detected."
-                            ),
-                            path=rc_path,
-                            source=str(rc_path),
-                            gap=COPILOT_RUNTIME_CONFIG_GAP,
-                        )
-                    ],
-                )
             continue
         check = _configured_root_check(
             "copilot",
@@ -1267,67 +1250,14 @@ def _plan_codex_installer_change(
     )
 
 
-def _copilot_target(
-    home: Path,
-    env: Mapping[str, str],
-) -> tuple[Path | None, str | None, str]:
-    shell_name = Path(env.get("SHELL", "")).name if env.get("SHELL") else ""
-    if shell_name == "bash":
-        return home / ".bashrc", "export", "bash"
-    if shell_name == "zsh":
-        return home / ".zshrc", "export", "zsh"
-    if shell_name == "fish":
-        return home / ".config" / "fish" / "config.fish", "fish", "fish"
-    return None, None, shell_name or "(unset $SHELL)"
-
-
 def _plan_copilot_installer_change(
     install_root: Path,
     home: Path,
     env: Mapping[str, str],
     runtime_report: Mapping[str, Any],
 ) -> dict[str, Any] | None:
-    reason = _fixable_reason(runtime_report, "AGENTERA_HOME")
-    if reason is None:
-        return None
-
-    target, _syntax, shell_name = _copilot_target(home, env)
-    if target is None:
-        return _installer_change(
-            runtime="copilot",
-            target=None,
-            reason=reason,
-            status="blocked",
-            action="manual-boundary",
-            message=(
-                f"detected {shell_name}. Agentera will not edit shell startup files; "
-                "cleanup is a user-owned manual boundary. For Copilot app context, "
-                "run AGENTERA_HOME=<agentera-directory> copilot ... for a single invocation."
-            ),
-        )
-
-    try:
-        current_text = _read_text_or_none(target)
-    except OSError as exc:
-        return _installer_change(
-            runtime="copilot",
-            target=target,
-            reason=reason,
-            status="blocked",
-            action="blocked",
-            message=f"cannot safely plan Copilot rc change: {exc}",
-        )
-    prefix = ""
-    if current_text and "AGENTERA_HOME" in current_text:
-        prefix = "Legacy Agentera shell startup line detected."
-    return _installer_change(
-        runtime="copilot",
-        target=target,
-        reason=reason,
-        status="blocked",
-        action="manual-boundary",
-        message=_copilot_shell_manual_boundary_message(prefix),
-    )
+    del install_root, home, env, runtime_report
+    return None
 
 
 def _summarize_installer(changes: list[dict[str, Any]]) -> dict[str, int]:

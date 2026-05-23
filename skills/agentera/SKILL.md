@@ -160,10 +160,10 @@ run, do not overwrite it silently or fall back to a local checkout. Say:
 Agentera directory, or approve --force only after checking that directory is safe to
 replace.`
 
-If stale Agentera lines are found in shell startup files such as `~/.bashrc`,
-`~/.zshrc`, `.profile`, or fish config, say plainly that Agentera will not edit
-those files. Cleanup of those lines is user-owned manual cleanup, not a repair
-write.
+If a leftover 1.x managed marker block (`# agentera: AGENTERA_HOME (managed)`) is
+reported in shell startup diagnostics, say plainly that Agentera will not edit
+those files. Cleanup is user-owned manual cleanup, not a repair write. Upgrade
+does not scan shell startup files.
 
 Only after the installed CLI succeeds, proceed to Step -1 and the routing layers
 below. Do not fall through to a local checkout as a workaround; the uvx commands

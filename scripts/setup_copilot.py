@@ -23,8 +23,8 @@ Three shell branches identify the diagnostic target only:
 4. **anything else** → print per-invocation guidance without selecting an rc
    file.
 
-Legacy marker and bare ``AGENTERA_HOME`` rc states are diagnostic-only. Agentera
-will not edit those lines; cleanup is a user-owned manual boundary.
+Legacy managed marker blocks (`# agentera: AGENTERA_HOME (managed)`) are diagnostic-only.
+Agentera will not edit those lines; cleanup is a user-owned manual boundary.
 
 The Agentera directory is verified against four canonical sibling entries
 (``scripts/validate_capability.py``, ``hooks/``, ``skills/``, ``skills/agentera/SKILL.md``)
@@ -353,12 +353,11 @@ def classify_rc(text: str) -> RcState:
             break
 
     if marker_idx == -1:
-        bare = any(MANAGED_KEY in line for line in lines)
         return RcState(
             marker_present=False,
             marker_idx=-1,
             export_after_marker="",
-            bare_export_present=bare,
+            bare_export_present=False,
         )
 
     export_after = ""
@@ -494,7 +493,7 @@ def plan_change(
 
     state = classify_rc(current_text)
     notice = "No Agentera shell startup line was detected; no persistent shell startup change was made."
-    if state.marker_present or state.bare_export_present:
+    if state.marker_present:
         notice = (
             "Legacy Agentera shell startup line detected. Agentera will not edit it; "
             "cleanup is a user-owned manual boundary."

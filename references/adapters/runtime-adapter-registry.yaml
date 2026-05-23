@@ -229,10 +229,7 @@ records:
       limitations:
         - Agentera does not install per-capability Copilot descriptors in this package phase.
     config_targets:
-      runtime_config_files:
-        - ~/.bashrc
-        - ~/.zshrc
-        - ~/.config/fish/config.fish
+      runtime_config_files: []
       hook_targets:
         - .github/hooks
       plugin_targets:
@@ -265,6 +262,7 @@ records:
         - Copilot marketplace install path is verified working.
       known_drifts:
         - Upgrade package phase currently has no Copilot package command item.
+        - Upgrade runtime configure is noop; shell rc paths in host_detection are doctor diagnostic probes only.
   - identity:
       runtime_id: codex
       display_name: Codex CLI

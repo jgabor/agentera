@@ -880,7 +880,10 @@ STARTUP_COMPLETENESS_MISSING_STATE: list[str] = []
 
 def _app_status_attention(bundle: dict[str, Any]) -> str:
     if bundle["status"] == "outdated":
-        return f"normal: app update needed; preview `{bundle['dryRunCommand']}`; app_home={bundle['appHome']}"
+        return (
+            f"normal: app files outdated; run agentera upgrade (preview: "
+            f"`{bundle['dryRunCommand']}`); app_home={bundle['appHome']}"
+        )
     if bundle.get("dryRunCommand"):
         label = str(bundle["status"]).replace("_", " ")
         return f"degraded: app {label}; preview `{bundle['dryRunCommand']}`; app_home={bundle['appHome']}"
@@ -7626,12 +7629,6 @@ def build_parser() -> argparse.ArgumentParser:
         "--update-packages",
         action="store_true",
         help="Also run external npx skills update commands for package-managed runtimes",
-    )
-    u.add_argument(
-        "--copilot-rc-file",
-        type=_agent_path,
-        default=None,
-        help="Override Copilot shell rc target (useful for previewing or tests)",
     )
     u.add_argument(
         "--opencode-config-dir",

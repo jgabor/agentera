@@ -37,7 +37,7 @@ Characterized runtime actions:
 | Codex CLI | `configure` | `~/.codex/config.toml` | `pending` | writes config, then reports `runtime update applied` |
 | Codex CLI | `copy-hooks` | `~/.codex/hooks.json` | `pending` | copies hooks, then reports `runtime update applied` |
 | Codex CLI | `copy-agent` | `~/.codex/agents/*.toml` | `pending` | copies managed capability descriptors, then reports `runtime update applied` |
-| Copilot CLI | `configure` | shell startup diagnostics | `blocked` or `noop` | reports that Agentera will not edit shell startup files |
+| Copilot CLI | `configure` | none | `noop` | no local config write; use per-invocation `AGENTERA_HOME` |
 | OpenCode | `copy-plugin` | `~/.config/opencode/plugins/agentera.js` | `pending` | copies plugin, then reports `runtime update applied` |
 | OpenCode | `copy-agent` | `~/.config/opencode/agents/*.md` | `pending` | copies managed capability descriptors, then reports `runtime update applied` |
 

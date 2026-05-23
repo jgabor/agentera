@@ -1,0 +1,90 @@
+header:
+  level: light
+  created: 2026-05-23
+  status: active
+  title: Upgrade postflight and OpenCode cleanup alignment
+what: >-
+  Align upgrade postflight with the app-home doctor probe used by agentera doctor,
+  and reconcile the OpenCode hej.md conflict where runtime copy and cleanup stale
+  detection fight each other after a successful repair.
+why: >-
+  Successful agentera upgrade --yes can exit 0 while printing After-check failed
+  even though agentera doctor reports up to date, which erodes trust after repair.
+  Separately, runtime applies a managed hej.md copy and cleanup then reports still
+  present after cleanup because detect_stale_v1 treats any managed command named hej
+  as a v1 remnant regardless of v2 content.
+constraints: >-
+  Use Option A for postflight (build_doctor_status, not full setup_doctor migration).
+  Do not change postflight exit code unless a regression test proves it is required.
+  Preserve Decision 54 lifecycle vocabulary in user-facing After-check copy. No vision
+  or objective edits. Scope cli; fold progress/plan metadata into the implementation
+  commit per AGENTS.md.
+scope:
+  included:
+    - Postflight helper and render_upgrade After-check alignment in scripts/agentera_upgrade.py
+    - OpenCode cleanup vs runtime coordination for legacy bridge commands such as hej.md
+    - Stale detection refinement in scripts/detect_stale_v1
+    - Focused tests in tests/test_upgrade_cli.py and related upgrade/cleanup tests
+    - Minimal vocabulary note in references/cli/vocabulary.md
+  excluded:
+    - Full setup_doctor.classify_install_root app-home migration (Option B follow-up)
+    - Package refresh (--update-packages) behavior changes
+    - Copilot shell-rc work (completed separately)
+  deferred:
+    - Unifying setup_doctor CLI with agentera doctor for standalone --install-root runs
+design: >-
+  Postflight: replace setup_doctor.build_report(app_home) in apply_upgrade_plan with
+  _build_upgrade_postflight that calls build_doctor_status using the same inputs as
+  cmd_doctor; render After-check from canonical status and top signal, not setup_doctor
+  aggregate fail counts. Cleanup/runtime: detect_opencode_stale_commands currently flags
+  managed commands whose stem is in V1_SKILL_NAMES even when content is the current v2
+  legacy-bridge template; runtime then recopies hej.md from .opencode/commands while
+  cleanup tries to remove it, yielding still present after cleanup. Fix by narrowing
+  stale detection to commands that still reference removed v1 skill paths (or otherwise
+  fail a v2 managed-command content check), and exclude commands the runtime phase just
+  installed from cleanup still-present reporting in the same apply pass. Prefer keeping
+  agentera.md as the primary managed OpenCode command; treat hej.md as optional legacy
+  bridge consistent with test_whole_repair_apply_after_clean_preview expecting removal
+  when it is a v1-style managed stub.
+tasks:
+  - number: 1
+    name: Postflight helper using build_doctor_status
+    depends_on: []
+    status: complete
+    acceptance:
+      - GIVEN platform app home with bundle under app/ WHEN postflight runs after successful bundle apply THEN postflight ok is true and status is up_to_date
+      - GIVEN missing or broken app files under app/ WHEN postflight runs THEN postflight ok is false and status reflects repair_needed, outdated, or manual_review_needed via existing doctor signals
+      - GIVEN legacy layout with bundle at app home root WHEN postflight runs on a valid install THEN postflight still passes via _doctor_roots semantics
+  - number: 2
+    name: After-check rendering aligned with lifecycle vocabulary
+    depends_on: [1]
+    status: complete
+    acceptance:
+      - GIVEN successful whole repair on platform home fixture WHEN upgrade --yes completes THEN stdout contains a plain After-check pass phrase and not failed with setup_doctor aggregate fail counts
+      - GIVEN repair applied but app still outdated WHEN postflight runs THEN After-check names the actionable signal without install-root recovery footer unless bundle phase was blocked
+  - number: 3
+    name: Narrow OpenCode stale command detection
+    depends_on: []
+    status: complete
+    acceptance:
+      - GIVEN managed hej.md whose body matches the current v2 legacy-bridge template without v1 skill paths WHEN detect_stale_v1 runs THEN it is not reported as stale_command
+      - GIVEN managed hej.md that references removed v1 skill paths such as skills/hej/SKILL.md WHEN detect_stale_v1 runs THEN it is reported as stale_command
+      - GIVEN user-owned hej.md without agentera_managed frontmatter WHEN detect_stale_v1 runs THEN cleanup remains blocked as user-owned
+  - number: 4
+    name: Reconcile runtime copy and cleanup apply for bridge commands
+    depends_on: [3]
+    status: complete
+    acceptance:
+      - GIVEN whole repair apply on fixture with stale v1-style managed hej.md WHEN upgrade --yes completes THEN cleanup does not report still present after cleanup for a command runtime intentionally refreshed OR hej.md is absent when product policy treats it as removable legacy bridge
+      - GIVEN runtime phase copies agentera.md WHEN upgrade --yes completes THEN agentera.md remains present and is not flagged as stale
+      - GIVEN apply order runtime then cleanup WHEN cleanup runs THEN paths written by runtime copy-command in the same apply pass are not misreported as failed cleanup remnants
+  - number: 5
+    name: Tests and documentation
+    depends_on: [1, 2, 4]
+    status: complete
+    acceptance:
+      - GIVEN uv run pytest tests/test_upgrade_cli.py WHEN executed after changes THEN all tests pass including postflight pass on platform home and whole-repair After-check assertions
+      - GIVEN references/cli/vocabulary.md WHEN read THEN postflight authority is documented as build_doctor_status not setup_doctor.build_report
+overall_acceptance:
+  - GIVEN a successful platform-home repair WHEN the user runs upgrade --yes THEN exit code is 0, After-check reports pass, and agentera doctor agrees on up_to_date
+  - GIVEN the same repair WHEN cleanup and runtime both touch OpenCode commands THEN output does not show contradictory fixed copy command and still present after cleanup for the same managed bridge file

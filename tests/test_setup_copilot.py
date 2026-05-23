@@ -118,8 +118,8 @@ def test_existing_bare_agentera_line_is_left_byte_identical(
 
     assert rc == 0, out
     assert target.read_bytes() == before
-    assert "Legacy Agentera shell startup line detected" in out.out
-    assert "Agentera will not edit it" in out.out
+    assert "Legacy Agentera shell startup line detected" not in out.out
+    assert "No Agentera shell startup line was detected" in out.out
 
 
 def test_rc_file_override_is_inspection_only(

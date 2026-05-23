@@ -64,9 +64,9 @@ dashboard. This bridge is an upgrade handoff.
 
 - Never mutate project artifacts or runtime installs without explicit
   confirmation from the user.
-- Never ask Agentera to edit shell startup files. Stale Agentera lines in
-  `~/.bashrc`, `~/.zshrc`, `.profile`, or fish config are user-owned manual
-  cleanup.
+- Never ask Agentera to edit shell startup files. Leftover 1.x managed marker
+  blocks reported by doctor or `setup_copilot.py` are user-owned manual cleanup.
+  Upgrade does not scan shell startup files.
 - Prefer `uvx --from git+https://github.com/jgabor/agentera` because legacy
   users may not have cloned the repository.
 - If running from a local Agentera checkout with `scripts/agentera`, the local

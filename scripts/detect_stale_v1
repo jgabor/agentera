@@ -151,14 +151,6 @@ def detect_opencode_stale_commands(
                 path=str(entry),
                 detail=f"references removed v1 skill path containing '{match.group(0)}'",
             ))
-            continue
-        if entry.stem in V1_SKILL_NAMES and _has_agentera_managed_marker(text):
-            findings.append(Finding(
-                surface="opencode",
-                kind="stale_command",
-                path=str(entry),
-                detail=f"managed command targets removed v1 skill '{entry.stem}'",
-            ))
 
     return findings
 

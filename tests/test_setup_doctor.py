@@ -647,15 +647,16 @@ def test_setup_installer_dry_run_shows_target_runtime_file_and_reason_per_writab
             check=False,
         )
 
-        expected_returncode = 1 if runtime == "copilot" else 0
+        expected_returncode = 0
         assert result.returncode == expected_returncode
         assert not target.exists()
-        expected_status = "blocked" if runtime == "copilot" else "pending"
-        assert f"{runtime}: {expected_status}" in result.stdout
-        assert f"target: {target}" in result.stdout
-        assert "reason:" in result.stdout
         if runtime == "copilot":
-            assert "Agentera will not edit shell startup files" in result.stdout
+            assert "no installer changes needed" in result.stdout
+        else:
+            expected_status = "pending"
+            assert f"{runtime}: {expected_status}" in result.stdout
+            assert f"target: {target}" in result.stdout
+            assert "reason:" in result.stdout
 
 
 def test_setup_installer_without_confirmation_does_not_write_per_writable_runtime(
@@ -676,10 +677,10 @@ def test_setup_installer_without_confirmation_does_not_write_per_writable_runtim
             check=False,
         )
 
-        assert result.returncode == 1
+        assert result.returncode == 0 if runtime == "copilot" else 1
         assert not target.exists()
         if runtime == "copilot":
-            assert "cleanup is a user-owned manual boundary" in result.stdout
+            assert "no installer changes needed" in result.stdout
         else:
             assert "confirmation required" in result.stdout
 
@@ -714,7 +715,8 @@ def test_setup_doctor_copilot_legacy_shell_line_is_diagnostic_only(tmp_path: Pat
         if check["name"] == "AGENTERA_HOME"
     )
     assert "Agentera will not edit shell startup files" in home_check["message"]
-    assert "user-owned manual boundary" in payload["installer"]["changes"][0]["message"]
+    assert payload["installer"]["changes"] == []
+    assert payload["installer"]["message"] == "no installer changes needed"
 
 
 def test_setup_installer_confirmed_write_fixes_each_writable_runtime(
@@ -739,9 +741,10 @@ def test_setup_installer_confirmed_write_fixes_each_writable_runtime(
         after = installer["afterDoctor"]["runtimes"][runtime]
 
         if runtime == "copilot":
-            assert result.returncode == 1
+            assert result.returncode == 0
             assert not target.exists()
-            assert installer["summary"]["blocked"] == 1
+            assert installer["summary"]["blocked"] == 0
+            assert installer["changes"] == []
             assert installer["afterDoctor"]["runtimes"][runtime]["status"] == "warn"
         else:
             assert result.returncode == 0
@@ -778,10 +781,11 @@ def test_setup_installer_idempotent_rerun_writes_nothing_per_writable_runtime(
             )
             payload = json.loads(second.stdout)
 
-            assert first.returncode == 1
-            assert second.returncode == 1
+            assert first.returncode == 0
+            assert second.returncode == 0
             assert not target.exists()
-            assert payload["installer"]["summary"]["blocked"] == 1
+            assert payload["installer"]["summary"]["blocked"] == 0
+            assert payload["installer"]["changes"] == []
             continue
         before = target.read_text(encoding="utf-8")
         second = subprocess.run(

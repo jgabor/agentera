@@ -86,7 +86,6 @@ def _upgrade_args(tmp_path: Path, *, install_root: Path | None = None, yes: bool
         force=False,
         yes=yes,
         update_packages=False,
-        copilot_rc_file=None,
     )
 
 

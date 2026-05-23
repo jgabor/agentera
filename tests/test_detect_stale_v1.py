@@ -189,7 +189,7 @@ class TestOpenCodeCommands:
         assert findings[0].kind == "stale_command"
         assert "hej.md" in findings[0].path
 
-    def test_fail_managed_v1_command_detected_without_path_reference(self, detect, fake_home):
+    def test_pass_managed_command_without_v1_path_not_flagged(self, detect, fake_home):
         env = _make_env(fake_home)
         commands_dir = Path(env["OPENCODE_CONFIG_DIR"]) / "commands"
         commands_dir.mkdir(parents=True)
@@ -204,9 +204,7 @@ class TestOpenCodeCommands:
 
         findings = detect.detect_opencode_stale_commands(fake_home, env)
 
-        assert len(findings) == 1
-        assert findings[0].kind == "stale_command"
-        assert "managed command targets removed v1 skill 'planera'" in findings[0].detail
+        assert findings == []
 
     def test_multiple_stale_commands(self, detect, fake_home):
         _create_stale_command(fake_home, "hej")

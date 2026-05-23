@@ -32,6 +32,7 @@ BOOTSTRAP_SOURCE_ROOT_ENV = "AGENTERA_BOOTSTRAP_SOURCE_ROOT"
 DEFAULT_INSTALL_ROOT_ENV = "AGENTERA_DEFAULT_INSTALL_ROOT"
 BUNDLE_MARKER = ".agentera-bundle.json"
 PHASES = ("bundle", "artifacts", "runtime", "cleanup", "packages")
+LEGACY_OPENCODE_BRIDGE_COMMANDS = frozenset({"hej"})
 STATUSES = ("pending", "applied", "noop", "blocked", "failed", "skipped")
 APP_UP_TO_DATE = "up_to_date"
 APP_OUTDATED = "outdated"
@@ -77,10 +78,6 @@ def _detect_module() -> ModuleType:
 
 def _setup_codex_module() -> ModuleType:
     return _load_script_module("agentera_setup_codex", ROOT / "scripts" / "setup_codex.py")
-
-
-def _setup_copilot_module() -> ModuleType:
-    return _load_script_module("agentera_setup_copilot", ROOT / "scripts" / "setup_copilot.py")
 
 
 def _setup_doctor_module() -> ModuleType:
@@ -1487,45 +1484,16 @@ def _retire_codex_copied_hooks_item(target: Path) -> dict[str, Any]:
     }
 
 
-def _plan_copilot_config(
-    adapter: dict[str, Any],
-    install_root: Path,
-    home: Path,
-    env: dict[str, str],
-    rc_file: Path | None,
-) -> dict[str, Any]:
+def _plan_copilot_config(adapter: dict[str, Any]) -> dict[str, Any]:
     runtime_id = adapter["identity"]["runtime_id"]
-    action = _write_label(adapter, "configure")
-    shell_name = Path(env.get("SHELL", "")).name if env.get("SHELL") else ""
-    if rc_file is not None:
-        target = rc_file
-    elif shell_name == "bash":
-        target = home / ".bashrc"
-    elif shell_name == "zsh":
-        target = home / ".zshrc"
-    elif shell_name == "fish":
-        target = home / ".config" / "fish" / "config.fish"
-    else:
-        target = None
-    prefix = ""
-    if target is not None:
-        try:
-            current = _read_text_or_none(target)
-        except OSError:
-            current = None
-        if current and "AGENTERA_HOME" in current:
-            prefix = "Legacy Agentera shell startup line detected. "
     return {
-        "status": "blocked",
+        "status": "noop",
         "runtime": runtime_id,
-        "action": action,
-        "target": str(target) if target is not None else None,
-        "ownership": {"status": "user-owned", "reason": "shell startup files are user-owned and off-limits"},
+        "action": "configure",
+        "target": None,
         "message": (
-            f"{prefix}Agentera will not edit shell startup files; cleanup is a "
-            "user-owned manual boundary. For Copilot app context, pass "
-            "AGENTERA_HOME for a single invocation or use runtime-native "
-            "environment support when available."
+            "Copilot uses per-invocation AGENTERA_HOME; Agentera does not write "
+            "shell startup files"
         ),
     }
 
@@ -1538,7 +1506,6 @@ def plan_runtime_phase(
     runtimes: set[str],
     *,
     force: bool,
-    copilot_rc_file: Path | None,
 ) -> dict[str, Any]:
     items: list[dict[str, Any]] = []
     registry = _runtime_registry()
@@ -1588,7 +1555,7 @@ def plan_runtime_phase(
                 action=codex_agent_action,
             ))
     if "copilot" in runtimes:
-        items.append(_plan_copilot_config(adapters["copilot"], install_root, home, env, copilot_rc_file))
+        items.append(_plan_copilot_config(adapters["copilot"]))
     if "opencode" in runtimes:
         adapter = adapters["opencode"]
         opencode_config_dir = _opencode_config_dir(home, env)
@@ -1602,6 +1569,8 @@ def plan_runtime_phase(
         ))
         commands_dir = opencode_config_dir / "commands"
         for command_source in sorted((runtime_source_root / ".opencode" / "commands").glob("*.md")):
+            if command_source.stem in LEGACY_OPENCODE_BRIDGE_COMMANDS:
+                continue
             items.append(_opencode_command_copy_item(command_source, commands_dir, force=force))
         agents_dir = opencode_config_dir / "agents"
         opencode_agent_action = adapter["config_targets"]["write_safety_labels"][1] if len(adapter["config_targets"]["write_safety_labels"]) > 1 else "copy-agent"
@@ -1816,7 +1785,13 @@ def _cleanup_item(finding: Any, status: str, message: str) -> dict[str, Any]:
     }
 
 
-def apply_cleanup_phase(phase: dict[str, Any], home: Path, env: dict[str, str]) -> None:
+def apply_cleanup_phase(
+    phase: dict[str, Any],
+    home: Path,
+    env: dict[str, str],
+    *,
+    runtime_applied_paths: set[str] | None = None,
+) -> None:
     detect = _detect_module()
     pending_paths = {item["path"] for item in phase["items"] if item["status"] == "pending"}
     findings = []
@@ -1834,8 +1809,11 @@ def apply_cleanup_phase(phase: dict[str, Any], home: Path, env: dict[str, str]) 
 
     remaining = detect.run_detection(home=home, env=env)
     removed_paths = {finding.path for finding, _result in results}
+    preserved_paths = runtime_applied_paths or set()
     for finding in remaining:
         if finding.path in removed_paths and finding.kind != "stale_agent":
+            continue
+        if finding.path in preserved_paths:
             continue
         ownership = _cleanup_finding_ownership(finding)
         status = "pending" if ownership["status"] == "agentera-owned" and finding.kind != "stale_agent" else "blocked"
@@ -2069,7 +2047,6 @@ def build_upgrade_plan(args: argparse.Namespace) -> dict[str, Any]:
                 env,
                 runtimes,
                 force=args.force,
-                copilot_rc_file=args.copilot_rc_file,
             ))
     if "cleanup" in only:
         phases.append(plan_cleanup_phase(home, env))
@@ -2106,6 +2083,51 @@ def build_upgrade_plan(args: argparse.Namespace) -> dict[str, Any]:
     }
 
 
+def _build_upgrade_postflight(
+    *,
+    install_root: Path,
+    home: Path,
+    project: Path,
+    source_root: Path,
+    env: dict[str, str],
+) -> dict[str, Any]:
+    resolved_root, root_source = resolve_doctor_install_root(
+        install_root,
+        home=home,
+        env=env,
+        source_root=source_root,
+    )
+    status = build_doctor_status(
+        resolved_root,
+        root_source=root_source,
+        source_root=source_root,
+        home=home,
+        project=project,
+        probe_cli=True,
+    )
+    ok = status["status"] == APP_UP_TO_DATE
+    if ok:
+        summary = "Agentera app files are up to date."
+    elif status["signals"]:
+        summary = str(status["signals"][0]["message"])
+    else:
+        summary = "Agentera app files need attention."
+    return {
+        "ok": ok,
+        "status": status["status"],
+        "signals": status["signals"],
+        "summary": summary,
+        "doctor": public_doctor_status(status),
+    }
+
+
+def _render_postflight_line(postflight: dict[str, Any]) -> str:
+    if postflight.get("ok"):
+        return "After-check: passed — Agentera app files are up to date."
+    summary = str(postflight.get("summary") or "Agentera app files need attention.")
+    return f"After-check: needs attention — {summary}"
+
+
 def apply_upgrade_plan(plan: dict[str, Any], args: argparse.Namespace) -> None:
     project = Path(plan["project"])
     home = Path(plan["home"])
@@ -2126,7 +2148,16 @@ def apply_upgrade_plan(plan: dict[str, Any], args: argparse.Namespace) -> None:
             else:
                 apply_runtime_phase(phase, install_root, force=args.force)
         elif phase["name"] == "cleanup":
-            apply_cleanup_phase(phase, home, env)
+            runtime_applied_paths = {
+                str(item["target"])
+                for plan_phase in plan["phases"]
+                if plan_phase["name"] == "runtime"
+                for item in plan_phase["items"]
+                if item.get("status") == "applied"
+                and item.get("action") == "copy-command"
+                and item.get("target")
+            }
+            apply_cleanup_phase(phase, home, env, runtime_applied_paths=runtime_applied_paths)
         elif phase["name"] == "packages":
             apply_package_phase(phase)
 
@@ -2140,15 +2171,12 @@ def apply_upgrade_plan(plan: dict[str, Any], args: argparse.Namespace) -> None:
     plan["compatibilityStatus"] = plan["status"]
 
     if any(phase["name"] == "runtime" for phase in plan["phases"]):
-        doctor = _setup_doctor_module()
-        selected_runtimes = tuple(plan["runtimes"])
-        plan["postflight"] = doctor.build_report(
+        plan["postflight"] = _build_upgrade_postflight(
             install_root=install_root,
             home=home,
+            project=project,
+            source_root=source_root,
             env=env,
-            runtimes=selected_runtimes,
-            run_smoke=False,
-            live_model_allowed=False,
         )
 
 
@@ -2239,6 +2267,13 @@ def _plain_location(item: dict[str, Any]) -> str | None:
     return None
 
 
+def _bundle_phase_blocked(plan: dict[str, Any]) -> bool:
+    for phase in plan.get("phases", []):
+        if phase.get("name") == "bundle" and phase.get("status") == "blocked":
+            return True
+    return False
+
+
 def render_upgrade(plan: dict[str, Any]) -> str:
     lines = [
         "Agentera repair",
@@ -2273,16 +2308,15 @@ def render_upgrade(plan: dict[str, Any]) -> str:
             "Next: if this preview looks right, rerun the same command "
             "with `--yes` to make the changes."
         )
-    if plan["summary"]["blocked"]:
+    if plan["summary"]["blocked"] and _bundle_phase_blocked(plan):
         lines.append("")
         lines.append(
             "Next: choose a safer Agentera directory, or use `--force` "
             "only after checking the directory is safe to replace."
         )
     if plan.get("postflight") is not None:
-        after = plan["postflight"]
         lines.append("")
-        lines.append(f"After-check: {'passed' if after.get('ok') else 'failed'} {after.get('summary')}")
+        lines.append(_render_postflight_line(plan["postflight"]))
     return "\n".join(lines)
 
 

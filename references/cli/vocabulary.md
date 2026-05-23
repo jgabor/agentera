@@ -351,7 +351,7 @@ not add precision:
 | `--only bundle` | Compatibility selector for narrow app-file work. Do not present it as the normal repair recommendation when managed runtime surfaces may also need repair. |
 | Preview | No-write mode. Required before upgrade or app repair writes; the underlying command flag is `--dry-run`. |
 | `--yes` | Explicit apply flag after preview and approval. |
-| Final check | Setup validation after upgrade apply. Internal code may still call this postflight doctor. |
+| Final check | Setup validation after upgrade apply. Uses the same app-home probe as `agentera doctor` (`build_doctor_status`), not `setup_doctor.build_report`. |
 | Package-update opt-in | External package manager changes require `--update-packages`. |
 | Runtime adapter | Runtime-specific Agentera adapter support for skill loading, hooks, artifact validation, lifecycle metadata, and diagnostics. |
 | Host support | What a runtime can theoretically do. Distinguish it from shipped Agentera behavior. |
@@ -370,9 +370,11 @@ consumer ownership boundaries for doctor, hej, upgrade, docs, and tests.
 
 Use this prose as guidance only: human-readable text can be friendlier, but it
 should be derived from canonical metadata instead of inventing parallel status
-words. `agentera upgrade` remains the umbrella command name. Its structured
-output and plain text should still name concrete operations such as repair app
-files, update app files, migrate Agentera data, or report no changes needed.
+words. `agentera upgrade` is the only repair command. When app files are
+version-behind, the operation inside that command is an **update**; when files
+are missing or broken, it is a **repair**; when v1 artifacts exist, it is a
+**migrate**. Hej attention text should name both the operation and the command
+(for example, app files outdated; run `agentera upgrade`).
 Compatibility aliases are transitional classifications in the YAML authority,
 not second source-of-truth status values.
 

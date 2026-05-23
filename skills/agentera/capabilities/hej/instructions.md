@@ -103,10 +103,9 @@ files, say: `Agentera was told to use a directory it cannot safely use. Choose a
 different Agentera directory, or approve --force only after checking that directory is
 safe to replace.`
 
-If stale Agentera lines are found in shell startup files such as `~/.bashrc`,
-`~/.zshrc`, `.profile`, or fish config, say plainly that Agentera will not edit
-those files. Cleanup of those lines is user-owned manual cleanup, not a repair
-write.
+If doctor or `setup_copilot.py` reports a leftover 1.x managed marker block in
+shell startup files, say plainly that Agentera will not edit those files.
+Cleanup is user-owned manual cleanup, not a repair write.
 
 Use `agentera query <artifact-name> --format json|yaml` only for advanced or
 custom artifact inspection when no top-level command serves the needed state.
