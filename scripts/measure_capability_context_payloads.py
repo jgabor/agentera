@@ -9,30 +9,24 @@ from __future__ import annotations
 
 import argparse
 import json
-import re
 import shlex
 import subprocess
-import tempfile
+import sys
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Callable
 
-CAPABILITIES = [
-    "hej",
-    "visionera",
-    "resonera",
-    "inspirera",
-    "planera",
-    "realisera",
-    "optimera",
-    "inspektera",
-    "dokumentera",
-    "profilera",
-    "visualisera",
-    "orkestrera",
-]
+SCRIPT_DIR = Path(__file__).resolve().parent
+if str(SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPT_DIR))
 
-DEFAULT_TOKEN_COUNTER_COMMAND = ["npx", "tiktoken-cli", "-m", "gpt-5"]
+from measure_json_common import (  # noqa: E402
+    CAPABILITIES,
+    DEFAULT_TOKEN_COUNTER_COMMAND,
+    count_gpt5_tokens,
+    measure_payload,
+    token_counter_display,
+)
 DEFAULT_LOCAL_BENCHMARK_COMMAND = (
     "uv run scripts/measure_capability_context_payloads.py --json --enforce-budgets"
 )
@@ -74,10 +68,6 @@ class Violation:
     reasons: list[str]
 
 
-def _token_counter_display(command: list[str]) -> str:
-    return f"<output> | {shlex.join(command)}"
-
-
 def run_agentera_context(root: Path, capability: str) -> str:
     result = subprocess.run(
         [
@@ -104,39 +94,20 @@ def run_agentera_context(root: Path, capability: str) -> str:
     return result.stdout
 
 
-def count_gpt5_tokens(output: str, command: list[str]) -> int:
-    with tempfile.TemporaryFile("w+", encoding="utf-8") as stream:
-        stream.write(output)
-        stream.seek(0)
-        result = subprocess.run(
-            command,
-            stdin=stream,
-            text=True,
-            capture_output=True,
-            check=False,
-        )
-    if result.returncode != 0:
-        raise RuntimeError(f"token counter failed: {result.stderr.strip()}")
-    match = re.search(r"^\s*(\d+)\s+", result.stdout, flags=re.MULTILINE)
-    if not match:
-        raise RuntimeError(f"token counter did not emit an integer: {result.stdout.strip()!r}")
-    return int(match.group(1))
-
-
 def _measurement(
     capability: str,
     output: str,
     token_counter: Callable[[str], int] | None,
 ) -> Measurement:
     budget = BUDGETS[capability]
-    token_count = token_counter(output) if token_counter else None
+    payload = measure_payload(output, token_counter)
     return Measurement(
         capability=capability,
-        bytes=len(output.encode("utf-8")),
-        gpt5_tokens=token_count,
+        bytes=payload.bytes,
+        gpt5_tokens=payload.gpt5_tokens,
         byte_budget=budget["bytes"],
         token_budget=budget["tokens"],
-        token_status="measured" if token_count is not None else "skipped",
+        token_status=payload.token_status,
     )
 
 
@@ -199,7 +170,7 @@ def payload(
         "status": status,
         "token_counter": {
             "mode": token_mode,
-            "command": _token_counter_display(token_counter_command),
+            "command": token_counter_display(token_counter_command),
             "local_benchmark_command": DEFAULT_LOCAL_BENCHMARK_COMMAND,
         },
         "capabilities": CAPABILITIES,

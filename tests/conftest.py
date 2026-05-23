@@ -102,6 +102,24 @@ def measure_capability_context_payloads():
 
 
 @pytest.fixture(scope="session")
+def measure_json_output_surfaces():
+    """Load scripts/measure_json_output_surfaces.py."""
+    return _load_module(
+        "measure_json_output_surfaces",
+        REPO_ROOT / "scripts" / "measure_json_output_surfaces.py",
+    )
+
+
+@pytest.fixture(scope="session")
+def measure_json_common():
+    """Load scripts/measure_json_common.py."""
+    return _load_module(
+        "measure_json_common",
+        REPO_ROOT / "scripts" / "measure_json_common.py",
+    )
+
+
+@pytest.fixture(scope="session")
 def startup_analysis_contract():
     """Load scripts/startup_analysis_contract.py."""
     return _load_module(

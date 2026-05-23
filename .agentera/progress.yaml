@@ -1,4 +1,31 @@
 cycles:
+- number: 587
+  timestamp: 2026-05-23 14:30
+  type: test
+  phase: build
+  what: Built whole-surface JSON measurement coverage for D58 inventory surfaces.
+  commit: pending
+  inspiration: Plan Task 2 for Agentera 3.0 JSON output budget work.
+  discovered: "Nested `uv run` subprocesses and YAML flow-sequence commas both broke\
+    \ reliable generation \u2014 direct `sys.executable` invocation and quoted `--fields`\
+    \ values were required. Logical non-zero CLI exits (compact check, upgrade dry-run)\
+    \ still emit valid JSON and must be measured by stdout validity rather than exit\
+    \ code alone."
+  verified: '`uv run --with pytest pytest tests/test_measure_json_output_surfaces.py
+    tests/test_measure_capability_context_payloads.py -q` passed (8 tests). `uv run
+    scripts/measure_json_output_surfaces.py --json --token-mode skip` passed with
+    66 surfaces measured (59 primary, 7 diagnostic), zero generation errors, and report
+    rows carrying command, selector, capability/profile, bytes, token_status, budget_classification,
+    and inventory_classification. Isolated compaction, temp AGENTERA_HOME doctor,
+    and PROFILERA_PROFILE_DIR stats fixtures verified without mutating repo profile
+    state.'
+  next: Proceed to Plan Task 3 JSON budget definition and enforcement.
+  context:
+    intent: Satisfy Task 2 acceptance for inventory-wide JSON measurement and reporting.
+    constraints: No plan.yaml task status edits, no Task 3 budget enforcement, no
+      prime 3.0 rewrites, no push.
+    scope: measure_json_output_surfaces.py, json_output_surface_manifest.yaml, measure_json_common.py,
+      tests, and PROGRESS evidence.
 - number: 586
   timestamp: 2026-05-23 12:00
   type: docs
@@ -256,34 +283,9 @@ cycles:
       decision-satisfaction update.
     scope: TODO.md closeout, PLAN task completion, PROGRESS evidence, focused validation
       reruns, and readiness report.
-- number: 577
-  timestamp: 2026-05-18 23:03
-  type: test
-  phase: build
-  what: Completed capability instruction validation regression coverage.
-  commit: pending
-  inspiration: Orkestrera executed Task 5 and closed the active Capability Instruction
-    Validation Regression Coverage plan after all dependencies passed.
-  discovered: The final diff stayed within validator/contract code, regression tests,
-    PLAN, and PROGRESS. Protected vision, objective, decisions, package, release,
-    TODO, README, and changelog files were unchanged.
-  verified: '`uv run pytest tests/test_capability_validator_characterization.py tests/test_capability_contract_loader.py
-    tests/test_capability_contract_structure.py tests/test_query_cli.py::TestHej::test_hej_capability_context_names_included_and_missing_state_families
-    tests/test_query_cli.py::TestHej::test_hej_realisera_execution_context_reports_plan_driven_startup
-    tests/test_query_cli.py::TestHej::test_hej_planera_context_exposes_compact_startup_contract
-    tests/test_query_cli.py::TestHej::test_planera_compact_startup_context_does_not_require_instruction_file
-    tests/test_query_cli.py::TestHej::test_compact_startup_exception_is_limited_to_planera`
-    passed with 45 tests. `agentera validate capability-contract --format json`, representative
-    capability validation for hej, planera, realisera, and orkestrera, protected-state
-    status checks, artifact validators, and `git diff --check` passed.'
-  next: Review and commit the completed validation regression coverage when ready.
-  context:
-    intent: Complete Task 5 and close the active plan.
-    constraints: Validation and regression coverage only. No broad wording cleanup,
-      package refresh, publication, push, tag, vision or objective mutation, decision
-      satisfaction updates, installed-app repair, or 3.0 compatibility removal.
-    scope: Final validation, diff-scope review, PLAN closure, and PROGRESS evidence.
 archive:
+- summary: 'Cycle 577 (2026-05-18): Completed capability instruction validation regression
+    coverage.'
 - summary: 'Cycle 576 (2026-05-18): Added compact-startup exception boundary regression
     coverage.'
 - summary: 'Cycle 575 (2026-05-18): Added contract and hej context regression coverage
@@ -359,4 +361,3 @@ archive:
     convergence.'
 - summary: 'Cycle 538 (2026-05-16): Tightened doctor plan around app metadata vocabulary
     convergence.'
-- summary: 'Cycle 537 (2026-05-16): Planned the doctor ready-state Next output fix.'
