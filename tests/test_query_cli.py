@@ -1826,6 +1826,36 @@ class TestHej:
         assert data["next_action"]["capability"] == "realisera"
         assert data["next_action"]["reason"] == "highest-priority open TODO"
 
+    def test_hej_next_action_uses_satisfaction_review_not_follow_substring(self, project):
+        _write_artifact(project, ".agentera/decisions.yaml", {
+            "decisions": [
+                {
+                    "number": 58,
+                    "question": "Naming boundary?",
+                    "choice": "Single-name protocol.",
+                    "reasoning": "Agents are easier to follow when names are unique.",
+                    "satisfaction": {
+                        "state": "user_confirmed_satisfied",
+                        "user_confirmation": {"confirmed_by": "user", "confirmed_at": "2026-05-23"},
+                    },
+                },
+                {
+                    "number": 56,
+                    "question": "TypeScript CLI rewrite?",
+                    "choice": "Defer.",
+                    "satisfaction": {"state": "open"},
+                },
+            ],
+        })
+
+        r = _run("hej", "--format", "json", cwd=project)
+
+        assert r.returncode == 0, r.stderr
+        data = json.loads(r.stdout)
+        assert data["next_action"]["capability"] == "resonera"
+        assert data["next_action"]["object"] == "DECISION 56 follow-up"
+        assert data["decision_attention"]["count"] == 1
+
     def test_hej_omits_decision_attention_when_all_decisions_are_confirmed(self, project):
         _write_artifact(project, ".agentera/decisions.yaml", {
             "decisions": [

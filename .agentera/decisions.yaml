@@ -516,6 +516,12 @@ decisions:
   feeds_into: skills/agentera/capabilities/inspektera/instructions.md, skills/agentera/SKILL.md,
     skills/agentera/capabilities/orkestrera/instructions.md, scripts/agentera, tests,
     TODO.md
+  satisfaction:
+    state: user_confirmed_satisfied
+    user_confirmation:
+      confirmed_by: user
+      confirmed_at: '2026-05-23'
+    evidence: User confirmed satisfaction during resonera review on 2026-05-23.
 - number: 61
   date: '2026-05-23'
   question: How should Agentera adapt architecture-deepening concepts from external
@@ -545,9 +551,11 @@ decisions:
   feeds_into: references/cli/vocabulary.md, inspektera, inspirera, resonera, PLAN.md,
     TODO.md
   satisfaction:
-    state: provisionally_satisfied
-    evidence: User accepted narrow inspektera-first during resonera review on 2026-05-23;
-      final satisfaction still requires explicit confirmation.
+    state: user_confirmed_satisfied
+    user_confirmation:
+      confirmed_by: user
+      confirmed_at: '2026-05-23'
+    evidence: User confirmed satisfaction during resonera review on 2026-05-23.
 archive:
 - summary: 'Decision 12 (2026-03-31): **Question**: How should version management
     work across the agentera ecosystem, both for agentera''s own skill versions and

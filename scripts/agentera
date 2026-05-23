@@ -7052,16 +7052,14 @@ def _state_presence(plan: dict[str, Any], docs: dict[str, Any], progress: dict[s
 
 def _decision_follow_up(schemas: dict) -> dict[str, Any] | None:
     data = _load_named_artifact(schemas, "decisions")
-    for entry in _extract_entries(data):
-        status = _entry_status(entry, "")
-        text = " ".join(
-            str(entry.get(key, ""))
-            for key in ("status", "choice", "reasoning", "follow_up")
-        )
-        if status in {"pending", "open", "unresolved"} or "follow" in text.lower():
-            number = entry.get("number", "?")
-            title = _first_present(entry, ["question", "choice"], "decision follow-up")
-            return {"object": f"DECISION {number} follow-up", "title": title}
+    for raw_entry in _extract_entries(data):
+        entry = _decision_context_entry(raw_entry)
+        satisfaction = entry.get("satisfaction")
+        if not isinstance(satisfaction, dict) or not satisfaction.get("review_needed"):
+            continue
+        number = entry.get("number", "?")
+        title = _first_present(entry, ["question", "choice"], "decision follow-up")
+        return {"object": f"DECISION {number} follow-up", "title": title}
     return None
 
 
