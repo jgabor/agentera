@@ -3,7 +3,7 @@
 This inventory classifies every supported `--format json` and `--json` CLI surface
 in `scripts/agentera` and related public helper scripts for Decision 58 and Decision
 59 follow-up work. It follows the D47 classification pattern in
-`docs/d47-app-home-vocabulary-inventory.md`: classification only; no 3.0 implementation
+`.agentera/archive/d47-app-home-vocabulary-inventory.md`: classification only; no 3.0 implementation
 in this task.
 
 ## Governing decisions
@@ -19,7 +19,7 @@ in this task.
   plane; every public JSON surface must be inventoried, measured, and budgeted.
 
 Byte and GPT-5 token caps (or documented exemptions) live in
-`docs/d59-json-output-budget-proposal.md` and are enforced via
+`.agentera/archive/d59-json-output-budget-proposal.md` and are enforced via
 `scripts/json_output_surface_manifest.yaml` plus
 `scripts/measure_json_output_surfaces.py --enforce-budgets`. Exempt rows cite
 inventory **defer** / **preserve** classifications here rather than hiding

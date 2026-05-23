@@ -9,7 +9,7 @@ sources:
   decisions:
     - .agentera/decisions.yaml#Decision-54
   prose:
-    - docs/vocabulary.md#app-lifecycle-status-vocabulary
+    - references/cli/vocabulary.md#app-lifecycle-status-vocabulary
 scope:
   includes:
     - Agentera app lifecycle status metadata emitted by doctor, hej, and upgrade.
@@ -197,7 +197,7 @@ consumers:
       - refresh
     may_define_new_statuses: false
 docs_delegation:
-  document: docs/vocabulary.md
+  document: references/cli/vocabulary.md
   required_anchor: App lifecycle status vocabulary
   authority_path: references/cli/app-lifecycle-vocabulary.yaml
   must_not_duplicate_large_table: true

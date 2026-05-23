@@ -34,7 +34,7 @@ EXPECTED_CLASSIFICATIONS = [
 
 CURRENT_PROSE_FILES = [
     "AGENTS.md",
-    "docs/vocabulary.md",
+    "references/cli/vocabulary.md",
     "references/adapters/runtime-feature-parity.md",
     "scripts/measure_token_payload.py",
     "skills/agentera/SKILL.md",
@@ -201,7 +201,7 @@ def test_focused_scan_exercises_every_allowed_classification() -> None:
 
 
 def test_vocabulary_docs_delegate_routing_execution_authority_to_yaml() -> None:
-    vocabulary = (REPO_ROOT / "docs" / "vocabulary.md").read_text(encoding="utf-8")
+    vocabulary = (REPO_ROOT / "references" / "cli" / "vocabulary.md").read_text(encoding="utf-8")
     section = vocabulary.split("### Routing and execution vocabulary", 1)[1].split(
         "## Artifact grammar", 1
     )[0]
@@ -221,13 +221,13 @@ def test_vocabulary_docs_delegate_routing_execution_authority_to_yaml() -> None:
 
 
 def test_source_index_points_to_routing_execution_authority() -> None:
-    vocabulary = (REPO_ROOT / "docs" / "vocabulary.md").read_text(encoding="utf-8")
+    vocabulary = (REPO_ROOT / "references" / "cli" / "vocabulary.md").read_text(encoding="utf-8")
 
     assert (
         "| `references/cli/routing-execution-vocabulary.yaml` | Routing and execution vocabulary authority. |"
         in vocabulary
     )
     delegation = _authority()["docs_delegation"]
-    assert delegation["document"] == "docs/vocabulary.md"
+    assert delegation["document"] == "references/cli/vocabulary.md"
     assert delegation["authority_path"] == "references/cli/routing-execution-vocabulary.yaml"
     assert delegation["must_not_duplicate_large_table"] is True

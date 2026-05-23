@@ -1,12 +1,15 @@
 version: 1
 scope:
-  in_scope: 'Live public JSON selectors from docs/d58-json-output-surface-inventory.md
-    with measurement_scope primary or diagnostic. Capability-context rows expand across
-    all twelve CAPABILITY_NAMES. Uses repo-root fixtures, isolated temp projects,
-    and AGENTERA_HOME / PROFILERA_PROFILE_DIR overrides so doctor, upgrade, hej, compact,
-    gate, and stats paths do not mutate the caller''s app or profile state.
-
-    '
+  in_scope: >-
+    Live public JSON selectors in this manifest with measurement_scope primary or
+    diagnostic. Historical classification source:
+    .agentera/archive/d58-json-output-surface-inventory.md. Capability-context rows
+    expand across all twelve CAPABILITY_NAMES. Uses repo-root fixtures, isolated temp
+    projects, and AGENTERA_HOME / PROFILERA_PROFILE_DIR overrides so doctor, upgrade,
+    hej, compact, gate, and stats paths do not mutate the caller's app or profile state.
+  historical_inventory: .agentera/archive/d58-json-output-surface-inventory.md
+  budget_proposal_archive: .agentera/archive/d59-json-output-budget-proposal.md
+  closeout_measurements_archive: .agentera/archive/d59-json-output-closeout-measurements.md
   excluded:
   - classification: historical
     examples:
@@ -357,7 +360,7 @@ surfaces:
   fixture: repo_root
   enforcement_tier: exempt
   exemption_rationale: 'Inventory defer: parser accepts --format json but _query_design
-    handler gap (docs/d58-json-output-surface-inventory.md).'
+    handler gap (.agentera/archive/d58-json-output-surface-inventory.md).'
 - id: compact-check
   command: agentera compact --mode check
   selector: --mode check --format json
@@ -634,7 +637,7 @@ surfaces:
   fixture: helper_usage_stats
   enforcement_tier: exempt
   exemption_rationale: 'Inventory preserve: helper seam behind canonical agentera
-    usage/stats (docs/d58-json-output-surface-inventory.md).'
+    usage/stats (.agentera/archive/d58-json-output-surface-inventory.md).'
 - id: validate-app-home-contract
   command: agentera validate app-home-contract
   selector: --format json

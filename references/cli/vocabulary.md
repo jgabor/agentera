@@ -12,6 +12,7 @@ included when they shape cross-suite usage.
 
 | Authority | Owns |
 | --- | --- |
+| `references/cli/vocabulary-index.yaml` | Authority order, normalization rules, plain-language layer rules, and Decision 44 replacement boundaries. |
 | `skills/agentera/protocol.yaml` | Confidence, severity, decision labels, exit signals, visual tokens, glyphs, and phases. |
 | `skills/agentera/capability_schema_contract.yaml` | Capability schema structure, required groups, priorities, and primitive-reference fields. |
 | `skills/agentera/schemas/artifacts/*.yaml` | Artifact field grammar, status values, path contracts, and validation rules. |
@@ -27,20 +28,11 @@ included when they shape cross-suite usage.
 
 ## Normalization rules
 
-| Rule | Use | Avoid |
-| --- | --- | --- |
-| Internal workflows are capabilities. | `capability`, `twelve capabilities`, `capability prose`, `capability schemas` | Calling hej/realisera/etc. standalone skills, except in v1 history. |
-| The runtime surface is a skill. | `Agentera skill`, `single installed Agentera app` | `twelve-skill suite` for v2 behavior. |
-| `/agentera` is the main invocation. | `/agentera`, `$agentera` for Codex-specific docs | `/hej` except as a legacy bridge. |
-| The CLI source and rendered dashboard are different. | `agentera hej` source data, `Hej dashboard` rendered briefing | Treating raw CLI labels as the user-facing dashboard. |
-| Routine state uses flat commands. | `agentera plan`, `agentera docs`, `agentera health` | `agentera query plan` for routine state. |
-| `query` is advanced access. | `agentera query --list-artifacts`, `agentera query <artifact>` | Calling it the normal state interface. |
-| Canonical artifact names are identifiers. | `VISION.md` maps to `.agentera/vision.yaml` | Assuming display names are literal paths. |
-| Exit signals are fixed. | `complete`, `flagged`, `stuck`, `waiting` | `blocked`, `partial`, `escalated` as exit signals. |
-| Current-state language names the object. | `Agentera app files need repair`, `artifacts are current`, `plan-level current-state check` | Bare `freshness` in new docs. |
-| App lifecycle state is canonical metadata. | `up_to_date`, `outdated`, `repair_needed`, `migration_needed`, `manual_review_needed`, `ready_to_apply`, `applied`, `no_changes_needed` | `fresh`, `stale`, `refresh`, `fixed`, `ready`, or `noop` as app lifecycle status values. |
-| Worker safety commits are Git-only. | `pre-spawn Git commit` | Non-Git `checkpoint` or `pre-dispatch commit gate` in new docs. |
-| Capability instruction files have current metadata and a runtime boundary. | Current rule: `instructions.md` plus emitted `first_invocation_read`; runtime enforcement remains false. | Claiming agents are policed for actual reads, or adding unsupported `agentera planera` commands. |
+`references/cli/vocabulary-index.yaml` owns the normalization rule table and
+plain-language layer rules. Do not duplicate those rows here.
+
+Read `vocabulary-index.yaml` `normalization_rules` and `plain_language` before
+editing docs, capability prose, diagnostics, tests, or labels.
 
 ## Plain-language rule
 
@@ -51,25 +43,8 @@ schema-aligned precision, or teach the product worldview. Prefer plain software
 terms for user-facing operations, diagnostics, setup, migration, and errors.
 
 When both are useful, lead with the plain phrase and introduce the Agentera term
-second:
-
-| Use | Avoid |
-| --- | --- |
-| `final state sync, the plan-level freshness checkpoint` | Bare `freshness checkpoint` |
-| `Agentera app files need repair` | `bundle freshness gap` in user-facing diagnostics |
-| `v1 migration check` | Bare `upgrade guard` in onboarding or recovery text |
-| `checkpoint commit` | Bare `checkpoint` |
-
-Diagnostics should state object, state, cause, and fix. Do not make users decode
-brand language before they can act.
-
-| Layer | Vocabulary rule |
-| --- | --- |
-| Product identity | Branded, memorable, and opinionated. |
-| Protocol internals | Precise, canonical, and schema-aligned. |
-| User operations | Plain, traditional, and searchable. |
-| Diagnostics and errors | Object, state, cause, fix. |
-| Onboarding | Plain phrase first, Agentera term second. |
+second. See `vocabulary-index.yaml` `plain_language.lead_with_plain_phrase` for
+examples. Diagnostics should state object, state, cause, and fix.
 
 ## Product grammar
 
@@ -293,51 +268,12 @@ progress markers such as `── step 2/6: verify`.
 
 ## Decision 44 replacement boundary
 
-This section is the source of truth for Decision 44 wording changes. Later tasks
-must use it before editing docs, capability prose, diagnostics, tests, labels,
-or active state.
+`references/cli/vocabulary-index.yaml` `decision_44` owns replacement terms,
+allowed uses, protected surfaces, and the deprecated-term scan pattern used by
+`tests/test_decision44_vocabulary.py`. Do not duplicate those tables here.
 
-Stable identifiers, enums, persisted state shapes, routing semantics, CLI exit
-behavior, canonical Swedish capability names, and Decision 43 aliases are
-protected compatibility surfaces. Do not rename them unless a later decision
-records the migration rationale, validation path, and compatibility impact.
-
-### Replacement terms
-
-| Deprecated preferred wording | Preferred wording | Rationale |
-| --- | --- | --- |
-| `freshness` as a general protocol label | `current`, `up to date`, `out of date`, `synced`, `status`, `needs sync` | Plain state words are clearer and avoid turning several conditions into one branded abstraction. |
-| `freshness checkpoint`, `plan-level freshness checkpoint` | `final state sync`, `plan-level current-state check` | Plan closure updates durable state; it is not a Git checkpoint or a special freshness concept. |
-| Non-Git `checkpoint` | `state sync`, `current-state check`, `milestone`, or the specific action | `checkpoint` remains Git-only so commit synchronization is unambiguous. |
-| Most `guard` wording | `check`, `status check`, `stop condition`, `safety rule`, or `pre-routing check` | The replacement says what happens instead of using security-flavored jargon. |
-| `Reality Verification Gate` | `behavioral verification gate` | Keep `gate` only for hard pass/fail verification boundaries, and name the behavior being verified. |
-| `Conductor protocol` | `orchestration loop` | The loop is select, dispatch, evaluate, resolve, and log; the plain phrase explains the action. |
-| `memory layer` | `saved project context` | Agentera persists context in project files and profile data, not model memory. |
-| `operating record` | `saved project context`, `project history`, or `progress log` | The replacement states the artifact role directly. |
-| Prose/label `drift` | `mismatch`, `out of sync`, or the concrete mismatch type | `drift` is vague in user-facing vocabulary; mismatch wording states the observable problem. |
-| `DTC`, `DTC-first` | `docs-first workflow`, `document intended behavior before tests and code` | Keep the working principle while removing acronym friction. |
-
-### Allowed uses
-
-| Term | Allowed use | Rationale |
-| --- | --- | --- |
-| `checkpoint` | Git commits only, such as `checkpoint commit` or `pre-dispatch checkpoint commit`. | Git users understand checkpoint as commit synchronization; non-Git lifecycle use is deprecated. |
-| `gate` | Hard pass/fail boundaries, especially `behavioral verification gate` or regression pass/fail decisions. | Gate remains useful when a failed check must stop the workflow. |
-| `guard` | Existing code identifiers, historical text, or conventional phrases where changing the word would imply behavior or API migration. Prefer replacement wording in current prose. | Compatibility and searchability can outweigh prose cleanup in stable surfaces. |
-| `drift` | Historical entries, test fixture names, version-drift/package-drift diagnostics, and deliberate compatibility labels where `drift` is already a stable concept. Prefer `mismatch` or `out of sync` for new user-facing prose. | Some existing diagnostics and tests use drift as a compatibility signal. |
-| `fresh`, `stale`, `fresh project` | Plain English state descriptions when they are natural user wording, especially `fresh project` versus returning project. Prefer `out of date` or `needs repair` for recovery prompts. | Decision 44 deprecates `freshness` as protocol jargon, not ordinary adjectives. |
-
-### Protected compatibility
-
-| Surface | Boundary | Rationale |
-| --- | --- | --- |
-| Schema fields and artifact shapes | Preserve field names, enum values, YAML structures, and validation semantics. | Persisted state and validators depend on stable shapes. |
-| Stable IDs | Preserve capability IDs, artifact IDs, group IDs, route IDs, and test fixture IDs unless a migration is planned. | IDs are integration contracts, not prose. |
-| CLI labels and exit behavior | Preserve current command names, parseable labels, exit codes, and source-contract labels unless an explicit CLI migration is recorded. | Shell users and tests consume these labels. |
-| Canonical capability names | Preserve `hej`, `visionera`, `resonera`, `inspirera`, `planera`, `realisera`, `optimera`, `inspektera`, `dokumentera`, `profilera`, `visualisera`, and `orkestrera`. | Decision 43 kept Swedish names as protocol identity. |
-| Decision 43 aliases | Preserve `/agentera status`, `vision`, `discuss`, `research`, `plan`, `build`, `optimize`, `audit`, `document`, `profile`, `design`, and `orchestrate`. | Alias routing is shipped 2.2.0 behavior. |
-| Historical artifacts | Do not rewrite old progress, changelog, archived plans, or decisions solely for vocabulary cleanup. | History should remain accurate; current surfaces can explain old terms when needed. |
-| Release version | Keep Decision 44 under pending 2.2.0; do not create a later version for this cleanup without policy-driven rationale. | The vocabulary cleanup belongs to the same release as Decision 43 aliases. |
+Read `vocabulary-index.yaml` before editing docs, capability prose, diagnostics,
+tests, labels, or active state.
 
 ## Workflow grammar
 

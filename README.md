@@ -242,7 +242,7 @@ uvx --from git+https://github.com/jgabor/agentera agentera hej --format json
 Startup context gets read again and again. Benchmarks measure when agents still
 fall back to raw artifact reads after using the CLI, then use that evidence to
 improve commands—less token waste, fewer stale assumptions, faster handoff. See
-[`docs/benchmark.md`](./docs/benchmark.md) for methodology.
+[`references/analysis/benchmark.md`](./references/analysis/benchmark.md) for methodology.
 
 Slash routes and CLI commands are separate surfaces. `/agentera plan` routes to
 `planera`; `agentera plan` reads plan state.
@@ -316,7 +316,7 @@ against the artifact contracts instead of one runtime.
 | Schema contract | [`skills/agentera/capability_schema_contract.yaml`](./skills/agentera/capability_schema_contract.yaml) |
 | Instruction-file contract | [`references/cli/capability-instruction-contract.yaml`](./references/cli/capability-instruction-contract.yaml) |
 | Runtime parity | [`references/adapters/runtime-feature-parity.md`](./references/adapters/runtime-feature-parity.md) |
-| Terminology | [`docs/vocabulary.md`](./docs/vocabulary.md) |
+| Terminology | [`references/cli/vocabulary.md`](./references/cli/vocabulary.md) |
 
 Validate a capability through the canonical namespace:
 
@@ -388,4 +388,4 @@ codex plugin marketplace remove jgabor/agentera
 
 ---
 
-**License:** [Apache-2.0](./LICENSE) · **Changelog:** [`CHANGELOG.md`](./CHANGELOG.md) · **Version:** 2.6.0
+**License:** [Apache-2.0](./LICENSE) · **Changelog:** [`CHANGELOG.md`](./CHANGELOG.md) · **Version:** 2.6.1

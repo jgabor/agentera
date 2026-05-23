@@ -13,7 +13,7 @@ import yaml
 REPO_ROOT = Path(__file__).resolve().parent.parent
 CONTRACT_PATH = REPO_ROOT / "references" / "analysis" / "startup-measurement-contract.yaml"
 DOCS_PATH = REPO_ROOT / ".agentera" / "docs.yaml"
-BENCHMARK_DOC_PATH = REPO_ROOT / "docs" / "benchmark.md"
+BENCHMARK_DOC_PATH = REPO_ROOT / "references" / "analysis" / "benchmark.md"
 
 
 def _contract() -> dict:
@@ -2216,11 +2216,11 @@ def test_docs_link_startup_report_surface_and_preserve_correct_metric():
 
     assert "scripts/startup_analysis_contract.py" in indexed_paths
     assert "references/analysis/startup-measurement-contract.yaml" in indexed_paths
-    assert "docs/benchmark.md" in indexed_paths
+    assert "references/analysis/benchmark.md" in indexed_paths
     assert "startup-overhead-report.md" in audit_text
     assert "Decision 51" in audit_text
     assert "raw artifact access after CLI state" in audit_text
-    assert "docs/benchmark.md" in readme
+    assert "references/analysis/benchmark.md" in readme
     assert "mage bench:startupState" in benchmark_doc
     assert "AGENTERA_BENCH_RUNTIME_STORES" in benchmark_doc
     assert "Mage generates one" in benchmark_doc

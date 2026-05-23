@@ -1,26 +1,30 @@
 """Decision 44 plain-English vocabulary coverage.
 
 The scanner fails on deprecated preferred wording unless the use is protected by
-the boundary in docs/vocabulary.md. Each exception rule carries its rationale so
-reviewers can distinguish stable compatibility terms from current prose.
+the boundary in references/cli/vocabulary-index.yaml. Each exception rule carries
+its rationale so reviewers can distinguish stable compatibility terms from
+current prose.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass
+from functools import lru_cache
 from pathlib import Path
 import re
 
+import yaml
+
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
+VOCABULARY_INDEX_PATH = REPO_ROOT / "references" / "cli" / "vocabulary-index.yaml"
 
 SCANNED_FILES = (
     "README.md",
     "UPGRADE.md",
     "CHANGELOG.md",
     "TODO.md",
-    "ROADMAP.md",
-    "docs/vocabulary.md",
+    "references/cli/vocabulary.md",
     ".agentera/docs.yaml",
     ".agentera/plan.yaml",
     ".agentera/progress.yaml",
@@ -35,12 +39,17 @@ SCANNED_DIRS = (
     "references/v1-section-mapping.md",
 )
 
-DEPRECATED_PREFERRED_RE = re.compile(
-    r"freshness|\bcheckpoint\b|\bguard\b|Reality Verification Gate|"
-    r"conductor protocol|memory layer|operating record|\bdrift\b|drifts|"
-    r"drifted|drifting|DTC-first|\bDTC\b",
-    re.IGNORECASE,
-)
+@lru_cache
+def _vocabulary_index() -> dict:
+    return yaml.safe_load(VOCABULARY_INDEX_PATH.read_text(encoding="utf-8"))
+
+
+def _deprecated_preferred_pattern() -> re.Pattern[str]:
+    pattern = _vocabulary_index()["decision_44"]["deprecated_scan_pattern"]
+    return re.compile(pattern, re.IGNORECASE)
+
+
+DEPRECATED_PREFERRED_RE = _deprecated_preferred_pattern()
 
 
 @dataclass(frozen=True)
@@ -59,7 +68,7 @@ class AllowedUse:
 
 ALLOWED_USES = (
     AllowedUse(
-        r"^docs/vocabulary\.md$",
+        r"^references/cli/vocabulary\.md$",
         r"Decision 44|Deprecated preferred wording|Allowed use|Protected compatibility|Avoid|"
         r"Bare |Non-Git|Git-only|checkpoint commit|pre-dispatch checkpoint commit|"
         r"sounds like a branded synonym|Use instead|bundle freshness gap detected|"
@@ -185,6 +194,15 @@ def _allowed_reason(relative_path: str, line: str) -> str | None:
     return None
 
 
+def test_vocabulary_index_decision_44_tables_are_populated() -> None:
+    index = _vocabulary_index()
+    decision_44 = index["decision_44"]
+    assert decision_44["replacements"]
+    assert decision_44["allowed_uses"]
+    assert decision_44["protected_surfaces"]
+    assert decision_44["deprecated_scan_pattern"].strip()
+
+
 def test_decision_44_deprecated_preferred_vocabulary_is_bounded():
     unprotected = [
         f"{path}:{line_number}: {term!r}: {text}"
@@ -211,11 +229,11 @@ def test_decision_44_allowed_uses_are_reasoned_exceptions():
 
 
 def test_decision_44_current_vocabulary_boundary_is_present():
-    vocabulary = (REPO_ROOT / "docs/vocabulary.md").read_text(encoding="utf-8")
+    decision_44 = _vocabulary_index()["decision_44"]
+    preferred = {entry["preferred"] for entry in decision_44["replacements"]}
 
-    assert "## Decision 44 replacement boundary" in vocabulary
-    assert "behavioral verification gate" in vocabulary
-    assert "orchestration loop" in vocabulary
-    assert "saved project context" in vocabulary
-    assert "docs-first workflow" in vocabulary
-    assert "Stable identifiers, enums, persisted state shapes" in vocabulary
+    assert "behavioral verification gate" in preferred
+    assert "orchestration loop" in preferred
+    assert "saved project context" in preferred
+    assert "docs-first workflow, document intended behavior before tests and code" in preferred
+    assert "Stable identifiers" in decision_44["summary"]

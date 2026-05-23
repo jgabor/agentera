@@ -2,12 +2,7 @@
 .codex
 .opencode/goals/
 docs/*
-!docs/benchmark.md
-!docs/d47-app-home-vocabulary-inventory.md
-!docs/d58-json-output-surface-inventory.md
-!docs/d59-json-output-budget-proposal.md
-!docs/d59-json-output-closeout-measurements.md
-!docs/vocabulary.md
+!docs/README.md
 __pycache__/
 *.pyc
 .env

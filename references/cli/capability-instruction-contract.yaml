@@ -9,7 +9,7 @@ purpose: >-
 sources:
   decision: .agentera/decisions.yaml#decision-57
   prose:
-    - docs/vocabulary.md#capability-instruction-contract
+    - references/cli/vocabulary.md#capability-instruction-contract
     - README.md#for-capability-authors
 scope:
   includes:
@@ -117,7 +117,7 @@ surface_inventory:
   runtime_descriptors: current_canonical_instructions_md_pointers
   capability_instruction_files: current_canonical_instruction_files
 docs_delegation:
-  document: docs/vocabulary.md
+  document: references/cli/vocabulary.md
   required_anchor: Capability instruction contract
   authority_path: references/cli/capability-instruction-contract.yaml
   must_not_duplicate_large_table: true

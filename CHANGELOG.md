@@ -2,20 +2,29 @@
 
 ## [Unreleased]
 
+## [2.6.1] · 2026-05-23
+
+### Changed
+
+- Authoritative documentation moved out of `docs/` into the shipped tree: vocabulary index to `references/cli/vocabulary.md`, benchmark runbook to `references/analysis/benchmark.md`, and maintainer inventory to `references/meta/documentation-inventory.md`.
+- `references/cli/vocabulary-index.yaml` now owns normalization rules and Decision 44 replacement boundaries; `tests/test_decision44_vocabulary.py` loads the deprecated-term scan pattern from YAML.
+- `scripts/json_output_surface_manifest.yaml` is the live JSON surface authority; d47/d58/d59 workpapers archived under `.agentera/archive/`.
+- `docs/` is gitignored except `docs/README.md` (local drafts only); vocabulary and benchmark docs are included in the app bundle via `references/`.
+
 ## [2.6.0] · 2026-05-23
 
 ### Key highlights
 
 - **`prime` control plane** for session priming, orientation JSON (`prime --dashboard`), and capability startup context (`prime --context <capability> --format json`).
-- **Token-optimized capability startup JSON**: removing the full-profile `hej --capability-context` envelope cuts aggregate startup payloads across twelve capabilities from **433,397 bytes / 96,060 GPT-5 tokens** to **119,017 bytes / 25,447 tokens** (**−72.5% / −73.5%** on the reference fixture; see `docs/d59-json-output-closeout-measurements.md`). Largest slim caps remain bounded (for example inspektera **20,292 B / 4,038 tok** vs **53,741 B / 11,678 tok** full-profile baseline).
+- **Token-optimized capability startup JSON**: removing the full-profile `hej --capability-context` envelope cuts aggregate startup payloads across twelve capabilities from **433,397 bytes / 96,060 GPT-5 tokens** to **119,017 bytes / 25,447 tokens** (**−72.5% / −73.5%** on the reference fixture; see `.agentera/archive/d59-json-output-closeout-measurements.md`). Largest slim caps remain bounded (for example inspektera **20,292 B / 4,038 tok** vs **53,741 B / 11,678 tok** full-profile baseline).
 - **Public JSON inventory, measurement, and enforced budgets** for **67** supported `--format json` / `--json` surfaces (`measure_json_output_surfaces.py` + manifest); exact-token benchmark reports **0** byte/token violations on stable fixtures.
 - **Removed** `hej --capability-context` and `--context-profile full`; slim `capability_context` is the only supported startup shape.
 - **Direct top-level capability commands** (`agentera planera`, `agentera realisera`, …) emit routing guidance to skill invocation and `prime --context`.
 
 ### Added
 
-- `docs/d58-json-output-surface-inventory.md` classifies all public JSON outputs for Decision 58/59 follow-up.
-- `docs/d59-json-output-budget-proposal.md` and `docs/d59-json-output-closeout-measurements.md` record budget methodology and final measurements.
+- `.agentera/archive/d58-json-output-surface-inventory.md` classifies all public JSON outputs for Decision 58/59 follow-up.
+- `.agentera/archive/d59-json-output-budget-proposal.md` and `.agentera/archive/d59-json-output-closeout-measurements.md` record budget methodology and final measurements.
 - `scripts/measure_json_output_surfaces.py` with `scripts/json_output_surface_manifest.yaml` measures 67 surfaces from stable fixtures without mutating user app/profile state.
 - `scripts/measure_json_common.py` shared byte/token counting for whole-surface and capability-context harnesses.
 

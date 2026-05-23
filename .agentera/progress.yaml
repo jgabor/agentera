@@ -1,4 +1,19 @@
 cycles:
+- number: 593
+  timestamp: 2026-05-23 22:30
+  type: release
+  phase: build
+  what: Relocated authoritative docs to references/ and released 2.6.1 patch metadata.
+  commit: 2430bd6
+  discovered: Vocabulary and benchmark guides under docs/ were not packaged in the
+    app bundle; JSON workpapers belonged in archive once manifest owned live surfaces.
+  verified: Moved vocabulary to references/cli/, benchmark to references/analysis/,
+    added vocabulary-index.yaml, archived d47/d58/d59 workpapers, updated tests and
+    delegation paths. Version surfaces aligned to 2.6.1; CHANGELOG [2.6.1] added.
+  next: Tag v2.6.1; SPEC.md and contract.md cleanup remain open per documentation
+    inventory.
+  context:
+    scope: docs relocation, version_files, CHANGELOG, TODO, PROGRESS, tag v2.6.1.
 - number: 592
   timestamp: 2026-05-23 22:00
   type: release
@@ -245,36 +260,9 @@ cycles:
       or decision-satisfaction updates.
     scope: CLI contract prose, Agentera skill guidance, Planera instruction guidance,
       README note, focused tests, PLAN and PROGRESS closeout evidence.
-- number: 583
-  timestamp: 2026-05-21 12:28
-  type: test
-  phase: build
-  what: Added capability-context byte and GPT-5 token budget regression coverage.
-  commit: pending
-  inspiration: Orkestrera Task 5 for the Slim Capability Context Payloads plan.
-  discovered: 'Exact GPT-5 token measurement works through `npx tiktoken-cli -m gpt-5`,
-    but the Python wrapper must stream payload text through stdin rather than parse
-    the trailing `model: gpt-5` line as a count. Slim bespoke contexts also needed
-    startup-focused compaction to meet the declared budgets.'
-  verified: '`uv run --with pytest pytest tests/test_measure_capability_context_payloads.py
-    tests/test_query_cli.py::TestHej::test_hej_capability_context_slim_profile_emits_startup_capsule
-    tests/test_query_cli.py::TestHej::test_hej_capability_context_slim_profile_adds_generic_capability_builders
-    tests/test_query_cli.py::TestHej::test_hej_capability_context_slim_profile_nests_existing_bespoke_contexts`
-    passed. `uv run scripts/measure_capability_context_payloads.py --json --enforce-budgets`
-    passed with no violations; measured counts were hej 2183 bytes/530 tokens, visionera
-    5165/1187, resonera 4324/998, inspirera 2244/549, planera 9418/1997, realisera
-    16144/3439, optimera 14647/2900, inspektera 20017/3953, dokumentera 15926/3385,
-    profilera 2294/559, visualisera 4279/997, and orkestrera 10941/2296.'
-  next: Execute Task 6 to synchronize contracts, docs, and final validation.
-  context:
-    intent: Complete Task 5 by adding payload budget measurement and regression coverage.
-    constraints: Task 5 only. No contract documentation synchronization beyond the
-      measurement script, no capability-name CLI commands, release metadata, publication,
-      installed-app refresh, protected vision/objective edits, or decision-satisfaction
-      updates.
-    scope: capability-context payload measurement script, offline tests, slim bespoke
-      context compaction, PLAN and PROGRESS evidence.
 archive:
+- summary: 'Cycle 583 (2026-05-21): Added capability-context byte and GPT-5 token
+    budget regression coverage.'
 - summary: 'Cycle 582 (2026-05-21): Added generic slim capability-context builders.'
 - summary: 'Cycle 581 (2026-05-21): Nested existing bespoke contexts in slim capability-context
     output.'
@@ -347,5 +335,3 @@ archive:
     closeout.'
 - summary: 'Cycle 544 (2026-05-16): Added doctor output regressions and synchronized
     Task 5 artifacts.'
-- summary: 'Cycle 543 (2026-05-16): Implemented canonical doctor app metadata statuses
-    for Plan Task 3.'

@@ -2,7 +2,7 @@
 
 Proposal for Plan Task 3 (**Define and enforce JSON budgets**). This document
 classifies every measured public JSON surface from
-`docs/d58-json-output-surface-inventory.md`, records stable-fixture baselines
+`.agentera/archive/d58-json-output-surface-inventory.md`, records stable-fixture baselines
 from `scripts/measure_json_output_surfaces.py`, and proposes byte and GPT-5 token
 caps or documented exemptions.
 
@@ -301,7 +301,7 @@ When raising or lowering a cap:
 | `scripts/json_output_surface_manifest.yaml` | Add `byte_budget`, `token_budget`, `enforcement_tier` per row |
 | `scripts/measure_json_output_surfaces.py` | `--enforce-budgets`; fail with command, counts, budget |
 | `tests/test_measure_json_output_surfaces.py` | Bytes in CI; token skip; exact benchmark documented |
-| `docs/d58-json-output-surface-inventory.md` | Cross-link exemptions to this proposal |
+| `.agentera/archive/d58-json-output-surface-inventory.md` | Cross-link exemptions to this proposal |
 
 ## Verification commands
 

@@ -334,7 +334,7 @@ def test_hej_capability_context_consumes_canonical_app_status() -> None:
 
 
 def test_vocabulary_docs_delegate_app_lifecycle_authority_to_yaml() -> None:
-    vocabulary = (REPO_ROOT / "docs" / "vocabulary.md").read_text(encoding="utf-8")
+    vocabulary = (REPO_ROOT / "references" / "cli" / "vocabulary.md").read_text(encoding="utf-8")
     section = vocabulary.split("### App lifecycle status vocabulary", 1)[1].split(
         "## Evaluation and evidence grammar", 1
     )[0]
@@ -349,7 +349,7 @@ def test_app_lifecycle_authority_declares_docs_delegation_contract() -> None:
     delegation = _authority()["docs_delegation"]
 
     assert delegation == {
-        "document": "docs/vocabulary.md",
+        "document": "references/cli/vocabulary.md",
         "required_anchor": "App lifecycle status vocabulary",
         "authority_path": "references/cli/app-lifecycle-vocabulary.yaml",
         "must_not_duplicate_large_table": True,
