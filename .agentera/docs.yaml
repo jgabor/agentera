@@ -10,6 +10,7 @@ conventions:
   - plugin.json
   - .github/plugin/plugin.json
   - .codex-plugin/plugin.json
+  - .cursor-plugin/plugin.json
   - .claude-plugin/marketplace.json
   - .opencode/plugins/agentera.js
   - skills/agentera/SKILL.md

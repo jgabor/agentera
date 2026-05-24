@@ -57,6 +57,11 @@ records:
           path: .codex-plugin/plugin.json
           version_bearing: true
           package_shape: suite-bundle
+        - id: cursor-plugin-manifest
+          runtime: cursor
+          path: .cursor-plugin/plugin.json
+          version_bearing: true
+          package_shape: suite-bundle
         - id: claude-marketplace-manifest
           runtime: claude
           path: .claude-plugin/marketplace.json
@@ -109,6 +114,10 @@ records:
           path: .agents/plugins
         - id: codex-plugin
           path: .codex-plugin
+        - id: cursor-plugin
+          path: .cursor-plugin
+        - id: cursor-agents
+          path: .cursor/agents
         - id: claude-plugin
           path: .claude-plugin
         - id: github-hooks
@@ -221,6 +230,7 @@ records:
         - plugin.json
         - .github/plugin/plugin.json
         - .codex-plugin/plugin.json
+        - .cursor-plugin/plugin.json
         - .claude-plugin/marketplace.json
         - .opencode/plugins/agentera.js
         - skills/agentera/SKILL.md

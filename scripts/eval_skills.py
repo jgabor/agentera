@@ -15,7 +15,7 @@ Run from repo root:
     uv run scripts/eval_skills.py --dry-run          # list skills + prompts
     uv run scripts/eval_skills.py --parallel N       # N concurrent workers
     uv run scripts/eval_skills.py --timeout 60       # per-skill timeout (s)
-    uv run scripts/eval_skills.py --runtime opencode # use OpenCode runtime
+    uv run scripts/eval_skills.py --runtime cursor-agent # use Cursor Agent CLI
 """
 
 from __future__ import annotations
@@ -64,27 +64,38 @@ DEFAULT_PARALLEL = 1    # sequential by default
 # ---------------------------------------------------------------------------
 
 def detect_runtime(explicit: str | None) -> str:
-    """Return the runtime name to use: 'claude' or 'opencode'.
+    """Return the runtime name to use.
 
-    If *explicit* is 'claude' or 'opencode', return it directly (skip PATH
-    detection).  If *explicit* is 'auto' (or None), probe PATH with
-    shutil.which(), preferring 'claude' when both are present.  Exit with a
-    clear error when neither binary is available.
+    If *explicit* names a supported runtime, return it directly. If *explicit* is
+    'auto' (or None), probe PATH with shutil.which(), preferring 'claude' when
+    multiple hosts are present. Exit with a clear error when no runtime binary
+    is available.
     """
     if explicit and explicit != "auto":
+        if explicit == "cursor-agent":
+            if shutil.which("cursor-agent") is None and shutil.which("agent") is None:
+                print(
+                    "ERROR: 'cursor-agent' not found on PATH. Install Cursor Agent CLI "
+                    "and ensure the binary is accessible.",
+                    file=sys.stderr,
+                )
+                sys.exit(1)
         return explicit
 
     has_claude = shutil.which("claude") is not None
     has_opencode = shutil.which("opencode") is not None
+    has_cursor_agent = shutil.which("cursor-agent") is not None or shutil.which("agent") is not None
 
     if has_claude:
         return "claude"
     if has_opencode:
         return "opencode"
+    if has_cursor_agent:
+        return "cursor-agent"
 
     print(
-        "ERROR: Neither 'claude' nor 'opencode' found on PATH. "
-        "Install Claude Code or OpenCode and ensure the binary is accessible.",
+        "ERROR: Neither 'claude', 'opencode', nor 'cursor-agent' found on PATH. "
+        "Install a supported runtime host and ensure the binary is accessible.",
         file=sys.stderr,
     )
     sys.exit(1)
@@ -129,8 +140,9 @@ def _invoke_skill(name: str, prompt: str, timeout: int, runtime: str = "claude")
     """Invoke *prompt* via the selected *runtime* and return a result dict.
 
     Supported runtimes:
-        claude    -- ["claude", "-p", "--output-format", "json"] (prompt on stdin)
-        opencode  -- ["opencode", "run", "--prompt"] (prompt on stdin)
+        claude        -- ["claude", "-p", "--output-format", "json"] (prompt on stdin)
+        opencode      -- ["opencode", "run", "--prompt"] (prompt on stdin)
+        cursor-agent  -- ["cursor-agent", "-p", "--output-format", "json", "--force", prompt arg]
 
     Returns a result dict suitable for inclusion in the JSON report:
         {"skill": str, "status": "pass"|"fail", "duration_s": float,
@@ -138,8 +150,14 @@ def _invoke_skill(name: str, prompt: str, timeout: int, runtime: str = "claude")
     """
     if runtime == "opencode":
         cmd = ["opencode", "run", "--prompt"]
+        stdin_prompt: str | None = prompt
+    elif runtime == "cursor-agent":
+        binary = "cursor-agent" if shutil.which("cursor-agent") else "agent"
+        cmd = [binary, "-p", "--output-format", "json", "--force", prompt]
+        stdin_prompt = None
     else:
         cmd = ["claude", "-p", "--output-format", "json"]
+        stdin_prompt = prompt
 
     start = time.monotonic()
     error: str | None = None
@@ -148,7 +166,7 @@ def _invoke_skill(name: str, prompt: str, timeout: int, runtime: str = "claude")
     try:
         result = subprocess.run(
             cmd,
-            input=prompt,
+            input=stdin_prompt,
             capture_output=True,
             text=True,
             timeout=timeout,
@@ -309,11 +327,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     )
     parser.add_argument(
         "--runtime",
-        choices=["auto", "claude", "opencode"],
+        choices=["auto", "claude", "opencode", "cursor-agent"],
         default="auto",
         help=(
             "Runtime to use for skill invocations. 'auto' (default) probes PATH "
-            "and prefers 'claude' when both are available."
+            "and prefers 'claude', then 'opencode', then 'cursor-agent'."
         ),
     )
     return parser.parse_args(argv)

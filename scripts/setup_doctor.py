@@ -146,48 +146,93 @@ CODEX_CONFIG_ERROR_MESSAGE = _diagnostic_messages("codex")[1]
 CODEX_PASS_STATUS, CODEX_WARN_STATUS, CODEX_FAIL_STATUS, CODEX_SKIP_STATUS = _diagnostic_status_labels("codex")
 CODEX_RUNTIME_CONFIG_GAP, CODEX_USER_ENVIRONMENT_GAP = _diagnostic_gap_labels("codex")
 CODEX_AVAILABILITY_CHECK = _availability_probe_label("codex")
+CURSOR_HOME_CHECK = _diagnostic_check_names("cursor")[0]
+CURSOR_HOOKS_CHECK = _diagnostic_check_names("cursor")[1]
+CURSOR_AGENTS_CHECK = _diagnostic_check_names("cursor")[2]
+(
+    CURSOR_HELPER_MESSAGE,
+    CURSOR_HOOKS_MESSAGE,
+    _CURSOR_HOOKS_STALE_MESSAGE,
+    CURSOR_AGENTS_MESSAGE,
+) = _diagnostic_messages("cursor")[:4]
+CURSOR_PASS_STATUS, CURSOR_WARN_STATUS, CURSOR_FAIL_STATUS, CURSOR_SKIP_STATUS = _diagnostic_status_labels("cursor")
+(
+    CURSOR_RUNTIME_CONFIG_GAP,
+    CURSOR_USER_ENVIRONMENT_GAP,
+    CURSOR_HOOK_DRIFT_GAP,
+    CURSOR_AGENT_DRIFT_GAP,
+) = _diagnostic_gap_labels("cursor")
+CURSOR_AVAILABILITY_CHECK = _availability_probe_label("cursor")
+CURSOR_AGENT_HOME_CHECK = _diagnostic_check_names("cursor-agent")[0]
+CURSOR_AGENT_BINARY_CHECK = _diagnostic_check_names("cursor-agent")[1]
+(
+    CURSOR_AGENT_HELPER_MESSAGE,
+    CURSOR_AGENT_BINARY_MESSAGE,
+) = _diagnostic_messages("cursor-agent")[:2]
+(
+    CURSOR_AGENT_PASS_STATUS,
+    CURSOR_AGENT_WARN_STATUS,
+    CURSOR_AGENT_FAIL_STATUS,
+    CURSOR_AGENT_SKIP_STATUS,
+) = _diagnostic_status_labels("cursor-agent")
+CURSOR_AGENT_RUNTIME_CONFIG_GAP, CURSOR_AGENT_USER_ENVIRONMENT_GAP = _diagnostic_gap_labels("cursor-agent")
+CURSOR_AGENT_AVAILABILITY_CHECK = _availability_probe_label("cursor-agent")
 HELPER_ACCESS_MESSAGE = COPILOT_HELPER_MESSAGE
 AVAILABILITY_CHECKS = {
     "claude": CLAUDE_AVAILABILITY_CHECK,
     "opencode": OPENCODE_AVAILABILITY_CHECK,
     "copilot": COPILOT_AVAILABILITY_CHECK,
     "codex": CODEX_AVAILABILITY_CHECK,
+    "cursor": CURSOR_AVAILABILITY_CHECK,
+    "cursor-agent": CURSOR_AGENT_AVAILABILITY_CHECK,
 }
 PASS_STATUSES = {
     "claude": CLAUDE_PASS_STATUS,
     "opencode": OPENCODE_PASS_STATUS,
     "copilot": COPILOT_PASS_STATUS,
     "codex": CODEX_PASS_STATUS,
+    "cursor": CURSOR_PASS_STATUS,
+    "cursor-agent": CURSOR_AGENT_PASS_STATUS,
 }
 WARN_STATUSES = {
     "claude": CLAUDE_WARN_STATUS,
     "opencode": OPENCODE_WARN_STATUS,
     "copilot": COPILOT_WARN_STATUS,
     "codex": CODEX_WARN_STATUS,
+    "cursor": CURSOR_WARN_STATUS,
+    "cursor-agent": CURSOR_AGENT_WARN_STATUS,
 }
 FAIL_STATUSES = {
     "claude": CLAUDE_FAIL_STATUS,
     "opencode": OPENCODE_FAIL_STATUS,
     "copilot": COPILOT_FAIL_STATUS,
     "codex": CODEX_FAIL_STATUS,
+    "cursor": CURSOR_FAIL_STATUS,
+    "cursor-agent": CURSOR_AGENT_FAIL_STATUS,
 }
 SKIP_STATUSES = {
     "claude": CLAUDE_SKIP_STATUS,
     "opencode": OPENCODE_SKIP_STATUS,
     "copilot": COPILOT_SKIP_STATUS,
     "codex": CODEX_SKIP_STATUS,
+    "cursor": CURSOR_SKIP_STATUS,
+    "cursor-agent": CURSOR_AGENT_SKIP_STATUS,
 }
 USER_ENVIRONMENT_GAPS = {
     "claude": CLAUDE_USER_ENVIRONMENT_GAP,
     "opencode": OPENCODE_USER_ENVIRONMENT_GAP,
     "copilot": COPILOT_USER_ENVIRONMENT_GAP,
     "codex": CODEX_USER_ENVIRONMENT_GAP,
+    "cursor": CURSOR_USER_ENVIRONMENT_GAP,
+    "cursor-agent": CURSOR_AGENT_USER_ENVIRONMENT_GAP,
 }
 RUNTIME_CONFIG_GAPS = {
     "claude": CLAUDE_RUNTIME_CONFIG_GAP,
     "opencode": OPENCODE_RUNTIME_CONFIG_GAP,
     "copilot": COPILOT_RUNTIME_CONFIG_GAP,
     "codex": CODEX_RUNTIME_CONFIG_GAP,
+    "cursor": CURSOR_RUNTIME_CONFIG_GAP,
+    "cursor-agent": CURSOR_AGENT_RUNTIME_CONFIG_GAP,
 }
 INSTALLER_FIXABLE_GAPS = {
     "copilot": (COPILOT_RUNTIME_CONFIG_GAP, COPILOT_USER_ENVIRONMENT_GAP),
@@ -1123,11 +1168,131 @@ def diagnose_codex(install_root: Path, home: Path, env: Mapping[str, str]) -> di
     return _runtime_result("codex", env, checks)
 
 
+def diagnose_cursor(install_root: Path, home: Path, env: Mapping[str, str]) -> dict[str, Any]:
+    checks: list[dict[str, Any]] = []
+    value = env.get("AGENTERA_HOME")
+    if value:
+        checks.append(
+            _configured_root_check(
+                "cursor",
+                CURSOR_HOME_CHECK,
+                Path(value).expanduser().resolve(),
+                install_root,
+                "environment",
+            )
+        )
+    else:
+        checks.append(
+            _check(
+                CURSOR_HOME_CHECK,
+                CURSOR_WARN_STATUS,
+                CURSOR_HELPER_MESSAGE,
+                source="environment",
+                gap=CURSOR_USER_ENVIRONMENT_GAP,
+            )
+        )
+
+    hooks_path = install_root / ".cursor" / "hooks.json"
+    if hooks_path.is_file():
+        text = hooks_path.read_text(encoding="utf-8")
+        if "cursor_session_start.py" in text and "cursor_pre_tool_use.py" in text:
+            checks.append(
+                _check(
+                    CURSOR_HOOKS_CHECK,
+                    CURSOR_PASS_STATUS,
+                    "Cursor hooks.json is present and references Agentera helpers",
+                    path=str(hooks_path),
+                )
+            )
+        else:
+            checks.append(
+                _check(
+                    CURSOR_HOOKS_CHECK,
+                    CURSOR_WARN_STATUS,
+                    "Cursor hooks.json is present but missing Agentera hook references",
+                    path=str(hooks_path),
+                    gap=CURSOR_HOOK_DRIFT_GAP,
+                )
+            )
+    else:
+        checks.append(
+            _check(
+                CURSOR_HOOKS_CHECK,
+                CURSOR_FAIL_STATUS,
+                "Cursor hooks.json is missing",
+                path=str(hooks_path),
+                gap=CURSOR_HOOK_DRIFT_GAP,
+            )
+        )
+
+    agents_dir = install_root / ".cursor" / "agents"
+    managed = sorted(agents_dir.glob("*.md")) if agents_dir.is_dir() else []
+    if len(managed) >= 12:
+        checks.append(
+            _check(
+                CURSOR_AGENTS_CHECK,
+                CURSOR_PASS_STATUS,
+                "Cursor managed capability agents are current",
+                path=str(agents_dir),
+                details=[agent.name for agent in managed],
+            )
+        )
+    elif managed:
+        checks.append(
+            _check(
+                CURSOR_AGENTS_CHECK,
+                CURSOR_WARN_STATUS,
+                f"Cursor managed agents incomplete ({len(managed)}/12)",
+                path=str(agents_dir),
+                gap=CURSOR_AGENT_DRIFT_GAP,
+            )
+        )
+    else:
+        checks.append(
+            _check(
+                CURSOR_AGENTS_CHECK,
+                CURSOR_FAIL_STATUS,
+                "Cursor managed capability agents are missing",
+                path=str(agents_dir),
+                gap=CURSOR_AGENT_DRIFT_GAP,
+            )
+        )
+    return _runtime_result("cursor", env, checks)
+
+
+def diagnose_cursor_agent(install_root: Path, home: Path, env: Mapping[str, str]) -> dict[str, Any]:
+    checks: list[dict[str, Any]] = []
+    value = env.get("AGENTERA_HOME")
+    if value:
+        checks.append(
+            _configured_root_check(
+                "cursor-agent",
+                CURSOR_AGENT_HOME_CHECK,
+                Path(value).expanduser().resolve(),
+                install_root,
+                "environment",
+            )
+        )
+    else:
+        checks.append(
+            _check(
+                CURSOR_AGENT_HOME_CHECK,
+                CURSOR_AGENT_WARN_STATUS,
+                "cursor-agent helper access depends on AGENTERA_HOME or shell rc configuration",
+                source="environment",
+                gap=CURSOR_AGENT_USER_ENVIRONMENT_GAP,
+            )
+        )
+    return _runtime_result("cursor-agent", env, checks)
+
+
 DIAGNOSTICS = {
     "claude": diagnose_claude,
     "opencode": diagnose_opencode,
     "copilot": diagnose_copilot,
     "codex": diagnose_codex,
+    "cursor": diagnose_cursor,
+    "cursor-agent": diagnose_cursor_agent,
 }
 
 

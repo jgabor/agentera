@@ -82,6 +82,7 @@ Use the scope for the primary behavior changed, not every file touched.
 | `claude`      | Claude-specific runtime behavior or packaging                                          |
 | `codex`       | Codex-specific runtime behavior or packaging                                           |
 | `copilot`     | Copilot-specific runtime behavior or packaging                                         |
+| `cursor`      | Cursor IDE and cursor-agent CLI runtime behavior, hooks, agents, and packaging           |
 | `release`     | Version bumps, changelog promotion, release readiness, tag/publication prep            |
 | `agents`      | `AGENTS.md` or runtime-neutral agent operating guidance                                |
 | `hej`         | Hej capability behavior, prose, schemas, or tests                                      |

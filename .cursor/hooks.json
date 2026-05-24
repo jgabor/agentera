@@ -1,0 +1,31 @@
+{
+  "version": 1,
+  "hooks": {
+    "sessionStart": [
+      {
+        "command": "uv run hooks/cursor_session_start.py",
+        "timeout": 15
+      }
+    ],
+    "sessionEnd": [
+      {
+        "command": "uv run hooks/session_stop.py",
+        "timeout": 15
+      }
+    ],
+    "preToolUse": [
+      {
+        "command": "uv run hooks/cursor_pre_tool_use.py",
+        "matcher": "Write|Edit",
+        "timeout": 15
+      }
+    ],
+    "postToolUse": [
+      {
+        "command": "uv run hooks/validate_artifact.py",
+        "matcher": "Write|Edit",
+        "timeout": 15
+      }
+    ]
+  }
+}

@@ -1297,6 +1297,8 @@ def _opencode_skill_item(
 
 
 def _text_has_agentera_managed_marker(text: str) -> bool:
+    if "<!-- agentera: managed -->" in text:
+        return True
     if any(line.strip() == "# agentera_managed: true" for line in text.splitlines()[:5]):
         return True
     lines = text.split("\n")
@@ -1336,6 +1338,9 @@ def _runtime_surface_ownership(runtime: str, action: str, target: Path) -> dict[
     if runtime == "codex" and action == "copy-hooks":
         if "agentera v2 Codex hooks" in text or "${AGENTERA_HOME}/hooks/validate_artifact.py" in text:
             return {"status": "agentera-owned", "reason": "Codex hooks contain Agentera hook identity"}
+    if runtime == "cursor" and action == "copy-hooks":
+        if "cursor_session_start.py" in text and "cursor_pre_tool_use.py" in text:
+            return {"status": "agentera-owned", "reason": "Cursor hooks.json references Agentera hook helpers"}
     if _text_has_agentera_managed_marker(text):
         return {"status": "agentera-owned", "reason": "file frontmatter contains agentera_managed: true"}
     return {"status": "user-owned", "reason": "no Agentera ownership marker or runtime identity was found"}
@@ -1505,11 +1510,13 @@ def plan_runtime_phase(
     env: dict[str, str],
     runtimes: set[str],
     *,
+    project: Path | None = None,
     force: bool,
 ) -> dict[str, Any]:
     items: list[dict[str, Any]] = []
     registry = _runtime_registry()
     adapters = {runtime_id: registry.consumer_view("upgrade", runtime_id) for runtime_id in runtimes}
+    cursor_project_root = (project or runtime_source_root).resolve()
     if "codex" in runtimes:
         adapter = adapters["codex"]
         setup_codex = _setup_codex_module()
@@ -1605,6 +1612,38 @@ def plan_runtime_phase(
             "target": None,
             "message": _write_label(adapter, "Claude Code plugin installs expose the app home without local config writes"),
         })
+    if "cursor" in runtimes:
+        adapter = adapters["cursor"]
+        labels = adapter["config_targets"]["write_safety_labels"]
+        hook_action = labels[0] if labels else "copy-hooks"
+        agent_action = labels[1] if len(labels) > 1 else "copy-agent"
+        plugin_action = labels[2] if len(labels) > 2 else "copy-plugin"
+        cursor_dir = cursor_project_root / ".cursor"
+        items.append(_copy_item(
+            adapter["identity"]["runtime_id"],
+            runtime_source_root / ".cursor" / "hooks.json",
+            cursor_dir / "hooks.json",
+            force=force,
+            action=hook_action,
+        ))
+        agents_dir = cursor_dir / "agents"
+        for agent_source in sorted((runtime_source_root / ".cursor" / "agents").glob("*.md")):
+            items.append(_copy_item(
+                adapter["identity"]["runtime_id"],
+                agent_source,
+                agents_dir / agent_source.name,
+                force=force,
+                action=agent_action,
+            ))
+        plugin_target = cursor_project_root / ".cursor-plugin" / "plugin.json"
+        plugin_source = runtime_source_root / ".cursor-plugin" / "plugin.json"
+        items.append(_copy_item(
+            adapter["identity"]["runtime_id"],
+            plugin_source,
+            plugin_target,
+            force=force,
+            action=plugin_action,
+        ))
     return _phase("runtime", items)
 
 
@@ -2051,6 +2090,7 @@ def build_upgrade_plan(args: argparse.Namespace) -> dict[str, Any]:
                 home,
                 env,
                 runtimes,
+                project=project,
                 force=args.force,
             ))
     if "cleanup" in only:

@@ -73,7 +73,7 @@ tasks:
   - number: 1
     name: Define Cursor runtime contract and registry records
     depends_on: []
-    status: pending
+    status: complete
     acceptance:
       - >-
         GIVEN Decision 63 is firm WHEN the runtime contract is reviewed THEN separate IDE
@@ -92,7 +92,7 @@ tasks:
     name: Ship repo-native Cursor hooks and session environment
     depends_on:
       - 1
-    status: pending
+    status: complete
     acceptance:
       - >-
         GIVEN a fresh checkout of this repository WHEN Cursor hook surfaces are inspected
@@ -110,7 +110,7 @@ tasks:
     name: Add managed capability agents and plugin metadata
     depends_on:
       - 1
-    status: pending
+    status: complete
     acceptance:
       - >-
         GIVEN the bundled skill has twelve capabilities WHEN Cursor agent descriptors are
@@ -128,7 +128,7 @@ tasks:
     depends_on:
       - 2
       - 3
-    status: pending
+    status: complete
     acceptance:
       - >-
         GIVEN a project without committed Cursor surfaces WHEN runtime upgrade runs in dry-run
@@ -147,6 +147,12 @@ tasks:
     depends_on:
       - 4
     status: pending
+    evidence:
+      - >-
+        Live IDE preToolUse Write smoke deferred this cycle: orchestration host can
+        run cursor-agent CLI but cannot drive interactive Cursor IDE preToolUse hook
+        firing with recorded invalid-block and valid-allow cases. Hard-gate registry
+        and parity docs remain advisory-only; release tagging stays blocked per Decision 63.
     acceptance:
       - >-
         GIVEN live-host smoke is enabled WHEN a reconstructable invalid Write candidate is
@@ -166,7 +172,7 @@ tasks:
     depends_on:
       - 1
       - 4
-    status: pending
+    status: complete
     acceptance:
       - >-
         GIVEN the eval runner is invoked with the cursor-agent runtime WHEN a smoke prompt
@@ -184,7 +190,11 @@ tasks:
     name: Document parity limits and AGENTS.md scope
     depends_on:
       - 5
-    status: pending
+    status: complete
+    evidence:
+      - >-
+        Parity docs, references/adapters/cursor.md, and AGENTS.md cursor scope landed
+        with advisory hard-gate language until Task 5 live smoke passes.
     acceptance:
       - >-
         GIVEN runtime parity documentation is reviewed WHEN Cursor v1 is compared with other

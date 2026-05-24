@@ -4,6 +4,8 @@ runtime_order:
   - opencode
   - copilot
   - codex
+  - cursor
+  - cursor-agent
 records:
   - identity:
       runtime_id: claude
@@ -349,3 +351,192 @@ records:
         - Codex config and hook files are planned as runtime updates.
       known_drifts:
         - Codex supports hook events but shipped config wires only apply_patch validation.
+  - identity:
+      runtime_id: cursor
+      display_name: Cursor IDE
+      adapter_family: native-plugin
+      support_status: supported
+    host_detection:
+      binary_names:
+        - cursor
+      host_config_locations:
+        - AGENTERA_HOME
+        - .cursor/hooks.json
+      availability_probe_label: runtime_binary
+    lifecycle_events:
+      supported_events:
+        - sessionStart
+        - sessionEnd
+        - preToolUse
+        - postToolUse
+        - subagentStart
+        - subagentStop
+        - beforeSubmitPrompt
+        - preCompact
+        - stop
+      unsupported_events:
+        - beforeShellExecution
+        - afterShellExecution
+        - beforeMCPExecution
+        - afterMCPExecution
+        - beforeReadFile
+        - afterFileEdit
+      event_status:
+        sessionStart: supported
+        sessionEnd: supported
+        preToolUse: supported
+        postToolUse: supported
+        subagentStart: supported
+        subagentStop: supported
+        beforeSubmitPrompt: supported
+        preCompact: supported
+        stop: supported
+      limitations:
+        - Cloud agents are unsupported in v1; repo hooks and managed agents target local IDE sessions only.
+        - Bare text hej routing is metadata-only; sessionStart injects context but does not rewrite prompts.
+    artifact_validation:
+      validation_events:
+        - preToolUse
+      hard_gate_claims:
+        - Conditional hard gate for reconstructable Write and Edit candidates via preToolUse; release-gated until live smoke passes.
+      payload_reconstruction_limitations:
+        - Malformed, sparse, or non-reconstructable tool_input payloads are allowed.
+    subagent_dispatch:
+      mechanism: Cursor .cursor/agents descriptors
+      setup_targets:
+        - .cursor/agents
+      descriptor_sources:
+        - .cursor/agents/*.md
+      invocation_pattern: Use the Cursor agent picker or @-mention the installed Agentera capability descriptor.
+      limitations:
+        - Cloud agent sessions do not load project hooks or managed agents in v1.
+    config_targets:
+      runtime_config_files: []
+      hook_targets:
+        - .cursor/hooks.json
+      plugin_targets:
+        - .cursor-plugin/plugin.json
+      environment_exports:
+        - AGENTERA_HOME
+      write_safety_labels:
+        - copy-hooks
+        - copy-agent
+        - copy-plugin
+    diagnostics:
+      check_names:
+        - AGENTERA_HOME
+        - cursor_hooks
+        - cursor_managed_agents
+      status_labels:
+        - pass
+        - warn
+        - fail
+        - skip
+      gap_labels:
+        - runtime_config
+        - user_environment
+        - hook_drift
+        - agent_drift
+      primary_messages:
+        - runtime can reach shared Agentera helper scripts
+        - Cursor hooks.json is present and references Agentera helpers
+        - Cursor hooks.json is missing or stale
+        - Cursor managed capability agents are current
+        - Cursor managed capability agents are missing or stale
+    documentation_claims:
+      reference_paths:
+        - references/adapters/runtime-feature-parity.md
+        - references/adapters/cursor.md
+      parity_claims:
+        - Cursor sessionStart exports AGENTERA_HOME and injects bounded session context.
+        - Cursor preToolUse can deny invalid reconstructable artifact candidates when live smoke passes.
+      install_claims:
+        - Repo-native .cursor/ surfaces ship in this repository; upgrade installs managed hooks and agents elsewhere.
+      known_drifts:
+        - Hard-gate parity claims stay advisory until live preToolUse Write smoke passes and release tagging is unblocked.
+        - Cloud agents are unsupported in v1.
+  - identity:
+      runtime_id: cursor-agent
+      display_name: Cursor Agent CLI
+      adapter_family: portable-cli
+      support_status: degraded
+    host_detection:
+      binary_names:
+        - cursor-agent
+        - agent
+      host_config_locations:
+        - AGENTERA_HOME
+        - ~/.bashrc
+        - ~/.zshrc
+        - ~/.config/fish/config.fish
+      availability_probe_label: runtime_binary
+    lifecycle_events:
+      supported_events:
+        - sessionStart
+        - sessionEnd
+        - preToolUse
+        - postToolUse
+      unsupported_events:
+        - subagentStart
+        - subagentStop
+        - beforeSubmitPrompt
+        - preCompact
+        - stop
+      event_status:
+        sessionStart: degraded
+        sessionEnd: degraded
+        preToolUse: degraded
+        postToolUse: degraded
+      limitations:
+        - CLI sessions may not inherit IDE sessionStart env; persistent shell configuration is a fallback only when shell-tool smoke fails.
+        - Non-interactive print mode may hang after completion in some host builds; eval and smoke harnesses use bounded timeouts.
+        - Cloud agents are unsupported in v1.
+    artifact_validation:
+      validation_events:
+        - preToolUse
+      hard_gate_claims:
+        - CLI hook parity is degraded relative to IDE; hard-gate claims follow IDE smoke evidence only.
+      payload_reconstruction_limitations:
+        - CLI may omit hook wiring entirely when launched outside a Cursor workspace with project hooks.
+    subagent_dispatch:
+      mechanism: Cursor Agent CLI host-managed dispatch
+      setup_targets: []
+      descriptor_sources: []
+      invocation_pattern: Use cursor-agent with explicit capability context; managed .cursor/agents descriptors apply only when the workspace is loaded.
+      limitations:
+        - Agentera does not install per-capability cursor-agent descriptors separately from IDE managed agents.
+    config_targets:
+      runtime_config_files: []
+      hook_targets: []
+      plugin_targets: []
+      environment_exports:
+        - AGENTERA_HOME
+      write_safety_labels:
+        - configure
+    diagnostics:
+      check_names:
+        - AGENTERA_HOME
+        - cursor-agent
+      status_labels:
+        - pass
+        - warn
+        - fail
+        - skip
+      gap_labels:
+        - runtime_config
+        - user_environment
+      primary_messages:
+        - runtime can reach shared Agentera helper scripts
+        - cursor-agent binary is not on PATH
+        - cursor-agent helper access depends on AGENTERA_HOME or shell rc configuration
+    documentation_claims:
+      reference_paths:
+        - references/adapters/runtime-feature-parity.md
+        - references/adapters/cursor.md
+      parity_claims:
+        - cursor-agent supports eval_skills --runtime cursor-agent print-mode dispatch.
+      install_claims:
+        - cursor-agent inherits IDE hook wiring only when run inside a workspace with installed Cursor surfaces.
+      known_drifts:
+        - CLI hook and session env parity is degraded relative to Cursor IDE.
+        - Bare text hej routing is metadata-only like Claude, Copilot, and Codex.

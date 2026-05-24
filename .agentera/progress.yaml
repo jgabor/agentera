@@ -1,4 +1,23 @@
 cycles:
+- number: 595
+  timestamp: 2026-05-24 13:05
+  type: feat
+  phase: build
+  what: Shipped Cursor v1 runtime slice per Decision 63.
+  commit: pending
+  discovered: Task 5 live IDE preToolUse Write smoke cannot be recorded honestly from
+    this orchestration host.
+  verified: cursor and cursor-agent registry records; .cursor/hooks.json with sessionStart
+    env and preToolUse wrappers; twelve .cursor/agents descriptors; .cursor-plugin/plugin.json;
+    upgrade, doctor, lifecycle validation, eval_skills --runtime cursor-agent; cursor.md
+    and parity docs; AGENTS.md cursor scope. Focused tests and lifecycle validation
+    pass.
+  next: Live Cursor IDE preToolUse Write smoke before release tagging; Task 8 closeout
+    when approved.
+  context:
+    intent: Implement Decision 63 Cursor first-class runtime v1 in one orchestration
+      cycle.
+    scope: Tasks 1-4, 6-7 complete; Task 5 deferred; Task 8 pending.
 - number: 594
   timestamp: 2026-05-23 23:15
   type: build
@@ -220,36 +239,9 @@ cycles:
       changes.
     scope: docs/d58-json-output-surface-inventory.md verification and PROGRESS cycle
       586.
-- number: 585
-  timestamp: 2026-05-21 18:31
-  type: feat
-  phase: build
-  what: Made Codex plugin-provided hooks primary when the Agentera Codex plugin is
-    enabled.
-  commit: pending
-  inspiration: Realisera executed the active Codex Plugin Hook Primary Transition
-    plan.
-  discovered: Runtime upgrade previously always planned copied `~/.codex/hooks.json`
-    hooks. The new branch can prove plugin eligibility from `[plugins."agentera@agentera"].enabled
-    = true`, trust plugin hook metadata, and retire only Agentera-owned copied hooks
-    after plugin trust config is applied or already current, while blocking mixed
-    or ambiguous user hook files.
-  verified: '`uv run --with pytest pytest tests/test_setup_codex.py tests/test_upgrade_cli.py
-    tests/test_runtime_adapters.py -q` passed with 130 tests. `uv run scripts/agentera
-    validate lifecycle-adapters`, artifact validators for PLAN and PROGRESS, `git
-    diff --check`, and `uv run scripts/agentera upgrade --runtime codex --only runtime
-    --dry-run --json` passed. The dry-run showed plugin hook trust plus `retire-hooks`
-    for the stale copied hook path.'
-  next: Review and commit the Codex plugin hook transition when ready.
-  context:
-    intent: Complete the plugin-primary Codex hook transition while preserving copied-hook
-      compatibility.
-    constraints: No Codex plugin installation, marketplace mutation, package refresh,
-      publication, push, tag, commit, protected vision/objective/profile edit, or
-      user-owned hook deletion.
-    scope: Codex runtime upgrade/setup helpers, focused tests, README/UPGRADE wording,
-      PLAN evidence, and PROGRESS evidence.
 archive:
+- summary: 'Cycle 585 (2026-05-21): Made Codex plugin-provided hooks primary when
+    the Agentera Codex plugin is enabled.'
 - summary: 'Cycle 584 (2026-05-21): Synchronized slim capability-context contracts
     and validation evidence.'
 - summary: 'Cycle 583 (2026-05-21): Added capability-context byte and GPT-5 token
@@ -322,5 +314,3 @@ archive:
     hook usage for plan Task 1.'
 - summary: 'Cycle 546 (2026-05-16): Completed the Cross-runtime Subagent Dispatch
     Plan.'
-- summary: 'Cycle 545 (2026-05-16): Completed the Doctor Ready Next Output Plan verification
-    closeout.'

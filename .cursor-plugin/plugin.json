@@ -1,0 +1,43 @@
+{
+  "name": "agentera",
+  "version": "2.6.1",
+  "description": "Agentera compound agent orchestration suite — twelve capabilities in one bundled skill; exact bare hej belongs to the bundled agentera dashboard path. Cloud agents are unsupported in v1.",
+  "author": {
+    "name": "Jonathan Gabor",
+    "url": "https://github.com/jgabor"
+  },
+  "homepage": "https://github.com/jgabor/agentera",
+  "repository": "https://github.com/jgabor/agentera",
+  "license": "Apache-2.0",
+  "keywords": ["agentera", "skills", "agents", "orchestration", "planning", "memory"],
+  "skills": "./skills/",
+  "hooks": "./.cursor/hooks.json",
+  "agents": "./.cursor/agents/",
+  "agentera": {
+    "packageShape": "suite-bundle",
+    "installRoot": "..",
+    "sharedPaths": [
+      "skills",
+      "scripts",
+      "hooks",
+      "registry.json",
+      "plugin.json",
+      "README.md",
+      "UPGRADE.md",
+      "pyproject.toml"
+    ],
+    "singleSkillInstall": "Single-skill installs keep core SKILL.md workflow behavior; suite tools are bundle-only enhancements."
+  },
+  "cursor": {
+    "limitations": [
+      "Cloud agents are unsupported in v1; use repo-native or upgraded project hooks and managed agents instead.",
+      "Bare hej routing is metadata-only; use the bundled agentera skill and hej dashboard path explicitly.",
+      "Conditional hard-gate validation for reconstructable Write and Edit candidates is release-gated until live preToolUse Write smoke passes."
+    ],
+    "distribution": {
+      "repoNativeHooks": ".cursor/hooks.json",
+      "managedAgents": ".cursor/agents/",
+      "marketplaceManifest": ".cursor-plugin/plugin.json"
+    }
+  }
+}

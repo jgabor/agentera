@@ -47,7 +47,7 @@ UV_INSTALL_GUIDANCE = (
     "https://docs.astral.sh/uv/getting-started/installation/ and then rerun the check"
 )
 HARD_GATE_DOC_REQUIREMENTS = {
-    "references/adapters/runtime-feature-parity.md": ("opencode", "copilot"),
+    "references/adapters/runtime-feature-parity.md": ("opencode", "copilot", "cursor"),
     "references/adapters/opencode.md": ("opencode",),
 }
 
@@ -460,6 +460,116 @@ def validate_copilot_hooks(
     return errors
 
 
+def validate_cursor(
+    root: Path,
+    plugin: dict[str, Any],
+    registry: RuntimeAdapterRegistry | None = None,
+) -> list[str]:
+    if registry is None:
+        registry = load_registry()
+    errors: list[str] = []
+    cursor_meta = plugin.get("cursor")
+    if not isinstance(cursor_meta, dict):
+        errors.append("cursor: missing cursor metadata object")
+    else:
+        limitations = cursor_meta.get("limitations")
+        if not isinstance(limitations, list) or not limitations:
+            errors.append("cursor: limitations must document cloud agents, bare hej, and hard-gate gating")
+        else:
+            joined = " ".join(str(item) for item in limitations)
+            for term in ("Cloud agents", "bare hej", "hard-gate", "smoke"):
+                if term.lower() not in joined.lower():
+                    errors.append(f"cursor: limitations must mention {term!r}")
+
+    skills = plugin.get("skills")
+    skill_paths = _string_paths(skills)
+    if not skill_paths:
+        errors.append("cursor.skills must be a string or string array path")
+    for skill_path in skill_paths:
+        resolved = _resolve_inside(root, skill_path.removeprefix("./"))
+        if resolved is None:
+            errors.append("cursor.skills paths must stay inside repository root")
+
+    hooks = plugin.get("hooks")
+    hook_paths = _string_paths(hooks)
+    if not hook_paths:
+        errors.append("cursor.hooks must reference bundled hooks.json")
+    for hook_path in hook_paths:
+        resolved = _resolve_inside(root, hook_path.removeprefix("./"))
+        if resolved is None or not resolved.is_file():
+            errors.append("cursor.hooks must resolve to .cursor/hooks.json")
+
+    agents = plugin.get("agents")
+    agent_paths = _string_paths(agents)
+    if not agent_paths:
+        errors.append("cursor.agents must reference managed capability agents")
+    else:
+        for agent_path in agent_paths:
+            resolved = _resolve_inside(root, agent_path.removeprefix("./"))
+            if resolved is None or not resolved.is_dir():
+                errors.append("cursor.agents must resolve to .cursor/agents")
+            elif len(list(resolved.glob("*.md"))) < 12:
+                errors.append("cursor.agents must expose twelve managed capability descriptors")
+
+    reference = root / "references/adapters/cursor.md"
+    if not reference.is_file():
+        errors.append("cursor: missing references/adapters/cursor.md")
+    else:
+        text = reference.read_text(encoding="utf-8")
+        for term in ("cloud agents", "cursor-agent", "metadata-only", "release-gated"):
+            if term not in text.lower():
+                errors.append(f"cursor.md must document {term!r}")
+
+    return errors
+
+
+def validate_cursor_hooks(
+    root: Path,
+    registry: RuntimeAdapterRegistry | None = None,
+) -> list[str]:
+    if registry is None:
+        registry = load_registry()
+    errors: list[str] = []
+    cursor_events = _supported_events(registry, "cursor")
+    required_prewrite_hook = next(iter(_validation_events(registry, "cursor")), "")
+    hooks_path = root / ".cursor" / "hooks.json"
+    if not hooks_path.is_file():
+        return ["cursor: missing .cursor/hooks.json"]
+
+    payload = _load_json(hooks_path)
+    hooks = payload.get("hooks")
+    if not isinstance(hooks, dict):
+        return errors + ["cursor: hooks.json must contain a hooks object"]
+
+    configured: set[str] = set()
+    for event, entries in hooks.items():
+        if event not in cursor_events:
+            errors.append(f"cursor: unsupported lifecycle event configured: {event}")
+            continue
+        if not isinstance(entries, list):
+            errors.append(f"cursor.{event}: hook entries must be a list")
+            continue
+        configured.add(event)
+        for index, entry in enumerate(entries):
+            if not isinstance(entry, dict):
+                errors.append(f"cursor.{event}[{index}]: hook entry must be an object")
+                continue
+            command = entry.get("command")
+            if not isinstance(command, str) or not command.strip():
+                errors.append(f"cursor.{event}[{index}]: command must be a string")
+                continue
+            if event == "sessionStart" and "cursor_session_start.py" not in command:
+                errors.append("cursor.sessionStart: must run hooks/cursor_session_start.py")
+            if event == required_prewrite_hook and "cursor_pre_tool_use.py" not in command:
+                errors.append("cursor.preToolUse: artifact hard gate must run hooks/cursor_pre_tool_use.py")
+
+    for required in ("sessionStart", "sessionEnd", required_prewrite_hook, "postToolUse"):
+        if required and required not in configured:
+            errors.append(f"cursor: missing required lifecycle hook {required}")
+
+    return errors
+
+
 def validate_codex(
     plugin: dict[str, Any],
     registry: RuntimeAdapterRegistry | None = None,
@@ -675,6 +785,9 @@ def main(argv: list[str] | None = None) -> int:
     copilot = _load_json(root / "plugin.json")
     errors.extend(validate_copilot(copilot, root, registry))
     errors.extend(validate_copilot_hooks(root, copilot, registry))
+    cursor_plugin = _load_json(root / ".cursor-plugin/plugin.json")
+    errors.extend(validate_cursor(root, cursor_plugin, registry))
+    errors.extend(validate_cursor_hooks(root, registry))
     codex = _load_json(root / ".codex-plugin/plugin.json")
     errors.extend(validate_codex(codex, registry))
     errors.extend(validate_codex_profilera_metadata(root, codex))

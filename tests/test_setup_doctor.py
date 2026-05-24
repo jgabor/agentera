@@ -11,6 +11,7 @@ from __future__ import annotations
 import importlib.util
 import json
 import os
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -95,6 +96,18 @@ def _base_env(path: str, **extra: str) -> dict[str, str]:
     return env
 
 
+def _write_cursor_surfaces(root: Path) -> None:
+    source_hooks = REPO_ROOT / ".cursor" / "hooks.json"
+    target_hooks = root / ".cursor" / "hooks.json"
+    target_hooks.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(source_hooks, target_hooks)
+    agents_src = REPO_ROOT / ".cursor" / "agents"
+    agents_dst = root / ".cursor" / "agents"
+    agents_dst.mkdir(parents=True, exist_ok=True)
+    for agent in agents_src.glob("*.md"):
+        shutil.copy2(agent, agents_dst / agent.name)
+
+
 def _prepare_pass(runtime: str, home: Path, root: Path, env: dict[str, str]) -> None:
     if runtime == "claude":
         env["CLAUDE_PLUGIN_ROOT"] = str(root)
@@ -111,6 +124,11 @@ def _prepare_pass(runtime: str, home: Path, root: Path, env: dict[str, str]) -> 
             '[shell_environment_policy]\nset = { AGENTERA_HOME = "' + str(root) + '" }\n',
             encoding="utf-8",
         )
+    elif runtime == "cursor":
+        _write_cursor_surfaces(root)
+        env["AGENTERA_HOME"] = str(root)
+    elif runtime == "cursor-agent":
+        env["AGENTERA_HOME"] = str(root)
 
 
 def _installer_env(tmp_path: Path, doctor: ModuleType, runtime: str) -> dict[str, str]:
@@ -195,6 +213,16 @@ def test_setup_doctor_runtime_json_characterization_before_registry_migration(tm
         "codex": [
             ("runtime_binary", "pass", "codex executable found", None),
             ("config.AGENTERA_HOME", "pass", "runtime can reach shared Agentera helper scripts", None),
+        ],
+        "cursor": [
+            ("runtime_binary", "pass", "cursor executable found", None),
+            ("AGENTERA_HOME", "pass", "runtime can reach shared Agentera helper scripts", None),
+            ("cursor_hooks", "pass", "Cursor hooks.json is present and references Agentera helpers", None),
+            ("cursor_managed_agents", "pass", "Cursor managed capability agents are current", None),
+        ],
+        "cursor-agent": [
+            ("runtime_binary", "pass", "cursor-agent executable found", None),
+            ("AGENTERA_HOME", "pass", "runtime can reach shared Agentera helper scripts", None),
         ],
     }
 
@@ -325,7 +353,7 @@ def test_setup_doctor_cli_json_is_stable_and_non_mutating(tmp_path: Path) -> Non
     assert result.returncode == 0
     assert before == after == []
     assert payload["schemaVersion"] == doctor.SCHEMA_VERSION
-    assert payload["summary"] == {"fail": 0, "pass": 0, "skip": 4, "warn": 0}
+    assert payload["summary"] == {"fail": 0, "pass": 0, "skip": 6, "warn": 0}
 
 
 def test_setup_doctor_read_only_diagnostics_do_not_modify_runtime_config(tmp_path: Path) -> None:

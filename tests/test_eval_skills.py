@@ -226,6 +226,7 @@ class TestParseArgs:
         assert eval_skills.parse_args([]).runtime == "auto"
         assert eval_skills.parse_args(["--runtime", "claude"]).runtime == "claude"
         assert eval_skills.parse_args(["--runtime", "opencode"]).runtime == "opencode"
+        assert eval_skills.parse_args(["--runtime", "cursor-agent"]).runtime == "cursor-agent"
 
 
 # ---------------------------------------------------------------------------
@@ -252,6 +253,17 @@ class TestDetectRuntime:
         """Explicit runtime bypasses PATH detection entirely."""
         monkeypatch.setattr(eval_skills.shutil, "which", lambda name: None)
         assert eval_skills.detect_runtime("opencode") == "opencode"
+
+    def test_detect_runtime_explicit_cursor_agent(self, eval_skills, monkeypatch):
+        monkeypatch.setattr(eval_skills.shutil, "which", lambda name: "/usr/bin/cursor-agent")
+        assert eval_skills.detect_runtime("cursor-agent") == "cursor-agent"
+
+    def test_detect_runtime_cursor_agent_unavailable(self, eval_skills, monkeypatch):
+        monkeypatch.setattr(eval_skills.shutil, "which", lambda name: None)
+        import pytest
+        with pytest.raises(SystemExit) as exc_info:
+            eval_skills.detect_runtime("cursor-agent")
+        assert exc_info.value.code == 1
 
     def test_detect_runtime_nothing_available(self, eval_skills, monkeypatch):
         """When neither binary is on PATH and no explicit runtime, sys.exit(1)."""
@@ -282,3 +294,28 @@ class TestInvokeSkillOpencodeCommand:
         monkeypatch.setattr(eval_skills.subprocess, "run", fake_run)
         eval_skills._invoke_skill("realisera", "test prompt", timeout=5, runtime="opencode")
         assert captured["cmd"] == ["opencode", "run", "--prompt"]
+
+
+class TestInvokeSkillCursorAgentCommand:
+    def test_invoke_skill_cursor_agent_command(self, eval_skills, monkeypatch):
+        captured: dict[str, object] = {}
+
+        def fake_which(name: str) -> str | None:
+            return "/usr/bin/cursor-agent" if name == "cursor-agent" else None
+
+        def fake_run(cmd, **kwargs):
+            captured["cmd"] = cmd
+            import subprocess
+            return subprocess.CompletedProcess(cmd, returncode=0, stdout="{}", stderr="")
+
+        monkeypatch.setattr(eval_skills.shutil, "which", fake_which)
+        monkeypatch.setattr(eval_skills.subprocess, "run", fake_run)
+        eval_skills._invoke_skill("hej", "status briefing", timeout=5, runtime="cursor-agent")
+        assert captured["cmd"] == [
+            "cursor-agent",
+            "-p",
+            "--output-format",
+            "json",
+            "--force",
+            "status briefing",
+        ]

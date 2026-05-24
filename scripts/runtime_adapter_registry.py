@@ -15,7 +15,7 @@ import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_REGISTRY_PATH = ROOT / "references/adapters/runtime-adapter-registry.yaml"
-EXPECTED_RUNTIME_ORDER = ("claude", "opencode", "copilot", "codex")
+EXPECTED_RUNTIME_ORDER = ("claude", "opencode", "copilot", "codex", "cursor", "cursor-agent")
 REQUIRED_GROUPS = (
     "identity",
     "host_detection",
@@ -94,6 +94,17 @@ SUPPORTED_EVENT_NAMES = {
     "experimental.session.compacting",
     "session.created",
     "session.idle",
+    "subagentStart",
+    "subagentStop",
+    "beforeSubmitPrompt",
+    "beforeShellExecution",
+    "afterShellExecution",
+    "beforeMCPExecution",
+    "afterMCPExecution",
+    "beforeReadFile",
+    "afterFileEdit",
+    "preCompact",
+    "stop",
 }
 CONSUMER_GROUPS = {
     "lifecycle": ("identity", "lifecycle_events", "artifact_validation", "subagent_dispatch", "documentation_claims"),
@@ -170,7 +181,9 @@ def validate_registry_data(data: Any) -> list[str]:
 
     runtime_order = data.get("runtime_order")
     if runtime_order != list(EXPECTED_RUNTIME_ORDER):
-        errors.append("registry.runtime_order must be claude, opencode, copilot, codex")
+        errors.append(
+            "registry.runtime_order must be claude, opencode, copilot, codex, cursor, cursor-agent"
+        )
 
     records = data.get("records")
     if not isinstance(records, list):
@@ -209,7 +222,9 @@ def validate_registry_data(data: Any) -> list[str]:
         seen.add(runtime_id)
 
     if ids != list(EXPECTED_RUNTIME_ORDER):
-        errors.append("registry.records must be ordered as claude, opencode, copilot, codex")
+        errors.append(
+            "registry.records must be ordered as claude, opencode, copilot, codex, cursor, cursor-agent"
+        )
     return errors
 
 

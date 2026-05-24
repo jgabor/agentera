@@ -62,6 +62,7 @@ def test_package_registry_returns_package_facts_in_deterministic_order_without_d
         "copilot-root-manifest",
         "copilot-repository-manifest",
         "codex-plugin-manifest",
+        "cursor-plugin-manifest",
         "claude-marketplace-manifest",
         "opencode-package-manifest",
     )

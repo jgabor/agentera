@@ -37,13 +37,15 @@ def test_runtime_adapter_registry_returns_current_runtimes_in_deterministic_orde
 
     registry = registry_module.load_registry(REGISTRY_PATH)
 
-    assert registry.runtime_ids == ("claude", "opencode", "copilot", "codex")
+    assert registry.runtime_ids == ("claude", "opencode", "copilot", "codex", "cursor", "cursor-agent")
     assert len(registry.runtime_ids) == len(set(registry.runtime_ids))
     assert [registry.get(runtime_id)["identity"]["display_name"] for runtime_id in registry.runtime_ids] == [
         "Claude Code",
         "OpenCode",
         "Copilot CLI",
         "Codex CLI",
+        "Cursor IDE",
+        "Cursor Agent CLI",
     ]
     opencode_lifecycle = registry.get("opencode")["lifecycle_events"]
     assert "chat.message" in opencode_lifecycle["supported_events"]

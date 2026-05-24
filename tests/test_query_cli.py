@@ -116,6 +116,8 @@ def _install_runtime_surface(app_home: Path) -> Path:
         "agents",
         ".agents/plugins",
         ".codex-plugin",
+        ".cursor-plugin",
+        ".cursor",
         ".claude-plugin",
         ".github/hooks",
         ".github/plugin",
