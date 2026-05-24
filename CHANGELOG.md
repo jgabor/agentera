@@ -4,19 +4,33 @@
 
 ## [2.7.0] · 2026-05-24
 
+### Key highlights
+
+- **Cursor runtime support**: separate `cursor` (IDE) and `cursor-agent` (CLI) registry identities, repo-native hooks and managed capability agents, `agentera upgrade --runtime cursor`, doctor coverage, and `eval_skills --runtime cursor-agent`.
+- **Cursor IDE preToolUse validation**: deny invalid reconstructable Write and Edit candidates before they apply; postToolUse advisory validation unchanged.
+- **Python package renamed** from `agentera_cli` to `agentera`.
+- **Hej and health audit fixes**: configurable inspektera staleness thresholds, correct latest-audit selection, and decision follow-up aligned with satisfaction review state.
+
 ### Added
 
-- Cursor first-class runtime v1 (Decision 63): separate `cursor` IDE and `cursor-agent` CLI registry identities, repo-native `.cursor/hooks.json` and managed capability agents, `.cursor-plugin/plugin.json`, `agentera upgrade --runtime cursor`, doctor coverage, and `eval_skills --runtime cursor-agent`.
-- Live Cursor IDE preToolUse Write smoke evidence for conditional hard-gate validation of reconstructable Write and Edit candidates.
+- First-class Cursor support with separate `cursor` (IDE) and `cursor-agent` (CLI) registry identities, repo-native `.cursor/hooks.json` and managed capability agents, `.cursor-plugin/plugin.json`, `agentera upgrade --runtime cursor`, doctor coverage, and `eval_skills --runtime cursor-agent`.
+- Cursor IDE preToolUse hard gate that denies invalid reconstructable Write and Edit candidates.
+- Local Cursor plugin install path (`~/.cursor/plugins/local/agentera`) and `sessionStart` plugin-root `AGENTERA_HOME` fallback when env and project walk-up miss.
 
 ### Changed
 
-- Registry and parity docs now record passed live preToolUse Write smoke (2026-05-24); release tagging and marketplace publication remain blocked pending broader release closeout.
+- Documented Cursor install paths (local plugin, portable skills, and project upgrade).
+- Refreshed README onboarding and profiling story.
+- Renamed Python distribution from `agentera_cli` to `agentera`.
 
 ### Fixed
 
-- `agentera hej` hybrid inspektera audit staleness via `AGENTERA_INSPEKTERA_MAX_AGE_DAYS` (default 30) and `AGENTERA_INSPEKTERA_MAX_CYCLES` (default 10); stale when either axis exceeds its threshold.
-- `agentera health` and hej now select the latest health audit by highest audit number and read schema `date` instead of a missing `timestamp` field.
+- Fixed `agentera hej` hybrid inspektera audit staleness detection using `AGENTERA_INSPEKTERA_MAX_AGE_DAYS` (default 30) and `AGENTERA_INSPEKTERA_MAX_CYCLES` (default 10); stale when either axis exceeds its threshold.
+- Fixed `agentera health` and hej to select the latest health audit by highest audit number and read schema `date` instead of a missing `timestamp` field.
+- Fixed `agentera hej` decision follow-up to align with satisfaction review state.
+- Fixed Codex upgrade to migrate thread-limit settings and retire stale copied hook trust when plugin hooks are primary.
+- Fixed upgrade postflight to align with doctor and reconcile OpenCode cleanup ownership.
+- Fixed `agentera lint` to fail fast on empty stdin when artifact paths auto-resolve.
 
 ## [2.6.1] · 2026-05-23
 

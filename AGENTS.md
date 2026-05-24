@@ -61,6 +61,54 @@ uv run scripts/agentera query decisions --topic <topic>
 - Visual identity: glyphs and semantic tokens defined in `protocol.yaml`
 - Versioning convention in canonical `DOCS.md` (mapped here to `.agentera/docs.yaml`): `version_files` lists what to bump, `semver_policy` maps commit types to bump levels
 
+## Changelog
+
+`CHANGELOG.md` is the human-facing release history. Realisera maintains it at release time; fold changelog updates into the release commit rather than standalone bookkeeping commits.
+
+### Structure
+
+- Newest release first under `## [Unreleased]` (empty until the next cut).
+- Version header: `## [X.Y.Z] · YYYY-MM-DD`.
+- For minor and major releases with meaningful user-facing change, add `### Key highlights` before the categorized sections. Patch releases may omit highlights when the diff is small.
+- Categorized sections: `### Added`, `### Changed`, `### Fixed`, `### Removed` — include only sections that apply.
+
+### Tone and phrasing
+
+- Write for someone reading the changelog cold: what shipped, what behavior changed, what broke and was fixed.
+- Use factual, imperative release-note phrasing. Prefer direct descriptions (`Added …`, `Fixed …`, `Renamed …`) over narrative or marketing language.
+- In **Key highlights**, lead with a short **bold label** and follow with a concise factual summary. Highlights orient the reader; the categorized sections carry the detail.
+- In **Fixed**, start each bullet with `Fixed`.
+- Include concrete command names, flags, env vars, and defaults when they help a reader act on the note.
+- Include measurements and before/after numbers when they quantify a user-visible improvement (see 2.6.0 token budget highlights).
+
+### Do not include
+
+- Internal Agentera bookkeeping: decision numbers, plan/task closeout, progress evidence, smoke log paths, archive workpapers, registry/parity doc sync notes.
+- Hype framing ("joins the roster", "behave like dashboards again", "leave the README-only era").
+- Features, scaffolds, or infrastructure that are not yet shipped or user-visible.
+
+### Examples
+
+Good highlight:
+
+```markdown
+- **Cursor runtime support**: separate `cursor` (IDE) and `cursor-agent` (CLI) registry identities, repo-native hooks and managed capability agents, `agentera upgrade --runtime cursor`, doctor coverage, and `eval_skills --runtime cursor-agent`.
+```
+
+Good Fixed entry:
+
+```markdown
+- Fixed `agentera health` and hej to select the latest health audit by highest audit number and read schema `date` instead of a missing `timestamp` field.
+```
+
+Avoid:
+
+```markdown
+- Cursor v1 per Decision 63: `.cursor/hooks.json`, …
+- Registry and parity docs record passed live preToolUse Write smoke (2026-05-24).
+- **Documentation website** in `packages/web` … (when the site is not yet developed)
+```
+
 ## Commit message scopes
 
 Scopes are optional. Omit the scope for broad suite-wide changes instead of using a generic scope.

@@ -1,4 +1,20 @@
 cycles:
+- number: 598
+  timestamp: 2026-05-24 18:00
+  type: chore
+  phase: build
+  what: Tagged v2.7.0 with Cursor v1, web site, and post-2.6.1 CLI fixes.
+  commit: pending
+  discovered: None.
+  verified: Version surfaces already at 2.7.0 across version_files; CHANGELOG [2.7.0]
+    promoted with Cursor plugin install, web monorepo, and CLI fix entries; validate_lifecycle-adapters
+    and version alignment tests pass; git tag v2.7.0 applied after release commit.
+  next: Push main and v2.7.0 tag when approved; Cursor Marketplace listing remains
+    optional.
+  context:
+    intent: Release closeout for 2.7.0 after explicit tag approval.
+    constraints: No remote push unless requested.
+    scope: CHANGELOG, PROGRESS, tag only; version_files unchanged.
 - number: 597
   timestamp: 2026-05-24 16:00
   type: feat
@@ -43,7 +59,7 @@ cycles:
   type: feat
   phase: build
   what: Shipped Cursor v1 runtime slice per Decision 63.
-  commit: "151043d feat(cursor): add first-class Cursor runtime adapter v1"
+  commit: '151043d feat(cursor): add first-class Cursor runtime adapter v1'
   discovered: Task 5 live IDE preToolUse Write smoke cannot be recorded honestly from
     this orchestration host.
   verified: cursor and cursor-agent registry records; .cursor/hooks.json with sessionStart
@@ -198,32 +214,9 @@ cycles:
     constraints: No plan.yaml task status edits, no push.
     scope: scripts/agentera, json_output_surface_manifest.yaml, measure scripts, tests/test_query_cli.py,
       tests/test_measure_json_output_surfaces.py, and PROGRESS evidence.
-- number: 588
-  timestamp: 2026-05-23 16:20
-  type: feat
-  phase: build
-  what: Wired D59 JSON byte/token budgets into manifest and measurement harness enforcement.
-  commit: pending
-  inspiration: Plan Task 3 for Agentera 3.0 JSON output budget work.
-  discovered: "Manifest `budget_by_capability` rows require per-capability budget\
-    \ resolution during expansion \u2014 template-level `_resolve_surface_budget`\
-    \ must not run for `expand_by: capability` parents. Monitor-tier diagnostic surfaces\
-    \ emit warnings in the JSON report without failing CI; exempt rows carry inventory-linked\
-    \ `exemption_rationale` from the manifest."
-  verified: '`uv run --with pytest pytest tests/test_measure_json_output_surfaces.py
-    -q` passed (11 tests). `uv run scripts/measure_json_output_surfaces.py --json
-    --token-mode skip --enforce-budgets` passed with status=pass, budget_status=pass,
-    66 surfaces measured, zero violations, and violation rows naming command, selector,
-    capability/profile, byte_count, byte_budget, token_count, token_budget, enforcement_tier,
-    and surface id when budgets are exceeded in offline unit tests.'
-  next: Proceed to Plan Task 4 prime implementation and JSON output rewrites.
-  context:
-    intent: Satisfy Task 3 acceptance for explicit budgets, enforce diagnostics, and
-      inventory-traceable exemptions.
-    constraints: No plan.yaml task status edits, no Task 4 prime rewrites, no push.
-    scope: json_output_surface_manifest.yaml, measure_json_output_surfaces.py, d59
-      proposal, d58 cross-link, tests, and PROGRESS evidence.
 archive:
+- summary: 'Cycle 588 (2026-05-23): Wired D59 JSON byte/token budgets into manifest
+    and measurement harness enforcement.'
 - summary: 'Cycle 587 (2026-05-23): Built whole-surface JSON measurement coverage
     for D58 inventory surfaces.'
 - summary: 'Cycle 586 (2026-05-23): Verified D58 JSON output surface inventory against
@@ -296,5 +289,3 @@ archive:
     for plan Task 4.'
 - summary: 'Cycle 549 (2026-05-17): Constrained Codex descriptor discovery paths for
     plan Task 3.'
-- summary: 'Cycle 548 (2026-05-17): Normalized OpenCode managed agent descriptors
-    for plan Task 2.'
