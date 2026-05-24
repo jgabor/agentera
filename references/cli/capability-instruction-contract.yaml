@@ -10,7 +10,7 @@ sources:
   decision: .agentera/decisions.yaml#decision-57
   prose:
     - references/cli/vocabulary.md#capability-instruction-contract
-    - README.md#for-capability-authors
+    - README.md#development
 scope:
   includes:
     - Documentation authority for the implemented capability instruction-file name.
