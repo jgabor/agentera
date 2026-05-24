@@ -348,7 +348,7 @@ def test_contract_defines_state_access_metric_and_report_shape():
         "rule": "include records with timestamps strictly after committed_at",
     }
     assert contract["state_gathering_sequence"]["start_anchor"] == (
-        "first_agentera_cli_state_call_after_capability_related_user_turn"
+        "first_agentera_state_call_after_capability_related_user_turn"
     )
     assert "bare capability name such as planera, resonera, or orkestrera" in contract[
         "state_gathering_sequence"

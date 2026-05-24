@@ -27,7 +27,7 @@ def test_packaged_launcher_recovers_deprecated_default_env_to_platform_home(tmp_
         [
             sys.executable,
             "-m",
-            "agentera_cli",
+            "agentera",
             "upgrade",
             "--only",
             "bundle",

@@ -237,7 +237,7 @@ explicit_special_cases:
     scope: cli_context
     default_path: agentera prime --context optimera --format json#benchmark_context
     producers:
-      - agentera_cli
+      - agentera
     consumers:
       - optimera
     docs_yaml_can_override_path: false

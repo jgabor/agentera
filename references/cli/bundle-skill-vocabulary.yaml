@@ -264,7 +264,7 @@ compatibility_identifiers:
     - SKILL.md
 package_metadata_values:
   - suite-bundle
-  - agentera_cli/bundle
+  - agentera/bundle
   - bundle-only enhancements
 historical_terms:
   - agentera bundle-status

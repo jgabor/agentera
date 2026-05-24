@@ -309,7 +309,7 @@ aggregate_history:
     - raw_tool_arguments
 
 state_gathering_sequence:
-  start_anchor: first_agentera_cli_state_call_after_capability_related_user_turn
+  start_anchor: first_agentera_state_call_after_capability_related_user_turn
   capability_invocation_markers:
     - slash route such as /agentera plan or /agentera build
     - bare capability name such as planera, resonera, or orkestrera
