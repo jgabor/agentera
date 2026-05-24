@@ -398,7 +398,7 @@ records:
       validation_events:
         - preToolUse
       hard_gate_claims:
-        - Conditional hard gate for reconstructable Write and Edit candidates via preToolUse; release-gated until live smoke passes.
+        - Conditional hard gate for reconstructable Write and Edit candidates via preToolUse; verified after live preToolUse Write smoke (2026-05-24).
       payload_reconstruction_limitations:
         - Malformed, sparse, or non-reconstructable tool_input payloads are allowed.
     subagent_dispatch:
@@ -449,11 +449,11 @@ records:
         - references/adapters/cursor.md
       parity_claims:
         - Cursor sessionStart exports AGENTERA_HOME and injects bounded session context.
-        - Cursor preToolUse can deny invalid reconstructable artifact candidates when live smoke passes.
+        - Cursor preToolUse denies invalid reconstructable artifact candidates; live preToolUse Write smoke passed 2026-05-24.
       install_claims:
         - Repo-native .cursor/ surfaces ship in this repository; upgrade installs managed hooks and agents elsewhere.
       known_drifts:
-        - Hard-gate parity claims stay advisory until live preToolUse Write smoke passes and release tagging is unblocked.
+        - Release tagging and marketplace publication remain blocked pending broader release closeout despite passed live preToolUse Write smoke.
         - Cloud agents are unsupported in v1.
   - identity:
       runtime_id: cursor-agent

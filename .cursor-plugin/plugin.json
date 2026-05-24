@@ -1,6 +1,6 @@
 {
   "name": "agentera",
-  "version": "2.6.1",
+  "version": "2.7.0",
   "description": "Agentera compound agent orchestration suite — twelve capabilities in one bundled skill; exact bare hej belongs to the bundled agentera dashboard path. Cloud agents are unsupported in v1.",
   "author": {
     "name": "Jonathan Gabor",
@@ -32,7 +32,7 @@
     "limitations": [
       "Cloud agents are unsupported in v1; use repo-native or upgraded project hooks and managed agents instead.",
       "Bare hej routing is metadata-only; use the bundled agentera skill and hej dashboard path explicitly.",
-      "Conditional hard-gate validation for reconstructable Write and Edit candidates is release-gated until live preToolUse Write smoke passes."
+      "Conditional hard-gate validation for reconstructable Write and Edit candidates is verified after live preToolUse Write smoke (2026-05-24); release tagging remains blocked pending broader release closeout."
     ],
     "distribution": {
       "repoNativeHooks": ".cursor/hooks.json",

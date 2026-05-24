@@ -18,6 +18,8 @@
 
 ## ✓ Resolved
 
+- ~~[feat:2.7.0] Cursor first-class runtime v1 (Decision 63): ship cursor and cursor-agent registry identities, repo-native hooks and managed agents, upgrade/doctor/eval paths, live preToolUse Write smoke, parity docs, and plan closeout without release tag or publication.~~ · resolved in 2.7.0 by commit 151043d plus Task 8 closeout; live smoke passed 2026-05-24; release tagging and marketplace publication remain blocked pending explicit approval.
+
 - ~~[fix:2.6.2] Update Codex setup/upgrade config generation for `multi_agent_v2`: stop writing legacy `[agents].max_threads`, translate the old default to `features.multi_agent_v2.max_concurrent_threads_per_session`, and add regression coverage for Codex 0.133.0 validation error `agents.max_threads cannot be set when multi_agent_v2 is enabled`.~~ · resolved by updating config generation to use `[features.multi_agent_v2]` and removing the legacy `max_threads` key from `[agents]`.
 - ~~[fix:2.6.2] Retire stale file-based Codex hook trust entries during plugin-primary upgrades: when `[plugins."agentera@agentera"].enabled = true` and plugin hook trust is written, remove Agentera-owned `[hooks.state."...hooks.json:pre_tool_use:0:0"]` and `[hooks.state."...hooks.json:post_tool_use:0:0"]` entries along with copied `hooks.json`, while preserving mixed or user-owned hook state for manual review.~~ · resolved by unlinking copied `hooks.json` and removing its matching trust entries from the `[hooks.state]` configuration table when plugin hooks are enabled.
 

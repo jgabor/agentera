@@ -1,10 +1,49 @@
 cycles:
+- number: 597
+  timestamp: 2026-05-24 16:00
+  type: feat
+  phase: build
+  what: Closed Cursor First-Class Runtime v1 plan (Decision 63) with 2.7.0 release
+    metadata.
+  commit: b50032f
+  discovered: None.
+  verified: "Plan Task 8 closeout: archived PLAN-2026-05-24-cursor-first-class-runtime-v1.yaml,\
+    \ removed active plan.yaml, Decision 63 marked provisionally_satisfied, TODO/CHANGELOG/PROGRESS\
+    \ synchronized, registry and parity docs updated after live smoke passed 2026-05-24\
+    \ without claiming full release readiness. Version surfaces bumped 2.6.1\u2192\
+    2.7.0 across version_files. Validation passed: lifecycle-adapters, capability-contract\
+    \ (2/2), cross-capability, focused cursor tests (87), registry tests (17), git\
+    \ diff --check."
+  next: User confirmation for Decision 63; tag v2.7.0 and publication only if explicitly
+    approved.
+  context:
+    intent: Plan-level completion review for Cursor v1 slice after Task 5 live smoke.
+    constraints: No push, tag, or publication.
+    scope: Artifact sync, version bump, plan archive, advisory doc updates only.
+- number: 596
+  timestamp: 2026-05-24 14:45
+  type: test
+  phase: build
+  what: Live Cursor IDE preToolUse Write smoke for Task 5.
+  commit: b50032f
+  discovered: None.
+  verified: 'Invalid-block: Write to `.agentera/progress.yaml` with broken YAML (`{{{`)
+    denied by preToolUse hook with progress schema parse error; tool returned permission
+    denied and did not mutate the file. Valid-allow: Write to `.agentera/smoke-cursor-pretooluse-evidence.txt`
+    succeeded with one-line PASS evidence. Both acceptance criteria 1 and 2 satisfied;
+    registry and parity docs left advisory-only per AC3.'
+  next: Task 8 plan-level completion review; release tagging still gated on broader
+    readiness.
+  context:
+    intent: Prove conditional hard-gate behavior for reconstructable Write candidates
+      in live Cursor IDE session.
+    scope: Task 5 smoke only; no registry or parity promotion.
 - number: 595
   timestamp: 2026-05-24 13:05
   type: feat
   phase: build
   what: Shipped Cursor v1 runtime slice per Decision 63.
-  commit: pending
+  commit: "151043d feat(cursor): add first-class Cursor runtime adapter v1"
   discovered: Task 5 live IDE preToolUse Write smoke cannot be recorded honestly from
     this orchestration host.
   verified: cursor and cursor-agent registry records; .cursor/hooks.json with sessionStart
@@ -20,7 +59,7 @@ cycles:
     scope: Tasks 1-4, 6-7 complete; Task 5 deferred; Task 8 pending.
 - number: 594
   timestamp: 2026-05-23 23:15
-  type: build
+  type: feat
   phase: build
   what: Added hybrid inspektera audit staleness to hej and fixed latest health audit
     selection.
@@ -33,11 +72,12 @@ cycles:
   next: Run inspektera when user approves; optional release metadata sync for feat
     scope.
   context:
+    intent: Fix hej audit staleness reporting and latest health audit selection.
     scope: scripts/agentera, tests/test_query_cli.py, hej and inspektera capability
       instructions.
 - number: 593
   timestamp: 2026-05-23 22:30
-  type: release
+  type: chore
   phase: build
   what: Relocated authoritative docs to references/ and released 2.6.1 patch metadata.
   commit: 2430bd6
@@ -49,10 +89,11 @@ cycles:
   next: Tag v2.6.1; SPEC.md and contract.md cleanup remain open per documentation
     inventory.
   context:
+    intent: Relocate docs to references/ and align 2.6.1 release metadata.
     scope: docs relocation, version_files, CHANGELOG, TODO, PROGRESS, tag v2.6.1.
 - number: 592
   timestamp: 2026-05-23 22:00
-  type: release
+  type: chore
   phase: build
   what: Archived completed prime/JSON-budget plan and released 2.6.0 metadata.
   commit: pending
@@ -182,64 +223,11 @@ cycles:
     constraints: No plan.yaml task status edits, no Task 4 prime rewrites, no push.
     scope: json_output_surface_manifest.yaml, measure_json_output_surfaces.py, d59
       proposal, d58 cross-link, tests, and PROGRESS evidence.
-- number: 587
-  timestamp: 2026-05-23 14:30
-  type: test
-  phase: build
-  what: Built whole-surface JSON measurement coverage for D58 inventory surfaces.
-  commit: pending
-  inspiration: Plan Task 2 for Agentera 3.0 JSON output budget work.
-  discovered: "Nested `uv run` subprocesses and YAML flow-sequence commas both broke\
-    \ reliable generation \u2014 direct `sys.executable` invocation and quoted `--fields`\
-    \ values were required. Logical non-zero CLI exits (compact check, upgrade dry-run)\
-    \ still emit valid JSON and must be measured by stdout validity rather than exit\
-    \ code alone."
-  verified: '`uv run --with pytest pytest tests/test_measure_json_output_surfaces.py
-    tests/test_measure_capability_context_payloads.py -q` passed (8 tests). `uv run
-    scripts/measure_json_output_surfaces.py --json --token-mode skip` passed with
-    66 surfaces measured (59 primary, 7 diagnostic), zero generation errors, and report
-    rows carrying command, selector, capability/profile, bytes, token_status, budget_classification,
-    and inventory_classification. Isolated compaction, temp AGENTERA_HOME doctor,
-    and PROFILERA_PROFILE_DIR stats fixtures verified without mutating repo profile
-    state.'
-  next: Proceed to Plan Task 3 JSON budget definition and enforcement.
-  context:
-    intent: Satisfy Task 2 acceptance for inventory-wide JSON measurement and reporting.
-    constraints: No plan.yaml task status edits, no Task 3 budget enforcement, no
-      prime 3.0 rewrites, no push.
-    scope: measure_json_output_surfaces.py, json_output_surface_manifest.yaml, measure_json_common.py,
-      tests, and PROGRESS evidence.
-- number: 586
-  timestamp: 2026-05-23 12:00
-  type: docs
-  phase: build
-  what: Verified D58 JSON output surface inventory against Plan Task 1 acceptance
-    criteria.
-  commit: pending
-  inspiration: Task evaluation retry for inventory commit 2593430 missing PROGRESS
-    verification.
-  discovered: The inventory at docs/d58-json-output-surface-inventory.md already lists
-    53 classification rows with command, selector, source file, owner, classification,
-    rationale, and planned action; the gap was only missing PROGRESS evidence.
-  verified: "Cross-checked docs/d58-json-output-surface-inventory.md against scripts/agentera\
-    \ parser and emitter paths: rg found 195 json/format references, 13 `--format`\
-    \ parser definitions in build_parser(), and upgrade/doctor `--json` flags at lines\
-    \ 7451/7508. Confirmed Plan Task 1 required surfaces are present \u2014 hej (4\
-    \ rows including capability-context profiles and --fields), decisions, compact\
-    \ check/fix, validate artifact, upgrade --json, describe (json default), and three\
-    \ planned/future prime rows (bare prime, dashboard mode, prime --context) plus\
-    \ direct capability-name commands. Inventory cites Decision 58/59 in Governing\
-    \ decisions, references docs/d47-app-home-vocabulary-inventory.md for the D47\
-    \ classification pattern, and uses change/preserve/defer/diagnostic/historical/private/planned\
-    \ legend. Surface-count summary reports ~38 live selectors plus 3 planned groups."
-  next: Proceed to Plan Task 2 whole-surface JSON measurement coverage.
-  context:
-    intent: Satisfy Task 1 acceptance verification without changing plan task status.
-    constraints: PROGRESS evidence only; no plan.yaml status edits or implementation
-      changes.
-    scope: docs/d58-json-output-surface-inventory.md verification and PROGRESS cycle
-      586.
 archive:
+- summary: 'Cycle 587 (2026-05-23): Built whole-surface JSON measurement coverage
+    for D58 inventory surfaces.'
+- summary: 'Cycle 586 (2026-05-23): Verified D58 JSON output surface inventory against
+    Plan Task 1 acceptance criteria.'
 - summary: 'Cycle 585 (2026-05-21): Made Codex plugin-provided hooks primary when
     the Agentera Codex plugin is enabled.'
 - summary: 'Cycle 584 (2026-05-21): Synchronized slim capability-context contracts
@@ -310,7 +298,3 @@ archive:
     plan Task 3.'
 - summary: 'Cycle 548 (2026-05-17): Normalized OpenCode managed agent descriptors
     for plan Task 2.'
-- summary: 'Cycle 547 (2026-05-16): Reconciled source-backed OpenCode bare-message
-    hook usage for plan Task 1.'
-- summary: 'Cycle 546 (2026-05-16): Completed the Cross-runtime Subagent Dispatch
-    Plan.'

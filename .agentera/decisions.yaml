@@ -595,9 +595,14 @@ decisions:
     scripts/agentera_upgrade.py, scripts/eval_skills.py, scripts/smoke_live_hosts.py,
     AGENTS.md, tests, package-registry.yaml
   satisfaction:
-    state: open
-    evidence: Decision captured at user request after resonera deliberation on 2026-05-24.
-      Implementation not yet started.
+    state: provisionally_satisfied
+    evidence: >-
+      Cursor v1 slice shipped in commit 151043d with cursor and cursor-agent registry
+      records, repo-native hooks and managed agents, upgrade/doctor/eval paths, and
+      parity docs. Live preToolUse Write smoke passed 2026-05-24 with invalid-block
+      and valid-allow evidence in `.agentera/smoke-cursor-pretooluse-evidence.txt`
+      and progress cycle 596. Plan Task 8 closeout synchronized artifacts and bumped
+      version metadata to 2.7.0. User confirmation pending.
 archive:
 - summary: 'Decision 53 (2026-05-15): Store decision satisfaction state on each decision
     entry. Agents may mark provisional satisfaction with evidence,...'

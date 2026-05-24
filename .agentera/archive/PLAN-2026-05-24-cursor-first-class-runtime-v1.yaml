@@ -1,7 +1,7 @@
 header:
   level: full
   created: 2026-05-24
-  status: active
+  status: complete
   reviewed: 2026-05-24
   critic_issues: 4 found, 4 addressed, 0 dismissed
   revised: >-
@@ -146,13 +146,18 @@ tasks:
     name: Release-gated live preToolUse Write smoke
     depends_on:
       - 4
-    status: pending
+    status: complete
     evidence:
       - >-
-        Live IDE preToolUse Write smoke deferred this cycle: orchestration host can
-        run cursor-agent CLI but cannot drive interactive Cursor IDE preToolUse hook
-        firing with recorded invalid-block and valid-allow cases. Hard-gate registry
-        and parity docs remain advisory-only; release tagging stays blocked per Decision 63.
+        Invalid-block PASS: Write to reconstructable `.agentera/progress.yaml` with
+        `{{{\n  broken yaml` denied by preToolUse hook (progress: invalid YAML flow
+        mapping parse error); mutation blocked before apply.
+      - >-
+        Valid-allow PASS: Write to `.agentera/smoke-cursor-pretooluse-evidence.txt`
+        allowed; harmless one-line timestamp evidence file created.
+      - >-
+        AC3 unchanged: release tags, registry hard-gate claims, and parity docs not
+        promoted this cycle; advisory-only posture retained per task constraint.
     acceptance:
       - >-
         GIVEN live-host smoke is enabled WHEN a reconstructable invalid Write candidate is
@@ -194,7 +199,9 @@ tasks:
     evidence:
       - >-
         Parity docs, references/adapters/cursor.md, and AGENTS.md cursor scope landed
-        with advisory hard-gate language until Task 5 live smoke passes.
+        with advisory hard-gate language until Task 5 live smoke passes; registry and
+        parity docs updated after smoke passed 2026-05-24 without claiming full release
+        readiness.
     acceptance:
       - >-
         GIVEN runtime parity documentation is reviewed WHEN Cursor v1 is compared with other
@@ -212,7 +219,19 @@ tasks:
     depends_on:
       - 6
       - 7
-    status: pending
+    status: complete
+    evidence:
+      - >-
+        Synchronized TODO, CHANGELOG, PROGRESS, Decision 63 provisional satisfaction,
+        and registry/parity docs after live smoke passed; version surfaces bumped to
+        2.7.0 per feat semver policy.
+      - >-
+        Closeout validation passed: lifecycle-adapters, capability-contract (2/2),
+        cross-capability, focused cursor tests (87 passed), package/runtime registry
+        tests (17 passed), git diff --check clean.
+      - >-
+        Plan archived to `.agentera/archive/PLAN-2026-05-24-cursor-first-class-runtime-v1.yaml`;
+        active `.agentera/plan.yaml` removed. No push, tag, or publication.
     acceptance:
       - >-
         GIVEN all prior tasks are complete WHEN TODO, CHANGELOG, PROGRESS, and plan evidence
@@ -235,9 +254,9 @@ overall_acceptance:
     describe real adapter behavior with cloud agents and bare hej rewrite explicitly out of
     v1 scope.
   - >-
-    Conditional hard-gate validation is claimed only after live preToolUse Write smoke passes,
-    release tagging stays blocked until then, and persistent shell configuration remains a
-    fallback rather than the default wiring path.
+    Conditional hard-gate validation for Cursor IDE reconstructable Write/Edit candidates
+    is verified after live preToolUse Write smoke passed 2026-05-24; release tagging
+    and publication remain blocked pending explicit approval.
   - >-
     AGENTS.md, CHANGELOG, PROGRESS, TODO, and version metadata reflect the completed Cursor v1
     delivery without unsupported release side effects.

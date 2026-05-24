@@ -2,12 +2,20 @@
 
 ## [Unreleased]
 
+## [2.7.0] · 2026-05-24
+
 ### Added
 
-- `agentera hej` hybrid inspektera audit staleness via `AGENTERA_INSPEKTERA_MAX_AGE_DAYS` (default 30) and `AGENTERA_INSPEKTERA_MAX_CYCLES` (default 10); stale when either axis exceeds its threshold.
+- Cursor first-class runtime v1 (Decision 63): separate `cursor` IDE and `cursor-agent` CLI registry identities, repo-native `.cursor/hooks.json` and managed capability agents, `.cursor-plugin/plugin.json`, `agentera upgrade --runtime cursor`, doctor coverage, and `eval_skills --runtime cursor-agent`.
+- Live Cursor IDE preToolUse Write smoke evidence for conditional hard-gate validation of reconstructable Write and Edit candidates.
+
+### Changed
+
+- Registry and parity docs now record passed live preToolUse Write smoke (2026-05-24); release tagging and marketplace publication remain blocked pending broader release closeout.
 
 ### Fixed
 
+- `agentera hej` hybrid inspektera audit staleness via `AGENTERA_INSPEKTERA_MAX_AGE_DAYS` (default 30) and `AGENTERA_INSPEKTERA_MAX_CYCLES` (default 10); stale when either axis exceeds its threshold.
 - `agentera health` and hej now select the latest health audit by highest audit number and read schema `date` instead of a missing `timestamp` field.
 
 ## [2.6.1] · 2026-05-23

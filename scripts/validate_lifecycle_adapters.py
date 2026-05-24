@@ -516,7 +516,7 @@ def validate_cursor(
         errors.append("cursor: missing references/adapters/cursor.md")
     else:
         text = reference.read_text(encoding="utf-8")
-        for term in ("cloud agents", "cursor-agent", "metadata-only", "release-gated"):
+        for term in ("cloud agents", "cursor-agent", "metadata-only", "live pretooluse write smoke"):
             if term not in text.lower():
                 errors.append(f"cursor.md must document {term!r}")
 

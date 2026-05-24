@@ -1,6 +1,6 @@
 {
   "name": "agentera",
-  "version": "2.6.1",
+  "version": "2.7.0",
   "description": "Compound agent orchestration suite \u2014 12 capabilities in one bundled skill; exact bare hej belongs to the bundled agentera dashboard path",
   "author": {
     "name": "Jonathan Gabor",
@@ -9,14 +9,7 @@
   "homepage": "https://github.com/jgabor/agentera",
   "repository": "https://github.com/jgabor/agentera",
   "license": "Apache-2.0",
-  "keywords": [
-    "agentera",
-    "skills",
-    "agents",
-    "coding",
-    "memory",
-    "orchestration"
-  ],
+  "keywords": ["agentera", "skills", "agents", "coding", "memory", "orchestration"],
   "skills": "./skills/",
   "hooks": "./hooks/codex-plugin-hooks.json",
   "interface": {

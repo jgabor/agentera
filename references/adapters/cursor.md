@@ -37,13 +37,15 @@ subprocesses. Agentera does not write shell rc files by default.
 
 | Surface | Behavior | Claim status |
 | ------- | -------- | ------------ |
-| IDE `preToolUse` (Write/Edit) | Deny invalid reconstructable artifact candidates | Release-gated until live smoke passes |
+| IDE `preToolUse` (Write/Edit) | Deny invalid reconstructable artifact candidates | Verified after live preToolUse Write smoke (2026-05-24) |
 | IDE `postToolUse` (Write/Edit) | Advisory validation through shared `validate_artifact.py` | Active |
 | CLI | Degraded; depends on workspace hook install and env propagation | Follows IDE smoke evidence only |
 
-Hard-gate documentation and registry claims stay advisory until live preToolUse
-Write smoke records passing invalid-block and valid-allow cases. Release tagging
-remains blocked until that smoke succeeds.
+Live preToolUse Write smoke passed on 2026-05-24 with invalid-block and valid-allow
+cases recorded in `.agentera/smoke-cursor-pretooluse-evidence.txt`. Conditional
+hard-gate claims for reconstructable IDE Write and Edit candidates are verified;
+release tagging and marketplace publication remain blocked pending broader release
+closeout.
 
 ## Subagent dispatch
 
