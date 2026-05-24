@@ -1,0 +1,49 @@
+---
+import '../styles/global.css';
+
+interface Props {
+  title?: string;
+}
+
+const { title = 'Agentera' } = Astro.props;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="The open protocol for turning AI coding agents into an engineering team."
+    />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>{title}</title>
+  </head>
+  <body class="min-h-screen antialiased">
+    <header class="border-b border-[var(--color-border)] px-6 py-4">
+      <nav class="mx-auto flex max-w-5xl items-center justify-between">
+        <a href="/" class="font-mono text-lg font-semibold no-underline hover:no-underline">
+          Agentera
+        </a>
+        <div class="flex gap-6 text-sm">
+          <a href="#what-you-see">Try it</a>
+          <a href="#capabilities">Capabilities</a>
+          <a href="#get-started">Install</a>
+          <a href="/docs/getting-started/">Docs</a>
+        </div>
+      </nav>
+    </header>
+    <main>
+      <slot />
+    </main>
+    <footer class="border-t border-[var(--color-border)] px-6 py-12 text-center text-sm text-[var(--color-muted)]">
+      <p>
+        <a href="/docs/getting-started/">Get started with Agentera</a>
+        ·
+        <a href="https://github.com/jgabor/agentera">GitHub</a>
+      </p>
+      <p class="mt-2">Apache-2.0 · v2.6.1</p>
+    </footer>
+  </body>
+</html>

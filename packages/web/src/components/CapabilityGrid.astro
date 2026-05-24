@@ -1,0 +1,54 @@
+---
+const capabilities = [
+  { glyph: '⌂', name: 'hej', alias: 'status', use: 'A project briefing and next best action.' },
+  { glyph: '⛥', name: 'visionera', alias: 'vision', use: 'Product direction in `.agentera/vision.yaml`.' },
+  { glyph: '❈', name: 'resonera', alias: 'discuss', use: 'Structured deliberation before consequential choices.' },
+  { glyph: '⬚', name: 'inspirera', alias: 'research', use: 'External pattern or reference analysis.' },
+  { glyph: '▤', name: 'dokumentera', alias: 'document', use: 'Documentation aligned with code and intent.' },
+  { glyph: '◰', name: 'visualisera', alias: 'design', use: 'Visual identity and design-token direction.' },
+  { glyph: '≡', name: 'planera', alias: 'plan', use: 'A scoped plan with behavioral acceptance criteria.' },
+  { glyph: '⎈', name: 'orkestrera', alias: 'orchestrate', use: 'Autonomous plan execution with evaluation and retry checks.' },
+  { glyph: '⧉', name: 'realisera', alias: 'build', use: 'One verified development cycle.' },
+  { glyph: '⎘', name: 'optimera', alias: 'optimize', use: 'Measured improvement of a concrete metric.' },
+  { glyph: '⛶', name: 'inspektera', alias: 'audit', use: 'Architecture, test, dependency, and artifact health audits.' },
+  { glyph: '♾', name: 'profilera', alias: 'profile', use: 'A reusable decision profile that travels with you across projects.' },
+];
+---
+
+<section id="capabilities" class="border-t border-[var(--color-border)] px-6 py-16">
+  <div class="mx-auto max-w-5xl">
+    <h2 class="mb-4 text-2xl font-semibold">Capabilities</h2>
+    <p class="mb-8 text-[var(--color-muted)]">
+      All twelve capabilities live inside one Agentera skill. Canonical Swedish names
+      are the protocol identity; aliases are direct <code class="rounded bg-[var(--color-surface)] px-1.5 py-0.5">/agentera &lt;alias&gt;</code> routes.
+    </p>
+    <div class="overflow-x-auto">
+      <table class="w-full border-collapse text-sm">
+        <thead>
+          <tr class="border-b border-[var(--color-border)] text-left">
+            <th class="py-3 pr-4 font-medium"></th>
+            <th class="py-3 pr-4 font-medium">Capability</th>
+            <th class="py-3 pr-4 font-medium">Alias</th>
+            <th class="py-3 font-medium">Use it when you need…</th>
+          </tr>
+        </thead>
+        <tbody>
+          {capabilities.map((cap) => (
+            <tr class="border-b border-[var(--color-border)]/50">
+              <td class="py-3 pr-4 font-mono text-lg">{cap.glyph}</td>
+              <td class="py-3 pr-4 font-mono">{cap.name}</td>
+              <td class="py-3 pr-4 font-mono text-[var(--color-muted)]">{cap.alias}</td>
+              <td class="py-3 text-[var(--color-muted)]">{cap.use}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+    <p class="mt-6 text-sm text-[var(--color-muted)]">
+      You can also use plain language: <code class="rounded bg-[var(--color-surface)] px-1.5 py-0.5">/agentera help me decide</code>,
+      <code class="rounded bg-[var(--color-surface)] px-1.5 py-0.5">/agentera plan this</code>,
+      <code class="rounded bg-[var(--color-surface)] px-1.5 py-0.5">/agentera run the plan</code>, or
+      <code class="rounded bg-[var(--color-surface)] px-1.5 py-0.5">/agentera audit the codebase</code>.
+    </p>
+  </div>
+</section>

@@ -1,0 +1,88 @@
+---
+const runtimes = [
+  {
+    id: 'claude',
+    label: 'Claude Code',
+    commands: `npx skills add jgabor/agentera -g -a claude-code --skill agentera -y`,
+  },
+  {
+    id: 'opencode',
+    label: 'OpenCode',
+    commands: `npx skills add jgabor/agentera -g -a opencode --skill agentera -y
+mkdir -p ~/.config/opencode/plugins
+curl -fsSL https://raw.githubusercontent.com/jgabor/agentera/main/.opencode/plugins/agentera.js \\
+  -o ~/.config/opencode/plugins/agentera.js`,
+    note: 'OpenCode also routes a bare message `hej` to the same dashboard.',
+  },
+  {
+    id: 'copilot',
+    label: 'Copilot CLI',
+    commands: `copilot plugin marketplace add jgabor/agentera
+copilot plugin install jgabor/agentera`,
+  },
+  {
+    id: 'codex',
+    label: 'Codex CLI',
+    commands: `codex plugin marketplace add jgabor/agentera
+codex plugin add agentera@agentera`,
+    note: 'Open `/plugins`, enable Agentera, then run `$agentera`.',
+  },
+];
+---
+
+<section id="get-started" class="border-t border-[var(--color-border)] px-6 py-16">
+  <div class="mx-auto max-w-3xl">
+    <h2 class="mb-4 text-2xl font-semibold">Get started</h2>
+    <ol class="mb-8 list-decimal space-y-2 pl-6 text-[var(--color-muted)]">
+      <li>Pick your runtime below and install.</li>
+      <li>Open a git project (existing repo or new).</li>
+      <li>Run <code class="rounded bg-[var(--color-surface)] px-1.5 py-0.5">/agentera</code> (<code class="rounded bg-[var(--color-surface)] px-1.5 py-0.5">$agentera</code> in Codex).</li>
+    </ol>
+    <p class="mb-6 text-sm text-[var(--color-muted)]">
+      Your first briefing bootstraps <code class="rounded bg-[var(--color-surface)] px-1.5 py-0.5">.agentera/</code> as capabilities run.
+    </p>
+
+    <div class="space-y-3">
+      {runtimes.map((runtime) => (
+        <details class="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)]">
+          <summary class="cursor-pointer px-4 py-3 font-semibold">{runtime.label}</summary>
+          <div class="border-t border-[var(--color-border)] px-4 py-4">
+            <pre class="overflow-x-auto text-xs sm:text-sm"><code>{runtime.commands}</code></pre>
+            {runtime.note && (
+              <p class="mt-3 text-sm text-[var(--color-muted)]">{runtime.note}</p>
+            )}
+          </div>
+        </details>
+      ))}
+    </div>
+
+    <p class="mt-8 text-sm">
+      <a href="/docs/getting-started/install/">Full install guide →</a>
+    </p>
+  </div>
+</section>
+
+<section id="how-it-works" class="border-t border-[var(--color-border)] px-6 py-16">
+  <div class="mx-auto max-w-3xl">
+    <h2 class="mb-4 text-2xl font-semibold">How it works</h2>
+    <p class="mb-6 text-[var(--color-muted)]">
+      Agentera is a plain-file coordination protocol: each capability reads what it
+      needs, writes what it owns, and leaves evidence for the next session.
+    </p>
+    <h3 class="mb-3 text-lg font-medium">Rich state, precise reads</h3>
+    <p class="mb-4 text-sm text-[var(--color-muted)]">
+      Project direction, active work, shipped evidence, deliberation history, health grades,
+      and prioritized findings each live in their own artifact. Agents query targeted slices
+      through the Agentera CLI instead of raw-reading whole YAML files.
+    </p>
+    <pre class="overflow-x-auto rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-4 text-xs sm:text-sm"><code>.agentera/
+  vision.yaml              product direction
+  plan.yaml                active plan and acceptance criteria
+  progress.yaml            shipped work and verification evidence
+  decisions.yaml           durable reasoning trail
+  health.yaml              architecture, test, dependency, and artifact health</code></pre>
+    <p class="mt-6 text-sm">
+      <a href="/docs/">Read the full documentation →</a>
+    </p>
+  </div>
+</section>

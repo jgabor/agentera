@@ -117,10 +117,46 @@ When adding a new helper, either expose a stable `agentera` namespace for normal
 use or document why the helper is internal/maintainer-only. Do not add broad new
 top-level CLI commands for implementation details.
 
+## Web DX
+
+The website lives in `packages/web` (Astro + Starlight on Cloudflare). Use [Vite+](https://viteplus.dev/) (`vp`) as the single entrypoint for Node tooling — avoid
+direct `pnpm` calls unless required.
+
+Install git hooks once after clone:
+
+```bash
+lefthook install
+```
+
+Pre-commit runs `vp staged` in `packages/web` when web files change; markdownlint
+and prettier for repo-wide docs/configs stay on `bunx`.
+
+Convenience scripts from the repo root:
+
+```bash
+vp run web:check    # format, lint, and type-check the website
+vp run web:build
+vp run web:dev
+vp run web:deploy
+```
+
+Or call package scripts directly:
+
+```bash
+vp run @agentera/web#check    # run a package.json script across the workspace
+vp dev packages/web             # start Astro dev server in that package directory
+```
+
+Use `vp run @agentera/web#<script>` to run workspace package scripts;
+use `vp dev packages/web` when you want the dev server pointed at that folder.
+
 ## Running tests
 
 Use the same command as lefthook pre-commit (`.lefthook.yml`). Do not run bare
 `uv run pytest` from the repo root.
+
+Pytest runs on pre-commit only when staged files match Python, YAML, workflow, or
+lockfile paths — not for web-only changes under `packages/web/**`.
 
 ```bash
 uv run --with pytest --with pyyaml --with pytest-xdist pytest tests/ -q -n auto

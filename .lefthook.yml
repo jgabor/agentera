@@ -24,5 +24,23 @@ pre-commit:
       run: bunx prettier --write {staged_files}
       stage_fixed: true
       glob: "*.json"
+      exclude:
+        - "packages/web/**"
+    web:
+      root: packages/web
+      run: vp staged
+      glob: "*.{ts,tsx,js,jsx,mjs,json,css,md,astro}"
+      exclude:
+        - "node_modules/**"
+        - "dist/**"
     tests:
       run: uv run --with pytest --with pyyaml --with pytest-xdist pytest tests/ -q -n auto
+      glob:
+        - "**/*.py"
+        - "**/*.{yaml,yml}"
+        - "pyproject.toml"
+        - "uv.lock"
+        - ".lefthook.yml"
+        - ".github/workflows/**"
+      exclude:
+        - "packages/web/**"

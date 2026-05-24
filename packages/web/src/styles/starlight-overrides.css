@@ -1,0 +1,7 @@
+/* Starlight theme tweaks — landing uses global.css instead */
+
+:root {
+  --sl-color-accent: #7c6cf0;
+  --sl-color-accent-low: #2a2540;
+  --sl-color-accent-high: #9588f5;
+}

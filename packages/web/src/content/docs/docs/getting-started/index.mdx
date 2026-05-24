@@ -1,0 +1,37 @@
+---
+title: Getting Started
+description: Install Agentera and run your first project briefing.
+---
+
+Agentera turns AI coding agents into an engineering team through shared project
+state, specialized capabilities, and behavioral verification gates.
+
+## First-run flow
+
+1. Pick your runtime and [install Agentera](/docs/getting-started/install/).
+2. Open a git project (existing repo or new).
+3. Run `/agentera` (`$agentera` in Codex).
+
+Your first briefing bootstraps `.agentera/` as capabilities run. The briefing
+pulls from plan, progress, decisions, health, and issues — but only the slices
+that matter right now.
+
+## What you see
+
+The dashboard shows project health, open issues, plan progress, profile status,
+attention items, and a suggested next capability. Wide coverage, narrow reads:
+many artifacts, token-efficient handoffs.
+
+## After your first briefing
+
+Run `/agentera profile` to teach Agentera how you decide. The profile travels
+across projects while repo artifacts stay project-local.
+
+## CLI without a clone
+
+```bash
+uvx --from git+https://github.com/jgabor/agentera agentera hej --format json
+uvx --from git+https://github.com/jgabor/agentera agentera doctor --format json
+```
+
+Contributors with a git clone use `uv run scripts/agentera …` instead.

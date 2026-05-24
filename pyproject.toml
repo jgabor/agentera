@@ -32,6 +32,9 @@ exclude = [
   ".git",
   ".pytest_cache",
   ".opencode/node_modules",
+  "packages/web/node_modules",
+  "packages/web/dist",
+  "packages/web/.astro",
 ]
 
 [tool.hatch.build.targets.wheel]

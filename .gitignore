@@ -7,6 +7,9 @@ __pycache__/
 *.pyc
 .env
 node_modules
-package.json
 package-lock.json
 bun.lock
+.pnpm-store
+packages/web/dist
+packages/web/.astro
+packages/web/.wrangler

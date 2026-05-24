@@ -15,3 +15,15 @@ jobs:
       - uses: astral-sh/setup-uv@v5
       - name: Repository gates
         run: uv run scripts/agentera gate
+
+  web:
+    name: Website
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: voidzero-dev/setup-vp@v1
+        with:
+          node-version: 22
+          cache: true
+      - run: vp run @agentera/web#check
+      - run: vp run @agentera/web#build

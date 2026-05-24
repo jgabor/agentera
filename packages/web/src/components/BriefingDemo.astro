@@ -1,0 +1,37 @@
+<section id="what-you-see" class="border-t border-[var(--color-border)] px-6 py-16">
+  <div class="mx-auto max-w-3xl">
+    <h2 class="mb-4 text-2xl font-semibold">What you see</h2>
+    <p class="mb-6 text-[var(--color-muted)]">
+      Run <code class="rounded bg-[var(--color-surface)] px-1.5 py-0.5">/agentera</code>
+      (<code class="rounded bg-[var(--color-surface)] px-1.5 py-0.5">$agentera</code> in Codex) and get a project briefing that reads
+      your repo instead of guessing from chat history.
+    </p>
+    <pre class="overflow-x-auto rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-6 text-xs leading-relaxed sm:text-sm"><code>┌─┐┌─┐┌─┐┌┐┌┌┬┐┌─┐┬─┐┌─┐
+├─┤│ ┬├┤ │││ │ ├┤ ├┬┘├─┤
+┴ ┴└─┘└─┘┘└┘ ┴ └─┘┴└─┴ ┴
+
+─── status ─────────────────────────────
+
+  ⛶ health    ⮉ B+ (testing: C)
+  ⇶ issues    0 critical · 2 degraded · 5 annoying
+  ≡ plan      [██████▓░░░] 6/10 tasks
+  ♾ profile   loaded
+
+  Shipped auth middleware and rate limiting last cycle.
+  Health trending up, test coverage still lagging.
+
+─── attention ──────────────────────────
+
+  ⇉ test coverage below 60%, degrading since cycle 8
+  ⇉ task 7 blocked on API schema decision
+
+─── next ───────────────────────────────
+
+  suggested → ❈ resonera (resolve API schema to unblock task 7)</code></pre>
+    <p class="mt-6 text-sm text-[var(--color-muted)]">
+      The briefing pulls from many artifacts (plan, progress, decisions, health,
+      issues) but only the slices that matter right now. You get breadth without paying
+      for a full dump of project state on every turn.
+    </p>
+  </div>
+</section>

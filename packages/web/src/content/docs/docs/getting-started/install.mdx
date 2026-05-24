@@ -1,0 +1,69 @@
+---
+title: Install
+description: Install Agentera on Claude Code, OpenCode, Copilot CLI, or Codex CLI.
+---
+
+Pick your runtime and follow the install steps below.
+
+## Claude Code
+
+```bash
+npx skills add jgabor/agentera -g -a claude-code --skill agentera -y
+```
+
+## OpenCode
+
+Install the skill and the plugin (both steps):
+
+```bash
+npx skills add jgabor/agentera -g -a opencode --skill agentera -y
+mkdir -p ~/.config/opencode/plugins
+curl -fsSL https://raw.githubusercontent.com/jgabor/agentera/main/.opencode/plugins/agentera.js \
+  -o ~/.config/opencode/plugins/agentera.js
+```
+
+OpenCode also routes a bare message `hej` to the same dashboard.
+
+## Copilot CLI
+
+```bash
+copilot plugin marketplace add jgabor/agentera
+copilot plugin install jgabor/agentera
+```
+
+## Codex CLI
+
+```bash
+codex plugin marketplace add jgabor/agentera
+codex plugin add agentera@agentera
+```
+
+Open `/plugins`, enable Agentera, then run `$agentera`.
+
+When the plugin is installed and enabled, Agentera uses plugin-provided hooks
+as the primary hook path. Copied `~/.codex/hooks.json` hooks remain only as a
+compatibility fallback for non-plugin installs.
+
+## Verify install
+
+```bash
+uvx --from git+https://github.com/jgabor/agentera agentera doctor
+```
+
+Doctor checks the managed app, Agentera app files status, and runtime wiring.
+From a clone: `uv run scripts/agentera doctor`.
+
+## Uninstall
+
+For Codex, disable Agentera in `/plugins` before removing the marketplace entry.
+
+```bash
+# Claude Code / OpenCode
+npx skills remove jgabor/agentera -g -y
+
+# Copilot CLI
+copilot plugin uninstall jgabor/agentera
+
+# Codex CLI
+codex plugin marketplace remove jgabor/agentera
+```

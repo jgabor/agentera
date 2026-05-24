@@ -1,0 +1,57 @@
+---
+title: Glossary
+description: Shared Agentera protocol vocabulary and terminology.
+---
+
+This page summarizes key terms from the
+[Agentera vocabulary](https://github.com/jgabor/agentera/blob/main/references/cli/vocabulary.md)
+reference. For the full index and authority order, see the repository source.
+
+## Authority order
+
+| Authority                                         | Owns                                                               |
+| ------------------------------------------------- | ------------------------------------------------------------------ |
+| `references/cli/vocabulary-index.yaml`            | Authority order, normalization rules, plain-language layer rules   |
+| `skills/agentera/protocol.yaml`                   | Confidence, severity, decision labels, exit signals, visual tokens |
+| `skills/agentera/capability_schema_contract.yaml` | Capability schema structure and primitive-reference fields         |
+| `skills/agentera/schemas/artifacts/*.yaml`        | Artifact field grammar and validation rules                        |
+| `skills/agentera/SKILL.md`                        | Routing entry point, CLI-first state access, safety rails          |
+
+## Product grammar
+
+| Term                      | Definition                                                                                                                       |
+| ------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| **Agentera**              | The open protocol for turning AI agents into engineering teams through shared project state, roles, decisions, and verification. |
+| **Agentera v2**           | Current architecture: one skill, one `/agentera` entry point, twelve capabilities, YAML project state, CLI-first access.         |
+| **Capability**            | A routed behavioral unit with `instructions.md` plus four schema files.                                                          |
+| **Project state**         | Structured files preserving intent, decisions, plans, progress, health, and session continuity.                                  |
+| **Saved project context** | Project artifacts plus global profile data for cross-session reuse.                                                              |
+
+## Capability names
+
+| Glyph | Capability  | Role                                          |
+| ----- | ----------- | --------------------------------------------- |
+| ⌂     | hej         | Orientation, routing, dashboard briefing      |
+| ⛥     | visionera   | Project direction and strategic tensions      |
+| ❈     | resonera    | Structured deliberation and tradeoff pressure |
+| ⬚     | inspirera   | External pattern analysis                     |
+| ≡     | planera     | Planning with behavioral acceptance criteria  |
+| ⧉     | realisera   | Verified autonomous development cycle         |
+| ⎘     | optimera    | Metric-driven optimization                    |
+| ⛶     | inspektera  | Codebase health audit                         |
+| ▤     | dokumentera | Documentation layer                           |
+| ♾     | profilera   | Reusable decision profile                     |
+| ◰     | visualisera | Visual identity and design tokens             |
+| ⎈     | orkestrera  | Multi-cycle orchestration                     |
+
+## Plain-language rule
+
+Brand the worldview. Boring-name the work.
+
+Use Agentera-specific terms when they name a protocol concept or preserve
+schema-aligned precision. Prefer plain software terms for user-facing operations,
+diagnostics, setup, migration, and errors.
+
+---
+
+Full vocabulary: [`references/cli/vocabulary.md`](https://github.com/jgabor/agentera/blob/main/references/cli/vocabulary.md)
