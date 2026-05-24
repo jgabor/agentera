@@ -31,6 +31,22 @@ def _run_lint(*args: str, input_text: str | None = None) -> subprocess.Completed
     )
 
 
+def _run_lint_empty_stdin(
+    *args: str,
+    timeout: float = 2.0,
+    cwd: Path | None = None,
+) -> subprocess.CompletedProcess:
+    return subprocess.run(
+        [sys.executable, str(CLI), "lint", *args],
+        stdin=subprocess.PIPE,
+        capture_output=True,
+        text=True,
+        cwd=cwd or REPO_ROOT,
+        env={**os.environ, "AGENTERA_HOME": str(REPO_ROOT)},
+        timeout=timeout,
+    )
+
+
 def _run_lint_with_home(app_home: Path, *args: str, input_text: str | None = None) -> subprocess.CompletedProcess:
     return subprocess.run(
         [sys.executable, str(CLI), "lint", *args],
@@ -328,3 +344,62 @@ class TestLintCli:
         assert f"appHome={app_home}" in r.stderr
         assert f"managedAppRoot={app_home / 'app'}" in r.stderr
         assert "run `agentera doctor --format json`" in r.stderr
+
+    def test_lint_empty_stdin_missing_file_fails_fast(self, tmp_path):
+        r = subprocess.run(
+            [sys.executable, str(CLI), "lint", "--artifact", "PROGRESS.md"],
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            cwd=tmp_path,
+            env={**os.environ, "AGENTERA_HOME": str(REPO_ROOT)},
+            timeout=5,
+        )
+        assert r.returncode == 2
+        assert "--file" in r.stderr or "--text" in r.stderr
+
+    def test_lint_auto_resolves_schema_name_to_artifact_file(self):
+        r = _run_lint("--artifact", "plan", "--format", "json")
+        assert r.returncode == 0
+        payload = json.loads(r.stdout)
+        assert payload["command"] == "lint"
+        assert "plan.yaml" in payload["source"]
+
+    def test_lint_auto_resolves_from_empty_stdin_when_artifact_exists(self):
+        r = subprocess.run(
+            [sys.executable, str(CLI), "lint", "--artifact", "plan", "--format", "json"],
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            cwd=REPO_ROOT,
+            env={**os.environ, "AGENTERA_HOME": str(REPO_ROOT)},
+            timeout=5,
+        )
+        assert r.returncode == 0
+        payload = json.loads(r.stdout)
+        assert "plan.yaml" in payload["source"]
+
+    def test_lint_empty_stdin_fails_fast_without_hanging(self, tmp_path):
+        empty = tmp_path / "project"
+        empty.mkdir()
+        r = _run_lint_empty_stdin("--artifact", "decisions", cwd=empty)
+        assert r.returncode == 2
+        assert "non-interactive and empty" in r.stderr
+        assert "does not exist" in r.stderr
+
+    def test_lint_auto_resolves_schema_artifact_file(self):
+        r = _run_lint("--artifact", "decisions", "--format", "json")
+        assert r.returncode == 0
+        payload = json.loads(r.stdout)
+        assert payload["command"] == "lint"
+        assert payload["artifact"] == "DECISIONS.md"
+        assert payload["source"].endswith(".agentera/decisions.yaml")
+
+    def test_lint_auto_resolves_canonical_artifact_label(self):
+        r = _run_lint("--artifact", "DECISIONS.md", "--format", "json")
+        assert r.returncode == 0
+        payload = json.loads(r.stdout)
+        assert payload["artifact"] == "DECISIONS.md"
+        assert payload["source"].endswith(".agentera/decisions.yaml")

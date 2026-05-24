@@ -42,6 +42,7 @@ import importlib.util
 import json
 import os
 import re
+import select
 import subprocess
 import sys
 import tomllib
@@ -97,7 +98,7 @@ Supported state commands:
   agentera docs                                 # Docs mappings + stale docs
   agentera objective                            # Active optimera objective
   agentera experiments                          # Active optimera experiments
-  agentera lint --artifact PROGRESS.md          # Pre-write artifact prose self-audit
+  agentera lint --artifact PROGRESS.md --file .agentera/progress.yaml  # Pre-write artifact prose self-audit
   agentera query --list-artifacts               # Discover advanced schema names
   agentera query <artifact-name>                # Advanced custom artifact query
 
@@ -4890,19 +4891,111 @@ LINT_CHECKS = [
     ("filler", "Remove the named filler phrase category before writing the artifact."),
 ]
 
+_LINT_CANONICAL_LABELS = {
+    "changelog": "CHANGELOG.md",
+    "decisions": "DECISIONS.md",
+    "design": "DESIGN.md",
+    "docs": "DOCS.md",
+    "health": "HEALTH.md",
+    "plan": "PLAN.md",
+    "progress": "PROGRESS.md",
+    "todo": "TODO.md",
+    "vision": "VISION.md",
+    "experiments": "EXPERIMENTS.md",
+}
 
-def _lint_input_text(args: argparse.Namespace) -> tuple[str, str]:
+
+def _stdin_has_pending_data() -> bool:
+    try:
+        ready, _, _ = select.select([sys.stdin], [], [], 0.0)
+    except (ValueError, OSError):
+        return False
+    return bool(ready)
+
+
+def _lint_read_piped_stdin_if_present() -> str | None:
+    if sys.stdin.isatty() or not _stdin_has_pending_data():
+        return None
+    data = sys.stdin.read()
+    return data if data else None
+
+
+def _lint_schema_name(artifact: str, schemas: dict[str, dict[str, Any]]) -> str | None:
+    if artifact in schemas:
+        return artifact
+    lowered = artifact.lower()
+    if lowered in schemas:
+        return lowered
+    for name, info in schemas.items():
+        record = info.get("record")
+        if isinstance(record, ArtifactRecord) and record.display_name == artifact:
+            return name
+    stem = Path(artifact).stem.lower()
+    if stem in schemas:
+        return stem
+    return None
+
+
+def _lint_canonical_label(schema_name: str, info: dict[str, Any], artifact: str) -> str:
+    if schema_name in _LINT_CANONICAL_LABELS:
+        return _LINT_CANONICAL_LABELS[schema_name]
+    record = info.get("record")
+    if isinstance(record, ArtifactRecord) and record.display_name:
+        return record.display_name
+    if artifact in VALIDATE_ARTIFACT_LABELS:
+        return artifact
+    upper = artifact.strip().upper()
+    if upper in VALIDATE_ARTIFACT_LABELS:
+        return upper
+    return artifact
+
+
+def _resolve_lint_artifact_file(artifact: str) -> tuple[Path, str]:
+    schemas = _load_schemas(_discover_schemas_dir())
+    schema_name = _lint_schema_name(artifact, schemas)
+    if schema_name is None:
+        valid_labels = ", ".join(VALIDATE_ARTIFACT_LABELS)
+        raise ValueError(
+            f"unsupported artifact {artifact!r}; provide --file or --text, "
+            f"or use a schema name from `agentera query --list-artifacts` "
+            f"or a canonical label ({valid_labels})"
+        )
+    info = schemas[schema_name]
+    path = _artifact_path(info, schema_name)
+    canonical = _lint_canonical_label(schema_name, info, artifact)
+    return path, canonical
+
+
+def _lint_input_text(args: argparse.Namespace) -> tuple[str, str, bool, str | None]:
     if getattr(args, "text", None) is not None:
-        return str(args.text), "text"
+        return str(args.text), "text", False, None
     if getattr(args, "file", None) is not None:
         path = Path(args.file)
         try:
-            return path.read_text(encoding="utf-8"), str(path)
+            return path.read_text(encoding="utf-8"), str(path), True, None
         except OSError as exc:
             raise ValueError(f"could not read lint file {path}: {exc}") from exc
-    if sys.stdin.isatty():
-        raise ValueError("lint requires --text, --file, or piped stdin")
-    return sys.stdin.read(), "stdin"
+
+    artifact = str(args.artifact)
+    piped_data = _lint_read_piped_stdin_if_present()
+    if piped_data is not None:
+        return piped_data, "stdin", False, None
+
+    path, canonical = _resolve_lint_artifact_file(artifact)
+    if path.is_file():
+        try:
+            return path.read_text(encoding="utf-8"), str(path), True, canonical
+        except OSError as exc:
+            raise ValueError(f"could not read lint file {path}: {exc}") from exc
+
+    if not sys.stdin.isatty():
+        raise ValueError(
+            f"lint requires --text, --file, or piped stdin with data when stdin is "
+            f"non-interactive and empty; artifact file {path} does not exist"
+        )
+    raise ValueError(
+        f"lint requires --text, --file, or piped stdin; artifact file {path} does not exist"
+    )
 
 
 def _lint_checks(text: str, artifact: str, *, full_artifact: bool = False) -> list[dict[str, Any]]:
@@ -4931,10 +5024,9 @@ def _lint_checks(text: str, artifact: str, *, full_artifact: bool = False) -> li
 
 
 def _lint_payload(args: argparse.Namespace) -> dict[str, Any]:
-    text, source = _lint_input_text(args)
-    artifact = str(args.artifact)
+    text, source, full_artifact, budget_artifact = _lint_input_text(args)
+    artifact = budget_artifact or str(args.artifact)
     _validate_agent_string(artifact, "artifact")
-    full_artifact = getattr(args, "file", None) is not None
     checks = _lint_checks(text, artifact, full_artifact=full_artifact)
     failures = [check for check in checks if check["status"] == "fail"]
     return {
@@ -7637,11 +7729,19 @@ def build_parser() -> argparse.ArgumentParser:
     lint = sub.add_parser(
         "lint",
         help="Run pre-write artifact prose self-audit",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description=(
+            "Run pre-write artifact prose self-audit.\n\n"
+            "Examples:\n"
+            "  agentera lint --artifact plan\n"
+            "  agentera lint --artifact PLAN.md --text \"draft entry prose\"\n"
+            "  agentera lint --artifact PLAN.md --file .agentera/plan.yaml"
+        ),
     )
     lint.add_argument(
         "--artifact",
         required=True,
-        help="Canonical artifact name for budget selection, e.g. PROGRESS.md",
+        help="Schema name (plan, decisions) or canonical label (PLAN.md) for budget selection",
     )
     lint_input = lint.add_mutually_exclusive_group()
     lint_input.add_argument("--file", type=_agent_path, help="Read artifact prose from a file")

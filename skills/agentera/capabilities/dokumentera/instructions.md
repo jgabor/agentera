@@ -166,7 +166,7 @@ If artifacts exist at root but mapping places them elsewhere:
 
 ### Step 4: Pre-write self-audit
 
-Pre-write self-audit: run `agentera lint --artifact <ARTIFACT>` on the draft entry to check verbosity overruns (per-artifact budget), abstraction creep (>=1 concrete anchor), and filler accumulation (banned patterns).
+Pre-write self-audit: run `agentera lint --artifact <ARTIFACT> --text "<DRAFT>"` (or `--file <PATH>`; schema names such as `decisions` auto-resolve the artifact file when no input is given) on the draft entry to check verbosity overruns (per-artifact budget), abstraction creep (>=1 concrete anchor), and filler accumulation (banned patterns).
 Max 3 revision attempts. Flag with [post-audit-flagged] if still failing.
 
 Narration voice (riff, don't script):
@@ -206,7 +206,7 @@ Present draft for approval before writing.
 
 ### Step 3: Pre-write self-audit
 
-Pre-write self-audit: run `agentera lint --artifact <ARTIFACT>` on the draft entry to check verbosity overruns (per-artifact budget), abstraction creep (>=1 concrete anchor), and filler accumulation (banned patterns).
+Pre-write self-audit: run `agentera lint --artifact <ARTIFACT> --text "<DRAFT>"` (or `--file <PATH>`; schema names such as `decisions` auto-resolve the artifact file when no input is given) on the draft entry to check verbosity overruns (per-artifact budget), abstraction creep (>=1 concrete anchor), and filler accumulation (banned patterns).
 Max 3 revision attempts. Flag with [post-audit-flagged] if still failing.
 
 Narration voice (riff, don't script):
@@ -263,7 +263,7 @@ Present drafts for approval.
 
 ### Step 4: Pre-write self-audit
 
-Pre-write self-audit: run `agentera lint --artifact <ARTIFACT>` on the draft entry to check verbosity overruns (per-artifact budget), abstraction creep (>=1 concrete anchor), and filler accumulation (banned patterns).
+Pre-write self-audit: run `agentera lint --artifact <ARTIFACT> --text "<DRAFT>"` (or `--file <PATH>`; schema names such as `decisions` auto-resolve the artifact file when no input is given) on the draft entry to check verbosity overruns (per-artifact budget), abstraction creep (>=1 concrete anchor), and filler accumulation (banned patterns).
 Max 3 revision attempts. Flag with [post-audit-flagged] if still failing.
 
 Narration voice (riff, don't script):
@@ -321,7 +321,7 @@ By severity: ⇶ critical (VT5, causes user errors), ⇉ warning (VT6, causes co
 
 ### Step 5: Pre-write self-audit
 
-Pre-write self-audit: run `agentera lint --artifact <ARTIFACT>` on the draft entry to check verbosity overruns (per-artifact budget), abstraction creep (>=1 concrete anchor), and filler accumulation (banned patterns).
+Pre-write self-audit: run `agentera lint --artifact <ARTIFACT> --text "<DRAFT>"` (or `--file <PATH>`; schema names such as `decisions` auto-resolve the artifact file when no input is given) on the draft entry to check verbosity overruns (per-artifact budget), abstraction creep (>=1 concrete anchor), and filler accumulation (banned patterns).
 Max 3 revision attempts. Flag with [post-audit-flagged] if still failing.
 
 Narration voice (riff, don't script):

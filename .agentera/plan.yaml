@@ -1,0 +1,234 @@
+header:
+  level: full
+  created: 2026-05-24
+  status: active
+  reviewed: 2026-05-24
+  critic_issues: 4 found, 4 addressed, 0 dismissed
+  revised: >-
+    Narrowed marketplace work to submission-ready artifacts rather than external approval;
+    kept setup_cursor.py as a conditional fallback inside the smoke-gate task instead of a
+    standalone upgrade task; made release-tag blocking explicit in smoke acceptance; and
+    added test proportionality targets for smoke and eval tasks.
+  title: Cursor First-Class Runtime v1
+what: >-
+  Add Cursor as a first-class Agentera runtime per Decision 63. Ship repo-native Cursor
+  hooks and managed capability agents, register separate IDE and CLI runtime identities,
+  wire upgrade and doctor surfaces for any project, claim conditional hard-gate validation
+  only after live preToolUse Write smoke passes, add cursor-agent eval support, and document
+  v1 limits including metadata-only bare hej routing and unsupported cloud agents.
+why: >-
+  Decision 63 (firm) resolves v1 scope after resonera deliberation. Cursor fits shared Python
+  hooks, portable skills, and managed agent descriptors, but the repository has zero Cursor
+  adapter code today. First-class status requires registry, doctor, upgrade, lifecycle
+  validation, parity docs, marketplace distribution, and release-gated hard-gate claims—not
+  repo-only dogfood.
+constraints: >-
+  Follow Decision 63 exactly. Register cursor for IDE and cursor-agent for CLI as separate
+  runtime records. Wire AGENTERA_HOME through sessionStart environment first; add persistent
+  shell configuration only if live shell-tool smoke proves session env does not propagate.
+  Claim conditional hard-gate parity for reconstructable Write and Edit candidates only after
+  live preToolUse smoke passes, and block release tagging until that smoke succeeds. Accept
+  metadata-only bare hej routing like Claude, Copilot, and Codex. Document cloud agents as
+  unsupported in v1. Preserve user-owned runtime surface collisions, CLI-first contracts,
+  dry-run and apply safety, non-interactive setup behavior, and decision satisfaction state.
+  Do not publish, push, tag, or bump release metadata unless explicitly approved after smoke
+  gates pass.
+scope:
+  included:
+    - Repo-native committed Cursor hooks, agents, and plugin metadata for this repository.
+    - agentera upgrade --runtime cursor for installing Cursor surfaces into other projects.
+    - Separate RuntimeAdapter records for cursor (IDE) and cursor-agent (CLI).
+    - Shared artifact validation through existing Python hook helpers with Cursor-shaped wrappers.
+    - Managed capability agent descriptors for all twelve Agentera capabilities.
+    - Cursor plugin manifest and marketplace submission-ready packaging.
+    - Doctor and lifecycle validation coverage for Cursor install health.
+    - eval_skills --runtime cursor-agent dispatch and verify namespace exposure.
+    - Live preToolUse Write smoke as a release gate for hard-gate claims.
+    - Parity documentation, references/adapters/cursor.md, and AGENTS.md cursor commit scope.
+    - Version bump and artifact synchronization closeout for feat-level delivery.
+  excluded:
+    - Cloud agent support in v1.
+    - Bare hej prompt rewrite routing; v1 stays metadata and context only.
+    - Session compaction injection and session bookmark wiring unless already covered by shared hooks without new v1 scope.
+    - Replacing the bundled Agentera skill with per-capability runtime skills or unsupported capability-name CLI commands.
+    - Live marketplace approval, package publication, remote pushes, or installed app refreshes unless explicitly approved.
+  deferred:
+    - setup_cursor.py persistent shell configuration unless sessionStart env fails shell-tool smoke.
+    - Cursor IDE eval runner support beyond cursor-agent CLI.
+    - Cloud agents, prompt rewrite bare hej, and full CLI hook parity beyond documented degraded behavior.
+design: >-
+  Treat Cursor as two honest registry identities: cursor for IDE-primary support and
+  cursor-agent for CLI-degraded support. Reuse the shared artifact validator and session
+  helpers already used by Copilot-style JSON hook wrappers, with sessionStart exporting
+  AGENTERA_HOME before tool validation runs. Install managed capability agents under
+  .cursor/agents with the same ownership rules used for OpenCode and Codex descriptors.
+  Extend upgrade and doctor through the existing runtime registry seam rather than ad hoc
+  scripts. Keep hard-gate documentation Copilot-class but release-gated: parity docs and
+  registry claims stay advisory until live preToolUse Write smoke proves blocking behavior
+  for reconstructable candidates. Distribution ships both repo-native .cursor/ for dogfood
+  and upgrade paths for downstream projects, plus submission-ready Cursor marketplace
+  metadata. Eval coverage targets cursor-agent first because CLI is the bounded automation
+  surface for v1.
+tasks:
+  - number: 1
+    name: Define Cursor runtime contract and registry records
+    depends_on: []
+    status: pending
+    acceptance:
+      - >-
+        GIVEN Decision 63 is firm WHEN the runtime contract is reviewed THEN separate IDE
+        and CLI identities exist with mechanism, lifecycle events, validation claims,
+        subagent dispatch, config targets, diagnostics, and documentation claims recorded
+        for each.
+      - >-
+        GIVEN existing runtime adapter validation runs WHEN Cursor records are added THEN
+        registry order, interface model typing, and lifecycle metadata checks accept both
+        Cursor identities without breaking existing runtimes.
+      - >-
+        GIVEN a maintainer reads the Cursor adapter reference WHEN comparing against other
+        runtimes THEN v1 support status, degraded CLI behavior, metadata-only bare hej,
+        and unsupported cloud agents are explicit.
+  - number: 2
+    name: Ship repo-native Cursor hooks and session environment
+    depends_on:
+      - 1
+    status: pending
+    acceptance:
+      - >-
+        GIVEN a fresh checkout of this repository WHEN Cursor hook surfaces are inspected
+        THEN session start, pre-tool, post-tool, and session end wrappers exist and invoke
+        the shared Agentera hook helpers.
+      - >-
+        GIVEN a Cursor session starts in this repository WHEN session bootstrap runs THEN
+        AGENTERA_HOME is exported for subsequent tool and validation subprocesses without
+        requiring persistent shell configuration in the default path.
+      - >-
+        GIVEN a reconstructable Write or Edit candidate is submitted WHEN pre-tool validation
+        runs in repo-native Cursor wiring THEN invalid artifact content is blocked and valid
+        candidates are allowed, matching Copilot-class conditional hard-gate behavior.
+  - number: 3
+    name: Add managed capability agents and plugin metadata
+    depends_on:
+      - 1
+    status: pending
+    acceptance:
+      - >-
+        GIVEN the bundled skill has twelve capabilities WHEN Cursor agent descriptors are
+        inspected THEN each capability has a managed agent entry with invocation guidance
+        and a pointer to the active capability instructions.
+      - >-
+        GIVEN user-owned agent files already exist WHEN managed agents are installed THEN
+        Agentera-owned targets refresh and unknown collisions are preserved.
+      - >-
+        GIVEN Cursor marketplace packaging is reviewed WHEN plugin metadata is validated
+        THEN submission-ready plugin manifest, hook references, and distribution notes exist
+        even if external marketplace approval remains a manual follow-up.
+  - number: 4
+    name: Wire upgrade, doctor, and lifecycle validation
+    depends_on:
+      - 2
+      - 3
+    status: pending
+    acceptance:
+      - >-
+        GIVEN a project without committed Cursor surfaces WHEN runtime upgrade runs in dry-run
+        and apply modes THEN managed hooks, agents, and plugin targets are planned and
+        installed with the same ownership protections used by other supported runtimes.
+      - >-
+        GIVEN upgrade completes on an isolated project WHEN doctor diagnosis runs for Cursor
+        THEN install health reports pass, warn, or fail states for helper access, managed
+        surfaces, and documented default app homes.
+      - >-
+        GIVEN lifecycle adapter validation runs WHEN Cursor wiring is checked THEN required
+        session and pre-tool validation events are present and documented limitations remain
+        truthful before any hard-gate claim is promoted.
+  - number: 5
+    name: Release-gated live preToolUse Write smoke
+    depends_on:
+      - 4
+    status: pending
+    acceptance:
+      - >-
+        GIVEN live-host smoke is enabled WHEN a reconstructable invalid Write candidate is
+        attempted through Cursor pre-tool validation THEN the mutation is blocked and the
+        smoke records passing evidence.
+      - >-
+        GIVEN live-host smoke is enabled WHEN a valid Write candidate is attempted THEN the
+        mutation is allowed and the smoke records passing evidence; proportionality target is
+        one passing invalid-write block case and one passing valid-write allow case.
+      - >-
+        GIVEN hard-gate parity is not yet proven WHEN release readiness is evaluated THEN
+        release tagging remains blocked, registry and parity docs stay advisory-only, and
+        persistent shell configuration is added only if shell-tool smoke shows session env
+        does not propagate.
+  - number: 6
+    name: Add eval runner support for cursor-agent
+    depends_on:
+      - 1
+      - 4
+    status: pending
+    acceptance:
+      - >-
+        GIVEN the eval runner is invoked with the cursor-agent runtime WHEN a smoke prompt
+        is dispatched THEN structured output and exit status are captured without requiring
+        interactive host approval.
+      - >-
+        GIVEN verify eval skills is run for cursor-agent WHEN documentation and CLI help are
+        inspected THEN cursor-agent appears as a supported runtime alongside existing eval
+        runtimes.
+      - >-
+        GIVEN focused eval tests run WHEN cursor-agent dispatch is exercised THEN
+        proportionality target is one passing dispatch case and one failing or skipped case
+        for unavailable host conditions.
+  - number: 7
+    name: Document parity limits and AGENTS.md scope
+    depends_on:
+      - 5
+    status: pending
+    acceptance:
+      - >-
+        GIVEN runtime parity documentation is reviewed WHEN Cursor v1 is compared with other
+        runtimes THEN skill loading, session preload, artifact validation, bare hej behavior,
+        subagent dispatch, eval support, and documented CLI gaps are recorded for both Cursor
+        identities.
+      - >-
+        GIVEN users read Cursor install guidance WHEN choosing IDE versus CLI surfaces THEN
+        cloud agents are documented as unsupported in v1 and bare hej remains metadata-only.
+      - >-
+        GIVEN commit scope guidance is reviewed WHEN Cursor runtime work lands THEN AGENTS.md
+        includes a cursor scope entry for Cursor-specific runtime behavior and packaging.
+  - number: 8
+    name: Plan-level completion review
+    depends_on:
+      - 6
+      - 7
+    status: pending
+    acceptance:
+      - >-
+        GIVEN all prior tasks are complete WHEN TODO, CHANGELOG, PROGRESS, and plan evidence
+        are synchronized THEN Decision 63 implementation status and Cursor v1 deliverables
+        are recorded without leaving stale active-plan tasks.
+      - >-
+        GIVEN feat-level runtime delivery is complete WHEN versioning policy is applied THEN
+        version-bearing surfaces listed in project docs are bumped consistently for the Cursor
+        runtime feature.
+      - >-
+        GIVEN closeout verification runs WHEN the plan completes THEN capability validation,
+        registry validation, focused tests, compaction, and diff checks record passing
+        evidence for the Cursor v1 slice.
+overall_acceptance:
+  - >-
+    Cursor is a first-class runtime with separate IDE and CLI registry identities, repo-native
+    surfaces in this repository, and upgrade plus doctor paths for other projects.
+  - >-
+    Managed capability agents, plugin metadata, eval support for cursor-agent, and parity docs
+    describe real adapter behavior with cloud agents and bare hej rewrite explicitly out of
+    v1 scope.
+  - >-
+    Conditional hard-gate validation is claimed only after live preToolUse Write smoke passes,
+    release tagging stays blocked until then, and persistent shell configuration remains a
+    fallback rather than the default wiring path.
+  - >-
+    AGENTS.md, CHANGELOG, PROGRESS, TODO, and version metadata reflect the completed Cursor v1
+    delivery without unsupported release side effects.
+surprises: []

@@ -1,74 +1,4 @@
 decisions:
-- number: 52
-  date: '2026-05-13'
-  question: How should Agentera run and retain startup state-access benchmark metrics?
-  context: Decision 51 made startup state-access overlap an optimization metric. To
-    compare versions, Agentera needs a repeatable manual run for `scripts/startup_analysis_contract.py`
-    that can read local runtime history without committing or shipping generated local
-    evidence.
-  alternatives:
-  - name: Ad hoc analyzer commands
-    status: rejected
-    description: Minimal, but weak for repeatability and trend comparison.
-  - name: Normal CI regression
-    status: rejected
-    description: CI cannot depend on private local runtime histories.
-  - name: Manual Mage benchmark with user-local retention
-    status: chosen
-    description: Mage runs the benchmark manually; aggregate history stays under `${AGENTERA_HOME}/benchmarks/startup-state/`.
-  choice: Add a manual Mage benchmark suite starting with the Decision 51 startup
-    state-access metric. Persist aggregate `runs.jsonl` history under the user Agentera
-    data home, not the repository, and retain only the latest redacted detailed report
-    beside it.
-  reasoning: Mage gives a clear manual benchmark surface while the Python analyzer
-    remains the metric source of truth. User-local JSONL enables longitudinal optimization
-    targets without polluting git or packages, and latest-only report retention preserves
-    debuggability without accumulating bulky private artifacts.
-  confidence: firm
-  feeds_into: magefile.go, startup state-access benchmark, TODO.md
-  satisfaction:
-    state: user_confirmed_satisfied
-    user_confirmation:
-      confirmed_by: user
-      confirmed_at: '2026-05-15'
-- number: 53
-  date: '2026-05-15'
-  question: How should Agentera track whether decisions are satisfied?
-  context: Current decision CLI output exposes compacted entries and downstream references,
-    but open TODOs show decisions can be forgotten after compaction or when they fall
-    outside normal query range. The user wants outcome tracking and compaction recovery
-    handled together.
-  alternatives:
-  - name: Track downstream references only
-    status: rejected
-    description: Shows where a decision should feed, but does not prove the intended
-      outcome was accepted as fulfilled.
-  - name: Store satisfaction outside decisions
-    status: rejected
-    description: Keeps the decision schema smaller, but makes decisions depend on
-      secondary indexes and leaves compaction without a canonical preservation rule.
-  - name: Decision-entry satisfaction state
-    status: chosen
-    description: Store satisfaction on the decision entry, let automation mark provisional
-      evidence, require user confirmation for final satisfaction, and protect unresolved
-      decisions from compaction.
-  choice: Store decision satisfaction state on each decision entry. Agents may mark
-    provisional satisfaction with evidence, but only the user may confirm satisfaction.
-    Open or provisionally satisfied decisions must not be compacted; old protected
-    decisions trigger review before compaction, during health audits, and at release
-    closeout.
-  reasoning: Decision satisfaction is an intent state, not just evidence of a downstream
-    write. Keeping it on the decision entry makes compaction rules and CLI source
-    contracts preserve the outcome instead of forcing agents into memory or git-history
-    recovery.
-  confidence: firm
-  feeds_into: TODO.md, .agentera/decisions.yaml, scripts/agentera, hooks/compaction.py,
-    tests, capability prose
-  satisfaction:
-    state: user_confirmed_satisfied
-    user_confirmation:
-      confirmed_by: user
-      confirmed_at: '2026-05-15'
 - number: 54
   date: '2026-05-16'
   question: How should Agentera rationalize app metadata status vocabulary across
@@ -556,171 +486,200 @@ decisions:
       confirmed_by: user
       confirmed_at: '2026-05-23'
     evidence: User confirmed satisfaction during resonera review on 2026-05-23.
+- number: 62
+  date: '2026-05-24'
+  question: How should Agentera strengthen visualisera governance for terminal-native
+    agent output?
+  context: Agentera's visual identity lives in DESIGN.md and protocol.yaml. It governs
+    terminal-native Markdown output, not rendered web UI. Agent-rendered surfaces
+    such as the hej dashboard, capability introductions, and structured artifact headers
+    can drift from declared glyphs, dividers, and constraints. Resonera review compared
+    prose-only strengthening against near-term CLI enforcement and broader visualisera
+    mode expansion. Decision 56 defers new CLI surfaces until contract-first parity
+    work is ready for the 3.0 direction.
+  alternatives:
+  - name: Phase 1 prose adoption only
+    status: chosen
+    description: Extend DESIGN.md and visualisera instructions with a startup gate,
+      brand-vs-product register rules, and expanded agent-output constraints. Defer
+      deterministic linting and additional visualisera modes until drift is measurable
+      or CLI parity work begins.
+  - name: Prose plus reverse-engineer mode
+    status: rejected
+    description: Adds a document-style workflow to infer tokens from observed output.
+      Useful later, but broader than the first governance slice.
+  - name: Include deterministic design-output linting now
+    status: rejected
+    description: Would catch drift automatically, but adds a new CLI surface before
+      recurring slop is evidenced and before Decision 56 parity constraints are satisfied.
+  - name: Defer all visualisera governance changes
+    status: rejected
+    description: Leaves agent-output drift unmanaged despite an existing design system.
+  choice: Adopt Phase 1 prose governance for visualisera in one refine pass. Formalize
+    `agentera prime --context visualisera` plus DESIGN.md read as a hard Step 0 gate
+    in visualisera instructions. Add a brand-vs-product register to DESIGN.md with
+    a narrow product register covering the hej dashboard, capability introductions,
+    and structured artifact headers, while human-facing root docs such as README and
+    UPGRADE remain the brand register. Expand DESIGN.md constraints with agent-output
+    anti-patterns and a slop test for generic agent formatting. Defer deterministic
+    design-output linting, named iteration commands beyond create/refine/audit, and
+    reverse-engineer workflows until evidence or 3.0 CLI work justifies them.
+  reasoning: Agentera already owns the token layer; the gap is explicit governance
+    for agent-rendered output. Prose changes are low cost, contract-aligned, and do
+    not require a new CLI command. A narrow product register preserves logo scarcity
+    and glyph discipline where agents emit structured output while leaving public
+    docs room to breathe. Tooling can follow once drift is observable or CLI parity
+    work can absorb a lint surface cleanly.
+  confidence: firm
+  feeds_into: DESIGN.md, skills/agentera/capabilities/visualisera/instructions.md,
+    visualisera
+  satisfaction:
+    state: open
+    evidence: Decision captured at user request after resonera deliberation on 2026-05-24.
+      Implementation not yet started.
+- number: 63
+  date: '2026-05-24'
+  question: How should Agentera add Cursor as a first-class runtime in v1?
+  context: Cursor IDE and CLI research against runtime-feature-parity.md shows strong
+    fit for shared Python hooks, portable skills, and .cursor/agents descriptors,
+    but no bare-hej prompt rewrite, no compaction injection, partial CLI hook parity,
+    and zero Cursor adapter code in the repository today. Resonera deliberation resolved
+    v1 scope, registry shape, validation claims, AGENTERA_HOME wiring, and distribution
+    targets before implementation.
+  alternatives:
+  - name: Repo-native dogfood only
+    status: rejected
+    description: Ship committed .cursor/ in this repository without upgrade/doctor
+      paths. Fast internally, but fails the first-class registry contract for other
+      projects.
+  - name: Skills install only; hooks deferred
+    status: rejected
+    description: Lowest effort via npx skills -a cursor, but leaves session preload,
+      validation, bookmarks, and lifecycle metadata unowned.
+  - name: Single cursor runtime with CLI drift notes
+    status: rejected
+    description: One registry id with known_drifts for CLI gaps. Simpler table, but
+      blurs IDE-primary support from CLI-degraded behavior.
+  - name: Advisory validation only in v1
+    status: rejected
+    description: Ship Claude-class post-mutation validation without claiming hard
+      gate. Safer claims, but undershoots Copilot-class parity the user wants when
+      payloads are reconstructable.
+  - name: Full v1 with split runtimes and release-gated hard gate
+    status: chosen
+    description: Repo .cursor/ plus upgrade/doctor; cursor and cursor-agent registry
+      entries; hard-gate claims after live preToolUse Write smoke; marketplace submit,
+      eval runner, and managed agents in v1; cloud agents documented unsupported.
+  choice: Add Cursor as a first-class runtime in one v1 slice. Ship repo-native .cursor/
+    and agentera upgrade --runtime cursor for any project. Register cursor for IDE
+    and cursor-agent for CLI as separate RuntimeAdapter records. Reuse shared hooks
+    with Cursor-shaped sessionStart wrappers; claim conditional hard-gate parity for
+    reconstructable Write/Edit candidates only after live preToolUse smoke passes,
+    and block release tagging until that smoke succeeds. Wire AGENTERA_HOME through
+    sessionStart env first; add setup_cursor.py only if shell-tool smoke shows env
+    does not propagate. Include .cursor-plugin/plugin.json, marketplace submission,
+    managed .cursor/agents for all twelve capabilities, and eval_skills --runtime
+    cursor-agent. Document cloud agents as unsupported in v1. Accept metadata-only
+    bare hej routing like Claude/Copilot/Codex.
+  reasoning: "First-class means registry, doctor, upgrade, lifecycle validator, and\
+    \ parity docs describe real adapter paths\u2014not just files in this repo. Splitting\
+    \ cursor and cursor-agent keeps IDE support honest while letting CLI stay degraded\
+    \ without hiding gaps inside one row. Hard-gate claims stay Copilot-class but\
+    \ release-gated so docs never overship. Deferring setup_cursor.py avoids Codex-style\
+    \ config glue until evidence says sessionStart env is insufficient for shell tools.\
+    \ The user explicitly chose an ambitious v1 that includes marketplace, eval, and\
+    \ managed agents rather than phasing distribution surfaces."
+  confidence: firm
+  feeds_into: references/adapters/runtime-adapter-registry.yaml, references/adapters/runtime-feature-parity.md,
+    references/adapters/cursor.md, .cursor/, .cursor-plugin/, hooks/validate_artifact.py,
+    scripts/agentera_upgrade.py, scripts/eval_skills.py, scripts/smoke_live_hosts.py,
+    AGENTS.md, tests, package-registry.yaml
+  satisfaction:
+    state: open
+    evidence: Decision captured at user request after resonera deliberation on 2026-05-24.
+      Implementation not yet started.
 archive:
-- summary: 'Decision 12 (2026-03-31): **Question**: How should version management
-    work across the agentera ecosystem, both for agentera''s own skill versions and
-    for target projects...'
-  satisfaction: &id001
-    state: user_confirmed_satisfied
-    user_confirmation:
-      confirmed_by: user
-      confirmed_at: '2026-05-15'
-- summary: 'Decision 13 (2026-04-01): **Question**: Should agentera artifacts be consolidated
-    out of the project root, and should their naming adopt common conventions?'
-  satisfaction: *id001
-- summary: 'Decision 14 (2026-04-02): **Question**: How should the ecosystem''s user-facing
-    messages be formatted?'
-  satisfaction: *id001
-- summary: 'Decision 15 (2026-04-02): **Question**: How should TODO.md categorize
-    issues beyond bug-severity, and should issues carry type tags?'
-  satisfaction: *id001
-- summary: 'Decision 16 (2026-04-02): **Question**: How should the ecosystem''s voice
-    and tone work across all 11 skills?'
-  satisfaction: *id001
-- summary: 'Decision 17 (2026-04-02): **Question**: How should skills narrate their
-    process between structural markers?'
-  satisfaction: *id001
-- summary: 'Decision 18 (2026-04-02): **Question**: How should the ecosystem handle
-    em-dashes and double dashes in all text?'
+- summary: 'Decision 53 (2026-05-15): Store decision satisfaction state on each decision
+    entry. Agents may mark provisional satisfaction with evidence,...'
+  number: 53
+  date: '2026-05-15'
+  choice: Store decision satisfaction state on each decision entry. Agents may mark
+    provisional satisfaction with evidence, but only the user may confirm satisfaction.
+    Open or provisionally satisfied decisions must not be compacted; old protected
+    decisions trigger review before compaction, during health audits, and at release
+    closeout.
+  feeds_into: TODO.md, .agentera/decisions.yaml, scripts/agentera, hooks/compaction.py,
+    tests, capability prose
   satisfaction:
     state: user_confirmed_satisfied
     user_confirmation:
       confirmed_by: user
       confirmed_at: '2026-05-15'
-- summary: 'Decision 19 (2026-04-02): **Question**: How should the ecosystem handle
-    line-breaks in prose text?'
-  number: 19
-  date: '2026-04-02'
-  satisfaction:
-    state: user_confirmed_satisfied
-    evidence: Legacy compacted archive decision confirmed settled during resonera
-      satisfaction review on 2026-05-23; full historical context remains unavailable
-      in the compact archive entry.
-    user_confirmation:
-      confirmed_by: user
-      confirmed_at: '2026-05-23'
-- summary: 'Decision 20 (2026-04-02): **Question**: Should the agentera ecosystem
-    add an orchestration skill, and what should it own?'
-  satisfaction: *id001
-- summary: 'Decision 21 (2026-04-02): **Question**: How should autonomous plans constrain
-    test generation to prevent unbounded output?'
-  satisfaction: *id001
-- summary: 'Decision 22 (2026-04-03): **Question**: Should ISS-19 phase tracking be
-    enforced across skills, and how should the ecosystem detect stale artifacts?'
-  satisfaction: *id001
-- summary: 'Decision 23 (2026-04-03): **Question**: Where should session-to-session
-    state live: new SESSION.md artifact, extend PROGRESS.md, or infrastructure dotfile?'
-  satisfaction: *id001
-- summary: 'Decision 24 (2026-04-03): **Question**: Should the PostToolUse validation
-    hook coexist with the git pre-commit hook, or replace it?'
-  satisfaction: *id001
-- summary: 'Decision 25 (2026-04-03): **Question**: Should agentera''s North Star
-    evolve from "a solo founder installs an engineering team" to a spec-centric framing?'
-  satisfaction: *id001
-- summary: 'Decision 26 (2026-04-10): **Question**: Should the terminology for the
-    ecosystem spec and per-skill context files be renamed for clarity and cohesion?'
-  satisfaction: *id001
-- summary: 'Decision 27 (2026-04-11): **Question**: How to implement Section 21''s
-    session corpus contract to close the gap between spec and extraction pipeline'
-  satisfaction: *id001
-- summary: 'Decision 28 (2026-04-11): **Question**: Where should PROFILE.md and profilera''s
-    generated artifacts live by default, and how should runtime adapters provide path
-    overrides?'
-  satisfaction: *id001
-- summary: 'Decision 29 (2026-04-11): **Question**: How should optimera handle measurement
-    archetypes that go beyond thin command-wrapper harnesses, and what should the
-    first such reference...'
-  satisfaction: *id001
-- summary: 'Decision 30 (2026-04-12): **Question**: How should the realisera-token
-    harness be redesigned after three consecutive discarded experiments where run-to-run
-    variance (13-20%) drowned the optimization...'
-  number: 30
-  date: '2026-04-12'
-  satisfaction:
-    state: user_confirmed_satisfied
-    evidence: Legacy compacted archive decision confirmed settled during resonera
-      satisfaction review on 2026-05-23; full historical context remains unavailable
-      in the compact archive entry.
-    user_confirmation:
-      confirmed_by: user
-      confirmed_at: '2026-05-23'
-- summary: "Decision 31 (2026-04-12): [Named per-objective subdirs] \u2014 Self-contained\
-    \ optimera objectives live under `.agentera/optimera/`."
-  satisfaction: *id001
-- summary: "Decision 32 (2026-04-26): [`scripts/usage_stats.py`] \u2014 Usage analytics\
-    \ count completed workflows from session corpus markers."
-  satisfaction: *id001
-- summary: "Decision 33 (2026-04-28): [Suite bundle first] \u2014 Installed suite\
-    \ bundle owns shared tools and runtime infrastructure."
-  satisfaction: *id001
-- summary: "Decision 34 (2026-04-29): [Self-audit protocol] \u2014 Producing skills\
-    \ run prose checks before artifact writes."
+  outcome: Store decision satisfaction state on each decision entry. Agents may mark
+    provisional satisfaction with evidence, but only the user may confirm satisfaction.
+    Open or provisionally satisfied decisions must not be compacted; old protected
+    decisions trigger review before compaction, during health audits, and at release
+    closeout.
+- summary: 'Decision 52 (2026-05-13): Add a manual Mage benchmark suite starting with
+    the Decision 51 startup state-access metric. Persist...'
+  number: 52
+  date: '2026-05-13'
+  choice: Add a manual Mage benchmark suite starting with the Decision 51 startup
+    state-access metric. Persist aggregate `runs.jsonl` history under the user Agentera
+    data home, not the repository, and retain only the latest redacted detailed report
+    beside it.
+  feeds_into: magefile.go, startup state-access benchmark, TODO.md
   satisfaction:
     state: user_confirmed_satisfied
     user_confirmation:
       confirmed_by: user
       confirmed_at: '2026-05-15'
-- summary: "Decision 35 (2026-04-29): [Build shared self_audit.py module] \u2014 Shared\
-    \ module plus hook enforce self-audit checks."
+  outcome: Add a manual Mage benchmark suite starting with the Decision 51 startup
+    state-access metric. Persist aggregate `runs.jsonl` history under the user Agentera
+    data home, not the repository, and retain only the latest redacted detailed report
+    beside it.
+- summary: 'Decision 51 (2026-05-13): Replace the old startup-window metric with a
+    state-access metric: after a capability-related user turn, anchor...'
+  number: 51
+  date: '2026-05-13'
+  choice: 'Replace the old startup-window metric with a state-access metric: after
+    a capability-related user turn, anchor on the first Agentera CLI state call, stop
+    at the first implementation boundary or next user turn, and count subsequent raw
+    artifact read/grep/glob access, especially when the raw artifact overlaps the
+    CLI state family already fetched.'
+  feeds_into: startup state-access analysis, scripts/agentera, scripts/extract_corpus.py,
+    capability prose, tests, TODO.md
   satisfaction:
     state: user_confirmed_satisfied
     user_confirmation:
       confirmed_by: user
       confirmed_at: '2026-05-15'
-- summary: "Decision 36 (2026-04-29): [Generate contracts JSON schema] \u2014 SPEC\
-    \ table parser outputs structured validation JSON."
+  outcome: 'Replace the old startup-window metric with a state-access metric: after
+    a capability-related user turn, anchor on the first Agentera CLI state call, stop
+    at the first implementation boundary or next user turn, and count subsequent raw
+    artifact read/grep/glob access, especially when the raw artifact overlaps the
+    CLI state family already fetched.'
+- summary: 'Decision 50 (2026-05-12): Make 2.3.0 a focused reliability release. Include
+    Decision 47 app-home migration as a hard requirement;...'
+  number: 50
+  date: '2026-05-12'
+  choice: Make 2.3.0 a focused reliability release. Include Decision 47 app-home migration
+    as a hard requirement; implement Decision 48 first through `agentera lint`; resolve
+    the degraded helper exposure/removal, schema discovery, and split-root doctor
+    checks. Defer Profilera corpus parity and broad script namespace promotion beyond
+    `lint`.
+  feeds_into: TODO.md, .agentera/plan.yaml, scripts/install_root.py, scripts/agentera_upgrade.py,
+    scripts/agentera, README.md, UPGRADE.md, capability prose, tests
   satisfaction:
     state: user_confirmed_satisfied
     user_confirmation:
       confirmed_by: user
       confirmed_at: '2026-05-15'
-- summary: "Decision 37 (2026-04-29): [Fail-open artifact hook] \u2014 Unhandled validation-hook\
-    \ crashes log and allow writes."
-  satisfaction: *id001
-- summary: "Decision 38 (2026-04-30): [Separate semantic eval surface] \u2014 Hej\
-    \ semantic fixtures assert output facts and artifact-derived next actions."
-  satisfaction: *id001
-- summary: "Decision 39 (2026-05-04): [Single bundled v2 skill] \u2014 Agentera 2.0\
-    \ collapsed 12 skills into one `/agentera` entry point with capability schemas\
-    \ and CLI-backed state."
-  satisfaction: *id001
-- summary: "Decision 40 (2026-05-04): [YAML agent artifacts] \u2014 Use YAML, no v1\
-    \ compatibility, and call sub-modules capabilities."
-  satisfaction: *id001
-- summary: 'Decision 41 (2026-05-04): Record the benchmark as complete for the revised
-    v2.0 target. Initial v2 measurement was 313,356...'
-  satisfaction: *id001
-- summary: "Decision 42 (2026-05-04): Five-layer dispatch model, heuristics hardcoded\
-    \ in `SKILL.md`: 1. **Bare `/agentera`** \u2192 deterministic heuristic decision\
-    \ tree...."
-  satisfaction: *id001
-- summary: 'Decision 43 (2026-05-07): Keep Swedish `-era` names canonical and add
-    one primary plain `/agentera <alias>` per capability.'
-  satisfaction: *id001
-- summary: 'Decision 44 (2026-05-07): Use plain English for capability/protocol prose
-    and labels. Deprecate `freshness`; use current/up-to-date/out-of-date/synced/status
-    wording. Keep `checkpoint`...'
-  number: 44
-  date: '2026-05-07'
-  choice: Use plain English for capability/protocol prose and labels. Deprecate `freshness`;
-    use current/up-to-date/out-of-date/synced/status wording. Keep `checkpoint` only
-    for Git commits. Replace most `guard` with check/stop-condition wording; keep
-    `gate` only for hard pass/fail. Use `behavioral verification gate`, `orchestration
-    loop`, `saved project context`, mismatch/out-of-sync wording, and `docs-first`
-    workflow language.
-  feeds_into: references/cli/vocabulary.md, capability prose, safe labels/tests, active
-    plan wording, TODO.md
-  satisfaction:
-    state: user_confirmed_satisfied
-    user_confirmation:
-      confirmed_by: user
-      confirmed_at: '2026-05-15'
-  outcome: Use plain English for capability/protocol prose and labels. Deprecate `freshness`;
-    use current/up-to-date/out-of-date/synced/status wording. Keep `checkpoint` only
-    for Git commits. Replace most `guard` with check/stop-condition wording; keep
-    `gate` only for hard pass/fail. Use `behavioral verification gate`, `orchestration
-    loop`, `saved project context`, mismatch/out-of-sync wording, and `docs-first`
-    workflow language.
+  outcome: Make 2.3.0 a focused reliability release. Include Decision 47 app-home
+    migration as a hard requirement; implement Decision 48 first through `agentera
+    lint`; resolve the degraded helper exposure/removal, schema discovery, and split-root
+    doctor checks. Defer Profilera corpus parity and broad script namespace promotion
+    beyond `lint`.
 - summary: 'Decision 45 (2026-05-08): Build one phased agent-ready state interface
     plan for pending 2.2.0: keep routine state command names...'
   number: 45
@@ -844,45 +803,160 @@ archive:
     item IDs. When the release is selected, convert `[type:X.Y.x]` to `[type:X.Y.Z]`.
     Status comes from the checkbox, priority from the section, and identity from normalized
     summary text.'
-- summary: 'Decision 50 (2026-05-12): Make 2.3.0 a focused reliability release. Include
-    Decision 47 app-home migration as a hard requirement;...'
-  number: 50
-  date: '2026-05-12'
-  choice: Make 2.3.0 a focused reliability release. Include Decision 47 app-home migration
-    as a hard requirement; implement Decision 48 first through `agentera lint`; resolve
-    the degraded helper exposure/removal, schema discovery, and split-root doctor
-    checks. Defer Profilera corpus parity and broad script namespace promotion beyond
-    `lint`.
-  feeds_into: TODO.md, .agentera/plan.yaml, scripts/install_root.py, scripts/agentera_upgrade.py,
-    scripts/agentera, README.md, UPGRADE.md, capability prose, tests
+- summary: 'Decision 44 (2026-05-07): Use plain English for capability/protocol prose
+    and labels. Deprecate `freshness`; use current/up-to-date/out-of-date/synced/status
+    wording. Keep `checkpoint`...'
+  number: 44
+  date: '2026-05-07'
+  choice: Use plain English for capability/protocol prose and labels. Deprecate `freshness`;
+    use current/up-to-date/out-of-date/synced/status wording. Keep `checkpoint` only
+    for Git commits. Replace most `guard` with check/stop-condition wording; keep
+    `gate` only for hard pass/fail. Use `behavioral verification gate`, `orchestration
+    loop`, `saved project context`, mismatch/out-of-sync wording, and `docs-first`
+    workflow language.
+  feeds_into: references/cli/vocabulary.md, capability prose, safe labels/tests, active
+    plan wording, TODO.md
   satisfaction:
     state: user_confirmed_satisfied
     user_confirmation:
       confirmed_by: user
       confirmed_at: '2026-05-15'
-  outcome: Make 2.3.0 a focused reliability release. Include Decision 47 app-home
-    migration as a hard requirement; implement Decision 48 first through `agentera
-    lint`; resolve the degraded helper exposure/removal, schema discovery, and split-root
-    doctor checks. Defer Profilera corpus parity and broad script namespace promotion
-    beyond `lint`.
-- summary: 'Decision 51 (2026-05-13): Replace the old startup-window metric with a
-    state-access metric: after a capability-related user turn, anchor...'
-  number: 51
-  date: '2026-05-13'
-  choice: 'Replace the old startup-window metric with a state-access metric: after
-    a capability-related user turn, anchor on the first Agentera CLI state call, stop
-    at the first implementation boundary or next user turn, and count subsequent raw
-    artifact read/grep/glob access, especially when the raw artifact overlaps the
-    CLI state family already fetched.'
-  feeds_into: startup state-access analysis, scripts/agentera, scripts/extract_corpus.py,
-    capability prose, tests, TODO.md
+  outcome: Use plain English for capability/protocol prose and labels. Deprecate `freshness`;
+    use current/up-to-date/out-of-date/synced/status wording. Keep `checkpoint` only
+    for Git commits. Replace most `guard` with check/stop-condition wording; keep
+    `gate` only for hard pass/fail. Use `behavioral verification gate`, `orchestration
+    loop`, `saved project context`, mismatch/out-of-sync wording, and `docs-first`
+    workflow language.
+- summary: 'Decision 30 (2026-04-12): **Question**: How should the realisera-token
+    harness be redesigned after three consecutive discarded experiments where run-to-run
+    variance (13-20%) drowned the optimization...'
+  number: 30
+  date: '2026-04-12'
+  satisfaction:
+    state: user_confirmed_satisfied
+    evidence: Legacy compacted archive decision confirmed settled during resonera
+      satisfaction review on 2026-05-23; full historical context remains unavailable
+      in the compact archive entry.
+    user_confirmation:
+      confirmed_by: user
+      confirmed_at: '2026-05-23'
+- summary: 'Decision 19 (2026-04-02): **Question**: How should the ecosystem handle
+    line-breaks in prose text?'
+  number: 19
+  date: '2026-04-02'
+  satisfaction:
+    state: user_confirmed_satisfied
+    evidence: Legacy compacted archive decision confirmed settled during resonera
+      satisfaction review on 2026-05-23; full historical context remains unavailable
+      in the compact archive entry.
+    user_confirmation:
+      confirmed_by: user
+      confirmed_at: '2026-05-23'
+- summary: 'Decision 43 (2026-05-07): Keep Swedish `-era` names canonical and add
+    one primary plain `/agentera <alias>` per capability.'
+  satisfaction: &id001
+    state: user_confirmed_satisfied
+    user_confirmation:
+      confirmed_by: user
+      confirmed_at: '2026-05-15'
+- summary: "Decision 42 (2026-05-04): Five-layer dispatch model, heuristics hardcoded\
+    \ in `SKILL.md`: 1. **Bare `/agentera`** \u2192 deterministic heuristic decision\
+    \ tree...."
+  satisfaction: *id001
+- summary: 'Decision 41 (2026-05-04): Record the benchmark as complete for the revised
+    v2.0 target. Initial v2 measurement was 313,356...'
+  satisfaction: *id001
+- summary: "Decision 40 (2026-05-04): [YAML agent artifacts] \u2014 Use YAML, no v1\
+    \ compatibility, and call sub-modules capabilities."
+  satisfaction: *id001
+- summary: "Decision 39 (2026-05-04): [Single bundled v2 skill] \u2014 Agentera 2.0\
+    \ collapsed 12 skills into one `/agentera` entry point with capability schemas\
+    \ and CLI-backed state."
+  satisfaction: *id001
+- summary: "Decision 38 (2026-04-30): [Separate semantic eval surface] \u2014 Hej\
+    \ semantic fixtures assert output facts and artifact-derived next actions."
+  satisfaction: *id001
+- summary: "Decision 37 (2026-04-29): [Fail-open artifact hook] \u2014 Unhandled validation-hook\
+    \ crashes log and allow writes."
+  satisfaction: *id001
+- summary: "Decision 36 (2026-04-29): [Generate contracts JSON schema] \u2014 SPEC\
+    \ table parser outputs structured validation JSON."
   satisfaction:
     state: user_confirmed_satisfied
     user_confirmation:
       confirmed_by: user
       confirmed_at: '2026-05-15'
-  outcome: 'Replace the old startup-window metric with a state-access metric: after
-    a capability-related user turn, anchor on the first Agentera CLI state call, stop
-    at the first implementation boundary or next user turn, and count subsequent raw
-    artifact read/grep/glob access, especially when the raw artifact overlaps the
-    CLI state family already fetched.'
+- summary: "Decision 35 (2026-04-29): [Build shared self_audit.py module] \u2014 Shared\
+    \ module plus hook enforce self-audit checks."
+  satisfaction:
+    state: user_confirmed_satisfied
+    user_confirmation:
+      confirmed_by: user
+      confirmed_at: '2026-05-15'
+- summary: "Decision 34 (2026-04-29): [Self-audit protocol] \u2014 Producing skills\
+    \ run prose checks before artifact writes."
+  satisfaction:
+    state: user_confirmed_satisfied
+    user_confirmation:
+      confirmed_by: user
+      confirmed_at: '2026-05-15'
+- summary: "Decision 33 (2026-04-28): [Suite bundle first] \u2014 Installed suite\
+    \ bundle owns shared tools and runtime infrastructure."
+  satisfaction: *id001
+- summary: "Decision 32 (2026-04-26): [`scripts/usage_stats.py`] \u2014 Usage analytics\
+    \ count completed workflows from session corpus markers."
+  satisfaction: *id001
+- summary: "Decision 31 (2026-04-12): [Named per-objective subdirs] \u2014 Self-contained\
+    \ optimera objectives live under `.agentera/optimera/`."
+  satisfaction: *id001
+- summary: 'Decision 29 (2026-04-11): **Question**: How should optimera handle measurement
+    archetypes that go beyond thin command-wrapper harnesses, and what should the
+    first such reference...'
+  satisfaction: *id001
+- summary: 'Decision 28 (2026-04-11): **Question**: Where should PROFILE.md and profilera''s
+    generated artifacts live by default, and how should runtime adapters provide path
+    overrides?'
+  satisfaction: *id001
+- summary: 'Decision 27 (2026-04-11): **Question**: How to implement Section 21''s
+    session corpus contract to close the gap between spec and extraction pipeline'
+  satisfaction: *id001
+- summary: 'Decision 26 (2026-04-10): **Question**: Should the terminology for the
+    ecosystem spec and per-skill context files be renamed for clarity and cohesion?'
+  satisfaction: *id001
+- summary: 'Decision 25 (2026-04-03): **Question**: Should agentera''s North Star
+    evolve from "a solo founder installs an engineering team" to a spec-centric framing?'
+  satisfaction: *id001
+- summary: 'Decision 24 (2026-04-03): **Question**: Should the PostToolUse validation
+    hook coexist with the git pre-commit hook, or replace it?'
+  satisfaction: *id001
+- summary: 'Decision 23 (2026-04-03): **Question**: Where should session-to-session
+    state live: new SESSION.md artifact, extend PROGRESS.md, or infrastructure dotfile?'
+  satisfaction: *id001
+- summary: 'Decision 22 (2026-04-03): **Question**: Should ISS-19 phase tracking be
+    enforced across skills, and how should the ecosystem detect stale artifacts?'
+  satisfaction: *id001
+- summary: 'Decision 21 (2026-04-02): **Question**: How should autonomous plans constrain
+    test generation to prevent unbounded output?'
+  satisfaction: *id001
+- summary: 'Decision 20 (2026-04-02): **Question**: Should the agentera ecosystem
+    add an orchestration skill, and what should it own?'
+  satisfaction: *id001
+- summary: 'Decision 18 (2026-04-02): **Question**: How should the ecosystem handle
+    em-dashes and double dashes in all text?'
+  satisfaction:
+    state: user_confirmed_satisfied
+    user_confirmation:
+      confirmed_by: user
+      confirmed_at: '2026-05-15'
+- summary: 'Decision 17 (2026-04-02): **Question**: How should skills narrate their
+    process between structural markers?'
+  satisfaction: *id001
+- summary: 'Decision 16 (2026-04-02): **Question**: How should the ecosystem''s voice
+    and tone work across all 11 skills?'
+  satisfaction: *id001
+- summary: 'Decision 15 (2026-04-02): **Question**: How should TODO.md categorize
+    issues beyond bug-severity, and should issues carry type tags?'
+  satisfaction: *id001
+- summary: 'Decision 14 (2026-04-02): **Question**: How should the ecosystem''s user-facing
+    messages be formatted?'
+  satisfaction: *id001

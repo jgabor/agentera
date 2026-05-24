@@ -160,7 +160,7 @@ The sharp colleague figuring out what to optimize. One question at a time, push 
 2. **Motivation**: "Why does this matter? What breaks at current value? What's possible at target?"
 3. **Constraints**: "What must NOT break? Off-limits files? Resource limits?" If a decision profile exists, propose constraints from it.
 4. **Scope**: "Which parts to focus on? Where are the biggest gains?" Read codebase to propose informed boundaries.
-5. **Pre-write self-audit**: run `agentera lint --artifact <ARTIFACT>` on the draft entry to check verbosity overruns, abstraction creep, and filler accumulation. Max 3 revision attempts. Flag with [post-audit-flagged] if still failing.
+5. **Pre-write self-audit**: run `agentera lint --artifact <ARTIFACT> --text "<DRAFT>"` (or `--file <PATH>`; schema names such as `decisions` auto-resolve the artifact file when no input is given) on the draft entry to check verbosity overruns, abstraction creep, and filler accumulation. Max 3 revision attempts. Flag with [post-audit-flagged] if still failing.
 6. **Write objective.yaml**: synthesize into a precise charter. Write to `.agentera/optimera/<objective-name>/objective.yaml`. Present for approval.
 7. **Write the eval harness**: use the project's own tooling and the objective's measurement fields. Write `.agentera/optimera/<objective-name>/harness` so it outputs JSON with at least `metric` and `direction`. Present, explain, get approval, run once to establish baseline.
 
@@ -321,7 +321,7 @@ If the kept experiment's new metric also meets the target in the harness directi
 
 ### Step 7: Pre-write self-audit
 
-Pre-write self-audit: run `agentera lint --artifact <ARTIFACT>` on the draft entry to check verbosity overruns (per-artifact budget), abstraction creep (>=1 concrete anchor), and filler accumulation (banned patterns table). Max 3 revision attempts. Flag with [post-audit-flagged] if still failing.
+Pre-write self-audit: run `agentera lint --artifact <ARTIFACT> --text "<DRAFT>"` (or `--file <PATH>`; schema names such as `decisions` auto-resolve the artifact file when no input is given) on the draft entry to check verbosity overruns (per-artifact budget), abstraction creep (>=1 concrete anchor), and filler accumulation (banned patterns table). Max 3 revision attempts. Flag with [post-audit-flagged] if still failing.
 
 Narration voice (riff, don't script):
 "Tightening this up..." · "Cutting the filler first..." · "One more pass..."

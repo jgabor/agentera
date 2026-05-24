@@ -183,7 +183,7 @@ Address legitimate issues; dismiss false positives with rationale. Present revie
 
 ## Step 4: Pre-write self-audit
 
-Pre-write self-audit: run `agentera lint --artifact <ARTIFACT>` on the draft entry to check verbosity overruns, abstraction creep, and filler accumulation.
+Pre-write self-audit: run `agentera lint --artifact <ARTIFACT> --text "<DRAFT>"` (or `--file <PATH>`; schema names such as `decisions` auto-resolve the artifact file when no input is given) on the draft entry to check verbosity overruns, abstraction creep, and filler accumulation.
 Max 3 revision attempts. Flag with [post-audit-flagged] if still failing.
 
 ## Step 5: Write PLAN.md

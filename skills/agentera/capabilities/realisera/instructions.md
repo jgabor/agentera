@@ -291,7 +291,7 @@ If the current task is a version bump: read DOCS.md for the `versioning` section
 
 ### Step 8: Pre-write self-audit
 
-Pre-write self-audit: run `agentera lint --artifact <ARTIFACT>` on the draft entry to check verbosity overruns, abstraction creep, and filler accumulation.
+Pre-write self-audit: run `agentera lint --artifact <ARTIFACT> --text "<DRAFT>"` (or `--file <PATH>`; schema names such as `decisions` auto-resolve the artifact file when no input is given) on the draft entry to check verbosity overruns, abstraction creep, and filler accumulation.
 Max 3 revision attempts. Flag with [post-audit-flagged] if still failing.
 
 ### Step 9: Log
