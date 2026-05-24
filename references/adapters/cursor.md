@@ -10,6 +10,40 @@ Agentera v1 ships Cursor as two registry identities:
 Decision 63 owns v1 scope. Cloud agents are unsupported. Bare text `hej` routing
 stays metadata-only like Claude, Copilot, and Codex.
 
+## Quick install
+
+**Local plugin (no Marketplace listing required)**
+
+```bash
+git clone https://github.com/jgabor/agentera.git ~/.cursor/plugins/local/agentera
+# or: ln -s /path/to/agentera ~/.cursor/plugins/local/agentera
+```
+
+Restart Cursor or run **Developer: Reload Window**. The plugin root must contain
+`.cursor-plugin/plugin.json`. Agentera is not published to the Cursor Marketplace
+yet; use this manual local path or Cursor's local plugin loading UI instead.
+
+The plugin loads skills, managed capability agents, and plugin hooks. When you open
+a project that is not an Agentera install root, `sessionStart` exports
+`AGENTERA_HOME` from the plugin checkout (including a plugin-root fallback when env
+and project walk-up do not resolve a managed root).
+
+**Portable skill plus project upgrade**
+
+```bash
+npx skills add jgabor/agentera -g -a cursor --skill agentera -y
+uvx --from git+https://github.com/jgabor/agentera agentera upgrade --project "$PWD" --runtime cursor --yes
+uvx --from git+https://github.com/jgabor/agentera agentera doctor --runtime cursor
+```
+
+Use the plugin path for a user-global install. Use upgrade when you need
+project-committed `.cursor/hooks.json` and `.cursor/agents/` copies. Both paths can
+be combined.
+
+From a clone, replace `uvx … agentera` with `uv run scripts/agentera`. User-facing
+install steps also live in [`README.md`](../../README.md) and
+[`UPGRADE.md`](../../UPGRADE.md).
+
 ## Repo-native surfaces
 
 This repository dogfoods committed Cursor surfaces:
@@ -25,7 +59,8 @@ subsequent hook executions run.
 ## AGENTERA_HOME wiring
 
 Primary path: `hooks/cursor_session_start.py` resolves the install root from
-`AGENTERA_HOME`, environment walk-up, or project checkout evidence, then returns
+`AGENTERA_HOME`, project walk-up, or the plugin/checkout root (`hooks/` parent)
+when the hook runs from a plugin install, then returns
 `{"env": {"AGENTERA_HOME": "<root>"}}` plus optional `additional_context` from
 the shared session digest.
 

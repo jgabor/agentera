@@ -210,6 +210,54 @@ diagnostic helper (read-only; changes nothing):
 uv run scripts/setup_copilot.py --install-root /path/to/agentera
 ```
 
+### Cursor
+
+**Local plugin (no Marketplace listing required)**
+
+Install from a clone or release checkout into Cursor's local plugin directory.
+The plugin root must contain `.cursor-plugin/plugin.json`:
+
+```bash
+git clone https://github.com/jgabor/agentera.git ~/.cursor/plugins/local/agentera
+# or: ln -s /path/to/agentera ~/.cursor/plugins/local/agentera
+```
+
+Restart Cursor or run **Developer: Reload Window**. Agentera is not published to
+the Cursor Marketplace yet.
+
+The plugin loads skills, managed capability agents, and hooks. `sessionStart`
+exports `AGENTERA_HOME` from the plugin checkout when the open project is not an
+Agentera install root.
+
+**Portable skill plus project upgrade**
+
+Install the bundled skill with `npx skills add jgabor/agentera -g -a cursor --skill agentera -y`,
+then install managed project surfaces:
+
+```bash
+uv run scripts/agentera upgrade --runtime cursor --dry-run
+uv run scripts/agentera upgrade --runtime cursor --yes
+uv run scripts/agentera doctor --runtime cursor
+```
+
+Use the plugin path for a user-global install. Use upgrade when you need
+project-committed `.cursor/hooks.json` and `.cursor/agents/` copies (team
+sharing, CI doctor checks, or working without the plugin). Both paths can be
+combined.
+
+Repo-native dogfood in this repository uses committed `.cursor/hooks.json` and
+`.cursor/agents/*.md`. Upgrade copies those managed surfaces into other projects
+with the same ownership protections used for OpenCode and Codex. Cloud agents are
+unsupported in v1. Bare text `hej` routing stays metadata-only.
+
+For CLI automation, eval coverage uses `cursor-agent` print mode:
+
+```bash
+uv run scripts/eval_skills.py --runtime cursor-agent --dry-run
+```
+
+See [`references/adapters/cursor.md`](references/adapters/cursor.md) for adapter details.
+
 ## Focused phases
 
 Run one phase at a time when you want more control:

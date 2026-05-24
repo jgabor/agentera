@@ -132,7 +132,7 @@ required-read validation regression remain separate follow-up work.
 | Suggest | Recommend a downstream capability and wait for confirmation. |
 | Delegate | Orkestrera assigns approved plan work to a worker capability during an explicitly orchestrated flow. |
 | Spawn | Realisera or Optimera launches an isolated runtime worker through the host subagent mechanism. |
-| Subagent mechanism | Runtime support for worker execution through Claude Code, OpenCode, Codex CLI, Copilot CLI, or another host-native worker surface. |
+| Subagent mechanism | Runtime support for worker execution through Claude Code, OpenCode, Codex CLI, Copilot CLI, Cursor IDE, or another host-native worker surface. |
 | Legacy bridge | Temporary v1 entry points, especially `/hej`, that guide users to `/agentera` and the v2 upgrade path. |
 
 CLI-visible `agentera hej` labels are source labels. Preserve them in CLI tests
@@ -358,7 +358,7 @@ not add precision:
 | Hook lifecycle | Runtime callbacks such as `SessionStart`, `Stop`, `PreToolUse`, and `PostToolUse`. |
 | Setup doctor | Diagnostic command surface for install/runtime health. |
 
-Canonical runtime names are Claude Code, OpenCode, Copilot CLI, and Codex CLI.
+Canonical runtime names are Claude Code, OpenCode, Copilot CLI, Codex CLI, Cursor IDE, and Cursor Agent CLI.
 
 ### App lifecycle status vocabulary
 

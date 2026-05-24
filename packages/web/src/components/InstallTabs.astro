@@ -15,6 +15,19 @@ curl -fsSL https://raw.githubusercontent.com/jgabor/agentera/main/.opencode/plug
     note: 'OpenCode also routes a bare message `hej` to the same dashboard.',
   },
   {
+    id: 'cursor',
+    label: 'Cursor',
+    commands: `# Option A — local plugin (no Marketplace listing)
+git clone https://github.com/jgabor/agentera.git ~/.cursor/plugins/local/agentera
+# or: ln -s /path/to/agentera ~/.cursor/plugins/local/agentera
+# Restart Cursor or Developer: Reload Window
+
+# Option B — portable skill + project upgrade
+npx skills add jgabor/agentera -g -a cursor --skill agentera -y
+uvx --from git+https://github.com/jgabor/agentera agentera upgrade --project "$PWD" --runtime cursor --yes`,
+    note: 'Plugin loads skills, agents, and hooks globally. Upgrade copies `.cursor/` surfaces into a project. Marketplace install is not available yet. Cloud agents are unsupported in v1.',
+  },
+  {
     id: 'copilot',
     label: 'Copilot CLI',
     commands: `copilot plugin marketplace add jgabor/agentera

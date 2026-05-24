@@ -13,7 +13,7 @@ may expose an event while agentera still lacks a shipped adapter path for it.
 | OpenCode | Full: native `skill` tool loads `.opencode`, `.claude`, and `.agents` skill paths | Deferred for session start: `session.created` is observable, but no model-context injection path is verified. Active for compaction through bounded `experimental.session.compacting` context from `agentera hej --format json`. | Conditional hard gate for reconstructable `write` and `edit` candidates via `tool.execute.before`; `tool.execute.after` remains advisory | Active via generic `event` hook on `session.idle` |
 | Copilot CLI | Full for portable skills through plugin or skill-folder install paths | Active via `sessionStart` | Conditional hard gate via `preToolUse` when `toolArgs` include path plus candidate content or exact replacement evidence | Active via `sessionEnd` |
 | Codex CLI | Full for portable skills through plugin install, `.agents/skills`, and `$skill` invocation | Not wired by the shipped hook config | Advisory `apply_patch` path validation through shipped PreToolUse and PostToolUse hooks; final patch content is not reconstructed | Not wired by the shipped hook config |
-| Cursor IDE | Full for portable skills through repo-native surfaces and upgrade-installed `.cursor/` targets | Active via `sessionStart` env export plus optional `additional_context` digest | Conditional hard gate for reconstructable `Write` and `Edit` candidates via `preToolUse`; verified after live preToolUse Write smoke (2026-05-24) | Active via `sessionEnd` |
+| Cursor IDE | Full for portable skills through local plugin (`~/.cursor/plugins/local/agentera` via `.cursor-plugin/plugin.json`), repo-native surfaces, and upgrade-installed `.cursor/` targets | Active via `sessionStart` env export plus optional `additional_context` digest; plugin-root fallback when `AGENTERA_HOME` env and project walk-up fail (`hooks/cursor_session_start.py`) | Conditional hard gate for reconstructable `Write` and `Edit` candidates via `preToolUse`; verified after live preToolUse Write smoke (2026-05-24) | Active via `sessionEnd` |
 | Cursor Agent CLI | Full when workspace surfaces are installed; degraded when launched outside a Cursor project | Degraded relative to IDE sessionStart env export | Degraded hook parity; follows IDE smoke evidence only | Degraded relative to IDE `sessionEnd` wiring |
 
 ## Bare `hej` routing
@@ -67,7 +67,7 @@ before mutation.
 | OpenCode | `@<capability>` descriptors under `~/.config/opencode/agents` | `.opencode/agents/*.md`, bootstrapped by `.opencode/plugins/agentera.js` | `scripts/smoke_opencode_bootstrap.mjs`, `agentera validate descriptors` |
 | Copilot CLI | User-driven host action such as `/fleet` when available | Host-managed; no Agentera descriptor files shipped for this phase | RuntimeAdapter registry |
 | Codex CLI | Native agent descriptors under `~/.codex/agents` or project `.codex/agents` with bounded `[agents]` settings | `skills/agentera/agents/*.toml`, installed by `scripts/setup_codex.py` and `agentera upgrade` | `agentera validate descriptors`, `tests/test_setup_codex.py`, `tests/test_upgrade_cli.py` |
-| Cursor IDE | Cursor agent picker / @-mention for managed capability descriptors | `.cursor/agents/*.md`, installed by `agentera upgrade --runtime cursor` | `references/adapters/cursor.md`, `scripts/validate_lifecycle_adapters.py`, `tests/test_upgrade_cli.py` |
+| Cursor IDE | Cursor agent picker / @-mention for managed capability descriptors | `.cursor/agents/*.md`, via local plugin or `agentera upgrade --runtime cursor` | `references/adapters/cursor.md`, `scripts/validate_lifecycle_adapters.py`, `tests/test_upgrade_cli.py` |
 | Cursor Agent CLI | Host-managed `cursor-agent -p` print mode | Workspace `.cursor/agents/*.md` when present; no separate CLI descriptor install | `scripts/eval_skills.py --runtime cursor-agent`, `tests/test_eval_skills.py` |
 
 Agentera v2 does not write legacy `[agents.<name>]` Codex config blocks. Capability dispatch must use runtime-native subagent descriptors or host Task surfaces, not unsupported `agentera <capability>` CLI commands.
@@ -99,14 +99,40 @@ paths still work, but Copilot warns they are deprecated.
 
 ## Cursor install notes
 
-Repo-native dogfood in this repository uses committed `.cursor/hooks.json` and
-`.cursor/agents/*.md`. Other projects install managed surfaces with:
+**Local plugin (no Marketplace listing required)**
 
 ```bash
+git clone https://github.com/jgabor/agentera.git ~/.cursor/plugins/local/agentera
+# or: ln -s /path/to/agentera ~/.cursor/plugins/local/agentera
+```
+
+Restart Cursor or run **Developer: Reload Window**. The plugin root must contain
+`.cursor-plugin/plugin.json`. Agentera is not published to the Cursor Marketplace
+yet.
+
+The plugin loads skills, managed capability agents, and hooks. When you open a
+project that is not an Agentera install root, `sessionStart` exports
+`AGENTERA_HOME` from the plugin checkout (including a plugin-root fallback when
+env and project walk-up do not resolve a managed root).
+
+**Portable skill plus project upgrade**
+
+Install the bundled skill, then install managed project surfaces:
+
+```bash
+npx skills add jgabor/agentera -g -a cursor --skill agentera -y
 uv run scripts/agentera upgrade --runtime cursor --dry-run
 uv run scripts/agentera upgrade --runtime cursor --yes
 uv run scripts/agentera doctor --runtime cursor
 ```
+
+Use the plugin path for a user-global install. Use upgrade when you need
+project-committed `.cursor/hooks.json` and `.cursor/agents/` copies. Both paths can
+be combined.
+
+Repo-native dogfood in this repository uses committed `.cursor/hooks.json` and
+`.cursor/agents/*.md`. Other projects install managed surfaces with the upgrade
+commands above.
 
 Cloud agents are unsupported in v1. Conditional hard-gate validation for IDE
 reconstructable Write and Edit candidates is verified after live preToolUse Write

@@ -13,7 +13,8 @@ import sys
 from pathlib import Path
 
 SCRIPT_DIR = Path(__file__).resolve().parent
-REPO_ROOT = SCRIPT_DIR.parent
+PLUGIN_ROOT = SCRIPT_DIR.parent
+REPO_ROOT = PLUGIN_ROOT
 if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
 if str(REPO_ROOT / "scripts") not in sys.path:
@@ -32,6 +33,8 @@ def _resolve_install_root(cwd: Path) -> Path | None:
     for parent in (cwd, *cwd.parents):
         if install_root_module.classify_resolved_root(parent, source="walk").kind == "managed_fresh":
             return parent
+    if install_root_module.classify_resolved_root(PLUGIN_ROOT, source="plugin").kind == "managed_fresh":
+        return PLUGIN_ROOT
     return None
 
 
@@ -44,7 +47,11 @@ def main() -> int:
         except json.JSONDecodeError:
             hook_input = {}
         if isinstance(hook_input, dict):
-            cwd = hook_input.get("cwd") or hook_input.get("workspace_roots", ["."])[0] if hook_input.get("workspace_roots") else "."
+            cwd = hook_input.get("cwd") or (
+                hook_input.get("workspace_roots", ["."])[0]
+                if hook_input.get("workspace_roots")
+                else "."
+            )
 
     project_root = Path(str(cwd)).resolve()
     install_root = _resolve_install_root(project_root)

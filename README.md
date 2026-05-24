@@ -87,6 +87,56 @@ OpenCode also routes a bare message `hej` to the same dashboard.
 </details>
 
 <details>
+<summary><strong>Cursor</strong></summary>
+
+**Option A — local plugin (no Marketplace listing required)**
+
+Install Agentera as a Cursor plugin from a clone or release checkout. The plugin
+root must contain `.cursor-plugin/plugin.json` (this repository already does).
+
+```bash
+git clone https://github.com/jgabor/agentera.git ~/.cursor/plugins/local/agentera
+# or: ln -s /path/to/agentera ~/.cursor/plugins/local/agentera
+```
+
+Restart Cursor or run **Developer: Reload Window**. You can also load the folder
+through Cursor's local plugin UI. Agentera is not published to the Cursor
+Marketplace yet; use this manual path instead.
+
+The plugin loads skills, managed capability agents, and plugin hooks. When you open
+a project that is not an Agentera install root, `sessionStart` exports
+`AGENTERA_HOME` from the plugin checkout.
+
+**Option B — portable skill plus project upgrade**
+
+Install the skill:
+
+```bash
+npx skills add jgabor/agentera -g -a cursor --skill agentera -y
+```
+
+Install managed hooks, capability agents, and plugin metadata in your project:
+
+```bash
+uvx --from git+https://github.com/jgabor/agentera agentera upgrade --project "$PWD" --runtime cursor --yes
+```
+
+From a clone, use `uv run scripts/agentera upgrade --runtime cursor --yes` instead.
+
+Use **Option A** for a user-global plugin install. Use **Option B** when you want
+project-committed `.cursor/` surfaces (team sharing, CI doctor checks, or working
+without the plugin). You can combine both: plugin for global availability, upgrade
+for per-project `.cursor/hooks.json` and `.cursor/agents/` copies.
+
+This repository dogfoods committed `.cursor/` surfaces; other projects receive them
+through upgrade. Cloud agents are unsupported in v1. Bare message `hej` stays
+metadata-only like Claude, Copilot, and Codex.
+
+Adapter details: [`references/adapters/cursor.md`](./references/adapters/cursor.md).
+
+</details>
+
+<details>
 <summary><strong>Copilot CLI</strong></summary>
 
 ```bash
@@ -211,7 +261,7 @@ reads those files instead of reconstructing context from chat.
 | Prompt chains | Sequential prompts | Chat transcript | Low |
 | Agent platforms | Platform-owned workflows | Vendor service | Platform-bound |
 | Vector memory | Retrieved snippets | External index | Depends on integration |
-| Agentera | Capability-owned artifacts with behavioral acceptance and health gates | Your repo and data directory | Claude Code, OpenCode, Copilot CLI, Codex CLI |
+| Agentera | Capability-owned artifacts with behavioral acceptance and health gates | Your repo and data directory | Claude Code, OpenCode, Copilot CLI, Codex CLI, Cursor |
 
 ## Saved project context
 
@@ -272,7 +322,7 @@ Maintainers benchmark when agents still raw-read artifacts after CLI queries; se
 
 ## Portable protocol
 
-Agentera runs on Claude Code, OpenCode, Copilot CLI, and Codex CLI with the
+Agentera runs on Claude Code, OpenCode, Copilot CLI, Codex CLI, and Cursor with the
 same capabilities and artifacts. Hooks are optional runtime adapters for session
 preload, artifact checks, app-home discovery, and bookmarks. The protocol works
 without them; hooks make supported runtimes smoother.
@@ -329,7 +379,7 @@ manager commands such as `npx skills add` or `npx skills remove`. See
 For Codex, disable Agentera in `/plugins` before removing the marketplace entry.
 
 ```bash
-# Claude Code / OpenCode
+# Claude Code / OpenCode / Cursor
 npx skills remove jgabor/agentera -g -y
 
 # Copilot CLI
