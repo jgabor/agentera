@@ -7528,6 +7528,232 @@ def cmd_query(args: argparse.Namespace) -> int:
     return 1
 
 
+def _add_structured_output_args(command_parser: argparse.ArgumentParser) -> None:
+    command_parser.add_argument(
+        "--format",
+        choices=["text", "json", "yaml"],
+        default="text",
+        help="Output format",
+    )
+    command_parser.add_argument(
+        "--fields",
+        help="Comma-separated structured output fields to include with command/status context",
+    )
+
+
+def _add_state_subcommand_parsers(state_sub: argparse._SubParsersAction) -> None:
+    decisions = state_sub.add_parser("decisions", help="Decision log")
+    decisions.add_argument("--topic", help="Filter by topic (substring match on text fields)")
+    _add_structured_output_args(decisions)
+
+    health = state_sub.add_parser("health", help="Latest health audit")
+    health.add_argument("--dimension", help="Filter by dimension name")
+    _add_structured_output_args(health)
+
+    todo = state_sub.add_parser("todo", help="TODO summary")
+    todo.add_argument("--severity", help="Filter by severity level")
+    todo.add_argument("--status", help="Filter by status")
+    _add_structured_output_args(todo)
+
+    plan = state_sub.add_parser("plan", help="Active plan summary")
+    plan.add_argument("--status", help="Filter plan tasks by status")
+    _add_structured_output_args(plan)
+
+    progress = state_sub.add_parser("progress", help="Recent cycle summary")
+    progress.add_argument("--topic", help="Filter by topic (substring match on text fields)")
+    progress.add_argument("--status", help="Filter progress entries by type")
+    progress.add_argument("--limit", type=int, default=5, help="Limit recent entries")
+    _add_structured_output_args(progress)
+
+    docs = state_sub.add_parser("docs", help="Documentation contract summary")
+    docs.add_argument("--topic", help="Filter docs by topic")
+    docs.add_argument("--status", help="Filter docs by status")
+    _add_structured_output_args(docs)
+
+    objective = state_sub.add_parser("objective", help="Active optimera objective summary")
+    objective.add_argument("--status", help="Filter legacy objective entries by status")
+    _add_structured_output_args(objective)
+
+    experiments = state_sub.add_parser("experiments", help="Active optimera experiments summary")
+    experiments.add_argument("--topic", help="Filter by topic (substring match on text fields)")
+    experiments.add_argument("--status", help="Filter by status")
+    experiments.add_argument("--limit", type=int, default=5, help="Limit recent entries")
+    _add_structured_output_args(experiments)
+
+    query = state_sub.add_parser("query", help="Advanced custom artifact query")
+    query.add_argument("query", nargs="?", help="Query pattern or artifact name")
+    query.add_argument("--list-artifacts", action="store_true", help="List all discovered artifact types")
+    query.add_argument("--format", choices=["text", "json", "yaml"], default="text", help="Output format")
+    query.add_argument("--topic", help="Filter by topic (substring match on text fields)")
+    query.add_argument("--severity", help="Filter by severity level")
+    query.add_argument("--dimension", help="Filter by dimension name")
+    query.add_argument("--status", help="Filter by status/type where supported")
+    query.add_argument("--limit", type=int, default=5, help="Limit recent entries for summary queries")
+
+
+def _add_validate_family_parsers(validate_sub: argparse._SubParsersAction) -> None:
+    validate_capability = validate_sub.add_parser(
+        "capability",
+        help="Validate a capability name or directory path",
+    )
+    validate_capability.add_argument(
+        "target",
+        help="Canonical capability name or capability directory path",
+    )
+    validate_capability.add_argument("--format", choices=["text", "json"], default="text", help="Output format")
+    validate_artifact = validate_sub.add_parser(
+        "artifact",
+        help="Validate a canonical artifact label and file",
+    )
+    validate_artifact.add_argument(
+        "--artifact",
+        required=True,
+        choices=VALIDATE_ARTIFACT_LABELS,
+        help="Canonical artifact label",
+    )
+    validate_artifact.add_argument(
+        "--file",
+        type=_agent_path,
+        help="Artifact file path to validate; defaults to docs.yaml mapping when omitted",
+    )
+    validate_artifact.add_argument(
+        "--cwd",
+        type=_agent_path,
+        default=Path.cwd(),
+        help="Project directory for relative paths and docs.yaml mapping",
+    )
+    validate_artifact.add_argument("--format", choices=["text", "json"], default="text", help="Output format")
+    validate_descriptors = validate_sub.add_parser(
+        "descriptors",
+        help="Validate Codex and OpenCode Agentera capability descriptors",
+        description="Validate Codex and OpenCode Agentera capability descriptors.",
+    )
+    validate_descriptors.add_argument("--format", choices=["text", "json"], default="text", help="Output format")
+    for family, description in (
+        ("cross-capability", "Validate capability artifact producer/consumer consistency"),
+        ("lifecycle-adapters", "Validate runtime lifecycle adapter metadata"),
+        ("app-home-contract", "Validate app-home contract terminology"),
+        ("capability-contract", "Validate the capability schema contract and protocol"),
+    ):
+        validate_family_parser = validate_sub.add_parser(
+            family,
+            help=description,
+            description=description,
+        )
+        validate_family_parser.add_argument("--format", choices=["text", "json"], default="text", help="Output format")
+
+
+def _add_verify_parser_arguments(verify_parser: argparse.ArgumentParser) -> None:
+    verify_parser.add_argument("verify_family", nargs="?", help="Gate family: smoke or eval")
+    verify_parser.add_argument("verify_target", nargs="?", help="Gate target for the selected family")
+    verify_parser.add_argument("fixtures", nargs="*", help="Explicit fixture path(s) for `agentera verify eval semantic`")
+    verify_parser.add_argument("--format", default="text", help="Output format: text or json")
+    verify_parser.add_argument("--installed-root", type=_agent_path, help="Installed package root for smoke installed-skills")
+    verify_parser.add_argument("--real-npx", action="store_true", help="Opt in to the direct installed-skills real npx path")
+    verify_parser.add_argument("--live", action="store_true", help="Opt in to direct live-host runtime checks")
+    verify_parser.add_argument("--yes", action="store_true", help="Confirm non-interactive live-host opt-in")
+    verify_parser.add_argument("--dry-run", action="store_true", help="Keep eval skills in dry-run mode without runtime invocation")
+    verify_parser.add_argument("--run", action="store_true", help="Opt in to runtime-backed eval skills execution")
+    verify_parser.add_argument("--skill", help="Skill name for eval skills")
+    verify_parser.add_argument("--parallel", type=int, default=1, help="Eval skills parallelism bound")
+    verify_parser.add_argument("--timeout", type=int, default=120, help="Eval skills per-skill timeout bound in seconds")
+    verify_parser.add_argument("--runtime", default="auto", help="Eval skills runtime: auto, claude, or opencode")
+
+
+def _add_lint_parser_arguments(lint_parser: argparse.ArgumentParser) -> None:
+    lint_parser.add_argument(
+        "--artifact",
+        required=True,
+        help="Schema name (plan, decisions) or canonical label (PLAN.md) for budget selection",
+    )
+    lint_input = lint_parser.add_mutually_exclusive_group()
+    lint_input.add_argument("--file", type=_agent_path, help="Read artifact prose from a file")
+    lint_input.add_argument("--text", help="Read artifact prose from this argument")
+    lint_parser.add_argument(
+        "--strict",
+        action="store_true",
+        help="Exit non-zero when self-audit checks fail",
+    )
+    lint_parser.add_argument("--format", choices=["text", "json"], default="text", help="Output format")
+
+
+def _add_compact_parser_arguments(compact_parser: argparse.ArgumentParser) -> None:
+    compact_parser.add_argument(
+        "--project",
+        type=_agent_path,
+        default=Path.cwd(),
+        help="Project directory whose artifacts should be checked or compacted (default: cwd)",
+    )
+    compact_parser.add_argument(
+        "--mode",
+        choices=["check", "fix"],
+        default="check",
+        help="Check only, or apply compaction to over-limit compactable artifacts",
+    )
+    compact_parser.add_argument("--format", choices=["text", "json"], default="text", help="Output format")
+
+
+def _add_report_parser_arguments(report_parser: argparse.ArgumentParser) -> None:
+    report_parser.add_argument("report_action", nargs="?", help="Optional action: refresh")
+    report_parser.add_argument("--format", default="text", help="Output format: text or json")
+    report_parser.add_argument("--project", help="Scope analysis to a project id or path-like value")
+    report_parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Preview corpus refresh without reading runtime history or writing files",
+    )
+    report_parser.add_argument(
+        "--consent",
+        choices=["local-history"],
+        help="Required consent for refresh to read local runtime history",
+    )
+    report_parser.add_argument(
+        "--project-root",
+        action="append",
+        type=_agent_path,
+        help="Project root to include during refresh; repeatable",
+    )
+
+
+def cmd_state_namespace(args: argparse.Namespace) -> int:
+    state_command = args.state_command
+    if state_command == "query":
+        args.command = "query"
+        return cmd_query(args)
+    args.command = state_command
+    return cmd_state(args)
+
+
+def cmd_report(args: argparse.Namespace) -> int:
+    args.stats_action = getattr(args, "report_action", None)
+    return cmd_stats(args)
+
+
+def cmd_check_compact(args: argparse.Namespace) -> int:
+    if getattr(args, "mode", "check") == "check":
+        return cmd_gate(args)
+    return cmd_compact(args)
+
+
+def cmd_check(args: argparse.Namespace) -> int:
+    check_command = args.check_command
+    if check_command == "validate":
+        return cmd_validate(args)
+    if check_command == "verify":
+        return cmd_verify(args)
+    if check_command == "lint":
+        return cmd_lint(args)
+    if check_command == "compact":
+        return cmd_check_compact(args)
+    raise ValueError(
+        "unsupported check subcommand; valid subcommands: validate, verify, lint, compact. "
+        "Examples: agentera check validate capability hej; "
+        "agentera check verify smoke installed-skills; "
+        "agentera check compact --format json"
+    )
+
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="agentera",
@@ -7643,7 +7869,7 @@ def build_parser() -> argparse.ArgumentParser:
     todo.add_argument("--status", help="Filter by status")
     add_structured_args(todo)
 
-    plan = sub.add_parser("plan", help="Active plan summary")
+    plan = sub.add_parser("plan", help="Deprecated alias for state plan")
     plan.add_argument("--status", help="Filter plan tasks by status")
     add_structured_args(plan)
 
@@ -7688,7 +7914,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     gate = sub.add_parser(
         "gate",
-        help="Run check-only repository gates",
+        help="Deprecated alias for check compact",
     )
     gate.add_argument(
         "--project",
@@ -7738,7 +7964,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     stats = sub.add_parser(
         "stats",
-        help="Generate privacy-gated usage analytics",
+        help="Deprecated alias for report",
         description=(
             "Canonical user-facing usage analytics workflow. Plain stats reads only the "
             "existing internal corpus; refresh requires explicit local-history consent. "
@@ -7794,7 +8020,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     validate = sub.add_parser(
         "validate",
-        help="Validate capabilities, artifacts, or descriptors, plus stable contracts",
+        help="Deprecated alias for check validate",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         description=(
             "Validate capability directories, canonical Agentera artifacts, runtime agent descriptors, "
@@ -7965,6 +8191,82 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Emit structured JSON instead of human-readable text",
     )
+    state = sub.add_parser(
+        "state",
+        help="Routine artifact reads and advanced artifact query",
+    )
+    state_sub = state.add_subparsers(dest="state_command")
+    _add_state_subcommand_parsers(state_sub)
+
+    report = sub.add_parser(
+        "report",
+        help="Privacy-gated usage analytics",
+        description=(
+            "Canonical user-facing usage analytics workflow. Plain report reads only the "
+            "existing internal corpus; refresh requires explicit local-history consent. "
+            "Examples: agentera report; agentera report --format json; "
+            "agentera report refresh --dry-run; "
+            "agentera report refresh --consent local-history"
+        ),
+        formatter_class=argparse.RawTextHelpFormatter,
+    )
+    _add_report_parser_arguments(report)
+
+    check = sub.add_parser(
+        "check",
+        help="Validation, verification, lint, and repository compaction gates",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    check_sub = check.add_subparsers(dest="check_command")
+    check_validate = check_sub.add_parser(
+        "validate",
+        help="Validate capabilities, artifacts, or descriptors, plus stable contracts",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description=(
+            "Validate capability directories, canonical Agentera artifacts, runtime agent descriptors, "
+            "and stable repository contracts.\n\n"
+            "Examples:\n"
+            "  agentera check validate capability hej\n"
+            "  agentera check validate artifact --artifact PLAN.md --file .agentera/plan.yaml --format json\n"
+            "  agentera check validate descriptors --format json\n"
+            "  agentera check validate cross-capability --format json\n"
+            "  agentera check validate lifecycle-adapters\n"
+            "  agentera check validate app-home-contract\n"
+            "  agentera check validate capability-contract --format json"
+        ),
+    )
+    _add_validate_family_parsers(check_validate.add_subparsers(dest="validate_family"))
+    check_verify = check_sub.add_parser(
+        "verify",
+        help="Run bounded smoke or eval verification gates",
+        description=(
+            "Run supported smoke or eval verification gates through a stable facade. "
+            "Examples: agentera check verify smoke installed-skills; "
+            "agentera check verify eval skills --format json"
+        ),
+        formatter_class=argparse.RawTextHelpFormatter,
+    )
+    _add_verify_parser_arguments(check_verify)
+    check_lint = check_sub.add_parser(
+        "lint",
+        help="Run pre-write artifact prose self-audit",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description=(
+            "Run pre-write artifact prose self-audit.\n\n"
+            "Examples:\n"
+            "  agentera check lint --artifact plan\n"
+            "  agentera check lint --artifact PLAN.md --text \"draft entry prose\"\n"
+            "  agentera check lint --artifact PLAN.md --file .agentera/plan.yaml"
+        ),
+    )
+    _add_lint_parser_arguments(check_lint)
+    check_compact = check_sub.add_parser(
+        "compact",
+        help="Check or fix artifact compaction budgets",
+    )
+    _add_compact_parser_arguments(check_compact)
+
+
     return parser
 
 
@@ -7982,6 +8284,19 @@ def main(argv: list[str] | None = None) -> int:
             return cmd_hej(args)
         if args.command in CAPABILITY_NAMES and args.command != "hej":
             return cmd_capability(args)
+        if args.command == "state":
+            if not args.state_command:
+                parser.error("the following arguments are required: state_command")
+            return cmd_state_namespace(args)
+        if args.command == "report":
+            return cmd_report(args)
+        if args.command == "check":
+            if not args.check_command:
+                parser.error("the following arguments are required: check_command")
+            return cmd_check(args)
+        if args.command == "plan":
+            _emit_deprecation_alias("plan", "state plan")
+            return cmd_state(args)
         if args.command in STATE_COMMAND_HANDLERS:
             return cmd_state(args)
         if args.command == "query":
@@ -7989,16 +8304,19 @@ def main(argv: list[str] | None = None) -> int:
         if args.command == "compact":
             return cmd_compact(args)
         if args.command == "gate":
+            _emit_deprecation_alias("gate", "check compact")
             return cmd_gate(args)
         if args.command == "verify":
             return cmd_verify(args)
         if args.command == "usage":
             return cmd_usage(args)
         if args.command == "stats":
+            _emit_deprecation_alias("stats", "report")
             return cmd_stats(args)
         if args.command == "lint":
             return cmd_lint(args)
         if args.command == "validate":
+            _emit_deprecation_alias("validate", "check validate")
             return cmd_validate(args)
         if args.command == "upgrade":
             return cmd_upgrade(args)

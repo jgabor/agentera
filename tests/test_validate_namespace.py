@@ -80,13 +80,17 @@ def _write_valid_progress(path: Path) -> None:
     )
 
 
+VALIDATE_DEPRECATION = "Deprecation: agentera validate is deprecated; use agentera check validate\n"
+
+
 def test_validate_capability_text_matches_direct_validator() -> None:
     namespace = _run_cli("validate", "capability", "hej")
     direct = _run_capability_validator(str(HEJ_CAPABILITY))
 
     assert namespace.returncode == direct.returncode == 0
     assert namespace.stdout == direct.stdout
-    assert namespace.stderr == direct.stderr == ""
+    assert namespace.stderr == VALIDATE_DEPRECATION
+    assert direct.stderr == ""
     assert "PASS: capability directory is valid" in namespace.stdout
 
 
@@ -157,12 +161,15 @@ def test_validate_invalid_capability_target_names_valid_values_syntax_and_exampl
 def test_validate_help_discovers_namespace_without_renaming_targets() -> None:
     root_help = _run_cli("--help")
     validate_help = _run_cli("validate", "--help")
+    check_help = _run_cli("check", "--help")
+    check_validate_help = _run_cli("check", "validate", "--help")
     artifact_help = _run_cli("validate", "artifact", "--help")
     descriptors_help = _run_cli("validate", "descriptors", "--help")
 
-    assert root_help.returncode == validate_help.returncode == artifact_help.returncode == descriptors_help.returncode == 0
-    assert "validate" in root_help.stdout
-    assert "Validate capabilities, artifacts, or descriptors" in root_help.stdout
+    assert root_help.returncode == validate_help.returncode == check_help.returncode == artifact_help.returncode == descriptors_help.returncode == 0
+    assert "check" in root_help.stdout
+    assert "capability" in validate_help.stdout
+    assert "agentera check validate capability hej" in check_validate_help.stdout
     assert "agentera validate capability hej" in validate_help.stdout
     assert "agentera validate artifact --artifact" in validate_help.stdout
     assert "agentera validate descriptors" in validate_help.stdout
@@ -192,7 +199,8 @@ def test_validate_stable_delegated_text_matches_direct_helpers() -> None:
 
         assert namespace.returncode == direct.returncode == 0
         assert namespace.stdout == direct.stdout
-        assert namespace.stderr == direct.stderr == ""
+        assert namespace.stderr == VALIDATE_DEPRECATION
+        assert direct.stderr == ""
         assert success in namespace.stdout
 
 
@@ -218,7 +226,8 @@ def test_validate_capability_contract_runs_self_and_protocol_checks() -> None:
 
     assert text.returncode == direct_self.returncode == direct_protocol.returncode == 0
     assert text.stdout == direct_self.stdout + direct_protocol.stdout
-    assert text.stderr == direct_self.stderr == direct_protocol.stderr == ""
+    assert text.stderr == VALIDATE_DEPRECATION
+    assert direct_self.stderr == direct_protocol.stderr == ""
 
     result = _run_cli("validate", "capability-contract", "--format", "json")
     payload = json.loads(result.stdout)

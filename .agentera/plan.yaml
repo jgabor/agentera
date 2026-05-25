@@ -144,7 +144,13 @@ tasks:
   - number: 3
     name: Add state, report, and check namespace parsers with delegation
     depends_on: [1]
-    status: pending
+    status: complete
+    evidence: >-
+      Added `state`, `report`, and `check` namespace parsers in scripts/agentera with
+      delegation to existing handlers; top-level `plan`, `stats`, `validate`, and
+      `gate` print one-line stderr deprecation aliases. `check compact` default
+      matches `gate`; `state plan --format json` matches legacy plan envelope.
+      Focused coverage in tests/test_audience_namespace_parsers.py.
     acceptance:
       - >-
         GIVEN `agentera state plan --format json` runs WHEN output emits THEN it
@@ -168,7 +174,13 @@ tasks:
   - number: 4
     name: Preserve top-level lifecycle and capability routing commands
     depends_on: [1]
-    status: pending
+    status: complete
+    evidence: >-
+      Added AgenteraArgumentParser with audience-grouped root help (agent: prime/schema/state/capabilities,
+      user: upgrade/doctor/report, maintainer: check). Removed hej and migration aliases from public
+      --help via argparse.SUPPRESS while preserving delegation. Focused coverage in
+      tests/test_audience_help_grouping.py; updated help expectations in query, skill-dispatch, usage,
+      validate, and verify tests.
     acceptance:
       - >-
         GIVEN `agentera upgrade` and `agentera doctor` run WHEN invoked THEN they

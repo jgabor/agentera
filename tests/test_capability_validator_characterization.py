@@ -223,7 +223,8 @@ def test_agentera_validate_capability_reports_same_missing_instructions_failure(
 
     assert direct_result.exit_code == 1
     assert agentera_result.exit_code == direct_result.exit_code
-    assert agentera_result.stderr == direct_result.stderr
+    assert agentera_result.stderr[0] == "Deprecation: agentera validate is deprecated; use agentera check validate"
+    assert agentera_result.stderr[1:] == direct_result.stderr
     assert "instructions.md not found" in "\n".join(agentera_result.stderr)
 
 
