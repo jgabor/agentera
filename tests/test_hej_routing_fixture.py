@@ -122,7 +122,7 @@ def test_fails_when_output_chooses_lower_priority_item(semantic_eval, semantic_f
     assert facts["forbidden_output[0]"]["status"] == "fail"
 
 
-def test_cli_budget_fixture_requires_composite_hej_tool_call(semantic_eval, semantic_fixtures):
+def test_cli_budget_fixture_requires_composite_prime_tool_call(semantic_eval, semantic_fixtures):
     fixture, errors = semantic_fixtures.load_fixture(CLI_BUDGET_FIXTURE_PATH)
     assert errors == []
 
@@ -133,7 +133,7 @@ def test_cli_budget_fixture_requires_composite_hej_tool_call(semantic_eval, sema
     assert facts["required_tool_calls[0]"]["status"] == "pass"
     for index in range(10):
         assert facts[f"forbidden_tool_calls[{index}]"]["status"] == "pass"
-    assert facts["tool_call_counts[agentera hej]"]["status"] == "pass"
+    assert facts["tool_call_counts[agentera prime]"]["status"] == "pass"
 
 
 def test_bare_hej_fixture_requires_dashboard_path(semantic_eval, semantic_fixtures):
@@ -145,7 +145,7 @@ def test_bare_hej_fixture_requires_dashboard_path(semantic_eval, semantic_fixtur
     assert result["status"] == "pass"
     facts = {fact["fact"]: fact for fact in result["checked_facts"]}
     assert facts["required_tool_calls[0]"]["status"] == "pass"
-    assert facts["tool_call_counts[agentera hej]"]["status"] == "pass"
+    assert facts["tool_call_counts[agentera prime]"]["status"] == "pass"
 
 
 def test_bare_hej_empty_repo_fixture_requires_dashboard_path(semantic_eval, semantic_fixtures):
@@ -157,14 +157,14 @@ def test_bare_hej_empty_repo_fixture_requires_dashboard_path(semantic_eval, sema
     assert result["status"] == "pass"
     facts = {fact["fact"]: fact for fact in result["checked_facts"]}
     assert facts["required_tool_calls[0]"]["status"] == "pass"
-    assert facts["tool_call_counts[agentera hej]"]["status"] == "pass"
+    assert facts["tool_call_counts[agentera prime]"]["status"] == "pass"
 
 
 def test_cli_budget_fixture_rejects_raw_cli_output(semantic_eval, semantic_fixtures):
     fixture = _load_cli_budget_fixture_with_output(
         semantic_fixtures,
         """
-        agentera hej
+        agentera prime
         mode: returning
         plan: status=active | progress=4/6
         next_action:
@@ -215,8 +215,8 @@ def test_cli_budget_fixture_rejects_source_contract_in_dashboard(semantic_eval, 
 def test_cli_budget_fixture_rejects_individual_state_command(semantic_eval, semantic_fixtures):
     text = CLI_BUDGET_FIXTURE_PATH.read_text(encoding="utf-8")
     text = text.replace(
-        '"uv run scripts/agentera hej"',
-        '"uv run scripts/agentera hej",\n    "uv run scripts/agentera plan"',
+        '"uv run scripts/agentera prime"',
+        '"uv run scripts/agentera prime",\n    "uv run scripts/agentera plan"',
     )
     fixture, errors = semantic_fixtures.validate_fixture_text(text)
     assert errors == []
@@ -227,11 +227,11 @@ def test_cli_budget_fixture_rejects_individual_state_command(semantic_eval, sema
     assert result["failing_fact"]["fact"] == "forbidden_tool_calls[0]"
 
 
-def test_cli_budget_fixture_rejects_duplicate_hej_state_call(semantic_eval, semantic_fixtures):
+def test_cli_budget_fixture_rejects_duplicate_prime_state_call(semantic_eval, semantic_fixtures):
     text = CLI_BUDGET_FIXTURE_PATH.read_text(encoding="utf-8")
     text = text.replace(
-        '"uv run scripts/agentera hej"',
-        '"uv run scripts/agentera hej",\n    "uv run scripts/agentera hej"',
+        '"uv run scripts/agentera prime"',
+        '"uv run scripts/agentera prime",\n    "uv run scripts/agentera prime"',
     )
     fixture, errors = semantic_fixtures.validate_fixture_text(text)
     assert errors == []
@@ -239,4 +239,4 @@ def test_cli_budget_fixture_rejects_duplicate_hej_state_call(semantic_eval, sema
     result = semantic_eval.evaluate_fixture(fixture, str(CLI_BUDGET_FIXTURE_PATH))
 
     assert result["status"] == "fail"
-    assert result["failing_fact"]["fact"] == "tool_call_counts[agentera hej]"
+    assert result["failing_fact"]["fact"] == "tool_call_counts[agentera prime]"

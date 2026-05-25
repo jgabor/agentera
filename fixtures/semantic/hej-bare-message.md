@@ -40,14 +40,14 @@ hej
 ```
 
 ⌂ hej · waiting
-Briefed the project from `agentera hej`; continue with the suggested plan task when ready.
+Briefed the project from `agentera prime`; continue with the suggested plan task when ready.
 
 ## Tool Trace
 
 ```json
 {
   "calls": [
-    "uv run scripts/agentera hej"
+    "uv run scripts/agentera prime"
   ]
 }
 ```
@@ -71,17 +71,17 @@ Briefed the project from `agentera hej`; continue with the suggested plan task w
     "Hello",
     "Hi there",
     "How can I help",
-    "agentera hej\nmode:",
+    "agentera prime\nmode:",
     "next_action:",
     "source_contract:",
     "object=PLAN Task 2",
     "question menu"
   ],
   "required_tool_calls": [
-    "agentera hej"
+    "agentera prime"
   ],
   "tool_call_counts": {
-    "agentera hej": 1
+    "agentera prime": 1
   },
   "forbidden_tool_calls": [
     "agentera plan",

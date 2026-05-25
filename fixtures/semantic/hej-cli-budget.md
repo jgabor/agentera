@@ -51,7 +51,7 @@ Task 5 is ready to run from the active plan.
 ```json
 {
   "calls": [
-    "uv run scripts/agentera hej"
+    "uv run scripts/agentera prime"
   ]
 }
 ```
@@ -69,16 +69,16 @@ Task 5 is ready to run from the active plan.
     "⌂ hej · waiting"
   ],
   "forbidden_output": [
-    "agentera hej\nmode:",
+    "agentera prime\nmode:",
     "next_action:",
     "source_contract:",
     "object=PLAN Task 5"
   ],
   "required_tool_calls": [
-    "agentera hej"
+    "agentera prime"
   ],
   "tool_call_counts": {
-    "agentera hej": 1
+    "agentera prime": 1
   },
   "forbidden_tool_calls": [
     "agentera plan",

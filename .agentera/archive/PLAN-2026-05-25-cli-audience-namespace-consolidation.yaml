@@ -1,7 +1,7 @@
 header:
   level: full
   created: 2026-05-25
-  status: active
+  status: complete
   reviewed: 2026-05-25
   critic_issues: "1 found, 1 addressed, 0 dismissed"
   revised: >-
@@ -227,7 +227,14 @@ tasks:
   - number: 6
     name: Migrate tests, semantic fixtures, and JSON surface manifest
     depends_on: [2, 3, 4, 5]
-    status: pending
+    status: complete
+    evidence: >-
+      Updated scripts/json_output_surface_manifest.yaml to canonical schema, state/*,
+      report/*, and check/* command paths with budgets enforced (67 surfaces, 0 violations).
+      Semantic fixtures and hej routing tests now require `agentera prime` tool calls.
+      Added tests/test_cli_namespace_migration_closeout.py for remaining state/check
+      coverage plus prime/schema alias parity. Full suite: 1287 passed with pytest
+      tests/ -q -n auto.
     acceptance:
       - >-
         GIVEN focused CLI tests run WHEN namespace and alias coverage executes
@@ -248,7 +255,13 @@ tasks:
   - number: 7
     name: Closeout verification, measurement evidence, and handoff
     depends_on: [1, 2, 3, 4, 5, 6]
-    status: pending
+    status: complete
+    evidence: >-
+      validate capability-contract --format json pass (2/2); check compact pass;
+      alias parity 0 byte/token delta for hej→prime, describe→schema, plan→state plan,
+      gate→check compact; canonical namespace manifest totals 51 surfaces 529515B/
+      121704 GPT-5 tok; measure_json_output_surfaces --token-mode exact --enforce-budgets
+      67 surfaces 0 violations; 1287 passed pytest tests/ -q -n auto; plan archived.
     acceptance:
       - >-
         GIVEN migration is complete WHEN `agentera validate capability-contract

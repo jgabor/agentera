@@ -6,7 +6,7 @@ scope:
     .agentera/archive/d58-json-output-surface-inventory.md. Capability-context rows
     expand across all twelve CAPABILITY_NAMES. Uses repo-root fixtures, isolated temp
     projects, and AGENTERA_HOME / PROFILERA_PROFILE_DIR overrides so doctor, upgrade,
-    hej, compact, gate, and stats paths do not mutate the caller's app or profile state.
+    prime, check compact, and report paths do not mutate the caller's app or profile state.
   historical_inventory: .agentera/archive/d58-json-output-surface-inventory.md
   budget_proposal_archive: .agentera/archive/d59-json-output-budget-proposal.md
   closeout_measurements_archive: .agentera/archive/d59-json-output-closeout-measurements.md
@@ -30,11 +30,11 @@ scope:
   - query design --format json routes to generic schema JSON when a design schema
     exists; inventory defer row is retained for the text-only handler gap.
 surfaces:
-- id: describe
-  command: agentera describe
+- id: schema
+  command: agentera schema
   selector: --format json (default)
   argv:
-  - describe
+  - schema
   - --format
   - json
   inventory_classification: change
@@ -59,11 +59,11 @@ surfaces:
   enforcement_tier: enforce
   byte_budget: 35000
   token_budget: 8000
-- id: hej-dashboard
-  command: agentera hej
-  selector: --format json
+- id: prime-briefing
+  command: agentera prime
+  selector: --format json (default briefing)
   argv:
-  - hej
+  - prime
   - --format
   - json
   inventory_classification: change
@@ -73,11 +73,11 @@ surfaces:
   enforcement_tier: enforce
   byte_budget: 35000
   token_budget: 8000
-- id: hej-fields-sparse
-  command: agentera hej
+- id: prime-fields-sparse
+  command: agentera prime
   selector: --format json --fields plan,progress,docs
   argv:
-  - hej
+  - prime
   - --format
   - json
   - --fields
@@ -159,10 +159,11 @@ surfaces:
     inspektera:
       byte_budget: 28000
       token_budget: 7000
-- id: plan
-  command: agentera plan
+- id: state-plan
+  command: agentera state plan
   selector: --format json
   argv:
+  - state
   - plan
   - --format
   - json
@@ -173,10 +174,11 @@ surfaces:
   enforcement_tier: enforce
   byte_budget: 20000
   token_budget: 4500
-- id: progress
-  command: agentera progress
+- id: state-progress
+  command: agentera state progress
   selector: --format json
   argv:
+  - state
   - progress
   - --format
   - json
@@ -187,10 +189,11 @@ surfaces:
   enforcement_tier: enforce
   byte_budget: 14000
   token_budget: 3000
-- id: health
-  command: agentera health
+- id: state-health
+  command: agentera state health
   selector: --format json
   argv:
+  - state
   - health
   - --format
   - json
@@ -201,10 +204,11 @@ surfaces:
   enforcement_tier: enforce
   byte_budget: 28000
   token_budget: 6500
-- id: todo
-  command: agentera todo
+- id: state-todo
+  command: agentera state todo
   selector: --format json
   argv:
+  - state
   - todo
   - --format
   - json
@@ -215,10 +219,11 @@ surfaces:
   enforcement_tier: enforce
   byte_budget: 2000
   token_budget: 500
-- id: decisions
-  command: agentera decisions
+- id: state-decisions
+  command: agentera state decisions
   selector: --format json
   argv:
+  - state
   - decisions
   - --format
   - json
@@ -229,10 +234,11 @@ surfaces:
   enforcement_tier: enforce
   byte_budget: 140000
   token_budget: 30000
-- id: docs
-  command: agentera docs
+- id: state-docs
+  command: agentera state docs
   selector: --format json
   argv:
+  - state
   - docs
   - --format
   - json
@@ -243,10 +249,11 @@ surfaces:
   enforcement_tier: enforce
   byte_budget: 24000
   token_budget: 6500
-- id: objective
-  command: agentera objective
+- id: state-objective
+  command: agentera state objective
   selector: --format json
   argv:
+  - state
   - objective
   - --format
   - json
@@ -257,10 +264,11 @@ surfaces:
   enforcement_tier: enforce
   byte_budget: 2000
   token_budget: 500
-- id: experiments
-  command: agentera experiments
+- id: state-experiments
+  command: agentera state experiments
   selector: --format json
   argv:
+  - state
   - experiments
   - --format
   - json
@@ -271,10 +279,11 @@ surfaces:
   enforcement_tier: enforce
   byte_budget: 2000
   token_budget: 500
-- id: query-list-artifacts
-  command: agentera query --list-artifacts
+- id: state-query-list-artifacts
+  command: agentera state query --list-artifacts
   selector: --list-artifacts --format json
   argv:
+  - state
   - query
   - --list-artifacts
   - --format
@@ -286,10 +295,11 @@ surfaces:
   enforcement_tier: enforce
   byte_budget: 24000
   token_budget: 6000
-- id: query-last-phase
-  command: agentera query last-phase
+- id: state-query-last-phase
+  command: agentera state query last-phase
   selector: --format json
   argv:
+  - state
   - query
   - last-phase
   - --format
@@ -301,10 +311,11 @@ surfaces:
   enforcement_tier: enforce
   byte_budget: 2000
   token_budget: 500
-- id: query-open-todos
-  command: agentera query open-todos
+- id: state-query-open-todos
+  command: agentera state query open-todos
   selector: --format json
   argv:
+  - state
   - query
   - open-todos
   - --format
@@ -316,10 +327,11 @@ surfaces:
   enforcement_tier: enforce
   byte_budget: 2000
   token_budget: 500
-- id: query-vision
-  command: agentera query vision
+- id: state-query-vision
+  command: agentera state query vision
   selector: --format json
   argv:
+  - state
   - query
   - vision
   - --format
@@ -331,10 +343,11 @@ surfaces:
   enforcement_tier: enforce
   byte_budget: 4000
   token_budget: 1000
-- id: query-changelog
-  command: agentera query changelog
+- id: state-query-changelog
+  command: agentera state query changelog
   selector: --format json
   argv:
+  - state
   - query
   - changelog
   - --format
@@ -346,10 +359,11 @@ surfaces:
   enforcement_tier: enforce
   byte_budget: 2000
   token_budget: 500
-- id: query-design
-  command: agentera query design
+- id: state-query-design
+  command: agentera state query design
   selector: --format json
   argv:
+  - state
   - query
   - design
   - --format
@@ -361,10 +375,11 @@ surfaces:
   enforcement_tier: exempt
   exemption_rationale: 'Inventory defer: parser accepts --format json but _query_design
     handler gap (.agentera/archive/d58-json-output-surface-inventory.md).'
-- id: compact-check
-  command: agentera compact --mode check
+- id: check-compact-check
+  command: agentera check compact --mode check
   selector: --mode check --format json
   argv:
+  - check
   - compact
   - --mode
   - check
@@ -377,10 +392,11 @@ surfaces:
   enforcement_tier: enforce
   byte_budget: 8000
   token_budget: 2000
-- id: compact-fix
-  command: agentera compact --mode fix
+- id: check-compact-fix
+  command: agentera check compact --mode fix
   selector: --mode fix --format json
   argv:
+  - check
   - compact
   - --mode
   - fix
@@ -393,11 +409,12 @@ surfaces:
   enforcement_tier: enforce
   byte_budget: 8000
   token_budget: 2000
-- id: gate
-  command: agentera gate
+- id: check-compact
+  command: agentera check compact
   selector: --format json
   argv:
-  - gate
+  - check
+  - compact
   - --format
   - json
   inventory_classification: change
@@ -407,10 +424,11 @@ surfaces:
   enforcement_tier: enforce
   byte_budget: 8000
   token_budget: 2000
-- id: lint
-  command: agentera lint
+- id: check-lint
+  command: agentera check lint --artifact PROGRESS.md
   selector: --format json
   argv:
+  - check
   - lint
   - --artifact
   - PROGRESS.md
@@ -425,10 +443,11 @@ surfaces:
   enforcement_tier: enforce
   byte_budget: 4000
   token_budget: 1000
-- id: validate-capability
-  command: agentera validate capability hej
+- id: check-validate-capability
+  command: agentera check validate capability hej
   selector: --format json
   argv:
+  - check
   - validate
   - capability
   - hej
@@ -442,10 +461,11 @@ surfaces:
   enforcement_tier: enforce
   byte_budget: 4000
   token_budget: 1000
-- id: validate-artifact
-  command: agentera validate artifact --artifact PLAN.md
+- id: check-validate-artifact
+  command: agentera check validate artifact --artifact PLAN.md
   selector: --format json
   argv:
+  - check
   - validate
   - artifact
   - --artifact
@@ -461,10 +481,11 @@ surfaces:
   enforcement_tier: enforce
   byte_budget: 4000
   token_budget: 1000
-- id: validate-descriptors
-  command: agentera validate descriptors
+- id: check-validate-descriptors
+  command: agentera check validate descriptors
   selector: --format json
   argv:
+  - check
   - validate
   - descriptors
   - --format
@@ -476,10 +497,11 @@ surfaces:
   enforcement_tier: enforce
   byte_budget: 8000
   token_budget: 2000
-- id: validate-cross-capability
-  command: agentera validate cross-capability
+- id: check-validate-cross-capability
+  command: agentera check validate cross-capability
   selector: --format json
   argv:
+  - check
   - validate
   - cross-capability
   - --format
@@ -491,10 +513,11 @@ surfaces:
   enforcement_tier: enforce
   byte_budget: 4000
   token_budget: 1000
-- id: validate-lifecycle-adapters
-  command: agentera validate lifecycle-adapters
+- id: check-validate-lifecycle-adapters
+  command: agentera check validate lifecycle-adapters
   selector: --format json
   argv:
+  - check
   - validate
   - lifecycle-adapters
   - --format
@@ -506,10 +529,11 @@ surfaces:
   enforcement_tier: enforce
   byte_budget: 4000
   token_budget: 1000
-- id: validate-capability-contract
-  command: agentera validate capability-contract
+- id: check-validate-capability-contract
+  command: agentera check validate capability-contract
   selector: --format json
   argv:
+  - check
   - validate
   - capability-contract
   - --format
@@ -562,11 +586,11 @@ surfaces:
   enforcement_tier: enforce
   byte_budget: 95000
   token_budget: 30000
-- id: stats-missing-corpus
-  command: agentera stats
+- id: report-missing-corpus
+  command: agentera report
   selector: --format json (corpus missing)
   argv:
-  - stats
+  - report
   - --format
   - json
   inventory_classification: change
@@ -576,11 +600,11 @@ surfaces:
   enforcement_tier: enforce
   byte_budget: 4000
   token_budget: 1000
-- id: stats-ready-corpus
-  command: agentera stats
+- id: report-ready-corpus
+  command: agentera report
   selector: --format json (corpus ready)
   argv:
-  - stats
+  - report
   - --format
   - json
   inventory_classification: change
@@ -590,11 +614,11 @@ surfaces:
   enforcement_tier: enforce
   byte_budget: 4000
   token_budget: 1000
-- id: stats-refresh-dry-run
-  command: agentera stats refresh
+- id: report-refresh-dry-run
+  command: agentera report refresh
   selector: --dry-run --format json
   argv:
-  - stats
+  - report
   - refresh
   - --dry-run
   - --format
@@ -606,11 +630,11 @@ surfaces:
   enforcement_tier: enforce
   byte_budget: 4000
   token_budget: 1000
-- id: stats-refresh-consent
-  command: agentera stats refresh
+- id: report-refresh-consent
+  command: agentera report refresh
   selector: --consent local-history --format json
   argv:
-  - stats
+  - report
   - refresh
   - --consent
   - local-history
@@ -638,10 +662,11 @@ surfaces:
   enforcement_tier: exempt
   exemption_rationale: 'Inventory preserve: helper seam behind canonical agentera
     usage/stats (.agentera/archive/d58-json-output-surface-inventory.md).'
-- id: validate-app-home-contract
-  command: agentera validate app-home-contract
+- id: check-validate-app-home-contract
+  command: agentera check validate app-home-contract
   selector: --format json
   argv:
+  - check
   - validate
   - app-home-contract
   - --format
@@ -652,10 +677,11 @@ surfaces:
   fixture: repo_root
   enforcement_tier: monitor
   monitor_byte_ceiling: 1000
-- id: verify-smoke-installed-skills
-  command: agentera verify smoke installed-skills
+- id: check-verify-smoke-installed-skills
+  command: agentera check verify smoke installed-skills
   selector: --format json
   argv:
+  - check
   - verify
   - smoke
   - installed-skills
@@ -667,10 +693,11 @@ surfaces:
   fixture: repo_root
   enforcement_tier: monitor
   monitor_byte_ceiling: 2000
-- id: verify-smoke-live-hosts
-  command: agentera verify smoke live-hosts
+- id: check-verify-smoke-live-hosts
+  command: agentera check verify smoke live-hosts
   selector: --format json
   argv:
+  - check
   - verify
   - smoke
   - live-hosts
@@ -682,10 +709,11 @@ surfaces:
   fixture: repo_root
   enforcement_tier: monitor
   monitor_byte_ceiling: 5000
-- id: verify-smoke-setup-helpers
-  command: agentera verify smoke setup-helpers
+- id: check-verify-smoke-setup-helpers
+  command: agentera check verify smoke setup-helpers
   selector: --format json
   argv:
+  - check
   - verify
   - smoke
   - setup-helpers
@@ -697,10 +725,11 @@ surfaces:
   fixture: repo_root
   enforcement_tier: monitor
   monitor_byte_ceiling: 2000
-- id: verify-smoke-opencode-bootstrap
-  command: agentera verify smoke opencode-bootstrap
+- id: check-verify-smoke-opencode-bootstrap
+  command: agentera check verify smoke opencode-bootstrap
   selector: --format json
   argv:
+  - check
   - verify
   - smoke
   - opencode-bootstrap
@@ -712,10 +741,11 @@ surfaces:
   fixture: repo_root
   enforcement_tier: monitor
   monitor_byte_ceiling: 2000
-- id: verify-eval-skills
-  command: agentera verify eval skills
+- id: check-verify-eval-skills
+  command: agentera check verify eval skills
   selector: --format json
   argv:
+  - check
   - verify
   - eval
   - skills
@@ -727,10 +757,11 @@ surfaces:
   fixture: repo_root
   enforcement_tier: monitor
   monitor_byte_ceiling: 3000
-- id: verify-eval-semantic
-  command: agentera verify eval semantic
+- id: check-verify-eval-semantic
+  command: agentera check verify eval semantic
   selector: --format json
   argv:
+  - check
   - verify
   - eval
   - semantic

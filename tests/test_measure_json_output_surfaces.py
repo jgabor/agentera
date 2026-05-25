@@ -146,7 +146,7 @@ def test_manifest_surfaces_define_enforcement_tiers(measure_json_output_surfaces
 def test_budget_failure_names_command_counts_and_budgets(measure_json_output_surfaces):
     module = measure_json_output_surfaces
     specs = module.load_surface_specs(module.DEFAULT_MANIFEST, REPO_ROOT, scopes={"primary"})
-    plan = next(spec for spec in specs if spec.id == "plan")
+    plan = next(spec for spec in specs if spec.id == "state-plan")
     outputs = {plan.id: "x" * 21_001}
     measurements = module.measure_outputs([plan], outputs, lambda output: 5_000)
     report = module.report_payload(
@@ -163,7 +163,7 @@ def test_budget_failure_names_command_counts_and_budgets(measure_json_output_sur
     assert report["status"] == "fail"
     assert report["violations"] == [
         {
-            "id": "plan",
+            "id": "state-plan",
             "command": plan.command,
             "selector": plan.selector,
             "capability": None,
@@ -182,7 +182,7 @@ def test_exempt_surfaces_skip_budget_enforcement(measure_json_output_surfaces):
     module = measure_json_output_surfaces
     specs = module.load_surface_specs(module.DEFAULT_MANIFEST, REPO_ROOT, scopes={"primary"})
     exempt = [spec for spec in specs if spec.enforcement_tier == "exempt"]
-    assert {spec.id for spec in exempt} == {"query-design", "usage-stats-helper"}
+    assert {spec.id for spec in exempt} == {"state-query-design", "usage-stats-helper"}
     outputs = {spec.id: "x" * 200_000 for spec in exempt}
     measurements = module.measure_outputs(exempt, outputs, lambda output: 99_999)
     report = module.report_payload(
@@ -203,7 +203,7 @@ def test_exempt_surfaces_skip_budget_enforcement(measure_json_output_surfaces):
 def test_skip_token_mode_still_enforces_byte_budgets(measure_json_output_surfaces):
     module = measure_json_output_surfaces
     specs = module.load_surface_specs(module.DEFAULT_MANIFEST, REPO_ROOT, scopes={"primary"})
-    todo = next(spec for spec in specs if spec.id == "todo")
+    todo = next(spec for spec in specs if spec.id == "state-todo")
     outputs = {todo.id: "x" * 3_000}
     measurements = module.measure_outputs([todo], outputs, token_counter=None)
     report = module.report_payload(
@@ -220,7 +220,7 @@ def test_skip_token_mode_still_enforces_byte_budgets(measure_json_output_surface
     assert report["status"] == "fail"
     assert report["violations"] == [
         {
-            "id": "todo",
+            "id": "state-todo",
             "command": todo.command,
             "selector": todo.selector,
             "capability": None,
@@ -238,7 +238,7 @@ def test_skip_token_mode_still_enforces_byte_budgets(measure_json_output_surface
 def test_monitor_surfaces_emit_warnings_without_failing(measure_json_output_surfaces):
     module = measure_json_output_surfaces
     specs = module.load_surface_specs(module.DEFAULT_MANIFEST, REPO_ROOT, scopes={"diagnostic"})
-    target = next(spec for spec in specs if spec.id == "validate-app-home-contract")
+    target = next(spec for spec in specs if spec.id == "check-validate-app-home-contract")
     outputs = {target.id: "x" * 1_500}
     measurements = module.measure_outputs([target], outputs, token_counter=None)
     report = module.report_payload(
@@ -254,7 +254,7 @@ def test_monitor_surfaces_emit_warnings_without_failing(measure_json_output_surf
 
     assert report["status"] == "pass"
     assert report["violations"] == []
-    assert report["warnings"][0]["id"] == "validate-app-home-contract"
+    assert report["warnings"][0]["id"] == "check-validate-app-home-contract"
     assert report["warnings"][0]["reason"] == "monitor_ceiling_exceeded"
 
 
