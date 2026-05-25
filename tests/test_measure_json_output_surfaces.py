@@ -5,6 +5,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
+
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
@@ -85,14 +87,13 @@ def test_skip_token_mode_keeps_tests_offline(measure_json_output_surfaces):
     assert all(row["token_status"] == "skipped" for row in report["measurements"])
 
 
-def test_primary_surfaces_generate_json_without_profile_mutation(measure_json_output_surfaces):
+@pytest.mark.slow
+def test_primary_surfaces_generate_json_without_profile_mutation(
+    measure_json_output_surfaces,
+    primary_surface_measurements,
+):
     module = measure_json_output_surfaces
-    specs = module.load_surface_specs(module.DEFAULT_MANIFEST, REPO_ROOT, scopes={"primary"})
-    measurements = module.measure_surfaces(
-        specs,
-        repo_root=REPO_ROOT,
-        token_counter=None,
-    )
+    specs, measurements = primary_surface_measurements
     errors = [row for row in measurements if row.generation_status == "error"]
 
     assert len(measurements) == len(specs)
@@ -257,14 +258,13 @@ def test_monitor_surfaces_emit_warnings_without_failing(measure_json_output_surf
     assert report["warnings"][0]["reason"] == "monitor_ceiling_exceeded"
 
 
-def test_primary_surfaces_pass_byte_budget_enforcement(measure_json_output_surfaces):
+@pytest.mark.slow
+def test_primary_surfaces_pass_byte_budget_enforcement(
+    measure_json_output_surfaces,
+    primary_surface_measurements,
+):
     module = measure_json_output_surfaces
-    specs = module.load_surface_specs(module.DEFAULT_MANIFEST, REPO_ROOT, scopes={"primary"})
-    measurements = module.measure_surfaces(
-        specs,
-        repo_root=REPO_ROOT,
-        token_counter=None,
-    )
+    specs, measurements = primary_surface_measurements
     report = module.report_payload(
         measurements,
         manifest_path=module.DEFAULT_MANIFEST,

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import importlib.util
+from functools import lru_cache
 from pathlib import Path
 from types import ModuleType, SimpleNamespace
 
@@ -26,6 +27,7 @@ EXPECTED_VERBS = ["install", "repair", "update", "migrate", "upgrade", "refresh"
 EXPECTED_CONSUMERS = ["doctor", "hej", "upgrade", "docs", "tests"]
 
 
+@lru_cache
 def _authority() -> dict:
     return yaml.safe_load(AUTHORITY.read_text(encoding="utf-8"))
 

@@ -16,6 +16,19 @@ import pytest
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
 
+@pytest.fixture(scope="session")
+def primary_surface_measurements(measure_json_output_surfaces):
+    """Run primary JSON surface measurement once per session for dependent tests."""
+    module = measure_json_output_surfaces
+    specs = module.load_surface_specs(module.DEFAULT_MANIFEST, REPO_ROOT, scopes={"primary"})
+    measurements = module.measure_surfaces(
+        specs,
+        repo_root=REPO_ROOT,
+        token_counter=None,
+    )
+    return specs, measurements
+
+
 def _load_module(name: str, file_path: Path) -> ModuleType:
     """Load a Python file as a module regardless of filename conventions.
 

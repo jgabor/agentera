@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from functools import lru_cache
 from pathlib import Path
 import re
 
@@ -73,14 +74,15 @@ def _authority() -> dict:
     return yaml.safe_load(AUTHORITY.read_text(encoding="utf-8"))
 
 
-def _focused_scan() -> list[tuple[str, int, str, str]]:
+@lru_cache
+def _focused_scan() -> tuple[tuple[str, int, str, str], ...]:
     matches: list[tuple[str, int, str, str]] = []
     for relative_path in _authority()["focused_scan"]["paths"]:
         path = REPO_ROOT / relative_path
         for line_number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
             if match := VOCABULARY_RE.search(line):
                 matches.append((relative_path, line_number, match.group(0), line.strip()))
-    return matches
+    return tuple(matches)
 
 
 def _classified_occurrences() -> list[ClassifiedOccurrence]:

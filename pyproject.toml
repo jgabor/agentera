@@ -40,6 +40,35 @@ exclude = [
 [tool.hatch.build.targets.wheel]
 packages = ["src/agentera"]
 
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+norecursedirs = [
+  ".git",
+  "plugins",
+  "packages",
+  "node_modules",
+  ".agentera",
+  ".benchmarks",
+  ".venv",
+]
+markers = [
+  "slow: full-surface CLI measurement or whole-repo scans; skip locally with -m 'not slow'",
+  "integration: subprocess-backed CLI boundary checks",
+]
+
+[tool.coverage.run]
+source = ["scripts", "hooks", "src"]
+include = [
+  "scripts/*",
+  "scripts/agentera",
+  "hooks/*",
+  "src/*",
+]
+
+[tool.coverage.report]
+skip_covered = true
+show_missing = true
+
 [tool.hatch.build.targets.wheel.force-include]
 "skills" = "agentera/bundle/skills"
 "scripts" = "agentera/bundle/scripts"

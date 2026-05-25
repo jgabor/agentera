@@ -176,10 +176,14 @@ CYCLE:
     type: string
     required: true
     description: >-
-      Git commit hash, or 'N/A' if no commit was made. May include
-      explanation (e.g., 'N/A: user requested no commit for this task').
+      Git commit that contains the product change for this cycle—not the commit
+      that last edited progress metadata. Use `pending` until that hash is known;
+      then the product commit hash, optionally with subject (e.g.
+      `abc1234 Speed up pytest suite`). Use `N/A: …` when no product commit was
+      made.
     validation:
       - "Non-empty string"
+      - "Use `pending` until the product-change commit hash is known; do not amend solely to backfill this field"
   7:
     id: PR7
     field: inspiration

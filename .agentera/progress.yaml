@@ -1,4 +1,24 @@
 cycles:
+- number: 602
+  timestamp: 2026-05-25 11:30
+  type: test
+  phase: build
+  what: Pytest suite speed and coverage hygiene plan closeout.
+  commit: pending
+  discovered: Session-scoped primary_surface_measurements plus xdist worker scheduling
+    cut full-suite wall time more than duplicate in-process caching alone on a single
+    worker.
+  verified: 1230 passed in ~60s with pytest tests/ -q -n auto (baseline ~114s); repo-root
+    collection 1230 tests (was ~50348); pytest -m 'not slow' 1225 passed in ~12.6s;
+    lefthook unchanged; validate_app_home import tests plus SourceFileLoader agentera
+    CLI smoke.
+  next: None.
+  context:
+    intent: Close PLAN-2026-05-25-pytest-suite-speed-and-coverage-hygiene without
+      release bump.
+    constraints: Pre-commit remains full suite; no capability test consolidation.
+    scope: pyproject.toml, AGENTS.md, conftest, measure_json, vocabulary caches, query_cli
+      prime fixture, app-home and agentera coverage tests.
 - number: 601
   timestamp: 2026-05-25 10:00
   type: chore
@@ -162,27 +182,9 @@ cycles:
   context:
     intent: Relocate docs to references/ and align 2.6.1 release metadata.
     scope: docs relocation, version_files, CHANGELOG, TODO, PROGRESS, tag v2.6.1.
-- number: 592
-  timestamp: 2026-05-23 22:00
-  type: chore
-  phase: build
-  what: Archived completed prime/JSON-budget plan and released 2.6.0 metadata.
-  commit: pending
-  inspiration: User-approved plan archive and 2.x release (not 3.0.0 semver).
-  discovered: "Plan archived to `.agentera/archive/PLAN-2026-05-23-agentera-3-0-prime-control-plane-and-json-budget.yaml`;\
-    \ active `.agentera/plan.yaml` removed. Version surfaces aligned to 2.6.0 per\
-    \ docs semver_policy feat\u2192minor from 2.5.1."
-  verified: Version-bearing files updated (registry, pyproject, lockfile, plugin manifests,
-    SKILL frontmatter, OpenCode AGENTERA_VERSION). CHANGELOG.md `[2.6.0]` section
-    added. README version line updated.
-  next: Tag v2.6.0 and publish only if explicitly requested; remaining Decision 58/59
-    3.0-boundary TODOs stay on `[chore:3.0.0]` track.
-  context:
-    intent: Close the completed orchestration plan and ship 2.x release metadata without
-      claiming the full Agentera 3.0 protocol boundary release.
-    constraints: No 3.0.0 version bump; no push unless requested.
-    scope: plan archive, version_files, CHANGELOG, PROGRESS evidence.
 archive:
+- summary: 'Cycle 592 (2026-05-23): Archived completed prime/JSON-budget plan and
+    released 2.6.0 metadata.'
 - summary: 'Cycle 591 (2026-05-23): Closed Agentera 3.0 JSON budget plan with full
     validation and measurement closeout evidence.'
 - summary: 'Cycle 590 (2026-05-23): Synced callers, contracts, docs, and tests to
@@ -255,5 +257,3 @@ archive:
     trust flow.'
 - summary: 'Cycle 553 (2026-05-17): Fixed 2.5.0 direct capability routing and Planera
     completed-plan archive boundaries.'
-- summary: 'Cycle 552 (2026-05-17): Closed out the Runtime Docs Compatibility Fix
-    Plan.'

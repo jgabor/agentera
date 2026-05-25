@@ -1,17 +1,43 @@
 from __future__ import annotations
 
+import importlib.util
 import subprocess
 import sys
 from pathlib import Path
+from types import ModuleType
+
+import pytest
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-VALIDATOR = REPO_ROOT / "scripts" / "validate_app_home_contract.py"
+VALIDATOR_PATH = REPO_ROOT / "scripts" / "validate_app_home_contract.py"
 
 
-def test_app_home_contract_validator_passes_current_user_surfaces() -> None:
+def _load_validator() -> ModuleType:
+    spec = importlib.util.spec_from_file_location(
+        "validate_app_home_contract",
+        VALIDATOR_PATH,
+    )
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+@pytest.fixture(scope="module")
+def validator() -> ModuleType:
+    return _load_validator()
+
+
+def test_app_home_contract_validator_passes_current_user_surfaces(validator: ModuleType) -> None:
+    errors = validator.validate(REPO_ROOT)
+    assert errors == []
+
+
+@pytest.mark.integration
+def test_app_home_contract_validator_cli_smoke() -> None:
     result = subprocess.run(
-        [sys.executable, str(VALIDATOR), "--root", str(REPO_ROOT)],
+        [sys.executable, str(VALIDATOR_PATH), "--root", str(REPO_ROOT)],
         cwd=REPO_ROOT,
         text=True,
         capture_output=True,
@@ -22,45 +48,42 @@ def test_app_home_contract_validator_passes_current_user_surfaces() -> None:
     assert "OK: app-home contract terminology is release-ready" in result.stdout
 
 
-def test_app_home_contract_validator_reports_offending_surface(tmp_path: Path) -> None:
+def test_app_home_contract_validator_reports_offending_surface(
+    validator: ModuleType,
+    tmp_path: Path,
+) -> None:
     (tmp_path / "README.md").write_text(
         "AGENTERA_HOME points at the live bundle root\n",
         encoding="utf-8",
     )
 
-    result = subprocess.run(
-        [sys.executable, str(VALIDATOR), "--root", str(tmp_path)],
-        cwd=REPO_ROOT,
-        text=True,
-        capture_output=True,
-        check=False,
-    )
+    errors = validator.validate(tmp_path)
 
-    assert result.returncode == 1
-    assert "README.md:1" in result.stderr
-    assert "live-bundle wording" in result.stderr
+    assert errors
+    assert any("README.md:1" in error for error in errors)
+    assert any("live-bundle wording" in error for error in errors)
 
 
-def test_app_home_contract_validator_rejects_recovery_jargon(tmp_path: Path) -> None:
+def test_app_home_contract_validator_rejects_recovery_jargon(
+    validator: ModuleType,
+    tmp_path: Path,
+) -> None:
     (tmp_path / "README.md").write_text(
         "Agentera-managed bundle install is blocked; use the platform app-home recovery path\n",
         encoding="utf-8",
     )
 
-    result = subprocess.run(
-        [sys.executable, str(VALIDATOR), "--root", str(tmp_path)],
-        cwd=REPO_ROOT,
-        text=True,
-        capture_output=True,
-        check=False,
-    )
+    errors = validator.validate(tmp_path)
 
-    assert result.returncode == 1
-    assert "README.md:1" in result.stderr
-    assert "jargon in recovery wording" in result.stderr
+    assert errors
+    assert any("README.md:1" in error for error in errors)
+    assert any("jargon in recovery wording" in error for error in errors)
 
 
-def test_app_home_contract_validator_inspects_authoritative_contract_reference(tmp_path: Path) -> None:
+def test_app_home_contract_validator_inspects_authoritative_contract_reference(
+    validator: ModuleType,
+    tmp_path: Path,
+) -> None:
     contract = tmp_path / "skills" / "agentera" / "references" / "contract.md"
     contract.parent.mkdir(parents=True)
     contract.write_text(
@@ -68,20 +91,17 @@ def test_app_home_contract_validator_inspects_authoritative_contract_reference(t
         encoding="utf-8",
     )
 
-    result = subprocess.run(
-        [sys.executable, str(VALIDATOR), "--root", str(tmp_path)],
-        cwd=REPO_ROOT,
-        text=True,
-        capture_output=True,
-        check=False,
-    )
+    errors = validator.validate(tmp_path)
 
-    assert result.returncode == 1
-    assert "skills/agentera/references/contract.md:1" in result.stderr
-    assert "AGENTERA_HOME named as install root" in result.stderr
+    assert errors
+    assert any("skills/agentera/references/contract.md:1" in error for error in errors)
+    assert any("AGENTERA_HOME named as install root" in error for error in errors)
 
 
-def test_app_home_contract_validator_inspects_cli_output(tmp_path: Path) -> None:
+def test_app_home_contract_validator_inspects_cli_output(
+    validator: ModuleType,
+    tmp_path: Path,
+) -> None:
     cli = tmp_path / "scripts" / "agentera"
     cli.parent.mkdir(parents=True)
     cli.write_text(
@@ -89,20 +109,17 @@ def test_app_home_contract_validator_inspects_cli_output(tmp_path: Path) -> None
         encoding="utf-8",
     )
 
-    result = subprocess.run(
-        [sys.executable, str(VALIDATOR), "--root", str(tmp_path)],
-        cwd=REPO_ROOT,
-        text=True,
-        capture_output=True,
-        check=False,
-    )
+    errors = validator.validate(tmp_path)
 
-    assert result.returncode == 1
-    assert "agentera hej" in result.stderr
-    assert "live-bundle wording" in result.stderr
+    assert errors
+    assert any("agentera hej" in error for error in errors)
+    assert any("live-bundle wording" in error for error in errors)
 
 
-def test_app_home_contract_validator_inspects_upgrade_output(tmp_path: Path) -> None:
+def test_app_home_contract_validator_inspects_upgrade_output(
+    validator: ModuleType,
+    tmp_path: Path,
+) -> None:
     cli = tmp_path / "scripts" / "agentera"
     cli.parent.mkdir(parents=True)
     cli.write_text(
@@ -113,21 +130,18 @@ def test_app_home_contract_validator_inspects_upgrade_output(tmp_path: Path) -> 
         encoding="utf-8",
     )
 
-    result = subprocess.run(
-        [sys.executable, str(VALIDATOR), "--root", str(tmp_path)],
-        cwd=REPO_ROOT,
-        text=True,
-        capture_output=True,
-        check=False,
-    )
+    errors = validator.validate(tmp_path)
 
-    assert result.returncode == 1
-    assert "--runtime claude --dry-run" in result.stderr
-    assert "CLI output names app home as install root" in result.stderr
-    assert "public JSON exposes installRoot instead of appHome" in result.stderr
+    assert errors
+    assert any("--runtime claude --dry-run" in error for error in errors)
+    assert any("CLI output names app home as install root" in error for error in errors)
+    assert any("public JSON exposes installRoot instead of appHome" in error for error in errors)
 
 
-def test_app_home_contract_validator_rejects_structured_cli_install_root_fields(tmp_path: Path) -> None:
+def test_app_home_contract_validator_rejects_structured_cli_install_root_fields(
+    validator: ModuleType,
+    tmp_path: Path,
+) -> None:
     cli = tmp_path / "scripts" / "agentera"
     cli.parent.mkdir(parents=True)
     cli.write_text(
@@ -137,15 +151,9 @@ def test_app_home_contract_validator_rejects_structured_cli_install_root_fields(
         encoding="utf-8",
     )
 
-    result = subprocess.run(
-        [sys.executable, str(VALIDATOR), "--root", str(tmp_path)],
-        cwd=REPO_ROOT,
-        text=True,
-        capture_output=True,
-        check=False,
-    )
+    errors = validator.validate(tmp_path)
 
-    assert result.returncode == 1
-    assert "agentera hej --format json" in result.stderr
-    assert "agentera doctor --json" in result.stderr
-    assert "public JSON exposes installRoot instead of appHome" in result.stderr
+    assert errors
+    assert any("agentera hej --format json" in error for error in errors)
+    assert any("agentera doctor --json" in error for error in errors)
+    assert any("public JSON exposes installRoot instead of appHome" in error for error in errors)

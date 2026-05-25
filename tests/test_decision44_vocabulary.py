@@ -13,6 +13,7 @@ from functools import lru_cache
 from pathlib import Path
 import re
 
+import pytest
 import yaml
 
 
@@ -160,7 +161,7 @@ ALLOWED_USES = (
 )
 
 
-def _iter_scanned_paths() -> list[Path]:
+def _iter_scanned_paths() -> tuple[Path, ...]:
     paths = {REPO_ROOT / path for path in SCANNED_FILES}
     for entry in SCANNED_DIRS:
         root = REPO_ROOT / entry
@@ -174,17 +175,18 @@ def _iter_scanned_paths() -> list[Path]:
             and "__pycache__" not in path.parts
             and ".pytest_cache" not in path.parts
         )
-    return sorted(path for path in paths if path.exists())
+    return tuple(sorted(path for path in paths if path.exists()))
 
 
-def _matches() -> list[tuple[str, int, str, str]]:
+@lru_cache
+def _matches() -> tuple[tuple[str, int, str, str], ...]:
     found: list[tuple[str, int, str, str]] = []
     for path in _iter_scanned_paths():
         relative_path = path.relative_to(REPO_ROOT).as_posix()
         for line_number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
             if match := DEPRECATED_PREFERRED_RE.search(line):
                 found.append((relative_path, line_number, match.group(0), line.strip()))
-    return found
+    return tuple(found)
 
 
 def _allowed_reason(relative_path: str, line: str) -> str | None:
@@ -203,6 +205,7 @@ def test_vocabulary_index_decision_44_tables_are_populated() -> None:
     assert decision_44["deprecated_scan_pattern"].strip()
 
 
+@pytest.mark.slow
 def test_decision_44_deprecated_preferred_vocabulary_is_bounded():
     unprotected = [
         f"{path}:{line_number}: {term!r}: {text}"

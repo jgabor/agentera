@@ -201,8 +201,8 @@ use `vp dev packages/web` when you want the dev server pointed at that folder.
 
 ## Running tests
 
-Use the same command as lefthook pre-commit (`.lefthook.yml`). Do not run bare
-`uv run pytest` from the repo root.
+Use the same command as lefthook pre-commit (`.lefthook.yml`). Pre-commit always
+runs the **full** suite with no marker filter.
 
 Pytest runs on pre-commit only when staged files match Python, YAML, workflow, or
 lockfile paths — not for web-only changes under `packages/web/**`.
@@ -211,9 +211,31 @@ lockfile paths — not for web-only changes under `packages/web/**`.
 uv run --with pytest --with pyyaml --with pytest-xdist pytest tests/ -q -n auto
 ```
 
+For faster local iteration, skip slow whole-repo or full-surface tests:
+
+```bash
+uv run --with pytest --with pyyaml --with pytest-xdist pytest tests/ -q -n auto -m "not slow"
+```
+
+Do not change lefthook to use `-m "not slow"`; hooks must keep full regression coverage.
+
+Python coverage (includes extensionless `scripts/agentera`):
+
+```bash
+uv run --with pytest --with pyyaml --with pytest-xdist --with pytest-cov \
+  pytest tests/ -q -n auto \
+  --cov=scripts --cov=hooks --cov=src \
+  --cov-report=term-missing:skip-covered
+```
+
+Import-based unit tests attribute coverage in-process; subprocess CLI tests still
+under-count unless you add targeted import coverage for those modules.
+
 Pitfalls:
 
-- **`uv run pytest` without `tests/`** discovers ~49k parametrized cases outside the intended suite and can run for many minutes or appear hung. Always pass `tests/`.
+- **`uv run pytest` without `tests/`** used to discover ~50k cases via the
+  `plugins/agentera -> ..` symlink loop. `pyproject.toml` now sets `testpaths =
+  ["tests"]`, but always pass `tests/` in docs and CI for clarity.
 - **Piping pytest through `tail`** buffers all output until the run finishes, which looks like a stall even when tests are progressing.
 - **`uv run pytest tests/` without `-n auto`** still passes (~1200 tests) but takes ~3 minutes instead of ~1 minute with xdist.
 
@@ -225,3 +247,13 @@ Pitfalls:
 - Include `.agentera/plan.yaml` and `.agentera/progress.yaml` updates in the same commit as the related implementation or validation change.
 - If progress metadata is committed during implementation, squash or fold it into the meaningful task commit before considering the task complete.
 - The final commit for a task should include the corresponding status-complete metadata update when Agentera artifacts are part of the task.
+
+### Progress `commit` field
+
+In `.agentera/progress.yaml`, `cycles[].commit` names **the git commit that contains the
+product change** for that cycle—not the commit that last edited progress metadata.
+
+- `commit: pending` is valid until that hash is known (common in the implementation commit).
+- After the product commit exists, set `commit` to that hash (optional subject suffix). Use one
+  forward commit if needed; never amend solely to backfill this field.
+- Use `N/A: …` only when no product commit was made for the cycle.

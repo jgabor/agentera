@@ -1,0 +1,114 @@
+header:
+  level: full
+  created: 2026-05-25
+  status: complete
+  reviewed: 2026-05-25
+  critic_issues: "5 found, 5 addressed, 0 dismissed"
+  title: Pytest suite speed and coverage hygiene
+what: >-
+  Improve pytest collection safety, cut redundant full-surface measurement work,
+  add optional slow-test markers without changing pre-commit scope, speed up
+  vocabulary scanner tests via session caching, reduce subprocess overhead in
+  high-frequency CLI tests, and make coverage metrics trustworthy for the main
+  CLI and subprocess-validated scripts.
+why: >-
+  The suite runs 1,228 tests in ~114s with xdist, but two measure_json_output_surfaces
+  tests alone consume ~110s by re-invoking every primary CLI surface twice. Bare
+  uv run pytest from the repo root collects ~50k tests via the plugins/agentera
+  symlink loop. Reported Python coverage is 66% but excludes scripts/agentera (~8k
+  lines) and understates subprocess-tested modules.
+constraints: >-
+  Keep lefthook and pre-commit running the full suite with no marker exclusions.
+  Do not consolidate per-capability test modules.
+scope:
+  included:
+    - pyproject.toml pytest.ini_options and coverage configuration
+    - Session-scoped primary_surface_measurements fixture
+    - slow and integration markers
+    - Vocabulary scan caching
+    - Targeted query_cli and app-home contract refactors
+    - AGENTS.md pytest and coverage guidance
+  excluded:
+    - Consolidating twelve per-capability test modules
+    - Splitting pre-commit into fast vs slow tiers
+  deferred:
+    - CI matrix sharding with pytest-split
+    - Broader query_cli.py refactor beyond hot paths
+design: >-
+  Fix collection at the config layer, share one session-scoped measurement across
+  duplicate full-surface tests, register slow markers for local runs only, cache
+  vocabulary scans per session, import validators directly where safe, and include
+  scripts/agentera in coverage configuration.
+tasks:
+  - number: 1
+    name: Pytest collection safety and marker registration
+    depends_on: []
+    status: completed
+    acceptance:
+      - GIVEN pyproject.toml defines testpaths and norecursedirs WHEN pytest --collect-only runs from repo root THEN only tests under tests/ are collected and count stays near 1,228 not tens of thousands
+      - GIVEN slow and integration markers are registered WHEN pytest --markers runs THEN both markers appear with documented descriptions
+      - GIVEN AGENTS.md pytest guidance WHEN a contributor reads it THEN it states the collection footgun, canonical pre-commit command, and that markers are optional for local runs only
+    evidence:
+      - pyproject.toml [tool.pytest.ini_options]; repo-root collection 1230 tests; AGENTS.md Running tests section
+  - number: 2
+    name: Deduplicate full-surface JSON measurement tests
+    depends_on: [1]
+    status: completed
+    acceptance:
+      - GIVEN the two primary-surface measure_json_output_surfaces tests WHEN they run in one session THEN measure_surfaces executes once via shared session-scoped fixture and both tests assert against cached results
+      - GIVEN the full pytest suite with xdist WHEN timed on the same machine class as baseline THEN wall time drops by at least 40 seconds versus the pre-change ~114s run without losing pass count
+      - GIVEN a measure_surfaces generation error WHEN either dependent test runs THEN the failure surfaces with the same diagnostic detail as today
+    evidence:
+      - tests/conftest.py primary_surface_measurements fixture; full suite 1230 passed in ~60s vs ~114s baseline
+  - number: 3
+    name: Annotate slow tests without changing pre-commit scope
+    depends_on: [1]
+    status: completed
+    acceptance:
+      - GIVEN slow-marked tests WHEN pytest tests/ -m "not slow" runs locally THEN those tests are skipped and remaining tests still pass
+      - GIVEN lefthook pre-commit test command WHEN inspected after changes THEN it still runs pytest tests/ -q -n auto with no marker filter
+      - GIVEN AGENTS.md WHEN read THEN it documents optional -m "not slow" for local iteration
+    evidence:
+      - four @pytest.mark.slow tests; pytest -m "not slow" 1225 passed in ~12.6s; .lefthook.yml unchanged
+  - number: 4
+    name: Session-cache vocabulary authority scans
+    depends_on: [1]
+    status: completed
+    acceptance:
+      - GIVEN vocabulary authority modules WHEN run in one pytest session THEN repo scans reuse cached results
+      - GIVEN the full pytest suite WHEN run with xdist THEN all vocabulary authority tests still pass
+    evidence:
+      - @lru_cache on decision44 _matches, bundle-skill and routing _focused_scan, lifecycle _authority
+  - number: 5
+    name: Reduce subprocess overhead in hot CLI test paths
+    depends_on: [2]
+    status: completed
+    acceptance:
+      - GIVEN test_query_cli.py prime helpers WHEN refactored THEN repeated prime invocations share a class-scoped fixture
+      - GIVEN refactored tests WHEN the full suite runs THEN pass count remains equivalent
+    evidence:
+      - TestPrime class-scoped prime_result fixture; 1230 passed full suite
+  - number: 6
+    name: Trustworthy coverage for CLI and subprocess validators
+    depends_on: [1]
+    status: completed
+    acceptance:
+      - GIVEN coverage configuration WHEN scripts/agentera is included THEN import smoke attributes the CLI entry surface
+      - GIVEN validate_app_home_contract tests WHEN refactored THEN import-based unit cases remain with one integration smoke
+    evidence:
+      - pyproject.toml [tool.coverage.run] include scripts/agentera; tests/test_app_home_contract.py import validate(); tests/test_agentera_cli_coverage.py SourceFileLoader smoke
+  - number: 7
+    name: Verification gate and state sync
+    depends_on: [2, 3, 4, 5, 6]
+    status: completed
+    acceptance:
+      - GIVEN all prior tasks complete WHEN full pytest suite runs THEN all tests pass
+      - GIVEN before and after wall times recorded WHEN compared THEN improvement is documented in progress evidence
+    evidence:
+      - 1230 passed in ~60s; baseline ~114s; dominant savings from shared primary_surface_measurements and parallelized full-surface setup
+overall_acceptance:
+  - GIVEN pre-commit WHEN Python files change THEN lefthook still executes the full parallel pytest suite faster than the pre-plan ~114s baseline
+  - GIVEN bare pytest from repo root WHEN no path argument is supplied THEN collection stays bounded to tests/
+  - GIVEN documented coverage command WHEN maintainers run it THEN scripts/agentera is included in coverage scope
+surprises:
+  - xdist schedules the two slow measure_json tests on separate workers, so session fixture deduplication saves wall time primarily via parallel setup rather than a single shared call globally.

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
 import yaml
 
 
@@ -158,6 +159,7 @@ def test_source_indexes_point_to_instruction_contract_authority() -> None:
     assert delegation["must_not_duplicate_large_table"] is True
 
 
+@pytest.mark.slow
 def test_real_capabilities_and_current_surfaces_do_not_use_legacy_prose_md() -> None:
     capabilities = REPO_ROOT / "skills" / "agentera" / "capabilities"
     assert sorted(capabilities.glob("*/prose.md")) == []

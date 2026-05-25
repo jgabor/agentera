@@ -297,25 +297,30 @@ def _write_startup_benchmark_fixture(
 
 
 class TestPrime:
-    def test_pass_outputs_guidance(self):
-        r = _run("prime")
-        assert r.returncode == 0
-        assert "agentera plan" in r.stdout
-        assert "native" in r.stdout.lower()
+    @pytest.fixture(scope="class")
+    def prime_result(self):
+        result = _run("prime")
+        assert result.returncode == 0
+        return result
+
+    def test_pass_outputs_guidance(self, prime_result):
+        assert "agentera plan" in prime_result.stdout
+        assert "native" in prime_result.stdout.lower()
 
     def test_prime_idempotent(self):
-        assert _run("prime").stdout == _run("prime").stdout
+        first = _run("prime")
+        second = _run("prime")
+        assert first.returncode == 0
+        assert second.returncode == 0
+        assert first.stdout == second.stdout
 
-    def test_prime_has_routing_and_recovery(self):
-        r = _run("prime")
-        assert "recovery" in r.stdout.lower()
-        assert "stale" in r.stdout.lower()
-        assert "missing" in r.stdout.lower()
+    def test_prime_has_routing_and_recovery(self, prime_result):
+        assert "recovery" in prime_result.stdout.lower()
+        assert "stale" in prime_result.stdout.lower()
+        assert "missing" in prime_result.stdout.lower()
 
-    def test_prime_no_args(self):
-        r = _run("prime")
-        assert r.returncode == 0
-        assert len(r.stdout) > 100
+    def test_prime_no_args(self, prime_result):
+        assert len(prime_result.stdout) > 100
 
 
 # ---------------------------------------------------------------------------
