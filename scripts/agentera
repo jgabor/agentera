@@ -90,23 +90,23 @@ raw YAML artifacts directly. The CLI is the seam between agent and state.
 Supported state commands:
   agentera prime                                # Composite orientation briefing
   agentera prime --guidance                     # Print this guide
-  agentera decisions [--topic TOPIC]            # Decision log
-  agentera health [--dimension DIM]             # Latest health audit
-  agentera todo [--severity LEVEL]              # TODO summary
-  agentera plan                                 # Active plan + task status
-  agentera progress [--limit N]                 # Recent cycle summary
-  agentera docs                                 # Docs mappings + stale docs
-  agentera objective                            # Active optimera objective
-  agentera experiments                          # Active optimera experiments
-  agentera lint --artifact PROGRESS.md --file .agentera/progress.yaml  # Pre-write artifact prose self-audit
-  agentera query --list-artifacts               # Discover advanced schema names
-  agentera query <artifact-name>                # Advanced custom artifact query
+  agentera state decisions [--topic TOPIC]      # Decision log
+  agentera state health [--dimension DIM]       # Latest health audit
+  agentera state todo [--severity LEVEL]        # TODO summary
+  agentera state plan                           # Active plan + task status
+  agentera state progress [--limit N]           # Recent cycle summary
+  agentera state docs                           # Docs mappings + stale docs
+  agentera state objective                      # Active optimera objective
+  agentera state experiments                    # Active optimera experiments
+  agentera check lint --artifact PROGRESS.md --file .agentera/progress.yaml  # Pre-write artifact prose self-audit
+  agentera state query --list-artifacts         # Discover advanced schema names
+  agentera state query <artifact-name>          # Advanced custom artifact query
 
 When to use agentera:
-  - "What did we decide about X?"       → agentera decisions --topic X
-  - "How's the codebase health?"        → agentera health
-  - "What's the coupling grade?"        → agentera health --dimension coupling_health
-  - "Any critical open issues?"         → agentera todo --severity critical
+  - "What did we decide about X?"       → agentera state decisions --topic X
+  - "How's the codebase health?"        → agentera state health
+  - "What's the coupling grade?"        → agentera state health --dimension coupling_health
+  - "Any critical open issues?"         → agentera state todo --severity critical
 
 When to use native tools:
   - Reading or editing source code      → native read/edit/grep

@@ -316,7 +316,7 @@ class TestPrime:
         assert "source_contract:" in prime_result.stdout
 
     def test_guidance_outputs_static_prose(self, prime_guidance_result):
-        assert "agentera plan" in prime_guidance_result.stdout
+        assert "agentera state plan" in prime_guidance_result.stdout
         assert "native" in prime_guidance_result.stdout.lower()
 
     def test_prime_idempotent(self):
