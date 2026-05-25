@@ -5,7 +5,7 @@
 - **12 standalone skills -> 1 bundled skill** with 12 capabilities under `skills/agentera/`
 - **Artifact format**: Markdown -> YAML for agent-facing `.agentera/` files
 - **Upgrade CLI**: `uvx --from git+https://github.com/jgabor/agentera agentera upgrade` or `uv run scripts/agentera upgrade` from a clone
-- **State CLI**: `uv run scripts/agentera hej`, `uv run scripts/agentera plan`, and other top-level state commands for routine access; `/agentera` still renders the hej dashboard from the `agentera hej` data source, while `uv run scripts/agentera query <artifact-name> --format json|yaml` remains advanced custom access
+- **State CLI**: `uv run scripts/agentera prime`, `uv run scripts/agentera state plan`, and other `state` namespace commands for routine access; `/agentera` still renders the hej dashboard from the `agentera prime` composite result, while `uv run scripts/agentera state query <artifact-name> --format json|yaml` remains advanced custom access. Top-level aliases such as `hej`, `plan`, and `query` remain during migration with stderr deprecation.
 
 ## Recommended upgrade
 
@@ -61,7 +61,7 @@ surfaces have the latest Agentera wiring. Directory selection and read-only
 repair checks are centralized in `scripts/install_root.py`.
 
 Bare `/agentera` owns this recovery path. When the installed CLI is missing
-`hej`, fails before command discovery, has an outdated `.agentera-bundle.json`
+`prime`, fails before command discovery, has an outdated `.agentera-bundle.json`
 version, or otherwise fails the install status contract, it should show the
 repair preview for the resolved Agentera directory. The preview covers app files,
 managed runtime config, plugins, hooks, commands, and safe cleanup together. It
@@ -115,7 +115,7 @@ Afterward, retry:
 
 ```bash
 RESOLVED_AGENTERA_HOME="<app home reported by upgrade>"
-uv run "$RESOLVED_AGENTERA_HOME/app/scripts/agentera" hej
+uv run "$RESOLVED_AGENTERA_HOME/app/scripts/agentera" prime
 ```
 
 Set `RESOLVED_AGENTERA_HOME` before running the command. Never combine the
@@ -276,6 +276,6 @@ uv run scripts/agentera upgrade --only packages --runtime opencode --yes --updat
 | Entry point | 12 separate `SKILL.md` files | `skills/agentera/SKILL.md` |
 | Artifact format | Markdown | YAML |
 | Upgrade path | Manual helper scripts | `uvx --from git+https://github.com/jgabor/agentera agentera upgrade` or `uv run scripts/agentera upgrade` |
-| State CLI | none | `uv run scripts/agentera hej` as the dashboard data source, top-level state commands, plus advanced `uv run scripts/agentera query <artifact-name> --format json` or `--format yaml` |
-| Validation | per-skill | `uv run scripts/agentera validate capability <name-or-path>` plus `agentera validate capability-contract` for schema self/protocol checks |
+| State CLI | none | `uv run scripts/agentera prime` as the dashboard data source, `state` namespace commands, plus advanced `uv run scripts/agentera state query <artifact-name> --format json` or `--format yaml` (top-level aliases remain during migration) |
+| Validation | per-skill | `uv run scripts/agentera check validate capability <name-or-path>` plus `agentera check validate capability-contract` for schema self/protocol checks (top-level `validate` is a migration alias) |
 | Shared primitives | `SPEC.md` | `skills/agentera/protocol.yaml` |

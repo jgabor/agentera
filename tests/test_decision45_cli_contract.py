@@ -61,7 +61,8 @@ def test_decision_45_contract_separates_doctor_from_project_health():
 def test_decision_45_contract_classifies_later_task_boundaries():
     contract = _contract()
 
-    assert contract["describe"]["status"] == "implemented_runtime_introspection"
+    assert contract["schema"]["status"] == "implemented_runtime_introspection"
+    assert contract["describe"]["status"] == "deprecated_alias_for_schema"
     assert contract["structured_output"]["status"] == "implemented_for_routine_state_commands"
     assert contract["structured_output"]["envelope"]["routine_state_commands"]["fields"] == [
         "command",

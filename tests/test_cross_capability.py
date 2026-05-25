@@ -220,7 +220,7 @@ def test_master_skill_requires_cli_first_state_access():
     text = SKILL_MD_PATH.read_text(encoding="utf-8")
 
     assert "Step -1: Top-level CLI-first state access" in text
-    assert "agentera hej" in text
+    assert "agentera prime" in text
     assert "Single-call installed CLI gate" in text
     assert "query --list-artifacts" in text
     assert "query <artifact-name> --format json|yaml" in text
@@ -228,7 +228,7 @@ def test_master_skill_requires_cli_first_state_access():
     assert "raw artifact reads only as a" in text
     assert "complete startup coverage" in text
     assert "try the CLI-provided fallback commands first" in text
-    assert "Do not run individual `plan`, `progress`, `health`" in text
+    assert "Do not run individual `state plan`, `state progress`, `state health`" in text
     assert "Do not run `glob`, `grep`, `read`" in text
 
 
@@ -257,7 +257,7 @@ def test_routine_capability_guidance_uses_top_level_state_commands():
     assert "query progress" not in realisera
     assert "scripts/agentera experiments" in optimera
     assert "query experiments" not in optimera
-    assert 'uv run "$RESOLVED_AGENTERA_HOME/app/scripts/agentera" hej' in hej
+    assert 'uv run "$RESOLVED_AGENTERA_HOME/app/scripts/agentera" prime' in hej
     assert "Agentera found an old or broken local copy" in hej
     assert "advanced/custom inspection only" in hej
     assert "Do not preflight app health" in hej
@@ -274,7 +274,7 @@ def test_master_skill_documents_route_alias_contract_boundary():
     assert "`/agentera status`" in text
     assert "`/agentera build`" in text
     assert "`/agentera plan` routes to planera" in text
-    assert "`agentera plan` reads plan state" in text
+    assert "`agentera state plan` reads plan state" in text
     assert "complete_for_plan_artifact=true" in text
     assert "overall acceptance, surprises" in text
     assert "Raw mapped plan artifact access remains valid" in text
@@ -378,7 +378,8 @@ def test_installed_hej_entrypoint_resolves_app_home_before_script_expansion():
     }
     for label, text in surfaces.items():
         assert 'uv run "$AGENTERA_HOME/app/scripts/agentera" hej' not in text, label
-        assert 'uv run "$RESOLVED_AGENTERA_HOME/app/scripts/agentera" hej' in text, label
+        assert 'uv run "$AGENTERA_HOME/app/scripts/agentera" prime' not in text, label
+        assert 'uv run "$RESOLVED_AGENTERA_HOME/app/scripts/agentera" prime' in text, label
 
     combined = "\n".join(surfaces.values())
     assert "Never combine the app-home assignment" in combined

@@ -2157,7 +2157,7 @@ class TestHej:
         assert contract["unsupported_command_boundary"]["capability_cli_commands_added"] is True
         assert contract["seam_decision"]["selected"] == "prime --context"
         assert {entry["surface"] for entry in contract["seam_decision"]["not_changed"]} == {
-            "agentera describe --format json",
+            "agentera schema --format json",
             "dispatcher guidance",
         }
 

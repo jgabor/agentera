@@ -46,7 +46,7 @@ def test_direct_capability_routes_use_state_commands_not_capability_cli_names() 
     assert "run the top-level command or commands named by that capability" not in content
     assert "do not assume the route word is a CLI command" in normalized
     assert "The CLI command surface is state-oriented, not capability-oriented" in normalized
-    assert "resonera reads decisions through agentera decisions" in plain
+    assert "resonera reads decisions through agentera state decisions" in plain
     assert "Never run unsupported capability-name commands" in normalized
 
 
@@ -90,7 +90,7 @@ def test_master_skill_routes_bare_hej_to_dashboard_path() -> None:
 
     assert "complete user message exactly `hej`" in normalized
     assert "bare user message exactly `hej`" in normalized
-    assert "run `agentera hej` first" in normalized
+    assert "run `agentera prime` first" in normalized
     assert "must not be handled as a generic greeting" in normalized
 
 

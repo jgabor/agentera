@@ -228,15 +228,15 @@ That breadth is the point: every session can see product intent, plan state,
 what shipped, why choices were made, and whether the repo is healthy. Each turn
 loads only the slices an agent needs.
 
-Agents query targeted slices through the Agentera CLI (`hej`, `plan`, `progress`,
-`decisions`, `health`, and more) instead of raw-reading whole YAML files or
-Markdown logs. Capability startup uses bounded JSON envelopes from
+Agents query targeted slices through the Agentera CLI (`prime`, `state plan`,
+`state progress`, `state decisions`, `state health`, and more) instead of raw-reading whole YAML files or
+Markdown logs. Top-level aliases such as `hej` and `plan` remain during migration with stderr deprecation. Capability startup uses bounded JSON envelopes from
 `agentera prime --context <name>` so orientation stays complete without loading
 full artifact history into context. When agents need a specific artifact, they
 can list canonical names and paths first:
 
 ```bash
-uvx --from git+https://github.com/jgabor/agentera agentera query --list-artifacts
+uvx --from git+https://github.com/jgabor/agentera agentera state query --list-artifacts
 ```
 
 Wide coverage, narrow reads: many artifacts, token-efficient handoffs.
@@ -303,19 +303,21 @@ and whether the project is healthy.
 Without a clone:
 
 ```bash
-uvx --from git+https://github.com/jgabor/agentera agentera hej --format json
-uvx --from git+https://github.com/jgabor/agentera agentera plan --format json
-uvx --from git+https://github.com/jgabor/agentera agentera progress --limit 1 --format json
-uvx --from git+https://github.com/jgabor/agentera agentera decisions --topic api --format json
-uvx --from git+https://github.com/jgabor/agentera agentera health --format json
+uvx --from git+https://github.com/jgabor/agentera agentera prime --format json
+uvx --from git+https://github.com/jgabor/agentera agentera state plan --format json
+uvx --from git+https://github.com/jgabor/agentera agentera state progress --limit 1 --format json
+uvx --from git+https://github.com/jgabor/agentera agentera state decisions --topic api --format json
+uvx --from git+https://github.com/jgabor/agentera agentera state health --format json
 uvx --from git+https://github.com/jgabor/agentera agentera doctor --format json
 ```
+
+Top-level aliases such as `hej`, `plan`, and `progress` remain during migration with stderr deprecation.
 
 Contributors with a git clone use `uv run scripts/agentera …` instead. See
 [Development](#development).
 
 Slash routes and CLI commands are separate surfaces. `/agentera plan` routes to
-`planera`; `agentera plan` reads plan state.
+`planera`; `agentera state plan` reads plan state (top-level `agentera plan` is a migration alias).
 
 Maintainers benchmark when agents still raw-read artifacts after CLI queries; see
 [`references/analysis/benchmark.md`](./references/analysis/benchmark.md).
@@ -415,8 +417,9 @@ commands.
 
 ```bash
 uv run --with pytest --with pyyaml --with pytest-xdist pytest tests/ -q -n auto
-uv run scripts/agentera validate capability <name-or-path>
-uv run scripts/agentera validate capability-contract --format json
+uv run scripts/agentera check validate capability <name-or-path>
+uv run scripts/agentera check validate capability-contract --format json
+uv run scripts/agentera check compact
 ```
 
 ---

@@ -1,4 +1,22 @@
 cycles:
+- number: 603
+  timestamp: 2026-05-25 12:00
+  type: docs
+  phase: build
+  what: "CLI audience namespace plan task 5 \u2014 docs, contracts, hooks, and skill\
+    \ routing."
+  commit: pending
+  discovered: None.
+  verified: 1274 passed with pytest tests/ -q -n auto; lefthook and CI call check
+    compact; SKILL.md bare /agentera and bare hej route through agentera prime; planera
+    startup contract points discovery to agentera schema.
+  next: Task 6 migrate tests, semantic fixtures, and JSON surface manifest.
+  context:
+    intent: Close PLAN task 5 for CLI audience namespace consolidation.
+    constraints: Do not start task 6-7 fixture/manifest migration beyond minimal test
+      fixes.
+    scope: SKILL.md, AGENTS.md, README, UPGRADE, agent-ready-state contract, hooks,
+      CI, planera schema reference, focused contract tests.
 - number: 602
   timestamp: 2026-05-25 11:30
   type: test
@@ -166,23 +184,9 @@ cycles:
     intent: Fix hej audit staleness reporting and latest health audit selection.
     scope: scripts/agentera, tests/test_query_cli.py, hej and inspektera capability
       instructions.
-- number: 593
-  timestamp: 2026-05-23 22:30
-  type: chore
-  phase: build
-  what: Relocated authoritative docs to references/ and released 2.6.1 patch metadata.
-  commit: 2430bd6
-  discovered: Vocabulary and benchmark guides under docs/ were not packaged in the
-    app bundle; JSON workpapers belonged in archive once manifest owned live surfaces.
-  verified: Moved vocabulary to references/cli/, benchmark to references/analysis/,
-    added vocabulary-index.yaml, archived d47/d58/d59 workpapers, updated tests and
-    delegation paths. Version surfaces aligned to 2.6.1; CHANGELOG [2.6.1] added.
-  next: Tag v2.6.1; SPEC.md and contract.md cleanup remain open per documentation
-    inventory.
-  context:
-    intent: Relocate docs to references/ and align 2.6.1 release metadata.
-    scope: docs relocation, version_files, CHANGELOG, TODO, PROGRESS, tag v2.6.1.
 archive:
+- summary: 'Cycle 593 (2026-05-23): Relocated authoritative docs to references/ and
+    released 2.6.1 patch metadata.'
 - summary: 'Cycle 592 (2026-05-23): Archived completed prime/JSON-budget plan and
     released 2.6.0 metadata.'
 - summary: 'Cycle 591 (2026-05-23): Closed Agentera 3.0 JSON budget plan with full
@@ -255,5 +259,3 @@ archive:
     and compaction context support.'
 - summary: 'Cycle 554 (2026-05-17): Implemented Codex hook packaging and copied-hook
     trust flow.'
-- summary: 'Cycle 553 (2026-05-17): Fixed 2.5.0 direct capability routing and Planera
-    completed-plan archive boundaries.'

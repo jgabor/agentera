@@ -28,10 +28,10 @@ def test_user_facing_docs_prefer_agentera_validate_namespace() -> None:
     upgrade = _read("UPGRADE.md")
     agents = _read("AGENTS.md")
 
-    assert "uv run scripts/agentera validate capability-contract --format json" in readme
-    assert "uv run scripts/agentera validate capability <name-or-path>" in readme
-    assert "uv run scripts/agentera validate capability <name-or-path>" in agents
-    assert "uv run scripts/agentera validate capability <name-or-path>" in upgrade
+    assert "uv run scripts/agentera check validate capability-contract --format json" in readme
+    assert "uv run scripts/agentera check validate capability <name-or-path>" in readme
+    assert "uv run scripts/agentera check validate capability <name-or-path>" in agents
+    assert "uv run scripts/agentera check validate capability <name-or-path>" in upgrade
     assert "uv run scripts/validate_capability.py skills/agentera/capabilities/<name>" not in agents
 
 

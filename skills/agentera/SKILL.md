@@ -6,7 +6,7 @@ description: >
   prose and machine-readable schemas. The agent reads this file to route
   incoming requests to the right capability. Use this skill for /agentera,
   Agentera capability requests, and a complete user message exactly `hej`;
-  bare `hej` runs the agentera hej dashboard path instead of a generic greeting.
+  bare `hej` runs the agentera prime orientation dashboard path instead of a generic greeting.
 version: "2.7.1"
 spec_sections: [1, 2, 3, 4, 5, 6, 11, 13, 18, 19, 20, 22, 23]
 ---
@@ -55,12 +55,12 @@ When a request arrives, route to the matching capability using the five-layer ro
 
 ### Prerequisite: Single-call installed CLI gate
 
-This gate is mandatory, but the gate and the hej dashboard source are the same
+This gate is mandatory, but the gate and the orientation dashboard source are the same
 installed CLI invocation. For bare `/agentera` or bare `hej`, the first normal
 state-access tool call is:
 
 ```bash
-uv run "$RESOLVED_AGENTERA_HOME/app/scripts/agentera" hej
+uv run "$RESOLVED_AGENTERA_HOME/app/scripts/agentera" prime
 ```
 
 Resolve `RESOLVED_AGENTERA_HOME` with the app-home precedence `AGENTERA_HOME`
@@ -123,7 +123,7 @@ uvx --from git+https://github.com/jgabor/agentera agentera upgrade --yes
 
 After apply, retry the installed command from the platform app home reported by
 the upgrade output, not from the old default directory. If the command executes but
-fails before argparse, reports `invalid choice` for `hej`, or reports a status of
+fails before argparse, reports `invalid choice` for `prime`, or reports a status of
 `outdated`, `manual_review_needed`, missing-command, or repair-needed:
 
 - Say `Agentera found an old or broken local copy of itself.`
@@ -146,7 +146,7 @@ uvx --from git+https://github.com/jgabor/agentera agentera upgrade --install-roo
 After apply, retry:
 
 ```bash
-uv run "$RESOLVED_AGENTERA_HOME/app/scripts/agentera" hej
+uv run "$RESOLVED_AGENTERA_HOME/app/scripts/agentera" prime
 ```
 
 If `AGENTERA_HOME` names the old default `$HOME/.agents/agentera`, no explicit
@@ -180,10 +180,13 @@ Before any artifact-backed briefing, route decision, or capability state read,
 run the top-level command that owns the needed state. The app health gate
 above must have already confirmed the installed CLI is usable.
 
-Routine commands are: `hej`, `plan`, `progress`, `health`, `todo`,
-`decisions`, `docs`, `objective`, and `experiments`. Discovery and custom
-inspection remain available through `agentera describe --format json`,
-`query --list-artifacts`, and `query <artifact-name> --format json|yaml`.
+Routine commands are: `prime`, `state plan`, `state progress`, `state health`,
+`state todo`, `state decisions`, `state docs`, `state objective`, and
+`state experiments`. Top-level aliases such as `plan`, `progress`, and `hej`
+remain during migration with stderr deprecation. Discovery and custom
+inspection remain available through `agentera schema --format json`
+(`describe` is a deprecated alias),
+`state query --list-artifacts`, and `state query <artifact-name> --format json|yaml`.
 Structured discovery includes an artifact-location contract with mapped paths,
 normal read commands, and raw-access boundaries; use that contract before
 reading `.agentera/docs.yaml` or probing `.agentera/` for path discovery.
@@ -193,7 +196,7 @@ CLI state declares complete startup coverage, do not perform defensive raw
 artifact reads for normal startup. If CLI state is unavailable or incomplete,
 try the CLI-provided fallback commands first; use raw artifact reads only as a
 last-resort fallback after those paths fail or still declare incomplete state.
-When `agentera plan --format json` returns
+When `agentera state plan --format json` returns
 `source_contract.complete_for_plan_artifact=true`, treat its `summary`,
 `entries`, and `source_contract` as complete for normal `PLAN.md` startup and
 evaluation context; do not read `.agentera/plan.yaml` merely to re-check task
@@ -204,17 +207,17 @@ for writes, archives, validation, corruption diagnostics, or unavailable or
 incomplete CLI state after CLI fallbacks.
 
 When artifact paths are the only missing fact, prefer the CLI discovery contract:
-`agentera describe --format json` exposes `artifact_locations`, and
-`agentera query --list-artifacts --format json` exposes the same compact records
-with a `names` compatibility list. Plain `query --list-artifacts` remains the
+`agentera schema --format json` exposes `artifact_locations`, and
+`agentera state query --list-artifacts --format json` exposes the same compact records
+with a `names` compatibility list. Plain `state query --list-artifacts` remains the
 human names list. These discovery surfaces do not replace routine state commands
 for normal artifact content reads.
 
-For bare `/agentera` or a bare user message exactly `hej`, run `agentera hej`
+For bare `/agentera` or a bare user message exactly `hej`, run `agentera prime`
 first and render the README-style hej dashboard from that single composite
 result. The CLI output is source data, not the user-facing dashboard; do not
-relay raw `agentera hej` lines as the final briefing. Do not run individual `plan`, `progress`, `health`,
-`todo`, or `decisions` commands unless `agentera hej` fails or explicitly asks
+relay raw `agentera prime` lines as the final briefing. Do not run individual `state plan`, `state progress`, `state health`,
+`state todo`, or `state decisions` commands unless `agentera prime` fails or explicitly asks
 for fallback. The final response must
 transform source labels such as `mode:`, `profile:`, `health:`, `issues:`,
 `plan:`, `objective:`, `attention:`, `next_action:`, `app_home:`,
@@ -245,11 +248,11 @@ word is a CLI command. The CLI command surface is state-oriented, not
 capability-oriented:
 use the supported routine state command or commands that own the capability's
 needed artifacts, as declared by that capability's artifact schema. For example,
-`resonera` reads decisions through `agentera decisions`, not through the
+`resonera` reads decisions through `agentera state decisions`, not through the
 unsupported capability-name command `agentera resonera`. Never run unsupported
 capability-name commands such as `agentera resonera`, `agentera planera`, or
 `agentera realisera` as a bootstrap step. Shared words stay split by interface:
-`/agentera plan` routes to planera, while `agentera plan` reads plan state from
+`/agentera plan` routes to planera, while `agentera state plan` reads plan state from
 the CLI. When capability-specific startup context is needed, request it through
 `agentera prime --context <capability> --format json`. Use returned
 `capability_context.state.included` directly, and for
@@ -263,9 +266,9 @@ before reading `skills/agentera/capabilities/planera/instructions.md`. Read Plan
 editing Planera, resolving contradiction or ambiguity, validating detailed
 behavior not covered by the compact contract, or investigating benchmark/read-trigger
 evidence. This preserves Planera prose as detailed authority and does not add
-`agentera planera`; `/agentera plan` remains routing while `agentera plan`
-remains plan state.
-For normal DECISIONS.md context, use `agentera decisions --format json` and its
+`agentera planera`; `/agentera plan` remains routing while `agentera state plan`
+remains plan state (top-level `agentera plan` is a migration alias).
+For normal DECISIONS.md context, use `agentera state decisions --format json` and its
 source_contract. When `complete_for_normal_deliberation_context=true`, preserve
 returned `missing_fields`, `compacted`, `caveats`, and `satisfaction.review_needed`
 instead of raw-reading `.agentera/decisions.yaml` to reconstruct missing history.
@@ -323,10 +326,10 @@ the runtime-native question tool is required.
 
 ### Step 0: V1 migration handling
 
-Do not perform separate v1 Markdown/YAML discovery before a normal hej briefing.
+Do not perform separate v1 Markdown/YAML discovery before a normal prime briefing.
 The top-level CLI owns v1 detection. For bare `/agentera` or bare `hej`, render
 any `v1 artifacts detected` attention item and affected-file list from
-`agentera hej`; do not spend extra tool calls on `.agentera/*.md`,
+`agentera prime`; do not spend extra tool calls on `.agentera/*.md`,
 `.agentera/*.yaml`, or `VISION.md` globs.
 
 If the CLI reports v1 state, use the `v1_migration.dry_run_command` preview it
@@ -352,11 +355,11 @@ skill; if `/agentera` then finds missing or out-of-date app files, run the
 plain-language repair preview above so upgrade updates the app and cleans up
 the old default directory when it is recoverable.
 
-### Layer 1: Bare `/agentera` or bare `hej` — delegate to hej
+### Layer 1: Bare `/agentera` or bare `hej` — delegate to prime
 
 If the request is `/agentera` with no additional text, or the complete user
 message is exactly `hej`, delegate immediately to hej. Hej performs state-aware
-routing through the `agentera hej` composite result, which condenses project
+routing through the `agentera prime` composite result, which condenses project
 artifacts and suggests the most useful next capability. This is deterministic
 and never wrong. Bare `hej` must not be handled as a generic greeting.
 

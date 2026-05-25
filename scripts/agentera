@@ -1672,7 +1672,7 @@ def _planera_startup_contract() -> dict[str, Any]:
             "selected": "prime --context",
             "not_changed": [
                 {
-                    "surface": "agentera describe --format json",
+                    "surface": "agentera schema --format json",
                     "reason": "runtime/schema command discovery, not capability workflow startup context",
                 },
                 {

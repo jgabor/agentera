@@ -192,7 +192,7 @@ def test_repository_gate_is_wired_into_commit_and_ci_automation():
     lefthook = (REPO_ROOT / ".lefthook.yml").read_text(encoding="utf-8")
     ci = (REPO_ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
 
-    assert lefthook.count("uv run scripts/agentera gate") >= 1
+    assert lefthook.count("uv run scripts/agentera check compact") >= 1
     assert "pre-commit:" in lefthook
     assert "Repository gates" in ci
-    assert "uv run scripts/agentera gate" in ci
+    assert "uv run scripts/agentera check compact" in ci

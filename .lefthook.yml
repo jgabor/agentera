@@ -12,7 +12,7 @@ output: [
 pre-commit:
   commands:
     agentera:
-      run: uv run scripts/agentera gate
+      run: uv run scripts/agentera check compact
     docs:
       run: bunx markdownlint --dot --fix --disable MD013 MD024 MD029 MD033 MD036 MD040 MD041 MD060 -- {staged_files}
       stage_fixed: true

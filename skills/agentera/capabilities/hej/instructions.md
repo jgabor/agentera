@@ -21,7 +21,7 @@ For returning projects, run one composite command before any individual state
 access:
 
 ```bash
-uv run "$RESOLVED_AGENTERA_HOME/app/scripts/agentera" hej
+uv run "$RESOLVED_AGENTERA_HOME/app/scripts/agentera" prime
 ```
 
 Use that output to render the dashboard and select the concrete next action. Do
@@ -92,7 +92,7 @@ uvx --from git+https://github.com/jgabor/agentera agentera upgrade --install-roo
 Do not run the matching apply command until the user explicitly approves the
 same Agentera repair and directory.
 After apply, retry `uv run
-"$RESOLVED_AGENTERA_HOME/app/scripts/agentera" hej`; do not treat local checkout
+"$RESOLVED_AGENTERA_HOME/app/scripts/agentera" prime`; do not treat local checkout
 fallback as installed-app success. If `AGENTERA_HOME` names the old default
 `$HOME/.agents/agentera`, no explicit `--install-root` was supplied, and
 `$AGENTERA_HOME/app/scripts/agentera` is missing or out of date, show the normal

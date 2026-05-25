@@ -14,7 +14,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
       - name: Repository gates
-        run: uv run scripts/agentera gate
+        run: uv run scripts/agentera check compact
 
   web:
     name: Website

@@ -87,9 +87,12 @@ doctor:
     release-clean vocabulary. `doctor` is Agentera CLI/install/runtime
     self-check vocabulary only; artifact health and codebase audits remain owned
     by `agentera health` and inspektera.
-describe:
+schema:
   status: implemented_runtime_introspection
-  command: describe
+  command: schema
+  migration_alias:
+    command: describe
+    stderr: one-line deprecation naming schema
   owns:
     - command discovery
     - filters and output format discovery
@@ -104,8 +107,15 @@ describe:
     - claiming unavailable schema facts as implemented
   rationale: >-
     The playbook prioritizes runtime schema introspection so agents can discover
-    the current interface on demand. Task 5 owns executable `describe` behavior;
-    this contract only fixes its boundary.
+    the current interface on demand. `schema` owns public discovery; `describe`
+    remains a stderr-deprecation alias during migration.
+describe:
+  status: deprecated_alias_for_schema
+  command: describe
+  canonical_replacement: schema
+  rationale: >-
+    Deprecated alias retained for one minor release; agents and docs should use
+    `agentera schema`.
 structured_output:
   status: implemented_for_routine_state_commands
   formats:
@@ -276,7 +286,7 @@ structured_output:
             requirements, handoff expectations, and the Planera prose authority
             boundary without reading `planera/instructions.md` at runtime. It must
             not introduce `agentera planera`, new top-level commands, or hidden
-            capability-name aliases; `agentera describe` remains runtime/schema
+            capability-name aliases; `agentera schema` owns runtime/schema
             introspection rather than a capability workflow payload.
           orchestration_context_semantics: >-
             `agentera prime --context orkestrera --format json` may include
@@ -317,7 +327,7 @@ structured_output:
             and a raw-read-last-resort source contract. It must not introduce
             `agentera realisera`, `agentera build`, new top-level commands, or new subcommands.
           decision_attention_semantics: >-
-            `agentera hej --format json` may include one bounded `decision_attention`
+            `agentera prime --format json` may include one bounded `decision_attention`
             payload when returned decisions require satisfaction review. The payload
             derives from the same `_decision_context_entry` and
             `_decision_satisfaction_context` semantics as `agentera decisions --format
@@ -362,11 +372,11 @@ startup_completeness:
     - Optimera benchmark_context metadata for retained startup benchmark summaries
     - Realisera execution_context metadata for plan-driven implementation startup
   empty_state_behavior: >-
-    agentera hej reports absent plan, docs, and progress state explicitly through
+    agentera prime reports absent plan, docs, and progress state explicitly through
     structured summaries and state_presence absence metadata instead of forcing
-    artifact discovery.
+    artifact discovery. Top-level `agentera hej` remains a migration alias.
   repair_guidance_behavior: >-
-    agentera hej carries stale app repair commands through bundle/app_home output and
+    agentera prime carries stale app repair commands through bundle/app_home output and
     v1 migration preview/apply commands through v1_migration output.
   non_goals:
     - Do not add Decision 43 slash-route aliases to the CLI command surface.

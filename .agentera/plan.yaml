@@ -200,7 +200,13 @@ tasks:
   - number: 5
     name: Update contracts, skill routing, docs, hooks, and CI references
     depends_on: [2, 3, 4]
-    status: pending
+    status: complete
+    evidence: >-
+      SKILL.md bare `/agentera` and bare `hej` route through `agentera prime`; AGENTS.md,
+      README, and UPGRADE prefer `state`, `check`, and `schema` namespace forms with
+      migration alias notes; `.lefthook.yml` and CI call `agentera check compact`;
+      planera startup contract and agent-ready-state contract point discovery to
+      `agentera schema`; focused contract and helper-script policy tests updated.
     acceptance:
       - >-
         GIVEN `skills/agentera/SKILL.md` bare `/agentera` and bare `hej` routing

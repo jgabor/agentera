@@ -8,7 +8,8 @@ agentera v2: one Agentera skill (`skills/agentera/`) with twelve capabilities. E
 
 ## Capability validation
 
-Validate any capability through the canonical `agentera validate` namespace.
+Validate any capability through the canonical `agentera check validate` namespace.
+Top-level `agentera validate` remains a migration alias during the namespace rollout.
 `capability_schema_contract.yaml` owns capability schema structure;
 `scripts/capability_contract.py` loads the model consumed by the validator. Do not
 duplicate contract-owned groups, priority values, directory rules, or
@@ -16,13 +17,13 @@ primitive-reference field mappings in tests or docs unless a validation check ti
 them back to the loader/model.
 
 ```bash
-uv run scripts/agentera validate capability <name-or-path>
+uv run scripts/agentera check validate capability <name-or-path>
 ```
 
 Self-validate the contract:
 
 ```bash
-uv run scripts/agentera validate capability-contract --format json
+uv run scripts/agentera check validate capability-contract --format json
 ```
 
 ## Adding or modifying a capability
@@ -30,26 +31,29 @@ uv run scripts/agentera validate capability-contract --format json
 1. Create `skills/agentera/capabilities/<name>/instructions.md` with behavioral instructions
 2. Create `skills/agentera/capabilities/<name>/schemas/` with the four schema files: `triggers.yaml`, `artifacts.yaml`, `validation.yaml`, `exit.yaml`
 3. Update the capability table in `skills/agentera/SKILL.md`
-4. Validate: `uv run scripts/agentera validate capability <name-or-path>`
+4. Validate: `uv run scripts/agentera check validate capability <name-or-path>`
 
 ## Artifact path resolution
 
 Prefer the CLI for state access before raw artifact reads:
 
 ```bash
-uv run scripts/agentera hej
-uv run scripts/agentera todo
-uv run scripts/agentera docs
-uv run scripts/agentera query --list-artifacts
+uv run scripts/agentera prime
+uv run scripts/agentera state todo
+uv run scripts/agentera state docs
+uv run scripts/agentera state query --list-artifacts
 ```
+
+Top-level aliases such as `hej`, `todo`, and `docs` remain during migration with stderr deprecation.
 
 Canonical artifact names such as `DOCS.md` may map to YAML paths such as `.agentera/docs.yaml`; use the mapping or CLI result as the source of truth.
 
 Query and validate artifacts via the CLI:
 
 ```bash
-uv run scripts/agentera query --list-artifacts
-uv run scripts/agentera query decisions --topic <topic>
+uv run scripts/agentera state query --list-artifacts
+uv run scripts/agentera state query decisions --topic <topic>
+uv run scripts/agentera check validate capability <name-or-path>
 ```
 
 ## Key conventions
