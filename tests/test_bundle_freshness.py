@@ -95,8 +95,6 @@ def test_doctor_reports_legacy_bundle_root_migration_required_with_exact_command
     kinds = {signal["kind"] for signal in payload["signals"]}
     assert "migration_needed" in kinds
     assert "version_mismatch" in kinds
-    assert "missing_command" in kinds
-    assert any("hej" in signal.get("missingCommands", []) for signal in payload["signals"])
     assert payload["dryRunCommand"] == (
         "uvx --from git+https://github.com/jgabor/agentera agentera upgrade "
         f"--install-root {install_root} --dry-run"
@@ -106,7 +104,7 @@ def test_doctor_reports_legacy_bundle_root_migration_required_with_exact_command
         f"--install-root {install_root} --yes"
     )
     assert payload["approval"] == f"approve app files repair for {install_root}"
-    assert payload["retryCommand"].endswith(f"{install_root}/scripts/agentera hej")
+    assert payload["retryCommand"].endswith(f"{install_root}/scripts/agentera prime")
 
 
 def test_doctor_reports_coherent_app_and_runtime_roots_without_migration_warning(tmp_path: Path) -> None:
@@ -119,7 +117,7 @@ def test_doctor_reports_coherent_app_and_runtime_roots_without_migration_warning
             "import argparse\n"
             "parser = argparse.ArgumentParser(prog='agentera')\n"
             "sub = parser.add_subparsers(dest='command')\n"
-            "sub.add_parser('hej')\n"
+            "sub.add_parser('prime')\n"
             "parser.parse_args()\n"
         ),
         version="2.3.0",
@@ -604,7 +602,7 @@ def test_stale_bundle_refresh_dry_run_then_apply_preserves_install_root(tmp_path
     assert "migration_needed" not in {signal["kind"] for signal in status_payload["signals"]}
 
     retry = subprocess.run(
-        ["uv", "run", str(install_root / "app" / "scripts" / "agentera"), "hej"],
+        ["uv", "run", str(install_root / "app" / "scripts" / "agentera"), "prime"],
         cwd=REPO_ROOT,
         env={**os.environ, "AGENTERA_HOME": str(install_root)},
         text=True,
@@ -613,7 +611,7 @@ def test_stale_bundle_refresh_dry_run_then_apply_preserves_install_root(tmp_path
     )
     assert retry.returncode == 0, retry.stderr
     assert "source_contract:" in retry.stdout
-    assert "render=caller-owned README-style hej dashboard" in retry.stdout
+    assert "render=caller-owned README-style prime orientation dashboard" in retry.stdout
 
 
 def test_bundle_upgrade_missing_root_dry_run_writes_nothing(tmp_path: Path) -> None:

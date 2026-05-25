@@ -42,7 +42,7 @@ APP_MANUAL_REVIEW_NEEDED = "manual_review_needed"
 APP_READY_TO_APPLY = "ready_to_apply"
 APP_APPLIED = "applied"
 APP_NO_CHANGES_NEEDED = "no_changes_needed"
-EXPECTED_STATE_COMMANDS = ("hej",)
+EXPECTED_STATE_COMMANDS = ("prime",)
 USER_STATE_NAMES = ("PROFILE.md", "USAGE.md", "history", "corpus", "corpus.json")
 ROOT_USER_STATE_NAMES = (*USER_STATE_NAMES, "TODO.md", "CHANGELOG.md", "DESIGN.md")
 ROOT_USER_STATE_FILE_NAMES = ("PROFILE.md", "USAGE.md", "corpus.json", "TODO.md", "CHANGELOG.md", "DESIGN.md")
@@ -618,7 +618,7 @@ def build_doctor_status(
             "uv",
             "run",
             str(active_bundle_root / "scripts" / "agentera"),
-            "hej",
+            expected_commands[0] if expected_commands else "prime",
         ]),
         "approval": f"approve app files repair for {install_root}",
     }

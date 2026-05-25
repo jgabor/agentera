@@ -88,8 +88,8 @@ agentera queries return compact answers from structured state. Do NOT read
 raw YAML artifacts directly. The CLI is the seam between agent and state.
 
 Supported state commands:
-  agentera prime                                # Print this guide
-  agentera hej                                  # Composite orientation briefing
+  agentera prime                                # Composite orientation briefing
+  agentera prime --guidance                     # Print this guide
   agentera decisions [--topic TOPIC]            # Decision log
   agentera health [--dimension DIM]             # Latest health audit
   agentera todo [--severity LEVEL]              # TODO summary
@@ -123,11 +123,11 @@ If `agentera <state>` returns empty:
 
 If artifacts are corrupted:
   1. Check the YAML file in .agentera/ directly.
-  2. Run `agentera describe --format json` and use `source.schemas_dir`.
+  2. Run `agentera schema --format json` and use `source.schemas_dir`.
   3. Re-run the producing capability to regenerate the artifact.
 
 If schemas are missing:
-  1. Run `agentera describe --format json`.
+  1. Run `agentera schema --format json`.
   2. Make sure Agentera's app files exist at the reported `managedAppRoot` path.
   3. Run `agentera doctor` for a plain-language repair preview.
 """
@@ -597,7 +597,7 @@ def _hej_bundle_status(args: argparse.Namespace) -> dict[str, Any]:
         home=home,
         project=Path.cwd().resolve(),
         expected_version=expected,
-        expected_commands=("hej",),
+        expected_commands=("prime",),
         probe_cli=False,
     )
     status["expectedVersionSource"] = expected_source
@@ -973,11 +973,13 @@ COMMAND_FILTERS = {
     "doctor": ["install_root", "home", "project", "expected_version", "expect_command"],
     "upgrade": ["project", "install_root", "home", "runtime", "only", "dry_run", "yes", "force", "update_packages"],
     "describe": ["format"],
+    "schema": ["format"],
 }
 
 COMMAND_DESCRIPTIONS = {
-    "prime": "Print static agent-priming guidance.",
-    "hej": "Composite orientation briefing.",
+    "prime": "Composite orientation briefing and capability startup context.",
+    "hej": "Deprecated alias for prime.",
+    "schema": "Runtime CLI/schema introspection.",
     "plan": "Active plan summary.",
     "progress": "Recent cycle summary.",
     "health": "Latest project artifact health audit.",
@@ -992,7 +994,7 @@ COMMAND_DESCRIPTIONS = {
     "compact": "Check or fix artifact compaction budgets.",
     "upgrade": "Plan or apply an idempotent v1-to-v2 upgrade.",
     "doctor": "Check Agentera CLI, app, and runtime status.",
-    "describe": "Runtime self-description for CLI commands, formats, fields, aliases, schemas, and doctor categories.",
+    "describe": "Deprecated alias for schema.",
 }
 
 DOCTOR_SIGNAL_KINDS = [
@@ -4437,10 +4439,10 @@ def _command_description(name: str, *, kind: str, fields: list[str] | None = Non
         output_formats = ["text", "json"]
     elif name == "upgrade":
         output_formats = ["text", "json"]
-    elif name == "describe":
+    elif name in {"describe", "schema"}:
         output_formats = ["json", "yaml"]
     elif name == "prime":
-        output_formats = ["text"]
+        output_formats = ["text", "json", "yaml"]
     return {
         "name": name,
         "kind": kind,
@@ -4453,8 +4455,8 @@ def _command_description(name: str, *, kind: str, fields: list[str] | None = Non
 
 def _describe_commands() -> list[dict[str, Any]]:
     commands = [
-        _command_description("prime", kind="guidance"),
-        _command_description("hej", kind="orientation", fields=_available_structured_fields("hej")),
+        _command_description("prime", kind="orientation", fields=_available_structured_fields("prime")),
+        _command_description("hej", kind="deprecated_alias", fields=_available_structured_fields("hej")),
     ]
     for name in CAPABILITY_NAMES:
         if name == "hej":
@@ -4469,7 +4471,8 @@ def _describe_commands() -> list[dict[str, Any]]:
         _command_description("lint", kind="artifact_lint", fields=["command", "status", "artifact", "checks", "summary"]),
         _command_description("gate", kind="repo_gate", fields=["command", "status", "project", "summary", "operations"]),
         _command_description("compact", kind="artifact_compaction", fields=["command", "status", "project", "summary", "operations"]),
-        _command_description("describe", kind="runtime_introspection"),
+        _command_description("schema", kind="runtime_introspection"),
+        _command_description("describe", kind="deprecated_alias"),
         _command_description("upgrade", kind="upgrade"),
         _command_description("doctor", kind="self_check"),
     ])
@@ -4487,7 +4490,7 @@ def _contract_section(contract: dict[str, Any] | None, key: str, gaps: list[dict
     return None
 
 
-def _build_describe_payload() -> dict[str, Any]:
+def _build_schema_payload(*, command: str = "schema") -> dict[str, Any]:
     contract, contract_error = _load_decision45_contract()
     app_model = _active_app_model()
     schemas_dir = _discover_schemas_dir(app_model)
@@ -4506,8 +4509,8 @@ def _build_describe_payload() -> dict[str, Any]:
     field_selection = _contract_section(contract, "field_selection", gaps)
 
     return {
-        "schemaVersion": "agentera.describe.v1",
-        "command": "describe",
+        "schemaVersion": "agentera.schema.v1",
+        "command": command,
         "status": "incomplete" if gaps else "ok",
         "source": {
             "contract": str(_contract_path()),
@@ -4552,9 +4555,21 @@ def _build_describe_payload() -> dict[str, Any]:
     }
 
 
-def cmd_describe(args: argparse.Namespace) -> int:
-    _emit_structured(_build_describe_payload(), getattr(args, "format", "json"))
+def _emit_deprecation_alias(legacy: str, canonical: str) -> None:
+    print(
+        f"Deprecation: agentera {legacy} is deprecated; use agentera {canonical}",
+        file=sys.stderr,
+    )
+
+
+def cmd_schema(args: argparse.Namespace) -> int:
+    _emit_structured(_build_schema_payload(), getattr(args, "format", "json"))
     return 0
+
+
+def cmd_describe(args: argparse.Namespace) -> int:
+    _emit_deprecation_alias("describe", "schema")
+    return cmd_schema(args)
 
 
 def _validate_prime_capability(capability: str) -> None:
@@ -4756,12 +4771,12 @@ def _build_orientation_json_payload(
     render = (
         "caller-owned README-style hej dashboard"
         if command == "hej"
-        else "caller-owned README-style orientation dashboard"
+        else "caller-owned README-style prime orientation dashboard"
     )
     access = (
         "single installed CLI call; app/v1/profile safety included; no preflight glob/read/import/doctor calls during normal hej"
         if command == "hej"
-        else "single installed CLI call; app/v1/profile safety included; no preflight glob/read/import/doctor calls during normal orientation"
+        else "single installed CLI call; app/v1/profile safety included; no preflight glob/read/import/doctor calls during normal prime"
     )
     return {
         "command": command,
@@ -4831,8 +4846,16 @@ def _build_prime_capability_context_payload(
 def cmd_prime(args: argparse.Namespace) -> int:
     capability = getattr(args, "context", None)
     dashboard = bool(getattr(args, "dashboard", False) or getattr(args, "orientation", False))
+    guidance = bool(getattr(args, "guidance", False))
     if capability is not None and dashboard:
         raise ValueError("prime --context and prime --dashboard/--orientation are mutually exclusive")
+    if capability is not None and guidance:
+        raise ValueError("prime --context and prime --guidance are mutually exclusive")
+    if dashboard and guidance:
+        raise ValueError("prime --dashboard/--orientation and prime --guidance are mutually exclusive")
+    if guidance:
+        print(PRIME_BLOB, end="")
+        return 0
     if capability is not None:
         _validate_prime_capability(str(capability))
         if _output_format(args) == "text":
@@ -4846,7 +4869,11 @@ def cmd_prime(args: argparse.Namespace) -> int:
         state = _collect_orientation_state(args)
         payload = _build_orientation_json_payload(state, command="prime")
         return _emit_state_structured("prime", payload, args)
-    print(PRIME_BLOB, end="")
+    state = _collect_orientation_state(args)
+    if _output_format(args) != "text":
+        payload = _build_orientation_json_payload(state, command="prime", capability_name=None)
+        return _emit_state_structured("prime", payload, args)
+    _print_orientation_text_briefing(state, command="prime")
     return 0
 
 
@@ -7301,10 +7328,7 @@ def _select_hej_next_action(
     }
 
 
-def cmd_hej(_args: argparse.Namespace) -> int:
-    if getattr(_args, "capability_context", None):
-        raise ValueError(REMOVED_3_0_HEJ_CAPABILITY_CONTEXT)
-    state = _collect_orientation_state(_args)
+def _print_orientation_text_briefing(state: dict[str, Any], *, command: str) -> None:
     bundle = state["bundle"]
     mode = state["mode"]
     profile_status = state["profile_status"]
@@ -7316,11 +7340,9 @@ def cmd_hej(_args: argparse.Namespace) -> int:
     state_presence = state["state_presence"]
     attention = state["attention"]
     next_action = state["next_action"]
-    if _output_format(_args) != "text":
-        payload = _build_orientation_json_payload(state, command="hej", capability_name=None)
-        return _emit_state_structured("hej", payload, _args)
+    dashboard_label = "prime orientation dashboard" if command == "prime" else "hej dashboard"
 
-    print("agentera hej")
+    print(f"agentera {command}")
     print(
         f"app_home: status={bundle['status']} | home={bundle['appHome']} | "
         f"source={bundle['appHomeSource']} | managed_app={bundle['managedAppRoot']} | user_data={bundle['userDataRoot']} | expected={bundle['expectedVersion']} | "
@@ -7368,7 +7390,7 @@ def cmd_hej(_args: argparse.Namespace) -> int:
     print(f"- {_format_next_action(next_action)}")
     print("source_contract:")
     print("- fields=app_home,mode,profile,v1_migration,health,issues,plan,docs,progress,objective,state_presence,attention,decision_attention,next_action,orchestration_context,closeout_context,evidence_context,benchmark_context,execution_context")
-    print("- render=caller-owned README-style hej dashboard")
+    print(f"- render=caller-owned README-style {dashboard_label}")
     print("- access=single installed CLI call; app/v1/profile safety included; no preflight glob/read/import/doctor calls")
     startup_contract = _startup_completeness_contract()
     print(f"- capability_startup_complete={str(startup_contract['complete_for_capability_startup']).lower()}")
@@ -7377,7 +7399,13 @@ def cmd_hej(_args: argparse.Namespace) -> int:
     print(f"- missing_state={missing_state}")
     print(f"- confidence_caveats={'; '.join(startup_contract['confidence_caveats'])}")
     print(f"- cli_fallback={'; '.join(startup_contract['cli_fallback'])}")
-    return 0
+
+
+def cmd_hej(args: argparse.Namespace) -> int:
+    if getattr(args, "capability_context", None):
+        raise ValueError(REMOVED_3_0_HEJ_CAPABILITY_CONTEXT)
+    _emit_deprecation_alias("hej", "prime")
+    return cmd_prime(args)
 
 
 def _query_generic_entries(args: argparse.Namespace, schemas: dict, name: str) -> list[dict]:
@@ -7515,7 +7543,12 @@ def build_parser() -> argparse.ArgumentParser:
 
     prime = sub.add_parser(
         "prime",
-        help="Print agent-priming guidance, orientation JSON, or capability startup context",
+        help="Composite orientation briefing, capability startup context, or static guidance",
+    )
+    prime.add_argument(
+        "--guidance",
+        action="store_true",
+        help="Print static agent-priming guidance prose",
     )
     prime.add_argument(
         "--context",
@@ -7552,15 +7585,21 @@ def build_parser() -> argparse.ArgumentParser:
     )
     add_structured_args(prime)
 
+    schema = sub.add_parser(
+        "schema",
+        help="Runtime CLI/schema introspection",
+    )
+    schema.add_argument("--format", choices=["json", "yaml"], default="json", help="Output format")
+
     describe = sub.add_parser(
         "describe",
-        help="Runtime CLI/schema introspection",
+        help="Deprecated alias for schema",
     )
     describe.add_argument("--format", choices=["json", "yaml"], default="json", help="Output format")
 
     hej = sub.add_parser(
         "hej",
-        help="Composite orientation briefing",
+        help="Deprecated alias for prime",
     )
     hej.add_argument(
         "--install-root",
@@ -7919,7 +7958,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--expect-command",
         action="append",
         type=_agent_command,
-        help="Installed CLI command that must be discoverable; may be repeated (default: hej)",
+        help="Installed CLI command that must be discoverable; may be repeated (default: prime)",
     )
     b.add_argument(
         "--json",
@@ -7935,6 +7974,8 @@ def main(argv: list[str] | None = None) -> int:
     try:
         if args.command == "prime":
             return cmd_prime(args)
+        if args.command == "schema":
+            return cmd_schema(args)
         if args.command == "describe":
             return cmd_describe(args)
         if args.command == "hej":

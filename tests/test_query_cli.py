@@ -303,9 +303,21 @@ class TestPrime:
         assert result.returncode == 0
         return result
 
-    def test_pass_outputs_guidance(self, prime_result):
-        assert "agentera plan" in prime_result.stdout
-        assert "native" in prime_result.stdout.lower()
+    @pytest.fixture(scope="class")
+    def prime_guidance_result(self):
+        result = _run("prime", "--guidance")
+        assert result.returncode == 0
+        return result
+
+    def test_default_outputs_orientation_briefing(self, prime_result):
+        assert "agentera prime" in prime_result.stdout
+        assert "app_home: status=" in prime_result.stdout
+        assert "next_action:" in prime_result.stdout
+        assert "source_contract:" in prime_result.stdout
+
+    def test_guidance_outputs_static_prose(self, prime_guidance_result):
+        assert "agentera plan" in prime_guidance_result.stdout
+        assert "native" in prime_guidance_result.stdout.lower()
 
     def test_prime_idempotent(self):
         first = _run("prime")
@@ -314,10 +326,10 @@ class TestPrime:
         assert second.returncode == 0
         assert first.stdout == second.stdout
 
-    def test_prime_has_routing_and_recovery(self, prime_result):
-        assert "recovery" in prime_result.stdout.lower()
-        assert "stale" in prime_result.stdout.lower()
-        assert "missing" in prime_result.stdout.lower()
+    def test_guidance_has_routing_and_recovery(self, prime_guidance_result):
+        assert "recovery" in prime_guidance_result.stdout.lower()
+        assert "stale" in prime_guidance_result.stdout.lower()
+        assert "missing" in prime_guidance_result.stdout.lower()
 
     def test_prime_no_args(self, prime_result):
         assert len(prime_result.stdout) > 100
@@ -1742,7 +1754,7 @@ class TestHej:
         assert "app_home: status=up_to_date" in r.stdout
         assert "source_contract:" in r.stdout
         assert "fields=app_home,mode,profile,v1_migration,health,issues,plan,docs,progress,objective,state_presence,attention,decision_attention,next_action,orchestration_context,closeout_context,evidence_context" in r.stdout
-        assert "render=caller-owned README-style hej dashboard" in r.stdout
+        assert "render=caller-owned README-style prime orientation dashboard" in r.stdout
         assert "access=single installed CLI call; app/v1/profile safety included; no preflight glob/read/import/doctor calls" in r.stdout
         assert "capability_startup_complete=true" in r.stdout
         assert "raw_artifact_reads_required=false" in r.stdout
@@ -1754,7 +1766,9 @@ class TestHej:
 
         structured = _run("hej", "--format", "json", cwd=project)
         assert structured.returncode == 0
+        assert "Deprecation: agentera hej is deprecated; use agentera prime" in structured.stderr
         data = json.loads(structured.stdout)
+        assert data["command"] == "prime"
         assert data["source_contract"]["capability_startup"]["complete_for_capability_startup"] is True
         assert data["source_contract"]["capability_startup"]["missing_state"] == []
         assert data["plan"]["tasks"][1]["depends_on"] == [1]
@@ -1953,8 +1967,9 @@ class TestHej:
         r = _run("hej", "--format", "json", cwd=project)
 
         assert r.returncode == 0, r.stderr
+        assert "Deprecation: agentera hej is deprecated; use agentera prime" in r.stderr
         data = json.loads(r.stdout)
-        assert data["command"] == "hej"
+        assert data["command"] == "prime"
         assert "plan" in data
         assert "docs" in data
         assert "source_contract" in data
@@ -4115,7 +4130,7 @@ class TestArtifactTypeCoverage:
 
 
 ROUTINE_STRUCTURED_COMMANDS = [
-    "hej",
+    "prime",
     "plan",
     "progress",
     "health",
@@ -4129,7 +4144,7 @@ ROUTINE_STRUCTURED_COMMANDS = [
 
 class TestRoutineStructuredOutput:
     def _seed(self, project: Path, command: str) -> None:
-        if command == "hej":
+        if command == "prime":
             return
         fixture = ARTIFACT_FIXTURES[command]
         _write_fixture_artifact(project, fixture)
@@ -4145,13 +4160,13 @@ class TestRoutineStructuredOutput:
         assert data["command"] == command
         assert data["status"] in {"ok", "empty"}
         assert "source" in data
-        if command == "hej":
+        if command == "prime":
             assert "next_action" in data
             assert "bundle" in data
             assert "v1_migration" in data
             assert "source_contract" in data
             assert data["source_contract"]["access"] == (
-                "single installed CLI call; app/v1/profile safety included; no preflight glob/read/import/doctor calls during normal hej"
+                "single installed CLI call; app/v1/profile safety included; no preflight glob/read/import/doctor calls during normal prime"
             )
             startup = data["source_contract"]["capability_startup"]
             assert startup["complete_for_capability_startup"] is True
@@ -4201,7 +4216,7 @@ class TestRoutineStructuredOutput:
         data = json.loads(r.stdout)
         assert data["entries"][0]["timestamp"] == "2026-05-09"
 
-    @pytest.mark.parametrize("command", [c for c in ROUTINE_STRUCTURED_COMMANDS if c != "hej"])
+    @pytest.mark.parametrize("command", [c for c in ROUTINE_STRUCTURED_COMMANDS if c != "prime"])
     def test_empty_json_state_is_explicit(self, project, command):
         r = _run(command, "--format", "json", cwd=project)
 
@@ -4246,10 +4261,11 @@ class TestRoutineStructuredOutput:
         r = _run("hej", "--format", "yaml", "--fields", "mode,next_action", cwd=project)
 
         assert r.returncode == 0
+        assert "Deprecation: agentera hej is deprecated; use agentera prime" in r.stderr
         data = yaml.safe_load(r.stdout)
         assert list(data) == ["command", "status", "mode", "next_action"]
         assert set(data).issubset(set(available))
-        assert data["command"] == "hej"
+        assert data["command"] == "prime"
         assert data["status"] == "ok"
 
     def test_sparse_hej_evidence_context_field_selection_uses_supported_seam(self, project):
@@ -4374,17 +4390,17 @@ class TestInputHardening:
 
 
 class TestDescribeIntrospection:
-    def test_describe_json_exposes_runtime_interface_without_route_alias_commands(self, project):
-        r = _run("describe", "--format", "json", cwd=project)
+    def test_schema_json_exposes_runtime_interface_without_route_alias_commands(self, project):
+        r = _run("schema", "--format", "json", cwd=project)
 
         assert r.returncode == 0
         data = json.loads(r.stdout)
-        assert data["schemaVersion"] == "agentera.describe.v1"
-        assert data["command"] == "describe"
+        assert data["schemaVersion"] == "agentera.schema.v1"
+        assert data["command"] == "schema"
         assert data["status"] == "ok"
         command_names = {entry["name"] for entry in data["commands"]}
         assert set(ROUTINE_STRUCTURED_COMMANDS).issubset(command_names)
-        assert {"query", "describe", "doctor", "upgrade", "prime"}.issubset(command_names)
+        assert {"query", "schema", "doctor", "upgrade", "prime"}.issubset(command_names)
         assert "bundle-status" not in command_names
         assert "build" not in command_names
         assert "planera" in command_names
@@ -4393,6 +4409,16 @@ class TestDescribeIntrospection:
         assert data["slash_route_aliases"]["aliases"]["plan"] == "planera"
         assert data["slash_route_aliases"]["cli_commands_added"] is True
 
+    def test_describe_json_delegates_to_schema_with_deprecation(self, project):
+        r = _run("describe", "--format", "json", cwd=project)
+
+        assert r.returncode == 0
+        assert "Deprecation: agentera describe is deprecated; use agentera schema" in r.stderr
+        data = json.loads(r.stdout)
+        assert data["schemaVersion"] == "agentera.schema.v1"
+        assert data["command"] == "schema"
+        assert data["status"] == "ok"
+
     def test_planera_capability_command_emits_routing_guidance(self, project):
         r = _run("planera", cwd=project)
 
@@ -4400,8 +4426,8 @@ class TestDescribeIntrospection:
         assert "startup context: agentera prime --context planera --format json" in r.stdout
         assert "not a routine state read" in r.stdout
 
-    def test_describe_json_exposes_formats_fields_schemas_and_doctor_boundaries(self, project):
-        r = _run("describe", "--format", "json", cwd=project)
+    def test_schema_json_exposes_formats_fields_schemas_and_doctor_boundaries(self, project):
+        r = _run("schema", "--format", "json", cwd=project)
 
         assert r.returncode == 0
         data = json.loads(r.stdout)
@@ -4433,17 +4459,27 @@ class TestDescribeIntrospection:
         assert "project artifact health" in data["doctor"]["excludes"]
         assert "version_mismatch" in data["doctor"]["signal_kinds"]
 
-    def test_describe_yaml_is_parseable(self, project):
-        r = _run("describe", "--format", "yaml", cwd=project)
+    def test_schema_yaml_is_parseable(self, project):
+        r = _run("schema", "--format", "yaml", cwd=project)
 
         assert r.returncode == 0
         data = yaml.safe_load(r.stdout)
-        assert data["command"] == "describe"
+        assert data["command"] == "schema"
         assert data["status"] == "ok"
         assert data["source"]["schemas_dir_exists"] is True
 
-    def test_describe_reports_missing_schema_discovery_explicitly(self, tmp_path):
-        r = _run("describe", "--format", "json", cwd=tmp_path)
+    def test_describe_yaml_delegates_to_schema(self, project):
+        r = _run("describe", "--format", "yaml", cwd=project)
+
+        assert r.returncode == 0
+        assert "Deprecation: agentera describe is deprecated; use agentera schema" in r.stderr
+        data = yaml.safe_load(r.stdout)
+        assert data["command"] == "schema"
+        assert data["status"] == "ok"
+        assert data["source"]["schemas_dir_exists"] is True
+
+    def test_schema_reports_missing_schema_discovery_explicitly(self, tmp_path):
+        r = _run("schema", "--format", "json", cwd=tmp_path)
 
         assert r.returncode == 0
         data = json.loads(r.stdout)

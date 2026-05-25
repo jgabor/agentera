@@ -113,7 +113,14 @@ tasks:
   - number: 2
     name: Implement prime default briefing and top-level schema command
     depends_on: [1]
-    status: pending
+    status: complete
+    evidence: >-
+      `agentera prime` default emits composite orientation briefing (text/json);
+      `--guidance` retains static PRIME_BLOB; `--context`/`--dashboard` unchanged.
+      Added `agentera schema`; `hej`/`describe` print one-line stderr deprecation
+      aliases delegating to `prime`/`schema`. `EXPECTED_STATE_COMMANDS` and doctor
+      `--expect-command` default to `prime`. Focused coverage in
+      tests/test_prime_schema_migration.py; suite: 1247 passed with pytest tests/ -q -n auto.
     acceptance:
       - >-
         GIVEN `agentera prime` runs with no mode flags WHEN output emits THEN it
