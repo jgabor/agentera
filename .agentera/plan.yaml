@@ -1,0 +1,264 @@
+header:
+  level: full
+  created: 2026-05-25
+  status: active
+  reviewed: 2026-05-25
+  critic_issues: "1 found, 1 addressed, 0 dismissed"
+  revised: >-
+    Critic noted missing explicit reconciliation with completed D59 prime work and
+    Decision 45 routine-state alias policy; added design notes and migration task
+    acceptance for both.
+  title: CLI Audience Namespace Consolidation with Prime, Schema, and Top-Level Lifecycle
+what: >-
+  Implement and migrate the Run 2 hybrid CLI shape refined by user direction: `prime`
+  fully replaces `hej` as the top-level orientation command; all eleven non-hej
+  capabilities remain top-level routing commands; `upgrade` and `doctor` stay
+  top-level lifecycle commands; `describe` becomes a top-level `schema` command;
+  routine state reads, analytics, and maintainer tooling consolidate under three
+  audience namespaces (`state`, `report`, `check`) with a phased alias migration.
+why: >-
+  The current flat CLI mixes agent orientation, artifact reads, capability routing,
+  install diagnostics, analytics, and maintainer gates at the same depth (~33
+  top-level verbs). Decision 59 established `prime` as the non-capability control
+  plane and direct capability-name routing; this plan extends that foundation with
+  clearer audience grouping, removes the redundant `hej`/`describe` split, and
+  deepens subcommand interfaces while preserving capability discoverability and
+  Decision 45 stable routine state names via aliases.
+constraints: >-
+  Do not add capability workflow execution commands. Slash routes (`/agentera plan`)
+  remain separate from CLI state reads (`state plan`). Direct helper scripts stay as
+  backward-compatible maintainer seams per AGENTS.md. Do not expose top-level
+  `agentera corpus`; corpus generation stays behind `report refresh --consent
+  local-history`. Do not publish, push, tag, refresh installed apps/profiles, edit
+  `.agentera/vision.yaml`, mutate objective state, or bump release metadata unless
+  separately approved. Reconcile with completed PLAN-2026-05-23 prime/JSON work:
+  extend rather than re-litigate slim `capability_context` and JSON budget enforcement.
+scope:
+  included:
+    - "`scripts/agentera` parser hierarchy, command dispatch, help grouping, and stderr deprecation aliases."
+    - "`prime` absorbing composite orientation briefing (today's `hej`) as default behavior."
+    - Top-level `schema` command replacing public `describe` ownership."
+    - Namespaces `state`, `report`, and `check` with canonical subcommands."
+    - Top-level preservation of `upgrade`, `doctor`, and eleven capability routing commands."
+    - Removal of top-level `hej`, `gate`, and public `describe` after alias period."
+    - "`references/cli/agent-ready-state-contract.yaml`, vocabulary docs, SKILL.md, AGENTS.md, hooks, CI references."
+    - Tests, semantic fixtures, JSON surface manifest updates for renamed/moved commands."
+  excluded:
+    - Replacing `mage bench:startupState` with an `agentera` subcommand."
+    - Merging `lint` into `validate artifact` or `doctor` into `state health`."
+    - Demoting capability-name commands to `prime --context` only."
+    - Package publication, installed-app refresh, and version-file bumps in this plan."
+  deferred:
+    - Final dashboard/orientation display label and exact flag spelling beyond provisional `--dashboard`."
+    - Removing all top-level state aliases (post-major cleanup after one minor alias release)."
+design: >-
+  Target top-level surface (~18 verbs): **control plane** — `prime` (default =
+  composite orientation briefing formerly owned by `hej`, plus `--context`,
+  `--dashboard`), `schema` (runtime CLI/schema introspection, renamed from
+  `describe`); **capabilities** — eleven top-level routing commands
+  (`visionera` … `orkestrera`, excluding `hej`); **lifecycle** — `upgrade`,
+  `doctor`; **audience namespaces** — `state` (routine artifact reads + `query`),
+  `report` (analytics; `stats` default read, `refresh` with consent), `check`
+  (validate, verify, lint, compact absorbing `gate`).
+
+  **Prime vs Decision 59:** Completed D59 work split static priming (bare `prime`)
+  from dashboard/orientation mode. User direction consolidates further: **`prime`
+  default emits the composite orientation briefing** (installed-app gate, health,
+  plan, attention, next_action). Static priming prose moves to an explicit flag
+  (e.g. `--guidance`) if still needed. `--context <capability>` and `--dashboard`
+  remain on `prime`. Bare `/agentera` and bare `hej` skill routes target
+  `agentera prime`.
+
+  **Schema:** `agentera schema` replaces public `agentera describe`; `describe`
+  becomes a stderr deprecation alias for one minor release. Discovery contracts
+  (`artifact_locations`, command tree, audience tags) emit from `schema`.
+
+  **Migration:** Phase 1 adds namespaces + delegates; old top-level names print
+  one stderr deprecation and forward. Phase 2 updates contracts, docs, hooks
+  (`.lefthook.yml` `gate` → `check compact`), semantic fixtures. Phase 3 removes
+  deprecated top-level parsers except documented capability and lifecycle names.
+  Decision 45 routine state names remain reachable as `state <name>` with
+  top-level aliases during Phase 1–2.
+
+  Anchors: `scripts/agentera` (`build_parser`, `cmd_hej`, `cmd_prime`, `cmd_describe`),
+  `references/cli/agent-ready-state-contract.yaml`, `tests/test_query_cli.py`,
+  `tests/test_helper_script_policy.py`, `.lefthook.yml`, `skills/agentera/SKILL.md`.
+tasks:
+  - number: 1
+    name: Record target CLI contract and alias migration policy
+    depends_on: []
+    status: complete
+    evidence: >-
+      Added references/cli/audience-namespace-cli-migration.yaml (target command tree,
+      state/report/check namespaces, audience tags, migration phases, Decision 59/45
+      reconciliation, plan routing distinction) and linked it from
+      references/cli/agent-ready-state-contract.yaml. Focused contract tests in
+      tests/test_audience_namespace_cli_migration_contract.py pass.
+    acceptance:
+      - >-
+        GIVEN the target command tree is documented WHEN maintainers inspect
+        `references/cli/agent-ready-state-contract.yaml` or a linked vocabulary
+        addendum THEN it lists top-level commands, namespace subcommands, audience
+        tags ([agent], [user], [maintainer]), and the prime/hej/schema migration
+        boundary.
+      - >-
+        GIVEN Decision 59 and Decision 45 apply WHEN the contract is reviewed THEN
+        it states that `prime --context` remains the capability startup seam,
+        routine state names stay stable via aliases, and `schema` owns discovery
+        formerly on `describe`.
+      - >-
+        GIVEN slash routes and capability tops are documented WHEN an agent reads
+        the contract THEN `/agentera plan` routing is distinguished from
+        `state plan` artifact reads and from `planera` routing guidance.
+  - number: 2
+    name: Implement prime default briefing and top-level schema command
+    depends_on: [1]
+    status: pending
+    acceptance:
+      - >-
+        GIVEN `agentera prime` runs with no mode flags WHEN output emits THEN it
+        produces the composite orientation briefing currently owned by `hej`
+        (app gate, health, plan, attention, next_action, source_contract).
+      - >-
+        GIVEN `agentera prime --context <capability> --format json` runs WHEN
+        output emits THEN slim `capability_context` remains the supported startup
+        shape per Decision 59.
+      - >-
+        GIVEN `agentera schema --format json` runs WHEN output emits THEN it
+        returns the runtime CLI/schema introspection payload previously owned by
+        `describe`.
+      - >-
+        GIVEN `agentera hej` or `agentera describe` is invoked WHEN stderr is
+        captured THEN a one-line deprecation names `prime` or `schema` and
+        execution delegates to the canonical command.
+      - >-
+        GIVEN `agentera doctor --expect-command` defaults WHEN prime migration
+        completes THEN the default expected command is `prime`, not `hej`.
+  - number: 3
+    name: Add state, report, and check namespace parsers with delegation
+    depends_on: [1]
+    status: pending
+    acceptance:
+      - >-
+        GIVEN `agentera state plan --format json` runs WHEN output emits THEN it
+        matches today's `agentera plan --format json` envelope and
+        source_contract.
+      - >-
+        GIVEN `agentera report` and `agentera report refresh --consent
+        local-history` run WHEN invoked THEN behavior matches today's plain
+        `stats` and `stats refresh` including consent gates.
+      - >-
+        GIVEN `agentera check validate capability hej` and `agentera check verify
+        smoke installed-skills` run WHEN invoked THEN they delegate to existing
+        validate/verify handlers without behavior change.
+      - >-
+        GIVEN `agentera check compact` runs in default mode WHEN invoked THEN it
+        matches today's `agentera gate` check-only compaction behavior.
+      - >-
+        GIVEN top-level aliases `plan`, `stats`, `validate`, `gate` remain during
+        migration WHEN invoked THEN they delegate with stderr deprecation to the
+        canonical namespace form.
+  - number: 4
+    name: Preserve top-level lifecycle and capability routing commands
+    depends_on: [1]
+    status: pending
+    acceptance:
+      - >-
+        GIVEN `agentera upgrade` and `agentera doctor` run WHEN invoked THEN they
+        remain top-level commands with unchanged flags and JSON shapes.
+      - >-
+        GIVEN each of the eleven non-hej capabilities is invoked at top level
+        WHEN output emits THEN routing guidance behavior is unchanged from today's
+        capability-name commands.
+      - >-
+        GIVEN `agentera hej` is removed from the public top-level parser WHEN
+        `--help` is inspected THEN `hej` does not appear as a top-level command
+        and `prime` is listed as the orientation entry.
+      - >-
+        GIVEN help text is grouped by audience WHEN `agentera --help` runs THEN
+        sections distinguish agent (`prime`, `state`, capabilities), user
+        (`upgrade`, `doctor`, `report`), and maintainer (`check`) commands.
+  - number: 5
+    name: Update contracts, skill routing, docs, hooks, and CI references
+    depends_on: [2, 3, 4]
+    status: pending
+    acceptance:
+      - >-
+        GIVEN `skills/agentera/SKILL.md` bare `/agentera` and bare `hej` routing
+        WHEN prose is inspected THEN the installed CLI gate calls `agentera prime`
+        and renders from that composite result.
+      - >-
+        GIVEN AGENTS.md and README validation examples reference CLI commands
+        WHEN inspected THEN they prefer namespace forms while noting migration
+        aliases where still supported.
+      - >-
+        GIVEN `.lefthook.yml` and CI workflows reference `agentera gate` WHEN
+        updated THEN they call `agentera check compact` (or equivalent canonical
+        form) without changing gate semantics.
+      - >-
+        GIVEN `agentera prime --context planera` startup contract references
+        `describe` WHEN updated THEN it points agents to `agentera schema` for
+        discovery.
+  - number: 6
+    name: Migrate tests, semantic fixtures, and JSON surface manifest
+    depends_on: [2, 3, 4, 5]
+    status: pending
+    acceptance:
+      - >-
+        GIVEN focused CLI tests run WHEN namespace and alias coverage executes
+        THEN tests cover `prime` default briefing, `schema`, `state/*`, `report/*`,
+        `check/*`, deprecation aliases, and preserved top-level upgrade/doctor/
+        capability commands.
+      - >-
+        GIVEN semantic eval fixtures reference `agentera hej` WHEN updated THEN
+        fixtures and expected facts use `agentera prime` without changing routing
+        semantics under test.
+      - >-
+        GIVEN `scripts/json_output_surface_manifest.yaml` lists public JSON
+        surfaces WHEN migration completes THEN renamed commands (`schema`, namespace
+        paths) have updated command rows and budgets remain enforced.
+      - >-
+        GIVEN `uv run pytest tests/ -q -n auto` runs WHEN closeout verification
+        executes THEN the full suite passes without weakening lefthook coverage.
+  - number: 7
+    name: Closeout verification, measurement evidence, and handoff
+    depends_on: [1, 2, 3, 4, 5, 6]
+    status: pending
+    acceptance:
+      - >-
+        GIVEN migration is complete WHEN `agentera validate capability-contract
+        --format json` and `agentera check compact` run THEN both pass on the
+        migrated tree.
+      - >-
+        GIVEN public JSON outputs changed WHEN measurement evidence is recorded
+        THEN before/after byte and token counts for `prime`, `schema`, and moved
+        namespace commands are noted in progress evidence.
+      - >-
+        GIVEN the plan tasks are all complete WHEN artifacts are inspected THEN
+        this plan is archived and `.agentera/plan.yaml` is removed per Planera
+        closeout rules.
+overall_acceptance:
+  - >-
+    GIVEN the migrated CLI WHEN an agent runs bare orientation THEN `agentera prime`
+    replaces `hej` as the single composite briefing entry with no loss of
+    source_contract fields.
+  - >-
+    GIVEN eleven capabilities remain top-level WHEN `--help` is reviewed THEN
+    capability routing discoverability is preserved and only `hej` is removed from
+    capability tops.
+  - >-
+    GIVEN lifecycle commands WHEN users run install diagnostics THEN `upgrade` and
+    `doctor` remain top-level without a `setup` namespace.
+  - >-
+    GIVEN schema discovery WHEN agents need command trees THEN `agentera schema`
+    is the canonical introspection command and `describe` is not the documented path.
+  - >-
+    GIVEN maintainer workflows WHEN CI and hooks run THEN `check` namespace owns
+    validate, verify, lint, and compact (former gate) with unchanged safety
+    boundaries for live verify opt-in.
+  - >-
+    GIVEN Decision 45 routine state names WHEN agents read plan/progress/etc. THEN
+    `state <name>` is canonical with top-level aliases during migration and
+    source_contract shapes are unchanged.
+surprises: []
+previous_plan_archived: null

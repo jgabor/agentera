@@ -9,8 +9,18 @@ sources:
   decisions:
     - .agentera/decisions.yaml#Decision-45
     - .agentera/decisions.yaml#Decision-43
+    - .agentera/decisions.yaml#Decision-59
   playbook: /home/jgabor/docs/agent-ready-interface-playbook.md
   active_plan: .agentera/plan.yaml
+linked_addenda:
+  audience_namespace_cli_migration:
+    path: references/cli/audience-namespace-cli-migration.yaml
+    status: target_design_contract
+    purpose: >-
+      Target CLI command tree, audience namespaces (`state`, `report`, `check`),
+      prime/hej and schema/describe migration boundaries, Decision 45 routine-state
+      alias policy, and `/agentera plan` versus `state plan` versus `planera` routing
+      distinction. Parser implementation is deferred to plan tasks 2–4.
 principles:
   - Keep the CLI state-oriented; capability routing remains a slash-command surface.
   - Preserve stable routine state command names unless a task records an explicit migration.

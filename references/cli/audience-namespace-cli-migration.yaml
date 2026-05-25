@@ -1,0 +1,335 @@
+schema_version: agentera.audience_namespace_cli_migration.v1
+status: target_design_contract
+purpose: >-
+  Target CLI command tree, audience namespace grouping, and phased alias migration
+  policy for the Run 2 hybrid CLI consolidation. Documents the post-migration surface
+  before parser and dispatch changes land in plan tasks 2–4.
+sources:
+  decisions:
+    - .agentera/decisions.yaml#Decision-45
+    - .agentera/decisions.yaml#Decision-59
+    - .agentera/decisions.yaml#Decision-43
+  parent_contract: references/cli/agent-ready-state-contract.yaml
+  active_plan: .agentera/plan.yaml
+  implementation_entrypoint: scripts/agentera
+implementation_status: design_only
+non_goals:
+  - Do not implement parser, dispatch, or help-grouping changes in this contract task.
+  - Do not remove top-level aliases until the phased migration completes.
+  - Do not add capability workflow execution commands such as `agentera planera`.
+  - Do not expose top-level `agentera corpus`; corpus generation stays behind
+    `report refresh --consent local-history`.
+target_surface_summary: >-
+  Reduce the flat ~33 top-level verbs to ~18 by grouping routine state reads,
+  analytics, and maintainer gates under three audience namespaces while preserving
+  eleven top-level capability routing commands plus lifecycle commands.
+audience_tags:
+  agent: >-
+    Orientation, routine project-state reads, capability startup context, and
+    capability routing guidance the agent uses before raw artifact access.
+  user: >-
+    Install lifecycle, diagnostics, and privacy-gated analytics a human operator
+    runs without maintainer-only verification gates.
+  maintainer: >-
+    Validation, verification, lint, compaction, and repository gate checks used in
+    CI, hooks, and maintainer workflows.
+top_level_commands:
+  control_plane:
+    prime:
+      audience: [agent]
+      status: target_canonical
+      replaces: hej
+      default_behavior: >-
+        Composite orientation briefing currently owned by `hej` (installed-app gate,
+        health, plan, attention, next_action, source_contract). Static priming prose
+        moves to an explicit flag such as `--guidance` when still needed.
+      modes:
+        default: composite orientation briefing (formerly `hej`)
+        context: >-
+          `agentera prime --context <capability> --format json` — slim
+          `capability_context` startup capsule per Decision 59
+        dashboard: >-
+          `agentera prime --dashboard` / `--orientation` — orientation JSON mode
+          (provisional flag spelling)
+      skill_routing: >-
+        Bare `/agentera` and bare `hej` skill routes target `agentera prime`, not
+        a separate `hej` CLI command.
+      removed_from_top_level: hej
+    schema:
+      audience: [agent]
+      status: target_canonical
+      replaces: describe
+      owns:
+        - command tree discovery
+        - audience tag metadata
+        - filters and output format discovery
+        - structured output shape metadata
+        - field selection metadata
+        - Decision 43 slash-route alias descriptions
+        - artifact schema discovery
+        - linked contract section pointers
+      migration_alias:
+        command: describe
+        stderr: one-line deprecation naming `schema`
+        removal: after one minor alias release
+  capabilities:
+    audience: [agent]
+    status: preserved_top_level
+    count: 11
+    excludes: hej
+    commands:
+      - visionera
+      - resonera
+      - inspirera
+      - planera
+      - realisera
+      - optimera
+      - inspektera
+      - dokumentera
+      - profilera
+      - visualisera
+      - orkestrera
+    behavior: >-
+      Top-level capability-name commands emit routing guidance only. They do not
+      execute capability workflows. Capability startup JSON remains on
+      `agentera prime --context <capability> --format json`, not on capability tops.
+    non_goals:
+      - Do not demote capability tops to `prime --context` only.
+      - Do not add `agentera hej` back as a capability top.
+  lifecycle:
+    upgrade:
+      audience: [user]
+      status: preserved_top_level
+      notes: Stays top-level; no `setup` namespace wrapper.
+    doctor:
+      audience: [user]
+      status: preserved_top_level
+      notes: Agentera CLI/install/runtime self-check only; see parent contract `doctor`.
+audience_namespaces:
+  state:
+    audience: [agent]
+    status: target_canonical_namespace
+    purpose: Routine artifact reads and advanced artifact query.
+    subcommands:
+      plan:
+        canonical_shape: agentera state plan [--format text|json|yaml] [--fields ...]
+        legacy_top_level_alias: plan
+      progress:
+        canonical_shape: agentera state progress [--format text|json|yaml] [--fields ...]
+        legacy_top_level_alias: progress
+      health:
+        canonical_shape: agentera state health [--format text|json|yaml] [--fields ...]
+        legacy_top_level_alias: health
+      todo:
+        canonical_shape: agentera state todo [--format text|json|yaml] [--fields ...]
+        legacy_top_level_alias: todo
+      decisions:
+        canonical_shape: agentera state decisions [--format text|json|yaml] [--fields ...]
+        legacy_top_level_alias: decisions
+      docs:
+        canonical_shape: agentera state docs [--format text|json|yaml] [--fields ...]
+        legacy_top_level_alias: docs
+      objective:
+        canonical_shape: agentera state objective [--format text|json|yaml] [--fields ...]
+        legacy_top_level_alias: objective
+      experiments:
+        canonical_shape: agentera state experiments [--format text|json|yaml] [--fields ...]
+        legacy_top_level_alias: experiments
+      query:
+        canonical_shape: agentera state query [--list-artifacts] [<artifact>] [--format ...]
+        legacy_top_level_alias: query
+        notes: Advanced artifact access; not the normal routine state interface.
+    decision_45_policy: >-
+      Decision 45 routine state command names (`plan`, `progress`, `health`, `todo`,
+      `decisions`, `docs`, `objective`, `experiments`, `query`) remain stable during
+      Phase 1–2 as top-level stderr-deprecation aliases that delegate to
+      `agentera state <name>`. Canonical namespace form is `state <name>`; JSON/YAML
+      envelopes and source_contract shapes are unchanged.
+  report:
+    audience: [user]
+    status: target_canonical_namespace
+    purpose: Privacy-gated usage analytics.
+    subcommands:
+      default_read:
+        canonical_shape: agentera report [--format text|json] [--project VALUE]
+        delegates_from: stats
+        behavior: Matches today's plain `agentera stats` read-only analytics.
+      refresh:
+        canonical_shape: >-
+          agentera report refresh [--dry-run] [--consent local-history]
+          [--project-root PATH] [--format text|json]
+        delegates_from: stats refresh
+        behavior: Matches today's `agentera stats refresh` including consent gates.
+    legacy_top_level_alias: stats
+    rejected_top_level: corpus
+    notes: >-
+      `agentera usage` and `scripts/usage_stats.py` remain backward-compatible
+      maintainer seams per AGENTS.md until separately classified; public user-facing
+      analytics consolidate under `report`.
+  check:
+    audience: [maintainer]
+    status: target_canonical_namespace
+    purpose: Validation, verification, lint, and repository compaction gates.
+    subcommands:
+      validate:
+        canonical_shape: agentera check validate <family> [target options]
+        delegates_from: validate
+        notes: Preserves existing validate families (capability, artifact, descriptors, etc.).
+      verify:
+        canonical_shape: agentera check verify <family> <target> [options]
+        delegates_from: verify
+        notes: Smoke and eval gate families unchanged.
+      lint:
+        canonical_shape: agentera check lint --artifact <ARTIFACT> [options]
+        delegates_from: lint
+      compact:
+        canonical_shape: agentera check compact [--project PATH] [--mode check|fix] [--format text|json]
+        delegates_from:
+          - compact
+          - gate
+        notes: >-
+          `check compact` in default check-only mode matches today's `agentera gate`.
+          Artifact compaction budget checks remain on `check compact`.
+    legacy_top_level_aliases:
+      - validate
+      - verify
+      - lint
+      - gate
+      - compact
+help_grouping:
+  agent: [prime, state, schema, capabilities]
+  user: [upgrade, doctor, report]
+  maintainer: [check]
+prime_hej_schema_migration_boundary:
+  prime_absorbs_hej:
+    status: target
+    hej_cli: >-
+      Top-level `hej` is removed from the public parser after the alias period.
+      `agentera hej` prints one stderr deprecation naming `prime` and delegates
+      during Phase 1–2.
+    hej_skill_route: >-
+      Bare `hej` in the Agentera skill still routes to orientation, but the installed
+      CLI gate calls `agentera prime` and renders from that composite result.
+    prime_default: >-
+      Bare `agentera prime` emits the composite orientation briefing currently owned
+      by `hej`, not static priming-only prose. Static priming moves to `--guidance`
+      when retained.
+    prime_context_unchanged: >-
+      `agentera prime --context <capability> --format json` remains the sole supported
+      capability startup JSON seam per Decision 59; slim `capability_context` shape
+      and JSON budgets are unchanged.
+    doctor_default: >-
+      After migration, `agentera doctor --expect-command` defaults to `prime`, not
+      `hej`.
+  schema_replaces_describe:
+    status: target
+    canonical: agentera schema [--format json|yaml]
+    alias: >-
+      `agentera describe` prints one stderr deprecation naming `schema` and delegates
+      during Phase 1–2.
+    discovery_ownership: >-
+      `schema` owns runtime CLI/schema introspection formerly on `describe`, including
+      command tree, audience tags, artifact locations, and linked contract sections.
+      Capability startup contracts that reference discovery must point agents to
+      `agentera schema`, not `agentera describe`.
+decision_reconciliation:
+  decision_59:
+    prime_context_seam: >-
+      `prime --context` remains the capability startup seam. Top-level capability
+      names route to capability guidance; `prime` prepares the agent. Historical
+      `hej --capability-context` and `--context-profile full` paths stay removed.
+    prime_consolidation: >-
+      User direction consolidates dashboard/orientation into `prime` default briefing
+      rather than keeping bare `prime` as static-only priming plus a separate `hej`
+      dashboard owner.
+  decision_45:
+    routine_state_aliases: >-
+      Routine state names stay stable via top-level aliases during migration. Canonical
+      reads become `agentera state <name>`; envelopes, field selection, and
+      source_contract semantics are unchanged.
+    slash_route_separation: >-
+      Decision 43 slash aliases remain excluded from the CLI command surface. The
+      shared word `plan` keeps three distinct meanings documented below.
+plan_routing_distinction:
+  slash_route:
+    invocation: /agentera plan
+    surface: Agentera skill slash route (Decision 43 primary alias)
+    routes_to: planera
+    meaning: >-
+      Request-to-capability routing — start or continue Planera planning work. This
+      is not a CLI command and does not read `.agentera/plan.yaml` by itself.
+  state_read:
+    invocation: agentera state plan
+    legacy_alias: agentera plan
+    surface: CLI routine state read
+    meaning: >-
+      Read-only access to the active plan artifact summary, tasks, acceptance
+      criteria, evidence, and source_contract. Does not invoke Planera workflow
+      execution.
+  capability_top:
+    invocation: agentera planera
+    surface: CLI top-level capability routing command
+    meaning: >-
+      Emits Planera routing guidance prose/schemas pointers. Does not replace
+      `state plan` reads or `/agentera plan` slash routing. Capability startup JSON
+      for Planera remains `agentera prime --context planera --format json`.
+  agent_guidance: >-
+    Use `/agentera plan` when the user wants planning work routed to Planera; use
+    `agentera state plan` (or legacy `agentera plan`) when the agent needs plan
+    artifact state; use `agentera planera` for capability routing guidance; use
+    `agentera prime --context planera` for bounded Planera startup context.
+migration_phases:
+  phase_1:
+    name: add_namespaces_and_delegate
+    actions:
+      - Add `state`, `report`, and `check` namespace parsers.
+      - Delegate to existing handlers without behavior change.
+      - Add `schema` top-level command delegating from `describe`.
+      - Make `prime` default emit composite orientation briefing.
+      - Keep legacy top-level names as stderr-deprecation aliases.
+  phase_2:
+    name: update_contracts_docs_hooks
+    actions:
+      - Update SKILL.md, AGENTS.md, hooks, CI, and semantic fixtures to prefer canonical forms.
+      - Emit audience tags and command tree from `agentera schema`.
+      - Record measurement evidence for JSON surface moves.
+  phase_3:
+    name: remove_deprecated_top_level_parsers
+    actions:
+      - >-
+        Remove `hej`, public `describe`, and `gate` from top-level parser help.
+      - >-
+        Remove other deprecated top-level parsers except documented capability and
+        lifecycle names and the Phase 1–2 alias set until post-major cleanup.
+      - >-
+        Deferred final removal of all routine-state top-level aliases after one
+        minor alias release.
+alias_policy:
+  stderr_format: one-line deprecation naming the canonical command
+  delegation: forward to canonical handler with unchanged JSON/text envelopes
+  duration: one minor release minimum for hej, describe, and routine-state tops
+  forbidden:
+    - bundle-status compatibility alias (Decision 45 hard rename)
+    - adding Decision 43 slash aliases as CLI commands
+    - silent fallback without stderr during the alias period
+command_tree_target:
+  top_level_count: ~18
+  groups:
+    - prime [agent]
+    - schema [agent]
+    - visionera [agent]
+    - resonera [agent]
+    - inspirera [agent]
+    - planera [agent]
+    - realisera [agent]
+    - optimera [agent]
+    - inspektera [agent]
+    - dokumentera [agent]
+    - profilera [agent]
+    - visualisera [agent]
+    - orkestrera [agent]
+    - upgrade [user]
+    - doctor [user]
+    - state [agent]
+    - report [user]
+    - check [maintainer]
