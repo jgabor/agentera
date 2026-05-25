@@ -147,6 +147,14 @@ CAPABILITY_NAMES = [
     "orkestrera",
 ]
 
+CAPABILITY_ROUTING_NAMES = tuple(name for name in CAPABILITY_NAMES if name != "hej")
+
+CLI_HELP_AUDIENCE_GROUPS: tuple[tuple[str, tuple[str, ...]], ...] = (
+    ("Agent commands", ("prime", "schema", "state", *CAPABILITY_ROUTING_NAMES)),
+    ("User commands", ("upgrade", "doctor", "report")),
+    ("Maintainer commands", ("check",)),
+)
+
 REMOVED_3_0_HEJ_CAPABILITY_CONTEXT = (
     "agentera hej --capability-context was removed in Agentera 3.0. "
     "Use `agentera prime --context <capability> --format json` for capability startup context."
@@ -7542,15 +7550,15 @@ def _add_structured_output_args(command_parser: argparse.ArgumentParser) -> None
 
 
 def _add_state_subcommand_parsers(state_sub: argparse._SubParsersAction) -> None:
-    decisions = state_sub.add_parser("decisions", help="Decision log")
+    decisions = state_sub.add_parser("decisions", help=argparse.SUPPRESS)
     decisions.add_argument("--topic", help="Filter by topic (substring match on text fields)")
     _add_structured_output_args(decisions)
 
-    health = state_sub.add_parser("health", help="Latest health audit")
+    health = state_sub.add_parser("health", help=argparse.SUPPRESS)
     health.add_argument("--dimension", help="Filter by dimension name")
     _add_structured_output_args(health)
 
-    todo = state_sub.add_parser("todo", help="TODO summary")
+    todo = state_sub.add_parser("todo", help=argparse.SUPPRESS)
     todo.add_argument("--severity", help="Filter by severity level")
     todo.add_argument("--status", help="Filter by status")
     _add_structured_output_args(todo)
@@ -7559,28 +7567,28 @@ def _add_state_subcommand_parsers(state_sub: argparse._SubParsersAction) -> None
     plan.add_argument("--status", help="Filter plan tasks by status")
     _add_structured_output_args(plan)
 
-    progress = state_sub.add_parser("progress", help="Recent cycle summary")
+    progress = state_sub.add_parser("progress", help=argparse.SUPPRESS)
     progress.add_argument("--topic", help="Filter by topic (substring match on text fields)")
     progress.add_argument("--status", help="Filter progress entries by type")
     progress.add_argument("--limit", type=int, default=5, help="Limit recent entries")
     _add_structured_output_args(progress)
 
-    docs = state_sub.add_parser("docs", help="Documentation contract summary")
+    docs = state_sub.add_parser("docs", help=argparse.SUPPRESS)
     docs.add_argument("--topic", help="Filter docs by topic")
     docs.add_argument("--status", help="Filter docs by status")
     _add_structured_output_args(docs)
 
-    objective = state_sub.add_parser("objective", help="Active optimera objective summary")
+    objective = state_sub.add_parser("objective", help=argparse.SUPPRESS)
     objective.add_argument("--status", help="Filter legacy objective entries by status")
     _add_structured_output_args(objective)
 
-    experiments = state_sub.add_parser("experiments", help="Active optimera experiments summary")
+    experiments = state_sub.add_parser("experiments", help=argparse.SUPPRESS)
     experiments.add_argument("--topic", help="Filter by topic (substring match on text fields)")
     experiments.add_argument("--status", help="Filter by status")
     experiments.add_argument("--limit", type=int, default=5, help="Limit recent entries")
     _add_structured_output_args(experiments)
 
-    query = state_sub.add_parser("query", help="Advanced custom artifact query")
+    query = state_sub.add_parser("query", help=argparse.SUPPRESS)
     query.add_argument("query", nargs="?", help="Query pattern or artifact name")
     query.add_argument("--list-artifacts", action="store_true", help="List all discovered artifact types")
     query.add_argument("--format", choices=["text", "json", "yaml"], default="text", help="Output format")
@@ -7754,14 +7762,59 @@ def cmd_check(args: argparse.Namespace) -> int:
 
 
 
+def _subparser_help_map(parser: argparse.ArgumentParser) -> dict[str, str]:
+    for action in parser._actions:
+        if isinstance(action, argparse._SubParsersAction):
+            return {
+                choice_action.dest: choice_action.help or ""
+                for choice_action in action._choices_actions
+                if choice_action.help is not argparse.SUPPRESS
+            }
+    return {}
+
+
+class AgenteraArgumentParser(argparse.ArgumentParser):
+    def format_help(self) -> str:
+        if self.prog != "agentera":
+            return super().format_help()
+        formatter = self._get_formatter()
+        public_names = [name for _, commands in CLI_HELP_AUDIENCE_GROUPS for name in commands]
+        parts = [
+            f"usage: {self.prog} [-h] {{{','.join(public_names)}}} ...",
+            "",
+        ]
+        if self.description:
+            parts.extend([self.description, ""])
+        command_help = _subparser_help_map(self)
+        for group_title, command_names in CLI_HELP_AUDIENCE_GROUPS:
+            parts.append(f"{group_title}:")
+            for name in command_names:
+                help_text = command_help.get(name, "")
+                parts.append(f"  {name:<20}{help_text}")
+            parts.append("")
+        optionals = [action for action in self._actions if action.option_strings]
+        if optionals:
+            parts.append("options:")
+            for action in optionals:
+                parts.extend(f"  {line}" for line in formatter._format_action(action).splitlines())
+            parts.append("")
+        if self.epilog:
+            parts.append(self.epilog)
+        return "\n".join(parts).rstrip() + "\n"
+
+
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(
+    parser = AgenteraArgumentParser(
         prog="agentera",
         description="agentera: read project state, upgrade installs, and print priming guidance",
-        epilog="Examples: agentera verify smoke installed-skills; agentera stats refresh --dry-run; agentera usage --format json",
+        epilog=(
+            "Examples: agentera prime; agentera state plan --format json; "
+            "agentera check verify smoke installed-skills; "
+            "agentera report refresh --dry-run"
+        ),
         formatter_class=argparse.RawTextHelpFormatter,
     )
-    sub = parser.add_subparsers(dest="command")
+    sub = parser.add_subparsers(dest="command", parser_class=argparse.ArgumentParser)
 
     def add_structured_args(command_parser: argparse.ArgumentParser) -> None:
         command_parser.add_argument("--format", choices=["text", "json", "yaml"], default="text", help="Output format")
@@ -7819,13 +7872,13 @@ def build_parser() -> argparse.ArgumentParser:
 
     describe = sub.add_parser(
         "describe",
-        help="Deprecated alias for schema",
+        help=argparse.SUPPRESS,
     )
     describe.add_argument("--format", choices=["json", "yaml"], default="json", help="Output format")
 
     hej = sub.add_parser(
         "hej",
-        help="Deprecated alias for prime",
+        help=argparse.SUPPRESS,
     )
     hej.add_argument(
         "--install-root",
@@ -7869,7 +7922,7 @@ def build_parser() -> argparse.ArgumentParser:
     todo.add_argument("--status", help="Filter by status")
     add_structured_args(todo)
 
-    plan = sub.add_parser("plan", help="Deprecated alias for state plan")
+    plan = sub.add_parser("plan", help=argparse.SUPPRESS)
     plan.add_argument("--status", help="Filter plan tasks by status")
     add_structured_args(plan)
 
@@ -7896,7 +7949,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     compact = sub.add_parser(
         "compact",
-        help="Check or fix artifact compaction budgets",
+        help=argparse.SUPPRESS,
     )
     compact.add_argument(
         "--project",
@@ -7914,7 +7967,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     gate = sub.add_parser(
         "gate",
-        help="Deprecated alias for check compact",
+        help=argparse.SUPPRESS,
     )
     gate.add_argument(
         "--project",
@@ -7926,7 +7979,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     verify = sub.add_parser(
         "verify",
-        help="Run bounded smoke or eval verification gates",
+        help=argparse.SUPPRESS,
         description=(
             "Run supported smoke or eval verification gates through a stable facade. "
             "Examples: agentera verify smoke installed-skills; "
@@ -7951,7 +8004,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     usage = sub.add_parser(
         "usage",
-        help="Generate suite usage analytics",
+        help=argparse.SUPPRESS,
         description=(
             "Generate suite usage analytics from the existing Section 22 corpus. "
             "Examples: agentera usage; agentera usage --format json --project agentera"
@@ -7964,7 +8017,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     stats = sub.add_parser(
         "stats",
-        help="Deprecated alias for report",
+        help=argparse.SUPPRESS,
         description=(
             "Canonical user-facing usage analytics workflow. Plain stats reads only the "
             "existing internal corpus; refresh requires explicit local-history consent. "
@@ -7993,7 +8046,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     lint = sub.add_parser(
         "lint",
-        help="Run pre-write artifact prose self-audit",
+        help=argparse.SUPPRESS,
         formatter_class=argparse.RawDescriptionHelpFormatter,
         description=(
             "Run pre-write artifact prose self-audit.\n\n"
@@ -8020,7 +8073,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     validate = sub.add_parser(
         "validate",
-        help="Deprecated alias for check validate",
+        help=argparse.SUPPRESS,
         formatter_class=argparse.RawDescriptionHelpFormatter,
         description=(
             "Validate capability directories, canonical Agentera artifacts, runtime agent descriptors, "

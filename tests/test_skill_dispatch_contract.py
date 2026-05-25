@@ -180,20 +180,11 @@ def test_non_hej_capabilities_are_not_cli_state_commands() -> None:
     assert result.returncode == 0, result.stderr
     choices = _command_choices(result.stdout)
 
-    assert {
-        "hej",
-        "decisions",
-        "health",
-        "todo",
-        "plan",
-        "progress",
-        "docs",
-        "objective",
-        "experiments",
-    } <= choices
+    assert "hej" not in choices
+    assert "state" in choices
+    assert {"plan", "progress", "todo", "query"}.isdisjoint(choices)
 
     non_hej_capabilities = {
         path.name for path in CAPABILITIES_DIR.iterdir() if path.is_dir()
     } - {"hej"}
     assert non_hej_capabilities <= choices
-    assert {"plan", "progress", "todo"}.issubset(choices)

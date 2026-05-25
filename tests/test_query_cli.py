@@ -3904,15 +3904,11 @@ class TestHelp:
         r = _run("--help")
         assert r.returncode == 0
         assert "prime" in r.stdout
-        assert "hej" in r.stdout
-        assert "query" in r.stdout
-        assert "plan" in r.stdout
-        assert "progress" in r.stdout
-        assert "health" in r.stdout
-        assert "decisions" in r.stdout
-        assert "docs" in r.stdout
-        assert "objective" in r.stdout
-        assert "experiments" in r.stdout
+        assert "hej" not in r.stdout
+        assert "state" in r.stdout
+        assert "report" in r.stdout
+        assert "check" in r.stdout
+        assert "Agent commands:" in r.stdout
 
     def test_query_help_lists_filters(self):
         r = _run("query", "--help")

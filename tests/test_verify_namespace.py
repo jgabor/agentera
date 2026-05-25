@@ -153,11 +153,12 @@ def test_verify_safety_boundaries_reject_unconfirmed_live_and_runtime_conflicts(
 def test_verify_help_discovers_namespace_without_renaming_smoke_or_eval_vocabulary() -> None:
     root_help = _run_cli("--help")
     verify_help = _run_cli("verify", "--help")
+    check_help = _run_cli("check", "verify", "--help")
 
-    assert root_help.returncode == verify_help.returncode == 0
-    assert "agentera verify" in root_help.stdout
-    assert "Run bounded smoke or eval verification gates" in root_help.stdout
+    assert root_help.returncode == verify_help.returncode == check_help.returncode == 0
+    assert "check" in root_help.stdout
     assert "agentera verify smoke installed-skills" in verify_help.stdout
+    assert "agentera check verify smoke installed-skills" in check_help.stdout
     assert "agentera verify eval skills --format json" in verify_help.stdout
     assert "Gate family: smoke or eval" in verify_help.stdout
     assert "--live" in verify_help.stdout

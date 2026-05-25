@@ -206,8 +206,8 @@ def test_usage_help_discovers_namespace_and_supported_flags() -> None:
     usage_help = _run_cli("usage", "--help")
 
     assert root_help.returncode == usage_help.returncode == 0
-    assert "agentera usage" in root_help.stdout
-    assert "Generate suite usage analytics" in root_help.stdout
+    assert "report" in root_help.stdout
+    assert "Generate suite usage analytics" in usage_help.stdout
     assert "agentera usage --format json --project agentera" in usage_help.stdout
     assert "--format" in usage_help.stdout
     assert "--corpus" in usage_help.stdout
@@ -345,12 +345,13 @@ def test_stats_refresh_with_consent_builds_internal_corpus(tmp_path: Path) -> No
 def test_stats_help_preserves_usage_and_exposes_no_top_level_corpus_command() -> None:
     root_help = _run_cli("--help")
     stats_help = _run_cli("stats", "--help")
+    report_help = _run_cli("report", "--help")
     corpus_help = _run_cli("corpus", "--help")
 
-    assert root_help.returncode == stats_help.returncode == 0
-    assert "agentera stats" in root_help.stdout
-    assert "agentera usage" in root_help.stdout
-    assert "agentera stats refresh --dry-run" in stats_help.stdout
-    assert "--consent" in stats_help.stdout
+    assert root_help.returncode == stats_help.returncode == report_help.returncode == 0
+    assert "report" in root_help.stdout
+    assert "agentera stats" in stats_help.stdout
+    assert "agentera report refresh --dry-run" in report_help.stdout
+    assert "--consent" in report_help.stdout
     assert "corpus" not in {line.strip() for line in root_help.stdout.splitlines()}
     assert corpus_help.returncode != 0
