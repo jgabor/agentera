@@ -976,6 +976,8 @@ def test_runtime_store_extraction_derives_state_sequences_without_usage_stats_mu
             "error_count": 0,
         },
         {"runtime": "claude-code", "status": "skipped", "reason": "disabled"},
+        {"runtime": "cursor", "status": "skipped", "reason": "disabled"},
+        {"runtime": "cursor-agent", "status": "skipped", "reason": "disabled"},
         {"runtime": "opencode", "status": "skipped", "reason": "disabled"},
         {"runtime": "github-copilot", "status": "skipped", "reason": "disabled"},
     ]

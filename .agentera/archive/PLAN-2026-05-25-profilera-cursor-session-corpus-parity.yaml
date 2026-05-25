@@ -1,0 +1,82 @@
+header:
+  level: full
+  created: 2026-05-25
+  status: complete
+  reviewed: 2026-05-25
+  critic_issues: "6 found, 6 addressed, 0 dismissed"
+  title: Profilera Cursor session corpus parity
+what: Add read-only Cursor IDE session mining to scripts/extract_corpus.py so profilera and agentera stats refresh can normalize Cursor agent transcripts into the Section 22 corpus alongside Claude Code, Codex, OpenCode, and GitHub Copilot.
+why: 2.7.0 shipped first-class Cursor runtime hooks and agents but left profilera without a cursor runtime in RUNTIME_STORE_GLOBS. Users on Cursor cannot contribute decision history to PROFILE.md until local ~/.cursor/projects agent-transcript stores are discoverable, parsed, and covered by fixture-backed tests.
+constraints: Preserve Decision 55 stats consent boundaries and existing agentera stats refresh workflow. Keep extraction local-only, read-only, and privacy-safe with no transcript leakage in tests, smoke, or diagnostics. Reuse existing record families and degradation metadata patterns. Do not add agentera corpus namespace, bump versions, tag, push, or edit vision or objective state without explicit approval.
+scope:
+  included:
+    - Cursor IDE agent-transcript discovery and extraction from ~/.cursor/projects/*/agent-transcripts/*/*.jsonl
+    - Normalized history_prompt, conversation_turn, and tool_call records where schema permits
+    - Fixture-backed tests, offline smoke parity, references/adapters/cursor.md corpus section, runtime parity doc updates
+  excluded:
+    - Live paid Cursor cloud agent sessions, remote APIs, profile scoring model changes, destructive store repair
+  deferred:
+    - cursor-agent CLI separate storage parity if it diverges from IDE transcript layout
+    - Cross-runtime deduplication beyond existing within-runtime source_id rules
+design: Follow the 2026-05-13 profilera corpus parity pattern. Document observable Cursor storage first, add a cursor runtime extractor to the shared normalization surface, prove privacy-safe fixture parity, then extend offline smoke. Map project roots to Cursor project dirs via repo.json or path slug heuristics before scanning transcripts.
+tasks:
+  - number: 1
+    name: Cursor storage contract and discovery boundary
+    depends_on: []
+    status: completed
+    acceptance:
+      - GIVEN references/adapters/cursor.md is updated WHEN a maintainer reads the profilera corpus section THEN it documents probe paths, transcript JSONL shape, project mapping, portable record families, and explicit gaps without relying on skill source reads
+      - GIVEN Cursor stores are available, absent, locked, sparse, or schema-divergent WHEN discovery runs THEN runtime_status reports bounded status and reason without blocking other runtimes or leaking transcript text
+    evidence:
+      - references/adapters/cursor.md Profilera session corpus section; discover_runtime_store shared with cursor runtime in extract_corpus.py
+  - number: 2
+    name: Cursor transcript extractor
+    depends_on: [1]
+    status: completed
+    acceptance:
+      - GIVEN fixture Cursor agent-transcript JSONL with user and assistant turns WHEN extraction runs THEN history_prompt and conversation_turn records normalize with stable source_id, session_id, project_id, and decision-signal classification like existing runtimes
+      - GIVEN assistant messages include tool blocks WHEN extraction runs THEN tool_call records emit with bounded argument metadata and no raw secrets
+      - GIVEN Cursor storage is unavailable WHEN extraction runs THEN cursor runtime degrades explicitly and other runtimes continue
+    evidence:
+      - scripts/extract_corpus.py extract_cursor_sessions with bounded tool arguments; tests/test_extract_corpus.py cursor transcript cases
+  - number: 3
+    name: CLI wiring and project-root mapping
+    depends_on: [2]
+    status: completed
+    acceptance:
+      - GIVEN default extraction WHEN agentera stats refresh --dry-run or extract_corpus.py runs THEN cursor probe resolves ~/.cursor/projects and honors --cursor-projects-dir and --no-cursor flags consistent with sibling runtime flags
+      - GIVEN --project-root paths WHEN extraction runs THEN Cursor project dirs matching those repos are preferred over unrelated transcript stores
+    evidence:
+      - --cursor-projects-dir, --no-cursor, resolve_cursor_projects_path(); test_cursor_project_root_scoping_skips_unrelated_projects
+  - number: 4
+    name: Cross-runtime fixture and degradation coverage
+    depends_on: [2, 3]
+    status: completed
+    acceptance:
+      - GIVEN Cursor fixtures plus existing runtime fixtures WHEN focused tests/test_extract_corpus.py cases run THEN cursor proves normalized families, ordering, missing, locked, sparse, and schema-divergent degradation without transcript leakage
+      - GIVEN combined extraction WHEN metadata is inspected THEN runtime_statuses includes cursor with counts and reasons aligned to other runtimes
+    evidence:
+      - 17 passing tests/test_extract_corpus.py including cross_runtime and cursor-specific degradation cases
+  - number: 5
+    name: Offline smoke and adapter parity sync
+    depends_on: [4]
+    status: completed
+    acceptance:
+      - GIVEN default scripts/smoke_live_hosts.py WHEN profilera corpus audits run THEN Cursor fixture parity and absent-store degradation are proven separately from local environment availability
+      - GIVEN references/adapters/runtime-feature-parity.md WHEN profilera corpus row for Cursor IDE is read THEN it states supported local session mining rather than runtime-only context injection
+    evidence:
+      - smoke_live_hosts profilera fixture and unavailable-store audits pass with cursor runtime; runtime-feature-parity.md Profilera session corpus table
+  - number: 6
+    name: State sync and release-target gate
+    depends_on: [5]
+    status: completed
+    acceptance:
+      - GIVEN no release target is selected WHEN state sync runs THEN TODO, docs, progress, and plan evidence record completion without version-bearing file changes
+      - GIVEN a release target is selected WHEN sync runs THEN version, changelog, TODO, docs, and progress follow semver policy for the feat scope
+    evidence:
+      - Plan archived without version bump; progress cycle 599 records verification; profilera instructions updated for Cursor runtime flags
+overall_acceptance:
+  - GIVEN Cursor agent-transcript stores exist on the host WHEN profilera corpus extraction completes THEN cursor records merge with Claude, Codex, OpenCode, and Copilot data using the same Section 22 envelope
+  - GIVEN diagnostics, tests, or smoke report extraction state WHEN inspected THEN they show counts, statuses, bounded reasons, and remediation labels, not raw transcript content
+surprises:
+  - agentera stats refresh inherits cursor extraction automatically through default extract_corpus.py flags without a separate stats command change.

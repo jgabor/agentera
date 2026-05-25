@@ -80,6 +80,123 @@ def _write_claude_fixture(projects_dir: Path, project_root: Path) -> Path:
     return session_path
 
 
+def _write_cursor_fixture(projects_dir: Path, project_root: Path) -> Path:
+    slug = "-".join(project_root.resolve().parts[1:]).lower() if project_root.is_absolute() else project_root.name
+    session_id = "cursor-session-1"
+    session_path = projects_dir / slug / "agent-transcripts" / session_id / f"{session_id}.jsonl"
+    session_path.parent.mkdir(parents=True)
+    events = [
+        {
+            "role": "user",
+            "message": {
+                "content": [
+                    {
+                        "type": "text",
+                        "text": "Should we keep Cursor extraction local-only?",
+                    }
+                ]
+            },
+        },
+        {
+            "role": "assistant",
+            "message": {
+                "content": [
+                    {
+                        "type": "text",
+                        "text": "Yes, read agent-transcripts without external calls.",
+                    }
+                ]
+            },
+        },
+        {
+            "role": "assistant",
+            "message": {
+                "content": [
+                    {
+                        "type": "tool_use",
+                        "name": "grep",
+                        "input": {"pattern": "extract_corpus", "path": str(project_root)},
+                    }
+                ]
+            },
+        },
+    ]
+    session_path.write_text(
+        "\n".join(json.dumps(event) for event in events) + "\n",
+        encoding="utf-8",
+    )
+    return session_path
+
+
+def _cursor_workspace_hash(project_root: Path) -> str:
+    import hashlib
+
+    return hashlib.md5(str(project_root.resolve()).encode("utf-8")).hexdigest()
+
+
+def _write_cursor_agent_fixture(
+    chats_dir: Path,
+    project_root: Path,
+    *,
+    session_id: str = "cursor-agent-session-1",
+    user_text: str = "Should cursor-agent store.db gap-fill when JSONL is absent?",
+    include_tool_call: bool = True,
+) -> Path:
+    workspace = chats_dir / _cursor_workspace_hash(project_root)
+    store_db = workspace / session_id / "store.db"
+    store_db.parent.mkdir(parents=True)
+    conn = sqlite3.connect(store_db)
+    try:
+        conn.executescript(
+            """
+            CREATE TABLE blobs (id TEXT PRIMARY KEY, data BLOB NOT NULL);
+            CREATE TABLE meta (key TEXT PRIMARY KEY, value BLOB NOT NULL);
+            """
+        )
+        blobs = [
+            (
+                "system-blob",
+                json.dumps({"role": "system", "content": "system prompt omitted from corpus"}),
+            ),
+            (
+                "user-blob",
+                json.dumps({"role": "user", "content": user_text}),
+            ),
+        ]
+        if include_tool_call:
+            blobs.append(
+                (
+                    "assistant-blob",
+                    json.dumps(
+                        {
+                            "role": "assistant",
+                            "content": [
+                                {"type": "text", "text": "Yes, gap-fill from store.db."},
+                                {
+                                    "type": "tool-call",
+                                    "toolCallId": "tool-1",
+                                    "toolName": "grep",
+                                    "args": {"pattern": "extract_corpus"},
+                                },
+                            ],
+                        }
+                    ),
+                )
+            )
+        conn.executemany(
+            "INSERT INTO blobs (id, data) VALUES (?, ?)",
+            [(blob_id, payload.encode("utf-8")) for blob_id, payload in blobs],
+        )
+        conn.execute(
+            "INSERT INTO meta (key, value) VALUES (?, ?)",
+            ("0", json.dumps({"agentId": session_id, "name": "fixture"})),
+        )
+        conn.commit()
+    finally:
+        conn.close()
+    return store_db
+
+
 def _write_opencode_fixture(db_path: Path, project_root: Path) -> Path:
     db_path.parent.mkdir(parents=True)
     conn = sqlite3.connect(db_path)
@@ -298,6 +415,8 @@ def test_build_corpus_emits_portable_families(tmp_path, extract_corpus, usage_st
     assert statuses["codex"]["status"] == "ok"
     assert statuses["codex"]["reason"] == "records_extracted"
     assert statuses["claude-code"]["status"] == "skipped"
+    assert statuses["cursor"]["status"] == "skipped"
+    assert statuses["cursor-agent"]["status"] == "skipped"
 
     kinds = {record["source_kind"] for record in corpus["records"]}
     assert kinds == {
@@ -346,6 +465,7 @@ def test_cli_writes_corpus_and_reports_counts(tmp_path):
             "--no-claude",
             "--no-opencode",
             "--no-copilot",
+            "--no-cursor",
         ],
         cwd=Path(__file__).resolve().parent.parent,
         text=True,
@@ -397,6 +517,10 @@ def test_runtime_discovery_reports_bounded_degradation_without_transcript_leak(
     assert statuses["opencode"]["reason"] == "store_absent"
     assert statuses["github-copilot"]["status"] == "skipped"
     assert statuses["github-copilot"]["reason"] == "disabled"
+    assert statuses["cursor"]["status"] == "skipped"
+    assert statuses["cursor"]["reason"] == "disabled"
+    assert statuses["cursor-agent"]["status"] == "skipped"
+    assert statuses["cursor-agent"]["reason"] == "disabled"
     assert secret_transcript not in json.dumps(corpus["metadata"])
 
 
@@ -653,10 +777,12 @@ def test_cross_runtime_fixtures_emit_expected_normalized_records(
     claude_dir = tmp_path / "claude" / "projects"
     opencode_db = tmp_path / "opencode" / "opencode.db"
     copilot_db = tmp_path / "copilot" / "session-store.db"
+    cursor_dir = tmp_path / "cursor" / "projects"
     _write_codex_fixture(codex_dir, project_root)
     _write_claude_fixture(claude_dir, project_root)
     _write_opencode_fixture(opencode_db, project_root)
     _write_copilot_fixture(copilot_db, project_root)
+    _write_cursor_fixture(cursor_dir, project_root)
 
     corpus = extract_corpus.build_corpus(
         project_roots=[project_root],
@@ -664,9 +790,10 @@ def test_cross_runtime_fixtures_emit_expected_normalized_records(
         claude_projects_dir=claude_dir,
         opencode_conversations_dir=opencode_db.parent,
         copilot_conversations_dir=copilot_db.parent,
+        cursor_projects_dir=cursor_dir,
     )
 
-    for runtime in ("claude-code", "codex", "opencode", "github-copilot"):
+    for runtime in ("claude-code", "codex", "opencode", "github-copilot", "cursor"):
         status = _assert_runtime_status(corpus, runtime, "ok", "records_extracted")
         assert status["record_count"] > 0, f"no runtime records: runtime={runtime}"
 
@@ -683,6 +810,9 @@ def test_cross_runtime_fixtures_emit_expected_normalized_records(
         ("opencode", "tool_call"): 1,
         ("github-copilot", "conversation_turn"): 4,
         ("github-copilot", "history_prompt"): 1,
+        ("cursor", "conversation_turn"): 2,
+        ("cursor", "history_prompt"): 1,
+        ("cursor", "tool_call"): 1,
     }
     for key, expected in expected_counts.items():
         assert counts.get(key) == expected, (
@@ -697,13 +827,14 @@ def test_cross_runtime_fixtures_emit_expected_normalized_records(
             if record["runtime"] == runtime
             and record["source_kind"] == "conversation_turn"
         ]
-        for runtime in ("claude-code", "codex", "opencode", "github-copilot")
+        for runtime in ("claude-code", "codex", "opencode", "github-copilot", "cursor")
     }
     assert runtime_order == {
         "claude-code": ["assistant", "user"],
         "codex": ["user", "assistant"],
         "opencode": ["assistant", "user", "assistant"],
         "github-copilot": ["assistant", "user", "assistant", "assistant"],
+        "cursor": ["user", "assistant"],
     }
 
 
@@ -756,3 +887,185 @@ def test_cross_runtime_degradation_fixtures_continue_without_transcript_leak(
     assert copilot_status["remediation_labels"] == ["/chronicle reindex"]
     assert corpus["metadata"]["total_records"] == 0
     assert secret_transcript not in json.dumps(corpus["metadata"])
+
+
+def test_cursor_transcripts_extract_user_assistant_history_and_tool_calls(
+    tmp_path,
+    extract_corpus,
+):
+    project_root = tmp_path / "agentera"
+    project_root.mkdir()
+    cursor_dir = tmp_path / "cursor" / "projects"
+    _write_cursor_fixture(cursor_dir, project_root)
+
+    corpus = extract_corpus.build_corpus(
+        project_roots=[project_root],
+        codex_sessions_dir=None,
+        claude_projects_dir=None,
+        opencode_conversations_dir=None,
+        copilot_conversations_dir=None,
+        cursor_projects_dir=cursor_dir,
+    )
+
+    status = _assert_runtime_status(corpus, "cursor", "ok", "records_extracted")
+    assert status["record_count"] >= 4
+    cursor_turns = [
+        record
+        for record in corpus["records"]
+        if record["runtime"] == "cursor" and record["source_kind"] == "conversation_turn"
+    ]
+    assert [turn["data"]["actor"] for turn in cursor_turns] == ["user", "assistant"]
+    tool_calls = [
+        record
+        for record in corpus["records"]
+        if record["runtime"] == "cursor" and record["source_kind"] == "tool_call"
+    ]
+    assert len(tool_calls) == 1
+    assert tool_calls[0]["data"]["tool_name"] == "grep"
+
+
+def test_cursor_projects_path_resolves_from_environment_or_default(
+    extract_corpus,
+    tmp_path,
+    monkeypatch,
+):
+    cursor_home = tmp_path / "cursor-home"
+    monkeypatch.setenv("CURSOR_HOME", str(cursor_home))
+    assert extract_corpus.resolve_cursor_projects_path() == cursor_home / "projects"
+
+    monkeypatch.delenv("CURSOR_HOME", raising=False)
+    monkeypatch.setattr(extract_corpus.Path, "home", lambda: tmp_path)
+    assert extract_corpus.resolve_cursor_projects_path() == tmp_path / ".cursor" / "projects"
+
+
+def test_cursor_sparse_store_degrades_without_transcript_leak(tmp_path, extract_corpus):
+    project_root = tmp_path / "agentera"
+    project_root.mkdir()
+    sparse = tmp_path / "cursor" / "projects"
+    sparse.mkdir(parents=True)
+
+    corpus = extract_corpus.build_corpus(
+        project_roots=[project_root],
+        codex_sessions_dir=None,
+        claude_projects_dir=None,
+        opencode_conversations_dir=None,
+        copilot_conversations_dir=None,
+        cursor_projects_dir=sparse,
+    )
+
+    _assert_runtime_status(corpus, "cursor", "sparse", "no_candidate_files")
+
+
+def test_cursor_project_root_scoping_skips_unrelated_projects(tmp_path, extract_corpus):
+    project_root = tmp_path / "agentera"
+    project_root.mkdir()
+    other_root = tmp_path / "other"
+    other_root.mkdir()
+    cursor_dir = tmp_path / "cursor" / "projects"
+    _write_cursor_fixture(cursor_dir, project_root)
+    _write_cursor_fixture(cursor_dir, other_root)
+
+    corpus = extract_corpus.build_corpus(
+        project_roots=[project_root],
+        codex_sessions_dir=None,
+        claude_projects_dir=None,
+        opencode_conversations_dir=None,
+        copilot_conversations_dir=None,
+        cursor_projects_dir=cursor_dir,
+    )
+
+    cursor_records = [record for record in corpus["records"] if record["runtime"] == "cursor"]
+    assert cursor_records
+    assert all(record.get("project_id") == "agentera" for record in cursor_records)
+
+
+def test_cursor_agent_store_extracts_gap_fill_without_jsonl(tmp_path, extract_corpus):
+    project_root = tmp_path / "agentera"
+    project_root.mkdir()
+    chats_dir = tmp_path / "cursor" / "chats"
+    _write_cursor_agent_fixture(chats_dir, project_root)
+
+    corpus = extract_corpus.build_corpus(
+        project_roots=[project_root],
+        codex_sessions_dir=None,
+        claude_projects_dir=None,
+        opencode_conversations_dir=None,
+        copilot_conversations_dir=None,
+        cursor_projects_dir=tmp_path / "missing-projects",
+        cursor_chats_dir=chats_dir,
+    )
+
+    status = _assert_runtime_status(corpus, "cursor-agent", "ok", "records_extracted")
+    assert status["record_count"] >= 3
+    turns = [
+        record
+        for record in corpus["records"]
+        if record["runtime"] == "cursor-agent" and record["source_kind"] == "conversation_turn"
+    ]
+    assert [turn["data"]["actor"] for turn in turns] == ["user", "assistant"]
+    tool_calls = [
+        record
+        for record in corpus["records"]
+        if record["runtime"] == "cursor-agent" and record["source_kind"] == "tool_call"
+    ]
+    assert len(tool_calls) == 1
+
+
+def test_cursor_agent_skips_sessions_with_jsonl_transcripts(tmp_path, extract_corpus):
+    project_root = tmp_path / "agentera"
+    project_root.mkdir()
+    projects_dir = tmp_path / "cursor" / "projects"
+    chats_dir = tmp_path / "cursor" / "chats"
+    session_id = "shared-session-id"
+    slug = "-".join(project_root.resolve().parts[1:]).lower()
+    jsonl_path = (
+        projects_dir
+        / slug
+        / "agent-transcripts"
+        / session_id
+        / f"{session_id}.jsonl"
+    )
+    jsonl_path.parent.mkdir(parents=True)
+    jsonl_path.write_text(
+        json.dumps(
+            {
+                "role": "user",
+                "message": {"content": [{"type": "text", "text": "Should JSONL stay canonical for this session?"}]},
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    _write_cursor_agent_fixture(
+        chats_dir,
+        project_root,
+        session_id=session_id,
+        user_text="Should not duplicate JSONL session.",
+    )
+
+    corpus = extract_corpus.build_corpus(
+        project_roots=[project_root],
+        codex_sessions_dir=None,
+        claude_projects_dir=None,
+        opencode_conversations_dir=None,
+        copilot_conversations_dir=None,
+        cursor_projects_dir=projects_dir,
+        cursor_chats_dir=chats_dir,
+    )
+
+    _assert_runtime_status(corpus, "cursor", "ok", "records_extracted")
+    _assert_runtime_status(corpus, "cursor-agent", "sparse", "no_matching_records")
+    assert not any(record["runtime"] == "cursor-agent" for record in corpus["records"])
+
+
+def test_cursor_chats_path_resolves_from_environment_or_default(
+    extract_corpus,
+    tmp_path,
+    monkeypatch,
+):
+    config_home = tmp_path / "cursor-config"
+    monkeypatch.setenv("CURSOR_CONFIG_HOME", str(config_home))
+    assert extract_corpus.resolve_cursor_chats_path() == config_home / "chats"
+
+    monkeypatch.delenv("CURSOR_CONFIG_HOME", raising=False)
+    assert extract_corpus.resolve_cursor_chats_path() == Path.home() / ".config" / "cursor" / "chats"

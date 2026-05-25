@@ -323,6 +323,8 @@ PRIVATE_FIXTURE_TEXT = (
     "SMOKE_PRIVATE_CODEX_TEXT",
     "SMOKE_PRIVATE_OPENCODE_TEXT",
     "SMOKE_PRIVATE_COPILOT_TEXT",
+    "SMOKE_PRIVATE_CURSOR_TEXT",
+    "SMOKE_PRIVATE_CURSOR_AGENT_TEXT",
 )
 
 
@@ -469,6 +471,88 @@ def _write_copilot_corpus_fixture(db_path: Path, project_root: Path) -> None:
         conn.close()
 
 
+def _write_cursor_corpus_fixture(projects_dir: Path, project_root: Path) -> None:
+    slug = "-".join(project_root.resolve().parts[1:]).lower()
+    session_id = "smoke-cursor"
+    session_path = projects_dir / slug / "agent-transcripts" / session_id / f"{session_id}.jsonl"
+    session_path.parent.mkdir(parents=True)
+    events = [
+        {
+            "role": "user",
+            "message": {
+                "content": [
+                    {
+                        "type": "text",
+                        "text": "Should Cursor stay local-only? SMOKE_PRIVATE_CURSOR_TEXT",
+                    }
+                ]
+            },
+        },
+        {
+            "role": "assistant",
+            "message": {
+                "content": [
+                    {
+                        "type": "text",
+                        "text": "Yes, keep smoke non-live.",
+                    }
+                ]
+            },
+        },
+    ]
+    session_path.write_text(
+        "\n".join(json.dumps(event) for event in events) + "\n",
+        encoding="utf-8",
+    )
+
+
+def _write_cursor_agent_corpus_fixture(chats_dir: Path, project_root: Path) -> None:
+    import hashlib
+
+    workspace = chats_dir / hashlib.md5(str(project_root.resolve()).encode("utf-8")).hexdigest()
+    session_id = "smoke-cursor-agent-only"
+    store_db = workspace / session_id / "store.db"
+    store_db.parent.mkdir(parents=True)
+    conn = sqlite3.connect(store_db)
+    try:
+        conn.executescript(
+            """
+            CREATE TABLE blobs (id TEXT PRIMARY KEY, data BLOB NOT NULL);
+            CREATE TABLE meta (key TEXT PRIMARY KEY, value BLOB NOT NULL);
+            """
+        )
+        conn.executemany(
+            "INSERT INTO blobs (id, data) VALUES (?, ?)",
+            [
+                (
+                    "user-blob",
+                    json.dumps(
+                        {
+                            "role": "user",
+                            "content": "Should cursor-agent gap-fill? SMOKE_PRIVATE_CURSOR_AGENT_TEXT",
+                        }
+                    ).encode("utf-8"),
+                ),
+                (
+                    "assistant-blob",
+                    json.dumps(
+                        {
+                            "role": "assistant",
+                            "content": [{"type": "text", "text": "Yes, when JSONL is absent."}],
+                        }
+                    ).encode("utf-8"),
+                ),
+            ],
+        )
+        conn.execute(
+            "INSERT INTO meta (key, value) VALUES (?, ?)",
+            ("0", json.dumps({"agentId": session_id})),
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+
 def _runtime_status_by_name(corpus: dict[str, object]) -> dict[str, dict[str, object]]:
     metadata = corpus.get("metadata", {})
     assert_true(isinstance(metadata, dict), "corpus metadata missing")
@@ -501,6 +585,8 @@ def run_fixture_corpus_parity_audit() -> None:
         claude_dir = tmp / "claude" / "projects"
         opencode_db = tmp / "opencode" / "opencode.db"
         copilot_db = tmp / "copilot" / "session-store.db"
+        cursor_dir = tmp / "cursor" / "projects"
+        cursor_chats_dir = tmp / "cursor" / "chats"
         output = tmp / "corpus.json"
 
         project_root.mkdir(parents=True)
@@ -516,6 +602,8 @@ def run_fixture_corpus_parity_audit() -> None:
         _write_claude_corpus_fixture(claude_dir, project_root)
         _write_opencode_corpus_fixture(opencode_db, project_root)
         _write_copilot_corpus_fixture(copilot_db, project_root)
+        _write_cursor_corpus_fixture(cursor_dir, project_root)
+        _write_cursor_agent_corpus_fixture(cursor_chats_dir, project_root)
 
         result = subprocess.run(
             [
@@ -533,6 +621,10 @@ def run_fixture_corpus_parity_audit() -> None:
                 str(opencode_db),
                 "--copilot-conversations-dir",
                 str(copilot_db),
+                "--cursor-projects-dir",
+                str(cursor_dir),
+                "--cursor-chats-dir",
+                str(cursor_chats_dir),
             ],
             capture_output=True,
             text=True,
@@ -548,7 +640,7 @@ def run_fixture_corpus_parity_audit() -> None:
         assert_true(output.exists(), "profilera corpus extractor did not write corpus.json")
         corpus = json.loads(output.read_text(encoding="utf-8"))
         statuses = _runtime_status_by_name(corpus)
-        for runtime in ("claude-code", "codex", "opencode", "github-copilot"):
+        for runtime in ("claude-code", "codex", "opencode", "github-copilot", "cursor", "cursor-agent"):
             status = statuses.get(runtime)
             assert_true(status is not None, f"missing runtime status: {runtime}")
             assert_true(status.get("status") == "ok", f"runtime did not extract records: {runtime}")
@@ -563,7 +655,7 @@ def run_fixture_corpus_parity_audit() -> None:
             )
         families = corpus.get("metadata", {}).get("families", {})
         assert_true(
-            families.get("conversation_turn", {}).get("count") >= 8,
+            families.get("conversation_turn", {}).get("count") >= 10,
             "profilera corpus extractor did not collect all fixture conversation turns",
         )
         assert_true(
@@ -608,6 +700,10 @@ def run_unavailable_store_degradation_audit() -> None:
                 str(tmp / "missing-opencode"),
                 "--copilot-conversations-dir",
                 str(tmp / "missing-copilot"),
+                "--cursor-projects-dir",
+                str(tmp / "missing-cursor"),
+                "--cursor-chats-dir",
+                str(tmp / "missing-cursor-chats"),
             ],
             capture_output=True,
             text=True,
@@ -622,7 +718,7 @@ def run_unavailable_store_degradation_audit() -> None:
         assert_true(result.returncode == 0, "profilera missing-store smoke failed")
         corpus = json.loads(output.read_text(encoding="utf-8"))
         statuses = _runtime_status_by_name(corpus)
-        for runtime in ("claude-code", "codex", "opencode", "github-copilot"):
+        for runtime in ("claude-code", "codex", "opencode", "github-copilot", "cursor", "cursor-agent"):
             status = statuses.get(runtime)
             assert_true(status is not None, f"missing unavailable-store status: {runtime}")
             assert_true(

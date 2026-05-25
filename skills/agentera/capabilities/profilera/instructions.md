@@ -90,6 +90,8 @@ Supported runtime sources:
 - **Codex**: default `~/.codex/sessions`, override with `--codex-sessions-dir <path>`, disable with `--no-codex`
 - **OpenCode**: default `opencode db path` when available, override with `--opencode-conversations-dir <path>`, disable with `--no-opencode`
 - **GitHub Copilot**: default `$COPILOT_HOME` or `~/.copilot`, override with `--copilot-conversations-dir <path>`, disable with `--no-copilot`
+- **Cursor IDE**: default `$CURSOR_HOME/projects` or `~/.cursor/projects`, override with `--cursor-projects-dir <path>`, disable with `--no-cursor`
+- **Cursor Agent CLI**: default `~/.config/cursor/chats`, override with `--cursor-chats-dir <path>` or `$CURSOR_CONFIG_HOME/chats`; disabled with `--no-cursor`
 
 Ask which runtime histories to include with a multi-select question. Put `All (Recommended)` first; it means every selectable runtime from the preview and wins over any individual runtime selections. Also offer one option per selectable runtime and a docs/config-only option for cases where the user wants no runtime conversation history. The question controls runtime conversation sources only; instruction documents and project config signals remain included.
 
@@ -103,9 +105,9 @@ Read `$PROFILERA_PROFILE_DIR/intermediate/corpus.json` if it already exists and 
 uv run ${AGENTERA_HOME:-.}/scripts/extract_corpus.py
 ```
 
-Apply runtime opt-out flags from Step 1. For example, if the user selects Claude Code and OpenCode only, run with `--no-codex --no-copilot`. If the user selects docs/config-only, run with `--no-claude --no-codex --no-opencode --no-copilot`. If the user selects `All (Recommended)`, use no runtime opt-out flags.
+Apply runtime opt-out flags from Step 1. For example, if the user selects Claude Code and OpenCode only, run with `--no-codex --no-copilot --no-cursor`. If the user selects docs/config-only, run with `--no-claude --no-codex --no-opencode --no-copilot --no-cursor`. If the user selects `All (Recommended)`, use no runtime opt-out flags.
 
-The extractor writes the default `$PROFILERA_PROFILE_DIR/intermediate/corpus.json` envelope and emits the four portable Section 22 families: `instruction_document`, `history_prompt`, `conversation_turn`, and `project_config_signal`. Use `--output <path>`, repeated `--project-root <path>`, `--codex-sessions-dir <path>`, `--claude-projects-dir <path>`, `--opencode-conversations-dir <path>`, or `--copilot-conversations-dir <path>` when the host stores data outside the defaults.
+The extractor writes the default `$PROFILERA_PROFILE_DIR/intermediate/corpus.json` envelope and emits the four portable Section 22 families: `instruction_document`, `history_prompt`, `conversation_turn`, and `project_config_signal`. Use `--output <path>`, repeated `--project-root <path>`, `--codex-sessions-dir <path>`, `--claude-projects-dir <path>`, `--opencode-conversations-dir <path>`, `--copilot-conversations-dir <path>`, `--cursor-projects-dir <path>`, or `--cursor-chats-dir <path>` when the host stores data outside the defaults.
 
 Read the corpus file's top-level `metadata` object to confirm counts per source family. Report totals to the user.
 

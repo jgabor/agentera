@@ -1,4 +1,59 @@
 cycles:
+- number: 601
+  timestamp: 2026-05-25 10:00
+  type: chore
+  phase: build
+  what: Tagged v2.7.1 with profilera Cursor session corpus parity.
+  commit: pending
+  discovered: None.
+  verified: "Version surfaces bumped 2.7.0\u21922.7.1 across version_files; CHANGELOG\
+    \ [2.7.1] promotes Cursor IDE JSONL and cursor-agent CLI gap-fill extraction;\
+    \ 20 test_extract_corpus.py cases pass; validate_lifecycle-adapters and version\
+    \ alignment tests pass; git tag v2.7.1 applied after release commit."
+  next: Push main and v2.7.1 tag when approved.
+  context:
+    intent: Patch release closeout for profilera Cursor corpus mining after explicit
+      2.7.1 target approval.
+    constraints: No remote push unless requested.
+    scope: CHANGELOG, version_files, PROGRESS, tag only.
+- number: 600
+  timestamp: 2026-05-25 09:15
+  type: feat
+  phase: build
+  what: Cursor Agent CLI store.db gap-fill extraction for profilera corpus.
+  commit: pending
+  discovered: On this host, 22/23 CLI chat sessions duplicate IDE JSONL; one chat-only
+    session needed store.db gap-fill with binary blob degradation.
+  verified: runtime cursor-agent reads ~/.config/cursor/chats/<md5(project)>/<session>/store.db,
+    skips sessions with IDE JSONL, maps workspace hash via md5(absolute project path);
+    20 test_extract_corpus.py cases pass; live extract on agentera repo yields cursor-agent
+    gap-fill user turn from chat-only session; smoke parity includes cursor-agent
+    fixture.
+  next: Release bump to 2.7.1 when approved.
+  context:
+    intent: Close deferred cursor-agent CLI corpus mining via gap-fill store.db parser.
+    constraints: No version bump without release target; privacy-safe bounded errors
+      for binary blobs.
+    scope: extract_corpus.py, tests, smoke, cursor.md, profilera instructions, runtime
+      parity.
+- number: 599
+  timestamp: 2026-05-25 09:00
+  type: feat
+  phase: build
+  what: Profilera Cursor IDE session corpus parity via extract_corpus cursor runtime.
+  commit: pending
+  discovered: None.
+  verified: extract_cursor_sessions reads ~/.cursor/projects/*/agent-transcripts/*/*.jsonl
+    with project-root slug scoping, --cursor-projects-dir, and --no-cursor flags;
+    references/adapters/cursor.md and runtime-feature-parity.md updated; 17 test_extract_corpus.py
+    cases pass; profilera corpus smoke audits pass for cursor fixture parity and missing-store
+    degradation.
+  next: cursor-agent CLI gap-fill shipped in cycle 600; release 2.7.1 pending approval.
+  context:
+    intent: Close Profilera Cursor session corpus parity plan via orkestrera dispatch.
+    constraints: No tag, push, or version_files changes without explicit release approval.
+    scope: extract_corpus, tests, smoke, adapter docs, profilera instructions, plan
+      archive.
 - number: 598
   timestamp: 2026-05-24 18:00
   type: chore
@@ -127,94 +182,13 @@ cycles:
       claiming the full Agentera 3.0 protocol boundary release.
     constraints: No 3.0.0 version bump; no push unless requested.
     scope: plan archive, version_files, CHANGELOG, PROGRESS evidence.
-- number: 591
-  timestamp: 2026-05-23 21:30
-  type: test
-  phase: build
-  what: Closed Agentera 3.0 JSON budget plan with full validation and measurement
-    closeout evidence.
-  commit: pending
-  inspiration: Plan Task 6 for Agentera 3.0 prime control plane and JSON output budget
-    work.
-  discovered: Exact tiktoken measurement available in this environment; skip-token
-    and exact-token budget enforcement both pass with zero violations across 67 manifest
-    surfaces and 12 capability-context capsules. Slim prime --context totals are ~72%
-    smaller than archived full-profile hej capability-context baselines.
-  verified: '`uv run --with pytest pytest tests/test_measure_json_output_surfaces.py
-    tests/test_measure_capability_context_payloads.py tests/test_decision45_cli_contract.py
-    tests/test_query_cli.py -q` passed (223 tests). `uv run scripts/agentera validate
-    capability orkestrera` passed. `uv run scripts/agentera validate capability-contract
-    --format json` passed (2/2). `uv run scripts/agentera validate artifact --artifact
-    PLAN.md --file .agentera/plan.yaml --format json` passed. `uv run scripts/agentera
-    gate --format json` passed. `git diff --check` passed. `uv run scripts/measure_json_output_surfaces.py
-    --json --token-mode skip --enforce-budgets` passed (67 surfaces, 0 violations).
-    `uv run scripts/measure_json_output_surfaces.py --json --token-mode exact --enforce-budgets`
-    passed (exact GPT-5 tokens, 0 violations). `uv run scripts/measure_capability_context_payloads.py
-    --json --enforce-budgets` passed (12 capabilities, 0 violations). Closeout doc:
-    docs/d59-json-output-closeout-measurements.md.'
-  next: Hand off to orkestrera for session closeout; defer release bumps and package
-    refresh until explicitly approved.
-  context:
-    intent: Satisfy Task 6 acceptance for validation, measurement reporting, and handoff
-      without plan.yaml task status edits or release metadata changes.
-    constraints: No plan.yaml task status edits, no version/changelog/release bumps,
-      no push.
-    scope: docs/d59-json-output-closeout-measurements.md and PROGRESS cycle 591 evidence.
-- number: 590
-  timestamp: 2026-05-23 19:45
-  type: docs
-  phase: build
-  what: Synced callers, contracts, docs, and tests to prime --context as sole 3.0
-    startup seam.
-  commit: pending
-  inspiration: Plan Task 5 for Agentera 3.0 JSON output budget work.
-  discovered: Capability instructions and validation schemas needed coordinated prime
-    command strings plus `capability_context.state.fallback_commands` where inspektera
-    previously cited `source_contract.capability_context.cli_fallback` from hej full
-    envelopes. D58 inventory rows for prime surfaces are implemented; hej capability-context
-    rows are historical only.
-  verified: '`uv run --with pytest pytest tests/test_decision45_cli_contract.py tests/test_query_cli.py
-    tests/test_cross_capability.py -q` passed (258 tests). `uv run scripts/agentera
-    validate capability orkestrera inspektera planera dokumentera realisera optimera`
-    passed for all six touched capabilities.'
-  next: Close Plan Task 5 and continue remaining 3.0 JSON budget tasks if any remain
-    open.
-  context:
-    intent: Teach `prime --context` as the single supported capability startup shape;
-      classify hej --capability-context and --context-profile as removed.
-    constraints: No plan.yaml task status edits, no push.
-    scope: agent-ready-state-contract, SKILL/README, capability prose/schemas, d58/d59
-      docs, decision45/cross-capability/capability tests, reference contracts.
-- number: 589
-  timestamp: 2026-05-23 18:15
-  type: feat
-  phase: build
-  what: Introduced prime context control plane and removed hej capability-context
-    compatibility.
-  commit: pending
-  inspiration: Plan Task 4 for Agentera 3.0 prime control plane and JSON output budget
-    work.
-  discovered: Shared `_collect_orientation_state` now feeds both `prime --dashboard`
-    and `prime --context`; slim bespoke contexts hoist only when `--fields` requests
-    nested keys. Removed `--capability-context` / `--context-profile` from the hej
-    parser; full-profile rows stay in the manifest as `removed_3_0` with argparse
-    rejection classified as `generation_status=removed`.
-  verified: '`uv run --with pytest pytest tests/test_query_cli.py tests/test_measure_json_output_surfaces.py
-    tests/test_measure_capability_context_payloads.py tests/test_decision45_cli_contract.py
-    tests/test_cross_capability.py tests/test_planera_capability.py -q` passed (290
-    tests). `uv run scripts/measure_json_output_surfaces.py --json --token-mode skip
-    --enforce-budgets` passed with status=pass, budget_status=pass, 67 surfaces measured,
-    12 removed_3_0 rows, zero violations. `agentera prime --context planera --format
-    json` emits command/status/capability_context; bare `agentera prime` still prints
-    PRIME_BLOB; `agentera planera` emits routing guidance only.'
-  next: Proceed to Plan Task 5 caller/docs/contract sync for prime --context.
-  context:
-    intent: Satisfy Task 4 acceptance for prime context, dashboard mode, direct capability
-      commands, and removal of full-profile/hej capability-context startup compatibility.
-    constraints: No plan.yaml task status edits, no push.
-    scope: scripts/agentera, json_output_surface_manifest.yaml, measure scripts, tests/test_query_cli.py,
-      tests/test_measure_json_output_surfaces.py, and PROGRESS evidence.
 archive:
+- summary: 'Cycle 591 (2026-05-23): Closed Agentera 3.0 JSON budget plan with full
+    validation and measurement closeout evidence.'
+- summary: 'Cycle 590 (2026-05-23): Synced callers, contracts, docs, and tests to
+    prime --context as sole 3.0 startup seam.'
+- summary: 'Cycle 589 (2026-05-23): Introduced prime context control plane and removed
+    hej capability-context compatibility.'
 - summary: 'Cycle 588 (2026-05-23): Wired D59 JSON byte/token budgets into manifest
     and measurement harness enforcement.'
 - summary: 'Cycle 587 (2026-05-23): Built whole-surface JSON measurement coverage
@@ -283,9 +257,3 @@ archive:
     completed-plan archive boundaries.'
 - summary: 'Cycle 552 (2026-05-17): Closed out the Runtime Docs Compatibility Fix
     Plan.'
-- summary: 'Cycle 551 (2026-05-17): Refreshed compatibility regression coverage for
-    plan Task 5.'
-- summary: 'Cycle 550 (2026-05-17): Reclassified OpenCode session lifecycle events
-    for plan Task 4.'
-- summary: 'Cycle 549 (2026-05-17): Constrained Codex descriptor discovery paths for
-    plan Task 3.'

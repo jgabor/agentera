@@ -46,9 +46,12 @@ FAMILIES = (
 RUNTIME_STORE_GLOBS = {
     "codex": "*.jsonl",
     "claude-code": "*.jsonl",
+    "cursor": "*.jsonl",
+    "cursor-agent": "store.db",
     "opencode": "opencode.db",
     "github-copilot": "session-store.db",
 }
+MAX_TOOL_ARG_TEXT = 500
 MAX_SQLITE_ROWS = 100_000
 MAX_SQLITE_SESSIONS = 60
 COPILOT_SPARSE_REMEDIATION = "/chronicle reindex"
@@ -1275,6 +1278,398 @@ def resolve_copilot_store_path() -> Path:
     return Path(os.environ.get("COPILOT_HOME", str(Path.home() / ".copilot"))).expanduser()
 
 
+def resolve_cursor_projects_path() -> Path:
+    return Path(os.environ.get("CURSOR_HOME", str(Path.home() / ".cursor"))).expanduser() / "projects"
+
+
+def resolve_cursor_chats_path() -> Path:
+    config_home = os.environ.get("CURSOR_CONFIG_HOME")
+    if config_home:
+        return Path(config_home).expanduser() / "chats"
+    return Path.home() / ".config" / "cursor" / "chats"
+
+
+def cursor_workspace_hash(project_root: Path) -> str:
+    return hashlib.md5(str(project_root.resolve()).encode("utf-8")).hexdigest()
+
+
+def cursor_project_dir_slug(project_root: Path) -> str:
+    resolved = project_root.resolve()
+    parts = resolved.parts
+    if parts and parts[0] == os.sep:
+        slug_parts = parts[1:]
+    else:
+        slug_parts = parts
+    slug = "-".join(slug_parts).lower()
+    return re.sub(r"[^a-z0-9._-]+", "-", slug).strip("-") or "global"
+
+
+def _cursor_project_path_from_dir(project_dir: Path) -> Path | None:
+    name = project_dir.name
+    if not name or name.isdigit() or name == "empty-window":
+        return None
+    parts = name.split("-")
+    if parts and parts[0] == "home" and len(parts) > 1:
+        return Path("/" + "/".join(parts))
+    return None
+
+
+def _bound_tool_arguments(arguments: dict[str, Any]) -> dict[str, Any]:
+    bounded: dict[str, Any] = {}
+    for key, value in arguments.items():
+        if isinstance(value, str) and len(value) > MAX_TOOL_ARG_TEXT:
+            bounded[key] = value[:MAX_TOOL_ARG_TEXT] + "…"
+        elif isinstance(value, dict):
+            bounded[key] = _bound_tool_arguments(value)
+        elif isinstance(value, list):
+            bounded[key] = [
+                item[:MAX_TOOL_ARG_TEXT] + "…"
+                if isinstance(item, str) and len(item) > MAX_TOOL_ARG_TEXT
+                else item
+                for item in value
+            ]
+        else:
+            bounded[key] = value
+    return bounded
+
+
+def _cursor_content_items(event: dict[str, Any]) -> list[dict[str, Any]]:
+    message = event.get("message")
+    if not isinstance(message, dict):
+        return []
+    content = message.get("content")
+    if isinstance(content, list):
+        return [item for item in content if isinstance(item, dict)]
+    if isinstance(content, dict):
+        return [content]
+    return []
+
+
+def iter_cursor_transcript_paths(
+    projects_dir: Path,
+    project_roots: list[Path],
+) -> list[Path]:
+    if not projects_dir.is_dir():
+        return []
+    search_dirs: list[Path]
+    if project_roots:
+        search_dirs = []
+        for root in project_roots:
+            candidate = projects_dir / cursor_project_dir_slug(root)
+            if candidate.is_dir():
+                search_dirs.append(candidate)
+    else:
+        search_dirs = [child for child in projects_dir.iterdir() if child.is_dir()]
+
+    paths: list[Path] = []
+    for project_dir in search_dirs:
+        transcripts_dir = project_dir / "agent-transcripts"
+        if not transcripts_dir.is_dir():
+            continue
+        paths.extend(sorted(transcripts_dir.rglob("*.jsonl")))
+    return paths
+
+
+def extract_cursor_sessions(
+    projects_dir: Path | None,
+    errors: list[str],
+    *,
+    project_roots: list[Path] | None = None,
+) -> list[dict[str, Any]]:
+    if projects_dir is None or not projects_dir.exists():
+        return []
+    roots = project_roots or []
+    slug_to_root = {cursor_project_dir_slug(root): root for root in roots}
+    records: list[dict[str, Any]] = []
+    for path in iter_cursor_transcript_paths(projects_dir, roots):
+        fallback_timestamp = iso_from_mtime(path)
+        session_id = path.parent.name or path.stem
+        project_dir = path.parents[2] if len(path.parents) > 2 else None
+        project_path = None
+        if isinstance(project_dir, Path):
+            project_path = slug_to_root.get(project_dir.name) or _cursor_project_path_from_dir(project_dir)
+        previous_assistant = ""
+        for index, event in enumerate(iter_jsonl(path, errors), start=1):
+            role = event.get("role")
+            if role not in {"user", "assistant"}:
+                continue
+
+            for content_index, item in enumerate(_cursor_content_items(event), start=1):
+                tool_record = _tool_call_record_from_item(
+                    item=item,
+                    event=event,
+                    fallback_timestamp=fallback_timestamp,
+                    project_path=project_path,
+                    runtime="cursor",
+                    source_path=path,
+                    index=(index * 1000) + content_index,
+                    session_id=session_id,
+                )
+                if tool_record is not None:
+                    tool_data = tool_record.get("data")
+                    if isinstance(tool_data, dict) and isinstance(tool_data.get("arguments"), dict):
+                        tool_data["arguments"] = _bound_tool_arguments(tool_data["arguments"])
+                    records.append(tool_record)
+
+            content = text_from_content(_cursor_content_items(event) or event.get("message"))
+            if not content:
+                continue
+            timestamp = event_timestamp(event, fallback_timestamp)
+            data: dict[str, Any] = {
+                "actor": role,
+                "content": content,
+            }
+            if role == "user":
+                if previous_assistant:
+                    data["preceding_context"] = previous_assistant[-2000:]
+                sig = signal_type(content)
+                if sig:
+                    data["signal_type"] = sig
+            else:
+                previous_assistant = content
+            records.append(
+                record(
+                    source_kind="conversation_turn",
+                    timestamp=timestamp,
+                    project_path=project_path,
+                    runtime="cursor",
+                    source_parts=(path.resolve(), index, role, content[:80]),
+                    session_id=session_id,
+                    data=data,
+                )
+            )
+            if role == "user":
+                sig = signal_type(content)
+                if sig:
+                    records.append(
+                        record(
+                            source_kind="history_prompt",
+                            timestamp=timestamp,
+                            project_path=project_path,
+                            runtime="cursor",
+                            source_parts=(path.resolve(), index, "history", content[:120]),
+                            session_id=session_id,
+                            data={
+                                "prompt": content,
+                                "signal_type": sig,
+                            },
+                        )
+                    )
+    return records
+
+
+def _cursor_jsonl_session_ids(
+    projects_dir: Path | None,
+    project_roots: list[Path],
+) -> set[str]:
+    if projects_dir is None:
+        return set()
+    session_ids: set[str] = set()
+    for path in iter_cursor_transcript_paths(projects_dir, project_roots):
+        session_ids.add(path.parent.name or path.stem)
+    return session_ids
+
+
+def _cursor_agent_message_text(message: dict[str, Any]) -> str:
+    content = message.get("content")
+    if isinstance(content, str):
+        text = content.strip()
+    elif isinstance(content, list):
+        parts: list[str] = []
+        for item in content:
+            if not isinstance(item, dict):
+                continue
+            if item.get("type") == "text":
+                text = item.get("text")
+                if isinstance(text, str) and text.strip():
+                    parts.append(text.strip())
+        text = "\n".join(parts)
+    else:
+        text = text_from_content(content)
+    return text.encode("utf-8", errors="replace").decode("utf-8")
+
+
+def _cursor_agent_tool_items(message: dict[str, Any]) -> list[dict[str, Any]]:
+    items: list[dict[str, Any]] = []
+    content = message.get("content")
+    if not isinstance(content, list):
+        return items
+    for item in content:
+        if not isinstance(item, dict):
+            continue
+        if item.get("type") != "tool-call":
+            continue
+        tool_name = item.get("toolName") or item.get("tool_name") or item.get("name")
+        if not isinstance(tool_name, str) or not tool_name:
+            continue
+        args = item.get("args") or item.get("arguments") or item.get("input") or {}
+        items.append(
+            {
+                "type": "tool_use",
+                "name": tool_name,
+                "input": args if isinstance(args, dict) else {"value": args},
+            }
+        )
+    return items
+
+
+def iter_cursor_agent_store_paths(
+    chats_dir: Path,
+    project_roots: list[Path],
+    *,
+    jsonl_session_ids: set[str],
+) -> list[tuple[Path, Path | None, str]]:
+    if not chats_dir.is_dir():
+        return []
+
+    workspace_dirs: list[tuple[Path, Path | None]] = []
+    if project_roots:
+        for root in project_roots:
+            workspace = chats_dir / cursor_workspace_hash(root)
+            if workspace.is_dir():
+                workspace_dirs.append((workspace, root.resolve()))
+    else:
+        for workspace in sorted(chats_dir.iterdir()):
+            if workspace.is_dir():
+                workspace_dirs.append((workspace, None))
+
+    items: list[tuple[Path, Path | None, str]] = []
+    for workspace, project_path in workspace_dirs:
+        for session_dir in sorted(workspace.iterdir()):
+            if not session_dir.is_dir():
+                continue
+            session_id = session_dir.name
+            if session_id in jsonl_session_ids:
+                continue
+            store_db = session_dir / "store.db"
+            if store_db.is_file():
+                items.append((store_db, project_path, session_id))
+    return items
+
+
+def _cursor_agent_blob_messages(
+    store_db: Path,
+    errors: list[str],
+) -> list[tuple[str, dict[str, Any]]]:
+    messages: list[tuple[str, dict[str, Any]]] = []
+    try:
+        conn = sqlite3.connect(f"file:{store_db.resolve()}?mode=ro", uri=True)
+    except sqlite3.Error as exc:
+        errors.append(f"{store_db}: cursor-agent sqlite open failed: {exc.__class__.__name__}")
+        return messages
+    try:
+        rows = conn.execute("SELECT id, data FROM blobs ORDER BY id").fetchall()
+    except sqlite3.Error as exc:
+        errors.append(f"{store_db}: cursor-agent sqlite read failed: {exc.__class__.__name__}")
+        conn.close()
+        return messages
+    conn.close()
+
+    for blob_id, payload in rows:
+        if not isinstance(payload, (bytes, bytearray, memoryview)):
+            errors.append(f"{store_db}: cursor-agent blob payload not bytes: {blob_id}")
+            continue
+        raw = bytes(payload)
+        try:
+            parsed = json.loads(raw)
+        except (json.JSONDecodeError, UnicodeDecodeError):
+            errors.append(f"{store_db}: cursor-agent blob not json: {blob_id}")
+            continue
+        if isinstance(parsed, dict):
+            messages.append((str(blob_id), parsed))
+    return messages
+
+
+def extract_cursor_agent_sessions(
+    chats_dir: Path | None,
+    errors: list[str],
+    *,
+    project_roots: list[Path] | None = None,
+    cursor_projects_dir: Path | None = None,
+) -> list[dict[str, Any]]:
+    if chats_dir is None or not chats_dir.exists():
+        return []
+    roots = project_roots or []
+    jsonl_session_ids = _cursor_jsonl_session_ids(cursor_projects_dir, roots)
+    records: list[dict[str, Any]] = []
+    for store_db, project_path, session_id in iter_cursor_agent_store_paths(
+        chats_dir,
+        roots,
+        jsonl_session_ids=jsonl_session_ids,
+    ):
+        fallback_timestamp = iso_from_mtime(store_db)
+        previous_assistant = ""
+        for index, (blob_id, message) in enumerate(
+            _cursor_agent_blob_messages(store_db, errors),
+            start=1,
+        ):
+            role = message.get("role")
+            for tool_index, tool_item in enumerate(_cursor_agent_tool_items(message), start=1):
+                tool_record = _tool_call_record_from_item(
+                    item=tool_item,
+                    event=message,
+                    fallback_timestamp=fallback_timestamp,
+                    project_path=project_path,
+                    runtime="cursor-agent",
+                    source_path=store_db,
+                    index=(index * 1000) + tool_index,
+                    session_id=session_id,
+                )
+                if tool_record is not None:
+                    tool_data = tool_record.get("data")
+                    if isinstance(tool_data, dict) and isinstance(tool_data.get("arguments"), dict):
+                        tool_data["arguments"] = _bound_tool_arguments(tool_data["arguments"])
+                    records.append(tool_record)
+
+            if role not in {"user", "assistant"}:
+                continue
+            content = _cursor_agent_message_text(message)
+            if not content:
+                continue
+            timestamp = event_timestamp(message, fallback_timestamp)
+            data: dict[str, Any] = {
+                "actor": role,
+                "content": content,
+            }
+            if role == "user":
+                if previous_assistant:
+                    data["preceding_context"] = previous_assistant[-2000:]
+                sig = signal_type(content)
+                if sig:
+                    data["signal_type"] = sig
+            else:
+                previous_assistant = content
+            records.append(
+                record(
+                    source_kind="conversation_turn",
+                    timestamp=timestamp,
+                    project_path=project_path,
+                    runtime="cursor-agent",
+                    source_parts=(store_db.resolve(), blob_id, role, content[:80]),
+                    session_id=session_id,
+                    data=data,
+                )
+            )
+            if role == "user":
+                sig = signal_type(content)
+                if sig:
+                    records.append(
+                        record(
+                            source_kind="history_prompt",
+                            timestamp=timestamp,
+                            project_path=project_path,
+                            runtime="cursor-agent",
+                            source_parts=(store_db.resolve(), blob_id, "history", content[:120]),
+                            session_id=session_id,
+                            data={
+                                "prompt": content,
+                                "signal_type": sig,
+                            },
+                        )
+                    )
+    return records
+
+
 def extract_runtime_store(
     *,
     runtime: str,
@@ -1410,6 +1805,8 @@ def build_corpus(
     claude_projects_dir: Path | None,
     opencode_conversations_dir: Path | None = None,
     copilot_conversations_dir: Path | None = None,
+    cursor_projects_dir: Path | None = None,
+    cursor_chats_dir: Path | None = None,
 ) -> dict[str, Any]:
     errors: list[str] = []
     normalized_roots = [root.resolve() for root in project_roots if root.exists()]
@@ -1424,6 +1821,17 @@ def build_corpus(
     for runtime, store_path, extractor in (
         ("codex", codex_sessions_dir, extract_codex_sessions),
         ("claude-code", claude_projects_dir, extract_claude_project_sessions),
+        ("cursor", cursor_projects_dir, lambda sp, err: extract_cursor_sessions(sp, err, project_roots=normalized_roots)),
+        (
+            "cursor-agent",
+            cursor_chats_dir,
+            lambda sp, err: extract_cursor_agent_sessions(
+                sp,
+                err,
+                project_roots=normalized_roots,
+                cursor_projects_dir=cursor_projects_dir,
+            ),
+        ),
         ("opencode", opencode_conversations_dir, extract_opencode_sessions),
         ("github-copilot", copilot_conversations_dir, extract_copilot_sessions),
     ):
@@ -1484,6 +1892,18 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help="GitHub Copilot session-store.db file or directory (default: COPILOT_HOME or ~/.copilot)",
     )
     parser.add_argument(
+        "--cursor-projects-dir",
+        type=Path,
+        default=None,
+        help="Cursor projects directory to scan (default: ~/.cursor/projects)",
+    )
+    parser.add_argument(
+        "--cursor-chats-dir",
+        type=Path,
+        default=None,
+        help="Cursor Agent CLI chats directory to scan (default: ~/.config/cursor/chats)",
+    )
+    parser.add_argument(
         "--no-codex",
         action="store_true",
         help="skip Codex session extraction",
@@ -1503,12 +1923,18 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         action="store_true",
         help="skip GitHub Copilot runtime discovery",
     )
+    parser.add_argument(
+        "--no-cursor",
+        action="store_true",
+        help="skip Cursor IDE and Cursor Agent CLI session extraction",
+    )
     return parser.parse_args(argv)
 
 
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
     project_roots = args.project_root or [Path.cwd()]
+    skip_cursor = args.no_cursor
     corpus = build_corpus(
         project_roots=project_roots,
         codex_sessions_dir=None if args.no_codex else args.codex_sessions_dir,
@@ -1521,9 +1947,16 @@ def main(argv: list[str] | None = None) -> int:
         copilot_conversations_dir=(
             None if args.no_copilot else args.copilot_conversations_dir or resolve_copilot_store_path()
         ),
+        cursor_projects_dir=(
+            None if skip_cursor else args.cursor_projects_dir or resolve_cursor_projects_path()
+        ),
+        cursor_chats_dir=(
+            None if skip_cursor else args.cursor_chats_dir or resolve_cursor_chats_path()
+        ),
     )
     args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(json.dumps(corpus, indent=2, sort_keys=False) + "\n", encoding="utf-8")
+    payload = json.dumps(corpus, indent=2, sort_keys=False, ensure_ascii=True) + "\n"
+    args.output.write_text(payload, encoding="utf-8")
     total = corpus["metadata"]["total_records"]
     family_bits = ", ".join(
         f"{name}={summary['count']}"

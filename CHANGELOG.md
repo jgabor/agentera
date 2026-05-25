@@ -2,6 +2,17 @@
 
 ## [Unreleased]
 
+## [2.7.1] · 2026-05-25
+
+### Added
+
+- Profilera corpus extraction for Cursor IDE agent-transcript JSONL under `~/.cursor/projects/<slug>/agent-transcripts/` (`cursor` runtime), with project-root slug scoping, `--cursor-projects-dir`, and `--no-cursor`.
+- Cursor Agent CLI gap-fill from `~/.config/cursor/chats/<md5(project-path)>/<session>/store.db` (`cursor-agent` runtime) for sessions without matching IDE JSONL; `--cursor-chats-dir` and `$CURSOR_CONFIG_HOME` override the chats root.
+
+### Changed
+
+- Documented Cursor profilera store layout and corpus flags in `references/adapters/cursor.md` and runtime feature parity.
+
 ## [2.7.0] · 2026-05-24
 
 ### Key highlights

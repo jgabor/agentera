@@ -16,6 +16,17 @@ may expose an event while agentera still lacks a shipped adapter path for it.
 | Cursor IDE | Full for portable skills through local plugin (`~/.cursor/plugins/local/agentera` via `.cursor-plugin/plugin.json`), repo-native surfaces, and upgrade-installed `.cursor/` targets | Active via `sessionStart` env export plus optional `additional_context` digest; plugin-root fallback when `AGENTERA_HOME` env and project walk-up fail (`hooks/cursor_session_start.py`) | Conditional hard gate for reconstructable `Write` and `Edit` candidates via `preToolUse`; verified after live preToolUse Write smoke (2026-05-24) | Active via `sessionEnd` |
 | Cursor Agent CLI | Full when workspace surfaces are installed; degraded when launched outside a Cursor project | Degraded relative to IDE sessionStart env export | Degraded hook parity; follows IDE smoke evidence only | Degraded relative to IDE `sessionEnd` wiring |
 
+## Profilera session corpus
+
+| Runtime | Local session mining | Evidence |
+| ------- | -------------------- | -------- |
+| Claude Code | Yes: `~/.claude/projects/**/*.jsonl` | `scripts/extract_corpus.py` |
+| Codex CLI | Yes: `~/.codex/sessions/**/*.jsonl` | `scripts/extract_corpus.py` |
+| OpenCode | Yes: `opencode.db` SQLite stores | `scripts/extract_corpus.py`, `references/adapters/opencode.md` |
+| Copilot CLI | Yes: `session-store.db` SQLite stores | `scripts/extract_corpus.py` |
+| Cursor IDE | Yes: `~/.cursor/projects/*/agent-transcripts/*/*.jsonl` | `scripts/extract_corpus.py`, `references/adapters/cursor.md` |
+| Cursor Agent CLI | Yes: gap-fill from `~/.config/cursor/chats/<md5(project)>/<session>/store.db` when no IDE JSONL exists | `scripts/extract_corpus.py`, `references/adapters/cursor.md` |
+
 ## Bare `hej` routing
 
 | Runtime | Bare text `hej` behavior | Evidence |

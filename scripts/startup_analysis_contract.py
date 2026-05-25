@@ -2027,6 +2027,8 @@ def default_runtime_store_paths(extract_corpus_module: Any | None = None) -> dic
     return {
         "codex": Path.home() / ".codex" / "sessions",
         "claude-code": Path.home() / ".claude" / "projects",
+        "cursor": extract_corpus.resolve_cursor_projects_path(),
+        "cursor-agent": extract_corpus.resolve_cursor_chats_path(),
         "opencode": extract_corpus.resolve_opencode_db_path(),
         "github-copilot": extract_corpus.resolve_copilot_store_path(),
     }

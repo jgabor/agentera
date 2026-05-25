@@ -119,6 +119,93 @@ bounded timeouts because some CLI builds hang after completion.
 - Session compaction injection beyond shared hook helpers
 - Separate cursor-agent hook install distinct from IDE workspace surfaces
 
+## Profilera session corpus (Section 22)
+
+Profilera mines five canonical record types from host session data. This section
+maps each record type to Cursor IDE local storage on disk.
+
+### Probe paths
+
+| Path | Purpose |
+| ---- | ------- |
+| `~/.cursor/projects/` | Root directory for workspace-scoped Cursor state |
+| `~/.cursor/projects/<project-slug>/agent-transcripts/<session-id>/*.jsonl` | Agent session transcripts (Composer / Agent) |
+| `~/.cursor/projects/<project-slug>/repo.json` | Workspace metadata (`id` UUID); slug mapping is primary for project scoping |
+| `~/.config/cursor/chats/<md5(project-path)>/<session-id>/store.db` | Cursor Agent CLI chat store (gap-fill when JSONL absent) |
+
+Override the projects root with `--cursor-projects-dir`, the CLI chats root with
+`--cursor-chats-dir`, or disable both Cursor runtimes with `--no-cursor` on
+`scripts/extract_corpus.py` and `agentera stats refresh`.
+
+Project slug convention: absolute project path segments joined with `-`, lowercased
+(for example `/home/user/git/agentera` → `home-user-git-agentera`). CLI workspace
+hashes use `md5(absolute-project-path)` hex (same string Cursor uses under
+`~/.config/cursor/chats/`). When `--project-root` is supplied, extraction prefers
+matching slugs and workspace hashes over unrelated stores.
+
+### Transcript JSONL shape
+
+Each line is a JSON object:
+
+```json
+{"role": "user", "message": {"content": [{"type": "text", "text": "..."}]}}
+{"role": "assistant", "message": {"content": [{"type": "text", "text": "..."}, {"type": "tool_use", "name": "grep", "input": {"pattern": "..."}}]}}
+```
+
+Roles are `user` or `assistant`. `message.content` is a list of blocks. Text blocks
+use `type: "text"`. Tool blocks use `type: "tool_use"` with `name` and `input`.
+
+### Cursor Agent CLI `store.db` shape
+
+Runtime id `cursor-agent` reads SQLite stores at
+`~/.config/cursor/chats/<workspace-hash>/<session-id>/store.db`. Each store has:
+
+| Table | Purpose |
+| ----- | ------- |
+| `blobs` | JSON message payloads keyed by content hash (`role`, `content`, optional tool blocks) |
+| `meta` | Session metadata (`agentId`, model, mode) |
+
+JSON blobs use `role` values such as `user`, `assistant`, and `tool`. User content is
+often a plain string; assistant content is a list that may include `text` and
+`tool-call` items (`toolName`, `args`). Sessions that already have IDE JSONL under
+`agent-transcripts/<same-session-id>/` are skipped (gap-fill only).
+
+### Portable record families
+
+| Family | Cursor source | Status |
+| ------ | ------------- | ------ |
+| Decision history | `history_prompt` from decision-rich user text blocks | Yes (local JSONL) |
+| Conversation exchanges | `conversation_turn` from user/assistant lines | Yes (local JSONL) |
+| Tool usage | `tool_call` from `tool_use` / `tool-call` blocks | Yes (bounded args) |
+| Instruction documents | Project `AGENTS.md` via shared `--project-root` scan | Yes (filesystem) |
+| Project config signals | Project manifests via shared `--project-root` scan | Yes (filesystem) |
+
+### Degradation and privacy
+
+Extraction is read-only and local-only. Runtime status uses the shared
+`runtime_statuses` vocabulary (`ok`, `missing`, `sparse`, `degraded`, `skipped`).
+Diagnostics report counts and bounded reasons only; raw transcript text must not
+appear in errors, smoke output, or test assertions.
+
+| Condition | Status | Reason |
+| --------- | ------ | ------ |
+| Store path disabled (`--no-cursor`) | `skipped` | `disabled` |
+| `~/.cursor/projects` or `~/.config/cursor/chats` absent | `missing` | `store_absent` |
+| No `*.jsonl` under `agent-transcripts` / no gap-fill `store.db` | `sparse` | `no_candidate_files` / `no_matching_records` |
+| Permission denied | `degraded` | `store_locked` |
+| Invalid JSONL lines | `degraded` | `schema_divergent` |
+| Candidates present but no normalized records | `sparse` | `no_matching_records` |
+
+### Gaps
+
+- Numeric or opaque project directory names (no slug) skip filesystem project-path
+  inference; `--project-root` mapping still scopes extraction when the slug matches.
+- Cloud agent sessions do not write local `agent-transcripts` in v1.
+- `cursor-agent` `store.db` sessions that already have IDE JSONL transcripts are skipped
+  to avoid duplicate corpus records; gap-fill covers chat-only CLI sessions.
+- Binary or non-JSON blobs in `store.db` degrade with bounded diagnostics and do not
+  leak transcript text.
+
 ## Source of truth
 
 RuntimeAdapter records live in
