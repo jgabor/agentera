@@ -1,83 +1,4 @@
 decisions:
-- number: 54
-  date: '2026-05-16'
-  question: How should Agentera rationalize app metadata status vocabulary across
-    doctor, hej, and upgrade surfaces, and how far should adjacent vocabulary renames
-    go now?
-  context: Doctor output currently exposes a mix of terms such as `fresh`, `stale`,
-    `update_needed`, `ready`, `refresh`, and `fixed`. The active doctor plan started
-    as a text-output repair for misleading ready-state `Next:` guidance, but user
-    deliberation rejected an easy split between internal JSON and user-facing wording
-    because Agentera already has terminology debt around DECISIONS.md/decisions.yaml
-    and bundle/app vocabulary. Follow-up review identified wider possible rename targets,
-    including capability names, canonical artifact names such as DECISIONS.md and
-    `.agentera/decisions.yaml`, exit signals, task statuses, health grades, and general
-    prose outside app metadata.
-  alternatives:
-  - name: Text-only translation
-    status: rejected
-    description: Lowest compatibility risk, but leaves JSON, docs, tests, and agent
-      reasoning with a second hidden vocabulary that can leak into future output.
-  - name: Canonical hard rename
-    status: chosen
-    description: Rename the canonical app status vocabulary now across internal metadata,
-      text, docs, and tests; update consumers in the same change instead of creating
-      a long-lived dual vocabulary.
-  - name: Broader suite-wide rename now
-    status: rejected
-    description: Renaming capability names, artifact names, exits, task statuses,
-      health grades, and general prose in the same change would mix a bounded doctor/app
-      contract fix with protocol identity changes whose blast radius has not been
-      inventoried.
-  - name: Block doctor fix on vocabulary authority migration
-    status: rejected
-    description: Deferring the bounded doctor/app metadata fix until a structured
-      vocabulary authority exists would preserve current confusing statuses longer.
-      Instead, record inventory and a separate Resonera decision as prerequisites
-      for broader renames.
-  - name: Canonical plus compatibility aliases
-    status: rejected
-    description: Safer for unknown consumers, but still risks becoming permanent dual
-      truth unless an unavoidable external compatibility consumer is proven.
-  - name: Keep current terms with stricter definitions
-    status: rejected
-    description: Defines the existing mess more precisely but keeps non-standard app
-      words such as `fresh`, `stale`, `refresh`, and `fixed` as first-class protocol
-      language.
-  choice: Hard-rename app metadata toward one canonical vocabulary. Use standard app
-    terms such as `up_to_date`, `outdated`, `repair_needed`, `migration_needed`, `manual_review_needed`,
-    `ready_to_apply`, `applied`, and `no_changes_needed` as the starting contract.
-    Avoid `fresh`, `stale`, `refresh`, and `fixed` as canonical status words. Preserve
-    compatibility aliases only when a concrete existing consumer requires them, and
-    document any such alias as transitional rather than as a second source of truth.
-    Do not rename capability names, artifact names or paths, exit signals, task statuses,
-    health grades, or general prose as part of the doctor app-metadata implementation.
-    Those broader targets require a thorough inventory, consumer review, and a separate
-    Resonera decision on whether a dedicated `vocabulary.yaml` should replace `references/cli/vocabulary.md`
-    as the structured vocabulary authority.
-  reasoning: 'Agentera''s prior vocabulary drift made agents and users carry mapping
-    tables between artifact names, app/bundle terminology, and CLI labels. App status
-    metadata is a protocol surface, not merely UI copy. A hard rename costs more now,
-    but it prevents another internal/public split and makes doctor, hej, upgrade,
-    tests, and documentation use the same mental model. The same argument does not
-    justify opportunistic suite-wide renames: capability names, artifact identifiers,
-    exit signals, task statuses, and health grades are protocol identity surfaces
-    with different compatibility costs. They need inventory-backed deliberation before
-    replacement, especially if the long-term authority moves from prose-only `references/cli/vocabulary.md`
-    to a machine-readable `vocabulary.yaml`.'
-  confidence: firm
-  feeds_into: .agentera/plan.yaml, TODO.md, references/cli/vocabulary.md, vocabulary.yaml,
-    scripts/agentera_upgrade.py, scripts/agentera, references/cli/agent-ready-state-contract.yaml,
-    tests, CHANGELOG.md, README.md, UPGRADE.md
-  satisfaction:
-    state: user_confirmed_satisfied
-    evidence: 'D54 app-metadata hard-rename stands with D58 governing the 3.0 live
-      boundary: any transitional compatibility aliases from D54 are migration and
-      upgrade-detection inputs only, not supported live protocol aliases after 3.0.
-      Reconciled in resonera satisfaction review on 2026-05-23.'
-    user_confirmation:
-      confirmed_by: user
-      confirmed_at: '2026-05-23'
 - number: 55
   date: '2026-05-17'
   question: How should Agentera expose usage statistics and local-history corpus generation?
@@ -596,14 +517,97 @@ decisions:
     AGENTS.md, tests, package-registry.yaml
   satisfaction:
     state: provisionally_satisfied
-    evidence: >-
-      Cursor v1 slice shipped in commit 151043d with cursor and cursor-agent registry
-      records, repo-native hooks and managed agents, upgrade/doctor/eval paths, and
-      parity docs. Live preToolUse Write smoke passed 2026-05-24 with invalid-block
+    evidence: Cursor v1 slice shipped in commit 151043d with cursor and cursor-agent
+      registry records, repo-native hooks and managed agents, upgrade/doctor/eval
+      paths, and parity docs. Live preToolUse Write smoke passed 2026-05-24 with invalid-block
       and valid-allow evidence in `.agentera/smoke-cursor-pretooluse-evidence.txt`
       and progress cycle 596. Plan Task 8 closeout synchronized artifacts and bumped
       version metadata to 2.7.0. User confirmation pending.
+- number: 64
+  date: '2026-05-26'
+  question: How should Agentera refine VISION.md after the recent direction shift?
+  context: The vision.yaml hadn''t been substantially updated since May 4, while the
+    project picked up Cursor as a first-class runtime (D63), consolidated the CLI
+    under prime (D59), set a TS/3.0 direction (D56), launched a web site, extended
+    inspektera with review mode and architecture-deepening (D60/61), added visualisera
+    governance (D62), and introduced JSON output budgets and enforcement (D59). A
+    resonera deliberation reviewed each section of the vision and selected three refinements.
+  alternatives:
+  - name: Full vision rewrite
+    status: rejected
+    description: Too broad; the north star and principles still hold structurally.
+  - name: Stretch-goal refinements including runtime landscape and TS/3.0 direction
+    status: rejected
+    description: Not yet ready for vision-level commitment until those directions
+      are more concrete.
+  - name: Focused refinements on JSON contract discipline, personality, and emotional
+      register
+    status: chosen
+    description: Three targeted updates that sharpen what the project proved through
+      implementation.
+  - name: No changes
+    status: rejected
+    description: Would leave the vision underrepresenting JSON-as-protocol rigor and
+      the autonomous feel of the system.
+  choice: 'Apply three focused refinements to vision.yaml: (1) add JSON output is
+    protocol paragraph to Direction, (2) shift personality from "ambitious workshop"
+    to "the sharp colleague''''s workshop", (3) add autonomy dimension to the emotional
+    register. Defer runtime landscape and TS/3.0 direction updates to a future refinement
+    when those directions are more concrete.'
+  reasoning: 'The vision''''s north star and principles are structurally sound. What
+    was missing was two things the project proved through implementation: that JSON-as-protocol
+    discipline is a product commitment rather than just an optimization preference,
+    and that the emotional feel of the system includes the companion autonomy of an
+    agent that works when you do not. The personality change from "ambitious workshop"
+    to "the sharp colleague''''s workshop" bridges these two refinements by making
+    the product personality mirror the interface voice.'
+  confidence: firm
+  feeds_into:
+  - VISION.md
+  satisfaction:
+    state: open
+    evidence: null
+    user_confirmation: null
+    review_needed: true
 archive:
+- summary: 'Decision 54 (2026-05-16): Hard-rename app metadata toward one canonical
+    vocabulary. Use standard app terms such as `up_to_date`, `outdated`,...'
+  number: 54
+  date: '2026-05-16'
+  choice: Hard-rename app metadata toward one canonical vocabulary. Use standard app
+    terms such as `up_to_date`, `outdated`, `repair_needed`, `migration_needed`, `manual_review_needed`,
+    `ready_to_apply`, `applied`, and `no_changes_needed` as the starting contract.
+    Avoid `fresh`, `stale`, `refresh`, and `fixed` as canonical status words. Preserve
+    compatibility aliases only when a concrete existing consumer requires them, and
+    document any such alias as transitional rather than as a second source of truth.
+    Do not rename capability names, artifact names or paths, exit signals, task statuses,
+    health grades, or general prose as part of the doctor app-metadata implementation.
+    Those broader targets require a thorough inventory, consumer review, and a separate
+    Resonera decision on whether a dedicated `vocabulary.yaml` should replace `references/cli/vocabulary.md`
+    as the structured vocabulary authority.
+  feeds_into: .agentera/plan.yaml, TODO.md, references/cli/vocabulary.md, vocabulary.yaml,
+    scripts/agentera_upgrade.py, scripts/agentera, references/cli/agent-ready-state-contract.yaml,
+    tests, CHANGELOG.md, README.md, UPGRADE.md
+  satisfaction:
+    state: user_confirmed_satisfied
+    evidence: 'D54 app-metadata hard-rename stands with D58 governing the 3.0 live
+      boundary: any transitional compatibility aliases from D54 are migration and
+      upgrade-detection inputs only, not supported live protocol aliases after 3.0.
+      Reconciled in resonera satisfaction review on 2026-05-23.'
+    user_confirmation:
+      confirmed_by: user
+      confirmed_at: '2026-05-23'
+  outcome: Hard-rename app metadata toward one canonical vocabulary. Use standard
+    app terms such as `up_to_date`, `outdated`, `repair_needed`, `migration_needed`,
+    `manual_review_needed`, `ready_to_apply`, `applied`, and `no_changes_needed` as
+    the starting contract. Avoid `fresh`, `stale`, `refresh`, and `fixed` as canonical
+    status words. Preserve compatibility aliases only when a concrete existing consumer
+    requires them, and document any such alias as transitional rather than as a second
+    source of truth. Do not rename capability names, artifact names or paths, exit
+    signals, task statuses, health grades, or general prose as part of the doctor
+    app-metadata implementation. Those broader targets require a thorough inventory,
+    consumer review, and a separate Resonera decision on whether a dedicated `vocabulary.yaml`
+    should replace `references/cli/vocabulary.md` as the structured vocabulary authority.
 - summary: 'Decision 53 (2026-05-15): Store decision satisfaction state on each decision
     entry. Agents may mark provisional satisfaction with evidence,...'
   number: 53
@@ -961,7 +965,4 @@ archive:
   satisfaction: *id001
 - summary: 'Decision 15 (2026-04-02): **Question**: How should TODO.md categorize
     issues beyond bug-severity, and should issues carry type tags?'
-  satisfaction: *id001
-- summary: 'Decision 14 (2026-04-02): **Question**: How should the ecosystem''s user-facing
-    messages be formatted?'
   satisfaction: *id001
