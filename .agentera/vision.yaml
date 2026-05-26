@@ -87,6 +87,12 @@ direction: 'The schemas are the foundation. The bundle is the proof. The next la
   DESIGN.md for the visual system. Everything else lives as structured data in `.agentera/`, queried on demand.
 
 
+  JSON output is protocol. Every public `--format json` surface is inventoried, measured in bytes and GPT-5 tokens,
+  and enforced through regression budgets. The prime context capsule is the single supported capability startup JSON shape.
+  Token efficiency is not an aspiration; it is a test gate. This discipline makes agent-to-state queries predictable
+  across versions and runtimes.
+
+
   The adoption arc takes portability further. Any agent runtime that can read a YAML schema and invoke a capability''s prose
   file joins the team. The schemas are the API. The bundle proves they''re sufficient. Others implement against them.
 
@@ -94,9 +100,8 @@ direction: 'The schemas are the foundation. The bundle is the proof. The next la
   An opinionated standalone runtime is one answer. A thin adapter for each platform is another. The protocol doesn''t prescribe
   the mechanism; it prescribes the contract.'
 identity:
-  personality: The ambitious workshop. Every tool has a purpose, nothing is decorative, and the whole space is designed to
-    flow. It's not quiet; it's alive with activity. Purposeful, opinionated, and crafted with the kind of care that only shows
-    up when you look closely.
+  personality: The sharp colleague's workshop. Every tool here earns its place — nothing is decorative, nothing is accidental.
+    Purposeful, opinionated, built with care. It's alive with activity because the colleague doesn't stop when you look away.
   voice: 'The Swedish names are invocations, not branding. *Realisera*: realize this. *Inspektera*: inspect that. *Resonera*:
     resonate with this decision. Each capability name is a verb in the imperative: a call to action.
 
@@ -108,10 +113,10 @@ identity:
 
     When outputs are data-dense the data stays structured for scannability. But a human opens and a human closes: the colleague
     interprets the evidence, doesn''t just present it.'
-  emotional_register: Using agentera should feel like having a sharp colleague at your back, not like reading output from
-    a monitoring system. The system earns trust through rigor and consistency, not through promises. When it audits your architecture
-    and finds problems, it says "hey, the architecture slid to C, here's what I'd look at" with enough evidence that you take
-    it seriously.
+  emotional_register: Using agentera should feel like having a sharp colleague at your back — one who keeps working when you
+    walk away. The system earns trust through rigor and consistency, not through promises. It finds problems before you ask and
+    surfaces what matters without being told. When it audits your architecture and finds problems, it says "hey, it slid to C,
+    here's what I'd look at" with enough evidence that you take it seriously. Close the laptop; the colleague stays at work.
   naming: 'Swedish verb stems with the *-era* suffix. Always. The name IS the action. The register extends beyond names: the
     suite speaks in workshop-floor language (*complete*, *flagged*, *stuck*) because the vocabulary of the workshop is the
     vocabulary of the work.'
