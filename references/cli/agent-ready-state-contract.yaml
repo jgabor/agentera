@@ -243,7 +243,6 @@ structured_output:
         - evidence_context
         - benchmark_context
         - execution_context
-        - capability_context
         - source
         - source_contract
       source_contract:
@@ -257,7 +256,6 @@ structured_output:
             - missing_state
             - confidence_caveats
             - cli_fallback
-            - capability_context
           complete_semantics: >-
             When complete_for_capability_startup is true, raw_artifact_reads_required
             must be false and agents should not perform defensive raw artifact reads
@@ -605,7 +603,6 @@ field_selection:
         - evidence_context
         - benchmark_context
         - execution_context
-        - capability_context
         - source
         - source_contract
   retained_context:

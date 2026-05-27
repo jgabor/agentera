@@ -36,7 +36,7 @@ def _run_python_script(script: str, *args: str) -> subprocess.CompletedProcess[s
 
 
 def test_verify_smoke_text_output_reports_success_and_safe_default() -> None:
-    result = _run_cli("verify", "smoke", "installed-skills")
+    result = _run_cli("check", "verify", "smoke", "installed-skills")
 
     assert result.returncode == 0, result.stderr
     assert "verify smoke installed-skills: pass (engine_exit=0)" in result.stdout

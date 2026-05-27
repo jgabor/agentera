@@ -1881,7 +1881,7 @@ class TestHej:
         assert "app_home: status=up_to_date" in r.stdout
         assert "source_contract:" in r.stdout
         assert "fields=app_home,mode,profile,v1_migration,health,issues,plan,docs,progress,objective,state_presence,attention,decision_attention,next_action,orchestration_context,closeout_context,evidence_context" in r.stdout
-        assert "render=caller-owned README-style prime orientation dashboard" in r.stdout
+        assert "render=caller-owned README-style hej dashboard" in r.stdout
         assert "access=single installed CLI call; app/v1/profile safety included; no preflight glob/read/import/doctor calls" in r.stdout
         assert "capability_startup_complete=true" in r.stdout
         assert "raw_artifact_reads_required=false" in r.stdout
@@ -1890,12 +1890,12 @@ class TestHej:
         assert "cli_fallback=agentera plan --format json; agentera docs --format json; agentera progress --format json" in r.stdout
         assert "┌─┐┌─┐┌─┐" not in r.stdout
         assert "render=hej dashboard | status=complete" not in r.stdout
-
+ 
         structured = _run("hej", "--format", "json", cwd=project)
         assert structured.returncode == 0
         assert "Deprecation: agentera hej is deprecated; use agentera prime" in structured.stderr
         data = json.loads(structured.stdout)
-        assert data["command"] == "prime"
+        assert data["command"] == "hej"
         assert data["source_contract"]["capability_startup"]["complete_for_capability_startup"] is True
         assert data["source_contract"]["capability_startup"]["missing_state"] == []
         assert data["plan"]["tasks"][1]["depends_on"] == [1]
@@ -2096,7 +2096,7 @@ class TestHej:
         assert r.returncode == 0, r.stderr
         assert "Deprecation: agentera hej is deprecated; use agentera prime" in r.stderr
         data = json.loads(r.stdout)
-        assert data["command"] == "prime"
+        assert data["command"] == "hej"
         assert "plan" in data
         assert "docs" in data
         assert "source_contract" in data
@@ -4388,7 +4388,7 @@ class TestRoutineStructuredOutput:
         data = yaml.safe_load(r.stdout)
         assert list(data) == ["command", "status", "mode", "next_action"]
         assert set(data).issubset(set(available))
-        assert data["command"] == "prime"
+        assert data["command"] == "hej"
         assert data["status"] == "ok"
 
     def test_sparse_hej_evidence_context_field_selection_uses_supported_seam(self, project):

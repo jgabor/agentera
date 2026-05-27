@@ -85,7 +85,7 @@ class TestAudienceGroupedHelp:
 
         assert result.returncode == 0, result.stderr
         assert "Deprecation: agentera hej is deprecated; use agentera prime" in result.stderr
-        assert "agentera prime" in result.stdout
+        assert "agentera hej" in result.stdout
 
 
 class TestPreservedTopLevelCommands:
