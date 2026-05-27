@@ -70,7 +70,7 @@ tasks:
   - number: 4
     name: CLI Consistency
     depends_on: []
-    status: pending
+    status: complete
     acceptance:
       - GIVEN agentera validate command family WHEN adding new validator THEN only one code path requires update
       - GIVEN agentera doctor --format json WHEN run THEN produces structured JSON output

@@ -2445,7 +2445,8 @@ def cmd_doctor(args: argparse.Namespace) -> int:
         expected_version=args.expected_version,
         expected_commands=tuple(args.expect_command or EXPECTED_STATE_COMMANDS),
     )
-    if args.json:
+    output_format = getattr(args, "format", "text")
+    if output_format == "json":
         print(json.dumps(public_doctor_status(status), indent=2, sort_keys=True))
     else:
         print(render_doctor_status(status))
