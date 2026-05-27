@@ -129,16 +129,16 @@ class TestDeprecationAliases:
 
         assert r.returncode == 0, r.stderr
         assert "Deprecation: agentera hej is deprecated; use agentera prime" in r.stderr
-        assert "agentera prime" in r.stdout
+        assert "agentera hej" in r.stdout
         assert "next_action:" in r.stdout
 
-    def test_hej_json_delegates_with_prime_command(self):
+    def test_hej_json_delegates_with_hej_command(self):
         r = _run("hej", "--format", "json")
 
         assert r.returncode == 0, r.stderr
         assert "Deprecation: agentera hej is deprecated; use agentera prime" in r.stderr
         data = json.loads(r.stdout)
-        assert data["command"] == "prime"
+        assert data["command"] == "hej"
 
     def test_describe_prints_deprecation_and_delegates_to_schema(self):
         r = _run("describe", "--format", "json")

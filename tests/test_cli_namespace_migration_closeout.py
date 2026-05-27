@@ -97,6 +97,10 @@ class TestSchemaAndPrimeCloseout:
         assert prime.returncode == hej.returncode == 0
         prime_payload = json.loads(prime.stdout)
         hej_payload = json.loads(hej.stdout)
-        assert prime_payload == hej_payload
         assert prime_payload["command"] == "prime"
+        assert hej_payload["command"] == "hej"
+        prime_payload["command"] = "hej"
+        prime_payload["source_contract"]["access"] = prime_payload["source_contract"]["access"].replace("normal prime", "normal hej")
+        prime_payload["source_contract"]["render"] = prime_payload["source_contract"]["render"].replace("prime orientation", "hej")
+        assert prime_payload == hej_payload
         assert "Deprecation: agentera hej is deprecated; use agentera prime" in hej.stderr

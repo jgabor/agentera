@@ -471,7 +471,8 @@ def _load_artifact(path: Path) -> Any:
         with open(path) as f:
             return yaml.safe_load(f)
     except Exception as exc:
-        print(f"warning: failed to parse artifact {path}: {exc}", file=sys.stderr)
+        if path.suffix.lower() != ".md":
+            print(f"warning: failed to parse artifact {path}: {exc}", file=sys.stderr)
         return None
 
 
@@ -837,7 +838,6 @@ HEJ_STRUCTURED_FIELDS = [
     "evidence_context",
     "benchmark_context",
     "execution_context",
-    "capability_context",
     "source",
     "source_contract",
 ]
@@ -866,7 +866,7 @@ ALLOWED_RAW_ARTIFACT_USES = [
     "benchmark analysis",
 ]
 
-STARTUP_COMPLETENESS_AVAILABLE_STATE = [
+STARTUP_AVAILABLE_STATE_FIELDS = [
     "app_home",
     "mode",
     "profile",
@@ -992,18 +992,18 @@ COMMAND_DESCRIPTIONS = {
     "prime": "Composite orientation briefing and capability startup context.",
     "hej": "Deprecated alias for prime.",
     "schema": "Runtime CLI/schema introspection.",
-    "plan": "Active plan summary.",
-    "progress": "Recent cycle summary.",
-    "health": "Latest project artifact health audit.",
-    "todo": "TODO summary.",
-    "decisions": "Decision log.",
-    "docs": "Documentation contract summary.",
-    "objective": "Active optimera objective summary.",
-    "experiments": "Active optimera experiments summary.",
+    "plan": "Deprecated alias for state plan. Active plan summary.",
+    "progress": "Deprecated alias for state progress. Recent cycle summary.",
+    "health": "Deprecated alias for state health. Latest project artifact health audit.",
+    "todo": "Deprecated alias for state todo. TODO summary.",
+    "decisions": "Deprecated alias for state decisions. Decision log.",
+    "docs": "Deprecated alias for state docs. Documentation contract summary.",
+    "objective": "Deprecated alias for state objective. Active optimera objective summary.",
+    "experiments": "Deprecated alias for state experiments. Active optimera experiments summary.",
     "query": "Deprecated alias for state query. Advanced custom artifact query.",
-    "lint": "Run pre-write artifact prose self-audit.",
-    "gate": "Run check-only repository gates.",
-    "compact": "Check or fix artifact compaction budgets.",
+    "lint": "Deprecated alias for check lint. Run pre-write artifact prose self-audit.",
+    "gate": "Deprecated alias for check compact. Run check-only repository gates.",
+    "compact": "Deprecated alias for check compact. Check or fix artifact compaction budgets.",
     "upgrade": "Plan or apply an idempotent v1-to-v2 upgrade.",
     "doctor": "Check Agentera CLI, app, and runtime status.",
     "describe": "Deprecated alias for schema.",
@@ -1023,7 +1023,9 @@ DOCTOR_SIGNAL_KINDS = [
 
 
 def _available_structured_fields(command: str) -> list[str]:
-    if command in {"hej", "prime"}:
+    if command == "prime":
+        return HEJ_STRUCTURED_FIELDS + ["capability_context"]
+    if command == "hej":
         return HEJ_STRUCTURED_FIELDS
     if command in CAPABILITY_NAMES:
         return ["command", "status", "capability", "routing"]
@@ -1190,6 +1192,11 @@ def _decision_satisfaction_context(entry: dict[str, Any]) -> dict[str, Any]:
     if explicit_review_needed:
         review_needed = True
         caveats.append("Decision satisfaction is explicitly marked review_needed.")
+    original_caveats = satisfaction.get("caveats")
+    if isinstance(original_caveats, list):
+        caveats = [str(c) for c in original_caveats] + caveats
+    elif isinstance(original_caveats, str):
+        caveats = [original_caveats] + caveats
     enriched = dict(satisfaction)
     enriched.setdefault("evidence", evidence)
     enriched.setdefault("user_confirmation", user_confirmation)
@@ -1510,7 +1517,7 @@ def _startup_completeness_contract() -> dict[str, Any]:
             "Do not read raw artifacts when complete_for_capability_startup is true. "
             "When incomplete, try cli_fallback first; raw artifact reads are only a last-resort fallback."
         ),
-        "available_state": STARTUP_COMPLETENESS_AVAILABLE_STATE,
+        "available_state": STARTUP_AVAILABLE_STATE_FIELDS,
         "missing_state": STARTUP_COMPLETENESS_MISSING_STATE,
         "confidence_caveats": STARTUP_COMPLETENESS_CONFIDENCE_CAVEATS,
         "cli_fallback": STARTUP_COMPLETENESS_CLI_FALLBACK,
@@ -4820,7 +4827,7 @@ def _build_orientation_json_payload(
             "artifacts_present": state["mode"] == "returning",
         },
         "source_contract": {
-            "fields": STARTUP_COMPLETENESS_AVAILABLE_STATE,
+            "fields": HEJ_STRUCTURED_FIELDS,
             "render": render,
             "access": access,
             "empty_state": "fresh mode with missing artifact summaries and zero issue counts",
@@ -4833,12 +4840,13 @@ def _build_orientation_json_payload(
 def _build_prime_capability_context_payload(
     state: dict[str, Any],
     capability_name: str,
+    command: str = "prime",
 ) -> dict[str, Any]:
     bundle_public = public_doctor_status(state["bundle"])
     app_home = _orientation_app_home(state["bundle"])
     bespoke = _bespoke_capability_contexts(capability_name, state)
     return {
-        "command": "prime",
+        "command": command,
         "status": "ok",
         "capability_context": _slim_capability_context(
             capability_name,
@@ -4869,24 +4877,25 @@ def cmd_prime(args: argparse.Namespace) -> int:
     if guidance:
         print(PRIME_BLOB, end="")
         return 0
+    cmd_name = getattr(args, "command", "prime")
     if capability is not None:
         _validate_prime_capability(str(capability))
         if _output_format(args) == "text":
             raise ValueError("prime --context requires --format json")
         state = _collect_orientation_state(args)
-        payload = _build_prime_capability_context_payload(state, str(capability))
-        return _emit_state_structured("prime", payload, args)
+        payload = _build_prime_capability_context_payload(state, str(capability), cmd_name)
+        return _emit_state_structured(cmd_name, payload, args)
     if dashboard:
         if _output_format(args) == "text":
             raise ValueError("prime --dashboard requires --format json")
         state = _collect_orientation_state(args)
-        payload = _build_orientation_json_payload(state, command="prime")
-        return _emit_state_structured("prime", payload, args)
+        payload = _build_orientation_json_payload(state, command=cmd_name)
+        return _emit_state_structured(cmd_name, payload, args)
     state = _collect_orientation_state(args)
     if _output_format(args) != "text":
-        payload = _build_orientation_json_payload(state, command="prime", capability_name=None)
-        return _emit_state_structured("prime", payload, args)
-    _print_orientation_text_briefing(state, command="prime")
+        payload = _build_orientation_json_payload(state, command=cmd_name, capability_name=None)
+        return _emit_state_structured(cmd_name, payload, args)
+    _print_orientation_text_briefing(state, command=cmd_name)
     return 0
 
 
@@ -5223,7 +5232,7 @@ def cmd_validate_capability(args: argparse.Namespace) -> int:
             print(result.stdout, end="")
         if result.stderr:
             print(result.stderr, end="", file=sys.stderr)
-    return result.returncode
+    return 0 if result.returncode == 0 else 1
 
 
 def _validate_artifact_label(artifact: str) -> None:
@@ -8327,20 +8336,20 @@ def main(argv: list[str] | None = None) -> int:
             if not args.check_command:
                 parser.error("the following arguments are required: check_command")
             return cmd_check(args)
-        if args.command == "plan":
-            _emit_deprecation_alias("plan", "state plan")
-            return cmd_state(args)
         if args.command in STATE_COMMAND_HANDLERS:
+            _emit_deprecation_alias(args.command, f"state {args.command}")
             return cmd_state(args)
         if args.command == "query":
             _emit_deprecation_alias("query", "state query")
             return cmd_query(args)
         if args.command == "compact":
+            _emit_deprecation_alias("compact", "check compact")
             return cmd_compact(args)
         if args.command == "gate":
             _emit_deprecation_alias("gate", "check compact")
             return cmd_gate(args)
         if args.command == "verify":
+            _emit_deprecation_alias("verify", "check verify")
             return cmd_verify(args)
         if args.command == "usage":
             return cmd_usage(args)
@@ -8348,6 +8357,7 @@ def main(argv: list[str] | None = None) -> int:
             _emit_deprecation_alias("stats", "report")
             return cmd_stats(args)
         if args.command == "lint":
+            _emit_deprecation_alias("lint", "check lint")
             return cmd_lint(args)
         if args.command == "validate":
             _emit_deprecation_alias("validate", "check validate")

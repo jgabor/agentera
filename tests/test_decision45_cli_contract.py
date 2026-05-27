@@ -106,7 +106,7 @@ def test_startup_completeness_contract_preserves_cli_vocabulary():
         "agentera docs --format json",
         "agentera progress --format json",
     ]
-    assert "capability_context" in hej_contract["fields"]
+    assert "capability_context" not in hej_contract["fields"]
     assert "agentera prime --context <capability> --format json" in hej_contract["capability_context_semantics"]
     assert "top-level `capability_context`" in hej_contract["capability_context_semantics"]
     assert "Historical v2 paths" in hej_contract["capability_context_semantics"]
