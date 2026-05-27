@@ -295,7 +295,8 @@ VALIDATION:
     severity: error
     description: >-
       The plan must have: level, created, status, title, what, why,
-      scope.included, scope.excluded, and at least one task.
+      scope.included, scope.excluded, and at least one task. Each task
+      must have number, name, and status.
     checks:
       - "level is present and is 'light' or 'full'"
       - "created is present and matches YYYY-MM-DD"
@@ -304,7 +305,9 @@ VALIDATION:
       - "what is present and non-empty"
       - "why is present and non-empty"
       - "scope.included has at least one entry"
+      - "scope.excluded is present (may be empty list)"
       - "tasks has at least one entry"
+      - "each task has number, name, and status"
   3:
     id: PV3
     rule: full_level_requirements
