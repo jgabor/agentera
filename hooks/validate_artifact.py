@@ -590,10 +590,11 @@ def _validate_decision_satisfaction(data: dict, name: str) -> list[str]:
 
 
 def _validation_rule_severity(schema: dict, rule: str) -> str | None:
-    for entry in schema.get("VALIDATION", {}).values():
-        if isinstance(entry, dict) and entry.get("rule") == rule:
-            severity = entry.get("severity")
-            return str(severity) if severity else None
+    for group_key in ("VALIDATION", "VALIDATION_RULES"):
+        for entry in schema.get(group_key, {}).values():
+            if isinstance(entry, dict) and entry.get("rule") == rule:
+                severity = entry.get("severity")
+                return str(severity) if severity else None
     return None
 
 
@@ -639,24 +640,33 @@ def _validate_yaml(content: str, schema: dict, name: str) -> list[str]:
             wc = len(content.split())
             if wc > mw:
                 violations.append(f"{name}: word count ({wc}) exceeds budget ({mw})")
-    for _, ve in schema.get("VALIDATION", {}).items():
-        if not isinstance(ve, dict):
-            continue
-        rule = ve.get("rule", "")
-        if "unique" in rule and "number" in rule and ve.get("severity") == "error":
-            for key, val in data.items():
-                if isinstance(val, list):
-                    nums = [
-                        e["number"]
-                        for e in val
-                        if isinstance(e, dict) and "number" in e
-                    ]
-                    if nums:
-                        if len(nums) != len(set(nums)):
-                            violations.append(f"{name}: duplicate numbers in '{key}'")
-                        direction = _expected_sequence_order(name, key)
-                        if not _sequence_in_order(nums, direction):
-                            violations.append(f"{name}: '{key}' not in {direction} order")
+    for group_key in ("VALIDATION", "VALIDATION_RULES"):
+        for _, ve in schema.get(group_key, {}).items():
+            if not isinstance(ve, dict):
+                continue
+            rule = ve.get("rule", "")
+            severity = ve.get("severity")
+            if severity != "error":
+                continue
+            if "unique" in rule and "number" in rule:
+                for key, val in data.items():
+                    if isinstance(val, list):
+                        nums = [
+                            e["number"]
+                            for e in val
+                            if isinstance(e, dict) and "number" in e
+                        ]
+                        if nums:
+                            if len(nums) != len(set(nums)):
+                                violations.append(f"{name}: duplicate numbers in '{key}'")
+                            direction = _expected_sequence_order(name, key)
+                            if not _sequence_in_order(nums, direction):
+                                violations.append(f"{name}: '{key}' not in {direction} order")
+            elif rule == "closure_consistency":
+                if isinstance(data.get("status"), str) and data["status"] == "closed":
+                    for field in ("closed_at", "final_value", "target_ref", "reason"):
+                        if field not in data or data[field] is None:
+                            violations.append(f"{name}: closure field '{field}' is required when status is 'closed'")
     return violations
 
 
@@ -748,7 +758,7 @@ class ArtifactSchemaValidator:
             path = self.schemas_dir / f"{name}.yaml"
             if path.is_file():
                 with open(path) as f:
-                    self._schema_cache[name] = yaml.safe_load(f)
+                    self._schema_cache[name] = yaml.safe_load(f) or {}
             else:
                 self._schema_cache[name] = None
         return self._schema_cache[name]
@@ -770,6 +780,8 @@ class ArtifactSchemaValidator:
             schema = self.load_schema(name)
             if schema is None:
                 return []
+            if not schema:
+                return [f"{name}: schema file is empty or contains no valid definitions"]
             content = _read_if_needed(write.content, abs_path)
             if content is None:
                 return []
@@ -798,6 +810,8 @@ class ArtifactSchemaValidator:
             schema = self.load_schema(name)
             if schema is None:
                 return [f"{artifact}: schema '{name}' is not available"]
+            if not schema:
+                return [f"{artifact}: schema '{name}' file is empty or contains no valid definitions"]
             return self.validate_yaml(content, schema, name)
         if artifact in _HUMAN_FACING:
             return self.validate_markdown(content, artifact)
@@ -907,4 +921,4 @@ if __name__ == "__main__":
         sys.exit(main())
     except Exception:
         traceback.print_exc(file=sys.stderr)
-        sys.exit(0)
+        sys.exit(2)

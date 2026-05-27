@@ -292,7 +292,8 @@ def _load_schemas(schemas_dir: Path) -> dict[str, dict[str, Any]]:
         try:
             with open(schema_file) as f:
                 schema = yaml.safe_load(f)
-        except Exception:
+        except Exception as exc:
+            print(f"warning: failed to load schema {schema_file.name}: {exc}", file=sys.stderr)
             continue
         if not isinstance(schema, dict):
             continue
@@ -324,7 +325,8 @@ def _load_registry_for_schemas(schemas_dir: Path) -> dict[str, ArtifactRecord]:
         model_path = Path(__file__).resolve().parent.parent / "references" / "artifacts" / "artifact-registry-interface-model.yaml"
     try:
         return load_artifact_registry(schemas_dir, model_path)
-    except Exception:
+    except Exception as exc:
+        print(f"warning: failed to load artifact registry for schemas: {exc}", file=sys.stderr)
         return {}
 
 
@@ -467,7 +469,8 @@ def _load_artifact(path: Path) -> Any:
     try:
         with open(path) as f:
             return yaml.safe_load(f)
-    except Exception:
+    except Exception as exc:
+        print(f"warning: failed to parse artifact {path}: {exc}", file=sys.stderr)
         return None
 
 

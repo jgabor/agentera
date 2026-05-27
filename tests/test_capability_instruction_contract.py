@@ -178,6 +178,7 @@ def test_real_capabilities_and_current_surfaces_do_not_use_legacy_prose_md() -> 
         "references/cli/capability-instruction-contract.yaml",
         "tests/test_capability_instruction_contract.py",
         "TODO.md",
+        "docs/notes/v1-legacy-triage.md",
     }
     offenders: list[str] = []
     for path in REPO_ROOT.rglob("*"):

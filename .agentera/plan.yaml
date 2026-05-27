@@ -1,0 +1,40 @@
+header:
+  level: light
+  created: 2026-05-26
+  status: complete
+  title: Fix critical validation and state-loading silent failures
+what: >
+  Fix 7 critical bugs where the artifact validation hook and CLI state
+  loaders silently mask failures — exit 0 on crash, empty schemas passing
+  validation, schema-defined rules ignored, and corrupt files
+  indistinguishable from missing files.
+why: >
+  The validation hook is a hard gate for artifact integrity. When it
+  silently passes on crashes, empty schemas, and unenforced rules, every
+  artifact operation downstream is untrustworthy. These are the
+  highest-severity open items in TODO.md.
+constraints: >
+  Must not break existing passing validation for well-formed artifacts.
+  Must preserve exit code contracts (0=pass, 1=fail, 2=violation).
+  Changes scoped to hooks/validate_artifact.py and scripts/agentera.
+overall_acceptance:
+  - GIVEN a hook crashes with an unexpected exception WHEN validate_artifact.py catches it THEN the process exits with code 2 not 0
+  - GIVEN an empty or comment-only schema file WHEN validation runs THEN the validator reports a violation instead of returning no violations
+  - GIVEN an objective artifact with VALIDATION_RULES group WHEN validation runs THEN those rules are iterated and enforced
+  - GIVEN schema-defined error-severity rules WHEN validation runs THEN violations are produced for non-conforming artifacts
+  - GIVEN a corrupt schema YAML file WHEN _load_schemas encounters it THEN an error is logged to stderr before continuing
+  - GIVEN a registry loading failure WHEN _load_registry_for_schemas catches it THEN an error is logged to stderr before returning empty
+  - GIVEN a corrupt YAML artifact file WHEN _load_artifact encounters it THEN the cause is distinguishable from a missing file via stderr
+tasks:
+  - number: 1
+    name: Fix all 7 critical validation and state-loading silent failures
+    depends_on: []
+    status: complete
+    acceptance:
+      - GIVEN a hook crashes with an unexpected exception WHEN validate_artifact.py catches it THEN the process exits with code 2 not 0
+      - GIVEN an empty or comment-only schema file WHEN validation runs THEN the validator reports a violation instead of returning no violations
+      - GIVEN an objective artifact with VALIDATION_RULES group WHEN validation runs THEN those rules are iterated and enforced
+      - GIVEN schema-defined error-severity rules WHEN validation runs THEN violations are produced for non-conforming artifacts
+      - GIVEN a corrupt schema YAML file WHEN _load_schemas encounters it THEN an error is logged to stderr before continuing
+      - GIVEN a registry loading failure WHEN _load_registry_for_schemas catches it THEN an error is logged to stderr before returning empty
+      - GIVEN a corrupt YAML artifact file WHEN _load_artifact encounters it THEN the cause is distinguishable from a missing file via stderr
