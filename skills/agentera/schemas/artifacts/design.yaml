@@ -17,7 +17,7 @@ meta:
   path: "DESIGN.md"
   producer: visualisera
   consumers: [dokumentera, hej, inspektera, realisera, visionera, visualisera]
-  format: yaml
+  format: markdown
 
 GROUP_PREFIXES:
   BUDGET: DB

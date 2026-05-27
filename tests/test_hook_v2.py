@@ -840,7 +840,7 @@ class TestMainYamlArtifact:
 
     def test_human_facing_markdown_valid(self, hook, project_dir, monkeypatch):
         todo = project_dir / "TODO.md"
-        todo.write_text("# TODO\n\n- [ ] something\n")
+        todo.write_text("# TODO\n\n## → Normal\n\n- [fix] something\n")
         rc, err, out = _run_main(hook, monkeypatch, {
             "tool_name": "Write",
             "tool_input": {"file_path": str(todo)},
@@ -859,9 +859,9 @@ class TestMainYamlArtifact:
             resolved.append(f"  detail for item {number}")
         todo.write_text(
             "# TODO\n\n"
-            "## Normal\n\n"
+            "## → Normal\n\n"
             f"{open_line}\n\n"
-            "## Resolved\n\n"
+            "## ✓ Resolved\n\n"
             + "\n".join(resolved)
             + "\n"
         )
@@ -887,9 +887,9 @@ class TestMainYamlArtifact:
         todo = project_dir / "TODO.md"
         before = (
             "# TODO\n\n"
-            "## Normal\n\n"
+            "## → Normal\n\n"
             "- [ ] [fix:2.2.2] Keep this open\n\n"
-            "## Resolved\n\n"
+            "## ✓ Resolved\n\n"
             "- [x] [fix:2.2.2] Small resolved item\n"
             "  detail stays full\n"
         )

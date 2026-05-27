@@ -86,7 +86,7 @@ tasks:
   - number: 6
     name: Human-Facing Schema Architecture
     depends_on: [2, 3]
-    status: pending
+    status: complete
     acceptance:
       - GIVEN todo/design/changelog schemas declare format markdown WHEN validating Markdown artifacts THEN schema is consulted
       - GIVEN Markdown artifact with missing required fields per schema WHEN validator runs THEN reports violations

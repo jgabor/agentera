@@ -39,6 +39,11 @@ SCHEMAS_DIR = REPO_ROOT / "skills" / "agentera" / "schemas" / "artifacts"
 
 _AGENT_YAML_RE = re.compile(r"\.agentera/([a-z_]+)\.yaml$")
 _HUMAN_FACING = {"TODO.md", "CHANGELOG.md", "DESIGN.md"}
+_HUMAN_FACING_SCHEMA_NAMES = {
+    "TODO.md": "todo",
+    "CHANGELOG.md": "changelog",
+    "DESIGN.md": "design",
+}
 _COMPACTION_MODULE = None
 
 _CANONICAL_SCHEMA_NAMES = {
@@ -671,14 +676,95 @@ def _validate_yaml(content: str, schema: dict, name: str) -> list[str]:
     return violations
 
 
-def _validate_md(content: str, name: str) -> list[str]:
+def _validate_md(content: str, name: str, schema: dict | None = None) -> list[str]:
     violations: list[str] = []
     if not content.strip():
         violations.append(f"{name}: empty content")
     fences = len(re.findall(r"^```", content, re.MULTILINE))
     if fences % 2:
         violations.append(f"{name}: unclosed code fence")
+    if schema:
+        violations.extend(_validate_md_schema(content, name, schema))
     return violations
+
+
+# ── Markdown schema validation ──────────────────────────────────────
+
+
+def _validate_md_schema(content: str, name: str, schema: dict) -> list[str]:
+    """Check Markdown content against schema group requirements."""
+    violations: list[str] = []
+    if not content.strip():
+        return violations
+    for group_key, group_value in schema.items():
+        if group_key in _SKIP_META or not isinstance(group_value, dict):
+            continue
+        has_required = any(
+            isinstance(e, dict) and e.get("required") and e.get("field")
+            for e in group_value.values()
+        )
+        if not has_required:
+            continue
+        if group_key == "ITEM":
+            _validate_md_items(content, name, violations)
+        elif group_key == "RELEASE":
+            _validate_md_releases(content, name, violations)
+        elif group_key == "TOKEN":
+            _validate_md_tokens(content, name, violations)
+    return violations
+
+
+def _validate_md_items(content: str, name: str, violations: list[str]) -> None:
+    """Validate TODO.md severity sections with entries."""
+    version_heading = re.search(r"^##\s+", content, re.MULTILINE)
+    if not version_heading:
+        violations.append(
+            f"{name}: missing severity sections (expected '## <glyph> <name>' headings)"
+        )
+        return
+    severity_glyphs = ["⇶", "⇉", "→", "⇢"]
+    found = False
+    for glyph in severity_glyphs:
+        if re.search(rf"^##\s*{re.escape(glyph)}", content, re.MULTILINE):
+            found = True
+            section_start = re.search(rf"^##\s*{re.escape(glyph)}.+$", content, re.MULTILINE)
+            if section_start:
+                idx = section_start.end()
+                next_section = content.find("\n##", idx)
+                section_body = content[idx:next_section] if next_section >= 0 else content[idx:]
+                if not re.search(r"^\s*\-", section_body, re.MULTILINE):
+                    glyph_name_match = re.search(rf"^##\s*({re.escape(glyph)}.+)$", content[section_start.start():section_start.end()], re.MULTILINE)
+                    heading_text = glyph_name_match.group(1) if glyph_name_match else glyph
+                    violations.append(
+                        f"{name}: severity section '{heading_text}' has no list entries "
+                        "(expected '- [type]' items)"
+                    )
+    if not found:
+        violations.append(
+            f"{name}: missing severity glyph in section headings "
+            "(expected '## ⇶ Critical', '## ⇉ Degraded', '## → Normal', '## ⇢ Annoying')"
+        )
+
+
+def _validate_md_releases(content: str, name: str, violations: list[str]) -> None:
+    """Validate CHANGELOG.md has version headers and change sections."""
+    if not re.search(r"^##\s*\[", content, re.MULTILINE):
+        violations.append(f"{name}: missing version header (expected '## [X.Y.Z]')")
+    change_sections = {"### Added", "### Changed", "### Fixed", "### Removed"}
+    if not change_sections.intersection(content.split("\n")):
+        violations.append(
+            f"{name}: missing change sections "
+            "(expected '### Added', '### Changed', '### Fixed', or '### Removed')"
+        )
+
+
+def _validate_md_tokens(content: str, name: str, violations: list[str]) -> None:
+    """Validate DESIGN.md has section headings and YAML token blocks."""
+    if not re.search(r"^##\s", content, re.MULTILINE):
+        violations.append(f"{name}: missing section heading (expected '## SectionName')")
+    yaml_blocks = len(re.findall(r"^```yaml\s*$", content, re.MULTILINE))
+    if not yaml_blocks:
+        violations.append(f"{name}: missing YAML code block with token definitions (expected '```yaml')")
 
 
 # ── Main ───────────────────────────────────────────────────────────
@@ -767,8 +853,8 @@ class ArtifactSchemaValidator:
     def validate_yaml(self, content: str, schema: dict, name: str) -> list[str]:
         return _validate_yaml(content, schema, name)
 
-    def validate_markdown(self, content: str, name: str) -> list[str]:
-        return _validate_md(content, name)
+    def validate_markdown(self, content: str, name: str, schema: dict | None = None) -> list[str]:
+        return _validate_md(content, name, schema)
 
     def validate_write(self, write: ArtifactWrite, cwd: str) -> list[str]:
         abs_path = _resolve(write.file_path, cwd)
@@ -795,7 +881,9 @@ class ArtifactSchemaValidator:
             content = _read_if_needed(write.content, abs_path)
             if content is None:
                 return []
-            violations = self.validate_markdown(content, artifact)
+            schema_name = _HUMAN_FACING_SCHEMA_NAMES.get(artifact)
+            schema = self.load_schema(schema_name) if schema_name else None
+            violations = self.validate_markdown(content, artifact, schema)
             if violations:
                 return violations
             return _compact_after_valid_write(artifact, abs_path)
@@ -815,7 +903,9 @@ class ArtifactSchemaValidator:
                 return [f"{artifact}: schema '{name}' file is empty or contains no valid definitions"]
             return self.validate_yaml(content, schema, name)
         if artifact in _HUMAN_FACING:
-            return self.validate_markdown(content, artifact)
+            schema_name = _HUMAN_FACING_SCHEMA_NAMES.get(artifact)
+            schema = self.load_schema(schema_name) if schema_name else None
+            return self.validate_markdown(content, artifact, schema)
         return [f"{artifact}: unsupported artifact; expected one of: {', '.join(sorted(_DEFAULT_ARTIFACT_PATHS))}"]
 
 

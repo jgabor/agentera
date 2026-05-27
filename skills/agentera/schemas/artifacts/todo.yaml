@@ -27,7 +27,7 @@ meta:
       visualisera,
     ]
   consumers: [hej, all_skills]
-  format: yaml
+  format: markdown
 
 GROUP_PREFIXES:
   BUDGET: TB
