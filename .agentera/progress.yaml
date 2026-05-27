@@ -4,7 +4,7 @@ cycles:
   type: fix
   phase: build
   what: Fix 16 degraded validation and CLI consistency issues across 7-task plan.
-  commit: 102fdcb
+  commit: bea9cda
   discovered: None.
   verified: "1294 passed pytest tests/ -q -n auto; 6 implementation commits verified:\n\
     \    187e7b1 fix TODO.md parser (Task 1)\n    3149cbf fix health.yaml/plan.yaml/ARCHIVE.summary\
