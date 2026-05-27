@@ -188,7 +188,7 @@ class RuntimeEventParser:
 _SKIP_META = {"meta", "GROUP_PREFIXES", "BUDGET", "COMPACTION", "VALIDATION", "CONVENTION"}
 _LIST_INDICATORS = {"number", "entry", "summary"}
 _SEQUENCE_KEYS_BY_ARTIFACT = {
-    "decisions": {"DECISION": "decisions"},
+    "decisions": {"DECISION": "decisions", "ARCHIVE": "archive"},
     "docs": {"MAPPING": "mapping", "INDEX": "index", "AUDIT_LOG": "audit_log"},
     "experiments": {"EXPERIMENT": "experiments"},
     "plan": {"TASK": "tasks"},
@@ -578,8 +578,13 @@ def _validate_decision_satisfaction(data: dict, name: str) -> list[str]:
             violations.append(f"{name}: '{path}.evidence' is required for provisionally_satisfied")
         if state == "user_confirmed_satisfied":
             confirmation = satisfaction.get("user_confirmation")
-            if not isinstance(confirmation, dict):
+            if confirmation is None:
                 violations.append(f"{name}: '{path}.user_confirmation' is required for user_confirmed_satisfied")
+                continue
+            if not isinstance(confirmation, dict):
+                violations.append(
+                    f"{name}: '{path}.user_confirmation' must be a mapping with confirmed_by and confirmed_at, got {type(confirmation).__name__}"
+                )
                 continue
             for field in ("confirmed_by", "confirmed_at"):
                 if _is_empty_required(confirmation.get(field)):

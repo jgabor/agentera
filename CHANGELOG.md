@@ -9,6 +9,11 @@
 - Fixed objective `VALIDATION_RULES` group being silently ignored: validator now iterates both `VALIDATION` and `VALIDATION_RULES` schema groups.
 - Fixed `closure_consistency` schema rule never being enforced: validator now checks closure fields (`closed_at`, `final_value`, `target_ref`, `reason`) when objective status is `closed`.
 - Fixed three silent `except Exception` swallowers in `scripts/agentera`: `_load_schemas`, `_load_registry_for_schemas`, and `_load_artifact` now log warnings to stderr before degrading.
+- Fixed `validate artifact` returning exit code 0 when hook JSON output is unparseable: now returns exit code 2 (violation) when status is `fail` but subprocess exited cleanly.
+- Fixed `query <name> --format json` emitting a bare array instead of the structured envelope: `_query_generic` now wraps output with `_structured_state()` providing `command`, `status`, `source`, `counts`, and `filters`.
+- Fixed `query` missing deprecation warning: top-level `query` command now emits stderr deprecation alias pointing to `state query` and includes deprecation label in `COMMAND_DESCRIPTIONS`.
+- Fixed archive entry required fields never validated: `ARCHIVE` group added to `_SEQUENCE_KEYS_BY_ARTIFACT` for `decisions`, so `summary` is now enforced on archive entries.
+- Fixed `user_confirmation` validation error message saying "is required" for wrong-type values: validator now distinguishes missing (`None`) from wrong type, emitting `'must be a mapping with confirmed_by and confirmed_at, got <type>'`.
 
 ## [2.7.1] · 2026-05-25
 

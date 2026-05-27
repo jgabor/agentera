@@ -1,4 +1,24 @@
 cycles:
+- number: 607
+  timestamp: 2026-05-26 14:00
+  type: fix
+  phase: build
+  what: Fix 5 degraded validation and CLI consistency issues in validate_artifact.py
+    and scripts/agentera.
+  commit: pending
+  discovered: None.
+  verified: 1287 passed pytest tests/ -q -n auto; behavioral verification passed for
+    validate artifact exit code 2 on unparseable JSON, query structured envelope,
+    query deprecation warning, archive entry required field validation, and user_confirmation
+    missing vs wrong-type diagnostic.
+  next: Address remaining degraded-severity TODO items (state todo parser, validate
+    subparser duplication, schema loading silent exceptions).
+  context:
+    intent: Continue validation hardening from cycle 606 by fixing degraded-severity
+      consistency issues.
+    constraints: Must not break existing passing tests. Must add regression coverage
+      for each fix.
+    scope: hooks/validate_artifact.py and scripts/agentera only.
 - number: 606
   timestamp: 2026-05-26 12:00
   type: fix
@@ -169,30 +189,11 @@ cycles:
     intent: Release closeout for 2.7.0 after explicit tag approval.
     constraints: No remote push unless requested.
     scope: CHANGELOG, PROGRESS, tag only; version_files unchanged.
-- number: 597
-  timestamp: 2026-05-24 16:00
-  type: feat
-  phase: build
-  what: Closed Cursor First-Class Runtime v1 plan (Decision 63) with 2.7.0 release
-    metadata.
-  commit: b50032f
-  discovered: None.
-  verified: "Plan Task 8 closeout: archived PLAN-2026-05-24-cursor-first-class-runtime-v1.yaml,\
-    \ removed active plan.yaml, Decision 63 marked provisionally_satisfied, TODO/CHANGELOG/PROGRESS\
-    \ synchronized, registry and parity docs updated after live smoke passed 2026-05-24\
-    \ without claiming full release readiness. Version surfaces bumped 2.6.1\u2192\
-    2.7.0 across version_files. Validation passed: lifecycle-adapters, capability-contract\
-    \ (2/2), cross-capability, focused cursor tests (87), registry tests (17), git\
-    \ diff --check."
-  next: User confirmation for Decision 63; tag v2.7.0 and publication only if explicitly
-    approved.
-  context:
-    intent: Plan-level completion review for Cursor v1 slice after Task 5 live smoke.
-    constraints: No push, tag, or publication.
-    scope: Artifact sync, version bump, plan archive, advisory doc updates only.
 archive:
 - summary: 'Cycle 605 (2026-05-25): Closed CLI audience namespace consolidation plan
     with validation, alias-parity measurements, and plan archive.'
+- summary: 'Cycle 597 (2026-05-24): Closed Cursor First-Class Runtime v1 plan (Decision
+    63) with 2.7.0 release metadata.'
 - summary: 'Cycle 596 (2026-05-24): Live Cursor IDE preToolUse Write smoke for Task
     5.'
 - summary: 'Cycle 595 (2026-05-24): Shipped Cursor v1 runtime slice per Decision 63.'
@@ -263,5 +264,3 @@ archive:
 - summary: 'Cycle 560 (2026-05-18): Added the bundle and SKILL.md vocabulary authority.'
 - summary: 'Cycle 559 (2026-05-18): Added the Decision 54 app lifecycle vocabulary
     authority.'
-- summary: 'Cycle 558 (2026-05-17): Documented the helper-script classification policy
-    and canonical CLI examples.'

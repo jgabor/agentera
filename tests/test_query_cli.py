@@ -1207,13 +1207,17 @@ class TestGenericQuery:
         self._write_custom_schema_and_artifact(project)
         r = _run("query", "custom_thing", "--format", "json", cwd=project)
         assert r.returncode == 0
-        assert json.loads(r.stdout) == [{"title": "My thing", "status": "active"}]
+        payload = json.loads(r.stdout)
+        assert payload["command"] == "custom_thing"
+        assert payload["entries"] == [{"title": "My thing", "status": "active"}]
 
     def test_new_schema_yaml_format_is_pipeable(self, project):
         self._write_custom_schema_and_artifact(project)
         r = _run("query", "custom_thing", "--format", "yaml", cwd=project)
         assert r.returncode == 0
-        assert yaml.safe_load(r.stdout) == [{"title": "My thing", "status": "active"}]
+        payload = yaml.safe_load(r.stdout)
+        assert payload["command"] == "custom_thing"
+        assert payload["entries"] == [{"title": "My thing", "status": "active"}]
 
 
 # ---------------------------------------------------------------------------

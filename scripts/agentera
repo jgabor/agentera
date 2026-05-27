@@ -999,7 +999,7 @@ COMMAND_DESCRIPTIONS = {
     "docs": "Documentation contract summary.",
     "objective": "Active optimera objective summary.",
     "experiments": "Active optimera experiments summary.",
-    "query": "Advanced custom artifact query.",
+    "query": "Deprecated alias for state query. Advanced custom artifact query.",
     "lint": "Run pre-write artifact prose self-audit.",
     "gate": "Run check-only repository gates.",
     "compact": "Check or fix artifact compaction budgets.",
@@ -5269,6 +5269,8 @@ def cmd_validate_artifact(args: argparse.Namespace) -> int:
             },
         }
         _emit_structured(payload, "json")
+        if payload.get("status") == "fail" and result.returncode == 0:
+            return 2
     else:
         if result.stdout:
             print(result.stdout, end="")
@@ -7448,8 +7450,17 @@ def _query_generic(args: argparse.Namespace, schemas: dict, name: str) -> int:
     output_format = getattr(args, "format", "text")
     entries = _query_generic_entries(args, schemas, name)
     if output_format != "text":
-        _emit_structured(entries, output_format)
-        return 0
+        info = schemas[name]
+        path = _artifact_path(info, name)
+        source = _source_metadata(name, path)
+        filters = {
+            "topic": getattr(args, "topic", None),
+            "severity": getattr(args, "severity", None),
+            "status": getattr(args, "status", None),
+            "dimension": getattr(args, "dimension", None),
+        }
+        payload = _structured_state(name, entries, source, filters=filters)
+        return _emit_state_structured(name, payload, args)
     if not entries:
         return 0
     info = schemas[name]
@@ -8356,6 +8367,7 @@ def main(argv: list[str] | None = None) -> int:
         if args.command in STATE_COMMAND_HANDLERS:
             return cmd_state(args)
         if args.command == "query":
+            _emit_deprecation_alias("query", "state query")
             return cmd_query(args)
         if args.command == "compact":
             return cmd_compact(args)
