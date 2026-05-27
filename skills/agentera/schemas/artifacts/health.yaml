@@ -426,7 +426,10 @@ VALIDATION:
     severity: error
     description: >-
       Each full-detail audit entry must have: number, date, dimensions,
-      findings_summary, trajectory, and grades.
+      findings_summary, trajectory, and grades. Each finding must have
+      heading, location, evidence, impact, suggested_action, severity,
+      and confidence. Each dimension must have name, grade, and summary.
+      Trends must have comparison_target. Archive entries must have summary.
     checks:
       - "number is present and is a positive integer"
       - "date is present and matches YYYY-MM-DD"
@@ -434,6 +437,10 @@ VALIDATION:
       - "findings_summary is present with critical, warning, info counts"
       - "trajectory is present and non-empty"
       - "grades is present with one grade per assessed dimension"
+      - "each finding has heading, location, evidence, impact, suggested_action, severity, confidence"
+      - "each dimension has name, grade, summary"
+      - "trends has comparison_target"
+      - "archive entries have summary"
   3:
     id: HV3
     rule: dimension_grade_coverage

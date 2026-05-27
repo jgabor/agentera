@@ -190,9 +190,9 @@ _LIST_INDICATORS = {"number", "entry", "summary"}
 _SEQUENCE_KEYS_BY_ARTIFACT = {
     "decisions": {"DECISION": "decisions", "ARCHIVE": "archive"},
     "docs": {"MAPPING": "mapping", "INDEX": "index", "AUDIT_LOG": "audit_log"},
-    "experiments": {"EXPERIMENT": "experiments"},
+    "experiments": {"EXPERIMENT": "experiments", "ARCHIVE": "archive"},
     "plan": {"TASK": "tasks"},
-    "progress": {"CYCLE": "cycles"},
+    "progress": {"CYCLE": "cycles", "ARCHIVE": "archive"},
     "session": {"BOOKMARK": "bookmarks"},
     "vision": {"PERSONA": "personas", "PRINCIPLE": "principles"},
 }
