@@ -7,7 +7,6 @@
 ## → Normal
 
 - [fix] Agentera subagent descriptors define zero tool/permission configuration — only `name`, `description`, and `developer_instructions`. The host runtime (Codex, OpenCode, Cursor, Copilot) determines tool sets entirely by its hardcoded defaults for each `subagent_type`. This means mutation-capable subagents (realisera, dokumentera, optimera, orkestrera, planera) that need `edit`/`bash`/`write` to fulfill their purpose instead receive the runtime's generic read-only tool set and fail silently with `tool:invalid`. Reproduced in OpenCode: 3 realisera sessions dispatched to remove cast display metadata, all failed because the subagent had no mutation tools despite agentera defining realisera as "Autonomous development execution." Fix: research each host runtime's per-subagent tool/permission configuration mechanism (Codex TOML `permission` blocks, OpenCode `.md` tool config or `opencode.json` subagent overrides, Cursor agent config, Copilot manifest), then add the required tool declarations to each runtime's agent descriptors so every subagent type has the tools it needs to do its job. Covers all 12 subagent types across all 4 supported runtimes.
-- [fix] Deprecated alias lists inconsistent across 4 docs: README.md:233 says `{hej,plan}`, README.md:314 says `{hej,plan,progress}`, UPGRADE.md:8 says `{hej,plan,query}`, SKILL.md:185 says `{plan,progress,hej,describe}`, vocabulary.md:110 says `{hej,plan,progress,health,todo,decisions,docs,objective,experiments,query}`. No two agree on which commands are deprecated. Code reality: 6 commands (`hej`, `describe`, `plan`, `gate`, `stats`, `validate`) emit deprecation warnings. Fix: reconcile to a single authoritative list in one doc (likely the migration contract), cross-reference from others.
 - [chore:3.0.0] Consolidate `yaml.safe_load()` `None`-return patterns across the codebase. `compaction.py` correctly uses `or {}` guard; `validate_artifact.py` and `scripts/agentera` do not. Standardize to prevent silent parsing failures.
 - [chore:3.0.0] Consolidate duplicated `compact_entries()` implementations: `session_stop.py:265-283` has its own version with different logic (missing decision protection) from `compaction.py:1036-1078`. Extract shared logic.
 - [chore:3.0.0] Consolidate duplicated `resolve_session_path()`: identical in `session_start.py:38-49` and `session_stop.py:62-73`. Move to `common.py`.
@@ -17,15 +16,15 @@
 - [test:3.0.0] Freeze CLI JSON contract parity fixtures before the TypeScript rewrite: supported command output shapes, exit codes, invalid-input guidance, artifact path/source contracts, and no-raw-read completeness signals must match or intentionally version-break.
 - [test:3.0.0] Port artifact validation, compaction, doctor/upgrade safety, verify gates, usage/stats consent semantics, and runtime adapter hooks behind TypeScript parity tests before cutting over from Python.
 - [feat:3.0.0] Rewrite the supported Agentera CLI core in TypeScript for Bun/npm/single-binary distribution, gated by contract-first parity with the current Python `agentera` CLI rather than a clean-slate command redesign.
-- [test] No formal JSON schema validation for CLI `--format json` output. Tests assert field-by-field only; a shape change (new nesting, renamed keys) could pass existing tests.
 
 ## ⇢ Annoying
 
-- [fix] `cmd_lint` returns exit code 0 when `status=="fail"` unless `--strict` is passed (`scripts/agentera:5100`). Scripts parsing exit code get false success for advisory violations. Decide: return 1 on fail without `--strict` (breaking but honest), or document the advisory-only exit code contract.
-- [fix] `_query_generic` always returns exit code 0 even when `--topic`/`--severity` filters eliminate all matching entries (`scripts/agentera:7451,7458`). Callers cannot distinguish "query returned empty results" from "command ran successfully." Fix: return 1 when filters produce zero results.
-
 ## ✓ Resolved
 
+- ~~[test] No formal JSON schema validation for CLI `--format json` output~~ · resolved: added tests verifying all JSON surface outputs against formal schemas.
+- ~~[fix] `cmd_lint` returns exit code 0 when `status=="fail"` unless `--strict` is passed~~ · resolved: return 1 on any failure, removing strict exit gate.
+- ~~[fix] `_query_generic` always returns exit code 0 on empty results~~ · resolved: return 1 on empty filtered results in text mode.
+- ~~[fix] Deprecated alias lists inconsistent across 4 docs~~ · resolved: reconciled to unified list in migration contract and updated all doc references.
 - ~~[fix] Schema loading silently swallows all exceptions / Silent `except Exception` swallowers across 6+ locations~~ · resolved: warning diagnostic emitted to stderr in load paths.
 - ~~[fix] `cmd_validate_capability` exit codes differ between single and multi-target validation~~ · resolved: normalized single-target validation exit codes to 0/1.
 - ~~[fix] Original `satisfaction.caveats` in decisions.yaml overwritten by enriched caveats~~ · resolved: original caveats prepended before enriched caveats.
