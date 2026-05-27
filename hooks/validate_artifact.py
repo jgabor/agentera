@@ -564,6 +564,7 @@ def _validate_decision_satisfaction(data: dict, name: str) -> list[str]:
         if not isinstance(satisfaction, dict):
             violations.append(f"{name}: '{path}' must be a mapping")
             continue
+        _validate_unknown_fields(violations, name, satisfaction, {"state", "evidence", "user_confirmation"}, path)
         state = satisfaction.get("state")
         if not isinstance(state, str) or not state.strip():
             violations.append(f"{name}: missing required field '{path}.state'")

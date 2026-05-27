@@ -1,39 +1,106 @@
 header:
-  level: light
-  status: complete
-  title: Fix 5 degraded validation and CLI consistency issues
-  created: "2026-05-26"
-what: >
-  Fix 5 degraded validation and CLI consistency issues:
-  wrong exit code on JSON parse failure, query bare array
-  output, missing query deprecation warning, unvalidated
-  archive entry fields, and misleading user_confirmation
-  error message.
-why: >
-  These degrade the validation hard gate restored in cycle
-  606. Wrong exit codes and missing deprecation warnings
-  let failures pass silently. Unvalidated archive entries
-  and misleading diagnostics erode trust in the tooling.
-constraints:
-  - Two files: scripts/agentera and hooks/validate_artifact.py
-  - One realisera cycle
-  - Must not change passing tests
-  - Must add regression coverage for each fix
-overall_acceptance:
-  - "validate artifact returns exit code 2 (not 0) when hook JSON output is unparseable"
-  - "query --format json returns structured envelope with command, status, source, counts, and source_contract"
-  - "query top-level command emits stderr deprecation warning pointing to state query"
-  - "Archive entries in decisions.yaml validate summary and outcome as required fields"
-  - "user_confirmation validation distinguishes missing field from wrong type with type-specific diagnostic"
+  level: full
+  created: 2026-05-26
+  status: active
+  reviewed: 2026-05-26
+  critic_issues: "10 found, 2 addressed, 8 dismissed"
+  title: Degraded validation and CLI consistency fixes
+what: >-
+  Fix 16 degraded-severity validation, parser, and CLI consistency issues
+  spanning TODO parser bugs, schema validation gaps, validator robustness,
+  CLI command consistency, and integration correctness.
+why: >-
+  These issues represent silent failures where validators pass when they should
+  fail, parsers return zero when data exists, and CLI commands behave inconsistently.
+  Each undermines the reliability that agents and humans depend on for correct
+  artifact validation and state access.
+constraints: >-
+  Must not break existing 1287 passing tests. Must preserve exit code contracts
+  (0=pass, 2=violation). Must maintain backward compatibility for CLI commands
+  during migration with deprecation warnings. Must not modify protected state
+  (vision.yaml, objective state).
+scope:
+  included:
+    - hooks/validate_artifact.py (validation logic)
+    - scripts/agentera (CLI commands)
+    - Schema files (health.yaml, plan.yaml, experiments.yaml, progress.yaml, decisions.yaml, todo.yaml, design.yaml, changelog.yaml)
+    - .opencode/plugins/agentera.js (hook integration)
+    - TODO.md, CHANGELOG.md, progress.yaml (state artifacts)
+  excluded:
+    - Vision and objective state (protected)
+    - Runtime adapter code (separate concern)
+    - Capability prose files (separate concern)
+    - Normal and annoying severity TODO items (separate plan)
+  deferred:
+    - Subagent tool configuration (requires runtime research)
+    - Type coercion edge cases (requires broader validator refactor)
+    - 3.0.0 TypeScript rewrite work (separate initiative)
+design: >-
+  Group 16 related fixes into 7 logical tasks by concern area. Each task is one
+  realisera cycle with independent acceptance criteria. Tasks 1-5 have no
+  dependencies and can execute in any order. Task 6 (human-facing schema
+  architecture) depends on Tasks 2-3 for validation infrastructure. Task 7
+  (final state sync) depends on all prior tasks. Full test suite runs after
+  each task. New regression tests added per task.
 tasks:
-  - id: 1
-    number: 1
-    name: Fix 5 degraded validation and CLI consistency issues
-    title: Fix 5 degraded validation and CLI consistency issues
+  - number: 1
+    name: Fix TODO Parser
+    depends_on: []
     status: complete
     acceptance:
-      - "validate artifact returns exit code 2 when hook JSON is unparseable, not subprocess returncode"
-      - "_query_generic wraps output with _structured_state() matching other query handlers"
-      - "query dispatch emits deprecation alias warning and COMMAND_DESCRIPTIONS includes deprecation label"
-      - "Archive entries added to _SEQUENCE_KEYS_BY_ARTIFACT with summary and outcome as required fields"
-      - "user_confirmation error says 'must be a mapping with confirmed_by and confirmed_at, got <type>' when value is wrong type"
+      - GIVEN TODO.md with `- [fix]` items WHEN `agentera state todo --format json` THEN `open_count` matches actual open items
+      - GIVEN TODO.md with severity sections WHEN parser runs THEN each item assigned correct severity
+      - GIVEN TODO.md with Resolved section WHEN parser runs THEN resolved items excluded from open count
+  - number: 2
+    name: Add Missing Validation Rules
+    depends_on: []
+    status: complete
+    acceptance:
+      - GIVEN health.yaml artifact with missing finding fields WHEN validator runs THEN reports violations
+      - GIVEN plan.yaml artifact with missing task fields WHEN validator runs THEN reports violations
+      - GIVEN experiments/progress/decisions artifacts with missing ARCHIVE.summary WHEN validator runs THEN reports violations
+  - number: 3
+    name: Validator Robustness
+    depends_on: []
+    status: complete
+    acceptance:
+      - GIVEN satisfaction map with unknown review_needed field WHEN validator runs THEN reports unknown field violation
+      - GIVEN corrupt schema YAML file WHEN loading THEN logs warning to stderr before degrading
+      - GIVEN validator and CLI skip configurations WHEN both run THEN skip identical metadata field sets
+  - number: 4
+    name: CLI Consistency
+    depends_on: []
+    status: pending
+    acceptance:
+      - GIVEN agentera validate command family WHEN adding new validator THEN only one code path requires update
+      - GIVEN agentera doctor --format json WHEN run THEN produces structured JSON output
+      - GIVEN agentera doctor --json WHEN run THEN emits deprecation warning pointing to --format json
+  - number: 5
+    name: Schema and Integration Fixes
+    depends_on: []
+    status: pending
+    acceptance:
+      - GIVEN agentera.js hook WHEN validator writes violations to stderr THEN correctly parses exit code 2
+      - GIVEN Planera validation schema WHEN checking vocabulary THEN uses final state sync not deprecated checkpoint vocabulary
+      - GIVEN artifact path mappings WHEN referenced THEN single source of truth in common.py
+  - number: 6
+    name: Human-Facing Schema Architecture
+    depends_on: [2, 3]
+    status: pending
+    acceptance:
+      - GIVEN todo/design/changelog schemas declare format markdown WHEN validating Markdown artifacts THEN schema is consulted
+      - GIVEN Markdown artifact with missing required fields per schema WHEN validator runs THEN reports violations
+      - GIVEN schema format declaration WHEN artifact is Markdown THEN format field value is markdown
+  - number: 7
+    name: Final State Sync
+    depends_on: [1, 2, 3, 4, 5, 6]
+    status: pending
+    acceptance:
+      - GIVEN all tasks complete WHEN final sync runs THEN TODO.md marks all 16 degraded items resolved
+      - GIVEN all tasks complete WHEN final sync runs THEN CHANGELOG.md has Fixed entries under Unreleased
+      - GIVEN all tasks complete WHEN final sync runs THEN progress.yaml has new cycle with commit hash
+overall_acceptance:
+  - GIVEN full test suite WHEN run THEN 1287 or more tests pass with no regressions
+  - GIVEN agentera validate artifact on any schema WHEN artifact violates required fields THEN exit code 2
+  - GIVEN agentera state todo WHEN TODO.md has open items THEN returns correct count and entries
+surprises: []
