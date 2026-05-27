@@ -1082,6 +1082,129 @@ class TestTodo:
         assert r.returncode == 0
         assert r.stdout.strip() == ""
 
+    def test_type_tagged_items_parsed(self, project):
+        """Regression: `- [fix]` items must be parsed (not just `- [ ]`)."""
+        (project / "TODO.md").write_text(
+            "# TODO\n\n"
+            "## \u21f6 Critical\n\n"
+            "- [fix] Fix the broken parser\n\n"
+            "## \u2192 Normal\n\n"
+            "- [feat] Add new feature\n"
+            "- [chore] Clean up code\n\n"
+            "## \u2713 Resolved\n\n"
+            "- ~~[fix] Old fix~~ \u00b7 resolved by commit abc\n"
+        )
+        r = _run("todo", cwd=project)
+        assert r.returncode == 0
+        assert "broken parser" in r.stdout
+        assert "new feature" in r.stdout
+        assert "Clean up code" in r.stdout
+        assert "Old fix" not in r.stdout
+
+    def test_type_tagged_items_json_open_count(self, project):
+        """Regression: JSON entry count must match actual open items."""
+        (project / "TODO.md").write_text(
+            "# TODO\n\n"
+            "## \u21f6 Critical\n\n"
+            "- [fix] Critical item one\n"
+            "- [fix] Critical item two\n\n"
+            "## \u21c9 Degraded\n\n"
+            "- [fix] Degraded item one\n\n"
+            "## \u2192 Normal\n\n"
+            "- [chore] Normal item one\n\n"
+            "## \u21e2 Annoying\n\n"
+            "- [fix] Annoying item one\n\n"
+            "## \u2713 Resolved\n\n"
+            "- ~~[fix] Resolved item~~ \u00b7 resolved by commit def\n"
+        )
+        r = _run("todo", "--format", "json", cwd=project)
+        assert r.returncode == 0
+        data = json.loads(r.stdout)
+        assert data["counts"]["entries"] == 5
+        assert len(data["entries"]) == 5
+        descriptions = [e["description"] for e in data["entries"]]
+        assert "Critical item one" in descriptions
+        assert "Degraded item one" in descriptions
+        assert "Normal item one" in descriptions
+        assert "Annoying item one" in descriptions
+        assert not any("Resolved item" in d for d in descriptions)
+
+    def test_resolved_section_with_glyph_excluded(self, project):
+        """Regression: `## ✓ Resolved` must be skipped (not just `## Resolved`)."""
+        (project / "TODO.md").write_text(
+            "# TODO\n\n"
+            "## \u2192 Normal\n\n"
+            "- [fix] Open item\n\n"
+            "## \u2713 Resolved\n\n"
+            "- [fix] Should be excluded\n"
+        )
+        r = _run("todo", cwd=project)
+        assert r.returncode == 0
+        assert "Open item" in r.stdout
+        assert "Should be excluded" not in r.stdout
+
+    def test_strikethrough_resolved_items_not_matched(self, project):
+        """Regression: `- ~~[fix] ...~~` must not match as open items."""
+        (project / "TODO.md").write_text(
+            "# TODO\n\n"
+            "## \u21f6 Critical\n\n"
+            "- [fix] Real open item\n"
+            "- ~~[fix] Resolved with strikethrough~~ \u00b7 resolved by commit 123\n"
+        )
+        r = _run("todo", cwd=project)
+        assert r.returncode == 0
+        assert "Real open item" in r.stdout
+        assert "strikethrough" not in r.stdout
+
+    def test_version_suffixed_type_tags_parsed(self, project):
+        """Items like `- [chore:3.0.0]` must be parsed."""
+        (project / "TODO.md").write_text(
+            "# TODO\n\n"
+            "## \u2192 Normal\n\n"
+            "- [chore:3.0.0] Consolidate patterns\n"
+            "- [test:3.0.0] Add parity tests\n"
+        )
+        r = _run("todo", cwd=project)
+        assert r.returncode == 0
+        assert "Consolidate patterns" in r.stdout
+        assert "Add parity tests" in r.stdout
+
+    def test_severity_assignment_with_glyph_headings(self, project):
+        """Each item gets the correct severity from its glyph-prefixed heading."""
+        (project / "TODO.md").write_text(
+            "# TODO\n\n"
+            "## \u21f6 Critical\n\n"
+            "- [fix] Critical bug\n\n"
+            "## \u21c9 Degraded\n\n"
+            "- [fix] Degraded service\n\n"
+            "## \u2192 Normal\n\n"
+            "- [chore] Normal task\n\n"
+            "## \u21e2 Annoying\n\n"
+            "- [fix] Annoying glitch\n"
+        )
+        r = _run("todo", "--format", "json", cwd=project)
+        assert r.returncode == 0
+        data = json.loads(r.stdout)
+        by_desc = {e["description"]: e for e in data["entries"]}
+        assert by_desc["Critical bug"]["severity"] == "critical"
+        assert by_desc["Degraded service"]["severity"] == "degraded"
+        assert by_desc["Normal task"]["severity"] == "normal"
+        assert by_desc["Annoying glitch"]["severity"] == "annoying"
+
+    def test_severity_filter_with_type_tagged_items(self, project):
+        """Severity filter works correctly with `- [type]` items."""
+        (project / "TODO.md").write_text(
+            "# TODO\n\n"
+            "## \u21f6 Critical\n\n"
+            "- [fix] Critical item\n\n"
+            "## \u2192 Normal\n\n"
+            "- [fix] Normal item\n"
+        )
+        r = _run("todo", "--severity", "critical", cwd=project)
+        assert r.returncode == 0
+        assert "Critical item" in r.stdout
+        assert "Normal item" not in r.stdout
+
 
 # ---------------------------------------------------------------------------
 # generic query (schema auto-discovery)

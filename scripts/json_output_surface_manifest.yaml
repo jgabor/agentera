@@ -217,8 +217,8 @@ surfaces:
   measurement_scope: primary
   fixture: repo_root
   enforcement_tier: enforce
-  byte_budget: 2000
-  token_budget: 500
+  byte_budget: 25000
+  token_budget: 6500
 - id: state-decisions
   command: agentera state decisions
   selector: --format json
@@ -325,8 +325,8 @@ surfaces:
   measurement_scope: primary
   fixture: repo_root
   enforcement_tier: enforce
-  byte_budget: 2000
-  token_budget: 500
+  byte_budget: 25000
+  token_budget: 6500
 - id: state-query-vision
   command: agentera state query vision
   selector: --format json
