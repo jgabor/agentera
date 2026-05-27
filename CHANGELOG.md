@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- Fixed `validate_artifact.py` exit code on unhandled exception: now exits 2 (violation) instead of 0 (pass), restoring the hard-gate validation contract.
+- Fixed empty or comment-only schema files bypassing all validation: validator now reports a violation instead of silently passing.
+- Fixed objective `VALIDATION_RULES` group being silently ignored: validator now iterates both `VALIDATION` and `VALIDATION_RULES` schema groups.
+- Fixed `closure_consistency` schema rule never being enforced: validator now checks closure fields (`closed_at`, `final_value`, `target_ref`, `reason`) when objective status is `closed`.
+- Fixed three silent `except Exception` swallowers in `scripts/agentera`: `_load_schemas`, `_load_registry_for_schemas`, and `_load_artifact` now log warnings to stderr before degrading.
+
 ## [2.7.1] · 2026-05-25
 
 ### Added

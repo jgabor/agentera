@@ -1,11 +1,31 @@
 cycles:
+- number: 606
+  timestamp: 2026-05-26 12:00
+  type: fix
+  phase: build
+  what: Fix 7 critical validation and state-loading silent failures in validate_artifact.py
+    and scripts/agentera.
+  commit: pending
+  discovered: None.
+  verified: 1285 passed pytest tests/ -q -n auto (2 pre-existing failures excluded);
+    behavioral verification passed for empty schema violation, VALIDATION_RULES iteration,
+    closure_consistency enforcement, and stderr logging on corrupt schemas/registries/artifacts.
+  next: Address degraded-severity TODO items (state todo parser, user_confirmation
+    type mismatch, archive entry validation).
+  context:
+    intent: Restore trust in the artifact validation hard gate by fixing silent failure
+      modes.
+    constraints: Must not break existing passing validation for well-formed artifacts.
+      Must preserve exit code contracts.
+    scope: hooks/validate_artifact.py and scripts/agentera only.
 - number: 605
   timestamp: 2026-05-25 15:45
   type: chore
   phase: build
   what: "CLI audience namespace plan task 7 \u2014 closeout verification, measurements,\
     \ and archive."
-  commit: 'acb6ee9 test(cli): migrate fixtures, manifest, and close out namespace plan'
+  commit: 'acb6ee9 test(cli): migrate fixtures, manifest, and close out namespace
+    plan'
   discovered: None.
   verified: "validate capability-contract --format json pass (2/2); check compact\
     \ pass; alias parity 0 byte/token delta (hej\u2192prime 29314B/6840tok, describe\u2192\
@@ -27,7 +47,8 @@ cycles:
   phase: build
   what: "CLI audience namespace plan task 6 \u2014 tests, semantic fixtures, JSON\
     \ manifest."
-  commit: 'acb6ee9 test(cli): migrate fixtures, manifest, and close out namespace plan'
+  commit: 'acb6ee9 test(cli): migrate fixtures, manifest, and close out namespace
+    plan'
   discovered: None.
   verified: 1287 passed with pytest tests/ -q -n auto; measure_json_output_surfaces
     --enforce-budgets pass (67 surfaces, 0 violations); semantic fixtures require
@@ -169,27 +190,11 @@ cycles:
     intent: Plan-level completion review for Cursor v1 slice after Task 5 live smoke.
     constraints: No push, tag, or publication.
     scope: Artifact sync, version bump, plan archive, advisory doc updates only.
-- number: 596
-  timestamp: 2026-05-24 14:45
-  type: test
-  phase: build
-  what: Live Cursor IDE preToolUse Write smoke for Task 5.
-  commit: b50032f
-  discovered: None.
-  verified: 'Invalid-block: Write to `.agentera/progress.yaml` with broken YAML (`{{{`)
-    denied by preToolUse hook with progress schema parse error; tool returned permission
-    denied and did not mutate the file. Valid-allow: Write to `.agentera/smoke-cursor-pretooluse-evidence.txt`
-    succeeded with one-line PASS evidence. Both acceptance criteria 1 and 2 satisfied;
-    registry and parity docs left advisory-only per AC3.'
-  next: Task 8 plan-level completion review; release tagging still gated on broader
-    readiness.
-  context:
-    intent: Prove conditional hard-gate behavior for reconstructable Write candidates
-      in live Cursor IDE session.
-    scope: Task 5 smoke only; no registry or parity promotion.
 archive:
 - summary: 'Cycle 605 (2026-05-25): Closed CLI audience namespace consolidation plan
     with validation, alias-parity measurements, and plan archive.'
+- summary: 'Cycle 596 (2026-05-24): Live Cursor IDE preToolUse Write smoke for Task
+    5.'
 - summary: 'Cycle 595 (2026-05-24): Shipped Cursor v1 runtime slice per Decision 63.'
 - summary: 'Cycle 594 (2026-05-23): Added hybrid inspektera audit staleness to hej
     and fixed latest health audit selection.'
@@ -260,4 +265,3 @@ archive:
     authority.'
 - summary: 'Cycle 558 (2026-05-17): Documented the helper-script classification policy
     and canonical CLI examples.'
-- summary: 'Cycle 557 (2026-05-17): Added the privacy-gated `agentera stats` workflow.'
