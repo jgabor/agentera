@@ -8107,55 +8107,7 @@ def build_parser() -> argparse.ArgumentParser:
         ),
     )
     validate_sub = validate.add_subparsers(dest="validate_family")
-    validate_capability = validate_sub.add_parser(
-        "capability",
-        help="Validate a capability name or directory path",
-    )
-    validate_capability.add_argument(
-        "target",
-        help="Canonical capability name or capability directory path",
-    )
-    validate_capability.add_argument("--format", choices=["text", "json"], default="text", help="Output format")
-    validate_artifact = validate_sub.add_parser(
-        "artifact",
-        help="Validate a canonical artifact label and file",
-    )
-    validate_artifact.add_argument(
-        "--artifact",
-        required=True,
-        choices=VALIDATE_ARTIFACT_LABELS,
-        help="Canonical artifact label",
-    )
-    validate_artifact.add_argument(
-        "--file",
-        type=_agent_path,
-        help="Artifact file path to validate; defaults to docs.yaml mapping when omitted",
-    )
-    validate_artifact.add_argument(
-        "--cwd",
-        type=_agent_path,
-        default=Path.cwd(),
-        help="Project directory for relative paths and docs.yaml mapping",
-    )
-    validate_artifact.add_argument("--format", choices=["text", "json"], default="text", help="Output format")
-    validate_descriptors = validate_sub.add_parser(
-        "descriptors",
-        help="Validate Codex and OpenCode Agentera capability descriptors",
-        description="Validate Codex and OpenCode Agentera capability descriptors.",
-    )
-    validate_descriptors.add_argument("--format", choices=["text", "json"], default="text", help="Output format")
-    for family, description in (
-        ("cross-capability", "Validate capability artifact producer/consumer consistency"),
-        ("lifecycle-adapters", "Validate runtime lifecycle adapter metadata"),
-        ("app-home-contract", "Validate app-home contract terminology"),
-        ("capability-contract", "Validate the capability schema contract and protocol"),
-    ):
-        validate_family_parser = validate_sub.add_parser(
-            family,
-            help=description,
-            description=description,
-        )
-        validate_family_parser.add_argument("--format", choices=["text", "json"], default="text", help="Output format")
+    _add_validate_family_parsers(validate_sub)
 
     u = sub.add_parser(
         "upgrade",
@@ -8258,9 +8210,15 @@ def build_parser() -> argparse.ArgumentParser:
         help="Installed CLI command that must be discoverable; may be repeated (default: prime)",
     )
     b.add_argument(
+        "--format",
+        choices=["text", "json"],
+        default="text",
+        help="Output format",
+    )
+    b.add_argument(
         "--json",
         action="store_true",
-        help="Emit structured JSON instead of human-readable text",
+        help=argparse.SUPPRESS,
     )
     state = sub.add_parser(
         "state",
@@ -8393,6 +8351,9 @@ def main(argv: list[str] | None = None) -> int:
         if args.command == "upgrade":
             return cmd_upgrade(args)
         if args.command == "doctor":
+            if getattr(args, "json", False):
+                _emit_deprecation_alias("doctor --json", "doctor --format json")
+                args.format = "json"
             return cmd_doctor(args)
     except (RuntimeError, ValueError) as exc:
         print(f"Error: {exc}", file=sys.stderr)

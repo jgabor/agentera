@@ -115,8 +115,10 @@ class TestPreservedTopLevelCommands:
 
         assert help_result.returncode == 0, help_result.stderr
         assert "--expect-command" in help_result.stdout
-        assert "--json" in help_result.stdout
+        assert "--format {text,json}" in help_result.stdout
         assert status.returncode in {0, 1}, status.stderr
+        assert "Deprecation: agentera doctor --json is deprecated;" in status.stderr
+        assert "use agentera doctor --format json" in status.stderr
         payload = json.loads(status.stdout)
         assert "signals" in payload
         assert "appHome" in payload
