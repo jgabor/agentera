@@ -14,6 +14,13 @@
 - Fixed `query` missing deprecation warning: top-level `query` command now emits stderr deprecation alias pointing to `state query` and includes deprecation label in `COMMAND_DESCRIPTIONS`.
 - Fixed archive entry required fields never validated: `ARCHIVE` group added to `_SEQUENCE_KEYS_BY_ARTIFACT` for `decisions`, so `summary` is now enforced on archive entries.
 - Fixed `user_confirmation` validation error message saying "is required" for wrong-type values: validator now distinguishes missing (`None`) from wrong type, emitting `'must be a mapping with confirmed_by and confirmed_at, got <type>'`.
+- Fixed TODO.md parser to handle `- [type]` type-tagged items instead of only `- [ ]` checkbox syntax
+- Fixed validation rules for health.yaml (12 required fields) and plan.yaml (scope.excluded, task sub-fields)
+- Fixed ARCHIVE.summary required-field validation for experiments, progress, and decisions artifacts
+- Fixed `_SKIP_META` asymmetry between validator and CLI, added unknown-field check for decision satisfaction maps
+- Fixed `agentera validate` subparser duplication and `agentera doctor` `--format json` convention
+- Fixed Planera validation schema vocabulary, agentera.js stderr parsing, and consolidated duplicated artifact path mappings
+- Fixed human-facing Markdown artifact schema validation: todo.yaml, design.yaml, changelog.yaml now check schema structure
 
 ## [2.7.1] · 2026-05-25
 
