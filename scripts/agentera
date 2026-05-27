@@ -6309,19 +6309,20 @@ def _query_todo(
         s = line.strip()
         if s.startswith("## "):
             section = s[3:].strip()
-            if section == "Resolved":
+            if "resolved" in section.lower():
                 current_section = None
                 continue
             current_section = section
             continue
         if current_section is None:
             continue
-        if not s.startswith("- [ ]"):
+        m = _TODO_ITEM_RE.match(s)
+        if not m:
             continue
         if marker and marker not in current_section:
             continue
         found = True
-        item = s[5:].strip()
+        item = m.group(2).strip()
         if status and status.lower() not in {"open", "todo"}:
             continue
         markdown_entries.append({
@@ -6721,6 +6722,7 @@ TODO_SECTION_SEVERITIES = {
     "info": "info",
     "annoying": "annoying",
 }
+_TODO_ITEM_RE = re.compile(r"^- \[([^\]]+)\]\s+(.*)")
 TODO_PLANERA_SIGNALS = {
     "acceptance",
     "artifact",
@@ -6940,12 +6942,14 @@ def _load_todo_items(schemas: dict) -> list[dict[str, str]]:
                     "normal",
                 )
             continue
-        if current_severity and stripped.startswith("- [ ]"):
-            items.append({
-                "severity": current_severity,
-                "status": "open",
-                "text": stripped[5:].strip(),
-            })
+        if current_severity:
+            m = _TODO_ITEM_RE.match(stripped)
+            if m:
+                items.append({
+                    "severity": current_severity,
+                    "status": "open",
+                    "text": m.group(2).strip(),
+                })
     return items
 
 

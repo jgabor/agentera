@@ -204,7 +204,7 @@ def test_skip_token_mode_still_enforces_byte_budgets(measure_json_output_surface
     module = measure_json_output_surfaces
     specs = module.load_surface_specs(module.DEFAULT_MANIFEST, REPO_ROOT, scopes={"primary"})
     todo = next(spec for spec in specs if spec.id == "state-todo")
-    outputs = {todo.id: "x" * 3_000}
+    outputs = {todo.id: "x" * 30_000}
     measurements = module.measure_outputs([todo], outputs, token_counter=None)
     report = module.report_payload(
         measurements,
@@ -225,10 +225,10 @@ def test_skip_token_mode_still_enforces_byte_budgets(measure_json_output_surface
             "selector": todo.selector,
             "capability": None,
             "profile": None,
-            "byte_count": 3_000,
-            "byte_budget": 2_000,
+            "byte_count": 30_000,
+            "byte_budget": 25_000,
             "token_count": None,
-            "token_budget": 500,
+            "token_budget": 6_500,
             "enforcement_tier": "enforce",
             "reasons": ["bytes_exceeded"],
         }
