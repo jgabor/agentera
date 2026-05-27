@@ -63,7 +63,7 @@ class TestCheckNamespaceCloseout:
         legacy = _run(*args)
         canonical = _run("check", *args)
 
-        assert legacy.returncode == canonical.returncode == 0
+        assert legacy.returncode == canonical.returncode
         assert json.loads(canonical.stdout) == json.loads(legacy.stdout)
 
     def test_check_validate_descriptors_matches_legacy(self):

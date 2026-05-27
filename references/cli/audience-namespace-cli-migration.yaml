@@ -333,3 +333,23 @@ command_tree_target:
     - state [agent]
     - report [user]
     - check [maintainer]
+
+deprecated_top_level_aliases:
+  # Command aliases that emit stderr deprecation warnings
+  - { legacy: hej, canonical: prime }
+  - { legacy: describe, canonical: schema }
+  - { legacy: plan, canonical: "state plan" }
+  - { legacy: progress, canonical: "state progress" }
+  - { legacy: health, canonical: "state health" }
+  - { legacy: todo, canonical: "state todo" }
+  - { legacy: decisions, canonical: "state decisions" }
+  - { legacy: docs, canonical: "state docs" }
+  - { legacy: objective, canonical: "state objective" }
+  - { legacy: experiments, canonical: "state experiments" }
+  - { legacy: query, canonical: "state query" }
+  - { legacy: compact, canonical: "check compact" }
+  - { legacy: gate, canonical: "check compact" }
+  - { legacy: verify, canonical: "check verify" }
+  - { legacy: stats, canonical: report }
+  - { legacy: lint, canonical: "check lint" }
+  - { legacy: validate, canonical: "check validate" }

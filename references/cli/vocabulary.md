@@ -107,7 +107,7 @@ required-read validation regression remain separate follow-up work.
 | Term | Definition |
 | --- | --- |
 | CLI-first state access | Read project state through `agentera` top-level commands before raw artifact reads. |
-| Top-level state commands | `hej`, `plan`, `progress`, `health`, `todo`, `decisions`, `docs`, `objective`, and `experiments`. |
+| Top-level state commands | The canonical namespace command is `state` followed by a subcommand (`plan`, `progress`, `health`, `todo`, `decisions`, `docs`, `objective`, `experiments`, `query`). Legacy top-level aliases remain during migration; see [audience-namespace-cli-migration.yaml](references/cli/audience-namespace-cli-migration.yaml). |
 | Artifact-backed briefing | Any briefing or routing decision backed by Agentera project artifacts. It must use CLI-first state access. |
 | Bare `/agentera` | Invocation without a specific request. It delegates to `hej` and renders the Hej dashboard from one composite source command. |
 | Hej dashboard | User-facing project briefing with logo, status metrics, a narrative read inside `status`, attention, next action, and `⌂ hej · <status>`. Issues summary uses `critical · degraded · annoying` only. |

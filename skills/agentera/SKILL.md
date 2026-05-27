@@ -182,10 +182,9 @@ above must have already confirmed the installed CLI is usable.
 
 Routine commands are: `prime`, `state plan`, `state progress`, `state health`,
 `state todo`, `state decisions`, `state docs`, `state objective`, and
-`state experiments`. Top-level aliases such as `plan`, `progress`, and `hej`
-remain during migration with stderr deprecation. Discovery and custom
+`state experiments`. Top-level aliases for legacy commands remain during migration with stderr deprecation; see [audience-namespace-cli-migration.yaml](references/cli/audience-namespace-cli-migration.yaml) for the full list. Discovery and custom
 inspection remain available through `agentera schema --format json`
-(`describe` is a deprecated alias),
+(with legacy `describe` alias),
 `state query --list-artifacts`, and `state query <artifact-name> --format json|yaml`.
 Structured discovery includes an artifact-location contract with mapped paths,
 normal read commands, and raw-access boundaries; use that contract before

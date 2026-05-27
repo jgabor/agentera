@@ -64,3 +64,34 @@ def test_migration_contract_distinguishes_plan_routing_surfaces():
     assert plan["state_read"]["legacy_alias"] == "agentera plan"
     assert plan["capability_top"]["invocation"] == "agentera planera"
     assert "prime --context planera" in plan["agent_guidance"]
+
+
+def test_deprecated_aliases_list_is_consistent_with_code():
+    migration = _load(MIGRATION_PATH)
+    yaml_aliases = {
+        item["legacy"]: item["canonical"]
+        for item in migration["deprecated_top_level_aliases"]
+    }
+
+    code_path = REPO_ROOT / "scripts/agentera"
+    code = code_path.read_text(encoding="utf-8")
+
+    import re
+    matches = re.findall(r'_emit_deprecation_alias\(\s*"([^"]+)"\s*,\s*"([^"]+)"\s*\)', code)
+
+    code_aliases = {}
+    for legacy, canonical in matches:
+        if " " not in legacy:  # Skip option-level deprecations like 'doctor --json'
+            code_aliases[legacy] = canonical
+
+    # Extract dynamic state commands
+    handlers_block_match = re.search(r'STATE_COMMAND_HANDLERS\s*=\s*\{([^}]+)\}', code)
+    assert handlers_block_match, "Could not find STATE_COMMAND_HANDLERS block"
+    handlers_block = handlers_block_match.group(1)
+    state_cmds = re.findall(r'"([^"]+)"\s*:', handlers_block)
+    assert len(state_cmds) > 0
+
+    for cmd in state_cmds:
+        code_aliases[cmd] = f"state {cmd}"
+
+    assert code_aliases == yaml_aliases

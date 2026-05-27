@@ -5111,7 +5111,7 @@ def cmd_lint(args: argparse.Namespace) -> int:
         _emit_structured(payload, "json")
     else:
         _emit_lint_text(payload)
-    return 1 if payload["status"] == "fail" and getattr(args, "strict", False) else 0
+    return 1 if payload["status"] == "fail" else 0
 
 
 def _validate_capability_target(target: str) -> Path:
@@ -7479,7 +7479,7 @@ def _query_generic(args: argparse.Namespace, schemas: dict, name: str) -> int:
         payload = _structured_state(name, entries, source, filters=filters)
         return _emit_state_structured(name, payload, args)
     if not entries:
-        return 0
+        return 1
     info = schemas[name]
     disp = _display_fields(info["fields"])
     for e in entries:

@@ -257,7 +257,7 @@ class TestLintCli:
     def test_lint_reports_bounded_actionable_diagnostics_by_default(self):
         text = "Here is the update. " + ("word " * 600)
         r = _run_lint("--artifact", "PROGRESS.md", "--text", text)
-        assert r.returncode == 0
+        assert r.returncode == 1
         assert r.stdout.count("- ") == 3
         assert "verbosity:" in r.stdout
         assert "abstraction creep" in r.stdout
@@ -300,8 +300,7 @@ class TestLintCli:
     def test_plan_lint_rejects_unanchored_generic_prose_regression(self):
         text = "This plan improves the system broadly and makes the implementation better for users."
         r = _run_lint("--artifact", "PLAN.md", "--text", text, "--format", "json")
-
-        assert r.returncode == 0
+        assert r.returncode == 1
         payload = json.loads(r.stdout)
         assert payload["status"] == "fail"
         assert payload["summary"] == {"failed": 1, "passed": 2, "advisory": True}
@@ -395,7 +394,7 @@ class TestLintCli:
 
     def test_lint_auto_resolves_schema_artifact_file(self):
         r = _run_lint("--artifact", "decisions", "--format", "json")
-        assert r.returncode == 0
+        assert r.returncode == 1
         payload = json.loads(r.stdout)
         assert payload["command"] == "lint"
         assert payload["artifact"] == "DECISIONS.md"
@@ -403,7 +402,7 @@ class TestLintCli:
 
     def test_lint_auto_resolves_canonical_artifact_label(self):
         r = _run_lint("--artifact", "DECISIONS.md", "--format", "json")
-        assert r.returncode == 0
+        assert r.returncode == 1
         payload = json.loads(r.stdout)
         assert payload["artifact"] == "DECISIONS.md"
         assert payload["source"].endswith(".agentera/decisions.yaml")
