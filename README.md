@@ -230,7 +230,7 @@ loads only the slices an agent needs.
 
 Agents query targeted slices through the Agentera CLI (`prime`, `state plan`,
 `state progress`, `state decisions`, `state health`, and more) instead of raw-reading whole YAML files or
-Markdown logs. Top-level aliases such as `hej` and `plan` remain during migration with stderr deprecation. Capability startup uses bounded JSON envelopes from
+Markdown logs. Top-level aliases for legacy commands remain during migration with stderr deprecation; see [audience-namespace-cli-migration.yaml](references/cli/audience-namespace-cli-migration.yaml) for the full list. Capability startup uses bounded JSON envelopes from
 `agentera prime --context <name>` so orientation stays complete without loading
 full artifact history into context. When agents need a specific artifact, they
 can list canonical names and paths first:
@@ -311,7 +311,7 @@ uvx --from git+https://github.com/jgabor/agentera agentera state health --format
 uvx --from git+https://github.com/jgabor/agentera agentera doctor --format json
 ```
 
-Top-level aliases such as `hej`, `plan`, and `progress` remain during migration with stderr deprecation.
+Top-level aliases for legacy commands remain during migration with stderr deprecation; see [audience-namespace-cli-migration.yaml](references/cli/audience-namespace-cli-migration.yaml) for the full list.
 
 Contributors with a git clone use `uv run scripts/agentera …` instead. See
 [Development](#development).

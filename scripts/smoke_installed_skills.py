@@ -78,7 +78,7 @@ def prepare_offline_install(source_root: Path, installed_root: Path) -> None:
     installed_root.mkdir(parents=True)
     shutil.copy2(REGISTRY, installed_root / "registry.json")
     shutil.copytree(source_root, installed_root / "skills")
-    for dirname in ("scripts", "hooks"):
+    for dirname in ("scripts", "hooks", "references", "agents"):
         source = REPO_ROOT / dirname
         if source.exists():
             shutil.copytree(source, installed_root / dirname)

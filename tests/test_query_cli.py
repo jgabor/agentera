@@ -1342,6 +1342,20 @@ class TestGenericQuery:
         assert payload["command"] == "custom_thing"
         assert payload["entries"] == [{"title": "My thing", "status": "active"}]
 
+    def test_generic_query_empty_results_exit_codes(self, project):
+        self._write_custom_schema_and_artifact(project)
+        # In text mode, query empty results should return 1
+        r_text = _run("query", "custom_thing", "--status", "nonexistent-status", cwd=project)
+        assert r_text.returncode == 1
+        assert r_text.stdout.strip() == ""
+
+        # In JSON mode, query empty results should return 0 with entries: []
+        r_json = _run("query", "custom_thing", "--status", "nonexistent-status", "--format", "json", cwd=project)
+        assert r_json.returncode == 0
+        payload = json.loads(r_json.stdout)
+        assert payload["command"] == "custom_thing"
+        assert payload["entries"] == []
+
 
 # ---------------------------------------------------------------------------
 # artifact-specific summaries

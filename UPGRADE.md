@@ -5,7 +5,7 @@
 - **12 standalone skills -> 1 bundled skill** with 12 capabilities under `skills/agentera/`
 - **Artifact format**: Markdown -> YAML for agent-facing `.agentera/` files
 - **Upgrade CLI**: `uvx --from git+https://github.com/jgabor/agentera agentera upgrade` or `uv run scripts/agentera upgrade` from a clone
-- **State CLI**: `uv run scripts/agentera prime`, `uv run scripts/agentera state plan`, and other `state` namespace commands for routine access; `/agentera` still renders the hej dashboard from the `agentera prime` composite result, while `uv run scripts/agentera state query <artifact-name> --format json|yaml` remains advanced custom access. Top-level aliases such as `hej`, `plan`, and `query` remain during migration with stderr deprecation.
+- **State CLI**: `uv run scripts/agentera prime`, `uv run scripts/agentera state plan`, and other `state` namespace commands for routine access; `/agentera` still renders the hej dashboard from the `agentera prime` composite result, while `uv run scripts/agentera state query <artifact-name> --format json|yaml` remains advanced custom access. Top-level aliases for legacy commands remain during migration with stderr deprecation; see [audience-namespace-cli-migration.yaml](references/cli/audience-namespace-cli-migration.yaml) for the full list.
 
 ## Recommended upgrade
 
