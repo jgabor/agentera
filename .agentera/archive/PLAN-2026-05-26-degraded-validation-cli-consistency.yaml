@@ -1,0 +1,39 @@
+header:
+  level: light
+  status: complete
+  title: Fix 5 degraded validation and CLI consistency issues
+  created: "2026-05-26"
+what: >
+  Fix 5 degraded validation and CLI consistency issues:
+  wrong exit code on JSON parse failure, query bare array
+  output, missing query deprecation warning, unvalidated
+  archive entry fields, and misleading user_confirmation
+  error message.
+why: >
+  These degrade the validation hard gate restored in cycle
+  606. Wrong exit codes and missing deprecation warnings
+  let failures pass silently. Unvalidated archive entries
+  and misleading diagnostics erode trust in the tooling.
+constraints:
+  - Two files: scripts/agentera and hooks/validate_artifact.py
+  - One realisera cycle
+  - Must not change passing tests
+  - Must add regression coverage for each fix
+overall_acceptance:
+  - "validate artifact returns exit code 2 (not 0) when hook JSON output is unparseable"
+  - "query --format json returns structured envelope with command, status, source, counts, and source_contract"
+  - "query top-level command emits stderr deprecation warning pointing to state query"
+  - "Archive entries in decisions.yaml validate summary and outcome as required fields"
+  - "user_confirmation validation distinguishes missing field from wrong type with type-specific diagnostic"
+tasks:
+  - id: 1
+    number: 1
+    name: Fix 5 degraded validation and CLI consistency issues
+    title: Fix 5 degraded validation and CLI consistency issues
+    status: complete
+    acceptance:
+      - "validate artifact returns exit code 2 when hook JSON is unparseable, not subprocess returncode"
+      - "_query_generic wraps output with _structured_state() matching other query handlers"
+      - "query dispatch emits deprecation alias warning and COMMAND_DESCRIPTIONS includes deprecation label"
+      - "Archive entries added to _SEQUENCE_KEYS_BY_ARTIFACT with summary and outcome as required fields"
+      - "user_confirmation error says 'must be a mapping with confirmed_by and confirmed_at, got <type>' when value is wrong type"

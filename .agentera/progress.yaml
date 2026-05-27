@@ -5,12 +5,12 @@ cycles:
   phase: build
   what: Fix 5 degraded validation and CLI consistency issues in validate_artifact.py
     and scripts/agentera.
-  commit: pending
+  commit: c096d83
   discovered: None.
   verified: 1287 passed pytest tests/ -q -n auto; behavioral verification passed for
     validate artifact exit code 2 on unparseable JSON, query structured envelope,
-    query deprecation warning, archive entry required field validation, and user_confirmation
-    missing vs wrong-type diagnostic.
+    query deprecation warning, archive entry required field validation, and
+    user_confirmation missing vs wrong-type diagnostic.
   next: Address remaining degraded-severity TODO items (state todo parser, validate
     subparser duplication, schema loading silent exceptions).
   context:
