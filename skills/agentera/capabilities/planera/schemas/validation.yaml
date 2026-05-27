@@ -31,14 +31,14 @@ VALIDATION:
       - "Adversarial review ran for full plans"
   4:
     id: V4
-    rule: plan_freshness_checkpoint
+    rule: plan_final_state_sync
     description: >-
-      Every full plan MUST end with a "Plan-level freshness checkpoint"
-      task that depends on all prior tasks. This ensures aggregate
-      plan-level CHANGELOG.md, PROGRESS.md, and TODO.md updates.
+      Every full plan MUST end with a "final state sync" task that depends
+      on all prior tasks. This ensures aggregate plan-level CHANGELOG.md,
+      PROGRESS.md, and TODO.md updates.
     severity: critical
     checks:
-      - "Full plan has freshness checkpoint task as last task"
+      - "Full plan has final state sync task as last task"
   5:
     id: V5
     rule: test_proportionality_target

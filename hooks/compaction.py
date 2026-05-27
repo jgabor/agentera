@@ -18,11 +18,20 @@ hooks/validate_artifact.py.
 from __future__ import annotations
 
 import re
+import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable
 
 import yaml
+
+# Ensure hooks/ is on sys.path so common.py can be imported when this module
+# is loaded via importlib (e.g., from validate_artifact.py or scripts/agentera).
+_hooks_dir = str(Path(__file__).resolve().parent)
+if _hooks_dir not in sys.path:
+    sys.path.insert(0, _hooks_dir)
+
+from common import DEFAULT_ARTIFACT_PATHS
 
 
 # ---------------------------------------------------------------------------
@@ -328,18 +337,6 @@ SPECS: dict[str, ArtifactSpec] = {
     ),
 }
 
-
-DEFAULT_ARTIFACT_PATHS: dict[str, str] = {
-    "VISION.md": ".agentera/vision.yaml",
-    "TODO.md": "TODO.md",
-    "CHANGELOG.md": "CHANGELOG.md",
-    "DECISIONS.md": ".agentera/decisions.yaml",
-    "PLAN.md": ".agentera/plan.yaml",
-    "PROGRESS.md": ".agentera/progress.yaml",
-    "HEALTH.md": ".agentera/health.yaml",
-    "DOCS.md": ".agentera/docs.yaml",
-    "DESIGN.md": "DESIGN.md",
-}
 
 COMPACTABLE_YAML_ARTIFACTS: dict[str, tuple[str, str]] = {
     "PROGRESS.md": ("cycles", "archive"),

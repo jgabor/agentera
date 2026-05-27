@@ -26,6 +26,13 @@ from pathlib import Path
 
 import yaml
 
+# Ensure hooks/ is on sys.path so common.py can be imported when this module
+# is loaded via importlib (e.g., from test fixtures).
+_hooks_dir = str(Path(__file__).resolve().parent)
+if _hooks_dir not in sys.path:
+    sys.path.insert(0, _hooks_dir)
+
+from common import DEFAULT_ARTIFACT_PATHS as _DEFAULT_ARTIFACT_PATHS
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SCHEMAS_DIR = REPO_ROOT / "skills" / "agentera" / "schemas" / "artifacts"
@@ -42,18 +49,6 @@ _CANONICAL_SCHEMA_NAMES = {
     "PLAN.md": "plan",
     "PROGRESS.md": "progress",
     "VISION.md": "vision",
-}
-
-_DEFAULT_ARTIFACT_PATHS = {
-    "VISION.md": ".agentera/vision.yaml",
-    "TODO.md": "TODO.md",
-    "CHANGELOG.md": "CHANGELOG.md",
-    "DECISIONS.md": ".agentera/decisions.yaml",
-    "PLAN.md": ".agentera/plan.yaml",
-    "PROGRESS.md": ".agentera/progress.yaml",
-    "HEALTH.md": ".agentera/health.yaml",
-    "DOCS.md": ".agentera/docs.yaml",
-    "DESIGN.md": "DESIGN.md",
 }
 
 _ARTIFACT_BY_SCHEMA_NAME = {schema: artifact for artifact, schema in _CANONICAL_SCHEMA_NAMES.items()}

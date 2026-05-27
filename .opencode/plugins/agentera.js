@@ -5,7 +5,7 @@
 // writes via tool.execute.before plus tool.execute.after.
 // Install: copy to ~/.config/opencode/plugins/agentera.js or .opencode/plugins/agentera.js
 
-import { execFileSync } from "child_process";
+import { execFileSync, spawnSync } from "child_process";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -561,26 +561,22 @@ function validateArtifactCandidate(filePath, content, projectRoot) {
       tool_name: "Edit",
       tool_input: { file_path: filePath, content },
     });
-    const stdout = execFileSync("uv", ["run", scriptPath], {
+    const result = spawnSync("uv", ["run", scriptPath], {
       input: payload,
       encoding: "utf8",
       timeout: 30000,
       stdio: ["pipe", "pipe", "pipe"],
-    }).trim();
-    if (!stdout) return { permissionDecision: "allow" };
-    const decision = JSON.parse(stdout);
-    if (!decision || typeof decision !== "object") {
-      return { permissionDecision: "allow" };
-    }
-    return decision;
-  } catch (err) {
-    if (err && (err.status === 2 || err.status === 1)) {
-      const reason = String(err.stderr || err.stdout || "Artifact validation failed").trim();
+    });
+    // validator writes violations to stderr with exit code 2
+    if (result.status === 2) {
+      const reason = String(result.stderr || "Artifact validation failed").trim();
       return {
         permissionDecision: "deny",
         permissionDecisionReason: reason || "Artifact validation failed",
       };
     }
+    return { permissionDecision: "allow" };
+  } catch (err) {
     return { permissionDecision: "allow" };
   }
 }
