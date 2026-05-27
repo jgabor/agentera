@@ -1527,7 +1527,8 @@ def plan_runtime_phase(
         try:
             codex_config_text = _read_text_or_none(codex_config_target)
             plugin_hooks_eligible = setup_codex.codex_plugin_hooks_enabled(codex_config_text)
-        except Exception:  # noqa: BLE001 - config parse errors are surfaced by _plan_codex_config.
+        except Exception as exc:  # noqa: BLE001 - config parse errors are surfaced by _plan_codex_config.
+            print(f"warning: failed to parse codex config: {exc}", file=sys.stderr)
             plugin_hooks_eligible = False
         hook_text = setup_codex.render_codex_hooks_config(hook_command)
         items.append(_plan_codex_config(

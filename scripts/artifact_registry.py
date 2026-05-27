@@ -158,7 +158,9 @@ def load_docs_path_overrides(project_root: Path) -> dict[str, str]:
         return {}
     try:
         data = yaml.safe_load(docs_path.read_text(encoding="utf-8"))
-    except Exception:
+    except Exception as exc:
+        import sys
+        print(f"warning: failed to load docs path overrides: {exc}", file=sys.stderr)
         return {}
     mapping = data.get("mapping") if isinstance(data, dict) else None
     if not isinstance(mapping, list):

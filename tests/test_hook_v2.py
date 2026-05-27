@@ -1007,6 +1007,22 @@ class TestFailOpenSafetyRule:
         )
         assert result.returncode == 0
 
+    def test_corrupt_docs_yaml_warning(self, tmp_path):
+        """A corrupt docs.yaml logs a warning to stderr."""
+        (tmp_path / ".agentera").mkdir()
+        docs_file = tmp_path / ".agentera" / "docs.yaml"
+        docs_file.write_text("not: [valid\n yaml")
+        data = json.dumps({"tool_name": "Edit", "tool_input": {"file_path": "/dev/null"}})
+        result = subprocess.run(
+            [sys.executable, self.SCRIPT],
+            input=data,
+            capture_output=True,
+            text=True,
+            cwd=str(tmp_path),
+        )
+        assert result.returncode == 0
+        assert "warning: failed to load docs path overrides" in result.stderr
+
 
 # ── Helpers ─────────────────────────────────────────────────────────
 
@@ -1029,3 +1045,191 @@ def _progress_cycles(count: int) -> list[dict]:
         }
         for number in range(count, 0, -1)
     ]
+
+
+class TestValidatorExtensions:
+    def test_positive_integer_validation(self, hook):
+        schema = hook.load_schema("decisions")
+        base = {
+            "number": 1, "date": "2026-05-04",
+            "question": "Which format?", "context": "Need portability",
+            "choice": "YAML", "reasoning": "Widely supported",
+            "confidence": "firm",
+            "alternatives": [{"name": "YAML", "status": "chosen"}],
+        }
+
+        # Valid decision passes
+        content = yaml_dump({"decisions": [base]})
+        assert hook.validate_yaml(content, schema, "decisions") == []
+
+        # number = 0 is invalid
+        bad_base = dict(base, number=0)
+        content = yaml_dump({"decisions": [bad_base]})
+        violations = hook.validate_yaml(content, schema, "decisions")
+        assert any("decisions[0].number' must be a positive integer" in v for v in violations)
+
+        # number = False is invalid (type error takes precedence)
+        bad_base2 = dict(base, number=False)
+        content = yaml_dump({"decisions": [bad_base2]})
+        violations = hook.validate_yaml(content, schema, "decisions")
+        assert any("decisions[0].number' must be an integer, got bool" in v for v in violations)
+
+        # number = -5 is invalid
+        bad_base3 = dict(base, number=-5)
+        content = yaml_dump({"decisions": [bad_base3]})
+        violations = hook.validate_yaml(content, schema, "decisions")
+        assert any("decisions[0].number' must be a positive integer" in v for v in violations)
+
+        # number = "three" is invalid type
+        bad_base4 = dict(base, number="three")
+        content = yaml_dump({"decisions": [bad_base4]})
+        violations = hook.validate_yaml(content, schema, "decisions")
+        assert any("decisions[0].number' must be an integer, got str" in v for v in violations)
+
+    def test_user_confirmation_wrong_type(self, hook):
+        schema = hook.load_schema("decisions")
+        base = {
+            "number": 1, "date": "2026-05-04",
+            "question": "Q", "context": "C",
+            "choice": "A", "reasoning": "R",
+            "confidence": "firm",
+            "alternatives": [{"name": "A", "status": "chosen"}],
+        }
+
+        # String user_confirmation is invalid
+        content = yaml_dump({
+            "decisions": [
+                {
+                    **base,
+                    "satisfaction": {
+                        "state": "user_confirmed_satisfied",
+                        "user_confirmation": "Jonathan",
+                    }
+                }
+            ]
+        })
+        violations = hook.validate_yaml(content, schema, "decisions")
+        assert any("user_confirmation' must be a mapping with confirmed_by and confirmed_at, got str" in v for v in violations)
+
+        # List user_confirmation is invalid
+        content = yaml_dump({
+            "decisions": [
+                {
+                    **base,
+                    "satisfaction": {
+                        "state": "user_confirmed_satisfied",
+                        "user_confirmation": ["Jonathan"],
+                    }
+                }
+            ]
+        })
+        violations = hook.validate_yaml(content, schema, "decisions")
+        assert any("user_confirmation' must be a mapping with confirmed_by and confirmed_at, got list" in v for v in violations)
+
+    def test_compaction_user_confirmation_wrong_type(self, compaction):
+        # Test wrong types for user_confirmation
+        for val in ("Jonathan", 123, ["Jonathan"], None):
+            entry = {
+                "satisfaction": {
+                    "state": "user_confirmed_satisfied",
+                    "user_confirmation": val
+                }
+            }
+            assert compaction._decision_requires_user_review(entry) is True
+
+    def test_crash_handling_exit_code_2(self, tmp_path):
+        import runpy, os
+        script = str(REPO_ROOT / "hooks" / "validate_artifact.py")
+        code = f"""
+import runpy, sys, yaml
+yaml.safe_load = lambda content: 1/0
+sys.argv = ['validate_artifact.py', '--artifact', 'PROGRESS.md', '--file', {repr(script)}]
+try:
+    runpy.run_path({repr(script)}, run_name='__main__')
+except SystemExit as e:
+    sys.exit(e.code)
+"""
+        env = dict(os.environ, PYTHONPATH=str(REPO_ROOT))
+        result = subprocess.run(
+            [sys.executable, "-c", code],
+            capture_output=True,
+            text=True,
+            cwd=str(tmp_path),
+            env=env,
+        )
+        assert result.returncode == 2
+        assert "ZeroDivisionError" in result.stderr
+
+    def test_empty_schema_file_validation_failure(self, hook, tmp_path):
+        # Mock load_schema to return empty dict
+        dummy = tmp_path / "dummy.yaml"
+        dummy.write_text("x: 1")
+        original_load = hook.ArtifactSchemaValidator.load_schema
+        try:
+            hook.ArtifactSchemaValidator.load_schema = lambda self, name: {}
+            violations = hook.ArtifactSchemaValidator().validate_explicit("DECISIONS.md", str(dummy), str(tmp_path))
+            assert any("file is empty or contains no valid definitions" in v for v in violations)
+        finally:
+            hook.ArtifactSchemaValidator.load_schema = original_load
+
+    def test_negative_type_validation_across_paths(self, hook):
+        schema = hook.load_schema("decisions")
+        base = {
+            "number": 1, "date": "2026-05-04",
+            "question": 123, "context": "C",
+            "choice": "A", "reasoning": "R",
+            "confidence": "firm",
+            "alternatives": [{"name": "A", "status": "chosen"}],
+        }
+        content = yaml_dump({"decisions": [base]})
+        violations = hook.validate_yaml(content, schema, "decisions")
+        assert any("decisions[0].question' must be a string, got int" in v for v in violations)
+
+        schema_plan = hook.load_schema("plan")
+        content_plan = yaml_dump({
+            "header": {
+                "level": "light",
+                "created": "2026-05-04",
+                "status": "active",
+                "title": "Test Plan",
+            },
+            "what": "What",
+            "why": "Why",
+            "scope": {
+                "included": ["A"],
+                "excluded": ["B"],
+                "deferred": "not a list",
+            },
+            "tasks": [
+                {"number": 1, "name": "Task 1", "status": "pending"}
+            ]
+        })
+        violations_plan = hook.validate_yaml(content_plan, schema_plan, "plan")
+        assert any("scope.deferred' must be a list of strings" in v for v in violations_plan)
+
+    def test_objective_validation_rules_respected(self, hook):
+        schema = hook.load_schema("objective")
+        content = yaml_dump({
+            "header": {"title": "Test Objective", "status": "closed"},
+            "objective": {
+                "description": "Desc",
+                "why": "Why",
+                "measurement": "Measure",
+            },
+            "metric": {
+                "description": "Metric desc",
+                "direction": "higher",
+                "unit": "pct",
+            },
+            "baseline": {"description": "Baseline"},
+            "scope": {
+                "included": ["*"],
+                "excluded": ["none"],
+            },
+        })
+        violations = hook.validate_yaml(content, schema, "objective")
+        assert any("closure field 'closed_at' is required" in v for v in violations)
+        assert any("closure field 'final_value' is required" in v for v in violations)
+        assert any("closure field 'target_ref' is required" in v for v in violations)
+        assert any("closure field 'reason' is required" in v for v in violations)
+

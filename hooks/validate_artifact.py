@@ -294,6 +294,67 @@ def _validate_allowed_value(
         )
 
 
+def _validate_field_type(
+    violations: list[str],
+    name: str,
+    scope: dict,
+    entry: dict,
+    path: str,
+) -> bool:
+    field = entry.get("field")
+    if not field or field not in scope:
+        return True
+    value = scope[field]
+    expected_type = entry.get("type")
+    if not expected_type or _is_empty_required(value):
+        return True
+    full_path = f"{path}.{field}" if path else field
+    is_valid = True
+    if expected_type == "integer":
+        if isinstance(value, bool) or not isinstance(value, int):
+            violations.append(f"{name}: '{full_path}' must be an integer, got {type(value).__name__}")
+            is_valid = False
+    elif expected_type == "string":
+        if not isinstance(value, str):
+            violations.append(f"{name}: '{full_path}' must be a string, got {type(value).__name__}")
+            is_valid = False
+    elif expected_type == "map":
+        if not isinstance(value, dict):
+            violations.append(f"{name}: '{full_path}' must be a mapping, got {type(value).__name__}")
+            is_valid = False
+    elif expected_type == "list[string]":
+        if not isinstance(value, list) or not all(isinstance(x, str) for x in value):
+            violations.append(f"{name}: '{full_path}' must be a list of strings")
+            is_valid = False
+    elif expected_type == "list[map]":
+        if not isinstance(value, list) or not all(isinstance(x, dict) for x in value):
+            violations.append(f"{name}: '{full_path}' must be a list of mappings")
+            is_valid = False
+    return is_valid
+
+
+def _validate_field_constraints(
+    violations: list[str],
+    name: str,
+    scope: dict,
+    entry: dict,
+    path: str,
+) -> None:
+    field = entry.get("field")
+    if not field or field not in scope:
+        return
+    value = scope[field]
+    for rule in entry.get("validation", []):
+        if not isinstance(rule, str):
+            continue
+        if rule == "Must be a positive integer":
+            if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
+                full_path = f"{path}.{field}" if path else field
+                violations.append(
+                    f"{name}: '{full_path}' must be a positive integer"
+                )
+
+
 def _validate_required_fields(
     violations: list[str],
     name: str,
@@ -304,25 +365,29 @@ def _validate_required_fields(
 ) -> None:
     for entry in _iter_group_entries(schema, group):
         field = entry.get("field")
-        if entry.get("parent") or field == "entry" or not entry.get("required"):
+        if entry.get("parent") or field == "entry":
             continue
-        _validate_field(violations, name, scope, field, path)
-        _validate_allowed_value(violations, name, scope, entry, path)
+        if entry.get("required"):
+            _validate_field(violations, name, scope, field, path)
+        if field in scope and not _is_empty_required(scope[field]):
+            if _validate_field_type(violations, name, scope, entry, path):
+                _validate_allowed_value(violations, name, scope, entry, path)
+                _validate_field_constraints(violations, name, scope, entry, path)
         value = scope.get(field)
         if isinstance(value, dict):
             for child in entry.get("children", []):
                 if (
                     isinstance(child, dict)
-                    and child.get("required")
                     and child.get("field")
                 ):
-                    _validate_field(
-                        violations,
-                        name,
-                        value,
-                        child["field"],
-                        f"{path}.{field}",
-                    )
+                    child_field = child["field"]
+                    child_path = f"{path}.{field}" if path else field
+                    if child.get("required"):
+                        _validate_field(violations, name, value, child_field, child_path)
+                    if child_field in value and not _is_empty_required(value[child_field]):
+                        if _validate_field_type(violations, name, value, child, child_path):
+                            _validate_allowed_value(violations, name, value, child, child_path)
+                            _validate_field_constraints(violations, name, value, child, child_path)
 
 
 def _validate_singleton_group(
@@ -339,7 +404,10 @@ def _validate_singleton_group(
             continue
         if entry.get("required"):
             _validate_field(violations, name, scope, field, path)
-        _validate_allowed_value(violations, name, scope, entry, path)
+        if field in scope and not _is_empty_required(scope[field]):
+            if _validate_field_type(violations, name, scope, entry, path):
+                _validate_allowed_value(violations, name, scope, entry, path)
+                _validate_field_constraints(violations, name, scope, entry, path)
 
 
 def _schema_field_names(schema: dict, group: str) -> set[str]:
@@ -669,9 +737,14 @@ def _validate_yaml(content: str, schema: dict, name: str) -> list[str]:
                             if not _sequence_in_order(nums, direction):
                                 violations.append(f"{name}: '{key}' not in {direction} order")
             elif rule == "closure_consistency":
-                if isinstance(data.get("status"), str) and data["status"] == "closed":
+                status = data.get("status") or data.get("header", {}).get("status")
+                if isinstance(status, str) and status == "closed":
+                    header = data.get("header", {}) if isinstance(data.get("header"), dict) else {}
                     for field in ("closed_at", "final_value", "target_ref", "reason"):
-                        if field not in data or data[field] is None:
+                        val = data.get(field)
+                        if val is None:
+                            val = header.get(field)
+                        if val is None or (isinstance(val, str) and not val.strip()):
                             violations.append(f"{name}: closure field '{field}' is required when status is 'closed'")
     return violations
 
@@ -780,7 +853,8 @@ def _docs_path_overrides(cwd: str) -> dict[str, str]:
         return {}
     try:
         data = yaml.safe_load(docs_path.read_text(encoding="utf-8"))
-    except Exception:
+    except Exception as exc:
+        print(f"warning: failed to load docs path overrides: {exc}", file=sys.stderr)
         return {}
     mapping = data.get("mapping") if isinstance(data, dict) else None
     if not isinstance(mapping, list):

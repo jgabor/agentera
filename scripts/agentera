@@ -359,7 +359,8 @@ def _active_objective_name() -> str | None:
             continue
         try:
             data = yaml.safe_load(objective.read_text(encoding="utf-8"))
-        except Exception:
+        except Exception as exc:
+            print(f"warning: failed to load active objective {objective}: {exc}", file=sys.stderr)
             continue
         status = ""
         if isinstance(data, dict):
@@ -1575,7 +1576,8 @@ def _capability_instruction_contract() -> dict[str, Any]:
         return {}
     try:
         data = yaml.safe_load(path.read_text(encoding="utf-8"))
-    except Exception:
+    except Exception as exc:
+        print(f"warning: failed to load capability instruction contract: {exc}", file=sys.stderr)
         return {}
     return data if isinstance(data, dict) else {}
 
@@ -6756,14 +6758,16 @@ def _check_profilera_staleness(profile_path: Path) -> tuple[bool, int, int] | No
         return None
     try:
         text = profile_path.read_text(encoding="utf-8")
-    except Exception:
+    except Exception as exc:
+        print(f"warning: failed to read profile path {profile_path}: {exc}", file=sys.stderr)
         return None
     m = re.search(r"<!-- Generated:\s*(\d{4}-\d{2}-\d{2})", text)
     if not m:
         return None
     try:
         generated = date.fromisoformat(m.group(1))
-    except ValueError:
+    except ValueError as exc:
+        print(f"warning: invalid date format in profile {profile_path}: {exc}", file=sys.stderr)
         return None
     stale_days = _profilera_stale_threshold_days()
     days_since = (date.today() - generated).days
