@@ -252,3 +252,22 @@ def test_docs_yaml_mapping_remains_runtime_override_data_not_canonical_registry_
     errors = _validate_docs_mapping_overrides(canonical_definition, model)
 
     assert "mapping[0] defines canonical registry fields: artifact_id, scope" in errors
+
+
+def test_corrupt_docs_yaml_warning_in_registry(tmp_path, capsys):
+    import sys
+    import importlib.util
+    mod_path = REPO_ROOT / "scripts" / "artifact_registry.py"
+    spec = importlib.util.spec_from_file_location("artifact_registry", mod_path)
+    assert spec and spec.loader
+    artifact_registry = importlib.util.module_from_spec(spec)
+    sys.modules["artifact_registry"] = artifact_registry
+    spec.loader.exec_module(artifact_registry)
+
+    (tmp_path / ".agentera").mkdir()
+    docs_file = tmp_path / ".agentera" / "docs.yaml"
+    docs_file.write_text("not: [valid\n yaml")
+    overrides = artifact_registry.load_docs_path_overrides(tmp_path)
+    assert overrides == {}
+    captured = capsys.readouterr()
+    assert "warning: failed to load docs path overrides" in captured.err
