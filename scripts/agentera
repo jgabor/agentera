@@ -333,7 +333,7 @@ def _load_registry_for_schemas(schemas_dir: Path) -> dict[str, ArtifactRecord]:
 def _discover_fields(schema: dict) -> dict[str, dict]:
     skip = {
         "meta", "GROUP_PREFIXES", "BUDGET", "COMPACTION", "VALIDATION",
-        "ARCHIVE",
+        "ARCHIVE", "CONVENTION", "CONVENTIONS",
     }
     fields: dict[str, dict] = {}
     for group_key, group_val in schema.items():
@@ -4272,7 +4272,7 @@ def _schema_field_description(entry: dict[str, Any]) -> dict[str, Any]:
 def _describe_schema_fields(schema: dict[str, Any]) -> list[dict[str, Any]]:
     skip = {
         "meta", "GROUP_PREFIXES", "BUDGET", "COMPACTION", "VALIDATION",
-        "ARCHIVE",
+        "ARCHIVE", "CONVENTION", "CONVENTIONS",
     }
     fields: list[dict[str, Any]] = []
     for group_key, group_val in schema.items():
