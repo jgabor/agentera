@@ -1,4 +1,32 @@
 cycles:
+- number: 608
+  timestamp: 2026-05-27 13:00
+  type: fix
+  phase: build
+  what: Fix 16 degraded validation and CLI consistency issues across 7-task plan.
+  commit: 102fdcb
+  discovered: None.
+  verified: "1294 passed pytest tests/ -q -n auto; 6 implementation commits verified:\n\
+    \    187e7b1 fix TODO.md parser (Task 1)\n    3149cbf fix health.yaml/plan.yaml/ARCHIVE.summary\
+    \ validation rules (Task 2)\n    bf9d83b consolidate _SKIP_META and add unknown-field\
+    \ check (Task 3)\n    18598f3 consolidate validate subparsers, fix doctor --format\
+    \ json (Task 4)\n    d5192c1 fix Planera vocabulary, agentera.js stderr, artifact\
+    \ path consolidation (Task 5)\n    7138880 fix human-facing Markdown schema validation\
+    \ (Task 6)\n    Behavioral verification: agentera state todo --format json returns\
+    \ correct open_count, health.yaml missing fields report violations, satisfaction\
+    \ maps reject unknown review_needed, validate subparser single code path, doctor\
+    \ --format json emits structured output, agentera.js parses exit code 2, Planera\
+    \ schema uses current vocabulary, artifact paths consolidated in common.py, _SKIP_META\
+    \ symmetric between validator and CLI, todo/design/changelog schema consulted\
+    \ for Markdown artifacts."
+  next: None.
+  context:
+    intent: Complete the 7-task plan for degraded validation and CLI consistency fixes.
+    constraints: Must not break existing passing tests. Must preserve exit code contracts.
+      No remote push.
+    scope: TODO.md parser, schema validation rules, validator robustness, CLI command
+      consistency, schema/integration fixes, human-facing Markdown schema architecture,
+      final state sync.
 - number: 607
   timestamp: 2026-05-26 14:00
   type: fix
@@ -9,8 +37,8 @@ cycles:
   discovered: None.
   verified: 1287 passed pytest tests/ -q -n auto; behavioral verification passed for
     validate artifact exit code 2 on unparseable JSON, query structured envelope,
-    query deprecation warning, archive entry required field validation, and
-    user_confirmation missing vs wrong-type diagnostic.
+    query deprecation warning, archive entry required field validation, and user_confirmation
+    missing vs wrong-type diagnostic.
   next: Address remaining degraded-severity TODO items (state todo parser, validate
     subparser duplication, schema loading silent exceptions).
   context:
@@ -173,25 +201,11 @@ cycles:
     constraints: No tag, push, or version_files changes without explicit release approval.
     scope: extract_corpus, tests, smoke, adapter docs, profilera instructions, plan
       archive.
-- number: 598
-  timestamp: 2026-05-24 18:00
-  type: chore
-  phase: build
-  what: Tagged v2.7.0 with Cursor v1, web site, and post-2.6.1 CLI fixes.
-  commit: pending
-  discovered: None.
-  verified: Version surfaces already at 2.7.0 across version_files; CHANGELOG [2.7.0]
-    promoted with Cursor plugin install, web monorepo, and CLI fix entries; validate_lifecycle-adapters
-    and version alignment tests pass; git tag v2.7.0 applied after release commit.
-  next: Push main and v2.7.0 tag when approved; Cursor Marketplace listing remains
-    optional.
-  context:
-    intent: Release closeout for 2.7.0 after explicit tag approval.
-    constraints: No remote push unless requested.
-    scope: CHANGELOG, PROGRESS, tag only; version_files unchanged.
 archive:
 - summary: 'Cycle 605 (2026-05-25): Closed CLI audience namespace consolidation plan
     with validation, alias-parity measurements, and plan archive.'
+- summary: 'Cycle 598 (2026-05-24): Tagged v2.7.0 with Cursor v1, web site, and post-2.6.1
+    CLI fixes.'
 - summary: 'Cycle 597 (2026-05-24): Closed Cursor First-Class Runtime v1 plan (Decision
     63) with 2.7.0 release metadata.'
 - summary: 'Cycle 596 (2026-05-24): Live Cursor IDE preToolUse Write smoke for Task
@@ -262,5 +276,3 @@ archive:
     authority.'
 - summary: 'Cycle 561 (2026-05-18): Added the routing and execution vocabulary authority.'
 - summary: 'Cycle 560 (2026-05-18): Added the bundle and SKILL.md vocabulary authority.'
-- summary: 'Cycle 559 (2026-05-18): Added the Decision 54 app lifecycle vocabulary
-    authority.'

@@ -1,7 +1,7 @@
 header:
   level: full
   created: 2026-05-26
-  status: active
+  status: complete
   reviewed: 2026-05-26
   critic_issues: "10 found, 2 addressed, 8 dismissed"
   title: Degraded validation and CLI consistency fixes
@@ -94,7 +94,7 @@ tasks:
   - number: 7
     name: Final State Sync
     depends_on: [1, 2, 3, 4, 5, 6]
-    status: pending
+    status: complete
     acceptance:
       - GIVEN all tasks complete WHEN final sync runs THEN TODO.md marks all 16 degraded items resolved
       - GIVEN all tasks complete WHEN final sync runs THEN CHANGELOG.md has Fixed entries under Unreleased
