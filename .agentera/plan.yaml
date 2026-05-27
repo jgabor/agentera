@@ -78,7 +78,7 @@ tasks:
   - number: 5
     name: Schema and Integration Fixes
     depends_on: []
-    status: pending
+    status: complete
     acceptance:
       - GIVEN agentera.js hook WHEN validator writes violations to stderr THEN correctly parses exit code 2
       - GIVEN Planera validation schema WHEN checking vocabulary THEN uses final state sync not deprecated checkpoint vocabulary

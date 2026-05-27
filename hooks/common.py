@@ -7,7 +7,7 @@
 
 Provides artifact path resolution used by both session start and session stop
 hooks. This is the single source of truth for
-DEFAULT_PATHS, parse_artifact_mapping, resolve_artifact_path, and
+DEFAULT_ARTIFACT_PATHS, parse_artifact_mapping, resolve_artifact_path, and
 load_artifact_overrides.
 """
 
@@ -21,7 +21,7 @@ from pathlib import Path
 # Artifact path resolution
 # ---------------------------------------------------------------------------
 
-DEFAULT_PATHS: dict[str, str] = {
+DEFAULT_ARTIFACT_PATHS: dict[str, str] = {
     "VISION.md": ".agentera/vision.yaml",
     "TODO.md": "TODO.md",
     "CHANGELOG.md": "CHANGELOG.md",
@@ -101,11 +101,11 @@ def resolve_artifact_path(
     """Resolve the path for a canonical artifact name.
 
     Uses overrides from DOCS.md if provided, otherwise falls back to
-    DEFAULT_PATHS.
+    DEFAULT_ARTIFACT_PATHS.
     """
     if overrides and artifact in overrides:
         return project_root / overrides[artifact]
-    return project_root / DEFAULT_PATHS.get(artifact, f".agentera/{artifact}")
+    return project_root / DEFAULT_ARTIFACT_PATHS.get(artifact, f".agentera/{artifact}")
 
 
 def load_artifact_overrides(project_root: Path) -> dict[str, str] | None:
