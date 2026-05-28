@@ -1,4 +1,20 @@
 cycles:
+- number: 609
+  timestamp: 2026-05-28 12:00
+  type: chore
+  phase: build
+  what: Tagged v2.7.5 with validation hardening and CLI namespace migration.
+  commit: pending
+  discovered: None.
+  verified: "Version surfaces bumped 2.7.1\u21922.7.5 across version_files; CHANGELOG\
+    \ [2.7.5] promotes validation fixes, CLI audience namespaces, subagent tool provisioning,\
+    \ and JSON output schema checks; version alignment tests pass; git tag v2.7.5\
+    \ applied after release commit."
+  next: Push main and v2.7.5 tag when approved.
+  context:
+    intent: Patch release closeout after explicit 2.7.5 target approval.
+    constraints: No remote push unless requested.
+    scope: CHANGELOG, version_files, PROGRESS, tag only.
 - number: 608
   timestamp: 2026-05-27 13:00
   type: fix
@@ -183,27 +199,11 @@ cycles:
       for binary blobs.
     scope: extract_corpus.py, tests, smoke, cursor.md, profilera instructions, runtime
       parity.
-- number: 599
-  timestamp: 2026-05-25 09:00
-  type: feat
-  phase: build
-  what: Profilera Cursor IDE session corpus parity via extract_corpus cursor runtime.
-  commit: pending
-  discovered: None.
-  verified: extract_cursor_sessions reads ~/.cursor/projects/*/agent-transcripts/*/*.jsonl
-    with project-root slug scoping, --cursor-projects-dir, and --no-cursor flags;
-    references/adapters/cursor.md and runtime-feature-parity.md updated; 17 test_extract_corpus.py
-    cases pass; profilera corpus smoke audits pass for cursor fixture parity and missing-store
-    degradation.
-  next: cursor-agent CLI gap-fill shipped in cycle 600; release 2.7.1 pending approval.
-  context:
-    intent: Close Profilera Cursor session corpus parity plan via orkestrera dispatch.
-    constraints: No tag, push, or version_files changes without explicit release approval.
-    scope: extract_corpus, tests, smoke, adapter docs, profilera instructions, plan
-      archive.
 archive:
 - summary: 'Cycle 605 (2026-05-25): Closed CLI audience namespace consolidation plan
     with validation, alias-parity measurements, and plan archive.'
+- summary: 'Cycle 599 (2026-05-25): Profilera Cursor IDE session corpus parity via
+    extract_corpus cursor runtime.'
 - summary: 'Cycle 598 (2026-05-24): Tagged v2.7.0 with Cursor v1, web site, and post-2.6.1
     CLI fixes.'
 - summary: 'Cycle 597 (2026-05-24): Closed Cursor First-Class Runtime v1 plan (Decision
@@ -275,4 +275,3 @@ archive:
 - summary: 'Cycle 562 (2026-05-18): Added the Decision 57 capability instruction contract
     authority.'
 - summary: 'Cycle 561 (2026-05-18): Added the routing and execution vocabulary authority.'
-- summary: 'Cycle 560 (2026-05-18): Added the bundle and SKILL.md vocabulary authority.'

@@ -2,6 +2,17 @@
 
 ## [Unreleased]
 
+## [2.7.5] · 2026-05-28
+
+### Added
+
+- Subagent descriptor `tools` and permission configuration across Claude, Cursor, Codex, Copilot, and OpenCode runtimes.
+- Formal JSON schema validation for CLI JSON output surfaces (`scripts/json_output_surface_manifest.yaml`).
+
+### Changed
+
+- Grouped CLI help and commands into audience namespaces (`state`, `report`, `check`) with `prime` as the default orientation entry; legacy top-level commands remain as deprecation aliases.
+
 ### Fixed
 
 - Fixed `validate_artifact.py` exit code on unhandled exception: now exits 2 (violation) instead of 0 (pass), restoring the hard-gate validation contract.
@@ -21,6 +32,8 @@
 - Fixed `agentera validate` subparser duplication and `agentera doctor` `--format json` convention
 - Fixed Planera validation schema vocabulary, agentera.js stderr parsing, and consolidated duplicated artifact path mappings
 - Fixed human-facing Markdown artifact schema validation: todo.yaml, design.yaml, changelog.yaml now check schema structure
+- Fixed `agentera lint` to return exit code 1 on failures and `state query` to return exit code 1 on empty text results.
+- Fixed hook validation to enforce positive integer and nested type constraints.
 
 ## [2.7.1] · 2026-05-25
 
