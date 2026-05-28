@@ -6,7 +6,6 @@
 
 ## → Normal
 
-- [fix] Agentera subagent descriptors define zero tool/permission configuration — only `name`, `description`, and `developer_instructions`. The host runtime (Codex, OpenCode, Cursor, Copilot) determines tool sets entirely by its hardcoded defaults for each `subagent_type`. This means mutation-capable subagents (realisera, dokumentera, optimera, orkestrera, planera) that need `edit`/`bash`/`write` to fulfill their purpose instead receive the runtime's generic read-only tool set and fail silently with `tool:invalid`. Reproduced in OpenCode: 3 realisera sessions dispatched to remove cast display metadata, all failed because the subagent had no mutation tools despite agentera defining realisera as "Autonomous development execution." Fix: research each host runtime's per-subagent tool/permission configuration mechanism (Codex TOML `permission` blocks, OpenCode `.md` tool config or `opencode.json` subagent overrides, Cursor agent config, Copilot manifest), then add the required tool declarations to each runtime's agent descriptors so every subagent type has the tools it needs to do its job. Covers all 12 subagent types across all 4 supported runtimes.
 - [chore:3.0.0] Consolidate `yaml.safe_load()` `None`-return patterns across the codebase. `compaction.py` correctly uses `or {}` guard; `validate_artifact.py` and `scripts/agentera` do not. Standardize to prevent silent parsing failures.
 - [chore:3.0.0] Consolidate duplicated `compact_entries()` implementations: `session_stop.py:265-283` has its own version with different logic (missing decision protection) from `compaction.py:1036-1078`. Extract shared logic.
 - [chore:3.0.0] Consolidate duplicated `resolve_session_path()`: identical in `session_start.py:38-49` and `session_stop.py:62-73`. Move to `common.py`.
@@ -21,6 +20,7 @@
 
 ## ✓ Resolved
 
+- ~~[fix] Agentera subagent descriptors define zero tool/permission configuration~~ · resolved: created capability-tool-classification.yaml authority, updated 12 OpenCode agents with frontmatter permissions, strengthened 12 Codex agent instructions, updated runtime adapter docs/parity tables/interface model, extended CLI validate descriptors command to check permissions/guidance, and added regression tests.
 - ~~[test] No formal JSON schema validation for CLI `--format json` output~~ · resolved: added tests verifying all JSON surface outputs against formal schemas.
 - ~~[fix] `cmd_lint` returns exit code 0 when `status=="fail"` unless `--strict` is passed~~ · resolved: return 1 on any failure, removing strict exit gate.
 - ~~[fix] `_query_generic` always returns exit code 0 on empty results~~ · resolved: return 1 on empty filtered results in text mode.

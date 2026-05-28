@@ -36,6 +36,10 @@ REQUIRED_FIELDS = {
     "diagnostics": ("check_names", "status_labels", "gap_labels", "primary_messages"),
     "documentation_claims": ("reference_paths", "parity_claims", "install_claims", "known_drifts"),
 }
+ALLOWED_FIELDS = {
+    group: fields + (("tool_configuration",) if group == "subagent_dispatch" else ())
+    for group, fields in REQUIRED_FIELDS.items()
+}
 LIST_FIELDS = {
     "binary_names",
     "host_config_locations",
@@ -69,6 +73,7 @@ STRING_FIELDS = {
     "availability_probe_label",
     "mechanism",
     "invocation_pattern",
+    "tool_configuration",
 }
 MAP_FIELDS = {"event_status"}
 SUPPORTED_EVENT_NAMES = {
@@ -235,7 +240,7 @@ def _validate_group(prefix: str, group: str, value: Mapping[str, Any]) -> list[s
         if field not in value:
             errors.append(f"{prefix}: missing required field {field}")
     for field, field_value in value.items():
-        if field not in REQUIRED_FIELDS[group]:
+        if field not in ALLOWED_FIELDS[group]:
             errors.append(f"{prefix}: unknown field {field}")
             continue
         if field in STRING_FIELDS and not isinstance(field_value, str):

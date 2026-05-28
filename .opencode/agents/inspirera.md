@@ -1,6 +1,9 @@
 ---
 description: External pattern research and synthesis.
 mode: subagent
+permission:
+  write: deny
+  bash: deny
 ---
 
 <!-- agentera: managed -->

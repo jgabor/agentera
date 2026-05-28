@@ -1,6 +1,9 @@
 ---
 description: Decision profiling and preference memory.
 mode: subagent
+permission:
+  write: allow
+  bash: allow
 ---
 
 <!-- agentera: managed -->

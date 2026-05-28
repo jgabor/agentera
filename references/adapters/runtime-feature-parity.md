@@ -72,14 +72,14 @@ before mutation.
 
 ## Subagent Dispatch
 
-| Runtime | Dispatch surface | Descriptor source | Verification surface |
-|---------|------------------|-------------------|----------------------|
-| Claude Code | Native Task/subagent surface | Host-managed; no Agentera descriptor files shipped for this phase | RuntimeAdapter registry |
-| OpenCode | `@<capability>` descriptors under `~/.config/opencode/agents` | `.opencode/agents/*.md`, bootstrapped by `.opencode/plugins/agentera.js` | `scripts/smoke_opencode_bootstrap.mjs`, `agentera validate descriptors` |
-| Copilot CLI | User-driven host action such as `/fleet` when available | Host-managed; no Agentera descriptor files shipped for this phase | RuntimeAdapter registry |
-| Codex CLI | Native agent descriptors under `~/.codex/agents` or project `.codex/agents` with bounded `[agents]` settings | `skills/agentera/agents/*.toml`, installed by `scripts/setup_codex.py` and `agentera upgrade` | `agentera validate descriptors`, `tests/test_setup_codex.py`, `tests/test_upgrade_cli.py` |
-| Cursor IDE | Cursor agent picker / @-mention for managed capability descriptors | `.cursor/agents/*.md`, via local plugin or `agentera upgrade --runtime cursor` | `references/adapters/cursor.md`, `scripts/validate_lifecycle_adapters.py`, `tests/test_upgrade_cli.py` |
-| Cursor Agent CLI | Host-managed `cursor-agent -p` print mode | Workspace `.cursor/agents/*.md` when present; no separate CLI descriptor install | `scripts/eval_skills.py --runtime cursor-agent`, `tests/test_eval_skills.py` |
+| Runtime | Dispatch surface | Descriptor source | Tool Access | Verification surface |
+|---------|------------------|-------------------|-------------|----------------------|
+| Claude Code | Native Task/subagent surface | Host-managed; no Agentera descriptor files shipped for this phase | None (no descriptors) | RuntimeAdapter registry |
+| OpenCode | `@<capability>` descriptors under `~/.config/opencode/agents` | `.opencode/agents/*.md`, bootstrapped by `.opencode/plugins/agentera.js` | Per-agent `permission` frontmatter | `scripts/smoke_opencode_bootstrap.mjs`, `agentera validate descriptors` |
+| Copilot CLI | User-driven host action such as `/fleet` when available | Host-managed; no Agentera descriptor files shipped for this phase | N/A (no descriptors) | RuntimeAdapter registry |
+| Codex CLI | Native agent descriptors under `~/.codex/agents` or project `.codex/agents` with bounded `[agents]` settings | `skills/agentera/agents/*.toml`, installed by `scripts/setup_codex.py` and `agentera upgrade` | Global sandbox policy (no per-agent) | `agentera validate descriptors`, `tests/test_setup_codex.py`, `tests/test_upgrade_cli.py` |
+| Cursor IDE | Cursor agent picker / @-mention for managed capability descriptors | `.cursor/agents/*.md`, via local plugin or `agentera upgrade --runtime cursor` | Global full access (no per-agent) | `references/adapters/cursor.md`, `scripts/validate_lifecycle_adapters.py`, `tests/test_upgrade_cli.py` |
+| Cursor Agent CLI | Host-managed `cursor-agent -p` print mode | Workspace `.cursor/agents/*.md` when present; no separate CLI descriptor install | Global full access (no per-agent) | `scripts/eval_skills.py --runtime cursor-agent`, `tests/test_eval_skills.py` |
 
 Agentera v2 does not write legacy `[agents.<name>]` Codex config blocks. Capability dispatch must use runtime-native subagent descriptors or host Task surfaces, not unsupported `agentera <capability>` CLI commands.
 

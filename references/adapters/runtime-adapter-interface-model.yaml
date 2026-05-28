@@ -66,6 +66,7 @@ record:
         - descriptor_sources
         - invocation_pattern
         - limitations
+        - tool_configuration
       required_fields:
         mechanism: string
         setup_targets: list[string]

@@ -1,6 +1,9 @@
 ---
 description: Documentation updates and synchronization.
 mode: subagent
+permission:
+  write: allow
+  bash: deny
 ---
 
 <!-- agentera: managed -->

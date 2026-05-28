@@ -1,6 +1,9 @@
 ---
 description: Define and refine project direction.
 mode: subagent
+permission:
+  write: allow
+  bash: deny
 ---
 
 <!-- agentera: managed -->

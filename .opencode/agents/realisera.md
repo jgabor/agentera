@@ -1,6 +1,9 @@
 ---
 description: Autonomous development execution.
 mode: subagent
+permission:
+  write: allow
+  bash: allow
 ---
 
 <!-- agentera: managed -->

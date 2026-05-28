@@ -1,6 +1,9 @@
 ---
 description: Agentera orientation and routing dashboard.
 mode: subagent
+permission:
+  write: deny
+  bash: deny
 ---
 
 <!-- agentera: managed -->

@@ -1,6 +1,9 @@
 ---
 description: Planning with acceptance criteria.
 mode: subagent
+permission:
+  write: allow
+  bash: deny
 ---
 
 <!-- agentera: managed -->

@@ -1,6 +1,9 @@
 ---
 description: Multi-cycle orchestration over active plans.
 mode: subagent
+permission:
+  write: allow
+  bash: allow
 ---
 
 <!-- agentera: managed -->
