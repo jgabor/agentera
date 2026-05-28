@@ -47,6 +47,7 @@ records:
       setup_targets: []
       descriptor_sources: []
       invocation_pattern: Use the host Task/subagent surface with the selected Agentera capability context.
+      tool_configuration: none
       limitations:
         - Agentera does not install per-capability Claude descriptors in this package phase.
     config_targets:
@@ -130,6 +131,7 @@ records:
       descriptor_sources:
         - .opencode/agents/*.md
       invocation_pattern: Use @<capability> for the installed Agentera capability descriptor.
+      tool_configuration: per_agent_permission
       limitations:
         - OpenCode descriptor bootstrap is file-based and preserves user-owned descriptor collisions.
     config_targets:
@@ -228,6 +230,7 @@ records:
       setup_targets: []
       descriptor_sources: []
       invocation_pattern: Use the host-native agent selection surface when available.
+      tool_configuration: none
       limitations:
         - Agentera does not install per-capability Copilot descriptors in this package phase.
     config_targets:
@@ -312,6 +315,7 @@ records:
       descriptor_sources:
         - skills/agentera/agents/*.toml
       invocation_pattern: Use the configured capability agent name through Codex-native subagent dispatch.
+      tool_configuration: global_sandbox_policy
       limitations:
         - Codex hook wiring remains limited to apply_patch validation; descriptor dispatch is separate runtime state.
     config_targets:
@@ -408,6 +412,7 @@ records:
       descriptor_sources:
         - .cursor/agents/*.md
       invocation_pattern: Use the Cursor agent picker or @-mention the installed Agentera capability descriptor.
+      tool_configuration: global_full_access
       limitations:
         - Cloud agent sessions do not load project hooks or managed agents in v1.
     config_targets:
@@ -503,6 +508,7 @@ records:
       setup_targets: []
       descriptor_sources: []
       invocation_pattern: Use cursor-agent with explicit capability context; managed .cursor/agents descriptors apply only when the workspace is loaded.
+      tool_configuration: global_full_access
       limitations:
         - Agentera does not install per-capability cursor-agent descriptors separately from IDE managed agents.
     config_targets:

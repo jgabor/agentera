@@ -5311,8 +5311,19 @@ def _descriptor_validation_payload() -> dict[str, Any]:
     source_root = Path(__file__).resolve().parent.parent
     codex_dir = source_root / "skills" / "agentera" / "agents"
     opencode_dir = source_root / ".opencode" / "agents"
+    classification_path = source_root / "references" / "cli" / "capability-tool-classification.yaml"
     checks: list[dict[str, Any]] = []
     violations: list[str] = []
+
+    try:
+        classification_data = yaml.safe_load(classification_path.read_text(encoding="utf-8"))
+        cap_permissions = {}
+        for category_name, category_data in classification_data["classification"].items():
+            for capability, cap_data in category_data["capabilities"].items():
+                cap_permissions[capability] = cap_data["permission"]
+    except Exception as exc:
+        violations.append(f"classification authority: failed to load classification: {exc}")
+        cap_permissions = {}
 
     for name in CAPABILITY_NAMES:
         codex_path = codex_dir / f"{name}.toml"
@@ -5338,6 +5349,20 @@ def _descriptor_validation_payload() -> dict[str, Any]:
         elif "# agentera_managed: true" not in text.splitlines()[:5]:
             check = {**check, "status": "fail", "message": "managed marker is required"}
             violations.append(f"codex {name}: managed marker is required")
+        else:
+            dev_inst = parsed["developer_instructions"]
+            expected_permission = cap_permissions.get(name, {})
+            if expected_permission:
+                if expected_permission.get("write") == "allow" and expected_permission.get("bash") == "allow":
+                    expected_guidance = "You have full file write, file edit, and shell execution tools available"
+                elif expected_permission.get("write") == "allow" and expected_permission.get("bash") == "deny":
+                    expected_guidance = "You have file write and file edit tools available to create or update files, but shell execution is disabled"
+                else:
+                    expected_guidance = "You are a read-only agent — do not write files or execute shell commands"
+
+                if expected_guidance not in dev_inst:
+                    check = {**check, "status": "fail", "message": f"developer_instructions must contain guidance '{expected_guidance}'"}
+                    violations.append(f"codex {name}: developer_instructions must contain guidance '{expected_guidance}'")
         checks.append(check)
 
         opencode_path = opencode_dir / f"{name}.md"
@@ -5349,20 +5374,39 @@ def _descriptor_validation_payload() -> dict[str, Any]:
             violations.append(f"opencode {name}: {exc}")
             checks.append(check)
             continue
-        fields = _frontmatter_fields(text)
+
+        frontmatter = {}
+        try:
+            lines = text.splitlines()
+            if lines and lines[0] == "---":
+                closing = lines.index("---", 1)
+                frontmatter_text = "\n".join(lines[1:closing])
+                frontmatter = yaml.safe_load(frontmatter_text) or {}
+        except Exception:
+            frontmatter = {}
+
         expected_ref = f"capabilities/{name}/instructions.md"
-        if "name" in fields:
+        expected_permission = cap_permissions.get(name, {})
+        actual_permission = frontmatter.get("permission")
+
+        if "name" in frontmatter:
             check = {**check, "status": "fail", "message": "name frontmatter must be omitted"}
             violations.append(f"opencode {name}: name frontmatter must be omitted")
-        elif fields.get("agentera_managed") == "true":
+        elif frontmatter.get("agentera_managed") == "true":
             check = {**check, "status": "fail", "message": "agentera_managed frontmatter must be omitted"}
             violations.append(f"opencode {name}: agentera_managed frontmatter must be omitted")
-        elif fields.get("mode") != "subagent":
+        elif frontmatter.get("mode") != "subagent":
             check = {**check, "status": "fail", "message": "mode: subagent frontmatter is required"}
             violations.append(f"opencode {name}: mode: subagent frontmatter is required")
-        elif not fields.get("description"):
+        elif not frontmatter.get("description"):
             check = {**check, "status": "fail", "message": "description is required"}
             violations.append(f"opencode {name}: description is required")
+        elif not isinstance(actual_permission, dict):
+            check = {**check, "status": "fail", "message": "permission frontmatter is required and must be an object"}
+            violations.append(f"opencode {name}: permission frontmatter is required and must be an object")
+        elif actual_permission.get("write") != expected_permission.get("write") or actual_permission.get("bash") != expected_permission.get("bash"):
+            check = {**check, "status": "fail", "message": "permission frontmatter does not match classification"}
+            violations.append(f"opencode {name}: permission frontmatter must be write: {expected_permission.get('write')}, bash: {expected_permission.get('bash')}")
         elif "<!-- agentera: managed -->" not in text:
             check = {**check, "status": "fail", "message": "managed body marker is required"}
             violations.append(f"opencode {name}: managed body marker is required")

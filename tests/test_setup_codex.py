@@ -116,6 +116,12 @@ def test_branch1_fresh_write(
         descriptor_text = descriptor.read_text(encoding="utf-8")
         assert "# agentera_managed: true" in descriptor_text
         assert f"capabilities/{name}/instructions.md" in descriptor_text
+        if name in ("realisera", "optimera", "orkestrera", "profilera"):
+            assert "You have full file write, file edit, and shell execution tools available" in descriptor_text
+        elif name in ("hej", "inspirera"):
+            assert "You are a read-only agent — do not write files or execute shell commands" in descriptor_text
+        else:
+            assert "You have file write and file edit tools available to create or update files, but shell execution is disabled" in descriptor_text
 
 
 def test_branch2_section_absent_appends(

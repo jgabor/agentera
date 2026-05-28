@@ -1,6 +1,9 @@
 ---
 description: Structured deliberation and decision support.
 mode: subagent
+permission:
+  write: allow
+  bash: deny
 ---
 
 <!-- agentera: managed -->

@@ -1,6 +1,9 @@
 ---
 description: Codebase health audit.
 mode: subagent
+permission:
+  write: allow
+  bash: deny
 ---
 
 <!-- agentera: managed -->

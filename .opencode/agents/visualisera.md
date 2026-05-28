@@ -1,6 +1,9 @@
 ---
 description: Visual identity and design systems.
 mode: subagent
+permission:
+  write: allow
+  bash: deny
 ---
 
 <!-- agentera: managed -->

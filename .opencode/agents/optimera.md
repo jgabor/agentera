@@ -1,6 +1,9 @@
 ---
 description: Metric-driven optimization cycles.
 mode: subagent
+permission:
+  write: allow
+  bash: allow
 ---
 
 <!-- agentera: managed -->

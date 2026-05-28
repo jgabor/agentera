@@ -57,6 +57,12 @@ def test_runtime_adapter_registry_returns_current_runtimes_in_deterministic_orde
     assert opencode_lifecycle["event_status"]["session.idle"] == "supported_via_event"
     assert registry.get("opencode")["subagent_dispatch"]["invocation_pattern"].startswith("Use @<capability>")
     assert "skills/agentera/agents/*.toml" in registry.get("codex")["subagent_dispatch"]["descriptor_sources"]
+    assert registry.get("claude")["subagent_dispatch"]["tool_configuration"] == "none"
+    assert registry.get("opencode")["subagent_dispatch"]["tool_configuration"] == "per_agent_permission"
+    assert registry.get("copilot")["subagent_dispatch"]["tool_configuration"] == "none"
+    assert registry.get("codex")["subagent_dispatch"]["tool_configuration"] == "global_sandbox_policy"
+    assert registry.get("cursor")["subagent_dispatch"]["tool_configuration"] == "global_full_access"
+    assert registry.get("cursor-agent")["subagent_dispatch"]["tool_configuration"] == "global_full_access"
 
 
 def test_runtime_adapter_registry_known_and_unknown_ids_have_clear_diagnostics():
