@@ -79,6 +79,7 @@ show_missing = true
 ".codex-plugin" = "agentera/bundle/.codex-plugin"
 ".cursor-plugin" = "agentera/bundle/.cursor-plugin"
 ".cursor/agents" = "agentera/bundle/.cursor/agents"
+".cursor/hooks.json" = "agentera/bundle/.cursor/hooks.json"
 ".claude-plugin" = "agentera/bundle/.claude-plugin"
 ".github/hooks" = "agentera/bundle/.github/hooks"
 ".github/plugin" = "agentera/bundle/.github/plugin"
