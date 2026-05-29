@@ -98,6 +98,47 @@ def _default_app_home(env: Mapping[str, str], home: Path) -> Path:
     return base / "agentera"
 
 
+def _linux_default_app_home(env: Mapping[str, str], home: Path) -> Path:
+    xdg = env.get("XDG_DATA_HOME")
+    base = Path(xdg).expanduser() if xdg else home.expanduser() / ".local" / "share"
+    return base / "agentera"
+
+
+def _macos_default_app_home(home: Path) -> Path:
+    return home.expanduser() / "Library" / "Application Support" / "agentera"
+
+
+def _windows_default_app_home(env: Mapping[str, str], home: Path) -> Path:
+    appdata = env.get("APPDATA")
+    base = Path(appdata).expanduser() if appdata else home.expanduser() / "AppData" / "Roaming"
+    return base / "agentera"
+
+
+def known_platform_default_app_homes(env: Mapping[str, str], home: Path) -> frozenset[Path]:
+    """Return every OS-native default app-home path, regardless of the current platform."""
+    return frozenset(
+        {
+            _linux_default_app_home(env, home).expanduser().resolve(),
+            _macos_default_app_home(home).expanduser().resolve(),
+            _windows_default_app_home(env, home).expanduser().resolve(),
+        }
+    )
+
+
+def is_foreign_platform_default_app_home(
+    candidate: Path,
+    *,
+    env: Mapping[str, str],
+    home: Path,
+) -> bool:
+    """Return true when ``candidate`` is another platform's default app home."""
+    resolved = candidate.expanduser().resolve()
+    platform_default = _default_app_home(env, home).expanduser().resolve()
+    if resolved == platform_default:
+        return False
+    return resolved in known_platform_default_app_homes(env, home)
+
+
 def classify_resolved_root(
     root: Path,
     *,
