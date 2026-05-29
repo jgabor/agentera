@@ -85,6 +85,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 SETUP_HELPERS_SMOKE = REPO_ROOT / "scripts" / "smoke_setup_helpers.py"
 AGENTERA_CLI = REPO_ROOT / "scripts" / "agentera"
 AGENTERA_YAML_MAPPING = REPO_ROOT / "scripts" / "yaml_mapping.py"
+AGENTERA_PROGRESS_COMMIT = REPO_ROOT / "scripts" / "progress_commit.py"
 AGENTERA_ARTIFACT_REGISTRY = REPO_ROOT / "scripts" / "artifact_registry.py"
 AGENTERA_INSTALL_ROOT = REPO_ROOT / "scripts" / "install_root.py"
 AGENTERA_UPGRADE = REPO_ROOT / "scripts" / "agentera_upgrade.py"
@@ -137,6 +138,7 @@ def _install_query_cli_bundle(install_root: Path) -> None:
     (install_root / "scripts").mkdir(parents=True)
     shutil.copy2(AGENTERA_CLI, install_root / "scripts" / "agentera")
     shutil.copy2(AGENTERA_YAML_MAPPING, install_root / "scripts" / "yaml_mapping.py")
+    shutil.copy2(AGENTERA_PROGRESS_COMMIT, install_root / "scripts" / "progress_commit.py")
     shutil.copy2(AGENTERA_ARTIFACT_REGISTRY, install_root / "scripts" / "artifact_registry.py")
     shutil.copy2(AGENTERA_INSTALL_ROOT, install_root / "scripts" / "install_root.py")
     shutil.copy2(AGENTERA_UPGRADE, install_root / "scripts" / "agentera_upgrade.py")

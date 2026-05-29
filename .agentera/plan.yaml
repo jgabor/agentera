@@ -1,101 +1,139 @@
 header:
   level: full
   created: "2026-05-29"
-  status: complete
+  status: active
   reviewed: "2026-05-29"
-  critic_issues: "3 found, 2 addressed, 1 dismissed"
-  title: Compaction check/gate robustness and retention-cap dedup
+  critic_issues: "5 found, 4 addressed, 1 dismissed"
+  title: Consolidate progress-commit/git-ancestry logic into a shared module (2.7.6)
 what: >-
-  Make compaction status computation resilient to non-mapping or malformed
-  compactable YAML roots so `agentera compact --mode check` and `agentera gate`
-  report a degraded error row with a clear reason instead of raising an uncaught
-  yaml.YAMLError traceback. Then finish the retention-cap deduplication by routing
-  the final 10/40/50 cap in compaction.compact_entries (and the YAML archive
-  truncation) through the shared hooks/common.apply_retention_caps helper, with a
-  contract test pinning the intentional ordering divergence.
+  Eliminate the near-duplicate progress-commit + git-ancestry implementations in
+  hooks/validate_artifact.py (~688–769) and scripts/agentera (~6177–6232) by
+  extracting one shared scripts/progress_commit.py module (commit-hash regex, git
+  subprocess wrapper, commit-token parser, HEAD-ancestor classifier,
+  cycle-commit rewrite, and pure backfill computation). Make both the
+  validate_artifact guard and the `agentera check backfill` CLI thin consumers of
+  that module, align the validator's YAML loading on load_yaml_mapping, route the
+  hook→scripts import through the single sanctioned hooks/common bridge,
+  consolidate and expand the shared module's regression tests, and document the
+  intentional unknown-hash/shallow-clone skip behavior. Resolves all eight open
+  2.7.6 progress-commit TODO items.
 why: >-
-  These are the two remaining degraded follow-ups from the completed "Hooks
-  session compaction deduplication" plan. load_yaml_mapping raises on list/scalar
-  roots, so a single corrupt compactable artifact makes the check/gate command
-  traceback instead of degrading gracefully. apply_retention_caps is only
-  half-adopted, leaving drift risk between session-bookmark and artifact caps.
+  The validator guard and the backfill CLI were designed as a pair and carry
+  drift risk: regex, token parsing, git wrappers, and ancestry checks are
+  near-copies in two oversized files (scripts/agentera ~8.7k lines,
+  validate_artifact.py ~1,182 lines). A single shared implementation removes the
+  drift risk, shrinks both monoliths, and unifies the YAML-loading failure mode.
+  These are the remaining degraded/annoying follow-ups from the completed hooks
+  session-compaction and progress-commit-guard work.
 constraints: >-
-  Full pytest suite must stay green. Preserve observable 10/40/50 outputs,
-  caps, and decision-protection semantics for healthy artifacts (no changed
-  expectations). Hook layer stays stdlib + pyyaml only. Do not modify
-  vision.yaml or objective state; no remote push. Version bump follows DOCS
-  semver policy: the check/gate traceback fix is a `fix` (patch); the
-  retention-cap dedup and contract test are refactor/test (no bump).
+  Full pytest suite must stay green. Preserve every observable backfill/guard
+  behavior: statuses (clean/action-needed/fixed/error/noop), exit codes (0/1/2),
+  messages, and accepted/rejected commit classifications. The shared module must
+  import under the hook layer's stdlib + pyyaml only rule — no new third-party
+  dependency, so the regex-based cycle-commit rewrite stays (no ruamel). Do not
+  modify vision.yaml or objective state; no remote push; never amend to backfill
+  a progress commit field. Version bump follows DOCS semver policy: the YAML-loader
+  alignment is a `fix` (patch bump to 2.7.6); extraction, tests, and docs are
+  chore/test/docs (no additional bump).
 scope:
   included:
-    - hooks/compaction.py (_yaml_counts, _yaml_lists, compute_compaction_status, compact_entries, compact_yaml_file archive cap)
-    - hooks/common.py (reuse apply_retention_caps / MAX_* constants)
-    - scripts/agentera (only if surfacing the error row needs payload/exit adjustment)
-    - tests/test_compaction_status.py and a compaction retention contract test
-    - TODO.md, CHANGELOG.md, progress.yaml (final sync only)
+    - scripts/progress_commit.py (new shared module; stdlib + pyyaml only)
+    - scripts/agentera (cmd_backfill and _backfill_*/_rewrite_cycle_commits become thin wrappers importing the module)
+    - hooks/validate_artifact.py (_validate_progress_commits/_progress_commit_token/_git_result/_COMMIT_HASH_RE delegate to the module; load via load_yaml_mapping)
+    - hooks/common.py (single sanctioned scripts→hooks bridge + re-export point and doc comment)
+    - tests/test_progress_commit_guard.py (retarget to the shared module; expand rewrite + token coverage)
+    - skills/agentera/schemas/artifacts/progress.yaml and/or UPGRADE.md (unknown-hash/shallow-clone docs)
+    - TODO.md, CHANGELOG.md, .agentera/progress.yaml (closeout/sync)
   excluded:
-    - Progress-commit consolidation, module extraction, and validator relocation TODO items
-    - v1 legacy removal and Decision 58 single-name protocol sweep
-    - Bun/npm packaging and TypeScript CLI rewrite initiatives
-    - Any compaction algorithm or ordering change for healthy artifacts
+    - v1 legacy removal and Decision 58 single-name protocol sweep (3.0.0)
+    - Bun/npm packaging and TypeScript CLI rewrite initiatives (3.0.0)
+    - A sweeping multi-hook sys.path refactor or a new neutral shared package
+    - Replacing the regex cycle-commit rewrite with a YAML round-trip library
+    - Any change to compaction/retention-cap logic (just-completed plan)
   deferred:
-    - Reduce hooks->scripts sys.path coupling for yaml_mapping import (adjacent annoying item)
+    - A fully neutral shared-package home for cross-layer modules (revisit under 3.0 packaging)
 design: >-
-  Item 1: the raise originates in load_yaml_mapping, so guarding only
-  _yaml_counts/_yaml_lists by returning 0,0 would mask corruption as a false
-  "ok" row. Instead, have compute_compaction_status attempt the load and, on
-  yaml.YAMLError, emit an error-classified CompactionStatus for that artifact
-  (counts None) while still classifying the rest; cover the YAML artifact loop
-  and the objective-scoped experiments.yaml glob. Map that status to
-  action="error" in _operation_for_status so both check and gate reuse the
-  existing error exit code (2) and guidance. Item 2: build the converted
-  full/oneline lists in compact_entries as today (numeric-ID ordering plus
-  ascending/descending handling), then delegate the final cap to
-  apply_retention_caps; route compact_yaml_file's non-decision archive cap the
-  same way, leaving decision protected-overflow selection untouched. Pin the
-  intentional ordering divergence (numeric-ID vs timestamp) in a contract test.
+  Create scripts/progress_commit.py following the agentera_upgrade.py sibling-import
+  precedent (scripts/agentera imports it via `from progress_commit import ...`).
+  The module exposes pure, stdlib+pyyaml primitives: COMMIT_HASH_RE, a git
+  subprocess wrapper, commit_token(value), ancestor_state(token, cwd) returning
+  ancestor/stale/unknown/unavailable, rewrite_cycle_commits(text, changes),
+  validate_progress_commits(content, cwd) for the guard, and a pure
+  compute_backfill(...) returning operations/changes used by the CLI runner.
+  scripts/agentera keeps only argparse wiring, payload emission, and file I/O in
+  cmd_backfill. hooks/validate_artifact.py imports the guard symbols through
+  hooks/common (which already inserts scripts/ on sys.path), so no new per-file
+  sys.path insert is added — common becomes the single documented bridge (item 5),
+  with a neutral package deferred to 3.0. The guard switches from raw
+  yaml.safe_load to load_yaml_mapping and catches load errors to return no commit
+  violation, leaving structural reporting to _validate_yaml (item 4). The regex
+  rewrite is retained and hardened with expanded folded/flow-scalar and
+  comment-preservation tests; token tests collapse to one parametrized table on
+  the shared module.
 tasks:
   - number: 1
-    name: Graceful degraded row for invalid compactable YAML roots
+    name: Extract scripts/progress_commit.py from the CLI
     depends_on: []
     status: complete
     acceptance:
-      - GIVEN a compactable YAML artifact whose root is a list/scalar/malformed WHEN `agentera compact --mode check` runs THEN it exits non-zero with an action=error row naming the artifact and reason, emitting no traceback
-      - GIVEN the same corrupt artifact WHEN `agentera gate` runs THEN it surfaces the same error row and non-zero exit instead of raising
-      - GIVEN compute_compaction_status WHEN any compactable YAML (including experiments.yaml) has a non-mapping root THEN it returns an error-classified status while still classifying the remaining artifacts
-      - GIVEN a healthy project WHEN check/gate run THEN existing pass output and exit code 0 are unchanged
+      - GIVEN a new scripts/progress_commit.py WHEN created THEN it exposes commit_token, ancestor_state, rewrite_cycle_commits, a git wrapper, COMMIT_HASH_RE, and a pure compute_backfill, importing only stdlib + yaml_mapping (hook-safe)
+      - GIVEN scripts/agentera WHEN cmd_backfill and its helpers run THEN they import from progress_commit (agentera_upgrade.py pattern) and hold no second copy of token/ancestry/rewrite/compute logic
+      - GIVEN existing `agentera check backfill` behavior (check/fix/forward-fill, refuse non-ancestor/unknown, statuses, exit codes 0/1/2) WHEN exercised THEN outputs and exit codes are unchanged
+      - GIVEN tests/test_progress_commit_guard.py CLI cases WHEN retargeted to the module locations THEN they pass in the full suite
   - number: 2
-    name: Route retention capping through the shared helper
-    depends_on: []
-    status: complete
+    name: Move the validator guard onto the shared module and align YAML loading
+    depends_on: ["1"]
+    status: pending
     acceptance:
-      - GIVEN compaction.compact_entries WHEN it assembles the final 10/40/50 result THEN the cap is applied via hooks/common.apply_retention_caps with numeric-ID ordering and ascending/descending handling preserved
-      - GIVEN compact_yaml_file non-decision path WHEN it truncates the archive THEN the final cap uses the shared helper while decision protected-overflow selection is unchanged
-      - GIVEN existing PROGRESS/DECISIONS/HEALTH/TODO and session-bookmark fixtures WHEN run THEN outputs match prior expectations with no changed assertions
+      - GIVEN hooks/validate_artifact.py WHEN it validates progress commits THEN _validate_progress_commits/token/git/regex delegate to scripts/progress_commit (imported via hooks/common), leaving no near-copy in the hook
+      - GIVEN the guard WHEN it loads progress YAML THEN it uses load_yaml_mapping (not raw yaml.safe_load) and catches load failure to return no commit violation, with a regression test pinning the consistent failure mode on non-mapping/unparseable progress YAML
+      - GIVEN ancestor/pending/N-A/unknown-hash/non-git fixtures WHEN the guard runs THEN classifications match prior behavior with no changed assertions beyond import path and loader
+      - GIVEN a stale-hash progress fixture WHEN the validate hook and `agentera check validate` run THEN the same "not an ancestor of HEAD" violation is reported
   - number: 3
-    name: Contract test pinning intentional retention/ordering divergence
-    depends_on: ["2"]
-    status: complete
+    name: Centralize and document the hooks to scripts import seam
+    depends_on: ["1", "2"]
+    status: pending
     acceptance:
-      - GIVEN apply_retention_caps, compact_entries, and compact_session_bookmark_entries WHEN a contract test runs THEN it asserts all three honor MAX_FULL_ENTRIES, MAX_ONELINE_ENTRIES, and MAX_TOTAL_ENTRIES
-      - GIVEN the same test WHEN ordering is checked THEN it documents and asserts the intentional divergence (numeric-ID recency for artifacts vs timestamp recency for session bookmarks)
-      - GIVEN the contract test WHEN run in the full suite THEN it passes
+      - GIVEN cross-layer imports of shared modules (yaml_mapping, progress_commit) WHEN hooks need them THEN they flow through the single sanctioned hooks/common bridge, adding no new per-file sys.path insertion for this purpose
+      - GIVEN hooks/common.py WHEN read THEN a comment/docstring documents it as the sanctioned scripts→hooks bridge and states a neutral package is deferred to 3.0 packaging
+      - GIVEN the full suite (including importlib test-fixture loading of hooks) WHEN run THEN hook import behavior is unchanged and green
   - number: 4
-    name: Resolve TODO items and sync state
-    depends_on: ["1", "2", "3"]
-    status: complete
+    name: Consolidate and expand shared-module regression tests
+    depends_on: ["1", "2"]
+    status: pending
     acceptance:
-      - GIVEN both degraded TODO items WHEN closeout runs THEN they move to Resolved in TODO.md
-      - GIVEN the change set WHEN the full pytest suite and `agentera check validate capability-contract` run THEN both pass
-      - GIVEN the release-facing fix WHEN closeout runs THEN CHANGELOG.md records the check/gate traceback fix and progress.yaml records verification evidence with a forward commit hash (never amend)
+      - GIVEN the shared commit_token WHEN tested THEN one parametrized table covers hash/hash+subject/pending/N-A/non-hash/non-string/empty, replacing the CLI-only table and covering the formerly-untested hook token path
+      - GIVEN rewrite_cycle_commits WHEN tested THEN coverage is expanded for folded/flow scalars and comment/quoting preservation (>-, |, flow {}/[], inline comments, archive lines)
+      - GIVEN both consumers (CLI backfill and validator guard) WHEN tested THEN thin assertions verify each delegates to the shared module so logic cannot re-diverge
+      - GIVEN the full suite WHEN run THEN all progress-commit tests pass
+  - number: 5
+    name: Document unknown-hash and shallow-clone skip behavior
+    depends_on: ["2"]
+    status: pending
+    acceptance:
+      - GIVEN the progress schema notes (skills/agentera/schemas/artifacts/progress.yaml) and/or UPGRADE.md WHEN read THEN they explain the guard and backfill intentionally skip commit objects unknown to the local clone (cross-clone copies, shallow CI checkouts) and how to reconcile when hit
+      - GIVEN the docs change WHEN touched-artifact validation and compaction run THEN they pass and stay within budget
+      - GIVEN the schema note WHEN added THEN it matches the guard's actual behavior verified in tests
+  - number: 6
+    name: Resolve TODO items, sync state, and verify
+    depends_on: ["1", "2", "3", "4", "5"]
+    status: pending
+    acceptance:
+      - GIVEN the eight 2.7.6 progress-commit TODO items WHEN closeout runs THEN each moves to Resolved in TODO.md with a one-line resolution and commit reference
+      - GIVEN the YAML-loader robustness fix WHEN closeout runs THEN CHANGELOG.md [Unreleased] records a Fixed entry while internal refactor/test/docs items are omitted per changelog policy
+      - GIVEN the change set WHEN the full pytest suite and `agentera check validate capability-contract --format json` run THEN both pass
+      - GIVEN .agentera/progress.yaml WHEN closeout runs THEN it records verification evidence with a forward product-commit hash (never amend) and the version is bumped to 2.7.6 across version_files per semver policy
 overall_acceptance: >-
-  GIVEN a corrupt compactable YAML root WHEN check/gate run THEN they report a
-  degraded error row and non-zero exit with no traceback. GIVEN healthy
-  artifacts WHEN check/gate/compaction run THEN all existing outputs, caps, and
-  decision-protection behavior are unchanged. GIVEN retention caps WHEN applied
-  across artifact and session-bookmark compaction THEN they flow through the
-  shared apply_retention_caps helper with a contract test pinning the intentional
-  ordering divergence. GIVEN closeout WHEN the full suite and capability-contract
-  validation run THEN both pass and both degraded TODO items are resolved.
+  GIVEN the progress-commit and git-ancestry logic WHEN the plan completes THEN
+  exactly one shared scripts/progress_commit.py implementation exists, consumed by
+  both the `agentera check backfill` CLI and the validate_artifact.py guard with no
+  near-duplicate logic. GIVEN the validator WHEN it loads progress YAML THEN it
+  uses load_yaml_mapping with a pinned consistent failure mode. GIVEN cross-layer
+  imports THEN they flow through the single documented hooks/common bridge. GIVEN
+  the shared module THEN commit_token and rewrite_cycle_commits behavior is covered
+  by one consolidated, expanded suite and the unknown-hash/shallow-clone skip is
+  documented. GIVEN closeout THEN all eight TODO items are resolved, the full suite
+  and capability-contract validation pass, CHANGELOG records the fix, and the
+  version is bumped to 2.7.6.
 surprises: []
-previous_plan_archived: .agentera/archive/PLAN-2026-05-29-hooks-session-compaction-deduplication.yaml
+previous_plan_archived: .agentera/archive/PLAN-2026-05-29-compaction-checkgate-retention-dedup.yaml

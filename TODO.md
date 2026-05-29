@@ -24,6 +24,7 @@
 - [test:2.7.6] Expand progress commit YAML rewrite regression coverage: `_rewrite_cycle_commits` in `scripts/agentera` is fragile against folded/flow scalars; expand tests if keeping the regex approach for comment preservation.
 - [docs:2.7.6] Document unknown-hash and shallow-clone behavior for progress commits: validator and backfill intentionally skip unknown commit objects (cross-clone copies, shallow CI checkouts); document in progress schema notes or UPGRADE.md for users who hit this.
 - [test:2.7.6] DRY progress commit token tests after module extraction: `test_progress_commit_guard.py` parametrizes CLI `_backfill_commit_token` only; hook `_progress_commit_token` has no equivalent table—after extraction, test the shared module once.
+- [test:2.7.6] De-flake the progress-commit guard `repo` fixture: `tests/test_progress_commit_guard.py` builds the "stale" commit via `git commit --amend`, whose dangling object intermittently becomes unreachable under full-suite/parallel load, flaking `test_stale_hash_is_flagged` and `test_check_mode_reports_stale_and_exits_one` (observed ~8–33%, present on main pre-extraction). Create the stale commit on a side branch so it stays reliably resolvable and non-ancestor.
 
 ## ✓ Resolved
 

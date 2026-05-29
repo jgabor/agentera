@@ -1,23 +1,58 @@
 cycles:
+- number: 614
+  timestamp: 2026-05-29 17:00
+  type: refactor
+  phase: build
+  what: Extract shared scripts/progress_commit.py; make `agentera check backfill`
+    a thin consumer.
+  commit: pending
+  discovered: "tests/test_progress_commit_guard.py repo fixture is pre-existing flaky\u2014\
+    its amended-away stale commit intermittently becomes unreachable under full-suite\
+    \ load (original main 4/12 fail vs refactor 1/12), flaking test_stale_hash_is_flagged\
+    \ and test_check_mode_reports_stale_and_exits_one."
+  verified: "Refactor-no-behavior-change confirmed with real evidence\u2014`agentera\
+    \ check backfill --format json` byte-identical before/after (diff clean) on the\
+    \ real repo, and fix-mode reset the stale cycle-613 hash to pending. TestBackfillCommand\
+    \ 10/10 covers check/fix/clean/forward-fill/refuse statuses and exit codes 0/1/2;\
+    \ retargeted token/rewrite cases pass. Full suite 1328 passed; the only new delta\
+    \ vs main was a bundle gap, fixed by copying progress_commit.py into smoke_live_hosts\
+    \ so test_query_smoke_bundle_includes_upgrade_support_module passes. capability-contract\
+    \ 2/2."
+  next: "Task 2\u2014migrate the validate_artifact guard onto the shared module and\
+    \ align its YAML loading on load_yaml_mapping."
+  context:
+    intent: Plan task 1 CLI-side extraction to remove progress-commit/git-ancestry
+      drift risk between the backfill CLI and the validator guard.
+    constraints: CLI-only (no hook edit), behavior-preserving, hook-safe imports (stdlib
+      + yaml_mapping), no version bump, no remote push, never amend to backfill.
+    scope: scripts/progress_commit.py (new), scripts/agentera (thin cmd_backfill wrapper),
+      scripts/smoke_live_hosts.py (bundle), tests/test_progress_commit_guard.py (retarget),
+      plan.yaml task 1 status; quoted pre-existing int commit on cycle 612 and reset
+      stale cycle 613 to pending to satisfy the artifact guard.
 - number: 613
   timestamp: 2026-05-29 16:00
   type: fix
   phase: build
   what: Close compaction check/gate robustness and retention-cap dedup plan.
-  commit: 74c8140
+  commit: pending
   discovered: None.
-  verified: 1329 passed, 29 failed pytest tests/ -q -n auto (failures are pre-existing macOS AGENTERA_HOME/platform-home env issues and missing corpus.json, unrelated to compaction closeout); compaction tests (23) pass; capability-contract validation pass (2/2).
+  verified: 1329 passed, 29 failed pytest tests/ -q -n auto (failures are pre-existing
+    macOS AGENTERA_HOME/platform-home env issues and missing corpus.json, unrelated
+    to compaction closeout); compaction tests (23) pass; capability-contract validation
+    pass (2/2).
   next: None.
   context:
-    intent: Plan task 4 closeout for compaction check/gate YAML error rows and retention-cap dedup.
+    intent: Plan task 4 closeout for compaction check/gate YAML error rows and retention-cap
+      dedup.
     constraints: No version bump; no remote push; never amend to backfill commit hashes.
-    scope: TODO.md, CHANGELOG.md, progress.yaml, plan.yaml closeout only; implementation in 8be19c4, cf0aa93, 55a9df8.
+    scope: TODO.md, CHANGELOG.md, progress.yaml, plan.yaml closeout only; implementation
+      in 8be19c4, cf0aa93, 55a9df8.
 - number: 612
   timestamp: 2026-05-29 15:00
   type: feat
   phase: build
   what: Add progress commit-hash churn guard and `agentera check backfill`.
-  commit: 3741787
+  commit: '3741787'
   discovered: Repo progress.yaml carried a dangling b78a417 hash across cycles 602-610
     (orphaned by a prior amend) plus malformed multi-line commit scalars in 603-605;
     the guard surfaced both.
@@ -166,44 +201,13 @@ cycles:
     intent: Close CLI audience namespace consolidation plan per Realisera task 7.
     constraints: No version bump, tag, or remote push.
     scope: Progress evidence, plan archive, validation and measurement closeout only.
-- number: 604
-  timestamp: 2026-05-25 14:00
-  type: test
-  phase: build
-  what: "CLI audience namespace plan task 6 \u2014 tests, semantic fixtures, JSON\
-    \ manifest."
-  commit: pending
-  discovered: None.
-  verified: 1287 passed with pytest tests/ -q -n auto; measure_json_output_surfaces
-    --enforce-budgets pass (67 surfaces, 0 violations); semantic fixtures require
-    agentera prime; manifest rows use schema/state/report/check canonical paths.
-  next: Task 7 closeout verification and handoff.
-  context:
-    intent: Close PLAN task 6 for CLI audience namespace consolidation.
-    constraints: Do not archive plan or run task 7 measurement closeout in this cycle.
-    scope: json_output_surface_manifest.yaml, semantic fixtures, closeout tests, measure_json
-      test id updates.
-- number: 603
-  timestamp: 2026-05-25 12:00
-  type: docs
-  phase: build
-  what: "CLI audience namespace plan task 5 \u2014 docs, contracts, hooks, and skill\
-    \ routing."
-  commit: pending
-  discovered: None.
-  verified: 1274 passed with pytest tests/ -q -n auto; lefthook and CI call check
-    compact; SKILL.md bare /agentera and bare hej route through agentera prime; planera
-    startup contract points discovery to agentera schema.
-  next: Task 6 migrate tests, semantic fixtures, and JSON surface manifest.
-  context:
-    intent: Close PLAN task 5 for CLI audience namespace consolidation.
-    constraints: Do not start task 6-7 fixture/manifest migration beyond minimal test
-      fixes.
-    scope: SKILL.md, AGENTS.md, README, UPGRADE, agent-ready-state contract, hooks,
-      CI, planera schema reference, focused contract tests.
 archive:
 - summary: 'Cycle 605 (2026-05-25): Closed CLI audience namespace consolidation plan
     with validation, alias-parity measurements, and plan archive.'
+- summary: "Cycle 604 (2026-05-25): CLI audience namespace plan task 6 \u2014 tests,\
+    \ semantic fixtures, JSON manifest."
+- summary: "Cycle 603 (2026-05-25): CLI audience namespace plan task 5 \u2014 docs,\
+    \ contracts, hooks, and skill routing."
 - summary: 'Cycle 602 (2026-05-25): Pytest suite speed and coverage hygiene plan closeout.'
 - summary: 'Cycle 601 (2026-05-25): Tagged v2.7.1 with profilera Cursor session corpus
     parity.'
@@ -273,7 +277,3 @@ archive:
 - summary: 'Cycle 567 (2026-05-18): Qualified ambiguous current SKILL.md prose references.'
 - summary: 'Cycle 566 (2026-05-18): Fixed installed hej entrypoint script-path construction
     for unset app-home environments.'
-- summary: 'Cycle 565 (2026-05-18): Closed the full-suite and review repair plan after
-    vocabulary and lifecycle fixes.'
-- summary: 'Cycle 564 (2026-05-18): Cleaned up installed-app wording that described
-    Agentera app files too vaguely.'
