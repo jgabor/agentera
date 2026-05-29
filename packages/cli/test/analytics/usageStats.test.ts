@@ -1,0 +1,170 @@
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
+
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+
+import {
+  CorpusUnavailable,
+  analyzeCorpus,
+  buildJsonPayload,
+  classifyTrigger,
+  defaultCorpusPath,
+  defaultUsageDir,
+  findMarkers,
+  loadCorpusOrRaise,
+  pairInvocations,
+  renderMarkdown,
+} from "../../src/analytics/usageStats.js";
+
+let tmp: string;
+beforeEach(() => {
+  tmp = fs.mkdtempSync(path.join(os.tmpdir(), "usage-"));
+});
+afterEach(() => {
+  fs.rmSync(tmp, { recursive: true, force: true });
+});
+
+function corpusFixture(): any {
+  return {
+    metadata: { extracted_at: "2026-01-04T00:00:00Z" },
+    records: [
+      {
+        source_kind: "conversation_turn",
+        source_id: "u1",
+        session_id: "c1",
+        project_id: "agentera",
+        timestamp: "2026-01-01T00:00:00Z",
+        data: { actor: "user", content: "/realisera go" },
+      },
+      {
+        source_kind: "conversation_turn",
+        source_id: "a1",
+        session_id: "c1",
+        project_id: "agentera",
+        timestamp: "2026-01-01T00:00:01Z",
+        data: { actor: "assistant", content: "─── ⧉ realisera · cycle ───\nwork\n─── ⧉ realisera · complete ───" },
+      },
+      {
+        source_kind: "conversation_turn",
+        source_id: "a2",
+        session_id: "c2",
+        project_id: "jg-go",
+        timestamp: "2026-01-02T00:00:01Z",
+        data: { actor: "assistant", content: "─── ≡ planera · planning ───\nplanning..." },
+      },
+    ],
+  };
+}
+
+describe("findMarkers", () => {
+  it("classifies intro and exit markers", () => {
+    const markers = findMarkers("─── ⧉ realisera · cycle ───\n─── ⧉ realisera · complete ───");
+    expect(markers.map((m) => [m.kind, m.skill, m.word])).toEqual([
+      ["intro", "realisera", "cycle"],
+      ["exit", "realisera", "complete"],
+    ]);
+  });
+
+  it("supports a trailing number in the phase word", () => {
+    const markers = findMarkers("─── ⧉ realisera · cycle 2 ───");
+    expect(markers[0].word).toBe("cycle 2");
+  });
+});
+
+describe("classifyTrigger", () => {
+  it("detects bare slash and XML command, else natural", () => {
+    expect(classifyTrigger("/realisera go")).toBe("slash");
+    expect(classifyTrigger("<command-name>/realisera</command-name>")).toBe("slash");
+    expect(classifyTrigger("please plan the next feature")).toBe("natural");
+    expect(classifyTrigger(null)).toBe("natural");
+  });
+});
+
+describe("pairInvocations", () => {
+  it("pairs nested same-skill markers LIFO and emits incomplete intros", () => {
+    const turn = {
+      source_id: "a",
+      timestamp: "t",
+      data: { content: "─── ⧉ realisera · cycle ───\n─── ⧉ realisera · cycle 2 ───\n─── ⧉ realisera · flagged ───" },
+    };
+    const invs = pairInvocations([turn]);
+    expect(invs.length).toBe(2);
+    const completed = invs.filter((i) => i.completed);
+    expect(completed.length).toBe(1);
+    expect(completed[0].exit_status).toBe("flagged");
+  });
+});
+
+describe("analyzeCorpus", () => {
+  it("aggregates skills, triggers, and per-project totals", () => {
+    const analysis = analyzeCorpus(corpusFixture(), null);
+    expect(analysis.skills.realisera).toEqual({
+      total: 1,
+      completed: 1,
+      incomplete: 0,
+      trigger_slash: 1,
+      trigger_natural: 0,
+    });
+    expect(analysis.skills.planera.incomplete).toBe(1);
+    expect(analysis.per_project.agentera.realisera.total).toBe(1);
+    expect(analysis.per_project["jg-go"].planera.total).toBe(1);
+  });
+
+  it("scopes to a single project when filtered", () => {
+    const analysis = analyzeCorpus(corpusFixture(), "agentera");
+    expect(Object.keys(analysis.skills)).toEqual(["realisera"]);
+    expect(analysis.per_project).toEqual({});
+  });
+
+  it("renders a markdown report and JSON payload", () => {
+    const analysis = analyzeCorpus(corpusFixture(), null);
+    const md = renderMarkdown(analysis, { generatedAt: "GEN", extractedAt: "2026-01-04T00:00:00Z" });
+    expect(md).toContain("# Suite Usage");
+    expect(md).toContain("| realisera | 1 |");
+    expect(md).toContain("## Per-project totals");
+    const payload = buildJsonPayload(analysis, { generatedAt: "GEN", extractedAt: "2026-01-04T00:00:00Z" });
+    expect(payload.generated_at).toBe("GEN");
+    expect(payload.invocations.length).toBe(2);
+  });
+});
+
+describe("loadCorpusOrRaise", () => {
+  it("raises when the corpus file is missing", () => {
+    const missing = path.join(tmp, "corpus.json");
+    expect(() => loadCorpusOrRaise(missing)).toThrow(CorpusUnavailable);
+    try {
+      loadCorpusOrRaise(missing);
+    } catch (err) {
+      expect((err as Error).message).toContain("corpus.json not found");
+    }
+  });
+
+  it("raises when the corpus has no conversation_turn records", () => {
+    const p = path.join(tmp, "corpus.json");
+    fs.writeFileSync(p, JSON.stringify({ records: [{ source_kind: "instruction_document" }] }));
+    expect(() => loadCorpusOrRaise(p)).toThrow(/no conversation_turn records/);
+  });
+
+  it("loads a valid corpus", () => {
+    const p = path.join(tmp, "corpus.json");
+    fs.writeFileSync(p, JSON.stringify(corpusFixture()));
+    expect(loadCorpusOrRaise(p).metadata.extracted_at).toBe("2026-01-04T00:00:00Z");
+  });
+});
+
+describe("default paths", () => {
+  it("honors AGENTERA_USAGE_DIR and PROFILERA_PROFILE_DIR overrides", () => {
+    expect(defaultUsageDir({ AGENTERA_USAGE_DIR: "/x/usage" })).toBe("/x/usage");
+    expect(defaultUsageDir({ PROFILERA_PROFILE_DIR: "/x/prof" })).toBe("/x/prof");
+    expect(defaultCorpusPath({ PROFILERA_PROFILE_DIR: "/x/prof" })).toBe(
+      path.join("/x/prof", "intermediate", "corpus.json"),
+    );
+  });
+
+  it("uses XDG default on linux", () => {
+    expect(defaultUsageDir({ HOME: "/home/u", XDG_DATA_HOME: "/home/u/.local/share" }, "linux")).toBe(
+      path.join("/home/u/.local/share", "agentera"),
+    );
+  });
+});
