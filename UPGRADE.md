@@ -258,6 +258,16 @@ uv run scripts/eval_skills.py --runtime cursor-agent --dry-run
 
 See [`references/adapters/cursor.md`](references/adapters/cursor.md) for adapter details.
 
+## Progress commit hashes
+
+Progress validation and `agentera check backfill` only verify hashes that resolve
+as commit objects in the **local** clone. Hashes from another checkout, a shallow
+CI clone without that object, or a commit not yet fetched are intentionally skipped
+so you do not get false positives. When a hash should be verified, use a full clone
+(or fetch the missing commit), then run `agentera check backfill --mode fix` to reset
+stale self-referential hashes to `pending` and forward-fill from a later product
+commit (never amend solely to backfill progress metadata).
+
 ## Focused phases
 
 Run one phase at a time when you want more control:

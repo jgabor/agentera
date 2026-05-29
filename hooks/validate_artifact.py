@@ -36,6 +36,7 @@ if _hooks_dir not in sys.path:
 from common import (
     DEFAULT_ARTIFACT_PATHS as _DEFAULT_ARTIFACT_PATHS,
     load_yaml_mapping,
+    validate_progress_commits as _validate_progress_commits,
 )
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -683,90 +684,6 @@ def _expected_sequence_order(name: str, key: str) -> str:
 def _sequence_in_order(nums: list[int], direction: str) -> bool:
     reverse = direction == "descending"
     return nums == sorted(nums, reverse=reverse)
-
-
-_COMMIT_HASH_RE = re.compile(r"^[0-9a-fA-F]{7,40}$")
-
-
-def _git_result(args: list[str], cwd: str) -> subprocess.CompletedProcess[str] | None:
-    try:
-        return subprocess.run(
-            ["git", *args],
-            cwd=cwd,
-            capture_output=True,
-            text=True,
-            check=False,
-        )
-    except (OSError, subprocess.SubprocessError):
-        return None
-
-
-def _progress_commit_token(value: str) -> str | None:
-    """Return the verifiable git hash token from a cycle ``commit`` value.
-
-    ``pending`` and ``N/A …`` are exempt and return ``None``. Otherwise the
-    leading whitespace-delimited token is returned when it looks like a git
-    short/long hash; non-hash free text returns ``None`` (nothing to verify).
-    """
-    text = value.strip()
-    if not text:
-        return None
-    token = text.split()[0]
-    low = token.lower()
-    if low == "pending" or low.startswith("n/a"):
-        return None
-    return token if _COMMIT_HASH_RE.match(token) else None
-
-
-def _validate_progress_commits(content: str, cwd: str) -> list[str]:
-    """Flag progress cycle ``commit`` hashes that are not ancestors of HEAD.
-
-    A cycle ``commit`` must be ``pending``, ``N/A …``, or a commit that already
-    exists in HEAD's history. A hash that resolves in the repository but is not
-    an ancestor of HEAD is the churn signature — a throwaway ``git commit
-    --amend`` hash or a self-reference — and is reported as a violation. Unknown
-    hashes (different clone, shallow history) and non-git contexts are not
-    flagged, to avoid false positives.
-    """
-    try:
-        data = yaml.safe_load(content)
-    except yaml.YAMLError:
-        return []
-    if not isinstance(data, dict):
-        return []
-    cycles = data.get("cycles")
-    if not isinstance(cycles, list):
-        return []
-    head = _git_result(["rev-parse", "--verify", "--quiet", "HEAD"], cwd)
-    if head is None or head.returncode != 0:
-        return []
-    acceptable: dict[str, bool] = {}
-    violations: list[str] = []
-    for entry in cycles:
-        if not isinstance(entry, dict):
-            continue
-        raw = entry.get("commit")
-        if not isinstance(raw, str):
-            continue
-        token = _progress_commit_token(raw)
-        if token is None:
-            continue
-        if token not in acceptable:
-            exists = _git_result(["rev-parse", "--verify", "--quiet", f"{token}^{{commit}}"], cwd)
-            if exists is None or exists.returncode != 0:
-                acceptable[token] = True  # unknown object: do not flag
-            else:
-                ancestor = _git_result(["merge-base", "--is-ancestor", token, "HEAD"], cwd)
-                acceptable[token] = ancestor is None or ancestor.returncode != 1
-        if not acceptable[token]:
-            number = entry.get("number", "?")
-            violations.append(
-                f"progress: cycle {number} commit '{token}' is not an ancestor of HEAD "
-                "(stale or self-referential); set it to `pending` or run "
-                "`agentera check backfill --mode fix`, then forward-fill the product commit "
-                "(never amend to backfill)"
-            )
-    return violations
 
 
 def _validate_yaml(content: str, schema: dict, name: str) -> list[str]:
