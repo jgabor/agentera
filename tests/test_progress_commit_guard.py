@@ -95,8 +95,8 @@ def progress_commit() -> ModuleType:
 
 @pytest.fixture()
 def repo(tmp_path: Path) -> dict:
-    """Repo where ``head`` is HEAD, ``ancestor`` is HEAD~1, and ``stale`` is a
-    dangling commit that resolves but is not an ancestor of HEAD."""
+    """Repo where ``head`` is HEAD, ``ancestor`` is the root commit, and ``stale``
+    is a commit on a side branch that resolves but is not an ancestor of HEAD."""
     _git(tmp_path, "init", "-q")
     _git(tmp_path, "config", "user.name", "Test")
     _git(tmp_path, "config", "user.email", "test@example.com")
@@ -104,8 +104,10 @@ def repo(tmp_path: Path) -> dict:
     _git(tmp_path, "commit", "--allow-empty", "-q", "-m", "A")
     ancestor = _short(tmp_path)
     _git(tmp_path, "commit", "--allow-empty", "-q", "-m", "B")
-    stale = _short(tmp_path)
-    _git(tmp_path, "commit", "--amend", "--allow-empty", "-q", "-m", "B-prime")
+    _git(tmp_path, "branch", "stale-ref")
+    stale = _short(tmp_path, "stale-ref")
+    _git(tmp_path, "reset", "--hard", ancestor)
+    _git(tmp_path, "commit", "--allow-empty", "-q", "-m", "C")
     head = _short(tmp_path)
     assert stale != head
     (tmp_path / ".agentera").mkdir()
@@ -171,6 +173,23 @@ class TestProgressCommitGuard:
         )
         assert any("not an ancestor of HEAD" in v for v in violations)
 
+    def test_corrupt_yaml_returns_no_commit_violations(self, hook, repo, progress_commit):
+        content = "cycles:\n  - number: [not valid\n"
+        assert hook._validate_progress_commits(content, str(repo["path"])) == []
+        assert progress_commit.validate_progress_commits(content, str(repo["path"])) == []
+
+    def test_non_mapping_root_returns_no_commit_violations(self, hook, repo, progress_commit):
+        content = "- not a mapping\n"
+        assert hook._validate_progress_commits(content, str(repo["path"])) == []
+        assert progress_commit.validate_progress_commits(content, str(repo["path"])) == []
+
+    def test_hook_delegates_to_shared_module(self, hook, progress_commit, repo):
+        content = _progress_yaml([(1, repo["stale"])])
+        cwd = str(repo["path"])
+        assert hook._validate_progress_commits(content, cwd) == (
+            progress_commit.validate_progress_commits(content, cwd)
+        )
+
 
 # ── Pure rewrite + token helpers (shared progress_commit module) ───
 
@@ -214,6 +233,39 @@ class TestRewriteCycleCommits:
         data = yaml.safe_load(out)
         commits = {c["number"]: c["commit"] for c in data["cycles"]}
         assert commits == {2: "pending", 1: "bbbbbbb"}
+
+    def test_folded_scalar_commit_is_replaced(self, progress_commit):
+        text = (
+            "cycles:\n"
+            "- number: 3\n"
+            "  commit: >-\n"
+            "    abc1234\n"
+            "    subject line\n"
+            "  discovered: kept\n"
+        )
+        out = progress_commit.rewrite_cycle_commits(text, {3: "pending"})
+        assert "subject line" not in out
+        assert "commit: pending" in out
+        assert "discovered: kept" in out
+
+    def test_flow_scalar_commit_is_replaced(self, progress_commit):
+        text = "cycles:\n- number: 4\n  commit: {hash: abc1234, note: x}\n  type: chore\n"
+        out = progress_commit.rewrite_cycle_commits(text, {4: "deadbeef"})
+        assert "{hash:" not in out
+        assert "commit: deadbeef" in out
+        assert "type: chore" in out
+
+    def test_inline_comment_after_commit_is_preserved_on_untouched_cycle(self, progress_commit):
+        text = (
+            "cycles:\n"
+            "- number: 1\n"
+            "  commit: abc1234 # product hash\n"
+            "- number: 2\n"
+            "  commit: def5678\n"
+        )
+        out = progress_commit.rewrite_cycle_commits(text, {2: "pending"})
+        assert "abc1234 # product hash" in out
+        assert "commit: pending" in out
 
 
 class TestBackfillCommitToken:
@@ -289,3 +341,11 @@ class TestBackfillCommand:
         result = _run_cli(repo, "check", "backfill", "--commit", "deadbeefdead", "--format", "json")
         assert result.returncode == 2, result.stdout
         assert json.loads(result.stdout)["status"] == "error"
+
+    def test_cli_backfill_imports_shared_module(self):
+        source = (REPO_ROOT / "scripts" / "agentera").read_text(encoding="utf-8")
+        assert "from progress_commit import compute_backfill, rewrite_cycle_commits" in source
+        assert "def _backfill_commit_token" not in source
+        hook_source = HOOK_PATH.read_text(encoding="utf-8")
+        assert "validate_progress_commits as _validate_progress_commits" in hook_source
+        assert "def _progress_commit_token" not in hook_source

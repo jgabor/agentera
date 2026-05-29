@@ -274,3 +274,45 @@ def compute_backfill(
     if mode == "fix":
         return BackfillResult("fixed", 0, operations, sorted_changes)
     return BackfillResult("action-needed", 1, operations, sorted_changes)
+
+
+def validate_progress_commits(content: str, cwd: Path | str = ".") -> list[str]:
+    """Flag progress cycle ``commit`` hashes that are not ancestors of HEAD.
+
+    A cycle ``commit`` must be ``pending``, ``N/A …``, or a commit that already
+    exists in HEAD's history. A hash that resolves in the repository but is not
+    an ancestor of HEAD is reported as a violation. Unknown hashes (different
+    clone, shallow history) and non-git contexts are not flagged, to avoid false
+    positives. YAML load failures and non-mapping roots return no commit
+    violations (structural errors are reported separately by the validator).
+    """
+    try:
+        data = load_yaml_mapping(content)
+    except Exception:
+        return []
+    if not isinstance(data, dict):
+        return []
+    cycles = data.get("cycles")
+    if not isinstance(cycles, list):
+        return []
+    if ancestor_state("HEAD", cwd) == "unavailable":
+        return []
+    violations: list[str] = []
+    for entry in cycles:
+        if not isinstance(entry, dict):
+            continue
+        raw = entry.get("commit")
+        if not isinstance(raw, str):
+            continue
+        token = commit_token(raw)
+        if token is None:
+            continue
+        if ancestor_state(token, cwd) == "stale":
+            number = entry.get("number", "?")
+            violations.append(
+                f"progress: cycle {number} commit '{token}' is not an ancestor of HEAD "
+                "(stale or self-referential); set it to `pending` or run "
+                "`agentera check backfill --mode fix`, then forward-fill the product commit "
+                "(never amend to backfill)"
+            )
+    return violations

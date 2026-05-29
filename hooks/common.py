@@ -9,6 +9,12 @@ Provides artifact path resolution used by both session start and session stop
 hooks. This is the single source of truth for
 DEFAULT_ARTIFACT_PATHS, parse_artifact_mapping, resolve_artifact_path, and
 load_artifact_overrides.
+
+**Scripts bridge:** This module is the single sanctioned import seam from hooks
+into ``scripts/`` (inserts ``scripts/`` on ``sys.path`` once). Hook code should
+import shared modules such as ``yaml_mapping`` and ``progress_commit`` here
+rather than adding per-file ``sys.path`` inserts. A neutral shared package is
+deferred to the 3.0 packaging initiative.
 """
 
 from __future__ import annotations
@@ -26,6 +32,13 @@ _SCRIPTS_DIR = Path(__file__).resolve().parent.parent / "scripts"
 if str(_SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_DIR))
 from yaml_mapping import load_yaml_mapping, load_yaml_mapping_file  # noqa: E402,F401
+from progress_commit import (  # noqa: E402,F401
+    COMMIT_HASH_RE,
+    ancestor_state,
+    commit_token,
+    git_run,
+    validate_progress_commits,
+)
 import install_root as install_root_module  # noqa: E402
 
 

@@ -184,6 +184,11 @@ CYCLE:
     validation:
       - "Non-empty string"
       - "Use `pending` until the product-change commit hash is known; do not amend solely to backfill this field"
+      - >-
+        Hashes that do not resolve as commit objects in the local clone (another
+        machine's copy, shallow CI checkout, or not yet fetched) are intentionally
+        not flagged by progress validation or `agentera check backfill`; reconcile
+        with a full clone or forward-fill once the product commit exists locally
   7:
     id: PR7
     field: inspiration
