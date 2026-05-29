@@ -14,7 +14,13 @@ load_artifact_overrides.
 from __future__ import annotations
 
 import re
+import sys
 from pathlib import Path
+
+_SCRIPTS_DIR = Path(__file__).resolve().parent.parent / "scripts"
+if str(_SCRIPTS_DIR) not in sys.path:
+    sys.path.insert(0, str(_SCRIPTS_DIR))
+from yaml_mapping import load_yaml_mapping, load_yaml_mapping_file  # noqa: E402,F401
 
 
 # ---------------------------------------------------------------------------

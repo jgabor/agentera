@@ -12,11 +12,17 @@ validation; protocol primitive values remain owned by ``protocol.yaml``.
 
 from __future__ import annotations
 
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
 import yaml
+
+_SCRIPTS_DIR = Path(__file__).resolve().parent
+if str(_SCRIPTS_DIR) not in sys.path:
+    sys.path.insert(0, str(_SCRIPTS_DIR))
+from yaml_mapping import load_yaml_mapping  # noqa: E402
 
 
 BOOTSTRAP_RULE_SECTIONS = (
@@ -99,12 +105,12 @@ class CapabilitySchemaContract:
 def load_capability_schema_contract(contract_path: Path) -> CapabilitySchemaContract:
     """Load, bootstrap-validate, and build a capability schema contract model."""
 
-    with open(contract_path) as f:
-        data = yaml.safe_load(f)
-    if not isinstance(data, dict):
+    try:
+        data = load_yaml_mapping(contract_path.read_text(encoding="utf-8"))
+    except yaml.YAMLError as exc:
         raise ContractBootstrapError(
-            [f"contract root in {contract_path} must be a mapping"]
-        )
+            [f"contract root in {contract_path} must be a mapping: {exc}"]
+        ) from exc
     errors = validate_contract_bootstrap(data, str(contract_path))
     if errors:
         raise ContractBootstrapError(errors)

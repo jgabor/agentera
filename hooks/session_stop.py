@@ -31,6 +31,7 @@ from pathlib import Path
 import yaml
 
 from common import (
+    load_yaml_mapping,
     load_artifact_overrides,
     resolve_artifact_path,
 )
@@ -186,7 +187,7 @@ def parse_session_entries(text: str) -> list[dict[str, object]]:
     Entries are returned in document order (newest first).
     """
     try:
-        data = yaml.safe_load(text)
+        data = load_yaml_mapping(text)
     except yaml.YAMLError:
         data = None
     if isinstance(data, dict):

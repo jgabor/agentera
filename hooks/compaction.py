@@ -31,7 +31,7 @@ _hooks_dir = str(Path(__file__).resolve().parent)
 if _hooks_dir not in sys.path:
     sys.path.insert(0, _hooks_dir)
 
-from common import DEFAULT_ARTIFACT_PATHS
+from common import DEFAULT_ARTIFACT_PATHS, load_yaml_mapping
 
 
 # ---------------------------------------------------------------------------
@@ -417,7 +417,7 @@ def _missing_status(artifact: str, path: Path, classification: str) -> Compactio
 
 
 def _yaml_counts(path: Path, active_key: str, archive_key: str) -> tuple[int, int]:
-    data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+    data = load_yaml_mapping(path.read_text(encoding="utf-8"))
     if not isinstance(data, dict):
         return 0, 0
     active = data.get(active_key) or []
@@ -429,7 +429,7 @@ def _yaml_counts(path: Path, active_key: str, archive_key: str) -> tuple[int, in
 
 
 def _yaml_lists(path: Path, active_key: str, archive_key: str) -> tuple[list[object], list[object]]:
-    data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+    data = load_yaml_mapping(path.read_text(encoding="utf-8"))
     if not isinstance(data, dict):
         return [], []
     active = data.get(active_key) or []
@@ -618,9 +618,7 @@ def compact_yaml_file(path: Path, artifact: str) -> CompactResult:
 
     active_key, archive_key = COMPACTABLE_YAML_ARTIFACTS[artifact]
     spec_name = YAML_SPEC_BY_ARTIFACT[artifact]
-    data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
-    if not isinstance(data, dict):
-        data = {}
+    data = load_yaml_mapping(path.read_text(encoding="utf-8"))
 
     active = data.get(active_key) or []
     archive = data.get(archive_key) or []

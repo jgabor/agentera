@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- Fixed inconsistent `yaml.safe_load()` `None` handling across hooks and the CLI: added `scripts/yaml_mapping.py` with `load_yaml_mapping()`, aligned compaction, `validate_artifact`, session hooks, `scripts/agentera`, and production registry/contract loaders so empty YAML maps to `{}` where appropriate while validators still reject non-mapping roots.
+
 ## [2.7.5] · 2026-05-28
 
 ### Added

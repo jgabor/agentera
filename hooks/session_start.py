@@ -30,6 +30,7 @@ import yaml
 
 from common import (
     load_artifact_overrides,
+    load_yaml_mapping,
     parse_artifact_mapping,
     resolve_artifact_path,
 )
@@ -152,7 +153,7 @@ def extract_session_summary(text: str) -> str | None:
 
 def _load_yaml(path: Path) -> object | None:
     try:
-        return yaml.safe_load(path.read_text(encoding="utf-8"))
+        return load_yaml_mapping(path.read_text(encoding="utf-8"))
     except (OSError, UnicodeDecodeError, yaml.YAMLError):
         return None
 

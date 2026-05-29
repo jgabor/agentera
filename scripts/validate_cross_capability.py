@@ -20,6 +20,11 @@ from typing import Any
 
 import yaml
 
+_SCRIPTS_DIR = Path(__file__).resolve().parent
+if str(_SCRIPTS_DIR) not in sys.path:
+    sys.path.insert(0, str(_SCRIPTS_DIR))
+from yaml_mapping import load_yaml_mapping  # noqa: E402
+
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from artifact_registry import ArtifactRecord, load_artifact_registry
 
@@ -48,8 +53,7 @@ class CapabilityArtifact:
 
 def _load_yaml(path: Path) -> dict[str, Any]:
     with path.open("r", encoding="utf-8") as fh:
-        data = yaml.safe_load(fh)
-    return data if isinstance(data, dict) else {}
+        return load_yaml_mapping(fh.read())
 
 
 def load_canonical_artifacts(
