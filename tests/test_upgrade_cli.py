@@ -138,6 +138,7 @@ def test_bundle_upgrade_installs_durable_bundle_from_packaged_source(tmp_path: P
     assert (app_home / "app" / "scripts" / "agentera").is_file()
     assert (app_home / "app" / "skills" / "agentera" / "SKILL.md").is_file()
     assert (app_home / "app" / ".opencode" / "commands" / "agentera.md").is_file()
+    assert (app_home / "app" / ".cursor" / "hooks.json").is_file()
 
     second = _run(
         "upgrade",
@@ -159,6 +160,62 @@ def test_bundle_upgrade_installs_durable_bundle_from_packaged_source(tmp_path: P
     payload = json.loads(second.stdout)
     assert payload["status"] == "noop"
     assert payload["phases"][0]["status"] == "noop"
+
+
+def test_runtime_upgrade_installs_cursor_hooks_from_bundled_source(tmp_path: Path) -> None:
+    home = tmp_path / "home"
+    project = tmp_path / "project"
+    app_home = home / ".local" / "share" / "agentera"
+    deprecated_default = home / ".agents" / "agentera"
+    bootstrap_env = {
+        "AGENTERA_HOME": "",
+        "XDG_DATA_HOME": str(home / ".local" / "share"),
+        "AGENTERA_BOOTSTRAP_SOURCE_ROOT": str(REPO_ROOT),
+        "AGENTERA_DEFAULT_INSTALL_ROOT": str(deprecated_default),
+    }
+
+    bundle = _run(
+        "upgrade",
+        "--only",
+        "bundle",
+        "--home",
+        str(home),
+        "--yes",
+        "--json",
+        env=bootstrap_env,
+    )
+    assert bundle.returncode == 0, bundle.stderr
+    assert (app_home / "app" / ".cursor" / "hooks.json").is_file()
+
+    runtime_env = {
+        **bootstrap_env,
+        "AGENTERA_HOME": str(app_home),
+    }
+    result = _run(
+        "upgrade",
+        "--only",
+        "runtime",
+        "--runtime",
+        "cursor",
+        "--home",
+        str(home),
+        "--project",
+        str(project),
+        "--yes",
+        "--json",
+        env=runtime_env,
+    )
+
+    assert result.returncode == 0, result.stderr
+    payload = json.loads(result.stdout)
+    runtime_items = {(item["runtime"], item["action"]): item for item in payload["phases"][0]["items"]}
+    copy_hooks = runtime_items[("cursor", "copy-hooks")]
+    assert copy_hooks["status"] == "applied"
+    assert copy_hooks["source"] == str(app_home / "app" / ".cursor" / "hooks.json")
+    assert copy_hooks["target"] == str(project / ".cursor" / "hooks.json")
+    installed = json.loads((project / ".cursor" / "hooks.json").read_text(encoding="utf-8"))
+    assert "cursor_session_start.py" in json.dumps(installed)
+    assert "cursor_pre_tool_use.py" in json.dumps(installed)
 
 
 def test_default_upgrade_retires_legacy_agents_default_app_home(tmp_path: Path) -> None:

@@ -151,6 +151,8 @@ records:
           path: plugin.json
         - id: opencode-package-manifest
           path: .opencode/package.json
+        - id: cursor-hooks
+          path: .cursor/hooks.json
       skip_parts:
         - __pycache__
         - .pytest_cache
