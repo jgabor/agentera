@@ -4,82 +4,98 @@ header:
   status: complete
   reviewed: "2026-05-29"
   critic_issues: "3 found, 2 addressed, 1 dismissed"
-  title: Hooks session compaction deduplication
+  title: Compaction check/gate robustness and retention-cap dedup
 what: >-
-  Deduplicate resolve_session_path() and compact_entries() across session hooks
-  by centralizing implementations in hooks/common.py. Preserve external behavior
-  for runtime-local session bookmarks and artifact compaction, including
-  decision-protection semantics owned by compaction.py.
+  Make compaction status computation resilient to non-mapping or malformed
+  compactable YAML roots so `agentera compact --mode check` and `agentera gate`
+  report a degraded error row with a clear reason instead of raising an uncaught
+  yaml.YAMLError traceback. Then finish the retention-cap deduplication by routing
+  the final 10/40/50 cap in compaction.compact_entries (and the YAML archive
+  truncation) through the shared hooks/common.apply_retention_caps helper, with a
+  contract test pinning the intentional ordering divergence.
 why: >-
-  session_start.py and session_stop.py duplicate resolve_session_path(), and
-  session_stop.py carries a simpler compact_entries() that can drift from
-  compaction.py. A single source of truth prevents silent behavioral skew
-  between session bookmark compaction and artifact compaction.
+  These are the two remaining degraded follow-ups from the completed "Hooks
+  session compaction deduplication" plan. load_yaml_mapping raises on list/scalar
+  roots, so a single corrupt compactable artifact makes the check/gate command
+  traceback instead of degrading gracefully. apply_retention_caps is only
+  half-adopted, leaving drift risk between session-bookmark and artifact caps.
 constraints: >-
-  Full pytest suite must stay green. Preserve 10/40/50 compaction limits and
-  existing session path resolution for AGENTERA_HOME and default data home.
-  Chore-only work (no version bump). Do not modify vision.yaml or objective
-  state.
+  Full pytest suite must stay green. Preserve observable 10/40/50 outputs,
+  caps, and decision-protection semantics for healthy artifacts (no changed
+  expectations). Hook layer stays stdlib + pyyaml only. Do not modify
+  vision.yaml or objective state; no remote push. Version bump follows DOCS
+  semver policy: the check/gate traceback fix is a `fix` (patch); the
+  retention-cap dedup and contract test are refactor/test (no bump).
 scope:
   included:
-    - hooks/common.py
-    - hooks/session_start.py
-    - hooks/session_stop.py
-    - hooks/compaction.py
-    - compaction and session hook tests
+    - hooks/compaction.py (_yaml_counts, _yaml_lists, compute_compaction_status, compact_entries, compact_yaml_file archive cap)
+    - hooks/common.py (reuse apply_retention_caps / MAX_* constants)
+    - scripts/agentera (only if surfacing the error row needs payload/exit adjustment)
+    - tests/test_compaction_status.py and a compaction retention contract test
     - TODO.md, CHANGELOG.md, progress.yaml (final sync only)
   excluded:
-    - v1 legacy removal
-    - Decision 58 single-name protocol sweep
+    - Progress-commit consolidation, module extraction, and validator relocation TODO items
+    - v1 legacy removal and Decision 58 single-name protocol sweep
     - Bun/npm packaging and TypeScript CLI rewrite initiatives
-    - Broader hook refactors beyond these two symbols
+    - Any compaction algorithm or ordering change for healthy artifacts
   deferred:
-    - Additional hook deduplication not listed in the two target TODO items
+    - Reduce hooks->scripts sys.path coupling for yaml_mapping import (adjacent annoying item)
 design: >-
-  Move resolve_session_path() to common.py with identical path semantics.
-  For compact_entries(), extract shared 10/40/50 policy helpers and keep
-  separate entry points when timestamp-ordered session bookmarks and
-  numeric-ID artifact compaction require different ordering rules. Wire
-  session_stop and compaction callers to the shared layer without changing
-  observable compaction outputs on existing fixtures and tests.
+  Item 1: the raise originates in load_yaml_mapping, so guarding only
+  _yaml_counts/_yaml_lists by returning 0,0 would mask corruption as a false
+  "ok" row. Instead, have compute_compaction_status attempt the load and, on
+  yaml.YAMLError, emit an error-classified CompactionStatus for that artifact
+  (counts None) while still classifying the rest; cover the YAML artifact loop
+  and the objective-scoped experiments.yaml glob. Map that status to
+  action="error" in _operation_for_status so both check and gate reuse the
+  existing error exit code (2) and guidance. Item 2: build the converted
+  full/oneline lists in compact_entries as today (numeric-ID ordering plus
+  ascending/descending handling), then delegate the final cap to
+  apply_retention_caps; route compact_yaml_file's non-decision archive cap the
+  same way, leaving decision protected-overflow selection untouched. Pin the
+  intentional ordering divergence (numeric-ID vs timestamp) in a contract test.
 tasks:
   - number: 1
-    name: Extract resolve_session_path to common
+    name: Graceful degraded row for invalid compactable YAML roots
     depends_on: []
     status: complete
     acceptance:
-      - GIVEN hooks/common.py WHEN session hooks import resolve_session_path THEN only one implementation defines AGENTERA_HOME and default data home resolution
-      - GIVEN a fixed project root and AGENTERA_HOME WHEN resolving session path THEN the returned path matches the pre-extraction session_start and session_stop behavior
-      - GIVEN session_start.py and session_stop.py WHEN updated THEN they no longer define duplicate resolve_session_path bodies
+      - GIVEN a compactable YAML artifact whose root is a list/scalar/malformed WHEN `agentera compact --mode check` runs THEN it exits non-zero with an action=error row naming the artifact and reason, emitting no traceback
+      - GIVEN the same corrupt artifact WHEN `agentera gate` runs THEN it surfaces the same error row and non-zero exit instead of raising
+      - GIVEN compute_compaction_status WHEN any compactable YAML (including experiments.yaml) has a non-mapping root THEN it returns an error-classified status while still classifying the remaining artifacts
+      - GIVEN a healthy project WHEN check/gate run THEN existing pass output and exit code 0 are unchanged
   - number: 2
-    name: Design shared compaction helpers
+    name: Route retention capping through the shared helper
     depends_on: []
     status: complete
     acceptance:
-      - GIVEN hooks/common.py or compaction module layout WHEN shared helpers are added THEN 10/40/50 caps and oneline conversion contracts are defined once
-      - GIVEN session bookmark entries and artifact entries WHEN documented THEN distinct ordering rules (timestamp vs numeric ID) are explicit in the plan implementation
-      - GIVEN compaction.py decision-protection paths WHEN reviewed THEN they remain owned by the artifact compaction entry point after helper extraction
+      - GIVEN compaction.compact_entries WHEN it assembles the final 10/40/50 result THEN the cap is applied via hooks/common.apply_retention_caps with numeric-ID ordering and ascending/descending handling preserved
+      - GIVEN compact_yaml_file non-decision path WHEN it truncates the archive THEN the final cap uses the shared helper while decision protected-overflow selection is unchanged
+      - GIVEN existing PROGRESS/DECISIONS/HEALTH/TODO and session-bookmark fixtures WHEN run THEN outputs match prior expectations with no changed assertions
   - number: 3
-    name: Wire session and compaction callers
-    depends_on: ["1", "2"]
+    name: Contract test pinning intentional retention/ordering divergence
+    depends_on: ["2"]
     status: complete
     acceptance:
-      - GIVEN session bookmark fixtures WHEN compacting before and after refactor THEN newest full entries and total caps match prior behavior
-      - GIVEN existing compaction tests WHEN run THEN outputs and expectations pass without weakening decision-protection behavior
-      - GIVEN session_stop and compaction imports WHEN inspected THEN duplicate compact_entries implementations are removed in favor of shared helpers and explicit entry points
+      - GIVEN apply_retention_caps, compact_entries, and compact_session_bookmark_entries WHEN a contract test runs THEN it asserts all three honor MAX_FULL_ENTRIES, MAX_ONELINE_ENTRIES, and MAX_TOTAL_ENTRIES
+      - GIVEN the same test WHEN ordering is checked THEN it documents and asserts the intentional divergence (numeric-ID recency for artifacts vs timestamp recency for session bookmarks)
+      - GIVEN the contract test WHEN run in the full suite THEN it passes
   - number: 4
-    name: Tests and state sync
-    depends_on: ["3"]
+    name: Resolve TODO items and sync state
+    depends_on: ["1", "2", "3"]
     status: complete
     acceptance:
-      - GIVEN targeted regression tests for session path and compaction parity WHEN run THEN they pass alongside the existing suite
-      - GIVEN all tasks complete WHEN final sync runs THEN both hook consolidation TODO items are resolved in TODO.md
-      - GIVEN all tasks complete WHEN final sync runs THEN CHANGELOG.md and progress.yaml record the chore with verification evidence
+      - GIVEN both degraded TODO items WHEN closeout runs THEN they move to Resolved in TODO.md
+      - GIVEN the change set WHEN the full pytest suite and `agentera check validate capability-contract` run THEN both pass
+      - GIVEN the release-facing fix WHEN closeout runs THEN CHANGELOG.md records the check/gate traceback fix and progress.yaml records verification evidence with a forward commit hash (never amend)
 overall_acceptance: >-
-  GIVEN the same session bookmark fixtures WHEN compacting before and after THEN
-  entry counts and newest-full preservation match prior behavior. GIVEN existing
-  compaction tests WHEN run THEN all pass without changed expectations. GIVEN
-  AGENTERA_HOME and default data home WHEN resolving session path THEN paths
-  match the pre-extraction implementation.
+  GIVEN a corrupt compactable YAML root WHEN check/gate run THEN they report a
+  degraded error row and non-zero exit with no traceback. GIVEN healthy
+  artifacts WHEN check/gate/compaction run THEN all existing outputs, caps, and
+  decision-protection behavior are unchanged. GIVEN retention caps WHEN applied
+  across artifact and session-bookmark compaction THEN they flow through the
+  shared apply_retention_caps helper with a contract test pinning the intentional
+  ordering divergence. GIVEN closeout WHEN the full suite and capability-contract
+  validation run THEN both pass and both degraded TODO items are resolved.
 surprises: []
-previous_plan_archived: .agentera/archive/PLAN-2026-05-29-yaml-safe-load-consolidation.yaml
+previous_plan_archived: .agentera/archive/PLAN-2026-05-29-hooks-session-compaction-deduplication.yaml

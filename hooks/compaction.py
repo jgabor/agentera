@@ -36,6 +36,7 @@ from common import (
     MAX_FULL_ENTRIES,
     MAX_ONELINE_ENTRIES,
     MAX_TOTAL_ENTRIES,
+    apply_retention_caps,
     load_yaml_mapping,
 )
 
@@ -413,6 +414,20 @@ def _missing_status(artifact: str, path: Path, classification: str) -> Compactio
     )
 
 
+def _yaml_error_status(artifact: str, path: Path, exc: yaml.YAMLError) -> CompactionStatus:
+    reason = str(exc).strip() or "invalid YAML mapping root"
+    return CompactionStatus(
+        artifact=artifact,
+        path=str(path),
+        classification="error",
+        active_count=None,
+        archive_count=None,
+        total_count=None,
+        over_limit_count=None,
+        reason=reason,
+    )
+
+
 def _yaml_counts(path: Path, active_key: str, archive_key: str) -> tuple[int, int]:
     data = load_yaml_mapping(path.read_text(encoding="utf-8"))
     if not isinstance(data, dict):
@@ -641,7 +656,8 @@ def compact_yaml_file(path: Path, artifact: str) -> CompactResult:
     if spec_name == "decisions":
         archive_after = _select_decision_archive_entries(archive_candidates)
     else:
-        archive_after = archive_candidates[:MAX_ONELINE_ENTRIES]
+        merged = apply_retention_caps(recent_full, archive_candidates)
+        archive_after = merged[len(recent_full) :]
 
     data[active_key] = recent_full
     data[archive_key] = archive_after
@@ -696,7 +712,11 @@ def compute_compaction_status(project_root: Path) -> list[CompactionStatus]:
     for artifact, (active_key, archive_key) in COMPACTABLE_YAML_ARTIFACTS.items():
         path = paths[artifact]
         if path.exists():
-            active, archive = _yaml_lists(path, active_key, archive_key)
+            try:
+                active, archive = _yaml_lists(path, active_key, archive_key)
+            except yaml.YAMLError as exc:
+                statuses.append(_yaml_error_status(artifact, path, exc))
+                continue
             protected_overflow_count = (
                 _decision_protected_overflow_count(active, archive)
                 if artifact == "DECISIONS.md"
@@ -721,7 +741,11 @@ def compute_compaction_status(project_root: Path) -> list[CompactionStatus]:
         ))
 
     for experiments_path in sorted((project_root / ".agentera" / "optimera").glob("*/experiments.yaml")):
-        active_count, archive_count = _yaml_counts(experiments_path, "experiments", "archive")
+        try:
+            active_count, archive_count = _yaml_counts(experiments_path, "experiments", "archive")
+        except yaml.YAMLError as exc:
+            statuses.append(_yaml_error_status("EXPERIMENTS.md", experiments_path, exc))
+            continue
         statuses.append(CompactionStatus(
             artifact="EXPERIMENTS.md",
             path=str(experiments_path),
@@ -739,6 +763,8 @@ def compute_compaction_status(project_root: Path) -> list[CompactionStatus]:
 def _operation_for_status(status: CompactionStatus, mode: str) -> CompactionOperation:
     if not status.exists:
         return CompactionOperation(status, mode, "missing", message=status.reason)
+    if status.classification == "error":
+        return CompactionOperation(status, mode, "error", message=status.reason)
     if status.classification != "compactable":
         return CompactionOperation(status, mode, "skipped", message=status.reason)
     if status.protected_overflow_count:
@@ -1050,20 +1076,28 @@ def compact_entries(
     # "10 most recent" rule correctly regardless of input ordering.
     newest_first = sorted(entries, key=_entry_number, reverse=True)
 
-    result: list[dict] = []
+    full: list[dict] = []
+    archive: list[dict] = []
     for i, entry in enumerate(newest_first):
         if i < max_full:
-            result.append(entry)
+            full.append(entry)
         elif i < max_total:
             if entry["kind"] == "full" and format_oneline is not None:
-                result.append({
+                archive.append({
                     "header": format_oneline(entry),
                     "body": "",
                     "kind": "oneline",
                 })
             else:
-                result.append(entry)
-        # else: drop.
+                archive.append(entry)
+
+    result = apply_retention_caps(
+        full,
+        archive,
+        max_full=max_full,
+        max_oneline=max_oneline,
+        max_total=max_total,
+    )
 
     if ascending:
         result.reverse()

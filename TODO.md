@@ -4,6 +4,10 @@
 
 ## ⇉ Degraded
 
+- [chore:2.7.6] Consolidate duplicated progress-commit and git-ancestry logic: near-copy implementations in `hooks/validate_artifact.py` (~688–769) and `scripts/agentera` (~6177–6232) cover regex, token parsing, git wrappers, and ancestry checks; guard and backfill were designed as a pair and carry drift risk.
+- [chore:2.7.6] Extract progress-commit module from `scripts/agentera` monolith: at ~8.7k lines (+319 this range) with ~275 lines of backfill added inline; extract `scripts/progress_commit.py` (token parsing, ancestry checks, `_rewrite_cycle_commits`, backfill runner) following the `agentera_upgrade.py` pattern with a thin `cmd_backfill` wrapper.
+- [chore:2.7.6] Move progress commit validation out of oversized `hooks/validate_artifact.py` (~1,182 lines, ~85 lines of git subprocess policy added inline): relocate into a shared module alongside progress-commit extraction.
+
 ## → Normal
 
 - [chore:3.0.0] Remove v1 legacy cruft after the 3.0 compatibility boundary (see also Tier C in [`references/meta/documentation-inventory.md`](references/meta/documentation-inventory.md)): delete obsolete migration paths, stale v1 runtime bridge behavior, v1 skill bundle/suite wording, legacy fixture assumptions, and compatibility-only docs/tests that no longer protect supported Agentera behavior.
@@ -15,8 +19,16 @@
 
 ## ⇢ Annoying
 
+- [fix:2.7.6] Align progress guard YAML loading: `_validate_progress_commits` in `validate_artifact.py` uses raw `safe_load` while nearby paths use `load_yaml_mapping`, giving inconsistent failure modes on corrupt progress YAML.
+- [chore:2.7.6] Reduce hooks→scripts sys.path coupling: `hooks/common.py` inserts `scripts/` on sys.path to import `yaml_mapping`; acceptable today, but consider a neutral shared location long-term.
+- [test:2.7.6] Expand progress commit YAML rewrite regression coverage: `_rewrite_cycle_commits` in `scripts/agentera` is fragile against folded/flow scalars; expand tests if keeping the regex approach for comment preservation.
+- [docs:2.7.6] Document unknown-hash and shallow-clone behavior for progress commits: validator and backfill intentionally skip unknown commit objects (cross-clone copies, shallow CI checkouts); document in progress schema notes or UPGRADE.md for users who hit this.
+- [test:2.7.6] DRY progress commit token tests after module extraction: `test_progress_commit_guard.py` parametrizes CLI `_backfill_commit_token` only; hook `_progress_commit_token` has no equivalent table—after extraction, test the shared module once.
+
 ## ✓ Resolved
 
+- ~~[fix:2.7.6] Catch non-mapping YAML roots in compaction check/gate: `load_yaml_mapping()` raises on list/scalar roots in `hooks/compaction.py` `_yaml_counts`/`_yaml_lists`, so `agentera check compact`/gate can traceback instead of reporting a degraded status row; catch `YAMLError` and emit an error reason like validator degradation.~~ · resolved by 8be19c4: `compute_compaction_status` catches `yaml.YAMLError` and emits error-classified `CompactionStatus` rows so `agentera check compact` and gate exit 2 with guidance instead of tracebacks; regression coverage in `tests/test_compaction_status.py`.
+- ~~[fix:2.7.6] Complete compaction dedup wiring: `apply_retention_caps`/`MAX_*` in `hooks/common.py` is used by session bookmarks, but `compaction.compact_entries` still has its own 10/40/50 loop with different ordering (`_entry_number`); wire through the shared helper or add a contract test documenting intentional divergence.~~ · resolved by cf0aa93 and 55a9df8: `compact_entries` and non-decision `compact_yaml_file` archive caps delegate to `apply_retention_caps`; `tests/test_compaction_retention_contract.py` pins shared 10/40/50 limits and intentional numeric-ID vs timestamp ordering divergence.
 - ~~[chore:3.0.0] Consolidate duplicated hook session helpers (`compact_entries`, `resolve_session_path`).~~ · resolved by moving `resolve_session_path()`, retention caps, and `compact_session_bookmark_entries()` into `hooks/common.py`, keeping numeric-ID `compaction.compact_entries()` for artifacts, and adding `tests/test_hooks_common.py`.
 - ~~[chore:3.0.0] Consolidate `yaml.safe_load()` `None`-return patterns across the codebase.~~ · resolved by `scripts/yaml_mapping.py` with `load_yaml_mapping()`, hook and CLI alignment, regression tests in `tests/test_yaml_mapping_loader.py`, and smoke bundle copy of `yaml_mapping.py`.
 - ~~[fix] Agentera subagent descriptors define zero tool/permission configuration~~ · resolved: created capability-tool-classification.yaml authority, updated 12 OpenCode agents with frontmatter permissions, strengthened 12 Codex agent instructions, updated runtime adapter docs/parity tables/interface model, extended CLI validate descriptors command to check permissions/guidance, and added regression tests.

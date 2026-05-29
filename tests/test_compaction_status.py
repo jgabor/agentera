@@ -1,8 +1,25 @@
 from __future__ import annotations
 
 import copy
+import json
+import subprocess
+import sys
+from pathlib import Path
 
 import yaml
+
+
+REPO_ROOT = Path(__file__).resolve().parent.parent
+CLI = REPO_ROOT / "scripts" / "agentera"
+
+
+def _run_cli(project: Path, *args: str) -> subprocess.CompletedProcess:
+    return subprocess.run(
+        [sys.executable, str(CLI), *args],
+        cwd=project,
+        capture_output=True,
+        text=True,
+    )
 
 
 def _write_docs_mapping(project, state_dir="state"):
@@ -399,3 +416,113 @@ def test_fix_mode_reports_missing_and_protected_without_blocking_compactable(com
     assert by_artifact["VISION.md"].action == "skipped"
     assert experiment_op.action == "skipped"
     assert experiments.read_text(encoding="utf-8") == "experiments:\n- number: 1\narchive: []\n"
+
+
+def test_compute_compaction_status_error_on_non_mapping_yaml_root(compaction, tmp_path):
+    project = tmp_path
+    _write_docs_mapping(project)
+    state = project / "state"
+    state.mkdir()
+    (state / "TODO.md").write_text("# TODO\n", encoding="utf-8")
+    (state / "progress.yaml").write_text("- not a mapping\n", encoding="utf-8")
+    (state / "decisions.yaml").write_text("decisions:\n- number: 1\narchive: []\n", encoding="utf-8")
+    (state / "health.yaml").write_text("audits: []\narchive: []\n", encoding="utf-8")
+
+    statuses = {status.artifact: status for status in compaction.compute_compaction_status(project)}
+
+    assert statuses["PROGRESS.md"].classification == "error"
+    assert statuses["PROGRESS.md"].active_count is None
+    assert statuses["PROGRESS.md"].archive_count is None
+    assert "mapping" in statuses["PROGRESS.md"].reason.lower()
+    assert statuses["DECISIONS.md"].classification == "compactable"
+    assert statuses["HEALTH.md"].classification == "compactable"
+
+
+def test_compute_compaction_status_error_on_corrupt_experiments_yaml(compaction, tmp_path):
+    project = tmp_path
+    _write_docs_mapping(project)
+    state = project / "state"
+    state.mkdir()
+    (state / "TODO.md").write_text("# TODO\n", encoding="utf-8")
+    (state / "progress.yaml").write_text("cycles: []\narchive: []\n", encoding="utf-8")
+    (state / "decisions.yaml").write_text("decisions: []\narchive: []\n", encoding="utf-8")
+    (state / "health.yaml").write_text("audits: []\narchive: []\n", encoding="utf-8")
+    experiments = project / ".agentera" / "optimera" / "speed" / "experiments.yaml"
+    experiments.parent.mkdir(parents=True)
+    experiments.write_text("scalar root\n", encoding="utf-8")
+
+    statuses = {status.artifact: status for status in compaction.compute_compaction_status(project)}
+
+    assert statuses["EXPERIMENTS.md"].classification == "error"
+    assert statuses["EXPERIMENTS.md"].active_count is None
+    assert "mapping" in statuses["EXPERIMENTS.md"].reason.lower()
+    assert statuses["PROGRESS.md"].classification == "compactable"
+
+
+def test_check_mode_reports_yaml_error_without_mutation(compaction, tmp_path):
+    project = tmp_path
+    _write_docs_mapping(project)
+    state = project / "state"
+    state.mkdir()
+    (state / "TODO.md").write_text("# TODO\n", encoding="utf-8")
+    progress_path = state / "progress.yaml"
+    progress_path.write_text("- not a mapping\n", encoding="utf-8")
+    (state / "decisions.yaml").write_text("decisions: []\narchive: []\n", encoding="utf-8")
+    (state / "health.yaml").write_text("audits: []\narchive: []\n", encoding="utf-8")
+    original = progress_path.read_text(encoding="utf-8")
+
+    operations = {op.status.artifact: op for op in compaction.run_compaction(project, mode="check")}
+
+    assert operations["PROGRESS.md"].action == "error"
+    assert operations["PROGRESS.md"].status.classification == "error"
+    assert "mapping" in operations["PROGRESS.md"].message.lower()
+    assert operations["DECISIONS.md"].action == "ok"
+    assert progress_path.read_text(encoding="utf-8") == original
+
+
+def test_compact_check_cli_reports_yaml_error_without_traceback(tmp_path):
+    project = tmp_path
+    _write_docs_mapping(project)
+    state = project / "state"
+    state.mkdir()
+    (state / "TODO.md").write_text("# TODO\n", encoding="utf-8")
+    (state / "progress.yaml").write_text("- not a mapping\n", encoding="utf-8")
+    (state / "decisions.yaml").write_text("decisions: []\narchive: []\n", encoding="utf-8")
+    (state / "health.yaml").write_text("audits: []\narchive: []\n", encoding="utf-8")
+
+    result = _run_cli(project, "compact", "--mode", "check", "--format", "json")
+    payload = json.loads(result.stdout)
+    progress = next(op for op in payload["operations"] if op["artifact"] == "PROGRESS.md")
+
+    assert result.returncode == 2
+    assert "Traceback" not in result.stderr
+    assert "Traceback" not in result.stdout
+    assert payload["status"] == "fail"
+    assert payload["summary"]["error_count"] == 1
+    assert progress["action"] == "error"
+    assert progress["classification"] == "error"
+    assert "mapping" in progress["message"].lower()
+
+
+def test_gate_cli_reports_yaml_error_without_traceback(tmp_path):
+    project = tmp_path
+    _write_docs_mapping(project)
+    state = project / "state"
+    state.mkdir()
+    (state / "TODO.md").write_text("# TODO\n", encoding="utf-8")
+    (state / "progress.yaml").write_text("- not a mapping\n", encoding="utf-8")
+    (state / "decisions.yaml").write_text("decisions: []\narchive: []\n", encoding="utf-8")
+    (state / "health.yaml").write_text("audits: []\narchive: []\n", encoding="utf-8")
+
+    result = _run_cli(project, "gate", "--format", "json")
+    payload = json.loads(result.stdout)
+    progress = next(op for op in payload["operations"] if op["artifact"] == "PROGRESS.md")
+
+    assert result.returncode == 2
+    assert "Traceback" not in result.stderr
+    assert "Traceback" not in result.stdout
+    assert payload["command"] == "gate"
+    assert payload["status"] == "fail"
+    assert progress["action"] == "error"
+    assert progress["classification"] == "error"
+    assert "mapping" in progress["message"].lower()
