@@ -12,7 +12,6 @@ fields honest and break the `git commit --amend` churn loop:
 
 from __future__ import annotations
 
-import importlib.machinery
 import importlib.util
 import json
 import os
@@ -80,11 +79,16 @@ def hook() -> ModuleType:
 
 
 @pytest.fixture()
-def cli() -> ModuleType:
-    loader = importlib.machinery.SourceFileLoader("agentera_cli", CLI)
-    spec = importlib.util.spec_from_loader("agentera_cli", loader)
+def progress_commit() -> ModuleType:
+    scripts_dir = REPO_ROOT / "scripts"
+    if str(scripts_dir) not in sys.path:
+        sys.path.insert(0, str(scripts_dir))
+    spec = importlib.util.spec_from_file_location(
+        "progress_commit", scripts_dir / "progress_commit.py"
+    )
     module = importlib.util.module_from_spec(spec)
     assert spec is not None and spec.loader is not None
+    sys.modules["progress_commit"] = module
     spec.loader.exec_module(module)
     return module
 
@@ -168,18 +172,18 @@ class TestProgressCommitGuard:
         assert any("not an ancestor of HEAD" in v for v in violations)
 
 
-# ── Pure rewrite + token helpers (B) ───────────────────────────────
+# ── Pure rewrite + token helpers (shared progress_commit module) ───
 
 
 class TestRewriteCycleCommits:
-    def test_replaces_single_line_commit(self, cli):
+    def test_replaces_single_line_commit(self, progress_commit):
         text = _progress_yaml([(2, "aaaaaaa"), (1, "bbbbbbb")])
-        out = cli._rewrite_cycle_commits(text, {1: "pending"})
+        out = progress_commit.rewrite_cycle_commits(text, {1: "pending"})
         data = yaml.safe_load(out)
         commits = {c["number"]: c["commit"] for c in data["cycles"]}
         assert commits == {2: "aaaaaaa", 1: "pending"}
 
-    def test_drops_multiline_scalar_continuation(self, cli):
+    def test_drops_multiline_scalar_continuation(self, progress_commit):
         # A hash wrapped with a subject across a deeper-indented line.
         text = (
             "cycles:\n"
@@ -189,13 +193,13 @@ class TestRewriteCycleCommits:
             "    plan'\n"
             "  discovered: None.\n"
         )
-        out = cli._rewrite_cycle_commits(text, {5: "pending"})
+        out = progress_commit.rewrite_cycle_commits(text, {5: "pending"})
         assert "plan'" not in out
         data = yaml.safe_load(out)
         assert data["cycles"][0]["commit"] == "pending"
         assert data["cycles"][0]["discovered"] == "None."
 
-    def test_leaves_untargeted_cycles_and_archive_untouched(self, cli):
+    def test_leaves_untargeted_cycles_and_archive_untouched(self, progress_commit):
         text = (
             "cycles:\n"
             "- number: 2\n"
@@ -205,7 +209,7 @@ class TestRewriteCycleCommits:
             "archive:\n"
             "- summary: 'commit: ccccccc kept verbatim'\n"
         )
-        out = cli._rewrite_cycle_commits(text, {2: "pending"})
+        out = progress_commit.rewrite_cycle_commits(text, {2: "pending"})
         assert "commit: ccccccc kept verbatim" in out
         data = yaml.safe_load(out)
         commits = {c["number"]: c["commit"] for c in data["cycles"]}
@@ -226,8 +230,8 @@ class TestBackfillCommitToken:
             ("", None),
         ],
     )
-    def test_token_extraction(self, cli, value, expected):
-        assert cli._backfill_commit_token(value) == expected
+    def test_token_extraction(self, progress_commit, value, expected):
+        assert progress_commit.commit_token(value) == expected
 
 
 # ── check backfill command (B) ─────────────────────────────────────
