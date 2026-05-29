@@ -198,17 +198,19 @@ salted hashes. Benchmark metrics are user-local, uncommitted, unshipped, and not
 part of normal CI.
 
 The command prints the retained benchmark directory in `benchmark.directory`.
-Review the latest result from that directory, or from the default location:
+Review the latest result from that directory, or from the default location under
+your resolved `AGENTERA_HOME` (see `agentera doctor --json` when unset):
 
 ```bash
-BENCH_DIR="${AGENTERA_HOME:-$HOME/.local/share/agentera}/benchmarks/startup-state"
+BENCH_DIR="${AGENTERA_HOME}/benchmarks/startup-state"
 
 less "$BENCH_DIR/latest-report.md"
 python3 -m json.tool "$BENCH_DIR/latest-report.json"
 tail -n 5 "$BENCH_DIR/runs.jsonl"
 ```
 
-The `BENCH_DIR` example uses the Linux default when `AGENTERA_HOME` is unset.
+Set `AGENTERA_HOME` first, or resolve the platform app home from
+`agentera doctor --json` / `agentera upgrade --dry-run` when unset.
 The stdout `reports` filenames are analyzer report names from Mage's temporary
 work directory. The durable operator-facing files are the `benchmark` paths:
 `runs.jsonl`, `latest-report.json`, and `latest-report.md`.

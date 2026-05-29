@@ -26,6 +26,7 @@ _SCRIPTS_DIR = Path(__file__).resolve().parent.parent / "scripts"
 if str(_SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_DIR))
 from yaml_mapping import load_yaml_mapping, load_yaml_mapping_file  # noqa: E402,F401
+import install_root as install_root_module  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
@@ -55,17 +56,18 @@ def apply_retention_caps(
 # ---------------------------------------------------------------------------
 
 
+def resolve_agentera_data_home() -> Path:
+    """Return the Agentera app home using the shared install-root contract."""
+    configured = os.environ.get("AGENTERA_HOME")
+    if configured:
+        return Path(configured).expanduser()
+    root, _source = install_root_module.resolve_candidate(None, env=os.environ, home=Path.home())
+    return root
+
+
 def resolve_session_path(project_root: Path) -> Path:
     """Return the runtime-local session bookmark path for this project."""
-    base = os.environ.get("AGENTERA_HOME")
-    if base:
-        data_home = Path(base).expanduser()
-    else:
-        xdg_data_home = os.environ.get("XDG_DATA_HOME")
-        if xdg_data_home:
-            data_home = Path(xdg_data_home).expanduser() / "agentera"
-        else:
-            data_home = Path.home() / ".local" / "share" / "agentera"
+    data_home = resolve_agentera_data_home()
     resolved = str(project_root.resolve())
     digest = hashlib.sha256(resolved.encode("utf-8")).hexdigest()[:16]
     slug = re.sub(r"[^A-Za-z0-9_.-]+", "-", project_root.name).strip(".-") or "project"

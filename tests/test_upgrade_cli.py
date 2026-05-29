@@ -1643,3 +1643,34 @@ def test_cleanup_preview_reports_unproven_stale_command_as_user_owned(tmp_path: 
     }
     assert "user-owned" in item["message"]
     assert command.read_text(encoding="utf-8") == "Load skill from skills/hej/SKILL.md\n"
+
+
+def test_upgrade_recovers_foreign_platform_app_home_on_darwin(tmp_path: Path, monkeypatch) -> None:
+    upgrade = _load_upgrade_module()
+    monkeypatch.setattr(upgrade.sys, "platform", "darwin")
+    home = tmp_path / "home"
+    foreign = home / ".local" / "share" / "agentera"
+    platform_home = home / "Library" / "Application Support" / "agentera"
+    _write_legacy_default_app_home(foreign / "app")
+    (foreign / "PROFILE.md").write_text("# Profile\n", encoding="utf-8")
+    env = {"AGENTERA_HOME": str(foreign)}
+
+    install_root = upgrade.resolve_install_root(None, REPO_ROOT, home, env=env)
+    assert install_root == platform_home.resolve()
+
+    bundle = upgrade.plan_bundle_phase(REPO_ROOT, install_root, home, force=False, env=env)
+    actions = {item["action"]: item for item in bundle["items"]}
+    assert actions["retire-foreign-platform-app-home"]["source"] == str(foreign.resolve())
+    assert actions["retire-foreign-platform-app-home"]["target"] == str(platform_home.resolve())
+
+
+def test_upgrade_keeps_custom_non_foreign_app_home(tmp_path: Path, monkeypatch) -> None:
+    upgrade = _load_upgrade_module()
+    monkeypatch.setattr(upgrade.sys, "platform", "darwin")
+    home = tmp_path / "home"
+    custom = tmp_path / "custom-agentera"
+    _write_legacy_default_app_home(custom / "app")
+    env = {"AGENTERA_HOME": str(custom)}
+
+    install_root = upgrade.resolve_install_root(None, REPO_ROOT, home, env=env)
+    assert install_root == custom.resolve()

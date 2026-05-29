@@ -222,3 +222,29 @@ def test_explicit_environment_default_source_precedence(tmp_path: Path) -> None:
     assert (explicit_result.source, explicit_result.path) == ("explicit", str(explicit.resolve()))
     assert (env_result.source, env_result.path) == ("environment", str(env_root.resolve()))
     assert (default_result.source, default_result.path) == ("default", str(default.resolve()))
+
+
+def test_foreign_platform_default_detection_on_darwin(tmp_path: Path, monkeypatch) -> None:
+    install_root = _load_install_root()
+    monkeypatch.setattr(install_root.sys, "platform", "darwin")
+    home = tmp_path / "home"
+    env: dict[str, str] = {}
+    linux_default = home / ".local" / "share" / "agentera"
+    mac_default = home / "Library" / "Application Support" / "agentera"
+
+    assert install_root._default_app_home(env, home).resolve() == mac_default.resolve()
+    assert install_root.is_foreign_platform_default_app_home(linux_default, env=env, home=home)
+    assert not install_root.is_foreign_platform_default_app_home(mac_default, env=env, home=home)
+
+
+def test_known_platform_default_app_homes_cover_all_os_defaults(tmp_path: Path) -> None:
+    install_root = _load_install_root()
+    home = tmp_path / "home"
+    env = {
+        "APPDATA": str(home / "AppData" / "Roaming"),
+        "XDG_DATA_HOME": str(home / ".local" / "share"),
+    }
+    known = install_root.known_platform_default_app_homes(env, home)
+    assert (home / ".local" / "share" / "agentera").resolve() in known
+    assert (home / "Library" / "Application Support" / "agentera").resolve() in known
+    assert (home / "AppData" / "Roaming" / "agentera").resolve() in known

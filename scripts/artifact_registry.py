@@ -21,6 +21,7 @@ _SCRIPTS_DIR = Path(__file__).resolve().parent
 if str(_SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_DIR))
 from yaml_mapping import load_yaml_mapping  # noqa: E402
+import install_root as install_root_module  # noqa: E402
 ARTIFACT_SCHEMAS_DIR = REPO_ROOT / "skills" / "agentera" / "schemas" / "artifacts"
 REGISTRY_MODEL_PATH = REPO_ROOT / "references" / "artifacts" / "artifact-registry-interface-model.yaml"
 
@@ -194,7 +195,6 @@ def resolve_artifact_path(
         suffix = artifact_path.removeprefix("$PROFILERA_PROFILE_DIR/")
         if explicit:
             return Path(explicit) / suffix
-        xdg = os.environ.get("XDG_DATA_HOME")
-        base = Path(xdg) if xdg else Path.home() / ".local" / "share"
-        return base / "agentera" / suffix
+        base, _source = install_root_module.resolve_candidate(None, env=os.environ, home=Path.home())
+        return base / suffix
     return _project_path(project_root, artifact_path, artifact_id=record.artifact_id)

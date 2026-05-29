@@ -761,6 +761,47 @@ def _legacy_default_managed_count(legacy_root: Path, rel_paths: list[Path]) -> i
     return count
 
 
+def _plan_alternate_app_home_retirement(
+    alternate_root: Path,
+    app_home: Path,
+    home: Path,
+    rel_paths: list[Path],
+    *,
+    force: bool,
+    action: str,
+    pending_message: str,
+    blocked_file_message: str,
+    blocked_conflict_message: str,
+) -> dict[str, Any] | None:
+    if alternate_root == app_home or not _legacy_default_has_agentera_evidence(alternate_root):
+        return None
+    if not alternate_root.is_dir():
+        return {
+            "status": "blocked",
+            "action": action,
+            "source": str(alternate_root),
+            "target": str(app_home),
+            "message": blocked_file_message,
+        }
+
+    conflicts = _legacy_default_conflicts(alternate_root, app_home, rel_paths)
+    user_entries = [entry.name for entry in _legacy_default_user_entries(alternate_root, rel_paths)]
+    managed_count = _legacy_default_managed_count(alternate_root, rel_paths)
+    return {
+        "status": "blocked" if conflicts and not force else "pending",
+        "action": action,
+        "source": str(alternate_root),
+        "target": str(app_home),
+        "appHome": str(app_home),
+        "legacyDefaultAppHome": str(alternate_root),
+        "userStateCount": len(user_entries),
+        "legacyManagedFileCount": managed_count,
+        "changedPreview": user_entries[:20],
+        "conflicts": conflicts,
+        "message": blocked_conflict_message if conflicts and not force else pending_message,
+    }
+
+
 def _plan_legacy_default_retirement(
     app_home: Path,
     home: Path,
@@ -769,37 +810,50 @@ def _plan_legacy_default_retirement(
     force: bool,
 ) -> dict[str, Any] | None:
     legacy_root = _legacy_default_app_home(home)
-    if legacy_root == app_home or not _legacy_default_has_agentera_evidence(legacy_root):
-        return None
-    if not legacy_root.is_dir():
-        return {
-            "status": "blocked",
-            "action": "retire-legacy-default-app-home",
-            "source": str(legacy_root),
-            "target": str(app_home),
-            "message": "The old Agentera location is a file, not a directory, so Agentera will not touch it automatically",
-        }
+    return _plan_alternate_app_home_retirement(
+        legacy_root,
+        app_home,
+        home,
+        rel_paths,
+        force=force,
+        action="retire-legacy-default-app-home",
+        pending_message="will move your old Agentera data to the current directory and remove old app files",
+        blocked_file_message="The old Agentera location is a file, not a directory, so Agentera will not touch it automatically",
+        blocked_conflict_message="Some old Agentera data already exists in the new directory; check it before using --force",
+    )
 
-    conflicts = _legacy_default_conflicts(legacy_root, app_home, rel_paths)
-    user_entries = [entry.name for entry in _legacy_default_user_entries(legacy_root, rel_paths)]
-    managed_count = _legacy_default_managed_count(legacy_root, rel_paths)
-    return {
-        "status": "blocked" if conflicts and not force else "pending",
-        "action": "retire-legacy-default-app-home",
-        "source": str(legacy_root),
-        "target": str(app_home),
-        "appHome": str(app_home),
-        "legacyDefaultAppHome": str(legacy_root),
-        "userStateCount": len(user_entries),
-        "legacyManagedFileCount": managed_count,
-        "changedPreview": user_entries[:20],
-        "conflicts": conflicts,
-        "message": (
-            "Some old Agentera data already exists in the new directory; check it before using --force"
-            if conflicts and not force
-            else "will move your old Agentera data to the current directory and remove old app files"
+
+def _plan_foreign_platform_default_retirement(
+    app_home: Path,
+    home: Path,
+    env: dict[str, str],
+    rel_paths: list[Path],
+    *,
+    force: bool,
+) -> dict[str, Any] | None:
+    foreign_root = _foreign_platform_env_app_home(home, env)
+    if foreign_root is None:
+        return None
+    return _plan_alternate_app_home_retirement(
+        foreign_root,
+        app_home,
+        home,
+        rel_paths,
+        force=force,
+        action="retire-foreign-platform-app-home",
+        pending_message=(
+            "will move your Agentera data from the non-native platform directory "
+            "to the current directory and remove old app files"
         ),
-    }
+        blocked_file_message=(
+            "The non-native platform Agentera location is a file, not a directory, "
+            "so Agentera will not touch it automatically"
+        ),
+        blocked_conflict_message=(
+            "Some Agentera data already exists in the native platform directory; "
+            "check it before using --force"
+        ),
+    )
 
 
 def _move_legacy_default_user_state(legacy_root: Path, app_home: Path, rel_paths: list[Path], *, force: bool) -> int:
@@ -845,7 +899,14 @@ def _remove_empty_legacy_default_root(legacy_root: Path, home: Path) -> bool:
     return removed
 
 
-def plan_bundle_phase(source_root: Path, install_root: Path, home: Path, *, force: bool) -> dict[str, Any]:
+def plan_bundle_phase(
+    source_root: Path,
+    install_root: Path,
+    home: Path,
+    *,
+    force: bool,
+    env: dict[str, str] | None = None,
+) -> dict[str, Any]:
     app_root = _managed_app_root(install_root)
     if source_root == install_root or source_root == app_root:
         return _phase(
@@ -944,6 +1005,17 @@ def plan_bundle_phase(source_root: Path, install_root: Path, home: Path, *, forc
     if legacy_default is not None:
         items.append(legacy_default)
 
+    effective_env = env if env is not None else os.environ
+    foreign_default = _plan_foreign_platform_default_retirement(
+        install_root,
+        home,
+        effective_env,
+        rel_paths,
+        force=force,
+    )
+    if foreign_default is not None:
+        items.append(foreign_default)
+
     return _phase("bundle", items)
 
 
@@ -985,7 +1057,7 @@ def apply_bundle_phase(phase: dict[str, Any], source_root: Path, install_root: P
                 removed = _remove_legacy_bundle_files(install_root, rel_paths)
                 item["legacyManagedFileCount"] = removed
                 item["message"] = "Agentera app files moved into app/"
-            elif item["action"] == "retire-legacy-default-app-home":
+            elif item["action"] in {"retire-legacy-default-app-home", "retire-foreign-platform-app-home"}:
                 if not _valid_install_root(install_root):
                     item["status"] = "blocked"
                     item["message"] = "Agentera could not find the selected app directory after install"
@@ -996,7 +1068,11 @@ def apply_bundle_phase(phase: dict[str, Any], source_root: Path, install_root: P
                 item["userStateCount"] = moved
                 item["legacyManagedFileCount"] = removed
                 item["removedLegacyDefaultAppHome"] = _remove_empty_legacy_default_root(legacy_root, install_root.parent)
-                item["message"] = "old Agentera directory cleaned up"
+                item["message"] = (
+                    "non-native platform Agentera directory cleaned up"
+                    if item["action"] == "retire-foreign-platform-app-home"
+                    else "old Agentera directory cleaned up"
+                )
         except Exception as exc:  # noqa: BLE001
             item["status"] = "failed"
             item["message"] = f"Agentera app repair failed: {exc}"
@@ -1954,6 +2030,28 @@ def _should_recover_stale_default_env(candidate: Path, source_root: Path, home: 
     return classification.kind == "managed_stale"
 
 
+def _should_recover_foreign_platform_default_app_home(
+    candidate: Path,
+    home: Path,
+    env: dict[str, str],
+) -> bool:
+    return _install_root_module().is_foreign_platform_default_app_home(
+        candidate,
+        env=env,
+        home=home,
+    )
+
+
+def _foreign_platform_env_app_home(home: Path, env: dict[str, str]) -> Path | None:
+    configured = env.get("AGENTERA_HOME")
+    if not configured:
+        return None
+    candidate = Path(configured).expanduser().resolve()
+    if not _should_recover_foreign_platform_default_app_home(candidate, home, env):
+        return None
+    return candidate
+
+
 def _legacy_default_residue_signal(
     *,
     selected_app_home: Path,
@@ -1972,23 +2070,46 @@ def _legacy_default_residue_signal(
     }
 
 
+def _foreign_platform_residue_signal(
+    *,
+    selected_app_home: Path,
+    source_name: str,
+    source_value: Path,
+) -> dict[str, str]:
+    return {
+        "kind": "foreign_platform_default_residue",
+        "source": source_name,
+        "foreignPlatformDefaultAppHome": str(source_value),
+        "selectedAppHome": str(selected_app_home),
+        "message": (
+            "A non-native platform app directory was treated as legacy residue, "
+            "so Agentera selected the normal platform app directory instead."
+        ),
+    }
+
+
 def resolve_install_root(value: Path | None, source_root: Path, home: Path, env: dict[str, str] | None = None) -> Path:
     env = env or os.environ
+    platform_default = _platform_default_app_home(home, env)
     if value is not None:
         return value.expanduser().resolve()
     configured = env.get("AGENTERA_HOME")
     if configured:
         candidate = Path(configured).expanduser().resolve()
         if _should_recover_stale_default_env(candidate, source_root, home):
-            return _platform_default_app_home(home, env)
+            return platform_default
+        if _should_recover_foreign_platform_default_app_home(candidate, home, env):
+            return platform_default
         return candidate
     default = env.get(DEFAULT_INSTALL_ROOT_ENV)
     if default:
         candidate = Path(default).expanduser().resolve()
         if _should_recover_stale_default_env(candidate, source_root, home):
-            return _platform_default_app_home(home, env)
+            return platform_default
+        if _should_recover_foreign_platform_default_app_home(candidate, home, env):
+            return platform_default
         return candidate
-    return _platform_default_app_home(home, env)
+    return platform_default
 
 
 def _app_home_resolution_signal(
@@ -2009,6 +2130,12 @@ def _app_home_resolution_signal(
             return None
         if _should_recover_stale_default_env(candidate, source_root, home):
             return _legacy_default_residue_signal(
+                selected_app_home=selected_app_home,
+                source_name=source_name,
+                source_value=candidate,
+            )
+        if _should_recover_foreign_platform_default_app_home(candidate, home, env):
+            return _foreign_platform_residue_signal(
                 selected_app_home=selected_app_home,
                 source_name=source_name,
                 source_value=candidate,
@@ -2065,7 +2192,7 @@ def build_upgrade_plan(args: argparse.Namespace) -> dict[str, Any]:
         if not args.force and _custom_environment_app_home_requires_decision(args.install_root, home, env, install_root):
             phases.append(_custom_environment_app_home_block(install_root, source_root))
         else:
-            phases.append(plan_bundle_phase(source_root, install_root, home, force=args.force))
+            phases.append(plan_bundle_phase(source_root, install_root, home, force=args.force, env=env))
     if "artifacts" in only:
         phases.append(plan_artifact_phase(project, force=args.force))
     if "runtime" in only:
@@ -2280,6 +2407,7 @@ ACTION_LABELS = {
     "install-bundle": "install or update Agentera app files",
     "migrate-app-home": "move Agentera app files into app/",
     "retire-legacy-default-app-home": "move old Agentera data and clean up old app files",
+    "retire-foreign-platform-app-home": "move non-native platform Agentera data and clean up old app files",
     "migrate": "convert old project notes",
     "copy": "copy current Agentera file",
     "configure": "connect Agentera to a runtime",
