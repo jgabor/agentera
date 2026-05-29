@@ -13,14 +13,99 @@ load_artifact_overrides.
 
 from __future__ import annotations
 
+import hashlib
+import os
 import re
 import sys
 from pathlib import Path
+from typing import Callable, TypeVar
+
+_EntryT = TypeVar("_EntryT", bound=dict[str, object])
 
 _SCRIPTS_DIR = Path(__file__).resolve().parent.parent / "scripts"
 if str(_SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_DIR))
 from yaml_mapping import load_yaml_mapping, load_yaml_mapping_file  # noqa: E402,F401
+
+
+# ---------------------------------------------------------------------------
+# Compaction policy (uniform 10/40/50)
+# ---------------------------------------------------------------------------
+
+MAX_FULL_ENTRIES = 10
+MAX_ONELINE_ENTRIES = 40
+MAX_TOTAL_ENTRIES = MAX_FULL_ENTRIES + MAX_ONELINE_ENTRIES
+
+
+def apply_retention_caps(
+    full_entries: list[_EntryT],
+    archive_entries: list[_EntryT],
+    *,
+    max_full: int = MAX_FULL_ENTRIES,
+    max_oneline: int = MAX_ONELINE_ENTRIES,
+    max_total: int = MAX_TOTAL_ENTRIES,
+) -> list[_EntryT]:
+    """Merge full-detail and one-line lists under uniform retention caps."""
+    capped_archive = archive_entries[:max_oneline]
+    return (full_entries[:max_full] + capped_archive)[:max_total]
+
+
+# ---------------------------------------------------------------------------
+# Runtime-local session bookmarks
+# ---------------------------------------------------------------------------
+
+
+def resolve_session_path(project_root: Path) -> Path:
+    """Return the runtime-local session bookmark path for this project."""
+    base = os.environ.get("AGENTERA_HOME")
+    if base:
+        data_home = Path(base).expanduser()
+    else:
+        xdg_data_home = os.environ.get("XDG_DATA_HOME")
+        if xdg_data_home:
+            data_home = Path(xdg_data_home).expanduser() / "agentera"
+        else:
+            data_home = Path.home() / ".local" / "share" / "agentera"
+    resolved = str(project_root.resolve())
+    digest = hashlib.sha256(resolved.encode("utf-8")).hexdigest()[:16]
+    slug = re.sub(r"[^A-Za-z0-9_.-]+", "-", project_root.name).strip(".-") or "project"
+    return data_home / "sessions" / f"{slug}-{digest}" / "session.yaml"
+
+
+def session_bookmark_to_oneline(entry: dict[str, object]) -> dict[str, object]:
+    """Compact a full session bookmark to a one-line archive entry."""
+    return {
+        "timestamp": str(entry.get("timestamp", "")),
+        "artifacts": [],
+        "summary": str(entry.get("summary", "")),
+        "kind": "oneline",
+    }
+
+
+def compact_session_bookmark_entries(
+    entries: list[dict[str, object]],
+    *,
+    max_full: int = MAX_FULL_ENTRIES,
+    max_oneline: int = MAX_ONELINE_ENTRIES,
+    max_total: int = MAX_TOTAL_ENTRIES,
+    to_oneline: Callable[[dict[str, object]], dict[str, object]] | None = None,
+) -> list[dict[str, object]]:
+    """Compact timestamp-ordered session bookmarks under 10/40/50 rules.
+
+    Newest bookmarks are determined by ``timestamp`` string sort descending.
+    This differs from :func:`compaction.compact_entries`, which orders numeric
+    artifact entry IDs for PROGRESS/DECISIONS/HEALTH compaction.
+    """
+    convert = to_oneline or session_bookmark_to_oneline
+    ordered = sorted(entries, key=lambda entry: str(entry.get("timestamp", "")), reverse=True)
+    full: list[dict[str, object]] = []
+    archive: list[dict[str, object]] = []
+    for entry in ordered:
+        if entry.get("kind") == "full" and len(full) < max_full:
+            full.append(entry)
+        else:
+            archive.append(convert(entry))
+    return apply_retention_caps(full, archive, max_full=max_full, max_oneline=max_oneline, max_total=max_total)
 
 
 # ---------------------------------------------------------------------------

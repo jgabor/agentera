@@ -1,0 +1,85 @@
+header:
+  level: full
+  created: "2026-05-29"
+  status: complete
+  reviewed: "2026-05-29"
+  critic_issues: "3 found, 2 addressed, 1 dismissed"
+  title: Hooks session compaction deduplication
+what: >-
+  Deduplicate resolve_session_path() and compact_entries() across session hooks
+  by centralizing implementations in hooks/common.py. Preserve external behavior
+  for runtime-local session bookmarks and artifact compaction, including
+  decision-protection semantics owned by compaction.py.
+why: >-
+  session_start.py and session_stop.py duplicate resolve_session_path(), and
+  session_stop.py carries a simpler compact_entries() that can drift from
+  compaction.py. A single source of truth prevents silent behavioral skew
+  between session bookmark compaction and artifact compaction.
+constraints: >-
+  Full pytest suite must stay green. Preserve 10/40/50 compaction limits and
+  existing session path resolution for AGENTERA_HOME and default data home.
+  Chore-only work (no version bump). Do not modify vision.yaml or objective
+  state.
+scope:
+  included:
+    - hooks/common.py
+    - hooks/session_start.py
+    - hooks/session_stop.py
+    - hooks/compaction.py
+    - compaction and session hook tests
+    - TODO.md, CHANGELOG.md, progress.yaml (final sync only)
+  excluded:
+    - v1 legacy removal
+    - Decision 58 single-name protocol sweep
+    - Bun/npm packaging and TypeScript CLI rewrite initiatives
+    - Broader hook refactors beyond these two symbols
+  deferred:
+    - Additional hook deduplication not listed in the two target TODO items
+design: >-
+  Move resolve_session_path() to common.py with identical path semantics.
+  For compact_entries(), extract shared 10/40/50 policy helpers and keep
+  separate entry points when timestamp-ordered session bookmarks and
+  numeric-ID artifact compaction require different ordering rules. Wire
+  session_stop and compaction callers to the shared layer without changing
+  observable compaction outputs on existing fixtures and tests.
+tasks:
+  - number: 1
+    name: Extract resolve_session_path to common
+    depends_on: []
+    status: complete
+    acceptance:
+      - GIVEN hooks/common.py WHEN session hooks import resolve_session_path THEN only one implementation defines AGENTERA_HOME and default data home resolution
+      - GIVEN a fixed project root and AGENTERA_HOME WHEN resolving session path THEN the returned path matches the pre-extraction session_start and session_stop behavior
+      - GIVEN session_start.py and session_stop.py WHEN updated THEN they no longer define duplicate resolve_session_path bodies
+  - number: 2
+    name: Design shared compaction helpers
+    depends_on: []
+    status: complete
+    acceptance:
+      - GIVEN hooks/common.py or compaction module layout WHEN shared helpers are added THEN 10/40/50 caps and oneline conversion contracts are defined once
+      - GIVEN session bookmark entries and artifact entries WHEN documented THEN distinct ordering rules (timestamp vs numeric ID) are explicit in the plan implementation
+      - GIVEN compaction.py decision-protection paths WHEN reviewed THEN they remain owned by the artifact compaction entry point after helper extraction
+  - number: 3
+    name: Wire session and compaction callers
+    depends_on: ["1", "2"]
+    status: complete
+    acceptance:
+      - GIVEN session bookmark fixtures WHEN compacting before and after refactor THEN newest full entries and total caps match prior behavior
+      - GIVEN existing compaction tests WHEN run THEN outputs and expectations pass without weakening decision-protection behavior
+      - GIVEN session_stop and compaction imports WHEN inspected THEN duplicate compact_entries implementations are removed in favor of shared helpers and explicit entry points
+  - number: 4
+    name: Tests and state sync
+    depends_on: ["3"]
+    status: complete
+    acceptance:
+      - GIVEN targeted regression tests for session path and compaction parity WHEN run THEN they pass alongside the existing suite
+      - GIVEN all tasks complete WHEN final sync runs THEN both hook consolidation TODO items are resolved in TODO.md
+      - GIVEN all tasks complete WHEN final sync runs THEN CHANGELOG.md and progress.yaml record the chore with verification evidence
+overall_acceptance: >-
+  GIVEN the same session bookmark fixtures WHEN compacting before and after THEN
+  entry counts and newest-full preservation match prior behavior. GIVEN existing
+  compaction tests WHEN run THEN all pass without changed expectations. GIVEN
+  AGENTERA_HOME and default data home WHEN resolving session path THEN paths
+  match the pre-extraction implementation.
+surprises: []
+previous_plan_archived: .agentera/archive/PLAN-2026-05-29-yaml-safe-load-consolidation.yaml

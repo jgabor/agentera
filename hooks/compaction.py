@@ -31,16 +31,13 @@ _hooks_dir = str(Path(__file__).resolve().parent)
 if _hooks_dir not in sys.path:
     sys.path.insert(0, _hooks_dir)
 
-from common import DEFAULT_ARTIFACT_PATHS, load_yaml_mapping
-
-
-# ---------------------------------------------------------------------------
-# Thresholds
-# ---------------------------------------------------------------------------
-
-MAX_FULL_ENTRIES = 10
-MAX_ONELINE_ENTRIES = 40
-MAX_TOTAL_ENTRIES = MAX_FULL_ENTRIES + MAX_ONELINE_ENTRIES
+from common import (
+    DEFAULT_ARTIFACT_PATHS,
+    MAX_FULL_ENTRIES,
+    MAX_ONELINE_ENTRIES,
+    MAX_TOTAL_ENTRIES,
+    load_yaml_mapping,
+)
 
 
 # ---------------------------------------------------------------------------

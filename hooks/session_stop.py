@@ -19,7 +19,6 @@ Run standalone for testing:
 
 from __future__ import annotations
 
-import hashlib
 import json
 import os
 import re
@@ -31,14 +30,15 @@ from pathlib import Path
 import yaml
 
 from common import (
-    load_yaml_mapping,
-    load_artifact_overrides,
-    resolve_artifact_path,
-)
-from compaction import (
     MAX_FULL_ENTRIES,
     MAX_ONELINE_ENTRIES,
     MAX_TOTAL_ENTRIES,
+    compact_session_bookmark_entries,
+    load_artifact_overrides,
+    load_yaml_mapping,
+    resolve_artifact_path,
+    resolve_session_path,
+    session_bookmark_to_oneline,
 )
 
 
@@ -58,20 +58,6 @@ TRACKED_ARTIFACTS = [
     "TODO.md",
     "CHANGELOG.md",
 ]
-
-
-def resolve_session_path(project_root: Path) -> Path:
-    """Return the runtime-local session bookmark path for this project."""
-    base = os.environ.get("AGENTERA_HOME")
-    if base:
-        data_home = Path(base).expanduser()
-    else:
-        xdg_data_home = os.environ.get("XDG_DATA_HOME")
-        data_home = Path(xdg_data_home).expanduser() / "agentera" if xdg_data_home else Path.home() / ".local" / "share" / "agentera"
-    resolved = str(project_root.resolve())
-    digest = hashlib.sha256(resolved.encode("utf-8")).hexdigest()[:16]
-    slug = re.sub(r"[^A-Za-z0-9_.-]+", "-", project_root.name).strip(".-") or "project"
-    return data_home / "sessions" / f"{slug}-{digest}" / "session.yaml"
 
 
 # ---------------------------------------------------------------------------
@@ -250,38 +236,8 @@ def parse_session_entries(text: str) -> list[dict[str, object]]:
     return entries
 
 
-def compact_entry_to_oneline(entry: dict[str, object]) -> dict[str, object]:
-    """Compact a full entry to a one-line summary.
-
-    Preserves timestamp and summary for the archive section.
-    """
-    return {
-        "timestamp": str(entry.get("timestamp", "")),
-        "artifacts": [],
-        "summary": str(entry.get("summary", "")),
-        "kind": "oneline",
-    }
-
-
-def compact_entries(entries: list[dict[str, object]]) -> list[dict[str, object]]:
-    """Apply compaction rules to an entry list.
-
-    Keeps the 10 newest full bookmarks, preserves up to 40 older one-line
-    archive entries, and drops anything beyond the 50-entry total cap.
-    """
-    ordered = sorted(
-        entries,
-        key=lambda entry: str(entry.get("timestamp", "")),
-        reverse=True,
-    )
-    full: list[dict[str, object]] = []
-    archive: list[dict[str, object]] = []
-    for entry in ordered:
-        if entry.get("kind") == "full" and len(full) < MAX_FULL_ENTRIES:
-            full.append(entry)
-        else:
-            archive.append(compact_entry_to_oneline(entry))
-    return (full + archive[:MAX_ONELINE_ENTRIES])[:MAX_TOTAL_ENTRIES]
+compact_entry_to_oneline = session_bookmark_to_oneline
+compact_entries = compact_session_bookmark_entries
 
 
 def format_session_yaml(entries: list[dict[str, object]]) -> str:
