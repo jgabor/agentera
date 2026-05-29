@@ -1,7 +1,7 @@
 header:
   level: full
   created: "2026-05-29"
-  status: active
+  status: complete
   reviewed: "2026-05-29"
   critic_issues: "5 found, 4 addressed, 1 dismissed"
   title: Consolidate progress-commit/git-ancestry logic into a shared module (2.7.6)
@@ -83,7 +83,7 @@ tasks:
   - number: 2
     name: Move the validator guard onto the shared module and align YAML loading
     depends_on: ["1"]
-    status: pending
+    status: complete
     acceptance:
       - GIVEN hooks/validate_artifact.py WHEN it validates progress commits THEN _validate_progress_commits/token/git/regex delegate to scripts/progress_commit (imported via hooks/common), leaving no near-copy in the hook
       - GIVEN the guard WHEN it loads progress YAML THEN it uses load_yaml_mapping (not raw yaml.safe_load) and catches load failure to return no commit violation, with a regression test pinning the consistent failure mode on non-mapping/unparseable progress YAML
@@ -92,7 +92,7 @@ tasks:
   - number: 3
     name: Centralize and document the hooks to scripts import seam
     depends_on: ["1", "2"]
-    status: pending
+    status: complete
     acceptance:
       - GIVEN cross-layer imports of shared modules (yaml_mapping, progress_commit) WHEN hooks need them THEN they flow through the single sanctioned hooks/common bridge, adding no new per-file sys.path insertion for this purpose
       - GIVEN hooks/common.py WHEN read THEN a comment/docstring documents it as the sanctioned scripts→hooks bridge and states a neutral package is deferred to 3.0 packaging
@@ -100,7 +100,7 @@ tasks:
   - number: 4
     name: Consolidate and expand shared-module regression tests
     depends_on: ["1", "2"]
-    status: pending
+    status: complete
     acceptance:
       - GIVEN the shared commit_token WHEN tested THEN one parametrized table covers hash/hash+subject/pending/N-A/non-hash/non-string/empty, replacing the CLI-only table and covering the formerly-untested hook token path
       - GIVEN rewrite_cycle_commits WHEN tested THEN coverage is expanded for folded/flow scalars and comment/quoting preservation (>-, |, flow {}/[], inline comments, archive lines)
@@ -109,7 +109,7 @@ tasks:
   - number: 5
     name: Document unknown-hash and shallow-clone skip behavior
     depends_on: ["2"]
-    status: pending
+    status: complete
     acceptance:
       - GIVEN the progress schema notes (skills/agentera/schemas/artifacts/progress.yaml) and/or UPGRADE.md WHEN read THEN they explain the guard and backfill intentionally skip commit objects unknown to the local clone (cross-clone copies, shallow CI checkouts) and how to reconcile when hit
       - GIVEN the docs change WHEN touched-artifact validation and compaction run THEN they pass and stay within budget
@@ -117,7 +117,7 @@ tasks:
   - number: 6
     name: Resolve TODO items, sync state, and verify
     depends_on: ["1", "2", "3", "4", "5"]
-    status: pending
+    status: complete
     acceptance:
       - GIVEN the eight 2.7.6 progress-commit TODO items WHEN closeout runs THEN each moves to Resolved in TODO.md with a one-line resolution and commit reference
       - GIVEN the YAML-loader robustness fix WHEN closeout runs THEN CHANGELOG.md [Unreleased] records a Fixed entry while internal refactor/test/docs items are omitted per changelog policy

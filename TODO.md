@@ -2,11 +2,11 @@
 
 ## ⇶ Critical
 
+- [chore] No open critical items.
+
 ## ⇉ Degraded
 
-- [chore:2.7.6] Consolidate duplicated progress-commit and git-ancestry logic: near-copy implementations in `hooks/validate_artifact.py` (~688–769) and `scripts/agentera` (~6177–6232) cover regex, token parsing, git wrappers, and ancestry checks; guard and backfill were designed as a pair and carry drift risk.
-- [chore:2.7.6] Extract progress-commit module from `scripts/agentera` monolith: at ~8.7k lines (+319 this range) with ~275 lines of backfill added inline; extract `scripts/progress_commit.py` (token parsing, ancestry checks, `_rewrite_cycle_commits`, backfill runner) following the `agentera_upgrade.py` pattern with a thin `cmd_backfill` wrapper.
-- [chore:2.7.6] Move progress commit validation out of oversized `hooks/validate_artifact.py` (~1,182 lines, ~85 lines of git subprocess policy added inline): relocate into a shared module alongside progress-commit extraction.
+- [chore] No open degraded items.
 
 ## → Normal
 
@@ -19,14 +19,19 @@
 
 ## ⇢ Annoying
 
-- [fix:2.7.6] Align progress guard YAML loading: `_validate_progress_commits` in `validate_artifact.py` uses raw `safe_load` while nearby paths use `load_yaml_mapping`, giving inconsistent failure modes on corrupt progress YAML.
-- [chore:2.7.6] Reduce hooks→scripts sys.path coupling: `hooks/common.py` inserts `scripts/` on sys.path to import `yaml_mapping`; acceptable today, but consider a neutral shared location long-term.
-- [test:2.7.6] Expand progress commit YAML rewrite regression coverage: `_rewrite_cycle_commits` in `scripts/agentera` is fragile against folded/flow scalars; expand tests if keeping the regex approach for comment preservation.
-- [docs:2.7.6] Document unknown-hash and shallow-clone behavior for progress commits: validator and backfill intentionally skip unknown commit objects (cross-clone copies, shallow CI checkouts); document in progress schema notes or UPGRADE.md for users who hit this.
-- [test:2.7.6] DRY progress commit token tests after module extraction: `test_progress_commit_guard.py` parametrizes CLI `_backfill_commit_token` only; hook `_progress_commit_token` has no equivalent table—after extraction, test the shared module once.
-- [test:2.7.6] De-flake the progress-commit guard `repo` fixture: `tests/test_progress_commit_guard.py` builds the "stale" commit via `git commit --amend`, whose dangling object intermittently becomes unreachable under full-suite/parallel load, flaking `test_stale_hash_is_flagged` and `test_check_mode_reports_stale_and_exits_one` (observed ~8–33%, present on main pre-extraction). Create the stale commit on a side branch so it stays reliably resolvable and non-ancestor.
+- [chore] No open annoying items.
 
 ## ✓ Resolved
+
+- ~~[chore:2.7.6] Consolidate duplicated progress-commit and git-ancestry logic~~ · resolved by 6530f42 and 56fd8fe: one `scripts/progress_commit.py` module now serves `agentera check backfill` and the validate-artifact guard via `hooks/common.py`.
+- ~~[chore:2.7.6] Extract progress-commit module from `scripts/agentera` monolith~~ · resolved by 6530f42: `cmd_backfill` is a thin wrapper importing `compute_backfill` and `rewrite_cycle_commits`.
+- ~~[chore:2.7.6] Move progress commit validation out of oversized `hooks/validate_artifact.py`~~ · resolved by 56fd8fe: guard delegates to `validate_progress_commits` with no near-copy git/token logic left in the hook.
+- ~~[fix:2.7.6] Align progress guard YAML loading~~ · resolved by 56fd8fe: guard uses `load_yaml_mapping()` and returns no commit violation on corrupt or non-mapping progress YAML.
+- ~~[chore:2.7.6] Reduce hooks→scripts sys.path coupling~~ · resolved by 56fd8fe: `hooks/common.py` documents the single sanctioned scripts bridge; neutral package deferred to 3.0.
+- ~~[test:2.7.6] Expand progress commit YAML rewrite regression coverage~~ · resolved by 56fd8fe: folded/flow scalar and comment-preservation cases in `tests/test_progress_commit_guard.py`.
+- ~~[docs:2.7.6] Document unknown-hash and shallow-clone behavior for progress commits~~ · resolved by 56fd8fe: progress schema notes and `UPGRADE.md` describe intentional skip and reconciliation.
+- ~~[test:2.7.6] DRY progress commit token tests after module extraction~~ · resolved by 6530f42 and 56fd8fe: one parametrized `commit_token` table on the shared module.
+- ~~[test:2.7.6] De-flake the progress-commit guard `repo` fixture~~ · resolved by 56fd8fe: stale commit is created on a side branch and kept off main history.
 
 - ~~[fix:2.7.6] Catch non-mapping YAML roots in compaction check/gate: `load_yaml_mapping()` raises on list/scalar roots in `hooks/compaction.py` `_yaml_counts`/`_yaml_lists`, so `agentera check compact`/gate can traceback instead of reporting a degraded status row; catch `YAMLError` and emit an error reason like validator degradation.~~ · resolved by 8be19c4: `compute_compaction_status` catches `yaml.YAMLError` and emits error-classified `CompactionStatus` rows so `agentera check compact` and gate exit 2 with guidance instead of tracebacks; regression coverage in `tests/test_compaction_status.py`.
 - ~~[fix:2.7.6] Complete compaction dedup wiring: `apply_retention_caps`/`MAX_*` in `hooks/common.py` is used by session bookmarks, but `compaction.compact_entries` still has its own 10/40/50 loop with different ordering (`_entry_number`); wire through the shared helper or add a contract test documenting intentional divergence.~~ · resolved by cf0aa93 and 55a9df8: `compact_entries` and non-decision `compact_yaml_file` archive caps delegate to `apply_retention_caps`; `tests/test_compaction_retention_contract.py` pins shared 10/40/50 limits and intentional numeric-ID vs timestamp ordering divergence.
