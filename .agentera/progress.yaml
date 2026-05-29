@@ -4,7 +4,7 @@ cycles:
   type: fix
   phase: build
   what: Consolidate progress-commit guard onto shared module; release 2.7.6.
-  commit: pending
+  commit: "a0c51b5 release: bump to 2.7.6 and close progress-commit plan"
   discovered: None.
   verified: tests/test_progress_commit_guard.py 31 passed; capability-contract 2/2;
     full suite 1335 passed with 30 pre-existing macOS AGENTERA_HOME/corpus failures
