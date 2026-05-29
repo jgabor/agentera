@@ -6172,6 +6172,275 @@ def _emit_compaction_payload(args: argparse.Namespace, payload: dict[str, Any], 
         print(f"guidance={summary['guidance']}")
 
 
+# ── Progress commit backfill ───────────────────────────────────────
+
+_BACKFILL_COMMIT_RE = re.compile(r"^[0-9a-fA-F]{7,40}$")
+
+
+def _backfill_git(cmd: list[str], cwd: Path) -> subprocess.CompletedProcess[str] | None:
+    try:
+        return subprocess.run(
+            ["git", *cmd],
+            cwd=str(cwd),
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+
+
+def _backfill_commit_token(value: Any) -> str | None:
+    """Leading verifiable git hash in a cycle ``commit`` value, else ``None``.
+
+    ``pending``, ``N/A …`` and non-hash free text are exempt (return ``None``).
+    """
+    if not isinstance(value, str):
+        return None
+    text = value.strip()
+    if not text:
+        return None
+    token = text.split()[0]
+    low = token.lower()
+    if low == "pending" or low.startswith("n/a"):
+        return None
+    return token if _BACKFILL_COMMIT_RE.match(token) else None
+
+
+def _backfill_ancestor_state(token: str, cwd: Path) -> str:
+    """Classify ``token`` relative to HEAD.
+
+    One of ``ancestor`` (already in history), ``stale`` (resolves but not an
+    ancestor of HEAD), ``unknown`` (not a commit object here), or
+    ``unavailable`` (git/HEAD missing).
+    """
+    head = _backfill_git(["rev-parse", "--verify", "--quiet", "HEAD"], cwd)
+    if head is None or head.returncode != 0:
+        return "unavailable"
+    exists = _backfill_git(["rev-parse", "--verify", "--quiet", f"{token}^{{commit}}"], cwd)
+    if exists is None:
+        return "unavailable"
+    if exists.returncode != 0:
+        return "unknown"
+    ancestor = _backfill_git(["merge-base", "--is-ancestor", token, "HEAD"], cwd)
+    if ancestor is None:
+        return "unavailable"
+    if ancestor.returncode == 0:
+        return "ancestor"
+    if ancestor.returncode == 1:
+        return "stale"
+    return "unavailable"
+
+
+def _rewrite_cycle_commits(text: str, changes: dict[int, str]) -> str:
+    """Replace the ``commit:`` field of specific cycles, preserving the rest.
+
+    ``changes`` maps cycle number to the new ``commit`` value. Only entries in
+    the top-level ``cycles:`` list are touched; comments, ordering, quoting, and
+    every other field are left exactly as authored. Multi-line commit scalars
+    (a hash wrapped with a subject across several deeper-indented lines) are
+    replaced wholesale, dropping their continuation lines.
+    """
+    if not changes:
+        return text
+    number_re = re.compile(r"^-\s+number:\s*(\d+)\s*$")
+    list_item_re = re.compile(r"^-\s")
+    commit_re = re.compile(r"^(\s+)commit:\s*.*$")
+    top_key_re = re.compile(r"^[A-Za-z_]")
+    lines = text.splitlines(keepends=True)
+    out: list[str] = []
+    in_cycles = False
+    current: int | None = None
+    i = 0
+    total = len(lines)
+    while i < total:
+        line = lines[i]
+        body = line.rstrip("\n")
+        if top_key_re.match(body):
+            in_cycles = body.startswith("cycles:")
+            current = None
+            out.append(line)
+            i += 1
+            continue
+        if in_cycles:
+            number_match = number_re.match(body)
+            if number_match:
+                current = int(number_match.group(1))
+                out.append(line)
+                i += 1
+                continue
+            if list_item_re.match(body):
+                current = None
+                out.append(line)
+                i += 1
+                continue
+            commit_match = commit_re.match(body)
+            if commit_match and current in changes:
+                indent = commit_match.group(1)
+                key_indent = len(indent)
+                newline = "\n" if line.endswith("\n") else ""
+                out.append(f"{indent}commit: {changes[current]}{newline}")
+                i += 1
+                while i < total:
+                    cont = lines[i].rstrip("\n")
+                    if not cont.strip():
+                        break
+                    leading = len(cont) - len(cont.lstrip(" "))
+                    if leading > key_indent and not list_item_re.match(cont):
+                        i += 1
+                        continue
+                    break
+                current = None
+                continue
+        out.append(line)
+        i += 1
+    return "".join(out)
+
+
+def _backfill_progress_path(project: Path) -> Path:
+    schemas = _load_schemas(_discover_schemas_dir())
+    info = schemas.get("progress")
+    rel = str(info.get("path")) if info and info.get("path") else ".agentera/progress.yaml"
+    path = Path(rel)
+    return path if path.is_absolute() else project / rel
+
+
+def _emit_backfill(args: argparse.Namespace, payload: dict[str, Any]) -> None:
+    if _output_format(args) == "json":
+        _emit_structured(payload, "json")
+        return
+    print(f"status={payload['status']} | mode={payload.get('mode')} | path={payload['path']}")
+    if payload.get("message"):
+        print(payload["message"])
+    for op in payload.get("operations", []):
+        print(
+            f"- cycle={op['cycle']} | commit={op['commit']} | "
+            f"state={op['state']} | action={op['action']}"
+        )
+    changes = payload.get("changes") or {}
+    if changes:
+        print("changes=" + ", ".join(f"{n}->{v}" for n, v in sorted(changes.items(), reverse=True)))
+
+
+def cmd_backfill(args: argparse.Namespace) -> int:
+    project = Path(getattr(args, "project", None) or Path.cwd()).resolve()
+    mode = getattr(args, "mode", "check")
+    path = _backfill_progress_path(project)
+    payload: dict[str, Any] = {
+        "command": "backfill",
+        "status": "ok",
+        "project": str(project),
+        "mode": mode,
+        "path": str(path),
+        "operations": [],
+        "changes": {},
+    }
+
+    if not path.exists():
+        payload["status"] = "noop"
+        payload["message"] = f"progress artifact not found at {path}"
+        _emit_backfill(args, payload)
+        return 0
+
+    text = path.read_text(encoding="utf-8")
+    try:
+        data = load_yaml_mapping(text)
+    except Exception as exc:
+        payload["status"] = "error"
+        payload["message"] = f"cannot parse progress artifact: {exc}"
+        _emit_backfill(args, payload)
+        return 2
+    cycles = data.get("cycles") if isinstance(data, dict) else None
+    if not isinstance(cycles, list):
+        payload["status"] = "noop"
+        payload["message"] = "progress artifact has no cycles list"
+        _emit_backfill(args, payload)
+        return 0
+
+    if _backfill_ancestor_state("HEAD", project) == "unavailable":
+        payload["status"] = "noop"
+        payload["message"] = "git HEAD unavailable; cannot verify commit ancestry"
+        _emit_backfill(args, payload)
+        return 0
+
+    full_cycles = [
+        (c["number"], c.get("commit"))
+        for c in cycles
+        if isinstance(c, dict) and isinstance(c.get("number"), int)
+    ]
+
+    target_commit = getattr(args, "commit", None)
+    target_token: str | None = None
+    target_cycle = getattr(args, "cycle", None)
+    if target_commit:
+        target_token = target_commit.strip().split()[0] if target_commit.strip() else ""
+        state = _backfill_ancestor_state(target_token, project) if target_token else "unknown"
+        if state != "ancestor":
+            payload["status"] = "error"
+            payload["message"] = (
+                f"refusing to backfill commit '{target_commit}': it is {state} relative to HEAD. "
+                "Backfill only a commit already in HEAD's history; commit the product change first, "
+                "then backfill from a later commit (never amend to backfill)."
+            )
+            _emit_backfill(args, payload)
+            return 2
+        known = {n for n, _ in full_cycles}
+        if target_cycle is not None and target_cycle not in known:
+            payload["status"] = "error"
+            payload["message"] = f"cycle {target_cycle} not found in progress cycles"
+            _emit_backfill(args, payload)
+            return 2
+        if target_cycle is None:
+            target_cycle = next(
+                (n for n, cv in full_cycles if _backfill_commit_token(cv) is None
+                 or _backfill_ancestor_state(_backfill_commit_token(cv) or "", project) == "stale"),
+                None,
+            )
+        if target_cycle is None:
+            payload["status"] = "noop"
+            payload["message"] = "no pending or stale cycle to backfill; pass --cycle N to target one"
+            _emit_backfill(args, payload)
+            return 0
+
+    changes: dict[int, str] = {}
+    operations: list[dict[str, Any]] = []
+    for number, commit_value in full_cycles:
+        if number == target_cycle and target_token:
+            action, state = "set-commit", "ancestor"
+            if _backfill_commit_token(commit_value) == target_token:
+                action, state = "none", "ancestor"
+            else:
+                changes[number] = target_token
+            operations.append({"cycle": number, "commit": target_token, "state": state, "action": action})
+            continue
+        token = _backfill_commit_token(commit_value)
+        if token is None:
+            operations.append({"cycle": number, "commit": commit_value, "state": "exempt", "action": "none"})
+            continue
+        state = _backfill_ancestor_state(token, project)
+        if state == "stale":
+            changes[number] = "pending"
+            operations.append({"cycle": number, "commit": token, "state": "stale", "action": "reset-to-pending"})
+        else:
+            operations.append({"cycle": number, "commit": token, "state": state, "action": "none"})
+
+    payload["operations"] = operations
+    payload["changes"] = {n: v for n, v in sorted(changes.items(), reverse=True)}
+
+    if not changes:
+        payload["status"] = "clean"
+        _emit_backfill(args, payload)
+        return 0
+    if mode == "fix":
+        path.write_text(_rewrite_cycle_commits(text, changes), encoding="utf-8")
+        payload["status"] = "fixed"
+        _emit_backfill(args, payload)
+        return 0
+    payload["status"] = "action-needed"
+    _emit_backfill(args, payload)
+    return 1
+
+
 def cmd_gate(args: argparse.Namespace) -> int:
     project = getattr(args, "project", Path.cwd()).resolve()
     helper = _load_compaction_helper()
@@ -7780,6 +8049,31 @@ def _add_compact_parser_arguments(compact_parser: argparse.ArgumentParser) -> No
     compact_parser.add_argument("--format", choices=["text", "json"], default="text", help="Output format")
 
 
+def _add_backfill_parser_arguments(backfill_parser: argparse.ArgumentParser) -> None:
+    backfill_parser.add_argument(
+        "--project",
+        type=_agent_path,
+        default=Path.cwd(),
+        help="Project directory whose progress.yaml should be reconciled (default: cwd)",
+    )
+    backfill_parser.add_argument(
+        "--mode",
+        choices=["check", "fix"],
+        default="check",
+        help="Check only (exit 1 when changes are needed), or apply commit-field repairs",
+    )
+    backfill_parser.add_argument(
+        "--commit",
+        help="Product commit hash to forward-fill (must already be an ancestor of HEAD)",
+    )
+    backfill_parser.add_argument(
+        "--cycle",
+        type=int,
+        help="Cycle number to backfill with --commit (default: latest pending or stale cycle)",
+    )
+    backfill_parser.add_argument("--format", choices=["text", "json"], default="text", help="Output format")
+
+
 def _add_report_parser_arguments(report_parser: argparse.ArgumentParser) -> None:
     report_parser.add_argument("report_action", nargs="?", help="Optional action: refresh")
     report_parser.add_argument("--format", default="text", help="Output format: text or json")
@@ -7832,11 +8126,14 @@ def cmd_check(args: argparse.Namespace) -> int:
         return cmd_lint(args)
     if check_command == "compact":
         return cmd_check_compact(args)
+    if check_command == "backfill":
+        return cmd_backfill(args)
     raise ValueError(
-        "unsupported check subcommand; valid subcommands: validate, verify, lint, compact. "
+        "unsupported check subcommand; valid subcommands: validate, verify, lint, compact, backfill. "
         "Examples: agentera check validate capability hej; "
         "agentera check verify smoke installed-skills; "
-        "agentera check compact --format json"
+        "agentera check compact --format json; "
+        "agentera check backfill --mode fix"
     )
 
 
@@ -8355,6 +8652,24 @@ def build_parser() -> argparse.ArgumentParser:
         help="Check or fix artifact compaction budgets",
     )
     _add_compact_parser_arguments(check_compact)
+    check_backfill = check_sub.add_parser(
+        "backfill",
+        help="Check or fix stale/self-referential progress cycle commit hashes",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description=(
+            "Reconcile `.agentera/progress.yaml` cycle commit hashes with git history.\n\n"
+            "A cycle `commit` must be `pending`, `N/A …`, or a commit already in HEAD's "
+            "history. Hashes that resolve but are not ancestors of HEAD (the churn signature "
+            "left by `git commit --amend`) are reset to `pending` in fix mode. Use --commit "
+            "to forward-fill a known product commit into the latest pending cycle (or --cycle N); "
+            "the commit must already exist in HEAD's history.\n\n"
+            "Examples:\n"
+            "  agentera check backfill --format json\n"
+            "  agentera check backfill --mode fix\n"
+            "  agentera check backfill --mode fix --cycle 610 --commit e494ee4"
+        ),
+    )
+    _add_backfill_parser_arguments(check_backfill)
 
 
     return parser

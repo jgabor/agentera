@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+### Added
+
+- `agentera check backfill` reconciles `.agentera/progress.yaml` cycle `commit` fields with git history: `--mode fix` resets stale or self-referential hashes (left by `git commit --amend`) to `pending`, and `--commit <hash> [--cycle N]` forward-fills a product commit that already exists in HEAD's history. The command refuses any commit that is not yet an ancestor of HEAD, so a commit can never store its own hash.
+- Progress validation now rejects a cycle `commit` hash that resolves in the repository but is not an ancestor of HEAD (the amend-churn signature). `pending`, `N/A …`, and hashes absent from the local clone remain accepted.
+
 ### Changed
 
 - Consolidated session hook helpers in `hooks/common.py`: `resolve_session_path()`, uniform 10/40/50 retention caps, and `compact_session_bookmark_entries()` for timestamp-ordered session bookmarks; `compaction.py` keeps numeric-ID `compact_entries()` for artifact compaction.
