@@ -1,10 +1,29 @@
 cycles:
+- number: 612
+  timestamp: 2026-05-29 15:00
+  type: feat
+  phase: build
+  what: Add progress commit-hash churn guard and `agentera check backfill`.
+  commit: pending
+  discovered: Repo progress.yaml carried a dangling b78a417 hash across cycles 602-610
+    (orphaned by a prior amend) plus malformed multi-line commit scalars in 603-605;
+    the guard surfaced both.
+  verified: 1344 passed pytest tests/ -q -n auto; capability-contract validation pass;
+    backfill check reports clean and validate_artifact passes on the reconciled progress.yaml.
+  next: Forward-fill cycle 612 commit hash in the next cycle (never amend).
+  context:
+    intent: Break the progress commit-hash amend/backfill loop with a validator guard
+      plus a backfill command, not another manual amend.
+    constraints: No release bump; never amend to backfill; preserve comments and non-commit
+      fields when rewriting.
+    scope: hooks/validate_artifact.py, scripts/agentera check backfill, tests/test_progress_commit_guard.py,
+      CHANGELOG.
 - number: 611
   timestamp: 2026-05-29 14:00
   type: chore
   phase: build
   what: Deduplicate session hook resolve_session_path and compact_entries helpers.
-  commit: c8f9b76
+  commit: 7d17786
   discovered: None.
   verified: 1315 passed pytest tests/ -q -n auto -m 'not slow'; hooks/common.py owns
     resolve_session_path, retention caps, and compact_session_bookmark_entries; compaction.py
@@ -19,7 +38,7 @@ cycles:
   type: chore
   phase: build
   what: Consolidate yaml.safe_load None-return handling across hooks and CLI.
-  commit: b78a417
+  commit: e494ee4
   discovered: None.
   verified: 1312 passed pytest tests/ -q -n auto -m 'not slow'; added scripts/yaml_mapping.py;
     regression tests in tests/test_yaml_mapping_loader.py; smoke bundle includes yaml_mapping.py.
@@ -34,7 +53,7 @@ cycles:
   type: chore
   phase: build
   what: Tagged v2.7.5 with validation hardening and CLI namespace migration.
-  commit: b78a417
+  commit: pending
   discovered: None.
   verified: "Version surfaces bumped 2.7.1\u21922.7.5 across version_files; CHANGELOG\
     \ [2.7.5] promotes validation fixes, CLI audience namespaces, subagent tool provisioning,\
@@ -50,7 +69,7 @@ cycles:
   type: fix
   phase: build
   what: Fix 16 degraded validation and CLI consistency issues across 7-task plan.
-  commit: b78a417
+  commit: pending
   discovered: None.
   verified: "1294 passed pytest tests/ -q -n auto; 6 implementation commits verified:\n\
     \    187e7b1 fix TODO.md parser (Task 1)\n    3149cbf fix health.yaml/plan.yaml/ARCHIVE.summary\
@@ -79,7 +98,7 @@ cycles:
   phase: build
   what: Fix 5 degraded validation and CLI consistency issues in validate_artifact.py
     and scripts/agentera.
-  commit: b78a417
+  commit: pending
   discovered: None.
   verified: 1287 passed pytest tests/ -q -n auto; behavioral verification passed for
     validate artifact exit code 2 on unparseable JSON, query structured envelope,
@@ -99,7 +118,7 @@ cycles:
   phase: build
   what: Fix 7 critical validation and state-loading silent failures in validate_artifact.py
     and scripts/agentera.
-  commit: b78a417
+  commit: pending
   discovered: None.
   verified: 1285 passed pytest tests/ -q -n auto (2 pre-existing failures excluded);
     behavioral verification passed for empty schema violation, VALIDATION_RULES iteration,
@@ -118,8 +137,7 @@ cycles:
   phase: build
   what: "CLI audience namespace plan task 7 \u2014 closeout verification, measurements,\
     \ and archive."
-  commit: b78a417
-    plan'
+  commit: pending
   discovered: None.
   verified: "validate capability-contract --format json pass (2/2); check compact\
     \ pass; alias parity 0 byte/token delta (hej\u2192prime 29314B/6840tok, describe\u2192\
@@ -141,8 +159,7 @@ cycles:
   phase: build
   what: "CLI audience namespace plan task 6 \u2014 tests, semantic fixtures, JSON\
     \ manifest."
-  commit: b78a417
-    plan'
+  commit: pending
   discovered: None.
   verified: 1287 passed with pytest tests/ -q -n auto; measure_json_output_surfaces
     --enforce-budgets pass (67 surfaces, 0 violations); semantic fixtures require
@@ -159,8 +176,7 @@ cycles:
   phase: build
   what: "CLI audience namespace plan task 5 \u2014 docs, contracts, hooks, and skill\
     \ routing."
-  commit: b78a417
-    CLI forms'
+  commit: pending
   discovered: None.
   verified: 1274 passed with pytest tests/ -q -n auto; lefthook and CI call check
     compact; SKILL.md bare /agentera and bare hej route through agentera prime; planera
@@ -172,29 +188,10 @@ cycles:
       fixes.
     scope: SKILL.md, AGENTS.md, README, UPGRADE, agent-ready-state contract, hooks,
       CI, planera schema reference, focused contract tests.
-- number: 602
-  timestamp: 2026-05-25 11:30
-  type: test
-  phase: build
-  what: Pytest suite speed and coverage hygiene plan closeout.
-  commit: b78a417
-  discovered: Session-scoped primary_surface_measurements plus xdist worker scheduling
-    cut full-suite wall time more than duplicate in-process caching alone on a single
-    worker.
-  verified: 1230 passed in ~60s with pytest tests/ -q -n auto (baseline ~114s); repo-root
-    collection 1230 tests (was ~50348); pytest -m 'not slow' 1225 passed in ~12.6s;
-    lefthook unchanged; validate_app_home import tests plus SourceFileLoader agentera
-    CLI smoke.
-  next: None.
-  context:
-    intent: Close PLAN-2026-05-25-pytest-suite-speed-and-coverage-hygiene without
-      release bump.
-    constraints: Pre-commit remains full suite; no capability test consolidation.
-    scope: pyproject.toml, AGENTS.md, conftest, measure_json, vocabulary caches, query_cli
-      prime fixture, app-home and agentera coverage tests.
 archive:
 - summary: 'Cycle 605 (2026-05-25): Closed CLI audience namespace consolidation plan
     with validation, alias-parity measurements, and plan archive.'
+- summary: 'Cycle 602 (2026-05-25): Pytest suite speed and coverage hygiene plan closeout.'
 - summary: 'Cycle 601 (2026-05-25): Tagged v2.7.1 with profilera Cursor session corpus
     parity.'
 - summary: 'Cycle 600 (2026-05-25): Cursor Agent CLI store.db gap-fill extraction
@@ -267,5 +264,3 @@ archive:
     vocabulary and lifecycle fixes.'
 - summary: 'Cycle 564 (2026-05-18): Cleaned up installed-app wording that described
     Agentera app files too vaguely.'
-- summary: 'Cycle 563 (2026-05-18): Aligned doctor, hej, and upgrade app lifecycle
-    metadata with Decision 54.'
