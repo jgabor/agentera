@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [2.7.6] · 2026-05-29
+
 ### Added
 
 - `agentera check backfill` reconciles `.agentera/progress.yaml` cycle `commit` fields with git history: `--mode fix` resets stale or self-referential hashes (left by `git commit --amend`) to `pending`, and `--commit <hash> [--cycle N]` forward-fills a product commit that already exists in HEAD's history. The command refuses any commit that is not yet an ancestor of HEAD, so a commit can never store its own hash.
@@ -10,9 +12,11 @@
 ### Changed
 
 - Consolidated session hook helpers in `hooks/common.py`: `resolve_session_path()`, uniform 10/40/50 retention caps, and `compact_session_bookmark_entries()` for timestamp-ordered session bookmarks; `compaction.py` keeps numeric-ID `compact_entries()` for artifact compaction.
+- Consolidated progress-commit and git-ancestry logic in `scripts/progress_commit.py`, consumed by `agentera check backfill` and the validate-artifact progress guard via the documented `hooks/common.py` scripts bridge.
 
 ### Fixed
 
+- Fixed progress commit guard YAML loading: `_validate_progress_commits` now uses `load_yaml_mapping()` like other artifact paths, returning no commit violation on corrupt or non-mapping progress YAML while structural errors remain reported separately.
 - Fixed `agentera check compact` and gate traceback on invalid compactable YAML roots: `compute_compaction_status` now catches `yaml.YAMLError` from list/scalar/malformed roots and reports an error-classified status row with exit code 2 instead of raising, while still classifying healthy artifacts.
 - Fixed inconsistent `yaml.safe_load()` `None` handling across hooks and the CLI: added `scripts/yaml_mapping.py` with `load_yaml_mapping()`, aligned compaction, `validate_artifact`, session hooks, `scripts/agentera`, and production registry/contract loaders so empty YAML maps to `{}` where appropriate while validators still reject non-mapping roots.
 

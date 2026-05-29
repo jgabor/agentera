@@ -1,11 +1,28 @@
 cycles:
+- number: 615
+  timestamp: 2026-05-29 18:00
+  type: fix
+  phase: build
+  what: Consolidate progress-commit guard onto shared module; release 2.7.6.
+  commit: pending
+  discovered: None.
+  verified: tests/test_progress_commit_guard.py 31 passed; capability-contract 2/2;
+    full suite 1335 passed with 30 pre-existing macOS AGENTERA_HOME/corpus failures
+    unrelated to this plan.
+  next: None.
+  context:
+    intent: Close plan tasks 2-6 after task 1 extraction (6530f42).
+    constraints: No remote push; never amend to backfill progress commit fields.
+    scope: hooks/validate_artifact.py, hooks/common.py, scripts/progress_commit.py,
+      tests/test_progress_commit_guard.py, progress schema, UPGRADE.md, version_files,
+      CHANGELOG, TODO.md, plan.yaml, progress.yaml.
 - number: 614
   timestamp: 2026-05-29 17:00
   type: refactor
   phase: build
   what: Extract shared scripts/progress_commit.py; make `agentera check backfill`
     a thin consumer.
-  commit: pending
+  commit: '6530f42 refactor(cli): extract progress-commit logic into shared module'
   discovered: "tests/test_progress_commit_guard.py repo fixture is pre-existing flaky\u2014\
     its amended-away stale commit intermittently becomes unreachable under full-suite\
     \ load (original main 4/12 fail vs refactor 1/12), flaking test_stale_hash_is_flagged\
@@ -179,29 +196,9 @@ cycles:
     constraints: Must not break existing passing validation for well-formed artifacts.
       Must preserve exit code contracts.
     scope: hooks/validate_artifact.py and scripts/agentera only.
-- number: 605
-  timestamp: 2026-05-25 15:45
-  type: chore
-  phase: build
-  what: "CLI audience namespace plan task 7 \u2014 closeout verification, measurements,\
-    \ and archive."
-  commit: pending
-  discovered: None.
-  verified: "validate capability-contract --format json pass (2/2); check compact\
-    \ pass; alias parity 0 byte/token delta (hej\u2192prime 29314B/6840tok, describe\u2192\
-    schema 101612B/23734tok, plan\u2192state plan 19204B/4286tok, progress\u2192state\
-    \ progress 5447B/1377tok, gate\u2192check compact 5271B/1465tok); canonical namespace\
-    \ manifest totals prime 15/195957B/43304tok, schema 1/101612B/23734tok, state\
-    \ 14/198284B/45051tok, report 4/2417B/699tok, check 17/31245B/8916tok (51 surfaces\
-    \ 529515B/121704tok); measure_json_output_surfaces --token-mode exact --enforce-budgets\
-    \ 67 surfaces 0 violations; 1287 passed pytest tests/ -q -n auto; archived PLAN-2026-05-25-cli-audience-namespace-consolidation.yaml\
-    \ and removed active plan.yaml."
-  next: None.
-  context:
-    intent: Close CLI audience namespace consolidation plan per Realisera task 7.
-    constraints: No version bump, tag, or remote push.
-    scope: Progress evidence, plan archive, validation and measurement closeout only.
 archive:
+- summary: "Cycle 605 (2026-05-25): CLI audience namespace plan task 7 \u2014 closeout\
+    \ verification, measurements, and archive."
 - summary: 'Cycle 605 (2026-05-25): Closed CLI audience namespace consolidation plan
     with validation, alias-parity measurements, and plan archive.'
 - summary: "Cycle 604 (2026-05-25): CLI audience namespace plan task 6 \u2014 tests,\
@@ -275,5 +272,3 @@ archive:
     with canonical route/suggest/delegate/spawn/subagent-mechanism terms across current
     non-archived files.'
 - summary: 'Cycle 567 (2026-05-18): Qualified ambiguous current SKILL.md prose references.'
-- summary: 'Cycle 566 (2026-05-18): Fixed installed hej entrypoint script-path construction
-    for unset app-home environments.'
