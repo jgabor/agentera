@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Added
+
+- Published npm placeholder package `agentera@0.0.0` from `packages/cli`: reserves `npx agentera`, delegates to the Python CLI via app-home, repo `uv run`, or pinned `uvx` from GitHub (`v2.7.6`).
+
 ## [2.7.6] · 2026-05-29
 
 ### Added

@@ -38,6 +38,9 @@ records:
         - id: opencode-plugin-marker
           path: .opencode/plugins/agentera.js
           selector: AGENTERA_VERSION
+        - id: npm-cli
+          path: packages/cli/package.json
+          selector: version
       excluded_runtime_manifests:
         - .opencode/package.json
     runtime_package_manifests:
@@ -130,6 +133,8 @@ records:
           path: .opencode/agents
         - id: opencode-plugins
           path: .opencode/plugins
+        - id: cli-package
+          path: packages/cli
       files:
         - id: readme
           path: README.md

@@ -61,6 +61,8 @@ for a full dump of project state on every turn.
 
 Your first briefing bootstraps `.agentera/` as capabilities run.
 
+An npm package named [`agentera`](packages/cli/) (placeholder `0.0.x` shim) reserves `npx agentera` for the Agentera 3.0 CLI. Until then it delegates to the Python CLI when `uv` or an installed app-home is available; see [packages/cli/README.md](packages/cli/README.md).
+
 <details>
 <summary><strong>Claude Code</strong></summary>
 

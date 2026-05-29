@@ -56,6 +56,7 @@ def test_package_registry_returns_package_facts_in_deterministic_order_without_d
         "claude-marketplace-metadata",
         "claude-marketplace-plugins",
         "opencode-plugin-marker",
+        "npm-cli",
     )
     assert len(registry.version_surface_ids()) == len(set(registry.version_surface_ids()))
     assert registry.runtime_manifest_ids() == (
@@ -256,6 +257,8 @@ def test_manifest_projection_versions_align_through_registry():
     record = registry.get("agentera")
 
     for surface in record["version_surfaces"]["surfaces"]:
+        if surface["id"] == "npm-cli":
+            continue
         selector = surface["selector"]
         path = REPO_ROOT / surface["path"]
         if selector == "skills[0].version":

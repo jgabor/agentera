@@ -13,3 +13,4 @@ bun.lock
 packages/web/dist
 packages/web/.astro
 packages/web/.wrangler
+packages/cli/*.tgz

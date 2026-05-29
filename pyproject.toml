@@ -87,6 +87,7 @@ show_missing = true
 ".opencode/agents" = "agentera/bundle/.opencode/agents"
 ".opencode/plugins" = "agentera/bundle/.opencode/plugins"
 ".opencode/package.json" = "agentera/bundle/.opencode/package.json"
+"packages/cli" = "agentera/bundle/packages/cli"
 "README.md" = "agentera/bundle/README.md"
 "UPGRADE.md" = "agentera/bundle/UPGRADE.md"
 "CHANGELOG.md" = "agentera/bundle/CHANGELOG.md"

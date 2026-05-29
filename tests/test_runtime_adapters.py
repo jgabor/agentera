@@ -369,6 +369,8 @@ def _validate_package_versions(root: Path = REPO_ROOT, package_manifest: Any | N
 def _version_surface_values(root: Path, package_manifest: Any) -> dict[str, Any]:
     surfaces: dict[str, Any] = {}
     for surface in package_manifest.consumer_view("validator")["version_surfaces"]["surfaces"]:
+        if surface.get("id") == "npm-cli":
+            continue
         path = surface["path"]
         selector = surface["selector"]
         if selector == "skills[0].version":
@@ -885,7 +887,10 @@ def _validate_package_surface_characterization(root: Path = REPO_ROOT) -> list[s
     for excluded_path in excluded_paths:
         if excluded_path in version_files:
             errors.append("DOCS version_files must exclude non-version-bearing OpenCode package.json")
+    decoupled_version_surfaces = {"npm-cli"}
     for surface in validator_view["version_surfaces"]["surfaces"]:
+        if surface["id"] in decoupled_version_surfaces:
+            continue
         if surface["path"] not in version_files:
             errors.append(f"DOCS version_files must include version-bearing surface {surface['path']}")
     return errors

@@ -124,6 +124,7 @@ def _install_runtime_surface(app_home: Path) -> Path:
         ".opencode/commands",
         ".opencode/agents",
         ".opencode/plugins",
+        "packages/cli",
     ):
         source = REPO_ROOT / directory
         if source.exists():
