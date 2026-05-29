@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Changed
+
+- Consolidated session hook helpers in `hooks/common.py`: `resolve_session_path()`, uniform 10/40/50 retention caps, and `compact_session_bookmark_entries()` for timestamp-ordered session bookmarks; `compaction.py` keeps numeric-ID `compact_entries()` for artifact compaction.
+
 ### Fixed
 
 - Fixed inconsistent `yaml.safe_load()` `None` handling across hooks and the CLI: added `scripts/yaml_mapping.py` with `load_yaml_mapping()`, aligned compaction, `validate_artifact`, session hooks, `scripts/agentera`, and production registry/contract loaders so empty YAML maps to `{}` where appropriate while validators still reject non-mapping roots.

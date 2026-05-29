@@ -20,7 +20,6 @@ Run standalone for testing:
 from __future__ import annotations
 
 import json
-import hashlib
 import os
 import re
 import sys
@@ -33,21 +32,8 @@ from common import (
     load_yaml_mapping,
     parse_artifact_mapping,
     resolve_artifact_path,
+    resolve_session_path,
 )
-
-
-def resolve_session_path(project_root: Path) -> Path:
-    """Return the runtime-local session bookmark path for this project."""
-    base = os.environ.get("AGENTERA_HOME")
-    if base:
-        data_home = Path(base).expanduser()
-    else:
-        xdg_data_home = os.environ.get("XDG_DATA_HOME")
-        data_home = Path(xdg_data_home).expanduser() / "agentera" if xdg_data_home else Path.home() / ".local" / "share" / "agentera"
-    resolved = str(project_root.resolve())
-    digest = hashlib.sha256(resolved.encode("utf-8")).hexdigest()[:16]
-    slug = re.sub(r"[^A-Za-z0-9_.-]+", "-", project_root.name).strip(".-") or "project"
-    return data_home / "sessions" / f"{slug}-{digest}" / "session.yaml"
 
 
 # ---------------------------------------------------------------------------

@@ -6,8 +6,6 @@
 
 ## → Normal
 
-- [chore:3.0.0] Consolidate duplicated `compact_entries()` implementations: `session_stop.py:265-283` has its own version with different logic (missing decision protection) from `compaction.py:1036-1078`. Extract shared logic.
-- [chore:3.0.0] Consolidate duplicated `resolve_session_path()`: identical in `session_start.py:38-49` and `session_stop.py:62-73`. Move to `common.py`.
 - [chore:3.0.0] Remove v1 legacy cruft after the 3.0 compatibility boundary (see also Tier C in [`references/meta/documentation-inventory.md`](references/meta/documentation-inventory.md)): delete obsolete migration paths, stale v1 runtime bridge behavior, v1 skill bundle/suite wording, legacy fixture assumptions, and compatibility-only docs/tests that no longer protect supported Agentera behavior.
 - [chore:3.0.0] Enforce Decision 58's single-name protocol boundary: remove every backwards-compatible, deprecated, parallel, display-only, or storage/protocol split name for artifacts, concepts, primitives, command surfaces, schema fields, metadata fields, runtime adapter surfaces, and protocol identities. Zero post-3.0 surfaces may retain legacy aliases or multiple names; old names must be removed or migrated, not supported alongside the canonical name.
 - [chore:3.0.0] Design the Bun/npm packaging plan for Agentera 3.0, including single-binary delivery, npm package layout, app-home migration from Python-managed installs, and preserved direct-helper compatibility boundaries where still needed.
@@ -19,6 +17,7 @@
 
 ## ✓ Resolved
 
+- ~~[chore:3.0.0] Consolidate duplicated hook session helpers (`compact_entries`, `resolve_session_path`).~~ · resolved by moving `resolve_session_path()`, retention caps, and `compact_session_bookmark_entries()` into `hooks/common.py`, keeping numeric-ID `compaction.compact_entries()` for artifacts, and adding `tests/test_hooks_common.py`.
 - ~~[chore:3.0.0] Consolidate `yaml.safe_load()` `None`-return patterns across the codebase.~~ · resolved by `scripts/yaml_mapping.py` with `load_yaml_mapping()`, hook and CLI alignment, regression tests in `tests/test_yaml_mapping_loader.py`, and smoke bundle copy of `yaml_mapping.py`.
 - ~~[fix] Agentera subagent descriptors define zero tool/permission configuration~~ · resolved: created capability-tool-classification.yaml authority, updated 12 OpenCode agents with frontmatter permissions, strengthened 12 Codex agent instructions, updated runtime adapter docs/parity tables/interface model, extended CLI validate descriptors command to check permissions/guidance, and added regression tests.
 - ~~[test] No formal JSON schema validation for CLI `--format json` output~~ · resolved: added tests verifying all JSON surface outputs against formal schemas.

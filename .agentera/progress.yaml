@@ -1,10 +1,25 @@
 cycles:
+- number: 611
+  timestamp: 2026-05-29 14:00
+  type: chore
+  phase: build
+  what: Deduplicate session hook resolve_session_path and compact_entries helpers.
+  commit: c8f9b76
+  discovered: None.
+  verified: 1315 passed pytest tests/ -q -n auto -m 'not slow'; hooks/common.py owns
+    resolve_session_path, retention caps, and compact_session_bookmark_entries; compaction.py
+    keeps numeric-ID compact_entries.
+  next: Archive completed plan when starting the next cycle.
+  context:
+    intent: Orkestrera execution of hooks session compaction deduplication plan.
+    constraints: Chore-only; preserve session bookmark and artifact compaction behavior.
+    scope: hooks/common.py, session_start.py, session_stop.py, compaction.py, tests/test_hooks_common.py.
 - number: 610
   timestamp: 2026-05-29 12:00
   type: chore
   phase: build
   what: Consolidate yaml.safe_load None-return handling across hooks and CLI.
-  commit: pending
+  commit: b78a417
   discovered: None.
   verified: 1312 passed pytest tests/ -q -n auto -m 'not slow'; added scripts/yaml_mapping.py;
     regression tests in tests/test_yaml_mapping_loader.py; smoke bundle includes yaml_mapping.py.
@@ -19,7 +34,7 @@ cycles:
   type: chore
   phase: build
   what: Tagged v2.7.5 with validation hardening and CLI namespace migration.
-  commit: pending
+  commit: b78a417
   discovered: None.
   verified: "Version surfaces bumped 2.7.1\u21922.7.5 across version_files; CHANGELOG\
     \ [2.7.5] promotes validation fixes, CLI audience namespaces, subagent tool provisioning,\
@@ -35,7 +50,7 @@ cycles:
   type: fix
   phase: build
   what: Fix 16 degraded validation and CLI consistency issues across 7-task plan.
-  commit: bea9cda
+  commit: b78a417
   discovered: None.
   verified: "1294 passed pytest tests/ -q -n auto; 6 implementation commits verified:\n\
     \    187e7b1 fix TODO.md parser (Task 1)\n    3149cbf fix health.yaml/plan.yaml/ARCHIVE.summary\
@@ -64,7 +79,7 @@ cycles:
   phase: build
   what: Fix 5 degraded validation and CLI consistency issues in validate_artifact.py
     and scripts/agentera.
-  commit: c096d83
+  commit: b78a417
   discovered: None.
   verified: 1287 passed pytest tests/ -q -n auto; behavioral verification passed for
     validate artifact exit code 2 on unparseable JSON, query structured envelope,
@@ -84,7 +99,7 @@ cycles:
   phase: build
   what: Fix 7 critical validation and state-loading silent failures in validate_artifact.py
     and scripts/agentera.
-  commit: 6c3e37a
+  commit: b78a417
   discovered: None.
   verified: 1285 passed pytest tests/ -q -n auto (2 pre-existing failures excluded);
     behavioral verification passed for empty schema violation, VALIDATION_RULES iteration,
@@ -103,7 +118,7 @@ cycles:
   phase: build
   what: "CLI audience namespace plan task 7 \u2014 closeout verification, measurements,\
     \ and archive."
-  commit: 'acb6ee9 test(cli): migrate fixtures, manifest, and close out namespace
+  commit: b78a417
     plan'
   discovered: None.
   verified: "validate capability-contract --format json pass (2/2); check compact\
@@ -126,7 +141,7 @@ cycles:
   phase: build
   what: "CLI audience namespace plan task 6 \u2014 tests, semantic fixtures, JSON\
     \ manifest."
-  commit: 'acb6ee9 test(cli): migrate fixtures, manifest, and close out namespace
+  commit: b78a417
     plan'
   discovered: None.
   verified: 1287 passed with pytest tests/ -q -n auto; measure_json_output_surfaces
@@ -144,7 +159,7 @@ cycles:
   phase: build
   what: "CLI audience namespace plan task 5 \u2014 docs, contracts, hooks, and skill\
     \ routing."
-  commit: '19b09bd docs(cli): migrate docs and hooks to prime, schema, and namespace
+  commit: b78a417
     CLI forms'
   discovered: None.
   verified: 1274 passed with pytest tests/ -q -n auto; lefthook and CI call check
@@ -162,7 +177,7 @@ cycles:
   type: test
   phase: build
   what: Pytest suite speed and coverage hygiene plan closeout.
-  commit: pending
+  commit: b78a417
   discovered: Session-scoped primary_surface_measurements plus xdist worker scheduling
     cut full-suite wall time more than duplicate in-process caching alone on a single
     worker.
@@ -177,26 +192,11 @@ cycles:
     constraints: Pre-commit remains full suite; no capability test consolidation.
     scope: pyproject.toml, AGENTS.md, conftest, measure_json, vocabulary caches, query_cli
       prime fixture, app-home and agentera coverage tests.
-- number: 601
-  timestamp: 2026-05-25 10:00
-  type: chore
-  phase: build
-  what: Tagged v2.7.1 with profilera Cursor session corpus parity.
-  commit: pending
-  discovered: None.
-  verified: "Version surfaces bumped 2.7.0\u21922.7.1 across version_files; CHANGELOG\
-    \ [2.7.1] promotes Cursor IDE JSONL and cursor-agent CLI gap-fill extraction;\
-    \ 20 test_extract_corpus.py cases pass; validate_lifecycle-adapters and version\
-    \ alignment tests pass; git tag v2.7.1 applied after release commit."
-  next: Push main and v2.7.1 tag when approved.
-  context:
-    intent: Patch release closeout for profilera Cursor corpus mining after explicit
-      2.7.1 target approval.
-    constraints: No remote push unless requested.
-    scope: CHANGELOG, version_files, PROGRESS, tag only.
 archive:
 - summary: 'Cycle 605 (2026-05-25): Closed CLI audience namespace consolidation plan
     with validation, alias-parity measurements, and plan archive.'
+- summary: 'Cycle 601 (2026-05-25): Tagged v2.7.1 with profilera Cursor session corpus
+    parity.'
 - summary: 'Cycle 600 (2026-05-25): Cursor Agent CLI store.db gap-fill extraction
     for profilera corpus.'
 - summary: 'Cycle 599 (2026-05-25): Profilera Cursor IDE session corpus parity via
@@ -269,5 +269,3 @@ archive:
     Agentera app files too vaguely.'
 - summary: 'Cycle 563 (2026-05-18): Aligned doctor, hej, and upgrade app lifecycle
     metadata with Decision 54.'
-- summary: 'Cycle 562 (2026-05-18): Added the Decision 57 capability instruction contract
-    authority.'
