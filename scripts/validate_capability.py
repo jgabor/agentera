@@ -23,7 +23,9 @@ from pathlib import Path
 
 import yaml
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
+_SCRIPTS_DIR = Path(__file__).resolve().parent
+sys.path.insert(0, str(_SCRIPTS_DIR))
+from yaml_mapping import load_yaml_mapping  # noqa: E402
 from capability_contract import CapabilitySchemaContract, load_capability_schema_contract
 
 PROTOCOL_GROUPS = (
@@ -39,13 +41,11 @@ PROTOCOL_GROUPS = (
 )
 
 def load_contract(contract_path: Path) -> dict:
-    with open(contract_path) as f:
-        return yaml.safe_load(f)
+    return load_yaml_mapping(contract_path.read_text(encoding="utf-8"))
 
 
 def load_schema_file(path: Path) -> dict:
-    with open(path) as f:
-        return yaml.safe_load(f) or {}
+    return load_yaml_mapping(path.read_text(encoding="utf-8"))
 
 
 def collect_schema_groups(
@@ -253,8 +253,7 @@ def validate_capability(cap_dir: Path, contract_path: Path) -> list[str]:
 
 
 def load_protocol(protocol_path: Path) -> dict:
-    with open(protocol_path) as f:
-        return yaml.safe_load(f)
+    return load_yaml_mapping(protocol_path.read_text(encoding="utf-8"))
 
 
 def build_protocol_value_lookup(protocol_data: dict) -> dict[str, set[str]]:

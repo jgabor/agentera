@@ -29,6 +29,11 @@ from typing import Any
 
 import yaml
 
+_SCRIPTS_DIR = Path(__file__).resolve().parent
+if str(_SCRIPTS_DIR) not in sys.path:
+    sys.path.insert(0, str(_SCRIPTS_DIR))
+from yaml_mapping import load_yaml_mapping  # noqa: E402
+
 REPO_ROOT = Path(__file__).resolve().parent.parent
 CONTRACT_PATH = REPO_ROOT / "references" / "analysis" / "startup-measurement-contract.yaml"
 EXTRACT_CORPUS_PATH = REPO_ROOT / "scripts" / "extract_corpus.py"
@@ -184,10 +189,10 @@ _XML_ROUTE_RE = re.compile(r"<command-name>\s*/(?:agentera\s+)?(?P<route>[A-Za-z
 def load_contract(path: Path = CONTRACT_PATH) -> dict[str, Any]:
     """Load the startup measurement contract from YAML."""
 
-    data = yaml.safe_load(path.read_text(encoding="utf-8"))
-    if not isinstance(data, dict):
-        raise ValueError(f"contract must be a mapping: {path}")
-    return data
+    try:
+        return load_yaml_mapping(path.read_text(encoding="utf-8"))
+    except yaml.YAMLError as exc:
+        raise ValueError(f"contract must be a mapping: {path}") from exc
 
 
 def hash_label(kind: str, value: object, *, salt: str) -> str:

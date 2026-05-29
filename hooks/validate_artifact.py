@@ -32,7 +32,10 @@ _hooks_dir = str(Path(__file__).resolve().parent)
 if _hooks_dir not in sys.path:
     sys.path.insert(0, _hooks_dir)
 
-from common import DEFAULT_ARTIFACT_PATHS as _DEFAULT_ARTIFACT_PATHS
+from common import (
+    DEFAULT_ARTIFACT_PATHS as _DEFAULT_ARTIFACT_PATHS,
+    load_yaml_mapping,
+)
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SCHEMAS_DIR = REPO_ROOT / "skills" / "agentera" / "schemas" / "artifacts"
@@ -852,11 +855,11 @@ def _docs_path_overrides(cwd: str) -> dict[str, str]:
     if not docs_path.is_file():
         return {}
     try:
-        data = yaml.safe_load(docs_path.read_text(encoding="utf-8"))
+        data = load_yaml_mapping(docs_path.read_text(encoding="utf-8"))
     except Exception as exc:
         print(f"warning: failed to load docs path overrides: {exc}", file=sys.stderr)
         return {}
-    mapping = data.get("mapping") if isinstance(data, dict) else None
+    mapping = data.get("mapping")
     if not isinstance(mapping, list):
         return {}
     overrides: dict[str, str] = {}
@@ -918,8 +921,8 @@ class ArtifactSchemaValidator:
         if name not in self._schema_cache:
             path = self.schemas_dir / f"{name}.yaml"
             if path.is_file():
-                with open(path) as f:
-                    self._schema_cache[name] = yaml.safe_load(f) or {}
+                with open(path, encoding="utf-8") as f:
+                    self._schema_cache[name] = load_yaml_mapping(f.read())
             else:
                 self._schema_cache[name] = None
         return self._schema_cache[name]

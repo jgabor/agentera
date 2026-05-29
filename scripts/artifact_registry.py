@@ -9,14 +9,18 @@ from __future__ import annotations
 
 import os
 import re
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
 import yaml
 
-
 REPO_ROOT = Path(__file__).resolve().parent.parent
+_SCRIPTS_DIR = Path(__file__).resolve().parent
+if str(_SCRIPTS_DIR) not in sys.path:
+    sys.path.insert(0, str(_SCRIPTS_DIR))
+from yaml_mapping import load_yaml_mapping  # noqa: E402
 ARTIFACT_SCHEMAS_DIR = REPO_ROOT / "skills" / "agentera" / "schemas" / "artifacts"
 REGISTRY_MODEL_PATH = REPO_ROOT / "references" / "artifacts" / "artifact-registry-interface-model.yaml"
 
@@ -36,8 +40,7 @@ class ArtifactRecord:
 
 def load_yaml(path: Path) -> dict[str, Any]:
     with path.open("r", encoding="utf-8") as fh:
-        data = yaml.safe_load(fh)
-    return data if isinstance(data, dict) else {}
+        return load_yaml_mapping(fh.read())
 
 
 def as_set(value: Any) -> set[str]:
@@ -157,12 +160,11 @@ def load_docs_path_overrides(project_root: Path) -> dict[str, str]:
     if not docs_path.exists():
         return {}
     try:
-        data = yaml.safe_load(docs_path.read_text(encoding="utf-8"))
+        data = load_yaml_mapping(docs_path.read_text(encoding="utf-8"))
     except Exception as exc:
-        import sys
         print(f"warning: failed to load docs path overrides: {exc}", file=sys.stderr)
         return {}
-    mapping = data.get("mapping") if isinstance(data, dict) else None
+    mapping = data.get("mapping")
     if not isinstance(mapping, list):
         return {}
     overrides: dict[str, str] = {}

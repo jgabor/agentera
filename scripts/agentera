@@ -52,6 +52,11 @@ from typing import Any
 
 import yaml
 
+_SCRIPTS_DIR = Path(__file__).resolve().parent
+if str(_SCRIPTS_DIR) not in sys.path:
+    sys.path.insert(0, str(_SCRIPTS_DIR))
+from yaml_mapping import load_yaml_mapping  # noqa: E402
+
 from artifact_registry import (
     ArtifactRecord,
     load_artifact_registry,
@@ -468,8 +473,11 @@ def _load_artifact(path: Path) -> Any:
     if not path.exists():
         return None
     try:
-        with open(path) as f:
-            return yaml.safe_load(f)
+        with open(path, encoding="utf-8") as f:
+            content = f.read()
+        if path.suffix.lower() in {".yaml", ".yml"}:
+            return load_yaml_mapping(content)
+        return yaml.safe_load(content)
     except Exception as exc:
         if path.suffix.lower() != ".md":
             print(f"warning: failed to parse artifact {path}: {exc}", file=sys.stderr)
@@ -1539,10 +1547,10 @@ def _capability_artifact_inventory(capability: str) -> tuple[dict[str, list[str]
     if not path.is_file():
         return inventory, f"No capability artifact schema found for {capability}."
     try:
-        data = yaml.safe_load(path.read_text(encoding="utf-8"))
+        data = load_yaml_mapping(path.read_text(encoding="utf-8"))
     except Exception as exc:
         return inventory, f"Capability artifact schema for {capability} could not be read: {exc}"
-    artifacts = data.get("ARTIFACTS") if isinstance(data, dict) else None
+    artifacts = data.get("ARTIFACTS")
     if not isinstance(artifacts, dict):
         return inventory, f"Capability artifact schema for {capability} has no ARTIFACTS mapping."
     errors: list[str] = []
@@ -1582,11 +1590,10 @@ def _capability_instruction_contract() -> dict[str, Any]:
     if not path.is_file():
         return {}
     try:
-        data = yaml.safe_load(path.read_text(encoding="utf-8"))
+        return load_yaml_mapping(path.read_text(encoding="utf-8"))
     except Exception as exc:
         print(f"warning: failed to load capability instruction contract: {exc}", file=sys.stderr)
         return {}
-    return data if isinstance(data, dict) else {}
 
 
 def _capability_instruction_target(capability: str) -> dict[str, Any]:
@@ -4259,12 +4266,9 @@ def _load_decision45_contract() -> tuple[dict[str, Any] | None, str | None]:
     if not path.is_file():
         return None, "Decision 45 CLI contract is missing"
     try:
-        data = yaml.safe_load(path.read_text(encoding="utf-8"))
+        return load_yaml_mapping(path.read_text(encoding="utf-8")), None
     except Exception as exc:
         return None, f"Decision 45 CLI contract could not be read: {exc}"
-    if not isinstance(data, dict):
-        return None, "Decision 45 CLI contract did not parse as a mapping"
-    return data, None
 
 
 def _schema_field_description(entry: dict[str, Any]) -> dict[str, Any]:
@@ -5316,7 +5320,7 @@ def _descriptor_validation_payload() -> dict[str, Any]:
     violations: list[str] = []
 
     try:
-        classification_data = yaml.safe_load(classification_path.read_text(encoding="utf-8"))
+        classification_data = load_yaml_mapping(classification_path.read_text(encoding="utf-8"))
         cap_permissions = {}
         for category_name, category_data in classification_data["classification"].items():
             for capability, cap_data in category_data["capabilities"].items():
@@ -5381,7 +5385,7 @@ def _descriptor_validation_payload() -> dict[str, Any]:
             if lines and lines[0] == "---":
                 closing = lines.index("---", 1)
                 frontmatter_text = "\n".join(lines[1:closing])
-                frontmatter = yaml.safe_load(frontmatter_text) or {}
+                frontmatter = load_yaml_mapping(frontmatter_text)
         except Exception:
             frontmatter = {}
 
@@ -8191,7 +8195,7 @@ def build_parser() -> argparse.ArgumentParser:
     u.add_argument(
         "--runtime",
         action="append",
-        choices=["claude", "opencode", "copilot", "codex"],
+        choices=["claude", "opencode", "copilot", "codex", "cursor"],
         help="Runtime to include; may be repeated (default: all runtimes)",
     )
     u.add_argument(

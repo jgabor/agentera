@@ -7,13 +7,17 @@
 
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 from typing import Any, Mapping
 
 import yaml
 
-
 ROOT = Path(__file__).resolve().parents[1]
+_SCRIPTS_DIR = Path(__file__).resolve().parent
+if str(_SCRIPTS_DIR) not in sys.path:
+    sys.path.insert(0, str(_SCRIPTS_DIR))
+from yaml_mapping import load_yaml_mapping  # noqa: E402
 DEFAULT_REGISTRY_PATH = ROOT / "references/adapters/runtime-adapter-registry.yaml"
 EXPECTED_RUNTIME_ORDER = ("claude", "opencode", "copilot", "codex", "cursor", "cursor-agent")
 REQUIRED_GROUPS = (
@@ -163,7 +167,7 @@ class RuntimeAdapterRegistry:
 
 def load_registry(path: Path = DEFAULT_REGISTRY_PATH) -> RuntimeAdapterRegistry:
     with path.open(encoding="utf-8") as handle:
-        data = yaml.safe_load(handle)
+        data = load_yaml_mapping(handle.read())
     errors = validate_registry_data(data)
     if errors:
         raise RegistryError("RuntimeAdapter registry validation failed: " + "; ".join(errors))
@@ -174,7 +178,7 @@ def load_registry(path: Path = DEFAULT_REGISTRY_PATH) -> RuntimeAdapterRegistry:
 
 def validate_registry_file(path: Path = DEFAULT_REGISTRY_PATH) -> list[str]:
     with path.open(encoding="utf-8") as handle:
-        return validate_registry_data(yaml.safe_load(handle))
+        return validate_registry_data(load_yaml_mapping(handle.read()))
 
 
 def validate_registry_data(data: Any) -> list[str]:

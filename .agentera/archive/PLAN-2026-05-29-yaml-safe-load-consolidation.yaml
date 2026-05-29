@@ -1,0 +1,98 @@
+header:
+  level: full
+  created: "2026-05-29"
+  status: complete
+  reviewed: "2026-05-29"
+  critic_issues: "4 found, 3 addressed, 1 dismissed"
+  title: YAML safe_load None-return consolidation
+what: >-
+  Standardize YAML parsing across hooks and production scripts so mapping-shaped
+  artifacts never propagate None from empty or whitespace-only parses. Introduce
+  a shared load contract, align validate_artifact and agentera state paths, and
+  add regression coverage for silent parsing failures.
+why: >-
+  compaction.py already guards with `or {}`; validate_artifact.py and
+  scripts/agentera do not consistently. Empty YAML can yield None and cause
+  silent misreads, skipped validation, or downstream errors instead of
+  predictable empty-mapping behavior or explicit violations.
+constraints: >-
+  Full pytest suite must stay green. Preserve validator exit codes (0 pass,
+  2 violation). Chore-only work (no version bump). Do not modify vision.yaml
+  or objective state.
+scope:
+  included:
+    - hooks/common.py (shared helper)
+    - hooks/validate_artifact.py
+    - hooks/session_start.py
+    - hooks/session_stop.py
+    - hooks/compaction.py
+    - scripts/agentera
+    - scripts/artifact_registry.py
+    - scripts/validate_capability.py
+    - scripts/package_registry.py
+    - scripts/runtime_adapter_registry.py
+    - scripts/startup_analysis_contract.py
+    - TODO.md, CHANGELOG.md, progress.yaml (final sync only)
+  excluded:
+    - Vision and objective state (protected)
+    - Mechanical rewrite of every test-file safe_load call
+    - compact_entries and resolve_session_path consolidation TODOs
+    - v1 removal and TypeScript rewrite initiatives
+  deferred:
+    - Repo-wide test-only safe_load normalization unless needed for contract docs
+design: >-
+  Add one canonical mapping loader in hooks/common.py imported by hooks and
+  scripts. Policy: mapping artifacts default to {} when parse is None where
+  empty content is valid; validator paths that require a mapping keep explicit
+  root-must-be-mapping violations for empty input. Task 1 defines the helper;
+  tasks 2 and 3 harden hooks and scripts in parallel; task 4 adds regression
+  tests; task 5 syncs TODO, changelog, and progress.
+tasks:
+  - number: 1
+    name: Define shared YAML load contract
+    depends_on: []
+    status: complete
+    acceptance:
+      - GIVEN hooks/common.py WHEN the shared mapping loader is imported THEN empty or whitespace-only YAML text returns an empty dict without raising
+      - GIVEN the loader WHEN parse raises YAMLError THEN the error propagates or is handled per documented contract
+      - GIVEN compaction.py artifact reads WHEN updated THEN they use the shared loader instead of inline safe_load or {}
+  - number: 2
+    name: Harden hooks
+    depends_on: ["1"]
+    status: complete
+    acceptance:
+      - GIVEN empty or whitespace-only YAML artifact content WHEN validate_artifact validates THEN exit code 2 with root must be a mapping violation
+      - GIVEN docs.yaml override load WHEN file parses to None THEN overrides resolve to empty dict without AttributeError
+      - GIVEN schema cache load WHEN schema file is empty THEN cache stores empty dict and validation degrades predictably
+  - number: 3
+    name: Harden scripts and CLI
+    depends_on: ["1"]
+    status: complete
+    acceptance:
+      - GIVEN _load_artifact on empty existing YAML file WHEN CLI reads artifact THEN returns empty mapping not None
+      - GIVEN production scripts in scope WHEN loading registry or contract YAML THEN no bare safe_load without None guard remains
+      - GIVEN agentera state commands on empty mapped artifacts WHEN run THEN structured output completes without None-related failure
+  - number: 4
+    name: Regression tests
+    depends_on: ["2", "3"]
+    status: complete
+    acceptance:
+      - GIVEN new tests for empty YAML in validator WHEN run THEN assert exit 2 and mapping-root violation message
+      - GIVEN new tests for CLI artifact load WHEN empty YAML THEN assert empty mapping behavior not None leak
+      - GIVEN full pytest suite WHEN run THEN all tests pass with no regressions
+  - number: 5
+    name: Final state sync
+    depends_on: ["1", "2", "3", "4"]
+    status: complete
+    acceptance:
+      - GIVEN all tasks complete WHEN final sync runs THEN TODO.md marks the yaml.safe_load consolidation item resolved
+      - GIVEN all tasks complete WHEN final sync runs THEN CHANGELOG.md has a Fixed or Changed entry under Unreleased
+      - GIVEN all tasks complete WHEN final sync runs THEN progress.yaml has a new cycle entry
+overall_acceptance: >-
+  GIVEN empty or whitespace-only YAML artifact WHEN validator runs THEN exit 2
+  with mapping-root violation not silent pass. GIVEN empty YAML artifact WHEN
+  agentera state loads it THEN structured output treats content as empty mapping
+  without crash. GIVEN full pytest suite WHEN run THEN no regressions versus
+  current baseline.
+surprises: []
+previous_plan_archived: .agentera/archive/PLAN-2026-05-29-degraded-validation-cli-consistency.yaml

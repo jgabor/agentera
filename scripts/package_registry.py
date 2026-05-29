@@ -8,13 +8,17 @@
 from __future__ import annotations
 
 import json
+import sys
 from pathlib import Path
 from typing import Any, Mapping
 
 import yaml
 
-
 ROOT = Path(__file__).resolve().parents[1]
+_SCRIPTS_DIR = Path(__file__).resolve().parent
+if str(_SCRIPTS_DIR) not in sys.path:
+    sys.path.insert(0, str(_SCRIPTS_DIR))
+from yaml_mapping import load_yaml_mapping  # noqa: E402
 DEFAULT_REGISTRY_PATH = ROOT / "references/adapters/package-registry.yaml"
 EXPECTED_PACKAGE_ORDER = ("agentera",)
 REQUIRED_GROUPS = (
@@ -154,7 +158,7 @@ class PackageRegistry:
 
 def load_registry(path: Path = DEFAULT_REGISTRY_PATH, root: Path = ROOT) -> PackageRegistry:
     with path.open(encoding="utf-8") as handle:
-        data = yaml.safe_load(handle)
+        data = load_yaml_mapping(handle.read())
     errors = validate_registry_data(data, root=root)
     if errors:
         raise RegistryError("PackageManifest registry validation failed: " + "; ".join(errors))
@@ -164,7 +168,7 @@ def load_registry(path: Path = DEFAULT_REGISTRY_PATH, root: Path = ROOT) -> Pack
 
 def validate_registry_file(path: Path = DEFAULT_REGISTRY_PATH, root: Path = ROOT) -> list[str]:
     with path.open(encoding="utf-8") as handle:
-        return validate_registry_data(yaml.safe_load(handle), root=root)
+        return validate_registry_data(load_yaml_mapping(handle.read()), root=root)
 
 
 def validate_registry_data(data: Any, root: Path = ROOT) -> list[str]:
