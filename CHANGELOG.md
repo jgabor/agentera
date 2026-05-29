@@ -13,6 +13,7 @@
 
 ### Fixed
 
+- Fixed `agentera check compact` and gate traceback on invalid compactable YAML roots: `compute_compaction_status` now catches `yaml.YAMLError` from list/scalar/malformed roots and reports an error-classified status row with exit code 2 instead of raising, while still classifying healthy artifacts.
 - Fixed inconsistent `yaml.safe_load()` `None` handling across hooks and the CLI: added `scripts/yaml_mapping.py` with `load_yaml_mapping()`, aligned compaction, `validate_artifact`, session hooks, `scripts/agentera`, and production registry/contract loaders so empty YAML maps to `{}` where appropriate while validators still reject non-mapping roots.
 
 ## [2.7.5] · 2026-05-28

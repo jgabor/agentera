@@ -1,10 +1,23 @@
 cycles:
+- number: 613
+  timestamp: 2026-05-29 16:00
+  type: fix
+  phase: build
+  what: Close compaction check/gate robustness and retention-cap dedup plan.
+  commit: 74c8140
+  discovered: None.
+  verified: 1329 passed, 29 failed pytest tests/ -q -n auto (failures are pre-existing macOS AGENTERA_HOME/platform-home env issues and missing corpus.json, unrelated to compaction closeout); compaction tests (23) pass; capability-contract validation pass (2/2).
+  next: None.
+  context:
+    intent: Plan task 4 closeout for compaction check/gate YAML error rows and retention-cap dedup.
+    constraints: No version bump; no remote push; never amend to backfill commit hashes.
+    scope: TODO.md, CHANGELOG.md, progress.yaml, plan.yaml closeout only; implementation in 8be19c4, cf0aa93, 55a9df8.
 - number: 612
   timestamp: 2026-05-29 15:00
   type: feat
   phase: build
   what: Add progress commit-hash churn guard and `agentera check backfill`.
-  commit: pending
+  commit: 3741787
   discovered: Repo progress.yaml carried a dangling b78a417 hash across cycles 602-610
     (orphaned by a prior amend) plus malformed multi-line commit scalars in 603-605;
     the guard surfaced both.
