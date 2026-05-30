@@ -9,6 +9,7 @@ import { cmdSchema } from "./commands/schema.js";
 import { cmdDoctor, DoctorArgs } from "./commands/doctor.js";
 import { cmdUpgrade, UpgradeArgs } from "./commands/upgrade.js";
 import { cmdVerify, VerifyArgs } from "./commands/verify.js";
+import { cmdReport, ReportArgs } from "./commands/report.js";
 import { runSessionStart } from "../hooks/sessionStart.js";
 import { runSessionStop } from "../hooks/sessionStop.js";
 import { runCursorSessionStart } from "../hooks/cursorSessionStart.js";
@@ -690,6 +691,46 @@ function runVerify(argv: string[], io: Io, prog: string): number {
   return cmdVerify(args, io);
 }
 
+function runReport(argv: string[], io: Io, prog: string): number {
+  const err = io.err ?? ((t: string) => process.stderr.write(t));
+  const args: ReportArgs = {
+    action: null,
+    format: "text",
+    project: null,
+    dryRun: false,
+    consent: null,
+    projectRoot: [],
+  };
+  const positionals: string[] = [];
+  for (let i = 0; i < argv.length; i++) {
+    const a = argv[i];
+    const value = (name: string): string | null => {
+      if (a === name) return argv[++i] ?? null;
+      if (a.startsWith(name + "=")) return a.slice(name.length + 1);
+      return null;
+    };
+    let v: string | null;
+    if ((v = value("--format")) !== null) args.format = v;
+    else if ((v = value("--project")) !== null) args.project = v;
+    else if ((v = value("--consent")) !== null) {
+      if (v !== "local-history") {
+        err(`${prog}: error: argument --consent: invalid choice: '${v}' (choose from 'local-history')\n`);
+        return 2;
+      }
+      args.consent = v;
+    } else if ((v = value("--project-root")) !== null) (args.projectRoot as string[]).push(v);
+    else if (a === "--dry-run") args.dryRun = true;
+    else if (a.startsWith("--")) {
+      err(`${prog}: error: unrecognized arguments: ${a}\n`);
+      return 2;
+    } else {
+      positionals.push(a);
+    }
+  }
+  args.action = positionals[0] ?? null;
+  return cmdReport(args, io);
+}
+
 export function main(argv: string[], io: Io = {}): number {
   const err = io.err ?? ((t: string) => process.stderr.write(t));
   const args = argv.slice(2);
@@ -708,6 +749,11 @@ export function main(argv: string[], io: Io = {}): number {
     case "verify":
       emitDeprecationAlias("verify", "check verify", err);
       return runVerify(rest, io, "agentera verify");
+    case "report":
+      return runReport(rest, io, "agentera report");
+    case "stats":
+      emitDeprecationAlias("stats", "report", err);
+      return runReport(rest, io, "agentera stats");
     case "hook": {
       const name = rest[0];
       if (!name) {
