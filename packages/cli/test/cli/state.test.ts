@@ -4,7 +4,7 @@ import path from "node:path";
 
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import { queryPlan, queryProgress } from "../../src/cli/commands/state.js";
+import { queryHealth, queryPlan, queryProgress } from "../../src/cli/commands/state.js";
 import { main } from "../../src/cli/dispatch.js";
 import type { SchemaInfo } from "../../src/cli/appContext.js";
 
@@ -190,6 +190,61 @@ describe("cli state plan", () => {
     expect(payload.status).toBe("empty");
     expect(payload.summary.absence_reason).toContain("No plan artifact");
     expect(payload.source_contract.complete_for_plan_artifact).toBe(false);
+  });
+});
+
+
+function healthSchema(absPath: string): Record<string, SchemaInfo> {
+  return { health: { path: absPath, record: undefined, schema: {}, fields: {} } };
+}
+
+function seedHealth(): string {
+  const p = path.join(tmp, "health.yaml");
+  fs.writeFileSync(
+    p,
+    [
+      "audits:",
+      "  - number: 1",
+      "    trajectory: improving",
+      "    grades:",
+      "      coupling_health: B",
+      "  - number: 2",
+      "    trajectory: stable",
+      "    grades:",
+      "      coupling_health: A",
+      "      test_health: B",
+      "",
+    ].join("\n"),
+  );
+  return p;
+}
+
+describe("cli state health", () => {
+  it("renders the latest audit (highest number) with grades", () => {
+    const p = seedHealth();
+    const { rc, out } = capture((io) => queryHealth({ command: "health" }, healthSchema(p), io));
+    expect(rc).toBe(0);
+    expect(out).toContain("Audit 2: stable");
+    expect(out).toContain("coupling_health: A");
+    expect(out).toContain("test_health: B");
+  });
+
+  it("filters by dimension substring", () => {
+    const p = seedHealth();
+    const { out } = capture((io) => queryHealth({ command: "health", dimension: "coupling" }, healthSchema(p), io));
+    expect(out).toContain("coupling_health: A");
+    expect(out).not.toContain("test_health");
+  });
+
+  it("emits a latest-only structured payload", () => {
+    const p = seedHealth();
+    const { rc, out } = capture((io) => queryHealth({ command: "health", format: "json" }, healthSchema(p), io));
+    expect(rc).toBe(0);
+    const payload = JSON.parse(out);
+    expect(payload.command).toBe("health");
+    expect(payload.summary.latest_only).toBe(true);
+    expect(payload.entries).toHaveLength(1);
+    expect(payload.entries[0].number).toBe(2);
   });
 });
 

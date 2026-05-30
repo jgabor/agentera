@@ -2,6 +2,7 @@ import { cmdPrime } from "./commands/prime.js";
 import { cmdLint, LintArgs } from "./commands/lint.js";
 import { cmdBackfill, BackfillArgs } from "./commands/backfill.js";
 import { cmdState, isPortedStateCommand, StateArgs } from "./commands/state.js";
+import { COMMAND_FILTERS } from "./stateQuery.js";
 
 /**
  * Top-level command dispatch. The full argparse-shaped surface is being ported
@@ -115,7 +116,17 @@ function runBackfill(argv: string[], io: Io, prog = "agentera backfill"): number
 }
 
 function parseStateArgs(command: string, argv: string[]): StateArgs | { error: string } {
-  const args: StateArgs = { command, topic: null, status: null, limit: 5, format: "text", fields: null };
+  const args: StateArgs = {
+    command,
+    topic: null,
+    status: null,
+    dimension: null,
+    severity: null,
+    limit: 5,
+    format: "text",
+    fields: null,
+  };
+  const allowed = new Set([...(COMMAND_FILTERS[command] ?? []), "format", "fields"]);
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     const value = (name: string): string | null => {
@@ -123,19 +134,24 @@ function parseStateArgs(command: string, argv: string[]): StateArgs | { error: s
       if (a.startsWith(name + "=")) return a.slice(name.length + 1);
       return null;
     };
+    const named = (flag: string, key: string): boolean => allowed.has(key) && (a === flag || a.startsWith(flag + "="));
     let v: string | null;
-    if ((v = value("--topic")) !== null) args.topic = v;
-    else if ((v = value("--status")) !== null) args.status = v;
-    else if ((v = value("--limit")) !== null) {
+    if (named("--topic", "topic")) args.topic = value("--topic");
+    else if (named("--status", "status")) args.status = value("--status");
+    else if (named("--dimension", "dimension")) args.dimension = value("--dimension");
+    else if (named("--severity", "severity")) args.severity = value("--severity");
+    else if (named("--limit", "limit")) {
+      v = value("--limit");
       const n = Number(v);
       if (!Number.isInteger(n)) return { error: `argument --limit: invalid int value: '${v}'` };
       args.limit = n;
-    } else if ((v = value("--format")) !== null) {
+    } else if (a === "--format" || a.startsWith("--format=")) {
+      v = value("--format");
       if (v !== "text" && v !== "json" && v !== "yaml") {
         return { error: `argument --format: invalid choice: '${v}' (choose from 'text', 'json', 'yaml')` };
       }
       args.format = v;
-    } else if ((v = value("--fields")) !== null) args.fields = v;
+    } else if (a === "--fields" || a.startsWith("--fields=")) args.fields = value("--fields");
     else return { error: `unrecognized arguments: ${a}` };
   }
   return args;
@@ -184,13 +200,11 @@ export function main(argv: string[], io: Io = {}): number {
       err(`agentera: unknown or not-yet-ported state subcommand: ${sub}\n`);
       return 1;
     }
-    case "progress":
-      emitDeprecationAlias("progress", "state progress", err);
-      return runState("progress", rest, io, "agentera progress");
-    case "plan":
-      emitDeprecationAlias("plan", "state plan", err);
-      return runState("plan", rest, io, "agentera plan");
     default:
+      if (command && isPortedStateCommand(command)) {
+        emitDeprecationAlias(command, `state ${command}`, err);
+        return runState(command, rest, io, `agentera ${command}`);
+      }
       err(`agentera: unknown or not-yet-ported command: ${command ?? "(none)"}\n`);
       return 1;
   }
