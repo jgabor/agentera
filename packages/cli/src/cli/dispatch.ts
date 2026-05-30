@@ -9,6 +9,7 @@ import {
   cmdValidate,
   cmdValidateCapability,
   cmdValidateCapabilityContract,
+  cmdValidateArtifact,
   cmdValidateDescriptors,
   isDelegatedValidateFamily,
 } from "./commands/validate.js";
@@ -286,6 +287,9 @@ function runValidate(argv: string[], io: Io, prog: string): number {
   const err = io.err ?? ((t: string) => process.stderr.write(t));
   let family: string | null = null;
   let capabilityTarget: string | null = null;
+  let artifactFlag: string | null = null;
+  let fileFlag: string | null = null;
+  let cwdFlag: string | null = null;
   let format = "text";
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
@@ -303,6 +307,12 @@ function runValidate(argv: string[], io: Io, prog: string): number {
         return 2;
       }
       format = v;
+    } else if (a === "--artifact" || a.startsWith("--artifact=")) {
+      artifactFlag = a === "--artifact" ? argv[++i] : a.slice("--artifact=".length);
+    } else if (a === "--file" || a.startsWith("--file=")) {
+      fileFlag = a === "--file" ? argv[++i] : a.slice("--file=".length);
+    } else if (a === "--cwd" || a.startsWith("--cwd=")) {
+      cwdFlag = a === "--cwd" ? argv[++i] : a.slice("--cwd=".length);
     } else if (a.startsWith("--")) {
       err(`${prog}: error: unrecognized arguments: ${a}\n`);
       return 2;
@@ -332,6 +342,13 @@ function runValidate(argv: string[], io: Io, prog: string): number {
     }
     if (family === "descriptors") {
       return cmdValidateDescriptors({ format }, io);
+    }
+    if (family === "artifact") {
+      if (artifactFlag === null) {
+        err(`${prog} artifact: error: the following arguments are required: --artifact\n`);
+        return 2;
+      }
+      return cmdValidateArtifact({ artifact: artifactFlag, file: fileFlag, cwd: cwdFlag, format }, io);
     }
     if (isDelegatedValidateFamily(family)) {
       return cmdValidate(family, { format }, io);
