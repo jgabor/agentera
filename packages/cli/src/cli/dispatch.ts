@@ -13,6 +13,8 @@ import { runCursorSessionStart } from "../hooks/cursorSessionStart.js";
 import { runCursorPreToolUse } from "../hooks/cursorPreToolUse.js";
 import { HookCliAdapter } from "../hooks/validateArtifact.js";
 import fsForHooks from "node:fs";
+import { usageMain } from "../analytics/usageStats.js";
+import { validatePathValue } from "./argvalidate.js";
 import { cmdCapability, CAPABILITY_ROUTING_NAMES } from "./commands/capability.js";
 import {
   cmdValidate,
@@ -534,6 +536,55 @@ function runHook(name: string, argv: string[], io: Io): number {
   }
 }
 
+function runUsage(argv: string[], io: Io, prog: string): number {
+  const realOut = io.out ?? ((t: string) => process.stdout.write(t));
+  const realErr = io.err ?? ((t: string) => process.stderr.write(t));
+  let format = "text";
+  let corpus: string | null = null;
+  let project: string | null = null;
+  for (let i = 0; i < argv.length; i++) {
+    const a = argv[i];
+    const value = (name: string): string | null => {
+      if (a === name) return argv[++i] ?? null;
+      if (a.startsWith(name + "=")) return a.slice(name.length + 1);
+      return null;
+    };
+    let v: string | null;
+    if ((v = value("--format")) !== null) format = v;
+    else if ((v = value("--corpus")) !== null) corpus = v;
+    else if ((v = value("--project")) !== null) project = v;
+    else {
+      realErr(`${prog}: error: unrecognized arguments: ${a}\n`);
+      return 2;
+    }
+  }
+  if (corpus !== null) {
+    try {
+      validatePathValue(corpus, "path");
+    } catch (e) {
+      realErr(`${prog}: error: argument --corpus: ${(e as Error).message}\n`);
+      return 2;
+    }
+  }
+  if (format !== "text" && format !== "json") {
+    const syntax = "agentera usage [--format text|json] [--corpus PATH] [--project VALUE]";
+    const example = "agentera usage --format json --project agentera";
+    realErr(
+      `Error: unsupported usage format '${format}'; valid formats: text, json. ` +
+        `Syntax: ${syntax}. Example: ${example}\n`,
+    );
+    return 2;
+  }
+  const engineArgv: string[] = [];
+  if (corpus !== null) engineArgv.push("--corpus", corpus);
+  if (project !== null) engineArgv.push("--project", project);
+  if (format === "json") engineArgv.push("--json");
+  return usageMain(engineArgv, {
+    out: (t) => realOut(t + "\n"),
+    err: (t) => realErr(t + "\n"),
+  });
+}
+
 export function main(argv: string[], io: Io = {}): number {
   const err = io.err ?? ((t: string) => process.stderr.write(t));
   const args = argv.slice(2);
@@ -545,6 +596,8 @@ export function main(argv: string[], io: Io = {}): number {
       return runPrime("prime", rest, io, "agentera prime");
     case "doctor":
       return runDoctor(rest, io, "agentera doctor");
+    case "usage":
+      return runUsage(rest, io, "agentera usage");
     case "hook": {
       const name = rest[0];
       if (!name) {

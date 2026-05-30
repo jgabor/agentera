@@ -503,3 +503,62 @@ export function renderStdoutSummary(
 export function nowIso(): string {
   return new Date().toISOString().replace(/\.\d{3}Z$/, "Z");
 }
+
+export interface UsageMainIo {
+  out?: (text: string) => void;
+  err?: (text: string) => void;
+  env?: Env;
+  platform?: NodeJS.Platform;
+}
+
+/**
+ * Engine entry point mirroring scripts/usage_stats.py main(): emit a USAGE.md
+ * report (default) or a JSON document (--json) from the existing corpus.
+ * Returns 2 when the corpus is unavailable, matching the Python engine.
+ */
+export function usageMain(argv: string[], io: UsageMainIo = {}): number {
+  const out = io.out ?? ((t: string) => process.stdout.write(t + "\n"));
+  const err = io.err ?? ((t: string) => process.stderr.write(t + "\n"));
+  const env = io.env ?? process.env;
+  const platform = io.platform ?? process.platform;
+
+  let corpus: string | null = null;
+  let project: string | null = null;
+  let emitJson = false;
+  for (let i = 0; i < argv.length; i++) {
+    const a = argv[i];
+    if (a === "--corpus") corpus = argv[++i] ?? null;
+    else if (a.startsWith("--corpus=")) corpus = a.slice("--corpus=".length);
+    else if (a === "--project") project = argv[++i] ?? null;
+    else if (a.startsWith("--project=")) project = a.slice("--project=".length);
+    else if (a === "--json") emitJson = true;
+  }
+
+  const corpusPath = corpus ?? defaultCorpusPath(env, platform);
+  let corpusData: Dict;
+  try {
+    corpusData = loadCorpusOrRaise(corpusPath);
+  } catch (e) {
+    if (e instanceof CorpusUnavailable) {
+      err(String(e.message));
+      return 2;
+    }
+    throw e;
+  }
+
+  const analysis = analyzeCorpus(corpusData, project);
+  const generatedAt = nowIso();
+  const md = (corpusData as Dict).metadata;
+  const extractedAt =
+    md && typeof md === "object" && !Array.isArray(md) ? ((md.extracted_at as string) ?? null) : null;
+
+  if (emitJson) {
+    out(renderJson(analysis, { generatedAt, extractedAt }));
+    return 0;
+  }
+
+  const outputDir = defaultUsageDir(env, platform);
+  const outPath = writeMarkdown(analysis, { generatedAt, extractedAt, outputDir });
+  out(renderStdoutSummary(analysis, { generatedAt, extractedAt, reportPath: outPath }));
+  return 0;
+}
