@@ -52,6 +52,14 @@ export function resolveSourceRoot(
   if (fromCwd) {
     return fromCwd;
   }
+  // Self-contained npm package: app data is staged under <packageRoot>/bundle
+  // (see scripts/copy-bundle.mjs). This makes `npx agentera` work with no repo
+  // checkout and no AGENTERA_HOME. Only reached when no checkout/app-home is
+  // found, so it never overrides a real checkout, installed app, or cwd match.
+  const bundled = path.resolve(moduleDir, "..", "..", "bundle");
+  if (hasSourceMarker(bundled)) {
+    return bundled;
+  }
   // Last resort: package root two levels above dist/core.
   return path.resolve(moduleDir, "..", "..");
 }
