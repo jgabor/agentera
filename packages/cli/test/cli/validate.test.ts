@@ -4,6 +4,7 @@ import {
   cmdValidate,
   cmdValidateCapability,
   cmdValidateCapabilityContract,
+  cmdValidateDescriptors,
   isDelegatedValidateFamily,
 } from "../../src/cli/commands/validate.js";
 import { main } from "../../src/cli/dispatch.js";
@@ -118,3 +119,24 @@ describe("cli validate capability-contract (structure)", () => {
     ]);
   });
 });
+
+
+describe("cli validate descriptors", () => {
+  it("validates agent descriptors against the repo (text)", () => {
+    const { rc, out } = capture((io) => cmdValidateDescriptors({}, io));
+    expect(out).toMatch(/descriptor validation (pass|fail): \d+ passed, \d+ failed/);
+    expect([0, 1]).toContain(rc);
+  });
+
+  it("emits a structured descriptors envelope (json)", () => {
+    const { out } = capture((io) => cmdValidateDescriptors({ format: "json" }, io));
+    const payload = JSON.parse(out);
+    expect(payload.command).toBe("validate");
+    expect(payload.target_family).toBe("descriptors");
+    expect(payload.target).toBe("agent-descriptors");
+    // 12 capabilities x 2 runtimes = 24 checks
+    expect(payload.checks).toHaveLength(24);
+    expect(payload.summary.passed + payload.summary.failed).toBe(24);
+  });
+});
+
