@@ -5,7 +5,12 @@ import { cmdState, isPortedStateCommand, StateArgs } from "./commands/state.js";
 import { COMMAND_FILTERS } from "./stateQuery.js";
 import { cmdQuery, QueryArgs } from "./commands/query.js";
 import { cmdCompact, CompactArgs } from "./commands/compact.js";
-import { cmdValidate, isDelegatedValidateFamily } from "./commands/validate.js";
+import {
+  cmdValidate,
+  cmdValidateCapability,
+  cmdValidateCapabilityContract,
+  isDelegatedValidateFamily,
+} from "./commands/validate.js";
 
 /**
  * Top-level command dispatch. The full argparse-shaped surface is being ported
@@ -279,6 +284,7 @@ function runCompact(argv: string[], io: Io, prog: string): number {
 function runValidate(argv: string[], io: Io, prog: string): number {
   const err = io.err ?? ((t: string) => process.stderr.write(t));
   let family: string | null = null;
+  let capabilityTarget: string | null = null;
   let format = "text";
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
@@ -301,6 +307,8 @@ function runValidate(argv: string[], io: Io, prog: string): number {
       return 2;
     } else if (family === null) {
       family = a;
+    } else if (capabilityTarget === null) {
+      capabilityTarget = a;
     } else {
       err(`${prog}: error: unrecognized arguments: ${a}\n`);
       return 2;
@@ -310,12 +318,22 @@ function runValidate(argv: string[], io: Io, prog: string): number {
     err(`${prog}: error: the following arguments are required: validate_family\n`);
     return 2;
   }
-  if (!isDelegatedValidateFamily(family)) {
+  try {
+    if (family === "capability") {
+      if (capabilityTarget === null) {
+        err(`${prog} capability: error: the following arguments are required: target\n`);
+        return 2;
+      }
+      return cmdValidateCapability(capabilityTarget, { format }, io);
+    }
+    if (family === "capability-contract") {
+      return cmdValidateCapabilityContract({ format }, io);
+    }
+    if (isDelegatedValidateFamily(family)) {
+      return cmdValidate(family, { format }, io);
+    }
     err(`agentera: validate family not yet ported: ${family}\n`);
     return 1;
-  }
-  try {
-    return cmdValidate(family, { format }, io);
   } catch (exc) {
     err(`Error: ${(exc as Error).message}\n`);
     return 2;
