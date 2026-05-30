@@ -22,7 +22,8 @@ import {
   selectHejNextAction,
   statePresence,
 } from "../orientation.js";
-import { firstPresent } from "../stateQuery.js";
+import { firstPresent, requestedFields, REQUIRED_SPARSE_CONTEXT_FIELDS } from "../stateQuery.js";
+import { emitStructured } from "../structured.js";
 
 /**
  * prime / hej orientation command. Port of scripts/agentera cmd_prime / cmd_hej.
@@ -404,6 +405,108 @@ function printOrientationTextBriefing(state: Dict, command: string, out: (t: str
   out(`- cli_fallback=${(startup.cli_fallback as string[]).join("; ")}\n`);
 }
 
+const HEJ_STRUCTURED_FIELDS = [
+  "command", "status", "app_home", "bundle", "mode", "profile", "v1_migration", "health",
+  "issues", "plan", "docs", "progress", "objective", "state_presence", "attention",
+  "decision_attention", "next_action", "orchestration_context", "closeout_context",
+  "evidence_context", "benchmark_context", "execution_context", "source", "source_contract",
+];
+
+function orientationAppHome(bundle: Dict): Dict {
+  return {
+    status: bundle.status,
+    home: bundle.appHome,
+    source: bundle.appHomeSource,
+    managed_app_root: bundle.managedAppRoot,
+    user_data_root: bundle.userDataRoot,
+  };
+}
+
+function buildOrientationJsonPayload(state: Dict, command: string, capabilityName: string | null = null): Dict {
+  const bundle = state.bundle;
+  const schemasDir = state.schemas_dir;
+  const bundlePublic = publicDoctorStatus(bundle);
+  const appHome = orientationAppHome(bundle);
+  // For capabilityName === null (default + dashboard), all bespoke contexts are null.
+  const bespoke: Dict = {
+    orchestration_context: null,
+    closeout_context: null,
+    evidence_context: null,
+    benchmark_context: null,
+    execution_context: null,
+  };
+  const render =
+    command === "hej"
+      ? "caller-owned README-style hej dashboard"
+      : "caller-owned README-style prime orientation dashboard";
+  const access =
+    command === "hej"
+      ? "single installed CLI call; app/v1/profile safety included; no preflight glob/read/import/doctor calls during normal hej"
+      : "single installed CLI call; app/v1/profile safety included; no preflight glob/read/import/doctor calls during normal prime";
+  return {
+    command,
+    status: "ok",
+    app_home: appHome,
+    bundle: bundlePublic,
+    mode: state.mode,
+    profile: state.profile_dict,
+    v1_migration: state.v1_migration,
+    health: state.health,
+    issues: state.counts,
+    plan: state.plan,
+    docs: state.docs,
+    progress: state.progress,
+    objective: state.objective,
+    state_presence: state.state_presence,
+    attention: (state.attention as string[]).slice(0, 6),
+    decision_attention: state.decision_attention,
+    next_action: state.next_action,
+    orchestration_context: bespoke.orchestration_context,
+    closeout_context: bespoke.closeout_context,
+    evidence_context: bespoke.evidence_context,
+    benchmark_context: bespoke.benchmark_context,
+    execution_context: bespoke.execution_context,
+    source: {
+      schemas_dir: schemasDir,
+      project: process.cwd(),
+      artifacts_present: state.mode === "returning",
+    },
+    source_contract: {
+      fields: HEJ_STRUCTURED_FIELDS,
+      render,
+      access,
+      empty_state: "fresh mode with missing artifact summaries and zero issue counts",
+      capability_startup: startupCompletenessContract(),
+      capability_context: capabilityName ? null : null,
+    },
+  };
+}
+
+function availablePrimeFields(command: string): string[] {
+  if (command === "prime") return [...HEJ_STRUCTURED_FIELDS, "capability_context"];
+  return HEJ_STRUCTURED_FIELDS;
+}
+
+function emitPrime(command: string, payload: Dict, format: string, fieldsArg: string | null | undefined, out: (t: string) => void, err: (t: string) => void): number {
+  const requested = requestedFields(fieldsArg);
+  if (requested.length === 0) {
+    emitStructured(payload, format, out);
+    return 0;
+  }
+  const available = availablePrimeFields(command);
+  const unsupported = requested.filter((f) => !available.includes(f));
+  if (unsupported.length > 0) {
+    err(`Error: unsupported field '${unsupported[0]}' for ${command}. Available fields: ${available.join(", ")}\n`);
+    return 1;
+  }
+  const selected: Dict = {};
+  for (const field of [...REQUIRED_SPARSE_CONTEXT_FIELDS, ...requested]) {
+    if (field in payload && !(field in selected)) selected[field] = payload[field];
+  }
+  emitStructured(selected, format, out);
+  return 0;
+}
+
 export interface PrimeArgs {
   command?: string;
   guidance?: boolean;
@@ -411,6 +514,7 @@ export interface PrimeArgs {
   dashboard?: boolean;
   orientation?: boolean;
   format?: string;
+  fields?: string | null;
   home?: string | null;
   installRoot?: string | null;
   expectedVersion?: string | null;
@@ -440,17 +544,30 @@ export function cmdPrime(args: PrimeArgs, io: Io = {}): number {
     return 0;
   }
   const format = args.format ?? "text";
-  if (capability !== null || dashboard || format !== "text") {
-    err(
-      "agentera: prime JSON/dashboard/context paths are not yet ported (pending the bespoke capability contexts)\n",
-    );
+  const collectOpts = { home: args.home, installRoot: args.installRoot, expectedVersion: args.expectedVersion };
+
+  if (capability !== null) {
+    if (format === "text") {
+      err("Error: prime --context requires --format json\n");
+      return 2;
+    }
+    err("agentera: prime --context is not yet ported (pending the bespoke capability contexts)\n");
     return 1;
   }
-  const state = collectOrientationState({
-    home: args.home,
-    installRoot: args.installRoot,
-    expectedVersion: args.expectedVersion,
-  });
+  if (dashboard) {
+    if (format === "text") {
+      err("Error: prime --dashboard requires --format json\n");
+      return 2;
+    }
+    const state = collectOrientationState(collectOpts);
+    const payload = buildOrientationJsonPayload(state, command, null);
+    return emitPrime(command, payload, format, args.fields, out, err);
+  }
+  const state = collectOrientationState(collectOpts);
+  if (format !== "text") {
+    const payload = buildOrientationJsonPayload(state, command, null);
+    return emitPrime(command, payload, format, args.fields, out, err);
+  }
   printOrientationTextBriefing(state, command, out);
   return 0;
 }

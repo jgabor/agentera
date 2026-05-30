@@ -39,11 +39,41 @@ describe("cli prime", () => {
     expect(capture((io) => cmdPrime({ dashboard: true, guidance: true }, io)).rc).toBe(2);
   });
 
-  it("reports JSON/dashboard/context paths as not yet ported", () => {
-    const json = capture((io) => cmdPrime({ format: "json" }, io));
-    expect(json.rc).toBe(1);
-    expect(json.err).toContain("not yet ported");
+  it("emits a default JSON orientation payload (bespoke contexts null)", () => {
+    const { rc, out } = capture((io) => cmdPrime({ command: "prime", format: "json" }, io));
+    expect(rc).toBe(0);
+    const payload = JSON.parse(out);
+    expect(payload.command).toBe("prime");
+    expect(payload.status).toBe("ok");
+    expect(payload.orchestration_context).toBeNull();
+    expect(payload.closeout_context).toBeNull();
+    expect(payload.execution_context).toBeNull();
+    expect(payload.source_contract.capability_context).toBeNull();
+    expect(payload.source_contract.fields).toContain("next_action");
+    expect(payload.bundle).toBeTruthy();
+  });
+
+  it("requires json for --dashboard and --context", () => {
+    expect(capture((io) => cmdPrime({ dashboard: true, format: "text" }, io)).rc).toBe(2);
+    expect(capture((io) => cmdPrime({ context: "planera", format: "text" }, io)).rc).toBe(2);
+  });
+
+  it("supports --fields selection on the JSON payload", () => {
+    const { rc, out } = capture((io) => cmdPrime({ command: "prime", format: "json", fields: "plan" }, io));
+    expect(rc).toBe(0);
+    const payload = JSON.parse(out);
+    expect(Object.keys(payload).sort()).toEqual(["command", "plan", "status"]);
+  });
+
+  it("rejects an unsupported --fields value for prime", () => {
+    const { rc, err } = capture((io) => cmdPrime({ command: "prime", format: "json", fields: "bogusfield" }, io));
+    expect(rc).toBe(1);
+    expect(err).toContain("unsupported field 'bogusfield'");
+  });
+
+  it("reports --context as not yet ported", () => {
     const ctx = capture((io) => cmdPrime({ context: "planera", format: "json" }, io));
     expect(ctx.rc).toBe(1);
+    expect(ctx.err).toContain("not yet ported");
   });
 });
