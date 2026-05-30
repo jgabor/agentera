@@ -4,7 +4,7 @@ import path from "node:path";
 
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import { queryHealth, queryPlan, queryProgress } from "../../src/cli/commands/state.js";
+import { queryHealth, queryPlan, queryProgress, queryTodo } from "../../src/cli/commands/state.js";
 import { main } from "../../src/cli/dispatch.js";
 import type { SchemaInfo } from "../../src/cli/appContext.js";
 
@@ -245,6 +245,53 @@ describe("cli state health", () => {
     expect(payload.summary.latest_only).toBe(true);
     expect(payload.entries).toHaveLength(1);
     expect(payload.entries[0].number).toBe(2);
+  });
+});
+
+
+function todoSchema(absPath: string): Record<string, SchemaInfo> {
+  return { todo: { path: absPath, record: undefined, schema: {}, fields: {} } };
+}
+
+describe("cli state todo", () => {
+  it("renders YAML todo entries with status counts", () => {
+    const p = path.join(tmp, "todo.yaml");
+    fs.writeFileSync(
+      p,
+      [
+        "todos:",
+        "  - severity: critical",
+        "    status: open",
+        "    description: Fix the parser at scripts/x.ts.",
+        "  - severity: normal",
+        "    status: done",
+        "    description: Already handled.",
+        "",
+      ].join("\n"),
+    );
+    const { rc, out } = capture((io) => queryTodo({ command: "todo" }, todoSchema(p), io));
+    expect(rc).toBe(0);
+    expect(out).toContain("TODO status: done=1, open=1");
+    expect(out).toContain("severity=critical | status=open");
+  });
+
+  it("filters YAML todo entries by severity (json)", () => {
+    const p = path.join(tmp, "todo.yaml");
+    fs.writeFileSync(p, "todos:\n  - severity: critical\n    status: open\n    description: A\n  - severity: info\n    status: open\n    description: B\n");
+    const { rc, out } = capture((io) => queryTodo({ command: "todo", severity: "critical", format: "json" }, todoSchema(p), io));
+    expect(rc).toBe(0);
+    const payload = JSON.parse(out);
+    expect(payload.counts.entries).toBe(1);
+    expect(payload.entries[0].severity).toBe("critical");
+  });
+
+  it("parses a markdown TODO.md fallback", () => {
+    const p = path.join(tmp, "TODO.md");
+    fs.writeFileSync(p, "## critical\n- [ ] Do the urgent thing\n\n## Resolved\n- [x] Old item\n");
+    const { rc, out } = capture((io) => queryTodo({ command: "todo" }, todoSchema(p), io));
+    expect(rc).toBe(0);
+    expect(out).toContain("[critical] Do the urgent thing");
+    expect(out).not.toContain("Old item");
   });
 });
 
