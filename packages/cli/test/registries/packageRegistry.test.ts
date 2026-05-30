@@ -84,7 +84,7 @@ describe("package registry", () => {
     delete malformed.records[0].docs_targets;
     malformed.records.push(structuredClone(fixture.records[0]));
     malformed.records[0].version_surfaces.surfaces[1].id = "registry";
-    malformed.records[0].version_surfaces.surfaces[2].path = "missing/plugin.json";
+    malformed.records[0].version_surfaces.surfaces[2].path = "../escape.json";
     malformed.records[0].package_commands.commands[1].argv =
       "npx skills add jgabor/agentera -g -a claude-code --skill agentera -y";
     malformed.records[0].version_authority.install_root = "~/.agents/agentera";
@@ -96,7 +96,7 @@ describe("package registry", () => {
     expect(errors).toContain("duplicate package id: agentera");
     expect(errors).toContain("records[0].version_surfaces.surfaces: duplicate id registry");
     expect(errors).toContain(
-      "records[0].version_surfaces.surfaces[2].path unknown path: missing/plugin.json",
+      "records[0].version_surfaces.surfaces[2].path must stay inside repo root",
     );
     expect(errors).toContain("records[0].package_commands.commands[1].argv must be a list of strings");
     expect(errors).toContain("records[0].version_authority: forbidden install-root field install_root");
