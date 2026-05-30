@@ -147,7 +147,7 @@ export function cmdReport(args: ReportArgs, io: Io = {}): number {
     }
     const corpusPath = args.output || statsCorpusPath();
     const engineArgv = buildExtractArgv(args, corpusPath);
-    const engineCommand = ["npx", "-y", "agentera", "extract-corpus", ...engineArgv];
+    const engineCommand = ["npx", "-y", "agentera", "report", "refresh", "--consent", "local-history", ...engineArgv];
     if (dryRun) {
       const payload = {
         command: "stats refresh",
