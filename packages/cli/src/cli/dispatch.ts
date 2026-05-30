@@ -5,6 +5,7 @@ import { cmdState, isPortedStateCommand, StateArgs } from "./commands/state.js";
 import { COMMAND_FILTERS } from "./stateQuery.js";
 import { cmdQuery, QueryArgs } from "./commands/query.js";
 import { cmdCompact, CompactArgs } from "./commands/compact.js";
+import { cmdSchema } from "./commands/schema.js";
 import {
   cmdValidate,
   cmdValidateCapability,
@@ -361,6 +362,32 @@ function runValidate(argv: string[], io: Io, prog: string): number {
   }
 }
 
+function runSchema(argv: string[], io: Io, prog: string): number {
+  const err = io.err ?? ((t: string) => process.stderr.write(t));
+  let format = "json";
+  for (let i = 0; i < argv.length; i++) {
+    const a = argv[i];
+    let v: string | null = null;
+    if (a === "--format") v = argv[++i];
+    else if (a.startsWith("--format=")) v = a.slice("--format=".length);
+    else {
+      err(`${prog}: error: unrecognized arguments: ${a}\n`);
+      return 2;
+    }
+    if (v !== "json" && v !== "yaml") {
+      err(`${prog}: error: argument --format: invalid choice: '${v}' (choose from 'json', 'yaml')\n`);
+      return 2;
+    }
+    format = v;
+  }
+  try {
+    return cmdSchema({ format }, io);
+  } catch (exc) {
+    err(`Error: ${(exc as Error).message}\n`);
+    return 2;
+  }
+}
+
 export function main(argv: string[], io: Io = {}): number {
   const err = io.err ?? ((t: string) => process.stderr.write(t));
   const args = argv.slice(2);
@@ -370,6 +397,11 @@ export function main(argv: string[], io: Io = {}): number {
   switch (command) {
     case "prime":
       return cmdPrime(rest);
+    case "schema":
+      return runSchema(rest, io, "agentera schema");
+    case "describe":
+      emitDeprecationAlias("describe", "schema", err);
+      return runSchema(rest, io, "agentera describe");
     case "lint":
       emitDeprecationAlias("lint", "check lint", err);
       return runLint(rest, io);

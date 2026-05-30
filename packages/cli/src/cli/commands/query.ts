@@ -166,7 +166,7 @@ function fileExists(p: string): boolean {
   }
 }
 
-function artifactLocationContract(schemasDir: string, schemas: Record<string, SchemaInfo>): Dict {
+export function artifactLocationContract(schemasDir: string, schemas: Record<string, SchemaInfo>): Dict {
   const docsOverrides = loadDocsPathOverrides(process.cwd());
   const names = Object.keys(schemas).sort();
   const records = names.map((name) => artifactLocationRecord(name, schemas[name], schemasDir, docsOverrides));
