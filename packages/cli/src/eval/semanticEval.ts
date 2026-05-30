@@ -1,4 +1,5 @@
 import { SemanticFixture, loadFixture, pyRepr } from "./semanticFixtures.js";
+import { pyJsonIndent } from "../core/pyjson.js";
 
 /**
  * Offline semantic eval runner for captured skill fixtures. Faithful TS port of
@@ -163,6 +164,6 @@ export function main(argv: string[] = [], out: (line: string) => void = (l) => p
     return 2;
   }
   const report = buildReport(argv.map((path) => evaluateFixtureFile(path)));
-  out(JSON.stringify(report, null, 2) + "\n");
+  out(pyJsonIndent(report) + "\n");
   return report.status === "pass" ? 0 : 1;
 }
