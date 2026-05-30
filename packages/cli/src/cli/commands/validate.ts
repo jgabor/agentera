@@ -1,10 +1,12 @@
 import path from "node:path";
-import { readdirSync as fsReaddirSync, statSync as fsStatSync } from "node:fs";
+import { readdirSync as fsReaddirSync, readFileSync as fsReadFileSync, statSync as fsStatSync } from "node:fs";
 
 import { resolvePath } from "../../core/paths.js";
 import { resolveSourceRoot } from "../../core/sourceRoot.js";
 import { validateAgentString, validatePathValue } from "../argvalidate.js";
 import { validateCapability, validateContractSelf, validateProtocolSelf } from "../../validate/capability.js";
+import { loadYamlMapping } from "../../core/yaml.js";
+import { parseToml as parseTomlValidate } from "../../core/toml.js";
 import { validateGraph } from "../../validate/crossCapability.js";
 import { lifecycleMain } from "../../validate/lifecycleAdapters.js";
 import { validate as validateAppHome } from "../../validate/appHomeContract.js";
@@ -321,4 +323,175 @@ export function cmdValidateCapabilityContract(args: { format?: string }, io: Io)
     }
   }
   return results.every(([, r]) => r.returncode === 0) ? 0 : 1;
+}
+
+// ── descriptors family ──────────────────────────────────────────────
+
+function pySplitlinesText(s: string): string[] {
+  return s.split(/\r\n|\r|\n/);
+}
+
+function descriptorValidationPayload(): Dict {
+  const sourceRoot = resolveSourceRoot();
+  const codexDir = path.join(sourceRoot, "skills", "agentera", "agents");
+  const opencodeDir = path.join(sourceRoot, ".opencode", "agents");
+  const classificationPath = path.join(sourceRoot, "references", "cli", "capability-tool-classification.yaml");
+  const checks: Dict[] = [];
+  const violations: string[] = [];
+
+  let capPermissions: Record<string, Dict> = {};
+  try {
+    const classificationData = loadYamlMapping(fsReadFileSync(classificationPath, "utf8"));
+    capPermissions = {};
+    for (const categoryData of Object.values((classificationData as Dict).classification as Dict)) {
+      for (const [capability, capData] of Object.entries((categoryData as Dict).capabilities as Dict)) {
+        capPermissions[capability] = (capData as Dict).permission;
+      }
+    }
+  } catch (exc) {
+    violations.push(`classification authority: failed to load classification: ${(exc as Error).message}`);
+    capPermissions = {};
+  }
+
+  for (const name of CAPABILITY_NAMES) {
+    const codexPath = path.join(codexDir, `${name}.toml`);
+    let check: Dict = { runtime: "codex", capability: name, path: codexPath, status: "pass" };
+    let text: string;
+    let parsed: Dict;
+    try {
+      text = fsReadFileSync(codexPath, "utf8");
+      parsed = parseTomlValidate(text) as Dict;
+    } catch (exc) {
+      check = { ...check, status: "fail", message: (exc as Error).message };
+      violations.push(`codex ${name}: ${(exc as Error).message}`);
+      checks.push(check);
+      continue;
+    }
+    const expectedRef = `capabilities/${name}/instructions.md`;
+    if (parsed.name !== name) {
+      check = { ...check, status: "fail", message: "name field does not match capability" };
+      violations.push(`codex ${name}: name field must be ${name}`);
+    } else if (typeof parsed.description !== "string" || !parsed.description.trim()) {
+      check = { ...check, status: "fail", message: "description is required" };
+      violations.push(`codex ${name}: description is required`);
+    } else if (typeof parsed.developer_instructions !== "string" || !parsed.developer_instructions.includes(expectedRef)) {
+      check = { ...check, status: "fail", message: "developer_instructions must reference capability instructions" };
+      violations.push(`codex ${name}: developer_instructions must reference ${expectedRef}`);
+    } else if (!pySplitlinesText(text).slice(0, 5).includes("# agentera_managed: true")) {
+      check = { ...check, status: "fail", message: "managed marker is required" };
+      violations.push(`codex ${name}: managed marker is required`);
+    } else {
+      const devInst = parsed.developer_instructions as string;
+      const expectedPermission = (capPermissions[name] ?? {}) as Dict;
+      if (expectedPermission && Object.keys(expectedPermission).length > 0) {
+        let expectedGuidance: string;
+        if (expectedPermission.write === "allow" && expectedPermission.bash === "allow") {
+          expectedGuidance = "You have full file write, file edit, and shell execution tools available";
+        } else if (expectedPermission.write === "allow" && expectedPermission.bash === "deny") {
+          expectedGuidance =
+            "You have file write and file edit tools available to create or update files, but shell execution is disabled";
+        } else {
+          expectedGuidance = "You are a read-only agent \u2014 do not write files or execute shell commands";
+        }
+        if (!devInst.includes(expectedGuidance)) {
+          check = { ...check, status: "fail", message: `developer_instructions must contain guidance '${expectedGuidance}'` };
+          violations.push(`codex ${name}: developer_instructions must contain guidance '${expectedGuidance}'`);
+        }
+      }
+    }
+    checks.push(check);
+
+    const opencodePath = path.join(opencodeDir, `${name}.md`);
+    let ocheck: Dict = { runtime: "opencode", capability: name, path: opencodePath, status: "pass" };
+    let otext: string;
+    try {
+      otext = fsReadFileSync(opencodePath, "utf8");
+    } catch (exc) {
+      ocheck = { ...ocheck, status: "fail", message: (exc as Error).message };
+      violations.push(`opencode ${name}: ${(exc as Error).message}`);
+      checks.push(ocheck);
+      continue;
+    }
+
+    let frontmatter: Dict = {};
+    try {
+      const lines = pySplitlinesText(otext);
+      if (lines.length > 0 && lines[0] === "---") {
+        const closing = lines.indexOf("---", 1);
+        if (closing !== -1) {
+          const frontmatterText = lines.slice(1, closing).join("\n");
+          frontmatter = loadYamlMapping(frontmatterText) as Dict;
+        }
+      }
+    } catch {
+      frontmatter = {};
+    }
+
+    const expectedRefO = `capabilities/${name}/instructions.md`;
+    const expectedPermission = (capPermissions[name] ?? {}) as Dict;
+    const actualPermission = frontmatter.permission;
+
+    if ("name" in frontmatter) {
+      ocheck = { ...ocheck, status: "fail", message: "name frontmatter must be omitted" };
+      violations.push(`opencode ${name}: name frontmatter must be omitted`);
+    } else if (frontmatter.agentera_managed === "true") {
+      ocheck = { ...ocheck, status: "fail", message: "agentera_managed frontmatter must be omitted" };
+      violations.push(`opencode ${name}: agentera_managed frontmatter must be omitted`);
+    } else if (frontmatter.mode !== "subagent") {
+      ocheck = { ...ocheck, status: "fail", message: "mode: subagent frontmatter is required" };
+      violations.push(`opencode ${name}: mode: subagent frontmatter is required`);
+    } else if (!frontmatter.description) {
+      ocheck = { ...ocheck, status: "fail", message: "description is required" };
+      violations.push(`opencode ${name}: description is required`);
+    } else if (!actualPermission || typeof actualPermission !== "object" || Array.isArray(actualPermission)) {
+      ocheck = { ...ocheck, status: "fail", message: "permission frontmatter is required and must be an object" };
+      violations.push(`opencode ${name}: permission frontmatter is required and must be an object`);
+    } else if (
+      (actualPermission as Dict).write !== expectedPermission.write ||
+      (actualPermission as Dict).bash !== expectedPermission.bash
+    ) {
+      ocheck = { ...ocheck, status: "fail", message: "permission frontmatter does not match classification" };
+      violations.push(
+        `opencode ${name}: permission frontmatter must be write: ${expectedPermission.write}, bash: ${expectedPermission.bash}`,
+      );
+    } else if (!otext.includes("<!-- agentera: managed -->")) {
+      ocheck = { ...ocheck, status: "fail", message: "managed body marker is required" };
+      violations.push(`opencode ${name}: managed body marker is required`);
+    } else if (!otext.includes(expectedRefO)) {
+      ocheck = { ...ocheck, status: "fail", message: "descriptor must reference capability instructions" };
+      violations.push(`opencode ${name}: descriptor must reference ${expectedRefO}`);
+    } else if (otext.includes("Dispatch only through the runtime-native") || otext.includes(`\`@${name}\``)) {
+      ocheck = { ...ocheck, status: "fail", message: "descriptor must not self-dispatch from a subagent" };
+      violations.push(`opencode ${name}: descriptor must execute directly without self-dispatch`);
+    }
+    checks.push(ocheck);
+  }
+
+  return {
+    command: "validate",
+    status: violations.length > 0 ? "fail" : "pass",
+    target_family: "descriptors",
+    target: "agent-descriptors",
+    checks,
+    violations,
+    summary: {
+      passed: checks.filter((c) => c.status === "pass").length,
+      failed: checks.filter((c) => c.status === "fail").length,
+    },
+  };
+}
+
+export function cmdValidateDescriptors(args: { format?: string }, io: Io): number {
+  const out = io.out ?? ((t: string) => process.stdout.write(t));
+  const err = io.err ?? ((t: string) => process.stderr.write(t));
+  const payload = descriptorValidationPayload();
+  if ((args.format ?? "text") === "json") {
+    emitStructured(payload, "json", out);
+  } else {
+    out(
+      `descriptor validation ${payload.status}: ${(payload.summary as Dict).passed} passed, ${(payload.summary as Dict).failed} failed\n`,
+    );
+    for (const violation of payload.violations as string[]) err(`- ${violation}\n`);
+  }
+  return payload.status === "pass" ? 0 : 1;
 }

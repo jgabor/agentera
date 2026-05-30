@@ -9,6 +9,7 @@ import {
   cmdValidate,
   cmdValidateCapability,
   cmdValidateCapabilityContract,
+  cmdValidateDescriptors,
   isDelegatedValidateFamily,
 } from "./commands/validate.js";
 
@@ -328,6 +329,9 @@ function runValidate(argv: string[], io: Io, prog: string): number {
     }
     if (family === "capability-contract") {
       return cmdValidateCapabilityContract({ format }, io);
+    }
+    if (family === "descriptors") {
+      return cmdValidateDescriptors({ format }, io);
     }
     if (isDelegatedValidateFamily(family)) {
       return cmdValidate(family, { format }, io);
