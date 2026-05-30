@@ -71,9 +71,28 @@ describe("cli prime", () => {
     expect(err).toContain("unsupported field 'bogusfield'");
   });
 
-  it("reports --context as not yet ported", () => {
-    const ctx = capture((io) => cmdPrime({ context: "planera", format: "json" }, io));
-    expect(ctx.rc).toBe(1);
-    expect(ctx.err).toContain("not yet ported");
+  it("emits a capability context for a non-bespoke capability (planera)", () => {
+    const { rc, out } = capture((io) => cmdPrime({ command: "prime", context: "planera", format: "json" }, io));
+    expect(rc).toBe(0);
+    const payload = JSON.parse(out);
+    expect(payload.command).toBe("prime");
+    expect(payload.capability_context.schemaVersion).toBe("agentera.capabilityContext.v1");
+    expect(payload.capability_context.capability).toBe("planera");
+    expect(payload.capability_context.context.planning_context).toBeTruthy();
+    expect(payload.capability_context.context.planning_context.startup_contract.schemaVersion).toBe(
+      "agentera.planeraStartup.v1",
+    );
+  });
+
+  it("gates bespoke-context capabilities as not yet ported", () => {
+    const { rc, err } = capture((io) => cmdPrime({ context: "orkestrera", format: "json" }, io));
+    expect(rc).toBe(1);
+    expect(err).toContain("not yet ported");
+  });
+
+  it("rejects an unknown --context capability", () => {
+    const { rc, err } = capture((io) => cmdPrime({ context: "bogus", format: "json" }, io));
+    expect(rc).toBe(2);
+    expect(err).toContain("unsupported capability 'bogus'");
   });
 });
