@@ -3,6 +3,7 @@ import { cmdLint, LintArgs } from "./commands/lint.js";
 import { cmdBackfill, BackfillArgs } from "./commands/backfill.js";
 import { cmdState, isPortedStateCommand, StateArgs } from "./commands/state.js";
 import { COMMAND_FILTERS } from "./stateQuery.js";
+import { cmdQuery, QueryArgs } from "./commands/query.js";
 
 /**
  * Top-level command dispatch. The full argparse-shaped surface is being ported
@@ -167,6 +168,63 @@ function runState(command: string, argv: string[], io: Io, prog: string): number
   return cmdState(parsed, io);
 }
 
+function parseQueryArgs(argv: string[]): QueryArgs | { error: string } {
+  const args: QueryArgs = {
+    query: null,
+    list_artifacts: false,
+    topic: null,
+    severity: null,
+    dimension: null,
+    status: null,
+    limit: null,
+    format: "text",
+    fields: null,
+  };
+  for (let i = 0; i < argv.length; i++) {
+    const a = argv[i];
+    const value = (name: string): string | null => {
+      if (a === name) return argv[++i];
+      if (a.startsWith(name + "=")) return a.slice(name.length + 1);
+      return null;
+    };
+    let v: string | null;
+    if (a === "--list-artifacts") args.list_artifacts = true;
+    else if ((v = value("--topic")) !== null) args.topic = v;
+    else if ((v = value("--severity")) !== null) args.severity = v;
+    else if ((v = value("--dimension")) !== null) args.dimension = v;
+    else if ((v = value("--status")) !== null) args.status = v;
+    else if ((v = value("--limit")) !== null) {
+      const n = Number(v);
+      if (!Number.isInteger(n)) return { error: `argument --limit: invalid int value: '${v}'` };
+      args.limit = n;
+    } else if ((v = value("--format")) !== null) {
+      if (v !== "text" && v !== "json" && v !== "yaml") {
+        return { error: `argument --format: invalid choice: '${v}' (choose from 'text', 'json', 'yaml')` };
+      }
+      args.format = v;
+    } else if ((v = value("--fields")) !== null) args.fields = v;
+    else if (a.startsWith("--")) return { error: `unrecognized arguments: ${a}` };
+    else if (args.query === null) args.query = a;
+    else return { error: `unrecognized arguments: ${a}` };
+  }
+  return args;
+}
+
+function runQuery(argv: string[], io: Io, prog: string): number {
+  const err = io.err ?? ((t: string) => process.stderr.write(t));
+  const parsed = parseQueryArgs(argv);
+  if ("error" in parsed) {
+    err(`${prog}: error: ${parsed.error}\n`);
+    return 2;
+  }
+  try {
+    return cmdQuery(parsed, io);
+  } catch (exc) {
+    err(`Error: ${(exc as Error).message}\n`);
+    return 2;
+  }
+}
+
 export function main(argv: string[], io: Io = {}): number {
   const err = io.err ?? ((t: string) => process.stderr.write(t));
   const args = argv.slice(2);
@@ -196,10 +254,14 @@ export function main(argv: string[], io: Io = {}): number {
         err("agentera state: error: the following arguments are required: state_command\n");
         return 2;
       }
+      if (sub === "query") return runQuery(rest.slice(1), io, "agentera state query");
       if (isPortedStateCommand(sub)) return runState(sub, rest.slice(1), io, `agentera state ${sub}`);
       err(`agentera: unknown or not-yet-ported state subcommand: ${sub}\n`);
       return 1;
     }
+    case "query":
+      emitDeprecationAlias("query", "state query", err);
+      return runQuery(rest, io, "agentera query");
     default:
       if (command && isPortedStateCommand(command)) {
         emitDeprecationAlias(command, `state ${command}`, err);

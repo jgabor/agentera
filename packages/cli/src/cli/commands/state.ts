@@ -759,7 +759,7 @@ const PRIORITY_FIELDS = [
 
 const DECISION_ARCHIVE_RE = /Decision\s+(?<number>\d+)(?:\s+\((?<date>\d{4}-\d{2}-\d{2})\))?:\s*(?<summary>.*)/;
 
-function displayFields(fields: Dict, limit = 6): string[] {
+export function displayFields(fields: Dict, limit = 6): string[] {
   const ordered = PRIORITY_FIELDS.filter((p) => p in fields);
   for (const fn of Object.keys(fields)) {
     if (!ordered.includes(fn)) ordered.push(fn);
