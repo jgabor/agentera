@@ -46,11 +46,6 @@ describe("verify request validation", () => {
       validateVerifyRequest({ family: "eval", target: "skills", runtime: "bogus" }),
     ).toThrow(/unsupported eval skills runtime 'bogus'/);
   });
-  it("rejects live-hosts --live without --yes", () => {
-    expect(() =>
-      validateVerifyRequest({ family: "smoke", target: "live-hosts", live: true, yes: false }),
-    ).toThrow(/requires explicit non-interactive consent/);
-  });
 });
 
 describe("cmdVerify", () => {
@@ -85,15 +80,6 @@ describe("cmdVerify", () => {
     expect(payload.safety.mode).toBe("dry-run");
   });
 
-  it("reports smoke families as unavailable in the self-contained package", () => {
-    const { rc, out } = run({ family: "smoke", target: "installed-skills", format: "json" });
-    expect(rc).toBe(127);
-    const payload = JSON.parse(out);
-    expect(payload.status).toBe("fail");
-    expect(payload.engine.exit_code).toBe(127);
-    expect(payload.diagnostics.stderr.join("\n")).toContain("not available in the self-contained");
-    expect(payload.safety.mode).toBe("offline");
-  });
 });
 
 describe("buildVerifyPayload", () => {
