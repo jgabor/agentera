@@ -96,8 +96,18 @@ describe("cli prime", () => {
     expect(ctx.orchestration_context.evaluator_handoff).toBeTruthy();
   });
 
+  it("emits the execution bespoke context for realisera", () => {
+    const { rc, out } = capture((io) => cmdPrime({ command: "prime", context: "realisera", format: "json" }, io));
+    expect(rc).toBe(0);
+    const ctx = JSON.parse(out).capability_context.context;
+    expect(ctx.execution_context).toBeTruthy();
+    expect(ctx.execution_context.capability).toBe("realisera");
+    expect(ctx.execution_context.work_selection).toBeTruthy();
+    expect(ctx.execution_context.changelog_boundary).toBeTruthy();
+  });
+
   it("still gates the remaining bespoke capabilities", () => {
-    for (const cap of ["dokumentera", "inspektera", "optimera", "realisera"]) {
+    for (const cap of ["dokumentera", "inspektera", "optimera"]) {
       const { rc } = capture((io) => cmdPrime({ context: cap, format: "json" }, io));
       expect(rc).toBe(1);
     }
