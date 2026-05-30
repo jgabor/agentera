@@ -77,7 +77,7 @@ function startupCompletenessContract(): Dict {
 }
 
 function isLocalCheckout(root: string): boolean {
-  return ["scripts/agentera", "skills/agentera/SKILL.md", "registry.json"].every((rel) =>
+  return ["skills/agentera/SKILL.md", "registry.json"].every((rel) =>
     fs.existsSync(path.join(root, rel)),
   );
 }
