@@ -1,6 +1,7 @@
 import { cmdPrime } from "./commands/prime.js";
 import { cmdLint, LintArgs } from "./commands/lint.js";
 import { cmdBackfill, BackfillArgs } from "./commands/backfill.js";
+import { cmdState, isPortedStateCommand, StateArgs } from "./commands/state.js";
 
 /**
  * Top-level command dispatch. The full argparse-shaped surface is being ported
@@ -113,6 +114,43 @@ function runBackfill(argv: string[], io: Io, prog = "agentera backfill"): number
   }
 }
 
+function parseStateArgs(command: string, argv: string[]): StateArgs | { error: string } {
+  const args: StateArgs = { command, topic: null, status: null, limit: 5, format: "text", fields: null };
+  for (let i = 0; i < argv.length; i++) {
+    const a = argv[i];
+    const value = (name: string): string | null => {
+      if (a === name) return argv[++i];
+      if (a.startsWith(name + "=")) return a.slice(name.length + 1);
+      return null;
+    };
+    let v: string | null;
+    if ((v = value("--topic")) !== null) args.topic = v;
+    else if ((v = value("--status")) !== null) args.status = v;
+    else if ((v = value("--limit")) !== null) {
+      const n = Number(v);
+      if (!Number.isInteger(n)) return { error: `argument --limit: invalid int value: '${v}'` };
+      args.limit = n;
+    } else if ((v = value("--format")) !== null) {
+      if (v !== "text" && v !== "json" && v !== "yaml") {
+        return { error: `argument --format: invalid choice: '${v}' (choose from 'text', 'json', 'yaml')` };
+      }
+      args.format = v;
+    } else if ((v = value("--fields")) !== null) args.fields = v;
+    else return { error: `unrecognized arguments: ${a}` };
+  }
+  return args;
+}
+
+function runState(command: string, argv: string[], io: Io, prog: string): number {
+  const err = io.err ?? ((t: string) => process.stderr.write(t));
+  const parsed = parseStateArgs(command, argv);
+  if ("error" in parsed) {
+    err(`${prog}: error: ${parsed.error}\n`);
+    return 2;
+  }
+  return cmdState(parsed, io);
+}
+
 export function main(argv: string[], io: Io = {}): number {
   const err = io.err ?? ((t: string) => process.stderr.write(t));
   const args = argv.slice(2);
@@ -136,6 +174,19 @@ export function main(argv: string[], io: Io = {}): number {
       err(`agentera: unknown or not-yet-ported check subcommand: ${sub}\n`);
       return 1;
     }
+    case "state": {
+      const sub = rest[0];
+      if (!sub) {
+        err("agentera state: error: the following arguments are required: state_command\n");
+        return 2;
+      }
+      if (isPortedStateCommand(sub)) return runState(sub, rest.slice(1), io, `agentera state ${sub}`);
+      err(`agentera: unknown or not-yet-ported state subcommand: ${sub}\n`);
+      return 1;
+    }
+    case "progress":
+      emitDeprecationAlias("progress", "state progress", err);
+      return runState("progress", rest, io, "agentera progress");
     default:
       err(`agentera: unknown or not-yet-ported command: ${command ?? "(none)"}\n`);
       return 1;
