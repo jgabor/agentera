@@ -4,7 +4,7 @@ import path from "node:path";
 
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import { queryHealth, queryPlan, queryProgress, queryTodo } from "../../src/cli/commands/state.js";
+import { queryDecisions, queryHealth, queryPlan, queryProgress, queryTodo } from "../../src/cli/commands/state.js";
 import { main } from "../../src/cli/dispatch.js";
 import type { SchemaInfo } from "../../src/cli/appContext.js";
 
@@ -292,6 +292,78 @@ describe("cli state todo", () => {
     expect(rc).toBe(0);
     expect(out).toContain("[critical] Do the urgent thing");
     expect(out).not.toContain("Old item");
+  });
+});
+
+
+function decisionsSchema(absPath: string): Record<string, SchemaInfo> {
+  return {
+    decisions: {
+      path: absPath,
+      record: undefined,
+      schema: {},
+      fields: { number: {}, date: {}, choice: {}, question: { type: "string" } },
+    },
+  };
+}
+
+describe("cli state decisions", () => {
+  it("renders display fields as text", () => {
+    const p = path.join(tmp, "decisions.yaml");
+    fs.writeFileSync(
+      p,
+      [
+        "decisions:",
+        "  - number: 1",
+        "    date: '2026-05-29'",
+        "    question: Should we migrate?",
+        "    choice: Yes, to TypeScript.",
+        "",
+      ].join("\n"),
+    );
+    const { rc, out } = capture((io) => queryDecisions({ command: "decisions" }, decisionsSchema(p), io));
+    expect(rc).toBe(0);
+    expect(out).toContain("number=1");
+    expect(out).toContain("date=2026-05-29");
+  });
+
+  it("emits enriched satisfaction context + source_contract (json)", () => {
+    const p = path.join(tmp, "decisions.yaml");
+    fs.writeFileSync(
+      p,
+      [
+        "decisions:",
+        "  - number: 1",
+        "    question: Q",
+        "    choice: C",
+        "    feeds_into: scripts/x.ts",
+        "",
+      ].join("\n"),
+    );
+    const { rc, out } = capture((io) => queryDecisions({ command: "decisions", format: "json" }, decisionsSchema(p), io));
+    expect(rc).toBe(0);
+    const payload = JSON.parse(out);
+    expect(payload.command).toBe("decisions");
+    const entry = payload.entries[0];
+    expect(entry.outcome).toBe("C");
+    expect(entry.satisfaction.review_needed).toBe(true);
+    expect(entry.satisfaction.source).toBe("missing_legacy_state");
+    expect(entry.downstream_consequence_references[0].reference).toBe("scripts/x.ts");
+    expect(payload.source_contract.artifact).toBe("DECISIONS.md");
+  });
+
+  it("includes compacted archive entries with caveats", () => {
+    const p = path.join(tmp, "decisions.yaml");
+    fs.writeFileSync(
+      p,
+      ["decisions: []", "archive:", "  - 'Decision 5 (2026-01-02): chose X'", ""].join("\n"),
+    );
+    const { out } = capture((io) => queryDecisions({ command: "decisions", format: "json" }, decisionsSchema(p), io));
+    const payload = JSON.parse(out);
+    const entry = payload.entries[0];
+    expect(entry.compacted).toBe(true);
+    expect(entry.number).toBe(5);
+    expect(entry.date).toBe("2026-01-02");
   });
 });
 
