@@ -36,6 +36,11 @@ import {
   diagnoseCodex,
   diagnoseCursor,
   readCodexAgenteraHome,
+  buildReport,
+  buildInstallerPlan,
+  doctorMain,
+  pyJsonIndent,
+  renderHuman,
 } from "../../src/setup/doctor.js";
 
 let tmp: string;
@@ -304,5 +309,76 @@ describe("setup doctor: per-runtime diagnostics", () => {
     expect(r.status).toBe("pass");
     const checkStatuses = (r.checks as Array<{ status: string }>).map((c) => c.status);
     expect(checkStatuses.every((sv) => sv === "pass")).toBe(true);
+  });
+});
+
+
+describe("setup doctor: report + CLI", () => {
+  function fullRoot(root: string): void {
+    managedRoot(root);
+    fs.mkdirSync(path.join(root, "skills", "agentera"), { recursive: true });
+    fs.writeFileSync(path.join(root, "skills", "agentera", "SKILL.md"), "x\n");
+  }
+
+  it("builds a report with schema, install root, and per-runtime entries", () => {
+    const root = path.join(tmp, "root");
+    fullRoot(root);
+    const bin = fakeBin(path.join(tmp, "bin"));
+    const report = buildReport({
+      installRoot: root,
+      home: path.join(tmp, "home"),
+      env: { PATH: bin, AGENTERA_HOME: root },
+    });
+    expect(report.schemaVersion).toBe("agentera.setupDoctor.v1");
+    expect(report.installRoot.status).toBe("pass");
+    expect(Object.keys(report.runtimes).sort()).toEqual([...RUNTIMES].sort());
+    expect(typeof report.ok).toBe("boolean");
+  });
+
+  it("fails every runtime when the install root is invalid", () => {
+    const bad = path.join(tmp, "bad");
+    fs.mkdirSync(bad);
+    const report = buildReport({ installRoot: bad, home: path.join(tmp, "home"), env: {} });
+    expect(report.ok).toBe(false);
+    expect(report.installRoot.status).toBe("fail");
+  });
+
+  it("renders a stable human report and indented JSON", () => {
+    const root = path.join(tmp, "root");
+    fullRoot(root);
+    const report = buildReport({ installRoot: root, home: path.join(tmp, "home"), env: {} });
+    expect(renderHuman(report)).toContain("Agentera setup doctor");
+    const json = pyJsonIndent(report);
+    expect(json.startsWith("{\n")).toBe(true);
+    expect(JSON.parse(json).schemaVersion).toBe("agentera.setupDoctor.v1");
+  });
+
+  it("plans a codex installer change when the codex config is missing", () => {
+    const root = path.join(tmp, "root");
+    fullRoot(root);
+    const bin = fakeBin(path.join(tmp, "bin"));
+    const home = path.join(tmp, "home");
+    fs.mkdirSync(home, { recursive: true });
+    const env = { PATH: bin, AGENTERA_HOME: root };
+    const report = buildReport({ installRoot: root, home, env });
+    const plan = buildInstallerPlan(report, { home, env, runtimes: [...RUNTIMES], confirmed: false, dryRun: true });
+    const codex = (plan.changes as Array<{ runtime: string; status: string }>).find((c) => c.runtime === "codex");
+    expect(codex?.status).toBe("pending");
+  });
+
+  it("doctorMain --install --yes writes the codex config", () => {
+    const root = path.join(tmp, "root");
+    fullRoot(root);
+    const bin = fakeBin(path.join(tmp, "bin"));
+    const home = path.join(tmp, "home");
+    fs.mkdirSync(home, { recursive: true });
+    let out = "";
+    const rc = doctorMain(
+      ["--install-root", root, "--home", home, "--install", "--yes"],
+      { out: (sx) => (out += sx), err: () => {}, env: { PATH: bin, AGENTERA_HOME: root, HOME: home } },
+    );
+    expect(typeof rc).toBe("number");
+    expect(fs.existsSync(path.join(home, ".codex", "config.toml"))).toBe(true);
+    expect(out).toContain("Agentera setup installer");
   });
 });
