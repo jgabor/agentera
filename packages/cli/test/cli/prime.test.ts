@@ -84,10 +84,23 @@ describe("cli prime", () => {
     );
   });
 
-  it("gates bespoke-context capabilities as not yet ported", () => {
-    const { rc, err } = capture((io) => cmdPrime({ context: "orkestrera", format: "json" }, io));
-    expect(rc).toBe(1);
-    expect(err).toContain("not yet ported");
+  it("emits the orchestration bespoke context for orkestrera", () => {
+    const { rc, out } = capture((io) => cmdPrime({ command: "prime", context: "orkestrera", format: "json" }, io));
+    expect(rc).toBe(0);
+    const payload = JSON.parse(out);
+    expect(payload.capability_context.capability).toBe("orkestrera");
+    const ctx = payload.capability_context.context;
+    expect(ctx.orchestration_context).toBeTruthy();
+    expect(ctx.orchestration_context.capability).toBe("orkestrera");
+    expect(ctx.orchestration_context.task_queue).toBeTruthy();
+    expect(ctx.orchestration_context.evaluator_handoff).toBeTruthy();
+  });
+
+  it("still gates the remaining bespoke capabilities", () => {
+    for (const cap of ["dokumentera", "inspektera", "optimera", "realisera"]) {
+      const { rc } = capture((io) => cmdPrime({ context: cap, format: "json" }, io));
+      expect(rc).toBe(1);
+    }
   });
 
   it("rejects an unknown --context capability", () => {
