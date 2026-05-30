@@ -218,3 +218,380 @@ export function tail(text: string, limit = 5): string[] {
   const lines = text.split(/\r\n|\r|\n/).filter((line) => line.trim());
   return lines.slice(-limit);
 }
+
+// ===========================================================================
+// Slice 2: runtime scaffolding, OpenCode diagnostics, reference validation
+// ===========================================================================
+
+import fs from "node:fs";
+
+import { classifyResolvedRoot as _classifyResolvedRoot } from "../state/installRoot.js";
+
+function rootClassification(root: string, source: string): Dict {
+  return _classifyResolvedRoot(root, { source });
+}
+
+/** shutil.which: first PATH entry whose `${dir}/${cmd}` is an executable file. */
+export function which(cmd: string, pathStr: string | undefined): string | null {
+  const accessCheck = (fn: string): boolean => {
+    try {
+      const st = fs.statSync(fn);
+      if (st.isDirectory()) return false;
+      fs.accessSync(fn, fs.constants.X_OK);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+  if (cmd.includes("/")) {
+    return accessCheck(cmd) ? cmd : null;
+  }
+  const entries = (pathStr ?? "").split(path.delimiter);
+  const seen = new Set<string>();
+  for (const dir of entries) {
+    if (!dir || seen.has(dir)) continue;
+    seen.add(dir);
+    const fn = path.join(dir, cmd);
+    if (accessCheck(fn)) return fn;
+  }
+  return null;
+}
+
+export function runtimeSkip(runtime: string, env: Env): Dict {
+  const binary = RUNTIME_BINARIES[runtime];
+  return {
+    runtime,
+    status: SKIP_STATUSES[runtime],
+    available: false,
+    binary: null,
+    checks: [
+      mkCheck(AVAILABILITY_CHECKS[runtime], SKIP_STATUSES[runtime], `${binary} executable not found on PATH`, {
+        source: "PATH",
+        gap: USER_ENVIRONMENT_GAPS[runtime],
+        details: [env.PATH ?? ""],
+      }),
+    ],
+  };
+}
+
+export function configuredRootCheck(
+  runtime: string,
+  name: string,
+  candidate: string,
+  installRoot: string,
+  source: string,
+): Dict {
+  const classification = rootClassification(candidate, "environment");
+  if (String(classification.kind).startsWith("missing_")) {
+    return mkCheck(name, FAIL_STATUSES[runtime], "configured Agentera root does not exist", {
+      source,
+      path: candidate,
+      gap: RUNTIME_CONFIG_GAPS[runtime],
+    });
+  }
+  if (classification.kind !== "managed_fresh") {
+    return mkCheck(name, FAIL_STATUSES[runtime], "configured Agentera root is not a valid suite bundle", {
+      source,
+      path: candidate,
+      gap: "bundle_packaging",
+      details: setupMissing(candidate),
+    });
+  }
+  const helperMissing = verifyHelperAccess(candidate);
+  if (helperMissing.length > 0) {
+    return mkCheck(name, FAIL_STATUSES[runtime], "configured Agentera root cannot reach shared helper scripts", {
+      source,
+      path: candidate,
+      gap: "bundle_packaging",
+      details: helperMissing,
+    });
+  }
+  if (resolvePath(candidate) !== resolvePath(installRoot)) {
+    return mkCheck(name, WARN_STATUSES[runtime], "runtime points at a different valid Agentera install root", {
+      source,
+      path: candidate,
+      gap: RUNTIME_CONFIG_GAPS[runtime],
+    });
+  }
+  return mkCheck(name, PASS_STATUSES[runtime], HELPER_ACCESS_MESSAGE, { source, path: candidate });
+}
+
+export function binaryPath(runtime: string, env: Env): string | null {
+  return which(RUNTIME_BINARIES[runtime], env.PATH);
+}
+
+export function runtimeHostPathProblem(runtime: string, env: Env): [string, string] | null {
+  const binary = RUNTIME_BINARIES[runtime];
+  for (const entry of (env.PATH ?? "").split(path.delimiter)) {
+    if (!entry) continue;
+    const candidate = path.join(entry, binary);
+    try {
+      if (fs.statSync(candidate).isDirectory()) {
+        return [candidate, `${binary} PATH candidate is a directory, not an executable`];
+      }
+    } catch {
+      /* not present */
+    }
+    if (pathExists(candidate)) {
+      try {
+        fs.accessSync(candidate, fs.constants.X_OK);
+      } catch {
+        return [candidate, `${binary} PATH candidate is not executable`];
+      }
+    }
+  }
+  return null;
+}
+
+export function runtimeResult(runtime: string, env: Env, checks: Dict[]): Dict {
+  const binary = binaryPath(runtime, env);
+  if (binary === null) return runtimeSkip(runtime, env);
+  const binaryCheck = mkCheck(
+    AVAILABILITY_CHECKS[runtime],
+    PASS_STATUSES[runtime],
+    `${RUNTIME_BINARIES[runtime]} executable found`,
+    { source: "PATH", path: binary },
+  );
+  const allChecks = [binaryCheck, ...checks];
+  return {
+    runtime,
+    status: aggregateStatus(allChecks),
+    available: true,
+    binary,
+    checks: allChecks,
+  };
+}
+
+// HELPER_ACCESS_MESSAGE mirrors COPILOT_HELPER_MESSAGE (registry-derived).
+export const HELPER_ACCESS_MESSAGE = diagnosticMessages("copilot")[0];
+
+// ── OpenCode diagnostics ────────────────────────────────────────────
+
+const OPENCODE_PLUGIN_CHECK = diagnosticCheckNames("opencode")[0];
+const OPENCODE_HOME_CHECK = diagnosticCheckNames("opencode")[1];
+const OPENCODE_COMMANDS_CHECK = diagnosticCheckNames("opencode")[2];
+const OPENCODE_SKILL_PATHS_CHECK = diagnosticCheckNames("opencode")[3];
+const OPENCODE_SUPPORT_CHECK = diagnosticCheckNames("opencode")[4];
+const OC_MSG = diagnosticMessages("opencode");
+const OPENCODE_COMMANDS_CURRENT_MESSAGE = OC_MSG[4];
+const OPENCODE_COMMANDS_DRIFT_MESSAGE = OC_MSG[5];
+const OPENCODE_SKILL_PATHS_CURRENT_MESSAGE = OC_MSG[6];
+const OPENCODE_SKILL_PATHS_DRIFT_MESSAGE = OC_MSG[7];
+const OPENCODE_SUPPORT_REFERENCES_PASS_MESSAGE = OC_MSG[8];
+const OPENCODE_SUPPORT_REFERENCES_DRIFT_MESSAGE = OC_MSG[9];
+const OPENCODE_PASS_STATUS = diagnosticStatusLabels("opencode")[0];
+const OPENCODE_WARN_STATUS = diagnosticStatusLabels("opencode")[1];
+const OC_GAP = diagnosticGapLabels("opencode");
+const OPENCODE_COMMAND_DRIFT_GAP = OC_GAP[2];
+const OPENCODE_SKILL_PATH_DRIFT_GAP = OC_GAP[3];
+const OPENCODE_VALIDATION_DRIFT_GAP = OC_GAP[4];
+
+export function opencodeConfigDir(home: string, env: Env): string {
+  const value = env.OPENCODE_CONFIG_DIR;
+  return value ? resolvePath(expanduser(value)) : path.join(home, ".config", "opencode");
+}
+
+export function opencodeCommandTemplate(name: string): string {
+  return (
+    "---\n" +
+    `description: "${OPENCODE_COMMAND_DESCRIPTIONS[name]}"\n` +
+    "agentera_managed: true\n" +
+    "---\n" +
+    `Load and execute the ${name} skill for this project.\n`
+  );
+}
+
+export function hasManagedMarker(text: string): boolean {
+  const lines = text.split("\n");
+  if (lines.length === 0 || lines[0] !== "---") return false;
+  const closing = lines.indexOf("---", 1);
+  if (closing === -1) return false;
+  return lines.slice(1, closing).some((line) => line.trim() === "agentera_managed: true");
+}
+
+export function diagnoseOpencodeCommands(home: string, env: Env): Dict {
+  const commandsDir = path.join(opencodeConfigDir(home, env), "commands");
+  const missing: string[] = [];
+  const stale: string[] = [];
+  const userOwned: string[] = [];
+  for (const name of OPENCODE_SKILL_NAMES) {
+    const command = path.join(commandsDir, `${name}.md`);
+    const expected = opencodeCommandTemplate(name);
+    let actual: string;
+    try {
+      actual = fs.readFileSync(command, "utf8");
+    } catch {
+      missing.push(name);
+      continue;
+    }
+    if (actual === expected) continue;
+    if (hasManagedMarker(actual)) stale.push(name);
+    else userOwned.push(name);
+  }
+  if (missing.length === 0 && stale.length === 0) {
+    const details = userOwned.map((name) => `user-owned command preserved: ${name}`);
+    return mkCheck(OPENCODE_COMMANDS_CHECK, OPENCODE_PASS_STATUS, OPENCODE_COMMANDS_CURRENT_MESSAGE, {
+      path: commandsDir,
+      details,
+    });
+  }
+  const details = [...missing.map((n) => `missing: ${n}`), ...stale.map((n) => `stale: ${n}`)];
+  if (userOwned.length > 0) details.push(...userOwned.map((n) => `user-owned command preserved: ${n}`));
+  details.push("action: start OpenCode with the Agentera plugin to restore managed commands");
+  return mkCheck(OPENCODE_COMMANDS_CHECK, OPENCODE_WARN_STATUS, OPENCODE_COMMANDS_DRIFT_MESSAGE, {
+    path: commandsDir,
+    gap: OPENCODE_COMMAND_DRIFT_GAP,
+    details,
+  });
+}
+
+function isAgenteraManagedSkillPath(target: string, name: string): boolean {
+  let linkTarget: string;
+  try {
+    linkTarget = fs.readlinkSync(target);
+  } catch {
+    return false;
+  }
+  const normalized = linkTarget.toLowerCase();
+  return normalized.includes("agentera") || path.basename(linkTarget) === name;
+}
+
+function isSymlink(p: string): boolean {
+  try {
+    return fs.lstatSync(p).isSymbolicLink();
+  } catch {
+    return false;
+  }
+}
+
+export function diagnoseOpencodeSkillPaths(installRoot: string, home: string, env: Env): Dict {
+  const skillsDir = path.join(opencodeConfigDir(home, env), "skills");
+  const missing: string[] = [];
+  const broken: string[] = [];
+  const userOwned: string[] = [];
+  const missingSource: string[] = [];
+  for (const name of OPENCODE_SKILL_NAMES) {
+    const source = path.join(installRoot, "skills", name, "SKILL.md");
+    const target = path.join(skillsDir, name);
+    if (!isFile(source)) {
+      missingSource.push(name);
+      continue;
+    }
+    if (!pathExists(target) && !isSymlink(target)) {
+      missing.push(name);
+      continue;
+    }
+    if (isFile(path.join(target, "SKILL.md"))) continue;
+    if (isAgenteraManagedSkillPath(target, name)) broken.push(name);
+    else userOwned.push(name);
+  }
+  if (missing.length === 0 && broken.length === 0 && missingSource.length === 0) {
+    const details = userOwned.map((name) => `user-owned skill path preserved: ${name}`);
+    return mkCheck(OPENCODE_SKILL_PATHS_CHECK, OPENCODE_PASS_STATUS, OPENCODE_SKILL_PATHS_CURRENT_MESSAGE, {
+      path: skillsDir,
+      details,
+    });
+  }
+  const details = [...missing.map((n) => `missing: ${n}`), ...broken.map((n) => `broken: ${n}`)];
+  if (missingSource.length > 0) {
+    details.push(...missingSource.map((n) => `missing install source: ${n}`));
+    details.push(`action: ${OPENCODE_SKILL_INSTALL_COMMAND}`);
+  } else {
+    details.push("action: start OpenCode with the Agentera plugin to restore managed skill paths");
+  }
+  if (userOwned.length > 0) details.push(...userOwned.map((n) => `user-owned skill path preserved: ${n}`));
+  return mkCheck(OPENCODE_SKILL_PATHS_CHECK, OPENCODE_WARN_STATUS, OPENCODE_SKILL_PATHS_DRIFT_MESSAGE, {
+    path: skillsDir,
+    gap: OPENCODE_SKILL_PATH_DRIFT_GAP,
+    details,
+  });
+}
+
+// ── bundled reference validation ────────────────────────────────────
+
+function trimChars(s: string, chars: string): string {
+  let start = 0;
+  let end = s.length;
+  while (start < end && chars.includes(s[start])) start++;
+  while (end > start && chars.includes(s[end - 1])) end--;
+  return s.slice(start, end);
+}
+
+export function normalizeReference(raw: string): string | null {
+  const candidate = trimChars(raw, "`'\"()[]{}.,:;");
+  if (!candidate || path.isAbsolute(candidate) || candidate.includes("\\")) return null;
+  const parts = candidate.split("/");
+  if (parts.some((part) => part === "" || part === "." || part === "..")) return null;
+  return candidate;
+}
+
+export function extractReferencePaths(text: string): string[] {
+  const refs: string[] = [];
+  const seen = new Set<string>();
+  const re = /(?<![\w/.$-])(?<path>references\/[A-Za-z0-9][A-Za-z0-9_./-]*)/g;
+  for (const match of text.matchAll(re)) {
+    const ref = normalizeReference(match.groups!.path);
+    if (ref !== null && !seen.has(ref)) {
+      refs.push(ref);
+      seen.add(ref);
+    }
+  }
+  return refs;
+}
+
+function globSkillFiles(skillsDir: string): string[] {
+  let entries: string[];
+  try {
+    entries = fs.readdirSync(skillsDir);
+  } catch {
+    return [];
+  }
+  const out: string[] = [];
+  for (const entry of entries) {
+    const skillFile = path.join(skillsDir, entry, "SKILL.md");
+    if (isFile(skillFile)) out.push(skillFile);
+  }
+  return out.sort();
+}
+
+export function diagnoseBundledReferenceValidation(installRoot: string): Dict {
+  const skillsDir = path.join(installRoot, "skills");
+  const missing: string[] = [];
+  for (const skillFile of globSkillFiles(skillsDir)) {
+    const text = fs.readFileSync(skillFile, "utf8");
+    const parentName = path.basename(path.dirname(skillFile));
+    for (const ref of extractReferencePaths(text)) {
+      if (!pathExists(path.join(path.dirname(skillFile), ref))) {
+        missing.push(`${parentName}: ${ref}`);
+      }
+    }
+  }
+  if (missing.length === 0) {
+    return mkCheck(OPENCODE_SUPPORT_CHECK, OPENCODE_PASS_STATUS, OPENCODE_SUPPORT_REFERENCES_PASS_MESSAGE, {
+      path: skillsDir,
+    });
+  }
+  return mkCheck(OPENCODE_SUPPORT_CHECK, OPENCODE_WARN_STATUS, OPENCODE_SUPPORT_REFERENCES_DRIFT_MESSAGE, {
+    path: skillsDir,
+    gap: OPENCODE_VALIDATION_DRIFT_GAP,
+    details: missing,
+  });
+}
+
+export function smokeCheck(
+  name: string,
+  category: string,
+  status: string,
+  message: string,
+  opts: { command?: string[] | null; path?: string | null; details?: string[] | null } = {},
+): Dict {
+  return {
+    name,
+    category,
+    status,
+    message,
+    command: opts.command ?? [],
+    path: opts.path ?? null,
+    details: opts.details ?? [],
+  };
+}

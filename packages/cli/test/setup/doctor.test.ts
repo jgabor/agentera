@@ -19,6 +19,18 @@ import {
   tail,
   verifyHelperAccess,
   verifyInstallRoot,
+  binaryPath,
+  configuredRootCheck,
+  diagnoseBundledReferenceValidation,
+  diagnoseOpencodeCommands,
+  diagnoseOpencodeSkillPaths,
+  extractReferencePaths,
+  hasManagedMarker,
+  normalizeReference,
+  opencodeCommandTemplate,
+  runtimeResult,
+  runtimeSkip,
+  which,
 } from "../../src/setup/doctor.js";
 
 let tmp: string;
@@ -119,5 +131,107 @@ describe("setup doctor: aggregation helpers", () => {
       gap: null,
       details: [],
     });
+  });
+});
+
+
+describe("setup doctor: runtime detection", () => {
+  it("finds an executable on PATH (which) and skips when absent", () => {
+    const bin = path.join(tmp, "bin");
+    fs.mkdirSync(bin, { recursive: true });
+    const exe = path.join(bin, "codex");
+    fs.writeFileSync(exe, "#!/bin/sh\n");
+    fs.chmodSync(exe, 0o755);
+    expect(which("codex", bin)).toBe(exe);
+    expect(binaryPath("codex", { PATH: bin })).toBe(exe);
+    expect(binaryPath("codex", { PATH: "/nonexistent" })).toBeNull();
+    const skip = runtimeSkip("codex", { PATH: "/x" });
+    expect(skip.available).toBe(false);
+    expect(skip.status).toBe("skip");
+  });
+
+  it("assembles a runtime result with the binary check first", () => {
+    const bin = path.join(tmp, "bin");
+    fs.mkdirSync(bin, { recursive: true });
+    const exe = path.join(bin, "codex");
+    fs.writeFileSync(exe, "x");
+    fs.chmodSync(exe, 0o755);
+    const r = runtimeResult("codex", { PATH: bin }, []);
+    expect(r.available).toBe(true);
+    expect(r.binary).toBe(exe);
+    expect(r.checks).toHaveLength(1);
+  });
+
+  it("warns when the configured root differs from the install root", () => {
+    const a = path.join(tmp, "a");
+    const b = path.join(tmp, "b");
+    managedRoot(a);
+    managedRoot(b);
+    const c = configuredRootCheck("codex", "codex.home", a, b, "env");
+    expect(c.status).toBe("warn");
+  });
+});
+
+describe("setup doctor: OpenCode diagnostics", () => {
+  it("renders a managed command template and detects its marker", () => {
+    const tpl = opencodeCommandTemplate("agentera");
+    expect(tpl).toContain("agentera_managed: true");
+    expect(hasManagedMarker(tpl)).toBe(true);
+    expect(hasManagedMarker("no frontmatter")).toBe(false);
+  });
+
+  it("passes when the managed command file is current", () => {
+    const home = path.join(tmp, "home");
+    const cmds = path.join(home, ".config", "opencode", "commands");
+    fs.mkdirSync(cmds, { recursive: true });
+    fs.writeFileSync(path.join(cmds, "agentera.md"), opencodeCommandTemplate("agentera"));
+    const c = diagnoseOpencodeCommands(home, {});
+    expect(c.status).toBe("pass");
+  });
+
+  it("warns when the managed command is missing", () => {
+    const home = path.join(tmp, "home2");
+    fs.mkdirSync(path.join(home, ".config", "opencode", "commands"), { recursive: true });
+    const c = diagnoseOpencodeCommands(home, {});
+    expect(c.status).toBe("warn");
+    expect(c.details).toContain("missing: agentera");
+  });
+
+  it("passes skill paths when the symlink resolves to a SKILL.md", () => {
+    const root = path.join(tmp, "root");
+    fs.mkdirSync(path.join(root, "skills", "agentera"), { recursive: true });
+    fs.writeFileSync(path.join(root, "skills", "agentera", "SKILL.md"), "s");
+    const home = path.join(tmp, "h");
+    const skills = path.join(home, ".config", "opencode", "skills");
+    fs.mkdirSync(skills, { recursive: true });
+    fs.symlinkSync(path.join(root, "skills", "agentera"), path.join(skills, "agentera"));
+    const c = diagnoseOpencodeSkillPaths(root, home, {});
+    expect(c.status).toBe("pass");
+  });
+});
+
+describe("setup doctor: reference validation", () => {
+  it("extracts and normalizes references", () => {
+    expect(extractReferencePaths("a references/guide.md `references/x.md` references/guide.md")).toEqual([
+      "references/guide.md",
+      "references/x.md",
+    ]);
+    expect(normalizeReference("references/guide.md).")).toBe("references/guide.md");
+    expect(normalizeReference("/abs/x")).toBeNull();
+    expect(normalizeReference("references/../x")).toBeNull();
+  });
+
+  it("warns on missing bundled references", () => {
+    const root = path.join(tmp, "root");
+    fs.mkdirSync(path.join(root, "skills", "agentera"), { recursive: true });
+    fs.writeFileSync(
+      path.join(root, "skills", "agentera", "SKILL.md"),
+      "see references/here.md and references/gone.md\n",
+    );
+    fs.mkdirSync(path.join(root, "skills", "agentera", "references"), { recursive: true });
+    fs.writeFileSync(path.join(root, "skills", "agentera", "references", "here.md"), "x");
+    const c = diagnoseBundledReferenceValidation(root);
+    expect(c.status).toBe("warn");
+    expect(c.details).toContain("agentera: references/gone.md");
   });
 });
