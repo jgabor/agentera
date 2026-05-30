@@ -1,0 +1,132 @@
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
+
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+
+import { cmdReport, statsCorpusPath, statsExistingCorpusStatus, ReportArgs } from "../../src/cli/commands/report.js";
+
+function run(args: ReportArgs): { rc: number; out: string; err: string } {
+  let out = "";
+  let err = "";
+  const rc = cmdReport(args, { out: (t) => (out += t), err: (t) => (err += t) });
+  return { rc, out, err };
+}
+
+describe("statsExistingCorpusStatus", () => {
+  let tmp: string;
+  beforeEach(() => {
+    tmp = fs.mkdtempSync(path.join(os.tmpdir(), "corpusstat-"));
+  });
+  afterEach(() => {
+    fs.rmSync(tmp, { recursive: true, force: true });
+  });
+
+  it("classifies a missing corpus", () => {
+    const s = statsExistingCorpusStatus(path.join(tmp, "nope.json"));
+    expect(s.status).toBe("missing");
+  });
+  it("classifies unreadable JSON as stale", () => {
+    const p = path.join(tmp, "corpus.json");
+    fs.writeFileSync(p, "{ not json");
+    expect(statsExistingCorpusStatus(p).status).toBe("stale");
+  });
+  it("classifies a corpus with no conversation_turn records as stale", () => {
+    const p = path.join(tmp, "corpus.json");
+    fs.writeFileSync(p, JSON.stringify({ records: [{ source_kind: "other" }] }));
+    expect(statsExistingCorpusStatus(p).status).toBe("stale");
+  });
+  it("classifies a corpus with conversation_turn records as ready", () => {
+    const p = path.join(tmp, "corpus.json");
+    fs.writeFileSync(
+      p,
+      JSON.stringify({
+        metadata: { extracted_at: "2026-01-02T03:04:05Z" },
+        records: [{ source_kind: "conversation_turn" }],
+      }),
+    );
+    const s = statsExistingCorpusStatus(p);
+    expect(s.status).toBe("ready");
+    expect(s.extracted_at).toBe("2026-01-02T03:04:05Z");
+    expect(s.total_records).toBe(1);
+  });
+});
+
+describe("statsCorpusPath", () => {
+  it("prefers PROFILERA_PROFILE_DIR, then AGENTERA_HOME", () => {
+    expect(statsCorpusPath({ PROFILERA_PROFILE_DIR: "/p" }, "linux")).toBe(path.join("/p", "intermediate", "corpus.json"));
+    expect(statsCorpusPath({ AGENTERA_HOME: "/h" }, "linux")).toBe(path.join("/h", "intermediate", "corpus.json"));
+  });
+});
+
+describe("cmdReport", () => {
+  let tmp: string;
+  let prev: string | undefined;
+  beforeEach(() => {
+    tmp = fs.mkdtempSync(path.join(os.tmpdir(), "report-"));
+    prev = process.env.PROFILERA_PROFILE_DIR;
+    process.env.PROFILERA_PROFILE_DIR = tmp;
+  });
+  afterEach(() => {
+    if (prev === undefined) delete process.env.PROFILERA_PROFILE_DIR;
+    else process.env.PROFILERA_PROFILE_DIR = prev;
+    fs.rmSync(tmp, { recursive: true, force: true });
+  });
+
+  it("rejects an invalid --format with the usage Error message", () => {
+    const { rc, err } = run({ format: "xml" });
+    expect(rc).toBe(2);
+    expect(err).toContain("Error: unsupported usage format 'xml'");
+  });
+
+  it("reports a missing corpus as not-ready (rc 2)", () => {
+    const { rc, out } = run({ format: "json" });
+    expect(rc).toBe(2);
+    const payload = JSON.parse(out);
+    expect(payload.command).toBe("stats");
+    expect(payload.status).toBe("missing");
+    expect(payload.next).toBe("agentera stats refresh --dry-run");
+  });
+
+  it("rejects refresh with both --dry-run and --consent", () => {
+    const { rc, err } = run({ action: "refresh", dryRun: true, consent: "local-history" });
+    expect(rc).toBe(2);
+    expect(err).toContain("either --dry-run or --consent");
+  });
+
+  it("rejects refresh without consent", () => {
+    const { rc, err } = run({ action: "refresh" });
+    expect(rc).toBe(2);
+    expect(err).toContain("requires explicit --consent local-history");
+  });
+
+  it("reports refresh as unavailable in the self-contained package (json)", () => {
+    const { rc, out } = run({ action: "refresh", consent: "local-history", format: "json" });
+    expect(rc).toBe(2);
+    const payload = JSON.parse(out);
+    expect(payload.command).toBe("stats refresh");
+    expect(payload.status).toBe("unavailable");
+  });
+
+  it("rejects an unknown action", () => {
+    const { rc, err } = run({ action: "bogus" });
+    expect(rc).toBe(2);
+    expect(err).toContain("unsupported stats action 'bogus'");
+  });
+
+  it("runs the usage engine over a ready corpus (rc 0)", () => {
+    fs.mkdirSync(path.join(tmp, "intermediate"), { recursive: true });
+    fs.writeFileSync(
+      path.join(tmp, "intermediate", "corpus.json"),
+      JSON.stringify({
+        metadata: { extracted_at: "2026-01-02T03:04:05Z" },
+        records: [{ source_kind: "conversation_turn", project_id: "agentera", role: "assistant", timestamp: "t", text: "x" }],
+      }),
+    );
+    const { rc, out } = run({ format: "json" });
+    expect(rc).toBe(0);
+    const payload = JSON.parse(out);
+    expect(typeof payload.generated_at).toBe("string");
+    expect(payload.extracted_at).toBe("2026-01-02T03:04:05Z");
+  });
+});
