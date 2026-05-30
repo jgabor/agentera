@@ -1,4 +1,5 @@
 import crypto from "node:crypto";
+import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
@@ -304,4 +305,355 @@ export function codexPluginHooksEnabled(text: string | null): boolean {
   if (!plugins || typeof plugins !== "object" || Array.isArray(plugins)) return false;
   const agentera = (plugins as Dict)[CODEX_PLUGIN_ID];
   return Boolean(agentera && typeof agentera === "object" && agentera.enabled === true);
+}
+
+// ===========================================================================
+// Slice 2: line-based TOML mutation engine
+// ===========================================================================
+
+function splitKeepEnds(text: string): string[] {
+  return text.match(/[^\n]*\n|[^\n]+/g) ?? [];
+}
+
+function rstripEol(line: string): string {
+  return line.replace(/[\r\n]+$/, "");
+}
+
+function lineTerminator(lineWithEnd: string): string {
+  if (lineWithEnd.endsWith("\r\n")) return "\r\n";
+  if (lineWithEnd.endsWith("\n")) return "\n";
+  return "\n";
+}
+
+const SECTION_HEADER_RE = new RegExp(`^\\s*\\[\\s*${SECTION_NAME.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*\\]\\s*$`);
+const SET_LINE_RE = /^\s*set\s*=\s*/;
+
+export function findSectionHeaderIndex(lines: string[]): number | null {
+  for (let idx = 0; idx < lines.length; idx++) {
+    if (SECTION_HEADER_RE.test(lines[idx])) return idx;
+  }
+  return null;
+}
+
+export function findSetLineIndex(lines: string[], sectionIdx: number): number | null {
+  for (let idx = sectionIdx + 1; idx < lines.length; idx++) {
+    const line = lines[idx];
+    if (SECTION_HEADER_RE.test(line)) return null;
+    if (/^\s*\[/.test(line)) return null;
+    if (SET_LINE_RE.test(line)) return idx;
+  }
+  return null;
+}
+
+export function insertSetLine(text: string, installRoot: string): string {
+  const linesWithEnds = splitKeepEnds(text);
+  const plainLines = linesWithEnds.map(rstripEol);
+  const sectionIdx = findSectionHeaderIndex(plainLines);
+  if (sectionIdx === null) {
+    throw new Error(`insert_set_line called but [${SECTION_NAME}] header not found`);
+  }
+  const terminator = lineTerminator(linesWithEnds[sectionIdx]);
+  const setValue = emitSetInlineTable({ [MANAGED_KEY]: installRoot });
+  const insertedLine = `set = ${setValue}${terminator}`;
+  return [...linesWithEnds.slice(0, sectionIdx + 1), insertedLine, ...linesWithEnds.slice(sectionIdx + 1)].join("");
+}
+
+export function rewriteSetLine(text: string, mergedPairs: Record<string, string>): string {
+  const linesWithEnds = splitKeepEnds(text);
+  const plainLines = linesWithEnds.map(rstripEol);
+  const sectionIdx = findSectionHeaderIndex(plainLines);
+  if (sectionIdx === null) {
+    throw new Error(`rewrite_set_line called but [${SECTION_NAME}] header not found`);
+  }
+  const setIdx = findSetLineIndex(plainLines, sectionIdx);
+  if (setIdx === null) {
+    throw new Error(`rewrite_set_line called but no set line found in [${SECTION_NAME}]`);
+  }
+  const setLine = plainLines[setIdx];
+  if (setLine.includes("{") && !setLine.includes("}")) {
+    throw new Error("existing set value spans multiple lines; cannot safely merge");
+  }
+  const setLineWithEnd = linesWithEnds[setIdx];
+  const terminator = setLineWithEnd.endsWith("\r\n") ? "\r\n" : setLineWithEnd.endsWith("\n") ? "\n" : "";
+  const setValue = emitSetInlineTable(mergedPairs);
+  const newLine = `set = ${setValue}${terminator}`;
+  return [...linesWithEnds.slice(0, setIdx), newLine, ...linesWithEnds.slice(setIdx + 1)].join("");
+}
+
+function tableHeaderRe(table: string): RegExp {
+  const dotted = table
+    .split(".")
+    .map((part) => part.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+    .join("\\s*\\.\\s*");
+  return new RegExp(`^\\s*\\[\\s*${dotted}\\s*\\]\\s*$`);
+}
+
+function findTableHeaderIndex(lines: string[], table: string): number | null {
+  const pattern = tableHeaderRe(table);
+  for (let idx = 0; idx < lines.length; idx++) {
+    if (pattern.test(lines[idx])) return idx;
+  }
+  return null;
+}
+
+function findTableKeyIndex(lines: string[], tableIdx: number, keyLiteral: string): number | null {
+  const keyRe = new RegExp(`^\\s*${keyLiteral.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*=`);
+  for (let idx = tableIdx + 1; idx < lines.length; idx++) {
+    const line = lines[idx];
+    if (/^\s*\[/.test(line)) return null;
+    if (keyRe.test(line)) return idx;
+  }
+  return null;
+}
+
+function insertTableKeyLine(text: string, table: string, line: string): string {
+  const linesWithEnds = splitKeepEnds(text);
+  const plainLines = linesWithEnds.map(rstripEol);
+  const tableIdx = findTableHeaderIndex(plainLines, table);
+  if (tableIdx === null) throw new Error(`[${table}] header not found`);
+  const terminator = lineTerminator(linesWithEnds[tableIdx]);
+  return [...linesWithEnds.slice(0, tableIdx + 1), line + terminator, ...linesWithEnds.slice(tableIdx + 1)].join("");
+}
+
+function replaceTableKeyLine(text: string, table: string, keyLiteral: string, line: string): string {
+  const linesWithEnds = splitKeepEnds(text);
+  const plainLines = linesWithEnds.map(rstripEol);
+  const tableIdx = findTableHeaderIndex(plainLines, table);
+  if (tableIdx === null) throw new Error(`[${table}] header not found`);
+  const keyIdx = findTableKeyIndex(plainLines, tableIdx, keyLiteral);
+  if (keyIdx === null) throw new Error(`${keyLiteral} not found in [${table}]`);
+  if (plainLines[keyIdx].includes("{") && !plainLines[keyIdx].includes("}")) {
+    throw new Error(`${keyLiteral} spans multiple lines in [${table}]`);
+  }
+  const terminator = lineTerminator(linesWithEnds[keyIdx]);
+  return [...linesWithEnds.slice(0, keyIdx), line + terminator, ...linesWithEnds.slice(keyIdx + 1)].join("");
+}
+
+function appendTable(text: string, table: string, lines: string[]): string {
+  let prefix = text;
+  if (!prefix.endsWith("\n")) prefix += "\n";
+  if (!prefix.endsWith("\n\n")) prefix += "\n";
+  return prefix + `[${table}]\n` + lines.join("\n") + "\n";
+}
+
+function tomlLoadOrEmpty(text: string): Dict {
+  return text.trim() ? (parseToml(text) as Dict) : {};
+}
+
+function ensureFeatureEnabled(text: string, key: string): string {
+  const parsed = tomlLoadOrEmpty(text);
+  const features = parsed.features;
+  if (features && typeof features === "object" && !Array.isArray(features) && (features as Dict)[key] === true) {
+    return text;
+  }
+  const lines = splitKeepEnds(text).map(rstripEol);
+  const tableIdx = findTableHeaderIndex(lines, "features");
+  if (tableIdx === null) {
+    if (features && typeof features === "object" && !Array.isArray(features)) {
+      if (lines.some((line) => /^\s*features\s*=/.test(line))) {
+        throw new Error("[features] uses an unsupported inline or dotted-table form");
+      }
+    }
+    return appendTable(text, "features", [`${key} = true`]);
+  }
+  const keyIdx = findTableKeyIndex(lines, tableIdx, key);
+  if (keyIdx === null) return insertTableKeyLine(text, "features", `${key} = true`);
+  return replaceTableKeyLine(text, "features", key, `${key} = true`);
+}
+
+function ensureFeaturesHooksEnabled(text: string): string {
+  return ensureFeatureEnabled(text, "hooks");
+}
+
+function ensureFeaturesPluginHooksEnabled(text: string): string {
+  return ensureFeatureEnabled(ensureFeaturesHooksEnabled(text), "plugin_hooks");
+}
+
+function removeTableKeyLine(text: string, table: string, key: string): string {
+  const linesWithEnds = splitKeepEnds(text);
+  const plainLines = linesWithEnds.map(rstripEol);
+  const tableIdx = findTableHeaderIndex(plainLines, table);
+  if (tableIdx === null) return text;
+  const keyLiteral = tomlBasicString(key);
+  let keyIdx = findTableKeyIndex(plainLines, tableIdx, keyLiteral);
+  if (keyIdx === null) keyIdx = findTableKeyIndex(plainLines, tableIdx, key);
+  if (keyIdx === null) return text;
+  return [...linesWithEnds.slice(0, keyIdx), ...linesWithEnds.slice(keyIdx + 1)].join("");
+}
+
+function codexMultiAgentThreadLimit(parsed: Dict): number {
+  const agents = parsed.agents;
+  if (agents && typeof agents === "object" && !Array.isArray(agents) && "max_threads" in agents) {
+    const n = Number((agents as Dict).max_threads);
+    if (Number.isInteger(n)) return n;
+  }
+  const features = parsed.features;
+  if (features && typeof features === "object" && !Array.isArray(features)) {
+    const multi = (features as Dict).multi_agent_v2;
+    if (multi && typeof multi === "object" && "max_concurrent_threads_per_session" in multi) {
+      const n = Number((multi as Dict).max_concurrent_threads_per_session);
+      if (Number.isInteger(n)) return n;
+    }
+  }
+  return 6;
+}
+
+function ensureCodexMultiAgentV2(text: string, maxThreadsVal: number): string {
+  const parsed = tomlLoadOrEmpty(text);
+  const features = parsed.features;
+  let multi: Dict = {};
+  if (features && typeof features === "object" && !Array.isArray(features)) {
+    const m = (features as Dict).multi_agent_v2;
+    if (m && typeof m === "object" && !Array.isArray(m)) multi = m;
+  }
+  if (multi.max_concurrent_threads_per_session === maxThreadsVal) return text;
+  const lines = splitKeepEnds(text).map(rstripEol);
+  const tableIdx = findTableHeaderIndex(lines, "features.multi_agent_v2");
+  const key = "max_concurrent_threads_per_session";
+  const line = `${key} = ${maxThreadsVal}`;
+  if (tableIdx === null) return appendTable(text, "features.multi_agent_v2", [line]);
+  const keyIdx = findTableKeyIndex(lines, tableIdx, key);
+  if (keyIdx === null) return insertTableKeyLine(text, "features.multi_agent_v2", line);
+  return replaceTableKeyLine(text, "features.multi_agent_v2", key, line);
+}
+
+export function ensureCodexAgentLimits(text: string): string {
+  let parsed = tomlLoadOrEmpty(text);
+  const maxThreadsVal = codexMultiAgentThreadLimit(parsed);
+  text = removeTableKeyLine(text, "agents", "max_threads");
+  parsed = tomlLoadOrEmpty(text);
+  const agents = parsed.agents;
+  const agentsMatches =
+    agents && typeof agents === "object" && !Array.isArray(agents) &&
+    Object.entries(DEFAULT_AGENT_LIMITS).every(([k, v]) => (agents as Dict)[k] === v);
+  if (!agentsMatches) {
+    const lines = splitKeepEnds(text).map(rstripEol);
+    const tableIdx = findTableHeaderIndex(lines, "agents");
+    if (tableIdx === null) {
+      if (agents && typeof agents === "object" && !Array.isArray(agents) && Object.keys(agents).length > 0) {
+        throw new Error("[agents] uses an unsupported inline or child-table-only form");
+      }
+      text = appendTable(text, "agents", Object.entries(DEFAULT_AGENT_LIMITS).map(([k, v]) => `${k} = ${v}`));
+    } else {
+      for (const [key, value] of Object.entries(DEFAULT_AGENT_LIMITS)) {
+        const line = `${key} = ${value}`;
+        const curLines = splitKeepEnds(text).map(rstripEol);
+        const curTableIdx = findTableHeaderIndex(curLines, "agents");
+        if (curTableIdx === null) throw new Error("[agents] header disappeared during update");
+        if (findTableKeyIndex(curLines, curTableIdx, key) === null) {
+          text = insertTableKeyLine(text, "agents", line);
+        } else {
+          text = replaceTableKeyLine(text, "agents", key, line);
+        }
+      }
+    }
+  }
+  return ensureCodexMultiAgentV2(text, maxThreadsVal);
+}
+
+function hookStateLine(key: string, trustedHash: string): string {
+  return `${tomlBasicString(key)} = { trusted_hash = ${tomlBasicString(trustedHash)}, enabled = true }`;
+}
+
+function ensureCodexHookStateEntries(text: string, entries: Record<string, string>): string {
+  const parsed = tomlLoadOrEmpty(text);
+  const hooks = parsed.hooks;
+  let state: Dict = {};
+  if (hooks && typeof hooks === "object" && !Array.isArray(hooks)) {
+    const s = (hooks as Dict).state;
+    if (s && typeof s === "object" && !Array.isArray(s)) state = s;
+  }
+  const allPresent = Object.entries(entries).every(([key, trustedHash]) => {
+    const e = state[key];
+    return e && typeof e === "object" && e.trusted_hash === trustedHash && e.enabled === true;
+  });
+  if (allPresent) return text;
+
+  const lines = splitKeepEnds(text).map(rstripEol);
+  const tableIdx = findTableHeaderIndex(lines, "hooks.state");
+  if (tableIdx === null) {
+    if (Object.keys(state).length > 0) {
+      throw new Error("[hooks.state] uses an unsupported inline or dotted-table form");
+    }
+    return appendTable(
+      text,
+      "hooks.state",
+      Object.entries(entries).map(([key, trustedHash]) => hookStateLine(key, trustedHash)),
+    );
+  }
+  for (const [key, trustedHash] of Object.entries(entries)) {
+    const keyLiteral = tomlBasicString(key);
+    const line = hookStateLine(key, trustedHash);
+    const curLines = splitKeepEnds(text).map(rstripEol);
+    const curTableIdx = findTableHeaderIndex(curLines, "hooks.state");
+    if (curTableIdx === null) throw new Error("[hooks.state] header disappeared during update");
+    if (findTableKeyIndex(curLines, curTableIdx, keyLiteral) === null) {
+      text = insertTableKeyLine(text, "hooks.state", line);
+    } else {
+      text = replaceTableKeyLine(text, "hooks.state", keyLiteral, line);
+    }
+  }
+  return text;
+}
+
+export function ensureCodexHookTrust(text: string, hooksPath: string, command: string = CODEX_HOOK_COMMAND): string {
+  return ensureCodexHookStateEntries(ensureFeaturesHooksEnabled(text), codexHookStateEntries(hooksPath, command));
+}
+
+export function codexCopiedHooksAreAgenteraOnly(text: string): boolean {
+  let payload: unknown;
+  try {
+    payload = JSON.parse(text);
+  } catch {
+    return false;
+  }
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) return false;
+  const p = payload as Dict;
+  if (typeof p.description !== "string" || !p.description.includes("agentera v2 Codex hooks")) return false;
+  const hooks = p.hooks;
+  if (!hooks || typeof hooks !== "object" || Array.isArray(hooks)) return false;
+  const keys = Object.keys(hooks);
+  if (keys.length !== 2 || !keys.includes("PreToolUse") || !keys.includes("PostToolUse")) return false;
+  for (const [event, entries] of Object.entries(hooks)) {
+    if (event !== "PreToolUse" && event !== "PostToolUse") return false;
+    if (!Array.isArray(entries) || entries.length !== 1) return false;
+    const entry = entries[0];
+    if (!entry || typeof entry !== "object" || entry.matcher !== CODEX_HOOK_MATCHER) return false;
+    const handlers = entry.hooks;
+    if (!Array.isArray(handlers) || handlers.length !== 1) return false;
+    const handler = handlers[0];
+    if (!handler || typeof handler !== "object") return false;
+    const command = handler.command;
+    if (handler.type !== "command" || typeof command !== "string") return false;
+    if (!command.includes("hooks/validate_artifact.py")) return false;
+    if (handler.timeout !== CODEX_HOOK_TIMEOUT) return false;
+    if (handler.statusMessage !== CODEX_HOOK_STATUS_MESSAGE) return false;
+  }
+  return true;
+}
+
+export function retireCodexCopiedHookTrust(text: string, hooksPath: string): string {
+  if (pathExists(hooksPath)) {
+    let hooksText: string;
+    try {
+      hooksText = fs.readFileSync(hooksPath, "utf8");
+    } catch {
+      return text;
+    }
+    if (!codexCopiedHooksAreAgenteraOnly(hooksText)) return text;
+  }
+  const resolved = resolvePath(hooksPath);
+  text = removeTableKeyLine(text, "hooks.state", `${resolved}:pre_tool_use:0:0`);
+  text = removeTableKeyLine(text, "hooks.state", `${resolved}:post_tool_use:0:0`);
+  return text;
+}
+
+export function ensureCodexPluginHookTrust(
+  text: string,
+  command: string = CODEX_PLUGIN_HOOK_COMMAND,
+  hooksPath: string | null = null,
+): string {
+  text = ensureCodexHookStateEntries(ensureFeaturesPluginHooksEnabled(text), codexPluginHookStateEntries(command));
+  const target = hooksPath ?? path.join(os.homedir(), ".codex", "hooks.json");
+  return retireCodexCopiedHookTrust(text, target);
 }

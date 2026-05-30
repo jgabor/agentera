@@ -8,13 +8,19 @@ import {
   CODEX_HOOK_MATCHER,
   InstallRootError,
   classifyToml,
+  codexCopiedHooksAreAgenteraOnly,
   codexHookStateEntries,
   codexHookTrustedHash,
   codexPluginHooksEnabled,
   emitSetInlineTable,
+  ensureCodexAgentLimits,
+  ensureCodexHookTrust,
+  ensureCodexPluginHookTrust,
+  insertSetLine,
   renderCodexHooksConfig,
   renderFreshConfig,
   resolveInstallRoot,
+  rewriteSetLine,
 } from "../../src/setup/codex.js";
 import { resolvePath } from "../../src/core/paths.js";
 
@@ -95,5 +101,51 @@ describe("setup codex: plugin enabled", () => {
     expect(codexPluginHooksEnabled('[plugins."agentera@agentera"]\nenabled = true\n')).toBe(true);
     expect(codexPluginHooksEnabled("")).toBe(false);
     expect(codexPluginHooksEnabled('[plugins."agentera@agentera"]\nenabled = false\n')).toBe(false);
+  });
+});
+
+
+describe("setup codex: TOML mutation engine", () => {
+  it("inserts a set line directly under the section header", () => {
+    const text = insertSetLine("[shell_environment_policy]\n\n[other]\nx = 1\n", "/opt/a");
+    expect(text).toBe('[shell_environment_policy]\nset = { AGENTERA_HOME = "/opt/a" }\n\n[other]\nx = 1\n');
+  });
+
+  it("rewrites a set line by merging pairs", () => {
+    const text = rewriteSetLine('[shell_environment_policy]\nset = { FOO = "bar" }\n', { FOO: "bar", AGENTERA_HOME: "/opt/a" });
+    expect(text).toBe('[shell_environment_policy]\nset = { FOO = "bar", AGENTERA_HOME = "/opt/a" }\n');
+  });
+
+  it("refuses to rewrite a multi-line set value", () => {
+    expect(() => rewriteSetLine("[shell_environment_policy]\nset = {\n  FOO = \"bar\"\n}\n", { FOO: "x" })).toThrow();
+  });
+
+  it("ensures default agent limits on an empty config", () => {
+    const text = ensureCodexAgentLimits("");
+    expect(text).toContain("[agents]\nmax_depth = 1");
+    expect(text).toContain("[features.multi_agent_v2]\nmax_concurrent_threads_per_session = 6");
+  });
+
+  it("ensures hook trust by enabling features.hooks and writing trust state", () => {
+    const text = ensureCodexHookTrust("", "/opt/agentera/hooks/codex-hooks.json");
+    expect(text).toContain("[features]\nhooks = true");
+    expect(text).toContain("[hooks.state]");
+    expect(text).toContain('/opt/agentera/hooks/codex-hooks.json:pre_tool_use:0:0');
+    expect(text).toContain("trusted_hash = ");
+    expect(text).toContain("enabled = true");
+  });
+
+  it("ensures plugin hook trust by enabling plugin_hooks", () => {
+    const text = ensureCodexPluginHookTrust("");
+    expect(text).toContain("hooks = true");
+    expect(text).toContain("plugin_hooks = true");
+    expect(text).toContain("agentera@agentera:hooks/codex-plugin-hooks.json:pre_tool_use:0:0");
+  });
+
+  it("detects an Agentera-only copied hooks.json", () => {
+    const config = renderCodexHooksConfig('uv run "${AGENTERA_HOME}/hooks/validate_artifact.py"');
+    expect(codexCopiedHooksAreAgenteraOnly(config)).toBe(true);
+    expect(codexCopiedHooksAreAgenteraOnly("{}")).toBe(false);
+    expect(codexCopiedHooksAreAgenteraOnly("not json")).toBe(false);
   });
 });
