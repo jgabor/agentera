@@ -21,7 +21,7 @@
     "node": ">=22"
   },
   "bin": {
-    "agentera": "./dist/bin/agentera.js"
+    "agentera": "dist/bin/agentera.js"
   },
   "files": [
     "dist",
