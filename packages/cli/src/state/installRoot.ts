@@ -12,14 +12,12 @@ import { expanduser, isFile, pathExists, resolvePath } from "../core/paths.js";
 export const BUNDLE_MARKER = ".agentera-bundle.json";
 
 export const SETUP_EVIDENCE = [
-  "scripts/validate_capability.py",
-  "hooks",
   "skills",
   "skills/agentera/SKILL.md",
+  "registry.json",
 ] as const;
 
 export const BUNDLE_EVIDENCE = [
-  "scripts/agentera",
   "skills/agentera/SKILL.md",
   "registry.json",
   BUNDLE_MARKER,
@@ -388,21 +386,8 @@ export function classifyResolvedRoot(
         },
       );
     }
-    const commandMissing = missingScriptCommands(path.join(root, "scripts", "agentera"), ["hej"]);
-    if (commandMissing.length > 0) {
-      return managedStale(
-        root,
-        source,
-        expected,
-        current,
-        ["current bundle marker/version or required CLI command evidence"],
-        "missing_command",
-        {
-          missingCommands: commandMissing,
-          scriptPath: path.join(root, "scripts", "agentera"),
-        },
-      );
-    }
+    // Node self-contained model: a marked bundle with current data is fresh; the
+    // Python CLI command-probe (scripts/agentera) no longer applies.
     return managedFresh(root, source, setupMissing, bundleMissing, expected, current);
   }
 

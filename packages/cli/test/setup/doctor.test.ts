@@ -51,13 +51,11 @@ afterEach(() => {
   fs.rmSync(tmp, { recursive: true, force: true });
 });
 
-function managedRoot(root: string, withHelper = true): void {
-  fs.mkdirSync(path.join(root, "hooks"), { recursive: true });
+function managedRoot(root: string, _withHelper = true): void {
+  // Node-era managed app: app data surfaces (no Python scripts/hooks).
   fs.mkdirSync(path.join(root, "skills", "agentera"), { recursive: true });
-  fs.mkdirSync(path.join(root, "scripts"), { recursive: true });
-  fs.writeFileSync(path.join(root, "scripts", "validate_capability.py"), "x");
   fs.writeFileSync(path.join(root, "skills", "agentera", "SKILL.md"), "s");
-  if (withHelper) fs.writeFileSync(path.join(root, "hooks", "validate_artifact.py"), "x");
+  fs.writeFileSync(path.join(root, "registry.json"), JSON.stringify({ skills: [{ version: "x" }] }));
 }
 
 describe("setup doctor: registry-derived constants", () => {
@@ -67,7 +65,7 @@ describe("setup doctor: registry-derived constants", () => {
     expect(RUNTIMES).toContain("codex");
     expect(Object.keys(AVAILABILITY_CHECKS).sort()).toEqual([...RUNTIMES].sort());
     expect(INSTALLER_FIXABLE_GAPS.copilot).toHaveLength(2);
-    expect(HELPER_ENTRIES).toContain("hooks/validate_artifact.py");
+    expect(HELPER_ENTRIES).toEqual([]);
     expect(CANONICAL_ENTRIES.length).toBeGreaterThan(0);
   });
 });
@@ -83,13 +81,15 @@ describe("setup doctor: install-root classification", () => {
     expect(verifyHelperAccess(root)).toEqual([]);
   });
 
-  it("fails a managed root that is missing helper scripts", () => {
-    const root = path.join(tmp, "nohelper");
-    managedRoot(root, false);
+  it("fails a root missing canonical Agentera entries", () => {
+    const root = path.join(tmp, "nodata");
+    fs.mkdirSync(path.join(root, "skills", "agentera"), { recursive: true });
+    fs.writeFileSync(path.join(root, "skills", "agentera", "SKILL.md"), "s");
+    // registry.json missing -> not a managed root.
     const c = classifyInstallRoot(root, {});
     expect(c.status).toBe("fail");
     expect(c.gap).toBe("bundle_packaging");
-    expect(c.missing).toEqual(["hooks/validate_artifact.py"]);
+    expect(c.missing).toContain("registry.json");
   });
 
   it("fails an invalid root", () => {

@@ -27,12 +27,8 @@ function readYaml(p: string): any {
 }
 
 function writeSetupRoot(root: string): void {
-  for (const entry of [
-    "scripts/validate_capability.py",
-    "hooks",
-    "skills",
-    "skills/agentera/SKILL.md",
-  ]) {
+  // Node-era setup evidence: app data surfaces (no Python scripts/hooks).
+  for (const entry of ["skills", "skills/agentera/SKILL.md", "registry.json"]) {
     const target = path.join(root, entry);
     if (path.basename(target).includes(".")) {
       fs.mkdirSync(path.dirname(target), { recursive: true });
@@ -41,9 +37,6 @@ function writeSetupRoot(root: string): void {
       fs.mkdirSync(target, { recursive: true });
     }
   }
-  const helper = path.join(root, "hooks", "validate_artifact.py");
-  fs.mkdirSync(path.dirname(helper), { recursive: true });
-  fs.writeFileSync(helper, "fixture\n");
 }
 
 function writeUpgradeRoot(
@@ -162,12 +155,13 @@ describe("install-root classification", () => {
       expect(result.diagnostic.code, shape).toBe(contract.diagnostic.code);
     }
 
+    // Node model: full app data without a bundle marker is a ready setup root
+    // (managed_fresh). The Python-era "lost marker -> stale" concept is gone.
     const missingMarker = classifyResolvedRoot(staleMissingMarker, {
       source: "explicit",
       expectedVersion: "current",
     });
-    expect(missingMarker.kind).toBe("managed_stale");
-    expect(missingMarker.diagnostic.evidence.reason).toBe("missing_marker");
+    expect(missingMarker.kind).toBe("managed_fresh");
   });
 
   it("is read-only for existing and missing roots", () => {
