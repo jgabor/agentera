@@ -1,5 +1,6 @@
 import { cmdPrime } from "./commands/prime.js";
 import { cmdLint, LintArgs } from "./commands/lint.js";
+import { cmdBackfill, BackfillArgs } from "./commands/backfill.js";
 
 /**
  * Top-level command dispatch. The full argparse-shaped surface is being ported
@@ -49,15 +50,63 @@ function parseLintArgs(argv: string[]): LintArgs | { error: string } {
   return args;
 }
 
-function runLint(argv: string[], io: Io): number {
+function runLint(argv: string[], io: Io, prog = "agentera lint"): number {
   const err = io.err ?? ((t: string) => process.stderr.write(t));
   const parsed = parseLintArgs(argv);
   if ("error" in parsed) {
-    err(`agentera lint: error: ${parsed.error}\n`);
+    err(`${prog}: error: ${parsed.error}\n`);
     return 2;
   }
   try {
     return cmdLint(parsed, io);
+  } catch (exc) {
+    err(`Error: ${(exc as Error).message}\n`);
+    return 2;
+  }
+}
+
+function parseBackfillArgs(argv: string[]): BackfillArgs | { error: string } {
+  const args: BackfillArgs = { project: null, mode: "check", commit: null, cycle: null, format: "text" };
+  for (let i = 0; i < argv.length; i++) {
+    const a = argv[i];
+    const value = (name: string): string | null => {
+      if (a === name) return argv[++i];
+      if (a.startsWith(name + "=")) return a.slice(name.length + 1);
+      return null;
+    };
+    let v: string | null;
+    if ((v = value("--project")) !== null) args.project = v;
+    else if ((v = value("--mode")) !== null) {
+      if (v !== "check" && v !== "fix") {
+        return { error: `argument --mode: invalid choice: '${v}' (choose from 'check', 'fix')` };
+      }
+      args.mode = v;
+    } else if ((v = value("--commit")) !== null) args.commit = v;
+    else if ((v = value("--cycle")) !== null) {
+      const n = Number(v);
+      if (!Number.isInteger(n)) return { error: `argument --cycle: invalid int value: '${v}'` };
+      args.cycle = n;
+    } else if ((v = value("--format")) !== null) {
+      if (v !== "text" && v !== "json") {
+        return { error: `argument --format: invalid choice: '${v}' (choose from 'text', 'json')` };
+      }
+      args.format = v;
+    } else {
+      return { error: `unrecognized arguments: ${a}` };
+    }
+  }
+  return args;
+}
+
+function runBackfill(argv: string[], io: Io, prog = "agentera backfill"): number {
+  const err = io.err ?? ((t: string) => process.stderr.write(t));
+  const parsed = parseBackfillArgs(argv);
+  if ("error" in parsed) {
+    err(`${prog}: error: ${parsed.error}\n`);
+    return 2;
+  }
+  try {
+    return cmdBackfill(parsed, io);
   } catch (exc) {
     err(`Error: ${(exc as Error).message}\n`);
     return 2;
@@ -82,7 +131,8 @@ export function main(argv: string[], io: Io = {}): number {
         err("agentera check: error: the following arguments are required: check_command\n");
         return 2;
       }
-      if (sub === "lint") return runLint(rest.slice(1), io);
+      if (sub === "lint") return runLint(rest.slice(1), io, "agentera check lint");
+      if (sub === "backfill") return runBackfill(rest.slice(1), io, "agentera check backfill");
       err(`agentera: unknown or not-yet-ported check subcommand: ${sub}\n`);
       return 1;
     }
