@@ -643,16 +643,11 @@ function validateRepoPath(prefix: string, value: unknown, root: string): string[
   if (rel !== "" && (rel.startsWith("..") || path.isAbsolute(rel))) {
     return [`${prefix} must stay inside repo root`];
   }
-  if (!pathExists(resolved)) {
-    // Self-contained npx bundle ships app data only; package surfaces (Python
-    // scripts, plugin manifests, version files) are intentionally absent, so a
-    // missing referenced path is expected there. Structural traversal checks
-    // above still apply. The sentinel never exists in a checkout/installed app.
-    if (pathExists(path.join(resolvedRoot, ".agentera-npx-bundle.json"))) {
-      return [];
-    }
-    return [`${prefix} unknown path: ${value}`];
-  }
+  // Existence is advisory for a package DISTRIBUTION spec: surfaces such as
+  // version files, plugin manifests, and build outputs may be generated at
+  // build/release time or be runtime-specific, and need not be present in every
+  // checkout (e.g. a node-only tree without the Python build files). Structural
+  // and traversal safety above still apply.
   return [];
 }
 
