@@ -790,7 +790,7 @@ function decisionArchiveEntry(entry: unknown): Dict {
   return archiveEntry;
 }
 
-function extractDecisionEntries(data: unknown): Dict[] {
+export function extractDecisionEntries(data: unknown): Dict[] {
   if (!data || typeof data !== "object" || Array.isArray(data)) return extractEntries(data);
   const d = data as Dict;
   const decisions = d.decisions ?? [];
@@ -913,7 +913,7 @@ export function decisionContextEntry(entry: Dict): Dict {
   return enriched;
 }
 
-function decisionSourceContract(source: Dict, entries: Dict[], filters: Dict): Dict {
+export function decisionSourceContract(source: Dict, entries: Dict[], filters: Dict): Dict {
   const sourceExists = Boolean(source.exists);
   const activeFilters = Object.fromEntries(Object.entries(filters).filter(([, v]) => v !== null && v !== undefined));
   const filteredNoMatch = sourceExists && Object.keys(activeFilters).length > 0 && entries.length === 0;
