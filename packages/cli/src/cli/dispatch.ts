@@ -187,6 +187,9 @@ export function main(argv: string[], io: Io = {}): number {
     case "progress":
       emitDeprecationAlias("progress", "state progress", err);
       return runState("progress", rest, io, "agentera progress");
+    case "plan":
+      emitDeprecationAlias("plan", "state plan", err);
+      return runState("plan", rest, io, "agentera plan");
     default:
       err(`agentera: unknown or not-yet-ported command: ${command ?? "(none)"}\n`);
       return 1;

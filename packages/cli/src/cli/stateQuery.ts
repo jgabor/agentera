@@ -121,6 +121,29 @@ export function truncate(value: unknown, limit = 110): string {
   return text.length > limit ? text.slice(0, limit - 3) + "..." : text;
 }
 
+export function asList(value: unknown): any[] {
+  return Array.isArray(value) ? value : [];
+}
+
+export function firstPresent(entry: Dict, names: string[], deflt: unknown = ""): unknown {
+  for (const name of names) {
+    const value = entry[name];
+    if (value !== null && value !== undefined && value !== "") return value;
+  }
+  return deflt;
+}
+
+export function printStatusCounts(prefix: string, counts: Record<string, number>, out: (t: string) => void): void {
+  const keys = Object.keys(counts);
+  if (keys.length > 0) {
+    const body = keys
+      .sort()
+      .map((name) => `${name}=${counts[name]}`)
+      .join(", ");
+    out(`${prefix}: ${body}\n`);
+  }
+}
+
 export function stringFieldNames(fields: Dict): string[] {
   return Object.entries(fields)
     .filter(([, d]) => (d as Dict)?.type === "string")

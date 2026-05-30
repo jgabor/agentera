@@ -4,7 +4,7 @@ import path from "node:path";
 
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import { queryProgress } from "../../src/cli/commands/state.js";
+import { queryPlan, queryProgress } from "../../src/cli/commands/state.js";
 import { main } from "../../src/cli/dispatch.js";
 import type { SchemaInfo } from "../../src/cli/appContext.js";
 
@@ -122,3 +122,74 @@ describe("cli dispatch: state routing", () => {
     expect(err).toContain("Deprecation: agentera progress is deprecated; use agentera state progress");
   });
 });
+
+
+function planSchema(absPath: string): Record<string, SchemaInfo> {
+  return {
+    plan: { path: absPath, record: undefined, schema: {}, fields: { title: { type: "string" } } },
+  };
+}
+
+function seedPlan(): string {
+  const p = path.join(tmp, "plan.yaml");
+  fs.writeFileSync(
+    p,
+    [
+      "header:",
+      "  title: Migrate CLI to TypeScript",
+      "  status: active",
+      "  created: '2026-05-29'",
+      "what: Port the dispatcher.",
+      "tasks:",
+      "  - number: 1",
+      "    status: done",
+      "    name: Foundation",
+      "  - number: 2",
+      "    status: pending",
+      "    name: State commands",
+      "",
+    ].join("\n"),
+  );
+  return p;
+}
+
+describe("cli state plan", () => {
+  it("renders the plan header, task status counts, and tasks as text", () => {
+    const p = seedPlan();
+    const { rc, out } = capture((io) => queryPlan({ command: "plan" }, planSchema(p), io));
+    expect(rc).toBe(0);
+    expect(out).toContain("Plan: status=active");
+    expect(out).toContain("Task status: done=1, pending=1");
+    expect(out).toContain("Task: number=1 | status=done | name=Foundation");
+  });
+
+  it("filters tasks by status", () => {
+    const p = seedPlan();
+    const { out } = capture((io) => queryPlan({ command: "plan", status: "done" }, planSchema(p), io));
+    expect(out).toContain("name=Foundation");
+    expect(out).not.toContain("State commands");
+  });
+
+  it("emits a structured payload with summary and source_contract", () => {
+    const p = seedPlan();
+    const { rc, out } = capture((io) => queryPlan({ command: "plan", format: "json" }, planSchema(p), io));
+    expect(rc).toBe(0);
+    const payload = JSON.parse(out);
+    expect(payload.command).toBe("plan");
+    expect(payload.summary.title).toBe("Migrate CLI to TypeScript");
+    expect(payload.source_contract.complete_for_plan_artifact).toBe(true);
+    expect(payload.counts.entries).toBe(2);
+  });
+
+  it("reports an absence payload when no plan artifact exists", () => {
+    const { rc, out } = capture((io) =>
+      queryPlan({ command: "plan", format: "json" }, planSchema(path.join(tmp, "missing.yaml")), io),
+    );
+    expect(rc).toBe(0);
+    const payload = JSON.parse(out);
+    expect(payload.status).toBe("empty");
+    expect(payload.summary.absence_reason).toContain("No plan artifact");
+    expect(payload.source_contract.complete_for_plan_artifact).toBe(false);
+  });
+});
+
