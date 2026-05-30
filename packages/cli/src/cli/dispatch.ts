@@ -719,6 +719,18 @@ function runReport(argv: string[], io: Io, prog: string): number {
       }
       args.consent = v;
     } else if ((v = value("--project-root")) !== null) (args.projectRoot as string[]).push(v);
+    else if ((v = value("--output")) !== null) args.output = v;
+    else if ((v = value("--codex-sessions-dir")) !== null) args.codexSessionsDir = v;
+    else if ((v = value("--claude-projects-dir")) !== null) args.claudeProjectsDir = v;
+    else if ((v = value("--opencode-conversations-dir")) !== null) args.opencodeConversationsDir = v;
+    else if ((v = value("--copilot-conversations-dir")) !== null) args.copilotConversationsDir = v;
+    else if ((v = value("--cursor-projects-dir")) !== null) args.cursorProjectsDir = v;
+    else if ((v = value("--cursor-chats-dir")) !== null) args.cursorChatsDir = v;
+    else if (a === "--no-codex") args.noCodex = true;
+    else if (a === "--no-claude") args.noClaude = true;
+    else if (a === "--no-opencode") args.noOpencode = true;
+    else if (a === "--no-copilot") args.noCopilot = true;
+    else if (a === "--no-cursor") args.noCursor = true;
     else if (a === "--dry-run") args.dryRun = true;
     else if (a.startsWith("--")) {
       err(`${prog}: error: unrecognized arguments: ${a}\n`);

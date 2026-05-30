@@ -100,12 +100,49 @@ describe("cmdReport", () => {
     expect(err).toContain("requires explicit --consent local-history");
   });
 
-  it("reports refresh as unavailable in the self-contained package (json)", () => {
-    const { rc, out } = run({ action: "refresh", consent: "local-history", format: "json" });
-    expect(rc).toBe(2);
+  it("previews refresh in dry-run mode (json)", () => {
+    const outp = path.join(tmp, "intermediate", "corpus.json");
+    const { rc, out } = run({
+      action: "refresh",
+      dryRun: true,
+      format: "json",
+      output: outp,
+      projectRoot: [tmp],
+      noCodex: true,
+      noClaude: true,
+      noOpencode: true,
+      noCopilot: true,
+      noCursor: true,
+    });
+    expect(rc).toBe(0);
     const payload = JSON.parse(out);
     expect(payload.command).toBe("stats refresh");
-    expect(payload.status).toBe("unavailable");
+    expect(payload.status).toBe("dry_run");
+    expect(fs.existsSync(outp)).toBe(false); // dry-run writes nothing
+  });
+
+  it("runs the corpus extractor on refresh --consent local-history (json)", () => {
+    fs.writeFileSync(path.join(tmp, "AGENTS.md"), "# rules\nprefer X.\n");
+    const outp = path.join(tmp, "intermediate", "corpus.json");
+    const { rc, out } = run({
+      action: "refresh",
+      consent: "local-history",
+      format: "json",
+      output: outp,
+      projectRoot: [tmp],
+      noCodex: true,
+      noClaude: true,
+      noOpencode: true,
+      noCopilot: true,
+      noCursor: true,
+    });
+    expect(rc).toBe(0);
+    const payload = JSON.parse(out);
+    expect(payload.command).toBe("stats refresh");
+    expect(payload.status).toBe("pass");
+    expect(fs.existsSync(outp)).toBe(true);
+    const corpus = JSON.parse(fs.readFileSync(outp, "utf-8"));
+    expect(corpus.metadata.families.instruction_document.count).toBe(1);
   });
 
   it("rejects an unknown action", () => {

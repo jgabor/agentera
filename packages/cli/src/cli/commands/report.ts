@@ -3,6 +3,7 @@ import os from "node:os";
 import path from "node:path";
 
 import { usageMain } from "../../analytics/usageStats.js";
+import { extractCorpusMain } from "../../analytics/extractCorpus.js";
 
 type Io = { out?: (t: string) => void; err?: (t: string) => void };
 type Env = Record<string, string | undefined>;
@@ -15,6 +16,36 @@ export interface ReportArgs {
   dryRun?: boolean;
   consent?: string | null;
   projectRoot?: string[];
+  // corpus-refresh passthrough to the extract engine (used by profilera)
+  output?: string | null;
+  codexSessionsDir?: string | null;
+  claudeProjectsDir?: string | null;
+  opencodeConversationsDir?: string | null;
+  copilotConversationsDir?: string | null;
+  cursorProjectsDir?: string | null;
+  cursorChatsDir?: string | null;
+  noCodex?: boolean;
+  noClaude?: boolean;
+  noOpencode?: boolean;
+  noCopilot?: boolean;
+  noCursor?: boolean;
+}
+
+function buildExtractArgv(args: ReportArgs, corpusPath: string): string[] {
+  const argv: string[] = ["--output", corpusPath];
+  for (const root of args.projectRoot ?? []) argv.push("--project-root", root);
+  if (args.codexSessionsDir) argv.push("--codex-sessions-dir", args.codexSessionsDir);
+  if (args.claudeProjectsDir) argv.push("--claude-projects-dir", args.claudeProjectsDir);
+  if (args.opencodeConversationsDir) argv.push("--opencode-conversations-dir", args.opencodeConversationsDir);
+  if (args.copilotConversationsDir) argv.push("--copilot-conversations-dir", args.copilotConversationsDir);
+  if (args.cursorProjectsDir) argv.push("--cursor-projects-dir", args.cursorProjectsDir);
+  if (args.cursorChatsDir) argv.push("--cursor-chats-dir", args.cursorChatsDir);
+  if (args.noCodex) argv.push("--no-codex");
+  if (args.noClaude) argv.push("--no-claude");
+  if (args.noOpencode) argv.push("--no-opencode");
+  if (args.noCopilot) argv.push("--no-copilot");
+  if (args.noCursor) argv.push("--no-cursor");
+  return argv;
 }
 
 function usageSyntax(): string {
@@ -80,10 +111,6 @@ export function statsExistingCorpusStatus(corpusPath: string): Dict {
   };
 }
 
-const REFRESH_UNAVAILABLE =
-  "corpus refresh is not available in the self-contained agentera package; the corpus " +
-  "extractor reads local runtime history and is a maintainer tool that runs from a source checkout";
-
 /**
  * Faithful port of scripts/agentera `cmd_stats` (canonical command is `report`;
  * `stats` is the deprecated alias and shares this logic). The plain read path
@@ -118,25 +145,48 @@ export function cmdReport(args: ReportArgs, io: Io = {}): number {
       );
       return 2;
     }
-    // Self-contained package: the maintainer extractor is not bundled.
-    if (outputFormat === "json") {
-      out(
-        JSON.stringify(
-          {
-            command: "stats refresh",
-            status: "unavailable",
-            mode: dryRun ? "dry_run" : "pending",
-            reason: REFRESH_UNAVAILABLE,
-            corpus_path: statsCorpusPath(),
-          },
-          null,
-          2,
-        ) + "\n",
-      );
-    } else {
-      err(`stats refresh unavailable: ${REFRESH_UNAVAILABLE}\n`);
+    const corpusPath = args.output || statsCorpusPath();
+    const engineArgv = buildExtractArgv(args, corpusPath);
+    const engineCommand = ["npx", "-y", "agentera", "extract-corpus", ...engineArgv];
+    if (dryRun) {
+      const payload = {
+        command: "stats refresh",
+        status: "dry_run",
+        privacy: { local_history_read: false, local_history_write: false, corpus_write: false, required_consent: "local-history" },
+        corpus_path: corpusPath,
+        engine: { command: engineCommand },
+        diagnostics: ["dry-run does not read runtime history or write corpus files"],
+      };
+      if (outputFormat === "json") {
+        out(JSON.stringify(payload, null, 2) + "\n");
+      } else {
+        out(`agentera stats refresh: dry_run\ncorpus=${corpusPath}\nengine=${engineCommand.join(" ")}\n`);
+        out("privacy=local_history_read=false, corpus_write=false, required_consent=local-history\n");
+      }
+      return 0;
     }
-    return 2;
+    // consent === "local-history": run the corpus extractor over local history.
+    let engineOut = "";
+    let engineErr = "";
+    const rc = extractCorpusMain(engineArgv, {
+      out: (t) => (engineOut += t + "\n"),
+      err: (t) => (engineErr += t + "\n"),
+    });
+    const payload = {
+      command: "stats refresh",
+      status: rc === 0 ? "pass" : "fail",
+      privacy: { local_history_read: true, local_history_write: false, corpus_write: true, required_consent: "local-history", provided_consent: "local-history" },
+      corpus_path: corpusPath,
+      engine: { command: engineCommand, exit_code: rc, stdout: engineOut.split("\n").filter((l) => l), stderr: engineErr.split("\n").filter((l) => l) },
+    };
+    if (outputFormat === "json") {
+      out(JSON.stringify(payload, null, 2) + "\n");
+    } else {
+      out(`agentera stats refresh: ${payload.status}\ncorpus=${corpusPath}\n`);
+      if (engineOut) out(engineOut);
+      if (engineErr) err(engineErr);
+    }
+    return rc;
   }
 
   if (action !== null) {
