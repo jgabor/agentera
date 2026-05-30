@@ -50,3 +50,33 @@ export function pyJsonInline(value: unknown): string {
   }
   return "null";
 }
+
+/**
+ * Mirror Python `json.dumps(value, indent=indent)` with default options:
+ * insertion-ordered object keys, ensure_ascii=True, item separator "," and key
+ * separator ": ", newline + indentation between items, and "{}"/"[]" for empty
+ * containers. Models ints/strings/bools/null/arrays/objects (no float formatting).
+ */
+export function pyJsonIndent(value: unknown, indent = 2, level = 0): string {
+  const pad = " ".repeat(indent * (level + 1));
+  const closePad = " ".repeat(indent * level);
+  if (value === null || value === undefined) return "null";
+  if (value === true) return "true";
+  if (value === false) return "false";
+  if (typeof value === "number") return String(value);
+  if (typeof value === "string") return pyJsonString(value);
+  if (Array.isArray(value)) {
+    if (value.length === 0) return "[]";
+    const items = value.map((v) => pad + pyJsonIndent(v, indent, level + 1));
+    return "[\n" + items.join(",\n") + "\n" + closePad + "]";
+  }
+  if (typeof value === "object") {
+    const entries = Object.entries(value as Record<string, unknown>);
+    if (entries.length === 0) return "{}";
+    const items = entries.map(
+      ([k, v]) => pad + pyJsonString(k) + ": " + pyJsonIndent(v, indent, level + 1),
+    );
+    return "{\n" + items.join(",\n") + "\n" + closePad + "}";
+  }
+  return "null";
+}

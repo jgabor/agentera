@@ -8,6 +8,7 @@ import { cmdCompact, cmdGate, CompactArgs } from "./commands/compact.js";
 import { cmdSchema } from "./commands/schema.js";
 import { cmdDoctor, DoctorArgs } from "./commands/doctor.js";
 import { cmdUpgrade, UpgradeArgs } from "./commands/upgrade.js";
+import { cmdVerify, VerifyArgs } from "./commands/verify.js";
 import { runSessionStart } from "../hooks/sessionStart.js";
 import { runSessionStop } from "../hooks/sessionStop.js";
 import { runCursorSessionStart } from "../hooks/cursorSessionStart.js";
@@ -633,6 +634,62 @@ function runUpgrade(argv: string[], io: Io, prog: string): number {
   return cmdUpgrade(args, io);
 }
 
+function runVerify(argv: string[], io: Io, prog: string): number {
+  const err = io.err ?? ((t: string) => process.stderr.write(t));
+  const args: VerifyArgs = {
+    family: null,
+    target: null,
+    format: "text",
+    installedRoot: null,
+    realNpx: false,
+    live: false,
+    yes: false,
+    run: false,
+    dryRun: false,
+    skill: null,
+    timeout: 120,
+    parallel: 1,
+    runtime: "auto",
+    fixtures: [],
+  };
+  const positionals: string[] = [];
+  for (let i = 0; i < argv.length; i++) {
+    const a = argv[i];
+    const value = (name: string): string | null => {
+      if (a === name) return argv[++i] ?? null;
+      if (a.startsWith(name + "=")) return a.slice(name.length + 1);
+      return null;
+    };
+    let v: string | null;
+    if ((v = value("--format")) !== null) {
+      if (v !== "text" && v !== "json") {
+        err(`${prog}: error: argument --format: invalid choice: '${v}' (choose from 'text', 'json')\n`);
+        return 2;
+      }
+      args.format = v;
+    } else if ((v = value("--installed-root")) !== null) args.installedRoot = v;
+    else if ((v = value("--skill")) !== null) args.skill = v;
+    else if ((v = value("--runtime")) !== null) args.runtime = v;
+    else if ((v = value("--timeout")) !== null) args.timeout = Number(v);
+    else if ((v = value("--parallel")) !== null) args.parallel = Number(v);
+    else if (a === "--real-npx") args.realNpx = true;
+    else if (a === "--live") args.live = true;
+    else if (a === "--yes") args.yes = true;
+    else if (a === "--run") args.run = true;
+    else if (a === "--dry-run") args.dryRun = true;
+    else if (a.startsWith("--")) {
+      err(`${prog}: error: unrecognized arguments: ${a}\n`);
+      return 2;
+    } else {
+      positionals.push(a);
+    }
+  }
+  args.family = positionals[0] ?? null;
+  args.target = positionals[1] ?? null;
+  args.fixtures = positionals.slice(2);
+  return cmdVerify(args, io);
+}
+
 export function main(argv: string[], io: Io = {}): number {
   const err = io.err ?? ((t: string) => process.stderr.write(t));
   const args = argv.slice(2);
@@ -648,6 +705,9 @@ export function main(argv: string[], io: Io = {}): number {
       return runUsage(rest, io, "agentera usage");
     case "upgrade":
       return runUpgrade(rest, io, "agentera upgrade");
+    case "verify":
+      emitDeprecationAlias("verify", "check verify", err);
+      return runVerify(rest, io, "agentera verify");
     case "hook": {
       const name = rest[0];
       if (!name) {
@@ -674,6 +734,7 @@ export function main(argv: string[], io: Io = {}): number {
         return 2;
       }
       if (sub === "validate") return runValidate(rest.slice(1), io, "agentera check validate");
+      if (sub === "verify") return runVerify(rest.slice(1), io, "agentera check verify");
       if (sub === "lint") return runLint(rest.slice(1), io, "agentera check lint");
       if (sub === "backfill") return runBackfill(rest.slice(1), io, "agentera check backfill");
       if (sub === "compact") {
