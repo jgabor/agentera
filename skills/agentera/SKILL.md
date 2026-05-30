@@ -60,18 +60,18 @@ installed CLI invocation. For bare `/agentera` or bare `hej`, the first normal
 state-access tool call is:
 
 ```bash
-uv run "$RESOLVED_AGENTERA_HOME/app/scripts/agentera" prime
+npx -y agentera prime
 ```
 
 Resolve `RESOLVED_AGENTERA_HOME` with the app-home precedence `AGENTERA_HOME`
 when set, otherwise the platform data home. Do not run `glob`, `grep`, `read`,
-`ls`, `python`, `doctor`, `--help`, `scripts/install_root.py`, `registry.json`,
+`ls`, `python`, `doctor`, `--help`, `registry.json`,
 or `.agentera-bundle.json` preflight checks before this call. The CLI owns app
 validation, v1 detection, profile detection, artifact condensation, and the
 `source_contract` that tells the caller how to render the dashboard.
 Never combine the app-home assignment with the same shell command that expands
 the managed app script path; shell expansion can otherwise turn an unset
-`AGENTERA_HOME` into `/app/scripts/agentera` before the assignment takes effect.
+`AGENTERA_HOME` into `npx -y agentera` before the assignment takes effect.
 
 If the command exits successfully, inspect the CLI-provided `bundle.status`
 installed-app status object. If its value is `fresh`, treat the installed app gate as passed
@@ -100,14 +100,14 @@ packaging terms.
 Only mention commands and paths after the plain explanation, as technical detail.
 
 If the command cannot execute because `AGENTERA_HOME` names the old default
-`$HOME/.agents/agentera` and `$AGENTERA_HOME/app/scripts/agentera` is missing,
+`$HOME/.agents/agentera` and `npx -y agentera` is missing,
 do not require a successful failed CLI invocation and do not first ask the user to
 unset `AGENTERA_HOME`. Tell the user: `Agentera found an old or broken local copy
 of itself. The safe fix is to install a fresh copy in the normal Agentera directory.`
 Then show this preview command and say it changes nothing:
 
 ```bash
-uvx --from git+https://github.com/jgabor/agentera agentera upgrade --dry-run
+npx -y agentera@latest doctor
 ```
 
 This preview writes nothing. Because no explicit `--install-root` is supplied,
@@ -118,7 +118,7 @@ explicit approval before writes, using plain wording such as
 safe repair path:
 
 ```bash
-uvx --from git+https://github.com/jgabor/agentera agentera upgrade --yes
+npx -y agentera@latest prime
 ```
 
 After apply, retry the installed command from the platform app home reported by
@@ -132,7 +132,7 @@ fails before argparse, reports `invalid choice` for `prime`, or reports a status
 - Show the clone-free preview command from `bundle.dryRunCommand` when present:
 
 ```bash
-uvx --from git+https://github.com/jgabor/agentera agentera upgrade --install-root "$RESOLVED_AGENTERA_HOME" --dry-run
+npx -y agentera@latest doctor
 ```
 
 Ask for explicit approval before writes. A normal affirmative response is
@@ -140,17 +140,17 @@ acceptable only when it clearly authorizes the same Agentera repair and director
 If approved, apply:
 
 ```bash
-uvx --from git+https://github.com/jgabor/agentera agentera upgrade --install-root "$RESOLVED_AGENTERA_HOME" --yes
+npx -y agentera@latest prime
 ```
 
 After apply, retry:
 
 ```bash
-uv run "$RESOLVED_AGENTERA_HOME/app/scripts/agentera" prime
+npx -y agentera prime
 ```
 
 If `AGENTERA_HOME` names the old default `$HOME/.agents/agentera`, no explicit
-`--install-root` was supplied, and `$AGENTERA_HOME/app/scripts/agentera` is
+`--install-root` was supplied, and `npx -y agentera` is
 missing or out of date, treat this as safe to preview with the normal Agentera
 directory above. Do not first ask the user to unset `AGENTERA_HOME`; do not claim to
 prove where the environment value came from. If `AGENTERA_HOME` names any other
@@ -166,7 +166,7 @@ those files. Cleanup is user-owned manual cleanup, not a repair write. Upgrade
 does not scan shell startup files.
 
 Only after the installed CLI succeeds, proceed to Step -1 and the routing layers
-below. Do not fall through to a local checkout as a workaround; the uvx commands
+below. Do not fall through to a local checkout as a workaround; the npx commands
 above are portable and require no local checkout.
 
 ### Step -1: Top-level CLI-first state access
@@ -337,8 +337,8 @@ user the preview changes nothing, then ask before applying. Only after
 confirmation, run `v1_migration.apply_command`.
 Never infer consent from the presence of v1 artifacts.
 The preview command shape is
-`uvx --from git+https://github.com/jgabor/agentera agentera upgrade --project "$PWD" --dry-run`
-or the local-checkout equivalent `uv run scripts/agentera upgrade --project "$PWD" --dry-run`
+`npx -y agentera@latest doctor`
+or, from a local checkout, `node packages/cli/dist/bin/agentera.js doctor`
 when supplied by the CLI.
 Do not replace the CLI-owned preview with manual artifact inspection,
 hand-written migration steps, or raw YAML reads. Only the apply step requires confirmation.
@@ -460,11 +460,11 @@ skills/agentera/
 Validate any capability against the contract through the canonical CLI:
 
 ```bash
-uv run scripts/agentera validate capability <name-or-path>
+npx -y agentera check validate capability <name-or-path>
 ```
 
 Self-validate the contract:
 
 ```bash
-uv run scripts/agentera validate capability-contract --format json
+npx -y agentera check validate capability-contract --format json
 ```

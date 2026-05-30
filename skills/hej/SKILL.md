@@ -35,7 +35,7 @@ dashboard. This bridge is an upgrade handoff.
    this preview command. Say clearly that the preview changes nothing:
 
    ```bash
-   uvx --from git+https://github.com/jgabor/agentera agentera upgrade --project "$PWD" --dry-run
+   npx -y agentera@latest doctor
    ```
 
 4. Ask before applying changes. Explain the apply step plainly: it installs or
@@ -44,19 +44,15 @@ dashboard. This bridge is an upgrade handoff.
    shell startup files. After explicit confirmation, use:
 
    ```bash
-   uvx --from git+https://github.com/jgabor/agentera agentera upgrade --project "$PWD" --yes
+   npx -y agentera@latest prime
    ```
 
-   Add `--update-packages` only when the user explicitly approves package-manager
-   commands such as `npx skills remove` or `npx skills add`.
+   agentera ships as a self-contained npm package: running the latest version
+   uses the newest bundled app data directly. There is no separate local app
+   install to copy or repair.
 
-5. If no v1 project state is present, offer the package-only update only when
-   `/agentera` is not available and the user explicitly approves package-manager
-   commands:
-
-   ```bash
-   uvx --from git+https://github.com/jgabor/agentera agentera upgrade --only packages --yes --update-packages
-   ```
+5. To refresh the version a runtime invokes, point its command at
+   `npx -y agentera@latest` (or a pinned `agentera@<version>`).
 
 6. End by telling the user to invoke `/agentera` (`$agentera` in Codex).
 
@@ -65,9 +61,9 @@ dashboard. This bridge is an upgrade handoff.
 - Never mutate project artifacts or runtime installs without explicit
   confirmation from the user.
 - Never ask Agentera to edit shell startup files. Leftover 1.x managed marker
-  blocks reported by doctor or `setup_copilot.py` are user-owned manual cleanup.
+  blocks reported by doctor are user-owned manual cleanup.
   Upgrade does not scan shell startup files.
-- Prefer `uvx --from git+https://github.com/jgabor/agentera` because legacy
-  users may not have cloned the repository.
-- If running from a local Agentera checkout with `scripts/agentera`, the local
-  equivalent is `uv run scripts/agentera upgrade ...`.
+- Prefer `npx -y agentera@latest` so the newest published self-contained package
+  is used without a separate install step.
+- From a local Agentera checkout, the equivalent is
+  `node packages/cli/dist/bin/agentera.js …` after `pnpm -C packages/cli build`.
