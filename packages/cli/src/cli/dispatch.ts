@@ -1,4 +1,4 @@
-import { cmdPrime } from "./commands/prime.js";
+import { cmdPrime, PrimeArgs } from "./commands/prime.js";
 import { cmdLint, LintArgs } from "./commands/lint.js";
 import { cmdBackfill, BackfillArgs } from "./commands/backfill.js";
 import { cmdState, isPortedStateCommand, StateArgs } from "./commands/state.js";
@@ -414,6 +414,34 @@ function runCapability(command: string, argv: string[], io: Io, prog: string): n
   return cmdCapability(command, { format }, io);
 }
 
+function runPrime(command: string, argv: string[], io: Io, prog: string): number {
+  const err = io.err ?? ((t: string) => process.stderr.write(t));
+  const args: PrimeArgs = { command, guidance: false, context: null, dashboard: false, orientation: false, format: "text" };
+  for (let i = 0; i < argv.length; i++) {
+    const a = argv[i];
+    let v: string | null = null;
+    if (a === "--guidance") args.guidance = true;
+    else if (a === "--dashboard") args.dashboard = true;
+    else if (a === "--orientation") args.orientation = true;
+    else if (a === "--context") args.context = argv[++i];
+    else if (a.startsWith("--context=")) args.context = a.slice("--context=".length);
+    else if (a === "--format" || a.startsWith("--format=")) {
+      v = a === "--format" ? argv[++i] : a.slice("--format=".length);
+      if (v !== "text" && v !== "json" && v !== "yaml") {
+        err(`${prog}: error: argument --format: invalid choice: '${v}' (choose from 'text', 'json', 'yaml')\n`);
+        return 2;
+      }
+      args.format = v;
+    } else if (a === "--fields" || a.startsWith("--fields=")) {
+      if (a === "--fields") i++;
+    } else {
+      err(`${prog}: error: unrecognized arguments: ${a}\n`);
+      return 2;
+    }
+  }
+  return cmdPrime(args, io);
+}
+
 export function main(argv: string[], io: Io = {}): number {
   const err = io.err ?? ((t: string) => process.stderr.write(t));
   const args = argv.slice(2);
@@ -422,7 +450,10 @@ export function main(argv: string[], io: Io = {}): number {
 
   switch (command) {
     case "prime":
-      return cmdPrime(rest);
+      return runPrime("prime", rest, io, "agentera prime");
+    case "hej":
+      emitDeprecationAlias("hej", "prime", err);
+      return runPrime("hej", rest, io, "agentera hej");
     case "schema":
       return runSchema(rest, io, "agentera schema");
     case "describe":
