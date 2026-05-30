@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { cmdValidate, isDelegatedValidateFamily } from "../../src/cli/commands/validate.js";
+import {
+  cmdValidate,
+  cmdValidateCapability,
+  cmdValidateCapabilityContract,
+  isDelegatedValidateFamily,
+} from "../../src/cli/commands/validate.js";
 import { main } from "../../src/cli/dispatch.js";
 
 function capture(fn: (io: { out: (t: string) => void; err: (t: string) => void }) => number): {
@@ -71,5 +76,45 @@ describe("cli dispatch: validate routing", () => {
     const { rc, err } = capture((io) => main(["node", "agentera", "check", "validate"], io));
     expect(rc).toBe(2);
     expect(err).toContain("validate_family");
+  });
+});
+
+
+describe("cli validate capability (structure; exact output covered by parity harness)", () => {
+  it("prints the validation header and contract line (text)", () => {
+    const { out } = capture((io) => cmdValidateCapability("hej", {}, io));
+    expect(out).toContain("Validating capability:");
+    expect(out).toContain("Using contract: skills/agentera/capability_schema_contract.yaml");
+  });
+
+  it("emits a single-capability JSON envelope with the target", () => {
+    const { out } = capture((io) => cmdValidateCapability("planera", { format: "json" }, io));
+    const payload = JSON.parse(out);
+    expect(payload.command).toBe("validate");
+    expect(payload.target_family).toBe("capability");
+    expect(payload.target).toBe("planera");
+  });
+
+  it("rejects an unknown capability name", () => {
+    expect(() => cmdValidateCapability("notacapability", {}, {})).toThrow(/unsupported capability target/);
+  });
+});
+
+describe("cli validate capability-contract (structure)", () => {
+  it("prints both contract and protocol headers (text)", () => {
+    const { out } = capture((io) => cmdValidateCapabilityContract({}, io));
+    expect(out).toContain("Self-validating contract: skills/agentera/capability_schema_contract.yaml");
+    expect(out).toContain("Validating protocol: skills/agentera/protocol.yaml");
+  });
+
+  it("emits a two-check JSON envelope", () => {
+    const { out } = capture((io) => cmdValidateCapabilityContract({ format: "json" }, io));
+    const payload = JSON.parse(out);
+    expect(payload.target_family).toBe("capability-contract");
+    expect(payload.checks).toHaveLength(2);
+    expect(payload.checks.map((c: { target_family: string }) => c.target_family)).toEqual([
+      "capability-contract-self",
+      "capability-protocol",
+    ]);
   });
 });
