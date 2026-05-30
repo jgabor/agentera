@@ -4,7 +4,7 @@ import path from "node:path";
 
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import { cmdCompact } from "../../src/cli/commands/compact.js";
+import { cmdCompact, cmdGate } from "../../src/cli/commands/compact.js";
 import { main } from "../../src/cli/dispatch.js";
 
 let tmp: string;
@@ -58,3 +58,36 @@ describe("cli compact", () => {
     expect(err).toContain("Deprecation: agentera compact is deprecated; use agentera check compact");
   });
 });
+
+
+describe("cli gate (check compact, mode check)", () => {
+  it("runs the compaction gate on an empty project", () => {
+    const { rc, out } = capture((io) => cmdGate({ project: tmp }, io));
+    expect(rc).toBe(0);
+    expect(out).toContain("status=pass | mode=check");
+  });
+
+  it("emits a structured gate payload with gate=compaction", () => {
+    const { rc, out } = capture((io) => cmdGate({ project: tmp, format: "json" }, io));
+    expect(rc).toBe(0);
+    const payload = JSON.parse(out);
+    expect(payload.command).toBe("gate");
+    expect(payload.gate).toBe("compaction");
+    expect(payload.summary.mode).toBe("check");
+  });
+
+  it("routes check compact (check mode) to the gate and check compact --mode fix to compact", () => {
+    const gate = capture((io) => main(["node", "agentera", "check", "compact", "--project", tmp], io));
+    expect(gate.rc).toBe(0);
+    expect(JSON.parse(gateJson(tmp)).command).toBe("gate");
+    const fix = capture((io) => main(["node", "agentera", "check", "compact", "--mode", "fix", "--project", tmp, "--format", "json"], io));
+    expect(fix.rc).toBe(0);
+  });
+});
+
+function gateJson(project: string): string {
+  let out = "";
+  cmdGate({ project, format: "json" }, { out: (t) => (out += t), err: () => {} });
+  return out;
+}
+
