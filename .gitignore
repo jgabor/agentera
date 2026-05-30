@@ -15,3 +15,4 @@ packages/web/.astro
 packages/web/.wrangler
 packages/cli/dist
 packages/cli/*.tgz
+packages/cli/bundle

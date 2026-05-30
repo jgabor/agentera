@@ -55,6 +55,15 @@ const SETUP_EVIDENCE = [
 ] as const;
 
 function sourceRootMissing(root: string): string[] {
+  // Self-contained npx bundle: the published package ships app data without the
+  // Python source surface (scripts/hooks). The sentinel + skills + registry are
+  // sufficient evidence of a complete app root. (Sentinel never exists in a repo
+  // checkout or installed app, so checkout/app-home behavior is unchanged.)
+  if (pathExists(path.join(root, ".agentera-npx-bundle.json"))) {
+    return ["skills/agentera/SKILL.md", "registry.json"].filter(
+      (entry) => !pathExists(path.join(root, entry)),
+    );
+  }
   return SETUP_EVIDENCE.filter((entry) => !pathExists(path.join(root, entry)));
 }
 
