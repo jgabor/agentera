@@ -61,7 +61,7 @@
     "configured": false,
     "limitations": [
       "codex_hooks ships stable and default-on as of v0.124.0 (2026-04-23). The bundled hooks/codex-hooks.json wires apply_patch PreToolUse and PostToolUse handlers per openai/codex#18391 (merged 2026-04-22).",
-      "The shipped Codex hook config validates touched artifact paths through hooks/validate_artifact.py, but it does not reconstruct final patch content for hard-gate validation. SessionStart and Stop are supported by the runtime but are not wired by the bundled config."
+      "The shipped Codex hook config validates touched artifact paths through `npx -y agentera hook validate-artifact`, but it does not reconstruct final patch content for hard-gate validation. SessionStart and Stop are supported by the runtime but are not wired by the bundled config."
     ],
     "supportedEvents": [
       "SessionStart",
