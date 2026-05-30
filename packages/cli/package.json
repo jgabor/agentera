@@ -28,6 +28,7 @@
   ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
+    "prepack": "tsc -p tsconfig.json",
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc -p tsconfig.json --noEmit"
