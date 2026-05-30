@@ -3,7 +3,8 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
-import { isFile, pathExists, resolvePath } from "../core/paths.js";
+import { expanduser, isFile, pathExists, resolvePath } from "../core/paths.js";
+import { splitLinesKeepEnds, unifiedDiff } from "../core/difflib.js";
 import { parseToml } from "../core/toml.js";
 import { SETUP_EVIDENCE, classifyResolvedRoot } from "../state/installRoot.js";
 
@@ -656,4 +657,518 @@ export function ensureCodexPluginHookTrust(
   text = ensureCodexHookStateEntries(ensureFeaturesPluginHooksEnabled(text), codexPluginHookStateEntries(command));
   const target = hooksPath ?? path.join(os.homedir(), ".codex", "hooks.json");
   return retireCodexCopiedHookTrust(text, target);
+}
+
+// ===========================================================================
+// Slice 3: plan/apply orchestration, agent descriptors, CLI
+// ===========================================================================
+
+export const DEFAULT_CONFIG_PATH = path.join(os.homedir(), ".codex", "config.toml");
+
+export interface Outcome {
+  action: string;
+  newText: string;
+  message: string;
+  diff: string;
+}
+
+function unifiedDiffText(before: string, after: string): string {
+  return unifiedDiff(
+    splitLinesKeepEnds(before),
+    splitLinesKeepEnds(after),
+    "config.toml (current)",
+    "config.toml (proposed)",
+    "",
+    "",
+    3,
+  ).join("");
+}
+
+function conflictDiffText(currentTable: Record<string, string>, mergedTable: Record<string, string>): string {
+  const currentInline = emitSetInlineTable(currentTable);
+  const mergedInline = emitSetInlineTable(mergedTable);
+  return `current:  set = ${currentInline}\nproposed: set = ${mergedInline}\n`;
+}
+
+function withCodexHookTrust(
+  outcome: Outcome,
+  beforeText: string | null,
+  hooksPath: string | null,
+  hookCommand: string = CODEX_HOOK_COMMAND,
+  pluginHooks = false,
+): Outcome {
+  if (outcome.action === "conflict") return outcome;
+  const before = beforeText || "";
+
+  let newText: string;
+  try {
+    newText = ensureCodexAgentLimits(outcome.newText);
+  } catch (exc) {
+    return {
+      action: "conflict",
+      newText: "",
+      message: `cannot safely update Codex agent dispatch settings: ${(exc as Error).message}`,
+      diff: "",
+    };
+  }
+
+  if (newText !== outcome.newText) {
+    const action = outcome.action !== "noop" ? outcome.action : "insert";
+    const message =
+      outcome.action === "noop"
+        ? "would configure Codex agent dispatch limits"
+        : `${outcome.message}; would configure Codex agent dispatch limits`;
+    outcome = { action, newText, message, diff: unifiedDiffText(before, newText) };
+  }
+
+  if (hooksPath === null && !pluginHooks) return outcome;
+
+  try {
+    if (pluginHooks) {
+      newText = ensureCodexPluginHookTrust(outcome.newText, CODEX_PLUGIN_HOOK_COMMAND, hooksPath);
+    } else if (hooksPath !== null) {
+      newText = ensureCodexHookTrust(outcome.newText, hooksPath, hookCommand);
+    } else {
+      newText = outcome.newText;
+    }
+  } catch (exc) {
+    return {
+      action: "conflict",
+      newText: "",
+      message: `cannot safely update Codex hook trust state: ${(exc as Error).message}`,
+      diff: "",
+    };
+  }
+
+  if (newText === outcome.newText) return outcome;
+
+  const action = outcome.action !== "noop" ? outcome.action : "insert";
+  let message: string;
+  if (outcome.action === "noop") {
+    message = pluginHooks
+      ? "would trust Codex plugin apply_patch hooks in config.toml"
+      : "would trust Codex apply_patch hooks in config.toml";
+  } else {
+    const hookLabel = pluginHooks ? "Codex plugin apply_patch hooks" : "Codex apply_patch hooks";
+    message = `${outcome.message}; would trust ${hookLabel}`;
+  }
+  return { action, newText, message, diff: unifiedDiffText(before, newText) };
+}
+
+export function planChange(
+  currentText: string | null,
+  installRoot: string,
+  opts: { force: boolean; hooksPath?: string | null; hookCommand?: string; pluginHooks?: boolean },
+): Outcome {
+  const force = opts.force;
+  const hooksPath = opts.hooksPath ?? null;
+  const hookCommand = opts.hookCommand ?? CODEX_HOOK_COMMAND;
+  const pluginHooks = opts.pluginHooks ?? false;
+  const desiredPath = installRoot;
+
+  // Branch 1: file absent (or empty) -> write fresh config.
+  if (currentText === null || !currentText.trim()) {
+    const newText = renderFreshConfig(installRoot);
+    return withCodexHookTrust(
+      {
+        action: "fresh",
+        newText,
+        message: `would write fresh config with ${SECTION_NAME}.set.${MANAGED_KEY} = ${desiredPath}`,
+        diff: unifiedDiffText("", newText),
+      },
+      currentText,
+      hooksPath,
+      hookCommand,
+      pluginHooks,
+    );
+  }
+
+  const state = classifyToml(currentText);
+
+  // Branch 2: section absent -> append a fresh section at EOF.
+  if (!state.sectionPresent) {
+    let prefix = currentText;
+    if (!prefix.endsWith("\n")) prefix += "\n";
+    if (!prefix.endsWith("\n\n")) prefix += "\n";
+    const newText = prefix + renderFreshConfig(installRoot);
+    return withCodexHookTrust(
+      {
+        action: "fresh",
+        newText,
+        message: `would append [${SECTION_NAME}] section with ${MANAGED_KEY} = ${desiredPath}`,
+        diff: unifiedDiffText(currentText, newText),
+      },
+      currentText,
+      hooksPath,
+      hookCommand,
+      pluginHooks,
+    );
+  }
+
+  // Branch 3a: section present, no set key -> insert set line.
+  if (!state.setPresent) {
+    const newText = insertSetLine(currentText, installRoot);
+    return withCodexHookTrust(
+      {
+        action: "insert",
+        newText,
+        message: `would insert set = { ${MANAGED_KEY} = ${desiredPath} } into [${SECTION_NAME}]`,
+        diff: unifiedDiffText(currentText, newText),
+      },
+      currentText,
+      hooksPath,
+      hookCommand,
+      pluginHooks,
+    );
+  }
+
+  // Branch 3b: AGENTERA_HOME already correct -> noop.
+  const currentValue = state.setTable[MANAGED_KEY];
+  if (currentValue === desiredPath) {
+    return withCodexHookTrust(
+      {
+        action: "noop",
+        newText: currentText,
+        message: `${MANAGED_KEY} already set to ${desiredPath}; nothing to do`,
+        diff: "",
+      },
+      currentText,
+      hooksPath,
+      hookCommand,
+      pluginHooks,
+    );
+  }
+
+  // Branch 3c: wrong value or sibling keys.
+  const siblings: Record<string, string> = {};
+  for (const [k, v] of Object.entries(state.setTable)) {
+    if (k !== MANAGED_KEY) siblings[k] = v;
+  }
+  const merged: Record<string, string> = { ...state.setTable, [MANAGED_KEY]: desiredPath };
+
+  if (MANAGED_KEY in state.setTable && Object.keys(siblings).length === 0) {
+    let newText: string;
+    try {
+      newText = rewriteSetLine(currentText, merged);
+    } catch (exc) {
+      return {
+        action: "conflict",
+        newText: "",
+        message: `${MANAGED_KEY} present but cannot be safely updated: ${(exc as Error).message}. Edit ~/.codex/config.toml manually.`,
+        diff: "",
+      };
+    }
+    return withCodexHookTrust(
+      {
+        action: "insert",
+        newText,
+        message: `would update ${MANAGED_KEY} from ${state.setTable[MANAGED_KEY]} to ${desiredPath}`,
+        diff: unifiedDiffText(currentText, newText),
+      },
+      currentText,
+      hooksPath,
+      hookCommand,
+      pluginHooks,
+    );
+  }
+
+  if (!force) {
+    return {
+      action: "conflict",
+      newText: "",
+      message: `[${SECTION_NAME}].set has sibling keys (${Object.keys(siblings).sort().join(", ")}). Re-run with --force to merge ${MANAGED_KEY} = ${desiredPath} alongside them.`,
+      diff: conflictDiffText(state.setTable, merged),
+    };
+  }
+
+  let newText: string;
+  try {
+    newText = rewriteSetLine(currentText, merged);
+  } catch (exc) {
+    return {
+      action: "conflict",
+      newText: "",
+      message: `--force requested but cannot safely merge: ${(exc as Error).message}. Edit ~/.codex/config.toml manually.`,
+      diff: "",
+    };
+  }
+  return withCodexHookTrust(
+    {
+      action: "force-merge",
+      newText,
+      message: `would merge ${MANAGED_KEY} = ${desiredPath} into existing set (siblings preserved: ${Object.keys(siblings).sort().join(", ")})`,
+      diff: unifiedDiffText(currentText, newText),
+    },
+    currentText,
+    hooksPath,
+    hookCommand,
+    pluginHooks,
+  );
+}
+
+// ── Agent descriptors ──────────────────────────────────────────────
+
+export interface AgentDescriptorChange {
+  action: string;
+  name: string;
+  source: string;
+  target: string;
+  message: string;
+  content: string;
+}
+
+export function codexAgentSourceDir(installRoot: string): string {
+  const candidates = [
+    path.join(installRoot, "app", "skills", "agentera", "agents"),
+    path.join(installRoot, "skills", "agentera", "agents"),
+  ];
+  for (const candidate of candidates) {
+    try {
+      if (fs.statSync(candidate).isDirectory()) return candidate;
+    } catch {
+      /* not a dir */
+    }
+  }
+  return candidates[0];
+}
+
+export function defaultAgentsDirForConfig(configPath: string): string {
+  const expanded = expanduser(configPath);
+  if (path.basename(expanded) === "config.toml" && path.basename(path.dirname(expanded)) === ".codex") {
+    return path.join(path.dirname(expanded), "agents");
+  }
+  throw new Error(
+    "Codex agent descriptors can be inferred only for documented config layouts: " +
+      "~/.codex/config.toml or <project>/.codex/config.toml. " +
+      "Pass --agents-dir for nonstandard --config-file paths.",
+  );
+}
+
+function codexDescriptorManaged(text: string): boolean {
+  const lines = text.split(/\r\n|\r|\n/).slice(0, 5);
+  return lines.some((line) => line.trim() === "# agentera_managed: true");
+}
+
+export function planAgentDescriptorChanges(
+  installRoot: string,
+  agentsDir: string,
+  opts: { force: boolean },
+): AgentDescriptorChange[] {
+  const sourceDir = codexAgentSourceDir(installRoot);
+  const changes: AgentDescriptorChange[] = [];
+  for (const name of CAPABILITY_AGENT_NAMES) {
+    const source = path.join(sourceDir, `${name}.toml`);
+    const target = path.join(agentsDir, `${name}.toml`);
+    let sourceText: string;
+    try {
+      sourceText = fs.readFileSync(source, "utf8");
+    } catch {
+      changes.push({ action: "blocked", name, source, target, message: "source descriptor is missing", content: "" });
+      continue;
+    }
+    if (!pathExists(target)) {
+      changes.push({ action: "pending", name, source, target, message: "would install Codex agent descriptor", content: sourceText });
+      continue;
+    }
+    if (!isFile(target)) {
+      changes.push({ action: "blocked", name, source, target, message: "target exists but is not a regular file", content: sourceText });
+      continue;
+    }
+    let targetText: string;
+    try {
+      targetText = fs.readFileSync(target, "utf8");
+    } catch (exc) {
+      changes.push({ action: "blocked", name, source, target, message: `cannot read target descriptor: ${(exc as Error).message}`, content: sourceText });
+      continue;
+    }
+    if (targetText === sourceText) {
+      changes.push({ action: "noop", name, source, target, message: "Codex agent descriptor is current", content: sourceText });
+    } else if (opts.force || codexDescriptorManaged(targetText)) {
+      changes.push({ action: "pending", name, source, target, message: "would refresh Codex agent descriptor", content: sourceText });
+    } else {
+      changes.push({
+        action: "blocked",
+        name,
+        source,
+        target,
+        message: "target exists without Agentera ownership proof; treating it as user-owned",
+        content: sourceText,
+      });
+    }
+  }
+  return changes;
+}
+
+export function writeAgentDescriptorChanges(changes: AgentDescriptorChange[]): void {
+  for (const change of changes) {
+    if (change.action !== "pending") continue;
+    fs.mkdirSync(path.dirname(change.target), { recursive: true });
+    fs.writeFileSync(change.target, change.content, "utf8");
+  }
+}
+
+function readTextOrNull(p: string): string | null {
+  if (!pathExists(p)) return null;
+  return fs.readFileSync(p, "utf8");
+}
+
+// ── CLI ─────────────────────────────────────────────────────────────
+
+export interface CodexCliIo {
+  /** Raw stdout sink; receives exact strings (including any newlines). */
+  out?: (text: string) => void;
+  /** Raw stderr sink; receives exact strings (including any newlines). */
+  err?: (text: string) => void;
+  env?: Env;
+}
+
+export function codexMain(argv: string[] = [], io: CodexCliIo = {}): number {
+  const writeOut = io.out ?? ((text: string) => process.stdout.write(text));
+  const writeErr = io.err ?? ((text: string) => process.stderr.write(text));
+  const out = (line: string) => writeOut(line + "\n");
+  const err = (line: string) => writeErr(line + "\n");
+  const env = io.env ?? process.env;
+
+  const args = {
+    installRoot: null as string | null,
+    configFile: DEFAULT_CONFIG_PATH,
+    agentsDir: null as string | null,
+    dryRun: false,
+    force: false,
+    enableAgents: false,
+  };
+
+  const valueFlag = (a: string, name: string): string | null => {
+    if (a === name) return "__NEXT__";
+    if (a.startsWith(name + "=")) return a.slice(name.length + 1);
+    return null;
+  };
+
+  for (let i = 0; i < argv.length; i++) {
+    const a = argv[i];
+    let v: string | null;
+    if ((v = valueFlag(a, "--install-root")) !== null) {
+      args.installRoot = v === "__NEXT__" ? argv[++i] : v;
+    } else if ((v = valueFlag(a, "--config-file")) !== null) {
+      args.configFile = v === "__NEXT__" ? argv[++i] : v;
+    } else if ((v = valueFlag(a, "--agents-dir")) !== null) {
+      args.agentsDir = v === "__NEXT__" ? argv[++i] : v;
+    } else if (a === "--dry-run") {
+      args.dryRun = true;
+    } else if (a === "--force") {
+      args.force = true;
+    } else if (a === "--enable-agents") {
+      args.enableAgents = true;
+    } else {
+      err(`setup_codex: error: unrecognized arguments: ${a}`);
+      return 2;
+    }
+  }
+
+  // Step 1: resolve and verify the Agentera directory.
+  let installRoot: string;
+  try {
+    installRoot = resolveInstallRoot(args.installRoot, env);
+  } catch (errx) {
+    if (errx instanceof InstallRootError) {
+      err(errx.message);
+      return 2;
+    }
+    throw errx;
+  }
+
+  // Step 2: read current config (None if absent).
+  const configPath = args.configFile;
+  let currentText: string | null;
+  try {
+    currentText = readTextOrNull(configPath);
+  } catch (errx) {
+    err(`error reading ${configPath}: ${(errx as Error).message}`);
+    return 2;
+  }
+
+  // Step 3: parse-check existing content.
+  if (currentText !== null && currentText.trim()) {
+    try {
+      parseToml(currentText);
+    } catch (errx) {
+      err(
+        `error: ${configPath} is not valid TOML (${(errx as Error).message}). ` +
+          "Repair it manually before running this helper.",
+      );
+      return 2;
+    }
+  }
+
+  // Step 4: plan the AGENTERA_HOME change and runtime-native descriptors.
+  const outcome = planChange(currentText, installRoot, { force: args.force });
+  let agentsDir: string;
+  try {
+    agentsDir = args.agentsDir ?? defaultAgentsDirForConfig(configPath);
+  } catch (errx) {
+    err(`error: ${(errx as Error).message}`);
+    return 2;
+  }
+  const descriptorChanges = planAgentDescriptorChanges(installRoot, agentsDir, { force: args.force });
+  const pendingDescriptors = descriptorChanges.filter((c) => c.action === "pending");
+  const blockedDescriptors = descriptorChanges.filter((c) => c.action === "blocked");
+
+  if (args.enableAgents) {
+    err(
+      "--enable-agents is deprecated in Agentera v2; no [agents.*] " +
+        "blocks will be written; runtime-native descriptor files are managed separately.",
+    );
+  }
+
+  // Step 5: dispatch on the outcome.
+  if (outcome.action === "conflict") {
+    err(outcome.message);
+    if (outcome.diff) err(outcome.diff);
+    return 2;
+  }
+
+  if (blockedDescriptors.length > 0) {
+    for (const change of blockedDescriptors) {
+      err(`error: ${change.target}: ${change.message}`);
+    }
+    return 2;
+  }
+
+  if (outcome.action === "noop" && pendingDescriptors.length === 0) {
+    out(outcome.message);
+    return 0;
+  }
+
+  if (args.dryRun) {
+    out(outcome.message);
+    if (outcome.diff) {
+      writeOut(outcome.diff);
+      if (!outcome.diff.endsWith("\n")) out("");
+    }
+    for (const change of pendingDescriptors) {
+      out(`${change.message}: ${change.target}`);
+    }
+    return 1;
+  }
+
+  try {
+    if (outcome.action !== "noop") {
+      fs.mkdirSync(path.dirname(configPath), { recursive: true });
+      fs.writeFileSync(configPath, outcome.newText, "utf8");
+    }
+    writeAgentDescriptorChanges(pendingDescriptors);
+  } catch (errx) {
+    err(`error writing Codex setup targets: ${(errx as Error).message}`);
+    return 2;
+  }
+
+  if (outcome.action !== "noop") {
+    out(`wrote ${configPath}: ${outcome.message.replaceAll("would ", "")}`);
+  } else {
+    out(outcome.message);
+  }
+  for (const change of pendingDescriptors) {
+    out(`wrote ${change.target}: ${change.message.replaceAll("would ", "")}`);
+  }
+  return 0;
 }

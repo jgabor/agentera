@@ -17,6 +17,9 @@ import {
   ensureCodexHookTrust,
   ensureCodexPluginHookTrust,
   insertSetLine,
+  codexMain,
+  planAgentDescriptorChanges,
+  planChange,
   renderCodexHooksConfig,
   renderFreshConfig,
   resolveInstallRoot,
@@ -147,5 +150,123 @@ describe("setup codex: TOML mutation engine", () => {
     expect(codexCopiedHooksAreAgenteraOnly(config)).toBe(true);
     expect(codexCopiedHooksAreAgenteraOnly("{}")).toBe(false);
     expect(codexCopiedHooksAreAgenteraOnly("not json")).toBe(false);
+  });
+});
+
+
+const AGENT_NAMES = [
+  "hej", "visionera", "resonera", "inspirera", "planera", "realisera",
+  "optimera", "inspektera", "dokumentera", "profilera", "visualisera", "orkestrera",
+];
+
+function managedRootWithAgents(root: string): void {
+  managedFresh(root);
+  const agentsDir = path.join(root, "skills", "agentera", "agents");
+  fs.mkdirSync(agentsDir, { recursive: true });
+  for (const name of AGENT_NAMES) {
+    fs.writeFileSync(path.join(agentsDir, `${name}.toml`), `# agent ${name}\nname = "${name}"\n`);
+  }
+}
+
+describe("setup codex: planChange branches", () => {
+  const R = "/opt/agentera";
+  it("plans a fresh write when the file is absent", () => {
+    const o = planChange(null, R, { force: false });
+    expect(o.action).toBe("fresh");
+    expect(o.newText).toContain('AGENTERA_HOME = "/opt/agentera"');
+  });
+  it("inserts a set line into an empty section", () => {
+    const o = planChange("[shell_environment_policy]\n", R, { force: false });
+    expect(o.action).toBe("insert");
+  });
+  it("is a noop when AGENTERA_HOME already matches", () => {
+    const o = planChange(renderFreshConfig(R), R, { force: false });
+    expect(o.action).toBe("noop");
+  });
+  it("conflicts on sibling keys without --force", () => {
+    const o = planChange('[shell_environment_policy]\nset = { FOO = "bar" }\n', R, { force: false });
+    expect(o.action).toBe("conflict");
+    expect(o.message).toContain("sibling keys (FOO)");
+  });
+  it("force-merges alongside siblings", () => {
+    const o = planChange('[shell_environment_policy]\nset = { FOO = "bar" }\n', R, { force: true });
+    expect(o.action).toBe("force-merge");
+    expect(o.newText).toContain('FOO = "bar"');
+    expect(o.newText).toContain('AGENTERA_HOME = "/opt/agentera"');
+  });
+});
+
+describe("setup codex: agent descriptors", () => {
+  it("plans install/refresh/noop/blocked by ownership", () => {
+    const root = path.join(tmp, "root");
+    managedRootWithAgents(root);
+    const agentsDir = path.join(tmp, "agents");
+    fs.mkdirSync(agentsDir, { recursive: true });
+    // user-owned hej.toml blocks; managed visionera refreshes; current resonera noops
+    fs.writeFileSync(path.join(agentsDir, "hej.toml"), "user owned\n");
+    fs.writeFileSync(path.join(agentsDir, "visionera.toml"), "# agentera_managed: true\nold\n");
+    fs.writeFileSync(path.join(agentsDir, "resonera.toml"), '# agent resonera\nname = "resonera"\n');
+    const changes = planAgentDescriptorChanges(root, agentsDir, { force: false });
+    const by = Object.fromEntries(changes.map((c) => [c.name, c.action]));
+    expect(by.hej).toBe("blocked");
+    expect(by.visionera).toBe("pending");
+    expect(by.resonera).toBe("noop");
+    expect(by.planera).toBe("pending");
+  });
+});
+
+describe("setup codex: codexMain end-to-end", () => {
+  function run(argv: string[]): { rc: number; out: string; err: string } {
+    let out = "";
+    let err = "";
+    const rc = codexMain(argv, { out: (s) => (out += s), err: (s) => (err += s), env: {} });
+    return { rc, out, err };
+  }
+
+  it("installs fresh config + descriptors, then is idempotent", () => {
+    const root = path.join(tmp, "root");
+    managedRootWithAgents(root);
+    const cfg = path.join(tmp, "home", ".codex", "config.toml");
+    fs.mkdirSync(path.dirname(cfg), { recursive: true });
+
+    const first = run(["--install-root", root, "--config-file", cfg]);
+    expect(first.rc).toBe(0);
+    expect(fs.existsSync(cfg)).toBe(true);
+    expect(fs.readFileSync(cfg, "utf8")).toContain(`AGENTERA_HOME = "${root}"`);
+    const agentsDir = path.join(tmp, "home", ".codex", "agents");
+    expect(fs.readdirSync(agentsDir).sort()).toEqual(AGENT_NAMES.map((n) => `${n}.toml`).sort());
+
+    const second = run(["--install-root", root, "--config-file", cfg]);
+    expect(second.rc).toBe(0);
+  });
+
+  it("dry-run reports a pending change and writes nothing (rc 1)", () => {
+    const root = path.join(tmp, "root");
+    managedRootWithAgents(root);
+    const cfg = path.join(tmp, "dry", ".codex", "config.toml");
+    fs.mkdirSync(path.dirname(cfg), { recursive: true });
+    const r = run(["--install-root", root, "--config-file", cfg, "--dry-run"]);
+    expect(r.rc).toBe(1);
+    expect(fs.existsSync(cfg)).toBe(false);
+  });
+
+  it("conflicts (rc 2) on sibling keys without --force", () => {
+    const root = path.join(tmp, "root");
+    managedRootWithAgents(root);
+    const cfg = path.join(tmp, "conf", ".codex", "config.toml");
+    fs.mkdirSync(path.dirname(cfg), { recursive: true });
+    fs.writeFileSync(cfg, '[shell_environment_policy]\nset = { FOO = "bar" }\n');
+    const r = run(["--install-root", root, "--config-file", cfg]);
+    expect(r.rc).toBe(2);
+    expect(r.err).toContain("sibling keys");
+  });
+
+  it("rejects an invalid install root (rc 2)", () => {
+    const bad = path.join(tmp, "bad");
+    fs.mkdirSync(bad, { recursive: true });
+    const cfg = path.join(tmp, "x", ".codex", "config.toml");
+    const r = run(["--install-root", bad, "--config-file", cfg]);
+    expect(r.rc).toBe(2);
+    expect(r.err).toContain("not a valid Agentera directory");
   });
 });
