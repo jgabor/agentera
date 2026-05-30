@@ -6,6 +6,7 @@ import { COMMAND_FILTERS } from "./stateQuery.js";
 import { cmdQuery, QueryArgs } from "./commands/query.js";
 import { cmdCompact, CompactArgs } from "./commands/compact.js";
 import { cmdSchema } from "./commands/schema.js";
+import { cmdCapability, CAPABILITY_ROUTING_NAMES } from "./commands/capability.js";
 import {
   cmdValidate,
   cmdValidateCapability,
@@ -388,6 +389,31 @@ function runSchema(argv: string[], io: Io, prog: string): number {
   }
 }
 
+function runCapability(command: string, argv: string[], io: Io, prog: string): number {
+  const err = io.err ?? ((t: string) => process.stderr.write(t));
+  let format = "text";
+  for (let i = 0; i < argv.length; i++) {
+    const a = argv[i];
+    let v: string | null = null;
+    if (a === "--format") v = argv[++i];
+    else if (a.startsWith("--format=")) v = a.slice("--format=".length);
+    else if (a === "--fields" || a.startsWith("--fields=")) {
+      // accepted by the parser but unused by capability routing
+      if (a === "--fields") i++;
+      continue;
+    } else {
+      err(`${prog}: error: unrecognized arguments: ${a}\n`);
+      return 2;
+    }
+    if (v !== "text" && v !== "json" && v !== "yaml") {
+      err(`${prog}: error: argument --format: invalid choice: '${v}' (choose from 'text', 'json', 'yaml')\n`);
+      return 2;
+    }
+    format = v;
+  }
+  return cmdCapability(command, { format }, io);
+}
+
 export function main(argv: string[], io: Io = {}): number {
   const err = io.err ?? ((t: string) => process.stderr.write(t));
   const args = argv.slice(2);
@@ -438,6 +464,9 @@ export function main(argv: string[], io: Io = {}): number {
       emitDeprecationAlias("validate", "check validate", err);
       return runValidate(rest, io, "agentera validate");
     default:
+      if (command && CAPABILITY_ROUTING_NAMES.includes(command)) {
+        return runCapability(command, rest, io, `agentera ${command}`);
+      }
       if (command && isPortedStateCommand(command)) {
         emitDeprecationAlias(command, `state ${command}`, err);
         return runState(command, rest, io, `agentera ${command}`);
