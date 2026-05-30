@@ -23,6 +23,7 @@ import {
   statePresence,
 } from "../orientation.js";
 import { firstPresent, requestedFields, REQUIRED_SPARSE_CONTEXT_FIELDS } from "../stateQuery.js";
+import { BESPOKE_CONTEXT_CAPABILITIES, buildPrimeCapabilityContextPayload, validatePrimeCapability } from "../capabilityContext.js";
 import { emitStructured } from "../structured.js";
 
 /**
@@ -547,12 +548,23 @@ export function cmdPrime(args: PrimeArgs, io: Io = {}): number {
   const collectOpts = { home: args.home, installRoot: args.installRoot, expectedVersion: args.expectedVersion };
 
   if (capability !== null) {
+    try {
+      validatePrimeCapability(capability);
+    } catch (exc) {
+      err(`Error: ${(exc as Error).message}\n`);
+      return 2;
+    }
     if (format === "text") {
       err("Error: prime --context requires --format json\n");
       return 2;
     }
-    err("agentera: prime --context is not yet ported (pending the bespoke capability contexts)\n");
-    return 1;
+    if (BESPOKE_CONTEXT_CAPABILITIES.has(capability)) {
+      err("agentera: prime --context for this capability is not yet ported (pending its bespoke context)\n");
+      return 1;
+    }
+    const state = collectOrientationState(collectOpts);
+    const payload = buildPrimeCapabilityContextPayload(state, capability, command);
+    return emitPrime(command, payload, format, args.fields, out, err);
   }
   if (dashboard) {
     if (format === "text") {
