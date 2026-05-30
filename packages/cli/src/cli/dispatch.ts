@@ -641,10 +641,6 @@ function runVerify(argv: string[], io: Io, prog: string): number {
     family: null,
     target: null,
     format: "text",
-    installedRoot: null,
-    realNpx: false,
-    live: false,
-    yes: false,
     run: false,
     dryRun: false,
     skill: null,
@@ -668,14 +664,10 @@ function runVerify(argv: string[], io: Io, prog: string): number {
         return 2;
       }
       args.format = v;
-    } else if ((v = value("--installed-root")) !== null) args.installedRoot = v;
-    else if ((v = value("--skill")) !== null) args.skill = v;
+    } else if ((v = value("--skill")) !== null) args.skill = v;
     else if ((v = value("--runtime")) !== null) args.runtime = v;
     else if ((v = value("--timeout")) !== null) args.timeout = Number(v);
     else if ((v = value("--parallel")) !== null) args.parallel = Number(v);
-    else if (a === "--real-npx") args.realNpx = true;
-    else if (a === "--live") args.live = true;
-    else if (a === "--yes") args.yes = true;
     else if (a === "--run") args.run = true;
     else if (a === "--dry-run") args.dryRun = true;
     else if (a.startsWith("--")) {

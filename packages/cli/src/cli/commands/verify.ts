@@ -4,9 +4,8 @@ import { main as semanticEvalMain } from "../../eval/semanticEval.js";
 type Io = { out?: (t: string) => void; err?: (t: string) => void };
 type Dict = Record<string, any>;
 
-export const VERIFY_FAMILIES = ["smoke", "eval"] as const;
+export const VERIFY_FAMILIES = ["eval"] as const;
 export const VERIFY_TARGETS: Record<string, string[]> = {
-  smoke: ["installed-skills", "live-hosts", "setup-helpers", "opencode-bootstrap"],
   eval: ["skills", "semantic"],
 };
 export const VERIFY_FORMATS = ["text", "json"] as const;
@@ -16,11 +15,6 @@ export interface VerifyArgs {
   family?: string | null;
   target?: string | null;
   format?: string;
-  // smoke
-  installedRoot?: string | null;
-  realNpx?: boolean;
-  live?: boolean;
-  yes?: boolean;
   // eval
   run?: boolean;
   dryRun?: boolean;
@@ -36,9 +30,8 @@ function verifySyntax(): string {
 }
 
 function verifyExample(family?: string | null): string {
-  if (family === "smoke") return "agentera verify smoke installed-skills --format json";
   if (family === "eval") return "agentera verify eval skills --format json";
-  return "agentera verify smoke installed-skills; agentera verify eval skills --format json";
+  return "agentera verify eval skills --format json";
 }
 
 /** Faithful port of scripts/agentera `_validate_verify_request`. Throws ValueError-style messages. */
@@ -50,7 +43,7 @@ export function validateVerifyRequest(args: VerifyArgs): [string, string, string
     throw new Error(
       `unsupported verify format '${outputFormat}'; valid formats: ${VERIFY_FORMATS.join(", ")}. ` +
         "Syntax: agentera verify <family> <target> --format text|json [target options]. " +
-        `Example: ${verifyExample("smoke")}`,
+        `Example: ${verifyExample("eval")}`,
     );
   }
   if (!(VERIFY_FAMILIES as readonly string[]).includes(family)) {
@@ -65,15 +58,6 @@ export function validateVerifyRequest(args: VerifyArgs): [string, string, string
       `unsupported verify target '${target}' for family '${family}'; valid targets: ${validTargets.join(", ")}. ` +
         `Syntax: agentera verify ${family} <target> [--format text|json] [target options]. ` +
         `Example: ${verifyExample(family)}`,
-    );
-  }
-  if (family === "smoke" && target === "live-hosts" && args.live && !args.yes) {
-    throw new Error(
-      "unsafe live-host verify request requires explicit non-interactive consent. " +
-        "Safe default: omit --live to run offline fixture and setup-helper checks only. " +
-        "Valid opt-in flags: --live --yes. " +
-        "Syntax: agentera verify smoke live-hosts [--live --yes] [--format text|json]. " +
-        "Example: agentera verify smoke live-hosts --live --yes --format json",
     );
   }
   if (family === "eval" && target === "skills" && args.run && args.dryRun) {
@@ -119,15 +103,10 @@ interface EngineResult {
   stderr: string;
 }
 
-const SMOKE_UNAVAILABLE =
-  "smoke verification is not available in the self-contained agentera package; " +
-  "the smoke runners are maintainer tools that run from a source checkout";
-
 /**
  * Resolve the engine command + safety metadata for a verify target. eval engines
- * run in-process (ported TS). smoke engines are maintainer tools absent from the
- * self-contained package, reported as unavailable (engine exit 127), mirroring
- * the Python CLI's "engine not found" behavior.
+ * run in-process (ported TS). Only the eval family is supported; the smoke
+ * family (maintainer/CI harnesses) was retired in the self-contained package.
  */
 function runVerifyEngine(family: string, target: string, args: VerifyArgs): { result: EngineResult; safety: Dict } {
   if (family === "eval" && target === "skills") {
@@ -174,56 +153,7 @@ function runVerifyEngine(family: string, target: string, args: VerifyArgs): { re
     );
     return { result, safety };
   }
-  // smoke family: maintainer runners are not part of the self-contained package.
-  const safety = smokeSafety(target, args);
-  return {
-    result: { command: ["smoke", target], returncode: 127, stdout: "", stderr: SMOKE_UNAVAILABLE },
-    safety,
-  };
-}
-
-function smokeSafety(target: string, args: VerifyArgs): Dict {
-  if (target === "installed-skills") {
-    let mode = "offline";
-    if (args.installedRoot != null) mode = "explicit-installed-root";
-    else if (args.realNpx) mode = "explicit-real-npx";
-    return {
-      mode,
-      summary: "default path is offline and credential-free; real npx requires --real-npx",
-      live: false,
-      mutates_installed_app: false,
-    };
-  }
-  if (target === "live-hosts") {
-    if (args.live) {
-      return {
-        mode: "explicit-live",
-        summary: "live host sections explicitly enabled with --live --yes and direct harness timeouts",
-        live: true,
-        mutates_installed_app: false,
-      };
-    }
-    return {
-      mode: "offline",
-      summary: "default runs offline fixture, missing-store, setup-helper, and upgrade-repair smoke checks only",
-      live: false,
-      mutates_installed_app: false,
-    };
-  }
-  if (target === "setup-helpers") {
-    return {
-      mode: "local-smoke",
-      summary: "uses temporary homes/config paths; no installed-app or profile mutation",
-      live: false,
-      mutates_installed_app: false,
-    };
-  }
-  return {
-    mode: "local-smoke",
-    summary: "uses temporary OpenCode config paths; no package refresh or profile mutation",
-    live: false,
-    mutates_installed_app: false,
-  };
+  throw new Error(`unhandled verify target ${family}/${target}`);
 }
 
 function runInProcess(
