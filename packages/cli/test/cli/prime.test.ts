@@ -127,9 +127,23 @@ describe("cli prime", () => {
     expect(ctx.benchmark_context.manual_refresh.command).toBe("mage bench:startupState");
   });
 
-  it("still gates dokumentera", () => {
-    const { rc } = capture((io) => cmdPrime({ context: "dokumentera", format: "json" }, io));
-    expect(rc).toBe(1);
+  it("emits the closeout bespoke context for dokumentera", () => {
+    const { rc, out } = capture((io) => cmdPrime({ command: "prime", context: "dokumentera", format: "json" }, io));
+    expect(rc).toBe(0);
+    const ctx = JSON.parse(out).capability_context.context;
+    expect(ctx.closeout_context).toBeTruthy();
+    expect(ctx.closeout_context.capability).toBe("dokumentera");
+    expect(ctx.closeout_context.release_boundary).toBeTruthy();
+    expect(ctx.closeout_context.version_policy).toBeTruthy();
+  });
+
+  it("serves --context for all 12 capabilities (no gate)", () => {
+    const caps = ["hej", "visionera", "resonera", "inspirera", "planera", "realisera",
+      "optimera", "inspektera", "dokumentera", "profilera", "visualisera", "orkestrera"];
+    for (const cap of caps) {
+      const { rc } = capture((io) => cmdPrime({ context: cap, format: "json" }, io));
+      expect(rc).toBe(0);
+    }
   });
 
   it("rejects an unknown --context capability", () => {
