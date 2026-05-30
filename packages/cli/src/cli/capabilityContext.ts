@@ -21,7 +21,7 @@ export const CAPABILITY_NAMES = [
   "optimera", "inspektera", "dokumentera", "profilera", "visualisera", "orkestrera",
 ];
 export const BESPOKE_CONTEXT_CAPABILITIES = new Set([
-  "orkestrera", "dokumentera", "inspektera", "optimera", "realisera",
+  "dokumentera", "inspektera", "optimera", "realisera",
 ]);
 
 const STATE_FAMILY_FALLBACK_COMMANDS: Record<string, string> = {
@@ -514,7 +514,7 @@ function slimCapabilityContext(
   // bespoke contexts are all null for the six non-bespoke capabilities.
   if (bespokeContexts) {
     for (const [name, value] of Object.entries(bespokeContexts)) {
-      if (value !== null && value !== undefined) contextPayload[name] = value;
+      if (value !== null && value !== undefined) contextPayload[name] = slimBespokeContext(name, value as Dict);
     }
   }
   return {
@@ -550,14 +550,7 @@ function orientationAppHome(bundle: Dict): Dict {
 export function buildPrimeCapabilityContextPayload(state: Dict, capabilityName: string, command = "prime"): Dict {
   const bundlePublic = publicDoctorStatus(state.bundle);
   const appHome = orientationAppHome(state.bundle);
-  // The five bespoke contexts are pending; all null for the six non-bespoke capabilities.
-  const bespoke: Dict = {
-    orchestration_context: null,
-    closeout_context: null,
-    evidence_context: null,
-    benchmark_context: null,
-    execution_context: null,
-  };
+  const bespoke = bespokeCapabilityContexts(capabilityName, state);
   return {
     command,
     status: "ok",
@@ -574,5 +567,275 @@ export function buildPrimeCapabilityContextPayload(state: Dict, capabilityName: 
       state.todo_items,
       bespoke,
     ),
+  };
+}
+
+// ── orchestration bespoke context (orkestrera) ──────────────────────
+
+function orchestrationTaskSummary(task: Dict): Dict {
+  const evidence = task.evidence;
+  const evidenceItems = Array.isArray(evidence) ? evidence : evidence === null || evidence === undefined || evidence === "" ? [] : [evidence];
+  return {
+    ...taskRef(task),
+    depends_on: asList(task.depends_on),
+    acceptance_summary: { count: asList(task.acceptance).length, items: asList(task.acceptance) },
+    evidence_summary: { count: evidenceItems.length, items: evidenceItems },
+  };
+}
+
+function progressVerificationSummary(progress: Dict): Dict {
+  const source = { source_family: "progress", command: "agentera progress --format json" };
+  if (!progress.exists) {
+    return {
+      status: "unavailable",
+      source_provenance: source,
+      cycle: null,
+      verified_present: false,
+      non_empty_evidence_present: false,
+      non_empty_evidence_fields: [],
+      verified: null,
+      verification_summary: null,
+      latest_progress_verification_pointer: null,
+      caveats: ["No progress cycles are recorded in CLI progress state."],
+    };
+  }
+  const latest = progress.latest && typeof progress.latest === "object" && !Array.isArray(progress.latest) ? progress.latest : {};
+  const verified = latest.verified;
+  const verifiedPresent = hasRecordedValue(verified);
+  const cycle: Dict = {};
+  for (const key of ["number", "timestamp", "type", "phase"]) {
+    if (latest[key] !== null && latest[key] !== undefined && latest[key] !== "") cycle[key] = latest[key];
+  }
+  const pointer = { ...source, cycle_number: latest.number ?? null, field: "verified" };
+  const caveats = verifiedPresent ? [] : ["Latest progress cycle has no non-empty verified evidence."];
+  const evidenceFields = verifiedPresent ? ["verified"] : [];
+  return {
+    status: "available",
+    source_provenance: source,
+    cycle,
+    verified_present: verifiedPresent,
+    non_empty_evidence_present: verifiedPresent,
+    non_empty_evidence_fields: evidenceFields,
+    verified: verifiedPresent ? verified : null,
+    verification_summary: verifiedPresent ? verified : null,
+    latest_progress_verification_pointer: pointer,
+    caveats,
+  };
+}
+
+function retryState(): Dict {
+  return {
+    status: "not_recorded",
+    source_provenance: {
+      source_family: "progress",
+      command: "agentera progress --format json",
+      reason: "Current CLI/artifact state records progress cycles but no retry attempt state for orchestration tasks.",
+    },
+    caveats: ["Retry attempt state is not recorded; no attempt count is exposed."],
+  };
+}
+
+function evaluatorHandoff(selected: Dict | null, progressVerification: Dict, retry: Dict, stateCaveats: string[]): Dict {
+  const caveats = [...stateCaveats, ...(progressVerification.caveats ?? []), ...(retry.caveats ?? [])];
+  if (selected === null) {
+    caveats.push("No dependency-ready task is selected for evaluator handoff.");
+    return {
+      status: "unavailable",
+      task: null,
+      acceptance_criteria: [],
+      evidence_requirements: [],
+      latest_progress_verification_pointer: progressVerification.latest_progress_verification_pointer ?? null,
+      evaluation_caveats: caveats,
+    };
+  }
+  const evidenceRequirements = (selected.evidence_summary?.items ?? []) as any[];
+  if (evidenceRequirements.length === 0) {
+    caveats.push("Selected task has no explicit evidence requirements recorded in plan state.");
+  }
+  return {
+    status: "ready",
+    task: taskRef(selected),
+    acceptance_criteria: selected.acceptance_summary?.items ?? [],
+    evidence_requirements: evidenceRequirements,
+    latest_progress_verification_pointer: progressVerification.latest_progress_verification_pointer ?? null,
+    evaluation_caveats: caveats,
+  };
+}
+
+function uniqueList(items: string[]): string[] {
+  const out: string[] = [];
+  for (const item of items) if (!out.includes(item)) out.push(item);
+  return out;
+}
+
+function orchestrationContext(
+  capability: string | null,
+  plan: Dict,
+  progress: Dict,
+  health: Dict,
+  todoItems: Array<Record<string, string>>,
+  docs: Dict,
+  profile: Dict,
+  nextAction: Dict,
+): Dict | null {
+  if (capability !== "orkestrera") return null;
+  const tasks = asList(plan.tasks).filter((t) => t && typeof t === "object" && !Array.isArray(t));
+  const taskByNumber: Record<string, Dict> = {};
+  for (const task of tasks) if (task.number !== null && task.number !== undefined) taskByNumber[String(task.number)] = task;
+  const dependencyReady: Dict[] = [];
+  const blocked: Dict[] = [];
+  for (const task of tasks) {
+    const status = entryStatus(task, "pending");
+    if (DONE_STATUSES_ORCH.has(status)) continue;
+    const reasons: string[] = [];
+    if (BLOCKED_STATUSES_ORCH.has(status)) reasons.push(`task status is ${status}`);
+    for (const dep of asList(task.depends_on)) {
+      const dependency = taskByNumber[String(dep)];
+      if (dependency === undefined) reasons.push(`dependency ${dep} is not present in plan tasks`);
+      else if (!DONE_STATUSES_ORCH.has(entryStatus(dependency, "pending"))) {
+        reasons.push(`dependency ${dep} is ${entryStatus(dependency, "pending")}`);
+      }
+    }
+    if (reasons.length > 0) blocked.push({ ...orchestrationTaskSummary(task), blocked_reasons: reasons });
+    else dependencyReady.push(orchestrationTaskSummary(task));
+  }
+  const selected = dependencyReady.length > 0 ? dependencyReady[0] : null;
+  const stateCaveats: string[] = [];
+  let fallbackCommands: string[] = [];
+  const capabilityContract = capabilityContext(capability) ?? {};
+  for (const family of (capabilityContract.missing_state_families ?? []) as string[]) {
+    stateCaveats.push(`${family} state is not included in prime --context startup context.`);
+  }
+  fallbackCommands.push(...((capabilityContract.cli_fallback ?? []) as string[]));
+  if (!plan.exists) {
+    stateCaveats.push("plan state is unavailable; task queue cannot be complete.");
+    fallbackCommands.push("agentera plan --format json");
+  }
+  if (!progress.exists) {
+    stateCaveats.push("progress state is unavailable; latest verification is not summarized here.");
+    fallbackCommands.push("agentera progress --format json");
+  }
+  if (!health.exists) {
+    stateCaveats.push("health state is unavailable or incomplete.");
+    fallbackCommands.push("agentera health --format json");
+  }
+  if (!docs.exists) {
+    stateCaveats.push("docs mapping state is unavailable or incomplete.");
+    fallbackCommands.push("agentera docs --format json");
+  }
+  if (todoItems.length === 0) {
+    stateCaveats.push("todo state has no open entries in prime --context response; absence may mean none open or unavailable.");
+    fallbackCommands.push("agentera todo --format json");
+  }
+  if (profile.status !== "loaded") {
+    stateCaveats.push("profile-derived state is unavailable in prime --context response.");
+  } else if (profile.stale === true) {
+    stateCaveats.push("profile-derived state is stale; this is a caveat, not approval to refresh profile state.");
+  }
+  fallbackCommands = uniqueList(fallbackCommands);
+  const progressVerification = progressVerificationSummary(progress);
+  const retry = retryState();
+  const handoff = evaluatorHandoff(selected, progressVerification, retry, stateCaveats);
+  const complete = Boolean(plan.exists) && tasks.length > 0 && stateCaveats.length === 0;
+  return {
+    capability: "orkestrera",
+    task_queue: { total: tasks.length, dependency_ready_tasks: dependencyReady, blocked_tasks: blocked },
+    selected_next_task: selected,
+    selected_next_action: nextAction,
+    progress_verification: progressVerification,
+    retry_state: retry,
+    evaluator_handoff: handoff,
+    task_summaries: tasks.map((task) => orchestrationTaskSummary(task)),
+    state_family_caveats: stateCaveats,
+    fallback_commands: fallbackCommands,
+    source_contract: {
+      complete_for_orchestration_context: complete,
+      raw_artifact_reads_required: false,
+      raw_artifact_read_policy:
+        "Use this orchestration_context and included hej state first. Run listed routine CLI fallback commands " +
+        "for missing or incomplete state families; raw artifact reads are last-resort diagnostics, not normal startup behavior.",
+      included_state_families: capabilityContract.included_state_families ?? [],
+      missing_state_families: capabilityContract.missing_state_families ?? [],
+      fallback_commands: fallbackCommands,
+      caveats: stateCaveats,
+      owns: [
+        "dependency-ready task queue",
+        "blocked task reasons",
+        "selected next task",
+        "task acceptance summaries",
+        "task evidence summaries",
+        "latest progress verification summary",
+        "retry_state provenance",
+        "evaluator handoff inputs",
+        "state-family caveats",
+      ],
+      deferred: [],
+    },
+  };
+}
+
+const DONE_STATUSES_ORCH = new Set(["complete", "completed", "closed", "done", "resolved", "retired"]);
+const BLOCKED_STATUSES_ORCH = new Set(["blocked", "stuck"]);
+
+function compactTaskSummaryForSlim(task: any): any {
+  if (!task || typeof task !== "object" || Array.isArray(task)) return task;
+  return {
+    number: task.number ?? null,
+    name: task.name ?? null,
+    status: task.status ?? null,
+    depends_on: task.depends_on ?? null,
+    acceptance_count: task.acceptance_summary && typeof task.acceptance_summary === "object" ? task.acceptance_summary.count ?? null : null,
+    evidence_count: task.evidence_summary && typeof task.evidence_summary === "object" ? task.evidence_summary.count ?? null : null,
+    blocked_reasons: task.blocked_reasons ?? null,
+  };
+}
+
+function compactProgressVerification(value: any): any {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return value;
+  const out: Dict = {};
+  for (const key of [
+    "status", "source_provenance", "cycle", "verified_present",
+    "non_empty_evidence_present", "non_empty_evidence_fields", "latest_progress_verification_pointer", "caveats",
+  ]) {
+    if (key in value) out[key] = value[key];
+  }
+  return out;
+}
+
+function slimOrchestrationContext(value: Dict): Dict {
+  const compact: Dict = { ...value };
+  const taskQueue = value.task_queue && typeof value.task_queue === "object" && !Array.isArray(value.task_queue) ? value.task_queue : {};
+  compact.task_queue = {
+    total: taskQueue.total ?? null,
+    dependency_ready_tasks: asList(taskQueue.dependency_ready_tasks).map((t) => compactTaskSummaryForSlim(t)),
+    blocked_tasks: asList(taskQueue.blocked_tasks).map((t) => compactTaskSummaryForSlim(t)),
+  };
+  compact.progress_verification = compactProgressVerification(value.progress_verification);
+  compact.task_summaries = asList(value.task_summaries).map((t) => compactTaskSummaryForSlim(t));
+  return compact;
+}
+
+function slimBespokeContext(name: string, value: Dict): Dict {
+  if (name === "orchestration_context") return slimOrchestrationContext(value);
+  // evidence_context / closeout_context slimming lands with their builders.
+  return value;
+}
+
+function bespokeCapabilityContexts(capabilityName: string | null, state: Dict): Dict {
+  return {
+    orchestration_context: orchestrationContext(
+      capabilityName,
+      state.plan,
+      state.progress,
+      state.health,
+      state.todo_items,
+      state.docs,
+      state.profile_dict,
+      state.next_action,
+    ),
+    closeout_context: null,
+    evidence_context: null,
+    benchmark_context: null,
+    execution_context: null,
   };
 }
