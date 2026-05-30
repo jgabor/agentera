@@ -31,6 +31,11 @@ import {
   runtimeResult,
   runtimeSkip,
   which,
+  DIAGNOSTICS,
+  diagnoseClaude,
+  diagnoseCodex,
+  diagnoseCursor,
+  readCodexAgenteraHome,
 } from "../../src/setup/doctor.js";
 
 let tmp: string;
@@ -233,5 +238,71 @@ describe("setup doctor: reference validation", () => {
     const c = diagnoseBundledReferenceValidation(root);
     expect(c.status).toBe("warn");
     expect(c.details).toContain("agentera: references/gone.md");
+  });
+});
+
+
+function fakeBin(dir: string): string {
+  fs.mkdirSync(dir, { recursive: true });
+  for (const b of ["claude", "opencode", "copilot", "codex", "cursor", "cursor-agent"]) {
+    const f = path.join(dir, b);
+    fs.writeFileSync(f, "#!/bin/sh\n");
+    fs.chmodSync(f, 0o755);
+  }
+  return dir;
+}
+
+describe("setup doctor: per-runtime diagnostics", () => {
+  it("exposes a diagnostics map for every runtime", () => {
+    expect(Object.keys(DIAGNOSTICS).sort()).toEqual([...RUNTIMES].sort());
+  });
+
+  it("skips a runtime whose binary is absent", () => {
+    const root = path.join(tmp, "root");
+    managedRoot(root);
+    const r = diagnoseClaude(root, path.join(tmp, "h"), {});
+    expect(r.status).toBe("skip");
+    expect(r.available).toBe(false);
+  });
+
+  it("passes claude when CLAUDE_PLUGIN_ROOT points at the install root", () => {
+    const root = path.join(tmp, "root");
+    managedRoot(root);
+    const bin = fakeBin(path.join(tmp, "bin"));
+    const r = diagnoseClaude(root, path.join(tmp, "h"), { PATH: bin, CLAUDE_PLUGIN_ROOT: root });
+    expect(r.available).toBe(true);
+    expect(r.status).toBe("pass");
+  });
+
+  it("reads AGENTERA_HOME from a codex config", () => {
+    const home = path.join(tmp, "h");
+    fs.mkdirSync(path.join(home, ".codex"), { recursive: true });
+    const root = path.join(tmp, "root");
+    managedRoot(root);
+    fs.writeFileSync(
+      path.join(home, ".codex", "config.toml"),
+      `[shell_environment_policy]\nset = { AGENTERA_HOME = "${root}" }\n`,
+    );
+    expect(readCodexAgenteraHome(path.join(home, ".codex", "config.toml"))).toEqual([root, null]);
+    expect(readCodexAgenteraHome(path.join(home, ".codex", "missing.toml"))).toEqual([null, "missing"]);
+    const bin = fakeBin(path.join(tmp, "bin"));
+    const r = diagnoseCodex(root, home, { PATH: bin });
+    expect(r.status).toBe("pass");
+  });
+
+  it("classifies cursor hooks + agents drift", () => {
+    const root = path.join(tmp, "root");
+    managedRoot(root);
+    fs.mkdirSync(path.join(root, ".cursor", "agents"), { recursive: true });
+    fs.writeFileSync(
+      path.join(root, ".cursor", "hooks.json"),
+      '{"h":["cursor_session_start.py","cursor_pre_tool_use.py"]}',
+    );
+    for (let i = 0; i < 12; i++) fs.writeFileSync(path.join(root, ".cursor", "agents", `a${i}.md`), "x");
+    const bin = fakeBin(path.join(tmp, "bin"));
+    const r = diagnoseCursor(root, path.join(tmp, "h"), { PATH: bin, AGENTERA_HOME: root });
+    expect(r.status).toBe("pass");
+    const checkStatuses = (r.checks as Array<{ status: string }>).map((c) => c.status);
+    expect(checkStatuses.every((sv) => sv === "pass")).toBe(true);
   });
 });
