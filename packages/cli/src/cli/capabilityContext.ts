@@ -3,8 +3,9 @@ import path from "node:path";
 
 import { loadYamlMapping } from "../core/yaml.js";
 import { publicDoctorStatus } from "../upgrade/doctor.js";
-import { activeAppModel, discoverSchemasDir } from "./appContext.js";
-import { asList, firstPresent } from "./stateQuery.js";
+import { activeAppModel, discoverSchemasDir, SchemaInfo } from "./appContext.js";
+import { artifactPath } from "./appContext.js";
+import { asList, firstPresent, sourceMetadata } from "./stateQuery.js";
 
 /**
  * prime --context capability-startup context. Faithful port of
@@ -21,7 +22,7 @@ export const CAPABILITY_NAMES = [
   "optimera", "inspektera", "dokumentera", "profilera", "visualisera", "orkestrera",
 ];
 export const BESPOKE_CONTEXT_CAPABILITIES = new Set([
-  "dokumentera", "inspektera", "optimera", "realisera",
+  "dokumentera", "inspektera", "optimera",
 ]);
 
 const STATE_FAMILY_FALLBACK_COMMANDS: Record<string, string> = {
@@ -836,6 +837,400 @@ function bespokeCapabilityContexts(capabilityName: string | null, state: Dict): 
     closeout_context: null,
     evidence_context: null,
     benchmark_context: null,
-    execution_context: null,
+    execution_context: realiseraExecutionContext(
+      capabilityName,
+      state.schemas,
+      state.plan,
+      state.progress,
+      state.health,
+      state.todo_items,
+      state.docs,
+      state.profile_dict,
+      state.bundle,
+    ),
+  };
+}
+
+// ── realisera execution bespoke context ─────────────────────────────
+
+const TARGET_VERSION_RE = /\b\d+\.\d+\.\d+\b/;
+
+function dependencyReadyTasks(tasks: Dict[]): Dict[] {
+  const taskByNumber: Record<string, Dict> = {};
+  for (const task of tasks) if (task.number !== null && task.number !== undefined) taskByNumber[String(task.number)] = task;
+  const ready: Dict[] = [];
+  for (const task of tasks) {
+    const status = entryStatus(task, "pending");
+    if (DONE_STATUSES_ORCH.has(status) || BLOCKED_STATUSES_ORCH.has(status)) continue;
+    let blocked = false;
+    for (const dep of asList(task.depends_on)) {
+      const dependency = taskByNumber[String(dep)];
+      if (dependency === undefined || !DONE_STATUSES_ORCH.has(entryStatus(dependency, "pending"))) {
+        blocked = true;
+        break;
+      }
+    }
+    if (!blocked) ready.push(task);
+  }
+  return ready;
+}
+
+function selectEvidenceTarget(plan: Dict): Dict {
+  const tasks = asList(plan.tasks).filter((t) => t && typeof t === "object" && !Array.isArray(t));
+  const noTarget = {
+    status: "no_target",
+    target_type: "repository",
+    task: null,
+    selection_reason: "no_plan_task_target",
+    source_provenance: sourceProvenance("plan", "agentera plan --format json", "entries"),
+    caveats: ["No plan task target was selected; evaluate repository-level evidence only."],
+  };
+  if (!plan.exists || tasks.length === 0) return noTarget;
+  const inProgress = tasks.find((task) => entryStatus(task, "pending") === "in_progress");
+  if (inProgress) {
+    return {
+      status: "selected",
+      target_type: "plan_task",
+      task: taskRef(inProgress),
+      selection_reason: "in_progress_task",
+      source_provenance: sourceProvenance("plan", "agentera plan --format json", "entries.status"),
+      caveats: [],
+    };
+  }
+  const ready = dependencyReadyTasks(tasks);
+  if (ready.length > 0) {
+    return {
+      status: "selected",
+      target_type: "plan_task",
+      task: taskRef(ready[0]),
+      selection_reason: "first_dependency_ready_pending_task",
+      source_provenance: sourceProvenance("plan", "agentera plan --format json", "entries.depends_on"),
+      caveats: [],
+    };
+  }
+  const completedWithEvidence = [...tasks].reverse().find(
+    (task) => DONE_STATUSES_ORCH.has(entryStatus(task, "pending")) && hasRecordedValue(task.evidence),
+  );
+  if (completedWithEvidence) {
+    return {
+      status: "selected",
+      target_type: "plan_task",
+      task: taskRef(completedWithEvidence),
+      selection_reason: "latest_completed_task_with_evidence",
+      source_provenance: sourceProvenance("plan", "agentera plan --format json", "entries.evidence"),
+      caveats: [],
+    };
+  }
+  return noTarget;
+}
+
+function taskByRef(plan: Dict, ref: Dict | null): Dict | null {
+  if (!ref) return null;
+  for (const task of asList(plan.tasks)) {
+    if (task && typeof task === "object" && !Array.isArray(task) && task.number === ref.number) return task;
+  }
+  return null;
+}
+
+function planContextField(plan: Dict, field: string): any {
+  const summary = plan.summary && typeof plan.summary === "object" && !Array.isArray(plan.summary) ? plan.summary : {};
+  return field in summary ? summary[field] : plan[field];
+}
+
+function realiseraScopeBoundary(plan: Dict, selected: Dict | null): Dict {
+  const explicitPaths: string[] = [];
+  const scopeField = planContextField(plan, "scope");
+  const sources = [selected ?? {}, scopeField && typeof scopeField === "object" ? scopeField : {}];
+  for (const source of sources) {
+    if (!source || typeof source !== "object" || Array.isArray(source)) continue;
+    for (const key of ["source_files", "files", "paths"]) {
+      for (const value of asList((source as Dict)[key])) {
+        const text = String(value).trim();
+        if (text && !explicitPaths.includes(text)) explicitPaths.push(text);
+      }
+    }
+  }
+  return {
+    artifact_families: ["plan", "progress", "todo", "docs", "health", "changelog", "decisions", "vision", "profile", "design"],
+    source_scope: {
+      status: explicitPaths.length > 0 ? "explicit" : "unspecified",
+      explicit_paths: explicitPaths,
+      policy: "Do not infer source-file allowlists or exclusions from task text; use only explicit plan/source-contract paths.",
+    },
+  };
+}
+
+function realiseraArtifactUpdateRequirements(plan: Dict, docs: Dict): Dict {
+  const mapping = asList(docs.mapping);
+  const mapped = mapping.filter((e) => e && typeof e === "object" && e.artifact).map((e) => e.artifact);
+  return {
+    required_families: ["plan", "progress", "todo", "changelog"],
+    protected_families: ["vision", "objective", "profile", "installed_app"],
+    docs_mapping_available: Boolean(docs.exists && mapping.length > 0),
+    mapped_artifacts: mapped,
+    plan_status_update_required: Boolean(plan.exists),
+    policy: "Update execution artifacts during the cycle; do not mutate protected state without explicit approval.",
+    source_provenance: sourceProvenance("docs", "agentera docs --format json", "summary.mapping"),
+  };
+}
+
+function realiseraPlanCompletionSweep(plan: Dict): Dict {
+  const complete = Boolean(plan.complete_plan);
+  return {
+    status: complete ? "eligible" : "not_eligible",
+    mutation_allowed: false,
+    required_updates: ["progress aggregate cycle", "changelog plan-level entries", "TODO milestone advance", "health cross-reference"],
+    archive_candidate: complete ? "active plan archive path is generated only during Realisera sweep execution" : null,
+    caveats: complete ? [] : ["Plan completion sweep is not eligible until every plan task is complete."],
+    source_provenance: sourceProvenance("plan", "agentera plan --format json", "summary.status"),
+  };
+}
+
+function selectedTargetVersion(plan: Dict): string | null {
+  const textParts = [String(plan.title ?? "")];
+  const firstPending = plan.first_pending;
+  if (firstPending && typeof firstPending === "object" && !Array.isArray(firstPending)) {
+    for (const key of ["name", "title"]) textParts.push(String(firstPending[key] ?? ""));
+  }
+  for (const task of asList(plan.tasks)) {
+    if (task && typeof task === "object" && !Array.isArray(task)) {
+      for (const key of ["name", "title"]) textParts.push(String(task[key] ?? ""));
+    }
+  }
+  const match = TARGET_VERSION_RE.exec(textParts.join("\n"));
+  return match ? match[0] : null;
+}
+
+function changelogRecordsTarget(text: string, targetVersion: string | null): boolean {
+  if (!targetVersion) return false;
+  const escaped = targetVersion.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const re = new RegExp(`(?<![\\d.])${escaped}(?![\\d.+-])`);
+  return text.split(/\r\n|\r|\n/).some((line) => re.test(line));
+}
+
+function closeoutChangelogBoundary(schemas: Record<string, SchemaInfo>, plan: Dict): Dict {
+  const info: SchemaInfo = schemas.changelog ?? { path: "CHANGELOG.md", record: undefined, schema: {}, fields: {} };
+  const p = artifactPath(info, "changelog");
+  const source = sourceMetadata("changelog", p);
+  const targetVersion = selectedTargetVersion(plan);
+  const unavailable = (caveat: string): Dict => ({
+    status: "unavailable",
+    source,
+    source_provenance: sourceProvenance("changelog", "agentera query changelog --format json"),
+    selected_target_version: targetVersion,
+    selected_target_recorded: false,
+    unreleased_present: false,
+    latest_release_heading: null,
+    boundary_present: false,
+    boundary: null,
+    caveats: [caveat],
+  });
+  if (!fs.existsSync(p)) return unavailable("CHANGELOG state is unavailable in CLI state.");
+  let text: string;
+  try {
+    text = fs.readFileSync(p, "utf8");
+  } catch (exc) {
+    return unavailable(`CHANGELOG state could not be read by the CLI: ${(exc as Error).message}`);
+  }
+  const headings = text.split(/\r\n|\r|\n/).filter((line) => line.startsWith("## ")).map((line) => line.trim());
+  const unreleased = headings.find((h) => h.toLowerCase().includes("unreleased")) ?? null;
+  const latestRelease = headings.find((h) => !h.toLowerCase().includes("unreleased")) ?? null;
+  const selectedRecorded = changelogRecordsTarget(text, targetVersion);
+  const caveats: string[] = [];
+  if (headings.length === 0) caveats.push("CHANGELOG state has no release headings.");
+  if (targetVersion && !selectedRecorded) caveats.push(`CHANGELOG state has no ${targetVersion} closeout entry yet.`);
+  const boundary = unreleased || latestRelease;
+  return {
+    status: headings.length > 0 ? "available" : "incomplete",
+    source,
+    source_provenance: {
+      ...sourceProvenance("changelog", "agentera query changelog --format json", "release_headings"),
+      internal_source: "CLI-resolved CHANGELOG.md heading scan",
+    },
+    selected_target_version: targetVersion,
+    selected_target_recorded: selectedRecorded,
+    unreleased_present: unreleased !== null,
+    latest_release_heading: latestRelease,
+    boundary_present: boundary !== null,
+    boundary,
+    release_state: selectedRecorded ? "selected_target_recorded" : "no_selected_target_closeout_entry",
+    caveats,
+  };
+}
+
+function realiseraExecutionContext(
+  capability: string | null,
+  schemas: Record<string, SchemaInfo>,
+  plan: Dict,
+  progress: Dict,
+  health: Dict,
+  todoItems: Array<Record<string, string>>,
+  docs: Dict,
+  profile: Dict,
+  bundle: Dict,
+): Dict | null {
+  if (capability !== "realisera") return null;
+  const capabilityContract = capabilityContext(capability) ?? {};
+  const tasks = asList(plan.tasks).filter((t) => t && typeof t === "object" && !Array.isArray(t));
+  const target = selectEvidenceTarget(plan);
+  const selected = taskByRef(plan, target && typeof target === "object" ? target.task : null);
+  const acceptance = selected && typeof selected === "object" ? asList(selected.acceptance) : [];
+  const progressVerification = progressVerificationSummary(progress);
+  const changelogBoundary = closeoutChangelogBoundary(schemas, plan);
+  const sweep = realiseraPlanCompletionSweep(plan);
+
+  let mode: string;
+  if (plan.complete_plan) mode = "completed_plan_sweep";
+  else if (!plan.exists || tasks.length === 0) mode = "no_plan";
+  else if (target.status === "selected" && selected !== null) mode = "plan_driven";
+  else mode = "blocked_or_dependency_unready";
+
+  let stateCaveats: string[] = [];
+  let fallbackCommands: string[] = [];
+  for (const family of (capabilityContract.missing_state_families ?? []) as string[]) {
+    stateCaveats.push(`${family} state is not included in prime --context startup context.`);
+  }
+  fallbackCommands.push(...((capabilityContract.cli_fallback ?? []) as string[]));
+  if (!plan.exists) {
+    stateCaveats.push("plan state is unavailable; execution context cannot select plan-driven work.");
+    fallbackCommands.push("agentera plan --format json");
+  }
+  if (mode === "blocked_or_dependency_unready") {
+    stateCaveats.push("No dependency-ready pending plan task is available in CLI plan state.");
+    fallbackCommands.push("agentera plan --format json");
+  }
+  if (mode === "plan_driven" && acceptance.length === 0) {
+    stateCaveats.push("Selected Realisera task has no acceptance criteria in CLI plan state.");
+    fallbackCommands.push("agentera plan --format json");
+  }
+  if (!progress.exists) {
+    stateCaveats.push("progress state is unavailable; progress logging context is incomplete.");
+    fallbackCommands.push("agentera progress --format json");
+  }
+  if (!health.exists) {
+    stateCaveats.push("health state is unavailable or incomplete.");
+    fallbackCommands.push("agentera health --format json");
+  }
+  if (!docs.exists) {
+    stateCaveats.push("docs mapping state is unavailable or incomplete.");
+    fallbackCommands.push("agentera docs --format json");
+  }
+  if (todoItems.length === 0) {
+    stateCaveats.push("todo state has no open entries in prime --context response; absence may mean none open or unavailable.");
+    fallbackCommands.push("agentera todo --format json");
+  }
+  if (changelogBoundary.status !== "available") {
+    stateCaveats.push(...((changelogBoundary.caveats ?? []) as string[]));
+    fallbackCommands.push("agentera query changelog --format json");
+  }
+  if (profile.status !== "loaded") {
+    stateCaveats.push("profile-derived state is unavailable in prime --context response.");
+  } else if (profile.stale === true) {
+    stateCaveats.push("profile-derived state is stale; this is a caveat, not approval to refresh profile state.");
+  }
+  if (bundle.status !== "up_to_date") {
+    stateCaveats.push("Agentera app files are not up to date; this is a caveat, not approval to repair or update app files.");
+  }
+  const scopeBoundary = realiseraScopeBoundary(plan, selected);
+  if (scopeBoundary.source_scope.status === "unspecified") {
+    stateCaveats.push("source-file scope is unspecified; no allowed or prohibited source paths were inferred.");
+  }
+  fallbackCommands = uniqueList(fallbackCommands);
+  stateCaveats = uniqueList(stateCaveats);
+  const requiredState: Record<string, boolean> = {
+    work_selection: mode === "plan_driven" || mode === "completed_plan_sweep",
+    acceptance_criteria: mode === "completed_plan_sweep" || acceptance.length > 0,
+    artifact_update_requirements: Boolean(docs.exists),
+    progress_logging_requirements: progressVerification.status === "available" || (progressVerification.caveats ?? []).length > 0,
+    changelog_boundary: changelogBoundary.status === "available",
+    scope_boundary: true,
+    safety_boundaries: true,
+  };
+  const missingRequired = Object.entries(requiredState).filter(([, present]) => !present).map(([name]) => name);
+  const caveated = stateCaveats.length > 0;
+  const complete = (mode === "plan_driven" || mode === "completed_plan_sweep") && missingRequired.length === 0;
+  return {
+    capability: "realisera",
+    mode,
+    work_selection: {
+      status: target.status,
+      selection_reason: target.selection_reason,
+      task: selected && typeof selected === "object" ? taskRef(selected) : null,
+      source_provenance: target.source_provenance,
+      caveats: target.caveats ?? [],
+    },
+    plan_task: selected && typeof selected === "object" ? orchestrationTaskSummary(selected) : null,
+    acceptance_criteria: {
+      status: acceptance.length > 0 ? "available" : "incomplete",
+      items: acceptance,
+      count: acceptance.length,
+      source_provenance: sourceProvenance("plan", "agentera plan --format json", "entries.acceptance"),
+    },
+    constraints: {
+      plan_constraints_present: hasRecordedValue(planContextField(plan, "constraints")),
+      plan_constraints_summary:
+        "Plan constraints are represented here as structured safety and fallback policy; " +
+        "run the plan CLI fallback only if full wording is needed.",
+      protected_actions: [
+        "no profile refresh",
+        "no installed app refresh",
+        "no vision edit",
+        "no objective-state edit",
+        "no dispatch without explicit cycle execution",
+        "no commit/push/tag/publication without explicit approval",
+      ],
+      unsupported_cli_command_policy: "Do not introduce capability-name or slash-alias CLI commands for Realisera.",
+      source_provenance: sourceProvenance("plan", "agentera plan --format json", "summary.constraints"),
+    },
+    scope_boundary: scopeBoundary,
+    verification_expectations: {
+      latest_progress_verification: progressVerification,
+      expected_commands: ["focused pytest targets", "Realisera capability validation", "self-validation", "agentera gate", "compaction check", "git diff --check"],
+      source_provenance: sourceProvenance("plan", "agentera plan --format json", "entries.acceptance"),
+    },
+    artifact_update_requirements: realiseraArtifactUpdateRequirements(plan, docs),
+    progress_logging_requirements: {
+      append_cycle: true,
+      verified_field_mandatory: true,
+      latest_progress_verification_pointer: progressVerification.latest_progress_verification_pointer ?? null,
+      source_provenance: sourceProvenance("progress", "agentera progress --format json"),
+    },
+    changelog_boundary: changelogBoundary,
+    git_boundary: {
+      remote_push_allowed: false,
+      commit_allowed_only_with_explicit_user_request: true,
+      tag_or_publication_allowed: false,
+      source_provenance: sourceProvenance("execution_context", "agentera prime --context realisera --format json", "git_boundary"),
+    },
+    plan_completion_sweep: sweep,
+    state_family_caveats: stateCaveats,
+    fallback_commands: fallbackCommands,
+    source_contract: {
+      complete_for_execution_context: complete,
+      caveated,
+      raw_artifact_reads_required: false,
+      raw_artifact_read_policy:
+        "Use this execution_context and included hej state first. Run listed routine/query CLI fallback commands " +
+        "for missing or incomplete execution state; raw artifact reads are last-resort diagnostics, not normal Realisera startup behavior.",
+      included_state_families: capabilityContract.included_state_families ?? [],
+      missing_state_families: capabilityContract.missing_state_families ?? [],
+      required_execution_state: requiredState,
+      missing_required_execution_state: missingRequired,
+      fallback_commands: fallbackCommands,
+      caveats: stateCaveats,
+      owns: [
+        "selected work item",
+        "task details and acceptance criteria",
+        "constraints and safety boundaries",
+        "verification expectations",
+        "artifact update requirements",
+        "progress logging requirements",
+        "changelog boundary",
+        "scope boundary",
+        "read-only plan completion sweep metadata",
+        "truthful completeness metadata",
+      ],
+      deferred: [],
+    },
   };
 }
