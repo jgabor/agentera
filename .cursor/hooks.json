@@ -3,26 +3,26 @@
   "hooks": {
     "sessionStart": [
       {
-        "command": "uv run hooks/cursor_session_start.py",
+        "command": "npx -y agentera hook cursor-session-start",
         "timeout": 15
       }
     ],
     "sessionEnd": [
       {
-        "command": "uv run hooks/session_stop.py",
+        "command": "npx -y agentera hook session-stop",
         "timeout": 15
       }
     ],
     "preToolUse": [
       {
-        "command": "uv run hooks/cursor_pre_tool_use.py",
+        "command": "npx -y agentera hook cursor-pre-tool-use",
         "matcher": "Write|Edit",
         "timeout": 15
       }
     ],
     "postToolUse": [
       {
-        "command": "uv run hooks/validate_artifact.py",
+        "command": "npx -y agentera hook validate-artifact",
         "matcher": "Write|Edit",
         "timeout": 15
       }

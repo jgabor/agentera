@@ -94,9 +94,6 @@ records:
         - id: upgrade-guide
           path: UPGRADE.md
           kind: file
-        - id: python-project
-          path: pyproject.toml
-          kind: file
       shared_paths_policy: validate minimum shared paths separately from full bundle includes
     bundle_surfaces:
       directories:

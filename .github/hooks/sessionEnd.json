@@ -1,7 +1,7 @@
 {
   "name": "sessionEnd",
   "type": "command",
-  "bash": "uv run hooks/session_stop.py",
-  "powershell": "uv run hooks/session_stop.py",
+  "bash": "npx -y agentera hook session-stop",
+  "powershell": "npx -y agentera hook session-stop",
   "timeoutSec": 10
 }

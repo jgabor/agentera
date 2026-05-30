@@ -1,7 +1,7 @@
 {
   "name": "preToolUse",
   "type": "command",
-  "bash": "uv run hooks/validate_artifact.py",
-  "powershell": "uv run hooks/validate_artifact.py",
+  "bash": "npx -y agentera hook validate-artifact",
+  "powershell": "npx -y agentera hook validate-artifact",
   "timeoutSec": 10
 }
