@@ -167,7 +167,7 @@ function capabilityResult(capDir: string): ProcResult {
   let stdout = `Validating capability: ${resolved}\nUsing contract: ${CONTRACT_PATH}\n`;
   let errors: string[];
   try {
-    errors = validateCapability(resolved, CONTRACT_PATH);
+    errors = validateCapability(resolved, path.join(resolveSourceRoot(), CONTRACT_PATH));
   } catch (exc) {
     errors = [(exc as Error).message];
   }
@@ -258,7 +258,7 @@ function contractSelfResult(): ProcResult {
   let stdout = `Self-validating contract: ${CONTRACT_PATH}\n`;
   let errors: string[];
   try {
-    errors = validateContractSelf(CONTRACT_PATH);
+    errors = validateContractSelf(path.join(resolveSourceRoot(), CONTRACT_PATH));
   } catch (exc) {
     errors = [(exc as Error).message];
   }
@@ -277,7 +277,7 @@ function protocolSelfResult(): ProcResult {
   let stdout = `Validating protocol: ${PROTOCOL_PATH}\n`;
   let errors: string[];
   try {
-    errors = validateProtocolSelf(PROTOCOL_PATH);
+    errors = validateProtocolSelf(path.join(resolveSourceRoot(), PROTOCOL_PATH));
   } catch (exc) {
     errors = [(exc as Error).message];
   }
