@@ -302,9 +302,7 @@ export function analyzeCorpus(corpus: Dict, projectFilter: string | null = null)
 
 // --- Paths -----------------------------------------------------------------
 
-export const CORPUS_GUIDANCE =
-  "Run uv run scripts/extract_corpus.py to build the default corpus. " +
-  "Provide --corpus <path> to an existing corpus.json.";
+export const CORPUS_GUIDANCE = "Provide --corpus <path> to an existing corpus.json.";
 
 function homeDir(env: Env): string {
   return env.HOME ?? os.homedir();

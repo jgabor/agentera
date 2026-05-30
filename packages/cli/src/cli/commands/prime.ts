@@ -103,8 +103,8 @@ function v1MigrationSummary(v1Artifacts: string[]): Dict {
     requires_confirmation: detected,
   };
   if (detected && isLocalCheckout(process.cwd())) {
-    summary.local_dry_run_command = 'uv run scripts/agentera upgrade --project "$PWD" --dry-run';
-    summary.local_apply_command = 'uv run scripts/agentera upgrade --project "$PWD" --yes';
+    summary.local_dry_run_command = 'npx -y agentera upgrade --project "$PWD" --dry-run';
+    summary.local_apply_command = 'npx -y agentera upgrade --project "$PWD" --yes';
   }
   return summary;
 }
