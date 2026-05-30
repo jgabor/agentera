@@ -117,11 +117,19 @@ describe("cli prime", () => {
     expect(ctx.evidence_context.residual_risks).toBeTruthy();
   });
 
-  it("still gates the remaining bespoke capabilities", () => {
-    for (const cap of ["dokumentera", "optimera"]) {
-      const { rc } = capture((io) => cmdPrime({ context: cap, format: "json" }, io));
-      expect(rc).toBe(1);
-    }
+  it("emits the benchmark bespoke context for optimera", () => {
+    const { rc, out } = capture((io) => cmdPrime({ command: "prime", context: "optimera", format: "json" }, io));
+    expect(rc).toBe(0);
+    const ctx = JSON.parse(out).capability_context.context;
+    expect(ctx.benchmark_context).toBeTruthy();
+    expect(ctx.benchmark_context.capability).toBe("optimera");
+    expect(ctx.benchmark_context.privacy_boundary.status).toBe("enforced");
+    expect(ctx.benchmark_context.manual_refresh.command).toBe("mage bench:startupState");
+  });
+
+  it("still gates dokumentera", () => {
+    const { rc } = capture((io) => cmdPrime({ context: "dokumentera", format: "json" }, io));
+    expect(rc).toBe(1);
   });
 
   it("rejects an unknown --context capability", () => {
