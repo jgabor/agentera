@@ -4,6 +4,7 @@ import path from "node:path";
 import { expanduser, isFile, pathExists, resolvePath } from "../core/paths.js";
 import { SOURCE_LABELS, classifyResolvedRoot } from "../state/installRoot.js";
 import { doctorRoots, loadSuiteVersion } from "./appModel.js";
+import { isNpxBundleRoot } from "../core/sourceRoot.js";
 
 /**
  * Doctor status build. Faithful TS port of build_doctor_status /
@@ -190,6 +191,39 @@ export function buildDoctorStatus(installRoot: string, opts: BuildDoctorStatusOp
   const project = opts.project;
   const expectedCommands = opts.expectedCommands ?? EXPECTED_STATE_COMMANDS;
   const probeCli = opts.probeCli ?? true;
+
+  // Fully self-contained npx bundle: the bundle IS the app and is always current
+  // (its version is the package version), so there is no install/upgrade step.
+  // Report it as the authoritative, up-to-date app home. (Sentinel-gated; never
+  // triggers for a repo checkout or an installed managed app.)
+  if (isNpxBundleRoot(sourceRoot)) {
+    const bundleExpected = opts.expectedVersion || loadSuiteVersion(sourceRoot) || "unknown";
+    return {
+      schemaVersion: "agentera.bundleStatus.v1",
+      status: APP_UP_TO_DATE,
+      expectedVersion: bundleExpected,
+      appHome: sourceRoot,
+      appHomeSource: "bundled app",
+      managedAppRoot: sourceRoot,
+      userDataRoot: sourceRoot,
+      activeBundleRoot: sourceRoot,
+      authoritativeRoot: sourceRoot,
+      skillRoot: path.join(sourceRoot, "skills", "agentera"),
+      runtimeRoot: sourceRoot,
+      sourceRoot,
+      installRoot: sourceRoot,
+      installRootSource: "bundled app",
+      home,
+      project,
+      rootStatus: "bundled",
+      markerVersion: bundleExpected,
+      signals: [],
+      dryRunCommand: null,
+      applyCommand: null,
+      retryCommand: commandText(["npx", "-y", "agentera", expectedCommands[0] ?? "prime"]),
+      approval: "no action needed: self-contained app bundle is current",
+    };
+  }
 
   const expected = opts.expectedVersion || loadSuiteVersion(sourceRoot) || "unknown";
   const roots = doctorRoots(installRoot);
