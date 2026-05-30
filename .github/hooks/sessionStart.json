@@ -1,7 +1,7 @@
 {
   "name": "sessionStart",
   "type": "command",
-  "bash": "uv run hooks/session_start.py",
-  "powershell": "uv run hooks/session_start.py",
+  "bash": "npx -y agentera hook session-start",
+  "powershell": "npx -y agentera hook session-start",
   "timeoutSec": 10
 }
