@@ -106,8 +106,19 @@ describe("cli prime", () => {
     expect(ctx.execution_context.changelog_boundary).toBeTruthy();
   });
 
+  it("emits the evidence bespoke context for inspektera", () => {
+    const { rc, out } = capture((io) => cmdPrime({ command: "prime", context: "inspektera", format: "json" }, io));
+    expect(rc).toBe(0);
+    const ctx = JSON.parse(out).capability_context.context;
+    expect(ctx.evidence_context).toBeTruthy();
+    expect(ctx.evidence_context.capability).toBe("inspektera");
+    expect(ctx.evidence_context.version_checks).toBeTruthy();
+    expect(ctx.evidence_context.decision_review_pressure).toBeTruthy();
+    expect(ctx.evidence_context.residual_risks).toBeTruthy();
+  });
+
   it("still gates the remaining bespoke capabilities", () => {
-    for (const cap of ["dokumentera", "inspektera", "optimera"]) {
+    for (const cap of ["dokumentera", "optimera"]) {
       const { rc } = capture((io) => cmdPrime({ context: cap, format: "json" }, io));
       expect(rc).toBe(1);
     }
