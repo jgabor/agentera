@@ -1,11 +1,71 @@
 import { cmdPrime } from "./commands/prime.js";
+import { cmdLint, LintArgs } from "./commands/lint.js";
 
 /**
- * Top-level command dispatch. Phase 0 wires only `prime`; subsequent phases
- * add the full command surface (state/check/report/hook/etc.) and a proper
- * argparse-shaped parser.
+ * Top-level command dispatch. The full argparse-shaped surface is being ported
+ * incrementally; currently wired: `prime`, `lint` (+ `check lint`).
  */
-export function main(argv: string[]): number {
+
+type Io = { out?: (t: string) => void; err?: (t: string) => void };
+
+function emitDeprecationAlias(legacy: string, canonical: string, err: (t: string) => void): void {
+  err(`Deprecation: agentera ${legacy} is deprecated; use agentera ${canonical}\n`);
+}
+
+/** Minimal flag parser for the `lint` command surface. */
+function parseLintArgs(argv: string[]): LintArgs | { error: string } {
+  const args: LintArgs = { artifact: "", file: null, text: null, strict: false, format: "text" };
+  let sawArtifact = false;
+  for (let i = 0; i < argv.length; i++) {
+    const a = argv[i];
+    const value = (name: string): string | null => {
+      if (a === name) return argv[++i];
+      if (a.startsWith(name + "=")) return a.slice(name.length + 1);
+      return null;
+    };
+    let v: string | null;
+    if ((v = value("--artifact")) !== null) {
+      args.artifact = v;
+      sawArtifact = true;
+    } else if ((v = value("--file")) !== null) {
+      args.file = v;
+    } else if ((v = value("--text")) !== null) {
+      args.text = v;
+    } else if (a === "--strict") {
+      args.strict = true;
+    } else if ((v = value("--format")) !== null) {
+      if (v !== "text" && v !== "json") {
+        return { error: `argument --format: invalid choice: '${v}' (choose from 'text', 'json')` };
+      }
+      args.format = v;
+    } else {
+      return { error: `unrecognized arguments: ${a}` };
+    }
+  }
+  if (!sawArtifact) return { error: "the following arguments are required: --artifact" };
+  if (args.file !== null && args.text !== null) {
+    return { error: "argument --text: not allowed with argument --file" };
+  }
+  return args;
+}
+
+function runLint(argv: string[], io: Io): number {
+  const err = io.err ?? ((t: string) => process.stderr.write(t));
+  const parsed = parseLintArgs(argv);
+  if ("error" in parsed) {
+    err(`agentera lint: error: ${parsed.error}\n`);
+    return 2;
+  }
+  try {
+    return cmdLint(parsed, io);
+  } catch (exc) {
+    err(`Error: ${(exc as Error).message}\n`);
+    return 2;
+  }
+}
+
+export function main(argv: string[], io: Io = {}): number {
+  const err = io.err ?? ((t: string) => process.stderr.write(t));
   const args = argv.slice(2);
   const command = args[0];
   const rest = args.slice(1);
@@ -13,10 +73,21 @@ export function main(argv: string[]): number {
   switch (command) {
     case "prime":
       return cmdPrime(rest);
+    case "lint":
+      emitDeprecationAlias("lint", "check lint", err);
+      return runLint(rest, io);
+    case "check": {
+      const sub = rest[0];
+      if (!sub) {
+        err("agentera check: error: the following arguments are required: check_command\n");
+        return 2;
+      }
+      if (sub === "lint") return runLint(rest.slice(1), io);
+      err(`agentera: unknown or not-yet-ported check subcommand: ${sub}\n`);
+      return 1;
+    }
     default:
-      process.stderr.write(
-        `agentera: unknown or not-yet-ported command: ${command ?? "(none)"}\n`,
-      );
+      err(`agentera: unknown or not-yet-ported command: ${command ?? "(none)"}\n`);
       return 1;
   }
 }
