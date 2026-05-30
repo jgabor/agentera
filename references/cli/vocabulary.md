@@ -23,7 +23,7 @@ included when they shape cross-suite usage.
 | `references/cli/routing-execution-vocabulary.yaml` | Canonical concepts, compatibility boundaries, and classification rules for routing, suggestions, delegation, worker spawning, runtime subagent mechanisms, and pre-spawn Git commits. |
 | `skills/agentera/SKILL.md` | Agentera routing entry point, routing model, CLI-first state access, installed-app status checks, and safety rails. |
 | `skills/agentera/capabilities/*/instructions.md` | Capability behavior, workflow grammar, step markers, and cross-capability boundaries. |
-| `scripts/agentera` and `scripts/agentera_upgrade.py` | CLI-visible command labels, upgrade output, and doctor diagnostics. |
+| `the agentera CLI` and `packages/cli/src/upgrade (doctor/upgrade)` | CLI-visible command labels, upgrade output, and doctor diagnostics. |
 | `README.md`, `UPGRADE.md`, `DESIGN.md`, `.agentera/*.yaml` | User-facing phrasing, design vocabulary, and current project-state examples. |
 
 ## Normalization rules
@@ -421,7 +421,7 @@ human-facing boundary.
 | Validation passed | Evidence that required checks completed successfully. Name the checks. |
 | Focused tests | Targeted tests for the changed surface. |
 | Full pytest | Repository-wide pytest run. Use exact counts when recorded. |
-| Capability validator | `uv run scripts/validate_capability.py skills/agentera/capabilities/<name>`. |
+| Capability validator | `uv run agentera check validate capability skills/agentera/capabilities/<name>`. |
 | Cross-capability validation | Checks that capability schemas agree with registry, protocol, routing, and exit contracts. |
 | Smoke eval | Runtime/setup check for crashes, non-zero exits, or obvious host failures. |
 | Live-host smoke | Explicit opt-in model-host check against real runtime access. |
@@ -522,9 +522,9 @@ High-signal source surfaces for this vocabulary:
 | `references/cli/bundle-skill-vocabulary.yaml` | Bundle and `SKILL.md` concept classification authority. |
 | `references/cli/capability-instruction-contract.yaml` | Decision 57 capability instruction-file and first-invocation read contract authority. |
 | `references/cli/routing-execution-vocabulary.yaml` | Routing and execution vocabulary authority. |
-| `scripts/agentera` | Flat State CLI labels and `agentera hej` source contract. |
-| `scripts/agentera_upgrade.py` | Upgrade and doctor output grammar. |
-| `scripts/install_root.py` | Install-root classification semantics. |
+| `the agentera CLI` | Flat State CLI labels and `agentera hej` source contract. |
+| `packages/cli/src/upgrade (doctor/upgrade)` | Upgrade and doctor output grammar. |
+| `packages/cli/src/state/installRoot.ts` | Install-root classification semantics. |
 | `hooks/validate_artifact.py` | Runtime artifact-write validation and hook exit codes. |
 | `README.md` | Product, invocation, artifact, and user-facing capability language. |
 | `UPGRADE.md` | Upgrade flow, package refresh, app-home repair, and runtime migration terms. |

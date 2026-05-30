@@ -11,7 +11,7 @@ sources:
     - .agentera/decisions.yaml#Decision-43
   parent_contract: references/cli/agent-ready-state-contract.yaml
   active_plan: .agentera/plan.yaml
-  implementation_entrypoint: scripts/agentera
+  implementation_entrypoint: the agentera CLI
 implementation_status: design_only
 non_goals:
   - Do not implement parser, dispatch, or help-grouping changes in this contract task.
@@ -163,7 +163,7 @@ audience_namespaces:
     legacy_top_level_alias: stats
     rejected_top_level: corpus
     notes: >-
-      `agentera usage` and `scripts/usage_stats.py` remain backward-compatible
+      `agentera usage` and `agentera usage` remain backward-compatible
       maintainer seams per AGENTS.md until separately classified; public user-facing
       analytics consolidate under `report`.
   check:
