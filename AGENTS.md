@@ -11,19 +11,19 @@ agentera v2: one Agentera skill (`skills/agentera/`) with twelve capabilities. E
 Validate any capability through the canonical `agentera check validate` namespace.
 Top-level `agentera validate` remains a migration alias during the namespace rollout.
 `capability_schema_contract.yaml` owns capability schema structure;
-`scripts/capability_contract.py` loads the model consumed by the validator. Do not
+`packages/cli/src/registries/capabilityContract.ts` loads the model consumed by the validator. Do not
 duplicate contract-owned groups, priority values, directory rules, or
 primitive-reference field mappings in tests or docs unless a validation check ties
 them back to the loader/model.
 
 ```bash
-uv run scripts/agentera check validate capability <name-or-path>
+npx -y agentera check validate capability <name-or-path>
 ```
 
 Self-validate the contract:
 
 ```bash
-uv run scripts/agentera check validate capability-contract --format json
+npx -y agentera check validate capability-contract --format json
 ```
 
 ## Adding or modifying a capability
@@ -31,17 +31,17 @@ uv run scripts/agentera check validate capability-contract --format json
 1. Create `skills/agentera/capabilities/<name>/instructions.md` with behavioral instructions
 2. Create `skills/agentera/capabilities/<name>/schemas/` with the four schema files: `triggers.yaml`, `artifacts.yaml`, `validation.yaml`, `exit.yaml`
 3. Update the capability table in `skills/agentera/SKILL.md`
-4. Validate: `uv run scripts/agentera check validate capability <name-or-path>`
+4. Validate: `npx -y agentera check validate capability <name-or-path>`
 
 ## Artifact path resolution
 
 Prefer the CLI for state access before raw artifact reads:
 
 ```bash
-uv run scripts/agentera prime
-uv run scripts/agentera state todo
-uv run scripts/agentera state docs
-uv run scripts/agentera state query --list-artifacts
+npx -y agentera prime
+npx -y agentera state todo
+npx -y agentera state docs
+npx -y agentera state query --list-artifacts
 ```
 
 Top-level aliases such as `hej`, `todo`, and `docs` remain during migration with stderr deprecation.
@@ -51,9 +51,9 @@ Canonical artifact names such as `DOCS.md` may map to YAML paths such as `.agent
 Query and validate artifacts via the CLI:
 
 ```bash
-uv run scripts/agentera state query --list-artifacts
-uv run scripts/agentera state query decisions --topic <topic>
-uv run scripts/agentera check validate capability <name-or-path>
+npx -y agentera state query --list-artifacts
+npx -y agentera state query decisions --topic <topic>
+npx -y agentera check validate capability <name-or-path>
 ```
 
 ## Key conventions
@@ -123,7 +123,7 @@ Use the scope for the primary behavior changed, not every file touched.
 
 | Scope         | Use for                                                                                |
 | ------------- | -------------------------------------------------------------------------------------- |
-| `cli`         | `scripts/agentera`, command behavior, CLI output, command tests                        |
+| `cli`         | `packages/cli`, command behavior, CLI output, command tests                            |
 | `hooks`       | `hooks/*`, artifact validation hooks, session hooks, compaction hooks                  |
 | `schemas`     | `protocol.yaml`, `capability_schema_contract.yaml`, artifact schemas, schema contracts |
 | `eval`        | Semantic eval runner, fixtures, evaluation harnesses                                   |
@@ -154,7 +154,7 @@ New scopes are closed by default. If a commit needs a new scope, update this tab
 
 ## Helper script classification
 
-`uv run scripts/agentera ...` is the canonical documented entry point for normal
+`npx -y agentera ...` is the canonical documented entry point for normal
 users and agents. Direct helper scripts remain in the repository, classified by
 purpose rather than promoted as the default workflow:
 
@@ -205,43 +205,26 @@ use `vp dev packages/web` when you want the dev server pointed at that folder.
 
 ## Running tests
 
-Use the same command as lefthook pre-commit (`.lefthook.yml`). Pre-commit always
-runs the **full** suite with no marker filter.
-
-Pytest runs on pre-commit only when staged files match Python, YAML, workflow, or
-lockfile paths — not for web-only changes under `packages/web/**`.
+The CLI test suite is vitest. lefthook pre-commit runs it when staged files touch
+`packages/cli/**`, the `skills/`/`references/` data, `registry.json`/`protocol.yaml`,
+or workflow paths — not for web-only changes under `packages/web/**`.
 
 ```bash
-uv run --with pytest --with pyyaml --with pytest-xdist pytest tests/ -q -n auto
+pnpm -C packages/cli test
 ```
 
-For faster local iteration, skip slow whole-repo or full-surface tests:
+Type-check and build:
 
 ```bash
-uv run --with pytest --with pyyaml --with pytest-xdist pytest tests/ -q -n auto -m "not slow"
+pnpm -C packages/cli run typecheck
+pnpm -C packages/cli build
 ```
 
-Do not change lefthook to use `-m "not slow"`; hooks must keep full regression coverage.
-
-Python coverage (includes extensionless `scripts/agentera`):
+The repository content gate (artifact compaction budgets) runs the built CLI:
 
 ```bash
-uv run --with pytest --with pyyaml --with pytest-xdist --with pytest-cov \
-  pytest tests/ -q -n auto \
-  --cov=scripts --cov=hooks --cov=src \
-  --cov-report=term-missing:skip-covered
+pnpm -C packages/cli build && node packages/cli/dist/bin/agentera.js check compact
 ```
-
-Import-based unit tests attribute coverage in-process; subprocess CLI tests still
-under-count unless you add targeted import coverage for those modules.
-
-Pitfalls:
-
-- **`uv run pytest` without `tests/`** used to discover ~50k cases via the
-  `plugins/agentera -> ..` symlink loop. `pyproject.toml` now sets `testpaths =
-  ["tests"]`, but always pass `tests/` in docs and CI for clarity.
-- **Piping pytest through `tail`** buffers all output until the run finishes, which looks like a stall even when tests are progressing.
-- **`uv run pytest tests/` without `-n auto`** still passes (~1200 tests) but takes ~3 minutes instead of ~1 minute with xdist.
 
 ## Agentera commits
 
@@ -266,21 +249,24 @@ product change** for that cycle—not the commit that last edited progress metad
 
 ### Environment prerequisites
 
-- Python 3.11+ and `uv` are required for the CLI and test suite.
-- Node.js 22+ with pnpm 10.30.3 and `vp` (Vite+) are required for the website (`packages/web`).
-- The `.opencode/` directory needs a standalone `npm install` (not managed by the pnpm workspace) to provide `@opencode-ai/plugin` types used by some tests.
+- Node.js 22+ with pnpm 10.30.3 (enable via `corepack enable`) for the CLI
+  (`packages/cli`) and the website (`packages/web`); `vp` (Vite+) for the website.
+- The `.opencode/` directory needs a standalone `npm install` (not managed by the
+  pnpm workspace) to provide `@opencode-ai/plugin` types used by some tests.
 
 ### Running services
 
 | Service | Command | Notes |
 |---------|---------|-------|
-| Python tests | `uv run --with pytest --with pyyaml --with pytest-xdist pytest tests/ -q -n auto` | ~1285 tests, ~55s with xdist |
-| CLI validation | `uv run scripts/agentera check validate capability-contract --format json` | Validates all capability schemas |
+| CLI tests | `pnpm -C packages/cli test` | vitest suite |
+| CLI build | `pnpm -C packages/cli build` | tsc → `dist` |
+| CLI validation | `node packages/cli/dist/bin/agentera.js check validate capability-contract --format json` | Validates all capability schemas |
 | Web dev server | `cd packages/web && npx astro dev` | Use `astro dev` directly rather than `vp dev` for SSR with Cloudflare adapter |
 | Web build | `vp run web:build` | Runs from workspace root |
 
 ### Gotchas
 
 - `vp dev packages/web` starts Vite in client-only mode and returns 404 for SSR routes. Use `cd packages/web && npx astro dev` for full SSR dev experience.
-- Two tests in `test_measure_json_output_surfaces.py` require a corpus file at `~/.local/share/agentera/intermediate/corpus.json` generated by `uv run scripts/extract_corpus.py`. These are maintainer-only surface measurement tests and their failure is expected in fresh environments.
-- `uv run scripts/agentera prime` exits with code 120 when the managed app is not installed; this is informational, not an error. The CLI still works for validation and state queries.
+- The published `agentera` npm package is self-contained: it bundles the app data
+  (`skills/`, `references/`, `registry.json`) under `packages/cli/bundle/` at pack
+  time, so `npx -y agentera` works with no repo checkout and no `AGENTERA_HOME`.
