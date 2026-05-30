@@ -7,6 +7,12 @@ import { cmdQuery, QueryArgs } from "./commands/query.js";
 import { cmdCompact, cmdGate, CompactArgs } from "./commands/compact.js";
 import { cmdSchema } from "./commands/schema.js";
 import { cmdDoctor, DoctorArgs } from "./commands/doctor.js";
+import { runSessionStart } from "../hooks/sessionStart.js";
+import { runSessionStop } from "../hooks/sessionStop.js";
+import { runCursorSessionStart } from "../hooks/cursorSessionStart.js";
+import { runCursorPreToolUse } from "../hooks/cursorPreToolUse.js";
+import { HookCliAdapter } from "../hooks/validateArtifact.js";
+import fsForHooks from "node:fs";
 import { cmdCapability, CAPABILITY_ROUTING_NAMES } from "./commands/capability.js";
 import {
   cmdValidate,
@@ -22,7 +28,7 @@ import {
  * incrementally; currently wired: `prime`, `lint` (+ `check lint`).
  */
 
-type Io = { out?: (t: string) => void; err?: (t: string) => void };
+type Io = { out?: (t: string) => void; err?: (t: string) => void; stdin?: () => string };
 
 function emitDeprecationAlias(legacy: string, canonical: string, err: (t: string) => void): void {
   err(`Deprecation: agentera ${legacy} is deprecated; use agentera ${canonical}\n`);
@@ -496,6 +502,38 @@ function runDoctor(argv: string[], io: Io, prog: string): number {
   return cmdDoctor(args, io);
 }
 
+function readStdin(): string {
+  try {
+    return fsForHooks.readFileSync(0, "utf8");
+  } catch {
+    return "";
+  }
+}
+
+function runHook(name: string, argv: string[], io: Io): number {
+  const err = io.err ?? ((t: string) => process.stderr.write(t));
+  const raw = io.stdin ? io.stdin() : readStdin();
+  // Each hook owns its own stdout newline convention; do not wrap stdout here.
+  switch (name) {
+    case "session-start":
+      return runSessionStart(raw);
+    case "session-stop":
+      return runSessionStop(raw);
+    case "cursor-session-start":
+      return runCursorSessionStart(raw);
+    case "cursor-pre-tool-use":
+      return runCursorPreToolUse(raw);
+    case "validate-artifact": {
+      const [rc, violations] = new HookCliAdapter().run(raw, null);
+      for (const v of violations) err(`${v}\n`);
+      return rc;
+    }
+    default:
+      err(`agentera hook: unknown hook '${name}'\n`);
+      return 2;
+  }
+}
+
 export function main(argv: string[], io: Io = {}): number {
   const err = io.err ?? ((t: string) => process.stderr.write(t));
   const args = argv.slice(2);
@@ -507,6 +545,14 @@ export function main(argv: string[], io: Io = {}): number {
       return runPrime("prime", rest, io, "agentera prime");
     case "doctor":
       return runDoctor(rest, io, "agentera doctor");
+    case "hook": {
+      const name = rest[0];
+      if (!name) {
+        err("agentera hook: error: the following arguments are required: hook_name\n");
+        return 2;
+      }
+      return runHook(name, rest.slice(1), io);
+    }
     case "hej":
       emitDeprecationAlias("hej", "prime", err);
       return runPrime("hej", rest, io, "agentera hej");

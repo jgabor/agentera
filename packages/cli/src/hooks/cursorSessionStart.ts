@@ -4,6 +4,7 @@ import { resolvePath } from "../core/paths.js";
 import { resolveSourceRoot } from "../core/sourceRoot.js";
 import { classifyResolvedRoot } from "../state/installRoot.js";
 import { buildDigest } from "./sessionStart.js";
+import { pyJsonInline } from "../core/pyjson.js";
 
 /**
  * Cursor sessionStart hook: export AGENTERA_HOME and preload session context.
@@ -88,7 +89,7 @@ export function runCursorSessionStart(rawStdin: string, opts: CursorSessionStart
   }
 
   if (Object.keys(payload).length > 0) {
-    out(JSON.stringify(payload));
+    out(pyJsonInline(payload));
   }
   return 0;
 }
