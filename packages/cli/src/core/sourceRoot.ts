@@ -27,7 +27,7 @@ export function isNpxBundleRoot(root: string): boolean {
 /** Markers that identify an Agentera app source root (repo checkout or bundle). */
 const SOURCE_MARKERS = [
   path.join("skills", "agentera", "SKILL.md"),
-  path.join("scripts", "agentera"),
+  "registry.json",
 ];
 
 function hasSourceMarker(dir: string): boolean {

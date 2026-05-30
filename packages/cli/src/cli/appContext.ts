@@ -26,7 +26,8 @@ export interface SchemaInfo {
 }
 
 function isLocalAgenteraCheckout(root: string): boolean {
-  return ["scripts/agentera", "skills/agentera/SKILL.md", "registry.json"].every((rel) =>
+  // Node checkout/app marker: the data surfaces the CLI reads (no Python script).
+  return ["skills/agentera/SKILL.md", "registry.json"].every((rel) =>
     fs.existsSync(path.join(root, rel)),
   );
 }

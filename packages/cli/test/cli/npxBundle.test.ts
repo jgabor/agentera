@@ -67,11 +67,16 @@ describe("self-contained npx bundle resolution", () => {
     expect(resolved).toBe(fs.realpathSync(bundle));
   });
 
-  it("resolveSourceRootStrict still rejects a non-bundle root missing the source surface", () => {
-    seedBundle(bundle, { sentinel: false });
-    expect(() => resolveSourceRootStrict({ AGENTERA_BOOTSTRAP_SOURCE_ROOT: bundle })).toThrow(
-      /bootstrap source root .* is missing/,
-    );
+  it("resolveSourceRootStrict still rejects a root missing the source surface", () => {
+    // An empty directory lacks skills/ and registry.json -> not a valid source root.
+    const empty = fs.mkdtempSync(path.join(os.tmpdir(), "npxempty-"));
+    try {
+      expect(() => resolveSourceRootStrict({ AGENTERA_BOOTSTRAP_SOURCE_ROOT: empty })).toThrow(
+        /bootstrap source root .* is missing/,
+      );
+    } finally {
+      fs.rmSync(empty, { recursive: true, force: true });
+    }
   });
 });
 

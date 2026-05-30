@@ -48,10 +48,9 @@ function runtimeRoot(): string {
 }
 
 const SETUP_EVIDENCE = [
-  "scripts/validate_capability.py",
-  "hooks",
   "skills",
   "skills/agentera/SKILL.md",
+  "registry.json",
 ] as const;
 
 function sourceRootMissing(root: string): string[] {
