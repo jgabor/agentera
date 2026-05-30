@@ -264,14 +264,14 @@ export function queryPlan(args: StateArgs, schemas: Record<string, SchemaInfo>, 
   return 0;
 }
 
-function healthAuditNumber(entry: Dict): number | null {
+export function healthAuditNumber(entry: Dict): number | null {
   const number = entry.number;
   if (typeof number === "number" && Number.isInteger(number)) return number;
   if (typeof number === "string" && /^\d+$/.test(number)) return parseInt(number, 10);
   return null;
 }
 
-function latestHealthAudit(entries: Dict[]): Dict | null {
+export function latestHealthAudit(entries: Dict[]): Dict | null {
   if (entries.length === 0) return null;
   let best: Dict | null = null;
   let bestNumber = -1;
@@ -628,7 +628,7 @@ const TODO_SEV_GLYPHS: Record<string, string> = {
   annoying: "\u21e2",
 };
 
-function normalizeSeverity(value: unknown, deflt = "normal"): string {
+export function normalizeSeverity(value: unknown, deflt = "normal"): string {
   const text = String(value || deflt).toLowerCase();
   for (const key of TODO_SEVERITY_ORDER_KEYS) {
     if (text.includes(key)) return key;
@@ -830,7 +830,7 @@ function decisionDownstreamReferences(entry: Dict): Array<Record<string, string>
   return refs.map((ref) => ({ source_field: "feeds_into", reference: ref }));
 }
 
-function decisionSatisfactionContext(entry: Dict): Dict {
+export function decisionSatisfactionContext(entry: Dict): Dict {
   const satisfaction = entry.satisfaction;
   if (!satisfaction || typeof satisfaction !== "object" || Array.isArray(satisfaction)) {
     return {
@@ -878,7 +878,7 @@ function decisionSatisfactionContext(entry: Dict): Dict {
   return enriched;
 }
 
-function decisionContextEntry(entry: Dict): Dict {
+export function decisionContextEntry(entry: Dict): Dict {
   const enriched: Dict = { ...entry };
   if ((enriched.outcome === null || enriched.outcome === undefined || enriched.outcome === "") &&
       enriched.choice !== null && enriched.choice !== undefined && enriched.choice !== "") {
