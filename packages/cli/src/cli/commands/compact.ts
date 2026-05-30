@@ -55,8 +55,8 @@ function compactionGuidance(mode: string, operations: CompactionOperation[]): st
   const over = operations.filter((op) => op.action === "over_limit" || op.action === "pending_fix");
   const protectedOps = operations.filter((op) => op.action === "protected_overflow");
   const errors = operations.filter((op) => op.action === "error");
-  const checkCommand = "uv run scripts/agentera compact --mode check --format json";
-  const fixCommand = "uv run scripts/agentera compact --mode fix --format json";
+  const checkCommand = "npx -y agentera compact --mode check --format json";
+  const fixCommand = "npx -y agentera compact --mode fix --format json";
   if (errors.length > 0) {
     return `Inspect the reported errors, repair invalid artifacts, then rerun \`${checkCommand}\`.`;
   }
