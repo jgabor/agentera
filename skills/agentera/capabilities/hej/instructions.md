@@ -21,7 +21,7 @@ For returning projects, run one composite command before any individual state
 access:
 
 ```bash
-uv run "$RESOLVED_AGENTERA_HOME/app/scripts/agentera" prime
+npx -y agentera prime
 ```
 
 Use that output to render the dashboard and select the concrete next action. Do
@@ -40,11 +40,11 @@ of adding routine fallback reads. Use top-level fallback commands only when
 Resolve `RESOLVED_AGENTERA_HOME` with the app-home precedence `AGENTERA_HOME`
 when set, otherwise the platform data home, then run
 the installed command once. Do not preflight app health with `glob`, `grep`,
-`read`, `ls`, `python`, `doctor`, `--help`, `scripts/install_root.py`,
+`read`, `ls`, `python`, `doctor`, `--help`,
 `registry.json`, or `.agentera-bundle.json`.
 Never combine the app-home assignment with the same shell command that expands
 the managed app script path; shell expansion can otherwise turn an unset
-`AGENTERA_HOME` into `/app/scripts/agentera` before the assignment takes effect.
+`AGENTERA_HOME` into `npx -y agentera` before the assignment takes effect.
 
 Recovery copy must be plain-language and recommendation-first. Never ask users
 to choose between technical install concepts, internal directory states,
@@ -54,14 +54,14 @@ not edit project files, shell startup files, or unknown directories. Good recove
 (Recommended)`, `Choose a different directory`, and `Stop`.
 
 If the command cannot execute because `AGENTERA_HOME` names the old default
-`$HOME/.agents/agentera` and `$AGENTERA_HOME/app/scripts/agentera` is missing,
+`$HOME/.agents/agentera` and `npx -y agentera` is missing,
 do not require a successful failed CLI invocation and do not first ask the user to
 unset `AGENTERA_HOME`. Say: `Agentera found an old or broken local copy of
 itself. The safe fix is to install a fresh copy in the normal Agentera directory.`
 Then show this preview command and say it changes nothing:
 
 ```bash
-uvx --from git+https://github.com/jgabor/agentera agentera upgrade --dry-run
+npx -y agentera@latest doctor
 ```
 
 That preview writes nothing. Because no explicit `--install-root` is supplied,
@@ -71,7 +71,7 @@ explicit approval before writes, using plain wording such as
 `Approve the safe Agentera repair at <directory>`. Then apply the same safe repair path:
 
 ```bash
-uvx --from git+https://github.com/jgabor/agentera agentera upgrade --yes
+npx -y agentera@latest prime
 ```
 
 After apply, retry the installed command from the platform app home reported by
@@ -86,16 +86,15 @@ the user `Agentera found an old or broken local copy of itself.` Then preview th
 repair with the CLI-provided command when present:
 
 ```bash
-uvx --from git+https://github.com/jgabor/agentera agentera upgrade --install-root "$RESOLVED_AGENTERA_HOME" --dry-run
+npx -y agentera@latest doctor
 ```
 
 Do not run the matching apply command until the user explicitly approves the
 same Agentera repair and directory.
-After apply, retry `uv run
-"$RESOLVED_AGENTERA_HOME/app/scripts/agentera" prime`; do not treat local checkout
+After apply, retry `npx -y agentera prime`; do not treat local checkout
 fallback as installed-app success. If `AGENTERA_HOME` names the old default
 `$HOME/.agents/agentera`, no explicit `--install-root` was supplied, and
-`$AGENTERA_HOME/app/scripts/agentera` is missing or out of date, show the normal
+`npx -y agentera` is missing or out of date, show the normal
 Agentera directory preview above instead of first asking the user to unset
 `AGENTERA_HOME`; do not claim to prove where the environment value came from. If
 `AGENTERA_HOME` points at any other missing path, file, or directory with unknown
@@ -103,7 +102,7 @@ files, say: `Agentera was told to use a directory it cannot safely use. Choose a
 different Agentera directory, or approve --force only after checking that directory is
 safe to replace.`
 
-If doctor or `setup_copilot.py` reports a leftover 1.x managed marker block in
+If doctor reports a leftover 1.x managed marker block in
 shell startup files, say plainly that Agentera will not edit those files.
 Cleanup is user-owned manual cleanup, not a repair write.
 

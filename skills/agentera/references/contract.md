@@ -3,7 +3,7 @@
 <!-- sections: 1, 2, 3, 4, 5, 6, 11, 13, 18, 19, 20, 22, 23 -->
 <!-- generated: 2026-05-04T10:26:45Z -->
 <!-- do not edit manually -->
-<!-- validate: uv run scripts/validate_capability.py --self-validate -->
+<!-- validate: npx -y agentera check validate capability-contract -->
 
 ## 1. Confidence Scale
 
