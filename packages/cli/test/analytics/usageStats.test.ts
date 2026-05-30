@@ -13,6 +13,7 @@ import {
   defaultUsageDir,
   findMarkers,
   loadCorpusOrRaise,
+  usageMain,
   pairInvocations,
   renderMarkdown,
 } from "../../src/analytics/usageStats.js";
@@ -166,5 +167,57 @@ describe("default paths", () => {
     expect(defaultUsageDir({ HOME: "/home/u", XDG_DATA_HOME: "/home/u/.local/share" }, "linux")).toBe(
       path.join("/home/u/.local/share", "agentera"),
     );
+  });
+});
+
+describe("usageMain engine", () => {
+  let tmp: string;
+  beforeEach(() => {
+    tmp = fs.mkdtempSync(path.join(os.tmpdir(), "usagemain-"));
+  });
+  afterEach(() => {
+    fs.rmSync(tmp, { recursive: true, force: true });
+  });
+
+  it("returns 2 and reports an unavailable corpus on stderr", () => {
+    let err = "";
+    const rc = usageMain(["--corpus", path.join(tmp, "missing.json"), "--json"], {
+      out: () => {},
+      err: (t) => (err += t),
+      env: {},
+    });
+    expect(rc).toBe(2);
+    expect(err).toContain("corpus.json not found");
+  });
+
+  it("emits a JSON document for a valid corpus", () => {
+    const corpusPath = path.join(tmp, "corpus.json");
+    fs.writeFileSync(
+      corpusPath,
+      JSON.stringify({
+        metadata: { extracted_at: "2026-01-02T03:04:05Z" },
+        records: [
+          {
+            source_kind: "conversation_turn",
+            project_id: "agentera",
+            role: "assistant",
+            timestamp: "2026-01-01T00:00:00Z",
+            text: "<route>planera</route> let me plan",
+          },
+        ],
+      }),
+    );
+    let out = "";
+    const rc = usageMain(["--corpus", corpusPath, "--json"], {
+      out: (t) => (out += t),
+      err: () => {},
+      env: {},
+    });
+    expect(rc).toBe(0);
+    const parsed = JSON.parse(out);
+    expect(parsed.project_filter).toBeNull();
+    expect(parsed.extracted_at).toBe("2026-01-02T03:04:05Z");
+    expect(typeof parsed.generated_at).toBe("string");
+    expect(typeof parsed.skills).toBe("object");
   });
 });
