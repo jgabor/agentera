@@ -1,9 +1,13 @@
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 import {
   cmdValidate,
   cmdValidateCapability,
   cmdValidateCapabilityContract,
+  cmdValidateArtifact,
   cmdValidateDescriptors,
   isDelegatedValidateFamily,
 } from "../../src/cli/commands/validate.js";
@@ -137,6 +141,44 @@ describe("cli validate descriptors", () => {
     // 12 capabilities x 2 runtimes = 24 checks
     expect(payload.checks).toHaveLength(24);
     expect(payload.summary.passed + payload.summary.failed).toBe(24);
+  });
+});
+
+
+describe("cli validate artifact", () => {
+  it("validates a canonical artifact against the repo (text)", () => {
+    const repo = path.resolve(process.cwd(), "..", "..");
+    const { rc, out } = capture((io) => cmdValidateArtifact({ artifact: "PLAN.md", cwd: repo }, io));
+    expect(rc).toBe(0);
+    expect(out).toContain("status=pass | artifact=PLAN.md");
+    expect(out).toContain("path_source=docs_mapped_default");
+  });
+
+  it("emits a wrapped JSON envelope", () => {
+    const repo = path.resolve(process.cwd(), "..", "..");
+    const { rc, out } = capture((io) => cmdValidateArtifact({ artifact: "PROGRESS.md", cwd: repo, format: "json" }, io));
+    expect(rc).toBe(0);
+    const payload = JSON.parse(out);
+    expect(payload.command).toBe("validate");
+    expect(payload.target_family).toBe("artifact");
+    expect(payload.target).toBe("PROGRESS.md");
+    expect(payload.engine).toEqual({ command: "validate-artifact", exit_code: 0 });
+  });
+
+  it("fails an invalid artifact file (rc 2)", () => {
+    const f = fs.mkdtempSync(path.join(os.tmpdir(), "va-"));
+    const bad = path.join(f, "bad.yaml");
+    fs.writeFileSync(bad, "x");
+    const { rc, out } = capture((io) => cmdValidateArtifact({ artifact: "PLAN.md", file: bad, format: "json" }, io));
+    expect(rc).toBe(2);
+    const payload = JSON.parse(out);
+    expect(payload.status).toBe("fail");
+    expect(payload.violations.length).toBeGreaterThan(0);
+    fs.rmSync(f, { recursive: true, force: true });
+  });
+
+  it("rejects an unsupported artifact label", () => {
+    expect(() => cmdValidateArtifact({ artifact: "BOGUS.md" }, {})).toThrow(/unsupported artifact/);
   });
 });
 

@@ -4,6 +4,7 @@ import { readdirSync as fsReaddirSync, readFileSync as fsReadFileSync, statSync 
 import { resolvePath } from "../../core/paths.js";
 import { resolveSourceRoot } from "../../core/sourceRoot.js";
 import { validateAgentString, validatePathValue } from "../argvalidate.js";
+import { HookCliAdapter } from "../../hooks/validateArtifact.js";
 import { validateCapability, validateContractSelf, validateProtocolSelf } from "../../validate/capability.js";
 import { loadYamlMapping } from "../../core/yaml.js";
 import { parseToml as parseTomlValidate } from "../../core/toml.js";
@@ -494,4 +495,63 @@ export function cmdValidateDescriptors(args: { format?: string }, io: Io): numbe
     for (const violation of payload.violations as string[]) err(`- ${violation}\n`);
   }
   return payload.status === "pass" ? 0 : 1;
+}
+
+// ── artifact family ─────────────────────────────────────────────────
+
+const VALIDATE_ARTIFACT_LABELS = [
+  "CHANGELOG.md",
+  "DECISIONS.md",
+  "DESIGN.md",
+  "DOCS.md",
+  "HEALTH.md",
+  "PLAN.md",
+  "PROGRESS.md",
+  "TODO.md",
+  "VISION.md",
+];
+
+function validateArtifactLabel(artifact: string): void {
+  validateAgentString(artifact, "artifact");
+  if (!VALIDATE_ARTIFACT_LABELS.includes(artifact)) {
+    const valid = VALIDATE_ARTIFACT_LABELS.join(", ");
+    throw new Error(
+      `unsupported artifact ${pyRepr(artifact)}; valid artifacts: ${valid}. ` +
+        "Syntax: agentera validate artifact --artifact <ARTIFACT> [--file <PATH>] [--format text|json]. " +
+        "Example: agentera validate artifact --artifact PLAN.md --file .agentera/plan.yaml --format json",
+    );
+  }
+}
+
+export function cmdValidateArtifact(
+  args: { artifact: string; file?: string | null; cwd?: string | null; format?: string },
+  io: Io,
+): number {
+  const out = io.out ?? ((t: string) => process.stdout.write(t));
+  const err = io.err ?? ((t: string) => process.stderr.write(t));
+  const artifact = String(args.artifact);
+  validateArtifactLabel(artifact);
+  const cwd = resolvePath(args.cwd ?? process.cwd());
+  const adapter = new HookCliAdapter();
+  const [rc, payload] = adapter.runExplicit(artifact, args.file ?? null, cwd);
+  if ((args.format ?? "text") === "json") {
+    const wrapped: Dict = {
+      ...payload,
+      command: "validate",
+      status: payload.status ?? "fail",
+      target_family: "artifact",
+      target: artifact,
+      engine: { command: "validate-artifact", exit_code: rc },
+    };
+    emitStructured(wrapped, "json", out);
+    if (wrapped.status === "fail" && rc === 0) return 2;
+    return rc;
+  }
+  out(
+    `status=${payload.status} | artifact=${payload.artifact} | ` +
+      `file=${payload.file} | docs_mapped_default=${payload.docs_mapped_default} | ` +
+      `path_source=${payload.path_source}\n`,
+  );
+  for (const violation of payload.violations as string[]) err(`${violation}\n`);
+  return rc;
 }
