@@ -367,6 +367,254 @@ export function queryHealth(args: StateArgs, schemas: Record<string, SchemaInfo>
   return 0;
 }
 
+const STARTUP_COMPLETENESS_MISSING_STATE: string[] = [];
+
+export function queryDocs(args: StateArgs, schemas: Record<string, SchemaInfo>, io: Io): number {
+  const o = out(io);
+  const e = err(io);
+  const info = schemas.docs;
+  if (!info) {
+    e(missingSchemaError("docs") + "\n");
+    return 1;
+  }
+  const p = artifactPath(info, "docs");
+  const data = loadArtifact(p);
+  const format = args.format ?? "text";
+  const isDict = data !== null && typeof data === "object" && !Array.isArray(data);
+  if (!isDict) {
+    if (format !== "text") {
+      return emitStateStructured(
+        "docs",
+        structuredState("docs", [], sourceMetadata("docs", p), {
+          filters: { topic: args.topic ?? null, status: args.status ?? null },
+        }),
+        format,
+        args.fields,
+        o,
+        e,
+      );
+    }
+    return 0;
+  }
+  const d = data as Dict;
+  const legacyEntries = asList(d.entries);
+  if (legacyEntries.length > 0) {
+    let entries = legacyEntries;
+    const statusFilter = args.status ?? null;
+    if (statusFilter) entries = filterByFieldValue(entries, "status", statusFilter);
+    if (format !== "text") {
+      return emitStateStructured(
+        "docs",
+        structuredState("docs", entries, sourceMetadata("docs", p), { filters: { status: statusFilter } }),
+        format,
+        args.fields,
+        o,
+        e,
+      );
+    }
+    for (const entry of entries) {
+      const line = formatEntry(entry, ["last_audit", "document", "path", "status"]);
+      if (line) o(line + "\n");
+    }
+    return 0;
+  }
+  const mapping = asList(d.mapping);
+  let index = asList(d.index);
+  const coverage = d.coverage && typeof d.coverage === "object" && !Array.isArray(d.coverage) ? d.coverage : {};
+  const conventions =
+    d.conventions && typeof d.conventions === "object" && !Array.isArray(d.conventions) ? d.conventions : {};
+  const topic = args.topic ?? null;
+  if (topic) {
+    const t = topic.toLowerCase();
+    index = index.filter(
+      (entry) =>
+        String(entry.document ?? "").toLowerCase().includes(t) ||
+        String(entry.path ?? "").toLowerCase().includes(t) ||
+        String(entry.status ?? "").toLowerCase().includes(t),
+    );
+  }
+  const statusFilter = args.status ?? null;
+  if (statusFilter) index = filterByFieldValue(index, "status", statusFilter);
+  if (format !== "text") {
+    return emitStateStructured(
+      "docs",
+      structuredState("docs", index, sourceMetadata("docs", p), {
+        filters: { topic, status: statusFilter },
+        summary: {
+          last_audit: d.last_audit,
+          conventions,
+          mapping,
+          mapping_entries: mapping.length,
+          coverage,
+          source_contract: {
+            capability_startup_complete: STARTUP_COMPLETENESS_MISSING_STATE.length === 0,
+            raw_artifact_reads_required: false,
+          },
+        },
+      }),
+      format,
+      args.fields,
+      o,
+      e,
+    );
+  }
+  o(`Docs: last_audit=${d.last_audit ?? "-"}\n`);
+  o(`Mapping: entries=${mapping.length}\n`);
+  if (Object.keys(coverage).length > 0) {
+    o("Coverage: " + Object.entries(coverage).map(([k, v]) => `${k}=${truncate(v)}`).join(" | ") + "\n");
+  }
+  printStatusCounts("Docs status", statusCounts(index), o);
+  for (const entry of index.slice(0, 10)) {
+    const line = formatEntry(entry, ["document", "path", "last_updated", "status"]);
+    if (line) o(line + "\n");
+  }
+  return 0;
+}
+
+export function queryObjective(args: StateArgs, schemas: Record<string, SchemaInfo>, io: Io): number {
+  const o = out(io);
+  const e = err(io);
+  const info = schemas.objective;
+  if (!info) {
+    e(missingSchemaError("objective") + "\n");
+    return 1;
+  }
+  const p = artifactPath(info, "objective");
+  const data = loadArtifact(p);
+  const format = args.format ?? "text";
+  const isDict = data !== null && typeof data === "object" && !Array.isArray(data);
+  if (!isDict) {
+    if (format !== "text") {
+      return emitStateStructured(
+        "objective",
+        structuredState("objective", [], sourceMetadata("objective", p), { filters: { status: args.status ?? null } }),
+        format,
+        args.fields,
+        o,
+        e,
+      );
+    }
+    return 0;
+  }
+  const d = data as Dict;
+  const legacyEntries = asList(d.entries);
+  if (legacyEntries.length > 0) {
+    let entries = legacyEntries;
+    const statusFilter = args.status ?? null;
+    if (statusFilter) entries = filterByFieldValue(entries, "status", statusFilter);
+    if (format !== "text") {
+      return emitStateStructured(
+        "objective",
+        structuredState("objective", entries, sourceMetadata("objective", p), { filters: { status: statusFilter } }),
+        format,
+        args.fields,
+        o,
+        e,
+      );
+    }
+    for (const entry of entries) {
+      const line = formatEntry(entry, ["title", "status", "target", "reason"]);
+      if (line) o(line + "\n");
+    }
+    return 0;
+  }
+  const header = d.header && typeof d.header === "object" && !Array.isArray(d.header) ? d.header : {};
+  const objective = d.objective && typeof d.objective === "object" && !Array.isArray(d.objective) ? d.objective : d;
+  const title = firstPresent(header, ["title"], objective.title ?? "");
+  const status = firstPresent(header, ["status"], objective.status ?? "");
+  const closure = d.closure && typeof d.closure === "object" && !Array.isArray(d.closure) ? d.closure : {};
+  if (format !== "text") {
+    return emitStateStructured(
+      "objective",
+      structuredState("objective", objective ? [objective] : [], sourceMetadata("objective", p), {
+        filters: { status: args.status ?? null },
+        summary: { title, status, header, closure },
+      }),
+      format,
+      args.fields,
+      o,
+      e,
+    );
+  }
+  o(`Objective: title=${truncate(title)} | status=${status || "unknown"}\n`);
+  for (const key of ["description", "target", "measurement", "direction", "unit"]) {
+    const value = objective[key] ?? d[key];
+    if (value) o(`${key}: ${truncate(value)}\n`);
+  }
+  if (Object.keys(closure).length > 0) {
+    o(formatEntry(closure, ["final_value", "target", "reason"]) + "\n");
+  }
+  return 0;
+}
+
+export function queryExperiments(args: StateArgs, schemas: Record<string, SchemaInfo>, io: Io): number {
+  const o = out(io);
+  const e = err(io);
+  const info = schemas.experiments;
+  if (!info) {
+    e(missingSchemaError("experiments") + "\n");
+    return 1;
+  }
+  const p = artifactPath(info, "experiments");
+  const data = loadArtifact(p);
+  const format = args.format ?? "text";
+  const isDict = data !== null && typeof data === "object" && !Array.isArray(data);
+  if (!isDict) {
+    if (format !== "text") {
+      return emitStateStructured(
+        "experiments",
+        structuredState("experiments", [], sourceMetadata("experiments", p), {
+          filters: { topic: args.topic ?? null, status: args.status ?? null, limit: args.limit ?? 5 },
+        }),
+        format,
+        args.fields,
+        o,
+        e,
+      );
+    }
+    return 0;
+  }
+  const d = data as Dict;
+  let entries = asList(d.experiments);
+  const statusFilter = args.status ?? null;
+  if (statusFilter) entries = filterByFieldValue(entries, "status", statusFilter);
+  const topic = args.topic ?? null;
+  if (topic) entries = filterByTopic(entries, topic, info.fields);
+  const limit = (args.limit ?? 5) || 5;
+  entries = entries.slice(-limit);
+  const closure = d.closure && typeof d.closure === "object" && !Array.isArray(d.closure) ? d.closure : {};
+  if (format !== "text") {
+    return emitStateStructured(
+      "experiments",
+      structuredState("experiments", entries, sourceMetadata("experiments", p), {
+        filters: { topic, status: statusFilter, limit },
+        summary: { closure },
+      }),
+      format,
+      args.fields,
+      o,
+      e,
+    );
+  }
+  printStatusCounts("Experiment status", statusCounts(entries), o);
+  for (const entry of entries) {
+    o(formatEntry(entry, ["number", "date", "label", "status"]) + "\n");
+    const metric = entry.metric;
+    if (metric && typeof metric === "object" && !Array.isArray(metric)) {
+      const metricLine = formatEntry(metric, ["primary_value", "delta_vs_baseline"]);
+      if (metricLine) o(`  metric: ${metricLine}\n`);
+    }
+    for (const key of ["conclusion", "next"]) {
+      const value = entry[key];
+      if (value) o(`  ${key}: ${truncate(value)}\n`);
+    }
+  }
+  if (Object.keys(closure).length > 0) {
+    o("Closure: " + formatEntry(closure, ["final_value", "target", "reason"]) + "\n");
+  }
+  return 0;
+}
+
 const STATE_COMMAND_HANDLERS: Record<
   string,
   (args: StateArgs, schemas: Record<string, SchemaInfo>, io: Io) => number
@@ -374,7 +622,11 @@ const STATE_COMMAND_HANDLERS: Record<
   progress: queryProgress,
   plan: queryPlan,
   health: queryHealth,
+  docs: queryDocs,
+  objective: queryObjective,
+  experiments: queryExperiments,
 };
+
 
 
 
