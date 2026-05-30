@@ -17,7 +17,8 @@ included when they shape cross-suite usage.
 | `skills/agentera/capability_schema_contract.yaml` | Capability schema structure, required groups, priorities, and primitive-reference fields. |
 | `skills/agentera/schemas/artifacts/*.yaml` | Artifact field grammar, status values, path contracts, and validation rules. |
 | `references/artifacts/artifact-registry-interface-model.yaml` | Artifact identity facts: `artifact_id`, display name, default path, producers, consumers, type, scope. |
-| `references/cli/app-lifecycle-vocabulary.yaml` | App lifecycle canonical statuses, deprecated aliases, operation verbs, and consumer ownership boundaries. |
+| `references/cli/app-lifecycle-vocabulary.yaml` | App lifecycle canonical statuses, deprecated aliases, operation verbs, status concepts, and consumer ownership boundaries. |
+| `references/cli/update-channels.yaml` | Stable and development update channels, dist-tag/git resolution, default channel, and override keys. |
 | `references/cli/bundle-skill-vocabulary.yaml` | Canonical concepts, compatibility boundaries, and classification rules for `bundle` and `SKILL.md` usage. |
 | `references/cli/capability-instruction-contract.yaml` | Decision 57 capability instruction-file contract, current `instructions.md` authority, and implemented `first_invocation_read` CLI/schema discoverability. |
 | `references/cli/routing-execution-vocabulary.yaml` | Canonical concepts, compatibility boundaries, and classification rules for routing, suggestions, delegation, worker spawning, runtime subagent mechanisms, and pre-spawn Git commits. |
@@ -365,8 +366,9 @@ Canonical runtime names are Claude Code, OpenCode, Copilot CLI, Codex CLI, Curso
 Decision 54 makes app lifecycle state a protocol surface, not ad hoc output
 copy. The machine-readable authority is
 `references/cli/app-lifecycle-vocabulary.yaml`; it owns the canonical status
-order, status definitions, deprecated aliases, scoped operation verbs, and
-consumer ownership boundaries for doctor, hej, upgrade, docs, and tests.
+order, status definitions, deprecated aliases, cross-major status concepts,
+scoped operation verbs, and consumer ownership boundaries for doctor, hej,
+upgrade, docs, and tests.
 
 Use this prose as guidance only: human-readable text can be friendlier, but it
 should be derived from canonical metadata instead of inventing parallel status
@@ -393,6 +395,26 @@ CLI-visible doctor labels to preserve: `Agentera doctor`,
 CLI-visible upgrade labels to preserve: `Agentera upgrade`, `mode:`,
 `status:`, `project:`, `app home:`, `managed app root:`, `user data root:`, phase lines, item lines,
 `run with --yes to apply pending changes`, and `postflight doctor:`.
+
+### Update channels
+
+Dual update channels select which published Agentera line upgrade, doctor, and
+prime resolve. The machine-readable authority is
+`references/cli/update-channels.yaml`; it owns channel names, default selection,
+npm dist-tag and git ref resolution, override precedence, and consumer ownership
+for upgrade, doctor, prime, docs, and tests.
+
+Use this prose as guidance only: **stable** tracks the supported 2.x line;
+**development** tracks 3.x alphas and release candidates. Default channel is
+stable. Override with `--channel`, `AGENTERA_UPDATE_CHANNEL`, or
+`update.channel` in user config. Cross-major v2→v3 migration is never implied by
+stable-channel `@latest`; it is migrate work tagged
+`major_boundary_crossing` in the app lifecycle authority and requires explicit
+`--target-major 3` opt-in before apply.
+
+Do not replace this with a parallel Markdown table of dist-tags, git refs, or
+override keys. Update the YAML authority first, then keep this section as the
+short human-facing boundary.
 
 ### Bundle and SKILL.md vocabulary
 
@@ -519,6 +541,7 @@ High-signal source surfaces for this vocabulary:
 | `skills/agentera/schemas/artifacts/*.yaml` | Artifact fields, status enums, validation vocabulary, and protected current-state fields. |
 | `references/artifacts/artifact-registry-interface-model.yaml` | Canonical artifact registry language. |
 | `references/cli/app-lifecycle-vocabulary.yaml` | App lifecycle canonical status and operation vocabulary authority. |
+| `references/cli/update-channels.yaml` | Update channel resolution and override-key authority. |
 | `references/cli/bundle-skill-vocabulary.yaml` | Bundle and `SKILL.md` concept classification authority. |
 | `references/cli/capability-instruction-contract.yaml` | Decision 57 capability instruction-file and first-invocation read contract authority. |
 | `references/cli/routing-execution-vocabulary.yaml` | Routing and execution vocabulary authority. |

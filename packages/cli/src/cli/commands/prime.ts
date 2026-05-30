@@ -5,6 +5,8 @@ import path from "node:path";
 import { PRIME_BLOB } from "../prime-blob.js";
 import { buildDoctorStatus, publicDoctorStatus } from "../../upgrade/doctor.js";
 import { loadSuiteVersion, resolveDoctorInstallRoot, resolveSourceRootStrict } from "../../upgrade/appModel.js";
+import { resolveUpdateChannel } from "../../upgrade/channels.js";
+import { buildUpgradeCommands } from "../../upgrade/upgradeCommands.js";
 import { discoverSchemasDir, loadSchemas, SchemaInfo } from "../appContext.js";
 import {
   activeObjectiveSummary,
@@ -91,20 +93,31 @@ function detectV1Artifacts(): string[] {
   return found;
 }
 
-function v1MigrationSummary(v1Artifacts: string[]): Dict {
-  const dryRun = 'uvx --from git+https://github.com/jgabor/agentera agentera upgrade --project "$PWD" --dry-run';
-  const apply = 'uvx --from git+https://github.com/jgabor/agentera agentera upgrade --project "$PWD" --yes';
+function v1MigrationSummary(
+  v1Artifacts: string[],
+  opts: { sourceRoot: string; home: string; env: Env },
+): Dict {
   const detected = v1Artifacts.length > 0;
+  const channel = resolveUpdateChannel({
+    channel: "stable",
+    sourceRoot: opts.sourceRoot,
+    home: opts.home,
+    env: opts.env,
+  });
+  const cmds = detected
+    ? buildUpgradeCommands({ project: "$PWD", installRoot: null, channel })
+    : null;
   const summary: Dict = {
     detected,
     affected_files: v1Artifacts,
-    dry_run_command: detected ? dryRun : null,
-    apply_command: detected ? apply : null,
+    dry_run_command: cmds?.dryRunCommand ?? null,
+    apply_command: cmds?.applyCommand ?? null,
     requires_confirmation: detected,
+    update_channel: channel.channel,
   };
   if (detected && isLocalCheckout(process.cwd())) {
-    summary.local_dry_run_command = 'npx -y agentera upgrade --project "$PWD" --dry-run';
-    summary.local_apply_command = 'npx -y agentera upgrade --project "$PWD" --yes';
+    summary.local_dry_run_command = cmds?.dryRunCommand ?? null;
+    summary.local_apply_command = cmds?.applyCommand ?? null;
   }
   return summary;
 }
@@ -205,6 +218,28 @@ function hejBundleStatus(opts: PrimeOpts): Dict {
   return status;
 }
 
+function crossMajorAppHomeAttention(
+  bundle: Dict,
+  opts: { sourceRoot: string; home: string; env: Env },
+): string {
+  const devChannel = resolveUpdateChannel({
+    channel: "development",
+    sourceRoot: opts.sourceRoot,
+    home: opts.home,
+    env: opts.env,
+  });
+  const cmds = buildUpgradeCommands({
+    project: process.cwd(),
+    installRoot: bundle.appHome,
+    channel: devChannel,
+    targetMajor: 3,
+  });
+  return (
+    `degraded: v2 managed app-home on 3.x CLI requires explicit v2→v3 migration; ` +
+    `preview \`${cmds.dryRunCommand}\`; app_home=${bundle.appHome}`
+  );
+}
+
 function appStatusAttention(bundle: Dict): string {
   if (bundle.status === "outdated") {
     return (
@@ -228,6 +263,8 @@ const TODO_SEVERITY_ORDER: Record<string, number> = {
 
 export function collectOrientationState(opts: PrimeOpts): Dict {
   const env = opts.env ?? process.env;
+  const home = opts.home ? opts.home : os.homedir();
+  const sourceRoot = resolveSourceRootStrict(env);
   const schemasDir = discoverSchemasDir();
   const schemas = loadSchemas(schemasDir);
   const bundle = hejBundleStatus(opts);
@@ -252,7 +289,7 @@ export function collectOrientationState(opts: PrimeOpts): Dict {
     if (isStale) profileDict.suggested_action = "Run profilera to refresh PROFILE.md";
   }
   const v1Artifacts = detectV1Artifacts();
-  const v1Migration = v1MigrationSummary(v1Artifacts);
+  const v1Migration = v1MigrationSummary(v1Artifacts, { sourceRoot, home, env });
   const plan = planSummary(schemas);
   const docs = docsSummary(schemas);
   const progress = progressSummary(schemas);
@@ -266,7 +303,11 @@ export function collectOrientationState(opts: PrimeOpts): Dict {
   const nextAction = selectHejNextAction(plan, health, objective, todoItems, decision, savedContext);
 
   const attention: string[] = [];
-  if (bundle.status !== "up_to_date") attention.push(appStatusAttention(bundle));
+  if (bundle.crossMajorBoundary) {
+    attention.push(crossMajorAppHomeAttention(bundle, { sourceRoot, home, env }));
+  } else if (bundle.status !== "up_to_date") {
+    attention.push(appStatusAttention(bundle));
+  }
   if (v1Migration.detected) {
     attention.push(
       `degraded: v1 artifacts detected; preview \`${v1Migration.dry_run_command}\`; files=${v1Artifacts.join(", ")}`,

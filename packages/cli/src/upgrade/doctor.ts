@@ -5,6 +5,9 @@ import { expanduser, isFile, pathExists, resolvePath } from "../core/paths.js";
 import { SOURCE_LABELS, classifyResolvedRoot } from "../state/installRoot.js";
 import { doctorRoots, loadSuiteVersion } from "./appModel.js";
 import { isNpxBundleRoot } from "../core/sourceRoot.js";
+import { resolveUpdateChannel } from "./channels.js";
+import { classifyInstall, crossMajorBoundaryApplies } from "./compatibility.js";
+import { buildUpgradeCommands, commandText } from "./upgradeCommands.js";
 
 /**
  * Doctor status build. Faithful TS port of build_doctor_status /
@@ -25,14 +28,15 @@ export const APP_MANUAL_REVIEW_NEEDED = "manual_review_needed";
 export const EXPECTED_STATE_COMMANDS = ["prime"] as const;
 export const BUNDLE_MARKER = ".agentera-bundle.json";
 
-const AGENTERA_USER_STATE_NAMES = new Set([
+/** Agentera user state preserved during v2→v3 managed app-home cleanup. */
+export const AGENTERA_USER_STATE_NAMES = new Set([
   "progress.yaml",
   "decisions.yaml",
   "health.yaml",
   "plan.yaml",
   "docs.yaml",
 ]);
-const ROOT_USER_STATE_FILE_NAMES = new Set([
+export const ROOT_USER_STATE_FILE_NAMES = new Set([
   "PROFILE.md",
   "USAGE.md",
   "corpus.json",
@@ -40,7 +44,7 @@ const ROOT_USER_STATE_FILE_NAMES = new Set([
   "CHANGELOG.md",
   "DESIGN.md",
 ]);
-const ROOT_USER_STATE_DIR_NAMES = new Set(["history", "corpus"]);
+export const ROOT_USER_STATE_DIR_NAMES = new Set(["history", "corpus"]);
 
 function hasBundleRootEvidence(root: string): boolean {
   return (
@@ -107,17 +111,6 @@ function appHomeIsUserDataOnly(appHome: string): boolean {
   return hasUserState;
 }
 
-function shellQuote(value: string): string {
-  if (/^[A-Za-z0-9_@%+=:,./-]+$/.test(value)) {
-    return value;
-  }
-  return "'" + value.replace(/'/g, "'\"'\"'") + "'";
-}
-
-function commandText(parts: string[]): string {
-  return parts.map(shellQuote).join(" ");
-}
-
 function sourceKey(rootSource: string): string {
   for (const [key, label] of Object.entries(SOURCE_LABELS)) {
     if (rootSource === label) {
@@ -182,6 +175,9 @@ export interface BuildDoctorStatusOptions {
   expectedCommands?: readonly string[];
   probeCli?: boolean;
   probeRunner?: ProbeRunner;
+  /** Override update channel (tests); default stable via resolveUpdateChannel. */
+  channel?: string | null;
+  env?: Record<string, string | undefined>;
 }
 
 export function buildDoctorStatus(installRoot: string, opts: BuildDoctorStatusOptions): Dict {
@@ -356,9 +352,21 @@ export function buildDoctorStatus(installRoot: string, opts: BuildDoctorStatusOp
     }
   }
 
-  // TS-CLI invocation form (Phase 8 packaging settles final wording).
-  const previewParts = ["npx", "-y", "agentera", "upgrade", "--install-root", installRoot, "--dry-run"];
-  const applyParts = ["npx", "-y", "agentera", "upgrade", "--install-root", installRoot, "--yes"];
+  const env = { ...(opts.env ?? process.env), HOME: home };
+  const channel = resolveUpdateChannel({
+    channel: opts.channel ?? null,
+    env,
+    home,
+    sourceRoot,
+  });
+  const install = classifyInstall({ appHome: installRoot, sourceRoot });
+  const crossMajorBoundary = crossMajorBoundaryApplies(install, sourceRoot);
+  const upgradeCommands = buildUpgradeCommands({
+    project,
+    installRoot,
+    channel,
+    targetMajor: null,
+  });
 
   const status = blocked
     ? APP_MANUAL_REVIEW_NEEDED
@@ -390,8 +398,12 @@ export function buildDoctorStatus(installRoot: string, opts: BuildDoctorStatusOp
     rootStatus,
     markerVersion,
     signals,
-    dryRunCommand: blocked || status === APP_UP_TO_DATE ? null : commandText(previewParts),
-    applyCommand: blocked || status === APP_UP_TO_DATE ? null : commandText(applyParts),
+    dryRunCommand:
+      blocked || status === APP_UP_TO_DATE ? null : upgradeCommands.dryRunCommand,
+    applyCommand:
+      blocked || status === APP_UP_TO_DATE ? null : upgradeCommands.applyCommand,
+    updateChannel: channel.channel,
+    crossMajorBoundary,
     retryCommand: commandText([
       "node",
       path.join(activeBundleRoot, "scripts", "agentera"),

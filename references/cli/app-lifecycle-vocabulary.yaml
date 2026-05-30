@@ -14,6 +14,7 @@ scope:
   includes:
     - Agentera app lifecycle status metadata emitted by doctor, hej, and upgrade.
     - Upgrade workflow operation verbs for app files, data migration, and no-change outcomes.
+    - Cross-major status concepts that annotate migration work without adding parallel status enums.
     - Transitional deprecated aliases needed to classify shipped or historical consumers.
   excludes:
     - Capability names.
@@ -21,6 +22,7 @@ scope:
     - Exit signals.
     - Task statuses.
     - Health grades.
+    - Update channel names, dist-tag resolution, and override keys.
     - General prose outside app lifecycle metadata.
 compatibility_boundary: >-
   Compatibility identifiers such as `.agentera-bundle.json`, `bundle.status`,
@@ -89,6 +91,27 @@ canonical_statuses:
     deprecated_aliases:
       - noop
       - already OK
+status_concept_order:
+  - major_boundary_crossing
+status_concepts:
+  major_boundary_crossing:
+    definition: >-
+      Work that crosses the v2→v3 compatibility boundary (Python managed app-home
+      to npm self-contained 3.x). Never implied by stable-channel resolution or
+      @latest; requires explicit --target-major 3 opt-in before apply.
+    applies_to_verbs:
+      - migrate
+      - upgrade
+    typical_statuses:
+      - manual_review_needed
+      - migration_needed
+    requires_explicit_opt_in:
+      flag: --target-major
+      value: 3
+    item_tag: requires_explicit_major_opt_in
+    never_implicit_on_channels:
+      - stable
+    authority_cross_ref: references/cli/update-channels.yaml
 operation_verb_order:
   - install
   - repair
@@ -104,8 +127,15 @@ operation_verbs:
     scope: Restore missing, incomplete, or broken Agentera app files.
     lifecycle_allowed: true
   update:
-    scope: Move existing Agentera app files from an older version to the expected version.
+    scope: >-
+      Move existing Agentera app files from an older version to the expected version
+      within the selected update channel's distribution major. Stable channel updates
+      stay on the 2.x line; development channel updates track 3.x pre-releases.
+      Cross-major v2→v3 moves are migrate work tagged major_boundary_crossing, not
+      channel updates.
     lifecycle_allowed: true
+    channel_aware: true
+    authority_cross_ref: references/cli/update-channels.yaml
   migrate:
     scope: Change layout, data, or schema across a compatibility boundary.
     lifecycle_allowed: true

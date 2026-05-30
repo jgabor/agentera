@@ -1,13 +1,46 @@
-# Upgrading to Agentera v2
+# Upgrading Agentera
+
+## Update channels
+
+Agentera resolves which published line `upgrade`, `doctor`, and `prime` target through
+**update channels**. The machine-readable authority is
+[`references/cli/update-channels.yaml`](references/cli/update-channels.yaml).
+
+| Channel | Resolves to | npm entry | Purpose |
+| --- | --- | --- | --- |
+| **stable** (default) | 2.x support line | `npx -y agentera@latest` | Production upgrades and repairs on the supported 2.x line |
+| **development** | 3.x alphas and RCs | `npx -y agentera@next` | Early adopters and maintainers testing the npm self-contained 3.x CLI |
+
+**Stable `@latest` stays on 2.x** until an explicit release decision retires the 2.x
+support line. Installing or upgrading with `@latest` (or the default channel) never
+starts a v2→v3 migration.
+
+Select a channel with `--channel`, `AGENTERA_UPDATE_CHANNEL`, or `update.channel` in
+`~/.config/agentera/config.toml`. Precedence is CLI flag, then environment variable,
+then config file, then the stable default.
+
+Preview before apply on every upgrade path: run `--dry-run` first, review the plan,
+then rerun with `--yes`. `--yes` and `--dry-run` are mutually exclusive. Cross-major
+v2→v3 work additionally requires a 3.x **development**-channel CLI and explicit
+`--target-major 3` on both preview and apply; stable-channel previews omit v3
+migration operations entirely.
 
 ## What changed
 
+### v1 → v2
+
 - **12 standalone skills -> 1 bundled skill** with 12 capabilities under `skills/agentera/`
 - **Artifact format**: Markdown -> YAML for agent-facing `.agentera/` files
-- **Upgrade CLI**: `uvx --from git+https://github.com/jgabor/agentera agentera upgrade` or `uv run scripts/agentera upgrade` from a clone
-- **State CLI**: `uv run scripts/agentera prime`, `uv run scripts/agentera state plan`, and other `state` namespace commands for routine access; `/agentera` still renders the hej dashboard from the `agentera prime` composite result, while `uv run scripts/agentera state query <artifact-name> --format json|yaml` remains advanced custom access. Top-level aliases for legacy commands remain during migration with stderr deprecation; see [audience-namespace-cli-migration.yaml](references/cli/audience-namespace-cli-migration.yaml) for the full list.
+- **Upgrade CLI**: `npx -y agentera@latest upgrade` on the stable channel, or `uv run scripts/agentera upgrade` from a clone
+- **State CLI**: `npx -y agentera prime` (or `uv run scripts/agentera prime` from a clone), `agentera state plan`, and other `state` namespace commands for routine access; `/agentera` still renders the hej dashboard from the `agentera prime` composite result, while `agentera state query <artifact-name> --format json|yaml` remains advanced custom access. Top-level aliases for legacy commands remain during migration with stderr deprecation; see [audience-namespace-cli-migration.yaml](references/cli/audience-namespace-cli-migration.yaml) for the full list.
 
-## Recommended upgrade
+### v2 → v3 (development channel only)
+
+The 3.x line replaces the Python managed app-home model with an npm self-contained
+CLI bundle. That cross-major migration is **never implied** by stable-channel
+resolution or `@latest`. Opt in only on a development-channel 3.x CLI after preview.
+
+## Recommended upgrade (v1 → v2, stable channel)
 
 ### No local clone
 
@@ -18,27 +51,27 @@ local clone.
 Preview first. This writes nothing and exits non-zero when pending work exists:
 
 ```bash
-uvx --from git+https://github.com/jgabor/agentera agentera upgrade --project /path/to/project --dry-run
+npx -y agentera@latest upgrade --project /path/to/project --dry-run
 ```
 
 Apply local, idempotent upgrade actions without package-manager changes:
 
 ```bash
-uvx --from git+https://github.com/jgabor/agentera agentera upgrade --project /path/to/project --yes
+npx -y agentera@latest upgrade --project /path/to/project --yes
+```
+
+From a git checkout on the stable line (`main`), the equivalent git-resolved entry is:
+
+```bash
+uvx --from git+https://github.com/jgabor/agentera@main agentera upgrade --project /path/to/project --dry-run
+uvx --from git+https://github.com/jgabor/agentera@main agentera upgrade --project /path/to/project --yes
 ```
 
 Add `--update-packages` only when you explicitly want Agentera to run external
 package-manager commands such as `npx skills remove` and `npx skills add`:
 
 ```bash
-uvx --from git+https://github.com/jgabor/agentera agentera upgrade --project /path/to/project --yes --update-packages
-```
-
-When the Python package is published, the shorter command is equivalent:
-
-```bash
-uvx agentera upgrade --project /path/to/project --dry-run
-uvx agentera upgrade --project /path/to/project --yes
+npx -y agentera@latest upgrade --project /path/to/project --yes --update-packages
 ```
 
 This command installs or refreshes the managed Agentera app under the Agentera
@@ -68,7 +101,7 @@ managed runtime config, plugins, hooks, commands, and safe cleanup together. It
 changes nothing:
 
 ```bash
-uvx --from git+https://github.com/jgabor/agentera agentera upgrade --install-root "$AGENTERA_HOME" --dry-run
+npx -y agentera@latest upgrade --install-root "$AGENTERA_HOME" --dry-run
 ```
 
 The durable location is still the Agentera directory, and app files are still
@@ -82,13 +115,13 @@ without `--install-root` so upgrade can choose the normal platform directory and
 preview cleanup of the old directory:
 
 ```bash
-uvx --from git+https://github.com/jgabor/agentera agentera upgrade --dry-run
+npx -y agentera@latest upgrade --dry-run
 ```
 
 Only after explicit approval should it apply the same safe repair path:
 
 ```bash
-uvx --from git+https://github.com/jgabor/agentera agentera upgrade --yes
+npx -y agentera@latest upgrade --yes
 ```
 
 Custom invalid `AGENTERA_HOME` values are different: choose a different Agentera
@@ -105,7 +138,7 @@ uv run scripts/agentera doctor --install-root "$AGENTERA_HOME" --json
 Only after explicit approval for that same app home should it apply:
 
 ```bash
-uvx --from git+https://github.com/jgabor/agentera agentera upgrade --install-root "$AGENTERA_HOME" --yes
+npx -y agentera@latest upgrade --install-root "$AGENTERA_HOME" --yes
 ```
 
 The apply command refreshes the managed app and managed runtime surfaces that the
@@ -166,6 +199,36 @@ External package updates are deliberately opt-in because they run `npx` and may 
 ```bash
 uv run scripts/agentera upgrade --project /path/to/project --yes --update-packages
 ```
+
+## Upgrading v2 to v3 (explicit opt-in)
+
+Use this path only when you intentionally move from a v2 managed app-home install
+to the npm self-contained 3.x model. The stable channel cannot apply this migration;
+use the development channel and opt in to the major boundary.
+
+1. Install or run a 3.x CLI on the development channel:
+
+```bash
+npx -y agentera@next upgrade --channel development --project /path/to/project --dry-run
+```
+
+1. Review the JSON or text preview. Cross-major items are tagged
+   `requires_explicit_major_opt_in` in the `agentera.upgrade.v2` payload. Pending work
+   exits non-zero until you approve apply.
+
+1. Apply only after preview, with explicit major opt-in:
+
+```bash
+npx -y agentera@next upgrade --channel development --target-major 3 --project /path/to/project --yes
+```
+
+`--yes` without a prior preview is rejected when cross-major work is pending. Run
+focused phases when you need more control (`--only artifacts`, `--only runtime`,
+`--only cleanup`).
+
+Phases migrate project YAML artifacts, rewire runtime config away from the Python
+managed app-home entrypoint, and optionally preview managed app-home cleanup while
+preserving user and project state boundaries.
 
 ## Runtime notes
 
@@ -273,11 +336,35 @@ commit (never amend solely to backfill progress metadata).
 Run one phase at a time when you want more control:
 
 ```bash
-uv run scripts/agentera upgrade --only artifacts --project /path/to/project --yes
-uv run scripts/agentera upgrade --only runtime --runtime codex --yes
-uv run scripts/agentera upgrade --only cleanup --yes
-uv run scripts/agentera upgrade --only packages --runtime opencode --yes --update-packages
+npx -y agentera@latest upgrade --only artifacts --project /path/to/project --yes
+npx -y agentera@latest upgrade --only runtime --runtime codex --yes
+npx -y agentera@latest upgrade --only cleanup --yes
+npx -y agentera@latest upgrade --only packages --runtime opencode --yes --update-packages
 ```
+
+For v2→v3 on the development channel, add `--channel development --target-major 3`
+to the same `--only` flags after preview.
+
+## Maintainer backports and cherry-picks
+
+When landing dual-channel and v2→v3 guard work onto `main`, cherry-pick in this
+order so stable users never see silent cross-major migration:
+
+1. **Vocabulary and authority** — `references/cli/update-channels.yaml`,
+   `references/cli/app-lifecycle-vocabulary.yaml`, and related vocabulary index or
+   prose boundaries in `references/cli/vocabulary.md`.
+2. **Guards and tests** — `packages/cli/src/upgrade/compatibility.ts`,
+   `packages/cli/src/upgrade/channels.ts`, and `packages/cli/test/upgrade/`
+   backport-safety coverage (`backportSafety.test.ts` proves stable-channel dry-run
+   payloads contain zero v3 migration operations).
+3. **Orchestrator and migration modules** — `upgradeOrchestrator.ts`,
+   `migrateArtifactsV2ToV3.ts`, and CLI wiring. Keep these active only when the
+   running CLI distribution major is 3; do not enable v3 migration apply paths on
+   `main` by default.
+
+Do **not** point stable `@latest` at 3.x or merge orchestrator apply paths that run
+v2→v3 migration on `main` until an explicit release decision retires the 2.x support
+line. Stable backports should pass the backport-safety gate before merge.
 
 ## What's different in v2
 
@@ -285,7 +372,7 @@ uv run scripts/agentera upgrade --only packages --runtime opencode --yes --updat
 |---|---|---|
 | Entry point | 12 separate `SKILL.md` files | `skills/agentera/SKILL.md` |
 | Artifact format | Markdown | YAML |
-| Upgrade path | Manual helper scripts | `uvx --from git+https://github.com/jgabor/agentera agentera upgrade` or `uv run scripts/agentera upgrade` |
-| State CLI | none | `uv run scripts/agentera prime` as the dashboard data source, `state` namespace commands, plus advanced `uv run scripts/agentera state query <artifact-name> --format json` or `--format yaml` (top-level aliases remain during migration) |
-| Validation | per-skill | `uv run scripts/agentera check validate capability <name-or-path>` plus `agentera check validate capability-contract` for schema self/protocol checks (top-level `validate` is a migration alias) |
+| Upgrade path | Manual helper scripts | `npx -y agentera@latest upgrade` (stable channel) or `uv run scripts/agentera upgrade` from a clone |
+| State CLI | none | `npx -y agentera prime` or `uv run scripts/agentera prime` as the dashboard data source, `state` namespace commands, plus advanced `agentera state query <artifact-name> --format json` or `--format yaml` (top-level aliases remain during migration) |
+| Validation | per-skill | `agentera check validate capability <name-or-path>` plus `agentera check validate capability-contract` for schema self/protocol checks (top-level `validate` is a migration alias) |
 | Shared primitives | `SPEC.md` | `skills/agentera/protocol.yaml` |

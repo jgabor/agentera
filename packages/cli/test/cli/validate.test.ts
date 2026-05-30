@@ -148,9 +148,10 @@ describe("cli validate descriptors", () => {
 describe("cli validate artifact", () => {
   it("validates a canonical artifact against the repo (text)", () => {
     const repo = path.resolve(process.cwd(), "..", "..");
-    const { rc, out } = capture((io) => cmdValidateArtifact({ artifact: "PLAN.md", cwd: repo }, io));
+    const artifact = fs.existsSync(path.join(repo, ".agentera/plan.yaml")) ? "PLAN.md" : "PROGRESS.md";
+    const { rc, out } = capture((io) => cmdValidateArtifact({ artifact, cwd: repo }, io));
     expect(rc).toBe(0);
-    expect(out).toContain("status=pass | artifact=PLAN.md");
+    expect(out).toContain(`status=pass | artifact=${artifact}`);
     expect(out).toContain("path_source=docs_mapped_default");
   });
 

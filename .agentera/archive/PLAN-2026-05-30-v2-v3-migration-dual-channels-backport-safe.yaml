@@ -1,0 +1,159 @@
+header:
+  level: full
+  created: "2026-05-30"
+  status: complete
+  reviewed: "2026-05-30"
+  critic_issues: "4 found, 4 addressed"
+  title: v2→v3 migration and dual update channels (backport-safe)
+what: >-
+  Restore upgrade/migration capability removed with the Python migrate_*.py scripts
+  during the TypeScript rewrite. Introduce an explicit v2→v3 compatibility boundary
+  (Python managed app-home → npm self-contained 3.x), dual update channels (stable
+  for 2.x support, development for 3.x alphas/RCs), and guard rails so stable
+  updates and main-line backports never accidentally cross the major boundary.
+  Port migration orchestration into packages/cli/src/upgrade/ with contract-first
+  parity against main's scripts/agentera_upgrade.py behavior oracle where applicable.
+why: >-
+  The TS branch currently stubs upgrade as "run npx -y agentera@latest" and drops
+  phased migration entirely. Decision 56 commits to a contract-first 3.0 rewrite,
+  but users on 2.x must keep a supported stable line while 3.x matures. Without
+  explicit channels and major-boundary gates, publishing 3.x to @latest or merging
+  migration code into main would risk silent cross-major upgrades. The removed
+  migrate_artifacts_v1_to_v2 and agentera_upgrade.py are the proven model for
+  preview/apply phases, dry-run safety, and testability.
+constraints: >-
+  Contract-first parity (Decision 56): Python on main remains behavior oracle until
+  TS fixtures pass. Default channel is stable; cross-major migration requires
+  explicit opt-in (--target-major 3 or equivalent), never implied by @latest.
+  Extend references/cli/app-lifecycle-vocabulary.yaml rather than inventing parallel
+  status vocabulary. Cherry-pick/backport order: vocabulary + guards + tests first
+  (safe on main), migration orchestration active only when distribution major is 3.
+  No remote push; do not modify vision.yaml or objective state. Preserve idempotent
+  dry-run before --yes apply. Stable channel must continue resolving to 2.x until an
+  explicit release decision retires it.
+scope:
+  included:
+    - references/cli/app-lifecycle-vocabulary.yaml (channel + major-boundary vocabulary)
+    - references/cli/update-channels.yaml (new authority for stable/development resolution)
+    - packages/cli/src/upgrade/channels.ts
+    - packages/cli/src/upgrade/compatibility.ts
+    - packages/cli/src/upgrade/migrateArtifactsV2ToV3.ts
+    - packages/cli/src/upgrade/upgradeOrchestrator.ts
+    - packages/cli/src/cli/commands/upgrade.ts (orchestrator wiring)
+    - packages/cli/src/cli/commands/doctor.ts and prime.ts (channel-aware commands)
+    - packages/cli/src/cli/commands/schema.ts (upgrade description)
+    - packages/cli/test/upgrade/ (channels, compatibility, migration, backport-safety)
+    - UPGRADE.md and README upgrade sections
+  excluded:
+    - Bun single-binary compilation and full npm publish pipeline (separate 3.0 packaging plan)
+    - Decision 58 single-name protocol sweep and v1 legacy removal
+    - Rewriting project artifact schemas beyond what v2→v3 actually requires
+    - Changing default @latest npm dist-tag on main before explicit release approval
+    - Runtime adapter feature parity beyond upgrade/migration wiring
+  deferred:
+    - Automatic runtime package refresh (--update-packages) for 3.x until channel model is stable
+    - Retiring the Python CLI stable line (requires separate release/migration comms plan)
+design: >-
+  Two orthogonal axes: (1) update channel selects which published line to track —
+  stable resolves to latest 2.x (uvx/git+main or agentera@latest pinned to 2.x
+  semantics), development resolves to 3.x pre-releases (agentera@next or
+  agentera@3.0.0-dev.*). Channel comes from AGENTERA_UPDATE_CHANNEL, user config,
+  or CLI --channel; default stable. (2) compatibility major gates migration —
+  detect v2 managed app-home (.agentera-bundle.json, scripts/agentera in managed
+  root) vs v3 self-contained (.agentera-npx-bundle.json). upgrade --dry-run emits
+  agentera.upgrade.v2 schema with phases detect, artifacts, runtime, cleanup;
+  cross-major items tagged requires_explicit_major_opt_in. Apply with --yes only
+  after preview; cross-major additionally requires --target-major 3. Port
+  migrate_artifacts logic from main's Python scripts as TS modules with fixture
+  tests; artifact phase may be mostly noop if YAML formats unchanged, but runtime
+  rewire and app-home cleanup are not. Backport safety: modules channels.ts and
+  compatibility.ts + vocabulary land on main with tests proving stable dry-run
+  never proposes v3; orchestrator and migrateArtifactsV2ToV3 stay behind
+  distributionMajor >= 3 compile-time or runtime guards so cherry-picks to main
+  add vocabulary/tests only unless explicitly enabling 3.x paths.
+tasks:
+  - number: 1
+    name: Define update-channel and major-boundary vocabulary
+    depends_on: []
+    status: complete
+    acceptance:
+      - GIVEN references/cli/update-channels.yaml WHEN read THEN it defines stable and development channels with dist-tag/git resolution, default stable, and env/config override keys
+      - GIVEN references/cli/app-lifecycle-vocabulary.yaml WHEN extended THEN it adds major_boundary_crossing status concept and channel-aware update verb scope without breaking existing canonical statuses
+      - GIVEN references/cli/vocabulary.md WHEN updated THEN it delegates to the new authority per docs_delegation pattern and does not duplicate large tables
+      - GIVEN validate lifecycle adapter or vocabulary sync tests WHEN run THEN they pass with the new fields
+  - number: 2
+    name: Implement channel resolution module
+    depends_on: ["1"]
+    status: complete
+    acceptance:
+      - GIVEN packages/cli/src/upgrade/channels.ts WHEN resolveUpdateChannel() runs THEN default is stable, AGENTERA_UPDATE_CHANNEL and --channel override are honored, and returned payload includes channel, distTag, updateCommand, and distributionMajor
+      - GIVEN stable channel WHEN updateCommand is rendered THEN it never resolves to a 3.x pre-release tag
+      - GIVEN development channel WHEN updateCommand is rendered THEN it resolves to the configured next/dev dist-tag for 3.x alphas/RCs
+      - GIVEN unit tests in packages/cli/test/upgrade/channels.test.ts WHEN run THEN stable/dev/default/override cases pass
+  - number: 3
+    name: Implement v2/v3 compatibility detection and guard rails
+    depends_on: ["1"]
+    status: complete
+    acceptance:
+      - GIVEN packages/cli/src/upgrade/compatibility.ts WHEN classifyInstall() runs THEN it distinguishes v2 managed app-home, v3 self-contained npm, source checkout, and unknown/foreign layouts using signals aligned with doctor/appModel
+      - GIVEN a v2 install and stable channel WHEN upgrade --dry-run runs without --target-major THEN preview status is manual_review_needed or no_changes_needed and never ready_to_apply for cross-major migration
+      - GIVEN a v2 install and explicit --target-major 3 WHEN upgrade --dry-run runs THEN preview lists cross-major work tagged requires_explicit_major_opt_in
+      - GIVEN backport-safety tests runnable on main WHEN stable channel dry-run executes THEN no v3 migration operations appear in the plan payload
+  - number: 4
+    name: Port v2→v3 artifact and runtime migration modules
+    depends_on: ["3"]
+    status: complete
+    acceptance:
+      - GIVEN packages/cli/src/upgrade/migrateArtifactsV2ToV3.ts WHEN dry-run on fixture projects THEN it reports the same class of pending/noop/blocked outcomes as main's migrate_artifacts_v1_to_v2 for equivalent v2 project layouts (YAML artifacts preserved, v1 pairs still detected separately)
+      - GIVEN runtime rewire phase WHEN applied on fixtures THEN runtime config no longer points at Python managed app-home and references the npm self-contained entrypoint
+      - GIVEN cleanup phase WHEN dry-run THEN optional managed app-home removal is previewed with user-data preservation rules matching main's USER_STATE_NAMES boundaries
+      - GIVEN migration module unit tests WHEN run THEN they pass without network access using checked-in fixtures
+  - number: 5
+    name: Wire phased upgrade orchestrator and CLI command
+    depends_on: ["2", "3", "4"]
+    status: complete
+    acceptance:
+      - GIVEN packages/cli/src/upgrade/upgradeOrchestrator.ts WHEN upgrade --dry-run --project "$PWD" runs THEN it emits agentera.upgrade.v2 JSON with phases, per-item statuses, channel metadata, and dryRunCommand/applyCommand fields
+      - GIVEN --yes without prior dry-run semantics WHEN attempted with cross-major work THEN command exits non-zero with plain-language error (preview mandatory)
+      - GIVEN --only artifacts|runtime|cleanup WHEN used THEN orchestrator limits phases like main's --only flag
+      - GIVEN packages/cli/src/cli/commands/upgrade.ts WHEN rewritten THEN it delegates to orchestrator and replaces the current self-contained-only stub
+      - GIVEN schema.ts upgrade description WHEN read THEN it documents v1→v2 (legacy) and v2→v3 (explicit opt-in) boundaries accurately
+  - number: 6
+    name: Integrate channels and migration into doctor and prime
+    depends_on: ["2", "5"]
+    status: complete
+    acceptance:
+      - GIVEN doctor output WHEN app is outdated on stable channel THEN repair/update commands use stable channel resolution (2.x path), not development
+      - GIVEN prime v1_migration summary WHEN v1 artifacts detected THEN dry_run_command/apply_command use channel-aware stable entrypoints consistent with upgrade orchestrator
+      - GIVEN prime app_home gate WHEN v2 managed app-home detected on 3.x CLI THEN attention item suggests explicit v2→v3 migration preview, not silent upgrade
+      - GIVEN doctor/prime JSON/text tests WHEN run THEN command strings no longer hardcode stale uvx-only paths where npm/channel model applies
+  - number: 7
+    name: Document upgrade paths and backport/cherry-pick policy
+    depends_on: ["1", "5"]
+    status: complete
+    acceptance:
+      - GIVEN UPGRADE.md WHEN read THEN it explains stable vs development channels, explicit v2→v3 opt-in, preview-before-apply, and that @latest/stable stays on 2.x until release retirement
+      - GIVEN README upgrade/troubleshooting sections WHEN read THEN they reference channel-aware commands and link to UPGRADE.md
+      - GIVEN a maintainer backport note in UPGRADE.md WHEN read THEN it lists safe cherry-pick order (vocabulary → guards/tests → orchestrator) and warns against enabling 3.x migration on main by default
+      - GIVEN docs validation/compaction WHEN run on touched docs THEN they pass
+  - number: 8
+    name: Parity tests, backport-safety gate, and closeout verification
+    depends_on: ["5", "6", "7"]
+    status: complete
+    acceptance:
+      - GIVEN packages/cli vitest suite WHEN run THEN all upgrade/channel/compatibility/migration tests pass
+      - GIVEN a stable-channel backport-safety fixture test WHEN run on main-compatible vocabulary/guard code THEN dry-run payload contains zero cross-major migration operations
+      - GIVEN upgrade JSON fixtures WHEN compared to Python oracle fixtures from main (where applicable) THEN phase names, status vocabulary, and exit codes match contract-first parity expectations
+      - GIVEN Decision 56 satisfaction review WHEN migration plan lands THEN feeds_into references (UPGRADE.md, release planning) are updated in TODO or decision follow-up as appropriate
+overall_acceptance: >-
+  GIVEN the TypeScript CLI WHEN a v2 user runs upgrade on the stable channel THEN
+  they receive 2.x-appropriate update/repair guidance and never an silent v2→v3
+  migration. GIVEN explicit --target-major 3 and a successful dry-run WHEN the user
+  applies THEN v2 managed app-home installs migrate to the npm self-contained model
+  with preserved user/project state. GIVEN development channel WHEN selected THEN
+  3.x alphas/RCs are reachable without changing stable defaults. GIVEN maintainer
+  backports WHEN vocabulary/guards land on main THEN tests prove stable dry-run
+  cannot propose v3 migration. GIVEN documentation WHEN read THEN channels, opt-in
+  migration, and backport order are clear to non-maintainers.
+surprises: []
+previous_plan_archived: .agentera/archive/PLAN-2026-05-30-progress-commit-consolidation-2.7.6.yaml

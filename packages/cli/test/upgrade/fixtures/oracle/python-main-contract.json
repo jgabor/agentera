@@ -1,0 +1,51 @@
+{
+  "source": "main:scripts/agentera_upgrade.py and tests/test_upgrade_cli.py",
+  "schemaVersions": {
+    "pythonMain": "agentera.upgrade.v1",
+    "typescriptV3Migration": "agentera.upgrade.v2"
+  },
+  "lifecycleStatusMapping": {
+    "pending": "ready_to_apply",
+    "applied": "applied",
+    "noop": "no_changes_needed",
+    "blocked": "manual_review_needed",
+    "failed": "manual_review_needed",
+    "skipped": "no_changes_needed"
+  },
+  "workflowStatuses": ["pending", "applied", "noop", "blocked", "failed", "skipped"],
+  "lifecycleStatuses": ["manual_review_needed", "no_changes_needed", "ready_to_apply", "applied"],
+  "exitCodeRules": {
+    "mutuallyExclusiveYesDryRun": 2,
+    "buildPlanError": 2,
+    "blockedOrFailedSummary": 1,
+    "planWithPendingSummary": 1,
+    "success": 0
+  },
+  "pythonMainPhases": ["bundle", "artifacts", "runtime", "cleanup", "packages"],
+  "typescriptV3Phases": ["detect", "artifacts", "runtime", "cleanup"],
+  "scenarios": [
+    {
+      "name": "artifact_dry_run_preview",
+      "pythonReturncode": 1,
+      "workflowPhaseStatus": "pending",
+      "lifecycleStatus": "ready_to_apply"
+    },
+    {
+      "name": "bundle_apply_noop_second_run",
+      "pythonReturncode": 0,
+      "workflowPhaseStatus": "noop",
+      "lifecycleStatus": "no_changes_needed"
+    },
+    {
+      "name": "runtime_blocked_user_owned",
+      "pythonReturncode": 1,
+      "workflowPhaseStatus": "blocked",
+      "lifecycleStatus": "manual_review_needed"
+    },
+    {
+      "name": "stable_channel_no_cross_major_ops",
+      "typescriptOnly": true,
+      "crossMajorMigrationOperations": 0
+    }
+  ]
+}
