@@ -38,7 +38,7 @@ function progressYaml(entries: Array<[number, string]>): string {
       "  type: chore",
       "  phase: build",
       `  what: Cycle ${number} work.`,
-      `  commit: ${commit}`,
+      `  commit: "${commit}"`,
       "  discovered: None.",
       "  context:",
       "    intent: Exercise the commit guard.",
