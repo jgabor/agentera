@@ -34,12 +34,14 @@ pre-commit:
         - "node_modules/**"
         - "dist/**"
     tests:
-      run: uv run --with pytest --with pyyaml --with pytest-xdist pytest tests/ -q -n auto
+      root: packages/cli
+      run: pnpm test
       glob:
-        - "**/*.py"
-        - "**/*.{yaml,yml}"
-        - "pyproject.toml"
-        - "uv.lock"
+        - "packages/cli/**/*.ts"
+        - "skills/**/*.{yaml,yml,md}"
+        - "references/**/*.{yaml,yml}"
+        - "registry.json"
+        - "protocol.yaml"
         - ".lefthook.yml"
         - ".github/workflows/**"
       exclude:

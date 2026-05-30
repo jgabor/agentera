@@ -7,14 +7,26 @@ on:
       - main
 
 jobs:
-  repository-gates:
-    name: Repository gates
+  cli:
+    name: CLI (build, typecheck, test)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Enable corepack (pnpm)
+        run: corepack enable
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Build CLI
+        run: pnpm -C packages/cli build
+      - name: Typecheck CLI
+        run: pnpm -C packages/cli run typecheck
+      - name: Test CLI
+        run: pnpm -C packages/cli test
       - name: Repository gates
-        run: uv run scripts/agentera check compact
+        run: node packages/cli/dist/bin/agentera.js check compact
 
   web:
     name: Website
