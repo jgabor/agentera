@@ -1,4 +1,5 @@
 import { HookCliAdapter } from "./validateArtifact.js";
+import { pyJsonInline } from "../core/pyjson.js";
 
 /**
  * Cursor preToolUse hook: block invalid reconstructable Write/Edit candidates.
@@ -14,9 +15,9 @@ export function runCursorPreToolUse(
   const [rc, violations] = adapter.run(rawStdin, opts.defaultCwd ?? null);
   if (rc === 2) {
     const reason = violations.length > 0 ? violations.join("; ") : "artifact validation failed";
-    out(JSON.stringify({ permission: "deny", user_message: reason, agent_message: reason }));
+    out(pyJsonInline({ permission: "deny", user_message: reason, agent_message: reason }));
     return 0;
   }
-  out(JSON.stringify({ permission: "allow" }));
+  out(pyJsonInline({ permission: "allow" }));
   return 0;
 }
