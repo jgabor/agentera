@@ -454,8 +454,8 @@ export function validateCopilotHooks(
       seenEvents.add(event);
       if (event === requiredPrewriteHook) {
         const commandText = handlerCommandText(hook);
-        if (!commandText.includes("hooks/validate_artifact.py")) {
-          errors.push("copilot.preToolUse: artifact hard gate must run hooks/validate_artifact.py");
+        if (!commandText.includes("hook validate-artifact")) {
+          errors.push("copilot.preToolUse: artifact hard gate must run agentera hook validate-artifact");
         }
       }
     }
@@ -572,11 +572,11 @@ export function validateCursorHooks(root: string, registry: RuntimeAdapterRegist
         errors.push(`cursor.${event}[${index}]: command must be a string`);
         return;
       }
-      if (event === "sessionStart" && !command.includes("cursor_session_start.py")) {
-        errors.push("cursor.sessionStart: must run hooks/cursor_session_start.py");
+      if (event === "sessionStart" && !command.includes("hook cursor-session-start")) {
+        errors.push("cursor.sessionStart: must run agentera hook cursor-session-start");
       }
-      if (event === requiredPrewriteHook && !command.includes("cursor_pre_tool_use.py")) {
-        errors.push("cursor.preToolUse: artifact hard gate must run hooks/cursor_pre_tool_use.py");
+      if (event === requiredPrewriteHook && !command.includes("hook cursor-pre-tool-use")) {
+        errors.push("cursor.preToolUse: artifact hard gate must run agentera hook cursor-pre-tool-use");
       }
     });
   }
