@@ -432,8 +432,10 @@ function runPrime(command: string, argv: string[], io: Io, prog: string): number
         return 2;
       }
       args.format = v;
-    } else if (a === "--fields" || a.startsWith("--fields=")) {
-      if (a === "--fields") i++;
+    } else if (a === "--fields") {
+      args.fields = argv[++i];
+    } else if (a.startsWith("--fields=")) {
+      args.fields = a.slice("--fields=".length);
     } else {
       err(`${prog}: error: unrecognized arguments: ${a}\n`);
       return 2;
