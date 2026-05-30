@@ -5,6 +5,8 @@ import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { activeAppModel } from "../../src/cli/appContext.js";
+import { buildDoctorStatus } from "../../src/upgrade/doctor.js";
+import { cmdUpgrade } from "../../src/cli/commands/upgrade.js";
 import { resolveSourceRootStrict } from "../../src/upgrade/appModel.js";
 
 /**
@@ -70,5 +72,70 @@ describe("self-contained npx bundle resolution", () => {
     expect(() => resolveSourceRootStrict({ AGENTERA_BOOTSTRAP_SOURCE_ROOT: bundle })).toThrow(
       /bootstrap source root .* is missing/,
     );
+  });
+});
+
+describe("self-contained doctor/upgrade semantics", () => {
+  let bundle: string;
+  function seed(root: string): void {
+    fs.mkdirSync(path.join(root, "skills", "agentera"), { recursive: true });
+    fs.writeFileSync(path.join(root, "skills", "agentera", "SKILL.md"), "# Agentera\n");
+    fs.writeFileSync(path.join(root, "registry.json"), JSON.stringify({ skills: [{ version: "9.9.9" }] }));
+    fs.writeFileSync(path.join(root, ".agentera-npx-bundle.json"), JSON.stringify({ kind: "agentera-npx-bundle" }));
+  }
+  beforeEach(() => {
+    bundle = fs.mkdtempSync(path.join(os.tmpdir(), "npxdoctor-"));
+  });
+  afterEach(() => {
+    fs.rmSync(bundle, { recursive: true, force: true });
+  });
+
+  it("buildDoctorStatus reports a sentinel bundle as the up-to-date app", () => {
+    seed(bundle);
+    const status = buildDoctorStatus(bundle, {
+      rootSource: "default app home",
+      sourceRoot: bundle,
+      home: os.homedir(),
+      project: bundle,
+      expectedVersion: "9.9.9",
+      probeCli: false,
+    });
+    expect(status.status).toBe("up_to_date");
+    expect(status.appHome).toBe(bundle);
+    expect(status.appHomeSource).toBe("bundled app");
+    expect(status.managedAppRoot).toBe(bundle);
+    expect(status.signals).toEqual([]);
+    expect(status.dryRunCommand).toBeNull();
+    expect(status.applyCommand).toBeNull();
+    expect(status.markerVersion).toBe("9.9.9");
+  });
+
+  it("cmdUpgrade rejects --yes with --dry-run", () => {
+    let err = "";
+    const rc = cmdUpgrade({ yes: true, dryRun: true }, { out: () => {}, err: (t) => (err += t) });
+    expect(rc).toBe(2);
+    expect(err).toContain("mutually exclusive");
+  });
+
+  it("cmdUpgrade reports the self-contained model for a sentinel bundle", () => {
+    seed(bundle);
+    const prev = process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT;
+    process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT = bundle;
+    try {
+      let out = "";
+      const rc = cmdUpgrade(
+        { expectedVersion: "9.9.9", format: "json" },
+        { out: (t) => (out += t), err: () => {} },
+      );
+      expect(rc).toBe(0);
+      const payload = JSON.parse(out);
+      expect(payload.mode).toBe("self_contained");
+      expect(payload.status).toBe("up_to_date");
+      expect(payload.updateCommand).toBe("npx -y agentera@latest");
+      expect(payload.currentVersion).toBe("9.9.9");
+    } finally {
+      if (prev === undefined) delete process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT;
+      else process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT = prev;
+    }
   });
 });

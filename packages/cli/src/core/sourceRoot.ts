@@ -6,6 +6,24 @@ import { expanduser } from "./paths.js";
 
 export const BOOTSTRAP_SOURCE_ROOT_ENV = "AGENTERA_BOOTSTRAP_SOURCE_ROOT";
 
+/** Sentinel file marking a self-contained npx app bundle (see scripts/copy-bundle.mjs). */
+export const NPX_BUNDLE_SENTINEL = ".agentera-npx-bundle.json";
+
+/**
+ * Detect a self-contained npx app bundle: the published `agentera` package
+ * stages app data (skills/, references/, registry.json) under <pkg>/bundle and
+ * writes the sentinel there. When the CLI's source root is such a bundle, the
+ * bundle IS the authoritative, always-current app (no install/upgrade step).
+ * The sentinel never exists in a repo checkout or an installed managed app.
+ */
+export function isNpxBundleRoot(root: string): boolean {
+  return (
+    fs.existsSync(path.join(root, NPX_BUNDLE_SENTINEL)) &&
+    fs.existsSync(path.join(root, "skills", "agentera", "SKILL.md")) &&
+    fs.existsSync(path.join(root, "registry.json"))
+  );
+}
+
 /** Markers that identify an Agentera app source root (repo checkout or bundle). */
 const SOURCE_MARKERS = [
   path.join("skills", "agentera", "SKILL.md"),

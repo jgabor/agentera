@@ -75,3 +75,19 @@ describe("agentera usage dispatch", () => {
     expect(err).toContain("unrecognized arguments: --bogus");
   });
 });
+
+describe("agentera upgrade dispatch", () => {
+  it("rejects --yes together with --dry-run", () => {
+    let err = "";
+    const rc = main(["node", "agentera", "upgrade", "--yes", "--dry-run"], { err: (t) => (err += t) });
+    expect(rc).toBe(2);
+    expect(err).toContain("mutually exclusive");
+  });
+
+  it("rejects an unrecognized argument", () => {
+    let err = "";
+    const rc = main(["node", "agentera", "upgrade", "--bogus"], { err: (t) => (err += t) });
+    expect(rc).toBe(2);
+    expect(err).toContain("unrecognized arguments: --bogus");
+  });
+});

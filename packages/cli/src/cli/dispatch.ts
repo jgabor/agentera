@@ -7,6 +7,7 @@ import { cmdQuery, QueryArgs } from "./commands/query.js";
 import { cmdCompact, cmdGate, CompactArgs } from "./commands/compact.js";
 import { cmdSchema } from "./commands/schema.js";
 import { cmdDoctor, DoctorArgs } from "./commands/doctor.js";
+import { cmdUpgrade, UpgradeArgs } from "./commands/upgrade.js";
 import { runSessionStart } from "../hooks/sessionStart.js";
 import { runSessionStop } from "../hooks/sessionStop.js";
 import { runCursorSessionStart } from "../hooks/cursorSessionStart.js";
@@ -585,6 +586,53 @@ function runUsage(argv: string[], io: Io, prog: string): number {
   });
 }
 
+function runUpgrade(argv: string[], io: Io, prog: string): number {
+  const err = io.err ?? ((t: string) => process.stderr.write(t));
+  const args: UpgradeArgs = {
+    installRoot: null,
+    home: null,
+    project: null,
+    expectedVersion: null,
+    yes: false,
+    dryRun: false,
+    format: "text",
+  };
+  let jsonFlag = false;
+  for (let i = 0; i < argv.length; i++) {
+    const a = argv[i];
+    const value = (name: string): string | null => {
+      if (a === name) return argv[++i] ?? null;
+      if (a.startsWith(name + "=")) return a.slice(name.length + 1);
+      return null;
+    };
+    let v: string | null;
+    if ((v = value("--install-root")) !== null) args.installRoot = v;
+    else if ((v = value("--home")) !== null) args.home = v;
+    else if ((v = value("--project")) !== null) args.project = v;
+    else if ((v = value("--expected-version")) !== null) args.expectedVersion = v;
+    else if ((v = value("--runtime")) !== null) void v; // accepted; self-contained ignores
+    else if ((v = value("--only")) !== null) void v; // accepted; self-contained ignores
+    else if ((v = value("--opencode-config-dir")) !== null) void v; // accepted; ignored
+    else if (a === "--yes") args.yes = true;
+    else if (a === "--dry-run") args.dryRun = true;
+    else if (a === "--force") void 0; // accepted; no install to force in self-contained mode
+    else if (a === "--update-packages") void 0; // accepted; ignored
+    else if (a === "--json") jsonFlag = true;
+    else if ((v = value("--format")) !== null) {
+      if (v !== "text" && v !== "json") {
+        err(`${prog}: error: argument --format: invalid choice: '${v}' (choose from 'text', 'json')\n`);
+        return 2;
+      }
+      args.format = v;
+    } else {
+      err(`${prog}: error: unrecognized arguments: ${a}\n`);
+      return 2;
+    }
+  }
+  if (jsonFlag) args.format = "json";
+  return cmdUpgrade(args, io);
+}
+
 export function main(argv: string[], io: Io = {}): number {
   const err = io.err ?? ((t: string) => process.stderr.write(t));
   const args = argv.slice(2);
@@ -598,6 +646,8 @@ export function main(argv: string[], io: Io = {}): number {
       return runDoctor(rest, io, "agentera doctor");
     case "usage":
       return runUsage(rest, io, "agentera usage");
+    case "upgrade":
+      return runUpgrade(rest, io, "agentera upgrade");
     case "hook": {
       const name = rest[0];
       if (!name) {
