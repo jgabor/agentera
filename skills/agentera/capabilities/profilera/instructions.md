@@ -77,7 +77,7 @@ Steps: detect, extract, read, categorize, generate, validate.
 Before asking what to include, run a deterministic local preview that uses the extractor defaults and writes a temporary preview corpus:
 
 ```bash
-uv run ${AGENTERA_HOME:-.}/scripts/extract_corpus.py --output <temporary-preview-corpus>
+npx -y agentera report refresh --consent local-history --output <temporary-preview-corpus>
 ```
 
 Read only the preview corpus top-level `metadata.runtime_statuses` plus per-runtime record counts. Do not display raw transcript content in the source-selection prompt. Remove the temporary preview after source selection unless it is reused as the final corpus for `All (Recommended)`.
@@ -102,7 +102,7 @@ If no runtime has extractable records, skip the selection question, say no local
 Read `$PROFILERA_PROFILE_DIR/intermediate/corpus.json` if it already exists and still matches the selected runtime set. If the corpus is absent, stale, or was produced for a different source selection, run the extractor from the Agentera app:
 
 ```bash
-uv run ${AGENTERA_HOME:-.}/scripts/extract_corpus.py
+npx -y agentera report refresh --consent local-history
 ```
 
 Apply runtime opt-out flags from Step 1. For example, if the user selects Claude Code and OpenCode only, run with `--no-codex --no-copilot --no-cursor`. If the user selects docs/config-only, run with `--no-claude --no-codex --no-opencode --no-copilot --no-cursor`. If the user selects `All (Recommended)`, use no runtime opt-out flags.
@@ -111,7 +111,7 @@ The extractor writes the default `$PROFILERA_PROFILE_DIR/intermediate/corpus.jso
 
 Read the corpus file's top-level `metadata` object to confirm counts per source family. Report totals to the user.
 
-**If extraction fails**: common causes include `uv` not found, permission errors, and empty output (no session history). If only some runtimes fail, the corpus will contain partial data with bounded runtime notes in `metadata.runtime_statuses`; proceed and note missing sources.
+**If extraction fails**: common causes include `npx`/agentera not found, permission errors, and empty output (no session history). If only some runtimes fail, the corpus will contain partial data with bounded runtime notes in `metadata.runtime_statuses`; proceed and note missing sources.
 
 ---
 
