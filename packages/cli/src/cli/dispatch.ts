@@ -6,6 +6,7 @@ import { COMMAND_FILTERS } from "./stateQuery.js";
 import { cmdQuery, QueryArgs } from "./commands/query.js";
 import { cmdCompact, cmdGate, CompactArgs } from "./commands/compact.js";
 import { cmdSchema } from "./commands/schema.js";
+import { cmdDoctor, DoctorArgs } from "./commands/doctor.js";
 import { cmdCapability, CAPABILITY_ROUTING_NAMES } from "./commands/capability.js";
 import {
   cmdValidate,
@@ -459,6 +460,42 @@ function runGate(argv: string[], io: Io, prog: string): number {
   }
 }
 
+function runDoctor(argv: string[], io: Io, prog: string): number {
+  const err = io.err ?? ((t: string) => process.stderr.write(t));
+  const args: DoctorArgs = { installRoot: null, home: null, project: null, expectedVersion: null, expectCommand: [], format: "text" };
+  let jsonFlag = false;
+  for (let i = 0; i < argv.length; i++) {
+    const a = argv[i];
+    const value = (name: string): string | null => {
+      if (a === name) return argv[++i];
+      if (a.startsWith(name + "=")) return a.slice(name.length + 1);
+      return null;
+    };
+    let v: string | null;
+    if ((v = value("--install-root")) !== null) args.installRoot = v;
+    else if ((v = value("--home")) !== null) args.home = v;
+    else if ((v = value("--project")) !== null) args.project = v;
+    else if ((v = value("--expected-version")) !== null) args.expectedVersion = v;
+    else if ((v = value("--expect-command")) !== null) (args.expectCommand as string[]).push(v);
+    else if ((v = value("--format")) !== null) {
+      if (v !== "text" && v !== "json") {
+        err(`${prog}: error: argument --format: invalid choice: '${v}' (choose from 'text', 'json')\n`);
+        return 2;
+      }
+      args.format = v;
+    } else if (a === "--json") jsonFlag = true;
+    else {
+      err(`${prog}: error: unrecognized arguments: ${a}\n`);
+      return 2;
+    }
+  }
+  if (jsonFlag) {
+    emitDeprecationAlias("doctor --json", "doctor --format json", err);
+    args.format = "json";
+  }
+  return cmdDoctor(args, io);
+}
+
 export function main(argv: string[], io: Io = {}): number {
   const err = io.err ?? ((t: string) => process.stderr.write(t));
   const args = argv.slice(2);
@@ -468,6 +505,8 @@ export function main(argv: string[], io: Io = {}): number {
   switch (command) {
     case "prime":
       return runPrime("prime", rest, io, "agentera prime");
+    case "doctor":
+      return runDoctor(rest, io, "agentera doctor");
     case "hej":
       emitDeprecationAlias("hej", "prime", err);
       return runPrime("hej", rest, io, "agentera hej");
