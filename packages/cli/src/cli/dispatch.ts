@@ -5,6 +5,7 @@ import { cmdState, isPortedStateCommand, StateArgs } from "./commands/state.js";
 import { COMMAND_FILTERS } from "./stateQuery.js";
 import { cmdQuery, QueryArgs } from "./commands/query.js";
 import { cmdCompact, CompactArgs } from "./commands/compact.js";
+import { cmdValidate, isDelegatedValidateFamily } from "./commands/validate.js";
 
 /**
  * Top-level command dispatch. The full argparse-shaped surface is being ported
@@ -275,6 +276,52 @@ function runCompact(argv: string[], io: Io, prog: string): number {
   }
 }
 
+function runValidate(argv: string[], io: Io, prog: string): number {
+  const err = io.err ?? ((t: string) => process.stderr.write(t));
+  let family: string | null = null;
+  let format = "text";
+  for (let i = 0; i < argv.length; i++) {
+    const a = argv[i];
+    if (a === "--format") {
+      const v = argv[++i];
+      if (v !== "text" && v !== "json") {
+        err(`${prog}: error: argument --format: invalid choice: '${v}' (choose from 'text', 'json')\n`);
+        return 2;
+      }
+      format = v;
+    } else if (a.startsWith("--format=")) {
+      const v = a.slice("--format=".length);
+      if (v !== "text" && v !== "json") {
+        err(`${prog}: error: argument --format: invalid choice: '${v}' (choose from 'text', 'json')\n`);
+        return 2;
+      }
+      format = v;
+    } else if (a.startsWith("--")) {
+      err(`${prog}: error: unrecognized arguments: ${a}\n`);
+      return 2;
+    } else if (family === null) {
+      family = a;
+    } else {
+      err(`${prog}: error: unrecognized arguments: ${a}\n`);
+      return 2;
+    }
+  }
+  if (family === null) {
+    err(`${prog}: error: the following arguments are required: validate_family\n`);
+    return 2;
+  }
+  if (!isDelegatedValidateFamily(family)) {
+    err(`agentera: validate family not yet ported: ${family}\n`);
+    return 1;
+  }
+  try {
+    return cmdValidate(family, { format }, io);
+  } catch (exc) {
+    err(`Error: ${(exc as Error).message}\n`);
+    return 2;
+  }
+}
+
 export function main(argv: string[], io: Io = {}): number {
   const err = io.err ?? ((t: string) => process.stderr.write(t));
   const args = argv.slice(2);
@@ -293,6 +340,7 @@ export function main(argv: string[], io: Io = {}): number {
         err("agentera check: error: the following arguments are required: check_command\n");
         return 2;
       }
+      if (sub === "validate") return runValidate(rest.slice(1), io, "agentera check validate");
       if (sub === "lint") return runLint(rest.slice(1), io, "agentera check lint");
       if (sub === "backfill") return runBackfill(rest.slice(1), io, "agentera check backfill");
       err(`agentera: unknown or not-yet-ported check subcommand: ${sub}\n`);
@@ -315,6 +363,9 @@ export function main(argv: string[], io: Io = {}): number {
     case "compact":
       emitDeprecationAlias("compact", "check compact", err);
       return runCompact(rest, io, "agentera compact");
+    case "validate":
+      emitDeprecationAlias("validate", "check validate", err);
+      return runValidate(rest, io, "agentera validate");
     default:
       if (command && isPortedStateCommand(command)) {
         emitDeprecationAlias(command, `state ${command}`, err);
