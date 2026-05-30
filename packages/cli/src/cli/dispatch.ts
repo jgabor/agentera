@@ -4,6 +4,7 @@ import { cmdBackfill, BackfillArgs } from "./commands/backfill.js";
 import { cmdState, isPortedStateCommand, StateArgs } from "./commands/state.js";
 import { COMMAND_FILTERS } from "./stateQuery.js";
 import { cmdQuery, QueryArgs } from "./commands/query.js";
+import { cmdCompact, CompactArgs } from "./commands/compact.js";
 
 /**
  * Top-level command dispatch. The full argparse-shaped surface is being ported
@@ -225,6 +226,55 @@ function runQuery(argv: string[], io: Io, prog: string): number {
   }
 }
 
+function compactModeOf(argv: string[]): string {
+  for (let i = 0; i < argv.length; i++) {
+    if (argv[i] === "--mode") return argv[i + 1] ?? "check";
+    if (argv[i].startsWith("--mode=")) return argv[i].slice("--mode=".length);
+  }
+  return "check";
+}
+
+function parseCompactArgs(argv: string[]): CompactArgs | { error: string } {
+  const args: CompactArgs = { project: null, mode: "check", format: "text" };
+  for (let i = 0; i < argv.length; i++) {
+    const a = argv[i];
+    const value = (name: string): string | null => {
+      if (a === name) return argv[++i];
+      if (a.startsWith(name + "=")) return a.slice(name.length + 1);
+      return null;
+    };
+    let v: string | null;
+    if ((v = value("--project")) !== null) args.project = v;
+    else if ((v = value("--mode")) !== null) {
+      if (v !== "check" && v !== "fix") {
+        return { error: `argument --mode: invalid choice: '${v}' (choose from 'check', 'fix')` };
+      }
+      args.mode = v;
+    } else if ((v = value("--format")) !== null) {
+      if (v !== "text" && v !== "json") {
+        return { error: `argument --format: invalid choice: '${v}' (choose from 'text', 'json')` };
+      }
+      args.format = v;
+    } else return { error: `unrecognized arguments: ${a}` };
+  }
+  return args;
+}
+
+function runCompact(argv: string[], io: Io, prog: string): number {
+  const err = io.err ?? ((t: string) => process.stderr.write(t));
+  const parsed = parseCompactArgs(argv);
+  if ("error" in parsed) {
+    err(`${prog}: error: ${parsed.error}\n`);
+    return 2;
+  }
+  try {
+    return cmdCompact(parsed, io);
+  } catch (exc) {
+    err(`Error: ${(exc as Error).message}\n`);
+    return 2;
+  }
+}
+
 export function main(argv: string[], io: Io = {}): number {
   const err = io.err ?? ((t: string) => process.stderr.write(t));
   const args = argv.slice(2);
@@ -262,6 +312,9 @@ export function main(argv: string[], io: Io = {}): number {
     case "query":
       emitDeprecationAlias("query", "state query", err);
       return runQuery(rest, io, "agentera query");
+    case "compact":
+      emitDeprecationAlias("compact", "check compact", err);
+      return runCompact(rest, io, "agentera compact");
     default:
       if (command && isPortedStateCommand(command)) {
         emitDeprecationAlias(command, `state ${command}`, err);
