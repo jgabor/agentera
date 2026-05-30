@@ -114,7 +114,7 @@ describe("setup copilot (diagnostic-only)", () => {
       HOME: path.join(tmp, "home"),
     });
     expect(code).toBe(2);
-    expect(err).toContain("scripts/validate_capability.py");
+    expect(err).toContain("registry.json");
     expect(err).toContain("skills/agentera/SKILL.md");
     expect(fs.existsSync(target)).toBe(false);
   });

@@ -16,15 +16,11 @@ afterEach(() => {
 });
 
 function managedFresh(root: string): void {
-  for (const entry of [
-    "scripts/validate_capability.py",
-    "skills/agentera/SKILL.md",
-  ]) {
+  // Node-era managed app evidence: app data surfaces (no Python scripts/hooks).
+  for (const entry of ["skills/agentera/SKILL.md", "registry.json"]) {
     fs.mkdirSync(path.join(root, path.dirname(entry)), { recursive: true });
     fs.writeFileSync(path.join(root, entry), "x");
   }
-  fs.mkdirSync(path.join(root, "hooks"), { recursive: true });
-  fs.mkdirSync(path.join(root, "skills"), { recursive: true });
 }
 
 describe("setup cursor", () => {

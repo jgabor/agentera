@@ -42,7 +42,9 @@ export const OPENCODE_COMMAND_DESCRIPTIONS: Record<string, string> = {
 };
 
 export const CANONICAL_ENTRIES = SETUP_EVIDENCE;
-export const HELPER_ENTRIES = ["scripts/validate_capability.py", "hooks/validate_artifact.py"] as const;
+// Self-contained model: runtime hooks invoke the bundled CLI (npx -y agentera
+// hook <name>); there are no per-install helper script files to verify.
+export const HELPER_ENTRIES = [] as const;
 export const SMOKE_TIMEOUT_SECONDS = 30;
 export const ENV_FALLBACKS = ["AGENTERA_HOME", "CLAUDE_PLUGIN_ROOT"] as const;
 export const COPILOT_MARKER = "# agentera: AGENTERA_HOME (managed)";
