@@ -154,3 +154,13 @@ export function cmdCompact(args: CompactArgs, io: Io = {}): number {
   emitCompactionPayload(payload, mode, args.format ?? "text", out);
   return compactionExitCode(mode, operations);
 }
+
+export function cmdGate(args: CompactArgs, io: Io = {}): number {
+  const out = io.out ?? ((t: string) => process.stdout.write(t));
+  const project = resolvePath(args.project ?? process.cwd());
+  const operations = runCompaction(project, "check");
+  const payload = compactionPayload("gate", project, "check", operations);
+  payload.gate = "compaction";
+  emitCompactionPayload(payload, "check", args.format ?? "text", out);
+  return compactionExitCode("check", operations);
+}

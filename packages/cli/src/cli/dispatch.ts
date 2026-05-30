@@ -4,7 +4,7 @@ import { cmdBackfill, BackfillArgs } from "./commands/backfill.js";
 import { cmdState, isPortedStateCommand, StateArgs } from "./commands/state.js";
 import { COMMAND_FILTERS } from "./stateQuery.js";
 import { cmdQuery, QueryArgs } from "./commands/query.js";
-import { cmdCompact, CompactArgs } from "./commands/compact.js";
+import { cmdCompact, cmdGate, CompactArgs } from "./commands/compact.js";
 import { cmdSchema } from "./commands/schema.js";
 import { cmdCapability, CAPABILITY_ROUTING_NAMES } from "./commands/capability.js";
 import {
@@ -444,6 +444,21 @@ function runPrime(command: string, argv: string[], io: Io, prog: string): number
   return cmdPrime(args, io);
 }
 
+function runGate(argv: string[], io: Io, prog: string): number {
+  const err = io.err ?? ((t: string) => process.stderr.write(t));
+  const parsed = parseCompactArgs(argv);
+  if ("error" in parsed) {
+    err(`${prog}: error: ${parsed.error}\n`);
+    return 2;
+  }
+  try {
+    return cmdGate(parsed, io);
+  } catch (exc) {
+    err(`Error: ${(exc as Error).message}\n`);
+    return 2;
+  }
+}
+
 export function main(argv: string[], io: Io = {}): number {
   const err = io.err ?? ((t: string) => process.stderr.write(t));
   const args = argv.slice(2);
@@ -473,6 +488,12 @@ export function main(argv: string[], io: Io = {}): number {
       if (sub === "validate") return runValidate(rest.slice(1), io, "agentera check validate");
       if (sub === "lint") return runLint(rest.slice(1), io, "agentera check lint");
       if (sub === "backfill") return runBackfill(rest.slice(1), io, "agentera check backfill");
+      if (sub === "compact") {
+        const subArgs = rest.slice(1);
+        const mode = compactModeOf(subArgs);
+        if (mode === "fix") return runCompact(subArgs, io, "agentera check compact");
+        return runGate(subArgs, io, "agentera check compact");
+      }
       err(`agentera: unknown or not-yet-ported check subcommand: ${sub}\n`);
       return 1;
     }
@@ -493,6 +514,9 @@ export function main(argv: string[], io: Io = {}): number {
     case "compact":
       emitDeprecationAlias("compact", "check compact", err);
       return runCompact(rest, io, "agentera compact");
+    case "gate":
+      emitDeprecationAlias("gate", "check compact", err);
+      return runGate(rest, io, "agentera gate");
     case "validate":
       emitDeprecationAlias("validate", "check validate", err);
       return runValidate(rest, io, "agentera validate");
