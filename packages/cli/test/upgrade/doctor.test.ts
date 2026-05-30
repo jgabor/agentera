@@ -74,7 +74,8 @@ describe("buildDoctorStatus", () => {
     expect(status.status).toBe(APP_OUTDATED);
     expect(status.signals.some((s: any) => s.kind === "version_mismatch")).toBe(true);
     expect(status.markerVersion).toBe("old");
-    expect(status.dryRunCommand).toContain("npx -y agentera upgrade");
+    expect(status.dryRunCommand).toContain("npx -y agentera@latest");
+    expect(status.dryRunCommand).toContain("upgrade");
     expect(status.applyCommand).toContain("--yes");
   });
 

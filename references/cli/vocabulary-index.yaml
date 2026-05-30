@@ -13,6 +13,7 @@ authority_order:
   - skills/agentera/schemas/artifacts/
   - references/artifacts/artifact-registry-interface-model.yaml
   - references/cli/app-lifecycle-vocabulary.yaml
+  - references/cli/update-channels.yaml
   - references/cli/bundle-skill-vocabulary.yaml
   - references/cli/capability-instruction-contract.yaml
   - references/cli/routing-execution-vocabulary.yaml
@@ -55,6 +56,9 @@ normalization_rules:
   - rule: App lifecycle state is canonical metadata.
     use: up_to_date, outdated, repair_needed, migration_needed, manual_review_needed, ready_to_apply, applied, no_changes_needed
     avoid: fresh, stale, refresh, fixed, ready, or noop as app lifecycle status values.
+  - rule: Update channel selects the published line.
+    use: stable channel, development channel, AGENTERA_UPDATE_CHANNEL, --channel stable|development
+    avoid: Treating @latest or default upgrade as implicit v2→v3 migration.
   - rule: Worker safety commits are Git-only.
     use: pre-spawn Git commit
     avoid: Non-Git checkpoint or pre-dispatch commit gate in new docs.

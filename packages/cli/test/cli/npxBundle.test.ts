@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
@@ -8,6 +9,12 @@ import { activeAppModel } from "../../src/cli/appContext.js";
 import { buildDoctorStatus } from "../../src/upgrade/doctor.js";
 import { cmdUpgrade } from "../../src/cli/commands/upgrade.js";
 import { resolveSourceRootStrict } from "../../src/upgrade/appModel.js";
+import {
+  STATUS_NO_CHANGES_NEEDED,
+  UPGRADE_PREVIEW_SCHEMA,
+} from "../../src/upgrade/compatibility.js";
+
+const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..");
 
 /**
  * Self-contained npx bundle: the published `agentera` package stages app data
@@ -86,7 +93,15 @@ describe("self-contained doctor/upgrade semantics", () => {
     fs.mkdirSync(path.join(root, "skills", "agentera"), { recursive: true });
     fs.writeFileSync(path.join(root, "skills", "agentera", "SKILL.md"), "# Agentera\n");
     fs.writeFileSync(path.join(root, "registry.json"), JSON.stringify({ skills: [{ version: "9.9.9" }] }));
-    fs.writeFileSync(path.join(root, ".agentera-npx-bundle.json"), JSON.stringify({ kind: "agentera-npx-bundle" }));
+    fs.writeFileSync(
+      path.join(root, ".agentera-npx-bundle.json"),
+      JSON.stringify({ kind: "agentera-npx-bundle", suiteVersion: "9.9.9" }),
+    );
+    fs.cpSync(
+      path.join(REPO_ROOT, "references", "cli"),
+      path.join(root, "references", "cli"),
+      { recursive: true },
+    );
   }
   beforeEach(() => {
     bundle = fs.mkdtempSync(path.join(os.tmpdir(), "npxdoctor-"));
@@ -122,7 +137,7 @@ describe("self-contained doctor/upgrade semantics", () => {
     expect(err).toContain("mutually exclusive");
   });
 
-  it("cmdUpgrade reports the self-contained model for a sentinel bundle", () => {
+  it("cmdUpgrade reports no_changes_needed for a sentinel bundle via agentera.upgrade.v2", () => {
     seed(bundle);
     const prev = process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT;
     process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT = bundle;
@@ -134,10 +149,12 @@ describe("self-contained doctor/upgrade semantics", () => {
       );
       expect(rc).toBe(0);
       const payload = JSON.parse(out);
-      expect(payload.mode).toBe("self_contained");
-      expect(payload.status).toBe("up_to_date");
-      expect(payload.updateCommand).toBe("npx -y agentera@latest");
-      expect(payload.currentVersion).toBe("9.9.9");
+      expect(payload.schemaVersion).toBe(UPGRADE_PREVIEW_SCHEMA);
+      expect(payload.install.kind).toBe("v3_self_contained_npm");
+      expect(payload.lifecycleStatus).toBe(STATUS_NO_CHANGES_NEEDED);
+      expect(payload.status).toBe("noop");
+      expect(payload.phases.map((phase: { name: string }) => phase.name)).toEqual(["detect"]);
+      expect(payload.channel.updateCommand).toBe("npx -y agentera@latest");
     } finally {
       if (prev === undefined) delete process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT;
       else process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT = prev;

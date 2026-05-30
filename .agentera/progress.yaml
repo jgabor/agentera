@@ -1,274 +1,299 @@
 cycles:
-- number: 615
-  timestamp: 2026-05-29 18:00
-  type: fix
-  phase: build
-  what: Consolidate progress-commit guard onto shared module; release 2.7.6.
-  commit: "a0c51b5 release: bump to 2.7.6 and close progress-commit plan"
-  discovered: None.
-  verified: tests/test_progress_commit_guard.py 31 passed; capability-contract 2/2;
-    full suite 1335 passed with 30 pre-existing macOS AGENTERA_HOME/corpus failures
-    unrelated to this plan.
-  next: None.
-  context:
-    intent: Close plan tasks 2-6 after task 1 extraction (6530f42).
-    constraints: No remote push; never amend to backfill progress commit fields.
-    scope: hooks/validate_artifact.py, hooks/common.py, scripts/progress_commit.py,
-      tests/test_progress_commit_guard.py, progress schema, UPGRADE.md, version_files,
-      CHANGELOG, TODO.md, plan.yaml, progress.yaml.
-- number: 614
-  timestamp: 2026-05-29 17:00
-  type: refactor
-  phase: build
-  what: Extract shared scripts/progress_commit.py; make `agentera check backfill`
-    a thin consumer.
-  commit: '6530f42 refactor(cli): extract progress-commit logic into shared module'
-  discovered: "tests/test_progress_commit_guard.py repo fixture is pre-existing flaky\u2014\
-    its amended-away stale commit intermittently becomes unreachable under full-suite\
-    \ load (original main 4/12 fail vs refactor 1/12), flaking test_stale_hash_is_flagged\
-    \ and test_check_mode_reports_stale_and_exits_one."
-  verified: "Refactor-no-behavior-change confirmed with real evidence\u2014`agentera\
-    \ check backfill --format json` byte-identical before/after (diff clean) on the\
-    \ real repo, and fix-mode reset the stale cycle-613 hash to pending. TestBackfillCommand\
-    \ 10/10 covers check/fix/clean/forward-fill/refuse statuses and exit codes 0/1/2;\
-    \ retargeted token/rewrite cases pass. Full suite 1328 passed; the only new delta\
-    \ vs main was a bundle gap, fixed by copying progress_commit.py into smoke_live_hosts\
-    \ so test_query_smoke_bundle_includes_upgrade_support_module passes. capability-contract\
-    \ 2/2."
-  next: "Task 2\u2014migrate the validate_artifact guard onto the shared module and\
-    \ align its YAML loading on load_yaml_mapping."
-  context:
-    intent: Plan task 1 CLI-side extraction to remove progress-commit/git-ancestry
-      drift risk between the backfill CLI and the validator guard.
-    constraints: CLI-only (no hook edit), behavior-preserving, hook-safe imports (stdlib
-      + yaml_mapping), no version bump, no remote push, never amend to backfill.
-    scope: scripts/progress_commit.py (new), scripts/agentera (thin cmd_backfill wrapper),
-      scripts/smoke_live_hosts.py (bundle), tests/test_progress_commit_guard.py (retarget),
-      plan.yaml task 1 status; quoted pre-existing int commit on cycle 612 and reset
-      stale cycle 613 to pending to satisfy the artifact guard.
-- number: 613
-  timestamp: 2026-05-29 16:00
-  type: fix
-  phase: build
-  what: Close compaction check/gate robustness and retention-cap dedup plan.
-  commit: pending
-  discovered: None.
-  verified: 1329 passed, 29 failed pytest tests/ -q -n auto (failures are pre-existing
-    macOS AGENTERA_HOME/platform-home env issues and missing corpus.json, unrelated
-    to compaction closeout); compaction tests (23) pass; capability-contract validation
-    pass (2/2).
-  next: None.
-  context:
-    intent: Plan task 4 closeout for compaction check/gate YAML error rows and retention-cap
-      dedup.
-    constraints: No version bump; no remote push; never amend to backfill commit hashes.
-    scope: TODO.md, CHANGELOG.md, progress.yaml, plan.yaml closeout only; implementation
-      in 8be19c4, cf0aa93, 55a9df8.
-- number: 612
-  timestamp: 2026-05-29 15:00
-  type: feat
-  phase: build
-  what: Add progress commit-hash churn guard and `agentera check backfill`.
-  commit: '3741787'
-  discovered: Repo progress.yaml carried a dangling b78a417 hash across cycles 602-610
-    (orphaned by a prior amend) plus malformed multi-line commit scalars in 603-605;
-    the guard surfaced both.
-  verified: 1344 passed pytest tests/ -q -n auto; capability-contract validation pass;
-    backfill check reports clean and validate_artifact passes on the reconciled progress.yaml.
-  next: Forward-fill cycle 612 commit hash in the next cycle (never amend).
-  context:
-    intent: Break the progress commit-hash amend/backfill loop with a validator guard
-      plus a backfill command, not another manual amend.
-    constraints: No release bump; never amend to backfill; preserve comments and non-commit
-      fields when rewriting.
-    scope: hooks/validate_artifact.py, scripts/agentera check backfill, tests/test_progress_commit_guard.py,
-      CHANGELOG.
-- number: 611
-  timestamp: 2026-05-29 14:00
-  type: chore
-  phase: build
-  what: Deduplicate session hook resolve_session_path and compact_entries helpers.
-  commit: 7d17786
-  discovered: None.
-  verified: 1315 passed pytest tests/ -q -n auto -m 'not slow'; hooks/common.py owns
-    resolve_session_path, retention caps, and compact_session_bookmark_entries; compaction.py
-    keeps numeric-ID compact_entries.
-  next: Archive completed plan when starting the next cycle.
-  context:
-    intent: Orkestrera execution of hooks session compaction deduplication plan.
-    constraints: Chore-only; preserve session bookmark and artifact compaction behavior.
-    scope: hooks/common.py, session_start.py, session_stop.py, compaction.py, tests/test_hooks_common.py.
-- number: 610
-  timestamp: 2026-05-29 12:00
-  type: chore
-  phase: build
-  what: Consolidate yaml.safe_load None-return handling across hooks and CLI.
-  commit: e494ee4
-  discovered: None.
-  verified: 1312 passed pytest tests/ -q -n auto -m 'not slow'; added scripts/yaml_mapping.py;
-    regression tests in tests/test_yaml_mapping_loader.py; smoke bundle includes yaml_mapping.py.
-  next: Archive completed plan when starting the next plan cycle.
-  context:
-    intent: Execute YAML safe_load consolidation plan via orkestrera orchestration.
-    constraints: Chore-only; no version bump.
-    scope: hooks, scripts/agentera, production script loaders, TODO/CHANGELOG/progress
-      sync.
-- number: 609
-  timestamp: 2026-05-28 12:00
-  type: chore
-  phase: build
-  what: Tagged v2.7.5 with validation hardening and CLI namespace migration.
-  commit: pending
-  discovered: None.
-  verified: "Version surfaces bumped 2.7.1\u21922.7.5 across version_files; CHANGELOG\
-    \ [2.7.5] promotes validation fixes, CLI audience namespaces, subagent tool provisioning,\
-    \ and JSON output schema checks; version alignment tests pass; git tag v2.7.5\
-    \ applied after release commit."
-  next: Push main and v2.7.5 tag when approved.
-  context:
-    intent: Patch release closeout after explicit 2.7.5 target approval.
-    constraints: No remote push unless requested.
-    scope: CHANGELOG, version_files, PROGRESS, tag only.
-- number: 608
-  timestamp: 2026-05-27 13:00
-  type: fix
-  phase: build
-  what: Fix 16 degraded validation and CLI consistency issues across 7-task plan.
-  commit: pending
-  discovered: None.
-  verified: "1294 passed pytest tests/ -q -n auto; 6 implementation commits verified:\n\
-    \    187e7b1 fix TODO.md parser (Task 1)\n    3149cbf fix health.yaml/plan.yaml/ARCHIVE.summary\
-    \ validation rules (Task 2)\n    bf9d83b consolidate _SKIP_META and add unknown-field\
-    \ check (Task 3)\n    18598f3 consolidate validate subparsers, fix doctor --format\
-    \ json (Task 4)\n    d5192c1 fix Planera vocabulary, agentera.js stderr, artifact\
-    \ path consolidation (Task 5)\n    7138880 fix human-facing Markdown schema validation\
-    \ (Task 6)\n    Behavioral verification: agentera state todo --format json returns\
-    \ correct open_count, health.yaml missing fields report violations, satisfaction\
-    \ maps reject unknown review_needed, validate subparser single code path, doctor\
-    \ --format json emits structured output, agentera.js parses exit code 2, Planera\
-    \ schema uses current vocabulary, artifact paths consolidated in common.py, _SKIP_META\
-    \ symmetric between validator and CLI, todo/design/changelog schema consulted\
-    \ for Markdown artifacts."
-  next: None.
-  context:
-    intent: Complete the 7-task plan for degraded validation and CLI consistency fixes.
-    constraints: Must not break existing passing tests. Must preserve exit code contracts.
-      No remote push.
-    scope: TODO.md parser, schema validation rules, validator robustness, CLI command
-      consistency, schema/integration fixes, human-facing Markdown schema architecture,
-      final state sync.
-- number: 607
-  timestamp: 2026-05-26 14:00
-  type: fix
-  phase: build
-  what: Fix 5 degraded validation and CLI consistency issues in validate_artifact.py
-    and scripts/agentera.
-  commit: pending
-  discovered: None.
-  verified: 1287 passed pytest tests/ -q -n auto; behavioral verification passed for
-    validate artifact exit code 2 on unparseable JSON, query structured envelope,
-    query deprecation warning, archive entry required field validation, and user_confirmation
-    missing vs wrong-type diagnostic.
-  next: Address remaining degraded-severity TODO items (state todo parser, validate
-    subparser duplication, schema loading silent exceptions).
-  context:
-    intent: Continue validation hardening from cycle 606 by fixing degraded-severity
-      consistency issues.
-    constraints: Must not break existing passing tests. Must add regression coverage
-      for each fix.
-    scope: hooks/validate_artifact.py and scripts/agentera only.
-- number: 606
-  timestamp: 2026-05-26 12:00
-  type: fix
-  phase: build
-  what: Fix 7 critical validation and state-loading silent failures in validate_artifact.py
-    and scripts/agentera.
-  commit: pending
-  discovered: None.
-  verified: 1285 passed pytest tests/ -q -n auto (2 pre-existing failures excluded);
-    behavioral verification passed for empty schema violation, VALIDATION_RULES iteration,
-    closure_consistency enforcement, and stderr logging on corrupt schemas/registries/artifacts.
-  next: Address degraded-severity TODO items (state todo parser, user_confirmation
-    type mismatch, archive entry validation).
-  context:
-    intent: Restore trust in the artifact validation hard gate by fixing silent failure
-      modes.
-    constraints: Must not break existing passing validation for well-formed artifacts.
-      Must preserve exit code contracts.
-    scope: hooks/validate_artifact.py and scripts/agentera only.
+  - number: 622
+    timestamp: 2026-05-30 23:55
+    type: test
+    phase: build
+    what: Parity tests, backport-safety gate, and migration plan closeout
+      verification.
+    commit: pending
+    inspiration: None.
+    discovered: Full CLI suite still has 2 unrelated repo-state failures (validate
+      PLAN artifact, compaction over_limit on progress.yaml); upgrade path fixed
+      to skip v2→v3 migration for v3 self-contained npm bundles.
+    verified: "pnpm -C packages/cli test test/upgrade/ — 60/60 passed; pnpm -C
+      packages/cli test — 540/543 passed (3 failures outside upgrade scope:
+      validate.test PLAN artifact, compaction.test progress over_limit,
+      progressCommit.test ancestor type); parity oracle fixture at
+      test/upgrade/fixtures/oracle/python-main-contract.json; stable
+      backport-safety dry-run emits zero cross-major migration operations;
+      .agentera/plan.yaml header and task 8 marked complete."
+    next: Fold migration branch work into release planning; continue Decision 56 CLI
+      parity for non-upgrade surfaces.
+    context:
+      intent: PLAN task 8 for v2→v3 migration dual update channels.
+      constraints: No commit; do not mark Decision 56 satisfied; user-only satisfaction.
+      unknowns: Full vitest green blocked by progress.yaml compaction budget and
+        active plan artifact validation.
+      scope: packages/cli/test/upgrade/parityOracle.test.ts,
+        packages/cli/test/upgrade/fixtures/oracle/python-main-contract.json,
+        packages/cli/src/upgrade/upgradeOrchestrator.ts runMigration guard,
+        packages/cli/test/cli/npxBundle.test.ts,
+        packages/cli/test/upgrade/upgradeOrchestrator.test.ts, TODO.md Decision
+        56 follow-up, .agentera/plan.yaml task 8 and header status.
+  - number: 621
+    timestamp: 2026-05-30 23:45
+    type: docs
+    phase: build
+    what: Document upgrade paths and backport/cherry-pick policy.
+    commit: pending
+    inspiration: None.
+    discovered: None.
+    verified: UPGRADE.md and README.md reviewed against update-channels.yaml and
+      upgrade orchestrator; lefthook markdownlint disables apply to repo doc
+      style; check compact unchanged (progress.yaml over-limit pre-existing).
+    next: Task 8 — parity tests, backport-safety gate, and closeout verification.
+    context:
+      intent: PLAN task 7 for v2→v3 migration dual update channels.
+      constraints: No commit; factual tone; channel-aware commands; maintainer
+        cherry-pick order.
+      unknowns: Task 6 doctor/prime channel integration may land in parallel.
+      scope: UPGRADE.md, README.md upgrade/troubleshooting sections,
+        .agentera/plan.yaml task 7 status.
+  - number: 620
+    timestamp: 2026-05-30 23:36
+    type: feat
+    phase: build
+    what: Wire phased upgrade orchestrator and CLI command.
+    commit: pending
+    inspiration: None.
+    discovered: None.
+    verified: pnpm -C packages/cli test test/upgrade/ — 48/48 passed; pnpm -C
+      packages/cli run typecheck — clean.
+    next: Task 6 — integrate channels and migration into doctor and prime.
+    context:
+      intent: PLAN task 5 for v2→v3 migration dual update channels.
+      constraints: No commit; orchestrator emits agentera.upgrade.v2;
+        preview-before-apply guard.
+      unknowns: None for orchestrator wiring; doctor/prime channel integration lands
+        in task 6.
+      scope: packages/cli/src/upgrade/upgradeOrchestrator.ts,
+        packages/cli/src/cli/commands/upgrade.ts,
+        packages/cli/src/cli/dispatch.ts,
+        packages/cli/src/cli/commands/schema.ts,
+        packages/cli/test/upgrade/upgradeOrchestrator.test.ts,
+        .agentera/plan.yaml task 5 status.
+  - number: 619
+    timestamp: 2026-05-30 23:35
+    type: feat
+    phase: build
+    what: Port v2→v3 artifact, runtime rewire, and cleanup migration modules.
+    commit: pending
+    inspiration: None.
+    discovered: None.
+    verified: pnpm -C packages/cli test test/upgrade/migrateArtifactsV2ToV3.test.ts
+      test/upgrade/ — 43/43 passed (8 migration + 35 existing upgrade tests).
+    next: Task 5 — wire phased upgrade orchestrator and CLI command.
+    context:
+      intent: PLAN task 4 for v2→v3 migration dual update channels.
+      constraints: No commit; v1 detection separate; USER_STATE_NAMES from doctor.ts;
+        fixture-only tests.
+      unknowns: Orchestrator wiring lands in task 5.
+      scope: packages/cli/src/upgrade/migrateArtifactsV2ToV3.ts,
+        packages/cli/src/upgrade/doctor.ts (export user-state constants),
+        packages/cli/test/upgrade/fixtures/,
+        packages/cli/test/upgrade/migrateArtifactsV2ToV3.test.ts,
+        .agentera/plan.yaml task 4 status.
+  - number: 618
+    timestamp: 2026-05-30 23:30
+    type: feat
+    phase: build
+    what: Implement v2/v3 compatibility detection and guard rails.
+    commit: pending
+    inspiration: None.
+    discovered: None.
+    verified: pnpm -C packages/cli test test/upgrade/compatibility.test.ts
+      test/upgrade/backportSafety.test.ts test/upgrade/channels.test.ts — 18/18
+      passed.
+    next: Task 4 — port v2→v3 artifact and runtime migration modules.
+    context:
+      intent: PLAN task 3 for v2→v3 migration dual update channels.
+      constraints: No commit; guard modules safe for main backport; stable dry-run
+        omits v3 ops.
+      unknowns: Full orchestrator wiring lands in task 5.
+      scope: packages/cli/src/upgrade/compatibility.ts,
+        packages/cli/test/upgrade/compatibility.test.ts,
+        packages/cli/test/upgrade/backportSafety.test.ts,
+        packages/cli/src/cli/commands/upgrade.ts,
+        packages/cli/src/cli/dispatch.ts, .agentera/plan.yaml task 3 status.
+  - number: 617
+    timestamp: 2026-05-30 23:25
+    type: feat
+    phase: build
+    what: Implement update channel resolution module (channels.ts).
+    commit: pending
+    inspiration: None.
+    discovered: None.
+    verified: pnpm -C packages/cli test test/upgrade/channels.test.ts 10/10 passed.
+    next: Task 3 — implement v2/v3 compatibility detection and guard rails.
+    context:
+      intent: PLAN task 2 for v2→v3 migration dual update channels.
+      constraints: No commit; do not modify vision.yaml; authority-driven resolution.
+      unknowns: None for channel resolver; orchestrator wiring lands in task 5.
+      scope: packages/cli/src/upgrade/channels.ts,
+        packages/cli/test/upgrade/channels.test.ts, .agentera/plan.yaml task 2
+        status.
+  - number: 616
+    timestamp: 2026-05-30 12:00
+    type: feat
+    phase: build
+    what: Define update-channel and major-boundary vocabulary authorities.
+    commit: pending
+    inspiration: None.
+    discovered: None.
+    verified: pnpm -C packages/cli test test/validate/vocabularyAuthority.test.ts
+      14/14 passed; pnpm -C packages/cli test
+      test/validate/lifecycleAdapters.test.ts 4/4 passed (18/18 total).
+    next: Task 2 — implement channel resolution module (channels.ts).
+    context:
+      intent: PLAN task 1 for v2→v3 migration dual update channels.
+      constraints: No commit; vocabulary-only; preserve Decision 54 canonical statuses.
+      unknowns: None for vocabulary surface; channel resolver behavior lands in task 2.
+      scope: references/cli/update-channels.yaml, app-lifecycle-vocabulary.yaml,
+        vocabulary-index.yaml, vocabulary.md,
+        packages/cli/test/validate/vocabularyAuthority.test.ts.
+  - number: 615
+    timestamp: 2026-05-29 18:00
+    type: fix
+    phase: build
+    what: Consolidate progress-commit guard onto shared module; release 2.7.6.
+    commit: "a0c51b5 release: bump to 2.7.6 and close progress-commit plan"
+    discovered: None.
+    verified: tests/test_progress_commit_guard.py 31 passed; capability-contract
+      2/2; full suite 1335 passed with 30 pre-existing macOS
+      AGENTERA_HOME/corpus failures unrelated to this plan.
+    next: None.
+    context:
+      intent: Close plan tasks 2-6 after task 1 extraction (6530f42).
+      constraints: No remote push; never amend to backfill progress commit fields.
+      scope: hooks/validate_artifact.py, hooks/common.py, scripts/progress_commit.py,
+        tests/test_progress_commit_guard.py, progress schema, UPGRADE.md,
+        version_files, CHANGELOG, TODO.md, plan.yaml, progress.yaml.
+  - number: 614
+    timestamp: 2026-05-29 17:00
+    type: refactor
+    phase: build
+    what: Extract shared scripts/progress_commit.py; make `agentera check backfill`
+      a thin consumer.
+    commit: "6530f42 refactor(cli): extract progress-commit logic into shared module"
+    discovered: tests/test_progress_commit_guard.py repo fixture is pre-existing
+      flaky—its amended-away stale commit intermittently becomes unreachable
+      under full-suite load (original main 4/12 fail vs refactor 1/12), flaking
+      test_stale_hash_is_flagged and
+      test_check_mode_reports_stale_and_exits_one.
+    verified: Refactor-no-behavior-change confirmed with real evidence—`agentera
+      check backfill --format json` byte-identical before/after (diff clean) on
+      the real repo, and fix-mode reset the stale cycle-613 hash to pending.
+      TestBackfillCommand 10/10 covers check/fix/clean/forward-fill/refuse
+      statuses and exit codes 0/1/2; retargeted token/rewrite cases pass. Full
+      suite 1328 passed; the only new delta vs main was a bundle gap, fixed by
+      copying progress_commit.py into smoke_live_hosts so
+      test_query_smoke_bundle_includes_upgrade_support_module passes.
+      capability-contract 2/2.
+    next: Task 2—migrate the validate_artifact guard onto the shared module and
+      align its YAML loading on load_yaml_mapping.
+    context:
+      intent: Plan task 1 CLI-side extraction to remove progress-commit/git-ancestry
+        drift risk between the backfill CLI and the validator guard.
+      constraints: CLI-only (no hook edit), behavior-preserving, hook-safe imports
+        (stdlib + yaml_mapping), no version bump, no remote push, never amend to
+        backfill.
+      scope: scripts/progress_commit.py (new), scripts/agentera (thin cmd_backfill
+        wrapper), scripts/smoke_live_hosts.py (bundle),
+        tests/test_progress_commit_guard.py (retarget), plan.yaml task 1 status;
+        quoted pre-existing int commit on cycle 612 and reset stale cycle 613 to
+        pending to satisfy the artifact guard.
+  - number: 613
+    timestamp: 2026-05-29 16:00
+    type: fix
+    phase: build
+    what: Close compaction check/gate robustness and retention-cap dedup plan.
+    commit: pending
+    discovered: None.
+    verified: 1329 passed, 29 failed pytest tests/ -q -n auto (failures are
+      pre-existing macOS AGENTERA_HOME/platform-home env issues and missing
+      corpus.json, unrelated to compaction closeout); compaction tests (23)
+      pass; capability-contract validation pass (2/2).
+    next: None.
+    context:
+      intent: Plan task 4 closeout for compaction check/gate YAML error rows and
+        retention-cap dedup.
+      constraints: No version bump; no remote push; never amend to backfill commit hashes.
+      scope: TODO.md, CHANGELOG.md, progress.yaml, plan.yaml closeout only;
+        implementation in 8be19c4, cf0aa93, 55a9df8.
 archive:
-- summary: "Cycle 605 (2026-05-25): CLI audience namespace plan task 7 \u2014 closeout\
-    \ verification, measurements, and archive."
-- summary: 'Cycle 605 (2026-05-25): Closed CLI audience namespace consolidation plan
-    with validation, alias-parity measurements, and plan archive.'
-- summary: "Cycle 604 (2026-05-25): CLI audience namespace plan task 6 \u2014 tests,\
-    \ semantic fixtures, JSON manifest."
-- summary: "Cycle 603 (2026-05-25): CLI audience namespace plan task 5 \u2014 docs,\
-    \ contracts, hooks, and skill routing."
-- summary: 'Cycle 602 (2026-05-25): Pytest suite speed and coverage hygiene plan closeout.'
-- summary: 'Cycle 601 (2026-05-25): Tagged v2.7.1 with profilera Cursor session corpus
-    parity.'
-- summary: 'Cycle 600 (2026-05-25): Cursor Agent CLI store.db gap-fill extraction
-    for profilera corpus.'
-- summary: 'Cycle 599 (2026-05-25): Profilera Cursor IDE session corpus parity via
-    extract_corpus cursor runtime.'
-- summary: 'Cycle 598 (2026-05-24): Tagged v2.7.0 with Cursor v1, web site, and post-2.6.1
-    CLI fixes.'
-- summary: 'Cycle 597 (2026-05-24): Closed Cursor First-Class Runtime v1 plan (Decision
-    63) with 2.7.0 release metadata.'
-- summary: 'Cycle 596 (2026-05-24): Live Cursor IDE preToolUse Write smoke for Task
-    5.'
-- summary: 'Cycle 595 (2026-05-24): Shipped Cursor v1 runtime slice per Decision 63.'
-- summary: 'Cycle 594 (2026-05-23): Added hybrid inspektera audit staleness to hej
-    and fixed latest health audit selection.'
-- summary: 'Cycle 593 (2026-05-23): Relocated authoritative docs to references/ and
-    released 2.6.1 patch metadata.'
-- summary: 'Cycle 592 (2026-05-23): Archived completed prime/JSON-budget plan and
-    released 2.6.0 metadata.'
-- summary: 'Cycle 591 (2026-05-23): Closed Agentera 3.0 JSON budget plan with full
-    validation and measurement closeout evidence.'
-- summary: 'Cycle 590 (2026-05-23): Synced callers, contracts, docs, and tests to
-    prime --context as sole 3.0 startup seam.'
-- summary: 'Cycle 589 (2026-05-23): Introduced prime context control plane and removed
-    hej capability-context compatibility.'
-- summary: 'Cycle 588 (2026-05-23): Wired D59 JSON byte/token budgets into manifest
-    and measurement harness enforcement.'
-- summary: 'Cycle 587 (2026-05-23): Built whole-surface JSON measurement coverage
-    for D58 inventory surfaces.'
-- summary: 'Cycle 586 (2026-05-23): Verified D58 JSON output surface inventory against
-    Plan Task 1 acceptance criteria.'
-- summary: 'Cycle 585 (2026-05-21): Made Codex plugin-provided hooks primary when
-    the Agentera Codex plugin is enabled.'
-- summary: 'Cycle 584 (2026-05-21): Synchronized slim capability-context contracts
-    and validation evidence.'
-- summary: 'Cycle 583 (2026-05-21): Added capability-context byte and GPT-5 token
-    budget regression coverage.'
-- summary: 'Cycle 582 (2026-05-21): Added generic slim capability-context builders.'
-- summary: 'Cycle 581 (2026-05-21): Nested existing bespoke contexts in slim capability-context
-    output.'
-- summary: 'Cycle 580 (2026-05-21): Added slim capability-context envelope mode.'
-- summary: 'Cycle 579 (2026-05-20): Introduced role-aware capability state inventory.'
-- summary: 'Cycle 578 (2026-05-18): Closed stale 2.4.x instruction-validation TODO
-    from committed regression evidence.'
-- summary: 'Cycle 577 (2026-05-18): Completed capability instruction validation regression
-    coverage.'
-- summary: 'Cycle 576 (2026-05-18): Added compact-startup exception boundary regression
-    coverage.'
-- summary: 'Cycle 575 (2026-05-18): Added contract and hej context regression coverage
-    for instruction reads.'
-- summary: 'Cycle 574 (2026-05-18): Added capability validator regression coverage
-    for required instructions.md.'
-- summary: 'Cycle 573 (2026-05-18): Added routing and execution vocabulary occurrence
-    classification coverage.'
-- summary: 'Cycle 572 (2026-05-18): Added bundle and SKILL.md vocabulary occurrence
-    classification coverage.'
-- summary: 'Cycle 571 (2026-05-18): Added Decision 54 app lifecycle status regression
-    coverage.'
-- summary: 'Cycle 570 (2026-05-18): Added first_invocation_read metadata to hej capability
-    context output.'
-- summary: 'Cycle 569 (2026-05-18): Renamed Agentera capability instruction files
-    from prose.md to instructions.md.'
-- summary: 'Cycle 568 (2026-05-18): Replaced legacy dispatch/conductor vocabulary
-    with canonical route/suggest/delegate/spawn/subagent-mechanism terms across current
-    non-archived files.'
-- summary: 'Cycle 567 (2026-05-18): Qualified ambiguous current SKILL.md prose references.'
+  - summary: "Cycle 612 (2026-05-29): Add progress commit-hash churn guard and
+      `agentera check backfill`."
+  - summary: "Cycle 611 (2026-05-29): Deduplicate session hook resolve_session_path
+      and compact_entries helpers."
+  - summary: "Cycle 610 (2026-05-29): Consolidate yaml.safe_load None-return
+      handling across hooks and CLI."
+  - summary: "Cycle 609 (2026-05-28): Tagged v2.7.5 with validation hardening and
+      CLI namespace migration."
+  - summary: "Cycle 608 (2026-05-27): Fix 16 degraded validation and CLI consistency
+      issues across 7-task plan."
+  - summary: "Cycle 607 (2026-05-26): Fix 5 degraded validation and CLI consistency
+      issues in validate_artifact.py and scripts/agentera."
+  - summary: "Cycle 606 (2026-05-26): Fix 7 critical validation and state-loading
+      silent failures in validate_artifact.py and scripts/agentera."
+  - summary: "Cycle 605 (2026-05-25): CLI audience namespace plan task 7 — closeout
+      verification, measurements, and archive."
+  - summary: "Cycle 605 (2026-05-25): Closed CLI audience namespace consolidation
+      plan with validation, alias-parity measurements, and plan archive."
+  - summary: "Cycle 604 (2026-05-25): CLI audience namespace plan task 6 — tests,
+      semantic fixtures, JSON manifest."
+  - summary: "Cycle 603 (2026-05-25): CLI audience namespace plan task 5 — docs,
+      contracts, hooks, and skill routing."
+  - summary: "Cycle 602 (2026-05-25): Pytest suite speed and coverage hygiene plan
+      closeout."
+  - summary: "Cycle 601 (2026-05-25): Tagged v2.7.1 with profilera Cursor session
+      corpus parity."
+  - summary: "Cycle 600 (2026-05-25): Cursor Agent CLI store.db gap-fill extraction
+      for profilera corpus."
+  - summary: "Cycle 599 (2026-05-25): Profilera Cursor IDE session corpus parity via
+      extract_corpus cursor runtime."
+  - summary: "Cycle 598 (2026-05-24): Tagged v2.7.0 with Cursor v1, web site, and
+      post-2.6.1 CLI fixes."
+  - summary: "Cycle 597 (2026-05-24): Closed Cursor First-Class Runtime v1 plan
+      (Decision 63) with 2.7.0 release metadata."
+  - summary: "Cycle 596 (2026-05-24): Live Cursor IDE preToolUse Write smoke for
+      Task 5."
+  - summary: "Cycle 595 (2026-05-24): Shipped Cursor v1 runtime slice per Decision 63."
+  - summary: "Cycle 594 (2026-05-23): Added hybrid inspektera audit staleness to hej
+      and fixed latest health audit selection."
+  - summary: "Cycle 593 (2026-05-23): Relocated authoritative docs to references/
+      and released 2.6.1 patch metadata."
+  - summary: "Cycle 592 (2026-05-23): Archived completed prime/JSON-budget plan and
+      released 2.6.0 metadata."
+  - summary: "Cycle 591 (2026-05-23): Closed Agentera 3.0 JSON budget plan with full
+      validation and measurement closeout evidence."
+  - summary: "Cycle 590 (2026-05-23): Synced callers, contracts, docs, and tests to
+      prime --context as sole 3.0 startup seam."
+  - summary: "Cycle 589 (2026-05-23): Introduced prime context control plane and
+      removed hej capability-context compatibility."
+  - summary: "Cycle 588 (2026-05-23): Wired D59 JSON byte/token budgets into
+      manifest and measurement harness enforcement."
+  - summary: "Cycle 587 (2026-05-23): Built whole-surface JSON measurement coverage
+      for D58 inventory surfaces."
+  - summary: "Cycle 586 (2026-05-23): Verified D58 JSON output surface inventory
+      against Plan Task 1 acceptance criteria."
+  - summary: "Cycle 585 (2026-05-21): Made Codex plugin-provided hooks primary when
+      the Agentera Codex plugin is enabled."
+  - summary: "Cycle 584 (2026-05-21): Synchronized slim capability-context contracts
+      and validation evidence."
+  - summary: "Cycle 583 (2026-05-21): Added capability-context byte and GPT-5 token
+      budget regression coverage."
+  - summary: "Cycle 582 (2026-05-21): Added generic slim capability-context builders."
+  - summary: "Cycle 581 (2026-05-21): Nested existing bespoke contexts in slim
+      capability-context output."
+  - summary: "Cycle 580 (2026-05-21): Added slim capability-context envelope mode."
+  - summary: "Cycle 579 (2026-05-20): Introduced role-aware capability state inventory."
+  - summary: "Cycle 578 (2026-05-18): Closed stale 2.4.x instruction-validation TODO
+      from committed regression evidence."
+  - summary: "Cycle 577 (2026-05-18): Completed capability instruction validation
+      regression coverage."
+  - summary: "Cycle 576 (2026-05-18): Added compact-startup exception boundary
+      regression coverage."
+  - summary: "Cycle 575 (2026-05-18): Added contract and hej context regression
+      coverage for instruction reads."
+  - summary: "Cycle 574 (2026-05-18): Added capability validator regression coverage
+      for required instructions.md."

@@ -336,16 +336,21 @@ Runtime entry points, validation strictness, and hook behavior:
 
 **Install or app home looks wrong**
 
+The default **stable** channel resolves to the supported 2.x line (`npx -y agentera@latest`).
+Preview before apply: run `--dry-run`, review the plan, then rerun with `--yes`.
+
 ```bash
-uvx --from git+https://github.com/jgabor/agentera agentera doctor
+npx -y agentera@latest doctor
+npx -y agentera@latest upgrade --project "$PWD" --dry-run
 ```
 
 Doctor checks the managed app, Agentera app files status, and runtime wiring.
-Follow the printed repair commands. From a clone: `uv run scripts/agentera doctor`.
+Follow the printed channel-aware repair commands. From a clone: `uv run scripts/agentera doctor`.
 
-**Migrating from Agentera v1**
+**Migrating from Agentera v1 or v2 to v3**
 
-See [Upgrade from v1](#upgrade-from-v1) or [`UPGRADE.md`](./UPGRADE.md).
+See [Upgrade from v1](#upgrade-from-v1) or [`UPGRADE.md`](./UPGRADE.md) for stable-channel
+v1→v2 steps, update channels, and explicit v2→v3 opt-in on the development channel.
 
 **Behavior differs by runtime**
 
@@ -356,23 +361,25 @@ as the source of truth.
 ## Upgrade from v1
 
 <details>
-<summary><strong>Preview and apply the v2 upgrade</strong></summary>
+<summary><strong>Preview and apply the v2 upgrade (stable channel)</strong></summary>
 
-Run the no-write preview first:
+The default stable channel uses `@latest` on the 2.x support line. Run the no-write
+preview first:
 
 ```bash
-uvx --from git+https://github.com/jgabor/agentera agentera upgrade --project "$PWD" --dry-run
+npx -y agentera@latest upgrade --project "$PWD" --dry-run
 ```
 
 After reviewing the preview, apply the upgrade:
 
 ```bash
-uvx --from git+https://github.com/jgabor/agentera agentera upgrade --project "$PWD" --yes
+npx -y agentera@latest upgrade --project "$PWD" --yes
 ```
 
 Add `--update-packages` only when you explicitly want Agentera to run package
-manager commands such as `npx skills add` or `npx skills remove`. See
-[`UPGRADE.md`](./UPGRADE.md) for the full migration guide.
+manager commands such as `npx skills add` or `npx skills remove`. For update
+channels, v2→v3 opt-in, and maintainer backport order, see
+[`UPGRADE.md`](./UPGRADE.md).
 
 </details>
 
@@ -407,7 +414,7 @@ Instruction-file contract:
 
 | You have | Use for day-to-day work | Use for upgrade, repair, validation |
 |---|---|---|
-| Skill or marketplace plugin only | `/agentera` (or `$agentera`) | `uvx --from git+https://github.com/jgabor/agentera agentera …` |
+| Skill or marketplace plugin only | `/agentera` (or `$agentera`) | `npx -y agentera@latest …` (stable) or `npx -y agentera@next …` (development) |
 | Git clone of this repo | `/agentera` plus hooks if configured | `uv run scripts/agentera …` |
 
 Agentera keeps a managed app under your Agentera data directory (app home). Skill

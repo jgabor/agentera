@@ -7,7 +7,7 @@ import { cmdQuery, QueryArgs } from "./commands/query.js";
 import { cmdCompact, cmdGate, CompactArgs } from "./commands/compact.js";
 import { cmdSchema } from "./commands/schema.js";
 import { cmdDoctor, DoctorArgs } from "./commands/doctor.js";
-import { cmdUpgrade, UpgradeArgs } from "./commands/upgrade.js";
+import { cmdUpgrade, UpgradeArgs, type UpgradeOnlyPhase } from "./commands/upgrade.js";
 import { cmdVerify, VerifyArgs } from "./commands/verify.js";
 import { cmdReport, ReportArgs } from "./commands/report.js";
 import { runSessionStart } from "../hooks/sessionStart.js";
@@ -595,8 +595,12 @@ function runUpgrade(argv: string[], io: Io, prog: string): number {
     home: null,
     project: null,
     expectedVersion: null,
+    channel: null,
+    targetMajor: null,
     yes: false,
     dryRun: false,
+    only: [],
+    force: false,
     format: "text",
   };
   let jsonFlag = false;
@@ -612,13 +616,28 @@ function runUpgrade(argv: string[], io: Io, prog: string): number {
     else if ((v = value("--home")) !== null) args.home = v;
     else if ((v = value("--project")) !== null) args.project = v;
     else if ((v = value("--expected-version")) !== null) args.expectedVersion = v;
-    else if ((v = value("--runtime")) !== null) void v; // accepted; self-contained ignores
-    else if ((v = value("--only")) !== null) void v; // accepted; self-contained ignores
+    else if ((v = value("--channel")) !== null) args.channel = v;
+    else if ((v = value("--target-major")) !== null) {
+      const major = Number(v);
+      if (!Number.isFinite(major)) {
+        err(`${prog}: error: argument --target-major: invalid int value: '${v}'\n`);
+        return 2;
+      }
+      args.targetMajor = major;
+    }
+    else if ((v = value("--runtime")) !== null) void v; // accepted; orchestrator uses fixture runtimes
+    else if ((v = value("--only")) !== null) {
+      if (v !== "artifacts" && v !== "runtime" && v !== "cleanup") {
+        err(`${prog}: error: argument --only: invalid choice: '${v}' (choose from 'artifacts', 'runtime', 'cleanup')\n`);
+        return 2;
+      }
+      (args.only as UpgradeOnlyPhase[]).push(v);
+    }
     else if ((v = value("--opencode-config-dir")) !== null) void v; // accepted; ignored
     else if (a === "--yes") args.yes = true;
     else if (a === "--dry-run") args.dryRun = true;
-    else if (a === "--force") void 0; // accepted; no install to force in self-contained mode
-    else if (a === "--update-packages") void 0; // accepted; ignored
+    else if (a === "--force") args.force = true;
+    else if (a === "--update-packages") void 0; // deferred for 3.x channel model
     else if (a === "--json") jsonFlag = true;
     else if ((v = value("--format")) !== null) {
       if (v !== "text" && v !== "json") {

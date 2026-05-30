@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "hooks": {
+    "sessionStart": [
+      {
+        "command": "uv run ${AGENTERA_HOME}/app/scripts/cursor_session_start.py",
+        "timeout": 15
+      }
+    ]
+  }
+}
