@@ -142,7 +142,7 @@ cycle report and run the listed `execution_context.fallback_commands` before any
 last-resort raw artifact diagnostic. Raw artifact reads are last-resort
 diagnostics, not normal Realisera startup behavior.
 
-For progress fallback specifically, use `uv run scripts/agentera progress --format json`
+For progress fallback specifically, use `npx -y agentera state progress --format json`
 or the installed app equivalent from the returned fallback command; the routine
 progress command owns startup progress state.
 
@@ -280,7 +280,7 @@ Verification has two phases: structural and behavioral. Both must pass before co
 - CLI tool: invoke with realistic arguments
 - Library/SDK: run a smoke driver
 - Web service: send a request to a production-shaped endpoint
-- Skill repo: `uv run scripts/eval_skills.py --skill <name>`
+- Skill repo: `npx -y agentera verify eval skills --skill <name>`
 
 If verification fails: diagnose, spawn a fix agent, re-verify.
 
