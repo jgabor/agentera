@@ -191,7 +191,7 @@ focused_scan:
     - README.md
     - references/cli/vocabulary.md
     - references/adapters/opencode.md
-    - scripts/measure_token_payload.py
+    - (retired maintainer measurement tool)
     - skills/agentera/SKILL.md
     - skills/agentera/capabilities/hej/schemas/triggers.yaml
     - skills/agentera/capabilities/resonera/instructions.md

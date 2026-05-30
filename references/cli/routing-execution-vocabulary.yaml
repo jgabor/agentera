@@ -168,7 +168,7 @@ focused_scan:
     - AGENTS.md
     - references/cli/vocabulary.md
     - references/adapters/runtime-feature-parity.md
-    - scripts/measure_token_payload.py
+    - (retired maintainer measurement tool)
     - skills/agentera/SKILL.md
     - skills/agentera/references/contract.md
     - skills/agentera/capabilities/realisera/instructions.md

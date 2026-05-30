@@ -18,8 +18,8 @@ authority_order:
   - references/cli/routing-execution-vocabulary.yaml
   - skills/agentera/SKILL.md
   - skills/agentera/capabilities/*/instructions.md
-  - scripts/agentera
-  - scripts/agentera_upgrade.py
+  - the agentera CLI
+  - packages/cli/src/upgrade (doctor/upgrade)
   - README.md
   - UPGRADE.md
   - DESIGN.md
