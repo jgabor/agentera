@@ -17,10 +17,26 @@ export function listPreservedAppHomeRelPaths(appHome: string): string[] {
       out.push(rel);
     }
   }
+  const walkUserStateDir = (dir: string, prefix: string): void => {
+    for (const entry of fs.readdirSync(dir)) {
+      const full = path.join(dir, entry);
+      const rel = prefix ? `${prefix}/${entry}` : entry;
+      if (fs.statSync(full).isDirectory()) {
+        walkUserStateDir(full, rel);
+      } else {
+        out.push(rel);
+      }
+    }
+  };
   for (const name of ROOT_USER_STATE_DIR_NAMES) {
     const rel = name;
-    if (fs.existsSync(path.join(appHome, rel))) {
-      out.push(rel);
+    const full = path.join(appHome, rel);
+    if (fs.existsSync(full)) {
+      if (fs.statSync(full).isDirectory()) {
+        walkUserStateDir(full, rel);
+      } else {
+        out.push(rel);
+      }
     }
   }
   const agenteraDir = path.join(appHome, ".agentera");

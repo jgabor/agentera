@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
+import { resolveNpxHookCommands } from "../../src/upgrade/migrateArtifactsV2ToV3.js";
 import {
   UPDATE_CHANNEL_ENV,
   assertStableNpmUpdateCommand,
@@ -146,5 +147,13 @@ describe("parseConfigUpdateChannel", () => {
   it("parses nested update.channel from TOML", () => {
     expect(parseConfigUpdateChannel('[update]\nchannel = "development"\n')).toBe("development");
     expect(parseConfigUpdateChannel("")).toBeNull();
+  });
+});
+describe("resolveNpxHookCommands", () => {
+  it("uses the selected channel npm update command for hook rewires", () => {
+    const resolved = resolveUpdateChannel({ channel: "development", env: env(), home, sourceRoot: REPO_ROOT });
+    const hooks = resolveNpxHookCommands({ channel: "development", env: env(), home, sourceRoot: REPO_ROOT });
+    expect(hooks.cliEntrypoint).toBe(resolved.updateCommand);
+    expect(hooks.validate).toBe(`${resolved.updateCommand} hook validate-artifact`);
   });
 });

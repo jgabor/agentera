@@ -9,6 +9,12 @@ import {
   ROOT_USER_STATE_DIR_NAMES,
   ROOT_USER_STATE_FILE_NAMES,
 } from "./doctor.js";
+import {
+  applyRuntimeMigrationItems,
+  planRuntimeMigrationItems,
+  resolveNpxHookCommands,
+  rewireRuntimeText,
+} from "./runtimeMigration.js";
 
 /**
  * v2→v3 migration phases: artifacts (noop for YAML), runtime rewire, cleanup.
@@ -27,22 +33,14 @@ export const V1_ARTIFACT_PAIRS: ReadonlyArray<readonly [string, string]> = [
   ["VISION.md", ".agentera/vision.yaml"],
 ];
 
-export const NPX_CLI_ENTRYPOINT = "npx -y agentera";
+/** Default development-channel npm entrypoint for tests and legacy imports. */
+export const NPX_CLI_ENTRYPOINT = "npx -y agentera@next";
 export const NPX_HOOK_VALIDATE = `${NPX_CLI_ENTRYPOINT} hook validate-artifact`;
 export const NPX_HOOK_CURSOR_SESSION_START = `${NPX_CLI_ENTRYPOINT} hook cursor-session-start`;
 export const NPX_HOOK_CURSOR_SESSION_STOP = `${NPX_CLI_ENTRYPOINT} hook session-stop`;
 export const NPX_HOOK_CURSOR_PRE_TOOL = `${NPX_CLI_ENTRYPOINT} hook cursor-pre-tool-use`;
 
-const PYTHON_MANAGED_PATTERNS = [
-  /hooks\/validate_artifact\.py/,
-  /\buv run\b/,
-  /\buvx\b/,
-  /scripts\/agentera/,
-  /\/app\/scripts\/agentera/,
-  /cursor_session_start\.py/,
-  /cursor_pre_tool_use\.py/,
-  /cursor_session_stop\.py/,
-] as const;
+export { rewireRuntimeText, resolveNpxHookCommands };
 
 export interface MigrationPhaseItem {
   status: MigrationStatus;
@@ -78,6 +76,9 @@ export interface MigrationContext {
   project: string;
   home: string;
   force?: boolean;
+  sourceRoot?: string;
+  channel?: string | null;
+  env?: Record<string, string | undefined>;
 }
 
 export interface DryRunMigrationResult {
@@ -189,88 +190,8 @@ export function applyArtifactsPhase(phase: MigrationPhase, _project: string): vo
   phase.status = summarizePhase("artifacts", phase.items, phase.message).status;
 }
 
-function textUsesPythonManagedEntrypoint(text: string): boolean {
-  if (/AGENTERA_HOME\s*=/.test(text)) {
-    return true;
-  }
-  return PYTHON_MANAGED_PATTERNS.some((pattern) => pattern.test(text));
-}
-
-function rewireRuntimeText(text: string, runtime: string): string {
-  let next = text;
-  next = next.replace(/uv run\s+"?\$\{AGENTERA_HOME\}\/hooks\/validate_artifact\.py"?/g, NPX_HOOK_VALIDATE);
-  next = next.replace(/uv run\s+"?\$\{PLUGIN_ROOT\}\/hooks\/validate_artifact\.py"?/g, NPX_HOOK_VALIDATE);
-  next = next.replace(/["']?[^"'\n]*hooks\/validate_artifact\.py[^"'\n]*["']?/g, `"${NPX_HOOK_VALIDATE}"`);
-  next = next.replace(/["']?[^"'\n]*cursor_session_start\.py[^"'\n]*["']?/g, `"${NPX_HOOK_CURSOR_SESSION_START}"`);
-  next = next.replace(/["']?[^"'\n]*cursor_pre_tool_use\.py[^"'\n]*["']?/g, `"${NPX_HOOK_CURSOR_PRE_TOOL}"`);
-  next = next.replace(/["']?[^"'\n]*cursor_session_stop\.py[^"'\n]*["']?/g, `"${NPX_HOOK_CURSOR_SESSION_STOP}"`);
-  next = next.replace(/["']?[^"'\n]*\/app\/scripts\/agentera[^"'\n]*["']?/g, `"${NPX_CLI_ENTRYPOINT}"`);
-  next = next.replace(/["']?[^"'\n]*scripts\/agentera[^"'\n]*["']?/g, `"${NPX_CLI_ENTRYPOINT}"`);
-  if (runtime === "codex") {
-    next = next.replace(/AGENTERA_HOME\s*=\s*"[^"]*"/g, "");
-    next = next.replace(/AGENTERA_HOME\s*=\s*'[^']*'/g, "");
-    next = next.replace(/set\s*=\s*\{\s*,/g, "set = {");
-    next = next.replace(/,\s*,/g, ",");
-    next = next.replace(/,\s*\}/g, " }");
-    next = next.replace(/set\s*=\s*\{\s*\}/g, "set = { }");
-  }
-  return next;
-}
-
-interface RuntimeTarget {
-  runtime: string;
-  path: string;
-}
-
-function runtimeTargets(home: string, project: string): RuntimeTarget[] {
-  const targets: RuntimeTarget[] = [];
-  const add = (runtime: string, p: string) => {
-    if (isFile(p)) {
-      targets.push({ runtime, path: p });
-    }
-  };
-  add("codex", path.join(home, ".codex", "hooks", "codex-hooks.json"));
-  add("codex", path.join(home, ".codex", "config.toml"));
-  add("cursor", path.join(project, ".cursor", "hooks.json"));
-  add("cursor", path.join(home, ".cursor", "hooks.json"));
-  return targets;
-}
-
 export function planRuntimeRewirePhase(ctx: MigrationContext): MigrationPhase {
-  const home = resolvePath(ctx.home);
-  const project = resolvePath(ctx.project);
-  const items: MigrationPhaseItem[] = [];
-
-  for (const target of runtimeTargets(home, project)) {
-    const text = fs.readFileSync(target.path, "utf8");
-    if (!textUsesPythonManagedEntrypoint(text)) {
-      if (text.includes(NPX_CLI_ENTRYPOINT)) {
-        items.push({
-          status: "noop",
-          action: "rewire-runtime",
-          runtime: target.runtime,
-          source: target.path,
-          message: "runtime config already references npm self-contained entrypoint",
-        });
-      }
-      continue;
-    }
-    const newText = rewireRuntimeText(text, target.runtime);
-    const status: MigrationStatus = newText === text ? "blocked" : "pending";
-    items.push({
-      status,
-      action: "rewire-runtime",
-      runtime: target.runtime,
-      source: target.path,
-      target: target.path,
-      newText,
-      message:
-        status === "pending"
-          ? "will rewire runtime config from Python managed app-home to npm self-contained entrypoint"
-          : "runtime config uses Python managed paths but could not be rewritten safely",
-    });
-  }
-
+  const items = planRuntimeMigrationItems(ctx);
   return summarizePhase(
     "runtime",
     items,
@@ -278,19 +199,15 @@ export function planRuntimeRewirePhase(ctx: MigrationContext): MigrationPhase {
   );
 }
 
-export function applyRuntimeRewirePhase(phase: MigrationPhase): void {
-  for (const item of phase.items) {
-    if (item.status !== "pending" || !item.target || item.newText === undefined) {
-      continue;
-    }
-    try {
-      fs.writeFileSync(item.target, item.newText, "utf8");
-      item.status = "applied";
-      item.message = "runtime config rewired to npm self-contained entrypoint";
-    } catch (exc) {
-      item.status = "failed";
-      item.message = `runtime rewire failed: ${(exc as Error).message}`;
-    }
+export function applyRuntimeRewirePhase(phase: MigrationPhase, ctx?: MigrationContext): void {
+  if (ctx) {
+    applyRuntimeMigrationItems(phase.items, ctx);
+  } else {
+    applyRuntimeMigrationItems(phase.items, {
+      appHome: "",
+      project: "",
+      home: "",
+    });
   }
   const updated = summarizePhase("runtime", phase.items, phase.message);
   phase.status = updated.status;
@@ -504,7 +421,7 @@ export function applyMigrationPhases(
     applyArtifactsPhase(result.artifacts, ctx.project);
   }
   if (only.includes("runtime")) {
-    applyRuntimeRewirePhase(result.runtime);
+    applyRuntimeRewirePhase(result.runtime, ctx);
   }
   if (only.includes("cleanup")) {
     applyCleanupPhase(result.cleanup);

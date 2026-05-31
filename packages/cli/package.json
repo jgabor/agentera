@@ -1,6 +1,6 @@
 {
   "name": "agentera",
-  "version": "3.0.0-dev.0",
+  "version": "3.0.0-dev.1",
   "description": "Agentera app-home protocol and CLI (TypeScript)",
   "type": "module",
   "license": "Apache-2.0",
@@ -38,7 +38,7 @@
   },
   "agentera": {
     "suiteVersion": "2.7.6",
-    "gitRef": "v3.0.0-dev.0"
+    "gitRef": "v3.0.0-dev.1"
   },
   "publishConfig": {
     "access": "public",

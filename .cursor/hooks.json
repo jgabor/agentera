@@ -3,26 +3,26 @@
   "hooks": {
     "sessionStart": [
       {
-        "command": "npx -y agentera hook cursor-session-start",
+        "command": "npx -y agentera@next hook cursor-session-start",
         "timeout": 15
       }
     ],
     "sessionEnd": [
       {
-        "command": "npx -y agentera hook session-stop",
+        "command": "npx -y agentera@next hook session-stop",
         "timeout": 15
       }
     ],
     "preToolUse": [
       {
-        "command": "npx -y agentera hook cursor-pre-tool-use",
+        "command": "npx -y agentera@next hook cursor-pre-tool-use",
         "matcher": "Write|Edit",
         "timeout": 15
       }
     ],
     "postToolUse": [
       {
-        "command": "npx -y agentera hook validate-artifact",
+        "command": "npx -y agentera@next hook validate-artifact",
         "matcher": "Write|Edit",
         "timeout": 15
       }

@@ -100,7 +100,13 @@ decisions:
   feeds_into: TODO.md, scripts/agentera, pyproject.toml, package manifests, runtime
     adapters, tests, README.md, UPGRADE.md, release planning
   satisfaction:
-    state: open
+    state: user_confirmed_satisfied
+    evidence: User confirmed satisfaction during resonera review on 2026-05-31. Contract-first
+      TypeScript CLI rewrite remains the 3.0 direction; feat/v3 packages/cli work is
+      downstream implementation.
+    user_confirmation:
+      confirmed_by: user
+      confirmed_at: '2026-05-31'
 - number: 57
   date: '2026-05-18'
   question: How should Agentera rename capability `prose.md` files and make first-invocation
@@ -455,9 +461,12 @@ decisions:
   feeds_into: DESIGN.md, skills/agentera/capabilities/visualisera/instructions.md,
     visualisera
   satisfaction:
-    state: open
-    evidence: Decision captured at user request after resonera deliberation on 2026-05-24.
-      Implementation not yet started.
+    state: user_confirmed_satisfied
+    evidence: User confirmed satisfaction during resonera review on 2026-05-31. Phase
+      1 prose governance remains the right approach; implementation is still downstream.
+    user_confirmation:
+      confirmed_by: user
+      confirmed_at: '2026-05-31'
 - number: 63
   date: '2026-05-24'
   question: How should Agentera add Cursor as a first-class runtime in v1?
@@ -516,13 +525,17 @@ decisions:
     scripts/agentera_upgrade.py, scripts/eval_skills.py, scripts/smoke_live_hosts.py,
     AGENTS.md, tests, package-registry.yaml
   satisfaction:
-    state: provisionally_satisfied
+    state: user_confirmed_satisfied
     evidence: Cursor v1 slice shipped in commit 151043d with cursor and cursor-agent
       registry records, repo-native hooks and managed agents, upgrade/doctor/eval
       paths, and parity docs. Live preToolUse Write smoke passed 2026-05-24 with invalid-block
       and valid-allow evidence in `.agentera/smoke-cursor-pretooluse-evidence.txt`
       and progress cycle 596. Plan Task 8 closeout synchronized artifacts and bumped
-      version metadata to 2.7.0. User confirmation pending.
+      version metadata to 2.7.0. User confirmed satisfaction during resonera review
+      on 2026-05-31.
+    user_confirmation:
+      confirmed_by: user
+      confirmed_at: '2026-05-31'
 - number: 64
   date: '2026-05-26'
   question: How should Agentera refine VISION.md after the recent direction shift?
@@ -565,10 +578,14 @@ decisions:
   feeds_into:
   - VISION.md
   satisfaction:
-    state: open
-    evidence: null
-    user_confirmation: null
-    review_needed: true
+    state: user_confirmed_satisfied
+    evidence: Three vision refinements applied in `.agentera/vision.yaml` — JSON-as-protocol
+      paragraph in direction, sharp colleague's workshop personality, autonomy principle
+      and emotional register. User confirmed satisfaction during resonera review on
+      2026-05-31.
+    user_confirmation:
+      confirmed_by: user
+      confirmed_at: '2026-05-31'
 archive:
 - summary: 'Decision 54 (2026-05-16): Hard-rename app metadata toward one canonical
     vocabulary. Use standard app terms such as `up_to_date`, `outdated`,...'

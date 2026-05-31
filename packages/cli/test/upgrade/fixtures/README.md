@@ -11,6 +11,7 @@ tests (`tests/test_upgrade_cli.py`, `hooks/codex-hooks.json`) and existing trees
 | `v2-app-home` | Managed `app/` bundle + user state | existing |
 | `v2-runtime-python` | Codex + Cursor hooks with Python paths | existing + main hooks |
 | `v2-app-home-noisy` | Cleanup blocked on unrecognized root entry | derived from v2-app-home |
+| `v2-app-home-realistic` | Preserved benchmarks/intermediate/sessions + managed `app/` | derived from v2-app-home |
 | `v2-legacy-agents-home` | Legacy `~/.agents/agentera` bundle layout | main upgrade tests |
 | `v2-runtime-codex-full` | Codex config + copied hooks + plugin path | main setup_codex |
 | `v2-runtime-cursor-full` | Project + user Cursor hooks | main cursor upgrade |
@@ -40,3 +41,5 @@ tests (`tests/test_upgrade_cli.py`, `hooks/codex-hooks.json`) and existing trees
 
 Preserved paths follow `packages/cli/src/upgrade/doctor.ts` allowlists and project
 `.agentera/*.yaml`. See `test/upgrade/helpers/preservation.ts`.
+
+| `full-runtime-matrix` | All runtimes + realistic app-home | composed P0 scenario |

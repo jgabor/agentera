@@ -62,6 +62,8 @@ describe("planRuntimeRewirePhase", () => {
       appHome: path.join(home, "agentera"),
       project: path.join(home, "project"),
       home,
+      sourceRoot: "/home/jgabor/git/agentera",
+      channel: "development",
     });
     expect(phase.status).toBe("pending");
     expect(phase.items.some((item) => item.runtime === "codex" && item.status === "pending")).toBe(true);
@@ -70,12 +72,15 @@ describe("planRuntimeRewirePhase", () => {
 
   it("apply rewires runtime config to npm self-contained entrypoint", () => {
     const home = copyFixture("v2-runtime-python", path.join(tmp, "home-apply"));
-    const preview = planRuntimeRewirePhase({
+    const ctx = {
       appHome: path.join(home, "agentera"),
       project: path.join(home, "project"),
       home,
-    });
-    applyRuntimeRewirePhase(preview);
+      sourceRoot: path.resolve(__dirname, "../../../.."),
+      channel: "development",
+    };
+    const preview = planRuntimeRewirePhase(ctx);
+    applyRuntimeRewirePhase(preview, ctx);
     expect(preview.status).toBe("applied");
 
     const codexHooks = fs.readFileSync(path.join(home, ".codex/hooks/codex-hooks.json"), "utf8");

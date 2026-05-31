@@ -11,6 +11,9 @@ import path from "path";
 import { fileURLToPath } from "url";
 
 const AGENTERA_VERSION = "2.7.6";
+const NPX_CLI_ENTRYPOINT = "npx -y agentera@next";
+const NPX_HOOK_VALIDATE = `${NPX_CLI_ENTRYPOINT} hook validate-artifact`;
+const NPX_HOOK_SESSION_STOP = `${NPX_CLI_ENTRYPOINT} hook session-stop`;
 const OPENCODE_SKILL_INSTALL_COMMAND = "npx skills add jgabor/agentera -g -a opencode --skill agentera -y";
 const REQUIRED_SKILL_NAMES = ["agentera"];
 const LEGACY_BRIDGE_SKILL_NAMES = new Set(["hej"]);
@@ -150,10 +153,8 @@ function validManagedSkillDir(skillDir, name) {
 function resolveInstalledAgenteraSkillsDir() {
   const pluginRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
   const candidates = [
-    process.env.AGENTERA_HOME && path.join(process.env.AGENTERA_HOME, "app", "skills"),
-    path.join(resolveDefaultAgenteraAppHome(), "app", "skills"),
     path.join(pluginRoot, "skills"),
-    // Legacy skill-source detection only; this is not an app-home fallback.
+    path.join(process.env.HOME, ".config", "opencode", "skills"),
     path.join(process.env.HOME, ".agents", "skills"),
   ].filter(Boolean);
 
@@ -188,9 +189,8 @@ function validAgentDescriptor(sourceDir, name) {
 function resolveInstalledOpenCodeAgentsDir() {
   const pluginRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
   const candidates = [
-    process.env.AGENTERA_HOME && path.join(process.env.AGENTERA_HOME, "app", ".opencode", "agents"),
-    path.join(resolveDefaultAgenteraAppHome(), "app", ".opencode", "agents"),
     path.join(pluginRoot, ".opencode", "agents"),
+    path.join(process.env.HOME, ".config", "opencode", "agents"),
   ].filter(Boolean);
 
   for (const candidate of candidates) {
@@ -423,6 +423,13 @@ function findAgenteraRoot(startDir) {
   return startDir;
 }
 
+function resolveUserDataHome() {
+  if (process.env.AGENTERA_HOME && fs.existsSync(process.env.AGENTERA_HOME)) {
+    return process.env.AGENTERA_HOME;
+  }
+  return resolveDefaultAgenteraAppHome();
+}
+
 function resolveDefaultAgenteraAppHome() {
   if (process.platform === "darwin") {
     return path.join(process.env.HOME, "Library", "Application Support", "agentera");
@@ -442,18 +449,11 @@ function isRunnableAgenteraAppRoot(candidate) {
 }
 
 function isValidAgenteraAppHome(candidate) {
-  return typeof candidate === "string" && isRunnableAgenteraAppRoot(path.join(candidate, "app"));
+  return typeof candidate === "string" && fs.existsSync(candidate);
 }
 
 function resolveAgenteraAppHome() {
-  if (isValidAgenteraAppHome(process.env.AGENTERA_HOME)) {
-    return process.env.AGENTERA_HOME;
-  }
-  const defaultAppHome = resolveDefaultAgenteraAppHome();
-  if (isRunnableAgenteraAppRoot(path.join(defaultAppHome, "app"))) {
-    return defaultAppHome;
-  }
-  return null;
+  return resolveUserDataHome();
 }
 
 function resolveAgenteraHome() {
@@ -477,23 +477,27 @@ function resolveAgenteraHome() {
   return null;
 }
 
+function runNpxHook(subcommand, payload) {
+  const args = NPX_CLI_ENTRYPOINT.split(/\s+/).slice(1);
+  args.push("hook", subcommand);
+  execFileSync("npx", args, {
+    input: payload,
+    timeout: 30000,
+    stdio: ["pipe", "pipe", "pipe"],
+    env: { ...process.env, AGENTERA_HOME: resolveUserDataHome() },
+  });
+}
+
 function validateArtifact(filePath, projectRoot) {
   try {
-    const agenteraHome = resolveAgenteraHome();
-    if (!agenteraHome || !filePath) return;
-    const scriptPath = path.join(agenteraHome, "hooks", "validate_artifact.py");
-    if (!fs.existsSync(scriptPath)) return;
+    if (!filePath) return;
     const payload = JSON.stringify({
       cwd: projectRoot,
       hook_event_name: "tool.execute.after",
       tool_name: "Edit",
       tool_input: { file_path: filePath },
     });
-    execFileSync("uv", ["run", scriptPath], {
-      input: payload,
-      timeout: 30000,
-      stdio: ["pipe", "pipe", "pipe"],
-    });
+    runNpxHook("validate-artifact", payload);
   } catch {}
 }
 
@@ -550,10 +554,6 @@ function reconstructCandidate(tool, args, root) {
 
 function validateArtifactCandidate(filePath, content, projectRoot) {
   try {
-    const agenteraHome = resolveAgenteraHome();
-    if (!agenteraHome) return { permissionDecision: "allow" };
-    const scriptPath = path.join(agenteraHome, "hooks", "validate_artifact.py");
-    if (!fs.existsSync(scriptPath)) return { permissionDecision: "allow" };
     const payload = JSON.stringify({
       runtime: "opencode",
       cwd: projectRoot,
@@ -561,13 +561,15 @@ function validateArtifactCandidate(filePath, content, projectRoot) {
       tool_name: "Edit",
       tool_input: { file_path: filePath, content },
     });
-    const result = spawnSync("uv", ["run", scriptPath], {
+    const args = NPX_CLI_ENTRYPOINT.split(/\s+/).slice(1);
+    args.push("hook", "validate-artifact");
+    const result = spawnSync("npx", args, {
       input: payload,
       encoding: "utf8",
       timeout: 30000,
       stdio: ["pipe", "pipe", "pipe"],
+      env: { ...process.env, AGENTERA_HOME: resolveUserDataHome() },
     });
-    // validator writes violations to stderr with exit code 2
     if (result.status === 2) {
       const reason = String(result.stderr || "Artifact validation failed").trim();
       return {
@@ -591,19 +593,11 @@ function hardGateArtifactCandidate(input, output, projectRoot) {
 
 function writeSessionBookmark(projectRoot) {
   try {
-    const agenteraHome = resolveAgenteraHome();
-    if (!agenteraHome) return;
-    const scriptPath = path.join(agenteraHome, "hooks", "session_stop.py");
-    if (!fs.existsSync(scriptPath)) return;
     const payload = JSON.stringify({
       cwd: projectRoot,
       hook_event_name: "session.idle",
     });
-    execFileSync("uv", ["run", scriptPath], {
-      input: payload,
-      timeout: 30000,
-      stdio: ["pipe", "pipe", "pipe"],
-    });
+    runNpxHook("session-stop", payload);
   } catch {}
 }
 
@@ -637,15 +631,14 @@ function formatCompactionStateContext(state) {
 
 function buildCompactionContext(projectRoot) {
   try {
-    const agenteraHome = resolveAgenteraHome();
-    if (!agenteraHome) return null;
-    const scriptPath = path.join(agenteraHome, "scripts", "agentera");
-    if (!fs.existsSync(scriptPath)) return null;
-    const stdout = execFileSync("uv", ["run", scriptPath, "hej", "--format", "json"], {
+    const args = NPX_CLI_ENTRYPOINT.split(/\s+/).slice(1);
+    args.push("hej", "--format", "json");
+    const stdout = execFileSync("npx", args, {
       cwd: projectRoot,
       encoding: "utf8",
       timeout: 30000,
       stdio: ["ignore", "pipe", "pipe"],
+      env: { ...process.env, AGENTERA_HOME: resolveUserDataHome() },
     }).trim();
     return formatCompactionStateContext(JSON.parse(stdout));
   } catch {
