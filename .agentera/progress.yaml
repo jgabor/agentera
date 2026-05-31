@@ -1,4 +1,25 @@
 cycles:
+  - number: 623
+    timestamp: 2026-05-31 00:25
+    type: test
+    phase: build
+    what: v2→v3 sandbox upgrade validation program (L0 fixtures, harness, CI).
+    commit: pending
+    inspiration: None.
+    discovered: partial-only-runtime must not assert app/ removal; OpenCode rewire
+      and stale-surface cleanup remain gap-tracked expected-fail until migration
+      ports land.
+    verified: pnpm -C packages/cli test test/upgrade/ — 74/74 passed;
+      scripts/sandbox P0 scenarios happy-path, stable, v1-md, noisy,
+      codex-plugin, partial-only pass; gapRegistry.ts tracks three open gaps; CI
+      adds sandbox-l1/l2 jobs on feat/v3.
+    next: Flip gap tests to required pass when runtimeTargets and cleanup detection
+      ports land; optional legacy-home-retirement harness scenario.
+    context:
+      intent: PLAN v2→v3 sandbox upgrade validation program tasks 1–8.
+      scope: scripts/sandbox/, packages/cli/test/upgrade/fixtures/,
+        packages/cli/test/upgrade/{dataPreservation,cleanupNoisyAppHome,migrateRuntimeMatrix,idempotency,leftoverScan,gapRegistry}.test.ts,
+        packages/cli/test/upgrade/gapRegistry.ts, .github/workflows/ci.yml
   - number: 622
     timestamp: 2026-05-30 23:55
     type: test
@@ -202,25 +223,9 @@ cycles:
         tests/test_progress_commit_guard.py (retarget), plan.yaml task 1 status;
         quoted pre-existing int commit on cycle 612 and reset stale cycle 613 to
         pending to satisfy the artifact guard.
-  - number: 613
-    timestamp: 2026-05-29 16:00
-    type: fix
-    phase: build
-    what: Close compaction check/gate robustness and retention-cap dedup plan.
-    commit: pending
-    discovered: None.
-    verified: 1329 passed, 29 failed pytest tests/ -q -n auto (failures are
-      pre-existing macOS AGENTERA_HOME/platform-home env issues and missing
-      corpus.json, unrelated to compaction closeout); compaction tests (23)
-      pass; capability-contract validation pass (2/2).
-    next: None.
-    context:
-      intent: Plan task 4 closeout for compaction check/gate YAML error rows and
-        retention-cap dedup.
-      constraints: No version bump; no remote push; never amend to backfill commit hashes.
-      scope: TODO.md, CHANGELOG.md, progress.yaml, plan.yaml closeout only;
-        implementation in 8be19c4, cf0aa93, 55a9df8.
 archive:
+  - summary: "Cycle 613 (2026-05-29): Close compaction check/gate robustness and
+      retention-cap dedup plan."
   - summary: "Cycle 612 (2026-05-29): Add progress commit-hash churn guard and
       `agentera check backfill`."
   - summary: "Cycle 611 (2026-05-29): Deduplicate session hook resolve_session_path
@@ -295,5 +300,3 @@ archive:
       regression coverage."
   - summary: "Cycle 575 (2026-05-18): Added contract and hej context regression
       coverage for instruction reads."
-  - summary: "Cycle 574 (2026-05-18): Added capability validator regression coverage
-      for required instructions.md."

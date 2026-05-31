@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - main
+      - feat/v3
 
 jobs:
   cli:
@@ -25,8 +26,61 @@ jobs:
         run: pnpm -C packages/cli run typecheck
       - name: Test CLI
         run: pnpm -C packages/cli test
+      - name: Upgrade L0 gate
+        run: pnpm -C packages/cli test test/upgrade/
       - name: Repository gates
         run: node packages/cli/dist/bin/agentera.js check compact
+
+  sandbox-l1:
+    name: v2→v3 sandbox L1
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/feat/v3' || github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm -C packages/cli build
+      - name: Run P0 sandbox scenarios
+        env:
+          REPO_ROOT: ${{ github.workspace }}
+          AGENTERA_SANDBOX_TIER: L1
+        run: |
+          set -euo pipefail
+          for scenario in happy-path-clean stable-safety v1-md-blocked noisy-app-home codex-plugin-vs-copied partial-only-runtime; do
+            bash scripts/sandbox/v2v3-upgrade-harness.sh "$scenario"
+          done
+      - name: Upload sandbox reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sandbox-reports-l1
+          path: sandbox-report-*.json
+
+  sandbox-l2:
+    name: v2→v3 sandbox L2 (pinned npm)
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/feat/v3'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
+      - name: Run L2 happy-path when published package resolves
+        env:
+          REPO_ROOT: ${{ github.workspace }}
+          AGENTERA_SANDBOX_TIER: L2
+          AGENTERA_NPM_PIN: agentera@3.0.0-dev.0
+        run: |
+          if ! npm view agentera@3.0.0-dev.0 version >/dev/null 2>&1; then
+            echo "skip: agentera@3.0.0-dev.0 not published"
+            exit 0
+          fi
+          bash scripts/sandbox/v2v3-upgrade-harness.sh happy-path-clean
 
   web:
     name: Website

@@ -16,3 +16,4 @@ packages/web/.wrangler
 packages/cli/dist
 packages/cli/*.tgz
 packages/cli/bundle
+sandbox-report-*.json
