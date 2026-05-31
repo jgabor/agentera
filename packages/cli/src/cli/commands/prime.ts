@@ -232,10 +232,9 @@ function crossMajorAppHomeAttention(
     project: process.cwd(),
     installRoot: bundle.appHome,
     channel: devChannel,
-    targetMajor: 3,
   });
   return (
-    `degraded: v2 managed app-home on 3.x CLI requires explicit v2→v3 migration; ` +
+    `degraded: v2 managed app-home on 3.x CLI requires v2→v3 migration (irreversible); preview ` +
     `preview \`${cmds.dryRunCommand}\`; app_home=${bundle.appHome}`
   );
 }

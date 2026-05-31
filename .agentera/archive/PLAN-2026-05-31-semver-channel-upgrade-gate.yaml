@@ -1,0 +1,146 @@
+header:
+  level: full
+  created: "2026-05-31"
+  status: complete
+  reviewed: "2026-05-31"
+  critic_issues: "4 found, 4 addressed, 0 dismissed"
+  title: Semver and channel upgrade gate (replace target-major)
+what: >-
+  Replace the bespoke --target-major 3 opt-in with a version-and-channel resolution
+  gate in the v3 upgrade path. The CLI compares the running install version to the
+  latest version on the selected update channel, classifies the outcome (same-major
+  update, forward major upgrade, channel-line mismatch, or blocked downgrade), and
+  requires dry-run review before --yes apply. v2 managed app-home upgrades to v3+
+  always target the latest release on the chosen channel (stable or development) and
+  run the existing v2→v3 migration orchestration behind that gate. Downgrade to v2
+  is permanently unsupported regardless of channel; only a future v4→v3 downgrade
+  may be added later and must remain explicitly scoped—never generalized to v2.
+why: >-
+  The current --target-major flag duplicates information already implied by running
+  the npm v3 CLI against a v2 app-home and adds friction without a distinct alternate
+  upgrade mode. A semver-plus-channel gate matches conventional package-manager UX,
+  scales to future majors without new flags, and still preserves preview-before-apply
+  safety. User policy clarifies irreversibility: crossing into v3+ closes the v2
+  Python line permanently; downgrade prompts apply only to supported lines (future
+  v4→v3), not to v2 recovery fantasies.
+constraints: >-
+  Contract-first: extend references/cli/app-lifecycle-vocabulary.yaml and
+  references/cli/update-channels.yaml rather than parallel vocab. Preserve dry-run
+  before --yes apply and idempotent migration phases. Stable channel must not
+  silently cross into v3 migration while stable resolution still tracks 2.x (until
+  an explicit release retires the 2.x support line). v3→v2 downgrade attempts must
+  always fail with a clear irreversibility message. Do not implement v4→v3 downgrade
+  apply in this plan—only leave extension points and blocking rules. Remove
+  --target-major from CLI surface, docs, sandbox harness, and tests once the gate
+  ships. No remote push; do not modify vision.yaml or objective state.
+scope:
+  included:
+    - references/cli/update-channels.yaml (version resolution rules per channel)
+    - references/cli/app-lifecycle-vocabulary.yaml (major_boundary_crossing opt-in model)
+    - references/cli/vocabulary.md and UPGRADE.md
+    - packages/cli/src/upgrade/ (version resolution, compatibility, orchestrator, commands)
+    - packages/cli/src/cli/commands/ (upgrade, doctor, prime, schema, dispatch)
+    - packages/cli/test/upgrade/ and sandbox harness scripts referencing target-major
+    - gapRegistry and CI upgrade gate expectations
+  excluded:
+    - Implementing v4→v3 downgrade apply (future plan only)
+    - Publishing real 2.x builds to npm @latest or retiring stable 2.x line
+    - Python main-line orchestrator changes beyond vocabulary backport if needed
+    - Interactive TUI prompts (text/JSON plan messages only in this plan)
+  deferred:
+    - Live npm registry fetch in CI Tier 2 (keep pinned fixtures; optional live probe separate)
+    - Retiring deprecated --target-major alias period if external docs still reference it
+design: >-
+  Introduce a version-resolution authority consumed by upgrade, doctor, and prime:
+  runningVersion from bundle marker or package version; channel from existing
+  resolveUpdateChannel(); latestOnChannel from offline-testable resolution (npm
+  dist-tag metadata and git ref semantics with injectable resolver for tests).
+  classifyUpgradeOutcome() returns behavioral concepts: same_major_update,
+  forward_major_upgrade, channel_line_mismatch, migration_to_latest_on_channel,
+  blocked_downgrade_to_v2 (always), optional future downgrade_candidate (v4→v3
+  stub blocked as not_implemented). Cross-major forward apply requires
+  lifecycleStatus manual_review_needed until dry-run reviewed; --yes after a
+  successful dry-run on the same channel and outcome class is sufficient—no
+  --target-major. v2 layout plus channel resolving to 3.x line plus forward major
+  triggers existing migrate phases and sets migration target to latestOnChannel for
+  that channel. v3 layout on development with stable channel selected surfaces
+  channel_line_mismatch (e.g. running 4.x dev, latest stable 3.x)—inform and block
+  apply unless user switches channel; never offer v2. Doctor and prime render
+  channel-aware commands without target-major; upgradeCommands derive flags only
+  from channel and --only. Deprecate and remove --target-major from dispatch and
+  schema after tests migrate.
+tasks:
+  - number: 1
+    name: Define version-resolution and irreversibility vocabulary
+    depends_on: []
+    status: complete
+    acceptance:
+      - GIVEN references/cli/update-channels.yaml WHEN extended THEN it defines how running and latest versions are resolved per channel without duplicating channel override keys
+      - GIVEN references/cli/app-lifecycle-vocabulary.yaml WHEN updated THEN major_boundary_crossing no longer requires --target-major; it references semver forward-major confirmation and states v2 return is permanently unsupported
+      - GIVEN references/cli/vocabulary.md WHEN read THEN it delegates to the authorities and documents irreversible v2 exit and future v4→v3-only downgrade scope
+      - GIVEN vocabulary authority tests WHEN run THEN they pass without referencing --target-major as the opt-in mechanism
+  - number: 2
+    name: Implement version resolution and outcome classification
+    depends_on: ["1"]
+    status: complete
+    acceptance:
+      - GIVEN packages/cli/src/upgrade/ WHEN resolveRunningVersion and resolveLatestOnChannel run with injectable metadata THEN they return semver strings for npx bundle, v2 managed marker, and fixture registry payloads without network in unit tests
+      - GIVEN classifyUpgradeOutcome WHEN running v3.1.3 stable and latest stable is v4.0.2 THEN outcome is forward_major_upgrade requiring preview before apply
+      - GIVEN classifyUpgradeOutcome WHEN running v2 managed layout and selected channel latest is v3.x THEN outcome is migration_to_latest_on_channel targeting that channel latest
+      - GIVEN classifyUpgradeOutcome WHEN any v3+ install attempts downgrade toward v2 THEN outcome is blocked_downgrade_to_v2 with no apply path
+      - GIVEN classifyUpgradeOutcome WHEN running v4.x on development and channel stable with latest stable v3.x THEN outcome is channel_line_mismatch without implying v2 downgrade
+  - number: 3
+    name: Replace target-major guards in compatibility and orchestrator
+    depends_on: ["2"]
+    status: complete
+    acceptance:
+      - GIVEN upgrade --dry-run on v2 fixture with development channel WHEN latest on channel is 3.x THEN preview lists cross-major migration phases and lifecycleStatus is ready_to_apply or manual_review_needed without requiring --target-major
+      - GIVEN upgrade --yes without prior dry-run on forward major or v2 migration WHEN attempted THEN command exits non-zero with plain-language preview-mandatory error
+      - GIVEN upgrade --yes after matching dry-run on same channel WHEN apply runs THEN migration executes without --target-major and targets latest on that channel
+      - GIVEN stable channel while stable resolution still tracks 2.x WHEN v2 home is probed THEN no v3 migration phases appear in preview
+      - GIVEN blocked_downgrade_to_v2 WHEN user requests apply THEN plan status is blocked with irreversibility messaging
+  - number: 4
+    name: Rewire doctor, prime, and upgrade command rendering
+    depends_on: ["3"]
+    status: complete
+    acceptance:
+      - GIVEN doctor on v2 home with v3 CLI WHEN status is emitted THEN dryRunCommand and applyCommand include channel when non-stable but never include --target-major
+      - GIVEN prime orientation WHEN v2 managed home on v3 CLI THEN attention text cites semver or channel mismatch and preview command without --target-major
+      - GIVEN buildUpgradeCommands WHEN rendered THEN flags reflect channel and --only only
+      - GIVEN schema.ts upgrade description WHEN read THEN it documents semver channel gate and irreversible v2 exit instead of --target-major 3
+  - number: 5
+    name: Remove --target-major CLI surface
+    depends_on: ["4"]
+    status: complete
+    acceptance:
+      - GIVEN agentera upgrade --help WHEN read THEN --target-major is absent
+      - GIVEN dispatch WHEN unknown --target-major is passed THEN user receives deprecation or removal message without silent ignore
+      - GIVEN packages/cli/src/upgrade/compatibility.ts WHEN searched THEN shouldIncludeCrossMajorPlanItems no longer depends on targetMajor === 3
+  - number: 6
+    name: Update tests, sandbox harness, and gap registry
+    depends_on: ["5"]
+    status: complete
+    acceptance:
+      - GIVEN packages/cli/test/upgrade/ WHEN run THEN compatibility, orchestrator, doctorChannels, primeChannels, and upgradeCommands tests pass without --target-major fixtures
+      - GIVEN scripts/sandbox/v2v3-upgrade-harness.sh WHEN run on P0 fixtures THEN apply uses channel gate only and assertions still pass
+      - GIVEN gapRegistry WHEN read THEN open items no longer require --target-major in rewire constants
+      - GIVEN CI upgrade gate job WHEN triggered THEN Tier 0 passes on feat/v3
+  - number: 7
+    name: Refresh user-facing upgrade documentation
+    depends_on: ["5"]
+    status: complete
+    acceptance:
+      - GIVEN UPGRADE.md WHEN read THEN v2→v3 section explains channel selection, semver gate, preview-then-yes, latest-on-channel migration target, and permanent no-return-to-v2 policy
+      - GIVEN README troubleshooting upgrade section WHEN read THEN it no longer instructs --target-major 3
+      - GIVEN UPGRADE.md WHEN searched THEN examples use development or stable channel plus dry-run and yes only
+  - number: 8
+    name: State sync and plan closeout
+    depends_on: ["6", "7"]
+    status: complete
+    acceptance:
+      - GIVEN full pytest and packages/cli test suites WHEN run THEN upgrade-related tests pass
+      - GIVEN agentera validate capability planera WHEN run THEN it passes
+      - GIVEN all prior tasks complete WHEN plan status reviewed THEN tasks marked complete and plan archived per Planera handoff
+overall_acceptance: >-
+  GIVEN a v2 managed app-home and development channel WHEN user runs upgrade dry-run then yes without --target-major THEN migration to latest 3.x on that channel is previewed and applied with no path back to v2 GIVEN any v3+ install WHEN user attempts downgrade to v2 on any channel THEN upgrade refuses with irreversibility messaging and blocked status GIVEN stable channel while stable still resolves to 2.x WHEN upgrade dry-run runs THEN v3 migration operations are absent from the plan GIVEN running and latest versions on the same major and channel WHEN upgrade dry-run runs THEN behavior remains same-major update or noop without spurious migration phases
+surprises: []

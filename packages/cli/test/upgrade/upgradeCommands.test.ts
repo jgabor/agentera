@@ -42,7 +42,7 @@ describe("buildUpgradeCommands", () => {
     expect(cmds.dryRunCommand).toMatch(/--project .*\$PWD/);
   });
 
-  it("adds development channel and target-major for cross-major preview", () => {
+  it("adds development channel for cross-major preview", () => {
     const channel = resolveUpdateChannel({
       channel: "development",
       sourceRoot: REPO_ROOT,
@@ -52,10 +52,9 @@ describe("buildUpgradeCommands", () => {
       project: "/tmp/proj",
       installRoot: "/tmp/agentera",
       channel,
-      targetMajor: 3,
     });
     expect(cmds.dryRunCommand).toContain("agentera@next");
     expect(cmds.dryRunCommand).toContain("--channel development");
-    expect(cmds.dryRunCommand).toContain("--target-major 3");
+    expect(cmds.dryRunCommand).not.toContain("--target-major");
   });
 });

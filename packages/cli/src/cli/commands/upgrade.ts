@@ -16,7 +16,6 @@ export interface UpgradeArgs {
   project?: string | null;
   expectedVersion?: string | null;
   channel?: string | null;
-  targetMajor?: number | null;
   yes?: boolean;
   dryRun?: boolean;
   only?: readonly UpgradeOnlyPhase[] | null;
@@ -33,7 +32,6 @@ function toOrchestratorArgs(args: UpgradeArgs): UpgradeOrchestratorArgs {
     home: args.home ?? null,
     project: args.project ?? null,
     channel: args.channel ?? null,
-    targetMajor: args.targetMajor ?? null,
     yes: args.yes ?? false,
     dryRun: args.dryRun ?? false,
     only: args.only && args.only.length > 0 ? args.only : null,

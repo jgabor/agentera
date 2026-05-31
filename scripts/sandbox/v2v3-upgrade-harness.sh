@@ -49,7 +49,7 @@ if [[ "$SCENARIO" == "stable-safety" ]]; then
   TARGET=()
 else
   CHANNEL=(--channel development)
-  TARGET=(--target-major 3)
+  TARGET=()
 fi
 
 if [[ "$SCENARIO" == "partial-only-runtime" ]]; then

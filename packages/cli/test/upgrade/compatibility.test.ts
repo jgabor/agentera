@@ -91,7 +91,7 @@ describe("classifyInstall", () => {
 });
 
 describe("previewCrossMajorGuard", () => {
-  it("stable channel without --target-major never surfaces ready_to_apply for cross-major", () => {
+  it("stable channel never surfaces migration items for cross-major v2 home", () => {
     const appHome = path.join(tmp, "v2-stable");
     managedV2(appHome);
     const preview = previewCrossMajorGuard({
@@ -105,9 +105,10 @@ describe("previewCrossMajorGuard", () => {
     expect([STATUS_MANUAL_REVIEW_NEEDED, STATUS_NO_CHANGES_NEEDED]).toContain(preview.lifecycleStatus);
     expect(preview.lifecycleStatus).not.toBe(STATUS_READY_TO_APPLY);
     expect(collectV3MigrationOperations(preview)).toHaveLength(0);
+    expect(preview.upgradeOutcome.kind).toBe("up_to_date");
   });
 
-  it("lists cross-major work tagged requires_explicit_major_opt_in with --target-major 3 on development", () => {
+  it("lists cross-major work on development channel when semver gate allows migration", () => {
     const appHome = path.join(tmp, "v2-dev");
     managedV2(appHome);
     const preview = previewCrossMajorGuard({
@@ -115,11 +116,11 @@ describe("previewCrossMajorGuard", () => {
       sourceRoot: REPO_ROOT,
       home: tmp,
       channel: "development",
-      targetMajor: 3,
     });
     const ops = collectV3MigrationOperations(preview);
     expect(ops.length).toBeGreaterThan(0);
     expect(ops.every((item) => item.tag === MAJOR_BOUNDARY_ITEM_TAG)).toBe(true);
     expect(ops.map((item) => item.phase).sort()).toEqual(["artifacts", "cleanup", "runtime"]);
+    expect(preview.upgradeOutcome.kind).toBe("migration_to_latest_on_channel");
   });
 });

@@ -596,7 +596,6 @@ function runUpgrade(argv: string[], io: Io, prog: string): number {
     project: null,
     expectedVersion: null,
     channel: null,
-    targetMajor: null,
     yes: false,
     dryRun: false,
     only: [],
@@ -618,12 +617,9 @@ function runUpgrade(argv: string[], io: Io, prog: string): number {
     else if ((v = value("--expected-version")) !== null) args.expectedVersion = v;
     else if ((v = value("--channel")) !== null) args.channel = v;
     else if ((v = value("--target-major")) !== null) {
-      const major = Number(v);
-      if (!Number.isFinite(major)) {
-        err(`${prog}: error: argument --target-major: invalid int value: '${v}'\n`);
-        return 2;
-      }
-      args.targetMajor = major;
+      void v;
+      err(`${prog}: error: --target-major was removed; use --channel with dry-run preview then --yes\n`);
+      return 2;
     }
     else if ((v = value("--runtime")) !== null) void v; // accepted; orchestrator uses fixture runtimes
     else if ((v = value("--only")) !== null) {

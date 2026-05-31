@@ -6,6 +6,13 @@ import { NPX_BUNDLE_SENTINEL, isNpxBundleRoot } from "../core/sourceRoot.js";
 import { BUNDLE_MARKER } from "../state/installRoot.js";
 import { doctorRoots, loadSuiteVersion } from "./appModel.js";
 import { resolveUpdateChannel, type ResolvedUpdateChannel, type ResolveUpdateChannelArgs } from "./channels.js";
+import {
+  classifyUpgradeOutcome,
+  shouldIncludeCrossMajorPlanItems,
+  type UpgradeOutcome,
+} from "./versionResolution.js";
+
+export { shouldIncludeCrossMajorPlanItems } from "./versionResolution.js";
 
 /**
  * v2/v3 install layout detection and cross-major upgrade guard rails.
@@ -68,7 +75,7 @@ export interface UpgradePreviewV2 {
     | typeof STATUS_READY_TO_APPLY;
   channel: ResolvedUpdateChannel;
   install: InstallClassification;
-  targetMajor: number | null;
+  upgradeOutcome: UpgradeOutcome;
   crossMajorBoundary: boolean;
   phases: UpgradePreviewPhase[];
 }
@@ -81,7 +88,7 @@ export interface ClassifyInstallArgs {
 export interface PreviewCrossMajorGuardArgs extends ResolveUpdateChannelArgs {
   appHome: string;
   sourceRoot: string;
-  targetMajor?: number | null;
+  catalog?: import("./versionResolution.js").VersionCatalog | null;
 }
 
 const CROSS_MAJOR_ITEMS: ReadonlyArray<Omit<CrossMajorPlanItem, "statusConcept" | "tag" | "lifecycleStatus">> = [
@@ -228,13 +235,6 @@ function groupItemsByPhase(items: CrossMajorPlanItem[]): UpgradePreviewPhase[] {
   return phases;
 }
 
-export function shouldIncludeCrossMajorPlanItems(
-  channel: ResolvedUpdateChannel,
-  explicitMajorOptIn: boolean,
-): boolean {
-  return channel.distributionMajor >= 3 && explicitMajorOptIn;
-}
-
 export function collectV3MigrationOperations(preview: UpgradePreviewV2): CrossMajorPlanItem[] {
   const out: CrossMajorPlanItem[] = [];
   for (const phase of preview.phases) {
@@ -250,11 +250,16 @@ export function collectV3MigrationOperations(preview: UpgradePreviewV2): CrossMa
 export function previewCrossMajorGuard(args: PreviewCrossMajorGuardArgs): UpgradePreviewV2 {
   const channel = resolveUpdateChannel(args);
   const install = classifyInstall({ appHome: args.appHome, sourceRoot: args.sourceRoot });
-  const targetMajor = args.targetMajor ?? null;
-  const explicitMajorOptIn = targetMajor === 3;
   const crossMajorBoundary = crossMajorBoundaryApplies(install, args.sourceRoot);
+  const upgradeOutcome = classifyUpgradeOutcome({
+    appHome: args.appHome,
+    sourceRoot: args.sourceRoot,
+    install,
+    channel,
+    catalog: args.catalog,
+  });
 
-  const items = shouldIncludeCrossMajorPlanItems(channel, explicitMajorOptIn)
+  const items = shouldIncludeCrossMajorPlanItems(channel, upgradeOutcome)
     ? taggedCrossMajorItems()
     : [];
 
@@ -265,7 +270,7 @@ export function previewCrossMajorGuard(args: PreviewCrossMajorGuardArgs): Upgrad
 
   if (!crossMajorBoundary) {
     lifecycleStatus = STATUS_NO_CHANGES_NEEDED;
-  } else if (!explicitMajorOptIn || channel.distributionMajor < 3) {
+  } else if (!shouldIncludeCrossMajorPlanItems(channel, upgradeOutcome)) {
     lifecycleStatus = STATUS_MANUAL_REVIEW_NEEDED;
   } else {
     lifecycleStatus = STATUS_MANUAL_REVIEW_NEEDED;
@@ -276,7 +281,7 @@ export function previewCrossMajorGuard(args: PreviewCrossMajorGuardArgs): Upgrad
     lifecycleStatus,
     channel,
     install,
-    targetMajor,
+    upgradeOutcome,
     crossMajorBoundary,
     phases: groupItemsByPhase(items),
   };
