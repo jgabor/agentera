@@ -7,7 +7,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "npx -y agentera hook validate-artifact",
+            "command": "npx -y agentera@next hook validate-artifact",
             "timeout": 10,
             "statusMessage": "validating artifact"
           }
@@ -20,7 +20,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "npx -y agentera hook validate-artifact",
+            "command": "npx -y agentera@next hook validate-artifact",
             "timeout": 10,
             "statusMessage": "validating artifact"
           }

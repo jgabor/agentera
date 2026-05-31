@@ -37,6 +37,19 @@ afterEach(() => {
 });
 
 describe("dataPreservation", () => {
+  it("preserves realistic app-home user dirs across cleanup without force", () => {
+    const appHome = copyFixture("v2-app-home-realistic", path.join(tmp, "realistic-home"));
+    const before = checksumManifest(appHome, listPreservedAppHomeRelPaths(appHome));
+    expect(Object.keys(before).some((k) => k.startsWith("benchmarks/"))).toBe(true);
+    expect(before["intermediate/corpus.json"]).toBeDefined();
+
+    const preview = planCleanupPhase({ appHome, project: appHome, home: tmp });
+    expect(preview.status).toBe("pending");
+    applyCleanupPhase(preview);
+    assertChecksumsUnchanged(appHome, before);
+    expect(fs.existsSync(path.join(appHome, "app"))).toBe(false);
+  });
+
   it("preserves app-home allowlisted paths across cleanup apply", () => {
     const appHome = copyFixture("v2-app-home-noisy", path.join(tmp, "app-home"));
     const before = checksumManifest(appHome, listPreservedAppHomeRelPaths(appHome));

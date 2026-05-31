@@ -233,8 +233,12 @@ Run focused phases when you need more control (`--only artifacts`, `--only runti
 `--only cleanup`).
 
 Phases migrate project YAML artifacts, rewire runtime config away from the Python
-managed app-home entrypoint, and optionally preview managed app-home cleanup while
-preserving user and project state boundaries.
+managed app-home entrypoint, and remove the managed `app/` bundle while preserving
+user and project state boundaries.
+
+Preserved app-home user state during cleanup includes `benchmarks/`, `intermediate/`,
+`sessions/`, `history/`, `corpus/`, root profile files, and project `.agentera/` YAML.
+Typical installs no longer require `--force` when those directories are present.
 
 ## Runtime notes
 
@@ -244,7 +248,7 @@ preserving user and project state boundaries.
 
 ### OpenCode
 
-The upgrade command can copy the current bundled plugin to the OpenCode config directory and remove outdated v1 command files. The same adapter remains available as an npm-style package entry through `.opencode/package.json` `main`/`exports`, but the copied `~/.config/opencode/plugins/agentera.js` path remains preserved for project-local installs. OpenCode package refresh remains opt-in:
+The upgrade command copies the current bundled plugin to the OpenCode config directory, syncs managed commands and agents, and links Agentera skills under the native OpenCode config path. The same adapter remains available as an npm-style package entry through `.opencode/package.json` `main`/`exports`, but the copied `~/.config/opencode/plugins/agentera.js` path remains preserved for project-local installs. OpenCode package refresh remains opt-in:
 
 ```bash
 uv run scripts/agentera upgrade --runtime opencode --yes --update-packages
@@ -256,7 +260,7 @@ OpenCode compaction context is provided by `experimental.session.compacting`. Th
 
 ### Codex
 
-The upgrade command writes `AGENTERA_HOME` into `~/.codex/config.toml` and manages Codex hook trust. When `[plugins."agentera@agentera"].enabled = true` proves the Agentera Codex plugin is installed and enabled, upgrade enables `[features].hooks`, `[features].plugin_hooks`, trusts the plugin-bundled hook metadata, and retires Agentera-owned copied `~/.codex/hooks.json` files. If copied hooks contain user or ambiguous entries, upgrade blocks for manual review instead of deleting them. Agentera v2 is one bundled `$agentera` skill; the old per-skill `[agents.<name>]` Codex config blocks are v1 artifacts and are not written.
+The upgrade command writes `AGENTERA_HOME` into `~/.codex/config.toml` and manages Codex hook trust. When `[plugins."agentera@agentera"].enabled = true` proves the Agentera Codex plugin is installed and enabled, upgrade enables `[features].hooks`, `[features].plugin_hooks`, trusts the plugin-bundled hook metadata, and retires Agentera-owned copied `~/.codex/hooks/codex-hooks.json` files when they contain only Agentera-owned handlers. If copied hooks contain user or ambiguous entries, upgrade blocks for manual review instead of deleting them. Agentera v2 is one bundled `$agentera` skill; the old per-skill `[agents.<name>]` Codex config blocks are v1 artifacts and are not written.
 
 When the Agentera Codex plugin is absent, disabled, or cannot be proven from `~/.codex/config.toml`, upgrade preserves the copied `~/.codex/hooks.json` compatibility fallback. Those copied hook commands use the resolved Agentera validator path, so they do not depend on hook subprocesses inheriting `[shell_environment_policy].set`.
 

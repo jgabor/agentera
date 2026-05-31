@@ -4,7 +4,7 @@
  */
 export const GAP_IDS = {
   OPENCODE_RUNTIME_REWIRE: "gap-opencode-runtime-rewire",
-  STALE_SURFACE_CLEANUP: "gap-stale-surface-cleanup",
+  V2_PYTHON_SURFACE_RETIREMENT: "gap-v2-python-surface-retirement",
   CHANNEL_AWARE_NPX_DIST: "gap-channel-aware-npx-dist",
 } as const;
 
@@ -28,19 +28,19 @@ export const TRACKED_GAPS: readonly TrackedGap[] = [
   {
     id: GAP_IDS.OPENCODE_RUNTIME_REWIRE,
     description: "runtimeTargets() does not rewire OpenCode plugin/commands/agents/skills",
-    closed: false,
+    closed: true,
     runtimeIds: ["opencode"],
   },
   {
-    id: GAP_IDS.STALE_SURFACE_CLEANUP,
-    description: "cleanup phase does not remove stale v1 surfaces via detect module",
-    closed: false,
+    id: GAP_IDS.V2_PYTHON_SURFACE_RETIREMENT,
+    description: "runtime migration retires v2 Python-managed surfaces (Codex copied hooks, OpenCode plugin, project hooks)",
+    closed: true,
     runtimeIds: ["opencode", "claude", "copilot"],
   },
   {
     id: GAP_IDS.CHANNEL_AWARE_NPX_DIST,
-    description: "rewire constants use npx -y agentera without @next on development channel",
-    closed: false,
+    description: "rewire constants use npx -y agentera@next on development channel",
+    closed: true,
     runtimeIds: ["codex", "cursor", "cursor-agent"],
   },
 ] as const;
@@ -56,9 +56,9 @@ export function gapSkipReason(id: GapId): string {
 /** Default runtime matrix for sandbox-report.json on current implementation. */
 export const DEFAULT_RUNTIME_MATRIX: Record<string, RuntimeMatrixStatus> = {
   claude: "noop",
-  opencode: "expected_fail",
+  opencode: "applied",
   copilot: "noop",
   codex: "applied",
   cursor: "applied",
-  "cursor-agent": "not_implemented",
+  "cursor-agent": "noop",
 };

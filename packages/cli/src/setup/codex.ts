@@ -41,11 +41,11 @@ export const CAPABILITY_AGENT_NAMES = [
 ] as const;
 const ENV_FALLBACKS = ["AGENTERA_HOME", "CLAUDE_PLUGIN_ROOT"] as const;
 
-export const CODEX_HOOK_COMMAND = 'uv run "${AGENTERA_HOME}/hooks/validate_artifact.py"';
+export const CODEX_HOOK_COMMAND = "npx -y agentera@next hook validate-artifact";
 export const CODEX_PLUGIN_ID = "agentera@agentera";
 export const CODEX_PLUGIN_HOOKS_PATH = "hooks/codex-plugin-hooks.json";
 export const CODEX_PLUGIN_HOOK_SOURCE = `${CODEX_PLUGIN_ID}:${CODEX_PLUGIN_HOOKS_PATH}`;
-export const CODEX_PLUGIN_HOOK_COMMAND = 'uv run "${PLUGIN_ROOT}/hooks/validate_artifact.py"';
+export const CODEX_PLUGIN_HOOK_COMMAND = "npx -y agentera@next hook validate-artifact";
 export const CODEX_HOOK_MATCHER = "^apply_patch$";
 export const CODEX_HOOK_TIMEOUT = 10;
 export const CODEX_HOOK_STATUS_MESSAGE = "validating artifact";
@@ -614,7 +614,10 @@ export function codexCopiedHooksAreAgenteraOnly(text: string): boolean {
   const hooks = p.hooks;
   if (!hooks || typeof hooks !== "object" || Array.isArray(hooks)) return false;
   const keys = Object.keys(hooks);
-  if (keys.length !== 2 || !keys.includes("PreToolUse") || !keys.includes("PostToolUse")) return false;
+  if (keys.length === 0) return false;
+  for (const key of keys) {
+    if (key !== "PreToolUse" && key !== "PostToolUse") return false;
+  }
   for (const [event, entries] of Object.entries(hooks)) {
     if (event !== "PreToolUse" && event !== "PostToolUse") return false;
     if (!Array.isArray(entries) || entries.length !== 1) return false;
@@ -626,9 +629,9 @@ export function codexCopiedHooksAreAgenteraOnly(text: string): boolean {
     if (!handler || typeof handler !== "object") return false;
     const command = handler.command;
     if (handler.type !== "command" || typeof command !== "string") return false;
-    if (!command.includes("hooks/validate_artifact.py")) return false;
-    if (handler.timeout !== CODEX_HOOK_TIMEOUT) return false;
-    if (handler.statusMessage !== CODEX_HOOK_STATUS_MESSAGE) return false;
+    if (!command.includes("hooks/validate_artifact.py") && !command.includes("hook validate-artifact")) return false;
+    if (handler.timeout !== undefined && handler.timeout !== CODEX_HOOK_TIMEOUT) return false;
+    if (handler.statusMessage !== undefined && handler.statusMessage !== CODEX_HOOK_STATUS_MESSAGE) return false;
   }
   return true;
 }

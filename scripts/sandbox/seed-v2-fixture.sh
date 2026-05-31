@@ -40,7 +40,7 @@ copy_fixture() {
 }
 
 seed_happy_path() {
-  copy_fixture v2-app-home "$HOME/.local/share/agentera"
+  copy_fixture v2-app-home-realistic "$HOME/.local/share/agentera"
   copy_fixture v2-yaml-project "$SANDBOX/project"
   copy_fixture v2-runtime-python "$HOME"
 }
@@ -67,7 +67,7 @@ case "$SCENARIO" in
     copy_fixture v2-runtime-cursor-full/home "$HOME"
     copy_fixture v2-runtime-cursor-full/project "$SANDBOX/project"
     ;;
-  happy-path-clean|stable-safety|partial-only-runtime|v2-python-control)
+  happy-path-clean|stable-safety|partial-only-runtime|v2-python-control|full-runtime-matrix)
     seed_happy_path
     ;;
   v1-md-blocked)
@@ -85,6 +85,16 @@ case "$SCENARIO" in
     copy_fixture v2-runtime-codex-full "$HOME"
     copy_fixture v2-app-home "$HOME/.local/share/agentera"
     copy_fixture v2-yaml-project "$SANDBOX/project"
+    ;;
+  full-runtime-matrix)
+    copy_fixture v2-app-home-realistic "$HOME/.local/share/agentera"
+    copy_fixture v2-yaml-project "$SANDBOX/project"
+    copy_fixture v2-runtime-codex-full "$HOME"
+    copy_fixture v2-runtime-cursor-full/home "$HOME"
+    copy_fixture v2-runtime-cursor-full/project "$SANDBOX/project"
+    copy_fixture v2-runtime-opencode "$HOME"
+    mkdir -p "$XDG_CONFIG_HOME"
+    cp -a "$HOME/xdg/opencode/." "$XDG_CONFIG_HOME/opencode/" 2>/dev/null || true
     ;;
   *)
     echo "unknown scenario or fixture: $SCENARIO" >&2

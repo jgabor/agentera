@@ -44,7 +44,13 @@ export const ROOT_USER_STATE_FILE_NAMES = new Set([
   "CHANGELOG.md",
   "DESIGN.md",
 ]);
-export const ROOT_USER_STATE_DIR_NAMES = new Set(["history", "corpus"]);
+export const ROOT_USER_STATE_DIR_NAMES = new Set([
+  "history",
+  "corpus",
+  "benchmarks",
+  "intermediate",
+  "sessions",
+]);
 
 function hasBundleRootEvidence(root: string): boolean {
   return (

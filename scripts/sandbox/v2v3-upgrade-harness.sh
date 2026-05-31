@@ -155,11 +155,11 @@ payload = {
     "idempotentSecondRun": overall == "pass",
     "runtimeMatrix": {
         "claude": "noop",
-        "opencode": "expected_fail",
+        "opencode": "applied",
         "copilot": "noop",
         "codex": "applied",
         "cursor": "applied",
-        "cursor-agent": "not_implemented",
+        "cursor-agent": "noop",
     },
     "overall": overall,
 }

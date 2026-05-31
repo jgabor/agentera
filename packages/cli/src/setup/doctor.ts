@@ -391,8 +391,15 @@ const OPENCODE_SKILL_PATH_DRIFT_GAP = OC_GAP[3];
 const OPENCODE_VALIDATION_DRIFT_GAP = OC_GAP[4];
 
 export function opencodeConfigDir(home: string, env: Env): string {
-  const value = env.OPENCODE_CONFIG_DIR;
-  return value ? resolvePath(expanduser(value)) : path.join(home, ".config", "opencode");
+  const explicit = env.OPENCODE_CONFIG_DIR;
+  if (explicit) {
+    return resolvePath(expanduser(explicit));
+  }
+  const xdg = env.XDG_CONFIG_HOME;
+  if (xdg) {
+    return path.join(resolvePath(expanduser(xdg)), "opencode");
+  }
+  return path.join(home, ".config", "opencode");
 }
 
 export function opencodeCommandTemplate(name: string): string {

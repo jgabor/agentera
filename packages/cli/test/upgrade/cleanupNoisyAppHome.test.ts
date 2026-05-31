@@ -29,6 +29,25 @@ afterEach(() => {
 });
 
 describe("cleanupNoisyAppHome", () => {
+
+  it("applies cleanup without force on realistic app-home user dirs", () => {
+    const appHome = fs.cpSync(path.join(FIXTURES, "v2-app-home-realistic"), path.join(tmp, "realistic"), {
+      recursive: true,
+    });
+    void appHome;
+    const realistic = path.join(tmp, "realistic");
+    const before = checksumManifest(realistic, listPreservedAppHomeRelPaths(realistic));
+    const preview = planCleanupPhase({ appHome: realistic, project: realistic, home: tmp });
+    expect(preview.status).toBe("pending");
+    applyCleanupPhase(preview);
+    expect(preview.status).toBe("applied");
+    expect(fs.existsSync(path.join(realistic, "app"))).toBe(false);
+    expect(fs.existsSync(path.join(realistic, "benchmarks"))).toBe(true);
+    expect(fs.existsSync(path.join(realistic, "intermediate"))).toBe(true);
+    expect(fs.existsSync(path.join(realistic, "sessions"))).toBe(true);
+    assertChecksumsUnchanged(realistic, before);
+  });
+
   it("blocks cleanup when unrecognized app-home entries exist", () => {
     const appHome = fs.cpSync(path.join(FIXTURES, "v2-app-home-noisy"), path.join(tmp, "noisy"), {
       recursive: true,

@@ -236,12 +236,12 @@ export function buildUpgradePlan(args: UpgradeOrchestratorArgs): UpgradePlanV2 {
   }
 
   let migrationPreview = runMigration
-    ? dryRunMigration({ appHome: installRoot, project, home, force: args.force })
+    ? dryRunMigration({ appHome: installRoot, project, home, force: args.force, sourceRoot, channel: args.channel ?? null, env })
     : null;
 
   if (args.yes && migrationPreview) {
     migrationPreview = applyMigrationPhases(
-      { appHome: installRoot, project, home, force: args.force },
+      { appHome: installRoot, project, home, force: args.force, sourceRoot, channel: args.channel ?? null, env },
       migrationPreview,
       args.only && args.only.length > 0 ? args.only : MIGRATION_ONLY_PHASES,
     );

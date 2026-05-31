@@ -340,7 +340,7 @@ not add precision:
 | --- | --- |
 | Agentera directory | Plain-language name for the local directory named by `AGENTERA_HOME`; user data stays at this directory root. |
 | App files directory | Plain-language name for `$AGENTERA_HOME/app`, where Agentera's scripts and skill files live. Internal JSON may call this `managedAppRoot`; do not use that phrase in prompts. |
-| User data directory | The `AGENTERA_HOME` root that keeps `PROFILE.md`, `USAGE.md`, history, and intermediate corpus data. |
+| User data directory | The `AGENTERA_HOME` root that keeps `PROFILE.md`, `USAGE.md`, `history/`, `benchmarks/`, `intermediate/`, `sessions/`, and other preserved user-state paths. |
 | `AGENTERA_HOME` | Environment variable pointing at the Agentera directory. Explain this only when the user needs the exact setting. |
 | Normal Agentera directory | Platform data directory for Agentera when `AGENTERA_HOME` is unset. |
 | `--install-root` | Compatibility flag name for existing CLI options; surrounding text should say Agentera directory. |
