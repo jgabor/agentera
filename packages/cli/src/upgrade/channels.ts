@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 import { expanduser } from "../core/paths.js";
 import { resolveSourceRoot } from "../core/sourceRoot.js";
@@ -42,6 +43,23 @@ export interface ResolveUpdateChannelArgs {
 type Dict = Record<string, unknown>;
 
 const CHANNEL_NAMES: readonly UpdateChannelName[] = ["stable", "development"];
+
+
+function authorityRootFor(sourceRoot: string): string {
+  if (fs.existsSync(path.join(sourceRoot, UPDATE_CHANNELS_AUTHORITY))) {
+    return sourceRoot;
+  }
+  const moduleBundled = path.resolve(
+    path.dirname(fileURLToPath(import.meta.url)),
+    "..",
+    "..",
+    "bundle",
+  );
+  if (fs.existsSync(path.join(moduleBundled, UPDATE_CHANNELS_AUTHORITY))) {
+    return moduleBundled;
+  }
+  return sourceRoot;
+}
 
 let cachedAuthority: Dict | null = null;
 let cachedAuthorityRoot: string | null = null;
@@ -101,17 +119,17 @@ function readConfigChannel(home: string): UpdateChannelName | null {
 }
 
 export function loadUpdateChannelsAuthority(sourceRoot: string): Dict {
-  const authorityPath = path.join(sourceRoot, UPDATE_CHANNELS_AUTHORITY);
+  const authorityPath = path.join(authorityRootFor(sourceRoot), UPDATE_CHANNELS_AUTHORITY);
   return loadYamlMappingFile(authorityPath);
 }
 
-function authorityForSourceRoot(sourceRoot: string): Dict {
-  if (cachedAuthority && cachedAuthorityRoot === sourceRoot) {
+function authorityForSourceRoot(authorityRoot: string): Dict {
+  if (cachedAuthority && cachedAuthorityRoot === authorityRoot) {
     return cachedAuthority;
   }
-  const authority = loadUpdateChannelsAuthority(sourceRoot);
+  const authority = loadUpdateChannelsAuthority(authorityRoot);
   cachedAuthority = authority;
-  cachedAuthorityRoot = sourceRoot;
+  cachedAuthorityRoot = authorityRoot;
   return authority;
 }
 
@@ -195,7 +213,7 @@ export function resolveSelectedChannel(args: ResolveUpdateChannelArgs): {
   }
 
   const sourceRoot = args.sourceRoot ?? resolveSourceRoot(env);
-  const authority = authorityForSourceRoot(sourceRoot);
+  const authority = authorityForSourceRoot(authorityRootFor(sourceRoot));
   const defaultChannel = String(authority.default_channel ?? "stable");
   return {
     channel: parseChannelValue(defaultChannel, "default"),
@@ -207,7 +225,7 @@ export function resolveUpdateChannel(args: ResolveUpdateChannelArgs = {}): Resol
   const env = args.env ?? process.env;
   const sourceRoot = args.sourceRoot ?? resolveSourceRoot(env);
   const { channel, source } = resolveSelectedChannel({ ...args, sourceRoot });
-  const authority = authorityForSourceRoot(sourceRoot);
+  const authority = authorityForSourceRoot(authorityRootFor(sourceRoot));
   const entry = channelEntry(authority, channel);
   const npm = npmResolution(entry);
   const git = gitResolution(entry);

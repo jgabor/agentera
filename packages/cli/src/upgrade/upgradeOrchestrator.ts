@@ -12,9 +12,14 @@ import {
   classifyInstall,
   crossMajorBoundaryApplies,
   previewCrossMajorGuard,
-  shouldIncludeCrossMajorPlanItems,
   type InstallClassification,
 } from "./compatibility.js";
+import {
+  classifyUpgradeOutcome,
+  isBlockedUpgradeOutcome,
+  shouldIncludeCrossMajorPlanItems,
+  type UpgradeOutcome,
+} from "./versionResolution.js";
 import { resolveUpdateChannel, type ResolvedUpdateChannel } from "./channels.js";
 import { buildUpgradeCommands, type UpgradeOnlyPhase } from "./upgradeCommands.js";
 import {
@@ -43,7 +48,6 @@ export interface UpgradeOrchestratorArgs {
   home?: string | null;
   project?: string | null;
   channel?: string | null;
-  targetMajor?: number | null;
   yes?: boolean;
   dryRun?: boolean;
   only?: readonly UpgradeOnlyPhase[] | null;
@@ -69,7 +73,7 @@ export interface UpgradePlanV2 {
     | typeof STATUS_APPLIED;
   channel: ResolvedUpdateChannel;
   install: InstallClassification;
-  targetMajor: number | null;
+  upgradeOutcome: UpgradeOutcome;
   crossMajorBoundary: boolean;
   project: string;
   appHome: string;
@@ -155,7 +159,7 @@ function summarizeOrchestratorPhase(
 function buildDetectPhase(
   install: InstallClassification,
   crossMajorBoundary: boolean,
-  explicitMajorOptIn: boolean,
+  outcome: UpgradeOutcome,
   channel: ResolvedUpdateChannel,
 ): UpgradeOrchestratorPhase {
   const items: MigrationPhaseItem[] = [
@@ -166,12 +170,25 @@ function buildDetectPhase(
     },
   ];
 
-  if (crossMajorBoundary && !shouldIncludeCrossMajorPlanItems(channel, explicitMajorOptIn)) {
+  if (isBlockedUpgradeOutcome(outcome)) {
+    items.push({
+      status: "blocked",
+      action: "downgrade-blocked",
+      message: outcome.message ?? "upgrade blocked",
+    });
+  } else if (crossMajorBoundary && !shouldIncludeCrossMajorPlanItems(channel, outcome)) {
     items.push({
       status: "blocked",
       action: "major-boundary",
       message:
-        "v2→v3 migration requires explicit opt-in: rerun with --target-major 3 on a 3.x development-channel CLI after preview",
+        outcome.message ??
+        "v2→v3 migration requires the development channel while stable tracks 2.x; rerun with --channel development after preview",
+    });
+  } else if (outcome.message && outcome.kind !== "up_to_date") {
+    items.push({
+      status: "noop",
+      action: "version-gate",
+      message: outcome.message,
     });
   }
 
@@ -201,17 +218,21 @@ export function buildUpgradePlan(args: UpgradeOrchestratorArgs): UpgradePlanV2 {
     sourceRoot,
   });
   const install = classifyInstall({ appHome: installRoot, sourceRoot });
-  const targetMajor = args.targetMajor ?? null;
-  const explicitMajorOptIn = targetMajor === 3;
+  const upgradeOutcome = classifyUpgradeOutcome({
+    appHome: installRoot,
+    sourceRoot,
+    install,
+    channel,
+  });
   const crossMajorBoundary = crossMajorBoundaryApplies(install, sourceRoot);
   const phaseFilter = selectedPhases(args.only);
   const runMigration =
-    crossMajorBoundary && shouldIncludeCrossMajorPlanItems(channel, explicitMajorOptIn);
+    crossMajorBoundary && shouldIncludeCrossMajorPlanItems(channel, upgradeOutcome);
 
   const phases: UpgradeOrchestratorPhase[] = [];
 
   if (phaseFilter.has("detect")) {
-    phases.push(buildDetectPhase(install, crossMajorBoundary, explicitMajorOptIn, channel));
+    phases.push(buildDetectPhase(install, crossMajorBoundary, upgradeOutcome, channel));
   }
 
   let migrationPreview = runMigration
@@ -243,7 +264,7 @@ export function buildUpgradePlan(args: UpgradeOrchestratorArgs): UpgradePlanV2 {
       channel: args.channel ?? null,
       env,
       home,
-      targetMajor,
+      catalog: null,
     });
     for (const guardPhase of guard.phases) {
       if (guardPhase.name === "detect" || !phaseFilter.has(guardPhase.name as UpgradePhaseName)) {
@@ -252,7 +273,7 @@ export function buildUpgradePlan(args: UpgradeOrchestratorArgs): UpgradePlanV2 {
       const items: MigrationPhaseItem[] = guardPhase.items.map((item) => ({
         status: "blocked",
         action: item.verb,
-        message: `${item.name} requires explicit major opt-in (--target-major 3)`,
+        message: `${item.name} requires semver forward-major confirmation on the selected channel`,
       }));
       phases.push({
         name: guardPhase.name as UpgradePhaseName,
@@ -273,7 +294,6 @@ export function buildUpgradePlan(args: UpgradeOrchestratorArgs): UpgradePlanV2 {
     project,
     installRoot,
     channel,
-    targetMajor: explicitMajorOptIn ? 3 : null,
     only: args.only,
   });
 
@@ -284,7 +304,7 @@ export function buildUpgradePlan(args: UpgradeOrchestratorArgs): UpgradePlanV2 {
     lifecycleStatus,
     channel,
     install,
-    targetMajor,
+    upgradeOutcome,
     crossMajorBoundary,
     project,
     appHome: installRoot,
@@ -303,18 +323,17 @@ export function validateUpgradeApply(args: UpgradeOrchestratorArgs, plan: Upgrad
   if (!args.yes) {
     return null;
   }
-  if (plan.crossMajorBoundary && plan.targetMajor !== 3) {
-    return (
-      "cross-major v2→v3 migration requires a preview first: run the same command with --dry-run, " +
-      "then apply with --yes and --target-major 3"
-    );
+  if (isBlockedUpgradeOutcome(plan.upgradeOutcome)) {
+    return plan.upgradeOutcome.message ?? "upgrade blocked";
   }
   if (
     plan.crossMajorBoundary &&
-    plan.targetMajor === 3 &&
-    !shouldIncludeCrossMajorPlanItems(plan.channel, true)
+    !shouldIncludeCrossMajorPlanItems(plan.channel, plan.upgradeOutcome)
   ) {
-    return "cross-major v2→v3 migration requires a 3.x development-channel CLI; stable channel cannot apply v3 migration";
+    return (
+      "cross-major v2→v3 migration requires the development channel while stable tracks 2.x; " +
+      "run the same command with --dry-run on --channel development, then apply with --yes"
+    );
   }
   return null;
 }
@@ -330,8 +349,9 @@ export function renderUpgradePlan(plan: UpgradePlanV2): string {
   ];
   if (plan.crossMajorBoundary) {
     lines.push("cross-major boundary: yes");
-    if (plan.targetMajor !== null) {
-      lines.push(`target major: ${plan.targetMajor}`);
+    lines.push(`running: ${plan.upgradeOutcome.runningVersion}; latest on channel: ${plan.upgradeOutcome.latestOnChannel}`);
+    if (plan.upgradeOutcome.migrationTargetVersion) {
+      lines.push(`migration target: ${plan.upgradeOutcome.migrationTargetVersion}`);
     }
   }
   for (const phase of plan.phases) {

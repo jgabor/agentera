@@ -408,9 +408,13 @@ Use this prose as guidance only: **stable** tracks the supported 2.x line;
 **development** tracks 3.x alphas and release candidates. Default channel is
 stable. Override with `--channel`, `AGENTERA_UPDATE_CHANNEL`, or
 `update.channel` in user config. Cross-major v2→v3 migration is never implied by
-stable-channel `@latest`; it is migrate work tagged
-`major_boundary_crossing` in the app lifecycle authority and requires explicit
-`--target-major 3` opt-in before apply.
+stable-channel `@latest` while stable tracks 2.x; it is migrate work tagged
+`major_boundary_crossing` in the app lifecycle authority and requires semver
+forward-major confirmation (running version behind latest on the selected channel)
+after preview with --dry-run before apply with --yes. Migration from v2 always targets the
+latest v3+ release on the chosen channel. Return to the v2 Python line is
+permanently unsupported after crossing into v3+; only a future scoped downgrade
+(for example v4→v3) may be added later.
 
 Do not replace this with a parallel Markdown table of dist-tags, git refs, or
 override keys. Update the YAML authority first, then keep this section as the

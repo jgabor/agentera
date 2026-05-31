@@ -100,7 +100,10 @@ describe("app lifecycle vocabulary authority", () => {
     expect(authority.status_concept_order).toEqual(["major_boundary_crossing"]);
     const concept = (authority.status_concepts as Dict).major_boundary_crossing as Dict;
     expect(String(concept.definition)).toContain("v2→v3");
-    expect(concept.requires_explicit_opt_in).toEqual({ flag: "--target-major", value: 3 });
+    expect((concept.requires_forward_major_confirmation as Record<string, unknown>).mechanism).toBe(
+      "semver_compare_running_to_latest_on_selected_channel",
+    );
+    expect(concept.irreversible_exit_lines).toEqual(["v2_python_managed_app_home"]);
     expect(concept.item_tag).toBe("requires_explicit_major_opt_in");
     expect(concept.never_implicit_on_channels).toEqual(["stable"]);
     expect(canonicalStatuses(authority)).toEqual(new Set(EXPECTED_STATUSES));
@@ -202,6 +205,13 @@ describe("update channels vocabulary authority", () => {
     for (const consumer of EXPECTED_CHANNEL_CONSUMERS) {
       expect(((authority.consumers as Dict)[consumer] as Dict).may_resolve_channels).toEqual([...EXPECTED_CHANNELS]);
     }
+  });
+
+  it("defines version resolution and irreversibility rules", () => {
+    const authority = updateChannelsAuthority();
+    const vr = authority.version_resolution as Record<string, unknown>;
+    expect(vr.forward_major_gate).toBeTruthy();
+    expect((vr.irreversibility as Record<string, unknown>).downgrade_to_v2).toBe("permanently_blocked");
   });
 
   it("declares docs delegation contract", () => {

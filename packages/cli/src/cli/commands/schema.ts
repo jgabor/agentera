@@ -55,7 +55,7 @@ const COMMAND_DESCRIPTIONS: Record<string, string> = {
   lint: "Deprecated alias for check lint. Run pre-write artifact prose self-audit.",
   gate: "Deprecated alias for check compact. Run check-only repository gates.",
   compact: "Deprecated alias for check compact. Check or fix artifact compaction budgets.",
-  upgrade: "Preview or apply phased upgrade: v1→v2 (legacy Python), v2→v3 (explicit --target-major 3 opt-in on 3.x CLI).",
+  upgrade: "Preview or apply phased upgrade with semver and channel gate; v2→v3 migrates to latest on selected channel (irreversible).",
   doctor: "Check Agentera CLI, app, and runtime status.",
   describe: "Deprecated alias for schema.",
 };
@@ -89,7 +89,7 @@ const COMMAND_FILTERS_ALL: Record<string, string[]> = {
   gate: ["project", "format"],
   compact: ["project", "mode", "format"],
   doctor: ["install_root", "home", "project", "expected_version", "expect_command"],
-  upgrade: ["project", "install_root", "home", "runtime", "only", "dry_run", "yes", "force", "update_packages", "channel", "target_major"],
+  upgrade: ["project", "install_root", "home", "runtime", "only", "dry_run", "yes", "force", "update_packages", "channel"],
   describe: ["format"],
   schema: ["format"],
 };

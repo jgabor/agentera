@@ -7,7 +7,6 @@ export interface BuildUpgradeCommandsArgs {
   /** When omitted, upgrade commands target --project only (v1 migration hints). */
   installRoot?: string | null;
   channel: ResolvedUpdateChannel;
-  targetMajor?: number | null;
   only?: readonly UpgradeOnlyPhase[] | null;
 }
 
@@ -39,10 +38,6 @@ export function buildUpgradeCommands(args: BuildUpgradeCommandsArgs): {
   if (args.channel.channel !== "stable") {
     previewParts.push("--channel", args.channel.channel);
     applyParts.push("--channel", args.channel.channel);
-  }
-  if (args.targetMajor === 3) {
-    previewParts.push("--target-major", "3");
-    applyParts.push("--target-major", "3");
   }
   if (args.only && args.only.length > 0) {
     for (const phase of args.only) {

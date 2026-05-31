@@ -96,7 +96,7 @@ fi
 
 second_out="$SANDBOX/second-dry-run.json"
 $CLI upgrade --install-root "$APP_HOME" --project "$PROJECT" --home "$HOME" \
-  --dry-run --format json --channel development --target-major 3 >"$second_out" 2>"$SANDBOX/second.stderr" || rc2=$?
+  --dry-run --format json --channel development >"$second_out" 2>"$SANDBOX/second.stderr" || rc2=$?
 rc2="${rc2:-0}"
 python3 - <<'PY' "$second_out" "$SCENARIO" "$rc2"
 import json, sys

@@ -22,8 +22,10 @@ then config file, then the stable default.
 Preview before apply on every upgrade path: run `--dry-run` first, review the plan,
 then rerun with `--yes`. `--yes` and `--dry-run` are mutually exclusive. Cross-major
 v2→v3 work additionally requires a 3.x **development**-channel CLI and explicit
-`--target-major 3` on both preview and apply; stable-channel previews omit v3
-migration operations entirely.
+preview with --dry-run, then apply with --yes on the same channel; stable-channel previews omit v3
+migration operations while stable tracks 2.x. Migration from v2 always targets the
+latest v3+ release on the chosen channel. Return to the v2 Python line is permanently
+unsupported after crossing into v3+.
 
 ## What changed
 
@@ -200,30 +202,34 @@ External package updates are deliberately opt-in because they run `npx` and may 
 uv run scripts/agentera upgrade --project /path/to/project --yes --update-packages
 ```
 
-## Upgrading v2 to v3 (explicit opt-in)
+## Upgrading v2 to v3 (development channel, irreversible)
 
 Use this path only when you intentionally move from a v2 managed app-home install
-to the npm self-contained 3.x model. The stable channel cannot apply this migration;
-use the development channel and opt in to the major boundary.
+to the npm self-contained 3.x model. The semver and channel gate compares your
+running version to the latest release on the selected channel. While stable tracks
+2.x, use the development channel. Migration always targets the latest v3+ release
+on that channel. Return to the v2 Python line is permanently unsupported after
+crossing into v3+.
 
-1. Install or run a 3.x CLI on the development channel:
+1. Install or run a 3.x CLI on the development channel and preview:
 
 ```bash
 npx -y agentera@next upgrade --channel development --project /path/to/project --dry-run
 ```
 
-1. Review the JSON or text preview. Cross-major items are tagged
-   `requires_explicit_major_opt_in` in the `agentera.upgrade.v2` payload. Pending work
-   exits non-zero until you approve apply.
+2. Review the JSON or text preview. Cross-major items are tagged
+   `requires_explicit_major_opt_in` in the `agentera.upgrade.v2` payload. The plan
+   shows running version, latest on channel, and migration target. Pending work exits
+   non-zero until you approve apply.
 
-1. Apply only after preview, with explicit major opt-in:
+3. Apply only after preview on the same channel:
 
 ```bash
-npx -y agentera@next upgrade --channel development --target-major 3 --project /path/to/project --yes
+npx -y agentera@next upgrade --channel development --project /path/to/project --yes
 ```
 
-`--yes` without a prior preview is rejected when cross-major work is pending. Run
-focused phases when you need more control (`--only artifacts`, `--only runtime`,
+`--yes` on the stable channel is rejected for v2→v3 migration while stable tracks 2.x.
+Run focused phases when you need more control (`--only artifacts`, `--only runtime`,
 `--only cleanup`).
 
 Phases migrate project YAML artifacts, rewire runtime config away from the Python
@@ -342,7 +348,7 @@ npx -y agentera@latest upgrade --only cleanup --yes
 npx -y agentera@latest upgrade --only packages --runtime opencode --yes --update-packages
 ```
 
-For v2→v3 on the development channel, add `--channel development --target-major 3`
+For v2→v3 on the development channel, use `--channel development` with preview with --dry-run, then apply with --yes
 to the same `--only` flags after preview.
 
 ## Maintainer backports and cherry-picks
@@ -351,16 +357,16 @@ When landing dual-channel and v2→v3 guard work onto `main`, cherry-pick in thi
 order so stable users never see silent cross-major migration:
 
 1. **Vocabulary and authority** — `references/cli/update-channels.yaml`,
-   `references/cli/app-lifecycle-vocabulary.yaml`, and related vocabulary index or
-   prose boundaries in `references/cli/vocabulary.md`.
+ `references/cli/app-lifecycle-vocabulary.yaml`, and related vocabulary index or
+ prose boundaries in `references/cli/vocabulary.md`.
 2. **Guards and tests** — `packages/cli/src/upgrade/compatibility.ts`,
-   `packages/cli/src/upgrade/channels.ts`, and `packages/cli/test/upgrade/`
-   backport-safety coverage (`backportSafety.test.ts` proves stable-channel dry-run
-   payloads contain zero v3 migration operations).
+ `packages/cli/src/upgrade/channels.ts`, and `packages/cli/test/upgrade/`
+ backport-safety coverage (`backportSafety.test.ts` proves stable-channel dry-run
+ payloads contain zero v3 migration operations).
 3. **Orchestrator and migration modules** — `upgradeOrchestrator.ts`,
-   `migrateArtifactsV2ToV3.ts`, and CLI wiring. Keep these active only when the
-   running CLI distribution major is 3; do not enable v3 migration apply paths on
-   `main` by default.
+ `migrateArtifactsV2ToV3.ts`, and CLI wiring. Keep these active only when the
+ running CLI distribution major is 3; do not enable v3 migration apply paths on
+ `main` by default.
 
 Do **not** point stable `@latest` at 3.x or merge orchestrator apply paths that run
 v2→v3 migration on `main` until an explicit release decision retires the 2.x support

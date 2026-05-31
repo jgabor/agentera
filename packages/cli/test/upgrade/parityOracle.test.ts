@@ -168,7 +168,6 @@ describe("Python main oracle contract parity", () => {
       home,
       project,
       channel: "development",
-      targetMajor: 3,
       dryRun: true,
     });
 

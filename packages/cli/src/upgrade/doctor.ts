@@ -365,7 +365,6 @@ export function buildDoctorStatus(installRoot: string, opts: BuildDoctorStatusOp
     project,
     installRoot,
     channel,
-    targetMajor: null,
   });
 
   const status = blocked

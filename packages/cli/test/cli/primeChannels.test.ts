@@ -72,7 +72,8 @@ describe("prime channel-aware migration and app_home gates", () => {
     );
     expect(crossMajorAttention).toBeTruthy();
     expect(crossMajorAttention).toContain("agentera@next");
-    expect(crossMajorAttention).toContain("--target-major 3");
+    expect(crossMajorAttention).not.toContain("--target-major");
+    expect(crossMajorAttention).toContain("irreversible");
     expect(crossMajorAttention).not.toContain("app files outdated");
   });
 });

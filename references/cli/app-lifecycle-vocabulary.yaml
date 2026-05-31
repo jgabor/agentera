@@ -98,19 +98,27 @@ status_concepts:
     definition: >-
       Work that crosses the v2→v3 compatibility boundary (Python managed app-home
       to npm self-contained 3.x). Never implied by stable-channel resolution or
-      @latest; requires explicit --target-major 3 opt-in before apply.
+      @latest while stable tracks 2.x; requires semver forward-major confirmation
+      (running version behind latest on the selected channel) and dry-run preview
+      before --yes apply. Return to the v2 Python line is permanently unsupported
+      after migrating to v3+.
     applies_to_verbs:
       - migrate
       - upgrade
     typical_statuses:
       - manual_review_needed
       - migration_needed
-    requires_explicit_opt_in:
-      flag: --target-major
-      value: 3
+    requires_forward_major_confirmation:
+      mechanism: semver_compare_running_to_latest_on_selected_channel
+      apply_requires:
+        - dry_run_preview
+        - yes_flag
+      authority_cross_ref: references/cli/update-channels.yaml
     item_tag: requires_explicit_major_opt_in
     never_implicit_on_channels:
       - stable
+    irreversible_exit_lines:
+      - v2_python_managed_app_home
     authority_cross_ref: references/cli/update-channels.yaml
 operation_verb_order:
   - install

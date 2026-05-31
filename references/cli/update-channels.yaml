@@ -113,6 +113,33 @@ consumers:
     may_resolve_channels:
       - stable
       - development
+version_resolution:
+  running_version:
+    priority:
+      - bundle_marker
+      - npm_package_version
+      - suite_registry
+  latest_on_channel:
+    resolver: npm_dist_tag_with_offline_defaults
+    offline_defaults:
+      stable: "2.7.6"
+      development: "3.0.0-dev.0"
+  irreversibility:
+    downgrade_to_v2: permanently_blocked
+    supported_downgrade_lines: []
+  forward_major_gate:
+    mechanism: semver_compare_running_to_latest_on_selected_channel
+    apply_requires:
+      - dry_run_preview
+      - yes_flag
+  outcome_concepts:
+    - same_major_update
+    - forward_major_upgrade
+    - migration_to_latest_on_channel
+    - channel_line_mismatch
+    - blocked_downgrade_to_v2
+    - blocked_downgrade_not_implemented
+    - up_to_date
 docs_delegation:
   document: references/cli/vocabulary.md
   required_anchor: Update channels

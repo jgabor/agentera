@@ -102,7 +102,6 @@ describe("buildUpgradePlan", () => {
       home,
       project,
       channel: "development",
-      targetMajor: 3,
       dryRun: true,
     });
 
@@ -112,7 +111,8 @@ describe("buildUpgradePlan", () => {
     expect(plan.phases.every((p) => p.summary && Array.isArray(p.items))).toBe(true);
     expect(plan.dryRunCommand).toContain("--dry-run");
     expect(plan.applyCommand).toContain("--yes");
-    expect(plan.applyCommand).toContain("--target-major");
+    expect(plan.applyCommand).not.toContain("--target-major");
+    expect(plan.upgradeOutcome.kind).toBe("migration_to_latest_on_channel");
   });
 
   it("limits phases with --only artifacts", () => {
@@ -125,7 +125,6 @@ describe("buildUpgradePlan", () => {
       home,
       project,
       channel: "development",
-      targetMajor: 3,
       only: ["artifacts"],
     });
 
@@ -136,7 +135,7 @@ describe("buildUpgradePlan", () => {
 });
 
 describe("validateUpgradeApply", () => {
-  it("rejects --yes for cross-major work without --target-major 3", () => {
+  it("rejects --yes on stable channel for cross-major v2 home", () => {
     const appHome = path.join(home, "agentera");
     managedV2(appHome);
     const project = copyFixture("v2-yaml-project", path.join(tmp, "project-yes"));
@@ -145,12 +144,12 @@ describe("validateUpgradeApply", () => {
       installRoot: appHome,
       home,
       project,
-      channel: "development",
+      channel: "stable",
       dryRun: true,
     });
 
-    const message = validateUpgradeApply({ yes: true, targetMajor: null }, preview);
-    expect(message).toMatch(/preview first/i);
+    const message = validateUpgradeApply({ yes: true }, preview);
+    expect(message).toMatch(/development channel/i);
   });
 });
 
@@ -168,8 +167,7 @@ describe("cmdUpgrade integration", () => {
         dryRun: true,
         format: "json",
         channel: "development",
-        targetMajor: 3,
-      },
+        },
       {
         out: (t) => { stdout += t; },
         err: (t) => { stderr += t; },
@@ -186,7 +184,7 @@ describe("cmdUpgrade integration", () => {
     expect(payload.lifecycleStatus).toBe(STATUS_READY_TO_APPLY);
   });
 
-  it("exits non-zero with plain-language error on --yes without cross-major opt-in", () => {
+  it("exits non-zero with plain-language error on --yes for stable cross-major v2 home", () => {
     const appHome = path.join(home, "agentera");
     managedV2(appHome);
     const project = copyFixture("v2-yaml-project", path.join(tmp, "cli-yes"));
@@ -197,7 +195,7 @@ describe("cmdUpgrade integration", () => {
         home,
         project,
         yes: true,
-        channel: "development",
+        channel: "stable",
       },
       {
         out: (t) => { stdout += t; },
@@ -206,6 +204,6 @@ describe("cmdUpgrade integration", () => {
     );
 
     expect(code).toBe(1);
-    expect(stderr).toMatch(/preview first/i);
+    expect(stderr).toMatch(/development channel/i);
   });
 });
