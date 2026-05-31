@@ -1,0 +1,17 @@
+{
+  "description": "agentera v2 Codex hooks",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "^apply_patch$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run \"${AGENTERA_HOME}/hooks/validate_artifact.py\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,2 @@
+[shell_environment_policy]
+set = { AGENTERA_HOME = "/home/user/.agents/agentera/app" }

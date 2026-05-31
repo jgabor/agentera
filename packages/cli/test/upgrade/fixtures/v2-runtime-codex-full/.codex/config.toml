@@ -1,0 +1,9 @@
+[plugins."agentera@agentera"]
+enabled = true
+
+[shell_environment_policy]
+set = { AGENTERA_HOME = "/home/user/.local/share/agentera/app" }
+
+[features]
+hooks = true
+plugin_hooks = true
