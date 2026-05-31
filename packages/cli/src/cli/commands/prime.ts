@@ -7,6 +7,10 @@ import { buildDoctorStatus, publicDoctorStatus } from "../../upgrade/doctor.js";
 import { loadSuiteVersion, resolveDoctorInstallRoot, resolveSourceRootStrict } from "../../upgrade/appModel.js";
 import { resolveUpdateChannel } from "../../upgrade/channels.js";
 import { buildUpgradeCommands } from "../../upgrade/upgradeCommands.js";
+import {
+  projectIntegrationAttention,
+  summarizeProjectIntegration,
+} from "../../upgrade/projectIntegration.js";
 import { discoverSchemasDir, loadSchemas, SchemaInfo } from "../appContext.js";
 import {
   activeObjectiveSummary,
@@ -41,7 +45,7 @@ type Env = Record<string, string | undefined>;
 const STARTUP_COMPLETENESS_MISSING_STATE: string[] = [];
 const STARTUP_AVAILABLE_STATE_FIELDS = [
   "app_home", "mode", "profile", "v1_migration", "health", "issues", "plan", "docs", "progress",
-  "objective", "state_presence", "attention", "decision_attention", "next_action",
+  "objective", "state_presence", "project_integration", "attention", "decision_attention", "next_action",
   "orchestration_context", "closeout_context", "evidence_context", "benchmark_context", "execution_context",
 ];
 const STARTUP_COMPLETENESS_CONFIDENCE_CAVEATS = [
@@ -99,13 +103,13 @@ function v1MigrationSummary(
 ): Dict {
   const detected = v1Artifacts.length > 0;
   const channel = resolveUpdateChannel({
-    channel: "stable",
+    channel: null,
     sourceRoot: opts.sourceRoot,
     home: opts.home,
     env: opts.env,
   });
   const cmds = detected
-    ? buildUpgradeCommands({ project: "$PWD", installRoot: null, channel })
+    ? buildUpgradeCommands({ project: process.cwd(), installRoot: null, channel, cwdDefault: true })
     : null;
   const summary: Dict = {
     detected,
@@ -232,6 +236,7 @@ function crossMajorAppHomeAttention(
     project: process.cwd(),
     installRoot: bundle.appHome,
     channel: devChannel,
+    cwdDefault: true,
   });
   return (
     `degraded: v2 managed app-home on 3.x CLI requires v2→v3 migration (irreversible); preview ` +
@@ -299,10 +304,36 @@ export function collectOrientationState(opts: PrimeOpts): Dict {
   const counts = issueCounts(todoItems);
   const decision = decisionFollowUp(schemas);
   const decisionAttention = decisionReviewAttention(schemas);
-  const nextAction = selectHejNextAction(plan, health, objective, todoItems, decision, savedContext);
+  const project = process.cwd();
+  const projectIntegration = summarizeProjectIntegration({
+    project,
+    sourceRoot,
+    home,
+    env,
+    installRoot: String(bundle.appHome),
+    bundleStatus: String(bundle.status),
+    crossMajorBoundary: Boolean(bundle.crossMajorBoundary),
+  });
+  const integrationAttention = projectIntegrationAttention(projectIntegration);
+
+  const defaultNextAction = selectHejNextAction(plan, health, objective, todoItems, decision, savedContext);
+  const nextAction =
+    projectIntegration.recommendation === "upgrade"
+      ? {
+          object:
+            projectIntegration.pending_runtime > 0
+              ? "Upgrade Agentera runtime wiring"
+              : "Upgrade Agentera",
+          capability: "hej",
+          reason: projectIntegration.message,
+        }
+      : defaultNextAction;
+
 
   const attention: string[] = [];
-  if (bundle.crossMajorBoundary) {
+  if (integrationAttention) {
+    attention.push(integrationAttention);
+  } else if (bundle.crossMajorBoundary) {
     attention.push(crossMajorAppHomeAttention(bundle, { sourceRoot, home, env }));
   } else if (bundle.status !== "up_to_date") {
     attention.push(appStatusAttention(bundle));
@@ -363,6 +394,7 @@ export function collectOrientationState(opts: PrimeOpts): Dict {
     profile_status: profileStatus,
     profile,
     v1_migration: v1Migration,
+    project_integration: projectIntegration,
     plan,
     docs,
     progress,
@@ -398,6 +430,14 @@ function printOrientationTextBriefing(state: Dict, command: string, out: (t: str
       `expected_source=${bundle.expectedVersionSource ?? "-"} | current=${bundle.markerVersion || "-"}\n`,
   );
   out(`mode: ${mode}\n`);
+  const projectIntegration = state.project_integration as Dict;
+  out(
+    `project_integration: recommendation=${projectIntegration.recommendation} | ` +
+      `channel=${projectIntegration.update_channel} | pending_runtime=${projectIntegration.pending_runtime}\n`,
+  );
+  if (projectIntegration.recommendation === "upgrade" && projectIntegration.message) {
+    out(`project_integration_message: ${projectIntegration.message}\n`);
+  }
   out(`profile: ${profileStatus} | path=${profile}\n`);
   if (health.exists) {
     const worst = health.worst;
@@ -431,7 +471,7 @@ function printOrientationTextBriefing(state: Dict, command: string, out: (t: str
   out(`- ${formatNextAction(nextAction)}\n`);
   out("source_contract:\n");
   out(
-    "- fields=app_home,mode,profile,v1_migration,health,issues,plan,docs,progress,objective,state_presence,attention,decision_attention,next_action,orchestration_context,closeout_context,evidence_context,benchmark_context,execution_context\n",
+    "- fields=app_home,mode,profile,v1_migration,project_integration,health,issues,plan,docs,progress,objective,state_presence,attention,decision_attention,next_action,orchestration_context,closeout_context,evidence_context,benchmark_context,execution_context\n",
   );
   out(`- render=caller-owned README-style ${dashboardLabel}\n`);
   out("- access=single installed CLI call; app/v1/profile safety included; no preflight glob/read/import/doctor calls\n");
@@ -448,7 +488,7 @@ function printOrientationTextBriefing(state: Dict, command: string, out: (t: str
 
 const HEJ_STRUCTURED_FIELDS = [
   "command", "status", "app_home", "bundle", "mode", "profile", "v1_migration", "health",
-  "issues", "plan", "docs", "progress", "objective", "state_presence", "attention",
+  "issues", "plan", "docs", "progress", "objective", "state_presence", "project_integration", "attention",
   "decision_attention", "next_action", "orchestration_context", "closeout_context",
   "evidence_context", "benchmark_context", "execution_context", "source", "source_contract",
 ];
@@ -492,6 +532,7 @@ function buildOrientationJsonPayload(state: Dict, command: string, capabilityNam
     mode: state.mode,
     profile: state.profile_dict,
     v1_migration: state.v1_migration,
+    project_integration: state.project_integration,
     health: state.health,
     issues: state.counts,
     plan: state.plan,

@@ -8,6 +8,8 @@ export interface BuildUpgradeCommandsArgs {
   installRoot?: string | null;
   channel: ResolvedUpdateChannel;
   only?: readonly UpgradeOnlyPhase[] | null;
+  /** When true, omit --project from user-facing command strings (defaults to cwd). */
+  cwdDefault?: boolean;
 }
 
 function shellQuote(value: string): string {
@@ -27,8 +29,12 @@ export function buildUpgradeCommands(args: BuildUpgradeCommandsArgs): {
   applyCommand: string;
 } {
   const base = args.channel.updateCommand.split(/\s+/).slice(0, 3);
-  const previewParts = [...base, "upgrade", "--project", args.project];
-  const applyParts = [...base, "upgrade", "--project", args.project];
+  const previewParts = [...base, "upgrade"];
+  const applyParts = [...base, "upgrade"];
+  if (!args.cwdDefault) {
+    previewParts.push("--project", args.project);
+    applyParts.push("--project", args.project);
+  }
   if (args.installRoot) {
     previewParts.push("--install-root", args.installRoot);
     applyParts.push("--install-root", args.installRoot);

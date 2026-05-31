@@ -57,4 +57,21 @@ describe("buildUpgradeCommands", () => {
     expect(cmds.dryRunCommand).toContain("--channel development");
     expect(cmds.dryRunCommand).not.toContain("--target-major");
   });
+
+  it("omits --project when cwdDefault is true", () => {
+    const channel = resolveUpdateChannel({
+      channel: "stable",
+      sourceRoot: REPO_ROOT,
+      home: "/tmp/home",
+    });
+    const cmds = buildUpgradeCommands({
+      project: "/tmp/proj",
+      installRoot: "/tmp/agentera",
+      channel,
+      cwdDefault: true,
+    });
+    expect(cmds.dryRunCommand).not.toContain("--project");
+    expect(cmds.applyCommand).not.toContain("--project");
+    expect(cmds.dryRunCommand).toContain("--dry-run");
+  });
 });

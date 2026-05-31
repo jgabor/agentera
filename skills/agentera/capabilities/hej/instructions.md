@@ -147,8 +147,8 @@ Narration voice: warm, brief, unscripted.
 Do not run separate v1 artifact or PROFILE.md checks during normal hej
 orientation. `agentera hej` owns those checks and emits the mode, profile status,
 `v1_migration.detected`, `v1_migration.affected_files`,
-`v1_migration.dry_run_command`, `v1_migration.apply_command`, attention items,
-and next action. Render those fields; do not spend additional tool calls on
+`v1_migration.dry_run_command`, `v1_migration.apply_command`, `project_integration.recommendation`, `project_integration.message`, `project_integration.dry_run_command`, `project_integration.apply_command`, attention items,
+and next action. When `project_integration.recommendation` is `upgrade`, explain the plain-language `project_integration.message`, show the preview command (`project_integration.dry_run_command`; it changes nothing), and ask before `project_integration.apply_command`. When it is `stay`, do not suggest upgrade. User-facing upgrade commands omit `--project` because the CLI defaults to the current repo. Render those fields; do not spend additional tool calls on
 `.agentera/*.md`, `.agentera/*.yaml`, `VISION.md`, or global profile-path
 discovery. Treat `v1_migration.dry_run_command` as the CLI-supplied preview and
 tell the user it changes nothing. Ask before any upgrade apply command, and only run
