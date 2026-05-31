@@ -115,6 +115,43 @@ describe("buildUpgradePlan", () => {
     expect(plan.upgradeOutcome.kind).toBe("migration_to_latest_on_channel");
   });
 
+
+  it("runs runtime rewire without crossMajorBoundary when project hooks are pending", () => {
+    const bundle = path.join(tmp, "npx-bundle-runtime");
+    fs.mkdirSync(path.join(bundle, "skills", "agentera"), { recursive: true });
+    fs.writeFileSync(path.join(bundle, "skills", "agentera", "SKILL.md"), "x");
+    fs.writeFileSync(
+      path.join(bundle, "registry.json"),
+      JSON.stringify({ skills: [{ name: "agentera", version: "3.0.0-dev.1" }] }),
+    );
+    fs.writeFileSync(
+      path.join(bundle, ".agentera-npx-bundle.json"),
+      JSON.stringify({ kind: "agentera-npx-bundle", suiteVersion: "3.0.0-dev.1" }),
+    );
+    fs.cpSync(path.join(REPO_ROOT, "references"), path.join(bundle, "references"), { recursive: true });
+
+    const project = path.join(tmp, "cursor-project");
+    fs.mkdirSync(path.join(project, ".cursor"), { recursive: true });
+    fs.copyFileSync(
+      path.join(FIXTURES, "v2-runtime-cursor-full/project/.cursor/hooks.json"),
+      path.join(project, ".cursor", "hooks.json"),
+    );
+
+    process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT = bundle;
+    const plan = buildUpgradePlan({
+      installRoot: bundle,
+      home,
+      project,
+      channel: "development",
+      dryRun: true,
+    });
+
+    expect(plan.crossMajorBoundary).toBe(false);
+    expect(plan.phases.map((p) => p.name)).toContain("runtime");
+    expect(plan.phases.find((p) => p.name === "runtime")?.summary.pending).toBeGreaterThan(0);
+    expect(plan.summary.pending).toBeGreaterThan(0);
+  });
+
   it("limits phases with --only artifacts", () => {
     const appHome = path.join(home, "agentera");
     managedV2(appHome);

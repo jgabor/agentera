@@ -22,6 +22,7 @@ import {
 } from "./versionResolution.js";
 import { resolveUpdateChannel, type ResolvedUpdateChannel } from "./channels.js";
 import { buildUpgradeCommands, type UpgradeOnlyPhase } from "./upgradeCommands.js";
+import { projectHasPendingRuntimeRewire } from "./projectIntegration.js";
 import {
   MIGRATION_STATUSES,
   applyMigrationPhases,
@@ -226,8 +227,27 @@ export function buildUpgradePlan(args: UpgradeOrchestratorArgs): UpgradePlanV2 {
   });
   const crossMajorBoundary = crossMajorBoundaryApplies(install, sourceRoot);
   const phaseFilter = selectedPhases(args.only);
-  const runMigration =
+  const migrationCtx = {
+    appHome: installRoot,
+    project,
+    home,
+    force: args.force,
+    sourceRoot,
+    channel: args.channel ?? null,
+    env,
+  };
+  const pendingRuntimeRewire = projectHasPendingRuntimeRewire(migrationCtx);
+  const crossMajorMigration =
     crossMajorBoundary && shouldIncludeCrossMajorPlanItems(channel, upgradeOutcome);
+  const runtimeOnlyMigration = pendingRuntimeRewire && !crossMajorMigration;
+  const runMigration = crossMajorMigration || pendingRuntimeRewire;
+  const effectiveOnly =
+    args.only && args.only.length > 0
+      ? args.only
+      : runtimeOnlyMigration
+        ? (["runtime"] as const)
+        : MIGRATION_ONLY_PHASES;
+
 
   const phases: UpgradeOrchestratorPhase[] = [];
 
@@ -235,16 +255,10 @@ export function buildUpgradePlan(args: UpgradeOrchestratorArgs): UpgradePlanV2 {
     phases.push(buildDetectPhase(install, crossMajorBoundary, upgradeOutcome, channel));
   }
 
-  let migrationPreview = runMigration
-    ? dryRunMigration({ appHome: installRoot, project, home, force: args.force, sourceRoot, channel: args.channel ?? null, env })
-    : null;
+  let migrationPreview = runMigration ? dryRunMigration(migrationCtx) : null;
 
   if (args.yes && migrationPreview) {
-    migrationPreview = applyMigrationPhases(
-      { appHome: installRoot, project, home, force: args.force, sourceRoot, channel: args.channel ?? null, env },
-      migrationPreview,
-      args.only && args.only.length > 0 ? args.only : MIGRATION_ONLY_PHASES,
-    );
+    migrationPreview = applyMigrationPhases(migrationCtx, migrationPreview, effectiveOnly);
   }
 
   if (migrationPreview) {
@@ -292,9 +306,10 @@ export function buildUpgradePlan(args: UpgradeOrchestratorArgs): UpgradePlanV2 {
   const blocked = status === "blocked" || status === "failed";
   const commands = buildUpgradeCommands({
     project,
-    installRoot,
+    installRoot: crossMajorMigration || crossMajorBoundary ? installRoot : null,
     channel,
-    only: args.only,
+    only: args.only ?? (runtimeOnlyMigration ? ["runtime"] : undefined),
+    cwdDefault: true,
   });
 
   return {

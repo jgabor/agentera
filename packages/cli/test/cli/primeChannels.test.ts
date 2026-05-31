@@ -67,13 +67,14 @@ describe("prime channel-aware migration and app_home gates", () => {
     process.chdir(project);
 
     const state = collectOrientationState({ home, installRoot: appHome, env: process.env });
+    expect(state.project_integration.recommendation).toBe("upgrade");
     const crossMajorAttention = (state.attention as string[]).find((line) =>
-      line.includes("v2 managed app-home on 3.x CLI"),
+      line.includes("v2 while the CLI is on v3"),
     );
     expect(crossMajorAttention).toBeTruthy();
     expect(crossMajorAttention).toContain("agentera@next");
     expect(crossMajorAttention).not.toContain("--target-major");
-    expect(crossMajorAttention).toContain("irreversible");
+    expect(crossMajorAttention).not.toContain("--project");
     expect(crossMajorAttention).not.toContain("app files outdated");
   });
 });

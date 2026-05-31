@@ -63,7 +63,7 @@ export function resolveNpxHookCommands(
   };
 }
 
-function textUsesPythonManagedEntrypoint(text: string): boolean {
+export function textUsesPythonManagedEntrypoint(text: string): boolean {
   if (/AGENTERA_HOME\s*=/.test(text)) {
     return true;
   }

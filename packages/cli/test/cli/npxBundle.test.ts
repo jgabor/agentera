@@ -97,11 +97,7 @@ describe("self-contained doctor/upgrade semantics", () => {
       path.join(root, ".agentera-npx-bundle.json"),
       JSON.stringify({ kind: "agentera-npx-bundle", suiteVersion: "9.9.9" }),
     );
-    fs.cpSync(
-      path.join(REPO_ROOT, "references", "cli"),
-      path.join(root, "references", "cli"),
-      { recursive: true },
-    );
+    fs.cpSync(path.join(REPO_ROOT, "references"), path.join(root, "references"), { recursive: true });
   }
   beforeEach(() => {
     bundle = fs.mkdtempSync(path.join(os.tmpdir(), "npxdoctor-"));
@@ -144,7 +140,7 @@ describe("self-contained doctor/upgrade semantics", () => {
     try {
       let out = "";
       const rc = cmdUpgrade(
-        { expectedVersion: "9.9.9", format: "json" },
+        { expectedVersion: "9.9.9", format: "json", installRoot: bundle, project: bundle },
         { out: (t) => (out += t), err: () => {} },
       );
       expect(rc).toBe(0);
