@@ -29,6 +29,26 @@ const PYTHON_MANAGED_PATTERNS = [
   /cursor_session_stop\.py/,
 ] as const;
 
+const RUNTIME_MIGRATION_ACTIONS = new Set([
+  "rewire-runtime",
+  "retire-hooks",
+  "copy-plugin",
+  "copy-agent",
+  "copy-command",
+  "link-skill",
+]);
+
+export function projectHasProjectLevelRuntimeHooks(project: string): boolean {
+  const root = resolvePath(project);
+  const candidates = [
+    path.join(root, ".cursor", "hooks.json"),
+    path.join(root, ".codex", "config.toml"),
+    path.join(root, ".codex", "hooks", "codex-hooks.json"),
+    path.join(root, ".github", "hooks"),
+  ];
+  return candidates.some((candidate) => isFile(candidate) || pathExists(candidate));
+}
+
 const OPENCODE_COMMAND_NAMES = ["agentera"] as const;
 const OPENCODE_SKILL_NAMES = ["agentera", "hej"] as const;
 const CURSOR_AGENT_MARKER = "<!-- agentera: managed -->";

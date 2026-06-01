@@ -26,6 +26,7 @@ import { projectHasPendingRuntimeRewire } from "./projectIntegration.js";
 import {
   MIGRATION_STATUSES,
   applyMigrationPhases,
+  detectV1ArtifactPairs,
   dryRunMigration,
   type MigrationPhase,
   type MigrationPhaseItem,
@@ -237,16 +238,20 @@ export function buildUpgradePlan(args: UpgradeOrchestratorArgs): UpgradePlanV2 {
     env,
   };
   const pendingRuntimeRewire = projectHasPendingRuntimeRewire(migrationCtx);
+  const pendingV1Artifacts = detectV1ArtifactPairs(project).length > 0;
   const crossMajorMigration =
     crossMajorBoundary && shouldIncludeCrossMajorPlanItems(channel, upgradeOutcome);
-  const runtimeOnlyMigration = pendingRuntimeRewire && !crossMajorMigration;
-  const runMigration = crossMajorMigration || pendingRuntimeRewire;
+  const artifactsOnlyMigration = pendingV1Artifacts && !crossMajorMigration;
+  const runtimeOnlyMigration = pendingRuntimeRewire && !crossMajorMigration && !artifactsOnlyMigration;
+  const runMigration = crossMajorMigration || pendingRuntimeRewire || pendingV1Artifacts;
   const effectiveOnly =
     args.only && args.only.length > 0
       ? args.only
-      : runtimeOnlyMigration
-        ? (["runtime"] as const)
-        : MIGRATION_ONLY_PHASES;
+      : artifactsOnlyMigration
+        ? (["artifacts"] as const)
+        : runtimeOnlyMigration
+          ? (["runtime"] as const)
+          : MIGRATION_ONLY_PHASES;
 
 
   const phases: UpgradeOrchestratorPhase[] = [];
@@ -308,7 +313,7 @@ export function buildUpgradePlan(args: UpgradeOrchestratorArgs): UpgradePlanV2 {
     project,
     installRoot: crossMajorMigration || crossMajorBoundary ? installRoot : null,
     channel,
-    only: args.only ?? (runtimeOnlyMigration ? ["runtime"] : undefined),
+    only: args.only ?? (artifactsOnlyMigration ? ["artifacts"] : runtimeOnlyMigration ? ["runtime"] : undefined),
     cwdDefault: true,
   });
 

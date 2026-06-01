@@ -209,6 +209,10 @@ function sourceLabel(source: string): string {
   return SOURCE_LABELS[source] ?? source;
 }
 
+export function resolvePlatformAppHome(home: string, env: Env = process.env): string {
+  return platformDefaultAppHome(home, env);
+}
+
 export function resolveDoctorInstallRoot(
   value: string | null,
   opts: { home: string; env?: Env; sourceRoot?: string | null },

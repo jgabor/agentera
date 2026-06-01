@@ -184,6 +184,8 @@ export interface BuildDoctorStatusOptions {
   /** Override update channel (tests); default stable via resolveUpdateChannel. */
   channel?: string | null;
   env?: Record<string, string | undefined>;
+  /** Evaluate installRoot even when sourceRoot is a self-contained npx bundle. */
+  skipNpxBundleShortCircuit?: boolean;
 }
 
 export function buildDoctorStatus(installRoot: string, opts: BuildDoctorStatusOptions): Dict {
@@ -198,7 +200,7 @@ export function buildDoctorStatus(installRoot: string, opts: BuildDoctorStatusOp
   // (its version is the package version), so there is no install/upgrade step.
   // Report it as the authoritative, up-to-date app home. (Sentinel-gated; never
   // triggers for a repo checkout or an installed managed app.)
-  if (isNpxBundleRoot(sourceRoot)) {
+  if (isNpxBundleRoot(sourceRoot) && !opts.skipNpxBundleShortCircuit) {
     const bundleExpected = opts.expectedVersion || loadSuiteVersion(sourceRoot) || "unknown";
     return {
       schemaVersion: "agentera.bundleStatus.v1",

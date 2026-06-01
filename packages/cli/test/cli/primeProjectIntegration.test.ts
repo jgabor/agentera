@@ -76,4 +76,31 @@ describe("prime project_integration", () => {
     expect(nextAction.object).toContain('Upgrade');
     expect(nextAction.capability).toBe('hej');
   });
+
+  it("recommends artifact upgrade for v1 Markdown project on npx bundle", () => {
+    const bundle = path.join(tmp, "bundle-v1");
+    seedNpxBundle(bundle);
+    process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT = bundle;
+
+    const project = path.join(tmp, "v1-project");
+    fs.mkdirSync(path.join(project, ".agentera"), { recursive: true });
+    fs.writeFileSync(
+      path.join(project, ".agentera", "PROGRESS.md"),
+      "# Progress\n\n## Cycle 1 · 2026-01-01 00:00 · feat\n\n**What**: fixture\n",
+    );
+    process.chdir(project);
+
+    const state = collectOrientationState({ home, env: process.env });
+    const integration = state.project_integration as Record<string, unknown>;
+
+    expect(integration.recommendation).toBe("upgrade");
+    expect(integration.pending_artifacts).toBe(1);
+    expect(integration.upgrade_only).toEqual(["artifacts"]);
+    expect(integration.dry_run_command).toContain("--only artifacts");
+    expect(integration.dry_run_command).not.toContain("--project");
+    expect(integration.dry_run_command).toContain("@next");
+
+    const nextAction = state.next_action as Record<string, string>;
+    expect(nextAction.object).toBe("Upgrade Agentera artifacts");
+  });
 });

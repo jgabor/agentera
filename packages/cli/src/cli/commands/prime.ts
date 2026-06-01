@@ -4,8 +4,9 @@ import path from "node:path";
 
 import { PRIME_BLOB } from "../prime-blob.js";
 import { buildDoctorStatus, publicDoctorStatus } from "../../upgrade/doctor.js";
-import { loadSuiteVersion, resolveDoctorInstallRoot, resolveSourceRootStrict } from "../../upgrade/appModel.js";
-import { resolveUpdateChannel } from "../../upgrade/channels.js";
+import { loadSuiteVersion, resolveDoctorInstallRoot, resolvePlatformAppHome, resolveSourceRootStrict } from "../../upgrade/appModel.js";
+import { resolveInvokedUpdateChannel } from "../../upgrade/channels.js";
+import { isNpxBundleRoot } from "../../core/sourceRoot.js";
 import { buildUpgradeCommands } from "../../upgrade/upgradeCommands.js";
 import {
   projectIntegrationAttention,
@@ -102,14 +103,20 @@ function v1MigrationSummary(
   opts: { sourceRoot: string; home: string; env: Env },
 ): Dict {
   const detected = v1Artifacts.length > 0;
-  const channel = resolveUpdateChannel({
+  const channel = resolveInvokedUpdateChannel({
     channel: null,
     sourceRoot: opts.sourceRoot,
     home: opts.home,
     env: opts.env,
   });
   const cmds = detected
-    ? buildUpgradeCommands({ project: process.cwd(), installRoot: null, channel, cwdDefault: true })
+    ? buildUpgradeCommands({
+        project: process.cwd(),
+        installRoot: null,
+        channel,
+        only: ["artifacts"],
+        cwdDefault: true,
+      })
     : null;
   const summary: Dict = {
     detected,
@@ -219,6 +226,32 @@ function hejBundleStatus(opts: PrimeOpts): Dict {
     probeCli: false,
   });
   status.expectedVersionSource = expectedSource;
+  if (isNpxBundleRoot(sourceRoot)) {
+    const platformRoot = resolvePlatformAppHome(home, env);
+    const platformStatus = buildDoctorStatus(platformRoot, {
+      rootSource: "default",
+      sourceRoot,
+      home,
+      project: process.cwd(),
+      expectedVersion: expected,
+      expectedCommands: ["prime"],
+      probeCli: false,
+      skipNpxBundleShortCircuit: true,
+      env,
+    });
+    status.platformAppHome = {
+      path: platformRoot,
+      status: platformStatus.status,
+      rootStatus: platformStatus.rootStatus,
+      dryRunCommand: platformStatus.dryRunCommand,
+      applyCommand: platformStatus.applyCommand,
+    };
+    status.cliBundle = {
+      path: sourceRoot,
+      status: status.status,
+      rootStatus: status.rootStatus,
+    };
+  }
   return status;
 }
 
@@ -226,7 +259,7 @@ function crossMajorAppHomeAttention(
   bundle: Dict,
   opts: { sourceRoot: string; home: string; env: Env },
 ): string {
-  const devChannel = resolveUpdateChannel({
+  const devChannel = resolveInvokedUpdateChannel({
     channel: "development",
     sourceRoot: opts.sourceRoot,
     home: opts.home,
@@ -321,9 +354,11 @@ export function collectOrientationState(opts: PrimeOpts): Dict {
     projectIntegration.recommendation === "upgrade"
       ? {
           object:
-            projectIntegration.pending_runtime > 0
-              ? "Upgrade Agentera runtime wiring"
-              : "Upgrade Agentera",
+            (projectIntegration.pending_artifacts as number) > 0
+              ? "Upgrade Agentera artifacts"
+              : (projectIntegration.pending_runtime as number) > 0
+                ? "Upgrade Agentera runtime wiring"
+                : "Upgrade Agentera",
           capability: "hej",
           reason: projectIntegration.message,
         }
@@ -338,7 +373,7 @@ export function collectOrientationState(opts: PrimeOpts): Dict {
   } else if (bundle.status !== "up_to_date") {
     attention.push(appStatusAttention(bundle));
   }
-  if (v1Migration.detected) {
+  if (v1Migration.detected && projectIntegration.recommendation !== "upgrade") {
     attention.push(
       `degraded: v1 artifacts detected; preview \`${v1Migration.dry_run_command}\`; files=${v1Artifacts.join(", ")}`,
     );

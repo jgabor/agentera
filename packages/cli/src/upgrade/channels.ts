@@ -3,7 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { expanduser } from "../core/paths.js";
-import { resolveSourceRoot } from "../core/sourceRoot.js";
+import { isNpxBundleRoot, resolveSourceRoot } from "../core/sourceRoot.js";
 import { loadTomlFile, parseToml } from "../core/toml.js";
 import { loadYamlMappingFile } from "../core/yaml.js";
 
@@ -259,6 +259,16 @@ export function resolveUpdateChannel(args: ResolveUpdateChannelArgs = {}): Resol
     gitRef,
     gitUpdateCommand,
   };
+}
+
+/** When the CLI runs from a self-contained npx bundle, user-facing hints use @next. */
+export function resolveInvokedUpdateChannel(args: ResolveUpdateChannelArgs = {}): ResolvedUpdateChannel {
+  const env = args.env ?? process.env;
+  const sourceRoot = args.sourceRoot ?? resolveSourceRoot(env);
+  if (isNpxBundleRoot(sourceRoot)) {
+    return resolveUpdateChannel({ ...args, channel: "development", sourceRoot });
+  }
+  return resolveUpdateChannel(args);
 }
 
 /** Parse `update.channel` from TOML text (tests). */
