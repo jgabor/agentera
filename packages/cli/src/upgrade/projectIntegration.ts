@@ -1,21 +1,28 @@
-import { expanduser, resolvePath } from "../core/paths.js";
+import { expanduser, isFile, resolvePath } from "../core/paths.js";
+import { isNpxBundleRoot } from "../core/sourceRoot.js";
 import {
   APP_MANUAL_REVIEW_NEEDED,
   APP_MIGRATION_NEEDED,
   APP_OUTDATED,
   APP_REPAIR_NEEDED,
   APP_UP_TO_DATE,
+  buildDoctorStatus,
 } from "./doctor.js";
 import { classifyInstall, crossMajorBoundaryApplies } from "./compatibility.js";
-import { resolveUpdateChannel, type ResolvedUpdateChannel } from "./channels.js";
+import { resolveInvokedUpdateChannel, type ResolvedUpdateChannel } from "./channels.js";
 import fs from "node:fs";
 
 import {
+  detectV1ArtifactPairs,
   planRuntimeRewirePhase,
   type MigrationContext,
   type MigrationPhaseItem,
 } from "./migrateArtifactsV2ToV3.js";
-import { textUsesPythonManagedEntrypoint } from "./runtimeMigration.js";
+import {
+  projectHasProjectLevelRuntimeHooks,
+  textUsesPythonManagedEntrypoint,
+} from "./runtimeMigration.js";
+import { resolvePlatformAppHome } from "./appModel.js";
 import { buildUpgradeCommands, type UpgradeOnlyPhase } from "./upgradeCommands.js";
 import {
   classifyUpgradeOutcome,
@@ -39,6 +46,7 @@ export interface ProjectIntegrationSummary {
   message: string;
   pending_runtime: number;
   pending_runtimes: string[];
+  pending_artifacts: number;
   dry_run_command: string | null;
   apply_command: string | null;
   update_channel: string;
@@ -58,7 +66,34 @@ function migrationContext(args: ProjectIntegrationArgs, channel: ResolvedUpdateC
   };
 }
 
-const RUNTIME_REWIRE_ACTIONS = new Set(["rewire-runtime", "retire-hooks"]);
+const RUNTIME_MIGRATION_ACTIONS = new Set([
+  "rewire-runtime",
+  "retire-hooks",
+  "copy-plugin",
+  "copy-agent",
+  "copy-command",
+  "link-skill",
+]);
+
+function isPendingRuntimeMigrationItem(item: MigrationPhaseItem): boolean {
+  if (item.status !== "pending" || item.action === "configure") {
+    return false;
+  }
+  if (item.action === "retire-hooks") {
+    return true;
+  }
+  if (item.action === "rewire-runtime") {
+    if (!item.source) {
+      return false;
+    }
+    try {
+      return textUsesPythonManagedEntrypoint(fs.readFileSync(item.source, "utf8"));
+    } catch {
+      return false;
+    }
+  }
+  return RUNTIME_MIGRATION_ACTIONS.has(item.action);
+}
 
 function isPythonManagedRewireItem(item: MigrationPhaseItem): boolean {
   if (item.action === "retire-hooks") {
@@ -74,14 +109,43 @@ function isPythonManagedRewireItem(item: MigrationPhaseItem): boolean {
   }
 }
 
-export function pendingRuntimeMigrationItems(ctx: MigrationContext): MigrationPhaseItem[] {
-  const phase = planRuntimeRewirePhase(ctx);
-  return phase.items.filter(
-    (item) => item.status === "pending" && RUNTIME_REWIRE_ACTIONS.has(item.action),
-  );
+function isGlobalStaleRuntimeItem(item: MigrationPhaseItem, ctx: MigrationContext): boolean {
+  const homeRoot = resolvePath(ctx.home);
+  if (!item.source?.startsWith(homeRoot)) {
+    return false;
+  }
+  if (item.action === "rewire-runtime" || item.action === "retire-hooks") {
+    return true;
+  }
+  if (item.action === "copy-plugin" && item.target) {
+    try {
+      if (isFile(item.target)) {
+        return textUsesPythonManagedEntrypoint(fs.readFileSync(item.target, "utf8"));
+      }
+      return item.source ? textUsesPythonManagedEntrypoint(fs.readFileSync(item.source, "utf8")) : false;
+    } catch {
+      return false;
+    }
+  }
+  return false;
 }
 
-/** True when the project still has Python-managed runtime hooks/config to rewire. */
+export function pendingRuntimeMigrationItems(ctx: MigrationContext): MigrationPhaseItem[] {
+  const phase = planRuntimeRewirePhase(ctx);
+  const projectRoot = resolvePath(ctx.project);
+  const hasProjectHooks = projectHasProjectLevelRuntimeHooks(ctx.project);
+  return phase.items.filter((item) => {
+    if (item.status !== "pending" || item.action === "configure") {
+      return false;
+    }
+    if (hasProjectHooks) {
+      return (item.source?.startsWith(projectRoot) ?? false) && isPendingRuntimeMigrationItem(item);
+    }
+    return isGlobalStaleRuntimeItem(item, ctx);
+  });
+}
+
+/** True when runtime hooks/config still need npm self-contained rewiring. */
 export function projectHasPendingRuntimeRewire(ctx: MigrationContext): boolean {
   const phase = planRuntimeRewirePhase(ctx);
   return phase.items.some((item) => isPythonManagedRewireItem(item));
@@ -95,6 +159,36 @@ function appNeedsUpgrade(bundleStatus: string): boolean {
   );
 }
 
+function resolveIntegrationTargets(args: ProjectIntegrationArgs): {
+  installRoot: string;
+  bundleStatus: string;
+  crossMajorBoundary: boolean;
+} {
+  if (!isNpxBundleRoot(args.sourceRoot)) {
+    return {
+      installRoot: args.installRoot,
+      bundleStatus: args.bundleStatus,
+      crossMajorBoundary: args.crossMajorBoundary ?? false,
+    };
+  }
+  const platformRoot = resolvePlatformAppHome(args.home, args.env);
+  const platformStatus = buildDoctorStatus(platformRoot, {
+    rootSource: "default",
+    sourceRoot: args.sourceRoot,
+    home: args.home,
+    project: args.project,
+    expectedCommands: ["prime"],
+    probeCli: false,
+    skipNpxBundleShortCircuit: true,
+    env: args.env,
+  });
+  return {
+    installRoot: platformRoot,
+    bundleStatus: args.bundleStatus,
+    crossMajorBoundary: Boolean(platformStatus.crossMajorBoundary),
+  };
+}
+
 function commandChannel(
   args: ProjectIntegrationArgs,
   channel: ResolvedUpdateChannel,
@@ -102,7 +196,7 @@ function commandChannel(
   upgradeOutcome: ReturnType<typeof classifyUpgradeOutcome>,
 ): ResolvedUpdateChannel {
   if (crossMajor && !shouldIncludeCrossMajorPlanItems(channel, upgradeOutcome)) {
-    return resolveUpdateChannel({
+    return resolveInvokedUpdateChannel({
       channel: "development",
       env: args.env,
       home: args.home,
@@ -113,21 +207,29 @@ function commandChannel(
 }
 
 export function summarizeProjectIntegration(args: ProjectIntegrationArgs): ProjectIntegrationSummary {
-  const channel = resolveUpdateChannel({
+  const channel = resolveInvokedUpdateChannel({
     channel: args.channel ?? null,
     env: args.env,
     home: args.home,
     sourceRoot: args.sourceRoot,
   });
-  const install = classifyInstall({ appHome: args.installRoot, sourceRoot: args.sourceRoot });
-  const crossMajor = args.crossMajorBoundary ?? crossMajorBoundaryApplies(install, args.sourceRoot);
+  const integrationTargets = resolveIntegrationTargets(args);
+  const install = classifyInstall({ appHome: integrationTargets.installRoot, sourceRoot: args.sourceRoot });
+  const crossMajor =
+    args.crossMajorBoundary ??
+    integrationTargets.crossMajorBoundary ??
+    crossMajorBoundaryApplies(install, args.sourceRoot);
   const upgradeOutcome = classifyUpgradeOutcome({
-    appHome: args.installRoot,
+    appHome: integrationTargets.installRoot,
     sourceRoot: args.sourceRoot,
     install,
     channel,
   });
-  const ctx = migrationContext(args, channel);
+  const ctx = migrationContext(
+    { ...args, installRoot: integrationTargets.installRoot },
+    channel,
+  );
+  const v1Artifacts = detectV1ArtifactPairs(args.project);
   const pending = pendingRuntimeMigrationItems(ctx);
   const pendingRuntimes = [
     ...new Set(pending.map((item) => item.runtime).filter((runtime): runtime is string => Boolean(runtime))),
@@ -136,13 +238,22 @@ export function summarizeProjectIntegration(args: ProjectIntegrationArgs): Proje
   const crossMajorMigration =
     crossMajor && shouldIncludeCrossMajorPlanItems(channel, upgradeOutcome);
   const crossMajorNeedsPreview = crossMajor && !crossMajorMigration;
-  const needsAppUpgrade = appNeedsUpgrade(args.bundleStatus);
+  const needsAppUpgrade =
+    isNpxBundleRoot(args.sourceRoot) && args.bundleStatus === APP_UP_TO_DATE
+      ? false
+      : appNeedsUpgrade(integrationTargets.bundleStatus);
+  const artifactsOnly = v1Artifacts.length > 0 && !crossMajorMigration && !crossMajorNeedsPreview && !needsAppUpgrade;
   const runtimeOnly =
-    pending.length > 0 && !crossMajorMigration && !crossMajorNeedsPreview && !needsAppUpgrade;
+    pending.length > 0 &&
+    !artifactsOnly &&
+    !crossMajorMigration &&
+    !crossMajorNeedsPreview &&
+    !needsAppUpgrade;
 
   if (
-    args.bundleStatus === APP_MANUAL_REVIEW_NEEDED &&
+    integrationTargets.bundleStatus === APP_MANUAL_REVIEW_NEEDED &&
     pending.length === 0 &&
+    v1Artifacts.length === 0 &&
     !crossMajor
   ) {
     return {
@@ -151,6 +262,7 @@ export function summarizeProjectIntegration(args: ProjectIntegrationArgs): Proje
         "Agentera needs manual review for your app directory before this project can be upgraded safely.",
       pending_runtime: 0,
       pending_runtimes: [],
+      pending_artifacts: 0,
       dry_run_command: null,
       apply_command: null,
       update_channel: channel.channel,
@@ -158,16 +270,21 @@ export function summarizeProjectIntegration(args: ProjectIntegrationArgs): Proje
   }
 
   if (
-    args.bundleStatus === APP_UP_TO_DATE &&
-    pending.length === 0 &&
+    !artifactsOnly &&
+    !runtimeOnly &&
     !crossMajorMigration &&
-    !crossMajorNeedsPreview
+    !crossMajorNeedsPreview &&
+    !needsAppUpgrade &&
+    integrationTargets.bundleStatus === APP_UP_TO_DATE &&
+    pending.length === 0 &&
+    v1Artifacts.length === 0
   ) {
     return {
       recommendation: "stay",
       message: "This project matches your current Agentera install; no upgrade is needed.",
       pending_runtime: 0,
       pending_runtimes: [],
+      pending_artifacts: 0,
       dry_run_command: null,
       apply_command: null,
       update_channel: channel.channel,
@@ -175,9 +292,13 @@ export function summarizeProjectIntegration(args: ProjectIntegrationArgs): Proje
   }
 
   const cmdsChannel = commandChannel(args, channel, crossMajor, upgradeOutcome);
-  const onlyPhases: readonly UpgradeOnlyPhase[] | undefined = runtimeOnly ? ["runtime"] : undefined;
+  const onlyPhases: readonly UpgradeOnlyPhase[] | undefined = artifactsOnly
+    ? ["artifacts"]
+    : runtimeOnly
+      ? ["runtime"]
+      : undefined;
   const installRootForCommands =
-    crossMajorMigration || crossMajorNeedsPreview || needsAppUpgrade ? args.installRoot : null;
+    crossMajorMigration || crossMajorNeedsPreview || needsAppUpgrade ? integrationTargets.installRoot : null;
   const cmds = buildUpgradeCommands({
     project: args.project,
     installRoot: installRootForCommands,
@@ -187,14 +308,19 @@ export function summarizeProjectIntegration(args: ProjectIntegrationArgs): Proje
   });
 
   let message: string;
-  if (crossMajorMigration || crossMajorNeedsPreview) {
+  if (artifactsOnly) {
+    message =
+      "This project still uses v1 Markdown artifacts; preview migrating them to v2 YAML before continuing.";
+  } else if (crossMajorMigration || crossMajorNeedsPreview) {
     message =
       "Your Agentera app copy is still on v2 while the CLI is on v3; preview the one-way v2→v3 migration before applying.";
   } else if (needsAppUpgrade) {
     message = "Your Agentera app copy is out of date; preview the repair or upgrade before applying.";
   } else if (pending.length > 0) {
     const runtimes = pendingRuntimes.length > 0 ? pendingRuntimes.join(", ") : "runtime configs";
-    message = `This project still uses older Agentera runtime wiring (${runtimes}); preview rewiring hooks to the current npm entrypoint.`;
+    message = projectHasProjectLevelRuntimeHooks(args.project)
+      ? `This project still uses older Agentera runtime wiring (${runtimes}); preview rewiring hooks to the current npm entrypoint.`
+      : `Your user-level Agentera runtime wiring (${runtimes}) is stale; preview rewiring hooks to the current npm entrypoint.`;
   } else {
     message = "Preview Agentera upgrade changes for this project before applying.";
   }
@@ -204,6 +330,7 @@ export function summarizeProjectIntegration(args: ProjectIntegrationArgs): Proje
     message,
     pending_runtime: pending.length,
     pending_runtimes: pendingRuntimes,
+    pending_artifacts: v1Artifacts.length,
     dry_run_command: cmds.dryRunCommand,
     apply_command: cmds.applyCommand,
     update_channel: cmdsChannel.channel,
@@ -216,6 +343,10 @@ export function projectIntegrationAttention(summary: ProjectIntegrationSummary):
     return null;
   }
   const preview = summary.dry_run_command ? `\`${summary.dry_run_command}\`` : "the preview command";
-  const prefix = summary.pending_runtime > 0 && summary.upgrade_only?.includes("runtime") ? "normal" : "degraded";
+  const prefix =
+    summary.pending_artifacts > 0 ||
+    (summary.pending_runtime > 0 && summary.upgrade_only?.includes("runtime"))
+      ? "normal"
+      : "degraded";
   return `${prefix}: ${summary.message} Preview ${preview}.`;
 }

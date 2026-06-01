@@ -10,6 +10,10 @@ import {
   ROOT_USER_STATE_FILE_NAMES,
 } from "./doctor.js";
 import {
+  applyV1ArtifactsPhase,
+  planV1ArtifactsPhase,
+} from "./migrateArtifactsV1ToV2.js";
+import {
   applyRuntimeMigrationItems,
   planRuntimeMigrationItems,
   resolveNpxHookCommands,
@@ -162,14 +166,7 @@ export function planArtifactsPhase(project: string): MigrationPhase {
 
   const v1Pairs = detectV1ArtifactPairs(root);
   if (v1Pairs.length > 0) {
-    const items: MigrationPhaseItem[] = v1Pairs.map((source) => ({
-      status: "blocked",
-      action: "validate",
-      source,
-      message:
-        "v1 Markdown artifacts require separate v1→v2 migration; v2→v3 preserves existing YAML only",
-    }));
-    return summarizePhase("artifacts", items);
+    return planV1ArtifactsPhase(root);
   }
 
   const yamlArtifacts = listV2YamlArtifacts(root);
@@ -186,7 +183,13 @@ export function planArtifactsPhase(project: string): MigrationPhase {
   return summarizePhase("artifacts", items);
 }
 
-export function applyArtifactsPhase(phase: MigrationPhase, _project: string): void {
+export function applyArtifactsPhase(phase: MigrationPhase, project: string, force = false): void {
+  const root = resolvePath(project);
+  const hasV1Migration = phase.items.some((item) => item.action === "migrate");
+  if (hasV1Migration) {
+    applyV1ArtifactsPhase(phase, root, force);
+    return;
+  }
   phase.status = summarizePhase("artifacts", phase.items, phase.message).status;
 }
 
@@ -418,7 +421,7 @@ export function applyMigrationPhases(
     cleanup: { ...preview.cleanup, items: preview.cleanup.items.map((item) => ({ ...item })) },
   };
   if (only.includes("artifacts")) {
-    applyArtifactsPhase(result.artifacts, ctx.project);
+    applyArtifactsPhase(result.artifacts, ctx.project, ctx.force);
   }
   if (only.includes("runtime")) {
     applyRuntimeRewirePhase(result.runtime, ctx);
