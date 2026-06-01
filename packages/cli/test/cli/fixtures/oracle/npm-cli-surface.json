@@ -1,0 +1,42 @@
+{
+  "schemaVersion": "agentera.npmParityOracle.v1",
+  "notes": "Python stable oracle envelope keys for npm @next parity; excludes uvx @feat/v3 and cross-entry-point channel parity.",
+  "commands": {
+    "prime": {
+      "argv": ["prime", "--format", "json"],
+      "exitCode": 0,
+      "requiredKeys": ["command", "status", "source_contract", "bundle"],
+      "commandValue": "prime"
+    },
+    "state_plan": {
+      "argv": ["state", "plan", "--format", "json"],
+      "exitCode": 0,
+      "requiredKeys": ["command", "status", "entries"],
+      "commandValue": "plan"
+    },
+    "state_todo": {
+      "argv": ["state", "todo", "--format", "json"],
+      "exitCode": 0,
+      "requiredKeys": ["command", "status", "entries"],
+      "commandValue": "todo"
+    },
+    "check_compact": {
+      "argv": ["check", "compact", "--format", "json"],
+      "exitCode": 0,
+      "requiredKeys": ["command", "summary"],
+      "commandValue": "gate"
+    },
+    "report_refresh_dry_run": {
+      "argv": ["report", "refresh", "--dry-run", "--format", "json"],
+      "exitCode": 0,
+      "requiredKeys": ["command", "status"],
+      "commandValue": "stats refresh"
+    },
+    "upgrade_development_dry_run": {
+      "argv": ["upgrade", "--channel", "development", "--dry-run", "--format", "json"],
+      "exitCode": 1,
+      "requiredKeys": ["schemaVersion", "summary", "phases", "channel"],
+      "forbiddenSubstrings": ["uvx", "@feat/v3"]
+    }
+  }
+}

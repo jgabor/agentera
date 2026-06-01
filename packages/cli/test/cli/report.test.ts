@@ -5,6 +5,7 @@ import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { cmdReport, statsCorpusPath, statsExistingCorpusStatus, ReportArgs } from "../../src/cli/commands/report.js";
+import { MAX_CORPUS_READ_BYTES, usageMain } from "../../src/analytics/usageStats.js";
 
 function run(args: ReportArgs): { rc: number; out: string; err: string } {
   let out = "";
@@ -35,6 +36,15 @@ describe("statsExistingCorpusStatus", () => {
     const p = path.join(tmp, "corpus.json");
     fs.writeFileSync(p, JSON.stringify({ records: [{ source_kind: "other" }] }));
     expect(statsExistingCorpusStatus(p).status).toBe("stale");
+  });
+  it("classifies an oversized corpus as stale with repair guidance", () => {
+    const p = path.join(tmp, "corpus.json");
+    const fd = fs.openSync(p, "w");
+    fs.ftruncateSync(fd, MAX_CORPUS_READ_BYTES + 1);
+    fs.closeSync(fd);
+    const s = statsExistingCorpusStatus(p);
+    expect(s.status).toBe("stale");
+    expect(s.reason).toContain("too large to load");
   });
   it("classifies a corpus with conversation_turn records as ready", () => {
     const p = path.join(tmp, "corpus.json");
@@ -151,6 +161,19 @@ describe("cmdReport", () => {
     expect(err).toContain("unsupported stats action 'bogus'");
   });
 
+  it("reports an oversized corpus as not-ready (rc 2)", () => {
+    fs.mkdirSync(path.join(tmp, "intermediate"), { recursive: true });
+    const p = path.join(tmp, "intermediate", "corpus.json");
+    const fd = fs.openSync(p, "w");
+    fs.ftruncateSync(fd, MAX_CORPUS_READ_BYTES + 1);
+    fs.closeSync(fd);
+    const { rc, out } = run({ format: "json" });
+    expect(rc).toBe(2);
+    const payload = JSON.parse(out);
+    expect(payload.status).toBe("stale");
+    expect(payload.reason).toContain("too large to load");
+  });
+
   it("runs the usage engine over a ready corpus (rc 0)", () => {
     fs.mkdirSync(path.join(tmp, "intermediate"), { recursive: true });
     fs.writeFileSync(
@@ -165,5 +188,29 @@ describe("cmdReport", () => {
     const payload = JSON.parse(out);
     expect(typeof payload.generated_at).toBe("string");
     expect(payload.extracted_at).toBe("2026-01-02T03:04:05Z");
+  });
+});
+
+describe("usageMain oversized corpus", () => {
+  let tmp: string;
+  beforeEach(() => {
+    tmp = fs.mkdtempSync(path.join(os.tmpdir(), "usage-oversized-"));
+  });
+  afterEach(() => {
+    fs.rmSync(tmp, { recursive: true, force: true });
+  });
+
+  it("degrades with guidance instead of throwing on oversized corpus", () => {
+    const p = path.join(tmp, "corpus.json");
+    const fd = fs.openSync(p, "w");
+    fs.ftruncateSync(fd, MAX_CORPUS_READ_BYTES + 1);
+    fs.closeSync(fd);
+    let err = "";
+    const rc = usageMain(["--corpus", p, "--json"], {
+      out: () => undefined,
+      err: (t) => (err += t),
+    });
+    expect(rc).not.toBe(0);
+    expect(err).toContain("too large to load");
   });
 });

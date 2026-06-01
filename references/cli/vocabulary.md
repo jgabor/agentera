@@ -404,9 +404,12 @@ prime resolve. The machine-readable authority is
 npm dist-tag and git ref resolution, override precedence, and consumer ownership
 for upgrade, doctor, prime, docs, and tests.
 
-Use this prose as guidance only: **stable** tracks the supported 2.x line;
-**development** tracks 3.x alphas and release candidates. Default channel is
-stable. Override with `--channel`, `AGENTERA_UPDATE_CHANNEL`, or
+Use this prose as guidance only: **stable** tracks the supported 2.x line on
+`npx -y agentera@latest` and, for maintainers, `uvx --from git+...@main` (Python
+CLI). **development** tracks 3.x alphas and release candidates on **npm only**
+(`npx -y agentera@next`); feat/v3 is TypeScript-only and has no uv/git install
+path. v2→v3 is a one-way upgrade through the development npm channel. Default
+channel is stable. Override with `--channel`, `AGENTERA_UPDATE_CHANNEL`, or
 `update.channel` in user config. Cross-major v2→v3 migration is never implied by
 stable-channel `@latest` while stable tracks 2.x; it is migrate work tagged
 `major_boundary_crossing` in the app lifecycle authority and requires semver

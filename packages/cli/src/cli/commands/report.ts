@@ -2,7 +2,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
-import { usageMain } from "../../analytics/usageStats.js";
+import { usageMain, corpusTooLargeReason } from "../../analytics/usageStats.js";
 import { extractCorpusMain } from "../../analytics/extractCorpus.js";
 
 type Io = { out?: (t: string) => void; err?: (t: string) => void };
@@ -87,6 +87,10 @@ export function statsCorpusPath(env: Env = process.env, platform: NodeJS.Platfor
 export function statsExistingCorpusStatus(corpusPath: string): Dict {
   if (!fs.existsSync(corpusPath)) {
     return { status: "missing", path: corpusPath, reason: "corpus file does not exist" };
+  }
+  const tooLarge = corpusTooLargeReason(corpusPath);
+  if (tooLarge) {
+    return { status: "stale", path: corpusPath, reason: tooLarge };
   }
   let data: any;
   try {

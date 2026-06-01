@@ -8,6 +8,8 @@ import {
 } from "../state/installRoot.js";
 import { loadRegistry } from "../registries/runtimeAdapterRegistry.js";
 import { parseToml as parseTomlLocal } from "../core/toml.js";
+import { resolveSourceRootStrict } from "../upgrade/appModel.js";
+import { runNpmSmokeChecks } from "./smokeChecks.js";
 
 /**
  * Setup diagnosis and confirmed installation for an Agentera suite bundle.
@@ -1038,7 +1040,25 @@ export function buildReport(opts: BuildReportOptions = {}): Dict {
     checks: [],
   };
   if (opts.runSmoke) {
-    throw new Error("setup doctor --smoke is not yet ported (pending Phase 9 node hook invocation)");
+    try {
+      const sourceRoot = resolveSourceRootStrict(sourceEnv);
+      smokeReport = runNpmSmokeChecks(sourceRoot, sourceEnv, {
+        liveModelAllowed,
+        runtimes,
+      });
+    } catch (exc) {
+      smokeReport = {
+        enabled: true,
+        liveModelAllowed,
+        modelCallsAttempted: false,
+        summary: { ...emptySummary, fail: 1 },
+        checks: [
+          smokeCheck("source_root", "helper", "fail", (exc as Error).message, {
+            details: ["resolveSourceRootStrict"],
+          }),
+        ],
+      };
+    }
   }
 
   const ok = rootReport.status !== "fail" && summaryCounts.fail === 0 && (smokeReport.summary as Dict).fail === 0;

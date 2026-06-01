@@ -20,6 +20,14 @@ import { usageMain } from "../analytics/usageStats.js";
 import { validatePathValue } from "./argvalidate.js";
 import { cmdCapability, CAPABILITY_ROUTING_NAMES } from "./commands/capability.js";
 import {
+  printCommandHelp,
+  printDoctorHelp,
+  printTopLevelHelp,
+  printUpgradeHelp,
+  splitHelpArgs,
+  wantsHelp,
+} from "./help.js";
+import {
   cmdValidate,
   cmdValidateCapability,
   cmdValidateCapabilityContract,
@@ -473,7 +481,21 @@ function runGate(argv: string[], io: Io, prog: string): number {
 
 function runDoctor(argv: string[], io: Io, prog: string): number {
   const err = io.err ?? ((t: string) => process.stderr.write(t));
-  const args: DoctorArgs = { installRoot: null, home: null, project: null, expectedVersion: null, expectCommand: [], format: "text" };
+  const out = io.out ?? ((t: string) => process.stdout.write(t));
+  if (wantsHelp(argv)) {
+    out(printDoctorHelp() + "\n");
+    return 0;
+  }
+  const args: DoctorArgs = {
+    installRoot: null,
+    home: null,
+    project: null,
+    expectedVersion: null,
+    expectCommand: [],
+    smoke: false,
+    allowLiveModel: false,
+    format: "text",
+  };
   let jsonFlag = false;
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
@@ -495,6 +517,8 @@ function runDoctor(argv: string[], io: Io, prog: string): number {
       }
       args.format = v;
     } else if (a === "--json") jsonFlag = true;
+    else if (a === "--smoke") args.smoke = true;
+    else if (a === "--allow-live-model") args.allowLiveModel = true;
     else {
       err(`${prog}: error: unrecognized arguments: ${a}\n`);
       return 2;
@@ -590,6 +614,11 @@ function runUsage(argv: string[], io: Io, prog: string): number {
 
 function runUpgrade(argv: string[], io: Io, prog: string): number {
   const err = io.err ?? ((t: string) => process.stderr.write(t));
+  const out = io.out ?? ((t: string) => process.stdout.write(t));
+  if (wantsHelp(argv)) {
+    out(printUpgradeHelp() + "\n");
+    return 0;
+  }
   const args: UpgradeArgs = {
     installRoot: null,
     home: null,
@@ -752,9 +781,23 @@ function runReport(argv: string[], io: Io, prog: string): number {
 
 export function main(argv: string[], io: Io = {}): number {
   const err = io.err ?? ((t: string) => process.stderr.write(t));
+  const out = io.out ?? ((t: string) => process.stdout.write(t));
   const args = argv.slice(2);
+  if (args.length === 0 || args[0] === "--help" || args[0] === "-h") {
+    out(printTopLevelHelp() + "\n");
+    return 0;
+  }
   const command = args[0];
-  const rest = args.slice(1);
+  const { args: rest, help } = splitHelpArgs(args.slice(1));
+  if (help) {
+    const text = printCommandHelp(command, rest);
+    if (text) {
+      out(text + "\n");
+      return 0;
+    }
+    err(`agentera: unknown or not-yet-ported command: ${command}\n`);
+    return 1;
+  }
 
   switch (command) {
     case "prime":
