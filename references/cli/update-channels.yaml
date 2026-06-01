@@ -10,12 +10,13 @@ sources:
 scope:
   includes:
     - Channel names, default selection, and resolution precedence.
-    - npm dist-tag and git ref resolution per channel.
+    - npm dist-tag resolution per channel and git ref resolution for the stable line only.
     - Environment, config, and CLI override keys.
   excludes:
     - App lifecycle canonical statuses and operation verb definitions.
     - Migration orchestration phases, apply semantics, and compatibility detection.
     - Package publication, dist-tag retirement, and release approval decisions.
+    - uv/git install paths for the development (3.x) channel; feat/v3 is TS-only on npm.
 compatibility_boundary: >-
   Stable channel must continue resolving to 2.x until an explicit release decision
   retires it. Cross-major v2→v3 migration is never implied by default channel
@@ -43,16 +44,20 @@ channels:
     concept: v3_pre_release_line
     definition: >-
       Tracks 3.x alphas, betas, and release candidates for early adopters and
-      maintainers testing the npm self-contained distribution.
+      maintainers testing the npm self-contained TypeScript distribution. The
+      feat/v3 branch and v3 CLI are npm-only; v2→v3 is a one-way upgrade through
+      npx @next, not through uvx or git checkout installs.
     distribution_major: 3
     resolution:
       npm:
         dist_tag: next
         update_command: npx -y agentera@next
       git:
-        ref: feat/v3
-        update_command: >-
-          uvx --from git+https://github.com/jgabor/agentera@feat/v3 agentera
+        supported: false
+        reason: >-
+          feat/v3 has no Python packaging; development-channel CLI delivery is
+          npm-only. Stable-channel git/uvx remains the Python 2.x maintainer path
+          on @main.
 override_precedence:
   - cli_flag
   - env_var

@@ -347,11 +347,32 @@ export class CorpusUnavailable extends Error {
   }
 }
 
+export const MAX_CORPUS_READ_BYTES = 64 * 1024 * 1024;
+
+export function corpusTooLargeReason(corpusPath: string): string | null {
+  try {
+    const size = fs.statSync(corpusPath).size;
+    if (size <= MAX_CORPUS_READ_BYTES) return null;
+    return `corpus is too large to load (${size} bytes; max ${MAX_CORPUS_READ_BYTES}). Rebuild with agentera report refresh --consent local-history or pass --corpus PATH to a smaller extract.`;
+  } catch {
+    return null;
+  }
+}
+
 export function loadCorpusOrRaise(corpusPath: string): Dict {
   if (!fs.existsSync(corpusPath)) {
     throw new CorpusUnavailable(`corpus.json not found at ${corpusPath}. ${CORPUS_GUIDANCE}`);
   }
-  const corpus = JSON.parse(fs.readFileSync(corpusPath, "utf8"));
+  const tooLarge = corpusTooLargeReason(corpusPath);
+  if (tooLarge) {
+    throw new CorpusUnavailable(`corpus at ${corpusPath} ${tooLarge}`);
+  }
+  let corpus: unknown;
+  try {
+    corpus = JSON.parse(fs.readFileSync(corpusPath, "utf8"));
+  } catch (exc) {
+    throw new CorpusUnavailable(`corpus is not readable JSON: ${(exc as Error).message}`);
+  }
   const records = isMapping(corpus) ? (corpus.records ?? []) : [];
   const hasTurn = Array.isArray(records) && records.some(
     (r: unknown) => isMapping(r) && r.source_kind === "conversation_turn",
@@ -361,7 +382,7 @@ export function loadCorpusOrRaise(corpusPath: string): Dict {
       `corpus at ${corpusPath} contains no conversation_turn records. ${CORPUS_GUIDANCE}`,
     );
   }
-  return corpus;
+  return corpus as Dict;
 }
 
 export function buildJsonPayload(

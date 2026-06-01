@@ -157,11 +157,14 @@ function npmResolution(entry: Dict): Dict {
   return npm as Dict;
 }
 
-function gitResolution(entry: Dict): Dict {
+function gitResolution(entry: Dict): Dict | null {
   const resolution = entry.resolution as Dict | undefined;
   const git = resolution?.git;
   if (!git || typeof git !== "object" || Array.isArray(git)) {
-    throw new Error("update channels authority missing git resolution");
+    return null;
+  }
+  if ((git as Dict).supported === false) {
+    return null;
   }
   return git as Dict;
 }
@@ -232,14 +235,18 @@ export function resolveUpdateChannel(args: ResolveUpdateChannelArgs = {}): Resol
 
   const distTag = String(npm.dist_tag ?? "");
   const updateCommand = String(npm.update_command ?? "").trim();
-  const gitRef = String(git.ref ?? "");
-  const gitUpdateCommand = String(git.update_command ?? "").trim();
+  const gitRef = git ? String(git.ref ?? "") : "";
+  const gitUpdateCommand = git ? String(git.update_command ?? "").trim() : "";
   const distributionMajor = Number(entry.distribution_major);
   if (!Number.isFinite(distributionMajor)) {
     throw new Error(`update channels authority missing distribution_major for ${channel}`);
   }
 
   assertStableNpmUpdateCommand(channel, updateCommand, distTag);
+
+  if (channel === "stable" && !git) {
+    throw new Error("update channels authority missing git resolution for stable channel");
+  }
 
   if (channel === "development") {
     if (distTag !== "next") {

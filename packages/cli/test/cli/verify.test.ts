@@ -26,6 +26,11 @@ describe("verify request validation", () => {
       /unsupported verify family 'bogus'/,
     );
   });
+  it("retires smoke with npm maintainer guidance", () => {
+    expect(() => validateVerifyRequest({ family: "smoke", target: "installed-skills" })).toThrow(
+      /verify smoke is retired on the npm self-contained CLI/,
+    );
+  });
   it("rejects an unknown target for a family", () => {
     expect(() => validateVerifyRequest({ family: "eval", target: "bogus" })).toThrow(
       /unsupported verify target 'bogus' for family 'eval'/,
@@ -49,6 +54,12 @@ describe("verify request validation", () => {
 });
 
 describe("cmdVerify", () => {
+  it("retires smoke verify on npm CLI", () => {
+    const { rc, err } = run({ family: "smoke", target: "installed-skills", format: "json" });
+    expect(rc).toBe(2);
+    expect(err).toContain("verify smoke is retired on the npm self-contained CLI");
+  });
+
   it("emits an Error and rc 2 for an invalid request", () => {
     const { rc, err } = run({ family: "eval", target: "semantic", fixtures: [], format: "json" });
     expect(rc).toBe(2);

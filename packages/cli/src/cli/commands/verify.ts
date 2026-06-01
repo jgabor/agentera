@@ -5,6 +5,7 @@ type Io = { out?: (t: string) => void; err?: (t: string) => void };
 type Dict = Record<string, any>;
 
 export const VERIFY_FAMILIES = ["eval"] as const;
+export const RETIRED_VERIFY_FAMILIES = ["smoke"] as const;
 export const VERIFY_TARGETS: Record<string, string[]> = {
   eval: ["skills", "semantic"],
 };
@@ -44,6 +45,13 @@ export function validateVerifyRequest(args: VerifyArgs): [string, string, string
       `unsupported verify format '${outputFormat}'; valid formats: ${VERIFY_FORMATS.join(", ")}. ` +
         "Syntax: agentera verify <family> <target> --format text|json [target options]. " +
         `Example: ${verifyExample("eval")}`,
+    );
+  }
+  if ((RETIRED_VERIFY_FAMILIES as readonly string[]).includes(family)) {
+    throw new Error(
+      `verify smoke is retired on the npm self-contained CLI; use \`agentera check verify eval skills\` ` +
+        "for bounded eval gates, or run smoke maintainer harnesses on the stable Python line with " +
+        "`uvx --from git+https://github.com/jgabor/agentera@main agentera check verify smoke installed-skills`.",
     );
   }
   if (!(VERIFY_FAMILIES as readonly string[]).includes(family)) {

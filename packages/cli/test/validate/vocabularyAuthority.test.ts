@@ -184,7 +184,8 @@ describe("update channels vocabulary authority", () => {
 
     expect(devNpm.dist_tag).toBe("next");
     expect(String(devNpm.update_command)).toContain("@next");
-    expect(String(devGit.update_command)).toContain("git+");
+    expect(devGit.supported).toBe(false);
+    expect(devGit.update_command).toBeUndefined();
   });
 
   it("declares env, config, and CLI override keys", () => {

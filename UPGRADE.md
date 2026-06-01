@@ -9,7 +9,7 @@ Agentera resolves which published line `upgrade`, `doctor`, and `prime` target t
 | Channel | Resolves to | npm entry | Purpose |
 | --- | --- | --- | --- |
 | **stable** (default) | 2.x support line | `npx -y agentera@latest` | Production upgrades and repairs on the supported 2.x line |
-| **development** | 3.x alphas and RCs | `npx -y agentera@next` | Early adopters and maintainers testing the npm self-contained 3.x CLI |
+| **development** | 3.x alphas and RCs | `npx -y agentera@next` | Early adopters testing the npm-only TypeScript 3.x CLI (no uvx/git path on feat/v3) |
 
 **Stable `@latest` stays on 2.x** until an explicit release decision retires the 2.x
 support line. Installing or upgrading with `@latest` (or the default channel) never
@@ -37,6 +37,12 @@ unsupported after crossing into v3+.
 - **State CLI**: `npx -y agentera prime` (or `uv run scripts/agentera prime` from a clone), `agentera state plan`, and other `state` namespace commands for routine access; `/agentera` still renders the hej dashboard from the `agentera prime` composite result, while `agentera state query <artifact-name> --format json|yaml` remains advanced custom access. Top-level aliases for legacy commands remain during migration with stderr deprecation; see [audience-namespace-cli-migration.yaml](references/cli/audience-namespace-cli-migration.yaml) for the full list.
 
 ### v2 → v3 (development channel only)
+
+Crossing from the Python 2.x support line to the npm TypeScript 3.x line uses the
+**development** channel only via `npx -y agentera@next`. There is no uvx or git
+install path for feat/v3; the branch is TS-only and v2→v3 is one-way. Stable
+maintainer work on Python 2.x continues through `uvx --from git+...@main` or a
+clone with `uv run scripts/agentera`.
 
 The 3.x line replaces the Python managed app-home model with an npm self-contained
 CLI bundle. That cross-major migration is **never implied** by stable-channel

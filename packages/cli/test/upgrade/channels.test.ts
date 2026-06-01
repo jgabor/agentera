@@ -55,6 +55,8 @@ describe("loadUpdateChannelsAuthority", () => {
       dist_tag: "next",
       update_command: "npx -y agentera@next",
     });
+    const devGit = (development.resolution as Record<string, unknown>).git as Record<string, unknown>;
+    expect(devGit.supported).toBe(false);
   });
 });
 
@@ -84,7 +86,8 @@ describe("resolveUpdateChannel", () => {
       distributionMajor: 3,
       source: "env_var",
     });
-    expect(resolved.gitUpdateCommand).toContain("feat/v3");
+    expect(resolved.gitRef).toBe("");
+    expect(resolved.gitUpdateCommand).toBe("");
   });
 
   it("honors CLI --channel over env and config", () => {

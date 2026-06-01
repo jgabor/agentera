@@ -755,11 +755,13 @@ verify_namespace:
   rejected_umbrella_command: smoke
   purpose: >-
     Define the supported `agentera verify` namespace so agents can run or inspect
-    smoke and eval gates through one discoverable verification surface without
-    guessing direct script names or unsupported capability-name CLI commands.
+    eval gates through one discoverable verification surface without guessing direct
+    script names or unsupported capability-name CLI commands.
   namespace_rationale: >-
     `agentera verify` is the public command for the evaluation gates (skills and
-    semantic). The smoke-check family was retired in the self-contained package.
+    semantic) on the npm self-contained CLI. The smoke-check family is retired on
+    @next; run smoke maintainer harnesses on the stable Python line with
+    `uvx --from git+https://github.com/jgabor/agentera@main agentera check verify smoke installed-skills`.
   command_shape: agentera verify <family> <target> [--format text|json] [target options]
   supported_gate_families:
     eval:
@@ -810,9 +812,11 @@ verify_namespace:
       - skipped
   invalid_input_behavior:
     family_error: >-
-      Unknown verify families must exit nonzero, list valid families `smoke` and
-      `eval`, show `agentera verify <family> <target> [--format text|json]`, and
-      include concrete examples for one smoke target and one eval target.
+      Unknown verify families must exit nonzero, list valid family `eval`, show
+      `agentera verify <family> <target> [--format text|json]`, and include a
+      concrete eval example. Requests for the retired `smoke` family must exit
+      nonzero with explicit npm-retired guidance pointing to eval verify or the
+      stable Python maintainer path.
     target_error: >-
       Unknown targets must exit nonzero, list valid targets for the selected family,
       show the correct family syntax, and include one concrete example for that family.
@@ -831,18 +835,17 @@ verify_namespace:
     - >-
       `agentera verify eval semantic` remains callable directly with fixture path arguments
       and existing offline semantic fixture behavior.
-      offline default behavior plus the explicit `--real-npx` opt-in path.
-      default behavior and explicit `--live`/`--yes` live-host opt-in behavior.
-      observable smoke-check behavior, including current non-argparse `--help` behavior.
-      observable local bootstrap diagnostics and failure behavior.
+    - >-
+      Retired `smoke` verify requests on the npm self-contained CLI must fail with
+      bounded guidance instead of invoking Python smoke harnesses.
   non_goals:
     - Do not add unsupported capability-name CLI commands such as `agentera realisera` or `agentera orkestrera`.
     - Do not reintroduce the retired smoke gate-family.
     - Do not implement D48 `validate`, `corpus`, or `usage` work.
     - Do not run live network, installed-app mutation, profile refresh, publication, push, tag, or package-update flows as part of this contract definition.
   evidence_sources:
-    - agentera --help exposes the `verify` namespace and safe smoke/eval examples.
-    - the verify vitest tests (packages/cli/test/cli/verify.test.ts) covers smoke success, eval success, text output, JSON output, invalid input feedback, safety boundaries, and preserved direct-script compatibility.
+    - agentera --help exposes the `verify` namespace and eval examples only on npm @next.
+    - the verify vitest tests (packages/cli/test/cli/verify.test.ts) cover eval success, smoke retirement, text output, JSON output, invalid input feedback, safety boundaries, and preserved direct-script compatibility.
     - agentera verify eval skills --help defines `--skill`, `--dry-run`, `--parallel`, `--timeout`, and `--runtime`.
     - agentera verify eval semantic --help defines fixture path inputs for offline semantic evaluation.
 usage_namespace:

@@ -381,4 +381,18 @@ describe("setup doctor: report + CLI", () => {
     expect(fs.existsSync(path.join(home, ".codex", "config.toml"))).toBe(true);
     expect(out).toContain("Agentera setup installer");
   });
+
+  it("buildReport --smoke emits bounded offline smoke checks", () => {
+    const root = path.join(tmp, "root");
+    fullRoot(root);
+    const report = buildReport({
+      installRoot: root,
+      home: path.join(tmp, "home"),
+      env: {},
+      runSmoke: true,
+    });
+    expect(report.smoke.enabled).toBe(true);
+    expect(report.smoke.modelCallsAttempted).toBe(false);
+    expect((report.smoke.checks as unknown[]).length).toBeGreaterThan(0);
+  });
 });

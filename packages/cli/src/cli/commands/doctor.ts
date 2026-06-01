@@ -5,6 +5,7 @@ import {
   resolveDoctorInstallRoot,
   resolveSourceRootStrict,
 } from "../../upgrade/appModel.js";
+import { runNpmSmokeChecks } from "../../setup/smokeChecks.js";
 import {
   APP_MANUAL_REVIEW_NEEDED,
   APP_MIGRATION_NEEDED,
@@ -122,7 +123,22 @@ export interface DoctorArgs {
   project?: string | null;
   expectedVersion?: string | null;
   expectCommand?: string[] | null;
+  smoke?: boolean;
+  allowLiveModel?: boolean;
   format?: string;
+}
+
+function renderDoctorSmoke(smoke: Dict): string {
+  const lines = [
+    "",
+    "Smoke checks:",
+    `  enabled: ${smoke.enabled ? "yes" : "no"}`,
+    `  model calls attempted: ${smoke.modelCallsAttempted ? "yes" : "no"}`,
+  ];
+  for (const check of (smoke.checks ?? []) as Dict[]) {
+    lines.push(`  - ${check.name}: ${check.status} - ${check.message}`);
+  }
+  return lines.join("\n");
 }
 
 export function pyJsonIndentSorted(value: unknown): string {
@@ -194,10 +210,22 @@ export function cmdDoctor(args: DoctorArgs, io: Io = {}): number {
     probeCli: true,
     probeRunner: inProcessProbe,
   });
+  let smokeReport: Dict | null = null;
+  if (args.smoke) {
+    smokeReport = runNpmSmokeChecks(sourceRoot, process.env, {
+      liveModelAllowed: Boolean(args.allowLiveModel),
+    });
+  }
   if ((args.format ?? "text") === "json") {
-    out(pyJsonIndentSorted(publicDoctorStatus(status)) + "\n");
+    const payload = publicDoctorStatus(status) as Dict;
+    if (smokeReport) payload.smoke = smokeReport;
+    out(pyJsonIndentSorted(payload) + "\n");
   } else {
-    out(renderDoctorStatus(status) + "\n");
+    out(renderDoctorStatus(status) + (smokeReport ? renderDoctorSmoke(smokeReport) : "") + "\n");
+  }
+  if (args.smoke) {
+    const failCount = Number((smokeReport?.summary as Dict | undefined)?.fail ?? 0);
+    if (failCount > 0) return 1;
   }
   return status.status === APP_UP_TO_DATE ? 0 : 1;
 }
