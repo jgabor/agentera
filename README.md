@@ -15,6 +15,7 @@ behavioral verification gates, and portable saved context across runtimes.
 <a href="#capabilities">Capabilities</a> ·
 <a href="#how-it-works">How it works</a> ·
 <a href="#get-started">Install</a> ·
+<a href="#agentera-30-preview">3.0 preview</a> ·
 <a href="#troubleshooting">Troubleshooting</a>
 </p>
 </div>
@@ -165,6 +166,85 @@ compatibility fallback for non-plugin installs. Full hook and validation details
 </details>
 
 Something broken after install? See [Troubleshooting](#troubleshooting).
+
+## Agentera 3.0 preview (development channel)
+
+**Stable installs stay on 2.x** (`npx -y agentera@latest`). The **development**
+line ships as pre-releases on npm (`npx -y agentera@next`). It is the native
+TypeScript CLI: self-contained on `npx`, no Python or `uv` required for normal
+use. Treat it as an early preview — preview every migration with `--dry-run`
+before `--yes`.
+
+### Highlights
+
+- **Self-contained npm CLI** — skills, schemas, and registry ship inside the
+  published package; `npx agentera@next` works without a repo checkout or
+  `AGENTERA_HOME/app`.
+- **Repo-native stay/upgrade** — `/agentera` (`agentera prime`) reports
+  `project_integration.recommendation` as **stay** or **upgrade** for the
+  current directory, with plain-language preview/apply commands (no `--project`
+  flag in user-facing hints).
+- **v1 Markdown → YAML** — legacy `.agentera/*.md` and root `VISION.md` migrate
+  through `upgrade --only artifacts` (backups under `.agentera/backup-v1/`).
+- **Runtime rewiring** — stale Python/`AGENTERA_HOME` hook wiring in Cursor,
+  Codex, and OpenCode can be previewed and applied with `--only runtime`.
+- **v2→v3 app-home migration** — one-way managed app-home cleanup on the
+  development channel only; stable `@latest` never starts this path. See
+  [`UPGRADE.md`](./UPGRADE.md).
+
+### Try it in a project
+
+From any git repo (no clone required):
+
+```bash
+# Orientation: stay vs upgrade for this repo
+npx -y agentera@next prime --format json
+
+# Same briefing fields, readable slice
+npx -y agentera@next prime --format json | jq '{
+  recommendation: .project_integration.recommendation,
+  message: .project_integration.message,
+  dry_run: .project_integration.dry_run_command,
+  next: .next_action.object
+}'
+```
+
+Interpret `project_integration`:
+
+| `recommendation` | Typical meaning |
+|---|---|
+| `stay` | YAML artifacts and runtime wiring look current for 3.x. |
+| `upgrade` | Pending artifact migration, runtime rewire, and/or v2→v3 app-home work. |
+
+Preview before writing anything (exit code 1 means pending work — expected):
+
+```bash
+# v1 Markdown artifacts → YAML
+npx -y agentera@next upgrade --dry-run --channel development --only artifacts
+
+# Python-managed hooks → npm entrypoint
+npx -y agentera@next upgrade --dry-run --channel development --only runtime
+
+# Full v2→v3 plan (development channel only; irreversible)
+npx -y agentera@next upgrade --dry-run --channel development
+```
+
+Apply after review:
+
+```bash
+npx -y agentera@next upgrade --yes --channel development --only artifacts
+# or --only runtime, or omit --only for the full v2→v3 migration
+```
+
+Pin an exact pre-release when comparing behavior across machines:
+
+```bash
+npx -y agentera@3.0.0-dev.3 prime --format json
+```
+
+Channel semantics, backport order, and irreversible v2→v3 steps:
+[`UPGRADE.md`](./UPGRADE.md) and
+[`references/cli/update-channels.yaml`](./references/cli/update-channels.yaml).
 
 ## Capabilities
 
