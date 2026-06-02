@@ -1,0 +1,93 @@
+header:
+  level: full
+  created: 2026-06-03
+  status: active
+  reviewed: 2026-06-03
+  critic_issues: "3 found, 3 addressed, 0 dismissed"
+  title: "Plan: 2.7.7 release"
+what: >-
+  Cut 2.7.7 patch release by landing two both-branch fixes
+  (D66 progress.yaml `commit` field removal, inspektera WARN/FAIL
+  citation enforcement) on `feat/v3` first and `main` second,
+  then bump version and reconcile state.
+why: >-
+  Both items are unblockers tagged [chore:2.7.7] and [fix:2.7.7]
+  in TODO. Shipping them clears the 2.7.7 ledger, reduces
+  inspektera false-positive noise, and drops the unmaintained
+  progress.yaml commit-tracking flow ahead of the v3 cutover.
+constraints: >-
+  `main` is feature-frozen for v3; only bug-fix-allowed surfaces
+  touch main. `feat/v3` ships as @next, `main` as @latest. Do
+  not regress any `agentera progress --format json` consumer
+  (prime, orkestrera, realisera, inspektera, hej). The installed
+  app is reported `outdated` at 2.7.7 by `agentera prime`; this
+  plan does not authorize app repair or upgrade. Decision 56,
+  Decision 58, and Decision 65 are out of scope for 2.7.x.
+scope:
+  included:
+    - Drop the per-cycle `commit` field from progress.yaml on both branches
+    - Enforce `file:line` citations on inspektera WARN/FAIL findings on both branches
+    - Bump version to 2.7.7 and update CHANGELOG
+    - Archive this plan and refresh current-state
+  excluded:
+    - Decision 56 remaining parity surfaces (artifact validation, compaction, verify, usage/stats, full suite green)
+    - Decision 58 single-name protocol sweep
+    - Decision 65 per-capability TypeScript surface
+    - TypeScript CLI rewrite and Bun/npm packaging
+    - v1 cruft removal
+  deferred:
+    - 3.0 cutover work
+    - Remaining CLI parity surfaces per Decision 56
+design: >-
+  Sequential both-branch implementation per task. Each fix
+  lands on `feat/v3` first (TypeScript @next surfaces + tests)
+  and then mirrors on `main` (Python stable slice + normative
+  prose backport). Both slices must pass their branch-appropriate
+  test gates before closeout. Test proportionality target: one
+  pass plus one fail per touched surface (TS schema, TS consumer,
+  Python schema, Python consumer, validator). Version bump and
+  plan archive are plan-level tail tasks.
+tasks:
+  - number: 1
+    name: D66 drop progress.yaml commit field
+    depends_on: []
+    status: pending
+    acceptance:
+      - "GIVEN a progress.yaml cycle entry WHEN validated by the schema THEN no `commit` field is required and existing entries without it parse"
+      - "GIVEN the TS CLI WHEN `agentera progress --format json` runs THEN output omits per-cycle `commit` while cycles, phase, type, timestamp, status, evidence, and surprises remain intact"
+      - "GIVEN the Python stable CLI WHEN `agentera progress --format json` runs THEN the same omission holds on `main`"
+      - "GIVEN `agentera state progress` consumers (prime, orkestrera, realisera, inspektera, hej) WHEN the new progress shape loads THEN each consumer renders without regression"
+      - "GIVEN AGENTS.md, realisera instructions, inspektera 5b, contract.md, UPGRADE.md, CHANGELOG, and progress text output WHEN reviewed THEN guidance matches the field-less shape"
+  - number: 2
+    name: Inspektera WARN and FAIL must cite file:line
+    depends_on: []
+    status: pending
+    acceptance:
+      - "GIVEN an inspektera WARN or FAIL finding WHEN rendered THEN the finding carries a `citation: file:line` field, or `not-applicable` with reason"
+      - "GIVEN a WARN finding with a citation WHEN re-verified by the exact `grep` or `git show` command shown in the citation THEN the evidence reproduces at that line"
+      - "GIVEN the orkestrera Step 3 Surface 2 delegation template WHEN the inspektera delegation prompt is constructed THEN the template requires the citation field"
+      - "GIVEN `references/cli/capability-instruction-contract.yaml` WHEN the evaluator-handoff schema is loaded THEN WARN and FAIL rows fail validation without a valid citation"
+      - "GIVEN a sample inspektera report WHEN a regression test runs THEN every WARN and FAIL entry carries a valid file:line citation"
+  - number: 3
+    name: 2.7.7 version bump and CHANGELOG update
+    depends_on:
+      - "1"
+      - "2"
+    status: pending
+    acceptance:
+      - "GIVEN DOCS.md versioning policy WHEN the release is cut THEN every file in `docs.yaml` `version_files` carries version 2.7.7"
+      - "GIVEN CHANGELOG.md WHEN the 2.7.7 entry is recorded THEN it lists both D66 and the WARN-citation fix with imperative phrasing and the implementation commit hashes"
+      - "GIVEN `agentera upgrade --dry-run` WHEN run from a clean install THEN it reports 2.7.7 as the current version"
+  - number: 4
+    name: Final state sync and plan archive
+    depends_on:
+      - "1"
+      - "2"
+      - "3"
+    status: pending
+    acceptance:
+      - "GIVEN all prior tasks complete WHEN this task runs THEN `.agentera/plan.yaml` is archived to `.agentera/archive/plan-2026-06-03.yaml` and the active plan slot is cleared"
+      - "GIVEN TODO.md WHEN the ledger is reconciled THEN the 2.7.7 entries move to the resolved section with implementation commit hashes"
+      - "GIVEN `agentera prime` WHEN rendered after closeout THEN the plan slot reports absent and health grade trends reflect the shipped fixes"
+overall_acceptance: "GIVEN `main` and `feat/v3` WHEN the 2.7.7 release ships THEN both branches pass their branch-appropriate test gates with no per-cycle `commit` field anywhere and inspektera WARN/FAIL findings carry reproducible file:line citations; AND GIVEN `npx -y agentera@latest` from `main` and `npx -y agentera@next` from `feat/v3` WHEN installed on a clean machine THEN both report version 2.7.7 and the D66 plus WARN-citation behaviors are observable end-to-end."
+surprises: []
