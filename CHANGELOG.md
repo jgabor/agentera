@@ -19,6 +19,10 @@
 
 - `packages/cli/src/state/progressCommit.ts` `rewriteCycleCommits` now YAML-quotes the rewritten `commit` value, so all-digit and scientific-notation short hashes (e.g. `61e2490` previously parsed as `61e2490 = Infinity` and silently broke `agentera check backfill --fix` round-trips) round-trip correctly through the YAML parser. The three tests in `packages/cli/test/state/progressCommit.test.ts` that asserted the prior unquoted output format were updated to expect the quoted form.
 
+### Added
+
+- Frozen parity oracles for `agentera check validate <family> --format json` (seven families: cross-capability, lifecycle-adapters, app-home-contract, capability, capability-contract, descriptors, artifact) at `packages/cli/test/cli/fixtures/oracle/validate-family.json` and for `agentera check verify eval <target> --format json` (semantic and skills targets) at `packages/cli/test/cli/fixtures/oracle/verify-eval-family.json`. Both oracles pin required top-level keys, value types, the `command`/`status`/`target_family` literals, and the engine/diagnostics/safety sub-object shapes; the fail path is owned by the existing `invalid-input-envelope.json` oracle and is referenced, not duplicated. Enforced by `packages/cli/test/cli/validateVerifyOracles.test.ts` with 27 parity tests and a strict `assertExactTopLevelKeys` drift detector that fails the test with a named diff when an undeclared top-level key is added to the live envelope. Existing `packages/cli/test/cli/validate.test.ts` and `packages/cli/test/cli/verify.test.ts` are unchanged and continue to pass (full suite 644/644).
+
 ## [2.7.6] · 2026-05-29
 
 ### Added
