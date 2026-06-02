@@ -55,7 +55,7 @@ BUDGET:
   1:
     id: DB1
     scope: per_decision_entry
-    max_words: 200
+    max_words: 1000
     description: >-
       Maximum words per decision entry. Budgets are guidelines, not hard
       blockers.
