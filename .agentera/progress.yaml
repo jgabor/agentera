@@ -4,7 +4,7 @@ cycles:
   type: test
   phase: build
   what: Add parametrized budget-lookup regression coverage in tests/test_self_audit.py.
-  commit: pending
+  commit: '639f7a3 test(cli): add self-audit budget lookup regression coverage'
   discovered: None.
   verified: "tests/test_self_audit.py 53 passed pytest -q -n auto (30\u219253 tests:\
     \ 10 per-entry normalization, 3 full-file/5 fallback, 10 full-file normalization,\
