@@ -2,69 +2,127 @@ header:
   level: light
   created: '2026-06-02'
   status: active
-  title: 'Shim cwd preservation: project path resolution for installed apps'
+  title: 'Freeze remaining CLI JSON contract parity fixtures'
 what: >
-  When users run `npx -y agentera` in a project, the published 0.0.0 shim
-  spawns the Python CLI with cwd set to the installed app home, causing
-  every state command to read from $AGENTERA_HOME/app/... instead of the
-  user's project. The shim must preserve the user's working directory so
-  the Python CLI's existing os.getcwd()-based path resolution finds the
-  project artifacts. A regression test pins the new behavior, and a
-  CHANGELOG note records the shim's transitional role against the
-  upcoming 3.0 TypeScript CLI.
+  Three slices of the original `[test:3.0.0] Freeze CLI JSON contract
+  parity fixtures` TODO remain unfrozen now that the npm CLI is at
+  `3.0.0-dev.4` and the Python-oracle and npm-parity-matrix oracles
+  exist: (1) the invalid-input guidance envelope that surfaces like
+  `check validate`, `check verify`, and `state *` emit on bad arguments,
+  (2) the `check validate` and `check verify` family JSON envelopes
+  that have no parity oracle, and (3) the `source_contract` field set
+  that `prime` and the per-capability `capability_context` capsule
+  emit. Each slice gets a frozen JSON oracle and a parity/regression
+  test that fails on contract drift. Task 1 is split into 1a (envelope
+  contract: oracle + helper + one surface exemplar) and 1b (wire across
+  the remaining CLI surfaces) so the per-cycle implementation surface
+  stays small enough for one realisera cycle.
 why: >
-  The installed shim is the only npm-published agentera entry point
-  until 3.0 ships the native TypeScript CLI. Today every user with an
-  installed app home hits the bug on first run: agentera state plan
-  reports "no plan" while the project has a complete plan, agentera
-  state todo reports "empty" while the project has open items, and
-  hej/planera/resonera/inspektera all see a fresh project. The shim
-  blocks every project-state read path.
+  The Python-oracle fixture covers `python-main-contract.json`
+  lifecycle and `npm-cli-surface.json` covers six command surfaces,
+  but `check validate`, `check verify`, and the `source_contract`
+  internals are not pinned. Decision 56 (parity orchestrator) remains
+  open with the explicit "artifact validation, verify, full suite
+  green" gap, and the new narrow TODO assumes a stable invalid-input
+  envelope to express drift. Without frozen contracts, every new field
+  or exit-code change in the validate/verify families lands without
+  an oracle-level safety net, and the hej/planera/resonera/inspektera
+  code paths that consume `source_contract` can drift silently.
 constraints: >
-  - The Python CLI's os.getcwd() semantics must not change; the shim is
-    the only site allowed to influence cwd.
-  - The repo backend (kind equals repo, local clone with scripts/agentera)
-    must keep its existing behavior — repo root is project root.
-  - No new uv, npm, or external dependencies.
-  - The shim version stays 0.0.0; the v3 TypeScript CLI is the resolution.
+  - The npm CLI stays TS-only and on the `3.0.0-dev` series on
+    `feat/v3`; do not add uv-installable v3 or cross-entry-point
+    parity with the Python stable path.
+  - Contract-first: extend
+    `packages/cli/test/cli/fixtures/oracle/` and
+    `packages/cli/test/upgrade/fixtures/oracle/` rather than
+    introduce parallel documentation.
+  - The Python-oracle and npm-cli-surface fixtures already in the repo
+    stay authoritative; new oracles cite and reference them, do not
+    duplicate.
+  - Pin value types and structural shapes, not exact string content,
+    for `source_contract` fields whose values legitimately vary by
+    caller (e.g. `cli_fallback`, `confidence_caveats`).
   - No remote push; do not edit vision.yaml or objective state.
+  - Decision 65 capability-instruction relocation is out of scope;
+    this plan freezes contracts for the artifacts D65's TypeScript
+    modules will export, not the relocation itself.
 scope:
   included:
-    - npm shim runBackend app-home cwd preservation
-    - Regression test exercising the app-home backend from a temporary
-      cwd outside the app home
-    - CHANGELOG note under [Unreleased] for the shim's transitional role
+    - Invalid-input guidance envelope (error shape, exit codes,
+      valid-values/syntax/example template) for all CLI surfaces
+      that reject arguments
+    - Parity oracles for `check validate` (cross-capability,
+      lifecycle-adapters, app-home-contract, capability,
+      capability-contract, descriptors, artifact) and `check verify`
+      (eval family) JSON envelopes
+    - Frozen `source_contract` field set and value-type contract
+      for the `prime` output and the per-capability
+      `capability_context` capsule
   excluded:
-    - Python CLI os.getcwd() semantics changes
-    - Repo-backend cwd changes (kind equals repo)
-    - v3 TypeScript CLI implementation work
+    - Python CLI parity (the Python stable path is the oracle, not
+      the implementation surface for 3.0)
+    - Decision 65 capability-instruction relocation work
+    - Full Decision 56 closeout (compaction and usage/stats are
+      already frozen; this plan covers validate, verify, and
+      source_contract)
   deferred:
-    - Full v3 TypeScript CLI release replacing the shim
+    - Parity oracles for the remaining `state *` and doctor/setup
+      surfaces that the npm-cli-surface fixture does not yet cover
 tasks:
   - number: 1
-    name: Preserve user cwd in npm shim app-home backend
+    name: Define the invalid-input envelope contract (oracle + helper + one surface exemplar)
     depends_on: []
     status: complete
     acceptance:
-      - GIVEN any project cwd not equal to the installed app home WHEN
-        npx -y agentera state plan --format json runs THEN the source
-        path resolves to the project's .agentera/plan.yaml (or "not
-        found" if absent), not a path under the app home.
-      - GIVEN a project with .agentera/docs.yaml mapping overrides WHEN
-        the shim delegates to the Python CLI THEN those overrides load
-        from the project root, not the app home.
-      - GIVEN the repo backend path (local clone with scripts/agentera
-        available) WHEN the shim is invoked from inside that clone THEN
-        the spawned Python CLI receives the repo root as cwd, matching
-        prior behavior.
-      - GIVEN a regression test exercising the app-home backend WHEN
-        run from a temporary cwd outside the app home THEN the spawned
-        process is observed to receive the user's cwd, not the app home.
-      - GIVEN the project's CHANGELOG.md WHEN read THEN a note under
-        [Unreleased] records the shim's transitional role and the 3.0
-          TypeScript CLI replacement.
+      - "GIVEN the bundled agentera skill invalid-input guidance template WHEN the canonical envelope type is defined in TypeScript THEN it has required keys status (string, value fail), error.class (string), error.message (string), and optional keys error.valid_values (array of strings), error.syntax (string), and error.example (string), matching the valid-values / correct-syntax / concrete-example guidance."
+      - "GIVEN the helper emitInvalidInput WHEN invoked with --format json THEN it writes the canonical JSON envelope to stdout and returns rc 2; WHEN invoked in text mode THEN it writes the four-question template (what happened / what the preview did / what the fix will do / what it will not do) to stderr and returns rc 2."
+      - "GIVEN the oracle fixture packages/cli/test/cli/fixtures/oracle/invalid-input-envelope.json WHEN authored THEN it pins the envelope shape, exit code, and required keys."
+      - "GIVEN one CLI surface (check validate) wired to emitInvalidInput as the exemplar WHEN run with --format json and a bad family THEN the envelope matches the oracle and rc is 2; WHEN run in text mode THEN the four-question template appears on stderr and rc is 2."
+      - "GIVEN the existing packages/cli/test/cli/validate.test.ts assertions on plain-text error output WHEN they coexist with the new json-mode envelope THEN they continue to pass without skipping; text-mode assertions stay on stderr text, json-mode assertions run against the envelope."
+  - number: 2
+    name: Wire the invalid-input envelope across remaining CLI surfaces
+    depends_on: ["1"]
+    status: pending
+    acceptance:
+      - "GIVEN the emitInvalidInput helper from task 1 WHEN wired into the remaining CLI surfaces (lint, backfill, state, schema, doctor, upgrade, report, verify, capability, help) THEN each surface emits the canonical envelope on --format json and the four-question template in text mode, with rc 2 for invalid input."
+      - "GIVEN the parity test from task 1 WHEN extended to cover every CLI surface in the npm-cli-surface matrix THEN the envelope shape, exit code, and required keys match the oracle for every surface."
+      - "GIVEN the existing tests that assert on plain-text error output for the wired surfaces (e.g. validate.test.ts, verify.test.ts) WHEN they coexist with the new json-mode envelope THEN they continue to pass without skipping; text-mode assertions stay on stderr text, json-mode assertions run against the envelope."
+  - number: 3
+    name: Freeze validate/verify family parity oracles
+    depends_on: ["1", "2"]
+    status: pending
+    acceptance:
+      - "GIVEN check validate <family> for each of the seven families (cross-capability, lifecycle-adapters, app-home-contract, capability, capability-contract, descriptors, artifact) WHEN run with --format json THEN the envelope matches the new oracle fixture packages/cli/test/cli/fixtures/oracle/validate-family.json."
+      - "GIVEN check verify eval <fixture> WHEN run with --format json THEN the envelope matches packages/cli/test/cli/fixtures/oracle/verify-eval-family.json."
+      - "GIVEN any new field added to a validate or verify envelope WHEN the parity test runs THEN the test fails with a diff naming the field, requiring an intentional oracle update."
+      - "GIVEN the existing packages/cli/test/cli/validate.test.ts and packages/cli/test/cli/verify.test.ts regression tests WHEN they assert the new oracles THEN they continue to pass without skipping."
+  - number: 4
+    name: Freeze source_contract internals
+    depends_on: ["1"]
+    status: pending
+    acceptance:
+      - "GIVEN the new TODO enumerated fields (complete_for_capability_startup, missing, cli_fallback, raw_artifact_reads_required, confidence_caveats) WHEN reconciled against the live agentera prime --format json output THEN the plan-documented field names match the actual prime keys (capability_startup_complete, missing_state, cli_fallback, raw_artifact_reads_required, confidence_caveats) and the TODO description in TODO.md is amended in the same commit."
+      - "GIVEN agentera prime and agentera prime --context <capability> WHEN they emit source_contract THEN the field set, value types, and required keys match the new oracle packages/cli/test/cli/fixtures/oracle/source-contract.json."
+      - "GIVEN any CLI command that emits a source_contract (state plan, state todo, state query, prime, prime --context) WHEN the parity test runs THEN each command contract matches its own oracle entry and the shared source_contract field set matches the new oracle."
+      - "GIVEN a value that legitimately varies by caller (e.g. cli_fallback, confidence_caveats) WHEN the oracle is authored THEN it pins the value type and shape, not the exact string content."
 overall_acceptance: >
-  All five behavioral criteria in task 1 must hold after one realisera
-  cycle. No remote push. vision.yaml and objective state untouched.
-surprises: []
-previous_plan_archived: .agentera/archive/PLAN-2026-06-01-npm-3x-cli-parity-tranche-1.yaml
+  After realisera completes the four tasks, the new oracles
+  (invalid-input-envelope, validate-family, verify-eval-family,
+  source-contract) exist under packages/cli/test/cli/fixtures/oracle/,
+  the parity/regression tests in packages/cli/test/cli/ fail on
+  contract drift across all CLI surfaces, the TODO.md field-name
+  reconciliation lands in the same commit, and the Decision 56
+  "artifact validation, verify" slice is closed by this plan
+  evidence. No remote push. vision.yaml and objective state untouched.
+surprises: >
+  The new TODO enumerates source_contract fields
+  (complete_for_capability_startup, missing) that do not match
+  the live prime output keys (capability_startup_complete,
+  missing_state); task 4 reconciles the field names and the TODO
+  description in TODO.md is amended in the same commit. Task 1
+  was originally scoped as a single cycle but split into 1a
+  (envelope contract: oracle + helper + one surface exemplar) and
+  1b (wire across the remaining CLI surfaces) so the per-cycle
+  implementation surface stays small enough for one realisera
+  cycle.
+previous_plan_archived: .agentera/archive/PLAN-2026-06-02-shim-cwd-preservation.yaml

@@ -1,14 +1,54 @@
 cycles:
+  - number: 626
+    timestamp: 2026-06-02 15:48
+    type: test
+    phase: build
+    what: Freeze the invalid-input error envelope contract for the 3.0 TypeScript
+      CLI — new emitInvalidInput helper, oracle fixture, parity test, and check
+      validate wired as the exemplar surface.
+    commit: pending
+    inspiration: None.
+    discovered: None.
+    verified: pnpm -C packages/cli test — 617/617 passed (73 files, +12 vs cycle
+      625's 605/605); pnpm -C packages/cli run typecheck — clean; pnpm -C
+      packages/cli build — clean; live smoke `node
+      packages/cli/dist/bin/agentera.js check validate --format json` returns
+      the canonical envelope + rc 2, text mode returns the four-question
+      template + rc 2, `check validate bogus --format json` returns an
+      `unsupported_target` envelope + rc 2.
+    next: Wire the invalid-input envelope across the remaining CLI surfaces (lint,
+      backfill, state, schema, doctor, upgrade, report, verify, capability,
+      help) per plan task 2, or freeze the validate/verify family parity oracles
+      per plan task 3. Task 2 unblocks task 3.
+    context:
+      intent: "Execute plan task 1 (1a — envelope contract: oracle + helper + check
+        validate exemplar). The 1a/1b split was needed because the original task
+        1 was too large for one realisera cycle."
+      constraints: TS-only on 3.0.0-dev feat/v3; no remote push; no vision.yaml or
+        objective-state edits; existing text-mode assertions in validate.test.ts
+        and verify.test.ts must continue to pass alongside the new json-mode
+        envelope.
+      unknowns: Whether task 2 will surface additional error classes beyond the seven
+        declared in the oracle union (missing_argument, invalid_choice,
+        unrecognized_argument, mutually_exclusive, invalid_int, invalid_format,
+        unsupported_target).
+      scope: Added packages/cli/src/cli/errors.ts (helper module),
+        packages/cli/test/cli/fixtures/oracle/invalid-input-envelope.json
+        (oracle contract), packages/cli/test/cli/invalidInputEnvelope.test.ts
+        (12 parity tests); modified packages/cli/src/cli/dispatch.ts runValidate
+        to route every error site through emitInvalidInput (six inline err()
+        sites plus the catch block plus the not-yet-ported branch); other CLI
+        surfaces unchanged — they migrate in task 2.
   - number: 625
     timestamp: 2026-06-02 09:20
     type: fix
     phase: build
     what: npm shim runBackend app-home branch now forwards the user's cwd to the
-      spawned Python CLI instead of the installed app home's app/ subdir; re-added
-      the shim source under packages/cli/shim/ (bin/agentera.mjs, lib/exec.mjs,
-      lib/resolve.mjs, package.json, README.md, LICENSE) and added vitest
-      regression coverage in packages/cli/test/shim/runBackend.test.ts.
-    commit: "4534d90"
+      spawned Python CLI instead of the installed app home's app/ subdir;
+      re-added the shim source under packages/cli/shim/ (bin/agentera.mjs,
+      lib/exec.mjs, lib/resolve.mjs, package.json, README.md, LICENSE) and added
+      vitest regression coverage in packages/cli/test/shim/runBackend.test.ts.
+    commit: 4534d90
     inspiration: None.
     discovered: Published npm shim 0.0.0 was the only npx -y agentera entry point
       until 3.0 ships; the shim's runBackend app-home branch set cwd to
@@ -222,26 +262,9 @@ cycles:
       scope: packages/cli/src/upgrade/channels.ts,
         packages/cli/test/upgrade/channels.test.ts, .agentera/plan.yaml task 2
         status.
-  - number: 616
-    timestamp: 2026-05-30 12:00
-    type: feat
-    phase: build
-    what: Define update-channel and major-boundary vocabulary authorities.
-    commit: pending
-    inspiration: None.
-    discovered: None.
-    verified: pnpm -C packages/cli test test/validate/vocabularyAuthority.test.ts
-      14/14 passed; pnpm -C packages/cli test
-      test/validate/lifecycleAdapters.test.ts 4/4 passed (18/18 total).
-    next: Task 2 — implement channel resolution module (channels.ts).
-    context:
-      intent: PLAN task 1 for v2→v3 migration dual update channels.
-      constraints: No commit; vocabulary-only; preserve Decision 54 canonical statuses.
-      unknowns: None for vocabulary surface; channel resolver behavior lands in task 2.
-      scope: references/cli/update-channels.yaml, app-lifecycle-vocabulary.yaml,
-        vocabulary-index.yaml, vocabulary.md,
-        packages/cli/test/validate/vocabularyAuthority.test.ts.
 archive:
+  - summary: "Cycle 616 (2026-05-30): Define update-channel and major-boundary
+      vocabulary authorities."
   - summary: "Cycle 615 (2026-05-29): Consolidate progress-commit guard onto shared
       module; release 2.7.6."
   - summary: "Cycle 614 (2026-05-29): Extract shared scripts/progress_commit.py;
@@ -316,5 +339,3 @@ archive:
   - summary: "Cycle 579 (2026-05-20): Introduced role-aware capability state inventory."
   - summary: "Cycle 578 (2026-05-18): Closed stale 2.4.x instruction-validation TODO
       from committed regression evidence."
-  - summary: "Cycle 577 (2026-05-18): Completed capability instruction validation
-      regression coverage."

@@ -18,6 +18,7 @@ import { HookCliAdapter } from "../hooks/validateArtifact.js";
 import fsForHooks from "node:fs";
 import { usageMain } from "../analytics/usageStats.js";
 import { validatePathValue } from "./argvalidate.js";
+import { emitInvalidInput } from "./errors.js";
 import { cmdCapability, CAPABILITY_ROUTING_NAMES } from "./commands/capability.js";
 import {
   printCommandHelp,
@@ -306,27 +307,38 @@ function runCompact(argv: string[], io: Io, prog: string): number {
 }
 
 function runValidate(argv: string[], io: Io, prog: string): number {
-  const err = io.err ?? ((t: string) => process.stderr.write(t));
   let family: string | null = null;
   let capabilityTarget: string | null = null;
   let artifactFlag: string | null = null;
   let fileFlag: string | null = null;
   let cwdFlag: string | null = null;
-  let format = "text";
+  let format: "text" | "json" = "text";
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === "--format") {
       const v = argv[++i];
       if (v !== "text" && v !== "json") {
-        err(`${prog}: error: argument --format: invalid choice: '${v}' (choose from 'text', 'json')\n`);
-        return 2;
+        return emitInvalidInput(io, {
+          format,
+          body: {
+            class: "invalid_choice",
+            message: `argument --format: invalid choice: '${v}' (choose from 'text', 'json')`,
+            valid_values: ["text", "json"],
+          },
+        });
       }
       format = v;
     } else if (a.startsWith("--format=")) {
       const v = a.slice("--format=".length);
       if (v !== "text" && v !== "json") {
-        err(`${prog}: error: argument --format: invalid choice: '${v}' (choose from 'text', 'json')\n`);
-        return 2;
+        return emitInvalidInput(io, {
+          format,
+          body: {
+            class: "invalid_choice",
+            message: `argument --format: invalid choice: '${v}' (choose from 'text', 'json')`,
+            valid_values: ["text", "json"],
+          },
+        });
       }
       format = v;
     } else if (a === "--artifact" || a.startsWith("--artifact=")) {
@@ -336,26 +348,57 @@ function runValidate(argv: string[], io: Io, prog: string): number {
     } else if (a === "--cwd" || a.startsWith("--cwd=")) {
       cwdFlag = a === "--cwd" ? argv[++i] : a.slice("--cwd=".length);
     } else if (a.startsWith("--")) {
-      err(`${prog}: error: unrecognized arguments: ${a}\n`);
-      return 2;
+      return emitInvalidInput(io, {
+        format,
+        body: {
+          class: "unrecognized_argument",
+          message: `unrecognized arguments: ${a}`,
+        },
+      });
     } else if (family === null) {
       family = a;
     } else if (capabilityTarget === null) {
       capabilityTarget = a;
     } else {
-      err(`${prog}: error: unrecognized arguments: ${a}\n`);
-      return 2;
+      return emitInvalidInput(io, {
+        format,
+        body: {
+          class: "unrecognized_argument",
+          message: `unrecognized arguments: ${a}`,
+        },
+      });
     }
   }
   if (family === null) {
-    err(`${prog}: error: the following arguments are required: validate_family\n`);
-    return 2;
+    return emitInvalidInput(io, {
+      format,
+      body: {
+        class: "missing_argument",
+        message: "the following arguments are required: validate_family",
+        valid_values: [
+          "cross-capability",
+          "lifecycle-adapters",
+          "app-home-contract",
+          "capability",
+          "capability-contract",
+          "descriptors",
+          "artifact",
+        ],
+        example: "agentera check validate cross-capability",
+      },
+    });
   }
   try {
     if (family === "capability") {
       if (capabilityTarget === null) {
-        err(`${prog} capability: error: the following arguments are required: target\n`);
-        return 2;
+        return emitInvalidInput(io, {
+          format,
+          body: {
+            class: "missing_argument",
+            message: "the following arguments are required: target",
+            example: "agentera check validate capability planera",
+          },
+        });
       }
       return cmdValidateCapability(capabilityTarget, { format }, io);
     }
@@ -367,19 +410,44 @@ function runValidate(argv: string[], io: Io, prog: string): number {
     }
     if (family === "artifact") {
       if (artifactFlag === null) {
-        err(`${prog} artifact: error: the following arguments are required: --artifact\n`);
-        return 2;
+        return emitInvalidInput(io, {
+          format,
+          body: {
+            class: "missing_argument",
+            message: "the following arguments are required: --artifact",
+            example: "agentera check validate artifact --artifact PLAN.md",
+          },
+        });
       }
       return cmdValidateArtifact({ artifact: artifactFlag, file: fileFlag, cwd: cwdFlag, format }, io);
     }
     if (isDelegatedValidateFamily(family)) {
       return cmdValidate(family, { format }, io);
     }
-    err(`agentera: validate family not yet ported: ${family}\n`);
-    return 1;
+    return emitInvalidInput(io, {
+      format,
+      body: {
+        class: "unsupported_target",
+        message: `validate family not yet ported: ${family}`,
+        valid_values: [
+          "cross-capability",
+          "lifecycle-adapters",
+          "app-home-contract",
+          "capability",
+          "capability-contract",
+          "descriptors",
+          "artifact",
+        ],
+      },
+    });
   } catch (exc) {
-    err(`Error: ${(exc as Error).message}\n`);
-    return 2;
+    return emitInvalidInput(io, {
+      format,
+      body: {
+        class: "unsupported_target",
+        message: (exc as Error).message,
+      },
+    });
   }
 }
 
