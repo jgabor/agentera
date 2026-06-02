@@ -1,0 +1,204 @@
+{
+  "schemaVersion": "agentera.validateFamilyOracle.v1",
+  "notes": "Frozen contract for the canonical `check validate <family> --format json` envelope across the seven families (cross-capability, lifecycle-adapters, app-home-contract, capability, capability-contract, descriptors, artifact). Pin is structural: required keys, value types, and the small set of literal values (command='validate', status union, target_family values). Field content that legitimately varies by family/fixture (target strings, violation messages, summary counts, resolved file paths) is not pinned; see the live envelope test in packages/cli/test/cli/validateVerifyOracles.test.ts for the canonical pass shape and packages/cli/test/cli/validate.test.ts for the existing per-family assertions. The fail path on `--format json` reuses the canonical invalid-input envelope (status='fail', error.{class,message,valid_values?,syntax?,example?}); see packages/cli/test/cli/fixtures/oracle/invalid-input-envelope.json for that contract. The npm-cli-surface.json oracle (packages/cli/test/cli/fixtures/oracle/npm-cli-surface.json) covers the cross-cutting npm exit-code matrix and is referenced, not duplicated.",
+  "format": "json",
+  "commandValue": "validate",
+  "statusUnion": ["pass", "fail"],
+  "violationsValueType": "array<string>",
+  "families": {
+    "cross-capability": {
+      "argv": ["check", "validate", "cross-capability", "--format", "json"],
+      "exitCode": 0,
+      "requiredTopLevelKeys": [
+        "command",
+        "status",
+        "target_family",
+        "target",
+        "violations",
+        "engine"
+      ],
+      "targetFamilyValue": "cross-capability",
+      "targetValueType": "string",
+      "engine": {
+        "requiredKeys": ["command", "exit_code", "stdout", "stderr"],
+        "commandValueType": "string",
+        "commandValue": "validate_cross_capability.py",
+        "exitCodeValueType": "number",
+        "stdoutValueType": "array<string>",
+        "stderrValueType": "array<string>"
+      }
+    },
+    "lifecycle-adapters": {
+      "argv": ["check", "validate", "lifecycle-adapters", "--format", "json"],
+      "exitCode": 0,
+      "requiredTopLevelKeys": [
+        "command",
+        "status",
+        "target_family",
+        "target",
+        "violations",
+        "engine"
+      ],
+      "targetFamilyValue": "lifecycle-adapters",
+      "targetValueType": "string",
+      "engine": {
+        "requiredKeys": ["command", "exit_code", "stdout", "stderr"],
+        "commandValueType": "string",
+        "commandValue": "validate_lifecycle_adapters.py",
+        "exitCodeValueType": "number",
+        "stdoutValueType": "array<string>",
+        "stderrValueType": "array<string>"
+      }
+    },
+    "app-home-contract": {
+      "argv": ["check", "validate", "app-home-contract", "--format", "json"],
+      "exitCode": 0,
+      "requiredTopLevelKeys": [
+        "command",
+        "status",
+        "target_family",
+        "target",
+        "violations",
+        "engine"
+      ],
+      "targetFamilyValue": "app-home-contract",
+      "targetValueType": "string",
+      "engine": {
+        "requiredKeys": ["command", "exit_code", "stdout", "stderr"],
+        "commandValueType": "string",
+        "commandValue": "validate_app_home_contract.py",
+        "exitCodeValueType": "number",
+        "stdoutValueType": "array<string>",
+        "stderrValueType": "array<string>"
+      }
+    },
+    "capability": {
+      "argv": ["check", "validate", "capability", "realisera", "--format", "json"],
+      "exitCode": 0,
+      "requiredTopLevelKeys": [
+        "command",
+        "status",
+        "target_family",
+        "target",
+        "violations",
+        "engine",
+        "path"
+      ],
+      "targetFamilyValue": "capability",
+      "targetValueType": "string",
+      "pathValueType": "string",
+      "engine": {
+        "requiredKeys": ["exit_code", "stdout", "stderr"],
+        "exitCodeValueType": "number",
+        "stdoutValueType": "array<string>",
+        "stderrValueType": "array<string>"
+      },
+      "altShape": {
+        "description": "When the target resolves to the capability root, the envelope is `target_family: 'capability-set'` with a `checks: [...]` array and `summary: { passed, failed }` per the existing capability-set path. The single-capability shape above is the canonical pass case asserted by the existing test suite.",
+        "targetFamilyValue": "capability-set",
+        "requiredTopLevelKeys": [
+          "command",
+          "status",
+          "target_family",
+          "target",
+          "path",
+          "checks",
+          "violations",
+          "summary"
+        ],
+        "summaryRequiredKeys": ["passed", "failed"]
+      }
+    },
+    "capability-contract": {
+      "argv": ["check", "validate", "capability-contract", "--format", "json"],
+      "exitCode": 0,
+      "requiredTopLevelKeys": [
+        "command",
+        "status",
+        "target_family",
+        "target",
+        "checks",
+        "violations",
+        "summary"
+      ],
+      "targetFamilyValue": "capability-contract",
+      "targetValueType": "string",
+      "checksValueType": "array<object>",
+      "checkItemRequiredKeys": [
+        "command",
+        "status",
+        "target_family",
+        "target",
+        "violations",
+        "engine"
+      ],
+      "checkItemEngineRequiredKeys": ["command", "exit_code", "stdout", "stderr"],
+      "checkItemEngineCommandValue": "validate_capability.py",
+      "summaryRequiredKeys": ["passed", "failed"]
+    },
+    "descriptors": {
+      "argv": ["check", "validate", "descriptors", "--format", "json"],
+      "exitCode": 0,
+      "requiredTopLevelKeys": [
+        "command",
+        "status",
+        "target_family",
+        "target",
+        "checks",
+        "violations",
+        "summary"
+      ],
+      "targetFamilyValue": "descriptors",
+      "targetValueType": "string",
+      "targetValue": "agent-descriptors",
+      "checksValueType": "array<object>",
+      "checkItemRequiredKeys": ["runtime", "capability", "path", "status"],
+      "checkItemRuntimeValueUnion": ["codex", "opencode"],
+      "checkItemStatusValueUnion": ["pass", "fail"],
+      "summaryRequiredKeys": ["passed", "failed"],
+      "summaryCheckCount": 24
+    },
+    "artifact": {
+      "argv": ["check", "validate", "artifact", "--artifact", "PLAN.md", "--format", "json"],
+      "exitCode": 0,
+      "requiredTopLevelKeys": [
+        "command",
+        "status",
+        "target_family",
+        "target",
+        "artifact",
+        "file",
+        "docs_mapped_default",
+        "path_source",
+        "violations",
+        "engine"
+      ],
+      "targetFamilyValue": "artifact",
+      "targetValueType": "string",
+      "artifactValueType": "string",
+      "fileValueType": "string",
+      "docsMappedDefaultValueType": "string",
+      "pathSourceValueType": "string",
+      "engine": {
+        "requiredKeys": ["command", "exit_code"],
+        "commandValueType": "string",
+        "commandValue": "validate-artifact",
+        "exitCodeValueType": "number"
+      },
+      "altShape": {
+        "description": "Pass envelope with valid file returns rc 0. Fail envelope (invalid YAML root, etc.) returns rc 2 and `status: 'fail'` with `violations` populated; the `engine.exit_code` is 2 in that case.",
+        "failExitCode": 2,
+        "failStatusValue": "fail"
+      }
+    }
+  },
+  "failEnvelope": {
+    "description": "Per-family fail envelopes on --format json reuse the canonical invalid-input envelope (rc 2, status='fail', error.{class,message,valid_values?,syntax?,example?}). This oracle does not duplicate that contract.",
+    "referencedOracle": "invalid-input-envelope.json",
+    "referencedOraclePath": "packages/cli/test/cli/fixtures/oracle/invalid-input-envelope.json"
+  },
+  "relatedOracles": {
+    "invalidInputEnvelope": "packages/cli/test/cli/fixtures/oracle/invalid-input-envelope.json",
+    "npmCliSurface": "packages/cli/test/cli/fixtures/oracle/npm-cli-surface.json"
+  }
+}

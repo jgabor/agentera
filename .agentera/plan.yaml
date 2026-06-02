@@ -90,7 +90,7 @@ tasks:
   - number: 3
     name: Freeze validate/verify family parity oracles
     depends_on: ["1", "2"]
-    status: pending
+    status: complete
     acceptance:
       - "GIVEN check validate <family> for each of the seven families (cross-capability, lifecycle-adapters, app-home-contract, capability, capability-contract, descriptors, artifact) WHEN run with --format json THEN the envelope matches the new oracle fixture packages/cli/test/cli/fixtures/oracle/validate-family.json."
       - "GIVEN check verify eval <fixture> WHEN run with --format json THEN the envelope matches packages/cli/test/cli/fixtures/oracle/verify-eval-family.json."

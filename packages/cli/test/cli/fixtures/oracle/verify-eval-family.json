@@ -1,0 +1,78 @@
+{
+  "schemaVersion": "agentera.verifyEvalFamilyOracle.v1",
+  "notes": "Frozen contract for the canonical `check verify eval <target> --format json` envelope. Two targets share the same envelope shape: `eval semantic <fixture>` (offline-fixtures safety) and `eval skills` (dry-run or explicit-runtime). Pin is structural: required keys, value types, and the small set of literal values (command='verify', family='eval', status union, safety mode union). Field content that legitimately varies by target/fixture (engine.command array elements, diagnostics stdout/stderr content, resolved safety.summary text) is not pinned. The fail path on --format json reuses the canonical invalid-input envelope (rc 2, status='fail', error.{class,message,valid_values?,syntax?,example?}); see packages/cli/test/cli/fixtures/oracle/invalid-input-envelope.json. The npm-cli-surface.json oracle (packages/cli/test/cli/fixtures/oracle/npm-cli-surface.json) covers the cross-cutting npm exit-code matrix.",
+  "format": "json",
+  "commandValue": "verify",
+  "familyValue": "eval",
+  "statusUnion": ["pass", "fail"],
+  "formatValueUnion": ["text", "json"],
+  "requiredTopLevelKeys": [
+    "command",
+    "status",
+    "family",
+    "target",
+    "format",
+    "engine",
+    "diagnostics",
+    "safety"
+  ],
+  "engine": {
+    "requiredKeys": ["command", "exit_code"],
+    "commandValueType": "array<string>",
+    "exitCodeValueType": "number"
+  },
+  "diagnostics": {
+    "requiredKeys": ["stdout", "stderr", "line_limit"],
+    "stdoutValueType": "array<string>",
+    "stderrValueType": "array<string>",
+    "lineLimitValueType": "number",
+    "lineLimitValue": 20
+  },
+  "safety": {
+    "requiredKeys": ["mode", "summary", "live", "long_running_default"],
+    "modeValueUnion": ["offline-fixtures", "dry-run", "explicit-runtime"],
+    "summaryValueType": "string",
+    "liveValueType": "boolean",
+    "longRunningDefaultValueType": "boolean"
+  },
+  "targets": {
+    "semantic": {
+      "argv": [
+        "check",
+        "verify",
+        "eval",
+        "semantic",
+        "fixtures/semantic/hej-bare-message.md",
+        "--format",
+        "json"
+      ],
+      "exitCode": 0,
+      "targetValueType": "string",
+      "targetValue": "semantic",
+      "safetyMode": "offline-fixtures",
+      "live": false
+    },
+    "skills_dry_run": {
+      "argv": ["check", "verify", "eval", "skills", "--dry-run", "--format", "json"],
+      "exitCode": 0,
+      "targetValueType": "string",
+      "targetValue": "skills",
+      "safetyMode": "dry-run",
+      "live": false
+    },
+    "skills_run": {
+      "description": "Out of scope for the default pinned shape — the live envelope is the same shape as the dry-run/explicit-runtime case but with `safety.live === true` and `engine.command` ending in `--runtime <runtime>` without `--dry-run`.",
+      "safetyMode": "explicit-runtime",
+      "live": true
+    }
+  },
+  "failEnvelope": {
+    "description": "Verify fail envelopes on --format json (unsupported family/target, eval skills with --run + --dry-run, etc.) reuse the canonical invalid-input envelope contract (rc 2, status='fail', error.{class,message,valid_values?,syntax?,example?}).",
+    "referencedOracle": "invalid-input-envelope.json",
+    "referencedOraclePath": "packages/cli/test/cli/fixtures/oracle/invalid-input-envelope.json"
+  },
+  "relatedOracles": {
+    "invalidInputEnvelope": "packages/cli/test/cli/fixtures/oracle/invalid-input-envelope.json",
+    "npmCliSurface": "packages/cli/test/cli/fixtures/oracle/npm-cli-surface.json"
+  }
+}

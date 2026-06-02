@@ -1,4 +1,62 @@
 cycles:
+  - number: 628
+    timestamp: 2026-06-02 18:15
+    type: test
+    phase: build
+    what: Freeze validate/verify family parity oracles — two new oracle fixtures
+      (validate-family.json, verify-eval-family.json) and a new
+      validateVerifyOracles.test.ts that pins the pass-envelope shape for all
+      seven validate families and the two verify eval targets, with a strict
+      drift detector (assertExactTopLevelKeys) that fails the test with a named
+      diff when an undeclared top-level key is added to the live envelope, and
+      two unit tests that self-verify the drift detector. Existing
+      validate.test.ts and verify.test.ts are unchanged and still pass. Oracles
+      cite and reference the existing invalid-input-envelope.json and
+      npm-cli-surface.json; no content is duplicated.
+    commit: pending
+    inspiration: None.
+    discovered: "cmdVerify's internal validateVerifyRequest catch writes `Error:
+      ...` to stderr and returns rc 2 instead of routing through
+      emitInvalidInput, so `check verify eval bogus --format json` does NOT emit
+      the canonical invalid-input envelope. This is a pre-existing gap
+      documented by verify.test.ts:63-67. The verify-eval-family oracle freezes
+      the PASS envelope only; the text-mode error path is owned by
+      verify.test.ts and is intentionally out of scope. Fixing the
+      dispatch-level gap (route runVerify's catch through emitInvalidInput) is a
+      follow-up cycle."
+    verified: pnpm -C packages/cli test -- 644/644 passed (74 files, +27 vs cycle
+      627's 617/617); pnpm -C packages/cli run typecheck -- clean; pnpm -C
+      packages/cli build -- clean; new tests exercise all 7 validate families +
+      2 verify eval targets against the oracles; drift detector unit tests
+      verify the named-diff behavior on added/missing keys; live `node
+      packages/cli/dist/bin/agentera.js check validate <family> --format json`
+      for each of the 7 families and `check verify eval semantic
+      fixtures/semantic/hej-bare-message.md --format json` / `check verify eval
+      skills --dry-run --format json` all match the oracles.
+    next: Plan task 4 (freeze source_contract internals) or close the cmdVerify
+      dispatch-level text-mode-error gap as a task 2 follow-up, or remove the
+      progress.yaml commit field per the new TODO.
+    context:
+      intent: "Execute plan task 3 (freeze validate/verify family parity oracles).
+        Plan: 3/4 tasks complete after this commit."
+      constraints: "TS-only on 3.0.0-dev feat/v3; no remote push; no vision.yaml or
+        objective-state edits; oracles cite and reference the existing
+        invalid-input-envelope.json and npm-cli-surface.json (no duplication);
+        pin value types and structural shapes, not exact string content, for
+        fields whose values legitimately vary by family/fixture; commit field
+        will be removed from the schema in a future cycle, so this cycle
+        intentionally leaves commit: pending and skips the forward backfill."
+      unknowns: Whether task 4 fits in one cycle or splits the capability_context
+        capsule and prime output into two sub-tasks.
+      scope: Added packages/cli/test/cli/fixtures/oracle/validate-family.json (132
+        lines, 7 families + alt-shape + fail-path reference) and
+        packages/cli/test/cli/fixtures/oracle/verify-eval-family.json (61 lines,
+        2 eval targets + safety/diagnostics/engine pinning + fail-path
+        reference); added packages/cli/test/cli/validateVerifyOracles.test.ts
+        (~600 lines, 27 tests covering pass envelopes for all 7 validate
+        families, 2 verify eval targets, fail envelope for artifact, dispatch
+        wiring for validate, and drift-detector unit tests). Plan task 3 status
+        updated to complete in the same commit.
   - number: 627
     timestamp: 2026-06-02 17:52
     type: feat
@@ -36,21 +94,21 @@ cycles:
       format-detection-in-error-paths gap as a task 2 follow-up, or remove the
       progress.yaml commit field per the new TODO.
     context:
-      intent: "Execute plan task 1b (wire emitInvalidInput across remaining CLI
+      intent: Execute plan task 1b (wire emitInvalidInput across remaining CLI
         surfaces). The subagent dispatched by orkestrera returned an empty
         task_result, so the orchestrator took over verification, fix, and commit
-        phases."
+        phases.
       constraints: "TS-only on 3.0.0-dev feat/v3; no remote push; no vision.yaml or
-        objective-state edits; all wired surfaces return rc 2; commit field
-        will be removed from the schema in a future cycle, so this cycle
+        objective-state edits; all wired surfaces return rc 2; commit field will
+        be removed from the schema in a future cycle, so this cycle
         intentionally leaves commit: pending and skips the forward backfill."
-      unknowns: "Whether task 3 and the format-detection follow-up fit in one
-        cycle or need to be split, and whether task 4 becomes the first
-        schema-removal cycle for the progress commit field."
+      unknowns: Whether task 3 and the format-detection follow-up fit in one cycle or
+        need to be split, and whether task 4 becomes the first schema-removal
+        cycle for the progress commit field.
       scope: "Modified dispatch.ts (3 new helpers, 21 run* functions wired through
-        emitInvalidInput), 4 CLI test files (assertions updated), progressCommit.ts
-        (rewriteCycleCommits quotes commit value), 3 progressCommit tests (expect
-        quoted form). Plan: 2/4 tasks complete."
+        emitInvalidInput), 4 CLI test files (assertions updated),
+        progressCommit.ts (rewriteCycleCommits quotes commit value), 3
+        progressCommit tests (expect quoted form). Plan: 2/4 tasks complete."
   - number: 626
     timestamp: 2026-06-02 15:48
     type: test
@@ -275,29 +333,9 @@ cycles:
         packages/cli/test/upgrade/fixtures/,
         packages/cli/test/upgrade/migrateArtifactsV2ToV3.test.ts,
         .agentera/plan.yaml task 4 status.
-  - number: 618
-    timestamp: 2026-05-30 23:30
-    type: feat
-    phase: build
-    what: Implement v2/v3 compatibility detection and guard rails.
-    commit: pending
-    inspiration: None.
-    discovered: None.
-    verified: pnpm -C packages/cli test test/upgrade/compatibility.test.ts
-      test/upgrade/backportSafety.test.ts test/upgrade/channels.test.ts — 18/18
-      passed.
-    next: Task 4 — port v2→v3 artifact and runtime migration modules.
-    context:
-      intent: PLAN task 3 for v2→v3 migration dual update channels.
-      constraints: No commit; guard modules safe for main backport; stable dry-run
-        omits v3 ops.
-      unknowns: Full orchestrator wiring lands in task 5.
-      scope: packages/cli/src/upgrade/compatibility.ts,
-        packages/cli/test/upgrade/compatibility.test.ts,
-        packages/cli/test/upgrade/backportSafety.test.ts,
-        packages/cli/src/cli/commands/upgrade.ts,
-        packages/cli/src/cli/dispatch.ts, .agentera/plan.yaml task 3 status.
 archive:
+  - summary: "Cycle 618 (2026-05-30): Implement v2/v3 compatibility detection and
+      guard rails."
   - summary: "Cycle 617 (2026-05-30): Implement update channel resolution module
       (channels.ts)."
   - summary: "Cycle 616 (2026-05-30): Define update-channel and major-boundary
@@ -373,4 +411,3 @@ archive:
   - summary: "Cycle 581 (2026-05-21): Nested existing bespoke contexts in slim
       capability-context output."
   - summary: "Cycle 580 (2026-05-21): Added slim capability-context envelope mode."
-  - summary: "Cycle 579 (2026-05-20): Introduced role-aware capability state inventory."
