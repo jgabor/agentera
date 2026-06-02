@@ -1,0 +1,124 @@
+header:
+  level: full
+  created: "2026-06-01"
+  status: complete
+  reviewed: "2026-06-01"
+  critic_issues: "3 found, 3 addressed, 0 dismissed"
+  title: "Plan: npm 3.x CLI parity tranche 1"
+what: >-
+  Close the first six actionable Normal TODO items from the uvx-vs-npx parity review:
+  align update-channel authority with TS-only v3, ship discoverable help on the npm CLI,
+  retire or document smoke verify for the self-contained distribution, fix oversized
+  corpus handling in report/usage, port doctor --smoke, and add a Python-oracle parity
+  test matrix. Establishes contract-first npm @next behavior without treating uvx/git
+  as a v3 entry point.
+why: >-
+  Decision 56 upgrade/migration parity remains open until npm CLI surfaces match the
+  Python oracle. Recent live probing found concrete gaps in help, channel docs,
+  verify smoke, corpus reads, doctor smoke, and automated parity coverage. Cycle 623
+  finished sandbox upgrade validation; the next tranche targets npm self-contained
+  completeness on feat/v3 before broader 3.0 boundary work (Decision 58, v1 cruft).
+constraints: >-
+  feat/v3 is TS-only; v2→v3 is one-way via npx @next; uvx/git is stable Python 2.x
+  maintainer path only—do not add uv-installable v3 or cross-entry-point --channel
+  parity with Python stable. Contract-first: extend references/cli/update-channels.yaml
+  and app-lifecycle vocabulary rather than parallel docs. Preserve dry-run before
+  --yes on upgrade. No remote push; do not modify vision.yaml or objective state.
+scope:
+  included:
+    - references/cli/update-channels.yaml
+    - references/cli/vocabulary.md and UPGRADE.md channel sections
+    - packages/cli/src/cli/dispatch.ts and help/schema surfaces
+    - packages/cli/src/cli/commands/doctor.ts and setup/doctor.ts
+    - packages/cli/src/cli/commands/verify.ts and related contracts
+    - packages/cli/src/analytics/ (report, usage, corpus read paths)
+    - packages/cli/test/ parity and upgrade test suites
+    - references/cli/agent-ready-state-contract.yaml verify/smoke sections if retired
+  excluded:
+    - Decision 58 single-name alias removal (separate plan)
+    - v1 legacy cruft deletion (separate plan)
+    - Full Bun single-binary packaging design TODO
+    - Python main-line feature work beyond oracle fixtures
+    - Publishing npm @next or retagging stable @latest
+  deferred:
+    - Streaming corpus extraction during report refresh (read path only in this plan)
+    - Live npm registry probes in CI Tier 2
+    - doctor --smoke model-host live calls (port structure first; live opt-in later)
+design: >-
+  Task 1 removes the unsupported development git/uvx resolution from
+  update-channels.yaml and syncs UPGRADE.md/README so development is npm-only
+  (npx @next) and stable git stays @main Python. Task 2 adds argparse-style help
+  to packages/cli dispatch: top-level --help/-h, subcommand help for upgrade,
+  state, check, report, doctor; expose help metadata via schema when useful.
+  Task 3 formally retires check verify smoke in the npm CLI: update verify.ts
+  messaging, agent-ready-state-contract, and CI/docs to eval-only verify on @next;
+  keep Python oracle tests documenting retired smoke as intentional. Task 4 fixes
+  report/usage to stream or bound-read corpus.json so oversized files degrade with
+  actionable guidance instead of Node max-string crashes. Task 5 ports doctor
+  --smoke shell structure from setup/doctor.ts Python parity (hook invocation
+  paths, JSON envelope, exit codes) without requiring live model calls in unit
+  tests. Task 6 adds packages/cli/test/ parity matrix comparing Python oracle
+  fixtures to npm CLI outputs for prime, state, check, report, upgrade
+  --channel development, and hooks—explicitly excluding uvx-as-v3 assertions.
+tasks:
+  - number: 1
+    name: Align update-channel authority for TS-only v3
+    depends_on: []
+    status: complete
+    acceptance:
+      - GIVEN references/cli/update-channels.yaml WHEN read THEN development channel resolves npm @next only and git/uvx @feat/v3 is absent or marked unsupported
+      - GIVEN UPGRADE.md and references/cli/vocabulary.md WHEN read THEN they state feat/v3 is npm-only, v2→v3 is one-way via npx @next, and uvx @main is stable Python 2.x
+      - GIVEN channel consumer tests in packages/cli/test/upgrade/ WHEN run THEN they pass without expecting uvx development resolution
+      - GIVEN TODO.md parity docs item WHEN checked THEN it can move to Resolved after this task lands
+  - number: 2
+    name: Ship npm CLI discoverable help
+    depends_on: []
+    status: complete
+    acceptance:
+      - GIVEN npx -y agentera@next --help or -h WHEN run THEN exit 0 with audience-grouped command summary matching schema top-level tree
+      - GIVEN agentera upgrade --help WHEN run THEN exit 0 listing channel, dry-run, yes, only, and format flags
+      - GIVEN validate app-home-contract WHEN run THEN core commands satisfy --help expectations
+      - GIVEN packages/cli/test/cli/ WHEN extended THEN help regression tests cover top-level and upgrade subcommand help
+  - number: 3
+    name: Retire smoke verify on npm CLI and sync contracts
+    depends_on: ["1"]
+    status: complete
+    acceptance:
+      - GIVEN agentera check verify smoke on npm @next WHEN run THEN user receives explicit retired-on-npm message pointing to eval verify or Python stable maintainer path
+      - GIVEN references/cli/agent-ready-state-contract.yaml WHEN read THEN verify namespace documents eval-only on self-contained npm distribution
+      - GIVEN CI and maintainer docs WHEN searched THEN they no longer require smoke installed-skills pass on npm @next
+      - GIVEN Python oracle fixtures WHEN run THEN smoke behavior remains documented as stable-line only
+  - number: 4
+    name: Bound or stream large corpus reads in report and usage
+    depends_on: []
+    status: complete
+    acceptance:
+      - GIVEN an oversized corpus.json fixture WHEN agentera report or usage runs on npm @next THEN exit is non-zero with degraded status and repair guidance, not an uncaught max-string exception
+      - GIVEN a normal-sized corpus WHEN report runs THEN behavior matches Python oracle envelope shape
+      - GIVEN packages/cli/test/ WHEN run THEN regression covers oversized corpus degradation path
+  - number: 5
+    name: Port doctor --smoke on npm CLI
+    depends_on: ["3"]
+    status: complete
+    acceptance:
+      - GIVEN agentera doctor --smoke on npm @next WHEN run with default flags THEN structured JSON or text smoke report emits without "not yet ported" error
+      - GIVEN doctor --smoke WHEN model calls are not opted in THEN smoke report marks live calls as not attempted and exits 0 when structural checks pass
+      - GIVEN packages/cli/test/setup/ or doctor tests WHEN run THEN --smoke path has regression coverage
+  - number: 6
+    name: Add Python-oracle to npm parity test matrix
+    depends_on: ["1", "2", "3", "4", "5"]
+    status: complete
+    acceptance:
+      - GIVEN packages/cli/test/ parity suite WHEN run THEN prime, state plan/todo, check compact, report refresh dry-run, and upgrade --channel development dry-run are compared to Python oracle fixtures
+      - GIVEN parity tests WHEN configured THEN they do not assert uvx @feat/v3 or cross-entry-point --channel on Python stable
+      - GIVEN pnpm -C packages/cli test WHEN run THEN new parity tests pass alongside existing upgrade suite
+      - GIVEN all prior tasks complete WHEN TODO items 1–6 from this tranche are checked THEN they can be marked Resolved in the same realisera commit
+overall_acceptance: >-
+  GIVEN npm @next on feat/v3 WHEN a maintainer runs help, report, doctor --smoke,
+  and upgrade --channel development dry-run THEN each succeeds or degrades with
+  contract-shaped guidance without Python entry-point dependency GIVEN
+  update-channels.yaml WHEN read THEN development is npm-only and irreversible
+  v2→v3 channel model is documented GIVEN parity test suite WHEN run in CI THEN
+  Python-oracle comparisons pass for the scoped namespace surface without uvx-v3
+  assertions
+surprises: []
