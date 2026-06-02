@@ -14,3 +14,6 @@ packages/web/dist
 packages/web/.astro
 packages/web/.wrangler
 packages/cli/*.tgz
+packages/cli/dist
+packages/cli/bundle
+sandbox-report-*.json
