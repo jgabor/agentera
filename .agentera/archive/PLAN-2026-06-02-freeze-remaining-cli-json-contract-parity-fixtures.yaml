@@ -2,6 +2,8 @@ header:
   level: light
   created: '2026-06-02'
   status: complete
+  reviewed: '2026-06-02'
+  critic_issues: '0 found, 0 addressed, 0 dismissed'
   title: 'Freeze remaining CLI JSON contract parity fixtures'
 what: >
   Three slices of the original `[test:3.0.0] Freeze CLI JSON contract
