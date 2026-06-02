@@ -4,7 +4,7 @@ cycles:
   type: test
   phase: build
   what: Add CLI end-to-end regression coverage for lint budget lookup.
-  commit: pending
+  commit: 'e8714de test(cli): add lint CLI end-to-end budget lookup regression coverage'
   discovered: None.
   verified: "tests/test_lint_cli.py 6 passed pytest -q -n auto; full suite 1399 passed\
     \ / 3 failed (pre-existing: upgrade --dry-run blocked, packages/cli prose.md refs,\
