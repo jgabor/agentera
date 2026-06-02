@@ -1,0 +1,295 @@
+{
+  "schemaVersion": "agentera.sourceContractOracle.v1",
+  "notes": "Frozen contract for the `source_contract` field set emitted by the 3.0 TypeScript CLI. Five CLI surfaces emit a `source_contract` (with structurally distinct field sets), and one (`state todo`) does not: prime, prime --context <capability>, state plan, state query --list-artifacts, and the per-capability bespoke `capability_context.context.<bespoke>.source_contract` nested under prime --context. The oracle pins (1) a shared `sourceContractPattern` that all five emissions follow at the structural level (always a top-level `source_contract: object`, always a boolean 'is raw artifact reads required' field, always a string policy field, often an array of caveats or fallbacks) and (2) per-command required keys, value types, and the small set of literal values that the CLI must emit. Field content that legitimately varies by caller (cli_fallback, confidence_caveats, caveats, fallback_commands, owns, deferred) is NOT pinned at the string-content level per AC4 — only the value type and shape are pinned. The npm-cli-surface.json oracle (packages/cli/test/cli/fixtures/oracle/npm-cli-surface.json) covers the cross-cutting npm exit-code matrix for these commands and is referenced, not duplicated. The invalid-input envelope oracle (packages/cli/test/cli/fixtures/oracle/invalid-input-envelope.json) is referenced where the source_contract consumer surfaces a bad input.",
+  "format": "json",
+  "sharedSourceContractPattern": {
+    "description": "The structural shape every `source_contract` emission follows. The exact key NAMES vary by command (e.g. `raw_artifact_reads_required` vs. `raw_artifact_reads_required_for_discovery`), but every emission is a JSON object, always carries a boolean 'is raw reads required' field, always carries at least one string policy field, and usually carries at least one string-array field listing caveats, fallbacks, or owned state. Drift detection runs per command in `commands`; this shared pattern is the second-level guard that catches cross-cutting contract drift when the per-command oracles stay in lockstep.",
+    "topLevelType": "object",
+    "requiredShapeKeys": {
+      "rawArtifactReadsRequiredField": {
+        "type": "boolean",
+        "description": "Whether the caller must read the raw artifact; false means the structured CLI output is sufficient.",
+        "namesByCommand": {
+          "prime": "capability_startup.raw_artifact_reads_required",
+          "state_plan": "raw_artifact_reads_required",
+          "state_query": "raw_artifact_reads_required_for_discovery",
+          "prime_context_per_capability": "raw_artifact_reads_required"
+        }
+      },
+      "rawArtifactPolicyField": {
+        "type": "string",
+        "description": "A human-readable policy line that names the conditions under which raw artifact access is allowed.",
+        "namesByCommand": {
+          "prime": "capability_startup.raw_artifact_read_policy",
+          "state_plan": "raw_artifact_read_policy",
+          "state_query": "raw_artifact_read_policy",
+          "prime_context_per_capability": "raw_artifact_read_policy"
+        }
+      },
+      "caveatsOrFallbackField": {
+        "type": "array<string>",
+        "description": "An array of strings describing caveats (per-call), missing state, fallback commands, or owned state. The exact name varies; the value is always an array of strings whose content legitimately varies by caller (per AC4).",
+        "namesByCommand": {
+          "prime": "capability_startup.confidence_caveats OR capability_startup.missing_state OR capability_startup.cli_fallback",
+          "state_plan": "missing_state OR fallback OR summary_fields OR entry_fields",
+          "state_query": "allowed_raw_artifact_uses",
+          "prime_context_per_capability": "caveats OR fallback_commands OR owns OR deferred"
+        }
+      }
+    }
+  },
+  "commands": {
+    "prime": {
+      "argv": ["prime", "--format", "json"],
+      "exitCode": 0,
+      "sourceContractLocation": "payload.source_contract",
+      "description": "Top-level `source_contract` for `agentera prime` (no `--context`). Holds the dashboard-level orientation field set plus a `capability_startup` sub-object that pins the boolean/string/array contract from the TODO enumeration. The `capability_context` key is always null on the bare `prime` path; it is filled in only on the `prime --context` path.",
+      "requiredTopLevelKeys": [
+        "fields",
+        "render",
+        "access",
+        "empty_state",
+        "capability_startup",
+        "capability_context"
+      ],
+      "fieldTypes": {
+        "fields": "array<string>",
+        "render": "string",
+        "access": "string",
+        "empty_state": "string",
+        "capability_startup": "object",
+        "capability_context": "null"
+      },
+      "fieldsValueType": "array<string>",
+      "renderValueType": "string",
+      "renderSubstring": "README-style",
+      "accessValueType": "string",
+      "accessSubstring": "single installed CLI call",
+      "emptyStateValueType": "string",
+      "capabilityStartupValueType": "object",
+      "capabilityContextValue": null,
+      "capabilityStartupRequiredKeys": [
+        "complete_for_capability_startup",
+        "raw_artifact_reads_required",
+        "raw_artifact_read_policy",
+        "available_state",
+        "missing_state",
+        "confidence_caveats",
+        "cli_fallback"
+      ],
+      "capabilityStartupFieldTypes": {
+        "complete_for_capability_startup": "boolean",
+        "raw_artifact_reads_required": "boolean",
+        "raw_artifact_read_policy": "string",
+        "available_state": "array<string>",
+        "missing_state": "array<string>",
+        "confidence_caveats": "array<string>",
+        "cli_fallback": "array<string>"
+      },
+      "rawArtifactReadsRequiredDefault": false,
+      "completeForCapabilityStartupPinned": false
+    },
+    "prime_context": {
+      "argv": ["prime", "--context", "orkestrera", "--format", "json"],
+      "exitCode": 0,
+      "description": "Per-capability context for `agentera prime --context <capability>`. The top-level `payload.source_contract` is NOT emitted on the context path (the dashboard-level orientation fields are not applicable when a specific capability is requested — only `command`, `status`, and `capability_context` are at the top level). The per-capability bespoke contract lives at `payload.capability_context.context.<bespoke>.source_contract`, where `<bespoke>` is the per-capability context key (`orchestration_context` for orkestrera, `execution_context` for realisera, `evidence_context` for inspektera, `benchmark_context` for optimera, `closeout_context` for dokumentera). The five BESPOKE capabilities have a per-capability source_contract; the seven non-bespoke capabilities (hej, planera, resonera, inspirera, visionera, visualisera, profilera) only carry the shared `capability_context.context` shape with `first_invocation_read` and have no bespoke source_contract.",
+      "topLevelSourceContract": {
+        "description": "The top-level `source_contract` key is NOT emitted on the `prime --context` path — `buildPrimeCapabilityContextPayload` returns `{ command, status, capability_context }` and the dashboard-level `source_contract` (which lives on the bare `prime` path) is intentionally absent.",
+        "shape": "absent",
+        "valueType": "n/a",
+        "keyCount": 0
+      },
+      "perCapabilitySourceContract": {
+        "description": "Per-capability bespoke source_contract at `payload.capability_context.context.<bespoke>.source_contract`. The required key set is shared across the five bespoke capabilities; the COMPLETENESS KEY and a few context-specific list fields vary by capability.",
+        "sourceContractLocation": "payload.capability_context.context.<bespoke>.source_contract",
+        "sharedRequiredKeys": [
+          "raw_artifact_reads_required",
+          "raw_artifact_read_policy",
+          "fallback_commands",
+          "caveats",
+          "owns"
+        ],
+        "sharedFieldTypes": {
+          "raw_artifact_reads_required": "boolean",
+          "raw_artifact_read_policy": "string",
+          "fallback_commands": "array<string>",
+          "caveats": "array<string>",
+          "owns": "array<string>"
+        },
+        "completenessKeyByCapability": {
+          "orkestrera": "complete_for_orchestration_context",
+          "realisera": "complete_for_execution_context",
+          "inspektera": "complete_for_evidence_context",
+          "optimera": "complete_for_benchmark_context",
+          "dokumentera": "complete_for_closeout_context"
+        },
+        "completenessKeyType": "boolean",
+        "caveatedKeyPresent": {
+          "present": ["realisera", "inspektera", "optimera", "dokumentera"],
+          "absent": ["orkestrera"]
+        },
+        "caveatedKeyType": "boolean",
+        "rawArtifactReadsRequiredDefault": false,
+        "contextSpecificListFieldsByCapability": {
+          "orkestrera": {
+            "included_state_families": "array<string>",
+            "missing_state_families": "array<string>",
+            "deferred": "array<string>"
+          },
+          "realisera": {
+            "included_state_families": "array<string>",
+            "missing_state_families": "array<string>",
+            "required_execution_state": "object",
+            "missing_required_execution_state": "array<string>",
+            "deferred": "array<string>"
+          },
+          "inspektera": {
+            "included_state_families": "array<string>",
+            "missing_state_families": "array<string>",
+            "required_evidence_state": "object",
+            "missing_required_evidence_state": "array<string>",
+            "deferred": "array<string>"
+          },
+          "optimera": {
+            "benchmark_state_families": "array<string>",
+            "required_benchmark_state": "object",
+            "missing_required_benchmark_state": "array<string>",
+            "source_labels": "array<string>",
+            "manual_refresh_status": "string",
+            "privacy_boundary": "object",
+            "deferred": "array<string>"
+          },
+          "dokumentera": {
+            "included_state_families": "array<string>",
+            "missing_state_families": "array<string>",
+            "closeout_state_families": "array<string>",
+            "required_closeout_state": "object",
+            "missing_required_closeout_state": "array<string>"
+          }
+        }
+      }
+    },
+    "state_plan": {
+      "argv": ["state", "plan", "--format", "json"],
+      "exitCode": 0,
+      "sourceContractLocation": "payload.source_contract",
+      "description": "Top-level `source_contract` for `agentera state plan`. PLAN-artifact-shaped contract that carries the persisted path, the complete flag, the included/complete state shapes, and the raw-access boundary policy.",
+      "requiredTopLevelKeys": [
+        "artifact",
+        "canonical_artifact_label",
+        "persisted_artifact_path",
+        "complete_for_plan_artifact",
+        "complete_for_normal_startup_evaluation",
+        "raw_artifact_reads_required",
+        "raw_artifact_read_policy",
+        "included_state",
+        "complete_state",
+        "raw_artifact_access_boundary",
+        "missing_state",
+        "fallback",
+        "fallback_policy",
+        "summary_fields",
+        "entry_fields"
+      ],
+      "artifactValue": "PLAN.md",
+      "canonicalArtifactLabelValue": "PLAN.md",
+      "fieldTypes": {
+        "artifact": "string",
+        "canonical_artifact_label": "string",
+        "persisted_artifact_path": "string|null",
+        "complete_for_plan_artifact": "boolean",
+        "complete_for_normal_startup_evaluation": "boolean",
+        "raw_artifact_reads_required": "boolean",
+        "raw_artifact_read_policy": "string",
+        "included_state": "array<string>",
+        "complete_state": "object",
+        "raw_artifact_access_boundary": "object",
+        "missing_state": "array<string>",
+        "fallback": "array<string>",
+        "fallback_policy": "string",
+        "summary_fields": "array<string>",
+        "entry_fields": "array<string>"
+      },
+      "completeStateRequiredKeys": ["summary", "entries", "normal_startup_evaluation"],
+      "completeStateFieldTypes": {
+        "summary": "array<string>",
+        "entries": "array<string>",
+        "normal_startup_evaluation": "boolean"
+      },
+      "rawArtifactAccessBoundaryRequiredKeys": [
+        "normal_read_only_startup_evaluation",
+        "allowed_raw_artifact_uses"
+      ],
+      "rawArtifactAccessBoundaryFieldTypes": {
+        "normal_read_only_startup_evaluation": "string",
+        "allowed_raw_artifact_uses": "array<string>"
+      },
+      "rawArtifactReadsRequiredDefault": false
+    },
+    "state_todo": {
+      "argv": ["state", "todo", "--format", "json"],
+      "exitCode": 0,
+      "sourceContractEmitted": false,
+      "description": "`agentera state todo` does NOT emit a `source_contract` on `--format json`. The required top-level keys are the standard state envelope (`command`, `status`, `entries`, `counts`, `source`, `filters`, `summary`) and that is owned by the npm-cli-surface.json oracle. The TODO enumeration in the live `source_contract` plan entry referenced the wrong field names; see TODO.md line 17 and plan.yaml surprises for the reconciliation. Documented here for completeness so the parity test does not falsely assert the presence of a `source_contract` key on this surface.",
+      "requiredTopLevelKeys": [
+        "command",
+        "status",
+        "entries",
+        "counts",
+        "source",
+        "filters",
+        "summary"
+      ]
+    },
+    "state_query_list_artifacts": {
+      "argv": ["state", "query", "--list-artifacts", "--format", "json"],
+      "exitCode": 0,
+      "sourceContractLocation": "payload.source_contract",
+      "description": "Top-level `source_contract` for `agentera state query --list-artifacts`. The discovery-mode source contract has a distinct field set (no `complete_for_*` boolean; instead `raw_artifact_reads_required_for_discovery` and `normal_content_policy`) and an `allowed_raw_artifact_uses` list that names the seven allowed use cases. Field content (e.g. the list of allowed uses) is NOT pinned at the string-content level per AC4; only the value type is pinned.",
+      "requiredTopLevelKeys": [
+        "raw_artifact_reads_required_for_discovery",
+        "normal_content_policy",
+        "raw_artifact_read_policy",
+        "allowed_raw_artifact_uses"
+      ],
+      "fieldTypes": {
+        "raw_artifact_reads_required_for_discovery": "boolean",
+        "normal_content_policy": "string",
+        "raw_artifact_read_policy": "string",
+        "allowed_raw_artifact_uses": "array<string>"
+      },
+      "rawArtifactReadsRequiredForDiscoveryDefault": false,
+      "allowedRawArtifactUsesCardinalityAtLeast": 5
+    }
+  },
+  "relatedOracles": {
+    "invalidInputEnvelope": "packages/cli/test/cli/fixtures/oracle/invalid-input-envelope.json",
+    "validateFamily": "packages/cli/test/cli/fixtures/oracle/validate-family.json",
+    "verifyEvalFamily": "packages/cli/test/cli/fixtures/oracle/verify-eval-family.json",
+    "npmCliSurface": "packages/cli/test/cli/fixtures/oracle/npm-cli-surface.json"
+  },
+  "fieldNameReconciliation": {
+    "description": "TODO.md line 17 enumerated source_contract fields as `complete_for_capability_startup`, `missing`, `cli_fallback`, `raw_artifact_reads_required`, `confidence_caveats`. The LIVE prime output keys are `capability_startup_complete` in the docs-summary sub-shape, `missing_state`, `cli_fallback`, `raw_artifact_reads_required`, `confidence_caveats`. The TODO enumerated `complete_for_capability_startup` (a key inside `capability_startup`) and `missing` (a truncation of `missing_state`); both were reconciled in TODO.md in the same commit per plan AC1. This oracle pins the LIVE keys: `complete_for_capability_startup`, `missing_state`, `cli_fallback`, `raw_artifact_reads_required`, `confidence_caveats`.",
+    "todoEnumeration": [
+      "complete_for_capability_startup",
+      "missing",
+      "cli_fallback",
+      "raw_artifact_reads_required",
+      "confidence_caveats"
+    ],
+    "liveKeys": [
+      "complete_for_capability_startup",
+      "missing_state",
+      "cli_fallback",
+      "raw_artifact_reads_required",
+      "confidence_caveats"
+    ],
+    "reconciledKeys": [
+      "complete_for_capability_startup",
+      "missing_state",
+      "cli_fallback",
+      "raw_artifact_reads_required",
+      "confidence_caveats"
+    ]
+  }
+}

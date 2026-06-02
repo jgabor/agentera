@@ -1,4 +1,80 @@
 cycles:
+  - number: 629
+    timestamp: 2026-06-02 18:38
+    type: test
+    phase: build
+    what: Freeze source_contract internals — new oracle fixture
+      (source-contract.json) and new parity test (sourceContractOracles.test.ts)
+      that pin the field set, value types, and required keys for every CLI
+      surface that emits a `source_contract` (prime, prime --context, state
+      plan, state query --list-artifacts) and documents the state todo
+      exclusion. The test includes a shared cross-cutting structural pattern
+      (boolean 'is raw reads required' field, string policy field,
+      caveats/fallbacks array) and a per-capability bespoke contract for the
+      five BESPOKE capabilities (orkestrera, realisera, inspektera, optimera,
+      dokumentera). The TODO.md line 17 source_contract field-name
+      reconciliation lands in the same commit per AC1 (`missing` becomes
+      `missing_state`, the live prime key). Field content that legitimately
+      varies by caller (cli_fallback, confidence_caveats, caveats,
+      fallback_commands, owns, deferred) is pinned at the value-type level only
+      per AC4. Oracles cite and reference the existing invalid-input-envelope,
+      validate-family, verify-eval-family, and npm-cli-surface oracles; no
+      content is duplicated.
+    commit: pending
+    inspiration: None.
+    discovered: The top-level `payload.source_contract` is NOT emitted on the `prime
+      --context <capability>` path — `buildPrimeCapabilityContextPayload`
+      returns `{ command, status, capability_context }` and the dashboard-level
+      source_contract is intentionally absent. The per-capability bespoke
+      source_contract lives at
+      `capability_context.context.<bespoke>.source_contract` where `<bespoke>`
+      is `orchestration_context` (orkestrera), `execution_context` (realisera),
+      `evidence_context` (inspektera), `benchmark_context` (optimera), or
+      `closeout_context` (dokumentera). The seven non-bespoke capabilities (hej,
+      planera, resonera, inspirera, visionera, visualisera, profilera) share the
+      bare `capability_context.context` shape and have no bespoke
+      source_contract. The oracle documents all three placements.
+    verified: pnpm -C packages/cli test -- 672/672 passed (75 files, +28 vs cycle
+      628's 644/644); pnpm -C packages/cli run typecheck -- clean; pnpm -C
+      packages/cli build -- clean; the new sourceContractOracles.test.ts
+      exercises the five source_contract emissions (prime, prime --context for
+      the five bespoke capabilities, state plan, state query --list-artifacts)
+      plus seven non-bespoke capability exclusions, one state-todo exclusion,
+      and two drift-detector unit tests; live `node
+      packages/cli/dist/bin/agentera.js prime --format json`, `prime --context
+      {orkestrera,realisera,inspektera,optimera,dokumentera} --format json`,
+      `state plan --format json`, `state query --list-artifacts --format json`,
+      and `state todo --format json` all match the oracle; TODO.md line 17
+      amended to use `missing_state` in the same commit; plan.yaml task 4 status
+      updated to complete.
+    next: Plan is now 4/4 tasks complete. Close Decision 56 ('artifact validation,
+      verify, full suite green' slice) or remove the progress.yaml commit field
+      per the new TODO.
+    context:
+      intent: Execute plan task 4 (freeze source_contract internals). Plan is 4/4
+        tasks complete after this commit. Last realisera cycle in this
+        orkestrera session.
+      constraints: TS-only on 3.0.0-dev feat/v3; no remote push; no vision.yaml or
+        objective-state edits; oracles cite and reference the existing
+        invalid-input-envelope.json, validate-family.json,
+        verify-eval-family.json, and npm-cli-surface.json (no duplication); pin
+        value types and structural shapes, not exact string content, for fields
+        whose values legitimately vary by caller (AC4); the TODO.md field-name
+        reconciliation MUST be in the same commit as the source-contract oracle
+        (AC1); the commit field will be removed from the schema in a future
+        cycle, so this cycle's commit is left as pending and skips the forward
+        backfill.
+      unknowns: Whether the post-plan work is the Decision 56 closeout (cut a v3.0.0
+        release with the 4/4 freeze evidence) or the progress.yaml commit-field
+        removal (chore:3.0.0 TODO).
+      scope: "Added packages/cli/test/cli/fixtures/oracle/source-contract.json (the
+        new oracle with five command entries, per-capability bespoke contracts
+        for the five bespoke capabilities, shared structural pattern, and
+        field-name reconciliation block) and
+        packages/cli/test/cli/sourceContractOracles.test.ts (the new parity test
+        with 28 cases). Amended TODO.md line 17 source_contract enumeration
+        (`missing` becomes `missing_state`). Updated .agentera/plan.yaml task 4
+        status to complete in the same commit. Plan: 4/4 tasks complete."
   - number: 628
     timestamp: 2026-06-02 18:15
     type: test
@@ -312,28 +388,9 @@ cycles:
         packages/cli/src/cli/commands/schema.ts,
         packages/cli/test/upgrade/upgradeOrchestrator.test.ts,
         .agentera/plan.yaml task 5 status.
-  - number: 619
-    timestamp: 2026-05-30 23:35
-    type: feat
-    phase: build
-    what: Port v2→v3 artifact, runtime rewire, and cleanup migration modules.
-    commit: pending
-    inspiration: None.
-    discovered: None.
-    verified: pnpm -C packages/cli test test/upgrade/migrateArtifactsV2ToV3.test.ts
-      test/upgrade/ — 43/43 passed (8 migration + 35 existing upgrade tests).
-    next: Task 5 — wire phased upgrade orchestrator and CLI command.
-    context:
-      intent: PLAN task 4 for v2→v3 migration dual update channels.
-      constraints: No commit; v1 detection separate; USER_STATE_NAMES from doctor.ts;
-        fixture-only tests.
-      unknowns: Orchestrator wiring lands in task 5.
-      scope: packages/cli/src/upgrade/migrateArtifactsV2ToV3.ts,
-        packages/cli/src/upgrade/doctor.ts (export user-state constants),
-        packages/cli/test/upgrade/fixtures/,
-        packages/cli/test/upgrade/migrateArtifactsV2ToV3.test.ts,
-        .agentera/plan.yaml task 4 status.
 archive:
+  - summary: "Cycle 619 (2026-05-30): Port v2→v3 artifact, runtime rewire, and
+      cleanup migration modules."
   - summary: "Cycle 618 (2026-05-30): Implement v2/v3 compatibility detection and
       guard rails."
   - summary: "Cycle 617 (2026-05-30): Implement update channel resolution module
@@ -408,6 +465,3 @@ archive:
   - summary: "Cycle 583 (2026-05-21): Added capability-context byte and GPT-5 token
       budget regression coverage."
   - summary: "Cycle 582 (2026-05-21): Added generic slim capability-context builders."
-  - summary: "Cycle 581 (2026-05-21): Nested existing bespoke contexts in slim
-      capability-context output."
-  - summary: "Cycle 580 (2026-05-21): Added slim capability-context envelope mode."
