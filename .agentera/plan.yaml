@@ -1,9 +1,9 @@
 header:
   level: full
   created: "2026-06-02"
-  status: pending
-  reviewed: null
-  critic_issues: null
+  status: complete
+  reviewed: "2026-06-02"
+  critic_issues: "3 found, 3 addressed, 0 dismissed"
   title: Align v2 self-audit linter lookup with CLI artifact vocabulary (2.7.7)
 what: >-
   Fix the v2 self-audit linter budget-lookup mismatch where `scripts/self_audit.py`
@@ -44,8 +44,8 @@ constraints: >-
 scope:
   included:
     - scripts/self_audit.py (flip budget dict keys to lowercase schema names; add a normalize helper for case/extension tolerance; add a defense-in-depth lookup that walks per-entry → full-file/5 → 1000 default)
-    - scripts/agentera (_lint_input_text and _lint_payload: compute budget_artifact for --text and --file paths; remove the `or str(args.artifact)` fallback when a budget name is computed; preserve canonical-label acceptance unchanged)
-    - tests/test_self_audit.py (new or extended: cover schema-name, canonical-label, and mixed-case lookups; per-entry vs full-file/5 fallback; unknown-artifact default)
+    - 'scripts/agentera (_lint_input_text and _lint_payload: compute budget_artifact for --text and --file paths; remove the or str(args.artifact) fallback when a budget name is computed; preserve canonical-label acceptance unchanged)'
+    - 'tests/test_self_audit.py (new or extended: cover schema-name, canonical-label, and mixed-case lookups; per-entry vs full-file/5 fallback; unknown-artifact default)'
     - tests/test_lint_cli.py or equivalent (end-to-end CLI test pinning that `agentera lint --artifact plan --text "<600 words>"` reports the per-artifact budget failure)
     - CHANGELOG.md [Unreleased] Fixed entry
     - UPGRADE.md (note that the linter now matches CLI schema-name input)
@@ -84,7 +84,7 @@ tasks:
       - GIVEN a new _resolve_budget_artifact(name) helper WHEN called with schema name, canonical label, or mixed case THEN it returns the lowercase no-extension form (e.g. "PROGRESS.md" → "progress", "Decisions.md" → "decisions", "decisions" → "decisions")
       - GIVEN check_verbosity / check_full_file_verbosity WHEN called with any of {schema name, canonical label, mixed case} THEN they hit the per-artifact budget
       - GIVEN check_verbosity WHEN called with an unknown artifact name THEN the 1000-word default still applies (regression guard for the unspecified-artifact case)
-      - GIVEN a 600-word text and check_verbosity(text, "plan") THEN the result is (False, "verbosity mismatch: 600 words exceeds 100 budget") — the previously-buggy default path now reports the correct per-artifact budget failure
+      - 'GIVEN a 600-word text and check_verbosity(text, "plan") THEN the result is (False, "verbosity mismatch: 600 words exceeds 100 budget") — the previously-buggy default path now reports the correct per-artifact budget failure'
   - number: 2
     name: Make the CLI lint path always resolve the budget lookup name
     depends_on: ["1"]
@@ -116,7 +116,7 @@ tasks:
   - number: 5
     name: "Closeout - CHANGELOG, UPGRADE, TODO, progress, version bump"
     depends_on: ["1", "2", "3", "4"]
-    status: pending
+    status: complete
     acceptance:
       - GIVEN CHANGELOG.md [Unreleased] WHEN the closeout commit lands THEN a Fixed entry records the linter budget-lookup alignment (no new version header in the changelog itself; the version bump lives in version_files)
       - GIVEN UPGRADE.md WHEN touched THEN it notes that `agentera lint` and `agentera check lint` now apply per-artifact budgets to both schema-name and canonical-label input

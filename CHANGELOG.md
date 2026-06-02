@@ -6,6 +6,12 @@
 
 - Published npm placeholder package `agentera@0.0.0` from `packages/cli`: reserves `npx agentera`, delegates to the Python CLI via app-home, repo `uv run`, or pinned `uvx` from GitHub (`v2.7.6`).
 
+## [2.7.7] · 2026-06-02
+
+### Fixed
+
+- Fixed `agentera lint` and `agentera check lint` budget lookup when `--artifact` uses schema names from `agentera query --list-artifacts` (for example `plan`, `progress`): per-artifact budgets now apply instead of the 1000-word default. Canonical labels (`PLAN.md`, `PROGRESS.md`) and mixed-case input remain accepted unchanged.
+
 ## [2.7.6] · 2026-05-29
 
 ### Added

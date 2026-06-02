@@ -268,6 +268,13 @@ so you do not get false positives. When a hash should be verified, use a full cl
 stale self-referential hashes to `pending` and forward-fill from a later product
 commit (never amend solely to backfill progress metadata).
 
+## Lint budget lookup (2.7.7)
+
+`agentera lint` and `agentera check lint` normalize `--artifact` input (schema
+name, canonical label, or mixed case) before budget lookup, so `--text` and
+`--file` paths apply the same per-artifact budgets as the artifact-resolved
+path.
+
 ## Focused phases
 
 Run one phase at a time when you want more control:

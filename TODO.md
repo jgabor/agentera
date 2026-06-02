@@ -23,6 +23,7 @@
 
 ## ✓ Resolved
 
+- ~~[fix:2.7.7] Self-audit linter budget lookup misses schema-name CLI input (`plan`, `progress`) and falls back to the 1000-word default~~ · resolved by 4725657: `_resolve_budget_artifact` normalizes artifact names, budget dicts use lowercase schema-name keys, and CLI `--text`/`--file` paths wire the normalized lookup.
 - ~~[chore:2.7.6] Consolidate duplicated progress-commit and git-ancestry logic~~ · resolved by 6530f42 and 56fd8fe: one `scripts/progress_commit.py` module now serves `agentera check backfill` and the validate-artifact guard via `hooks/common.py`.
 - ~~[chore:2.7.6] Extract progress-commit module from `scripts/agentera` monolith~~ · resolved by 6530f42: `cmd_backfill` is a thin wrapper importing `compute_backfill` and `rewrite_cycle_commits`.
 - ~~[chore:2.7.6] Move progress commit validation out of oversized `hooks/validate_artifact.py`~~ · resolved by 56fd8fe: guard delegates to `validate_progress_commits` with no near-copy git/token logic left in the hook.

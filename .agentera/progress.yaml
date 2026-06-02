@@ -1,4 +1,21 @@
 cycles:
+- number: 620
+  timestamp: 2026-06-02 22:45
+  type: fix
+  phase: build
+  what: Align self-audit linter budget lookup with CLI vocabulary; release 2.7.7.
+  commit: pending
+  discovered: None.
+  verified: "tests/test_lint_cli.py 6 passed; tests/test_self_audit.py 53 passed;\
+    \ capability-contract 2/2 pass; full suite 1399 passed / 3 failed (pre-existing:\
+    \ upgrade --dry-run blocked, packages/cli prose.md refs, corpus.json byte budget\
+    \ \u2014 same as cycles 616\u2013619)."
+  next: None.
+  context:
+    intent: "Plan task 5 closeout after tasks 1\u20134 (4725657, 8563d3b, 639f7a3,\
+      \ e8714de)."
+    constraints: No remote push; never amend to backfill progress commit fields.
+    scope: CHANGELOG, UPGRADE, TODO, progress, version_files, plan.yaml task 5.
 - number: 619
   timestamp: 2026-06-02 22:00
   type: test
@@ -169,22 +186,9 @@ cycles:
     intent: Orkestrera execution of hooks session compaction deduplication plan.
     constraints: Chore-only; preserve session bookmark and artifact compaction behavior.
     scope: hooks/common.py, session_start.py, session_stop.py, compaction.py, tests/test_hooks_common.py.
-- number: 610
-  timestamp: 2026-05-29 12:00
-  type: chore
-  phase: build
-  what: Consolidate yaml.safe_load None-return handling across hooks and CLI.
-  commit: e494ee4
-  discovered: None.
-  verified: 1312 passed pytest tests/ -q -n auto -m 'not slow'; added scripts/yaml_mapping.py;
-    regression tests in tests/test_yaml_mapping_loader.py; smoke bundle includes yaml_mapping.py.
-  next: Archive completed plan when starting the next plan cycle.
-  context:
-    intent: Execute YAML safe_load consolidation plan via orkestrera orchestration.
-    constraints: Chore-only; no version bump.
-    scope: hooks, scripts/agentera, production script loaders, TODO/CHANGELOG/progress
-      sync.
 archive:
+- summary: 'Cycle 610 (2026-05-29): Consolidate yaml.safe_load None-return handling
+    across hooks and CLI.'
 - summary: 'Cycle 609 (2026-05-28): Tagged v2.7.5 with validation hardening and CLI
     namespace migration.'
 - summary: 'Cycle 608 (2026-05-27): Fix 16 degraded validation and CLI consistency
@@ -258,5 +262,3 @@ archive:
     classification coverage.'
 - summary: 'Cycle 572 (2026-05-18): Added bundle and SKILL.md vocabulary occurrence
     classification coverage.'
-- summary: 'Cycle 571 (2026-05-18): Added Decision 54 app lifecycle status regression
-    coverage.'
