@@ -1,4 +1,20 @@
 cycles:
+- number: 618
+  timestamp: 2026-06-02 21:30
+  type: test
+  phase: build
+  what: Add parametrized budget-lookup regression coverage in tests/test_self_audit.py.
+  commit: pending
+  discovered: None.
+  verified: "tests/test_self_audit.py 53 passed pytest -q -n auto (30\u219253 tests:\
+    \ 10 per-entry normalization, 3 full-file/5 fallback, 10 full-file normalization,\
+    \ unknown-artifact 1000 default pin)."
+  next: "Task 4 \u2014 add CLI end-to-end regression coverage."
+  context:
+    intent: "Plan task 3 \u2014 pin budget lookup normalization across schema name,\
+      \ canonical label, mixed case, and .yaml forms."
+    constraints: No remote push; never amend to backfill progress commit fields.
+    scope: tests/test_self_audit.py, plan.yaml task 3, progress.yaml.
 - number: 617
   timestamp: 2026-06-02 21:00
   type: fix
@@ -168,35 +184,9 @@ cycles:
     intent: Patch release closeout after explicit 2.7.5 target approval.
     constraints: No remote push unless requested.
     scope: CHANGELOG, version_files, PROGRESS, tag only.
-- number: 608
-  timestamp: 2026-05-27 13:00
-  type: fix
-  phase: build
-  what: Fix 16 degraded validation and CLI consistency issues across 7-task plan.
-  commit: pending
-  discovered: None.
-  verified: "1294 passed pytest tests/ -q -n auto; 6 implementation commits verified:\n\
-    \    187e7b1 fix TODO.md parser (Task 1)\n    3149cbf fix health.yaml/plan.yaml/ARCHIVE.summary\
-    \ validation rules (Task 2)\n    bf9d83b consolidate _SKIP_META and add unknown-field\
-    \ check (Task 3)\n    18598f3 consolidate validate subparsers, fix doctor --format\
-    \ json (Task 4)\n    d5192c1 fix Planera vocabulary, agentera.js stderr, artifact\
-    \ path consolidation (Task 5)\n    7138880 fix human-facing Markdown schema validation\
-    \ (Task 6)\n    Behavioral verification: agentera state todo --format json returns\
-    \ correct open_count, health.yaml missing fields report violations, satisfaction\
-    \ maps reject unknown review_needed, validate subparser single code path, doctor\
-    \ --format json emits structured output, agentera.js parses exit code 2, Planera\
-    \ schema uses current vocabulary, artifact paths consolidated in common.py, _SKIP_META\
-    \ symmetric between validator and CLI, todo/design/changelog schema consulted\
-    \ for Markdown artifacts."
-  next: None.
-  context:
-    intent: Complete the 7-task plan for degraded validation and CLI consistency fixes.
-    constraints: Must not break existing passing tests. Must preserve exit code contracts.
-      No remote push.
-    scope: TODO.md parser, schema validation rules, validator robustness, CLI command
-      consistency, schema/integration fixes, human-facing Markdown schema architecture,
-      final state sync.
 archive:
+- summary: 'Cycle 608 (2026-05-27): Fix 16 degraded validation and CLI consistency
+    issues across 7-task plan.'
 - summary: 'Cycle 607 (2026-05-26): Fix 5 degraded validation and CLI consistency
     issues in validate_artifact.py and scripts/agentera.'
 - summary: 'Cycle 606 (2026-05-26): Fix 7 critical validation and state-loading silent
@@ -270,5 +260,3 @@ archive:
     coverage.'
 - summary: 'Cycle 570 (2026-05-18): Added first_invocation_read metadata to hej capability
     context output.'
-- summary: 'Cycle 569 (2026-05-18): Renamed Agentera capability instruction files
-    from prose.md to instructions.md.'

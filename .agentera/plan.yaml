@@ -98,7 +98,7 @@ tasks:
   - number: 3
     name: Add unit regression coverage in tests/test_self_audit.py
     depends_on: ["1", "2"]
-    status: pending
+    status: complete
     acceptance:
       - GIVEN a parametrized table covering each artifact WHEN check_verbosity is called with schema name, canonical label, mixed case, and trailing-extended forms THEN all four input forms hit the same per-entry budget for the same artifact
       - GIVEN a per-artifact vs full-file/5 fallback test WHEN check_verbosity is called for an artifact with only a full-file budget (e.g. design, docs) THEN the per-entry budget used is full_file_budget // 5

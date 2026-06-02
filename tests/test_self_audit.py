@@ -2,7 +2,7 @@
 
 6 base tests (1 pass + 1 fail per function: check_verbosity, check_abstraction,
 check_filler) plus 3 edge case tests for check_filler (empty text, all-patterns
-text, mixed valid+banned).
+text, mixed valid+banned), plus budget-lookup normalization regression coverage.
 """
 
 from __future__ import annotations
@@ -72,6 +72,43 @@ def self_audit():
 
 
 # ---------------------------------------------------------------------------
+# Budget lookup normalization (plan task 3)
+# ---------------------------------------------------------------------------
+
+def _words(count: int) -> str:
+    return "word " * count
+
+
+# schema, canonical label, mixed case, trailing .yaml, expected per-entry budget
+_PER_ENTRY_BUDGET_CASES = [
+    ("progress", "PROGRESS.md", "Progress.MD", "progress.yaml", 500),
+    ("experiments", "EXPERIMENTS.md", "Experiments.MD", "experiments.yaml", 300),
+    ("health", "HEALTH.md", "Health.MD", "health.yaml", 150),
+    ("decisions", "DECISIONS.md", "Decisions.MD", "decisions.yaml", 200),
+    ("todo", "TODO.md", "Todo.MD", "todo.yaml", 100),
+    ("changelog", "CHANGELOG.md", "Changelog.MD", "changelog.yaml", 300),
+    ("plan", "PLAN.md", "Plan.MD", "plan.yaml", 100),
+    ("vision", "VISION.md", "Vision.MD", "vision.yaml", 300),
+    ("design", "DESIGN.md", "Design.MD", "design.yaml", 400),
+    ("docs", "DOCS.md", "Docs.MD", "docs.yaml", 400),
+]
+
+# schema, canonical label, mixed case, expected full-file budget
+_FULL_FILE_BUDGET_CASES = [
+    ("progress", "PROGRESS.md", "Progress.MD", 3000),
+    ("experiments", "EXPERIMENTS.md", "Experiments.MD", 2500),
+    ("health", "HEALTH.md", "Health.MD", 2000),
+    ("decisions", "DECISIONS.md", "Decisions.MD", 5000),
+    ("todo", "TODO.md", "Todo.MD", 5000),
+    ("changelog", "CHANGELOG.md", "Changelog.MD", 5000),
+    ("plan", "PLAN.md", "Plan.MD", 2500),
+    ("vision", "VISION.md", "Vision.MD", 1500),
+    ("design", "DESIGN.md", "Design.MD", 2000),
+    ("docs", "DOCS.md", "Docs.MD", 2000),
+]
+
+
+# ---------------------------------------------------------------------------
 # check_verbosity: 1 pass + 1 fail
 # ---------------------------------------------------------------------------
 
@@ -94,11 +131,81 @@ class TestCheckVerbosity:
         assert "500" in detail
 
     def test_uses_fallback_for_unknown_artifact(self, self_audit):
-        """Unknown artifact uses 500-word default budget."""
-        text = "word " * 100  # 100 words < 500 default
-        passed, detail = self_audit.check_verbosity(text, "UNKNOWN.md")
+        """Unknown artifact uses 1000-word default budget."""
+        within = _words(1000)
+        over = _words(1001)
+        passed, detail = self_audit.check_verbosity(within, "totally-unknown-artifact")
         assert passed is True
         assert detail == ""
+        passed, detail = self_audit.check_verbosity(over, "totally-unknown-artifact")
+        assert passed is False
+        assert "exceeds 1000 budget" in detail
+
+    @pytest.mark.parametrize(
+        "schema,canonical,mixed,extended,expected_budget",
+        _PER_ENTRY_BUDGET_CASES,
+        ids=[case[0] for case in _PER_ENTRY_BUDGET_CASES],
+    )
+    def test_budget_lookup_normalizes_all_input_forms(
+        self,
+        self_audit,
+        schema,
+        canonical,
+        mixed,
+        extended,
+        expected_budget,
+    ):
+        """Schema name, canonical label, mixed case, and .yaml all hit the same budget."""
+        over_text = _words(expected_budget + 1)
+        for artifact in (schema, canonical, mixed, extended):
+            passed, detail = self_audit.check_verbosity(over_text, artifact)
+            assert passed is False
+            assert f"exceeds {expected_budget} budget" in detail
+
+    @pytest.mark.parametrize(
+        "artifact,full_file_budget",
+        [
+            ("design", 2000),
+            ("docs", 2000),
+            ("vision", 1500),
+        ],
+    )
+    def test_full_file_only_artifact_uses_div_five_fallback(
+        self,
+        self_audit,
+        artifact,
+        full_file_budget,
+    ):
+        """Artifacts without explicit per-entry budget use full_file_budget // 5."""
+        per_entry = full_file_budget // 5
+        passed, detail = self_audit.check_verbosity(_words(per_entry), artifact)
+        assert passed is True
+        assert detail == ""
+        passed, detail = self_audit.check_verbosity(_words(per_entry + 1), artifact)
+        assert passed is False
+        assert f"exceeds {per_entry} budget" in detail
+
+
+class TestCheckFullFileVerbosity:
+    @pytest.mark.parametrize(
+        "schema,canonical,mixed,expected_budget",
+        _FULL_FILE_BUDGET_CASES,
+        ids=[case[0] for case in _FULL_FILE_BUDGET_CASES],
+    )
+    def test_budget_lookup_normalizes_all_input_forms(
+        self,
+        self_audit,
+        schema,
+        canonical,
+        mixed,
+        expected_budget,
+    ):
+        """Schema name, canonical label, and mixed case hit the same full-file budget."""
+        over_text = _words(expected_budget + 1)
+        for artifact in (schema, canonical, mixed):
+            passed, detail = self_audit.check_full_file_verbosity(over_text, artifact)
+            assert passed is False
+            assert f"exceeds {expected_budget} full-file budget" in detail
 
 
 # ---------------------------------------------------------------------------
