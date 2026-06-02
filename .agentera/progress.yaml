@@ -4,7 +4,7 @@ cycles:
   type: fix
   phase: build
   what: Align self-audit linter budget lookup with CLI vocabulary; release 2.7.7.
-  commit: pending
+  commit: 'beb535c release: bump to 2.7.7 and close linter budget-lookup plan'
   discovered: None.
   verified: "tests/test_lint_cli.py 6 passed; tests/test_self_audit.py 53 passed;\
     \ capability-contract 2/2 pass; full suite 1399 passed / 3 failed (pre-existing:\
