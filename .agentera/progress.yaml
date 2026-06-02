@@ -6,7 +6,7 @@ cycles:
     what: Freeze the invalid-input error envelope contract for the 3.0 TypeScript
       CLI — new emitInvalidInput helper, oracle fixture, parity test, and check
       validate wired as the exemplar surface.
-    commit: pending
+    commit: "acc8db1"
     inspiration: None.
     discovered: None.
     verified: pnpm -C packages/cli test — 617/617 passed (73 files, +12 vs cycle
