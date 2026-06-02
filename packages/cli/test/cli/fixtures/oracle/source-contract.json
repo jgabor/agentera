@@ -230,7 +230,7 @@
       "argv": ["state", "todo", "--format", "json"],
       "exitCode": 0,
       "sourceContractEmitted": false,
-      "description": "`agentera state todo` does NOT emit a `source_contract` on `--format json`. The required top-level keys are the standard state envelope (`command`, `status`, `entries`, `counts`, `source`, `filters`, `summary`) and that is owned by the npm-cli-surface.json oracle. The TODO enumeration in the live `source_contract` plan entry referenced the wrong field names; see TODO.md line 17 and plan.yaml surprises for the reconciliation. Documented here for completeness so the parity test does not falsely assert the presence of a `source_contract` key on this surface.",
+      "description": "`agentera state todo` does NOT emit a `source_contract` on `--format json`. The required top-level keys are the standard state envelope (`command`, `status`, `entries`, `counts`, `source`, `filters`, `summary`) and that is owned by the npm-cli-surface.json oracle. The TODO enumeration in the live `source_contract` plan entry referenced the wrong field names; see TODO.md Resolved section (the freeze-fixtures entry was line 17 when task 4 was implemented, then moved to Resolved when the plan was archived) and plan.yaml surprises for the reconciliation. Documented here for completeness so the parity test does not falsely assert the presence of a `source_contract` key on this surface.",
       "requiredTopLevelKeys": [
         "command",
         "status",
@@ -269,7 +269,7 @@
     "npmCliSurface": "packages/cli/test/cli/fixtures/oracle/npm-cli-surface.json"
   },
   "fieldNameReconciliation": {
-    "description": "TODO.md line 17 enumerated source_contract fields as `complete_for_capability_startup`, `missing`, `cli_fallback`, `raw_artifact_reads_required`, `confidence_caveats`. The LIVE prime output keys are `capability_startup_complete` in the docs-summary sub-shape, `missing_state`, `cli_fallback`, `raw_artifact_reads_required`, `confidence_caveats`. The TODO enumerated `complete_for_capability_startup` (a key inside `capability_startup`) and `missing` (a truncation of `missing_state`); both were reconciled in TODO.md in the same commit per plan AC1. This oracle pins the LIVE keys: `complete_for_capability_startup`, `missing_state`, `cli_fallback`, `raw_artifact_reads_required`, `confidence_caveats`.",
+    "description": "TODO.md's now-Resolved freeze-fixtures entry (originally on line 17 when task 4 was implemented, moved to Resolved when the plan was archived) enumerated source_contract fields as `complete_for_capability_startup`, `missing`, `cli_fallback`, `raw_artifact_reads_required`, `confidence_caveats`. The LIVE prime output keys are `capability_startup_complete` in the docs-summary sub-shape, `missing_state`, `cli_fallback`, `raw_artifact_reads_required`, `confidence_caveats`. The TODO enumerated `complete_for_capability_startup` (a key inside `capability_startup`) and `missing` (a truncation of `missing_state`); both were reconciled in TODO.md in the same commit per plan AC1. This oracle pins the LIVE keys: `complete_for_capability_startup`, `missing_state`, `cli_fallback`, `raw_artifact_reads_required`, `confidence_caveats`.",
     "todoEnumeration": [
       "complete_for_capability_startup",
       "missing",
