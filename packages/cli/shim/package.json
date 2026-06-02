@@ -32,5 +32,9 @@
   "agentera": {
     "suiteVersion": "2.7.6",
     "gitRef": "v2.7.6"
+  },
+  "scripts": {
+    "test": "pnpm -C .. test test/shim/",
+    "publish:stable": "node ./scripts/publish-stable.mjs"
   }
 }
