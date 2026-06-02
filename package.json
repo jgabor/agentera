@@ -6,7 +6,9 @@
     "web:dev": "vp run @agentera/web#dev",
     "web:build": "vp run @agentera/web#build",
     "web:check": "vp run @agentera/web#check",
-    "web:deploy": "vp run @agentera/web#deploy"
+    "web:deploy": "vp run @agentera/web#deploy",
+    "cli:publish:dev": "pnpm -C packages/cli run publish:dev",
+    "cli:publish:stable": "pnpm -C packages/cli/shim run publish:stable"
   },
   "pnpm": {
     "overrides": {
