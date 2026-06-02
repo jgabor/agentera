@@ -5,7 +5,7 @@ cycles:
   phase: build
   what: Flip self-audit budget dict keys to lowercase schema names; add _resolve_budget_artifact
     helper.
-  commit: pending
+  commit: '4725657 fix(cli): normalize self-audit budget lookup to schema names'
   discovered: None.
   verified: "Manual AC1–AC5 passed (_PER_ENTRY_BUDGETS/_FULL_FILE_BUDGETS keys, _resolve_budget_artifact normalization, check_verbosity/check_full_file_verbosity lookup, unknown-artifact 1000 default, plan 600-word failure message). tests/test_self_audit.py 30 passed pytest -q -n auto. Pre-commit full suite 1370 passed / 3 failed on main without this diff: test_upgrade_help_and_json_shape_unchanged (upgrade --dry-run status blocked), test_real_capabilities_and_current_surfaces_do_not_use_legacy_prose_md (packages/cli bundle prose.md refs), test_primary_surfaces_pass_byte_budget_enforcement (missing corpus.json byte budget)."
   next: "Task 2 \u2014 make CLI lint path always resolve budget lookup name for --text/--file."
