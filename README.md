@@ -239,7 +239,7 @@ npx -y agentera@next upgrade --yes --channel development --only artifacts
 Pin an exact pre-release when comparing behavior across machines:
 
 ```bash
-npx -y agentera@3.0.0-dev.3 prime --format json
+npx -y agentera@3.0.0-dev.4 prime --format json
 ```
 
 Channel semantics, backport order, and irreversible v2→v3 steps:
