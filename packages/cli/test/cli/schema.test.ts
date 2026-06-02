@@ -57,8 +57,15 @@ describe("cli dispatch: schema/describe routing", () => {
   });
 
   it("rejects an invalid --format choice", () => {
-    const { rc, err } = capture((io) => main(["node", "agentera", "schema", "--format", "text"], io));
+    const { rc, out, err } = capture((io) => main(["node", "agentera", "schema", "--format", "text"], io));
     expect(rc).toBe(2);
-    expect(err).toContain("invalid choice");
+    // runSchema defaults format to "json", so the invalid --format rejection
+    // emits the canonical JSON envelope to stdout and the four-question text
+    // template would not appear on stderr in this default mode.
+    expect(err).toBe("");
+    const envelope = JSON.parse(out);
+    expect(envelope.status).toBe("fail");
+    expect(envelope.error.class).toBe("invalid_choice");
+    expect(envelope.error.message).toContain("invalid choice");
   });
 });

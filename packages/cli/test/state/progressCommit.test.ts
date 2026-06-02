@@ -185,7 +185,7 @@ describe("rewriteCycleCommits", () => {
       "  discovered: kept\n";
     const out = rewriteCycleCommits(text, { 3: "pending" });
     expect(out).not.toContain("subject line");
-    expect(out).toContain("commit: pending");
+    expect(out).toContain('commit: "pending"');
     expect(out).toContain("discovered: kept");
   });
 
@@ -193,7 +193,7 @@ describe("rewriteCycleCommits", () => {
     const text = "cycles:\n- number: 4\n  commit: {hash: abc1234, note: x}\n  type: chore\n";
     const out = rewriteCycleCommits(text, { 4: "deadbeef" });
     expect(out).not.toContain("{hash:");
-    expect(out).toContain("commit: deadbeef");
+    expect(out).toContain('commit: "deadbeef"');
     expect(out).toContain("type: chore");
   });
 
@@ -206,7 +206,7 @@ describe("rewriteCycleCommits", () => {
       "  commit: def5678\n";
     const out = rewriteCycleCommits(text, { 2: "pending" });
     expect(out).toContain("abc1234 # product hash");
-    expect(out).toContain("commit: pending");
+    expect(out).toContain('commit: "pending"');
   });
 });
 

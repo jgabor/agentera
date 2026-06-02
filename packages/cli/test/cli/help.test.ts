@@ -88,7 +88,8 @@ describe("cli help", () => {
 
   it("rejects help for unknown commands", () => {
     const { rc, err } = capture((io) => main(["node", "agentera", "bogus", "--help"], io));
-    expect(rc).toBe(1);
+    expect(rc).toBe(2);
+    expect(err).toContain("What happened:");
     expect(err).toContain("unknown or not-yet-ported command: bogus");
   });
 

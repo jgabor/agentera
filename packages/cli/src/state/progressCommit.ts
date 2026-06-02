@@ -95,7 +95,7 @@ export function rewriteCycleCommits(text: string, changes: ChangeMap): string {
         const indent = commitMatch[1];
         const keyIndent = indent.length;
         const newline = line.endsWith("\n") ? "\n" : "";
-        out.push(`${indent}commit: ${changeGet(changes, current)}${newline}`);
+        out.push(`${indent}commit: "${changeGet(changes, current)}"${newline}`);
         i += 1;
         while (i < total) {
           const cont = lines[i].endsWith("\n") ? lines[i].slice(0, -1) : lines[i];

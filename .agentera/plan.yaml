@@ -82,7 +82,7 @@ tasks:
   - number: 2
     name: Wire the invalid-input envelope across remaining CLI surfaces
     depends_on: ["1"]
-    status: pending
+    status: complete
     acceptance:
       - "GIVEN the emitInvalidInput helper from task 1 WHEN wired into the remaining CLI surfaces (lint, backfill, state, schema, doctor, upgrade, report, verify, capability, help) THEN each surface emits the canonical envelope on --format json and the four-question template in text mode, with rc 2 for invalid input."
       - "GIVEN the parity test from task 1 WHEN extended to cover every CLI surface in the npm-cli-surface matrix THEN the envelope shape, exit code, and required keys match the oracle for every surface."

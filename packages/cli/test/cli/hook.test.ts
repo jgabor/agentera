@@ -60,11 +60,12 @@ describe("agentera hook dispatch", () => {
 });
 
 describe("agentera usage dispatch", () => {
-  it("rejects an invalid --format with the Error: syntax message", () => {
+  it("rejects an invalid --format with the four-question envelope", () => {
     let err = "";
     const rc = main(["node", "agentera", "usage", "--format", "xml"], { err: (t) => (err += t) });
     expect(rc).toBe(2);
-    expect(err).toContain("Error: unsupported usage format 'xml'");
+    expect(err).toContain("What happened:");
+    expect(err).toContain("unsupported usage format 'xml'");
     expect(err).toContain("valid formats: text, json");
   });
 
@@ -72,6 +73,7 @@ describe("agentera usage dispatch", () => {
     let err = "";
     const rc = main(["node", "agentera", "usage", "--bogus"], { err: (t) => (err += t) });
     expect(rc).toBe(2);
+    expect(err).toContain("What happened:");
     expect(err).toContain("unrecognized arguments: --bogus");
   });
 });

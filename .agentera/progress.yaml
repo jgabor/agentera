@@ -1,4 +1,56 @@
 cycles:
+  - number: 627
+    timestamp: 2026-06-02 17:52
+    type: feat
+    phase: build
+    what: Wire the invalid-input envelope across the remaining CLI surfaces (lint,
+      backfill, state, query, compact, schema, doctor, upgrade, report, verify,
+      capability, help, usage, prime, gate, hook) in dispatch.ts —
+      classifyParseError, asEnvelopeFormat, detectTopLevelFormat helpers; 21
+      run* functions now route their parse-error and catch paths through
+      emitInvalidInput; existing test assertions on plain-text error output
+      updated to assert the four-question envelope template. Also fixes
+      rewriteCycleCommits to always YAML-quote the commit value so all-digit and
+      scientific-notation short hashes (e.g. 61e2490 -> Infinity) round- trip
+      correctly through the parser.
+    commit: pending
+    inspiration: None.
+    discovered: "Two follow-ups: (1) the parse-error path in non-validate surfaces
+      hardcodes format: 'text' because the parse functions consume argv before
+      the format flag is reliably known; runValidate inlines format detection
+      and works correctly, but runLint/runBackfill/runState/runQuery/runCompact
+      will emit text-mode envelope on --format json parse errors. Fix in a
+      future cycle by either inlining the parse loops for each surface or
+      extracting a detectFormat() pass that runs before parse. (2) The
+      progress.yaml commit field will be removed entirely per user direction;
+      this cycle's commit is left as pending with no forward backfill, and
+      rewriteCycleCommits will be deleted alongside the field in the schema
+      migration cycle."
+    verified: pnpm -C packages/cli test -- 617/617 passed (no regression vs cycle
+      626); pnpm -C packages/cli run typecheck -- clean; pnpm -C packages/cli
+      build -- clean; live smoke `lint`, `state bogus`, `check backfill --mode
+      bogus` all return the four-question template + rc 2; `schema --format
+      text` (invalid choice) returns the canonical JSON envelope + rc 2; `lint
+      --format json` returns text-mode template (known format-detection gap).
+    next: Plan task 3 (validate/verify family parity oracles) or close the
+      format-detection-in-error-paths gap as a task 2 follow-up, or remove the
+      progress.yaml commit field per the new TODO.
+    context:
+      intent: "Execute plan task 1b (wire emitInvalidInput across remaining CLI
+        surfaces). The subagent dispatched by orkestrera returned an empty
+        task_result, so the orchestrator took over verification, fix, and commit
+        phases."
+      constraints: "TS-only on 3.0.0-dev feat/v3; no remote push; no vision.yaml or
+        objective-state edits; all wired surfaces return rc 2; commit field
+        will be removed from the schema in a future cycle, so this cycle
+        intentionally leaves commit: pending and skips the forward backfill."
+      unknowns: "Whether task 3 and the format-detection follow-up fit in one
+        cycle or need to be split, and whether task 4 becomes the first
+        schema-removal cycle for the progress commit field."
+      scope: "Modified dispatch.ts (3 new helpers, 21 run* functions wired through
+        emitInvalidInput), 4 CLI test files (assertions updated), progressCommit.ts
+        (rewriteCycleCommits quotes commit value), 3 progressCommit tests (expect
+        quoted form). Plan: 2/4 tasks complete."
   - number: 626
     timestamp: 2026-06-02 15:48
     type: test
@@ -6,7 +58,7 @@ cycles:
     what: Freeze the invalid-input error envelope contract for the 3.0 TypeScript
       CLI — new emitInvalidInput helper, oracle fixture, parity test, and check
       validate wired as the exemplar surface.
-    commit: "acc8db1"
+    commit: acc8db1
     inspiration: None.
     discovered: None.
     verified: pnpm -C packages/cli test — 617/617 passed (73 files, +12 vs cycle
@@ -245,24 +297,9 @@ cycles:
         packages/cli/test/upgrade/backportSafety.test.ts,
         packages/cli/src/cli/commands/upgrade.ts,
         packages/cli/src/cli/dispatch.ts, .agentera/plan.yaml task 3 status.
-  - number: 617
-    timestamp: 2026-05-30 23:25
-    type: feat
-    phase: build
-    what: Implement update channel resolution module (channels.ts).
-    commit: pending
-    inspiration: None.
-    discovered: None.
-    verified: pnpm -C packages/cli test test/upgrade/channels.test.ts 10/10 passed.
-    next: Task 3 — implement v2/v3 compatibility detection and guard rails.
-    context:
-      intent: PLAN task 2 for v2→v3 migration dual update channels.
-      constraints: No commit; do not modify vision.yaml; authority-driven resolution.
-      unknowns: None for channel resolver; orchestrator wiring lands in task 5.
-      scope: packages/cli/src/upgrade/channels.ts,
-        packages/cli/test/upgrade/channels.test.ts, .agentera/plan.yaml task 2
-        status.
 archive:
+  - summary: "Cycle 617 (2026-05-30): Implement update channel resolution module
+      (channels.ts)."
   - summary: "Cycle 616 (2026-05-30): Define update-channel and major-boundary
       vocabulary authorities."
   - summary: "Cycle 615 (2026-05-29): Consolidate progress-commit guard onto shared
@@ -337,5 +374,3 @@ archive:
       capability-context output."
   - summary: "Cycle 580 (2026-05-21): Added slim capability-context envelope mode."
   - summary: "Cycle 579 (2026-05-20): Introduced role-aware capability state inventory."
-  - summary: "Cycle 578 (2026-05-18): Closed stale 2.4.x instruction-validation TODO
-      from committed regression evidence."

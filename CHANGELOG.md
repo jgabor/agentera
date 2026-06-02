@@ -13,6 +13,11 @@
 ### Added
 
 - `agentera check validate` now emits a canonical invalid-input error envelope in JSON mode (`status: "fail"`, `error.class`, `error.message`, optional `error.valid_values`, `error.syntax`, `error.example`) and the four-question repair template (what happened / what the preview did / what the recommended fix will do / what it will not do) in text mode, with rc 2 for invalid input. Pinned by oracle at `packages/cli/test/cli/fixtures/oracle/invalid-input-envelope.json`; enforced by `packages/cli/test/cli/invalidInputEnvelope.test.ts`. The text-mode template still includes the original `validate_family` error message, so existing `err.toContain("validate_family")` assertions continue to pass.
+- The same invalid-input envelope is now wired across the remaining CLI surfaces (`lint`, `backfill`, `state`, `query`, `compact`, `schema`, `doctor`, `upgrade`, `report`, `verify`, `capability`, `help`, `usage`, `prime`, `gate`, `hook`) in `packages/cli/src/cli/dispatch.ts`. 21 `run*` functions route their parse-error and catch paths through `emitInvalidInput`; existing text-mode assertions in `backfill.test.ts`, `help.test.ts`, `hook.test.ts`, and `schema.test.ts` were updated to assert the four-question template. `check validate`, `check verify`, `agentera schema`, and the `check *` not-yet-ported branch use the canonical `unsupported_target` class with optional `valid_values` lists of supported options.
+
+### Fixed
+
+- `packages/cli/src/state/progressCommit.ts` `rewriteCycleCommits` now YAML-quotes the rewritten `commit` value, so all-digit and scientific-notation short hashes (e.g. `61e2490` previously parsed as `61e2490 = Infinity` and silently broke `agentera check backfill --fix` round-trips) round-trip correctly through the YAML parser. The three tests in `packages/cli/test/state/progressCommit.test.ts` that asserted the prior unquoted output format were updated to expect the quoted form.
 
 ## [2.7.6] · 2026-05-29
 

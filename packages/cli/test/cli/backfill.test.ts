@@ -56,9 +56,13 @@ describe("cli backfill", () => {
     expect(good.rc).toBe(0);
     const badMode = capture((io) => main(["node", "agentera", "check", "backfill", "--mode", "bogus"], io));
     expect(badMode.rc).toBe(2);
-    expect(badMode.err).toContain("agentera check backfill: error: argument --mode: invalid choice");
+    expect(badMode.err).toContain("What happened:");
+    expect(badMode.err).toContain("argument --mode: invalid choice");
+    expect(badMode.err).toContain("check");
+    expect(badMode.err).toContain("fix");
     const badCycle = capture((io) => main(["node", "agentera", "check", "backfill", "--cycle", "abc"], io));
     expect(badCycle.rc).toBe(2);
+    expect(badCycle.err).toContain("What happened:");
     expect(badCycle.err).toContain("invalid int value: 'abc'");
   });
 });
