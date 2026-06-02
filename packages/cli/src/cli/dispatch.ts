@@ -18,7 +18,10 @@ import { HookCliAdapter } from "../hooks/validateArtifact.js";
 import fsForHooks from "node:fs";
 import { usageMain } from "../analytics/usageStats.js";
 import { validatePathValue } from "./argvalidate.js";
-import { emitInvalidInput } from "./errors.js";
+import {
+  emitInvalidInput,
+  type InvalidInputErrorBody,
+} from "./errors.js";
 import { cmdCapability, CAPABILITY_ROUTING_NAMES } from "./commands/capability.js";
 import {
   printCommandHelp,
@@ -46,6 +49,66 @@ type Io = { out?: (t: string) => void; err?: (t: string) => void; stdin?: () => 
 
 function emitDeprecationAlias(legacy: string, canonical: string, err: (t: string) => void): void {
   err(`Deprecation: agentera ${legacy} is deprecated; use agentera ${canonical}\n`);
+}
+
+/**
+ * Map a legacy parse-error string (the kind returned by `parse*Args`) to the
+ * canonical invalid-input envelope body. Lets the parse functions keep their
+ * simple `{ error: string }` shape while every surface's error path still
+ * funnels through `emitInvalidInput` for the frozen envelope contract.
+ */
+function classifyParseError(raw: string): InvalidInputErrorBody {
+  const required = /^the following arguments are required: (.+)$/.exec(raw);
+  if (required) {
+    return { class: "missing_argument", message: raw };
+  }
+  const unrecognized = /^unrecognized arguments: (.+)$/.exec(raw);
+  if (unrecognized) {
+    return { class: "unrecognized_argument", message: raw };
+  }
+  const choice = /^argument (--[\w-]+): invalid choice: '([^']+)' \(choose from (.+)\)$/.exec(raw);
+  if (choice) {
+    const validValues = [...choice[3].matchAll(/'([^']+)'/g)].map((m) => m[1]);
+    return {
+      class: "invalid_choice",
+      message: raw,
+      valid_values: validValues,
+    };
+  }
+  const intBad = /^argument (--[\w-]+): invalid int value: '([^']+)'$/.exec(raw);
+  if (intBad) {
+    return { class: "invalid_int", message: raw };
+  }
+  const mutex = /^argument (--[\w-]+): not allowed with argument (--[\w-]+)$/.exec(raw);
+  if (mutex) {
+    return { class: "mutually_exclusive", message: raw };
+  }
+  return { class: "unrecognized_argument", message: raw };
+}
+
+/** Coerce the loose `string` format field on parsed args to the literal union. */
+function asEnvelopeFormat(format: string | undefined | null): "text" | "json" {
+  return format === "json" ? "json" : "text";
+}
+
+/**
+ * Scan a top-level argv slice for `--format json` (or `--format=json`) so
+ * main() can decide whether to route its error envelope to stdout or stderr.
+ * Unknown format values fall through to "text" — the user will discover the
+ * mis-spelling when the underlying command runs.
+ */
+function detectTopLevelFormat(args: string[]): "text" | "json" {
+  for (let i = 0; i < args.length; i++) {
+    const a = args[i];
+    if (a === "--format") {
+      const v = args[++i];
+      if (v === "json" || v === "text" || v === "yaml") return v === "json" ? "json" : "text";
+    } else if (a.startsWith("--format=")) {
+      const v = a.slice("--format=".length);
+      if (v === "json" || v === "text" || v === "yaml") return v === "json" ? "json" : "text";
+    }
+  }
+  return "text";
 }
 
 /** Minimal flag parser for the `lint` command surface. */
@@ -86,17 +149,20 @@ function parseLintArgs(argv: string[]): LintArgs | { error: string } {
 }
 
 function runLint(argv: string[], io: Io, prog = "agentera lint"): number {
-  const err = io.err ?? ((t: string) => process.stderr.write(t));
   const parsed = parseLintArgs(argv);
   if ("error" in parsed) {
-    err(`${prog}: error: ${parsed.error}\n`);
-    return 2;
+    return emitInvalidInput(io, {
+      format: "text",
+      body: classifyParseError(parsed.error),
+    });
   }
   try {
     return cmdLint(parsed, io);
   } catch (exc) {
-    err(`Error: ${(exc as Error).message}\n`);
-    return 2;
+    return emitInvalidInput(io, {
+      format: asEnvelopeFormat(parsed.format),
+      body: { class: "unsupported_target", message: (exc as Error).message },
+    });
   }
 }
 
@@ -134,17 +200,20 @@ function parseBackfillArgs(argv: string[]): BackfillArgs | { error: string } {
 }
 
 function runBackfill(argv: string[], io: Io, prog = "agentera backfill"): number {
-  const err = io.err ?? ((t: string) => process.stderr.write(t));
   const parsed = parseBackfillArgs(argv);
   if ("error" in parsed) {
-    err(`${prog}: error: ${parsed.error}\n`);
-    return 2;
+    return emitInvalidInput(io, {
+      format: "text",
+      body: classifyParseError(parsed.error),
+    });
   }
   try {
     return cmdBackfill(parsed, io);
   } catch (exc) {
-    err(`Error: ${(exc as Error).message}\n`);
-    return 2;
+    return emitInvalidInput(io, {
+      format: asEnvelopeFormat(parsed.format),
+      body: { class: "unsupported_target", message: (exc as Error).message },
+    });
   }
 }
 
@@ -191,13 +260,21 @@ function parseStateArgs(command: string, argv: string[]): StateArgs | { error: s
 }
 
 function runState(command: string, argv: string[], io: Io, prog: string): number {
-  const err = io.err ?? ((t: string) => process.stderr.write(t));
   const parsed = parseStateArgs(command, argv);
   if ("error" in parsed) {
-    err(`${prog}: error: ${parsed.error}\n`);
-    return 2;
+    return emitInvalidInput(io, {
+      format: "text",
+      body: classifyParseError(parsed.error),
+    });
   }
-  return cmdState(parsed, io);
+  try {
+    return cmdState(parsed, io);
+  } catch (exc) {
+    return emitInvalidInput(io, {
+      format: asEnvelopeFormat(parsed.format),
+      body: { class: "unsupported_target", message: (exc as Error).message },
+    });
+  }
 }
 
 function parseQueryArgs(argv: string[]): QueryArgs | { error: string } {
@@ -243,17 +320,20 @@ function parseQueryArgs(argv: string[]): QueryArgs | { error: string } {
 }
 
 function runQuery(argv: string[], io: Io, prog: string): number {
-  const err = io.err ?? ((t: string) => process.stderr.write(t));
   const parsed = parseQueryArgs(argv);
   if ("error" in parsed) {
-    err(`${prog}: error: ${parsed.error}\n`);
-    return 2;
+    return emitInvalidInput(io, {
+      format: "text",
+      body: classifyParseError(parsed.error),
+    });
   }
   try {
     return cmdQuery(parsed, io);
   } catch (exc) {
-    err(`Error: ${(exc as Error).message}\n`);
-    return 2;
+    return emitInvalidInput(io, {
+      format: asEnvelopeFormat(parsed.format),
+      body: { class: "unsupported_target", message: (exc as Error).message },
+    });
   }
 }
 
@@ -292,17 +372,20 @@ function parseCompactArgs(argv: string[]): CompactArgs | { error: string } {
 }
 
 function runCompact(argv: string[], io: Io, prog: string): number {
-  const err = io.err ?? ((t: string) => process.stderr.write(t));
   const parsed = parseCompactArgs(argv);
   if ("error" in parsed) {
-    err(`${prog}: error: ${parsed.error}\n`);
-    return 2;
+    return emitInvalidInput(io, {
+      format: "text",
+      body: classifyParseError(parsed.error),
+    });
   }
   try {
     return cmdCompact(parsed, io);
   } catch (exc) {
-    err(`Error: ${(exc as Error).message}\n`);
-    return 2;
+    return emitInvalidInput(io, {
+      format: asEnvelopeFormat(parsed.format),
+      body: { class: "unsupported_target", message: (exc as Error).message },
+    });
   }
 }
 
@@ -452,7 +535,6 @@ function runValidate(argv: string[], io: Io, prog: string): number {
 }
 
 function runSchema(argv: string[], io: Io, prog: string): number {
-  const err = io.err ?? ((t: string) => process.stderr.write(t));
   let format = "json";
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
@@ -460,25 +542,34 @@ function runSchema(argv: string[], io: Io, prog: string): number {
     if (a === "--format") v = argv[++i];
     else if (a.startsWith("--format=")) v = a.slice("--format=".length);
     else {
-      err(`${prog}: error: unrecognized arguments: ${a}\n`);
-      return 2;
+      return emitInvalidInput(io, {
+        format: asEnvelopeFormat(format),
+        body: { class: "unrecognized_argument", message: `unrecognized arguments: ${a}` },
+      });
     }
     if (v !== "json" && v !== "yaml") {
-      err(`${prog}: error: argument --format: invalid choice: '${v}' (choose from 'json', 'yaml')\n`);
-      return 2;
+      return emitInvalidInput(io, {
+        format: asEnvelopeFormat(format),
+        body: {
+          class: "invalid_choice",
+          message: `argument --format: invalid choice: '${v}' (choose from 'json', 'yaml')`,
+          valid_values: ["json", "yaml"],
+        },
+      });
     }
     format = v;
   }
   try {
     return cmdSchema({ format }, io);
   } catch (exc) {
-    err(`Error: ${(exc as Error).message}\n`);
-    return 2;
+    return emitInvalidInput(io, {
+      format: asEnvelopeFormat(format),
+      body: { class: "unsupported_target", message: (exc as Error).message },
+    });
   }
 }
 
 function runCapability(command: string, argv: string[], io: Io, prog: string): number {
-  const err = io.err ?? ((t: string) => process.stderr.write(t));
   let format = "text";
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
@@ -490,20 +581,34 @@ function runCapability(command: string, argv: string[], io: Io, prog: string): n
       if (a === "--fields") i++;
       continue;
     } else {
-      err(`${prog}: error: unrecognized arguments: ${a}\n`);
-      return 2;
+      return emitInvalidInput(io, {
+        format: asEnvelopeFormat(format),
+        body: { class: "unrecognized_argument", message: `unrecognized arguments: ${a}` },
+      });
     }
     if (v !== "text" && v !== "json" && v !== "yaml") {
-      err(`${prog}: error: argument --format: invalid choice: '${v}' (choose from 'text', 'json', 'yaml')\n`);
-      return 2;
+      return emitInvalidInput(io, {
+        format: asEnvelopeFormat(format),
+        body: {
+          class: "invalid_choice",
+          message: `argument --format: invalid choice: '${v}' (choose from 'text', 'json', 'yaml')`,
+          valid_values: ["text", "json", "yaml"],
+        },
+      });
     }
     format = v;
   }
-  return cmdCapability(command, { format }, io);
+  try {
+    return cmdCapability(command, { format }, io);
+  } catch (exc) {
+    return emitInvalidInput(io, {
+      format: asEnvelopeFormat(format),
+      body: { class: "unsupported_target", message: (exc as Error).message },
+    });
+  }
 }
 
 function runPrime(command: string, argv: string[], io: Io, prog: string): number {
-  const err = io.err ?? ((t: string) => process.stderr.write(t));
   const args: PrimeArgs = { command, guidance: false, context: null, dashboard: false, orientation: false, format: "text" };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
@@ -516,8 +621,14 @@ function runPrime(command: string, argv: string[], io: Io, prog: string): number
     else if (a === "--format" || a.startsWith("--format=")) {
       v = a === "--format" ? argv[++i] : a.slice("--format=".length);
       if (v !== "text" && v !== "json" && v !== "yaml") {
-        err(`${prog}: error: argument --format: invalid choice: '${v}' (choose from 'text', 'json', 'yaml')\n`);
-        return 2;
+        return emitInvalidInput(io, {
+          format: asEnvelopeFormat(args.format),
+          body: {
+            class: "invalid_choice",
+            message: `argument --format: invalid choice: '${v}' (choose from 'text', 'json', 'yaml')`,
+            valid_values: ["text", "json", "yaml"],
+          },
+        });
       }
       args.format = v;
     } else if (a === "--fields") {
@@ -525,25 +636,37 @@ function runPrime(command: string, argv: string[], io: Io, prog: string): number
     } else if (a.startsWith("--fields=")) {
       args.fields = a.slice("--fields=".length);
     } else {
-      err(`${prog}: error: unrecognized arguments: ${a}\n`);
-      return 2;
+      return emitInvalidInput(io, {
+        format: asEnvelopeFormat(args.format),
+        body: { class: "unrecognized_argument", message: `unrecognized arguments: ${a}` },
+      });
     }
   }
-  return cmdPrime(args, io);
+  try {
+    return cmdPrime(args, io);
+  } catch (exc) {
+    return emitInvalidInput(io, {
+      format: asEnvelopeFormat(args.format),
+      body: { class: "unsupported_target", message: (exc as Error).message },
+    });
+  }
 }
 
 function runGate(argv: string[], io: Io, prog: string): number {
-  const err = io.err ?? ((t: string) => process.stderr.write(t));
   const parsed = parseCompactArgs(argv);
   if ("error" in parsed) {
-    err(`${prog}: error: ${parsed.error}\n`);
-    return 2;
+    return emitInvalidInput(io, {
+      format: "text",
+      body: classifyParseError(parsed.error),
+    });
   }
   try {
     return cmdGate(parsed, io);
   } catch (exc) {
-    err(`Error: ${(exc as Error).message}\n`);
-    return 2;
+    return emitInvalidInput(io, {
+      format: asEnvelopeFormat(parsed.format),
+      body: { class: "unsupported_target", message: (exc as Error).message },
+    });
   }
 }
 
@@ -580,23 +703,38 @@ function runDoctor(argv: string[], io: Io, prog: string): number {
     else if ((v = value("--expect-command")) !== null) (args.expectCommand as string[]).push(v);
     else if ((v = value("--format")) !== null) {
       if (v !== "text" && v !== "json") {
-        err(`${prog}: error: argument --format: invalid choice: '${v}' (choose from 'text', 'json')\n`);
-        return 2;
+        return emitInvalidInput(io, {
+          format: asEnvelopeFormat(args.format),
+          body: {
+            class: "invalid_choice",
+            message: `argument --format: invalid choice: '${v}' (choose from 'text', 'json')`,
+            valid_values: ["text", "json"],
+          },
+        });
       }
       args.format = v;
     } else if (a === "--json") jsonFlag = true;
     else if (a === "--smoke") args.smoke = true;
     else if (a === "--allow-live-model") args.allowLiveModel = true;
     else {
-      err(`${prog}: error: unrecognized arguments: ${a}\n`);
-      return 2;
+      return emitInvalidInput(io, {
+        format: asEnvelopeFormat(args.format),
+        body: { class: "unrecognized_argument", message: `unrecognized arguments: ${a}` },
+      });
     }
   }
   if (jsonFlag) {
     emitDeprecationAlias("doctor --json", "doctor --format json", err);
     args.format = "json";
   }
-  return cmdDoctor(args, io);
+  try {
+    return cmdDoctor(args, io);
+  } catch (exc) {
+    return emitInvalidInput(io, {
+      format: asEnvelopeFormat(args.format),
+      body: { class: "unsupported_target", message: (exc as Error).message },
+    });
+  }
 }
 
 function readStdin(): string {
@@ -626,8 +764,20 @@ function runHook(name: string, argv: string[], io: Io): number {
       return rc;
     }
     default:
-      err(`agentera hook: unknown hook '${name}'\n`);
-      return 2;
+      return emitInvalidInput(io, {
+        format: "text",
+        body: {
+          class: "unsupported_target",
+          message: `unknown hook '${name}'`,
+          valid_values: [
+            "session-start",
+            "session-stop",
+            "cursor-session-start",
+            "cursor-pre-tool-use",
+            "validate-artifact",
+          ],
+        },
+      });
   }
 }
 
@@ -649,26 +799,36 @@ function runUsage(argv: string[], io: Io, prog: string): number {
     else if ((v = value("--corpus")) !== null) corpus = v;
     else if ((v = value("--project")) !== null) project = v;
     else {
-      realErr(`${prog}: error: unrecognized arguments: ${a}\n`);
-      return 2;
+      return emitInvalidInput(io, {
+        format: asEnvelopeFormat(format),
+        body: { class: "unrecognized_argument", message: `unrecognized arguments: ${a}` },
+      });
     }
   }
   if (corpus !== null) {
     try {
       validatePathValue(corpus, "path");
     } catch (e) {
-      realErr(`${prog}: error: argument --corpus: ${(e as Error).message}\n`);
-      return 2;
+      return emitInvalidInput(io, {
+        format: asEnvelopeFormat(format),
+        body: {
+          class: "invalid_format",
+          message: `argument --corpus: ${(e as Error).message}`,
+        },
+      });
     }
   }
   if (format !== "text" && format !== "json") {
-    const syntax = "agentera usage [--format text|json] [--corpus PATH] [--project VALUE]";
-    const example = "agentera usage --format json --project agentera";
-    realErr(
-      `Error: unsupported usage format '${format}'; valid formats: text, json. ` +
-        `Syntax: ${syntax}. Example: ${example}\n`,
-    );
-    return 2;
+    return emitInvalidInput(io, {
+      format: asEnvelopeFormat(format),
+      body: {
+        class: "invalid_choice",
+        message: `unsupported usage format '${format}'; valid formats: text, json.`,
+        valid_values: ["text", "json"],
+        syntax: "agentera usage [--format text|json] [--corpus PATH] [--project VALUE]",
+        example: "agentera usage --format json --project agentera",
+      },
+    });
   }
   const engineArgv: string[] = [];
   if (corpus !== null) engineArgv.push("--corpus", corpus);
@@ -715,14 +875,25 @@ function runUpgrade(argv: string[], io: Io, prog: string): number {
     else if ((v = value("--channel")) !== null) args.channel = v;
     else if ((v = value("--target-major")) !== null) {
       void v;
-      err(`${prog}: error: --target-major was removed; use --channel with dry-run preview then --yes\n`);
-      return 2;
+      return emitInvalidInput(io, {
+        format: asEnvelopeFormat(args.format),
+        body: {
+          class: "unsupported_target",
+          message: "--target-major was removed; use --channel with dry-run preview then --yes",
+        },
+      });
     }
     else if ((v = value("--runtime")) !== null) void v; // accepted; orchestrator uses fixture runtimes
     else if ((v = value("--only")) !== null) {
       if (v !== "artifacts" && v !== "runtime" && v !== "cleanup") {
-        err(`${prog}: error: argument --only: invalid choice: '${v}' (choose from 'artifacts', 'runtime', 'cleanup')\n`);
-        return 2;
+        return emitInvalidInput(io, {
+          format: asEnvelopeFormat(args.format),
+          body: {
+            class: "invalid_choice",
+            message: `argument --only: invalid choice: '${v}' (choose from 'artifacts', 'runtime', 'cleanup')`,
+            valid_values: ["artifacts", "runtime", "cleanup"],
+          },
+        });
       }
       (args.only as UpgradeOnlyPhase[]).push(v);
     }
@@ -734,21 +905,35 @@ function runUpgrade(argv: string[], io: Io, prog: string): number {
     else if (a === "--json") jsonFlag = true;
     else if ((v = value("--format")) !== null) {
       if (v !== "text" && v !== "json") {
-        err(`${prog}: error: argument --format: invalid choice: '${v}' (choose from 'text', 'json')\n`);
-        return 2;
+        return emitInvalidInput(io, {
+          format: asEnvelopeFormat(args.format),
+          body: {
+            class: "invalid_choice",
+            message: `argument --format: invalid choice: '${v}' (choose from 'text', 'json')`,
+            valid_values: ["text", "json"],
+          },
+        });
       }
       args.format = v;
     } else {
-      err(`${prog}: error: unrecognized arguments: ${a}\n`);
-      return 2;
+      return emitInvalidInput(io, {
+        format: asEnvelopeFormat(args.format),
+        body: { class: "unrecognized_argument", message: `unrecognized arguments: ${a}` },
+      });
     }
   }
   if (jsonFlag) args.format = "json";
-  return cmdUpgrade(args, io);
+  try {
+    return cmdUpgrade(args, io);
+  } catch (exc) {
+    return emitInvalidInput(io, {
+      format: asEnvelopeFormat(args.format),
+      body: { class: "unsupported_target", message: (exc as Error).message },
+    });
+  }
 }
 
 function runVerify(argv: string[], io: Io, prog: string): number {
-  const err = io.err ?? ((t: string) => process.stderr.write(t));
   const args: VerifyArgs = {
     family: null,
     target: null,
@@ -772,8 +957,14 @@ function runVerify(argv: string[], io: Io, prog: string): number {
     let v: string | null;
     if ((v = value("--format")) !== null) {
       if (v !== "text" && v !== "json") {
-        err(`${prog}: error: argument --format: invalid choice: '${v}' (choose from 'text', 'json')\n`);
-        return 2;
+        return emitInvalidInput(io, {
+          format: asEnvelopeFormat(args.format),
+          body: {
+            class: "invalid_choice",
+            message: `argument --format: invalid choice: '${v}' (choose from 'text', 'json')`,
+            valid_values: ["text", "json"],
+          },
+        });
       }
       args.format = v;
     } else if ((v = value("--skill")) !== null) args.skill = v;
@@ -783,8 +974,10 @@ function runVerify(argv: string[], io: Io, prog: string): number {
     else if (a === "--run") args.run = true;
     else if (a === "--dry-run") args.dryRun = true;
     else if (a.startsWith("--")) {
-      err(`${prog}: error: unrecognized arguments: ${a}\n`);
-      return 2;
+      return emitInvalidInput(io, {
+        format: asEnvelopeFormat(args.format),
+        body: { class: "unrecognized_argument", message: `unrecognized arguments: ${a}` },
+      });
     } else {
       positionals.push(a);
     }
@@ -792,11 +985,17 @@ function runVerify(argv: string[], io: Io, prog: string): number {
   args.family = positionals[0] ?? null;
   args.target = positionals[1] ?? null;
   args.fixtures = positionals.slice(2);
-  return cmdVerify(args, io);
+  try {
+    return cmdVerify(args, io);
+  } catch (exc) {
+    return emitInvalidInput(io, {
+      format: asEnvelopeFormat(args.format),
+      body: { class: "unsupported_target", message: (exc as Error).message },
+    });
+  }
 }
 
 function runReport(argv: string[], io: Io, prog: string): number {
-  const err = io.err ?? ((t: string) => process.stderr.write(t));
   const args: ReportArgs = {
     action: null,
     format: "text",
@@ -818,8 +1017,14 @@ function runReport(argv: string[], io: Io, prog: string): number {
     else if ((v = value("--project")) !== null) args.project = v;
     else if ((v = value("--consent")) !== null) {
       if (v !== "local-history") {
-        err(`${prog}: error: argument --consent: invalid choice: '${v}' (choose from 'local-history')\n`);
-        return 2;
+        return emitInvalidInput(io, {
+          format: asEnvelopeFormat(args.format),
+          body: {
+            class: "invalid_choice",
+            message: `argument --consent: invalid choice: '${v}' (choose from 'local-history')`,
+            valid_values: ["local-history"],
+          },
+        });
       }
       args.consent = v;
     } else if ((v = value("--project-root")) !== null) (args.projectRoot as string[]).push(v);
@@ -837,14 +1042,23 @@ function runReport(argv: string[], io: Io, prog: string): number {
     else if (a === "--no-cursor") args.noCursor = true;
     else if (a === "--dry-run") args.dryRun = true;
     else if (a.startsWith("--")) {
-      err(`${prog}: error: unrecognized arguments: ${a}\n`);
-      return 2;
+      return emitInvalidInput(io, {
+        format: asEnvelopeFormat(args.format),
+        body: { class: "unrecognized_argument", message: `unrecognized arguments: ${a}` },
+      });
     } else {
       positionals.push(a);
     }
   }
   args.action = positionals[0] ?? null;
-  return cmdReport(args, io);
+  try {
+    return cmdReport(args, io);
+  } catch (exc) {
+    return emitInvalidInput(io, {
+      format: asEnvelopeFormat(args.format),
+      body: { class: "unsupported_target", message: (exc as Error).message },
+    });
+  }
 }
 
 export function main(argv: string[], io: Io = {}): number {
@@ -863,8 +1077,13 @@ export function main(argv: string[], io: Io = {}): number {
       out(text + "\n");
       return 0;
     }
-    err(`agentera: unknown or not-yet-ported command: ${command}\n`);
-    return 1;
+    return emitInvalidInput(io, {
+      format: "text",
+      body: {
+        class: "unsupported_target",
+        message: `unknown or not-yet-ported command: ${command}`,
+      },
+    });
   }
 
   switch (command) {
@@ -887,8 +1106,20 @@ export function main(argv: string[], io: Io = {}): number {
     case "hook": {
       const name = rest[0];
       if (!name) {
-        err("agentera hook: error: the following arguments are required: hook_name\n");
-        return 2;
+        return emitInvalidInput(io, {
+          format: "text",
+          body: {
+            class: "missing_argument",
+            message: "the following arguments are required: hook_name",
+            valid_values: [
+              "session-start",
+              "session-stop",
+              "cursor-session-start",
+              "cursor-pre-tool-use",
+              "validate-artifact",
+            ],
+          },
+        });
       }
       return runHook(name, rest.slice(1), io);
     }
@@ -906,8 +1137,14 @@ export function main(argv: string[], io: Io = {}): number {
     case "check": {
       const sub = rest[0];
       if (!sub) {
-        err("agentera check: error: the following arguments are required: check_command\n");
-        return 2;
+        return emitInvalidInput(io, {
+          format: "text",
+          body: {
+            class: "missing_argument",
+            message: "the following arguments are required: check_command",
+            valid_values: ["validate", "verify", "lint", "backfill", "compact"],
+          },
+        });
       }
       if (sub === "validate") return runValidate(rest.slice(1), io, "agentera check validate");
       if (sub === "verify") return runVerify(rest.slice(1), io, "agentera check verify");
@@ -919,19 +1156,57 @@ export function main(argv: string[], io: Io = {}): number {
         if (mode === "fix") return runCompact(subArgs, io, "agentera check compact");
         return runGate(subArgs, io, "agentera check compact");
       }
-      err(`agentera: unknown or not-yet-ported check subcommand: ${sub}\n`);
-      return 1;
+      return emitInvalidInput(io, {
+        format: "text",
+        body: {
+          class: "unsupported_target",
+          message: `unknown or not-yet-ported check subcommand: ${sub}`,
+          valid_values: ["validate", "verify", "lint", "backfill", "compact"],
+        },
+      });
     }
     case "state": {
       const sub = rest[0];
       if (!sub) {
-        err("agentera state: error: the following arguments are required: state_command\n");
-        return 2;
+        return emitInvalidInput(io, {
+          format: "text",
+          body: {
+            class: "missing_argument",
+            message: "the following arguments are required: state_command",
+            valid_values: [
+              "progress",
+              "plan",
+              "health",
+              "docs",
+              "objective",
+              "experiments",
+              "todo",
+              "decisions",
+              "query",
+            ],
+          },
+        });
       }
       if (sub === "query") return runQuery(rest.slice(1), io, "agentera state query");
       if (isPortedStateCommand(sub)) return runState(sub, rest.slice(1), io, `agentera state ${sub}`);
-      err(`agentera: unknown or not-yet-ported state subcommand: ${sub}\n`);
-      return 1;
+      return emitInvalidInput(io, {
+        format: "text",
+        body: {
+          class: "unsupported_target",
+          message: `unknown or not-yet-ported state subcommand: ${sub}`,
+          valid_values: [
+            "progress",
+            "plan",
+            "health",
+            "docs",
+            "objective",
+            "experiments",
+            "todo",
+            "decisions",
+            "query",
+          ],
+        },
+      });
     }
     case "query":
       emitDeprecationAlias("query", "state query", err);
@@ -953,7 +1228,12 @@ export function main(argv: string[], io: Io = {}): number {
         emitDeprecationAlias(command, `state ${command}`, err);
         return runState(command, rest, io, `agentera ${command}`);
       }
-      err(`agentera: unknown or not-yet-ported command: ${command ?? "(none)"}\n`);
-      return 1;
+      return emitInvalidInput(io, {
+        format: "text",
+        body: {
+          class: "unsupported_target",
+          message: `unknown or not-yet-ported command: ${command ?? "(none)"}`,
+        },
+      });
   }
 }
