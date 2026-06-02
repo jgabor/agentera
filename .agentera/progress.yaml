@@ -4,7 +4,7 @@ cycles:
   type: fix
   phase: build
   what: Wire CLI lint path to always resolve normalized budget lookup name for --text/--file.
-  commit: pending
+  commit: '8563d3b fix(cli): wire lint path to normalized budget lookup name'
   discovered: None.
   verified: "Manual AC1\u2013AC5 passed (_lint_input_text returns normalized budget_artifact\
     \ for --text/--file; _lint_payload uses budget_artifact for checks without or-fallback;\
