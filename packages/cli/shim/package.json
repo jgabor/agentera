@@ -1,0 +1,36 @@
+{
+  "name": "agentera",
+  "version": "0.0.0",
+  "description": "npm shim for Agentera — delegates to the Python CLI until the 3.0 TypeScript release",
+  "type": "module",
+  "license": "Apache-2.0",
+  "author": "Jonathan Gabor",
+  "homepage": "https://github.com/jgabor/agentera",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jgabor/agentera.git",
+    "directory": "packages/cli"
+  },
+  "keywords": [
+    "agentera",
+    "agents",
+    "cli",
+    "orchestration"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "bin": {
+    "agentera": "./bin/agentera.mjs"
+  },
+  "files": [
+    "bin",
+    "lib",
+    "README.md",
+    "LICENSE"
+  ],
+  "agentera": {
+    "suiteVersion": "2.7.6",
+    "gitRef": "v2.7.6"
+  }
+}

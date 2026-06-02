@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+### Key highlights
+
+- **npm shim 0.0.0 cwd preservation**: the `agentera@0.0.0` npm shim now forwards the user's working directory to the installed Python CLI for the `app-home` backend, so `npx -y agentera` state, prime, hej, planera, resonera, and inspektera reads resolve the project's `.agentera/` artifacts instead of the app home. The shim remains a transitional entry point; the native TypeScript CLI ships in 3.0.
+
+### Fixed
+
+- Fixed `agentera@0.0.0` npm shim `runBackend` `app-home` branch spawning the installed Python CLI (`$AGENTERA_HOME/app/scripts/agentera`) with `cwd` set to the app home's `app/` directory. The shim now passes the caller's cwd through `dispatch` → `runBackend` and lets `spawnSync` fall back to `process.cwd()` when the caller omits one. The `repo` backend keeps `cwd: backend.repoRoot` (unchanged), and the `uvx` backend remains spawn-options-only. Regression coverage in `packages/cli/test/shim/runBackend.test.ts` pins the user's cwd against the app-home `app/` subdir and asserts the repo backend is still anchored to its repo root.
+
 ## [2.7.6] · 2026-05-29
 
 ### Added
