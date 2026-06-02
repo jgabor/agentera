@@ -1,6 +1,6 @@
 {
   "name": "agentera",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "npm shim for Agentera — delegates to the Python CLI until the 3.0 TypeScript release",
   "type": "module",
   "license": "Apache-2.0",
@@ -31,7 +31,7 @@
   ],
   "agentera": {
     "suiteVersion": "2.7.6",
-    "gitRef": "v2.7.6"
+    "gitRef": "77e9f27f0a2d1c50a881363364291316fbf45c21"
   },
   "scripts": {
     "test": "pnpm -C .. test test/shim/",
