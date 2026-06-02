@@ -128,7 +128,7 @@ version_resolution:
     resolver: npm_dist_tag_with_offline_defaults
     offline_defaults:
       stable: "2.7.6"
-      development: "3.0.0-dev.3"
+      development: "3.0.0-dev.4"
   irreversibility:
     downgrade_to_v2: permanently_blocked
     supported_downgrade_lines: []
