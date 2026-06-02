@@ -4,11 +4,11 @@ cycles:
     type: fix
     phase: build
     what: npm shim runBackend app-home branch now forwards the user's cwd to the
-      spawned Python CLI instead of the installed app home's app/ subdir;
-      re-added the shim source under packages/cli/shim/ (bin/agentera.mjs,
-      lib/exec.mjs, lib/resolve.mjs, package.json, README.md, LICENSE) and added
-      vitest regression coverage in packages/cli/test/shim/runBackend.test.ts.
-    commit: pending
+      spawned Python CLI instead of the installed app home's app/ subdir; re-added
+      the shim source under packages/cli/shim/ (bin/agentera.mjs, lib/exec.mjs,
+      lib/resolve.mjs, package.json, README.md, LICENSE) and added vitest
+      regression coverage in packages/cli/test/shim/runBackend.test.ts.
+    commit: "4534d90"
     inspiration: None.
     discovered: Published npm shim 0.0.0 was the only npx -y agentera entry point
       until 3.0 ships; the shim's runBackend app-home branch set cwd to
