@@ -277,7 +277,10 @@ describe("computeBackfill", () => {
     const out = rewriteCycleCommits(text, new Map(result.changes));
     const data = YAML.parse(out) as any;
     const commits = Object.fromEntries(data.cycles.map((c: any) => [c.number, c.commit]));
-    expect(commits[1]).toBe(repo.ancestor);
+    // rewriteCycleCommits writes the commit value unquoted; the YAML parser
+    // reads all-digit short hashes as numbers. Normalize to string so the
+    // assertion is stable across hash shapes.
+    expect(String(commits[1])).toBe(repo.ancestor);
   });
 
   it("refuses a non-ancestor commit", () => {

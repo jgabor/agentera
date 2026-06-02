@@ -10,6 +10,10 @@
 
 - Fixed `agentera@0.0.0` npm shim `runBackend` `app-home` branch spawning the installed Python CLI (`$AGENTERA_HOME/app/scripts/agentera`) with `cwd` set to the app home's `app/` directory. The shim now passes the caller's cwd through `dispatch` → `runBackend` and lets `spawnSync` fall back to `process.cwd()` when the caller omits one. The `repo` backend keeps `cwd: backend.repoRoot` (unchanged), and the `uvx` backend remains spawn-options-only. Regression coverage in `packages/cli/test/shim/runBackend.test.ts` pins the user's cwd against the app-home `app/` subdir and asserts the repo backend is still anchored to its repo root.
 
+### Added
+
+- `agentera check validate` now emits a canonical invalid-input error envelope in JSON mode (`status: "fail"`, `error.class`, `error.message`, optional `error.valid_values`, `error.syntax`, `error.example`) and the four-question repair template (what happened / what the preview did / what the recommended fix will do / what it will not do) in text mode, with rc 2 for invalid input. Pinned by oracle at `packages/cli/test/cli/fixtures/oracle/invalid-input-envelope.json`; enforced by `packages/cli/test/cli/invalidInputEnvelope.test.ts`. The text-mode template still includes the original `validate_family` error message, so existing `err.toContain("validate_family")` assertions continue to pass.
+
 ## [2.7.6] · 2026-05-29
 
 ### Added
