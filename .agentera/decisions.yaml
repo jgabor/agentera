@@ -1,57 +1,4 @@
 decisions:
-- number: 55
-  date: '2026-05-17'
-  question: How should Agentera expose usage statistics and local-history corpus generation?
-  context: D48 exposed `agentera usage` for analytics while intentionally not adding
-    `agentera corpus`. The helper-script inventory identified `scripts/extract_corpus.py`
-    as a direct helper that reads local runtime history and produces an intermediate
-    corpus consumed by `scripts/usage_stats.py` and Profilera. A follow-up deliberation
-    considered whether clear consent semantics made a top-level corpus command safe
-    enough, then rejected exposing the implementation artifact as product vocabulary.
-  alternatives:
-  - name: Add top-level agentera corpus
-    status: rejected
-    description: Makes a sensitive intermediate data structure user-facing vocabulary
-      and invites users to reason about extraction artifacts instead of the analytics
-      outcome.
-  - name: Keep agentera usage only
-    status: rejected
-    description: Preserves compatibility, but leaves the missing-corpus path less
-      discoverable and keeps the user-facing command name weaker than the outcome.
-  - name: Add agentera stats with internal corpus refresh
-    status: chosen
-    description: Expose usage statistics as the product command while keeping corpus
-      generation as an internal, previewable, consent-gated implementation step.
-  - name: Auto-refresh stats from runtime history
-    status: rejected
-    description: Violates the privacy boundary by making a normal stats read silently
-      inspect local AI runtime histories.
-  choice: Add `agentera stats` as the user-facing analytics workflow and do not expose
-    a top-level `agentera corpus` command. Plain `agentera stats` reports from existing
-    fresh data or shows the refresh command when data is missing or stale; it must
-    not read local runtime history. `agentera stats refresh --dry-run` previews candidate
-    runtimes, paths, and expected actions without extraction or writes. `agentera
-    stats refresh --consent local-history` reads bounded local runtime history, writes
-    the internal corpus at `$PROFILERA_PROFILE_DIR/intermediate/corpus.json`, and
-    reports stats. Preserve `agentera usage` as a compatibility surface or alias.
-  reasoning: Users want to measure Agentera usage, not operate on a corpus artifact.
-    Keeping corpus generation internal reduces vocabulary and privacy risk while still
-    giving agents and users a supported way to refresh analytics data. The preview
-    plus explicit `--consent local-history` contract satisfies non-interactive CLI
-    design, makes sensitive local-history reads intentional, and keeps `usage_stats.py`
-    and `extract_corpus.py` as implementation seams behind a clearer product command.
-  confidence: firm
-  feeds_into: TODO.md, scripts/agentera, scripts/extract_corpus.py, scripts/usage_stats.py,
-    tests, README.md, capability prose
-  satisfaction:
-    state: user_confirmed_satisfied
-    evidence: 'D55 stats/corpus privacy boundary stands with D58 governing the 3.0
-      live boundary: `agentera usage` as a compatibility surface or alias is migration
-      and upgrade-detection input only, not a supported live protocol alias after
-      3.0. Reconciled in resonera satisfaction review on 2026-05-23.'
-    user_confirmation:
-      confirmed_by: user
-      confirmed_at: '2026-05-23'
 - number: 56
   date: '2026-05-17'
   question: Should Agentera 3.0 rewrite the CLI core in TypeScript for Bun/npm distribution
@@ -102,8 +49,8 @@ decisions:
   satisfaction:
     state: user_confirmed_satisfied
     evidence: User confirmed satisfaction during resonera review on 2026-05-31. Contract-first
-      TypeScript CLI rewrite remains the 3.0 direction; feat/v3 packages/cli work is
-      downstream implementation.
+      TypeScript CLI rewrite remains the 3.0 direction; feat/v3 packages/cli work
+      is downstream implementation.
     user_confirmation:
       confirmed_by: user
       confirmed_at: '2026-05-31'
@@ -579,14 +526,127 @@ decisions:
   - VISION.md
   satisfaction:
     state: user_confirmed_satisfied
-    evidence: Three vision refinements applied in `.agentera/vision.yaml` — JSON-as-protocol
-      paragraph in direction, sharp colleague's workshop personality, autonomy principle
-      and emotional register. User confirmed satisfaction during resonera review on
-      2026-05-31.
+    evidence: "Three vision refinements applied in `.agentera/vision.yaml` \u2014\
+      \ JSON-as-protocol paragraph in direction, sharp colleague's workshop personality,\
+      \ autonomy principle and emotional register. User confirmed satisfaction during\
+      \ resonera review on 2026-05-31."
     user_confirmation:
       confirmed_by: user
       confirmed_at: '2026-05-31'
+- number: 65
+  date: '2026-06-02'
+  question: How should Agentera 3.0 reorganize the per-capability content surface
+    relative to the bundled `/agentera` SKILL.md and the CLI?
+  context: "SKILL.md is the discoverability surface for `npx skills`; the skills.sh\
+    \ public page for `agentera` empirically shows only the SKILL.md body, never per-capability\
+    \ instruction files. D59 makes the slim `capability_context` capsule the only\
+    \ supported capability startup JSON shape. D57 (firm) currently requires the runtime\
+    \ to read `instructions.md` in full on first invocation \u2014 that surface becomes\
+    \ redundant once the CLI capsule is authoritative and skills.sh only uses SKILL.md\
+    \ externally. Supported runtimes (Claude Code, OpenCode, Cursor, Copilot, Codex)\
+    \ all shell out cleanly to the CLI, and the broader CLI-over-MCP trend reinforces\
+    \ CLI as the canonical AI-agent interface. The v3 npm bundle is already self-contained\
+    \ at publish time via `scripts/copy-bundle.mjs`, so the source-of-truth can move\
+    \ without breaking install behavior or the `npx skills` ecosystem contract."
+  alternatives:
+  - name: Keep Markdown `instructions.md` as runtime surface
+    status: rejected
+    description: Status quo. The on-disk files stay in the runtime skill install;
+      the CLI capsule becomes a parallel startup surface with no clear winner.
+  - name: Generated-from-source
+    status: rejected
+    description: '`instructions.md` stays in the runtime install but is generated
+      from `src/instructions.ts` at publish. Halves the seam reduction and keeps a
+      redundant Markdown surface the runtime still has to read.'
+  - name: Drop from runtime install, relocate to `src/instructions.ts`
+    status: chosen
+    description: "SKILL.md becomes the runtime discoverability surface (frontmatter\
+      \ index + body routing stub). The 12 per-capability `instructions.md` files\
+      \ leave the runtime install and move to `packages/cli/src/capabilities/*/instructions.ts`\
+      \ as TypeScript modules exporting the capability prose as a string constant.\
+      \ The CLI serves the prose as both the `capability_context` JSON capsule (D59)\
+      \ and as human-readable Markdown for the docs site. D57 first_invocation_read\
+      \ = full is replaced \u2014 the runtime shells out to `agentera prime --context\
+      \ <name>` instead of reading on-disk `instructions.md`."
+  - name: Keep both surfaces, no relocation
+    status: rejected
+    description: Adds `src/instructions.ts` alongside the on-disk `instructions.md`.
+      Two authoring surfaces for the same prose invites drift and violates D58 single-name
+      boundary.
+  choice: "Adopt the SKILL-md-as-discoverability + `instructions.ts`-as-source-of-truth\
+    \ model. (1) `/agentera` SKILL.md is the runtime discoverability surface; frontmatter\
+    \ becomes a tight `name` + `description` index, body becomes a routing stub that\
+    \ hands off to `agentera prime` for state and to the CLI for capability execution.\
+    \ (2) The 12 per-capability `instructions.md` files leave the runtime skill install\
+    \ and relocate to `packages/cli/src/capabilities/*/instructions.ts` as TypeScript\
+    \ modules exporting the capability prose as a string constant. (3) The CLI serves\
+    \ the prose as both the `capability_context` JSON capsule (D59) and as human-readable\
+    \ Markdown for the docs site / GitHub. (4) D57 first_invocation_read = full is\
+    \ explicitly retired \u2014 the runtime shells out to `agentera prime --context\
+    \ <name>` instead of reading on-disk `instructions.md`. (5) The `npx skills` ecosystem\
+    \ surface (SKILL.md only) is unchanged."
+  reasoning: "The discoverability surface (SKILL.md) and the runtime startup surface\
+    \ (CLI capsule) are different concerns with different contracts. The Markdown\
+    \ `instructions.md` was bridging neither well \u2014 it was human-readable but\
+    \ rarely read by humans (skills.sh does not surface it), and runtime-readable\
+    \ but no longer the authoritative startup shape after D59. Moving prose to `src/instructions.ts`\
+    \ makes the TS source the human+runtime shared source; the CLI serves both shapes\
+    \ from one place, satisfying D58 single-name boundary and aligning with the CLI-over-MCP\
+    \ trend. Empirically verified that the skills.sh public surface is SKILL.md only,\
+    \ so the `npx skills` ecosystem sees no behavioral change. Three blind spots tested\
+    \ and held: (a) every supported runtime can shell out to the CLI; (b) the `npx\
+    \ skills` page tooling does not need per-capability Markdown; (c) the CLI is a\
+    \ stronger AI-agent content surface than static Markdown for the runtime working-memory\
+    \ slot that D57 used to fill."
+  confidence: firm
+  feeds_into: TODO.md, skills/agentera/SKILL.md, packages/cli/src/capabilities/*/instructions.ts
+    (new), packages/cli/scripts/copy-bundle.mjs, references/cli/capability-instruction-contract.yaml,
+    skills/agentera/capability_schema_contract.yaml, scripts/validate_capability.py,
+    runtime descriptors, tests, README.md, AGENTS.md, references/cli/vocabulary.md
+  satisfaction:
+    state: user_confirmed_satisfied
+    evidence: Deliberation closed in resonara session on 2026-06-02 with three of
+      three evidence-backed challenges landing. skills.sh public surface empirically
+      verified to use SKILL.md only. CLI-over-MCP trend documented via jannikreinhard.com
+      and justin.poehnelt.com references provided during the session. User confirmed
+      D64-style capture and TODO filing. User confirmed satisfaction 2026-06-02 after
+      D65 was written to `.agentera/decisions.yaml` with the schema and self_audit
+      budget bumps in place.
+    user_confirmation:
+      confirmed_by: user
+      confirmed_at: '2026-06-02'
 archive:
+- summary: 'Decision 55 (2026-05-17): Add `agentera stats` as the user-facing analytics
+    workflow and do not expose a top-level `agentera...'
+  number: 55
+  date: '2026-05-17'
+  choice: Add `agentera stats` as the user-facing analytics workflow and do not expose
+    a top-level `agentera corpus` command. Plain `agentera stats` reports from existing
+    fresh data or shows the refresh command when data is missing or stale; it must
+    not read local runtime history. `agentera stats refresh --dry-run` previews candidate
+    runtimes, paths, and expected actions without extraction or writes. `agentera
+    stats refresh --consent local-history` reads bounded local runtime history, writes
+    the internal corpus at `$PROFILERA_PROFILE_DIR/intermediate/corpus.json`, and
+    reports stats. Preserve `agentera usage` as a compatibility surface or alias.
+  feeds_into: TODO.md, scripts/agentera, scripts/extract_corpus.py, scripts/usage_stats.py,
+    tests, README.md, capability prose
+  satisfaction:
+    state: user_confirmed_satisfied
+    evidence: 'D55 stats/corpus privacy boundary stands with D58 governing the 3.0
+      live boundary: `agentera usage` as a compatibility surface or alias is migration
+      and upgrade-detection input only, not a supported live protocol alias after
+      3.0. Reconciled in resonera satisfaction review on 2026-05-23.'
+    user_confirmation:
+      confirmed_by: user
+      confirmed_at: '2026-05-23'
+  outcome: Add `agentera stats` as the user-facing analytics workflow and do not expose
+    a top-level `agentera corpus` command. Plain `agentera stats` reports from existing
+    fresh data or shows the refresh command when data is missing or stale; it must
+    not read local runtime history. `agentera stats refresh --dry-run` previews candidate
+    runtimes, paths, and expected actions without extraction or writes. `agentera
+    stats refresh --consent local-history` reads bounded local runtime history, writes
+    the internal corpus at `$PROFILERA_PROFILE_DIR/intermediate/corpus.json`, and
+    reports stats. Preserve `agentera usage` as a compatibility surface or alias.
 - summary: 'Decision 54 (2026-05-16): Hard-rename app metadata toward one canonical
     vocabulary. Use standard app terms such as `up_to_date`, `outdated`,...'
   number: 54
@@ -979,7 +1039,4 @@ archive:
   satisfaction: *id001
 - summary: 'Decision 16 (2026-04-02): **Question**: How should the ecosystem''s voice
     and tone work across all 11 skills?'
-  satisfaction: *id001
-- summary: 'Decision 15 (2026-04-02): **Question**: How should TODO.md categorize
-    issues beyond bug-severity, and should issues carry type tags?'
   satisfaction: *id001
