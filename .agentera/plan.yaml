@@ -107,7 +107,7 @@ tasks:
   - number: 4
     name: Add CLI end-to-end regression coverage
     depends_on: ["2"]
-    status: pending
+    status: complete
     acceptance:
       - GIVEN tests/test_lint_cli.py (or equivalent) WHEN it spawns the CLI with `agentera lint --artifact plan --text "<600 words>"` (and the same for progress, decisions, todo) THEN the JSON payload's verbosity check is "fail" with the per-artifact budget message and the per-artifact budget value matches the budgets dict
       - GIVEN a CLI invocation with the canonical label form `--artifact PLAN.md` WHEN run with 600 words THEN the JSON payload still emits the artifact field as `PLAN.md` and verbosity fails with the same per-artifact message (canonical-label display preserved)

@@ -1,4 +1,20 @@
 cycles:
+- number: 619
+  timestamp: 2026-06-02 22:00
+  type: test
+  phase: build
+  what: Add CLI end-to-end regression coverage for lint budget lookup.
+  commit: pending
+  discovered: None.
+  verified: "tests/test_lint_cli.py 6 passed pytest -q -n auto; full suite 1399 passed\
+    \ / 3 failed (pre-existing: upgrade --dry-run blocked, packages/cli prose.md refs,\
+    \ corpus.json byte budget \u2014 same as cycle 616)."
+  next: "Task 5 \u2014 closeout (CHANGELOG, UPGRADE, TODO, progress, version bump)."
+  context:
+    intent: "Plan task 4 \u2014 pin end-to-end CLI budget lookup for schema names,\
+      \ canonical labels, and --file path."
+    constraints: No remote push; never amend to backfill progress commit fields.
+    scope: tests/test_lint_cli.py, plan.yaml task 4, progress.yaml.
 - number: 618
   timestamp: 2026-06-02 21:30
   type: test
@@ -168,23 +184,9 @@ cycles:
     constraints: Chore-only; no version bump.
     scope: hooks, scripts/agentera, production script loaders, TODO/CHANGELOG/progress
       sync.
-- number: 609
-  timestamp: 2026-05-28 12:00
-  type: chore
-  phase: build
-  what: Tagged v2.7.5 with validation hardening and CLI namespace migration.
-  commit: pending
-  discovered: None.
-  verified: "Version surfaces bumped 2.7.1\u21922.7.5 across version_files; CHANGELOG\
-    \ [2.7.5] promotes validation fixes, CLI audience namespaces, subagent tool provisioning,\
-    \ and JSON output schema checks; version alignment tests pass; git tag v2.7.5\
-    \ applied after release commit."
-  next: Push main and v2.7.5 tag when approved.
-  context:
-    intent: Patch release closeout after explicit 2.7.5 target approval.
-    constraints: No remote push unless requested.
-    scope: CHANGELOG, version_files, PROGRESS, tag only.
 archive:
+- summary: 'Cycle 609 (2026-05-28): Tagged v2.7.5 with validation hardening and CLI
+    namespace migration.'
 - summary: 'Cycle 608 (2026-05-27): Fix 16 degraded validation and CLI consistency
     issues across 7-task plan.'
 - summary: 'Cycle 607 (2026-05-26): Fix 5 degraded validation and CLI consistency
@@ -258,5 +260,3 @@ archive:
     classification coverage.'
 - summary: 'Cycle 571 (2026-05-18): Added Decision 54 app lifecycle status regression
     coverage.'
-- summary: 'Cycle 570 (2026-05-18): Added first_invocation_read metadata to hej capability
-    context output.'
