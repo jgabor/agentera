@@ -6,6 +6,12 @@ This file provides guidance to AI coding agents when working with code in this r
 
 agentera v2: one Agentera skill (`skills/agentera/`) with twelve capabilities. Each capability is defined by human-readable prose (`instructions.md`) and machine-readable schemas (`triggers.yaml`, `artifacts.yaml`, `validation.yaml`, `exit.yaml`). The Agentera router routes incoming requests to the right capability.
 
+## Branch model
+
+- `main` is the v2.x stable branch. The Python CLI ships from here as `npx -y agentera@latest`. Feature-frozen for the v3 cutover, but bug-fix-allowed for velocity blockers (the linter, the commit-tracking flow, the artifact validation hooks).
+- `feat/v3` is the v3.0.0 dev branch. The TypeScript CLI ships from here as `npx -y agentera@next`. Active development; v3-only work and v2→v3 parity belong there, not here.
+- `TODO.md` lives on `feat/v3`. When this branch ships a v2 fix, cherry-pick or merge the resolution back to `feat/v3` so the backlog stays in sync.
+
 ## Capability validation
 
 Validate any capability through the canonical `agentera check validate` namespace.
