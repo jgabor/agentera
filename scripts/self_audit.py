@@ -23,27 +23,38 @@ import re
 # ---------------------------------------------------------------------------
 
 _FULL_FILE_BUDGETS: dict[str, int] = {
-    "PROGRESS.md": 3000,
-    "EXPERIMENTS.md": 2500,
-    "HEALTH.md": 2000,
-    "DECISIONS.md": 5000,
-    "TODO.md": 5000,
-    "CHANGELOG.md": 5000,
-    "PLAN.md": 2500,
-    "VISION.md": 1500,
-    "DESIGN.md": 2000,
-    "DOCS.md": 2000,
+    "progress": 3000,
+    "experiments": 2500,
+    "health": 2000,
+    "decisions": 5000,
+    "todo": 5000,
+    "changelog": 5000,
+    "plan": 2500,
+    "vision": 1500,
+    "design": 2000,
+    "docs": 2000,
 }
 
 _PER_ENTRY_BUDGETS: dict[str, int] = {
-    "PROGRESS.md": 500,
-    "EXPERIMENTS.md": 300,
-    "HEALTH.md": 150,
-    "DECISIONS.md": 200,
-    "TODO.md": 100,
-    "CHANGELOG.md": 300,
-    "PLAN.md": 100,
+    "progress": 500,
+    "experiments": 300,
+    "health": 150,
+    "decisions": 200,
+    "todo": 100,
+    "changelog": 300,
+    "plan": 100,
 }
+
+
+def _resolve_budget_artifact(name: str) -> str:
+    """Normalize artifact input to lowercase no-extension schema name."""
+
+    normalized = name.lower()
+    for suffix in (".md", ".yaml"):
+        if normalized.endswith(suffix):
+            normalized = normalized[: -len(suffix)]
+            break
+    return normalized
 
 # ---------------------------------------------------------------------------
 # Concrete anchor patterns (Self-Audit Protocol Check 2 — Abstraction creep)
@@ -121,17 +132,18 @@ def check_verbosity(
         ``(False, reason)`` with a verbosity mismatch message otherwise.
     """
     word_count = len(text.split())
+    resolved = _resolve_budget_artifact(artifact)
 
     if budgets is None:
         budgets = _PER_ENTRY_BUDGETS
 
-    per_entry_budget = budgets.get(artifact)
+    per_entry_budget = budgets.get(resolved)
     if per_entry_budget is None:
-        full_budget = _FULL_FILE_BUDGETS.get(artifact)
+        full_budget = _FULL_FILE_BUDGETS.get(resolved)
         if full_budget is not None:
             per_entry_budget = full_budget // 5
         else:
-            per_entry_budget = 500  # generous default for unknown artifacts
+            per_entry_budget = 1000  # default for unknown artifacts
 
     if word_count <= per_entry_budget:
         return (True, "")
@@ -146,7 +158,8 @@ def check_full_file_verbosity(text: str, artifact: str) -> tuple[bool, str]:
     """Check whole-artifact word count against the artifact's full-file budget."""
 
     word_count = len(text.split())
-    budget = _FULL_FILE_BUDGETS.get(artifact, 2500)
+    resolved = _resolve_budget_artifact(artifact)
+    budget = _FULL_FILE_BUDGETS.get(resolved, 2500)
     if word_count <= budget:
         return (True, "")
     return (

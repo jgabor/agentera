@@ -1,139 +1,140 @@
 header:
   level: full
-  created: "2026-05-29"
-  status: complete
-  reviewed: "2026-05-29"
-  critic_issues: "5 found, 4 addressed, 1 dismissed"
-  title: Consolidate progress-commit/git-ancestry logic into a shared module (2.7.6)
+  created: "2026-06-02"
+  status: pending
+  reviewed: null
+  critic_issues: null
+  title: Align v2 self-audit linter lookup with CLI artifact vocabulary (2.7.7)
 what: >-
-  Eliminate the near-duplicate progress-commit + git-ancestry implementations in
-  hooks/validate_artifact.py (~688–769) and scripts/agentera (~6177–6232) by
-  extracting one shared scripts/progress_commit.py module (commit-hash regex, git
-  subprocess wrapper, commit-token parser, HEAD-ancestor classifier,
-  cycle-commit rewrite, and pure backfill computation). Make both the
-  validate_artifact guard and the `agentera check backfill` CLI thin consumers of
-  that module, align the validator's YAML loading on load_yaml_mapping, route the
-  hook→scripts import through the single sanctioned hooks/common bridge,
-  consolidate and expand the shared module's regression tests, and document the
-  intentional unknown-hash/shallow-clone skip behavior. Resolves all eight open
-  2.7.6 progress-commit TODO items.
+  Fix the v2 self-audit linter budget-lookup mismatch where `scripts/self_audit.py`
+  looks up `_PER_ENTRY_BUDGETS` and `_FULL_FILE_BUDGETS` by canonical display
+  label keys like `PROGRESS.md` while the `agentera lint` CLI passes lowercase
+  no-extension schema names like `progress` (the very names `agentera query
+  --list-artifacts` returns). The lookup misses in `--text` and `--file` paths,
+  falling back to the 1000-word default. Change the helper to normalize the
+  artifact input (lowercase, strip `.md`/`.yaml`) and key the budgets by the
+  lowercase schema name so any caller input — schema name, canonical label, or
+  mixed case — hits the right per-artifact budget. Fix the CLI lint code path
+  to compute the budget lookup name for `--text` and `--file` too (not just the
+  artifact-resolved path). Add regression coverage pinning the matching
+  behavior across all three input forms. Defer cross-surface vocabulary
+  unification to the in-flight 3.0.0 Decision 58 work.
 why: >-
-  The validator guard and the backfill CLI were designed as a pair and carry
-  drift risk: regex, token parsing, git wrappers, and ancestry checks are
-  near-copies in two oversized files (scripts/agentera ~8.7k lines,
-  validate_artifact.py ~1,182 lines). A single shared implementation removes the
-  drift risk, shrinks both monoliths, and unifies the YAML-loading failure mode.
-  These are the remaining degraded/annoying follow-ups from the completed hooks
-  session-compaction and progress-commit-guard work.
+  The v2 linter's verbosity check is the pre-write gate for every capability
+  that writes artifacts (planera, realisera, dokumentera, inspektera, etc.). A
+  silent miss against the per-artifact budget means over-budget entries can
+  ship through `agentera lint` and `agentera check lint` and only get caught
+  later by length inspection. The user-facing CLI example in `agentera lint
+  --help` already documents `--artifact plan` (lowercase) and the v2 fix
+  aligns the helper to match that input. Decision 58 owns the broader
+  cross-surface vocabulary unification on 3.0.0; this plan ships the linter
+  half on 2.x and explicitly hands off the rest.
 constraints: >-
-  Full pytest suite must stay green. Preserve every observable backfill/guard
-  behavior: statuses (clean/action-needed/fixed/error/noop), exit codes (0/1/2),
-  messages, and accepted/rejected commit classifications. The shared module must
-  import under the hook layer's stdlib + pyyaml only rule — no new third-party
-  dependency, so the regex-based cycle-commit rewrite stays (no ruamel). Do not
-  modify vision.yaml or objective state; no remote push; never amend to backfill
-  a progress commit field. Version bump follows DOCS semver policy: the YAML-loader
-  alignment is a `fix` (patch bump to 2.7.6); extraction, tests, and docs are
-  chore/test/docs (no additional bump).
+  All existing `agentera lint` and `agentera check lint` observable behavior is
+  preserved for callers that pass canonical labels (`PLAN.md`, `PROGRESS.md`,
+  `DECISIONS.md`, `TODO.md`, `CHANGELOG.md`, `VISION.md`, `DESIGN.md`,
+  `DOCS.md`, `HEALTH.md`, `EXPERIMENTS.md`): budgets hit, no messages change,
+  no exit code changes. Schema-name callers (`progress`, `decisions`, `plan`)
+  must now hit the per-artifact budget instead of the 1000-word default (this
+  is the intended fix). All other CLI commands, capability contracts, and
+  hooks continue to work unchanged. No new third-party dependencies. No
+  vision.yaml or objective state edits; no remote push. Version bump follows
+  DOCS semver policy: this is a `fix` (patch bump to 2.7.7). Do not modify
+  the v2→v3 split: this work is on `main` only.
 scope:
   included:
-    - scripts/progress_commit.py (new shared module; stdlib + pyyaml only)
-    - scripts/agentera (cmd_backfill and _backfill_*/_rewrite_cycle_commits become thin wrappers importing the module)
-    - hooks/validate_artifact.py (_validate_progress_commits/_progress_commit_token/_git_result/_COMMIT_HASH_RE delegate to the module; load via load_yaml_mapping)
-    - hooks/common.py (single sanctioned scripts→hooks bridge + re-export point and doc comment)
-    - tests/test_progress_commit_guard.py (retarget to the shared module; expand rewrite + token coverage)
-    - skills/agentera/schemas/artifacts/progress.yaml and/or UPGRADE.md (unknown-hash/shallow-clone docs)
-    - TODO.md, CHANGELOG.md, .agentera/progress.yaml (closeout/sync)
+    - scripts/self_audit.py (flip budget dict keys to lowercase schema names; add a normalize helper for case/extension tolerance; add a defense-in-depth lookup that walks per-entry → full-file/5 → 1000 default)
+    - scripts/agentera (_lint_input_text and _lint_payload: compute budget_artifact for --text and --file paths; remove the `or str(args.artifact)` fallback when a budget name is computed; preserve canonical-label acceptance unchanged)
+    - tests/test_self_audit.py (new or extended: cover schema-name, canonical-label, and mixed-case lookups; per-entry vs full-file/5 fallback; unknown-artifact default)
+    - tests/test_lint_cli.py or equivalent (end-to-end CLI test pinning that `agentera lint --artifact plan --text "<600 words>"` reports the per-artifact budget failure)
+    - CHANGELOG.md [Unreleased] Fixed entry
+    - UPGRADE.md (note that the linter now matches CLI schema-name input)
+    - TODO.md (move the entry to Resolved with the implementation commit hash)
+    - .agentera/progress.yaml (closeout evidence with the product commit hash)
+    - version bump to 2.7.7 per semver_policy
   excluded:
-    - v1 legacy removal and Decision 58 single-name protocol sweep (3.0.0)
+    - The cross-surface vocabulary unification (file path → display label → CLI arg) — already in flight as the 3.0.0 Decision 58 work on `feat/v3`
     - Bun/npm packaging and TypeScript CLI rewrite initiatives (3.0.0)
-    - A sweeping multi-hook sys.path refactor or a new neutral shared package
-    - Replacing the regex cycle-commit rewrite with a YAML round-trip library
-    - Any change to compaction/retention-cap logic (just-completed plan)
+    - Replacing the regex banned-pattern list in self_audit.py
+    - Adding new artifacts or new budget groups
+    - A neutral shared-package home for cross-layer modules (deferred to 3.0 packaging)
   deferred:
-    - A fully neutral shared-package home for cross-layer modules (revisit under 3.0 packaging)
+    - A future v2.x release that adopts the 3.0.0 D58 single-name boundary once feat/v3 lands (no work on this branch)
 design: >-
-  Create scripts/progress_commit.py following the agentera_upgrade.py sibling-import
-  precedent (scripts/agentera imports it via `from progress_commit import ...`).
-  The module exposes pure, stdlib+pyyaml primitives: COMMIT_HASH_RE, a git
-  subprocess wrapper, commit_token(value), ancestor_state(token, cwd) returning
-  ancestor/stale/unknown/unavailable, rewrite_cycle_commits(text, changes),
-  validate_progress_commits(content, cwd) for the guard, and a pure
-  compute_backfill(...) returning operations/changes used by the CLI runner.
-  scripts/agentera keeps only argparse wiring, payload emission, and file I/O in
-  cmd_backfill. hooks/validate_artifact.py imports the guard symbols through
-  hooks/common (which already inserts scripts/ on sys.path), so no new per-file
-  sys.path insert is added — common becomes the single documented bridge (item 5),
-  with a neutral package deferred to 3.0. The guard switches from raw
-  yaml.safe_load to load_yaml_mapping and catches load errors to return no commit
-  violation, leaving structural reporting to _validate_yaml (item 4). The regex
-  rewrite is retained and hardened with expanded folded/flow-scalar and
-  comment-preservation tests; token tests collapse to one parametrized table on
-  the shared module.
+  The linter gets one shared normalize step: `_resolve_budget_artifact(name)`
+  lowercases the input, strips a trailing `.md` or `.yaml` (case-insensitive),
+  and returns the normalized form. The two budget dicts (`_PER_ENTRY_BUDGETS`,
+  `_FULL_FILE_BUDGETS`) are keyed by that normalized lowercase no-extension
+  name. The lookup chain becomes: explicit per-entry budget → full-file
+  budget // 5 → 1000 default. The CLI lint code path passes the normalized
+  name to the helper, so any caller input — schema name from
+  `agentera query --list-artifacts`, canonical display label from help text,
+  or mixed case — produces a single budget lookup. The existing
+  `_LINT_CANONICAL_LABELS` dict and the artifact record `display_name` stay
+  where they are; they are still used for path resolution and CLI payload
+  emission. The fix is purely the budget-lookup layer and the lint code path
+  that feeds it.
 tasks:
   - number: 1
-    name: Extract scripts/progress_commit.py from the CLI
+    name: Flip budget dict keys and add a normalize-and-lookup helper
     depends_on: []
     status: complete
     acceptance:
-      - GIVEN a new scripts/progress_commit.py WHEN created THEN it exposes commit_token, ancestor_state, rewrite_cycle_commits, a git wrapper, COMMIT_HASH_RE, and a pure compute_backfill, importing only stdlib + yaml_mapping (hook-safe)
-      - GIVEN scripts/agentera WHEN cmd_backfill and its helpers run THEN they import from progress_commit (agentera_upgrade.py pattern) and hold no second copy of token/ancestry/rewrite/compute logic
-      - GIVEN existing `agentera check backfill` behavior (check/fix/forward-fill, refuse non-ancestor/unknown, statuses, exit codes 0/1/2) WHEN exercised THEN outputs and exit codes are unchanged
-      - GIVEN tests/test_progress_commit_guard.py CLI cases WHEN retargeted to the module locations THEN they pass in the full suite
+      - GIVEN _PER_ENTRY_BUDGETS and _FULL_FILE_BUDGETS in scripts/self_audit.py WHEN read THEN their keys are lowercase no-extension (progress, decisions, plan, todo, changelog, vision, design, docs, health, experiments) and the values are unchanged
+      - GIVEN a new _resolve_budget_artifact(name) helper WHEN called with schema name, canonical label, or mixed case THEN it returns the lowercase no-extension form (e.g. "PROGRESS.md" → "progress", "Decisions.md" → "decisions", "decisions" → "decisions")
+      - GIVEN check_verbosity / check_full_file_verbosity WHEN called with any of {schema name, canonical label, mixed case} THEN they hit the per-artifact budget
+      - GIVEN check_verbosity WHEN called with an unknown artifact name THEN the 1000-word default still applies (regression guard for the unspecified-artifact case)
+      - GIVEN a 600-word text and check_verbosity(text, "plan") THEN the result is (False, "verbosity mismatch: 600 words exceeds 100 budget") — the previously-buggy default path now reports the correct per-artifact budget failure
   - number: 2
-    name: Move the validator guard onto the shared module and align YAML loading
+    name: Make the CLI lint path always resolve the budget lookup name
     depends_on: ["1"]
-    status: complete
+    status: pending
     acceptance:
-      - GIVEN hooks/validate_artifact.py WHEN it validates progress commits THEN _validate_progress_commits/token/git/regex delegate to scripts/progress_commit (imported via hooks/common), leaving no near-copy in the hook
-      - GIVEN the guard WHEN it loads progress YAML THEN it uses load_yaml_mapping (not raw yaml.safe_load) and catches load failure to return no commit violation, with a regression test pinning the consistent failure mode on non-mapping/unparseable progress YAML
-      - GIVEN ancestor/pending/N-A/unknown-hash/non-git fixtures WHEN the guard runs THEN classifications match prior behavior with no changed assertions beyond import path and loader
-      - GIVEN a stale-hash progress fixture WHEN the validate hook and `agentera check validate` run THEN the same "not an ancestor of HEAD" violation is reported
+      - GIVEN scripts/agentera _lint_input_text WHEN invoked with --text or --file THEN budget_artifact is the normalized lookup name (not None)
+      - GIVEN _lint_payload WHEN budget_artifact is set THEN artifact = budget_artifact, not `budget_artifact or str(args.artifact)` (the fallback path is removed)
+      - GIVEN the existing CLI example `agentera lint --artifact plan --text "..."` WHEN run with 600 words THEN the JSON output's `artifact` field is the canonical display label ("PLAN.md") and the `verbosity` check is "fail" with "exceeds 100 budget" — the bug is fixed
+      - GIVEN the existing CLI example `agentera lint --artifact PLAN.md --text "..."` WHEN run with 600 words THEN behavior is unchanged (canonical label still works, still emits "PLAN.md", still fails verbosity with the same message)
+      - GIVEN the artifact-resolved path (no --text/--file) WHEN run THEN behavior is unchanged
   - number: 3
-    name: Centralize and document the hooks to scripts import seam
+    name: Add unit regression coverage in tests/test_self_audit.py
     depends_on: ["1", "2"]
-    status: complete
+    status: pending
     acceptance:
-      - GIVEN cross-layer imports of shared modules (yaml_mapping, progress_commit) WHEN hooks need them THEN they flow through the single sanctioned hooks/common bridge, adding no new per-file sys.path insertion for this purpose
-      - GIVEN hooks/common.py WHEN read THEN a comment/docstring documents it as the sanctioned scripts→hooks bridge and states a neutral package is deferred to 3.0 packaging
-      - GIVEN the full suite (including importlib test-fixture loading of hooks) WHEN run THEN hook import behavior is unchanged and green
+      - GIVEN a parametrized table covering each artifact WHEN check_verbosity is called with schema name, canonical label, mixed case, and trailing-extended forms THEN all four input forms hit the same per-entry budget for the same artifact
+      - GIVEN a per-artifact vs full-file/5 fallback test WHEN check_verbosity is called for an artifact with only a full-file budget (e.g. design, docs) THEN the per-entry budget used is full_file_budget // 5
+      - GIVEN an unknown-artifact test WHEN check_verbosity is called with "totally-unknown-artifact" THEN the result falls back to 1000 words and the test pins this
+      - GIVEN check_full_file_verbosity WHEN called with schema name, canonical label, and mixed case THEN the same full-file budget is hit
   - number: 4
-    name: Consolidate and expand shared-module regression tests
-    depends_on: ["1", "2"]
-    status: complete
-    acceptance:
-      - GIVEN the shared commit_token WHEN tested THEN one parametrized table covers hash/hash+subject/pending/N-A/non-hash/non-string/empty, replacing the CLI-only table and covering the formerly-untested hook token path
-      - GIVEN rewrite_cycle_commits WHEN tested THEN coverage is expanded for folded/flow scalars and comment/quoting preservation (>-, |, flow {}/[], inline comments, archive lines)
-      - GIVEN both consumers (CLI backfill and validator guard) WHEN tested THEN thin assertions verify each delegates to the shared module so logic cannot re-diverge
-      - GIVEN the full suite WHEN run THEN all progress-commit tests pass
-  - number: 5
-    name: Document unknown-hash and shallow-clone skip behavior
+    name: Add CLI end-to-end regression coverage
     depends_on: ["2"]
-    status: complete
+    status: pending
     acceptance:
-      - GIVEN the progress schema notes (skills/agentera/schemas/artifacts/progress.yaml) and/or UPGRADE.md WHEN read THEN they explain the guard and backfill intentionally skip commit objects unknown to the local clone (cross-clone copies, shallow CI checkouts) and how to reconcile when hit
-      - GIVEN the docs change WHEN touched-artifact validation and compaction run THEN they pass and stay within budget
-      - GIVEN the schema note WHEN added THEN it matches the guard's actual behavior verified in tests
-  - number: 6
-    name: Resolve TODO items, sync state, and verify
-    depends_on: ["1", "2", "3", "4", "5"]
-    status: complete
+      - GIVEN tests/test_lint_cli.py (or equivalent) WHEN it spawns the CLI with `agentera lint --artifact plan --text "<600 words>"` (and the same for progress, decisions, todo) THEN the JSON payload's verbosity check is "fail" with the per-artifact budget message and the per-artifact budget value matches the budgets dict
+      - GIVEN a CLI invocation with the canonical label form `--artifact PLAN.md` WHEN run with 600 words THEN the JSON payload still emits the artifact field as `PLAN.md` and verbosity fails with the same per-artifact message (canonical-label display preserved)
+      - GIVEN a CLI invocation with --file pointing at a real artifact WHEN run THEN behavior is unchanged
+      - GIVEN the full pytest suite WHEN run THEN all tests pass
+  - number: 5
+    name: "Closeout - CHANGELOG, UPGRADE, TODO, progress, version bump"
+    depends_on: ["1", "2", "3", "4"]
+    status: pending
     acceptance:
-      - GIVEN the eight 2.7.6 progress-commit TODO items WHEN closeout runs THEN each moves to Resolved in TODO.md with a one-line resolution and commit reference
-      - GIVEN the YAML-loader robustness fix WHEN closeout runs THEN CHANGELOG.md [Unreleased] records a Fixed entry while internal refactor/test/docs items are omitted per changelog policy
-      - GIVEN the change set WHEN the full pytest suite and `agentera check validate capability-contract --format json` run THEN both pass
-      - GIVEN .agentera/progress.yaml WHEN closeout runs THEN it records verification evidence with a forward product-commit hash (never amend) and the version is bumped to 2.7.6 across version_files per semver policy
+      - GIVEN CHANGELOG.md [Unreleased] WHEN the closeout commit lands THEN a Fixed entry records the linter budget-lookup alignment (no new version header in the changelog itself; the version bump lives in version_files)
+      - GIVEN UPGRADE.md WHEN touched THEN it notes that `agentera lint` and `agentera check lint` now apply per-artifact budgets to both schema-name and canonical-label input
+      - GIVEN TODO.md WHEN the closeout commit lands THEN the entry moves from Normal to Resolved with the implementation commit hash and a one-line summary
+      - GIVEN .agentera/progress.yaml WHEN closeout runs THEN it records verification evidence with the forward product-commit hash (never amend) and the version is bumped to 2.7.7 across version_files per semver policy (pyproject.toml, uv.lock, plugin.json, .github/plugin/plugin.json, .codex-plugin/plugin.json, .cursor-plugin/plugin.json, .claude-plugin/marketplace.json, .opencode/plugins/agentera.js, skills/agentera/SKILL.md, skills/hej/SKILL.md, registry.json)
+      - GIVEN the closeout commit WHEN the full pytest suite and `agentera check validate capability-contract --format json` run THEN both pass
 overall_acceptance: >-
-  GIVEN the progress-commit and git-ancestry logic WHEN the plan completes THEN
-  exactly one shared scripts/progress_commit.py implementation exists, consumed by
-  both the `agentera check backfill` CLI and the validate_artifact.py guard with no
-  near-duplicate logic. GIVEN the validator WHEN it loads progress YAML THEN it
-  uses load_yaml_mapping with a pinned consistent failure mode. GIVEN cross-layer
-  imports THEN they flow through the single documented hooks/common bridge. GIVEN
-  the shared module THEN commit_token and rewrite_cycle_commits behavior is covered
-  by one consolidated, expanded suite and the unknown-hash/shallow-clone skip is
-  documented. GIVEN closeout THEN all eight TODO items are resolved, the full suite
-  and capability-contract validation pass, CHANGELOG records the fix, and the
-  version is bumped to 2.7.6.
+  GIVEN the v2 self-audit linter WHEN any caller passes a schema name
+  (`progress`), canonical display label (`PROGRESS.md`), or mixed case
+  (`Progress.MD`) THEN the same per-artifact verbosity budget is applied.
+  GIVEN the previously-buggy CLI path `agentera lint --artifact plan --text
+  "<600 words>"` WHEN run THEN verbosity fails with the per-artifact budget
+  message, no longer the 1000-word default. GIVEN the canonical-label CLI
+  path THEN behavior is unchanged and display labels still emit as
+  `PLAN.md`/`PROGRESS.md`/etc. for the artifact field. GIVEN the full
+  pytest suite THEN it is green. GIVEN the closeout commit THEN TODO.md
+  records the resolution, CHANGELOG records the fix, version is 2.7.7, and
+  the cross-surface vocabulary unification is explicitly handed off to the
+  3.0.0 Decision 58 work on feat/v3.
 surprises: []
-previous_plan_archived: .agentera/archive/PLAN-2026-05-29-compaction-checkgate-retention-dedup.yaml
+previous_plan_archived: .agentera/archive/PLAN-2026-05-29-progress-commit-consolidation.yaml
