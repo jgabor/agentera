@@ -5020,25 +5020,39 @@ def _resolve_lint_artifact_file(artifact: str) -> tuple[Path, str]:
     return path, canonical
 
 
-def _lint_input_text(args: argparse.Namespace) -> tuple[str, str, bool, str | None]:
+def _resolve_lint_budget_artifact(artifact: str) -> str:
+    self_audit = _load_self_audit_helper()
+    return self_audit._resolve_budget_artifact(artifact)
+
+
+def _lint_display_artifact(artifact: str) -> str:
+    schemas = _load_schemas(_discover_schemas_dir())
+    schema_name = _lint_schema_name(artifact, schemas)
+    if schema_name is None:
+        return artifact
+    return _lint_canonical_label(schema_name, schemas[schema_name], artifact)
+
+
+def _lint_input_text(args: argparse.Namespace) -> tuple[str, str, bool, str]:
+    artifact = str(args.artifact)
+    budget_artifact = _resolve_lint_budget_artifact(artifact)
     if getattr(args, "text", None) is not None:
-        return str(args.text), "text", False, None
+        return str(args.text), "text", False, budget_artifact
     if getattr(args, "file", None) is not None:
         path = Path(args.file)
         try:
-            return path.read_text(encoding="utf-8"), str(path), True, None
+            return path.read_text(encoding="utf-8"), str(path), True, budget_artifact
         except OSError as exc:
             raise ValueError(f"could not read lint file {path}: {exc}") from exc
 
-    artifact = str(args.artifact)
     piped_data = _lint_read_piped_stdin_if_present()
     if piped_data is not None:
-        return piped_data, "stdin", False, None
+        return piped_data, "stdin", False, budget_artifact
 
-    path, canonical = _resolve_lint_artifact_file(artifact)
+    path, _canonical = _resolve_lint_artifact_file(artifact)
     if path.is_file():
         try:
-            return path.read_text(encoding="utf-8"), str(path), True, canonical
+            return path.read_text(encoding="utf-8"), str(path), True, budget_artifact
         except OSError as exc:
             raise ValueError(f"could not read lint file {path}: {exc}") from exc
 
@@ -5079,9 +5093,9 @@ def _lint_checks(text: str, artifact: str, *, full_artifact: bool = False) -> li
 
 def _lint_payload(args: argparse.Namespace) -> dict[str, Any]:
     text, source, full_artifact, budget_artifact = _lint_input_text(args)
-    artifact = budget_artifact or str(args.artifact)
+    artifact = _lint_display_artifact(str(args.artifact))
     _validate_agent_string(artifact, "artifact")
-    checks = _lint_checks(text, artifact, full_artifact=full_artifact)
+    checks = _lint_checks(text, budget_artifact, full_artifact=full_artifact)
     failures = [check for check in checks if check["status"] == "fail"]
     return {
         "command": "lint",

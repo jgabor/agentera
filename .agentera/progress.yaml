@@ -1,4 +1,21 @@
 cycles:
+- number: 617
+  timestamp: 2026-06-02 21:00
+  type: fix
+  phase: build
+  what: Wire CLI lint path to always resolve normalized budget lookup name for --text/--file.
+  commit: pending
+  discovered: None.
+  verified: "Manual AC1\u2013AC5 passed (_lint_input_text returns normalized budget_artifact\
+    \ for --text/--file; _lint_payload uses budget_artifact for checks without or-fallback;\
+    \ agentera lint --artifact plan --text 600w emits artifact PLAN.md and verbosity\
+    \ fail exceeds 100 budget; PLAN.md input unchanged; artifact-resolved path unchanged).\
+    \ tests/test_self_audit.py 30 passed pytest -q -n auto."
+  next: "Task 3 \u2014 add unit regression coverage in tests/test_self_audit.py."
+  context:
+    intent: "Plan task 2 \u2014 make CLI lint path always resolve budget lookup name."
+    constraints: No remote push; never amend to backfill progress commit fields.
+    scope: scripts/agentera, plan.yaml task 2, progress.yaml.
 - number: 616
   timestamp: 2026-06-02 20:30
   type: fix
@@ -7,7 +24,14 @@ cycles:
     helper.
   commit: '4725657 fix(cli): normalize self-audit budget lookup to schema names'
   discovered: None.
-  verified: "Manual AC1–AC5 passed (_PER_ENTRY_BUDGETS/_FULL_FILE_BUDGETS keys, _resolve_budget_artifact normalization, check_verbosity/check_full_file_verbosity lookup, unknown-artifact 1000 default, plan 600-word failure message). tests/test_self_audit.py 30 passed pytest -q -n auto. Pre-commit full suite 1370 passed / 3 failed on main without this diff: test_upgrade_help_and_json_shape_unchanged (upgrade --dry-run status blocked), test_real_capabilities_and_current_surfaces_do_not_use_legacy_prose_md (packages/cli bundle prose.md refs), test_primary_surfaces_pass_byte_budget_enforcement (missing corpus.json byte budget)."
+  verified: "Manual AC1\u2013AC5 passed (_PER_ENTRY_BUDGETS/_FULL_FILE_BUDGETS keys,\
+    \ _resolve_budget_artifact normalization, check_verbosity/check_full_file_verbosity\
+    \ lookup, unknown-artifact 1000 default, plan 600-word failure message). tests/test_self_audit.py\
+    \ 30 passed pytest -q -n auto. Pre-commit full suite 1370 passed / 3 failed on\
+    \ main without this diff: test_upgrade_help_and_json_shape_unchanged (upgrade\
+    \ --dry-run status blocked), test_real_capabilities_and_current_surfaces_do_not_use_legacy_prose_md\
+    \ (packages/cli bundle prose.md refs), test_primary_surfaces_pass_byte_budget_enforcement\
+    \ (missing corpus.json byte budget)."
   next: "Task 2 \u2014 make CLI lint path always resolve budget lookup name for --text/--file."
   context:
     intent: "Plan task 1 \u2014 align self-audit budget lookup with CLI schema-name\
@@ -172,27 +196,9 @@ cycles:
     scope: TODO.md parser, schema validation rules, validator robustness, CLI command
       consistency, schema/integration fixes, human-facing Markdown schema architecture,
       final state sync.
-- number: 607
-  timestamp: 2026-05-26 14:00
-  type: fix
-  phase: build
-  what: Fix 5 degraded validation and CLI consistency issues in validate_artifact.py
-    and scripts/agentera.
-  commit: pending
-  discovered: None.
-  verified: 1287 passed pytest tests/ -q -n auto; behavioral verification passed for
-    validate artifact exit code 2 on unparseable JSON, query structured envelope,
-    query deprecation warning, archive entry required field validation, and user_confirmation
-    missing vs wrong-type diagnostic.
-  next: Address remaining degraded-severity TODO items (state todo parser, validate
-    subparser duplication, schema loading silent exceptions).
-  context:
-    intent: Continue validation hardening from cycle 606 by fixing degraded-severity
-      consistency issues.
-    constraints: Must not break existing passing tests. Must add regression coverage
-      for each fix.
-    scope: hooks/validate_artifact.py and scripts/agentera only.
 archive:
+- summary: 'Cycle 607 (2026-05-26): Fix 5 degraded validation and CLI consistency
+    issues in validate_artifact.py and scripts/agentera.'
 - summary: 'Cycle 606 (2026-05-26): Fix 7 critical validation and state-loading silent
     failures in validate_artifact.py and scripts/agentera.'
 - summary: "Cycle 605 (2026-05-25): CLI audience namespace plan task 7 \u2014 closeout\
@@ -266,6 +272,3 @@ archive:
     context output.'
 - summary: 'Cycle 569 (2026-05-18): Renamed Agentera capability instruction files
     from prose.md to instructions.md.'
-- summary: 'Cycle 568 (2026-05-18): Replaced legacy dispatch/conductor vocabulary
-    with canonical route/suggest/delegate/spawn/subagent-mechanism terms across current
-    non-archived files.'

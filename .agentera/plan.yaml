@@ -88,7 +88,7 @@ tasks:
   - number: 2
     name: Make the CLI lint path always resolve the budget lookup name
     depends_on: ["1"]
-    status: pending
+    status: complete
     acceptance:
       - GIVEN scripts/agentera _lint_input_text WHEN invoked with --text or --file THEN budget_artifact is the normalized lookup name (not None)
       - GIVEN _lint_payload WHEN budget_artifact is set THEN artifact = budget_artifact, not `budget_artifact or str(args.artifact)` (the fallback path is removed)
