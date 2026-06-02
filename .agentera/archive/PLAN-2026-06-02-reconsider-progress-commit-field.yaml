@@ -1,0 +1,69 @@
+header:
+  level: light
+  created: '2026-06-02'
+  status: complete
+  title: 'Reconsider the progress.yaml `commit` field'
+what: >
+  Evaluate whether the progress.yaml `commit` field should be removed from
+  the progress schema entirely. The forward-commit backfill workflow
+  (`commit: pending` to `commit: <hash>`) requires a second commit per
+  cycle; the rewrite infrastructure (`progressCommit.ts`
+  `rewriteCycleCommits`) is brittle because of all-digit short-hash YAML
+  parsing; and the field is redundant with `git log` for the same cycle.
+  The decision covers removal of the field, simplification of
+  `computeBackfill` and `agentera check backfill`, removal of the rewrite
+  pipeline, and updates to progress validation, AGENTS.md, and realisera
+  instructions. A separate follow-up realisera plan implements the chosen
+  path.
+why: >
+  The field is a maintenance burden (rewriteCycleCommits short-hash
+  parser, double-commit-per-cycle ceremony, brittle YAML edge cases) and
+  the information it carries is already available in `git log` for the
+  same cycle. Removing it aligns with the broader Decision 58 single-name
+  and single-source-of-truth direction, eliminates a class of YAML
+  rewrite/validation bugs, and reduces ceremony per cycle.
+constraints: >
+  Out of scope: the actual removal implementation (a follow-up realisera
+  plan); v1 legacy cruft removal; D58 single-name protocol boundary
+  cleanup; D65 instruction relocation; Bun/npm packaging; the TS CLI
+  rewrite. In scope: design decision (remove vs. retain-and-fix) plus the
+  migration story for the chosen path. Must not break `agentera progress
+  --format json` consumers (prime, orkestrera, realisera, inspektera,
+  hej) and must not break the progress validation pipeline.
+scope:
+  included:
+    - Written keep-vs-remove decision with rationale, ripple inventory, and migration outline
+    - Ripple enumeration into `agentera check backfill`, `computeBackfill`, progress validation, AGENTS.md, and realisera instructions
+    - Draft acceptance criteria for the follow-up realisera plan
+  excluded:
+    - The actual removal implementation
+    - v1 legacy cruft removal
+    - D58 single-name protocol boundary cleanup
+    - D65 instruction relocation
+    - Bun/npm packaging
+    - The TS CLI rewrite
+  deferred:
+    - Migration of any external `commit`-consuming tooling outside the Agentera repo
+overall_acceptance: >
+  A written decision records keep vs. remove with rationale, ripple
+  inventory, and migration outline. The ripple into `agentera check
+  backfill`, `computeBackfill`, progress validation, AGENTS.md, and
+  realisera instructions is enumerated with the call sites that change.
+  The follow-up realisera plan's acceptance criteria are draftable from
+  the evaluation without re-deriving the rationale.
+tasks:
+  - number: 1
+    name: Evaluate keep-vs-remove and draft the follow-up plan criteria
+    depends_on: []
+    status: complete
+    acceptance:
+      - "GIVEN the progress.yaml schema and its current `commit` field WHEN the evaluation runs THEN a written decision records keep vs. remove with rationale, ripple inventory, and migration outline."
+      - "GIVEN the `rewriteCycleCommits` rewrite pipeline and `computeBackfill` workflow WHEN the migration outline is drafted THEN the ripple into `agentera check backfill`, progress validation, AGENTS.md, and realisera instructions is enumerated with the call sites that change."
+      - "GIVEN the decision and migration outline WHEN a follow-up realisera plan is required THEN its acceptance criteria are draftable from the evaluation without re-deriving the rationale."
+surprises: >
+  The completed freeze plan from cycle 629 already shipped a new
+  `source-contract.json` oracle that does not pin the `commit` field on
+  the per-cycle payload, so removing the field is a one-oracle-update
+  matter (no consumer breakage in the freeze-slice fixtures).
+previous_plan_archived: .agentera/archive/PLAN-2026-06-02-freeze-remaining-cli-json-contract-parity-fixtures.yaml
+outcome_decision: 66
