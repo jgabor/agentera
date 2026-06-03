@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 /**
  * Copy the Agentera app-data surfaces the TypeScript CLI reads at runtime into
- * packages/cli/bundle/ so the published npm package is self-contained: `npx
- * agentera` then works with no repo checkout and no AGENTERA_HOME, reading
+ * packages/cli/bundle/ so the published npm package is self-contained: npx
+ * agentera then works with no repo checkout and no AGENTERA_HOME, reading
  * skills/, references/, and registry.json from the bundled data directory.
  *
  * This intentionally bundles only DATA (no Python). The data set mirrors the
@@ -12,15 +12,15 @@
  *   - references/    (artifact-registry interface model + reference paths)
  *   - registry.json  (artifact registry at the source root)
  *
- * D65: per-capability `instructions.md` files are no longer copied because
+ * D65: per-capability instructions.md files are no longer copied because
  * they do not exist on disk. The per-capability prose ships via the
- * compiled `dist/capabilities/*/instructions.js` modules that `tsc` emits
+ * compiled dist/capabilities/[name]/instructions.js modules that tsc emits
  * alongside the rest of the TypeScript surface. The runtime loader
- * imports the compiled `.js` path from `../capabilities/index.js`; the
- * source `packages/cli/src/capabilities/<name>/instructions.ts` files
- * are bundled into `dist/` by the `build` script before `copy-bundle.mjs`
- * runs in `prepack`. The `skills/` directory still carries the
- * capability `schemas/*.yaml` files because the capability validator
+ * imports the compiled .js path from ../capabilities/index.js; the
+ * source packages/cli/src/capabilities/[name]/instructions.ts files
+ * are bundled into dist/ by the build script before copy-bundle.mjs
+ * runs in prepack. The skills/ directory still carries the
+ * capability schemas/[wildcard].yaml files because the capability validator
  * and routing still need them.
  */
 import fs from "node:fs";
