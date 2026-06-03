@@ -580,6 +580,46 @@ def test_runtime_upgrade_configures_codex_without_v1_agent_blocks(tmp_path: Path
     assert payload["phases"][0]["summary"]["noop"] == 14
 
 
+def test_runtime_upgrade_normalizes_misplaced_codex_shell_env_policy(tmp_path: Path) -> None:
+    home = tmp_path / "home"
+    app_home = home / ".local" / "share" / "agentera"
+    codex_config = home / ".codex" / "config.toml"
+    codex_config.parent.mkdir(parents=True)
+    codex_config.write_text(
+        '[profiles.default]\nmodel = "gpt-5.5"\n\n'
+        "[shell_environment_policy]\n"
+        'AGENTERA_HOME = "/stale/agentera"\n'
+        "\n"
+        "[shell_environment_policy.set]\n",
+        encoding="utf-8",
+    )
+
+    result = _run(
+        "upgrade",
+        "--only",
+        "bundle",
+        "--only",
+        "runtime",
+        "--runtime",
+        "codex",
+        "--home",
+        str(home),
+        "--yes",
+        "--json",
+        env={"AGENTERA_HOME": "", "XDG_DATA_HOME": str(home / ".local" / "share")},
+    )
+
+    assert result.returncode == 0, result.stderr
+    import tomllib
+
+    config = codex_config.read_text(encoding="utf-8")
+    assert '[profiles.default]\nmodel = "gpt-5.5"' in config
+    assert "[shell_environment_policy.set]" not in config
+    parsed = tomllib.loads(config)
+    assert parsed["shell_environment_policy"]["set"]["AGENTERA_HOME"] == str(app_home)
+    assert parsed["shell_environment_policy"].get("AGENTERA_HOME") is None
+
+
 def test_runtime_upgrade_refreshes_codex_managed_entries_preserving_user_config(tmp_path: Path) -> None:
     home = tmp_path / "home"
     app_home = home / ".local" / "share" / "agentera"

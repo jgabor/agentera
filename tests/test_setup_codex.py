@@ -583,3 +583,58 @@ def test_codex_plugin_hook_trust_preserves_user_owned_copied_hook_trust(
     outcome = setup_codex.plan_change(current, install_root, force=False, hooks_path=hooks_file, plugin_hooks=True)
 
     assert f'"{hooks_file}:pre_tool_use:0:0"' in outcome.new_text
+
+
+def test_misplaced_section_level_home_normalizes_without_force(
+    setup_codex: ModuleType, tmp_path: Path, install_root: Path, capsys
+):
+    """Codex subtable migration: section-level AGENTERA_HOME + empty .set subtable."""
+    target = _codex_config(tmp_path)
+    pre_existing = (
+        "[shell_environment_policy]\n"
+        f'AGENTERA_HOME = "{install_root}"\n'
+        "\n"
+        "[shell_environment_policy.set]\n"
+        "\n"
+        "[agents]\n"
+        "max_depth = 1\n"
+    )
+    target.write_text(pre_existing, encoding="utf-8")
+
+    rc = _run(
+        setup_codex,
+        "--install-root",
+        str(install_root),
+        "--config-file",
+        str(target),
+    )
+    out = capsys.readouterr()
+    assert rc == 0, out
+
+    import tomllib
+
+    text = target.read_text(encoding="utf-8")
+    assert "AGENTERA_HOME =" in text
+    assert "[shell_environment_policy.set]" not in text
+    assert f'set = {{ AGENTERA_HOME = "{install_root}" }}' in text
+    parsed = tomllib.loads(text)
+    policy = parsed["shell_environment_policy"]
+    assert policy["set"]["AGENTERA_HOME"] == str(install_root)
+    assert policy.get("AGENTERA_HOME") is None
+
+
+def test_codex_managed_home_configured_requires_set_path(
+    setup_codex: ModuleType, install_root: Path,
+):
+    misplaced = (
+        "[shell_environment_policy]\n"
+        f'AGENTERA_HOME = "{install_root}"\n'
+        "\n"
+        "[shell_environment_policy.set]\n"
+    )
+    canonical = (
+        "[shell_environment_policy]\n"
+        f'set = {{ AGENTERA_HOME = "{install_root}" }}\n'
+    )
+    assert not setup_codex.codex_managed_home_configured(misplaced)
+    assert setup_codex.codex_managed_home_configured(canonical)

@@ -224,11 +224,14 @@ class TomlState(NamedTuple):
         set_present: True iff the section contains a ``set`` key.
         set_table: The parsed ``set`` table (empty dict when set_present
             is False).
+        section_level_home: ``AGENTERA_HOME`` written directly under the
+            section instead of under ``set`` (Codex subtable migration).
     """
 
     section_present: bool
     set_present: bool
     set_table: dict[str, str]
+    section_level_home: str | None = None
 
 
 def classify_toml(text: str) -> TomlState:
@@ -243,16 +246,36 @@ def classify_toml(text: str) -> TomlState:
     since the helper cannot safely modify a file it cannot parse.
     """
     if not text.strip():
-        return TomlState(section_present=False, set_present=False, set_table={})
+        return TomlState(
+            section_present=False,
+            set_present=False,
+            set_table={},
+            section_level_home=None,
+        )
 
     parsed = tomllib.loads(text)
     section = parsed.get(SECTION_NAME)
     if not isinstance(section, dict):
-        return TomlState(section_present=False, set_present=False, set_table={})
+        return TomlState(
+            section_present=False,
+            set_present=False,
+            set_table={},
+            section_level_home=None,
+        )
+
+    section_home = section.get(MANAGED_KEY)
+    section_level_home = (
+        section_home if isinstance(section_home, str) and section_home else None
+    )
 
     set_value = section.get("set")
     if not isinstance(set_value, dict):
-        return TomlState(section_present=True, set_present=False, set_table={})
+        return TomlState(
+            section_present=True,
+            set_present=False,
+            set_table={},
+            section_level_home=section_level_home,
+        )
 
     # Coerce values to str: tomllib returns mixed types, but the Codex
     # contract expects string env values. Non-string sibling values
@@ -260,7 +283,12 @@ def classify_toml(text: str) -> TomlState:
     coerced: dict[str, str] = {}
     for key, value in set_value.items():
         coerced[str(key)] = value if isinstance(value, str) else repr(value)
-    return TomlState(section_present=True, set_present=True, set_table=coerced)
+    return TomlState(
+        section_present=True,
+        set_present=True,
+        set_table=coerced,
+        section_level_home=section_level_home,
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -489,6 +517,8 @@ _SECTION_HEADER_RE = re.compile(
 # (tomllib already gave us the parsed structure).
 _SET_LINE_RE = re.compile(r"^\s*set\s*=\s*")
 
+SET_SUBTABLE_NAME = f"{SECTION_NAME}.set"
+
 
 def find_section_header_index(lines: list[str]) -> int | None:
     """Return the zero-based index of the section header line, or None."""
@@ -496,6 +526,107 @@ def find_section_header_index(lines: list[str]) -> int | None:
         if _SECTION_HEADER_RE.match(line):
             return idx
     return None
+
+
+def has_inline_set_line(text: str) -> bool:
+    """Return True when the section contains an inline ``set = ...`` line."""
+    plain_lines = [line.rstrip("\r\n") for line in text.splitlines(keepends=True)]
+    section_idx = find_section_header_index(plain_lines)
+    if section_idx is None:
+        return False
+    return find_set_line_index(plain_lines, section_idx) is not None
+
+
+def has_set_subtable_header(text: str) -> bool:
+    plain_lines = [line.rstrip("\r\n") for line in text.splitlines(keepends=True)]
+    return _find_table_header_index(plain_lines, SET_SUBTABLE_NAME) is not None
+
+
+def managed_home_in_set(section: dict[str, object]) -> str | None:
+    set_value = section.get("set")
+    if not isinstance(set_value, dict):
+        return None
+    value = set_value.get(MANAGED_KEY)
+    return value if isinstance(value, str) and value else None
+
+
+def codex_managed_home_configured(text: str | None) -> bool:
+    """Return True when ``set.AGENTERA_HOME`` is present in parsed Codex config."""
+    if text is None or not text.strip():
+        return False
+    parsed = tomllib.loads(text)
+    section = parsed.get(SECTION_NAME)
+    if not isinstance(section, dict):
+        return False
+    return managed_home_in_set(section) is not None
+
+
+def needs_shell_env_normalize(state: TomlState, text: str) -> bool:
+    """True when the file uses a non-canonical shell_environment_policy layout."""
+    if state.section_level_home is not None:
+        return True
+    if state.set_present and not has_inline_set_line(text):
+        return True
+    if has_set_subtable_header(text):
+        return True
+    return False
+
+
+def merge_set_pairs(section: dict[str, object], install_root: Path) -> dict[str, str]:
+    """Build the canonical inline ``set`` table from parsed section state."""
+    pairs: dict[str, str] = {}
+    set_value = section.get("set")
+    if isinstance(set_value, dict):
+        for key, value in set_value.items():
+            if key == MANAGED_KEY:
+                continue
+            pairs[str(key)] = value if isinstance(value, str) else repr(value)
+    pairs[MANAGED_KEY] = str(install_root)
+    return pairs
+
+
+def _shell_policy_section_end(plain_lines: list[str], section_idx: int) -> int:
+    """Return the index of the first line after the managed section body."""
+    idx = section_idx + 1
+    while idx < len(plain_lines):
+        line = plain_lines[idx]
+        if _SECTION_HEADER_RE.match(line):
+            return idx
+        if _table_header_re(SET_SUBTABLE_NAME).match(line):
+            idx += 1
+            while idx < len(plain_lines) and not re.match(r"^\s*\[", plain_lines[idx]):
+                idx += 1
+            continue
+        if re.match(r"^\s*\[", line):
+            return idx
+        idx += 1
+    return len(plain_lines)
+
+
+def normalize_shell_environment_policy(text: str, install_root: Path) -> str:
+    """Rewrite the managed section to canonical inline ``set = { ... }`` form."""
+    parsed = tomllib.loads(text)
+    section = parsed.get(SECTION_NAME)
+    if not isinstance(section, dict):
+        raise ValueError(f"normalize_shell_environment_policy: [{SECTION_NAME}] missing")
+
+    pairs = merge_set_pairs(section, install_root)
+    lines_with_ends = text.splitlines(keepends=True)
+    plain_lines = [line.rstrip("\r\n") for line in lines_with_ends]
+    section_idx = find_section_header_index(plain_lines)
+    if section_idx is None:
+        raise ValueError(
+            f"normalize_shell_environment_policy: [{SECTION_NAME}] header not found"
+        )
+
+    end_idx = _shell_policy_section_end(plain_lines, section_idx)
+    terminator = _line_terminator(lines_with_ends[section_idx])
+    set_line = f"set = {emit_set_inline_table(pairs)}{terminator}"
+    return "".join(
+        lines_with_ends[: section_idx + 1]
+        + [set_line]
+        + lines_with_ends[end_idx:]
+    )
 
 
 def find_set_line_index(lines: list[str], section_idx: int) -> int | None:
@@ -1091,6 +1222,50 @@ def plan_change(
         ), current_text, hooks_path, hook_command, plugin_hooks=plugin_hooks)
 
     state = classify_toml(current_text)
+    parsed = tomllib.loads(current_text)
+    section = parsed.get(SECTION_NAME)
+    if not isinstance(section, dict):
+        section = {}
+
+    # Branch 2.5: misplaced section-level key and/or ``[shell_environment_policy.set]``
+    # subtable without inline ``set = { ... }`` → rewrite to canonical inline form.
+    if needs_shell_env_normalize(state, current_text):
+        merged = merge_set_pairs(section, install_root)
+        canonical_home = merged.get(MANAGED_KEY)
+        if (
+            canonical_home == desired_path
+            and state.section_level_home is None
+            and has_inline_set_line(current_text)
+            and not has_set_subtable_header(current_text)
+            and state.set_table.get(MANAGED_KEY) == desired_path
+        ):
+            pass  # fall through to hook-trust / noop handling below
+        else:
+            try:
+                new_text = normalize_shell_environment_policy(current_text, install_root)
+            except ValueError as exc:
+                return Outcome(
+                    action="conflict",
+                    new_text="",
+                    message=(
+                        f"cannot normalize [{SECTION_NAME}] layout: {exc}. "
+                        "Edit ~/.codex/config.toml manually."
+                    ),
+                    diff="",
+                )
+            if new_text == current_text:
+                pass
+            else:
+                diff = _unified_diff(current_text, new_text)
+                return _with_codex_hook_trust(Outcome(
+                    action="normalize",
+                    new_text=new_text,
+                    message=(
+                        f"would normalize [{SECTION_NAME}] to inline "
+                        f"set = {{ {MANAGED_KEY} = {desired_path} }}"
+                    ),
+                    diff=diff,
+                ), current_text, hooks_path, hook_command, plugin_hooks=plugin_hooks)
 
     # Branch 2: section absent → append a fresh section at EOF.
     if not state.section_present:
@@ -1169,6 +1344,46 @@ def plan_change(
             message=(
                 f"would update {MANAGED_KEY} from "
                 f"{state.set_table[MANAGED_KEY]} to {desired_path}"
+            ),
+            diff=diff,
+        ), current_text, hooks_path, hook_command, plugin_hooks=plugin_hooks)
+
+    # Empty ``set`` with no inline line should have been normalized above; if we
+    # still reach here with no siblings and no managed key, insert inline set.
+    if not siblings and MANAGED_KEY not in state.set_table:
+        if has_inline_set_line(current_text):
+            try:
+                new_text = rewrite_set_line(current_text, merged)
+            except ValueError as exc:
+                return Outcome(
+                    action="conflict",
+                    new_text="",
+                    message=(
+                        f"cannot add {MANAGED_KEY} to existing set line: {exc}. "
+                        "Edit ~/.codex/config.toml manually."
+                    ),
+                    diff="",
+                )
+        else:
+            try:
+                new_text = normalize_shell_environment_policy(current_text, install_root)
+            except ValueError as exc:
+                return Outcome(
+                    action="conflict",
+                    new_text="",
+                    message=(
+                        f"cannot add {MANAGED_KEY} to [{SECTION_NAME}]: {exc}. "
+                        "Edit ~/.codex/config.toml manually."
+                    ),
+                    diff="",
+                )
+        diff = _unified_diff(current_text, new_text)
+        return _with_codex_hook_trust(Outcome(
+            action="insert",
+            new_text=new_text,
+            message=(
+                f"would set {MANAGED_KEY} = {desired_path} in "
+                f"[{SECTION_NAME}].set"
             ),
             diff=diff,
         ), current_text, hooks_path, hook_command, plugin_hooks=plugin_hooks)

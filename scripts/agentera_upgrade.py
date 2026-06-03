@@ -1496,7 +1496,7 @@ def _plan_codex_config(
         {"status": "agentera-owned", "reason": "Codex config is absent and can receive Agentera shell_environment_policy"}
         if current is None
         else {"status": "agentera-owned", "reason": "Codex config has Agentera-owned shell_environment_policy.AGENTERA_HOME"}
-        if "AGENTERA_HOME" in current
+        if setup_codex.codex_managed_home_configured(current)
         else {"status": "agentera-owned", "reason": "Codex config can be extended without overwriting existing user keys"}
         if status == "pending"
         else {"status": "user-owned", "reason": "existing Codex config needs explicit force before merging Agentera state"}
