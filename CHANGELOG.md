@@ -6,6 +6,12 @@
 
 - Published npm placeholder package `agentera@0.0.0` from `packages/cli`: reserves `npx agentera`, delegates to the Python CLI via app-home, repo `uv run`, or pinned `uvx` from GitHub (`v2.7.6`).
 
+## [2.7.8] · 2026-06-03
+
+### Fixed
+
+- Fixed `_validate_md_items` TODO.md severity-section body extraction: locate the next section with `/\n##\s/` from the heading end, skip the trailing newline before list items, and stop false "severity section has no list entries" violations when valid `- [type]` items are present. Regression coverage in `tests/test_validate_md_items.py`. TypeScript parity in `feat/v3` commit `20f3837`.
+
 ## [2.7.7] · 2026-06-03
 
 ### Changed

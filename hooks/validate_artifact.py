@@ -807,8 +807,14 @@ def _validate_md_items(content: str, name: str, violations: list[str]) -> None:
             section_start = re.search(rf"^##\s*{re.escape(glyph)}.+$", content, re.MULTILINE)
             if section_start:
                 idx = section_start.end()
-                next_section = content.find("\n##", idx)
-                section_body = content[idx:next_section] if next_section >= 0 else content[idx:]
+                next_match = re.search(r"\n##\s", content[idx:])
+                body_start = idx
+                if content.startswith("\r\n", body_start):
+                    body_start += 2
+                elif body_start < len(content) and content[body_start] == "\n":
+                    body_start += 1
+                section_end = idx + next_match.start() if next_match else len(content)
+                section_body = content[body_start:section_end]
                 if not re.search(r"^\s*\-", section_body, re.MULTILINE):
                     glyph_name_match = re.search(rf"^##\s*({re.escape(glyph)}.+)$", content[section_start.start():section_start.end()], re.MULTILINE)
                     heading_text = glyph_name_match.group(1) if glyph_name_match else glyph
