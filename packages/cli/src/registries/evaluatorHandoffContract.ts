@@ -169,6 +169,13 @@ export function validateEvaluationReport(
   return errors;
 }
 
+function readCitedLine(repoRoot: string, file: string, line: number): string {
+  const absPath = path.isAbsolute(file) ? file : path.join(repoRoot, file);
+  if (!fs.existsSync(absPath)) return "";
+  const lines = fs.readFileSync(absPath, "utf8").split(/\r?\n/);
+  return (lines[line - 1] ?? "").trim();
+}
+
 export function verifyWarnCitationAtLine(
   row: EvaluationReportRow,
   repoRoot: string,
@@ -179,19 +186,22 @@ export function verifyWarnCitationAtLine(
   if (!parsed) {
     return { ok: true, message: "not-applicable citation skips line verification" };
   }
+  const citedLine = readCitedLine(repoRoot, parsed.file, parsed.line);
+  if (!citedLine) {
+    return { ok: false, message: `cited line ${parsed.line} is missing or empty in ${parsed.file}` };
+  }
   if (!verifyCommand) {
     return { ok: false, message: "missing verify_command for file:line citation" };
   }
   try {
-    const output = execSync(verifyCommand, { cwd: repoRoot, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
-    const lineRef = `${parsed.line}:`;
-    const lineRefAlt = `${parsed.line}-`;
-    if (output.includes(lineRef) || output.split("\n").some((line) => line.startsWith(lineRefAlt))) {
-      return { ok: true, message: "verify_command output references cited line" };
+    const output = execSync(verifyCommand, { cwd: repoRoot, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] })
+      .trim();
+    if (output.includes(citedLine)) {
+      return { ok: true, message: "verify_command output includes cited line text" };
     }
     return {
       ok: false,
-      message: `verify_command output does not reference line ${parsed.line} for ${parsed.file}`,
+      message: `verify_command output does not reproduce cited line ${parsed.line} in ${parsed.file}`,
     };
   } catch (exc) {
     return { ok: false, message: `verify_command failed: ${(exc as Error).message}` };

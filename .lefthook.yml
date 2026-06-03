@@ -34,8 +34,7 @@ pre-commit:
         - "node_modules/**"
         - "dist/**"
     tests:
-      root: packages/cli
-      run: pnpm test
+      run: bash scripts/precommit-vitest.sh {staged_files}
       glob:
         - "packages/cli/**/*.ts"
         - "skills/**/*.{yaml,yml,md}"

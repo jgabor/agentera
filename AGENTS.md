@@ -187,7 +187,16 @@ Install git hooks once after clone:
 lefthook install
 ```
 
-Pre-commit runs `vp staged` in `packages/web` when web files change; markdownlint
+Pre-commit on `feat/v3` runs staged-aware CLI tests via `scripts/precommit-vitest.sh`
+(full `pnpm -C packages/cli test` only when broad CLI, schema, or workflow paths change).
+On `main`, `scripts/precommit-pytest.sh` runs targeted pytest plus a small smoke set
+instead of the full parallel suite for narrow edits. GitHub Actions still runs the
+full vitest and pytest suites.
+
+Use `LEFTHOOK=0 git commit` only for emergency bypass when the hook config itself is
+broken or a failure is already tracked for CI — not for routine TODO.md or fixture edits.
+
+Pre-commit also runs `vp staged` in `packages/web` when web files change; markdownlint
 and prettier for repo-wide docs/configs stay on `bunx`.
 
 Convenience scripts from the repo root:
