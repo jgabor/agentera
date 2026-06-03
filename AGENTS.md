@@ -4,7 +4,7 @@ This file provides guidance to AI coding agents when working with code in this r
 
 ## What this is
 
-agentera v2: one Agentera skill (`skills/agentera/`) with twelve capabilities. Each capability is defined by human-readable prose (`instructions.md`) and machine-readable schemas (`triggers.yaml`, `artifacts.yaml`, `validation.yaml`, `exit.yaml`). The Agentera router routes incoming requests to the right capability.
+agentera v2: one Agentera skill (`skills/agentera/`) with twelve capabilities. Each capability is defined by human-readable prose (`packages/cli/src/capabilities/<name>/instructions.ts`) and machine-readable schemas (`triggers.yaml`, `artifacts.yaml`, `validation.yaml`, `exit.yaml`). The Agentera router routes incoming requests to the right capability. The runtime serves the prose through `agentera prime --context <name> --format json`.
 
 ## Branch model
 
@@ -34,7 +34,7 @@ npx -y agentera check validate capability-contract --format json
 
 ## Adding or modifying a capability
 
-1. Create `skills/agentera/capabilities/<name>/instructions.md` with behavioral instructions
+1. Create `packages/cli/src/capabilities/<name>/instructions.ts` that exports the behavioral instructions as a default-exported string constant named `instructions`
 2. Create `skills/agentera/capabilities/<name>/schemas/` with the four schema files: `triggers.yaml`, `artifacts.yaml`, `validation.yaml`, `exit.yaml`
 3. Update the capability table in `skills/agentera/SKILL.md`
 4. Validate: `npx -y agentera check validate capability <name-or-path>`

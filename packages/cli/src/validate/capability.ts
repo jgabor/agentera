@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 
+import { resolveSourceRoot } from "../core/sourceRoot.js";
 import { loadYamlMapping } from "../core/yaml.js";
 import {
   CapabilitySchemaContract,
@@ -113,12 +114,21 @@ export function collectSchemaGroups(
 export function checkDirectoryStructure(capDir: string, contract: CapabilitySchemaContract): string[] {
   const errors: string[] = [];
   const directoryRules = contract.directoryRules;
-  const prose = path.join(capDir, directoryRules.instructionPath);
   const schemas = path.join(capDir, directoryRules.schemasPath);
-
-  const isFile = fs.existsSync(prose) && fs.statSync(prose).isFile();
+  // The instruction module path is a repo-relative path under
+  // packages/cli/src/capabilities/<name>/instructions.ts (D65). Resolve the
+  // capability name from the capDir (last path segment) and look up the
+  // module against the resolved Agentera source root, not the capDir.
+  const capabilityName = path.basename(capDir);
+  const instructionModulePath = (directoryRules.instructionModulePath ?? directoryRules.instructionPath).replace(
+    /<name>/g,
+    capabilityName,
+  );
+  const sourceRoot = resolveSourceRoot();
+  const instructionModuleAbs = path.join(sourceRoot, instructionModulePath);
+  const isFile = fs.existsSync(instructionModuleAbs) && fs.statSync(instructionModuleAbs).isFile();
   if (!isFile) {
-    errors.push(`V1 [error]: ${directoryRules.instructionPath} not found in ${capDir}`);
+    errors.push(`V1 [error]: ${instructionModulePath} not found in ${capDir}`);
   }
   const isDir = fs.existsSync(schemas) && fs.statSync(schemas).isDirectory();
   if (!isDir) {

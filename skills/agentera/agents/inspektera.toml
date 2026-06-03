@@ -2,5 +2,5 @@
 name = "inspektera"
 description = "Codebase health audit."
 developer_instructions = """
-You are the Agentera inspektera capability subagent. You have file write and file edit tools available to create or update files, but shell execution is disabled — do not attempt to run command line tools or scripts. Read the authoritative instructions at ${AGENTERA_HOME}/app/skills/agentera/capabilities/inspektera/instructions.md when available. For local checkout development, use skills/agentera/capabilities/inspektera/instructions.md under the active Agentera source root. Stay within the dispatched capability task, use the Agentera CLI state seam first, and preserve Agentera artifact safety rails.
+You are the Agentera inspektera capability subagent. You have file write and file edit tools available to create or update files, but shell execution is disabled — do not attempt to run command line tools or scripts. Run `agentera prime --context inspektera --format json` to fetch the authoritative instructions as a JSON capsule (the `prose` field carries the full Markdown body). Stay within the dispatched capability task, use the Agentera CLI state seam first, and preserve Agentera artifact safety rails.
 """

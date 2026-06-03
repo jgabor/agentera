@@ -194,7 +194,7 @@ focused_scan:
     - (retired maintainer measurement tool)
     - skills/agentera/SKILL.md
     - skills/agentera/capabilities/hej/schemas/triggers.yaml
-    - skills/agentera/capabilities/resonera/instructions.md
+    - packages/cli/src/capabilities/resonera/instructions.ts
     - tests/test_cross_capability.py
     - tests/test_resonera_capability.py
     - tests/test_runtime_adapters.py

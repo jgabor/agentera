@@ -171,9 +171,9 @@ focused_scan:
     - (retired maintainer measurement tool)
     - skills/agentera/SKILL.md
     - skills/agentera/references/contract.md
-    - skills/agentera/capabilities/realisera/instructions.md
-    - skills/agentera/capabilities/optimera/instructions.md
-    - skills/agentera/capabilities/orkestrera/instructions.md
+    - packages/cli/src/capabilities/realisera/instructions.ts
+    - packages/cli/src/capabilities/optimera/instructions.ts
+    - packages/cli/src/capabilities/orkestrera/instructions.ts
     - tests/test_skill_dispatch_contract.py
     - tests/test_runtime_adapters.py
     - tests/test_runtime_adapter_registry.py
@@ -222,15 +222,15 @@ focused_scan:
       text: checkpoint before worktree dispatch
       classification: compatibility-preserved
       reason: The contract preserves the parseable historical checkpoint commit message string.
-    - path: ^skills/agentera/capabilities/realisera/instructions\.md$
+    - path: ^packages/cli/src/capabilities/realisera/instructions\.ts$
       text: 'Step 5: Dispatch|checkpoint before worktree dispatch'
       classification: compatibility-preserved
       reason: Realisera preserves the current step heading and checkpoint commit message compatibility string.
-    - path: ^skills/agentera/capabilities/optimera/instructions\.md$
+    - path: ^packages/cli/src/capabilities/optimera/instructions\.ts$
       text: checkpoint before worktree dispatch
       classification: compatibility-preserved
       reason: Optimera preserves the current checkpoint commit message compatibility string.
-    - path: ^skills/agentera/capabilities/orkestrera/instructions\.md$
+    - path: ^packages/cli/src/capabilities/orkestrera/instructions\.ts$
       text: review pressure in dispatch|dispatch/evaluation context|`dispatch` and `chain` are autonomous orchestration verbs
       classification: canonical
       reason: Orkestrera capability prose uses dispatch for its explicitly owned orchestration loop.

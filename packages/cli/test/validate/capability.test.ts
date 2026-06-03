@@ -36,9 +36,24 @@ function writeCapability(
   const prose = opts.prose ?? false;
   fs.mkdirSync(capDir, { recursive: true });
   if (instructions) {
-    fs.writeFileSync(path.join(capDir, "instructions.md"), "# Fixture\n");
+    // D65: the per-capability prose is a TypeScript module at
+    // packages/cli/src/capabilities/<name>/instructions.ts. The validator
+    // resolves that path against the repo root using the capability name
+    // derived from the capDir, so the test fixture must mirror the new
+    // shape: write a minimal instructions.ts that exports the prose.
+    const capabilityName = path.basename(capDir);
+    const modulePath = path.join(REPO_ROOT, "packages", "cli", "src", "capabilities", capabilityName, "instructions.ts");
+    fs.mkdirSync(path.dirname(modulePath), { recursive: true });
+    fs.writeFileSync(
+      modulePath,
+      '// Fixture for capability validator (D65).\nexport const instructions: string = "# Fixture\\n";\nexport default instructions;\n',
+    );
+    fixtureModules.push(modulePath);
   }
   if (prose) {
+    // Legacy compatibility fixture: a prose.md file in the capDir must not
+    // satisfy the instruction module requirement; it remains a historical
+    // artifact only.
     fs.writeFileSync(path.join(capDir, "prose" + ".md"), "# Legacy fixture\n");
   }
   const schemas = path.join(capDir, "schemas");
@@ -74,11 +89,16 @@ function validSchema(opts: { triggerPriority?: string; triggerId?: string } = {}
 }
 
 let tmp: string;
+let fixtureModules: string[];
 beforeEach(() => {
   tmp = fs.mkdtempSync(path.join(os.tmpdir(), "vc-"));
+  fixtureModules = [];
 });
 afterEach(() => {
   fs.rmSync(tmp, { recursive: true, force: true });
+  for (const modulePath of fixtureModules) {
+    fs.rmSync(modulePath, { force: true });
+  }
 });
 
 function writeContract(mutate: (data: any) => void): string {
@@ -98,7 +118,7 @@ describe("validateCapability", () => {
   it("reports both V1 errors for a missing directory", () => {
     const capDir = path.join(tmp, "missing-directory");
     expect(validateCapability(capDir, CONTRACT_PATH)).toEqual([
-      `V1 [error]: instructions.md not found in ${capDir}`,
+      `V1 [error]: packages/cli/src/capabilities/missing-directory/instructions.ts not found in ${capDir}`,
       `V1 [error]: schemas/ directory not found in ${capDir}`,
     ]);
   });
@@ -114,23 +134,23 @@ describe("validateCapability", () => {
     ]);
   });
 
-  it("requires instructions.md when schemas exist", () => {
+  it("requires instructions.ts when schemas exist", () => {
     const capDir = writeCapability(path.join(tmp, "missing-instructions"), validSchema(), {
       instructions: false,
     });
     expect(validateCapability(capDir, CONTRACT_PATH)).toEqual([
-      `V1 [error]: instructions.md not found in ${capDir}`,
+      `V1 [error]: packages/cli/src/capabilities/missing-instructions/instructions.ts not found in ${capDir}`,
     ]);
   });
 
-  it("rejects legacy prose.md without instructions.md", () => {
+  it("rejects legacy prose.md without the instructions module", () => {
     const capDir = writeCapability(path.join(tmp, "legacy-prose-only"), validSchema(), {
       instructions: false,
       prose: true,
     });
     expect(fs.existsSync(path.join(capDir, "prose" + ".md"))).toBe(true);
     expect(validateCapability(capDir, CONTRACT_PATH)).toEqual([
-      `V1 [error]: instructions.md not found in ${capDir}`,
+      `V1 [error]: packages/cli/src/capabilities/legacy-prose-only/instructions.ts not found in ${capDir}`,
     ]);
   });
 

@@ -49,11 +49,15 @@ describe("capability schema contract loader", () => {
     const model = loadCapabilitySchemaContract(CONTRACT_PATH);
 
     expect(model.directoryRules.instructionPath).toBe(
-      contractData.DIRECTORY_REQUIREMENTS.instruction_file.path,
+      contractData.DIRECTORY_REQUIREMENTS.instruction_module.path,
+    );
+    expect(model.directoryRules.instructionModulePath).toBe(
+      contractData.DIRECTORY_REQUIREMENTS.instruction_module.path,
     );
     expect("required_files" in contractData.DIRECTORY_REQUIREMENTS).toBe(false);
     expect(model.requiredGroups).toEqual(["TRIGGERS", "ARTIFACTS", "VALIDATION", "EXIT_CONDITIONS"]);
-    expect(model.directoryRules.instructionPath).toBe("instructions.md");
+    expect(model.directoryRules.instructionPath).toBe("packages/cli/src/capabilities/<name>/instructions.ts");
+    expect(model.directoryRules.instructionModulePath).toBe("packages/cli/src/capabilities/<name>/instructions.ts");
     expect(model.directoryRules.schemasPath).toBe("schemas");
     expect(model.directoryRules.schemaGlob).toBe("*.yaml");
     expect(model.directoryRules.minimumSchemaFiles).toBe(1);
@@ -113,9 +117,9 @@ describe("capability schema contract loader", () => {
     assertHasErrorContaining(bootstrapErrors(data), message);
   });
 
-  it("rejects a legacy prose.md instruction file", () => {
+  it("rejects a legacy prose.md instruction module path", () => {
     const data = structuredClone(validContractData());
-    data.DIRECTORY_REQUIREMENTS.instruction_file.path = LEGACY_INSTRUCTION_FILE;
+    data.DIRECTORY_REQUIREMENTS.instruction_module.path = LEGACY_INSTRUCTION_FILE;
     const p = writeContract(data);
     try {
       loadCapabilitySchemaContract(p);
@@ -123,7 +127,7 @@ describe("capability schema contract loader", () => {
     } catch (err) {
       expect(err).toBeInstanceOf(ContractBootstrapError);
       expect((err as ContractBootstrapError).errors).toEqual([
-        `bootstrap [error]: DIRECTORY_REQUIREMENTS.instruction_file.path in ${p} must be instructions.md`,
+        `bootstrap [error]: DIRECTORY_REQUIREMENTS.instruction_module.path in ${p} must be packages/cli/src/capabilities/<name>/instructions.ts`,
       ]);
     }
   });
@@ -140,7 +144,7 @@ describe("capability schema contract loader", () => {
     } catch (err) {
       expect(err).toBeInstanceOf(ContractBootstrapError);
       expect((err as ContractBootstrapError).errors).toEqual([
-        `bootstrap [error]: DIRECTORY_REQUIREMENTS.required_files in ${p} duplicates instruction_file and schemas_directory authority`,
+        `bootstrap [error]: DIRECTORY_REQUIREMENTS.required_files in ${p} duplicates instruction_module and schemas_directory authority`,
       ]);
     }
   });

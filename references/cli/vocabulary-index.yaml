@@ -18,7 +18,7 @@ authority_order:
   - references/cli/capability-instruction-contract.yaml
   - references/cli/routing-execution-vocabulary.yaml
   - skills/agentera/SKILL.md
-  - skills/agentera/capabilities/*/instructions.md
+  - packages/cli/src/capabilities/*/instructions.ts
   - the agentera CLI
   - packages/cli/src/upgrade (doctor/upgrade)
   - README.md
@@ -62,8 +62,8 @@ normalization_rules:
   - rule: Worker safety commits are Git-only.
     use: pre-spawn Git commit
     avoid: Non-Git checkpoint or pre-dispatch commit gate in new docs.
-  - rule: Capability instruction files have current metadata and a runtime boundary.
-    use: instructions.md plus emitted first_invocation_read; runtime enforcement remains false
+  - rule: Capability instruction modules have current metadata and a runtime boundary.
+    use: instructions.ts plus emitted prime_context first_invocation_read; runtime enforcement is true via the CLI prime command
     avoid: Claiming agents are policed for actual reads, or adding unsupported agentera planera commands.
 plain_language:
   lead_with_plain_phrase:
