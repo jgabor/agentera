@@ -1,2 +1,18 @@
 packages:
   - "packages/*"
+
+# pnpm 10+ ignores the legacy `pnpm` field in package.json. The settings that
+# used to live under `pnpm.onlyBuiltDependencies` and `pnpm.overrides` now
+# belong here, in the workspace config.
+#
+# `onlyBuiltDependencies` whitelists esbuild, sharp, and workerd postinstall
+# scripts. pnpm 10 ignores the `pnpm` key in package.json and would otherwise
+# block every postinstall by default.
+onlyBuiltDependencies:
+  - esbuild
+  - sharp
+  - workerd
+overrides:
+  devalue: ">=5.6.4"
+  undici: ">=7.24.0"
+  yaml: ">=2.8.3"
