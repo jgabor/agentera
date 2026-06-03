@@ -115,7 +115,7 @@ export function printCheckHelp(sub?: string): string {
     return [`usage: agentera check ${sub} [-h] [options]`, "", "options:", "  -h, --help            show this help message and exit"].join("\n");
   }
   return [
-    "usage: agentera check [-h] {validate,verify,lint,compact,backfill} ...",
+    "usage: agentera check [-h] {validate,verify,lint,compact} ...",
     "",
     "Validation, verification, lint, and repository compaction gates.",
   ].join("\n");

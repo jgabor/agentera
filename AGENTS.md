@@ -241,16 +241,6 @@ pnpm -C packages/cli build && node packages/cli/dist/bin/agentera.js check compa
 - If progress metadata is committed during implementation, squash or fold it into the meaningful task commit before considering the task complete.
 - The final commit for a task should include the corresponding status-complete metadata update when Agentera artifacts are part of the task.
 
-### Progress `commit` field
-
-In `.agentera/progress.yaml`, `cycles[].commit` names **the git commit that contains the
-product change** for that cycle—not the commit that last edited progress metadata.
-
-- `commit: pending` is valid until that hash is known (common in the implementation commit).
-- After the product commit exists, set `commit` to that hash (optional subject suffix). Use one
-  forward commit if needed; never amend solely to backfill this field.
-- Use `N/A: …` only when no product commit was made for the cycle.
-
 ## Cursor Cloud specific instructions
 
 ### Environment prerequisites

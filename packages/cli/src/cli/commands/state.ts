@@ -12,6 +12,7 @@ import {
   loadArtifact,
   missingSchemaError,
   printStatusCounts,
+  progressEntriesForOutput,
   recentCycles,
   sourceMetadata,
   statusCounts,
@@ -63,7 +64,7 @@ export function queryProgress(args: StateArgs, schemas: Record<string, SchemaInf
   if ((args.format ?? "text") !== "text") {
     return emitStateStructured(
       "progress",
-      structuredState("progress", entries, sourceMetadata("progress", p), {
+      structuredState("progress", progressEntriesForOutput(entries), sourceMetadata("progress", p), {
         filters: { topic, status: statusFilter, limit: effectiveLimit },
       }),
       args.format ?? "text",
@@ -74,7 +75,7 @@ export function queryProgress(args: StateArgs, schemas: Record<string, SchemaInf
   }
   if (entries.length === 0) return 0;
   for (const entry of entries) {
-    o(formatEntry(entry, ["number", "timestamp", "type", "phase", "commit"]) + "\n");
+    o(formatEntry(entry, ["number", "timestamp", "type", "phase"]) + "\n");
     for (const key of ["what", "verified", "next"]) {
       const value = entry[key];
       if (value) o(`  ${key}: ${truncate(value)}\n`);

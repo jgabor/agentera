@@ -1,7 +1,7 @@
 header:
   level: full
   created: 2026-06-03
-  status: active
+  status: complete
   reviewed: 2026-06-03
   critic_issues: "3 found, 3 addressed, 0 dismissed"
   title: "Plan: 2.7.7 release"
@@ -51,7 +51,7 @@ tasks:
   - number: 1
     name: D66 drop progress.yaml commit field
     depends_on: []
-    status: pending
+    status: complete
     acceptance:
       - "GIVEN a progress.yaml cycle entry WHEN validated by the schema THEN no `commit` field is required and existing entries without it parse"
       - "GIVEN the TS CLI WHEN `agentera progress --format json` runs THEN output omits per-cycle `commit` while cycles, phase, type, timestamp, status, evidence, and surprises remain intact"
@@ -61,33 +61,46 @@ tasks:
   - number: 2
     name: Inspektera WARN and FAIL must cite file:line
     depends_on: []
-    status: pending
+    status: complete
     acceptance:
       - "GIVEN an inspektera WARN or FAIL finding WHEN rendered THEN the finding carries a `citation: file:line` field, or `not-applicable` with reason"
       - "GIVEN a WARN finding with a citation WHEN re-verified by the exact `grep` or `git show` command shown in the citation THEN the evidence reproduces at that line"
       - "GIVEN the orkestrera Step 3 Surface 2 delegation template WHEN the inspektera delegation prompt is constructed THEN the template requires the citation field"
       - "GIVEN `references/cli/capability-instruction-contract.yaml` WHEN the evaluator-handoff schema is loaded THEN WARN and FAIL rows fail validation without a valid citation"
-      - "GIVEN a sample inspektera report WHEN a regression test runs THEN every WARN and FAIL entry carries a valid file:line citation"
+      - "GIVEN a sample inspektera report WHEN a regression test runs THEN every WARN/FAIL entry carries a valid file:line citation"
   - number: 3
+    name: progress.yaml over-budget compaction
+    depends_on:
+      - "1"
+    status: complete
+    acceptance:
+      - "GIVEN `.agentera/progress.yaml` cycle count WHEN the regression test runs THEN the compaction gate fails if the count exceeds 50"
+      - "GIVEN the TS CLI WHEN `agentera check compact --apply` runs THEN progress.yaml is brought under the 50-cycle cap with cycle data preserved by archive"
+      - "GIVEN the Python stable CLI WHEN the same compaction runs THEN the same enforcement holds on `main`"
+      - "GIVEN the orchestration session after this task WHEN `agentera check compact` runs THEN the gate passes without over_limit"
+  - number: 4
     name: 2.7.7 version bump and CHANGELOG update
     depends_on:
       - "1"
       - "2"
-    status: pending
+      - "3"
+    status: complete
     acceptance:
       - "GIVEN DOCS.md versioning policy WHEN the release is cut THEN every file in `docs.yaml` `version_files` carries version 2.7.7"
-      - "GIVEN CHANGELOG.md WHEN the 2.7.7 entry is recorded THEN it lists both D66 and the WARN-citation fix with imperative phrasing and the implementation commit hashes"
+      - "GIVEN CHANGELOG.md WHEN the 2.7.7 entry is recorded THEN it lists D66, the WARN-citation fix, and the progress.yaml compaction with imperative phrasing and the implementation commit hashes"
       - "GIVEN `agentera upgrade --dry-run` WHEN run from a clean install THEN it reports 2.7.7 as the current version"
-  - number: 4
+  - number: 5
     name: Final state sync and plan archive
     depends_on:
       - "1"
       - "2"
       - "3"
-    status: pending
+      - "4"
+    status: complete
     acceptance:
       - "GIVEN all prior tasks complete WHEN this task runs THEN `.agentera/plan.yaml` is archived to `.agentera/archive/plan-2026-06-03.yaml` and the active plan slot is cleared"
       - "GIVEN TODO.md WHEN the ledger is reconciled THEN the 2.7.7 entries move to the resolved section with implementation commit hashes"
       - "GIVEN `agentera prime` WHEN rendered after closeout THEN the plan slot reports absent and health grade trends reflect the shipped fixes"
-overall_acceptance: "GIVEN `main` and `feat/v3` WHEN the 2.7.7 release ships THEN both branches pass their branch-appropriate test gates with no per-cycle `commit` field anywhere and inspektera WARN/FAIL findings carry reproducible file:line citations; AND GIVEN `npx -y agentera@latest` from `main` and `npx -y agentera@next` from `feat/v3` WHEN installed on a clean machine THEN both report version 2.7.7 and the D66 plus WARN-citation behaviors are observable end-to-end."
+overall_acceptance: "GIVEN `main` and `feat/v3` WHEN the 2.7.7 release ships THEN both branches pass their branch-appropriate test gates with no per-cycle `commit` field anywhere, inspektera WARN/FAIL findings carry reproducible file:line citations, and progress.yaml is under the 50-cycle cap; AND GIVEN `npx -y agentera@latest` from `main` and `npx -y agentera@next` from `feat/v3` WHEN installed on a clean machine THEN both report version 2.7.7 and the D66, WARN-citation, and progress.yaml compaction behaviors are observable end-to-end."
 surprises: []
+previous_plan_archived: .agentera/archive/PLAN-2026-06-02-reconsider-progress-commit-field.yaml

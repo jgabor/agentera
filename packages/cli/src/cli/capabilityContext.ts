@@ -8,6 +8,10 @@ import { artifactPath } from "./appContext.js";
 import { asList, firstPresent, sourceMetadata } from "./stateQuery.js";
 import { loadNamedArtifact } from "./orientation.js";
 import { decisionContextEntry, decisionSourceContract, extractDecisionEntries } from "./commands/state.js";
+import {
+  evaluatorHandoffOutputRequirements,
+  loadEvaluatorHandoffContract,
+} from "../registries/evaluatorHandoffContract.js";
 
 /**
  * prime --context capability-startup context. Faithful port of
@@ -637,8 +641,20 @@ function retryState(): Dict {
   };
 }
 
+function evaluatorHandoffOutputRequirementsFromContract(): Dict {
+  const contractPath = capabilityInstructionContractPath();
+  if (!isFile(contractPath)) return {};
+  try {
+    const contract = loadEvaluatorHandoffContract(contractPath);
+    return evaluatorHandoffOutputRequirements(contract);
+  } catch {
+    return {};
+  }
+}
+
 function evaluatorHandoff(selected: Dict | null, progressVerification: Dict, retry: Dict, stateCaveats: string[]): Dict {
   const caveats = [...stateCaveats, ...(progressVerification.caveats ?? []), ...(retry.caveats ?? [])];
+  const outputRequirements = evaluatorHandoffOutputRequirementsFromContract();
   if (selected === null) {
     caveats.push("No dependency-ready task is selected for evaluator handoff.");
     return {
@@ -648,6 +664,7 @@ function evaluatorHandoff(selected: Dict | null, progressVerification: Dict, ret
       evidence_requirements: [],
       latest_progress_verification_pointer: progressVerification.latest_progress_verification_pointer ?? null,
       evaluation_caveats: caveats,
+      output_requirements: outputRequirements,
     };
   }
   const evidenceRequirements = (selected.evidence_summary?.items ?? []) as any[];
@@ -661,6 +678,7 @@ function evaluatorHandoff(selected: Dict | null, progressVerification: Dict, ret
     evidence_requirements: evidenceRequirements,
     latest_progress_verification_pointer: progressVerification.latest_progress_verification_pointer ?? null,
     evaluation_caveats: caveats,
+    output_requirements: outputRequirements,
   };
 }
 

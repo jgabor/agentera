@@ -184,6 +184,15 @@ function cycleSortKey(entry: Dict): [number, number | string] {
   return [0, ""];
 }
 
+export function omitProgressCommit(entry: Dict): Dict {
+  const { commit: _commit, ...rest } = entry;
+  return rest;
+}
+
+export function progressEntriesForOutput(entries: Dict[]): Dict[] {
+  return entries.map(omitProgressCommit);
+}
+
 export function recentCycles(entries: Dict[], limit: number): Dict[] {
   const sorted = [...entries].sort((a, b) => {
     const ka = cycleSortKey(a);

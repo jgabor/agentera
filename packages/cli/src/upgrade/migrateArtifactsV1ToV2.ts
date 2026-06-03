@@ -120,7 +120,6 @@ function parseProgress(text: string): Record<string, unknown> {
       type: commitType,
       phase: phase ? phase.toLowerCase() : "build",
       what: extractBoldFieldMultiline(section, "What"),
-      commit: extractBoldField(section, "Commit") || "N/A",
       inspiration: extractBoldField(section, "Inspiration"),
       discovered: extractBoldField(section, "Discovered"),
       verified: extractBoldField(section, "Verified"),

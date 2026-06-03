@@ -1,7 +1,7 @@
 # Progress Artifact Schema
 #
 # Cycle-by-cycle operational log for realisera. Each entry records what happened
-# in one development cycle: phase, work done, commit, discoveries, verification,
+# in one development cycle: phase, work done, discoveries, verification,
 # next steps, and context envelope.
 #
 # Structural pattern: UPPER_CASE groups with numbered entries and stable IDs,
@@ -16,12 +16,11 @@
 # (type-prefix from heading)            CYCLE.type             PR3
 # **Phase**: <phase>                    CYCLE.phase            PR4
 # **What**: <text>                      CYCLE.what             PR5
-# **Commit**: <hash/N/A>                CYCLE.commit           PR6
-# **Inspiration**: <text>               CYCLE.inspiration      PR7
-# **Discovered**: <text>                CYCLE.discovered       PR8
-# **Verified**: <text>                  CYCLE.verified         PR9
-# **Next**: <text>                      CYCLE.next             PR10
-# **Context**: <text>                   CYCLE.context          PR11
+# **Inspiration**: <text>               CYCLE.inspiration      PR6
+# **Discovered**: <text>                CYCLE.discovered       PR7
+# **Verified**: <text>                  CYCLE.verified         PR8
+# **Next**: <text>                      CYCLE.next             PR9
+# **Context**: <text>                   CYCLE.context          PR10
 # (intent from Context)                 CONTEXT.intent         PT1
 # (constraints from Context)            CONTEXT.constraints    PT2
 # (unknowns from Context)               CONTEXT.unknowns       PT3
@@ -172,57 +171,38 @@ CYCLE:
       - "Non-empty string"
   6:
     id: PR6
-    field: commit
-    type: string
-    required: true
-    description: >-
-      Git commit that contains the product change for this cycle—not the commit
-      that last edited progress metadata. Use `pending` until that hash is known;
-      then the product commit hash, optionally with subject (e.g.
-      `abc1234 Speed up pytest suite`). Use `N/A: …` when no product commit was
-      made.
-    validation:
-      - "Non-empty string"
-      - "Use `pending` until the product-change commit hash is known; do not amend solely to backfill this field"
-      - >-
-        Hashes that do not resolve as commit objects in the local clone (another
-        machine's copy, shallow CI checkout, or not yet fetched) are intentionally
-        not flagged by progress validation or `agentera check backfill`; reconcile
-        with a full clone or forward-fill once the product commit exists locally
-  7:
-    id: PR7
     field: inspiration
     type: string
     required: false
     description: >-
       What prompted this cycle. References to active plan tasks,
       decisions, or conventions that drove the work.
-  8:
-    id: PR8
+  7:
+    id: PR7
     field: discovered
     type: string
     required: false
     description: >-
       Unexpected findings during the cycle. Things learned that were
       not known before starting.
-  9:
-    id: PR9
+  8:
+    id: PR8
     field: verified
     type: string
     required: false
     description: >-
       Evidence that the work was verified. Test commands run, validation
       passed, manual checks performed.
-  10:
-    id: PR10
+  9:
+    id: PR9
     field: next
     type: string
     required: false
     description: >-
       What should happen next. Guidance for subsequent cycles.
       Explicit about scope boundaries to prevent scope creep.
-  11:
-    id: PR11
+  10:
+    id: PR10
     field: context
     type: map
     required: true
@@ -293,14 +273,13 @@ VALIDATION:
     severity: error
     description: >-
       Each full-detail cycle entry must have: number, timestamp, type,
-      phase, what, commit, and context (with intent).
+      phase, what, and context (with intent).
     checks:
       - "number is present and is a positive integer"
       - "timestamp is present and matches YYYY-MM-DD HH:MM"
       - "type is present and is a valid commit prefix"
       - "phase is present and is a valid phase name"
       - "what is present and non-empty"
-      - "commit is present"
       - "context is present with intent sub-field"
   3:
     id: PV3

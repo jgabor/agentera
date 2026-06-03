@@ -83,6 +83,16 @@ describe("cli gate (check compact, mode check)", () => {
     const fix = capture((io) => main(["node", "agentera", "check", "compact", "--mode", "fix", "--project", tmp, "--format", "json"], io));
     expect(fix.rc).toBe(0);
   });
+
+  it("routes check compact --apply to the fix path", () => {
+    const fix = capture((io) =>
+      main(["node", "agentera", "check", "compact", "--apply", "--project", tmp, "--format", "json"], io),
+    );
+    expect(fix.rc).toBe(0);
+    const payload = JSON.parse(fix.out);
+    expect(payload.command).toBe("compact");
+    expect(payload.summary.mode).toBe("fix");
+  });
 });
 
 function gateJson(project: string): string {

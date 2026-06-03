@@ -4,7 +4,6 @@ import path from "node:path";
 import { loadYamlMapping, parseYaml } from "../core/yaml.js";
 import { resolvePath } from "../core/paths.js";
 import { resolveSourceRoot } from "../core/sourceRoot.js";
-import { validateProgressCommits } from "../state/progressCommit.js";
 import { DEFAULT_ARTIFACT_PATHS } from "./common.js";
 import { COMPACTABLE_YAML_ARTIFACTS, compactFile, compactYamlFile } from "./compaction.js";
 
@@ -823,7 +822,6 @@ export class ArtifactSchemaValidator {
       const content = readIfNeeded(write.content, absPath);
       if (content === null) return [];
       let violations = this.validateYaml(content, schema, name);
-      if (name === "progress") violations = violations.concat(validateProgressCommits(content, cwd));
       if (violations.length > 0) return violations;
       return compactAfterValidWrite(artifact, absPath);
     }
@@ -850,7 +848,6 @@ export class ArtifactSchemaValidator {
       if (schema === null) return [`${artifact}: schema '${name}' is not available`];
       if (Object.keys(schema).length === 0) return [`${artifact}: schema '${name}' file is empty or contains no valid definitions`];
       let violations = this.validateYaml(content, schema, name);
-      if (name === "progress") violations = violations.concat(validateProgressCommits(content, cwd));
       return violations;
     }
     if (HUMAN_FACING.has(artifact)) {

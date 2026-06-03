@@ -46,7 +46,7 @@ const PLAIN_STATUS: Record<string, string> = {
 
 /** Commands the TS dispatcher exposes (used by the in-process CLI probe). */
 const DISPATCHER_COMMANDS = new Set([
-  "prime", "hej", "schema", "describe", "state", "query", "check", "lint", "backfill",
+  "prime", "hej", "schema", "describe", "state", "query", "check", "lint",
   "compact", "gate", "validate", "decisions", "health", "todo", "plan", "progress",
   "docs", "objective", "experiments",
 ]);

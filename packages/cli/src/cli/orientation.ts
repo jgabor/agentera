@@ -16,6 +16,7 @@ import {
   extractEntries,
   firstPresent,
   loadArtifact,
+  progressEntriesForOutput,
   recentCycles,
   truncate,
 } from "./stateQuery.js";
@@ -367,7 +368,7 @@ export function progressSummary(schemas: Record<string, SchemaInfo>): Dict {
   if (entries.length === 0) {
     return { exists: false, status: "absent", absence_reason: "No progress cycles are available from agentera progress." };
   }
-  const latest = recentCycles(entries, 1)[0];
+  const latest = progressEntriesForOutput(recentCycles(entries, 1))[0];
   return {
     exists: true,
     status: "available",
