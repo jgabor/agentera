@@ -319,7 +319,7 @@ export function buildDoctorStatus(installRoot: string, opts: BuildDoctorStatusOp
       signals.push({
         status: APP_REPAIR_NEEDED,
         kind: "missing_marker",
-        message: "Agentera cannot prove these app files are current, so it should repair them",
+        message: "Agentera app files need repair",
       });
     } else if (classification.kind === "managed_stale" && reason === "version_mismatch") {
       if (recoverableStaleDefault) {
@@ -437,4 +437,27 @@ export function publicDoctorStatus(status: Dict): Dict {
   delete pub.installRoot;
   delete pub.installRootSource;
   return pub;
+}
+
+/** Oracle-pinned keys for `agentera doctor --format json` (parity-remaining-families.json). */
+export const DOCTOR_PARITY_JSON_KEYS = [
+  "status",
+  "expectedVersion",
+  "appHome",
+  "managedAppRoot",
+  "userDataRoot",
+  "signals",
+  "dryRunCommand",
+  "applyCommand",
+  "retryCommand",
+] as const;
+
+/** Public doctor JSON envelope: command label plus oracle structural keys only. */
+export function doctorParityJsonEnvelope(status: Dict): Dict {
+  const pub = publicDoctorStatus(status);
+  const out: Dict = { command: "doctor" };
+  for (const key of DOCTOR_PARITY_JSON_KEYS) {
+    if (key in pub) out[key] = pub[key];
+  }
+  return out;
 }

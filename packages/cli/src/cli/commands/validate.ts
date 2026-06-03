@@ -11,6 +11,8 @@ import { parseToml as parseTomlValidate } from "../../core/toml.js";
 import { validateGraph } from "../../validate/crossCapability.js";
 import { lifecycleMain } from "../../validate/lifecycleAdapters.js";
 import { validate as validateAppHome } from "../../validate/appHomeContract.js";
+import { selfAuditMain } from "../../validate/selfAudit.js";
+import { vocabularyAuthorityMain } from "../../validate/vocabularyAuthority.js";
 import { emitStructured } from "../structured.js";
 
 /** Port of scripts/agentera cmd_validate delegated-script family. */
@@ -28,6 +30,8 @@ const VALIDATE_DELEGATED_SCRIPTS: Record<string, string> = {
   "cross-capability": "validate_cross_capability.py",
   "lifecycle-adapters": "validate_lifecycle_adapters.py",
   "app-home-contract": "validate_app_home_contract.py",
+  vocabularyAuthority: "validate_vocabulary_authority.py",
+  selfAudit: "self_audit.py",
 };
 
 function pySplitlines(s: string): string[] {
@@ -63,6 +67,18 @@ function runAppHomeContract(): ProcResult {
   return { stdout: "OK: app-home contract terminology is release-ready\n", stderr: "", returncode: 0 };
 }
 
+function runVocabularyAuthority(): ProcResult {
+  const lines: string[] = [];
+  const rc = vocabularyAuthorityMain({ out: (line) => lines.push(line) });
+  return { stdout: lines.map((l) => l + "\n").join(""), stderr: "", returncode: rc };
+}
+
+function runSelfAudit(): ProcResult {
+  const lines: string[] = [];
+  const rc = selfAuditMain({ out: (line) => lines.push(line) });
+  return { stdout: lines.map((l) => l + "\n").join(""), stderr: "", returncode: rc };
+}
+
 function repoRoot(): string {
   // appHomeContract.validate resolves its own default root; pass the source root.
   return process.cwd();
@@ -72,6 +88,8 @@ const DELEGATED_RUNNERS: Record<string, () => ProcResult> = {
   "cross-capability": runCrossCapability,
   "lifecycle-adapters": runLifecycleAdapters,
   "app-home-contract": runAppHomeContract,
+  vocabularyAuthority: runVocabularyAuthority,
+  selfAudit: runSelfAudit,
 };
 
 function validationProcessPayload(
@@ -110,7 +128,7 @@ export function cmdValidate(family: string, args: { format?: string }, io: Io): 
   if (!(family in DELEGATED_RUNNERS)) {
     throw new Error(
       "unsupported validate target family; valid families: capability, artifact, descriptors, " +
-        "cross-capability, lifecycle-adapters, app-home-contract, capability-contract.",
+        "cross-capability, lifecycle-adapters, app-home-contract, vocabularyAuthority, selfAudit, capability-contract.",
     );
   }
   const result = DELEGATED_RUNNERS[family]();

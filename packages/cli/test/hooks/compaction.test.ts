@@ -166,3 +166,26 @@ describe("runCompaction", () => {
     expect(() => runCompaction(REPO_ROOT, "bogus")).toThrow(/unknown compaction mode/);
   });
 });
+
+describe("computeCompactionStatus YAML errors", () => {
+  it("classifies invalid YAML without a Python-style yaml.YAMLError prefix", () => {
+    const p = path.join(tmp, ".agentera", "progress.yaml");
+    fs.mkdirSync(path.dirname(p), { recursive: true });
+    fs.writeFileSync(p, "cycles: bad: yaml: here\n");
+    const status = computeCompactionStatus(tmp).find((s) => s.artifact === "PROGRESS.md");
+    expect(status?.classification).toBe("error");
+    expect(status?.reason).toBeTruthy();
+    expect(status?.reason).not.toContain("yaml.YAMLError:");
+    const op = checkCompaction(tmp).find((o) => o.status.artifact === "PROGRESS.md");
+    expect(op?.action).toBe("error");
+  });
+
+  it("classifies a non-mapping YAML root like the Python oracle", () => {
+    const p = path.join(tmp, ".agentera", "decisions.yaml");
+    fs.mkdirSync(path.dirname(p), { recursive: true });
+    fs.writeFileSync(p, "- item\n");
+    const status = computeCompactionStatus(tmp).find((s) => s.artifact === "DECISIONS.md");
+    expect(status?.classification).toBe("error");
+    expect(status?.reason).toBe("YAML root must be a mapping");
+  });
+});

@@ -353,7 +353,7 @@ export function corpusTooLargeReason(corpusPath: string): string | null {
   try {
     const size = fs.statSync(corpusPath).size;
     if (size <= MAX_CORPUS_READ_BYTES) return null;
-    return `corpus is too large to load (${size} bytes; max ${MAX_CORPUS_READ_BYTES}). Rebuild with agentera report refresh --consent local-history or pass --corpus PATH to a smaller extract.`;
+    return `corpus is too large to load (${size} bytes; max ${MAX_CORPUS_READ_BYTES}). Rebuild with agentera stats refresh --consent local-history or pass --corpus PATH to a smaller extract.`;
   } catch {
     return null;
   }

@@ -67,6 +67,23 @@ describe("buildDoctorStatus", () => {
     expect(status.schemaVersion).toBe("agentera.bundleStatus.v1");
   });
 
+  it("uses plain-language repair wording for missing_bundle signals", () => {
+    const appHome = path.join(tmp, "nope");
+    const status = buildDoctorStatus(appHome, { rootSource: "default app home", ...common });
+    const signal = status.signals.find((s: { kind?: string }) => s.kind === "missing_bundle");
+    expect(signal?.message).toBe("Agentera is not installed in the normal directory yet");
+    expect(JSON.stringify(status.signals)).not.toMatch(/bundle freshness|bundle refresh|app refresh required/);
+  });
+
+  it("pins missing_marker diagnostic copy to authority-approved repair wording", () => {
+    const source = fs.readFileSync(
+      path.join(path.dirname(fileURLToPath(import.meta.url)), "../../src/upgrade/doctor.ts"),
+      "utf8",
+    );
+    expect(source).toContain('kind: "missing_marker"');
+    expect(source).toContain('message: "Agentera app files need repair"');
+  });
+
   it("reports outdated with a version_mismatch signal for a stale marker", () => {
     const appHome = path.join(tmp, "stale");
     managed(appHome, "old");
