@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- Fixed pre-commit fragility when `TODO.md` edits broke the inspektera evaluation-report oracle: WARN citations now use `packages/cli/test/cli/fixtures/citation-anchor-todo.md` and `verifyWarnCitationAtLine` checks cited line text. Added `scripts/precommit-vitest.sh` for staged-aware vitest on `feat/v3`. (`0b64687`)
+
 ### Key highlights
 
 - **npm shim 0.0.0 cwd preservation**: the `agentera@0.0.0` npm shim now forwards the user's working directory to the installed Python CLI for the `app-home` backend, so `npx -y agentera` state, prime, hej, planera, resonera, and inspektera reads resolve the project's `.agentera/` artifacts instead of the app home. The shim remains a transitional entry point; the native TypeScript CLI ships in 3.0.

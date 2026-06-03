@@ -1,0 +1,104 @@
+header:
+  level: full
+  created: 2026-06-03
+  status: complete
+  reviewed: 2026-06-03
+  critic_issues: "2 found, 2 addressed, 0 dismissed"
+  title: "Plan: durable pre-commit hooks (lefthook)"
+what: >-
+  Remove the need to bypass lefthook with LEFTHOOK=0 during normal commits.
+  The immediate failure on feat/v3 was a brittle inspektera evaluation oracle
+  that cited a live TODO.md line number; editing TODO.md during a commit
+  broke verifyWarnCitationAtLine and failed the full vitest pre-commit hook.
+  On main, bypass was used after targeted pytest passed because the hook runs
+  the entire parallel pytest suite on broad globs, which is slow and can flake
+  on uv stderr noise and environment setup. Fix the oracle coupling first, then
+  align pre-commit test scope with staged changes while keeping full suites in
+  CI.
+why: >-
+  Pre-commit hooks exist to catch regressions before they land. Bypassing them
+  hides real failures and trains agents to skip the gate. The checkbox-fix
+  session showed the hook worked but the tests were wrong for volatile artifacts;
+  main showed scope and flake issues that encourage bypass even when product
+  code is correct.
+constraints: >-
+  Do not weaken CI: full vitest and full pytest remain required in GitHub
+  Actions. Pre-commit may run a smaller staged-aware subset. Do not remove
+  evaluator handoff citation requirements from the contract. No new user-facing
+  CLI flags. Document one-time worktree setup (lefthook install, opencode deps
+  on main) in AGENTS.md only if still missing. feat/v3 owns TypeScript changes;
+  main owns Python lefthook.yml if pytest scope changes diverge.
+scope:
+  included:
+    - Stable citation anchor fixture for inspektera-evaluation-report.json
+    - Update evaluatorHandoffContract tests to verify content at cited line
+    - Pre-commit test runner scripts with staged-file awareness on feat/v3
+    - Parallel pytest scope reduction or smoke script on main pre-commit
+    - Verification commit on each branch with hooks enabled (no LEFTHOOK=0)
+  excluded:
+    - Disabling lefthook or removing the tests job from CI
+    - Rewriting the entire inspektera handoff contract
+    - Fixing unrelated pre-existing validateVerifyOracles failures unless they block hook green
+  deferred:
+    - Auto-updating oracle citations when TODO.md edits (over-engineered)
+design: >-
+  Replace live TODO.md:NN in the sample evaluation report with a dedicated
+  file under packages/cli/test/cli/fixtures/ (for example
+  citation-anchor-todo.md) containing a stable first list item. Point
+  citation and verify_command at that fixture. Optionally strengthen
+  verifyWarnCitationAtLine to read the cited file line and match expected
+  substrings instead of only checking grep output contains a line number.
+  Add scripts/precommit-vitest.sh (feat/v3) that maps staged paths to vitest
+  filters (always include evaluatorHandoffContract and todoMarkdown when
+  oracle or TODO parser paths change) and falls back to full pnpm test when
+  CLI core changes are broad. Add scripts/precommit-pytest.sh (main) that
+  runs pytest on changed test modules plus a fixed smoke set instead of
+  tests/ -n auto on every YAML touch. Update .lefthook.yml on each branch to
+  call those scripts. Close with a deliberate empty commit or doc-only touch
+  that proves hooks pass without bypass.
+tasks:
+  - number: 1
+    name: Decouple inspektera evaluation oracle from live TODO.md
+    depends_on: []
+    status: complete
+    acceptance:
+      - "GIVEN the sample inspektera-evaluation-report.json WHEN inspected THEN no WARN/FAIL row cites TODO.md at a line number that depends on the project ledger"
+      - "GIVEN a staged edit to repo TODO.md that adds or removes Critical items WHEN vitest runs evaluatorHandoffContract tests THEN they still pass without updating the oracle line number"
+      - "GIVEN verifyWarnCitationAtLine WHEN run for the sample WARN row THEN it validates fixture content at the cited line, not merely grep output containing a line digit"
+  - number: 2
+    name: Staged-aware pre-commit test scripts and lefthook wiring
+    depends_on:
+      - "1"
+    status: complete
+    acceptance:
+      - "GIVEN only packages/cli/test/cli/todoMarkdown.test.ts staged on feat/v3 WHEN lefthook pre-commit runs THEN vitest executes a bounded subset that includes that file and completes faster than full-suite pnpm test"
+      - "GIVEN a staged change under scripts/ on main WHEN lefthook pre-commit runs THEN pytest runs targeted modules plus smoke tests without invoking the full parallel suite unless the change touches workflow or lefthook config"
+      - "GIVEN .lefthook.yml on each branch WHEN read THEN the tests command invokes the staged-aware script instead of unconditional full-suite commands"
+  - number: 3
+    name: Verify hooks green without LEFTHOOK=0
+    depends_on:
+      - "1"
+      - "2"
+    status: complete
+    acceptance:
+      - "GIVEN a docs-only commit on feat/v3 that does not touch oracle fixtures WHEN git commit runs without LEFTHOOK=0 THEN pre-commit succeeds"
+      - "GIVEN a commit on main that touches only the new precommit script and lefthook config WHEN git commit runs without LEFTHOOK=0 THEN pre-commit succeeds"
+      - "GIVEN AGENTS.md WHEN updated THEN it states that LEFTHOOK=0 is for emergency bypass only and lists the staged pre-commit commands"
+  - number: 4
+    name: Final state sync and plan archive
+    depends_on:
+      - "1"
+      - "2"
+      - "3"
+    status: complete
+    acceptance:
+      - "GIVEN all prior tasks complete WHEN this task runs THEN plan archives to .agentera/archive/plan-2026-06-03-durable-pre-commit-hooks.yaml and the active plan slot clears"
+      - "GIVEN TODO.md WHEN a chore item exists for lefthook bypass or brittle oracle THEN it moves to Resolved with the implementation commit hash"
+      - "GIVEN a normal product commit on feat/v3 WHEN attempted with hooks enabled THEN the agent does not need LEFTHOOK=0 for routine ledger edits"
+overall_acceptance: >-
+  GIVEN developers commit on feat/v3 or main WHEN editing TODO.md or narrow
+  CLI fixes THEN lefthook pre-commit passes without LEFTHOOK=0, full test suites
+  still run in CI, and the inspektera evaluation oracle no longer couples to
+  volatile project TODO line numbers.
+surprises: []
+previous_plan_archived: .agentera/archive/plan-2026-06-03-todo-checkbox-parsing.yaml
