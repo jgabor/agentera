@@ -108,3 +108,17 @@ CONVENTION:
       Resolved items should wrap the original task text in Markdown
       strikethrough (~~text~~) before the resolution summary, keeping
       the original intent readable while visually marking it closed.
+  6:
+    id: TC6
+    field: severity_band_policy
+    level: required
+    description: >-
+      Severity band policy: Critical (⇶) is enforced by the validator
+      (level: required) and must contain at least one `- [type]` item;
+      Degraded (⇉), Normal (→), and Annoying (⇢) are advisory and may
+      be header-only (no list entries, no Placeholder sentinel). The
+      asymmetry reflects the fact that Critical is the only band whose
+      absence is user-visible routing damage; the other three bands
+      may be honestly empty. This rule lives in
+      packages/cli/src/hooks/validateArtifact.ts `validateMdItems` as
+      the single executable source of truth.

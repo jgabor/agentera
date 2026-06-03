@@ -193,6 +193,7 @@ ambiguous-term sweep remain separate follow-up work.
 | --- | --- |
 | Artifact | A project or agent state file owned by one or more capabilities. |
 | Human-facing artifact | A root-level Markdown artifact intended for people, such as `TODO.md`, `CHANGELOG.md`, or `DESIGN.md`. |
+| Severity band policy | TODO.md severity bands are header-only allowed for Degraded (⇉), Normal (→), and Annoying (⇢); Critical (⇶) is enforced and must contain at least one `- [type]` item. Authority: `skills/agentera/schemas/artifacts/todo.yaml` CONVENTION TC6; executable rule in `packages/cli/src/hooks/validateArtifact.ts` `validateMdItems`. |
 | Agent-facing artifact | A structured YAML artifact under `.agentera/`, such as `.agentera/progress.yaml`. |
 | Global artifact | A user-level artifact outside a project, such as `PROFILE.md` or `USAGE.md`. |
 | Canonical artifact name | Display identifier such as `VISION.md`, `PROGRESS.md`, or `DOCS.md`; not always a literal path. |

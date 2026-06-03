@@ -1,0 +1,220 @@
+header:
+  level: full
+  created: "2026-06-03"
+  status: complete
+  reviewed: "2026-06-03"
+  critic_issues: "3 found, 3 addressed, 0 dismissed"
+  revised: >-
+    (1) Plan now lives at .agentera/plan.yaml in canonical plan.yaml shape
+    (HEADER/PLAN/SCOPE/TASK), not in a markdown working document. (2) AC-5
+    rewritten to assert boundary-scanner correctness plus the absence of
+    a Degraded violation under the hybrid policy; T2-d asserts no Degraded
+    violation and a new T2-e exercises the Critical-body-collapse scenario
+    to lock in the 20f3837 off-by-one fix. (3) todo.yaml CONVENTION TC6
+    changed from level: advisory to level: required so the validator's
+    hard gate on Critical is explicit in the schema; description documents
+    the asymmetry between Critical (enforced) and the other three bands
+    (advisory).
+  title: "Plan: TODO.md empty severity sections (header-only bands allowed)"
+
+what: >-
+  Allow header-only Degraded, Normal, and Annoying severity bands in TODO.md
+  without forcing a decoy `- Placeholder` row. Critical (⇶) must still
+  contain at least one `- [type]` item. Update `validateMdItems` in
+  packages/cli/src/hooks/validateArtifact.ts to a per-band policy,
+  add CONVENTION TC6 (level: required) to skills/agentera/schemas/artifacts/todo.yaml,
+  document the policy in references/cli/vocabulary.md, and update
+  the live TODO.md to drop the existing `- Placeholder` decoy rows
+  while folding the open chore:3.0.0 TODO into the Resolved ledger.
+
+why: >-
+  The current validator (line 664 of validateArtifact.ts) rejects any
+  severity band whose body contains no `- [type]` items, which forces
+  contributors to leave synthetic `- Placeholder` lines in Degraded and
+  Annoying bands whenever those bands have no real work. The placeholder
+  decoys are misleading to readers and to the open-set counted by
+  `agentera state todo --format json`. Open TODO at TODO.md line 14
+  ([chore:3.0.0]) records the smell and the open question of whether
+  bands may be header-only or must use a reserved sentinel. The hybrid
+  policy resolves that question without violating Decision 58 single-name
+  protocol boundary (no new parallel vocabulary) or Decision 65
+  per-capability content surface (the rule lives in one TS surface).
+
+constraints: >-
+  Preserve the existing adjacent-heading regression test at
+  validateArtifact.test.ts:84-103. Do not introduce parallel
+  vocabulary tokens (no `EMPTY_SECTION_TOKENS`, no `- Empty`,
+  no `- _empty_` sentinel). Do not change
+  parseTodoMarkdownListItem in packages/cli/src/cli/todoMarkdown.ts
+  unless a downstream consumer fails on zero-item bands (AC-1 catches
+  that case). The Python `hooks/validate_artifact.py` does NOT have
+  a `validate_md_items` equivalent; this is a TS-only fix and no
+  main-branch backport is needed. Do not touch
+  `capability_schema_contract.yaml` (the contract is for capabilities,
+  not artifacts). Per AGENTS.md "Agentera commits", fold the resolved-ledger
+  move and the `- Placeholder` removal into the same implementation
+  commit; do not create a separate bookkeeping commit.
+
+scope:
+  included:
+    - "validateMdItems policy change in packages/cli/src/hooks/validateArtifact.ts (T1)"
+    - "Regression tests in packages/cli/test/hooks/validateArtifact.test.ts (T2)"
+    - "CONVENTION TC6 in skills/agentera/schemas/artifacts/todo.yaml (T3)"
+    - "Discoverability row in references/cli/vocabulary.md (T4)"
+    - "capability_schema_contract.yaml unchanged verification (T5)"
+    - "vitest suite, typecheck, build, and capability-contract validation (T6-T8)"
+    - "TODO.md Degraded/Annoying `- Placeholder` removal and resolved-ledger fold (T9)"
+  excluded:
+    - "Python hooks/validate_artifact.py port (no validate_md_items equivalent; TS-only)"
+    - "main-branch backport (TS-only fix on feat/v3)"
+    - "Decision 58 broader single-name protocol cleanup (separate open TODO)"
+    - "Decision 65 per-capability content surface (separate open TODO)"
+    - "Splitting packages/cli/src/hooks/validateArtifact.ts from 912 lines (separate TODO)"
+    - "Touching skills/agentera/schemas/artifacts/todo.yaml BUDGET or ITEM groups"
+  deferred:
+    - "Case-insensitive band glyph matching (current literal match is correct)"
+    - "Per-project override of the band policy (no signal this is needed)"
+
+design: >-
+  Single-file, ≤20-line change in `validateMdItems` to introduce a
+  per-band check. The function already iterates the four
+  severityGlyphs; replace the unconditional `if (!/^\s*-/m.test(sectionBody))`
+  gate with a per-glyph check: glyph `⇶` (Critical) requires
+  at least one `- [type]` item, the other three glyphs (`⇉`, `→`,
+  `⇢`) emit no violation for an empty body. Keep the heading-slice
+  and headingText extraction so the error message names the
+  offending band. The change is asymmetric by design: Critical is
+  the only band whose absence is user-visible routing damage, so it
+  is the only band that must always carry work.
+
+  Policy is documented in three places, each with a distinct role:
+  todo.yaml CONVENTION TC6 (level: required) owns the canonical
+  human-readable description of the enforced Critical rule and the
+  advisory header-only rule for the other three bands; references/cli/vocabulary.md
+  owns a discoverability index row pointing to TC6; the validator
+  itself is the single executable source of truth. No new schema
+  group is added; no new vocabulary is added.
+
+  Test coverage: retire the `- Placeholder` decoy test (its
+  precondition no longer holds) and replace it with four new tests
+  plus a Critical-collapse boundary test. The boundary test (T2-e)
+  exercises a TODO.md where the boundary scanner is forced to
+  mis-attribute an empty body to Critical, asserting that the
+  Critical violation is still emitted to lock in the 20f3837
+  off-by-one fix. The existing adjacent-heading regression (line 84)
+  still passes because Critical with no body is still rejected.
+
+  Folded into one commit per AGENTS.md: the validator change
+  (T1), the test changes (T2), the schema CONVENTION (T3), the
+  vocabulary row (T4), and the TODO.md fold (T9). Tasks T5-T8
+  are verification gates and produce no commits of their own.
+
+tasks:
+  - number: 1
+    name: Implement hybrid policy in validateMdItems
+    depends_on: []
+    status: complete
+    acceptance:
+      - "GIVEN a TODO.md where the ⇶ Critical band contains no `- [type]` items WHEN validator runs THEN a violation names '⇶ Critical'"
+      - "GIVEN a TODO.md where Degraded, Normal, and Annoying bands are header-only (no items) WHEN validator runs THEN no violation is emitted for those bands"
+      - "The change to validateMdItems is ≤20 lines, single-file, no signature changes"
+      - "GIVEN the existing adjacent-heading test fixture (Critical followed immediately by '## ⇉ Degraded' with no list items) WHEN the test runs THEN the violation still names '⇶ Critical' and the test passes"
+  - number: 2
+    name: Update validateArtifact.test.ts regression coverage
+    depends_on:
+      - "1"
+    status: complete
+    acceptance:
+      - "GIVEN a TODO.md with header-only Degraded and Annoying bands (no items) WHEN validateExplicit('TODO.md') runs THEN violations are empty"
+      - "GIVEN a TODO.md with all four bands header-only WHEN validateExplicit('TODO.md') runs THEN exactly one violation names '⇶ Critical' and the other three bands produce no violation"
+      - "GIVEN a TODO.md body containing the literal substring '\\n## ⇉ Degraded\\n## → Normal\\n' (no list entries, no blank line between headings) WHEN validateExplicit runs THEN the boundary scanner attributes the empty body to Degraded and the validator emits NO violation naming '⇉ Degraded' (under the hybrid policy, Degraded with zero items is legal; the assertion is that the boundary scanner does not collapse the empty body into Critical or Normal)"
+      - "GIVEN a TODO.md whose Critical band is followed immediately by another band heading with no body and no terminating newline (the Critical-body-collapse scenario, which exercises the 20f3837 off-by-one fix) WHEN validateExplicit runs THEN a violation names '⇶ Critical', locking in the boundary scanner's correct attribution"
+      - "GIVEN the four pre-existing TODO.md test cases at validateArtifact.test.ts:54-103 WHEN the test suite runs THEN all cases pass (the multi-section Placeholder test is retired; the remaining three pass unchanged)"
+      - "Test count for the file rises by ≥4 new cases (T2-a, T2-b, T2-c, T2-d, T2-e)"
+  - number: 3
+    name: Add CONVENTION TC6 to todo.yaml
+    depends_on:
+      - "1"
+    status: complete
+    acceptance:
+      - "skills/agentera/schemas/artifacts/todo.yaml gains exactly one new CONVENTION entry, id TC6, level REQUIRED, describing the per-band policy"
+      - "TC6's description explicitly states: 'Critical (⇶) is enforced by the validator (level: required) and must contain ≥1 `- [type]` item; Degraded (⇉), Normal (→), and Annoying (⇢) are advisory and may be header-only (no items).'"
+      - "BUDGET and ITEM groups in todo.yaml are unchanged"
+      - "No EMPTY_SECTION_TOKENS, no `- Empty`, no `- _empty_` sentinel introduced anywhere in the schema"
+  - number: 4
+    name: Add discoverability row to references/cli/vocabulary.md
+    depends_on:
+      - "3"
+    status: complete
+    acceptance:
+      - "references/cli/vocabulary.md gains one row in the artifact grammar table naming 'Severity band policy' and pointing to todo.yaml CONVENTION TC6"
+      - "rg 'Severity band policy' references/cli/vocabulary.md returns exactly one hit"
+      - "No new vocabulary terms; this is a discoverability index row only"
+  - number: 5
+    name: Verify capability_schema_contract.yaml unchanged
+    depends_on:
+      - "1"
+    status: complete
+    acceptance:
+      - "GIVEN feat/v3 base WHEN `git diff feat/v3 -- skills/agentera/capability_schema_contract.yaml` runs THEN output is empty"
+      - "GIVEN the build WHEN `node packages/cli/dist/bin/agentera.js check validate capability-contract --format json` runs THEN the validator passes"
+  - number: 6
+    name: Run vitest suite
+    depends_on:
+      - "1"
+      - "2"
+      - "3"
+    status: complete
+    acceptance:
+      - "GIVEN the implementation WHEN `pnpm -C packages/cli test` runs THEN the full suite is green"
+      - "Coverage count for validateArtifact.test.ts rises by ≥4 tests vs. feat/v3 base"
+  - number: 7
+    name: Type-check the CLI
+    depends_on:
+      - "1"
+      - "2"
+      - "3"
+    status: complete
+    acceptance:
+      - "GIVEN the implementation WHEN `pnpm -C packages/cli run typecheck` runs THEN zero errors are reported"
+  - number: 8
+    name: Build the CLI
+    depends_on:
+      - "7"
+    status: complete
+    acceptance:
+      - "GIVEN the implementation WHEN `pnpm -C packages/cli build` runs THEN the build exits 0 and dist/bin/agentera.js exists"
+      - "GIVEN the build artifact WHEN `node packages/cli/dist/bin/agentera.js check validate capability-contract --format json` runs THEN the validator passes"
+  - number: 9
+    name: Update TODO.md and fold resolved-ledger entry
+    depends_on:
+      - "1"
+      - "2"
+      - "3"
+      - "4"
+    status: complete
+    acceptance:
+      - "GIVEN feat/v3 base WHEN `git diff --stat feat/v3 -- TODO.md` runs THEN the diff shows the two `- Placeholder` lines removed and the open TODO at line 14 moved to the `## ✓ Resolved` section"
+      - "GIVEN the implementation commit WHEN `rg '^- Placeholder$' TODO.md` runs THEN zero hits remain"
+      - "The resolved entry uses the standard ledger form per AGENTS.md: '- ~~[chore:3.0.0] TODO.md empty severity sections~~ · resolved on `feat/v3` @ <sha>: ...' naming the commit hash once known"
+      - "GIVEN the implementation commit WHEN the AGENTS.md 'Agentera commits' rule is applied THEN the TODO.md fold, validator change, test changes, schema CONVENTION, and vocabulary row are all in a single commit (not separate bookkeeping commits)"
+
+overall_acceptance: >-
+  GIVEN a project TODO.md whose Degraded, Normal, or Annoying bands
+  are header-only (no `- Placeholder`, no `- [type]` items) WHEN
+  users run `agentera state todo --format json` or trigger the
+  PostToolUse validate-artifact hook THEN the validator returns
+  exit 0 and zero violations, while a header-only Critical band
+  still produces a named violation. GIVEN a TODO.md whose Critical
+  band is followed immediately by another band heading with no body
+  (the Critical-body-collapse scenario) WHEN the boundary test runs
+  THEN a violation names '⇶ Critical', locking in the 20f3837
+  off-by-one fix. The plan ships on feat/v3 only; no main-branch
+  backport is required because the Python `hooks/validate_artifact.py`
+  has no equivalent validator. All eight ACs (AC-1..AC-8 from the
+  planera spec) hold on the implementation commit, and the open
+  TODO at TODO.md line 14 closes with the standard ledger form.
+
+surprises: []
+
+previous_plan_archived: .agentera/archive/plan-2026-06-03.yaml

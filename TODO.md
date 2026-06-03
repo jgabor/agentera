@@ -8,12 +8,9 @@
 
 ## ⇉ Degraded
 
-- Placeholder
-
 ## → Normal
 
 - ~~[chore:3.0.0] Lefthook pre-commit bypass and brittle inspektera TODO.md oracle~~ · resolved on `feat/v3` @ b3900f4 and `main` @ e200528: citation-anchor fixture decouples evaluation-report WARN rows from the project ledger; `verifyWarnCitationAtLine` checks cited line text; `scripts/precommit-vitest.sh` / `scripts/precommit-pytest.sh` run staged-aware smoke tests; hooks verified green without `LEFTHOOK=0`.
-- [chore:3.0.0] TODO.md empty severity sections: `validateMdItems` in `packages/cli/src/hooks/validateArtifact.ts` currently rejects any severity band with no `- [type]` entries, which forces decoy open items when a band has no real work. Allow empty Degraded/Annoying (and other bands when appropriate) without violating artifact validation; document whether bands may be header-only or may use a reserved `- Placeholder` sentinel; add hook/CLI regression coverage. Until then, use `- Placeholder` only when a hook blocks an otherwise-empty section. (Branch: `feat/v3` — implement on `feat/v3`.)
 - [feat:3.0.0] Rewrite the supported Agentera CLI core in TypeScript for Bun/npm/single-binary distribution, gated by contract-first parity with the current Python `agentera` CLI rather than a clean-slate command redesign. (Branch: `feat/v3` — implement on `feat/v3`.)
 - [chore:3.0.0] Design the Bun/npm packaging plan for Agentera 3.0, including single-binary delivery, npm package layout, app-home migration from Python-managed installs, and preserved direct-helper compatibility boundaries where still needed. (Branch: `feat/v3` — implement on `feat/v3`.)
 - [test:3.0.0] Decision 56 upgrade/migration parity on `feat/v3` · v2→v3 orchestrator, dual update channels, compatibility guards, backport-safety gate, and Python-oracle fixture tests pass in `packages/cli/test/upgrade/` (60 tests); `UPGRADE.md` documents channels and backport order. Decision 56 remains **open** until remaining CLI surfaces (artifact validation, compaction, verify, usage/stats, full suite green) meet contract-first parity per feeds_into. (Branch: `feat/v3` — implement on `feat/v3`.)
@@ -29,9 +26,9 @@
 
 ## ⇢ Annoying
 
-- Placeholder
-
 ## ✓ Resolved
+
+- ~~[chore:3.0.0] TODO.md empty severity sections~~ · resolved on `feat/v3` (this commit): `validateMdItems` in `packages/cli/src/hooks/validateArtifact.ts` now enforces the hybrid policy: only Critical (⇶) requires ≥1 `- [type]` item; Degraded (⇉), Normal (→), and Annoying (⇢) are allowed to be header-only without `- Placeholder` decoys. The policy is documented in `skills/agentera/schemas/artifacts/todo.yaml` CONVENTION TC6 (level: required, asymmetric) and discoverability-indexed in `references/cli/vocabulary.md`. Regression coverage: retired the placeholder-decoy test and added 4 new cases in `packages/cli/test/hooks/validateArtifact.test.ts` (header-only Degraded, all-four header-only, empty Critical flagged, boundary-scanner Critical-body-collapse). 686 vitest green; capability-contract unchanged; TS-only fix (no Python port, no main-branch backport). `.agentera/plan.yaml` status: complete; this is the implementation commit for that plan.
 
 - ~~[feat:3.0.0] Next-major doctor section~~ · resolved on `feat/v3` @ 51feef4 and `main` @ 3300acd: per-channel `next_major` in `references/cli/update-channels.yaml`, TypeScript `nextMajorDoctor.ts` and Python `scripts/next_major_doctor.py` head-of-output doctor rendering, vitest 12/12 and pytest 5/5 on main; CHANGELOG `[3.0.0]` and feat/v3 version_files at 3.0.0.
 - ~~[chore:2.7.7] `progress.yaml` exceeds the 10/40/50 compaction retention caps on `feat/v3`~~ · resolved on `feat/v3` @ 6b8af92: added `--apply` alias for `agentera check compact --mode fix`, regression tests that fail the gate when progress.yaml exceeds 50 cycles, archive preservation on compact, and live progress.yaml pinned at 10/40/50; `agentera check compact` passes without `over_limit`. Python stable mirror on `main` deferred per both-branch sequencing.
