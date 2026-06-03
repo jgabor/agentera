@@ -33,7 +33,7 @@
 - Added per-channel `next_major` metadata to `references/cli/update-channels.yaml` (`concept`, `channel`, `version`, npm `dist_tag`, `guide_url`, `preview_command`, `irreversible_advisory`). (`51feef4`)
 - Added `packages/cli/src/upgrade/nextMajorDoctor.ts` and head-of-output rendering in `packages/cli/src/cli/commands/doctor.ts`, sourced exclusively from the channel authority. (`51feef4`)
 - Added vitest regression coverage in `packages/cli/test/upgrade/nextMajorDoctor.test.ts` for authority reachability, six-line cap, v1 hardcoded fallback, omitted-when-null on `channels.development`, and vocabulary guard. (`51feef4`)
-- Added Python stable doctor mirror in `scripts/next_major_doctor.py` with pytest coverage in `tests/test_next_major_doctor.py` on `main` (landed in separate `main` commit). (`51feef4`)
+- Added Python stable doctor mirror in `scripts/next_major_doctor.py` with pytest coverage in `tests/test_next_major_doctor.py` on `main`. (`2f557b5`)
 
 ### Changed
 
