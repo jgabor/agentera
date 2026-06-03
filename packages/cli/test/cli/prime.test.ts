@@ -1,7 +1,17 @@
-import { describe, expect, it } from "vitest";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
-import { cmdPrime } from "../../src/cli/commands/prime.js";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+
+import { buildPrimeCapabilityContextPayload } from "../../src/cli/capabilityContext.js";
+import { cmdPrime, collectOrientationState } from "../../src/cli/commands/prime.js";
+import { planSummary } from "../../src/cli/orientation.js";
 import { PRIME_BLOB } from "../../src/cli/prime-blob.js";
+import type { SchemaInfo } from "../../src/cli/appContext.js";
+
+const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..");
 
 function capture(fn: (io: { out: (t: string) => void; err: (t: string) => void }) => number): {
   rc: number;
@@ -150,5 +160,80 @@ describe("cli prime", () => {
     const { rc, err } = capture((io) => cmdPrime({ context: "bogus", format: "json" }, io));
     expect(rc).toBe(2);
     expect(err).toContain("unsupported capability 'bogus'");
+  });
+});
+
+describe("orkestrera orchestration_context task_queue", () => {
+  let tmp: string;
+  let prevCwd: string;
+
+  beforeEach(() => {
+    tmp = fs.mkdtempSync(path.join(os.tmpdir(), "prime-orch-queue-"));
+    prevCwd = process.cwd();
+    process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT = REPO_ROOT;
+    fs.mkdirSync(path.join(tmp, ".agentera"), { recursive: true });
+    fs.writeFileSync(
+      path.join(tmp, ".agentera/plan.yaml"),
+      [
+        "header:",
+        "  title: Dependency queue regression",
+        "  status: active",
+        "tasks:",
+        "  - number: 1",
+        "    name: First task",
+        "    status: complete",
+        "    depends_on: []",
+        "  - number: 2",
+        "    name: Second task",
+        "    status: pending",
+        "    depends_on:",
+        '      - "1"',
+        "",
+      ].join("\n"),
+    );
+    process.chdir(tmp);
+  });
+
+  afterEach(() => {
+    process.chdir(prevCwd);
+    delete process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT;
+    fs.rmSync(tmp, { recursive: true, force: true });
+  });
+
+  it("unblocks dependents when a string depends_on ref matches an integer task number", () => {
+    const planPath = path.join(tmp, ".agentera/plan.yaml");
+    const schemas: Record<string, SchemaInfo> = {
+      plan: { path: planPath, record: undefined, schema: {}, fields: {} },
+    };
+    const plan = planSummary(schemas);
+    expect(plan.tasks[0].status).toBe("complete");
+    expect(plan.tasks[1].depends_on).toEqual(["1"]);
+
+    const state = collectOrientationState({ env: process.env });
+    const payload = buildPrimeCapabilityContextPayload(state, "orkestrera");
+    const orch = payload.capability_context.context.orchestration_context as Record<string, unknown>;
+    const taskQueue = orch.task_queue as Record<string, unknown>;
+    const ready = (taskQueue.dependency_ready_tasks as Array<{ number: number }>).map((t) => t.number);
+    const blocked = taskQueue.blocked_tasks as Array<{ number: number; blocked_reasons?: string[] }>;
+    const allReasons = blocked.flatMap((t) => t.blocked_reasons ?? []);
+
+    expect(ready).toContain(2);
+    expect(blocked.some((t) => t.number === 2)).toBe(false);
+    expect(allReasons.some((r) => r.includes("dependency 1 is not present in plan tasks"))).toBe(false);
+    expect((orch.task_summaries as Array<{ number: number; status: string }>)[0].status).toBe("complete");
+    expect((orch.selected_next_action as Record<string, unknown>)?.object).toBeTruthy();
+  });
+
+  it("matches prime --context orkestrera --format json task_queue to task_summaries", () => {
+    const { rc, out } = capture((io) => cmdPrime({ command: "prime", context: "orkestrera", format: "json" }, io));
+    expect(rc).toBe(0);
+    const orch = JSON.parse(out).capability_context.context.orchestration_context;
+    const ready = orch.task_queue.dependency_ready_tasks.map((t: { number: number }) => t.number);
+    const blockedReasons = orch.task_queue.blocked_tasks.flatMap(
+      (t: { blocked_reasons?: string[] }) => t.blocked_reasons ?? [],
+    );
+
+    expect(ready).toContain(2);
+    expect(blockedReasons.some((r: string) => r.includes("dependency 1 is not present in plan tasks"))).toBe(false);
   });
 });

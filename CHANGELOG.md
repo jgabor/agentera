@@ -4,6 +4,7 @@
 
 ### Fixed
 
+- Fixed `agentera prime --context orkestrera --format json` returning empty `dependency_ready_tasks` and `dependency 1 is not present in plan tasks` blocked_reasons when the dependency was complete in plan tasks; orchestration_context task_queue, task_summaries, and selected_next_action now agree after normalizing plan task numbers and depends_on refs.
 - Fixed pre-commit fragility when `TODO.md` edits broke the inspektera evaluation-report oracle: WARN citations now use `packages/cli/test/cli/fixtures/citation-anchor-todo.md` and `verifyWarnCitationAtLine` checks cited line text. Added `scripts/precommit-vitest.sh` for staged-aware vitest on `feat/v3`. (`b3900f4`)
 
 ### Key highlights

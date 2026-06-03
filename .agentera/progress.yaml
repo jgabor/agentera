@@ -1,4 +1,25 @@
 cycles:
+  - number: 640
+    timestamp: 2026-06-03 19:50
+    type: fix
+    phase: build
+    what: Orkestrera task_queue dependency lookup — planTaskRefKeys normalization in
+      orchestrationContext and dependencyReadyTasks; regression tests in
+      packages/cli/test/cli/prime.test.ts.
+    inspiration: TODO.md [fix:3.0.0] orkestrera task_queue dependency_ready_tasks
+      contract violation.
+    discovered: depends_on object refs and mixed int/string forms failed lookup even
+      when task_summaries showed the dependency complete.
+    verified: pnpm -C packages/cli test — 688/688; typecheck and build green;
+      capability-contract validate passed; manual prime --context orkestrera on
+      multi-task fixture confirms dependency_ready_tasks contains task 2.
+    next: continue Decision 56 parity work.
+    context:
+      intent: Align task_queue.dependency_ready_tasks with task_summaries and
+        selected_next_action.
+      constraints: Surgical change in capabilityContext.ts only.
+      unknowns: none
+      scope: capabilityContext.ts, prime.test.ts, TODO.md, CHANGELOG.md
   - number: 639
     timestamp: 2026-06-03 17:25
     type: fix
@@ -249,30 +270,9 @@ cycles:
         packages/cli/test/cli/inspekteraEvaluationReport.test.ts,
         packages/cli/test/cli/fixtures/oracle/inspektera-evaluation-report.json,
         .agentera/plan.yaml
-  - number: 630
-    timestamp: 2026-06-03 01:16
-    type: chore
-    phase: build
-    what: D66 drop progress.yaml per-cycle commit field — removed PR6/PV2 commit
-      requirements from the progress schema; deleted progressCommit.ts, backfill
-      command, and git ancestry guard; stripped commit from CLI JSON/text output
-      and v1 migration; updated AGENTS.md, realisera, inspektera 5b,
-      contract.md, UPGRADE.md, and CHANGELOG; refreshed bundle data.
-    inspiration: Plan task 1 (2.7.7 release).
-    discovered: Main-branch Python mirror deferred per plan both-branch sequencing;
-      feat/v3 TypeScript slice only in this session.
-    verified: pnpm -C packages/cli test — 643/643 passed (73 files); typecheck
-      clean; build clean; live state progress --format json omits per-cycle
-      commit; prime progress.latest has no commit key.
-    next: Plan task 2 — inspektera WARN/FAIL file:line citation enforcement.
-    context:
-      intent: Execute plan task 1 (D66 commit field removal) on feat/v3 only.
-      constraints: No remote push; no vision.yaml edits; main Python slice deferred.
-      unknowns: none
-      scope: skills/agentera/schemas/artifacts/progress.yaml, packages/cli/src/**,
-        AGENTS.md, realisera/inspektera instructions, contract.md, UPGRADE.md,
-        CHANGELOG.md, .agentera/progress.yaml, .agentera/plan.yaml
 archive:
+  - summary: "Cycle 630 (2026-06-03): D66 drop progress.yaml per-cycle commit field
+      — removed PR6/PV2 commit requirements from the progress schema;..."
   - summary: "Cycle 629 (2026-06-02): Freeze source_contract internals — new oracle
       fixture (source-contract.json) and new parity test
       (sourceContractOracles.test.ts) that pin..."
@@ -351,5 +351,3 @@ archive:
       and released 2.6.1 patch metadata."
   - summary: "Cycle 592 (2026-05-23): Archived completed prime/JSON-budget plan and
       released 2.6.0 metadata."
-  - summary: "Cycle 591 (2026-05-23): Closed Agentera 3.0 JSON budget plan with full
-      validation and measurement closeout evidence."
