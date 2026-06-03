@@ -187,6 +187,11 @@ Install git hooks once after clone:
 lefthook install
 ```
 
+Pre-commit on `main` runs staged-aware pytest via `scripts/precommit-pytest.sh`
+(smoke plus touched test modules; full `pytest tests/ -n auto` only for workflow,
+`pyproject.toml`, or `uv.lock` changes). GitHub Actions still runs the full suite.
+Use `LEFTHOOK=0 git commit` only for emergency bypass when the hook itself is broken.
+
 Pre-commit runs `vp staged` in `packages/web` when web files change; markdownlint
 and prettier for repo-wide docs/configs stay on `bunx`.
 
