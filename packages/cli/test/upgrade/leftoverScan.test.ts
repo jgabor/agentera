@@ -10,6 +10,7 @@ import {
   applyMigrationPhases,
   dryRunMigration,
 } from "../../src/upgrade/migrateArtifactsV2ToV3.js";
+import { migrationCtx } from "./helpers/migrationCtx.js";
 import { scanDirectoryForPythonLeftovers } from "./helpers/preservation.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -36,13 +37,7 @@ describe("leftoverScan", () => {
     fs.cpSync(path.join(FIXTURES, "v2-yaml-project"), project, { recursive: true });
     fs.cpSync(path.join(FIXTURES, "v2-runtime-python"), home, { recursive: true });
 
-    const ctx = {
-      appHome,
-      project,
-      home,
-      sourceRoot: REPO_ROOT,
-      channel: "development" as const,
-    };
+    const ctx = migrationCtx(appHome, project, home, REPO_ROOT);
     const preview = dryRunMigration(ctx);
     applyMigrationPhases(ctx, preview, ["runtime"]);
 

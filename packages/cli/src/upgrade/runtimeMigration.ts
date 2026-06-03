@@ -1,4 +1,4 @@
-import fs from "node:fs";
+import fs, { type Stats } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
@@ -483,9 +483,14 @@ function planEnvRuntimeNoops(items: MigrationPhaseItem[], runtime: string, messa
 }
 
 export function planRuntimeMigrationItems(ctx: MigrationContext): MigrationPhaseItem[] {
+  if (!ctx.env) {
+    throw new Error(
+      "MigrationContext.env is required for runtime migration planning; pass sandboxMigrationEnv(home, sourceRoot) in tests or an explicit env in callers.",
+    );
+  }
   const home = resolvePath(ctx.home);
   const project = resolvePath(ctx.project);
-  const env = ctx.env ?? { ...process.env, HOME: home };
+  const env = ctx.env;
   const sourceRoot = resolvePath(ctx.sourceRoot ?? resolveSourceRoot(env));
   const commands = resolveNpxHookCommands({ ...ctx, home, env, sourceRoot });
   const items: MigrationPhaseItem[] = [];
@@ -546,8 +551,19 @@ export function applyRuntimeMigrationItem(item: MigrationPhaseItem, commands: Np
           return;
         }
         fs.mkdirSync(path.dirname(item.target), { recursive: true });
-        if (pathExists(item.target)) {
-          fs.rmSync(item.target, { recursive: true, force: true });
+        // lstat (not stat): stat follows symlinks and ENOENTs on dangling links; rmSync then fails.
+        let targetStat: Stats | null = null;
+        try {
+          targetStat = fs.lstatSync(item.target);
+        } catch {
+          /* target absent */
+        }
+        if (targetStat) {
+          if (targetStat.isSymbolicLink()) {
+            fs.unlinkSync(item.target);
+          } else {
+            fs.rmSync(item.target, { recursive: true, force: true });
+          }
         }
         fs.symlinkSync(item.source, item.target);
         item.status = "applied";

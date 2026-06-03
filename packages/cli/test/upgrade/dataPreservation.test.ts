@@ -11,6 +11,7 @@ import {
   dryRunMigration,
   planCleanupPhase,
 } from "../../src/upgrade/migrateArtifactsV2ToV3.js";
+import { sandboxMigrationEnv } from "./helpers/migrationCtx.js";
 import {
   assertChecksumsUnchanged,
   checksumManifest,
@@ -20,6 +21,7 @@ import {
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const FIXTURES = path.join(__dirname, "fixtures");
+const REPO_ROOT = path.resolve(__dirname, "../../../..");
 
 let tmp: string;
 
@@ -68,7 +70,7 @@ describe("dataPreservation", () => {
     expect(before[".agentera/optimera/runs/sample.yaml"]).toBeDefined();
 
     const appHome = copyFixture("v2-app-home", path.join(tmp, "agentera"));
-    dryRunMigration({ appHome, project, home: tmp });
+    dryRunMigration({ appHome, project, home: tmp, env: sandboxMigrationEnv(tmp, REPO_ROOT) });
     assertChecksumsUnchanged(project, before);
   });
 

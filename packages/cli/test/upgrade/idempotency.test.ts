@@ -13,6 +13,7 @@ import {
   applyMigrationPhases,
   dryRunMigration,
 } from "../../src/upgrade/migrateArtifactsV2ToV3.js";
+import { migrationCtx } from "./helpers/migrationCtx.js";
 import {
   buildUpgradePlan,
   upgradeExitCode,
@@ -66,8 +67,9 @@ afterEach(() => {
 describe("idempotency", () => {
   it("second orchestrator dry-run reports no_changes_needed after full apply", () => {
     const { appHome, project } = seedLayout(tmp);
-    const preview = dryRunMigration({ appHome, project, home });
-    applyMigrationPhases({ appHome, project, home }, preview, ["runtime", "cleanup"]);
+    const ctx = migrationCtx(appHome, project, home, REPO_ROOT);
+    const preview = dryRunMigration(ctx);
+    applyMigrationPhases(ctx, preview, ["runtime", "cleanup"]);
 
     const second = buildUpgradePlan({
       installRoot: appHome,
