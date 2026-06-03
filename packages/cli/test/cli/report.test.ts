@@ -128,6 +128,17 @@ describe("cmdReport", () => {
     const payload = JSON.parse(out);
     expect(payload.command).toBe("stats refresh");
     expect(payload.status).toBe("dry_run");
+    expect(payload.privacy).toEqual({
+      local_history_read: false,
+      local_history_write: false,
+      corpus_write: false,
+      required_consent: "local-history",
+      provided_consent: null,
+    });
+    expect(payload.diagnostics).toEqual([
+      "dry-run does not read runtime history or write corpus files",
+      "generated corpus is internal state for stats at $PROFILERA_PROFILE_DIR/intermediate/corpus.json",
+    ]);
     expect(fs.existsSync(outp)).toBe(false); // dry-run writes nothing
   });
 

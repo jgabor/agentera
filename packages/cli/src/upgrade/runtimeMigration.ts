@@ -14,7 +14,7 @@ import {
   hasManagedMarker,
   opencodeCommandTemplate,
   opencodeConfigDir,
-} from "../setup/doctor.js";
+} from "../setup/opencode.js";
 import { resolveUpdateChannel } from "./channels.js";
 import type { MigrationContext, MigrationPhaseItem, MigrationStatus } from "./migrateArtifactsV2ToV3.js";
 

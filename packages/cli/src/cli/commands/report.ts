@@ -156,10 +156,19 @@ export function cmdReport(args: ReportArgs, io: Io = {}): number {
       const payload = {
         command: "stats refresh",
         status: "dry_run",
-        privacy: { local_history_read: false, local_history_write: false, corpus_write: false, required_consent: "local-history" },
+        privacy: {
+          local_history_read: false,
+          local_history_write: false,
+          corpus_write: false,
+          required_consent: "local-history",
+          provided_consent: null,
+        },
         corpus_path: corpusPath,
         engine: { command: engineCommand },
-        diagnostics: ["dry-run does not read runtime history or write corpus files"],
+        diagnostics: [
+          "dry-run does not read runtime history or write corpus files",
+          "generated corpus is internal state for stats at $PROFILERA_PROFILE_DIR/intermediate/corpus.json",
+        ],
       };
       if (outputFormat === "json") {
         out(JSON.stringify(payload, null, 2) + "\n");

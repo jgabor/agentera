@@ -1,0 +1,210 @@
+{
+  "schemaVersion": "agentera.parityRemainingFamilies.v1",
+  "notes": "Frozen contract for the six v3-remaining CLI surface families whose parity with the Python `agentera` stable CLI has not yet been pinned. The fixture is the contract reference for `packages/cli/test/cli/npmParityMatrix.test.ts` — every row in the parity matrix reads its expected shape and forbidden-shape sentinel from here. The `python_commit` field pins the Python CLI source (commit on the agentera `main` branch) the structural contract is locked to. The `normalizeEnvelope` block is the canonical normalization spec applied to live envelopes before drift classification (timestamp → ISO date, hash → 0x + 8 hex, path → forward-slash). Per-family `python_commit` mirrors the top-level pin so the matrix can be exercised per-family when the families land in T2-T7. The `expectedShape` block is structural (required keys + value types + literal pins); the `forbiddenSubstrings` block is the per-family sentinel — a substring the TS side MUST NOT emit because the Python side does not. T1 marks every row in the matrix as `intentional_version_break: true` (the six surfaces are not yet ported in this commit); T2-T7 close the rows by removing the `version_break` flag and asserting `drift_direction === 'equal'`.",
+  "python_commit": "382fa5ee0dcb4bab19e5b938a9337cad21443acc",
+  "normalizeEnvelope": {
+    "description": "Canonical normalization applied to live TS envelopes before they are compared to the Python oracle pin. The helper lives in `packages/cli/test/cli/npmParityMatrix.test.ts` and reads these rules verbatim; do not duplicate the rules in test code.",
+    "rules": {
+      "timestamp": {
+        "description": "Any value matching ISO 8601 with a time component (`YYYY-MM-DDTHH:MM:SS[.fff][Z|+HH:MM]`) is reduced to the date (`YYYY-MM-DD`). Date-only values pass through unchanged. Non-string values pass through unchanged.",
+        "regex": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?(Z|[+-]\\d{2}:?\\d{2})?$",
+        "shape": "YYYY-MM-DD"
+      },
+      "hash": {
+        "description": "Any value matching a hex hash of 8+ characters (with or without an algorithm prefix like `sha256:`) is reduced to `0x` + the first 8 hex characters. Algorithm-prefixed hashes are stripped of the prefix first. Values shorter than 8 hex characters pass through unchanged. Non-string values pass through unchanged.",
+        "regex": "^(sha256:|sha1:|md5:)?([0-9a-fA-F]{8,})$",
+        "shape": "0xXXXXXXXX"
+      },
+      "path": {
+        "description": "Any string value that is a filesystem path is normalized to forward-slash separators. Backslashes are replaced with forward slashes. Windows drive-letter prefixes (`C:\\`) are lowercased. UNC paths (`\\\\server\\share`) are normalized to `//server/share`. The normalization is applied recursively to nested object keys whose names are in a `pathKeys` allowlist (path, file, dir, root, home, source_root, app_home, user_data_root, managed_app_root, persisted_artifact_path, agentera_home).",
+        "shape": "forward-slash",
+        "pathKeys": [
+          "path",
+          "file",
+          "dir",
+          "root",
+          "home",
+          "source_root",
+          "app_home",
+          "user_data_root",
+          "managed_app_root",
+          "persisted_artifact_path",
+          "agentera_home"
+        ]
+      }
+    }
+  },
+  "driftDirectionTaxonomy": {
+    "description": "The four-valued drift classification applied to every parity-matrix row.",
+    "values": {
+      "equal": "Normalized TS envelope matches the Python oracle pin; the row is in lockstep and the test passes.",
+      "ts_smaller": "Normalized TS envelope is missing keys/fields the Python oracle emits; the TS side is smaller than the Python side. The test fails unless `version_break: true` is set on the row.",
+      "python_smaller": "Normalized TS envelope has extra keys/fields the Python oracle does not emit; the Python side is smaller than the TS side. The test fails unless `version_break: true` is set on the row.",
+      "intentional_version_break": "The row has `version_break: true` set, classifying any drift (ts_smaller or python_smaller) as intentional; the test passes. T2-T7 will close these rows by removing the flag and re-classifying as `equal`."
+    }
+  },
+  "families": {
+    "artifact_validation": {
+      "description": "The seven `check validate <family> --format json` subcommands (capability, capability-contract, cross-capability, lifecycle-adapters, app-home-contract, vocabularyAuthority, selfAudit). T2 ports the 7 surfaces; T1 pins the structural contract and marks the row as `intentional_version_break`.",
+      "python_commit": "382fa5ee0dcb4bab19e5b938a9337cad21443acc",
+      "argv": ["check", "validate", "capability-contract", "--format", "json"],
+      "exitCode": 0,
+      "expectedShape": {
+        "command": "string",
+        "status": "string",
+        "statusUnion": ["pass", "fail"],
+        "target_family": "string",
+        "target_family_value": "capability-contract",
+        "target": "string",
+        "checks": "array",
+        "violations": "array",
+        "summary": "object",
+        "summaryRequiredKeys": ["passed", "failed"]
+      },
+      "forbiddenSubstrings": ["validate_capability.py is missing", "internal compiler error"]
+    },
+    "compaction": {
+      "description": "`check compact` apply + dry-run + retention caps (10/40/50 from hooks/common). T3 closes this row; dry-run gate and apply paths match the Python oracle pin.",
+      "python_commit": "382fa5ee0dcb4bab19e5b938a9337cad21443acc",
+      "argv": ["check", "compact", "--format", "json"],
+      "exitCode": 0,
+      "expectedShape": {
+        "command": "string",
+        "command_value": "gate",
+        "status": "string",
+        "project": "string",
+        "gate": "string",
+        "gate_value": "compaction",
+        "operations": "array",
+        "summary": "object",
+        "summaryRequiredKeys": [
+          "status",
+          "mode",
+          "artifact_count",
+          "over_limit_count",
+          "action_counts",
+          "guidance"
+        ],
+        "summary_status_union": ["pass", "fail"],
+        "summary_mode_union": ["check", "fix"]
+      },
+      "forbiddenSubstrings": [
+        "Cannot create a string longer than 0x1fffffe8",
+        "yaml.YAMLError: mapping values are not allowed"
+      ]
+    },
+    "verify_eval": {
+      "description": "`check verify eval` family (eval semantic + eval skills, with --dry-run and --run paths; smoke family is retired on npm). T5 ports the safety wrappers and parity pins; gap `gap-verify-eval-family` closes when drift_direction === 'equal'.",
+      "python_commit": "382fa5ee0dcb4bab19e5b938a9337cad21443acc",
+      "argv": ["check", "verify", "eval", "skills", "--dry-run", "--format", "json"],
+      "exitCode": 0,
+      "expectedShape": {
+        "command": "string",
+        "command_value": "verify",
+        "status": "string",
+        "statusUnion": ["pass", "fail"],
+        "family": "string",
+        "family_value": "eval",
+        "target": "string",
+        "format": "string",
+        "formatUnion": ["text", "json"],
+        "engine": "object",
+        "engineRequiredKeys": ["command", "exit_code"],
+        "diagnostics": "object",
+        "diagnosticsRequiredKeys": ["stdout", "stderr", "line_limit"],
+        "safety": "object",
+        "safetyRequiredKeys": ["mode", "summary", "live", "long_running_default"],
+        "safetyModeUnion": ["offline-fixtures", "dry-run", "explicit-runtime"]
+      },
+      "forbiddenSubstrings": [
+        "verify smoke is retired on the npm self-contained CLI",
+        "live runtime call attempted without explicit --run"
+      ]
+    },
+    "doctor_upgrade_safety": {
+      "description": "`doctor` and `upgrade --dry-run` with the canonical Decision 54 lifecycle vocabulary (up_to_date, outdated, repair_needed, manual_review_needed, ready_to_apply, applied, no_changes_needed); smoke checks; next-major doctor for the npm channel. T4 ports the safety rails; T1 pins the structural contract and marks the row as `intentional_version_break`.",
+      "python_commit": "382fa5ee0dcb4bab19e5b938a9337cad21443acc",
+      "argv": ["doctor", "--format", "json"],
+      "exitCode": 0,
+      "expectedShape": {
+        "command": "string",
+        "command_value": "doctor",
+        "status": "string",
+        "statusUnion": [
+          "up_to_date",
+          "outdated",
+          "repair_needed",
+          "manual_review_needed",
+          "ready_to_apply",
+          "applied",
+          "no_changes_needed",
+          "pending"
+        ],
+        "expectedVersion": "string",
+        "appHome": "string",
+        "managedAppRoot": "string",
+        "userDataRoot": "string",
+        "signals": "array",
+        "dryRunCommand": ["string", "null"],
+        "applyCommand": ["string", "null"],
+        "retryCommand": "string"
+      },
+      "forbiddenSubstrings": [
+        "uvx --from git+https://github.com/jgabor/agentera agentera",
+        "@feat/v3"
+      ]
+    },
+    "usage_stats_consent": {
+      "description": "`stats` + `stats refresh --dry-run` + `stats refresh --consent local-history`; explicit consent enforcement; size-bounded corpus reads; no top-level `agentera corpus` (per resolved-ledger TODOs L84, L85). T6 closes this row; plain `stats` missing-corpus JSON matches the Python oracle pin.",
+      "python_commit": "382fa5ee0dcb4bab19e5b938a9337cad21443acc",
+      "argv": ["stats", "--format", "json"],
+      "exitCode": 2,
+      "expectedShape": {
+        "command": "string",
+        "command_value": "stats",
+        "status": "string",
+        "statusUnion": ["missing", "stale", "ready", "dry_run", "pass", "fail"],
+        "reason": "string",
+        "next": "string",
+        "corpus_path": "string",
+        "privacy": "object",
+        "privacyRequiredKeys": ["local_history_read", "local_history_write"]
+      },
+      "forbiddenSubstrings": ["agentera corpus", "raw runtime history read without --consent"]
+    },
+    "runtime_adapter_hooks": {
+      "description": "OpenCode/Codex/Cursor/Copilot hook surface coverage + per-runtime `subagent_dispatch` parity + descriptor bodies and trust hashes parity. T7 closes this row when `check validate descriptors --format json` is parity-green (24 checks: 12 codex + 12 opencode) and lifecycle adapter metadata validates.",
+      "python_commit": "382fa5ee0dcb4bab19e5b938a9337cad21443acc",
+      "argv": ["check", "validate", "descriptors", "--format", "json"],
+      "exitCode": 0,
+      "expectedShape": {
+        "command": "string",
+        "command_value": "validate",
+        "status": "string",
+        "target_family": "string",
+        "target_family_value": "descriptors",
+        "target": "string",
+        "target_value": "agent-descriptors",
+        "checks": "array",
+        "checksLength": 24,
+        "violations": "array",
+        "summary": "object",
+        "summaryRequiredKeys": ["passed", "failed"],
+        "checkItemRequiredKeys": ["runtime", "capability", "path", "status"],
+        "checkItemRuntimeUnion": ["codex", "opencode"],
+        "checkItemStatusUnion": ["pass", "fail"]
+      },
+      "forbiddenSubstrings": [
+        "Read ${AGENTERA_HOME}/app/skills/agentera/capabilities",
+        "experimental.session.compacting missing"
+      ]
+    }
+  },
+  "relatedOracles": {
+    "npmCliSurface": "packages/cli/test/cli/fixtures/oracle/npm-cli-surface.json",
+    "validateFamily": "packages/cli/test/cli/fixtures/oracle/validate-family.json",
+    "verifyEvalFamily": "packages/cli/test/cli/fixtures/oracle/verify-eval-family.json",
+    "sourceContract": "packages/cli/test/cli/fixtures/oracle/source-contract.json",
+    "invalidInputEnvelope": "packages/cli/test/cli/fixtures/oracle/invalid-input-envelope.json"
+  }
+}

@@ -6,11 +6,13 @@ import { fileURLToPath } from "node:url";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import {
+  D56_PARITY_FAMILY_GAPS,
   GAP_IDS,
   DEFAULT_RUNTIME_MATRIX,
   TRACKED_GAPS,
   gapSkipReason,
   isGapClosed,
+  isParityFamilyClosed,
 } from "./gapRegistry.js";
 import { planRuntimeRewirePhase } from "../../src/upgrade/migrateArtifactsV2ToV3.js";
 
@@ -43,6 +45,55 @@ describe("gapRegistry", () => {
 
   it("documents opencode runtime rewire as closed", () => {
     expect(isGapClosed(GAP_IDS.OPENCODE_RUNTIME_REWIRE)).toBe(true);
+  });
+
+  it("documents compaction parity family as closed after D56 T3", () => {
+    expect(isGapClosed(GAP_IDS.COMPACTION_FAMILY)).toBe(true);
+    expect(isParityFamilyClosed("compaction")).toBe(true);
+    expect(D56_PARITY_FAMILY_GAPS.compaction).toBe(GAP_IDS.COMPACTION_FAMILY);
+  });
+
+  it("documents usage_stats_consent parity family as closed after D56 T6", () => {
+    expect(isGapClosed(GAP_IDS.USAGE_STATS_CONSENT_FAMILY)).toBe(true);
+    expect(isParityFamilyClosed("usage_stats_consent")).toBe(true);
+    expect(D56_PARITY_FAMILY_GAPS.usage_stats_consent).toBe(GAP_IDS.USAGE_STATS_CONSENT_FAMILY);
+  });
+
+  it("documents artifact_validation parity family as closed after D56 T2", () => {
+    expect(isGapClosed(GAP_IDS.ARTIFACT_VALIDATION_FAMILY)).toBe(true);
+    expect(isParityFamilyClosed("artifact_validation")).toBe(true);
+    expect(D56_PARITY_FAMILY_GAPS.artifact_validation).toBe(GAP_IDS.ARTIFACT_VALIDATION_FAMILY);
+  });
+
+  it("documents doctor_upgrade_safety parity family as closed after D56 T4", () => {
+    expect(isGapClosed(GAP_IDS.DOCTOR_UPGRADE_SAFETY_FAMILY)).toBe(true);
+    expect(isParityFamilyClosed("doctor_upgrade_safety")).toBe(true);
+    expect(D56_PARITY_FAMILY_GAPS.doctor_upgrade_safety).toBe(GAP_IDS.DOCTOR_UPGRADE_SAFETY_FAMILY);
+  });
+
+  it("documents verify_eval parity family as closed after D56 T5", () => {
+    expect(isGapClosed(GAP_IDS.VERIFY_EVAL_FAMILY)).toBe(true);
+    expect(isParityFamilyClosed("verify_eval")).toBe(true);
+    expect(D56_PARITY_FAMILY_GAPS.verify_eval).toBe(GAP_IDS.VERIFY_EVAL_FAMILY);
+  });
+
+  it("documents runtime_adapter_hooks parity family as closed after D56 T7", () => {
+    expect(isGapClosed(GAP_IDS.RUNTIME_ADAPTER_HOOKS_FAMILY)).toBe(true);
+    expect(isParityFamilyClosed("runtime_adapter_hooks")).toBe(true);
+    expect(D56_PARITY_FAMILY_GAPS.runtime_adapter_hooks).toBe(GAP_IDS.RUNTIME_ADAPTER_HOOKS_FAMILY);
+  });
+
+  it("maps all six D56 parity families to gap ids", () => {
+    expect(Object.keys(D56_PARITY_FAMILY_GAPS).sort()).toEqual(
+      [
+        "artifact_validation",
+        "compaction",
+        "doctor_upgrade_safety",
+        "runtime_adapter_hooks",
+        "usage_stats_consent",
+        "verify_eval",
+      ].sort(),
+    );
   });
 
   it("skips opencode gap test until gap closes", () => {

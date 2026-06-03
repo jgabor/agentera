@@ -15,7 +15,7 @@ import {
   buildDoctorStatus,
   EXPECTED_STATE_COMMANDS,
   ProbeResult,
-  publicDoctorStatus,
+  doctorParityJsonEnvelope,
 } from "../../upgrade/doctor.js";
 import { classifyInstall } from "../../upgrade/compatibility.js";
 import type { UpdateChannelName } from "../../upgrade/channels.js";
@@ -223,7 +223,7 @@ export function cmdDoctor(args: DoctorArgs, io: Io = {}): number {
     });
   }
   if ((args.format ?? "text") === "json") {
-    const payload = publicDoctorStatus(status) as Dict;
+    const payload = doctorParityJsonEnvelope(status) as Dict;
     if (smokeReport) payload.smoke = smokeReport;
     out(pyJsonIndentSorted(payload) + "\n");
   } else {

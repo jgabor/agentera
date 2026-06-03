@@ -246,7 +246,7 @@ tasks:
     name: Port artifact-validation CLI surface to TS
     depends_on:
       - "1"
-    status: complete
+    status: pending
     acceptance:
       - "GIVEN T1's oracle WHEN `packages/cli/src/cli/commands/validate.ts` is updated THEN the file hosts all 7 subcommands (capability, capability-contract, cross-capability, lifecycle-adapters, app-home-contract, vocabularyAuthority, selfAudit); each subcommand routes to the corresponding `packages/cli/src/validate/*.ts` module and emits the same JSON shape as the Python oracle"
       - "GIVEN the 7 subcommands WHEN `packages/cli/test/cli/validateParity.test.ts` (or one test file per subcommand) runs THEN every subcommand is parity-green against the Python oracle per `npmParityMatrix.test.ts` `artifact_validation` family"
@@ -257,7 +257,7 @@ tasks:
     name: Port compaction CLI surface to TS
     depends_on:
       - "1"
-    status: complete
+    status: pending
     acceptance:
       - "GIVEN T1's oracle WHEN `packages/cli/src/cli/commands/compact.ts` is reviewed/extended THEN the `apply` and `dry-run` paths match the Python `hooks/compaction.py` + `scripts/yaml_mapping.py` shapes; the 10/40/50 retention caps are wired through the shared `apply_retention_caps` helper or an equivalent TS-side helper; `yaml.YAMLError` error classification matches the Python `compute_compaction_status` behavior (per resolved-ledger TODO L57)"
       - "GIVEN the compact apply WHEN `agentera check compact --apply` (or the TS equivalent) runs on a fixture that exceeds the 10/40/50 cap THEN the cap is enforced, archives are preserved, and `over_limit` is reported as `none`; the parity row is `equal` for the `compaction` family"
@@ -267,7 +267,7 @@ tasks:
     name: Port doctor/upgrade safety rails to TS
     depends_on:
       - "1"
-    status: complete
+    status: pending
     acceptance:
       - "GIVEN T1's oracle WHEN `packages/cli/src/setup/doctor.ts` and `packages/cli/src/upgrade/{doctor,nextMajorDoctor,appModel,channels}.ts` are reviewed/extended THEN the safety-rail transitions (outdated → ready_to_apply → applied; repair_needed; manual_review_needed) match the Python `scripts/agentera` upgrade/doctor shapes; the canonical Decision 54 vocabulary is pinned in lifecycle metadata; user-facing repair wording matches the plain-language template"
       - "GIVEN `doctor --smoke` WHEN the npm `runNpmSmokeChecks` path is reviewed THEN the smoke family is parity-green for the npm distribution boundary (per resolved-ledger TODO L45); the parity row is `equal` for the `doctor_upgrade_safety` family"
@@ -277,7 +277,7 @@ tasks:
     name: Port verify gates (`check verify eval`) to TS
     depends_on:
       - "1"
-    status: complete
+    status: pending
     acceptance:
       - "GIVEN T1's oracle WHEN `packages/cli/src/cli/commands/verify.ts` is reviewed/extended THEN the `eval` family is wired with safety wrappers (retired smoke family messaging for npm distribution per resolved-ledger TODO L43; bounded offline smoke without live model calls by default); the verify contract spec from `agent-ready-state-contract.yaml` is parity-pinned for the npm @next distribution boundary"
       - "GIVEN `check verify eval` WHEN the npm `@next` path runs THEN the `eval` family is supported; the smoke family returns the retired-family message; the `agent-ready-state-contract.yaml` reflects eval-only npm guidance; the parity row is `equal` for the `verify_eval` family"
@@ -286,7 +286,7 @@ tasks:
     name: Port usage/stats consent semantics to TS
     depends_on:
       - "1"
-    status: complete
+    status: pending
     acceptance:
       - "GIVEN T1's oracle WHEN `packages/cli/src/analytics/usageStats.ts` is reviewed/extended THEN the consent flow matches the Python `agentera stats` semantics: no runtime-history reads from plain `stats`; explicit `--consent local-history` required for extraction; bounded size-bounded corpus reads; the v1 `agentera stats` namespace owns the surface; no top-level `agentera corpus` command is exposed (per resolved-ledger TODOs L84, L85)"
       - "GIVEN `stats refresh --dry-run` WHEN the dry-run path runs THEN no corpus is written; the privacy payload matches the Python oracle; the parity row is `equal` for the `usage_stats_consent` family"
@@ -296,7 +296,7 @@ tasks:
     name: Port runtime adapter hooks (OpenCode/Codex/Cursor/Copilot) to TS
     depends_on:
       - "1"
-    status: complete
+    status: pending
     acceptance:
       - "GIVEN T1's oracle WHEN `packages/cli/src/registries/runtimeAdapterRegistry.ts` and the per-runtime setup files (`packages/cli/src/setup/{opencode,codex,cursor,copilot}.ts`) are reviewed/extended THEN the hook surface coverage matches the Python side per `references/cli/runtime-adapters.md`: OpenCode `event`, `shell.env`, `chat.message`, `tool.execute.before/after`, `experimental.session.compacting`; Codex `hooks.state` trust hashes and PLUGIN_ROOT-safe apply_patch config; Cursor `preToolUse Write` and `session.created`/`session.idle` rejection; Copilot per-invocation AGENTERA_HOME"
       - "GIVEN per-runtime `subagent_dispatch` WHEN the TS implementation is reviewed THEN it matches the Python `RuntimeAdapter.subagent_dispatch` shape; descriptor bodies and trust hashes are parity-equivalent; the `agentera validate descriptors` check passes for all 36 descriptors (12 codex + 12 cursor + 12 opencode, per D65 plan T5 acceptance)"
@@ -312,7 +312,7 @@ tasks:
       - "5"
       - "6"
       - "7"
-    status: complete
+    status: pending
     acceptance:
       - "GIVEN T1-T7 complete WHEN the implementation commit is staged THEN `.agentera/plan.yaml` status flips from `active` to `complete` and the new plan archives to `.agentera/archive/plan-2026-06-04-d56-parity-closeout.yaml`; the D65 plan on disk is already archived at `.agentera/archive/plan-2026-06-03-d65-capability-ts-surface.yaml` per the D65 plan's own design note, so T8 verifies the archive presence (no-op copy); the `previous_plan_archived` line in the new plan points at the D65 archive path"
       - "GIVEN the same commit WHEN `.agentera/progress.yaml` is updated THEN a new full-detail cycle entry is appended whose scope is `D56 parity closeout`; per Decision 66 (PR6/PR2 removal) the cycle omits the `commit` field and follows the post-D66 cycle shape; the commit is folded into the implementation commit per AGENTS.md `Agentera commits` rules, not a separate bookkeeping commit"

@@ -119,3 +119,45 @@ export function checkFiller(text: string): [boolean, string] {
   }
   return [false, "filler: " + matched.join(", ")];
 }
+
+/** Smoke-validate that self-audit conventions and budgets are wired. */
+export function validateSelfAuditConventions(): string[] {
+  const errors: string[] = [];
+  if (Object.keys(FULL_FILE_BUDGETS).length === 0 || Object.keys(PER_ENTRY_BUDGETS).length === 0) {
+    errors.push("self-audit: budget tables must be non-empty");
+  }
+  const sample = "concrete anchor `scripts/agentera` at line 42 with 12 words total here";
+  const [verbosityOk] = checkVerbosity(sample, "PROGRESS.md");
+  if (!verbosityOk) {
+    errors.push("self-audit: verbosity check failed on smoke sample");
+  }
+  const [abstractionOk] = checkAbstraction(sample);
+  if (!abstractionOk) {
+    errors.push("self-audit: abstraction check failed to detect concrete anchor in smoke sample");
+  }
+  const [fillerOk] = checkFiller("Shipped the plan task with a concrete file path.");
+  if (!fillerOk) {
+    errors.push("self-audit: filler check false-positive on clean smoke sample");
+  }
+  const [fillerFailOk, fillerDetail] = checkFiller("In summary, the work is done.");
+  if (fillerFailOk || !fillerDetail.includes("filler")) {
+    errors.push("self-audit: filler check must flag banned summary preambles");
+  }
+  return errors;
+}
+
+export interface SelfAuditMainOptions {
+  out?: (line: string) => void;
+}
+
+export function selfAuditMain(opts: SelfAuditMainOptions = {}): number {
+  const out = opts.out ?? ((line: string) => process.stdout.write(line + "\n"));
+  const errors = validateSelfAuditConventions();
+  if (errors.length > 0) {
+    out("self-audit validation failed:");
+    for (const error of errors) out(`- ${error}`);
+    return 1;
+  }
+  out("self-audit conventions ok");
+  return 0;
+}

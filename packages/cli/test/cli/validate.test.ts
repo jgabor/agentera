@@ -29,6 +29,8 @@ describe("cli validate (delegated families)", () => {
     expect(isDelegatedValidateFamily("cross-capability")).toBe(true);
     expect(isDelegatedValidateFamily("lifecycle-adapters")).toBe(true);
     expect(isDelegatedValidateFamily("app-home-contract")).toBe(true);
+    expect(isDelegatedValidateFamily("vocabularyAuthority")).toBe(true);
+    expect(isDelegatedValidateFamily("selfAudit")).toBe(true);
     expect(isDelegatedValidateFamily("capability")).toBe(false);
   });
 
@@ -59,6 +61,18 @@ describe("cli validate (delegated families)", () => {
     const { rc, out } = capture((io) => cmdValidate("app-home-contract", {}, io));
     expect(rc).toBe(0);
     expect(out.trim()).toBe("OK: app-home contract terminology is release-ready");
+  });
+
+  it("validates vocabulary authority against the repo", () => {
+    const { rc, out } = capture((io) => cmdValidate("vocabularyAuthority", {}, io));
+    expect(rc).toBe(0);
+    expect(out.trim()).toBe("vocabulary authority ok");
+  });
+
+  it("validates self-audit conventions against the repo", () => {
+    const { rc, out } = capture((io) => cmdValidate("selfAudit", {}, io));
+    expect(rc).toBe(0);
+    expect(out.trim()).toBe("self-audit conventions ok");
   });
 
   it("throws for an unsupported family", () => {

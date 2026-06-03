@@ -1,4 +1,178 @@
 cycles:
+  - number: 643
+    timestamp: 2026-06-04 14:00
+    type: feat
+    phase: build
+    what: >-
+      D56 parity closeout — ported the six remaining CLI surface families to
+
+      TypeScript and proved byte-level parity with the Python oracle pinned at
+
+      parity-remaining-families.json:python_commit. T1 oracle
+
+      (parity-remaining-families.json, rebase_oracle.sh, normalizeEnvelope,
+
+      drift_direction, gapRegistry); T2 artifact validation (7 validate
+
+      subcommands); T3 compaction (check compact apply/dry-run, 10/40/50 caps);
+
+      T4 doctor/upgrade safety rails; T5 verify eval wrappers; T6 usage/stats
+
+      consent; T7 runtime adapter hooks. All six gapRegistry families closed;
+
+      npmParityMatrix reports drift_direction equal for every v3-remaining row.
+
+      Plan archived to
+      .agentera/archive/plan-2026-06-04-d56-parity-closeout.yaml;
+
+      TODO L18+L19 folded to ## ✓ Resolved.
+    inspiration: Plan D56 parity closeout (Decision 56 feeds_into v3 cutover).
+    discovered: |-
+      compaction expectedShape used summary_status_union/summary_mode_union keys
+      that parityOracle.ts treated as required envelope keys (endsWith Union
+      missed snake_case _union suffix); fixed isExpectedShapeRequiredKey to
+      exclude _union and Length metadata keys. progress.yaml at 10/40/50 cap;
+      demoted cycle 633 to archive for this write.
+    verified: |-
+      pnpm -C packages/cli test — 792/792 (84 files); typecheck clean; build
+      clean; capability-contract validate passes; all 12 per-name capability
+      validators pass; npmParityMatrix six v3-remaining families
+      (artifact_validation, compaction, verify_eval, doctor_upgrade_safety,
+      usage_stats_consent, runtime_adapter_hooks) report drift_direction equal
+      with zero ts_smaller/python_smaller rows; D65 archive verified at
+      .agentera/archive/plan-2026-06-03-d65-capability-ts-surface.yaml.
+    next: |-
+      Headline TODO L16 (v3 TS rewrite cutover) remains open — separate
+      planera cycle per Decision 56 feeds_into; CHANGELOG fold deferred to
+      release per AGENTS.md.
+    context:
+      intent: >-
+        Close Decision 56 parity implementation track on
+        feat/d56-parity-closeout
+
+        — port six CLI families to TS and prove Python oracle parity before
+
+        the v3 cutover planera cycle.
+      constraints: |-
+        Single implementation commit on feat/d56-parity-closeout (no push, no
+        CHANGELOG, no Python oracle update from TS); post-D66 progress cycle
+        shape (no commit field).
+      unknowns: none
+      scope: |-
+        packages/cli/test/cli/fixtures/oracle/parity-remaining-families.json,
+        packages/cli/scripts/rebase_oracle.sh,
+        packages/cli/test/cli/npmParityMatrix.test.ts,
+        packages/cli/test/cli/parityOracle.ts,
+        packages/cli/test/upgrade/gapRegistry.ts,
+        packages/cli/src/cli/commands/{validate,compact,verify,doctor}.ts,
+        packages/cli/src/validate/vocabularyAuthority.ts,
+        packages/cli/src/setup/opencode.ts,
+        packages/cli/src/analytics/usageStats.ts,
+        packages/cli/src/upgrade/{doctor,runtimeMigration}.ts,
+        packages/cli/test/cli/*Parity*.test.ts,
+        .agentera/plan.yaml,
+        .agentera/archive/plan-2026-06-04-d56-parity-closeout.yaml,
+        .agentera/progress.yaml, TODO.md
+  - number: 642
+    timestamp: 2026-06-04 11:45
+    type: chore
+    phase: plan
+    what: |-
+      Plan: Decision 56 parity closeout — drafted the first plan in the
+      v3-rewrite sequence targeting Decision 56 (npm @next parity with
+      the Python `agentera` stable CLI). Plan is full level, 8 tasks,
+      lands on `feat/v3` with the implementation commit on
+      `feat/d56-parity-closeout`; closes TODO L18 + L19 on T8 final
+      state sync. T1 establishes the npm parity oracle
+      (`parity-remaining-families.json` + Python commit pin +
+      `rebase_oracle.sh` + `normalizeEnvelope()` + `drift_direction`).
+      T2-T7 port the six remaining CLI surface families: artifact
+      validation (7 subcommands), compaction, doctor/upgrade safety
+      rails, verify gates, usage/stats consent, runtime adapter hooks.
+      T8 runs all six final verification gates and folds L18+L19 to
+      `## ✓ Resolved`. Headline TODO L16 (v3 TS rewrite) remains open
+      — the cutover is a separate planera cycle per Decision 56's
+      `feeds_into`.
+    inspiration: TODO.md [feat:3.0.0] Rewrite the supported Agentera CLI core in
+      TypeScript (line 16); TODO L18 + L19 are the immediate v3-blocker pair.
+    discovered: >-
+      progress.yaml at the 10/40/50 cap before this write (10 full-detail
+
+      + 40 archive = 50); this write demotes cycle 632 to archive and
+
+      drops cycle 593 to keep the cap at 50. D65 plan archive already
+
+      present at
+      `.agentera/archive/plan-2026-06-03-d65-capability-ts-surface.yaml`
+
+      so T8 verifies (no-op copy). Four V3 critic issues found in
+
+      pre-write review (oracle drift, envelope flake, drift direction,
+
+      npm `@next` version-divergence gate); all four addressed in
+
+      the plan's `revised` block.
+    verified: |-
+      Plan pre-write self-audit V1-V6: V1 Given/When/Then pass, V2 ≤8
+      tasks pass (8 exactly), V3 adversarial review pass (4 found, 4
+      addressed), V4 final state sync as T8, V5 proportionality
+      targets per task (T1=12, T2=14, T3=4, T4=10, T5=4, T6=6, T7=8),
+      V6 skip-level N/A (v3 RC blocker; full correct). Plan YAML
+      written to `.agentera/plan.yaml` with `status: active`; D65
+      archive verified. Implementation commit (T1 oracle) is the
+      next realisera cycle; 6 verification gates pending until T8.
+    next: |-
+      T1 implementation commit on `feat/d56-parity-closeout` — author
+      `parity-remaining-families.json`, `rebase_oracle.sh`, the
+      `normalizeEnvelope()` helper, `drift_direction`, `gapRegistry`
+      entries, and the updated `npmParityMatrix.test.ts`. CHANGELOG
+      fold deferred to release per AGENTS.md.
+    context:
+      intent: |-
+        Plan the v3 critical path — close Decision 56 by porting
+        six remaining CLI surface families to TS and proving parity
+        with a pinned Python oracle.
+      constraints: |-
+        Land on `feat/v3` only; implementation commit on
+        `feat/d56-parity-closeout`. Contract-first: no command-shape
+        redesigns, no new top-level commands, no parallel surfaces.
+        Python oracle pinned by commit (not tag); Python side never
+        auto-updated from TS. npm `@next` version divergence (TODO
+        L23) is a known pre-existing condition; T8 re-runs parity
+        matrix after any version bump.
+      unknowns: none
+      scope: >-
+        .agentera/plan.yaml (this write), .agentera/progress.yaml
+
+        (this cycle),
+        .agentera/archive/plan-2026-06-03-d65-capability-ts-surface.yaml
+
+        (verify, no-op),
+        packages/cli/test/cli/fixtures/oracle/parity-remaining-families.json
+
+        (T1), packages/cli/scripts/rebase_oracle.sh (T1),
+
+        packages/cli/test/cli/npmParityMatrix.test.ts (T1),
+
+        packages/cli/test/upgrade/gapRegistry.ts (T1),
+
+        packages/cli/src/cli/commands/{validate,compact,verify}.ts
+
+        (T2/T3/T5), packages/cli/src/setup/doctor.ts (T4),
+
+        packages/cli/src/upgrade/{doctor,nextMajorDoctor,appModel,channels}.ts
+
+        (T4), packages/cli/src/analytics/usageStats.ts (T6),
+
+        packages/cli/src/registries/runtimeAdapterRegistry.ts (T7),
+
+        packages/cli/src/setup/{opencode,codex,cursor,copilot}.ts
+
+        (T7), TODO.md (T8 fold),
+
+        .agentera/archive/plan-2026-06-04-d56-parity-closeout.yaml
+
+        (T8 archive), CHANGELOG.md (T8 deferred)
   - number: 641
     timestamp: 2026-06-03 22:58
     type: feat
@@ -260,60 +434,12 @@ cycles:
       unknowns: none
       scope: .agentera/archive/plan-2026-06-03.yaml, .agentera/plan.yaml, TODO.md,
         .agentera/health.yaml, .agentera/progress.yaml
-  - number: 633
-    timestamp: 2026-06-03 08:30
-    type: chore
-    phase: build
-    what: 2.7.7 version bump and CHANGELOG update — bumped all docs.yaml
-      version_files to 2.7.7, updated suiteVersion/offline_defaults/shim
-      defaults, promoted D66/WARN-citation/compaction bullets into CHANGELOG
-      [2.7.7] with commit pending placeholders until the release commit lands,
-      and marked plan task 4 complete.
-    inspiration: Plan task 4 (2.7.7 release).
-    discovered: pyproject.toml and uv.lock are absent on feat/v3; nine present
-      version_files plus suiteVersion/update-channels offline_defaults carry
-      2.7.7. Implementation commit hashes in CHANGELOG remain pending per
-      session no-commit constraint.
-    verified: pnpm -C packages/cli test — 657/657 passed (75 files); typecheck
-      clean; build clean; all nine present docs.yaml version_files carry 2.7.7
-      (pyproject.toml and uv.lock absent on feat/v3); clean-install `agentera
-      upgrade --dry-run --format json` reports runningVersion and
-      latestOnChannel 2.7.7; CHANGELOG [2.7.7] lists D66, WARN-citation, and
-      compaction with commit pending placeholders.
-    next: Plan task 5 — final state sync and plan archive.
-    context:
-      intent: Execute plan task 4 (2.7.7 version bump and CHANGELOG) on feat/v3.
-      constraints: No remote push; no git commit; CHANGELOG hashes pending.
-      unknowns: none
-      scope: version_files, references/cli/update-channels.yaml,
-        packages/cli/package.json, CHANGELOG.md, .agentera/plan.yaml,
-        .agentera/progress.yaml
-  - number: 632
-    timestamp: 2026-06-03 08:16
-    type: chore
-    phase: build
-    what: progress.yaml over-budget compaction — added `--apply` alias for `agentera
-      check compact --mode fix`, regression tests that fail the gate when
-      progress.yaml exceeds 50 cycles and compact under the cap with archive
-      preservation, and a repo regression pinning live progress.yaml at
-      10/40/50.
-    inspiration: Plan task 3 (2.7.7 release).
-    discovered: Live progress.yaml was already at the 10/40/50 cap before apply;
-      Python stable mirror on main deferred per plan both-branch sequencing.
-    verified: pnpm -C packages/cli test — 657/657 passed (75 files, +4 vs cycle
-      631's 653/653); typecheck clean; build clean; `agentera check compact`
-      passes with progress active=10 archive=40 total=50; synthetic 55-cycle
-      fixture fails gate then compacts to 50 with archive summaries preserved;
-      `agentera check compact --apply` routes to fix mode.
-    next: Plan task 4 — 2.7.7 version bump and CHANGELOG update.
-    context:
-      intent: Execute plan task 3 (progress.yaml compaction enforcement) on feat/v3.
-      constraints: No remote push; no commit; main Python slice deferred.
-      unknowns: none
-      scope: packages/cli/src/cli/dispatch.ts,
-        packages/cli/test/hooks/compaction.test.ts,
-        packages/cli/test/cli/compact.test.ts, .agentera/plan.yaml
 archive:
+  - summary: "Cycle 633 (2026-06-03): 2.7.7 version bump and CHANGELOG update —
+      bumped version_files to 2.7.7, promoted D66/WARN-citation/compaction
+      bullets into CHANGELOG [2.7.7]; marked plan task 4 complete."
+  - summary: "Cycle 632 (2026-06-03): 2.7.7 version bump and CHANGELOG update;
+      marked plan task 4 complete."
   - summary: "Cycle 631 (2026-06-03): Inspektera WARN/FAIL file:line citation
       enforcement — added evaluator_handoff schema to
       capability-instruction-contract.yaml, evaluatorHandoffContract.ts registry
@@ -391,8 +517,3 @@ archive:
       (Decision 63) with 2.7.0 release metadata."
   - summary: "Cycle 596 (2026-05-24): Live Cursor IDE preToolUse Write smoke for
       Task 5."
-  - summary: "Cycle 595 (2026-05-24): Shipped Cursor v1 runtime slice per Decision 63."
-  - summary: "Cycle 594 (2026-05-23): Added hybrid inspektera audit staleness to hej
-      and fixed latest health audit selection."
-  - summary: "Cycle 593 (2026-05-23): Relocated authoritative docs to references/
-      and released 2.6.1 patch metadata."
