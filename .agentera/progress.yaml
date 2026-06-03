@@ -1,4 +1,97 @@
 cycles:
+  - number: 637
+    timestamp: 2026-06-03 16:00
+    type: chore
+    phase: build
+    what: Final state sync and plan archive — archived plan to
+      .agentera/archive/plan-2026-06-03-next-major-doctor.yaml, cleared active
+      plan slot, reconciled TODO next-major doctor entry to Resolved with
+      pending commit hash and main backport caveat.
+    inspiration: Plan task 3 (orkestrera closeout).
+    discovered: No git commit in orchestration session; CHANGELOG and TODO hashes
+      remain pending. Python stable backport on main still uncommitted.
+    verified: agentera prime --format json reports plan absent
+      (state_presence.active.plan false); live agentera doctor shows 6-line Next
+      major section at head; archive file present at
+      .agentera/archive/plan-2026-06-03-next-major-doctor.yaml.
+    next: User release commit on feat/v3; main checkout for Python backport commit;
+      fill pending hashes in CHANGELOG and TODO.
+    context:
+      intent: Orkestrera session closeout for next-major doctor plan.
+      constraints: No remote push; no git commit.
+      unknowns: none
+      scope: .agentera/archive/plan-2026-06-03-next-major-doctor.yaml,
+        .agentera/plan.yaml, TODO.md, .agentera/progress.yaml
+    commit: f2f4ee6
+  - number: 636
+    timestamp: 2026-06-03 15:35
+    type: chore
+    phase: build
+    what: 3.0 version bump and CHANGELOG update — bumped all nine present docs.yaml
+      version_files to 3.0.0, aligned packages/cli/package.json
+      version/suiteVersion/gitRef to 3.0.0, set update-channels
+      offline_defaults.development to 3.0.0, and recorded CHANGELOG [3.0.0]
+      next-major doctor section with pending implementation commit hashes.
+    inspiration: Plan task 2 (3.0 version bump and CHANGELOG update).
+    discovered: pyproject.toml and uv.lock are absent on feat/v3 (deferred to main
+      checkout for Python stable 3.0.0 cut). v2 Python next-major doctor
+      backport in /tmp/agentera-main-wt remains uncommitted on main — AC3
+      clean-machine @latest test documented not executed; authority
+      channels.stable.next_major satisfies the contract. channels.development
+      has no next_major so @next doctor omits the section (AC4). Three
+      pre-existing validateVerifyOracles.test.ts failures unrelated to this task
+      (669/672 suite green otherwise).
+    verified: pnpm -C packages/cli run typecheck — clean; pnpm -C packages/cli build
+      — clean; targeted vitest (nextMajorDoctor, packageRegistry,
+      versionResolution, doctor, vocabularyAuthority) — 52/52 passed; all nine
+      present version_files carry 3.0.0; package.json version and suiteVersion
+      both 3.0.0; update-channels stable.next_major points at development 3.0.0;
+      development channel omits next_major; CHANGELOG [3.0.0] lists next-major
+      doctor with pending hashes.
+    next: Plan task 3 — final state sync and plan archive.
+    context:
+      intent: Execute plan task 2 on feat/v3 without remote push or commit.
+      constraints: No remote push; no git commit; commit field pending.
+      unknowns: none
+      scope: version_files, packages/cli/package.json,
+        references/cli/update-channels.yaml, CHANGELOG.md, .agentera/plan.yaml,
+        .agentera/progress.yaml
+    commit: pending
+  - number: 635
+    timestamp: 2026-06-03 15:30
+    type: feat
+    phase: build
+    what: Next-major doctor section — extended references/cli/update-channels.yaml
+      with per-channel next_major on stable, added
+      packages/cli/src/upgrade/nextMajorDoctor.ts and head-of-output rendering
+      in doctor.ts, plus vitest regression coverage for authority reachability,
+      six-line cap, v1 hardcoded fallback, omitted-when-null, and D58 vocabulary
+      guard. Python stable mirror implemented in main worktree
+      (scripts/next_major_doctor.py, render_doctor_status hook,
+      tests/test_next_major_doctor.py).
+    inspiration: Plan task 1 (next-major doctor section).
+    discovered: feat/v3 has no Python tree; v2 backport lives in
+      /tmp/agentera-main-wt on main and needs a separate main-branch commit.
+      Full vitest suite reports 3 pre-existing oracle failures unrelated to this
+      task (validateVerifyOracles.test.ts).
+    verified: pnpm -C packages/cli exec vitest run
+      test/upgrade/nextMajorDoctor.test.ts — 12/12 passed; pnpm -C packages/cli
+      run typecheck — clean; pnpm -C packages/cli build — clean; live node
+      packages/cli/dist/bin/agentera.js doctor — 6-line Next major section at
+      head sourced from channels.stable.next_major; /tmp/agentera-main-wt uv run
+      pytest tests/test_next_major_doctor.py — 9/9 passed.
+    next: Plan task 2 — 3.0 version bump and CHANGELOG update.
+    context:
+      intent: Execute plan task 1 on feat/v3 with main worktree Python parity.
+      constraints: No remote push; no git commit.
+      unknowns: none
+      scope: references/cli/update-channels.yaml,
+        packages/cli/src/upgrade/nextMajorDoctor.ts,
+        packages/cli/src/cli/commands/doctor.ts,
+        packages/cli/test/upgrade/nextMajorDoctor.test.ts,
+        packages/cli/test/validate/vocabularyAuthority.test.ts,
+        .agentera/plan.yaml, .agentera/progress.yaml
+    commit: pending
   - number: 634
     timestamp: 2026-06-03 09:00
     type: chore
@@ -266,134 +359,13 @@ cycles:
         families, 2 verify eval targets, fail envelope for artifact, dispatch
         wiring for validate, and drift-detector unit tests). Plan task 3 status
         updated to complete in the same commit.
-  - number: 627
-    timestamp: 2026-06-02 17:52
-    type: feat
-    phase: build
-    what: Wire the invalid-input envelope across the remaining CLI surfaces (lint,
-      backfill, state, query, compact, schema, doctor, upgrade, report, verify,
-      capability, help, usage, prime, gate, hook) in dispatch.ts —
-      classifyParseError, asEnvelopeFormat, detectTopLevelFormat helpers; 21
-      run* functions now route their parse-error and catch paths through
-      emitInvalidInput; existing test assertions on plain-text error output
-      updated to assert the four-question envelope template. Also fixes
-      rewriteCycleCommits to always YAML-quote the commit value so all-digit and
-      scientific-notation short hashes (e.g. 61e2490 -> Infinity) round- trip
-      correctly through the parser.
-    inspiration: None.
-    discovered: "Two follow-ups: (1) the parse-error path in non-validate surfaces
-      hardcodes format: 'text' because the parse functions consume argv before
-      the format flag is reliably known; runValidate inlines format detection
-      and works correctly, but runLint/runBackfill/runState/runQuery/runCompact
-      will emit text-mode envelope on --format json parse errors. Fix in a
-      future cycle by either inlining the parse loops for each surface or
-      extracting a detectFormat() pass that runs before parse. (2) The
-      progress.yaml commit field will be removed entirely per user direction;
-      this cycle's commit is left as pending with no forward backfill, and
-      rewriteCycleCommits will be deleted alongside the field in the schema
-      migration cycle."
-    verified: pnpm -C packages/cli test -- 617/617 passed (no regression vs cycle
-      626); pnpm -C packages/cli run typecheck -- clean; pnpm -C packages/cli
-      build -- clean; live smoke `lint`, `state bogus`, `check backfill --mode
-      bogus` all return the four-question template + rc 2; `schema --format
-      text` (invalid choice) returns the canonical JSON envelope + rc 2; `lint
-      --format json` returns text-mode template (known format-detection gap).
-    next: Plan task 3 (validate/verify family parity oracles) or close the
-      format-detection-in-error-paths gap as a task 2 follow-up, or remove the
-      progress.yaml commit field per the new TODO.
-    context:
-      intent: Execute plan task 1b (wire emitInvalidInput across remaining CLI
-        surfaces). The subagent dispatched by orkestrera returned an empty
-        task_result, so the orchestrator took over verification, fix, and commit
-        phases.
-      constraints: "TS-only on 3.0.0-dev feat/v3; no remote push; no vision.yaml or
-        objective-state edits; all wired surfaces return rc 2; commit field will
-        be removed from the schema in a future cycle, so this cycle
-        intentionally leaves commit: pending and skips the forward backfill."
-      unknowns: Whether task 3 and the format-detection follow-up fit in one cycle or
-        need to be split, and whether task 4 becomes the first schema-removal
-        cycle for the progress commit field.
-      scope: "Modified dispatch.ts (3 new helpers, 21 run* functions wired through
-        emitInvalidInput), 4 CLI test files (assertions updated),
-        progressCommit.ts (rewriteCycleCommits quotes commit value), 3
-        progressCommit tests (expect quoted form). Plan: 2/4 tasks complete."
-  - number: 626
-    timestamp: 2026-06-02 15:48
-    type: test
-    phase: build
-    what: Freeze the invalid-input error envelope contract for the 3.0 TypeScript
-      CLI — new emitInvalidInput helper, oracle fixture, parity test, and check
-      validate wired as the exemplar surface.
-    inspiration: None.
-    discovered: None.
-    verified: pnpm -C packages/cli test — 617/617 passed (73 files, +12 vs cycle
-      625's 605/605); pnpm -C packages/cli run typecheck — clean; pnpm -C
-      packages/cli build — clean; live smoke `node
-      packages/cli/dist/bin/agentera.js check validate --format json` returns
-      the canonical envelope + rc 2, text mode returns the four-question
-      template + rc 2, `check validate bogus --format json` returns an
-      `unsupported_target` envelope + rc 2.
-    next: Wire the invalid-input envelope across the remaining CLI surfaces (lint,
-      backfill, state, schema, doctor, upgrade, report, verify, capability,
-      help) per plan task 2, or freeze the validate/verify family parity oracles
-      per plan task 3. Task 2 unblocks task 3.
-    context:
-      intent: "Execute plan task 1 (1a — envelope contract: oracle + helper + check
-        validate exemplar). The 1a/1b split was needed because the original task
-        1 was too large for one realisera cycle."
-      constraints: TS-only on 3.0.0-dev feat/v3; no remote push; no vision.yaml or
-        objective-state edits; existing text-mode assertions in validate.test.ts
-        and verify.test.ts must continue to pass alongside the new json-mode
-        envelope.
-      unknowns: Whether task 2 will surface additional error classes beyond the seven
-        declared in the oracle union (missing_argument, invalid_choice,
-        unrecognized_argument, mutually_exclusive, invalid_int, invalid_format,
-        unsupported_target).
-      scope: Added packages/cli/src/cli/errors.ts (helper module),
-        packages/cli/test/cli/fixtures/oracle/invalid-input-envelope.json
-        (oracle contract), packages/cli/test/cli/invalidInputEnvelope.test.ts
-        (12 parity tests); modified packages/cli/src/cli/dispatch.ts runValidate
-        to route every error site through emitInvalidInput (six inline err()
-        sites plus the catch block plus the not-yet-ported branch); other CLI
-        surfaces unchanged — they migrate in task 2.
-  - number: 625
-    timestamp: 2026-06-02 09:20
-    type: fix
-    phase: build
-    what: npm shim runBackend app-home branch now forwards the user's cwd to the
-      spawned Python CLI instead of the installed app home's app/ subdir;
-      re-added the shim source under packages/cli/shim/ (bin/agentera.mjs,
-      lib/exec.mjs, lib/resolve.mjs, package.json, README.md, LICENSE) and added
-      vitest regression coverage in packages/cli/test/shim/runBackend.test.ts.
-    inspiration: None.
-    discovered: Published npm shim 0.0.0 was the only npx -y agentera entry point
-      until 3.0 ships; the shim's runBackend app-home branch set cwd to
-      path.dirname(path.dirname(scriptPath)) = $AGENTERA_HOME/app, so the Python
-      CLI's os.getcwd()-based state resolution read from the app home on every
-      project invocation.
-    verified: pnpm -C packages/cli test test/shim/ — 3/3 passed; pnpm -C
-      packages/cli test — 605/605 passed (72 files); smoke check `cd
-      /home/jgabor/git/agentera && node packages/cli/shim/bin/agentera.mjs state
-      plan --format json` returns source.path =
-      /home/jgabor/git/agentera/.agentera/plan.yaml (not under
-      /home/jgabor/.local/share/agentera/app/).
-    next: Republish agentera@0.0.0 (or 0.0.1) to npm with the fixed runBackend; once
-      3.0 ships, retire the shim per the [Unreleased] changelog note.
-    context:
-      intent: Execute plan task 1 (npm shim app-home cwd preservation) with regression
-        coverage and a transitional changelog note.
-      constraints: No remote push; do not edit vision.yaml or objective state; the
-        Python CLI's os.getcwd() semantics are unchanged; the repo backend keeps
-        cwd equal to backend.repoRoot; shim version stays 0.0.0; match existing
-        shim code style (ESM, JSDoc, node-style imports).
-      unknowns: Whether to republish the shim from this repo as 0.0.0/0.0.1 or wait
-        for the 3.0 cutover; npm pack artifacts live under packages/cli/*.tgz
-        and are gitignored.
-      scope: packages/cli/shim/{bin/agentera.mjs,lib/exec.mjs,lib/resolve.mjs,package.json,README.md,LICENSE},
-        packages/cli/test/shim/runBackend.test.ts, CHANGELOG.md [Unreleased],
-        .agentera/plan.yaml task 1 status, .agentera/progress.yaml cycle 625
-        (and cycle 624 commit annotation).
 archive:
+  - summary: "Cycle 627 (2026-06-02): Wire the invalid-input envelope across the
+      remaining CLI surfaces (lint, backfill, state, query, compact, schema,..."
+  - summary: "Cycle 626 (2026-06-02): Freeze the invalid-input error envelope
+      contract for the 3.0 TypeScript CLI — new emitInvalidInput helper,..."
+  - summary: "Cycle 625 (2026-06-02): npm shim runBackend app-home branch now
+      forwards the user's cwd to the spawned Python CLI..."
   - summary: "Cycle 624 (2026-06-02): Shim cwd preservation plan replaces the
       completed npm 3.x CLI parity tranche 1; targets the..."
   - summary: "Cycle 623 (2026-05-31): v2→v3 sandbox upgrade validation program (L0
@@ -466,9 +438,3 @@ archive:
       prime --context as sole 3.0 startup seam."
   - summary: "Cycle 589 (2026-05-23): Introduced prime context control plane and
       removed hej capability-context compatibility."
-  - summary: "Cycle 588 (2026-05-23): Wired D59 JSON byte/token budgets into
-      manifest and measurement harness enforcement."
-  - summary: "Cycle 587 (2026-05-23): Built whole-surface JSON measurement coverage
-      for D58 inventory surfaces."
-  - summary: "Cycle 586 (2026-05-23): Verified D58 JSON output surface inventory
-      against Plan Task 1 acceptance criteria."

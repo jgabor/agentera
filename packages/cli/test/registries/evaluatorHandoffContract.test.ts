@@ -32,7 +32,7 @@ describe("evaluator handoff contract loader", () => {
   });
 
   it("accepts file:line and not-applicable citations", () => {
-    expect(isValidCitation("TODO.md:15", contract)).toBe(true);
+    expect(isValidCitation("TODO.md:5", contract)).toBe(true);
     expect(isValidCitation("not-applicable: runtime-only metric with no file anchor", contract)).toBe(true);
     expect(isValidCitation("prose only", contract)).toBe(false);
     expect(isValidCitation("not-applicable: short", contract)).toBe(false);

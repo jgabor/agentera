@@ -17,6 +17,12 @@ import {
   ProbeResult,
   publicDoctorStatus,
 } from "../../upgrade/doctor.js";
+import { classifyInstall } from "../../upgrade/compatibility.js";
+import type { UpdateChannelName } from "../../upgrade/channels.js";
+import {
+  prependNextMajorDoctorSection,
+  resolveNextMajorDoctorLines,
+} from "../../upgrade/nextMajorDoctor.js";
 import { emitStructured } from "../structured.js";
 
 /**
@@ -221,7 +227,18 @@ export function cmdDoctor(args: DoctorArgs, io: Io = {}): number {
     if (smokeReport) payload.smoke = smokeReport;
     out(pyJsonIndentSorted(payload) + "\n");
   } else {
-    out(renderDoctorStatus(status) + (smokeReport ? renderDoctorSmoke(smokeReport) : "") + "\n");
+    const install = classifyInstall({ appHome: installRoot, sourceRoot });
+    const nextMajorLines = resolveNextMajorDoctorLines({
+      sourceRoot,
+      home,
+      channel: (status.updateChannel as UpdateChannelName | undefined) ?? null,
+      install,
+      env: process.env,
+    });
+    const body =
+      prependNextMajorDoctorSection(renderDoctorStatus(status), nextMajorLines) +
+      (smokeReport ? renderDoctorSmoke(smokeReport) : "");
+    out(body + "\n");
   }
   if (args.smoke) {
     const failCount = Number((smokeReport?.summary as Dict | undefined)?.fail ?? 0);

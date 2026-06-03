@@ -22,6 +22,23 @@
 
 - Reconciled the TODO.md `source_contract` field enumeration against the live `agentera prime --format json` output: `missing` (the TODO truncation) is now `missing_state` (the live key) in TODO.md line 17. The TODO description still names the five source_contract field categories (`complete_for_capability_startup`, `missing_state`, `cli_fallback`, `raw_artifact_reads_required`, `confidence_caveats`) and is amended in the same commit as the new `source-contract.json` oracle per plan task 4 AC1.
 
+## [3.0.0] · 2026-06-03
+
+### Key highlights
+
+- **Next-major doctor section**: `agentera doctor` renders a six-line successor advisory at the head of output when the running update channel has a non-null `next_major` block in `references/cli/update-channels.yaml`; the section is omitted entirely when no successor is announced. Stable-channel installs surface the forward line (`npx -y agentera@next`); development-channel installs omit the section until a later major is published in the authority. v1 installs use a hardcoded stable-channel fallback. No new flags or opt-out config.
+
+### Added
+
+- Added per-channel `next_major` metadata to `references/cli/update-channels.yaml` (`concept`, `channel`, `version`, npm `dist_tag`, `guide_url`, `preview_command`, `irreversible_advisory`). (`f2f4ee6`)
+- Added `packages/cli/src/upgrade/nextMajorDoctor.ts` and head-of-output rendering in `packages/cli/src/cli/commands/doctor.ts`, sourced exclusively from the channel authority. (`f2f4ee6`)
+- Added vitest regression coverage in `packages/cli/test/upgrade/nextMajorDoctor.test.ts` for authority reachability, six-line cap, v1 hardcoded fallback, omitted-when-null on `channels.development`, and vocabulary guard. (`f2f4ee6`)
+- Added Python stable doctor mirror in `scripts/next_major_doctor.py` with pytest coverage in `tests/test_next_major_doctor.py` on `main` (landed in separate `main` commit). (`f2f4ee6`)
+
+### Changed
+
+- Aligned npm `@next` release metadata: `packages/cli/package.json` `version`, `agentera.suiteVersion`, and `agentera.gitRef` now carry `3.0.0`; all nine present `docs.yaml` `version_files` on `feat/v3` report `3.0.0`; `references/cli/update-channels.yaml` `offline_defaults.development` is `3.0.0`. Stable-channel `offline_defaults.stable` remains `2.7.7` until explicit retirement. (`f2f4ee6`)
+
 ## [2.7.7] · 2026-06-03
 
 ### Changed
