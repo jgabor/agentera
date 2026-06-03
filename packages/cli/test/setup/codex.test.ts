@@ -57,11 +57,11 @@ describe("setup codex: install root", () => {
 describe("setup codex: TOML classification + emission", () => {
   it("classifies a present set table", () => {
     const state = classifyToml('[shell_environment_policy]\nset = { AGENTERA_HOME = "/x", FOO = "bar" }\n');
-    expect(state).toEqual({ sectionPresent: true, setPresent: true, setTable: { AGENTERA_HOME: "/x", FOO: "bar" } });
+    expect(state).toEqual({ sectionPresent: true, setPresent: true, setTable: { AGENTERA_HOME: "/x", FOO: "bar" }, sectionLevelHome: null });
   });
   it("classifies an empty document and a section without set", () => {
-    expect(classifyToml("")).toEqual({ sectionPresent: false, setPresent: false, setTable: {} });
-    expect(classifyToml("[shell_environment_policy]\n")).toEqual({ sectionPresent: true, setPresent: false, setTable: {} });
+    expect(classifyToml("")).toEqual({ sectionPresent: false, setPresent: false, setTable: {}, sectionLevelHome: null });
+    expect(classifyToml("[shell_environment_policy]\n")).toEqual({ sectionPresent: true, setPresent: false, setTable: {}, sectionLevelHome: null });
   });
   it("emits an inline table with basic-string escaping", () => {
     expect(emitSetInlineTable({ AGENTERA_HOME: "/x", FOO: 'b"q' })).toBe('{ AGENTERA_HOME = "/x", FOO = "b\\"q" }');
@@ -267,5 +267,22 @@ describe("setup codex: codexMain end-to-end", () => {
     const r = run(["--install-root", bad, "--config-file", cfg]);
     expect(r.rc).toBe(2);
     expect(r.err).toContain("not a valid Agentera directory");
+  });
+});
+describe("setup codex: misplaced shell_environment_policy", () => {
+  const R = "/opt/agentera";
+  it("normalizes section-level AGENTERA_HOME and empty .set subtable", () => {
+    const current =
+      "[shell_environment_policy]\n" +
+      `AGENTERA_HOME = "${R}"\n` +
+      "\n" +
+      "[shell_environment_policy.set]\n" +
+      "\n" +
+      "[agents]\n" +
+      "max_depth = 1\n";
+    const o = planChange(current, R, { force: false });
+    expect(o.action).toBe("normalize");
+    expect(o.newText).toContain(`set = { AGENTERA_HOME = "${R}" }`);
+    expect(o.newText).not.toContain("[shell_environment_policy.set]");
   });
 });
