@@ -21,7 +21,7 @@ cycles:
       unknowns: none
       scope: evaluatorHandoffContract, oracle fixture, scripts/precommit-*.sh,
         .lefthook.yml, AGENTS.md, plan archive
-    commit: 0b64687
+    commit: b3900f4
   - number: 638
     timestamp: 2026-06-03 17:20
     type: fix
@@ -43,7 +43,7 @@ cycles:
       unknowns: none
       scope: packages/cli/src/cli/todoMarkdown.ts, orientation.ts, state.ts,
         scripts/agentera (main), tests, CHANGELOG, TODO.md, plan archive
-    commit: 3f19841
+    commit: 8c15b32
   - number: 637
     timestamp: 2026-06-03 16:00
     type: chore

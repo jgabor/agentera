@@ -4,7 +4,7 @@
 
 ### Fixed
 
-- Fixed pre-commit fragility when `TODO.md` edits broke the inspektera evaluation-report oracle: WARN citations now use `packages/cli/test/cli/fixtures/citation-anchor-todo.md` and `verifyWarnCitationAtLine` checks cited line text. Added `scripts/precommit-vitest.sh` for staged-aware vitest on `feat/v3`. (`0b64687`)
+- Fixed pre-commit fragility when `TODO.md` edits broke the inspektera evaluation-report oracle: WARN citations now use `packages/cli/test/cli/fixtures/citation-anchor-todo.md` and `verifyWarnCitationAtLine` checks cited line text. Added `scripts/precommit-vitest.sh` for staged-aware vitest on `feat/v3`. (`b3900f4`)
 
 ### Key highlights
 
@@ -12,7 +12,7 @@
 
 ### Fixed
 
-- Fixed `agentera state todo --format json` and prime/hej orientation ignoring GitHub task-list `[x]`/`[ ]` checkboxes before Agentera `[type]` tags: shared parser in `packages/cli/src/cli/todoMarkdown.ts` drives `loadTodoItems` and `queryTodo` markdown fallback so `- [x] [fix] …` is resolved and omitted from open counts; `- [ ] [type] …` and type-only bullets stay open. Regression coverage in `packages/cli/test/cli/todoMarkdown.test.ts`, `state.test.ts`, and `orientation.test.ts`. Python stable backport on `main` @ fdbe97b (2.7.9). (`3f19841`)
+- Fixed `agentera state todo --format json` and prime/hej orientation ignoring GitHub task-list `[x]`/`[ ]` checkboxes before Agentera `[type]` tags: shared parser in `packages/cli/src/cli/todoMarkdown.ts` drives `loadTodoItems` and `queryTodo` markdown fallback so `- [x] [fix] …` is resolved and omitted from open counts; `- [ ] [type] …` and type-only bullets stay open. Regression coverage in `packages/cli/test/cli/todoMarkdown.test.ts`, `state.test.ts`, and `orientation.test.ts`. Python stable backport on `main` @ b1150e4 (2.7.9). (`8c15b32`)
 - Fixed `validateMdItems` TODO.md severity-section body extraction: locate the next section with `/\n##\s/` from the heading end, skip the trailing newline before list items, and stop false "severity section has no list entries" violations when valid `- [type]` items are present. Regression coverage in `packages/cli/test/hooks/validateArtifact.test.ts`.
 - Fixed `agentera@0.0.0` npm shim `runBackend` `app-home` branch spawning the installed Python CLI (`$AGENTERA_HOME/app/scripts/agentera`) with `cwd` set to the app home's `app/` directory. The shim now passes the caller's cwd through `dispatch` → `runBackend` and lets `spawnSync` fall back to `process.cwd()` when the caller omits one. The `repo` backend keeps `cwd: backend.repoRoot` (unchanged), and the `uvx` backend remains spawn-options-only. Regression coverage in `packages/cli/test/shim/runBackend.test.ts` pins the user's cwd against the app-home `app/` subdir and asserts the repo backend is still anchored to its repo root.
 
@@ -38,7 +38,7 @@
 - Added per-channel `next_major` metadata to `references/cli/update-channels.yaml` (`concept`, `channel`, `version`, npm `dist_tag`, `guide_url`, `preview_command`, `irreversible_advisory`). (`51feef4`)
 - Added `packages/cli/src/upgrade/nextMajorDoctor.ts` and head-of-output rendering in `packages/cli/src/cli/commands/doctor.ts`, sourced exclusively from the channel authority. (`51feef4`)
 - Added vitest regression coverage in `packages/cli/test/upgrade/nextMajorDoctor.test.ts` for authority reachability, six-line cap, v1 hardcoded fallback, omitted-when-null on `channels.development`, and vocabulary guard. (`51feef4`)
-- Added Python stable doctor mirror in `scripts/next_major_doctor.py` with pytest coverage in `tests/test_next_major_doctor.py` on `main`. (`2f557b5`)
+- Added Python stable doctor mirror in `scripts/next_major_doctor.py` with pytest coverage in `tests/test_next_major_doctor.py` on `main`. (`3300acd`)
 
 ### Changed
 
