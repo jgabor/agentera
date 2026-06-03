@@ -140,7 +140,14 @@ describe("self-contained doctor/upgrade semantics", () => {
     try {
       let out = "";
       const rc = cmdUpgrade(
-        { expectedVersion: "9.9.9", format: "json", installRoot: bundle, project: bundle },
+        {
+          expectedVersion: "9.9.9",
+          format: "json",
+          installRoot: bundle,
+          project: bundle,
+          home: bundle,
+          only: ["detect"],
+        },
         { out: (t) => (out += t), err: () => {} },
       );
       expect(rc).toBe(0);

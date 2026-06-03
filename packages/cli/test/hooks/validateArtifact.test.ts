@@ -58,6 +58,50 @@ describe("ArtifactSchemaValidator", () => {
     expect(violations.some((v) => v.includes("severity"))).toBe(true);
   });
 
+  it("accepts multi-section TODO.md without false empty-section violations", () => {
+    const p = path.join(tmp, "TODO.md");
+    const todo = [
+      "# TODO",
+      "",
+      "## ⇶ Critical",
+      "- [fix:3.0.0] First critical item",
+      "",
+      "## ⇉ Degraded",
+      "- Placeholder",
+      "",
+      "## → Normal",
+      "- [chore:3.0.0] Normal item",
+      "",
+      "## ⇢ Annoying",
+      "- Placeholder",
+      "",
+    ].join("\n");
+    fs.writeFileSync(p, todo);
+    const violations = new ArtifactSchemaValidator().validateExplicit("TODO.md", p, tmp);
+    expect(violations.filter((v) => v.includes("severity section"))).toEqual([]);
+  });
+
+  it("flags severity sections with no list entries when the next heading is adjacent", () => {
+    const p = path.join(tmp, "TODO.md");
+    const todo = [
+      "# TODO",
+      "",
+      "## ⇶ Critical",
+      "## ⇉ Degraded",
+      "- Placeholder",
+      "",
+      "## → Normal",
+      "- [chore:3.0.0] Normal item",
+      "",
+      "## ⇢ Annoying",
+      "- Placeholder",
+      "",
+    ].join("\n");
+    fs.writeFileSync(p, todo);
+    const violations = new ArtifactSchemaValidator().validateExplicit("TODO.md", p, tmp);
+    expect(violations.some((v) => v.includes("severity section '⇶ Critical'"))).toBe(true);
+  });
+
   it("rejects an unsupported artifact name", () => {
     const f = path.join(tmp, "x");
     fs.writeFileSync(f, "content\n");

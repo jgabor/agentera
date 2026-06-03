@@ -8,6 +8,7 @@
 
 ### Fixed
 
+- Fixed `validateMdItems` TODO.md severity-section body extraction: locate the next section with `/\n##\s/` from the heading end, skip the trailing newline before list items, and stop false "severity section has no list entries" violations when valid `- [type]` items are present. Regression coverage in `packages/cli/test/hooks/validateArtifact.test.ts`.
 - Fixed `agentera@0.0.0` npm shim `runBackend` `app-home` branch spawning the installed Python CLI (`$AGENTERA_HOME/app/scripts/agentera`) with `cwd` set to the app home's `app/` directory. The shim now passes the caller's cwd through `dispatch` → `runBackend` and lets `spawnSync` fall back to `process.cwd()` when the caller omits one. The `repo` backend keeps `cwd: backend.repoRoot` (unchanged), and the `uvx` backend remains spawn-options-only. Regression coverage in `packages/cli/test/shim/runBackend.test.ts` pins the user's cwd against the app-home `app/` subdir and asserts the repo backend is still anchored to its repo root.
 
 ### Added
