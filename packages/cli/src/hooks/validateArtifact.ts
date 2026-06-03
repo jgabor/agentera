@@ -647,6 +647,7 @@ function validateMdItems(content: string, name: string, violations: string[]): v
     return;
   }
   const severityGlyphs = ["⇶", "⇉", "→", "⇢"];
+  const requiredItemGlyphs = new Set(["⇶"]);
   let found = false;
   for (const glyph of severityGlyphs) {
     const g = glyph.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -661,7 +662,7 @@ function validateMdItems(content: string, name: string, violations: string[]): v
         else if (content[bodyStart] === "\n") bodyStart += 1;
         const sectionEnd = nextMatch ? idx + nextMatch.index! : content.length;
         const sectionBody = content.slice(bodyStart, sectionEnd);
-        if (!/^\s*-/m.test(sectionBody)) {
+        if (requiredItemGlyphs.has(glyph) && !/^\s*-/m.test(sectionBody)) {
           const headingSlice = content.slice(sectionStart.index, sectionStart.index + sectionStart[0].length);
           const glyphNameMatch = new RegExp(`^##\\s*(${g}.+)$`, "m").exec(headingSlice);
           const headingText = glyphNameMatch ? glyphNameMatch[1] : glyph;
