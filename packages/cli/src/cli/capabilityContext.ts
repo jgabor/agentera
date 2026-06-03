@@ -583,7 +583,7 @@ function orchestrationTaskSummary(task: Dict): Dict {
   const evidenceItems = Array.isArray(evidence) ? evidence : evidence === null || evidence === undefined || evidence === "" ? [] : [evidence];
   return {
     ...taskRef(task),
-    depends_on: asList(task.depends_on),
+    depends_on: planDependsOnList(task),
     acceptance_summary: { count: asList(task.acceptance).length, items: asList(task.acceptance) },
     evidence_summary: { count: evidenceItems.length, items: evidenceItems },
   };
@@ -688,6 +688,51 @@ function uniqueList(items: string[]): string[] {
   return out;
 }
 
+/** Coerce plan task numbers and depends_on refs to comparable lookup keys (int/string/object forms). */
+function planTaskRefKeys(value: unknown): string[] {
+  if (value === null || value === undefined) return [];
+  if (typeof value === "object" && !Array.isArray(value)) {
+    const entry = value as Dict;
+    const nested = entry.number ?? entry.task_number ?? entry.id;
+    return nested === null || nested === undefined ? [] : planTaskRefKeys(nested);
+  }
+  const text = String(value).trim();
+  if (!text) return [];
+  const keys = new Set<string>([text]);
+  const numeric = Number(text);
+  if (Number.isFinite(numeric) && Number.isInteger(numeric)) keys.add(String(numeric));
+  return [...keys];
+}
+
+function formatPlanTaskDepRef(dep: unknown): string {
+  const keys = planTaskRefKeys(dep);
+  return keys.length > 0 ? keys[0]! : String(dep);
+}
+
+function planDependsOnList(task: Dict): unknown[] {
+  const raw = task.depends_on;
+  if (Array.isArray(raw)) return raw;
+  if (raw === null || raw === undefined || raw === "") return [];
+  return [raw];
+}
+
+function indexPlanTasksByNumber(tasks: Dict[]): Record<string, Dict> {
+  const taskByNumber: Record<string, Dict> = {};
+  for (const task of tasks) {
+    if (task.number === null || task.number === undefined) continue;
+    for (const key of planTaskRefKeys(task.number)) taskByNumber[key] = task;
+  }
+  return taskByNumber;
+}
+
+function resolvePlanTaskByRef(taskByNumber: Record<string, Dict>, dep: unknown): Dict | undefined {
+  for (const key of planTaskRefKeys(dep)) {
+    const hit = taskByNumber[key];
+    if (hit !== undefined) return hit;
+  }
+  return undefined;
+}
+
 function orchestrationContext(
   capability: string | null,
   plan: Dict,
@@ -700,8 +745,7 @@ function orchestrationContext(
 ): Dict | null {
   if (capability !== "orkestrera") return null;
   const tasks = asList(plan.tasks).filter((t) => t && typeof t === "object" && !Array.isArray(t));
-  const taskByNumber: Record<string, Dict> = {};
-  for (const task of tasks) if (task.number !== null && task.number !== undefined) taskByNumber[String(task.number)] = task;
+  const taskByNumber = indexPlanTasksByNumber(tasks);
   const dependencyReady: Dict[] = [];
   const blocked: Dict[] = [];
   for (const task of tasks) {
@@ -709,11 +753,11 @@ function orchestrationContext(
     if (DONE_STATUSES_ORCH.has(status)) continue;
     const reasons: string[] = [];
     if (BLOCKED_STATUSES_ORCH.has(status)) reasons.push(`task status is ${status}`);
-    for (const dep of asList(task.depends_on)) {
-      const dependency = taskByNumber[String(dep)];
-      if (dependency === undefined) reasons.push(`dependency ${dep} is not present in plan tasks`);
+    for (const dep of planDependsOnList(task)) {
+      const dependency = resolvePlanTaskByRef(taskByNumber, dep);
+      if (dependency === undefined) reasons.push(`dependency ${formatPlanTaskDepRef(dep)} is not present in plan tasks`);
       else if (!DONE_STATUSES_ORCH.has(entryStatus(dependency, "pending"))) {
-        reasons.push(`dependency ${dep} is ${entryStatus(dependency, "pending")}`);
+        reasons.push(`dependency ${formatPlanTaskDepRef(dep)} is ${entryStatus(dependency, "pending")}`);
       }
     }
     if (reasons.length > 0) blocked.push({ ...orchestrationTaskSummary(task), blocked_reasons: reasons });
@@ -895,15 +939,14 @@ function bespokeCapabilityContexts(capabilityName: string | null, state: Dict): 
 const TARGET_VERSION_RE = /\b\d+\.\d+\.\d+\b/;
 
 function dependencyReadyTasks(tasks: Dict[]): Dict[] {
-  const taskByNumber: Record<string, Dict> = {};
-  for (const task of tasks) if (task.number !== null && task.number !== undefined) taskByNumber[String(task.number)] = task;
+  const taskByNumber = indexPlanTasksByNumber(tasks);
   const ready: Dict[] = [];
   for (const task of tasks) {
     const status = entryStatus(task, "pending");
     if (DONE_STATUSES_ORCH.has(status) || BLOCKED_STATUSES_ORCH.has(status)) continue;
     let blocked = false;
-    for (const dep of asList(task.depends_on)) {
-      const dependency = taskByNumber[String(dep)];
+    for (const dep of planDependsOnList(task)) {
+      const dependency = resolvePlanTaskByRef(taskByNumber, dep);
       if (dependency === undefined || !DONE_STATUSES_ORCH.has(entryStatus(dependency, "pending"))) {
         blocked = true;
         break;
