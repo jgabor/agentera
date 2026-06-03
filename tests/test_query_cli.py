@@ -2768,7 +2768,7 @@ class TestHej:
             text=True,
             check=True,
         ).stdout.strip()
-        subprocess.run(["git", "tag", "v2.3.9", blob], cwd=project, capture_output=True, text=True, check=True)
+        subprocess.run(["git", "tag", "-f", "v2.3.9", blob], cwd=project, capture_output=True, text=True, check=True)
         _write_artifact(project, ".agentera/plan.yaml", {
             "header": {"title": "2.3.9 Dokumentera Closeout Context Source Contract", "status": "active"},
             "tasks": [{"number": 1, "name": "Closeout", "status": "pending"}],

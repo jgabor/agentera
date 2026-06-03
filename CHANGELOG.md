@@ -4,6 +4,7 @@
 
 ### Added
 
+- Added per-channel `next_major` metadata to `references/cli/update-channels.yaml` and a six-line **Next major** section at the head of `agentera doctor` text output on the stable channel, sourced exclusively from that authority. v1 installs use a hardcoded stable-channel fallback; the section is omitted when no successor is announced. Regression coverage in `tests/test_next_major_doctor.py`.
 - Published npm placeholder package `agentera@0.0.0` from `packages/cli`: reserves `npx agentera`, delegates to the Python CLI via app-home, repo `uv run`, or pinned `uvx` from GitHub (`v2.7.6`).
 
 ## [2.7.8] · 2026-06-03

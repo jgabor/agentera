@@ -33,6 +33,21 @@ channels:
       Tracks the supported 2.x release line for users who must not cross the v2→v3
       major boundary without explicit opt-in.
     distribution_major: 2
+    next_major:
+      concept: forward_successor_line
+      channel: development
+      version: "3.0.0"
+      npm:
+        dist_tag: next
+      npm_only_advisory: >-
+        The successor line is npm-only; stable git/uvx installs remain on the
+        supported 2.x line until you explicitly opt in through npm.
+      guide_url: >-
+        https://github.com/jgabor/agentera/blob/main/UPGRADE.md#upgrading-v2-to-v3-development-channel-irreversible
+      preview_command: npx -y agentera@next upgrade --dry-run --channel development
+      irreversible_advisory: >-
+        Forward migration to the successor line is one-way; return to the prior
+        Python support line is permanently unsupported.
     resolution:
       npm:
         dist_tag: latest
@@ -127,8 +142,8 @@ version_resolution:
   latest_on_channel:
     resolver: npm_dist_tag_with_offline_defaults
     offline_defaults:
-      stable: "2.7.8"
-      development: "3.0.0-dev.4"
+      stable: "2.7.7"
+      development: "3.0.0"
   irreversibility:
     downgrade_to_v2: permanently_blocked
     supported_downgrade_lines: []

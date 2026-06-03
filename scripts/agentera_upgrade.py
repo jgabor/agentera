@@ -2518,7 +2518,9 @@ def cmd_upgrade(args: argparse.Namespace) -> int:
     return 0
 
 
-def render_doctor_status(status: dict[str, Any]) -> str:
+def render_doctor_status(status: dict[str, Any], *, source_root: Path | None = None) -> str:
+    from next_major_doctor import prepend_next_major_doctor_section, resolve_next_major_doctor_lines
+
     action_noun = _doctor_action_noun(status)
     lines = [
         "Agentera doctor",
@@ -2550,7 +2552,15 @@ def render_doctor_status(status: dict[str, Any]) -> str:
             "Next: choose a safer Agentera directory, or use `--force` "
             "only after checking the directory is safe to replace."
         )
-    return "\n".join(lines)
+    body = "\n".join(lines)
+    if source_root is None:
+        return body
+    next_major_lines = resolve_next_major_doctor_lines(
+        source_root=source_root,
+        channel=str(status.get("updateChannel") or "stable"),
+        running_version=str(status.get("markerVersion") or status.get("expectedVersion") or ""),
+    )
+    return prepend_next_major_doctor_section(body, next_major_lines)
 
 
 def cmd_doctor(args: argparse.Namespace) -> int:
@@ -2578,5 +2588,5 @@ def cmd_doctor(args: argparse.Namespace) -> int:
     if output_format == "json":
         print(json.dumps(public_doctor_status(status), indent=2, sort_keys=True))
     else:
-        print(render_doctor_status(status))
+        print(render_doctor_status(status, source_root=source_root))
     return 0 if status["status"] == APP_UP_TO_DATE else 1

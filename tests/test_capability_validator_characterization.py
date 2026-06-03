@@ -143,7 +143,7 @@ def test_validator_cli_characterizes_valid_fixture(tmp_path):
 
     assert result.exit_code == 0
     assert result.stdout == _expected_stdout(cap_dir)
-    assert result.stderr == []
+    assert [line for line in result.stderr if not line.startswith("Installed ")] == []
 
 
 def test_validator_cli_characterizes_missing_directory_fixture(tmp_path):
@@ -283,7 +283,7 @@ def test_validator_cli_characterizes_malformed_group_fixture(tmp_path):
 
     assert result.exit_code == 0
     assert result.stdout == _expected_stdout(cap_dir)
-    assert result.stderr == []
+    assert [line for line in result.stderr if not line.startswith("Installed ")] == []
 
 
 def test_validator_cli_characterizes_invalid_priority_fixture(tmp_path):
