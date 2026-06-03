@@ -4,6 +4,7 @@
 
 ### Fixed
 
+- Fixed v2→v3 migration tests still creating OpenCode skill symlinks under the developer's real `~/.config/opencode/skills/` despite sandbox `migrationCtx`: `planRuntimeMigrationItems` no longer falls back to `{ ...process.env, HOME }` (which kept the shell's `XDG_CONFIG_HOME`), requires `MigrationContext.env`, and upgrade tests pass `sandboxMigrationEnv` consistently; regression test `noHomeLeak.test.ts` fails when plan targets leave the temp home. Fixed `link-skill` apply failing on pre-existing dangling symlinks by unlinking symlink targets via `lstat` before `symlinkSync`.
 - Fixed `agentera prime --context orkestrera --format json` returning empty `dependency_ready_tasks` and `dependency 1 is not present in plan tasks` blocked_reasons when the dependency was complete in plan tasks; orchestration_context task_queue, task_summaries, and selected_next_action now agree after normalizing plan task numbers and depends_on refs.
 - Fixed pre-commit fragility when `TODO.md` edits broke the inspektera evaluation-report oracle: WARN citations now use `packages/cli/test/cli/fixtures/citation-anchor-todo.md` and `verifyWarnCitationAtLine` checks cited line text. Added `scripts/precommit-vitest.sh` for staged-aware vitest on `feat/v3`. (`b3900f4`)
 

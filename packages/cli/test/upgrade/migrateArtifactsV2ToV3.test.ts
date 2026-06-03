@@ -17,9 +17,11 @@ import {
   planCleanupPhase,
   planRuntimeRewirePhase,
 } from "../../src/upgrade/migrateArtifactsV2ToV3.js";
+import { migrationCtx, sandboxMigrationEnv } from "./helpers/migrationCtx.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const FIXTURES = path.join(__dirname, "fixtures");
+const REPO_ROOT = path.resolve(__dirname, "../../../..");
 
 let tmp: string;
 
@@ -73,13 +75,9 @@ describe("planArtifactsPhase", () => {
 describe("planRuntimeRewirePhase", () => {
   it("dry-run reports pending rewire for Python managed runtime configs", () => {
     const home = copyFixture("v2-runtime-python", path.join(tmp, "home"));
-    const phase = planRuntimeRewirePhase({
-      appHome: path.join(home, "agentera"),
-      project: path.join(home, "project"),
-      home,
-      sourceRoot: "/home/jgabor/git/agentera",
-      channel: "development",
-    });
+    const phase = planRuntimeRewirePhase(
+      migrationCtx(path.join(home, "agentera"), path.join(home, "project"), home, REPO_ROOT),
+    );
     expect(phase.status).toBe("pending");
     expect(phase.items.some((item) => item.runtime === "codex" && item.status === "pending")).toBe(true);
     expect(phase.items.some((item) => item.runtime === "cursor" && item.status === "pending")).toBe(true);
@@ -87,13 +85,7 @@ describe("planRuntimeRewirePhase", () => {
 
   it("apply rewires runtime config to npm self-contained entrypoint", () => {
     const home = copyFixture("v2-runtime-python", path.join(tmp, "home-apply"));
-    const ctx = {
-      appHome: path.join(home, "agentera"),
-      project: path.join(home, "project"),
-      home,
-      sourceRoot: path.resolve(__dirname, "../../../.."),
-      channel: "development",
-    };
+    const ctx = migrationCtx(path.join(home, "agentera"), path.join(home, "project"), home, REPO_ROOT);
     const preview = planRuntimeRewirePhase(ctx);
     applyRuntimeRewirePhase(preview, ctx);
     expect(preview.status).toBe("applied");
@@ -139,7 +131,7 @@ describe("dryRunMigration", () => {
     const home = copyFixture("v2-runtime-python", path.join(tmp, "full"));
     const appHome = copyFixture("v2-app-home", path.join(home, "agentera"));
     const project = copyFixture("v2-yaml-project", path.join(home, "project"));
-    const result = dryRunMigration({ appHome, project, home });
+    const result = dryRunMigration({ appHome, project, home, env: sandboxMigrationEnv(home, REPO_ROOT) });
     expect(result.artifacts.name).toBe("artifacts");
     expect(result.runtime.name).toBe("runtime");
     expect(result.cleanup.name).toBe("cleanup");
@@ -152,8 +144,9 @@ describe("dryRunMigration", () => {
     const home = copyFixture("v2-runtime-python", path.join(tmp, "only"));
     const appHome = copyFixture("v2-app-home", path.join(home, "agentera"));
     const project = copyFixture("v2-yaml-project", path.join(home, "project"));
-    const preview = dryRunMigration({ appHome, project, home });
-    const applied = applyMigrationPhases({ appHome, project, home }, preview, ["runtime"]);
+    const ctx = migrationCtx(appHome, project, home, REPO_ROOT);
+    const preview = dryRunMigration(ctx);
+    const applied = applyMigrationPhases(ctx, preview, ["runtime"]);
     expect(applied.runtime.status).toBe("applied");
     expect(applied.cleanup.status).toBe("pending");
     expect(fs.existsSync(path.join(appHome, "app"))).toBe(true);
