@@ -5,9 +5,8 @@ cycles:
   phase: build
   what: Mirror 2.7.7 stable slice on main (D66, citations, compaction).
   discovered: null
-  verified: "1bcda5b release: mirror 2.7.7 stable slice on main; tests/test_evaluator_handoff_contract.py\
-    \ 8 passed; tests/test_compaction_status.py +4; pre-commit pytest 1382 passed;\
-    \ check compact pass; validate PROGRESS.md pass."
+  verified: "tests/test_evaluator_handoff_contract.py 8 passed; tests/test_compaction_status.py\
+    \ +4; pre-commit pytest 1382 passed; check compact pass; validate PROGRESS.md pass."
   next: null
   context:
     intent: Land Python stable 2.7.7 slice from feat/v3 commit 6b8af92.
