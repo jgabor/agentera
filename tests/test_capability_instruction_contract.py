@@ -176,6 +176,8 @@ def test_real_capabilities_and_current_surfaces_do_not_use_legacy_prose_md() -> 
         "CHANGELOG.md",
         "references/cli/vocabulary.md",
         "references/cli/capability-instruction-contract.yaml",
+        "packages/cli/bundle/references/cli/capability-instruction-contract.yaml",
+        "packages/cli/bundle/references/cli/vocabulary.md",
         "tests/test_capability_instruction_contract.py",
         "TODO.md",
         "docs/notes/v1-legacy-triage.md",

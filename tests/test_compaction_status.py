@@ -504,6 +504,91 @@ def test_compact_check_cli_reports_yaml_error_without_traceback(tmp_path):
     assert "mapping" in progress["message"].lower()
 
 
+MAX_TOTAL_ENTRIES = 50
+
+
+def _write_progress_yaml(project: Path, cycle_count: int) -> None:
+    state = project / "state"
+    state.mkdir(exist_ok=True)
+    cycles = [_progress_cycle(i) for i in range(1, cycle_count + 1)]
+    (state / "progress.yaml").write_text(
+        yaml.safe_dump({"cycles": cycles, "archive": []}, sort_keys=False),
+        encoding="utf-8",
+    )
+    for name in ["decisions", "health"]:
+        (state / f"{name}.yaml").write_text(f"{name if name != 'health' else 'audits'}: []\narchive: []\n", encoding="utf-8")
+
+
+def test_check_compact_apply_flag_routes_to_fix_mode(tmp_path):
+    project = tmp_path
+    _write_docs_mapping(project)
+    state = project / "state"
+    state.mkdir(exist_ok=True)
+    (state / "TODO.md").write_text("# TODO\n", encoding="utf-8")
+    _write_progress_yaml(project, 55)
+
+    result = _run_cli(project, "check", "compact", "--apply", "--format", "json")
+    payload = json.loads(result.stdout)
+
+    assert result.returncode == 0
+    assert payload["command"] == "compact"
+    assert payload["summary"]["mode"] == "fix"
+    progress = next(op for op in payload["operations"] if op["artifact"] == "PROGRESS.md")
+    assert progress["action"] == "compacted"
+
+
+def test_progress_over_50_cycles_fails_gate(compaction, tmp_path):
+    project = tmp_path
+    _write_docs_mapping(project)
+    state = project / "state"
+    state.mkdir()
+    (state / "TODO.md").write_text("# TODO\n", encoding="utf-8")
+    _write_progress_yaml(project, 55)
+
+    progress_op = next(
+        op for op in compaction.run_compaction(project, mode="check") if op.status.artifact == "PROGRESS.md"
+    )
+
+    assert progress_op.action == "over_limit"
+    assert progress_op.status.total_count == 55
+    assert progress_op.status.over_limit_count > 0
+
+
+def test_progress_over_50_cycles_apply_compacts_to_10_plus_40(compaction, tmp_path):
+    project = tmp_path
+    _write_docs_mapping(project)
+    state = project / "state"
+    state.mkdir()
+    (state / "TODO.md").write_text("# TODO\n", encoding="utf-8")
+    _write_progress_yaml(project, 55)
+
+    progress_op = next(
+        op for op in compaction.run_compaction(project, mode="fix") if op.status.artifact == "PROGRESS.md"
+    )
+    after = yaml.safe_load((state / "progress.yaml").read_text(encoding="utf-8"))
+
+    assert progress_op.action == "compacted"
+    assert progress_op.changed is True
+    assert len(after["cycles"]) == 10
+    assert len(after["archive"]) == 40
+    assert len(after["cycles"]) + len(after["archive"]) == MAX_TOTAL_ENTRIES
+    assert after["cycles"][0]["number"] == 55
+    assert any("Cycle 1" in entry["summary"] for entry in after["archive"])
+
+
+def test_repo_progress_within_50_cycle_cap(compaction):
+    progress_path = REPO_ROOT / ".agentera" / "progress.yaml"
+    assert progress_path.exists()
+    data = yaml.safe_load(progress_path.read_text(encoding="utf-8"))
+    total = len(data.get("cycles", [])) + len(data.get("archive", []))
+    assert total <= MAX_TOTAL_ENTRIES
+
+    progress_op = next(
+        op for op in compaction.compute_compaction_status(REPO_ROOT) if op.artifact == "PROGRESS.md"
+    )
+    assert progress_op.over_limit_count == 0
+
+
 def test_gate_cli_reports_yaml_error_without_traceback(tmp_path):
     project = tmp_path
     _write_docs_mapping(project)

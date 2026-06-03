@@ -17,7 +17,7 @@ def test_agents_documents_helper_script_classification_policy() -> None:
     agents = _read("AGENTS.md")
 
     assert "Helper script classification" in agents
-    assert "`uv run scripts/agentera ...` is the canonical documented entry point" in agents
+    assert "`npx -y agentera ...` is the canonical documented entry point" in agents
     assert "Backward-compatible maintainer seam" in agents
     assert "Internal support module" in agents
     assert "stats refresh consent" in agents
@@ -30,8 +30,8 @@ def test_user_facing_docs_prefer_agentera_validate_namespace() -> None:
 
     assert "uv run scripts/agentera check validate capability-contract --format json" in readme
     assert "uv run scripts/agentera check validate capability <name-or-path>" in readme
-    assert "uv run scripts/agentera check validate capability <name-or-path>" in agents
-    assert "uv run scripts/agentera check validate capability <name-or-path>" in upgrade
+    assert "npx -y agentera check validate capability <name-or-path>" in agents
+    assert "agentera check validate capability <name-or-path>" in upgrade
     assert "uv run scripts/validate_capability.py skills/agentera/capabilities/<name>" not in agents
 
 

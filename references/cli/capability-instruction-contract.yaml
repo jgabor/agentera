@@ -116,6 +116,50 @@ surface_inventory:
   capability_schema_contract: current_canonical_validator_reference
   runtime_descriptors: current_canonical_instructions_md_pointers
   capability_instruction_files: current_canonical_instruction_files
+evaluator_handoff:
+  status: implemented
+  purpose: >-
+    Define the inspektera evaluation report schema and citation requirements
+    for orkestrera Step 3 Surface 2 delegations and post-plan health checks.
+  report_schema_version: agentera.inspekteraEvaluationReport.v1
+  row_schema:
+    required_fields:
+      - criterion
+      - status
+      - evidence
+    status_values:
+      - PASS
+      - WARN
+      - FAIL
+    citation_required_for:
+      - WARN
+      - FAIL
+    citation_formats:
+      file_line:
+        pattern: "^[^:\\s]+:\\d+$"
+        description: Relative repo path with 1-based line number, e.g. TODO.md:15
+      not_applicable:
+        prefix: "not-applicable:"
+        min_reason_length: 8
+        description: >-
+          Use when no file anchor exists; prefix with not-applicable: and give a
+          concrete reason (at least 8 characters after the prefix).
+    warn_verify_command:
+      required_when: file_line_citation
+      allowed_prefixes:
+        - grep
+        - git show
+      description: >-
+        WARN rows with a file:line citation MUST include verify_command with the
+        exact grep or git show invocation that reproduces the evidence at the
+        cited line.
+  orchestration_context_fields:
+    output_requirements:
+      citation_required_for:
+        - WARN
+        - FAIL
+      warn_verify_command_required: true
+      schema_authority: references/cli/capability-instruction-contract.yaml#evaluator_handoff
 docs_delegation:
   document: references/cli/vocabulary.md
   required_anchor: Capability instruction contract

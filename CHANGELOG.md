@@ -6,11 +6,17 @@
 
 - Published npm placeholder package `agentera@0.0.0` from `packages/cli`: reserves `npx agentera`, delegates to the Python CLI via app-home, repo `uv run`, or pinned `uvx` from GitHub (`v2.7.6`).
 
-## [2.7.7] · 2026-06-02
+## [2.7.7] · 2026-06-03
+
+### Changed
+
+- Removed the per-cycle `commit` field from the progress artifact schema, `agentera state progress` JSON/text output, v1→v2 migration extraction, and progress validation (Decision 66). Deleted `agentera check backfill` and the progress commit ancestry guard introduced in 2.7.6. Existing `progress.yaml` entries that still carry `commit` parse cleanly; CLI output omits the field. TypeScript parity in `feat/v3` commit `6b8af92`.
+- Added `--apply` as an alias for `agentera check compact --mode fix`, regression tests that fail the gate when `progress.yaml` exceeds 50 cycles, and archive preservation when compacting under the cap. TypeScript parity in `feat/v3` commit `6b8af92`.
 
 ### Fixed
 
 - Fixed `agentera lint` and `agentera check lint` budget lookup when `--artifact` uses schema names from `agentera query --list-artifacts` (for example `plan`, `progress`): per-artifact budgets now apply instead of the 1000-word default. Canonical labels (`PLAN.md`, `PROGRESS.md`) and mixed-case input remain accepted unchanged.
+- Required reproducible `file:line` citations (or `not-applicable` with reason) on inspektera WARN and FAIL findings: tightened the orkestrera Step 3 Surface 2 delegation template, `references/cli/capability-instruction-contract.yaml` evaluator-handoff schema, and inspektera citation standard prose. Python regression coverage in `tests/test_evaluator_handoff_contract.py`. TypeScript registry validation in `feat/v3` commit `6b8af92`.
 
 ## [2.7.6] · 2026-05-29
 

@@ -97,7 +97,7 @@ class TestProgressMigration:
         assert c["type"] == "feat"
         assert c["phase"] == "build"
         assert "initial project skeleton" in c["what"]
-        assert c["commit"] == "abc1234"
+        assert "commit" not in c
         assert c["context"]["intent"] != ""
 
     def test_parse_archive(self, migrate):

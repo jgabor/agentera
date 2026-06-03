@@ -203,6 +203,10 @@ focused_scan:
       text: skills/agentera/SKILL\.md|Agentera routing entry point
       classification: canonical
       reason: AGENTS guidance names the concrete Agentera routing entry point.
+    - path: ^AGENTS\.md$
+      text: packages/cli/bundle/|bundles the app data|npm package is self-contained
+      classification: generic
+      reason: AGENTS uses bundled in the ordinary npm package-shipping sense and names the concrete bundle directory path.
     - path: ^README\.md$
       text: skills/agentera/SKILL\.md|Agentera routing entry point
       classification: canonical

@@ -1,10 +1,24 @@
 cycles:
+- number: 621
+  timestamp: 2026-06-03 12:00
+  type: chore
+  phase: build
+  what: Mirror 2.7.7 stable slice on main (D66, citations, compaction).
+  discovered: null
+  verified: "1bcda5b release: mirror 2.7.7 stable slice on main; tests/test_evaluator_handoff_contract.py\
+    \ 8 passed; tests/test_compaction_status.py +4; pre-commit pytest 1382 passed;\
+    \ check compact pass; validate PROGRESS.md pass."
+  next: null
+  context:
+    intent: Land Python stable 2.7.7 slice from feat/v3 commit 6b8af92.
+    constraints: No remote push; one release commit.
+    unknowns: none
+    scope: scripts/agentera, hooks, tests, CHANGELOG, TODO, progress, version_files.
 - number: 620
   timestamp: 2026-06-02 22:45
   type: fix
   phase: build
   what: Align self-audit linter budget lookup with CLI vocabulary; release 2.7.7.
-  commit: 'beb535c release: bump to 2.7.7 and close linter budget-lookup plan'
   discovered: None.
   verified: "tests/test_lint_cli.py 6 passed; tests/test_self_audit.py 53 passed;\
     \ capability-contract 2/2 pass; full suite 1399 passed / 3 failed (pre-existing:\
@@ -21,7 +35,6 @@ cycles:
   type: test
   phase: build
   what: Add CLI end-to-end regression coverage for lint budget lookup.
-  commit: 'e8714de test(cli): add lint CLI end-to-end budget lookup regression coverage'
   discovered: None.
   verified: "tests/test_lint_cli.py 6 passed pytest -q -n auto; full suite 1399 passed\
     \ / 3 failed (pre-existing: upgrade --dry-run blocked, packages/cli prose.md refs,\
@@ -37,7 +50,6 @@ cycles:
   type: test
   phase: build
   what: Add parametrized budget-lookup regression coverage in tests/test_self_audit.py.
-  commit: '639f7a3 test(cli): add self-audit budget lookup regression coverage'
   discovered: None.
   verified: "tests/test_self_audit.py 53 passed pytest -q -n auto (30\u219253 tests:\
     \ 10 per-entry normalization, 3 full-file/5 fallback, 10 full-file normalization,\
@@ -53,7 +65,6 @@ cycles:
   type: fix
   phase: build
   what: Wire CLI lint path to always resolve normalized budget lookup name for --text/--file.
-  commit: '8563d3b fix(cli): wire lint path to normalized budget lookup name'
   discovered: None.
   verified: "Manual AC1\u2013AC5 passed (_lint_input_text returns normalized budget_artifact\
     \ for --text/--file; _lint_payload uses budget_artifact for checks without or-fallback;\
@@ -71,7 +82,6 @@ cycles:
   phase: build
   what: Flip self-audit budget dict keys to lowercase schema names; add _resolve_budget_artifact
     helper.
-  commit: '4725657 fix(cli): normalize self-audit budget lookup to schema names'
   discovered: None.
   verified: "Manual AC1\u2013AC5 passed (_PER_ENTRY_BUDGETS/_FULL_FILE_BUDGETS keys,\
     \ _resolve_budget_artifact normalization, check_verbosity/check_full_file_verbosity\
@@ -92,7 +102,6 @@ cycles:
   type: fix
   phase: build
   what: Consolidate progress-commit guard onto shared module; release 2.7.6.
-  commit: 'a0c51b5 release: bump to 2.7.6 and close progress-commit plan'
   discovered: None.
   verified: tests/test_progress_commit_guard.py 31 passed; capability-contract 2/2;
     full suite 1335 passed with 30 pre-existing macOS AGENTERA_HOME/corpus failures
@@ -110,7 +119,6 @@ cycles:
   phase: build
   what: Extract shared scripts/progress_commit.py; make `agentera check backfill`
     a thin consumer.
-  commit: '6530f42 refactor(cli): extract progress-commit logic into shared module'
   discovered: "tests/test_progress_commit_guard.py repo fixture is pre-existing flaky\u2014\
     its amended-away stale commit intermittently becomes unreachable under full-suite\
     \ load (original main 4/12 fail vs refactor 1/12), flaking test_stale_hash_is_flagged\
@@ -139,7 +147,6 @@ cycles:
   type: fix
   phase: build
   what: Close compaction check/gate robustness and retention-cap dedup plan.
-  commit: pending
   discovered: None.
   verified: 1329 passed, 29 failed pytest tests/ -q -n auto (failures are pre-existing
     macOS AGENTERA_HOME/platform-home env issues and missing corpus.json, unrelated
@@ -157,7 +164,6 @@ cycles:
   type: feat
   phase: build
   what: Add progress commit-hash churn guard and `agentera check backfill`.
-  commit: '3741787'
   discovered: Repo progress.yaml carried a dangling b78a417 hash across cycles 602-610
     (orphaned by a prior amend) plus malformed multi-line commit scalars in 603-605;
     the guard surfaced both.
@@ -171,22 +177,9 @@ cycles:
       fields when rewriting.
     scope: hooks/validate_artifact.py, scripts/agentera check backfill, tests/test_progress_commit_guard.py,
       CHANGELOG.
-- number: 611
-  timestamp: 2026-05-29 14:00
-  type: chore
-  phase: build
-  what: Deduplicate session hook resolve_session_path and compact_entries helpers.
-  commit: 7d17786
-  discovered: None.
-  verified: 1315 passed pytest tests/ -q -n auto -m 'not slow'; hooks/common.py owns
-    resolve_session_path, retention caps, and compact_session_bookmark_entries; compaction.py
-    keeps numeric-ID compact_entries.
-  next: Archive completed plan when starting the next cycle.
-  context:
-    intent: Orkestrera execution of hooks session compaction deduplication plan.
-    constraints: Chore-only; preserve session bookmark and artifact compaction behavior.
-    scope: hooks/common.py, session_start.py, session_stop.py, compaction.py, tests/test_hooks_common.py.
 archive:
+- summary: 'Cycle 611 (2026-05-29): Deduplicate session hook resolve_session_path
+    and compact_entries helpers.'
 - summary: 'Cycle 610 (2026-05-29): Consolidate yaml.safe_load None-return handling
     across hooks and CLI.'
 - summary: 'Cycle 609 (2026-05-28): Tagged v2.7.5 with validation hardening and CLI
@@ -259,6 +252,4 @@ archive:
 - summary: 'Cycle 574 (2026-05-18): Added capability validator regression coverage
     for required instructions.md.'
 - summary: 'Cycle 573 (2026-05-18): Added routing and execution vocabulary occurrence
-    classification coverage.'
-- summary: 'Cycle 572 (2026-05-18): Added bundle and SKILL.md vocabulary occurrence
     classification coverage.'

@@ -36,7 +36,6 @@ if _hooks_dir not in sys.path:
 from common import (
     DEFAULT_ARTIFACT_PATHS as _DEFAULT_ARTIFACT_PATHS,
     load_yaml_mapping,
-    validate_progress_commits as _validate_progress_commits,
 )
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -952,8 +951,6 @@ class ArtifactSchemaValidator:
             if content is None:
                 return []
             violations = self.validate_yaml(content, schema, name)
-            if name == "progress":
-                violations = violations + _validate_progress_commits(content, cwd)
             if violations:
                 return violations
             return _compact_after_valid_write(artifact, abs_path)
@@ -983,8 +980,6 @@ class ArtifactSchemaValidator:
             if not schema:
                 return [f"{artifact}: schema '{name}' file is empty or contains no valid definitions"]
             violations = self.validate_yaml(content, schema, name)
-            if name == "progress":
-                violations = violations + _validate_progress_commits(content, cwd)
             return violations
         if artifact in _HUMAN_FACING:
             schema_name = _HUMAN_FACING_SCHEMA_NAMES.get(artifact)

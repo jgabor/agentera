@@ -231,8 +231,12 @@ You are evaluating a completed task for [project].
 
 ## Output format
 For each acceptance criterion, report:
-- PASS or FAIL
-- Evidence (what you checked, what you found)
+- status: PASS, WARN, or FAIL
+- evidence: what you checked and what you found
+- citation: `<file>:<line>` OR `not-applicable: <reason>` — **required for every WARN and FAIL row**
+- verify_command: exact `grep` or `git show` invocation — **required for every WARN row with a file:line citation**; the command must reproduce the evidence at the cited line when re-run
+
+Use `orchestration_context.evaluator_handoff.output_requirements` from prime context as the machine-readable citation contract. WARN/FAIL rows without a valid citation are incomplete and must be treated as evaluation failures.
 
 Then report the verification evidence audit outcome (PASS or FAIL with reasoning).
 
@@ -358,7 +362,7 @@ The orchestration loop in Step 2 (Delegate) always spawns the target capability 
 |---------|-----------|-------|
 | Claude Code | Task tool | Native programmatic in-session subagent delegation. |
 | OpenCode | `~/.config/opencode/agents/*.md` descriptors invoked as `@<capability>` | The plugin bootstraps managed descriptors from `.opencode/agents/` and preserves user-owned collisions. No unsupported capability-name CLI commands. |
-| Codex CLI | `~/.codex/agents/*.toml` descriptors plus bounded `[agents]` settings | `scripts/setup_codex.py` and `agentera upgrade` install one descriptor per Agentera capability from `skills/agentera/agents/*.toml`. Agentera v2 never writes legacy `[agents.<name>]` blocks. |
+| Codex CLI | `~/.codex/agents/*.toml` descriptors plus bounded `[agents]` settings | The self-contained `agentera` package installs one descriptor per Agentera capability from `skills/agentera/agents/*.toml`. Agentera v2 never writes legacy `[agents.<name>]` blocks. |
 | Copilot CLI | None programmatically; user-driven `/fleet` fallback | Copilot exposes no in-session subagent tool call equivalent to the Claude Code Task tool. The orchestrator surfaces the delegation as a `/fleet` recommendation; the user runs `/fleet` to execute the parallel subagent. |
 
 Orchestrator-side instructions, retry logic, and inspektera evaluation gating stay unchanged. Only the concrete delegation surface changes by runtime.

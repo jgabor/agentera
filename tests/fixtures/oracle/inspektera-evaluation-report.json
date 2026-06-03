@@ -1,0 +1,33 @@
+{
+  "schemaVersion": "agentera.inspekteraEvaluationReport.v1",
+  "notes": "Sample inspektera evaluation report for regression testing WARN/FAIL citation enforcement. Every WARN/FAIL row carries a valid file:line citation or not-applicable reason. WARN rows with file:line citations include verify_command that reproduces evidence at the cited line.",
+  "overall_verdict": "FAIL",
+  "verification_evidence_audit": "PASS",
+  "rows": [
+    {
+      "criterion": "GIVEN CHANGELOG header WHEN inspected THEN title line is present",
+      "status": "PASS",
+      "evidence": "CHANGELOG.md opens with the expected title heading."
+    },
+    {
+      "criterion": "GIVEN TODO open-count claim WHEN re-verified THEN matches grep output",
+      "status": "WARN",
+      "evidence": "Open checkbox count is 12 per grep.",
+      "citation": "TODO.md:13",
+      "verify_command": "grep -n 'task_queue.dependency_ready_tasks' TODO.md | head -1"
+    },
+    {
+      "criterion": "GIVEN progress schema WHEN inspected THEN commit field absent",
+      "status": "FAIL",
+      "evidence": "progress.yaml schema no longer defines a per-cycle commit field.",
+      "citation": "skills/agentera/schemas/artifacts/progress.yaml:1",
+      "verify_command": "head -1 skills/agentera/schemas/artifacts/progress.yaml"
+    },
+    {
+      "criterion": "GIVEN runtime-only metric WHEN no file anchor exists THEN not-applicable is allowed",
+      "status": "WARN",
+      "evidence": "Stale installed-app marker is runtime state without a repo file anchor.",
+      "citation": "not-applicable: installed-app version drift is runtime state without a stable repo file anchor"
+    }
+  ]
+}

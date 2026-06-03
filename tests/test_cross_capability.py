@@ -253,7 +253,7 @@ def test_routine_capability_guidance_uses_top_level_state_commands():
     optimera = (CAPABILITIES_DIR / "optimera" / "instructions.md").read_text(encoding="utf-8")
     hej = (CAPABILITIES_DIR / "hej" / "instructions.md").read_text(encoding="utf-8")
 
-    assert "scripts/agentera progress" in realisera
+    assert "agentera state progress" in realisera
     assert "query progress" not in realisera
     assert "scripts/agentera experiments" in optimera
     assert "query experiments" not in optimera
@@ -392,7 +392,7 @@ def test_upgrade_guide_documents_app_home_recovery_and_artifact_backups():
     assert "npx skills update" in text
     assert "does not refresh\nAgentera's local app files" in text
     assert "do not require a successful failed CLI invocation" in text
-    assert "agentera upgrade --dry-run" in text
+    assert "upgrade --dry-run" in text
     assert "managed runtime config, plugins, hooks, commands" in text
     assert "without `--install-root`" in text
     assert "backups under `.agentera/backup-v1/` after preview and confirmation" in text

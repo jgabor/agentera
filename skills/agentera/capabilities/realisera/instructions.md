@@ -68,7 +68,6 @@ cycles:
     type: feat
     phase: build
     what: One-line summary of what shipped.
-    commit: pending
     inspiration: External source, if any.
     discovered: Issues or ideas found.
     verified: Observed output, N/A tag, or rationale.
@@ -82,11 +81,6 @@ archive: []
 ```
 
 The `verified` field is mandatory for every cycle entry.
-
-The `commit` field names the git commit that contains the product change. Write
-`commit: pending` in the implementation commit when the hash is not known yet; backfill
-the product commit hash later in a forward commit if needed. Never amend solely to
-set this field to HEAD.
 
 ### CHANGELOG.md
 
@@ -142,7 +136,7 @@ cycle report and run the listed `execution_context.fallback_commands` before any
 last-resort raw artifact diagnostic. Raw artifact reads are last-resort
 diagnostics, not normal Realisera startup behavior.
 
-For progress fallback specifically, use `uv run scripts/agentera progress --format json`
+For progress fallback specifically, use `npx -y agentera state progress --format json`
 or the installed app equivalent from the returned fallback command; the routine
 progress command owns startup progress state.
 
@@ -280,7 +274,7 @@ Verification has two phases: structural and behavioral. Both must pass before co
 - CLI tool: invoke with realistic arguments
 - Library/SDK: run a smoke driver
 - Web service: send a request to a production-shaped endpoint
-- Skill repo: `uv run scripts/eval_skills.py --skill <name>`
+- Skill repo: `npx -y agentera verify eval skills --skill <name>`
 
 If verification fails: diagnose, spawn a fix agent, re-verify.
 
@@ -291,10 +285,6 @@ If verification fails: diagnose, spawn a fix agent, re-verify.
 Once verified, commit with a conventional commit message: `type(scope): summary`.
 
 Types: `feat`, `fix`, `docs`, `refactor`, `chore`, `test`. Include all related files. Never commit partial or broken work. Never push to remote.
-
-When logging progress in the same commit, set `commit: pending` unless the product
-commit hash is already known. Do not amend afterward only to replace `pending` with
-that hash.
 
 If the current task is a version bump: read DOCS.md for the `versioning` section. Update every file in `version_files`.
 

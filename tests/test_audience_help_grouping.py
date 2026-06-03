@@ -106,7 +106,14 @@ class TestPreservedTopLevelCommands:
         assert "--yes" in help_result.stdout
         assert dry_run.returncode in {0, 1}, dry_run.stderr
         payload = json.loads(dry_run.stdout)
-        assert payload["status"] in {"planned", "applied", "noop", "migration_needed", "pending"}
+        assert payload["status"] in {
+            "planned",
+            "applied",
+            "noop",
+            "migration_needed",
+            "pending",
+            "blocked",
+        }
         assert "appHome" in payload
 
     def test_doctor_help_and_json_shape_unchanged(self):

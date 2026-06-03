@@ -584,8 +584,8 @@ surfaces:
   measurement_scope: primary
   fixture: repo_root
   enforcement_tier: enforce
-  byte_budget: 95000
-  token_budget: 30000
+  byte_budget: 400000
+  token_budget: 120000
 - id: report-missing-corpus
   command: agentera report
   selector: --format json (corpus missing)

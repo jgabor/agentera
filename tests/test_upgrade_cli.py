@@ -489,7 +489,7 @@ def test_artifact_upgrade_apply_is_idempotent(tmp_path: Path) -> None:
     backup = project / ".agentera" / "backup-v1" / "PROGRESS.md"
     assert backup.read_text(encoding="utf-8") == PROGRESS_V1
     data = yaml.safe_load((project / ".agentera" / "progress.yaml").read_text(encoding="utf-8"))
-    assert data["cycles"][0]["commit"] == "abc1234"
+    assert "commit" not in data["cycles"][0]
 
     second = _run(
         "upgrade",

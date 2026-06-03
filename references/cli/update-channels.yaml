@@ -1,0 +1,152 @@
+schema_version: agentera.update_channels.v1
+status: active_authority
+purpose: >-
+  Define dual update channels that select which published Agentera line upgrade,
+  doctor, and prime resolve: stable tracks the supported 2.x line; development
+  tracks 3.x alphas and release candidates.
+sources:
+  prose:
+    - references/cli/vocabulary.md#update-channels
+scope:
+  includes:
+    - Channel names, default selection, and resolution precedence.
+    - npm dist-tag resolution per channel and git ref resolution for the stable line only.
+    - Environment, config, and CLI override keys.
+  excludes:
+    - App lifecycle canonical statuses and operation verb definitions.
+    - Migration orchestration phases, apply semantics, and compatibility detection.
+    - Package publication, dist-tag retirement, and release approval decisions.
+    - uv/git install paths for the development (3.x) channel; feat/v3 is TS-only on npm.
+compatibility_boundary: >-
+  Stable channel must continue resolving to 2.x until an explicit release decision
+  retires it. Cross-major v2→v3 migration is never implied by default channel
+  resolution or stable-channel @latest semantics; see
+  references/cli/app-lifecycle-vocabulary.yaml status_concepts.major_boundary_crossing.
+default_channel: stable
+channel_order:
+  - stable
+  - development
+channels:
+  stable:
+    concept: v2_support_line
+    definition: >-
+      Tracks the supported 2.x release line for users who must not cross the v2→v3
+      major boundary without explicit opt-in.
+    distribution_major: 2
+    resolution:
+      npm:
+        dist_tag: latest
+        update_command: npx -y agentera@latest
+      git:
+        ref: main
+        update_command: uvx --from git+https://github.com/jgabor/agentera@main agentera
+  development:
+    concept: v3_pre_release_line
+    definition: >-
+      Tracks 3.x alphas, betas, and release candidates for early adopters and
+      maintainers testing the npm self-contained TypeScript distribution. The
+      feat/v3 branch and v3 CLI are npm-only; v2→v3 is a one-way upgrade through
+      npx @next, not through uvx or git checkout installs.
+    distribution_major: 3
+    resolution:
+      npm:
+        dist_tag: next
+        update_command: npx -y agentera@next
+      git:
+        supported: false
+        reason: >-
+          feat/v3 has no Python packaging; development-channel CLI delivery is
+          npm-only. Stable-channel git/uvx remains the Python 2.x maintainer path
+          on @main.
+override_precedence:
+  - cli_flag
+  - env_var
+  - config_file
+  - default
+override_keys:
+  cli:
+    flag: --channel
+    values:
+      - stable
+      - development
+  env:
+    name: AGENTERA_UPDATE_CHANNEL
+    values:
+      - stable
+      - development
+  config:
+    file: ~/.config/agentera/config.toml
+    key: update.channel
+    values:
+      - stable
+      - development
+consumer_order:
+  - upgrade
+  - doctor
+  - prime
+  - docs
+  - tests
+consumers:
+  upgrade:
+    owns:
+      - channel resolution for preview and apply command rendering.
+      - channel metadata in agentera.upgrade.v2 payloads.
+    may_resolve_channels:
+      - stable
+      - development
+  doctor:
+    owns:
+      - channel-aware repair and update command strings in diagnostics.
+    may_resolve_channels:
+      - stable
+      - development
+  prime:
+    owns:
+      - channel-aware v1 migration and app-home gate command strings.
+    may_resolve_channels:
+      - stable
+      - development
+  docs:
+    owns:
+      - human-readable explanation of this authority.
+    may_resolve_channels:
+      - stable
+      - development
+  tests:
+    owns:
+      - regression coverage proving consumers remain synchronized with this authority.
+    may_resolve_channels:
+      - stable
+      - development
+version_resolution:
+  running_version:
+    priority:
+      - bundle_marker
+      - npm_package_version
+      - suite_registry
+  latest_on_channel:
+    resolver: npm_dist_tag_with_offline_defaults
+    offline_defaults:
+      stable: "2.7.7"
+      development: "3.0.0-dev.4"
+  irreversibility:
+    downgrade_to_v2: permanently_blocked
+    supported_downgrade_lines: []
+  forward_major_gate:
+    mechanism: semver_compare_running_to_latest_on_selected_channel
+    apply_requires:
+      - dry_run_preview
+      - yes_flag
+  outcome_concepts:
+    - same_major_update
+    - forward_major_upgrade
+    - migration_to_latest_on_channel
+    - channel_line_mismatch
+    - blocked_downgrade_to_v2
+    - blocked_downgrade_not_implemented
+    - up_to_date
+docs_delegation:
+  document: references/cli/vocabulary.md
+  required_anchor: Update channels
+  authority_path: references/cli/update-channels.yaml
+  must_not_duplicate_large_table: true

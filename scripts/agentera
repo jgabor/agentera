@@ -56,7 +56,6 @@ _SCRIPTS_DIR = Path(__file__).resolve().parent
 if str(_SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_DIR))
 from yaml_mapping import load_yaml_mapping  # noqa: E402
-from progress_commit import compute_backfill, rewrite_cycle_commits  # noqa: E402
 
 from artifact_registry import (
     ArtifactRecord,
@@ -639,6 +638,11 @@ def _extract_entries(data: Any) -> list[dict]:
                 return val
         return [data]
     return []
+
+
+def _omit_progress_commit_entries(entries: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Strip legacy per-cycle commit fields before progress CLI/JSON output."""
+    return [{key: value for key, value in entry.items() if key != "commit"} for entry in entries]
 
 
 _DECISION_ARCHIVE_RE = re.compile(r"Decision\s+(?P<number>\d+)(?:\s+\((?P<date>\d{4}-\d{2}-\d{2})\))?:\s*(?P<summary>.*)")
@@ -6187,75 +6191,6 @@ def _emit_compaction_payload(args: argparse.Namespace, payload: dict[str, Any], 
         print(f"guidance={summary['guidance']}")
 
 
-# ── Progress commit backfill ───────────────────────────────────────
-
-
-def _backfill_progress_path(project: Path) -> Path:
-    schemas = _load_schemas(_discover_schemas_dir())
-    info = schemas.get("progress")
-    rel = str(info.get("path")) if info and info.get("path") else ".agentera/progress.yaml"
-    path = Path(rel)
-    return path if path.is_absolute() else project / rel
-
-
-def _emit_backfill(args: argparse.Namespace, payload: dict[str, Any]) -> None:
-    if _output_format(args) == "json":
-        _emit_structured(payload, "json")
-        return
-    print(f"status={payload['status']} | mode={payload.get('mode')} | path={payload['path']}")
-    if payload.get("message"):
-        print(payload["message"])
-    for op in payload.get("operations", []):
-        print(
-            f"- cycle={op['cycle']} | commit={op['commit']} | "
-            f"state={op['state']} | action={op['action']}"
-        )
-    changes = payload.get("changes") or {}
-    if changes:
-        print("changes=" + ", ".join(f"{n}->{v}" for n, v in sorted(changes.items(), reverse=True)))
-
-
-def cmd_backfill(args: argparse.Namespace) -> int:
-    project = Path(getattr(args, "project", None) or Path.cwd()).resolve()
-    mode = getattr(args, "mode", "check")
-    path = _backfill_progress_path(project)
-    payload: dict[str, Any] = {
-        "command": "backfill",
-        "status": "ok",
-        "project": str(project),
-        "mode": mode,
-        "path": str(path),
-        "operations": [],
-        "changes": {},
-    }
-
-    if not path.exists():
-        payload["status"] = "noop"
-        payload["message"] = f"progress artifact not found at {path}"
-        _emit_backfill(args, payload)
-        return 0
-
-    text = path.read_text(encoding="utf-8")
-    result = compute_backfill(
-        text,
-        mode=mode,
-        target_commit=getattr(args, "commit", None),
-        target_cycle=getattr(args, "cycle", None),
-        cwd=project,
-    )
-    payload["status"] = result.status
-    payload["operations"] = result.operations
-    payload["changes"] = result.changes
-    if result.message is not None:
-        payload["message"] = result.message
-
-    if result.status == "fixed":
-        path.write_text(rewrite_cycle_commits(text, result.changes), encoding="utf-8")
-
-    _emit_backfill(args, payload)
-    return result.exit_code
-
-
 def cmd_gate(args: argparse.Namespace) -> int:
     project = getattr(args, "project", Path.cwd()).resolve()
     helper = _load_compaction_helper()
@@ -6590,7 +6525,7 @@ def _query_progress(args: argparse.Namespace, schemas: dict) -> int:
     if status_filter:
         entries = _filter_by_field_value(entries, "type", status_filter)
     limit = getattr(args, "limit", 5) or 5
-    entries = _recent_cycles(entries, limit)
+    entries = _omit_progress_commit_entries(_recent_cycles(entries, limit))
     if _output_format(args) != "text":
         return _emit_state_structured(
             "progress",
@@ -6605,7 +6540,7 @@ def _query_progress(args: argparse.Namespace, schemas: dict) -> int:
     if not entries:
         return 0
     for entry in entries:
-        print(_format_entry(entry, ["number", "timestamp", "type", "phase", "commit"]))
+        print(_format_entry(entry, ["number", "timestamp", "type", "phase"]))
         for key in ("what", "verified", "next"):
             value = entry.get(key)
             if value:
@@ -7210,7 +7145,7 @@ def _progress_summary(schemas: dict) -> dict[str, Any]:
             "status": "absent",
             "absence_reason": "No progress cycles are available from agentera progress.",
         }
-    latest = _recent_cycles(entries, 1)[0]
+    latest = _omit_progress_commit_entries(_recent_cycles(entries, 1))[0]
     return {
         "exists": True,
         "status": "available",
@@ -7861,32 +7796,12 @@ def _add_compact_parser_arguments(compact_parser: argparse.ArgumentParser) -> No
         default="check",
         help="Check only, or apply compaction to over-limit compactable artifacts",
     )
+    compact_parser.add_argument(
+        "--apply",
+        action="store_true",
+        help="Apply compaction fixes (alias for --mode fix)",
+    )
     compact_parser.add_argument("--format", choices=["text", "json"], default="text", help="Output format")
-
-
-def _add_backfill_parser_arguments(backfill_parser: argparse.ArgumentParser) -> None:
-    backfill_parser.add_argument(
-        "--project",
-        type=_agent_path,
-        default=Path.cwd(),
-        help="Project directory whose progress.yaml should be reconciled (default: cwd)",
-    )
-    backfill_parser.add_argument(
-        "--mode",
-        choices=["check", "fix"],
-        default="check",
-        help="Check only (exit 1 when changes are needed), or apply commit-field repairs",
-    )
-    backfill_parser.add_argument(
-        "--commit",
-        help="Product commit hash to forward-fill (must already be an ancestor of HEAD)",
-    )
-    backfill_parser.add_argument(
-        "--cycle",
-        type=int,
-        help="Cycle number to backfill with --commit (default: latest pending or stale cycle)",
-    )
-    backfill_parser.add_argument("--format", choices=["text", "json"], default="text", help="Output format")
 
 
 def _add_report_parser_arguments(report_parser: argparse.ArgumentParser) -> None:
@@ -7926,6 +7841,8 @@ def cmd_report(args: argparse.Namespace) -> int:
 
 
 def cmd_check_compact(args: argparse.Namespace) -> int:
+    if getattr(args, "apply", False):
+        args.mode = "fix"
     if getattr(args, "mode", "check") == "check":
         return cmd_gate(args)
     return cmd_compact(args)
@@ -7941,14 +7858,12 @@ def cmd_check(args: argparse.Namespace) -> int:
         return cmd_lint(args)
     if check_command == "compact":
         return cmd_check_compact(args)
-    if check_command == "backfill":
-        return cmd_backfill(args)
     raise ValueError(
-        "unsupported check subcommand; valid subcommands: validate, verify, lint, compact, backfill. "
+        "unsupported check subcommand; valid subcommands: validate, verify, lint, compact. "
         "Examples: agentera check validate capability hej; "
         "agentera check verify smoke installed-skills; "
         "agentera check compact --format json; "
-        "agentera check backfill --mode fix"
+        "agentera check compact --apply"
     )
 
 
@@ -8467,25 +8382,6 @@ def build_parser() -> argparse.ArgumentParser:
         help="Check or fix artifact compaction budgets",
     )
     _add_compact_parser_arguments(check_compact)
-    check_backfill = check_sub.add_parser(
-        "backfill",
-        help="Check or fix stale/self-referential progress cycle commit hashes",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        description=(
-            "Reconcile `.agentera/progress.yaml` cycle commit hashes with git history.\n\n"
-            "A cycle `commit` must be `pending`, `N/A …`, or a commit already in HEAD's "
-            "history. Hashes that resolve but are not ancestors of HEAD (the churn signature "
-            "left by `git commit --amend`) are reset to `pending` in fix mode. Use --commit "
-            "to forward-fill a known product commit into the latest pending cycle (or --cycle N); "
-            "the commit must already exist in HEAD's history.\n\n"
-            "Examples:\n"
-            "  agentera check backfill --format json\n"
-            "  agentera check backfill --mode fix\n"
-            "  agentera check backfill --mode fix --cycle 610 --commit e494ee4"
-        ),
-    )
-    _add_backfill_parser_arguments(check_backfill)
-
 
     return parser
 

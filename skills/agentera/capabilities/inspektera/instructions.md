@@ -96,7 +96,7 @@ Use complete `evidence_context` first for the evaluated target, current plan cri
 3. **Decision context**: use `evidence_context.decision_context` for decision caveats. Findings contradicting deliberate decisions are not findings.
 4. **TODO state**: use `evidence_context.todo_state` for known problems. Don't re-report unless worsened.
 5. **Progress verification**: use `evidence_context.progress_verification` for recent-cycle verification and caveats.
-5b. **Change magnitude**: if CLI progress evidence exposes commit hashes from cycles since the last health audit timestamp, run `git log --stat` on those commits to estimate total change volume. If CLI progress evidence has no commit hashes, skip; default depth applies.
+5b. **Change magnitude**: run `git log --stat` on commits since the last health audit timestamp to estimate total change volume. If the audit timestamp is unavailable, skip; default depth applies.
 5c. **Plan context** (for artifact current-state review): use `evidence_context.evaluation_target` and `evidence_context.plan_criteria` for the plan-relative baseline. If the evidence context reports no target, missing criteria, or missing current-state baseline, preserve that caveat; do not reconstruct it from raw plan state during normal startup.
 6. **Decision profile**: use profile/app caveats already attributed in `evidence_context.residual_risks`; stale or unavailable profile state calibrates confidence but is not approval to refresh profile state or read profile directly during startup.
 7. **Project discovery**: map directory structure, read dependency manifests, README, CLAUDE.md, AGENTS.md, identify language/stack/build commands, `git log --oneline -20`
@@ -161,6 +161,14 @@ Every finding MUST include:
 - Quoted code showing the issue
 - Explanation of why it matters
 - Confidence score (0-100)
+
+### Citation standard (WARN and FAIL findings)
+Every warning or critical finding MUST carry a reproducible anchor:
+- **Health audit findings**: `location: <file>:<line>` in health.yaml (or `not-applicable: <reason>` when no file anchor exists)
+- **Orkestrera evaluation reports**: `citation: <file>:<line>` per row (schema: `agentera.inspekteraEvaluationReport.v1` in `references/cli/capability-instruction-contract.yaml#evaluator_handoff`)
+- **WARN rows with file:line citations**: include `verify_command` with the exact `grep` or `git show` invocation that reproduces the evidence at the cited line when re-run
+
+Prose-only evidence for WARN/FAIL findings is incomplete. The orchestrator treats missing or invalid citations as evaluation failures.
 
 ## Presenting findings
 Introduce each finding conversationally before the structured evidence. The colleague

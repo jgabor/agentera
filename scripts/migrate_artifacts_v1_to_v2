@@ -106,7 +106,6 @@ def _parse_progress(text: str) -> dict[str, Any]:
 
             phase = _extract_bold_field(section, "Phase")
             what = _extract_bold_field_multiline(section, "What")
-            commit = _extract_bold_field(section, "Commit")
             inspiration = _extract_bold_field(section, "Inspiration")
             discovered = _extract_bold_field(section, "Discovered")
             verified = _extract_bold_field(section, "Verified")
@@ -121,7 +120,6 @@ def _parse_progress(text: str) -> dict[str, Any]:
                 "type": commit_type,
                 "phase": phase.lower() if phase else "build",
                 "what": what,
-                "commit": commit if commit else "N/A",
                 "inspiration": inspiration,
                 "discovered": discovered,
                 "verified": verified,
