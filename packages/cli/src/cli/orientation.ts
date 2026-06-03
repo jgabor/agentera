@@ -21,6 +21,7 @@ import {
   truncate,
 } from "./stateQuery.js";
 import { decisionContextEntry, latestHealthAudit, normalizeSeverity } from "./commands/state.js";
+import { isResolvedTodoMarkdownStatus, parseTodoMarkdownListItem } from "./todoMarkdown.js";
 
 /**
  * Orientation summaries layer for prime/hej. Faithful port of the
@@ -51,7 +52,6 @@ const TODO_SECTION_SEVERITIES: Record<string, string> = {
   info: "info",
   annoying: "annoying",
 };
-const TODO_ITEM_RE = /^- \[([^\]]+)\]\s+(.*)/;
 const TODO_PLANERA_SIGNALS = new Set([
   "acceptance", "artifact", "capability", "capability-context", "compatibility", "contract",
   "cross-capability", "docs", "metadata", "migration", "schema", "startup", "surface", "test", "validation",
@@ -247,8 +247,10 @@ export function loadTodoItems(schemas: Record<string, SchemaInfo>): Array<Record
       continue;
     }
     if (currentSeverity) {
-      const m = TODO_ITEM_RE.exec(stripped);
-      if (m) items.push({ severity: currentSeverity, status: "open", text: m[2].trim() });
+      const parsed = parseTodoMarkdownListItem(stripped);
+      if (!parsed || isResolvedTodoMarkdownStatus(parsed.status)) continue;
+      if (!parsed.description) continue;
+      items.push({ severity: currentSeverity, status: parsed.status, text: parsed.description });
     }
   }
   return items;

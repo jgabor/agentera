@@ -122,4 +122,23 @@ describe("orientation: artifact summaries", () => {
     const items = loadTodoItems(schema("todo", p));
     expect(items).toEqual([{ severity: "critical", status: "open", text: "Fix it" }]);
   });
+
+  it("excludes resolved GitHub checkbox items from open todo load", () => {
+    const p = path.join(tmp, "TODO.md");
+    fs.writeFileSync(
+      p,
+      ["## ⇶ Critical", "- [x] [fix] Already done", "- [ ] [fix] Still open", ""].join("\n"),
+    );
+    const items = loadTodoItems(schema("todo", p));
+    expect(items).toEqual([{ severity: "critical", status: "open", text: "[fix] Still open" }]);
+    expect(issueCounts(items).critical).toBe(1);
+  });
+
+  it("reports zero critical issues when only resolved checkboxes remain", () => {
+    const p = path.join(tmp, "TODO.md");
+    fs.writeFileSync(p, "## ⇶ Critical\n- [x] [fix] Done only\n");
+    const items = loadTodoItems(schema("todo", p));
+    expect(items).toEqual([]);
+    expect(issueCounts(items).critical).toBe(0);
+  });
 });

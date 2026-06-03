@@ -315,6 +315,44 @@ describe("cli state todo", () => {
     expect(out).toContain("[critical] Do the urgent thing");
     expect(out).not.toContain("Old item");
   });
+
+  it("classifies GitHub checkbox plus type tag in markdown TODO (json)", () => {
+    const p = path.join(tmp, "TODO.md");
+    fs.writeFileSync(
+      p,
+      [
+        "## ⇶ Critical",
+        "- [x] [fix] Resolved checkbox item",
+        "- [ ] [fix] Open checkbox item",
+        "- [fix:3.0.0] Type-only open item",
+        "",
+      ].join("\n"),
+    );
+    const { rc, out } = capture((io) =>
+      queryTodo({ command: "todo", format: "json" }, todoSchema(p), io),
+    );
+    expect(rc).toBe(0);
+    const payload = JSON.parse(out);
+    const byDesc = Object.fromEntries(
+      payload.entries.map((e: { description: string }) => [e.description, e]),
+    );
+    expect(byDesc["[fix] Resolved checkbox item"].status).toBe("resolved");
+    expect(byDesc["[fix] Open checkbox item"].status).toBe("open");
+    expect(byDesc["Type-only open item"].status).toBe("open");
+  });
+
+  it("omits resolved checkbox rows from open-only markdown TODO (json)", () => {
+    const p = path.join(tmp, "TODO.md");
+    fs.writeFileSync(p, "## critical\n- [x] [fix] Done\n- [ ] [fix] Still open\n");
+    const { rc, out } = capture((io) =>
+      queryTodo({ command: "todo", format: "json" }, todoSchema(p), io, true),
+    );
+    expect(rc).toBe(0);
+    const payload = JSON.parse(out);
+    expect(payload.entries).toHaveLength(1);
+    expect(payload.entries[0].status).toBe("open");
+    expect(payload.entries[0].description).toBe("[fix] Still open");
+  });
 });
 
 
