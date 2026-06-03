@@ -121,7 +121,10 @@ export interface TomlState {
   sectionPresent: boolean;
   setPresent: boolean;
   setTable: Record<string, string>;
+  sectionLevelHome: string | null;
 }
+
+export const SET_SUBTABLE_NAME = `${SECTION_NAME}.set`;
 
 /** Python repr() for a scalar, used to display non-string sibling set values. */
 function pyRepr(value: unknown): string {
@@ -136,22 +139,108 @@ function pyRepr(value: unknown): string {
 
 export function classifyToml(text: string): TomlState {
   if (!text.trim()) {
-    return { sectionPresent: false, setPresent: false, setTable: {} };
+    return { sectionPresent: false, setPresent: false, setTable: {}, sectionLevelHome: null };
   }
   const parsed = parseToml(text) as Dict;
   const section = parsed[SECTION_NAME];
   if (!section || typeof section !== "object" || Array.isArray(section)) {
-    return { sectionPresent: false, setPresent: false, setTable: {} };
+    return { sectionPresent: false, setPresent: false, setTable: {}, sectionLevelHome: null };
   }
-  const setValue = (section as Dict).set;
+  const sectionDict = section as Dict;
+  const sectionHome = sectionDict[MANAGED_KEY];
+  const sectionLevelHome =
+    typeof sectionHome === "string" && sectionHome ? sectionHome : null;
+  const setValue = sectionDict.set;
   if (!setValue || typeof setValue !== "object" || Array.isArray(setValue)) {
-    return { sectionPresent: true, setPresent: false, setTable: {} };
+    return { sectionPresent: true, setPresent: false, setTable: {}, sectionLevelHome };
   }
   const coerced: Record<string, string> = {};
   for (const [key, value] of Object.entries(setValue)) {
     coerced[String(key)] = typeof value === "string" ? value : pyRepr(value);
   }
-  return { sectionPresent: true, setPresent: true, setTable: coerced };
+  return { sectionPresent: true, setPresent: true, setTable: coerced, sectionLevelHome };
+}
+
+export function hasInlineSetLine(text: string): boolean {
+  const plainLines = splitKeepEnds(text).map(rstripEol);
+  const sectionIdx = findSectionHeaderIndex(plainLines);
+  if (sectionIdx === null) return false;
+  return findSetLineIndex(plainLines, sectionIdx) !== null;
+}
+
+export function hasSetSubtableHeader(text: string): boolean {
+  const plainLines = splitKeepEnds(text).map(rstripEol);
+  return findTableHeaderIndex(plainLines, SET_SUBTABLE_NAME) !== null;
+}
+
+export function managedHomeInSet(section: Dict): string | null {
+  const setValue = section.set;
+  if (!setValue || typeof setValue !== "object" || Array.isArray(setValue)) return null;
+  const value = (setValue as Dict)[MANAGED_KEY];
+  return typeof value === "string" && value ? value : null;
+}
+
+export function codexManagedHomeConfigured(text: string | null): boolean {
+  if (!text || !text.trim()) return false;
+  const parsed = parseToml(text) as Dict;
+  const section = parsed[SECTION_NAME];
+  if (!section || typeof section !== "object" || Array.isArray(section)) return false;
+  return managedHomeInSet(section as Dict) !== null;
+}
+
+export function needsShellEnvNormalize(state: TomlState, text: string): boolean {
+  if (state.sectionLevelHome !== null) return true;
+  if (state.setPresent && !hasInlineSetLine(text)) return true;
+  if (hasSetSubtableHeader(text)) return true;
+  return false;
+}
+
+export function mergeSetPairs(section: Dict, installRoot: string): Record<string, string> {
+  const pairs: Record<string, string> = {};
+  const setValue = section.set;
+  if (setValue && typeof setValue === "object" && !Array.isArray(setValue)) {
+    for (const [key, value] of Object.entries(setValue as Dict)) {
+      if (key === MANAGED_KEY) continue;
+      pairs[String(key)] = typeof value === "string" ? value : pyRepr(value);
+    }
+  }
+  pairs[MANAGED_KEY] = installRoot;
+  return pairs;
+}
+
+function shellPolicySectionEnd(plainLines: string[], sectionIdx: number): number {
+  let idx = sectionIdx + 1;
+  while (idx < plainLines.length) {
+    const line = plainLines[idx];
+    if (SECTION_HEADER_RE.test(line)) return idx;
+    if (tableHeaderRe(SET_SUBTABLE_NAME).test(line)) {
+      idx += 1;
+      while (idx < plainLines.length && !/^\s*\[/.test(plainLines[idx])) idx += 1;
+      continue;
+    }
+    if (/^\s*\[/.test(line)) return idx;
+    idx += 1;
+  }
+  return plainLines.length;
+}
+
+export function normalizeShellEnvironmentPolicy(text: string, installRoot: string): string {
+  const parsed = parseToml(text) as Dict;
+  const section = parsed[SECTION_NAME];
+  if (!section || typeof section !== "object" || Array.isArray(section)) {
+    throw new Error(`normalize_shell_environment_policy: [${SECTION_NAME}] missing`);
+  }
+  const pairs = mergeSetPairs(section as Dict, installRoot);
+  const linesWithEnds = splitKeepEnds(text);
+  const plainLines = linesWithEnds.map(rstripEol);
+  const sectionIdx = findSectionHeaderIndex(plainLines);
+  if (sectionIdx === null) {
+    throw new Error(`normalize_shell_environment_policy: [${SECTION_NAME}] header not found`);
+  }
+  const endIdx = shellPolicySectionEnd(plainLines, sectionIdx);
+  const terminator = lineTerminator(linesWithEnds[sectionIdx]);
+  const setLine = `set = ${emitSetInlineTable(pairs)}${terminator}`;
+  return [...linesWithEnds.slice(0, sectionIdx + 1), setLine, ...linesWithEnds.slice(endIdx)].join("");
 }
 
 // ── TOML emission ──────────────────────────────────────────────────
@@ -787,6 +876,44 @@ export function planChange(
   }
 
   const state = classifyToml(currentText);
+  const parsed = parseToml(currentText) as Dict;
+  const section = parsed[SECTION_NAME];
+  const sectionDict =
+    section && typeof section === "object" && !Array.isArray(section) ? (section as Dict) : {};
+
+  if (needsShellEnvNormalize(state, currentText)) {
+    const canonical =
+      state.sectionLevelHome === null &&
+      hasInlineSetLine(currentText) &&
+      !hasSetSubtableHeader(currentText) &&
+      state.setTable[MANAGED_KEY] === desiredPath;
+    if (!canonical) {
+      try {
+        const newText = normalizeShellEnvironmentPolicy(currentText, installRoot);
+        if (newText !== currentText) {
+          return withCodexHookTrust(
+            {
+              action: "normalize",
+              newText,
+              message: `would normalize [${SECTION_NAME}] to inline set = { ${MANAGED_KEY} = ${desiredPath} }`,
+              diff: unifiedDiffText(currentText, newText),
+            },
+            currentText,
+            hooksPath,
+            hookCommand,
+            pluginHooks,
+          );
+        }
+      } catch (exc) {
+        return {
+          action: "conflict",
+          newText: "",
+          message: `cannot normalize [${SECTION_NAME}] layout: ${(exc as Error).message}. Edit ~/.codex/config.toml manually.`,
+          diff: "",
+        };
+      }
+    }
+  }
 
   // Branch 2: section absent -> append a fresh section at EOF.
   if (!state.sectionPresent) {
@@ -866,6 +993,34 @@ export function planChange(
         action: "insert",
         newText,
         message: `would update ${MANAGED_KEY} from ${state.setTable[MANAGED_KEY]} to ${desiredPath}`,
+        diff: unifiedDiffText(currentText, newText),
+      },
+      currentText,
+      hooksPath,
+      hookCommand,
+      pluginHooks,
+    );
+  }
+
+  if (Object.keys(siblings).length === 0 && !(MANAGED_KEY in state.setTable)) {
+    let newText: string;
+    try {
+      newText = hasInlineSetLine(currentText)
+        ? rewriteSetLine(currentText, merged)
+        : normalizeShellEnvironmentPolicy(currentText, installRoot);
+    } catch (exc) {
+      return {
+        action: "conflict",
+        newText: "",
+        message: `cannot add ${MANAGED_KEY} to [${SECTION_NAME}]: ${(exc as Error).message}. Edit ~/.codex/config.toml manually.`,
+        diff: "",
+      };
+    }
+    return withCodexHookTrust(
+      {
+        action: "insert",
+        newText,
+        message: `would set ${MANAGED_KEY} = ${desiredPath} in [${SECTION_NAME}].set`,
         diff: unifiedDiffText(currentText, newText),
       },
       currentText,
