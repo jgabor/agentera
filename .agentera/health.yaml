@@ -1685,7 +1685,7 @@ audits:
       Tests: B
       Deps: A
       Version: C
-      Freshness: B
+      Freshness: A
       Prose: A
       Security: A
     dimension_details:
@@ -1749,36 +1749,27 @@ audits:
         findings: []
       - name: Version health
         grade: C
-        summary: package.json is 3.0.0-dev.0 while agentera.suiteVersion remains 2.7.6;
-          large uncommitted migration work sits on the TS rewrite branch.
+        summary: suiteVersion and offline_defaults now carry 2.7.7 on feat/v3, but
+          package.json remains 3.0.0-dev.4 while the @next channel publishes the
+          TS rewrite; release-metadata parity across npm and suite surfaces stays
+          open.
         findings:
-          - heading: "⇉ Version surfaces and release tree diverge, warning (confidence: 92)"
+          - heading: "⇉ npm @next dev series vs suiteVersion channel split, warning (confidence: 88)"
             severity: warning
-            confidence: 92
-            location: packages/cli/package.json, uncommitted working tree
-            evidence: version 3.0.0-dev.0 vs suiteVersion 2.7.6/gitRef v2.7.6; dozens of
-              modified and untracked upgrade files remain uncommitted after the
-              migration plan.
-            impact: Installed-app expectations, docs, and npm publish metadata can disagree
-              until release alignment lands.
-            suggested_action: Coordinate a release-metadata pass when migration work
-              commits; keep stable channel on 2.x until explicit retirement.
+            confidence: 88
+            location: packages/cli/package.json, references/cli/update-channels.yaml
+            evidence: version 3.0.0-dev.4 vs suiteVersion 2.7.7; @next ships the TS CLI
+              while stable @latest remains on 2.x until explicit retirement.
+            impact: Installed-app expectations and publish metadata can disagree until
+              the 3.0 RC alignment pass lands.
+            suggested_action: Coordinate release-metadata parity when the 3.0 RC cuts;
+              keep stable channel on 2.x until explicit retirement.
       - name: Artifact freshness
-        grade: B
-        summary: Completed plan was archived correctly; progress.yaml grew through
-          orchestration cycles and now triggers compaction over_limit.
-        findings:
-          - heading: "⇉ progress.yaml over compaction budget, warning (confidence: 91)"
-            severity: warning
-            confidence: 91
-            location: .agentera/progress.yaml
-            evidence: hooks/compaction.test.ts classifies repository artifacts with
-              over_limit after cycles 616–622 appended during v2→v3 migration
-              orchestration.
-            impact: Compaction hooks and validate paths treat progress as needing
-              maintenance; hej/progress reads stay heavier than intended.
-            suggested_action: Run compaction on progress.yaml or archive older cycles before
-              the next orchestration session.
+        grade: A
+        summary: The 2.7.7 plan archived to `.agentera/archive/plan-2026-06-03.yaml`,
+          active plan slot cleared, progress.yaml at 10/40/50 under the compaction
+          cap, and TODO 2.7.7 ledger reconciled.
+        findings: []
       - name: Prose health
         grade: A
         summary: UPGRADE.md channel and backport sections stay factual; new vocabulary
@@ -1798,14 +1789,18 @@ audits:
             suggested_action: Keep npm audit and secret scanning in release CI for 3.x.
     trends:
       improved: v2→v3 migration architecture, dual update channels, 60 upgrade vitest
-        cases, and backport-safety gates landed on the TS rewrite branch.
+        cases, backport-safety gates, 2.7.7 suiteVersion bump, progress.yaml
+        compaction enforcement, D66 commit-field removal, and inspektera WARN/FAIL
+        citation contract on feat/v3.
       degraded: Complexity grade slips as large TS modules replace the Python CLI
-        monolith; artifact compaction pressure from orchestration cycles.
+        monolith; npm @next dev-series vs suiteVersion channel split persists.
       stable: Dependency, prose, and security posture remain healthy.
-      new_findings: Compaction/plan-validate vitest failures, progress over budget,
-        version-surface split on 3.0.0-dev.0.
-      resolved: Audit 21 hybrid-staleness and health-selection issues remain fixed in
-        the ported TS CLI paths exercised here.
+      new_findings: npm @next 3.0.0-dev.4 vs suiteVersion 2.7.7 release-metadata
+        divergence; Python stable mirrors for 2.7.7 both-branch items deferred.
+      resolved: progress.yaml over-budget compaction pressure; D66 progress commit
+        field and backfill flow; inspektera WARN false-positive citation gap; 2.7.7
+        plan archived and active plan slot cleared; Audit 21 hybrid-staleness and
+        health-selection issues remain fixed in the ported TS CLI paths.
     patterns:
       - "Upgrade architecture: channels.ts → compatibility.ts →
         migrateArtifactsV2ToV3.ts → upgradeOrchestrator.ts with shared

@@ -90,6 +90,28 @@ describe("cli state progress", () => {
     expect(payload.entries[0].number).toBe(2);
   });
 
+  it("omits per-cycle commit from JSON output even when the artifact carries it", () => {
+    const p = path.join(tmp, "progress.yaml");
+    fs.writeFileSync(
+      p,
+      [
+        "cycles:",
+        "  - number: 1",
+        "    timestamp: '2026-05-29 17:00'",
+        "    type: feat",
+        "    phase: build",
+        "    what: Shipped a change.",
+        "    commit: pending",
+        "",
+      ].join("\n"),
+    );
+    const { rc, out } = capture((io) => queryProgress({ command: "progress", format: "json" }, progressSchema(p), io));
+    expect(rc).toBe(0);
+    const payload = JSON.parse(out);
+    expect(payload.entries[0].what).toBe("Shipped a change.");
+    expect(payload.entries[0].commit).toBeUndefined();
+  });
+
   it("supports --fields selection with sparse context", () => {
     const p = seedProgress();
     const { rc, out } = capture((io) =>

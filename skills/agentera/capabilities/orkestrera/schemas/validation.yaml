@@ -105,3 +105,16 @@ VALIDATION:
       - "Provisional satisfaction requires evidence"
       - "Only the user confirms final satisfaction"
       - "Missing or compacted satisfaction caveats are preserved"
+  10:
+    id: V10
+    rule: inspektera_citation_required
+    description: >-
+      Orkestrera Step 3 Surface 2 inspektera delegation MUST require a
+      citation: <file>:<line> (or not-applicable: <reason>) for every WARN and
+      FAIL finding, and require verify_command for WARN rows with file:line
+      citations. Authority: references/cli/capability-instruction-contract.yaml#evaluator_handoff.
+    severity: critical
+    checks:
+      - "instructions.md contains citation: `<file>:<line>` OR `not-applicable: <reason>`"
+      - "instructions.md contains verify_command"
+      - "instructions.md contains evaluator_handoff.output_requirements"

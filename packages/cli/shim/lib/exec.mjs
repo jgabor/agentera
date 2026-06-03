@@ -22,7 +22,7 @@ export function runBackend(backend, args, meta = {}) {
   }
 
   if (backend.kind === "uvx") {
-    const gitRef = backend.gitRef ?? meta.gitRef ?? "v2.7.6";
+    const gitRef = backend.gitRef ?? meta.gitRef ?? "v2.7.7";
     const gitRepo = backend.gitRepo ?? meta.gitRepo ?? "https://github.com/jgabor/agentera";
     const from = `git+${gitRepo}@${gitRef}`;
     return spawnChecked("uvx", ["--from", from, "agentera", ...args], {});

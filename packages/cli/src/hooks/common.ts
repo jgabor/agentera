@@ -16,12 +16,6 @@ export {
   loadYamlMapping,
   loadYamlMappingFile,
 } from "../core/yaml.js";
-export {
-  COMMIT_HASH_RE,
-  commitToken,
-  validateProgressCommits,
-} from "../state/progressCommit.js";
-export { ancestorState, gitRun } from "../core/git.js";
 
 type Env = Record<string, string | undefined>;
 type Entry = Record<string, unknown>;

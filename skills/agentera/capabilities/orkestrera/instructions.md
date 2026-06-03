@@ -231,8 +231,12 @@ You are evaluating a completed task for [project].
 
 ## Output format
 For each acceptance criterion, report:
-- PASS or FAIL
-- Evidence (what you checked, what you found)
+- status: PASS, WARN, or FAIL
+- evidence: what you checked and what you found
+- citation: `<file>:<line>` OR `not-applicable: <reason>` — **required for every WARN and FAIL row**
+- verify_command: exact `grep` or `git show` invocation — **required for every WARN row with a file:line citation**; the command must reproduce the evidence at the cited line when re-run
+
+Use `orchestration_context.evaluator_handoff.output_requirements` from prime context as the machine-readable citation contract. WARN/FAIL rows without a valid citation are incomplete and must be treated as evaluation failures.
 
 Then report the verification evidence audit outcome (PASS or FAIL with reasoning).
 

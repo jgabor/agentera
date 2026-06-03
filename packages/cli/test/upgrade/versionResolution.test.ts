@@ -73,7 +73,7 @@ describe("classifyUpgradeOutcome", () => {
 
   it("classifies v2 managed layout migration to latest on development channel", () => {
     const appHome = path.join(tmp, "v2");
-    managedV2(appHome, "2.7.6");
+    managedV2(appHome, "2.7.7");
     const install = classifyInstall({ appHome, sourceRoot: REPO_ROOT });
     const channel = resolveUpdateChannel({ sourceRoot: REPO_ROOT, channel: "development", home: tmp });
     const outcome = classifyUpgradeOutcome({
@@ -81,7 +81,7 @@ describe("classifyUpgradeOutcome", () => {
       sourceRoot: REPO_ROOT,
       install,
       channel,
-      catalog: { stable: "2.7.6", development: "3.0.0-dev.0" },
+      catalog: { stable: "2.7.7", development: "3.0.0-dev.0" },
     });
     expect(outcome.kind).toBe("migration_to_latest_on_channel");
     expect(outcome.migrationTargetVersion).toBe("3.0.0-dev.0");
@@ -102,7 +102,7 @@ describe("classifyUpgradeOutcome", () => {
       sourceRoot: REPO_ROOT,
       install,
       channel,
-      catalog: { stable: "2.7.6", development: "3.0.0-dev.0" },
+      catalog: { stable: "2.7.7", development: "3.0.0-dev.0" },
     });
     expect(outcome.kind).toBe("blocked_downgrade_to_v2");
   });
@@ -131,11 +131,11 @@ describe("classifyUpgradeOutcome", () => {
 describe("resolveRunningVersion", () => {
   it("reads bundle marker version for v2 managed app-home", () => {
     const appHome = path.join(tmp, "v2");
-    managedV2(appHome, "2.7.6");
+    managedV2(appHome, "2.7.7");
     const install = classifyInstall({ appHome, sourceRoot: REPO_ROOT });
     expect(
       resolveRunningVersion({ appHome, sourceRoot: REPO_ROOT, install }),
-    ).toBe("2.7.6");
+    ).toBe("2.7.7");
   });
 });
 
@@ -143,7 +143,7 @@ describe("resolveLatestOnChannel", () => {
   it("uses injectable catalog without network", () => {
     const channel = resolveUpdateChannel({ sourceRoot: REPO_ROOT, channel: "development", home: tmp });
     expect(
-      resolveLatestOnChannel(channel, REPO_ROOT, { stable: "2.7.6", development: "3.0.0-dev.0" }),
+      resolveLatestOnChannel(channel, REPO_ROOT, { stable: "2.7.7", development: "3.0.0-dev.0" }),
     ).toBe("3.0.0-dev.0");
   });
 });

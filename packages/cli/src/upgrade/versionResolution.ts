@@ -124,7 +124,7 @@ export function loadOfflineLatestDefaults(sourceRoot: string): VersionCatalog {
   const latestOnChannel = versionResolution?.latest_on_channel as Record<string, unknown> | undefined;
   const defaults = latestOnChannel?.offline_defaults as Record<string, string> | undefined;
   return {
-    stable: defaults?.stable ?? "2.7.6",
+    stable: defaults?.stable ?? "2.7.7",
     development: defaults?.development ?? "3.0.0-dev.0",
   };
 }
@@ -137,7 +137,7 @@ export function resolveLatestOnChannel(
   const resolved = catalog ?? testVersionCatalog ?? loadOfflineLatestDefaults(sourceRoot);
   return channel.channel === "development"
     ? (resolved.development ?? "3.0.0-dev.0")
-    : (resolved.stable ?? "2.7.6");
+    : (resolved.stable ?? "2.7.7");
 }
 
 export function classifyUpgradeOutcome(args: {

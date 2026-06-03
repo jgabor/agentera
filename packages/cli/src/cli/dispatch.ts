@@ -1,6 +1,5 @@
 import { cmdPrime, PrimeArgs } from "./commands/prime.js";
 import { cmdLint, LintArgs } from "./commands/lint.js";
-import { cmdBackfill, BackfillArgs } from "./commands/backfill.js";
 import { cmdState, isPortedStateCommand, StateArgs } from "./commands/state.js";
 import { COMMAND_FILTERS } from "./stateQuery.js";
 import { cmdQuery, QueryArgs } from "./commands/query.js";
@@ -166,57 +165,6 @@ function runLint(argv: string[], io: Io, prog = "agentera lint"): number {
   }
 }
 
-function parseBackfillArgs(argv: string[]): BackfillArgs | { error: string } {
-  const args: BackfillArgs = { project: null, mode: "check", commit: null, cycle: null, format: "text" };
-  for (let i = 0; i < argv.length; i++) {
-    const a = argv[i];
-    const value = (name: string): string | null => {
-      if (a === name) return argv[++i];
-      if (a.startsWith(name + "=")) return a.slice(name.length + 1);
-      return null;
-    };
-    let v: string | null;
-    if ((v = value("--project")) !== null) args.project = v;
-    else if ((v = value("--mode")) !== null) {
-      if (v !== "check" && v !== "fix") {
-        return { error: `argument --mode: invalid choice: '${v}' (choose from 'check', 'fix')` };
-      }
-      args.mode = v;
-    } else if ((v = value("--commit")) !== null) args.commit = v;
-    else if ((v = value("--cycle")) !== null) {
-      const n = Number(v);
-      if (!Number.isInteger(n)) return { error: `argument --cycle: invalid int value: '${v}'` };
-      args.cycle = n;
-    } else if ((v = value("--format")) !== null) {
-      if (v !== "text" && v !== "json") {
-        return { error: `argument --format: invalid choice: '${v}' (choose from 'text', 'json')` };
-      }
-      args.format = v;
-    } else {
-      return { error: `unrecognized arguments: ${a}` };
-    }
-  }
-  return args;
-}
-
-function runBackfill(argv: string[], io: Io, prog = "agentera backfill"): number {
-  const parsed = parseBackfillArgs(argv);
-  if ("error" in parsed) {
-    return emitInvalidInput(io, {
-      format: "text",
-      body: classifyParseError(parsed.error),
-    });
-  }
-  try {
-    return cmdBackfill(parsed, io);
-  } catch (exc) {
-    return emitInvalidInput(io, {
-      format: asEnvelopeFormat(parsed.format),
-      body: { class: "unsupported_target", message: (exc as Error).message },
-    });
-  }
-}
-
 function parseStateArgs(command: string, argv: string[]): StateArgs | { error: string } {
   const args: StateArgs = {
     command,
@@ -339,6 +287,7 @@ function runQuery(argv: string[], io: Io, prog: string): number {
 
 function compactModeOf(argv: string[]): string {
   for (let i = 0; i < argv.length; i++) {
+    if (argv[i] === "--apply") return "fix";
     if (argv[i] === "--mode") return argv[i + 1] ?? "check";
     if (argv[i].startsWith("--mode=")) return argv[i].slice("--mode=".length);
   }
@@ -355,7 +304,9 @@ function parseCompactArgs(argv: string[]): CompactArgs | { error: string } {
       return null;
     };
     let v: string | null;
-    if ((v = value("--project")) !== null) args.project = v;
+    if (a === "--apply") {
+      args.mode = "fix";
+    } else if ((v = value("--project")) !== null) args.project = v;
     else if ((v = value("--mode")) !== null) {
       if (v !== "check" && v !== "fix") {
         return { error: `argument --mode: invalid choice: '${v}' (choose from 'check', 'fix')` };
@@ -1142,14 +1093,13 @@ export function main(argv: string[], io: Io = {}): number {
           body: {
             class: "missing_argument",
             message: "the following arguments are required: check_command",
-            valid_values: ["validate", "verify", "lint", "backfill", "compact"],
+            valid_values: ["validate", "verify", "lint", "compact"],
           },
         });
       }
       if (sub === "validate") return runValidate(rest.slice(1), io, "agentera check validate");
       if (sub === "verify") return runVerify(rest.slice(1), io, "agentera check verify");
       if (sub === "lint") return runLint(rest.slice(1), io, "agentera check lint");
-      if (sub === "backfill") return runBackfill(rest.slice(1), io, "agentera check backfill");
       if (sub === "compact") {
         const subArgs = rest.slice(1);
         const mode = compactModeOf(subArgs);
@@ -1161,7 +1111,7 @@ export function main(argv: string[], io: Io = {}): number {
         body: {
           class: "unsupported_target",
           message: `unknown or not-yet-ported check subcommand: ${sub}`,
-          valid_values: ["validate", "verify", "lint", "backfill", "compact"],
+          valid_values: ["validate", "verify", "lint", "compact"],
         },
       });
     }

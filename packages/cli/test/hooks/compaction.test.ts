@@ -11,9 +11,11 @@ import {
   compactYamlFile,
   compactEntries,
   computeCompactionStatus,
+  fixCompaction,
   parseEntries,
   runCompaction,
 } from "../../src/hooks/compaction.js";
+import { MAX_TOTAL_ENTRIES } from "../../src/hooks/common.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "../../../..");
@@ -26,6 +28,28 @@ afterEach(() => {
   fs.rmSync(tmp, { recursive: true, force: true });
 });
 
+function progressCycleEntry(n: number): Record<string, unknown> {
+  return {
+    number: n,
+    timestamp: `2026-01-${String((n % 28) + 1).padStart(2, "0")} 10:00`,
+    type: "feat",
+    phase: "build",
+    what: `Work cycle ${n}`,
+    context: { intent: "test" },
+  };
+}
+
+function writeProgressYaml(dir: string, cycleCount: number, archiveCount = 0): string {
+  const p = path.join(dir, ".agentera", "progress.yaml");
+  fs.mkdirSync(path.dirname(p), { recursive: true });
+  const cycles = Array.from({ length: cycleCount }, (_, i) => progressCycleEntry(i + 1));
+  const archive = Array.from({ length: archiveCount }, (_, i) => ({
+    summary: `Cycle ${i + 1} (2026-01-01): archived ${i + 1}`,
+  }));
+  fs.writeFileSync(p, YAML.stringify({ cycles, archive }));
+  return p;
+}
+
 describe("computeCompactionStatus (real repo)", () => {
   it("classifies the repository artifacts and reports check operations", () => {
     const statuses = computeCompactionStatus(REPO_ROOT);
@@ -37,8 +61,52 @@ describe("computeCompactionStatus (real repo)", () => {
 
     const ops = checkCompaction(REPO_ROOT);
     expect(ops.length).toBe(statuses.length);
-    // The repo artifacts are within limits, so no over_limit actions.
     expect(ops.every((o) => o.action !== "over_limit")).toBe(true);
+  });
+
+  it("keeps repository progress.yaml within the 50-cycle cap", () => {
+    const progressPath = path.join(REPO_ROOT, ".agentera", "progress.yaml");
+    expect(fs.existsSync(progressPath)).toBe(true);
+    const data = YAML.parse(fs.readFileSync(progressPath, "utf8")) as {
+      cycles?: unknown[];
+      archive?: unknown[];
+    };
+    const total = (data.cycles?.length ?? 0) + (data.archive?.length ?? 0);
+    expect(total).toBeLessThanOrEqual(MAX_TOTAL_ENTRIES);
+
+    const progressOp = checkCompaction(REPO_ROOT).find((o) => o.status.artifact === "PROGRESS.md");
+    expect(progressOp?.action).toBe("ok");
+    expect(progressOp?.status.over_limit_count).toBe(0);
+  });
+});
+
+describe("progress.yaml over-limit gate", () => {
+  it("fails the compaction gate when cycle count exceeds 50", () => {
+    writeProgressYaml(tmp, 55);
+    const progressOp = checkCompaction(tmp).find((o) => o.status.artifact === "PROGRESS.md");
+    expect(progressOp?.action).toBe("over_limit");
+    expect(progressOp?.status.total_count).toBe(55);
+    expect(progressOp?.status.over_limit_count).toBeGreaterThan(0);
+    expect(runCompaction(tmp, "check").some((o) => o.action === "over_limit")).toBe(true);
+  });
+
+  it("compacts over-limit progress.yaml under the cap with archive preservation", () => {
+    writeProgressYaml(tmp, 55);
+    const ops = fixCompaction(tmp);
+    const progressOp = ops.find((o) => o.status.artifact === "PROGRESS.md");
+    expect(progressOp?.action).toBe("compacted");
+    expect(progressOp?.changed).toBe(true);
+
+    const data = YAML.parse(fs.readFileSync(path.join(tmp, ".agentera", "progress.yaml"), "utf8")) as {
+      cycles: { number: number }[];
+      archive: { summary: string }[];
+    };
+    expect(data.cycles.length).toBe(10);
+    expect(data.archive.length).toBe(40);
+    expect(data.cycles.length + data.archive.length).toBe(MAX_TOTAL_ENTRIES);
+    expect(data.cycles[0].number).toBe(55);
+    expect(data.archive.some((e) => e.summary.includes("Cycle 1"))).toBe(true);
+    expect(checkCompaction(tmp).find((o) => o.status.artifact === "PROGRESS.md")?.action).toBe("ok");
   });
 });
 

@@ -30,7 +30,7 @@
     "LICENSE"
   ],
   "agentera": {
-    "suiteVersion": "2.7.6",
+    "suiteVersion": "2.7.7",
     "gitRef": "77e9f27f0a2d1c50a881363364291316fbf45c21"
   },
   "scripts": {

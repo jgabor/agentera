@@ -98,7 +98,7 @@ export function findAppHomeScript(agenteraHome) {
 export function resolveBackend({
   cwd = process.cwd(),
   env = process.env,
-  gitRef = "v2.7.6",
+  gitRef = "v2.7.7",
   gitRepo = DEFAULT_GIT_REPO,
 } = {}) {
   const scriptPath = findAppHomeScript(env.AGENTERA_HOME);

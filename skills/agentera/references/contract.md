@@ -145,7 +145,7 @@ Three project-facing files at the project root; nine operational files in `.agen
 | CHANGELOG.md | CHANGELOG.md | realisera | project contributors | ## [Unreleased], ### Added/Changed/Fixed |
 | DECISIONS.md | .agentera/decisions.yaml | resonera | planera, realisera, inspektera, profilera, optimera, orkestrera | ## Decision N · date, **Question/Context/Alternatives/Choice/Reasoning/Confidence/Feeds into** |
 | PLAN.md | .agentera/plan.yaml | planera | realisera, inspektera, orkestrera | <!-- Level/Created/Status -->, ## Tasks with ### Task N, **Status/Depends on/Acceptance** |
-| PROGRESS.md | .agentera/progress.yaml | realisera | planera, inspektera, dokumentera, visionera, orkestrera | ## Cycle N · date, **Phase/What/Commit/Inspiration/Discovered/Next/Context** |
+| PROGRESS.md | .agentera/progress.yaml | realisera | planera, inspektera, dokumentera, visionera, orkestrera | ## Cycle N · date, **Phase/What/Inspiration/Discovered/Next/Context** |
 | HEALTH.md | .agentera/health.yaml | inspektera | realisera, planera, orkestrera | ## Audit N · date, **Dimensions/Findings/Overall/Grades**, per-dimension sections |
 | OBJECTIVE.md | .agentera/optimera/<name>/objective.yaml | optimera | optimera | ## Metric, ## Target, ## Baseline, ## Constraints, **Status** |
 | EXPERIMENTS.md | .agentera/optimera/<name>/experiments.yaml | optimera | optimera | ## Experiment N · date, **Hypothesis/Method/Result/Conclusion**; ## Closure · date, **Final value/Target/Reason** |
@@ -669,7 +669,7 @@ This gate is orthogonal to Section 19 Staleness Detection. Section 19 asks: did 
 
 ### Evidence format
 
-Every cycle entry in PROGRESS.md carries a `verified` field alongside phase, what, commit, inspiration, discovered, next, and context fields. The field is mandatory: no cycle is considered closed without it. The field accepts exactly one of three shapes:
+Every cycle entry in PROGRESS.md carries a `verified` field alongside phase, what, inspiration, discovered, next, and context fields. The field is mandatory: no cycle is considered closed without it. The field accepts exactly one of three shapes:
 
 | Shape | Content |
 |-------|---------|

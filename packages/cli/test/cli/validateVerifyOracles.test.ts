@@ -98,9 +98,8 @@ const VERIFY_EVAL_FAMILY_ORACLE = JSON.parse(fs.readFileSync(VERIFY_EVAL_FAMILY_
   >;
 };
 
-// The artifact-family test needs the repo root (resolves .agentera/plan.yaml).
-// The existing validate.test.ts uses the same pattern: process.cwd() is the
-// packages/cli workspace at vitest time, so two ".." levels up is the repo root.
+// The artifact-family test needs the repo root. Prefer PLAN.md when an active plan
+// exists; after plan archive closeout, fall back to TODO.md like validate.test.ts.
 const REPO_ROOT = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
   "..",
@@ -109,6 +108,9 @@ const REPO_ROOT = path.resolve(
   "..",
 );
 const SEMANTIC_FIXTURE = path.join(REPO_ROOT, "fixtures", "semantic", "hej-bare-message.md");
+const ARTIFACT_VALIDATE_TARGET = fs.existsSync(path.join(REPO_ROOT, ".agentera/plan.yaml"))
+  ? "PLAN.md"
+  : "TODO.md";
 
 function capture(
   fn: (io: { out: (t: string) => void; err: (t: string) => void }) => number,
@@ -249,7 +251,7 @@ describe("validate family envelope (oracle parity)", () => {
     }
     if (family === "artifact") {
       const { rc, out } = capture((io) =>
-        cmdValidateArtifact({ artifact: "PLAN.md", cwd: REPO_ROOT, format: "json" }, io),
+        cmdValidateArtifact({ artifact: ARTIFACT_VALIDATE_TARGET, cwd: REPO_ROOT, format: "json" }, io),
       );
       return { rc, payload: readJson(out) };
     }

@@ -10,7 +10,7 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 
-const AGENTERA_VERSION = "2.7.6";
+const AGENTERA_VERSION = "2.7.7";
 const NPX_CLI_ENTRYPOINT = "npx -y agentera@next";
 const NPX_HOOK_VALIDATE = `${NPX_CLI_ENTRYPOINT} hook validate-artifact`;
 const NPX_HOOK_SESSION_STOP = `${NPX_CLI_ENTRYPOINT} hook session-stop`;
