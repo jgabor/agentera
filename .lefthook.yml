@@ -34,7 +34,7 @@ pre-commit:
         - "node_modules/**"
         - "dist/**"
     tests:
-      run: uv run --with pytest --with pyyaml --with pytest-xdist pytest tests/ -q -n auto
+      run: bash scripts/precommit-pytest.sh {staged_files}
       glob:
         - "**/*.py"
         - "**/*.{yaml,yml}"
