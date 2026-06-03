@@ -32,7 +32,7 @@ describe("evaluator handoff contract loader", () => {
   });
 
   it("accepts file:line and not-applicable citations", () => {
-    expect(isValidCitation("TODO.md:5", contract)).toBe(true);
+    expect(isValidCitation("packages/cli/test/cli/fixtures/citation-anchor-todo.md:5", contract)).toBe(true);
     expect(isValidCitation("not-applicable: runtime-only metric with no file anchor", contract)).toBe(true);
     expect(isValidCitation("prose only", contract)).toBe(false);
     expect(isValidCitation("not-applicable: short", contract)).toBe(false);
@@ -91,6 +91,18 @@ describe("inspektera evaluation report citation regression", () => {
     }
   });
 
+  it("sample report does not cite volatile project TODO.md line numbers", () => {
+    const warnFailRows = report.rows.filter((row: { status: string; citation?: string }) =>
+      ["WARN", "FAIL"].includes(String(row.status).toUpperCase()),
+    );
+    for (const row of warnFailRows) {
+      const citation = String(row.citation ?? "");
+      if (citation.includes(":")) {
+        expect(citation.startsWith("TODO.md:"), JSON.stringify(row)).toBe(false);
+      }
+    }
+  });
+
   it("re-verifies WARN file:line citations with the fixture verify_command", () => {
     const warnRows = report.rows.filter(
       (row: { status: string; citation?: string; verify_command?: string }) =>
@@ -100,6 +112,25 @@ describe("inspektera evaluation report citation regression", () => {
     for (const row of warnRows) {
       const result = verifyWarnCitationAtLine(row, REPO_ROOT);
       expect(result.ok, result.message).toBe(true);
+    }
+  });
+
+  it("stays green when project TODO.md ledger lines shift", () => {
+    const todoPath = path.join(REPO_ROOT, "TODO.md");
+    const original = fs.readFileSync(todoPath, "utf8");
+    const shifted = "# TODO\n\n## ⇶ Critical\n\n- [chore:3.0.0] Decoy line inserted above real items\n\n" + original.replace(/^# TODO\n\n/, "");
+    try {
+      fs.writeFileSync(todoPath, shifted);
+      for (const row of report.rows.filter(
+        (r: { status: string; verify_command?: string }) =>
+          String(r.status).toUpperCase() === "WARN" && r.verify_command,
+      )) {
+        expect(verifyWarnCitationAtLine(row, REPO_ROOT).ok, row.citation).toBe(true);
+      }
+      const errors = validateEvaluationReport(report, contract);
+      expect(errors).toEqual([]);
+    } finally {
+      fs.writeFileSync(todoPath, original);
     }
   });
 });
