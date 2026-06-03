@@ -30,14 +30,14 @@
 
 ### Added
 
-- Added per-channel `next_major` metadata to `references/cli/update-channels.yaml` (`concept`, `channel`, `version`, npm `dist_tag`, `guide_url`, `preview_command`, `irreversible_advisory`). (`f2f4ee6`)
-- Added `packages/cli/src/upgrade/nextMajorDoctor.ts` and head-of-output rendering in `packages/cli/src/cli/commands/doctor.ts`, sourced exclusively from the channel authority. (`f2f4ee6`)
-- Added vitest regression coverage in `packages/cli/test/upgrade/nextMajorDoctor.test.ts` for authority reachability, six-line cap, v1 hardcoded fallback, omitted-when-null on `channels.development`, and vocabulary guard. (`f2f4ee6`)
-- Added Python stable doctor mirror in `scripts/next_major_doctor.py` with pytest coverage in `tests/test_next_major_doctor.py` on `main` (landed in separate `main` commit). (`f2f4ee6`)
+- Added per-channel `next_major` metadata to `references/cli/update-channels.yaml` (`concept`, `channel`, `version`, npm `dist_tag`, `guide_url`, `preview_command`, `irreversible_advisory`). (`51feef4`)
+- Added `packages/cli/src/upgrade/nextMajorDoctor.ts` and head-of-output rendering in `packages/cli/src/cli/commands/doctor.ts`, sourced exclusively from the channel authority. (`51feef4`)
+- Added vitest regression coverage in `packages/cli/test/upgrade/nextMajorDoctor.test.ts` for authority reachability, six-line cap, v1 hardcoded fallback, omitted-when-null on `channels.development`, and vocabulary guard. (`51feef4`)
+- Added Python stable doctor mirror in `scripts/next_major_doctor.py` with pytest coverage in `tests/test_next_major_doctor.py` on `main` (landed in separate `main` commit). (`51feef4`)
 
 ### Changed
 
-- Aligned npm `@next` release metadata: `packages/cli/package.json` `version`, `agentera.suiteVersion`, and `agentera.gitRef` now carry `3.0.0`; all nine present `docs.yaml` `version_files` on `feat/v3` report `3.0.0`; `references/cli/update-channels.yaml` `offline_defaults.development` is `3.0.0`. Stable-channel `offline_defaults.stable` remains `2.7.7` until explicit retirement. (`f2f4ee6`)
+- Aligned npm `@next` release metadata: `packages/cli/package.json` `version`, `agentera.suiteVersion`, and `agentera.gitRef` now carry `3.0.0`; all nine present `docs.yaml` `version_files` on `feat/v3` report `3.0.0`; `references/cli/update-channels.yaml` `offline_defaults.development` is `3.0.0`. Stable-channel `offline_defaults.stable` remains `2.7.7` until explicit retirement. (`51feef4`)
 
 ## [2.7.7] · 2026-06-03
 
