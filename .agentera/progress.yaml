@@ -22,7 +22,7 @@ cycles:
       unknowns: none
       scope: .agentera/archive/plan-2026-06-03-next-major-doctor.yaml,
         .agentera/plan.yaml, TODO.md, .agentera/progress.yaml
-    commit: f2f4ee6
+    commit: 51feef4
   - number: 636
     timestamp: 2026-06-03 15:35
     type: chore
@@ -56,7 +56,7 @@ cycles:
       scope: version_files, packages/cli/package.json,
         references/cli/update-channels.yaml, CHANGELOG.md, .agentera/plan.yaml,
         .agentera/progress.yaml
-    commit: pending
+    commit: 51feef4
   - number: 635
     timestamp: 2026-06-03 15:30
     type: feat
@@ -91,7 +91,7 @@ cycles:
         packages/cli/test/upgrade/nextMajorDoctor.test.ts,
         packages/cli/test/validate/vocabularyAuthority.test.ts,
         .agentera/plan.yaml, .agentera/progress.yaml
-    commit: pending
+    commit: 51feef4
   - number: 634
     timestamp: 2026-06-03 09:00
     type: chore
