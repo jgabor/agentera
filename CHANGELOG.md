@@ -8,6 +8,7 @@
 
 ### Fixed
 
+- Fixed `agentera state todo --format json` and prime/hej orientation ignoring GitHub task-list `[x]`/`[ ]` checkboxes before Agentera `[type]` tags: shared parser in `packages/cli/src/cli/todoMarkdown.ts` drives `loadTodoItems` and `queryTodo` markdown fallback so `- [x] [fix] …` is resolved and omitted from open counts; `- [ ] [type] …` and type-only bullets stay open. Regression coverage in `packages/cli/test/cli/todoMarkdown.test.ts`, `state.test.ts`, and `orientation.test.ts`. Python stable backport on `main` (pending commit hash).
 - Fixed `validateMdItems` TODO.md severity-section body extraction: locate the next section with `/\n##\s/` from the heading end, skip the trailing newline before list items, and stop false "severity section has no list entries" violations when valid `- [type]` items are present. Regression coverage in `packages/cli/test/hooks/validateArtifact.test.ts`.
 - Fixed `agentera@0.0.0` npm shim `runBackend` `app-home` branch spawning the installed Python CLI (`$AGENTERA_HOME/app/scripts/agentera`) with `cwd` set to the app home's `app/` directory. The shim now passes the caller's cwd through `dispatch` → `runBackend` and lets `spawnSync` fall back to `process.cwd()` when the caller omits one. The `repo` backend keeps `cwd: backend.repoRoot` (unchanged), and the `uvx` backend remains spawn-options-only. Regression coverage in `packages/cli/test/shim/runBackend.test.ts` pins the user's cwd against the app-home `app/` subdir and asserts the repo backend is still anchored to its repo root.
 

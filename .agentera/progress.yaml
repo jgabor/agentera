@@ -1,4 +1,26 @@
 cycles:
+  - number: 638
+    timestamp: 2026-06-03 17:20
+    type: fix
+    phase: build
+    what: TODO.md GitHub checkbox parsing — shared parseTodoMarkdownListItem in
+      packages/cli/src/cli/todoMarkdown.ts; loadTodoItems and queryTodo markdown
+      paths classify [x]/[ ] before [type] tags; Python backport in
+      scripts/agentera on main (2.7.9); plan archived.
+    inspiration: Orkestrera plan task 1–4 (checkbox parsing).
+    discovered: No git commit in session; TODO and CHANGELOG cite pending hashes.
+    verified: pnpm -C packages/cli test — 680/680 passed (+8 vs prior); uv run
+      pytest
+      tests/test_query_cli.py::TestTodo::test_github_checkbox_before_type_tag_json
+      on main — passed; agentera prime reports plan absent.
+    next: User commit on feat/v3 and main; fill pending hashes in TODO/CHANGELOG.
+    context:
+      intent: Close critical routing bug for GitHub task-list TODO.md convention.
+      constraints: Dual-branch feat/v3 + main; no remote push.
+      unknowns: none
+      scope: packages/cli/src/cli/todoMarkdown.ts, orientation.ts, state.ts,
+        scripts/agentera (main), tests, CHANGELOG, TODO.md, plan archive
+    commit: pending
   - number: 637
     timestamp: 2026-06-03 16:00
     type: chore
@@ -302,64 +324,10 @@ cycles:
         with 28 cases). Amended TODO.md line 17 source_contract enumeration
         (`missing` becomes `missing_state`). Updated .agentera/plan.yaml task 4
         status to complete in the same commit. Plan: 4/4 tasks complete."
-  - number: 628
-    timestamp: 2026-06-02 18:15
-    type: test
-    phase: build
-    what: Freeze validate/verify family parity oracles — two new oracle fixtures
-      (validate-family.json, verify-eval-family.json) and a new
-      validateVerifyOracles.test.ts that pins the pass-envelope shape for all
-      seven validate families and the two verify eval targets, with a strict
-      drift detector (assertExactTopLevelKeys) that fails the test with a named
-      diff when an undeclared top-level key is added to the live envelope, and
-      two unit tests that self-verify the drift detector. Existing
-      validate.test.ts and verify.test.ts are unchanged and still pass. Oracles
-      cite and reference the existing invalid-input-envelope.json and
-      npm-cli-surface.json; no content is duplicated.
-    inspiration: None.
-    discovered: "cmdVerify's internal validateVerifyRequest catch writes `Error:
-      ...` to stderr and returns rc 2 instead of routing through
-      emitInvalidInput, so `check verify eval bogus --format json` does NOT emit
-      the canonical invalid-input envelope. This is a pre-existing gap
-      documented by verify.test.ts:63-67. The verify-eval-family oracle freezes
-      the PASS envelope only; the text-mode error path is owned by
-      verify.test.ts and is intentionally out of scope. Fixing the
-      dispatch-level gap (route runVerify's catch through emitInvalidInput) is a
-      follow-up cycle."
-    verified: pnpm -C packages/cli test -- 644/644 passed (74 files, +27 vs cycle
-      627's 617/617); pnpm -C packages/cli run typecheck -- clean; pnpm -C
-      packages/cli build -- clean; new tests exercise all 7 validate families +
-      2 verify eval targets against the oracles; drift detector unit tests
-      verify the named-diff behavior on added/missing keys; live `node
-      packages/cli/dist/bin/agentera.js check validate <family> --format json`
-      for each of the 7 families and `check verify eval semantic
-      fixtures/semantic/hej-bare-message.md --format json` / `check verify eval
-      skills --dry-run --format json` all match the oracles.
-    next: Plan task 4 (freeze source_contract internals) or close the cmdVerify
-      dispatch-level text-mode-error gap as a task 2 follow-up, or remove the
-      progress.yaml commit field per the new TODO.
-    context:
-      intent: "Execute plan task 3 (freeze validate/verify family parity oracles).
-        Plan: 3/4 tasks complete after this commit."
-      constraints: "TS-only on 3.0.0-dev feat/v3; no remote push; no vision.yaml or
-        objective-state edits; oracles cite and reference the existing
-        invalid-input-envelope.json and npm-cli-surface.json (no duplication);
-        pin value types and structural shapes, not exact string content, for
-        fields whose values legitimately vary by family/fixture; commit field
-        will be removed from the schema in a future cycle, so this cycle
-        intentionally leaves commit: pending and skips the forward backfill."
-      unknowns: Whether task 4 fits in one cycle or splits the capability_context
-        capsule and prime output into two sub-tasks.
-      scope: Added packages/cli/test/cli/fixtures/oracle/validate-family.json (132
-        lines, 7 families + alt-shape + fail-path reference) and
-        packages/cli/test/cli/fixtures/oracle/verify-eval-family.json (61 lines,
-        2 eval targets + safety/diagnostics/engine pinning + fail-path
-        reference); added packages/cli/test/cli/validateVerifyOracles.test.ts
-        (~600 lines, 27 tests covering pass envelopes for all 7 validate
-        families, 2 verify eval targets, fail envelope for artifact, dispatch
-        wiring for validate, and drift-detector unit tests). Plan task 3 status
-        updated to complete in the same commit.
 archive:
+  - summary: "Cycle 628 (2026-06-02): Freeze validate/verify family parity oracles —
+      two new oracle fixtures (validate-family.json, verify-eval-family.json)
+      and a new..."
   - summary: "Cycle 627 (2026-06-02): Wire the invalid-input envelope across the
       remaining CLI surfaces (lint, backfill, state, query, compact, schema,..."
   - summary: "Cycle 626 (2026-06-02): Freeze the invalid-input error envelope
@@ -436,5 +404,3 @@ archive:
       validation and measurement closeout evidence."
   - summary: "Cycle 590 (2026-05-23): Synced callers, contracts, docs, and tests to
       prime --context as sole 3.0 startup seam."
-  - summary: "Cycle 589 (2026-05-23): Introduced prime context control plane and
-      removed hej capability-context compatibility."

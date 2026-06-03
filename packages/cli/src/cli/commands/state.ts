@@ -21,6 +21,7 @@ import {
   truncate,
   validateFilterValues,
 } from "../stateQuery.js";
+import { isResolvedTodoMarkdownStatus, parseTodoMarkdownListItem } from "../todoMarkdown.js";
 
 type Dict = Record<string, any>;
 type Io = { out?: (t: string) => void; err?: (t: string) => void };
@@ -619,7 +620,6 @@ export function queryExperiments(args: StateArgs, schemas: Record<string, Schema
 }
 
 const TODO_SEVERITY_ORDER_KEYS = ["critical", "degraded", "warning", "normal", "info", "annoying"];
-const TODO_ITEM_RE = /^- \[([^\]]+)\]\s+(.*)/;
 const TODO_SEV_GLYPHS: Record<string, string> = {
   critical: "\u21f6",
   degraded: "\u21c9",
@@ -712,18 +712,27 @@ export function queryTodo(
       continue;
     }
     if (currentSection === null) continue;
-    const m = TODO_ITEM_RE.exec(sline);
-    if (!m) continue;
+    const parsed = parseTodoMarkdownListItem(sline);
+    if (!parsed) continue;
     if (marker && !currentSection.includes(marker)) continue;
-    const item = m[2].trim();
-    if (status && !["open", "todo"].includes(status.toLowerCase())) continue;
+    const itemStatus = parsed.status;
+    if (openOnly && isResolvedTodoMarkdownStatus(itemStatus)) continue;
+    if (status) {
+      const want = status.toLowerCase();
+      const have = itemStatus.toLowerCase();
+      if (want === "open" || want === "todo") {
+        if (isResolvedTodoMarkdownStatus(have)) continue;
+      } else if (have !== want) {
+        continue;
+      }
+    }
     markdownEntries.push({
       severity: normalizeSeverity(currentSection),
-      status: "open",
-      description: item,
+      status: itemStatus,
+      description: parsed.description,
       section: currentSection,
     });
-    if (format === "text") o(`[${currentSection}] ${item}\n`);
+    if (format === "text") o(`[${currentSection}] ${parsed.description}\n`);
   }
   if (format !== "text") {
     return emitStateStructured(
