@@ -27,6 +27,7 @@ export class ContractBootstrapError extends Error {
 
 export interface DirectoryRules {
   instructionPath: string;
+  instructionModulePath: string;
   schemasPath: string;
   schemaGlob: string;
   minimumSchemaFiles: number;
@@ -141,7 +142,8 @@ export function buildCapabilitySchemaContract(
     path: contractPath,
     requiredGroups: [...(data.REQUIRED_GROUPS as string[])],
     directoryRules: {
-      instructionPath: (directory.instruction_file as Dict).path as string,
+      instructionPath: (directory.instruction_module as Dict).path as string,
+      instructionModulePath: (directory.instruction_module as Dict).path as string,
       schemasPath: (directory.schemas_directory as Dict).path as string,
       schemaGlob: schemaFiles.glob as string,
       minimumSchemaFiles: schemaFiles.minimum_count as number,
@@ -245,7 +247,7 @@ function checkDirectoryRules(data: Dict, sourceLabel: string, errors: string[]):
   if (!isMapping(directory)) {
     return;
   }
-  for (const section of ["instruction_file", "schemas_directory", "schema_files"]) {
+  for (const section of ["instruction_module", "schemas_directory", "schema_files"]) {
     if (!isMapping(directory[section])) {
       errors.push(
         `bootstrap [error]: DIRECTORY_REQUIREMENTS.${section} in ${sourceLabel} must be a mapping`,
@@ -254,24 +256,24 @@ function checkDirectoryRules(data: Dict, sourceLabel: string, errors: string[]):
   }
   if ("required_files" in directory) {
     errors.push(
-      `bootstrap [error]: DIRECTORY_REQUIREMENTS.required_files in ${sourceLabel} duplicates instruction_file and schemas_directory authority`,
+      `bootstrap [error]: DIRECTORY_REQUIREMENTS.required_files in ${sourceLabel} duplicates instruction_module and schemas_directory authority`,
     );
   }
-  const instructionFile = directory.instruction_file;
-  if (isMapping(instructionFile)) {
-    if (instructionFile.path !== "instructions.md") {
+  const instructionModule = directory.instruction_module;
+  if (isMapping(instructionModule)) {
+    if (instructionModule.path !== "packages/cli/src/capabilities/<name>/instructions.ts") {
       errors.push(
-        `bootstrap [error]: DIRECTORY_REQUIREMENTS.instruction_file.path in ${sourceLabel} must be instructions.md`,
+        `bootstrap [error]: DIRECTORY_REQUIREMENTS.instruction_module.path in ${sourceLabel} must be packages/cli/src/capabilities/<name>/instructions.ts`,
       );
     }
-    if (instructionFile.type !== "file") {
+    if (instructionModule.type !== "file") {
       errors.push(
-        `bootstrap [error]: DIRECTORY_REQUIREMENTS.instruction_file.type in ${sourceLabel} must be file`,
+        `bootstrap [error]: DIRECTORY_REQUIREMENTS.instruction_module.type in ${sourceLabel} must be file`,
       );
     }
-    if (instructionFile.required !== true) {
+    if (instructionModule.required !== true) {
       errors.push(
-        `bootstrap [error]: DIRECTORY_REQUIREMENTS.instruction_file.required in ${sourceLabel} must be true`,
+        `bootstrap [error]: DIRECTORY_REQUIREMENTS.instruction_module.required in ${sourceLabel} must be true`,
       );
     }
   }

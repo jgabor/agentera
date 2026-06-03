@@ -1,7 +1,5 @@
-import fs from "node:fs";
 import path from "node:path";
 
-import { resolveSourceRoot } from "../../core/sourceRoot.js";
 import { emitStructured } from "../structured.js";
 
 /** Port of scripts/agentera cmd_capability (capability-name routing guidance). */
@@ -17,11 +15,7 @@ const PRIME_CAPABILITY_CONTEXT_COMMAND = "agentera prime --context {capability} 
 
 export function cmdCapability(capability: string, args: { format?: string }, io: Io): number {
   const out = io.out ?? ((t: string) => process.stdout.write(t));
-  const sourceRoot = resolveSourceRoot();
-  const instructions = path.join(sourceRoot, "skills", "agentera", "capabilities", capability, "instructions.md");
-  const instructionsPath = fs.existsSync(instructions)
-    ? path.relative(sourceRoot, instructions)
-    : `skills/agentera/capabilities/${capability}/instructions.md`;
+  const instructionsPath = `packages/cli/src/capabilities/${capability}/instructions.ts`;
   const startupContext = PRIME_CAPABILITY_CONTEXT_COMMAND.replace("{capability}", capability);
   const payload = {
     command: capability,

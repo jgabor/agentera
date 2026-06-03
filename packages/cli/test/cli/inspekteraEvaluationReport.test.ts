@@ -36,10 +36,12 @@ describe("orkestrera evaluator handoff citation contract", () => {
   });
 
   it("orkestrera Step 3 Surface 2 delegation template requires citation field", () => {
-    const instructions = fs.readFileSync(
-      path.join(REPO_ROOT, "skills/agentera/capabilities/orkestrera/instructions.md"),
-      "utf8",
-    );
+    // D65: the orkestrera prose is loaded by the runtime via the compiled
+    // .js module. The test loads the same module to assert the citation
+    // template, rather than readFileSync of the deleted
+    // skills/agentera/capabilities/orkestrera/instructions.md.
+    const module = require("../../dist/capabilities/orkestrera/instructions.js");
+    const instructions: string = module.instructions ?? module.default;
     expect(instructions).toContain("citation: `<file>:<line>` OR `not-applicable: <reason>`");
     expect(instructions).toContain("verify_command");
     expect(instructions).toContain("evaluator_handoff.output_requirements");

@@ -483,10 +483,16 @@ codex plugin marketplace remove jgabor/agentera
 Requires Python 3.11+ and [uv](https://docs.astral.sh/uv/). Contributor rules,
 capability layout, and schema contracts: [`AGENTS.md`](./AGENTS.md).
 
-Every capability has `instructions.md` plus `schemas/triggers.yaml`,
-`schemas/artifacts.yaml`, `schemas/validation.yaml`, and `schemas/exit.yaml`.
-Capability startup exposes `first_invocation_read` metadata via
-`agentera prime --context <name> --format json`; runtime enforcement is still false.
+Every capability has `packages/cli/src/capabilities/<name>/instructions.ts`
+plus `schemas/triggers.yaml`, `schemas/artifacts.yaml`, `schemas/validation.yaml`,
+and `schemas/exit.yaml` (the `schemas/` directory lives at
+`skills/agentera/capabilities/<name>/schemas/`). The TypeScript module exports
+the capability prose as a default-exported string constant; the runtime serves
+the full prose through the `prose` field of the `capability_context` capsule.
+Capability startup exposes `first_invocation_read: prime_context` metadata via
+`agentera prime --context <name> --format json`; runtime enforcement is true
+(agents shell out to the prime command instead of reading the prose module
+directly).
 Instruction-file contract:
 [`references/cli/capability-instruction-contract.yaml`](./references/cli/capability-instruction-contract.yaml).
 

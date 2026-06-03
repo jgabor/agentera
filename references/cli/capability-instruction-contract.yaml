@@ -3,9 +3,10 @@ status: active_authority
 decision: 57
 purpose: >-
   Define the Decision 57 capability instruction-file contract: the canonical
-  `instructions.md` file name, implemented CLI/schema first-invocation read
-  discoverability, compact-startup exception boundaries, and runtime behavior
-  that remains intentionally unsupported.
+  `instructions.ts` module path, implemented CLI/schema first-invocation read
+  discoverability, the `prime_context` runtime-enforcement boundary, and
+  retirement of the historical `full`/`compact_startup`/`skip` values
+  superseded by Decision 65.
 sources:
   decision: .agentera/decisions.yaml#decision-57
   prose:
@@ -13,91 +14,87 @@ sources:
     - README.md#development
 scope:
   includes:
-    - Documentation authority for the implemented capability instruction-file name.
+    - Documentation authority for the implemented capability instruction module path.
     - CLI/schema discoverability for first capability invocation startup-read metadata.
-    - Compact-startup exception semantics and boundaries.
-    - Current canonical references to existing `instructions.md` files.
+    - The single `prime_context` first-invocation shape enforced by the runtime.
+    - Current canonical references to existing `instructions.ts` modules.
     - Explicit separation from runtime behavior work.
   excludes:
     - Implementing first-invocation read behavior.
     - Marking Decision 57 satisfied or editing protected vision/objective/profile/installed-app state.
 current_state:
   canonical_instruction_file:
-    path: skills/agentera/capabilities/<name>/instructions.md
+    path: packages/cli/src/capabilities/<name>/instructions.ts
     status: current_canonical_implemented
     definition: >-
-      The human-readable instruction file for each capability.
+      The TypeScript module that exports the capability's behavioral
+      instructions as a default-exported string constant. The runtime loads
+      the compiled .js path and serves the prose through the slim
+      `capability_context` capsule's `prose` field.
   legacy_instruction_file:
+    path: skills/agentera/capabilities/<name>/instructions.md
+    status: historical_or_compatibility_evidence_only
+    definition: >-
+      The pre-D65 Markdown instruction filename. It may survive only in
+      archived history, compatibility fixtures, benchmark evidence, or
+      explicit migration documentation; real capability directories do not
+      use it as canonical.
+  legacy_prose_file:
     path: skills/agentera/capabilities/<name>/prose.md
     status: historical_or_compatibility_evidence_only
     definition: >-
-      The former capability instruction filename. It may survive only in archived
-      history, compatibility fixtures, benchmark evidence, or explicit migration
-      documentation; real capability directories do not use it as canonical.
+      The pre-D57 capability instruction filename. It may survive only in
+      archived history, compatibility fixtures, benchmark evidence, or
+      explicit migration documentation; real capability directories do not
+      use it as canonical.
   validator_requirement:
-    current_required_path: instructions.md
-    future_required_path: instructions.md
+    current_required_path: packages/cli/src/capabilities/<name>/instructions.ts
+    future_required_path: packages/cli/src/capabilities/<name>/instructions.ts
     status: current_requirement_enforced
   cli_metadata:
     field: first_invocation_read
     status: emitted_in_prime_capability_context
     current_behavior: >-
       `agentera prime --context <name> --format json` emits
-      `capability_context` metadata including `first_invocation_read` for
-      supported capabilities. Historical `hej --capability-context` is removed in 3.0.
+      `capability_context` metadata including `first_invocation_read`
+      (value: `prime_context`, runtime_enforcement: true) and the full prose
+      in the `prose` field for supported capabilities. Historical
+      `hej --capability-context` is removed in 3.0.
 first_invocation_read:
-  field_status: cli_schema_discoverability_implemented
+  field_status: runtime_enforced
   definition: >-
-    Capability metadata declaring what instruction content an agent must read on
-    the first invocation of that capability in a session.
+    Capability metadata declaring what instruction content an agent must
+    read on the first invocation of that capability in a session. Decision
+    65 collapses the legacy `full`/`compact_startup` distinction into a
+    single `prime_context` value because the CLI now owns the prose and
+    the runtime can mechanically shell out to the prime command.
   allowed_values:
-    full:
+    prime_context:
       meaning: >-
-        The first capability invocation must read `instructions.md` in full before
-        executing capability-specific work.
-      obligation: full_instruction_file_read_required
-    compact_startup:
-      meaning: >-
-        A declared compact startup contract may satisfy initial orientation without
-        reading the full instruction file first.
-      obligation: compact_contract_must_name_covered_guidance_and_escalation_rules
-    skip:
-      meaning: >-
-        No first-invocation instruction read is required for the declared scope.
-      obligation: requires_explicit_contract_justification
-      caution: >-
-        Reserved for narrow future surfaces; not a default and not implemented by
-        this authority.
-  default_rule: full
+        The first capability invocation must shell out to
+        `agentera prime --context <name> --format json` and read the
+        returned `prose` field (the full Markdown body) before executing
+        capability-specific work.
+      obligation: shell out to agentera prime --context <name> --format json
+  default_rule: prime_context
   full_read_obligation: >-
-    On initial capability invocation, read `instructions.md` in full unless that
-    capability declares a compact-startup exception with explicit coverage and
-    escalation boundaries.
-compact_startup_exception:
-  status: implemented_for_planera_compact_startup_discoverability
-  allowed_when:
-    - A machine-readable startup contract is available through supported state access.
-    - The compact contract states which instruction topics it covers.
-    - The compact contract states when the agent must escalate to a full instruction-file read.
-    - The compact contract preserves unsupported-command and raw-artifact-read boundaries.
-  not_allowed_when:
-    - The agent is editing the capability's own instructions or schemas.
-    - The compact contract is missing, incomplete, stale, or contradictory.
-    - The requested work touches behavior not covered by the compact contract.
-    - Safety rails, validation, exit semantics, or cross-capability boundaries are ambiguous.
+    On initial capability invocation, shell out to
+    `agentera prime --context <name> --format json` and read the
+    `capability_context.prose` field in full.
 implementation_state:
-  instructions_md_files: renamed
-  validators_require_instructions_md: true
+  instructions_ts_modules: implemented
+  validators_require_instructions_ts: true
   first_invocation_read_cli_metadata: true
   first_invocation_read_schema_metadata: true
-  runtime_first_invocation_behavior: false
-  descriptors_rewritten_to_instructions_md: true
-  package_metadata_rewritten_to_instructions_md: true
+  runtime_first_invocation_behavior: true
+  descriptors_rewritten_to_prime_command: true
+  package_metadata_rewritten_to_prime_command: true
 compatibility_preservation:
   preserve_legacy_references_only_when_classified:
-    - skills/agentera/capabilities/*/instructions.md paths
+    - skills/agentera/capabilities/*/instructions.md paths (historical)
+    - packages/cli/src/capabilities/*/instructions.ts paths (current canonical)
     - skills/agentera/capability_schema_contract.yaml directory requirements
-    - runtime descriptors and generated agent guidance that point to `instructions.md`
+    - runtime descriptors and generated agent guidance that point to `instructions.md` (retired)
     - archived v1/v2 migration records and progress evidence
     - compatibility fixtures and tests that intentionally preserve old behavior evidence
     - README, AGENTS, and vocabulary references that explicitly describe the current canonical state

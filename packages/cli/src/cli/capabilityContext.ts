@@ -12,6 +12,11 @@ import {
   evaluatorHandoffOutputRequirements,
   loadEvaluatorHandoffContract,
 } from "../registries/evaluatorHandoffContract.js";
+import {
+  CAPABILITY_INSTRUCTIONS,
+  capabilityInstructionModulePath,
+  capabilityStartupCommand,
+} from "../capabilities/index.js";
 
 /**
  * prime --context capability-startup context. Faithful port of
@@ -119,28 +124,33 @@ function capabilityInstructionContract(): Dict {
 }
 
 function capabilityInstructionTarget(capability: string): Dict {
-  const skillRoot = String(activeAppModel().skillRoot);
-  const rel = `skills/agentera/capabilities/${capability}/instructions.md`;
-  const installedTarget = path.join(skillRoot, "capabilities", capability, "instructions.md");
-  return { path: rel, exists: isFile(installedTarget), runtime_path: installedTarget };
+  const module = capabilityInstructionModulePath(capability);
+  const prose = CAPABILITY_INSTRUCTIONS[capability] ?? null;
+  return {
+    module,
+    exists: prose !== null && prose.length > 0,
+    runtime_path: module,
+    prose_present: prose !== null,
+    prose_length: prose === null ? 0 : prose.length,
+  };
 }
 
 function firstInvocationReadMetadata(capability: string): Dict {
   const authority = capabilityInstructionContract();
   const firstRead = authority.first_invocation_read && typeof authority.first_invocation_read === "object" ? authority.first_invocation_read : {};
   const allowedValues = firstRead.allowed_values && typeof firstRead.allowed_values === "object" ? firstRead.allowed_values : {};
-  const value = capability === "planera" ? "compact_startup" : "full";
+  const value = "prime_context";
   const valueContract = (allowedValues[value] ?? {}) as Dict;
-  const fullContract = (allowedValues.full ?? {}) as Dict;
   return {
     field: "first_invocation_read",
     value,
     allowed_values: Object.keys(allowedValues),
     default_rule: firstRead.default_rule ?? firstRead.default_future_rule ?? null,
-    instruction_target: capabilityInstructionTarget(capability),
-    obligation_summary: valueContract.obligation ?? fullContract.obligation ?? null,
+    module_target: capabilityInstructionTarget(capability),
+    startup_command: capabilityStartupCommand(capability),
+    obligation_summary: valueContract.obligation ?? `shell out to ${capabilityStartupCommand(capability)}`,
     meaning: valueContract.meaning ?? null,
-    runtime_enforcement: false,
+    runtime_enforcement: true,
     provenance: {
       authority_path: "references/cli/capability-instruction-contract.yaml",
       authority_status: authority.status ?? null,
@@ -159,8 +169,8 @@ function planeraStartupContract(): Dict {
     instructions_runtime_read_required: false,
     instructions_authority: {
       normal_startup:
-        "Use this compact context for normal Planera execution startup before reading " +
-        "skills/agentera/capabilities/planera/instructions.md.",
+        "Use this compact context for normal Planera execution startup; " +
+        "shell out to `agentera prime --context planera --format json` for the full Planera prose.",
       read_planera_instructions_when: PLANERA_INSTRUCTIONS_AUTHORITY_EXCEPTIONS,
     },
     planning: {
@@ -523,6 +533,7 @@ function slimCapabilityContext(
       if (value !== null && value !== undefined) contextPayload[name] = slimBespokeContext(name, value as Dict);
     }
   }
+  const prose = CAPABILITY_INSTRUCTIONS[capability] ?? null;
   return {
     schemaVersion: "agentera.capabilityContext.v1",
     capability,
@@ -539,6 +550,7 @@ function slimCapabilityContext(
       schema_error: context.schema_error ?? null,
     },
     context: contextPayload,
+    prose: prose ?? "",
     raw_artifact_read_policy: context.raw_artifact_read_policy ?? null,
   };
 }

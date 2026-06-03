@@ -1,4 +1,81 @@
 cycles:
+  - number: 641
+    timestamp: 2026-06-03 22:58
+    type: feat
+    phase: build
+    what: |-
+      D65 per-capability content surface — relocated 12 capability prose files
+      from skills/agentera/capabilities/<name>/instructions.md to
+      packages/cli/src/capabilities/<name>/instructions.ts as default-exported
+      string constants; the slim capability_context capsule gains a `prose`
+      field and `first_invocation_read: prime_context` with
+      `runtime_enforcement: true`; 36 runtime descriptors (12 codex toml + 12
+      cursor md + 12 opencode md) now invoke `agentera prime --context <name>
+      --format json` instead of reading the on-disk prose;
+      capability_schema_contract.yaml renames instruction_file →
+      instruction_module; the validate command adds a regression sentinel
+      rejecting the legacy `instructions.md` substring in descriptor bodies.
+      Plan D65 lands on feat/d65-capability-ts-surface; the published npx
+      skills surface (SKILL.md only) keeps the discoverability table and
+      validation commands, so the npx skills ecosystem stays functionally
+      equivalent.
+    inspiration: TODO.md [chore:3.0.0] Decision 65 per-capability content surface.
+    discovered: |-
+      Round-tripping the MD body through `JSON.parse(String.raw…)` avoids both
+      backticks (code fences) and template-literal interpolation; the
+      validator's checkDirectoryStructure now resolves the instruction module
+      path against resolveSourceRoot() (repo root) instead of the capDir so
+      the production and test paths agree.
+    verified: |-
+      pnpm -C packages/cli test — 692/692 (78 files, +4 vs cycle 640's
+      688/688); typecheck clean; build clean; capability-contract validate
+      passes; all 12 per-name capability validators pass (V1 error string now
+      `packages/cli/src/capabilities/<name>/instructions.ts not found`);
+      `node dist/bin/agentera.js check validate descriptors --format json`
+      reports 24/24 passed (12 codex + 12 opencode); all 12 `prime --context
+      <capability> --format json` responses return valid JSON with non-empty
+      `prose` and `first_invocation_read.value == "prime_context"`; doctor
+      smoke `npm.validate_capability` passes.
+    next: |-
+      continue Decision 56 parity work; CHANGELOG fold deferred to the release
+      commit per AGENTS.md.
+    context:
+      intent: |-
+        Move per-capability prose from on-disk Markdown to compiled TypeScript
+        modules so the CLI process owns the source-of-truth surface and the
+        runtime shells out to `agentera prime --context <name> --format json`
+        instead of reading the prose directly.
+      constraints: |-
+        Single implementation commit on feat/d65-capability-ts-surface (no
+        main-branch backport, no separate bookkeeping commit per AGENTS.md
+        "Agentera commits" rules); the published npx skills surface stays
+        functionally equivalent; the Python validate_capability.py port does
+        not exist on feat/v3 (Python CLI retired in v2→v3 rewrite).
+      unknowns: none
+      scope: packages/cli/src/capabilities/<name>/instructions.ts (12 new),
+        skills/agentera/capabilities/<name>/instructions.md (12 deleted),
+        packages/cli/src/cli/capabilityContext.ts,
+        packages/cli/src/cli/commands/capability.ts,
+        packages/cli/src/cli/commands/validate.ts,
+        packages/cli/src/validate/appHomeContract.ts,
+        packages/cli/src/validate/capability.ts,
+        packages/cli/src/registries/capabilityContract.ts,
+        packages/cli/src/capabilities/index.ts,
+        packages/cli/test/validate/capability.test.ts,
+        packages/cli/test/registries/capabilityContract.test.ts,
+        packages/cli/test/cli/inspekteraEvaluationReport.test.ts,
+        packages/cli/scripts/copy-bundle.mjs, skills/agentera/SKILL.md,
+        skills/agentera/capability_schema_contract.yaml,
+        skills/agentera/capabilities/orkestrera/schemas/validation.yaml,
+        skills/agentera/agents/<name>.toml (12), .cursor/agents/<name>.md (12),
+        .opencode/agents/<name>.md (12),
+        references/cli/capability-instruction-contract.yaml,
+        references/cli/vocabulary.md, references/cli/vocabulary-index.yaml,
+        references/cli/routing-execution-vocabulary.yaml,
+        references/cli/bundle-skill-vocabulary.yaml,
+        references/cli/agent-ready-state-contract.yaml, README.md, AGENTS.md,
+        TODO.md, .agentera/plan.yaml, .agentera/progress.yaml,
+        .agentera/archive/plan-2026-06-03-d65-capability-ts-surface.yaml
   - number: 640
     timestamp: 2026-06-03 19:50
     type: fix
@@ -236,41 +313,11 @@ cycles:
       scope: packages/cli/src/cli/dispatch.ts,
         packages/cli/test/hooks/compaction.test.ts,
         packages/cli/test/cli/compact.test.ts, .agentera/plan.yaml
-  - number: 631
-    timestamp: 2026-06-03 08:13
-    type: fix
-    phase: build
-    what: Inspektera WARN/FAIL file:line citation enforcement — added
-      evaluator_handoff schema to capability-instruction-contract.yaml,
-      evaluatorHandoffContract.ts registry with report validation and
-      verify_command line reproduction, output_requirements on prime
-      evaluator_handoff, orkestrera Surface 2 delegation template and V10
-      validation rule, inspektera citation standard prose, sample report
-      fixture, and regression tests.
-    inspiration: Plan task 2 (2.7.7 release).
-    discovered: Main-branch Python mirror deferred per plan both-branch sequencing;
-      feat/v3 TypeScript slice only in this session.
-    verified: pnpm -C packages/cli test — 653/653 passed (75 files, +10 vs cycle
-      630's 643/643); typecheck clean; build clean; evaluatorHandoffContract and
-      inspekteraEvaluationReport tests cover schema load, WARN/FAIL citation
-      validation, verify_command line reproduction, prime output_requirements,
-      and orkestrera delegation template prose.
-    next: Plan task 3 — progress.yaml over-budget compaction.
-    context:
-      intent: Execute plan task 2 (inspektera citation enforcement) on feat/v3 only.
-      constraints: No remote push; no vision.yaml edits; main Python slice deferred.
-      unknowns: none
-      scope: references/cli/capability-instruction-contract.yaml,
-        packages/cli/src/registries/evaluatorHandoffContract.ts,
-        packages/cli/src/cli/capabilityContext.ts,
-        skills/agentera/capabilities/orkestrera/instructions.md,
-        skills/agentera/capabilities/inspektera/instructions.md,
-        skills/agentera/capabilities/orkestrera/schemas/validation.yaml,
-        packages/cli/test/registries/evaluatorHandoffContract.test.ts,
-        packages/cli/test/cli/inspekteraEvaluationReport.test.ts,
-        packages/cli/test/cli/fixtures/oracle/inspektera-evaluation-report.json,
-        .agentera/plan.yaml
 archive:
+  - summary: "Cycle 631 (2026-06-03): Inspektera WARN/FAIL file:line citation
+      enforcement — added evaluator_handoff schema to
+      capability-instruction-contract.yaml, evaluatorHandoffContract.ts registry
+      with report..."
   - summary: "Cycle 630 (2026-06-03): D66 drop progress.yaml per-cycle commit field
       — removed PR6/PV2 commit requirements from the progress schema;..."
   - summary: "Cycle 629 (2026-06-02): Freeze source_contract internals — new oracle
@@ -349,5 +396,3 @@ archive:
       and fixed latest health audit selection."
   - summary: "Cycle 593 (2026-05-23): Relocated authoritative docs to references/
       and released 2.6.1 patch metadata."
-  - summary: "Cycle 592 (2026-05-23): Archived completed prime/JSON-budget plan and
-      released 2.6.0 metadata."

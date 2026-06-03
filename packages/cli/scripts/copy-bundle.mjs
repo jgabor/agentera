@@ -11,6 +11,17 @@
  *                     capabilities/*, schemas/*)
  *   - references/    (artifact-registry interface model + reference paths)
  *   - registry.json  (artifact registry at the source root)
+ *
+ * D65: per-capability `instructions.md` files are no longer copied because
+ * they do not exist on disk. The per-capability prose ships via the
+ * compiled `dist/capabilities/*/instructions.js` modules that `tsc` emits
+ * alongside the rest of the TypeScript surface. The runtime loader
+ * imports the compiled `.js` path from `../capabilities/index.js`; the
+ * source `packages/cli/src/capabilities/<name>/instructions.ts` files
+ * are bundled into `dist/` by the `build` script before `copy-bundle.mjs`
+ * runs in `prepack`. The `skills/` directory still carries the
+ * capability `schemas/*.yaml` files because the capability validator
+ * and routing still need them.
  */
 import fs from "node:fs";
 import path from "node:path";

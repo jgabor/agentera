@@ -282,10 +282,10 @@ structured_output:
             contract can summarize planning levels, step markers, CLI-first
             orientation, raw plan artifact boundaries, full-plan review/self-audit
             requirements, handoff expectations, and the Planera prose authority
-            boundary without reading `planera/instructions.md` at runtime. It must
-            not introduce `agentera planera`, new top-level commands, or hidden
-            capability-name aliases; `agentera schema` owns runtime/schema
-            introspection rather than a capability workflow payload.
+            boundary without reading `packages/cli/src/capabilities/planera/instructions.ts`
+            at runtime. It must not introduce `agentera planera`, new top-level
+            commands, or hidden capability-name aliases; `agentera schema` owns
+            runtime/schema introspection rather than a capability workflow payload.
           orchestration_context_semantics: >-
             `agentera prime --context orkestrera --format json` may include
             orchestration_context with dependency-ready tasks, blocked task reasons,
@@ -465,7 +465,7 @@ evidence_context_target_contract:
         verified_field: header.status=complete
       - reason: Inspektera prose and schemas are validated directly; complete evidence_context covers normal evaluation startup without raw plan/progress/docs/health/TODO/decisions reads.
         paths:
-          - skills/agentera/capabilities/inspektera/instructions.md
+          - packages/cli/src/capabilities/inspektera/instructions.ts
           - skills/agentera/capabilities/inspektera/schemas/artifacts.yaml
           - skills/agentera/capabilities/inspektera/schemas/validation.yaml
         raw_artifact_reads_required_for_startup: false

@@ -1,14 +1,28 @@
 ---
 name: agentera
 description: >
-  The open protocol for turning AI agents into engineering teams.
-  One Agentera skill with twelve capabilities, each defined by human-readable
-  prose and machine-readable schemas. The agent reads this file to route
-  incoming requests to the right capability. Use this skill for /agentera,
-  Agentera capability requests, and a complete user message exactly `hej`;
-  bare `hej` runs the agentera prime orientation dashboard path instead of a generic greeting.
+  The open protocol for turning AI agents into engineering teams. One Agentera
+  skill with twelve capabilities; per-capability prose lives in
+  `packages/cli/src/capabilities/<name>/instructions.ts` and the runtime serves
+  it through `agentera prime --context <name> --format json`. Use this skill
+  for /agentera, Agentera capability requests, and a complete user message
+  exactly `hej`; bare `hej` runs the agentera prime orientation dashboard path
+  instead of a generic greeting.
 version: "3.0.0"
 spec_sections: [1, 2, 3, 4, 5, 6, 11, 13, 18, 19, 20, 22, 23]
+capabilities:
+  - hej
+  - visionera
+  - resonera
+  - inspirera
+  - planera
+  - realisera
+  - optimera
+  - inspektera
+  - dokumentera
+  - profilera
+  - visualisera
+  - orkestrera
 ---
 
 # agentera
@@ -261,21 +275,25 @@ v2 paths `hej --capability-context` and `--context-profile` are removed in 3.0.
 For normal ≡ planera execution, use
 `capability_context.context.planning_context.startup_contract` from
 `agentera prime --context planera --format json`
-before reading `skills/agentera/capabilities/planera/instructions.md`. Read Planera prose only when
-editing Planera, resolving contradiction or ambiguity, validating detailed
-behavior not covered by the compact contract, or investigating benchmark/read-trigger
-evidence. This preserves Planera prose as detailed authority and does not add
-`agentera planera`; `/agentera plan` remains routing while `agentera state plan`
-remains plan state (top-level `agentera plan` is a migration alias).
+before reading the Planera prose from
+`packages/cli/src/capabilities/planera/instructions.ts` (served via
+`capability_context.prose` from the same prime call). Read the full Planera
+prose only when editing Planera, resolving contradiction or ambiguity,
+validating detailed behavior not covered by the compact contract, or
+investigating benchmark/read-trigger evidence. This preserves Planera prose
+as detailed authority and does not add `agentera planera`; `/agentera plan`
+remains routing while `agentera state plan` remains plan state (top-level
+`agentera plan` is a migration alias).
 For normal DECISIONS.md context, use `agentera state decisions --format json` and its
 source_contract. When `complete_for_normal_deliberation_context=true`, preserve
 returned `missing_fields`, `compacted`, `caveats`, and `satisfaction.review_needed`
 instead of raw-reading `.agentera/decisions.yaml` to reconstruct missing history.
 Raw decision artifact access is reserved for Resonera-owned writes/repairs,
 artifact corruption diagnostics, or CLI defect investigation.
-Reading a capability's `instructions.md` file is not itself a capability invocation;
-invocation means routing to the capability, following its prose, and using the
-CLI state layer first for artifact-backed state.
+Reading a capability's instructions module is not itself a capability invocation;
+invocation means routing to the capability, fetching the prose via
+`agentera prime --context <name> --format json`, following that prose, and using
+the CLI state layer first for artifact-backed state.
 
 Capability handoffs use glyph plus canonical capability name, for example
 `⧉ realisera` or `≡ planera`. Reserve `/agentera <alias>` wording for explicit
@@ -436,25 +454,24 @@ Before reading or writing any artifact, check if `.agentera/docs.yaml` exists. I
 
 ```
 skills/agentera/
-  SKILL.md                          # This file
+  SKILL.md                          # This file (routing stub + capability table)
   protocol.yaml                     # Shared primitives
   capability_schema_contract.yaml   # Self-referential schema contract
   capabilities/
     hej/
-      instructions.md
       schemas/
         triggers.yaml
         artifacts.yaml
         validation.yaml
         exit.yaml
     resonera/
-      instructions.md
       schemas/
         triggers.yaml
         artifacts.yaml
         validation.yaml
         exit.yaml
-    ... (12 capabilities total)
+    ... (12 capabilities total, each with schemas/ only)
+packages/cli/src/capabilities/<name>/instructions.ts   # Per-capability prose (D65)
 ```
 
 Validate any capability against the contract through the canonical CLI:

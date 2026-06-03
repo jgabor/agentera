@@ -368,7 +368,8 @@ function descriptorValidationPayload(): Dict {
       checks.push(check);
       continue;
     }
-    const expectedRef = `capabilities/${name}/instructions.md`;
+    const expectedRef = `agentera prime --context ${name} --format json`;
+    const legacyRef = `capabilities/${name}/instructions.md`;
     if (parsed.name !== name) {
       check = { ...check, status: "fail", message: "name field does not match capability" };
       violations.push(`codex ${name}: name field must be ${name}`);
@@ -378,6 +379,9 @@ function descriptorValidationPayload(): Dict {
     } else if (typeof parsed.developer_instructions !== "string" || !parsed.developer_instructions.includes(expectedRef)) {
       check = { ...check, status: "fail", message: "developer_instructions must reference capability instructions" };
       violations.push(`codex ${name}: developer_instructions must reference ${expectedRef}`);
+    } else if (typeof parsed.developer_instructions === "string" && parsed.developer_instructions.includes(legacyRef)) {
+      check = { ...check, status: "fail", message: "developer_instructions must not reference the retired on-disk instructions.md" };
+      violations.push(`codex ${name}: developer_instructions must not reference ${legacyRef} (use the prime --context command)`);
     } else if (!pySplitlinesText(text).slice(0, 5).includes("# agentera_managed: true")) {
       check = { ...check, status: "fail", message: "managed marker is required" };
       violations.push(`codex ${name}: managed marker is required`);
@@ -428,7 +432,8 @@ function descriptorValidationPayload(): Dict {
       frontmatter = {};
     }
 
-    const expectedRefO = `capabilities/${name}/instructions.md`;
+    const expectedRefO = `agentera prime --context ${name} --format json`;
+    const legacyRefO = `capabilities/${name}/instructions.md`;
     const expectedPermission = (capPermissions[name] ?? {}) as Dict;
     const actualPermission = frontmatter.permission;
 
@@ -461,6 +466,9 @@ function descriptorValidationPayload(): Dict {
     } else if (!otext.includes(expectedRefO)) {
       ocheck = { ...ocheck, status: "fail", message: "descriptor must reference capability instructions" };
       violations.push(`opencode ${name}: descriptor must reference ${expectedRefO}`);
+    } else if (otext.includes(legacyRefO)) {
+      ocheck = { ...ocheck, status: "fail", message: "descriptor must not reference the retired on-disk instructions.md" };
+      violations.push(`opencode ${name}: descriptor must not reference ${legacyRefO} (use the prime --context command)`);
     } else if (otext.includes("Dispatch only through the runtime-native") || otext.includes(`\`@${name}\``)) {
       ocheck = { ...ocheck, status: "fail", message: "descriptor must not self-dispatch from a subagent" };
       violations.push(`opencode ${name}: descriptor must execute directly without self-dispatch`);
