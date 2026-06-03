@@ -1,0 +1,102 @@
+header:
+  level: full
+  created: 2026-06-03
+  status: complete
+  reviewed: 2026-06-03
+  critic_issues: "3 found, 3 addressed, 0 dismissed"
+  title: "Plan: 3.0.0 next-major doctor section"
+what: >-
+  Cut a self-contained, generic, major-agnostic "next major" doctor section
+  in both v2 (Python stable) and v3 (TypeScript npm) so every install
+  surfaces the next available major line without code changes between
+  major versions. Sourced from a single `next_major` block in the
+  existing `references/cli/update-channels.yaml` channel authority.
+  Zero new flags. Zero version-named vocabulary. No opt-out. Renders at
+  the head of `agentera doctor` when the running line has a non-null
+  `next_major` successor; omitted entirely otherwise. v1 installs are
+  treated as the v2 predecessor and render the same section shape.
+why: >-
+  v2 users currently have no in-tool signal that v3 exists on the
+  development channel. The v2→v3 transition suffers from silent
+  discovery (users learn about v3 only when they read release notes)
+  and asymmetric knowledge (the v3 side knows about v2; v2 has no
+  equivalent surface). A generic "next major" section reuses the
+  existing channel authority, scales to v3→v4 unchanged, and stays
+  D58-compliant by avoiding v3-named concepts in code or vocabulary.
+constraints: >-
+  No new CLI flags in either branch. No opt-out config key. No
+  version-named vocabulary. The doctor section must read its metadata
+  exclusively from `references/cli/update-channels.yaml`. The
+  `next_major` block must be per-channel so v2 stable can point at
+  v3 development and v3 development can later point at v4 stable
+  without code changes. v2 doctor (Python) and v3 doctor (TypeScript)
+  must render the same section from the same authority. The section
+  is omitted entirely when the running line has no announced
+  successor.
+scope:
+  included:
+    - Extend `references/cli/update-channels.yaml` with a per-channel `next_major` block
+    - Implement head-of-output doctor section in v3 (TypeScript) reading the authority
+    - Backport the same section shape to v2 (Python stable) doctor reading the same authority
+    - Treat v1 installs as the v2 predecessor: render v1→v2 section in v1 doctor
+    - Pin the 6-line cap, "no opt-out", and "omitted-when-null" behavior with regression coverage
+  excluded:
+    - v2→v3 migration logic (already in `packages/cli/src/upgrade/migrateArtifactsV2ToV3.ts`)
+    - v2 readiness report, state manifest for v3, coexistence detection (separate TODO items)
+    - Decision-required sunset date for v2 line
+    - v1→v2 migration content (already in the existing v1→v2 upgrade path)
+  deferred:
+    - v3→v4 successor: enabled by populating `channels.development.next_major` later
+    - Banner positioning in interactive shells (TTY detection)
+design: >-
+  The channel authority owns a per-channel `next_major` block with
+  concept, channel name, version, npm dist_tag, guide URL, preview
+  command, and irreversible advisory. Doctor reads the running
+  line's channel from `update.channel` config (or default `stable`)
+  and looks up `next_major` on that channel. When non-null, the
+  section renders six lines: current version + channel, next version
+  + channel + npm-only advisory, guide URL, preview command, and
+  irreversible advisory. When null, the section is omitted entirely
+  (no header, no placeholder). v1 installs fall through to a
+  hardcoded v1→v2 channel mapping because the channel authority was
+  introduced in v2. Test proportionality: one pass plus one fail
+  per touched surface (channel authority extension, v3 doctor
+  rendering, v2 doctor rendering, v1 fallback, omitted-when-null
+  behavior). All regressions must run in both the v3 vitest suite
+  and the v2 pytest suite so backport parity is enforced.
+tasks:
+  - number: 1
+    name: Implement next-major doctor section
+    depends_on: []
+    status: complete
+    acceptance:
+      - "GIVEN the channel authority WHEN extended with a `next_major` block per channel THEN the YAML parses and the block is reachable from `channels.<channel>.next_major`"
+      - "GIVEN a v3 install on the stable channel WHEN `agentera doctor` runs THEN a 6-line `next major` section renders at the head of the output sourced from `channels.stable.next_major`"
+      - "GIVEN a v2 install on the stable channel WHEN `agentera doctor` runs THEN the same 6-line section renders at the head of the output, sourced from the same authority file"
+      - "GIVEN a v1 install WHEN `agentera doctor` runs THEN the v1→v2 section renders with current: 1.x and next: 2.x on stable, using a hardcoded v1 channel fallback"
+      - "GIVEN the running line has no announced successor (e.g., v3 stable with v4 not yet announced) WHEN `agentera doctor` runs THEN the next-major section is omitted entirely; no header, no placeholder"
+      - "GIVEN the regression test suite WHEN run on v3 vitest and v2 pytest THEN the new section's behavior, v1 fallback, omitted-when-null, and 6-line cap each have a passing and a failing test"
+      - "GIVEN the vocabulary authority WHEN scanned for new doctor-section wording THEN no v3-named, v4-named, or major-version-named concept appears in code or prose"
+  - number: 2
+    name: 3.0 version bump and CHANGELOG update
+    depends_on:
+      - "1"
+    status: complete
+    acceptance:
+      - "GIVEN DOCS.md versioning policy WHEN the 3.0 release is cut THEN every file in `docs.yaml` `version_files` carries version 3.0.0 (main) and 3.0.0 (feat/v3)"
+      - "GIVEN CHANGELOG.md WHEN the 3.0 entry is recorded THEN it lists the next-major doctor section with imperative phrasing and the implementation commit hashes"
+      - "GIVEN `npx -y agentera@latest` (v2 stable) WHEN installed on a clean machine THEN `agentera doctor` shows the v2→v3 next-major section"
+      - "GIVEN `npx -y agentera@next` (v3 development) WHEN installed on a clean machine THEN `agentera doctor` shows the v3→v4 section only if v4 is announced; otherwise omitted"
+  - number: 3
+    name: Final state sync and plan archive
+    depends_on:
+      - "1"
+      - "2"
+    status: complete
+    acceptance:
+      - "GIVEN all prior tasks complete WHEN this task runs THEN `.agentera/plan.yaml` is archived to `.agentera/archive/plan-2026-06-03-next-major-doctor.yaml` and the active plan slot is cleared"
+      - "GIVEN TODO.md WHEN the ledger is reconciled THEN the next-major doctor entry moves to the resolved section with the implementation commit hash"
+      - "GIVEN `agentera prime` WHEN rendered after closeout THEN the plan slot reports absent and the next-major doctor section appears in any subsequent `agentera doctor` run"
+overall_acceptance: "GIVEN both `main` and `feat/v3` WHEN the 3.0 release ships THEN both `agentera doctor` invocations render the same next-major section at the head of output, sourced from `references/cli/update-channels.yaml`, with no v3-named vocabulary, no new flags, and the v1→v2 fallback for v1 installs; AND GIVEN a v3 install on the stable channel WHEN `agentera doctor` runs THEN a user reading the output sees the v3→v4 next-major section without any code change once v4 is announced in the channel authority."
+surprises: []
+previous_plan_archived: .agentera/archive/plan-2026-06-03.yaml

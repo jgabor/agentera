@@ -125,7 +125,7 @@ export function loadOfflineLatestDefaults(sourceRoot: string): VersionCatalog {
   const defaults = latestOnChannel?.offline_defaults as Record<string, string> | undefined;
   return {
     stable: defaults?.stable ?? "2.7.7",
-    development: defaults?.development ?? "3.0.0-dev.0",
+    development: defaults?.development ?? "3.0.0",
   };
 }
 
@@ -136,7 +136,7 @@ export function resolveLatestOnChannel(
 ): string {
   const resolved = catalog ?? testVersionCatalog ?? loadOfflineLatestDefaults(sourceRoot);
   return channel.channel === "development"
-    ? (resolved.development ?? "3.0.0-dev.0")
+    ? (resolved.development ?? "3.0.0")
     : (resolved.stable ?? "2.7.7");
 }
 

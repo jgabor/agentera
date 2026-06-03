@@ -188,6 +188,19 @@ describe("update channels vocabulary authority", () => {
     expect(devGit.update_command).toBeUndefined();
   });
 
+  it("declares per-channel next_major successor metadata on stable only", () => {
+    const authority = updateChannelsAuthority();
+    const stable = (authority.channels as Dict).stable as Dict;
+    const development = (authority.channels as Dict).development as Dict;
+    const stableNext = stable.next_major as Dict;
+    expect(stableNext.concept).toBe("forward_successor_line");
+    expect(stableNext.channel).toBe("development");
+    expect(stableNext.version).toBe("3.0.0");
+    expect((stableNext.npm as Dict).dist_tag).toBe("next");
+    expect(String(stableNext.preview_command)).toContain("@next");
+    expect(development.next_major).toBeUndefined();
+  });
+
   it("declares env, config, and CLI override keys", () => {
     const authority = updateChannelsAuthority();
     expect(authority.override_precedence).toEqual(["cli_flag", "env_var", "config_file", "default"]);
