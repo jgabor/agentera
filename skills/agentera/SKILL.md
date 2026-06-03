@@ -7,7 +7,7 @@ description: >
   incoming requests to the right capability. Use this skill for /agentera,
   Agentera capability requests, and a complete user message exactly `hej`;
   bare `hej` runs the agentera prime orientation dashboard path instead of a generic greeting.
-version: "2.7.8"
+version: "2.7.9"
 spec_sections: [1, 2, 3, 4, 5, 6, 11, 13, 18, 19, 20, 22, 23]
 ---
 

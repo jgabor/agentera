@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- Fixed `agentera state todo --format json` and prime/hej orientation ignoring GitHub task-list `[x]`/`[ ]` checkboxes before Agentera `[type]` tags: `- [x] [fix] …` rows are now `status: resolved` and excluded from open issue counts and `next_action` selection; `- [ ] [type] …` and `- [type] …` (no checkbox) remain open. Regression coverage in `tests/test_query_cli.py::TestTodo::test_github_checkbox_before_type_tag_json`. TypeScript parity on `feat/v3`.
+
 ### Added
 
 - Added per-channel `next_major` metadata to `references/cli/update-channels.yaml` and a six-line **Next major** section at the head of `agentera doctor` text output on the stable channel, sourced exclusively from that authority. v1 installs use a hardcoded stable-channel fallback; the section is omitted when no successor is announced. Regression coverage in `tests/test_next_major_doctor.py`.

@@ -1102,6 +1102,23 @@ class TestTodo:
         assert "Clean up code" in r.stdout
         assert "Old fix" not in r.stdout
 
+    def test_github_checkbox_before_type_tag_json(self, project):
+        """Regression: [x]/[ ] checkboxes before [type] must set status correctly."""
+        (project / "TODO.md").write_text(
+            "# TODO\n\n"
+            "## \u21f6 Critical\n\n"
+            "- [x] [fix] Resolved checkbox item\n"
+            "- [ ] [fix] Open checkbox item\n"
+            "- [fix:3.0.0] Type-only open item\n"
+        )
+        r = _run("todo", "--format", "json", cwd=project)
+        assert r.returncode == 0
+        data = json.loads(r.stdout)
+        by_desc = {e["description"]: e for e in data["entries"]}
+        assert by_desc["[fix] Resolved checkbox item"]["status"] == "resolved"
+        assert by_desc["[fix] Open checkbox item"]["status"] == "open"
+        assert by_desc["Type-only open item"]["status"] == "open"
+
     def test_type_tagged_items_json_open_count(self, project):
         """Regression: JSON entry count must match actual open items."""
         (project / "TODO.md").write_text(

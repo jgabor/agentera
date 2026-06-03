@@ -6394,18 +6394,26 @@ def _query_todo(
             continue
         if current_section is None:
             continue
-        m = _TODO_ITEM_RE.match(s)
-        if not m:
+        parsed = _parse_todo_md_list_item(s)
+        if not parsed:
             continue
         if marker and marker not in current_section:
             continue
-        found = True
-        item = m.group(2).strip()
-        if status and status.lower() not in {"open", "todo"}:
+        item_status, item = parsed
+        if open_only and _is_resolved_todo_md_status(item_status):
             continue
+        if status:
+            want = status.lower()
+            have = item_status.lower()
+            if want in {"open", "todo"}:
+                if _is_resolved_todo_md_status(have):
+                    continue
+            elif have != want:
+                continue
+        found = True
         markdown_entries.append({
             "severity": _normalize_severity(current_section),
-            "status": "open",
+            "status": item_status,
             "description": item,
             "section": current_section,
         })
@@ -6801,6 +6809,24 @@ TODO_SECTION_SEVERITIES = {
     "annoying": "annoying",
 }
 _TODO_ITEM_RE = re.compile(r"^- \[([^\]]+)\]\s+(.*)")
+
+
+def _parse_todo_md_list_item(line: str) -> tuple[str, str] | None:
+    m = _TODO_ITEM_RE.match(line)
+    if not m:
+        return None
+    token, rest = m.group(1), m.group(2).strip()
+    if token.lower() == "x":
+        return "resolved", rest
+    if token == " ":
+        return "open", rest
+    return "open", rest
+
+
+def _is_resolved_todo_md_status(status: str) -> bool:
+    return status == "resolved"
+
+
 TODO_PLANERA_SIGNALS = {
     "acceptance",
     "artifact",
@@ -7023,13 +7049,16 @@ def _load_todo_items(schemas: dict) -> list[dict[str, str]]:
                 )
             continue
         if current_severity:
-            m = _TODO_ITEM_RE.match(stripped)
-            if m:
-                items.append({
-                    "severity": current_severity,
-                    "status": "open",
-                    "text": m.group(2).strip(),
-                })
+            parsed = _parse_todo_md_list_item(stripped)
+            if not parsed or _is_resolved_todo_md_status(parsed[0]):
+                continue
+            if not parsed[1]:
+                continue
+            items.append({
+                "severity": current_severity,
+                "status": parsed[0],
+                "text": parsed[1],
+            })
     return items
 
 
