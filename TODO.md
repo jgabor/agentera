@@ -2,6 +2,7 @@
 
 ## ⇶ Critical
 
+- ~~[fix:3.0.0] TODO.md severity-section body extraction is off-by-one in `validateMdItems`~~ · resolved on `feat/v3` @ pending: slice severity bodies with `/\n##\s/` boundaries from the heading end, skip the trailing newline before list items, and add regression coverage in `packages/cli/test/hooks/validateArtifact.test.ts`. Python backport tracked for `main` 2.7.8.
 - ~~[fix:3.0.0] npm 0.0.0 shim delegates to the Python CLI with cwd set to the installed app home, so every project-state read resolves to `$AGENTERA_HOME/app/...` instead of the user's project; preserve the user's working directory in the shim's runBackend app-home path.~~ · resolved by packages/cli/shim/lib/exec.mjs runBackend app-home branch now passing the caller's cwd through dispatch → runBackend to spawnSync; regression coverage in packages/cli/test/shim/runBackend.test.ts pins user cwd vs. app home and asserts the repo backend is still anchored to its repo root; CHANGELOG [Unreleased] records the shim's transitional role against the 3.0 TypeScript CLI.
 
 ## ⇉ Degraded

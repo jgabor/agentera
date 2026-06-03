@@ -655,8 +655,12 @@ function validateMdItems(content: string, name: string, violations: string[]): v
       const sectionStart = new RegExp(`^##\\s*${g}.+$`, "m").exec(content);
       if (sectionStart) {
         const idx = sectionStart.index + sectionStart[0].length;
-        const nextSection = content.indexOf("\n##", idx);
-        const sectionBody = nextSection >= 0 ? content.slice(idx, nextSection) : content.slice(idx);
+        const nextMatch = content.slice(idx).match(/\n##\s/);
+        let bodyStart = idx;
+        if (content.startsWith("\r\n", bodyStart)) bodyStart += 2;
+        else if (content[bodyStart] === "\n") bodyStart += 1;
+        const sectionEnd = nextMatch ? idx + nextMatch.index! : content.length;
+        const sectionBody = content.slice(bodyStart, sectionEnd);
         if (!/^\s*-/m.test(sectionBody)) {
           const headingSlice = content.slice(sectionStart.index, sectionStart.index + sectionStart[0].length);
           const glyphNameMatch = new RegExp(`^##\\s*(${g}.+)$`, "m").exec(headingSlice);
