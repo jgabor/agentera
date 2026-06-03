@@ -3,23 +3,12 @@
   "private": true,
   "packageManager": "pnpm@10.30.3",
   "scripts": {
+    "preinstall": "case \"$SHARP_IGNORE_GLOBAL_LIBVIPS\" in true|1) ;; *) export SHARP_IGNORE_GLOBAL_LIBVIPS=true; exec pnpm install ;; esac",
     "web:dev": "vp run @agentera/web#dev",
     "web:build": "vp run @agentera/web#build",
     "web:check": "vp run @agentera/web#check",
     "web:deploy": "vp run @agentera/web#deploy",
     "cli:publish:dev": "pnpm -C packages/cli run publish:dev",
     "cli:publish:stable": "pnpm -C packages/cli/shim run publish:stable"
-  },
-  "pnpm": {
-    "overrides": {
-      "devalue": ">=5.6.4",
-      "undici": ">=7.24.0",
-      "yaml": ">=2.8.3"
-    },
-    "onlyBuiltDependencies": [
-      "esbuild",
-      "sharp",
-      "workerd"
-    ]
   }
 }
