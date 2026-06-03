@@ -25,12 +25,12 @@
 
 ### Changed
 
-- Removed the per-cycle `commit` field from the progress artifact schema, `agentera state progress` JSON/text output, v1→v2 migration extraction, and progress validation (Decision 66). Deleted `agentera check backfill` and the progress commit ancestry guard introduced in 2.7.6. Existing progress.yaml entries that still carry `commit` parse cleanly; CLI output omits the field. (`commit: pending`)
-- Enforced progress.yaml 10/40/50 compaction retention on the TypeScript CLI: added `--apply` as an alias for `agentera check compact --mode fix`, regression tests that fail the gate when progress.yaml exceeds 50 cycles, and archive preservation when compacting under the cap. (`commit: pending`)
+- Removed the per-cycle `commit` field from the progress artifact schema, `agentera state progress` JSON/text output, v1→v2 migration extraction, and progress validation (Decision 66). Deleted `agentera check backfill` and the progress commit ancestry guard introduced in 2.7.6. Existing progress.yaml entries that still carry `commit` parse cleanly; CLI output omits the field. (`6b8af92`)
+- Enforced progress.yaml 10/40/50 compaction retention on the TypeScript CLI: added `--apply` as an alias for `agentera check compact --mode fix`, regression tests that fail the gate when progress.yaml exceeds 50 cycles, and archive preservation when compacting under the cap. (`6b8af92`)
 
 ### Fixed
 
-- Required reproducible `file:line` citations (or `not-applicable` with reason) on inspektera WARN and FAIL findings: tightened the orkestrera Step 3 Surface 2 delegation template, `references/cli/capability-instruction-contract.yaml` evaluator-handoff schema, `evaluatorHandoffContract.ts` report validation with `verify_command` line reproduction, and inspektera citation standard prose. Regression coverage in `evaluatorHandoffContract.test.ts` and `inspekteraEvaluationReport.test.ts`. (`commit: pending`)
+- Required reproducible `file:line` citations (or `not-applicable` with reason) on inspektera WARN and FAIL findings: tightened the orkestrera Step 3 Surface 2 delegation template, `references/cli/capability-instruction-contract.yaml` evaluator-handoff schema, `evaluatorHandoffContract.ts` report validation with `verify_command` line reproduction, and inspektera citation standard prose. Regression coverage in `evaluatorHandoffContract.test.ts` and `inspekteraEvaluationReport.test.ts`. (`6b8af92`)
 
 ## [2.7.6] · 2026-05-29
 
