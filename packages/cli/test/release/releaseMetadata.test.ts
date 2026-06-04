@@ -33,7 +33,7 @@ const VALID_REGISTRY = (version: string) => ({
 
 const VALID_PACKAGE = (overrides: Record<string, unknown> = {}) => ({
   name: "agentera",
-  version: "3.0.0-dev.5",
+  version: "3.0.0",
   description: "test",
   type: "module",
   license: "Apache-2.0",
@@ -53,7 +53,7 @@ const VALID_PACKAGE = (overrides: Record<string, unknown> = {}) => ({
     suiteVersion: "3.0.0",
     gitRef: "dd3ea28813c6c787104519d41ec478c67488050e",
   },
-  publishConfig: { access: "public", tag: "next" },
+  publishConfig: { access: "public", tag: "latest" },
   dependencies: { "smol-toml": "^1.3.1", yaml: "^2.8.3" },
   devDependencies: {
     "@types/node": "^22.10.0",
@@ -158,7 +158,7 @@ describe("release-metadata", () => {
     const snap = readReleaseMetadata(tmp);
     expect(snap.authoritativeVersion).toBe("3.0.0");
     expect(snap.authoritativeSource).toBe("registry.json");
-    expect(snap.packageVersion).toBe("3.0.0-dev.5");
+    expect(snap.packageVersion).toBe("3.0.0");
     expect(snap.packageSuiteVersion).toBe("3.0.0");
     expect(snap.packageGitRef).toBe("dd3ea28813c6c787104519d41ec478c67488050e");
     expect(snap.developmentChannelDefault).toBe("3.0.0");
@@ -343,7 +343,7 @@ describe("release-metadata live repo", () => {
       return;
     }
     const errors = validateReleaseMetadata(REPO_ROOT);
-    // The current @next package.json is 3.0.0-dev.5 and registry.json
+    // The released package.json is 3.0.0 and registry.json
     // skills[0].version is 3.0.0; if this test fails after a future bump
     // the divergence is a real release-metadata regression.
     if (errors.length > 0) {
