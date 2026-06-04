@@ -2352,6 +2352,40 @@ def apply_upgrade_plan(plan: dict[str, Any], args: argparse.Namespace) -> None:
             env=env,
         )
 
+    _refresh_v3_handoff_manifest(
+        install_root=install_root,
+        source_root=source_root,
+        home=home,
+        env=env,
+    )
+
+
+def _refresh_v3_handoff_manifest(
+    *,
+    install_root: Path,
+    source_root: Path,
+    home: Path,
+    env: dict[str, str],
+) -> None:
+    if not _valid_install_root(install_root):
+        return
+    try:
+        import v3_handoff_manifest as handoff
+    except ImportError:
+        return
+    try:
+        handoff.write_manifest(
+            app_home=install_root,
+            source_root=source_root,
+            home=home,
+            env=env,
+        )
+    except OSError as exc:
+        print(
+            f"upgrade warning: could not write {handoff.MANIFEST_FILENAME}: {exc}",
+            file=sys.stderr,
+        )
+
 
 def _public_plan(plan: dict[str, Any]) -> dict[str, Any]:
     public = json.loads(json.dumps(plan, default=str))
@@ -2584,6 +2618,25 @@ def cmd_doctor(args: argparse.Namespace) -> int:
         expected_version=args.expected_version,
         expected_commands=tuple(args.expect_command or EXPECTED_STATE_COMMANDS),
     )
+    if _valid_install_root(install_root):
+        try:
+            import v3_handoff_manifest as handoff
+        except ImportError:
+            handoff = None
+        if handoff is not None:
+            try:
+                handoff.ensure_fresh_manifest(
+                    app_home=install_root,
+                    source_root=source_root,
+                    home=home,
+                    env=dict(os.environ),
+                    warn=lambda message: print(message, file=sys.stderr),
+                )
+            except OSError as exc:
+                print(
+                    f"doctor warning: could not refresh {handoff.MANIFEST_FILENAME}: {exc}",
+                    file=sys.stderr,
+                )
     output_format = getattr(args, "format", "text")
     if output_format == "json":
         print(json.dumps(public_doctor_status(status), indent=2, sort_keys=True))
