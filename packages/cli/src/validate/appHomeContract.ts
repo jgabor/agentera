@@ -24,14 +24,14 @@ export const TEXT_SURFACES = [
 
 export const CLI_HELP_COMMANDS: string[][] = [
   ["--help"],
-  ["hej", "--help"],
+  ["prime", "--help"],
   ["doctor", "--help"],
   ["upgrade", "--help"],
 ];
 
 export const CLI_OUTPUT_COMMANDS: string[][] = [
-  ["hej"],
-  ["hej", "--format", "json"],
+  ["prime"],
+  ["prime", "--format", "json"],
   ["doctor", "--json"],
   ["upgrade", "--only", "bundle", "--dry-run"],
   ["upgrade", "--only", "bundle", "--dry-run", "--json"],

@@ -96,4 +96,25 @@ describe("cli help", () => {
   it("returns null for unknown command help", () => {
     expect(printCommandHelp("bogus")).toBeNull();
   });
+
+  it("returns null for removed top-level parser help aliases", () => {
+    expect(printCommandHelp("hej")).toBeNull();
+    expect(printCommandHelp("describe")).toBeNull();
+    expect(printCommandHelp("gate")).toBeNull();
+    expect(printCommandHelp("plan")).toBeNull();
+  });
+});
+
+describe("cli dispatch: removed top-level parsers (T8)", () => {
+  const removed = ["hej", "describe", "gate", "plan"] as const;
+
+  for (const command of removed) {
+    it(`rejects agentera ${command} with rc 2 and the unknown-command envelope`, () => {
+      const { rc, out, err } = capture((io) => main(["node", "agentera", command], io));
+      expect(rc).toBe(2);
+      expect(out).toBe("");
+      expect(err).toContain("What happened:");
+      expect(err).toContain(`unknown or not-yet-ported command: ${command}`);
+    });
+  }
 });

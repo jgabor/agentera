@@ -51,9 +51,12 @@ describe("cli dispatch: schema/describe routing", () => {
     expect(rc).toBe(0);
   });
 
-  it("emits a deprecation alias for describe", () => {
-    const { err } = capture((io) => main(["node", "agentera", "describe", "--format", "json"], io));
-    expect(err).toContain("Deprecation: agentera describe is deprecated; use agentera schema");
+  it("rejects removed top-level describe with the unknown-command envelope", () => {
+    const { rc, out, err } = capture((io) => main(["node", "agentera", "describe"], io));
+    expect(rc).toBe(2);
+    expect(out).toBe("");
+    expect(err).toContain("What happened:");
+    expect(err).toContain("unknown or not-yet-ported command: describe");
   });
 
   it("rejects an invalid --format choice", () => {
