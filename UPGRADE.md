@@ -88,10 +88,9 @@ disposable tool cache.
 
 `npx skills update` alone refreshes the visible skill files but does not refresh
 Agentera's local app files, migrate project artifacts, clean up the old Agentera
-directory, or rewrite runtime config. Agentera v2.0.2 keeps a legacy `/hej` bridge so
-old entry points can hand users to the command above, but the command above is
-the complete upgrade path. With explicit `--update-packages`, it removes
-package-managed v1 skill entries and installs `/agentera`.
+directory, or rewrite runtime config. The command above is the complete upgrade
+path. With explicit `--update-packages`, it removes package-managed legacy
+standalone skill entries and installs `/agentera`.
 
 ### App and runtime repair
 

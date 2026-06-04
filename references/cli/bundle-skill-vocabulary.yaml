@@ -14,7 +14,7 @@ scope:
     - Package and distribution metadata that names the suite package shape.
     - Runtime hook packaging prose and metadata for plugin-shipped hooks.
     - Historical references to the removed `bundle-status` command.
-    - Current and legacy references to `skills/agentera/SKILL.md` and v1 skill entry files.
+    - Current references to `skills/agentera/SKILL.md`.
   excludes:
     - Routing and execution vocabulary collapse work.
     - Capability instruction-file rename work.
@@ -32,8 +32,6 @@ canonical_concept_order:
   - removed_bundle_status_command
   - agentera_routing_entry
   - skill_entry_file
-  - v1_skill_entry_file
-  - legacy_hej_bridge
 canonical_concepts:
   agentera_app_files:
     definition: >-
@@ -119,32 +117,6 @@ canonical_concepts:
       - SKILL.md
       - skill file
       - skill entry
-  v1_skill_entry_file:
-    definition: >-
-      A historical standalone v1 skill entry file or path retained in migration
-      notes, tests, stale-path checks, and compatibility fixtures.
-    allowed_terms:
-      - v1 skill entry file
-      - v1 standalone skill entry file
-      - "historical v1 `SKILL.md` file"
-      - v1 skill path
-    forbidden_ambiguous_shortcuts:
-      - SKILL.md
-      - v1 SKILL.md
-      - old skill file
-  legacy_hej_bridge:
-    definition: >-
-      The temporary v1 `/hej` bridge or exact bare `hej` compatibility path that
-      guides users toward `/agentera` and the v2 upgrade path.
-    allowed_terms:
-      - legacy hej bridge
-      - "legacy `/hej` bridge"
-      - v1 hej bridge
-      - "bare `hej` compatibility path"
-    forbidden_ambiguous_shortcuts:
-      - hej skill
-      - legacy skill
-      - old hej
 classification_order:
   - canonical_concept
   - compatibility_identifier

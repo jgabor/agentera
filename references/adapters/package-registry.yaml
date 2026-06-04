@@ -233,7 +233,6 @@ records:
         - .claude-plugin/marketplace.json
         - .opencode/plugins/agentera.js
         - skills/agentera/SKILL.md
-        - skills/hej/SKILL.md
         - registry.json
       index_targets:
         - references/adapters/package-surface-characterization.md
