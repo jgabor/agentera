@@ -1,0 +1,9 @@
+# v2/v3 coexistence doctor warning contract (both CLI lines).
+schema_version: agentera.coexistenceProbe.v1
+section_header: Coexistence
+warning:
+  headline: "v3 detected alongside v2; pick one line"
+  resolutions:
+    - complete v3 migration
+    - uninstall v3
+    - stay on v2 explicitly
