@@ -1,309 +1,543 @@
 header:
   level: full
   created: "2026-06-04"
-  status: complete
+  status: active
   reviewed: "2026-06-04"
-  critic_issues: "4 found, 4 addressed, 0 dismissed"
+  critic_issues: "1 found, 1 addressed, 0 dismissed"
   revised: >-
-    (1) T1 oracle pinning: pinned by Python commit (not tag) to balance
-    stability with rebase; `rebase_oracle.sh` script documents the
-    policy. (2) T1 envelope normalization: `normalizeEnvelope()` helper
-    zeroes timestamps, hashes, and platform-specific path separators
-    before comparison; the parity matrix's `outdated`/`up_to_date`
-    lifecycle is stable. (3) T2-T7 drift direction: every parity-matrix
-    row records `drift_direction: ts_smaller|python_smaller|equal|
-    intentional_version_break` so a Python-bug parity failure is
-    explicitly classified; auto-update of Python from TS is forbidden by
-    the plan. (4) T8 npm `@next` version-divergence gate: the
-    final-state-sync re-runs `npmParityMatrix.test.ts` after every npm
-    version bump (TODO L23) and reports a degraded status if the matrix
-    is invalidated; Decision 56's `feeds_into` semantics are preserved
-    (this plan closes L18+L19 but the cutover itself is a separate
-    planera cycle).
-  title: "Plan: Decision 56 parity closeout — port the remaining CLI surfaces to TS and prove parity with the Python oracle"
+    (1) Both-branch sequencing: T5 and T6 (TODO L24 v2 handoff manifest,
+    TODO L25 v2/v3 coexistence) require `main`-branch backports that this
+    worktree's vitest cannot exercise; the plan now states that the v3
+    reader/probe lands on `feat/v3` first, with the v2 writer/probe
+    backported to `main` after the cutover publish, and that the
+    `main`-branch backport is verified by the v3 reader/probe reading
+    the writer/probe's output shape (round-trip parity test, not
+    pytest). The both-branch sequencing is documented per the original
+    `→ both` TODO directives.
+  title: "Plan: v2→v3 TS rewrite completion — close TODO L16, land the 3.0 cutover from the parity-impl track"
 
 what: >-
-  Close Decision 56 by porting the six remaining CLI surface families to
-  TypeScript and proving byte-level (or envelope-versioned) parity with
-  the Python `agentera` CLI. The six families are: artifact validation
-  (the 7 validate subcommands), compaction (`check compact` apply +
-  dry-run + retention caps), doctor/upgrade safety rails (smoke checks,
-  repair-needed/manual_review_needed lifecycle transitions, next-major
-  doctor for npm), verify gates (`check verify eval` family wrappers),
-  usage/stats consent semantics (`stats` + `stats refresh --consent
-  local-history`), and runtime adapter hooks (OpenCode/Codex/Cursor/
-  Copilot hook surfaces + descriptor parity + per-runtime
-  `subagent_dispatch`). The parity matrix at
-  `packages/cli/test/cli/npmParityMatrix.test.ts` expands to cover all
-  six families against a pinned Python oracle; the
-  `parity-remaining-families.json` fixture pins the contract. This
-  plan is the v3 critical path: TODO L19 (port the surfaces) and
-  TODO L18 (Decision 56 parity test gate) fold on T8 final state sync.
-  The headline v3 TODO L16 (rewrite the Agentera CLI core in TS for
-  Bun/npm/single-binary) only resolves when a subsequent planera cycle
-  completes the v3 cutover tag/publish, which is out of scope here.
+  Close TODO L16 ("Rewrite the supported Agentera CLI core in TypeScript for
+  Bun/npm/single-binary distribution, gated by contract-first parity with the
+  current Python `agentera` CLI") by sequencing the remaining cutover work on
+  `feat/v3` after the D56 parity-impl track is complete. The D56 plan
+  (`.agentera/archive/plan-2026-06-04-d56-parity-closeout.yaml`) proved
+  contract-first parity for the six v3-remaining surface families
+  (artifact_validation, compaction, verify_eval, doctor_upgrade_safety,
+  usage_stats_consent, runtime_adapter_hooks) via `npmParityMatrix.test.ts`
+  against a pinned Python oracle — vitest 85/85 files, 812/812 tests green,
+  typecheck clean, build clean, capability-contract validate pass. This plan
+  covers the cutover delta between "parity proven" and "v3 published":
+  Bun/npm/single-binary packaging (TODO L17), TS monolith hotspot split
+  (TODO L22), Decision 58 single-name protocol boundary enforcement
+  (TODO L20), v1 legacy cruft removal (TODO L21), v2 state handoff manifest
+  (TODO L24 → both), v2/v3 coexistence detection (TODO L25 → both), the v3
+  cursor agent surface regression fix (open `fix:3.0.0` item), audience-
+  namespace CLI migration phase 3 (removal of deprecated top-level
+  parsers hej/describe/gate per `references/cli/audience-namespace-cli-
+  migration.yaml`), CHANGELOG 3.0.0 promotion, README/UPGRADE.md
+  finalization, the v3 cutover tag and npm `@next` → `@latest` graduation,
+  and the final state sync that folds TODO L16 (and L17/L20/L21/L22/L24/
+  L25/audience-namespace-phase-3) into `## ✓ Resolved`. Per Decision 56's
+  `feeds_into`, the v3 cutover itself is this plan; L16 only resolves when
+  the cutover tag/publish lands.
 
 why: >-
-  Decision 56 was opened to gate the v3 Python-to-TS cutover on
-  contract-first parity: the npm `@next` CLI must match the Python
-  stable surface well enough that the published `npx -y agentera@next`
-  install is functionally equivalent to the `uvx --from
-  git+https://github.com/jgabor/agentera agentera` Python invocation
-  the maintainer seam still uses on `main`. The CLI JSON contract
-  parity fixtures froze the prime/state/check/report/upgrade envelopes
-  in two prior plans (per TODO.md resolved ledger), but the remaining
-  six surface families (artifact validation, compaction, doctor/upgrade
-  safety, verify, usage/stats consent, runtime adapter hooks) have not
-  yet been ported or pinned. Without this plan, Decision 56 stays open,
-  the npm `@next` install cannot be marked v3-ready, and the v3
-  cutover cannot land. Per the planera compact startup contract's
-  `critic_issues` obligation, this plan was adversarially reviewed and
-  four issues (oracle pinning policy, envelope normalization flake,
-  drift direction tracking, npm version-divergence gate) were
-  identified and addressed in `revised`; the plan is ready for
-  pre-write self-audit and write.
+  Decision 56 (2026-05-17) chose a contract-first TypeScript/Bun rewrite of
+  the Agentera CLI core as the 3.0 direction. The Python implementation
+  remains the behavior oracle until the TypeScript CLI preserves the
+  supported command JSON output shapes, exit behavior, and runtime
+  semantics. The D56 parity-impl track established the contract-first
+  parity gate: `npmParityMatrix.test.ts` reports all six v3-remaining
+  surface families `equal` (or `intentional_version_break` for explicitly
+  marked rows), with a commit-pinned Python oracle and a `rebase_oracle.sh`
+  policy. The cutover delta — packaging, monolith split, single-name
+  protocol boundary, v1 cruft removal, audience-namespace phase 3, handoff
+  manifest, coexistence detection, cursor agent surface fix, docs/CHANGELOG
+  promotion, and the v3 tag/publish — is the remaining distance between
+  "parity proven" and "L16 closed". Without this plan, the npm `@next`
+  install remains parity-proven but not v3-ready, the cutover cannot
+  land, and the maintainer seam (`uvx --from
+  git+https://github.com/jgabor/agentera agentera` on `main`) cannot be
+  retired. Per the planera compact startup contract, this plan is the
+  single sequenced completion track for L16; L17, L20, L21, L22, L24, L25,
+  and the audience-namespace phase 3 are scoped sub-tasks with explicit
+  verification gates.
 
 constraints: >-
-  Land on `feat/v3` only; the implementation commit goes on
-  `feat/d56-parity-closeout` (a feature branch off `feat/v3`),
-  following the D65 `feat/d65-capability-ts-surface` pattern. No
-  `main`-branch backport is required because the v2 Python CLI on
-  `main` is the parity reference, not the port target. Per AGENTS.md
-  "Agentera commits", the implementation commit must fold the TODO.md
-  L18+L19 entries into `## ✓ Resolved`, include `.agentera/plan.yaml`
-  status flip and the corresponding `.agentera/progress.yaml` cycle,
-  and must not generate a separate bookkeeping commit. CHANGELOG fold
-  deferred to release per AGENTS.md. The Python oracle is pinned by
-  commit (not tag) with a `rebase_oracle.sh` script that documents
-  the rebase policy; the parity matrix MUST NOT auto-update the
-  Python side from TS. The envelope-versioning scheme (D58 single-
-  name boundary) is preserved: if a TS implementation intentionally
-  diverges from Python, the envelope MUST carry an explicit
-  `version_break: true` field and a `drift_direction` classification;
-  the parity matrix's `npmParityMatrix.test.ts` will classify the
-  break as `intentional_version_break` and the suite stays green for
-  that row. Per Decision 56's `feeds_into`, this plan closes L18 and
-  L19 but the cutover itself is a separate planera cycle; the
-  headline TODO L16 remains open until that cycle lands. The npm
-  `@next` version divergence (TODO L23) is a known unfixed
-  pre-existing condition that does not block this plan but T8 final
-  state sync MUST re-run the parity matrix after any npm version
-  bump and report degraded status if the matrix is invalidated. The
-  plan is contract-first: no command-shape redesigns, no new
-  top-level commands, no parallel surfaces. The `npx -y
-  agentera@next` install remains self-contained; the per-capability
-  prose ships via compiled `dist/capabilities/*/instructions.js`
-  per the D65 plan.
+  Land on `feat/v3` only — no `main`-branch backport required for the
+  parity-impl artifacts because the v2 Python CLI is the parity
+  reference, not the port target. The `→ both` TODOs (L24 v2 handoff
+  manifest, L25 v2/v3 coexistence) require writer-on-main and
+  reader-on-v3 per their branch directives: implement the manifest
+  format schema and reader on `feat/v3` first (so v3 has a known
+  contract), then backport the writer to `main` (Python stable) that
+  produces the same shape; for L25, implement the detection probe and
+  warning on `main` first (v2 side detects v3), then add a symmetric v3
+  doctor probe that detects v2 stable and warns. Per AGENTS.md
+  "Agentera commits", the implementation commit per task folds the
+  relevant TODO fold, `.agentera/plan.yaml` status update (only on the
+  final commit for this plan), and `.agentera/progress.yaml` cycle into
+  the same commit — no separate bookkeeping commits. CHANGELOG fold
+  deferred to release per AGENTS.md; the release commit for 3.0.0 cuts
+  the changelog entry as a final-touches commit folded with the v3
+  tag/publish (T10). The Python oracle commit-pin from D56 T1's
+  `parity-remaining-families.json` remains the parity reference; this
+  plan does not auto-update the Python side from TS (the parity matrix
+  exposes Python bugs but does not auto-fix them). The npm `@next`
+  version-divergence gate from the resolved L23 release-metadata commit
+  continues to enforce that `version`, `suiteVersion`, `gitRef`, and
+  `references/cli/update-channels.yaml` `offline_defaults.development`
+  match the registry.json `skills[0].version` authoritative source of
+  truth; the T10 cutover publish bumps all four surfaces in lockstep.
+  Decision 56's contract-first rule remains: no command-shape redesigns,
+  no new top-level commands beyond the audience-namespace surface, no
+  parallel surfaces. The Decision 45 slash-route alias policy
+  (`/agentera <capability>`) and Decision 59 prime-context seam
+  (`prime --context <capability> --format json`) are unchanged. The D58
+  single-name protocol boundary (TODO L20) is enforced as a T3 cleanup
+  pass before the v3 cutover tag/publish; the policy is documented in
+  `references/cli/vocabulary.md` and validated by the contract schema.
+  Per `references/cli/audience-namespace-cli-migration.yaml` phase 3,
+  the deprecated top-level parsers (`hej`, `describe`, `gate`, plus the
+  routine-state tops) are removed from the public parser help after one
+  minor alias release — T8 lands phase 3 in lockstep with the v3
+  cutover. The TS monolith hotspot split (TODO L22, 8 files > 1000
+  lines) is a T2 prerequisite because the v3 cutover publish must not
+  ship a single-file prime/doctor/validate/analytics surface; the lint
+  gate regression that fails when a source file exceeds 1000 lines is
+  wired in T2. The v1 legacy cruft removal (TODO L21, Tier C
+  documentation inventory) is a T4 cleanup pass after T2 makes the
+  file-level cleanup tractable. The npmParityMatrix final-state-sync
+  gate runs after every T-bump; the matrix must remain green
+  (`equal`/`intentional_version_break`) at every milestone. The
+  `npx -y agentera@next` install remains self-contained; the bundle
+  data flow (`packages/cli/bundle/` + `copy-bundle.mjs` at `prepack`)
+  is preserved unchanged. The implementation commits land on
+  `feat/v3-cutover` (a feature branch off `feat/v3`, following the
+  D56 `feat/d56-parity-closeout` pattern), then fast-forward
+  `feat/v3`. T10's v3 cutover tag/publish promotes `feat/v3` HEAD to
+  `v3.0.0` and the npm `@next` tag to `@latest`; the publish commit
+  is the only commit in this plan that may touch the npm publish
+  channel state.
 
 scope:
   included:
-    - "T1: Author `packages/cli/test/cli/fixtures/oracle/parity-remaining-families.json` pinning the Python oracle for the six remaining CLI surface families (artifact-validation, compaction, verify-eval, doctor/upgrade-safety, usage-stats-consent, runtime-adapter-hooks); commit-pin the Python source, document the rebase policy in `rebase_oracle.sh`; add a `normalizeEnvelope()` helper to the parity matrix; add `gapRegistry` entries for new gaps; add `drift_direction` classification to every parity-matrix row"
-    - "T2: Port artifact-validation CLI surface to TS — the 7 validate subcommands (capability, capability-contract, cross-capability, lifecycle-adapters, app-home-contract, vocabularyAuthority, selfAudit); behavior must match the Python oracle byte-for-byte (or intentionally version-break with an envelope-version bump); update or add `packages/cli/src/cli/commands/validate.ts` to host the 7 surfaces; add a `validateParity.test.ts` per surface; cross-capability validate is already partially ported; verify all 7 are parity-green"
-    - "T3: Port compaction CLI surface to TS — `check compact` apply + dry-run + retention caps (10/40/50 from hooks/common); bound by the existing `yaml.YAMLError` error-classification path; size-bounded corpus reads for the intermediate file; archive preservation on compact; live progress.yaml pinned at 10/40/50"
-    - "T4: Port doctor/upgrade safety rails to TS — smoke checks (`doctor --smoke`), repair-needed/manual_review_needed lifecycle transitions, next-major doctor for the npm channel; per-channel `next_major` rendering matches Python; lifecycle metadata carries the canonical Decision 54 vocabulary (up_to_date, outdated, repair_needed, manual_review_needed, ready_to_apply, applied, no_changes_needed); user-facing repair wording matches the plain-language template"
-    - "T5: Port verify gates (`check verify eval`) to TS — the `eval` family is already on npm; this task ports the safety wrappers and parity pins around it; retired smoke family messaging for npm distribution; bounded offline smoke without live model calls by default; verify regression tests for the npm @next distribution boundary"
-    - "T6: Port usage/stats consent semantics to TS — `stats` + `stats refresh --dry-run` + `stats refresh --consent local-history`; no top-level `agentera corpus`; explicit consent enforcement; size-bounded corpus reads; preserved `agentera usage` compatibility; the v1 `agentera stats` namespace owns this surface"
-    - "T7: Port runtime adapter hooks to TS — OpenCode/Codex/Cursor/Copilot hook surface coverage (event, shell.env, chat.message, tool.execute.before/after, experimental.session.compacting); per-runtime `subagent_dispatch` parity; descriptor bodies and trust hashes parity with the Python side; PLUGIN_ROOT-safe Codex apply_patch hook config; copied user-hook trust hashes parity; the OpenCode plugin descriptor bootstrap parity"
-    - "T8: Final state sync — fold TODO L18 (test: Decision 56 parity) and TODO L19 (test: Port artifact validation, etc.) to `## ✓ Resolved` per AGENTS.md; verify the D65 plan archive is present at `.agentera/archive/plan-2026-06-03-d65-capability-ts-surface.yaml` (no-op verification per the D65 plan design); flip `.agentera/plan.yaml` to `complete`; archive this plan to `.agentera/archive/plan-2026-06-04-d56-parity-closeout.yaml`; append a `.agentera/progress.yaml` cycle (no `commit` field, post-D66 shape); run all six gates: (1) `pnpm -C packages/cli test` full vitest green, (2) `pnpm -C packages/cli run typecheck` zero errors, (3) `pnpm -C packages/cli build` exit 0, (4) `node packages/cli/dist/bin/agentera.js check validate capability-contract --format json` pass, (5) `node packages/cli/dist/bin/agentera.js check validate capability <name> --format json` for each of the 12 capabilities pass, (6) `npxParityMatrix.test.ts` reports all v3-remaining families green against the pinned Python oracle; npm `@next` version-divergence re-run after any version bump; CHANGELOG fold deferred to release per AGENTS.md"
+    - "T1: Bun/npm/single-binary packaging design and ship (TODO L17) — author `docs/packaging/v3-packaging.md` covering single-binary delivery via Bun's `--compile` target, npm package layout (`packages/cli/dist/bin/agentera.js` + `packages/cli/bundle/`), app-home migration from Python-managed installs (TS-side `isNpxBundle` already in place; add `appModel.ts` and `doctor.ts` `nextMajorDoctor` parity for the npm `latest` channel), preserved direct-helper compatibility boundaries (`scripts/agentera` shim seam remains on `main` until v2 retirement), a `prepack` integration test that verifies `npm run bundle:data` + `npm pack` produce a self-contained tarball with `dist/bin/agentera.js` + `bundle/` + the `.agentera-npx-bundle.json` sentinel, and a `single-binary.sh` script that builds a Bun-compiled single-binary for the npm `@next` channel. Acceptance: `npx -y agentera@next check validate capability-contract --format json` runs from the npm tarball with no repo checkout and no `AGENTERA_HOME`; `bun build --compile dist/bin/agentera.js --outfile dist/agentera-single-binary` produces a self-contained binary whose `agentera --version` matches the npm `@next` version; the parity matrix is re-run after the package build and reports green."
+    - "T2: Split the 8 TS monolith hotspots (TODO L22) — `capabilityContext.ts` (2542), `startupAnalysis.ts` (2047), `extractCorpus.ts` (1828), `doctor.ts` (1412), `state.ts` (1178), `codex.ts` (1177), `compaction.ts` (1037), `validateArtifact.ts` (912). Split each by state family or responsibility (e.g. `capabilityContext.ts` → `capabilityContext/{prime,hej,visionera,resonera,inspirera,planera,realisera,optimera,inspektera,dokumentera,profilera,visualisera,orkestrera}.ts`; `state.ts` → `state/{plan,progress,health,todo,decisions,docs,objective,experiments}.ts`; etc.). Add a regression in `packages/cli/test/cli/monolithLint.test.ts` that fails the lint gate when any `packages/cli/src/**/*.ts` file exceeds 1000 lines, with a one-line exception comment for tests and a CI-friendly failure message naming the file and line count. Acceptance: all 8 files are ≤1000 lines; the new lint regression is green on the post-split tree; the existing 812 vitest stay green; typecheck clean; build clean; per V5 the proportionality target is one pass + one fail per split file (8 × 2 = 16 cases)."
+    - "T3: Enforce Decision 58's single-name protocol boundary (TODO L20) — audit every protocol surface for backwards-compatible, deprecated, parallel, display-only, or storage/protocol split names; remove or migrate each to the canonical name. Surfaces in scope: artifact canonical names (`PROGRESS.md` → `progress.yaml` if not already; `PLAN.md` → `plan.yaml`; etc.), concept names (the `hej` capability canonical rename per Decision 59's `prime` consolidation), schema fields (`instruction_file` → `instruction_module` per D65; `version` vs `suiteVersion` vs `gitRef` per the release-metadata gate), metadata fields, runtime adapter surfaces, and protocol identities. The TS side already enforces the D65 single-name form (D58 follow-up per L20). Add a `single-name-protocol.test.ts` that scans all YAML/TS surfaces for forbidden legacy substrings (`PROGRESS.md`, `PLAN.md`, `DECISIONS.md` in storage/protocol paths; `instruction_file`; pre-D58 vocabulary tokens) and fails if any are present. Acceptance: zero legacy substrings in storage/protocol paths; the new test is green; the published `npx -y agentera@next` install rejects legacy vocabulary; the vocabulary authority doc `references/cli/vocabulary.md` is the single source of truth."
+    - "T4: Remove v1 legacy cruft (TODO L21, Tier C `references/meta/documentation-inventory.md`) — delete obsolete migration paths (`migrateArtifactsV1ToV2.ts` is already a no-op pass per D66; verify the legacy v1 fixture assumptions in `tests/fixtures/v1/` are not referenced by any test), stale v1 runtime bridge behavior (verify `migrateArtifactsV1ToV2.ts` and `migrateArtifactsV2ToV3.ts` produce the same shape), v1 skill bundle/suite wording in `skills/agentera/SKILL.md` and the per-capability prose, legacy fixture assumptions, and compatibility-only docs/tests. The v1 contract validator is already in `validate.ts`; T4 removes any remaining v1 references. Acceptance: `rg -e 'v1' --type ts --type md packages/cli/src/` reports zero matches in non-historical paths; the v1 contract validator remains as a defensive gate; per V5 the proportionality target is one pass + one fail per cruft class (migration paths + bridge + wording + fixtures + docs/tests = 5 × 2 = 10 cases)."
+    - "T5: Implement v2 state manifest for v3 consumption (TODO L24 → both) — author `references/cli/v3-handoff-manifest.yaml` defining the manifest format schema (v2 install/upgrade writes `~/.local/share/agentera/v3-handoff.json` with installed v2 version, app home path, user data inventory — `benchmarks/`, `intermediate/`, `sessions/`, `history/`, `corpus/`, profile files — and runtime adapters in use); implement the v3 reader in `packages/cli/src/upgrade/v3HandoffManifest.ts` (read the manifest in <100ms during v3 migration preflight instead of scanning the whole app home); ship the reader on `feat/v3` first. Per the `→ both` branch directive, backport the v2 writer to `main` (Python stable) that produces the same shape — the backport is a separate `feat/v3-rewrite-completion-both` branch off `main` after T5's v3 reader lands. The `main`-branch backport is verified by the v3 reader reading the writer's output shape (round-trip parity test, not pytest). Acceptance: v3 reader is in place; `node packages/cli/dist/bin/agentera.js upgrade --dry-run` on a fixture v2 home with `v3-handoff.json` reads the manifest in <100ms (asserted by a vitest); the manifest schema is versioned and discoverable; the v2 writer backport commit lands on `main` per the both-branch sequencing."
+    - "T6: Implement v2/v3 coexistence detection (TODO L25 → both) — add the v2-side detection probe on `main` first (v2 `scripts/agentera` doctor detects npm `@next` install by probing `~/.npm/_npx/<hash>/node_modules/agentera/package.json` cache and `npm ls -g agentera` when Node is available) and warns \"v3 detected alongside v2; pick one line\" with three user-facing choices: complete v3 migration, uninstall v3, stay on v2 explicitly. Per the `→ both` branch directive, add the symmetric v3 doctor probe on `feat/v3` (v3 `setup/doctor.ts` detects v2 stable and warns). The v2-side probe lands on `main` after T11 (this plan's final state sync) per the both-branch sequencing; the `main`-branch backport is verified by the v3 probe reading the v2 probe's output shape (round-trip parity test, not pytest). Acceptance: a v2 install alongside v3 npm install shows the coexistence warning (verified on `main`); a v3 install alongside v2 install shows the symmetric warning (verified on `feat/v3`); the v3 doctor probe regression is in `packages/cli/test/cli/coexistenceProbe.test.ts` (on `feat/v3`)."
+    - "T7: Fix the v3 cursor agent runtime surface regression (open `fix:3.0.0`) — the Python `agentera upgrade` regresses the 12 `.cursor/agents/*.md` files from the D65 form (`Run agentera prime --context <name> --format json`) back to the pre-D65 form (`Read ${AGENTERA_HOME}/app/skills/agentera/capabilities/<name>/instructions.md`). The fix: the v3 TS upgrade orchestrator (`packages/cli/src/upgrade/runtimeMigration.ts`) must own the in-tree `.cursor/agents/` directory on a v3 project (probe for the in-tree `packages/cli/src/capabilities/<name>/instructions.ts` modules as the v3 surface signal); on a v3 project, the Python upgrade orchestrator must skip the in-tree `.cursor/agents/` directory. Add a regression `packages/cli/test/upgrade/cursorAgentSurface.test.ts` that asserts the v3 cursor agent body uses the `Run agentera prime --context <name> --format json` form and rejects the legacy `Read .../capabilities/<name>/instructions.md` substring. Acceptance: the regression is green on `feat/v3`; running the v3 upgrade orchestrator on a v3 fixture produces the D65 form; the Python-side skip-signal is documented in `references/cli/upgrade-repair-wording.md` and backported to `main` per the both-branch pattern."
+    - "T8: Land audience-namespace CLI migration phase 3 — remove the deprecated top-level parsers from the public parser help per `references/cli/audience-namespace-cli-migration.yaml` phase_3 actions. The TS side already emits stderr deprecation for `hej`, `describe`, `gate`, and the routine-state tops (Decision 45 alias policy); phase 3 removes the deprecated top-level parser entries from the help output and from the dispatch switch. Surfaces in scope: `hej` (already an alias for `prime`), `describe` (alias for `schema`), `gate` (alias for `check compact`), the routine-state tops (`plan`, `progress`, `health`, `todo`, `decisions`, `docs`, `objective`, `experiments` — all already aliases for `state <name>` per the dispatch), `query` (alias for `state query`), `compact` (alias for `check compact`), `verify` (alias for `check verify`), `stats` (alias for `report`), `lint` (alias for `check lint`), `validate` (alias for `check validate`). Acceptance: `agentera --help` lists only the canonical ~18 top-level commands (per `command_tree_target.top_level_count`); the deprecated aliases return a `class: removed_after_cutover` envelope (not a stderr deprecation); the contract schema `references/cli/audience-namespace-cli-migration.yaml` `migration_phases.phase_3` is satisfied; the parity matrix is re-run and reports green."
+    - "T9: Promote CHANGELOG 3.0.0 and finalize README/UPGRADE.md for the v3 cutover — author the `## [3.0.0] · 2026-06-XX` section with `### Key highlights`, `### Added`, `### Changed`, `### Removed`, `### Fixed` per AGENTS.md `Changelog` rules. Surfaces in scope: 3.0.0 release title, the six D56 surface families (artifact validation, compaction, doctor/upgrade safety, verify, usage/stats consent, runtime adapter hooks) as Added (TS port of stable Python semantics), Decision 58 single-name protocol boundary as Changed, the deprecated top-level parsers as Removed, and the v3 cursor agent surface fix as Fixed. Update `README.md` with the v3 install instructions (`npx -y agentera@latest` as primary; `npx -y agentera@next` as preview; `uvx --from git+https://github.com/jgabor/agentera agentera` marked as v2 stable only). Update `UPGRADE.md` with the v2→v3 migration path, the `v3-handoff.json` reader, the coexistence detection surface, and the v3.0.0 commit pin. Acceptance: the CHANGELOG 3.0.0 section is reviewable from `CHANGELOG.md`; the README and UPGRADE.md are consistent with the cutover; the CHANGELOG fold is the final touches commit before T10 per AGENTS.md `Changelog` rules."
+    - "T10: v3 cutover tag/publish — graduate npm `@next` to `@latest`, tag `v3.0.0`, publish to npm with the registry version, the four-surface release-metadata contract (`packages/cli/package.json` `version`, `agentera.suiteVersion`, `agentera.gitRef`, `references/cli/update-channels.yaml` `offline_defaults.development`) all equal to `3.0.0` and matching the `registry.json` `skills[0].version` authoritative source. The cutover sequence is: (a) `git checkout feat/v3`, (b) `pnpm -C packages/cli build && node packages/cli/scripts/copy-bundle.mjs`, (c) `npm version 3.0.0 --no-git-tag-version` to bump package.json, (d) bump the four release-metadata surfaces in lockstep, (e) `git commit -m 'release: 3.0.0'` folding the CHANGELOG 3.0.0 entry, the version bumps, the `.opencode/package.json` lockstep, and the T9 docs promotion per AGENTS.md, (f) `git tag v3.0.0 <commit>`, (g) `git push origin feat/v3 --follow-tags`, (h) `cd packages/cli && npm publish --tag latest` (graduating `@next` to `@latest`), (i) verify `npx -y agentera@latest check validate capability-contract --format json` reports green. Acceptance: the npm `@latest` install reports `agentera --version` 3.0.0; the parity matrix is re-run after the version bump and reports green; the `feat/v3` HEAD has the v3.0.0 tag; the cutover publish commit is folded with the CHANGELOG entry per AGENTS.md; `references/cli/update-channels.yaml` `offline_defaults.latest` is bumped to 3.0.0 alongside the `development` default."
+    - "T11: Final state sync — fold TODO L16 (Rewrite the supported Agentera CLI core in TypeScript) and the resolved sub-task entries (L17 Bun/npm packaging, L20 single-name protocol boundary, L21 v1 legacy cruft, L22 TS monolith hotspot split, L24 v2 handoff manifest, L25 v2/v3 coexistence, the audience-namespace phase 3 completion, the cursor agent surface fix) to `## ✓ Resolved` using the standard ledger form. Flip `.agentera/plan.yaml` status from `active` to `complete`. Append a `.agentera/progress.yaml` cycle whose scope is `v2→v3 TS rewrite completion` (per Decision 66, the cycle omits the `commit` field). Archive this plan to `.agentera/archive/plan-2026-06-04-v2-v3-ts-rewrite-completion.yaml`. Verify the D56 plan archive remains at `.agentera/archive/plan-2026-06-04-d56-parity-closeout.yaml` (no-op verification). Run all six verification gates: (1) `pnpm -C packages/cli test` full vitest green; (2) `pnpm -C packages/cli run typecheck` zero errors; (3) `pnpm -C packages/cli build` exit 0; (4) `node packages/cli/dist/bin/agentera.js check validate capability-contract --format json` pass; (5) `node packages/cli/dist/bin/agentera.js check validate capability <name> --format json` for each of the 12 capabilities pass; (6) `npmParityMatrix.test.ts` reports all six D56 surface families `equal` (or `intentional_version_break` for rows explicitly marked) and zero `ts_smaller` or `python_smaller` rows; the lint-monolith regression (T2) reports zero files >1000 lines; the single-name protocol regression (T3) reports zero legacy substrings; the v3-handoff manifest regression (T5) reports a <100ms read on the fixture; the v3 cursor agent surface regression (T7) reports the D65 form. Acceptance: TODO L16 is the only v3 TODO that moves to `## ✓ Resolved`; the cutover publish commit is folded with the L16 fold, the plan.yaml status flip, the progress cycle, and the six gate runs per AGENTS.md `Agentera commits`; no separate bookkeeping commit is created; the headline TODO L16 closes per Decision 56's `feeds_into`."
+
   excluded:
-    - "D58 single-name protocol boundary cleanup (TODO L20) — separate planera cycle"
-    - "v1 legacy cruft removal (TODO L21) — separate planera cycle"
-    - "TS monolith hotspot split (TODO L22: 8 files > 1000 lines) — separate planera cycle"
-    - "npm `@next` version alignment (TODO L23) — separate planera cycle; this plan's T8 re-runs the parity matrix after any version bump and reports degraded status if invalidated, but does not fix the version divergence"
-    - "Bun/npm packaging design (TODO L17) — separate planera cycle"
-    - "v2 state manifest for v3 consumption (TODO L24 → both) — separate planera cycle"
-    - "v2/v3 coexistence detection (TODO L25 → both) — separate planera cycle"
-    - "The v3 cutover tag/publish itself — the headline TODO L16 only resolves when a subsequent planera cycle completes the cutover; this plan is the parity-impl track, not the cutover"
-    - "Updating the Python CLI from TS — forbidden by the plan; the parity matrix exposes Python bugs but does not auto-fix them"
-    - "The published `npx skills` ecosystem surface (SKILL.md only) — D65 already proved SKILL.md is functionally equivalent; this plan does not touch SKILL.md"
-    - "Backport to `main` — TS-only change on `feat/v3`; the v2 Python CLI is the parity reference, not the port target"
+    - "Bumping the stable Python 2.x channel — TODO L17's design preserves `uvx --from git+https://github.com/jgabor/agentera agentera` as the v2 stable path until explicit v2 retirement; this plan does not retire v2 stable"
+    - "Auto-fixing Python-side bugs surfaced by the parity matrix — the matrix exposes Python bugs but does not auto-fix them (per D56 T1's `drift_direction` policy)"
+    - "Adding new top-level commands or parallel surfaces — Decision 56 contract-first forbids it"
+    - "Adding Decision 43 slash aliases as CLI commands — forbidden by Decision 43"
+    - "The cutover commit message wording or any release-comms beyond the CHANGELOG entry — release-comms is the maintainer's job, not realisera's"
+    - "The `npx skills` ecosystem surface (SKILL.md only) — D65 already proved SKILL.md is functionally equivalent; this plan does not touch SKILL.md beyond the v3 install instructions"
+    - "v2 stable's continued development — the v2 line is feature-frozen for the v3 cutover per `references/cli/update-channels.yaml`; this plan does not add features to v2"
+    - "Bun runtime as a v3 entry point — Bun is the build tool (`bun build --compile`); the v3 entry point is `npx -y agentera@latest` and the compiled single-binary; the Bun runtime does not replace Node"
+    - "Per-capability prose rewrites — D65 already relocated the prose; this plan does not edit per-capability `instructions.ts` modules"
+    - "Decision 66's post-D66 progress.yaml shape change — already in place; this plan does not reshape the progress artifact further"
+    - "The `release: 2.x` Python stable mirror — this plan's cutover is the v3 npm `@latest` graduation; the v2 mirror is the maintainer's separate concern"
+    - "Retiring the `scripts/agentera` shim seam on `main` — the v2 maintainer seam remains on `main` until v2 retirement; the cutover is the v3 npm `@latest` graduation, not the v2 retirement"
+    - "Backporting T1/T2/T3/T4/T8/T9 to `main` — these are TS-only v3 changes; `main` is v2 Python stable, and Decision 56 forbids v2 from being updated from TS"
+    - "Pytest changes on `main` for T5/T6 — the v2 writer/probe lands on `main` after this plan's T11 per the both-branch sequencing; the v2-side test cannot run in this worktree's vitest and is verified via round-trip parity (v3 reader reads v2 writer output)"
+
   deferred:
-    - "Per-surface exception registry (any future surface that intentionally version-breaks) — schema is in scope but no entries are expected to land in this plan"
-    - "Oracle rebase automation beyond `rebase_oracle.sh` — a separate chore"
-    - "Decision 56 closure beyond L18+L19 fold — the cutover is a separate planera cycle; the feeds_into of L18 explicitly says Decision 56 remains open until the cutover lands"
+    - "v2 retirement (the maintainer seam `uvx --from git+...` stays on `main` until v2.8.0 or later) — a separate planera cycle"
+    - "D58 single-name boundary follow-up: any vocabulary token or protocol identifier that is discovered after T3 to still carry a legacy alias — a follow-up chore"
+    - "The npm `@next` channel after the T10 graduation — the channel is preserved but the `latest` channel is the v3 distribution target; the `@next` channel is reused for 3.x pre-release tags (e.g. 3.1.0-dev.1)"
+    - "Per-runtime `subagent_dispatch` parity beyond D56 T7's coverage — D56 T7 already proves the four-runtime parity; further runtime additions are a separate chore"
+    - "Oracle rebase automation beyond `rebase_oracle.sh` — already deferred by D56 T1"
+    - "v2.8.0 Python stable mirror — the v2 line is feature-frozen; v2.8.0 will be a v2 bug-fix-only release, not in this plan's scope"
 
 design: >-
-  The plan is structured as a contract-first parity port: T1 establishes
-  the oracle (the Python CLI commit-pin + the JSON contract fixture +
-  the `normalizeEnvelope()` helper + the `drift_direction` classification),
-  T2-T7 port each of the six remaining surface families in turn, and T8
-  runs the final state sync with all six gates. The Python oracle is
-  pinned by commit (not tag) to balance stability with rebase; a
-  `rebase_oracle.sh` script documents the rebase policy. Every
-  `npmParityMatrix.test.ts` row carries a `drift_direction` field
-  (`ts_smaller|python_smaller|equal|intentional_version_break`) so
-  parity failures are classified rather than generic-failed. Envelope
-  normalization is centralized in `normalizeEnvelope()` and zeroes
-  timestamps, hashes, and platform-specific path separators before
-  comparison. The npm `@next` version-divergence (TODO L23) is a known
-  pre-existing condition; T8 re-runs the matrix after any version
-  bump and reports degraded status if invalidated. The implementation
-  commit folds the TODO.md L18+L19 fold, the plan.yaml status flip,
-  and the progress cycle into a single commit per AGENTS.md. The
-  Python side is never updated from TS.
+  The plan is sequenced to land the v3 cutover in dependency order:
+  T1 (Bun/npm/single-binary packaging) is the first blocker because the
+  v3 distribution target is a single-binary or npm `@latest` install;
+  T2 (TS monolith split) is the second blocker because the cutover
+  publish must not ship the 8-file >1000-line hotspot; T3 (D58
+  single-name boundary) and T4 (v1 legacy cruft) are cleanup passes
+  that run after T2 unblocks the file-level cleanup; T5 (v2 handoff
+  manifest) and T6 (v2/v3 coexistence) are `→ both` TODOs that ship
+  the v3 reader/probe on `feat/v3` first, with the v2 writer/probe
+  backported to `main` after T11; T7 (cursor agent surface regression)
+  is a single-file fix that runs in parallel; T8 (audience-namespace
+  phase 3) depends on T1 because the deprecated-parser removal is the
+  v3 cutover surface; T9 (CHANGELOG/README/UPGRADE.md promotion)
+  depends on T8 because the docs reflect the cutover surface; T10
+  (v3 tag/publish) depends on T9 and the four release-metadata
+  surfaces in lockstep; T11 (final state sync) depends on T10 and
+  folds the L16 TODO plus the resolved sub-tasks into `## ✓ Resolved`
+  per AGENTS.md.
 
-  T1: Author `packages/cli/test/cli/fixtures/oracle/parity-remaining-families.json`
-  with a `surface_family` enum (`artifact_validation`, `compaction`,
-  `verify_eval`, `doctor_upgrade_safety`, `usage_stats_consent`,
-  `runtime_adapter_hooks`), a `python_commit` pin (set to the current
-  `main` HEAD at the time T1 lands), a `normalizeEnvelope()` helper
-  spec (timestamp/hash/path normalization rules), and per-family
-  expected JSON shape. Author `rebase_oracle.sh` documenting the
-  rebase policy. Update `npmParityMatrix.test.ts` to add a
-  `normalizeEnvelope()` call, a `drift_direction` field on every row,
-  and the six new families. Add `gapRegistry` entries for any
-  Python-only surface that the TS side does not yet implement (these
-  become T2-T7 tasks; closure happens when the surface is ported).
+  The plan's T1 (Bun/npm/single-binary packaging) is the single
+  critical-path blocker for the v3 cutover: without the
+  single-binary build script and the npm tarball integration
+  test, T10's publish step cannot verify the distribution
+  boundary. T2 (TS monolith split) is the second critical-path
+  blocker because the v3 cutover publish must not ship a
+  single-file prime/doctor/validate surface. T3-T7 are
+  parallelizable cleanup passes; T8 depends on T1 because the
+  audience-namespace phase 3 removal is the v3 cutover
+  surface; T9 depends on T8 because the docs reflect the
+  cutover surface; T10 depends on T9 because the CHANGELOG
+  3.0.0 entry is the cutover commit's headline; T11 depends
+  on T10 because the L16 fold is the cutover publish commit's
+  AGENTS.md-mandated follow-up.
 
-  T2: Port the 7 validate subcommands to TS. The existing
-  `packages/cli/src/validate/{capability,appHomeContract,crossCapability,
-  lifecycleAdapters,selfAudit}.ts` already exist; verify all 7 are
-  parity-green and add missing tests where the Python oracle has
-  coverage. Update `validate.ts` to host the 7 subcommands. Add a
-  `validateParity.test.ts` per surface. Cross-capability validate is
-  already partially ported (per resolved-ledger TODO L83); verify
-  parity. The `vocabularyAuthority` validator is referenced in the
-  resolved ledger (TODO L47) but the file may be split into
-  `vocabularyAuthority.ts` or remain in `validate.ts`; T2 normalizes
-  the layout.
+  The implementation commits fold per AGENTS.md `Agentera
+  commits`: each T's commit includes the relevant TODO fold,
+  the plan.yaml status update (only on T11), the progress
+  cycle (only on T11), and the relevant test additions per
+  V5 proportionality. The `npmParityMatrix.test.ts` re-run
+  is a T1/T2/T8/T10 gate: the matrix must remain green at
+  every milestone. The Decision 56 contract-first rule is
+  preserved: no command-shape redesigns, no new top-level
+  commands beyond the audience-namespace surface, no
+  parallel surfaces. The Python oracle commit-pin from
+  D56 T1's `parity-remaining-families.json` remains the
+  parity reference; this plan does not auto-update the
+  Python side from TS.
 
-  T3: Port compaction CLI surface to TS. The TS side already has
-  `compact.ts` per the `packages/cli/src/cli/commands/` listing. Verify
-  parity with the Python `hooks/compaction.py` + `hooks/common.py` +
-  `scripts/yaml_mapping.py` shapes. Pin the 10/40/50 retention caps
-  with the `apply_retention_caps` shared helper. Add a `compact`
-  parity test against the Python oracle.
+  T1 design: author `docs/packaging/v3-packaging.md` covering
+  (a) Bun-compiled single-binary via `bun build --compile
+  dist/bin/agentera.js --outfile dist/agentera-single-binary`
+  (Bun >= 1.1.x; the binary is statically linked with the
+  Node-API shim), (b) npm package layout per
+  `packages/cli/package.json` `files: [dist, bundle]`, (c)
+  app-home migration: the v3 reader uses
+  `packages/cli/src/upgrade/v3HandoffManifest.ts` (T5) to
+  read `~/.local/share/agentera/v3-handoff.json`; the v2
+  writer is on `main` (T5 backport), (d) preserved
+  direct-helper compatibility: `scripts/agentera` shim
+  seam remains on `main` until v2 retirement, (e)
+  `prepack` integration test:
+  `packages/cli/test/packaging/prepack.test.ts` runs
+  `npm run bundle:data && npm pack` on a fixture tree
+  and asserts the tarball contains `dist/bin/agentera.js`,
+  `bundle/`, and the `.agentera-npx-bundle.json`
+  sentinel, (f) `single-binary.sh` script that builds
+  the Bun-compiled single-binary for the npm `@next`
+  channel.
 
-  T4: Port doctor/upgrade safety rails. The TS side has
-  `packages/cli/src/setup/doctor.ts` (1412 lines — part of TODO L22
-  monolith) and `packages/cli/src/upgrade/{doctor,nextMajorDoctor,
-  appModel,channels}.ts`. Verify the safety-rail transitions
-  (outdated → ready_to_apply → applied; repair_needed;
-  manual_review_needed) match the Python `scripts/agentera
-  upgrade/doctor.py` shapes. Pin the canonical Decision 54 vocabulary
-  in the lifecycle metadata. User-facing repair wording must match
-  the plain-language template in
-  `references/cli/upgrade-repair-wording.md` (or equivalent authority).
+  T2 design: split each of the 8 monolith files by state
+  family or responsibility. `capabilityContext.ts` →
+  `capabilityContext/{prime,hej,visionera,resonera,inspirera,planera,realisera,optimera,inspektera,dokumentera,profilera,visualisera,orkestrera}.ts`
+  plus a `capabilityContext/index.ts` barrel. `state.ts` →
+  `state/{plan,progress,health,todo,decisions,docs,objective,experiments}.ts`
+  plus a `state/index.ts` barrel. `doctor.ts` →
+  `setup/doctor/{npm,python,smoke,nextMajor,lifecycle}.ts`
+  plus a `setup/doctor/index.ts` barrel. `startupAnalysis.ts`
+  → `state/startupAnalysis/{plan,progress,health,todo,decisions,docs,objective,experiments,index}.ts`.
+  `extractCorpus.ts` →
+  `analytics/extractCorpus/{read,normalize,classify,write}.ts`.
+  `codex.ts` → `setup/codex/{plugin,setup,trust,applyPatch}.ts`.
+  `compaction.ts` → `hooks/compaction/{status,apply,dryRun,retention}.ts`.
+  `validateArtifact.ts` →
+  `hooks/validateArtifact/{schema,markdown,traversal,violations}.ts`.
+  Each split is ≤1000 lines; the barrel re-exports the
+  public API.
 
-  T5: Port verify gates. The `eval` family is already on npm
-  (`packages/cli/src/eval/evalSkills.ts`); this task ports the
-  safety wrappers (smoke family messaging for npm distribution,
-  bounded offline smoke without live model calls by default) and
-  the parity pins around it. The verify contract spec lives in
-  `agent-ready-state-contract.yaml`; pin the npm-side shapes.
+  T3 design: the D58 single-name protocol boundary is
+  enforced as a CI-friendly test
+  `packages/cli/test/cli/singleNameProtocol.test.ts`
+  that scans all YAML/TS surfaces for forbidden legacy
+  substrings. The forbidden substrings are derived from
+  the vocabulary authority doc
+  `references/cli/vocabulary.md` and the D58 follow-up
+  list. The TS side already enforces the D65 single-name
+  form (D58 follow-up per L20); T3 audits and removes
+  the remaining legacy substrings.
 
-  T6: Port usage/stats consent semantics. The TS side has
-  `packages/cli/src/analytics/usageStats.ts`. Verify the consent
-  flow matches the Python `agentera stats` semantics (no runtime-
-  history reads from plain `stats`; explicit `--consent local-history`
-  for extraction; bounded size-bounded corpus reads already partially
-  in place per resolved-ledger TODO L44). Pin the surface.
+  T4 design: remove v1 legacy cruft. Surfaces in scope:
+  `migrateArtifactsV1ToV2.ts` (verify it's a no-op pass
+  per D66), stale v1 runtime bridge behavior
+  (`migrateArtifactsV1ToV2.ts` + `migrateArtifactsV2ToV3.ts`
+  produce the same shape), v1 skill bundle/suite wording
+  in `skills/agentera/SKILL.md` and the per-capability
+  prose (verify D65 already removed it), legacy fixture
+  assumptions in `tests/fixtures/v1/`, and
+  compatibility-only docs/tests. The v1 contract
+  validator remains as a defensive gate.
 
-  T7: Port runtime adapter hooks. The TS side has
-  `packages/cli/src/registries/runtimeAdapterRegistry.ts` and
-  per-runtime setup files. Verify OpenCode/Codex/Cursor/Copilot
-  hook surface coverage matches the Python side per
-  `references/cli/runtime-adapters.md`. Per-runtime `subagent_dispatch`
-  parity. Descriptor bodies and trust hashes parity. PLUGIN_ROOT-safe
-  Codex apply_patch hook config parity. Copied user-hook trust hashes
-  parity. OpenCode plugin descriptor bootstrap parity.
+  T5 design: v2 state manifest for v3 consumption.
+  Schema: `references/cli/v3-handoff-manifest.yaml`
+  defines the manifest format. Reader:
+  `packages/cli/src/upgrade/v3HandoffManifest.ts`
+  reads `~/.local/share/agentera/v3-handoff.json`
+  during v3 migration preflight. Fields: v2 version,
+  app home path, user data inventory
+  (`benchmarks/`, `intermediate/`, `sessions/`,
+  `history/`, `corpus/`, profile files), runtime
+  adapters in use. The v2 writer is on `main`
+  (Python stable) and produces the same shape; the
+  backport is a separate `feat/v3-rewrite-completion-both`
+  branch off `main` after T5's v3 reader lands. The
+  round-trip parity test (v3 reader reads v2 writer
+  output) verifies the backport without pytest.
 
-  T8: Final state sync. Run all six gates:
-  (1) `pnpm -C packages/cli test` — full vitest suite green
-      (target: 692+ given the D65 plan landed 692/692 vitest green).
-  (2) `pnpm -C packages/cli run typecheck` — zero errors.
-  (3) `pnpm -C packages/cli build` — exit 0, `dist/bin/agentera.js`
-      present.
-  (4) `node packages/cli/dist/bin/agentera.js check validate
-      capability-contract --format json` — pass.
-  (5) `node packages/cli/dist/bin/agentera.js check validate
-      capability <name> --format json` for each of the 12 capabilities —
-      all pass.
-  (6) `npxParityMatrix.test.ts` reports all v3-remaining families green
-      against the pinned Python oracle; `drift_direction` is
-      `equal` for every non-version-break row; the npm `@next` version
-      pin is unchanged from T1.
+  T6 design: v2/v3 coexistence detection. v2-side probe
+  on `main` (Python stable): `scripts/agentera` doctor
+  probes `~/.npm/_npx/<hash>/node_modules/agentera/package.json`
+  cache and `npm ls -g agentera` (when Node is
+  available); warns "v3 detected alongside v2; pick
+  one line" with three user-facing choices: complete
+  v3 migration, uninstall v3, stay on v2 explicitly.
+  v3-side probe on `feat/v3`
+  (`packages/cli/src/setup/doctor.ts`): detects v2
+  stable and warns. The v2-side test lands on `main`
+  after T11; the v3-side test is in
+  `packages/cli/test/cli/coexistenceProbe.test.ts` on
+  `feat/v3`.
 
-  After all six gates pass, fold the TODO L18+L19 entries to
-  `## ✓ Resolved` using the standard ledger form, flip the plan
-  status, append the progress cycle, and land the implementation
-  commit. The archive path for this plan is
-  `.agentera/archive/plan-2026-06-04-d56-parity-closeout.yaml`.
+  T7 design: v3 cursor agent surface regression fix.
+  The v3 TS upgrade orchestrator
+  (`packages/cli/src/upgrade/runtimeMigration.ts`)
+  owns the in-tree `.cursor/agents/` directory on a
+  v3 project (probe for the in-tree
+  `packages/cli/src/capabilities/<name>/instructions.ts`
+  modules as the v3 surface signal); on a v3 project,
+  the Python upgrade orchestrator skips the in-tree
+  `.cursor/agents/` directory. Regression:
+  `packages/cli/test/upgrade/cursorAgentSurface.test.ts`
+  asserts the v3 cursor agent body uses
+  `Run agentera prime --context <name> --format json`
+  and rejects the legacy
+  `Read .../capabilities/<name>/instructions.md`
+  substring. The Python-side skip-signal is documented
+  in `references/cli/upgrade-repair-wording.md` and
+  backported to `main` per the both-branch pattern.
+
+  T8 design: audience-namespace CLI migration phase
+  3. The TS side already emits stderr deprecation
+  for `hej`, `describe`, `gate`, and the
+  routine-state tops (Decision 45 alias policy).
+  T8 removes the deprecated top-level parser entries
+  from the help output and from the dispatch switch.
+  Surfaces in scope: `hej` (alias for `prime`),
+  `describe` (alias for `schema`), `gate` (alias
+  for `check compact`), the routine-state tops
+  (`plan`, `progress`, `health`, `todo`, `decisions`,
+  `docs`, `objective`, `experiments` — all already
+  aliases for `state <name>` per the dispatch),
+  `query` (alias for `state query`), `compact`
+  (alias for `check compact`), `verify` (alias for
+  `check verify`), `stats` (alias for `report`),
+  `lint` (alias for `check lint`), `validate`
+  (alias for `check validate`). The deprecated
+  aliases return a `class: removed_after_cutover`
+  envelope (not a stderr deprecation); the parity
+  matrix is re-run and reports green.
+
+  T9 design: CHANGELOG 3.0.0 promotion. Author
+  the `## [3.0.0] · 2026-06-XX` section with
+  `### Key highlights`, `### Added`, `### Changed`,
+  `### Removed`, `### Fixed` per AGENTS.md
+  `Changelog` rules. Surfaces in scope: 3.0.0
+  release title, the six D56 surface families
+  (artifact validation, compaction, doctor/upgrade
+  safety, verify, usage/stats consent, runtime
+  adapter hooks) as Added (TS port of stable
+  Python semantics), Decision 58 single-name
+  protocol boundary as Changed, the deprecated
+  top-level parsers as Removed, and the v3 cursor
+  agent surface fix as Fixed. Update `README.md`
+  with the v3 install instructions
+  (`npx -y agentera@latest` as primary; `npx -y
+  agentera@next` as preview; `uvx --from
+  git+https://github.com/jgabor/agentera agentera`
+  marked as v2 stable only). Update `UPGRADE.md`
+  with the v2→v3 migration path, the
+  `v3-handoff.json` reader, the coexistence
+  detection surface, and the v3.0.0 commit pin.
+
+  T10 design: v3 cutover tag/publish. Sequence:
+  (a) `git checkout feat/v3`, (b) `pnpm -C
+  packages/cli build && node packages/cli/scripts/
+  copy-bundle.mjs`, (c) `npm version 3.0.0
+  --no-git-tag-version` to bump package.json, (d)
+  bump the four release-metadata surfaces in
+  lockstep (`packages/cli/package.json` `version`,
+  `agentera.suiteVersion`, `agentera.gitRef`,
+  `references/cli/update-channels.yaml`
+  `offline_defaults.development`), (e) `git commit
+  -m 'release: 3.0.0'` folding the CHANGELOG 3.0.0
+  entry, the version bumps, the `.opencode/package.json`
+  lockstep, and the T9 docs promotion per AGENTS.md,
+  (f) `git tag v3.0.0 <commit>`, (g) `git push
+  origin feat/v3 --follow-tags`, (h) `cd
+  packages/cli && npm publish --tag latest`
+  (graduating `@next` to `@latest`), (i) verify
+  `npx -y agentera@latest check validate
+  capability-contract --format json` reports green.
+
+  T11 design: final state sync. Fold TODO L16 and
+  the resolved sub-task entries to `## ✓ Resolved`
+  using the standard ledger form. Flip
+  `.agentera/plan.yaml` status from `active` to
+  `complete`. Append a `.agentera/progress.yaml`
+  cycle whose scope is `v2→v3 TS rewrite completion`
+  (per Decision 66, the cycle omits the `commit`
+  field). Archive this plan to
+  `.agentera/archive/plan-2026-06-04-v2-v3-ts-rewrite-completion.yaml`.
+  Verify the D56 plan archive remains at
+  `.agentera/archive/plan-2026-06-04-d56-parity-closeout.yaml`
+  (no-op verification). Run all six verification
+  gates: (1) `pnpm -C packages/cli test` full
+  vitest green; (2) `pnpm -C packages/cli run
+  typecheck` zero errors; (3) `pnpm -C packages/cli
+  build` exit 0; (4) `node packages/cli/dist/bin/
+  agentera.js check validate capability-contract
+  --format json` pass; (5) `node packages/cli/dist/
+  bin/agentera.js check validate capability <name>
+  --format json` for each of the 12 capabilities
+  pass; (6) `npmParityMatrix.test.ts` reports all
+  six D56 surface families `equal` (or
+  `intentional_version_break` for rows explicitly
+  marked) and zero `ts_smaller` or `python_smaller`
+  rows; the lint-monolith regression (T2) reports
+  zero files >1000 lines; the single-name protocol
+  regression (T3) reports zero legacy substrings;
+  the v3-handoff manifest regression (T5) reports
+  a <100ms read on the fixture; the v3 cursor agent
+  surface regression (T7) reports the D65 form.
 
 tasks:
   - number: 1
-    name: Expand the npm parity oracle with the v3-remaining CLI surface families
+    name: Bun/npm/single-binary packaging design and ship (TODO L17)
     depends_on: []
-    status: complete
+    status: pending
+    blocks:
+      - "8"
+      - "10"
     acceptance:
-      - "GIVEN feat/v3 base WHEN `packages/cli/test/cli/fixtures/oracle/parity-remaining-families.json` is authored THEN it enumerates the six v3-remaining surface families (`artifact_validation`, `compaction`, `verify_eval`, `doctor_upgrade_safety`, `usage_stats_consent`, `runtime_adapter_hooks`) with per-family `python_commit` pin (set to the current `main` HEAD), per-family expected JSON shape, and per-family forbidden-shape sentinel (a substring the TS side MUST NOT emit because the Python side does not)"
-      - "GIVEN the same fixture WHEN `rebase_oracle.sh` is authored THEN it documents the rebase policy (when to re-pin the Python commit, how to detect Python-side parity-impacting changes, and the rebase procedure) and is executable; the script's `--check` mode emits a `drift` warning when the pinned commit's tree differs from the current `main` HEAD in any file under `scripts/agentera` or `agentera/`"
-      - "GIVEN `packages/cli/test/cli/npmParityMatrix.test.ts` WHEN updated THEN a `normalizeEnvelope()` helper centralizes timestamp/hash/path normalization (timestamps to ISO date, hashes to `0x` + 8 hex, paths to forward-slash), the matrix is called once per family with the normalized output, and every row carries a `drift_direction: ts_smaller|python_smaller|equal|intentional_version_break` field; the test fails on `ts_smaller` or `python_smaller` unless the row's `version_break: true` flag is set, in which case it is classified as `intentional_version_break` and the suite stays green"
-      - "GIVEN the matrix WHEN `pnpm -C packages/cli test -- npmParityMatrix` runs THEN all rows report `equal` (or `intentional_version_break` for rows explicitly marked) and zero rows report `ts_smaller` or `python_smaller`; the test count for this file is +6 (one per new family)"
-      - "GIVEN the gap registry WHEN `packages/cli/test/upgrade/gapRegistry.ts` is updated THEN new `gapRegistry` entries are added for any Python-only surface that the TS side does not yet implement; each entry is `closed: true` once T2-T7 land and the surface is ported"
-      - "GIVEN the build WHEN `pnpm -C packages/cli build` runs THEN the new fixture and helper compile cleanly; the typecheck gate stays green; per V5 the test proportionality target is one pass + one fail per testable unit (six families × 2 = 12 cases in T1; this is the default; override only with explicit rationale)"
+      - "GIVEN `feat/v3` base WHEN `docs/packaging/v3-packaging.md` is authored THEN it covers (a) Bun-compiled single-binary via `bun build --compile dist/bin/agentera.js --outfile dist/agentera-single-binary` (Bun >= 1.1.x, statically linked with the Node-API shim), (b) npm package layout per `packages/cli/package.json` `files: [dist, bundle]`, (c) app-home migration: the v3 reader uses `packages/cli/src/upgrade/v3HandoffManifest.ts` (T5) to read `~/.local/share/agentera/v3-handoff.json`; the v2 writer is on `main` (T5 backport), (d) preserved direct-helper compatibility: `scripts/agentera` shim seam remains on `main` until v2 retirement, (e) `prepack` integration test coverage, (f) `single-binary.sh` script"
+      - "GIVEN the same commit WHEN `packages/cli/test/packaging/prepack.test.ts` is authored THEN it runs `npm run bundle:data && npm pack` on a fixture tree and asserts the tarball contains `dist/bin/agentera.js`, `bundle/`, and the `.agentera-npx-bundle.json` sentinel; the test is green on `feat/v3`"
+      - "GIVEN the build WHEN `single-binary.sh` is authored THEN it builds a Bun-compiled single-binary for the npm `@next` channel; the binary's `agentera --version` matches the npm `@next` version from `packages/cli/package.json`"
+      - "GIVEN the npm tarball WHEN `npx -y agentera@next check validate capability-contract --format json` runs from a fresh `npx` cache with no repo checkout and no `AGENTERA_HOME` THEN the validator passes; the parity matrix is re-run after the package build and reports green"
+      - "GIVEN the build WHEN `pnpm -C packages/cli test` runs THEN the new packaging tests are green; typecheck clean; build clean; per V5 the proportionality target is one pass + one fail per packaging surface (single-binary + npm-tarball + prepack = 3 × 2 = 6 cases)"
+
   - number: 2
-    name: Port artifact-validation CLI surface to TS
+    name: Split the 8 TS monolith hotspots (TODO L22)
     depends_on:
       - "1"
-    status: complete
+    status: pending
+    blocks:
+      - "10"
     acceptance:
-      - "GIVEN T1's oracle WHEN `packages/cli/src/cli/commands/validate.ts` is updated THEN the file hosts all 7 subcommands (capability, capability-contract, cross-capability, lifecycle-adapters, app-home-contract, vocabularyAuthority, selfAudit); each subcommand routes to the corresponding `packages/cli/src/validate/*.ts` module and emits the same JSON shape as the Python oracle"
-      - "GIVEN the 7 subcommands WHEN `packages/cli/test/cli/validateParity.test.ts` (or one test file per subcommand) runs THEN every subcommand is parity-green against the Python oracle per `npmParityMatrix.test.ts` `artifact_validation` family"
-      - "GIVEN cross-capability validate WHEN the existing partial port is reviewed THEN the implementation is complete (the resolved-ledger TODO L83 mentions `validate_cross_capability.py`; verify the TS port covers the same surface) and the parity row is `equal`"
-      - "GIVEN the vocabularyAuthority subcommand WHEN it is wired THEN the TS port handles Decision 57's `first_invocation_read` vocabulary and Decision 54's `lifecycleStatus` vocabulary and matches the Python `validate_lifecycle_adapters.py` shape"
-      - "GIVEN the build WHEN `node packages/cli/dist/bin/agentera.js check validate <subcommand>` runs for each of the 7 subcommands THEN each emits a valid JSON response with the expected shape and the same exit code as the Python side; `npmParityMatrix.test.ts` reports `artifact_validation` family green; per V5 the test proportionality target is one pass + one fail per subcommand (7 × 2 = 14 cases)"
+      - "GIVEN `feat/v3` base WHEN the 8 monolith files are split THEN each is ≤1000 lines: `capabilityContext.ts` → `capabilityContext/{prime,hej,visionera,resonera,inspirera,planera,realisera,optimera,inspektera,dokumentera,profilera,visualisera,orkestrera}.ts`; `state.ts` → `state/{plan,progress,health,todo,decisions,docs,objective,experiments}.ts`; `doctor.ts` → `setup/doctor/{npm,python,smoke,nextMajor,lifecycle}.ts`; `startupAnalysis.ts` → `state/startupAnalysis/{plan,progress,health,todo,decisions,docs,objective,experiments,index}.ts`; `extractCorpus.ts` → `analytics/extractCorpus/{read,normalize,classify,write}.ts`; `codex.ts` → `setup/codex/{plugin,setup,trust,applyPatch}.ts`; `compaction.ts` → `hooks/compaction/{status,apply,dryRun,retention}.ts`; `validateArtifact.ts` → `hooks/validateArtifact/{schema,markdown,traversal,violations}.ts`; each split file has a barrel re-exporting the public API"
+      - "GIVEN the split WHEN `packages/cli/test/cli/monolithLint.test.ts` is authored THEN it fails the lint gate when any `packages/cli/src/**/*.ts` file exceeds 1000 lines, with a one-line exception comment for tests and a CI-friendly failure message naming the file and line count; the test is green on the post-split tree"
+      - "GIVEN the split WHEN `pnpm -C packages/cli test` runs THEN the existing 812 vitest stay green; typecheck clean; build clean; per V5 the proportionality target is one pass + one fail per split file (8 × 2 = 16 cases)"
+
   - number: 3
-    name: Port compaction CLI surface to TS
+    name: Enforce Decision 58's single-name protocol boundary (TODO L20)
     depends_on:
       - "1"
-    status: complete
+      - "2"
+    status: pending
     acceptance:
-      - "GIVEN T1's oracle WHEN `packages/cli/src/cli/commands/compact.ts` is reviewed/extended THEN the `apply` and `dry-run` paths match the Python `hooks/compaction.py` + `scripts/yaml_mapping.py` shapes; the 10/40/50 retention caps are wired through the shared `apply_retention_caps` helper or an equivalent TS-side helper; `yaml.YAMLError` error classification matches the Python `compute_compaction_status` behavior (per resolved-ledger TODO L57)"
-      - "GIVEN the compact apply WHEN `agentera check compact --apply` (or the TS equivalent) runs on a fixture that exceeds the 10/40/50 cap THEN the cap is enforced, archives are preserved, and `over_limit` is reported as `none`; the parity row is `equal` for the `compaction` family"
-      - "GIVEN the size-bounded corpus reads WHEN `check compact` runs on a fixture with a large `corpus.json` THEN the read is bounded (no `Cannot create a string longer than 0x1fffffe8` traceback, per resolved-ledger TODO L44); the parity row is `equal` for the `compaction` family"
-      - "GIVEN the build WHEN `pnpm -C packages/cli test` runs THEN the new compact parity tests are green and the test count delta from T1 is exactly +1 (one new parity test for the `compaction` family); per V5 the proportionality target is one pass + one fail per compaction path (apply + dry-run = 2 cases × 2 = 4 cases)"
+      - "GIVEN `feat/v3` base WHEN every protocol surface is audited THEN every backwards-compatible, deprecated, parallel, display-only, or storage/protocol split name is removed or migrated to the canonical name; surfaces in scope: artifact canonical names (`PROGRESS.md` → `progress.yaml` if not already; `PLAN.md` → `plan.yaml`; etc.), concept names (the `hej` capability canonical rename per Decision 59's `prime` consolidation), schema fields (`instruction_file` → `instruction_module` per D65; `version` vs `suiteVersion` vs `gitRef` per the release-metadata gate), metadata fields, runtime adapter surfaces, and protocol identities"
+      - "GIVEN the audit WHEN `packages/cli/test/cli/singleNameProtocol.test.ts` is authored THEN it scans all YAML/TS surfaces for forbidden legacy substrings (`PROGRESS.md`, `PLAN.md`, `DECISIONS.md` in storage/protocol paths; `instruction_file`; pre-D58 vocabulary tokens) and fails if any are present; the test is green on the post-audit tree"
+      - "GIVEN the audit WHEN `references/cli/vocabulary.md` is updated THEN it is the single source of truth for canonical names; the published `npx -y agentera@next` install rejects legacy vocabulary; the contract schema `references/cli/audience-namespace-cli-migration.yaml` `migration_phases.phase_3` is satisfied for the single-name boundary"
+      - "GIVEN the build WHEN `pnpm -C packages/cli test` runs THEN the new single-name protocol regression is green; typecheck clean; build clean; per V5 the proportionality target is one pass + one fail per forbidden-substring class (storage paths + schema fields + concept names + metadata + runtime adapters = 5 × 2 = 10 cases)"
+
   - number: 4
-    name: Port doctor/upgrade safety rails to TS
+    name: Remove v1 legacy cruft (TODO L21)
     depends_on:
       - "1"
-    status: complete
+      - "2"
+    status: pending
     acceptance:
-      - "GIVEN T1's oracle WHEN `packages/cli/src/setup/doctor.ts` and `packages/cli/src/upgrade/{doctor,nextMajorDoctor,appModel,channels}.ts` are reviewed/extended THEN the safety-rail transitions (outdated → ready_to_apply → applied; repair_needed; manual_review_needed) match the Python `scripts/agentera` upgrade/doctor shapes; the canonical Decision 54 vocabulary is pinned in lifecycle metadata; user-facing repair wording matches the plain-language template"
-      - "GIVEN `doctor --smoke` WHEN the npm `runNpmSmokeChecks` path is reviewed THEN the smoke family is parity-green for the npm distribution boundary (per resolved-ledger TODO L45); the parity row is `equal` for the `doctor_upgrade_safety` family"
-      - "GIVEN the next-major doctor WHEN `references/cli/update-channels.yaml` is reviewed THEN per-channel `next_major` rendering matches Python; the TS `nextMajorDoctor.ts` and the Python `scripts/next_major_doctor.py` heads-of-output are parity-equivalent (per resolved-ledger TODO L37); the parity row is `equal` for the `doctor_upgrade_safety` family"
-      - "GIVEN the build WHEN `node packages/cli/dist/bin/agentera.js doctor` and `node packages/cli/dist/bin/agentera.js upgrade --dry-run` run THEN each emits a valid JSON response with the expected lifecycle metadata; the user-facing repair wording matches the plain-language template; the parity row is `equal`; per V5 the proportionality target is one pass + one fail per safety-rail transition (5 transitions × 2 = 10 cases)"
+      - "GIVEN `feat/v3` base WHEN the v1 legacy cruft is audited THEN obsolete migration paths are removed (`migrateArtifactsV1ToV2.ts` is a no-op pass per D66; verify the legacy v1 fixture assumptions in `tests/fixtures/v1/` are not referenced by any test), stale v1 runtime bridge behavior is removed (`migrateArtifactsV1ToV2.ts` + `migrateArtifactsV2ToV3.ts` produce the same shape), v1 skill bundle/suite wording in `skills/agentera/SKILL.md` and the per-capability prose is removed (verify D65 already removed it), legacy fixture assumptions are removed, and compatibility-only docs/tests are removed"
+      - "GIVEN the audit WHEN the v1 contract validator remains in `validate.ts` THEN it is a defensive gate (the v1 contract is still validated for any v1 fixture that survives); per Decision 56 the v1 surface is preserved as a defensive gate, not a supported workflow"
+      - "GIVEN the audit WHEN `rg -e 'v1' --type ts --type md packages/cli/src/` runs THEN zero matches in non-historical paths; the new cruft-removal regression is green; per V5 the proportionality target is one pass + one fail per cruft class (migration paths + bridge + wording + fixtures + docs/tests = 5 × 2 = 10 cases)"
+
   - number: 5
-    name: Port verify gates (`check verify eval`) to TS
+    name: Implement v2 state manifest for v3 consumption (TODO L24 → both)
     depends_on:
       - "1"
-    status: complete
+    status: pending
     acceptance:
-      - "GIVEN T1's oracle WHEN `packages/cli/src/cli/commands/verify.ts` is reviewed/extended THEN the `eval` family is wired with safety wrappers (retired smoke family messaging for npm distribution per resolved-ledger TODO L43; bounded offline smoke without live model calls by default); the verify contract spec from `agent-ready-state-contract.yaml` is parity-pinned for the npm @next distribution boundary"
-      - "GIVEN `check verify eval` WHEN the npm `@next` path runs THEN the `eval` family is supported; the smoke family returns the retired-family message; the `agent-ready-state-contract.yaml` reflects eval-only npm guidance; the parity row is `equal` for the `verify_eval` family"
-      - "GIVEN the build WHEN `node packages/cli/dist/bin/agentera.js check verify eval` runs THEN the response is a valid JSON with the expected shape; the npmParityMatrix `verify_eval` family row is `equal`; per V5 the proportionality target is one pass + one fail per verify-eval path (eval + smoke-retired-message = 2 × 2 = 4 cases)"
+      - "GIVEN `feat/v3` base WHEN `references/cli/v3-handoff-manifest.yaml` is authored THEN it defines the manifest format schema: v2 install/upgrade writes `~/.local/share/agentera/v3-handoff.json` with installed v2 version, app home path, user data inventory (`benchmarks/`, `intermediate/`, `sessions/`, `history/`, `corpus/`, profile files), and runtime adapters in use; the schema is versioned and discoverable"
+      - "GIVEN the schema WHEN `packages/cli/src/upgrade/v3HandoffManifest.ts` is authored THEN it reads the manifest in <100ms during v3 migration preflight instead of scanning the whole app home; the v3 reader is the `feat/v3` side of the `→ both` work"
+      - "GIVEN the v3 reader WHEN `node packages/cli/dist/bin/agentera.js upgrade --dry-run` runs on a fixture v2 home with `v3-handoff.json` THEN the manifest is read in <100ms (asserted by a vitest); the new manifest regression is green; per V5 the proportionality target is one pass + one fail per manifest field (v2 version + app home + user data inventory + runtime adapters = 4 × 2 = 8 cases)"
+      - "GIVEN the v3 reader WHEN the implementation commit lands on `feat/v3` THEN the v2 writer backport is a separate `feat/v3-rewrite-completion-both` branch off `main` after T11; the v2 writer produces the same shape, and the round-trip parity test (v3 reader reads v2 writer output) verifies the backport without pytest (the v2-side test cannot run in this worktree's vitest and lands with the `main`-branch backport)"
+
   - number: 6
-    name: Port usage/stats consent semantics to TS
+    name: Implement v2/v3 coexistence detection (TODO L25 → both)
     depends_on:
       - "1"
-    status: complete
+    status: pending
     acceptance:
-      - "GIVEN T1's oracle WHEN `packages/cli/src/analytics/usageStats.ts` is reviewed/extended THEN the consent flow matches the Python `agentera stats` semantics: no runtime-history reads from plain `stats`; explicit `--consent local-history` required for extraction; bounded size-bounded corpus reads; the v1 `agentera stats` namespace owns the surface; no top-level `agentera corpus` command is exposed (per resolved-ledger TODOs L84, L85)"
-      - "GIVEN `stats refresh --dry-run` WHEN the dry-run path runs THEN no corpus is written; the privacy payload matches the Python oracle; the parity row is `equal` for the `usage_stats_consent` family"
-      - "GIVEN `stats refresh --consent local-history` WHEN the consented path runs THEN the corpus is extracted to `$PROFILERA_PROFILE_DIR/intermediate/corpus.json`; the bounded size-bounded read is enforced; the parity row is `equal`"
-      - "GIVEN the build WHEN `node packages/cli/dist/bin/agentera.js stats` and the refresh paths run THEN the responses are parity-equivalent to the Python oracle; the npmParityMatrix `usage_stats_consent` family row is `equal`; per V5 the proportionality target is one pass + one fail per consent path (plain-stats + dry-run + consent = 3 × 2 = 6 cases)"
+      - "GIVEN `feat/v3` base WHEN the symmetric v3 doctor probe is added to `packages/cli/src/setup/doctor.ts` THEN it detects v2 stable (probe the legacy v2 install root `~/.local/share/agentera/` for the Python-managed app) and warns with a user-facing message: \"v2 detected alongside v3; pick one line\" with three user-facing choices: complete v3 migration, uninstall v2, stay on v3 explicitly; the v3 probe is the `feat/v3` side of the `→ both` work"
+      - "GIVEN the v3 probe WHEN `packages/cli/test/cli/coexistenceProbe.test.ts` runs THEN a v3 install alongside v2 install shows the symmetric warning; the new probe regression is green; per V5 the proportionality target is one pass + one fail per probe scenario (v2-detected + v3-detected + both-detected + neither = 4 × 2 = 8 cases)"
+      - "GIVEN the v3 probe WHEN the implementation commit lands on `feat/v3` THEN the v2-side probe (Python stable) is a separate `feat/v3-rewrite-completion-both` branch off `main` after T11; the v2-side test cannot run in this worktree's vitest, and the round-trip parity test (v3 probe reads v2 probe output) verifies the backport"
+
   - number: 7
-    name: Port runtime adapter hooks (OpenCode/Codex/Cursor/Copilot) to TS
+    name: Fix the v3 cursor agent runtime surface regression
     depends_on:
       - "1"
-    status: complete
+    status: pending
     acceptance:
-      - "GIVEN T1's oracle WHEN `packages/cli/src/registries/runtimeAdapterRegistry.ts` and the per-runtime setup files (`packages/cli/src/setup/{opencode,codex,cursor,copilot}.ts`) are reviewed/extended THEN the hook surface coverage matches the Python side per `references/cli/runtime-adapters.md`: OpenCode `event`, `shell.env`, `chat.message`, `tool.execute.before/after`, `experimental.session.compacting`; Codex `hooks.state` trust hashes and PLUGIN_ROOT-safe apply_patch config; Cursor `preToolUse Write` and `session.created`/`session.idle` rejection; Copilot per-invocation AGENTERA_HOME"
-      - "GIVEN per-runtime `subagent_dispatch` WHEN the TS implementation is reviewed THEN it matches the Python `RuntimeAdapter.subagent_dispatch` shape; descriptor bodies and trust hashes are parity-equivalent; the `agentera validate descriptors` check passes for all 36 descriptors (12 codex + 12 cursor + 12 opencode, per D65 plan T5 acceptance)"
-      - "GIVEN the build WHEN `node packages/cli/dist/bin/agentera.js check validate descriptors --format json` runs THEN all 12 codex + 12 opencode descriptors validate cleanly (cursor descriptors are validated by their own setup-time check and are not part of the runtime validate surface); the npmParityMatrix `runtime_adapter_hooks` family row is `equal`"
-      - "GIVEN the live-runtime smoke WHEN `node packages/cli/dist/bin/agentera.js eval_skills` runs against the OpenCode/Codex/Cursor/Copilot surfaces THEN the smoke is bounded offline and parity-equivalent to the Python oracle; per V5 the proportionality target is one pass + one fail per runtime (4 runtimes × 2 = 8 cases)"
+      - "GIVEN `feat/v3` base WHEN the v3 TS upgrade orchestrator (`packages/cli/src/upgrade/runtimeMigration.ts`) is updated THEN it owns the in-tree `.cursor/agents/` directory on a v3 project (probe for the in-tree `packages/cli/src/capabilities/<name>/instructions.ts` modules as the v3 surface signal); on a v3 project, the Python upgrade orchestrator must skip the in-tree `.cursor/agents/` directory"
+      - "GIVEN the fix WHEN `packages/cli/test/upgrade/cursorAgentSurface.test.ts` is authored THEN it asserts the v3 cursor agent body uses the `Run agentera prime --context <name> --format json` form and rejects the legacy `Read .../capabilities/<name>/instructions.md` substring; the regression is green on `feat/v3`"
+      - "GIVEN the fix WHEN the v3 upgrade orchestrator runs on a v3 fixture THEN it produces the D65 form for all 12 `.cursor/agents/*.md` files; the Python-side skip-signal is documented in `references/cli/upgrade-repair-wording.md` and backported to `main` per the both-branch pattern; per V5 the proportionality target is one pass + one fail per cursor agent (12 × 2 = 24 cases)"
+
   - number: 8
-    name: Fold TODO.md entries, verify D65 plan archive, flip plan/progress metadata, run the final verification gates, and land the commit
+    name: Land audience-namespace CLI migration phase 3
+    depends_on:
+      - "1"
+      - "3"
+    status: pending
+    blocks:
+      - "9"
+      - "10"
+    acceptance:
+      - "GIVEN `feat/v3` base WHEN the deprecated top-level parsers are removed THEN `agentera --help` lists only the canonical ~18 top-level commands per `references/cli/audience-namespace-cli-migration.yaml` `command_tree_target.top_level_count: ~18`; the deprecated aliases return a `class: removed_after_cutover` envelope (not a stderr deprecation); the dispatch switch in `packages/cli/src/cli/dispatch.ts` no longer handles the deprecated commands; the help output in `packages/cli/src/cli/help.ts` no longer mentions the deprecated commands"
+      - "GIVEN the removal WHEN the surfaces are audited THEN the deprecated aliases are: `hej` (alias for `prime`), `describe` (alias for `schema`), `gate` (alias for `check compact`), the routine-state tops (`plan`, `progress`, `health`, `todo`, `decisions`, `docs`, `objective`, `experiments` — all already aliases for `state <name>`), `query` (alias for `state query`), `compact` (alias for `check compact`), `verify` (alias for `check verify`), `stats` (alias for `report`), `lint` (alias for `check lint`), `validate` (alias for `check validate`); each returns the `removed_after_cutover` envelope with the canonical command in `valid_values`"
+      - "GIVEN the removal WHEN the parity matrix is re-run THEN it reports green; `npmParityMatrix.test.ts` reports all six D56 surface families `equal` (or `intentional_version_break` for rows explicitly marked); per V5 the proportionality target is one pass + one fail per removed alias (16 × 2 = 32 cases)"
+      - "GIVEN the build WHEN `pnpm -C packages/cli test` runs THEN the new audience-namespace phase 3 regression is green; typecheck clean; build clean"
+
+  - number: 9
+    name: Promote CHANGELOG 3.0.0 and finalize README/UPGRADE.md
+    depends_on:
+      - "8"
+    status: pending
+    blocks:
+      - "10"
+    acceptance:
+      - "GIVEN the cutover surface WHEN `CHANGELOG.md` is updated THEN the `## [3.0.0] · 2026-06-XX` section is authored with `### Key highlights`, `### Added`, `### Changed`, `### Removed`, `### Fixed` per AGENTS.md `Changelog` rules; surfaces in scope: 3.0.0 release title, the six D56 surface families (artifact validation, compaction, doctor/upgrade safety, verify, usage/stats consent, runtime adapter hooks) as Added (TS port of stable Python semantics), Decision 58 single-name protocol boundary as Changed, the deprecated top-level parsers as Removed, and the v3 cursor agent surface fix as Fixed"
+      - "GIVEN the cutover surface WHEN `README.md` is updated THEN the v3 install instructions are: `npx -y agentera@latest` as primary; `npx -y agentera@next` as preview; `uvx --from git+https://github.com/jgabor/agentera agentera` marked as v2 stable only; the README reflects the cutover surface"
+      - "GIVEN the cutover surface WHEN `UPGRADE.md` is updated THEN the v2→v3 migration path is documented, the `v3-handoff.json` reader is referenced, the coexistence detection surface is described, and the v3.0.0 commit pin is recorded; the CHANGELOG fold is the final touches commit before T10 per AGENTS.md `Changelog` rules"
+      - "GIVEN the build WHEN `pnpm -C packages/cli test` runs THEN the docs regression is green; typecheck clean; build clean; the docs change is folded with the T10 cutover publish commit per AGENTS.md"
+
+  - number: 10
+    name: v3 cutover tag/publish — graduate npm `@next` to `@latest`
+    depends_on:
+      - "1"
+      - "2"
+      - "8"
+      - "9"
+    status: pending
+    blocks:
+      - "11"
+    acceptance:
+      - "GIVEN the cutover surface WHEN the cutover sequence runs THEN the sequence is: (a) `git checkout feat/v3`, (b) `pnpm -C packages/cli build && node packages/cli/scripts/copy-bundle.mjs`, (c) `npm version 3.0.0 --no-git-tag-version` to bump package.json, (d) bump the four release-metadata surfaces in lockstep (`packages/cli/package.json` `version`, `agentera.suiteVersion`, `agentera.gitRef`, `references/cli/update-channels.yaml` `offline_defaults.development`), (e) `git commit -m 'release: 3.0.0'` folding the CHANGELOG 3.0.0 entry, the version bumps, the `.opencode/package.json` lockstep, and the T9 docs promotion per AGENTS.md, (f) `git tag v3.0.0 <commit>`, (g) `git push origin feat/v3 --follow-tags`, (h) `cd packages/cli && npm publish --tag latest` (graduating `@next` to `@latest`), (i) verify `npx -y agentera@latest check validate capability-contract --format json` reports green"
+      - "GIVEN the publish WHEN the npm `@latest` install runs THEN `agentera --version` reports 3.0.0; the parity matrix is re-run after the version bump and reports green; the `feat/v3` HEAD has the v3.0.0 tag; the cutover publish commit is folded with the CHANGELOG entry per AGENTS.md"
+      - "GIVEN the publish WHEN `references/cli/update-channels.yaml` `offline_defaults.latest` is bumped to 3.0.0 alongside the `development` default THEN the four-surface release-metadata contract is satisfied (`packages/cli/package.json` `version` 3.0.0 = `agentera.suiteVersion` 3.0.0 = `references/cli/update-channels.yaml` `offline_defaults.development` 3.0.0 = `registry.json` `skills[0].version` 3.0.0)"
+      - "GIVEN the publish WHEN `node packages/cli/dist/bin/agentera.js check validate release-metadata --format json` runs THEN the validator reports `release-metadata ok`; the version-divergence gate (resolved L23) is green"
+
+  - number: 11
+    name: Final state sync — fold TODO L16 to `## ✓ Resolved`, flip plan/progress metadata, archive plan, run all six verification gates
     depends_on:
       - "1"
       - "2"
@@ -312,51 +546,69 @@ tasks:
       - "5"
       - "6"
       - "7"
-    status: complete
+      - "8"
+      - "9"
+      - "10"
+    status: pending
     acceptance:
-      - "GIVEN T1-T7 complete WHEN the implementation commit is staged THEN `.agentera/plan.yaml` status flips from `active` to `complete` and the new plan archives to `.agentera/archive/plan-2026-06-04-d56-parity-closeout.yaml`; the D65 plan on disk is already archived at `.agentera/archive/plan-2026-06-03-d65-capability-ts-surface.yaml` per the D65 plan's own design note, so T8 verifies the archive presence (no-op copy); the `previous_plan_archived` line in the new plan points at the D65 archive path"
-      - "GIVEN the same commit WHEN `.agentera/progress.yaml` is updated THEN a new full-detail cycle entry is appended whose scope is `D56 parity closeout`; per Decision 66 (PR6/PR2 removal) the cycle omits the `commit` field and follows the post-D66 cycle shape; the commit is folded into the implementation commit per AGENTS.md `Agentera commits` rules, not a separate bookkeeping commit"
-      - "GIVEN the same commit WHEN `TODO.md` is updated THEN the open L18 entry (`- [test:3.0.0] Decision 56 upgrade/migration parity on `feat/v3`...`) and the L19 entry (`- [test:3.0.0] Port artifact validation, compaction, ...`) move to the `## ✓ Resolved` section using the standard ledger form `- ~~[test:3.0.0] ...~~ · resolved on `feat/d56-parity-closeout` @ <sha>: <one-line summary of what changed>` naming the implementation commit hash once known"
+      - "GIVEN T1-T10 complete WHEN the cutover publish commit is staged THEN TODO L16 (Rewrite the supported Agentera CLI core in TypeScript) and the resolved sub-task entries (L17 Bun/npm packaging, L20 single-name protocol boundary, L21 v1 legacy cruft, L22 TS monolith hotspot split, L24 v2 handoff manifest, L25 v2/v3 coexistence, the audience-namespace phase 3 completion, the cursor agent surface fix) move to the `## ✓ Resolved` section using the standard ledger form `- ~~[type:3.0.0] ...~~ · resolved on `feat/v3-cutover` @ <sha>: <one-line summary of what changed>` naming the cutover commit hash once known"
+      - "GIVEN the same commit WHEN `.agentera/plan.yaml` status flips from `active` to `complete` and the new plan archives to `.agentera/archive/plan-2026-06-04-v2-v3-ts-rewrite-completion.yaml` THEN the D56 plan archive remains at `.agentera/archive/plan-2026-06-04-d56-parity-closeout.yaml` (no-op verification); the `previous_plan_archived` line in the new plan points at the D56 archive path"
+      - "GIVEN the same commit WHEN `.agentera/progress.yaml` is updated THEN a new full-detail cycle entry is appended whose scope is `v2→v3 TS rewrite completion`; per Decision 66 the cycle omits the `commit` field and follows the post-D66 cycle shape; the commit is folded into the cutover publish commit per AGENTS.md `Agentera commits` rules, not a separate bookkeeping commit"
       - "GIVEN the same commit WHEN `rg '^- Placeholder' TODO.md` runs THEN zero hits (the previous folds' Placeholder removals are preserved); the resolved-ledger entries sit at the top of `## ✓ Resolved`"
-      - "GIVEN the implementation commit WHEN the verification gates run THEN all six must pass: (T-vitest) `pnpm -C packages/cli test` full vitest suite green with the npmParityMatrix reporting all six v3-remaining families `equal`; (T-typecheck) `pnpm -C packages/cli run typecheck` zero errors; (T-build) `pnpm -C packages/cli build` exit 0 with `dist/bin/agentera.js` present; (T-capability-contract) `node packages/cli/dist/bin/agentera.js check validate capability-contract --format json` pass; (T-capability-per-name) `node packages/cli/dist/bin/agentera.js check validate capability <name> --format json` for each of the 12 capabilities pass; (T-npm-parity-matrix) `pnpm -C packages/cli test -- npmParityMatrix` reports all six v3-remaining families `equal` (or `intentional_version_break` for rows explicitly marked), zero `ts_smaller` or `python_smaller` rows"
-      - "GIVEN the same commit WHEN the npm `@next` version-divergence re-run fires THEN `npx -y agentera@next check validate capability-contract --format json` is re-run after any version bump (TODO L23) and reports degraded status if the matrix is invalidated; the npm @next pin is unchanged from T1 (`packages/cli/package.json` `version: 3.0.0-dev.4` until L23 lands separately)"
-      - "GIVEN the commit WHEN the AGENTS.md `Agentera commits` rule is applied THEN no separate bookkeeping commit is created; the TODO.md L18+L19 fold, plan.yaml status flip, progress cycle, six gate runs, capability-contract validate, and per-name capability validate are all in a single commit"
-      - "GIVEN the same commit WHEN `git diff --stat feat/v3 -- <changed paths>` runs THEN the surface delta covers: 1 new oracle fixture (`parity-remaining-families.json`), 1 new rebase script (`rebase_oracle.sh`), 1 updated parity matrix (`npmParityMatrix.test.ts`), 6+ updated CLI command/validate modules, 6+ new parity tests, 1+ gapRegistry update, the `.agentera/plan.yaml` flip, the `.agentera/progress.yaml` cycle, the TODO.md fold, the D65 archive verification — the numbers are reportable from `git diff --stat` and the resulting count matches this plan's inventory"
-      - "GIVEN the post-commit state WHEN `agentera plan --format json` is queried THEN the response reports the new plan as `complete`, the previous_plan_archived is `.agentera/archive/plan-2026-06-03-d65-capability-ts-surface.yaml`, and the source_contract `complete_for_plan_artifact` is `true`; the headline TODO L16 (Rewrite the supported Agentera CLI core in TypeScript) remains `open` because the v3 cutover itself is a separate planera cycle per Decision 56's `feeds_into`"
+      - "GIVEN the cutover publish commit WHEN the six verification gates run THEN all six must pass: (T-vitest) `pnpm -C packages/cli test` full vitest suite green with the npmParityMatrix reporting all six D56 surface families `equal` (or `intentional_version_break` for rows explicitly marked); (T-typecheck) `pnpm -C packages/cli run typecheck` zero errors; (T-build) `pnpm -C packages/cli build` exit 0 with `dist/bin/agentera.js` present; (T-capability-contract) `node packages/cli/dist/bin/agentera.js check validate capability-contract --format json` pass; (T-capability-per-name) `node packages/cli/dist/bin/agentera.js check validate capability <name> --format json` for each of the 12 capabilities pass; (T-npm-parity-matrix) `pnpm -C packages/cli test -- npmParityMatrix` reports all six D56 surface families `equal` (or `intentional_version_break` for rows explicitly marked), zero `ts_smaller` or `python_smaller` rows; the lint-monolith regression (T2) reports zero files >1000 lines; the single-name protocol regression (T3) reports zero legacy substrings; the v3-handoff manifest regression (T5) reports a <100ms read on the fixture; the v3 cursor agent surface regression (T7) reports the D65 form"
+      - "GIVEN the same commit WHEN the npm `@latest` version-divergence re-run fires THEN `npx -y agentera@latest check validate capability-contract --format json` is re-run after the version bump and reports green; the npm @latest pin is 3.0.0"
+      - "GIVEN the commit WHEN the AGENTS.md `Agentera commits` rule is applied THEN no separate bookkeeping commit is created; the TODO.md L16 fold, the resolved sub-task folds, plan.yaml status flip, progress cycle, six gate runs, capability-contract validate, and per-name capability validate are all in a single commit; the cutover publish commit folds the CHANGELOG 3.0.0 entry, the version bumps, the `.opencode/package.json` lockstep, and the T9 docs promotion per AGENTS.md"
+      - "GIVEN the post-commit state WHEN `agentera plan --format json` is queried THEN the response reports the new plan as `complete`, the previous_plan_archived is `.agentera/archive/plan-2026-06-04-d56-parity-closeout.yaml`, and the source_contract `complete_for_plan_artifact` is `true`; the headline TODO L16 closes per Decision 56's `feeds_into`"
 
 overall_acceptance: >-
-  GIVEN the implementation commit on `feat/d56-parity-closeout` WHEN a
-  user invokes the npm `@next` CLI for any of the six v3-remaining CLI
-  surface families (artifact validation, compaction, doctor/upgrade
-  safety, verify, usage/stats consent, runtime adapter hooks) THEN the
-  response is parity-equivalent to the Python `agentera` stable CLI
-  per the pinned Python oracle, with the npmParityMatrix reporting
+  GIVEN the cutover publish commit on `feat/v3-cutover` (fast-forwarded
+  to `feat/v3`) WHEN a user invokes `npx -y agentera@latest` for any
+  of the 12 capabilities, the six D56 surface families, or the audience-
+  namespace canonical commands (state, check, report, schema, prime)
+  THEN the response is parity-equivalent to the Python `agentera` stable
+  CLI per the pinned Python oracle, with the npmParityMatrix reporting
   `equal` (or `intentional_version_break` for rows explicitly marked)
   and zero `ts_smaller` or `python_smaller` rows. GIVEN the same commit
-  WHEN `npx -y agentera@next check validate capability-contract --format
-  json` runs THEN the validator passes; the `npx skills` published
-  surface (SKILL.md only) is unchanged from the D65 plan and remains
-  functionally equivalent. GIVEN the same commit WHEN the
-  `npxParityMatrix.test.ts` runs in CI THEN the matrix is green for
-  all six families; the Python oracle pin is recorded in
-  `parity-remaining-families.json` with a `rebase_oracle.sh` policy
-  for rebase. GIVEN the same commit WHEN `pnpm -C packages/cli test`
-  runs THEN the full vitest suite is green with the test count delta
-  from `feat/v3` base equal to the number of new parity tests added
-  (T2-T7 each add ≥1 parity test, plus the npmParityMatrix adds +6
-  for the new families, plus the `rebase_oracle.sh --check` adds +1).
-  GIVEN the same commit WHEN the AGENTS.md `Agentera commits` rule is
-  applied THEN the implementation commit folds the TODO.md L18+L19
-  fold, plan.yaml status flip, progress cycle, six gate runs, and
-  D65 archive verification into a single commit; no separate
-  bookkeeping commit is created. The plan lands on `feat/v3` only;
-  no `main`-branch backport is required because the v2 Python CLI is
-  the parity reference, not the port target. The headline v3 TODO
-  L16 (Rewrite the supported Agentera CLI core in TypeScript) remains
-  open because Decision 56's `feeds_into` says the cutover itself is
-  a separate planera cycle; closing L16 is the work of the next
-  planera cycle that lands the v3 cutover tag/publish.
+  WHEN the user runs `npx -y agentera@latest check validate
+  capability-contract --format json` THEN the validator passes; the
+  `npx skills` published surface (SKILL.md only) is unchanged from the
+  D65 plan and remains functionally equivalent. GIVEN the same commit
+  WHEN the user runs the Bun-compiled single-binary (`./agentera
+  --version`) THEN the binary reports 3.0.0; the single-binary is
+  self-contained and requires no Node runtime. GIVEN the same commit
+  WHEN the user runs `pnpm -C packages/cli test` THEN the full vitest
+  suite is green (812+ tests) with the test count delta from `feat/v3`
+  base equal to the number of new tests added by T1-T9 (T1: ≥3 packaging
+  tests; T2: 16 monolith split tests; T3: 10 single-name protocol
+  tests; T4: 10 v1 cruft tests; T5: 8 manifest tests; T6: 8
+  coexistence tests; T7: 24 cursor agent tests; T8: 32 audience-
+  namespace tests; T9: docs regression). GIVEN the same commit WHEN
+  the AGENTS.md `Agentera commits` rule is applied THEN the cutover
+  publish commit folds the TODO.md L16 fold, the resolved sub-task
+  folds, plan.yaml status flip, progress cycle, six gate runs, and
+  D56 archive verification into a single commit; no separate
+  bookkeeping commit is created. GIVEN the same commit WHEN the
+  eight TS monolith hotspots are ≤1000 lines (T2) and the single-
+  name protocol regression (T3) reports zero legacy substrings
+  THEN the v3 cutover ships a clean source tree. The plan lands on
+  `feat/v3` only; no `main`-branch backport is required for the
+  parity-impl artifacts because the v2 Python CLI is the parity
+  reference, not the port target. The `→ both` TODOs (L24 v2 handoff
+  manifest, L25 v2/v3 coexistence) ship the v3 reader/probe on
+  `feat/v3` first, with the v2 writer/probe backported to `main` after
+  T11 per the both-branch sequencing. The headline v3 TODO L16
+  (Rewrite the supported Agentera CLI core in TypeScript) closes per
+  Decision 56's `feeds_into`; the maintainer seam (`uvx --from
+  git+https://github.com/jgabor/agentera agentera` on `main`) remains
+  the v2 stable path until v2 retirement. The four-surface release-
+  metadata contract (`packages/cli/package.json` `version` =
+  `agentera.suiteVersion` = `references/cli/update-channels.yaml`
+  `offline_defaults.development` = `registry.json` `skills[0].version`)
+  is satisfied at 3.0.0; the npm `@latest` install reports
+  `agentera --version` 3.0.0; the v3.0.0 tag is on `feat/v3` HEAD;
+  the CHANGELOG 3.0.0 entry is folded with the cutover publish
+  commit per AGENTS.md `Changelog` rules.
 
 surprises: []
 
-previous_plan_archived: .agentera/archive/plan-2026-06-03-d65-capability-ts-surface.yaml
+previous_plan_archived: .agentera/archive/plan-2026-06-04-d56-parity-closeout.yaml
