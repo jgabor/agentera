@@ -1,4 +1,18 @@
 cycles:
+- number: 647
+  timestamp: 2026-06-04 15:00
+  type: fix
+  phase: build
+  what: T7 cursor agent runtime surface regression (plan T7, TODO fix:3.0.0). On v3 projects (all twelve `packages/cli/src/capabilities/<name>/instructions.ts` modules present), the TypeScript upgrade orchestrator skips in-tree `.cursor/agents/` `copy-agent` items so D65 `Run agentera prime --context <name> --format json` bodies are not overwritten by legacy bundle agents. Added `packages/cli/src/upgrade/v3CapabilitySurface.ts`, wired skip in `runtimeMigration.ts`, regression `packages/cli/test/upgrade/cursorAgentSurface.test.ts`, and `references/cli/upgrade-repair-wording.md` documenting the shared probe for Python stable (`main`) backport. Python skip implemented on `fix/t7-cursor-agent-python-main` (not merged here).
+  inspiration: Plan T7 acceptance — Python `agentera upgrade` regressed 12 `.cursor/agents/*.md` files from D65 prime --context back to instructions.md.
+  discovered: feat/v3 removed `scripts/agentera_upgrade.py`; the v2 stable Python path on `main` still copies bundle agents unless the v3 probe skips. TS @next upgrade uses the same skip so repo-native agents stay authoritative.
+  verified: pnpm -C packages/cli test; typecheck; build; capability-contract validate; cursorAgentSurface.test.ts; rg D65 vs legacy on .cursor/agents/.
+  next: Merge `fix/t7-cursor-agent-python-main` to `main`; fold TODO fix:3.0.0 at T11; continue v3 cutover plan T1+.
+  context:
+    intent: Preserve D65 cursor agent bodies on v3 repos during upgrade.
+    constraints: Probe all twelve instruction modules; preserve v2 copy behavior when the probe fails; document Python main backport separately from feat/v3.
+    unknowns: none
+    scope: packages/cli/src/upgrade/, packages/cli/test/upgrade/, references/cli/
 - number: 646
   timestamp: 2026-06-04 16:35
   type: chore
@@ -579,21 +593,6 @@ cycles:
     unknowns: none
     scope: packages/cli/src/cli/todoMarkdown.ts, orientation.ts, state.ts, scripts/agentera (main), tests, CHANGELOG, TODO.md, plan archive
   commit: 8c15b32
-- number: 637
-  timestamp: 2026-06-03 16:00
-  type: chore
-  phase: build
-  what: Final state sync and plan archive — archived plan to .agentera/archive/plan-2026-06-03-next-major-doctor.yaml, cleared active plan slot, reconciled TODO next-major doctor entry to Resolved with pending commit hash and main backport caveat.
-  inspiration: Plan task 3 (orkestrera closeout).
-  discovered: No git commit in orchestration session; CHANGELOG and TODO hashes remain pending. Python stable backport on main still uncommitted.
-  verified: agentera prime --format json reports plan absent (state_presence.active.plan false); live agentera doctor shows 6-line Next major section at head; archive file present at .agentera/archive/plan-2026-06-03-next-major-doctor.yaml.
-  next: User release commit on feat/v3; main checkout for Python backport commit; fill pending hashes in CHANGELOG and TODO.
-  context:
-    intent: Orkestrera session closeout for next-major doctor plan.
-    constraints: No remote push; no git commit.
-    unknowns: none
-    scope: .agentera/archive/plan-2026-06-03-next-major-doctor.yaml, .agentera/plan.yaml, TODO.md, .agentera/progress.yaml
-  commit: 51feef4
 archive:
 - summary: 'Cycle 635 (2026-06-03): Next-major doctor section — extended references/cli/update-channels.yaml with per-channel next_major on stable, added packages/cli/src/upgrade/nextMajorDoctor.ts and head-of-output...'
 - summary: 'Cycle 634 (2026-06-03): Final state sync and plan archive. Archived the 2.7.7 plan to .agentera/archive/plan-2026-06-03.yaml, cleared the active...'
