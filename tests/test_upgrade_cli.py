@@ -218,6 +218,75 @@ def test_runtime_upgrade_installs_cursor_hooks_from_bundled_source(tmp_path: Pat
     assert "cursor_pre_tool_use.py" in json.dumps(installed)
 
 
+def _seed_v3_capability_surface(project: Path) -> None:
+    upgrade = _load_upgrade_module()
+    for name in upgrade.V3_CAPABILITY_NAMES:
+        module_path = project / upgrade.V3_INSTRUCTION_MODULE_ROOT / name / "instructions.ts"
+        module_path.parent.mkdir(parents=True, exist_ok=True)
+        module_path.write_text("export const instructions = '';\n", encoding="utf-8")
+
+
+def test_runtime_upgrade_skips_in_tree_cursor_agents_on_v3_project(tmp_path: Path) -> None:
+    home = tmp_path / "home"
+    project = tmp_path / "project"
+    _seed_v3_capability_surface(project)
+    agents_dir = project / ".cursor" / "agents"
+    agents_dir.mkdir(parents=True)
+    d65_planera = (
+        "<!-- agentera: managed -->\n\n"
+        "Use the Agentera `planera` capability. Run `agentera prime --context planera --format json` "
+        "to fetch the authoritative instructions.\n"
+    )
+    (agents_dir / "planera.md").write_text(d65_planera, encoding="utf-8")
+
+    app_home = home / ".local" / "share" / "agentera"
+    deprecated_default = home / ".agents" / "agentera"
+    bootstrap_env = {
+        "AGENTERA_HOME": "",
+        "XDG_DATA_HOME": str(home / ".local" / "share"),
+        "AGENTERA_BOOTSTRAP_SOURCE_ROOT": str(REPO_ROOT),
+        "AGENTERA_DEFAULT_INSTALL_ROOT": str(deprecated_default),
+    }
+    bundle = _run(
+        "upgrade",
+        "--only",
+        "bundle",
+        "--home",
+        str(home),
+        "--yes",
+        "--json",
+        env=bootstrap_env,
+    )
+    assert bundle.returncode == 0, bundle.stderr
+
+    runtime_env = {**bootstrap_env, "AGENTERA_HOME": str(app_home)}
+    result = _run(
+        "upgrade",
+        "--only",
+        "runtime",
+        "--runtime",
+        "cursor",
+        "--home",
+        str(home),
+        "--project",
+        str(project),
+        "--dry-run",
+        "--json",
+        env=runtime_env,
+    )
+    assert result.returncode == 1, result.stderr
+    payload = json.loads(result.stdout)
+    agent_items = [
+        item
+        for item in payload["phases"][0]["items"]
+        if item.get("runtime") == "cursor" and item.get("action") == "copy-agent"
+    ]
+    assert agent_items
+    assert all(item["status"] == "skipped" for item in agent_items)
+    assert (agents_dir / "planera.md").read_text(encoding="utf-8") == d65_planera
+    assert "instructions.md" not in (agents_dir / "planera.md").read_text(encoding="utf-8")
+
+
 def test_default_upgrade_retires_legacy_agents_default_app_home(tmp_path: Path) -> None:
     home = tmp_path / "home"
     legacy_default = home / ".agents" / "agentera"

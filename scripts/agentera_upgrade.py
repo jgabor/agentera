@@ -54,7 +54,29 @@ AGENTERA_USER_STATE_NAMES = (
     "plan.yaml",
     "docs.yaml",
 )
+V3_CAPABILITY_NAMES = (
+    "hej",
+    "visionera",
+    "resonera",
+    "inspirera",
+    "planera",
+    "realisera",
+    "optimera",
+    "inspektera",
+    "dokumentera",
+    "profilera",
+    "visualisera",
+    "orkestrera",
+)
+V3_INSTRUCTION_MODULE_ROOT = Path("packages/cli/src/capabilities")
 
+
+def _project_uses_v3_capability_instruction_modules(project: Path) -> bool:
+    root = project.resolve()
+    return all(
+        (root / V3_INSTRUCTION_MODULE_ROOT / name / "instructions.ts").is_file()
+        for name in V3_CAPABILITY_NAMES
+    )
 
 
 def _load_script_module(name: str, path: Path) -> ModuleType:
@@ -1704,14 +1726,30 @@ def plan_runtime_phase(
             action=hook_action,
         ))
         agents_dir = cursor_dir / "agents"
-        for agent_source in sorted((runtime_source_root / ".cursor" / "agents").glob("*.md")):
-            items.append(_copy_item(
-                adapter["identity"]["runtime_id"],
-                agent_source,
-                agents_dir / agent_source.name,
-                force=force,
-                action=agent_action,
-            ))
+        skip_in_tree_agents = (
+            project is not None
+            and _project_uses_v3_capability_instruction_modules(project)
+        )
+        if skip_in_tree_agents:
+            items.append({
+                "status": "skipped",
+                "runtime": adapter["identity"]["runtime_id"],
+                "action": agent_action,
+                "target": str(agents_dir),
+                "message": (
+                    "v3 capability instruction modules present; in-tree .cursor/agents/ "
+                    "uses prime --context and is not overwritten"
+                ),
+            })
+        else:
+            for agent_source in sorted((runtime_source_root / ".cursor" / "agents").glob("*.md")):
+                items.append(_copy_item(
+                    adapter["identity"]["runtime_id"],
+                    agent_source,
+                    agents_dir / agent_source.name,
+                    force=force,
+                    action=agent_action,
+                ))
         plugin_target = cursor_project_root / ".cursor-plugin" / "plugin.json"
         plugin_source = runtime_source_root / ".cursor-plugin" / "plugin.json"
         items.append(_copy_item(
