@@ -3,6 +3,7 @@
 .opencode/goals/
 docs/*
 !docs/README.md
+!docs/packaging/
 __pycache__/
 *.pyc
 .env
