@@ -1,0 +1,127 @@
+/**
+ * Markdown entry parsing for the compaction writer.
+ *
+ * Splits a markdown artifact into "full" and "oneline" entries by
+ * walking the spec's heading regex, then collects the trailing
+ * detail body up to the next heading. The TODO-resolved section
+ * uses indented detail lines as the body delimiter.
+ */
+
+import { ArtifactSpec, escapeRe } from "./dryRun.js";
+
+type Dict = Record<string, any>;
+
+export function splitArchive(text: string, archiveHeading: string): [string, string] {
+  if (!archiveHeading) return [text, ""];
+  const pattern = new RegExp(`^${escapeRe(archiveHeading)}\\s*$`, "m");
+  const match = pattern.exec(text);
+  if (!match) return [text, ""];
+  const pre = text.slice(0, match.index).replace(/\s+$/, "");
+  const after = text.slice(match.index + match[0].length);
+  const nextSection = /^##\s/m.exec(after);
+  if (nextSection) {
+    const archiveBody = after.slice(0, nextSection.index);
+    const trailing = after.slice(nextSection.index);
+    return [pre, archiveBody.trim() + (trailing ? "\n\n" + trailing : "")];
+  }
+  return [pre, after.trim()];
+}
+
+export function parseFullEntries(text: string, spec: ArtifactSpec): Dict[] {
+  const entries: Dict[] = [];
+  const re = new RegExp(spec.entryHeadingRe.source, "gm");
+  const matches = [...text.matchAll(re)];
+  for (let i = 0; i < matches.length; i++) {
+    const m = matches[i];
+    const lineStart = text.lastIndexOf("\n", m.index! - 1) + 1;
+    let lineEnd = text.indexOf("\n", m.index!);
+    if (lineEnd === -1) lineEnd = text.length;
+    const headerLine = text.slice(lineStart, lineEnd).trim();
+    const glyphMatch = /^(■)\s*/.exec(headerLine);
+    const glyph = glyphMatch ? glyphMatch[1] + " " : "";
+    const remainder = glyphMatch ? headerLine.slice(glyphMatch[0].length) : headerLine;
+    const header = glyph + remainder.replace(/^#+/, "").trim();
+    const bodyStart = lineEnd + 1;
+    let bodyEnd: number;
+    if (i + 1 < matches.length) {
+      bodyEnd = text.lastIndexOf("\n", matches[i + 1].index! - 1) + 1;
+    } else {
+      bodyEnd = text.length;
+    }
+    const body = text.slice(bodyStart, bodyEnd).trim();
+    entries.push({ header, body, kind: "full" });
+  }
+  return entries;
+}
+
+export function parseOnelineEntries(text: string, spec: ArtifactSpec): Dict[] {
+  if (spec.onelineHeadingRe === null) return [];
+  const entries: Dict[] = [];
+  const re = new RegExp(spec.onelineHeadingRe.source);
+  for (const line of text.split(/\r\n|\r|\n/)) {
+    if (re.test(line)) {
+      entries.push({ header: line.replace(/\s+$/, ""), body: "", kind: "oneline" });
+    }
+  }
+  return entries;
+}
+
+export function extractResolvedSection(text: string): [number, number, string] {
+  const m = /^##\s+(?:✓\s+)?Resolved\s*$/m.exec(text);
+  if (!m) return [-1, -1, ""];
+  const bodyStart = m.index + m[0].length + 1;
+  const nextSection = /^##\s/m.exec(text.slice(bodyStart));
+  const bodyEnd = nextSection ? bodyStart + nextSection.index : text.length;
+  return [m.index, bodyEnd, text.slice(bodyStart, bodyEnd)];
+}
+
+export function parseTodoResolved(text: string, spec: ArtifactSpec): Dict[] {
+  const [, , body] = extractResolvedSection(text);
+  if (!body) return [];
+  const entries: Dict[] = [];
+  const lines = body.split(/\r\n|\r|\n/);
+  const headRe = new RegExp(spec.entryHeadingRe.source);
+  let i = 0;
+  while (i < lines.length) {
+    const line = lines[i];
+    if (headRe.test(line)) {
+      const detailLines: string[] = [];
+      let j = i + 1;
+      while (j < lines.length) {
+        const nxt = lines[j];
+        if (nxt.startsWith(" ") || nxt.startsWith("\t")) {
+          detailLines.push(nxt);
+          j += 1;
+        } else if (nxt.trim() === "") {
+          if (j + 1 < lines.length && (lines[j + 1].startsWith(" ") || lines[j + 1].startsWith("\t"))) {
+            detailLines.push(nxt);
+            j += 1;
+          } else {
+            break;
+          }
+        } else {
+          break;
+        }
+      }
+      const bodyText = detailLines.join("\n").trim();
+      entries.push({ header: line.replace(/\s+$/, ""), body: bodyText, kind: bodyText ? "full" : "oneline" });
+      i = j;
+    } else {
+      i += 1;
+    }
+  }
+  return entries;
+}
+
+export function parseEntries(text: string, specName: string): Dict[] {
+  const spec = SPECS[specName];
+  if (spec.name === "todo-resolved") {
+    return parseTodoResolved(text, spec);
+  }
+  const [pre, archiveBody] = splitArchive(text, spec.archiveHeading || "");
+  const fullEntries = parseFullEntries(pre, spec);
+  const onelineEntries = parseOnelineEntries(archiveBody, spec);
+  return [...fullEntries, ...onelineEntries];
+}
+
+import { SPECS } from "./dryRun.js";

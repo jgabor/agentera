@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import { ArtifactSchemaValidator, HookCliAdapter, loadSchema } from "../../src/hooks/validateArtifact.js";
+import { ArtifactSchemaValidator, HookCliAdapter, loadSchema } from "../../src/hooks/validateArtifact/index.js";
 import { runCursorPreToolUse } from "../../src/hooks/cursorPreToolUse.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
