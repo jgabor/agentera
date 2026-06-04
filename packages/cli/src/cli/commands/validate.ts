@@ -13,6 +13,7 @@ import { lifecycleMain } from "../../validate/lifecycleAdapters.js";
 import { validate as validateAppHome } from "../../validate/appHomeContract.js";
 import { selfAuditMain } from "../../validate/selfAudit.js";
 import { vocabularyAuthorityMain } from "../../validate/vocabularyAuthority.js";
+import { releaseMetadataMain } from "../../release/releaseMetadata.js";
 import { emitStructured } from "../structured.js";
 
 /** Port of scripts/agentera cmd_validate delegated-script family. */
@@ -32,6 +33,7 @@ const VALIDATE_DELEGATED_SCRIPTS: Record<string, string> = {
   "app-home-contract": "validate_app_home_contract.py",
   vocabularyAuthority: "validate_vocabulary_authority.py",
   selfAudit: "self_audit.py",
+  "release-metadata": "validate_release_metadata.py",
 };
 
 function pySplitlines(s: string): string[] {
@@ -79,6 +81,12 @@ function runSelfAudit(): ProcResult {
   return { stdout: lines.map((l) => l + "\n").join(""), stderr: "", returncode: rc };
 }
 
+function runReleaseMetadata(): ProcResult {
+  const lines: string[] = [];
+  const rc = releaseMetadataMain({ out: (line) => lines.push(line) });
+  return { stdout: lines.map((l) => l + "\n").join(""), stderr: "", returncode: rc };
+}
+
 function repoRoot(): string {
   // appHomeContract.validate resolves its own default root; pass the source root.
   return process.cwd();
@@ -90,6 +98,7 @@ const DELEGATED_RUNNERS: Record<string, () => ProcResult> = {
   "app-home-contract": runAppHomeContract,
   vocabularyAuthority: runVocabularyAuthority,
   selfAudit: runSelfAudit,
+  "release-metadata": runReleaseMetadata,
 };
 
 function validationProcessPayload(
@@ -128,7 +137,7 @@ export function cmdValidate(family: string, args: { format?: string }, io: Io): 
   if (!(family in DELEGATED_RUNNERS)) {
     throw new Error(
       "unsupported validate target family; valid families: capability, artifact, descriptors, " +
-        "cross-capability, lifecycle-adapters, app-home-contract, vocabularyAuthority, selfAudit, capability-contract.",
+        "cross-capability, lifecycle-adapters, app-home-contract, vocabularyAuthority, selfAudit, release-metadata, capability-contract.",
     );
   }
   const result = DELEGATED_RUNNERS[family]();
