@@ -166,7 +166,6 @@ function commandDescription(name: string, kind: string, fields: string[] | null 
 function describeCommands(): Dict[] {
   const commands: Dict[] = [
     commandDescription("prime", "orientation", availableStructuredFields("prime")),
-    commandDescription("hej", "deprecated_alias", availableStructuredFields("hej")),
   ];
   for (const name of CAPABILITY_NAMES) {
     if (name === "hej") continue;
@@ -178,10 +177,8 @@ function describeCommands(): Dict[] {
   commands.push(
     commandDescription("query", "advanced_artifact_query"),
     commandDescription("lint", "artifact_lint", ["command", "status", "artifact", "checks", "summary"]),
-    commandDescription("gate", "repo_gate", ["command", "status", "project", "summary", "operations"]),
     commandDescription("compact", "artifact_compaction", ["command", "status", "project", "summary", "operations"]),
     commandDescription("schema", "runtime_introspection"),
-    commandDescription("describe", "deprecated_alias"),
     commandDescription("upgrade", "upgrade"),
     commandDescription("doctor", "self_check"),
   );

@@ -139,9 +139,12 @@ describe("cli dispatch: state routing", () => {
     expect(err).toContain("state_command");
   });
 
-  it("emits a deprecation alias for top-level progress", () => {
-    const { err } = capture((io) => main(["node", "agentera", "progress"], io));
-    expect(err).toContain("Deprecation: agentera progress is deprecated; use agentera state progress");
+  it("rejects removed top-level progress with the unknown-command envelope", () => {
+    const { rc, out, err } = capture((io) => main(["node", "agentera", "progress"], io));
+    expect(rc).toBe(2);
+    expect(out).toBe("");
+    expect(err).toContain("What happened:");
+    expect(err).toContain("unknown or not-yet-ported command: progress");
   });
 });
 

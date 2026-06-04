@@ -178,10 +178,8 @@ export function printCommandHelp(command: string, rest: string[] = []): string |
   const sub = rest.find((a) => !a.startsWith("-") && a !== "--help" && a !== "-h");
   switch (command) {
     case "prime":
-    case "hej":
       return printPrimeHelp();
     case "schema":
-    case "describe":
       return printSchemaHelp();
     case "upgrade":
       return printUpgradeHelp();

@@ -70,14 +70,8 @@ export function main(argv: string[], io: Io = {}): number {
       }
       return runHook(name, rest.slice(1), io);
     }
-    case "hej":
-      emitDeprecationAlias("hej", "prime", err);
-      return runPrime("hej", rest, io, "agentera hej");
     case "schema":
       return runSchema(rest, io, "agentera schema");
-    case "describe":
-      emitDeprecationAlias("describe", "schema", err);
-      return runSchema(rest, io, "agentera describe");
     case "lint":
       emitDeprecationAlias("lint", "check lint", err);
       return runLint(rest, io);
@@ -160,19 +154,12 @@ export function main(argv: string[], io: Io = {}): number {
     case "compact":
       emitDeprecationAlias("compact", "check compact", err);
       return runCompact(rest, io, "agentera compact");
-    case "gate":
-      emitDeprecationAlias("gate", "check compact", err);
-      return runGate(rest, io, "agentera gate");
     case "validate":
       emitDeprecationAlias("validate", "check validate", err);
       return runValidate(rest, io, "agentera validate");
     default:
       if (command && CAPABILITY_ROUTING_NAMES.includes(command)) {
         return runCapability(command, rest, io, `agentera ${command}`);
-      }
-      if (command && isPortedStateCommand(command)) {
-        emitDeprecationAlias(command, `state ${command}`, err);
-        return runState(command, rest, io, `agentera ${command}`);
       }
       return emitInvalidInput(io, {
         format: "text",
