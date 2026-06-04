@@ -362,17 +362,17 @@ privacy_boundary:
     - canonical_event_class
     - salted_non_reconstructable_hash
   canonical_artifact_labels:
-    TODO.md: TODO.md
-    CHANGELOG.md: CHANGELOG.md
-    DESIGN.md: DESIGN.md
-    PLAN.md: PLAN.md
-    PROGRESS.md: PROGRESS.md
-    DOCS.md: DOCS.md
-    DECISIONS.md: DECISIONS.md
-    HEALTH.md: HEALTH.md
-    VISION.md: VISION.md
-    OBJECTIVE.md: OBJECTIVE.md
-    EXPERIMENTS.md: EXPERIMENTS.md
+    todo: todo
+    changelog: changelog
+    design: design
+    plan: plan
+    progress: progress
+    docs: docs
+    decisions: decisions
+    health: health
+    vision: vision
+    objective: objective
+    experiments: experiments
     AGENTS.md: AGENTS.md
     SKILL.md: SKILL.md
     AGENTERA_ARTIFACTS: AGENTERA_ARTIFACTS

@@ -1,0 +1,42 @@
+schema_version: agentera.single_name_protocol.v1
+status: active_authority
+decision: 58
+purpose: >-
+  Machine-readable Decision 58 boundary: forbidden legacy protocol identifiers
+  and scan surfaces for the single-name protocol regression test.
+human_index:
+  document: references/cli/vocabulary.md
+forbidden_protocol_substrings:
+  - pattern: instruction_file
+    rationale: D65 renamed DIRECTORY_REQUIREMENTS and contract fields to instruction_module.
+  - pattern: canonical_instruction_file
+    rationale: Use canonical_instruction_module in capability-instruction-contract.yaml.
+  - pattern: legacy_instruction_file
+    rationale: Historical paths belong in archive or migration modules only.
+  - pattern: instructionPath
+    rationale: capabilityContract loader exposes instructionModulePath only.
+forbidden_storage_protocol_markdown_artifacts:
+  - PROGRESS.md
+  - PLAN.md
+  - DECISIONS.md
+  - VISION.md
+  - HEALTH.md
+  - DOCS.md
+  - OBJECTIVE.md
+  - EXPERIMENTS.md
+scan_roots:
+  - packages/cli/src
+  - skills/agentera/capability_schema_contract.yaml
+  - skills/agentera/protocol.yaml
+  - references/cli/capability-instruction-contract.yaml
+  - references/cli/vocabulary.md
+  - references/cli/vocabulary-index.yaml
+  - registry.json
+scan_exclude_globs:
+  - "**/capabilities/**/instructions.ts"
+  - "**/migrateArtifactsV1ToV2.ts"
+  - "**/migrateArtifactsV2ToV3.ts"
+  - "**/migrateArtifacts*.ts"
+  - "**/*.test.ts"
+  - "**/test/**"
+comment_line_exempt: true

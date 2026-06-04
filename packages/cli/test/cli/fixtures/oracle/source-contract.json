@@ -191,8 +191,8 @@
         "summary_fields",
         "entry_fields"
       ],
-      "artifactValue": "PLAN.md",
-      "canonicalArtifactLabelValue": "PLAN.md",
+      "artifactValue": "plan",
+      "canonicalArtifactLabelValue": "plan",
       "fieldTypes": {
         "artifact": "string",
         "canonical_artifact_label": "string",

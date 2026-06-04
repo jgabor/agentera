@@ -159,7 +159,7 @@
       "summaryCheckCount": 24
     },
     "artifact": {
-      "argv": ["check", "validate", "artifact", "--artifact", "PLAN.md", "--format", "json"],
+      "argv": ["check", "validate", "artifact", "--artifact", "plan", "--format", "json"],
       "exitCode": 0,
       "requiredTopLevelKeys": [
         "command",

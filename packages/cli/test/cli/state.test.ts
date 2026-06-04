@@ -409,7 +409,7 @@ describe("cli state decisions", () => {
     expect(entry.satisfaction.review_needed).toBe(true);
     expect(entry.satisfaction.source).toBe("missing_legacy_state");
     expect(entry.downstream_consequence_references[0].reference).toBe("scripts/x.ts");
-    expect(payload.source_contract.artifact).toBe("DECISIONS.md");
+    expect(payload.source_contract.artifact).toBe("decisions");
   });
 
   it("includes compacted archive entries with caveats", () => {

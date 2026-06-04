@@ -222,23 +222,23 @@ export const SPECS: Record<string, ArtifactSpec> = {
 };
 
 export const COMPACTABLE_YAML_ARTIFACTS: Record<string, [string, string]> = {
-  "PROGRESS.md": ["cycles", "archive"],
-  "DECISIONS.md": ["decisions", "archive"],
-  "HEALTH.md": ["audits", "archive"],
+  progress: ["cycles", "archive"],
+  decisions: ["decisions", "archive"],
+  health: ["audits", "archive"],
 };
 
 const YAML_SPEC_BY_ARTIFACT: Record<string, string> = {
-  "PROGRESS.md": "progress",
-  "DECISIONS.md": "decisions",
-  "HEALTH.md": "health",
+  progress: "progress",
+  decisions: "decisions",
+  health: "health",
 };
 
 const NON_COMPACTABLE_ARTIFACTS: Record<string, [string, string]> = {
-  "CHANGELOG.md": ["exempt", "public release history is not compacted"],
-  "PLAN.md": ["unsupported", "active plan is lifecycle state, not a uniform retained-entry log"],
-  "DOCS.md": ["unsupported", "docs owns artifact mapping and schema metadata"],
-  "VISION.md": ["protected", "vision state is protected during execution cycles"],
-  "DESIGN.md": ["unsupported", "design is a human-facing identity artifact, not a uniform retained-entry log"],
+  changelog: ["exempt", "public release history is not compacted"],
+  plan: ["unsupported", "active plan is lifecycle state, not a uniform retained-entry log"],
+  docs: ["unsupported", "docs owns artifact mapping and schema metadata"],
+  vision: ["protected", "vision state is protected during execution cycles"],
+  design: ["unsupported", "design is a human-facing identity artifact, not a uniform retained-entry log"],
 };
 
 function overLimitCount(activeCount: number, archiveCount: number): number {
@@ -487,7 +487,7 @@ function selectDecisionActiveEntries(active: any[]): [any[], any[]] {
   const protectedEntries = active.filter((e) => decisionRequiresUserReview(e));
   if (protectedEntries.length > MAX_FULL_ENTRIES) {
     throw new Error(
-      "DECISIONS.md: protected-overflow review pressure; " +
+      "decisions: protected-overflow review pressure; " +
         `${protectedEntries.length} protected active decision(s) exceed ${MAX_FULL_ENTRIES} full-detail slots`,
     );
   }
@@ -502,7 +502,7 @@ function selectDecisionArchiveEntries(archiveCandidates: any[]): any[] {
   const protectedEntries = archiveCandidates.filter((e) => decisionRequiresUserReview(e));
   if (protectedEntries.length > MAX_ONELINE_ENTRIES) {
     throw new Error(
-      "DECISIONS.md: protected-overflow review pressure; " +
+      "decisions: protected-overflow review pressure; " +
         `${protectedEntries.length} protected archived decision(s) exceed ${MAX_ONELINE_ENTRIES} archive slots`,
     );
   }
@@ -586,14 +586,14 @@ export function computeCompactionStatus(projectRoot: string): CompactionStatus[]
   const paths = artifactPaths(projectRoot);
   const statuses: CompactionStatus[] = [];
 
-  const todoPath = paths["TODO.md"];
+  const todoPath = paths.todo;
   if (fs.existsSync(todoPath)) {
     const entries = parseEntries(fs.readFileSync(todoPath, "utf8"), "todo-resolved");
     const activeCount = entries.filter((e) => e.kind === "full").length;
     const archiveCount = entries.filter((e) => e.kind === "oneline").length;
-    statuses.push(countStatus("TODO.md#Resolved", todoPath, activeCount, archiveCount));
+    statuses.push(countStatus("todo#Resolved", todoPath, activeCount, archiveCount));
   } else {
-    statuses.push(missingStatus("TODO.md#Resolved", todoPath, "compactable"));
+    statuses.push(missingStatus("todo#Resolved", todoPath, "compactable"));
   }
 
   for (const [artifact, [activeKey, archiveKey]] of Object.entries(COMPACTABLE_YAML_ARTIFACTS)) {
@@ -608,7 +608,7 @@ export function computeCompactionStatus(projectRoot: string): CompactionStatus[]
         continue;
       }
       const protectedOverflowCount =
-        artifact === "DECISIONS.md" ? decisionProtectedOverflowCount(active, archive) : 0;
+        artifact === "decisions" ? decisionProtectedOverflowCount(active, archive) : 0;
       statuses.push(countStatus(artifact, p, active.length, archive.length, protectedOverflowCount));
     } else {
       statuses.push(missingStatus(artifact, p, "compactable"));
@@ -644,11 +644,11 @@ export function computeCompactionStatus(projectRoot: string): CompactionStatus[]
       try {
         [activeCount, archiveCount] = yamlCounts(expPath, "experiments", "archive");
       } catch (exc) {
-        statuses.push(yamlErrorStatus("EXPERIMENTS.md", expPath, (exc as Error).message));
+        statuses.push(yamlErrorStatus("experiments", expPath, (exc as Error).message));
         continue;
       }
       statuses.push({
-        artifact: "EXPERIMENTS.md",
+        artifact: "experiments",
         path: expPath,
         classification: "protected",
         active_count: activeCount,
@@ -702,7 +702,7 @@ export function fixCompaction(projectRoot: string): CompactionOperation[] {
     const p = status.path;
     let result: CompactResult;
     try {
-      if (status.artifact === "TODO.md#Resolved") {
+      if (status.artifact === "todo#Resolved") {
         result = compactFile(p, "todo-resolved");
       } else if (status.artifact in YAML_SPEC_BY_ARTIFACT) {
         result = compactYamlFile(p, status.artifact);

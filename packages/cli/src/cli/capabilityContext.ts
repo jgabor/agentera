@@ -1620,7 +1620,7 @@ function decisionReviewPressure(schemas: Record<string, SchemaInfo>): Dict {
     const message =
       "Protected decisions exceed the 10/40/50 compaction budget; " +
       `${protectedOverflowCount} protected decision(s) require review before compaction can complete.`;
-    stale.push({ label: "DECISIONS.md", collection: "decisions/archive", reason: "protected_compaction_budget_pressure", protected_overflow_count: protectedOverflowCount, message });
+    stale.push({ label: "decisions", collection: "decisions/archive", reason: "protected_compaction_budget_pressure", protected_overflow_count: protectedOverflowCount, message });
     caveats.push(message);
   }
   caveats = uniqueList(caveats);

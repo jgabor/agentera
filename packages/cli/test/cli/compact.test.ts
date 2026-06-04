@@ -43,7 +43,7 @@ describe("cli compact", () => {
     const payload = JSON.parse(out);
     expect(payload.command).toBe("compact");
     expect(payload.summary.status).toBe("pass");
-    const changelog = payload.operations.find((o: { artifact: string }) => o.artifact === "CHANGELOG.md");
+    const changelog = payload.operations.find((o: { artifact: string }) => o.artifact === "changelog");
     expect(changelog.active_count).toBeNull();
   });
 

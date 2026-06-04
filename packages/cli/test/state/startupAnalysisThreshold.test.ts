@@ -51,7 +51,7 @@ describe("classifyStartupEvent", () => {
     });
     expect(cls).toBe("cli_state_call");
     expect(cmd).toBe("plan");
-    expect([...artifacts]).toEqual(["PLAN.md"]);
+    expect([...artifacts]).toEqual(["plan"]);
   });
 
   it("classifies raw artifact access and implementation boundary", () => {
@@ -97,14 +97,14 @@ describe("scanThresholdEvidence", () => {
 });
 
 describe("scanRetainedThresholdEvidence", () => {
-  it("flags a retained PLAN.md false-positive signal", () => {
+  it("flags a retained plan false-positive signal", () => {
     const retained = scanRetainedThresholdEvidence(
-      { "PLAN.md": "[post-audit-flagged] full plan exceeds budget; 600 words exceeds 500 budget" },
+      { plan: "[post-audit-flagged] full plan exceeds budget; 600 words exceeds 500 budget" },
       { salt: "SALT" },
     );
     expect(retained.counts.warning_events).toBe(1);
     const event = retained.warning_events[0];
-    expect(event.artifact_label).toBe("PLAN.md");
+    expect(event.artifact_label).toBe("plan");
     expect(event.detail_loss_status).toBe("retained_artifact_false_positive_signal");
     expect(event.observed_counts.post_audit_flag_markers).toBe(1);
   });

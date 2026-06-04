@@ -4,6 +4,11 @@ import path from "node:path";
 import { loadYamlMapping, parseYaml } from "../core/yaml.js";
 import { resolvePath } from "../core/paths.js";
 import { resolveSourceRoot } from "../core/sourceRoot.js";
+import {
+  ARTIFACT_PROTOCOL_PATHS,
+  HUMAN_FACING_ARTIFACT_IDS,
+  normalizeArtifactProtocolId,
+} from "../registries/artifactProtocolIds.js";
 import { DEFAULT_ARTIFACT_PATHS } from "./common.js";
 import { COMPACTABLE_YAML_ARTIFACTS, compactFile, compactYamlFile } from "./compaction.js";
 
@@ -19,23 +24,8 @@ function schemasDirDefault(): string {
 }
 
 const AGENT_YAML_RE = /\.agentera\/([a-z_]+)\.yaml$/;
-const HUMAN_FACING = new Set(["TODO.md", "CHANGELOG.md", "DESIGN.md"]);
-const HUMAN_FACING_SCHEMA_NAMES: Record<string, string> = {
-  "TODO.md": "todo",
-  "CHANGELOG.md": "changelog",
-  "DESIGN.md": "design",
-};
-const CANONICAL_SCHEMA_NAMES: Record<string, string> = {
-  "DECISIONS.md": "decisions",
-  "DOCS.md": "docs",
-  "EXPERIMENTS.md": "experiments",
-  "HEALTH.md": "health",
-  "PLAN.md": "plan",
-  "PROGRESS.md": "progress",
-  "VISION.md": "vision",
-};
-const ARTIFACT_BY_SCHEMA_NAME: Record<string, string> = Object.fromEntries(
-  Object.entries(CANONICAL_SCHEMA_NAMES).map(([a, s]) => [s, a]),
+const AGENT_FACING_ARTIFACT_IDS = new Set(
+  Object.keys(ARTIFACT_PROTOCOL_PATHS).filter((id) => !HUMAN_FACING_ARTIFACT_IDS.has(id)),
 );
 
 const SKIP_META = new Set(["meta", "GROUP_PREFIXES", "BUDGET", "COMPACTION", "VALIDATION", "CONVENTION"]);
@@ -752,8 +742,13 @@ function artifactForWrite(absPath: string, relPath: string, basename: string, cw
     if (samePath(absPath, mappedPath)) return artifact;
   }
   const match = AGENT_YAML_RE.exec(relPath);
-  if (match) return ARTIFACT_BY_SCHEMA_NAME[match[1]] ?? null;
-  if (HUMAN_FACING.has(basename)) return basename;
+  if (match) {
+    const id = match[1];
+    return id in ARTIFACT_PROTOCOL_PATHS ? id : null;
+  }
+  if (HUMAN_FACING_ARTIFACT_IDS.has(normalizeArtifactProtocolId(basename) ?? "")) {
+    return normalizeArtifactProtocolId(basename);
+  }
   return null;
 }
 
@@ -769,7 +764,7 @@ function readIfNeeded(content: string | null, absPath: string): string | null {
 function compactAfterValidWrite(artifact: string, absPath: string): string[] {
   if (!fs.existsSync(absPath)) return [];
   try {
-    if (artifact === "TODO.md") {
+    if (artifact === "todo") {
       compactFile(absPath, "todo-resolved");
     } else if (artifact in COMPACTABLE_YAML_ARTIFACTS) {
       compactYamlFile(absPath, artifact);
@@ -819,23 +814,21 @@ export class ArtifactSchemaValidator {
     const basename = path.basename(absPath);
     const artifact = artifactForWrite(absPath, rel, basename, cwd);
 
-    if (artifact && artifact in CANONICAL_SCHEMA_NAMES) {
-      const name = CANONICAL_SCHEMA_NAMES[artifact];
-      const schema = this.loadSchema(name);
+    if (artifact && AGENT_FACING_ARTIFACT_IDS.has(artifact)) {
+      const schema = this.loadSchema(artifact);
       if (schema === null) return [];
-      if (Object.keys(schema).length === 0) return [`${name}: schema file is empty or contains no valid definitions`];
+      if (Object.keys(schema).length === 0) return [`${artifact}: schema file is empty or contains no valid definitions`];
       const content = readIfNeeded(write.content, absPath);
       if (content === null) return [];
-      let violations = this.validateYaml(content, schema, name);
+      let violations = this.validateYaml(content, schema, artifact);
       if (violations.length > 0) return violations;
       return compactAfterValidWrite(artifact, absPath);
     }
 
-    if (artifact && HUMAN_FACING.has(artifact)) {
+    if (artifact && HUMAN_FACING_ARTIFACT_IDS.has(artifact)) {
       const content = readIfNeeded(write.content, absPath);
       if (content === null) return [];
-      const schemaName = HUMAN_FACING_SCHEMA_NAMES[artifact];
-      const schema = schemaName ? this.loadSchema(schemaName) : null;
+      const schema = this.loadSchema(artifact);
       const violations = this.validateMarkdown(content, artifact, schema);
       if (violations.length > 0) return violations;
       return compactAfterValidWrite(artifact, absPath);
@@ -847,17 +840,20 @@ export class ArtifactSchemaValidator {
   validateExplicit(artifact: string, filePath: string, cwd: string): string[] {
     const content = readIfNeeded(null, filePath);
     if (content === null) return [`${artifact}: cannot read artifact file '${filePath}'`];
-    if (artifact in CANONICAL_SCHEMA_NAMES) {
-      const name = CANONICAL_SCHEMA_NAMES[artifact];
-      const schema = this.loadSchema(name);
-      if (schema === null) return [`${artifact}: schema '${name}' is not available`];
-      if (Object.keys(schema).length === 0) return [`${artifact}: schema '${name}' file is empty or contains no valid definitions`];
-      let violations = this.validateYaml(content, schema, name);
-      return violations;
+    const protocolId = normalizeArtifactProtocolId(artifact);
+    if (protocolId === null) {
+      return [`${artifact}: unsupported artifact protocol id`];
     }
-    if (HUMAN_FACING.has(artifact)) {
-      const schemaName = HUMAN_FACING_SCHEMA_NAMES[artifact];
-      const schema = schemaName ? this.loadSchema(schemaName) : null;
+    if (AGENT_FACING_ARTIFACT_IDS.has(protocolId)) {
+      const schema = this.loadSchema(protocolId);
+      if (schema === null) return [`${protocolId}: schema '${protocolId}' is not available`];
+      if (Object.keys(schema).length === 0) {
+        return [`${protocolId}: schema '${protocolId}' file is empty or contains no valid definitions`];
+      }
+      return this.validateYaml(content, schema, protocolId);
+    }
+    if (HUMAN_FACING_ARTIFACT_IDS.has(protocolId)) {
+      const schema = this.loadSchema(protocolId);
       return this.validateMarkdown(content, artifact, schema);
     }
     return [

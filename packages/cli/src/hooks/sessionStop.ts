@@ -25,24 +25,16 @@ type Env = Record<string, string | undefined>;
 
 export { MAX_TOTAL_ENTRIES };
 
-export const TRACKED_ARTIFACTS = [
-  "PROGRESS.md",
-  "DECISIONS.md",
-  "PLAN.md",
-  "HEALTH.md",
-  "DESIGN.md",
-  "DOCS.md",
-  "VISION.md",
-  "TODO.md",
-  "CHANGELOG.md",
-];
+import { TRACKED_ARTIFACT_IDS } from "../registries/artifactProtocolIds.js";
+
+export { TRACKED_ARTIFACT_IDS as TRACKED_ARTIFACTS } from "../registries/artifactProtocolIds.js";
 
 export function getArtifactPaths(
   projectRoot: string,
   overrides: Record<string, string> | null,
 ): Record<string, string> {
   const pathToName: Record<string, string> = {};
-  for (const artifact of TRACKED_ARTIFACTS) {
+  for (const artifact of TRACKED_ARTIFACT_IDS) {
     const resolved = resolveArtifactPath(projectRoot, artifact, overrides);
     const rel = path.relative(resolvePath(projectRoot), resolved);
     if (rel.startsWith("..") || path.isAbsolute(rel)) {

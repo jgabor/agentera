@@ -42,8 +42,8 @@ describe("aggregateStartupMetrics", () => {
     expect(m.token_estimator_version).toBe("approx_bytes_div_4_v1");
     expect(m.per_capability_state_counts.realisera.state_sequences).toBe(1);
     expect(m.cli_state_command_counts.plan).toBe(1);
-    expect(m.raw_artifact_access_after_cli_counts).toEqual({ "HEALTH.md": 1, "PLAN.md": 1 });
-    expect(m.redundant_raw_artifact_access_counts).toEqual({ "PLAN.md": 1 });
+    expect(m.raw_artifact_access_after_cli_counts).toEqual({ health: 1, plan: 1 });
+    expect(m.redundant_raw_artifact_access_counts).toEqual({ plan: 1 });
   });
 
   it("emits null passthrough fields and a startup recommendation", () => {

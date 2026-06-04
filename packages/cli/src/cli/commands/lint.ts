@@ -18,30 +18,7 @@ const LINT_CHECKS: Array<[string, string]> = [
   ["filler", "Remove the named filler phrase category before writing the artifact."],
 ];
 
-const LINT_CANONICAL_LABELS: Record<string, string> = {
-  changelog: "CHANGELOG.md",
-  decisions: "DECISIONS.md",
-  design: "DESIGN.md",
-  docs: "DOCS.md",
-  health: "HEALTH.md",
-  plan: "PLAN.md",
-  progress: "PROGRESS.md",
-  todo: "TODO.md",
-  vision: "VISION.md",
-  experiments: "EXPERIMENTS.md",
-};
-
-const VALIDATE_ARTIFACT_LABELS = [
-  "CHANGELOG.md",
-  "DECISIONS.md",
-  "DESIGN.md",
-  "DOCS.md",
-  "HEALTH.md",
-  "PLAN.md",
-  "PROGRESS.md",
-  "TODO.md",
-  "VISION.md",
-];
+import { VALIDATE_ARTIFACT_PROTOCOL_IDS, normalizeArtifactProtocolId } from "../../registries/artifactProtocolIds.js";
 
 export interface LintArgs {
   artifact: string;
@@ -64,21 +41,15 @@ function lintSchemaName(artifact: string, schemas: Record<string, SchemaInfo>): 
   return null;
 }
 
-function lintCanonicalLabel(schemaName: string, info: SchemaInfo, artifact: string): string {
-  if (schemaName in LINT_CANONICAL_LABELS) return LINT_CANONICAL_LABELS[schemaName];
-  const record = info.record;
-  if (record && record.displayName) return record.displayName;
-  if (VALIDATE_ARTIFACT_LABELS.includes(artifact)) return artifact;
-  const upper = artifact.trim().toUpperCase();
-  if (VALIDATE_ARTIFACT_LABELS.includes(upper)) return upper;
-  return artifact;
+function lintCanonicalLabel(schemaName: string, _info: SchemaInfo, artifact: string): string {
+  return normalizeArtifactProtocolId(artifact) ?? schemaName;
 }
 
 function resolveLintArtifactFile(artifact: string): [string, string] {
   const schemas = loadSchemas(discoverSchemasDir());
   const schemaName = lintSchemaName(artifact, schemas);
   if (schemaName === null) {
-    const validLabels = VALIDATE_ARTIFACT_LABELS.join(", ");
+    const validLabels = VALIDATE_ARTIFACT_PROTOCOL_IDS.join(", ");
     throw new Error(
       `unsupported artifact ${pyRepr(artifact)}; provide --file or --text, ` +
         "or use a schema name from `agentera query --list-artifacts` " +

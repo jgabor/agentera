@@ -54,10 +54,10 @@ describe("computeCompactionStatus (real repo)", () => {
   it("classifies the repository artifacts and reports check operations", () => {
     const statuses = computeCompactionStatus(REPO_ROOT);
     const byArtifact = Object.fromEntries(statuses.map((s) => [s.artifact, s]));
-    expect(byArtifact["DECISIONS.md"].classification).toBe("compactable");
-    expect(byArtifact["CHANGELOG.md"].classification).toBe("exempt");
-    expect(byArtifact["PLAN.md"].classification).toBe("unsupported");
-    expect(byArtifact["VISION.md"].classification).toBe("protected");
+    expect(byArtifact.decisions.classification).toBe("compactable");
+    expect(byArtifact.changelog.classification).toBe("exempt");
+    expect(byArtifact.plan.classification).toBe("unsupported");
+    expect(byArtifact.vision.classification).toBe("protected");
 
     const ops = checkCompaction(REPO_ROOT);
     expect(ops.length).toBe(statuses.length);
@@ -74,7 +74,7 @@ describe("computeCompactionStatus (real repo)", () => {
     const total = (data.cycles?.length ?? 0) + (data.archive?.length ?? 0);
     expect(total).toBeLessThanOrEqual(MAX_TOTAL_ENTRIES);
 
-    const progressOp = checkCompaction(REPO_ROOT).find((o) => o.status.artifact === "PROGRESS.md");
+    const progressOp = checkCompaction(REPO_ROOT).find((o) => o.status.artifact === "progress");
     expect(progressOp?.action).toBe("ok");
     expect(progressOp?.status.over_limit_count).toBe(0);
   });
@@ -83,7 +83,7 @@ describe("computeCompactionStatus (real repo)", () => {
 describe("progress.yaml over-limit gate", () => {
   it("fails the compaction gate when cycle count exceeds 50", () => {
     writeProgressYaml(tmp, 55);
-    const progressOp = checkCompaction(tmp).find((o) => o.status.artifact === "PROGRESS.md");
+    const progressOp = checkCompaction(tmp).find((o) => o.status.artifact === "progress");
     expect(progressOp?.action).toBe("over_limit");
     expect(progressOp?.status.total_count).toBe(55);
     expect(progressOp?.status.over_limit_count).toBeGreaterThan(0);
@@ -93,7 +93,7 @@ describe("progress.yaml over-limit gate", () => {
   it("compacts over-limit progress.yaml under the cap with archive preservation", () => {
     writeProgressYaml(tmp, 55);
     const ops = fixCompaction(tmp);
-    const progressOp = ops.find((o) => o.status.artifact === "PROGRESS.md");
+    const progressOp = ops.find((o) => o.status.artifact === "progress");
     expect(progressOp?.action).toBe("compacted");
     expect(progressOp?.changed).toBe(true);
 
@@ -106,7 +106,7 @@ describe("progress.yaml over-limit gate", () => {
     expect(data.cycles.length + data.archive.length).toBe(MAX_TOTAL_ENTRIES);
     expect(data.cycles[0].number).toBe(55);
     expect(data.archive.some((e) => e.summary.includes("Cycle 1"))).toBe(true);
-    expect(checkCompaction(tmp).find((o) => o.status.artifact === "PROGRESS.md")?.action).toBe("ok");
+    expect(checkCompaction(tmp).find((o) => o.status.artifact === "progress")?.action).toBe("ok");
   });
 });
 
@@ -119,7 +119,7 @@ describe("compactYamlFile", () => {
     const p = path.join(tmp, "progress.yaml");
     fs.writeFileSync(p, "cycles:\n" + cycles.join("\n") + "\n");
 
-    const result = compactYamlFile(p, "PROGRESS.md");
+    const result = compactYamlFile(p, "progress");
     expect(result.changed).toBe(true);
     expect(result.full_before).toBe(12);
     expect(result.full_after).toBe(10);
@@ -136,7 +136,7 @@ describe("compactYamlFile", () => {
   it("no-ops when under the limit", () => {
     const p = path.join(tmp, "progress.yaml");
     fs.writeFileSync(p, "cycles:\n- number: 1\n  what: x\n");
-    expect(compactYamlFile(p, "PROGRESS.md").changed).toBe(false);
+    expect(compactYamlFile(p, "progress").changed).toBe(false);
   });
 });
 
@@ -172,11 +172,11 @@ describe("computeCompactionStatus YAML errors", () => {
     const p = path.join(tmp, ".agentera", "progress.yaml");
     fs.mkdirSync(path.dirname(p), { recursive: true });
     fs.writeFileSync(p, "cycles: bad: yaml: here\n");
-    const status = computeCompactionStatus(tmp).find((s) => s.artifact === "PROGRESS.md");
+    const status = computeCompactionStatus(tmp).find((s) => s.artifact === "progress");
     expect(status?.classification).toBe("error");
     expect(status?.reason).toBeTruthy();
     expect(status?.reason).not.toContain("yaml.YAMLError:");
-    const op = checkCompaction(tmp).find((o) => o.status.artifact === "PROGRESS.md");
+    const op = checkCompaction(tmp).find((o) => o.status.artifact === "progress");
     expect(op?.action).toBe("error");
   });
 
@@ -184,7 +184,7 @@ describe("computeCompactionStatus YAML errors", () => {
     const p = path.join(tmp, ".agentera", "decisions.yaml");
     fs.mkdirSync(path.dirname(p), { recursive: true });
     fs.writeFileSync(p, "- item\n");
-    const status = computeCompactionStatus(tmp).find((s) => s.artifact === "DECISIONS.md");
+    const status = computeCompactionStatus(tmp).find((s) => s.artifact === "decisions");
     expect(status?.classification).toBe("error");
     expect(status?.reason).toBe("YAML root must be a mapping");
   });

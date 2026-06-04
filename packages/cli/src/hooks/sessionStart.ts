@@ -161,7 +161,7 @@ export function buildDigest(projectRoot: string, env: Env = process.env): string
   const overrides = loadArtifactOverrides(projectRoot);
   const sections: string[] = [];
 
-  const progressPath = resolveArtifactPath(projectRoot, "PROGRESS.md", overrides);
+  const progressPath = resolveArtifactPath(projectRoot, "progress", overrides);
   if (fs.existsSync(progressPath)) {
     const entry = progressPath.endsWith(".yaml")
       ? extractLatestProgressYaml(loadYaml(progressPath))
@@ -169,7 +169,7 @@ export function buildDigest(projectRoot: string, env: Env = process.env): string
     if (entry) sections.push(`## Latest progress\n${entry}`);
   }
 
-  const healthPath = resolveArtifactPath(projectRoot, "HEALTH.md", overrides);
+  const healthPath = resolveArtifactPath(projectRoot, "health", overrides);
   if (fs.existsSync(healthPath)) {
     const grades = healthPath.endsWith(".yaml")
       ? extractHealthGradesYaml(loadYaml(healthPath))
@@ -177,7 +177,7 @@ export function buildDigest(projectRoot: string, env: Env = process.env): string
     if (grades) sections.push(`## Health\n${grades}`);
   }
 
-  const planPath = resolveArtifactPath(projectRoot, "PLAN.md", overrides);
+  const planPath = resolveArtifactPath(projectRoot, "plan", overrides);
   if (fs.existsSync(planPath)) {
     const task = planPath.endsWith(".yaml")
       ? extractNextPlanTaskYaml(loadYaml(planPath))
@@ -185,7 +185,7 @@ export function buildDigest(projectRoot: string, env: Env = process.env): string
     if (task) sections.push(`## Next task\n${task}`);
   }
 
-  const todoPath = resolveArtifactPath(projectRoot, "TODO.md", overrides);
+  const todoPath = resolveArtifactPath(projectRoot, "todo", overrides);
   if (fs.existsSync(todoPath)) {
     const critical = extractCriticalTodos(fs.readFileSync(todoPath, "utf8"));
     if (critical.length > 0) sections.push(`## Critical issues\n` + critical.join("\n"));
