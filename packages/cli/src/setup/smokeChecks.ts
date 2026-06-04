@@ -3,7 +3,7 @@ import os from "node:os";
 import path from "node:path";
 
 import { resolvePath } from "../core/paths.js";
-import { HookCliAdapter } from "../hooks/validateArtifact.js";
+import { HookCliAdapter } from "../hooks/validateArtifact/index.js";
 import { validateCapability } from "../validate/capability.js";
 import { smokeCheck, summarizeStatuses } from "./doctor.js";
 
