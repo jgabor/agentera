@@ -2552,7 +2552,13 @@ def cmd_upgrade(args: argparse.Namespace) -> int:
     return 0
 
 
-def render_doctor_status(status: dict[str, Any], *, source_root: Path | None = None) -> str:
+def render_doctor_status(
+    status: dict[str, Any],
+    *,
+    source_root: Path | None = None,
+    home: Path | None = None,
+) -> str:
+    from coexistence_probe import prepend_coexistence_doctor_section, resolve_coexistence_doctor_lines
     from next_major_doctor import prepend_next_major_doctor_section, resolve_next_major_doctor_lines
 
     action_noun = _doctor_action_noun(status)
@@ -2587,6 +2593,9 @@ def render_doctor_status(status: dict[str, Any], *, source_root: Path | None = N
             "only after checking the directory is safe to replace."
         )
     body = "\n".join(lines)
+    if source_root is not None and home is not None:
+        coexistence_lines = resolve_coexistence_doctor_lines(home=home, source_root=source_root)
+        body = prepend_coexistence_doctor_section(body, coexistence_lines)
     if source_root is None:
         return body
     next_major_lines = resolve_next_major_doctor_lines(
@@ -2641,5 +2650,5 @@ def cmd_doctor(args: argparse.Namespace) -> int:
     if output_format == "json":
         print(json.dumps(public_doctor_status(status), indent=2, sort_keys=True))
     else:
-        print(render_doctor_status(status, source_root=source_root))
+        print(render_doctor_status(status, source_root=source_root, home=home))
     return 0 if status["status"] == APP_UP_TO_DATE else 1
