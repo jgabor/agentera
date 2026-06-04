@@ -40,4 +40,3 @@ Live JSON enforcement uses `scripts/json_output_surface_manifest.yaml` only.
 
 - Replace live `SPEC.md` references in `UPGRADE.md`, hooks, adapter docs, `contract.md`
 - Refresh or drop assertions against pre-migration characterization snapshots
-- Agentera 3.0: remove `skills/hej/` bridge and `references/v1-section-mapping.md`
