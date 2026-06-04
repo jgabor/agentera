@@ -3,28 +3,34 @@
  * `scripts/self_audit.py`. Advisory only — report but do not block writes.
  */
 
+import { normalizeArtifactProtocolId } from "../registries/artifactProtocolIds.js";
+
 const FULL_FILE_BUDGETS: Record<string, number> = {
-  "PROGRESS.md": 3000,
-  "EXPERIMENTS.md": 2500,
-  "HEALTH.md": 2000,
-  "DECISIONS.md": 5000,
-  "TODO.md": 5000,
-  "CHANGELOG.md": 5000,
-  "PLAN.md": 2500,
-  "VISION.md": 1500,
-  "DESIGN.md": 2000,
-  "DOCS.md": 2000,
+  progress: 3000,
+  experiments: 2500,
+  health: 2000,
+  decisions: 5000,
+  todo: 5000,
+  changelog: 5000,
+  plan: 2500,
+  vision: 1500,
+  design: 2000,
+  docs: 2000,
 };
 
 const PER_ENTRY_BUDGETS: Record<string, number> = {
-  "PROGRESS.md": 500,
-  "EXPERIMENTS.md": 300,
-  "HEALTH.md": 150,
-  "DECISIONS.md": 200,
-  "TODO.md": 100,
-  "CHANGELOG.md": 300,
-  "PLAN.md": 100,
+  progress: 500,
+  experiments: 300,
+  health: 150,
+  decisions: 200,
+  todo: 100,
+  changelog: 300,
+  plan: 100,
 };
+
+function resolveBudgetArtifact(artifact: string): string {
+  return normalizeArtifactProtocolId(artifact) ?? artifact.toLowerCase();
+}
 
 const FILE_PATH_RE = /\b(?:[A-Za-z0-9_.-]+\/)+[A-Za-z0-9_.-]+\.[A-Za-z]{1,10}\b/;
 const REPO_PATH_RE =
@@ -67,9 +73,10 @@ export function checkVerbosity(
 ): [boolean, string] {
   const count = wordCount(text);
   const table = budgets ?? PER_ENTRY_BUDGETS;
-  let perEntryBudget = table[artifact];
+  const resolved = resolveBudgetArtifact(artifact);
+  let perEntryBudget = table[resolved];
   if (perEntryBudget === undefined) {
-    const fullBudget = FULL_FILE_BUDGETS[artifact];
+    const fullBudget = FULL_FILE_BUDGETS[resolved];
     perEntryBudget = fullBudget !== undefined ? Math.floor(fullBudget / 5) : 500;
   }
   if (count <= perEntryBudget) {
@@ -80,7 +87,7 @@ export function checkVerbosity(
 
 export function checkFullFileVerbosity(text: string, artifact: string): [boolean, string] {
   const count = wordCount(text);
-  const budget = FULL_FILE_BUDGETS[artifact] ?? 2500;
+  const budget = FULL_FILE_BUDGETS[resolveBudgetArtifact(artifact)] ?? 2500;
   if (count <= budget) {
     return [true, ""];
   }
@@ -127,7 +134,7 @@ export function validateSelfAuditConventions(): string[] {
     errors.push("self-audit: budget tables must be non-empty");
   }
   const sample = "concrete anchor `scripts/agentera` at line 42 with 12 words total here";
-  const [verbosityOk] = checkVerbosity(sample, "PROGRESS.md");
+  const [verbosityOk] = checkVerbosity(sample, "progress");
   if (!verbosityOk) {
     errors.push("self-audit: verbosity check failed on smoke sample");
   }

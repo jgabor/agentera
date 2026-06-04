@@ -14,6 +14,10 @@ import { validate as validateAppHome } from "../../validate/appHomeContract.js";
 import { selfAuditMain } from "../../validate/selfAudit.js";
 import { vocabularyAuthorityMain } from "../../validate/vocabularyAuthority.js";
 import { releaseMetadataMain } from "../../release/releaseMetadata.js";
+import {
+  VALIDATE_ARTIFACT_PROTOCOL_IDS,
+  normalizeArtifactProtocolId,
+} from "../../registries/artifactProtocolIds.js";
 import { emitStructured } from "../structured.js";
 
 /** Port of scripts/agentera cmd_validate delegated-script family. */
@@ -534,26 +538,14 @@ export function cmdValidateDescriptors(args: { format?: string }, io: Io): numbe
 
 // ── artifact family ─────────────────────────────────────────────────
 
-const VALIDATE_ARTIFACT_LABELS = [
-  "CHANGELOG.md",
-  "DECISIONS.md",
-  "DESIGN.md",
-  "DOCS.md",
-  "HEALTH.md",
-  "PLAN.md",
-  "PROGRESS.md",
-  "TODO.md",
-  "VISION.md",
-];
-
 function validateArtifactLabel(artifact: string): void {
   validateAgentString(artifact, "artifact");
-  if (!VALIDATE_ARTIFACT_LABELS.includes(artifact)) {
-    const valid = VALIDATE_ARTIFACT_LABELS.join(", ");
+  if (normalizeArtifactProtocolId(artifact) === null) {
+    const valid = VALIDATE_ARTIFACT_PROTOCOL_IDS.join(", ");
     throw new Error(
-      `unsupported artifact ${pyRepr(artifact)}; valid artifacts: ${valid}. ` +
-        "Syntax: agentera validate artifact --artifact <ARTIFACT> [--file <PATH>] [--format text|json]. " +
-        "Example: agentera validate artifact --artifact PLAN.md --file .agentera/plan.yaml --format json",
+      `unsupported artifact ${pyRepr(artifact)}; valid artifact_id values: ${valid}. ` +
+        "Syntax: agentera check validate artifact --artifact <ARTIFACT_ID> [--file <PATH>] [--format text|json]. " +
+        "Example: agentera check validate artifact --artifact plan --file .agentera/plan.yaml --format json",
     );
   }
 }

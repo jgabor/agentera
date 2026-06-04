@@ -1,28 +1,22 @@
-import { execFileSync } from "node:child_process";
-import { fileURLToPath } from "node:url";
-import path from "node:path";
 import { describe, expect, it } from "vitest";
 
+import { cmdPrime } from "../src/cli/commands/prime.js";
 import { PRIME_BLOB } from "../src/cli/prime-blob.js";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const BIN = path.resolve(__dirname, "../dist/bin/agentera.js");
-
-function runCli(args: string[]): { stdout: string; status: number } {
-  try {
-    const stdout = execFileSync("node", [BIN, ...args], { encoding: "utf8" });
-    return { stdout, status: 0 };
-  } catch (err) {
-    const e = err as { stdout?: string; status?: number };
-    return { stdout: e.stdout ?? "", status: e.status ?? 1 };
-  }
+function capture(fn: (io: { out: (t: string) => void; err: (t: string) => void }) => number): {
+  rc: number;
+  out: string;
+} {
+  let out = "";
+  const rc = fn({ out: (t) => (out += t), err: () => {} });
+  return { rc, out };
 }
 
 describe("agentera prime --guidance (Phase 0 spike)", () => {
   it("prints the priming guide exactly, with no trailing newline added", () => {
-    const { stdout, status } = runCli(["prime", "--guidance"]);
-    expect(status).toBe(0);
-    expect(stdout).toBe(PRIME_BLOB);
+    const { rc, out } = capture((io) => cmdPrime({ guidance: true }, io));
+    expect(rc).toBe(0);
+    expect(out).toBe(PRIME_BLOB);
   });
 
   it("PRIME_BLOB ends with a single trailing newline and no extra", () => {

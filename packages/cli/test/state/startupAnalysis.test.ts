@@ -20,9 +20,9 @@ describe("startup analysis: redaction core", () => {
   });
 
   it("maps known artifact paths to canonical labels", () => {
-    expect(canonicalArtifactLabel(".agentera/plan.yaml")).toBe("PLAN.md");
-    expect(canonicalArtifactLabel(".agentera/decisions.yaml")).toBe("DECISIONS.md");
-    expect(canonicalArtifactLabel("/repo/.agentera/objective.yaml")).toBe("OBJECTIVE.md");
+    expect(canonicalArtifactLabel(".agentera/plan.yaml")).toBe("plan");
+    expect(canonicalArtifactLabel(".agentera/decisions.yaml")).toBe("decisions");
+    expect(canonicalArtifactLabel("/repo/.agentera/objective.yaml")).toBe("objective");
     expect(canonicalArtifactLabel("/etc/passwd")).toBeNull();
   });
 
@@ -38,10 +38,10 @@ describe("startup analysis: redaction core", () => {
     const redacted = redactForStartupOutput(sample, "S");
     expect(redacted.content).toBe("<redacted:transcript_text>");
     expect(redacted.session_id).toMatch(/^session:[0-9a-f]{16}$/);
-    expect(redacted.path).toBe("PLAN.md");
+    expect(redacted.path).toBe("plan");
     expect(redacted.cwd).toMatch(/^path:[0-9a-f]{16}$/);
     expect(redacted.nested.text).toBe("<redacted:transcript_text>");
-    expect(redacted.nested.store_path).toBe("DECISIONS.md");
+    expect(redacted.nested.store_path).toBe("decisions");
     expect(redacted.nested.keep).toBe("value");
     expect(redacted.list[0].prompt).toBe("<redacted:transcript_text>");
     expect(redacted.list[0].session_id).toMatch(/^session:[0-9a-f]{16}$/);

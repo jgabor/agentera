@@ -111,19 +111,19 @@ function planSourceContract(source: Dict, summary: Dict): Dict {
   const legacyEntries = Boolean(summary.legacy_entries);
   const complete = Boolean(source.exists) && !legacyEntries;
   const missingState: string[] = [];
-  if (!source.exists) missingState.push("PLAN.md artifact");
-  if (legacyEntries) missingState.push("current PLAN.md task artifact shape");
+  if (!source.exists) missingState.push("plan artifact");
+  if (legacyEntries) missingState.push("current plan task artifact shape");
   const summaryFields = Object.keys(summary).sort();
   const entryFields = ["number", "name", "depends_on", "status", "acceptance", "evidence", "blocked_reason"];
   return {
-    artifact: "PLAN.md",
-    canonical_artifact_label: "PLAN.md",
+    artifact: "plan",
+    canonical_artifact_label: "plan",
     persisted_artifact_path: source.path,
     complete_for_plan_artifact: complete,
     complete_for_normal_startup_evaluation: complete,
     raw_artifact_reads_required: false,
     raw_artifact_read_policy:
-      "Use `agentera plan --format json` entries, summary, source, and source_contract before raw PLAN.md access. " +
+      "Use `agentera state plan --format json` entries, summary, source, and source_contract before raw plan access. " +
       "When complete_for_plan_artifact is true, skip defensive `.agentera/plan.yaml` reads during normal read-only " +
       "plan startup/evaluation; raw plan artifact access is reserved for writes, archival, validation, corruption " +
       "diagnostics, or unavailable/incomplete CLI state.",
@@ -952,8 +952,8 @@ export function decisionSourceContract(source: Dict, entries: Dict[], filters: D
   if (entriesWithoutDownstream) caveats.push("One or more returned decisions lack explicit downstream consequence references.");
   if (entriesRequiringSatisfactionReview) caveats.push("One or more returned decisions require satisfaction review; satisfaction is never inferred from downstream references.");
   return {
-    artifact: "DECISIONS.md",
-    canonical_artifact_label: "DECISIONS.md",
+    artifact: "decisions",
+    canonical_artifact_label: "decisions",
     path: source.path,
     complete_for_returned_decisions: completeForReturned,
     complete_for_decision_context: completeForReturned,

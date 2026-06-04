@@ -61,14 +61,14 @@ function pyStr(value: unknown): string {
 }
 
 const FALLBACK_ARTIFACT_LABELS: Array<[string, string]> = [
-  [".agentera/plan.yaml", "PLAN.md"],
-  [".agentera/progress.yaml", "PROGRESS.md"],
-  [".agentera/docs.yaml", "DOCS.md"],
-  [".agentera/decisions.yaml", "DECISIONS.md"],
-  [".agentera/health.yaml", "HEALTH.md"],
-  [".agentera/vision.yaml", "VISION.md"],
-  [".agentera/objective.yaml", "OBJECTIVE.md"],
-  [".agentera/experiments.yaml", "EXPERIMENTS.md"],
+  [".agentera/plan.yaml", "plan"],
+  [".agentera/progress.yaml", "progress"],
+  [".agentera/docs.yaml", "docs"],
+  [".agentera/decisions.yaml", "decisions"],
+  [".agentera/health.yaml", "health"],
+  [".agentera/vision.yaml", "vision"],
+  [".agentera/objective.yaml", "objective"],
+  [".agentera/experiments.yaml", "experiments"],
 ];
 
 export function canonicalArtifactLabel(value: unknown, contract: Dict | null = null): string | null {
@@ -197,27 +197,27 @@ export const STATE_CLI_COMMANDS = new Set([
   "query",
 ]);
 const CLI_COMMAND_ARTIFACTS: Record<string, Set<string>> = {
-  plan: new Set(["PLAN.md"]),
-  progress: new Set(["PROGRESS.md"]),
-  health: new Set(["HEALTH.md"]),
-  todo: new Set(["TODO.md"]),
-  decisions: new Set(["DECISIONS.md"]),
-  docs: new Set(["DOCS.md"]),
-  objective: new Set(["OBJECTIVE.md"]),
-  experiments: new Set(["EXPERIMENTS.md"]),
-  hej: new Set(["PLAN.md", "PROGRESS.md", "HEALTH.md", "TODO.md", "DOCS.md", "DECISIONS.md"]),
-  prime: new Set(["PLAN.md", "PROGRESS.md", "HEALTH.md", "TODO.md", "DOCS.md", "DECISIONS.md", "CHANGELOG.md"]),
+  plan: new Set(["plan"]),
+  progress: new Set(["progress"]),
+  health: new Set(["health"]),
+  todo: new Set(["todo"]),
+  decisions: new Set(["decisions"]),
+  docs: new Set(["docs"]),
+  objective: new Set(["objective"]),
+  experiments: new Set(["experiments"]),
+  hej: new Set(["plan", "progress", "health", "todo", "docs", "decisions"]),
+  prime: new Set(["plan", "progress", "health", "todo", "docs", "decisions", "changelog"]),
 };
 const QUERY_ARTIFACTS: Record<string, string> = {
-  plan: "PLAN.md",
-  progress: "PROGRESS.md",
-  health: "HEALTH.md",
-  todo: "TODO.md",
-  decisions: "DECISIONS.md",
-  docs: "DOCS.md",
-  vision: "VISION.md",
-  objective: "OBJECTIVE.md",
-  experiments: "EXPERIMENTS.md",
+  plan: "plan",
+  progress: "progress",
+  health: "health",
+  todo: "todo",
+  decisions: "decisions",
+  docs: "docs",
+  vision: "vision",
+  objective: "objective",
+  experiments: "experiments",
 };
 const PRIMARY_ROUTE_TO_CAPABILITY: Record<string, string> = {
   build: "realisera",
@@ -254,7 +254,7 @@ const THRESHOLD_WARNING_PATTERNS: Array<[string, string, string, RegExp]> = [
 ];
 const POST_AUDIT_FLAG_RE = /\[post-audit-flagged(?::[^\]]*)?\]/gi;
 const BUDGET_PRESSURE_RE = THRESHOLD_WARNING_PATTERNS[0][3];
-const FULL_PLAN_BUDGET_RE = /full[- ]plan|full plans?|PLAN\.md/i;
+const FULL_PLAN_BUDGET_RE = /full[- ]plan|full plans?|\bplan\b/i;
 const DETAIL_ANCHOR_RE = /`[^`]+`|\b(?:[A-Za-z0-9_.-]+\/)+[A-Za-z0-9_.-]+\b|:\d{2,}\b|\b[0-9a-fA-F]{7,}\b/g;
 
 function inc(counter: Record<string, number>, key: string): void {
@@ -745,7 +745,7 @@ export function scanRetainedThresholdEvidence(
     if (warnings.length === 0) continue;
     const postAuditMarkers = countMatches(POST_AUDIT_FLAG_RE, text);
     const budgetMentions = countMatches(BUDGET_PRESSURE_RE, text);
-    const fullPlanBudgetPressure = artifactLabel === "PLAN.md" && budgetMentions > 0 && FULL_PLAN_BUDGET_RE.test(text);
+    const fullPlanBudgetPressure = artifactLabel === "plan" && budgetMentions > 0 && FULL_PLAN_BUDGET_RE.test(text);
     const detailStatus =
       postAuditMarkers && fullPlanBudgetPressure ? "retained_artifact_false_positive_signal" : "not_assessed";
 
@@ -1657,7 +1657,7 @@ export function renderStartupReport(metrics: Dict): string {
     "- Raw transcript text is not emitted.",
     "- Full local paths and raw store paths are not emitted.",
     "- Session identifiers are salted or omitted.",
-    "- Raw artifact accesses use canonical artifact labels such as `PLAN.md`, not filesystem paths.",
+    "- Raw artifact accesses use canonical artifact_id labels such as `plan`, not filesystem paths.",
     "- Runtime coverage may be incomplete or degraded; inspect `confidence_caveats` before selecting follow-up work.",
     "",
   );

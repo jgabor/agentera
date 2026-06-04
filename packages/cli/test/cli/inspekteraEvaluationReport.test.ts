@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 import { cmdPrime } from "../../src/cli/commands/prime.js";
+import { instructions as orkestreraInstructions } from "../../src/capabilities/orkestrera/instructions.js";
 import {
   loadEvaluatorHandoffContract,
   validateEvaluationReportRow,
@@ -36,15 +37,9 @@ describe("orkestrera evaluator handoff citation contract", () => {
   });
 
   it("orkestrera Step 3 Surface 2 delegation template requires citation field", () => {
-    // D65: the orkestrera prose is loaded by the runtime via the compiled
-    // .js module. The test loads the same module to assert the citation
-    // template, rather than readFileSync of the deleted
-    // skills/agentera/capabilities/orkestrera/instructions.md.
-    const module = require("../../dist/capabilities/orkestrera/instructions.js");
-    const instructions: string = module.instructions ?? module.default;
-    expect(instructions).toContain("citation: `<file>:<line>` OR `not-applicable: <reason>`");
-    expect(instructions).toContain("verify_command");
-    expect(instructions).toContain("evaluator_handoff.output_requirements");
+    expect(orkestreraInstructions).toContain("citation: `<file>:<line>` OR `not-applicable: <reason>`");
+    expect(orkestreraInstructions).toContain("verify_command");
+    expect(orkestreraInstructions).toContain("evaluator_handoff.output_requirements");
   });
 
   it("evaluator-handoff schema in capability-instruction-contract.yaml rejects WARN/FAIL without citation", () => {

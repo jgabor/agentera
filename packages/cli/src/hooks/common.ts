@@ -4,6 +4,11 @@ import os from "node:os";
 import path from "node:path";
 
 import { expanduser, resolvePath } from "../core/paths.js";
+import {
+  ARTIFACT_PROTOCOL_PATHS,
+  normalizeArtifactMappingKeys,
+  normalizeArtifactProtocolId,
+} from "../registries/artifactProtocolIds.js";
 import { resolveCandidate } from "../state/installRoot.js";
 
 /**
@@ -97,17 +102,7 @@ export function compactSessionBookmarkEntries(
   return applyRetentionCaps(full, archive, { maxFull, maxOneline, maxTotal });
 }
 
-export const DEFAULT_ARTIFACT_PATHS: Record<string, string> = {
-  "VISION.md": ".agentera/vision.yaml",
-  "TODO.md": "TODO.md",
-  "CHANGELOG.md": "CHANGELOG.md",
-  "DECISIONS.md": ".agentera/decisions.yaml",
-  "PLAN.md": ".agentera/plan.yaml",
-  "PROGRESS.md": ".agentera/progress.yaml",
-  "HEALTH.md": ".agentera/health.yaml",
-  "DOCS.md": ".agentera/docs.yaml",
-  "DESIGN.md": "DESIGN.md",
-};
+export const DEFAULT_ARTIFACT_PATHS: Record<string, string> = { ...ARTIFACT_PROTOCOL_PATHS };
 
 function stripQuotes(value: string): string {
   return value.replace(/^['"]|['"]$/g, "");
@@ -139,7 +134,7 @@ export function parseDocsYamlMapping(docsText: string): Record<string, string> {
       current = null;
     }
   }
-  return mapping;
+  return normalizeArtifactMappingKeys(mapping);
 }
 
 export function parseArtifactMapping(docsText: string): Record<string, string> {
@@ -163,7 +158,7 @@ export function parseArtifactMapping(docsText: string): Record<string, string> {
       break;
     }
   }
-  return mapping;
+  return normalizeArtifactMappingKeys(mapping);
 }
 
 export function resolveArtifactPath(
@@ -171,23 +166,17 @@ export function resolveArtifactPath(
   artifact: string,
   overrides: Record<string, string> | null = null,
 ): string {
-  if (overrides && artifact in overrides) {
-    return path.join(projectRoot, overrides[artifact]);
+  const artifactId = normalizeArtifactProtocolId(artifact) ?? artifact;
+  if (overrides && artifactId in overrides) {
+    return path.join(projectRoot, overrides[artifactId]);
   }
-  return path.join(projectRoot, DEFAULT_ARTIFACT_PATHS[artifact] ?? `.agentera/${artifact}`);
+  return path.join(projectRoot, DEFAULT_ARTIFACT_PATHS[artifactId] ?? `.agentera/${artifactId}.yaml`);
 }
 
 export function loadArtifactOverrides(projectRoot: string): Record<string, string> | null {
   const yamlPath = path.join(projectRoot, ".agentera", "docs.yaml");
   if (fs.existsSync(yamlPath)) {
     const mapping = parseDocsYamlMapping(fs.readFileSync(yamlPath, "utf8"));
-    if (Object.keys(mapping).length > 0) {
-      return mapping;
-    }
-  }
-  const docsPath = path.join(projectRoot, ".agentera", "DOCS.md");
-  if (fs.existsSync(docsPath)) {
-    const mapping = parseArtifactMapping(fs.readFileSync(docsPath, "utf8"));
     if (Object.keys(mapping).length > 0) {
       return mapping;
     }

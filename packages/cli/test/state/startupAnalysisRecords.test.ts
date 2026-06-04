@@ -35,10 +35,10 @@ describe("classifyStartupRecords", () => {
     expect(seq.counts.cli_state_call).toBe(1);
     expect(seq.counts.raw_artifact_access).toBe(2);
     expect(seq.counts.implementation_boundary).toBe(1);
-    expect(seq.cli_artifact_labels).toEqual(["PLAN.md"]);
+    expect(seq.cli_artifact_labels).toEqual(["plan"]);
     // plan.yaml read after `agentera plan` is redundant; health.yaml is not.
-    expect(seq.redundant_raw_artifact_labels).toEqual(["PLAN.md"]);
-    expect(Object.keys(seq.estimated_raw_after_cli_tokens_by_artifact).sort()).toEqual(["HEALTH.md", "PLAN.md"]);
+    expect(seq.redundant_raw_artifact_labels).toEqual(["plan"]);
+    expect(Object.keys(seq.estimated_raw_after_cli_tokens_by_artifact).sort()).toEqual(["health", "plan"]);
   });
 
   it("records pre-boundary and no-state-sequence degradations", () => {

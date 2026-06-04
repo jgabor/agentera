@@ -115,7 +115,7 @@ describe("compaction parity (D56 T3)", () => {
     expect(summary.mode).toBe("check");
     expect(summary.over_limit_count).toBe(1);
     const progress = (payload.operations as Array<Record<string, unknown>>).find(
-      (op) => op.artifact === "PROGRESS.md",
+      (op) => op.artifact === "progress",
     );
     expect(progress?.action).toBe("over_limit");
   });
@@ -132,7 +132,7 @@ describe("compaction parity (D56 T3)", () => {
     expect(summary.over_limit_count).toBe(0);
 
     const progress = (payload.operations as Array<Record<string, unknown>>).find(
-      (op) => op.artifact === "PROGRESS.md",
+      (op) => op.artifact === "progress",
     );
     expect(progress?.action).toBe("compacted");
     const result = progress?.result as Record<string, unknown>;

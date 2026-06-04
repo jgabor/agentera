@@ -452,7 +452,7 @@ function runValidate(argv: string[], io: Io, prog: string): number {
           body: {
             class: "missing_argument",
             message: "the following arguments are required: --artifact",
-            example: "agentera check validate artifact --artifact PLAN.md",
+            example: "agentera check validate artifact --artifact plan",
           },
         });
       }

@@ -201,12 +201,12 @@ ambiguous-term sweep remain separate follow-up work.
 | Severity band policy | TODO.md severity bands are header-only allowed for Degraded (⇉), Normal (→), and Annoying (⇢); Critical (⇶) is enforced and must contain at least one `- [type]` item. Authority: `skills/agentera/schemas/artifacts/todo.yaml` CONVENTION TC6; executable rule in `packages/cli/src/hooks/validateArtifact.ts` `validateMdItems`. |
 | Agent-facing artifact | A structured YAML artifact under `.agentera/`, such as `.agentera/progress.yaml`. |
 | Global artifact | A user-level artifact outside a project, such as `PROFILE.md` or `USAGE.md`. |
-| Canonical artifact name | Display identifier such as `VISION.md`, `PROGRESS.md`, or `DOCS.md`; not always a literal path. |
+| Canonical artifact name | Protocol `artifact_id` such as `plan`, `progress`, or `docs`; human-facing Markdown filenames such as `TODO.md` are `display_name` values, not protocol identity. |
 | Resolved artifact path | The actual path after consulting `.agentera/docs.yaml` mapping or the default layout. |
-| Artifact mapping | `.agentera/docs.yaml` rows that map canonical names to project-local paths and producers. |
+| Artifact mapping | `.agentera/docs.yaml` rows that map `artifact_id` values to project-local paths and producers. |
 | ArtifactRegistry | The registry interface model for artifact IDs, display names, default paths, producers, consumers, type, scope, and special cases. |
 | `artifact_id` | Machine identifier such as `progress`, `health`, `docs`, or `objective`. |
-| `display_name` | Human-readable canonical name, usually the v1-style Markdown name. |
+| `display_name` | Human-readable filename label such as `VISION.md` or `TODO.md`; registry-owned, not protocol identity. |
 | `default_path` | Registry-owned path used when no docs mapping overrides it. |
 | `local_role` | Capability relationship to an artifact: `produces`, `consumes`, or `produces_and_consumes`. |
 | Docs override boundary | `docs.yaml` may override paths for known display names; it must not redefine canonical identity facts. |

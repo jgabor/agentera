@@ -28,7 +28,7 @@ describe("compactSessionBookmarkEntries", () => {
   it("keeps newest full entries and compacts the rest under 10/40/50", () => {
     const entries = Array.from({ length: 12 }, (_, i) => ({
       timestamp: `2026-04-${String(i + 1).padStart(2, "0")} 10:00`,
-      artifacts: ["PLAN.md"],
+      artifacts: ["plan"],
       summary: `Entry ${i + 1}`,
       kind: "full",
     }));
@@ -58,20 +58,20 @@ describe("resolveSessionPath", () => {
 
 describe("artifact path resolution", () => {
   it("uses defaults and overrides", () => {
-    expect(resolveArtifactPath("/p", "PLAN.md")).toBe(path.join("/p", ".agentera/plan.yaml"));
-    expect(resolveArtifactPath("/p", "PLAN.md", { "PLAN.md": "custom/plan.yaml" })).toBe(
+    expect(resolveArtifactPath("/p", "plan")).toBe(path.join("/p", ".agentera/plan.yaml"));
+    expect(resolveArtifactPath("/p", "PLAN.md", { plan: "custom/plan.yaml" })).toBe(
       path.join("/p", "custom/plan.yaml"),
     );
-    expect(resolveArtifactPath("/p", "UNKNOWN.md")).toBe(path.join("/p", ".agentera/UNKNOWN.md"));
+    expect(resolveArtifactPath("/p", "UNKNOWN.md")).toBe(path.join("/p", ".agentera/UNKNOWN.md.yaml"));
   });
 
   it("parses docs.yaml mapping", () => {
     const text = "mapping:\n- artifact: PLAN.md\n  path: notes/plan.yaml\n- artifact: TODO.md\n  path: TODO.md\nother: x\n";
-    expect(parseDocsYamlMapping(text)).toEqual({ "PLAN.md": "notes/plan.yaml", "TODO.md": "TODO.md" });
+    expect(parseDocsYamlMapping(text)).toEqual({ plan: "notes/plan.yaml", todo: "TODO.md" });
   });
 
   it("parses legacy DOCS.md artifact table", () => {
     const text = "| Artifact | Path |\n| --- | --- |\n| PLAN.md | .agentera/plan.yaml |\n| TODO.md | TODO.md |\n\ntext";
-    expect(parseArtifactMapping(text)).toEqual({ "PLAN.md": ".agentera/plan.yaml", "TODO.md": "TODO.md" });
+    expect(parseArtifactMapping(text)).toEqual({ plan: ".agentera/plan.yaml", todo: "TODO.md" });
   });
 });
