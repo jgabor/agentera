@@ -6,12 +6,10 @@ import { describe, expect, it } from "vitest";
 const SRC_ROOT = path.resolve(__dirname, "../../src");
 const LINE_LIMIT = 1000;
 
-/** Remaining plan T2 splits (not T2b); delete entries as each monolith lands. */
-const PENDING_T2_MONOLITHS = new Set([
-  "analytics/extractCorpus.ts",
-  "setup/codex.ts",
-  "setup/doctor.ts",
-  "state/startupAnalysis.ts",
+/** Pending T2 splits — shrink as each monolith lands; not a permanent escape hatch.
+ *  All T2 splits landed; the set is now empty and will be removed at T11. */
+const PENDING_T2_MONOLITHS = new Set<string>([
+  // empty — all 8 plan-listed monoliths and the 9th (cli/dispatch.ts) are split
 ]);
 
 function listSourceFiles(dir: string): string[] {
@@ -39,15 +37,20 @@ describe("T2 monolith lint gate", () => {
         offenders.push({ file: rel, lines });
       }
     }
-    if (offenders.length > 0) {
-      const detail = offenders
+    const unexpected = offenders.filter((o) => !PENDING_T2_MONOLITHS.has(o.file));
+    if (unexpected.length > 0) {
+      const detail = unexpected
         .map((o) => `  - ${o.file}: ${o.lines} lines`)
         .join("\n");
       throw new Error(
-        `monolith lint gate: ${offenders.length} source file(s) exceed ${LINE_LIMIT} lines.\n` +
-          `Split each by state family or responsibility. Offenders:\n${detail}`,
+        `monolith lint gate: ${unexpected.length} source file(s) exceed ${LINE_LIMIT} lines.\n` +
+          `Split each by state family or responsibility (or add only while a T2 slice is in flight). Offenders:\n${detail}`,
       );
     }
-    expect(offenders).toEqual([]);
+    expect(unexpected).toEqual([]);
+    for (const path of PENDING_T2_MONOLITHS) {
+      const hit = offenders.find((o) => o.file === path);
+      expect(hit, `expected pending monolith still over limit: ${path}`).toBeTruthy();
+    }
   });
 });
