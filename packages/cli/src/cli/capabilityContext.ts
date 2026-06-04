@@ -7,7 +7,7 @@ import { activeAppModel, discoverSchemasDir, SchemaInfo } from "./appContext.js"
 import { artifactPath } from "./appContext.js";
 import { asList, firstPresent, sourceMetadata } from "./stateQuery.js";
 import { loadNamedArtifact } from "./orientation.js";
-import { decisionContextEntry, decisionSourceContract, extractDecisionEntries } from "./commands/state.js";
+import { decisionContextEntry, decisionSourceContract, extractDecisionEntries } from "./commands/state/index.js";
 import {
   evaluatorHandoffOutputRequirements,
   loadEvaluatorHandoffContract,
