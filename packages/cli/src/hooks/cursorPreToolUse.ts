@@ -1,4 +1,4 @@
-import { HookCliAdapter } from "./validateArtifact.js";
+import { HookCliAdapter } from "./validateArtifact/index.js";
 import { pyJsonInline } from "../core/pyjson.js";
 
 /**

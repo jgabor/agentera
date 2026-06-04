@@ -4,7 +4,7 @@ import { readdirSync as fsReaddirSync, readFileSync as fsReadFileSync, statSync 
 import { resolvePath } from "../../core/paths.js";
 import { resolveSourceRoot } from "../../core/sourceRoot.js";
 import { validateAgentString, validatePathValue } from "../argvalidate.js";
-import { HookCliAdapter } from "../../hooks/validateArtifact.js";
+import { HookCliAdapter } from "../../hooks/validateArtifact/index.js";
 import { validateCapability, validateContractSelf, validateProtocolSelf } from "../../validate/capability.js";
 import { loadYamlMapping } from "../../core/yaml.js";
 import { parseToml as parseTomlValidate } from "../../core/toml.js";

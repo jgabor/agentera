@@ -13,7 +13,7 @@ import { runSessionStart } from "../hooks/sessionStart.js";
 import { runSessionStop } from "../hooks/sessionStop.js";
 import { runCursorSessionStart } from "../hooks/cursorSessionStart.js";
 import { runCursorPreToolUse } from "../hooks/cursorPreToolUse.js";
-import { HookCliAdapter } from "../hooks/validateArtifact.js";
+import { HookCliAdapter } from "../hooks/validateArtifact/index.js";
 import fsForHooks from "node:fs";
 import { usageMain } from "../analytics/usageStats.js";
 import { validatePathValue } from "./argvalidate.js";
