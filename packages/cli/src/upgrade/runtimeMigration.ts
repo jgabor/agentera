@@ -17,6 +17,7 @@ import {
 } from "../setup/opencode.js";
 import { resolveUpdateChannel } from "./channels.js";
 import type { MigrationContext, MigrationPhaseItem, MigrationStatus } from "./migrateArtifactsV2ToV3.js";
+import { projectUsesV3CapabilityInstructionModules } from "./v3CapabilitySurface.js";
 
 const PYTHON_MANAGED_PATTERNS = [
   /hooks\/validate_artifact\.py/,
@@ -289,7 +290,18 @@ function planCursorItems(
         });
       }
     }
-    if (pathExists(agentsSource)) {
+    const skipInTreeCursorAgents =
+      root === project && projectUsesV3CapabilityInstructionModules(project);
+    if (skipInTreeCursorAgents) {
+      items.push({
+        status: "skipped",
+        action: "copy-agent",
+        runtime: "cursor",
+        target: agentsDir,
+        message:
+          "v3 capability instruction modules present; in-tree .cursor/agents/ uses prime --context and is not overwritten",
+      });
+    } else if (pathExists(agentsSource)) {
       for (const entry of fs.readdirSync(agentsSource)) {
         if (!entry.endsWith(".md")) continue;
         const src = path.join(agentsSource, entry);
