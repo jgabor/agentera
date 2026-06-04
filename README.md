@@ -15,7 +15,7 @@ behavioral verification gates, and portable saved context across runtimes.
 <a href="#capabilities">Capabilities</a> ·
 <a href="#how-it-works">How it works</a> ·
 <a href="#get-started">Install</a> ·
-<a href="#agentera-30-preview">3.0 preview</a> ·
+<a href="#agentera-cli">CLI</a> ·
 <a href="#troubleshooting">Troubleshooting</a>
 </p>
 </div>
@@ -56,11 +56,20 @@ for a full dump of project state on every turn.
 
 ## Get started
 
-1. Pick your runtime below and install.
+1. Install the Agentera CLI (see [Agentera CLI](#agentera-cli)) and pick your runtime below.
 2. Open a git project (existing repo or new).
-3. Run `/agentera` (`$agentera` in Codex).
+3. Run `/agentera` (`$agentera` in Codex) or `npx -y agentera@next prime`.
 
 Your first briefing bootstraps `.agentera/` as capabilities run.
+
+**Agentera 3.x** ships as a self-contained npm TypeScript CLI. Use
+`npx -y agentera@next` on the development channel today; the 3.0 cutover
+graduates that line to `npx -y agentera@latest`. The current `@latest` tag
+remains the Python-backed 2.x support line until that publish.
+
+Optional: build a Bun-compiled single-binary with
+`bash scripts/single-binary.sh` after `pnpm -C packages/cli build` (see
+[`docs/packaging/v3-packaging.md`](./docs/packaging/v3-packaging.md)).
 
 <details>
 <summary><strong>Claude Code</strong></summary>
@@ -167,85 +176,6 @@ compatibility fallback for non-plugin installs. Full hook and validation details
 
 Something broken after install? See [Troubleshooting](#troubleshooting).
 
-## Agentera 3.0 preview (development channel)
-
-**Stable installs stay on 2.x** (`npx -y agentera@latest`). The **development**
-line ships as pre-releases on npm (`npx -y agentera@next`). It is the native
-TypeScript CLI: self-contained on `npx`, no Python or `uv` required for normal
-use. Treat it as an early preview — preview every migration with `--dry-run`
-before `--yes`.
-
-### Highlights
-
-- **Self-contained npm CLI** — skills, schemas, and registry ship inside the
-  published package; `npx agentera@next` works without a repo checkout or
-  `AGENTERA_HOME/app`.
-- **Repo-native stay/upgrade** — `/agentera` (`agentera prime`) reports
-  `project_integration.recommendation` as **stay** or **upgrade** for the
-  current directory, with plain-language preview/apply commands (no `--project`
-  flag in user-facing hints).
-- **v1 Markdown → YAML** — legacy `.agentera/*.md` and root `VISION.md` migrate
-  through `upgrade --only artifacts` (backups under `.agentera/backup-v1/`).
-- **Runtime rewiring** — stale Python/`AGENTERA_HOME` hook wiring in Cursor,
-  Codex, and OpenCode can be previewed and applied with `--only runtime`.
-- **v2→v3 app-home migration** — one-way managed app-home cleanup on the
-  development channel only; stable `@latest` never starts this path. See
-  [`UPGRADE.md`](./UPGRADE.md).
-
-### Try it in a project
-
-From any git repo (no clone required):
-
-```bash
-# Orientation: stay vs upgrade for this repo
-npx -y agentera@next prime --format json
-
-# Same briefing fields, readable slice
-npx -y agentera@next prime --format json | jq '{
-  recommendation: .project_integration.recommendation,
-  message: .project_integration.message,
-  dry_run: .project_integration.dry_run_command,
-  next: .next_action.object
-}'
-```
-
-Interpret `project_integration`:
-
-| `recommendation` | Typical meaning |
-|---|---|
-| `stay` | YAML artifacts and runtime wiring look current for 3.x. |
-| `upgrade` | Pending artifact migration, runtime rewire, and/or v2→v3 app-home work. |
-
-Preview before writing anything (exit code 1 means pending work — expected):
-
-```bash
-# v1 Markdown artifacts → YAML
-npx -y agentera@next upgrade --dry-run --channel development --only artifacts
-
-# Python-managed hooks → npm entrypoint
-npx -y agentera@next upgrade --dry-run --channel development --only runtime
-
-# Full v2→v3 plan (development channel only; irreversible)
-npx -y agentera@next upgrade --dry-run --channel development
-```
-
-Apply after review:
-
-```bash
-npx -y agentera@next upgrade --yes --channel development --only artifacts
-# or --only runtime, or omit --only for the full v2→v3 migration
-```
-
-Pin an exact pre-release when comparing behavior across machines:
-
-```bash
-npx -y agentera@3.0.0-dev.4 prime --format json
-```
-
-Channel semantics, backport order, and irreversible v2→v3 steps:
-[`UPGRADE.md`](./UPGRADE.md) and
-[`references/cli/update-channels.yaml`](./references/cli/update-channels.yaml).
-
 ## Capabilities
 
 All twelve capabilities live inside one Agentera skill. Canonical Swedish names
@@ -309,14 +239,17 @@ what shipped, why choices were made, and whether the repo is healthy. Each turn
 loads only the slices an agent needs.
 
 Agents query targeted slices through the Agentera CLI (`prime`, `state plan`,
-`state progress`, `state decisions`, `state health`, and more) instead of raw-reading whole YAML files or
-Markdown logs. Top-level aliases for legacy commands remain during migration with stderr deprecation; see [audience-namespace-cli-migration.yaml](references/cli/audience-namespace-cli-migration.yaml) for the full list. Capability startup uses bounded JSON envelopes from
-`agentera prime --context <name>` so orientation stays complete without loading
-full artifact history into context. When agents need a specific artifact, they
-can list canonical names and paths first:
+`state progress`, `state decisions`, `state health`, and more) instead of
+raw-reading whole YAML files or Markdown logs. Legacy top-level names (`hej`,
+`plan`, `validate`, …) still forward with a one-line stderr alias; see
+[`references/cli/audience-namespace-cli-migration.yaml`](references/cli/audience-namespace-cli-migration.yaml).
+Capability startup uses bounded JSON envelopes from
+`agentera prime --context <name> --format json` so orientation stays complete
+without loading full artifact history into context. When agents need a specific
+artifact, list canonical names and paths first:
 
 ```bash
-uvx --from git+https://github.com/jgabor/agentera agentera state query --list-artifacts
+npx -y agentera@next state query --list-artifacts
 ```
 
 Wide coverage, narrow reads: many artifacts, token-efficient handoffs.
@@ -375,29 +308,53 @@ across projects while repo artifacts stay project-local.
 
 ## Agentera CLI
 
-The CLI is how agents read project state precisely. Instead of opening whole
-artifacts and spending context on irrelevant history, they ask targeted
-questions: what changed, what is next, what is blocked, what decisions matter,
-and whether the project is healthy.
+The CLI is how agents read project state precisely. Agentera 3.x is a native
+TypeScript CLI published to npm: skills, schemas, and registry ship inside the
+package, so `npx` works with no repo checkout and no `AGENTERA_HOME` for normal
+use.
 
-Without a clone:
+| Channel | npm tag | Use for |
+| --- | --- | --- |
+| **development** (3.x today) | `@next` | `npx -y agentera@next` — self-contained TypeScript CLI |
+| **stable** (2.x until 3.0 cutover) | `@latest` | `npx -y agentera@latest` — Python-backed 2.x support line |
+| **v2 git maintainer** | n/a | `uvx --from git+https://github.com/jgabor/agentera@main agentera` — stable Python from `main` only |
+
+Select a channel with `--channel`, `AGENTERA_UPDATE_CHANNEL`, or
+`update.channel` in `~/.config/agentera/config.toml`. See
+[`references/cli/update-channels.yaml`](references/cli/update-channels.yaml).
+
+Canonical top-level commands (from `agentera --help`):
+
+| Group | Commands |
+| --- | --- |
+| Agent | `prime`, `schema`, `state`, capability routing (`planera`, `realisera`, …) |
+| User | `upgrade`, `doctor`, `report` |
+| Maintainer | `check` (`validate`, `verify`, `lint`, `compact`) |
+
+Without a clone (3.x development channel):
 
 ```bash
-uvx --from git+https://github.com/jgabor/agentera agentera prime --format json
-uvx --from git+https://github.com/jgabor/agentera agentera state plan --format json
-uvx --from git+https://github.com/jgabor/agentera agentera state progress --limit 1 --format json
-uvx --from git+https://github.com/jgabor/agentera agentera state decisions --topic api --format json
-uvx --from git+https://github.com/jgabor/agentera agentera state health --format json
-uvx --from git+https://github.com/jgabor/agentera agentera doctor --format json
+npx -y agentera@next prime --format json
+npx -y agentera@next prime --context planera --format json
+npx -y agentera@next state plan --format json
+npx -y agentera@next state progress --limit 1 --format json
+npx -y agentera@next state decisions --topic api --format json
+npx -y agentera@next state health --format json
+npx -y agentera@next check validate capability-contract --format json
+npx -y agentera@next doctor --format json
 ```
 
-Top-level aliases for legacy commands remain during migration with stderr deprecation; see [audience-namespace-cli-migration.yaml](references/cli/audience-namespace-cli-migration.yaml) for the full list.
+`agentera prime` replaces the former top-level `hej` command for orientation.
+`agentera check validate` is canonical; top-level `agentera validate` still
+runs with a stderr alias. Validate a capability with
+`npx -y agentera@next check validate capability <name-or-path>`.
 
-Contributors with a git clone use `uv run scripts/agentera …` instead. See
-[Development](#development).
+Contributors on this repository use `pnpm -C packages/cli build` and
+`node packages/cli/dist/bin/agentera.js …`. The stable 2.x Python line on
+`main` still uses `uv run scripts/agentera …`. See [Development](#development).
 
 Slash routes and CLI commands are separate surfaces. `/agentera plan` routes to
-`planera`; `agentera state plan` reads plan state (top-level `agentera plan` is a migration alias).
+`planera`; `agentera state plan` reads plan state.
 
 Maintainers benchmark when agents still raw-read artifacts after CLI queries; see
 [`references/analysis/benchmark.md`](./references/analysis/benchmark.md).
@@ -416,21 +373,29 @@ Runtime entry points, validation strictness, and hook behavior:
 
 **Install or app home looks wrong**
 
-The default **stable** channel resolves to the supported 2.x line (`npx -y agentera@latest`).
-Preview before apply: run `--dry-run`, review the plan, then rerun with `--yes`.
+On **3.x** (`npx -y agentera@next`), doctor checks the bundled CLI, runtime
+wiring, and coexistence with a leftover v2 managed app home:
+
+```bash
+npx -y agentera@next doctor
+npx -y agentera@next upgrade --dry-run --channel development
+```
+
+On the **2.x stable** line (`npx -y agentera@latest`), preview before apply:
 
 ```bash
 npx -y agentera@latest doctor
 npx -y agentera@latest upgrade --project "$PWD" --dry-run
 ```
 
-Doctor checks the managed app, Agentera app files status, and runtime wiring.
-Follow the printed channel-aware repair commands. From a clone: `uv run scripts/agentera doctor`.
+Follow the printed channel-aware repair commands. From a clone on `main`:
+`uv run scripts/agentera doctor`.
 
 **Migrating from Agentera v1 or v2 to v3**
 
-See [Upgrade from v1](#upgrade-from-v1) or [`UPGRADE.md`](./UPGRADE.md) for stable-channel
-v1→v2 steps, update channels, and explicit v2→v3 opt-in on the development channel.
+See [Upgrade from v1](#upgrade-from-v1) or [`UPGRADE.md`](./UPGRADE.md) for
+stable-channel v1→v2 steps, the `v3-handoff.json` preflight, coexistence
+doctor warnings, and explicit v2→v3 opt-in on the development channel.
 
 **Behavior differs by runtime**
 
@@ -480,8 +445,10 @@ codex plugin marketplace remove jgabor/agentera
 
 ## Development
 
-Requires Python 3.11+ and [uv](https://docs.astral.sh/uv/). Contributor rules,
-capability layout, and schema contracts: [`AGENTS.md`](./AGENTS.md).
+Requires Node.js 22+ with pnpm for the TypeScript CLI (`packages/cli`) and
+Python 3.11+ with [uv](https://docs.astral.sh/uv/) for the stable 2.x line on
+`main`. Contributor rules, capability layout, and schema contracts:
+[`AGENTS.md`](./AGENTS.md).
 
 Every capability has `packages/cli/src/capabilities/<name>/instructions.ts`
 plus `schemas/triggers.yaml`, `schemas/artifacts.yaml`, `schemas/validation.yaml`,
@@ -500,21 +467,22 @@ Instruction-file contract:
 
 | You have | Use for day-to-day work | Use for upgrade, repair, validation |
 |---|---|---|
-| Skill or marketplace plugin only | `/agentera` (or `$agentera`) | `npx -y agentera@latest …` (stable) or `npx -y agentera@next …` (development) |
-| Git clone of this repo | `/agentera` plus hooks if configured | `uv run scripts/agentera …` |
+| Skill or marketplace plugin only | `/agentera` (or `$agentera`) | `npx -y agentera@next …` (3.x) or `npx -y agentera@latest …` (2.x stable) |
+| Git clone of this repo (`feat/v3`) | `/agentera` plus hooks if configured | `node packages/cli/dist/bin/agentera.js …` after `pnpm -C packages/cli build` |
+| Git clone of this repo (`main`) | `/agentera` plus hooks if configured | `uv run scripts/agentera …` |
 
-Agentera keeps a managed app under your Agentera data directory (app home). Skill
-installs load routing prose; upgrade and doctor refresh the managed app and wire
-runtime config. Doctor reports stale or missing app files and suggested repair
-commands.
+On 3.x, the published npm package is self-contained: upgrade and doctor operate
+on the bundled `dist/` and `bundle/` trees. On 2.x stable, Agentera keeps a
+managed app under your Agentera data directory (app home).
 
 ```bash
-uv run --with pytest --with pyyaml --with pytest-xdist pytest tests/ -q -n auto
-uv run scripts/agentera check validate capability <name-or-path>
-uv run scripts/agentera check validate capability-contract --format json
-uv run scripts/agentera check compact
+pnpm -C packages/cli test
+pnpm -C packages/cli run typecheck
+pnpm -C packages/cli build
+node packages/cli/dist/bin/agentera.js check validate capability-contract --format json
+node packages/cli/dist/bin/agentera.js check compact
 ```
 
 ---
 
-**License:** [Apache-2.0](./LICENSE) · **Changelog:** [`CHANGELOG.md`](./CHANGELOG.md) · **Version:** 2.7.7
+**License:** [Apache-2.0](./LICENSE) · **Changelog:** [`CHANGELOG.md`](./CHANGELOG.md) · **Version:** 3.0.0 (`@next`; stable `@latest` remains 2.x until cutover)
