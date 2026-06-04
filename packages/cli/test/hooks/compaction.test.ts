@@ -14,7 +14,7 @@ import {
   fixCompaction,
   parseEntries,
   runCompaction,
-} from "../../src/hooks/compaction.js";
+} from "../../src/hooks/compaction/index.js";
 import { MAX_TOTAL_ENTRIES } from "../../src/hooks/common.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));

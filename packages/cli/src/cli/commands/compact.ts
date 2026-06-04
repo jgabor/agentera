@@ -1,5 +1,5 @@
 import { resolvePath } from "../../core/paths.js";
-import { runCompaction, CompactionOperation } from "../../hooks/compaction.js";
+import { runCompaction, CompactionOperation } from "../../hooks/compaction/index.js";
 import { emitStructured } from "../structured.js";
 
 /** Port of scripts/agentera cmd_compact and its _compaction_* helpers. */

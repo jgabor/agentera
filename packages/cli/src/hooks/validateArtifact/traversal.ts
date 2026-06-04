@@ -17,7 +17,7 @@ import {
   normalizeArtifactProtocolId,
 } from "../../registries/artifactProtocolIds.js";
 import { DEFAULT_ARTIFACT_PATHS } from "../common.js";
-import { COMPACTABLE_YAML_ARTIFACTS, compactFile, compactYamlFile } from "../compaction.js";
+import { COMPACTABLE_YAML_ARTIFACTS, compactFile, compactYamlFile } from "../compaction/index.js";
 import { isMapping } from "./schema.js";
 
 type Dict = Record<string, any>;
