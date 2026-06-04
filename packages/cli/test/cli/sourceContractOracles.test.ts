@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 
 import { cmdPrime } from "../../src/cli/commands/prime.js";
 import { cmdQuery } from "../../src/cli/commands/query.js";
-import { cmdState } from "../../src/cli/commands/state.js";
+import { cmdState } from "../../src/cli/commands/state/index.js";
 import { main } from "../../src/cli/dispatch.js";
 
 const SOURCE_CONTRACT_ORACLE_PATH = path.join(

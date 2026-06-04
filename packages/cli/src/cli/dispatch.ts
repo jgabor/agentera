@@ -1,6 +1,6 @@
 import { cmdPrime, PrimeArgs } from "./commands/prime.js";
 import { cmdLint, LintArgs } from "./commands/lint.js";
-import { cmdState, isPortedStateCommand, StateArgs } from "./commands/state.js";
+import { cmdState, isPortedStateCommand, StateArgs } from "./commands/state/index.js";
 import { COMMAND_FILTERS } from "./stateQuery.js";
 import { cmdQuery, QueryArgs } from "./commands/query.js";
 import { cmdCompact, cmdGate, CompactArgs } from "./commands/compact.js";

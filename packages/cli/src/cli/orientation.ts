@@ -20,7 +20,7 @@ import {
   recentCycles,
   truncate,
 } from "./stateQuery.js";
-import { decisionContextEntry, latestHealthAudit, normalizeSeverity } from "./commands/state.js";
+import { decisionContextEntry, latestHealthAudit, normalizeSeverity } from "./commands/state/index.js";
 import { isResolvedTodoMarkdownStatus, parseTodoMarkdownListItem } from "./todoMarkdown.js";
 
 /**
