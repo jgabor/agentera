@@ -20,6 +20,10 @@ import {
 import { classifyInstall } from "../../upgrade/compatibility.js";
 import type { UpdateChannelName } from "../../upgrade/channels.js";
 import {
+  prependCoexistenceDoctorSection,
+  resolveCoexistenceDoctorLines,
+} from "../../upgrade/coexistenceProbe.js";
+import {
   prependNextMajorDoctorSection,
   resolveNextMajorDoctorLines,
 } from "../../upgrade/nextMajorDoctor.js";
@@ -228,6 +232,11 @@ export function cmdDoctor(args: DoctorArgs, io: Io = {}): number {
     out(pyJsonIndentSorted(payload) + "\n");
   } else {
     const install = classifyInstall({ appHome: installRoot, sourceRoot });
+    const coexistenceLines = resolveCoexistenceDoctorLines({
+      home,
+      sourceRoot,
+      env: { ...process.env, HOME: home },
+    });
     const nextMajorLines = resolveNextMajorDoctorLines({
       sourceRoot,
       home,
@@ -236,8 +245,10 @@ export function cmdDoctor(args: DoctorArgs, io: Io = {}): number {
       env: process.env,
     });
     const body =
-      prependNextMajorDoctorSection(renderDoctorStatus(status), nextMajorLines) +
-      (smokeReport ? renderDoctorSmoke(smokeReport) : "");
+      prependCoexistenceDoctorSection(
+        prependNextMajorDoctorSection(renderDoctorStatus(status), nextMajorLines),
+        coexistenceLines,
+      ) + (smokeReport ? renderDoctorSmoke(smokeReport) : "");
     out(body + "\n");
   }
   if (args.smoke) {
