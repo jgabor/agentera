@@ -1,0 +1,55 @@
+{
+  "schema_version": "agentera.v3_handoff_manifest.v1",
+  "written_at": "2026-06-04T12:00:00.000Z",
+  "installed_v2_version": "2.7.0",
+  "app_home_path": "/tmp/v2-app-home-realistic",
+  "user_data_inventory": [
+    {
+      "id": "benchmarks",
+      "relative_path": "benchmarks",
+      "kind": "directory",
+      "exists": true
+    },
+    {
+      "id": "intermediate",
+      "relative_path": "intermediate",
+      "kind": "directory",
+      "exists": true
+    },
+    {
+      "id": "sessions",
+      "relative_path": "sessions",
+      "kind": "directory",
+      "exists": true
+    },
+    {
+      "id": "history",
+      "relative_path": "history",
+      "kind": "directory",
+      "exists": false
+    },
+    {
+      "id": "corpus",
+      "relative_path": "corpus",
+      "kind": "directory",
+      "exists": false
+    },
+    {
+      "id": "profile_files",
+      "kind": "profile_files",
+      "members": [
+        {
+          "relative_path": "PROFILE.md",
+          "kind": "file",
+          "exists": false
+        },
+        {
+          "relative_path": "USAGE.md",
+          "kind": "file",
+          "exists": false
+        }
+      ]
+    }
+  ],
+  "runtime_adapters": ["cursor", "codex"]
+}
