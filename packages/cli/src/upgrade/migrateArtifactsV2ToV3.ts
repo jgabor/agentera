@@ -6,13 +6,15 @@ import { BUNDLE_MARKER } from "../state/installRoot.js";
 import { doctorRoots } from "./appModel.js";
 import {
   AGENTERA_USER_STATE_NAMES,
-  ROOT_USER_STATE_DIR_NAMES,
-  ROOT_USER_STATE_FILE_NAMES,
 } from "./doctor.js";
 import {
   applyV1ArtifactsPhase,
   planV1ArtifactsPhase,
 } from "./migrateArtifactsV1ToV2.js";
+import {
+  appHomeHasUnrecognizedEntriesWithPreflight,
+  resolveMigrationUserStatePreflight,
+} from "../migrate/v2HandoffManifest.js";
 import {
   applyRuntimeMigrationItems,
   planRuntimeMigrationItems,
@@ -217,59 +219,6 @@ export function applyRuntimeRewirePhase(phase: MigrationPhase, ctx?: MigrationCo
   phase.summary = updated.summary;
 }
 
-function agenteraUserStateDirIsRecognized(dir: string): boolean {
-  if (!pathExists(dir) || !fs.statSync(dir).isDirectory()) {
-    return false;
-  }
-  for (const entry of fs.readdirSync(dir)) {
-    const full = path.join(dir, entry);
-    const st = fs.statSync(full);
-    if (AGENTERA_USER_STATE_NAMES.has(entry) && st.isFile()) {
-      continue;
-    }
-    if (entry === "optimera" && st.isDirectory()) {
-      continue;
-    }
-    return false;
-  }
-  return true;
-}
-
-function isPreservedUserStateEntry(appHome: string, entry: string): boolean {
-  const full = path.join(appHome, entry);
-  if (!pathExists(full)) {
-    return false;
-  }
-  const st = fs.statSync(full);
-  if (ROOT_USER_STATE_FILE_NAMES.has(entry) && st.isFile()) {
-    return true;
-  }
-  if (ROOT_USER_STATE_DIR_NAMES.has(entry) && st.isDirectory()) {
-    return true;
-  }
-  if (entry === ".agentera" && agenteraUserStateDirIsRecognized(full)) {
-    return true;
-  }
-  return false;
-}
-
-function listPreservedUserStatePaths(appHome: string): string[] {
-  const preserved: string[] = [];
-  for (const entry of listPreservedUserState(appHome)) {
-    const full = path.join(appHome, entry);
-    preserved.push(full);
-    if (entry === ".agentera" && pathExists(full) && fs.statSync(full).isDirectory()) {
-      for (const name of AGENTERA_USER_STATE_NAMES) {
-        const nested = path.join(full, name);
-        if (isFile(nested)) {
-          preserved.push(nested);
-        }
-      }
-    }
-  }
-  return preserved.sort();
-}
-
 function hasManagedBundleEvidence(managedAppRoot: string): boolean {
   return (
     isFile(path.join(managedAppRoot, BUNDLE_MARKER)) ||
@@ -303,28 +252,13 @@ function listManagedBundlePreview(managedAppRoot: string, limit = 20): string[] 
   return out;
 }
 
-function appHomeHasUnrecognizedEntries(appHome: string): string[] {
-  if (!pathExists(appHome)) {
-    return [];
-  }
-  const unknown: string[] = [];
-  for (const entry of fs.readdirSync(appHome)) {
-    if (entry === "app") {
-      continue;
-    }
-    if (!isPreservedUserStateEntry(appHome, entry)) {
-      unknown.push(entry);
-    }
-  }
-  return unknown;
-}
-
 export function planCleanupPhase(ctx: MigrationContext): MigrationPhase {
   const appHome = resolvePath(ctx.appHome);
   const roots = doctorRoots(appHome);
   const managedAppRoot = roots.managedAppRoot;
-  const preserved = listPreservedUserStatePaths(appHome);
-  const unknown = appHomeHasUnrecognizedEntries(appHome);
+  const preflight = resolveMigrationUserStatePreflight(appHome);
+  const preserved = preflight.preservedAbsolutePaths;
+  const unknown = appHomeHasUnrecognizedEntriesWithPreflight(appHome, preflight);
 
   if (unknown.length > 0 && !ctx.force) {
     return summarizePhase("cleanup", [
@@ -356,22 +290,6 @@ export function planCleanupPhase(ctx: MigrationContext): MigrationPhase {
         "will remove managed Python app-home bundle under app/ while preserving user state at app-home root",
     },
   ]);
-}
-
-function listPreservedUserState(appHome: string): string[] {
-  if (!pathExists(appHome)) {
-    return [];
-  }
-  const preserved: string[] = [];
-  for (const entry of fs.readdirSync(appHome)) {
-    if (entry === "app") {
-      continue;
-    }
-    if (isPreservedUserStateEntry(appHome, entry)) {
-      preserved.push(entry);
-    }
-  }
-  return preserved.sort();
 }
 
 function removeDirectoryRecursive(dir: string): void {

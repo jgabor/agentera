@@ -1,0 +1,98 @@
+schema_version: agentera.v3_handoff_manifest.v1
+status: active_authority
+purpose: >-
+  Contract for the v2→v3 handoff manifest written by the stable Python CLI at the
+  app-home root and read by the v3 TypeScript migration preflight. The manifest
+  lets v3 migration classify preserved user state in O(1) time instead of
+  scanning the entire app home.
+manifest_file: v3-handoff.json
+manifest_path: >-
+  {app_home}/v3-handoff.json where app_home is the platform data-home install
+  root (for example ~/.local/share/agentera on Linux).
+writers:
+  - v2 stable Python CLI on install, upgrade apply, and doctor (refresh when stale)
+readers:
+  - v3 TypeScript migration preflight in packages/cli/src/migrate/v2HandoffManifest.ts
+performance:
+  reader_preflight_budget_ms: 100
+  note: >-
+    When the manifest is present and valid, the v3 reader must complete parsing
+    and validation within 100ms. When absent or invalid, the reader may fall
+    back to a full app-home scan with no time budget.
+required_top_level_fields:
+  schema_version:
+    type: string
+    const: agentera.v3_handoff_manifest.v1
+  written_at:
+    type: string
+    format: iso8601_utc
+    description: UTC timestamp when the manifest was last written.
+  installed_v2_version:
+    type: string
+    min_length: 1
+    description: Installed Agentera suite version from the active v2 bundle marker.
+  app_home_path:
+    type: string
+    min_length: 1
+    description: Absolute resolved app-home path the writer used.
+  user_data_inventory:
+    type: array
+    min_items: 6
+    description: >-
+      One entry per catalog id below. Entries for paths that do not exist on disk
+      set exists=false; writers still emit the full catalog so v3 preflight can
+      trust absence without rescanning.
+  runtime_adapters:
+    type: array
+    items:
+      type: string
+    description: >-
+      Runtime adapter ids (references/adapters/runtime-adapter-registry.yaml)
+      that the v2 install actively uses — runtimes whose setup doctor status is
+      pass at write time.
+user_data_inventory_catalog:
+  - id: benchmarks
+    relative_path: benchmarks
+    kind: directory
+  - id: intermediate
+    relative_path: intermediate
+    kind: directory
+  - id: sessions
+    relative_path: sessions
+    kind: directory
+  - id: history
+    relative_path: history
+    kind: directory
+  - id: corpus
+    relative_path: corpus
+    kind: directory
+  - id: profile_files
+    kind: profile_files
+    members:
+      - relative_path: PROFILE.md
+        kind: file
+      - relative_path: USAGE.md
+        kind: file
+user_data_inventory_entry_shapes:
+  directory:
+    required: [id, relative_path, kind, exists]
+    kind_const: directory
+  file:
+    required: [id, relative_path, kind, exists]
+    kind_const: file
+  profile_files:
+    required: [id, kind, members]
+    kind_const: profile_files
+    members:
+      required: [relative_path, kind, exists]
+      kind_const: file
+freshness:
+  writer_obligations:
+    - Refresh the manifest on every v2 upgrade apply.
+    - Refresh the manifest on v2 doctor when stale or missing (after warning).
+  stale_when_any:
+    - Manifest file missing.
+    - schema_version mismatch.
+    - app_home_path differs from the resolved install root.
+    - installed_v2_version differs from the active bundle marker version.
+    - written_at is older than the bundle marker mtime.
