@@ -1,6 +1,6 @@
 import { cmdPrime, PrimeArgs } from "./commands/prime.js";
 import { cmdLint, LintArgs } from "./commands/lint.js";
-import { cmdState, isPortedStateCommand, StateArgs } from "./commands/state.js";
+import { cmdState, isPortedStateCommand, StateArgs } from "./commands/state/index.js";
 import { COMMAND_FILTERS } from "./stateQuery.js";
 import { cmdQuery, QueryArgs } from "./commands/query.js";
 import { cmdCompact, cmdGate, CompactArgs } from "./commands/compact.js";
@@ -13,7 +13,7 @@ import { runSessionStart } from "../hooks/sessionStart.js";
 import { runSessionStop } from "../hooks/sessionStop.js";
 import { runCursorSessionStart } from "../hooks/cursorSessionStart.js";
 import { runCursorPreToolUse } from "../hooks/cursorPreToolUse.js";
-import { HookCliAdapter } from "../hooks/validateArtifact.js";
+import { HookCliAdapter } from "../hooks/validateArtifact/index.js";
 import fsForHooks from "node:fs";
 import { usageMain } from "../analytics/usageStats.js";
 import { validatePathValue } from "./argvalidate.js";

@@ -27,7 +27,7 @@ import {
   structuredState,
   validateFilterValues,
 } from "../stateQuery.js";
-import { displayFields, queryTodo, StateArgs } from "./state.js";
+import { displayFields, queryTodo, StateArgs } from "./state/index.js";
 
 type Dict = Record<string, any>;
 type Io = { out?: (t: string) => void; err?: (t: string) => void };

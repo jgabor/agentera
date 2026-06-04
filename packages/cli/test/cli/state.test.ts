@@ -4,7 +4,7 @@ import path from "node:path";
 
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import { queryDecisions, queryHealth, queryPlan, queryProgress, queryTodo } from "../../src/cli/commands/state.js";
+import { queryDecisions, queryHealth, queryPlan, queryProgress, queryTodo } from "../../src/cli/commands/state/index.js";
 import { main } from "../../src/cli/dispatch.js";
 import type { SchemaInfo } from "../../src/cli/appContext.js";
 
