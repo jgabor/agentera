@@ -34,19 +34,27 @@ unsupported after crossing into v3+.
 - **12 standalone skills -> 1 bundled skill** with 12 capabilities under `skills/agentera/`
 - **Artifact format**: Markdown -> YAML for agent-facing `.agentera/` files
 - **Upgrade CLI**: `npx -y agentera@latest upgrade` on the stable channel, or `uv run scripts/agentera upgrade` from a clone
-- **State CLI**: `npx -y agentera prime` (or `uv run scripts/agentera prime` from a clone), `agentera state plan`, and other `state` namespace commands for routine access; `/agentera` still renders the hej dashboard from the `agentera prime` composite result, while `agentera state query <artifact-name> --format json|yaml` remains advanced custom access. Top-level aliases for legacy commands remain during migration with stderr deprecation; see [audience-namespace-cli-migration.yaml](references/cli/audience-namespace-cli-migration.yaml) for the full list.
+- **State CLI**: `npx -y agentera prime` (or `uv run scripts/agentera prime` from a clone on `main`), `agentera state plan`, and other `state` namespace commands for routine access; `/agentera` still renders the orientation dashboard from the `agentera prime` composite result, while `agentera state query <artifact-name> --format json|yaml` remains advanced custom access. On 3.x, `agentera --help` lists only canonical namespaces; legacy top-level names still forward with stderr deprecation — see [audience-namespace-cli-migration.yaml](references/cli/audience-namespace-cli-migration.yaml).
 
 ### v2 → v3 (development channel only)
 
 Crossing from the Python 2.x support line to the npm TypeScript 3.x line uses the
 **development** channel only via `npx -y agentera@next`. There is no uvx or git
-install path for feat/v3; the branch is TS-only and v2→v3 is one-way. Stable
-maintainer work on Python 2.x continues through `uvx --from git+...@main` or a
+install path for the 3.x CLI; v2→v3 is one-way. Stable maintainer work on Python
+2.x continues through `uvx --from git+https://github.com/jgabor/agentera@main` or a
 clone with `uv run scripts/agentera`.
 
 The 3.x line replaces the Python managed app-home model with an npm self-contained
-CLI bundle. That cross-major migration is **never implied** by stable-channel
-resolution or `@latest`. Opt in only on a development-channel 3.x CLI after preview.
+CLI bundle (`dist/bin/agentera.js` plus `bundle/`). That cross-major migration is
+**never implied** by stable-channel resolution or `@latest`. Opt in only on a
+development-channel 3.x CLI after preview.
+
+After the 3.0 cutover publish, `npx -y agentera@latest` becomes the TypeScript 3.x
+line; until then use `@next` for 3.x and `@latest` for 2.x stable.
+
+**CLI shape on 3.x:** `agentera prime`, `agentera prime --context <capability> --format json`,
+`agentera state <name>`, and `agentera check validate`. Legacy top-level names still
+forward with stderr deprecation but no longer appear in `agentera --help`.
 
 ## Recommended upgrade (v1 → v2, stable channel)
 
@@ -216,18 +224,38 @@ running version to the latest release on the selected channel. While stable trac
 on that channel. Return to the v2 Python line is permanently unsupported after
 crossing into v3+.
 
-1. Install or run a 3.x CLI on the development channel and preview:
+### Before you migrate
+
+1. **Refresh the v2 handoff manifest (stable CLI).** On the 2.x line, run doctor
+   or upgrade so the stable Python CLI writes or refreshes
+   `{app_home}/v3-handoff.json` (for example `~/.local/share/agentera/v3-handoff.json`
+   on Linux). The manifest records the installed v2 version, resolved app-home
+   path, user-data inventory (`benchmarks/`, `intermediate/`, `sessions/`,
+   `history/`, `corpus/`, profile files), and active runtime adapters. Schema:
+   [`references/cli/v3-handoff-manifest.schema.yaml`](references/cli/v3-handoff-manifest.schema.yaml).
+
+2. **Check coexistence.** If both lines are installed, doctor warns before you
+   cross majors:
+   - **v2 stable** (`npx -y agentera@latest doctor`): detects an npm `@next` /
+     v3 install (npx cache and `npm ls -g agentera` when Node is available) and
+     prints `v3 detected alongside v2; pick one line` with three choices:
+     complete v3 migration, uninstall v3, or stay on v2 explicitly.
+   - **v3 development** (`npx -y agentera@next doctor`): detects a v2 managed
+     app home under the platform default path and prints the same headline and
+     resolution list from
+     [`references/cli/coexistence-probe.yaml`](references/cli/coexistence-probe.yaml).
+
+3. **Preview on the development channel:**
 
 ```bash
 npx -y agentera@next upgrade --channel development --project /path/to/project --dry-run
 ```
 
-2. Review the JSON or text preview. Cross-major items are tagged
-   `requires_explicit_major_opt_in` in the `agentera.upgrade.v2` payload. The plan
-   shows running version, latest on channel, and migration target. Pending work exits
-   non-zero until you approve apply.
+Review the JSON or text preview. Cross-major items are tagged
+`requires_explicit_major_opt_in` in the `agentera.upgrade.v2` payload. Pending
+work exits non-zero until you approve apply.
 
-3. Apply only after preview on the same channel:
+### Apply
 
 ```bash
 npx -y agentera@next upgrade --channel development --project /path/to/project --yes
@@ -237,13 +265,31 @@ npx -y agentera@next upgrade --channel development --project /path/to/project --
 Run focused phases when you need more control (`--only artifacts`, `--only runtime`,
 `--only cleanup`).
 
-Phases migrate project YAML artifacts, rewire runtime config away from the Python
-managed app-home entrypoint, and remove the managed `app/` bundle while preserving
-user and project state boundaries.
+### What the v3 migration does
 
-Preserved app-home user state during cleanup includes `benchmarks/`, `intermediate/`,
-`sessions/`, `history/`, `corpus/`, root profile files, and project `.agentera/` YAML.
-Typical installs no longer require `--force` when those directories are present.
+**Handoff manifest preflight.** During the cleanup phase, the v3 reader in
+`packages/cli/src/migrate/v2HandoffManifest.ts` loads `v3-handoff.json` when
+present and completes parsing within 100ms (`READER_PREFLIGHT_BUDGET_MS`). When
+the manifest is missing or invalid, preflight falls back to scanning the app home
+for preserved user directories and profile files.
+
+**Phases.** Migration migrates project YAML artifacts, rewires runtime config
+from the Python managed app-home entrypoint to `npx -y agentera@next`, and
+removes the managed `app/` bundle while preserving user and project state
+boundaries. Preserved app-home user state includes `benchmarks/`, `intermediate/`,
+`sessions/`, `history/`, `corpus/`, root profile files, and project `.agentera/`
+YAML. Typical installs no longer require `--force` when those directories are present.
+
+**Cursor agent surface.** On v3 projects (in-tree
+`packages/cli/src/capabilities/<name>/instructions.ts` modules), upgrade skips
+copying legacy `.cursor/agents/*.md` bodies that point at
+`Read …/capabilities/<name>/instructions.md`. Managed agents should use
+`Run agentera prime --context <name> --format json` instead.
+
+**Audience-namespace CLI.** After migration, use `agentera prime`, `agentera schema`,
+`agentera state plan`, and `agentera check validate` as the canonical entry points.
+Top-level `hej`, `describe`, `gate`, `plan`, `validate`, and related legacy names
+still delegate with stderr deprecation but no longer appear in `agentera --help`.
 
 ## Runtime notes
 
@@ -378,6 +424,7 @@ line. Stable backports should pass the backport-safety gate before merge.
 | Entry point | 12 separate `SKILL.md` files | `skills/agentera/SKILL.md` |
 | Artifact format | Markdown | YAML |
 | Upgrade path | Manual helper scripts | `npx -y agentera@latest upgrade` (stable channel) or `uv run scripts/agentera upgrade` from a clone |
-| State CLI | none | `npx -y agentera prime` or `uv run scripts/agentera prime` as the dashboard data source, `state` namespace commands, plus advanced `agentera state query <artifact-name> --format json` or `--format yaml` (top-level aliases remain during migration) |
-| Validation | per-skill | `agentera check validate capability <name-or-path>` plus `agentera check validate capability-contract` for schema self/protocol checks (top-level `validate` is a migration alias) |
+| State CLI | none | `npx -y agentera prime` or `uv run scripts/agentera prime` as the dashboard data source, `state` namespace commands, plus advanced `agentera state query <artifact-name> --format json` or `--format yaml` |
+| Validation | per-skill | `agentera check validate capability <name-or-path>` plus `agentera check validate capability-contract` for schema self/protocol checks |
+| Distribution (v3) | Python app home + uvx | npm `@next` self-contained TypeScript CLI; optional Bun single-binary via `scripts/single-binary.sh` |
 | Shared primitives | `SPEC.md` | `skills/agentera/protocol.yaml` |
