@@ -17,7 +17,7 @@ The current version-bearing surfaces are:
 | `plugin.json` | version-bearing surface and runtime package manifest | root Copilot manifest `version` matches the suite version. |
 | `.github/plugin/plugin.json` | version-bearing surface and runtime package manifest | repository Copilot manifest `version` matches the suite version. |
 | `.codex-plugin/plugin.json` | version-bearing surface and runtime package manifest | Codex manifest `version` matches the suite version. |
-| `.claude-plugin/marketplace.json` | version-bearing surface and runtime package manifest | `metadata.version` and every plugin entry version, including the legacy `hej` bridge, match the suite version. |
+| `.claude-plugin/marketplace.json` | version-bearing surface and runtime package manifest | `metadata.version` and the bundled `agentera` plugin entry version match the suite version. |
 | `.opencode/plugins/agentera.js` | version-bearing surface | `AGENTERA_VERSION` matches the registry suite version and drives the OpenCode command marker file `.agentera-version`. |
 
 `.opencode/package.json` is intentionally not version-bearing. Its current behavior is runtime package manifest behavior only: it keeps `type: "module"`, `main`/`exports` pointing at `./plugins/agentera.js`, `dependencies["@opencode-ai/plugin"] == "1.14.33"`, and an `agentera` npm-loadable plugin metadata block, but it has no top-level `name` or `version` field.
@@ -44,5 +44,4 @@ Write gating is preserved: `--update-packages` changes package items from `skipp
 | `.agentera/docs.yaml` `version_files` includes version-bearing surfaces and excludes `.opencode/package.json`. | version-bearing surface | `preserve` | Keep `.opencode/package.json` out of version checks because it is a runtime package manifest, not a suite version surface. |
 | `.opencode/package.json` is force-included and bundled, but it is not in docs `version_files`. | runtime package manifest | `preserve` | Keep packaging it without treating it as version-bearing. |
 | Upgrade package commands are represented as argv lists for Claude Code and OpenCode only; Codex and Copilot have runtime manifests but no package-manager command entries. | package-manager command surface | `preserve` | Keep command planning limited to currently managed package runtimes. |
-| `.claude-plugin/marketplace.json` carries a `hej` legacy bridge version alongside `agentera`. | version-bearing surface | `defer` | Keep the legacy bridge version aligned until a separate legacy-bridge removal or marketplace simplification task exists. |
 | Live package-manager behavior is not characterized by this task. | package-manager command surface | `defer` | Keep tests mocked; do not introduce live `npx skills` execution. |

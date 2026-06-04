@@ -440,7 +440,7 @@ references, generic plain language, and ambiguous current prose.
 Use this prose as guidance only: current conceptual docs should say the object
 they mean, such as Agentera app files, suite package, plugin-shipped hooks,
 removed `bundle-status` command, Agentera routing entry point, skill entry file,
-v1 skill entry file, or legacy hej bridge. Preserve shipped identifiers and
+historical v1 skill entry paths (post-3.0 removed from the repo tree). Preserve shipped identifiers and
 literal paths such as `.agentera-bundle.json`, `bundle.status`,
 `activeBundleRoot`, `--only bundle`, and `skills/agentera/SKILL.md` unless an
 explicit compatibility migration is in scope.

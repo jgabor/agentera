@@ -1,4 +1,56 @@
 cycles:
+  - number: 645
+    timestamp: 2026-06-04 16:35
+    type: chore
+    phase: build
+    what: >-
+      Remove v1 legacy cruft after the 3.0 compatibility boundary (plan T4 /
+
+      TODO L21). Deleted the `skills/hej/` v1 `/hej` bridge tree,
+
+      `references/v1-section-mapping.md`, and `.opencode/commands/hej.md`.
+
+      Removed the legacy `hej` plugin from `.claude-plugin/marketplace.json`
+
+      and `hej` skillMetadata from `.codex-plugin/plugin.json`. Dropped
+
+      `skills/hej/SKILL.md` from package-registry docs_targets and
+
+      `.agentera/docs.yaml` version_files; retired `legacy_hej_bridge` and
+
+      `v1_skill_entry_file` from bundle-skill-vocabulary canonical concepts.
+
+      Updated `skills/agentera/SKILL.md`, `references/adapters/opencode.md`,
+
+      `UPGRADE.md`, package-surface-characterization, vocabulary.md, and
+
+      documentation-inventory Tier C cleanup items. Kept
+
+      `migrateArtifactsV1ToV2.ts` and prime `v1_migration` as the supported
+
+      Markdown→YAML migration path. Added
+      `packages/cli/test/cli/v1LegacyCruft.test.ts`
+
+      (10 cases: 5 cruft classes × pass/fail).
+    inspiration: plan T4 acceptance; documentation-inventory Tier C.
+    discovered: tests/fixtures/v1/ was already absent; no pytest tree on feat/v3.
+      Test count 812→822 (+10 v1 cruft regression cases, +1 file 85→86).
+    verified: |-
+      pnpm -C packages/cli test — 822/822 (86 files); typecheck clean; build
+      clean; `node packages/cli/dist/bin/agentera.js check validate
+      capability-contract --format json` pass; `state query --list-artifacts`
+      lists yaml artifacts only; npmParityMatrix 14/14 green.
+    next: Plan T1 Bun/npm packaging or T2 monolith split per cutover plan.
+    context:
+      intent: Delete post-3.0 v1 bridge and compatibility-only surfaces while
+        preserving the CLI-owned v1 Markdown→YAML migration path.
+      constraints: |-
+        Do not remove `migrateArtifactsV1ToV2.ts` or prime `v1_migration`
+        (still required for legacy project artifacts). Do not break v2 @latest
+        Python stable; feat/v3-only sweep. npmParityMatrix and
+        capability-contract must stay green.
+      unknowns: ""
+      scope: plan T4 on feat/t4-remove-v1-cruft
   - number: 644
     timestamp: 2026-06-04 14:30
     type: fix
@@ -466,42 +518,10 @@ cycles:
         references/cli/update-channels.yaml, CHANGELOG.md, .agentera/plan.yaml,
         .agentera/progress.yaml
     commit: 51feef4
-  - number: 635
-    timestamp: 2026-06-03 15:30
-    type: feat
-    phase: build
-    what: Next-major doctor section — extended references/cli/update-channels.yaml
-      with per-channel next_major on stable, added
-      packages/cli/src/upgrade/nextMajorDoctor.ts and head-of-output rendering
-      in doctor.ts, plus vitest regression coverage for authority reachability,
-      six-line cap, v1 hardcoded fallback, omitted-when-null, and D58 vocabulary
-      guard. Python stable mirror implemented in main worktree
-      (scripts/next_major_doctor.py, render_doctor_status hook,
-      tests/test_next_major_doctor.py).
-    inspiration: Plan task 1 (next-major doctor section).
-    discovered: feat/v3 has no Python tree; v2 backport lives in
-      /tmp/agentera-main-wt on main and needs a separate main-branch commit.
-      Full vitest suite reports 3 pre-existing oracle failures unrelated to this
-      task (validateVerifyOracles.test.ts).
-    verified: pnpm -C packages/cli exec vitest run
-      test/upgrade/nextMajorDoctor.test.ts — 12/12 passed; pnpm -C packages/cli
-      run typecheck — clean; pnpm -C packages/cli build — clean; live node
-      packages/cli/dist/bin/agentera.js doctor — 6-line Next major section at
-      head sourced from channels.stable.next_major; /tmp/agentera-main-wt uv run
-      pytest tests/test_next_major_doctor.py — 9/9 passed.
-    next: Plan task 2 — 3.0 version bump and CHANGELOG update.
-    context:
-      intent: Execute plan task 1 on feat/v3 with main worktree Python parity.
-      constraints: No remote push; no git commit.
-      unknowns: none
-      scope: references/cli/update-channels.yaml,
-        packages/cli/src/upgrade/nextMajorDoctor.ts,
-        packages/cli/src/cli/commands/doctor.ts,
-        packages/cli/test/upgrade/nextMajorDoctor.test.ts,
-        packages/cli/test/validate/vocabularyAuthority.test.ts,
-        .agentera/plan.yaml, .agentera/progress.yaml
-    commit: 51feef4
 archive:
+  - summary: "Cycle 635 (2026-06-03): Next-major doctor section — extended
+      references/cli/update-channels.yaml with per-channel next_major on stable,
+      added packages/cli/src/upgrade/nextMajorDoctor.ts and head-of-output..."
   - summary: "Cycle 634 (2026-06-03): Final state sync and plan archive. Archived
       the 2.7.7 plan to .agentera/archive/plan-2026-06-03.yaml, cleared the
       active..."
@@ -585,5 +605,3 @@ archive:
       post-2.6.1 CLI fixes."
   - summary: "Cycle 597 (2026-05-24): Closed Cursor First-Class Runtime v1 plan
       (Decision 63) with 2.7.0 release metadata."
-  - summary: "Cycle 596 (2026-05-24): Live Cursor IDE preToolUse Write smoke for
-      Task 5."

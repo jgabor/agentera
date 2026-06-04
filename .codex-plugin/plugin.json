@@ -96,16 +96,6 @@
       "policy": {
         "allow_implicit_invocation": true
       }
-    },
-    {
-      "name": "hej",
-      "description": "Legacy Agentera v1 explicit $hej bridge to the v2 $agentera upgrade flow; do not use for bare text hej.",
-      "path": "./skills/hej",
-      "runtimeSupport": "portable",
-      "invocationHint": "$hej only when explicitly requested as a legacy bridge; bare text hej belongs to $agentera",
-      "policy": {
-        "allow_implicit_invocation": false
-      }
     }
   ]
 }

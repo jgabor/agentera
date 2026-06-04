@@ -1,6 +1,0 @@
-{
-  "name": "hej",
-  "version": "2.0.3",
-  "description": "Legacy Agentera v1 explicit /hej bridge to the v2 /agentera upgrade flow; do not use for bare text hej.",
-  "author": { "name": "jgabor" }
-}

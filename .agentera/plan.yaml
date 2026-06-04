@@ -455,7 +455,7 @@ tasks:
     depends_on:
       - "1"
       - "2"
-    status: pending
+    status: complete
     acceptance:
       - "GIVEN `feat/v3` base WHEN the v1 legacy cruft is audited THEN obsolete migration paths are removed (`migrateArtifactsV1ToV2.ts` is a no-op pass per D66; verify the legacy v1 fixture assumptions in `tests/fixtures/v1/` are not referenced by any test), stale v1 runtime bridge behavior is removed (`migrateArtifactsV1ToV2.ts` + `migrateArtifactsV2ToV3.ts` produce the same shape), v1 skill bundle/suite wording in `skills/agentera/SKILL.md` and the per-capability prose is removed (verify D65 already removed it), legacy fixture assumptions are removed, and compatibility-only docs/tests are removed"
       - "GIVEN the audit WHEN the v1 contract validator remains in `validate.ts` THEN it is a defensive gate (the v1 contract is still validated for any v1 fixture that survives); per Decision 56 the v1 surface is preserved as a defensive gate, not a supported workflow"
