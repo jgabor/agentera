@@ -56,7 +56,7 @@ OpenCode skill search paths:
 - Global install: `npx skills add jgabor/agentera -g -a opencode --skill agentera -y`
 - Project install: symlink or copy `skills/agentera/` into `.opencode/skills/agentera/` or `.agents/skills/agentera/`
 
-The temporary `skills/hej/` entry point is a v1 upgrade bridge, not a new-install target. Each Agentera skill entry file already contains YAML frontmatter with `name` and `description`, which matches OpenCode's frontmatter requirements exactly. The OpenCode plugin adds one prompt transformation: when the complete user message is exactly bare text `hej`, `chat.message` rewrites it to load the bundled `agentera` skill and route through the `agentera hej` dashboard path. The match is exact except for OpenCode's CLI-added single trailing newline transport artifact, and does not apply to `/hej`, `Hej`, `hej there`, attachments, or other message parts.
+Each Agentera skill entry file contains YAML frontmatter with `name` and `description`, which matches OpenCode's frontmatter requirements exactly. The OpenCode plugin adds one prompt transformation: when the complete user message is exactly bare text `hej`, `chat.message` rewrites it to load the bundled `agentera` skill and route through the `agentera prime` dashboard path. The match is exact except for OpenCode's CLI-added single trailing newline transport artifact, and does not apply to `Hej`, `hej there`, attachments, or other message parts.
 
 **OpenCode frontmatter validation** requires: `name` (1-64 chars, lowercase alphanumeric with single hyphens), `description` (1-1024 chars). Agentera entry point names are lowercase, matching the validation regex `^[a-z0-9]+(-[a-z0-9]+)*$`.
 

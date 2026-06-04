@@ -361,15 +361,14 @@ when supplied by the CLI.
 Do not replace the CLI-owned preview with manual artifact inspection,
 hand-written migration steps, or raw YAML reads. Only the apply step requires confirmation.
 
-The upgrade command is idempotent. It installs or updates Agentera app files
-when invoked through `uvx`, migrates v1 artifacts, wires runtime config to that
-app home, and removes fixable outdated v1 runtime artifacts.
-The artifacts phase migrates supported v1 Markdown files to YAML with backups
-after preview and confirmation. Package refreshes that run `npx skills remove`
-for v1 skill entries and `npx skills add` for `/agentera` remain explicit opt-in
-via `--update-packages`. `npx skills update` by itself updates only the visible
-skill; if `/agentera` then finds missing or out-of-date app files, run the
-plain-language repair preview above so upgrade updates the app and cleans up
+The upgrade command is idempotent. It installs or updates Agentera app files,
+migrates legacy Markdown artifacts to YAML when detected, wires runtime config
+to the app home, and removes fixable outdated runtime artifacts after preview
+and confirmation. Package refreshes that run `npx skills remove` for legacy
+standalone skill entries and `npx skills add` for `/agentera` remain explicit
+opt-in via `--update-packages`. `npx skills update` by itself updates only the
+visible skill; if `/agentera` then finds missing or out-of-date app files, run
+the plain-language repair preview above so upgrade updates the app and cleans up
 the old default directory when it is recoverable.
 
 ### Layer 1: Bare `/agentera` or bare `hej` — delegate to prime

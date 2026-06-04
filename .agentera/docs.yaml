@@ -14,7 +14,6 @@ conventions:
   - .claude-plugin/marketplace.json
   - .opencode/plugins/agentera.js
   - skills/agentera/SKILL.md
-  - skills/hej/SKILL.md
   - registry.json
   version_files_registry: references/adapters/package-registry.yaml docs_targets.version_files
   semver_policy:
@@ -370,7 +369,7 @@ index:
   last_updated: '2026-05-05'
   status: current
 coverage:
-  documented: 2/2 skill entry points have SKILL.md (1 active bundled skill plus 1 temporary legacy bridge)
+  documented: 1/1 skill entry points have SKILL.md (active bundled Agentera skill)
   undocumented: 0 skills lack documentation
   stale: none
   release_metadata: >
