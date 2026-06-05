@@ -18,6 +18,21 @@ afterEach(() => {
   fs.rmSync(tmp, { recursive: true, force: true });
 });
 
+function v3SourceRoot(announced: boolean): string {
+  const root = path.join(tmp, `v3-src-${announced}`);
+  fs.mkdirSync(path.join(root, ".git"), { recursive: true });
+  fs.mkdirSync(path.join(root, "skills", "agentera"), { recursive: true });
+  fs.writeFileSync(path.join(root, "skills", "agentera", "SKILL.md"), "x");
+  fs.copyFileSync(path.join(REPO_ROOT, "registry.json"), path.join(root, "registry.json"));
+  fs.mkdirSync(path.join(root, "references", "cli"), { recursive: true });
+  let channels = fs.readFileSync(path.join(REPO_ROOT, "references/cli/update-channels.yaml"), "utf8");
+  if (announced) {
+    channels = channels.replace("announced: false", "announced: true");
+  }
+  fs.writeFileSync(path.join(root, "references/cli/update-channels.yaml"), channels);
+  return root;
+}
+
 function managed(appHome: string, marker: string): void {
   const app = path.join(appHome, "app");
   fs.mkdirSync(path.join(app, "scripts"), { recursive: true });
@@ -54,12 +69,30 @@ describe("buildDoctorStatus channel-aware commands", () => {
     expect(status.dryRunCommand).not.toContain("@next");
   });
 
-  it("flags crossMajorBoundary for v2 managed app-home on 3.x source root", () => {
+  it("does not propose v2→v3 upgrade while stable successor is unannounced", () => {
     const appHome = path.join(tmp, "v2home");
     managed(appHome, "2.7.0");
     const status = buildDoctorStatus(appHome, {
       rootSource: "explicit --install-root",
       sourceRoot: REPO_ROOT,
+      home: path.join(tmp, "home"),
+      project: path.join(tmp, "proj"),
+      expectedVersion: "3.0.0",
+      probeCli: false,
+    });
+    expect(status.crossMajorBoundary).toBe(false);
+    expect(status.status).toBe("up_to_date");
+    expect(status.dryRunCommand).toBeNull();
+    expect(status.signals.some((s: { kind?: string }) => s.kind === "version_mismatch")).toBe(false);
+  });
+
+  it("flags crossMajorBoundary for v2 managed app-home when successor is announced", () => {
+    const sourceRoot = v3SourceRoot(true);
+    const appHome = path.join(tmp, "v2home-announced");
+    managed(appHome, "2.7.0");
+    const status = buildDoctorStatus(appHome, {
+      rootSource: "explicit --install-root",
+      sourceRoot,
       home: path.join(tmp, "home"),
       project: path.join(tmp, "proj"),
       expectedVersion: "3.0.0",

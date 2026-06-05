@@ -12,6 +12,7 @@ import {
   STATUS_READY_TO_APPLY,
   UPGRADE_PREVIEW_SCHEMA,
 } from "../../src/upgrade/compatibility.js";
+import { setSuccessorAnnouncedOverrideForTests } from "../../src/upgrade/nextMajorDoctor.js";
 import {
   buildUpgradePlan,
   validateUpgradeApply,
@@ -55,9 +56,11 @@ beforeEach(() => {
   stderr = "";
   process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT = REPO_ROOT;
   process.env.HOME = home;
+  setSuccessorAnnouncedOverrideForTests(true);
 });
 
 afterEach(() => {
+  setSuccessorAnnouncedOverrideForTests(null);
   delete process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT;
   delete process.env.HOME;
   fs.rmSync(tmp, { recursive: true, force: true });

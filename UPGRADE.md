@@ -34,7 +34,7 @@ unsupported after crossing into v3+.
 - **12 standalone skills -> 1 bundled skill** with 12 capabilities under `skills/agentera/`
 - **Artifact format**: Markdown -> YAML for agent-facing `.agentera/` files
 - **Upgrade CLI**: `npx -y agentera@latest upgrade` on the stable channel, or `uv run scripts/agentera upgrade` from a clone
-- **State CLI**: `npx -y agentera prime` (or `uv run scripts/agentera prime` from a clone on `main`), `agentera state plan`, and other `state` namespace commands for routine access; `/agentera` still renders the orientation dashboard from the `agentera prime` composite result, while `agentera state query <artifact-name> --format json|yaml` remains advanced custom access. On 3.x, `agentera --help` lists only canonical namespaces; legacy top-level names still forward with stderr deprecation — see [audience-namespace-cli-migration.yaml](references/cli/audience-namespace-cli-migration.yaml).
+- **State CLI**: `npx -y agentera prime` (or `uv run scripts/agentera prime` from a clone on `main`), `agentera state plan`, and other `state` namespace commands for routine access; `/agentera` still renders the orientation dashboard from the `agentera prime` composite result, while `agentera state query <artifact-name> --format json|yaml` remains advanced custom access. On 3.x npm, `agentera --help` lists only canonical namespaces; top-level `hej`, `describe`, `gate`, and routine-state names are removed — use `prime`, `schema`, `check compact`, and `state <name>`. Transitional aliases (`validate`, `compact`, `verify`, `stats`, `lint`, `query`) still delegate with stderr deprecation — see [audience-namespace-cli-migration.yaml](references/cli/audience-namespace-cli-migration.yaml).
 
 ### v2 → v3 (development channel only)
 
@@ -53,8 +53,13 @@ After the 3.0 cutover publish, `npx -y agentera@latest` becomes the TypeScript 3
 line; until then use `@next` for 3.x and `@latest` for 2.x stable.
 
 **CLI shape on 3.x:** `agentera prime`, `agentera prime --context <capability> --format json`,
-`agentera state <name>`, and `agentera check validate`. Legacy top-level names still
-forward with stderr deprecation but no longer appear in `agentera --help`.
+`agentera state <name>`, and `agentera check validate`. `agentera --help` lists only
+canonical top-level commands. The npm 3.x CLI **removed** top-level `hej`, `describe`,
+`gate`, and routine-state names such as `plan`, `progress`, `health`, and `todo`; use
+`prime`, `schema`, `check compact`, and `state <name>` instead. A smaller transitional
+set (`validate`, `compact`, `verify`, `stats`, `lint`, `query`) still forwards with a
+one-line stderr deprecation naming the canonical command — see
+[audience-namespace-cli-migration.yaml](references/cli/audience-namespace-cli-migration.yaml).
 
 ## Recommended upgrade (v1 → v2, stable channel)
 
@@ -288,8 +293,10 @@ copying legacy `.cursor/agents/*.md` bodies that point at
 
 **Audience-namespace CLI.** After migration, use `agentera prime`, `agentera schema`,
 `agentera state plan`, and `agentera check validate` as the canonical entry points.
-Top-level `hej`, `describe`, `gate`, `plan`, `validate`, and related legacy names
-still delegate with stderr deprecation but no longer appear in `agentera --help`.
+Top-level `hej`, `describe`, `gate`, and routine-state names (`plan`, `progress`,
+`health`, `todo`, and related) are removed from the npm 3.x dispatch surface.
+Transitional aliases (`validate`, `compact`, `verify`, `stats`, `lint`, `query`) still
+delegate with stderr deprecation but no longer appear in `agentera --help`.
 
 ## Runtime notes
 

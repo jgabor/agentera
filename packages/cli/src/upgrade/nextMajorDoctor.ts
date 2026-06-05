@@ -19,6 +19,8 @@ export interface NextMajorBlock {
   concept: string;
   channel: UpdateChannelName;
   version: string;
+  /** When false, doctor/prime omit successor-line upgrade prompts until republished. */
+  announced: boolean;
   npmOnlyAdvisory: string;
   guideUrl: string;
   previewCommand: string;
@@ -42,6 +44,7 @@ export const V1_NEXT_MAJOR_FALLBACK: NextMajorBlock & { currentVersion: string; 
   currentChannel: "stable",
   channel: "stable",
   version: "2.x",
+  announced: true,
   npmOnlyAdvisory: "",
   guideUrl:
     "https://github.com/jgabor/agentera/blob/main/UPGRADE.md#recommended-upgrade-v1--v2-stable-channel",
@@ -78,11 +81,28 @@ function parseNextMajorBlock(raw: unknown): NextMajorBlock | null {
     concept: String(block.concept ?? "forward_successor_line").trim(),
     channel: channel as UpdateChannelName,
     version,
+    announced: block.announced !== false,
     npmOnlyAdvisory: String(block.npm_only_advisory ?? "").trim(),
     guideUrl,
     previewCommand,
     irreversibleAdvisory,
   };
+}
+
+let testSuccessorAnnouncedOverride: boolean | null = null;
+
+/** Reset injectable successor announcement gate (tests). */
+export function setSuccessorAnnouncedOverrideForTests(value: boolean | null): void {
+  testSuccessorAnnouncedOverride = value;
+}
+
+/** True when stable-channel successor metadata exists and is announced for doctor/prime. */
+export function isStableSuccessorAnnounced(sourceRoot: string): boolean {
+  if (testSuccessorAnnouncedOverride !== null) {
+    return testSuccessorAnnouncedOverride;
+  }
+  const block = loadChannelNextMajor(sourceRoot, "stable");
+  return block?.announced === true;
 }
 
 export function loadChannelNextMajor(sourceRoot: string, channel: UpdateChannelName): NextMajorBlock | null {
@@ -138,7 +158,7 @@ export function resolveNextMajorDoctorLines(ctx: NextMajorDoctorContext): string
   }
 
   const authorityBlock = loadChannelNextMajor(sourceRoot, currentChannel);
-  if (!authorityBlock) {
+  if (!authorityBlock || !authorityBlock.announced) {
     return null;
   }
 

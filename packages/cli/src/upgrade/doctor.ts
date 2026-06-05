@@ -7,7 +7,9 @@ import { doctorRoots, loadSuiteVersion } from "./appModel.js";
 import { isNpxBundleRoot } from "../core/sourceRoot.js";
 import { resolveUpdateChannel } from "./channels.js";
 import { classifyInstall, crossMajorBoundaryApplies } from "./compatibility.js";
+import { isStableSuccessorAnnounced } from "./nextMajorDoctor.js";
 import { buildUpgradeCommands, commandText } from "./upgradeCommands.js";
+import { parseSemverMajor } from "./versionResolution.js";
 
 /**
  * Doctor status build. Faithful TS port of build_doctor_status /
@@ -368,7 +370,22 @@ export function buildDoctorStatus(installRoot: string, opts: BuildDoctorStatusOp
     sourceRoot,
   });
   const install = classifyInstall({ appHome: installRoot, sourceRoot });
-  const crossMajorBoundary = crossMajorBoundaryApplies(install, sourceRoot);
+  const crossMajorDetected = crossMajorBoundaryApplies(install, sourceRoot);
+  const successorAnnounced = isStableSuccessorAnnounced(sourceRoot);
+  const crossMajorBoundary = crossMajorDetected && successorAnnounced;
+  if (crossMajorDetected && !successorAnnounced) {
+    for (let i = signals.length - 1; i >= 0; i--) {
+      const signal = signals[i];
+      if (signal.kind !== "version_mismatch") {
+        continue;
+      }
+      const actualMajor = parseSemverMajor(String(signal.actual ?? markerVersion ?? "")) ?? 0;
+      const expectedMajor = parseSemverMajor(String(signal.expected ?? expected)) ?? 0;
+      if (actualMajor > 0 && actualMajor < 3 && expectedMajor >= 3) {
+        signals.splice(i, 1);
+      }
+    }
+  }
   const upgradeCommands = buildUpgradeCommands({
     project,
     installRoot,

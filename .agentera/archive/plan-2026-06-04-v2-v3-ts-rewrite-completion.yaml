@@ -1,7 +1,7 @@
 header:
   level: full
   created: "2026-06-04"
-  status: active
+  status: complete
   reviewed: "2026-06-04"
   critic_issues: "1 found, 1 addressed, 0 dismissed"
   revised: >-
@@ -415,7 +415,7 @@ tasks:
   - number: 1
     name: Bun/npm/single-binary packaging design and ship (TODO L17)
     depends_on: []
-    status: pending
+    status: complete
     blocks:
       - "8"
       - "10"
@@ -430,7 +430,7 @@ tasks:
     name: Split the 8 TS monolith hotspots (TODO L22)
     depends_on:
       - "1"
-    status: pending
+    status: complete
     blocks:
       - "10"
     acceptance:
@@ -443,7 +443,7 @@ tasks:
     depends_on:
       - "1"
       - "2"
-    status: pending
+    status: complete
     acceptance:
       - "GIVEN `feat/v3` base WHEN every protocol surface is audited THEN every backwards-compatible, deprecated, parallel, display-only, or storage/protocol split name is removed or migrated to the canonical name; surfaces in scope: artifact canonical names (`PROGRESS.md` → `progress.yaml` if not already; `PLAN.md` → `plan.yaml`; etc.), concept names (the `hej` capability canonical rename per Decision 59's `prime` consolidation), schema fields (`instruction_file` → `instruction_module` per D65; `version` vs `suiteVersion` vs `gitRef` per the release-metadata gate), metadata fields, runtime adapter surfaces, and protocol identities"
       - "GIVEN the audit WHEN `packages/cli/test/cli/singleNameProtocol.test.ts` is authored THEN it scans all YAML/TS surfaces for forbidden legacy substrings (`PROGRESS.md`, `PLAN.md`, `DECISIONS.md` in storage/protocol paths; `instruction_file`; pre-D58 vocabulary tokens) and fails if any are present; the test is green on the post-audit tree"
@@ -465,7 +465,7 @@ tasks:
     name: Implement v2 state manifest for v3 consumption (TODO L24 → both)
     depends_on:
       - "1"
-    status: pending
+    status: complete
     acceptance:
       - "GIVEN `feat/v3` base WHEN `references/cli/v3-handoff-manifest.yaml` is authored THEN it defines the manifest format schema: v2 install/upgrade writes `~/.local/share/agentera/v3-handoff.json` with installed v2 version, app home path, user data inventory (`benchmarks/`, `intermediate/`, `sessions/`, `history/`, `corpus/`, profile files), and runtime adapters in use; the schema is versioned and discoverable"
       - "GIVEN the schema WHEN `packages/cli/src/upgrade/v3HandoffManifest.ts` is authored THEN it reads the manifest in <100ms during v3 migration preflight instead of scanning the whole app home; the v3 reader is the `feat/v3` side of the `→ both` work"
@@ -476,7 +476,7 @@ tasks:
     name: Implement v2/v3 coexistence detection (TODO L25 → both)
     depends_on:
       - "1"
-    status: pending
+    status: complete
     acceptance:
       - "GIVEN `feat/v3` base WHEN the symmetric v3 doctor probe is added to `packages/cli/src/setup/doctor.ts` THEN it detects v2 stable (probe the legacy v2 install root `~/.local/share/agentera/` for the Python-managed app) and warns with a user-facing message: \"v2 detected alongside v3; pick one line\" with three user-facing choices: complete v3 migration, uninstall v2, stay on v3 explicitly; the v3 probe is the `feat/v3` side of the `→ both` work"
       - "GIVEN the v3 probe WHEN `packages/cli/test/cli/coexistenceProbe.test.ts` runs THEN a v3 install alongside v2 install shows the symmetric warning; the new probe regression is green; per V5 the proportionality target is one pass + one fail per probe scenario (v2-detected + v3-detected + both-detected + neither = 4 × 2 = 8 cases)"
@@ -486,7 +486,7 @@ tasks:
     name: Fix the v3 cursor agent runtime surface regression
     depends_on:
       - "1"
-    status: pending
+    status: complete
     acceptance:
       - "GIVEN `feat/v3` base WHEN the v3 TS upgrade orchestrator (`packages/cli/src/upgrade/runtimeMigration.ts`) is updated THEN it owns the in-tree `.cursor/agents/` directory on a v3 project (probe for the in-tree `packages/cli/src/capabilities/<name>/instructions.ts` modules as the v3 surface signal); on a v3 project, the Python upgrade orchestrator must skip the in-tree `.cursor/agents/` directory"
       - "GIVEN the fix WHEN `packages/cli/test/upgrade/cursorAgentSurface.test.ts` is authored THEN it asserts the v3 cursor agent body uses the `Run agentera prime --context <name> --format json` form and rejects the legacy `Read .../capabilities/<name>/instructions.md` substring; the regression is green on `feat/v3`"
@@ -497,7 +497,7 @@ tasks:
     depends_on:
       - "1"
       - "3"
-    status: pending
+    status: complete
     blocks:
       - "9"
       - "10"
@@ -511,7 +511,7 @@ tasks:
     name: Promote CHANGELOG 3.0.0 and finalize README/UPGRADE.md
     depends_on:
       - "8"
-    status: pending
+    status: complete
     blocks:
       - "10"
     acceptance:
@@ -527,7 +527,7 @@ tasks:
       - "2"
       - "8"
       - "9"
-    status: pending
+    status: complete
     blocks:
       - "11"
     acceptance:
@@ -549,7 +549,7 @@ tasks:
       - "8"
       - "9"
       - "10"
-    status: pending
+    status: complete
     acceptance:
       - "GIVEN T1-T10 complete WHEN the cutover publish commit is staged THEN TODO L16 (Rewrite the supported Agentera CLI core in TypeScript) and the resolved sub-task entries (L17 Bun/npm packaging, L20 single-name protocol boundary, L21 v1 legacy cruft, L22 TS monolith hotspot split, L24 v2 handoff manifest, L25 v2/v3 coexistence, the audience-namespace phase 3 completion, the cursor agent surface fix) move to the `## ✓ Resolved` section using the standard ledger form `- ~~[type:3.0.0] ...~~ · resolved on `feat/v3-cutover` @ <sha>: <one-line summary of what changed>` naming the cutover commit hash once known"
       - "GIVEN the same commit WHEN `.agentera/plan.yaml` status flips from `active` to `complete` and the new plan archives to `.agentera/archive/plan-2026-06-04-v2-v3-ts-rewrite-completion.yaml` THEN the D56 plan archive remains at `.agentera/archive/plan-2026-06-04-d56-parity-closeout.yaml` (no-op verification); the `previous_plan_archived` line in the new plan points at the D56 archive path"
@@ -609,6 +609,13 @@ overall_acceptance: >-
   the CHANGELOG 3.0.0 entry is folded with the cutover publish
   commit per AGENTS.md `Changelog` rules.
 
-surprises: []
+surprises:
+  - >-
+    T10 landed as `3.0.0-dev.6` republication on npm `@next` after the withdrawn
+    `3.0.0` publish; stable `@latest` graduation and the `## [3.0.0]` CHANGELOG
+    promotion from T9 remain deferred to the next release cut.
+  - >-
+    `channels.stable.next_major.announced: false` keeps doctor/prime from proposing
+    v2→v3 upgrade while the 3.0.0 line is off npm.
 
 previous_plan_archived: .agentera/archive/plan-2026-06-04-d56-parity-closeout.yaml

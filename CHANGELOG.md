@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+### Changed
+
+- Aligned audience-namespace migration docs with npm 3.x Phase 3 dispatch: top-level `hej`, `describe`, `gate`, and routine-state names are removed; transitional aliases (`validate`, `compact`, `verify`, `stats`, `lint`, `query`) still forward with stderr deprecation.
+- Set `channels.stable.next_major.announced: false` so doctor and prime omit the v2→v3 successor upgrade prompt while the 3.0.0 line is off npm pending republication.
+
 ### Fixed
 
 - Fixed `pnpm install` failing on hosts with a system-wide `vips` (Arch, Fedora, Nix with vips overlay, Homebrew on macOS): sharp's `useGlobalLibvips()` check returned true and the install hook fell through to a `node-gyp` source build that needed `node-addon-api`. Migrated the deprecated `pnpm.onlyBuiltDependencies` and `pnpm.overrides` from `package.json#pnpm` to `pnpm-workspace.yaml` (pnpm 10+ ignores the legacy key) and added a `preinstall` hook that re-execs `pnpm install` with `SHARP_IGNORE_GLOBAL_LIBVIPS=true` so sharp's prebuilt binary is always used.
