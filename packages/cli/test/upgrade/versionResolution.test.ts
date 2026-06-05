@@ -8,6 +8,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { BUNDLE_MARKER } from "../../src/state/installRoot.js";
 import { classifyInstall } from "../../src/upgrade/compatibility.js";
 import { resolveUpdateChannel } from "../../src/upgrade/channels.js";
+import { setSuccessorAnnouncedOverrideForTests } from "../../src/upgrade/nextMajorDoctor.js";
 import {
   classifyUpgradeOutcome,
   parseSemverMajor,
@@ -27,10 +28,12 @@ beforeEach(() => {
     stable: "3.1.6",
     development: "4.2.1",
   });
+  setSuccessorAnnouncedOverrideForTests(true);
 });
 
 afterEach(() => {
   setVersionCatalogForTests(null);
+  setSuccessorAnnouncedOverrideForTests(null);
   fs.rmSync(tmp, { recursive: true, force: true });
 });
 
@@ -69,6 +72,23 @@ describe("classifyUpgradeOutcome", () => {
     });
     expect(outcome.kind).toBe("forward_major_upgrade");
     expect(outcome.latestOnChannel).toBe("4.0.2");
+  });
+
+  it("treats v2 managed layout as up_to_date when successor is unannounced", () => {
+    setSuccessorAnnouncedOverrideForTests(false);
+    const appHome = path.join(tmp, "v2-unannounced");
+    managedV2(appHome, "2.7.7");
+    const install = classifyInstall({ appHome, sourceRoot: REPO_ROOT });
+    const channel = resolveUpdateChannel({ sourceRoot: REPO_ROOT, channel: "development", home: tmp });
+    const outcome = classifyUpgradeOutcome({
+      appHome,
+      sourceRoot: REPO_ROOT,
+      install,
+      channel,
+      catalog: { stable: "2.7.7", development: "3.0.0" },
+    });
+    expect(outcome.kind).toBe("up_to_date");
+    expect(outcome.message).toContain("not announced");
   });
 
   it("classifies v2 managed layout migration to latest on development channel", () => {

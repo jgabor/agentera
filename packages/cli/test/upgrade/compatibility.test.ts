@@ -16,6 +16,7 @@ import {
   collectV3MigrationOperations,
   previewCrossMajorGuard,
 } from "../../src/upgrade/compatibility.js";
+import { setSuccessorAnnouncedOverrideForTests } from "../../src/upgrade/nextMajorDoctor.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "../../../..");
@@ -24,9 +25,11 @@ let tmp: string;
 
 beforeEach(() => {
   tmp = fs.mkdtempSync(path.join(os.tmpdir(), "compat-"));
+  setSuccessorAnnouncedOverrideForTests(true);
 });
 
 afterEach(() => {
+  setSuccessorAnnouncedOverrideForTests(null);
   fs.rmSync(tmp, { recursive: true, force: true });
 });
 

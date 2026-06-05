@@ -59,10 +59,39 @@ describe("prime channel-aware migration and app_home gates", () => {
     expect(state.v1_migration.apply_command).toContain("--yes");
   });
 
-  it("attention suggests explicit v2→v3 preview when cross-major boundary applies", () => {
+  it("does not suggest v2→v3 preview while stable successor is unannounced", () => {
     const appHome = process.env.AGENTERA_HOME as string;
     managedV2(appHome);
     const project = path.join(tmp, "proj");
+    fs.mkdirSync(project, { recursive: true });
+    process.chdir(project);
+
+    const state = collectOrientationState({ home, installRoot: appHome, env: process.env });
+    expect(state.bundle.crossMajorBoundary).toBe(false);
+    expect(state.project_integration.recommendation).toBe("stay");
+    const crossMajorAttention = (state.attention as string[]).find((line) =>
+      line.includes("v2 while the CLI is on v3"),
+    );
+    expect(crossMajorAttention).toBeUndefined();
+  });
+
+  it("attention suggests explicit v2→v3 preview when successor is announced", () => {
+    const authorityRoot = path.join(tmp, "announced");
+    fs.mkdirSync(path.join(authorityRoot, ".git"), { recursive: true });
+    fs.mkdirSync(path.join(authorityRoot, "skills", "agentera"), { recursive: true });
+    fs.writeFileSync(path.join(authorityRoot, "skills", "agentera", "SKILL.md"), "x");
+    fs.copyFileSync(path.join(REPO_ROOT, "registry.json"), path.join(authorityRoot, "registry.json"));
+    fs.cpSync(path.join(REPO_ROOT, "references"), path.join(authorityRoot, "references"), { recursive: true });
+    const authorityPath = path.join(authorityRoot, "references/cli/update-channels.yaml");
+    fs.writeFileSync(
+      authorityPath,
+      fs.readFileSync(authorityPath, "utf8").replace("announced: false", "announced: true"),
+    );
+    process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT = authorityRoot;
+
+    const appHome = process.env.AGENTERA_HOME as string;
+    managedV2(appHome);
+    const project = path.join(tmp, "proj-announced");
     fs.mkdirSync(project, { recursive: true });
     process.chdir(project);
 

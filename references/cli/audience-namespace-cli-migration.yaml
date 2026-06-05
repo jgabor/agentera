@@ -204,9 +204,10 @@ prime_hej_schema_migration_boundary:
   prime_absorbs_hej:
     status: target
     hej_cli: >-
-      Top-level `hej` is removed from the public parser after the alias period.
-      `agentera hej` prints one stderr deprecation naming `prime` and delegates
-      during Phase 1–2.
+      Top-level `hej` is removed from the npm 3.x public parser and dispatch.
+      During Phase 1–2, `agentera hej` printed one stderr deprecation naming
+      `prime` and delegated; Phase 3 on the development channel rejects the
+      command with an unsupported-target envelope.
     hej_skill_route: >-
       Bare `hej` in the Agentera skill still routes to orientation, but the installed
       CLI gate calls `agentera prime` and renders from that composite result.
@@ -225,8 +226,9 @@ prime_hej_schema_migration_boundary:
     status: target
     canonical: agentera schema [--format json|yaml]
     alias: >-
-      `agentera describe` prints one stderr deprecation naming `schema` and delegates
-      during Phase 1–2.
+      Top-level `describe` is removed from the npm 3.x public parser and dispatch.
+      During Phase 1–2, `agentera describe` printed one stderr deprecation naming
+      `schema` and delegated.
     discovery_ownership: >-
       `schema` owns runtime CLI/schema introspection formerly on `describe`, including
       command tree, audience tags, artifact locations, and linked contract sections.
@@ -260,7 +262,9 @@ plan_routing_distinction:
       is not a CLI command and does not read `.agentera/plan.yaml` by itself.
   state_read:
     invocation: agentera state plan
-    legacy_alias: agentera plan
+    legacy_alias: >-
+      Top-level `agentera plan` was removed on the npm 3.x CLI in Phase 3; use
+      `agentera state plan`.
     surface: CLI routine state read
     meaning: >-
       Read-only access to the active plan artifact summary, tasks, acceptance
@@ -275,8 +279,8 @@ plan_routing_distinction:
       for Planera remains `agentera prime --context planera --format json`.
   agent_guidance: >-
     Use `/agentera plan` when the user wants planning work routed to Planera; use
-    `agentera state plan` (or legacy `agentera plan`) when the agent needs plan
-    artifact state; use `agentera planera` for capability routing guidance; use
+    `agentera state plan` when the agent needs plan artifact state; use
+    `agentera planera` for capability routing guidance; use
     `agentera prime --context planera` for bounded Planera startup context.
 migration_phases:
   phase_1:
@@ -295,15 +299,18 @@ migration_phases:
       - Record measurement evidence for JSON surface moves.
   phase_3:
     name: remove_deprecated_top_level_parsers
+    status: shipped_on_development_channel
     actions:
       - >-
-        Remove `hej`, public `describe`, and `gate` from top-level parser help.
+        Remove `hej`, public `describe`, and `gate` from top-level parser help
+        and dispatch on the npm 3.x CLI.
       - >-
-        Remove other deprecated top-level parsers except documented capability and
-        lifecycle names and the Phase 1–2 alias set until post-major cleanup.
+        Remove routine-state top-level parsers (`plan`, `progress`, `health`,
+        `todo`, `decisions`, `docs`, `objective`, `experiments`) from help and
+        dispatch on the npm 3.x CLI.
       - >-
-        Deferred final removal of all routine-state top-level aliases after one
-        minor alias release.
+        Keep a transitional stderr-alias set (`validate`, `compact`, `verify`,
+        `stats`, `lint`, `query`) until post-cutover cleanup.
 alias_policy:
   stderr_format: one-line deprecation naming the canonical command
   delegation: forward to canonical handler with unchanged JSON/text envelopes
@@ -334,22 +341,29 @@ command_tree_target:
     - report [user]
     - check [maintainer]
 
-deprecated_top_level_aliases:
-  # Command aliases that emit stderr deprecation warnings
-  - { legacy: hej, canonical: prime }
-  - { legacy: describe, canonical: schema }
-  - { legacy: plan, canonical: "state plan" }
-  - { legacy: progress, canonical: "state progress" }
-  - { legacy: health, canonical: "state health" }
-  - { legacy: todo, canonical: "state todo" }
-  - { legacy: decisions, canonical: "state decisions" }
-  - { legacy: docs, canonical: "state docs" }
-  - { legacy: objective, canonical: "state objective" }
-  - { legacy: experiments, canonical: "state experiments" }
+removed_top_level_commands:
+  # Phase 3 on npm 3.x: removed from help and dispatch (unsupported_target)
+  - hej
+  - describe
+  - gate
+  - plan
+  - progress
+  - health
+  - todo
+  - decisions
+  - docs
+  - objective
+  - experiments
+
+transitional_stderr_aliases:
+  # Still delegate with one-line stderr deprecation on npm 3.x
   - { legacy: query, canonical: "state query" }
   - { legacy: compact, canonical: "check compact" }
-  - { legacy: gate, canonical: "check compact" }
   - { legacy: verify, canonical: "check verify" }
   - { legacy: stats, canonical: report }
   - { legacy: lint, canonical: "check lint" }
   - { legacy: validate, canonical: "check validate" }
+
+# Superseded by `removed_top_level_commands` and `transitional_stderr_aliases`
+# for npm 3.x Phase 3 (empty list retained for contract migration readers).
+deprecated_top_level_aliases: []

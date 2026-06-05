@@ -38,6 +38,7 @@ describe("update-channels authority next_major", () => {
     expect(block.concept).toBe("forward_successor_line");
     expect(block.channel).toBe("development");
     expect(block.version).toBe("3.0.0");
+    expect(block.announced).toBe(false);
     expect((block.npm as Record<string, unknown>).dist_tag).toBe("next");
     expect(String(block.guide_url)).toContain("UPGRADE.md");
     expect(block.preview_command).toContain("@next");
@@ -75,10 +76,38 @@ describe("loadChannelNextMajor", () => {
   });
 });
 
+function authorityRootWithAnnouncedSuccessor(announced: boolean): string {
+  const authorityRoot = path.join(tmp, `announced-${announced}`);
+  fs.mkdirSync(path.join(authorityRoot, "references/cli"), { recursive: true });
+  fs.copyFileSync(
+    path.join(REPO_ROOT, "references/cli/update-channels.yaml"),
+    path.join(authorityRoot, "references/cli/update-channels.yaml"),
+  );
+  const authorityPath = path.join(authorityRoot, "references/cli/update-channels.yaml");
+  const text = fs.readFileSync(authorityPath, "utf8");
+  const patched = announced
+    ? text.replace("announced: false", "announced: true")
+    : text;
+  fs.writeFileSync(authorityPath, patched);
+  return authorityRoot;
+}
+
 describe("resolveNextMajorDoctorLines", () => {
-  it("renders six lines for stable-channel 2.x installs from authority", () => {
+  it("omits the section when stable successor is not announced", () => {
     const lines = resolveNextMajorDoctorLines({
       sourceRoot: REPO_ROOT,
+      home: tmp,
+      channel: "stable",
+      runningVersion: "2.7.7",
+      runningDistributionMajor: 2,
+    });
+    expect(lines).toBeNull();
+  });
+
+  it("renders six lines for stable-channel 2.x installs when successor is announced", () => {
+    const authorityRoot = authorityRootWithAnnouncedSuccessor(true);
+    const lines = resolveNextMajorDoctorLines({
+      sourceRoot: authorityRoot,
       home: tmp,
       channel: "stable",
       runningVersion: "2.7.7",
@@ -127,6 +156,7 @@ describe("resolveNextMajorDoctorLines", () => {
       concept: "forward_successor_line",
       channel: "development" as const,
       version: "3.0.0",
+      announced: true,
       npmOnlyAdvisory: "npm-only advisory",
       guideUrl: "https://example.test/guide",
       previewCommand: "npx -y agentera@next upgrade --dry-run",
@@ -173,7 +203,7 @@ describe("prependNextMajorDoctorSection", () => {
       retryCommand: "npx -y agentera prime",
     };
     const section = resolveNextMajorDoctorLines({
-      sourceRoot: REPO_ROOT,
+      sourceRoot: authorityRootWithAnnouncedSuccessor(true),
       home: tmp,
       channel: "stable",
       runningVersion: "2.7.7",

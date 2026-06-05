@@ -6,6 +6,7 @@ import { classifyResolvedRoot } from "../state/installRoot.js";
 import { doctorRoots, loadSuiteVersion } from "./appModel.js";
 import type { InstallClassification } from "./compatibility.js";
 import { loadUpdateChannelsAuthority, type ResolvedUpdateChannel } from "./channels.js";
+import { isStableSuccessorAnnounced } from "./nextMajorDoctor.js";
 
 /**
  * Semver and channel upgrade gate.
@@ -193,6 +194,14 @@ export function classifyUpgradeOutcome(args: {
         kind: "up_to_date",
         message:
           "stable channel tracks the 2.x support line; switch to the development channel to preview v2→v3 migration",
+      };
+    }
+    if (!isStableSuccessorAnnounced(args.sourceRoot)) {
+      return {
+        ...base,
+        kind: "up_to_date",
+        message:
+          "v3 successor line is not announced yet; v2 managed app files remain current on the stable channel",
       };
     }
     return {

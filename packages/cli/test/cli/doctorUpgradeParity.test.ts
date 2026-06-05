@@ -31,6 +31,7 @@ import {
   normalizeEnvelope,
 } from "./parityOracle.js";
 import { BUNDLE_MARKER } from "../../src/state/installRoot.js";
+import { setSuccessorAnnouncedOverrideForTests } from "../../src/upgrade/nextMajorDoctor.js";
 import { buildUpgradePlan } from "../../src/upgrade/upgradeOrchestrator.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -103,9 +104,11 @@ beforeEach(() => {
   fs.mkdirSync(home, { recursive: true });
   process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT = REPO_ROOT;
   process.env.HOME = home;
+  setSuccessorAnnouncedOverrideForTests(true);
 });
 
 afterEach(() => {
+  setSuccessorAnnouncedOverrideForTests(null);
   delete process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT;
   delete process.env.HOME;
   fs.rmSync(tmp, { recursive: true, force: true });

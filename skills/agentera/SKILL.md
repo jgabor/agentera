@@ -1,8 +1,8 @@
 ---
 name: agentera
 description: >
-  The open protocol for turning AI agents into engineering teams. One Agentera
-  skill with twelve capabilities; per-capability prose lives in
+  Agentera agent engine for editor runtimes. One Agentera skill with twelve
+  capabilities; per-capability prose lives in
   `packages/cli/src/capabilities/<name>/instructions.ts` and the runtime serves
   it through `agentera prime --context <name> --format json`. Use this skill
   for /agentera, Agentera capability requests, and a complete user message
@@ -196,9 +196,10 @@ above must have already confirmed the installed CLI is usable.
 
 Routine commands are: `prime`, `state plan`, `state progress`, `state health`,
 `state todo`, `state decisions`, `state docs`, `state objective`, and
-`state experiments`. Top-level aliases for legacy commands remain during migration with stderr deprecation; see [audience-namespace-cli-migration.yaml](references/cli/audience-namespace-cli-migration.yaml) for the full list. Discovery and custom
-inspection remain available through `agentera schema --format json`
-(with legacy `describe` alias),
+`state experiments`. On the npm 3.x CLI, top-level `hej`, `describe`, `gate`, and
+routine-state names are removed; a smaller transitional alias set still forwards
+with stderr deprecation — see [audience-namespace-cli-migration.yaml](references/cli/audience-namespace-cli-migration.yaml). Discovery and custom
+inspection remain available through `agentera schema --format json`,
 `state query --list-artifacts`, and `state query <artifact-name> --format json|yaml`.
 Structured discovery includes an artifact-location contract with mapped paths,
 normal read commands, and raw-access boundaries; use that contract before

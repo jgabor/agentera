@@ -1,6 +1,6 @@
 {
   "name": "agentera",
-  "version": "3.0.0",
+  "version": "3.0.0-dev.6",
   "description": "Agentera app-home protocol and CLI (TypeScript)",
   "type": "module",
   "license": "Apache-2.0",
@@ -34,15 +34,15 @@
     "test:watch": "vitest",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "bundle:data": "node scripts/copy-bundle.mjs",
-    "publish:dev": "npm run build && npm run bundle:data && npm publish --tag next"
+    "publish:dev": "set -a; [ -f ../../.env ] && . ../../.env; set +a; npm run build && npm run bundle:data && npm publish --tag next"
   },
   "agentera": {
     "suiteVersion": "3.0.0",
-    "gitRef": "7352b4bf744d9e32393078049baa605f6f044a7a"
+    "gitRef": "2521c7a8f4d33a52c0198944b5cac4bf1e58f0b7"
   },
   "publishConfig": {
     "access": "public",
-    "tag": "latest"
+    "tag": "next"
   },
   "dependencies": {
     "smol-toml": "^1.3.1",

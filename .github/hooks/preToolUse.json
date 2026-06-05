@@ -1,7 +1,7 @@
 {
   "name": "preToolUse",
   "type": "command",
-  "bash": "npx -y agentera hook validate-artifact",
-  "powershell": "npx -y agentera hook validate-artifact",
+  "bash": "npx -y agentera@next hook validate-artifact",
+  "powershell": "npx -y agentera@next hook validate-artifact",
   "timeoutSec": 10
 }

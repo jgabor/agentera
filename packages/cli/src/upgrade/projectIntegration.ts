@@ -24,6 +24,7 @@ import {
 } from "./runtimeMigration.js";
 import { resolvePlatformAppHome } from "./appModel.js";
 import { buildUpgradeCommands, type UpgradeOnlyPhase } from "./upgradeCommands.js";
+import { isStableSuccessorAnnounced } from "./nextMajorDoctor.js";
 import {
   classifyUpgradeOutcome,
   shouldIncludeCrossMajorPlanItems,
@@ -215,10 +216,11 @@ export function summarizeProjectIntegration(args: ProjectIntegrationArgs): Proje
   });
   const integrationTargets = resolveIntegrationTargets(args);
   const install = classifyInstall({ appHome: integrationTargets.installRoot, sourceRoot: args.sourceRoot });
-  const crossMajor =
+  const crossMajorDetected =
     args.crossMajorBoundary ??
     integrationTargets.crossMajorBoundary ??
     crossMajorBoundaryApplies(install, args.sourceRoot);
+  const crossMajor = crossMajorDetected && isStableSuccessorAnnounced(args.sourceRoot);
   const upgradeOutcome = classifyUpgradeOutcome({
     appHome: integrationTargets.installRoot,
     sourceRoot: args.sourceRoot,
