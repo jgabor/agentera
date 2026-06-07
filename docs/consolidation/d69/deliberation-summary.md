@@ -23,12 +23,12 @@ Stored at `~/.local/share/agora/transcripts/`. The slug is the same
 across all three (`which-d69-option-should-agentera-adopt-as-the-load`)
 because the topic was identical; the timestamp disambiguates.
 
-| Run | Timestamp | Config | Model | Winner | Confidence |
-| --- | --- | --- | --- | --- | --- |
-| 1 | `20260606-073159` | `agora-config.yaml` | `opencode-go/deepseek-v4-flash` | failed | n/a |
-| 2 | `20260606-074032` | `agora-config.yaml` | `local/small` (qwen3.5:2b) | **d69-d** | high |
-| 3 | `20260606-074736` | `agora-config-large.yaml` | `local/large` (qwen3.6:35b) | **d69-b** | medium |
-| 4 | `20260606-080846` | `agora-config-medium.yaml` | `local/medium` (gemma4:12b) | **d69-a OR d69-c** | medium |
+| Run | Timestamp         | Config                     | Model                           | Winner             | Confidence |
+| --- | ----------------- | -------------------------- | ------------------------------- | ------------------ | ---------- |
+| 1   | `20260606-073159` | `agora-config.yaml`        | `opencode-go/deepseek-v4-flash` | failed             | n/a        |
+| 2   | `20260606-074032` | `agora-config.yaml`        | `local/small` (qwen3.5:2b)      | **d69-d**          | high       |
+| 3   | `20260606-074736` | `agora-config-large.yaml`  | `local/large` (qwen3.6:35b)     | **d69-b**          | medium     |
+| 4   | `20260606-080846` | `agora-config-medium.yaml` | `local/medium` (gemma4:12b)     | **d69-a OR d69-c** | medium     |
 
 Run 1 failed because the original `opencode-go/deepseek-v4-flash` model
 had insufficient balance. The user redirected to local models; runs 2,
@@ -39,12 +39,12 @@ Inspect with `agora list` or `agora show <slug>`.
 
 ## The four-way verdict
 
-| Source | Winner | Confidence | Why |
-| --- | --- | --- | --- |
-| Agentera subagent (`deepseek-v4-flash`) | **d69-a** | (comparison) | Only option that honors D68's "one fixed workflow" without reinterpreting it. |
-| Agora `local/small` (qwen3.5:2b) | **d69-d** | high | The 4 cast members converged on 5 points; the synthesis elevated d69-d as the only "coherent" brand-first path. |
-| Agora `local/large` (qwen3.6:35b) | **d69-b** | medium | The middle path: invariant 5-phase journey, per-surface capability subsets, no shared capability schema to maintain. d69-c was a close second. |
-| Agora `local/medium` (gemma4:12b) | **d69-a OR d69-c** | medium | Refused to pick; the choice depends on whether D68 means behavioral identity (a) or state continuity (c). |
+| Source                                  | Winner             | Confidence   | Why                                                                                                                                            |
+| --------------------------------------- | ------------------ | ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| Agentera subagent (`deepseek-v4-flash`) | **d69-a**          | (comparison) | Only option that honors D68's "one fixed workflow" without reinterpreting it.                                                                  |
+| Agora `local/small` (qwen3.5:2b)        | **d69-d**          | high         | The 4 cast members converged on 5 points; the synthesis elevated d69-d as the only "coherent" brand-first path.                                |
+| Agora `local/large` (qwen3.6:35b)       | **d69-b**          | medium       | The middle path: invariant 5-phase journey, per-surface capability subsets, no shared capability schema to maintain. d69-c was a close second. |
+| Agora `local/medium` (gemma4:12b)       | **d69-a OR d69-c** | medium       | Refused to pick; the choice depends on whether D68 means behavioral identity (a) or state continuity (c).                                      |
 
 The cast of 4 advocates (a, b, c, d) reached different consensus points
 in each run. The small model found 5 points of agreement and elevated
@@ -102,13 +102,8 @@ interpretation D).
 
 ## Status
 
-No D69 promoted. D69 is blocked on D68 clarification (see
-`d68-followup.md` and the "D68 follow-up" section above). The four
-drafts and the three successful agora transcripts are preserved on
-disk. This folder is the source of truth for the deliberation; the
-DECISIONS.md (`.agentera/decisions.yaml`) does not yet reflect a D69
-entry.
-
-**Next move for the human decision-maker**: open `d68-followup.md`,
-pick an interpretation of D68, and run a fresh resonera deliberation
-with that interpretation as the opening premise.
+**Decision 69 promoted firm** (2026-06-07, resonera). Chosen invariant:
+`packages/cli` narrow waist (D69-a/E); D68 interpretation A; OpenCode-like
+Layer A+B; editor-runtime composite surface; presentation-only mobile tiering.
+See `.agentera/decisions.yaml` number 69. This folder preserves pre-promotion
+drafts and agora transcripts.

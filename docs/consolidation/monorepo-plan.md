@@ -12,15 +12,19 @@ public story to an **opinionated mobile-first coding agent** as a single product
 brand. The [jgabor/agentera](https://github.com/jgabor/agentera) repository is
 the home for all product surfaces:
 
-| Package | npm name | Role |
-| ------- | -------- | ---- |
+| Package           | npm name           | Role                                                                |
+| ----------------- | ------------------ | ------------------------------------------------------------------- |
 | `packages/mobile` | `@agentera/mobile` | **Flagship product** — SvelteKit app, Cursor SDK, Cloudflare Worker |
-| `packages/web` | `@agentera/web` | Marketing site and published Starlight docs |
-| `packages/cli` | `agentera` | Agent runtime and `.agentera/` project-state CLI |
+| `packages/web`    | `@agentera/web`    | Marketing site and published Starlight docs                         |
+| `packages/cli`    | `agentera`         | Agent runtime and `.agentera/` project-state CLI                    |
 
 The same fixed workflow ships through mobile, web, CLI, and editor skill/plugin
-runtimes (Decision 68). Schema contracts in `skills/` and `references/` power
-every surface — implementation authority, not a separate protocol brand.
+runtimes (Decision 68). **Decision 69 (firm, 2026-06-07)** records the load-bearing
+invariant: `packages/cli` owns capability schema, `.agentera/` state contract, and
+agent execution routing; all surfaces are clients. Editor delivery is one composite
+surface (`SKILL.md` + runtime hooks + `agentera` CLI). Schema contracts in
+`skills/` and `references/` power every surface — implementation authority, not
+a separate protocol brand.
 
 The former standalone [agentera-mobile](https://github.com/jgabor/agentera-mobile)
 repo was a staging ground for product vision and docs. Its content now lives in
@@ -30,12 +34,12 @@ repo was a staging ground for product vision and docs. Its content now lives in
 
 Two open-source monorepos informed this layout:
 
-| Pattern | T3 Code | Pi | Agentera |
-| ------- | ------- | -- | -------- |
-| Root README | Product-first (“minimal web GUI…”) | Package table + monorepo index | Product home + `@agentera/*` table |
-| Package README | Split across `docs/` | Full philosophy in `packages/coding-agent/README.md` | Philosophy in `packages/mobile/README.md` |
-| Scoped npm names | `t3` (npx) | `@earendil-works/pi-*` | `@agentera/mobile`, `@agentera/web`; CLI publishes as `agentera` |
-| Extensibility | Fixed GUI over providers | Highly extensible (opposite of mobile) | All surfaces: **no user extensions**; editor skill/plugin runtimes are **delivery surfaces**, not extension hosts |
+| Pattern          | T3 Code                            | Pi                                                   | Agentera                                                                                                          |
+| ---------------- | ---------------------------------- | ---------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| Root README      | Product-first (“minimal web GUI…”) | Package table + monorepo index                       | Product home + `@agentera/*` table                                                                                |
+| Package README   | Split across `docs/`               | Full philosophy in `packages/coding-agent/README.md` | Philosophy in `packages/mobile/README.md`                                                                         |
+| Scoped npm names | `t3` (npx)                         | `@earendil-works/pi-*`                               | `@agentera/mobile`, `@agentera/web`; CLI publishes as `agentera`                                                  |
+| Extensibility    | Fixed GUI over providers           | Highly extensible (opposite of mobile)               | All surfaces: **no user extensions**; editor skill/plugin runtimes are **delivery surfaces**, not extension hosts |
 
 Agentera follows **Pi’s monorepo shape** and **T3’s single-consumer-product
 clarity**.
@@ -106,13 +110,13 @@ flowchart TB
 
 ### Product brand
 
-| Term | Meaning |
-| ---- | ------- |
-| **Agentera** | The product — app, monorepo, user-facing docs |
-| **`@agentera/mobile`** | Workspace package for the mobile/web app |
-| **`@agentera/web`** | Workspace package for the marketing/docs site |
+| Term                                 | Meaning                                                   |
+| ------------------------------------ | --------------------------------------------------------- |
+| **Agentera**                         | The product — app, monorepo, user-facing docs             |
+| **`@agentera/mobile`**               | Workspace package for the mobile/web app                  |
+| **`@agentera/web`**                  | Workspace package for the marketing/docs site             |
 | **`@agentera/cli`** / **`agentera`** | Agent runtime and state CLI (npm package name `agentera`) |
-| **`.agentera/`** | User project state directory (like Pi’s `.pi/`) |
+| **`.agentera/`**                     | User project state directory (like Pi’s `.pi/`)           |
 
 Retired as **public headline**: “open protocol for turning AI agents into
 engineering teams.” Internal docs may still describe schemas and CLI mechanics.
@@ -128,41 +132,41 @@ vision file in the mobile package.
 
 Mobile UX uses **English aliases**; CLI and schemas retain **Swedish `-era` IDs**.
 
-| Glyph | User-facing (mobile) | Internal |
-| :---: | -------------------- | -------- |
-| ⌂ | brief | hej |
-| ⛥ | vision | visionera |
-| ❈ | discuss | resonera |
-| ⬚ | research | inspirera |
-| ≡ | plan | planera |
-| ⧉ | build | realisera |
-| ⎘ | optimize | optimera |
-| ▤ | document | dokumentera |
-| ◰ | design | visualisera |
-| ⛶ | audit | inspektera |
-| ♾ | profile | profilera |
-| ⎈ | orchestrate | orkestrera |
+| Glyph | User-facing (mobile) | Internal    |
+| :---: | -------------------- | ----------- |
+|   ⌂   | brief                | hej         |
+|   ⛥   | vision               | visionera   |
+|   ❈   | discuss              | resonera    |
+|   ⬚   | research             | inspirera   |
+|   ≡   | plan                 | planera     |
+|   ⧉   | build                | realisera   |
+|   ⎘   | optimize             | optimera    |
+|   ▤   | document             | dokumentera |
+|   ◰   | design               | visualisera |
+|   ⛶   | audit                | inspektera  |
+|   ♾   | profile              | profilera   |
+|   ⎈   | orchestrate          | orkestrera  |
 
 Canonical alias table: [`packages/mobile/README.md`](../../packages/mobile/README.md).
 A full schema rename is a separate future decision (D58 single-name boundary).
 
 ### Extensibility
 
-| Surface | Policy |
-| ------- | ------ |
-| **Mobile app** | No extensions, plugins, MCP servers, or skill loading — ever. Custom sidebar actions are app-defined shortcuts, not arbitrary extension surfaces. |
-| **CLI** | Agent runtime and `.agentera/` state access — a delivery surface, not an extension host. |
-| **Editor skill/plugin runtimes** | Same twelve-capability workflow in Cursor, Claude, OpenCode, Codex, Copilot — **delivery surfaces** documented under README **Internals** and [`packages/cli/README.md`](../../packages/cli/README.md). Not user extensibility; the fixed product in an editor shell. |
+| Surface                    | Policy                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Mobile app**             | No extensions, plugins, MCP servers, or skill loading — ever. Custom sidebar actions are app-defined shortcuts, not arbitrary extension surfaces. **Client of `packages/cli`** (Decision 69); presentation-only tiering allowed.                                                                                                                                                                                                     |
+| **CLI**                    | Agent runtime and `.agentera/` state access — the **narrow waist** (Decision 69). All agent execution routes through CLI or `agentera serve`; provider SDKs are adapters behind CLI.                                                                                                                                                                                                                                                 |
+| **Editor-runtime surface** | **Composite delivery surface** (Decision 69): `skills/agentera/SKILL.md` (discoverability + routing stub) + runtime-native hooks (lifecycle injection) + `agentera` CLI binary (engine). Same twelve-capability workflow in Cursor, Claude, OpenCode, Codex, Copilot — not user extensibility; hooks delegate validation to CLI. Documented under README **Internals** and [`packages/cli/README.md`](../../packages/cli/README.md). |
 
 ## Design surfaces
 
 Decision 62 brand-vs-product register, implemented as a **surface register** in
 [`DESIGN.md`](../../DESIGN.md):
 
-| Surface | Authority | Renders |
-| ------- | --------- | ------- |
-| `terminal` | Root `DESIGN.md` | CLI dashboard, capability intros, Markdown artifact headers |
-| `mobile` | `packages/mobile/DESIGN.md` | Touch UI, smart bar, sidebar, chat composer |
+| Surface    | Authority                   | Renders                                                     |
+| ---------- | --------------------------- | ----------------------------------------------------------- |
+| `terminal` | Root `DESIGN.md`            | CLI dashboard, capability intros, Markdown artifact headers |
+| `mobile`   | `packages/mobile/DESIGN.md` | Touch UI, smart bar, sidebar, chat composer                 |
 
 Shared: product name, capability glyphs, sharp-colleague voice.
 Not shared: box-drawing logo scarcity rules (terminal), Tailwind touch targets (mobile).
@@ -189,17 +193,17 @@ vp run web:deploy
 
 ## Documentation authority
 
-| Layer | Role |
-| ----- | ---- |
-| [`.agentera/vision.yaml`](../../.agentera/vision.yaml) | Product north star |
-| [`README.md`](../../README.md) | Product home and package index |
-| [`packages/mobile/README.md`](../../packages/mobile/README.md) | Mobile product philosophy, UI conventions, dev commands |
-| [`packages/mobile/DESIGN.md`](../../packages/mobile/DESIGN.md) | Mobile UI design system |
-| [`packages/web/README.md`](../../packages/web/README.md) | Web site DX; Starlight is published docs layer |
-| [`packages/cli/README.md`](../../packages/cli/README.md) | CLI channels, upgrade, editor runtime install pointer |
-| [`references/cli/vocabulary.md`](../../references/cli/vocabulary.md) | Terminology index (product grammar updated 2026-06-05) |
-| **`docs/consolidation/`** (this file) | Consolidation plan and migration checklist |
-| **`docs/packaging/`** | v3 CLI distribution contract (separate track) |
+| Layer                                                                | Role                                                    |
+| -------------------------------------------------------------------- | ------------------------------------------------------- |
+| [`.agentera/vision.yaml`](../../.agentera/vision.yaml)               | Product north star                                      |
+| [`README.md`](../../README.md)                                       | Product home and package index                          |
+| [`packages/mobile/README.md`](../../packages/mobile/README.md)       | Mobile product philosophy, UI conventions, dev commands |
+| [`packages/mobile/DESIGN.md`](../../packages/mobile/DESIGN.md)       | Mobile UI design system                                 |
+| [`packages/web/README.md`](../../packages/web/README.md)             | Web site DX; Starlight is published docs layer          |
+| [`packages/cli/README.md`](../../packages/cli/README.md)             | CLI channels, upgrade, editor runtime install pointer   |
+| [`references/cli/vocabulary.md`](../../references/cli/vocabulary.md) | Terminology index (product grammar updated 2026-06-05)  |
+| **`docs/consolidation/`** (this file)                                | Consolidation plan and migration checklist              |
+| **`docs/packaging/`**                                                | v3 CLI distribution contract (separate track)           |
 
 [`packages/web/src/content/docs/`](../../packages/web/src/content/docs/) remains
 the **published** documentation layer. Protocol changes land in `references/` or
@@ -238,16 +242,16 @@ Implementation items: [`packages/mobile/TODO.md`](../../packages/mobile/TODO.md)
 Open decisions (CLI integration, publish identity, skill horizon, and related
 ambiguities): [`mobile-open-decisions.md`](./mobile-open-decisions.md).
 
-| Priority | Item |
-| -------- | ---- |
-| Degraded | Scaffold SvelteKit app with Cursor SDK integration |
-| Degraded | Implement smart bar, sidebar, queue, paste, rewind |
-| Degraded | Wire lefthook/CI fully once app source exists |
-| Normal | Publish mobile product page on Starlight (`packages/web`) |
-| Normal | Tiered model assignment table in README |
-| Open | CLI ↔ mobile state integration strategy — see [mobile-open-decisions.md](./mobile-open-decisions.md) |
-| Open | npm publish identity for `@agentera/mobile` — see [mobile-open-decisions.md](./mobile-open-decisions.md) |
-| Open | Skill bundle long-term role (coexist vs eventual sunset) — see [mobile-open-decisions.md](./mobile-open-decisions.md) |
+| Priority | Item                                                                                                                  |
+| -------- | --------------------------------------------------------------------------------------------------------------------- |
+| Degraded | Scaffold SvelteKit app with Cursor SDK integration                                                                    |
+| Degraded | Implement smart bar, sidebar, queue, paste, rewind                                                                    |
+| Degraded | Wire lefthook/CI fully once app source exists                                                                         |
+| Normal   | Publish mobile product page on Starlight (`packages/web`)                                                             |
+| Normal   | Tiered model assignment table in README                                                                               |
+| Open     | CLI ↔ mobile state integration strategy — see [mobile-open-decisions.md](./mobile-open-decisions.md)                  |
+| Open     | npm publish identity for `@agentera/mobile` — see [mobile-open-decisions.md](./mobile-open-decisions.md)              |
+| Open     | Skill bundle long-term role (coexist vs eventual sunset) — see [mobile-open-decisions.md](./mobile-open-decisions.md) |
 
 ## Physical migration checklist
 
@@ -263,11 +267,12 @@ When application code is ready to move from a staging checkout:
 
 ## Decisions
 
-| ID | Date | Topic |
-| -- | ---- | ----- |
-| [D67](../../.agentera/decisions.yaml) | 2026-06-05 | Product pivot from open protocol to mobile-first single brand |
-| [D68](../../.agentera/decisions.yaml) | 2026-06-05 | Multi-surface product — same fixed workflow; editor skill/plugin runtimes are delivery surfaces, not extension hosts |
-| Staging D1–D5 | 2026-06-05 | Archived in [`.agentera/decisions.yaml`](../../.agentera/decisions.yaml) `archive:` (naming, vision placement, aliases with provisional alias-table confidence, extensibility, monorepo path) |
+| ID                                    | Date       | Topic                                                                                                                                                                                         |
+| ------------------------------------- | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [D67](../../.agentera/decisions.yaml) | 2026-06-05 | Product pivot from open protocol to mobile-first single brand                                                                                                                                 |
+| [D68](../../.agentera/decisions.yaml) | 2026-06-05 | Multi-surface product — same fixed workflow; editor skill/plugin runtimes are delivery surfaces, not extension hosts                                                                          |
+| [D69](../../.agentera/decisions.yaml) | 2026-06-07 | Multi-surface invariant — `packages/cli` narrow waist (schema + state + execution routing); editor-runtime = skills + hooks + CLI composite                                                   |
+| Staging D1–D5                         | 2026-06-05 | Archived in [`.agentera/decisions.yaml`](../../.agentera/decisions.yaml) `archive:` (naming, vision placement, aliases with provisional alias-table confidence, extensibility, monorepo path) |
 
 ## Related documents
 

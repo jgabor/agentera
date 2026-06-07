@@ -1,110 +1,4 @@
 decisions:
-  - number: 59
-    date: 2026-05-22
-    question: How should Agentera 3.0 default and measure JSON context output?
-    context: "Agentera v2 added `--context-profile slim` for `agentera hej --format
-      json --capability-context <capability>` while preserving the full
-      dashboard envelope as the default compatibility profile. The user
-      clarified that Agentera 3.0 should not keep that compatibility path: slim
-      capability context should become the only supported capability startup
-      JSON shape, and every public JSON output surface should be inventoried,
-      measured, and reviewed for bloat and token inefficiency. Follow-up
-      deliberation clarified that 3.0 should make top-level commands map
-      directly to capabilities, with `prime` as the intentional non-capability
-      exception for central startup/context preparation. A second follow-up
-      selected the stronger consolidation: `prime` should be the single
-      non-capability control plane for initial session priming, project
-      orientation/dashboard mode, and capability startup context. Bare `prime`
-      keeps the static Agentera usage guide, a dashboard/orientation mode
-      replaces the long-term need for `hej` as a separate context-serving
-      command, and a context mode replaces `hej --capability-context`. The
-      eventual dashboard/orientation display label and exact flag spelling
-      remain provisional. The D47 vocabulary inventory provides the intended
-      classification pattern: classify public surfaces and protected
-      compatibility/history before implementation rather than rewriting
-      opportunistically."
-    alternatives:
-      - name: Unified prime control plane
-        status: chosen
-        description: Remove full-profile capability-startup compatibility, make
-          `capability_context` the supported startup JSON shape, make `prime`
-          the single non-capability command for static priming,
-          dashboard/orientation mode, and capability context mode, inventory
-          every public JSON output, and gate byte and GPT-5 token budgets with
-          measured results.
-      - name: Split prime and dashboard
-        status: rejected
-        description: Keeping `prime` for context while adding a separate dashboard
-          command would create a second non-capability command exception after
-          3.0 and weaken the clean top-level capability map.
-      - name: Keep `hej --capability-context` as the central context seam
-        status: rejected
-        description: Keeping capability startup context under the orientation/dashboard
-          surface would preserve a misleading ownership boundary after 3.0,
-          especially if `hej` is renamed or narrowed to human-facing project
-          orientation.
-      - name: Per-capability context commands
-        status: rejected
-        description: Commands such as `planera --context` would make each capability own
-          its own startup envelope, but would duplicate context mechanics and
-          weaken the single measured JSON budget surface.
-      - name: Compatibility-preserving default flip
-        status: rejected
-        description: Making slim the default while keeping `--context-profile full`
-          would preserve the duplicate JSON shape the 3.0 boundary is meant to
-          remove.
-      - name: Capability startup only
-        status: rejected
-        description: Measuring only `hej --capability-context` would miss bloat in other
-          public JSON surfaces such as decisions, compact, validate, upgrade,
-          describe, lint, gate, and query outputs.
-      - name: Manual measurement review only
-        status: rejected
-        description: Manual measurements are useful evidence, but without budget
-          enforcement future JSON bloat can return unnoticed.
-    choice: Agentera 3.0 should remove `--context-profile full` as a supported
-      capability startup compatibility path, make the slim `capability_context`
-      capsule the only supported capability startup JSON shape, and consolidate
-      central non-capability startup behavior under `prime`. Top-level commands
-      should directly map to capabilities, with `prime` as the intentional
-      non-capability exception. Bare `prime` should emit static Agentera usage
-      for initial session priming. A dashboard/orientation mode under `prime`
-      should replace separate `hej` dashboard ownership, with the final display
-      label and exact flag spelling still provisional. A context mode under
-      `prime` should replace `hej --capability-context` for preparing capability
-      startup payloads. The implementation must require a D47-style inventory of
-      all public JSON output surfaces, measure bytes and GPT-5 tokens for every
-      supported `--format json` or `--json` public CLI output surface, and
-      enforce budgets so bloated JSON fails tests.
-    reasoning: "Agent-facing JSON is protocol, not incidental formatting. Keeping
-      both full and slim startup shapes would preserve the ambiguity Decision 58
-      is trying to remove, and keeping capability startup under `hej` would
-      couple a central context API to a human-facing orientation surface whose
-      future name remains open. Consolidating orientation and context under
-      `prime` is stronger than adding a separate dashboard command because it
-      creates one explicit control-plane exception rather than two: capability
-      names run capabilities, while `prime` prepares the agent. Bare `prime`
-      already carries static priming guidance, so extending it to
-      dashboard/orientation mode and capability context mode makes the existing
-      under-utilized command earn its name. Per-capability `--context` commands
-      would spread startup mechanics across every capability and make
-      measurement harder. A public-surface inventory plus automated byte/token
-      budgets gives Planera and Realisera concrete acceptance criteria and
-      prevents a clean 3.0 break from becoming another compatibility seam."
-    confidence: firm
-    feeds_into: TODO.md, PLAN.md, scripts/agentera,
-      scripts/measure_capability_context_payloads.py,
-      references/cli/agent-ready-state-contract.yaml, tests, README.md,
-      UPGRADE.md, .agentera/archive/d47-app-home-vocabulary-inventory.md
-    satisfaction:
-      state: user_confirmed_satisfied
-      evidence: D59 slim capability_context and unified prime control-plane direction
-        confirmed as 3.0 policy during resonera satisfaction review on
-        2026-05-23. Implementation of dashboard mode, JSON surface inventory,
-        and byte/token budgets remains downstream work.
-      user_confirmation:
-        confirmed_by: user
-        confirmed_at: 2026-05-23
   - number: 60
     date: 2026-05-23
     question: How should Agentera adopt two-axis diff review after inspirera
@@ -704,7 +598,113 @@ decisions:
       user_confirmation:
         confirmed_by: user
         confirmed_at: 2026-06-05
+  - number: 69
+    date: 2026-06-07
+    question: What is the load-bearing invariant connecting Agentera's surfaces
+      under Decision 68's "one fixed workflow" claim?
+    context: >
+      Decision 68 (firm) commits to one fixed twelve-capability workflow, shared
+      `.agentera/` state, and built-in tools across mobile, web, CLI, and editor
+      delivery surfaces. Decision 65 (firm) relocated capability prose to
+      `packages/cli` and made `agentera prime --context` the startup contract.
+      Prior D69 deliberation (`docs/consolidation/d69/`) explored four
+      invariants and found no convergence until D68's implementation level was
+      clarified. Resonera deliberation (2026-06-07) confirmed OpenCode-like
+      architecture with `packages/cli` as foundation.
+    alternatives:
+      - name: D69-a/E — CLI capability schema + state contract
+        status: chosen
+        description: Capability schema and `.agentera/` validation in `packages/cli`;
+          all surfaces are clients; execution routes through CLI or serve.
+      - name: D69-b — mental journey invariant
+        status: rejected
+        description: Five-phase journey as narrow waist; capability behavior may differ
+          per surface.
+        reason_rejected: Reinterprets D68; allows observable capability divergence.
+      - name: D69-c — state-only invariant
+        status: rejected
+        description: Shared `.agentera/` schema only; behavior may differ per surface.
+        reason_rejected: Weak D68 fit.
+      - name: D69-d — brand only
+        status: rejected
+        description: Surfaces as independent products under one logo.
+        reason_rejected: Contradicts D68 by construction.
+    choice: >
+      Adopt `packages/cli` as the narrow waist. Layer A (contract) —
+      twelve-capability schema, `.agentera/` artifact shapes, validation, and
+      `agentera prime` / `agentera state *` JSON contracts are authoritative in
+      CLI. Layer B (execution routing) — all agent execution routes through the
+      CLI engine (direct or `agentera serve`). Provider runtimes (Cursor SDK
+      first; future OpenCode SDK, Vercel AI) are Layer B adapters behind CLI.
+      Surfaces are clients — mobile (presentation-only tiering), web
+      (docs/inspector), editor-runtime composite (SKILL.md + hooks + CLI
+      binary), future desktop/TUI. D68 means behavioral identity (interpretation
+      A).
+    reasoning: >
+      OpenCode-like single engine with surface clients matches D65/D68 and
+      prevents parallel agent loops on mobile. Editor-runtime is one delivery
+      surface, not three workflows. Open follow-ups — serve API shape,
+      conflict-resolution policy, schema package location — are implementation
+      decisions, not invariant changes.
+    confidence: firm
+    feeds_into: docs/consolidation/monorepo-plan.md, docs/consolidation/d69/,
+      docs/consolidation/mobile-open-decisions.md, packages/cli/,
+      packages/mobile/, AGENTS.md, skills/agentera/SKILL.md,
+      references/adapters/, hooks/, TODO.md
+    satisfaction:
+      state: user_confirmed_satisfied
+      evidence: Resonera deliberation 2026-06-07 — D68 interpretation A, Layer A+B,
+        presentation-only mobile tiering, editor-runtime composite surface.
+      user_confirmation:
+        confirmed_by: user
+        confirmed_at: 2026-06-07
 archive:
+  - summary: "Decision 59 (2026-05-22): Agentera 3.0 should remove
+      `--context-profile full` as a supported capability startup compatibility
+      path, make the..."
+    number: 59
+    date: 2026-05-22
+    choice: Agentera 3.0 should remove `--context-profile full` as a supported
+      capability startup compatibility path, make the slim `capability_context`
+      capsule the only supported capability startup JSON shape, and consolidate
+      central non-capability startup behavior under `prime`. Top-level commands
+      should directly map to capabilities, with `prime` as the intentional
+      non-capability exception. Bare `prime` should emit static Agentera usage
+      for initial session priming. A dashboard/orientation mode under `prime`
+      should replace separate `hej` dashboard ownership, with the final display
+      label and exact flag spelling still provisional. A context mode under
+      `prime` should replace `hej --capability-context` for preparing capability
+      startup payloads. The implementation must require a D47-style inventory of
+      all public JSON output surfaces, measure bytes and GPT-5 tokens for every
+      supported `--format json` or `--json` public CLI output surface, and
+      enforce budgets so bloated JSON fails tests.
+    feeds_into: TODO.md, PLAN.md, scripts/agentera,
+      scripts/measure_capability_context_payloads.py,
+      references/cli/agent-ready-state-contract.yaml, tests, README.md,
+      UPGRADE.md, .agentera/archive/d47-app-home-vocabulary-inventory.md
+    satisfaction:
+      state: user_confirmed_satisfied
+      evidence: D59 slim capability_context and unified prime control-plane direction
+        confirmed as 3.0 policy during resonera satisfaction review on
+        2026-05-23. Implementation of dashboard mode, JSON surface inventory,
+        and byte/token budgets remains downstream work.
+      user_confirmation:
+        confirmed_by: user
+        confirmed_at: 2026-05-23
+    outcome: Agentera 3.0 should remove `--context-profile full` as a supported
+      capability startup compatibility path, make the slim `capability_context`
+      capsule the only supported capability startup JSON shape, and consolidate
+      central non-capability startup behavior under `prime`. Top-level commands
+      should directly map to capabilities, with `prime` as the intentional
+      non-capability exception. Bare `prime` should emit static Agentera usage
+      for initial session priming. A dashboard/orientation mode under `prime`
+      should replace separate `hej` dashboard ownership, with the final display
+      label and exact flag spelling still provisional. A context mode under
+      `prime` should replace `hej --capability-context` for preparing capability
+      startup payloads. The implementation must require a D47-style inventory of
+      all public JSON output surfaces, measure bytes and GPT-5 tokens for every
+      supported `--format json` or `--json` public CLI output surface, and
+      enforce budgets so bloated JSON fails tests.
   - summary: "Decision 58 (2026-05-18): Agentera 3.0 must eliminate all
       backwards-compatible and multiple naming surfaces. Zero artifacts,
       concepts, primitives, commands,..."
@@ -1267,14 +1267,6 @@ archive:
   - summary: "Decision 26 (2026-04-10): **Question**: Should the terminology for the
       ecosystem spec and per-skill context files be renamed for clarity and
       cohesion?"
-    satisfaction:
-      state: user_confirmed_satisfied
-      user_confirmation:
-        confirmed_by: user
-        confirmed_at: 2026-05-15
-  - summary: "Decision 25 (2026-04-03): **Question**: Should agentera's North Star
-      evolve from \"a solo founder installs an engineering team\" to a
-      spec-centric framing?"
     satisfaction:
       state: user_confirmed_satisfied
       user_confirmation:

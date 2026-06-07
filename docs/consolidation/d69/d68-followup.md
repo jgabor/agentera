@@ -43,12 +43,12 @@ valid choice.** But this requires revising D68.
 
 ## What each interpretation implies
 
-| If D68 means... | Then D69 must be... | And the conflict-resolution policy must be... |
-| --- | --- | --- |
-| A — behavioral identity | a | per-artifact last-writer-wins (or stronger) |
-| B — mental journey | b | loose; design review catches drift |
-| C — state continuity | c | strict on state schema; loose on capability behavior |
-| D — brand only | (D68 is revised; D69-d follows) | per-surface local; no cross-surface continuity required |
+| If D68 means...         | Then D69 must be...             | And the conflict-resolution policy must be...           |
+| ----------------------- | ------------------------------- | ------------------------------------------------------- |
+| A — behavioral identity | a                               | per-artifact last-writer-wins (or stronger)             |
+| B — mental journey      | b                               | loose; design review catches drift                      |
+| C — state continuity    | c                               | strict on state schema; loose on capability behavior    |
+| D — brand only          | (D68 is revised; D69-d follows) | per-surface local; no cross-surface continuity required |
 
 ## What the four D69 drafts said
 
@@ -91,12 +91,14 @@ unresolved across {a, b, c} and must be decided alongside D69:
 
 ## Confidence
 
-open — the question is not yet decided.
+firm — resolved by Decision 69 (2026-06-07). D68 means **interpretation A
+(behavioral identity)**; narrow waist is `packages/cli` (Layer A contract +
+Layer B execution routing).
 
 ## Status
 
-This is a follow-up question, not a decision. No D69 promoted. The
-D69 work and the four-way verdict are preserved in:
+**Resolved.** Decision 69 promoted firm 2026-06-07. The deliberation artifacts
+are preserved in:
 
 - `d69-a.md`, `d69-b.md`, `d69-c.md`, `d69-d.md` — refined drafts
 - `comparison.md` — agentera subagent's side-by-side (recommends a)
