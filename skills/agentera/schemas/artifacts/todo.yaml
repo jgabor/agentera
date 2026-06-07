@@ -67,16 +67,17 @@ CONVENTION:
     field: type_tag
     level: advisory
     description: >-
-      Each item should carry a type tag such as [fix], [feat], [chore],
-      [test], [perf], or [docs] for commit-scope alignment and scan
-      discoverability.
+      Each item should carry a type tag such as [fix], [feat], [refactor],
+      [chore], [test], [perf], or [docs] for commit-scope alignment and
+      scan discoverability.
   2:
     id: TC2
     field: version_suffix
     level: advisory
     description: >-
-      Feature and fix items should include a version scope like [fix:2.4.x]
-      or [feat:2.3.x] when the work targets a specific release train.
+      Optional train scope in `[type:train]` form, e.g. `[fix:train]`, when
+      the work targets a specific release train; most common on feat and fix
+      items. Omit the train suffix when the item is not train-scoped.
   3:
     id: TC3
     field: title_format
@@ -86,40 +87,33 @@ CONVENTION:
       either all plain prose or all "**BoldTitle**: description".
   4:
     id: TC4
-    field: resolved_summary
-    level: advisory
-    description: >-
-      Resolved items should end with "· resolved by ..." to distinguish
-      completed work from open or deferred items at a glance.
-  5:
-    id: TC5
     field: resolved_checkbox
     level: advisory
     description: >-
       Resolved items should use a checked GitHub task-list checkbox
-      (`- [x]`) before the task text and resolution summary. Open
-      items use `- [ ]`. The checkbox state is the canonical completion
-      marker; do not wrap resolved text in Markdown strikethrough.
-  6:
-    id: TC6
+      (`- [x]`) before the task text. Open items use `- [ ]`. The
+      checkbox state is the canonical completion marker; do not wrap
+      resolved text in Markdown strikethrough.
+  5:
+    id: TC5
     field: severity_band_policy
     level: required
     description: >-
       Severity band policy: all four severity bands (⇶ Critical, ⇉
       Degraded, → Normal, ⇢ Annoying) may be header-only when they
       have no open work. Open items use `- [ ]` only. Resolved items
-      must not appear in severity bands (see TC7). Executable checks
+      must not appear in severity bands (see TC6). Executable checks
       live in packages/cli/src/hooks/validateArtifact/markdown.ts
       `validateMdItems` and packages/cli/src/hooks/compaction/parse.ts.
-  7:
-    id: TC7
+  6:
+    id: TC6
     field: resolved_section_placement
     level: required
     description: >-
       Resolved ledger policy: completed items live only under
-      `## ✓ Resolved` as `- [x]` checkboxes with a resolution summary.
-      Severity bands must not contain `- [x]` or legacy `~~`
-      strikethrough resolved rows. The compaction gate counts every
-      resolved row (including mis-placed rows until migrated) against
-      the uniform 10/40/50 retention cap. `compact --mode fix` migrates
-      mis-placed rows into `## ✓ Resolved` before applying retention.
+      `## ✓ Resolved` as `- [x] [type:train]` checkboxes. Severity
+      bands must not contain `- [x]` or legacy `~~` strikethrough
+      resolved rows. The compaction gate counts every resolved row
+      (including mis-placed rows until migrated) against the uniform
+      10/40/50 retention cap. `compact --mode fix` migrates mis-placed
+      rows into `## ✓ Resolved` before applying retention.
