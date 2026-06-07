@@ -116,6 +116,10 @@ index:
   path: docs/consolidation/mobile-open-decisions.md
   last_updated: '2026-06-07'
   status: current
+- document: D69 multi-surface invariant deliberation (draft)
+  path: docs/consolidation/d69/README.md
+  last_updated: '2026-06-07'
+  status: draft
 - document: Python package manifest
   path: pyproject.toml
   last_updated: '2026-05-16'

@@ -10,7 +10,10 @@
 
 The mobile app must read and write `.agentera/` project state (vision, plan,
 progress, decisions, docs, health, TODO). Three integration strategies remain
-on the table; **no choice has been recorded** (Decision 69 deferred).
+on the table; **no choice has been recorded** — open, unnumbered. A future
+decision may follow once [Decision 69](./d69/) (multi-surface invariant) and
+the [D68 follow-up](./d69/d68-followup.md) clarify what "one fixed workflow"
+means at the implementation layer.
 
 | Option | Shape | Tradeoffs |
 | ------ | ----- | --------- |
@@ -23,6 +26,8 @@ on the table; **no choice has been recorded** (Decision 69 deferred).
 - CLI channels, state commands, and contributor build: [`packages/cli/README.md`](../../packages/cli/README.md)
 - Mobile workflow FSM and chat conventions: [`packages/mobile/README.md`](../../packages/mobile/README.md)
 - Consolidation context: [`monorepo-plan.md`](./monorepo-plan.md)
+- Related (separate) multi-surface invariant deliberation — Decision 69 draft
+  archive: [`d69/`](./d69/) (start at [`d68-followup.md`](./d69/d68-followup.md))
 
 ## `@agentera/mobile` publish identity
 

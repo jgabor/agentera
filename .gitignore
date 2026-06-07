@@ -4,6 +4,7 @@
 docs/*
 !docs/README.md
 !docs/packaging/
+!docs/consolidation/
 __pycache__/
 *.pyc
 .env
