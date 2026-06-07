@@ -121,6 +121,32 @@ export function registryArtifactPath(artifactId: string, schemasDir: string): st
 
 // ── staleness ───────────────────────────────────────────────────────
 
+const PROFILE_GENERATED_RE = /<!-- Generated:\s*(\d{4}-\d{2}-\d{2})/;
+const PROFILE_VALIDATED_RE = /Validated:\s*(\d{4}-\d{2}-\d{2})/;
+
+export function parseProfileHeaderDates(text: string): {
+  generatedDate: string | null;
+  validatedDate: string | null;
+  generatedUtc: number | null;
+  validatedUtc: number | null;
+} {
+  const genMatch = PROFILE_GENERATED_RE.exec(text);
+  const generatedDate = genMatch ? genMatch[1] : null;
+  const generatedUtc = generatedDate ? dateFromIso(generatedDate) : null;
+  const valMatch = PROFILE_VALIDATED_RE.exec(text);
+  const validatedDate = valMatch ? valMatch[1] : null;
+  const validatedUtc = validatedDate ? dateFromIso(validatedDate) : null;
+  return { generatedDate, validatedDate, generatedUtc, validatedUtc };
+}
+
+function profileRefreshAnchorUtc(text: string): number | null {
+  const { generatedUtc, validatedUtc } = parseProfileHeaderDates(text);
+  if (generatedUtc === null && validatedUtc === null) return null;
+  if (generatedUtc === null) return validatedUtc;
+  if (validatedUtc === null) return generatedUtc;
+  return Math.max(generatedUtc, validatedUtc);
+}
+
 export function checkProfileraStaleness(profilePath: string, env: Env = process.env): [boolean, number, number] | null {
   if (!fs.existsSync(profilePath)) return null;
   let text: string;
@@ -130,12 +156,10 @@ export function checkProfileraStaleness(profilePath: string, env: Env = process.
     process.stderr.write(`warning: failed to read profile path ${profilePath}: ${(exc as Error).message}\n`);
     return null;
   }
-  const m = /<!-- Generated:\s*(\d{4}-\d{2}-\d{2})/.exec(text);
-  if (!m) return null;
-  const gen = dateFromIso(m[1]);
-  if (gen === null) return null;
+  const anchor = profileRefreshAnchorUtc(text);
+  if (anchor === null) return null;
   const staleDays = intEnv(env, PROFILERA_STALE_DAYS_ENV, DEFAULT_PROFILERA_STALE_DAYS);
-  const since = daysSince(gen);
+  const since = daysSince(anchor);
   return [since >= staleDays, since, staleDays];
 }
 
