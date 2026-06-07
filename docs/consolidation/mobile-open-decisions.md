@@ -8,18 +8,24 @@
 
 **Status:** Open — blocks SvelteKit scaffold wiring, not docs-only closeout.
 
+**Decision 69 (firm, 2026-06-07)** records the invariant: `packages/cli` is the narrow
+waist for capability schema, `.agentera/` state contract, and agent execution routing.
+Mobile is a **client** of that engine (OpenCode-like), not a parallel implementation.
+Cursor SDK on mobile is a Layer B adapter behind CLI — not a separate Agentera loop.
+
 The mobile app must read and write `.agentera/` project state (vision, plan,
 progress, decisions, docs, health, TODO). Three integration strategies remain
-on the table; **no choice has been recorded** — open, unnumbered. A future
-decision may follow once [Decision 69](./d69/) (multi-surface invariant) and
-the [D68 follow-up](./d69/d68-followup.md) clarify what "one fixed workflow"
-means at the implementation layer.
+on the table for **how the mobile client connects to CLI**; the invariant is decided:
 
-| Option | Shape | Tradeoffs |
-| ------ | ----- | --------- |
-| **CLI subprocess** | Mobile shells out to `agentera prime`, `agentera state *`, and related commands | Reuses the shipped CLI contract and parity tests; subprocess latency and error parsing overhead; requires Node/npm or bundled CLI on device |
-| **Embedded TypeScript** | Mobile imports shared modules from `packages/cli` (state readers, prime context builders) | Lowest latency and tightest type sharing; couples mobile release to CLI internals; must respect the self-contained npm bundle boundary for deploy |
-| **Hybrid** | CLI subprocess for project-state reads/writes; Cursor SDK for the agent loop only | Clear separation of concerns; two integration surfaces to maintain; subprocess cost only on state transitions |
+| Option                  | Shape                                                                                                                                     | Tradeoffs                                                                                                                                         |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **CLI subprocess**      | Mobile shells out to `agentera prime`, `agentera state *`, and related commands                                                           | Reuses the shipped CLI contract and parity tests; subprocess latency and error parsing overhead; requires Node/npm or bundled CLI on device       |
+| **Embedded TypeScript** | Mobile imports shared modules from `packages/cli` (state readers, prime context builders)                                                 | Lowest latency and tightest type sharing; couples mobile release to CLI internals; must respect the self-contained npm bundle boundary for deploy |
+| **Hybrid**              | CLI subprocess or `agentera serve` for project-state reads/writes; Cursor SDK for the agent loop only **when routed through CLI Layer B** | Clear separation of concerns; two integration surfaces to maintain; serve/API likely needed at scale                                              |
+
+**Likely direction under D69:** long-lived `agentera serve` + typed client (OpenCode
+pattern), with Cursor SDK registered as a CLI runtime adapter — not mobile calling
+Cursor SDK directly for capability execution.
 
 **References:**
 
@@ -36,11 +42,11 @@ means at the implementation layer.
 `packages/mobile/package.json` sets `"private": true`. Three distribution
 models remain under consideration:
 
-| Model | Meaning |
-| ----- | ------- |
-| **Workspace-private** | Package exists only inside the monorepo; no npm publish |
-| **npm publish** | Scoped `@agentera/mobile` on npm for installable app/tooling consumers |
-| **Deploy-only** | Cloudflare Worker (or similar) deploy artifact; no npm package |
+| Model                 | Meaning                                                                |
+| --------------------- | ---------------------------------------------------------------------- |
+| **Workspace-private** | Package exists only inside the monorepo; no npm publish                |
+| **npm publish**       | Scoped `@agentera/mobile` on npm for installable app/tooling consumers |
+| **Deploy-only**       | Cloudflare Worker (or similar) deploy artifact; no npm package         |
 
 Mobile v1 does not require a decision before SvelteKit scaffold work, but CI
 and release docs should align once chosen.
