@@ -102,12 +102,13 @@ CONVENTION:
       completed work from open or deferred items at a glance.
   5:
     id: TC5
-    field: resolved_strikethrough
+    field: resolved_checkbox
     level: advisory
     description: >-
-      Resolved items should wrap the original task text in Markdown
-      strikethrough (~~text~~) before the resolution summary, keeping
-      the original intent readable while visually marking it closed.
+      Resolved items should use a checked GitHub task-list checkbox
+      (`- [x]`) before the task text and resolution summary. Open
+      items use `- [ ]`. The checkbox state is the canonical completion
+      marker; do not wrap resolved text in Markdown strikethrough.
   6:
     id: TC6
     field: severity_band_policy

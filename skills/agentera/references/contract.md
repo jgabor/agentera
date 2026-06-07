@@ -83,12 +83,12 @@ TODO.md uses a conventional checkbox format grouped by severity. Skills write it
 - [ ] ISS-N: [type] Description
 
 ## Resolved
-- [x] ~~ISS-N: [type] Description~~ · resolved in commit hash
+- [x] ISS-N: [type] Description · resolved in commit hash
 ```
 
 Type tags use the conventional commit vocabulary: feat, fix, docs, refactor, chore, test, perf.
 
-The severity vocabulary (critical/degraded/annoying) is preserved as section headings with severity glyphs. Checkboxes indicate completion state. Resolved items move to the Resolved section with strikethrough and commit reference.
+The severity vocabulary (critical/degraded/annoying) is preserved as section headings with severity glyphs. Checkboxes indicate completion state. Resolved items move to the Resolved section with `- [x]` and a commit reference.
 
 **Linter check**: Deterministic. Exact string matching for severity terms in context.
 
@@ -298,7 +298,7 @@ Same logic: collapse oldest full-detail to one-line when >10 exist. Drop oldest 
 | Tier | Entries | Format |
 |------|---------|--------|
 | Full detail | 10 most recent resolved items | Standard resolved entry format |
-| One-line archive | Items 11 through 50 | `- [x] ~~[ISS-NN]: ≤15-word resolution summary~~` |
+| One-line archive | Items 11 through 50 | `- [x] [ISS-NN]: ≤15-word resolution summary` |
 | Dropped | Items older than 50 | Removed entirely |
 
 Same logic: collapse oldest full-detail to one-line when >10 exist. Drop oldest one-line when >40 one-line entries exist. Compaction applies only within the `## Resolved` section; active severity sections are not affected.

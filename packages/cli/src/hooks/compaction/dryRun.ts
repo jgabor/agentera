@@ -116,7 +116,7 @@ const TODO_CHECKBOX_RE = /^-\s*\[x\]\s*/;
 const TODO_ISS_LABEL_RE = /ISS-\d+:?\s*/;
 
 function isTodoOnelinePassthrough(entry: Dict): boolean {
-  return entry.kind === "oneline" && String(entry.header).includes("~~");
+  return entry.kind === "oneline";
 }
 
 function stripTodoMetadata(header: string): string {
@@ -133,7 +133,7 @@ export function formatTodoOneline(entry: Dict): string {
     return header.startsWith("- ") ? header : `- ${header}`;
   }
   const summary = truncateWords(stripTodoMetadata(header) || "(resolved)", 15);
-  return `- [x] ~~${summary}~~`;
+  return `- [x] ${summary}`;
 }
 
 export const SPECS: Record<string, ArtifactSpec> = {
