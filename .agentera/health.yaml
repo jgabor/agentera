@@ -1,126 +1,4 @@
 audits:
-  - number: 13
-    date: 2026-04-25
-    dimensions:
-      - architecture alignment
-      - pattern consistency
-      - coupling health
-      - complexity hotspots
-      - test health
-      - version health
-      - artifact freshness
-      - security hygiene
-      - dependency health
-    findings_summary:
-      critical: 0
-      warning: 0
-      info: 0
-      filtered_by_confidence: 0
-    trajectory: stable vs Audit 12. The completed Copilot marketplace plan preserved
-      the evidence boundary and did not degrade validation, versioning, or
-      artifacts.
-    grades:
-      Architecture: A
-      Patterns: A
-      Coupling: A
-      Complexity: A
-      Tests: A
-      Version: A
-      Freshness: A
-      Security: A
-      Deps: A
-    dimension_details:
-      - name: Architecture alignment
-        grade: A
-        summary: "The marketplace guidance matches the portability thesis: shared skills
-          stay canonical, runtime install surfaces are adapter-specific, and
-          unverified Copilot marketplace availability is not claimed."
-        findings: []
-      - name: Pattern consistency
-        grade: A
-        summary: README, PLAN, PROGRESS, TODO, and CHANGELOG use the same evidence-gated
-          language. Legacy per-skill Copilot entries are observational, while
-          aggregate `agentera` remains future verified-source guidance.
-        findings: []
-      - name: Coupling health
-        grade: A
-        summary: Validation keeps Copilot install semantics in
-          `tests/test_runtime_adapters.py` without adding runtime coupling. Host
-          evidence remains recorded in artifacts, not encoded as unsupported
-          install behavior.
-        findings: []
-      - name: Complexity hotspots
-        grade: A
-        summary: "The new marketplace guards are small and proportional: one README pass
-          plus focused failure cases for availability claims,
-          placeholder-as-source, and primary fallback wording."
-        findings: []
-      - name: Test health
-        grade: A
-        summary: "Required checks pass: Copilot packaging 7 passed, runtime adapters 26
-          passed, full pytest 361 passed, lifecycle validation passed, spec
-          validation passed with 0 warnings."
-        findings: []
-      - name: Version health
-        grade: A
-        summary: The active plan introduced docs, test, and chore commits only after the
-          existing 1.18.1 release state. DOCS.md policy correctly required no
-          new bump.
-        findings: []
-      - name: Artifact freshness
-        grade: A
-        summary: PLAN is complete. PROGRESS, TODO, and CHANGELOG record the final
-          no-verified-source outcome, and DOCS.md does not predate the plan
-          creation date.
-        findings: []
-      - name: Security hygiene
-        grade: A
-        summary: No real secret hits were found. Secret-pattern matches are only
-          documented examples in inspektera source, and subprocess usage remains
-          list-form or fixed-path plugin validation.
-        findings: []
-      - name: Dependency health
-        grade: A
-        summary: "No dependencies changed during the plan. Python remains stdlib-only
-          for validators and tests; the isolated OpenCode Node dependency
-          surface is unchanged. ### Trends vs Audit 12 - **Improved**: Copilot
-          marketplace guidance is now more explicit: syntax-only placeholder,
-          verified built-in marketplaces, no `agentera` source claim. -
-          **Degraded**: none. - **Stable**: Live host caveats remain explicit;
-          validation and artifact freshness stayed green. ### Patterns Observed
-          - Module structure: shared skill sources remain canonical; runtime
-          adapters expose host-specific metadata and validation guards. -
-          Evidence pattern: live-host observations are recorded as caveats
-          unless a verified source exists. - Testing approach: install guidance
-          gets additive negative tests to reject future contradictory wording. -
-          Release pattern: docs/test/chore marketplace work does not bump
-          versions without verified new install capability."
-        findings: []
-    trends:
-      improved: >-
-        Copilot marketplace guidance is now more explicit: syntax-only
-        placeholder, verified built-in marketplaces, no `agentera` source claim.
-
-        - **Degraded**: none.
-
-        - **Stable**: Live host caveats remain explicit; validation and artifact
-        freshness stayed green.
-      degraded: >-
-        none.
-
-        - **Stable**: Live host caveats remain explicit; validation and artifact
-        freshness stayed green.
-      stable: Live host caveats remain explicit; validation and artifact freshness
-        stayed green.
-    patterns:
-      - "Module structure: shared skill sources remain canonical; runtime
-        adapters expose host-specific metadata and validation guards."
-      - "Evidence pattern: live-host observations are recorded as caveats unless
-        a verified source exists."
-      - "Testing approach: install guidance gets additive negative tests to
-        reject future contradictory wording."
-      - "Release pattern: docs/test/chore marketplace work does not bump
-        versions without verified new install capability."
   - number: 14
     date: 2026-04-26
     dimensions:
@@ -1811,7 +1689,139 @@ audits:
       - "Testing approach: vitest fixture trees under
         packages/cli/test/upgrade/fixtures/ with Python-oracle parity JSON for
         contract-first migration work."
+  - number: 23
+    date: 2026-06-07
+    dimensions:
+      - architecture alignment
+      - pattern consistency
+      - coupling health
+      - complexity hotspots
+      - test health
+      - dependency health
+      - version health
+      - artifact freshness
+      - prose health
+      - security hygiene
+    findings_summary:
+      critical: 0
+      warning: 1
+      info: 1
+      filtered_by_confidence: 0
+    trajectory: >-
+      improving vs Audit 22 on mobile monorepo closeout (progress cycle 650),
+      capabilityContext split, vitest 884/884 green, and suiteVersion 3.0.0
+      alignment; orientation.ts remains the prime/hej hub.
+    grades:
+      Architecture: A
+      Patterns: A
+      Coupling: B
+      Complexity: B
+      Tests: A
+      Deps: A
+      Version: B
+      Freshness: A
+      Prose: A
+      Security: A
+    dimension_details:
+      - name: Architecture alignment
+        grade: A
+        summary: Decision 69 CLI narrow waist and monorepo-plan.md package table match
+          the checkout; packages/mobile is a documented docs-only stub per D67/D68
+          with lefthook wired.
+        findings: []
+      - name: Pattern consistency
+        grade: A
+        summary: vp is the workspace entrypoint for web and mobile; TODO checkbox
+          convention aligns across TODO.md, todo.yaml, compaction dryRun, and
+          packages/mobile/TODO.md.
+        findings: []
+      - name: Coupling health
+        grade: B
+        summary: capabilityContext/ split reduced prime startup coupling, but
+          orientation.ts still aggregates hej, prime, and state summaries in one
+          module.
+        findings:
+          - heading: "⇉ orientation.ts remains prime/hej state hub, warning (confidence: 82)"
+            severity: warning
+            confidence: 82
+            location: packages/cli/src/cli/orientation.ts:407
+            evidence: orientation.ts is 650 lines; healthSummary, planSummary,
+              docsSummary, and selectHejNextAction share one module imported by
+              prime.ts and capabilityContext/evidence.ts.
+            impact: Hej and prime orientation changes still touch a single dense file
+              despite capabilityContext modularization elsewhere.
+            suggested_action: Extract state-family summary builders into
+              cli/orientation/ slices mirroring the capabilityContext split.
+            verify_command: wc -l packages/cli/src/cli/orientation.ts
+      - name: Complexity hotspots
+        grade: B
+        summary: No TS module exceeds 900 lines after capabilityContext/ and
+          startupAnalysis/ splits; largest files are orientation.ts (650) and
+          capabilityContext/benchmark.ts (528).
+        findings: []
+      - name: Test health
+        grade: A
+        summary: Vitest reports 884/884 passed in 91 files; prior compaction and
+          plan-validate housekeeping failures from Audit 22 are resolved.
+        findings: []
+      - name: Dependency health
+        grade: A
+        summary: pnpm audit --prod reports 0 vulnerabilities; runtime deps remain yaml
+          and smol-toml only.
+        findings: []
+      - name: Version health
+        grade: B
+        summary: packages/cli/package.json carries version 3.0.0-dev.6 with
+          agentera.suiteVersion 3.0.0; one fix commit since the dev.6 bump;
+          stable-channel shim at 2.7.7 remains intentional per Decision 56.
+        findings: []
+      - name: Artifact freshness
+        grade: A
+        summary: progress.yaml cycle 650 and docs.yaml index updated 2026-06-07 for
+          mobile monorepo closeout; no active plan slot.
+        findings: []
+      - name: Prose health
+        grade: A
+        summary: monorepo-plan.md and mobile-open-decisions.md stay factual with
+          concrete package paths and decision references.
+        findings: []
+      - name: Security hygiene
+        grade: A
+        summary: No hardcoded secrets in scanned TS sources; RegExp.exec matches are
+          parsing helpers, not dynamic code execution on user input.
+        findings:
+          - heading: "⇢ Dedicated security tooling still recommended, info (confidence: 60)"
+            severity: info
+            confidence: 60
+            location: repository-wide
+            evidence: Regex hygiene scan only; pnpm audit --prod clean on packages/cli.
+            impact: Surface scan cannot replace dependency or secret-scan CI for publish.
+            suggested_action: Keep pnpm audit and secret scanning in release CI for 3.x.
+    trends:
+      improved: >-
+        Mobile monorepo closeout (D67/D68/D69), capabilityContext monolith split
+        (2542 to 528 max module), startupAnalysis modularization, vitest 884/884
+        green, suiteVersion 3.0.0 aligned with @next dev.6, profilera
+        Validated-header fix.
+      degraded: none.
+      stable: >-
+        Dependency, prose, and security posture remain healthy; stable @latest
+        shim stays on 2.7.7 by design.
+      new_findings: orientation.ts prime/hej hub density after capabilityContext split.
+      resolved: >-
+        Audit 22 TS monolith hotspots (capabilityContext.ts 2542 lines);
+        compaction and plan-validate vitest failures; npm @next dev.4 vs
+        suiteVersion 2.7.7 release-metadata divergence.
+    patterns:
+      - "Monorepo layout: packages/mobile (flagship stub), packages/web (Starlight),
+        packages/cli (agentera npm); CLI owns schema and .agentera/ contract per D69."
+      - "Prime startup: capabilityContext/ modules by state family with slim re-export
+        barrel; orientation.ts still centralizes hej briefing summaries."
+      - "Testing approach: 884 vitest cases including upgrade parity, prime
+        source_contract oracles, and packaging prepack tarball gates."
 archive:
+  - summary: "Audit 13 (2026-04-25): stable vs Audit 12. Copilot marketplace plan
+      preserved evidence boundaries; all dimensions graded A."
   - summary: "Audit 12 (2026-04-25): ⮉ improving vs Audit 11. Audit 11 cleanup
       resolved the prior portability warnings without widening..."
   - summary: "Audit 11 (2026-04-24): stable vs Audit 10. Runtime portability moved
