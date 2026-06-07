@@ -8,6 +8,10 @@
     "web:build": "vp run @agentera/web#build",
     "web:check": "vp run @agentera/web#check",
     "web:deploy": "vp run @agentera/web#deploy",
+    "mobile:dev": "vp run @agentera/mobile#dev",
+    "mobile:build": "vp run @agentera/mobile#build",
+    "mobile:check": "vp run @agentera/mobile#check",
+    "mobile:deploy": "vp run @agentera/mobile#deploy",
     "cli:publish:dev": "pnpm -C packages/cli run publish:dev",
     "cli:publish:stable": "pnpm -C packages/cli/shim run publish:stable"
   }

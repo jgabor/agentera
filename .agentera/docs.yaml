@@ -1,4 +1,4 @@
-last_audit: '2026-05-18 (first_invocation_read metadata CLI discoverability sync)'
+last_audit: '2026-06-07 (mobile monorepo closeout — packages/mobile artifact index, D68 doc sync)'
 conventions:
   doc_root: .
   style: technical, concise, sections with tables, no badges
@@ -70,7 +70,47 @@ mapping:
 index:
 - document: README
   path: README.md
-  last_updated: '2026-05-17'
+  last_updated: '2026-06-05'
+  status: current
+- document: AGENTS
+  path: AGENTS.md
+  last_updated: '2026-06-05'
+  status: current
+- document: Mobile package README
+  path: packages/mobile/README.md
+  last_updated: '2026-06-05'
+  status: current
+- document: Mobile design system
+  path: packages/mobile/DESIGN.md
+  last_updated: '2026-06-05'
+  status: current
+- document: Mobile package AGENTS
+  path: packages/mobile/AGENTS.md
+  last_updated: '2026-06-07'
+  status: current
+- document: Mobile package TODO
+  path: packages/mobile/TODO.md
+  last_updated: '2026-06-07'
+  status: current
+- document: Mobile package CHANGELOG
+  path: packages/mobile/CHANGELOG.md
+  last_updated: '2026-06-07'
+  status: current
+- document: Mobile package LICENSE
+  path: packages/mobile/LICENSE
+  last_updated: '2026-06-07'
+  status: current
+- document: Web package README
+  path: packages/web/README.md
+  last_updated: '2026-06-05'
+  status: current
+- document: CLI package README
+  path: packages/cli/README.md
+  last_updated: '2026-06-05'
+  status: current
+- document: Monorepo consolidation plan
+  path: docs/consolidation/monorepo-plan.md
+  last_updated: '2026-06-05'
   status: current
 - document: Python package manifest
   path: pyproject.toml
@@ -90,7 +130,7 @@ index:
   status: current
 - document: Vision
   path: .agentera/vision.yaml
-  last_updated: '2026-05-04'
+  last_updated: '2026-06-05'
   status: current
 - document: Progress
   path: .agentera/progress.yaml
@@ -118,7 +158,7 @@ index:
   status: current
 - document: Vocabulary
   path: references/cli/vocabulary.md
-  last_updated: '2026-05-23'
+  last_updated: '2026-06-05'
   status: current
 - document: Vocabulary index
   path: references/cli/vocabulary-index.yaml
@@ -138,7 +178,7 @@ index:
   status: archived
 - document: Design
   path: DESIGN.md
-  last_updated: '2026-05-05'
+  last_updated: '2026-06-05'
   status: current
 - document: Registry
   path: registry.json

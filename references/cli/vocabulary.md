@@ -51,11 +51,13 @@ examples. Diagnostics should state object, state, cause, and fix.
 
 | Term | Definition | Common sources |
 | --- | --- | --- |
-| Agentera | The open protocol for turning AI agents into engineering teams through shared project state, roles, decisions, and verification. | `README.md`, `.agentera/vision.yaml`, `skills/agentera/SKILL.md` |
-| Agentera v2 | The current architecture: one Agentera skill, one `/agentera` entry point, twelve capabilities, YAML project state, and CLI-first access. | `README.md`, `UPGRADE.md`, `.agentera/decisions.yaml` |
-| Agentera skill | The runtime-loaded Agentera skill at `skills/agentera/`. It contains the routing entry and twelve capabilities. | `skills/agentera/SKILL.md` |
+| Agentera | An opinionated mobile-first coding agent. One product brand across delivery surfaces — `@agentera/mobile`, `@agentera/web`, `@agentera/cli`, and editor skill/plugin runtimes. Structured `.agentera/` project state makes sessions compound. | `README.md`, `.agentera/vision.yaml` |
+| Product surface | Where the same fixed Agentera workflow ships: `@agentera/mobile` (primary app), `@agentera/web` (site and docs), `@agentera/cli` (agent runtime and state CLI), and editor skill/plugin runtimes (Cursor, Claude, OpenCode, Codex, Copilot). Not extension hosts — delivery shells. | `README.md`, `AGENTS.md`, `packages/*/README.md`, `.agentera/decisions.yaml` |
+| @agentera/mobile | The flagship mobile/web app package at `packages/mobile`. SvelteKit, Cursor SDK, Cloudflare Worker. | `packages/mobile/README.md`, `packages/mobile/DESIGN.md` |
+| Agentera skill | Runtime-loaded skill at `skills/agentera/` — a delivery surface for the same twelve-capability workflow inside supported editors. Contains the routing entry and twelve capabilities; not user extensibility. | `skills/agentera/SKILL.md`, `README.md` Internals |
 | Capability | A routed behavioral unit inside the Agentera skill, with the prose module `packages/cli/src/capabilities/<name>/instructions.ts` plus `triggers.yaml`, `artifacts.yaml`, `validation.yaml`, and `exit.yaml`. | `AGENTS.md`, `skills/agentera/capabilities/*`, `packages/cli/src/capabilities/*` |
-| Shared protocol | The primitive vocabulary in `protocol.yaml`: confidence, severity, decision labels, exits, visual tokens, glyphs, and phases. | `skills/agentera/protocol.yaml` |
+| Capability alias | User-facing English name in the mobile app (e.g. `brief`, `discuss`) mapped to internal `-era` IDs (e.g. `hej`, `resonera`). Documented in `packages/mobile/README.md`; schemas retain internal IDs. | `packages/mobile/README.md`, `.agentera/decisions.yaml` |
+| Shared protocol | Internal primitive vocabulary in `protocol.yaml`: confidence, severity, decision labels, exits, visual tokens, glyphs, and phases. | `skills/agentera/protocol.yaml` |
 | Capability schema contract | The executable contract for capability schema groups, stable IDs, priorities, deprecations, and primitive references. | `skills/agentera/capability_schema_contract.yaml` |
 | Project state | Structured files that preserve intent, decisions, plans, progress, health, docs, design, and session continuity. | `README.md`, `.agentera/docs.yaml` |
 | Project history | Durable history kept in files so future agents do not reconstruct history from chat residue. | `README.md`, `.agentera/progress.yaml` |
@@ -490,8 +492,8 @@ Visualisera owns visual identity in `DESIGN.md`. Protocol owns token meanings in
 
 | Phrase | Use |
 | --- | --- |
-| “The open protocol for turning AI agents into engineering teams.” | Product identity. |
-| “One install, one entry point, one query interface to all project state.” | v2 app-home promise. |
+| “Opinionated mobile-first coding agent.” | Product identity. |
+| “One install, one entry point, one query interface to all project state.” | CLI state-access promise (internals/contributor docs). |
 | “Continuity lives in files, not memory.” | Realisera/project-state principle. |
 | “The conversation preserves reasoning; the artifact preserves the plan.” | Planera boundary. |
 | “Planera owns WHAT and WHY; realisera owns HOW.” | Planning/building boundary. |

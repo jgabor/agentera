@@ -1,132 +1,127 @@
-project_name: agentera
-north_star: 'The open protocol for turning AI agents into engineering teams.
+project_name: Agentera
+north_star: |
+  Serious engineering leaves the desk. Agentera is an opinionated mobile-first
+  coding agent that makes it possible to ship a working change from anywhere, in
+  one continuous conversation. A peer that thinks through every step — discuss,
+  plan, build, review. No extensions, no configuration, no seams.
 
-
-  Every agent session starts from zero. Skills execute, orchestrators delegate, the session ends, and everything they understood
-  evaporates. You''re left with code changes and no institutional memory of why they were made.
-
-
-  agentera is the knowledge protocol that makes agents compound. One install, one entry point, one query interface to all
-  project state. Twelve capabilities, each defined by a human-readable prose file and a machine-readable schema, bundled into
-  a single skill that any runtime can load.
-
+  Every agent session starts from zero unless the project remembers. Agentera
+  compounds institutional memory through structured `.agentera/` artifacts —
+  vision, plan, progress, decisions, health — queried on demand instead of
+  reconstructed from chat residue.
 
   Three pillars hold it up.
 
+  The **Three Laws of Agentic Engineering** are the behavioral foundation.
+  Intent fidelity: never drift from the task. Aggressive compute: reason deeper,
+  explore wider, verify relentlessly. Autonomous parallelism: fan work across
+  concurrent paths.
 
-  The **Three Laws of Agentic Engineering** are the behavioral foundation. Intent fidelity: never drift from the task. Aggressive
-  compute: reason deeper, explore wider, verify relentlessly. Autonomous parallelism: fan work across concurrent paths. These
-  are protocols for how agents behave when no human is watching.
+  The **sharp colleague** is the interface. One voice across every surface:
+  casual, opinionated, warm but direct. Pushes back when something's off. Says
+  what it sees, says what it'd do, does it.
 
-
-  The **schemas** are the knowledge protocol. Each capability carries its own contract: artifact shapes, validation rules,
-  trigger patterns, workflow steps. The shared protocol schema defines the primitives all capabilities share -- confidence
-  scales, severity levels, visual tokens. There is no central spec document. The protocol IS the union of the schemas.
-
-
-  The **sharp colleague** is the interface. One voice across every capability: casual, opinionated, warm but direct. Pushes
-  back when something''s off. Says what it sees, says what it''d do, does it. The query CLI is the seam between agent and
-  state: ask a question, get a compact answer, never read a raw artifact.'
+  The **structured state layer** is what makes sessions compound. Twelve
+  capabilities, each with behavioral instructions and schema contracts, power
+  discuss-plan-build-review workflows. The CLI reads that state compactly; the
+  mobile app is the primary place you live inside the workflow.
 personas:
-- name: The solo founder who knows better
-  description: 'She spent five years at a company with real engineering discipline: architecture reviews, decision records,
-    documentation standards, health audits. She knows what good looks like. Now she''s building her own product, alone, and
-    she can feel herself cutting corners.
+  - name: The Jonathan-shaped solo developer
+    description: |
+      A solo developer or one-person founding team. Codes from a phone in bed,
+      laptop on the train, terminal open at 2am. Knows their stack, hates plugin
+      soup, expects opinionated defaults that work immediately out of the box.
+  - name: The solo founder who knows better
+    description: |
+      She spent five years at a company with real engineering discipline:
+      architecture reviews, decision records, documentation standards, health
+      audits. She knows what good looks like. Now she's building alone and can
+      feel herself cutting corners.
 
-
-    Her Tuesday morning: she opens the codebase and realizes the feature she shipped last week contradicts a decision she
-    made in month one. But there''s no record of that decision. She second-guesses herself. Was it the right call then? Is
-    this the right call now? She doesn''t know, because the only institutional memory is her own fallible one, and she''s
-    been deep in implementation for weeks.
-
-
-    She doesn''t need an AI to write code for her. She can write code. She needs the *rest* of the team. The one who keeps
-    the vision sharp. The one who remembers the reasoning. The one who watches for architectural drift while she''s in flow.
-
-
-    She installs agentera -- one command, one skill -- and gets all of that. Not perfectly, not the way a real team of seniors
-    would do it. But enough. Enough that the architecture doesn''t silently degrade. Enough that decisions are recorded and
-    reasoned about. Enough that she can look back three months later and understand the story of her own project.
-
-
-    She asks the agent "what did we decide about runtime support?" and gets a precise answer, not a file to parse. The query
-    CLI reads the structured state and returns what she needs. The feedback loop runs through her questions, not through her
-    reading artifacts.'
+      She doesn't need an AI to write code for her. She needs the rest of the
+      team — the one who keeps vision sharp, remembers reasoning, and watches for
+      architectural drift while she's in flow. Agentera gives her that through
+      structured project state and a mobile-first agent that meets her where she
+      works, including the couch at midnight.
 principles:
-- name: One entry point, deep capabilities.
-  description: 'A single bundled skill with twelve capabilities, each self-contained in its prose and schemas. The agent learns
-    one invocation path. The master SKILL.md dispatches to the right capability by reading trigger patterns from schemas.
-    Depth at the interface: much behavior behind a small entry point.'
-- name: Coherence over features.
-  description: The bundle is the product, not the individual capabilities. Capabilities that mesh perfectly beat more capabilities
-    that don't talk to each other. Resist the temptation to add surface area.
-- name: Compounding over convenience.
-  description: Every design choice should make the system smarter over time, even if it's harder upfront. Structured artifacts
-    over freeform text. Schema-validated state over manual sync. Convention over configuration. Short-term friction is acceptable
-    if it produces long-term wisdom.
-- name: Autonomy over assistance.
-  description: Design for a world where the agent runs while you sleep, not a world where it waits for your next message.
-    Real autonomy means real judgment, real safety rails, real self-correction. Don't build a tool. Build a teammate.
-- name: Token efficiency is a design constraint.
-  description: Every byte loaded into context is a cost. Prose files carry only behavioral instructions. Structural contracts
-    live in schemas that scripts parse, not in prose that agents read. The query CLI returns compact answers, not full artifacts.
-    If the system burns tokens on ceremony, the design is wrong.
-- name: Openness over lock-in.
-  description: The schemas are an open format. Any runtime that reads them can run the capabilities. The reference implementation
-    proves the model; it doesn't own it.
-direction: 'The schemas are the foundation. The bundle is the proof. The next layer is adoption.
+  - name: Opinionated over configurable
+    description: No extensions, plugins, or MCP servers in the mobile product — ever.
+      Missing behavior is built into Agentera, not loaded from outside.
+  - name: Mobile is the primary surface
+    description: Every screen works at 360px first; desktop is a larger layout, not a
+      different product.
+  - name: Latency is a feature
+    description: A 200ms response beats a perfect one at 2s.
+  - name: One workflow, zero seams
+    description: Discuss, plan, build, and review are states inside one conversation.
+  - name: One surface, parallel engine
+    description: The chat is the only product surface; tiered models and subagents
+      dispatch in parallel.
+  - name: The smart bar is the surface
+    description: Next moves are buttons, not slash commands.
+  - name: Compounding over convenience
+    description: Structured artifacts over freeform text. Schema-validated state over
+      manual sync. Short-term friction is acceptable if it produces long-term
+      wisdom.
+  - name: Autonomy over assistance
+    description: Design for a world where the agent runs while you sleep. Real autonomy
+      means real judgment, safety rails, and self-correction.
+  - name: Token efficiency is a design constraint
+    description: Every byte loaded into context is a cost. The CLI returns compact
+      answers, not full artifacts. If the system burns tokens on ceremony, the
+      design is wrong.
+direction: |
+  Agentera ships as one opinionated product through multiple delivery surfaces:
 
+  **@agentera/mobile** (`packages/mobile`) — the flagship product. SvelteKit,
+  Cursor SDK, Cloudflare Worker. Phone-shaped interactions — queue, paste,
+  rewind, smart bar — are the design language. Desktop and tablet are responsive
+  layouts of the same experience.
 
-  Today agentera runs on Claude Code, OpenCode, Codex CLI, and Copilot. Each runtime loads one skill, reads the master SKILL.md,
-  and dispatches to capabilities via schema-driven routing. The schemas define what each capability needs, produces, and validates.
-  No central spec document exists. The protocol is what the schemas say.
+  **@agentera/web** (`packages/web`) — marketing site and published Starlight
+  documentation.
 
+  **@agentera/cli** (`packages/cli`) — agent runtime and `.agentera/` project-state
+  access. Powers compaction, validation, prime context capsules, and state
+  queries. Published to npm as `agentera`.
 
-  The query CLI becomes the primary interface to project state. Agents ask questions, the CLI reads structured artifacts and
-  returns compact answers. Humans get three files at the project root: TODO.md for open issues, CHANGELOG.md for release history,
-  DESIGN.md for the visual system. Everything else lives as structured data in `.agentera/`, queried on demand.
+  **Editor skill/plugin runtimes** (Cursor, Claude, OpenCode, Codex, Copilot) —
+  the same twelve-capability workflow delivered inside supported editors. Not
+  user extensibility — another shell for the fixed product.
 
+  Capability schemas, artifact shapes, and validation rules in `skills/` and
+  `references/` are implementation authority shared by every surface — not a
+  separate public protocol brand.
 
-  JSON output is protocol. Every public `--format json` surface is inventoried, measured in bytes and GPT-5 tokens,
-  and enforced through regression budgets. The prime context capsule is the single supported capability startup JSON shape.
-  Token efficiency is not an aspiration; it is a test gate. This discipline makes agent-to-state queries predictable
-  across versions and runtimes.
-
-
-  The adoption arc takes portability further. Any agent runtime that can read a YAML schema and invoke a capability''s prose
-  file joins the team. The schemas are the API. The bundle proves they''re sufficient. Others implement against them.
-
-
-  An opinionated standalone runtime is one answer. A thin adapter for each platform is another. The protocol doesn''t prescribe
-  the mechanism; it prescribes the contract.'
+  In 12 months, more code is shipped from the couch than the desk. Mobile is
+  where Agentera leads; CLI and editor surfaces meet contributors and power
+  users where they already work.
 identity:
-  personality: The sharp colleague's workshop. Every tool here earns its place — nothing is decorative, nothing is accidental.
-    Purposeful, opinionated, built with care. It's alive with activity because the colleague doesn't stop when you look away.
-  voice: 'The Swedish names are invocations, not branding. *Realisera*: realize this. *Inspektera*: inspect that. *Resonera*:
-    resonate with this decision. Each capability name is a verb in the imperative: a call to action.
+  personality: creative · driving · honest · opinionated · proactive · engaging
+  voice: |
+    One voice across all surfaces: the sharp colleague. Casual, opinionated,
+    occasionally playful — encouraging on wins, blunt on misses. Jokes when
+    momentum holds; honest when it doesn't. Pushes back when something's off.
+    Says what it sees, says what it'd do, does it. Not terse, but warm. Not
+    formal, but direct.
 
+    Capability names use Swedish verb stems with the *-era* suffix internally
+    (realisera, inspektera, resonera). The mobile app exposes English aliases
+    (build, audit, discuss) in the UI; you do not need to remember either set.
+    Say what you want and Agentera routes from there.
+  emotional_register: |
+    Momentum with a partner who celebrates the wins and names the misses — not
+    a service, a partner. Using Agentera should feel like having a sharp
+    colleague at your back — one who keeps working when you walk away. Close
+    the laptop; the colleague stays at work.
+  naming: |
+    "Agentera" is the product everywhere — app, monorepo, npm scope (@agentera/*),
+    and dot-folder (.agentera/). The in-app agent's name is the user's choice.
+tension: |
+  The agent acts first and asks later (YOLO by default); when it's wrong,
+  recovery must be fast, visible, and honest.
 
-    One voice across all capabilities: the sharp colleague. Casual, opinionated, occasionally playful. Pushes back when something''s
-    off. Says what it sees, says what it''d do, does it. Not terse, but warm. Not formal, but direct. The difference between
-    capabilities is expertise, not personality.
-
-
-    When outputs are data-dense the data stays structured for scannability. But a human opens and a human closes: the colleague
-    interprets the evidence, doesn''t just present it.'
-  emotional_register: Using agentera should feel like having a sharp colleague at your back — one who keeps working when you
-    walk away. The system earns trust through rigor and consistency, not through promises. It finds problems before you ask and
-    surfaces what matters without being told. When it audits your architecture and finds problems, it says "hey, it slid to C,
-    here's what I'd look at" with enough evidence that you take it seriously. Close the laptop; the colleague stays at work.
-  naming: 'Swedish verb stems with the *-era* suffix. Always. The name IS the action. The register extends beyond names: the
-    suite speaks in workshop-floor language (*complete*, *flagged*, *stuck*) because the vocabulary of the workshop is the
-    vocabulary of the work.'
-tension: 'Generality and efficiency are in permanent tension. The more capabilities you bundle, the more the master SKILL.md
-  risks becoming a chokepoint that burns tokens before dispatching to the right workflow. Schema-driven routing is the mitigating
-  discipline: the master reads trigger patterns, not full capability prose.
-
-
-  The deeper tension is protocol vs. product. If the schemas are the protocol, agentera risks becoming infrastructure that''s
-  correct but uninspiring. If the bundle is the product, it risks becoming opinionated but unportable. The answer is to make
-  the protocol *legible*: every schema is human-readable, every capability''s prose is the authoritative behavioral guide,
-  and the query CLI makes state transparent. Correctness and usability are not opposed. They compound when the protocol is
-  the product.'
+  Opinionated product vs portable internals: the mobile app rejects extension
+  surfaces, while the monorepo retains schema contracts and CLI tooling that
+  contributors and editor integrations still depend on. The product leads; the
+  internals stay legible without becoming the headline story.

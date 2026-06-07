@@ -4,7 +4,14 @@ Maintainer inventory of repository documentation, workpapers, and legacy surface
 Authoritative Agentera docs live under `references/`, `skills/agentera/`, and root
 guides — not under `docs/`.
 
-**Last reviewed:** 2026-05-23
+**Last reviewed:** 2026-06-05
+
+## Design docs under `docs/`
+
+| Path | Topic |
+| ---- | ----- |
+| `docs/packaging/v3-packaging.md` | v3 CLI npm/Bun distribution contract |
+| `docs/consolidation/monorepo-plan.md` | Product pivot, `@agentera/*` package layout, migration checklist (D67) |
 
 ## Authority stack
 
@@ -17,7 +24,7 @@ guides — not under `docs/`.
 | Benchmark contract | `references/analysis/startup-measurement-contract.yaml` |
 | Benchmark runbook | `references/analysis/benchmark.md` |
 | JSON surface budgets | `scripts/json_output_surface_manifest.yaml` |
-| Project drafts | `docs/` (gitignored except `docs/README.md`) |
+| Project drafts | `docs/` (gitignored except `docs/README.md`, `docs/packaging/`, `docs/consolidation/`) |
 
 ## `docs/` policy
 

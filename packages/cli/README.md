@@ -17,10 +17,11 @@ npx -y agentera@next upgrade --dry-run --channel development
 Run those from a project root. `prime` reports `project_integration.recommendation`
 (`stay` or `upgrade`) and suggested commands for the current repo.
 
-Full preview instructions, highlights, and migration paths:
-[repository README — Agentera 3.0 preview](../../README.md#agentera-30-preview).
+Full preview instructions, channels, and migration paths: [`UPGRADE.md`](../../UPGRADE.md).
 
-Upgrade channels and v2→v3 opt-in: [`UPGRADE.md`](../../UPGRADE.md).
+## Editor runtime installs
+
+Agentera ships a skill bundle for supported editor runtimes (Claude Code, OpenCode, Cursor, Copilot CLI, Codex CLI). Install steps and parity details live in the [repository README — Internals](../../README.md#internals) and [`references/adapters/runtime-feature-parity.md`](../../references/adapters/runtime-feature-parity.md).
 
 ## Package layout
 

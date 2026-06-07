@@ -1,6 +1,18 @@
-# agentera
+# Agentera
 
-Visual identity system for the agentera skill ecosystem. Terminal-native, layered on standard Markdown, designed for both human reading and agent consumption.
+Visual identity system for Agentera. Terminal-native tokens for CLI and agent-rendered Markdown; mobile UI tokens live in [`packages/mobile/DESIGN.md`](./packages/mobile/DESIGN.md).
+
+## Surface register
+
+One brand (Agentera), two render contexts. Decision 62 brand-vs-product register.
+
+| Surface | Authority | Renders |
+| --- | --- | --- |
+| `terminal` | This file (`DESIGN.md`) | CLI dashboard, capability introductions, structured artifact headers in Markdown |
+| `mobile` | `packages/mobile/DESIGN.md` | Touch UI, smart bar, sidebar, chat composer, responsive layouts |
+
+Shared across surfaces: product name, capability glyphs, sharp-colleague voice.
+Not shared: box-drawing logo usage (terminal key moments only), terminal severity arrows in mobile UI, Tailwind touch targets in terminal output.
 
 ## Philosophy
 
