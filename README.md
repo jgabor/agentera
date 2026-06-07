@@ -36,13 +36,14 @@ Development lives in [`packages/mobile`](./packages/mobile).
 
 ```bash
 pnpm install
-vp run mobile:dev      # when packages/mobile is scaffolded
-vp run mobile:check
+vp run mobile:dev      # fmt/lint via Vite+ stub until SvelteKit lands
+vp run mobile:check    # same — no app dev server yet
 ```
 
 See [`packages/mobile/README.md`](./packages/mobile/README.md) for product philosophy, UI conventions, and dev commands.
 
 Monorepo consolidation plan: [`docs/consolidation/monorepo-plan.md`](./docs/consolidation/monorepo-plan.md).
+Open decisions (CLI ↔ mobile integration, publish identity): [`docs/consolidation/mobile-open-decisions.md`](./docs/consolidation/mobile-open-decisions.md).
 
 ### Website
 

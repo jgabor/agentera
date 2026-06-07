@@ -4,6 +4,8 @@
 
 ### Changed
 
+- Documented mobile monorepo open decisions in `docs/consolidation/mobile-open-decisions.md` (CLI ↔ mobile integration options, `@agentera/mobile` publish identity, skill-bundle horizon, D3 provisional alias table, `packages/tui` vs `agentera-tui`, temporary `vite.config.ts` hook stub).
+- Closed mobile docs/artifacts monorepo integration pass: `packages/mobile/` docs stub, D67/D68 and archived staging D1–D5, D68 delivery-surface wording sync, lefthook `vp staged` hook via minimal Vite+ config (progress cycle 650).
 - Aligned audience-namespace migration docs with npm 3.x Phase 3 dispatch: top-level `hej`, `describe`, `gate`, and routine-state names are removed; transitional aliases (`validate`, `compact`, `verify`, `stats`, `lint`, `query`) still forward with stderr deprecation.
 - Set `channels.stable.next_major.announced: false` so doctor and prime omit the v2→v3 successor upgrade prompt while the 3.0.0 line is off npm pending republication.
 

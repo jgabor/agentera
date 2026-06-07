@@ -14,7 +14,7 @@ cycles:
       table retained in archive summary.
     verified: Artifact paths present; docs.yaml index entries for packages/mobile
       AGENTS, TODO, CHANGELOG, LICENSE; monorepo-plan and vision direction
-      aligned with D68.
+      aligned with D68; mobile-open-decisions.md indexed (branch cleanup pass).
     next: SvelteKit scaffold with Cursor SDK integration (packages/mobile/TODO.md).
     context:
       intent: Close the docs/artifacts mobile monorepo integration pass without
