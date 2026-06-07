@@ -23,6 +23,7 @@ import {
   healthSummary,
   issueCounts,
   loadTodoItems,
+  parseProfileHeaderDates,
   planSummary,
   progressSummary,
   registryArtifactPath,
@@ -323,6 +324,15 @@ export function collectOrientationState(opts: PrimeOpts): Dict {
     profileDict.days_since_generated = daysSince;
     profileDict.stale = isStale;
     profileDict.stale_threshold_days = staleDays;
+    if (profileExists) {
+      try {
+        const headerDates = parseProfileHeaderDates(fs.readFileSync(profile, "utf8"));
+        if (headerDates.generatedDate) profileDict.generated_date = headerDates.generatedDate;
+        if (headerDates.validatedDate) profileDict.validated_date = headerDates.validatedDate;
+      } catch {
+        // profile metadata is optional for prime output
+      }
+    }
     if (isStale) profileDict.suggested_action = "Run profilera to refresh PROFILE.md";
   }
   const v1Artifacts = detectV1Artifacts();
@@ -385,7 +395,7 @@ export function collectOrientationState(opts: PrimeOpts): Dict {
   } else if (profileStaleness !== null && profileStaleness[0]) {
     const [, daysSince, staleDays] = profileStaleness;
     attention.push(
-      `normal: profilera profile stale (${daysSince} days since generated; ` +
+      `normal: profilera profile stale (${daysSince} days since last refresh; ` +
         `threshold=${staleDays}); suggest running profilera to refresh PROFILE.md`,
     );
   }
