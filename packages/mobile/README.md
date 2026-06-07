@@ -2,6 +2,11 @@
 
 Official mobile app for Agentera (`@agentera/mobile`) — an opinionated mobile-first coding agent built with [Cursor SDK](https://cursor.com/docs/sdk/typescript), [SvelteKit](https://svelte.dev/), and [Tailwind](https://tailwindcss.com/).
 
+**Status:** Docs-only stub in the monorepo — product philosophy, design system, and
+conventions are written; SvelteKit app source and Cursor SDK wiring are not yet
+landed. FIXME placeholders (logo, tiered model table) are intentional
+pre-implementation markers tracked in [`TODO.md`](./TODO.md).
+
 _FIXME: Add logo, badges, and screenshot._
 
 Agentera does not, and will not, support extensions, plugins, MCP servers, or any other type of customization. It ships with a fixed system prompt, a fixed set of tools, and a workflow that works out of the box.

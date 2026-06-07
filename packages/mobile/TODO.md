@@ -2,9 +2,9 @@
 
 Plan and migration checklist: [`docs/consolidation/monorepo-plan.md`](../../docs/consolidation/monorepo-plan.md).
 
-## Critical (⇶)
+Open decisions (CLI integration, publish identity, skill horizon): [`docs/consolidation/mobile-open-decisions.md`](../../docs/consolidation/mobile-open-decisions.md).
 
-## Degraded (⇉)
+## ⇉ Degraded
 
 - [docs] Add logo, badges, and screenshot to README
 - [docs] Add tiered model table (glyph, tier, default model, assignments) to README
@@ -12,12 +12,13 @@ Plan and migration checklist: [`docs/consolidation/monorepo-plan.md`](../../docs
 - [feat] Implement smart bar and sidebar control center
 - [feat] Implement chat queue, paste collapse, and rewind affordances
 
-## Normal (→)
+## → Normal
 
 - [docs] Publish mobile product page on packages/web Starlight site
 - [chore] Wire CI for packages/mobile when app source lands (lefthook pre-commit already configured)
+- [chore] Remove temporary `vite.config.ts` hook plumbing when SvelteKit scaffold replaces it
 
-## Annoying (⇢)
+## ⇢ Annoying
 
 - [docs] Improve chat interface section prose once UI is implemented
 

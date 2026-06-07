@@ -12,6 +12,9 @@
 
 ## → Normal
 
+- ~~[docs:3.0.0] Document CLI ↔ mobile state integration options in `docs/consolidation/mobile-open-decisions.md`~~ · resolved on `feat/v3` (branch cleanup pass): three options (CLI subprocess, embedded TS, hybrid) with tradeoffs documented; no integration choice recorded.
+- [chore:3.0.0] Decide `@agentera/mobile` npm publish identity (private workspace vs npm vs deploy-only).
+- [docs:3.0.0] Decide long-term editor skill-bundle role (coexist vs eventual sunset) — horizon item, not blocking mobile v1.
 - [feat:3.0.0] Extend visionera create/refine and `agentera prime --context visionera` to treat identity voice and emotional_register nuance as first-class attributes — surface the full identity block in capability context.
 - [fix:3.0.0] Fix so that upgrades are not presented as repairs during `prime` or `doctor`. A version upgrade is distinct from a repair, even if they might overlap in their behavior.
 - [feat:3.0.0] Detect "You're right" and "my mistake" responses during profiling, to add generalized behavioral rules to the profile based on the times the human had to correct the model's behavior.

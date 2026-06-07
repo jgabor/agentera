@@ -4,10 +4,14 @@ Guidance for AI coding agents working in the Agentera mobile package.
 
 ## What this is
 
-Agentera (`@agentera/mobile`) is the official mobile-first coding agent app in the
-[jgabor/agentera](https://github.com/jgabor/agentera) monorepo at `packages/mobile`.
-It is an opinionated product with a fixed system prompt, fixed tools, and a single
-chat surface. It does not load skills, MCP servers, plugins, or runtime adapters.
+Agentera (`@agentera/mobile`) is the official mobile-first coding agent app — the
+flagship product surface in the [jgabor/agentera](https://github.com/jgabor/agentera)
+monorepo at `packages/mobile/`. It is an opinionated product with a fixed system
+prompt, fixed tools, and a single chat surface. It does not load skills, MCP
+servers, plugins, or runtime adapters.
+
+The package is currently a **docs-only stub** (no SvelteKit app source yet). Open
+integration and publish decisions: [`docs/consolidation/mobile-open-decisions.md`](../../docs/consolidation/mobile-open-decisions.md).
 
 ## Stack
 

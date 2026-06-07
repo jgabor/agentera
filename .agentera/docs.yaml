@@ -110,7 +110,11 @@ index:
   status: current
 - document: Monorepo consolidation plan
   path: docs/consolidation/monorepo-plan.md
-  last_updated: '2026-06-05'
+  last_updated: '2026-06-07'
+  status: current
+- document: Mobile open decisions
+  path: docs/consolidation/mobile-open-decisions.md
+  last_updated: '2026-06-07'
   status: current
 - document: Python package manifest
   path: pyproject.toml
