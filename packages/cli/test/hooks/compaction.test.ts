@@ -142,7 +142,7 @@ describe("compactYamlFile", () => {
 
 describe("parseEntries todo-resolved + compactEntries", () => {
   it("parses resolved checkbox bullets and detects full vs oneline", () => {
-    const todo = "# TODO\n\n## Resolved\n- [x] Fixed the leak\n    detail line\n- [x] ~~Quick fix~~\n";
+    const todo = "# TODO\n\n## Resolved\n- [x] Fixed the leak\n    detail line\n- [x] Quick fix\n";
     const entries = parseEntries(todo, "todo-resolved");
     expect(entries.length).toBe(2);
     expect(entries[0].kind).toBe("full");
