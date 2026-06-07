@@ -175,7 +175,7 @@ export const SPECS: Record<string, ArtifactSpec> = {
     onelineHeadingRe: null,
     archiveHeading: null,
     formatOneline: formatTodoOneline,
-    scopedSection: "## Resolved",
+    scopedSection: "## ✓ Resolved",
   },
 };
 

@@ -27,7 +27,7 @@ import {
   yamlRecentFullAndOlder,
   yamlSortEntries,
 } from "./retention.js";
-import { parseEntries, parseTodoResolved, extractResolvedSection } from "./parse.js";
+import { normalizeTodoResolvedLayout, parseEntries, parseTodoResolved, extractResolvedSection } from "./parse.js";
 
 type Dict = Record<string, any>;
 
@@ -193,9 +193,14 @@ function extractHeaderPrefix(text: string, spec: any): string {
 
 function compactTodoResolved(p: string): CompactResult {
   const spec = SPECS["todo-resolved"];
-  const text = fs.readFileSync(p, "utf8");
-  const [start, end, body] = extractResolvedSection(text);
-  if (start < 0) return { full_before: 0, oneline_before: 0, full_after: 0, oneline_after: 0, dropped: 0, changed: false };
+  let text = fs.readFileSync(p, "utf8");
+  const normalized = normalizeTodoResolvedLayout(text);
+  if (normalized.changed) {
+    fs.writeFileSync(p, normalized.text);
+    text = normalized.text;
+  }
+  const [start, end] = extractResolvedSection(text);
+  if (start < 0) return { full_before: 0, oneline_before: 0, full_after: 0, oneline_after: 0, dropped: 0, changed: normalized.changed };
 
   const entries = parseTodoResolved(text, spec);
   const fullBefore = entries.filter((e) => e.kind === "full").length;
@@ -203,7 +208,14 @@ function compactTodoResolved(p: string): CompactResult {
   const totalBefore = entries.length;
 
   if (totalBefore <= MAX_TOTAL_ENTRIES && fullBefore <= MAX_FULL_ENTRIES && onelineBefore <= MAX_ONELINE_ENTRIES) {
-    return { full_before: fullBefore, oneline_before: onelineBefore, full_after: fullBefore, oneline_after: onelineBefore, dropped: 0, changed: false };
+    return {
+      full_before: fullBefore,
+      oneline_before: onelineBefore,
+      full_after: fullBefore,
+      oneline_after: onelineBefore,
+      dropped: 0,
+      changed: normalized.changed,
+    };
   }
 
   const compacted = compactTodoEntries(entries);
@@ -224,7 +236,14 @@ function compactTodoResolved(p: string): CompactResult {
   const headingEnd = text.indexOf("\n", start) + 1;
   const newText = text.slice(0, headingEnd) + "\n" + newBody + text.slice(end);
   fs.writeFileSync(p, newText);
-  return { full_before: fullBefore, oneline_before: onelineBefore, full_after: fullAfter, oneline_after: onelineAfter, dropped, changed: true };
+  return {
+    full_before: fullBefore,
+    oneline_before: onelineBefore,
+    full_after: fullAfter,
+    oneline_after: onelineAfter,
+    dropped,
+    changed: normalized.changed || true,
+  };
 }
 
 export function compactFile(p: string, specName: string): CompactResult {

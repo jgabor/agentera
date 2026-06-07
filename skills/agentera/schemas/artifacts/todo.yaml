@@ -16,16 +16,7 @@ meta:
   artifact_type: human_facing
   path: "TODO.md"
   producer:
-    [
-      dokumentera,
-      inspektera,
-      inspirera,
-      optimera,
-      orkestrera,
-      realisera,
-      resonera,
-      visualisera,
-    ]
+    [dokumentera, inspektera, inspirera, optimera, orkestrera, realisera, resonera, visualisera]
   consumers: [hej, all_skills]
   format: markdown
 
@@ -114,12 +105,21 @@ CONVENTION:
     field: severity_band_policy
     level: required
     description: >-
-      Severity band policy: Critical (⇶) is enforced by the validator
-      (level: required) and must contain at least one `- [type]` item;
-      Degraded (⇉), Normal (→), and Annoying (⇢) are advisory and may
-      be header-only (no list entries, no Placeholder sentinel). The
-      asymmetry reflects the fact that Critical is the only band whose
-      absence is user-visible routing damage; the other three bands
-      may be honestly empty. This rule lives in
-      packages/cli/src/hooks/validateArtifact.ts `validateMdItems` as
-      the single executable source of truth.
+      Severity band policy: all four severity bands (⇶ Critical, ⇉
+      Degraded, → Normal, ⇢ Annoying) may be header-only when they
+      have no open work. Open items use `- [ ]` only. Resolved items
+      must not appear in severity bands (see TC7). Executable checks
+      live in packages/cli/src/hooks/validateArtifact/markdown.ts
+      `validateMdItems` and packages/cli/src/hooks/compaction/parse.ts.
+  7:
+    id: TC7
+    field: resolved_section_placement
+    level: required
+    description: >-
+      Resolved ledger policy: completed items live only under
+      `## ✓ Resolved` as `- [x]` checkboxes with a resolution summary.
+      Severity bands must not contain `- [x]` or legacy `~~`
+      strikethrough resolved rows. The compaction gate counts every
+      resolved row (including mis-placed rows until migrated) against
+      the uniform 10/40/50 retention cap. `compact --mode fix` migrates
+      mis-placed rows into `## ✓ Resolved` before applying retention.

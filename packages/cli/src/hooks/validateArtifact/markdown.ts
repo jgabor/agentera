@@ -5,7 +5,66 @@
  * section check (ITEM, RELEASE, TOKEN).
  */
 
+import { parseTodoMarkdownListItem } from "../../cli/todoMarkdown.js";
+import {
+  classifyTodoSectionHeading,
+  isLegacyStrikethroughTodoLine,
+} from "../compaction/parse.js";
 import { isMapping, isEmptyRequired } from "./schema.js";
+
+const TODO_RESOLVED_HEADING_RE = /^##\s*(?:✓\s+)?Resolved\s*$/im;
+
+function validateTodoResolvedPlacement(content: string, name: string): string[] {
+  const violations: string[] = [];
+  let section: "severity" | "resolved" | "other" = "other";
+  let hasResolvedHeading = TODO_RESOLVED_HEADING_RE.test(content);
+  let hasResolvedItems = false;
+
+  for (const line of content.split(/\r\n|\r|\n/)) {
+    const kind = classifyTodoSectionHeading(line);
+    if (kind === "resolved") {
+      hasResolvedHeading = true;
+      section = "resolved";
+      continue;
+    }
+    if (kind === "severity") {
+      section = "severity";
+      continue;
+    }
+    if (/^##\s/.test(line.trim())) {
+      section = "other";
+      continue;
+    }
+
+    const trimmed = line.trim();
+    if (!trimmed.startsWith("-")) continue;
+
+    const parsed = parseTodoMarkdownListItem(trimmed);
+    if (parsed?.status === "resolved") {
+      hasResolvedItems = true;
+      if (section === "severity") {
+        violations.push(
+          `${name}: resolved checkbox item must live under '## ✓ Resolved', not in severity bands`,
+        );
+        break;
+      }
+    }
+
+    if (isLegacyStrikethroughTodoLine(trimmed)) {
+      hasResolvedItems = true;
+      violations.push(
+        `${name}: legacy strikethrough resolved items are not allowed; use '- [x]' under '## ✓ Resolved'`,
+      );
+      break;
+    }
+  }
+
+  if (hasResolvedItems && !hasResolvedHeading) {
+    violations.push(`${name}: missing '## ✓ Resolved' section for resolved items`);
+  }
+
+  return violations;
+}
 
 type Dict = Record<string, any>;
 
@@ -41,7 +100,6 @@ export function validateMdItems(content: string, name: string, violations: strin
     return;
   }
   const severityGlyphs = ["⇶", "⇉", "→", "⇢"];
-  const requiredItemGlyphs = new Set(["⇶"]);
   let found = false;
   for (const glyph of severityGlyphs) {
     const g = glyph.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -56,16 +114,25 @@ export function validateMdItems(content: string, name: string, violations: strin
         else if (content[bodyStart] === "\n") bodyStart += 1;
         const sectionEnd = nextMatch ? idx + nextMatch.index! : content.length;
         const sectionBody = content.slice(bodyStart, sectionEnd);
-        if (requiredItemGlyphs.has(glyph) && !/^\s*-/m.test(sectionBody)) {
-          const headingSlice = content.slice(sectionStart.index, sectionStart.index + sectionStart[0].length);
-          const glyphNameMatch = new RegExp(`^##\\s*(${g}.+)$`, "m").exec(headingSlice);
-          const headingText = glyphNameMatch ? glyphNameMatch[1] : glyph;
+        const headingSlice = content.slice(sectionStart.index, sectionStart.index + sectionStart[0].length);
+        const glyphNameMatch = new RegExp(`^##\\s*(${g}.+)$`, "m").exec(headingSlice);
+        const headingText = glyphNameMatch ? glyphNameMatch[1] : glyph;
+        const gluedNextSection = nextMatch?.index === 0;
+        if (gluedNextSection || /^\s*##\s/m.test(sectionBody)) {
           violations.push(
-            `${name}: severity section '${headingText}' has no list entries (expected '- [type]' items)`,
+            `${name}: severity section '${headingText}' body contains a nested heading; add a blank line before the next '##' section`,
+          );
+        }
+        if (glyph === "⇶" && /^\s*-\s+\[x\]/im.test(sectionBody)) {
+          violations.push(
+            `${name}: severity section '⇶ Critical' must not contain resolved '- [x]' items; move them to '## ✓ Resolved'`,
           );
         }
       }
     }
+  }
+  if (name === "TODO.md" || name === "todo") {
+    violations.push(...validateTodoResolvedPlacement(content, name));
   }
   if (!found) {
     violations.push(

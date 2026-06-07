@@ -4,12 +4,19 @@
  * Splits a markdown artifact into "full" and "oneline" entries by
  * walking the spec's heading regex, then collects the trailing
  * detail body up to the next heading. The TODO-resolved section
- * uses indented detail lines as the body delimiter.
+ * uses indented detail lines as the body delimiter; open items stay
+ * in severity bands and resolved items belong only under
+ * `## ✓ Resolved`.
  */
 
-import { ArtifactSpec, escapeRe } from "./dryRun.js";
+import { parseTodoMarkdownListItem } from "../../cli/todoMarkdown.js";
+import { ArtifactSpec, SPECS, escapeRe } from "./dryRun.js";
 
 type Dict = Record<string, any>;
+type TodoSectionKind = "severity" | "resolved" | "other";
+
+const SEVERITY_HEADING_RE = /^##\s*(⇶|⇉|→|⇢)\s/m;
+const STRIKETHROUGH_ITEM_RE = /^(\s*)-\s+~~(.+?)~~\s*(.*)$/;
 
 export function splitArchive(text: string, archiveHeading: string): [string, string] {
   if (!archiveHeading) return [text, ""];
@@ -113,6 +120,133 @@ export function parseTodoResolved(text: string, spec: ArtifactSpec): Dict[] {
   return entries;
 }
 
+export function isTodoSeveritySectionHeading(line: string): boolean {
+  return SEVERITY_HEADING_RE.test(line.trim());
+}
+
+export function isTodoResolvedSectionHeading(line: string): boolean {
+  return /^##\s*(?:✓\s+)?Resolved\s*$/im.test(line.trim());
+}
+
+export function classifyTodoSectionHeading(line: string): TodoSectionKind {
+  if (isTodoSeveritySectionHeading(line)) return "severity";
+  if (isTodoResolvedSectionHeading(line)) return "resolved";
+  if (/^##\s/.test(line.trim())) return "other";
+  return "other";
+}
+
+export function strikethroughTodoLineToCheckbox(line: string): string | null {
+  const m = STRIKETHROUGH_ITEM_RE.exec(line);
+  if (!m) return null;
+  const tail = m[3]?.trim();
+  const body = m[2].trim();
+  return `${m[1]}- [x] ${body}${tail ? (tail.startsWith("·") ? ` ${tail}` : ` ${tail}`) : ""}`;
+}
+
+export function isLegacyStrikethroughTodoLine(line: string): boolean {
+  return /^(\s*)-\s+~~/.test(line);
+}
+
+export function countTodoResolvedInSeverityBands(content: string): number {
+  let count = 0;
+  let section: TodoSectionKind = "other";
+  for (const line of content.split(/\r\n|\r|\n/)) {
+    const kind = classifyTodoSectionHeading(line);
+    if (kind !== "other" || /^##\s/.test(line.trim())) {
+      section = kind;
+      continue;
+    }
+    if (section !== "severity") continue;
+    const trimmed = line.trim();
+    if (!trimmed.startsWith("-")) continue;
+    const parsed = parseTodoMarkdownListItem(trimmed);
+    if (parsed?.status === "resolved" || isLegacyStrikethroughTodoLine(trimmed)) {
+      count += 1;
+    }
+  }
+  return count;
+}
+
+export function countTodoResolvedEntries(content: string): { full: number; oneline: number } {
+  const spec = SPECS["todo-resolved"];
+  const resolvedSection = parseTodoResolved(content, spec);
+  const misplaced = countTodoResolvedInSeverityBands(content);
+  return {
+    full: resolvedSection.filter((e) => e.kind === "full").length,
+    oneline: resolvedSection.filter((e) => e.kind === "oneline").length + misplaced,
+  };
+}
+
+/**
+ * Move resolved rows from severity bands into `## ✓ Resolved`, creating the
+ * section when absent. Newly migrated rows are prepended (newest-first folds).
+ */
+export function normalizeTodoResolvedLayout(content: string): { text: string; changed: boolean } {
+  const lines = content.split(/\r\n|\r|\n/);
+  const beforeResolved: string[] = [];
+  const migratedResolved: string[] = [];
+  const existingResolved: string[] = [];
+  const afterResolved: string[] = [];
+
+  let section: TodoSectionKind = "other";
+  let seenResolvedHeading = false;
+
+  for (const line of lines) {
+    const headingKind = classifyTodoSectionHeading(line);
+    if (headingKind === "resolved") {
+      seenResolvedHeading = true;
+      section = "resolved";
+      continue;
+    }
+    if (headingKind === "severity") {
+      section = "severity";
+      if (!seenResolvedHeading) beforeResolved.push(line);
+      else afterResolved.push(line);
+      continue;
+    }
+    if (/^##\s/.test(line.trim())) {
+      section = "other";
+      if (!seenResolvedHeading) beforeResolved.push(line);
+      else afterResolved.push(line);
+      continue;
+    }
+
+    const trimmed = line.trim();
+    if (section === "resolved") {
+      if (trimmed) existingResolved.push(line);
+      continue;
+    }
+
+    if (section === "severity" && trimmed.startsWith("-")) {
+      const converted = strikethroughTodoLineToCheckbox(line) ?? line;
+      const parsed = parseTodoMarkdownListItem(converted.trim());
+      if (parsed?.status === "resolved" || isLegacyStrikethroughTodoLine(trimmed)) {
+        migratedResolved.push(converted.trim());
+        continue;
+      }
+    }
+
+    if (!seenResolvedHeading) beforeResolved.push(line);
+    else afterResolved.push(line);
+  }
+
+  if (migratedResolved.length === 0) {
+    return { text: content, changed: false };
+  }
+
+  const rebuilt = [...beforeResolved];
+  if (rebuilt.length > 0 && rebuilt[rebuilt.length - 1]?.trim() !== "") rebuilt.push("");
+  rebuilt.push("## ✓ Resolved");
+  rebuilt.push(...migratedResolved, ...existingResolved);
+  if (afterResolved.length > 0) {
+    rebuilt.push("");
+    rebuilt.push(...afterResolved);
+  }
+
+  const text = rebuilt.join("\n").replace(/\n*$/, "\n");
+  return { text, changed: text !== content };
+}
+
 export function parseEntries(text: string, specName: string): Dict[] {
   const spec = SPECS[specName];
   if (spec.name === "todo-resolved") {
@@ -123,5 +257,3 @@ export function parseEntries(text: string, specName: string): Dict[] {
   const onelineEntries = parseOnelineEntries(archiveBody, spec);
   return [...fullEntries, ...onelineEntries];
 }
-
-import { SPECS } from "./dryRun.js";

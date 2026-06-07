@@ -16,7 +16,16 @@
 import { applyRetentionCaps as _applyRetentionCaps } from "../common.js";
 import { compactFile, compactYamlFile, detectOverflow, compactEntries } from "./apply.js";
 import { checkCompaction, computeCompactionStatus, fixCompaction, runCompaction } from "./status.js";
-import { parseEntries, parseFullEntries, parseOnelineEntries, splitArchive, extractResolvedSection, parseTodoResolved } from "./parse.js";
+import {
+  parseEntries,
+  parseFullEntries,
+  parseOnelineEntries,
+  splitArchive,
+  extractResolvedSection,
+  parseTodoResolved,
+  countTodoResolvedEntries,
+  normalizeTodoResolvedLayout,
+} from "./parse.js";
 import { SPECS, COMPACTABLE_YAML_ARTIFACTS, NON_COMPACTABLE_ARTIFACTS, YAML_SPEC_BY_ARTIFACT, formatTodoOneline } from "./dryRun.js";
 import {
   overLimitCount,
@@ -52,6 +61,8 @@ export {
   NON_COMPACTABLE_ARTIFACTS,
   YAML_SPEC_BY_ARTIFACT,
   formatTodoOneline,
+  countTodoResolvedEntries,
+  normalizeTodoResolvedLayout,
   overLimitCount,
   stableSortBy,
   yamlArchiveEntry,

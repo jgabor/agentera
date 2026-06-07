@@ -20,7 +20,7 @@ import {
 } from "./retention.js";
 import { CompactResult, CompactionOperation, CompactionStatus } from "./types.js";
 import { compactFile, compactYamlFile } from "./apply.js";
-import { parseEntries } from "./parse.js";
+import { countTodoResolvedEntries, parseEntries } from "./parse.js";
 import { YAML_SPEC_BY_ARTIFACT } from "./dryRun.js";
 
 function artifactPaths(projectRoot: string): Record<string, string> {
@@ -110,10 +110,8 @@ export function computeCompactionStatus(projectRoot: string): CompactionStatus[]
 
   const todoPath = paths.todo;
   if (fs.existsSync(todoPath)) {
-    const entries = parseEntries(fs.readFileSync(todoPath, "utf8"), "todo-resolved");
-    const activeCount = entries.filter((e) => e.kind === "full").length;
-    const archiveCount = entries.filter((e) => e.kind === "oneline").length;
-    statuses.push(countStatus("todo#Resolved", todoPath, activeCount, archiveCount));
+    const counts = countTodoResolvedEntries(fs.readFileSync(todoPath, "utf8"));
+    statuses.push(countStatus("todo#Resolved", todoPath, counts.full, counts.oneline));
   } else {
     statuses.push(missingStatus("todo#Resolved", todoPath, "compactable"));
   }
