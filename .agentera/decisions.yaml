@@ -1,135 +1,4 @@
 decisions:
-  - number: 57
-    date: 2026-05-18
-    question: How should Agentera rename capability `prose.md` files and make
-      first-invocation instruction reading explicit?
-    context: The capability file name `prose.md` undersells its role as the
-      behavioral instruction source for each capability. The user asked how to
-      rename it to `instructions.md` and enforce full reading during initial
-      capability invocation. The practical constraint is that Agentera cannot
-      technically force every runtime to read a file, but it can make the
-      requirement explicit through schema metadata, CLI capability context,
-      router guidance, descriptors, docs, and tests.
-    alternatives:
-      - name: Full instructions contract
-        status: chosen
-        description: Rename `skills/agentera/capabilities/*/prose.md` to
-          `skills/agentera/capabilities/*/instructions.md`, add first-invocation
-          read metadata, surface required reads through CLI capability context,
-          and update the capability schema contract, router guidance, runtime
-          descriptors, docs, and tests.
-      - name: Rename only
-        status: rejected
-        description: Improves naming but leaves agents guessing whether instructions
-          must be read during startup.
-      - name: Metadata without rename
-        status: rejected
-        description: Adds startup-read semantics but keeps the misleading `prose.md`
-          name and preserves the old vocabulary debt.
-      - name: Runtime hook enforcement
-        status: rejected
-        description: Not portable because runtimes do not expose a shared, reliable
-          conversation-state proof that a file was read in full.
-    choice: Rename capability `prose.md` files to `instructions.md`, add
-      `first_invocation_read` metadata with values such as `full`,
-      `compact_startup`, or `skip`, surface the required reads through `agentera
-      hej --format json --capability-context <name>`, and update
-      `skills/agentera/SKILL.md`,
-      `skills/agentera/capability_schema_contract.yaml`,
-      `scripts/validate_capability.py`, runtime descriptors, tests, `README.md`,
-      `AGENTS.md`, and `references/cli/vocabulary.md` so first capability
-      invocation reads `instructions.md` in full unless an explicit
-      compact-startup exception is declared.
-    reasoning: The `instructions.md` name states the file's purpose better than
-      `prose.md` and turns capability startup from an implicit convention into a
-      contract. Full technical enforcement across every runtime is unrealistic,
-      so the durable implementation should combine schema metadata, CLI
-      visibility, Agentera router guidance, descriptor updates, and regression
-      coverage rather than relying on prose alone.
-    confidence: firm
-    feeds_into: TODO.md, skills/agentera/SKILL.md,
-      skills/agentera/capability_schema_contract.yaml, scripts/agentera,
-      scripts/validate_capability.py, runtime descriptors, tests, README.md,
-      AGENTS.md, references/cli/vocabulary.md
-    satisfaction:
-      state: user_confirmed_satisfied
-      evidence: "D57 instructions.md rename and first_invocation_read contract stand
-        with D59 governing the capability startup context seam: required reads
-        are surfaced through `agentera prime --context <capability>` rather than
-        `hej --capability-context`. Reconciled in resonera satisfaction review
-        on 2026-05-23."
-      user_confirmation:
-        confirmed_by: user
-        confirmed_at: 2026-05-23
-  - number: 58
-    date: 2026-05-18
-    question: What naming boundary must Agentera 3.0 enforce for artifacts,
-      concepts, primitives, and compatibility aliases?
-    context: Agentera v2 still exposes legacy Markdown-style canonical artifact
-      labels such as `PROGRESS.md`, `PLAN.md`, and `DECISIONS.md` while the
-      actual v2 storage paths are YAML files such as `.agentera/progress.yaml`.
-      Similar compatibility seams exist in vocabulary, runtime metadata,
-      migration fixtures, direct-helper commands, schema names, and historical
-      alias surfaces. The user explicitly decided that Agentera 3.0 must not
-      preserve backwards-compatible or multiple names for artifacts, concepts,
-      primitives, or any equivalent protocol identity. Follow-up deliberation
-      clarified that primary route aliases such as `/agentera build` and
-      `/agentera plan` are protocol identities, artifact IDs such as `plan`,
-      `progress`, and `decisions` become canonical instead of Markdown labels
-      such as `PLAN.md` or `DECISIONS.md`, storage paths must align with
-      artifact IDs, and old names may remain only in upgrade detection,
-      migration notes, and historical evidence.
-    alternatives:
-      - name: Single-name 3.0 protocol
-        status: chosen
-        description: Agentera 3.0 has exactly one canonical name for every artifact,
-          concept, primitive, command surface, schema field, runtime metadata
-          field, and protocol identity. Legacy names are removed or migrated;
-          they are not retained as aliases.
-      - name: Preserve compatibility aliases after 3.0
-        status: rejected
-        description: Keeping compatibility names after the 3.0 boundary would perpetuate
-          the current ambiguity and make agents choose between old and new
-          protocol identities.
-      - name: Keep Markdown-style artifact labels as display names
-        status: rejected
-        description: Display names that differ from storage/protocol identities are
-          still multiple names. They are not allowed after the 3.0 boundary.
-      - name: Decide per surface later
-        status: rejected
-        description: The policy is already decided; implementation can sequence
-          surfaces, but cannot reopen whether aliases remain after 3.0.
-      - name: 3.x runtime warning window
-        status: rejected
-        description: Accepting old names with warnings after 3.0 would still preserve
-          aliases as supported runtime inputs.
-    choice: Agentera 3.0 must eliminate all backwards-compatible and multiple naming
-      surfaces. Zero artifacts, concepts, primitives, commands, schema fields,
-      metadata fields, runtime adapter surfaces, or protocol identities may
-      retain legacy aliases, parallel display names, compatibility names,
-      deprecated names, or storage/protocol name splits after the 3.0 boundary.
-      Every retained surface must have one name, and old names must be removed
-      or migrated rather than supported alongside it. This applies to routes,
-      artifact IDs, paths, schema fields, runtime metadata, adapters, package
-      manifests, public docs, and command surfaces.
-    reasoning: Agentera is agent-facing infrastructure; every duplicate name becomes
-      routing, validation, documentation, and implementation ambiguity.
-      Compatibility aliases were acceptable during v2 migration, but the 3.0
-      boundary exists to end that ambiguity. A single-name protocol makes
-      schemas, CLI output, docs, tests, and runtime adapters mechanically
-      consistent and easier for agents to follow. Migration tooling can still
-      recognize old names as inputs, but runtime behavior and docs must not keep
-      them alive as supported alternatives.
-    confidence: firm
-    feeds_into: TODO.md,
-      references/artifacts/artifact-registry-interface-model.yaml,
-      skills/agentera/schemas/artifacts, scripts/agentera, hooks, runtime
-      adapters, tests, README.md, UPGRADE.md, references/cli/vocabulary.md
-    satisfaction:
-      state: user_confirmed_satisfied
-      user_confirmation:
-        confirmed_by: user
-        confirmed_at: 2026-05-23
   - number: 59
     date: 2026-05-22
     question: How should Agentera 3.0 default and measure JSON context output?
@@ -708,35 +577,205 @@ decisions:
         and freeze oracles that omit per-cycle `commit` remain green.
       - GIVEN TODO.md chore:3.0.0 WHEN closeout runs THEN the entry moves to
         Resolved with decision 66 reference and the implementation commit hash.
-archive:
-  - summary: "Decision 56 (2026-05-17): Treat a pure TypeScript/Bun rewrite of the
-      whole Agentera CLI core as the 3.0 direction,..."
-    number: 56
-    date: 2026-05-17
-    choice: Treat a pure TypeScript/Bun rewrite of the whole Agentera CLI core as
-      the 3.0 direction, gated by contract-first parity. The Python
-      implementation remains the behavior oracle until the TypeScript CLI
-      preserves supported command JSON output shapes, exit behavior, artifact
-      validation, compaction, doctor/upgrade safety, verify/usage/stats
-      semantics, and runtime adapter hooks. Bun/npm/single-binary distribution
-      is the payoff, but not a reason to weaken existing Agentera contracts.
-    feeds_into: TODO.md, scripts/agentera, pyproject.toml, package manifests,
-      runtime adapters, tests, README.md, UPGRADE.md, release planning
+  - number: 67
+    date: 2026-06-05
+    question: How should Agentera reposition from open protocol to mobile-first product?
+    context: The agentera-mobile staging repo and monorepo README previously framed
+      Agentera as an open protocol with runtime adapters as the primary story.
+      The mobile app is the flagship consumer product. Pi and T3 Code use one
+      product name across monorepo packages.
+    alternatives:
+      - name: Single brand everywhere
+        status: chosen
+        description: Agentera is the product. @agentera/mobile, @agentera/web,
+          @agentera/cli are product surfaces. Skills and references are internal
+          implementation contracts.
+      - name: Keep open protocol as public headline
+        status: rejected
+        description: Conflicts with mobile-first product direction and opinionated
+          no-extensions policy.
+      - name: Agentera Mobile as separate product name
+        status: rejected
+        description: Adds naming friction when mobile is the primary surface.
+    choice: Adopt single-brand product positioning. Merge mobile vision into root
+      .agentera/vision.yaml. Restructure root README as Pi-style package index
+      with @agentera/mobile as flagship. Demote editor runtime install matrices
+      to README Internals and packages/cli/README.md. Document capability
+      English aliases in packages/mobile/README.md without renaming schema IDs
+      yet. Add DESIGN.md surface register (terminal vs mobile).
+    reasoning: One north star, one product name, package READMEs for
+      surface-specific DX — matches Pi/T3 monorepo patterns and the user's
+      merged-vision choice.
+    confidence: firm
+    feeds_into: README.md, .agentera/vision.yaml, AGENTS.md, DESIGN.md,
+      packages/mobile/, references/cli/vocabulary.md, .agentera/docs.yaml,
+      docs/consolidation/monorepo-plan.md
     satisfaction:
       state: user_confirmed_satisfied
-      evidence: User confirmed satisfaction during resonera review on 2026-05-31.
-        Contract-first TypeScript CLI rewrite remains the 3.0 direction; feat/v3
-        packages/cli work is downstream implementation.
+      evidence: Decision 68 (2026-06-05) corrected D67 skills-as-internals ceiling to
+        a delivery surface, removed SaaS/PaaS framing, and reaffirmed
+        multi-surface product boundary. User confirmed D67 satisfaction
+        2026-06-05 in current resonera deliberation. D67 feeds_into list is
+        satisfied.
       user_confirmation:
         confirmed_by: user
-        confirmed_at: 2026-05-31
-    outcome: Treat a pure TypeScript/Bun rewrite of the whole Agentera CLI core as
-      the 3.0 direction, gated by contract-first parity. The Python
-      implementation remains the behavior oracle until the TypeScript CLI
-      preserves supported command JSON output shapes, exit behavior, artifact
-      validation, compaction, doctor/upgrade safety, verify/usage/stats
-      semantics, and runtime adapter hooks. Bun/npm/single-binary distribution
-      is the payoff, but not a reason to weaken existing Agentera contracts.
+        confirmed_at: 2026-06-05
+  - number: 68
+    date: 2026-06-05
+    question: Should Agentera expand from a skill suite into a multi-surface product
+      sharing one fixed workflow?
+    context: >
+      Decision 67 (2026-06-05) repositioned docs toward mobile-first single
+      brand
+
+      with three packages and described skills/references as internal
+      implementation
+
+      contracts. An initial resonera draft (same day) incorrectly framed
+      expansion as
+
+      SaaS/PaaS with Pi-style extensibility on some surfaces. User correction:
+      drop
+
+      SaaS and PaaS entirely; no extensions remains true everywhere — Agentera
+      ships
+
+      as-is with a fixed system prompt, fixed tools, and fixed workflow. Skills
+      and
+
+      editor plugins are not user extensibility — they are another delivery
+      surface for
+
+      the same workflow, alongside CLI, mobile, web, desktop, TUI, and
+      potentially
+
+      cloud later.
+    alternatives:
+      - name: Keep D67 three-package ceiling
+        status: rejected
+        description: Mobile, web, and cli only; no additional surfaces; skills stay
+          documented as internals.
+        reason_rejected: User intent is explicit multi-surface expansion; skills/plugins
+          should be named as a surface, not demoted to hidden internals.
+      - name: SaaS/PaaS platform with third-party extensibility
+        status: rejected
+        description: Managed cloud product and/or platform APIs for others to build on;
+          plugin ecosystems on editor or mobile surfaces.
+        reason_rejected: User rejected SaaS, PaaS, and extensibility framing on
+          2026-06-05 refinement.
+      - name: Pi-style user extensions on CLI/desktop/TUI
+        status: rejected
+        description: Users load third-party skills, plugins, or MCP servers on
+          power-user surfaces while mobile stays curated.
+        reason_rejected: Contradicts no-extensions policy; Agentera ships as-is on every
+          surface.
+      - name: Multi-surface product, one fixed workflow
+        status: chosen
+        description: Agentera is one opinionated product delivered through multiple
+          surfaces — the same twelve-capability workflow, `.agentera/` state,
+          and built-in tools everywhere. CLI, mobile, web, desktop, TUI, editor
+          skill/plugin runtimes, and optional future cloud are surfaces (where
+          and how you interact), not extension hosts. Nothing is loaded from
+          outside; missing behavior is built into Agentera.
+    choice: Adopt multi-surface product architecture with a single fixed workflow.
+      Surface map — packages/cli (state access + agent runtime), packages/mobile
+      (flagship app), packages/web (marketing + docs), editor skill/plugin
+      surfaces (Cursor, Claude, OpenCode, Codex, Copilot — same workflow as
+      today), future packages/desktop, packages/tui, and optional future cloud
+      surface. No SaaS or PaaS framing. No user extensions, plugins, MCP
+      servers, or third-party skill loading on any surface. D67 docs pass
+      remains valid for monorepo consolidation; D68 corrects the "skills as
+      internals only" ceiling and replaces any SaaS/PaaS or extensibility split
+      with surface parity under one product boundary.
+    reasoning: Surfaces answer "where do I use Agentera?" not "what can I bolt on?"
+      The skill bundle in an editor and the mobile app are the same product in
+      different shells — analogous to Pi's terminal vs SDK, but without Pi's
+      extension model. Keeping no-extensions everywhere preserves the persona
+      and product promise from D67 mobile principles across the full surface
+      map.
+    confidence: firm
+    feeds_into: .agentera/vision.yaml, docs/consolidation/monorepo-plan.md,
+      README.md, AGENTS.md, packages/mobile/README.md,
+      references/cli/vocabulary.md, skills/agentera/SKILL.md
+    satisfaction:
+      state: user_confirmed_satisfied
+      evidence: User refined resonera draft 2026-06-05 — drop SaaS/PaaS, keep
+        no-extensions, skills/plugins are surfaces not extensibility.
+      user_confirmation:
+        confirmed_by: user
+        confirmed_at: 2026-06-05
+archive:
+  - summary: "Decision 58 (2026-05-18): Agentera 3.0 must eliminate all
+      backwards-compatible and multiple naming surfaces. Zero artifacts,
+      concepts, primitives, commands,..."
+    number: 58
+    date: 2026-05-18
+    choice: Agentera 3.0 must eliminate all backwards-compatible and multiple naming
+      surfaces. Zero artifacts, concepts, primitives, commands, schema fields,
+      metadata fields, runtime adapter surfaces, or protocol identities may
+      retain legacy aliases, parallel display names, compatibility names,
+      deprecated names, or storage/protocol name splits after the 3.0 boundary.
+      Every retained surface must have one name, and old names must be removed
+      or migrated rather than supported alongside it. This applies to routes,
+      artifact IDs, paths, schema fields, runtime metadata, adapters, package
+      manifests, public docs, and command surfaces.
+    feeds_into: TODO.md,
+      references/artifacts/artifact-registry-interface-model.yaml,
+      skills/agentera/schemas/artifacts, scripts/agentera, hooks, runtime
+      adapters, tests, README.md, UPGRADE.md, references/cli/vocabulary.md
+    satisfaction:
+      state: user_confirmed_satisfied
+      user_confirmation:
+        confirmed_by: user
+        confirmed_at: 2026-05-23
+    outcome: Agentera 3.0 must eliminate all backwards-compatible and multiple
+      naming surfaces. Zero artifacts, concepts, primitives, commands, schema
+      fields, metadata fields, runtime adapter surfaces, or protocol identities
+      may retain legacy aliases, parallel display names, compatibility names,
+      deprecated names, or storage/protocol name splits after the 3.0 boundary.
+      Every retained surface must have one name, and old names must be removed
+      or migrated rather than supported alongside it. This applies to routes,
+      artifact IDs, paths, schema fields, runtime metadata, adapters, package
+      manifests, public docs, and command surfaces.
+  - summary: "Decision 57 (2026-05-18): Rename capability `prose.md` files to
+      `instructions.md`, add `first_invocation_read` metadata with values such
+      as `full`, `compact_startup`,..."
+    number: 57
+    date: 2026-05-18
+    choice: Rename capability `prose.md` files to `instructions.md`, add
+      `first_invocation_read` metadata with values such as `full`,
+      `compact_startup`, or `skip`, surface the required reads through `agentera
+      hej --format json --capability-context <name>`, and update
+      `skills/agentera/SKILL.md`,
+      `skills/agentera/capability_schema_contract.yaml`,
+      `scripts/validate_capability.py`, runtime descriptors, tests, `README.md`,
+      `AGENTS.md`, and `references/cli/vocabulary.md` so first capability
+      invocation reads `instructions.md` in full unless an explicit
+      compact-startup exception is declared.
+    feeds_into: TODO.md, skills/agentera/SKILL.md,
+      skills/agentera/capability_schema_contract.yaml, scripts/agentera,
+      scripts/validate_capability.py, runtime descriptors, tests, README.md,
+      AGENTS.md, references/cli/vocabulary.md
+    satisfaction:
+      state: user_confirmed_satisfied
+      evidence: "D57 instructions.md rename and first_invocation_read contract stand
+        with D59 governing the capability startup context seam: required reads
+        are surfaced through `agentera prime --context <capability>` rather than
+        `hej --capability-context`. Reconciled in resonera satisfaction review
+        on 2026-05-23."
+      user_confirmation:
+        confirmed_by: user
+        confirmed_at: 2026-05-23
+    outcome: Rename capability `prose.md` files to `instructions.md`, add
+      `first_invocation_read` metadata with values such as `full`,
+      `compact_startup`, or `skip`, surface the required reads through `agentera
+      hej --format json --capability-context <name>`, and update
+      `skills/agentera/SKILL.md`,
+      `skills/agentera/capability_schema_contract.yaml`,
+      `scripts/validate_capability.py`, runtime descriptors, tests, `README.md`,
+      `AGENTS.md`, and `references/cli/vocabulary.md` so first capability
+      invocation reads `instructions.md` in full unless an explicit
+      compact-startup exception is declared.
   - summary: "Decision 55 (2026-05-17): Add `agentera stats` as the user-facing
       analytics workflow and do not expose a top-level `agentera..."
     number: 55
@@ -771,6 +810,34 @@ archive:
       local-history` reads bounded local runtime history, writes the internal
       corpus at `$PROFILERA_PROFILE_DIR/intermediate/corpus.json`, and reports
       stats. Preserve `agentera usage` as a compatibility surface or alias.
+  - summary: "Decision 56 (2026-05-17): Treat a pure TypeScript/Bun rewrite of the
+      whole Agentera CLI core as the 3.0 direction,..."
+    number: 56
+    date: 2026-05-17
+    choice: Treat a pure TypeScript/Bun rewrite of the whole Agentera CLI core as
+      the 3.0 direction, gated by contract-first parity. The Python
+      implementation remains the behavior oracle until the TypeScript CLI
+      preserves supported command JSON output shapes, exit behavior, artifact
+      validation, compaction, doctor/upgrade safety, verify/usage/stats
+      semantics, and runtime adapter hooks. Bun/npm/single-binary distribution
+      is the payoff, but not a reason to weaken existing Agentera contracts.
+    feeds_into: TODO.md, scripts/agentera, pyproject.toml, package manifests,
+      runtime adapters, tests, README.md, UPGRADE.md, release planning
+    satisfaction:
+      state: user_confirmed_satisfied
+      evidence: User confirmed satisfaction during resonera review on 2026-05-31.
+        Contract-first TypeScript CLI rewrite remains the 3.0 direction; feat/v3
+        packages/cli work is downstream implementation.
+      user_confirmation:
+        confirmed_by: user
+        confirmed_at: 2026-05-31
+    outcome: Treat a pure TypeScript/Bun rewrite of the whole Agentera CLI core as
+      the 3.0 direction, gated by contract-first parity. The Python
+      implementation remains the behavior oracle until the TypeScript CLI
+      preserves supported command JSON output shapes, exit behavior, artifact
+      validation, compaction, doctor/upgrade safety, verify/usage/stats
+      semantics, and runtime adapter hooks. Bun/npm/single-binary distribution
+      is the payoff, but not a reason to weaken existing Agentera contracts.
   - summary: "Decision 54 (2026-05-16): Hard-rename app metadata toward one
       canonical vocabulary. Use standard app terms such as `up_to_date`,
       `outdated`,..."
@@ -1087,31 +1154,50 @@ archive:
         confirmed_at: 2026-05-23
   - summary: "Decision 43 (2026-05-07): Keep Swedish `-era` names canonical and add
       one primary plain `/agentera <alias>` per capability."
-    satisfaction: &a1
+  - summary: "Decision 42 (2026-05-04): Five-layer dispatch model, heuristics
+      hardcoded in `SKILL.md`: 1. **Bare `/agentera`** → deterministic heuristic
+      decision tree...."
+    satisfaction:
       state: user_confirmed_satisfied
       user_confirmation:
         confirmed_by: user
         confirmed_at: 2026-05-15
-  - summary: "Decision 42 (2026-05-04): Five-layer dispatch model, heuristics
-      hardcoded in `SKILL.md`: 1. **Bare `/agentera`** → deterministic heuristic
-      decision tree...."
-    satisfaction: *a1
   - summary: "Decision 41 (2026-05-04): Record the benchmark as complete for the
       revised v2.0 target. Initial v2 measurement was 313,356..."
-    satisfaction: *a1
+    satisfaction:
+      state: user_confirmed_satisfied
+      user_confirmation:
+        confirmed_by: user
+        confirmed_at: 2026-05-15
   - summary: "Decision 40 (2026-05-04): [YAML agent artifacts] — Use YAML, no v1
       compatibility, and call sub-modules capabilities."
-    satisfaction: *a1
+    satisfaction:
+      state: user_confirmed_satisfied
+      user_confirmation:
+        confirmed_by: user
+        confirmed_at: 2026-05-15
   - summary: "Decision 39 (2026-05-04): [Single bundled v2 skill] — Agentera 2.0
       collapsed 12 skills into one `/agentera` entry point with capability
       schemas and CLI-backed state."
-    satisfaction: *a1
+    satisfaction:
+      state: user_confirmed_satisfied
+      user_confirmation:
+        confirmed_by: user
+        confirmed_at: 2026-05-15
   - summary: "Decision 38 (2026-04-30): [Separate semantic eval surface] — Hej
       semantic fixtures assert output facts and artifact-derived next actions."
-    satisfaction: *a1
+    satisfaction:
+      state: user_confirmed_satisfied
+      user_confirmation:
+        confirmed_by: user
+        confirmed_at: 2026-05-15
   - summary: "Decision 37 (2026-04-29): [Fail-open artifact hook] — Unhandled
       validation-hook crashes log and allow writes."
-    satisfaction: *a1
+    satisfaction:
+      state: user_confirmed_satisfied
+      user_confirmation:
+        confirmed_by: user
+        confirmed_at: 2026-05-15
   - summary: "Decision 36 (2026-04-29): [Generate contracts JSON schema] — SPEC
       table parser outputs structured validation JSON."
     satisfaction:
@@ -1135,57 +1221,82 @@ archive:
         confirmed_at: 2026-05-15
   - summary: "Decision 33 (2026-04-28): [Suite bundle first] — Installed suite
       bundle owns shared tools and runtime infrastructure."
-    satisfaction: *a1
-  - summary: "Decision 32 (2026-04-26): [`scripts/usage_stats.py`] — Usage analytics
-      count completed workflows from session corpus markers."
-    satisfaction: *a1
-  - summary: "Decision 31 (2026-04-12): [Named per-objective subdirs] —
-      Self-contained optimera objectives live under `.agentera/optimera/`."
-    satisfaction: *a1
-  - summary: "Decision 29 (2026-04-11): **Question**: How should optimera handle
-      measurement archetypes that go beyond thin command-wrapper harnesses, and
-      what should the first such reference..."
-    satisfaction: *a1
-  - summary: "Decision 28 (2026-04-11): **Question**: Where should PROFILE.md and
-      profilera's generated artifacts live by default, and how should runtime
-      adapters provide path overrides?"
-    satisfaction: *a1
-  - summary: "Decision 27 (2026-04-11): **Question**: How to implement Section 21's
-      session corpus contract to close the gap between spec and extraction
-      pipeline"
-    satisfaction: *a1
-  - summary: "Decision 26 (2026-04-10): **Question**: Should the terminology for the
-      ecosystem spec and per-skill context files be renamed for clarity and
-      cohesion?"
-    satisfaction: *a1
-  - summary: "Decision 25 (2026-04-03): **Question**: Should agentera's North Star
-      evolve from \"a solo founder installs an engineering team\" to a
-      spec-centric framing?"
-    satisfaction: *a1
-  - summary: "Decision 24 (2026-04-03): **Question**: Should the PostToolUse
-      validation hook coexist with the git pre-commit hook, or replace it?"
-    satisfaction: *a1
-  - summary: "Decision 23 (2026-04-03): **Question**: Where should
-      session-to-session state live: new SESSION.md artifact, extend
-      PROGRESS.md, or infrastructure dotfile?"
-    satisfaction: *a1
-  - summary: "Decision 22 (2026-04-03): **Question**: Should ISS-19 phase tracking
-      be enforced across skills, and how should the ecosystem detect stale
-      artifacts?"
-    satisfaction: *a1
-  - summary: "Decision 21 (2026-04-02): **Question**: How should autonomous plans
-      constrain test generation to prevent unbounded output?"
-    satisfaction: *a1
-  - summary: "Decision 20 (2026-04-02): **Question**: Should the agentera ecosystem
-      add an orchestration skill, and what should it own?"
-    satisfaction: *a1
-  - summary: "Decision 18 (2026-04-02): **Question**: How should the ecosystem
-      handle em-dashes and double dashes in all text?"
     satisfaction:
       state: user_confirmed_satisfied
       user_confirmation:
         confirmed_by: user
         confirmed_at: 2026-05-15
-  - summary: "Decision 17 (2026-04-02): **Question**: How should skills narrate
-      their process between structural markers?"
-    satisfaction: *a1
+  - summary: "Decision 32 (2026-04-26): [`scripts/usage_stats.py`] — Usage analytics
+      count completed workflows from session corpus markers."
+    satisfaction:
+      state: user_confirmed_satisfied
+      user_confirmation:
+        confirmed_by: user
+        confirmed_at: 2026-05-15
+  - summary: "Decision 31 (2026-04-12): [Named per-objective subdirs] —
+      Self-contained optimera objectives live under `.agentera/optimera/`."
+    satisfaction:
+      state: user_confirmed_satisfied
+      user_confirmation:
+        confirmed_by: user
+        confirmed_at: 2026-05-15
+  - summary: "Decision 29 (2026-04-11): **Question**: How should optimera handle
+      measurement archetypes that go beyond thin command-wrapper harnesses, and
+      what should the first such reference..."
+    satisfaction:
+      state: user_confirmed_satisfied
+      user_confirmation:
+        confirmed_by: user
+        confirmed_at: 2026-05-15
+  - summary: "Decision 28 (2026-04-11): **Question**: Where should PROFILE.md and
+      profilera's generated artifacts live by default, and how should runtime
+      adapters provide path overrides?"
+    satisfaction:
+      state: user_confirmed_satisfied
+      user_confirmation:
+        confirmed_by: user
+        confirmed_at: 2026-05-15
+  - summary: "Decision 27 (2026-04-11): **Question**: How to implement Section 21's
+      session corpus contract to close the gap between spec and extraction
+      pipeline"
+    satisfaction:
+      state: user_confirmed_satisfied
+      user_confirmation:
+        confirmed_by: user
+        confirmed_at: 2026-05-15
+  - summary: "Decision 26 (2026-04-10): **Question**: Should the terminology for the
+      ecosystem spec and per-skill context files be renamed for clarity and
+      cohesion?"
+    satisfaction:
+      state: user_confirmed_satisfied
+      user_confirmation:
+        confirmed_by: user
+        confirmed_at: 2026-05-15
+  - summary: "Decision 25 (2026-04-03): **Question**: Should agentera's North Star
+      evolve from \"a solo founder installs an engineering team\" to a
+      spec-centric framing?"
+    satisfaction:
+      state: user_confirmed_satisfied
+      user_confirmation:
+        confirmed_by: user
+        confirmed_at: 2026-05-15
+  - summary: "Staging D1 (2026-06-05, agentera-mobile): **Question**: How should
+      Agentera name itself after the mobile product pivot? **Choice**: Single
+      brand everywhere — Agentera is the product; @agentera/* scoped packages.
+      **Confidence**: firm."
+  - summary: "Staging D2 (2026-06-05, agentera-mobile): **Question**: Where does the
+      mobile product vision live? **Choice**: Merge mobile vision into root
+      `.agentera/vision.yaml`; package README holds DX. **Confidence**: firm."
+  - summary: "Staging D3 (2026-06-05, agentera-mobile): **Question**: How should
+      mobile capability names relate to internal -era names? **Choice**: Docs
+      alias table only — English UX labels in mobile; internal -era IDs
+      unchanged until a dedicated rename pass. **Confidence**: provisional
+      (alias table)."
+  - summary: "Staging D4 (2026-06-05, agentera-mobile): **Question**: What is
+      Agentera's extensibility policy for the mobile product? **Choice**: Mobile
+      never supports extensions, plugins, MCP, or user skill loading; sidebar
+      shortcuts are app-defined. **Confidence**: firm."
+  - summary: "Staging D5 (2026-06-05, agentera-mobile): **Question**: How does
+      agentera-mobile integrate into the monorepo? **Choice**: Target
+      `packages/mobile` (`@agentera/mobile`) in jgabor/agentera; staging repo
+      until physical move completes. **Confidence**: firm."

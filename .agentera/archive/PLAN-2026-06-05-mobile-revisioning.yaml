@@ -1,0 +1,56 @@
+header:
+  level: full
+  created: "2026-06-05"
+  status: complete
+  title: "Plan: Agentera mobile re-visioning — artifacts and docs"
+
+what: >-
+  Re-position agentera-mobile as the official Agentera product surface. Align
+  artifacts and docs with a Pi/T3-style monorepo product model (one brand,
+  package READMEs). Prepare both the standalone staging repo and jgabor/agentera
+  for eventual packages/mobile integration with a merged root vision.
+
+why: >-
+  Agentera is pivoting from open-protocol positioning to an opinionated
+  mobile-first coding agent. Documentation and project artifacts must reflect
+  single-brand identity, capability alias mapping, and monorepo package layout
+  before application code lands.
+
+tasks:
+  - id: T1
+    title: Rewrite mobile vision and README
+    status: complete
+    acceptance: >-
+      .agentera/vision.yaml reframed as product vision with merge_target comment;
+      README uses single brand, monorepo note, capability alias table, sidebar
+      table filled.
+  - id: T2
+    title: Bootstrap mobile project artifacts
+    status: complete
+    acceptance: >-
+      docs.yaml, decisions.yaml, plan.yaml, progress.yaml, AGENTS.md, DESIGN.md,
+      TODO.md, CHANGELOG.md, LICENSE present and indexed.
+  - id: T3
+    title: Merge vision into monorepo root
+    status: complete
+    acceptance: >-
+      jgabor/agentera/.agentera/vision.yaml product-first; open-protocol north
+      star retired; mobile named as flagship surface.
+  - id: T4
+    title: Monorepo README and AGENTS.md pivot
+    status: complete
+    acceptance: >-
+      Root README Pi-style package table; package.json mobile:* scripts;
+      AGENTS.md mobile scope and package DX section.
+  - id: T5
+    title: Docs index, vocabulary, and DESIGN surface register
+    status: complete
+    acceptance: >-
+      docs.yaml indexes packages/mobile; vocabulary.md product grammar updated;
+      DESIGN.md surface register for terminal vs mobile.
+  - id: T6
+    title: Monorepo integration stub and CI wiring
+    status: complete
+    acceptance: >-
+      packages/mobile stub README; lefthook/CI paths documented or wired when
+      code moves; standalone repo redirect note.

@@ -1,4 +1,28 @@
 cycles:
+  - number: 650
+    timestamp: 2026-06-07 12:00
+    type: chore
+    phase: audit
+    what: Mobile monorepo closeout — archived agentera-mobile staging artifacts
+      (D1–D5 decisions, re-visioning plan, LICENSE), synced D68 delivery-surface
+      docs, extended docs.yaml index; packages/mobile stub landed with lefthook
+      wired; mobile docs pass complete.
+    inspiration: Monorepo consolidation plan closeout sequence; Decision 68 surface
+      parity propagation.
+    discovered: Staging repo decisions D1–D5 superseded by monorepo D67/D68 but
+      preserved as compact archive entries; D3 provisional confidence on alias
+      table retained in archive summary.
+    verified: Artifact paths present; docs.yaml index entries for packages/mobile
+      AGENTS, TODO, CHANGELOG, LICENSE; monorepo-plan and vision direction
+      aligned with D68.
+    next: SvelteKit scaffold with Cursor SDK integration (packages/mobile/TODO.md).
+    context:
+      intent: Close the docs/artifacts mobile monorepo integration pass without
+        scaffolding application code or deciding CLI↔mobile integration.
+      constraints: No SvelteKit scaffold; no CLI↔mobile integration decision.
+      unknowns: CLI ↔ mobile state integration strategy remains open.
+      scope: packages/mobile/, .agentera/*, README.md, docs/consolidation/,
+        references/cli/vocabulary.md, lefthook
   - number: 649
     timestamp: 2026-06-05 14:06
     type: chore
@@ -530,28 +554,11 @@ cycles:
         references/cli/agent-ready-state-contract.yaml, README.md, AGENTS.md,
         TODO.md, .agentera/plan.yaml, .agentera/progress.yaml,
         .agentera/archive/plan-2026-06-03-d65-capability-ts-surface.yaml
-  - number: 640
-    timestamp: 2026-06-03 19:50
-    type: fix
-    phase: build
-    what: Orkestrera task_queue dependency lookup — planTaskRefKeys normalization in
-      orchestrationContext and dependencyReadyTasks; regression tests in
-      packages/cli/test/cli/prime.test.ts.
-    inspiration: TODO.md [fix:3.0.0] orkestrera task_queue dependency_ready_tasks
-      contract violation.
-    discovered: depends_on object refs and mixed int/string forms failed lookup even
-      when task_summaries showed the dependency complete.
-    verified: pnpm -C packages/cli test — 688/688; typecheck and build green;
-      capability-contract validate passed; manual prime --context orkestrera on
-      multi-task fixture confirms dependency_ready_tasks contains task 2.
-    next: continue Decision 56 parity work.
-    context:
-      intent: Align task_queue.dependency_ready_tasks with task_summaries and
-        selected_next_action.
-      constraints: Surgical change in capabilityContext.ts only.
-      unknowns: none
-      scope: capabilityContext.ts, prime.test.ts, TODO.md, CHANGELOG.md
 archive:
+  - summary: "Cycle 640 (2026-06-03): Orkestrera task_queue dependency lookup —
+      planTaskRefKeys normalization in orchestrationContext and
+      dependencyReadyTasks; regression tests in
+      packages/cli/test/cli/prime.test.ts."
   - summary: "Cycle 639 (2026-06-03): Durable pre-commit hooks —
       citation-anchor-todo.md fixture, stronger verifyWarnCitationAtLine,
       scripts/precommit-vitest.sh and precommit-pytest.sh, lefthook wiring,
@@ -639,5 +646,3 @@ archive:
       corpus parity."
   - summary: "Cycle 600 (2026-05-25): Cursor Agent CLI store.db gap-fill extraction
       for profilera corpus."
-  - summary: "Cycle 599 (2026-05-25): Profilera Cursor IDE session corpus parity via
-      extract_corpus cursor runtime."

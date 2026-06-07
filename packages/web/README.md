@@ -30,9 +30,11 @@ Install git hooks once: `lefthook install` (runs `vp staged` on web file changes
 | Layer                            | Role                                                                     |
 | -------------------------------- | ------------------------------------------------------------------------ |
 | `packages/web/src/content/docs/` | **Published** documentation (Starlight)                                  |
-| `references/` and `skills/`      | Protocol authority — source of truth for schemas and capability behavior |
-| Root `docs/`                     | Non-authoritative scratch space                                          |
-| Root `README.md`                 | Contributor-facing overview; landing page ports key sections             |
+| `packages/mobile/`               | **Mobile product** — app README and mobile UI design system              |
+| `docs/consolidation/`            | **Consolidation plan** — monorepo layout and migration (Decision 67)     |
+| `references/` and `skills/`      | Internal contracts — capability schemas and agent engine behavior        |
+| Root `docs/`                     | Design docs (`packaging/`, `consolidation/`) and non-authoritative notes |
+| Root `README.md`                 | Product home and package index; landing page ports key sections          |
 
 Starlight pages are the published layer. When protocol docs change, update
 `references/` or `skills/` first, then migrate content to Starlight incrementally.

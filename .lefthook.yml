@@ -26,10 +26,18 @@ pre-commit:
       glob: "*.json"
       exclude:
         - "packages/web/**"
+        - "packages/mobile/**"
     web:
       root: packages/web
       run: vp staged
       glob: "*.{ts,tsx,js,jsx,mjs,json,css,md,astro}"
+      exclude:
+        - "node_modules/**"
+        - "dist/**"
+    mobile:
+      root: packages/mobile
+      run: vp staged
+      glob: "*.{ts,tsx,js,jsx,mjs,svelte,json,css,md}"
       exclude:
         - "node_modules/**"
         - "dist/**"
@@ -45,3 +53,4 @@ pre-commit:
         - ".github/workflows/**"
       exclude:
         - "packages/web/**"
+        - "packages/mobile/**"

@@ -4,7 +4,19 @@ This file provides guidance to AI coding agents when working with code in this r
 
 ## What this is
 
-agentera v2: one Agentera skill (`skills/agentera/`) with twelve capabilities. Each capability is defined by human-readable prose (`packages/cli/src/capabilities/<name>/instructions.ts`) and machine-readable schemas (`triggers.yaml`, `artifacts.yaml`, `validation.yaml`, `exit.yaml`). The Agentera router routes incoming requests to the right capability. The runtime serves the prose through `agentera prime --context <name> --format json`.
+Agentera is an opinionated mobile-first coding agent shipped as a monorepo:
+
+| Package | Role |
+| ------- | ---- |
+| `@agentera/mobile` | Primary product — SvelteKit app with Cursor SDK |
+| `@agentera/web` | Marketing site and Starlight docs |
+| `@agentera/cli` | Agent runtime and `.agentera/` project-state CLI |
+
+The skill bundle (`skills/agentera/`) with twelve capabilities remains the internal contract for the agent engine. Each capability is defined by human-readable prose (`packages/cli/src/capabilities/<name>/instructions.ts`) and machine-readable schemas (`triggers.yaml`, `artifacts.yaml`, `validation.yaml`, `exit.yaml`). The Agentera router routes incoming requests to the right capability. The runtime serves the prose through `agentera prime --context <name> --format json`.
+
+Mobile uses Cursor SDK directly — not skill routing from `skills/agentera/SKILL.md`.
+
+Monorepo consolidation plan: [`docs/consolidation/monorepo-plan.md`](./docs/consolidation/monorepo-plan.md).
 
 ## Branch model
 
@@ -129,6 +141,8 @@ Use the scope for the primary behavior changed, not every file touched.
 
 | Scope         | Use for                                                                                |
 | ------------- | -------------------------------------------------------------------------------------- |
+| `mobile`      | `packages/mobile`, mobile app UI, Cursor SDK integration, mobile deploy                |
+| `web`         | `packages/web`, Astro/Starlight site, marketing pages, published docs                |
 | `cli`         | `packages/cli`, command behavior, CLI output, command tests                            |
 | `hooks`       | `hooks/*`, artifact validation hooks, session hooks, compaction hooks                  |
 | `schemas`     | `protocol.yaml`, `capability_schema_contract.yaml`, artifact schemas, schema contracts |
@@ -176,10 +190,11 @@ When adding a new helper, either expose a stable `agentera` namespace for normal
 use or document why the helper is internal/maintainer-only. Do not add broad new
 top-level CLI commands for implementation details.
 
-## Web DX
+## Package DX
 
-The website lives in `packages/web` (Astro + Starlight on Cloudflare). Use [Vite+](https://viteplus.dev/) (`vp`) as the single entrypoint for Node tooling — avoid
-direct `pnpm` calls unless required.
+### Web (`@agentera/web`)
+
+The website lives in `packages/web` (Astro + Starlight on Cloudflare). Use [Vite+](https://viteplus.dev/) (`vp`) as the single entrypoint for Node tooling — avoid direct `pnpm` calls unless required.
 
 Install git hooks once after clone:
 
@@ -199,6 +214,21 @@ broken or a failure is already tracked for CI — not for routine TODO.md or fix
 Pre-commit also runs `vp staged` in `packages/web` when web files change; markdownlint
 and prettier for repo-wide docs/configs stay on `bunx`.
 
+### Mobile (`@agentera/mobile`)
+
+The mobile app lives in `packages/mobile` (SvelteKit + Cursor SDK + Cloudflare Worker). Same `vp` entrypoint as web.
+
+```bash
+vp run mobile:check
+vp run mobile:dev
+vp run mobile:build
+vp run mobile:deploy
+```
+
+Pre-commit runs `vp staged` in `packages/mobile` when mobile files change (mirrors web).
+
+Mobile is opinionated: no skill loading, MCP servers, or plugin extensions. Custom sidebar actions are app-defined shortcuts, not arbitrary extension surfaces.
+
 Convenience scripts from the repo root:
 
 ```bash
@@ -206,6 +236,10 @@ vp run web:check    # format, lint, and type-check the website
 vp run web:build
 vp run web:dev
 vp run web:deploy
+vp run mobile:check # format, lint, and type-check the mobile app
+vp run mobile:build
+vp run mobile:dev
+vp run mobile:deploy
 ```
 
 Or call package scripts directly:
@@ -268,6 +302,8 @@ pnpm -C packages/cli build && node packages/cli/dist/bin/agentera.js check compa
 | CLI validation | `node packages/cli/dist/bin/agentera.js check validate capability-contract --format json` | Validates all capability schemas |
 | Web dev server | `cd packages/web && npx astro dev` | Use `astro dev` directly rather than `vp dev` for SSR with Cloudflare adapter |
 | Web build | `vp run web:build` | Runs from workspace root |
+| Mobile dev server | `vp run mobile:dev` | SvelteKit dev server via packages/mobile |
+| Mobile check | `vp run mobile:check` | Lint, format, type-check mobile package |
 
 ### Gotchas
 
