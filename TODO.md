@@ -6,13 +6,14 @@
 
 ## → Normal
 
-- [ ] [chore:3.0.0] Decide `@agentera/mobile` npm publish identity (private workspace vs npm vs deploy-only).
-- [ ] [docs:3.0.0] Decide long-term editor skill-bundle role (coexist vs eventual sunset) — horizon item, not blocking mobile v1.
-- [ ] [feat:3.0.0] Extend visionera create/refine and `agentera prime --context visionera` to treat identity voice and emotional_register nuance as first-class attributes — surface the full identity block in capability context.
 - [ ] [fix:3.0.0] Fix so that upgrades are not presented as repairs during `prime` or `doctor`. A version upgrade is distinct from a repair, even if they might overlap in their behavior.
 - [ ] [feat:3.0.0] Detect "You're right", "my mistake", "You're right to push back" responses during profiling, to add generalized behavioral rules to the profile based on the times the human had to correct the model's behavior.
 - [ ] [feat:3.0.0] Add or adapt context compression and memory techniques, such as `https://github.com/zdk/lowfat` and/or `https://github.com/yvgude/lean-ctx`, that seamlessly compresses context, stores insights and memories, etc., to enhance all capabilities' accuracy and token efficiency.
 - [ ] [feat:3.0.0] Add `statusline` command to show data such as current plan status, health, etc. that can be used by runtimes, similar to `https://github.com/ryoppippi/ccusage`, `https://github.com/avinashbest/cli-status-bar`, and `https://cursor.com/changelog/04-14-26`
+- [ ] [feat:3.0.0] Decide extending visionera create/refine and `agentera prime --context visionera` to treat identity voice and emotional_register nuance as first-class attributes, or introduce a "SOUL.md" artifact for agentera identity and personality.
+- [ ] [chore:3.0.0] Decide `@agentera/mobile` npm publish identity (private workspace vs npm vs deploy-only).
+- [ ] [docs:3.0.0] Decide long-term editor skill-bundle role (coexist vs eventual sunset) — horizon item, not blocking mobile v1.
+- [ ] [docs:3.0.0] Decide on Swedish -era verbs or standardizing on plain English (e.g., `agentera optimera` vs `agentera optimize`)
 
 ## ✓ Resolved
 
