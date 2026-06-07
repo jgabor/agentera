@@ -3776,10 +3776,27 @@ class TestHej:
         assert migration["requires_confirmation"] is True
 
     def _write_profile(self, project: Path, date_str: str) -> Path:
+        return self._write_profile_full(project, generated=date_str)
+
+    def _write_profile_full(
+        self,
+        project: Path,
+        *,
+        generated: str | None = None,
+        validated: str | None = None,
+        user_corrected: str | None = None,
+    ) -> Path:
         profile_dir = project / ".xdg" / "agentera"
         profile_dir.mkdir(parents=True, exist_ok=True)
         profile = profile_dir / "PROFILE.md"
-        profile.write_text(f"# Profile\n<!-- Generated: {date_str} -->\n")
+        lines = ["# Profile"]
+        if generated is not None:
+            lines.append(f"<!-- Generated: {generated} -->")
+        if validated is not None:
+            lines.append(f"<!-- Validated: {validated} -->")
+        if user_corrected is not None:
+            lines.append(f"<!-- User-corrected: {user_corrected} -->")
+        profile.write_text("\n".join(lines) + "\n")
         return profile
 
     def _profile_date(self, days_ago: int) -> str:
@@ -3896,6 +3913,73 @@ class TestHej:
         assert len(stale_attentions) > 0
         assert any("stale" in a for a in stale_attentions)
         assert any("suggest running profilera" in a for a in stale_attentions)
+
+    def test_recent_validated_resets_staleness(self, project):
+        self._write_profile_full(
+            project,
+            generated=self._profile_date(days_ago=30),
+            validated=self._profile_date(days_ago=0),
+        )
+        r = _run("hej", "--format", "json", cwd=project)
+        assert r.returncode == 0
+        data = json.loads(r.stdout)
+        assert data["profile"]["stale"] is False
+        assert data["profile"]["days_since_generated"] <= 1
+
+    def test_recent_user_corrected_resets_staleness(self, project):
+        self._write_profile_full(
+            project,
+            generated=self._profile_date(days_ago=30),
+            user_corrected=self._profile_date(days_ago=0),
+        )
+        r = _run("hej", "--format", "json", cwd=project)
+        assert r.returncode == 0
+        data = json.loads(r.stdout)
+        assert data["profile"]["stale"] is False
+
+    def test_freshest_of_three_wins(self, project):
+        self._write_profile_full(
+            project,
+            generated=self._profile_date(days_ago=30),
+            validated=self._profile_date(days_ago=30),
+            user_corrected=self._profile_date(days_ago=0),
+        )
+        r = _run("hej", "--format", "json", cwd=project)
+        assert r.returncode == 0
+        data = json.loads(r.stdout)
+        assert data["profile"]["stale"] is False
+
+    def test_generated_only_stale_regression(self, project):
+        self._write_profile_full(
+            project,
+            generated=self._profile_date(days_ago=30),
+        )
+        r = _run("hej", "--format", "json", cwd=project)
+        assert r.returncode == 0
+        data = json.loads(r.stdout)
+        assert data["profile"]["stale"] is True
+
+    def test_all_three_old_stale(self, project):
+        self._write_profile_full(
+            project,
+            generated=self._profile_date(days_ago=30),
+            validated=self._profile_date(days_ago=30),
+            user_corrected=self._profile_date(days_ago=30),
+        )
+        r = _run("hej", "--format", "json", cwd=project)
+        assert r.returncode == 0
+        data = json.loads(r.stdout)
+        assert data["profile"]["stale"] is True
+
+    def test_missing_generated_falls_back_to_validated(self, project):
+        self._write_profile_full(
+            project,
+            validated=self._profile_date(days_ago=30),
+        )
+        r = _run("hej", "--format", "json", cwd=project)
+        assert r.returncode == 0
+        data = json.loads(r.stdout)
+        assert data["profile"]["stale"] is True
 
     def _write_health_audit(
         self,

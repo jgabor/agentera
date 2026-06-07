@@ -6877,16 +6877,22 @@ def _check_profilera_staleness(profile_path: Path) -> tuple[bool, int, int] | No
     except Exception as exc:
         print(f"warning: failed to read profile path {profile_path}: {exc}", file=sys.stderr)
         return None
-    m = re.search(r"<!-- Generated:\s*(\d{4}-\d{2}-\d{2})", text)
-    if not m:
-        return None
-    try:
-        generated = date.fromisoformat(m.group(1))
-    except ValueError as exc:
-        print(f"warning: invalid date format in profile {profile_path}: {exc}", file=sys.stderr)
+    freshest: date | None = None
+    for m in re.finditer(
+        r"(Generated|Validated|User-corrected):\s*(\d{4}-\d{2}-\d{2})",
+        text,
+    ):
+        try:
+            parsed = date.fromisoformat(m.group(2))
+        except ValueError as exc:
+            print(f"warning: invalid date format in profile {profile_path}: {exc}", file=sys.stderr)
+            continue
+        if freshest is None or parsed > freshest:
+            freshest = parsed
+    if freshest is None:
         return None
     stale_days = _profilera_stale_threshold_days()
-    days_since = (date.today() - generated).days
+    days_since = (date.today() - freshest).days
     return days_since >= stale_days, days_since, stale_days
 
 

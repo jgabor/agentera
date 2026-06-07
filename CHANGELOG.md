@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- Fixed `agentera hej` and `agentera prime` to anchor profilera staleness on the freshest of `Generated`, `Validated`, and `User-corrected` in the `PROFILE.md` frontmatter instead of `Generated` alone.
+
 ## [2.7.9] · 2026-06-03
 
 ### Fixed
