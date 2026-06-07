@@ -99,7 +99,7 @@ describe("ArtifactSchemaValidator", () => {
     expect(violations.filter((v) => v.includes("severity section"))).toEqual([]);
   });
 
-  it("flags an empty Critical band even when all four bands are header-only", () => {
+  it("accepts header-only Critical when resolved items live in ## ✓ Resolved", () => {
     const p = path.join(tmp, "TODO.md");
     const todo = [
       "# TODO",
@@ -109,15 +109,37 @@ describe("ArtifactSchemaValidator", () => {
       "## ⇉ Degraded",
       "",
       "## → Normal",
+      "- [ ] [chore:3.0.0] Open item",
+      "",
+      "## ⇢ Annoying",
+      "",
+      "## ✓ Resolved",
+      "- [x] [fix:3.0.0] Done item",
+      "",
+    ].join("\n");
+    fs.writeFileSync(p, todo);
+    const violations = new ArtifactSchemaValidator().validateExplicit("TODO.md", p, tmp);
+    expect(violations.filter((v) => v.includes("severity section"))).toEqual([]);
+    expect(violations.filter((v) => v.includes("## ✓ Resolved"))).toEqual([]);
+  });
+
+  it("flags resolved checkboxes left in severity bands", () => {
+    const p = path.join(tmp, "TODO.md");
+    const todo = [
+      "# TODO",
+      "",
+      "## ⇶ Critical",
+      "- [x] [fix:3.0.0] Done in critical",
+      "",
+      "## → Normal",
+      "- [ ] [chore:3.0.0] Open item",
       "",
       "## ⇢ Annoying",
       "",
     ].join("\n");
     fs.writeFileSync(p, todo);
     const violations = new ArtifactSchemaValidator().validateExplicit("TODO.md", p, tmp);
-    expect(
-      violations.filter((v) => v.includes("severity section '⇶ Critical'")).length,
-    ).toBeGreaterThan(0);
+    expect(violations.some((v) => v.includes("must live under '## ✓ Resolved'"))).toBe(true);
   });
 
   it("does not collapse an empty Degraded body into the next Normal heading", () => {
@@ -129,6 +151,7 @@ describe("ArtifactSchemaValidator", () => {
       "- [fix:3.0.0] First critical item",
       "",
       "## ⇉ Degraded",
+      "",
       "## → Normal",
       "- [chore:3.0.0] Normal item",
       "",
@@ -141,7 +164,7 @@ describe("ArtifactSchemaValidator", () => {
     expect(violations.filter((v) => v.includes("severity section '⇶ Critical'"))).toEqual([]);
   });
 
-  it("flags a Critical-body-collapse scenario where Critical has no items and no terminating blank line", () => {
+  it("flags a Critical-body-collapse scenario where the next heading is glued into Critical", () => {
     const p = path.join(tmp, "TODO.md");
     const todo = [
       "# TODO",
@@ -159,7 +182,7 @@ describe("ArtifactSchemaValidator", () => {
     fs.writeFileSync(p, todo);
     const violations = new ArtifactSchemaValidator().validateExplicit("TODO.md", p, tmp);
     expect(
-      violations.filter((v) => v.includes("severity section '⇶ Critical'")).length,
+      violations.filter((v) => v.includes("nested heading")).length,
     ).toBeGreaterThan(0);
   });
 
