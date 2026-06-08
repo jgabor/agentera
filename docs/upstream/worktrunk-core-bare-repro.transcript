@@ -1,0 +1,47 @@
+# worktrunk core.bare repro transcript (2026-06-08)
+
+Environment: wt v0.56.0, bash, /tmp/opencode/
+
+## Control: normal repo (no core.bare flip)
+
+```text
+$ git init -b main repo && cd repo
+$ git config commit.gpgsign false user.email=t@t.com user.name=T
+$ echo hello > README.md && git add README.md && git commit -m init
+$ git switch -c feat/v3
+$ wt switch --create fix/repro --base main --no-hooks --yes
+✓ Created branch fix/repro from main and worktree @ .../repo.fix-repro
+$ echo change > ../repo.fix-repro/README.md
+$ git -C ../repo.fix-repro commit -am 'fix: change'
+$ cd ../repo.fix-repro && wt merge main --no-hooks --yes
+✓ Merged to main (1 commit, 1 file, +1, -1)
+◎ Removing fix/repro worktree & branch in background (same commit as main, _)
+$ git -C ../repo config core.bare
+false
+```
+
+## Trigger class: bare-at-.git + worktreeConfig
+
+```text
+$ git init --bare -b main myproject/.git
+$ git --git-dir=myproject/.git config core.bare false
+$ git --git-dir=myproject/.git config extensions.worktreeConfig true
+$ printf '[core]\n\tbare = true\n' > myproject/.git/config.worktree
+$ git --git-dir=myproject/.git worktree add myproject/main main
+$ cd myproject/main && git switch -c feat/v3
+$ wt switch --create fix/repro --base main --no-hooks --yes
+▲ Bare repo at myproject/.git — worktrees will be at myproject/.git.fix-repro
+✓ Created branch fix/repro ... @ myproject/.git.fix-repro
+$ cd myproject/.git.fix-repro && wt merge main --no-hooks --yes
+✓ Merged to main (1 commit, 1 file, +1, -1)
+◎ Removing fix/repro worktree & branch in background (same commit as main, _)
+○ Switched to worktree for main @ myproject/.git
+$ grep bare myproject/.git/config
+	bare = false
+$ cat myproject/.git/config.worktree
+[core]
+	bare = true
+```
+
+Shared config stayed `bare = false`; effective `git config core.bare` reads `true` via config.worktree merge.
+Agentera incident reported shared `.git/config` poisoned to `core.bare = true` (stricter breakage).

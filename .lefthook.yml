@@ -9,6 +9,11 @@ output: [
     # "skips",
   ]
 
+post-merge:
+  commands:
+    check-bare:
+      run: bash hooks/post-merge-check-bare.sh
+
 pre-commit:
   commands:
     agentera:

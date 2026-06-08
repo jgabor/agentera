@@ -267,6 +267,7 @@ pnpm -C packages/cli build && node packages/cli/dist/bin/agentera.js check compa
 
 ### Gotchas
 
+- **Worktrunk `wt merge` and `core.bare`:** A successful `wt merge --remove` can rarely leave the primary checkout with `core.bare = true` in `.git/config` (git then fails with `fatal: this operation must be run in a work tree`). This correlates with a `Branch-worktree mismatch` warning (`expected @ …/.git.<branch>` vs sibling `../<repo>.<branch>`). After any `wt merge` that removes a worktree, confirm `git config --bool core.bare` is `false`. Recovery: `git config core.bare false`. Lefthook `post-merge` runs `hooks/post-merge-check-bare.sh` to auto-repair.
 - `vp dev packages/web` starts Vite in client-only mode and returns 404 for SSR routes. Use `cd packages/web && npx astro dev` for full SSR dev experience.
 - The published `agentera` npm package is self-contained: it bundles the app data
   (`skills/`, `references/`, `registry.json`) under `packages/cli/bundle/` at pack

@@ -53,6 +53,37 @@ def test_compact_session_bookmark_entries_matches_session_stop_alias(common, ses
     assert common.compact_session_bookmark_entries(entries) == session_stop.compact_entries(entries)
 
 
+def test_post_merge_check_bare_resets_poisoned_config(tmp_path, monkeypatch):
+    import os
+    import subprocess
+
+    script = HOOKS_DIR / "post-merge-check-bare.sh"
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    monkeypatch.chdir(repo)
+    monkeypatch.setenv("GIT_CONFIG_GLOBAL", "/dev/null")
+    monkeypatch.setenv("GIT_CONFIG_SYSTEM", "/dev/null")
+    git_env = {**os.environ, "GIT_CONFIG_GLOBAL": "/dev/null", "GIT_CONFIG_SYSTEM": "/dev/null"}
+
+    subprocess.run(
+        ["git", "init", "-b", "main"],
+        check=True,
+        capture_output=True,
+        env=git_env,
+    )
+    subprocess.run(["git", "config", "user.email", "t@t.com"], check=True)
+    subprocess.run(["git", "config", "user.name", "T"], check=True)
+    subprocess.run(["git", "config", "core.bare", "true"], check=True)
+    subprocess.run(["bash", str(script)], check=True)
+    bare = subprocess.run(
+        ["git", "config", "--bool", "core.bare"],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    assert bare.stdout.strip() == "false"
+
+
 def test_apply_retention_caps_enforces_total_limit(common):
     full = [{"kind": "full", "n": i} for i in range(15)]
     archive = [{"kind": "oneline", "n": i} for i in range(50)]
