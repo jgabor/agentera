@@ -52,20 +52,21 @@ This repository dogfoods committed Cursor surfaces:
 - `.cursor/agents/*.md` — twelve managed capability descriptors
 - `.cursor-plugin/plugin.json` — marketplace submission-ready manifest
 
-Hooks resolve helper scripts through `uv run hooks/...` from the project root.
-`sessionStart` exports `AGENTERA_HOME` through Cursor hook JSON (`env`) before
-subsequent hook executions run.
+Hooks invoke the TypeScript CLI through `npx -y agentera hook …` (or
+`npx -y agentera@next hook …` on the development channel). `sessionStart` exports
+`AGENTERA_HOME` through Cursor hook JSON (`env`) before subsequent hook executions
+run.
 
 ## AGENTERA_HOME wiring
 
-Primary path: `hooks/cursor_session_start.py` resolves the install root from
-`AGENTERA_HOME`, project walk-up, or the plugin/checkout root (`hooks/` parent)
-when the hook runs from a plugin install, then returns
+Primary path: `agentera hook cursor-session-start` resolves the install root from
+`AGENTERA_HOME`, project walk-up, the plugin/checkout root, or the platform default
+app home when env and walk-up do not resolve a managed root, then returns
 `{"env": {"AGENTERA_HOME": "<root>"}}` plus optional `additional_context` from
 the shared session digest.
 
-Fallback: `scripts/setup_cursor.py` reports persistent shell configuration only
-when live shell-tool smoke proves session env does not propagate to CLI
+Fallback: `packages/cli/src/setup/cursor.ts` reports persistent shell configuration
+only when live shell-tool smoke proves session env does not propagate to CLI
 subprocesses. Agentera does not write shell rc files by default.
 
 ## Artifact validation

@@ -6,6 +6,7 @@ const TOP_LEVEL = [
   "state",
   ...CAPABILITY_ROUTING_NAMES.filter((n) => n !== "hej"),
   "upgrade",
+  "app-home",
   "doctor",
   "report",
   "check",
@@ -32,6 +33,7 @@ export function printTopLevelHelp(): string {
     ]),
     ...lines("User commands:", [
       "upgrade             Plan or apply an idempotent upgrade with semver/channel gate",
+      "app-home            Resolve the platform Agentera app-home path",
       "doctor              Check Agentera CLI, app, and runtime status",
       "report              Privacy-gated usage analytics",
     ]),
@@ -62,6 +64,20 @@ export function printUpgradeHelp(): string {
     "  --dry-run             Plan only and write nothing",
     "  --yes                 Apply pending local upgrade actions",
     "  --force               Overwrite managed runtime files or conflicting backups",
+    "  --format {text,json}  Structured output format",
+  ].join("\n");
+}
+
+export function printAppHomeHelp(): string {
+  return [
+    "usage: agentera app-home [-h] [--install-root PATH] [--home HOME] [--format {text,json}]",
+    "",
+    "Resolve the Agentera app-home path for agent/bootstrap callers.",
+    "",
+    "options:",
+    "  -h, --help            show this help message and exit",
+    "  --install-root PATH   Explicit Agentera app home to resolve",
+    "  --home HOME           Home directory for platform default resolution",
     "  --format {text,json}  Structured output format",
   ].join("\n");
 }
@@ -183,6 +199,8 @@ export function printCommandHelp(command: string, rest: string[] = []): string |
       return printSchemaHelp();
     case "upgrade":
       return printUpgradeHelp();
+    case "app-home":
+      return printAppHomeHelp();
     case "doctor":
       return printDoctorHelp();
     case "state":

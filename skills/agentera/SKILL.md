@@ -70,22 +70,25 @@ When a request arrives, route to the matching capability using the five-layer ro
 ### Prerequisite: Single-call installed CLI gate
 
 This gate is mandatory, but the gate and the orientation dashboard source are the same
-installed CLI invocation. For bare `/agentera` or bare `hej`, the first normal
-state-access tool call is:
+installed CLI invocation. For bare `/agentera` or bare `hej`, resolve the app home in
+one separate command, then run prime:
 
 ```bash
+RESOLVED_AGENTERA_HOME="$(npx -y agentera app-home)"
 npx -y agentera prime
 ```
 
+Never combine the app-home assignment with the same shell command that runs
+prime; shell expansion can otherwise turn an unset `AGENTERA_HOME` into
+`npx -y agentera` before the assignment takes effect.
+
 Resolve `RESOLVED_AGENTERA_HOME` with the app-home precedence `AGENTERA_HOME`
-when set, otherwise the platform data home. Do not run `glob`, `grep`, `read`,
-`ls`, `python`, `doctor`, `--help`, `registry.json`,
-or `.agentera-bundle.json` preflight checks before this call. The CLI owns app
-validation, v1 detection, profile detection, artifact condensation, and the
+when set, otherwise the platform data home from `agentera app-home`. Do not substitute
+the Linux-only `${XDG_DATA_HOME:-$HOME/.local/share}/agentera` fallback on macOS or
+Windows. Do not run `glob`, `grep`, `read`, `ls`, `python`, `doctor`, `--help`,
+`registry.json`, or `.agentera-bundle.json` preflight checks before this call. The CLI
+owns app validation, v1 detection, profile detection, artifact condensation, and the
 `source_contract` that tells the caller how to render the dashboard.
-Never combine the app-home assignment with the same shell command that expands
-the managed app script path; shell expansion can otherwise turn an unset
-`AGENTERA_HOME` into `npx -y agentera` before the assignment takes effect.
 
 If the command exits successfully, inspect the CLI-provided `bundle.status`
 installed-app status object. If its value is `fresh`, treat the installed app gate as passed

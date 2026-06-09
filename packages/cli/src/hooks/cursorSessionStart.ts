@@ -1,8 +1,9 @@
+import os from "node:os";
 import path from "node:path";
 
 import { resolvePath } from "../core/paths.js";
 import { resolveSourceRoot } from "../core/sourceRoot.js";
-import { classifyResolvedRoot } from "../state/installRoot.js";
+import { classifyResolvedRoot, resolveCandidate } from "../state/installRoot.js";
 import { buildDigest } from "./sessionStart.js";
 import { pyJsonInline } from "../core/pyjson.js";
 
@@ -27,7 +28,8 @@ export function resolveInstallRoot(
   const envRoot = env.AGENTERA_HOME;
   if (envRoot) {
     const candidate = resolvePath(envRoot);
-    if (classifyResolvedRoot(candidate, { source: "env" }).kind === "managed_fresh") {
+    const kind = classifyResolvedRoot(candidate, { source: "environment" }).kind;
+    if (kind === "managed_fresh" || kind === "managed_stale") {
       return candidate;
     }
   }
@@ -46,6 +48,13 @@ export function resolveInstallRoot(
 
   if (classifyResolvedRoot(pluginRoot, { source: "plugin" }).kind === "managed_fresh") {
     return resolvePath(pluginRoot);
+  }
+
+  const home = env.HOME ?? process.env.HOME ?? os.homedir();
+  const [defaultRoot] = resolveCandidate(null, { env, home });
+  const defaultKind = classifyResolvedRoot(defaultRoot, { source: "default" }).kind;
+  if (defaultKind === "managed_fresh" || defaultKind === "managed_stale") {
+    return defaultRoot;
   }
   return null;
 }
