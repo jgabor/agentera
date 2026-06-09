@@ -470,3 +470,28 @@ export function formatDiagnostic(c: Classification): string {
   return `${c.diagnostic.severity}: ${c.diagnostic.message} (${c.path})`;
 }
 
+/** Resolved app-home path for agent/bootstrap callers (port of install_root.py). */
+export function formatResolvedAppHome(
+  explicitRoot: string | null | undefined,
+  opts: {
+    env?: Record<string, string | undefined>;
+    home?: string;
+    format?: "text" | "json";
+    platform?: NodeJS.Platform;
+  } = {},
+): string {
+  const env = opts.env ?? process.env;
+  const home = opts.home ?? expanduser("~");
+  const platform = opts.platform ?? process.platform;
+  const [resolvedPath, source] = resolveCandidate(explicitRoot ?? null, { env, home, platform });
+  if ((opts.format ?? "text") === "json") {
+    return JSON.stringify({
+      path: resolvedPath,
+      source,
+      sourceLabel: sourceLabel(source),
+      platform,
+    });
+  }
+  return resolvedPath;
+}
+

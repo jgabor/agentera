@@ -55,6 +55,26 @@ describe("resolveInstallRoot", () => {
     expect(resolved).toBe(resolvePath(pluginRoot));
   });
 
+  it("falls back to a managed platform default app home", () => {
+    const home = path.join(tmp, "home");
+    const platformDefault =
+      process.platform === "darwin"
+        ? path.join(home, "Library", "Application Support", "agentera")
+        : process.platform === "win32"
+          ? path.join(home, "AppData", "Roaming", "agentera")
+          : path.join(home, ".local", "share", "agentera");
+    writeSetupRoot(platformDefault);
+    const unrelated = path.join(tmp, "unrelated");
+    fs.mkdirSync(unrelated);
+    const emptyPlugin = path.join(tmp, "empty-plugin");
+    fs.mkdirSync(emptyPlugin);
+    const resolved = resolveInstallRoot(unrelated, {
+      env: { HOME: home },
+      pluginRoot: emptyPlugin,
+    });
+    expect(resolved).toBe(resolvePath(platformDefault));
+  });
+
   it("ignores an invalid AGENTERA_HOME and still falls back to the plugin root", () => {
     const pluginRoot = path.join(tmp, "plugin");
     writeSetupRoot(pluginRoot);
@@ -82,6 +102,27 @@ describe("runCursorSessionStart", () => {
     });
     expect(code).toBe(0);
     expect(JSON.parse(output).env.AGENTERA_HOME).toBe(resolvePath(pluginRoot));
+  });
+
+  it("exports AGENTERA_HOME from the platform default when env and walk miss", () => {
+    const home = path.join(tmp, "home");
+    const platformDefault =
+      process.platform === "darwin"
+        ? path.join(home, "Library", "Application Support", "agentera")
+        : process.platform === "win32"
+          ? path.join(home, "AppData", "Roaming", "agentera")
+          : path.join(home, ".local", "share", "agentera");
+    writeSetupRoot(platformDefault);
+    const unrelated = path.join(tmp, "workspace");
+    fs.mkdirSync(unrelated);
+    let output = "";
+    const code = runCursorSessionStart(JSON.stringify({ cwd: unrelated }), {
+      env: { HOME: home },
+      pluginRoot: path.join(tmp, "empty-plugin"),
+      out: (t) => (output = t),
+    });
+    expect(code).toBe(0);
+    expect(JSON.parse(output).env.AGENTERA_HOME).toBe(resolvePath(platformDefault));
   });
 
   it("exports AGENTERA_HOME from a walk-up checkout", () => {

@@ -11,6 +11,7 @@ import {
   classifyResolvedRoot,
   defaultAppHome,
   formatDiagnostic,
+  formatResolvedAppHome,
   isForeignPlatformDefaultAppHome,
   knownPlatformDefaultAppHomes,
   toDict,
@@ -245,6 +246,21 @@ describe("install-root classification", () => {
     expect(resolvePath(defaultAppHome(env, home, "darwin"))).toBe(resolvePath(macDefault));
     expect(isForeignPlatformDefaultAppHome(linuxDefault, { env, home, platform: "darwin" })).toBe(true);
     expect(isForeignPlatformDefaultAppHome(macDefault, { env, home, platform: "darwin" })).toBe(false);
+  });
+
+  it("formatResolvedAppHome uses the platform default on darwin", () => {
+    const home = path.join(tmp, "home");
+    const env: Record<string, string | undefined> = {};
+    const expected = path.join(home, "Library", "Application Support", "agentera");
+    expect(formatResolvedAppHome(null, { env, home, platform: "darwin" })).toBe(resolvePath(expected));
+  });
+
+  it("formatResolvedAppHome returns json metadata", () => {
+    const home = path.join(tmp, "home");
+    const payload = JSON.parse(formatResolvedAppHome(null, { env: {}, home, format: "json", platform: "darwin" }));
+    expect(payload.source).toBe("default");
+    expect(payload.platform).toBe("darwin");
+    expect(payload.path).toBe(resolvePath(path.join(home, "Library", "Application Support", "agentera")));
   });
 
   it("known platform default app homes cover all OS defaults", () => {

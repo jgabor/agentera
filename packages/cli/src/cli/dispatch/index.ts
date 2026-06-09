@@ -4,7 +4,7 @@ import { printCommandHelp, printTopLevelHelp, splitHelpArgs } from "../help.js";
 import { compactModeOf, runCompact, runLint, runSchema, runValidate } from "./check.js";
 import { runQuery, runState } from "./state.js";
 import { runCapability, runPrime } from "./prime.js";
-import { runDoctor, runGate, runHook, runReport, runUpgrade, runUsage, runVerify } from "./lifecycle.js";
+import { runAppHome, runDoctor, runGate, runHook, runReport, runUpgrade, runUsage, runVerify } from "./lifecycle.js";
 import { emitDeprecationAlias, type Io } from "./shared.js";
 import { emitInvalidInput } from "../errors.js";
 
@@ -36,6 +36,8 @@ export function main(argv: string[], io: Io = {}): number {
   switch (command) {
     case "prime":
       return runPrime("prime", rest, io, "agentera prime");
+    case "app-home":
+      return runAppHome(rest, io, "agentera app-home");
     case "doctor":
       return runDoctor(rest, io, "agentera doctor");
     case "usage":

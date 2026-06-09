@@ -1,4 +1,5 @@
 import fsForHooks from "node:fs";
+import { cmdAppHome, AppHomeArgs } from "../commands/appHome.js";
 import { cmdDoctor, DoctorArgs } from "../commands/doctor.js";
 import { cmdUpgrade, UpgradeArgs, type UpgradeOnlyPhase } from "../commands/upgrade.js";
 import { cmdVerify, VerifyArgs } from "../commands/verify.js";
@@ -11,7 +12,7 @@ import { runCursorPreToolUse } from "../../hooks/cursorPreToolUse.js";
 import { HookCliAdapter } from "../../hooks/validateArtifact/index.js";
 import { usageMain } from "../../analytics/usageStats.js";
 import { validatePathValue } from "../argvalidate.js";
-import { printDoctorHelp, printUpgradeHelp, wantsHelp } from "../help.js";
+import { printAppHomeHelp, printDoctorHelp, printUpgradeHelp, wantsHelp } from "../help.js";
 import { parseCompactArgs } from "./check.js";
 import { asEnvelopeFormat, classifyParseError, emitDeprecationAlias, type Io } from "./shared.js";
 import { emitInvalidInput } from "../errors.js";
@@ -29,6 +30,56 @@ export function runGate(argv: string[], io: Io, prog: string): number {
   } catch (exc) {
     return emitInvalidInput(io, {
       format: asEnvelopeFormat(parsed.format),
+      body: { class: "unsupported_target", message: (exc as Error).message },
+    });
+  }
+}
+
+export function runAppHome(argv: string[], io: Io, prog: string): number {
+  const out = io.out ?? ((t: string) => process.stdout.write(t));
+  if (wantsHelp(argv)) {
+    out(printAppHomeHelp() + "\n");
+    return 0;
+  }
+  const args: AppHomeArgs = {
+    installRoot: null,
+    home: null,
+    format: "text",
+  };
+  for (let i = 0; i < argv.length; i++) {
+    const a = argv[i];
+    const value = (name: string): string | null => {
+      if (a === name) return argv[++i];
+      if (a.startsWith(name + "=")) return a.slice(name.length + 1);
+      return null;
+    };
+    let v: string | null;
+    if ((v = value("--install-root")) !== null) args.installRoot = v;
+    else if ((v = value("--home")) !== null) args.home = v;
+    else if ((v = value("--format")) !== null) {
+      if (v !== "text" && v !== "json") {
+        return emitInvalidInput(io, {
+          format: asEnvelopeFormat(args.format),
+          body: {
+            class: "invalid_choice",
+            message: `argument --format: invalid choice: '${v}' (choose from 'text', 'json')`,
+            valid_values: ["text", "json"],
+          },
+        });
+      }
+      args.format = v;
+    } else {
+      return emitInvalidInput(io, {
+        format: asEnvelopeFormat(args.format),
+        body: { class: "unrecognized_argument", message: `unrecognized arguments: ${a}` },
+      });
+    }
+  }
+  try {
+    return cmdAppHome(args, io);
+  } catch (exc) {
+    return emitInvalidInput(io, {
+      format: asEnvelopeFormat(args.format),
       body: { class: "unsupported_target", message: (exc as Error).message },
     });
   }
