@@ -117,3 +117,13 @@ CONVENTION:
       (including mis-placed rows until migrated) against the uniform
       10/40/50 retention cap. `compact --mode fix` migrates mis-placed
       rows into `## ✓ Resolved` before applying retention.
+  7:
+    id: TC7
+    field: resolved_line_provenance
+    level: advisory
+    description: >-
+      Resolved provenance uses `resolved YYYY-MM-DD` or `resolved @
+      <semver>` after the item description. Do not use `resolved on
+      feat/v3 @ <hash>` or dual-branch hash reconciliation; git history
+      is the archaeology source. Fold the Resolved move into the
+      implementation commit — no follow-up hash-backfill commit.

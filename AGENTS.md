@@ -20,9 +20,36 @@ Monorepo consolidation plan: [`docs/consolidation/monorepo-plan.md`](./docs/cons
 
 ## Branch model
 
-- `main` is the v2.x stable branch. The Python CLI ships from here as `npx -y agentera@latest`. Feature-frozen for the v3 cutover, but bug-fix-allowed for velocity blockers (the linter, the commit-tracking flow, the artifact validation hooks).
-- `feat/v3` is the v3.0.0 dev branch. The TypeScript CLI ships from here as `npx -y agentera@next`. Active development; the bulk of `feat:` and `test:` work lands here.
-- `TODO.md` lives on `feat/v3`. Items prefixed `→ main` require `git checkout main`, implement, push (CI cuts a new release), then `git checkout feat/v3` to mark the item resolved in TODO.md and continue. Items prefixed `→ v3` stay on this branch. Items prefixed `→ both` span main and feat/v3 — prose on both, code on whichever branch owns the surface.
+**Target flow:** trunk-based development on `main`. Work commits directly to `main`;
+branches are absent or extremely short-lived. There is no pull-request workflow —
+CI and release tags gate quality, not merge requests.
+
+**During the v3 rewrite (temporary):**
+
+- `feat/v3` — active TypeScript rewrite; npm `@next` channel (`npx -y agentera@next`).
+  Most `feat:`, `fix:`, and `test:` work lands here until v3 promotes to `main`.
+- `main` — v2.x stable Python CLI (`npx -y agentera@latest`). Feature-frozen for
+  the v3 cutover except velocity blockers (linter, commit-tracking flow, artifact
+  validation hooks).
+- `TODO.md` on `feat/v3` may still use `→ main`, `→ v3`, or `→ both` prefixes for
+  dual-branch items until trunk cutover; retire those prefixes once development is
+  trunk-only on `main`.
+
+## Common commands
+
+Recipe-first entry points (run from repo root unless noted):
+
+| When | Command |
+| ---- | ------- |
+| Orientation / hej dashboard | `npx -y agentera prime` |
+| Capability startup context | `npx -y agentera prime --context <name> --format json` |
+| Project state | `npx -y agentera state todo`, `state plan`, `state decisions` |
+| Validate capability or contract | `npx -y agentera check validate capability <name>` · `check validate capability-contract` |
+| Artifact compaction gate | `pnpm -C packages/cli build && node packages/cli/dist/bin/agentera.js check compact` |
+| CLI tests (staged-aware via lefthook) | `pnpm -C packages/cli test` |
+| CLI typecheck / build | `pnpm -C packages/cli run typecheck` · `pnpm -C packages/cli build` |
+| Web lint / build / dev | `vp run web:check` · `vp run web:build` · `cd packages/web && npx astro dev` |
+| Mobile check / dev | `vp run mobile:check` · `vp run mobile:dev` |
 
 ## Capability validation
 
@@ -277,12 +304,78 @@ pnpm -C packages/cli build && node packages/cli/dist/bin/agentera.js check compa
 
 ## Agentera commits
 
-- Commit messages should be concise, imperative descriptions of the actual product or project change, for example `add config file contract` or `fix: remove tui phase ownership`, depending on the active projects' conventions.
-- Commit identity must come from the substantive engineering outcome, not from Agentera bookkeeping.
-- Do not create standalone commits whose only changes are Agentera status, progress evidence, plan archival/removal, or ROADMAP closeout/status updates. Fold those changes into the related implementation, test, validation, or documentation commit.
-- Include `.agentera/plan.yaml` and `.agentera/progress.yaml` updates in the same commit as the related implementation or validation change.
-- If progress metadata is committed during implementation, squash or fold it into the meaningful task commit before considering the task complete.
-- The final commit for a task should include the corresponding status-complete metadata update when Agentera artifacts are part of the task.
+Commit messages are concise, imperative descriptions of the product or project
+change (`fix(cli): …`, `feat(mobile): …`). Commit identity must come from the
+substantive engineering outcome, not from Agentera bookkeeping.
+
+### Same-commit fold-in (default)
+
+When a task touches code, tests, or user-facing docs, fold related artifact updates
+into **that same commit**:
+
+- `.agentera/plan.yaml` (task status, plan closeout, archive handoff)
+- `.agentera/progress.yaml` (cycle evidence for the work)
+- `TODO.md` (open items closed or filed)
+- `.agentera/health.yaml` (inspektera audit output)
+- `.agentera/decisions.yaml` (resonera satisfaction updates)
+
+Do not leave a task "done" with artifact state committed in a follow-up chore
+commit. If you already pushed the implementation commit, fold artifact updates into
+the next substantive commit on the same task — not a hash-backfill pass.
+
+### Standalone commits (narrow exceptions)
+
+Only these may land without paired product code in the same commit:
+
+- **Release cuts** — version bumps, changelog promotion, npm publish metadata
+- **npm publish / registry alignment** when no code change accompanies the tag
+
+Everything else — including plan archive, TODO Resolved moves, progress cycles,
+health audits, and decision closeout — rides the implementation commit.
+
+### Bookkeeping patterns to eliminate
+
+Git history on `feat/v3` showed recurring standalone commits from these triggers.
+**Do not create commits for:**
+
+| Trigger | Retired pattern | Use instead |
+| ------- | ----------------- | ------------- |
+| TODO Resolved hash backfill | `chore: record … in TODO` with only `@ <hash>` | `resolved YYYY-MM-DD` or `resolved @ <semver>` in the implementation commit |
+| Dual-branch hash ledger | `resolved on feat/v3 @ X and main @ Y` in a second pass | Date or release version; `git log --grep` for archaeology |
+| Progress cycle hash backfill | `chore(progress): backfill cycle N commit hash` | No per-cycle commit field (Decision 66); evidence in the task commit message |
+| Plan-only closeout | `chore(plan): close out …` with only archive + cleared slot | Archive + clear `.agentera/plan.yaml` in the final task commit |
+| Author-rewrite / ledger hygiene | `docs: refresh commit hashes after …` | Avoid hash-dependent Resolved lines so rewrites do not orphan ledgers |
+
+### Commit sequencing
+
+When a task naturally splits refactor and behavior:
+
+1. **Refactor commit first** — behavior-preserving extraction, rename, or move; tree
+   green.
+2. **Behavior commit second** — minimal diff for the fix or feature; tests in the
+   same commit as the behavior unless the plan explicitly splits them.
+
+If the user asked for one squashed delivery, a single commit is fine. Do not bundle
+a behavior-preserving refactor into a behavior commit because it was discovered
+mid-change — stage hunks or split commits instead.
+
+### Code comments vs commit messages
+
+Comments explain **why the code is shaped as it is** for a reader who has never seen
+prior versions. Do not narrate development history, rejected alternatives, or
+"cleaner than the previous approach" in source. That story belongs in the commit
+message.
+
+### Capability closeout fold-in
+
+Capability runs that update artifacts must commit those writes with the
+implementation, not in a follow-up chore commit:
+
+| Capability | Artifact | Fold into |
+| ---------- | -------- | --------- |
+| inspektera | `.agentera/health.yaml` | Same commit as audit fixes or findings addressed |
+| resonera | `.agentera/decisions.yaml` | Same commit as deliberation outcome or confirmation |
+| planera / orkestrera / realisera | `.agentera/plan.yaml` (+ archive on complete) | Final task commit: mark tasks complete, archive plan, clear active slot |
 
 ## Cursor Cloud specific instructions
 
