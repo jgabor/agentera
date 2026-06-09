@@ -13,9 +13,21 @@ import { HookCliAdapter } from "../../hooks/validateArtifact/index.js";
 import { usageMain } from "../../analytics/usageStats.js";
 import { validatePathValue } from "../argvalidate.js";
 import { printAppHomeHelp, printDoctorHelp, printUpgradeHelp, wantsHelp } from "../help.js";
+import { makeArgvValueReader } from "./argvParser.js";
 import { parseCompactArgs } from "./check.js";
 import { asEnvelopeFormat, classifyParseError, emitDeprecationAlias, type Io } from "./shared.js";
 import { emitInvalidInput } from "../errors.js";
+
+function rejectUnsupportedUpgradeFlag(
+  io: Io,
+  format: string,
+  message: string,
+): number {
+  return emitInvalidInput(io, {
+    format: asEnvelopeFormat(format),
+    body: { class: "unsupported_target", message },
+  });
+}
 
 export function runGate(argv: string[], io: Io, prog: string): number {
   const parsed = parseCompactArgs(argv);
@@ -46,13 +58,12 @@ export function runAppHome(argv: string[], io: Io, prog: string): number {
     home: null,
     format: "text",
   };
-  for (let i = 0; i < argv.length; i++) {
+  let i = 0;
+  const value = makeArgvValueReader(argv, () => i, (n) => {
+    i = n;
+  });
+  for (; i < argv.length; i++) {
     const a = argv[i];
-    const value = (name: string): string | null => {
-      if (a === name) return argv[++i];
-      if (a.startsWith(name + "=")) return a.slice(name.length + 1);
-      return null;
-    };
     let v: string | null;
     if ((v = value("--install-root")) !== null) args.installRoot = v;
     else if ((v = value("--home")) !== null) args.home = v;
@@ -103,13 +114,12 @@ export function runDoctor(argv: string[], io: Io, prog: string): number {
     format: "text",
   };
   let jsonFlag = false;
-  for (let i = 0; i < argv.length; i++) {
+  let i = 0;
+  const value = makeArgvValueReader(argv, () => i, (n) => {
+    i = n;
+  });
+  for (; i < argv.length; i++) {
     const a = argv[i];
-    const value = (name: string): string | null => {
-      if (a === name) return argv[++i];
-      if (a.startsWith(name + "=")) return a.slice(name.length + 1);
-      return null;
-    };
     let v: string | null;
     if ((v = value("--install-root")) !== null) args.installRoot = v;
     else if ((v = value("--home")) !== null) args.home = v;
@@ -202,13 +212,12 @@ export function runUsage(argv: string[], io: Io, prog: string): number {
   let format = "text";
   let corpus: string | null = null;
   let project: string | null = null;
-  for (let i = 0; i < argv.length; i++) {
+  let i = 0;
+  const value = makeArgvValueReader(argv, () => i, (n) => {
+    i = n;
+  });
+  for (; i < argv.length; i++) {
     const a = argv[i];
-    const value = (name: string): string | null => {
-      if (a === name) return argv[++i] ?? null;
-      if (a.startsWith(name + "=")) return a.slice(name.length + 1);
-      return null;
-    };
     let v: string | null;
     if ((v = value("--format")) !== null) format = v;
     else if ((v = value("--corpus")) !== null) corpus = v;
@@ -275,13 +284,12 @@ export function runUpgrade(argv: string[], io: Io, prog: string): number {
     format: "text",
   };
   let jsonFlag = false;
-  for (let i = 0; i < argv.length; i++) {
+  let i = 0;
+  const value = makeArgvValueReader(argv, () => i, (n) => {
+    i = n;
+  });
+  for (; i < argv.length; i++) {
     const a = argv[i];
-    const value = (name: string): string | null => {
-      if (a === name) return argv[++i] ?? null;
-      if (a.startsWith(name + "=")) return a.slice(name.length + 1);
-      return null;
-    };
     let v: string | null;
     if ((v = value("--install-root")) !== null) args.installRoot = v;
     else if ((v = value("--home")) !== null) args.home = v;
@@ -289,17 +297,18 @@ export function runUpgrade(argv: string[], io: Io, prog: string): number {
     else if ((v = value("--expected-version")) !== null) args.expectedVersion = v;
     else if ((v = value("--channel")) !== null) args.channel = v;
     else if ((v = value("--target-major")) !== null) {
-      void v;
-      return emitInvalidInput(io, {
-        format: asEnvelopeFormat(args.format),
-        body: {
-          class: "unsupported_target",
-          message: "--target-major was removed; use --channel with dry-run preview then --yes",
-        },
-      });
-    }
-    else if ((v = value("--runtime")) !== null) void v; // accepted; orchestrator uses fixture runtimes
-    else if ((v = value("--only")) !== null) {
+      return rejectUnsupportedUpgradeFlag(
+        io,
+        args.format ?? "text",
+        "--target-major was removed; use --channel with dry-run preview then --yes",
+      );
+    } else if ((v = value("--runtime")) !== null) {
+      return rejectUnsupportedUpgradeFlag(
+        io,
+        args.format ?? "text",
+        "--runtime is not yet supported by the TypeScript upgrade command; use --only runtime for migration phases",
+      );
+    } else if ((v = value("--only")) !== null) {
       if (v !== "artifacts" && v !== "runtime" && v !== "cleanup") {
         return emitInvalidInput(io, {
           format: asEnvelopeFormat(args.format),
@@ -312,11 +321,22 @@ export function runUpgrade(argv: string[], io: Io, prog: string): number {
       }
       (args.only as UpgradeOnlyPhase[]).push(v);
     }
-    else if ((v = value("--opencode-config-dir")) !== null) void v; // accepted; ignored
-    else if (a === "--yes") args.yes = true;
+    else if ((v = value("--opencode-config-dir")) !== null) {
+      return rejectUnsupportedUpgradeFlag(
+        io,
+        args.format ?? "text",
+        "--opencode-config-dir is not yet supported by the TypeScript upgrade command",
+      );
+    } else if (a === "--yes") args.yes = true;
     else if (a === "--dry-run") args.dryRun = true;
     else if (a === "--force") args.force = true;
-    else if (a === "--update-packages") void 0; // deferred for 3.x channel model
+    else if (a === "--update-packages") {
+      return rejectUnsupportedUpgradeFlag(
+        io,
+        args.format ?? "text",
+        "--update-packages is not yet supported by the TypeScript upgrade command; external package refresh is deferred for the 3.x channel model",
+      );
+    }
     else if (a === "--json") jsonFlag = true;
     else if ((v = value("--format")) !== null) {
       if (v !== "text" && v !== "json") {
@@ -362,13 +382,12 @@ export function runVerify(argv: string[], io: Io, prog: string): number {
     fixtures: [],
   };
   const positionals: string[] = [];
-  for (let i = 0; i < argv.length; i++) {
+  let i = 0;
+  const value = makeArgvValueReader(argv, () => i, (n) => {
+    i = n;
+  });
+  for (; i < argv.length; i++) {
     const a = argv[i];
-    const value = (name: string): string | null => {
-      if (a === name) return argv[++i] ?? null;
-      if (a.startsWith(name + "=")) return a.slice(name.length + 1);
-      return null;
-    };
     let v: string | null;
     if ((v = value("--format")) !== null) {
       if (v !== "text" && v !== "json") {
@@ -420,13 +439,12 @@ export function runReport(argv: string[], io: Io, prog: string): number {
     projectRoot: [],
   };
   const positionals: string[] = [];
-  for (let i = 0; i < argv.length; i++) {
+  let i = 0;
+  const value = makeArgvValueReader(argv, () => i, (n) => {
+    i = n;
+  });
+  for (; i < argv.length; i++) {
     const a = argv[i];
-    const value = (name: string): string | null => {
-      if (a === name) return argv[++i] ?? null;
-      if (a.startsWith(name + "=")) return a.slice(name.length + 1);
-      return null;
-    };
     let v: string | null;
     if ((v = value("--format")) !== null) args.format = v;
     else if ((v = value("--project")) !== null) args.project = v;

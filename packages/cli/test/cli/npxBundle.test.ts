@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { activeAppModel } from "../../src/cli/appContext.js";
+import { resolvePath } from "../../src/core/paths.js";
 import { buildDoctorStatus } from "../../src/upgrade/doctor.js";
 import { cmdUpgrade } from "../../src/cli/commands/upgrade.js";
 import { resolveSourceRootStrict } from "../../src/upgrade/appModel.js";
@@ -47,11 +48,11 @@ describe("self-contained npx bundle resolution", () => {
   it("treats a sentinel bundle as the authoritative bundled app home", () => {
     seedBundle(bundle, { sentinel: true });
     const model = activeAppModel({ AGENTERA_BOOTSTRAP_SOURCE_ROOT: bundle });
-    const real = fs.realpathSync(bundle);
+    const real = resolvePath(bundle);
     expect(model.appHomeSource).toBe("bundled app");
-    expect(model.authoritativeRoot).toBe(real);
-    expect(model.skillRoot).toBe(path.join(real, "skills", "agentera"));
-    expect(model.appHome).toBe(real);
+    expect(resolvePath(model.authoritativeRoot)).toBe(real);
+    expect(resolvePath(model.skillRoot)).toBe(path.join(real, "skills", "agentera"));
+    expect(resolvePath(model.appHome)).toBe(real);
   });
 
   it("does NOT treat a data dir without the sentinel as a bundled app", () => {
@@ -71,7 +72,7 @@ describe("self-contained npx bundle resolution", () => {
   it("resolveSourceRootStrict accepts a sentinel bundle lacking the Python source surface", () => {
     seedBundle(bundle, { sentinel: true });
     const resolved = resolveSourceRootStrict({ AGENTERA_BOOTSTRAP_SOURCE_ROOT: bundle });
-    expect(resolved).toBe(fs.realpathSync(bundle));
+    expect(resolvePath(resolved)).toBe(resolvePath(bundle));
   });
 
   it("resolveSourceRootStrict still rejects a root missing the source surface", () => {

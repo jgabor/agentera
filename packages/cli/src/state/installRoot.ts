@@ -119,18 +119,12 @@ export function defaultAppHome(
   platform: NodeJS.Platform = process.platform,
 ): string {
   if (platform === "darwin") {
-    return path.join(expanduser(home), "Library", "Application Support", "agentera");
+    return macosDefaultAppHome(home);
   }
   if (platform === "win32") {
-    const appdata = env.APPDATA;
-    const base = appdata
-      ? expanduser(appdata)
-      : path.join(expanduser(home), "AppData", "Roaming");
-    return path.join(base, "agentera");
+    return windowsDefaultAppHome(env, home);
   }
-  const xdg = env.XDG_DATA_HOME;
-  const base = xdg ? expanduser(xdg) : path.join(expanduser(home), ".local", "share");
-  return path.join(base, "agentera");
+  return linuxDefaultAppHome(env, home);
 }
 
 function linuxDefaultAppHome(env: Record<string, string | undefined>, home: string): string {

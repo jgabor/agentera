@@ -92,4 +92,31 @@ describe("agentera upgrade dispatch", () => {
     expect(rc).toBe(2);
     expect(err).toContain("unrecognized arguments: --bogus");
   });
+
+  it("rejects --runtime with explicit guidance", () => {
+    let err = "";
+    const rc = main(["node", "agentera", "upgrade", "--runtime", "cursor", "--dry-run"], {
+      err: (t) => (err += t),
+    });
+    expect(rc).toBe(2);
+    expect(err).toContain("--runtime is not yet supported");
+  });
+
+  it("rejects --opencode-config-dir with explicit guidance", () => {
+    let err = "";
+    const rc = main(["node", "agentera", "upgrade", "--opencode-config-dir", "/tmp/opencode", "--dry-run"], {
+      err: (t) => (err += t),
+    });
+    expect(rc).toBe(2);
+    expect(err).toContain("--opencode-config-dir is not yet supported");
+  });
+
+  it("rejects --update-packages with explicit guidance", () => {
+    let err = "";
+    const rc = main(["node", "agentera", "upgrade", "--update-packages", "--dry-run"], {
+      err: (t) => (err += t),
+    });
+    expect(rc).toBe(2);
+    expect(err).toContain("--update-packages is not yet supported");
+  });
 });

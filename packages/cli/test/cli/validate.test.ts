@@ -57,6 +57,13 @@ describe("cli validate (delegated families)", () => {
     expect(out.trim()).toBe("lifecycle adapter metadata ok");
   });
 
+  it("accepts --legacy-python-parity on lifecycle-adapters via dispatch", () => {
+    const { rc } = capture((io) =>
+      main(["node", "agentera", "check", "validate", "lifecycle-adapters", "--legacy-python-parity"], io),
+    );
+    expect(rc).toBe(0);
+  });
+
   it("validates the app-home contract against the repo", () => {
     const { rc, out } = capture((io) => cmdValidate("app-home-contract", {}, io));
     expect(rc).toBe(0);

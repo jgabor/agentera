@@ -9,7 +9,7 @@ import {
   resolveArtifactPath,
 } from "../registries/artifactRegistry.js";
 import { resolveActiveAppModel, ActiveAppModel } from "../upgrade/appModel.js";
-import { resolveSourceRoot } from "../core/sourceRoot.js";
+import { isNpxBundleRoot, resolveSourceRoot } from "../core/sourceRoot.js";
 import os from "node:os";
 
 /**
@@ -40,21 +40,6 @@ function isInstalledManagedApp(root: string): boolean {
   );
 }
 
-/**
- * Detect a self-contained npx app bundle: the published `agentera` package
- * stages app data (skills/, references/, registry.json) under <pkg>/bundle and
- * writes a sentinel there (see scripts/copy-bundle.mjs). When the CLI resolves
- * its source root to such a bundle, the bundle IS the authoritative app home —
- * this makes `npx agentera` work with no repo checkout and no AGENTERA_HOME.
- */
-function isNpxBundle(root: string): boolean {
-  return (
-    isFileSafe(path.join(root, ".agentera-npx-bundle.json")) &&
-    fs.existsSync(path.join(root, "skills", "agentera", "SKILL.md")) &&
-    fs.existsSync(path.join(root, "registry.json"))
-  );
-}
-
 /** Faithful port of scripts/agentera `_active_app_model` (CLI-level wrapper). */
 export function activeAppModel(env: Record<string, string | undefined> = process.env): ActiveAppModel {
   const sourceRoot = resolveSourceRoot(env);
@@ -75,7 +60,7 @@ export function activeAppModel(env: Record<string, string | undefined> = process
       runtimeRoot: sourceRoot,
     };
   }
-  if (!env.AGENTERA_HOME && !env.AGENTERA_DEFAULT_INSTALL_ROOT && isNpxBundle(sourceRoot)) {
+  if (!env.AGENTERA_HOME && !env.AGENTERA_DEFAULT_INSTALL_ROOT && isNpxBundleRoot(sourceRoot)) {
     return {
       appHome: sourceRoot,
       appHomeSource: "bundled app",

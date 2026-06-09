@@ -271,12 +271,22 @@ describe("v3 packaging (T1)", () => {
   describe("single-binary surface (bun build --compile)", () => {
     let tmp: string;
 
+    function removeBunBuildArtifacts(dir: string): void {
+      if (!fs.existsSync(dir)) return;
+      for (const name of fs.readdirSync(dir)) {
+        if (name.endsWith(".bun-build")) {
+          fs.rmSync(path.join(dir, name), { force: true });
+        }
+      }
+    }
+
     beforeEach(() => {
       tmp = fs.mkdtempSync(path.join(os.tmpdir(), "bun-binary-"));
     });
 
     afterEach(() => {
       fs.rmSync(tmp, { recursive: true, force: true });
+      removeBunBuildArtifacts(PKG_ROOT);
     });
 
     function bunAvailable(): boolean {
@@ -292,7 +302,7 @@ describe("v3 packaging (T1)", () => {
       const r = spawnSync(
         "bun",
         ["build", "--compile", path.join(PKG_ROOT, "dist", "bin", "agentera.js"), "--outfile", outfile],
-        { cwd: PKG_ROOT, encoding: "utf8" },
+        { cwd: tmp, encoding: "utf8" },
       );
       expect(r.status, `bun build --compile must succeed; stderr=${r.stderr.slice(0, 500)}`).toBe(0);
       expect(fs.existsSync(outfile)).toBe(true);
@@ -317,7 +327,7 @@ describe("v3 packaging (T1)", () => {
       const r = spawnSync(
         "bun",
         ["build", "--compile", path.join(PKG_ROOT, "dist", "bin", "does-not-exist.js"), "--outfile", outfile],
-        { cwd: PKG_ROOT, encoding: "utf8" },
+        { cwd: tmp, encoding: "utf8" },
       );
       expect(r.status, "bun build --compile of a missing entrypoint must fail").not.toBe(0);
       expect(fs.existsSync(outfile)).toBe(false);

@@ -1,0 +1,240 @@
+header:
+  level: full
+  created: 2026-06-09
+  status: complete
+  reviewed: 2026-06-09
+  critic_issues: "2 found, 2 addressed, 0 dismissed"
+  revised: >-
+    (1) T1 scoped to prime/doctor/orientation/upgrade public contracts — not a
+    single-cycle rewrite of all 46 Dict-alias files. (2) T6 deferred until T4–T5
+    land extractions so prime is not split twice.
+  title: "v3 CLI structural debt — thermo-nuclear audit chore pass"
+
+what: >-
+  Address the validated thermo-nuclear code-quality findings filed on the 3.0.0
+  train in TODO.md (lines 16–33): reduce Python-port structural debt in
+  packages/cli on feat/v3 without changing user-visible CLI command shapes or
+  lifecycle semantics. Work spans shared typing, dispatch deduplication,
+  lifecycle-adapters cutover, doctor/integration refactors, and prime
+  decomposition — behavior-preserving refactors gated by existing vitest and
+  parity suites.
+
+why: >-
+  The v3 TypeScript rewrite is parity-complete but still carries untyped Dict
+  contracts, duplicated argv parsers, monolithic prime/doctor/lifecycle modules,
+  and transitional Python validation on the default npm path. The audit rated
+  feat/v3 REQUEST CHANGES for maintainability before main promotion; these
+  chores convert audit findings into sequenced, test-gated cleanup without
+  blocking unrelated 3.0.0 feature work (Decision 70 rename, mobile scaffold,
+  statusline).
+
+constraints: >-
+  Land on feat/v3 only. Behavior-preserving refactors — no command redesign, no
+  new top-level CLI surfaces, no npm publish. Preserve Decision 54
+  app-lifecycle vocabulary and the upgrade-vs-repair wording pass (resolved
+  2026-06-09). Keep monolithLint 1000-line gate green; proactive splits must
+  finish before any file crosses the threshold. Python oracle parity rows stay
+  equal unless a change is explicitly marked intentional_version_break with
+  documented rationale. Fold TODO.md closeout and plan task status into each
+  task's implementation commit per AGENTS.md — no standalone bookkeeping
+  commits. Exclude packages/mobile SvelteKit scaffold (tracked in
+  packages/mobile/TODO.md); the mobile vite-hook removal item stays deferred
+  until that scaffold lands. Do not edit vision or objective state.
+
+scope:
+  included:
+    - Shared typing for bundle/orientation/doctor public contracts
+    - Dispatch argv parser and mechanical deduplication chores
+    - lifecycleAdapters node vs legacy Python split and default-path gating
+    - buildDoctorStatus classifier and npx platform status unification
+    - summarizeProjectIntegration decision table and prime attention unification
+    - prime.ts decomposition and TODO severity ordering alignment
+    - Final state sync and TODO fold-in for addressed audit items
+  excluded:
+    - Decision 70 capability English-ID rename (separate open TODO)
+    - Mobile app scaffold and vite hook removal
+    - New features (statusline, context compression, SOUL.md)
+    - npm publish or main cutover
+  deferred:
+    - Repo-wide elimination of every Dict alias in one pass (follow-on after T1
+      establishes canonical types at IO boundaries)
+    - Full removal of legacy Python lifecycle parity (opt-in maintainer path may
+      remain after T3 gates the default)
+
+design: >-
+  Sequence foundations before extractions before decomposition. T1 introduces
+  canonical typed shapes at prime/doctor/orientation boundaries so later tasks
+  refactor against stable contracts. T2 lands low-risk mechanical dedup in
+  dispatch and install paths. T3 splits lifecycleAdapters and gates packaged-
+  Python checks off the default npm v3 validate path. T4 refactors doctor
+  classification and shared npx/platform resolution used by prime and
+  projectIntegration. T5 simplifies integration messaging and prime attention
+  into single-source flows. T6 splits prime.ts after domain logic has moved out.
+  T7 closes the plan and folds resolved TODO items.
+
+tasks:
+  - number: 1
+    name: Canonical bundle and orientation contracts
+    depends_on: []
+    status: complete
+    acceptance:
+      - >-
+        GIVEN prime, doctor, and orientation emit bundle or orientation payloads
+        WHEN a consumer reads the structured output THEN public fields use named
+        types (not ad-hoc string-key bags) at the module export boundary.
+      - >-
+        GIVEN the shared value/JSON typing module exists WHEN new code in
+        prime/doctor/orientation is added THEN it imports the canonical types
+        instead of declaring a local Dict alias.
+      - >-
+        GIVEN vitest runs on feat/v3 WHEN T1 lands THEN doctor, prime, and
+        orientation test suites pass without changing JSON field names or exit
+        codes for existing fixtures.
+
+  - number: 2
+    name: Dispatch hygiene and mechanical deduplication
+    depends_on:
+      - "1"
+    status: complete
+    acceptance:
+      - >-
+        GIVEN lifecycle, check, state, and prime dispatch parsers WHEN flags are
+        parsed THEN a shared parser module owns repeated argv loops and each
+        dispatch file delegates to it.
+      - >-
+        GIVEN prime detects v1 artifact pairs WHEN orientation runs THEN it uses
+        the same detector export as migrateArtifactsV2ToV3 with no duplicate pair
+        constant.
+      - >-
+        GIVEN defaultAppHome resolves on linux, macos, and windows WHEN paths are
+        computed THEN platform-specific helpers are the single implementation
+        source.
+      - >-
+        GIVEN upgrade is invoked with --runtime, --opencode-config-dir, or
+        --update-packages WHEN the flag is present THEN the CLI either wires it
+        through or rejects with explicit guidance — never silent no-op.
+      - >-
+        GIVEN buildDoctorStatus is called with probeCli true and no custom probe
+        WHEN the default probe runs THEN it does not always report failure for
+        the shipped doctor command path.
+      - >-
+        GIVEN JSON output is emitted from doctor and related commands WHEN
+        sorted stable JSON is required THEN one shared helper is used instead of
+        parallel pyJsonIndent implementations.
+      - >-
+        GIVEN npx bundle detection runs across CLI entry points WHEN source root
+        is classified THEN isNpxBundleRoot is the single authority.
+
+  - number: 3
+    name: Lifecycle adapters — node default, legacy Python gated
+    depends_on:
+      - "2"
+    status: complete
+    acceptance:
+      - >-
+        GIVEN agentera check validate lifecycle-adapters on npm v3 default path
+        WHEN validation runs THEN packaged-Python-script and uv-binary probes do
+        not run unless an explicit maintainer flag enables legacy parity.
+      - >-
+        GIVEN lifecycleAdapters source is inspected WHEN module size is measured
+        THEN node-form and legacy Python checks live in separate modules and no
+        single file exceeds the 1000-line monolith gate.
+      - >-
+        GIVEN vitest and lifecycle adapter tests run WHEN T3 lands THEN default
+        validate path tests pass and legacy parity remains available behind the
+        maintainer flag.
+
+  - number: 4
+    name: Doctor classification and npx platform status
+    depends_on:
+      - "1"
+      - "3"
+    status: complete
+    acceptance:
+      - >-
+        GIVEN install-root classification kinds WHEN buildDoctorStatus runs
+        THEN root status and signals are produced by a typed classifier map, not
+        a nested eleven-branch ladder in one function body.
+      - >-
+        GIVEN an npx bundle invocation WHEN prime and projectIntegration resolve
+        platform app-home status THEN both call one shared resolver that wraps
+        resolvePlatformAppHome and buildDoctorStatus consistently.
+      - >-
+        GIVEN doctor and projectIntegration parity fixtures WHEN tests run THEN
+        bundle status, signals, and integration targets match pre-refactor
+        expectations.
+
+  - number: 5
+    name: Integration decision table and unified prime attention
+    depends_on:
+      - "4"
+    status: complete
+    acceptance:
+      - >-
+        GIVEN project integration scenarios (artifacts-only, runtime-only,
+        cross-major, needs-app-upgrade) WHEN summarizeProjectIntegration runs
+        THEN outcome is selected from an explicit decision table with fixture
+        coverage per scenario.
+      - >-
+        GIVEN collectOrientationState builds attention WHEN upgrade guidance is
+        needed THEN project_integration is the single upgrade-attention source
+        and bundle-level attention forks do not contradict integration messaging.
+      - >-
+        GIVEN primeAppWording and projectIntegrationWording tests WHEN they run
+        THEN outdated, repair-needed, and cross-major scenarios assert one
+        canonical narrative per scenario.
+
+  - number: 6
+    name: Prime module decomposition
+    depends_on:
+      - "5"
+    status: complete
+    acceptance:
+      - >-
+        GIVEN prime.ts is measured WHEN T6 lands THEN v1 detection, bundle
+        status, and orientation field assembly live in focused modules and
+        prime.ts stays under the monolith gate with cmdPrime as thin dispatch.
+      - >-
+        GIVEN TODO severity ordering is needed in prime and orientation WHEN
+        summaries are built THEN both import the same ordering constant aligned
+        with state/todo.ts.
+      - >-
+        GIVEN monolithLint runs WHEN T6 lands THEN no packages/cli/src file
+        exceeds 1000 lines.
+
+  - number: 7
+    name: State sync and audit TODO closeout
+    depends_on:
+      - "6"
+    status: complete
+    acceptance:
+      - >-
+        GIVEN all prior tasks are complete WHEN vitest, typecheck, and build run
+        on feat/v3 THEN the full CLI suite is green.
+      - >-
+        GIVEN each addressed thermo-nuclear TODO item WHEN its task commit lands
+        THEN the item moves to Resolved with resolved date (not a follow-up chore
+        commit).
+      - >-
+        GIVEN the plan is complete WHEN closeout runs THEN plan.yaml archives to
+        .agentera/archive/ and the active plan slot is cleared.
+
+overall_acceptance: >-
+  GIVEN feat/v3 after the full plan WHEN a maintainer runs doctor, prime, and
+  check validate lifecycle-adapters THEN behavior and JSON shapes match
+  pre-plan fixtures except for explicitly documented legacy-gating changes.
+  GIVEN the thermo-nuclear audit TODO block WHEN the plan completes THEN every
+  in-scope chore/refactor/fix item (lines 16–33 except mobile vite deferral)
+  is resolved or explicitly deferred with rationale in surprises. GIVEN
+  packages/cli source tree WHEN measured THEN lifecycleAdapters and prime
+  remain under 1000 lines and no new monolith regressions appear.
+
+surprises:
+  - >-
+    Full vitest on darwin reports 14 pre-existing failures outside T1–T6 scope:
+    vocabularyAuthority YAML parse at update-channels.yaml line 154; npxBundle
+    realpath /private prefix mismatch; appModel platform default paths expecting
+    XDG on macOS; coexistenceProbe, codex AGENTERA_HOME path, sessionStop data
+    home, and compaction over_limit gate on the live repo tree.
+
+previous_plan_archived: .agentera/archive/PLAN-2026-06-09-upgrade-vs-repair-wording.yaml

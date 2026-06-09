@@ -110,7 +110,7 @@ export function diagnose(installRoot: string, home: string, env: Env = process.e
   if (envValue) {
     checks.push({
       name: MANAGED_KEY,
-      status: resolvePath(envValue) === installRoot ? "pass" : "warn",
+      status: resolvePath(envValue) === resolvePath(installRoot) ? "pass" : "warn",
       message: `${MANAGED_KEY}=${envValue}`,
     });
   } else {

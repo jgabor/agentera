@@ -78,12 +78,12 @@ describe("buildDoctorStatus", () => {
   });
 
   it("pins missing_marker diagnostic copy to authority-approved repair wording", () => {
-    const source = fs.readFileSync(
-      path.join(path.dirname(fileURLToPath(import.meta.url)), "../../src/upgrade/doctor.ts"),
+    const classifierSource = fs.readFileSync(
+      path.join(path.dirname(fileURLToPath(import.meta.url)), "../../src/upgrade/doctorClassifier.ts"),
       "utf8",
     );
-    expect(source).toContain('kind: "missing_marker"');
-    expect(source).toContain('message: "Agentera app files need repair"');
+    expect(classifierSource).toContain('kind: "missing_marker"');
+    expect(classifierSource).toContain('message: "Agentera app files need repair"');
   });
 
   it("reports outdated with a version_mismatch signal for a stale marker", () => {

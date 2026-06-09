@@ -17,6 +17,17 @@ import { resolvePath } from "../../src/core/paths.js";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "../../../..");
 
+function platformDefaultAppHome(home: string, xdg?: string): string {
+  if (process.platform === "darwin") {
+    return path.join(home, "Library", "Application Support", "agentera");
+  }
+  if (process.platform === "win32") {
+    return path.join(home, "AppData", "Roaming", "agentera");
+  }
+  const base = xdg ?? path.join(home, ".local", "share");
+  return path.join(base, "agentera");
+}
+
 let home: string;
 beforeEach(() => {
   home = fs.mkdtempSync(path.join(os.tmpdir(), "am-"));
@@ -35,10 +46,10 @@ describe("resolveInstallRoot", () => {
     expect(resolveInstallRoot(null, REPO_ROOT, home, { AGENTERA_HOME: custom })).toBe(resolvePath(custom));
   });
 
-  it("falls back to the XDG platform default when no env is set", () => {
+  it("falls back to the platform default when no env is set", () => {
     const xdg = path.join(home, ".local", "share");
     expect(resolveInstallRoot(null, REPO_ROOT, home, { XDG_DATA_HOME: xdg })).toBe(
-      resolvePath(path.join(xdg, "agentera")),
+      resolvePath(platformDefaultAppHome(home, xdg)),
     );
   });
 
@@ -56,7 +67,7 @@ describe("resolveInstallRoot", () => {
       AGENTERA_HOME: legacy,
       XDG_DATA_HOME: xdg,
     });
-    expect(resolved).toBe(resolvePath(path.join(xdg, "agentera")));
+    expect(resolved).toBe(resolvePath(platformDefaultAppHome(home, xdg)));
   });
 });
 
@@ -64,7 +75,7 @@ describe("resolveActiveAppModel", () => {
   it("returns the app-model roots", () => {
     const xdg = path.join(home, ".local", "share");
     const model = resolveActiveAppModel(null, { home, env: { XDG_DATA_HOME: xdg } });
-    const appHome = resolvePath(path.join(xdg, "agentera"));
+    const appHome = resolvePath(platformDefaultAppHome(home, xdg));
     expect(model.appHome).toBe(appHome);
     expect(model.managedAppRoot).toBe(path.join(appHome, "app"));
     expect(model.authoritativeRoot).toBe(model.managedAppRoot);

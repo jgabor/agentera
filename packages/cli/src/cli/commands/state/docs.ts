@@ -21,9 +21,8 @@ import {
   truncate,
 } from "../../stateQuery.js";
 import { SchemaInfo, artifactPath } from "../../appContext.js";
+import { capabilityStartupComplete } from "../../startupCompletenessContract.js";
 import { out, err, StateArgs, Io } from "./shared.js";
-
-const STARTUP_COMPLETENESS_MISSING_STATE: string[] = [];
 
 export function queryDocs(args: StateArgs, schemas: Record<string, SchemaInfo>, io: Io): number {
   const o = out(io);
@@ -103,7 +102,7 @@ export function queryDocs(args: StateArgs, schemas: Record<string, SchemaInfo>, 
           mapping_entries: mapping.length,
           coverage,
           source_contract: {
-            capability_startup_complete: STARTUP_COMPLETENESS_MISSING_STATE.length === 0,
+            capability_startup_complete: capabilityStartupComplete(),
             raw_artifact_reads_required: false,
           },
         },

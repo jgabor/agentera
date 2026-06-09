@@ -55,9 +55,9 @@ function runCrossCapability(): ProcResult {
   return { stdout: "cross-capability artifact graph ok\n", stderr: "", returncode: 0 };
 }
 
-function runLifecycleAdapters(): ProcResult {
+function runLifecycleAdapters(legacyPythonParity = false): ProcResult {
   const lines: string[] = [];
-  const rc = lifecycleMain({ out: (line) => lines.push(line) });
+  const rc = lifecycleMain({ legacyPythonParity, out: (line) => lines.push(line) });
   return { stdout: lines.map((l) => l + "\n").join(""), stderr: "", returncode: rc };
 }
 
@@ -96,13 +96,18 @@ function repoRoot(): string {
   return process.cwd();
 }
 
-const DELEGATED_RUNNERS: Record<string, () => ProcResult> = {
-  "cross-capability": runCrossCapability,
-  "lifecycle-adapters": runLifecycleAdapters,
-  "app-home-contract": runAppHomeContract,
-  vocabularyAuthority: runVocabularyAuthority,
-  selfAudit: runSelfAudit,
-  "release-metadata": runReleaseMetadata,
+export interface DelegatedValidateArgs {
+  format?: string;
+  legacyPythonParity?: boolean;
+}
+
+const DELEGATED_RUNNERS: Record<string, (args: DelegatedValidateArgs) => ProcResult> = {
+  "cross-capability": () => runCrossCapability(),
+  "lifecycle-adapters": (args) => runLifecycleAdapters(Boolean(args.legacyPythonParity)),
+  "app-home-contract": () => runAppHomeContract(),
+  vocabularyAuthority: () => runVocabularyAuthority(),
+  selfAudit: () => runSelfAudit(),
+  "release-metadata": () => runReleaseMetadata(),
 };
 
 function validationProcessPayload(
@@ -135,7 +140,7 @@ function delegatedValidationPayload(targetFamily: string, result: ProcResult, en
   return payload;
 }
 
-export function cmdValidate(family: string, args: { format?: string }, io: Io): number {
+export function cmdValidate(family: string, args: DelegatedValidateArgs, io: Io): number {
   const out = io.out ?? ((t: string) => process.stdout.write(t));
   const err = io.err ?? ((t: string) => process.stderr.write(t));
   if (!(family in DELEGATED_RUNNERS)) {
@@ -144,7 +149,7 @@ export function cmdValidate(family: string, args: { format?: string }, io: Io): 
         "cross-capability, lifecycle-adapters, app-home-contract, vocabularyAuthority, selfAudit, release-metadata, capability-contract.",
     );
   }
-  const result = DELEGATED_RUNNERS[family]();
+  const result = DELEGATED_RUNNERS[family](args);
   if ((args.format ?? "text") === "json") {
     emitStructured(
       delegatedValidationPayload(family, result, VALIDATE_DELEGATED_SCRIPTS[family]),

@@ -9,6 +9,8 @@ import {
   cmdValidateDescriptors,
   isDelegatedValidateFamily,
 } from "../commands/validate.js";
+import { LEGACY_PYTHON_PARITY_FLAG } from "../../validate/lifecycleAdapters.js";
+import { makeArgvValueReader } from "./argvParser.js";
 import { asEnvelopeFormat, classifyParseError, type Io } from "./shared.js";
 import { emitInvalidInput } from "../errors.js";
 
@@ -16,13 +18,12 @@ import { emitInvalidInput } from "../errors.js";
 export function parseLintArgs(argv: string[]): LintArgs | { error: string } {
   const args: LintArgs = { artifact: "", file: null, text: null, strict: false, format: "text" };
   let sawArtifact = false;
-  for (let i = 0; i < argv.length; i++) {
+  let i = 0;
+  const value = makeArgvValueReader(argv, () => i, (n) => {
+    i = n;
+  });
+  for (; i < argv.length; i++) {
     const a = argv[i];
-    const value = (name: string): string | null => {
-      if (a === name) return argv[++i];
-      if (a.startsWith(name + "=")) return a.slice(name.length + 1);
-      return null;
-    };
     let v: string | null;
     if ((v = value("--artifact")) !== null) {
       args.artifact = v;
@@ -79,13 +80,12 @@ export function compactModeOf(argv: string[]): string {
 
 export function parseCompactArgs(argv: string[]): CompactArgs | { error: string } {
   const args: CompactArgs = { project: null, mode: "check", format: "text" };
-  for (let i = 0; i < argv.length; i++) {
+  let i = 0;
+  const value = makeArgvValueReader(argv, () => i, (n) => {
+    i = n;
+  });
+  for (; i < argv.length; i++) {
     const a = argv[i];
-    const value = (name: string): string | null => {
-      if (a === name) return argv[++i];
-      if (a.startsWith(name + "=")) return a.slice(name.length + 1);
-      return null;
-    };
     let v: string | null;
     if (a === "--apply") {
       args.mode = "fix";
@@ -129,10 +129,13 @@ export function runValidate(argv: string[], io: Io, prog: string): number {
   let artifactFlag: string | null = null;
   let fileFlag: string | null = null;
   let cwdFlag: string | null = null;
+  let legacyPythonParity = false;
   let format: "text" | "json" = "text";
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
-    if (a === "--format") {
+    if (a === LEGACY_PYTHON_PARITY_FLAG) {
+      legacyPythonParity = true;
+    } else if (a === "--format") {
       const v = argv[++i];
       if (v !== "text" && v !== "json") {
         return emitInvalidInput(io, {
@@ -242,7 +245,7 @@ export function runValidate(argv: string[], io: Io, prog: string): number {
       return cmdValidateArtifact({ artifact: artifactFlag, file: fileFlag, cwd: cwdFlag, format }, io);
     }
     if (isDelegatedValidateFamily(family)) {
-      return cmdValidate(family, { format }, io);
+      return cmdValidate(family, { format, legacyPythonParity }, io);
     }
     return emitInvalidInput(io, {
       format,

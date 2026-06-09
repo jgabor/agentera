@@ -18,4 +18,5 @@ packages/web/.wrangler
 packages/cli/dist
 packages/cli/*.tgz
 packages/cli/bundle
+*.bun-build
 sandbox-report-*.json
