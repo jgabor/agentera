@@ -285,6 +285,16 @@ function appStatusAttention(bundle: Dict): string {
       `\`${bundle.dryRunCommand}\`); app_home=${bundle.appHome}`
     );
   }
+  if (bundle.status === "repair_needed" && bundle.dryRunCommand) {
+    return (
+      `degraded: app files need repair; preview \`${bundle.dryRunCommand}\`; app_home=${bundle.appHome}`
+    );
+  }
+  if (bundle.status === "migration_needed" && bundle.dryRunCommand) {
+    return (
+      `degraded: app files need migration; preview \`${bundle.dryRunCommand}\`; app_home=${bundle.appHome}`
+    );
+  }
   if (bundle.dryRunCommand) {
     const label = String(bundle.status).replace(/_/g, " ");
     return `degraded: app ${label}; preview \`${bundle.dryRunCommand}\`; app_home=${bundle.appHome}`;

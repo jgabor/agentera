@@ -192,6 +192,8 @@ describe("install-root classification", () => {
     expect(result.diagnostic.evidence.expectedVersion).toBe("current");
     expect(result.diagnostic.evidence.currentVersion).toBe("old");
     expect(result.diagnostic.evidence.reason).toBe("version_mismatch");
+    expect(result.diagnostic.message).toContain("need an update");
+    expect(result.diagnostic.message).not.toContain("need repair");
     expect(fs.readdirSync(root).some((n) => n.startsWith(".refresh"))).toBe(false);
   });
 
