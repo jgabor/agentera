@@ -40,6 +40,15 @@ Starlight pages are the published layer. When protocol docs change, update
 `references/` or `skills/` first, then migrate content to Starlight incrementally.
 Do not duplicate long-term — link back to repository sources where appropriate.
 
+### Release vs draft boundary
+
+`packages/web/src/content/docs/` is **draft until release promotion**. End users
+read the deployed site for the version they run — not in-repo Starlight edits on
+`feat/v3`. Do not describe unreleased CLI or product behavior as current in
+Starlight pages while it still lives only under `CHANGELOG.md` `## [Unreleased]`.
+Ship user-facing doc changes with the release cut that promotes the matching
+`CHANGELOG` section, same as root `CHANGELOG.md` policy in `AGENTS.md`.
+
 ## Stack
 
 - **Astro 6** with `@astrojs/starlight` for docs at `/docs`

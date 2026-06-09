@@ -1,0 +1,93 @@
+header:
+  level: full
+  created: 2026-06-09
+  reviewed: 2026-06-09
+  status: complete
+  title: Agent operating doctrine and bookkeeping simplification
+  critic_issues: 5 found, 5 addressed, 0 dismissed
+  revised: >-
+    Scoped EXPECTED/ACTUAL to one documented template row; limited TODO hash
+    rewrite to three examples; deferred Cursor user-rule sync; clarified
+    feat/v3-only authority edits until trunk cutover; tied web boundary to
+    CHANGELOG Unreleased cross-check.
+what: >-
+  Revise Agentera agent operating guidance (AGENTS.md and related authority) so
+  commit and artifact closeout rules match trunk-based development on main,
+  eliminate hash-backfill bookkeeping commits, and adopt high-fit patterns from
+  external agent-constitution research (command recipes, refactor-then-behavior
+  sequencing, comment discipline, parity bug-demonstration, release docs boundary).
+why: >-
+  Git history audit (last 50–100 commits on feat/v3) shows fold-in works for
+  feature/fix work but ~15–20% of commits are bookkeeping-leaning: TODO hash
+  backfills, progress cycle hashes, plan archives, and dual-branch ledger updates.
+  The current AGENTS.md fold-in model fights its own Resolved-line `@ hash`
+  convention and capability closeout rituals. feat/v3 is temporary; target flow is
+  trunk-based commits to main with no PR dependency. Inspirera mapped lazygit
+  AGENTS.md patterns with high confidence for command index, commit sequencing,
+  and comment/history split.
+constraints: >-
+  Scope feat/v3 for AGENTS.md, todo conventions, and test/docs spikes; no vision
+  or objective edits. Keep conventional commits and closed scope table. Do not
+  import lazygit anti-patterns (no PR ban, no conventional-commit ban, no agent
+  squash of fixups). CHANGELOG fold-into-release policy stays.
+design: >-
+  Treat AGENTS.md as the agent constitution: front-load how to work, then commit
+  law, then artifact closeout. Replace hash-ledger hygiene with git-native
+  traceability (date, release version, git log). Bookkeeping fold-in means same
+  commit as the behavior it records; release cuts are the main exception.
+  Refactor-then-behavior is normative for realisera/orkestrera. EXPECTED/ACTUAL
+  is one documented parity template for bisect-friendly regressions.
+overall_acceptance: >-
+  GIVEN an agent completes a fix WHEN it closes a TODO item THEN the Resolved
+  line uses date or release version and no follow-up commit exists solely to
+  record `@ hash`. GIVEN AGENTS.md after this plan WHEN read THEN it includes
+  Common commands, trunk-based main target, feat/v3 as temporary rewrite branch,
+  refactor-then-behavior guidance, and revised bookkeeping without dual-branch
+  hash reconciliation. GIVEN capability closeout WHEN health or decisions update
+  THEN writes ride the implementation commit. GIVEN npmParityMatrix WHEN the
+  EXPECTED/ACTUAL spike lands THEN one row documents demonstrate-then-fix flow.
+  GIVEN web docs WHEN the boundary note exists THEN unreleased behavior is not
+  presented as current for end users.
+tasks:
+  - number: 1
+    name: Correct branch model and inventory bookkeeping triggers
+    depends_on: []
+    status: complete
+  - number: 2
+    name: Rewrite Agentera commits and bookkeeping fold-in rules
+    depends_on:
+      - "1"
+    status: complete
+  - number: 3
+    name: Add Common commands cheat sheet to AGENTS.md
+    depends_on:
+      - "2"
+    status: complete
+  - number: 4
+    name: Simplify TODO Resolved convention
+    depends_on:
+      - "2"
+    status: complete
+  - number: 5
+    name: Capability closeout fold-in guidance
+    depends_on:
+      - "2"
+    status: complete
+  - number: 6
+    name: EXPECTED/ACTUAL parity regression template
+    depends_on:
+      - "1"
+    status: complete
+  - number: 7
+    name: Web release vs draft documentation boundary
+    depends_on: []
+    status: complete
+  - number: 8
+    name: Validate authority and close this plan
+    depends_on:
+      - "3"
+      - "4"
+      - "5"
+      - "6"
+      - "7"
+    status: complete
