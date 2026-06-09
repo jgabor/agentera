@@ -60,7 +60,10 @@ ARTIFACTS:
     artifact_id: design
     local_role: consumes
     description: >-
-      Hej reads this for the briefing's design status.
+      Hej reads this for project design status metadata (exists, stale, missing).
+      Suite chrome styling uses protocol.yaml, prime --context capability prose,
+      and v2 app-home DESIGN.md when present — not the host project's design
+      artifact.
   11:
     id: A11
     artifact_id: profile

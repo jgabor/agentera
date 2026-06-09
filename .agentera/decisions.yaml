@@ -133,34 +133,40 @@ decisions:
       - name: Defer all visualisera governance changes
         status: rejected
         description: Leaves agent-output drift unmanaged despite an existing design system.
-    choice: Adopt Phase 1 prose governance for visualisera in one refine pass.
+    choice: >-
+      Adopt Phase 1 prose governance for visualisera in one refine pass.
       Formalize `agentera prime --context visualisera` plus DESIGN.md read as a
-      hard Step 0 gate in visualisera instructions. Add a brand-vs-product
-      register to DESIGN.md with a narrow product register covering the hej
-      dashboard, capability introductions, and structured artifact headers,
-      while human-facing root docs such as README and UPGRADE remain the brand
-      register. Expand DESIGN.md constraints with agent-output anti-patterns and
-      a slop test for generic agent formatting. Defer deterministic
-      design-output linting, named iteration commands beyond
-      create/refine/audit, and reverse-engineer workflows until evidence or 3.0
-      CLI work justifies them.
-    reasoning: Agentera already owns the token layer; the gap is explicit governance
-      for agent-rendered output. Prose changes are low cost, contract-aligned,
-      and do not require a new CLI command. A narrow product register preserves
-      logo scarcity and glyph discipline where agents emit structured output
-      while leaving public docs room to breathe. Tooling can follow once drift
-      is observable or CLI parity work can absorb a lint surface cleanly.
+      hard Step 0 gate in visualisera instructions. Add brand-vs-product output
+      registers and suite-vs-project design authorities to DESIGN.md (alongside
+      the terminal/mobile surface register on feat/v3). Expand DESIGN.md
+      constraints with agent-output anti-patterns and a slop test. Defer
+      deterministic design-output linting until evidence or 3.0 CLI work
+      justifies it. Amend 2026-06-09 — suite chrome follows protocol.yaml,
+      prime --context capability prose (D65), and v2 app-home DESIGN.md when
+      present; host project DESIGN.md is project-product authority only; hej
+      reads project design for status metadata only.
+    reasoning: >-
+      Agentera already owns the token layer; the gap is explicit governance for
+      agent-rendered output. Prose changes are contract-aligned and do not
+      require a new CLI command. Resonera amendment 2026-06-09 separates suite
+      design authority from project design authority so a host repo's DESIGN.md
+      (for example a user-built coding-agent CLI) never conflates with Agentera
+      chrome. On v3, capability prose ships in packages/cli instruction modules
+      (D65); npm bundle does not copy suite DESIGN.md into host projects.
     confidence: firm
-    feeds_into: DESIGN.md, skills/agentera/capabilities/visualisera/instructions.md,
-      visualisera
+    feeds_into: DESIGN.md, packages/cli/src/capabilities/visualisera/instructions.ts,
+      skills/agentera/capabilities/hej/schemas/artifacts.yaml, visualisera
     satisfaction:
       state: user_confirmed_satisfied
-      evidence: User confirmed satisfaction during resonera review on 2026-05-31.
-        Phase 1 prose governance remains the right approach; implementation is
-        still downstream.
+      evidence: >-
+        Phase 1 prose governance and 2026-06-09 suite-vs-project authority
+        amendment implemented on feat/v3 — DESIGN.md (terminal/mobile + output
+        registers + design authorities), visualisera instruction module Step 0
+        gate and safety rails, hej design artifact schema. User confirmed
+        satisfaction in resonera on 2026-06-09.
       user_confirmation:
         confirmed_by: user
-        confirmed_at: 2026-05-31
+        confirmed_at: 2026-06-09
   - number: 63
     date: 2026-05-24
     question: How should Agentera add Cursor as a first-class runtime in v1?
@@ -226,17 +232,17 @@ decisions:
       package-registry.yaml
     satisfaction:
       state: user_confirmed_satisfied
-      evidence: Cursor v1 slice shipped in commit 151043d with cursor and cursor-agent
-        registry records, repo-native hooks and managed agents,
-        upgrade/doctor/eval paths, and parity docs. Live preToolUse Write smoke
-        passed 2026-05-24 with invalid-block and valid-allow evidence in
-        `.agentera/smoke-cursor-pretooluse-evidence.txt` and progress cycle 596.
-        Plan Task 8 closeout synchronized artifacts and bumped version metadata
-        to 2.7.0. User confirmed satisfaction during resonera review on
-        2026-05-31.
+      evidence: >-
+        Cursor v1 slice shipped with cursor and cursor-agent registry records,
+        repo-native hooks and managed agents, upgrade/doctor/eval paths, and
+        parity docs. Live preToolUse Write smoke passed 2026-05-24. Cross-platform
+        app-home resolution is implemented in the TypeScript CLI
+        (`packages/cli/src/state/installRoot.ts`). User confirmed satisfaction in
+        resonera on 2026-06-09 after verifying macOS app-home resolves to
+        `~/Library/Application Support/agentera`.
       user_confirmation:
         confirmed_by: user
-        confirmed_at: 2026-05-31
+        confirmed_at: 2026-06-09
   - number: 64
     date: 2026-05-26
     question: How should Agentera refine VISION.md after the recent direction shift?
