@@ -10,9 +10,11 @@ import {
   APP_OUTDATED,
   APP_REPAIR_NEEDED,
   APP_UP_TO_DATE,
+  appLifecycleApprovalPhrase,
   buildDoctorStatus,
   publicDoctorStatus,
 } from "../../src/upgrade/doctor.js";
+import { renderDoctorStatus } from "../../src/cli/commands/doctor.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "../../../..");
@@ -94,6 +96,24 @@ describe("buildDoctorStatus", () => {
     expect(status.dryRunCommand).toContain("npx -y agentera@latest");
     expect(status.dryRunCommand).toContain("upgrade");
     expect(status.applyCommand).toContain("--yes");
+    expect(status.approval).toBe(appLifecycleApprovalPhrase(APP_OUTDATED, appHome));
+    expect(status.approval).toContain("update");
+    expect(status.approval).not.toContain("repair");
+    const rendered = renderDoctorStatus(status);
+    expect(rendered).toContain("Preview the update:");
+    expect(rendered).not.toContain("Preview the repair:");
+  });
+
+  it("uses repair approval wording for repair_needed installs", () => {
+    const appHome = path.join(tmp, "repair");
+    fs.mkdirSync(path.join(appHome, ".agentera"), { recursive: true });
+    fs.writeFileSync(path.join(appHome, ".agentera", "progress.yaml"), "cycles: []\n");
+    const status = buildDoctorStatus(appHome, { rootSource: "explicit --install-root", ...common });
+    expect(status.status).toBe(APP_REPAIR_NEEDED);
+    expect(status.approval).toContain("repair");
+    expect(status.approval).not.toContain("update");
+    const rendered = renderDoctorStatus(status);
+    expect(rendered).toContain("Preview the repair:");
   });
 
   it("reports user_data_only repair for an app home with only Agentera data", () => {

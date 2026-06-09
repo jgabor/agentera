@@ -96,8 +96,24 @@ for that briefing and render from the output. The object includes
 `expectedVersion`, `expectedVersionSource`, `appHome`, `managedAppRoot`,
 `userDataRoot`, repair commands, and approval text.
 
+### User-facing update wording
+
+When `bundle.status` is `outdated` or doctor reports version-behind app files,
+the install is valid but older than expected. Use **update** language, not
+repair or broken-install framing.
+
+1. What happened: `Agentera app files are out of date.`
+2. What the preview did: `Nothing was changed.`
+3. What the recommended fix will do: `Update Agentera app files to the expected version in the normal Agentera directory.`
+4. What it will not do: `It will not edit your project files, shell startup files, or unknown directories.`
+
+Name both the operation and the command: for example, `app files outdated; run agentera upgrade`.
+Ask for explicit approval before writes with plain wording such as
+`Approve the Agentera app-file update at <directory>`.
+
 ### User-facing repair wording
 
+When `bundle.status` is `repair_needed`, files are missing, incomplete, or broken.
 Recovery and troubleshooting prompts must be plain enough for a non-technical
 user. Never ask the user to choose between technical install concepts, internal
 directory states, command-mode flags, or package-layout terms. Keep those as
@@ -143,28 +159,17 @@ the upgrade output, not from the old default directory. If the command executes 
 fails before argparse, reports `invalid choice` for `prime`, or reports a status of
 `outdated`, `manual_review_needed`, missing-command, or repair-needed:
 
-- Say `Agentera found an old or broken local copy of itself.`
+- For `outdated` only: use the **update wording** section above (`Agentera app files are out of date`, approve an app-file **update**).
+- For `repair_needed`, missing-command, or broken-install states: use the **repair wording** section above (`old or broken local copy`, approve a **repair**).
+- For `manual_review_needed`: say Agentera needs a user decision before any writes.
 - Say whether the preview changed anything; preview commands change nothing.
 - State the safe recommendation in plain language before paths or commands.
-- Show the clone-free preview command from `bundle.dryRunCommand` when present:
-
-```bash
-npx -y agentera@latest doctor
-```
+- Show the clone-free preview command from `bundle.dryRunCommand` when present.
 
 Ask for explicit approval before writes. A normal affirmative response is
-acceptable only when it clearly authorizes the same Agentera repair and directory.
-If approved, apply:
-
-```bash
-npx -y agentera@latest prime
-```
-
-After apply, retry:
-
-```bash
-npx -y agentera prime
-```
+acceptable only when it clearly authorizes the same Agentera update, repair, or
+migration and directory. If approved, apply the matching `bundle.applyCommand` or
+channel-aware `agentera upgrade --yes` form, then retry `npx -y agentera prime`.
 
 If `AGENTERA_HOME` names the old default `$HOME/.agents/agentera`, no explicit
 `--install-root` was supplied, and `npx -y agentera` is

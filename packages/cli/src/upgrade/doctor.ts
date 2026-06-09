@@ -28,6 +28,24 @@ export const APP_REPAIR_NEEDED = "repair_needed";
 export const APP_MIGRATION_NEEDED = "migration_needed";
 export const APP_MANUAL_REVIEW_NEEDED = "manual_review_needed";
 export const EXPECTED_STATE_COMMANDS = ["prime"] as const;
+
+/** Operation noun for doctor/prime copy derived from aggregate lifecycle status. */
+export function appLifecycleActionNoun(status: string): string {
+  if (status === APP_OUTDATED) {
+    return "update";
+  }
+  if (status === APP_MIGRATION_NEEDED) {
+    return "migration";
+  }
+  return "repair";
+}
+
+export function appLifecycleApprovalPhrase(status: string, installRoot: string): string {
+  if (status === APP_UP_TO_DATE) {
+    return "no action needed: Agentera app files are up to date";
+  }
+  return `approve app files ${appLifecycleActionNoun(status)} for ${installRoot}`;
+}
 export const BUNDLE_MARKER = ".agentera-bundle.json";
 
 /** Agentera user state preserved during v2→v3 managed app-home cleanup. */
@@ -434,7 +452,7 @@ export function buildDoctorStatus(installRoot: string, opts: BuildDoctorStatusOp
       path.join(activeBundleRoot, "scripts", "agentera"),
       expectedCommands[0] ?? "prime",
     ]),
-    approval: `approve app files repair for ${installRoot}`,
+    approval: appLifecycleApprovalPhrase(status, installRoot),
   };
 }
 

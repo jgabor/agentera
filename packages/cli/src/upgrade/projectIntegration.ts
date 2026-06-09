@@ -317,7 +317,19 @@ export function summarizeProjectIntegration(args: ProjectIntegrationArgs): Proje
     message =
       "Your Agentera app copy is still on v2 while the CLI is on v3; preview the one-way v2→v3 migration before applying.";
   } else if (needsAppUpgrade) {
-    message = "Your Agentera app copy is out of date; preview the repair or upgrade before applying.";
+    if (integrationTargets.bundleStatus === APP_OUTDATED) {
+      message =
+        "Your Agentera app copy is out of date; preview the update with agentera upgrade before applying.";
+    } else if (integrationTargets.bundleStatus === APP_REPAIR_NEEDED) {
+      message =
+        "Your Agentera app copy needs repair; preview the repair with agentera upgrade before applying.";
+    } else if (integrationTargets.bundleStatus === APP_MIGRATION_NEEDED) {
+      message =
+        "Your Agentera app copy needs migration; preview the migration with agentera upgrade before applying.";
+    } else {
+      message =
+        "Your Agentera app copy is out of date; preview the update with agentera upgrade before applying.";
+    }
   } else if (pending.length > 0) {
     const runtimes = pendingRuntimes.length > 0 ? pendingRuntimes.join(", ") : "runtime configs";
     message = projectHasProjectLevelRuntimeHooks(args.project)

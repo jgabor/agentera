@@ -6,7 +6,6 @@
 
 ## → Normal
 
-- [ ] [fix:3.0.0] Fix so that upgrades are not presented as repairs during `prime` or `doctor`. A version upgrade is distinct from a repair, even if they might overlap in their behavior.
 - [ ] [feat:3.0.0] Detect "You're right", "my mistake", "You're right to push back" responses during profiling, to add generalized behavioral rules to the profile based on the times the human had to correct the model's behavior.
 - [ ] [feat:3.0.0] Add or adapt context compression and memory techniques, such as `https://github.com/zdk/lowfat` and/or `https://github.com/yvgude/lean-ctx`, that seamlessly compresses context, stores insights and memories, etc., to enhance all capabilities' accuracy and token efficiency. Benchmarked using a cost methodology similar to `https://github.com/jahala/tilth/tree/main/benchmark`
 - [ ] [feat:3.0.0] Add `statusline` command to show data such as current plan status, health, etc. that can be used by runtimes, similar to `https://github.com/ryoppippi/ccusage`, `https://github.com/avinashbest/cli-status-bar`, and `https://cursor.com/changelog/04-14-26`
@@ -17,6 +16,7 @@
 
 ## ✓ Resolved
 
+- [x] [fix:3.0.0] Fix so that upgrades are not presented as repairs during `prime` or `doctor` · resolved on `feat/v3` (uncommitted): `appLifecycleActionNoun` / `appLifecycleApprovalPhrase` in `upgrade/doctor.ts`; `managedStaleDiagnosticMessage` splits `version_mismatch`→update vs repair; `projectIntegration` and `prime.appStatusAttention` derive verbs from lifecycle status; `skills/agentera/SKILL.md` adds User-facing update wording; regression tests in `installRoot.test.ts`, `doctor.test.ts`, `projectIntegrationWording.test.ts`, and `primeAppWording.test.ts`; `check validate app-home-contract` pass.
 - [x] [docs:3.0.0] Decide on Swedish -era verbs or standardizing on plain English (e.g., `agentera optimera` vs `agentera optimize`) · resolved 2026-06-09: Decision 70 — promote D43 English aliases to canonical v3 IDs; v2 `@latest` keeps Swedish; closeout deliberation pinned implementation details.
 
 - [x] [fix:3.0.0] `agentera state todo --format json` ignores GitHub task-list `[x]`/`[ ]` checkboxes before Agentera `[type]` tags · resolved on `feat/v3` @ 8c15b32 and `main` @ b1150e4 (2.7.9): shared markdown parser classifies `- [x] [type] …` as resolved and excludes those rows from open issue counts and hej `next_action`; `- [ ] [type] …` and type-only bullets stay open. Regression coverage in `packages/cli/test/cli/todoMarkdown.test.ts`, `state.test.ts`, `orientation.test.ts`, and `tests/test_query_cli.py::TestTodo::test_github_checkbox_before_type_tag_json`.

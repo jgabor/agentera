@@ -233,6 +233,13 @@ function managedFresh(
   );
 }
 
+function managedStaleDiagnosticMessage(reason: string): string {
+  if (reason === "version_mismatch") {
+    return "Agentera app files are valid but need an update to the expected version";
+  }
+  return "Agentera app files need repair";
+}
+
 function managedStale(
   root: string,
   source: string,
@@ -253,7 +260,7 @@ function managedStale(
     {
       code: "install_root.managed_stale",
       severity: "warning",
-      message: "Agentera app files need repair",
+      message: managedStaleDiagnosticMessage(reason),
       evidence: { path: root, source: sourceLabel(source), reason, ...evidence },
     },
     { expectedVersion: expected, currentVersion: current },

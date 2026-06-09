@@ -12,6 +12,7 @@ import {
   APP_OUTDATED,
   APP_REPAIR_NEEDED,
   APP_UP_TO_DATE,
+  appLifecycleActionNoun,
   buildDoctorStatus,
   EXPECTED_STATE_COMMANDS,
   ProbeResult,
@@ -77,12 +78,6 @@ function plainStatus(value: string): string {
   return PLAIN_STATUS[value] ?? value.replace(/_/g, " ").replace(/-/g, " ");
 }
 
-function doctorActionNoun(status: Dict): string {
-  if (status.status === APP_OUTDATED) return "update";
-  if (status.status === APP_MIGRATION_NEEDED) return "migration";
-  return "repair";
-}
-
 /** In-process probe: confirm the TS CLI exposes the expected state commands. */
 function inProcessProbe(args: { expectedCommands: readonly string[] }): ProbeResult {
   const missing = args.expectedCommands.filter((name) => !DISPATCHER_COMMANDS.has(name));
@@ -102,7 +97,7 @@ function inProcessProbe(args: { expectedCommands: readonly string[] }): ProbeRes
 }
 
 export function renderDoctorStatus(status: Dict): string {
-  const actionNoun = doctorActionNoun(status);
+  const actionNoun = appLifecycleActionNoun(String(status.status));
   const lines = [
     "Agentera doctor",
     `status: ${plainStatus(status.status)}`,
