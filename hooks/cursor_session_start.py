@@ -28,13 +28,22 @@ def _resolve_install_root(cwd: Path) -> Path | None:
     env_root = os.environ.get("AGENTERA_HOME")
     if env_root:
         candidate = Path(env_root).expanduser().resolve()
-        if install_root_module.classify_resolved_root(candidate, source="env").kind == "managed_fresh":
+        if install_root_module.classify_resolved_root(candidate, source="environment").kind in {
+            "managed_fresh",
+            "managed_stale",
+        }:
             return candidate
     for parent in (cwd, *cwd.parents):
         if install_root_module.classify_resolved_root(parent, source="walk").kind == "managed_fresh":
             return parent
     if install_root_module.classify_resolved_root(PLUGIN_ROOT, source="plugin").kind == "managed_fresh":
         return PLUGIN_ROOT
+    default_root, _source = install_root_module.resolve_candidate(None, env=os.environ, home=Path.home())
+    if install_root_module.classify_resolved_root(default_root, source="default").kind in {
+        "managed_fresh",
+        "managed_stale",
+    }:
+        return default_root
     return None
 
 

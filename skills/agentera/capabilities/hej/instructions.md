@@ -17,14 +17,15 @@ or explicitly asks for fallback.
 
 ### CLI-first access
 
-For returning projects, run one composite command before any individual state
-access:
+For returning projects, resolve the app home in one separate command, then run prime:
 
 ```bash
+RESOLVED_AGENTERA_HOME="$(uvx --from git+https://github.com/jgabor/agentera agentera app-home)"
 uv run "$RESOLVED_AGENTERA_HOME/app/scripts/agentera" prime
 ```
 
-Use that output to render the dashboard and select the concrete next action. Do
+In a local Agentera checkout, the resolver may use `uv run scripts/agentera app-home`
+instead of `uvx`. Use that output to render the dashboard and select the concrete next action. Do
 not relay raw CLI lines as the user-facing briefing. Source labels such as
 `mode:`, `profile:`, `v1_migration:`, `health:`, `issues:`, `plan:`,
 `objective:`, `attention:`, `next_action:`, `source_contract:`, and the
@@ -38,10 +39,11 @@ of adding routine fallback reads. Use top-level fallback commands only when
 `agentera hej` fails or explicitly reports fallback-only recovery.
 
 Resolve `RESOLVED_AGENTERA_HOME` with the app-home precedence `AGENTERA_HOME`
-when set, otherwise the platform data home, then run
-the installed command once. Do not preflight app health with `glob`, `grep`,
-`read`, `ls`, `python`, `doctor`, `--help`, `scripts/install_root.py`,
-`registry.json`, or `.agentera-bundle.json`.
+when set, otherwise the platform data home from `agentera app-home`, then run
+the installed command once. Do not substitute the Linux-only
+`${XDG_DATA_HOME:-$HOME/.local/share}/agentera` fallback on macOS or Windows. Do
+not preflight app health with `glob`, `grep`, `read`, `ls`, `python`, `doctor`,
+`--help`, `registry.json`, or `.agentera-bundle.json`.
 Never combine the app-home assignment with the same shell command that expands
 the managed app script path; shell expansion can otherwise turn an unset
 `AGENTERA_HOME` into `/app/scripts/agentera` before the assignment takes effect.

@@ -19,7 +19,6 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any, Mapping
 
-
 BUNDLE_MARKER = ".agentera-bundle.json"
 SETUP_EVIDENCE = (
     "scripts/validate_capability.py",
@@ -427,3 +426,64 @@ def _missing_script_commands(script: Path, commands: tuple[str, ...]) -> list[st
     except OSError:
         return list(commands)
     return [command for command in commands if command not in text]
+
+
+def format_resolved_app_home(
+    explicit_root: str | Path | None = None,
+    *,
+    env: Mapping[str, str] | None = None,
+    home: Path | None = None,
+    output_format: str = "text",
+) -> str:
+    """Return the resolved app home for agent/bootstrap callers."""
+    resolved_env = env if env is not None else os.environ
+    resolved_home = home if home is not None else Path.home()
+    path, source = resolve_candidate(explicit_root, env=resolved_env, home=resolved_home)
+    if output_format == "json":
+        return json.dumps(
+            {
+                "path": str(path),
+                "source": source,
+                "sourceLabel": SOURCE_LABELS.get(source, source),
+                "platform": sys.platform,
+            }
+        )
+    return str(path)
+
+
+def main(argv: list[str] | None = None) -> int:
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Resolve Agentera app-home paths.")
+    parser.add_argument(
+        "--format",
+        choices=["text", "json"],
+        default="text",
+        help="Output format (default: text prints the resolved app-home path only)",
+    )
+    parser.add_argument(
+        "--install-root",
+        type=Path,
+        default=None,
+        help="Explicit app home to resolve (default: AGENTERA_HOME, then platform data home)",
+    )
+    parser.add_argument(
+        "--home",
+        type=Path,
+        default=Path.home(),
+        help="Home directory used for the default app home",
+    )
+    args = parser.parse_args(argv)
+    print(
+        format_resolved_app_home(
+            args.install_root,
+            env=os.environ,
+            home=args.home,
+            output_format=args.format,
+        )
+    )
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

@@ -1,12 +1,34 @@
 cycles:
+- number: 622
+  timestamp: 2026-06-09 19:30
+  type: fix
+  phase: build
+  what: Add app-home bootstrap for cross-platform agent discovery (D63 gap).
+  commit: 'f2151a9 fix(cli): add app-home bootstrap for cross-platform agent discovery'
+  discovered: Resonera D63 review found agents/skill bootstrap used Linux-only `~/.local/share/agentera`
+    when `AGENTERA_HOME` was unset on macOS, missing `~/Library/Application Support/agentera`;
+    same failure class likely on Windows (`%APPDATA%/agentera`).
+  verified: uv run scripts/agentera app-home resolves macOS Application Support path;
+    app-home-contract pass; tests/test_cross_capability.py 52 passed; install_root
+    + app-home tests 12 passed; rebased onto origin/main (382fa5e) without conflicts;
+    b769812 test prose assertion fix.
+  next: Push to origin/main; user confirmation for D63 satisfaction after fix ships.
+  context:
+    intent: Close D63 provisional app-home discovery gap from resonera satisfaction
+      review on 2026-06-09.
+    constraints: No vision or objective edits; D63 remains provisionally_satisfied
+      until user confirms.
+    scope: scripts/agentera, scripts/install_root.py, skills/agentera/SKILL.md, hej
+      instructions, hooks/cursor_session_start.py, references/adapters/cursor.md,
+      UPGRADE.md, decisions.yaml, tests/test_cross_capability.py.
 - number: 621
   timestamp: 2026-06-03 12:00
   type: chore
   phase: build
   what: Mirror 2.7.7 stable slice on main (D66, citations, compaction).
   discovered: null
-  verified: "tests/test_evaluator_handoff_contract.py 8 passed; tests/test_compaction_status.py\
-    \ +4; pre-commit pytest 1382 passed; check compact pass; validate PROGRESS.md pass."
+  verified: tests/test_evaluator_handoff_contract.py 8 passed; tests/test_compaction_status.py
+    +4; pre-commit pytest 1382 passed; check compact pass; validate PROGRESS.md pass.
   next: null
   context:
     intent: Land Python stable 2.7.7 slice from feat/v3 commit 6b8af92.
@@ -158,25 +180,9 @@ cycles:
     constraints: No version bump; no remote push; never amend to backfill commit hashes.
     scope: TODO.md, CHANGELOG.md, progress.yaml, plan.yaml closeout only; implementation
       in 8be19c4, cf0aa93, 55a9df8.
-- number: 612
-  timestamp: 2026-05-29 15:00
-  type: feat
-  phase: build
-  what: Add progress commit-hash churn guard and `agentera check backfill`.
-  discovered: Repo progress.yaml carried a dangling b78a417 hash across cycles 602-610
-    (orphaned by a prior amend) plus malformed multi-line commit scalars in 603-605;
-    the guard surfaced both.
-  verified: 1344 passed pytest tests/ -q -n auto; capability-contract validation pass;
-    backfill check reports clean and validate_artifact passes on the reconciled progress.yaml.
-  next: Forward-fill cycle 612 commit hash in the next cycle (never amend).
-  context:
-    intent: Break the progress commit-hash amend/backfill loop with a validator guard
-      plus a backfill command, not another manual amend.
-    constraints: No release bump; never amend to backfill; preserve comments and non-commit
-      fields when rewriting.
-    scope: hooks/validate_artifact.py, scripts/agentera check backfill, tests/test_progress_commit_guard.py,
-      CHANGELOG.
 archive:
+- summary: 'Cycle 612 (2026-05-29): Add progress commit-hash churn guard and `agentera
+    check backfill`.'
 - summary: 'Cycle 611 (2026-05-29): Deduplicate session hook resolve_session_path
     and compact_entries helpers.'
 - summary: 'Cycle 610 (2026-05-29): Consolidate yaml.safe_load None-return handling
@@ -250,5 +256,3 @@ archive:
     for instruction reads.'
 - summary: 'Cycle 574 (2026-05-18): Added capability validator regression coverage
     for required instructions.md.'
-- summary: 'Cycle 573 (2026-05-18): Added routing and execution vocabulary occurrence
-    classification coverage.'

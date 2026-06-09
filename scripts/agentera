@@ -73,6 +73,7 @@ from agentera_upgrade import (
     resolve_doctor_install_root,
     resolve_source_root,
 )
+import install_root as install_root_module  # noqa: E402
 
 
 CONTROL_CHAR_RE = re.compile(r"[\x00-\x1f\x7f]")
@@ -4873,6 +4874,19 @@ def _build_prime_capability_context_payload(
     }
 
 
+def cmd_app_home(args: argparse.Namespace) -> int:
+    explicit = getattr(args, "install_root", None)
+    home = getattr(args, "home", Path.home())
+    output = install_root_module.format_resolved_app_home(
+        explicit,
+        env=os.environ,
+        home=home,
+        output_format=str(getattr(args, "format", "text")),
+    )
+    print(output)
+    return 0
+
+
 def cmd_prime(args: argparse.Namespace) -> int:
     capability = getattr(args, "context", None)
     dashboard = bool(getattr(args, "dashboard", False) or getattr(args, "orientation", False))
@@ -7999,6 +8013,29 @@ def build_parser() -> argparse.ArgumentParser:
     )
     add_structured_args(prime)
 
+    app_home = sub.add_parser(
+        "app-home",
+        help="Print the resolved Agentera app home for bootstrap commands",
+    )
+    app_home.add_argument(
+        "--install-root",
+        type=_agent_path,
+        default=None,
+        help="Explicit app home to resolve (default: AGENTERA_HOME, then platform data home)",
+    )
+    app_home.add_argument(
+        "--home",
+        type=_agent_path,
+        default=Path.home(),
+        help="Home directory used for the default app home",
+    )
+    app_home.add_argument(
+        "--format",
+        choices=["text", "json"],
+        default="text",
+        help="Output format (text prints the resolved app-home path only)",
+    )
+
     schema = sub.add_parser(
         "schema",
         help="Runtime CLI/schema introspection",
@@ -8421,6 +8458,8 @@ def main(argv: list[str] | None = None) -> int:
     try:
         if args.command == "prime":
             return cmd_prime(args)
+        if args.command == "app-home":
+            return cmd_app_home(args)
         if args.command == "schema":
             return cmd_schema(args)
         if args.command == "describe":

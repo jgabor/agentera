@@ -164,8 +164,10 @@ app-home assignment with the same shell command that expands the managed app
 script path; shell expansion can otherwise turn an unset `AGENTERA_HOME` into
 `/app/scripts/agentera` before the assignment takes effect.
 
-If `AGENTERA_HOME` is unset, use the shared app-home contract's default platform
-data home. If it points at a missing path, a file, or a directory with unrelated
+If `AGENTERA_HOME` is unset, resolve the app home with `agentera app-home` in a
+separate command before expanding `"$RESOLVED_AGENTERA_HOME/app/scripts/agentera"`.
+Do not substitute the Linux-only `${XDG_DATA_HOME:-$HOME/.local/share}/agentera`
+fallback on macOS or Windows. If it points at a missing path, a file, or a directory with unrelated
 files, Agentera stops instead of guessing. Choose a different Agentera directory,
 or use `--force` only after checking that directory is safe to replace.
 

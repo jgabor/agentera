@@ -14,9 +14,12 @@ reference resolution, plus collective checks for prose cross-references.
 
 from __future__ import annotations
 
+import importlib.util
 import re
 import subprocess
+import sys
 from pathlib import Path
+from types import ModuleType
 
 import yaml
 import pytest
@@ -42,6 +45,18 @@ CAPABILITY_NAMES = sorted(
 PROTOCOL_ID_RE = re.compile(r"\b([A-Z]{2}\d+)\b")
 
 KNOWN_CAPABILITY_NAMES = frozenset(CAPABILITY_NAMES)
+
+
+def _load_install_root() -> ModuleType:
+    spec = importlib.util.spec_from_file_location(
+        "agentera_install_root_module_cross",
+        REPO_ROOT / "scripts" / "install_root.py",
+    )
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
 
 
 def _load_protocol_ids() -> set[str]:
@@ -260,7 +275,7 @@ def test_routine_capability_guidance_uses_top_level_state_commands():
     assert 'uv run "$RESOLVED_AGENTERA_HOME/app/scripts/agentera" prime' in hej
     assert "Agentera found an old or broken local copy" in hej
     assert "advanced/custom inspection only" in hej
-    assert "Do not preflight app health" in hej
+    assert "not preflight app health" in hej
     assert "Do not run separate v1 artifact or PROFILE.md checks" in hej
     assert "Use the safe fix" in hej
     assert "agentera upgrade --dry-run" in hej
@@ -331,9 +346,11 @@ def test_master_bundle_health_gate_is_single_call():
 
     assert "Single-call installed CLI gate" in text
     assert "Resolve `RESOLVED_AGENTERA_HOME` with the app-home precedence" in text
-    assert "otherwise the platform data home" in text
+    assert "agentera app-home" in text
+    assert "Do not substitute" in text
+    assert "Linux-only" in text
     assert "Do not run `glob`, `grep`, `read`" in text
-    assert "scripts/install_root.py`, `registry.json`" in text
+    assert "`registry.json`" in text
     assert "If the command exits successfully" in text
     assert "inspect the CLI-provided `bundle.status`" in text
     assert "`bundle.dryRunCommand`" in text
@@ -396,3 +413,56 @@ def test_upgrade_guide_documents_app_home_recovery_and_artifact_backups():
     assert "managed runtime config, plugins, hooks, commands" in text
     assert "without `--install-root`" in text
     assert "backups under `.agentera/backup-v1/` after preview and confirmation" in text
+
+
+def test_agentera_app_home_uses_platform_default_on_darwin(tmp_path: Path, monkeypatch) -> None:
+    install_root = _load_install_root()
+    monkeypatch.setattr(install_root.sys, "platform", "darwin")
+    home = tmp_path / "home"
+    monkeypatch.setenv("HOME", str(home))
+    monkeypatch.delenv("AGENTERA_HOME", raising=False)
+    monkeypatch.delenv("AGENTERA_DEFAULT_INSTALL_ROOT", raising=False)
+    monkeypatch.delenv("XDG_DATA_HOME", raising=False)
+
+    expected = home / "Library" / "Application Support" / "agentera"
+    assert install_root.format_resolved_app_home(env={}, home=home) == str(expected.resolve())
+
+
+def test_agentera_app_home_cli_prints_platform_default(monkeypatch) -> None:
+    monkeypatch.delenv("AGENTERA_HOME", raising=False)
+    monkeypatch.delenv("AGENTERA_DEFAULT_INSTALL_ROOT", raising=False)
+    cli = REPO_ROOT / "scripts" / "agentera"
+    result = subprocess.run(
+        [sys.executable, str(cli), "app-home"],
+        cwd=REPO_ROOT,
+        text=True,
+        capture_output=True,
+        check=True,
+    )
+    resolved = Path(result.stdout.strip())
+    assert resolved.name == "agentera"
+    if sys.platform == "darwin":
+        assert "Application Support" in str(resolved)
+    script = resolved / "app" / "scripts" / "agentera"
+    if script.is_file():
+        assert script.is_file()
+
+
+def test_linux_only_xdg_fallback_is_not_documented_for_installed_gate() -> None:
+    text = SKILL_MD_PATH.read_text(encoding="utf-8")
+    hej = (CAPABILITIES_DIR / "hej" / "instructions.md").read_text(encoding="utf-8")
+    combined = text + "\n" + hej
+    assert "agentera app-home" in combined
+    assert "Do not substitute" in combined
+    assert "Linux-only" in combined
+    assert "macOS or Windows" in combined
+    assert 'RESOLVED_AGENTERA_HOME="$(uvx' in combined
+
+    install_root = _load_install_root()
+    home = Path("/tmp/agentera-cross-capability-home")
+    env = {
+        "APPDATA": str(home / "AppData" / "Roaming"),
+        "XDG_DATA_HOME": str(home / ".local" / "share"),
+    }
+    known = install_root.known_platform_default_app_homes(env, home)
+    assert (home / "AppData" / "Roaming" / "agentera").resolve() in known

@@ -59,10 +59,15 @@ subsequent hook executions run.
 ## AGENTERA_HOME wiring
 
 Primary path: `hooks/cursor_session_start.py` resolves the install root from
-`AGENTERA_HOME`, project walk-up, or the plugin/checkout root (`hooks/` parent)
-when the hook runs from a plugin install, then returns
-`{"env": {"AGENTERA_HOME": "<root>"}}` plus optional `additional_context` from
-the shared session digest.
+`AGENTERA_HOME`, project walk-up, the plugin/checkout root (`hooks/` parent)
+when the hook runs from a plugin install, or the platform default app home
+(`~/Library/Application Support/agentera` on macOS, `%APPDATA%/agentera` on
+Windows, `$XDG_DATA_HOME/agentera` on Linux) through `install_root.resolve_candidate`,
+then returns `{"env": {"AGENTERA_HOME": "<root>"}}` plus optional
+`additional_context` from the shared session digest. Agents bootstrapping shell
+commands without session env must resolve the path with `agentera app-home` in a
+separate command; do not hardcode Linux-only `~/.local/share/agentera` on macOS
+or Windows.
 
 Fallback: `scripts/setup_cursor.py` reports persistent shell configuration only
 when live shell-tool smoke proves session env does not propagate to CLI

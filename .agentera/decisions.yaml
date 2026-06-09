@@ -522,7 +522,13 @@ decisions:
       paths, and parity docs. Live preToolUse Write smoke passed 2026-05-24 with invalid-block
       and valid-allow evidence in `.agentera/smoke-cursor-pretooluse-evidence.txt`
       and progress cycle 596. Plan Task 8 closeout synchronized artifacts and bumped
-      version metadata to 2.7.0. User confirmation pending.
+      version metadata to 2.7.0. Resonera review 2026-06-09 kept provisional because
+      agent/skill bootstrap used a Linux-only `~/.local/share/agentera` fallback on
+      macOS when `AGENTERA_HOME` was unset, missing the platform default at `~/Library/Application
+      Support/agentera`. The same failure class likely affects Windows (`%APPDATA%/agentera`)
+      when callers hardcode XDG paths. Fix adds `agentera app-home`, skill/hej gate prose,
+      cursor sessionStart platform-default resolution, and cross-platform tests. User
+      confirmation pending after fix ships.
 - number: 64
   date: '2026-05-26'
   question: How should Agentera refine VISION.md after the recent direction shift?
