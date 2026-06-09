@@ -20,11 +20,11 @@ Ship a working change from anywhere — discuss, plan, build, review — in one 
 
 ## Packages
 
-| Package | Path | What it is |
-| ------- | ---- | ---------- |
+| Package              | Path                                   | What it is                                                                   |
+| -------------------- | -------------------------------------- | ---------------------------------------------------------------------------- |
 | **@agentera/mobile** | [`packages/mobile`](./packages/mobile) | Mobile/web app — primary product surface (SvelteKit, Cursor SDK, Cloudflare) |
-| **@agentera/web** | [`packages/web`](./packages/web) | Marketing site and published Starlight docs |
-| **@agentera/cli** | [`packages/cli`](./packages/cli) | Agent runtime and `.agentera/` project-state CLI (npm: `agentera`) |
+| **@agentera/web**    | [`packages/web`](./packages/web)       | Marketing site and published Starlight docs                                  |
+| **@agentera/cli**    | [`packages/cli`](./packages/cli)       | Agent runtime and `.agentera/` project-state CLI (npm: `agentera`)           |
 
 Agentera does not support extensions, plugins, or MCP servers in the mobile product. It ships with a fixed system prompt, fixed tools, and a workflow that works out of the box.
 
@@ -84,22 +84,22 @@ The mobile app is the primary surface for living inside this workflow. The CLI q
 
 ## Capabilities
 
-Twelve built-in workflows. The mobile app shows English names; the CLI and internal runtime use Swedish `-era` IDs.
+Twelve built-in workflows. v3 (`@next`) uses English capability names everywhere; v2 stable (`@latest`) retains the legacy Swedish `-era` IDs (Decision 70).
 
-| | User-facing | Internal | Use it when you need... |
-| --- | --- | --- | --- |
-| ⌂ | brief | hej | Project briefing and next best action |
-| ⛥ | vision | visionera | Product direction |
-| ❈ | discuss | resonera | Structured deliberation |
-| ⬚ | research | inspirera | External pattern analysis |
-| ≡ | plan | planera | Scoped plan with acceptance criteria |
-| ⧉ | build | realisera | One verified development cycle |
-| ⎘ | optimize | optimera | Metric-driven optimization |
-| ▤ | document | dokumentera | Documentation aligned with code |
-| ◰ | design | visualisera | Visual identity and design tokens |
-| ⛶ | audit | inspektera | Architecture and project health audits |
-| ♾ | profile | profilera | Reusable decision profile |
-| ⎈ | orchestrate | orkestrera | Autonomous plan execution with evaluation |
+|     | Capability  | Use it when you need...                   |
+| --- | ----------- | ----------------------------------------- |
+| ⌂   | status      | Project briefing and next best action     |
+| ⛥   | vision      | Product direction                         |
+| ❈   | discuss     | Structured deliberation                   |
+| ⬚   | research    | External pattern analysis                 |
+| ≡   | plan        | Scoped plan with acceptance criteria      |
+| ⧉   | build       | One verified development cycle            |
+| ⎘   | optimize    | Metric-driven optimization                |
+| ▤   | document    | Documentation aligned with code           |
+| ◰   | design      | Visual identity and design tokens         |
+| ⛶   | audit       | Architecture and project health audits    |
+| ♾   | profile     | Reusable decision profile                 |
+| ⎈   | orchestrate | Autonomous plan execution with evaluation |
 
 Say what you want — "help me decide" routes to discuss; Agentera guides from there.
 
@@ -183,9 +183,9 @@ Runtime parity details: [`references/adapters/runtime-feature-parity.md`](./refe
 <details>
 <summary><strong>CLI channels and upgrade</strong></summary>
 
-| Channel | npm tag | Use for |
-| --- | --- | --- |
-| development (3.x) | `@next` | `npx -y agentera@next` |
+| Channel                    | npm tag   | Use for                  |
+| -------------------------- | --------- | ------------------------ |
+| development (3.x)          | `@next`   | `npx -y agentera@next`   |
 | stable (2.x until cutover) | `@latest` | `npx -y agentera@latest` |
 
 Upgrade and migration: [`UPGRADE.md`](./UPGRADE.md).
@@ -215,4 +215,4 @@ Capability schemas: `skills/agentera/capabilities/<name>/schemas/`. Instruction 
 
 ---
 
-**License:** [Apache-2.0](./LICENSE) · **Changelog:** [`CHANGELOG.md`](./CHANGELOG.md) · **Version:** 3.0.0-dev.6 (`@next`; stable `@latest` remains 2.x until cutover)
+**License:** [Apache-2.0](./LICENSE) · **Version:** 3.0.0-dev.6 · **Author:** Jonathan Gabor [jgabor.se](https://jgabor.se)

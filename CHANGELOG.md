@@ -4,6 +4,7 @@
 
 ### Changed
 
+- Recorded Decision 70 (satisfied 2026-06-09): v3 will promote the Decision 43 English alias set to canonical capability IDs (`status`, `vision`, `discuss`, `research`, `plan`, `build`, `optimize`, `audit`, `document`, `profile`, `design`, `orchestrate`); Swedish `-era` IDs retire from the v3 surface; orientation stays `agentera prime` with `prime --context status`; v2 stable (`npx -y agentera@latest`) keeps Swedish IDs. Mechanical rename lands in a follow-up implementation PR; mobile retires the `brief` label for `status`.
 - Documented mobile monorepo open decisions in `docs/consolidation/mobile-open-decisions.md` (CLI ↔ mobile integration options, `@agentera/mobile` publish identity, skill-bundle horizon, D3 provisional alias table, `packages/tui` vs `agentera-tui`, temporary `vite.config.ts` hook stub).
 - Closed mobile docs/artifacts monorepo integration pass: `packages/mobile/` docs stub, D67/D68 and archived staging D1–D5, D68 delivery-surface wording sync, lefthook `vp staged` hook via minimal Vite+ config (progress cycle 650).
 - Aligned audience-namespace migration docs with npm 3.x Phase 3 dispatch: top-level `hej`, `describe`, `gate`, and routine-state names are removed; transitional aliases (`validate`, `compact`, `verify`, `stats`, `lint`, `query`) still forward with stderr deprecation.

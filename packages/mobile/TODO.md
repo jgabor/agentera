@@ -14,7 +14,7 @@ Open decisions (CLI integration, publish identity, skill horizon): [`docs/consol
 
 ## → Normal
 
-- [ ] [docs] Publish mobile product page on packages/web Starlight site
+- [ ] [docs] Publish mobile product page on packages/web site
 - [ ] [chore] Wire CI for packages/mobile when app source lands (lefthook pre-commit already configured)
 - [ ] [chore] Remove temporary `vite.config.ts` hook plumbing when SvelteKit scaffold replaces it
 

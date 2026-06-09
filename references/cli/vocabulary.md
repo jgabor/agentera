@@ -56,7 +56,8 @@ examples. Diagnostics should state object, state, cause, and fix.
 | @agentera/mobile           | The flagship mobile/web app package at `packages/mobile`. SvelteKit, Cursor SDK, Cloudflare Worker.                                                                                                                                                                                 | `packages/mobile/README.md`, `packages/mobile/DESIGN.md`                         |
 | Agentera skill             | Runtime-loaded skill at `skills/agentera/` — a delivery surface for the same twelve-capability workflow inside supported editors. Contains the routing entry and twelve capabilities; not user extensibility.                                                                       | `skills/agentera/SKILL.md`, `README.md` Internals                                |
 | Capability                 | A routed behavioral unit inside the Agentera skill, with the prose module `packages/cli/src/capabilities/<name>/instructions.ts` plus `triggers.yaml`, `artifacts.yaml`, `validation.yaml`, and `exit.yaml`.                                                                        | `AGENTS.md`, `skills/agentera/capabilities/*`, `packages/cli/src/capabilities/*` |
-| Capability alias           | User-facing English name in the mobile app (e.g. `brief`, `discuss`) mapped to internal `-era` IDs (e.g. `hej`, `resonera`). Documented in `packages/mobile/README.md`; schemas retain internal IDs.                                                                                | `packages/mobile/README.md`, `.agentera/decisions.yaml`                          |
+| Capability canonical name (v3) | The English name binding for v3+ capability invocation, per Decision 70. Promoted from the Decision 43 alias set. Mobile UX, web docs, editor skills, and the CLI all use the same English name; the v2 stable distribution uses the legacy Swedish `-era` IDs (see `Legacy Swedish capability names`).                                                                                | `.agentera/decisions.yaml` (D43, D70), `references/cli/vocabulary-index.yaml` (protected_surfaces)                          |
+| Legacy Swedish capability names (v2 stable) | The historical Swedish `-era` IDs (e.g. `hej`, `resonera`) used by the v2 stable distribution (`npx -y agentera@latest`) and preserved as historical references in archived plans, decisions, and changelogs. Out of scope for v3 surface per Decision 70. Coexistence probe surfaces per-distribution naming divergence.                                                                                | `.agentera/decisions.yaml` (D70), `references/cli/vocabulary-index.yaml` (protected_surfaces)                          |
 | Shared protocol            | Internal primitive vocabulary in `protocol.yaml`: confidence, severity, decision labels, exits, visual tokens, glyphs, and phases.                                                                                                                                                  | `skills/agentera/protocol.yaml`                                                  |
 | Capability schema contract | The executable contract for capability schema groups, stable IDs, priorities, deprecations, and primitive references.                                                                                                                                                               | `skills/agentera/capability_schema_contract.yaml`                                |
 | Project state              | Structured files that preserve intent, decisions, plans, progress, health, docs, design, and session continuity.                                                                                                                                                                    | `README.md`, `.agentera/docs.yaml`                                               |
@@ -150,24 +151,27 @@ and parsing code, but transform them before presenting a user dashboard:
 
 Primary route aliases are slash-route vocabulary, not CLI command vocabulary:
 
-| Canonical capability | Primary route alias     |
-| -------------------- | ----------------------- |
-| `hej`                | `/agentera status`      |
-| `visionera`          | `/agentera vision`      |
-| `resonera`           | `/agentera discuss`     |
-| `inspirera`          | `/agentera research`    |
-| `planera`            | `/agentera plan`        |
-| `realisera`          | `/agentera build`       |
-| `optimera`           | `/agentera optimize`    |
-| `inspektera`         | `/agentera audit`       |
-| `dokumentera`        | `/agentera document`    |
-| `profilera`          | `/agentera profile`     |
-| `visualisera`        | `/agentera design`      |
-| `orkestrera`         | `/agentera orchestrate` |
+| Canonical capability (v3) | Legacy Swedish ID (v2 stable) | Slash route              |
+| ------------------------- | ----------------------------- | ------------------------ |
+| `status`                  | `hej`                         | `/agentera status`       |
+| `vision`                  | `visionera`                   | `/agentera vision`       |
+| `discuss`                 | `resonera`                    | `/agentera discuss`      |
+| `research`                | `inspirera`                   | `/agentera research`     |
+| `plan`                    | `planera`                     | `/agentera plan`         |
+| `build`                   | `realisera`                   | `/agentera build`        |
+| `optimize`                | `optimera`                    | `/agentera optimize`     |
+| `audit`                   | `inspektera`                  | `/agentera audit`        |
+| `document`                | `dokumentera`                 | `/agentera document`     |
+| `profile`                 | `profilera`                   | `/agentera profile`      |
+| `design`                  | `visualisera`                 | `/agentera design`       |
+| `orchestrate`             | `orkestrera`                  | `/agentera orchestrate`  |
 
-Do not teach primary aliases as CLI state commands. The CLI state surface
-remains `hej`, `plan`, `progress`, `health`, `todo`, `decisions`, `docs`,
-`objective`, `experiments`, and advanced `query`.
+Do not teach primary aliases as CLI state commands. v3 orientation is
+`agentera prime` (capability ID `status` via `prime --context status`); routine
+state reads use `agentera state plan`, `state progress`, `state health`,
+`state todo`, `state decisions`, `state docs`, `state objective`,
+`state experiments`, and advanced `state query`. The v2 stable distribution
+retains `hej` and the rest of the Swedish capability surface per Decision 70.
 
 When capability prose recommends another capability, use the handoff label
 grammar (`<glyph> <capability>`). Keep slash forms only when documenting the
