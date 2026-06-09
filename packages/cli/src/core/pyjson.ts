@@ -2,9 +2,23 @@
  * Python-faithful JSON string helpers.
  *
  * Mirrors CPython's `json` encoder for the cases the CLI/hook surfaces need:
- * ensure_ascii escaping and the default inline separators (", " / ": ") with
- * insertion-ordered object keys (no sort_keys).
+ * ensure_ascii escaping and the default inline separators (", " / ": ").
+ * `pyJsonInline` / `pyJsonIndent` keep insertion-ordered object keys; sorted
+ * variants match `json.dumps(..., sort_keys=True)` for doctor parity.
  */
+
+export type PyJsonScalarHook = (value: unknown) => string | undefined;
+
+function formatScalar(value: unknown, hook?: PyJsonScalarHook): string | null {
+  const hooked = hook?.(value);
+  if (hooked !== undefined) return hooked;
+  if (value === null || value === undefined) return "null";
+  if (value === true) return "true";
+  if (value === false) return "false";
+  if (typeof value === "number") return String(value);
+  if (typeof value === "string") return pyJsonString(value);
+  return null;
+}
 
 /** Mirror Python json encoder string escaping with ensure_ascii=True. */
 export function pyJsonString(str: string): string {
@@ -75,6 +89,61 @@ export function pyJsonIndent(value: unknown, indent = 2, level = 0): string {
     if (entries.length === 0) return "{}";
     const items = entries.map(
       ([k, v]) => pad + pyJsonString(k) + ": " + pyJsonIndent(v, indent, level + 1),
+    );
+    return "{\n" + items.join(",\n") + "\n" + closePad + "}";
+  }
+  return "null";
+}
+
+/**
+ * Mirror Python `json.dumps(value, sort_keys=True)` with default options:
+ * sorted object keys, separators (", " / ": "), ensure_ascii=True.
+ */
+export function pyJsonDumps(value: unknown, hook?: PyJsonScalarHook): string {
+  const scalar = formatScalar(value, hook);
+  if (scalar !== null) return scalar;
+  if (Array.isArray(value)) return "[" + value.map((v) => pyJsonDumps(v, hook)).join(", ") + "]";
+  if (typeof value === "object") {
+    const keys = Object.keys(value as Record<string, unknown>).sort();
+    return (
+      "{" +
+      keys
+        .map((k) => `${pyJsonString(k)}: ${pyJsonDumps((value as Record<string, unknown>)[k], hook)}`)
+        .join(", ") +
+      "}"
+    );
+  }
+  return "null";
+}
+
+/**
+ * Mirror Python `json.dumps(value, indent=2, sort_keys=True)` with default
+ * options: sorted object keys, ensure_ascii=True, 2-space indentation.
+ */
+export function pyJsonIndentSorted(
+  value: unknown,
+  indent = 2,
+  level = 0,
+  hook?: PyJsonScalarHook,
+): string {
+  const pad = " ".repeat(indent * (level + 1));
+  const closePad = " ".repeat(indent * level);
+  const scalar = formatScalar(value, hook);
+  if (scalar !== null) return scalar;
+  if (Array.isArray(value)) {
+    if (value.length === 0) return "[]";
+    const items = value.map((v) => pad + pyJsonIndentSorted(v, indent, level + 1, hook));
+    return "[\n" + items.join(",\n") + "\n" + closePad + "]";
+  }
+  if (typeof value === "object") {
+    const keys = Object.keys(value as Record<string, unknown>).sort();
+    if (keys.length === 0) return "{}";
+    const items = keys.map(
+      (k) =>
+        pad +
+        pyJsonString(k) +
+        ": " +
+        pyJsonIndentSorted((value as Record<string, unknown>)[k], indent, level + 1, hook),
     );
     return "{\n" + items.join(",\n") + "\n" + closePad + "}";
   }

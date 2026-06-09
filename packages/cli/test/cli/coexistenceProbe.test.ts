@@ -18,6 +18,16 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "../../../..");
 const V2_APP_HOME_FIXTURE = path.join(__dirname, "../upgrade/fixtures/v2-app-home");
 
+function platformDefaultAppHome(home: string): string {
+  if (process.platform === "darwin") {
+    return path.join(home, "Library", "Application Support", "agentera");
+  }
+  if (process.platform === "win32") {
+    return path.join(home, "AppData", "Roaming", "agentera");
+  }
+  return path.join(home, ".local", "share", "agentera");
+}
+
 function captureDoctor(home: string): string {
   let out = "";
   const priorHome = process.env.HOME;
@@ -67,7 +77,7 @@ describe("v2/v3 coexistence probe (v3 doctor)", () => {
 
   it("detects a synthetic v2 managed app home under the platform default path", () => {
     const home = fs.mkdtempSync(path.join(os.tmpdir(), "coexistence-v2-"));
-    const appHome = path.join(home, ".local", "share", "agentera");
+    const appHome = platformDefaultAppHome(home);
     fs.cpSync(V2_APP_HOME_FIXTURE, appHome, { recursive: true });
     expect(isV2ManagedInstallAtAppHome(appHome)).toBe(true);
     expect(detectV2Coexistence({ home, env: { HOME: home } }).length).toBeGreaterThan(0);
@@ -94,7 +104,7 @@ describe("v2/v3 coexistence probe (v3 doctor)", () => {
 
   it("emits the coexistence warning when a v2 install is staged in the default app home", () => {
     const home = fs.mkdtempSync(path.join(os.tmpdir(), "coexistence-doctor-v2-"));
-    const appHome = path.join(home, ".local", "share", "agentera");
+    const appHome = platformDefaultAppHome(home);
     fs.cpSync(V2_APP_HOME_FIXTURE, appHome, { recursive: true });
     const output = captureDoctor(home);
     expect(output).toContain("v3 detected alongside v2; pick one line");

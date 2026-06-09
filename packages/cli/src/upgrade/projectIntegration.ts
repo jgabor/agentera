@@ -5,9 +5,8 @@ import {
   APP_MIGRATION_NEEDED,
   APP_OUTDATED,
   APP_REPAIR_NEEDED,
-  APP_UP_TO_DATE,
-  buildDoctorStatus,
 } from "./doctor.js";
+import { resolveNpxPlatformStatus } from "./npxPlatformStatus.js";
 import { classifyInstall, crossMajorBoundaryApplies } from "./compatibility.js";
 import { resolveInvokedUpdateChannel, type ResolvedUpdateChannel } from "./channels.js";
 import fs from "node:fs";
@@ -22,9 +21,15 @@ import {
   projectHasProjectLevelRuntimeHooks,
   textUsesPythonManagedEntrypoint,
 } from "./runtimeMigration.js";
-import { resolvePlatformAppHome } from "./appModel.js";
-import { buildUpgradeCommands, type UpgradeOnlyPhase } from "./upgradeCommands.js";
 import { isStableSuccessorAnnounced } from "./nextMajorDoctor.js";
+import { buildUpgradeCommands, type UpgradeOnlyPhase } from "./upgradeCommands.js";
+import {
+  classifyIntegrationScenario,
+  integrationScenarioMessage,
+  integrationScenarioNeedsInstallRoot,
+  integrationScenarioOnlyPhases,
+  integrationScenarioRecommendation,
+} from "./projectIntegrationDecision.js";
 import {
   classifyUpgradeOutcome,
   shouldIncludeCrossMajorPlanItems,
@@ -172,20 +177,15 @@ function resolveIntegrationTargets(args: ProjectIntegrationArgs): {
       crossMajorBoundary: args.crossMajorBoundary ?? false,
     };
   }
-  const platformRoot = resolvePlatformAppHome(args.home, args.env);
-  const platformStatus = buildDoctorStatus(platformRoot, {
-    rootSource: "default",
-    sourceRoot: args.sourceRoot,
+  const { platformRoot, platformStatus } = resolveNpxPlatformStatus({
     home: args.home,
+    sourceRoot: args.sourceRoot,
     project: args.project,
-    expectedCommands: ["prime"],
-    probeCli: false,
-    skipNpxBundleShortCircuit: true,
     env: args.env,
   });
   return {
     installRoot: platformRoot,
-    bundleStatus: args.bundleStatus,
+    bundleStatus: platformStatus.status,
     crossMajorBoundary: Boolean(platformStatus.crossMajorBoundary),
   };
 }
@@ -240,50 +240,27 @@ export function summarizeProjectIntegration(args: ProjectIntegrationArgs): Proje
   const crossMajorMigration =
     crossMajor && shouldIncludeCrossMajorPlanItems(channel, upgradeOutcome);
   const crossMajorNeedsPreview = crossMajor && !crossMajorMigration;
-  const needsAppUpgrade =
-    isNpxBundleRoot(args.sourceRoot) && args.bundleStatus === APP_UP_TO_DATE
-      ? false
-      : appNeedsUpgrade(integrationTargets.bundleStatus);
-  const artifactsOnly = v1Artifacts.length > 0 && !crossMajorMigration && !crossMajorNeedsPreview && !needsAppUpgrade;
-  const runtimeOnly =
-    pending.length > 0 &&
-    !artifactsOnly &&
-    !crossMajorMigration &&
-    !crossMajorNeedsPreview &&
-    !needsAppUpgrade;
+  const needsAppUpgrade = appNeedsUpgrade(integrationTargets.bundleStatus);
 
-  if (
-    integrationTargets.bundleStatus === APP_MANUAL_REVIEW_NEEDED &&
-    pending.length === 0 &&
-    v1Artifacts.length === 0 &&
-    !crossMajor
-  ) {
+  const scenario = classifyIntegrationScenario({
+    bundleStatus: integrationTargets.bundleStatus,
+    pendingRuntimeCount: pending.length,
+    pendingArtifactCount: v1Artifacts.length,
+    crossMajor,
+    crossMajorMigration,
+    crossMajorNeedsPreview,
+    needsAppUpgrade,
+  });
+  const recommendation = integrationScenarioRecommendation(scenario);
+  const message = integrationScenarioMessage(scenario, {
+    projectLevelRuntimeHooks: projectHasProjectLevelRuntimeHooks(args.project),
+    pendingRuntimes,
+  });
+
+  if (recommendation === "stay") {
     return {
       recommendation: "stay",
-      message:
-        "Agentera needs manual review for your app directory before this project can be upgraded safely.",
-      pending_runtime: 0,
-      pending_runtimes: [],
-      pending_artifacts: 0,
-      dry_run_command: null,
-      apply_command: null,
-      update_channel: channel.channel,
-    };
-  }
-
-  if (
-    !artifactsOnly &&
-    !runtimeOnly &&
-    !crossMajorMigration &&
-    !crossMajorNeedsPreview &&
-    !needsAppUpgrade &&
-    integrationTargets.bundleStatus === APP_UP_TO_DATE &&
-    pending.length === 0 &&
-    v1Artifacts.length === 0
-  ) {
-    return {
-      recommendation: "stay",
-      message: "This project matches your current Agentera install; no upgrade is needed.",
+      message,
       pending_runtime: 0,
       pending_runtimes: [],
       pending_artifacts: 0,
@@ -294,13 +271,10 @@ export function summarizeProjectIntegration(args: ProjectIntegrationArgs): Proje
   }
 
   const cmdsChannel = commandChannel(args, channel, crossMajor, upgradeOutcome);
-  const onlyPhases: readonly UpgradeOnlyPhase[] | undefined = artifactsOnly
-    ? ["artifacts"]
-    : runtimeOnly
-      ? ["runtime"]
-      : undefined;
-  const installRootForCommands =
-    crossMajorMigration || crossMajorNeedsPreview || needsAppUpgrade ? integrationTargets.installRoot : null;
+  const onlyPhases = integrationScenarioOnlyPhases(scenario);
+  const installRootForCommands = integrationScenarioNeedsInstallRoot(scenario)
+    ? integrationTargets.installRoot
+    : null;
   const cmds = buildUpgradeCommands({
     project: args.project,
     installRoot: installRootForCommands,
@@ -308,36 +282,6 @@ export function summarizeProjectIntegration(args: ProjectIntegrationArgs): Proje
     only: onlyPhases,
     cwdDefault: true,
   });
-
-  let message: string;
-  if (artifactsOnly) {
-    message =
-      "This project still uses v1 Markdown artifacts; preview migrating them to v2 YAML before continuing.";
-  } else if (crossMajorMigration || crossMajorNeedsPreview) {
-    message =
-      "Your Agentera app copy is still on v2 while the CLI is on v3; preview the one-way v2→v3 migration before applying.";
-  } else if (needsAppUpgrade) {
-    if (integrationTargets.bundleStatus === APP_OUTDATED) {
-      message =
-        "Your Agentera app copy is out of date; preview the update with agentera upgrade before applying.";
-    } else if (integrationTargets.bundleStatus === APP_REPAIR_NEEDED) {
-      message =
-        "Your Agentera app copy needs repair; preview the repair with agentera upgrade before applying.";
-    } else if (integrationTargets.bundleStatus === APP_MIGRATION_NEEDED) {
-      message =
-        "Your Agentera app copy needs migration; preview the migration with agentera upgrade before applying.";
-    } else {
-      message =
-        "Your Agentera app copy is out of date; preview the update with agentera upgrade before applying.";
-    }
-  } else if (pending.length > 0) {
-    const runtimes = pendingRuntimes.length > 0 ? pendingRuntimes.join(", ") : "runtime configs";
-    message = projectHasProjectLevelRuntimeHooks(args.project)
-      ? `This project still uses older Agentera runtime wiring (${runtimes}); preview rewiring hooks to the current npm entrypoint.`
-      : `Your user-level Agentera runtime wiring (${runtimes}) is stale; preview rewiring hooks to the current npm entrypoint.`;
-  } else {
-    message = "Preview Agentera upgrade changes for this project before applying.";
-  }
 
   return {
     recommendation: "upgrade",

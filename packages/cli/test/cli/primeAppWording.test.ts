@@ -61,12 +61,13 @@ describe("prime app lifecycle wording", () => {
     const state = collectOrientationState({ home, installRoot: appHome, env: process.env });
     expect(state.bundle.status).toBe("outdated");
 
-    const attention = (state.attention as string[]).find(
-      (line) => line.includes("app files outdated") || line.includes("out of date"),
-    );
+    expect(state.project_integration.recommendation).toBe("upgrade");
+    expect(state.project_integration.message).toContain("out of date");
+    const attention = (state.attention as string[]).find((line) => line.includes("out of date"));
     expect(attention).toBeTruthy();
+    expect(attention).toContain(state.project_integration.message);
     expect(attention).not.toContain("need repair");
-    expect(attention).toContain("agentera upgrade");
+    expect(attention).not.toMatch(/repair or upgrade/i);
   });
 
   it("uses repair framing when managed app files need repair", () => {
@@ -80,9 +81,13 @@ describe("prime app lifecycle wording", () => {
     const state = collectOrientationState({ home, installRoot: appHome, env: process.env });
     expect(state.bundle.status).toBe("repair_needed");
 
+    expect(state.project_integration.recommendation).toBe("upgrade");
+    expect(state.project_integration.message).toContain("needs repair");
     const attention = (state.attention as string[]).find((line) => line.includes("needs repair"));
     expect(attention).toBeTruthy();
+    expect(attention).toContain(state.project_integration.message);
     expect(attention).not.toMatch(/repair or upgrade/i);
     expect(attention).not.toContain("out of date");
+    expect(attention).not.toContain("app files outdated");
   });
 });

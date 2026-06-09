@@ -14,7 +14,7 @@ import {
   parseSessionEntries,
   writeSessionBookmark,
 } from "../../src/hooks/sessionStop.js";
-import { resolveSessionPath } from "../../src/hooks/common.js";
+import { resolveAgenteraDataHome, resolveSessionPath } from "../../src/hooks/common.js";
 
 const SESSION_WITH_ENTRIES =
   "# Sessions\n\n## 2026-04-03 15:00\n\nArtifacts modified: health, plan\nSummary: Ran audit and planned next steps\n\n## 2026-04-03 10:00\n\nArtifacts modified: progress\nSummary: Completed cycle 80\n\n## 2026-04-02 14:00 (Previous session summary)\n";
@@ -92,23 +92,33 @@ describe("compactEntries / formatSessionYaml / buildBookmark", () => {
   });
 });
 
+function sessionTestEnv(home: string): Record<string, string> {
+  // Pin data home so resolveSessionPath inside writeSessionBookmark matches
+  // expectations without threading a custom home argument through the hook.
+  return { HOME: home, AGENTERA_HOME: path.join(home, "agentera-data") };
+}
+
 describe("writeSessionBookmark", () => {
   let tmp: string;
+  let home: string;
   beforeEach(() => {
     tmp = fs.mkdtempSync(path.join(os.tmpdir(), "ss-stop-"));
+    home = path.join(tmp, "home");
+    fs.mkdirSync(home, { recursive: true });
   });
   afterEach(() => {
     fs.rmSync(tmp, { recursive: true, force: true });
   });
 
   it("writes a new session file under the data home", () => {
-    const env = { XDG_DATA_HOME: path.join(tmp, "data") };
+    const env = sessionTestEnv(home);
     const ts = new Date(Date.UTC(2026, 3, 3, 15, 0));
     const written = writeSessionBookmark(tmp, null, ["health", "plan"], { timestamp: ts, env });
     expect(written).toBe(true);
+    const dataHome = resolveAgenteraDataHome(env, home);
     const sessionPath = resolveSessionPath(tmp, env);
     expect(fs.existsSync(sessionPath)).toBe(true);
-    expect(sessionPath.startsWith(path.join(tmp, "data", "agentera", "sessions"))).toBe(true);
+    expect(sessionPath.startsWith(path.join(dataHome, "sessions"))).toBe(true);
     const content = fs.readFileSync(sessionPath, "utf8");
     expect(content).toContain("bookmarks:");
     expect(content).toContain("timestamp: 2026-04-03 15:00");
@@ -116,13 +126,13 @@ describe("writeSessionBookmark", () => {
   });
 
   it("skips writing when no artifacts changed", () => {
-    const env = { XDG_DATA_HOME: path.join(tmp, "data") };
+    const env = sessionTestEnv(home);
     expect(writeSessionBookmark(tmp, null, [], { env })).toBe(false);
     expect(fs.existsSync(resolveSessionPath(tmp, env))).toBe(false);
   });
 
   it("compacts old entries when appending", () => {
-    const env = { XDG_DATA_HOME: path.join(tmp, "data") };
+    const env = sessionTestEnv(home);
     const sessionPath = resolveSessionPath(tmp, env);
     fs.mkdirSync(path.dirname(sessionPath), { recursive: true });
     const entries = Array.from({ length: 11 }, (_, i) => ({

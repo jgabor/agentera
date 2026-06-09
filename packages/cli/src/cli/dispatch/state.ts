@@ -1,6 +1,7 @@
 import { cmdState, StateArgs } from "../commands/state/index.js";
 import { COMMAND_FILTERS } from "../stateQuery.js";
 import { cmdQuery, QueryArgs } from "../commands/query.js";
+import { makeArgvValueReader } from "./argvParser.js";
 import { asEnvelopeFormat, classifyParseError, type Io } from "./shared.js";
 import { emitInvalidInput } from "../errors.js";
 
@@ -16,13 +17,12 @@ export function parseStateArgs(command: string, argv: string[]): StateArgs | { e
     fields: null,
   };
   const allowed = new Set([...(COMMAND_FILTERS[command] ?? []), "format", "fields"]);
-  for (let i = 0; i < argv.length; i++) {
+  let i = 0;
+  const value = makeArgvValueReader(argv, () => i, (n) => {
+    i = n;
+  });
+  for (; i < argv.length; i++) {
     const a = argv[i];
-    const value = (name: string): string | null => {
-      if (a === name) return argv[++i];
-      if (a.startsWith(name + "=")) return a.slice(name.length + 1);
-      return null;
-    };
     const named = (flag: string, key: string): boolean => allowed.has(key) && (a === flag || a.startsWith(flag + "="));
     let v: string | null;
     if (named("--topic", "topic")) args.topic = value("--topic");
@@ -76,13 +76,12 @@ export function parseQueryArgs(argv: string[]): QueryArgs | { error: string } {
     format: "text",
     fields: null,
   };
-  for (let i = 0; i < argv.length; i++) {
+  let i = 0;
+  const value = makeArgvValueReader(argv, () => i, (n) => {
+    i = n;
+  });
+  for (; i < argv.length; i++) {
     const a = argv[i];
-    const value = (name: string): string | null => {
-      if (a === name) return argv[++i];
-      if (a.startsWith(name + "=")) return a.slice(name.length + 1);
-      return null;
-    };
     let v: string | null;
     if (a === "--list-artifacts") args.list_artifacts = true;
     else if ((v = value("--topic")) !== null) args.topic = v;

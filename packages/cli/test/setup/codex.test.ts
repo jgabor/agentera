@@ -231,7 +231,7 @@ describe("setup codex: codexMain end-to-end", () => {
     const first = run(["--install-root", root, "--config-file", cfg]);
     expect(first.rc).toBe(0);
     expect(fs.existsSync(cfg)).toBe(true);
-    expect(fs.readFileSync(cfg, "utf8")).toContain(`AGENTERA_HOME = "${root}"`);
+    expect(fs.readFileSync(cfg, "utf8")).toContain(`AGENTERA_HOME = "${resolvePath(root)}"`);
     const agentsDir = path.join(tmp, "home", ".codex", "agents");
     expect(fs.readdirSync(agentsDir).sort()).toEqual(AGENT_NAMES.map((n) => `${n}.toml`).sort());
 

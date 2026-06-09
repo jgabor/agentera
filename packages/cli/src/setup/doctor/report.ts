@@ -3,6 +3,7 @@ import os from "node:os";
 import path from "node:path";
 
 import { expanduser, pathExists, resolvePath } from "../../core/paths.js";
+import { pyJsonIndentSorted } from "../../core/pyjson.js";
 import { planChange as codexPlanChange } from "../codex.js";
 import { resolveSourceRootStrict } from "../../upgrade/appModel.js";
 import { runNpmSmokeChecks } from "../smokeChecks.js";
@@ -25,48 +26,8 @@ import { CODEX_HOME_CHECK, CODEX_RUNTIME_CONFIG_GAP, DIAGNOSTICS } from "./diagn
 type Dict = Record<string, any>;
 type Env = Record<string, string | undefined>;
 
-function jsonAscii(str: string): string {
-  let out = '"';
-  for (const ch of str) {
-    const cp = ch.codePointAt(0) as number;
-    if (ch === '"') out += '\\"';
-    else if (ch === "\\") out += "\\\\";
-    else if (cp === 0x08) out += "\\b";
-    else if (cp === 0x09) out += "\\t";
-    else if (cp === 0x0a) out += "\\n";
-    else if (cp === 0x0c) out += "\\f";
-    else if (cp === 0x0d) out += "\\r";
-    else if (cp < 0x20) out += "\\u" + cp.toString(16).padStart(4, "0");
-    else if (cp < 0x80) out += ch;
-    else if (cp > 0xffff) {
-      const v = cp - 0x10000;
-      out += "\\u" + (0xd800 + (v >> 10)).toString(16).padStart(4, "0");
-      out += "\\u" + (0xdc00 + (v & 0x3ff)).toString(16).padStart(4, "0");
-    } else out += "\\u" + cp.toString(16).padStart(4, "0");
-  }
-  return out + '"';
-}
-
 export function pyJsonIndent(value: unknown, level = 0): string {
-  const pad = "  ".repeat(level);
-  const padIn = "  ".repeat(level + 1);
-  if (value === null || value === undefined) return "null";
-  if (value === true) return "true";
-  if (value === false) return "false";
-  if (typeof value === "number") return Number.isInteger(value) ? String(value) : String(value);
-  if (typeof value === "string") return jsonAscii(value);
-  if (Array.isArray(value)) {
-    if (value.length === 0) return "[]";
-    const items = value.map((v) => padIn + pyJsonIndent(v, level + 1));
-    return "[\n" + items.join(",\n") + "\n" + pad + "]";
-  }
-  if (typeof value === "object") {
-    const keys = Object.keys(value as Dict).sort();
-    if (keys.length === 0) return "{}";
-    const items = keys.map((k) => padIn + jsonAscii(k) + ": " + pyJsonIndent((value as Dict)[k], level + 1));
-    return "{\n" + items.join(",\n") + "\n" + pad + "}";
-  }
-  return "null";
+  return pyJsonIndentSorted(value, 2, level);
 }
 
 function summarize(runtimes: Record<string, Dict>): Record<string, number> {

@@ -24,7 +24,7 @@ import {
 
 /**
  * v2→v3 migration phases: artifacts (noop for YAML), runtime rewire, cleanup.
- * v1 Markdown→YAML migration stays separate (prime.ts V1_ARTIFACT_PAIRS).
+ * v1 Markdown→YAML migration uses detectV1ArtifactPairs (shared with prime).
  */
 
 export const MIGRATION_STATUSES = ["pending", "applied", "noop", "blocked", "failed", "skipped"] as const;

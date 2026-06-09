@@ -22,9 +22,8 @@ import {
 } from "../../stateQuery.js";
 import { SchemaInfo, artifactPath } from "../../appContext.js";
 import { isResolvedTodoMarkdownStatus, parseTodoMarkdownListItem } from "../../todoMarkdown.js";
+import { TODO_SEVERITY_ORDER_KEYS } from "../../todoSeverity.js";
 import { out, err, StateArgs, Io } from "./shared.js";
-
-const TODO_SEVERITY_ORDER_KEYS = ["critical", "degraded", "warning", "normal", "info", "annoying"];
 const TODO_SEV_GLYPHS: Record<string, string> = {
   critical: "⇶",
   degraded: "⇉",

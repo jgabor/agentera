@@ -22,6 +22,36 @@ import {
 } from "./stateQuery.js";
 import { decisionContextEntry, latestHealthAudit, normalizeSeverity } from "./commands/state/index.js";
 import { isResolvedTodoMarkdownStatus, parseTodoMarkdownListItem } from "./todoMarkdown.js";
+import type { JsonObject } from "../core/jsonValue.js";
+import { TODO_SEVERITY_ORDER, TODO_SEVERITY_ORDER_KEYS } from "./todoSeverity.js";
+import { capabilityStartupComplete } from "./startupCompletenessContract.js";
+import type {
+  DecisionFollowUp,
+  DecisionReviewAttention,
+  DecisionReviewEntry,
+  DocsSummary,
+  HealthSummary,
+  IssueCounts,
+  NextAction,
+  ObjectiveSummary,
+  PlanSummary,
+  ProgressSummary,
+  StatePresenceSummary,
+} from "./contracts/orientationState.js";
+
+export type {
+  DecisionFollowUp,
+  DecisionReviewAttention,
+  DecisionReviewEntry,
+  DocsSummary,
+  HealthSummary,
+  IssueCounts,
+  NextAction,
+  ObjectiveSummary,
+  PlanSummary,
+  ProgressSummary,
+  StatePresenceSummary,
+} from "./contracts/orientationState.js";
 
 /**
  * Orientation summaries layer for prime/hej. Faithful port of the
@@ -29,29 +59,12 @@ import { isResolvedTodoMarkdownStatus, parseTodoMarkdownListItem } from "./todoM
  * `_decision_*`, `_select_hej_next_action`, and staleness helpers.
  */
 
-type Dict = Record<string, any>;
-
 export const DONE_STATUSES = new Set(["complete", "completed", "closed", "done", "resolved", "retired"]);
 export const BLOCKED_STATUSES = new Set(["blocked", "stuck"]);
 export const DECISION_ATTENTION_MAX_ENTRIES = 3;
-export const STARTUP_COMPLETENESS_MISSING_STATE: string[] = [];
-
-const TODO_SEVERITY_ORDER: Record<string, number> = {
-  critical: 0,
-  degraded: 1,
-  warning: 1,
-  normal: 2,
-  info: 3,
-  annoying: 3,
-};
-const TODO_SECTION_SEVERITIES: Record<string, string> = {
-  critical: "critical",
-  degraded: "degraded",
-  warning: "warning",
-  normal: "normal",
-  info: "info",
-  annoying: "annoying",
-};
+const TODO_SECTION_SEVERITIES: Record<string, string> = Object.fromEntries(
+  TODO_SEVERITY_ORDER_KEYS.map((key) => [key, key]),
+);
 const TODO_PLANERA_SIGNALS = new Set([
   "acceptance", "artifact", "capability", "capability-context", "compatibility", "contract",
   "cross-capability", "docs", "metadata", "migration", "schema", "startup", "surface", "test", "validation",
@@ -98,12 +111,12 @@ function daysSince(genUtc: number): number {
 
 // ── entry helpers ───────────────────────────────────────────────────
 
-function entryStatusPy(entry: Dict, def = "open"): string {
+function entryStatusPy(entry: JsonObject, def = "open"): string {
   const raw = "status" in entry ? entry.status : def;
   return String(raw || def).toLowerCase();
 }
 
-function isOpenEntry(entry: Dict): boolean {
+function isOpenEntry(entry: JsonObject): boolean {
   return !DONE_STATUSES.has(entryStatusPy(entry));
 }
 
@@ -163,7 +176,7 @@ export function checkProfileraStaleness(profilePath: string, env: Env = process.
   return [since >= staleDays, since, staleDays];
 }
 
-export function healthAuditDate(entry: Dict): number | null {
+export function healthAuditDate(entry: JsonObject): number | null {
   for (const key of ["date", "timestamp"]) {
     const value = entry[key];
     if (typeof value === "string" && value.trim()) {
@@ -174,7 +187,7 @@ export function healthAuditDate(entry: Dict): number | null {
   return null;
 }
 
-function progressEntryDate(entry: Dict): number | null {
+function progressEntryDate(entry: JsonObject): number | null {
   for (const key of ["timestamp", "date"]) {
     const value = entry[key];
     if (typeof value === "string" && value.trim()) {
@@ -198,10 +211,10 @@ function cyclesSinceHealthAudit(schemas: Record<string, SchemaInfo>, auditDate: 
 
 function checkInspekteraAuditStaleness(
   schemas: Record<string, SchemaInfo>,
-  latest: Dict | null,
+  latest: JsonObject | null,
   auditDate: number | null,
   env: Env = process.env,
-): Dict | null {
+): Partial<HealthSummary> | null {
   if (latest === null || auditDate === null) return null;
   const staleDaysThreshold = intEnv(env, INSPEKTERA_STALE_DAYS_ENV, DEFAULT_INSPEKTERA_STALE_DAYS);
   const staleCyclesThreshold = intEnv(env, INSPEKTERA_STALE_CYCLES_ENV, DEFAULT_INSPEKTERA_STALE_CYCLES);
@@ -216,7 +229,7 @@ function checkInspekteraAuditStaleness(
     else if (timeStale) triggeringAxis = "time";
     else triggeringAxis = "cycles";
   }
-  const result: Dict = {
+  const result: Partial<HealthSummary> = {
     stale: isStale,
     days_since_audit: since,
     stale_threshold_days: staleDaysThreshold,
@@ -280,7 +293,7 @@ export function loadTodoItems(schemas: Record<string, SchemaInfo>): Array<Record
   return items;
 }
 
-export function issueCounts(todoItems: Array<Record<string, string>>): Record<string, number> {
+export function issueCounts(todoItems: Array<Record<string, string>>): IssueCounts {
   const counts = { critical: 0, degraded: 0, normal: 0, annoying: 0 };
   for (const item of todoItems) {
     const severity = item.severity;
@@ -301,7 +314,7 @@ function todoNeedsPlanera(item: Record<string, string>): boolean {
 
 // ── per-artifact summaries ──────────────────────────────────────────
 
-export function planSummary(schemas: Record<string, SchemaInfo>): Dict {
+export function planSummary(schemas: Record<string, SchemaInfo>): PlanSummary {
   const data = loadNamedArtifact(schemas, "plan");
   if (!data || typeof data !== "object" || Array.isArray(data)) {
     return {
@@ -313,9 +326,9 @@ export function planSummary(schemas: Record<string, SchemaInfo>): Dict {
       absence_reason: "No active plan artifact is available from agentera plan.",
     };
   }
-  const d = data as Dict;
+  const d = data as JsonObject;
   const legacyEntries = asList(d.entries);
-  let tasks: Dict[];
+  let tasks: JsonObject[];
   let status: string;
   let title: string;
   if (legacyEntries.length > 0) {
@@ -331,7 +344,7 @@ export function planSummary(schemas: Record<string, SchemaInfo>): Dict {
   const complete = tasks.filter((task) => DONE_STATUSES.has(entryStatusPy(task, ""))).length;
   const total = tasks.length;
   const completePlan = DONE_STATUSES.has(status.toLowerCase()) && complete === total;
-  let firstPending: Dict | null = null;
+  let firstPending: JsonObject | null = null;
   if (!completePlan) {
     for (const task of tasks) {
       const ts = entryStatusPy(task, "pending");
@@ -356,12 +369,12 @@ export function planSummary(schemas: Record<string, SchemaInfo>): Dict {
   };
 }
 
-export function docsSummary(schemas: Record<string, SchemaInfo>): Dict {
+export function docsSummary(schemas: Record<string, SchemaInfo>): DocsSummary {
   const data = loadNamedArtifact(schemas, "docs");
   if (!data || typeof data !== "object" || Array.isArray(data)) {
     return { exists: false, status: "absent", absence_reason: "No docs mapping artifact is available from agentera docs." };
   }
-  const d = data as Dict;
+  const d = data as JsonObject;
   const mapping = asList(d.mapping);
   const index = asList(d.index);
   const coverage = d.coverage && typeof d.coverage === "object" && !Array.isArray(d.coverage) ? d.coverage : {};
@@ -375,7 +388,7 @@ export function docsSummary(schemas: Record<string, SchemaInfo>): Dict {
     mapping_entries: mapping.length,
     coverage,
     source_contract: {
-      capability_startup_complete: STARTUP_COMPLETENESS_MISSING_STATE.length === 0,
+      capability_startup_complete: capabilityStartupComplete(),
       raw_artifact_reads_required: false,
       state_families: [
         "plan task details, dependencies, acceptance criteria, and evidence summaries",
@@ -388,7 +401,7 @@ export function docsSummary(schemas: Record<string, SchemaInfo>): Dict {
   };
 }
 
-export function progressSummary(schemas: Record<string, SchemaInfo>): Dict {
+export function progressSummary(schemas: Record<string, SchemaInfo>): ProgressSummary {
   const data = loadNamedArtifact(schemas, "progress");
   const entries = extractEntries(data);
   if (entries.length === 0) {
@@ -404,7 +417,7 @@ export function progressSummary(schemas: Record<string, SchemaInfo>): Dict {
   };
 }
 
-export function healthSummary(schemas: Record<string, SchemaInfo>, env: Env = process.env): Dict {
+export function healthSummary(schemas: Record<string, SchemaInfo>, env: Env = process.env): HealthSummary {
   const data = loadNamedArtifact(schemas, "health");
   const entries = extractEntries(data);
   if (entries.length === 0) return { exists: false };
@@ -421,7 +434,7 @@ export function healthSummary(schemas: Record<string, SchemaInfo>, env: Env = pr
   const trajectory = String(latest.trajectory ?? "");
   const auditDate = healthAuditDate(latest);
   const dateStr = auditDate !== null ? isoFromUtc(auditDate) : null;
-  const summary: Dict = {
+  const summary: HealthSummary = {
     exists: true,
     number: latest.number ?? "?",
     date: dateStr,
@@ -446,7 +459,7 @@ function isoFromUtc(utc: number): string {
   return `${y}-${m}-${day}`;
 }
 
-function objectiveStatus(data: Dict): string {
+function objectiveStatus(data: JsonObject): string {
   const header = data.header && typeof data.header === "object" && !Array.isArray(data.header) ? data.header : {};
   const objective = data.objective && typeof data.objective === "object" && !Array.isArray(data.objective) ? data.objective : {};
   return String(
@@ -454,7 +467,7 @@ function objectiveStatus(data: Dict): string {
   ).toLowerCase();
 }
 
-export function activeObjectiveSummary(): Dict {
+export function activeObjectiveSummary(): ObjectiveSummary {
   const root = path.join(process.cwd(), ".agentera", "optimera");
   let isDir = false;
   try {
@@ -463,7 +476,7 @@ export function activeObjectiveSummary(): Dict {
     isDir = false;
   }
   if (!isDir) return { exists: false };
-  const candidates: Array<[string, Dict, string]> = [];
+  const candidates: Array<[string, JsonObject, string]> = [];
   let closedCount = 0;
   for (const entry of fs.readdirSync(root)) {
     const candidate = path.join(root, entry);
@@ -476,12 +489,12 @@ export function activeObjectiveSummary(): Dict {
     if (!fs.existsSync(objectivePath)) continue;
     const data = loadArtifact(objectivePath);
     if (!data || typeof data !== "object" || Array.isArray(data)) continue;
-    const status = objectiveStatus(data as Dict);
+    const status = objectiveStatus(data as JsonObject);
     if (DONE_STATUSES.has(status)) {
       closedCount += 1;
       continue;
     }
-    candidates.push([candidate, data as Dict, status]);
+    candidates.push([candidate, data as JsonObject, status]);
   }
   if (candidates.length === 0) return { exists: closedCount > 0, active: false, closed_count: closedCount };
   candidates.sort((a, b) => fs.statSync(b[0]).mtimeMs - fs.statSync(a[0]).mtimeMs);
@@ -502,7 +515,13 @@ export function activeObjectiveSummary(): Dict {
   };
 }
 
-export function statePresence(plan: Dict, docs: Dict, progress: Dict, health: Dict, objective: Dict): Dict {
+export function statePresence(
+  plan: PlanSummary,
+  docs: DocsSummary,
+  progress: ProgressSummary,
+  health: HealthSummary,
+  objective: ObjectiveSummary,
+): StatePresenceSummary {
   const active = { plan: Boolean(plan.active), objective: Boolean(objective.active) };
   const available = {
     plan: Boolean(plan.exists),
@@ -511,8 +530,12 @@ export function statePresence(plan: Dict, docs: Dict, progress: Dict, health: Di
     health: Boolean(health.exists),
     objective: Boolean(objective.exists),
   };
-  const absence: Record<string, any> = {};
-  for (const [name, summary] of [["plan", plan], ["docs", docs], ["progress", progress]] as Array<[string, Dict]>) {
+  const absence: Record<string, string> = {};
+  for (const [name, summary] of [
+    ["plan", plan],
+    ["docs", docs],
+    ["progress", progress],
+  ] as Array<[string, PlanSummary | DocsSummary | ProgressSummary]>) {
     if (!summary.exists && summary.absence_reason) absence[name] = summary.absence_reason;
   }
   const anyActive = Object.values(active).some(Boolean);
@@ -527,7 +550,7 @@ export function statePresence(plan: Dict, docs: Dict, progress: Dict, health: Di
 
 // ── decisions follow-up + attention ─────────────────────────────────
 
-export function decisionFollowUp(schemas: Record<string, SchemaInfo>): Dict | null {
+export function decisionFollowUp(schemas: Record<string, SchemaInfo>): DecisionFollowUp | null {
   const data = loadNamedArtifact(schemas, "decisions");
   for (const rawEntry of extractEntries(data)) {
     const entry = decisionContextEntry(rawEntry);
@@ -535,23 +558,23 @@ export function decisionFollowUp(schemas: Record<string, SchemaInfo>): Dict | nu
     if (!satisfaction || typeof satisfaction !== "object" || !satisfaction.review_needed) continue;
     const number = entry.number ?? "?";
     const title = firstPresent(entry, ["question", "choice"], "decision follow-up");
-    return { object: `DECISION ${number} follow-up`, title };
+    return { object: `DECISION ${number} follow-up`, title: String(title) };
   }
   return null;
 }
 
-function decisionAttentionState(satisfaction: Dict): string {
+function decisionAttentionState(satisfaction: JsonObject): string {
   const state = satisfaction.state;
   if (state === null || state === undefined || state === "") return "missing";
   if (state === "user_confirmed_satisfied" && satisfaction.review_needed) return "unconfirmed_user_confirmed_satisfied";
-  if (["open", "provisionally_satisfied", "review_needed"].includes(state)) return String(state);
+  if (["open", "provisionally_satisfied", "review_needed"].includes(String(state))) return String(state);
   if (state === "user_confirmed_satisfied") return "user_confirmed_satisfied";
   return "unrecognized";
 }
 
-export function decisionReviewAttention(schemas: Record<string, SchemaInfo>): Dict | null {
+export function decisionReviewAttention(schemas: Record<string, SchemaInfo>): DecisionReviewAttention | null {
   const data = loadNamedArtifact(schemas, "decisions");
-  const reviewEntries: Dict[] = [];
+  const reviewEntries: DecisionReviewEntry[] = [];
   const stateCounts: Record<string, number> = {};
   for (const rawEntry of extractEntries(data)) {
     const entry = decisionContextEntry(rawEntry);
@@ -586,17 +609,17 @@ export function decisionReviewAttention(schemas: Record<string, SchemaInfo>): Di
   };
 }
 
-export function formatNextAction(action: Record<string, string> | null): string {
+export function formatNextAction(action: NextAction | Record<string, string> | null): string {
   if (!action) return "object=VISION refresh | capability=visionera | reason=no executable follow-up";
   return `object=${truncate(action.object)} | capability=${action.capability} | reason=${action.reason}`;
 }
 
 export function selectHejNextAction(
-  plan: Dict,
-  health: Dict,
-  objective: Dict,
+  plan: PlanSummary,
+  health: HealthSummary,
+  objective: ObjectiveSummary,
   todoItems: Array<Record<string, string>>,
-  decision: Dict | null,
+  decision: DecisionFollowUp | null,
   savedContext: boolean,
 ): Record<string, string> {
   const pending = plan.first_pending;

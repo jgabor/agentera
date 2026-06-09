@@ -1,3 +1,4 @@
+import { pyJsonDumps as pyJsonDumpsCore, pyJsonString as pyJsonStringCore } from "../../core/pyjson.js";
 import { type Dict, hashLabel } from "./contract.js";
 
 export const CLI_COMMAND_ARTIFACTS: Record<string, Set<string>> = {
@@ -137,44 +138,16 @@ export function toolArgument(record: Dict, ...keys: string[]): string {
   }
   return "";
 }
-export function pyJsonString(str: string): string {
-  let out = '"';
-  for (const ch of str) {
-    const cp = ch.codePointAt(0) as number;
-    if (ch === '"') out += '\\"';
-    else if (ch === "\\") out += "\\\\";
-    else if (cp === 0x08) out += "\\b";
-    else if (cp === 0x09) out += "\\t";
-    else if (cp === 0x0a) out += "\\n";
-    else if (cp === 0x0c) out += "\\f";
-    else if (cp === 0x0d) out += "\\r";
-    else if (cp < 0x20) out += "\\u" + cp.toString(16).padStart(4, "0");
-    else if (cp < 0x80) out += ch;
-    else if (cp > 0xffff) {
-      const v = cp - 0x10000;
-      const hi = 0xd800 + (v >> 10);
-      const lo = 0xdc00 + (v & 0x3ff);
-      out += "\\u" + hi.toString(16).padStart(4, "0") + "\\u" + lo.toString(16).padStart(4, "0");
-    } else {
-      out += "\\u" + cp.toString(16).padStart(4, "0");
-    }
-  }
-  return out + '"';
+export const pyJsonString = pyJsonStringCore;
+
+function startupJsonScalar(value: unknown): string | undefined {
+  if (value instanceof Flt) return formatFloat(value.v);
+  return undefined;
 }
+
 /** Mirror Python json.dumps(value, sort_keys=True) (separators ", "/": ", ensure_ascii). */
 export function pyJsonDumps(value: unknown): string {
-  if (value === null || value === undefined) return "null";
-  if (value === true) return "true";
-  if (value === false) return "false";
-  if (value instanceof Flt) return formatFloat(value.v);
-  if (typeof value === "number") return String(value);
-  if (typeof value === "string") return pyJsonString(value);
-  if (Array.isArray(value)) return "[" + value.map((v) => pyJsonDumps(v)).join(", ") + "]";
-  if (typeof value === "object") {
-    const keys = Object.keys(value as Dict).sort();
-    return "{" + keys.map((k) => `${pyJsonString(k)}: ${pyJsonDumps((value as Dict)[k])}`).join(", ") + "}";
-  }
-  return "null";
+  return pyJsonDumpsCore(value, startupJsonScalar);
 }
 export function argumentsText(record: Dict): string {
   return pyJsonDumps(toolArguments(record));

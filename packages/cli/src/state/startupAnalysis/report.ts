@@ -2,33 +2,19 @@ import fs from "node:fs";
 import path from "node:path";
 
 import { type Dict } from "./contract.js";
+import { pyJsonIndentSorted } from "../../core/pyjson.js";
 import { Flt, formatFloat, pyFmt, pyJsonDumps, pyJsonString } from "./helpers.js";
 
 export const STARTUP_REPORT_MARKDOWN = "startup-overhead-report.md";
 export const STARTUP_REPORT_JSON = "startup-overhead-report.json";
 
-/** Python json.dumps(value, indent=2, sort_keys=True) — multiline, ensure_ascii, Flt-aware. */
-function pyJsonIndent(value: unknown, level = 0, indent = "  "): string {
-  const pad = indent.repeat(level);
-  const childPad = indent.repeat(level + 1);
-  if (value === null || value === undefined) return "null";
-  if (value === true) return "true";
-  if (value === false) return "false";
+function startupJsonScalar(value: unknown): string | undefined {
   if (value instanceof Flt) return formatFloat(value.v);
-  if (typeof value === "number") return String(value);
-  if (typeof value === "string") return pyJsonString(value);
-  if (Array.isArray(value)) {
-    if (value.length === 0) return "[]";
-    const items = value.map((v) => childPad + pyJsonIndent(v, level + 1, indent));
-    return "[\n" + items.join(",\n") + "\n" + pad + "]";
-  }
-  if (typeof value === "object") {
-    const keys = Object.keys(value as Dict).sort();
-    if (keys.length === 0) return "{}";
-    const items = keys.map((k) => childPad + pyJsonString(k) + ": " + pyJsonIndent((value as Dict)[k], level + 1, indent));
-    return "{\n" + items.join(",\n") + "\n" + pad + "}";
-  }
-  return "null";
+  return undefined;
+}
+
+function pyJsonIndent(value: unknown, level = 0, indent = "  "): string {
+  return pyJsonIndentSorted(value, indent.length || 2, level, startupJsonScalar);
 }
 
 function markdownTable(headers: string[], rows: Array<Array<unknown>>): string[] {

@@ -10,6 +10,13 @@ import { classifyInstall, crossMajorBoundaryApplies } from "./compatibility.js";
 import { isStableSuccessorAnnounced } from "./nextMajorDoctor.js";
 import { buildUpgradeCommands, commandText } from "./upgradeCommands.js";
 import { parseSemverMajor } from "./versionResolution.js";
+import type { BundleStatus, DoctorSignal, PublicBundleStatus } from "../cli/contracts/bundleStatus.js";
+import { type ProbeResult, type ProbeRunner } from "./cliProbe.js";
+import { classifyInstallRootStatus } from "./doctorClassifier.js";
+
+export type { ProbeResult, ProbeRunner } from "./cliProbe.js";
+
+export type { BundleStatus, DoctorSignal, PublicBundleStatus } from "../cli/contracts/bundleStatus.js";
 
 /**
  * Doctor status build. Faithful TS port of build_doctor_status /
@@ -19,8 +26,6 @@ import { parseSemverMajor } from "./versionResolution.js";
  * The emitted command strings use the TS-CLI invocation form (npx/node) rather
  * than the Python uvx/uv form; the final wording is settled in Phase 8 packaging.
  */
-
-type Dict = Record<string, any>;
 
 export const APP_UP_TO_DATE = "up_to_date";
 export const APP_OUTDATED = "outdated";
@@ -149,49 +154,6 @@ function sourceKey(rootSource: string): string {
   return "explicit";
 }
 
-function recoverableStaleDefaultSignal(appHome: string, roots: Dict): Dict {
-  return {
-    status: APP_REPAIR_NEEDED,
-    kind: "recoverable_stale_default",
-    message:
-      "Agentera found an old app directory and can repair it without asking you to edit shell settings",
-    deprecatedDefaultAppHome: appHome,
-    managedAppRoot: roots.managedAppRoot,
-  };
-}
-
-function userDataOnlySignal(appHome: string, roots: Dict): Dict {
-  return {
-    status: APP_REPAIR_NEEDED,
-    kind: "user_data_only_app_home",
-    message:
-      "This Agentera directory only has your Agentera data, so Agentera can safely add fresh app files under app/",
-    appHome,
-    managedAppRoot: roots.managedAppRoot,
-  };
-}
-
-function blockedRootRecoveryMessage(_rootSource: string): string {
-  return "choose a different Agentera directory, or use --force only if you checked this directory and want Agentera to replace files there";
-}
-
-export interface ProbeResult {
-  ok: boolean;
-  command?: string[] | null;
-  returnCode?: number | null;
-  stdoutTail?: string[];
-  stderrTail?: string[];
-  missingCommands?: string[];
-  message?: string;
-}
-
-export type ProbeRunner = (args: {
-  bundleRoot: string;
-  appHome: string;
-  project: string;
-  expectedCommands: readonly string[];
-}) => ProbeResult;
-
 export interface BuildDoctorStatusOptions {
   rootSource: string;
   sourceRoot: string;
@@ -208,7 +170,7 @@ export interface BuildDoctorStatusOptions {
   skipNpxBundleShortCircuit?: boolean;
 }
 
-export function buildDoctorStatus(installRoot: string, opts: BuildDoctorStatusOptions): Dict {
+export function buildDoctorStatus(installRoot: string, opts: BuildDoctorStatusOptions): BundleStatus {
   const rootSource = opts.rootSource;
   const sourceRoot = opts.sourceRoot;
   const home = opts.home;
@@ -257,128 +219,32 @@ export function buildDoctorStatus(installRoot: string, opts: BuildDoctorStatusOp
     expectedVersion: expected,
   });
   const markerVersion = classification.current_version;
-  const signals: Dict[] = [];
-  let blocked = false;
   const recoverableStaleDefault = isRecoverableStaleDefaultAppHome(installRoot, rootSource, home);
   const legacyBundleRoot =
     activeBundleRoot === installRoot &&
     hasBundleRootEvidence(installRoot) &&
     !pathExists(path.join(installRoot, ".git"));
+  const userDataOnly =
+    classification.kind === "unmanaged_directory" && appHomeIsUserDataOnly(installRoot);
 
-  let rootStatus: string;
-
-  if (classification.kind === "missing_default") {
-    rootStatus = "missing";
-    signals.push({
-      status: APP_REPAIR_NEEDED,
-      kind: "missing_bundle",
-      message: "Agentera is not installed in the normal directory yet",
-    });
-  } else if (classification.kind === "missing_explicit_or_environment" && recoverableStaleDefault) {
-    rootStatus = "missing";
-    signals.push(recoverableStaleDefaultSignal(installRoot, roots));
-  } else if (classification.kind === "missing_explicit_or_environment") {
-    rootStatus = "missing";
-    blocked = true;
-    signals.push({
-      status: APP_MANUAL_REVIEW_NEEDED,
-      kind: "invalid_install_root",
-      message:
-        "Agentera was told to use a directory that does not exist. " +
-        "Choose an existing Agentera directory, or install into the normal Agentera directory.",
-    });
-  } else if (classification.kind === "file_valued_root") {
-    rootStatus = "invalid";
-    blocked = true;
-    signals.push({
-      status: APP_MANUAL_REVIEW_NEEDED,
-      kind: "invalid_install_root",
-      message: `Agentera was told to use a file instead of a directory; ${blockedRootRecoveryMessage(rootSource)}`,
-    });
-  } else if (
-    (classification.kind === "invalid_bundle" || classification.kind === "unmanaged_directory") &&
-    recoverableStaleDefault
-  ) {
-    rootStatus = "stale_default";
-    signals.push(recoverableStaleDefaultSignal(installRoot, roots));
-  } else if (classification.kind === "unmanaged_directory" && appHomeIsUserDataOnly(installRoot)) {
-    rootStatus = "user_data_only";
-    signals.push(userDataOnlySignal(installRoot, roots));
-  } else if (classification.kind === "unmanaged_directory") {
-    rootStatus = "unmanaged";
-    blocked = true;
-    signals.push({
-      status: APP_MANUAL_REVIEW_NEEDED,
-      kind: "unmanaged_install_root",
-      message: `This directory already has files Agentera does not recognize, so Agentera will not change it automatically; ${blockedRootRecoveryMessage(rootSource)}`,
-    });
-  } else if (classification.kind === "invalid_bundle") {
-    rootStatus = "invalid";
-    blocked = true;
-    signals.push({
-      status: APP_MANUAL_REVIEW_NEEDED,
-      kind: "invalid_bundle",
-      message: `This directory looks like a broken Agentera install; ${blockedRootRecoveryMessage(rootSource)}`,
-    });
-  } else {
-    rootStatus = "managed";
-    if (legacyBundleRoot) {
-      signals.push({
-        status: APP_MIGRATION_NEEDED,
-        kind: APP_MIGRATION_NEEDED,
-        message: "Agentera app files are in the old place and can be moved into app/",
-        legacyBundleRoot: installRoot,
-        managedAppRoot: roots.managedAppRoot,
-      });
-    }
-    const reason = classification.diagnostic.evidence.reason;
-    if (classification.kind === "managed_stale" && reason === "missing_marker") {
-      if (recoverableStaleDefault) {
-        signals.push(recoverableStaleDefaultSignal(installRoot, roots));
-      }
-      signals.push({
-        status: APP_REPAIR_NEEDED,
-        kind: "missing_marker",
-        message: "Agentera app files need repair",
-      });
-    } else if (classification.kind === "managed_stale" && reason === "version_mismatch") {
-      if (recoverableStaleDefault) {
-        signals.push(recoverableStaleDefaultSignal(installRoot, roots));
-      }
-      signals.push({
-        status: APP_OUTDATED,
-        kind: "version_mismatch",
-        expected,
-        actual: markerVersion,
-        message: "Agentera app files are valid but need an update to the expected version",
-      });
-    }
-    const probe: ProbeResult = probeCli
-      ? (opts.probeRunner ?? defaultProbe)({
-          bundleRoot: activeBundleRoot,
-          appHome: installRoot,
-          project,
-          expectedCommands,
-        })
-      : { ok: true };
-    if (!probe.ok) {
-      let kind = "cli_probe_unavailable";
-      if (probe.returnCode !== null && probe.returnCode !== undefined && probe.returnCode !== 0) {
-        kind = "cli_probe_failed";
-      } else if (probe.missingCommands && probe.missingCommands.length > 0) {
-        kind = "missing_command";
-      }
-      signals.push({
-        status: APP_REPAIR_NEEDED,
-        kind,
-        message: probe.message,
-        returnCode: probe.returnCode ?? null,
-        missingCommands: probe.missingCommands ?? [],
-        stdoutTail: probe.stdoutTail ?? [],
-        stderrTail: probe.stderrTail ?? [],
-      });
-    }
-  }
+  const classified = classifyInstallRootStatus({
+    installRoot,
+    rootSource,
+    roots,
+    classification,
+    expected,
+    markerVersion,
+    recoverableStaleDefault,
+    legacyBundleRoot,
+    userDataOnly,
+    probeCli,
+    probeRunner: opts.probeRunner,
+    project,
+    expectedCommands,
+  });
+  const rootStatus = classified.rootStatus;
+  const signals = classified.signals;
+  const blocked = classified.blocked;
 
   const env = { ...(opts.env ?? process.env), HOME: home };
   const channel = resolveUpdateChannel({
@@ -456,21 +322,8 @@ export function buildDoctorStatus(installRoot: string, opts: BuildDoctorStatusOp
   };
 }
 
-/** Default CLI probe placeholder (wired to the bundled TS CLI in Phase 8). */
-const defaultProbe: ProbeRunner = ({ expectedCommands }) => ({
-  ok: false,
-  command: null,
-  returnCode: null,
-  stdoutTail: [],
-  stderrTail: [],
-  missingCommands: [...expectedCommands],
-  message: "CLI probe not yet wired to the bundled TS CLI",
-});
-
-export function publicDoctorStatus(status: Dict): Dict {
-  const pub = JSON.parse(JSON.stringify(status));
-  delete pub.installRoot;
-  delete pub.installRootSource;
+export function publicDoctorStatus(status: BundleStatus): PublicBundleStatus {
+  const { installRoot: _installRoot, installRootSource: _installRootSource, ...pub } = status;
   return pub;
 }
 
@@ -488,9 +341,9 @@ export const DOCTOR_PARITY_JSON_KEYS = [
 ] as const;
 
 /** Public doctor JSON envelope: command label plus oracle structural keys only. */
-export function doctorParityJsonEnvelope(status: Dict): Dict {
+export function doctorParityJsonEnvelope(status: BundleStatus): Record<string, unknown> {
   const pub = publicDoctorStatus(status);
-  const out: Dict = { command: "doctor" };
+  const out: Record<string, unknown> = { command: "doctor" };
   for (const key of DOCTOR_PARITY_JSON_KEYS) {
     if (key in pub) out[key] = pub[key];
   }

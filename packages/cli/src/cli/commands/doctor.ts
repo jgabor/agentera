@@ -1,11 +1,14 @@
 import os from "node:os";
 
 import { expanduser, resolvePath } from "../../core/paths.js";
+import { pyJsonIndentSorted } from "../../core/pyjson.js";
 import {
   resolveDoctorInstallRoot,
   resolveSourceRootStrict,
 } from "../../upgrade/appModel.js";
 import { runNpmSmokeChecks } from "../../setup/smokeChecks.js";
+import type { JsonObject } from "../../core/jsonValue.js";
+import type { BundleStatus } from "../contracts/bundleStatus.js";
 import {
   APP_MANUAL_REVIEW_NEEDED,
   APP_MIGRATION_NEEDED,
@@ -15,9 +18,9 @@ import {
   appLifecycleActionNoun,
   buildDoctorStatus,
   EXPECTED_STATE_COMMANDS,
-  ProbeResult,
   doctorParityJsonEnvelope,
 } from "../../upgrade/doctor.js";
+import { inProcessProbe } from "../../upgrade/cliProbe.js";
 import { classifyInstall } from "../../upgrade/compatibility.js";
 import type { UpdateChannelName } from "../../upgrade/channels.js";
 import {
@@ -38,7 +41,6 @@ import { emitStructured } from "../structured.js";
  * is the intended runtime form rather than Python's `uv run`.
  */
 
-type Dict = Record<string, any>;
 type Io = { out?: (t: string) => void; err?: (t: string) => void };
 
 const PLAIN_STATUS: Record<string, string> = {
@@ -55,48 +57,11 @@ const PLAIN_STATUS: Record<string, string> = {
   [APP_MANUAL_REVIEW_NEEDED]: "needs manual review",
 };
 
-/** Commands the TS dispatcher exposes (used by the in-process CLI probe). */
-const DISPATCHER_COMMANDS = new Set([
-  "prime",
-  "schema",
-  "state",
-  "query",
-  "check",
-  "lint",
-  "compact",
-  "validate",
-  "verify",
-  "stats",
-  "upgrade",
-  "doctor",
-  "report",
-  "usage",
-  "hook",
-]);
-
 function plainStatus(value: string): string {
   return PLAIN_STATUS[value] ?? value.replace(/_/g, " ").replace(/-/g, " ");
 }
 
-/** In-process probe: confirm the TS CLI exposes the expected state commands. */
-function inProcessProbe(args: { expectedCommands: readonly string[] }): ProbeResult {
-  const missing = args.expectedCommands.filter((name) => !DISPATCHER_COMMANDS.has(name));
-  const command = ["npx", "-y", "agentera", "--help"];
-  return {
-    ok: missing.length === 0,
-    command,
-    returnCode: 0,
-    stdoutTail: [],
-    stderrTail: [],
-    missingCommands: missing,
-    message:
-      missing.length === 0
-        ? "CLI exposes expected state commands"
-        : "CLI is missing expected state commands",
-  };
-}
-
-export function renderDoctorStatus(status: Dict): string {
+export function renderDoctorStatus(status: BundleStatus): string {
   const actionNoun = appLifecycleActionNoun(String(status.status));
   const lines = [
     "Agentera doctor",
@@ -109,10 +74,10 @@ export function renderDoctorStatus(status: Dict): string {
   if (status.signals && status.signals.length > 0) {
     lines.push("");
     lines.push("What needs attention:");
-    for (const signal of status.signals as Dict[]) {
+    for (const signal of status.signals) {
       lines.push(`  - ${plainStatus(signal.status)}: ${signal.message}`);
       if (signal.missingCommands && signal.missingCommands.length > 0) {
-        lines.push(`    Missing command: ${(signal.missingCommands as string[]).join(", ")}`);
+        lines.push(`    Missing command: ${signal.missingCommands.join(", ")}`);
       }
     }
   }
@@ -145,63 +110,17 @@ export interface DoctorArgs {
   format?: string;
 }
 
-function renderDoctorSmoke(smoke: Dict): string {
+function renderDoctorSmoke(smoke: JsonObject): string {
   const lines = [
     "",
     "Smoke checks:",
     `  enabled: ${smoke.enabled ? "yes" : "no"}`,
     `  model calls attempted: ${smoke.modelCallsAttempted ? "yes" : "no"}`,
   ];
-  for (const check of (smoke.checks ?? []) as Dict[]) {
+  for (const check of (smoke.checks ?? []) as JsonObject[]) {
     lines.push(`  - ${check.name}: ${check.status} - ${check.message}`);
   }
   return lines.join("\n");
-}
-
-export function pyJsonIndentSorted(value: unknown): string {
-  return jsonIndent(value, 0);
-}
-
-function jsonAscii(str: string): string {
-  let out = '"';
-  for (const ch of str) {
-    const cp = ch.codePointAt(0) as number;
-    if (ch === '"') out += '\\"';
-    else if (ch === "\\") out += "\\\\";
-    else if (cp === 0x08) out += "\\b";
-    else if (cp === 0x09) out += "\\t";
-    else if (cp === 0x0a) out += "\\n";
-    else if (cp === 0x0c) out += "\\f";
-    else if (cp === 0x0d) out += "\\r";
-    else if (cp < 0x20) out += "\\u" + cp.toString(16).padStart(4, "0");
-    else if (cp < 0x80) out += ch;
-    else if (cp > 0xffff) {
-      const v = cp - 0x10000;
-      out += "\\u" + (0xd800 + (v >> 10)).toString(16).padStart(4, "0");
-      out += "\\u" + (0xdc00 + (v & 0x3ff)).toString(16).padStart(4, "0");
-    } else out += "\\u" + cp.toString(16).padStart(4, "0");
-  }
-  return out + '"';
-}
-
-function jsonIndent(value: unknown, level: number): string {
-  const pad = "  ".repeat(level);
-  const padIn = "  ".repeat(level + 1);
-  if (value === null || value === undefined) return "null";
-  if (value === true) return "true";
-  if (value === false) return "false";
-  if (typeof value === "number") return String(value);
-  if (typeof value === "string") return jsonAscii(value);
-  if (Array.isArray(value)) {
-    if (value.length === 0) return "[]";
-    return "[\n" + value.map((v) => padIn + jsonIndent(v, level + 1)).join(",\n") + "\n" + pad + "]";
-  }
-  if (typeof value === "object") {
-    const keys = Object.keys(value as Dict).sort();
-    if (keys.length === 0) return "{}";
-    return "{\n" + keys.map((k) => padIn + jsonAscii(k) + ": " + jsonIndent((value as Dict)[k], level + 1)).join(",\n") + "\n" + pad + "}";
-  }
-  return "null";
 }
 
 export function cmdDoctor(args: DoctorArgs, io: Io = {}): number {
@@ -227,14 +146,14 @@ export function cmdDoctor(args: DoctorArgs, io: Io = {}): number {
     probeCli: true,
     probeRunner: inProcessProbe,
   });
-  let smokeReport: Dict | null = null;
+  let smokeReport: JsonObject | null = null;
   if (args.smoke) {
     smokeReport = runNpmSmokeChecks(sourceRoot, process.env, {
       liveModelAllowed: Boolean(args.allowLiveModel),
-    });
+    }) as JsonObject;
   }
   if ((args.format ?? "text") === "json") {
-    const payload = doctorParityJsonEnvelope(status) as Dict;
+    const payload = doctorParityJsonEnvelope(status);
     if (smokeReport) payload.smoke = smokeReport;
     out(pyJsonIndentSorted(payload) + "\n");
   } else {
@@ -259,7 +178,7 @@ export function cmdDoctor(args: DoctorArgs, io: Io = {}): number {
     out(body + "\n");
   }
   if (args.smoke) {
-    const failCount = Number((smokeReport?.summary as Dict | undefined)?.fail ?? 0);
+    const failCount = Number((smokeReport?.summary as JsonObject | undefined)?.fail ?? 0);
     if (failCount > 0) return 1;
   }
   return status.status === APP_UP_TO_DATE ? 0 : 1;

@@ -78,8 +78,23 @@ if [[ ! -f "$ENTRY" ]]; then
   die "missing entrypoint: $ENTRY (build step did not produce dist/bin/agentera.js)"
 fi
 mkdir -p "$(dirname "$OUTFILE")"
-log "bun build --compile $ENTRY --outfile $OUTFILE"
-bun build --compile "$ENTRY" --outfile "$OUTFILE"
+ABS_ENTRY="$ROOT/$ENTRY"
+if [[ "$OUTFILE" != /* ]]; then
+  OUTFILE="$ROOT/$OUTFILE"
+fi
+# Bun leaves transient `.{hash}.bun-build` files in cwd (oven-sh/bun#14020); compile from a temp dir.
+COMPILE_TMP="$(mktemp -d "${TMPDIR:-/tmp}/agentera-bun-compile.XXXXXX")"
+cleanup_bun_compile_artifacts() {
+  rm -rf "$COMPILE_TMP"
+  find "$ROOT/packages/cli" -maxdepth 1 -type f -name '*.bun-build' -delete 2>/dev/null || true
+}
+trap cleanup_bun_compile_artifacts EXIT
+log "bun build --compile $ABS_ENTRY --outfile $OUTFILE (cwd=$COMPILE_TMP)"
+if ! (cd "$COMPILE_TMP" && bun build --compile "$ABS_ENTRY" --outfile "$OUTFILE"); then
+  die "bun build --compile failed"
+fi
+cleanup_bun_compile_artifacts
+trap - EXIT
 if [[ ! -x "$OUTFILE" ]]; then
   die "bun build --compile did not produce an executable at $OUTFILE"
 fi
