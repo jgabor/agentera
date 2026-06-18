@@ -1,7 +1,6 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 
 import YAML from "yaml";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -16,16 +15,16 @@ import {
   runCompaction,
 } from "../../src/hooks/compaction/index.js";
 import { MAX_TOTAL_ENTRIES } from "../../src/hooks/common.js";
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const REPO_ROOT = path.resolve(__dirname, "../../../..");
+import { cleanupFixtureProject, useFixtureProject } from "../helpers/useFixtureProject.js";
 
 let tmp: string;
+const fixtureRoots: string[] = [];
 beforeEach(() => {
   tmp = fs.mkdtempSync(path.join(os.tmpdir(), "compaction-"));
 });
 afterEach(() => {
   fs.rmSync(tmp, { recursive: true, force: true });
+  while (fixtureRoots.length) cleanupFixtureProject(fixtureRoots.pop()!);
 });
 
 function progressCycleEntry(n: number): Record<string, unknown> {
@@ -50,31 +49,31 @@ function writeProgressYaml(dir: string, cycleCount: number, archiveCount = 0): s
   return p;
 }
 
-describe("computeCompactionStatus (real repo)", () => {
-  it("classifies the repository artifacts and reports check operations", () => {
-    const statuses = computeCompactionStatus(REPO_ROOT);
-    const byArtifact = Object.fromEntries(statuses.map((s) => [s.artifact, s]));
-    expect(byArtifact.decisions.classification).toBe("compactable");
-    expect(byArtifact.changelog.classification).toBe("exempt");
-    expect(byArtifact.plan.classification).toBe("unsupported");
-    expect(byArtifact.vision.classification).toBe("protected");
-
-    const ops = checkCompaction(REPO_ROOT);
-    expect(ops.length).toBe(statuses.length);
-    expect(ops.every((o) => o.action !== "over_limit")).toBe(true);
+describe("checkCompaction (repo-state fixtures)", () => {
+  it("flags 46 Resolved entries as over_limit with count 6", () => {
+    const root = useFixtureProject("todo-resolved-over-limit");
+    fixtureRoots.push(root);
+    const op = checkCompaction(root).find((o) => o.status.artifact === "todo#Resolved");
+    expect(op?.action).toBe("over_limit");
+    expect(op?.status.over_limit_count).toBe(6);
   });
 
-  it("keeps repository progress.yaml within the 50-cycle cap", () => {
-    const progressPath = path.join(REPO_ROOT, ".agentera", "progress.yaml");
-    expect(fs.existsSync(progressPath)).toBe(true);
-    const data = YAML.parse(fs.readFileSync(progressPath, "utf8")) as {
-      cycles?: unknown[];
-      archive?: unknown[];
-    };
-    const total = (data.cycles?.length ?? 0) + (data.archive?.length ?? 0);
-    expect(total).toBeLessThanOrEqual(MAX_TOTAL_ENTRIES);
+  it("reports ok for all compactable artifacts within uniform_10_40_50", () => {
+    const root = useFixtureProject("ok");
+    fixtureRoots.push(root);
+    const present = checkCompaction(root).filter(
+      (o) => o.status.classification === "compactable" && o.status.exists,
+    );
+    expect(present.length).toBeGreaterThan(0);
+    expect(present.every((o) => o.action === "ok")).toBe(true);
+    expect(present.every((o) => (o.status.over_limit_count ?? 0) === 0)).toBe(true);
+  });
 
-    const progressOp = checkCompaction(REPO_ROOT).find((o) => o.status.artifact === "progress");
+  it("keeps progress-at-cap within limits at 50 total entries", () => {
+    const root = useFixtureProject("progress-at-cap");
+    fixtureRoots.push(root);
+    const progressOp = checkCompaction(root).find((o) => o.status.artifact === "progress");
+    expect(progressOp?.status.total_count).toBe(50);
     expect(progressOp?.action).toBe("ok");
     expect(progressOp?.status.over_limit_count).toBe(0);
   });
@@ -163,7 +162,7 @@ describe("parseEntries todo-resolved + compactEntries", () => {
 
 describe("runCompaction", () => {
   it("rejects an unknown mode", () => {
-    expect(() => runCompaction(REPO_ROOT, "bogus")).toThrow(/unknown compaction mode/);
+    expect(() => runCompaction(tmp, "bogus")).toThrow(/unknown compaction mode/);
   });
 });
 

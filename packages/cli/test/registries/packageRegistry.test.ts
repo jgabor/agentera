@@ -11,11 +11,13 @@ import {
   loadRegistry,
   validateRegistryData,
 } from "../../src/registries/packageRegistry.js";
+import { repoStateFixturePath } from "../helpers/useFixtureProject.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "../../../..");
 const REGISTRY_PATH = path.join(REPO_ROOT, "references/adapters/package-registry.yaml");
 const PACKAGE_MANIFEST_PATH = path.join(REPO_ROOT, "registry.json");
+const FIXTURE_DOCS_PATH = path.join(repoStateFixturePath("ok"), ".agentera/docs.yaml");
 
 function registryFixture(): any {
   const data = YAML.parse(fs.readFileSync(REGISTRY_PATH, "utf8"));
@@ -163,7 +165,7 @@ describe("package registry", () => {
 
   it("manifest projections align with registry docs_targets", () => {
     const registry = loadRegistry(REGISTRY_PATH);
-    const docs = YAML.parse(fs.readFileSync(path.join(REPO_ROOT, ".agentera/docs.yaml"), "utf8"));
+    const docs = YAML.parse(fs.readFileSync(FIXTURE_DOCS_PATH, "utf8"));
     const docsView = registry.consumerView("docs");
 
     expect(new Set(docsView.docs_targets.version_files)).toEqual(

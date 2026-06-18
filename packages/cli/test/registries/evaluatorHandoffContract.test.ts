@@ -11,6 +11,7 @@ import {
   validateEvaluationReport,
   verifyWarnCitationAtLine,
 } from "../../src/registries/evaluatorHandoffContract.js";
+import { cleanupFixtureProject, useFixtureProject } from "../helpers/useFixtureProject.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "../../../..");
@@ -116,10 +117,13 @@ describe("inspektera evaluation report citation regression", () => {
   });
 
   it("stays green when project TODO.md ledger lines shift", () => {
-    const todoPath = path.join(REPO_ROOT, "TODO.md");
-    const original = fs.readFileSync(todoPath, "utf8");
-    const shifted = "# TODO\n\n## ⇶ Critical\n\n- [chore:3.0.0] Decoy line inserted above real items\n\n" + original.replace(/^# TODO\n\n/, "");
+    const root = useFixtureProject("ok");
     try {
+      const todoPath = path.join(root, "TODO.md");
+      const original = fs.readFileSync(todoPath, "utf8");
+      const shifted =
+        "# TODO\n\n## ⇶ Critical\n\n- [chore:3.0.0] Decoy line inserted above real items\n\n" +
+        original.replace(/^# TODO\n\n/, "");
       fs.writeFileSync(todoPath, shifted);
       for (const row of report.rows.filter(
         (r: { status: string; verify_command?: string }) =>
@@ -130,7 +134,7 @@ describe("inspektera evaluation report citation regression", () => {
       const errors = validateEvaluationReport(report, contract);
       expect(errors).toEqual([]);
     } finally {
-      fs.writeFileSync(todoPath, original);
+      cleanupFixtureProject(root);
     }
   });
 });

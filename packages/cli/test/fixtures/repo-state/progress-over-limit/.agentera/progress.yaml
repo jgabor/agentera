@@ -1,0 +1,386 @@
+cycles:
+  - number: 1
+    timestamp: 2026-01-02 10:00
+    type: feat
+    phase: build
+    what: Work cycle 1
+    context:
+      intent: test
+  - number: 2
+    timestamp: 2026-01-03 10:00
+    type: feat
+    phase: build
+    what: Work cycle 2
+    context:
+      intent: test
+  - number: 3
+    timestamp: 2026-01-04 10:00
+    type: feat
+    phase: build
+    what: Work cycle 3
+    context:
+      intent: test
+  - number: 4
+    timestamp: 2026-01-05 10:00
+    type: feat
+    phase: build
+    what: Work cycle 4
+    context:
+      intent: test
+  - number: 5
+    timestamp: 2026-01-06 10:00
+    type: feat
+    phase: build
+    what: Work cycle 5
+    context:
+      intent: test
+  - number: 6
+    timestamp: 2026-01-07 10:00
+    type: feat
+    phase: build
+    what: Work cycle 6
+    context:
+      intent: test
+  - number: 7
+    timestamp: 2026-01-08 10:00
+    type: feat
+    phase: build
+    what: Work cycle 7
+    context:
+      intent: test
+  - number: 8
+    timestamp: 2026-01-09 10:00
+    type: feat
+    phase: build
+    what: Work cycle 8
+    context:
+      intent: test
+  - number: 9
+    timestamp: 2026-01-10 10:00
+    type: feat
+    phase: build
+    what: Work cycle 9
+    context:
+      intent: test
+  - number: 10
+    timestamp: 2026-01-11 10:00
+    type: feat
+    phase: build
+    what: Work cycle 10
+    context:
+      intent: test
+  - number: 11
+    timestamp: 2026-01-12 10:00
+    type: feat
+    phase: build
+    what: Work cycle 11
+    context:
+      intent: test
+  - number: 12
+    timestamp: 2026-01-13 10:00
+    type: feat
+    phase: build
+    what: Work cycle 12
+    context:
+      intent: test
+  - number: 13
+    timestamp: 2026-01-14 10:00
+    type: feat
+    phase: build
+    what: Work cycle 13
+    context:
+      intent: test
+  - number: 14
+    timestamp: 2026-01-15 10:00
+    type: feat
+    phase: build
+    what: Work cycle 14
+    context:
+      intent: test
+  - number: 15
+    timestamp: 2026-01-16 10:00
+    type: feat
+    phase: build
+    what: Work cycle 15
+    context:
+      intent: test
+  - number: 16
+    timestamp: 2026-01-17 10:00
+    type: feat
+    phase: build
+    what: Work cycle 16
+    context:
+      intent: test
+  - number: 17
+    timestamp: 2026-01-18 10:00
+    type: feat
+    phase: build
+    what: Work cycle 17
+    context:
+      intent: test
+  - number: 18
+    timestamp: 2026-01-19 10:00
+    type: feat
+    phase: build
+    what: Work cycle 18
+    context:
+      intent: test
+  - number: 19
+    timestamp: 2026-01-20 10:00
+    type: feat
+    phase: build
+    what: Work cycle 19
+    context:
+      intent: test
+  - number: 20
+    timestamp: 2026-01-21 10:00
+    type: feat
+    phase: build
+    what: Work cycle 20
+    context:
+      intent: test
+  - number: 21
+    timestamp: 2026-01-22 10:00
+    type: feat
+    phase: build
+    what: Work cycle 21
+    context:
+      intent: test
+  - number: 22
+    timestamp: 2026-01-23 10:00
+    type: feat
+    phase: build
+    what: Work cycle 22
+    context:
+      intent: test
+  - number: 23
+    timestamp: 2026-01-24 10:00
+    type: feat
+    phase: build
+    what: Work cycle 23
+    context:
+      intent: test
+  - number: 24
+    timestamp: 2026-01-25 10:00
+    type: feat
+    phase: build
+    what: Work cycle 24
+    context:
+      intent: test
+  - number: 25
+    timestamp: 2026-01-26 10:00
+    type: feat
+    phase: build
+    what: Work cycle 25
+    context:
+      intent: test
+  - number: 26
+    timestamp: 2026-01-27 10:00
+    type: feat
+    phase: build
+    what: Work cycle 26
+    context:
+      intent: test
+  - number: 27
+    timestamp: 2026-01-28 10:00
+    type: feat
+    phase: build
+    what: Work cycle 27
+    context:
+      intent: test
+  - number: 28
+    timestamp: 2026-01-01 10:00
+    type: feat
+    phase: build
+    what: Work cycle 28
+    context:
+      intent: test
+  - number: 29
+    timestamp: 2026-01-02 10:00
+    type: feat
+    phase: build
+    what: Work cycle 29
+    context:
+      intent: test
+  - number: 30
+    timestamp: 2026-01-03 10:00
+    type: feat
+    phase: build
+    what: Work cycle 30
+    context:
+      intent: test
+  - number: 31
+    timestamp: 2026-01-04 10:00
+    type: feat
+    phase: build
+    what: Work cycle 31
+    context:
+      intent: test
+  - number: 32
+    timestamp: 2026-01-05 10:00
+    type: feat
+    phase: build
+    what: Work cycle 32
+    context:
+      intent: test
+  - number: 33
+    timestamp: 2026-01-06 10:00
+    type: feat
+    phase: build
+    what: Work cycle 33
+    context:
+      intent: test
+  - number: 34
+    timestamp: 2026-01-07 10:00
+    type: feat
+    phase: build
+    what: Work cycle 34
+    context:
+      intent: test
+  - number: 35
+    timestamp: 2026-01-08 10:00
+    type: feat
+    phase: build
+    what: Work cycle 35
+    context:
+      intent: test
+  - number: 36
+    timestamp: 2026-01-09 10:00
+    type: feat
+    phase: build
+    what: Work cycle 36
+    context:
+      intent: test
+  - number: 37
+    timestamp: 2026-01-10 10:00
+    type: feat
+    phase: build
+    what: Work cycle 37
+    context:
+      intent: test
+  - number: 38
+    timestamp: 2026-01-11 10:00
+    type: feat
+    phase: build
+    what: Work cycle 38
+    context:
+      intent: test
+  - number: 39
+    timestamp: 2026-01-12 10:00
+    type: feat
+    phase: build
+    what: Work cycle 39
+    context:
+      intent: test
+  - number: 40
+    timestamp: 2026-01-13 10:00
+    type: feat
+    phase: build
+    what: Work cycle 40
+    context:
+      intent: test
+  - number: 41
+    timestamp: 2026-01-14 10:00
+    type: feat
+    phase: build
+    what: Work cycle 41
+    context:
+      intent: test
+  - number: 42
+    timestamp: 2026-01-15 10:00
+    type: feat
+    phase: build
+    what: Work cycle 42
+    context:
+      intent: test
+  - number: 43
+    timestamp: 2026-01-16 10:00
+    type: feat
+    phase: build
+    what: Work cycle 43
+    context:
+      intent: test
+  - number: 44
+    timestamp: 2026-01-17 10:00
+    type: feat
+    phase: build
+    what: Work cycle 44
+    context:
+      intent: test
+  - number: 45
+    timestamp: 2026-01-18 10:00
+    type: feat
+    phase: build
+    what: Work cycle 45
+    context:
+      intent: test
+  - number: 46
+    timestamp: 2026-01-19 10:00
+    type: feat
+    phase: build
+    what: Work cycle 46
+    context:
+      intent: test
+  - number: 47
+    timestamp: 2026-01-20 10:00
+    type: feat
+    phase: build
+    what: Work cycle 47
+    context:
+      intent: test
+  - number: 48
+    timestamp: 2026-01-21 10:00
+    type: feat
+    phase: build
+    what: Work cycle 48
+    context:
+      intent: test
+  - number: 49
+    timestamp: 2026-01-22 10:00
+    type: feat
+    phase: build
+    what: Work cycle 49
+    context:
+      intent: test
+  - number: 50
+    timestamp: 2026-01-23 10:00
+    type: feat
+    phase: build
+    what: Work cycle 50
+    context:
+      intent: test
+  - number: 51
+    timestamp: 2026-01-24 10:00
+    type: feat
+    phase: build
+    what: Work cycle 51
+    context:
+      intent: test
+  - number: 52
+    timestamp: 2026-01-25 10:00
+    type: feat
+    phase: build
+    what: Work cycle 52
+    context:
+      intent: test
+  - number: 53
+    timestamp: 2026-01-26 10:00
+    type: feat
+    phase: build
+    what: Work cycle 53
+    context:
+      intent: test
+  - number: 54
+    timestamp: 2026-01-27 10:00
+    type: feat
+    phase: build
+    what: Work cycle 54
+    context:
+      intent: test
+  - number: 55
+    timestamp: 2026-01-28 10:00
+    type: feat
+    phase: build
+    what: Work cycle 55
+    context:
+      intent: test

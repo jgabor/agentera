@@ -1,0 +1,180 @@
+header:
+  level: full
+  created: 2026-06-18
+  status: complete
+  reviewed: 2026-06-18
+  critic_issues: "2 found, 2 addressed, 0 dismissed"
+  revised: >-
+    (1) Task 3 scoped to a minimal fixture tree and helper API only — not
+    migrating every consumer in one step. (2) release-metadata live-repo test
+    excluded as static version-surface gate, not session ledger coupling.
+  title: "Decouple vitest from live repo artifact state"
+
+what: >-
+  Remove vitest dependence on this checkout's mutable agent artifacts
+  (TODO.md Resolved ledger, progress.yaml cycle counts, plan slot presence)
+  while preserving compaction and schema hygiene through explicit repo gates
+  (`agentera check compact`, CI, lefthook). Introduce a small fixture project
+  tree and shared helpers so compaction, artifact validation, and oracle tests
+  prove behavior from pinned inputs, not from whatever orkestrera left in the
+  working tree.
+
+why: >-
+  Plan closeout on feat/v3 broke vitest (933/934) because compaction tests
+  assert the live repo is within uniform_10_40_50 budgets — duplicate of
+  `check compact` but embedded in unit tests. Contributors on any machine run
+  the same suite; local artifact churn feels like a code regression. Compaction
+  logic is already covered by tmp-based cases in the same file; live-repo
+  describes are hygiene gates wearing unit-test names.
+
+constraints: >-
+  feat/v3 only. Do not remove `agentera check compact` from CI or lefthook.
+  Behavior-preserving for compaction, validation, and oracle contracts. No
+  change to uniform_10_40_50 policy. Fold TODO/plan/progress updates into
+  implementation commits. Do not edit vision or objective.
+
+scope:
+  included:
+    - Coupling inventory and test-layer policy (unit vs repo gate)
+    - Remove compaction real-repo vitest; expand fixture coverage if gaps exist
+    - Shared fixture project helper (valid, over-limit, invalid YAML, empty plan)
+    - Decouple validateArtifact, validate, validateVerifyOracles artifact paths
+    - Stop mutating live TODO.md in evaluatorHandoffContract test
+    - Point registry tests at fixture docs.yaml instead of live .agentera/docs.yaml
+    - AGENTS.md / CI comment clarity on where hygiene gates live
+  excluded:
+    - release-metadata live-repo test (static version alignment, not session ledger)
+    - lifecycleAdapters real-repo tests (stable source/hook contracts)
+    - install_root model yaml reads (checked-in contract fixtures, low churn)
+    - Changing compaction caps or pre-commit hook policy
+  deferred:
+    - Optional `pnpm -C packages/cli test:repo-gates` script for explicit local hygiene
+    - Prime/orientation tests that use process.cwd() (packages/cli, not monorepo root)
+
+design: >-
+  Three layers: (1) vitest proves logic with fixtures and temp dirs; (2)
+  `agentera check compact` proves this repo's committed artifacts in CI and
+  lefthook; (3) docs state the split so agents do not "fix" vitest when compact
+  fails. Add `packages/cli/test/fixtures/repo-state/` with minimal valid
+  `.agentera/*` and TODO.md variants (ok, todo-resolved-over-limit,
+  progress-over-limit, invalid-yaml). A `useFixtureProject(name)` helper copies
+  into tmp and returns root. Migrate highest-pain couplings first (compaction,
+  validate artifact), then registry/oracle consumers.
+
+tasks:
+  - number: 1
+    name: Inventory and test-layer policy
+    depends_on: []
+    status: complete
+    acceptance:
+      - >-
+        GIVEN every REPO_ROOT coupling in packages/cli/test WHEN the inventory
+        runs THEN each entry is classified as mutable-state, static-contract, or
+        acceptable gate-deferred
+      - >-
+        GIVEN AGENTS.md Package DX or test section WHEN a contributor reads it
+        THEN it states vitest uses fixtures and `check compact` owns live-repo
+        artifact budgets
+      - >-
+        GIVEN the inventory WHEN complete THEN it lists files to migrate in tasks
+        2–5 with no undocumented live .agentera or TODO.md reads in vitest
+
+  - number: 2
+    name: Compaction tests use fixtures only
+    depends_on:
+      - "1"
+    status: complete
+    acceptance:
+      - >-
+        GIVEN vitest runs WHEN compaction.test.ts executes THEN no test calls
+        computeCompactionStatus or checkCompaction against REPO_ROOT for budget
+        assertions
+      - >-
+        GIVEN a fixture with 46 Resolved TODO entries WHEN checkCompaction runs
+        THEN action is over_limit with over count 6
+      - >-
+        GIVEN a fixture within uniform_10_40_50 WHEN checkCompaction runs THEN
+        all compactable artifacts report action ok
+      - >-
+        GIVEN CI workflow WHEN unchanged THEN `agentera check compact` still runs
+        after vitest
+
+  - number: 3
+    name: Shared repo-state fixture harness
+    depends_on:
+      - "1"
+    status: complete
+    acceptance:
+      - >-
+        GIVEN packages/cli/test/fixtures/repo-state/ WHEN tests import the
+        helper THEN named variants copy into an isolated temp directory with
+        .agentera and TODO.md layouts
+      - >-
+        GIVEN at least variants ok, todo-resolved-over-limit, progress-at-cap,
+        progress-over-limit, and invalid-progress-yaml WHEN documented THEN
+        each variant's intent is one line in a fixture README
+      - >-
+        GIVEN two tests WHEN they use the same variant THEN they get independent
+        temp copies with no cross-test mutation
+
+  - number: 4
+    name: Decouple artifact validation and validate oracles
+    depends_on:
+      - "3"
+    status: complete
+    acceptance:
+      - >-
+        GIVEN validateArtifact.test.ts WHEN it validates schemas THEN it uses
+        fixture paths under repo-state, not live REPO_ROOT .agentera files
+      - >-
+        GIVEN validate.test.ts and validateVerifyOracles WHEN artifact
+        validation runs THEN cwd points at a fixture project, not live plan
+        presence
+      - >-
+        GIVEN vitest WHEN the full suite runs THEN no test branches on
+        fs.existsSync(REPO_ROOT/.agentera/plan.yaml) for target selection
+
+  - number: 5
+    name: Decouple registry and evaluator TODO coupling
+    depends_on:
+      - "3"
+    status: complete
+    acceptance:
+      - >-
+        GIVEN packageRegistry and artifactRegistry tests WHEN they load docs
+        mapping THEN they read fixture docs.yaml, not live .agentera/docs.yaml
+      - >-
+        GIVEN evaluatorHandoffContract TODO shift test WHEN it runs THEN it
+        mutates a fixture TODO copy in tmp, never REPO_ROOT/TODO.md
+      - >-
+        GIVEN vitest on a clean clone WHEN run THEN passing does not require
+        local orkestrera artifact edits in the working tree
+
+  - number: 6
+    name: Verification and closeout
+    depends_on:
+      - "2"
+      - "4"
+      - "5"
+    status: complete
+    acceptance:
+      - >-
+        GIVEN pnpm -C packages/cli test WHEN run on feat/v3 THEN all tests pass
+        without running agentera compact first on a normal dev tree
+      - >-
+        GIVEN agentera check compact WHEN run on committed artifacts THEN pass
+        or fail only reflects committed state, not vitest duplication
+      - >-
+        GIVEN plan closeout WHEN complete THEN archive written, active slot
+        cleared, progress cycle records verification
+
+overall_acceptance: >-
+  GIVEN a contributor clones feat/v3 and runs pnpm -C packages/cli test without
+  local plan closeout or compaction THEN the suite passes. GIVEN they commit
+  artifact growth past uniform_10_40_50 THEN CI fails at check compact, not at
+  a misleading compaction unit test. GIVEN compaction fixture tests WHEN run
+  THEN they cover the behaviors previously asserted only by real-repo describes.
+
+surprises: []
+
+previous_plan_archived: .agentera/archive/PLAN-2026-06-18-profilera-corpus-coverage-trust.yaml

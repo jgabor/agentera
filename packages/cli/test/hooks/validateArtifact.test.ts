@@ -1,34 +1,34 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
-
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { ArtifactSchemaValidator, HookCliAdapter, loadSchema } from "../../src/hooks/validateArtifact/index.js";
 import { runCursorPreToolUse } from "../../src/hooks/cursorPreToolUse.js";
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const REPO_ROOT = path.resolve(__dirname, "../../../..");
+import { cleanupFixtureProject, useFixtureProject } from "../helpers/useFixtureProject.js";
 
 let tmp: string;
+const fixtureRoots: string[] = [];
 beforeEach(() => {
   tmp = fs.mkdtempSync(path.join(os.tmpdir(), "va-"));
 });
 afterEach(() => {
   fs.rmSync(tmp, { recursive: true, force: true });
+  while (fixtureRoots.length) cleanupFixtureProject(fixtureRoots.pop()!);
 });
 
 describe("ArtifactSchemaValidator", () => {
-  it("loads real schemas and validates the live repo artifacts clean", () => {
+  it("loads real schemas and validates repo-state fixture artifacts clean", () => {
     expect(loadSchema("progress")).toBeTruthy();
+    const root = useFixtureProject("ok");
+    fixtureRoots.push(root);
     const v = new ArtifactSchemaValidator();
     for (const [artifact, rel] of [
       ["DOCS.md", ".agentera/docs.yaml"],
       ["VISION.md", ".agentera/vision.yaml"],
       ["HEALTH.md", ".agentera/health.yaml"],
     ] as const) {
-      expect(v.validateExplicit(artifact, path.join(REPO_ROOT, rel), REPO_ROOT)).toEqual([]);
+      expect(v.validateExplicit(artifact, path.join(root, rel), root)).toEqual([]);
     }
   });
 

@@ -2,7 +2,9 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
+
+import { cleanupFixtureProject, useFixtureProject } from "../helpers/useFixtureProject.js";
 
 import {
   cmdValidate,
@@ -98,8 +100,6 @@ const VERIFY_EVAL_FAMILY_ORACLE = JSON.parse(fs.readFileSync(VERIFY_EVAL_FAMILY_
   >;
 };
 
-// The artifact-family test needs the repo root. Prefer PLAN.md when an active plan
-// exists; after plan archive closeout, fall back to TODO.md like validate.test.ts.
 const REPO_ROOT = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
   "..",
@@ -108,9 +108,12 @@ const REPO_ROOT = path.resolve(
   "..",
 );
 const SEMANTIC_FIXTURE = path.join(REPO_ROOT, "fixtures", "semantic", "hej-bare-message.md");
-const ARTIFACT_VALIDATE_TARGET = fs.existsSync(path.join(REPO_ROOT, ".agentera/plan.yaml"))
-  ? "PLAN.md"
-  : "TODO.md";
+const ARTIFACT_VALIDATE_TARGET = "PLAN.md";
+
+const fixtureRoots: string[] = [];
+afterEach(() => {
+  while (fixtureRoots.length) cleanupFixtureProject(fixtureRoots.pop()!);
+});
 
 function capture(
   fn: (io: { out: (t: string) => void; err: (t: string) => void }) => number,
@@ -250,8 +253,10 @@ describe("validate family envelope (oracle parity)", () => {
       return { rc, payload: readJson(out) };
     }
     if (family === "artifact") {
+      const root = useFixtureProject("ok");
+      fixtureRoots.push(root);
       const { rc, out } = capture((io) =>
-        cmdValidateArtifact({ artifact: ARTIFACT_VALIDATE_TARGET, cwd: REPO_ROOT, format: "json" }, io),
+        cmdValidateArtifact({ artifact: ARTIFACT_VALIDATE_TARGET, cwd: root, format: "json" }, io),
       );
       return { rc, payload: readJson(out) };
     }

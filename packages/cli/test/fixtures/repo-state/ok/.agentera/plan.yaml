@@ -1,0 +1,16 @@
+header:
+  level: light
+  created: 2026-01-01
+  status: active
+  title: Fixture plan
+what: Minimal valid plan for artifact validation tests.
+why: Pin schema-clean plan.yaml in repo-state fixtures.
+scope:
+  included:
+  - fixture validation
+  excluded:
+  - live repo coupling
+tasks:
+  - number: 1
+    name: Placeholder
+    status: complete

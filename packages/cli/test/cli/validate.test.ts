@@ -1,7 +1,9 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
+
+import { cleanupFixtureProject, useFixtureProject } from "../helpers/useFixtureProject.js";
 
 import {
   cmdValidate,
@@ -166,19 +168,25 @@ describe("cli validate descriptors", () => {
 });
 
 
+const fixtureRoots: string[] = [];
+afterEach(() => {
+  while (fixtureRoots.length) cleanupFixtureProject(fixtureRoots.pop()!);
+});
+
 describe("cli validate artifact", () => {
-  it("validates a canonical artifact against the repo (text)", () => {
-    const repo = path.resolve(process.cwd(), "..", "..");
-    const artifact = fs.existsSync(path.join(repo, ".agentera/plan.yaml")) ? "PLAN.md" : "PROGRESS.md";
-    const { rc, out } = capture((io) => cmdValidateArtifact({ artifact, cwd: repo }, io));
+  it("validates a canonical artifact against a repo-state fixture (text)", () => {
+    const root = useFixtureProject("ok");
+    fixtureRoots.push(root);
+    const { rc, out } = capture((io) => cmdValidateArtifact({ artifact: "PLAN.md", cwd: root }, io));
     expect(rc).toBe(0);
-    expect(out).toContain(`status=pass | artifact=${artifact}`);
+    expect(out).toContain("status=pass | artifact=PLAN.md");
     expect(out).toContain("path_source=docs_mapped_default");
   });
 
   it("emits a wrapped JSON envelope", () => {
-    const repo = path.resolve(process.cwd(), "..", "..");
-    const { rc, out } = capture((io) => cmdValidateArtifact({ artifact: "PROGRESS.md", cwd: repo, format: "json" }, io));
+    const root = useFixtureProject("ok");
+    fixtureRoots.push(root);
+    const { rc, out } = capture((io) => cmdValidateArtifact({ artifact: "PROGRESS.md", cwd: root, format: "json" }, io));
     expect(rc).toBe(0);
     const payload = JSON.parse(out);
     expect(payload.command).toBe("validate");
