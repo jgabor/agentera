@@ -93,6 +93,16 @@ describe("cli help", () => {
     expect(err).toContain("unknown or not-yet-ported command: bogus");
   });
 
+  it("routes report --help through main with runtime deselection flags", () => {
+    const { rc, out } = capture((io) => main(["node", "agentera", "report", "--help"], io));
+    expect(rc).toBe(0);
+    expect(out).toContain("--no-codex");
+    expect(out).toContain("Skip codex even if");
+    expect(out).toContain("--no-claude");
+    expect(out).toContain("--accept-coverage-gap");
+    expect(out).toContain("Coverage Audit");
+  });
+
   it("returns null for unknown command help", () => {
     expect(printCommandHelp("bogus")).toBeNull();
   });

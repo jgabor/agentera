@@ -135,6 +135,20 @@ export interface DecisionReviewAttention {
   attention: string;
 }
 
+export interface CorpusCoverageGap {
+  runtime: string;
+  reason: string;
+  store_path?: string;
+}
+
+export interface CorpusCoverageSummary {
+  path: string;
+  status: "missing" | "unreadable" | "too_large" | "loaded";
+  available_runtimes: string[];
+  selected_runtimes: string[];
+  available_but_not_selected: CorpusCoverageGap[];
+}
+
 /** Internal orientation state assembled by collectOrientationState. */
 export interface OrientationState {
   schemas_dir: string;
@@ -152,6 +166,7 @@ export interface OrientationState {
   health: HealthSummary;
   objective: ObjectiveSummary;
   state_presence: StatePresenceSummary;
+  corpus_coverage: CorpusCoverageSummary;
   todo_items: Array<Record<string, string>>;
   counts: IssueCounts;
   decision_attention: DecisionReviewAttention | null;

@@ -25,6 +25,7 @@
  */
 import fs from "node:fs";
 import path from "node:path";
+import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -56,6 +57,16 @@ function copyDir(src, dest) {
     } else if (entry.isFile()) {
       fs.copyFileSync(from, to);
     }
+  }
+}
+
+function runExtractCorpusParity(mode = "check") {
+  const generator = path.join(here, "generate-extract-corpus-parity.mjs");
+  if (!fs.existsSync(generator)) return;
+  const args = mode === "write" ? [generator, "--write"] : [generator];
+  const result = spawnSync(process.execPath, args, { stdio: "inherit" });
+  if (result.status !== 0) {
+    process.exit(result.status ?? 1);
   }
 }
 
@@ -98,5 +109,8 @@ fs.writeFileSync(
   path.join(bundleRoot, ".agentera-npx-bundle.json"),
   JSON.stringify({ kind: "agentera-npx-bundle", suiteVersion }, null, 2) + "\n",
 );
+
+runExtractCorpusParity("check");
+runExtractCorpusParity("write");
 
 console.log(`copy-bundle: staged ${copied} data surfaces into ${path.relative(pkgRoot, bundleRoot)}/`);

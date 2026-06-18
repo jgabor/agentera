@@ -23,6 +23,7 @@ import {
   statePresence,
 } from "../../orientation.js";
 import { buildOrientationAttention } from "../../orientation/attention.js";
+import { corpusCoverageSummary } from "../../orientation/corpusCoverage.js";
 import type { OrientationState, ProfileSummary } from "../../contracts/orientationState.js";
 import { hejBundleStatus } from "./bundleStatus.js";
 import type { PrimeOpts } from "./types.js";
@@ -76,6 +77,7 @@ export function collectOrientationState(opts: PrimeOpts): OrientationState {
   const counts = issueCounts(todoItems);
   const decision = decisionFollowUp(schemas);
   const decisionAttention = decisionReviewAttention(schemas);
+  const corpusCoverage = corpusCoverageSummary(env, process.platform);
   const project = process.cwd();
   const projectIntegration = summarizeProjectIntegration({
     project,
@@ -117,6 +119,7 @@ export function collectOrientationState(opts: PrimeOpts): OrientationState {
     health,
     objective,
     state_presence: presence,
+    corpus_coverage: corpusCoverage,
     todo_items: todoItems,
     counts,
     decision_attention: decisionAttention,
@@ -140,6 +143,7 @@ export function collectOrientationState(opts: PrimeOpts): OrientationState {
     health,
     objective,
     state_presence: presence,
+    corpus_coverage: corpusCoverage,
     todo_items: todoItems,
     counts,
     decision_attention: decisionAttention,

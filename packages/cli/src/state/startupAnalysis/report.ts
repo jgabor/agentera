@@ -68,12 +68,12 @@ export function renderStartupReport(metrics: Dict): string {
         status.status ?? "unknown",
         status.reason ?? "unknown",
         status.record_count ?? 0,
-        status.candidate_count ?? 0,
+        status.file_count ?? 0,
         status.error_count ?? 0,
       ]);
     }
   }
-  lines.push(...markdownTable(["Runtime", "Status", "Reason", "Records", "Candidates", "Errors"], runtimeRows));
+  lines.push(...markdownTable(["Runtime", "Status", "Reason", "Records", "Files", "Errors"], runtimeRows));
   lines.push(
     "",
     "## Metrics",

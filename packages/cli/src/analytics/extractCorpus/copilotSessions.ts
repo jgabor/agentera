@@ -3,13 +3,17 @@ import fs from "node:fs";
 import { resolvePath } from "../../core/paths.js";
 import {
   type Dict,
-  MAX_SQLITE_ROWS,
   isoFromMtime,
   record,
   signalType,
   textFromContent,
 } from "./core.js";
 import { isPlainObject, rglob, isFilePath } from "./core.js";
+import {
+  type SqliteCaps,
+  type SqliteTruncationInfo,
+  resolveSqliteCaps,
+} from "./sqliteCaps.js";
 import {
   type SqliteDb,
   PermissionDeniedError,
@@ -18,6 +22,7 @@ import {
   tableColumns,
   firstColumn,
   qualified,
+  type ExtractorContext,
 } from "./sqliteSessions.js";
 
 function copilotDbCandidates(storePath: string): string[] {
@@ -25,7 +30,7 @@ function copilotDbCandidates(storePath: string): string[] {
   return rglob(storePath, "session-store.db");
 }
 
-function copilotRows(conn: SqliteDb): Dict[] {
+function copilotRows(conn: SqliteDb, caps: SqliteCaps): Dict[] {
   const tables = new Set(
     conn.prepare("SELECT name FROM sqlite_master WHERE type = 'table'").all().map((r) => String(r.name)),
   );
@@ -78,7 +83,50 @@ function copilotRows(conn: SqliteDb): Dict[] {
                  ${idExpr}
         LIMIT ?
     `;
-  return conn.prepare(query).all(MAX_SQLITE_ROWS);
+  return conn.prepare(query).all(caps.maxRows);
+}
+
+export function probeCopilotTruncation(
+  conn: SqliteDb,
+  caps: SqliteCaps,
+  fallback: string,
+): SqliteTruncationInfo | null {
+  const tables = new Set(
+    conn.prepare("SELECT name FROM sqlite_master WHERE type = 'table'").all().map((r) => String(r.name)),
+  );
+  if (!tables.has("sessions") || !tables.has("turns")) return null;
+  const sessionCols = tableColumns(conn, "sessions");
+  const turnCols = tableColumns(conn, "turns");
+  const sessionId = firstColumn(sessionCols, ["id", "session_id", "sessionID"]);
+  const turnSession = firstColumn(turnCols, ["session_id", "sessionID", "session", "sessionId"]);
+  const roleCol = firstColumn(turnCols, ["role", "actor", "author"]);
+  if (!(sessionId && turnSession && roleCol)) return null;
+  const turnId = firstColumn(turnCols, ["id", "turn_id", "turnID"]);
+  const sessionTime = firstColumn(sessionCols, ["time", "timestamp", "created_at", "createdAt"]);
+  const turnTime = firstColumn(turnCols, ["time", "timestamp", "created_at", "createdAt"]);
+  const turnOrder = firstColumn(turnCols, ["turn_index", "turnIndex", "idx", "position", "sequence"]);
+  const orderExpr = turnOrder ? `t."${turnOrder}"` : `t."${turnTime || turnSession}"`;
+  const idExpr = turnId ? `t."${turnId}"` : "t.rowid";
+  const turnCount = Number(
+    conn.prepare("SELECT COUNT(*) AS c FROM turns t JOIN sessions s ON t.\"" + turnSession + "\" = s.\"" + sessionId + "\"").get()?.c ?? 0,
+  );
+  if (turnCount <= caps.maxRows) return null;
+  const timeExpr = `COALESCE(t."${turnTime || turnSession}", s."${sessionTime || sessionId}")`;
+  const query = `
+    SELECT MIN(turn_ts) AS truncated_at
+    FROM (
+      SELECT ${timeExpr} AS turn_ts
+      FROM turns t
+      JOIN sessions s ON t."${turnSession}" = s."${sessionId}"
+      ORDER BY COALESCE(${orderExpr}, t."${turnSession}"),
+               CASE LOWER(t."${roleCol}") WHEN 'user' THEN 0 WHEN 'assistant' THEN 1 ELSE 2 END,
+               ${idExpr}
+      LIMIT -1 OFFSET ?
+    )
+  `;
+  const row = conn.prepare(query).get(caps.maxRows);
+  const truncatedAt = sqliteTimestamp(row?.truncated_at, fallback);
+  return { truncatedAt, cap: "rows", limit: caps.maxRows };
 }
 
 function copilotArgumentDict(value: unknown): Dict {
@@ -149,8 +197,13 @@ function copilotRowTools(row: Dict, errors: string[]): Dict[] {
   return tools.filter((t) => typeof t.tool_name === "string" && t.tool_name);
 }
 
-export function extractCopilotSessions(storePath: string | null, errors: string[]): Dict[] {
+export function extractCopilotSessions(
+  storePath: string | null,
+  errors: string[],
+  ctx?: ExtractorContext,
+): Dict[] {
   if (storePath === null || !fs.existsSync(storePath)) return [];
+  const caps = ctx?.sqliteCaps ?? resolveSqliteCaps();
   const records: Dict[] = [];
   for (const dbPath of copilotDbCandidates(storePath).slice(0, 1)) {
     const fallbackTimestamp = isoFromMtime(dbPath);
@@ -158,7 +211,9 @@ export function extractCopilotSessions(storePath: string | null, errors: string[
     let conn: SqliteDb | null = null;
     try {
       conn = openSqlite(dbPath);
-      rows = copilotRows(conn);
+      const truncation = probeCopilotTruncation(conn, caps, fallbackTimestamp);
+      if (truncation && ctx) ctx.truncation = truncation;
+      rows = copilotRows(conn, caps);
     } catch (exc) {
       const msg = (exc as Error).message || "";
       if (/lock|busy/i.test(msg)) throw new PermissionDeniedError(msg);

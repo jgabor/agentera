@@ -223,7 +223,7 @@ export function runtimeBenchmarkCoverage(reportStatus: string, report: Dict | nu
     statusCounts[status] = (statusCounts[status] ?? 0) + 1;
     const item: Dict = { runtime, status };
     if (reason) item.reason = reason;
-    for (const key of ["record_count", "candidate_count", "error_count"]) {
+    for (const key of ["record_count", "file_count", "error_count"]) {
       const number = safeBenchmarkNumber(raw[key]);
       if (number !== null) item[key] = number;
     }

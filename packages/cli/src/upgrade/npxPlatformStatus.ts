@@ -1,3 +1,4 @@
+import { expanduser } from "../core/paths.js";
 import { resolvePlatformAppHome } from "./appModel.js";
 import { buildDoctorStatus, type BuildDoctorStatusOptions } from "./doctor.js";
 import type { BundleStatus } from "../cli/contracts/bundleStatus.js";
@@ -20,7 +21,7 @@ export interface NpxPlatformStatusResult {
 export function resolveNpxPlatformStatus(
   opts: ResolveNpxPlatformStatusOptions,
 ): NpxPlatformStatusResult {
-  const env = opts.env ?? process.env;
+  const env = { ...process.env, ...(opts.env ?? {}), HOME: expanduser(opts.home) };
   const platformRoot = resolvePlatformAppHome(opts.home, env);
   const doctorOpts: BuildDoctorStatusOptions = {
     rootSource: "default",

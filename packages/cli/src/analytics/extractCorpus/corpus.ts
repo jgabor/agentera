@@ -23,6 +23,10 @@ import {
   resolveCursorChatsPath,
 } from "./cursorSessions.js";
 import { resolvePath } from "../../core/paths.js";
+import type { CorpusEnvelopeCoverage } from "./coverageAudit.js";
+import type { SqliteCaps } from "./sqliteCaps.js";
+import { applyTruncationToStatus } from "./sqliteCaps.js";
+import type { ExtractorContext } from "./sqliteSessions.js";
 
 export class ExtractionNotImplementedError extends Error {}
 
@@ -34,48 +38,58 @@ export interface BuildCorpusOpts {
   copilotConversationsDir?: string | null;
   cursorProjectsDir?: string | null;
   cursorChatsDir?: string | null;
+  coverage?: CorpusEnvelopeCoverage;
+  sqliteCaps?: SqliteCaps;
 }
 
-type Extractor = (storePath: string | null, errors: string[]) => Dict[];
+type Extractor = (storePath: string | null, errors: string[], ctx?: ExtractorContext) => Dict[];
 
 function extractRuntimeStore(
   runtime: string,
   storePath: string | null,
   errors: string[],
   extractor: Extractor,
+  sqliteCaps?: SqliteCaps,
 ): [Dict[], Dict] {
   const discovery = discoverRuntimeStore(runtime, storePath);
   if (discovery.status !== "available") return [[], discovery];
   const errorStart = errors.length;
+  const ctx: ExtractorContext = { sqliteCaps };
   let records: Dict[];
   try {
-    records = extractor(storePath, errors);
+    records = extractor(storePath, errors, ctx);
   } catch (exc) {
-    const cc = discovery.candidate_count ?? null;
+    const fc = discovery.file_count ?? null;
     if (exc instanceof ExtractionNotImplementedError) {
-      return [[], runtimeStatus(runtime, { status: "degraded", reason: "extractor_unimplemented", storePath, candidateCount: cc, recordCount: 0, errorCount: 0 })];
+      return [[], runtimeStatus(runtime, { status: "degraded", reason: "extractor_unimplemented", storePath, fileCount: fc, recordCount: 0, errorCount: 0 })];
     }
     if (exc instanceof PermissionDeniedError) {
-      return [[], runtimeStatus(runtime, { status: "degraded", reason: "store_locked", storePath, candidateCount: cc })];
+      return [[], runtimeStatus(runtime, { status: "degraded", reason: "store_locked", storePath, fileCount: fc })];
     }
-    return [[], runtimeStatus(runtime, { status: "degraded", reason: "store_unreadable", storePath, candidateCount: cc })];
+    return [[], runtimeStatus(runtime, { status: "degraded", reason: "store_unreadable", storePath, fileCount: fc })];
   }
-  const cc = discovery.candidate_count ?? null;
+  const fc = discovery.file_count ?? null;
   const errorCount = errors.length - errorStart;
   if (errorCount) {
-    return [records, runtimeStatus(runtime, { status: "degraded", reason: "schema_divergent", storePath, candidateCount: cc, recordCount: records.length, errorCount })];
+    return [records, runtimeStatus(runtime, { status: "degraded", reason: "schema_divergent", storePath, fileCount: fc, recordCount: records.length, errorCount })];
   }
   if (records.length === 0) {
     return [records, runtimeStatus(runtime, {
       status: "sparse",
       reason: "no_matching_records",
       storePath,
-      candidateCount: cc,
+      fileCount: fc,
       recordCount: 0,
       remediationLabels: runtime === "github-copilot" ? [COPILOT_SPARSE_REMEDIATION] : null,
     })];
   }
-  return [records, runtimeStatus(runtime, { status: "ok", reason: "records_extracted", storePath, candidateCount: cc, recordCount: records.length, errorCount: 0 })];
+  return [
+    records,
+    applyTruncationToStatus(
+      runtimeStatus(runtime, { status: "ok", reason: "records_extracted", storePath, fileCount: fc, recordCount: records.length, errorCount: 0 }),
+      ctx.truncation,
+    ),
+  ];
 }
 
 export function dedupeRecords(records: Dict[]): Dict[] {
@@ -101,7 +115,12 @@ export function dedupeRecords(records: Dict[]): Dict[] {
   });
 }
 
-export function buildMetadata(records: Dict[], errors: string[], runtimeStatuses: Dict[]): Dict {
+export function buildMetadata(
+  records: Dict[],
+  errors: string[],
+  runtimeStatuses: Dict[],
+  coverage?: CorpusEnvelopeCoverage,
+): Dict {
   const counts = new Map<string, number>();
   for (const item of records) {
     const sk = item.source_kind;
@@ -114,12 +133,20 @@ export function buildMetadata(records: Dict[], errors: string[], runtimeStatuses
     if (count === 0) families[family].error = "no records extracted for this family";
   }
   const runtimes = Array.from(new Set(records.filter((i) => i.runtime).map((i) => String(i.runtime)))).sort();
+  const coverageFields = coverage ?? {
+    available_runtimes: [],
+    selected_runtimes: [],
+    available_but_not_selected: [],
+  };
   return {
     extracted_at: isoNow(),
     runtimes,
     adapter_version: ADAPTER_VERSION,
     families,
     runtime_statuses: runtimeStatuses,
+    available_runtimes: coverageFields.available_runtimes,
+    selected_runtimes: coverageFields.selected_runtimes,
+    available_but_not_selected: coverageFields.available_but_not_selected,
     total_records: records.length,
     errors,
   };
@@ -149,10 +176,10 @@ export function buildCorpus(opts: BuildCorpusOpts): Dict {
     ["github-copilot", opts.copilotConversationsDir ?? null, extractCopilotSessions],
   ];
   for (const [runtime, storePath, extractor] of runtimes) {
-    const [runtimeRecords, status] = extractRuntimeStore(runtime, storePath, errors, extractor);
+    const [runtimeRecords, status] = extractRuntimeStore(runtime, storePath, errors, extractor, opts.sqliteCaps);
     records.push(...runtimeRecords);
     runtimeStatuses.push(status);
   }
   const deduped = dedupeRecords(records);
-  return { metadata: buildMetadata(deduped, errors, runtimeStatuses), records: deduped };
+  return { metadata: buildMetadata(deduped, errors, runtimeStatuses, opts.coverage), records: deduped };
 }

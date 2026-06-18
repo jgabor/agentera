@@ -1,5 +1,6 @@
 import { projectIntegrationAttention } from "../../upgrade/projectIntegration.js";
 import type { OrientationState } from "../contracts/orientationState.js";
+import { corpusCoverageAttention } from "./corpusCoverage.js";
 import { firstPresent } from "../stateQuery.js";
 import { TODO_SEVERITY_ORDER } from "../todoSeverity.js";
 
@@ -13,6 +14,7 @@ export function buildOrientationAttention(state: OrientationState): string[] {
     health,
     plan,
     decision_attention: decisionAttention,
+    corpus_coverage: corpusCoverage,
     todo_items: todoItems,
   } = state;
 
@@ -20,6 +22,10 @@ export function buildOrientationAttention(state: OrientationState): string[] {
   const integrationAttention = projectIntegrationAttention(projectIntegration);
   if (integrationAttention) {
     attention.push(integrationAttention);
+  }
+  const coverageAttention = corpusCoverageAttention(corpusCoverage);
+  if (coverageAttention) {
+    attention.push(coverageAttention);
   }
   if (v1Migration.detected && projectIntegration.recommendation !== "upgrade") {
     attention.push(

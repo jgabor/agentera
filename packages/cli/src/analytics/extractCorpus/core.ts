@@ -98,19 +98,25 @@ export interface RuntimeStatusOpts {
   status: string;
   reason: string;
   storePath: string | null;
-  candidateCount?: number | null;
+  fileCount?: number | null;
   recordCount?: number | null;
   errorCount?: number | null;
   remediationLabels?: string[] | null;
+  truncatedAt?: string | null;
+  truncationCap?: "sessions" | "rows" | null;
+  truncationLimit?: number | null;
 }
 
 export function runtimeStatus(runtime: string, opts: RuntimeStatusOpts): Dict {
   const item: Dict = { runtime, status: opts.status, reason: opts.reason };
   if (opts.storePath !== null && opts.storePath !== undefined) item.store_path = opts.storePath;
-  if (opts.candidateCount !== null && opts.candidateCount !== undefined) item.candidate_count = opts.candidateCount;
+  if (opts.fileCount !== null && opts.fileCount !== undefined) item.file_count = opts.fileCount;
   if (opts.recordCount !== null && opts.recordCount !== undefined) item.record_count = opts.recordCount;
   if (opts.errorCount !== null && opts.errorCount !== undefined) item.error_count = opts.errorCount;
   if (opts.remediationLabels && opts.remediationLabels.length > 0) item.remediation_labels = opts.remediationLabels;
+  if (opts.truncatedAt) item.truncated_at = opts.truncatedAt;
+  if (opts.truncationCap) item.truncation_cap = opts.truncationCap;
+  if (opts.truncationLimit !== null && opts.truncationLimit !== undefined) item.truncation_limit = opts.truncationLimit;
   return item;
 }
 
@@ -170,7 +176,7 @@ export function discoverRuntimeStore(runtime: string, storePath: string | null):
       status: "available",
       reason: "candidate_files_found",
       storePath,
-      candidateCount: 1,
+      fileCount: 1,
     });
   }
   if (!isDir(storePath)) {
@@ -187,7 +193,7 @@ export function discoverRuntimeStore(runtime: string, storePath: string | null):
       status: "sparse",
       reason: "no_candidate_files",
       storePath,
-      candidateCount: 0,
+      fileCount: 0,
       remediationLabels: runtime === "github-copilot" ? [COPILOT_SPARSE_REMEDIATION] : null,
     });
   }
@@ -195,7 +201,7 @@ export function discoverRuntimeStore(runtime: string, storePath: string | null):
     status: "available",
     reason: "candidate_files_found",
     storePath,
-    candidateCount: candidates.length,
+    fileCount: candidates.length,
   });
 }
 

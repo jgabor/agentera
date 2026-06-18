@@ -72,14 +72,25 @@ describe("statsCorpusPath", () => {
 describe("cmdReport", () => {
   let tmp: string;
   let prev: string | undefined;
+  let prevHome: string | undefined;
   beforeEach(() => {
     tmp = fs.mkdtempSync(path.join(os.tmpdir(), "report-"));
     prev = process.env.PROFILERA_PROFILE_DIR;
+    prevHome = process.env.HOME;
     process.env.PROFILERA_PROFILE_DIR = tmp;
+    process.env.HOME = tmp;
+    process.env.XDG_DATA_HOME = path.join(tmp, ".local", "share");
+    process.env.CURSOR_HOME = path.join(tmp, ".cursor");
+    process.env.COPILOT_HOME = path.join(tmp, ".copilot");
   });
   afterEach(() => {
     if (prev === undefined) delete process.env.PROFILERA_PROFILE_DIR;
     else process.env.PROFILERA_PROFILE_DIR = prev;
+    if (prevHome === undefined) delete process.env.HOME;
+    else process.env.HOME = prevHome;
+    delete process.env.XDG_DATA_HOME;
+    delete process.env.CURSOR_HOME;
+    delete process.env.COPILOT_HOME;
     fs.rmSync(tmp, { recursive: true, force: true });
   });
 
@@ -151,6 +162,12 @@ describe("cmdReport", () => {
       format: "json",
       output: outp,
       projectRoot: [tmp],
+      codexSessionsDir: path.join(tmp, "stores", "codex"),
+      claudeProjectsDir: path.join(tmp, "stores", "claude"),
+      opencodeConversationsDir: path.join(tmp, "stores", "opencode.db"),
+      copilotConversationsDir: path.join(tmp, "stores", "copilot"),
+      cursorProjectsDir: path.join(tmp, "stores", "cursor-projects"),
+      cursorChatsDir: path.join(tmp, "stores", "cursor-chats"),
       noCodex: true,
       noClaude: true,
       noOpencode: true,
