@@ -1,0 +1,192 @@
+header:
+  level: full
+  created: 2026-06-18
+  status: complete
+  reviewed: 2026-06-18
+  critic_issues: "3 found, 3 addressed, 0 dismissed"
+  title: "Profilera corpus coverage trust + test gate recovery"
+
+what: >-
+  Fix four project-integration test regressions introduced after the structural-debt
+  refactor, then implement profilera corpus coverage guardrails: mandatory pre-extraction
+  Coverage Audit, corpus envelope coverage arrays, overridable SQLite caps with
+  truncation warnings, Py/TS extractor parity, and clearer runtime metadata/docs.
+
+why: >-
+  Full-mode profilera can rebuild PROFILE.md from partial history with no user-visible
+  warning. The incident session skipped available runtimes via --no-* flags and
+  truncated a 95,334-session opencode store to 60 rows. Until this chain lands,
+  every Full rebuild is a data-integrity risk. Test regressions (912/916) block
+  committing the already-landed structural-debt work.
+
+constraints: >-
+  feat/v3 only. Behavior-preserving for happy-path extraction when all runtimes
+  selected and under caps. Preserve Decision 55 local-only privacy boundaries.
+  No npm publish. Fold addressed TODO items into each task's implementation commit.
+  Do not edit vision or objective state.
+
+scope:
+  included:
+    - projectIntegration and app-home test regression fixes
+    - Coverage Audit pre-extraction step in profilera Full mode
+    - Corpus envelope available/selected/skipped arrays
+    - SQLite cap CLI/env overrides and truncated_at metadata
+    - Py/TS extractor parity gate
+    - candidate_count rename and --no-runtime flag documentation
+    - Final state sync and TODO fold-in
+  excluded:
+    - Decision 70 capability rename
+    - Capability prose over-prescription audit
+    - Artifact descriptive/decisional lint extension
+    - Profile first:/confidence carry-forward fix
+  deferred:
+    - 3-tier capability mode taxonomy
+    - macOS/Windows GHA CI jobs
+
+design: >-
+  Sequence test recovery before feature work. Coverage Audit is the user-facing gate;
+  corpus envelope fields are the machine-readable contract hej/prime consume. Cap
+  overrides and parity test prevent silent reversion. Metadata rename closes the
+  "1 candidate = 1 conversation" misread trap.
+
+tasks:
+  - number: 1
+    name: Restore integration test gate
+    depends_on: []
+    status: complete
+    acceptance:
+      - >-
+        GIVEN vitest runs on feat/v3 WHEN this task lands THEN 916/916 tests pass
+        with no integration or app-home failures
+      - >-
+        GIVEN summarizeProjectIntegration scenarios for runtime-only and
+        artifacts-only pending work WHEN prime emits project_integration THEN
+        upgrade_only matches the decision table expectations
+      - >-
+        GIVEN npx bundle is current but platform app home is outdated WHEN
+        summarizeProjectIntegration runs THEN recommendation is upgrade with
+        repair-oriented wording
+
+  - number: 2
+    name: Coverage Audit pre-extraction step
+    depends_on:
+      - "1"
+    status: complete
+    acceptance:
+      - >-
+        GIVEN any runtime store exists on the host WHEN profilera Full mode begins
+        extraction THEN the first user-visible output is a coverage summary listing
+        available runtimes with earliest and latest session timestamps
+      - >-
+        GIVEN an available runtime is skipped by flags or defaults WHEN Full mode
+        proceeds THEN the run status is flagged EX2 until the user explicitly
+        accepts the gap
+      - >-
+        GIVEN all available runtimes are selected WHEN Full mode proceeds THEN no
+        EX2 flag is raised for coverage
+
+  - number: 3
+    name: Corpus envelope coverage arrays
+    depends_on:
+      - "2"
+    status: complete
+    acceptance:
+      - >-
+        GIVEN extraction completes WHEN corpus metadata is emitted THEN
+        available_runtimes, selected_runtimes, and available_but_not_selected
+        arrays are present
+      - >-
+        GIVEN available_but_not_selected is non-empty WHEN hej or prime consumes
+        corpus state THEN attention includes a coverage-loss item
+      - >-
+        GIVEN a runtime was skipped despite an available store WHEN profilera Full
+        mode finishes THEN the envelope records the runtime in
+        available_but_not_selected with reason
+
+  - number: 4
+    name: SQLite cap overrides and truncation warnings
+    depends_on:
+      - "2"
+    status: complete
+    acceptance:
+      - >-
+        GIVEN a SQLite store exceeds default session or row caps WHEN extraction
+        runs THEN runtime_statuses includes truncated_at from an uncapped probe
+        query
+      - >-
+        GIVEN a maintainer passes --max-sqlite-sessions or sets
+        AGENTERA_EXTRACT_MAX_SQLITE_SESSIONS WHEN extraction runs THEN the
+        configured cap is honored
+      - >-
+        GIVEN truncation occurs WHEN diagnostics or coverage summary are shown
+        THEN the user sees which runtime was truncated and at what boundary
+
+  - number: 5
+    name: Py/TS extractor parity gate
+    depends_on:
+      - "4"
+    status: complete
+    acceptance:
+      - >-
+        GIVEN a seeded opencode.db fixture WHEN both extractors run THEN
+        record_count, earliest, and latest match
+      - >-
+        GIVEN TS source changes caps or discovery logic WHEN bundle:data
+        regenerates THEN either the Python surface reflects TS output or CI fails
+        with an explicit parity error
+      - >-
+        GIVEN parity drifts without an intentional version break WHEN parityCheck
+        runs THEN the test fails before merge
+
+  - number: 6
+    name: Runtime metadata clarity and flag docs
+    depends_on:
+      - "3"
+    status: complete
+    acceptance:
+      - >-
+        GIVEN SQLite runtime discovery WHEN metadata is emitted THEN file_count
+        replaces candidate_count and never implies a single conversation when
+        multiple records exist
+      - >-
+        GIVEN agentera extract --help WHEN a user reads runtime flags THEN each
+        --no-<runtime> flag documents that it deselects an available runtime
+      - >-
+        GIVEN a regression test for the rename WHEN SQLite store has thousands of
+        records THEN file_count and record_count are both present and
+        non-contradictory
+
+  - number: 7
+    name: State sync and plan closeout
+    depends_on:
+      - "1"
+      - "2"
+      - "3"
+      - "4"
+      - "5"
+      - "6"
+    status: complete
+    acceptance:
+      - >-
+        GIVEN all prior tasks complete WHEN state sync runs THEN addressed TODO
+        items move to Resolved with resolved dates in the same commits as their
+        fixes
+      - >-
+        GIVEN plan closeout runs WHEN archive is written THEN active plan slot is
+        cleared and progress records verification evidence
+      - >-
+        GIVEN a Full-mode profilera dry-run on a host with multiple runtimes WHEN
+        coverage audit runs THEN coverage summary and envelope fields are present
+        in output
+
+overall_acceptance: >-
+  GIVEN a host with codex, claude-code, and opencode stores WHEN Full-mode
+  profilera runs with --no-codex THEN the user sees coverage loss before
+  extraction and the run is flagged until accepted. GIVEN an opencode store
+  with more than 60 sessions WHEN extraction runs under default caps THEN
+  truncated_at is visible and hej attention surfaces the truncation. GIVEN
+  vitest on feat/v3 WHEN the plan completes THEN 916/916 tests pass.
+
+surprises: []
+
+previous_plan_archived: .agentera/archive/PLAN-2026-06-09-v3-cli-structural-debt.yaml

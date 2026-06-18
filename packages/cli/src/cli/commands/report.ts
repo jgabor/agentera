@@ -29,6 +29,8 @@ export interface ReportArgs {
   noOpencode?: boolean;
   noCopilot?: boolean;
   noCursor?: boolean;
+  acceptCoverageGap?: boolean;
+  coverageAuditOnly?: boolean;
 }
 
 function buildExtractArgv(args: ReportArgs, corpusPath: string): string[] {
@@ -45,6 +47,8 @@ function buildExtractArgv(args: ReportArgs, corpusPath: string): string[] {
   if (args.noOpencode) argv.push("--no-opencode");
   if (args.noCopilot) argv.push("--no-copilot");
   if (args.noCursor) argv.push("--no-cursor");
+  if (args.acceptCoverageGap) argv.push("--accept-coverage-gap");
+  if (args.coverageAuditOnly) argv.push("--coverage-audit-only");
   return argv;
 }
 
@@ -185,10 +189,12 @@ export function cmdReport(args: ReportArgs, io: Io = {}): number {
       out: (t) => (engineOut += t + "\n"),
       err: (t) => (engineErr += t + "\n"),
     });
+    const refreshStatus = rc === 0 ? "pass" : rc === 4 ? "flagged" : "fail";
     const payload = {
       command: "stats refresh",
-      status: rc === 0 ? "pass" : "fail",
-      privacy: { local_history_read: true, local_history_write: false, corpus_write: true, required_consent: "local-history", provided_consent: "local-history" },
+      status: refreshStatus,
+      exit_signal: rc === 4 ? "EX2" : null,
+      privacy: { local_history_read: true, local_history_write: false, corpus_write: rc === 0, required_consent: "local-history", provided_consent: "local-history" },
       corpus_path: corpusPath,
       engine: { command: engineCommand, exit_code: rc, stdout: engineOut.split("\n").filter((l) => l), stderr: engineErr.split("\n").filter((l) => l) },
     };

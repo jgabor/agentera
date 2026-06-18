@@ -5,6 +5,7 @@ import {
   APP_MIGRATION_NEEDED,
   APP_OUTDATED,
   APP_REPAIR_NEEDED,
+  APP_UP_TO_DATE,
 } from "./doctor.js";
 import { resolveNpxPlatformStatus } from "./npxPlatformStatus.js";
 import { classifyInstall, crossMajorBoundaryApplies } from "./compatibility.js";
@@ -168,6 +169,7 @@ function appNeedsUpgrade(bundleStatus: string): boolean {
 function resolveIntegrationTargets(args: ProjectIntegrationArgs): {
   installRoot: string;
   bundleStatus: string;
+  platformBundleStatus?: string;
   crossMajorBoundary: boolean;
 } {
   if (!isNpxBundleRoot(args.sourceRoot)) {
@@ -185,7 +187,8 @@ function resolveIntegrationTargets(args: ProjectIntegrationArgs): {
   });
   return {
     installRoot: platformRoot,
-    bundleStatus: platformStatus.status,
+    bundleStatus: args.bundleStatus,
+    platformBundleStatus: platformStatus.status,
     crossMajorBoundary: Boolean(platformStatus.crossMajorBoundary),
   };
 }
@@ -240,10 +243,20 @@ export function summarizeProjectIntegration(args: ProjectIntegrationArgs): Proje
   const crossMajorMigration =
     crossMajor && shouldIncludeCrossMajorPlanItems(channel, upgradeOutcome);
   const crossMajorNeedsPreview = crossMajor && !crossMajorMigration;
-  const needsAppUpgrade = appNeedsUpgrade(integrationTargets.bundleStatus);
+  const isNpx = isNpxBundleRoot(args.sourceRoot);
+  const classificationBundleStatus =
+    isNpx && integrationTargets.platformBundleStatus !== undefined
+      ? integrationTargets.platformBundleStatus
+      : integrationTargets.bundleStatus;
+  const needsAppUpgrade =
+    isNpx && integrationTargets.bundleStatus === APP_UP_TO_DATE
+      ? appNeedsUpgrade(integrationTargets.platformBundleStatus ?? APP_UP_TO_DATE) &&
+        pending.length === 0 &&
+        v1Artifacts.length === 0
+      : appNeedsUpgrade(classificationBundleStatus);
 
   const scenario = classifyIntegrationScenario({
-    bundleStatus: integrationTargets.bundleStatus,
+    bundleStatus: classificationBundleStatus,
     pendingRuntimeCount: pending.length,
     pendingArtifactCount: v1Artifacts.length,
     crossMajor,

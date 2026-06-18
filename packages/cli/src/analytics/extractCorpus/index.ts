@@ -38,4 +38,30 @@ export {
   extractCursorAgentSessions,
 } from "./cursorSessions.js";
 export { ExtractionNotImplementedError, dedupeRecords, buildMetadata, buildCorpus } from "./corpus.js";
+export {
+  formatTruncationWarnings,
+  resolveSqliteCaps,
+  type SqliteCaps,
+  type SqliteTruncationInfo,
+} from "./sqliteCaps.js";
+export type { ExtractorContext } from "./sqliteSessions.js";
+export {
+  COVERAGE_EXIT_FLAGGED,
+  corpusEnvelopeCoverage,
+  formatCoverageSummaryText,
+  resolveRuntimeStoreConfigs,
+  runCoverageAudit,
+  type CorpusEnvelopeCoverage,
+  type CoverageAuditResult,
+  type RuntimeCoverageEntry,
+  type RuntimeStoreConfig,
+} from "./coverageAudit.js";
 export { parseExtractArgs, extractCorpusMain } from "./cli.js";
+export {
+  EXTRACT_CORPUS_PARITY_SCHEMA,
+  buildExtractCorpusParityManifest,
+  opencodeParitySnapshot,
+  type ExtractCorpusParityManifest,
+  type OpencodeParitySnapshot,
+  type OpencodeProbeShape,
+} from "./extractCorpusParity.js";

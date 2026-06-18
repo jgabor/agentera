@@ -1,0 +1,23 @@
+{
+  "schema_version": "agentera-extract-corpus-parity-v1",
+  "adapter_version": "agentera-v2-corpus-1",
+  "max_sqlite_sessions": 60,
+  "max_sqlite_rows": 100000,
+  "max_tool_arg_text": 500,
+  "copilot_sparse_remediation": "/chronicle reindex",
+  "runtime_store_globs": {
+    "codex": "*.jsonl",
+    "claude-code": "*.jsonl",
+    "cursor": "*.jsonl",
+    "cursor-agent": "store.db",
+    "opencode": "opencode.db",
+    "github-copilot": "session-store.db"
+  },
+  "families": [
+    "instruction_document",
+    "history_prompt",
+    "conversation_turn",
+    "tool_call",
+    "project_config_signal"
+  ]
+}

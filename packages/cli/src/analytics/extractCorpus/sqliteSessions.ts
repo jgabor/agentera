@@ -5,15 +5,17 @@ import { createRequire } from "node:module";
 import { resolvePath } from "../../core/paths.js";
 import {
   type Dict,
-  MAX_SQLITE_ROWS,
-  MAX_SQLITE_SESSIONS,
-  eventTimestamp,
   isoFromMtime,
   record,
   signalType,
   textFromContent,
 } from "./core.js";
 import { isPlainObject, isFilePath, rglob } from "./core.js";
+import {
+  type SqliteCaps,
+  type SqliteTruncationInfo,
+  resolveSqliteCaps,
+} from "./sqliteCaps.js";
 
 const requireCjs = createRequire(import.meta.url);
 
@@ -28,6 +30,11 @@ export class PermissionDeniedError extends Error {
     super(message);
     this.name = "PermissionDeniedError";
   }
+}
+
+export interface ExtractorContext {
+  sqliteCaps?: SqliteCaps;
+  truncation?: SqliteTruncationInfo | null;
 }
 
 /** Lazy open a read-only SQLite db via node:sqlite (warning only fires here). */
@@ -79,7 +86,28 @@ export function qualified(alias: string, column: string | null, label: string): 
   return `${alias}."${escaped}" AS ${label}`;
 }
 
-function opencodeRows(conn: SqliteDb): Dict[] {
+interface OpencodeSchema {
+  sessionId: string;
+  messageId: string;
+  messageSession: string;
+  partMessage: string;
+  messageData: string | null;
+  partData: string | null;
+  roleCol: string | null;
+  messageTime: string | null;
+  partTime: string | null;
+  sessionTime: string | null;
+  sessionUpdated: string | null;
+  projectCol: string | null;
+  messageText: string | null;
+  partText: string | null;
+  partType: string | null;
+  partId: string | null;
+  sortExpr: string;
+  recentSessionExpr: string;
+}
+
+function resolveOpencodeSchema(conn: SqliteDb): OpencodeSchema {
   const tables = new Set(
     conn.prepare("SELECT name FROM sqlite_master WHERE type = 'table'").all().map((r) => String(r.name)),
   );
@@ -110,9 +138,50 @@ function opencodeRows(conn: SqliteDb): Dict[] {
   const partText = firstColumn(partCols, ["text", "content", "input", "output"]);
   const partType = firstColumn(partCols, ["type", "kind"]);
   const partId = firstColumn(partCols, ["id", "part_id", "partID"]);
-
   const sortExpr = `COALESCE(m."${messageTime || messageId}", p."${partTime || partMessage}", s."${sessionTime || sessionId}")`;
   const recentSessionExpr = `s."${sessionUpdated || sessionTime || sessionId}"`;
+  return {
+    sessionId,
+    messageId,
+    messageSession,
+    partMessage,
+    messageData,
+    partData,
+    roleCol,
+    messageTime,
+    partTime,
+    sessionTime,
+    sessionUpdated,
+    projectCol,
+    messageText,
+    partText,
+    partType,
+    partId,
+    sortExpr,
+    recentSessionExpr,
+  };
+}
+
+function opencodeRows(conn: SqliteDb, caps: SqliteCaps, schema: OpencodeSchema): Dict[] {
+  const {
+    sessionId,
+    messageId,
+    messageSession,
+    partMessage,
+    messageData,
+    partData,
+    roleCol,
+    messageTime,
+    partTime,
+    sessionTime,
+    projectCol,
+    messageText,
+    partText,
+    partType,
+    partId,
+    sortExpr,
+    recentSessionExpr,
+  } = schema;
   const query = `
         WITH recent_sessions AS (
             SELECT s."${sessionId}" AS recent_session_id
@@ -152,7 +221,91 @@ function opencodeRows(conn: SqliteDb): Dict[] {
         FROM recent
         ORDER BY sort_time, message_id, part_id
     `;
-  return conn.prepare(query).all(MAX_SQLITE_SESSIONS, MAX_SQLITE_ROWS);
+  return conn.prepare(query).all(caps.maxSessions, caps.maxRows);
+}
+
+export function probeOpencodeTruncation(
+  conn: SqliteDb,
+  caps: SqliteCaps,
+  fallback: string,
+): SqliteTruncationInfo | null {
+  const schema = resolveOpencodeSchema(conn);
+  const { sessionId, sessionTime, sessionUpdated, recentSessionExpr } = schema;
+  const sessionTimeCol = sessionTime || sessionId;
+  const sessionCount = Number(conn.prepare("SELECT COUNT(*) AS c FROM session").get()?.c ?? 0);
+  if (sessionCount > caps.maxSessions) {
+    const query = `
+      SELECT MIN(session_ts) AS truncated_at
+      FROM (
+        SELECT s."${sessionTimeCol}" AS session_ts
+        FROM session s
+        ORDER BY ${recentSessionExpr} DESC,
+                 s."${sessionId}" DESC
+        LIMIT -1 OFFSET ?
+      )
+    `;
+    const row = conn.prepare(query).get(caps.maxSessions);
+    const truncatedAt = sqliteTimestamp(row?.truncated_at, fallback);
+    return { truncatedAt, cap: "sessions", limit: caps.maxSessions };
+  }
+
+  const {
+    messageId,
+    messageSession,
+    partMessage,
+    roleCol,
+    messageTime,
+    partTime,
+    messageData,
+    partData,
+    messageText,
+    partText,
+    partType,
+    partId,
+    sortExpr,
+  } = schema;
+  const rowCountQuery = `
+    WITH recent_sessions AS (
+      SELECT s."${sessionId}" AS recent_session_id
+      FROM session s
+      ORDER BY ${recentSessionExpr} DESC,
+               s."${sessionId}" DESC
+      LIMIT ?
+    )
+    SELECT COUNT(*) AS c
+    FROM message m
+    JOIN session s ON m."${messageSession}" = s."${sessionId}"
+    JOIN recent_sessions rs ON rs.recent_session_id = s."${sessionId}"
+    LEFT JOIN part p ON p."${partMessage}" = m."${messageId}"
+  `;
+  const rowCount = Number(conn.prepare(rowCountQuery).get(caps.maxSessions)?.c ?? 0);
+  if (rowCount > caps.maxRows) {
+    const query = `
+      WITH recent_sessions AS (
+        SELECT s."${sessionId}" AS recent_session_id
+        FROM session s
+        ORDER BY ${recentSessionExpr} DESC,
+                 s."${sessionId}" DESC
+        LIMIT ?
+      ),
+      ranked AS (
+        SELECT ${sortExpr} AS sort_time
+        FROM message m
+        JOIN session s ON m."${messageSession}" = s."${sessionId}"
+        JOIN recent_sessions rs ON rs.recent_session_id = s."${sessionId}"
+        LEFT JOIN part p ON p."${partMessage}" = m."${messageId}"
+        ORDER BY sort_time DESC,
+                 m."${messageId}" DESC,
+                 p."${partId || partMessage}" DESC
+        LIMIT -1 OFFSET ?
+      )
+      SELECT MIN(sort_time) AS truncated_at FROM ranked
+    `;
+    const row = conn.prepare(query).get(caps.maxSessions, caps.maxRows);
+    const truncatedAt = sqliteTimestamp(row?.truncated_at, fallback);
+    return { truncatedAt, cap: "rows", limit: caps.maxRows };
+  }
+  return null;
 }
 
 function opencodeDbCandidates(storePath: string): string[] {
@@ -160,8 +313,13 @@ function opencodeDbCandidates(storePath: string): string[] {
   return rglob(storePath, "opencode.db");
 }
 
-export function extractOpencodeSessions(storePath: string | null, errors: string[]): Dict[] {
+export function extractOpencodeSessions(
+  storePath: string | null,
+  errors: string[],
+  ctx?: ExtractorContext,
+): Dict[] {
   if (storePath === null || !fs.existsSync(storePath)) return [];
+  const caps = ctx?.sqliteCaps ?? resolveSqliteCaps();
   const records: Dict[] = [];
   for (const dbPath of opencodeDbCandidates(storePath).slice(0, 1)) {
     const fallbackTimestamp = isoFromMtime(dbPath);
@@ -169,7 +327,10 @@ export function extractOpencodeSessions(storePath: string | null, errors: string
     let conn: SqliteDb | null = null;
     try {
       conn = openSqlite(dbPath);
-      rows = opencodeRows(conn);
+      const truncation = probeOpencodeTruncation(conn, caps, fallbackTimestamp);
+      if (truncation && ctx) ctx.truncation = truncation;
+      const schema = resolveOpencodeSchema(conn);
+      rows = opencodeRows(conn, caps, schema);
     } catch (exc) {
       const msg = (exc as Error).message || "";
       if (/lock|busy/i.test(msg)) throw new PermissionDeniedError(msg);

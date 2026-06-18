@@ -473,6 +473,8 @@ export function runReport(argv: string[], io: Io, prog: string): number {
     else if (a === "--no-opencode") args.noOpencode = true;
     else if (a === "--no-copilot") args.noCopilot = true;
     else if (a === "--no-cursor") args.noCursor = true;
+    else if (a === "--accept-coverage-gap") args.acceptCoverageGap = true;
+    else if (a === "--coverage-audit-only") args.coverageAuditOnly = true;
     else if (a === "--dry-run") args.dryRun = true;
     else if (a.startsWith("--")) {
       return emitInvalidInput(io, {

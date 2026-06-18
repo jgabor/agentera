@@ -12,7 +12,8 @@ EXIT_CONDITIONS:
     condition: flagged
     description: >-
       Profile generation or validation completed but with data quality
-      issues: extraction failed for one or more sources, prediction
+      issues: available runtime history was skipped without explicit
+      acceptance, extraction failed for one or more sources, prediction
       accuracy was below 3/5, or significant unresolved tensions were
       found.
     exit_signal: flagged

@@ -44,16 +44,20 @@ export function resolveOpencodeDbPath(env: Env = process.env): string | null {
   return candidate ? expanduser(candidate) : null;
 }
 
+function homeDir(env: Env = process.env): string {
+  return env.HOME || os.homedir();
+}
+
 export function resolveCopilotStorePath(env: Env = process.env): string {
-  return expanduser(env.COPILOT_HOME || path.join(os.homedir(), ".copilot"));
+  return expanduser(env.COPILOT_HOME || path.join(homeDir(env), ".copilot"));
 }
 export function resolveCursorProjectsPath(env: Env = process.env): string {
-  return path.join(expanduser(env.CURSOR_HOME || path.join(os.homedir(), ".cursor")), "projects");
+  return path.join(expanduser(env.CURSOR_HOME || path.join(homeDir(env), ".cursor")), "projects");
 }
 export function resolveCursorChatsPath(env: Env = process.env): string {
   const configHome = env.CURSOR_CONFIG_HOME;
   if (configHome) return path.join(expanduser(configHome), "chats");
-  return path.join(os.homedir(), ".config", "cursor", "chats");
+  return path.join(homeDir(env), ".config", "cursor", "chats");
 }
 
 // ── cursor helpers ──────────────────────────────────────────────────

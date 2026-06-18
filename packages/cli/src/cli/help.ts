@@ -141,8 +141,21 @@ export function printReportHelp(): string {
   return [
     "usage: agentera report [-h] [--format {text,json}] [--project VALUE]",
     "                       | agentera report refresh [--dry-run|--consent local-history]",
+    "                         [--no-<runtime> ...] [--accept-coverage-gap]",
     "",
     "Privacy-gated usage analytics over an existing corpus.",
+    "",
+    "Corpus extraction flags (report refresh with --consent local-history):",
+    "  These flags deselect runtimes that would otherwise be included when their",
+    "  store exists. Full-mode profilera runs a Coverage Audit first; skipping an",
+    "  available runtime flags the run until --accept-coverage-gap is passed.",
+    "  --no-codex            Skip codex even if ~/.codex/sessions exists",
+    "  --no-claude           Skip claude-code even if ~/.claude/projects exists",
+    "  --no-opencode         Skip opencode even if the opencode.db store exists",
+    "  --no-copilot          Skip github-copilot even if session-store.db exists",
+    "  --no-cursor           Skip cursor and cursor-agent stores",
+    "  --accept-coverage-gap Proceed despite skipped available runtimes (EX2)",
+    "  --coverage-audit-only Run the Coverage Audit summary only; do not extract",
   ].join("\n");
 }
 

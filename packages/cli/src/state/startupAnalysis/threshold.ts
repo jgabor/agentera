@@ -74,7 +74,7 @@ export function boundedRuntimeStatus(status: Dict): Dict {
     status: BOUNDED_RUNTIME_STATUSES.has(state) ? state : "degraded",
     reason: BOUNDED_RUNTIME_REASONS.has(reason) ? reason : "schema_divergent",
   };
-  for (const key of ["candidate_count", "record_count", "error_count"]) {
+  for (const key of ["file_count", "record_count", "error_count"]) {
     const value = status[key];
     if (typeof value === "number" && Number.isInteger(value)) item[key] = value;
   }

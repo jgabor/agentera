@@ -10,6 +10,13 @@ import {
 } from "./core.js";
 import { buildCorpus } from "./corpus.js";
 import {
+  COVERAGE_EXIT_FLAGGED,
+  corpusEnvelopeCoverage,
+  formatCoverageSummaryText,
+  runCoverageAudit,
+} from "./coverageAudit.js";
+import { formatTruncationWarnings, resolveSqliteCaps } from "./sqliteCaps.js";
+import {
   resolveCopilotStorePath,
   resolveCursorChatsPath,
   resolveCursorProjectsPath,
@@ -30,10 +37,15 @@ export interface ExtractArgs {
   noOpencode: boolean;
   noCopilot: boolean;
   noCursor: boolean;
+  acceptCoverageGap: boolean;
+  coverageAuditOnly: boolean;
+  maxSqliteSessions?: number;
+  maxSqliteRows?: number;
+  format: "text" | "json";
 }
 
 export function parseExtractArgs(argv: string[], env: Env = process.env, platform: NodeJS.Platform = process.platform): ExtractArgs {
-  const home = os.homedir();
+  const home = env.HOME || (platform === "win32" ? env.USERPROFILE : undefined) || os.homedir();
   const args: ExtractArgs = {
     output: defaultOutputPath(env, platform),
     projectRoot: [],
@@ -48,6 +60,9 @@ export function parseExtractArgs(argv: string[], env: Env = process.env, platfor
     noOpencode: false,
     noCopilot: false,
     noCursor: false,
+    acceptCoverageGap: false,
+    coverageAuditOnly: false,
+    format: "text",
   };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
@@ -70,7 +85,22 @@ export function parseExtractArgs(argv: string[], env: Env = process.env, platfor
     else if (a === "--no-opencode") args.noOpencode = true;
     else if (a === "--no-copilot") args.noCopilot = true;
     else if (a === "--no-cursor") args.noCursor = true;
-    else throw new Error(`extract-corpus: unrecognized argument: ${a}`);
+    else if (a === "--accept-coverage-gap") args.acceptCoverageGap = true;
+    else if (a === "--coverage-audit-only") args.coverageAuditOnly = true;
+    else if ((v = val("--max-sqlite-sessions")) !== null) {
+      args.maxSqliteSessions = Number.parseInt(v, 10);
+      if (!Number.isFinite(args.maxSqliteSessions) || args.maxSqliteSessions < 1) {
+        throw new Error(`extract-corpus: invalid --max-sqlite-sessions: ${v}`);
+      }
+    } else if ((v = val("--max-sqlite-rows")) !== null) {
+      args.maxSqliteRows = Number.parseInt(v, 10);
+      if (!Number.isFinite(args.maxSqliteRows) || args.maxSqliteRows < 1) {
+        throw new Error(`extract-corpus: invalid --max-sqlite-rows: ${v}`);
+      }
+    } else if ((v = val("--format")) !== null) {
+      if (v !== "text" && v !== "json") throw new Error(`extract-corpus: unsupported format '${v}'`);
+      args.format = v;
+    } else throw new Error(`extract-corpus: unrecognized argument: ${a}`);
   }
   return args;
 }
@@ -98,6 +128,21 @@ export function extractCorpusMain(argv: string[], io: ExtractMainIo = {}): numbe
     return 2;
   }
   const projectRoots = args.projectRoot.length > 0 ? args.projectRoot : [cwd];
+  const audit = runCoverageAudit(args, env, platform, args.acceptCoverageGap);
+  if (args.format === "json") {
+    out(JSON.stringify({ coverage_audit: audit }, null, 2));
+  } else {
+    out(formatCoverageSummaryText(audit));
+  }
+  if (audit.coverage_gap_flagged) {
+    err("coverage gap flagged (EX2): available runtime(s) skipped; pass --accept-coverage-gap to proceed");
+    return COVERAGE_EXIT_FLAGGED;
+  }
+  if (args.coverageAuditOnly) return 0;
+  const sqliteCaps = resolveSqliteCaps(env, {
+    maxSessions: args.maxSqliteSessions,
+    maxRows: args.maxSqliteRows,
+  });
   const skipCursor = args.noCursor;
   const corpus = buildCorpus({
     projectRoots,
@@ -107,9 +152,13 @@ export function extractCorpusMain(argv: string[], io: ExtractMainIo = {}): numbe
     copilotConversationsDir: args.noCopilot ? null : args.copilotConversationsDir || resolveCopilotStorePath(env),
     cursorProjectsDir: skipCursor ? null : args.cursorProjectsDir || resolveCursorProjectsPath(env),
     cursorChatsDir: skipCursor ? null : args.cursorChatsDir || resolveCursorChatsPath(env),
+    coverage: corpusEnvelopeCoverage(audit),
+    sqliteCaps,
   });
   fs.mkdirSync(path.dirname(args.output), { recursive: true });
   fs.writeFileSync(args.output, pyJsonIndent(corpus) + "\n", "utf-8");
+  const truncationWarning = formatTruncationWarnings(corpus.metadata.runtime_statuses as Dict[]);
+  if (truncationWarning) err(truncationWarning);
   const total = corpus.metadata.total_records;
   const familyBits = Object.entries(corpus.metadata.families)
     .map(([name, summary]) => `${name}=${(summary as Dict).count}`)
