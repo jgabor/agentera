@@ -1,0 +1,112 @@
+cycles:
+  - number: 41
+    timestamp: 2026-01-14 10:00
+    type: feat
+    phase: build
+    what: Work cycle 41
+    context:
+      intent: test
+  - number: 42
+    timestamp: 2026-01-15 10:00
+    type: feat
+    phase: build
+    what: Work cycle 42
+    context:
+      intent: test
+  - number: 43
+    timestamp: 2026-01-16 10:00
+    type: feat
+    phase: build
+    what: Work cycle 43
+    context:
+      intent: test
+  - number: 44
+    timestamp: 2026-01-17 10:00
+    type: feat
+    phase: build
+    what: Work cycle 44
+    context:
+      intent: test
+  - number: 45
+    timestamp: 2026-01-18 10:00
+    type: feat
+    phase: build
+    what: Work cycle 45
+    context:
+      intent: test
+  - number: 46
+    timestamp: 2026-01-19 10:00
+    type: feat
+    phase: build
+    what: Work cycle 46
+    context:
+      intent: test
+  - number: 47
+    timestamp: 2026-01-20 10:00
+    type: feat
+    phase: build
+    what: Work cycle 47
+    context:
+      intent: test
+  - number: 48
+    timestamp: 2026-01-21 10:00
+    type: feat
+    phase: build
+    what: Work cycle 48
+    context:
+      intent: test
+  - number: 49
+    timestamp: 2026-01-22 10:00
+    type: feat
+    phase: build
+    what: Work cycle 49
+    context:
+      intent: test
+  - number: 50
+    timestamp: 2026-01-23 10:00
+    type: feat
+    phase: build
+    what: Work cycle 50
+    context:
+      intent: test
+archive:
+  - summary: "Cycle 1 (2026-01-01): archived 1"
+  - summary: "Cycle 2 (2026-01-01): archived 2"
+  - summary: "Cycle 3 (2026-01-01): archived 3"
+  - summary: "Cycle 4 (2026-01-01): archived 4"
+  - summary: "Cycle 5 (2026-01-01): archived 5"
+  - summary: "Cycle 6 (2026-01-01): archived 6"
+  - summary: "Cycle 7 (2026-01-01): archived 7"
+  - summary: "Cycle 8 (2026-01-01): archived 8"
+  - summary: "Cycle 9 (2026-01-01): archived 9"
+  - summary: "Cycle 10 (2026-01-01): archived 10"
+  - summary: "Cycle 11 (2026-01-01): archived 11"
+  - summary: "Cycle 12 (2026-01-01): archived 12"
+  - summary: "Cycle 13 (2026-01-01): archived 13"
+  - summary: "Cycle 14 (2026-01-01): archived 14"
+  - summary: "Cycle 15 (2026-01-01): archived 15"
+  - summary: "Cycle 16 (2026-01-01): archived 16"
+  - summary: "Cycle 17 (2026-01-01): archived 17"
+  - summary: "Cycle 18 (2026-01-01): archived 18"
+  - summary: "Cycle 19 (2026-01-01): archived 19"
+  - summary: "Cycle 20 (2026-01-01): archived 20"
+  - summary: "Cycle 21 (2026-01-01): archived 21"
+  - summary: "Cycle 22 (2026-01-01): archived 22"
+  - summary: "Cycle 23 (2026-01-01): archived 23"
+  - summary: "Cycle 24 (2026-01-01): archived 24"
+  - summary: "Cycle 25 (2026-01-01): archived 25"
+  - summary: "Cycle 26 (2026-01-01): archived 26"
+  - summary: "Cycle 27 (2026-01-01): archived 27"
+  - summary: "Cycle 28 (2026-01-01): archived 28"
+  - summary: "Cycle 29 (2026-01-01): archived 29"
+  - summary: "Cycle 30 (2026-01-01): archived 30"
+  - summary: "Cycle 31 (2026-01-01): archived 31"
+  - summary: "Cycle 32 (2026-01-01): archived 32"
+  - summary: "Cycle 33 (2026-01-01): archived 33"
+  - summary: "Cycle 34 (2026-01-01): archived 34"
+  - summary: "Cycle 35 (2026-01-01): archived 35"
+  - summary: "Cycle 36 (2026-01-01): archived 36"
+  - summary: "Cycle 37 (2026-01-01): archived 37"
+  - summary: "Cycle 38 (2026-01-01): archived 38"
+  - summary: "Cycle 39 (2026-01-01): archived 39"
+  - summary: "Cycle 40 (2026-01-01): archived 40"

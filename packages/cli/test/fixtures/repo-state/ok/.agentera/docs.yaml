@@ -1,0 +1,55 @@
+last_audit: '2026-01-01'
+conventions:
+  doc_root: .
+  style: technical
+  auto_gen:
+  - none
+  version_files:
+  - pyproject.toml
+  - uv.lock
+  - plugin.json
+  - .github/plugin/plugin.json
+  - .codex-plugin/plugin.json
+  - .cursor-plugin/plugin.json
+  - .claude-plugin/marketplace.json
+  - .opencode/plugins/agentera.js
+  - skills/agentera/SKILL.md
+  - registry.json
+  semver_policy:
+    feat: minor
+    fix: patch
+mapping:
+- artifact: TODO.md
+  path: TODO.md
+  producers:
+  - realisera
+- artifact: PLAN.md
+  path: .agentera/plan.yaml
+  producers:
+  - planera
+- artifact: PROGRESS.md
+  path: .agentera/progress.yaml
+  producers:
+  - realisera
+- artifact: DOCS.md
+  path: .agentera/docs.yaml
+  producers:
+  - dokumentera
+- artifact: VISION.md
+  path: .agentera/vision.yaml
+  producers:
+  - visionera
+- artifact: HEALTH.md
+  path: .agentera/health.yaml
+  producers:
+  - inspektera
+index:
+- document: README
+  path: README.md
+  last_updated: '2026-01-01'
+  status: current
+coverage:
+  documented: '1'
+  undocumented: '0'
+  stale: '0'
+  tests: '0'

@@ -289,6 +289,13 @@ or workflow paths — not for web-only changes under `packages/web/**`.
 pnpm -C packages/cli test
 ```
 
+**Test layers:** Vitest proves hook and CLI **logic** from temp dirs and pinned fixtures
+under `packages/cli/test/fixtures/` — not from whatever is in this checkout's live
+`.agentera/` or `TODO.md`. Committed artifact **budgets** (`uniform_10_40_50`) are enforced
+by `agentera check compact` in CI and lefthook, not by vitest reading the working tree.
+See [`packages/cli/test/README.md`](./packages/cli/test/README.md) for the REPO_ROOT coupling
+inventory and migration targets (tasks 2–5 of the active decouple plan).
+
 Type-check and build:
 
 ```bash
@@ -301,6 +308,9 @@ The repository content gate (artifact compaction budgets) runs the built CLI:
 ```bash
 pnpm -C packages/cli build && node packages/cli/dist/bin/agentera.js check compact
 ```
+
+When vitest passes but `check compact` fails, fix committed artifacts or run compaction —
+do not treat compact failures as missing unit tests.
 
 ## Agentera commits
 

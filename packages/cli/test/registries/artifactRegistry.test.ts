@@ -11,13 +11,14 @@ import {
   loadDocsPathOverrides,
   resolveArtifactPath,
 } from "../../src/registries/artifactRegistry.js";
+import { repoStateFixturePath } from "../helpers/useFixtureProject.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "../../../..");
 const MODEL_PATH = path.join(REPO_ROOT, "references/artifacts/artifact-registry-interface-model.yaml");
 const ARTIFACT_SCHEMA_DIR = path.join(REPO_ROOT, "skills/agentera/schemas/artifacts");
 const CAPABILITY_DIR = path.join(REPO_ROOT, "skills/agentera/capabilities");
-const DOCS_PATH = path.join(REPO_ROOT, ".agentera/docs.yaml");
+const DOCS_PATH = path.join(repoStateFixturePath("ok"), ".agentera/docs.yaml");
 
 type Dict = Record<string, any>;
 

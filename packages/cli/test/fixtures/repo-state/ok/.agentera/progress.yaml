@@ -1,0 +1,15 @@
+cycles:
+  - number: 2
+    timestamp: 2026-01-03 10:00
+    type: feat
+    phase: build
+    what: Work cycle 2
+    context:
+      intent: test
+  - number: 1
+    timestamp: 2026-01-02 10:00
+    type: feat
+    phase: build
+    what: Work cycle 1
+    context:
+      intent: test

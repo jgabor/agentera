@@ -1,0 +1,15 @@
+project_name: Fixture
+north_star: Test north star for repo-state validation.
+personas:
+- name: Dev
+  description: A developer running vitest.
+principles:
+- name: Simple
+  description: Keep fixture trees minimal.
+direction: Ship with pinned inputs.
+identity:
+  personality: Direct
+  voice: Clear
+  emotional_register: Calm
+  naming: Fixture
+tension: Speed vs quality.
