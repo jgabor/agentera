@@ -3,32 +3,45 @@ import { spawnSync } from "node:child_process";
 import { resolveBackend } from "./resolve.mjs";
 
 /**
+ * @typedef {object} RunBackendResult
+ * @property {number} exitCode
+ * @property {boolean} fallthrough true when the backend is unusable and dispatch should try the next strategy
+ */
+
+/**
  * @param {import('./resolve.mjs').ResolveResult} backend
  * @param {string[]} args
  * @param {{ gitRef?: string; gitRepo?: string; cwd?: string }} [meta]
- * @returns {number}
+ * @returns {RunBackendResult}
  */
 export function runBackend(backend, args, meta = {}) {
   if (backend.kind === "app-home" && backend.scriptPath) {
-    return spawnChecked("uv", ["run", backend.scriptPath, ...args], {
+    const exitCode = spawnChecked("uv", ["run", backend.scriptPath, ...args], {
       cwd: meta.cwd,
     });
+    return { exitCode, fallthrough: exitCode !== 0 };
   }
 
   if (backend.kind === "repo" && backend.repoRoot) {
-    return spawnChecked("uv", ["run", "scripts/agentera", ...args], {
-      cwd: backend.repoRoot,
-    });
+    return {
+      exitCode: spawnChecked("uv", ["run", "scripts/agentera", ...args], {
+        cwd: backend.repoRoot,
+      }),
+      fallthrough: false,
+    };
   }
 
   if (backend.kind === "uvx") {
     const gitRef = backend.gitRef ?? meta.gitRef ?? "v2.7.7";
     const gitRepo = backend.gitRepo ?? meta.gitRepo ?? "https://github.com/jgabor/agentera";
     const from = `git+${gitRepo}@${gitRef}`;
-    return spawnChecked("uvx", ["--from", from, "agentera", ...args], {});
+    return {
+      exitCode: spawnChecked("uvx", ["--from", from, "agentera", ...args], {}),
+      fallthrough: false,
+    };
   }
 
-  return 1;
+  return { exitCode: 1, fallthrough: false };
 }
 
 /**
@@ -61,6 +74,7 @@ function spawnChecked(command, args, options) {
  * @param {string} [options.gitRef]
  * @param {string} [options.gitRepo]
  * @param {(message: string) => void} [options.printInstallHelp]
+ * @param {(message: string) => void} [options.logStderr]
  * @returns {number}
  */
 export function dispatch(argv, options = {}) {
@@ -69,12 +83,34 @@ export function dispatch(argv, options = {}) {
     return 0;
   }
 
-  const backend = resolveBackend({
+  let backend = resolveBackend({
     cwd: options.cwd,
     env: options.env,
     gitRef: options.gitRef,
     gitRepo: options.gitRepo,
+    logStderr: options.logStderr,
   });
+
+  if (backend.kind === "app-home") {
+    const result = runBackend(backend, userArgs, {
+      gitRef: options.gitRef,
+      gitRepo: options.gitRepo,
+      cwd: options.cwd,
+    });
+    if (!result.fallthrough) {
+      return result.exitCode;
+    }
+    console.error(
+      `agentera: app-home backend crashed (exit ${result.exitCode}); falling through to next resolution strategy`,
+    );
+    backend = resolveBackend({
+      cwd: options.cwd,
+      env: options.env,
+      gitRef: options.gitRef,
+      gitRepo: options.gitRepo,
+      excludeAppHome: true,
+    });
+  }
 
   if (backend.kind === "none") {
     const print = options.printInstallHelp ?? printInstallHelp;
@@ -86,7 +122,7 @@ export function dispatch(argv, options = {}) {
     gitRef: options.gitRef,
     gitRepo: options.gitRepo,
     cwd: options.cwd,
-  });
+  }).exitCode;
 }
 
 /**
