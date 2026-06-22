@@ -1,4 +1,27 @@
 cycles:
+- number: 672
+  timestamp: 2026-06-22 15:50
+  type: fix
+  phase: build
+  what: 'Backport fix: remove empty-severity-section rejection from validate_artifact.py
+    on main.'
+  inspiration: "Hit the bug during resonera TODO fold-in \u2014 the hook blocked TODO.md\
+    \ edits when Critical section was empty."
+  discovered: The v3 TS rewrite already dropped this check; the v2 Python hook on
+    main was the only surface still rejecting empty severity sections. The opencode
+    plugin on feat/v3 already calls the TS CLI, not the Python script.
+  verified: "python -m pytest tests/test_validate_md_items.py \u2014 2/2 pass; 15/16\
+    \ validate tests pass (1 pre-existing coexistence_probe shebang failure)."
+  next: 'Remaining degraded TODOs: deprecated fallback commands in prime --context,
+    over-prescription language audit, lint extension for decisional language.'
+  context:
+    intent: Unblock TODO.md edits when severity sections are legitimately empty (no
+      critical issues).
+    constraints: main branch only; v3 TS already correct; must update test from 'flags'
+      to 'accepts'.
+    unknowns: None.
+    scope: hooks/validate_artifact.py (main), tests/test_validate_md_items.py (main),
+      TODO.md (feat/v3), .agentera/progress.yaml (feat/v3)
 - number: 671
   timestamp: 2026-06-22 15:30
   type: fix
@@ -219,32 +242,10 @@ cycles:
       packages/cli/src/state/startupAnalysis/{report,threshold}.ts, packages/cli/src/cli/capabilityContext/benchmark.ts,
       packages/cli/test/analytics/extractCorpus.test.ts, packages/cli/test/analytics/extractCorpusParity.test.ts,
       packages/cli/test/cli/help.test.ts, references/analysis/startup-measurement-contract.yaml
-- number: 662
-  timestamp: 2026-06-18 23:00
-  type: chore
-  phase: build
-  what: "Plan T5 \u2014 Py/TS extractor parity gate: extractCorpusParity manifest\
-    \ + opencodeParitySnapshot; generate-extract-corpus-parity.mjs syncs committed\
-    \ manifest and scripts/extract_corpus.py from TS; copy-bundle fails on drift;\
-    \ parityCheck test on seeded opencode.db asserts record_count, earliest, and latest\
-    \ across coverage/extraction probes and Python wrapper output."
-  inspiration: "Profilera corpus coverage trust plan T5 \u2014 prevent silent bundle:data\
-    \ cap/discovery reversion from ses_142098f9fffeE9sNvugn0l0Aku."
-  discovered: Python-visible surface is a generated uv wrapper delegating probes to
-    the compiled TS engine; bundle parity manifest ships beside npx data.
-  verified: "pnpm -C packages/cli run typecheck; pnpm -C packages/cli test \u2014\
-    \ extractCorpusParity parityCheck cases pass; generate-extract-corpus-parity reports\
-    \ in sync after --write."
-  next: T6 runtime metadata clarity and flag docs.
-  context:
-    intent: Task 5 scope only; no candidate_count rename or plan closeout.
-    constraints: feat/v3; no commit; TS authoritative for extractor behavior.
-    unknowns: None for T5 acceptance.
-    scope: packages/cli/src/analytics/extractCorpus/extractCorpusParity.ts, packages/cli/scripts/generate-extract-corpus-parity.mjs,
-      packages/cli/scripts/extract-corpus-parity-probe.mjs, packages/cli/scripts/copy-bundle.mjs,
-      packages/cli/test/analytics/extractCorpusParity.test.ts, packages/cli/test/analytics/fixtures/extract-corpus-parity-manifest.json,
-      scripts/extract_corpus.py
 archive:
+- summary: "Cycle 662 (2026-06-18): Plan T5 \u2014 Py/TS extractor parity gate: extractCorpusParity\
+    \ manifest + opencodeParitySnapshot; generate-extract-corpus-parity.mjs syncs\
+    \ committed manifest..."
 - summary: "Cycle 661 (2026-06-18): Plan T4 \u2014 SQLite cap overrides and truncation\
     \ warnings: --max-sqlite-sessions / --max-sqlite-rows plus AGENTERA_EXTRACT_MAX_SQLITE_*\
     \ env..."
@@ -341,4 +342,3 @@ archive:
     plan closeout verification.'
 - summary: 'Cycle 621 (2026-05-30): Document upgrade paths and backport/cherry-pick
     policy.'
-- summary: 'Cycle 620 (2026-05-30): Wire phased upgrade orchestrator and CLI command.'
