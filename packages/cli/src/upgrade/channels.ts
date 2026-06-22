@@ -6,6 +6,7 @@ import { expanduser } from "../core/paths.js";
 import { isNpxBundleRoot, resolveSourceRoot } from "../core/sourceRoot.js";
 import { loadTomlFile, parseToml } from "../core/toml.js";
 import { loadYamlMappingFile } from "../core/yaml.js";
+import { cliDistributionMajor } from "./compatibility.js";
 
 /**
  * Update channel resolution for upgrade, doctor, and prime.
@@ -274,6 +275,12 @@ export function resolveInvokedUpdateChannel(args: ResolveUpdateChannelArgs = {})
   const sourceRoot = args.sourceRoot ?? resolveSourceRoot(env);
   if (isNpxBundleRoot(sourceRoot)) {
     return resolveUpdateChannel({ ...args, channel: "development", sourceRoot });
+  }
+  if (cliDistributionMajor(sourceRoot) >= 3) {
+    const selected = resolveSelectedChannel({ ...args, sourceRoot });
+    if (selected.source === "default") {
+      return resolveUpdateChannel({ ...args, channel: "development", sourceRoot });
+    }
   }
   return resolveUpdateChannel(args);
 }

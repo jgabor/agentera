@@ -12,6 +12,7 @@ import {
   loadUpdateChannelsAuthority,
   parseConfigUpdateChannel,
   resetUpdateChannelsAuthorityCache,
+  resolveInvokedUpdateChannel,
   resolveSelectedChannel,
   resolveUpdateChannel,
 } from "../../src/upgrade/channels.js";
@@ -158,5 +159,60 @@ describe("resolveNpxHookCommands", () => {
     const hooks = resolveNpxHookCommands({ channel: "development", env: env(), home, sourceRoot: REPO_ROOT });
     expect(hooks.cliEntrypoint).toBe(resolved.updateCommand);
     expect(hooks.validate).toBe(`${resolved.updateCommand} hook validate-artifact`);
+  });
+});
+
+describe("resolveInvokedUpdateChannel", () => {
+  function v2SourceRoot(): string {
+    const root = path.join(home, "v2-source");
+    fs.mkdirSync(path.join(root, "skills", "agentera"), { recursive: true });
+    fs.writeFileSync(path.join(root, "skills", "agentera", "SKILL.md"), "x");
+    fs.writeFileSync(
+      path.join(root, "registry.json"),
+      JSON.stringify({ skills: [{ name: "agentera", version: "2.7.0" }] }),
+    );
+    fs.cpSync(path.join(REPO_ROOT, "references"), path.join(root, "references"), { recursive: true });
+    return root;
+  }
+
+  it("feat/v3 checkout resolves to development channel (@next)", () => {
+    const resolved = resolveInvokedUpdateChannel({ env: env(), sourceRoot: REPO_ROOT });
+    expect(resolved.channel).toBe("development");
+    expect(resolved.distTag).toBe("next");
+    expect(resolved.updateCommand).toBe("npx -y agentera@next");
+  });
+
+  it("feat/v3 checkout does not resolve to stable (@latest)", () => {
+    const resolved = resolveInvokedUpdateChannel({ env: env(), sourceRoot: REPO_ROOT });
+    expect(resolved.channel).not.toBe("stable");
+    expect(resolved.updateCommand).not.toBe("npx -y agentera@latest");
+  });
+
+  it("explicit --channel stable on feat/v3 takes flag precedence", () => {
+    const resolved = resolveInvokedUpdateChannel({
+      channel: "stable",
+      env: env(),
+      sourceRoot: REPO_ROOT,
+    });
+    expect(resolved.channel).toBe("stable");
+    expect(resolved.source).toBe("cli_flag");
+    expect(resolved.updateCommand).toBe("npx -y agentera@latest");
+  });
+
+  it("AGENTERA_UPDATE_CHANNEL=stable on feat/v3 takes env precedence", () => {
+    const resolved = resolveInvokedUpdateChannel({
+      env: env({ [UPDATE_CHANNEL_ENV]: "stable" }),
+      sourceRoot: REPO_ROOT,
+    });
+    expect(resolved.channel).toBe("stable");
+    expect(resolved.source).toBe("env_var");
+    expect(resolved.updateCommand).toBe("npx -y agentera@latest");
+  });
+
+  it("stable checkout (v2 registry) resolves to stable channel (@latest)", () => {
+    const resolved = resolveInvokedUpdateChannel({ env: env(), sourceRoot: v2SourceRoot() });
+    expect(resolved.channel).toBe("stable");
+    expect(resolved.distTag).toBe("latest");
+    expect(resolved.updateCommand).toBe("npx -y agentera@latest");
   });
 });

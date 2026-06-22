@@ -101,7 +101,13 @@ export function collectOrientationState(opts: PrimeOpts): OrientationState {
           capability: "hej",
           reason: projectIntegration.message,
         }
-      : defaultNextAction;
+      : projectIntegration.major_boundary_block
+        ? {
+            object: "Await v3 successor announcement",
+            capability: "hej",
+            reason: projectIntegration.major_boundary_block,
+          }
+        : defaultNextAction;
 
   const attention = buildOrientationAttention({
     schemas_dir: schemasDir,

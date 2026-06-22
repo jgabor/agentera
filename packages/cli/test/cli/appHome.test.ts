@@ -8,11 +8,16 @@ import { main } from "../../src/cli/dispatch.js";
 import { resolvePath } from "../../src/core/paths.js";
 
 let tmp: string;
+let savedXdg: string | undefined;
 beforeEach(() => {
   tmp = fs.mkdtempSync(path.join(os.tmpdir(), "app-home-cli-"));
+  savedXdg = process.env.XDG_DATA_HOME;
+  delete process.env.XDG_DATA_HOME;
 });
 afterEach(() => {
   fs.rmSync(tmp, { recursive: true, force: true });
+  if (savedXdg !== undefined) process.env.XDG_DATA_HOME = savedXdg;
+  else delete process.env.XDG_DATA_HOME;
 });
 
 describe("agentera app-home", () => {

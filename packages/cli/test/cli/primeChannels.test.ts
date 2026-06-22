@@ -46,7 +46,7 @@ afterEach(() => {
 });
 
 describe("prime channel-aware migration and app_home gates", () => {
-  it("v1_migration commands use stable npm entrypoints, not uvx", () => {
+  it("v1_migration commands use npm entrypoints, not uvx", () => {
     const project = path.join(tmp, "project");
     fs.mkdirSync(path.join(project, ".agentera"), { recursive: true });
     fs.writeFileSync(path.join(project, ".agentera", "PROGRESS.md"), "# progress\n");
@@ -54,7 +54,7 @@ describe("prime channel-aware migration and app_home gates", () => {
 
     const state = collectOrientationState({ home, env: process.env });
     expect(state.v1_migration.detected).toBe(true);
-    expect(state.v1_migration.dry_run_command).toContain("npx -y agentera@latest");
+    expect(state.v1_migration.dry_run_command).toContain("npx -y agentera@next");
     expect(state.v1_migration.dry_run_command).not.toContain("uvx");
     expect(state.v1_migration.apply_command).toContain("--yes");
   });
@@ -105,5 +105,17 @@ describe("prime channel-aware migration and app_home gates", () => {
     expect(crossMajorAttention).not.toContain("--target-major");
     expect(crossMajorAttention).not.toContain("--project");
     expect(crossMajorAttention).not.toContain("app files outdated");
+  });
+
+  it("feat/v3 source checkout with no v2 managed app recommends stay with no upgrade command", () => {
+    const project = path.join(tmp, "proj-source-only");
+    fs.mkdirSync(project, { recursive: true });
+    process.chdir(project);
+
+    const state = collectOrientationState({ home, env: process.env });
+    expect(state.project_integration.recommendation).toBe("stay");
+    expect(state.project_integration.dry_run_command).toBeNull();
+    expect(state.project_integration.apply_command).toBeNull();
+    expect(state.project_integration.pending_runtime).toBe(0);
   });
 });
