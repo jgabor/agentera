@@ -227,7 +227,7 @@ export function summarizeProjectIntegration(args: ProjectIntegrationArgs): Proje
     args.crossMajorBoundary ??
     integrationTargets.crossMajorBoundary ??
     crossMajorBoundaryApplies(install, args.sourceRoot);
-  const successorAnnounced = isStableSuccessorAnnounced(args.sourceRoot);
+  const successorAnnounced = isStableSuccessorAnnounced(args.sourceRoot, channel.channel);
   const crossMajor = crossMajorDetected && successorAnnounced;
   if (crossMajorBoundaryApplies(install, args.sourceRoot) && !successorAnnounced) {
     return {

@@ -1,105 +1,136 @@
 header:
-  level: full
+  level: light
   created: "2026-06-22"
-  status: complete
-  reviewed: "2026-06-22"
-  critic_issues: "4 found, 4 addressed, 0 dismissed"
-  title: "v2→v3 cutover stability — critical issue remediation"
+  status: active
+  title: "v2→v3 cutover stability — degraded issue remediation (batch 1)"
 what: >
-  Fix the three critical cutover-stability issues discovered during the
-  stabilization sweep: the corrupted managed app script write path that
-  crashes the shim under Node, the prime/upgrade messaging conflict where
-  prime recommends an upgrade that upgrade hard-blocks, and prime suggesting
-  the wrong npm channel (@latest instead of @next) on feat/v3 checkouts.
+  Fix four degraded cutover-stability issues surfaced after the critical
+  batch landed: make the major-boundary gate channel-aware, validate
+  shebang/runtime before shim spawn (with crash fallback), stop doctor
+  from silently suppressing cross-major version-mismatch signals, and make
+  doctor's bundle evidence check shebang-aware so retryCommand matches the
+  managed script's actual runtime.
 why: >
-  These three issues together make the v2→v3 cutover path appear broken to
-  users and agents: running the suggested upgrade command crashes with a
-  ReferenceError, prime's guidance contradicts upgrade's gate, and the
-  suggested command would install the wrong major version. Fixing them is a
-  prerequisite for a seamless v3 transition.
+  The critical batch fixed the visible "ReferenceError on first run" path
+  and the prime/upgrade messaging conflict, but the underlying gate still
+  hardcodes the stable channel, the shim has no defense against future
+  shebang corruption, and doctor's "up_to_date" verdict is dishonest on
+  cross-major boundaries. Each of these four issues is a foot-gun the
+  previous plan explicitly excluded, and any one of them can break the
+  v2→v3 cutover window the same way the critical issues did. Fixing them
+  now, while v3 is still feature-frozen, is cheaper than after cutover.
 constraints: >
-  All work on feat/v3 only. Do not modify the major-boundary gate semantics
-  (isStableSuccessorAnnounced) — that is a separate degraded issue. Do not
-  change the update-channels.yaml announced flag — v3 is not yet announced.
-  Do not modify the shim package (packages/cli/shim/) — the shim's
-  shebang validation gap is a separate degraded issue. Fixes must not break
-  existing vitest tests. Explicit user channel choice (--channel flag or
-  AGENTERA_UPDATE_CHANNEL env) must take precedence over any derived
-  default.
+  All work on feat/v3 only. Do not flip the update-channels.yaml
+  announced flag — v3 is not yet announced. Do not touch the three
+  duplicate hasBundleRootEvidence implementations in compatibility.ts,
+  coexistenceProbe.ts, appModel.ts — scope is doctor.ts only. Do not
+  extract a shared TS shebang-read helper between the shim and the
+  CLI; the shim is a separate ESM build with different dependencies,
+  and ~10 lines of shebang parsing does not warrant the cost. Tests
+  must not break the existing 970/970 vitest green count. The shim
+  has no existing test suite — adding one for this work is in scope,
+  but keep it minimal.
 scope:
   included:
-    - "Managed app script write path in packages/cli/src/upgrade/ (what writes app/scripts/agentera)"
-    - "Prime pending runtime detection in packages/cli/src/upgrade/projectIntegration.ts"
-    - "Prime next_action reason text in packages/cli/src/cli/commands/prime/collectOrientationState.ts"
-    - "Channel resolution for repo checkouts in packages/cli/src/upgrade/channels.ts"
-    - "Regression tests for all three fixes"
+    - "isStableSuccessorAnnounced channel-awareness in packages/cli/src/upgrade/nextMajorDoctor.ts"
+    - "Shim shebang/runtime validation and crash fallback in packages/cli/shim/lib/resolve.mjs and exec.mjs"
+    - "Doctor cross_major_pending advisory signal in packages/cli/src/upgrade/doctor.ts (lines 257-272)"
+    - "Doctor shebang-aware retryCommand in packages/cli/src/upgrade/doctor.ts (lines 80-85, 316-319)"
+    - "Regression tests for all four fixes (vitest for the CLI; minimal new test files for the shim)"
   excluded:
-    - "isStableSuccessorAnnounced channel-awareness (degraded TODO item)"
-    - "Shim isRunnableFile shebang validation (degraded TODO item)"
-    - "Doctor version_mismatch signal suppression (degraded TODO item)"
-    - "Doctor runtime validation of managed script (degraded TODO item)"
+    - "Audit capability prose for over-prescription language (TODO.md line 12 — content/docs change, defers to a docs-focused plan)"
+    - "--force major-boundary bypass (TODO.md line 28 — channel-awareness from Task 1 subsumes half; explicit --force flag can be a follow-up)"
+    - "Consolidating duplicate hasBundleRootEvidence across compatibility.ts, coexistenceProbe.ts, appModel.ts (separate chore item)"
+    - "Shim → CLI shared shebang-read helper extraction (over-engineering at this scale)"
     - "update-channels.yaml announced flag flip"
-    - "packages/cli/shim/ changes"
-  deferred: []
+    - "Removing missingScriptCommands dead code (TODO.md line 29 — separate chore)"
+  deferred:
+    - "--force-major-boundary flag (only worth doing if Task 1 channel-awareness is not enough)"
+    - "Prose audit for over-prescription language (separate docs plan)"
 design: >
-  Task 1 traced the corrupted script to a test leak in
-  projectIntegrationWording.test.ts where platformDefaultAppHome read
-  process.env.XDG_DATA_HOME instead of the temp home parameter, writing
-  stub scripts with Node shebangs and Python content to the real app home.
-  Fixed the test helper, shebang mismatches in stubs, and added a shared
-  managedAppStub helper with integrity tests. Task 2 added a
-  major_boundary_block field to ProjectIntegrationSummary and an early
-  return in summarizeProjectIntegration when crossMajorBoundaryApplies
-  and successor is unannounced, surfacing the block reason in next_action
-  instead of recommending an upgrade that will fail. Task 3 made
-  resolveInvokedUpdateChannel derive the channel from cliDistributionMajor
-  >= 3 for repo checkouts, so feat/v3 checkouts suggest @next instead of
-  @latest, with explicit user channel choices taking precedence.
+  Task 1 widens isStableSuccessorAnnounced from (sourceRoot) to
+  (sourceRoot, channel) and threads channel through doctor.ts:258,
+  versionResolution.ts:199, projectIntegration.ts:230. The stable
+  channel is the legacy default — old callers get identical behavior.
+  update-channels.yaml stays unchanged (no next_major block under
+  development, so --channel development still returns false at runtime,
+  preserving current behavior outside of test cases).
+
+  Task 2 adds a shebang-read step in resolve.mjs after isRunnableFile
+  passes. If the shebang says node but the content is Python, OR vice
+  versa, the shim logs "app-home backend unavailable: shebang/content
+  mismatch" to stderr and falls through to the next strategy. exec.mjs
+  spawnChecked already exits non-zero on script crash; the fix is to
+  treat non-zero as "backend unavailable" instead of "fatal" and return
+  the same fallthrough signal.
+
+  Task 3 replaces the silent splice at doctor.ts:260-272 with an
+  explicit emit: when crossMajorDetected && !successorAnnounced &&
+  actualMajor < 3 && expectedMajor >= 3, push a kind: "cross_major_pending"
+  signal with a non-actionable advisory message and set final status to
+  APP_MANUAL_REVIEW_NEEDED instead of APP_UP_TO_DATE. This makes the
+  version gap visible in JSON output and honest in status.
+
+  Task 4 makes hasBundleRootEvidence at doctor.ts:80-85 read the
+  shebang as part of the evidence check, and constructs retryCommand
+  at doctor.ts:316-319 by spawning with shebang-derived runtime
+  (uv run for Python PEP 723, node for #!/usr/bin/env node, omit for
+  unreadable/no shebang). When probeCli is true, the doctor emits a
+  cli_probe_failed signal on shebang/content mismatch.
+
+  Parallelization: Tasks 1 and 3 both touch doctor.ts:257-272 but
+  Task 1 changes the function signature at line 258 and Task 3
+  consumes the result; sequence them (1 before 3) within the batch.
+  Tasks 2 and 4 are disjoint (shim ESM vs CLI TS) and can run in
+  parallel with the Task 1+3 chain.
 tasks:
   - number: 1
-    name: "Fix corrupted managed app script write path"
+    name: "Make major-boundary gate channel-aware"
     depends_on: []
     status: complete
     acceptance:
-      - "GIVEN a v3 CLI upgrade or cleanup operation WHEN it writes to $AGENTERA_HOME/app/scripts/agentera THEN the file has valid content with a shebang matching its runtime (Python PEP 723 or Node JS, not mixed)"
-      - "GIVEN an existing valid managed app script WHEN a v3 CLI operation runs THEN the script is not truncated or corrupted"
-      - "GIVEN the managed app script after any v3 CLI operation WHEN executed with its declared runtime THEN it does not crash with a shebang/runtime mismatch error (e.g., ReferenceError: sub is not defined)"
-      - "Test proportionality: one pass (valid write preserves shebang + content) + one fail (operation does not write a Node shebang to a Python script)"
+      - "GIVEN a source root where update-channels.yaml has channels.development.next_major.announced=true WHEN prime is invoked with --channel development THEN the major-boundary gate does not block the v2→v3 path"
+      - "GIVEN the default update-channels.yaml (development has no next_major block) WHEN isStableSuccessorAnnounced(sourceRoot, \"development\") is called THEN it returns false (no successor announced on dev channel), preserving current behavior"
+      - "GIVEN --channel stable with stable's next_major.announced=false (current state) WHEN isStableSuccessorAnnounced(sourceRoot, \"stable\") is called THEN it returns false, identical to pre-fix behavior"
+      - "GIVEN the channel parameter is omitted (legacy callers) WHEN the function is called THEN it defaults to \"stable\" and behavior is identical to pre-fix"
   - number: 2
-    name: "Fix prime/upgrade messaging conflict"
+    name: "Shim shebang/runtime validation and crash fallback"
     depends_on: []
-    status: complete
+    status: pending
     acceptance:
-      - "GIVEN a v2 managed app with unannounced v3 successor WHEN prime runs THEN prime's next_action surfaces the major-boundary block reason rather than suggesting an upgrade that will fail"
-      - "GIVEN a v2 managed app with unannounced v3 successor WHEN prime runs THEN pending_runtime is 0 or absent (no actionable pending items while the gate is blocked)"
-      - "GIVEN a v2 managed app with announced v3 successor WHEN prime runs THEN prime's next_action recommends upgrade as before"
-      - "GIVEN a v3 self-contained npm install or source checkout WHEN prime runs THEN no major-boundary block reason appears in next_action"
-      - "Test proportionality: one pass (unannounced successor surfaces block reason in next_action) + one fail (unannounced successor does not set recommendation=upgrade)"
+      - "GIVEN a managed app/scripts/agentera whose shebang is #!/usr/bin/env node but whose content is Python WHEN the shim resolves the app-home backend THEN the shim reports 'app-home backend unavailable: shebang/content mismatch' on stderr and falls through to the next resolution strategy (uvx or repo) instead of spawning uv run against it"
+      - "GIVEN a v2 Python PEP 723 managed script with a correct #!/usr/bin/env python3 shebang WHEN the shim resolves the app-home backend THEN the script is selected and dispatched via uv run"
+      - "GIVEN the app-home backend spawns uv run <script> and the process exits non-zero (script runtime crash) WHEN spawnChecked returns THEN the shim falls through to the next resolution strategy instead of treating exit code as final"
+      - "GIVEN no AGENTERA_HOME and no repo checkout WHEN the shim resolves THEN behavior is unchanged from current (returns kind: \"none\" with install help)"
   - number: 3
-    name: "Fix prime channel resolution for feat/v3 checkouts"
-    depends_on: []
-    status: complete
+    name: "Doctor cross_major_pending advisory signal"
+    depends_on: ["1"]
+    status: pending
     acceptance:
-      - "GIVEN a feat/v3 repo checkout with cliDistributionMajor >= 3 WHEN prime suggests an upgrade command THEN the command uses the development channel (@next) not stable (@latest)"
-      - "GIVEN an explicit --channel stable flag or AGENTERA_UPDATE_CHANNEL=stable env WHEN prime resolves the channel THEN the explicit user choice takes precedence over the derived default"
-      - "GIVEN a stable channel repo checkout with cliDistributionMajor < 3 WHEN prime suggests an upgrade command THEN the command uses @latest as before"
-      - "GIVEN a feat/v3 source checkout with no v2 managed app and no pending runtime items WHEN prime runs THEN no upgrade command is suggested (channel fix is not observable when there is no upgrade suggestion)"
-      - "Test proportionality: one pass (feat/v3 checkout suggests @next) + one fail (feat/v3 checkout does not suggest @latest)"
+      - "GIVEN a v2.7.9 managed app facing a v3.0.0 CLI (cross-major boundary, successor unannounced) WHEN doctor runs THEN the emitted signals include kind: \"cross_major_pending\" with a non-actionable advisory message, and the final status is APP_MANUAL_REVIEW_NEEDED (not APP_UP_TO_DATE)"
+      - "GIVEN the same cross-major boundary WHEN doctor runs THEN at least one signal referencing the version gap remains in the signals array (the prior suppression behavior is gone)"
+      - "GIVEN a non-cross-major scenario (v2.7.9 CLI facing v2.7.9 app, or v3.0.0 self-contained npx bundle) WHEN doctor runs THEN no cross_major_pending signal is emitted and behavior is identical to pre-fix"
+      - "GIVEN the cross-major scenario after the fix WHEN prime reads app_home.status THEN it is manual_review_needed (not up_to_date), matching the corrected doctor verdict"
   - number: 4
-    name: "Version bump and final state sync"
-    depends_on: ["1", "2", "3"]
-    status: complete
+    name: "Doctor shebang-aware retryCommand and runtime validation"
+    depends_on: []
+    status: pending
     acceptance:
-      - "GIVEN all prior tasks complete WHEN vitest runs THEN no new failures beyond pre-existing appHome.test.ts env failures"
-      - "GIVEN all prior tasks complete WHEN agentera check compact runs THEN all artifacts within limits"
-      - "GIVEN the three critical TODO items WHEN inspected THEN they are marked resolved"
-      - "GIVEN the fix work WHEN the version is checked THEN it is bumped per the docs versioning policy for fix work"
+      - "GIVEN a managed app/scripts/agentera whose shebang is #!/usr/bin/env python3 (Python PEP 723) WHEN doctor builds the BundleStatus THEN retryCommand starts with 'uv run <script>', not 'node <script>'"
+      - "GIVEN a managed script with #!/usr/bin/env node shebang (v3 self-contained) WHEN doctor builds the BundleStatus THEN retryCommand starts with 'node <script>' (current behavior, preserved)"
+      - "GIVEN a managed script with no shebang or an unreadable shebang WHEN doctor builds the BundleStatus THEN retryCommand is omitted or set to null rather than producing an unrunnable 'node <python>' command"
+      - "GIVEN a managed script with mismatched shebang/content (Node shebang + Python body, the case Task 2 catches in the shim) WHEN doctor runs with probeCli: true THEN the doctor emits a runtime_mismatch signal in signals[], so the failure surfaces in JSON output instead of silently passing"
 overall_acceptance: >
-  A user on a feat/v3 checkout with a v2 managed app runs prime and sees a
-  next_action that surfaces the major-boundary block reason (not an upgrade
-  recommendation that will fail), with a suggested command using @next (not
-  @latest). The managed app script at $AGENTERA_HOME/app/scripts/agentera is
-  not corrupted by any v3 CLI operation. Full vitest suite passes.
-  agentera check compact passes. Three critical TODO items are marked
-  resolved.
-surprises: "Task 1 root cause was a test leak, not production code — platformDefaultAppHome in projectIntegrationWording.test.ts read process.env.XDG_DATA_HOME instead of the temp home parameter, writing stub scripts to the real app home. Parallel subagent execution clobbered Tasks 2 and 3 working tree changes on first run — re-ran sequentially to recover."
+  A user on a feat/v3 checkout with a v2 managed app can run prime with
+  --channel development and observe the same "blocked" verdict as with
+  --channel stable (the gate is now channel-aware but no behavior change
+  until development's next_major block is set). The shim refuses to
+  spawn a Python script under Node or a Node script under uv, logs the
+  mismatch to stderr, and falls through to the next resolution strategy
+  instead of crashing. Doctor's cross-major verdict is honest: v2.7.9
+  facing 3.0.0 shows manual_review_needed, not up_to_date, with a
+  cross_major_pending advisory signal. Doctor's retryCommand matches
+  the managed script's actual runtime. Full vitest suite passes
+  (970/970 baseline). New shim tests pass. agentera check compact
+  passes. The 4 chosen Degraded TODO items are marked resolved.
+surprises: ""

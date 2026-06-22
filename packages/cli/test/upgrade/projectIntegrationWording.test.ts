@@ -182,10 +182,21 @@ describe("summarizeProjectIntegration wording", () => {
     fs.copyFileSync(path.join(REPO_ROOT, "registry.json"), path.join(authorityRoot, "registry.json"));
     fs.cpSync(path.join(REPO_ROOT, "references"), path.join(authorityRoot, "references"), { recursive: true });
     const authorityPath = path.join(authorityRoot, "references/cli/update-channels.yaml");
-    fs.writeFileSync(
-      authorityPath,
-      fs.readFileSync(authorityPath, "utf8").replace("announced: false", "announced: true"),
+    const authorityText = fs.readFileSync(authorityPath, "utf8");
+    const nextMajorBlock = [
+      "    next_major:",
+      "      channel: stable",
+      '      version: "3.x"',
+      "      announced: true",
+      '      guide_url: "https://example.test/guide"',
+      '      preview_command: "npx -y agentera@next upgrade --dry-run"',
+      '      irreversible_advisory: "forward migration is one-way"',
+    ].join("\n");
+    const patched = authorityText.replace(
+      /(  development:[\s\S]*?distribution_major: 3\n)/,
+      `$1${nextMajorBlock}\n`,
     );
+    fs.writeFileSync(authorityPath, patched);
 
     const project = path.join(tmp, "cross-major");
     fs.mkdirSync(project, { recursive: true });

@@ -11,9 +11,11 @@ import {
   NEXT_MAJOR_SECTION_HEADER,
   V1_NEXT_MAJOR_FALLBACK,
   formatNextMajorDoctorLines,
+  isStableSuccessorAnnounced,
   loadChannelNextMajor,
   prependNextMajorDoctorSection,
   resolveNextMajorDoctorLines,
+  setSuccessorAnnouncedOverrideForTests,
 } from "../../src/upgrade/nextMajorDoctor.js";
 import { renderDoctorStatus } from "../../src/cli/commands/doctor.js";
 
@@ -91,6 +93,76 @@ function authorityRootWithAnnouncedSuccessor(announced: boolean): string {
   fs.writeFileSync(authorityPath, patched);
   return authorityRoot;
 }
+
+function authorityRootWithDevelopmentNextMajor(announced: boolean): string {
+  const authorityRoot = path.join(tmp, `dev-announced-${announced}`);
+  fs.mkdirSync(path.join(authorityRoot, "references/cli"), { recursive: true });
+  fs.copyFileSync(
+    path.join(REPO_ROOT, "references/cli/update-channels.yaml"),
+    path.join(authorityRoot, "references/cli/update-channels.yaml"),
+  );
+  const authorityPath = path.join(authorityRoot, "references/cli/update-channels.yaml");
+  const text = fs.readFileSync(authorityPath, "utf8");
+  const nextMajorBlock = [
+    "    next_major:",
+    "      channel: stable",
+    '      version: "3.x"',
+    `      announced: ${announced}`,
+    '      guide_url: "https://example.test/guide"',
+    '      preview_command: "npx -y agentera@next upgrade --dry-run"',
+    '      irreversible_advisory: "forward migration is one-way"',
+  ].join("\n");
+  const patched = text.replace(
+    /(  development:[\s\S]*?distribution_major: 3\n)/,
+    `$1${nextMajorBlock}\n`,
+  );
+  fs.writeFileSync(authorityPath, patched);
+  return authorityRoot;
+}
+
+describe("isStableSuccessorAnnounced", () => {
+  beforeEach(() => {
+    setSuccessorAnnouncedOverrideForTests(null);
+  });
+
+  afterEach(() => {
+    setSuccessorAnnouncedOverrideForTests(null);
+  });
+
+  it("returns true on development channel when development.next_major.announced=true", () => {
+    const authorityRoot = authorityRootWithDevelopmentNextMajor(true);
+    expect(isStableSuccessorAnnounced(authorityRoot, "development")).toBe(true);
+  });
+
+  it("returns false on development channel when development has no next_major block", () => {
+    expect(isStableSuccessorAnnounced(REPO_ROOT, "development")).toBe(false);
+  });
+
+  it("returns false on development channel when development.next_major.announced=false", () => {
+    const authorityRoot = authorityRootWithDevelopmentNextMajor(false);
+    expect(isStableSuccessorAnnounced(authorityRoot, "development")).toBe(false);
+  });
+
+  it("returns false on stable channel when stable.next_major.announced=false", () => {
+    expect(isStableSuccessorAnnounced(REPO_ROOT, "stable")).toBe(false);
+  });
+
+  it("returns true on stable channel when stable.next_major.announced=true", () => {
+    const authorityRoot = authorityRootWithAnnouncedSuccessor(true);
+    expect(isStableSuccessorAnnounced(authorityRoot, "stable")).toBe(true);
+  });
+
+  it("defaults to stable when the channel argument is omitted (legacy callers)", () => {
+    expect(isStableSuccessorAnnounced(REPO_ROOT)).toBe(false);
+    const authorityRoot = authorityRootWithAnnouncedSuccessor(true);
+    expect(isStableSuccessorAnnounced(authorityRoot)).toBe(true);
+  });
+
+  it("does not consult the stable channel when development is requested", () => {
+    const stableAnnouncedRoot = authorityRootWithAnnouncedSuccessor(true);
+    expect(isStableSuccessorAnnounced(stableAnnouncedRoot, "development")).toBe(false);
+  });
+});
 
 describe("resolveNextMajorDoctorLines", () => {
   it("omits the section when stable successor is not announced", () => {
