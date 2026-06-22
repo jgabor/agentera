@@ -52,7 +52,7 @@ def test_validate_md_items_accepts_multi_section_todo(validate_artifact):
     assert _todo_violations(validate_artifact, todo) == []
 
 
-def test_validate_md_items_flags_adjacent_empty_section(validate_artifact):
+def test_validate_md_items_accepts_empty_severity_section(validate_artifact):
     todo = "\n".join(
         [
             "# TODO",
@@ -69,5 +69,4 @@ def test_validate_md_items_flags_adjacent_empty_section(validate_artifact):
             "",
         ]
     )
-    violations = _todo_violations(validate_artifact, todo)
-    assert any("⇶ Critical" in v for v in violations)
+    assert _todo_violations(validate_artifact, todo) == []

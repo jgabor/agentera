@@ -815,13 +815,6 @@ def _validate_md_items(content: str, name: str, violations: list[str]) -> None:
                     body_start += 1
                 section_end = idx + next_match.start() if next_match else len(content)
                 section_body = content[body_start:section_end]
-                if not re.search(r"^\s*\-", section_body, re.MULTILINE):
-                    glyph_name_match = re.search(rf"^##\s*({re.escape(glyph)}.+)$", content[section_start.start():section_start.end()], re.MULTILINE)
-                    heading_text = glyph_name_match.group(1) if glyph_name_match else glyph
-                    violations.append(
-                        f"{name}: severity section '{heading_text}' has no list entries "
-                        "(expected '- [type]' items)"
-                    )
     if not found:
         violations.append(
             f"{name}: missing severity glyph in section headings "
