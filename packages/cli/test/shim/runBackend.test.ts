@@ -68,7 +68,8 @@ describe("shim runBackend cwd preservation", () => {
       cwd: tmpUserCwd,
     });
 
-    expect(rc).toBe(0);
+    expect(rc.exitCode).toBe(0);
+    expect(rc.fallthrough).toBe(false);
     expect(spawnSyncMock).toHaveBeenCalledTimes(1);
     const [command, args, options] = spawnSyncMock.mock.calls[0] as [
       string,
@@ -92,7 +93,8 @@ describe("shim runBackend cwd preservation", () => {
 
     const rc = runBackend(backend, ["state", "plan"]);
 
-    expect(rc).toBe(0);
+    expect(rc.exitCode).toBe(0);
+    expect(rc.fallthrough).toBe(false);
     const options = (spawnSyncMock.mock.calls[0] as [
       string,
       string[],
@@ -113,7 +115,8 @@ describe("shim runBackend cwd preservation", () => {
 
     const rc = runBackend(backend, ["state", "plan"], { cwd: tmpUserCwd });
 
-    expect(rc).toBe(0);
+    expect(rc.exitCode).toBe(0);
+    expect(rc.fallthrough).toBe(false);
     const [command, args, options] = spawnSyncMock.mock.calls[0] as [
       string,
       string[],

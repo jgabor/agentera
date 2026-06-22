@@ -5,6 +5,9 @@ const DEFAULT_GIT_REPO = "https://github.com/jgabor/agentera";
 const APP_SCRIPT_REL = path.join("app", "scripts", "agentera");
 const REPO_SCRIPT_REL = path.join("scripts", "agentera");
 
+const HEAD_READ_BYTES = 2048;
+const APP_HOME_MISMATCH_PREFIX = "agentera: app-home backend unavailable: shebang/content mismatch";
+
 /**
  * @typedef {'app-home' | 'repo' | 'uvx' | 'none'} BackendKind
  */
@@ -17,6 +20,16 @@ const REPO_SCRIPT_REL = path.join("scripts", "agentera");
  * @property {string} [gitRef]
  * @property {string} [gitRepo]
  * @property {string} [reason]
+ */
+
+/**
+ * @typedef {object} ResolveOptions
+ * @property {string} [cwd]
+ * @property {NodeJS.ProcessEnv} [env]
+ * @property {string} [gitRef]
+ * @property {string} [gitRepo]
+ * @property {boolean} [excludeAppHome]
+ * @property {(message: string) => void} [logStderr]
  */
 
 /**
@@ -57,6 +70,110 @@ export function isRunnableFile(filePath) {
 }
 
 /**
+ * @param {string} filePath
+ * @returns {string | null}
+ */
+function readHead(filePath) {
+  let fd;
+  try {
+    fd = fs.openSync(filePath, "r");
+    const buf = Buffer.alloc(HEAD_READ_BYTES);
+    const bytes = fs.readSync(fd, buf, 0, HEAD_READ_BYTES, 0);
+    return buf.slice(0, bytes).toString("utf8");
+  } catch {
+    return null;
+  } finally {
+    if (fd !== undefined) {
+      try {
+        fs.closeSync(fd);
+      } catch {
+        // ignore
+      }
+    }
+  }
+}
+
+/**
+ * @param {string} shebang
+ * @returns {'js' | 'python' | 'unknown'}
+ */
+function shebangRuntime(shebang) {
+  if (/\bnode\b/.test(shebang)) {
+    return "js";
+  }
+  if (/\bpython\d*\b/.test(shebang) || /\buv\b[^\n]*\brun\b/.test(shebang)) {
+    return "python";
+  }
+  return "unknown";
+}
+
+/**
+ * @param {string} body
+ * @returns {'js' | 'python' | 'unknown'}
+ */
+function contentLanguage(body) {
+  if (body.includes("# /// script")) {
+    return "python";
+  }
+  if (/\brequire\s*\(/.test(body) || /\bmodule\.exports\b/.test(body)) {
+    return "js";
+  }
+  if (/^\s*import\s+[^'"\n]+\s+from\s+['"]/m.test(body)) {
+    return "js";
+  }
+  if (/^\s*import\s+['"]/m.test(body)) {
+    return "js";
+  }
+  const lines = body.split("\n").slice(0, 30);
+  for (const raw of lines) {
+    const t = raw.trimStart();
+    if (
+      /^import\s+\w+\s*$/.test(t) ||
+      t.startsWith("from ") ||
+      t.startsWith("def ") ||
+      t.startsWith("class ")
+    ) {
+      return "python";
+    }
+    if (
+      t.startsWith("const ") ||
+      t.startsWith("let ") ||
+      t.startsWith("var ") ||
+      t.startsWith("export ")
+    ) {
+      return "js";
+    }
+  }
+  return "unknown";
+}
+
+/**
+ * @param {string} filePath
+ * @returns {string | null}
+ */
+export function detectShebangContentMismatch(filePath) {
+  const head = readHead(filePath);
+  if (head === null) {
+    return null;
+  }
+  const nl = head.indexOf("\n");
+  const shebang = (nl >= 0 ? head.slice(0, nl) : head).trim();
+  if (!shebang.startsWith("#!")) {
+    return null;
+  }
+  const body = nl >= 0 ? head.slice(nl + 1) : "";
+  const expected = shebangRuntime(shebang);
+  const actual = contentLanguage(body);
+  if (expected === "unknown" || actual === "unknown") {
+    return null;
+  }
+  if (expected !== actual) {
+    return `shebang=${expected} content=${actual}`;
+  }
+  return null;
+}
+
+/**
  * @param {string} startDir
  * @returns {string | null}
  */
@@ -77,22 +194,28 @@ export function findRepoRoot(startDir) {
 
 /**
  * @param {string | undefined} agenteraHome
+ * @param {{ logStderr?: (message: string) => void }} [options]
  * @returns {string | null}
  */
-export function findAppHomeScript(agenteraHome) {
+export function findAppHomeScript(agenteraHome, options = {}) {
   if (!agenteraHome) {
     return null;
   }
   const scriptPath = path.join(path.resolve(agenteraHome), APP_SCRIPT_REL);
-  return isRunnableFile(scriptPath) ? scriptPath : null;
+  if (!isRunnableFile(scriptPath)) {
+    return null;
+  }
+  const mismatch = detectShebangContentMismatch(scriptPath);
+  if (mismatch) {
+    const log = options.logStderr ?? ((msg) => console.error(msg));
+    log(`${APP_HOME_MISMATCH_PREFIX} (${mismatch}) at ${scriptPath}`);
+    return null;
+  }
+  return scriptPath;
 }
 
 /**
- * @param {object} options
- * @param {string} [options.cwd]
- * @param {NodeJS.ProcessEnv} [options.env]
- * @param {string} [options.gitRef]
- * @param {string} [options.gitRepo]
+ * @param {ResolveOptions} [options]
  * @returns {ResolveResult}
  */
 export function resolveBackend({
@@ -100,10 +223,14 @@ export function resolveBackend({
   env = process.env,
   gitRef = "v2.7.7",
   gitRepo = DEFAULT_GIT_REPO,
+  excludeAppHome = false,
+  logStderr,
 } = {}) {
-  const scriptPath = findAppHomeScript(env.AGENTERA_HOME);
-  if (scriptPath) {
-    return { kind: "app-home", scriptPath };
+  if (!excludeAppHome) {
+    const scriptPath = findAppHomeScript(env.AGENTERA_HOME, { logStderr });
+    if (scriptPath) {
+      return { kind: "app-home", scriptPath };
+    }
   }
 
   const repoRoot = findRepoRoot(cwd);

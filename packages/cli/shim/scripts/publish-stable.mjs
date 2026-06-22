@@ -41,7 +41,7 @@ if (dirty) {
 }
 
 console.log("publish:stable: running shim regression tests...");
-const testResult = runInheriting("pnpm", ["-C", "..", "test", "test/shim/"]);
+const testResult = runInheriting("pnpm", ["test"]);
 if (testResult.status !== 0) {
   fail(`tests failed (exit ${testResult.status ?? "signal"})`);
 }
