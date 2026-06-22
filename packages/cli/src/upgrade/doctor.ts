@@ -18,6 +18,119 @@ export type { ProbeResult, ProbeRunner } from "./cliProbe.js";
 
 export type { BundleStatus, DoctorSignal, PublicBundleStatus } from "../cli/contracts/bundleStatus.js";
 
+const HEAD_READ_BYTES = 2048;
+type ScriptRuntime = "node" | "python" | "unknown";
+
+interface ManagedScriptEvidence {
+  scriptPath: string;
+  hasScript: boolean;
+  shebang: string | null;
+  runtime: ScriptRuntime;
+  contentLanguage: ScriptRuntime;
+  mismatch: boolean;
+}
+
+function readScriptHead(filePath: string): string | null {
+  let fd: number | undefined;
+  try {
+    fd = fs.openSync(filePath, "r");
+    const buf = Buffer.alloc(HEAD_READ_BYTES);
+    const bytes = fs.readSync(fd, buf, 0, HEAD_READ_BYTES, 0);
+    return buf.slice(0, bytes).toString("utf8");
+  } catch {
+    return null;
+  } finally {
+    if (fd !== undefined) {
+      try {
+        fs.closeSync(fd);
+      } catch {}
+    }
+  }
+}
+
+function shebangRuntime(shebang: string): ScriptRuntime {
+  if (/\bnode\b/.test(shebang)) {
+    return "node";
+  }
+  if (/\bpython\d*\b/.test(shebang) || /\buv\b[^\n]*\brun\b/.test(shebang)) {
+    return "python";
+  }
+  return "unknown";
+}
+
+function detectContentLanguage(body: string): ScriptRuntime {
+  if (body.includes("# /// script")) {
+    return "python";
+  }
+  const lines = body.split("\n").slice(0, 30);
+  for (const raw of lines) {
+    const t = raw.trimStart();
+    if (
+      /^import\s+\w+\s*$/.test(t) ||
+      t.startsWith("from ") ||
+      t.startsWith("def ") ||
+      t.startsWith("class ")
+    ) {
+      return "python";
+    }
+  }
+  return "unknown";
+}
+
+function readManagedScriptEvidence(bundleRoot: string): ManagedScriptEvidence {
+  const scriptPath = path.join(bundleRoot, "scripts", "agentera");
+  if (!isFile(scriptPath)) {
+    return {
+      scriptPath,
+      hasScript: false,
+      shebang: null,
+      runtime: "unknown",
+      contentLanguage: "unknown",
+      mismatch: false,
+    };
+  }
+  const head = readScriptHead(scriptPath);
+  let shebang: string | null = null;
+  let runtime: ScriptRuntime = "unknown";
+  let contentLanguage: ScriptRuntime = "unknown";
+  if (head !== null) {
+    const nl = head.indexOf("\n");
+    const firstLine = (nl >= 0 ? head.slice(0, nl) : head).trim();
+    if (firstLine.startsWith("#!")) {
+      shebang = firstLine;
+      runtime = shebangRuntime(firstLine);
+    }
+    const body = nl >= 0 ? head.slice(nl + 1) : "";
+    contentLanguage = detectContentLanguage(body);
+  }
+  const mismatch =
+    runtime !== "unknown" && contentLanguage !== "unknown" && runtime !== contentLanguage;
+  return {
+    scriptPath,
+    hasScript: true,
+    shebang,
+    runtime,
+    contentLanguage,
+    mismatch,
+  };
+}
+
+function buildRetryCommandFromEvidence(
+  evidence: ManagedScriptEvidence,
+  expectedCommand: string,
+): string | null {
+  if (!evidence.hasScript) {
+    return null;
+  }
+  if (evidence.runtime === "node") {
+    return commandText(["node", evidence.scriptPath, expectedCommand]);
+  }
+  if (evidence.runtime === "python") {
+    return commandText(["uv", "run", evidence.scriptPath, expectedCommand]);
+  }
+  return null;
+}
+
 /**
  * Doctor status build. Faithful TS port of build_doctor_status /
  * public_doctor_status from scripts/agentera_upgrade.py.
@@ -78,10 +191,13 @@ export const ROOT_USER_STATE_DIR_NAMES = new Set([
 ]);
 
 function hasBundleRootEvidence(root: string): boolean {
-  return (
-    isFile(path.join(root, "scripts", "agentera")) &&
-    isFile(path.join(root, "skills", "agentera", "SKILL.md"))
-  );
+  if (!isFile(path.join(root, "scripts", "agentera"))) {
+    return false;
+  }
+  if (!isFile(path.join(root, "skills", "agentera", "SKILL.md"))) {
+    return false;
+  }
+  return readScriptHead(path.join(root, "scripts", "agentera")) !== null;
 }
 
 function legacyDefaultAppHome(home: string): string {
@@ -214,6 +330,7 @@ export function buildDoctorStatus(installRoot: string, opts: BuildDoctorStatusOp
   const expected = opts.expectedVersion || loadSuiteVersion(sourceRoot) || "unknown";
   const roots = doctorRoots(installRoot);
   const activeBundleRoot = roots.activeBundleRoot;
+  const managedScriptEvidence = readManagedScriptEvidence(activeBundleRoot);
   const classification = classifyResolvedRoot(activeBundleRoot, {
     source: sourceKey(rootSource),
     expectedVersion: expected,
@@ -245,6 +362,18 @@ export function buildDoctorStatus(installRoot: string, opts: BuildDoctorStatusOp
   const rootStatus = classified.rootStatus;
   const signals = classified.signals;
   const blocked = classified.blocked;
+
+  if (probeCli && managedScriptEvidence.mismatch) {
+    signals.push({
+      status: APP_REPAIR_NEEDED,
+      kind: "runtime_mismatch",
+      message:
+        `Managed script shebang (${managedScriptEvidence.runtime}) does not match ` +
+        `content language (${managedScriptEvidence.contentLanguage}); ` +
+        `expected ${managedScriptEvidence.runtime} but found ${managedScriptEvidence.contentLanguage}`,
+      managedAppRoot: roots.managedAppRoot,
+    });
+  }
 
   const env = { ...(opts.env ?? process.env), HOME: home };
   const channel = resolveUpdateChannel({
@@ -327,11 +456,10 @@ export function buildDoctorStatus(installRoot: string, opts: BuildDoctorStatusOp
         : upgradeCommands.applyCommand,
     updateChannel: channel.channel,
     crossMajorBoundary,
-    retryCommand: commandText([
-      "node",
-      path.join(activeBundleRoot, "scripts", "agentera"),
+    retryCommand: buildRetryCommandFromEvidence(
+      managedScriptEvidence,
       expectedCommands[0] ?? "prime",
-    ]),
+    ),
     approval: appLifecycleApprovalPhrase(status, installRoot),
   };
 }

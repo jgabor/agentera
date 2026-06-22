@@ -114,7 +114,7 @@ tasks:
   - number: 4
     name: "Doctor shebang-aware retryCommand and runtime validation"
     depends_on: []
-    status: pending
+    status: complete
     acceptance:
       - "GIVEN a managed app/scripts/agentera whose shebang is #!/usr/bin/env python3 (Python PEP 723) WHEN doctor builds the BundleStatus THEN retryCommand starts with 'uv run <script>', not 'node <script>'"
       - "GIVEN a managed script with #!/usr/bin/env node shebang (v3 self-contained) WHEN doctor builds the BundleStatus THEN retryCommand starts with 'node <script>' (current behavior, preserved)"

@@ -57,7 +57,7 @@ export interface BundleStatus {
   applyCommand: string | null;
   updateChannel?: string;
   crossMajorBoundary?: boolean;
-  retryCommand: string;
+  retryCommand: string | null;
   approval: string;
   platformAppHome?: NpxPlatformAppHome;
   cliBundle?: NpxCliBundle;
