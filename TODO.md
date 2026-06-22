@@ -45,7 +45,10 @@
 
 ## ✓ Resolved
 
-- [x] [fix:3.0.0] Bundle marker version detection: `.agentera-bundle.json` can be written with a stale or placeholder version instead of the actual installed version. Fixed on feat/v3 with pyproject.toml fallback in `installRoot.ts`; v2 backport on main adds the same fallback to `_load_suite_version` in `agentera_upgrade.py`. · resolved 2026-06-22
+- [x] ~~[fix:3.0.0] Investigate corrupted managed app script write path. Root cause was a test leak in...~~
+- [x] ~~[fix:3.0.0] Prime/upgrade messaging conflict: prime recommends upgrade while upgrade blocks. Added `major_boundary_block` field to `ProjectIntegrationSummary`...~~
+- [x] ~~[fix:3.0.0] Prime suggests wrong npm channel on feat/v3 checkout. Made `resolveInvokedUpdateChannel` derive channel from `cliDistributionMajor(sourceRoot)...~~
+- [x] ~~[fix:3.0.0] Bundle marker version detection: `.agentera-bundle.json` can be written with a stale or placeholder version...~~
 - [x] ~~[fix:3.0.0] **CLI `prime --context <capability>` returns deprecated fallback commands.** The `fallback_commands` array in the `prime...~~
 - [x] ~~[chore:3.0.0] `validate_artifact.py:818` rejects every Edit/Write to TODO.md when `## ⇶ Critical` or `## ⇉ Degraded`...~~
 - [x] ~~[fix:3.0.0] **resonera/instructions.md YAML schema example is stale and causes write failures.** The `decisions.yaml` example at...~~
@@ -82,6 +85,3 @@
 - [x] ~~[test:3.0.0] v2→v3 migration test pollution guard~~
 - [x] ~~[chore:3.0.0] Lefthook pre-commit bypass and brittle inspektera TODO.md oracle~~
 - [x] ~~[feat:3.0.0] Rewrite the supported Agentera CLI core in TypeScript for Bun/npm/single-binary distribution, gated by contract-first...~~
-- [x] ~~[chore:3.0.0] Design the Bun/npm packaging plan for Agentera 3.0, including single-binary delivery, npm package layout,...~~
-- [x] ~~[chore:3.0.0] Enforce Decision 58's single-name protocol boundary: remove every backwards-compatible, deprecated, parallel, display-only, or storage/protocol...~~
-- [x] ~~[chore:3.0.0] Remove v1 legacy cruft after the 3.0 compatibility boundary~~

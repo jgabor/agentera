@@ -17,7 +17,7 @@ let prevCwd: string;
 function managedApp(appHome: string, marker: string | null): void {
   const app = path.join(appHome, "app");
   fs.mkdirSync(path.join(app, "scripts"), { recursive: true });
-  fs.writeFileSync(path.join(app, "scripts", "agentera"), "#!/usr/bin/env node\nsub.add_parser('hej')\n");
+  fs.writeFileSync(path.join(app, "scripts", "agentera"), "#!/usr/bin/env python3\nsub.add_parser('hej')\n");
   fs.mkdirSync(path.join(app, "skills", "agentera"), { recursive: true });
   fs.writeFileSync(path.join(app, "skills", "agentera", "SKILL.md"), "x");
   fs.writeFileSync(
@@ -61,13 +61,10 @@ describe("prime app lifecycle wording", () => {
     const state = collectOrientationState({ home, installRoot: appHome, env: process.env });
     expect(state.bundle.status).toBe("outdated");
 
-    expect(state.project_integration.recommendation).toBe("upgrade");
-    expect(state.project_integration.message).toContain("out of date");
-    const attention = (state.attention as string[]).find((line) => line.includes("out of date"));
-    expect(attention).toBeTruthy();
-    expect(attention).toContain(state.project_integration.message);
-    expect(attention).not.toContain("need repair");
-    expect(attention).not.toMatch(/repair or upgrade/i);
+    expect(state.project_integration.recommendation).toBe("stay");
+    expect(state.project_integration.pending_runtime).toBe(0);
+    expect(state.project_integration.major_boundary_block).toBeTruthy();
+    expect(state.project_integration.major_boundary_block).toContain("v3 successor line is not announced yet");
   });
 
   it("uses repair framing when managed app files need repair", () => {

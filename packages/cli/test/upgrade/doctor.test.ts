@@ -32,7 +32,7 @@ function managed(appHome: string, marker: string | null, hej = true): void {
   fs.mkdirSync(path.join(app, "scripts"), { recursive: true });
   fs.writeFileSync(
     path.join(app, "scripts", "agentera"),
-    "#!/usr/bin/env node\n" + (hej ? "sub.add_parser('hej')\n" : "pass\n"),
+    "#!/usr/bin/env python3\n" + (hej ? "sub.add_parser('hej')\n" : "pass\n"),
   );
   fs.mkdirSync(path.join(app, "skills", "agentera"), { recursive: true });
   fs.writeFileSync(path.join(app, "skills", "agentera", "SKILL.md"), "x");

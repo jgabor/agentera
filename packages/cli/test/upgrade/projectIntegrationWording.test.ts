@@ -21,8 +21,9 @@ function platformDefaultAppHome(home: string): string {
   if (process.platform === "darwin") {
     return path.join(home, "Library", "Application Support", "agentera");
   }
-  const xdg = process.env.XDG_DATA_HOME;
-  if (xdg) return path.join(xdg, "agentera");
+  if (process.platform === "win32") {
+    return path.join(home, "AppData", "Roaming", "agentera");
+  }
   return path.join(home, ".local", "share", "agentera");
 }
 
@@ -40,7 +41,7 @@ function seedNpxBundle(root: string): void {
 function managedPlatformAppHome(appHome: string, marker: string | null): void {
   const app = path.join(appHome, "app");
   fs.mkdirSync(path.join(app, "scripts"), { recursive: true });
-  fs.writeFileSync(path.join(app, "scripts", "agentera"), "#!/usr/bin/env node\nsub.add_parser('hej')\n");
+  fs.writeFileSync(path.join(app, "scripts", "agentera"), "#!/usr/bin/env python3\nsub.add_parser('hej')\n");
   fs.mkdirSync(path.join(app, "skills", "agentera"), { recursive: true });
   fs.writeFileSync(path.join(app, "skills", "agentera", "SKILL.md"), "x");
   fs.writeFileSync(
@@ -161,7 +162,7 @@ describe("summarizeProjectIntegration wording", () => {
       project,
       sourceRoot: bundle,
       home: userHome,
-      env: {},
+      env: { XDG_DATA_HOME: path.join(userHome, ".local", "share") },
       installRoot: bundle,
       bundleStatus: APP_UP_TO_DATE,
       crossMajorBoundary: false,

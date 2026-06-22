@@ -19,6 +19,8 @@ export function cmdAppHome(args: AppHomeArgs, io: Io = {}): number {
     env = { ...process.env, HOME: resolvedHome };
     delete env.XDG_DATA_HOME;
     delete env.APPDATA;
+    delete env.AGENTERA_HOME;
+    delete env.AGENTERA_DEFAULT_INSTALL_ROOT;
   }
   const output = formatResolvedAppHome(args.installRoot, {
     env,

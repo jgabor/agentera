@@ -36,6 +36,9 @@ import {
   shouldIncludeCrossMajorPlanItems,
 } from "./versionResolution.js";
 
+const MAJOR_BOUNDARY_BLOCK_MESSAGE =
+  "v3 successor line is not announced yet; v2 managed app files remain current on the stable channel";
+
 export interface ProjectIntegrationArgs {
   project: string;
   sourceRoot: string;
@@ -58,6 +61,7 @@ export interface ProjectIntegrationSummary {
   apply_command: string | null;
   update_channel: string;
   upgrade_only?: readonly UpgradeOnlyPhase[];
+  major_boundary_block?: string | null;
 }
 
 function migrationContext(args: ProjectIntegrationArgs, channel: ResolvedUpdateChannel): MigrationContext {
@@ -223,7 +227,21 @@ export function summarizeProjectIntegration(args: ProjectIntegrationArgs): Proje
     args.crossMajorBoundary ??
     integrationTargets.crossMajorBoundary ??
     crossMajorBoundaryApplies(install, args.sourceRoot);
-  const crossMajor = crossMajorDetected && isStableSuccessorAnnounced(args.sourceRoot);
+  const successorAnnounced = isStableSuccessorAnnounced(args.sourceRoot);
+  const crossMajor = crossMajorDetected && successorAnnounced;
+  if (crossMajorBoundaryApplies(install, args.sourceRoot) && !successorAnnounced) {
+    return {
+      recommendation: "stay",
+      message: MAJOR_BOUNDARY_BLOCK_MESSAGE,
+      pending_runtime: 0,
+      pending_runtimes: [],
+      pending_artifacts: 0,
+      dry_run_command: null,
+      apply_command: null,
+      update_channel: channel.channel,
+      major_boundary_block: MAJOR_BOUNDARY_BLOCK_MESSAGE,
+    };
+  }
   const upgradeOutcome = classifyUpgradeOutcome({
     appHome: integrationTargets.installRoot,
     sourceRoot: args.sourceRoot,
@@ -280,6 +298,7 @@ export function summarizeProjectIntegration(args: ProjectIntegrationArgs): Proje
       dry_run_command: null,
       apply_command: null,
       update_channel: channel.channel,
+      major_boundary_block: null,
     };
   }
 
@@ -306,6 +325,7 @@ export function summarizeProjectIntegration(args: ProjectIntegrationArgs): Proje
     apply_command: cmds.applyCommand,
     update_channel: cmdsChannel.channel,
     upgrade_only: onlyPhases,
+    major_boundary_block: null,
   };
 }
 
