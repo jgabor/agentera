@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 import { expanduser, isFile, pathExists, resolvePath } from "../core/paths.js";
+import { loadTomlFile } from "../core/toml.js";
 
 /**
  * Read-only Agentera install-root classification. Faithful TypeScript port of
@@ -280,6 +281,26 @@ function readBundleMarker(root: string): Record<string, unknown> | null {
   }
 }
 
+const SEMVER_PREFIX = /^\d+\.\d+\.\d+/;
+
+function readPyprojectVersion(root: string): string | null {
+  const pyprojectPath = path.join(root, "pyproject.toml");
+  if (!isFile(pyprojectPath)) {
+    return null;
+  }
+  try {
+    const data = loadTomlFile(pyprojectPath);
+    const project = data.project;
+    if (project && typeof project === "object" && !Array.isArray(project)) {
+      const version = (project as Record<string, unknown>).version;
+      return typeof version === "string" && version ? version : null;
+    }
+  } catch {
+    // fall through
+  }
+  return null;
+}
+
 function missingScriptCommands(script: string, commands: readonly string[]): string[] {
   if (!isFile(script)) {
     return [...commands];
@@ -365,7 +386,15 @@ export function classifyResolvedRoot(
   const hasBundleEvidence = bundleMissing.length === 0;
   const presentEvidence = MANAGED_EVIDENCE.filter((entry) => pathExists(path.join(root, entry)));
   const marker = readBundleMarker(root);
-  const current = (marker?.version as string | undefined) ?? null;
+  let current = (marker?.version as string | undefined) ?? null;
+  // Fall back to pyproject.toml when the marker version is not a valid semver
+  // (e.g. stale "v1" or placeholder "current" from v2-era installs).
+  if (current !== null && !SEMVER_PREFIX.test(current)) {
+    const pyprojectVersion = readPyprojectVersion(root);
+    if (pyprojectVersion !== null) {
+      current = pyprojectVersion;
+    }
+  }
 
   if (hasSetupEvidence && !pathExists(path.join(root, BUNDLE_MARKER))) {
     return managedFresh(root, source, setupMissing, bundleMissing, expected, current);

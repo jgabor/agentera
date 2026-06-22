@@ -92,19 +92,19 @@ export function genericSlimStartupContext(
   todoItems: Array<Record<string, string>>,
   profile: Dict,
 ): Dict {
-  const decisionsPointer = fallbackStatePointer("decisions", "agentera decisions --format json");
+  const decisionsPointer = fallbackStatePointer("decisions", "agentera state decisions --format json");
   const docsState = slimDocsState(docs);
   const profileState = capabilityContextProfileSummary(profile);
   if (capability === "visionera") {
     return {
       vision_startup_context: {
-        vision: fallbackStatePointer("vision", "agentera query vision --format json"),
+        vision: fallbackStatePointer("vision", "agentera state query vision --format json"),
         docs_mapping: docsState,
         progress: slimProgressState(progress),
         health: slimHealthState(health),
         todo: slimTodoState(todoItems),
         decisions: decisionsPointer,
-        design: fallbackStatePointer("design", "agentera query design --format json"),
+        design: fallbackStatePointer("design", "agentera state query design --format json"),
         profile: profileState,
       },
     };
@@ -113,8 +113,8 @@ export function genericSlimStartupContext(
     return {
       deliberation_context: {
         decisions: decisionsPointer,
-        vision: fallbackStatePointer("vision", "agentera query vision --format json"),
-        objective: fallbackStatePointer("objective", "agentera objective --format json"),
+        vision: fallbackStatePointer("vision", "agentera state query vision --format json"),
+        objective: fallbackStatePointer("objective", "agentera state objective --format json"),
         todo: slimTodoState(todoItems),
         docs_mapping: docsState,
         profile: profileState,
@@ -126,7 +126,7 @@ export function genericSlimStartupContext(
     return {
       research_context: {
         profile: profileState,
-        vision: fallbackStatePointer("vision", "agentera query vision --format json"),
+        vision: fallbackStatePointer("vision", "agentera state query vision --format json"),
         write_boundaries: ["todo", "vision"],
       },
     };
@@ -153,8 +153,8 @@ export function genericSlimStartupContext(
   if (capability === "visualisera") {
     return {
       design_context: {
-        design: fallbackStatePointer("design", "agentera query design --format json"),
-        vision: fallbackStatePointer("vision", "agentera query vision --format json"),
+        design: fallbackStatePointer("design", "agentera state query design --format json"),
+        vision: fallbackStatePointer("vision", "agentera state query vision --format json"),
         progress: slimProgressState(progress),
         todo: slimTodoState(todoItems),
         docs_mapping: docsState,

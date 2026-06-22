@@ -53,23 +53,23 @@ export function orchestrationContext(
   fallbackCommands.push(...((capabilityContract.cli_fallback ?? []) as string[]));
   if (!plan.exists) {
     stateCaveats.push("plan state is unavailable; task queue cannot be complete.");
-    fallbackCommands.push("agentera plan --format json");
+    fallbackCommands.push("agentera state plan --format json");
   }
   if (!progress.exists) {
     stateCaveats.push("progress state is unavailable; latest verification is not summarized here.");
-    fallbackCommands.push("agentera progress --format json");
+    fallbackCommands.push("agentera state progress --format json");
   }
   if (!health.exists) {
     stateCaveats.push("health state is unavailable or incomplete.");
-    fallbackCommands.push("agentera health --format json");
+    fallbackCommands.push("agentera state health --format json");
   }
   if (!docs.exists) {
     stateCaveats.push("docs mapping state is unavailable or incomplete.");
-    fallbackCommands.push("agentera docs --format json");
+    fallbackCommands.push("agentera state docs --format json");
   }
   if (todoItems.length === 0) {
     stateCaveats.push("todo state has no open entries in prime --context response; absence may mean none open or unavailable.");
-    fallbackCommands.push("agentera todo --format json");
+    fallbackCommands.push("agentera state todo --format json");
   }
   if (profile.status !== "loaded") {
     stateCaveats.push("profile-derived state is unavailable in prime --context response.");

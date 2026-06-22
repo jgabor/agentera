@@ -1,0 +1,90 @@
+header:
+  level: full
+  created: "2026-06-22"
+  status: complete
+  reviewed: "2026-06-22"
+  critic_issues: "4 found, 4 addressed, 0 dismissed"
+  title: "Prime output accuracy — version detection and fallback command correctness"
+what: >
+  Fix prime's capability_context output to emit non-deprecated `agentera state *`
+  fallback commands across all context builders, and backport the bundle marker
+  version detection fix to the v2 Python CLI on `main` so future v2 installs
+  write the correct version to `.agentera-bundle.json`.
+why: >
+  Agents following `fallback_commands` emit stderr deprecation noise on every
+  invocation, degrading trust in CLI output. The bundle marker version detection
+  bug (already fixed on feat/v3 with a pyproject.toml fallback in
+  `packages/cli/src/state/installRoot.ts`) caused prime to misreport the
+  installed version as "v1" instead of "2.7.9", triggering false v1-migration
+  attention. Both are prime output accuracy bugs that mislead agents during
+  startup.
+constraints: >
+  v3 TS fix on `feat/v3` only; v2 Python backport on `main` only. Do not update
+  `source_provenance.command` strings in task 2 — those are evidence metadata
+  deferred to a separate cleanup. Bundle marker fix on feat/v3 is already done;
+  only the v2 `main` backport remains. The v2 fallback condition must match the
+  feat/v3 pattern: non-semver registry version triggers pyproject.toml fallback,
+  not a replacement of the registry authority.
+scope:
+  included:
+    - "STATE_FAMILY_FALLBACK_COMMANDS map in packages/cli/src/cli/capabilityContext/types.ts"
+    - "Direct fallback strings in startup.ts, realisera.ts, orchestration.ts, evidence.ts, closeout.ts, benchmark.ts"
+    - "v2 _load_suite_version pyproject.toml fallback in scripts/agentera_upgrade.py on main"
+    - "Regression test for non-deprecated fallback commands"
+  excluded:
+    - "source_provenance.command strings in context builders (evidence metadata, separate cleanup)"
+  deferred: []
+design: >
+  Update the centralized STATE_FAMILY_FALLBACK_COMMANDS map to use `agentera
+  state *` forms. Update direct string literals in context builders that bypass
+  the map (startup.ts `query vision`/`query design`, bespoke fallback arrays in
+  realisera/orchestration/evidence/closeout/benchmark). Add pyproject.toml
+  version fallback to v2 `_load_suite_version` matching the feat/v3 fix pattern
+  (non-semver check via regex, pyproject.toml project.version read). Regression
+  test asserts non-deprecated forms in the map and direct strings.
+tasks:
+  - number: 1
+    name: "Update STATE_FAMILY_FALLBACK_COMMANDS to state forms"
+    depends_on: []
+    status: complete
+    acceptance:
+      - "GIVEN STATE_FAMILY_FALLBACK_COMMANDS in types.ts WHEN inspected THEN every value starts with `agentera state`"
+      - "GIVEN a capability context builder that reads from STATE_FAMILY_FALLBACK_COMMANDS WHEN fallback_commands are emitted THEN no command emits a stderr deprecation warning"
+  - number: 2
+    name: "Update direct fallback strings in context builders"
+    depends_on: ["1"]
+    status: complete
+    acceptance:
+      - "GIVEN startup.ts WHEN inspected THEN `query vision` and `query design` fallbacks use `agentera state query` forms"
+      - "GIVEN realisera.ts, orchestration.ts, evidence.ts, closeout.ts, benchmark.ts WHEN inspected THEN all fallbackCommands push calls use `agentera state` forms"
+      - "GIVEN source_provenance strings in those same files WHEN inspected THEN they are unchanged"
+  - number: 3
+    name: "Add regression test for non-deprecated fallback commands"
+    depends_on: ["2"]
+    status: complete
+    acceptance:
+      - "GIVEN STATE_FAMILY_FALLBACK_COMMANDS entries WHEN checked THEN every value matches `agentera state` prefix"
+      - "GIVEN startup.ts direct fallback strings for query vision and query design WHEN checked THEN they match `agentera state query` prefix"
+  - number: 4
+    name: "v2 backport: pyproject.toml fallback in _load_suite_version"
+    depends_on: []
+    status: complete
+    acceptance:
+      - "GIVEN a v2 install with registry.json version `current` and pyproject.toml version `2.7.9` WHEN _load_suite_version is called THEN it returns `2.7.9`"
+      - "GIVEN a v2 install with registry.json version `3.0.0` WHEN _load_suite_version is called THEN it returns `3.0.0`"
+      - "GIVEN a v2 install with no pyproject.toml and registry version `current` WHEN _load_suite_version is called THEN it returns `current`"
+  - number: 5
+    name: "Final state sync and verification"
+    depends_on: ["1", "2", "3", "4"]
+    status: complete
+    acceptance:
+      - "GIVEN `prime --context resonera` WHEN fallback_commands are checked THEN every command starts with `agentera state`"
+      - "GIVEN full vitest suite WHEN run THEN no new failures beyond pre-existing appHome.test.ts env failures"
+      - "GIVEN `agentera check compact` WHEN run THEN all artifacts within limits"
+      - "GIVEN TODO.md WHEN inspected THEN the deprecated fallback commands item is marked resolved"
+overall_acceptance: >
+  Every `prime --context <capability>` response emits `fallback_commands` where
+  every command starts with `agentera state`. A v2 install with registry version
+  `current` and pyproject version `2.7.9` writes marker version `2.7.9`. Full
+  vitest suite passes with no new failures. `agentera check compact` passes.
+surprises: ""
