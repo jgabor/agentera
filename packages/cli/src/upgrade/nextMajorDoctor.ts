@@ -96,12 +96,19 @@ export function setSuccessorAnnouncedOverrideForTests(value: boolean | null): vo
   testSuccessorAnnouncedOverride = value;
 }
 
-/** True when stable-channel successor metadata exists and is announced for doctor/prime. */
-export function isStableSuccessorAnnounced(sourceRoot: string): boolean {
+/**
+ * True when the resolved channel's successor metadata exists and is announced
+ * for doctor/prime. Defaults to the stable channel so legacy callers that
+ * omit the argument behave identically to pre-fix behavior.
+ */
+export function isStableSuccessorAnnounced(
+  sourceRoot: string,
+  channel: UpdateChannelName = "stable",
+): boolean {
   if (testSuccessorAnnouncedOverride !== null) {
     return testSuccessorAnnouncedOverride;
   }
-  const block = loadChannelNextMajor(sourceRoot, "stable");
+  const block = loadChannelNextMajor(sourceRoot, channel);
   return block?.announced === true;
 }
 

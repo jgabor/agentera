@@ -255,7 +255,7 @@ export function buildDoctorStatus(installRoot: string, opts: BuildDoctorStatusOp
   });
   const install = classifyInstall({ appHome: installRoot, sourceRoot });
   const crossMajorDetected = crossMajorBoundaryApplies(install, sourceRoot);
-  const successorAnnounced = isStableSuccessorAnnounced(sourceRoot);
+  const successorAnnounced = isStableSuccessorAnnounced(sourceRoot, channel.channel);
   const crossMajorBoundary = crossMajorDetected && successorAnnounced;
   if (crossMajorDetected && !successorAnnounced) {
     for (let i = signals.length - 1; i >= 0; i--) {
