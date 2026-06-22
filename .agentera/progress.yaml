@@ -1,385 +1,344 @@
 cycles:
-  - number: 670
-    timestamp: 2026-06-18 22:15
-    type: chore
-    phase: audit
-    what: "Plan T6 — verification and closeout: archived
-      PLAN-2026-06-18-decouple-vitest-live-repo.yaml; cleared active plan slot;
-      confirmed vitest decoupled from live artifact state without compact
-      pre-run."
-    inspiration: Decouple vitest from live repo artifact state plan T6 — prove the
-      six-task plan on feat/v3 before archive.
-    discovered: Full suite 941/941 pass (101 files) without pre-running compact;
-      check compact pass on committed artifacts (todo 40/40, progress 50/50,
-      decisions 50/50, health 25/25).
-    verified: pnpm -C packages/cli test — 941/941 pass (101 files); pnpm -C
-      packages/cli build && node packages/cli/dist/bin/agentera.js check compact
-      — status=pass, over_limit=0.
-    next: No active plan; deferred items include optional test:repo-gates script and
-      prime/orientation process.cwd() follow-on.
-    context:
-      intent: Task 6 only — verification and plan closeout; no commit unless user asks.
-      constraints: feat/v3; archive to .agentera/archive/; delete active plan slot per
-        repo convention.
-      unknowns: None for T6 acceptance.
-      scope: .agentera/archive/PLAN-2026-06-18-decouple-vitest-live-repo.yaml,
-        .agentera/plan.yaml (deleted), .agentera/progress.yaml,
-        packages/cli/test/README.md
-  - number: 669
-    timestamp: 2026-06-18 21:00
-    type: chore
-    phase: build
-    what: "Plan T5 — decouple registry and evaluator TODO coupling: packageRegistry
-      and artifactRegistry tests read fixture repo-state/ok/.agentera/docs.yaml;
-      evaluatorHandoffContract ledger-shift test mutates useFixtureProject('ok')
-      TODO copy in tmp, never REPO_ROOT/TODO.md; ok fixture docs.yaml
-      version_files aligned with package-registry docs_targets."
-    inspiration: Decouple vitest from live repo artifact state plan T5 — registry
-      and oracle tests must not read or mutate live session artifacts.
-    discovered: ok fixture docs.yaml needed registry-aligned version_files for
-      packageRegistry manifest projection test; ledger-shift regression still
-      verifies citations against REPO_ROOT static fixture paths.
-    verified: pnpm -C packages/cli test test/registries/packageRegistry.test.ts
-      test/registries/artifactRegistry.test.ts
-      test/registries/evaluatorHandoffContract.test.ts — pass; no vitest reads
-      or mutates live .agentera/docs.yaml or TODO.md.
-    next: Task 6 — verification and closeout.
-    context:
-      intent: Task 5 only — registry/evaluator fixture migration, no commit unless
-        user asks.
-      constraints: feat/v3; REPO_ROOT retained for static index_targets and citation
-        fixture paths under packages/cli/test/cli/fixtures/.
-      unknowns: None for T5 acceptance.
-      scope: packages/cli/test/registries/packageRegistry.test.ts,
-        packages/cli/test/registries/artifactRegistry.test.ts,
-        packages/cli/test/registries/evaluatorHandoffContract.test.ts,
-        packages/cli/test/fixtures/repo-state/ok/.agentera/docs.yaml,
-        packages/cli/test/README.md, .agentera/plan.yaml,
-        .agentera/progress.yaml
-  - number: 668
-    timestamp: 2026-06-18 20:15
-    type: chore
-    phase: build
-    what: "Plan T4 — decouple artifact validation and validate oracles: migrated
-      validateArtifact.test.ts, validate.test.ts, and
-      validateVerifyOracles.test.ts to useFixtureProject('ok'); extended ok
-      fixture with schema-clean docs.yaml, vision.yaml, health.yaml, and valid
-      plan/progress; removed plan.yaml branching for artifact target selection."
-    inspiration: Decouple vitest from live repo artifact state plan T4 — validation
-      tests must not depend on checkout plan slot or live .agentera files.
-    discovered: ok fixture plan.yaml and progress.yaml needed schema fixes (light
-      header, non-empty scope, descending cycle order) before
-      cmdValidateArtifact pass envelopes succeed.
-    verified: pnpm -C packages/cli test test/hooks/validateArtifact.test.ts
-      test/cli/validate.test.ts test/cli/validateVerifyOracles.test.ts — 64/64
-      pass; no vitest branches on fs.existsSync(REPO_ROOT/.agentera/plan.yaml)
-      for target selection.
-    next: Task 5 — decouple registry and evaluatorHandoffContract TODO coupling;
-      Task 6 — verification and closeout.
-    context:
-      intent: Task 4 only — artifact validation fixture migration, no commit unless
-        user asks.
-      constraints: feat/v3; REPO_ROOT retained in validateVerifyOracles only for
-        static semantic fixture path.
-      unknowns: None for T4 acceptance.
-      scope: packages/cli/test/hooks/validateArtifact.test.ts,
-        packages/cli/test/cli/validate.test.ts,
-        packages/cli/test/cli/validateVerifyOracles.test.ts,
-        packages/cli/test/fixtures/repo-state/ok/.agentera/*,
-        packages/cli/test/README.md, .agentera/plan.yaml,
-        .agentera/progress.yaml
-  - number: 667
-    timestamp: 2026-06-18 25:15
-    type: chore
-    phase: build
-    what: "Plan T2 — compaction tests use fixtures only: removed real-repo
-      computeCompactionStatus/checkCompaction budget asserts from
-      compaction.test.ts; added repo-state fixture cases for 46 Resolved
-      over_limit (count 6), ok within uniform_10_40_50, and progress-at-cap."
-    inspiration: Decouple vitest from live repo artifact state plan T2 — live
-      artifact budgets stay owned by agentera check compact in CI.
-    discovered: todo-resolved-over-limit and progress-at-cap acceptance cases
-      already exercised in useFixtureProject.test.ts; compaction.test.ts now
-      mirrors them without REPO_ROOT coupling.
-    verified: pnpm -C packages/cli test test/hooks/compaction.test.ts passes; no
-      REPO_ROOT budget asserts remain in compaction.test.ts; CI still runs check
-      compact after vitest.
-    next: Task 4 — decouple validateArtifact and validate oracles; Task 5 — registry
-      and evaluator TODO coupling.
-    context:
-      intent: Task 2 only — compaction fixture migration, no commit unless user asks.
-      constraints: feat/v3; CI check compact unchanged.
-      unknowns: None for T2 acceptance.
-      scope: packages/cli/test/hooks/compaction.test.ts, packages/cli/test/README.md,
-        .agentera/plan.yaml, .agentera/progress.yaml
-  - number: 666
-    timestamp: 2026-06-18 24:45
-    type: chore
-    phase: build
-    what: "Plan T3 — shared repo-state fixture harness: added
-      packages/cli/test/fixtures/repo-state/ variants (ok,
-      todo-resolved-over-limit, progress-at-cap, progress-over-limit,
-      invalid-progress-yaml), useFixtureProject helper, fixture README, and
-      helper regression tests."
-    inspiration: Decouple vitest from live repo artifact state plan T3 — pinned
-      project trees before migrating compaction and validation consumers.
-    discovered: todo-resolved-over-limit uses 16 full + 30 oneline Resolved rows for
-      over_limit_count 6; progress-at-cap is 10 cycles + 40 archive at 50 total
-      without triggering over_limit.
-    verified: pnpm -C packages/cli test test/helpers/useFixtureProject.test.ts
-      passes; each useFixtureProject call copies into an isolated temp dir.
-    next: Task 2 — compaction tests use fixtures only; Task 4 — decouple
-      validateArtifact and validate oracles.
-    context:
-      intent: Task 3 only — harness and variants, no consumer migration yet.
-      constraints: feat/v3; no commit unless user asks.
-      unknowns: None for T3 acceptance.
-      scope: packages/cli/test/fixtures/repo-state/,
-        packages/cli/test/helpers/useFixtureProject.ts,
-        packages/cli/test/helpers/useFixtureProject.test.ts,
-        .agentera/plan.yaml, .agentera/progress.yaml
-  - number: 665
-    timestamp: 2026-06-18 24:15
-    type: chore
-    phase: audit
-    what: "Plan T1 — vitest/repo gate inventory: classified all REPO_ROOT couplings
-      in packages/cli/test; documented mutable-state vs static-contract vs
-      gate-deferred; added packages/cli/test/README.md and AGENTS.md test-layer
-      policy."
-    inspiration: Decouple vitest from live repo artifact state plan T1 — inventory
-      and policy before fixture migration.
-    discovered: Seven mutable couplings (compaction, validateArtifact, validate
-      oracles, registry docs, evaluator TODO shift); releaseMetadata live-repo
-      describe is the only gate-deferred artifact coupling; install_root model
-      YAML reads are static contract.
-    verified: rg inventory baseline for live .agentera/TODO.md reads; AGENTS.md and
-      packages/cli/test/README.md policy text matches plan acceptance.
-    next: Task 2 — compaction tests use fixtures only.
-    context:
-      intent: Task 1 only — no fixture migration.
-      constraints: feat/v3; no commit unless user asks.
-      unknowns: None for T1 acceptance.
-      scope: packages/cli/test/README.md, AGENTS.md, .agentera/plan.yaml,
-        .agentera/progress.yaml
-  - number: 664
-    timestamp: 2026-06-18 23:55
-    type: chore
-    phase: audit
-    what: "Plan T7 — state sync and plan closeout: archived
-      PLAN-2026-06-18-profilera-corpus-coverage-trust.yaml; cleared active plan
-      slot; six profilera corpus coverage TODO items folded to Resolved with
-      resolved 2026-06-18."
-    inspiration: Profilera corpus coverage trust plan T7 — close the seven-task plan
-      after T1–T6 without a standalone bookkeeping commit.
-    discovered: Critical section is now header-only after the Coverage Audit item
-      moved to Resolved; capability prose audit and descriptive/decisional lint
-      remain open in Degraded.
-    verified: pnpm -C packages/cli run typecheck; pnpm -C packages/cli build; pnpm
-      -C packages/cli test — 934/934 pass (100 files).
-    next: No active plan; open 3.0.0 items include Decision 70 rename, mobile
-      scaffold/vite hook, capability prose audit, and profile first:/confidence
-      carry-forward fix.
-    context:
-      intent: Plan closeout per T7 acceptance; no commit unless tests green.
-      constraints: Archive to .agentera/archive/; delete active plan slot per repo
-        convention.
-      unknowns: None for T7 acceptance.
-      scope: .agentera/archive/PLAN-2026-06-18-profilera-corpus-coverage-trust.yaml,
-        .agentera/plan.yaml (deleted), .agentera/progress.yaml, TODO.md
-  - number: 663
-    timestamp: 2026-06-18 23:30
-    type: refactor
-    phase: build
-    what: "Plan T6 — runtime metadata clarity and flag docs: renamed
-      runtime_statuses[].candidate_count to file_count; documented
-      --no-<runtime> deselection flags and Coverage Audit cross-reference in
-      report help; regression test asserts SQLite stores expose file_count=1
-      alongside record_count without implying a single conversation."
-    inspiration: Profilera corpus coverage trust plan T6 — close the candidate_count
-      misread trap from ses_142098f9fffeE9sNvugn0l0Aku.
-    discovered: file_count counts store files (one SQLite db = 1); record_count
-      remains the extracted message/tool row total and can diverge by orders of
-      magnitude.
-    verified: pnpm -C packages/cli run typecheck; pnpm -C packages/cli test —
-      extractCorpus file_count regression, extractCorpusParity discovery shape,
-      and help.test report --no-* flag docs pass.
-    next: T7 state sync and plan closeout.
-    context:
-      intent: Task 6 scope only; no plan archive or TODO Resolved fold yet.
-      constraints: feat/v3; no commit.
-      unknowns: None for T6 acceptance.
-      scope: packages/cli/src/analytics/extractCorpus/core.ts,
-        packages/cli/src/analytics/extractCorpus/corpus.ts,
-        packages/cli/src/analytics/extractCorpus/extractCorpusParity.ts,
-        packages/cli/src/cli/help.ts,
-        packages/cli/src/state/startupAnalysis/{report,threshold}.ts,
-        packages/cli/src/cli/capabilityContext/benchmark.ts,
-        packages/cli/test/analytics/extractCorpus.test.ts,
-        packages/cli/test/analytics/extractCorpusParity.test.ts,
-        packages/cli/test/cli/help.test.ts,
-        references/analysis/startup-measurement-contract.yaml
-  - number: 662
-    timestamp: 2026-06-18 23:00
-    type: chore
-    phase: build
-    what: "Plan T5 — Py/TS extractor parity gate: extractCorpusParity manifest +
-      opencodeParitySnapshot; generate-extract-corpus-parity.mjs syncs committed
-      manifest and scripts/extract_corpus.py from TS; copy-bundle fails on
-      drift; parityCheck test on seeded opencode.db asserts record_count,
-      earliest, and latest across coverage/extraction probes and Python wrapper
-      output."
-    inspiration: Profilera corpus coverage trust plan T5 — prevent silent
-      bundle:data cap/discovery reversion from ses_142098f9fffeE9sNvugn0l0Aku.
-    discovered: Python-visible surface is a generated uv wrapper delegating probes
-      to the compiled TS engine; bundle parity manifest ships beside npx data.
-    verified: pnpm -C packages/cli run typecheck; pnpm -C packages/cli test —
-      extractCorpusParity parityCheck cases pass; generate-extract-corpus-parity
-      reports in sync after --write.
-    next: T6 runtime metadata clarity and flag docs.
-    context:
-      intent: Task 5 scope only; no candidate_count rename or plan closeout.
-      constraints: feat/v3; no commit; TS authoritative for extractor behavior.
-      unknowns: None for T5 acceptance.
-      scope: packages/cli/src/analytics/extractCorpus/extractCorpusParity.ts,
-        packages/cli/scripts/generate-extract-corpus-parity.mjs,
-        packages/cli/scripts/extract-corpus-parity-probe.mjs,
-        packages/cli/scripts/copy-bundle.mjs,
-        packages/cli/test/analytics/extractCorpusParity.test.ts,
-        packages/cli/test/analytics/fixtures/extract-corpus-parity-manifest.json,
-        scripts/extract_corpus.py
-  - number: 661
-    timestamp: 2026-06-18 22:00
-    type: feat
-    phase: build
-    what: "Plan T4 — SQLite cap overrides and truncation warnings:
-      --max-sqlite-sessions / --max-sqlite-rows plus
-      AGENTERA_EXTRACT_MAX_SQLITE_* env overrides;
-      runtime_statuses[].truncated_at from uncapped probe queries; stderr
-      warning when extraction truncates opencode or copilot stores."
-    inspiration: Profilera corpus coverage trust plan T4 — close silent 95k→60
-      session truncation path from ses_142098f9fffeE9sNvugn0l0Aku.
-    discovered: Session-cap probe uses the same recent-session ordering as
-      extraction and reports MIN(time_created) among omitted sessions; row-cap
-      probe mirrors the capped query LIMIT/OFFSET boundary.
-    verified: pnpm -C packages/cli run typecheck; pnpm -C packages/cli test —
-      extractCorpus SQLite cap/truncation cases pass.
-    next: T5 Py/TS extractor parity gate.
-    context:
-      intent: Task 4 scope only; no candidate_count rename or Python parity yet.
-      constraints: feat/v3; no commit; behavior-preserving under default caps when
-        stores fit.
-      unknowns: None for T4 acceptance.
-      scope: packages/cli/src/analytics/extractCorpus/sqliteCaps.ts,
-        packages/cli/src/analytics/extractCorpus/core.ts,
-        packages/cli/src/analytics/extractCorpus/sqliteSessions.ts,
-        packages/cli/src/analytics/extractCorpus/copilotSessions.ts,
-        packages/cli/src/analytics/extractCorpus/corpus.ts,
-        packages/cli/src/analytics/extractCorpus/cli.ts,
-        packages/cli/test/analytics/extractCorpus.test.ts
+- number: 671
+  timestamp: 2026-06-22 15:30
+  type: fix
+  phase: build
+  what: Fix stale YAML schema example, deprecated lint command, and archive reference
+    in resonera instructions.
+  inspiration: Planera light plan for three degraded TODOs targeting resonera/instructions.ts
+    prose accuracy.
+  discovered: "TODO.md edit hook blocks writes when Critical section is empty \u2014\
+    \ pre-existing issue (TODO line 13); bypassed via bash write. Plan schema requires\
+    \ at least one task and quoted date string \u2014 same YAML date-quoting class\
+    \ of bug as T1."
+  verified: "pnpm -C packages/cli test \u2014 939/941 pass (2 pre-existing appHome\
+    \ env-var failures); pnpm -C packages/cli run typecheck \u2014 clean; check compact\
+    \ \u2014 status=pass, over_limit=0."
+  next: 'Remaining capability prose hygiene TODOs: deprecated fallback commands in
+    prime --context (#4), over-prescription language audit (#5), lint extension for
+    decisional language (#6).'
+  context:
+    intent: Correct three stale references in resonera instructions that cause agents
+      to produce invalid decisions.yaml entries and emit deprecation noise.
+    constraints: Single-file scope (resonera/instructions.ts); no schema changes;
+      must not break capability routing tests.
+    unknowns: None.
+    scope: packages/cli/src/capabilities/resonera/instructions.ts, .agentera/plan.yaml,
+      TODO.md, .agentera/progress.yaml
+- number: 670
+  timestamp: 2026-06-18 22:15
+  type: chore
+  phase: audit
+  what: "Plan T6 \u2014 verification and closeout: archived PLAN-2026-06-18-decouple-vitest-live-repo.yaml;\
+    \ cleared active plan slot; confirmed vitest decoupled from live artifact state\
+    \ without compact pre-run."
+  inspiration: "Decouple vitest from live repo artifact state plan T6 \u2014 prove\
+    \ the six-task plan on feat/v3 before archive."
+  discovered: Full suite 941/941 pass (101 files) without pre-running compact; check
+    compact pass on committed artifacts (todo 40/40, progress 50/50, decisions 50/50,
+    health 25/25).
+  verified: "pnpm -C packages/cli test \u2014 941/941 pass (101 files); pnpm -C packages/cli\
+    \ build && node packages/cli/dist/bin/agentera.js check compact \u2014 status=pass,\
+    \ over_limit=0."
+  next: No active plan; deferred items include optional test:repo-gates script and
+    prime/orientation process.cwd() follow-on.
+  context:
+    intent: "Task 6 only \u2014 verification and plan closeout; no commit unless user\
+      \ asks."
+    constraints: feat/v3; archive to .agentera/archive/; delete active plan slot per
+      repo convention.
+    unknowns: None for T6 acceptance.
+    scope: .agentera/archive/PLAN-2026-06-18-decouple-vitest-live-repo.yaml, .agentera/plan.yaml
+      (deleted), .agentera/progress.yaml, packages/cli/test/README.md
+- number: 669
+  timestamp: 2026-06-18 21:00
+  type: chore
+  phase: build
+  what: "Plan T5 \u2014 decouple registry and evaluator TODO coupling: packageRegistry\
+    \ and artifactRegistry tests read fixture repo-state/ok/.agentera/docs.yaml; evaluatorHandoffContract\
+    \ ledger-shift test mutates useFixtureProject('ok') TODO copy in tmp, never REPO_ROOT/TODO.md;\
+    \ ok fixture docs.yaml version_files aligned with package-registry docs_targets."
+  inspiration: "Decouple vitest from live repo artifact state plan T5 \u2014 registry\
+    \ and oracle tests must not read or mutate live session artifacts."
+  discovered: ok fixture docs.yaml needed registry-aligned version_files for packageRegistry
+    manifest projection test; ledger-shift regression still verifies citations against
+    REPO_ROOT static fixture paths.
+  verified: "pnpm -C packages/cli test test/registries/packageRegistry.test.ts test/registries/artifactRegistry.test.ts\
+    \ test/registries/evaluatorHandoffContract.test.ts \u2014 pass; no vitest reads\
+    \ or mutates live .agentera/docs.yaml or TODO.md."
+  next: "Task 6 \u2014 verification and closeout."
+  context:
+    intent: "Task 5 only \u2014 registry/evaluator fixture migration, no commit unless\
+      \ user asks."
+    constraints: feat/v3; REPO_ROOT retained for static index_targets and citation
+      fixture paths under packages/cli/test/cli/fixtures/.
+    unknowns: None for T5 acceptance.
+    scope: packages/cli/test/registries/packageRegistry.test.ts, packages/cli/test/registries/artifactRegistry.test.ts,
+      packages/cli/test/registries/evaluatorHandoffContract.test.ts, packages/cli/test/fixtures/repo-state/ok/.agentera/docs.yaml,
+      packages/cli/test/README.md, .agentera/plan.yaml, .agentera/progress.yaml
+- number: 668
+  timestamp: 2026-06-18 20:15
+  type: chore
+  phase: build
+  what: "Plan T4 \u2014 decouple artifact validation and validate oracles: migrated\
+    \ validateArtifact.test.ts, validate.test.ts, and validateVerifyOracles.test.ts\
+    \ to useFixtureProject('ok'); extended ok fixture with schema-clean docs.yaml,\
+    \ vision.yaml, health.yaml, and valid plan/progress; removed plan.yaml branching\
+    \ for artifact target selection."
+  inspiration: "Decouple vitest from live repo artifact state plan T4 \u2014 validation\
+    \ tests must not depend on checkout plan slot or live .agentera files."
+  discovered: ok fixture plan.yaml and progress.yaml needed schema fixes (light header,
+    non-empty scope, descending cycle order) before cmdValidateArtifact pass envelopes
+    succeed.
+  verified: "pnpm -C packages/cli test test/hooks/validateArtifact.test.ts test/cli/validate.test.ts\
+    \ test/cli/validateVerifyOracles.test.ts \u2014 64/64 pass; no vitest branches\
+    \ on fs.existsSync(REPO_ROOT/.agentera/plan.yaml) for target selection."
+  next: "Task 5 \u2014 decouple registry and evaluatorHandoffContract TODO coupling;\
+    \ Task 6 \u2014 verification and closeout."
+  context:
+    intent: "Task 4 only \u2014 artifact validation fixture migration, no commit unless\
+      \ user asks."
+    constraints: feat/v3; REPO_ROOT retained in validateVerifyOracles only for static
+      semantic fixture path.
+    unknowns: None for T4 acceptance.
+    scope: packages/cli/test/hooks/validateArtifact.test.ts, packages/cli/test/cli/validate.test.ts,
+      packages/cli/test/cli/validateVerifyOracles.test.ts, packages/cli/test/fixtures/repo-state/ok/.agentera/*,
+      packages/cli/test/README.md, .agentera/plan.yaml, .agentera/progress.yaml
+- number: 667
+  timestamp: 2026-06-18 25:15
+  type: chore
+  phase: build
+  what: "Plan T2 \u2014 compaction tests use fixtures only: removed real-repo computeCompactionStatus/checkCompaction\
+    \ budget asserts from compaction.test.ts; added repo-state fixture cases for 46\
+    \ Resolved over_limit (count 6), ok within uniform_10_40_50, and progress-at-cap."
+  inspiration: "Decouple vitest from live repo artifact state plan T2 \u2014 live\
+    \ artifact budgets stay owned by agentera check compact in CI."
+  discovered: todo-resolved-over-limit and progress-at-cap acceptance cases already
+    exercised in useFixtureProject.test.ts; compaction.test.ts now mirrors them without
+    REPO_ROOT coupling.
+  verified: pnpm -C packages/cli test test/hooks/compaction.test.ts passes; no REPO_ROOT
+    budget asserts remain in compaction.test.ts; CI still runs check compact after
+    vitest.
+  next: "Task 4 \u2014 decouple validateArtifact and validate oracles; Task 5 \u2014\
+    \ registry and evaluator TODO coupling."
+  context:
+    intent: "Task 2 only \u2014 compaction fixture migration, no commit unless user\
+      \ asks."
+    constraints: feat/v3; CI check compact unchanged.
+    unknowns: None for T2 acceptance.
+    scope: packages/cli/test/hooks/compaction.test.ts, packages/cli/test/README.md,
+      .agentera/plan.yaml, .agentera/progress.yaml
+- number: 666
+  timestamp: 2026-06-18 24:45
+  type: chore
+  phase: build
+  what: "Plan T3 \u2014 shared repo-state fixture harness: added packages/cli/test/fixtures/repo-state/\
+    \ variants (ok, todo-resolved-over-limit, progress-at-cap, progress-over-limit,\
+    \ invalid-progress-yaml), useFixtureProject helper, fixture README, and helper\
+    \ regression tests."
+  inspiration: "Decouple vitest from live repo artifact state plan T3 \u2014 pinned\
+    \ project trees before migrating compaction and validation consumers."
+  discovered: todo-resolved-over-limit uses 16 full + 30 oneline Resolved rows for
+    over_limit_count 6; progress-at-cap is 10 cycles + 40 archive at 50 total without
+    triggering over_limit.
+  verified: pnpm -C packages/cli test test/helpers/useFixtureProject.test.ts passes;
+    each useFixtureProject call copies into an isolated temp dir.
+  next: "Task 2 \u2014 compaction tests use fixtures only; Task 4 \u2014 decouple\
+    \ validateArtifact and validate oracles."
+  context:
+    intent: "Task 3 only \u2014 harness and variants, no consumer migration yet."
+    constraints: feat/v3; no commit unless user asks.
+    unknowns: None for T3 acceptance.
+    scope: packages/cli/test/fixtures/repo-state/, packages/cli/test/helpers/useFixtureProject.ts,
+      packages/cli/test/helpers/useFixtureProject.test.ts, .agentera/plan.yaml, .agentera/progress.yaml
+- number: 665
+  timestamp: 2026-06-18 24:15
+  type: chore
+  phase: audit
+  what: "Plan T1 \u2014 vitest/repo gate inventory: classified all REPO_ROOT couplings\
+    \ in packages/cli/test; documented mutable-state vs static-contract vs gate-deferred;\
+    \ added packages/cli/test/README.md and AGENTS.md test-layer policy."
+  inspiration: "Decouple vitest from live repo artifact state plan T1 \u2014 inventory\
+    \ and policy before fixture migration."
+  discovered: Seven mutable couplings (compaction, validateArtifact, validate oracles,
+    registry docs, evaluator TODO shift); releaseMetadata live-repo describe is the
+    only gate-deferred artifact coupling; install_root model YAML reads are static
+    contract.
+  verified: rg inventory baseline for live .agentera/TODO.md reads; AGENTS.md and
+    packages/cli/test/README.md policy text matches plan acceptance.
+  next: "Task 2 \u2014 compaction tests use fixtures only."
+  context:
+    intent: "Task 1 only \u2014 no fixture migration."
+    constraints: feat/v3; no commit unless user asks.
+    unknowns: None for T1 acceptance.
+    scope: packages/cli/test/README.md, AGENTS.md, .agentera/plan.yaml, .agentera/progress.yaml
+- number: 664
+  timestamp: 2026-06-18 23:55
+  type: chore
+  phase: audit
+  what: "Plan T7 \u2014 state sync and plan closeout: archived PLAN-2026-06-18-profilera-corpus-coverage-trust.yaml;\
+    \ cleared active plan slot; six profilera corpus coverage TODO items folded to\
+    \ Resolved with resolved 2026-06-18."
+  inspiration: "Profilera corpus coverage trust plan T7 \u2014 close the seven-task\
+    \ plan after T1\u2013T6 without a standalone bookkeeping commit."
+  discovered: Critical section is now header-only after the Coverage Audit item moved
+    to Resolved; capability prose audit and descriptive/decisional lint remain open
+    in Degraded.
+  verified: "pnpm -C packages/cli run typecheck; pnpm -C packages/cli build; pnpm\
+    \ -C packages/cli test \u2014 934/934 pass (100 files)."
+  next: No active plan; open 3.0.0 items include Decision 70 rename, mobile scaffold/vite
+    hook, capability prose audit, and profile first:/confidence carry-forward fix.
+  context:
+    intent: Plan closeout per T7 acceptance; no commit unless tests green.
+    constraints: Archive to .agentera/archive/; delete active plan slot per repo convention.
+    unknowns: None for T7 acceptance.
+    scope: .agentera/archive/PLAN-2026-06-18-profilera-corpus-coverage-trust.yaml,
+      .agentera/plan.yaml (deleted), .agentera/progress.yaml, TODO.md
+- number: 663
+  timestamp: 2026-06-18 23:30
+  type: refactor
+  phase: build
+  what: "Plan T6 \u2014 runtime metadata clarity and flag docs: renamed runtime_statuses[].candidate_count\
+    \ to file_count; documented --no-<runtime> deselection flags and Coverage Audit\
+    \ cross-reference in report help; regression test asserts SQLite stores expose\
+    \ file_count=1 alongside record_count without implying a single conversation."
+  inspiration: "Profilera corpus coverage trust plan T6 \u2014 close the candidate_count\
+    \ misread trap from ses_142098f9fffeE9sNvugn0l0Aku."
+  discovered: file_count counts store files (one SQLite db = 1); record_count remains
+    the extracted message/tool row total and can diverge by orders of magnitude.
+  verified: "pnpm -C packages/cli run typecheck; pnpm -C packages/cli test \u2014\
+    \ extractCorpus file_count regression, extractCorpusParity discovery shape, and\
+    \ help.test report --no-* flag docs pass."
+  next: T7 state sync and plan closeout.
+  context:
+    intent: Task 6 scope only; no plan archive or TODO Resolved fold yet.
+    constraints: feat/v3; no commit.
+    unknowns: None for T6 acceptance.
+    scope: packages/cli/src/analytics/extractCorpus/core.ts, packages/cli/src/analytics/extractCorpus/corpus.ts,
+      packages/cli/src/analytics/extractCorpus/extractCorpusParity.ts, packages/cli/src/cli/help.ts,
+      packages/cli/src/state/startupAnalysis/{report,threshold}.ts, packages/cli/src/cli/capabilityContext/benchmark.ts,
+      packages/cli/test/analytics/extractCorpus.test.ts, packages/cli/test/analytics/extractCorpusParity.test.ts,
+      packages/cli/test/cli/help.test.ts, references/analysis/startup-measurement-contract.yaml
+- number: 662
+  timestamp: 2026-06-18 23:00
+  type: chore
+  phase: build
+  what: "Plan T5 \u2014 Py/TS extractor parity gate: extractCorpusParity manifest\
+    \ + opencodeParitySnapshot; generate-extract-corpus-parity.mjs syncs committed\
+    \ manifest and scripts/extract_corpus.py from TS; copy-bundle fails on drift;\
+    \ parityCheck test on seeded opencode.db asserts record_count, earliest, and latest\
+    \ across coverage/extraction probes and Python wrapper output."
+  inspiration: "Profilera corpus coverage trust plan T5 \u2014 prevent silent bundle:data\
+    \ cap/discovery reversion from ses_142098f9fffeE9sNvugn0l0Aku."
+  discovered: Python-visible surface is a generated uv wrapper delegating probes to
+    the compiled TS engine; bundle parity manifest ships beside npx data.
+  verified: "pnpm -C packages/cli run typecheck; pnpm -C packages/cli test \u2014\
+    \ extractCorpusParity parityCheck cases pass; generate-extract-corpus-parity reports\
+    \ in sync after --write."
+  next: T6 runtime metadata clarity and flag docs.
+  context:
+    intent: Task 5 scope only; no candidate_count rename or plan closeout.
+    constraints: feat/v3; no commit; TS authoritative for extractor behavior.
+    unknowns: None for T5 acceptance.
+    scope: packages/cli/src/analytics/extractCorpus/extractCorpusParity.ts, packages/cli/scripts/generate-extract-corpus-parity.mjs,
+      packages/cli/scripts/extract-corpus-parity-probe.mjs, packages/cli/scripts/copy-bundle.mjs,
+      packages/cli/test/analytics/extractCorpusParity.test.ts, packages/cli/test/analytics/fixtures/extract-corpus-parity-manifest.json,
+      scripts/extract_corpus.py
 archive:
-  - summary: "Cycle 660 (2026-06-18): Plan T3 — corpus envelope coverage arrays:
-      buildMetadata emits available_runtimes, selected_runtimes, and
-      available_but_not_selected; extractCorpusMain wires..."
-  - summary: "Cycle 659 (2026-06-18): Plan T2 — Coverage Audit pre-extraction:
-      runCoverageAudit enumerates six runtimes with store paths and session..."
-  - summary: "Cycle 658 (2026-06-18): Plan T1 — restore integration test gate:
-      revert npx projectIntegration decision regression (platform status vs..."
-  - summary: "Cycle 657 (2026-06-10): Plan T7 — state sync and audit TODO closeout:
-      archived PLAN-2026-06-09-v3-cli-structural-debt.yaml; cleared active plan
-      slot;..."
-  - summary: "Cycle 656 (2026-06-10): Plan T6 — prime module decomposition:
-      extracted v1 migration, bundle status, orientation field assembly, and..."
-  - summary: "Cycle 655 (2026-06-10): Plan T5 — integration decision table and
-      unified prime attention: `upgrade/projectIntegrationDecision.ts`
-      classifies artifacts-only, runtime-only, cross-major,..."
-  - summary: "Cycle 654 (2026-06-10): Plan T4 — doctor classification and npx
-      platform status: extracted typed `ROOT_CLASSIFIERS` map in
-      `upgrade/doctorClassifier.ts`;..."
-  - summary: "Cycle 653 (2026-06-10): Plan T3 — lifecycle adapters node default,
-      legacy Python gated: split lifecycleAdapters into shared.ts,
-      nodeFormChecks.ts,..."
-  - summary: "Cycle 652 (2026-06-10): Plan T2 — dispatch hygiene and mechanical
-      deduplication (3 parallel realisera workstreams merged): shared
-      `cli/dispatch/argvParser.ts`;..."
-  - summary: "Cycle 651 (2026-06-09): Plan T1 — canonical bundle and orientation
-      contracts: added `core/jsonValue.ts`, `cli/contracts/bundleStatus.ts`, and
-      `cli/contracts/orientationState.ts`; typed `buildDoctorStatus`,..."
-  - summary: "Cycle 650 (2026-06-07): Mobile monorepo closeout — archived
-      agentera-mobile staging artifacts (D1–D5 decisions, re-visioning plan,
-      LICENSE), synced D68..."
-  - summary: "Cycle 649 (2026-06-05): v2→v3 TS rewrite completion plan closeout
-      (T11). Archived the active plan to
-      `.agentera/archive/plan-2026-06-04-v2-v3-ts-rewrite-completion.yaml` and
-      cleared..."
-  - summary: "Cycle 648 (2026-06-04): T5 v2 handoff manifest reader (plan T5, TODO
-      L24). Authored `references/cli/v3-handoff-manifest.schema.yaml`; added
-      `packages/cli/src/migrate/v2HandoffManifest.ts` and wired..."
-  - summary: "Cycle 647 (2026-06-04): T7 cursor agent runtime surface regression
-      (plan T7, TODO fix:3.0.0). On v3 projects (all twelve..."
-  - summary: "Cycle 646 (2026-06-04): Remove v1 legacy cruft after the 3.0
-      compatibility boundary (plan T4 / TODO L21). Deleted..."
-  - summary: "Cycle 645 (2026-06-04): Decision 58 single-name protocol boundary
-      (plan T3 / TODO L20). Added `artifactProtocolIds.ts` and
-      `references/cli/single-name-protocol.yaml`; migrated..."
-  - summary: "Cycle 644 (2026-06-04): npm `@next` version-divergence gate (TODO
-      L21). Added `packages/cli/src/release/releaseMetadata.ts` that reads
-      `registry.json` `skills[0].version` as the authoritative..."
-  - summary: "Cycle 643 (2026-06-04): D56 parity closeout — ported the six remaining
-      CLI surface families to TypeScript and proved..."
-  - summary: "Cycle 642 (2026-06-04): Plan: Decision 56 parity closeout — drafted
-      the first plan in the v3-rewrite sequence targeting..."
-  - summary: "Cycle 641 (2026-06-03): D65 per-capability content surface — relocated
-      12 capability prose files from
-      skills/agentera/capabilities/<name>/instructions.md to
-      packages/cli/src/capabilities/<name>/instructions.ts as..."
-  - summary: "Cycle 640 (2026-06-03): Orkestrera task_queue dependency lookup —
-      planTaskRefKeys normalization in orchestrationContext and
-      dependencyReadyTasks; regression tests in
-      packages/cli/test/cli/prime.test.ts."
-  - summary: "Cycle 639 (2026-06-03): Durable pre-commit hooks —
-      citation-anchor-todo.md fixture, stronger verifyWarnCitationAtLine,
-      scripts/precommit-vitest.sh and precommit-pytest.sh, lefthook wiring,
-      AGENTS.md emergency-bypass..."
-  - summary: "Cycle 638 (2026-06-03): TODO.md GitHub checkbox parsing — shared
-      parseTodoMarkdownListItem in packages/cli/src/cli/todoMarkdown.ts;
-      loadTodoItems and queryTodo markdown paths classify..."
-  - summary: "Cycle 635 (2026-06-03): Next-major doctor section — extended
-      references/cli/update-channels.yaml with per-channel next_major on stable,
-      added packages/cli/src/upgrade/nextMajorDoctor.ts and head-of-output..."
-  - summary: "Cycle 634 (2026-06-03): Final state sync and plan archive. Archived
-      the 2.7.7 plan to .agentera/archive/plan-2026-06-03.yaml, cleared the
-      active..."
-  - summary: "Cycle 633 (2026-06-03): 2.7.7 version bump and CHANGELOG update —
-      bumped version_files to 2.7.7, promoted D66/WARN-citation/compaction
-      bullets into CHANGELOG [2.7.7]; marked plan task 4 complete."
-  - summary: "Cycle 632 (2026-06-03): 2.7.7 version bump and CHANGELOG update;
-      marked plan task 4 complete."
-  - summary: "Cycle 631 (2026-06-03): Inspektera WARN/FAIL file:line citation
-      enforcement — added evaluator_handoff schema to
-      capability-instruction-contract.yaml, evaluatorHandoffContract.ts registry
-      with report..."
-  - summary: "Cycle 630 (2026-06-03): D66 drop progress.yaml per-cycle commit field
-      — removed PR6/PV2 commit requirements from the progress schema;..."
-  - summary: "Cycle 629 (2026-06-02): Freeze source_contract internals — new oracle
-      fixture (source-contract.json) and new parity test
-      (sourceContractOracles.test.ts) that pin..."
-  - summary: "Cycle 628 (2026-06-02): Freeze validate/verify family parity oracles —
-      two new oracle fixtures (validate-family.json, verify-eval-family.json)
-      and a new..."
-  - summary: "Cycle 627 (2026-06-02): Wire the invalid-input envelope across the
-      remaining CLI surfaces (lint, backfill, state, query, compact, schema,..."
-  - summary: "Cycle 626 (2026-06-02): Freeze the invalid-input error envelope
-      contract for the 3.0 TypeScript CLI — new emitInvalidInput helper,..."
-  - summary: "Cycle 625 (2026-06-02): npm shim runBackend app-home branch now
-      forwards the user's cwd to the spawned Python CLI..."
-  - summary: "Cycle 624 (2026-06-02): Shim cwd preservation plan replaces the
-      completed npm 3.x CLI parity tranche 1; targets the..."
-  - summary: "Cycle 623 (2026-05-31): v2→v3 sandbox upgrade validation program (L0
-      fixtures, harness, CI)."
-  - summary: "Cycle 622 (2026-05-30): Parity tests, backport-safety gate, and
-      migration plan closeout verification."
-  - summary: "Cycle 621 (2026-05-30): Document upgrade paths and
-      backport/cherry-pick policy."
-  - summary: "Cycle 620 (2026-05-30): Wire phased upgrade orchestrator and CLI command."
-  - summary: "Cycle 619 (2026-05-30): Port v2→v3 artifact, runtime rewire, and
-      cleanup migration modules."
+- summary: "Cycle 661 (2026-06-18): Plan T4 \u2014 SQLite cap overrides and truncation\
+    \ warnings: --max-sqlite-sessions / --max-sqlite-rows plus AGENTERA_EXTRACT_MAX_SQLITE_*\
+    \ env..."
+- summary: "Cycle 660 (2026-06-18): Plan T3 \u2014 corpus envelope coverage arrays:\
+    \ buildMetadata emits available_runtimes, selected_runtimes, and available_but_not_selected;\
+    \ extractCorpusMain wires..."
+- summary: "Cycle 659 (2026-06-18): Plan T2 \u2014 Coverage Audit pre-extraction:\
+    \ runCoverageAudit enumerates six runtimes with store paths and session..."
+- summary: "Cycle 658 (2026-06-18): Plan T1 \u2014 restore integration test gate:\
+    \ revert npx projectIntegration decision regression (platform status vs..."
+- summary: "Cycle 657 (2026-06-10): Plan T7 \u2014 state sync and audit TODO closeout:\
+    \ archived PLAN-2026-06-09-v3-cli-structural-debt.yaml; cleared active plan slot;..."
+- summary: "Cycle 656 (2026-06-10): Plan T6 \u2014 prime module decomposition: extracted\
+    \ v1 migration, bundle status, orientation field assembly, and..."
+- summary: "Cycle 655 (2026-06-10): Plan T5 \u2014 integration decision table and\
+    \ unified prime attention: `upgrade/projectIntegrationDecision.ts` classifies\
+    \ artifacts-only, runtime-only, cross-major,..."
+- summary: "Cycle 654 (2026-06-10): Plan T4 \u2014 doctor classification and npx platform\
+    \ status: extracted typed `ROOT_CLASSIFIERS` map in `upgrade/doctorClassifier.ts`;..."
+- summary: "Cycle 653 (2026-06-10): Plan T3 \u2014 lifecycle adapters node default,\
+    \ legacy Python gated: split lifecycleAdapters into shared.ts, nodeFormChecks.ts,..."
+- summary: "Cycle 652 (2026-06-10): Plan T2 \u2014 dispatch hygiene and mechanical\
+    \ deduplication (3 parallel realisera workstreams merged): shared `cli/dispatch/argvParser.ts`;..."
+- summary: "Cycle 651 (2026-06-09): Plan T1 \u2014 canonical bundle and orientation\
+    \ contracts: added `core/jsonValue.ts`, `cli/contracts/bundleStatus.ts`, and `cli/contracts/orientationState.ts`;\
+    \ typed `buildDoctorStatus`,..."
+- summary: "Cycle 650 (2026-06-07): Mobile monorepo closeout \u2014 archived agentera-mobile\
+    \ staging artifacts (D1\u2013D5 decisions, re-visioning plan, LICENSE), synced\
+    \ D68..."
+- summary: "Cycle 649 (2026-06-05): v2\u2192v3 TS rewrite completion plan closeout\
+    \ (T11). Archived the active plan to `.agentera/archive/plan-2026-06-04-v2-v3-ts-rewrite-completion.yaml`\
+    \ and cleared..."
+- summary: 'Cycle 648 (2026-06-04): T5 v2 handoff manifest reader (plan T5, TODO L24).
+    Authored `references/cli/v3-handoff-manifest.schema.yaml`; added `packages/cli/src/migrate/v2HandoffManifest.ts`
+    and wired...'
+- summary: 'Cycle 647 (2026-06-04): T7 cursor agent runtime surface regression (plan
+    T7, TODO fix:3.0.0). On v3 projects (all twelve...'
+- summary: 'Cycle 646 (2026-06-04): Remove v1 legacy cruft after the 3.0 compatibility
+    boundary (plan T4 / TODO L21). Deleted...'
+- summary: 'Cycle 645 (2026-06-04): Decision 58 single-name protocol boundary (plan
+    T3 / TODO L20). Added `artifactProtocolIds.ts` and `references/cli/single-name-protocol.yaml`;
+    migrated...'
+- summary: 'Cycle 644 (2026-06-04): npm `@next` version-divergence gate (TODO L21).
+    Added `packages/cli/src/release/releaseMetadata.ts` that reads `registry.json`
+    `skills[0].version` as the authoritative...'
+- summary: "Cycle 643 (2026-06-04): D56 parity closeout \u2014 ported the six remaining\
+    \ CLI surface families to TypeScript and proved..."
+- summary: "Cycle 642 (2026-06-04): Plan: Decision 56 parity closeout \u2014 drafted\
+    \ the first plan in the v3-rewrite sequence targeting..."
+- summary: "Cycle 641 (2026-06-03): D65 per-capability content surface \u2014 relocated\
+    \ 12 capability prose files from skills/agentera/capabilities/<name>/instructions.md\
+    \ to packages/cli/src/capabilities/<name>/instructions.ts as..."
+- summary: "Cycle 640 (2026-06-03): Orkestrera task_queue dependency lookup \u2014\
+    \ planTaskRefKeys normalization in orchestrationContext and dependencyReadyTasks;\
+    \ regression tests in packages/cli/test/cli/prime.test.ts."
+- summary: "Cycle 639 (2026-06-03): Durable pre-commit hooks \u2014 citation-anchor-todo.md\
+    \ fixture, stronger verifyWarnCitationAtLine, scripts/precommit-vitest.sh and\
+    \ precommit-pytest.sh, lefthook wiring, AGENTS.md emergency-bypass..."
+- summary: "Cycle 638 (2026-06-03): TODO.md GitHub checkbox parsing \u2014 shared\
+    \ parseTodoMarkdownListItem in packages/cli/src/cli/todoMarkdown.ts; loadTodoItems\
+    \ and queryTodo markdown paths classify..."
+- summary: "Cycle 635 (2026-06-03): Next-major doctor section \u2014 extended references/cli/update-channels.yaml\
+    \ with per-channel next_major on stable, added packages/cli/src/upgrade/nextMajorDoctor.ts\
+    \ and head-of-output..."
+- summary: 'Cycle 634 (2026-06-03): Final state sync and plan archive. Archived the
+    2.7.7 plan to .agentera/archive/plan-2026-06-03.yaml, cleared the active...'
+- summary: "Cycle 633 (2026-06-03): 2.7.7 version bump and CHANGELOG update \u2014\
+    \ bumped version_files to 2.7.7, promoted D66/WARN-citation/compaction bullets\
+    \ into CHANGELOG [2.7.7]; marked plan task 4 complete."
+- summary: 'Cycle 632 (2026-06-03): 2.7.7 version bump and CHANGELOG update; marked
+    plan task 4 complete.'
+- summary: "Cycle 631 (2026-06-03): Inspektera WARN/FAIL file:line citation enforcement\
+    \ \u2014 added evaluator_handoff schema to capability-instruction-contract.yaml,\
+    \ evaluatorHandoffContract.ts registry with report..."
+- summary: "Cycle 630 (2026-06-03): D66 drop progress.yaml per-cycle commit field\
+    \ \u2014 removed PR6/PV2 commit requirements from the progress schema;..."
+- summary: "Cycle 629 (2026-06-02): Freeze source_contract internals \u2014 new oracle\
+    \ fixture (source-contract.json) and new parity test (sourceContractOracles.test.ts)\
+    \ that pin..."
+- summary: "Cycle 628 (2026-06-02): Freeze validate/verify family parity oracles \u2014\
+    \ two new oracle fixtures (validate-family.json, verify-eval-family.json) and\
+    \ a new..."
+- summary: 'Cycle 627 (2026-06-02): Wire the invalid-input envelope across the remaining
+    CLI surfaces (lint, backfill, state, query, compact, schema,...'
+- summary: "Cycle 626 (2026-06-02): Freeze the invalid-input error envelope contract\
+    \ for the 3.0 TypeScript CLI \u2014 new emitInvalidInput helper,..."
+- summary: 'Cycle 625 (2026-06-02): npm shim runBackend app-home branch now forwards
+    the user''s cwd to the spawned Python CLI...'
+- summary: 'Cycle 624 (2026-06-02): Shim cwd preservation plan replaces the completed
+    npm 3.x CLI parity tranche 1; targets the...'
+- summary: "Cycle 623 (2026-05-31): v2\u2192v3 sandbox upgrade validation program\
+    \ (L0 fixtures, harness, CI)."
+- summary: 'Cycle 622 (2026-05-30): Parity tests, backport-safety gate, and migration
+    plan closeout verification.'
+- summary: 'Cycle 621 (2026-05-30): Document upgrade paths and backport/cherry-pick
+    policy.'
+- summary: 'Cycle 620 (2026-05-30): Wire phased upgrade orchestrator and CLI command.'

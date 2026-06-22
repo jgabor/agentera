@@ -1,0 +1,66 @@
+header:
+  level: light
+  created: "2026-06-22"
+  status: complete
+  title: "Plan: Fix stale YAML schema example and deprecated references in resonera instructions"
+what: >
+  Fix three correctness bugs in packages/cli/src/capabilities/resonera/instructions.ts
+  where the capability prose diverges from the actual decisions.yaml schema and
+  current CLI command surface: (1) the YAML example at lines 43-62 uses fields
+  that do not exist in the schema (tradeoffs, win_condition, chosen true/false)
+  and an unquoted date that YAML parses as a date type instead of a string,
+  causing schema validation failures on write; (2) line 235 references the
+  deprecated agentera lint command instead of agentera check lint; (3) line
+  72 references a Markdown-style Archived Decisions heading that does not
+  exist in the YAML format and omits the ascending-order requirement for the
+  YAML archive list.
+why: >
+  An agent following resonera's instructions produces decisions.yaml entries
+  that fail schema validation on write (missing required field
+  alternatives status, date must be a string got date). The deprecated
+  lint reference causes stderr deprecation noise on every pre-write self-audit.
+  The Markdown archive reference misleads agents writing YAML. These are
+  correctness bugs in capability prose that propagate to every resonera
+  invocation that writes or archives a decision.
+constraints: >
+  Must match the actual decisions.yaml schema fields (DA2 name, DA3 status
+  chosen/rejected, DA4 description; DC2 date as quoted string). Must not
+  break existing resonera capability routing or contract tests. The
+  instructions.ts is the source of truth (relocated from .md per D65). No
+  schema changes — only prose accuracy fixes. Out of scope: the broader
+  capability prose audit (TODO 5), the lint extension for decisional language
+  detection (TODO 6), and the deprecated fallback commands in prime context
+  (TODO 7).
+scope:
+  included:
+    - "packages/cli/src/capabilities/resonera/instructions.ts — YAML example fields and date quoting (T1)"
+    - "packages/cli/src/capabilities/resonera/instructions.ts — deprecated agentera lint to agentera check lint (T2)"
+    - "packages/cli/src/capabilities/resonera/instructions.ts — Markdown archive heading to YAML archive ordering (T3)"
+  excluded:
+    - "Other capability instructions.ts files (inspirera, visionera, planera prose audit — TODO 5)"
+    - "Lint extension for decisional language detection (TODO 6)"
+    - "Deprecated fallback commands in prime --context output (TODO 7)"
+  deferred: []
+design: >
+  Single-file edit to the embedded JSON string literal in instructions.ts.
+  All three fixes are in the same file with no inter-dependencies. Update the
+  YAML example to match schema DA2-DA4 and DC2, replace the deprecated command
+  reference, and replace the Markdown archive reference with YAML archive
+  ordering guidance.
+tasks:
+  - number: 1
+    name: "Fix stale YAML example, deprecated lint command, and archive reference in resonera instructions"
+    depends_on: []
+    status: complete
+    acceptance:
+      - "GIVEN the YAML example in resonera instructions WHEN an agent follows it to write a decision entry THEN the entry uses status chosen or rejected (not chosen true/false), uses description (not tradeoffs), has no win_condition field, and quotes the date as a string so it passes decisions schema validation"
+      - "GIVEN the pre-write self-audit step in resonera instructions WHEN an agent runs the lint command from the instructions THEN it uses agentera check lint --artifact and emits no stderr deprecation warning"
+      - "GIVEN the decision numbering instruction in resonera instructions WHEN an agent archives a decision in YAML format THEN the instruction references the YAML archive list and ascending order by number field, not a Markdown Archived Decisions heading"
+      - "GIVEN the updated resonera instructions WHEN the CLI test suite runs THEN all tests pass and capability routing for resonera is unchanged"
+overall_acceptance: >
+  All three stale references in resonera instructions.ts are corrected to match
+  the actual decisions.yaml schema and current CLI command surface. An agent
+  following the updated instructions produces decisions.yaml entries that pass
+  schema validation, runs the non-deprecated lint command, and archives
+  decisions using YAML archive ordering. The CLI test suite passes unchanged.
+surprises: []
