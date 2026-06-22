@@ -467,7 +467,7 @@ export function optimeraBenchmarkContext(capability: string | null): Dict | null
     ...((recommendation.caveats ?? []) as string[]),
     ...((manualRefresh.caveats ?? []) as string[]),
   ]);
-  const fallbackCommands = ["agentera docs --format json", "agentera query --list-artifacts --format json"];
+  const fallbackCommands = ["agentera state docs --format json", "agentera state query --list-artifacts --format json"];
   return {
     capability: "optimera",
     benchmark_source: {

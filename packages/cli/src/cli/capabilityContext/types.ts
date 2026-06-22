@@ -8,15 +8,15 @@ export const CAPABILITY_NAMES = [
 export const BESPOKE_CONTEXT_CAPABILITIES = new Set<string>([]);
 
 export const STATE_FAMILY_FALLBACK_COMMANDS: Record<string, string> = {
-  plan: "agentera plan --format json",
-  docs: "agentera docs --format json",
-  progress: "agentera progress --format json",
-  health: "agentera health --format json",
-  todo: "agentera todo --format json",
-  decisions: "agentera decisions --format json",
-  changelog: "agentera query changelog --format json",
-  objective: "agentera objective --format json",
-  experiments: "agentera experiments --format json",
+  plan: "agentera state plan --format json",
+  docs: "agentera state docs --format json",
+  progress: "agentera state progress --format json",
+  health: "agentera state health --format json",
+  todo: "agentera state todo --format json",
+  decisions: "agentera state decisions --format json",
+  changelog: "agentera state query changelog --format json",
+  objective: "agentera state objective --format json",
+  experiments: "agentera state experiments --format json",
 };
 export const STARTUP_ENVELOPE_STATE_FAMILIES = new Set([
   "plan", "docs", "progress", "health", "todo", "objective", "benchmark_context",

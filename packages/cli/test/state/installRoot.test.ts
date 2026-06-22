@@ -197,6 +197,45 @@ describe("install-root classification", () => {
     expect(fs.readdirSync(root).some((n) => n.startsWith(".refresh"))).toBe(false);
   });
 
+  it("falls back to pyproject.toml when marker version is non-semver", () => {
+    const root = path.join(tmp, "v2-install");
+    writeUpgradeRoot(root, { markerVersion: "v1" });
+    fs.writeFileSync(
+      path.join(root, "pyproject.toml"),
+      '[project]\nname = "agentera"\nversion = "2.7.9"\n',
+    );
+
+    const result = classifyResolvedRoot(root, { source: "explicit", expectedVersion: "3.0.0" });
+
+    expect(result.kind).toBe("managed_stale");
+    expect(result.current_version).toBe("2.7.9");
+    expect(result.diagnostic.evidence.currentVersion).toBe("2.7.9");
+    expect(result.diagnostic.evidence.reason).toBe("version_mismatch");
+  });
+
+  it("falls back to pyproject.toml when marker version is placeholder 'current'", () => {
+    const root = path.join(tmp, "v2-current");
+    writeUpgradeRoot(root, { markerVersion: "current" });
+    fs.writeFileSync(
+      path.join(root, "pyproject.toml"),
+      '[project]\nname = "agentera"\nversion = "2.7.9"\n',
+    );
+
+    const result = classifyResolvedRoot(root, { source: "explicit", expectedVersion: "3.0.0" });
+
+    expect(result.kind).toBe("managed_stale");
+    expect(result.current_version).toBe("2.7.9");
+  });
+
+  it("preserves marker version when pyproject.toml is absent", () => {
+    const root = path.join(tmp, "no-pyproject");
+    writeUpgradeRoot(root, { markerVersion: "old" });
+
+    const result = classifyResolvedRoot(root, { source: "explicit", expectedVersion: "current" });
+
+    expect(result.current_version).toBe("old");
+  });
+
   it("display text does not replace structured diagnostic data", () => {
     const root = path.join(tmp, "unmanaged");
     fs.mkdirSync(root);

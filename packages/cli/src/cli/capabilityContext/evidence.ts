@@ -403,12 +403,12 @@ export function inspekteraEvidenceContext(
   };
   const missingRequired = Object.entries(requiredState).filter(([, present]) => !present).map(([name]) => name);
   const fallbackCommands = uniqueList([
-    "agentera plan --format json",
-    "agentera progress --format json",
-    "agentera docs --format json",
-    "agentera health --format json",
-    "agentera todo --format json",
-    "agentera query --list-artifacts --format json",
+    "agentera state plan --format json",
+    "agentera state progress --format json",
+    "agentera state docs --format json",
+    "agentera state health --format json",
+    "agentera state todo --format json",
+    "agentera state query --list-artifacts --format json",
     ...((capabilityContract.cli_fallback ?? []) as string[]),
   ]);
   return {
