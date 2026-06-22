@@ -105,7 +105,7 @@ tasks:
   - number: 3
     name: "Doctor cross_major_pending advisory signal"
     depends_on: ["1"]
-    status: pending
+    status: complete
     acceptance:
       - "GIVEN a v2.7.9 managed app facing a v3.0.0 CLI (cross-major boundary, successor unannounced) WHEN doctor runs THEN the emitted signals include kind: \"cross_major_pending\" with a non-actionable advisory message, and the final status is APP_MANUAL_REVIEW_NEEDED (not APP_UP_TO_DATE)"
       - "GIVEN the same cross-major boundary WHEN doctor runs THEN at least one signal referencing the version gap remains in the signals array (the prior suppression behavior is gone)"
