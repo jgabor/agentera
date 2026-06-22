@@ -22,7 +22,7 @@ import v3_handoff_manifest as handoff
 SCHEMA_PATH = REPO_ROOT / "references" / "cli" / "v3-handoff-manifest.schema.yaml"
 
 
-def _write_managed_bundle(app_root: Path, version: str = "2.7.9") -> None:
+def _write_managed_bundle(app_root: Path, version: str = "2.7.10") -> None:
     (app_root / "scripts").mkdir(parents=True, exist_ok=True)
     (app_root / "scripts" / "agentera").write_text("#!/usr/bin/env python3\n", encoding="utf-8")
     (app_root / "skills" / "agentera").mkdir(parents=True, exist_ok=True)
@@ -80,7 +80,7 @@ def test_write_manifest_emits_contract_fields(tmp_path: Path) -> None:
     )
     payload = json.loads(target.read_text(encoding="utf-8"))
     assert payload["schema_version"] == handoff.SCHEMA_VERSION
-    assert payload["installed_v2_version"] == "2.7.9"
+    assert payload["installed_v2_version"] == "2.7.10"
     assert payload["app_home_path"] == str(app_home.resolve())
     assert isinstance(payload["runtime_adapters"], list)
     assert len(payload["user_data_inventory"]) == 6
@@ -112,7 +112,7 @@ def test_ensure_fresh_manifest_refreshes_stale_manifest(tmp_path: Path) -> None:
     )
     assert warnings
     refreshed = json.loads(target.read_text(encoding="utf-8"))
-    assert refreshed["installed_v2_version"] == "2.7.9"
+    assert refreshed["installed_v2_version"] == "2.7.10"
 
 
 def test_is_manifest_stale_detects_version_and_path_mismatch(tmp_path: Path) -> None:

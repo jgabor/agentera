@@ -3,7 +3,7 @@
 # requires-python = ">=3.11"
 # dependencies = []
 # ///
-"""v2→v3 handoff manifest writer and freshness checks.
+"""v2→v3 handoff manifest writer and current-state checks.
 
 Contract authority: references/cli/v3-handoff-manifest.schema.yaml
 """
@@ -148,7 +148,7 @@ def read_manifest(app_home: Path) -> dict[str, Any] | None:
     return data if isinstance(data, dict) else None
 
 
-def freshness_context(
+def current_state_context(
     app_home: Path,
     source_root: Path,
 ) -> dict[str, Any] | None:
@@ -194,7 +194,7 @@ def ensure_fresh_manifest(
     env: Mapping[str, str] | None = None,
     warn: Any | None = print,
 ) -> Path | None:
-    ctx = freshness_context(app_home, source_root)
+    ctx = current_state_context(app_home, source_root)
     if ctx is None:
         return None
     existing = read_manifest(app_home)

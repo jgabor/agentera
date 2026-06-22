@@ -1,6 +1,6 @@
 {
-  "app_home_path": "/home/jgabor/git/agentera.fix-v2-bundle-marker-version",
-  "installed_v2_version": "2.7.9",
+  "app_home_path": "/home/jgabor/git/agentera",
+  "installed_v2_version": "2.7.10",
   "runtime_adapters": [
     "copilot",
     "cursor",
@@ -55,5 +55,5 @@
       ]
     }
   ],
-  "written_at": "2026-06-22T15:10:04Z"
+  "written_at": "2026-06-22T20:33:26Z"
 }

@@ -2,9 +2,12 @@
 
 ## [Unreleased]
 
+## [2.7.10] · 2026-06-22
+
 ### Fixed
 
 - Fixed `agentera hej` and `agentera prime` to anchor profilera staleness on the freshest of `Generated`, `Validated`, and `User-corrected` in the `PROFILE.md` frontmatter instead of `Generated` alone.
+- Fixed `agentera validate_artifact` TODO.md hook to allow empty severity sections (`## ⇶ Critical`, `## ⇉ Degraded`, `## → Normal`, `## ⇢ Annoying`) as valid state. Empty sections are not a validation error — no critical issues is good, not a bug. The v3 TypeScript rewrite already dropped this check; this backports the fix to the v2 Python hook on main.
 
 ## [2.7.9] · 2026-06-03
 

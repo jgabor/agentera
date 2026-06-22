@@ -426,4 +426,4 @@ uv run scripts/agentera check compact
 
 ---
 
-**License:** [Apache-2.0](./LICENSE) · **Changelog:** [`CHANGELOG.md`](./CHANGELOG.md) · **Version:** 2.7.9
+**License:** [Apache-2.0](./LICENSE) · **Changelog:** [`CHANGELOG.md`](./CHANGELOG.md) · **Version:** 2.7.10
