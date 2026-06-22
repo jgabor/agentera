@@ -142,6 +142,67 @@ describe("buildDoctorStatus", () => {
     expect(status.dryRunCommand).toBeNull();
     expect(status.signals.some((s: any) => s.kind === "invalid_install_root")).toBe(true);
   });
+
+  it("emits cross_major_pending advisory and manual_review_needed for v2.7.9 app facing v3.0.0 CLI with successor unannounced", () => {
+    const appHome = path.join(tmp, "v2-cross-major");
+    managed(appHome, "2.7.9");
+    const status = buildDoctorStatus(appHome, {
+      rootSource: "explicit --install-root",
+      sourceRoot: REPO_ROOT,
+      home: path.join(tmp, "home"),
+      project: path.join(tmp, "proj"),
+      expectedVersion: "3.0.0",
+      probeCli: false,
+    });
+    expect(status.status).toBe(APP_MANUAL_REVIEW_NEEDED);
+    expect(status.crossMajorBoundary).toBe(false);
+    expect(status.dryRunCommand).toBeNull();
+    expect(status.applyCommand).toBeNull();
+    const pending = status.signals.find((s: { kind?: string }) => s.kind === "cross_major_pending");
+    expect(pending).toBeTruthy();
+    expect(pending?.status).toBe(APP_MANUAL_REVIEW_NEEDED);
+    expect(pending?.expected).toBe("3.0.0");
+    expect(pending?.actual).toBe("2.7.9");
+    expect(pending?.message).toContain("not announced");
+    expect(pending?.message).not.toContain("--yes");
+    expect(status.signals.some((s: { kind?: string }) => s.kind === "version_mismatch")).toBe(true);
+  });
+
+  it("does not emit cross_major_pending for a same-major stale bundle", () => {
+    const appHome = path.join(tmp, "stale-same-major");
+    managed(appHome, "old");
+    const status = buildDoctorStatus(appHome, {
+      rootSource: "explicit --install-root",
+      ...common,
+      expectedVersion: "v9",
+    });
+    expect(status.status).toBe(APP_OUTDATED);
+    expect(status.signals.some((s: { kind?: string }) => s.kind === "cross_major_pending")).toBe(false);
+    expect(status.signals.some((s: { kind?: string }) => s.kind === "version_mismatch")).toBe(true);
+  });
+
+  it("does not emit cross_major_pending when the v2 managed marker matches the v2 CLI version", () => {
+    const appHome = path.join(tmp, "v2-match");
+    managed(appHome, "2.7.9");
+    const v2Source = path.join(tmp, "v2-cli-source");
+    fs.mkdirSync(path.join(v2Source, "skills", "agentera"), { recursive: true });
+    fs.writeFileSync(path.join(v2Source, "skills", "agentera", "SKILL.md"), "x");
+    fs.writeFileSync(
+      path.join(v2Source, "registry.json"),
+      JSON.stringify({ skills: [{ name: "agentera", version: "2.7.9" }] }),
+    );
+    const status = buildDoctorStatus(appHome, {
+      rootSource: "explicit --install-root",
+      sourceRoot: v2Source,
+      home: path.join(tmp, "home"),
+      project: path.join(tmp, "proj"),
+      expectedVersion: "2.7.9",
+      probeCli: false,
+    });
+    expect(status.status).toBe(APP_UP_TO_DATE);
+    expect(status.signals.some((s: { kind?: string }) => s.kind === "cross_major_pending")).toBe(false);
+    expect(status.signals.some((s: { kind?: string }) => s.kind === "version_mismatch")).toBe(false);
+  });
 });
 
 describe("publicDoctorStatus", () => {

@@ -69,7 +69,7 @@ describe("buildDoctorStatus channel-aware commands", () => {
     expect(status.dryRunCommand).not.toContain("@next");
   });
 
-  it("does not propose v2→v3 upgrade while stable successor is unannounced", () => {
+  it("emits cross_major_pending advisory instead of up_to_date while successor is unannounced", () => {
     const appHome = path.join(tmp, "v2home");
     managed(appHome, "2.7.0");
     const status = buildDoctorStatus(appHome, {
@@ -81,9 +81,13 @@ describe("buildDoctorStatus channel-aware commands", () => {
       probeCli: false,
     });
     expect(status.crossMajorBoundary).toBe(false);
-    expect(status.status).toBe("up_to_date");
+    expect(status.status).toBe("manual_review_needed");
     expect(status.dryRunCommand).toBeNull();
-    expect(status.signals.some((s: { kind?: string }) => s.kind === "version_mismatch")).toBe(false);
+    expect(status.applyCommand).toBeNull();
+    const pending = status.signals.find((s: { kind?: string }) => s.kind === "cross_major_pending");
+    expect(pending).toBeTruthy();
+    expect(pending?.status).toBe("manual_review_needed");
+    expect(status.signals.some((s: { kind?: string }) => s.kind === "version_mismatch")).toBe(true);
   });
 
   it("flags crossMajorBoundary for v2 managed app-home when successor is announced", () => {

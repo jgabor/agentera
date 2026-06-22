@@ -257,16 +257,24 @@ export function buildDoctorStatus(installRoot: string, opts: BuildDoctorStatusOp
   const crossMajorDetected = crossMajorBoundaryApplies(install, sourceRoot);
   const successorAnnounced = isStableSuccessorAnnounced(sourceRoot, channel.channel);
   const crossMajorBoundary = crossMajorDetected && successorAnnounced;
+  let crossMajorPending = false;
   if (crossMajorDetected && !successorAnnounced) {
-    for (let i = signals.length - 1; i >= 0; i--) {
-      const signal = signals[i];
+    for (const signal of signals) {
       if (signal.kind !== "version_mismatch") {
         continue;
       }
       const actualMajor = parseSemverMajor(String(signal.actual ?? markerVersion ?? "")) ?? 0;
       const expectedMajor = parseSemverMajor(String(signal.expected ?? expected)) ?? 0;
       if (actualMajor > 0 && actualMajor < 3 && expectedMajor >= 3) {
-        signals.splice(i, 1);
+        crossMajorPending = true;
+        signals.push({
+          status: APP_MANUAL_REVIEW_NEEDED,
+          kind: "cross_major_pending",
+          expected: signal.expected,
+          actual: signal.actual,
+          message: `Agentera app files are on v${actualMajor}.x while the CLI is on v${expectedMajor}.x; the v${expectedMajor} successor line is not announced yet, so no upgrade is offered`,
+        });
+        break;
       }
     }
   }
@@ -281,11 +289,13 @@ export function buildDoctorStatus(installRoot: string, opts: BuildDoctorStatusOp
     ? APP_MANUAL_REVIEW_NEEDED
     : signals.some((s) => s.kind === APP_MIGRATION_NEEDED)
       ? APP_MIGRATION_NEEDED
-      : signals.some((s) => s.status === APP_REPAIR_NEEDED)
-        ? APP_REPAIR_NEEDED
-        : signals.some((s) => s.status === APP_OUTDATED)
-          ? APP_OUTDATED
-          : APP_UP_TO_DATE;
+      : crossMajorPending
+        ? APP_MANUAL_REVIEW_NEEDED
+        : signals.some((s) => s.status === APP_REPAIR_NEEDED)
+          ? APP_REPAIR_NEEDED
+          : signals.some((s) => s.status === APP_OUTDATED)
+            ? APP_OUTDATED
+            : APP_UP_TO_DATE;
 
   return {
     schemaVersion: "agentera.bundleStatus.v1",
@@ -308,9 +318,13 @@ export function buildDoctorStatus(installRoot: string, opts: BuildDoctorStatusOp
     markerVersion,
     signals,
     dryRunCommand:
-      blocked || status === APP_UP_TO_DATE ? null : upgradeCommands.dryRunCommand,
+      blocked || crossMajorPending || status === APP_UP_TO_DATE
+        ? null
+        : upgradeCommands.dryRunCommand,
     applyCommand:
-      blocked || status === APP_UP_TO_DATE ? null : upgradeCommands.applyCommand,
+      blocked || crossMajorPending || status === APP_UP_TO_DATE
+        ? null
+        : upgradeCommands.applyCommand,
     updateChannel: channel.channel,
     crossMajorBoundary,
     retryCommand: commandText([
