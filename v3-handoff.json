@@ -1,0 +1,59 @@
+{
+  "app_home_path": "/home/jgabor/git/agentera.fix-v2-bundle-marker-version",
+  "installed_v2_version": "2.7.9",
+  "runtime_adapters": [
+    "copilot",
+    "cursor",
+    "cursor-agent"
+  ],
+  "schema_version": "agentera.v3_handoff_manifest.v1",
+  "user_data_inventory": [
+    {
+      "exists": false,
+      "id": "benchmarks",
+      "kind": "directory",
+      "relative_path": "benchmarks"
+    },
+    {
+      "exists": false,
+      "id": "intermediate",
+      "kind": "directory",
+      "relative_path": "intermediate"
+    },
+    {
+      "exists": false,
+      "id": "sessions",
+      "kind": "directory",
+      "relative_path": "sessions"
+    },
+    {
+      "exists": false,
+      "id": "history",
+      "kind": "directory",
+      "relative_path": "history"
+    },
+    {
+      "exists": false,
+      "id": "corpus",
+      "kind": "directory",
+      "relative_path": "corpus"
+    },
+    {
+      "id": "profile_files",
+      "kind": "profile_files",
+      "members": [
+        {
+          "exists": false,
+          "kind": "file",
+          "relative_path": "PROFILE.md"
+        },
+        {
+          "exists": false,
+          "kind": "file",
+          "relative_path": "USAGE.md"
+        }
+      ]
+    }
+  ],
+  "written_at": "2026-06-22T15:10:04Z"
+}

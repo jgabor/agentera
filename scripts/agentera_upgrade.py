@@ -22,6 +22,7 @@ import re
 import shutil
 import subprocess
 import sys
+import tomllib
 from pathlib import Path
 from types import ModuleType
 from typing import Any
@@ -171,6 +172,25 @@ def _valid_install_root(root: Path) -> bool:
     return classification.managed_status == "managed"
 
 
+_SEMVER_PREFIX = re.compile(r"^\d+\.\d+\.\d+")
+
+
+def _load_pyproject_version(source_root: Path) -> str | None:
+    pyproject_path = source_root / "pyproject.toml"
+    if not pyproject_path.is_file():
+        return None
+    try:
+        with pyproject_path.open("rb") as handle:
+            data = tomllib.load(handle)
+    except (OSError, tomllib.TOMLDecodeError):
+        return None
+    project = data.get("project")
+    if not isinstance(project, dict):
+        return None
+    version = project.get("version")
+    return version if isinstance(version, str) and version else None
+
+
 def _load_suite_version(source_root: Path) -> str | None:
     pkg = _package_registry()
     record = pkg.get("agentera")
@@ -189,7 +209,13 @@ def _load_suite_version(source_root: Path) -> str | None:
         return None
     first = skills[0]
     version = first.get("version") if isinstance(first, dict) else None
-    return version if isinstance(version, str) and version else None
+    if not isinstance(version, str) or not version:
+        return None
+    if not _SEMVER_PREFIX.match(version):
+        pyproject_version = _load_pyproject_version(source_root)
+        if pyproject_version is not None:
+            return pyproject_version
+    return version
 
 
 def load_suite_version(source_root: Path) -> str | None:

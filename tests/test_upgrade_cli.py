@@ -1681,6 +1681,71 @@ def test_load_suite_version_reads_authority_from_package_registry(tmp_path: Path
     assert version == "9.9.9"
 
 
+def test_load_suite_version_falls_back_to_pyproject_for_non_semver(tmp_path: Path, monkeypatch) -> None:
+    upgrade = _load_upgrade_module()
+    pkg_module = upgrade._package_registry_module()
+
+    (tmp_path / "registry.json").write_text(
+        json.dumps({"skills": [{"version": "current"}]}),
+        encoding="utf-8",
+    )
+    (tmp_path / "pyproject.toml").write_text(
+        '[project]\nname = "agentera"\nversion = "2.7.9"\n',
+        encoding="utf-8",
+    )
+
+    fixture = yaml.safe_load(
+        (REPO_ROOT / "references/adapters/package-registry.yaml").read_text(encoding="utf-8")
+    )
+    registry = pkg_module.PackageRegistry(tuple(fixture["records"]), root=tmp_path)
+    monkeypatch.setattr(upgrade, "_package_registry", lambda: registry)
+
+    version = upgrade._load_suite_version(tmp_path)
+    assert version == "2.7.9"
+
+
+def test_load_suite_version_preserves_valid_semver_without_fallback(tmp_path: Path, monkeypatch) -> None:
+    upgrade = _load_upgrade_module()
+    pkg_module = upgrade._package_registry_module()
+
+    (tmp_path / "registry.json").write_text(
+        json.dumps({"skills": [{"version": "3.0.0"}]}),
+        encoding="utf-8",
+    )
+    (tmp_path / "pyproject.toml").write_text(
+        '[project]\nname = "agentera"\nversion = "2.7.9"\n',
+        encoding="utf-8",
+    )
+
+    fixture = yaml.safe_load(
+        (REPO_ROOT / "references/adapters/package-registry.yaml").read_text(encoding="utf-8")
+    )
+    registry = pkg_module.PackageRegistry(tuple(fixture["records"]), root=tmp_path)
+    monkeypatch.setattr(upgrade, "_package_registry", lambda: registry)
+
+    version = upgrade._load_suite_version(tmp_path)
+    assert version == "3.0.0"
+
+
+def test_load_suite_version_returns_placeholder_when_no_pyproject(tmp_path: Path, monkeypatch) -> None:
+    upgrade = _load_upgrade_module()
+    pkg_module = upgrade._package_registry_module()
+
+    (tmp_path / "registry.json").write_text(
+        json.dumps({"skills": [{"version": "current"}]}),
+        encoding="utf-8",
+    )
+
+    fixture = yaml.safe_load(
+        (REPO_ROOT / "references/adapters/package-registry.yaml").read_text(encoding="utf-8")
+    )
+    registry = pkg_module.PackageRegistry(tuple(fixture["records"]), root=tmp_path)
+    monkeypatch.setattr(upgrade, "_package_registry", lambda: registry)
+
+    version = upgrade._load_suite_version(tmp_path)
+    assert version == "current"
+
+
 def test_cleanup_upgrade_removes_fixable_v1_artifacts_and_reports_codex(tmp_path: Path) -> None:
     home = tmp_path / "home"
     skills = home / ".agents" / "skills"
