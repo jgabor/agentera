@@ -89,7 +89,13 @@ export function renderDoctorStatus(status: BundleStatus): string {
     lines.push("Next:");
     lines.push(`  1. Preview the ${actionNoun}: ${status.dryRunCommand}`);
     lines.push(`  2. If the preview looks right, apply the ${actionNoun}: ${status.applyCommand}`);
-    lines.push(`  3. Then retry Agentera: ${status.retryCommand}`);
+    if (status.retryCommand) {
+      lines.push(`  3. Then retry Agentera: ${status.retryCommand}`);
+    } else {
+      lines.push(
+        "  3. Then retry Agentera once the managed script runtime is restored (retryCommand unavailable).",
+      );
+    }
   } else {
     lines.push("");
     lines.push(
