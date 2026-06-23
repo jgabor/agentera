@@ -1,0 +1,63 @@
+header:
+  level: full
+  created: 2026-06-23
+  status: complete
+  reviewed: 2026-06-23
+  critic_issues: "4 found, 4 addressed, 0 dismissed"
+  title: D71 RFC 2119 Capability Prose Convention
+what: Implement D71 by adopting RFC 2119 modal vocabulary in capability prose. Apply to three flagged sections as exemplars. Close the over-prescription TODO and drop the inverted lint-extension TODO.
+why: Weak models read capability instructions as user commands; deliberate modal verbs disambiguate intent.
+constraints: Prose-only. Lowercase modals stay ordinary English; capitalized keywords carry protocol force. No new lint feed.
+scope:
+  included: [inspirera Key Concepts/Applicability Matrix, visionera principles field, planera design field, capability_schema_contract.yaml convention, TODO close-out]
+  excluded: [nine other capabilities, QA audit TODO stays open, VISION.md principle declined]
+  deferred: [broad QA audit handles non-flagged capabilities later]
+design: Prose edits at section level. Convention block in the schema contract.
+tasks:
+  - number: 1
+    name: Add RFC 2119 convention to capability_schema_contract.yaml
+    depends_on: []
+    status: complete
+    acceptance:
+      - GIVEN capability_schema_contract.yaml WHEN inspected THEN it contains an RFC 2119 convention block with capitalized protocol force and lowercase ordinary English, with a concrete example
+      - GIVEN the contract file WHEN validated THEN it still passes agentera check validate capability-contract
+  - number: 2
+    name: Rewrite inspirera Key Concepts and Applicability Matrix sections
+    depends_on: [1]
+    status: complete
+    acceptance:
+      - GIVEN inspirera instructions.ts WHEN parsed THEN Key Concepts and Applicability Matrix use RFC 2119 modals for constraints and bare imperatives are replaced with noun-plus-modal forms
+      - GIVEN the file WHEN agentera check validate capability inspirera runs THEN it passes
+  - number: 3
+    name: Rewrite visionera principles field template and surrounding prose
+    depends_on: [1]
+    status: complete
+    acceptance:
+      - GIVEN visionera instructions.ts WHEN parsed THEN principles field description excludes implementation patterns via MUST NOT
+      - GIVEN the file WHEN agentera check validate capability visionera runs THEN it passes
+  - number: 4
+    name: Rewrite planera design field template and schema-list description
+    depends_on: [1]
+    status: complete
+    acceptance:
+      - GIVEN planera instructions.ts WHEN parsed THEN design field states positive boundary plus MUST NOT exclusions
+      - GIVEN the file WHEN agentera check validate capability planera runs THEN it passes
+  - number: 5
+    name: Update TODO.md close-out
+    depends_on: [2, 3, 4]
+    status: complete
+    acceptance:
+      - GIVEN TODO.md WHEN read THEN over-prescription audit TODO is resolved and lint-extension TODO is removed
+  - number: 6
+    name: Final state sync and validation
+    depends_on: [5]
+    status: complete
+    acceptance:
+      - GIVEN all touched files WHEN agentera check lint runs THEN all pass
+      - GIVEN the three capabilities WHEN agentera check validate capability runs THEN all pass
+overall_acceptance:
+  - GIVEN capability_schema_contract.yaml WHEN inspected THEN it contains an RFC 2119 convention block distinguishing capitalized protocol force from lowercase ordinary English
+  - GIVEN the three rewritten instruction files WHEN parsed THEN every capitalized RFC 2119 keyword appears only where protocol force is intended
+  - GIVEN TODO.md WHEN read THEN the over-prescription audit TODO is resolved and the lint-extension TODO is removed
+  - GIVEN agentera check lint WHEN run on all touched files THEN all pass
+surprises: []

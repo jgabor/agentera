@@ -143,6 +143,34 @@ FIELD_RULES:
         - low
       description: Priority of this trigger entry for routing confidence.
 
+PROSE_CONVENTIONS:
+  description: >-
+    Authoring rules for capability behavioral instructions (Decision 71).
+    These conventions govern the prose in
+    packages/cli/src/capabilities/<name>/instructions.ts.
+  modal_vocabulary:
+    authority: RFC 2119
+    keywords:
+      - MUST
+      - MUST NOT
+      - SHOULD
+      - SHOULD NOT
+      - MAY
+    rule: >-
+      Capitalized keywords carry protocol force. Lowercase modal verbs
+      (should, must, may) remain ordinary English with no protocol force.
+      Use capitalized keywords when stating hard requirements, strong
+      recommendations, or optional behavior. Use lowercase modals in
+      natural prose that does not bind the agent.
+    rationale: >-
+      Weak models read capability instructions literally as user commands.
+      Deliberate modal vocabulary disambiguates intent: a capitalized MUST
+      signals a hard constraint, while lowercase "should" in descriptive
+      prose does not bind. This is the disambiguator, not the offender.
+    example: >-
+      Steps SHOULD be ordered by value/effort ratio. Each matrix cell
+      MUST be ≤15 words. A concept MAY reference external sources.
+
 PRIMITIVE_REFERENCE_FIELDS:
   description: >-
     Capability schema fields that reference protocol primitive groups. This
