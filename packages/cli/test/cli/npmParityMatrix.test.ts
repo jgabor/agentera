@@ -238,7 +238,34 @@ function assertRowPassesOrDocumentsBreak(
 describe("npm CLI parity matrix (Python oracle envelopes)", () => {
   for (const [name, spec] of Object.entries(ORACLE.commands)) {
     it(`matches oracle envelope for ${name}`, () => {
-      const { rc, out } = capture((io) => main(["node", "agentera", ...spec.argv], io));
+      const envRestore: Array<[string, string | undefined]> = [];
+      let appHomeTmp: string | null = null;
+      if (name === "upgrade_development_dry_run") {
+        appHomeTmp = fs.mkdtempSync(path.join(os.tmpdir(), "npm-parity-apphome-"));
+        fs.mkdirSync(path.join(appHomeTmp, "app", "skills", "agentera"), { recursive: true });
+        fs.mkdirSync(path.join(appHomeTmp, "app", "scripts"), { recursive: true });
+        fs.writeFileSync(path.join(appHomeTmp, "app", "skills", "agentera", "SKILL.md"), "# Agentera\n");
+        fs.writeFileSync(path.join(appHomeTmp, "app", "scripts", "agentera"), "#!/usr/bin/env node\n");
+        fs.writeFileSync(
+          path.join(appHomeTmp, "app", ".agentera-bundle.json"),
+          JSON.stringify({ kind: "agentera-bundle", version: "2.7.9" }),
+        );
+        envRestore.push(["AGENTERA_HOME", process.env.AGENTERA_HOME]);
+        process.env.AGENTERA_HOME = appHomeTmp;
+      }
+      let rc: number;
+      let out: string;
+      try {
+        const captured = capture((io) => main(["node", "agentera", ...spec.argv], io));
+        rc = captured.rc;
+        out = captured.out;
+      } finally {
+        for (const [key, value] of envRestore) {
+          if (value === undefined) delete process.env[key];
+          else process.env[key] = value;
+        }
+        if (appHomeTmp) fs.rmSync(appHomeTmp, { recursive: true, force: true });
+      }
       expect(rc).toBe(spec.exitCode);
       const payload = JSON.parse(out);
       for (const key of spec.requiredKeys) {

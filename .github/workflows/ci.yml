@@ -20,6 +20,12 @@ jobs:
         run: corepack enable
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.1"
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v5
       - name: Build CLI
         run: pnpm -C packages/cli build
       - name: Typecheck CLI
@@ -42,6 +48,12 @@ jobs:
           node-version: 22
       - run: corepack enable
       - run: pnpm install --frozen-lockfile
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.1"
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v5
       - run: pnpm -C packages/cli build
       - name: Run P0 sandbox scenarios
         env:
