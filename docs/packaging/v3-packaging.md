@@ -147,7 +147,7 @@ release-metadata contract`) stay in lockstep:
 
 | Surface | Source | Example (T1) |
 | --- | --- | --- |
-| `packages/cli/package.json#version` | npm-published version | `3.0.0-dev.6` |
+| `packages/cli/package.json#version` | npm-published version | `3.0.0-next.1` |
 | `packages/cli/package.json#agentera.suiteVersion` | suite authority | `3.0.0` |
 | `packages/cli/package.json#agentera.gitRef` | git commit pin | `dd3ea28813c6c787104519d41ec478c67488050e` |
 | `registry.json#skills[0].version` | agentera-app registry authority | `3.0.0` |

@@ -151,7 +151,7 @@ describe("prime major-boundary gate", () => {
   describe("v3 self-contained npm bundle", () => {
     it("does not surface a block reason (pass)", () => {
       const bundle = path.join(tmp, "npx-bundle");
-      npxBundle(bundle, "3.0.0-dev.1");
+      npxBundle(bundle, "3.0.0-next.1");
       process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT = bundle;
       const appHome = process.env.AGENTERA_HOME as string;
       const project = path.join(tmp, "project-npx");
@@ -165,7 +165,7 @@ describe("prime major-boundary gate", () => {
 
     it("next_action does not surface a block reason (pass)", () => {
       const bundle = path.join(tmp, "npx-bundle-na");
-      npxBundle(bundle, "3.0.0-dev.1");
+      npxBundle(bundle, "3.0.0-next.1");
       process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT = bundle;
       const appHome = process.env.AGENTERA_HOME as string;
       const project = path.join(tmp, "project-npx-na");

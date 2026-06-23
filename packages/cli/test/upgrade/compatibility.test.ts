@@ -52,7 +52,7 @@ function managedV2(appHome: string, marker = "2.7.0"): void {
 function npxBundleRoot(root: string): void {
   fs.mkdirSync(path.join(root, "skills", "agentera"), { recursive: true });
   fs.writeFileSync(path.join(root, "skills", "agentera", "SKILL.md"), "x");
-  fs.writeFileSync(path.join(root, "registry.json"), JSON.stringify({ skills: [{ name: "agentera", version: "3.0.0-dev.1" }] }));
+  fs.writeFileSync(path.join(root, "registry.json"), JSON.stringify({ skills: [{ name: "agentera", version: "3.0.0-next.1" }] }));
   fs.writeFileSync(path.join(root, NPX_BUNDLE_SENTINEL), JSON.stringify({ schemaVersion: "agentera.npxBundle.v1" }));
 }
 

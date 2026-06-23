@@ -215,4 +215,4 @@ Capability schemas: `skills/agentera/capabilities/<name>/schemas/`. Instruction 
 
 ---
 
-**License:** [Apache-2.0](./LICENSE) · **Version:** 3.0.0-dev.6 · **Author:** Jonathan Gabor [jgabor.se](https://jgabor.se)
+**License:** [Apache-2.0](./LICENSE) · **Version:** 3.0.0-next.1 · **Author:** Jonathan Gabor [jgabor.se](https://jgabor.se)

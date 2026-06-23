@@ -73,11 +73,11 @@ describe("buildUpgradePlan", () => {
     fs.writeFileSync(path.join(bundle, "skills", "agentera", "SKILL.md"), "x");
     fs.writeFileSync(
       path.join(bundle, "registry.json"),
-      JSON.stringify({ skills: [{ name: "agentera", version: "3.0.0-dev.1" }] }),
+      JSON.stringify({ skills: [{ name: "agentera", version: "3.0.0-next.1" }] }),
     );
     fs.writeFileSync(
       path.join(bundle, ".agentera-npx-bundle.json"),
-      JSON.stringify({ kind: "agentera-npx-bundle", suiteVersion: "3.0.0-dev.1" }),
+      JSON.stringify({ kind: "agentera-npx-bundle", suiteVersion: "3.0.0-next.1" }),
     );
 
     const plan = buildUpgradePlan({
@@ -125,11 +125,11 @@ describe("buildUpgradePlan", () => {
     fs.writeFileSync(path.join(bundle, "skills", "agentera", "SKILL.md"), "x");
     fs.writeFileSync(
       path.join(bundle, "registry.json"),
-      JSON.stringify({ skills: [{ name: "agentera", version: "3.0.0-dev.1" }] }),
+      JSON.stringify({ skills: [{ name: "agentera", version: "3.0.0-next.1" }] }),
     );
     fs.writeFileSync(
       path.join(bundle, ".agentera-npx-bundle.json"),
-      JSON.stringify({ kind: "agentera-npx-bundle", suiteVersion: "3.0.0-dev.1" }),
+      JSON.stringify({ kind: "agentera-npx-bundle", suiteVersion: "3.0.0-next.1" }),
     );
     fs.cpSync(path.join(REPO_ROOT, "references"), path.join(bundle, "references"), { recursive: true });
 

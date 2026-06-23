@@ -18,7 +18,7 @@ import { loadYamlMappingFile } from "../core/yaml.js";
  *   1. `registry.json` `skills[0].version` — authoritative source of truth
  *      (per `references/adapters/package-registry.yaml` `version_authority`).
  *   2. `packages/cli/package.json` `version` — npm semver of the published CLI.
- *      May carry a pre-release suffix (e.g. `3.0.0-dev.5`) on the `@next`
+ *      May carry a pre-release suffix (e.g. `3.0.0-next.5`) on the `@next`
  *      development channel; the major.minor.patch prefix must match the
  *      authoritative version.
  *   3. `packages/cli/package.json` `agentera.suiteVersion` — mirror of the

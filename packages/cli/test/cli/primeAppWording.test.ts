@@ -53,7 +53,7 @@ afterEach(() => {
 describe("prime app lifecycle wording", () => {
   it("uses update framing when managed app files are outdated", () => {
     const appHome = process.env.AGENTERA_HOME as string;
-    managedApp(appHome, "3.0.0-dev.1");
+    managedApp(appHome, "3.0.0-next.1");
     const project = path.join(tmp, "project");
     fs.mkdirSync(project, { recursive: true });
     process.chdir(project);
