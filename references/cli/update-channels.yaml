@@ -64,6 +64,21 @@ channels:
       feat/v3 branch and v3 CLI are npm-only; v2→v3 is a one-way upgrade through
       npx @next, not through uvx or git checkout installs.
     distribution_major: 3
+    next_major:
+      concept: forward_successor_line
+      channel: development
+      version: "3.0.0"
+      announced: true
+      npm:
+        dist_tag: next
+      npm_only_advisory: >-
+        The v3 successor line is npm-only; opt in to v2→v3 migration through npx @next.
+      guide_url: >-
+        https://github.com/jgabor/agentera/blob/main/UPGRADE.md#upgrading-v2-to-v3-development-channel-irreversible
+      preview_command: npx -y agentera@next upgrade --dry-run --channel development
+      irreversible_advisory: >-
+        Forward migration to the v3 line is one-way; return to the prior
+        Python support line is permanently unsupported.
     resolution:
       npm:
         dist_tag: next
