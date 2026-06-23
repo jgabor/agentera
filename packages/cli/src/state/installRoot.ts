@@ -301,19 +301,6 @@ function readPyprojectVersion(root: string): string | null {
   return null;
 }
 
-function missingScriptCommands(script: string, commands: readonly string[]): string[] {
-  if (!isFile(script)) {
-    return [...commands];
-  }
-  let text: string;
-  try {
-    text = fs.readFileSync(script, "utf8");
-  } catch {
-    return [...commands];
-  }
-  return commands.filter((command) => !text.includes(command));
-}
-
 export function classifyResolvedRoot(
   rootInput: string,
   opts: { source: string; expectedVersion?: string | null },
