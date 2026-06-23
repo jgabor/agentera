@@ -1,41 +1,4 @@
 decisions:
-  - number: 61
-    date: 2026-05-23
-    question: How should Agentera adapt architecture-deepening concepts from
-      external cross-pollination?
-    context: Inspirera analyzed an external architecture-deepening pattern.
-      Follow-up resonera review compared inspektera, inspirera, and
-      handoff-first options. The user chose better audits and accepted a narrow
-      inspektera-first slice. Decision 60 remains separate; it covers
-      Standards-and-Spec diff review.
-    alternatives:
-      - name: Narrow inspektera-first slice
-        status: chosen
-        description: Add evidence-backed deepening candidates to inspektera with
-          deletion-test evidence, interface-test signal, dependency tags, and
-          resonera handoff for load-bearing boundaries.
-      - name: Equal split ownership
-        status: rejected
-        description: Too diffuse for the first slice after better audits became dominant.
-      - name: External skill only
-        status: rejected
-        description: Fails the cross-pollination goal.
-    choice: Keep split ownership, but implement first in inspektera. Inspirera
-      imports sources; inspektera names evidence-backed audit candidates;
-      resonera decides disputed boundaries; planera and realisera execute
-      concrete candidates.
-    reasoning: The selected value was better audits. Inspektera is closest to
-      concrete deepening opportunities. Narrow evidence keeps taste out of audit
-      findings.
-    confidence: provisional
-    feeds_into: references/cli/vocabulary.md, inspektera, inspirera, resonera,
-      PLAN.md, TODO.md
-    satisfaction:
-      state: user_confirmed_satisfied
-      user_confirmation:
-        confirmed_by: user
-        confirmed_at: 2026-05-23
-      evidence: User confirmed satisfaction during resonera review on 2026-05-23.
   - number: 62
     date: 2026-05-24
     question: How should Agentera strengthen visualisera governance for
@@ -737,7 +700,110 @@ decisions:
         reference: CHANGELOG.md
       - source_field: feeds_into
         reference: hooks/
+  - number: 71
+    date: 2026-06-23
+    question: >
+      How should Agentera tighten capability prose so weak models do not read
+      capability instructions as user commands?
+    context: >
+      The over-prescription audit flagged inspirera Key Concepts and
+      Applicability Matrix, the visionera principles field, and the planera
+      design field as sections where descriptive prose drifts toward decisional
+      content. The original audit TODO proposed a descriptive/decisional lint
+      extension that would flag marker words (should, must, will, adopt,
+      recommend) in descriptive artifacts. Resonera reframed: the actual failure
+      mode is weak models reading capability instructions literally as user
+      commands, not a taste problem of description-versus-decision drift. Modal
+      auxiliary verbs are the disambiguator, not the offender.
+    alternatives:
+      - name: Reactive prose rewrite plus descriptive/decisional lint extension
+        status: rejected
+        description: >
+          A cleanup pass rewrites offending prose; a follow-up lint extension
+          flags marker words (should, must, will, adopt, recommend) in
+          descriptive artifacts going forward.
+        reason_rejected: >
+          Inverted premise - modal verbs solve the literal-reader problem, they
+          do not cause it. Lint feed is blunt and catches legitimate uses
+          (direct quotes, safety rails already tagged decisional).
+      - name: Preventive prose convention with deliberate modal vocabulary; drop lint
+          TODO
+        status: chosen
+        description: >
+          Adopt RFC 2119 modal vocabulary (MUST, MUST NOT, SHOULD, SHOULD NOT,
+          MAY) for capability prose. Lowercase modal verbs remain ordinary
+          English; capitalized keywords carry protocol force. Rewrite the three
+          flagged sections as exemplars. Drop the descriptive/decisional
+          lint-extension TODO entirely. Convention lives in
+          capability_schema_contract.yaml.
+        reason_chosen: >
+          RFC 2119 keywords are externally anchored, stable, and born for the
+          literal-reader problem. Rewritten prose converts bare imperatives and
+          ambiguous verbs into noun-plus-modal forms (such as 'Steps SHOULD be
+          ordered by value/effort ratio.') that weak models can disambiguate
+          without structural overhead.
+      - name: Section-tag plus marker-list hybrid
+        status: rejected
+        description: >
+          Each section header gains a descriptive/decisional intent tag; the
+          lint polices marker words only inside non-decisional sections.
+        reason_rejected: >
+          Over-engineered for the rarity of new explicit-intent sections; adds a
+          new tag convention to every instructions.md and doubles rule surface
+          area.
+    choice: >
+      Preventive prose convention using RFC 2119 modal vocabulary (MUST, MUST
+      NOT, SHOULD, SHOULD NOT, MAY). Lowercase modal verbs remain ordinary
+      English; capitalized keywords carry protocol force. Tighten the three
+      flagged section rewrites as exemplars. Drop the descriptive/decisional
+      lint-extension TODO entirely. The convention lives in
+      capability_schema_contract.yaml.
+    reasoning: >
+      RFC 2119 keywords are externally anchored, stable, and born for the
+      literal-reader problem. Rewritten prose converts bare imperatives and
+      ambiguous verbs into noun-plus-modal forms that weak models can
+      disambiguate without structural overhead. The section-tag and
+      structural-rubric variants over-engineered the problem for the rarity of
+      new explicit-intent sections. The original lint-extension premise was
+      inverted - modal verbs solve the failure, they do not cause it.
+    confidence: firm
+    feeds_into: capabilities/inspirera, capabilities/visionera,
+      capabilities/planera, capability_schema_contract.yaml, VISION.md, TODO.md
+    downstream_consequence_references:
+      - source_field: feeds_into
+        reference: capabilities/inspirera
+      - source_field: feeds_into
+        reference: capabilities/visionera
+      - source_field: feeds_into
+        reference: capabilities/planera
+      - source_field: feeds_into
+        reference: capability_schema_contract.yaml
+      - source_field: feeds_into
+        reference: VISION.md
+      - source_field: feeds_into
+        reference: TODO.md
 archive:
+  - summary: "Decision 61 (2026-05-23): Keep split ownership, but implement first in
+      inspektera. Inspirera imports sources; inspektera names evidence-backed
+      audit..."
+    number: 61
+    date: 2026-05-23
+    choice: Keep split ownership, but implement first in inspektera. Inspirera
+      imports sources; inspektera names evidence-backed audit candidates;
+      resonera decides disputed boundaries; planera and realisera execute
+      concrete candidates.
+    feeds_into: references/cli/vocabulary.md, inspektera, inspirera, resonera,
+      PLAN.md, TODO.md
+    satisfaction:
+      state: user_confirmed_satisfied
+      user_confirmation:
+        confirmed_by: user
+        confirmed_at: 2026-05-23
+      evidence: User confirmed satisfaction during resonera review on 2026-05-23.
+    outcome: Keep split ownership, but implement first in inspektera. Inspirera
+      imports sources; inspektera names evidence-backed audit candidates;
+      resonera decides disputed boundaries; planera and realisera execute
+      concrete candidates.
   - summary: "Decision 60 (2026-05-23): Extend inspektera with a diff-scoped review
       mode adopting a two-axis Standards-and-Spec pattern. Review output is..."
     number: 60
@@ -1364,14 +1430,6 @@ archive:
   - summary: "Decision 28 (2026-04-11): **Question**: Where should PROFILE.md and
       profilera's generated artifacts live by default, and how should runtime
       adapters provide path overrides?"
-    satisfaction:
-      state: user_confirmed_satisfied
-      user_confirmation:
-        confirmed_by: user
-        confirmed_at: 2026-05-15
-  - summary: "Decision 27 (2026-04-11): **Question**: How to implement Section 21's
-      session corpus contract to close the gap between spec and extraction
-      pipeline"
     satisfaction:
       state: user_confirmed_satisfied
       user_confirmation:
