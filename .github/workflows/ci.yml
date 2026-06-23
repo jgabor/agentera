@@ -23,7 +23,7 @@ jobs:
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
-          bun-version: "1.1"
+          bun-version: "1.3"
       - name: Setup uv
         uses: astral-sh/setup-uv@v5
       - name: Build CLI
@@ -51,7 +51,7 @@ jobs:
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
-          bun-version: "1.1"
+          bun-version: "1.3"
       - name: Setup uv
         uses: astral-sh/setup-uv@v5
       - run: pnpm -C packages/cli build
