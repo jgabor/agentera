@@ -73,8 +73,9 @@ describe("loadChannelNextMajor", () => {
     expect(block?.previewCommand).toContain("upgrade --dry-run");
   });
 
-  it("returns null when development has no announced successor", () => {
-    expect(loadChannelNextMajor(REPO_ROOT, "development")).toBeNull();
+  it("returns null when development has next_major omitted", () => {
+    const authorityRoot = authorityRootWithoutDevelopmentNextMajor();
+    expect(loadChannelNextMajor(authorityRoot, "development")).toBeNull();
   });
 });
 
@@ -103,20 +104,56 @@ function authorityRootWithDevelopmentNextMajor(announced: boolean): string {
   );
   const authorityPath = path.join(authorityRoot, "references/cli/update-channels.yaml");
   const text = fs.readFileSync(authorityPath, "utf8");
-  const nextMajorBlock = [
-    "    next_major:",
-    "      channel: stable",
-    '      version: "3.x"',
-    `      announced: ${announced}`,
-    '      guide_url: "https://example.test/guide"',
-    '      preview_command: "npx -y agentera@next upgrade --dry-run"',
-    '      irreversible_advisory: "forward migration is one-way"',
-  ].join("\n");
-  const patched = text.replace(
-    /(  development:[\s\S]*?distribution_major: 3\n)/,
-    `$1${nextMajorBlock}\n`,
+  const devStart = text.indexOf("  development:");
+  const devResolution = text.indexOf("\n    resolution:", devStart);
+  const before = text.slice(0, devStart);
+  const devBlock = text.slice(devStart, devResolution);
+  const patchedDev = devBlock.replace(
+    /\n      announced: (true|false)/,
+    `\n      announced: ${announced}`,
   );
+  const patched = before + patchedDev + text.slice(devResolution);
   fs.writeFileSync(authorityPath, patched);
+  return authorityRoot;
+}
+
+function authorityRootWithoutDevelopmentNextMajor(): string {
+  const authorityRoot = path.join(tmp, "no-dev-successor");
+  fs.mkdirSync(path.join(authorityRoot, "references/cli"), { recursive: true });
+  fs.copyFileSync(
+    path.join(REPO_ROOT, "references/cli/update-channels.yaml"),
+    path.join(authorityRoot, "references/cli/update-channels.yaml"),
+  );
+  const authorityPath = path.join(authorityRoot, "references/cli/update-channels.yaml");
+  const text = fs.readFileSync(authorityPath, "utf8");
+  const devStart = text.indexOf("  development:");
+  const devResolution = text.indexOf("\n    resolution:", devStart);
+  const before = text.slice(0, devStart);
+  const devBlock = text.slice(devStart, devResolution);
+  const nextMajorStart = devBlock.indexOf("\n    next_major:");
+  const stripped = nextMajorStart === -1 ? devBlock : devBlock.slice(0, nextMajorStart);
+  const patched = before + stripped + text.slice(devResolution);
+  fs.writeFileSync(authorityPath, patched);
+  return authorityRoot;
+}
+
+function authorityRootWithStableAnnouncedDevUnannounced(): string {
+  const authorityRoot = path.join(tmp, "stable-ann-dev-no");
+  fs.mkdirSync(path.join(authorityRoot, "references/cli"), { recursive: true });
+  fs.copyFileSync(
+    path.join(REPO_ROOT, "references/cli/update-channels.yaml"),
+    path.join(authorityRoot, "references/cli/update-channels.yaml"),
+  );
+  const authorityPath = path.join(authorityRoot, "references/cli/update-channels.yaml");
+  let text = fs.readFileSync(authorityPath, "utf8");
+  text = text.replace("announced: false", "announced: true");
+  const devStart = text.indexOf("  development:");
+  const devResolution = text.indexOf("\n    resolution:", devStart);
+  const before = text.slice(0, devStart);
+  const devBlock = text.slice(devStart, devResolution);
+  const patchedDev = devBlock.replace(/\n      announced: (true|false)/, "\n      announced: false");
+  text = before + patchedDev + text.slice(devResolution);
+  fs.writeFileSync(authorityPath, text);
   return authorityRoot;
 }
 
@@ -135,7 +172,8 @@ describe("isStableSuccessorAnnounced", () => {
   });
 
   it("returns false on development channel when development has no next_major block", () => {
-    expect(isStableSuccessorAnnounced(REPO_ROOT, "development")).toBe(false);
+    const authorityRoot = authorityRootWithoutDevelopmentNextMajor();
+    expect(isStableSuccessorAnnounced(authorityRoot, "development")).toBe(false);
   });
 
   it("returns false on development channel when development.next_major.announced=false", () => {
@@ -159,7 +197,7 @@ describe("isStableSuccessorAnnounced", () => {
   });
 
   it("does not consult the stable channel when development is requested", () => {
-    const stableAnnouncedRoot = authorityRootWithAnnouncedSuccessor(true);
+    const stableAnnouncedRoot = authorityRootWithStableAnnouncedDevUnannounced();
     expect(isStableSuccessorAnnounced(stableAnnouncedRoot, "development")).toBe(false);
   });
 });
@@ -200,7 +238,7 @@ describe("resolveNextMajorDoctorLines", () => {
 
   it("omits the section when development channel has no successor", () => {
     const lines = resolveNextMajorDoctorLines({
-      sourceRoot: REPO_ROOT,
+      sourceRoot: authorityRootWithoutDevelopmentNextMajor(),
       home: tmp,
       channel: "development",
       runningVersion: "3.0.0-next.4",
@@ -302,7 +340,7 @@ describe("prependNextMajorDoctorSection", () => {
     const text = prependNextMajorDoctorSection(
       renderDoctorStatus(status),
       resolveNextMajorDoctorLines({
-        sourceRoot: REPO_ROOT,
+        sourceRoot: authorityRootWithoutDevelopmentNextMajor(),
         home: tmp,
         channel: "development",
         runningVersion: "3.0.0-next.4",

@@ -61,10 +61,13 @@ describe("prime app lifecycle wording", () => {
     const state = collectOrientationState({ home, installRoot: appHome, env: process.env });
     expect(state.bundle.status).toBe("outdated");
 
-    expect(state.project_integration.recommendation).toBe("stay");
+    expect(state.project_integration.recommendation).toBe("upgrade");
     expect(state.project_integration.pending_runtime).toBe(0);
-    expect(state.project_integration.major_boundary_block).toBeTruthy();
-    expect(state.project_integration.major_boundary_block).toContain("v3 successor line is not announced yet");
+    expect(state.project_integration.message).toContain("out of date");
+    expect(state.project_integration.message).toContain("update");
+    expect(state.project_integration.update_channel).toBe("development");
+    expect(state.project_integration.dry_run_command).toContain("agentera@next");
+    expect(state.project_integration.major_boundary_block).toBeNull();
   });
 
   it("uses repair framing when managed app files need repair", () => {
