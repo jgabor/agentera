@@ -13,12 +13,12 @@ import { parseSemverMajor } from "./versionResolution.js";
 import type { BundleStatus, DoctorSignal, PublicBundleStatus } from "../cli/contracts/bundleStatus.js";
 import { type ProbeResult, type ProbeRunner } from "./cliProbe.js";
 import { classifyInstallRootStatus } from "./doctorClassifier.js";
+import { hasBundleRootEvidence, readScriptHead } from "./bundleEvidence.js";
 
 export type { ProbeResult, ProbeRunner } from "./cliProbe.js";
 
 export type { BundleStatus, DoctorSignal, PublicBundleStatus } from "../cli/contracts/bundleStatus.js";
 
-const HEAD_READ_BYTES = 2048;
 type ScriptRuntime = "node" | "python" | "unknown";
 
 interface ManagedScriptEvidence {
@@ -28,24 +28,6 @@ interface ManagedScriptEvidence {
   runtime: ScriptRuntime;
   contentLanguage: ScriptRuntime;
   mismatch: boolean;
-}
-
-function readScriptHead(filePath: string): string | null {
-  let fd: number | undefined;
-  try {
-    fd = fs.openSync(filePath, "r");
-    const buf = Buffer.alloc(HEAD_READ_BYTES);
-    const bytes = fs.readSync(fd, buf, 0, HEAD_READ_BYTES, 0);
-    return buf.slice(0, bytes).toString("utf8");
-  } catch {
-    return null;
-  } finally {
-    if (fd !== undefined) {
-      try {
-        fs.closeSync(fd);
-      } catch {}
-    }
-  }
 }
 
 function shebangRuntime(shebang: string): ScriptRuntime {
@@ -189,16 +171,6 @@ export const ROOT_USER_STATE_DIR_NAMES = new Set([
   "intermediate",
   "sessions",
 ]);
-
-function hasBundleRootEvidence(root: string): boolean {
-  if (!isFile(path.join(root, "scripts", "agentera"))) {
-    return false;
-  }
-  if (!isFile(path.join(root, "skills", "agentera", "SKILL.md"))) {
-    return false;
-  }
-  return readScriptHead(path.join(root, "scripts", "agentera")) !== null;
-}
 
 function legacyDefaultAppHome(home: string): string {
   return resolvePath(path.join(expanduser(home), ".agents", "agentera"));

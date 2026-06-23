@@ -4,6 +4,7 @@ import { isFile, pathExists, resolvePath } from "../core/paths.js";
 import { loadYamlMappingFile } from "../core/yaml.js";
 import { NPX_BUNDLE_SENTINEL } from "../core/sourceRoot.js";
 import { BUNDLE_MARKER, defaultAppHome } from "../state/installRoot.js";
+import { hasBundleRootEvidence } from "./bundleEvidence.js";
 
 /**
  * v2/v3 coexistence doctor probe (authority: references/cli/coexistence-probe.yaml).
@@ -25,13 +26,6 @@ function authorityPath(sourceRoot: string): string {
 
 export function loadCoexistenceProbeAuthority(sourceRoot: string): Dict {
   return loadYamlMappingFile(authorityPath(sourceRoot));
-}
-
-function hasBundleRootEvidence(root: string): boolean {
-  return (
-    isFile(path.join(root, "scripts", "agentera")) &&
-    isFile(path.join(root, "skills", "agentera", "SKILL.md"))
-  );
 }
 
 /** True when the platform default app home holds a v2 Python-managed install. */

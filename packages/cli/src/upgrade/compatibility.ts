@@ -11,6 +11,7 @@ import {
   shouldIncludeCrossMajorPlanItems,
   type UpgradeOutcome,
 } from "./versionResolution.js";
+import { hasBundleRootEvidence } from "./bundleEvidence.js";
 
 export { shouldIncludeCrossMajorPlanItems } from "./versionResolution.js";
 
@@ -96,13 +97,6 @@ const CROSS_MAJOR_ITEMS: ReadonlyArray<Omit<CrossMajorPlanItem, "statusConcept" 
   { phase: "runtime", verb: "migrate", name: "v2_to_v3_runtime_rewire" },
   { phase: "cleanup", verb: "migrate", name: "v2_to_v3_app_home_cleanup" },
 ];
-
-function hasBundleRootEvidence(root: string): boolean {
-  return (
-    isFile(path.join(root, "scripts", "agentera")) &&
-    isFile(path.join(root, "skills", "agentera", "SKILL.md"))
-  );
-}
 
 function isSourceCheckoutRoot(sourceRoot: string): boolean {
   return (
