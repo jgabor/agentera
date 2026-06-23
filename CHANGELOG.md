@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Removed
+
+- Removed dead `missingScriptCommands` from `packages/cli/src/state/installRoot.ts`; the function was never called and its intended broken-managed-script failure mode is already covered by `detectShebangContentMismatch` in the npm shim's `resolve.mjs`.
+
 ### Changed
 
 - Recorded Decision 70 (satisfied 2026-06-09): v3 will promote the Decision 43 English alias set to canonical capability IDs (`status`, `vision`, `discuss`, `research`, `plan`, `build`, `optimize`, `audit`, `document`, `profile`, `design`, `orchestrate`); Swedish `-era` IDs retire from the v3 surface; orientation stays `agentera prime` with `prime --context status`; v2 stable (`npx -y agentera@latest`) keeps Swedish IDs. Mechanical rename lands in a follow-up implementation PR; mobile retires the `brief` label for `status`.
