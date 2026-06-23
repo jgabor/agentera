@@ -1,4 +1,19 @@
 cycles:
+- number: 673
+  timestamp: 2026-06-23 00:30
+  type: fix
+  phase: build
+  what: Align parity oracle retryCommand pin with string|null contract.
+  discovered: Surfaced by inspektera post-plan health check after the cutover-stability
+    batch 1; the contract was widened to string|null but the fixture pin was missed.
+  verified: "pnpm -C packages/cli test \u2192 986/986; typecheck clean; compact pass."
+  next: Defer hasBundleRootEvidence consolidation and detectContentLanguage alignment
+    to next plan.
+  context:
+    intent: Close surfaced debt from cutover-stability batch 1.
+    constraints: Scope limited to parity fixture pin; no behavior change.
+    unknowns: When to schedule refactor of duplicated hasBundleRootEvidence.
+    scope: 1 file, 1 line plus artifact fold-ins (CHANGELOG, PROGRESS).
 - number: 672
   timestamp: 2026-06-22 15:50
   type: fix
@@ -217,32 +232,9 @@ cycles:
     unknowns: None for T7 acceptance.
     scope: .agentera/archive/PLAN-2026-06-18-profilera-corpus-coverage-trust.yaml,
       .agentera/plan.yaml (deleted), .agentera/progress.yaml, TODO.md
-- number: 663
-  timestamp: 2026-06-18 23:30
-  type: refactor
-  phase: build
-  what: "Plan T6 \u2014 runtime metadata clarity and flag docs: renamed runtime_statuses[].candidate_count\
-    \ to file_count; documented --no-<runtime> deselection flags and Coverage Audit\
-    \ cross-reference in report help; regression test asserts SQLite stores expose\
-    \ file_count=1 alongside record_count without implying a single conversation."
-  inspiration: "Profilera corpus coverage trust plan T6 \u2014 close the candidate_count\
-    \ misread trap from ses_142098f9fffeE9sNvugn0l0Aku."
-  discovered: file_count counts store files (one SQLite db = 1); record_count remains
-    the extracted message/tool row total and can diverge by orders of magnitude.
-  verified: "pnpm -C packages/cli run typecheck; pnpm -C packages/cli test \u2014\
-    \ extractCorpus file_count regression, extractCorpusParity discovery shape, and\
-    \ help.test report --no-* flag docs pass."
-  next: T7 state sync and plan closeout.
-  context:
-    intent: Task 6 scope only; no plan archive or TODO Resolved fold yet.
-    constraints: feat/v3; no commit.
-    unknowns: None for T6 acceptance.
-    scope: packages/cli/src/analytics/extractCorpus/core.ts, packages/cli/src/analytics/extractCorpus/corpus.ts,
-      packages/cli/src/analytics/extractCorpus/extractCorpusParity.ts, packages/cli/src/cli/help.ts,
-      packages/cli/src/state/startupAnalysis/{report,threshold}.ts, packages/cli/src/cli/capabilityContext/benchmark.ts,
-      packages/cli/test/analytics/extractCorpus.test.ts, packages/cli/test/analytics/extractCorpusParity.test.ts,
-      packages/cli/test/cli/help.test.ts, references/analysis/startup-measurement-contract.yaml
 archive:
+- summary: "Cycle 663 (2026-06-18): Plan T6 \u2014 runtime metadata clarity and flag\
+    \ docs: renamed runtime_statuses[].candidate_count to file_count; documented --no-<runtime>..."
 - summary: "Cycle 662 (2026-06-18): Plan T5 \u2014 Py/TS extractor parity gate: extractCorpusParity\
     \ manifest + opencodeParitySnapshot; generate-extract-corpus-parity.mjs syncs\
     \ committed manifest..."
@@ -340,5 +332,3 @@ archive:
     \ (L0 fixtures, harness, CI)."
 - summary: 'Cycle 622 (2026-05-30): Parity tests, backport-safety gate, and migration
     plan closeout verification.'
-- summary: 'Cycle 621 (2026-05-30): Document upgrade paths and backport/cherry-pick
-    policy.'

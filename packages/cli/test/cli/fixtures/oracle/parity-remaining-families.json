@@ -147,7 +147,7 @@
         "signals": "array",
         "dryRunCommand": ["string", "null"],
         "applyCommand": ["string", "null"],
-        "retryCommand": "string"
+        "retryCommand": ["string", "null"]
       },
       "forbiddenSubstrings": [
         "uvx --from git+https://github.com/jgabor/agentera agentera",

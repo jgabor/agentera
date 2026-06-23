@@ -14,6 +14,7 @@
 
 - Fixed `pnpm install` failing on hosts with a system-wide `vips` (Arch, Fedora, Nix with vips overlay, Homebrew on macOS): sharp's `useGlobalLibvips()` check returned true and the install hook fell through to a `node-gyp` source build that needed `node-addon-api`. Migrated the deprecated `pnpm.onlyBuiltDependencies` and `pnpm.overrides` from `package.json#pnpm` to `pnpm-workspace.yaml` (pnpm 10+ ignores the legacy key) and added a `preinstall` hook that re-execs `pnpm install` with `SHARP_IGNORE_GLOBAL_LIBVIPS=true` so sharp's prebuilt binary is always used.
 - Fixed `pnpm install` emitting `Failed to replace env in config: ${NPM_TOKEN}` on every invocation: scoped the npm auth config from repo root to `packages/cli/.npmrc`. Both publishing packages (the `agentera` 3.0 CLI on `@next` and the `agentera` 0.0.x shim on `@latest`) find the auth via npm's parent-directory walk; `pnpm install` from the repo root no longer reads any auth-bearing `.npmrc`.
+- Fixed parity oracle `retryCommand` pin in `packages/cli/test/cli/fixtures/oracle/parity-remaining-families.json` to match the new `string | null` contract from the doctor shebang-aware `retryCommand` work.
 
 ### Key highlights
 
