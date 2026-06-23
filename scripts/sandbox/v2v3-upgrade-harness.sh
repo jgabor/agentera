@@ -118,6 +118,13 @@ if [[ "$SCENARIO" != "stable-safety" && "$SCENARIO" != "v1-md-blocked" ]]; then
     >"$SANDBOX/apply.json" 2>"$SANDBOX/apply.stderr"
   apply_rc=$?
   set -e
+
+  if [[ ! -s "$SANDBOX/apply.json" ]]; then
+    echo "harness: empty apply JSON (tier=$TIER rc=$apply_rc)" >&2
+    cat "$SANDBOX/apply.stderr" >&2 || true
+    exit 1
+  fi
+
   apply_lifecycle="$(python3 - <<'PY' "$SANDBOX/apply.json"
 import json, sys
 print(json.load(open(sys.argv[1])).get("lifecycleStatus", "unknown"))

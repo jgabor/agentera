@@ -191,6 +191,11 @@ describe("buildDoctorStatus", () => {
       path.join(v2Source, "registry.json"),
       JSON.stringify({ skills: [{ name: "agentera", version: "2.7.9" }] }),
     );
+    fs.mkdirSync(path.join(v2Source, "references", "cli"), { recursive: true });
+    fs.copyFileSync(
+      path.join(REPO_ROOT, "references", "cli", "update-channels.yaml"),
+      path.join(v2Source, "references", "cli", "update-channels.yaml"),
+    );
     const status = buildDoctorStatus(appHome, {
       rootSource: "explicit --install-root",
       sourceRoot: v2Source,
