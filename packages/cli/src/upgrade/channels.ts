@@ -178,7 +178,7 @@ export function assertStableNpmUpdateCommand(channel: UpdateChannelName, updateC
   if (distTag !== "latest") {
     throw new Error(`stable channel dist tag must be latest, got ${JSON.stringify(distTag)}`);
   }
-  const forbidden = [/@next\b/i, /@3\.\d/i, /@3\.0\.0-dev/i, /-alpha/i, /-rc/i, /-beta/i];
+  const forbidden = [/@next\b/i, /@3\.\d/i, /@3\.0\.0-next/i, /-alpha/i, /-rc/i, /-beta/i];
   for (const pattern of forbidden) {
     if (pattern.test(updateCommand)) {
       throw new Error(`stable channel update command must not target 3.x pre-releases: ${updateCommand}`);

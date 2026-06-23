@@ -30,7 +30,7 @@ fi
 PROJECT="$SANDBOX/project"
 
 if [[ "$TIER" == "L2" ]]; then
-  PIN="${AGENTERA_NPM_PIN:-agentera@3.0.0-dev.0}"
+  PIN="${AGENTERA_NPM_PIN:-agentera@3.0.0-next.0}"
   CLI=(npx -y "$PIN")
 else
   CLI=(node "$REPO_ROOT/packages/cli/dist/bin/agentera.js")
@@ -136,7 +136,7 @@ fi
 
 cli_version="repo-dist"
 if [[ "$TIER" == "L2" ]]; then
-  cli_version="${AGENTERA_NPM_PIN:-agentera@3.0.0-dev.0}"
+  cli_version="${AGENTERA_NPM_PIN:-agentera@3.0.0-next.0}"
 fi
 
 python3 - <<'PY' "$report" "$SCENARIO" "$TIER" "$cli_version" "$preview_lifecycle" "$apply_lifecycle" "$overall"

@@ -74,10 +74,10 @@ jobs:
         env:
           REPO_ROOT: ${{ github.workspace }}
           AGENTERA_SANDBOX_TIER: L2
-          AGENTERA_NPM_PIN: agentera@3.0.0-dev.0
+          AGENTERA_NPM_PIN: agentera@3.0.0-next.0
         run: |
-          if ! npm view agentera@3.0.0-dev.0 version >/dev/null 2>&1; then
-            echo "skip: agentera@3.0.0-dev.0 not published"
+          if ! npm view agentera@3.0.0-next.0 version >/dev/null 2>&1; then
+            echo "skip: agentera@3.0.0-next.0 not published"
             exit 0
           fi
           bash scripts/sandbox/v2v3-upgrade-harness.sh happy-path-clean
@@ -93,3 +93,103 @@ jobs:
           cache: true
       - run: vp run @agentera/web#check
       - run: vp run @agentera/web#build
+
+  publish-next:
+    name: Publish packages/cli to npm @next (feat/v3)
+    needs: [cli, sandbox-l1, sandbox-l2, web]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/feat/v3'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
+      - name: Compare local vs published @next version
+        id: version-check
+        run: |
+          set -euo pipefail
+          cd packages/cli
+          LOCAL_VERSION=$(node -p "require('./package.json').version")
+          echo "Local version: ${LOCAL_VERSION}"
+          PUBLISHED_VERSION=$(npm view agentera@next version 2>/dev/null || echo "none")
+          echo "Published @next version: ${PUBLISHED_VERSION}"
+          should_publish=false
+          if [ "${PUBLISHED_VERSION}" = "none" ]; then
+            echo "No @next published yet; will publish"
+            should_publish=true
+          elif [ "${LOCAL_VERSION}" = "${PUBLISHED_VERSION}" ]; then
+            echo "Committed version equals published @next; skip"
+          else
+            NEWER=$(printf '%s\n%s\n' "${LOCAL_VERSION}" "${PUBLISHED_VERSION}" | sort -V | tail -n1)
+            if [ "${NEWER}" = "${LOCAL_VERSION}" ]; then
+              echo "Committed version is newer than published @next; will publish"
+              should_publish=true
+            else
+              echo "Committed version is older than published @next; skip"
+            fi
+          fi
+          echo "should_publish=${should_publish}" >> $GITHUB_OUTPUT
+      - name: Publish (npm publish --tag next; prepack builds dist+bundle)
+        if: steps.version-check.outputs.should_publish == 'true'
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ -z "${NPM_TOKEN}" ]; then
+            echo "NPM_TOKEN secret is not set; skipping publish"
+            exit 0
+          fi
+          cd packages/cli
+          npm publish --tag next --access public
+
+  publish-latest:
+    name: Publish stable shim to npm @latest (main)
+    needs: [cli, web]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Compare local vs published @latest version
+        id: version-check
+        run: |
+          set -euo pipefail
+          cd packages/cli/shim
+          LOCAL_VERSION=$(node -p "require('./package.json').version")
+          echo "Local shim version: ${LOCAL_VERSION}"
+          PUBLISHED_VERSION=$(npm view agentera@latest version 2>/dev/null || echo "none")
+          echo "Published @latest version: ${PUBLISHED_VERSION}"
+          should_publish=false
+          if [ "${PUBLISHED_VERSION}" = "none" ]; then
+            echo "No @latest published yet; will publish"
+            should_publish=true
+          elif [ "${LOCAL_VERSION}" = "${PUBLISHED_VERSION}" ]; then
+            echo "Committed shim version equals published @latest; skip"
+          else
+            NEWER=$(printf '%s\n%s\n' "${LOCAL_VERSION}" "${PUBLISHED_VERSION}" | sort -V | tail -n1)
+            if [ "${NEWER}" = "${LOCAL_VERSION}" ]; then
+              echo "Committed shim version is newer than published @latest; will publish"
+              should_publish=true
+            else
+              echo "Committed shim version is older than published @latest; skip"
+            fi
+          fi
+          echo "should_publish=${should_publish}" >> $GITHUB_OUTPUT
+      - name: Publish shim (npm publish; default tag = latest)
+        if: steps.version-check.outputs.should_publish == 'true'
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ -z "${NPM_TOKEN}" ]; then
+            echo "NPM_TOKEN secret is not set; skipping publish"
+            exit 0
+          fi
+          cd packages/cli/shim
+          npm publish --access public
+
+

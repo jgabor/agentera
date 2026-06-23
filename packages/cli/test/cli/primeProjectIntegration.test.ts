@@ -21,10 +21,10 @@ let prevCwd: string;
 function seedNpxBundle(root: string): void {
   fs.mkdirSync(path.join(root, "skills", "agentera"), { recursive: true });
   fs.writeFileSync(path.join(root, "skills", "agentera", "SKILL.md"), "# Agentera\n");
-  fs.writeFileSync(path.join(root, "registry.json"), JSON.stringify({ skills: [{ version: "3.0.0-dev.1" }] }));
+  fs.writeFileSync(path.join(root, "registry.json"), JSON.stringify({ skills: [{ version: "3.0.0-next.1" }] }));
   fs.writeFileSync(
     path.join(root, NPX_BUNDLE_SENTINEL),
-    JSON.stringify({ kind: "agentera-npx-bundle", suiteVersion: "3.0.0-dev.1" }),
+    JSON.stringify({ kind: "agentera-npx-bundle", suiteVersion: "3.0.0-next.1" }),
   );
   fs.cpSync(path.join(REPO_ROOT, "references"), path.join(root, "references"), { recursive: true });
 }

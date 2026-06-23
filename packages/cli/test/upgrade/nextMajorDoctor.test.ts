@@ -203,7 +203,7 @@ describe("resolveNextMajorDoctorLines", () => {
       sourceRoot: REPO_ROOT,
       home: tmp,
       channel: "development",
-      runningVersion: "3.0.0-dev.4",
+      runningVersion: "3.0.0-next.4",
       runningDistributionMajor: 3,
     });
     expect(lines).toBeNull();
@@ -290,7 +290,7 @@ describe("prependNextMajorDoctorSection", () => {
   it("omits the section entirely when successor is null", () => {
     const status = {
       status: "up_to_date",
-      expectedVersion: "3.0.0-dev.4",
+      expectedVersion: "3.0.0-next.4",
       appHome: "/h",
       managedAppRoot: "/h/app",
       userDataRoot: "/h",
@@ -305,7 +305,7 @@ describe("prependNextMajorDoctorSection", () => {
         sourceRoot: REPO_ROOT,
         home: tmp,
         channel: "development",
-        runningVersion: "3.0.0-dev.4",
+        runningVersion: "3.0.0-next.4",
         runningDistributionMajor: 3,
       }),
     );

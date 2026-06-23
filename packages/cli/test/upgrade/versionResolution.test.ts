@@ -52,7 +52,7 @@ function managedV2(appHome: string, marker = "2.7.0"): void {
 describe("parseSemverMajor", () => {
   it("reads leading major version", () => {
     expect(parseSemverMajor("3.1.3")).toBe(3);
-    expect(parseSemverMajor("3.0.0-dev.0")).toBe(3);
+    expect(parseSemverMajor("3.0.0-next.0")).toBe(3);
   });
 });
 
@@ -101,10 +101,10 @@ describe("classifyUpgradeOutcome", () => {
       sourceRoot: REPO_ROOT,
       install,
       channel,
-      catalog: { stable: "2.7.7", development: "3.0.0-dev.0" },
+      catalog: { stable: "2.7.7", development: "3.0.0-next.0" },
     });
     expect(outcome.kind).toBe("migration_to_latest_on_channel");
-    expect(outcome.migrationTargetVersion).toBe("3.0.0-dev.0");
+    expect(outcome.migrationTargetVersion).toBe("3.0.0-next.0");
   });
 
   it("blocks downgrade to v2 permanently", () => {
@@ -122,7 +122,7 @@ describe("classifyUpgradeOutcome", () => {
       sourceRoot: REPO_ROOT,
       install,
       channel,
-      catalog: { stable: "2.7.7", development: "3.0.0-dev.0" },
+      catalog: { stable: "2.7.7", development: "3.0.0-next.0" },
     });
     expect(outcome.kind).toBe("blocked_downgrade_to_v2");
   });
@@ -163,7 +163,7 @@ describe("resolveLatestOnChannel", () => {
   it("uses injectable catalog without network", () => {
     const channel = resolveUpdateChannel({ sourceRoot: REPO_ROOT, channel: "development", home: tmp });
     expect(
-      resolveLatestOnChannel(channel, REPO_ROOT, { stable: "2.7.7", development: "3.0.0-dev.0" }),
-    ).toBe("3.0.0-dev.0");
+      resolveLatestOnChannel(channel, REPO_ROOT, { stable: "2.7.7", development: "3.0.0-next.0" }),
+    ).toBe("3.0.0-next.0");
   });
 });

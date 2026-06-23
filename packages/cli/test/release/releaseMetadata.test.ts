@@ -189,7 +189,7 @@ describe("release-metadata", () => {
   });
 
   it("forbids pre-release suffixes on the authoritative registry version", () => {
-    writeJson(tmp, "registry.json", VALID_REGISTRY("3.0.0-dev.5"));
+    writeJson(tmp, "registry.json", VALID_REGISTRY("3.0.0-next.5"));
     const errors = validateReleaseMetadata(tmp);
     expect(errors).toContainEqual(
       expect.stringContaining("registry.json: skills[0].version must be a released core version"),
