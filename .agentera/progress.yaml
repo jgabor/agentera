@@ -1,4 +1,40 @@
 cycles:
+- number: 623
+  timestamp: 2026-06-23 14:38
+  type: fix
+  phase: build
+  what: Harden v2 install defense against silently corrupted scripts/agentera; release
+    2.7.11.
+  discovered: "Plan Task 1 root cause was environmental (case c) \u2014 the v2 install\
+    \ path on origin/main HEAD did not reproduce the corruption. Plan Task 2 was rewritten\
+    \ to harden what CAN be hardened in v2 source: a defensive post-install assertion\
+    \ in apply_bundle_phase that aborts the upgrade with an explicit RuntimeError\
+    \ when the installed app/scripts/agentera is missing, shorter than 8000 lines,\
+    \ lacks a shebang, or fails ast.parse. The check runs outside the per-item try/except\
+    \ so a corrupted install surfaces as a hard failure rather than a silently swallowed\
+    \ 'failed' item status."
+  verified: tests/test_apply_bundle_phase_defense.py covers defense behavior (missing/short/no-shebang/invalid-Python/abort-outside-try-except
+    and a clean 8528-line source passes); tests/test_apply_bundle_phase_byte_equality.py
+    pins byte equality against REPO_ROOT on a clean state. UPGRADE.md Runtime notes
+    sections 'v2 install defense' and 'v2/v3 boundary in the v2 wheel' document the
+    new surface. All 11 canonical version_files plus README.md, v3-handoff.json installed_v2_version
+    and written_at, packages/cli/package.json suiteVersion/gitRef, and three test
+    fixture files aligned to 2.7.11.
+  next: null
+  context:
+    intent: "Plan task 3 \u2014 final state sync on main: version bump 2.7.10 to 2.7.11\
+      \ (fix scope per semver_policy), CHANGELOG entry under ### Fixed, PROGRESS cycle,\
+      \ plan Task 3 closeout. Folded into the release commit per AGENTS.md 'Same-commit\
+      \ fold-in (default)'."
+    constraints: Work in worktree at ~/git/agentera.feat-v3-v2-install-corruption-task3;
+      do not touch the main repo working tree; closed commit scope `release` per the
+      v2 AGENTS.md commit scopes table.
+    unknowns: none
+    scope: pyproject.toml, uv.lock, plugin.json, .github/plugin/plugin.json, .codex-plugin/plugin.json,
+      .cursor-plugin/plugin.json, .claude-plugin/marketplace.json, .opencode/plugins/agentera.js,
+      skills/agentera/SKILL.md, skills/hej/SKILL.md, registry.json, README.md, v3-handoff.json,
+      packages/cli/package.json, tests/test_npm_cli_shim.py, tests/test_upgrade_cli.py,
+      tests/test_v3_handoff_manifest.py, CHANGELOG.md, .agentera/progress.yaml, .agentera/plan.yaml.
 - number: 622
   timestamp: 2026-06-09 19:30
   type: fix
@@ -163,24 +199,9 @@ cycles:
       scripts/smoke_live_hosts.py (bundle), tests/test_progress_commit_guard.py (retarget),
       plan.yaml task 1 status; quoted pre-existing int commit on cycle 612 and reset
       stale cycle 613 to pending to satisfy the artifact guard.
-- number: 613
-  timestamp: 2026-05-29 16:00
-  type: fix
-  phase: build
-  what: Close compaction check/gate robustness and retention-cap dedup plan.
-  discovered: None.
-  verified: 1329 passed, 29 failed pytest tests/ -q -n auto (failures are pre-existing
-    macOS AGENTERA_HOME/platform-home env issues and missing corpus.json, unrelated
-    to compaction closeout); compaction tests (23) pass; capability-contract validation
-    pass (2/2).
-  next: None.
-  context:
-    intent: Plan task 4 closeout for compaction check/gate YAML error rows and retention-cap
-      dedup.
-    constraints: No version bump; no remote push; never amend to backfill commit hashes.
-    scope: TODO.md, CHANGELOG.md, progress.yaml, plan.yaml closeout only; implementation
-      in 8be19c4, cf0aa93, 55a9df8.
 archive:
+- summary: 'Cycle 613 (2026-05-29): Close compaction check/gate robustness and retention-cap
+    dedup plan.'
 - summary: 'Cycle 612 (2026-05-29): Add progress commit-hash churn guard and `agentera
     check backfill`.'
 - summary: 'Cycle 611 (2026-05-29): Deduplicate session hook resolve_session_path
@@ -254,5 +275,3 @@ archive:
     coverage.'
 - summary: 'Cycle 575 (2026-05-18): Added contract and hej context regression coverage
     for instruction reads.'
-- summary: 'Cycle 574 (2026-05-18): Added capability validator regression coverage
-    for required instructions.md.'

@@ -1690,7 +1690,7 @@ def test_load_suite_version_falls_back_to_pyproject_for_non_semver(tmp_path: Pat
         encoding="utf-8",
     )
     (tmp_path / "pyproject.toml").write_text(
-        '[project]\nname = "agentera"\nversion = "2.7.10"\n',
+        '[project]\nname = "agentera"\nversion = "2.7.11"\n',
         encoding="utf-8",
     )
 
@@ -1701,7 +1701,7 @@ def test_load_suite_version_falls_back_to_pyproject_for_non_semver(tmp_path: Pat
     monkeypatch.setattr(upgrade, "_package_registry", lambda: registry)
 
     version = upgrade._load_suite_version(tmp_path)
-    assert version == "2.7.10"
+    assert version == "2.7.11"
 
 
 def test_load_suite_version_preserves_valid_semver_without_fallback(tmp_path: Path, monkeypatch) -> None:
@@ -1713,7 +1713,7 @@ def test_load_suite_version_preserves_valid_semver_without_fallback(tmp_path: Pa
         encoding="utf-8",
     )
     (tmp_path / "pyproject.toml").write_text(
-        '[project]\nname = "agentera"\nversion = "2.7.10"\n',
+        '[project]\nname = "agentera"\nversion = "2.7.11"\n',
         encoding="utf-8",
     )
 

@@ -139,7 +139,7 @@ tasks:
   - number: 3
     name: "Final state sync on main"
     depends_on: ["1", "2"]
-    status: pending
+    status: complete
     acceptance:
       - "GIVEN Tasks 1 and 2 complete WHEN pyproject.toml and version surfaces are bumped THEN the new version is consistent (e.g., 2.7.11 patch bump per fix work)"
       - "GIVEN the fix WHEN CHANGELOG.md is updated THEN a 2.7.11 entry lists the corruption fix under ### Fixed"

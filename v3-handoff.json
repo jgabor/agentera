@@ -1,6 +1,6 @@
 {
   "app_home_path": "/home/jgabor/git/agentera",
-  "installed_v2_version": "2.7.10",
+  "installed_v2_version": "2.7.11",
   "runtime_adapters": [
     "copilot",
     "cursor",
@@ -55,5 +55,5 @@
       ]
     }
   ],
-  "written_at": "2026-06-22T20:33:26Z"
+  "written_at": "2026-06-23T12:40:07Z"
 }

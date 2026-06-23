@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+## [2.7.11] · 2026-06-23
+
+### Fixed
+
+- Fixed `agentera upgrade --yes` to abort with an explicit `RuntimeError` when `apply_bundle_phase` finishes but the installed `app/scripts/agentera` is missing, is shorter than 8000 lines, lacks a shebang, or fails `ast.parse`. The check runs outside the per-item `try/except` so a corrupted install surfaces as a hard failure instead of a silently swallowed "failed" item status. The 8000-line floor catches the original v2.7.10 corruption class (a 2-line `#!/usr/bin/env node\nsub.add_parser('hej')` stub) without false positives on legitimate v2 sources (v2.7.0+ is 8100+ lines; v2.7.10 is 8528 lines). Recovery from a tripped defense: `git show <commit>:scripts/agentera > ~/.local/share/agentera/app/scripts/agentera` then re-run upgrade. Regression coverage in `tests/test_apply_bundle_phase_defense.py` (defense behavior) and `tests/test_apply_bundle_phase_byte_equality.py` (clean-state byte equality against REPO_ROOT). Documented in `UPGRADE.md` under **Runtime notes → v2 install defense** and **v2/v3 boundary in the v2 wheel**.
+
 ## [2.7.10] · 2026-06-22
 
 ### Fixed

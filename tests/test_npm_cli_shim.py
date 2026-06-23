@@ -26,7 +26,7 @@ delete env.TEST_CWD;
 console.log(JSON.stringify(resolveBackend({
   cwd,
   env,
-  gitRef: process.env.TEST_GIT_REF ?? 'v2.7.10',
+  gitRef: process.env.TEST_GIT_REF ?? 'v2.7.11',
 })));
 """
 
@@ -35,7 +35,7 @@ def _resolve_backend(
     *,
     cwd: Path,
     env: dict[str, str] | None = None,
-    git_ref: str = "v2.7.10",
+    git_ref: str = "v2.7.11",
 ) -> dict:
     parent = {k: v for k, v in os.environ.items() if k != "AGENTERA_HOME"}
     merged = {**parent, **(env or {}), "TEST_CWD": str(cwd), "TEST_GIT_REF": git_ref}
@@ -113,7 +113,7 @@ def test_uvx_when_uv_present_without_repo(isolated: Path):
         env={"PATH": str(fake_bin)},
     )
     assert backend["kind"] == "uvx"
-    assert backend["gitRef"] == "v2.7.10"
+    assert backend["gitRef"] == "v2.7.11"
 
 
 def test_none_when_no_uv_and_no_scripts(isolated: Path):
@@ -131,7 +131,7 @@ def test_bin_version_smoke():
         check=True,
     )
     assert "agentera npm shim 0.0.0" in proc.stdout
-    assert "suite 2.7.10" in proc.stdout
+    assert "suite 2.7.11" in proc.stdout
 
 
 def test_bin_help_smoke():
