@@ -120,9 +120,9 @@ tasks:
       - "GIVEN the corruption investigation WHEN the v2 install code (scripts/agentera_upgrade.py, scripts/install_root.py) and the v2 test stubs (tests/test_install_root_module.py, tests/test_install_root_characterization.py, tests/test_runtime_adapters.py) are read THEN the root cause is identified and documented in the commit message: it is either (a) a v2 test stub leak writing to the real AGENTERA_HOME, (b) a v2 wheel build issue mixing in Node-flavored content, or (c) an environmental condition that won't reproduce in a clean temp dir"
       - "GIVEN the investigation WHEN the root cause is environmental (case c) THEN the plan's fix task is rewritten to address what CAN be fixed in v2 source, and a follow-up TODO is filed for the environmental side"
   - number: 2
-    name: "Harden v2 install path defenses and document the v2/v3 boundary"
+    name: "Harden v2 install path defenses and document v2/v3 boundary"
     depends_on: ["1"]
-    status: pending
+    status: complete
     note: >
       Task 2 is rewritten because Task 1 established the corruption is
       environmental (case c). There is no v2 source bug to fix. What CAN

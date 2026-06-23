@@ -250,6 +250,25 @@ Typical installs no longer require `--force` when those directories are present.
 
 ## Runtime notes
 
+### v2 install defense
+
+`apply_bundle_phase` runs a post-install assertion on `app/scripts/agentera` after the bundle copy loop completes. The defense aborts with an explicit `RuntimeError` if the installed file is missing, is shorter than 8000 lines, lacks a shebang, or fails `ast.parse`. The check runs **outside** the per-item `try/except` so a corrupted install surfaces as a hard failure rather than a silently swallowed "failed" item status.
+
+The 8000-line floor catches the original 2.7.10 corruption class (a 2-line `#!/usr/bin/env node\nsub.add_parser('hej')` stub) without false positives on legitimate v2 sources (v2.7.0+ is 8100+ lines; v2.7.10 is 8528 lines).
+
+If a user install triggers this defense, the recovery is to restore the script from the v2 source:
+
+```bash
+git show <commit>:scripts/agentera > ~/.local/share/agentera/app/scripts/agentera
+uvx --from git+https://github.com/jgabor/agentera agentera upgrade --yes
+```
+
+The commit hash is the published version of v2 the user expects (e.g., `012eea79` for v2.7.10).
+
+### v2/v3 boundary in the v2 wheel
+
+The v2 wheel force-includes `packages/cli/` content at `agentera/bundle/packages/cli/` per `pyproject.toml [tool.hatch.build.targets.wheel.force-include]`. The v2 install copies this to `app/packages/cli/bin/agentera.mjs` — a distinct path from `app/scripts/agentera`. The v3 npm shim is bundled in the v2 wheel so v2.x users have a v3 fallback even before v3 promotes to `@latest`. This is intentional; the two paths never collide because `apply_bundle_phase` iterates distinct `rel_paths` for each.
+
 ### Claude Code
 
 `agentera upgrade` does not require Claude access and does not run Claude smoke tests. Package refresh is skipped unless `--update-packages` is set.

@@ -13,6 +13,7 @@ path is repeatable and testable.
 from __future__ import annotations
 
 import argparse
+import ast
 import hashlib
 import importlib.machinery
 import importlib.util
@@ -733,6 +734,63 @@ def _copy_bundle_file(source_root: Path, bundle_root: Path, rel_path: Path) -> N
     shutil.copy2(source, target)
 
 
+# Minimum line count for the installed `scripts/agentera`. The v2.7.10 source is
+# 8528 lines. A corrupted install (Node shebang + Python test-stub body) is
+# typically 2-7 lines. The 8000-line floor catches that class without false
+# positives on legitimate v2 source (the lowest recent count is v2.7.0 at
+# ~8100 lines; v2.6.x is older and not on the npm @latest channel).
+MIN_INSTALLED_SCRIPT_LINES = 8000
+
+
+def _validate_installed_script(target: Path) -> None:
+    """Raise if the installed `scripts/agentera` looks corrupted.
+
+    Defends against environmental or build-time regressions that produce
+    a too-short or non-Python file at the canonical script path. The check
+    runs after the bundle copy loop so a corrupted write surfaces as an
+    explicit failure instead of a silently broken install.
+    """
+    if not target.is_file():
+        raise RuntimeError(
+            f"Installed script is missing at {target}. "
+            "The v2 install requires scripts/agentera to be present."
+        )
+    text = target.read_text(encoding="utf-8", errors="replace")
+    line_count = text.count("\n") + (0 if text.endswith("\n") else 1)
+    if line_count < MIN_INSTALLED_SCRIPT_LINES:
+        head = text.splitlines()[:3]
+        raise RuntimeError(
+            f"Installed script at {target} is suspiciously short "
+            f"({line_count} lines; expected >= {MIN_INSTALLED_SCRIPT_LINES}). "
+            f"First lines: {head!r}. This usually indicates a corrupted "
+            "install (e.g., a test stub or build-time mix-in). "
+            "Restore the script from the v2 source "
+            "(`git show <commit>:scripts/agentera > <target>`) and re-run upgrade."
+        )
+    if not text.startswith("#!/"):
+        first_line = text.splitlines()[0] if text else "<empty>"
+        raise RuntimeError(
+            f"Installed script at {target} is missing a shebang. "
+            f"First line: {first_line!r}. The v2 install requires a "
+            "PEP 723 (`#!/usr/bin/env -S uv run --script`) or python shebang. "
+            "This usually indicates a corrupted install. "
+            "Restore the script from the v2 source and re-run upgrade."
+        )
+    # The script is a long Python file; ast.parse on a multi-thousand-line
+    # file is fast enough but we cap it to avoid pathological cases.
+    body = text.split("\n", 1)[1] if "\n" in text else text
+    try:
+        ast.parse(body)
+    except SyntaxError as exc:
+        raise RuntimeError(
+            f"Installed script at {target} is not valid Python "
+            f"(syntax error: {exc}). The v2 install requires a syntactically "
+            "valid Python script. This usually indicates a corrupted install "
+            "(e.g., a test stub or build-time mix-in). "
+            "Restore the script from the v2 source and re-run upgrade."
+        ) from exc
+
+
 def _remove_empty_parents(path: Path, stop_at: Path) -> None:
     current = path.parent
     while current != stop_at and stop_at in current.parents:
@@ -1127,6 +1185,15 @@ def apply_bundle_phase(phase: dict[str, Any], source_root: Path, install_root: P
             continue
         item["status"] = "applied"
     phase.update(_phase("bundle", phase["items"], message=phase.get("message", "")))
+    # Defensive post-install check: if the install-bundle item succeeded
+    # but the resulting scripts/agentera is corrupted (too short, missing
+    # shebang, or invalid Python), abort with an explicit error. This is
+    # called OUTSIDE the per-item try/except so a validation failure is
+    # not silently swallowed into a "failed" item status. The check is
+    # scoped to install-bundle items only.
+    for item in phase["items"]:
+        if item.get("status") == "applied" and item.get("action") == "install-bundle":
+            _validate_installed_script(app_root / "scripts" / "agentera")
 
 
 def _phase(name: str, items: list[dict[str, Any]], *, message: str = "") -> dict[str, Any]:
