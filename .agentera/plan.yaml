@@ -1,0 +1,111 @@
+header:
+  level: light
+  created: "2026-06-23"
+  status: active
+  title: "Cutover-stability refactor — surfaced debt consolidation"
+what: >
+  Two refactors surfaced by the post-cutover-stability inspektera health check.
+  Consolidate the four `hasBundleRootEvidence` copies into a single shared
+  module so a v2 managed install with an unreadable script classifies the
+  same way across all four call sites (doctor strengthened it during Task 4;
+  compatibility, appModel, and coexistenceProbe still use the original
+  isFile+isFile check). Then align the doctor's `detectContentLanguage`
+  with the shim's broader Python+JS detection so the doctor recognizes
+  Python-shebang + JS-body mismatches under `probeCli: true`.
+why: >
+  The cutover-stability batch 1 hardened doctor's bundle evidence and
+  retryCommand paths against the managed script corruption class. The
+  remaining three `hasBundleRootEvidence` copies stayed at the original
+  weak check, so a managed install with an unreadable script (the very
+  corruption class the previous batch fixed) now classifies as "valid
+  v2-managed" in compatibility, appModel, and coexistenceProbe but as "no
+  bundle evidence" in doctor. That drift is the first thing a future
+  shebang-corruption regression would surface, and it would surface
+  differently depending on which CLI command the user happened to run.
+  The `detectContentLanguage` gap is a smaller version of the same class:
+  a Python-shebang + JS-body mismatch is caught by the shim (Task 2) and
+  by `npx -y agentera@next` paths, but invisible to `agentera doctor`
+  when run from a v2 Python install. Closing both gaps now, while v3 is
+  still feature-frozen, is cheaper than after cutover.
+constraints: >
+  All work on feat/v3. Do not flip the update-channels.yaml announced
+  flag. Do not change `BundleStatus.retryCommand` semantics (Task 4 of
+  the previous plan). Do not extract a shared TS shebang-read helper
+  between the shim and the CLI — the shim is a separate ESM build with
+  different dependencies, and ~30 lines of language detection does not
+  warrant the build-pipeline cost. The shim's `contentLanguage` keeps
+  its own copy; only the doctor's `detectContentLanguage` is widened.
+  Tests must not break the existing 986/986 vitest green count. Use the
+  closed commit scope vocabulary (cli); do not invent new scopes.
+scope:
+  included:
+    - "New module packages/cli/src/upgrade/bundleEvidence.ts exporting hasBundleRootEvidence"
+    - "packages/cli/src/upgrade/doctor.ts: replace local hasBundleRootEvidence with shared import"
+    - "packages/cli/src/upgrade/compatibility.ts: replace local hasBundleRootEvidence with shared import"
+    - "packages/cli/src/upgrade/appModel.ts: replace local hasBundleRootEvidence with shared import"
+    - "packages/cli/src/upgrade/coexistenceProbe.ts: replace local hasBundleRootEvidence with shared import"
+    - "packages/cli/src/upgrade/doctor.ts: detectContentLanguage widened to return 'js' for JS body"
+    - "Regression tests for both refactors in packages/cli/test/upgrade/"
+  excluded:
+    - "Extracting shared TS shebang-read helper between shim and CLI (build-pipeline cost too high)"
+    - "Aligning the shim's contentLanguage (separate build; shim is the canonical implementation)"
+    - "Consolidating the 3 missingScriptCommands dead code (TODO.md line 29 — separate chore)"
+    - "Re-doing doctor shebang-aware retryCommand logic (Task 4 of previous plan; correct as-is)"
+    - "Re-doing the parity oracle pin (already fixed in realisera cycle 1, f77328b8)"
+  deferred:
+    - "Shim → CLI shared shebang-read helper (only worth doing if Task 2 surfaces a third asymmetric surface)"
+design: >
+  Task 1 extracts `hasBundleRootEvidence` to a new module
+  `packages/cli/src/upgrade/bundleEvidence.ts`. The shared version uses
+  the post-Task-4 doctor logic: `isFile(scripts/agentera) && isFile(skills/agentera/SKILL.md) && readScriptHead(scripts/agentera) !== null`.
+  The 4 callers replace their local copies with the shared import. The
+  behavior change for compatibility/appModel/coexistenceProbe is that a
+  managed install with an unreadable script now classifies as "no
+  bundle evidence" everywhere, matching the doctor's post-Task-4 view.
+  This is the desired drift direction (the doctor's stricter check is
+  the one Task 4 established as correct); the 3 weaker copies were the
+  drift.
+
+  Task 2 widens doctor's `detectContentLanguage` to mirror the shim's
+  JS-detection patterns: `import ... from '...'`, `import '...'`, `const|let|var|export` at line start, `require(...)`, `module.exports`.
+  These patterns all return `'js'`. The Python-detection patterns
+  (shebang body markers, `import x`, `from ...`, `def ...`, `class ...`)
+  stay as-is. With this widening, doctor's `mismatch` check at line 106-107
+  now correctly flags Python-shebang + JS-body as a runtime mismatch
+  under `probeCli: true`, matching the shim's behavior.
+
+  Both tasks are independent (different files, different test surfaces)
+  and can be dispatched in parallel; the previous orchestrator session's
+  clobbering problem is moot here because we won't be running multiple
+  parallel worktree dispatches.
+tasks:
+  - number: 1
+    name: "Consolidate hasBundleRootEvidence into a shared module"
+    depends_on: []
+    status: complete
+    acceptance:
+      - "GIVEN a managed install where scripts/agentera exists, skills/agentera/SKILL.md exists, and the script shebang is readable WHEN hasBundleRootEvidence is called from any of the 4 call sites THEN it returns true"
+      - "GIVEN a managed install where scripts/agentera exists, skills/agentera/SKILL.md exists, but the script shebang is unreadable WHEN hasBundleRootEvidence is called from any of the 4 call sites THEN it returns false (the post-Task-4 stricter check, applied uniformly)"
+      - "GIVEN a managed install where scripts/agentera is missing or skills/agentera/SKILL.md is missing WHEN hasBundleRootEvidence is called from any of the 4 call sites THEN it returns false"
+      - "GIVEN the refactor WHEN grep -rn 'function hasBundleRootEvidence' packages/cli/src/ is run THEN there is exactly one definition (in the new shared module) and four imports"
+  - number: 2
+    name: "Widen doctor's detectContentLanguage to detect JS bodies"
+    depends_on: []
+    status: pending
+    acceptance:
+      - "GIVEN a script body that contains 'const x = 1' WHEN detectContentLanguage is called THEN it returns 'js'"
+      - "GIVEN a script body that contains 'import foo from \"bar\"' WHEN detectContentLanguage is called THEN it returns 'js'"
+      - "GIVEN a script body that contains 'def main()' WHEN detectContentLanguage is called THEN it returns 'python' (existing behavior preserved)"
+      - "GIVEN a script body that contains 'import sys' WHEN detectContentLanguage is called THEN it returns 'python' (existing behavior preserved)"
+      - "GIVEN a script with 'python' shebang and a JS body WHEN doctor runs with probeCli: true THEN a runtime_mismatch signal is emitted (currently invisible)"
+overall_acceptance: >
+  A v2 managed install with an unreadable script classifies the same way
+  across all four hasBundleRootEvidence call sites (doctor, compatibility,
+  appModel, coexistenceProbe) after the consolidation. A Python-shebang
+  managed script with a JS body is detected by doctor as a runtime mismatch
+  under probeCli: true, matching the shim's detection. The vitest suite
+  remains green at 986 baseline plus the new regression tests. typecheck
+  clean. compact gate pass. The two surfaced debt items from the post-plan
+  inspektera report (parity oracle pin already closed in realisera cycle 1)
+  are both fully resolved.
+surprises: ""

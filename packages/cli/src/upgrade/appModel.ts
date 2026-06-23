@@ -13,6 +13,7 @@ import {
   resolveCandidate,
 } from "../state/installRoot.js";
 import { loadRegistry } from "../registries/packageRegistry.js";
+import { hasBundleRootEvidence } from "./bundleEvidence.js";
 
 /**
  * App-home / app-model resolution used by doctor and upgrade. Faithful TS port
@@ -89,13 +90,6 @@ export function loadSuiteVersion(sourceRoot: string): string | null {
   const first = skills[0];
   const version = first && typeof first === "object" ? first.version : null;
   return typeof version === "string" && version ? version : null;
-}
-
-function hasBundleRootEvidence(root: string): boolean {
-  return (
-    isFile(path.join(root, "scripts", "agentera")) &&
-    isFile(path.join(root, "skills", "agentera", "SKILL.md"))
-  );
 }
 
 export function doctorRoots(appHome: string): DoctorRoots {
