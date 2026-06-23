@@ -337,3 +337,130 @@ describe("buildDoctorStatus shebang-aware retryCommand", () => {
     expect(status.signals.some((s: { kind?: string }) => s.kind === "runtime_mismatch")).toBe(false);
   });
 });
+
+describe("buildDoctorStatus runtime_mismatch JS detection", () => {
+  it("emits runtime_mismatch for a python shebang with a const-declared JS body", () => {
+    const appHome = path.join(tmp, "py-shebang-const-body");
+    managedWithScript(
+      appHome,
+      "v9",
+      "const x = 1\n",
+      "#!/usr/bin/env python3",
+    );
+    const status = buildDoctorStatus(appHome, {
+      rootSource: "explicit --install-root",
+      ...common,
+      probeCli: true,
+    });
+    const mismatch = status.signals.find((s: { kind?: string }) => s.kind === "runtime_mismatch");
+    expect(mismatch).toBeTruthy();
+    expect(mismatch?.message).toMatch(/content language/);
+    expect(mismatch?.message).toContain("python");
+    expect(mismatch?.message).toContain("js");
+  });
+
+  it("emits runtime_mismatch for a python shebang with `import foo from \"bar\"` JS body", () => {
+    const appHome = path.join(tmp, "py-shebang-import-from-body");
+    managedWithScript(
+      appHome,
+      "v9",
+      'import foo from "bar"\n',
+      "#!/usr/bin/env python3",
+    );
+    const status = buildDoctorStatus(appHome, {
+      rootSource: "explicit --install-root",
+      ...common,
+      probeCli: true,
+    });
+    const mismatch = status.signals.find((s: { kind?: string }) => s.kind === "runtime_mismatch");
+    expect(mismatch).toBeTruthy();
+    expect(mismatch?.message).toMatch(/content language/);
+  });
+
+  it("emits runtime_mismatch for a node shebang with a `def main()` python body", () => {
+    const appHome = path.join(tmp, "node-shebang-def-body");
+    managedWithScript(
+      appHome,
+      "v9",
+      "def main():\n    pass\n",
+      "#!/usr/bin/env node",
+    );
+    const status = buildDoctorStatus(appHome, {
+      rootSource: "explicit --install-root",
+      ...common,
+      probeCli: true,
+    });
+    const mismatch = status.signals.find((s: { kind?: string }) => s.kind === "runtime_mismatch");
+    expect(mismatch).toBeTruthy();
+    expect(mismatch?.message).toContain("js");
+    expect(mismatch?.message).toContain("python");
+  });
+
+  it("emits runtime_mismatch for a node shebang with an `import sys` python body", () => {
+    const appHome = path.join(tmp, "node-shebang-import-sys-body");
+    managedWithScript(
+      appHome,
+      "v9",
+      "import sys\n",
+      "#!/usr/bin/env node",
+    );
+    const status = buildDoctorStatus(appHome, {
+      rootSource: "explicit --install-root",
+      ...common,
+      probeCli: true,
+    });
+    const mismatch = status.signals.find((s: { kind?: string }) => s.kind === "runtime_mismatch");
+    expect(mismatch).toBeTruthy();
+  });
+
+  it("emits runtime_mismatch for a python shebang with a JS body when probeCli is true (acceptance)", () => {
+    const appHome = path.join(tmp, "py-shebang-js-body");
+    managedWithScript(
+      appHome,
+      "v9",
+      "import foo from 'bar'\nexport const main = () => {};\n",
+      "#!/usr/bin/env python3",
+    );
+    const status = buildDoctorStatus(appHome, {
+      rootSource: "explicit --install-root",
+      ...common,
+      probeCli: true,
+    });
+    const mismatch = status.signals.find((s: { kind?: string }) => s.kind === "runtime_mismatch");
+    expect(mismatch).toBeTruthy();
+    expect(mismatch?.status).toBe("repair_needed");
+  });
+
+  it("emits runtime_mismatch for a python shebang with a require()-based JS body", () => {
+    const appHome = path.join(tmp, "py-shebang-require-body");
+    managedWithScript(
+      appHome,
+      "v9",
+      "const fs = require('node:fs');\n",
+      "#!/usr/bin/env python3",
+    );
+    const status = buildDoctorStatus(appHome, {
+      rootSource: "explicit --install-root",
+      ...common,
+      probeCli: true,
+    });
+    const mismatch = status.signals.find((s: { kind?: string }) => s.kind === "runtime_mismatch");
+    expect(mismatch).toBeTruthy();
+  });
+
+  it("does not emit runtime_mismatch for a node shebang with a matched JS const body", () => {
+    const appHome = path.join(tmp, "node-shebang-js-body-match");
+    managedWithScript(
+      appHome,
+      "v9",
+      "import fs from 'node:fs';\nconst x = 1\n",
+      "#!/usr/bin/env node",
+    );
+    const status = buildDoctorStatus(appHome, {
+      rootSource: "explicit --install-root",
+      ...common,
+      probeCli: true,
+    });
+    expect(status.signals.some((s: { kind?: string }) => s.kind === "runtime_mismatch")).toBe(false);
+  });
+});

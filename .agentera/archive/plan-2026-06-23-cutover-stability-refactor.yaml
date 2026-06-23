@@ -91,7 +91,7 @@ tasks:
   - number: 2
     name: "Widen doctor's detectContentLanguage to detect JS bodies"
     depends_on: []
-    status: pending
+    status: complete
     acceptance:
       - "GIVEN a script body that contains 'const x = 1' WHEN detectContentLanguage is called THEN it returns 'js'"
       - "GIVEN a script body that contains 'import foo from \"bar\"' WHEN detectContentLanguage is called THEN it returns 'js'"

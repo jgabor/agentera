@@ -19,7 +19,7 @@ export type { ProbeResult, ProbeRunner } from "./cliProbe.js";
 
 export type { BundleStatus, DoctorSignal, PublicBundleStatus } from "../cli/contracts/bundleStatus.js";
 
-type ScriptRuntime = "node" | "python" | "unknown";
+type ScriptRuntime = "js" | "python" | "unknown";
 
 interface ManagedScriptEvidence {
   scriptPath: string;
@@ -32,7 +32,7 @@ interface ManagedScriptEvidence {
 
 function shebangRuntime(shebang: string): ScriptRuntime {
   if (/\bnode\b/.test(shebang)) {
-    return "node";
+    return "js";
   }
   if (/\bpython\d*\b/.test(shebang) || /\buv\b[^\n]*\brun\b/.test(shebang)) {
     return "python";
@@ -44,6 +44,15 @@ function detectContentLanguage(body: string): ScriptRuntime {
   if (body.includes("# /// script")) {
     return "python";
   }
+  if (/\brequire\s*\(/.test(body) || /\bmodule\.exports\b/.test(body)) {
+    return "js";
+  }
+  if (/^\s*import\s+[^'"\n]+\s+from\s+['"]/m.test(body)) {
+    return "js";
+  }
+  if (/^\s*import\s+['"]/m.test(body)) {
+    return "js";
+  }
   const lines = body.split("\n").slice(0, 30);
   for (const raw of lines) {
     const t = raw.trimStart();
@@ -54,6 +63,14 @@ function detectContentLanguage(body: string): ScriptRuntime {
       t.startsWith("class ")
     ) {
       return "python";
+    }
+    if (
+      t.startsWith("const ") ||
+      t.startsWith("let ") ||
+      t.startsWith("var ") ||
+      t.startsWith("export ")
+    ) {
+      return "js";
     }
   }
   return "unknown";
@@ -104,7 +121,7 @@ function buildRetryCommandFromEvidence(
   if (!evidence.hasScript) {
     return null;
   }
-  if (evidence.runtime === "node") {
+  if (evidence.runtime === "js") {
     return commandText(["node", evidence.scriptPath, expectedCommand]);
   }
   if (evidence.runtime === "python") {
