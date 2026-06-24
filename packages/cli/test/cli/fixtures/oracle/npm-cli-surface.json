@@ -5,7 +5,7 @@
     "prime": {
       "argv": ["prime", "--format", "json"],
       "exitCode": 0,
-      "requiredKeys": ["command", "status", "source_contract", "bundle"],
+      "requiredKeys": ["command", "status", "source_contract", "app"],
       "commandValue": "prime"
     },
     "state_plan": {

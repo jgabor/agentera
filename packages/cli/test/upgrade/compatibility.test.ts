@@ -15,6 +15,7 @@ import {
   classifyInstall,
   collectV3MigrationOperations,
   previewCrossMajorGuard,
+  projectInstallTrack,
 } from "../../src/upgrade/compatibility.js";
 import { setSuccessorAnnouncedOverrideForTests } from "../../src/upgrade/nextMajorDoctor.js";
 
@@ -90,6 +91,37 @@ describe("classifyInstall", () => {
     fs.writeFileSync(path.join(appHome, "notes.txt"), "not agentera\n");
     const result = classifyInstall({ appHome, sourceRoot: appHome });
     expect(result.kind).toBe("unknown_foreign");
+  });
+});
+
+describe("projectInstallTrack", () => {
+  it("maps v2 managed app-home to v2", () => {
+    const appHome = path.join(tmp, "v2-proj");
+    managedV2(appHome);
+    const result = classifyInstall({ appHome, sourceRoot: REPO_ROOT });
+    expect(projectInstallTrack(result.kind)).toBe("v2");
+  });
+
+  it("maps v3 self-contained npm to v3", () => {
+    const root = path.join(tmp, "v3-proj");
+    npxBundleRoot(root);
+    const result = classifyInstall({ appHome: root, sourceRoot: root });
+    expect(projectInstallTrack(result.kind)).toBe("v3");
+  });
+
+  it("maps source checkout to source", () => {
+    const appHome = path.join(tmp, "src-proj");
+    fs.mkdirSync(appHome, { recursive: true });
+    const result = classifyInstall({ appHome, sourceRoot: REPO_ROOT });
+    expect(projectInstallTrack(result.kind)).toBe("source");
+  });
+
+  it("maps unknown foreign to unknown", () => {
+    const appHome = path.join(tmp, "unknown-proj");
+    fs.mkdirSync(appHome, { recursive: true });
+    fs.writeFileSync(path.join(appHome, "notes.txt"), "not agentera\n");
+    const result = classifyInstall({ appHome, sourceRoot: appHome });
+    expect(projectInstallTrack(result.kind)).toBe("unknown");
   });
 });
 

@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
@@ -11,13 +12,17 @@ import {
 } from "../../src/cli/orientation/corpusCoverage.js";
 import type { OrientationState } from "../../src/cli/contracts/orientationState.js";
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const REPO_ROOT = path.resolve(__dirname, "../../../..");
+const V2_APP_HOME_FIXTURE = path.join(__dirname, "../upgrade/fixtures/v2-app-home");
+
 let tmp: string;
 
 function minimalOrientationState(corpusCoverage: OrientationState["corpus_coverage"]): OrientationState {
   return {
     schemas_dir: "",
     schemas: {},
-    bundle: { status: "ok", appHome: "/tmp", appHomeSource: "test", managedAppRoot: "/tmp", userDataRoot: "/tmp" },
+    app: { status: "ok", appHome: "/tmp", appHomeSource: "test", managedAppRoot: "/tmp", userDataRoot: "/tmp" },
     mode: "returning",
     profile_dict: { status: "loaded", path: "/tmp/PROFILE.md" },
     profile_status: "loaded",
@@ -124,5 +129,35 @@ describe("corpus coverage attention", () => {
       }),
     );
     expect(attention.some((item) => item.includes("corpus coverage loss (EX2)"))).toBe(true);
+  });
+});
+
+describe("coexistence attention", () => {
+  it("includes a coexistence warning when a v2 managed app is staged at the app home", () => {
+    const appHome = path.join(tmp, "v2-app-home");
+    fs.cpSync(V2_APP_HOME_FIXTURE, appHome, { recursive: true });
+    const state = minimalOrientationState({
+      path: "",
+      status: "missing",
+      available_runtimes: [],
+      selected_runtimes: [],
+      available_but_not_selected: [],
+    });
+    state.app.appHome = appHome;
+    const attention = buildOrientationAttention(state);
+    expect(attention.some((item) => item.includes("v2/v3 coexistence") && item.includes("pick one line"))).toBe(true);
+  });
+
+  it("does not include a coexistence warning when no v2 install is present", () => {
+    const state = minimalOrientationState({
+      path: "",
+      status: "missing",
+      available_runtimes: [],
+      selected_runtimes: [],
+      available_but_not_selected: [],
+    });
+    state.app.appHome = path.join(tmp, "clean-app-home");
+    const attention = buildOrientationAttention(state);
+    expect(attention.some((item) => item.includes("v2/v3 coexistence"))).toBe(false);
   });
 });

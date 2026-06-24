@@ -316,7 +316,7 @@ describe("v3 packaging (T1)", () => {
       expect(payload.command).toBe("prime");
       expect(payload.status).toBe("ok");
       expect(payload).toHaveProperty("app_home");
-      expect(payload).toHaveProperty("bundle");
+      expect(payload).toHaveProperty("app");
     });
 
     it("FAIL (regression): bun build --compile of a missing entrypoint exits non-zero", () => {

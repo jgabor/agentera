@@ -61,7 +61,7 @@ describe("prime project_integration", () => {
     const state = collectOrientationState({ home, env: process.env });
     const integration = state.project_integration as Record<string, unknown>;
 
-    expect(state.bundle.status).toBe("up_to_date");
+    expect(state.app.status).toBe("up_to_date");
     expect(integration.recommendation).toBe("upgrade");
     expect(integration.pending_runtime).toBeGreaterThan(0);
     expect(integration.pending_runtimes).toContain("cursor");

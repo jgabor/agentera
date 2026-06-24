@@ -235,8 +235,8 @@ export function orientationAppHome(bundle: Dict): Dict {
 }
 
 export function buildPrimeCapabilityContextPayload(state: Dict, capabilityName: string, command = "prime"): Dict {
-  const bundlePublic = publicDoctorStatus(state.bundle);
-  const appHome = orientationAppHome(state.bundle);
+  const bundlePublic = publicDoctorStatus(state.app);
+  const appHome = orientationAppHome(state.app);
   const bespoke = bespokeCapabilityContexts(capabilityName, state);
   return {
     command,

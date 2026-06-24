@@ -2,12 +2,19 @@
 
 ## [Unreleased]
 
+### Added
+
+- Added `install_track` field to `prime --format json` (`app_home.install_track`) and `doctor --format json` output. Values: `v2`, `v3`, `source`, `unknown` — a plain-English projection of the internal install-lineage classifier (Decision 72).
+
 ### Removed
 
+- Removed `rootStatus` from public JSON output (`prime --format json` and `doctor --format json`). The field remains internal for classifier logic but is no longer exposed in diagnostic output.
 - Removed dead `missingScriptCommands` from `packages/cli/src/state/installRoot.ts`; the function was never called and its intended broken-managed-script failure mode is already covered by `detectShebangContentMismatch` in the npm shim's `resolve.mjs`.
 
 ### Changed
 
+- Renamed the top-level `bundle` field to `app` in `prime --format json` output. The nested `activeBundleRoot` key is now `activeAppRoot`, `cliBundle` is now `cliApp`, and `legacyBundleRoot` in doctor signals is now `legacyAppRoot`. Breaking JSON output change accepted for the v3 pre-release (Decision 72).
+- Added v2/v3 coexistence warning to the orientation attention list when a v2 managed app is detected at the app home alongside a v3 CLI runtime. Uses the existing "pick one line" contract message from `references/cli/coexistence-probe.yaml`.
 - Recorded Decision 70 (satisfied 2026-06-09): v3 will promote the Decision 43 English alias set to canonical capability IDs (`status`, `vision`, `discuss`, `research`, `plan`, `build`, `optimize`, `audit`, `document`, `profile`, `design`, `orchestrate`); Swedish `-era` IDs retire from the v3 surface; orientation stays `agentera prime` with `prime --context status`; v2 stable (`npx -y agentera@latest`) keeps Swedish IDs. Mechanical rename lands in a follow-up implementation PR; mobile retires the `brief` label for `status`.
 - Documented mobile monorepo open decisions in `docs/consolidation/mobile-open-decisions.md` (CLI ↔ mobile integration options, `@agentera/mobile` publish identity, skill-bundle horizon, D3 provisional alias table, `packages/tui` vs `agentera-tui`, temporary `vite.config.ts` hook stub).
 - Closed mobile docs/artifacts monorepo integration pass: `packages/mobile/` docs stub, D67/D68 and archived staging D1–D5, D68 delivery-surface wording sync, lefthook `vp staged` hook via minimal Vite+ config (progress cycle 650).

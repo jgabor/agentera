@@ -132,7 +132,7 @@ describe("doctor upgrade safety parity (D56 T4)", () => {
     });
     const envelope = doctorParityJsonEnvelope(status);
     expect(envelope.command).toBe("doctor");
-    expect(Object.keys(envelope).sort()).toEqual(["command", ...DOCTOR_PARITY_JSON_KEYS].sort());
+    expect(Object.keys(envelope).sort()).toEqual(["command", "install_track", ...DOCTOR_PARITY_JSON_KEYS].sort());
     const cls = classifyDrift(
       normalizeEnvelope(envelope) as Record<string, unknown>,
       requiredKeys,

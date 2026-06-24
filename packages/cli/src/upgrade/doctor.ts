@@ -6,7 +6,7 @@ import { SOURCE_LABELS, classifyResolvedRoot } from "../state/installRoot.js";
 import { doctorRoots, loadSuiteVersion } from "./appModel.js";
 import { isNpxBundleRoot } from "../core/sourceRoot.js";
 import { resolveUpdateChannel } from "./channels.js";
-import { classifyInstall, crossMajorBoundaryApplies } from "./compatibility.js";
+import { classifyInstall, crossMajorBoundaryApplies, projectInstallTrack } from "./compatibility.js";
 import { isStableSuccessorAnnounced } from "./nextMajorDoctor.js";
 import { buildUpgradeCommands, commandText } from "./upgradeCommands.js";
 import { parseSemverMajor } from "./versionResolution.js";
@@ -297,7 +297,7 @@ export function buildDoctorStatus(installRoot: string, opts: BuildDoctorStatusOp
       appHomeSource: "bundled app",
       managedAppRoot: sourceRoot,
       userDataRoot: sourceRoot,
-      activeBundleRoot: sourceRoot,
+      activeAppRoot: sourceRoot,
       authoritativeRoot: sourceRoot,
       skillRoot: path.join(sourceRoot, "skills", "agentera"),
       runtimeRoot: sourceRoot,
@@ -307,6 +307,7 @@ export function buildDoctorStatus(installRoot: string, opts: BuildDoctorStatusOp
       home,
       project,
       rootStatus: "bundled",
+      installKind: "v3_self_contained_npm",
       markerVersion: bundleExpected,
       signals: [],
       dryRunCommand: null,
@@ -423,7 +424,7 @@ export function buildDoctorStatus(installRoot: string, opts: BuildDoctorStatusOp
     appHomeSource: rootSource,
     managedAppRoot: roots.managedAppRoot,
     userDataRoot: installRoot,
-    activeBundleRoot,
+    activeAppRoot: activeBundleRoot,
     authoritativeRoot: roots.managedAppRoot,
     skillRoot: roots.skillRoot,
     runtimeRoot: roots.runtimeRoot,
@@ -433,6 +434,7 @@ export function buildDoctorStatus(installRoot: string, opts: BuildDoctorStatusOp
     home,
     project,
     rootStatus,
+    installKind: install.kind,
     markerVersion,
     signals,
     dryRunCommand:
@@ -454,8 +456,17 @@ export function buildDoctorStatus(installRoot: string, opts: BuildDoctorStatusOp
 }
 
 export function publicDoctorStatus(status: BundleStatus): PublicBundleStatus {
-  const { installRoot: _installRoot, installRootSource: _installRootSource, ...pub } = status;
-  return pub;
+  const { installRoot: _installRoot, installRootSource: _installRootSource, installKind: _installKind, rootStatus: _rootStatus, platformAppHome, cliApp, ...rest } = status;
+  const result: PublicBundleStatus = { ...rest };
+  if (platformAppHome) {
+    const { rootStatus: _prs, ...platform } = platformAppHome;
+    result.platformAppHome = platform;
+  }
+  if (cliApp) {
+    const { rootStatus: _crs, ...cli } = cliApp;
+    result.cliApp = cli;
+  }
+  return result;
 }
 
 /** Oracle-pinned keys for `agentera doctor --format json` (parity-remaining-families.json). */
@@ -474,7 +485,7 @@ export const DOCTOR_PARITY_JSON_KEYS = [
 /** Public doctor JSON envelope: command label plus oracle structural keys only. */
 export function doctorParityJsonEnvelope(status: BundleStatus): Record<string, unknown> {
   const pub = publicDoctorStatus(status);
-  const out: Record<string, unknown> = { command: "doctor" };
+  const out: Record<string, unknown> = { command: "doctor", install_track: projectInstallTrack(status.installKind) };
   for (const key of DOCTOR_PARITY_JSON_KEYS) {
     if (key in pub) out[key] = pub[key];
   }

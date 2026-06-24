@@ -129,6 +129,7 @@
       "expectedShape": {
         "command": "string",
         "command_value": "doctor",
+        "install_track": "string",
         "status": "string",
         "statusUnion": [
           "up_to_date",

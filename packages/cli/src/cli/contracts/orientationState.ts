@@ -153,7 +153,7 @@ export interface CorpusCoverageSummary {
 export interface OrientationState {
   schemas_dir: string;
   schemas: Record<string, SchemaInfo>;
-  bundle: BundleStatus;
+  app: BundleStatus;
   mode: "returning" | "fresh";
   profile_dict: ProfileSummary;
   profile_status: string;

@@ -1,4 +1,5 @@
 import { publicDoctorStatus } from "../../../upgrade/doctor.js";
+import { projectInstallTrack } from "../../../upgrade/compatibility.js";
 import { formatNextAction } from "../../orientation.js";
 import { requestedFields, REQUIRED_SPARSE_CONTEXT_FIELDS } from "../../stateQuery.js";
 import { emitStructured } from "../../structured.js";
@@ -10,7 +11,7 @@ import { startupCompletenessContract } from "../../startupCompletenessContract.j
 export { startupCompletenessContract } from "../../startupCompletenessContract.js";
 
 const HEJ_STRUCTURED_FIELDS = [
-  "command", "status", "app_home", "bundle", "mode", "profile", "v1_migration", "health",
+  "command", "status", "app_home", "app", "mode", "profile", "v1_migration", "health",
   "issues", "plan", "docs", "progress", "objective", "state_presence", "project_integration", "attention",
   "decision_attention", "next_action", "orchestration_context", "closeout_context",
   "evidence_context", "benchmark_context", "execution_context", "source", "source_contract",
@@ -18,6 +19,7 @@ const HEJ_STRUCTURED_FIELDS = [
 
 function orientationAppHome(bundle: BundleStatus): JsonObject {
   return {
+    install_track: projectInstallTrack(bundle.installKind),
     status: bundle.status,
     home: bundle.appHome,
     source: bundle.appHomeSource,
@@ -30,7 +32,7 @@ export function buildOrientationJsonPayload(
   state: OrientationState,
   command: string,
 ): Record<string, unknown> {
-  const bundle = state.bundle;
+  const bundle = state.app;
   const schemasDir = state.schemas_dir;
   const bundlePublic = publicDoctorStatus(bundle);
   const appHome = orientationAppHome(bundle);
@@ -53,7 +55,7 @@ export function buildOrientationJsonPayload(
     command,
     status: "ok",
     app_home: appHome,
-    bundle: bundlePublic,
+    app: bundlePublic,
     mode: state.mode,
     profile: state.profile_dict,
     v1_migration: state.v1_migration,
@@ -122,7 +124,7 @@ export function emitPrime(
 }
 
 export function printOrientationTextBriefing(state: OrientationState, command: string, out: (t: string) => void): void {
-  const bundle = state.bundle;
+  const bundle = state.app;
   const mode = state.mode;
   const profileStatus = state.profile_status;
   const profile = state.profile;
@@ -137,7 +139,7 @@ export function printOrientationTextBriefing(state: OrientationState, command: s
 
   out(`agentera ${command}\n`);
   out(
-    `app_home: status=${bundle.status} | home=${bundle.appHome} | ` +
+    `app_home: install_track=${projectInstallTrack(bundle.installKind)} | status=${bundle.status} | home=${bundle.appHome} | ` +
       `source=${bundle.appHomeSource} | managed_app=${bundle.managedAppRoot} | user_data=${bundle.userDataRoot} | expected=${bundle.expectedVersion} | ` +
       `expected_source=${bundle.expectedVersionSource ?? "-"} | current=${bundle.markerVersion || "-"}\n`,
   );

@@ -34,7 +34,7 @@ const DOCTOR_SIGNAL_KINDS = [
   "missing_marker", "version_mismatch", "cli_probe_unavailable", "cli_probe_failed", "missing_command",
 ];
 const HEJ_STRUCTURED_FIELDS = [
-  "command", "status", "app_home", "bundle", "mode", "profile", "v1_migration", "health",
+  "command", "status", "app_home", "app", "mode", "profile", "v1_migration", "health",
   "issues", "plan", "docs", "progress", "objective", "state_presence", "attention",
   "decision_attention", "next_action", "orchestration_context", "closeout_context",
   "evidence_context", "benchmark_context", "execution_context", "source", "source_contract",

@@ -233,7 +233,7 @@ function classifyManaged(ctx: ClassifierContext): ClassifierResult {
       status: APP_MIGRATION_NEEDED,
       kind: APP_MIGRATION_NEEDED,
       message: "Agentera app files are in the old place and can be moved into app/",
-      legacyBundleRoot: ctx.installRoot,
+      legacyAppRoot: ctx.installRoot,
       managedAppRoot: ctx.roots.managedAppRoot,
     });
   }

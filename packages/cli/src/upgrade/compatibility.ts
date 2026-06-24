@@ -34,6 +34,21 @@ export type InstallKind =
   | "source_checkout"
   | "unknown_foreign";
 
+export type InstallTrack = "v2" | "v3" | "source" | "unknown";
+
+export function projectInstallTrack(kind: InstallKind): InstallTrack {
+  switch (kind) {
+    case "v2_managed_app_home":
+      return "v2";
+    case "v3_self_contained_npm":
+      return "v3";
+    case "source_checkout":
+      return "source";
+    case "unknown_foreign":
+      return "unknown";
+  }
+}
+
 export interface InstallSignals {
   bundleMarkerAtActiveRoot: boolean;
   agenteraScriptAtActiveRoot: boolean;
