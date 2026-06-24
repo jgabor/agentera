@@ -59,7 +59,7 @@ describe("prime app lifecycle wording", () => {
     process.chdir(project);
 
     const state = collectOrientationState({ home, installRoot: appHome, env: process.env });
-    expect(state.bundle.status).toBe("outdated");
+    expect(state.app.status).toBe("outdated");
 
     expect(state.project_integration.recommendation).toBe("upgrade");
     expect(state.project_integration.pending_runtime).toBe(0);
@@ -79,7 +79,7 @@ describe("prime app lifecycle wording", () => {
     process.chdir(project);
 
     const state = collectOrientationState({ home, installRoot: appHome, env: process.env });
-    expect(state.bundle.status).toBe("repair_needed");
+    expect(state.app.status).toBe("repair_needed");
 
     expect(state.project_integration.recommendation).toBe("upgrade");
     expect(state.project_integration.message).toContain("needs repair");

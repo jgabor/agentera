@@ -35,7 +35,8 @@ describe("cli prime", () => {
     const { rc, out } = capture((io) => cmdPrime({ command: "prime" }, io));
     expect(rc).toBe(0);
     expect(out.startsWith("agentera prime\n")).toBe(true);
-    expect(out).toContain("app_home: status=");
+    expect(out).toContain("app_home: install_track=");
+    expect(out).toContain("status=");
     expect(out).toContain("mode: ");
     expect(out).toContain("issues: critical=");
     expect(out).toContain("next_action:");
@@ -60,7 +61,9 @@ describe("cli prime", () => {
     expect(payload.execution_context).toBeNull();
     expect(payload.source_contract.capability_context).toBeNull();
     expect(payload.source_contract.fields).toContain("next_action");
-    expect(payload.bundle).toBeTruthy();
+    expect(payload.app).toBeTruthy();
+    expect(payload.app_home.install_track).toBeTruthy();
+    expect(typeof payload.app.status).toBe("string");
   });
 
   it("requires json for --dashboard and --context", () => {

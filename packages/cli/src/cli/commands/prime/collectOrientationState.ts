@@ -112,7 +112,7 @@ export function collectOrientationState(opts: PrimeOpts): OrientationState {
   const attention = buildOrientationAttention({
     schemas_dir: schemasDir,
     schemas,
-    bundle,
+    app: bundle,
     mode,
     profile_dict: profileDict,
     profile_status: profileStatus,
@@ -136,7 +136,7 @@ export function collectOrientationState(opts: PrimeOpts): OrientationState {
   return {
     schemas_dir: schemasDir,
     schemas,
-    bundle,
+    app: bundle,
     mode,
     profile_dict: profileDict,
     profile_status: profileStatus,

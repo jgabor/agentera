@@ -111,7 +111,7 @@ export function hejBundleStatus(opts: PrimeOpts): BundleStatus {
       dryRunCommand: platformStatus.dryRunCommand,
       applyCommand: platformStatus.applyCommand,
     };
-    status.cliBundle = {
+    status.cliApp = {
       path: sourceRoot,
       status: status.status,
       rootStatus: status.rootStatus,

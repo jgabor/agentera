@@ -33,7 +33,7 @@ export function bespokeCapabilityContexts(capabilityName: string | null, state: 
       state.todo_items,
       state.docs,
       state.profile_dict,
-      state.bundle,
+      state.app,
     ),
     evidence_context: inspekteraEvidenceContext(
       capabilityName,
@@ -44,7 +44,7 @@ export function bespokeCapabilityContexts(capabilityName: string | null, state: 
       state.todo_items,
       state.docs,
       state.profile_dict,
-      state.bundle,
+      state.app,
     ),
     benchmark_context: optimeraBenchmarkContext(capabilityName),
     execution_context: realiseraExecutionContext(
@@ -56,7 +56,7 @@ export function bespokeCapabilityContexts(capabilityName: string | null, state: 
       state.todo_items,
       state.docs,
       state.profile_dict,
-      state.bundle,
+      state.app,
     ),
   };
 }

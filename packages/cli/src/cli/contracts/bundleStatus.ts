@@ -1,3 +1,5 @@
+import type { InstallKind } from "../../upgrade/compatibility.js";
+
 /** Doctor signal emitted in bundle status payloads. */
 export interface DoctorSignal {
   status: string;
@@ -11,7 +13,7 @@ export interface DoctorSignal {
   stderrTail?: string[];
   deprecatedDefaultAppHome?: string;
   managedAppRoot?: string;
-  legacyBundleRoot?: string;
+  legacyAppRoot?: string;
   appHome?: string;
 }
 
@@ -24,8 +26,8 @@ export interface NpxPlatformAppHome {
   applyCommand: string | null;
 }
 
-/** Npx CLI bundle overlay on bundle status. */
-export interface NpxCliBundle {
+/** Npx CLI app overlay on bundle status. */
+export interface NpxCliApp {
   path: string;
   status: string;
   rootStatus: string;
@@ -41,7 +43,7 @@ export interface BundleStatus {
   appHomeSource: string;
   managedAppRoot: string;
   userDataRoot: string;
-  activeBundleRoot: string;
+  activeAppRoot: string;
   authoritativeRoot: string;
   skillRoot: string;
   runtimeRoot: string;
@@ -51,6 +53,7 @@ export interface BundleStatus {
   home: string;
   project: string;
   rootStatus: string;
+  installKind: InstallKind;
   markerVersion: string | null;
   signals: DoctorSignal[];
   dryRunCommand: string | null;
@@ -60,8 +63,17 @@ export interface BundleStatus {
   retryCommand: string | null;
   approval: string;
   platformAppHome?: NpxPlatformAppHome;
-  cliBundle?: NpxCliBundle;
+  cliApp?: NpxCliApp;
 }
 
-/** Public bundle status (install-root fields stripped for prime/doctor JSON). */
-export type PublicBundleStatus = Omit<BundleStatus, "installRoot" | "installRootSource">;
+/** Public npx platform app-home overlay (rootStatus stripped). */
+export type PublicNpxPlatformAppHome = Omit<NpxPlatformAppHome, "rootStatus">;
+
+/** Public npx CLI app overlay (rootStatus stripped). */
+export type PublicNpxCliApp = Omit<NpxCliApp, "rootStatus">;
+
+/** Public bundle status (install-root, install-kind, and rootStatus fields stripped for prime/doctor JSON). */
+export type PublicBundleStatus = Omit<BundleStatus, "installRoot" | "installRootSource" | "installKind" | "rootStatus" | "platformAppHome" | "cliApp"> & {
+  platformAppHome?: PublicNpxPlatformAppHome;
+  cliApp?: PublicNpxCliApp;
+};

@@ -63,11 +63,13 @@ describe("cli doctor", () => {
     expect(out).toContain("status: ");
   });
 
-  it("emits sorted indented JSON", () => {
+  it("emits sorted indented JSON with install_track and no bundle keys", () => {
     const { out } = capture((io) => cmdDoctor({ format: "json" }, io));
     const payload = JSON.parse(out);
     expect(typeof payload.status).toBe("string");
     expect("expectedVersion" in payload).toBe(true);
+    expect(typeof payload.install_track).toBe("string");
+    expect(JSON.stringify(payload)).not.toContain("bundle");
   });
 
   it("routes doctor and the --json deprecation alias", () => {
