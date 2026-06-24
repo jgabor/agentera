@@ -30,7 +30,7 @@ export function validatePrimeCapability(capability: string): void {
     const valid = CAPABILITY_NAMES.join(", ");
     throw new Error(
       `unsupported capability ${pyRepr(capability)}; valid capabilities: ${valid}. ` +
-        "Example: agentera prime --context planera --format json",
+        "Example: agentera prime --context plan --format json",
     );
   }
 }

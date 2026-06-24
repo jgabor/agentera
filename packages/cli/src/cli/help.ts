@@ -169,7 +169,7 @@ export function printPrimeHelp(): string {
     "options:",
     "  -h, --help            show this help message and exit",
     "  --format FORMAT       Output format: text, json, or yaml",
-    "  --context CAPABILITY  Emit startup context for a capability (e.g. planera)",
+    "  --context CAPABILITY  Emit startup context for a capability (e.g. plan)",
     "  --guidance            Emit static routing guidance",
     "  --dashboard           Emit the hej orientation dashboard",
     "  --orientation         Emit orientation briefing sections",

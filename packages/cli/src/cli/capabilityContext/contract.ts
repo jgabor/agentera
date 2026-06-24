@@ -76,13 +76,13 @@ export function planeraStartupContract(): Dict {
   return {
     schemaVersion: PLANERA_STARTUP_CONTRACT_VERSION,
     status: "implemented_compact_normal_startup_contract",
-    canonical_surface: "agentera prime --context planera --format json",
+    canonical_surface: "agentera prime --context plan --format json",
     bounded: true,
     instructions_runtime_read_required: false,
     instructions_authority: {
       normal_startup:
         "Use this compact context for normal Planera execution startup; " +
-        "shell out to `agentera prime --context planera --format json` for the full Planera prose.",
+        "shell out to `agentera prime --context plan --format json` for the full Planera prose.",
       read_planera_instructions_when: PLANERA_INSTRUCTIONS_AUTHORITY_EXCEPTIONS,
     },
     planning: {
@@ -191,6 +191,6 @@ export function capabilityContext(capability: string | null): Dict | null {
       "If needed families are missing or CLI state is incomplete, run the CLI fallback commands before raw file access.",
     schema_error: error,
   };
-  if (capability === "planera") context.startup_contract = planeraStartupContract();
+  if (capability === "plan") context.startup_contract = planeraStartupContract();
   return context;
 }

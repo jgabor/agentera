@@ -3,128 +3,181 @@ header:
   created: "2026-06-24"
   status: active
   reviewed: "2026-06-24"
-  critic_issues: "10 found, 10 addressed, 0 dismissed"
-  title: "Plan: Install Track Consolidation (Decision 72)"
+  critic_issues: "1 found, 1 addressed, 0 dismissed"
+  revised: >-
+    Found v2-era straggler provenance strings in capabilityContext/evidence.ts
+    (lines 355, 360, 364) and closeout.ts (line 145) still referencing
+    agentera hej --format json instead of the v3 agentera prime command. The
+    capability name change (hej to status) and the command name fix (hej to
+    prime) are orthogonal — conflating them would introduce an unsupported
+    agentera status CLI command. Addressed by adding explicit task 1
+    acceptance criteria that provenance strings use English capability IDs
+    AND agentera prime (not agentera hej) for the command reference.
+  title: "Plan: D70 Capability Rename (English IDs on v3 surface)"
 what: >
-  Promote the existing internal install-lineage classifier to a public field
-  in diagnostic output, rename legacy bundle terminology to app terminology
-  across public output, and surface the coexistence warning through the
-  existing attention mechanism. Three parallel install-state concepts become
-  one canonical public field; one redundant public field retires.
+  Promote the Decision 43 English alias set to canonical capability IDs on the
+  v3 surface. Rename 24 capability directories (12 in packages/cli/src/capabilities/
+  plus 12 in skills/agentera/capabilities/), update the capability barrel and
+  internal dispatch code, update ~50 prose and schema content references inside
+  the renamed dirs, rename and update 36 runtime descriptor files, flip the
+  capability_schema_contract.yaml so English is canonical and Swedish is legacy,
+  update SKILL.md dispatch and AGENTS.md scope table, add a coexistence probe
+  naming-divergence line, retire the mobile brief UI label for status, and
+  promote the CHANGELOG D70 entry from future to past tense.
 why: >
-  Users cannot tell at a glance whether they are running v2, v3, or from
-  source. Three parallel concepts overlap and create internal confusion about
-  which is canonical. The coexistence warning (v2 app plus v3 hooks) exists
-  in doctor output but does not surface in the orientation briefing. The
-  bundle field name is a straggler from before the app-terminology decision.
+  Decision 70 (firm, satisfied 2026-06-09) decided that the D43 English aliases
+  become the binding canonical name set for v3 and onward. One name per
+  capability in v3 satisfies D58. English verbs compose with LLM priors on
+  common CLI patterns (git status, kubectl plan). CLI is ground zero per
+  D68/D69 and its naming propagates to all v3 surfaces. The decision was
+  satisfied as policy but the mechanical rename was deferred to this
+  implementation. v2 stable on main keeps Swedish IDs; historical artifacts are
+  not rewritten.
 constraints: >
-  Must not break the development-channel npm flow. Must not remove protected
-  user state. Must not change upgrade behavior (diagnostic output only). Must
-  not add new npm dependencies. Must preserve the coexistence contract
-  message ("pick one line"). Breaking change to JSON output accepted because
-  the CLI is pre-release on the development channel; all consumers are
-  internal. External consumers verified: packages/mobile and packages/web do
-  not read bundle or rootStatus from orientation or doctor JSON output.
+  Must not rename schema version strings (agentera.inspekteraEvaluationReport.v1,
+  agentera.coexistenceProbe.v1, agentera.capabilityContext.v1, etc.) — they are
+  compatibility identifiers, not capability IDs. Must not rewrite historical
+  artifacts (archived plans, prior decisions, prior changelog entries). Must
+  not affect the v2 stable distribution on main. Must preserve the cli_boundary
+  in capability_schema_contract.yaml: /agentera plan routes to the capability,
+  agentera state plan reads plan state — the rename must not surface agentera
+  status, agentera plan, agentera document, etc. as CLI commands. Must not add
+  new npm dependencies. Behavior-preserving mechanical rename: no functional
+  changes to capability behavior, only naming. The orientation command stays
+  agentera prime (not agentera status). Bare hej is dropped; bare /agentera is
+  the only bare form.
 scope:
   included:
-    - "Promote the internal lineage classifier to a public install_track field in orientation and doctor output"
-    - "Rename bundle to app in public diagnostic output (orientation, doctor)"
-    - "Retire the redundant rootStatus field from public output"
-    - "Add coexistence warning as an attention item in orientation output"
-    - "Update all internal production consumers of the renamed fields"
-    - "Update tests covering diagnostic output"
+    - "Rename 24 capability directories to English IDs (hej→status, visionera→vision, resonera→discuss, inspirera→research, planera→plan, realisera→build, optimera→optimize, inspektera→audit, dokumentera→document, profilera→profile, visualisera→design, orkestrera→orchestrate)"
+    - "Update capability barrel (index.ts imports, CAPABILITY_INSTRUCTIONS keys, path functions) and internal dispatch code (capabilityContext/ type union, startup comparisons, guard checks, provenance strings)"
+    - "Update ~50 prose and schema content references inside instructions.ts headers and schemas/*.yaml files"
+    - "Rename and update 36 runtime descriptor files (.cursor/agents/*.md, .opencode/agents/*.md, skills/agentera/agents/*.toml)"
+    - "Flip capability_schema_contract.yaml ROUTE_ALIASES: English canonical, Swedish legacy reference"
+    - "Update SKILL.md dispatch table, frontmatter, and routing logic; update AGENTS.md scope table (12 rows)"
+    - "Update vocabulary.md, vocabulary-index.yaml, registry.json capabilities array, plugin.json description, DESIGN.md glyph table keys"
+    - "Add coexistence probe naming-divergence line to references/cli/coexistence-probe.yaml and corresponding test assertion"
+    - "Retire mobile brief UI label for status in packages/mobile"
+    - "Promote CHANGELOG D70 entry from future to past tense; README.md tense check"
   excluded:
-    - "Upgrade command output (already shows version transition)"
-    - "Coexistence contract message text (stays 'pick one line')"
-    - "Capability startup context shape (not a diagnostic surface)"
-    - "Mobile or web packages (verified: no JSON field reads of bundle or rootStatus)"
+    - "Schema version strings (agentera.inspekteraEvaluationReport.v1, agentera.coexistenceProbe.v1, etc.) — compatibility identifiers, not capability IDs"
+    - "Historical artifacts (archived plans, prior decisions, prior changelog entries) — not rewritten per D70"
+    - "v2 stable distribution on main — keeps Swedish IDs per D70"
+    - "UPGRADE.md historical command references — migration context, not rewritten"
+    - "agentera prime command name — orientation stays prime, not agentera status"
+    - "agentera state plan / agentera state docs CLI commands — state-oriented, not capability commands"
   deferred:
-    - "Retiring the internal classifier field name (internal rename, not user-visible; can land separately)"
+    - "Internal implementation file renames (capabilityContext/realisera.ts → build.ts, etc.) — internal, not v3 surface; can land separately like D72 deferred the internal classifier field name"
+    - "Legacy hej skill bridge at ~/.config/opencode/skills/hej — managed by upgrade, not in-repo source"
 design: >
-  The tasks run sequentially because multiple tasks edit the same
-  orientation and doctor output assemblers; parallel execution would
-  collide on shared files. The promotion phase runs first: the lineage
-  classifier gains a public projection function that maps internal values
-  to the four public values. The rename phase runs second: all public
-  output fields carrying the legacy bundle name switch to the app name.
-  The retirement phase runs third: the redundant root health field is
-  removed from public output while staying internal for classifier logic.
-  The coexistence phase runs fourth: the existing coexistence detection
-  feeds into the existing orientation attention builder (already present),
-  and the doctor coexistence section stays as-is. The consumer-update phase
-  runs fifth: all internal production code that reads the old field names
-  is updated. The test phase runs sixth: tests covering diagnostic output
-  are updated to assert the new field names and values. The final task
-  verifies the full suite, content gate, typecheck, and captures the
-  breaking change in the changelog.
+  Task 1 is the foundational structural rename: 24 directory renames plus all
+  internal code that must compile against the new names. Tasks 2-7 depend on
+  task 1 and edit disjoint file sets, so they could run in parallel after task
+  1 lands green. Task 8 is the verification gate that depends on all prior
+  tasks. The plan lands as one behavior-preserving refactor commit per the
+  AGENTS.md commit sequencing convention: the rename is behavior-preserving
+  (no functional changes to capability behavior, only naming). The critical
+  path is 1→2→8. The coexistence probe naming-divergence line (task 6) and
+  mobile label change (task 7) are small auxiliary surfaces. The contract
+  flip (task 4) is the authoritative naming declaration that all other tasks
+  reference. Internal dispatch code in task 1 includes provenance strings
+  that still reference the old agentera hej command name — these update to
+  agentera prime per the v3 command surface.
 tasks:
   - number: 1
-    name: "Promote lineage classifier to public field"
+    name: "Rename capability directories, barrel, and internal dispatch code"
     depends_on: []
     status: complete
     acceptance:
-      - "GIVEN the orientation command runs with JSON output WHEN the install is a v2 managed app THEN the app_home object includes install_track with value v2"
-      - "GIVEN the orientation command runs with JSON output WHEN the install is a v3 npm self-contained package THEN the app_home object includes install_track with value v3"
-      - "GIVEN the orientation command runs with JSON output WHEN the install is a source checkout THEN the app_home object includes install_track with value source"
-      - "GIVEN the orientation command runs with JSON output WHEN the install is an unknown foreign directory THEN the app_home object includes install_track with value unknown"
-      - "GIVEN the test fixtures directory WHEN inspected THEN install-state fixtures exist or are created for v2, v3, source, and unknown states"
+      - "GIVEN the packages/cli/src/capabilities/ directory WHEN inspected THEN 12 directories use English IDs (status, vision, discuss, research, plan, build, optimize, audit, document, profile, design, orchestrate)"
+      - "GIVEN the skills/agentera/capabilities/ directory WHEN inspected THEN 12 directories use the same English IDs"
+      - "GIVEN the capability barrel index.ts WHEN inspected THEN all 12 imports use English module paths and CAPABILITY_INSTRUCTIONS keys are English IDs"
+      - "GIVEN the capabilityContext/types.ts type union WHEN inspected THEN the CapabilityName type lists the 12 English IDs"
+      - "GIVEN the capabilityContext/startup.ts dispatch WHEN inspected THEN all capability string comparisons use English IDs"
+      - "GIVEN the capabilityContext guard files (realisera, orchestration, evidence, closeout, benchmark) WHEN inspected THEN capability name checks and provenance strings use English IDs and agentera prime (not agentera hej)"
+      - "GIVEN the cli/help.ts example WHEN inspected THEN the --context example uses an English capability name"
+      - "GIVEN pnpm -C packages/cli run typecheck WHEN executed THEN it passes with zero type errors"
+      - "GIVEN pnpm -C packages/cli build WHEN executed THEN it passes with zero errors"
   - number: 2
-    name: "Rename bundle to app in public output"
+    name: "Update capability prose and schema content references"
     depends_on: ["1"]
-    status: complete
+    status: pending
     acceptance:
-      - "GIVEN the orientation command runs with JSON output WHEN the output is parsed THEN the top-level field previously named bundle is named app"
-      - "GIVEN the doctor command runs with JSON output WHEN the output is parsed THEN the top-level field previously named bundle is named app"
-      - "GIVEN the orientation or doctor JSON output WHEN any key name is inspected THEN no key contains the substring bundle"
+      - "GIVEN each instructions.ts file WHEN inspected THEN the Markdown header uses the English name (e.g. # STATUS not # HEJ)"
+      - "GIVEN each instructions.ts file WHEN inspected THEN self-references to the capability name use the English ID"
+      - "GIVEN each schemas/*.yaml file WHEN inspected THEN capability name references use the English ID"
+      - "GIVEN the instructions.ts files WHEN searched THEN no self-reference uses the Swedish -era name as the canonical capability identity (historical mentions in context are acceptable if clearly referencing the v2 stable distribution)"
   - number: 3
-    name: "Retire redundant root health field from public output"
-    depends_on: ["2"]
-    status: complete
-    acceptance:
-      - "GIVEN the orientation command runs with JSON output WHEN the output is parsed THEN no key named rootStatus exists anywhere in the output"
-      - "GIVEN the doctor command runs with JSON output WHEN the output is parsed THEN no key named rootStatus exists anywhere in the output"
-      - "GIVEN the doctor text output WHEN rendered THEN the root classification is still reported in human-readable form without referencing the retired field name"
-  - number: 4
-    name: "Add coexistence warning as orientation attention item"
+    name: "Rename and update runtime descriptor files"
     depends_on: ["1"]
-    status: complete
+    status: pending
     acceptance:
-      - "GIVEN a v2 managed app is present at the resolved home AND the runtime hooks reference the v3 npm entrypoint WHEN the orientation command runs THEN the attention list includes an item warning about v2 and v3 coexistence"
-      - "GIVEN no v2 managed app is present WHEN the orientation command runs THEN the attention list does not include a coexistence warning"
-      - "GIVEN the doctor command runs WHEN the output is rendered THEN the existing coexistence section is unchanged"
-      - "GIVEN the test fixtures directory WHEN inspected THEN a coexistence fixture exists or is created that simulates v2 app plus v3 hooks in a temp dir"
+      - "GIVEN the .cursor/agents/ directory WHEN inspected THEN 12 .md files use English IDs as filenames"
+      - "GIVEN the .opencode/agents/ directory WHEN inspected THEN 12 .md files use English IDs as filenames"
+      - "GIVEN the skills/agentera/agents/ directory WHEN inspected THEN 12 .toml files use English IDs as filenames"
+      - "GIVEN each runtime descriptor file WHEN inspected THEN the agentera prime --context reference uses the English capability name"
+      - "GIVEN the validate capability command WHEN run against any renamed runtime descriptor THEN it passes"
+  - number: 4
+    name: "Flip contract, vocabulary, and package metadata"
+    depends_on: ["1"]
+    status: pending
+    acceptance:
+      - "GIVEN the capability_schema_contract.yaml ROUTE_ALIASES section WHEN inspected THEN English names are canonical and Swedish names are marked as legacy v2-stable references"
+      - "GIVEN the ROUTE_ALIASES description WHEN inspected THEN it states English is canonical protocol identity (not Swedish -era directory names)"
+      - "GIVEN the cli_boundary field WHEN inspected THEN it preserves the /agentera plan (routing) vs agentera state plan (CLI state) separation"
+      - "GIVEN references/cli/vocabulary.md WHEN inspected THEN the capability canonical name entry states English is canonical for v3 in present tense"
+      - "GIVEN references/cli/vocabulary-index.yaml WHEN inspected THEN the protected surface for v3 canonical names lists English IDs"
+      - "GIVEN registry.json WHEN inspected THEN the capabilities array lists English IDs"
+      - "GIVEN plugin.json WHEN inspected THEN the description references English capability names and bare /agentera routing (not bare hej)"
   - number: 5
-    name: "Update internal production consumers of renamed fields"
-    depends_on: ["2", "3"]
-    status: complete
+    name: "Update SKILL.md dispatch and AGENTS.md scope table"
+    depends_on: ["1"]
+    status: pending
     acceptance:
-      - "GIVEN the production source files WHEN searched for references to the old bundle field name in JSON output construction THEN no production file reads or writes the old field name"
-      - "GIVEN the production source files WHEN searched for references to rootStatus in public output construction THEN no production file exposes rootStatus in public output"
+      - "GIVEN skills/agentera/SKILL.md frontmatter WHEN inspected THEN the capabilities list uses English IDs"
+      - "GIVEN the SKILL.md dispatch table WHEN inspected THEN all 12 rows use English capability names with English primary routes"
+      - "GIVEN the SKILL.md routing logic layer 2 WHEN inspected THEN direct-route examples use English capability names"
+      - "GIVEN the SKILL.md routing logic layer 5 WHEN inspected THEN the fallback references the English orientation capability name"
+      - "GIVEN the SKILL.md bare-routing text WHEN inspected THEN bare /agentera is the only bare form (bare hej is dropped)"
+      - "GIVEN AGENTS.md scope table WHEN inspected THEN 12 scope rows use English IDs with one-line definitions"
+      - "GIVEN the AGENTS.md scope vocabulary rule WHEN inspected THEN it reflects English scope names"
   - number: 6
-    name: "Update tests for diagnostic output changes"
-    depends_on: ["4", "5"]
-    status: complete
+    name: "Update DESIGN.md glyph table and add coexistence probe naming-divergence line"
+    depends_on: ["1"]
+    status: pending
     acceptance:
-      - "GIVEN a test asserting orientation JSON output WHEN the install is v2 THEN the test asserts install_track equals v2 and app.status is present"
-      - "GIVEN a test asserting doctor JSON output WHEN the install is v3 THEN the test asserts install_track equals v3 and no key contains the substring bundle"
-      - "GIVEN a test asserting orientation attention items WHEN coexistence is detected THEN the test asserts a coexistence warning is present in the attention list"
-      - "GIVEN the full test suite WHEN all tests execute THEN no test references the old field names in assertions or fixtures"
+      - "GIVEN DESIGN.md glyph table WHEN inspected THEN the 12 keys use English IDs (status, vision, discuss, research, plan, build, optimize, audit, document, profile, design, orchestrate)"
+      - "GIVEN references/cli/coexistence-probe.yaml WHEN inspected THEN a naming-divergence dimension is present that surfaces v3 English IDs vs v2 Swedish -era IDs"
+      - "GIVEN the coexistence probe test WHEN run THEN it asserts the naming-divergence line is emitted when v2 and v3 are both detected"
+      - "GIVEN packages/cli/src/upgrade/coexistenceProbe.ts WHEN inspected THEN it supports the naming-divergence dimension"
   - number: 7
-    name: "Verify suite, content gate, and changelog"
-    depends_on: ["4", "6"]
-    status: complete
+    name: "Mobile: retire brief UI label for status"
+    depends_on: ["1"]
+    status: pending
     acceptance:
-      - "GIVEN the test suite runs WHEN all tests execute THEN the suite passes with zero failures"
-      - "GIVEN the content gate runs WHEN the compaction check executes THEN the gate passes with no budget violations"
-      - "GIVEN the typecheck runs WHEN the compiler executes THEN no type errors exist"
-      - "GIVEN the changelog unreleased section WHEN inspected THEN the breaking JSON output change (bundle to app rename, rootStatus removal, install_track addition) is recorded"
+      - "GIVEN the packages/mobile source WHEN searched for the brief UI label THEN no surface uses brief as the orientation capability label"
+      - "GIVEN the mobile orientation surface WHEN inspected THEN the label is status (matching the CLI canonical name)"
+      - "GIVEN vp run mobile:check WHEN executed THEN it passes with zero errors"
+  - number: 8
+    name: "Verify suite, content gate, typecheck, CHANGELOG promotion"
+    depends_on: ["2", "3", "4", "5", "6", "7"]
+    status: pending
+    acceptance:
+      - "GIVEN pnpm -C packages/cli test WHEN executed THEN the suite passes with zero failures"
+      - "GIVEN pnpm -C packages/cli build && node packages/cli/dist/bin/agentera.js check compact WHEN executed THEN the content gate passes with no budget violations"
+      - "GIVEN pnpm -C packages/cli run typecheck WHEN executed THEN no type errors exist"
+      - "GIVEN the CHANGELOG.md D70 entry WHEN inspected THEN it is past tense (v3 promotes, not v3 will promote)"
+      - "GIVEN README.md WHEN inspected THEN the capability naming statement is consistent with the completed rename"
+      - "GIVEN agentera check validate capability-contract --format json WHEN executed THEN it passes"
+      - "GIVEN the full test suite WHEN searched for Swedish capability name hardcodes in assertions or fixtures (excluding historical/migration tests) THEN no live v3 surface test references the old Swedish IDs"
 overall_acceptance: >
-  GIVEN the orientation command runs with JSON output WHEN a user inspects
-  the output THEN the user sees install_track (v2/v3/source/unknown) in
-  app_home and app.status (health) as the two orthogonal install fields,
-  with no bundle or rootStatus keys present. GIVEN a v2 install with v3
-  hooks WHEN the orientation command runs THEN the attention list warns
-  about coexistence with the "pick one line" message. GIVEN the full test
-  suite and content gate run WHEN verification completes THEN both pass
-  with zero failures.
+  GIVEN the v3 CLI surface WHEN a user invokes agentera prime --context status
+  --format json THEN the capability context loads successfully and returns the
+  orientation prose. GIVEN the capability barrel WHEN inspected THEN all 12
+  keys are English IDs. GIVEN the coexistence probe WHEN v2 and v3 are both
+  installed THEN a naming-divergence line is emitted. GIVEN the AGENTS.md scope
+  table WHEN inspected THEN 12 rows use English scope names. GIVEN the full
+  test suite and content gate run WHEN verification completes THEN both pass
+  with zero failures. GIVEN the CHANGELOG WHEN inspected THEN the D70 entry is
+  past tense. Historical artifacts, schema version strings, and the v2 stable
+  distribution are unchanged.
 surprises: []

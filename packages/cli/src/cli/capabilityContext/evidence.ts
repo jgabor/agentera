@@ -93,7 +93,7 @@ export function evidenceTodoState(schemas: Record<string, SchemaInfo>, todoItems
 }
 
 export function evidenceProtectedStateChecks(): Dict {
-  const source = sourceProvenance("evidence_context", "agentera prime --context inspektera --format json", "protected_state_checks");
+  const source = sourceProvenance("evidence_context", "agentera prime --context audit --format json", "protected_state_checks");
   return {
     status: "not_checked_by_design",
     allowed_status_values: ["verified_local", "not_checked_by_design", "requires_manual_check", "unavailable"],
@@ -125,7 +125,7 @@ export function evidenceVersionChecks(docs: Dict): Dict {
   const versionFiles = asList(conventions.version_files);
   const semverPolicy = conventions.semver_policy && typeof conventions.semver_policy === "object" && !Array.isArray(conventions.semver_policy) ? conventions.semver_policy : {};
   const source = sourceProvenance("docs", "agentera docs --format json", "summary.conventions");
-  const ec = (field: string) => sourceProvenance("evidence_context", "agentera prime --context inspektera --format json", field);
+  const ec = (field: string) => sourceProvenance("evidence_context", "agentera prime --context audit --format json", field);
   const checks: Dict[] = [
     {
       name: "docs_version_policy",
@@ -329,7 +329,7 @@ export function inspekteraEvidenceContext(
   profile: Dict,
   bundle: Dict,
 ): Dict | null {
-  if (capability !== "inspektera") return null;
+  if (capability !== "audit") return null;
   const capabilityContract = capabilityContext(capability) ?? {};
   const evaluationTarget = selectEvidenceTarget(plan);
   const planCriteria = evidencePlanCriteria(plan, evaluationTarget);
@@ -347,26 +347,26 @@ export function inspekteraEvidenceContext(
   for (const family of (capabilityContract.missing_state_families ?? []) as string[]) {
     const message = `${family} state is not included in prime --context startup context.`;
     stateCaveats.push(message);
-    attributedRisks.push(residualRiskEntry("missing_state_family", "caveated", message, sourceProvenance("prime", "agentera prime --context inspektera --format json", "source_contract.capability_context.missing_state_families")));
+    attributedRisks.push(residualRiskEntry("missing_state_family", "caveated", message, sourceProvenance("prime", "agentera prime --context audit --format json", "source_contract.capability_context.missing_state_families")));
   }
   if (bundle.status !== "up_to_date") {
     const message = "Agentera app files are not up to date; this is a caveat, not approval to repair or update app files.";
     stateCaveats.push(message);
-    attributedRisks.push(residualRiskEntry("installed_app_state", "caveated", message, sourceProvenance("hej", "agentera hej --format json", "bundle.status")));
+    attributedRisks.push(residualRiskEntry("installed_app_state", "caveated", message, sourceProvenance("status", "agentera prime --format json", "app.status")));
   }
   if (profile.status !== "loaded") {
     const message = "profile-derived state is unavailable in prime --context response.";
     stateCaveats.push(message);
-    attributedRisks.push(residualRiskEntry("profile_state", "unavailable", message, sourceProvenance("hej", "agentera hej --format json", "profile.status")));
+    attributedRisks.push(residualRiskEntry("profile_state", "unavailable", message, sourceProvenance("status", "agentera prime --format json", "profile.status")));
   } else if (profile.stale === true) {
     const message = "profile-derived state is stale; this is a caveat, not approval to refresh profile state.";
     stateCaveats.push(message);
-    attributedRisks.push(residualRiskEntry("profile_state", "caveated", message, sourceProvenance("hej", "agentera hej --format json", "profile.stale")));
+    attributedRisks.push(residualRiskEntry("profile_state", "caveated", message, sourceProvenance("status", "agentera prime --format json", "profile.stale")));
   }
   for (const component of [evaluationTarget, planCriteria, progressVerification, docsState, healthState, todoState, protectedStateChecks, versionChecks]) {
     for (const caveat of (component.caveats ?? []) as string[]) {
       stateCaveats.push(caveat);
-      attributedRisks.push(residualRiskEntry("evidence_family", "caveated", caveat, component.source_provenance ?? sourceProvenance("evidence_context", "agentera prime --context inspektera --format json")));
+      attributedRisks.push(residualRiskEntry("evidence_family", "caveated", caveat, component.source_provenance ?? sourceProvenance("evidence_context", "agentera prime --context audit --format json")));
     }
   }
   for (const caveat of (decisionRisk.caveats ?? []) as string[]) {
@@ -412,7 +412,7 @@ export function inspekteraEvidenceContext(
     ...((capabilityContract.cli_fallback ?? []) as string[]),
   ]);
   return {
-    capability: "inspektera",
+    capability: "audit",
     evaluation_target: evaluationTarget,
     plan_criteria: planCriteria,
     progress_verification: progressVerification,
