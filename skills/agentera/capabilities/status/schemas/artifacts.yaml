@@ -4,63 +4,63 @@ ARTIFACTS:
     artifact_id: vision
     local_role: consumes
     description: >-
-      Hej reads this for the briefing's project context.
+      Status reads this for the briefing's project context.
   2:
     id: A2
     artifact_id: decisions
     local_role: consumes
     description: >-
-      Hej reads this to identify unresolved decisions requiring follow-up.
+      Status reads this to identify unresolved decisions requiring follow-up.
   3:
     id: A3
     artifact_id: plan
     local_role: consumes
     description: >-
-      Hej reads this to identify the next executable task and plan progress.
+      Status reads this to identify the next executable task and plan progress.
   4:
     id: A4
     artifact_id: progress
     local_role: consumes
     description: >-
-      Hej reads this for the briefing's "what shipped" context.
+      Status reads this for the briefing's "what shipped" context.
   5:
     id: A5
     artifact_id: todo
     local_role: consumes
     description: >-
-      Hej reads this to identify high-severity open items for routing.
+      Status reads this to identify high-severity open items for routing.
   6:
     id: A6
     artifact_id: health
     local_role: consumes
     description: >-
-      Hej reads this for the health status line and attention items.
+      Status reads this for the health status line and attention items.
   7:
     id: A7
     artifact_id: objective
     local_role: consumes
     description: >-
-      Hej reads this to check for active optimization objectives.
+      Status reads this to check for active optimization objectives.
   8:
     id: A8
     artifact_id: experiments
     local_role: consumes
     description: >-
-      Hej reads this alongside the active optimization target to determine
+      Status reads this alongside the active optimization target to determine
       optimization status.
   9:
     id: A9
     artifact_id: docs
     local_role: consumes
     description: >-
-      Hej reads this first to resolve project-local artifact mappings before
+      Status reads this first to resolve project-local artifact mappings before
       reading other artifacts.
   10:
     id: A10
     artifact_id: design
     local_role: consumes
     description: >-
-      Hej reads this for project design status metadata (exists, stale, missing).
+      Status reads this for project design status metadata (exists, stale, missing).
       Suite chrome styling uses protocol.yaml, prime --context capability prose,
       and v2 app-home DESIGN.md when present — not the host project's design
       artifact.
@@ -69,4 +69,4 @@ ARTIFACTS:
     artifact_id: profile
     local_role: consumes
     description: >-
-      Hej reads this to report profile status (loaded/not found) in the briefing.
+      Status reads this to report profile status (loaded/not found) in the briefing.

@@ -33,7 +33,7 @@ function scanPost30CruftViolations(root: string): string[] {
   if (fs.existsSync(marketplacePath)) {
     const marketplace = JSON.parse(fs.readFileSync(marketplacePath, "utf8"));
     const pluginNames = (marketplace.plugins ?? []).map((p: { name: string }) => p.name);
-    if (pluginNames.includes("hej")) {
+    if (pluginNames.includes("status")) {
       violations.push(".claude-plugin/marketplace.json still lists hej plugin");
     }
   }
@@ -41,7 +41,7 @@ function scanPost30CruftViolations(root: string): string[] {
   if (fs.existsSync(codexPath)) {
     const codex = JSON.parse(fs.readFileSync(codexPath, "utf8"));
     const codexSkills = (codex.skillMetadata ?? []).map((s: { name: string }) => s.name);
-    if (codexSkills.includes("hej")) {
+    if (codexSkills.includes("status")) {
       violations.push(".codex-plugin/plugin.json still lists hej skillMetadata");
     }
   }
@@ -111,7 +111,7 @@ describe("v1 legacy cruft removal (post-3.0 boundary)", () => {
       fs.mkdirSync(path.join(tmp, ".claude-plugin"), { recursive: true });
       fs.writeFileSync(
         path.join(tmp, ".claude-plugin/marketplace.json"),
-        JSON.stringify({ metadata: { version: "3.0.0" }, plugins: [{ name: "hej" }] }),
+        JSON.stringify({ metadata: { version: "3.0.0" }, plugins: [{ name: "status" }] }),
         "utf8",
       );
       expect(scanPost30CruftViolations(tmp)).toContain(
@@ -134,7 +134,7 @@ describe("v1 legacy cruft removal (post-3.0 boundary)", () => {
       fs.mkdirSync(path.join(tmp, ".codex-plugin"), { recursive: true });
       fs.writeFileSync(
         path.join(tmp, ".codex-plugin/plugin.json"),
-        JSON.stringify({ skillMetadata: [{ name: "hej" }] }),
+        JSON.stringify({ skillMetadata: [{ name: "status" }] }),
         "utf8",
       );
       expect(scanPost30CruftViolations(tmp)).toContain(

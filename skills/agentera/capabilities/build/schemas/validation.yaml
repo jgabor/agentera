@@ -14,7 +14,7 @@ VALIDATION:
     id: V2
     rule: one_cycle_per_invocation
     description: >-
-      Realisera executes exactly one cycle per invocation. After logging (Step 9),
+      Build executes exactly one cycle per invocation. After logging (Step 9),
       the capability MUST stop. Multiple cycles require separate invocations or
       /loop.
     severity: critical
@@ -24,7 +24,7 @@ VALIDATION:
     id: V3
     rule: no_remote_push
     description: >-
-      Realisera MUST NEVER push to any remote repository. All commits are local
+      Build MUST NEVER push to any remote repository. All commits are local
       only. Remote operations require explicit user instruction outside this
       capability.
     severity: critical
@@ -43,7 +43,7 @@ VALIDATION:
     id: V5
     rule: consecutive_failure_guard
     description: >-
-      If the last 3 PROGRESS.md entries all record failed cycles, realisera
+      If the last 3 PROGRESS.md entries all record failed cycles, build
       MUST stop and surface the pattern to the user. Do not attempt a 4th
       consecutive cycle on the same failing problem.
     severity: critical
@@ -64,7 +64,7 @@ VALIDATION:
     id: V7
     rule: execution_context_first
     description: >-
-      Realisera startup SHOULD begin from `agentera prime --context realisera
+      Build startup SHOULD begin from `agentera prime --context build
       --format json` and consume complete execution_context
       state before direct reads of plan, progress, TODO, docs, health,
       decisions, changelog, vision, profile, or design artifacts.
@@ -76,7 +76,7 @@ VALIDATION:
     id: V8
     rule: fallback_before_raw
     description: >-
-      When execution_context is incomplete or caveated, Realisera MUST run listed
+      When execution_context is incomplete or caveated, Build MUST run listed
       CLI fallback commands before any last-resort raw artifact diagnostic and
       MUST preserve caveats in cycle reporting.
     severity: critical
@@ -93,12 +93,12 @@ VALIDATION:
     severity: critical
     checks:
       - "No protected state mutation during context generation"
-      - "No unsupported `agentera realisera` or `agentera build` command introduced"
+      - "No unsupported `agentera build` or `agentera build` command introduced"
   10:
     id: V10
     rule: satisfaction_authority_boundary
     description: >-
-      When Realisera touches decision satisfaction, it may mark provisional
+      When Build touches decision satisfaction, it may mark provisional
       satisfaction with evidence but MUST NOT user-confirm satisfaction. Missing,
       compacted, open, provisional, or review-needed satisfaction state remains a
       caveat and review pressure; automation must not reconstruct hidden outcomes

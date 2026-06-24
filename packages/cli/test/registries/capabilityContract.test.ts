@@ -84,23 +84,23 @@ describe("capability schema contract loader", () => {
     });
     expect(model.routeAliases.routePrefix).toBe("/agentera");
     expect(model.routeAliases.canonicalNamePrecedence).toBe(true);
-    expect(model.routeAliases.cliBoundary).toContain("`/agentera plan` routes to planera");
+    expect(model.routeAliases.cliBoundary).toContain("`/agentera plan` routes to the plan capability");
     const aliasMap = Object.fromEntries(
       model.routeAliases.primaryAliases.map((r) => [r.alias, r.capability]),
     );
     expect(aliasMap).toEqual({
-      status: "hej",
-      vision: "visionera",
-      discuss: "resonera",
-      research: "inspirera",
-      plan: "planera",
-      build: "realisera",
-      optimize: "optimera",
-      audit: "inspektera",
-      document: "dokumentera",
-      profile: "profilera",
-      design: "visualisera",
-      orchestrate: "orkestrera",
+      status: "status",
+      vision: "vision",
+      discuss: "discuss",
+      research: "research",
+      plan: "plan",
+      build: "build",
+      optimize: "optimize",
+      audit: "audit",
+      document: "document",
+      profile: "profile",
+      design: "design",
+      orchestrate: "orchestrate",
     });
   });
 
@@ -171,8 +171,8 @@ describe("capability schema contract loader", () => {
       "ROUTE_ALIASES.primary_aliases alias 'status' in fixture.yaml must be unique",
     ],
     [
-      (data) => data.ROUTE_ALIASES.primary_aliases.push({ alias: "duplicate", capability: "hej" }),
-      "ROUTE_ALIASES.primary_aliases capability 'hej' in fixture.yaml must be unique",
+      (data) => data.ROUTE_ALIASES.primary_aliases.push({ alias: "duplicate", capability: "status" }),
+      "ROUTE_ALIASES.primary_aliases capability 'status' in fixture.yaml must be unique",
     ],
   ];
   it.each(ruleFamily)("each rule family has a focused failing fixture", (mutate, message) => {

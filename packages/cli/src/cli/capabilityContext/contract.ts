@@ -110,22 +110,22 @@ export function planeraStartupContract(): Dict {
       artifact_mapping_source: "agentera docs/query artifact mapping before writes or closeout",
     },
     handoff_expectations: [
-      "skip level suggests ⧉ realisera and waits for confirmation unless the user already asked to implement now",
-      "single-task plans suggest ⧉ realisera and wait for confirmation",
-      "full plans suggest ⎈ orkestrera and wait for confirmation",
+      "skip level suggests ⧉ build and waits for confirmation unless the user already asked to implement now",
+      "single-task plans suggest ⧉ build and wait for confirmation",
+      "full plans suggest ⎈ orchestrate and wait for confirmation",
     ],
     unsupported_command_boundary: {
       capability_cli_commands_added: true,
       forbidden_examples: [],
       route_boundary:
         "Use `/agentera plan` for routing, `agentera plan` for plan state, " +
-        "and `agentera planera` for capability routing guidance only.",
+        "and `agentera plan` for capability routing guidance only.",
     },
     seam_decision: {
       selected: "prime --context",
       not_changed: [
         { surface: "agentera schema --format json", reason: "runtime/schema command discovery, not capability workflow startup context" },
-        { surface: "dispatcher guidance", reason: "route and CLI-state separation guidance, not a bounded Planera workflow payload" },
+        { surface: "dispatcher guidance", reason: "route and CLI-state separation guidance, not a bounded Plan workflow payload" },
       ],
     },
   };

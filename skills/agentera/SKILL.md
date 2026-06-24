@@ -5,24 +5,23 @@ description: >
   capabilities; per-capability prose lives in
   `packages/cli/src/capabilities/<name>/instructions.ts` and the runtime serves
   it through `agentera prime --context <name> --format json`. Use this skill
-  for /agentera, Agentera capability requests, and a complete user message
-  exactly `hej`; bare `hej` runs the agentera prime orientation dashboard path
-  instead of a generic greeting.
+  for /agentera and Agentera capability requests; bare `/agentera` runs the
+  agentera prime orientation dashboard path instead of a generic greeting.
 version: "3.0.0"
 spec_sections: [1, 2, 3, 4, 5, 6, 11, 13, 18, 19, 20, 22, 23]
 capabilities:
-  - hej
-  - visionera
-  - resonera
-  - inspirera
-  - planera
-  - realisera
-  - optimera
-  - inspektera
-  - dokumentera
-  - profilera
-  - visualisera
-  - orkestrera
+  - status
+  - vision
+  - discuss
+  - research
+  - plan
+  - build
+  - optimize
+  - audit
+  - document
+  - profile
+  - design
+  - orchestrate
 ---
 
 # agentera
@@ -48,18 +47,18 @@ Capabilities import these by name. The schema contract ensures consistent usage.
 
 | | Capability | Primary route | Purpose |
 |---|---|---|---|
-| ⌂ | hej | `/agentera status` | Orientation and routing |
-| ⛥ | visionera | `/agentera vision` | Define project direction |
-| ❈ | resonera | `/agentera discuss` | Structured deliberation |
-| ⬚ | inspirera | `/agentera research` | External pattern analysis |
-| ≡ | planera | `/agentera plan` | Planning with acceptance criteria |
-| ⧉ | realisera | `/agentera build` | Autonomous development |
-| ⎘ | optimera | `/agentera optimize` | Metric-driven optimization |
-| ⛶ | inspektera | `/agentera audit` | Codebase health audit |
-| ▤ | dokumentera | `/agentera document` | Documentation |
-| ♾ | profilera | `/agentera profile` | Decision profiling |
-| ◰ | visualisera | `/agentera design` | Visual identity system |
-| ⎈ | orkestrera | `/agentera orchestrate` | Multi-cycle orchestration |
+| ⌂ | status | `/agentera status` | Orientation and routing |
+| ⛥ | vision | `/agentera vision` | Define project direction |
+| ❈ | discuss | `/agentera discuss` | Structured deliberation |
+| ⬚ | research | `/agentera research` | External pattern analysis |
+| ≡ | plan | `/agentera plan` | Planning with acceptance criteria |
+| ⧉ | build | `/agentera build` | Autonomous development |
+| ⎘ | optimize | `/agentera optimize` | Metric-driven optimization |
+| ⛶ | audit | `/agentera audit` | Codebase health audit |
+| ▤ | document | `/agentera document` | Documentation |
+| ♾ | profile | `/agentera profile` | Decision profiling |
+| ◰ | design | `/agentera design` | Visual identity system |
+| ⎈ | orchestrate | `/agentera orchestrate` | Multi-cycle orchestration |
 
 ---
 
@@ -70,7 +69,7 @@ When a request arrives, route to the matching capability using the five-layer ro
 ### Prerequisite: Single-call installed CLI gate
 
 This gate is mandatory, but the gate and the orientation dashboard source are the same
-installed CLI invocation. For bare `/agentera` or bare `hej`, resolve the app home in
+installed CLI invocation. For bare `/agentera`, resolve the app home in
 one separate command, then run prime:
 
 ```bash
@@ -235,8 +234,8 @@ with a `names` compatibility list. Plain `state query --list-artifacts` remains 
 human names list. These discovery surfaces do not replace routine state commands
 for normal artifact content reads.
 
-For bare `/agentera` or a bare user message exactly `hej`, run `agentera prime`
-first and render the README-style hej dashboard from that single composite
+For bare `/agentera`, run `agentera prime`
+first and render the README-style status dashboard from that single composite
 result. The CLI output is source data, not the user-facing dashboard; do not
 relay raw `agentera prime` lines as the final briefing. Do not run individual `state plan`, `state progress`, `state health`,
 `state todo`, or `state decisions` commands unless `agentera prime` fails or explicitly asks
@@ -260,44 +259,44 @@ Bare `/agentera` returning-project output must include these visible markers:
 ─── next ───────────────────────────────
 ```
 
-Use the README-style layout from hej Step 1b: metrics first, narrative read
+Use the README-style layout from status Step 1b: metrics first, narrative read
 inside `status`, then attention and next. The issues summary line uses
 `critical · degraded · normal · annoying` in the order prime emits them. Omit `attention` only when the source has no attention items. Always include the
-mandatory `⌂ hej · <status>` marker below the dashboard code fence, and ask for
+mandatory `⌂ status · <status>` marker below the dashboard code fence, and ask for
 confirmation before invoking the suggested downstream capability. For
 `/agentera <capability-name>` or `/agentera <alias>`, do not assume the route
 word is a CLI command. The CLI command surface is state-oriented, not
 capability-oriented:
 use the supported routine state command or commands that own the capability's
 needed artifacts, as declared by that capability's artifact schema. For example,
-`resonera` reads decisions through `agentera state decisions`, not through the
-unsupported capability-name command `agentera resonera`. Never run unsupported
-capability-name commands such as `agentera resonera`, `agentera planera`, or
-`agentera realisera` as a bootstrap step. Shared words stay split by interface:
-`/agentera plan` routes to planera, while `agentera state plan` reads plan state from
+`discuss` reads decisions through `agentera state decisions`, not through the
+unsupported capability-name command `agentera discuss`. Never run unsupported
+capability-name commands such as `agentera discuss`, `agentera vision`, or
+`agentera build` as a bootstrap step. Shared words stay split by interface:
+`/agentera plan` routes to plan, while `agentera state plan` reads plan state from
 the CLI. When capability-specific startup context is needed, request it through
 `agentera prime --context <capability> --format json`. Use returned
 `capability_context.state.included` directly, and for
 `capability_context.state.missing`, run the listed
 `capability_context.state.fallback_commands` before raw file access. Historical
 v2 paths `hej --capability-context` and `--context-profile` are removed in 3.0.
-For normal ≡ planera execution, use
+For normal ≡ plan execution, use
 `capability_context.context.planning_context.startup_contract` from
-`agentera prime --context planera --format json`
-before reading the Planera prose from
-`packages/cli/src/capabilities/planera/instructions.ts` (served via
-`capability_context.prose` from the same prime call). Read the full Planera
-prose only when editing Planera, resolving contradiction or ambiguity,
+`agentera prime --context plan --format json`
+before reading the Plan prose from
+`packages/cli/src/capabilities/plan/instructions.ts` (served via
+`capability_context.prose` from the same prime call). Read the full Plan
+prose only when editing Plan, resolving contradiction or ambiguity,
 validating detailed behavior not covered by the compact contract, or
-investigating benchmark/read-trigger evidence. This preserves Planera prose
-as detailed authority and does not add `agentera planera`; `/agentera plan`
+investigating benchmark/read-trigger evidence. This preserves Plan prose
+as detailed authority and does not add `agentera plan`; `/agentera plan`
 remains routing while `agentera state plan` remains plan state (top-level
 `agentera plan` is a migration alias).
 For normal DECISIONS.md context, use `agentera state decisions --format json` and its
 source_contract. When `complete_for_normal_deliberation_context=true`, preserve
 returned `missing_fields`, `compacted`, `caveats`, and `satisfaction.review_needed`
 instead of raw-reading `.agentera/decisions.yaml` to reconstruct missing history.
-Raw decision artifact access is reserved for Resonera-owned writes/repairs,
+Raw decision artifact access is reserved for Discuss-owned writes/repairs,
 artifact corruption diagnostics, or CLI defect investigation.
 Reading a capability's instructions module is not itself a capability invocation;
 invocation means routing to the capability, fetching the prose via
@@ -305,9 +304,9 @@ invocation means routing to the capability, fetching the prose via
 the CLI state layer first for artifact-backed state.
 
 Capability handoffs use glyph plus canonical capability name, for example
-`⧉ realisera` or `≡ planera`. Reserve `/agentera <alias>` wording for explicit
+`⧉ build` or `≡ plan`. Reserve `/agentera <alias>` wording for explicit
 slash-route documentation and do not use standalone slash-capability names such
-as `/realisera` or `/planera` as handoff labels. SG priority codes such as `SG2`
+as `/build` or `/plan` as handoff labels. SG priority codes such as `SG2`
 are internal protocol references; do not render them in user-facing handoff
 labels.
 
@@ -322,9 +321,9 @@ Handoff verbs are normative:
   Proceed/Cancel handoff. State-changing means the proposed next step may write
   artifacts, edit code, run optimization or orchestration cycles, apply
   migrations, refresh app/runtime state, or otherwise mutate project/runtime
-  state. Use the behavior rule first, with common examples such as ⧉ realisera,
-  ≡ planera when creating or updating plans, ▤ dokumentera when writing docs,
-  ⎘ optimera when running or applying optimization cycles, and ⎈ orkestrera
+  state. Use the behavior rule first, with common examples such as ⧉ build,
+  ≡ plan when creating or updating plans, ▤ document when writing docs,
+  ⎘ optimize when running or applying optimization cycles, and ⎈ orchestrate
   when dispatching cycles. A single non-mutating suggestion may use a free-form
   prompt; clear replies such as `yes`, `start`, `do it`, or `run <capability>`
   confirm the named suggestion. Ambiguous replies get one clarifying question.
@@ -333,7 +332,7 @@ Handoff verbs are normative:
 - `chain`: dispatch multiple capabilities autonomously only inside an explicitly
   orchestrated flow; otherwise suggest the next capability and wait.
 
-The first Agentera/hej response in a fresh interaction should deliver the brief
+The first Agentera/status response in a fresh interaction should deliver the brief
 and a free-form continuation prompt, not a native question menu, unless the user
 explicitly asks for bounded choices or the suggested next step is a
 state-changing Proceed/Cancel handoff. Mid-conversation, use the runtime's
@@ -346,14 +345,14 @@ affordances as alternatives. Current host examples are Claude Code
 `question`. Put the recommended choice first with `(Recommended)` in its label
 and include `Done`. Selecting a downstream capability option is confirmation to
 invoke that capability; selecting `Done` stops without routing. This generic
-question-tool gating applies to hej and capability handoff prompts. Once a
+question-tool gating applies to status and capability handoff prompts. Once a
 capability is invoked, that capability's own interaction rules control whether
 the runtime-native question tool is required.
 
 ### Step 0: V1 migration handling
 
 Do not perform separate v1 Markdown/YAML discovery before a normal prime briefing.
-The top-level CLI owns v1 detection. For bare `/agentera` or bare `hej`, render
+The top-level CLI owns v1 detection. For bare `/agentera`, render
 any `v1 artifacts detected` attention item and affected-file list from
 `agentera prime`; do not spend extra tool calls on `.agentera/*.md`,
 `.agentera/*.yaml`, or `VISION.md` globs.
@@ -380,35 +379,35 @@ visible skill; if `/agentera` then finds missing or out-of-date app files, run
 the plain-language repair preview above so upgrade updates the app and cleans up
 the old default directory when it is recoverable.
 
-### Layer 1: Bare `/agentera` or bare `hej` — delegate to prime
+### Layer 1: Bare `/agentera` — delegate to prime
 
-If the request is `/agentera` with no additional text, or the complete user
-message is exactly `hej`, delegate immediately to hej. Hej performs state-aware
-routing through the `agentera prime` composite result, which condenses project
-artifacts and suggests the most useful next capability. This is deterministic
-and never wrong. Bare `hej` must not be handled as a generic greeting.
+If the request is `/agentera` with no additional text, delegate immediately to
+status. Status performs state-aware routing through the `agentera prime`
+composite result, which condenses project artifacts and suggests the most
+useful next capability. This is deterministic and never wrong. Bare `/agentera`
+must not be handled as a generic greeting.
 
 ### Layer 2: capability name or `/agentera <primary-alias>` — direct route
 
 If the request text exactly matches a capability name (case-insensitive, e.g.,
-"resonera", "planera", "hej"), route directly to that capability without
-evaluating natural-language trigger patterns. Canonical Swedish names remain the
+"discuss", "plan", "status"), route directly to that capability without
+evaluating natural-language trigger patterns. Canonical capability names remain the
 protocol identity and bypass natural-language matching.
 
 If the request begins with a canonical capability name followed by more text, or
 uses `/agentera <capability-name> <topic>`, route directly to that capability and
 pass the remaining text as the user's topic or instruction. For example,
-`resonera decide whether to keep this API` invokes ❈ resonera; it must not
+`discuss decide whether to keep this API` invokes ❈ discuss; it must not
 receive a generic analysis response and must not try the unsupported CLI command
-`agentera resonera`.
+`agentera discuss`.
 
 If the request text exactly matches one primary alias from
 `capability_schema_contract.yaml` `ROUTE_ALIASES.primary_aliases`, route directly
 to that alias's capability without evaluating natural-language trigger patterns.
 Each capability has exactly one primary alias. Secondary user wording stays in
 capability trigger schemas below this layer. Examples: `deliberate`,
-`brainstorm`, and `rubber duck` remain resonera trigger wording; `brief` and
-`what's next` remain hej trigger wording. These are not primary aliases.
+`brainstorm`, and `rubber duck` remain discuss trigger wording; `brief` and
+`what's next` remain status trigger wording. These are not primary aliases.
 
 ### Layer 3: Natural language with high-confidence match
 
@@ -418,9 +417,9 @@ If the request is natural language (e.g., "help me think through this"), evaluat
 
 If the schema-owned routing semantics produce competing borderline matches, present a disambiguation prompt instead of silently choosing. List the matching capabilities with brief descriptions and ask the user to confirm or clarify.
 
-### Layer 5: No match — fallback to hej
+### Layer 5: No match — fallback to status
 
-If no capability matches with sufficient confidence, route to hej for orientation. Hej handles greetings, status requests, and ambiguous inputs.
+If no capability matches with sufficient confidence, route to status for orientation. Status handles greetings, status requests, and ambiguous inputs.
 
 ### Trigger Pattern Discovery
 
@@ -466,13 +465,13 @@ skills/agentera/
   protocol.yaml                     # Shared primitives
   capability_schema_contract.yaml   # Self-referential schema contract
   capabilities/
-    hej/
+    status/
       schemas/
         triggers.yaml
         artifacts.yaml
         validation.yaml
         exit.yaml
-    resonera/
+    discuss/
       schemas/
         triggers.yaml
         artifacts.yaml

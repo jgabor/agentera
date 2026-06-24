@@ -206,7 +206,7 @@ Each capability reads what earlier ones wrote, does its work, and leaves evidenc
 
 ```bash
 npx -y agentera@next state query --list-artifacts
-npx -y agentera@next prime --context planera --format json
+npx -y agentera@next prime --context plan --format json
 ```
 
 Capability schemas: `skills/agentera/capabilities/<name>/schemas/`. Instruction modules: `packages/cli/src/capabilities/<name>/instructions.ts`.

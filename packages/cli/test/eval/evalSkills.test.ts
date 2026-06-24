@@ -20,18 +20,18 @@ import {
 } from "../../src/eval/evalSkills.js";
 
 const ALL_SKILL_NAMES = [
-  "dokumentera",
-  "hej",
-  "inspektera",
-  "inspirera",
-  "optimera",
-  "orkestrera",
-  "planera",
-  "profilera",
-  "realisera",
-  "resonera",
-  "visionera",
-  "visualisera",
+  "document",
+  "status",
+  "audit",
+  "research",
+  "optimize",
+  "orchestrate",
+  "plan",
+  "profile",
+  "build",
+  "discuss",
+  "vision",
+  "design",
 ].sort();
 
 let tmp: string;
@@ -54,7 +54,7 @@ describe("TRIGGER_PROMPTS", () => {
 
 describe("parseFrontmatterName", () => {
   it("reads the name field", () => {
-    expect(parseFrontmatterName("---\nname: realisera\ndescription: x\n---\n# C\n")).toBe("realisera");
+    expect(parseFrontmatterName("---\nname: build\ndescription: x\n---\n# C\n")).toBe("build");
   });
   it("returns null without frontmatter", () => {
     expect(parseFrontmatterName("# Just markdown")).toBeNull();
@@ -123,7 +123,7 @@ describe("buildReport / buildDryRun / parseArgs", () => {
     expect(def.parallel).toBe(DEFAULT_PARALLEL);
     expect(def.timeout).toBe(DEFAULT_TIMEOUT);
     expect(def.runtime).toBe("auto");
-    expect(parseArgs(["--skill", "realisera"]).skill).toBe("realisera");
+    expect(parseArgs(["--skill", "build"]).skill).toBe("build");
     expect(parseArgs(["--runtime", "opencode"]).runtime).toBe("opencode");
     expect(parseArgs(["--runtime", "cursor-agent"]).runtime).toBe("cursor-agent");
   });
@@ -166,7 +166,7 @@ describe("invokeSkill command selection", () => {
       captured = cmd;
       return { status: 0, stdout: "", stderr: "" };
     };
-    invokeSkill("realisera", "test prompt", 5, "opencode", { run, repoRoot: tmp });
+    invokeSkill("build", "test prompt", 5, "opencode", { run, repoRoot: tmp });
     expect(captured).toEqual(["opencode", "run", "--prompt"]);
   });
 
@@ -177,7 +177,7 @@ describe("invokeSkill command selection", () => {
       captured = cmd;
       return { status: 0, stdout: "{}", stderr: "" };
     };
-    invokeSkill("hej", "status briefing", 5, "cursor-agent", { which, run, repoRoot: tmp });
+    invokeSkill("status", "status briefing", 5, "cursor-agent", { which, run, repoRoot: tmp });
     expect(captured).toEqual([
       "cursor-agent",
       "-p",
@@ -194,14 +194,14 @@ describe("main --dry-run", () => {
     const lines: string[] = [];
     const code = main(["--dry-run"], {
       detectRuntime: () => "claude",
-      discoverSkills: () => [{ name: "hej", prompt: "Start a new session." }],
+      discoverSkills: () => [{ name: "status", prompt: "Start a new session." }],
       out: (l) => lines.push(l),
     });
     expect(code).toBe(0);
     expect(JSON.parse(lines.join("\n"))).toEqual({
       mode: "dry-run",
       runtime: "claude (auto-detected)",
-      skills: [{ name: "hej", prompt: "Start a new session." }],
+      skills: [{ name: "status", prompt: "Start a new session." }],
     });
   });
 });

@@ -110,17 +110,17 @@ describe("cli dispatch: validate routing", () => {
 
 describe("cli validate capability (structure; exact output covered by parity harness)", () => {
   it("prints the validation header and contract line (text)", () => {
-    const { out } = capture((io) => cmdValidateCapability("hej", {}, io));
+    const { out } = capture((io) => cmdValidateCapability("status", {}, io));
     expect(out).toContain("Validating capability:");
     expect(out).toContain("Using contract: skills/agentera/capability_schema_contract.yaml");
   });
 
   it("emits a single-capability JSON envelope with the target", () => {
-    const { out } = capture((io) => cmdValidateCapability("planera", { format: "json" }, io));
+    const { out } = capture((io) => cmdValidateCapability("plan", { format: "json" }, io));
     const payload = JSON.parse(out);
     expect(payload.command).toBe("validate");
     expect(payload.target_family).toBe("capability");
-    expect(payload.target).toBe("planera");
+    expect(payload.target).toBe("plan");
   });
 
   it("rejects an unknown capability name", () => {

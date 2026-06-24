@@ -24,7 +24,7 @@ export const ROUTINE_STRUCTURED_FIELDS = [
 ];
 
 export const COMMAND_FILTERS: Record<string, string[]> = {
-  hej: [],
+  prime: [],
   plan: ["status"],
   progress: ["topic", "status", "limit"],
   health: ["dimension"],
@@ -269,7 +269,7 @@ export function requestedFields(fieldsArg: string | null | undefined): string[] 
 }
 
 function availableStructuredFields(command: string): string[] {
-  // State commands only; prime/hej/capability handled by their own commands.
+  // State commands only; prime/capability handled by their own commands.
   return ROUTINE_STRUCTURED_FIELDS;
 }
 

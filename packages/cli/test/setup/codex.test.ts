@@ -154,8 +154,8 @@ describe("setup codex: TOML mutation engine", () => {
 
 
 const AGENT_NAMES = [
-  "hej", "visionera", "resonera", "inspirera", "planera", "realisera",
-  "optimera", "inspektera", "dokumentera", "profilera", "visualisera", "orkestrera",
+  "status", "vision", "discuss", "research", "plan", "build",
+  "optimize", "audit", "document", "profile", "design", "orchestrate",
 ];
 
 function managedRootWithAgents(root: string): void {
@@ -201,16 +201,16 @@ describe("setup codex: agent descriptors", () => {
     managedRootWithAgents(root);
     const agentsDir = path.join(tmp, "agents");
     fs.mkdirSync(agentsDir, { recursive: true });
-    // user-owned hej.toml blocks; managed visionera refreshes; current resonera noops
-    fs.writeFileSync(path.join(agentsDir, "hej.toml"), "user owned\n");
-    fs.writeFileSync(path.join(agentsDir, "visionera.toml"), "# agentera_managed: true\nold\n");
-    fs.writeFileSync(path.join(agentsDir, "resonera.toml"), '# agent resonera\nname = "resonera"\n');
+    // user-owned status.toml blocks; managed vision refreshes; current discuss noops
+    fs.writeFileSync(path.join(agentsDir, "status.toml"), "user owned\n");
+    fs.writeFileSync(path.join(agentsDir, "vision.toml"), "# agentera_managed: true\nold\n");
+    fs.writeFileSync(path.join(agentsDir, "discuss.toml"), '# agent discuss\nname = "discuss"\n');
     const changes = planAgentDescriptorChanges(root, agentsDir, { force: false });
     const by = Object.fromEntries(changes.map((c) => [c.name, c.action]));
-    expect(by.hej).toBe("blocked");
-    expect(by.visionera).toBe("pending");
-    expect(by.resonera).toBe("noop");
-    expect(by.planera).toBe("pending");
+    expect(by.status).toBe("blocked");
+    expect(by.vision).toBe("pending");
+    expect(by.discuss).toBe("noop");
+    expect(by.plan).toBe("pending");
   });
 });
 

@@ -20,7 +20,7 @@ const CONTRACT = {
 function metrics(): any {
   const corpus = {
     records: [
-      { source_kind: "conversation_turn", source_id: "u1", session_id: "c1", timestamp: "2026-02-01T00:00:00Z", data: { actor: "user", content: "/realisera build it" } },
+      { source_kind: "conversation_turn", source_id: "u1", session_id: "c1", timestamp: "2026-02-01T00:00:00Z", data: { actor: "user", content: "/build build it" } },
       { source_kind: "tool_call", source_id: "t1", session_id: "c1", timestamp: "2026-02-01T00:00:01Z", data: { tool: "bash", arguments: { command: "uv run scripts/agentera plan" } } },
       { source_kind: "tool_call", source_id: "t2", session_id: "c1", timestamp: "2026-02-01T00:00:02Z", data: { tool: "read", arguments: { path: ".agentera/plan.yaml" } } },
       { source_kind: "tool_call", source_id: "t4", session_id: "c1", timestamp: "2026-02-01T00:00:04Z", data: { tool: "apply_patch", arguments: { path: "x.py" } } },
@@ -49,7 +49,7 @@ describe("renderStartupReport", () => {
     expect(md).toContain("# Agentera Startup State-Access Analysis");
     expect(md).toContain("- Boundary commit: `None`"); // null -> Python None
     expect(md).toContain("- Raw-after-CLI sequence rate: `1.0`"); // float, not 1
-    expect(md).toContain("| realisera | 1 | 1 |");
+    expect(md).toContain("| build | 1 | 1 |");
     expect(md).toContain("## Recommendation");
   });
 });

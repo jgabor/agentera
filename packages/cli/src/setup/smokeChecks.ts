@@ -34,26 +34,26 @@ function which(binary: string, env: Env): string | null {
 
 function runCapabilitySmoke(sourceRoot: string): Dict {
   const contract = path.join(sourceRoot, "skills", "agentera", "capability_schema_contract.yaml");
-  const hejDir = path.join(sourceRoot, "skills", "agentera", "capabilities", "hej");
-  const command = ["node", "agentera", "check", "validate", "capability", "hej"];
-  if (!fs.existsSync(hejDir)) {
-    return smokeCheck("npm.validate_capability", "helper", "fail", "hej capability directory is missing", {
+  const statusDir = path.join(sourceRoot, "skills", "agentera", "capabilities", "status");
+  const command = ["node", "agentera", "check", "validate", "capability", "status"];
+  if (!fs.existsSync(statusDir)) {
+    return smokeCheck("npm.validate_capability", "helper", "fail", "status capability directory is missing", {
       command,
-      path: hejDir,
+      path: statusDir,
       details: ["bundle_packaging"],
     });
   }
-  const errors = validateCapability(hejDir, contract);
+  const errors = validateCapability(statusDir, contract);
   if (errors.length > 0) {
-    return smokeCheck("npm.validate_capability", "helper", "fail", "hej capability validation failed", {
+    return smokeCheck("npm.validate_capability", "helper", "fail", "status capability validation failed", {
       command,
-      path: hejDir,
+      path: statusDir,
       details: errors.slice(0, 5),
     });
   }
-  return smokeCheck("npm.validate_capability", "helper", "pass", "hej capability validation passed", {
+  return smokeCheck("npm.validate_capability", "helper", "pass", "status capability validation passed", {
     command,
-    path: hejDir,
+    path: statusDir,
   });
 }
 

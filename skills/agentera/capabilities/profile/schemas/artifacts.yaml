@@ -5,14 +5,14 @@ ARTIFACTS:
     local_role: produces_and_consumes
     description: >-
       Decision profile with per-entry confidence scoring, permanence
-      classification, and temporal metadata. Profilera writes this in both Full
+      classification, and temporal metadata. Profile writes this in both Full
       and Validate modes, then reads it for validation and update context.
   2:
     id: A2
     artifact_id: decisions
     local_role: consumes
     description: >-
-      Profilera treats this as a high-signal source for extraction scripts.
+      Profile treats this as a high-signal source for extraction scripts.
       Each decision entry captures
       reasoning, tradeoffs, and confidence, making deliberation sessions
       one of the richest inputs for decision profile generation.

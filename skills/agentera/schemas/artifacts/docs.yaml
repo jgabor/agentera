@@ -1,6 +1,6 @@
 # Docs Artifact Schema
 #
-# Documentation contract maintained by dokumentera. Tracks project doc
+# Documentation contract maintained by document. Tracks project doc
 # conventions, artifact path overrides, document index with status, coverage
 # metrics, and timestamped audit findings.
 #
@@ -47,11 +47,11 @@ meta:
   name: docs
   version: "1.0.0"
   description: >-
-    Documentation contract. Produced by dokumentera. Consumed by all skills
+    Documentation contract. Produced by document. Consumed by all skills
     for artifact path resolution and doc status tracking.
   artifact_type: agent_facing
   path: ".agentera/docs.yaml"
-  producer: dokumentera
+  producer: document
   consumers: [all_skills]
   format: yaml
 
@@ -123,7 +123,7 @@ CONVENTIONS:
     required: true
     description: >-
       Files whose content changes indicate a version bump is needed.
-      Tracked by planera, inspektera, and realisera for bump discipline.
+      Tracked by plan, audit, and build for bump discipline.
     validation:
       - "At least one entry required"
   5:
@@ -288,7 +288,7 @@ AUDIT_LOG:
     type: map
     required: false
     description: >-
-      Each audit log entry. Timestamped findings from dokumentera audits.
+      Each audit log entry. Timestamped findings from document audits.
       Appended when an audit is performed.
   2:
     id: DA2

@@ -15,7 +15,7 @@ export const TRIGGER_SLASH = "slash";
 export const TRIGGER_NATURAL = "natural";
 
 const MARKER_RE =
-  /─{2,}\s+(\S)\s+([a-z]+era)\s+·\s+([a-z]+(?:\s+\d+)?)\s+─{2,}/g;
+  /─{2,}\s+(\S)\s+(status|vision|discuss|research|plan|build|optimize|audit|document|profile|design|orchestrate)\s+·\s+([a-z]+(?:\s+\d+)?)\s+─{2,}/g;
 
 export interface Marker {
   kind: string;

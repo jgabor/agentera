@@ -5,7 +5,7 @@ ARTIFACTS:
     local_role: produces_and_consumes
     description: >-
       Active plan with tasks, dependencies, and behavioral acceptance criteria.
-      Planera writes this during the planning session and may read existing
+      Plan writes this during the planning session and may read existing
       plan context before replacing or refining it.
   2:
     id: A2
@@ -20,43 +20,43 @@ ARTIFACTS:
     artifact_id: vision
     local_role: consumes
     description: >-
-      Planera reads this during Orient to understand project direction and
+      Plan reads this during Orient to understand project direction and
       align the plan with the vision.
   4:
     id: A4
     artifact_id: decisions
     local_role: consumes
     description: >-
-      Planera reads firm (DL1) entries only as hard constraints for planning.
+      Plan reads firm (DL1) entries only as hard constraints for planning.
   5:
     id: A5
     artifact_id: todo
     local_role: consumes
     description: >-
-      Planera reads this to identify related known
+      Plan reads this to identify related known
       issues that the plan should address.
   6:
     id: A6
     artifact_id: health
     local_role: consumes
     description: >-
-      Planera reads this to factor structural issues into the plan.
+      Plan reads this to factor structural issues into the plan.
   7:
     id: A7
     artifact_id: progress
     local_role: consumes
     description: >-
-      Planera reads this to understand what was built recently.
+      Plan reads this to understand what was built recently.
   8:
     id: A8
     artifact_id: profile
     local_role: consumes
     description: >-
-      Planera reads this to calibrate planning depth and pattern preferences.
+      Plan reads this to calibrate planning depth and pattern preferences.
   9:
     id: A9
     artifact_id: docs
     local_role: consumes
     description: >-
-      Planera reads this first to resolve project-local artifact mappings and
+      Plan reads this first to resolve project-local artifact mappings and
       reads the versioning block for version bump task generation.

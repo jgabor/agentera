@@ -17,7 +17,7 @@ Status: production reference (formerly design document).
 | Skill install | Documented below | `npx skills add jgabor/agentera -g -a opencode --skill agentera -y` |
 | Profile path | Documented below | `~/.config/opencode/profile/PROFILE.md` |
 
-Routes exact bare text hej through chat.message to the bundled Agentera dashboard path. The public docs page omits this hook, but `packages/plugin/src/index.ts` defines `"chat.message"` on the exported `Hooks` interface.
+Routes exact bare text /agentera through chat.message to the bundled Agentera dashboard path. The public docs page omits this hook, but `packages/plugin/src/index.ts` defines `"chat.message"` on the exported `Hooks` interface.
 
 The plugin was promoted from `references/adapters/opencode-plugin.js` to `.opencode/plugins/agentera.js` and is now the production local-file location. Install it with:
 
@@ -56,7 +56,7 @@ OpenCode skill search paths:
 - Global install: `npx skills add jgabor/agentera -g -a opencode --skill agentera -y`
 - Project install: symlink or copy `skills/agentera/` into `.opencode/skills/agentera/` or `.agents/skills/agentera/`
 
-Each Agentera skill entry file contains YAML frontmatter with `name` and `description`, which matches OpenCode's frontmatter requirements exactly. The OpenCode plugin adds one prompt transformation: when the complete user message is exactly bare text `hej`, `chat.message` rewrites it to load the bundled `agentera` skill and route through the `agentera prime` dashboard path. The match is exact except for OpenCode's CLI-added single trailing newline transport artifact, and does not apply to `Hej`, `hej there`, attachments, or other message parts.
+Each Agentera skill entry file contains YAML frontmatter with `name` and `description`, which matches OpenCode's frontmatter requirements exactly. The OpenCode plugin adds one prompt transformation: when the complete user message is exactly bare text `/agentera`, `chat.message` rewrites it to load the bundled `agentera` skill and route through the `agentera prime` dashboard path. The match is exact except for OpenCode's CLI-added single trailing newline transport artifact, and does not apply to `/agentera plan`, `/agentera status`, attachments, or other message parts.
 
 **OpenCode frontmatter validation** requires: `name` (1-64 chars, lowercase alphanumeric with single hyphens), `description` (1-1024 chars). Agentera entry point names are lowercase, matching the validation regex `^[a-z0-9]+(-[a-z0-9]+)*$`.
 
@@ -207,10 +207,10 @@ def dispatch_opencode(skill_name: str, prompt: str) -> dict:
 |---------------|----------------|-------|
 | SessionStart | `event` hook with `event.type === "session.created"` | Observation only unless a supported context-injection hook is also used |
 | Stop | `event` hook with `event.type === "session.idle"` | Fires when a session reaches idle state |
-| Exact bare `hej` | `chat.message` | Rewrites only the complete text message `hej` so the bundled `agentera` skill owns the dashboard path |
+| Exact bare `/agentera` | `chat.message` | Rewrites only the complete text message `/agentera` so the bundled `agentera` skill owns the dashboard path |
 | PreToolUse | `tool.execute.before` | Blocks invalid reconstructable artifact candidates by throwing an error |
 | PostToolUse | `tool.execute.after` | Fires after every tool execution |
-| Compaction context | `experimental.session.compacting` | Appends bounded Agentera state from `agentera hej --format json` |
+| Compaction context | `experimental.session.compacting` | Appends bounded Agentera state from `agentera prime --format json` |
 
 OpenCode plugins subscribe to session events by exporting one generic `event` hook:
 
@@ -233,7 +233,7 @@ export const AgenteraPlugin = async ({ project, client, $, directory, worktree }
       // PostToolUse equivalent: report validation warnings
     },
     "chat.message": async (input, output) => {
-      // Exact bare hej prompt rewrite.
+      // Exact bare /agentera prompt rewrite.
     },
     "experimental.session.compacting": async (input, output) => {
       // Append bounded Agentera CLI state context.
@@ -248,17 +248,17 @@ Install-root semantics used by the plugin are contract-bound to `scripts/install
 
 OpenCode runtime facts are owned by the RuntimeAdapter registry at `references/adapters/runtime-adapter-registry.yaml` and loaded through `scripts/runtime_adapter_registry.py`. This reference describes the OpenCode adapter behavior, but registry-owned values such as event support, artifact-validation claims, config targets, diagnostic labels, and documentation claims must be validated against the registry rather than changed here as an independent source. The install-root Module must keep package manifest registry and package metadata consolidation work outside its scope.
 
-Registry parity claims: Blocks invalid reconstructable artifact candidates. Routes exact bare text hej through chat.message to the bundled Agentera dashboard path.
+Registry parity claims: Blocks invalid reconstructable artifact candidates. Routes exact bare text /agentera through chat.message to the bundled Agentera dashboard path.
 
 1. **SessionStart** (`event.type === "session.created"`): Observe session creation through the event hook. Session-start context preload remains deferred because no supported model-context injection path is verified for this adapter. Do not attach dead preload code to event observation alone.
 
 2. **PreToolUse** (`tool.execute.before`): When `write` or `edit` args expose a path plus candidate content or exact replacement evidence, validate the candidate through `hooks/validate_artifact.py`. Throw an error to block invalid artifact content before mutation. Sparse payloads and `apply_patch` `patchText` without reconstructed full content are allowed rather than guessed.
 
-3. **Exact bare `hej`** (`chat.message`): If the incoming user message has exactly one meaningful text part and that text is exactly `hej` after removing only OpenCode's CLI-added single trailing newline transport artifact, replace that text with an Agentera routing prompt that preserves the original-message fact and instructs the agent to run `agentera hej` instead of replying with a generic greeting. This is intentionally not a broad greeting detector.
+3. **Exact bare `/agentera`** (`chat.message`): If the incoming user message has exactly one meaningful text part and that text is exactly `/agentera` after removing only OpenCode's CLI-added single trailing newline transport artifact, replace that text with an Agentera routing prompt that preserves the original-message fact and instructs the agent to run `agentera prime` instead of replying with a generic greeting. This is intentionally not a broad greeting detector.
 
 4. **PostToolUse** (`tool.execute.after`): After `write` or `edit`, run the shared artifact validator for warnings. This is advisory because the mutation already happened.
 
-5. **Compaction context** (`experimental.session.compacting`): Before OpenCode compacts a session, append a bounded Agentera project-state summary generated by `agentera hej --format json`. This hook is CLI-first by design and does not read `.agentera` artifacts directly.
+5. **Compaction context** (`experimental.session.compacting`): Before OpenCode compacts a session, append a bounded Agentera project-state summary generated by `agentera prime --format json`. This hook is CLI-first by design and does not read `.agentera` artifacts directly.
 
 6. **Stop** (`event.type === "session.idle"`): Append a runtime-local bookmark entry under the Agentera data directory capturing artifact changes for next-session continuity.
 

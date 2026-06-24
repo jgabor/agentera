@@ -180,7 +180,7 @@ records:
         - references/adapters/opencode.md
       parity_claims:
         - Blocks invalid reconstructable artifact candidates.
-        - Routes exact bare text hej through chat.message to the bundled Agentera dashboard path.
+        - Routes exact bare text /agentera through chat.message to the bundled Agentera dashboard path.
       install_claims:
         - OpenCode plugin is copied to the native plugin path.
       known_drifts:
@@ -217,7 +217,7 @@ records:
         postToolUse: supported
         errorOccurred: supported
       limitations:
-        - Profilera exposes bounded corpus metadata limits with missing source families.
+        - Profile exposes bounded corpus metadata limits with missing source families.
     artifact_validation:
       validation_events:
         - preToolUse
@@ -397,7 +397,7 @@ records:
         stop: supported
       limitations:
         - Cloud agents are unsupported in v1; repo hooks and managed agents target local IDE sessions only.
-        - Bare text hej routing is metadata-only; sessionStart injects context but does not rewrite prompts.
+        - Bare text /agentera routing is metadata-only; sessionStart injects context but does not rewrite prompts.
     artifact_validation:
       validation_events:
         - preToolUse
@@ -545,4 +545,4 @@ records:
         - cursor-agent inherits IDE hook wiring only when run inside a workspace with installed Cursor surfaces.
       known_drifts:
         - CLI hook and session env parity is degraded relative to Cursor IDE.
-        - Bare text hej routing is metadata-only like Claude, Copilot, and Codex.
+        - Bare text /agentera routing is metadata-only like Claude, Copilot, and Codex.

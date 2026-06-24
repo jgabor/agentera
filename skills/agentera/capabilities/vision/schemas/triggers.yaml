@@ -3,11 +3,11 @@ TRIGGERS:
     id: T1
     description: >-
       Direct invocation by name or slash command. Matches when the user
-      explicitly requests visionera.
+      explicitly requests vision.
     priority: high
     patterns:
-      - "visionera"
-      - "/visionera"
+      - "vision"
+      - "/vision"
   2:
     id: T2
     description: >-

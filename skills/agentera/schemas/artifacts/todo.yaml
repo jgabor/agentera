@@ -1,6 +1,6 @@
 # Todo Artifact Schema
 #
-# Open issues and tasks maintained by realisera and inspektera. Severity-ranked
+# Open issues and tasks maintained by build and audit. Severity-ranked
 # checklist of work to be done, resolved items, and deferred work.
 #
 # Note: TODO.md is a human-facing Markdown artifact. It remains at the
@@ -16,8 +16,8 @@ meta:
   artifact_type: human_facing
   path: "TODO.md"
   producer:
-    [dokumentera, inspektera, inspirera, optimera, orkestrera, realisera, resonera, visualisera]
-  consumers: [hej, all_skills]
+    [document, audit, research, optimize, orchestrate, build, discuss, design]
+  consumers: [status, all_skills]
   format: markdown
 
 GROUP_PREFIXES:

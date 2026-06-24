@@ -3,24 +3,24 @@ VALIDATION:
     id: V1
     rule: never_read_source
     description: >-
-      Orkestrera MUST NEVER read implementation source code. It dispatches
+      Orchestrate MUST NEVER read implementation source code. It dispatches
       capabilities; it does not implement. Artifact files (PLAN.md, HEALTH.md,
       DECISIONS.md, PROGRESS.md, etc.) are not source code and are expected
       to be read. This rule verifies the prose explicitly states the
       source-code read prohibition.
     severity: critical
     checks:
-      - "orkestrera prose (packages/cli/src/capabilities/orkestrera/instructions.ts) contains NEVER read implementation source code"
+      - "orchestrate prose (packages/cli/src/capabilities/orchestrate/instructions.ts) contains NEVER read implementation source code"
   2:
     id: V2
     rule: evaluation_gate_required
     description: >-
-      Every completed task MUST be verified by inspektera before being marked
+      Every completed task MUST be verified by audit before being marked
       complete. The orchestrator MUST NOT skip evaluation. This rule verifies
       the prose contains the never-skip-evaluation safety rail.
     severity: critical
     checks:
-      - "orkestrera prose contains NEVER skip evaluation"
+      - "orchestrate prose contains NEVER skip evaluation"
   3:
     id: V3
     rule: retry_budget_enforced
@@ -30,18 +30,18 @@ VALIDATION:
       is stated in the prose and safety rails.
     severity: critical
     checks:
-      - "orkestrera prose contains retry budget of 2"
+      - "orchestrate prose contains retry budget of 2"
   4:
     id: V4
     rule: exit_marker_required
     description: >-
-      Every orkestrera invocation MUST emit an exit marker. The marker uses
-      the canonical glyph ⎈ (SG12) in the format ⎈ orkestrera · <status>
+      Every orchestrate invocation MUST emit an exit marker. The marker uses
+      the canonical glyph ⎈ (SG12) in the format ⎈ orchestrate · <status>
       where status is one of EX1-EX4.
     severity: critical
     checks:
-      - "orkestrera prose contains exit marker with glyph ⎈ (SG12)"
-      - "orkestrera prose references exit signals EX1-EX4"
+      - "orchestrate prose contains exit marker with glyph ⎈ (SG12)"
+      - "orchestrate prose references exit signals EX1-EX4"
   5:
     id: V5
     rule: orchestrator_read_only_artifacts
@@ -60,42 +60,42 @@ VALIDATION:
     id: V6
     rule: orchestration_context_first
     description: >-
-      Orkestrera startup and evaluation MUST use
-      `agentera prime --context orkestrera --format json` and the
+      Orchestrate startup and evaluation MUST use
+      `agentera prime --context orchestrate --format json` and the
       returned orchestration context before raw plan, progress, health, TODO,
       or decisions artifact reads.
     severity: critical
     checks:
-      - "orkestrera prose contains agentera prime --context orkestrera --format json"
-      - "orkestrera prose contains Use the returned `orchestration_context` before raw plan, progress, health, TODO, or decisions artifacts"
-      - "orkestrera prose contains If `source_contract.complete_for_orchestration_context` is true, do not read raw plan, progress, health, TODO, or decisions artifacts"
+      - "orchestrate prose contains agentera prime --context orchestrate --format json"
+      - "orchestrate prose contains Use the returned `orchestration_context` before raw plan, progress, health, TODO, or decisions artifacts"
+      - "orchestrate prose contains If `source_contract.complete_for_orchestration_context` is true, do not read raw plan, progress, health, TODO, or decisions artifacts"
   7:
     id: V7
     rule: cli_fallback_before_raw_read
     description: >-
-      When orchestration context is incomplete, Orkestrera MUST run listed
+      When orchestration context is incomplete, Orchestrate MUST run listed
       routine CLI fallback commands before any last-resort raw artifact read.
     severity: critical
     checks:
-      - "orkestrera prose contains run the listed routine CLI fallback commands"
-      - "orkestrera prose contains Read a raw artifact only as a last-resort diagnostic"
+      - "orchestrate prose contains run the listed routine CLI fallback commands"
+      - "orchestrate prose contains Read a raw artifact only as a last-resort diagnostic"
   8:
     id: V8
     rule: caveats_preserved_for_evaluation
     description: >-
-      Orkestrera MUST preserve compacted-decision, stale health/profile/app,
+      Orchestrate MUST preserve compacted-decision, stale health/profile/app,
       missing-state, and retry-state provenance caveats when handing a task to
-      inspektera.
+      audit.
     severity: critical
     checks:
-      - "orkestrera prose contains compacted decision caveats"
-      - "orkestrera prose contains stale health/profile/app caveats"
-      - "orkestrera prose contains retry-state provenance"
+      - "orchestrate prose contains compacted decision caveats"
+      - "orchestrate prose contains stale health/profile/app caveats"
+      - "orchestrate prose contains retry-state provenance"
   9:
     id: V9
     rule: satisfaction_authority_boundary
     description: >-
-      When Orkestrera touches decision satisfaction, it may pass through or request
+      When Orchestrate touches decision satisfaction, it may pass through or request
       provisional satisfaction with evidence but MUST NOT user-confirm satisfaction.
       Missing, compacted, open, provisional, or review-needed satisfaction state
       remains a caveat and review pressure; automation must not reconstruct hidden
@@ -109,12 +109,12 @@ VALIDATION:
     id: V10
     rule: inspektera_citation_required
     description: >-
-      Orkestrera Step 3 Surface 2 inspektera delegation MUST require a
+      Orchestrate Step 3 Surface 2 audit delegation MUST require a
       citation: <file>:<line> (or not-applicable: <reason>) for every WARN and
       FAIL finding, and require verify_command for WARN rows with file:line
       citations. Authority: references/cli/capability-instruction-contract.yaml#evaluator_handoff.
     severity: critical
     checks:
-      - "orkestrera prose contains citation: `<file>:<line>` OR `not-applicable: <reason>`"
-      - "orkestrera prose contains verify_command"
-      - "orkestrera prose contains evaluator_handoff.output_requirements"
+      - "orchestrate prose contains citation: `<file>:<line>` OR `not-applicable: <reason>`"
+      - "orchestrate prose contains verify_command"
+      - "orchestrate prose contains evaluator_handoff.output_requirements"

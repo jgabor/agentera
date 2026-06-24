@@ -16,7 +16,7 @@ export interface ReportArgs {
   dryRun?: boolean;
   consent?: string | null;
   projectRoot?: string[];
-  // corpus-refresh passthrough to the extract engine (used by profilera)
+  // corpus-refresh passthrough to the extract engine (used by profile)
   output?: string | null;
   codexSessionsDir?: string | null;
   claudeProjectsDir?: string | null;

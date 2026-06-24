@@ -121,7 +121,7 @@ Follow this loop:
    by `raw_artifact_access_after_cli_counts` when the read is not redundant yet
    but still happens after a successful CLI state call.
 4. Map each repeated raw read to the CLI state owner. Prefer enriching existing
-   routine commands or the `hej` composite startup result. Do not add Decision 43
+    routine commands or the `prime` composite startup result. Do not add Decision 43
    slash-route aliases as CLI commands.
 5. Make CLI completeness explicit. A startup-capable response should say whether
    it is complete for the requested capability, whether raw artifact reads are

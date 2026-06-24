@@ -3,8 +3,8 @@ VALIDATION:
     id: V1
     rule: read_only_target
     description: >-
-      Inspirera MUST NOT modify code in the target project. It analyzes
-      and maps concepts; other capabilities (realisera, optimera)
+      Research MUST NOT modify code in the target project. It analyzes
+      and maps concepts; other capabilities (build, optimize)
       implement changes. The only writes are to TODO.md and VISION.md,
       and only with explicit user confirmation.
     severity: critical

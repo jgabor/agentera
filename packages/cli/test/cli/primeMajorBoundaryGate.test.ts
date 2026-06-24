@@ -109,7 +109,7 @@ describe("prime major-boundary gate", () => {
 
       const nextAction = state.next_action as { object: string; capability: string; reason: string };
       expect(nextAction.object).toBe("Await v3 successor announcement");
-      expect(nextAction.capability).toBe("hej");
+      expect(nextAction.capability).toBe("status");
       expect(nextAction.reason).toContain("v3 successor line is not announced yet");
       expect(nextAction.object).not.toBe("Upgrade Agentera");
     });
@@ -144,7 +144,7 @@ describe("prime major-boundary gate", () => {
 
       const nextAction = state.next_action as { object: string; capability: string; reason: string };
       expect(nextAction.object).toContain("Upgrade");
-      expect(nextAction.capability).toBe("hej");
+      expect(nextAction.capability).toBe("status");
     });
   });
 

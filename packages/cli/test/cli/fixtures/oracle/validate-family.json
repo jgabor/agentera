@@ -73,7 +73,7 @@
       }
     },
     "capability": {
-      "argv": ["check", "validate", "capability", "realisera", "--format", "json"],
+      "argv": ["check", "validate", "capability", "build", "--format", "json"],
       "exitCode": 0,
       "requiredTopLevelKeys": [
         "command",

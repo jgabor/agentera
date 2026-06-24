@@ -100,7 +100,7 @@ tasks:
   - number: 2
     name: "Update capability prose and schema content references"
     depends_on: ["1"]
-    status: pending
+    status: complete
     acceptance:
       - "GIVEN each instructions.ts file WHEN inspected THEN the Markdown header uses the English name (e.g. # STATUS not # HEJ)"
       - "GIVEN each instructions.ts file WHEN inspected THEN self-references to the capability name use the English ID"
@@ -109,7 +109,7 @@ tasks:
   - number: 3
     name: "Rename and update runtime descriptor files"
     depends_on: ["1"]
-    status: pending
+    status: complete
     acceptance:
       - "GIVEN the .cursor/agents/ directory WHEN inspected THEN 12 .md files use English IDs as filenames"
       - "GIVEN the .opencode/agents/ directory WHEN inspected THEN 12 .md files use English IDs as filenames"
@@ -119,7 +119,7 @@ tasks:
   - number: 4
     name: "Flip contract, vocabulary, and package metadata"
     depends_on: ["1"]
-    status: pending
+    status: complete
     acceptance:
       - "GIVEN the capability_schema_contract.yaml ROUTE_ALIASES section WHEN inspected THEN English names are canonical and Swedish names are marked as legacy v2-stable references"
       - "GIVEN the ROUTE_ALIASES description WHEN inspected THEN it states English is canonical protocol identity (not Swedish -era directory names)"
@@ -131,7 +131,7 @@ tasks:
   - number: 5
     name: "Update SKILL.md dispatch and AGENTS.md scope table"
     depends_on: ["1"]
-    status: pending
+    status: complete
     acceptance:
       - "GIVEN skills/agentera/SKILL.md frontmatter WHEN inspected THEN the capabilities list uses English IDs"
       - "GIVEN the SKILL.md dispatch table WHEN inspected THEN all 12 rows use English capability names with English primary routes"
@@ -143,7 +143,7 @@ tasks:
   - number: 6
     name: "Update DESIGN.md glyph table and add coexistence probe naming-divergence line"
     depends_on: ["1"]
-    status: pending
+    status: complete
     acceptance:
       - "GIVEN DESIGN.md glyph table WHEN inspected THEN the 12 keys use English IDs (status, vision, discuss, research, plan, build, optimize, audit, document, profile, design, orchestrate)"
       - "GIVEN references/cli/coexistence-probe.yaml WHEN inspected THEN a naming-divergence dimension is present that surfaces v3 English IDs vs v2 Swedish -era IDs"
@@ -152,7 +152,7 @@ tasks:
   - number: 7
     name: "Mobile: retire brief UI label for status"
     depends_on: ["1"]
-    status: pending
+    status: complete
     acceptance:
       - "GIVEN the packages/mobile source WHEN searched for the brief UI label THEN no surface uses brief as the orientation capability label"
       - "GIVEN the mobile orientation surface WHEN inspected THEN the label is status (matching the CLI canonical name)"
@@ -160,7 +160,7 @@ tasks:
   - number: 8
     name: "Verify suite, content gate, typecheck, CHANGELOG promotion"
     depends_on: ["2", "3", "4", "5", "6", "7"]
-    status: pending
+    status: complete
     acceptance:
       - "GIVEN pnpm -C packages/cli test WHEN executed THEN the suite passes with zero failures"
       - "GIVEN pnpm -C packages/cli build && node packages/cli/dist/bin/agentera.js check compact WHEN executed THEN the content gate passes with no budget violations"

@@ -7,3 +7,7 @@ warning:
     - complete v3 migration
     - uninstall v3
     - stay on v2 explicitly
+naming_divergence:
+  description: "v3 uses English capability IDs (status, vision, discuss, research, plan, build, optimize, audit, document, profile, design, orchestrate); v2 stable uses Swedish -era IDs (hej, visionera, resonera, inspirera, planera, realisera, optimera, inspektera, dokumentera, profilera, visualisera, orkestrera)"
+  v3_canonical: [status, vision, discuss, research, plan, build, optimize, audit, document, profile, design, orchestrate]
+  v2_stable: [hej, visionera, resonera, inspirera, planera, realisera, optimera, inspektera, dokumentera, profilera, visualisera, orkestrera]

@@ -3,11 +3,11 @@ TRIGGERS:
     id: T1
     description: >-
       Direct invocation by name or slash command. Matches when the user
-      explicitly requests inspirera.
+      explicitly requests research.
     priority: high
     patterns:
-      - "inspirera"
-      - "/inspirera"
+      - "research"
+      - "/research"
   2:
     id: T2
     description: >-

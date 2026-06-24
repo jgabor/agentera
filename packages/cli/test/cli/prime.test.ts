@@ -45,8 +45,8 @@ describe("cli prime", () => {
   });
 
   it("rejects mutually-exclusive prime modes", () => {
-    expect(capture((io) => cmdPrime({ context: "planera", dashboard: true }, io)).rc).toBe(2);
-    expect(capture((io) => cmdPrime({ context: "planera", guidance: true }, io)).rc).toBe(2);
+    expect(capture((io) => cmdPrime({ context: "plan", dashboard: true }, io)).rc).toBe(2);
+    expect(capture((io) => cmdPrime({ context: "plan", guidance: true }, io)).rc).toBe(2);
     expect(capture((io) => cmdPrime({ dashboard: true, guidance: true }, io)).rc).toBe(2);
   });
 
@@ -68,7 +68,7 @@ describe("cli prime", () => {
 
   it("requires json for --dashboard and --context", () => {
     expect(capture((io) => cmdPrime({ dashboard: true, format: "text" }, io)).rc).toBe(2);
-    expect(capture((io) => cmdPrime({ context: "planera", format: "text" }, io)).rc).toBe(2);
+    expect(capture((io) => cmdPrime({ context: "plan", format: "text" }, io)).rc).toBe(2);
   });
 
   it("supports --fields selection on the JSON payload", () => {
@@ -85,12 +85,12 @@ describe("cli prime", () => {
   });
 
   it("emits a capability context for a non-bespoke capability (planera)", () => {
-    const { rc, out } = capture((io) => cmdPrime({ command: "prime", context: "planera", format: "json" }, io));
+    const { rc, out } = capture((io) => cmdPrime({ command: "prime", context: "plan", format: "json" }, io));
     expect(rc).toBe(0);
     const payload = JSON.parse(out);
     expect(payload.command).toBe("prime");
     expect(payload.capability_context.schemaVersion).toBe("agentera.capabilityContext.v1");
-    expect(payload.capability_context.capability).toBe("planera");
+    expect(payload.capability_context.capability).toBe("plan");
     expect(payload.capability_context.context.planning_context).toBeTruthy();
     expect(payload.capability_context.context.planning_context.startup_contract.schemaVersion).toBe(
       "agentera.planeraStartup.v1",
@@ -98,61 +98,61 @@ describe("cli prime", () => {
   });
 
   it("emits the orchestration bespoke context for orkestrera", () => {
-    const { rc, out } = capture((io) => cmdPrime({ command: "prime", context: "orkestrera", format: "json" }, io));
+    const { rc, out } = capture((io) => cmdPrime({ command: "prime", context: "orchestrate", format: "json" }, io));
     expect(rc).toBe(0);
     const payload = JSON.parse(out);
-    expect(payload.capability_context.capability).toBe("orkestrera");
+    expect(payload.capability_context.capability).toBe("orchestrate");
     const ctx = payload.capability_context.context;
     expect(ctx.orchestration_context).toBeTruthy();
-    expect(ctx.orchestration_context.capability).toBe("orkestrera");
+    expect(ctx.orchestration_context.capability).toBe("orchestrate");
     expect(ctx.orchestration_context.task_queue).toBeTruthy();
     expect(ctx.orchestration_context.evaluator_handoff).toBeTruthy();
   });
 
   it("emits the execution bespoke context for realisera", () => {
-    const { rc, out } = capture((io) => cmdPrime({ command: "prime", context: "realisera", format: "json" }, io));
+    const { rc, out } = capture((io) => cmdPrime({ command: "prime", context: "build", format: "json" }, io));
     expect(rc).toBe(0);
     const ctx = JSON.parse(out).capability_context.context;
     expect(ctx.execution_context).toBeTruthy();
-    expect(ctx.execution_context.capability).toBe("realisera");
+    expect(ctx.execution_context.capability).toBe("build");
     expect(ctx.execution_context.work_selection).toBeTruthy();
     expect(ctx.execution_context.changelog_boundary).toBeTruthy();
   });
 
   it("emits the evidence bespoke context for inspektera", () => {
-    const { rc, out } = capture((io) => cmdPrime({ command: "prime", context: "inspektera", format: "json" }, io));
+    const { rc, out } = capture((io) => cmdPrime({ command: "prime", context: "audit", format: "json" }, io));
     expect(rc).toBe(0);
     const ctx = JSON.parse(out).capability_context.context;
     expect(ctx.evidence_context).toBeTruthy();
-    expect(ctx.evidence_context.capability).toBe("inspektera");
+    expect(ctx.evidence_context.capability).toBe("audit");
     expect(ctx.evidence_context.version_checks).toBeTruthy();
     expect(ctx.evidence_context.decision_review_pressure).toBeTruthy();
     expect(ctx.evidence_context.residual_risks).toBeTruthy();
   });
 
   it("emits the benchmark bespoke context for optimera", () => {
-    const { rc, out } = capture((io) => cmdPrime({ command: "prime", context: "optimera", format: "json" }, io));
+    const { rc, out } = capture((io) => cmdPrime({ command: "prime", context: "optimize", format: "json" }, io));
     expect(rc).toBe(0);
     const ctx = JSON.parse(out).capability_context.context;
     expect(ctx.benchmark_context).toBeTruthy();
-    expect(ctx.benchmark_context.capability).toBe("optimera");
+    expect(ctx.benchmark_context.capability).toBe("optimize");
     expect(ctx.benchmark_context.privacy_boundary.status).toBe("enforced");
     expect(ctx.benchmark_context.manual_refresh.command).toBe("mage bench:startupState");
   });
 
   it("emits the closeout bespoke context for dokumentera", () => {
-    const { rc, out } = capture((io) => cmdPrime({ command: "prime", context: "dokumentera", format: "json" }, io));
+    const { rc, out } = capture((io) => cmdPrime({ command: "prime", context: "document", format: "json" }, io));
     expect(rc).toBe(0);
     const ctx = JSON.parse(out).capability_context.context;
     expect(ctx.closeout_context).toBeTruthy();
-    expect(ctx.closeout_context.capability).toBe("dokumentera");
+    expect(ctx.closeout_context.capability).toBe("document");
     expect(ctx.closeout_context.release_boundary).toBeTruthy();
     expect(ctx.closeout_context.version_policy).toBeTruthy();
   });
 
   it("serves --context for all 12 capabilities (no gate)", () => {
-    const caps = ["hej", "visionera", "resonera", "inspirera", "planera", "realisera",
-      "optimera", "inspektera", "dokumentera", "profilera", "visualisera", "orkestrera"];
+    const caps = ["status", "vision", "discuss", "research", "plan", "build",
+      "optimize", "audit", "document", "profile", "design", "orchestrate"];
     for (const cap of caps) {
       const { rc } = capture((io) => cmdPrime({ context: cap, format: "json" }, io));
       expect(rc).toBe(0);
@@ -213,7 +213,7 @@ describe("orkestrera orchestration_context task_queue", () => {
     expect(plan.tasks[1].depends_on).toEqual(["1"]);
 
     const state = collectOrientationState({ env: process.env });
-    const payload = buildPrimeCapabilityContextPayload(state, "orkestrera");
+    const payload = buildPrimeCapabilityContextPayload(state, "orchestrate");
     const orch = payload.capability_context.context.orchestration_context as Record<string, unknown>;
     const taskQueue = orch.task_queue as Record<string, unknown>;
     const ready = (taskQueue.dependency_ready_tasks as Array<{ number: number }>).map((t) => t.number);
@@ -227,8 +227,8 @@ describe("orkestrera orchestration_context task_queue", () => {
     expect((orch.selected_next_action as Record<string, unknown>)?.object).toBeTruthy();
   });
 
-  it("matches prime --context orkestrera --format json task_queue to task_summaries", () => {
-    const { rc, out } = capture((io) => cmdPrime({ command: "prime", context: "orkestrera", format: "json" }, io));
+  it("matches prime --context orchestrate --format json task_queue to task_summaries", () => {
+    const { rc, out } = capture((io) => cmdPrime({ command: "prime", context: "orchestrate", format: "json" }, io));
     expect(rc).toBe(0);
     const orch = JSON.parse(out).capability_context.context.orchestration_context;
     const ready = orch.task_queue.dependency_ready_tasks.map((t: { number: number }) => t.number);

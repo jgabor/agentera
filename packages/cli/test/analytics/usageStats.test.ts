@@ -36,7 +36,7 @@ function corpusFixture(): any {
         session_id: "c1",
         project_id: "agentera",
         timestamp: "2026-01-01T00:00:00Z",
-        data: { actor: "user", content: "/realisera go" },
+        data: { actor: "user", content: "/build go" },
       },
       {
         source_kind: "conversation_turn",
@@ -44,7 +44,7 @@ function corpusFixture(): any {
         session_id: "c1",
         project_id: "agentera",
         timestamp: "2026-01-01T00:00:01Z",
-        data: { actor: "assistant", content: "─── ⧉ realisera · cycle ───\nwork\n─── ⧉ realisera · complete ───" },
+        data: { actor: "assistant", content: "─── ⧉ build · cycle ───\nwork\n─── ⧉ build · complete ───" },
       },
       {
         source_kind: "conversation_turn",
@@ -52,7 +52,7 @@ function corpusFixture(): any {
         session_id: "c2",
         project_id: "jg-go",
         timestamp: "2026-01-02T00:00:01Z",
-        data: { actor: "assistant", content: "─── ≡ planera · planning ───\nplanning..." },
+        data: { actor: "assistant", content: "─── ≡ plan · planning ───\nplanning..." },
       },
     ],
   };
@@ -60,23 +60,23 @@ function corpusFixture(): any {
 
 describe("findMarkers", () => {
   it("classifies intro and exit markers", () => {
-    const markers = findMarkers("─── ⧉ realisera · cycle ───\n─── ⧉ realisera · complete ───");
+    const markers = findMarkers("─── ⧉ build · cycle ───\n─── ⧉ build · complete ───");
     expect(markers.map((m) => [m.kind, m.skill, m.word])).toEqual([
-      ["intro", "realisera", "cycle"],
-      ["exit", "realisera", "complete"],
+      ["intro", "build", "cycle"],
+      ["exit", "build", "complete"],
     ]);
   });
 
   it("supports a trailing number in the phase word", () => {
-    const markers = findMarkers("─── ⧉ realisera · cycle 2 ───");
+    const markers = findMarkers("─── ⧉ build · cycle 2 ───");
     expect(markers[0].word).toBe("cycle 2");
   });
 });
 
 describe("classifyTrigger", () => {
   it("detects bare slash and XML command, else natural", () => {
-    expect(classifyTrigger("/realisera go")).toBe("slash");
-    expect(classifyTrigger("<command-name>/realisera</command-name>")).toBe("slash");
+    expect(classifyTrigger("/build go")).toBe("slash");
+    expect(classifyTrigger("<command-name>/build</command-name>")).toBe("slash");
     expect(classifyTrigger("please plan the next feature")).toBe("natural");
     expect(classifyTrigger(null)).toBe("natural");
   });
@@ -87,7 +87,7 @@ describe("pairInvocations", () => {
     const turn = {
       source_id: "a",
       timestamp: "t",
-      data: { content: "─── ⧉ realisera · cycle ───\n─── ⧉ realisera · cycle 2 ───\n─── ⧉ realisera · flagged ───" },
+      data: { content: "─── ⧉ build · cycle ───\n─── ⧉ build · cycle 2 ───\n─── ⧉ build · flagged ───" },
     };
     const invs = pairInvocations([turn]);
     expect(invs.length).toBe(2);
@@ -100,21 +100,21 @@ describe("pairInvocations", () => {
 describe("analyzeCorpus", () => {
   it("aggregates skills, triggers, and per-project totals", () => {
     const analysis = analyzeCorpus(corpusFixture(), null);
-    expect(analysis.skills.realisera).toEqual({
+    expect(analysis.skills.build).toEqual({
       total: 1,
       completed: 1,
       incomplete: 0,
       trigger_slash: 1,
       trigger_natural: 0,
     });
-    expect(analysis.skills.planera.incomplete).toBe(1);
-    expect(analysis.per_project.agentera.realisera.total).toBe(1);
-    expect(analysis.per_project["jg-go"].planera.total).toBe(1);
+    expect(analysis.skills.plan.incomplete).toBe(1);
+    expect(analysis.per_project.agentera.build.total).toBe(1);
+    expect(analysis.per_project["jg-go"].plan.total).toBe(1);
   });
 
   it("scopes to a single project when filtered", () => {
     const analysis = analyzeCorpus(corpusFixture(), "agentera");
-    expect(Object.keys(analysis.skills)).toEqual(["realisera"]);
+    expect(Object.keys(analysis.skills)).toEqual(["build"]);
     expect(analysis.per_project).toEqual({});
   });
 
@@ -122,7 +122,7 @@ describe("analyzeCorpus", () => {
     const analysis = analyzeCorpus(corpusFixture(), null);
     const md = renderMarkdown(analysis, { generatedAt: "GEN", extractedAt: "2026-01-04T00:00:00Z" });
     expect(md).toContain("# Suite Usage");
-    expect(md).toContain("| realisera | 1 |");
+    expect(md).toContain("| build | 1 |");
     expect(md).toContain("## Per-project totals");
     const payload = buildJsonPayload(analysis, { generatedAt: "GEN", extractedAt: "2026-01-04T00:00:00Z" });
     expect(payload.generated_at).toBe("GEN");
@@ -202,7 +202,7 @@ describe("usageMain engine", () => {
             project_id: "agentera",
             role: "assistant",
             timestamp: "2026-01-01T00:00:00Z",
-            text: "<route>planera</route> let me plan",
+            text: "<route>plan</route> let me plan",
           },
         ],
       }),

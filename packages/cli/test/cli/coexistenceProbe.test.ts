@@ -9,6 +9,7 @@ import { cmdDoctor } from "../../src/cli/commands/doctor.js";
 import {
   detectV2Coexistence,
   formatCoexistenceDoctorLines,
+  formatNamingDivergenceLines,
   isV2ManagedInstallAtAppHome,
   loadCoexistenceProbeAuthority,
   resolveCoexistenceDoctorLines,
@@ -68,11 +69,39 @@ describe("v2/v3 coexistence probe (v3 doctor)", () => {
     const lines = formatCoexistenceDoctorLines(contract);
     expect(lines[0]).toBe("Coexistence");
     expect(lines[1]).toBe("v3 detected alongside v2; pick one line");
-    expect(lines.slice(2)).toEqual([
+    expect(lines.slice(2, 5)).toEqual([
       "  - complete v3 migration",
       "  - uninstall v3",
       "  - stay on v2 explicitly",
     ]);
+    // D70: naming-divergence dimension surfaces v3 English IDs vs v2 Swedish -era IDs.
+    expect(lines[5]).toBe("  naming divergence:");
+    expect(lines[6]).toBe(
+      "    v3: status, vision, discuss, research, plan, build, optimize, audit, document, profile, design, orchestrate",
+    );
+    expect(lines[7]).toBe(
+      "    v2: hej, visionera, resonera, inspirera, planera, realisera, optimera, inspektera, dokumentera, profilera, visualisera, orkestrera",
+    );
+  });
+
+  it("renders the naming-divergence dimension from a well-formed contract", () => {
+    const lines = formatNamingDivergenceLines({
+      v3_canonical: ["status", "build"],
+      v2_stable: ["hej", "realisera"],
+    });
+    expect(lines).toEqual([
+      "  naming divergence:",
+      "    v3: status, build",
+      "    v2: hej, realisera",
+    ]);
+  });
+
+  it("returns null when the naming-divergence dimension is missing or malformed", () => {
+    expect(formatNamingDivergenceLines(undefined)).toBeNull();
+    expect(formatNamingDivergenceLines(null)).toBeNull();
+    expect(formatNamingDivergenceLines("nope")).toBeNull();
+    expect(formatNamingDivergenceLines({ v3_canonical: ["status"] })).toBeNull();
+    expect(formatNamingDivergenceLines({ v3_canonical: [], v2_stable: [] })).toBeNull();
   });
 
   it("detects a synthetic v2 managed app home under the platform default path", () => {
@@ -111,6 +140,14 @@ describe("v2/v3 coexistence probe (v3 doctor)", () => {
     expect(output).toContain("  - complete v3 migration");
     expect(output).toContain("  - uninstall v3");
     expect(output).toContain("  - stay on v2 explicitly");
+    // D70: naming-divergence dimension is emitted alongside the coexistence warning.
+    expect(output).toContain("naming divergence");
+    expect(output).toContain(
+      "v3: status, vision, discuss, research, plan, build, optimize, audit, document, profile, design, orchestrate",
+    );
+    expect(output).toContain(
+      "v2: hej, visionera, resonera, inspirera, planera, realisera, optimera, inspektera, dokumentera, profilera, visualisera, orkestrera",
+    );
   });
 
   it("does not emit the coexistence warning without a v2 install", () => {

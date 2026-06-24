@@ -14,12 +14,12 @@ VALIDATION:
     id: V2
     rule: no_realisera_modification
     description: >-
-      VISION.md MUST NOT be modified during a realisera execution cycle.
-      Vision changes happen only in dedicated visionera sessions. This
+      VISION.md MUST NOT be modified during a build execution cycle.
+      Vision changes happen only in dedicated vision sessions. This
       prevents vision drift during autonomous development.
     severity: critical
     checks:
-      - "VISION.md not written during realisera cycle"
+      - "VISION.md not written during build cycle"
   3:
     id: V3
     rule: inspirational_tone
@@ -35,7 +35,7 @@ VALIDATION:
     rule: codebase_exploration_required
     description: >-
       When code exists, the codebase exploration step (Step 1) MUST NOT
-      be skipped. Arriving informed distinguishes visionera from a
+      be skipped. Arriving informed distinguishes vision from a
       blank-slate interview.
     severity: critical
     checks:
@@ -46,7 +46,7 @@ VALIDATION:
     description: >-
       The vision MUST be concrete enough to guide autonomous development.
       "Make a great tool" is not a vision. It must include specific
-      direction, principles, and enough detail for planera to derive tasks.
+      direction, principles, and enough detail for plan to derive tasks.
     severity: critical
     checks:
       - "Vision contains specific direction"
@@ -64,8 +64,8 @@ VALIDATION:
     id: V7
     rule: exit_marker_required
     description: >-
-      Every visionera invocation MUST emit an exit marker using the
-      canonical glyph ⛥ (SG6) in the format ⛥ visionera · <status>
+      Every vision invocation MUST emit an exit marker using the
+      canonical glyph ⛥ (SG6) in the format ⛥ vision · <status>
       where status is one of EX1-EX4.
     severity: critical
     checks:

@@ -60,9 +60,9 @@ describe("validateGraph", () => {
   it("validates capability relationships from registry records", () => {
     const schemas = path.join(tmp, "schemas");
     const caps = path.join(tmp, "capabilities");
-    writeYaml(path.join(schemas, "plan.yaml"), schemaMeta("plan", ".agentera/plan.yaml", "planera", ["realisera"]));
-    writeYaml(path.join(caps, "planera", "schemas", "artifacts.yaml"), capabilityArtifact("plan", "produces"));
-    writeYaml(path.join(caps, "realisera", "schemas", "artifacts.yaml"), capabilityArtifact("plan", "consumes"));
+    writeYaml(path.join(schemas, "plan.yaml"), schemaMeta("plan", ".agentera/plan.yaml", "plan", ["build"]));
+    writeYaml(path.join(caps, "plan", "schemas", "artifacts.yaml"), capabilityArtifact("plan", "produces"));
+    writeYaml(path.join(caps, "build", "schemas", "artifacts.yaml"), capabilityArtifact("plan", "consumes"));
 
     expect(validateGraph(schemas, caps)).toEqual([]);
   });
@@ -70,10 +70,10 @@ describe("validateGraph", () => {
   it("reports a producer mismatch", () => {
     const schemas = path.join(tmp, "schemas");
     const caps = path.join(tmp, "capabilities");
-    writeYaml(path.join(schemas, "health.yaml"), schemaMeta("health", ".agentera/health.yaml", "inspektera", ["realisera"]));
-    writeYaml(path.join(caps, "inspektera", "schemas", "artifacts.yaml"), capabilityArtifact("health", "consumes"));
+    writeYaml(path.join(schemas, "health.yaml"), schemaMeta("health", ".agentera/health.yaml", "audit", ["build"]));
+    writeYaml(path.join(caps, "audit", "schemas", "artifacts.yaml"), capabilityArtifact("health", "consumes"));
     writeYaml(
-      path.join(caps, "realisera", "schemas", "artifacts.yaml"),
+      path.join(caps, "build", "schemas", "artifacts.yaml"),
       capabilityArtifact("health", "produces_and_consumes"),
     );
 
@@ -84,10 +84,10 @@ describe("validateGraph", () => {
   it("reports an unknown artifact_id without a display-name translation map", () => {
     const schemas = path.join(tmp, "schemas");
     const caps = path.join(tmp, "capabilities");
-    writeYaml(path.join(schemas, "plan.yaml"), schemaMeta("plan", ".agentera/plan.yaml", "planera", ["realisera"]));
-    writeYaml(path.join(caps, "planera", "schemas", "artifacts.yaml"), capabilityArtifact("ghost", "produces"));
+    writeYaml(path.join(schemas, "plan.yaml"), schemaMeta("plan", ".agentera/plan.yaml", "plan", ["build"]));
+    writeYaml(path.join(caps, "plan", "schemas", "artifacts.yaml"), capabilityArtifact("ghost", "produces"));
 
-    expect(validateGraph(schemas, caps)).toContain("planera: unknown artifact_id 'ghost'");
+    expect(validateGraph(schemas, caps)).toContain("plan: unknown artifact_id 'ghost'");
   });
 
   it("loads special cases from the registry not validator-local exceptions", () => {

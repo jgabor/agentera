@@ -5,18 +5,18 @@ export const MANAGED_KEY = "AGENTERA_HOME";
 export const SECTION_NAME = "shell_environment_policy";
 export const DEFAULT_AGENT_LIMITS: Record<string, number> = { max_depth: 1 };
 export const CAPABILITY_AGENT_NAMES = [
-  "hej",
-  "visionera",
-  "resonera",
-  "inspirera",
-  "planera",
-  "realisera",
-  "optimera",
-  "inspektera",
-  "dokumentera",
-  "profilera",
-  "visualisera",
-  "orkestrera",
+  "status",
+  "vision",
+  "discuss",
+  "research",
+  "plan",
+  "build",
+  "optimize",
+  "audit",
+  "document",
+  "profile",
+  "design",
+  "orchestrate",
 ] as const;
 
 export const CODEX_HOOK_COMMAND = "npx -y agentera@next hook validate-artifact";

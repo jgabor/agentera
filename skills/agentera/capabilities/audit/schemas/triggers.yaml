@@ -3,11 +3,11 @@ TRIGGERS:
     id: T1
     description: >-
       Direct invocation by name or slash command. Matches when the user
-      explicitly requests inspektera.
+      explicitly requests audit.
     priority: high
     patterns:
-      - "inspektera"
-      - "/inspektera"
+      - "audit"
+      - "/audit"
   2:
     id: T2
     description: >-
@@ -29,10 +29,10 @@ TRIGGERS:
   3:
     id: T3
     description: >-
-      Implicit trigger after extended realisera activity. Matches when
-      realisera has run 5+ cycles without a health check and the system
+      Implicit trigger after extended build activity. Matches when
+      build has run 5+ cycles without a health check and the system
       detects an overdue audit.
     priority: medium
     patterns:
       - "health check overdue"
-      - "audit after realisera"
+      - "audit after build"

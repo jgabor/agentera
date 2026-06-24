@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 import { cmdPrime } from "../../src/cli/commands/prime.js";
-import { instructions as orkestreraInstructions } from "../../src/capabilities/orkestrera/instructions.js";
+import { instructions as orchestrateInstructions } from "../../src/capabilities/orchestrate/instructions.js";
 import {
   loadEvaluatorHandoffContract,
   validateEvaluationReportRow,
@@ -26,8 +26,8 @@ function capture(fn: (io: { out: (t: string) => void; err: (t: string) => void }
 }
 
 describe("orkestrera evaluator handoff citation contract", () => {
-  it("emits output_requirements on evaluator_handoff from prime --context orkestrera", () => {
-    const { rc, out } = capture((io) => cmdPrime({ command: "prime", context: "orkestrera", format: "json" }, io));
+  it("emits output_requirements on evaluator_handoff from prime --context orchestrate", () => {
+    const { rc, out } = capture((io) => cmdPrime({ command: "prime", context: "orchestrate", format: "json" }, io));
     expect(rc).toBe(0);
     const handoff = JSON.parse(out).capability_context.context.orchestration_context.evaluator_handoff;
     expect(handoff.output_requirements).toBeTruthy();
@@ -37,9 +37,9 @@ describe("orkestrera evaluator handoff citation contract", () => {
   });
 
   it("orkestrera Step 3 Surface 2 delegation template requires citation field", () => {
-    expect(orkestreraInstructions).toContain("citation: `<file>:<line>` OR `not-applicable: <reason>`");
-    expect(orkestreraInstructions).toContain("verify_command");
-    expect(orkestreraInstructions).toContain("evaluator_handoff.output_requirements");
+    expect(orchestrateInstructions).toContain("citation: `<file>:<line>` OR `not-applicable: <reason>`");
+    expect(orchestrateInstructions).toContain("verify_command");
+    expect(orchestrateInstructions).toContain("evaluator_handoff.output_requirements");
   });
 
   it("evaluator-handoff schema in capability-instruction-contract.yaml rejects WARN/FAIL without citation", () => {

@@ -1,6 +1,6 @@
 # Experiments Artifact Schema
 #
-# Experiment log maintained by optimera. Each experiment records hypothesis,
+# Experiment log maintained by optimize. Each experiment records hypothesis,
 # method, metric results, kept/discarded status, and conclusions. Lives
 # alongside OBJECTIVE.md in .agentera/optimera/<name>/.
 #
@@ -40,12 +40,12 @@ meta:
   name: experiments
   version: "1.0.0"
   description: >-
-    Experiment log for optimera objectives. Produced and consumed by optimera.
+    Experiment log for optimize objectives. Produced and consumed by optimize.
     Lives in .agentera/optimera/<name>/ alongside the objective.
   artifact_type: agent_facing
   path: ".agentera/optimera/<name>/experiments.yaml"
-  producer: optimera
-  consumers: [hej, optimera]
+  producer: optimize
+  consumers: [status, optimize]
   format: yaml
 
 GROUP_PREFIXES:
@@ -108,7 +108,7 @@ COMPACTION:
       Experiments older than 50 are dropped entirely.
   5:
     id: EX_CMP5
-    trigger: "When optimera writes a new experiment"
+    trigger: "When optimize writes a new experiment"
     description: >-
       Compaction runs when the producing skill writes a new entry.
       If >10 full-detail entries exist, collapse the oldest to one-line.

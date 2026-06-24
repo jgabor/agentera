@@ -3,7 +3,7 @@
  *
  * Returns the docs index (document, path, last_updated, status) and
  * a source_contract that asserts
- * `capability_startup_complete` so prime/hej can skip raw
+ * `capability_startup_complete` so prime can skip raw
  * `.agentera/docs.yaml` reads.
  */
 

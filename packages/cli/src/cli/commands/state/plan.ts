@@ -3,7 +3,7 @@
  *
  * Source-contract builder for plan artifacts: declares the
  * `complete_for_plan_artifact` / `complete_for_normal_startup_evaluation`
- * flags that downstream capabilities (prime, hej, orkestrera) read
+ * flags that downstream capabilities (prime, orchestrate) read
  * before raw plan access.
  */
 

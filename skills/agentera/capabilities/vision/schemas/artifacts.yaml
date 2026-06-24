@@ -4,54 +4,54 @@ ARTIFACTS:
     artifact_id: vision
     local_role: produces_and_consumes
     description: >-
-      Visionera writes and refines project direction, principles, personas,
+      Vision writes and refines project direction, principles, personas,
       aspirations, and identity.
   2:
     id: A2
     artifact_id: decisions
     local_role: consumes
     description: >-
-      Visionera reads this to detect shifted thinking during refine mode
+      Vision reads this to detect shifted thinking during refine mode
       and to surface unresolved tensions with the vision.
   3:
     id: A3
     artifact_id: progress
     local_role: consumes
     description: >-
-      Visionera reads this during refine mode to understand what has been
+      Vision reads this during refine mode to understand what has been
       built since the vision was last updated.
   4:
     id: A4
     artifact_id: health
     local_role: consumes
     description: >-
-      Visionera reads this to understand structural realities that
+      Vision reads this to understand structural realities that
       constrain or inform the vision.
   5:
     id: A5
     artifact_id: todo
     local_role: consumes
     description: >-
-      Visionera reads this during refine mode to detect recurring problems
+      Vision reads this during refine mode to detect recurring problems
       that suggest the vision needs adjustment.
   6:
     id: A6
     artifact_id: design
     local_role: consumes
     description: >-
-      Visionera reads this during codebase exploration to ensure the
+      Vision reads this during codebase exploration to ensure the
       Identity section in project direction coheres with the visual system.
   7:
     id: A7
     artifact_id: docs
     local_role: consumes
     description: >-
-      Visionera reads this first to resolve project-local artifact mappings
+      Vision reads this first to resolve project-local artifact mappings
       before accessing other artifacts.
   8:
     id: A8
     artifact_id: profile
     local_role: consumes
     description: >-
-      Visionera reads this to calibrate the vision conversation: high-confidence
+      Vision reads this to calibrate the vision conversation: high-confidence
       entries become proposed principles.

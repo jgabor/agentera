@@ -80,10 +80,10 @@ describe("cli help", () => {
   });
 
   it("routes capability --help through main", () => {
-    const { rc, out } = capture((io) => main(["node", "agentera", "planera", "--help"], io));
+    const { rc, out } = capture((io) => main(["node", "agentera", "plan", "--help"], io));
     expect(rc).toBe(0);
-    expect(out).toContain("agentera planera [-h]");
-    expect(out).toContain("prime --context planera");
+    expect(out).toContain("agentera plan [-h]");
+    expect(out).toContain("prime --context plan");
   });
 
   it("rejects help for unknown commands", () => {
@@ -108,15 +108,14 @@ describe("cli help", () => {
   });
 
   it("returns null for removed top-level parser help aliases", () => {
-    expect(printCommandHelp("hej")).toBeNull();
+    expect(printCommandHelp("status")).toBeNull();
     expect(printCommandHelp("describe")).toBeNull();
     expect(printCommandHelp("gate")).toBeNull();
-    expect(printCommandHelp("plan")).toBeNull();
   });
 });
 
 describe("cli dispatch: removed top-level parsers (T8)", () => {
-  const removed = ["hej", "describe", "gate", "plan"] as const;
+  const removed = ["status", "describe", "gate"] as const;
 
   for (const command of removed) {
     it(`rejects agentera ${command} with rc 2 and the unknown-command envelope`, () => {

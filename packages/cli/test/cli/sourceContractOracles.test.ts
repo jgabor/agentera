@@ -349,8 +349,8 @@ describe("prime source_contract (oracle parity)", () => {
 });
 
 describe("prime --context <capability> source_contract (oracle parity)", () => {
-  const BESPOKE_CAPABILITIES = ["orkestrera", "realisera", "inspektera", "optimera", "dokumentera"];
-  const NON_BESPOKE_CAPABILITIES = ["hej", "planera", "resonera", "inspirera", "visionera", "visualisera", "profilera"];
+  const BESPOKE_CAPABILITIES = ["orchestrate", "build", "audit", "optimize", "document"];
+  const NON_BESPOKE_CAPABILITIES = ["status", "plan", "discuss", "research", "vision", "design", "profile"];
 
   function capturePrimeContext(capability: string): { rc: number; payload: Record<string, unknown> } {
     return runDispatch(["prime", "--context", capability, "--format", "json"]);
@@ -540,7 +540,7 @@ describe("shared source_contract pattern (cross-cutting structural contract)", (
       },
       {
         label: "prime_context.orkestrera",
-        payload: readBespokeInPayload(runDispatch(["prime", "--context", "orkestrera", "--format", "json"]).payload),
+        payload: readBespokeInPayload(runDispatch(["prime", "--context", "orchestrate", "--format", "json"]).payload),
         readsRequiredKey: "raw_artifact_reads_required",
       },
       {
@@ -576,7 +576,7 @@ describe("shared source_contract pattern (cross-cutting structural contract)", (
       },
       {
         label: "prime_context.orkestrera",
-        payload: readBespokeInPayload(runDispatch(["prime", "--context", "orkestrera", "--format", "json"]).payload),
+        payload: readBespokeInPayload(runDispatch(["prime", "--context", "orchestrate", "--format", "json"]).payload),
         policyKey: "raw_artifact_read_policy",
       },
       {

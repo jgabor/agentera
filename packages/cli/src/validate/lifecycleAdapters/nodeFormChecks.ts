@@ -15,7 +15,7 @@ import {
   HARD_GATE_DOC_REQUIREMENTS,
   codexLifecycleStatusValues,
   codexLimitationTerms,
-  copilotProfileraTerms,
+  copilotProfileTerms,
   handlerCommandText,
   hardGateDocTerms,
   isDir,
@@ -163,9 +163,9 @@ export function validateCopilot(
     }
   }
   const description = plugin.description;
-  const profileraTerms = copilotProfileraTerms(registry);
-  if (typeof description !== "string" || profileraTerms.some((term) => !description.includes(term))) {
-    errors.push("copilot.profilera: description must expose bounded corpus metadata limits");
+  const profileTerms = copilotProfileTerms(registry);
+  if (typeof description !== "string" || profileTerms.some((term) => !description.includes(term))) {
+    errors.push("copilot.profile: description must expose bounded corpus metadata limits");
   }
   return errors;
 }
@@ -246,10 +246,10 @@ export function validateCursor(
   } else {
     const limitations = cursorMeta.limitations;
     if (!Array.isArray(limitations) || limitations.length === 0) {
-      errors.push("cursor: limitations must document cloud agents, bare hej, and hard-gate gating");
+      errors.push("cursor: limitations must document cloud agents, /agentera, and hard-gate gating");
     } else {
       const joined = limitations.map((item) => String(item)).join(" ");
-      for (const term of ["Cloud agents", "bare hej", "hard-gate", "smoke"]) {
+      for (const term of ["Cloud agents", "/agentera", "hard-gate", "smoke"]) {
         if (!joined.toLowerCase().includes(term.toLowerCase())) {
           errors.push(`cursor: limitations must mention '${term}'`);
         }
@@ -455,7 +455,7 @@ export function validateCodexProfileraMetadata(root: string, plugin: JsonObject)
     if (!text.includes("path: ./skills/agentera")) {
       errors.push(`codex.agentera: ${rel} must point at installed skills/agentera`);
     }
-    for (const stalePath of ["path: ./skills/hej", "metadata: ./skills/hej", "skills/<name>/agents"]) {
+    for (const stalePath of ["path: ./skills/status", "metadata: ./skills/status", "skills/<name>/agents"]) {
       if (text.includes(stalePath)) {
         errors.push(`codex.agentera: ${rel} carries stale v1 skill path '${stalePath}'`);
       }

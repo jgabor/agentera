@@ -25,23 +25,23 @@ export const QUERY_ARTIFACTS: Record<string, string> = {
   experiments: "experiments",
 };
 const PRIMARY_ROUTE_TO_CAPABILITY: Record<string, string> = {
-  build: "realisera",
-  plan: "planera",
-  status: "hej",
-  discuss: "resonera",
-  research: "inspirera",
-  optimize: "optimera",
-  audit: "inspektera",
-  document: "dokumentera",
-  profile: "profilera",
-  design: "visualisera",
-  orchestrate: "orkestrera",
-  vision: "visionera",
+  build: "build",
+  plan: "plan",
+  status: "status",
+  discuss: "discuss",
+  research: "research",
+  optimize: "optimize",
+  audit: "audit",
+  document: "document",
+  profile: "profile",
+  design: "design",
+  orchestrate: "orchestrate",
+  vision: "vision",
 };
-const CAPABILITIES_WITH_HEJ = new Set([...Object.values(PRIMARY_ROUTE_TO_CAPABILITY), "hej"]);
-const MARKER_RE = /─{2,}\s+(\S)\s+([a-z]+era|hej)\s+·\s+([a-z]+(?:\s+\d+)?)\s+─{2,}/g;
+const CAPABILITIES_WITH_STATUS = new Set([...Object.values(PRIMARY_ROUTE_TO_CAPABILITY)]);
+const MARKER_RE = /─{2,}\s+(\S)\s+(status|vision|discuss|research|plan|build|optimize|audit|document|profile|design|orchestrate)\s+·\s+([a-z]+(?:\s+\d+)?)\s+─{2,}/g;
 const BARE_AGENTERA_ROUTE_RE = /^\s*\/agentera(?:\s+([A-Za-z0-9._:-]+))?/m;
-const BARE_CAPABILITY_ROUTE_RE = /^\s*\/([a-z]+era|hej)(?:\s|$)/m;
+const BARE_CAPABILITY_ROUTE_RE = /^\s*\/(status|vision|discuss|research|plan|build|optimize|audit|document|profile|design|orchestrate)(?:\s|$)/m;
 const XML_ROUTE_RE = /<command-name>\s*\/(?:agentera\s+)?([A-Za-z0-9._:-]+)\s*<\/command-name>/;
 
 export const THRESHOLD_WARNING_PATTERNS: Array<[string, string, string, RegExp]> = [
@@ -168,12 +168,12 @@ export function routeCapability(text: string): string | null {
   let m = XML_ROUTE_RE.exec(text);
   if (m) {
     const route = m[1].toLowerCase();
-    return CAPABILITIES_WITH_HEJ.has(route) ? route : (PRIMARY_ROUTE_TO_CAPABILITY[route] ?? null);
+    return CAPABILITIES_WITH_STATUS.has(route) ? route : (PRIMARY_ROUTE_TO_CAPABILITY[route] ?? null);
   }
   m = BARE_AGENTERA_ROUTE_RE.exec(text);
   if (m) {
     const route = (m[1] || "status").toLowerCase();
-    return CAPABILITIES_WITH_HEJ.has(route) ? route : (PRIMARY_ROUTE_TO_CAPABILITY[route] ?? null);
+    return CAPABILITIES_WITH_STATUS.has(route) ? route : (PRIMARY_ROUTE_TO_CAPABILITY[route] ?? null);
   }
   m = BARE_CAPABILITY_ROUTE_RE.exec(text);
   if (m) {
@@ -187,7 +187,7 @@ export function capabilityInvocation(text: string): string | null {
   const marker = introCapability(text);
   if (marker) return marker;
   const lowered = text.toLowerCase();
-  for (const capability of [...CAPABILITIES_WITH_HEJ].sort()) {
+  for (const capability of [...CAPABILITIES_WITH_STATUS].sort()) {
     if (new RegExp(`\\b${capability.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`).test(lowered)) {
       return capability;
     }

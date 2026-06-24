@@ -1,6 +1,6 @@
 # Plan Artifact Schema
 #
-# Active work plan maintained by planera. Each plan captures what will be built,
+# Active work plan maintained by plan. Each plan captures what will be built,
 # why, constraints, scope boundaries, design approach, tasks with dependencies
 # and acceptance criteria, overall acceptance, and surprises.
 #
@@ -41,12 +41,12 @@ meta:
   name: plan
   version: "1.0.0"
   description: >-
-    Active work plan. Produced by planera and updated by plan executors.
+    Active work plan. Produced by plan and updated by plan executors.
     Consumed by capabilities that inspect or execute plan state.
   artifact_type: agent_facing
   path: ".agentera/plan.yaml"
-  producer: [orkestrera, planera, realisera]
-  consumers: [hej, inspektera, orkestrera, planera, realisera]
+  producer: [orchestrate, plan, build]
+  consumers: [status, audit, orchestrate, plan, build]
   format: yaml
 
 GROUP_PREFIXES:
@@ -191,7 +191,7 @@ PLAN:
     required: false
     description: >-
       Runtime surprises discovered during plan execution. Populated
-      by realisera when reality diverges from plan. Default: empty.
+      by build when reality diverges from plan. Default: empty.
   7:
     id: PL22
     field: previous_plan_archived

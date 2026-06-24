@@ -88,7 +88,7 @@ function passEnvelope(subcommand: (typeof D56_SUBCOMMANDS)[number]): {
   payload: Record<string, unknown>;
 } {
   if (subcommand === "capability") {
-    const { rc, out } = capture((io) => cmdValidateCapability("realisera", { format: "json" }, io));
+    const { rc, out } = capture((io) => cmdValidateCapability("build", { format: "json" }, io));
     return { rc, payload: JSON.parse(out) };
   }
   if (subcommand === "capability-contract") {

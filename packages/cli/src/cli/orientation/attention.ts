@@ -40,14 +40,14 @@ export function buildOrientationAttention(state: OrientationState): string[] {
   }
   if (profileStatus === "not found") {
     attention.push(
-      `degraded: PROFILE.md not found at ${profile}; suggest running profilera to generate PROFILE.md`,
+      `degraded: PROFILE.md not found at ${profile}; suggest running profile to generate PROFILE.md`,
     );
   } else if (profileDict.stale) {
     const daysSince = profileDict.days_since_generated ?? "?";
     const staleDays = profileDict.stale_threshold_days ?? "?";
     attention.push(
-      `normal: profilera profile stale (${daysSince} days since last refresh; ` +
-        `threshold=${staleDays}); suggest running profilera to refresh PROFILE.md`,
+      `normal: profile stale (${daysSince} days since last refresh; ` +
+        `threshold=${staleDays}); suggest running profile to refresh PROFILE.md`,
     );
   }
   if (health.stale) {
@@ -56,11 +56,11 @@ export function buildOrientationAttention(state: OrientationState): string[] {
     const thresholdDays = health.stale_threshold_days ?? "?";
     const thresholdCycles = health.stale_threshold_cycles ?? "?";
     let attentionText =
-      `normal: inspektera audit stale (${daysSince} days since Audit ${auditNumber}; ` +
+      `normal: audit stale (${daysSince} days since Audit ${auditNumber}; ` +
       `threshold days=${thresholdDays}, cycles=${thresholdCycles}`;
     const cyclesSince = health.cycles_since_audit;
     if (cyclesSince !== null && cyclesSince !== undefined) attentionText += `; ${cyclesSince} cycles since audit`;
-    attention.push(`${attentionText}); suggest running inspektera`);
+    attention.push(`${attentionText}); suggest running audit`);
   }
   if (health.degrading) {
     const worst = health.worst;

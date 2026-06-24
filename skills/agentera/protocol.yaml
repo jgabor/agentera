@@ -59,18 +59,18 @@
 #   Structural: inline separator (·)               → VISUAL_TOKENS.16    (VT16)
 #   Structural: flow/target (→)                    → VISUAL_TOKENS.17    (VT17)
 #   Structural: progress bar (█▓░)                 → VISUAL_TOKENS.18    (VT18)
-#   Skill glyph: hej (⌂)                           → SKILL_GLYPHS.1      (SG1)
-#   Skill glyph: realisera (⧉)                     → SKILL_GLYPHS.2      (SG2)
-#   Skill glyph: inspektera (⛶)                    → SKILL_GLYPHS.3      (SG3)
-#   Skill glyph: resonera (❈)                      → SKILL_GLYPHS.4      (SG4)
-#   Skill glyph: planera (≡)                       → SKILL_GLYPHS.5      (SG5)
-#   Skill glyph: visionera (⛥)                     → SKILL_GLYPHS.6      (SG6)
-#   Skill glyph: optimera (⎘)                      → SKILL_GLYPHS.7      (SG7)
-#   Skill glyph: dokumentera (▤)                   → SKILL_GLYPHS.8      (SG8)
-#   Skill glyph: profilera (♾)                     → SKILL_GLYPHS.9      (SG9)
-#   Skill glyph: inspirera (⬚)                     → SKILL_GLYPHS.10     (SG10)
-#   Skill glyph: visualisera (◰)                   → SKILL_GLYPHS.11     (SG11)
-#   Skill glyph: orkestrera (⎈)                    → SKILL_GLYPHS.12     (SG12)
+#   Skill glyph: status (⌂)                          → SKILL_GLYPHS.1      (SG1)
+#   Skill glyph: build (⧉)                           → SKILL_GLYPHS.2      (SG2)
+#   Skill glyph: audit (⛶)                          → SKILL_GLYPHS.3      (SG3)
+#   Skill glyph: discuss (❈)                         → SKILL_GLYPHS.4      (SG4)
+#   Skill glyph: plan (≡)                            → SKILL_GLYPHS.5      (SG5)
+#   Skill glyph: vision (⛥)                          → SKILL_GLYPHS.6      (SG6)
+#   Skill glyph: optimize (⎘)                        → SKILL_GLYPHS.7      (SG7)
+#   Skill glyph: document (▤)                        → SKILL_GLYPHS.8      (SG8)
+#   Skill glyph: profile (♾)                         → SKILL_GLYPHS.9      (SG9)
+#   Skill glyph: research (⬚)                        → SKILL_GLYPHS.10     (SG10)
+#   Skill glyph: design (◰)                          → SKILL_GLYPHS.11     (SG11)
+#   Skill glyph: orchestrate (⎈)                     → SKILL_GLYPHS.12     (SG12)
 #
 # SPEC Section 18 (Phase Tracking):
 #   Phase: envision                                → PHASES.1            (PH1)
@@ -349,73 +349,73 @@ VISUAL_TOKENS:
 SKILL_GLYPHS:
   1:
     id: SG1
-    capability: hej
+    capability: status
     glyph: "\u2302"
     glyph_code: U+2302
     meaning: "home base"
   2:
     id: SG2
-    capability: realisera
+    capability: build
     glyph: "\u29C9"
     glyph_code: U+29C9
     meaning: "joined building blocks"
   3:
     id: SG3
-    capability: inspektera
+    capability: audit
     glyph: "\u26F6"
     glyph_code: U+26F6
     meaning: "viewfinder frame"
   4:
     id: SG4
-    capability: resonera
+    capability: discuss
     glyph: "\u2748"
     glyph_code: U+2748
     meaning: "spark of insight"
   5:
     id: SG5
-    capability: planera
+    capability: plan
     glyph: "\u2261"
     glyph_code: U+2261
     meaning: "structured layers"
   6:
     id: SG6
-    capability: visionera
+    capability: vision
     glyph: "\u26E5"
     glyph_code: U+26E5
     meaning: "guiding star"
   7:
     id: SG7
-    capability: optimera
+    capability: optimize
     glyph: "\u2398"
     glyph_code: U+2398
     meaning: "measurement"
   8:
     id: SG8
-    capability: dokumentera
+    capability: document
     glyph: "\u25A4"
     glyph_code: U+25A4
     meaning: "text on page"
   9:
     id: SG9
-    capability: profilera
+    capability: profile
     glyph: "\u267E"
     glyph_code: U+267E
     meaning: "permanent mark"
   10:
     id: SG10
-    capability: inspirera
+    capability: research
     glyph: "\u2B1A"
     glyph_code: U+2B1A
     meaning: "frame to fill"
   11:
     id: SG11
-    capability: visualisera
+    capability: design
     glyph: "\u25F0"
     glyph_code: U+25F0
     meaning: "design grid"
   12:
     id: SG12
-    capability: orkestrera
+    capability: orchestrate
     glyph: "\u2388"
     glyph_code: U+2388
     meaning: "helm, steering"
@@ -424,7 +424,7 @@ PHASES:
   1:
     id: PH1
     value: envision
-    capabilities: [visionera]
+    capabilities: [vision]
     purpose: "Define or refine the project's north star"
     valid_successors: [deliberate, plan, build]
     terminal: false
@@ -432,7 +432,7 @@ PHASES:
   2:
     id: PH2
     value: deliberate
-    capabilities: [resonera]
+    capabilities: [discuss]
     purpose: "Reason through decisions before committing to a direction"
     valid_successors: [plan, build, envision]
     terminal: false
@@ -440,7 +440,7 @@ PHASES:
   3:
     id: PH3
     value: plan
-    capabilities: [planera]
+    capabilities: [plan]
     purpose: "Structure work into tasks with dependencies and acceptance criteria"
     valid_successors: [build, deliberate]
     terminal: false
@@ -448,7 +448,7 @@ PHASES:
   4:
     id: PH4
     value: build
-    capabilities: [realisera, optimera, dokumentera, visualisera]
+    capabilities: [build, optimize, document, design]
     purpose: "Implement, optimize, document, or design"
     valid_successors: [build, audit, plan]
     terminal: true
@@ -456,7 +456,7 @@ PHASES:
   5:
     id: PH5
     value: audit
-    capabilities: [inspektera]
+    capabilities: [audit]
     purpose: "Evaluate structural health and alignment"
     valid_successors: [build, plan, deliberate, envision]
     terminal: true

@@ -1,7 +1,7 @@
 # Decisions Artifact Schema
 #
-# Reasoning trail maintained by resonera. Each deliberation session appends
-# one entry. Decisions are referenced by realisera, optimera, and profilera
+# Reasoning trail maintained by discuss. Each deliberation session appends
+# one entry. Decisions are referenced by build, optimize, and profile
 # for context on why choices were made.
 #
 # Structural pattern: UPPER_CASE groups with numbered entries and stable IDs,
@@ -32,14 +32,14 @@ meta:
   name: decisions
   version: "1.0.0"
   description: >-
-    Reasoning trail maintained by resonera. Each deliberation session
-    appends one entry. Decisions are referenced by realisera, optimera,
-    profilera, planera, inspektera, hej, dokumentera, visionera, resonera,
-    and orkestrera for context on why choices were made.
+    Reasoning trail maintained by discuss. Each deliberation session
+    appends one entry. Decisions are referenced by build, optimize,
+    profile, plan, audit, status, document, vision, discuss,
+    and orchestrate for context on why choices were made.
   artifact_type: agent_facing
   path: ".agentera/decisions.yaml"
-  producer: resonera
-  consumers: [dokumentera, hej, inspektera, optimera, orkestrera, planera, profilera, realisera, resonera, visionera]
+  producer: discuss
+  consumers: [document, status, audit, optimize, orchestrate, plan, profile, build, discuss, vision]
   format: yaml
 
 GROUP_PREFIXES:
@@ -103,7 +103,7 @@ COMPACTION:
       Decisions older than 50 are dropped entirely.
   5:
     id: DX5
-    trigger: "When resonera writes a new decision"
+    trigger: "When discuss writes a new decision"
     description: >-
       Compaction runs when the producing skill writes a new entry.
       If >10 full-detail entries exist, collapse the oldest to one-line.

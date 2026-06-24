@@ -5,24 +5,24 @@ ARTIFACTS:
     local_role: produces_and_consumes
     description: >-
       Documentation contract with conventions, artifact mapping, and
-      documentation index. Dokumentera writes and reads doc root, style
+      documentation index. Document writes and reads doc root, style
       conventions, auto-generated doc tracking, project-local artifact mappings,
       and a status index (current/stale/missing) for tracked docs. During
-      closeout, Dokumentera consumes docs state through CLI `closeout_context`
+      closeout, Document consumes docs state through CLI `closeout_context`
       before raw artifact fallback.
   2:
     id: A2
     artifact_id: vision
     local_role: consumes
     description: >-
-      Dokumentera reads this to understand who the documentation is for
+      Document reads this to understand who the documentation is for
       and what tone to use.
   3:
     id: A3
     artifact_id: progress
     local_role: consumes
     description: >-
-      Dokumentera reads this during explore-and-generate mode to understand
+      Document reads this during explore-and-generate mode to understand
       recent project context. During closeout, latest progress evidence and
       verification pointers are consumed through CLI `closeout_context` before
       raw artifact fallback.
@@ -31,21 +31,21 @@ ARTIFACTS:
     artifact_id: decisions
     local_role: consumes
     description: >-
-      Dokumentera reads this during explore-and-generate mode for project
+      Document reads this during explore-and-generate mode for project
       context and decision awareness.
   5:
     id: A5
     artifact_id: health
     local_role: consumes
     description: >-
-      Dokumentera reads this to discover documentation gaps surfaced
+      Document reads this to discover documentation gaps surfaced
       during health audits.
   6:
     id: A6
     artifact_id: todo
     local_role: produces_and_consumes
     description: >-
-      Dokumentera writes to this when code diverges from docs (per DTC,
+      Document writes to this when code diverges from docs (per DTC,
       the code is wrong). Also reads for context during documentation work;
       closeout blocker state is consumed through CLI `closeout_context` before
       raw artifact fallback.
@@ -54,20 +54,20 @@ ARTIFACTS:
     artifact_id: design
     local_role: consumes
     description: >-
-      Dokumentera reads this to respect the declared aesthetic and voice
+      Document reads this to respect the declared aesthetic and voice
       when generating user-facing documentation.
   8:
     id: A8
     artifact_id: profile
     local_role: consumes
     description: >-
-      Dokumentera reads this to calibrate documentation style preferences:
+      Document reads this to calibrate documentation style preferences:
       detail level, tone, format.
   9:
     id: A9
     artifact_id: changelog
     local_role: consumes
     description: >-
-      Dokumentera reads this during closeout synchronization through CLI
+      Document reads this during closeout synchronization through CLI
       `closeout_context` to preserve the changelog boundary and avoid inventing
       release, tag, publication, or remote state.

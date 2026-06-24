@@ -3,11 +3,11 @@ TRIGGERS:
     id: T1
     description: >-
       Direct invocation by name or slash command. Matches when the user
-      explicitly requests profilera.
+      explicitly requests profile.
     priority: high
     patterns:
-      - "profilera"
-      - "/profilera"
+      - "profile"
+      - "/profile"
   2:
     id: T2
     description: >-

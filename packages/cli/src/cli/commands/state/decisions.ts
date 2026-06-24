@@ -1,6 +1,6 @@
 /**
  * `state decisions` query (decisions.yaml + archive) plus the
- * decision context enrichment utilities consumed by prime/hej.
+ * decision context enrichment utilities consumed by prime.
  *
  * The contract for decision context: never infer satisfaction from
  * downstream references, commits, or compacted history. Only

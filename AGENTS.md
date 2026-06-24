@@ -41,7 +41,7 @@ Recipe-first entry points (run from repo root unless noted):
 
 | When | Command |
 | ---- | ------- |
-| Orientation / hej dashboard | `npx -y agentera prime` |
+| Orientation / status dashboard | `npx -y agentera prime` |
 | Capability startup context | `npx -y agentera prime --context <name> --format json` |
 | Project state | `npx -y agentera state todo`, `state plan`, `state decisions` |
 | Validate capability or contract | `npx -y agentera check validate capability <name>` · `check validate capability-contract` |
@@ -89,7 +89,7 @@ npx -y agentera state docs
 npx -y agentera state query --list-artifacts
 ```
 
-Top-level aliases such as `hej`, `todo`, and `docs` remain during migration with stderr deprecation.
+Top-level aliases such as `status`, `todo`, and `docs` remain during migration with stderr deprecation.
 
 Canonical artifact names such as `DOCS.md` may map to YAML paths such as `.agentera/docs.yaml`; use the mapping or CLI result as the source of truth.
 
@@ -112,7 +112,7 @@ npx -y agentera check validate capability <name-or-path>
 
 ## Changelog
 
-`CHANGELOG.md` is the human-facing release history. Realisera maintains it at release time; fold changelog updates into the release commit rather than standalone bookkeeping commits.
+`CHANGELOG.md` is the human-facing release history. Build maintains it at release time; fold changelog updates into the release commit rather than standalone bookkeeping commits.
 
 ### Structure
 
@@ -147,7 +147,7 @@ Good highlight:
 Good Fixed entry:
 
 ```markdown
-- Fixed `agentera health` and hej to select the latest health audit by highest audit number and read schema `date` instead of a missing `timestamp` field.
+- Fixed `agentera health` and status to select the latest health audit by highest audit number and read schema `date` instead of a missing `timestamp` field.
 ```
 
 Avoid:
@@ -184,18 +184,18 @@ Use the scope for the primary behavior changed, not every file touched.
 | `cursor`      | Cursor IDE and cursor-agent CLI runtime behavior, hooks, agents, and packaging           |
 | `release`     | Version bumps, changelog promotion, release readiness, tag/publication prep            |
 | `agents`      | `AGENTS.md` or runtime-neutral agent operating guidance                                |
-| `hej`         | Hej capability behavior, prose, schemas, or tests                                      |
-| `visionera`   | Visionera capability behavior, prose, schemas, or tests                                |
-| `resonera`    | Resonera capability behavior, prose, schemas, or tests                                 |
-| `inspirera`   | Inspirera capability behavior, prose, schemas, or tests                                |
-| `planera`     | Planera capability behavior, prose, schemas, or tests                                  |
-| `realisera`   | Realisera capability behavior, prose, schemas, or tests                                |
-| `optimera`    | Optimera capability behavior, prose, schemas, or tests                                 |
-| `inspektera`  | Inspektera capability behavior, prose, schemas, or tests                               |
-| `dokumentera` | Dokumentera capability behavior, prose, schemas, or tests                              |
-| `profilera`   | Profilera capability behavior, prose, schemas, or tests                                |
-| `visualisera` | Visualisera capability behavior, prose, schemas, or tests                              |
-| `orkestrera`  | Orkestrera capability behavior, prose, schemas, or tests                               |
+| `status`      | Status capability behavior, prose, schemas, or tests                                     |
+| `vision`      | Vision capability behavior, prose, schemas, or tests                                    |
+| `discuss`     | Discuss capability behavior, prose, schemas, or tests                                  |
+| `research`    | Research capability behavior, prose, schemas, or tests                                  |
+| `plan`        | Plan capability behavior, prose, schemas, or tests                                      |
+| `build`       | Build capability behavior, prose, schemas, or tests                                     |
+| `optimize`    | Optimize capability behavior, prose, schemas, or tests                                 |
+| `audit`       | Audit capability behavior, prose, schemas, or tests                                    |
+| `document`    | Document capability behavior, prose, schemas, or tests                                  |
+| `profile`     | Profile capability behavior, prose, schemas, or tests                                  |
+| `design`      | Design capability behavior, prose, schemas, or tests                                   |
+| `orchestrate` | Orchestrate capability behavior, prose, schemas, or tests                              |
 
 New scopes are closed by default. If a commit needs a new scope, update this table with a one-line definition in the same commit; otherwise omit the scope.
 
@@ -326,8 +326,8 @@ into **that same commit**:
 - `.agentera/plan.yaml` (task status, plan closeout, archive handoff)
 - `.agentera/progress.yaml` (cycle evidence for the work)
 - `TODO.md` (open items closed or filed)
-- `.agentera/health.yaml` (inspektera audit output)
-- `.agentera/decisions.yaml` (resonera satisfaction updates)
+- `.agentera/health.yaml` (audit capability output)
+- `.agentera/decisions.yaml` (discuss satisfaction updates)
 
 Do not leave a task "done" with artifact state committed in a follow-up chore
 commit. If you already pushed the implementation commit, fold artifact updates into
@@ -383,9 +383,9 @@ implementation, not in a follow-up chore commit:
 
 | Capability | Artifact | Fold into |
 | ---------- | -------- | --------- |
-| inspektera | `.agentera/health.yaml` | Same commit as audit fixes or findings addressed |
-| resonera | `.agentera/decisions.yaml` | Same commit as deliberation outcome or confirmation |
-| planera / orkestrera / realisera | `.agentera/plan.yaml` (+ archive on complete) | Final task commit: mark tasks complete, archive plan, clear active slot |
+| audit | `.agentera/health.yaml` | Same commit as audit fixes or findings addressed |
+| discuss | `.agentera/decisions.yaml` | Same commit as deliberation outcome or confirmation |
+| plan / orchestrate / build | `.agentera/plan.yaml` (+ archive on complete) | Final task commit: mark tasks complete, archive plan, clear active slot |
 
 ## Cursor Cloud specific instructions
 
