@@ -28,7 +28,7 @@ export function realiseraExecutionContext(
   profile: Dict,
   bundle: Dict,
 ): Dict | null {
-  if (capability !== "realisera") return null;
+  if (capability !== "build") return null;
   const capabilityContract = capabilityContext(capability) ?? {};
   const tasks = asList(plan.tasks).filter((t) => t && typeof t === "object" && !Array.isArray(t));
   const target = selectEvidenceTarget(plan);
@@ -109,7 +109,7 @@ export function realiseraExecutionContext(
   const caveated = stateCaveats.length > 0;
   const complete = (mode === "plan_driven" || mode === "completed_plan_sweep") && missingRequired.length === 0;
   return {
-    capability: "realisera",
+    capability: "build",
     mode,
     work_selection: {
       status: target.status,
@@ -159,7 +159,7 @@ export function realiseraExecutionContext(
       remote_push_allowed: false,
       commit_allowed_only_with_explicit_user_request: true,
       tag_or_publication_allowed: false,
-      source_provenance: sourceProvenance("execution_context", "agentera prime --context realisera --format json", "git_boundary"),
+      source_provenance: sourceProvenance("execution_context", "agentera prime --context build --format json", "git_boundary"),
     },
     plan_completion_sweep: sweep,
     state_family_caveats: stateCaveats,

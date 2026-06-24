@@ -3,32 +3,32 @@
 // CAPABILITY_INSTRUCTIONS lookup keyed by capability name. The CLI loader
 // imports this barrel from `../capabilities/index.js` so source-mode (vitest)
 // and dist-mode (npm install) resolve the same path.
-import { instructions as hejInstructions } from "./hej/instructions.js";
-import { instructions as visioneraInstructions } from "./visionera/instructions.js";
-import { instructions as resoneraInstructions } from "./resonera/instructions.js";
-import { instructions as inspireraInstructions } from "./inspirera/instructions.js";
-import { instructions as planeraInstructions } from "./planera/instructions.js";
-import { instructions as realiseraInstructions } from "./realisera/instructions.js";
-import { instructions as optimeraInstructions } from "./optimera/instructions.js";
-import { instructions as inspekteraInstructions } from "./inspektera/instructions.js";
-import { instructions as dokumenteraInstructions } from "./dokumentera/instructions.js";
-import { instructions as profileraInstructions } from "./profilera/instructions.js";
-import { instructions as visualiseraInstructions } from "./visualisera/instructions.js";
-import { instructions as orkestreraInstructions } from "./orkestrera/instructions.js";
+import { instructions as statusInstructions } from "./status/instructions.js";
+import { instructions as visionInstructions } from "./vision/instructions.js";
+import { instructions as discussInstructions } from "./discuss/instructions.js";
+import { instructions as researchInstructions } from "./research/instructions.js";
+import { instructions as planInstructions } from "./plan/instructions.js";
+import { instructions as buildInstructions } from "./build/instructions.js";
+import { instructions as optimizeInstructions } from "./optimize/instructions.js";
+import { instructions as auditInstructions } from "./audit/instructions.js";
+import { instructions as documentInstructions } from "./document/instructions.js";
+import { instructions as profileInstructions } from "./profile/instructions.js";
+import { instructions as designInstructions } from "./design/instructions.js";
+import { instructions as orchestrateInstructions } from "./orchestrate/instructions.js";
 
 export const CAPABILITY_INSTRUCTIONS: Record<string, string> = {
-  hej: hejInstructions,
-  visionera: visioneraInstructions,
-  resonera: resoneraInstructions,
-  inspirera: inspireraInstructions,
-  planera: planeraInstructions,
-  realisera: realiseraInstructions,
-  optimera: optimeraInstructions,
-  inspektera: inspekteraInstructions,
-  dokumentera: dokumenteraInstructions,
-  profilera: profileraInstructions,
-  visualisera: visualiseraInstructions,
-  orkestrera: orkestreraInstructions,
+  status: statusInstructions,
+  vision: visionInstructions,
+  discuss: discussInstructions,
+  research: researchInstructions,
+  plan: planInstructions,
+  build: buildInstructions,
+  optimize: optimizeInstructions,
+  audit: auditInstructions,
+  document: documentInstructions,
+  profile: profileInstructions,
+  design: designInstructions,
+  orchestrate: orchestrateInstructions,
 };
 
 export function capabilityInstructionModulePath(capability: string): string {

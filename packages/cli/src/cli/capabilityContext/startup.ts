@@ -95,7 +95,7 @@ export function genericSlimStartupContext(
   const decisionsPointer = fallbackStatePointer("decisions", "agentera state decisions --format json");
   const docsState = slimDocsState(docs);
   const profileState = capabilityContextProfileSummary(profile);
-  if (capability === "visionera") {
+  if (capability === "vision") {
     return {
       vision_startup_context: {
         vision: fallbackStatePointer("vision", "agentera state query vision --format json"),
@@ -109,7 +109,7 @@ export function genericSlimStartupContext(
       },
     };
   }
-  if (capability === "resonera") {
+  if (capability === "discuss") {
     return {
       deliberation_context: {
         decisions: decisionsPointer,
@@ -122,7 +122,7 @@ export function genericSlimStartupContext(
       },
     };
   }
-  if (capability === "inspirera") {
+  if (capability === "research") {
     return {
       research_context: {
         profile: profileState,
@@ -131,7 +131,7 @@ export function genericSlimStartupContext(
       },
     };
   }
-  if (capability === "planera") {
+  if (capability === "plan") {
     return {
       planning_context: {
         startup_contract: context.startup_contract ?? null,
@@ -145,12 +145,12 @@ export function genericSlimStartupContext(
       },
     };
   }
-  if (capability === "profilera") {
+  if (capability === "profile") {
     return {
       profile_context: { profile: profileState, decisions: decisionsPointer, raw_profile_body_emitted: false },
     };
   }
-  if (capability === "visualisera") {
+  if (capability === "design") {
     return {
       design_context: {
         design: fallbackStatePointer("design", "agentera state query design --format json"),

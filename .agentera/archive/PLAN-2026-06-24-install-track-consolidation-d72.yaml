@@ -1,0 +1,130 @@
+header:
+  level: full
+  created: "2026-06-24"
+  status: active
+  reviewed: "2026-06-24"
+  critic_issues: "10 found, 10 addressed, 0 dismissed"
+  title: "Plan: Install Track Consolidation (Decision 72)"
+what: >
+  Promote the existing internal install-lineage classifier to a public field
+  in diagnostic output, rename legacy bundle terminology to app terminology
+  across public output, and surface the coexistence warning through the
+  existing attention mechanism. Three parallel install-state concepts become
+  one canonical public field; one redundant public field retires.
+why: >
+  Users cannot tell at a glance whether they are running v2, v3, or from
+  source. Three parallel concepts overlap and create internal confusion about
+  which is canonical. The coexistence warning (v2 app plus v3 hooks) exists
+  in doctor output but does not surface in the orientation briefing. The
+  bundle field name is a straggler from before the app-terminology decision.
+constraints: >
+  Must not break the development-channel npm flow. Must not remove protected
+  user state. Must not change upgrade behavior (diagnostic output only). Must
+  not add new npm dependencies. Must preserve the coexistence contract
+  message ("pick one line"). Breaking change to JSON output accepted because
+  the CLI is pre-release on the development channel; all consumers are
+  internal. External consumers verified: packages/mobile and packages/web do
+  not read bundle or rootStatus from orientation or doctor JSON output.
+scope:
+  included:
+    - "Promote the internal lineage classifier to a public install_track field in orientation and doctor output"
+    - "Rename bundle to app in public diagnostic output (orientation, doctor)"
+    - "Retire the redundant rootStatus field from public output"
+    - "Add coexistence warning as an attention item in orientation output"
+    - "Update all internal production consumers of the renamed fields"
+    - "Update tests covering diagnostic output"
+  excluded:
+    - "Upgrade command output (already shows version transition)"
+    - "Coexistence contract message text (stays 'pick one line')"
+    - "Capability startup context shape (not a diagnostic surface)"
+    - "Mobile or web packages (verified: no JSON field reads of bundle or rootStatus)"
+  deferred:
+    - "Retiring the internal classifier field name (internal rename, not user-visible; can land separately)"
+design: >
+  The tasks run sequentially because multiple tasks edit the same
+  orientation and doctor output assemblers; parallel execution would
+  collide on shared files. The promotion phase runs first: the lineage
+  classifier gains a public projection function that maps internal values
+  to the four public values. The rename phase runs second: all public
+  output fields carrying the legacy bundle name switch to the app name.
+  The retirement phase runs third: the redundant root health field is
+  removed from public output while staying internal for classifier logic.
+  The coexistence phase runs fourth: the existing coexistence detection
+  feeds into the existing orientation attention builder (already present),
+  and the doctor coexistence section stays as-is. The consumer-update phase
+  runs fifth: all internal production code that reads the old field names
+  is updated. The test phase runs sixth: tests covering diagnostic output
+  are updated to assert the new field names and values. The final task
+  verifies the full suite, content gate, typecheck, and captures the
+  breaking change in the changelog.
+tasks:
+  - number: 1
+    name: "Promote lineage classifier to public field"
+    depends_on: []
+    status: complete
+    acceptance:
+      - "GIVEN the orientation command runs with JSON output WHEN the install is a v2 managed app THEN the app_home object includes install_track with value v2"
+      - "GIVEN the orientation command runs with JSON output WHEN the install is a v3 npm self-contained package THEN the app_home object includes install_track with value v3"
+      - "GIVEN the orientation command runs with JSON output WHEN the install is a source checkout THEN the app_home object includes install_track with value source"
+      - "GIVEN the orientation command runs with JSON output WHEN the install is an unknown foreign directory THEN the app_home object includes install_track with value unknown"
+      - "GIVEN the test fixtures directory WHEN inspected THEN install-state fixtures exist or are created for v2, v3, source, and unknown states"
+  - number: 2
+    name: "Rename bundle to app in public output"
+    depends_on: ["1"]
+    status: complete
+    acceptance:
+      - "GIVEN the orientation command runs with JSON output WHEN the output is parsed THEN the top-level field previously named bundle is named app"
+      - "GIVEN the doctor command runs with JSON output WHEN the output is parsed THEN the top-level field previously named bundle is named app"
+      - "GIVEN the orientation or doctor JSON output WHEN any key name is inspected THEN no key contains the substring bundle"
+  - number: 3
+    name: "Retire redundant root health field from public output"
+    depends_on: ["2"]
+    status: complete
+    acceptance:
+      - "GIVEN the orientation command runs with JSON output WHEN the output is parsed THEN no key named rootStatus exists anywhere in the output"
+      - "GIVEN the doctor command runs with JSON output WHEN the output is parsed THEN no key named rootStatus exists anywhere in the output"
+      - "GIVEN the doctor text output WHEN rendered THEN the root classification is still reported in human-readable form without referencing the retired field name"
+  - number: 4
+    name: "Add coexistence warning as orientation attention item"
+    depends_on: ["1"]
+    status: complete
+    acceptance:
+      - "GIVEN a v2 managed app is present at the resolved home AND the runtime hooks reference the v3 npm entrypoint WHEN the orientation command runs THEN the attention list includes an item warning about v2 and v3 coexistence"
+      - "GIVEN no v2 managed app is present WHEN the orientation command runs THEN the attention list does not include a coexistence warning"
+      - "GIVEN the doctor command runs WHEN the output is rendered THEN the existing coexistence section is unchanged"
+      - "GIVEN the test fixtures directory WHEN inspected THEN a coexistence fixture exists or is created that simulates v2 app plus v3 hooks in a temp dir"
+  - number: 5
+    name: "Update internal production consumers of renamed fields"
+    depends_on: ["2", "3"]
+    status: complete
+    acceptance:
+      - "GIVEN the production source files WHEN searched for references to the old bundle field name in JSON output construction THEN no production file reads or writes the old field name"
+      - "GIVEN the production source files WHEN searched for references to rootStatus in public output construction THEN no production file exposes rootStatus in public output"
+  - number: 6
+    name: "Update tests for diagnostic output changes"
+    depends_on: ["4", "5"]
+    status: complete
+    acceptance:
+      - "GIVEN a test asserting orientation JSON output WHEN the install is v2 THEN the test asserts install_track equals v2 and app.status is present"
+      - "GIVEN a test asserting doctor JSON output WHEN the install is v3 THEN the test asserts install_track equals v3 and no key contains the substring bundle"
+      - "GIVEN a test asserting orientation attention items WHEN coexistence is detected THEN the test asserts a coexistence warning is present in the attention list"
+      - "GIVEN the full test suite WHEN all tests execute THEN no test references the old field names in assertions or fixtures"
+  - number: 7
+    name: "Verify suite, content gate, and changelog"
+    depends_on: ["4", "6"]
+    status: complete
+    acceptance:
+      - "GIVEN the test suite runs WHEN all tests execute THEN the suite passes with zero failures"
+      - "GIVEN the content gate runs WHEN the compaction check executes THEN the gate passes with no budget violations"
+      - "GIVEN the typecheck runs WHEN the compiler executes THEN no type errors exist"
+      - "GIVEN the changelog unreleased section WHEN inspected THEN the breaking JSON output change (bundle to app rename, rootStatus removal, install_track addition) is recorded"
+overall_acceptance: >
+  GIVEN the orientation command runs with JSON output WHEN a user inspects
+  the output THEN the user sees install_track (v2/v3/source/unknown) in
+  app_home and app.status (health) as the two orthogonal install fields,
+  with no bundle or rootStatus keys present. GIVEN a v2 install with v3
+  hooks WHEN the orientation command runs THEN the attention list warns
+  about coexistence with the "pick one line" message. GIVEN the full test
+  suite and content gate run WHEN verification completes THEN both pass
+  with zero failures.
+surprises: []

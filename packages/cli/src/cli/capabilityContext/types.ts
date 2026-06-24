@@ -2,8 +2,8 @@ export type Dict = Record<string, any>;
 export type Env = Record<string, string | undefined>;
 
 export const CAPABILITY_NAMES = [
-  "hej", "visionera", "resonera", "inspirera", "planera", "realisera",
-  "optimera", "inspektera", "dokumentera", "profilera", "visualisera", "orkestrera",
+  "status", "vision", "discuss", "research", "plan", "build",
+  "optimize", "audit", "document", "profile", "design", "orchestrate",
 ];
 export const BESPOKE_CONTEXT_CAPABILITIES = new Set<string>([]);
 

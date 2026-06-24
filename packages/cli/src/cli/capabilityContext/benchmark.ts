@@ -5,7 +5,7 @@ import { capabilityContext } from "./contract.js";
 import { sourceProvenance, uniqueList } from "./shared.js";
 import type { Dict, Env } from "./types.js";
 
-export const BENCHMARK_CONTEXT_CMD = "agentera prime --context optimera --format json";
+export const BENCHMARK_CONTEXT_CMD = "agentera prime --context optimize --format json";
 export const BENCHMARK_LATEST_REPORT_LABEL = "startup_benchmark_latest_report";
 export const BENCHMARK_HISTORY_LABEL = "startup_benchmark_history";
 export const BENCHMARK_CONTEXT_SOURCE_LABELS = [BENCHMARK_LATEST_REPORT_LABEL, BENCHMARK_HISTORY_LABEL];
@@ -426,7 +426,7 @@ export function benchmarkPrivacyBoundary(): Dict {
 }
 
 export function optimeraBenchmarkContext(capability: string | null): Dict | null {
-  if (capability !== "optimera") return null;
+  if (capability !== "optimize") return null;
   const benchmarkDir = startupBenchmarkDir();
   const [latestStatus, latestData, latestCaveats] = readBenchmarkJson(path.join(benchmarkDir, "latest-report.json"), BENCHMARK_LATEST_REPORT_LABEL);
   const [historyStatus, historyRows, historyCaveats] = readBenchmarkHistory(path.join(benchmarkDir, "runs.jsonl"));
@@ -469,7 +469,7 @@ export function optimeraBenchmarkContext(capability: string | null): Dict | null
   ]);
   const fallbackCommands = ["agentera state docs --format json", "agentera state query --list-artifacts --format json"];
   return {
-    capability: "optimera",
+    capability: "optimize",
     benchmark_source: {
       status: latestStatus === "available" && ["available", "empty"].includes(historyStatus) ? "available" : "incomplete",
       source_provenance: sourceProvenance("benchmark_context", BENCHMARK_CONTEXT_CMD, "benchmark_source"),
@@ -494,7 +494,7 @@ export function optimeraBenchmarkContext(capability: string | null): Dict | null
       caveated: caveats.length > 0,
       raw_artifact_reads_required: false,
       raw_artifact_read_policy:
-        "Use this benchmark_context from `agentera prime --context optimera --format json` first. " +
+        "Use this benchmark_context from `agentera prime --context optimize --format json` first. " +
         "If incomplete, follow fallback_commands and manual_refresh before any last-resort direct latest-report.json, " +
         "latest-report.md, or runs.jsonl diagnostic read.",
       benchmark_state_families: [

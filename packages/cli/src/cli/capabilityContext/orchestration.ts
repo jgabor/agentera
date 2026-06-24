@@ -23,7 +23,7 @@ export function orchestrationContext(
   profile: Dict,
   nextAction: Dict,
 ): Dict | null {
-  if (capability !== "orkestrera") return null;
+  if (capability !== "orchestrate") return null;
   const tasks = asList(plan.tasks).filter((t) => t && typeof t === "object" && !Array.isArray(t));
   const taskByNumber = indexPlanTasksByNumber(tasks);
   const dependencyReady: Dict[] = [];
@@ -82,7 +82,7 @@ export function orchestrationContext(
   const handoff = evaluatorHandoff(selected, progressVerification, retry, stateCaveats);
   const complete = Boolean(plan.exists) && tasks.length > 0 && stateCaveats.length === 0;
   return {
-    capability: "orkestrera",
+    capability: "orchestrate",
     task_queue: { total: tasks.length, dependency_ready_tasks: dependencyReady, blocked_tasks: blocked },
     selected_next_task: selected,
     selected_next_action: nextAction,

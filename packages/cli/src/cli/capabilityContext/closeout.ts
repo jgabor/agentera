@@ -135,14 +135,14 @@ export function closeoutReleaseBoundary(changelogBoundary: Dict, bundle: Dict): 
       remote_push: "not_recorded_in_cli_state",
       remote_checks_performed: false,
       registry_checks_performed: false,
-      source_provenance: sourceProvenance("closeout_context", "agentera prime --context dokumentera --format json", "release_boundary.publication_evidence"),
+      source_provenance: sourceProvenance("closeout_context", "agentera prime --context document --format json", "release_boundary.publication_evidence"),
       caveats: ["Closeout context does not contact remotes or package registries."],
     },
     app_refresh_evidence: {
       installed_app_status: bundle.status ?? null,
       refresh: "not_recorded_in_cli_state",
       approval_recorded: false,
-      source_provenance: sourceProvenance("hej", "agentera hej --format json", "bundle.status"),
+      source_provenance: sourceProvenance("status", "agentera prime --format json", "app.status"),
     },
     caveats,
   };
@@ -158,7 +158,7 @@ export function dokumenteraCloseoutContext(
   profile: Dict,
   bundle: Dict,
 ): Dict | null {
-  if (capability !== "dokumentera") return null;
+  if (capability !== "document") return null;
   const capabilityContract = capabilityContext(capability) ?? {};
   const artifactMappings = closeoutArtifactMappings(docs);
   const versionPolicy = closeoutVersionPolicy(docs);
@@ -198,7 +198,7 @@ export function dokumenteraCloseoutContext(
     ...((capabilityContract.cli_fallback ?? []) as string[]),
   ]);
   return {
-    capability: "dokumentera",
+    capability: "document",
     artifact_mappings: artifactMappings,
     version_policy: versionPolicy,
     todo_blockers: todoBlockers,
