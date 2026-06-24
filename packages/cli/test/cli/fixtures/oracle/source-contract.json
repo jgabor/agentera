@@ -90,7 +90,7 @@
       "completeForCapabilityStartupPinned": false
     },
     "prime_context": {
-      "argv": ["prime", "--context", "orkestrera", "--format", "json"],
+      "argv": ["prime", "--context", "orchestrate", "--format", "json"],
       "exitCode": 0,
       "description": "Per-capability context for `agentera prime --context <capability>`. The top-level `payload.source_contract` is NOT emitted on the context path (the dashboard-level orientation fields are not applicable when a specific capability is requested — only `command`, `status`, and `capability_context` are at the top level). The per-capability bespoke contract lives at `payload.capability_context.context.<bespoke>.source_contract`, where `<bespoke>` is the per-capability context key (`orchestration_context` for orkestrera, `execution_context` for realisera, `evidence_context` for inspektera, `benchmark_context` for optimera, `closeout_context` for dokumentera). The five BESPOKE capabilities have a per-capability source_contract; the seven non-bespoke capabilities (hej, planera, resonera, inspirera, visionera, visualisera, profilera) only carry the shared `capability_context.context` shape with `first_invocation_read` and have no bespoke source_contract.",
       "topLevelSourceContract": {
@@ -117,40 +117,40 @@
           "owns": "array<string>"
         },
         "completenessKeyByCapability": {
-          "orkestrera": "complete_for_orchestration_context",
-          "realisera": "complete_for_execution_context",
-          "inspektera": "complete_for_evidence_context",
-          "optimera": "complete_for_benchmark_context",
-          "dokumentera": "complete_for_closeout_context"
+          "orchestrate": "complete_for_orchestration_context",
+          "build": "complete_for_execution_context",
+          "audit": "complete_for_evidence_context",
+          "optimize": "complete_for_benchmark_context",
+          "document": "complete_for_closeout_context"
         },
         "completenessKeyType": "boolean",
         "caveatedKeyPresent": {
-          "present": ["realisera", "inspektera", "optimera", "dokumentera"],
-          "absent": ["orkestrera"]
+          "present": ["build", "audit", "optimize", "document"],
+          "absent": ["orchestrate"]
         },
         "caveatedKeyType": "boolean",
         "rawArtifactReadsRequiredDefault": false,
         "contextSpecificListFieldsByCapability": {
-          "orkestrera": {
+          "orchestrate": {
             "included_state_families": "array<string>",
             "missing_state_families": "array<string>",
             "deferred": "array<string>"
           },
-          "realisera": {
+          "build": {
             "included_state_families": "array<string>",
             "missing_state_families": "array<string>",
             "required_execution_state": "object",
             "missing_required_execution_state": "array<string>",
             "deferred": "array<string>"
           },
-          "inspektera": {
+          "audit": {
             "included_state_families": "array<string>",
             "missing_state_families": "array<string>",
             "required_evidence_state": "object",
             "missing_required_evidence_state": "array<string>",
             "deferred": "array<string>"
           },
-          "optimera": {
+          "optimize": {
             "benchmark_state_families": "array<string>",
             "required_benchmark_state": "object",
             "missing_required_benchmark_state": "array<string>",
@@ -159,7 +159,7 @@
             "privacy_boundary": "object",
             "deferred": "array<string>"
           },
-          "dokumentera": {
+          "document": {
             "included_state_families": "array<string>",
             "missing_state_families": "array<string>",
             "closeout_state_families": "array<string>",

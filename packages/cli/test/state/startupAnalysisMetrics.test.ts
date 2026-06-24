@@ -14,7 +14,7 @@ const CONTRACT = {
 function corpus(): any {
   return {
     records: [
-      { source_kind: "conversation_turn", source_id: "u1", session_id: "c1", timestamp: "2026-02-01T00:00:00Z", data: { actor: "user", content: "/realisera build it" } },
+      { source_kind: "conversation_turn", source_id: "u1", session_id: "c1", timestamp: "2026-02-01T00:00:00Z", data: { actor: "user", content: "/build build it" } },
       { source_kind: "tool_call", source_id: "t1", session_id: "c1", timestamp: "2026-02-01T00:00:01Z", data: { tool: "bash", arguments: { command: "uv run scripts/agentera plan" } } },
       { source_kind: "tool_call", source_id: "t2", session_id: "c1", timestamp: "2026-02-01T00:00:02Z", data: { tool: "read", arguments: { path: ".agentera/plan.yaml" } } },
       { source_kind: "tool_call", source_id: "t3", session_id: "c1", timestamp: "2026-02-01T00:00:03Z", data: { tool: "read", arguments: { path: ".agentera/health.yaml" } } },
@@ -40,7 +40,7 @@ describe("aggregateStartupMetrics", () => {
     expect(m.total_raw_artifact_access_after_cli).toBe(2);
     expect(m.total_redundant_raw_artifact_accesses).toBe(1);
     expect(m.token_estimator_version).toBe("approx_bytes_div_4_v1");
-    expect(m.per_capability_state_counts.realisera.state_sequences).toBe(1);
+    expect(m.per_capability_state_counts.build.state_sequences).toBe(1);
     expect(m.cli_state_command_counts.plan).toBe(1);
     expect(m.raw_artifact_access_after_cli_counts).toEqual({ health: 1, plan: 1 });
     expect(m.redundant_raw_artifact_access_counts).toEqual({ plan: 1 });

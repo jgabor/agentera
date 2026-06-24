@@ -73,8 +73,8 @@ VALIDATION:
     id: V8
     rule: exit_marker_required
     description: >-
-      Every dokumentera invocation MUST emit an exit marker using the
-      canonical glyph ▤ (SG8) in the format ▤ dokumentera · <status>
+      Every document invocation MUST emit an exit marker using the
+      canonical glyph ▤ (SG8) in the format ▤ document · <status>
       where status is one of EX1-EX4.
     severity: critical
     checks:
@@ -85,22 +85,22 @@ VALIDATION:
     id: V9
     rule: closeout_context_first
     description: >-
-      During final synchronization, Dokumentera MUST use `agentera prime
-      --context dokumentera --format json` and its `closeout_context`
+      During final synchronization, Document MUST use `agentera prime
+      --context document --format json` and its `closeout_context`
       before reading TODO, docs, changelog, or progress artifacts directly.
       Complete closeout context is the normal source for mappings, version
       policy, blockers, boundaries, progress evidence, benchmark evidence,
       caveats, fallback commands, raw-read policy, and completeness.
     severity: critical
     checks:
-      - "Closeout starts from hej capability context"
+      - "Closeout starts from status capability context"
       - "Complete closeout_context is used before raw artifact reads"
       - "Completeness and non-empty evidence flags are preserved"
   10:
     id: V10
     rule: closeout_fallback_before_raw
     description: >-
-      If closeout context is incomplete or caveated, Dokumentera MUST run the
+      If closeout context is incomplete or caveated, Document MUST run the
       listed existing CLI fallback commands before any last-resort raw artifact
       read. No unsupported capability-name command or new closeout command may
       be introduced.
@@ -113,7 +113,7 @@ VALIDATION:
     id: V11
     rule: closeout_caveat_preservation
     description: >-
-      Dokumentera MUST preserve closeout caveats about stale app/profile state,
+      Document MUST preserve closeout caveats about stale app/profile state,
       compacted or missing state, missing benchmark evidence, absent local
       metadata or tags, and unrecorded publication or remote state. Caveats must
       not be hidden, reconstructed, or converted into approval to refresh apps,
@@ -127,7 +127,7 @@ VALIDATION:
     id: V12
     rule: satisfaction_authority_boundary
     description: >-
-      When Dokumentera touches decision satisfaction, it may record provisional
+      When Document touches decision satisfaction, it may record provisional
       satisfaction with evidence but MUST NOT user-confirm satisfaction. Missing,
       compacted, open, provisional, or review-needed satisfaction state remains a
       caveat and review pressure; automation must not reconstruct hidden outcomes

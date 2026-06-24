@@ -1,6 +1,6 @@
 # Design Artifact Schema
 #
-# Visual identity system maintained by visualisera. Defines design tokens,
+# Visual identity system maintained by design. Defines design tokens,
 # palette, typography, spacing, and component styling rules.
 #
 # Note: DESIGN.md is a human-facing Markdown artifact. It remains at the
@@ -11,12 +11,12 @@ meta:
   name: design
   version: "1.0.0"
   description: >-
-    Visual identity system. Produced by visualisera. Consumed by capabilities
+    Visual identity system. Produced by design. Consumed by capabilities
     that need visual identity context. Human-facing: remains Markdown at root.
   artifact_type: human_facing
   path: "DESIGN.md"
-  producer: visualisera
-  consumers: [dokumentera, hej, inspektera, realisera, visionera, visualisera]
+  producer: design
+  consumers: [document, status, audit, build, vision, design]
   format: markdown
 
 GROUP_PREFIXES:

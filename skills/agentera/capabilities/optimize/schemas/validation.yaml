@@ -34,7 +34,7 @@ VALIDATION:
     id: V4
     rule: one_experiment_per_invocation
     description: >-
-      Each optimera invocation performs exactly one experiment. Multiple
+      Each optimize invocation performs exactly one experiment. Multiple
       experiments require multiple invocations or /loop setup.
     severity: critical
     checks:
@@ -53,8 +53,8 @@ VALIDATION:
     id: V6
     rule: exit_marker_required
     description: >-
-      Every optimera invocation MUST emit an exit marker. The marker uses
-      the canonical glyph ⎘ (SG7) in the format ⎘ optimera · <status>
+      Every optimize invocation MUST emit an exit marker. The marker uses
+      the canonical glyph ⎘ (SG7) in the format ⎘ optimize · <status>
       where status is one of EX1-EX4.
     severity: critical
     checks:
@@ -65,21 +65,21 @@ VALIDATION:
     id: V7
     rule: benchmark_context_first
     description: >-
-      For benchmark-oriented startup, Optimera MUST start from `agentera prime
-      --context optimera --format json` and consume complete
+      For benchmark-oriented startup, Optimize MUST start from `agentera prime
+      --context optimize --format json` and consume complete
       benchmark_context before direct retained benchmark file reads. Direct
       latest-report.json, latest-report.md, or runs.jsonl reads are last-resort
       diagnostics only when the CLI context is incomplete.
     severity: critical
     checks:
-      - "Optimera startup uses benchmark_context before direct retained benchmark files"
+      - "Optimize startup uses benchmark_context before direct retained benchmark files"
       - "Incomplete benchmark_context follows listed CLI fallback and manual refresh guidance"
       - "Direct benchmark file reads are treated as last-resort diagnostics"
   8:
     id: V8
     rule: benchmark_caveat_preservation
     description: >-
-      Benchmark caveats from benchmark_context MUST be preserved when Optimera
+      Benchmark caveats from benchmark_context MUST be preserved when Optimize
       reports measurement evidence. Agents must not hide, upgrade, reconstruct,
       or infer away caveats for manual-only execution, missing local history,
       runtime coverage degradation, missing token estimates, non-comparable

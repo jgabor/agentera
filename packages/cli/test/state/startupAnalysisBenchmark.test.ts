@@ -24,7 +24,7 @@ function corpus(): any {
       adapter_version: "adapterX",
     },
     records: [
-      { source_kind: "conversation_turn", runtime: "claude-code", source_id: "u1", session_id: "c1", timestamp: "2026-02-01T00:00:00Z", data: { actor: "user", content: "/realisera build it" } },
+      { source_kind: "conversation_turn", runtime: "claude-code", source_id: "u1", session_id: "c1", timestamp: "2026-02-01T00:00:00Z", data: { actor: "user", content: "/build build it" } },
       { source_kind: "tool_call", runtime: "claude-code", source_id: "t1", session_id: "c1", timestamp: "2026-02-01T00:00:01Z", data: { tool: "bash", arguments: { command: "uv run scripts/agentera plan" } } },
     ],
   };

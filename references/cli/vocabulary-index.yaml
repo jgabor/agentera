@@ -28,7 +28,7 @@ authority_order:
 normalization_rules:
   - rule: Internal workflows are capabilities.
     use: capability, twelve capabilities, capability prose, capability schemas
-    avoid: Calling hej/realisera/etc. standalone skills, except in v1 history.
+    avoid: Calling status/build/etc. standalone skills, except in v1 history.
   - rule: The runtime surface is a skill.
     use: Agentera skill, single installed Agentera app
     avoid: twelve-skill suite for v2 behavior.
@@ -36,7 +36,7 @@ normalization_rules:
     use: /agentera, $agentera for Codex-specific docs
     avoid: /hej except as a legacy bridge.
   - rule: The CLI source and rendered dashboard are different.
-    use: agentera hej source data, Hej dashboard rendered briefing
+    use: agentera prime source data, status dashboard rendered briefing
     avoid: Treating raw CLI labels as the user-facing dashboard.
   - rule: Routine state uses flat commands.
     use: agentera plan, agentera docs, agentera health
@@ -64,7 +64,7 @@ normalization_rules:
     avoid: Non-Git checkpoint or pre-dispatch commit gate in new docs.
   - rule: Capability instruction modules have current metadata and a runtime boundary.
     use: instructions.ts plus emitted prime_context first_invocation_read; runtime enforcement is true via the CLI prime command
-    avoid: Claiming agents are policed for actual reads, or adding unsupported agentera planera commands.
+    avoid: Claiming agents are policed for actual reads, or adding unsupported agentera plan commands.
 plain_language:
   lead_with_plain_phrase:
     - use: final state sync, the plan-level freshness checkpoint

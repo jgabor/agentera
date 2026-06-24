@@ -98,7 +98,7 @@ export function validateVerifyRequest(args: VerifyArgs): [string, string, string
       "semantic verify requires explicit fixture path(s); broad fixture discovery is not a safe default. " +
         "Valid targets for eval: skills, semantic. " +
         "Syntax: agentera verify eval semantic <fixture> [<fixture>...] [--format text|json]. " +
-        "Example: agentera verify eval semantic fixtures/semantic/hej-bare-message.md --format json",
+        "Example: agentera verify eval semantic fixtures/semantic/bare-agentera-message.md --format json",
     );
   }
   return [family, target, outputFormat];

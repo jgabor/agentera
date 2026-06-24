@@ -82,6 +82,6 @@ export function corpusCoverageAttention(summary: CorpusCoverageSummary): string 
   const skipped = summary.available_but_not_selected.map((item) => `${item.runtime} (${item.reason})`).join(", ");
   return (
     `flagged: corpus coverage loss (EX2): available runtimes skipped (${skipped}); ` +
-    "suggest running profilera stats refresh without --no-* flags"
+    "suggest running profile stats refresh without --no-* flags"
   );
 }

@@ -237,7 +237,7 @@ function checkInspekteraAuditStaleness(
     triggering_axis: triggeringAxis,
   };
   if (cyclesSince !== null) result.cycles_since_audit = cyclesSince;
-  if (isStale) result.suggested_action = "Run inspektera to refresh health audit";
+  if (isStale) result.suggested_action = "Run audit to refresh health audit";
   return result;
 }
 
@@ -610,7 +610,7 @@ export function decisionReviewAttention(schemas: Record<string, SchemaInfo>): De
 }
 
 export function formatNextAction(action: NextAction | Record<string, string> | null): string {
-  if (!action) return "object=VISION refresh | capability=visionera | reason=no executable follow-up";
+  if (!action) return "object=VISION refresh | capability=vision | reason=no executable follow-up";
   return `object=${truncate(action.object)} | capability=${action.capability} | reason=${action.reason}`;
 }
 
@@ -626,17 +626,17 @@ export function selectHejNextAction(
   if (pending && typeof pending === "object" && !Array.isArray(pending)) {
     const number = pending.number ?? "?";
     const title = firstPresent(pending, ["name", "title"], "pending task");
-    return { object: `PLAN Task ${number}: ${title}`, capability: "orkestrera", reason: "first pending plan task" };
+    return { object: `PLAN Task ${number}: ${title}`, capability: "orchestrate", reason: "first pending plan task" };
   }
   if (health.degrading) {
     const worst = health.worst;
     const target = worst ? `${worst[0]}:${worst[1]}` : "degrading health";
-    return { object: `HEALTH: ${target}`, capability: "inspektera", reason: "critical or degrading health" };
+    return { object: `HEALTH: ${target}`, capability: "audit", reason: "critical or degrading health" };
   }
   if (objective.active) {
     return {
       object: `OBJECTIVE: ${objective.metric || objective.title}`,
-      capability: "optimera",
+      capability: "optimize",
       reason: "active non-closed objective",
     };
   }
@@ -645,29 +645,29 @@ export function selectHejNextAction(
       (a, b) => (TODO_SEVERITY_ORDER[a.severity] ?? 2) - (TODO_SEVERITY_ORDER[b.severity] ?? 2),
     )[0];
     if (todoNeedsPlanera(item)) {
-      return { object: `TODO: ${item.text}`, capability: "planera", reason: "complex TODO needs planning" };
+      return { object: `TODO: ${item.text}`, capability: "plan", reason: "complex TODO needs planning" };
     }
-    return { object: `TODO: ${item.text}`, capability: "realisera", reason: "highest-priority open TODO" };
+    return { object: `TODO: ${item.text}`, capability: "build", reason: "highest-priority open TODO" };
   }
   if (health.stale && !health.degrading) {
     return {
       object: `HEALTH: Audit ${health.number ?? "?"} stale`,
-      capability: "inspektera",
+      capability: "audit",
       reason: "stale health audit",
     };
   }
   if (decision) {
-    return { object: String(decision.object), capability: "resonera", reason: "unresolved decision follow-up" };
+    return { object: String(decision.object), capability: "discuss", reason: "unresolved decision follow-up" };
   }
   const visionExists = fs.existsSync(path.join(process.cwd(), ".agentera", "vision.yaml"));
   if (plan.exists && !plan.complete_plan) {
-    return { object: "VISION refresh", capability: "planera", reason: "no executable follow-up" };
+    return { object: "VISION refresh", capability: "plan", reason: "no executable follow-up" };
   }
   if (visionExists) {
-    return { object: "VISION refresh", capability: "planera", reason: "no executable follow-up" };
+    return { object: "VISION refresh", capability: "plan", reason: "no executable follow-up" };
   }
   if (savedContext) {
-    return { object: "Direction clarification", capability: "resonera", reason: "saved context without vision" };
+    return { object: "Direction clarification", capability: "discuss", reason: "saved context without vision" };
   }
-  return { object: "VISION refresh", capability: "visionera", reason: "fresh project direction" };
+  return { object: "VISION refresh", capability: "vision", reason: "fresh project direction" };
 }

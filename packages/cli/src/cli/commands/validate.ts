@@ -170,8 +170,8 @@ export function isDelegatedValidateFamily(family: string): boolean {
 // ── capability + capability-contract families ───────────────────────
 
 const CAPABILITY_NAMES = [
-  "hej", "visionera", "resonera", "inspirera", "planera", "realisera",
-  "optimera", "inspektera", "dokumentera", "profilera", "visualisera", "orkestrera",
+  "status", "vision", "discuss", "research", "plan", "build",
+  "optimize", "audit", "document", "profile", "design", "orchestrate",
 ];
 const CONTRACT_PATH = "skills/agentera/capability_schema_contract.yaml";
 const PROTOCOL_PATH = "skills/agentera/protocol.yaml";
@@ -191,7 +191,7 @@ function validateCapabilityTarget(target: string): string {
     throw new Error(
       `unsupported capability target ${pyRepr(target)}; valid capability names: ${valid}. ` +
         "Syntax: agentera validate capability <capability-or-path> [--format text|json]. " +
-        "Example: agentera validate capability hej",
+        "Example: agentera validate capability status",
     );
   }
   validatePathValue(target, "capability path");

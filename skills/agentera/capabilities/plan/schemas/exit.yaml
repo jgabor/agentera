@@ -4,8 +4,8 @@ EXIT_CONDITIONS:
     condition: complete
     description: >-
       PLAN.md was written and approved (or skip level confirmed), the
-      adversarial review ran for full plans, and the handoff to realisera
-      or orkestrera was suggested.
+      adversarial review ran for full plans, and the handoff to build
+      or orchestrate was suggested.
     exit_signal: complete
   2:
     id: E2

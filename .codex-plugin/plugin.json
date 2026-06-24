@@ -1,7 +1,7 @@
 {
   "name": "agentera",
   "version": "3.0.0",
-  "description": "Compound agent orchestration suite \u2014 12 capabilities in one bundled skill; exact bare hej belongs to the bundled agentera dashboard path",
+  "description": "Compound agent orchestration suite \u2014 12 capabilities in one bundled skill; exact bare /agentera belongs to the bundled agentera dashboard path",
   "author": {
     "name": "Jonathan Gabor",
     "url": "https://github.com/jgabor"
@@ -14,8 +14,8 @@
   "hooks": "./hooks/codex-plugin-hooks.json",
   "interface": {
     "displayName": "Agentera",
-    "shortDescription": "Portable skills that give Codex exact bare hej routing, project memory, planning, execution, and review workflows.",
-    "longDescription": "Agentera turns Codex into a coordinated engineering partner with shared project artifacts, decision memory, planning, autonomous execution, audits, documentation, visual identity, research, optimization, and orchestration. A complete user message exactly `hej` belongs to the bundled agentera skill and its agentera hej dashboard path, not the legacy hej bridge.",
+    "shortDescription": "Portable skills that give Codex exact bare /agentera routing, project memory, planning, execution, and review workflows.",
+    "longDescription": "Agentera turns Codex into a coordinated engineering partner with shared project artifacts, decision memory, planning, autonomous execution, audits, documentation, visual identity, research, optimization, and orchestration. A complete user message exactly `/agentera` belongs to the bundled agentera skill and its agentera status dashboard path, not the legacy hej bridge.",
     "developerName": "Jonathan Gabor",
     "category": "Coding",
     "capabilities": ["Interactive", "Read", "Write"],
@@ -23,7 +23,7 @@
     "privacyPolicyURL": "https://github.com/jgabor/agentera",
     "termsOfServiceURL": "https://github.com/jgabor/agentera/blob/main/LICENSE",
     "defaultPrompt": [
-      "Use $agentera to inspect this project and suggest the next best action. If the complete user message is exactly `hej`, use $agentera's hej dashboard path."
+      "Use $agentera to inspect this project and suggest the next best action. If the complete user message is exactly `/agentera`, use $agentera's status dashboard path."
     ],
     "brandColor": "#111827",
     "screenshots": []
@@ -34,9 +34,9 @@
       "skills": "/skills",
       "plugins": "/plugins"
     },
-    "invocationHint": "Use $agentera for explicit invocation. If the complete user message is exactly `hej`, route it through $agentera and the hej dashboard path; $hej is only a legacy explicit bridge.",
+    "invocationHint": "Use $agentera for explicit invocation. If the complete user message is exactly `/agentera`, route it through $agentera and the status dashboard path; $hej is only a legacy explicit bridge.",
     "limitations": [
-      "profilera collects bounded Codex session corpus data when present and reports any absent source families in corpus metadata.",
+      "profile collects bounded Codex session corpus data when present and reports any absent source families in corpus metadata.",
       "AGENTERA_HOME must be set in ~/.codex/config.toml under [shell_environment_policy].set as the app home so SKILL.md helper-script invocations resolve through $AGENTERA_HOME/app; see README install instructions."
     ]
   },
@@ -89,10 +89,10 @@
   "skillMetadata": [
     {
       "name": "agentera",
-      "description": "Compound agent orchestration suite \u2014 12 capabilities in one bundled skill; use for exact bare hej dashboard routing",
+      "description": "Compound agent orchestration suite \u2014 12 capabilities in one bundled skill; use for exact bare /agentera dashboard routing",
       "path": "./skills/agentera",
       "runtimeSupport": "portable",
-      "invocationHint": "$agentera; for a complete bare `hej`, use the agentera hej dashboard path",
+      "invocationHint": "$agentera; for a complete bare `/agentera`, use the agentera status dashboard path",
       "policy": {
         "allow_implicit_invocation": true
       }

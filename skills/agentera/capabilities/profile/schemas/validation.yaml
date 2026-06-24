@@ -37,9 +37,9 @@ VALIDATION:
     id: V4
     rule: read_only_sources
     description: >-
-      Profilera MUST NOT modify session history, memory files, or config
+      Profile MUST NOT modify session history, memory files, or config
       files. It reads these sources for extraction but never writes to them.
-      The only artifact profilera produces is PROFILE.md.
+      The only artifact profile produces is PROFILE.md.
     severity: critical
     checks:
       - "No writes to session history files"

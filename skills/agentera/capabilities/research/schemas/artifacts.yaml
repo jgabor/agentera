@@ -4,21 +4,21 @@ ARTIFACTS:
     artifact_id: todo
     local_role: produces
     description: >-
-      Open problems by severity. Inspirera writes actionable findings here
+      Open problems by severity. Research writes actionable findings here
       (with user confirmation), classifying each by severity per protocol
-      SF1-SF3. Realisera picks up changes automatically in its next cycle.
+      SF1-SF3. Build picks up changes automatically in its next cycle.
   2:
     id: A2
     artifact_id: vision
     local_role: produces
     description: >-
-      Inspirera may refine project direction with user confirmation when the
+      Research may refine project direction with user confirmation when the
       analysis shifts thinking about the project's direction.
   3:
     id: A3
     artifact_id: profile
     local_role: consumes
     description: >-
-      Inspirera reads this via the effective profile script to weight
-      applicability judgments. If missing, inspirera proceeds without persona
+      Research reads this via the effective profile script to weight
+      applicability judgments. If missing, research proceeds without persona
       grounding.

@@ -235,11 +235,11 @@ explicit_special_cases:
     display_name: benchmark_context
     artifact_type: cli_context
     scope: cli_context
-    default_path: agentera prime --context optimera --format json#benchmark_context
+    default_path: agentera prime --context optimize --format json#benchmark_context
     producers:
       - agentera
     consumers:
-      - optimera
+      - optimize
     docs_yaml_can_override_path: false
 consumer_permissions:
   cross_capability_validator:

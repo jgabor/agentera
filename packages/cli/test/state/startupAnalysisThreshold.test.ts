@@ -19,7 +19,7 @@ function corpusFixture(): any {
         source_id: "u1",
         session_id: "c1",
         timestamp: "2026-01-01T00:00:00Z",
-        data: { actor: "user", content: "/realisera go" },
+        data: { actor: "user", content: "/build go" },
       },
       {
         source_kind: "conversation_turn",
@@ -79,7 +79,7 @@ describe("scanThresholdEvidence", () => {
     expect(scan.counts.by_warning["self_audit.verbosity"]).toBe(1);
     expect(scan.counts.by_warning["self_audit.abstraction"]).toBe(1);
     const event = scan.warning_events[0];
-    expect(event.capability).toBe("realisera");
+    expect(event.capability).toBe("build");
     expect(event.conversation).toMatch(/^session:[0-9a-f]{16}$/);
     expect(event.detail_loss_status).toBe("possible_useful_detail_removed");
     expect(event.rewrite_followup.event_class).toBe("implementation_boundary");

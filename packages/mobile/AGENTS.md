@@ -26,7 +26,7 @@ integration and publish decisions: [`docs/consolidation/mobile-open-decisions.md
 - Use `vp dev`, `vp check`, `vp test`, `vp build`, `vp deploy` — not ad-hoc toolchains
 - Mobile-first: every screen must work at 360px width first
 - No extension or plugin architecture — build missing behavior into the app
-- User-facing capability names are English (brief, discuss, plan); internal runtime names use -era suffix (hej, resonera, planera) — see README alias table
+- User-facing capability names are English (status, discuss, plan); internal runtime names use -era suffix (hej, resonera, planera) — see README alias table
 - Project state lives in the monorepo root `.agentera/` (vision, plan, progress, decisions, docs)
 - Do not modify `.agentera/vision.yaml` during routine execution cycles unless running visionera or an explicit vision task
 

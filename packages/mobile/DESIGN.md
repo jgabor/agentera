@@ -53,7 +53,7 @@ Reuse monorepo glyph assignments for capability pickers and status chips:
 
 | Glyph | User-facing | Internal    |
 | :---: | ----------- | ----------- |
-|   ⌂   | brief       | hej         |
+|   ⌂   | status      | hej         |
 |   ⛥   | vision      | visionera   |
 |   ❈   | discuss     | resonera    |
 |   ⬚   | research    | inspirera   |

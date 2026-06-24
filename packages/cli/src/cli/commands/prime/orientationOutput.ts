@@ -45,11 +45,11 @@ export function buildOrientationJsonPayload(
   };
   const render =
     command === "hej"
-      ? "caller-owned README-style hej dashboard"
+      ? "caller-owned README-style prime orientation dashboard"
       : "caller-owned README-style prime orientation dashboard";
   const access =
     command === "hej"
-      ? "single installed CLI call; app/v1/profile safety included; no preflight glob/read/import/doctor calls during normal hej"
+      ? "single installed CLI call; app/v1/profile safety included; no preflight glob/read/import/doctor calls during normal prime"
       : "single installed CLI call; app/v1/profile safety included; no preflight glob/read/import/doctor calls during normal prime";
   return {
     command,
@@ -135,7 +135,7 @@ export function printOrientationTextBriefing(state: OrientationState, command: s
   const presence = state.state_presence;
   const attention = state.attention;
   const nextAction = state.next_action;
-  const dashboardLabel = command === "prime" ? "prime orientation dashboard" : "hej dashboard";
+  const dashboardLabel = command === "prime" ? "prime orientation dashboard" : "prime orientation dashboard";
 
   out(`agentera ${command}\n`);
   out(

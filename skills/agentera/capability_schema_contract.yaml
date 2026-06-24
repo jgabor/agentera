@@ -200,41 +200,71 @@ PRIMITIVE_REFERENCE_FIELDS:
 
 ROUTE_ALIASES:
   description: >-
-    Primary plain slash-route aliases from Decision 43. These aliases are exact
-    `/agentera <alias>` routes for users; the Swedish -era capability directory
-    names remain canonical protocol identity. Alias routes are not CLI commands.
+    Primary plain slash-route aliases from Decision 43, flipped to English
+    canonical by Decision 70. These aliases are exact `/agentera <alias>`
+    routes for users; English capability names are canonical protocol identity.
+    The Decision 43 alias set and the canonical capability directory IDs
+    converge: the plain English route word is now the canonical ID itself.
+    Swedish -era names are legacy v2-stable references, preserved for the v2
+    stable distribution and historical artifacts (see legacy_aliases). Alias
+    routes are not CLI commands.
   route_prefix: /agentera
   canonical_name_precedence: true
   cli_boundary: >-
     Slash routes and state commands are distinct: `/agentera plan` routes to
-    planera, while `agentera plan` remains the state-oriented CLI command for
-    reading plan state. Do not add non-hej capability or alias commands to the
-    CLI.
+    the plan capability, while `agentera state plan` remains the
+    state-oriented CLI command for reading plan state. Do not add capability or
+    alias commands to the CLI.
   primary_aliases:
     - alias: status
-      capability: hej
+      capability: status
     - alias: vision
-      capability: visionera
+      capability: vision
     - alias: discuss
-      capability: resonera
+      capability: discuss
     - alias: research
-      capability: inspirera
+      capability: research
     - alias: plan
-      capability: planera
+      capability: plan
     - alias: build
-      capability: realisera
+      capability: build
     - alias: optimize
-      capability: optimera
+      capability: optimize
     - alias: audit
-      capability: inspektera
+      capability: audit
     - alias: document
-      capability: dokumentera
+      capability: document
     - alias: profile
-      capability: profilera
+      capability: profile
     - alias: design
-      capability: visualisera
+      capability: design
     - alias: orchestrate
-      capability: orkestrera
+      capability: orchestrate
+  legacy_aliases:
+    - legacy: hej
+      canonical: status
+    - legacy: visionera
+      canonical: vision
+    - legacy: resonera
+      canonical: discuss
+    - legacy: inspirera
+      canonical: research
+    - legacy: planera
+      canonical: plan
+    - legacy: realisera
+      canonical: build
+    - legacy: optimera
+      canonical: optimize
+    - legacy: inspektera
+      canonical: audit
+    - legacy: dokumentera
+      canonical: document
+    - legacy: profilera
+      canonical: profile
+    - legacy: visualisera
+      canonical: design
+    - legacy: orkestrera
+      canonical: orchestrate
 
 # ---------------------------------------------------------------------------
 # The four required groups follow. The contract IS a valid capability schema,

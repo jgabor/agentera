@@ -3,11 +3,11 @@ TRIGGERS:
     id: T1
     description: >-
       Direct invocation by name or slash command. Matches when the user
-      explicitly requests hej.
+      explicitly requests status.
     priority: high
     patterns:
-      - "hej"
-      - "/hej"
+      - "status"
+      - "/status"
   2:
     id: T2
     description: >-
@@ -49,7 +49,7 @@ TRIGGERS:
   5:
     id: T5
     description: >-
-      Fallback. Hej is the default capability when no other capability's
+      Fallback. Status is the default capability when no other capability's
       trigger patterns match. This entry documents the fallback behavior
       defined in the routing layer routing logic.
     patterns:

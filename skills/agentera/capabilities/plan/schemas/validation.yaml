@@ -53,9 +53,9 @@ VALIDATION:
     id: V6
     rule: skip_level_for_trivial_work
     description: >-
-      Planera MUST detect skip level for trivial work (single-file change,
-      bug fix, config tweak, < 50 lines) and route directly to /realisera
+      Plan MUST detect skip level for trivial work (single-file change,
+      bug fix, config tweak, < 50 lines) and route directly to /build
       without producing a PLAN.md.
     severity: critical
     checks:
-      - "Trivial work routed to /realisera without plan"
+      - "Trivial work routed to /build without plan"

@@ -7,47 +7,47 @@ classification:
   mutation_capable:
     description: Needs file write, edit, and/or shell execution to fulfill purpose
     capabilities:
-      realisera:
+      build:
         permission: {write: allow, bash: allow}
         rationale: Autonomous dev execution — writes code, runs tests/builds, commits
-      optimera:
+      optimize:
         permission: {write: allow, bash: allow}
         rationale: Metric-driven optimization — runs experiments, writes harnesses
-      orkestrera:
+      orchestrate:
         permission: {write: allow, bash: allow}
         rationale: Multi-cycle orchestration — dispatches workers, updates plan/progress
-      dokumentera:
+      document:
         permission: {write: allow, bash: deny}
         rationale: Documentation generation — creates/updates doc files
-      planera:
+      plan:
         permission: {write: allow, bash: deny}
         rationale: Plan management — writes plan.yaml, archives completed plans
 
   contextual_write:
     description: Writes owned Agentera state artifacts
     capabilities:
-      visionera:
+      vision:
         permission: {write: allow, bash: deny}
         rationale: Writes vision.yaml, archives old visions
-      resonera:
+      discuss:
         permission: {write: allow, bash: deny}
         rationale: Writes decisions.yaml, may update TODO.md
-      visualisera:
+      design:
         permission: {write: allow, bash: deny}
         rationale: Writes DESIGN.md, archives old designs
-      profilera:
+      profile:
         permission: {write: allow, bash: allow}
         rationale: Runs extraction scripts, writes PROFILE.md
-      inspektera:
+      audit:
         permission: {write: allow, bash: deny}
         rationale: Writes health.yaml audit reports
 
   read_only:
     description: Only reads files, searches, analyzes
     capabilities:
-      hej:
+      status:
         permission: {write: deny, bash: deny}
         rationale: Strictly read-only orientation dashboard
-      inspirera:
+      research:
         permission: {write: deny, bash: deny}
         rationale: Analysis-only creative exploration

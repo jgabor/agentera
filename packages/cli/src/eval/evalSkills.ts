@@ -13,18 +13,18 @@ import { resolveSourceRoot } from "../core/sourceRoot.js";
 type Dict = Record<string, any>;
 
 export const TRIGGER_PROMPTS: Record<string, string> = {
-  dokumentera: "Audit the documentation for this project.",
-  hej: "Start a new session and give me a status briefing on this project.",
-  inspektera: "Run a codebase health audit.",
-  inspirera: "Analyze https://example.com and map patterns to this project.",
-  optimera: "Optimize test suite execution time.",
-  orkestrera: "Execute the next cycle of the current plan.",
-  planera: "Plan the next feature for this project.",
-  profilera: "Generate a decision profile from session history.",
-  realisera: "Run one autonomous development cycle.",
-  resonera: "Deliberate on whether to add a new dependency.",
-  visionera: "Create a vision document for this project.",
-  visualisera: "Create a visual identity system for this project.",
+  document: "Audit the documentation for this project.",
+  status: "Start a new session and give me a status briefing on this project.",
+  audit: "Run a codebase health audit.",
+  research: "Analyze https://example.com and map patterns to this project.",
+  optimize: "Optimize test suite execution time.",
+  orchestrate: "Execute the next cycle of the current plan.",
+  plan: "Plan the next feature for this project.",
+  profile: "Generate a decision profile from session history.",
+  build: "Run one autonomous development cycle.",
+  discuss: "Deliberate on whether to add a new dependency.",
+  vision: "Create a vision document for this project.",
+  design: "Create a visual identity system for this project.",
 };
 
 export const DEFAULT_TIMEOUT = 120;

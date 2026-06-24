@@ -1,6 +1,6 @@
 # Progress Artifact Schema
 #
-# Cycle-by-cycle operational log for realisera. Each entry records what happened
+# Cycle-by-cycle operational log for build. Each entry records what happened
 # in one development cycle: phase, work done, discoveries, verification,
 # next steps, and context envelope.
 #
@@ -36,12 +36,12 @@ meta:
   name: progress
   version: "1.0.0"
   description: >-
-    Cycle-by-cycle operational log. Produced by realisera. Consumed by
+    Cycle-by-cycle operational log. Produced by build. Consumed by
     capabilities that need recent work history and verification evidence.
   artifact_type: agent_facing
   path: ".agentera/progress.yaml"
-  producer: realisera
-  consumers: [dokumentera, hej, inspektera, optimera, orkestrera, planera, realisera, visionera, visualisera]
+  producer: build
+  consumers: [document, status, audit, optimize, orchestrate, plan, build, vision, design]
   format: yaml
 
 GROUP_PREFIXES:
@@ -104,7 +104,7 @@ COMPACTION:
       Cycles older than 50 are dropped entirely.
   5:
     id: PX5
-    trigger: "When realisera writes a new cycle entry"
+    trigger: "When build writes a new cycle entry"
     description: >-
       Compaction runs when the producing skill writes a new entry.
       If >10 full-detail entries exist, collapse the oldest to one-line.

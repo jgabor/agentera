@@ -74,7 +74,7 @@ describe("prime project_integration", () => {
 
     const nextAction = state.next_action as Record<string, string>;
     expect(nextAction.object).toContain('Upgrade');
-    expect(nextAction.capability).toBe('hej');
+    expect(nextAction.capability).toBe('status');
   });
 
   it("recommends artifact upgrade for v1 Markdown project on npx bundle", () => {

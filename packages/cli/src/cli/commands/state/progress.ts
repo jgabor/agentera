@@ -2,7 +2,7 @@
  * `state progress` query (PROGRESS.md / progress.yaml cycles).
  *
  * Reports the most recent N cycles (default 5), filtered by topic or
- * type, with a structured envelope that downstream prime/hej callers
+ * type, with a structured envelope that downstream prime callers
  * use to surface progress_verification without raw artifact reads.
  */
 

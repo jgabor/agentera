@@ -48,7 +48,7 @@ export function collectOrientationState(opts: PrimeOpts): OrientationState {
   const profileStatus = profileExists ? "loaded" : "not found";
   const profileStaleness = profileExists ? checkProfileraStaleness(profile, env) : null;
   const profileDict: ProfileSummary = { status: profileStatus, path: profile };
-  if (profileStatus === "not found") profileDict.suggested_action = "Run profilera to generate PROFILE.md";
+  if (profileStatus === "not found") profileDict.suggested_action = "Run profile to generate PROFILE.md";
   if (profileStaleness !== null) {
     const [isStale, daysSince, staleDays] = profileStaleness;
     profileDict.days_since_generated = daysSince;
@@ -63,7 +63,7 @@ export function collectOrientationState(opts: PrimeOpts): OrientationState {
         // profile metadata is optional for prime output
       }
     }
-    if (isStale) profileDict.suggested_action = "Run profilera to refresh PROFILE.md";
+    if (isStale) profileDict.suggested_action = "Run profile to refresh PROFILE.md";
   }
   const v1Artifacts = detectV1ArtifactPairs(process.cwd());
   const v1Migration = v1MigrationSummary(v1Artifacts, { sourceRoot, home, env });
@@ -98,13 +98,13 @@ export function collectOrientationState(opts: PrimeOpts): OrientationState {
               : (projectIntegration.pending_runtime as number) > 0
                 ? "Upgrade Agentera runtime wiring"
                 : "Upgrade Agentera",
-          capability: "hej",
+          capability: "status",
           reason: projectIntegration.message,
         }
       : projectIntegration.major_boundary_block
         ? {
             object: "Await v3 successor announcement",
-            capability: "hej",
+            capability: "status",
             reason: projectIntegration.major_boundary_block,
           }
         : defaultNextAction;

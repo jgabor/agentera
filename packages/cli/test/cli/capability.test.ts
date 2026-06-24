@@ -15,38 +15,38 @@ function capture(fn: (io: { out: (t: string) => void; err: (t: string) => void }
 }
 
 describe("cli capability routing", () => {
-  it("lists the routable capability names (hej excluded)", () => {
-    expect(CAPABILITY_ROUTING_NAMES).toContain("visionera");
-    expect(CAPABILITY_ROUTING_NAMES).not.toContain("hej");
+  it("lists the routable capability names (status excluded)", () => {
+    expect(CAPABILITY_ROUTING_NAMES).toContain("vision");
+    expect(CAPABILITY_ROUTING_NAMES).not.toContain("status");
     expect(CAPABILITY_ROUTING_NAMES).toHaveLength(11);
   });
 
   it("emits text routing guidance", () => {
-    const { rc, out } = capture((io) => cmdCapability("planera", {}, io));
+    const { rc, out } = capture((io) => cmdCapability("plan", {}, io));
     expect(rc).toBe(0);
-    expect(out).toContain("agentera planera");
-    expect(out).toContain("invoke: /agentera planera via Agentera skill routing");
-    expect(out).toContain("startup context: agentera prime --context planera --format json");
+    expect(out).toContain("agentera plan");
+    expect(out).toContain("invoke: /agentera plan via Agentera skill routing");
+    expect(out).toContain("startup context: agentera prime --context plan --format json");
   });
 
   it("emits a JSON routing payload", () => {
-    const { rc, out } = capture((io) => cmdCapability("resonera", { format: "json" }, io));
+    const { rc, out } = capture((io) => cmdCapability("discuss", { format: "json" }, io));
     expect(rc).toBe(0);
     const payload = JSON.parse(out);
-    expect(payload.command).toBe("resonera");
-    expect(payload.capability).toBe("resonera");
-    expect(payload.routing.skill_invocation).toBe("/agentera resonera");
+    expect(payload.command).toBe("discuss");
+    expect(payload.capability).toBe("discuss");
+    expect(payload.routing.skill_invocation).toBe("/agentera discuss");
   });
 
   it("treats yaml like text (only json is structured)", () => {
-    const yaml = capture((io) => cmdCapability("optimera", { format: "yaml" }, io));
-    const text = capture((io) => cmdCapability("optimera", { format: "text" }, io));
+    const yaml = capture((io) => cmdCapability("optimize", { format: "yaml" }, io));
+    const text = capture((io) => cmdCapability("optimize", { format: "text" }, io));
     expect(yaml.out).toBe(text.out);
   });
 
   it("routes capability names through the dispatcher", () => {
-    const { rc, out } = capture((io) => main(["node", "agentera", "visionera"], io));
+    const { rc, out } = capture((io) => main(["node", "agentera", "vision"], io));
     expect(rc).toBe(0);
-    expect(out).toContain("agentera visionera");
+    expect(out).toContain("agentera vision");
   });
 });

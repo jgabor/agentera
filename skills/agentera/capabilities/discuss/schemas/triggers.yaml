@@ -3,11 +3,11 @@ TRIGGERS:
     id: T1
     description: >-
       Direct invocation by name or slash command. Matches when the user
-      explicitly requests resonera for structured deliberation.
+      explicitly requests discuss for structured deliberation.
     priority: high
     patterns:
-      - "resonera"
-      - "/resonera"
+      - "discuss"
+      - "/discuss"
   2:
     id: T2
     description: >-

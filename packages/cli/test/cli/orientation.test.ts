@@ -45,16 +45,16 @@ describe("orientation: pure helpers", () => {
     const action = selectHejNextAction(plan, {}, {}, [], null, true);
     expect(action).toEqual({
       object: "PLAN Task 3: Wire prime",
-      capability: "orkestrera",
+      capability: "orchestrate",
       reason: "first pending plan task",
     });
   });
 
   it("routes a complex TODO to planera and a simple one to realisera", () => {
     const complex = [{ severity: "normal", status: "open", text: "update the schema contract and validation surface" }];
-    expect(selectHejNextAction({}, {}, {}, complex, null, true).capability).toBe("planera");
+    expect(selectHejNextAction({}, {}, {}, complex, null, true).capability).toBe("plan");
     const simple = [{ severity: "normal", status: "open", text: "rename a thing" }];
-    expect(selectHejNextAction({}, {}, {}, simple, null, true).capability).toBe("realisera");
+    expect(selectHejNextAction({}, {}, {}, simple, null, true).capability).toBe("build");
   });
 
   it("summarizes state presence", () => {

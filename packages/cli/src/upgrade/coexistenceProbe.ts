@@ -12,6 +12,7 @@ import { hasBundleRootEvidence } from "./bundleEvidence.js";
 
 export const COEXISTENCE_PROBE_AUTHORITY = "references/cli/coexistence-probe.yaml";
 export const COEXISTENCE_SECTION_HEADER = "Coexistence";
+export const COEXISTENCE_NAMING_DIVERGENCE_LABEL = "naming divergence";
 
 type Dict = Record<string, unknown>;
 type Env = Record<string, string | undefined>;
@@ -54,6 +55,29 @@ export function detectV2Coexistence(opts: { home: string; env?: Env }): string[]
   return [`v2 managed app home: ${appHome}`];
 }
 
+/**
+ * Renders the naming-divergence dimension from the coexistence probe contract.
+ * Surfaces the v3 English capability IDs against the v2 stable Swedish -era IDs
+ * so a doctor reader can see the vocabulary split between the two CLI lines.
+ * Returns null when the contract omits or malforms the dimension.
+ */
+export function formatNamingDivergenceLines(raw: unknown): string[] | null {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
+    return null;
+  }
+  const block = raw as Dict;
+  const v3 = block.v3_canonical;
+  const v2 = block.v2_stable;
+  if (!Array.isArray(v3) || v3.length === 0 || !Array.isArray(v2) || v2.length === 0) {
+    return null;
+  }
+  return [
+    `  ${COEXISTENCE_NAMING_DIVERGENCE_LABEL}:`,
+    `    v3: ${v3.map(String).join(", ")}`,
+    `    v2: ${v2.map(String).join(", ")}`,
+  ];
+}
+
 export function formatCoexistenceDoctorLines(contract: Dict): string[] {
   const section = String(contract.section_header ?? COEXISTENCE_SECTION_HEADER);
   const warning = contract.warning;
@@ -69,6 +93,10 @@ export function formatCoexistenceDoctorLines(contract: Dict): string[] {
   const lines = [section, headline];
   for (const item of resolutions) {
     lines.push(`  - ${String(item)}`);
+  }
+  const divergence = formatNamingDivergenceLines(contract.naming_divergence);
+  if (divergence) {
+    lines.push(...divergence);
   }
   return lines;
 }

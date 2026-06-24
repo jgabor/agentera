@@ -7,8 +7,8 @@ import { emitStructured } from "../structured.js";
 type Io = { out?: (t: string) => void; err?: (t: string) => void };
 
 export const CAPABILITY_ROUTING_NAMES = [
-  "visionera", "resonera", "inspirera", "planera", "realisera",
-  "optimera", "inspektera", "dokumentera", "profilera", "visualisera", "orkestrera",
+  "vision", "discuss", "research", "plan", "build",
+  "optimize", "audit", "document", "profile", "design", "orchestrate",
 ];
 
 const PRIME_CAPABILITY_CONTEXT_COMMAND = "agentera prime --context {capability} --format json";

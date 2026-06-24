@@ -33,7 +33,7 @@ const EXPECTED_STATUSES = [
 ] as const;
 
 const EXPECTED_VERBS = ["install", "repair", "update", "migrate", "upgrade", "refresh"] as const;
-const EXPECTED_LIFECYCLE_CONSUMERS = ["doctor", "hej", "upgrade", "docs", "tests"] as const;
+const EXPECTED_LIFECYCLE_CONSUMERS = ["doctor", "status", "upgrade", "docs", "tests"] as const;
 const EXPECTED_CHANNELS = ["stable", "development"] as const;
 const EXPECTED_CHANNEL_CONSUMERS = ["upgrade", "doctor", "prime", "docs", "tests"] as const;
 

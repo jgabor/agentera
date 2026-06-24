@@ -3,8 +3,8 @@ VALIDATION:
     id: V1
     rule: read_only_codebase
     description: >-
-      Inspektera MUST NOT modify any source code files. It is a read-only
-      assessment capability. Other capabilities fix what inspektera finds.
+      Audit MUST NOT modify any source code files. It is a read-only
+      assessment capability. Other capabilities fix what audit finds.
     severity: critical
     checks:
       - "No source code files are modified during audit"
@@ -53,8 +53,8 @@ VALIDATION:
     id: V6
     rule: exit_marker_required
     description: >-
-      Every inspektera invocation MUST emit an exit marker. The marker uses
-      the canonical glyph ⛶ (SG3) in the format ⛶ inspektera · <status>
+      Every audit invocation MUST emit an exit marker. The marker uses
+      the canonical glyph ⛶ (SG3) in the format ⛶ audit · <status>
       where status is one of EX1-EX4.
     severity: critical
     checks:
@@ -65,8 +65,8 @@ VALIDATION:
     id: V7
     rule: evidence_context_first
     description: >-
-      Inspektera evaluation startup MUST begin with `agentera prime --context
-      inspektera --format json` and use complete CLI `evidence_context` before
+      Audit evaluation startup MUST begin with `agentera prime --context
+      audit --format json` and use complete CLI `evidence_context` before
       raw plan, progress, docs, health, TODO, or decisions artifacts.
     severity: critical
     checks:
@@ -77,7 +77,7 @@ VALIDATION:
     rule: evidence_context_fallback_before_raw
     description: >-
       When evidence_context is absent, incomplete, or caveated for needed state,
-      Inspektera MUST run listed existing CLI fallback commands before any last-resort
+      Audit MUST run listed existing CLI fallback commands before any last-resort
       raw artifact read.
     severity: critical
     checks:
@@ -88,7 +88,7 @@ VALIDATION:
     id: V9
     rule: evidence_context_caveats_preserved
     description: >-
-      Inspektera reports MUST preserve evidence_context caveats for stale app/profile
+      Audit reports MUST preserve evidence_context caveats for stale app/profile
       state, compacted decisions, protected-state boundaries, unavailable version or
       publication evidence, manual-check states, and residual risks instead of hiding,
       flattening, or reconstructing them.
@@ -101,7 +101,7 @@ VALIDATION:
     id: V10
     rule: satisfaction_authority_boundary
     description: >-
-      When Inspektera touches decision satisfaction, it may report provisional
+      When Audit touches decision satisfaction, it may report provisional
       satisfaction with evidence but MUST NOT user-confirm satisfaction. Missing,
       compacted, open, provisional, or review-needed satisfaction state remains a
       caveat and review pressure; automation must not reconstruct hidden outcomes

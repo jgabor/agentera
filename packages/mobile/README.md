@@ -73,7 +73,7 @@ User-facing names appear in the app; internal names match the monorepo agent run
 
 | Glyph | User-facing | Internal    | What it does                                                                       |
 | :---: | ----------- | ----------- | ---------------------------------------------------------------------------------- |
-|   ⌂   | brief       | hej         | Briefs on project status, current plan, known gaps, and suggested next action      |
+|   ⌂   | status      | hej         | Briefs on project status, current plan, known gaps, and suggested next action      |
 |   ⛥   | vision      | visionera   | Helps you shape the project's vision and long-term goals                           |
 |   ❈   | discuss     | resonera    | Structured deliberation before consequential choices                               |
 |   ⬚   | research    | inspirera   | Assists with adapting concepts, patterns, or solutions                             |

@@ -1,6 +1,6 @@
 # Objective Artifact Schema
 #
-# Optimization objective maintained by optimera. Each objective lives in its
+# Optimization objective maintained by optimize. Each objective lives in its
 # own subdirectory under .agentera/optimera/<name>/ and captures the metric,
 # target, baseline, constraints, measurement method, gates, and scope.
 #
@@ -47,12 +47,12 @@ meta:
   name: objective
   version: "1.0.0"
   description: >-
-    Optimization objective. Produced by optimera and resonera. Each objective
+    Optimization objective. Produced by optimize and discuss. Each objective
     lives in its own subdirectory under .agentera/optimera/<name>/.
   artifact_type: agent_facing
   path: ".agentera/optimera/<name>/objective.yaml"
-  producer: [optimera, resonera]
-  consumers: [hej, optimera, resonera]
+  producer: [optimize, discuss]
+  consumers: [status, optimize, discuss]
   format: yaml
 
 GROUP_PREFIXES:

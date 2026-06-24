@@ -26,7 +26,7 @@ Human-facing root documentation: `README`, `UPGRADE`, `CHANGELOG`, package and p
 
 Agent-rendered terminal output for whichever design authority this file belongs to:
 
-- **Suite `DESIGN.md`:** hej dashboard, capability introductions and exits, Agentera CLI-formatted state summaries
+- **Suite `DESIGN.md`:** status dashboard, capability introductions and exits, Agentera CLI-formatted state summaries
 - **Project `DESIGN.md`:** the host product's own CLI, agent, or terminal-native output
 
 The product register enforces logo scarcity, protocol glyphs, section dividers, and composition rules below. When an agent emits structured terminal Markdown on behalf of Agentera, the **suite** product register wins even if the same session also edited README or the host project has its own `DESIGN.md`.
@@ -42,15 +42,15 @@ Governs **Agentera capability chrome** when the suite renders terminal output in
 | Source | Role |
 |--------|------|
 | `protocol.yaml` | Shared glyphs, dividers, severity, confidence, and exit tokens (npm bundle or app-home skills) |
-| `agentera prime --context` capability prose (D65) | Hej dashboard, introductions, exits, and startup contracts |
+| `agentera prime --context` capability prose (D65) | Status dashboard, introductions, exits, and startup contracts |
 | v2 `$AGENTERA_HOME/app/DESIGN.md` when present | Legacy managed-install suite product register |
 | Agentera repo root `DESIGN.md` | Suite dogfood terminal register plus brand register for this repository |
 
-**Surfaces:** hej orientation dashboard, capability introductions and exit markers, CLI-formatted `agentera state` summaries agents emit as Agentera.
+**Surfaces:** status orientation dashboard, capability introductions and exit markers, CLI-formatted `agentera state` summaries agents emit as Agentera.
 
 #### Project design authority
 
-Governs the **host repository's own product** — web UI, the user's coding-agent CLI, docs site, or other app output visualisera was asked to design.
+Governs the **host repository's own product** — web UI, the user's coding-agent CLI, docs site, or other app output the design capability was asked to design.
 
 | Source | Role |
 |--------|------|
@@ -62,11 +62,10 @@ Governs the **host repository's own product** — web UI, the user's coding-agen
 
 - v3 npm publish (`packages/cli/bundle/`) ships `skills/` and `protocol.yaml`; it does **not** copy suite `DESIGN.md` into host projects.
 - v2 managed app-home may include `app/DESIGN.md`; project install still does **not** copy it to the host project root.
-- Visualisera in a host project writes **project** `DESIGN.md` only; never merge suite design sources into it.
-- Hej reads project design for **status metadata** (exists, stale, missing) — not to style suite chrome.
+- Design in a host project writes **project** `DESIGN.md` only; never merge suite design sources into it.
+- Status reads project design for **status metadata** (exists, stale, missing) — not to style suite chrome.
 - When both authorities apply in one session, suite chrome follows suite sources; the host product follows project `DESIGN.md`.
 - In the Agentera repository, root `DESIGN.md` is suite terminal dogfood plus brand register; `packages/mobile/DESIGN.md` is the mobile surface register.
-
 
 ## Philosophy
 
@@ -74,10 +73,9 @@ The ambitious workshop. Every visual element carries semantic weight; craft and 
 
 Modern terminal assumed. Full Unicode space available.
 
-
 ## Logo
 
-The agentera logo uses box-drawing characters exclusively. It appears at key moments only: the hej dashboard, major completions, significant artifacts. Scarcity keeps it special.
+The agentera logo uses box-drawing characters exclusively. It appears at key moments only: the status dashboard, major completions, significant artifacts. Scarcity keeps it special.
 
 <!-- design:logo -->
 
@@ -97,18 +95,18 @@ Each skill has a unique Unicode glyph that appears in section headers as a subtl
 <!-- design:glyphs -->
 
 ```yaml
-hej:         { glyph: "⌂", code: "U+2302", meaning: "home base" }
-realisera:   { glyph: "⧉", code: "U+29C9", meaning: "joined building blocks" }
-inspektera:  { glyph: "⛶", code: "U+26F6", meaning: "viewfinder frame" }
-resonera:    { glyph: "❈", code: "U+2748", meaning: "spark of insight" }
-planera:     { glyph: "≡", code: "U+2261", meaning: "structured layers" }
-visionera:   { glyph: "⛥", code: "U+26E5", meaning: "guiding star" }
-optimera:    { glyph: "⎘", code: "U+2398", meaning: "measurement" }
-dokumentera: { glyph: "▤", code: "U+25A4", meaning: "text on page" }
-profilera:   { glyph: "♾", code: "U+267E", meaning: "permanent mark" }
-inspirera:   { glyph: "⬚", code: "U+2B1A", meaning: "frame to fill" }
-visualisera: { glyph: "◰", code: "U+25F0", meaning: "design grid" }
-orkestrera:  { glyph: "⎈", code: "U+2388", meaning: "helm, steering" }
+status:      { glyph: "⌂", code: "U+2302", meaning: "home base" }
+build:       { glyph: "⧉", code: "U+29C9", meaning: "joined building blocks" }
+audit:       { glyph: "⛶", code: "U+26F6", meaning: "viewfinder frame" }
+discuss:     { glyph: "❈", code: "U+2748", meaning: "spark of insight" }
+plan:        { glyph: "≡", code: "U+2261", meaning: "structured layers" }
+vision:      { glyph: "⛥", code: "U+26E5", meaning: "guiding star" }
+optimize:    { glyph: "⎘", code: "U+2398", meaning: "measurement" }
+document:    { glyph: "▤", code: "U+25A4", meaning: "text on page" }
+profile:     { glyph: "♾", code: "U+267E", meaning: "permanent mark" }
+research:    { glyph: "⬚", code: "U+2B1A", meaning: "frame to fill" }
+design:      { glyph: "◰", code: "U+25F0", meaning: "design grid" }
+orchestrate: { glyph: "⎈", code: "U+2388", meaning: "helm, steering" }
 ```
 
 ## Status Tokens
@@ -210,7 +208,7 @@ agent-output:
     reason: "Use severity and status tokens from this file, not emoji"
   - pattern: markdown-tables-in-agent-dashboard
     rule: prohibited
-    scope: [hej-dashboard, capability-intros]
+    scope: [status-dashboard, capability-intros]
     reason: "Prefer dividers and metric lines over generic table slop"
   - pattern: bold-decoration-spam
     rule: prohibited

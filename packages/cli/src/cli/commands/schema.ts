@@ -23,8 +23,8 @@ type Dict = Record<string, any>;
 type Io = { out?: (t: string) => void; err?: (t: string) => void };
 
 const CAPABILITY_NAMES = [
-  "hej", "visionera", "resonera", "inspirera", "planera", "realisera",
-  "optimera", "inspektera", "dokumentera", "profilera", "visualisera", "orkestrera",
+  "status", "vision", "discuss", "research", "plan", "build",
+  "optimize", "audit", "document", "profile", "design", "orchestrate",
 ];
 const ROUTINE_STATE_COMMANDS = [
   "hej", "plan", "progress", "health", "todo", "decisions", "docs", "objective", "experiments",
@@ -49,8 +49,8 @@ const COMMAND_DESCRIPTIONS: Record<string, string> = {
   todo: "Deprecated alias for state todo. TODO summary.",
   decisions: "Deprecated alias for state decisions. Decision log.",
   docs: "Deprecated alias for state docs. Documentation contract summary.",
-  objective: "Deprecated alias for state objective. Active optimera objective summary.",
-  experiments: "Deprecated alias for state experiments. Active optimera experiments summary.",
+  objective: "Deprecated alias for state objective. Active optimize objective summary.",
+  experiments: "Deprecated alias for state experiments. Active optimize experiments summary.",
   query: "Deprecated alias for state query. Advanced custom artifact query.",
   lint: "Deprecated alias for check lint. Run pre-write artifact prose self-audit.",
   gate: "Deprecated alias for check compact. Run check-only repository gates.",

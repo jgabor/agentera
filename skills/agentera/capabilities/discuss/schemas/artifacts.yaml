@@ -4,7 +4,7 @@ ARTIFACTS:
     artifact_id: decisions
     local_role: produces_and_consumes
     description: >-
-      Reasoning trail with confidence labels. Resonera reads existing decisions
+      Reasoning trail with confidence labels. Discuss reads existing decisions
       through `agentera decisions --format json` and its source_contract to avoid
       re-deliberation, and writes new decision entries with confidence (DL1
       firm, DL2 provisional, DL3 exploratory). Compact older entries by applying
@@ -15,7 +15,7 @@ ARTIFACTS:
     artifact_id: vision
     local_role: produces_and_consumes
     description: >-
-      Resonera may update project direction only with explicit user
+      Discuss may update project direction only with explicit user
       confirmation when a decision feeds into project direction. Read for
       context during deliberation.
   3:
@@ -23,25 +23,25 @@ ARTIFACTS:
     artifact_id: todo
     local_role: produces_and_consumes
     description: >-
-      Resonera may add tech debt items surfaced during deliberation only with
+      Discuss may add tech debt items surfaced during deliberation only with
       explicit user confirmation. Severity per protocol SI1-SI4.
   4:
     id: A4
     artifact_id: objective
     local_role: produces_and_consumes
     description: >-
-      Resonera may write optimization decisions only with explicit user
+      Discuss may write optimization decisions only with explicit user
       confirmation when a decision feeds into what to optimize.
   5:
     id: A5
     artifact_id: profile
     local_role: consumes
     description: >-
-      Resonera reads this at session start to acknowledge high-confidence
+      Discuss reads this at session start to acknowledge high-confidence
       entries and avoid re-deliberating settled ground.
   6:
     id: A6
     artifact_id: docs
     local_role: consumes
     description: >-
-      Resonera reads this first to resolve project-local artifact mappings.
+      Discuss reads this first to resolve project-local artifact mappings.

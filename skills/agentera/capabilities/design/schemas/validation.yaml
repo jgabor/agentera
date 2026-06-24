@@ -50,12 +50,12 @@ VALIDATION:
     id: V5
     rule: no_code_modification
     description: >-
-      Visualisera MUST NOT modify code files. It writes DESIGN.md only.
-      Realisera implements the design system in code. The separation
+      Design MUST NOT modify code files. It writes DESIGN.md only.
+      Build implements the design system in code. The separation
       of declaration and implementation is fundamental.
     severity: critical
     checks:
-      - "No code files modified during visualisera invocation"
+      - "No code files modified during design invocation"
   6:
     id: V6
     rule: codebase_exploration_required
@@ -70,8 +70,8 @@ VALIDATION:
     id: V7
     rule: exit_marker_required
     description: >-
-      Every visualisera invocation MUST emit an exit marker using the
-      canonical glyph ◰ (SG11) in the format ◰ visualisera · <status>
+      Every design invocation MUST emit an exit marker using the
+      canonical glyph ◰ (SG11) in the format ◰ design · <status>
       where status is one of EX1-EX4.
     severity: critical
     checks:

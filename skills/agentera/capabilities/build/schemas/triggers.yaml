@@ -3,11 +3,11 @@ TRIGGERS:
     id: T1
     description: >-
       Direct invocation by name or slash command. Matches when the user
-      explicitly requests realisera for autonomous development.
+      explicitly requests build for autonomous development.
     priority: high
     patterns:
-      - "realisera"
-      - "/realisera"
+      - "build"
+      - "/build"
   2:
     id: T2
     description: >-

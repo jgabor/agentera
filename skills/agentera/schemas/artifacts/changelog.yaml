@@ -1,6 +1,6 @@
 # Changelog Artifact Schema
 #
-# Release history maintained by realisera. Tracks versioned releases with
+# Release history maintained by build. Tracks versioned releases with
 # categorized changes (Added, Changed, Fixed, Removed).
 #
 # Note: CHANGELOG.md is a human-facing Markdown artifact. It remains at the
@@ -11,12 +11,12 @@ meta:
   name: changelog
   version: "1.0.0"
   description: >-
-    Release history. Produced by realisera. Consumed by users and agents
+    Release history. Produced by build. Consumed by users and agents
     for version context. Human-facing: remains Markdown at project root.
   artifact_type: human_facing
   path: "CHANGELOG.md"
-  producer: realisera
-  consumers: [hej, all_skills]
+  producer: build
+  consumers: [status, all_skills]
   format: markdown
 
 GROUP_PREFIXES:

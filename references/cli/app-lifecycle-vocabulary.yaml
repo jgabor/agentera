@@ -2,7 +2,7 @@ schema_version: agentera.app_lifecycle_vocabulary.v1
 status: active_authority
 decision: 54
 purpose: >-
-  Define the app lifecycle vocabulary shared by doctor, hej, upgrade, docs,
+  Define the app lifecycle vocabulary shared by doctor, status, upgrade, docs,
   and tests so structured status metadata, operation verbs, deprecated aliases,
   and consumer ownership boundaries have one machine-readable source.
 sources:
@@ -12,7 +12,7 @@ sources:
     - references/cli/vocabulary.md#app-lifecycle-status-vocabulary
 scope:
   includes:
-    - Agentera app lifecycle status metadata emitted by doctor, hej, and upgrade.
+    - Agentera app lifecycle status metadata emitted by doctor, status, and upgrade.
     - Upgrade workflow operation verbs for app files, data migration, and no-change outcomes.
     - Cross-major status concepts that annotate migration work without adding parallel status enums.
     - Transitional deprecated aliases needed to classify shipped or historical consumers.
@@ -155,7 +155,7 @@ operation_verbs:
     lifecycle_allowed: false
 consumer_order:
   - doctor
-  - hej
+  - status
   - upgrade
   - docs
   - tests
@@ -176,7 +176,7 @@ consumers:
       - migrate
       - upgrade
     may_define_new_statuses: false
-  hej:
+  status:
     owns:
       - installed app gate summary exposed in the composite state briefing.
       - recovery prompts derived from doctor and upgrade metadata.

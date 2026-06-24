@@ -241,7 +241,7 @@ describe("validate family envelope (oracle parity)", () => {
       return { rc, payload: readJson(out) };
     }
     if (family === "capability") {
-      const { rc, out } = capture((io) => cmdValidateCapability("realisera", { format: "json" }, io));
+      const { rc, out } = capture((io) => cmdValidateCapability("build", { format: "json" }, io));
       return { rc, payload: readJson(out) };
     }
     if (family === "capability-contract") {

@@ -1,6 +1,6 @@
 # Health Artifact Schema
 #
-# Audit log maintained by inspektera. Each audit entry records assessed
+# Audit log maintained by audit. Each audit entry records assessed
 # dimensions, findings (critical/warning/info counts), overall trajectory,
 # per-dimension grades (A-F), per-dimension findings with confidence, and
 # trend analysis against the prior audit.
@@ -49,12 +49,12 @@ meta:
   name: health
   version: "1.0.0"
   description: >-
-    Audit log maintained by inspektera. Consumed by capabilities that need
+    Audit log maintained by audit. Consumed by capabilities that need
     codebase health context.
   artifact_type: agent_facing
   path: ".agentera/health.yaml"
-  producer: inspektera
-  consumers: [dokumentera, hej, inspektera, orkestrera, planera, realisera, visionera]
+  producer: audit
+  consumers: [document, status, audit, orchestrate, plan, build, vision]
   format: yaml
 
 GROUP_PREFIXES:
@@ -119,7 +119,7 @@ COMPACTION:
       Audits older than 50 are dropped entirely.
   5:
     id: HX5
-    trigger: "When inspektera writes a new audit"
+    trigger: "When audit writes a new audit"
     description: >-
       Compaction runs when the producing skill writes a new entry.
       If >10 full-detail entries exist, collapse the oldest to one-line.

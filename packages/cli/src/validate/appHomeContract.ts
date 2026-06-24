@@ -18,7 +18,7 @@ export const TEXT_SURFACES = [
   ".codex-plugin/plugin.json",
   ".opencode/plugins/agentera.js",
   "skills/agentera/SKILL.md",
-  "packages/cli/src/capabilities/hej/instructions.ts",
+  "packages/cli/src/capabilities/status/instructions.ts",
   "skills/agentera/references/contract.md",
 ] as const;
 

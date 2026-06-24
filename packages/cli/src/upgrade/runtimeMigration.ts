@@ -51,7 +51,7 @@ export function projectHasProjectLevelRuntimeHooks(project: string): boolean {
 }
 
 const OPENCODE_COMMAND_NAMES = ["agentera"] as const;
-const OPENCODE_SKILL_NAMES = ["agentera", "hej"] as const;
+const OPENCODE_SKILL_NAMES = ["agentera", "status"] as const;
 const CURSOR_AGENT_MARKER = "<!-- agentera: managed -->";
 
 export interface NpxHookCommands {

@@ -111,7 +111,7 @@ function claimTerms(text: string, candidates: string[]): string[] {
   return candidates.filter((term) => normalized.includes(term.toLowerCase()));
 }
 
-export function copilotProfileraTerms(registry: RuntimeAdapterRegistry): string[] {
+export function copilotProfileTerms(registry: RuntimeAdapterRegistry): string[] {
   const view = runtimeView(registry, "copilot");
   const lifecycleEvents = objectField(view, "lifecycle_events");
   const documentationClaims = objectField(view, "documentation_claims");
@@ -119,7 +119,7 @@ export function copilotProfileraTerms(registry: RuntimeAdapterRegistry): string[
     ...stringArrayField(lifecycleEvents, "limitations"),
     ...stringArrayField(documentationClaims, "parity_claims"),
   ].join(" ");
-  return claimTerms(text, ["profilera", "bounded", "corpus", "metadata", "missing source families"]);
+  return claimTerms(text, ["profile", "bounded", "corpus", "metadata", "missing source families"]);
 }
 
 export function codexLifecycleStatusValues(registry: RuntimeAdapterRegistry): string[] {
