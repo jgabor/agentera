@@ -2,7 +2,6 @@
 
 ## ⇶ Critical
 
-- [ ] [chore:3.0.0] Implement Decision 70 capability rename on feat/v3 — rename capability dirs to English IDs; flip capability_schema_contract; update runtime descriptors, SKILL.md dispatch, tests, AGENTS.md scopes, coexistence probe naming line; promote CHANGELOG past tense when merged.
 - [ ] [chore:3.0.0] Replace scattered `type Dict = Record<string, any>` aliases across `packages/cli` with a shared typed JSON/value module; narrow casts at IO boundaries only (T1 landed `core/jsonValue.ts` and prime/doctor/orientation contracts; repo-wide Dict elimination deferred).
 
 ## ⇉ Degraded
@@ -36,6 +35,7 @@
 
 ## ✓ Resolved
 
+- [x] ~~[chore:3.0.0] Implement Decision 70 capability rename on feat/v3 — rename capability dirs to English IDs; flip capability_schema_contract; update runtime descriptors, SKILL.md dispatch, tests, AGENTS.md scopes, coexistence probe naming line; promote CHANGELOG past tense when merged. Resolved 2026-06-24: English capability IDs renamed and promoted as canonical on v3 surface; CHANGELOG entry promoted to past tense.~~
 - [x] ~~[fix:3.0.0] `--force` does not bypass the major-boundary gate. Resolved 2026-06-23: `isStableSuccessorAnnounced` is now channel-aware (`nextMajorDoctor.ts:104-113`),...~~
 - [x] ~~[feat:3.0.0] Add CI publish jobs for both npm channels. `.github/workflows/ci.yml` runs build/typecheck/test/sandbox/compact gates but had...~~
 - [x] ~~[fix:3.0.0] validate-artifact hook rejects TODO.md edits when any severity section is empty. Resolved 2026-06-23: The...~~
@@ -75,4 +75,3 @@
 - [x] ~~[refactor:3.0.0] Introduce typed `BundleStatus` / `OrientationState` in `prime.ts` (replace `Dict` return shapes from `hejBundleStatus` and...~~
 - [x] ~~[fix:3.0.0] Fix so that upgrades are not presented as repairs during `prime` or `doctor`~~
 - [x] ~~[docs:3.0.0] Decide on Swedish -era verbs or standardizing on plain English (e.g., `agentera optimera` vs...~~
-- [x] ~~[fix:3.0.0] `agentera state todo --format json` ignores GitHub task-list `[x]`/`[ ]` checkboxes before Agentera `[type]`...~~
