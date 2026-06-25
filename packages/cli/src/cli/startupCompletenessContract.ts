@@ -27,7 +27,7 @@ export const STARTUP_AVAILABLE_STATE_FIELDS = [
 
 export const STARTUP_COMPLETENESS_CONFIDENCE_CAVEATS = [
   "representative benchmark evidence exists, but claude-code and github-copilot coverage is degraded by schema divergence",
-  "Inspektera evidence context uses existing hej, plan, progress, docs, health, TODO, and decisions state outputs",
+  "Audit evidence context uses existing hej, plan, progress, docs, health, TODO, and decisions state outputs",
 ] as const;
 
 export const STARTUP_COMPLETENESS_CLI_FALLBACK = [

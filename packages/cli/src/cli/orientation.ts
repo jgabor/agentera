@@ -72,10 +72,10 @@ const TODO_PLAN_SIGNALS = new Set([
 
 const PROFILE_STALE_DAYS_ENV = "AGENTERA_PROFILE_MAX_AGE_DAYS";
 const DEFAULT_PROFILE_STALE_DAYS = 7;
-const INSPEKTERA_STALE_DAYS_ENV = "AGENTERA_INSPEKTERA_MAX_AGE_DAYS";
-const DEFAULT_INSPEKTERA_STALE_DAYS = 30;
-const INSPEKTERA_STALE_CYCLES_ENV = "AGENTERA_INSPEKTERA_MAX_CYCLES";
-const DEFAULT_INSPEKTERA_STALE_CYCLES = 10;
+const AUDIT_STALE_DAYS_ENV = "AGENTERA_AUDIT_MAX_AGE_DAYS";
+const DEFAULT_AUDIT_STALE_DAYS = 30;
+const AUDIT_STALE_CYCLES_ENV = "AGENTERA_AUDIT_MAX_CYCLES";
+const DEFAULT_AUDIT_STALE_CYCLES = 10;
 
 type Env = Record<string, string | undefined>;
 
@@ -209,15 +209,15 @@ function cyclesSinceHealthAudit(schemas: Record<string, SchemaInfo>, auditDate: 
   return count;
 }
 
-function checkInspekteraAuditStaleness(
+function checkAuditStaleness(
   schemas: Record<string, SchemaInfo>,
   latest: JsonObject | null,
   auditDate: number | null,
   env: Env = process.env,
 ): Partial<HealthSummary> | null {
   if (latest === null || auditDate === null) return null;
-  const staleDaysThreshold = intEnv(env, INSPEKTERA_STALE_DAYS_ENV, DEFAULT_INSPEKTERA_STALE_DAYS);
-  const staleCyclesThreshold = intEnv(env, INSPEKTERA_STALE_CYCLES_ENV, DEFAULT_INSPEKTERA_STALE_CYCLES);
+  const staleDaysThreshold = intEnv(env, AUDIT_STALE_DAYS_ENV, DEFAULT_AUDIT_STALE_DAYS);
+  const staleCyclesThreshold = intEnv(env, AUDIT_STALE_CYCLES_ENV, DEFAULT_AUDIT_STALE_CYCLES);
   const since = daysSince(auditDate);
   const cyclesSince = cyclesSinceHealthAudit(schemas, auditDate);
   const timeStale = since >= staleDaysThreshold;
@@ -446,7 +446,7 @@ export function healthSummary(schemas: Record<string, SchemaInfo>, env: Env = pr
       ["degrading", "declining", "worse"].includes(trajectory.toLowerCase()) ||
       (worst !== null && worst[2] >= gradeRank.D),
   };
-  const staleness = checkInspekteraAuditStaleness(schemas, latest, auditDate, env);
+  const staleness = checkAuditStaleness(schemas, latest, auditDate, env);
   if (staleness !== null) Object.assign(summary, staleness);
   return summary;
 }

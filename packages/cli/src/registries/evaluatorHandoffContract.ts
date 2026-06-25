@@ -5,7 +5,7 @@ import path from "node:path";
 import { loadYamlMapping } from "../core/yaml.js";
 
 /**
- * Evaluator-handoff contract loader and inspektera evaluation report validator.
+ * Evaluator-handoff contract loader and audit evaluation report validator.
  * Authority: references/cli/capability-instruction-contract.yaml#evaluator_handoff
  */
 

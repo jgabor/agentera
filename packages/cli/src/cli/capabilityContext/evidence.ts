@@ -318,7 +318,7 @@ export function decisionReviewPressure(schemas: Record<string, SchemaInfo>): Dic
   };
 }
 
-export function inspekteraEvidenceContext(
+export function auditEvidenceContext(
   capability: string | null,
   schemas: Record<string, SchemaInfo>,
   plan: Dict,

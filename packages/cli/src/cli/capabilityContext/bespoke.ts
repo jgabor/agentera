@@ -1,7 +1,7 @@
 import type { Dict } from "./types.js";
 import { orchestrationContext } from "./orchestration.js";
 import { dokumenteraCloseoutContext } from "./closeout.js";
-import { inspekteraEvidenceContext } from "./evidence.js";
+import { auditEvidenceContext } from "./evidence.js";
 import { optimizeBenchmarkContext } from "./benchmark.js";
 import { buildExecutionContext } from "./realisera.js";
 import { slimOrchestrationContext, slimEvidenceContext, slimCloseoutContext } from "./slim.js";
@@ -35,7 +35,7 @@ export function bespokeCapabilityContexts(capabilityName: string | null, state: 
       state.profile_dict,
       state.app,
     ),
-    evidence_context: inspekteraEvidenceContext(
+    evidence_context: auditEvidenceContext(
       capabilityName,
       state.schemas,
       state.plan,
