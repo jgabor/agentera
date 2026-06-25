@@ -152,6 +152,7 @@ records:
         - opencode_managed_commands
         - opencode_skill_paths
         - bundled_support_references
+        - profile_dir_deprecated
       status_labels:
         - pass
         - warn
@@ -174,6 +175,8 @@ records:
         - OpenCode Agentera skill paths are missing or broken
         - bundled support references validate separately from installer status
         - bundled reference validation mismatch found despite installer status
+        - profile dir env var is current
+        - v2 env var PROFILERA_PROFILE_DIR detected; run `agentera upgrade` to migrate to AGENTERA_PROFILE_DIR
     documentation_claims:
       reference_paths:
         - references/adapters/runtime-feature-parity.md

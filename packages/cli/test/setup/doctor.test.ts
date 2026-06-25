@@ -23,6 +23,7 @@ import {
   configuredRootCheck,
   diagnoseBundledReferenceValidation,
   diagnoseOpencodeCommands,
+  diagnoseOpencodeProfileDir,
   diagnoseOpencodeSkillPaths,
   extractReferencePaths,
   hasManagedMarker,
@@ -217,6 +218,26 @@ describe("setup doctor: OpenCode diagnostics", () => {
     fs.symlinkSync(path.join(root, "skills", "agentera"), path.join(skills, "agentera"));
     const c = diagnoseOpencodeSkillPaths(root, home, {});
     expect(c.status).toBe("pass");
+  });
+
+  it("warns when the deprecated PROFILERA_PROFILE_DIR env var is set", () => {
+    const c = diagnoseOpencodeProfileDir(path.join(tmp, "root"), path.join(tmp, "home"), {
+      PROFILERA_PROFILE_DIR: "/legacy/profile",
+    });
+    expect(c.status).toBe("warn");
+    expect(c.name).toBe("profile_dir_deprecated");
+    expect(c.message).toContain("PROFILERA_PROFILE_DIR");
+    expect(c.message).toContain("agentera upgrade");
+    expect(c.message).toContain("AGENTERA_PROFILE_DIR");
+    expect(c.gap).toBe("user_environment");
+  });
+
+  it("passes when PROFILERA_PROFILE_DIR is absent", () => {
+    const c = diagnoseOpencodeProfileDir(path.join(tmp, "root"), path.join(tmp, "home"), {});
+    expect(c.status).toBe("pass");
+    expect(c.name).toBe("profile_dir_deprecated");
+    expect(c.message).toBe("profile dir env var is current");
+    expect(c.gap).toBeNull();
   });
 });
 
