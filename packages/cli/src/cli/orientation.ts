@@ -468,7 +468,7 @@ function objectiveStatus(data: JsonObject): string {
 }
 
 export function activeObjectiveSummary(): ObjectiveSummary {
-  const root = path.join(process.cwd(), ".agentera", "optimera");
+  const root = path.join(process.cwd(), ".agentera", "optimize");
   let isDir = false;
   try {
     isDir = fs.statSync(root).isDirectory();

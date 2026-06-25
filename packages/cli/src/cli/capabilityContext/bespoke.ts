@@ -3,7 +3,7 @@ import { orchestrationContext } from "./orchestration.js";
 import { documentCloseoutContext } from "./closeout.js";
 import { auditEvidenceContext } from "./evidence.js";
 import { optimizeBenchmarkContext } from "./benchmark.js";
-import { buildExecutionContext } from "./realisera.js";
+import { buildExecutionContext } from "./build.js";
 import { slimOrchestrationContext, slimEvidenceContext, slimCloseoutContext } from "./slim.js";
 
 export function slimBespokeContext(name: string, value: Dict): Dict {

@@ -182,7 +182,7 @@ export function loadSchemas(schemasDir: string): Record<string, SchemaInfo> {
 }
 
 export function activeObjectiveName(projectRoot: string = process.cwd()): string | null {
-  const root = path.join(projectRoot, ".agentera", "optimera");
+  const root = path.join(projectRoot, ".agentera", "optimize");
   if (!isDirSafe(root)) return null;
   const candidates = fs
     .readdirSync(root)

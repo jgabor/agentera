@@ -28,9 +28,9 @@ current_test_routing_behavior:
     - lines: 60-81
       summary: _collect_all_triggers returns only capability-to-pattern lists; trigger priority, thresholds, fallback metadata, and disambiguation metadata are not preserved.
     - lines: 84-93
-      summary: _route_trigger chooses the matching pattern with the longest substring and falls back to hej only when no substring matches.
+      summary: _route_trigger chooses the matching pattern with the longest substring and falls back to status only when no substring matches.
     - lines: 132-146
-      summary: test_trigger_routing exercises one sample pattern per non-hej capability and asserts a single routed capability, so disambiguation behavior is not covered.
+      summary: test_trigger_routing exercises one sample pattern per non-status capability and asserts a single routed capability, so disambiguation behavior is not covered.
   named_gaps:
     - longest-substring matching
     - ignored priority

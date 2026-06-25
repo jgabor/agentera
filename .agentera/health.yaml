@@ -171,8 +171,8 @@ audits:
           2026-04-26, and three new Index rows for `setup_codex.py`,
           `setup_copilot.py`, `smoke_setup_helpers.py` are present. PROGRESS,
           TODO, CHANGELOG, README, HEALTH all touched today. SPEC.md, DESIGN.md,
-          VISION.md older than the plan, but the owning skills (visualisera,
-          visionera) were not dispatched."
+          VISION.md older than the plan, but the owning skills (design,
+          vision) were not dispatched."
         findings: []
       - name: Security hygiene
         grade: A
@@ -462,7 +462,7 @@ audits:
         findings: []
       - name: Security hygiene
         grade: A
-        summary: Secret-pattern hits are limited to inspektera's own documented
+        summary: Secret-pattern hits are limited to audit's own documented
           examples. Setup doctor and smoke subprocess calls use list-form
           commands with timeouts and no `shell=True`; installer writes are
           limited to confirmed Codex and Copilot runtime-native config targets.
@@ -600,21 +600,21 @@ audits:
     dimension_details:
       - name: Architecture alignment
         grade: A
-        summary: Resonera remains the deliberation owner. Planera and optimera received
+        summary: Discuss remains the deliberation owner. Plan and optimize received
           only local effort-bias guards, matching
           `.agentera/archive/PLAN-2026-04-29-steelman-informed-decision-pressure.md:16-21`.
         findings: []
       - name: Pattern consistency
         grade: A
         summary: Pressure testing, win conditions, and effort-bias resets use existing
-          workflow prose. `skills/resonera/SKILL.md:182-217`,
-          `skills/planera/SKILL.md:112`, and `skills/optimera/SKILL.md:221`
+          workflow prose. `skills/discuss/SKILL.md:182-217`,
+          `skills/plan/SKILL.md:112`, and `skills/optimize/SKILL.md:221`
           avoid new modes, artifacts, or confidence labels.
         findings: []
       - name: Coupling health
         grade: A
         summary: DECISIONS.md compatibility stayed intact.
-          `skills/resonera/references/templates/DECISIONS-template.md:36-38`
+          `skills/discuss/references/templates/DECISIONS-template.md:36-38`
           keeps win conditions inside Alternatives bullets while preserving
           current top-level fields.
         findings: []
@@ -653,7 +653,7 @@ audits:
               - **Impact**: Orientation consumers see stale validation scale
               after 1.22-1.24 work.
 
-              - **Suggested action**: Run dokumentera to refresh DOCS.md Index
+              - **Suggested action**: Run document to refresh DOCS.md Index
               and Coverage for the 511-test baseline.
             evidence: >-
               DOCS reports "477 tests across 17 files" and a 2026-04-28
@@ -663,15 +663,15 @@ audits:
               - **Impact**: Orientation consumers see stale validation scale
               after 1.22-1.24 work.
 
-              - **Suggested action**: Run dokumentera to refresh DOCS.md Index
+              - **Suggested action**: Run document to refresh DOCS.md Index
               and Coverage for the 511-test baseline.
             impact: >-
               Orientation consumers see stale validation scale after 1.22-1.24
               work.
 
-              - **Suggested action**: Run dokumentera to refresh DOCS.md Index
+              - **Suggested action**: Run document to refresh DOCS.md Index
               and Coverage for the 511-test baseline.
-            suggested_action: Run dokumentera to refresh DOCS.md Index and Coverage for the
+            suggested_action: Run document to refresh DOCS.md Index and Coverage for the
               511-test baseline.
       - name: Prose health
         grade: A
@@ -682,7 +682,7 @@ audits:
         findings: []
       - name: Security hygiene
         grade: A
-        summary: Secret-pattern hits are limited to inspektera examples and prior HEALTH
+        summary: Secret-pattern hits are limited to audit examples and prior HEALTH
           prose. The Steelman plan added no new executable code or shell
           construction.
         findings: []
@@ -700,7 +700,7 @@ audits:
           not touched by this plan. ### Patterns Observed - Module structure:
           skill behavior remains in `skills/*/SKILL.md`; artifact contracts stay
           in SPEC, generated contracts, and templates. - Decision pattern:
-          resonera owns pressure testing and win-condition capture; adjacent
+          discuss owns pressure testing and win-condition capture; adjacent
           skills receive only selection-bias guards. - Testing approach:
           deterministic validators and full pytest cover contracts; live eval
           remains blocked by external API credit. - Release pattern:
@@ -751,7 +751,7 @@ audits:
     patterns:
       - "Module structure: skill behavior remains in `skills/*/SKILL.md`;
         artifact contracts stay in SPEC, generated contracts, and templates."
-      - "Decision pattern: resonera owns pressure testing and win-condition
+      - "Decision pattern: discuss owns pressure testing and win-condition
         capture; adjacent skills receive only selection-bias guards."
       - "Testing approach: deterministic validators and full pytest cover
         contracts; live eval remains blocked by external API credit."
@@ -770,7 +770,7 @@ audits:
       warning: 0
       info: 0
       filtered_by_confidence: 0
-    trajectory: ⮉ improving vs Audit 17. The Completed Optimera Objective Archival
+    trajectory: ⮉ improving vs Audit 17. The Completed Optimize Objective Archival
       plan resolved the DOCS coverage warning and closed the plan without adding
       forbidden objective surfaces.
     grades:
@@ -782,7 +782,7 @@ audits:
     dimension_details:
       - name: Artifact freshness
         grade: A
-        summary: "`.agentera/archive/PLAN-2026-04-29-completed-optimera-objective-archi\
+        summary: "`.agentera/archive/PLAN-2026-04-29-completed-optimize-objective-archi\
           val.md:36-114` marks Tasks 1-8 complete, `.agentera/PLAN.md` is
           absent, and `TODO.md:38` resolves the completed-objective item with
           `27bb667..a1e60bd` plus the checkpoint commit."
@@ -814,13 +814,13 @@ audits:
         summary: "Glob checks found no active root `OBJECTIVE.md`, root
           `EXPERIMENTS.md`, or `.agentera/PLAN.md`. DOCS Artifact Mapping has no
           fixed OBJECTIVE/EXPERIMENTS rows; README and SPEC explicitly preserve
-          per-objective `.agentera/optimera/<name>/` layout without registries
+          per-objective `.agentera/optimize/<name>/` layout without registries
           or symlinks. ### Trends vs Audit 17 - **Improved**: Freshness B→A;
           DOCS coverage now matches the 523-test suite. - **Degraded**: none. -
           **Stable**: Version, validation, documentation, and objective layout
           are coherent. - **Resolved**: Audit 17 DOCS coverage baseline stale
-          warning. ### Patterns Observed - Objective lifecycle: optimera keeps
-          state self-contained under `.agentera/optimera/<name>/` and excludes
+          warning. ### Patterns Observed - Objective lifecycle: optimize keeps
+          state self-contained under `.agentera/optimize/<name>/` and excludes
           closed objectives before active-work inference. - Release pattern:
           completed-objective fix landed as patch release `1.24.1`, followed by
           a plan-level freshness checkpoint. - Validation pattern: spec,
@@ -849,8 +849,8 @@ audits:
         - **Resolved**: Audit 17 DOCS coverage baseline stale warning.
       resolved: Audit 17 DOCS coverage baseline stale warning.
     patterns:
-      - "Objective lifecycle: optimera keeps state self-contained under
-        `.agentera/optimera/<name>/` and excludes closed objectives before
+      - "Objective lifecycle: optimize keeps state self-contained under
+        `.agentera/optimize/<name>/` and excludes closed objectives before
         active-work inference."
       - "Release pattern: completed-objective fix landed as patch release
         `1.24.1`, followed by a plan-level freshness checkpoint."
@@ -860,7 +860,7 @@ audits:
     date: 2026-04-30
     dimensions:
       - artifact freshness
-      - optimera analyzer health
+      - optimize analyzer health
       - test and validation health
       - version health
       - unintended-change hygiene
@@ -869,7 +869,7 @@ audits:
       warning: 1
       info: 0
       filtered_by_confidence: 0
-    trajectory: stable vs Audit 18. Optimera analyzer reliability landed cleanly,
+    trajectory: stable vs Audit 18. Optimize analyzer reliability landed cleanly,
       but DOCS coverage evidence lags the 536-test suite.
     grades:
       Freshness: A
@@ -884,11 +884,11 @@ audits:
           after `2026-04-30` plan creation. `.agentera/PLAN.md` is absent, and
           this audit updates HEALTH."
         findings: []
-      - name: Optimera analyzer health
+      - name: Optimize analyzer health
         grade: A
-        summary: "`skills/optimera/scripts/analyze_experiments.py:39-444` keeps parsing,
+        summary: "`skills/optimize/scripts/analyze_experiments.py:39-444` keeps parsing,
           target extraction, analysis, and frontier rendering separated. Live
-          realisera-token smoke produced 6 experiments, 2 kept, best metric
+          build-token smoke produced 6 experiments, 2 kept, best metric
           12055, and Markdown frontier output."
         findings: []
       - name: Test and validation health
@@ -909,7 +909,7 @@ audits:
               - **Impact**: Orientation consumers see stale validation scale
               after analyzer reliability tests landed.
 
-              - **Suggested action**: Run dokumentera to refresh DOCS.md
+              - **Suggested action**: Run document to refresh DOCS.md
               Coverage and Test suite rows to 536 tests.
             evidence: >-
               DOCS reports "523 tests across 19 files". Current `python3 -m
@@ -918,15 +918,15 @@ audits:
               - **Impact**: Orientation consumers see stale validation scale
               after analyzer reliability tests landed.
 
-              - **Suggested action**: Run dokumentera to refresh DOCS.md
+              - **Suggested action**: Run document to refresh DOCS.md
               Coverage and Test suite rows to 536 tests.
             impact: >-
               Orientation consumers see stale validation scale after analyzer
               reliability tests landed.
 
-              - **Suggested action**: Run dokumentera to refresh DOCS.md
+              - **Suggested action**: Run document to refresh DOCS.md
               Coverage and Test suite rows to 536 tests.
-            suggested_action: Run dokumentera to refresh DOCS.md Coverage and Test suite
+            suggested_action: Run document to refresh DOCS.md Coverage and Test suite
               rows to 536 tests.
       - name: Version health
         grade: A
@@ -940,13 +940,13 @@ audits:
         summary: "Only `.agentera/HEALTH.md` is modified after this audit. Plan commits
           changed the expected analyzer, tests, metadata, CHANGELOG, TODO,
           PROGRESS, and archived plan surfaces. ### Trends vs Audit 18 -
-          **Improved**: Optimera analyzer reliability now has real-artifact JSON
+          **Improved**: Optimize analyzer reliability now has real-artifact JSON
           and frontier smoke evidence. - **Degraded**: Test evidence freshness B
           because DOCS coverage stayed at 523 after the 536-test suite. -
           **Stable**: Artifact lifecycle, version metadata, and change hygiene
           remain green. - **New findings**: DOCS coverage count stale. -
           **Resolved**: No prior Audit 18 findings were open. ### Patterns
-          Observed - Optimera analyzer: one stdlib script owns parse, target
+          Observed - Optimize analyzer: one stdlib script owns parse, target
           extraction, analysis, and optional frontier rendering. - Testing
           approach: parser edge cases, target diagnostics, CLI mode
           compatibility, and frontier ordering are covered in
@@ -956,7 +956,7 @@ audits:
         findings: []
     trends:
       improved: >-
-        Optimera analyzer reliability now has real-artifact JSON and frontier
+        Optimize analyzer reliability now has real-artifact JSON and frontier
         smoke evidence.
 
         - **Degraded**: Test evidence freshness B because DOCS coverage stayed
@@ -987,7 +987,7 @@ audits:
         - **Resolved**: No prior Audit 18 findings were open.
       resolved: No prior Audit 18 findings were open.
     patterns:
-      - "Optimera analyzer: one stdlib script owns parse, target extraction,
+      - "Optimize analyzer: one stdlib script owns parse, target extraction,
         analysis, and optional frontier rendering."
       - "Testing approach: parser edge cases, target diagnostics, CLI mode
         compatibility, and frontier ordering are covered in
@@ -1037,7 +1037,7 @@ audits:
         grade: A
         summary: Capability directories share `prose.md` plus four schema files. Runtime
           adapters consistently expose one active `agentera` skill plus the
-          temporary legacy `hej` bridge.
+          temporary legacy `status` bridge.
         findings: []
       - name: Coupling health
         grade: A
@@ -1101,7 +1101,7 @@ audits:
         grade: A
         summary: Secret and dangerous-call scan found documented examples, test-loader
           `exec(compile(...))` usage, and environment-sourced API key handling
-          in an optimera token counter. No committed literal secret or
+          in an optimize token counter. No committed literal secret or
           shell-injection path was identified.
         findings: []
     trends:
@@ -1116,7 +1116,7 @@ audits:
         phases now use protocol values and validation rejects `phase: verify`."
     patterns:
       - "Module structure: one bundled `skills/agentera` skill owns capability
-        prose and schemas; root `skills/hej` remains a temporary v1 bridge."
+        prose and schemas; root `skills/status` remains a temporary v1 bridge."
       - "State access: `scripts/agentera` provides flat routine state commands
         plus advanced `query` for custom artifact access."
       - "Validation approach: pytest, capability schema validation,
@@ -1144,7 +1144,7 @@ audits:
       info: 1
       filtered_by_confidence: 0
     trajectory: improving vs Audit 20. Health CLI now selects the latest audit by
-      number, hej exposes hybrid inspektera staleness, and Audit 20
+      number, status exposes hybrid audit staleness, and Audit 20
       stale-history warning is resolved; uncommitted feat work remains a release
       cleanup item.
     grades:
@@ -1161,19 +1161,19 @@ audits:
     dimension_details:
       - name: Architecture alignment
         grade: A
-        summary: Hybrid audit staleness extends the profilera profile-age seam in
+        summary: Hybrid audit staleness extends the profile capability's profile-age seam in
           scripts/agentera without duplicating plan-relative artifact freshness
-          in hej.
+          in status.
         findings: []
       - name: Pattern consistency
         grade: A
-        summary: Inspektera staleness mirrors profilera env-threshold parsing,
-          structured hej metadata, and attention copy.
+        summary: Audit staleness mirrors profile env-threshold parsing,
+          structured status metadata, and attention copy.
         findings: []
       - name: Coupling health
         grade: A
         summary: Latest-audit selection and staleness helpers stay inside
-          scripts/agentera and are shared by health, hej, and prime evidence
+          scripts/agentera and are shared by health, status, and prime evidence
           state.
         findings: []
       - name: Complexity hotspots
@@ -1208,15 +1208,15 @@ audits:
               sync when ready.
       - name: Artifact freshness
         grade: A
-        summary: _latest_health_audit and schema date fields now drive health, hej, and
-          prime evidence state; hej hybrid staleness surfaces overdue audits.
+        summary: _latest_health_audit and schema date fields now drive health, status, and
+          prime evidence state; status hybrid staleness surfaces overdue audits.
         findings:
           - heading: "⇢ Audit 20 stale health selection resolved, info (confidence: 96)"
             severity: info
             confidence: 96
             location: "`scripts/agentera`, `tests/test_query_cli.py`"
             evidence: uv run scripts/agentera health --format json returns Audit 20 from
-              ascending-order fixtures; hej reports Audit 20 with hybrid stale
+              ascending-order fixtures; status reports Audit 20 with hybrid stale
               metadata.
             impact: Orientation no longer misreads older audits when health.yaml lists
               audits ascending by number.
@@ -1224,7 +1224,7 @@ audits:
               20 artifact-freshness warning.
       - name: Prose health
         grade: A
-        summary: Hej and inspektera instruction updates stay compact and name the
+        summary: Status and audit instruction updates stay compact and name the
           env-var contract explicitly.
         findings: []
       - name: Security hygiene
@@ -1233,8 +1233,8 @@ audits:
           no new secret handling paths were introduced.
         findings: []
     trends:
-      improved: Health CLI and hej now agree on latest audit number and date; hybrid
-        inspektera staleness closes the orientation gap profilera already
+      improved: Health CLI and status now agree on latest audit number and date; hybrid
+        audit staleness closes the orientation gap profile already
         covered for profiles.
       degraded: None material beyond normal release-prep drift.
       stable: Architecture, patterns, coupling, dependency, prose, and security remain
@@ -1242,11 +1242,11 @@ audits:
       new_findings: Unreleased post-2.6.1 feat/fix work.
       resolved: Audit 20 direct health state command stale audit history warning.
     patterns:
-      - "Orientation staleness: profilera profile age and inspektera audit age
-        both surface through hej attention with env-configurable thresholds."
+      - "Orientation staleness: the profile capability's profile age and the audit capability's audit age
+        both surface through status attention with env-configurable thresholds."
       - "Health state: latest audit selection by number is shared across health,
-        hej, and prime evidence context in the checkout CLI."
-      - "Testing approach: hybrid staleness adds focused hej and health
+        status, and prime evidence context in the checkout CLI."
+      - "Testing approach: hybrid staleness adds focused status and health
         regressions alongside the existing query-cli contract suite."
   - number: 22
     date: 2026-05-30
@@ -1383,7 +1383,7 @@ audits:
     trends:
       improved: v2→v3 migration architecture, dual update channels, 60 upgrade vitest
         cases, backport-safety gates, 2.7.7 suiteVersion bump, progress.yaml
-        compaction enforcement, D66 commit-field removal, and inspektera
+        compaction enforcement, D66 commit-field removal, and audit
         WARN/FAIL citation contract on feat/v3.
       degraded: Complexity grade slips as large TS modules replace the Python CLI
         monolith; npm @next dev-series vs suiteVersion channel split persists.
@@ -1391,7 +1391,7 @@ audits:
       new_findings: npm @next 3.0.0-dev.4 vs suiteVersion 2.7.7 release-metadata
         divergence; Python stable mirrors for 2.7.7 both-branch items deferred.
       resolved: progress.yaml over-budget compaction pressure; D66 progress commit
-        field and backfill flow; inspektera WARN false-positive citation gap;
+        field and backfill flow; audit WARN false-positive citation gap;
         2.7.7 plan archived and active plan slot cleared; Audit 21
         hybrid-staleness and health-selection issues remain fixed in the ported
         TS CLI paths.
@@ -1425,7 +1425,7 @@ audits:
       filtered_by_confidence: 0
     trajectory: improving vs Audit 22 on mobile monorepo closeout (progress cycle
       650), capabilityContext split, vitest 884/884 green, and suiteVersion
-      3.0.0 alignment; orientation.ts remains the prime/hej hub.
+      3.0.0 alignment; orientation.ts remains the prime/status hub.
     grades:
       Architecture: A
       Patterns: A
@@ -1453,18 +1453,18 @@ audits:
       - name: Coupling health
         grade: B
         summary: capabilityContext/ split reduced prime startup coupling, but
-          orientation.ts still aggregates hej, prime, and state summaries in one
+          orientation.ts still aggregates status, prime, and state summaries in one
           module.
         findings:
-          - heading: "⇉ orientation.ts remains prime/hej state hub, warning (confidence:
+          - heading: "⇉ orientation.ts remains prime/status state hub, warning (confidence:
               82)"
             severity: warning
             confidence: 82
             location: packages/cli/src/cli/orientation.ts:407
             evidence: orientation.ts is 650 lines; healthSummary, planSummary, docsSummary,
-              and selectHejNextAction share one module imported by prime.ts and
+              and selectStatusNextAction share one module imported by prime.ts and
               capabilityContext/evidence.ts.
-            impact: Hej and prime orientation changes still touch a single dense file
+            impact: Status and prime orientation changes still touch a single dense file
               despite capabilityContext modularization elsewhere.
             suggested_action: Extract state-family summary builders into cli/orientation/
               slices mirroring the capabilityContext split.
@@ -1516,12 +1516,12 @@ audits:
     trends:
       improved: Mobile monorepo closeout (D67/D68/D69), capabilityContext monolith
         split (2542 to 528 max module), startupAnalysis modularization, vitest
-        884/884 green, suiteVersion 3.0.0 aligned with @next dev.6, profilera
+        884/884 green, suiteVersion 3.0.0 aligned with @next dev.6, profile
         Validated-header fix.
       degraded: none.
       stable: Dependency, prose, and security posture remain healthy; stable @latest
         shim stays on 2.7.7 by design.
-      new_findings: orientation.ts prime/hej hub density after capabilityContext split.
+      new_findings: orientation.ts prime/status hub density after capabilityContext split.
       resolved: Audit 22 TS monolith hotspots (capabilityContext.ts 2542 lines);
         compaction and plan-validate vitest failures; npm @next dev.4 vs
         suiteVersion 2.7.7 release-metadata divergence.
@@ -1530,7 +1530,7 @@ audits:
         (Starlight), packages/cli (agentera npm); CLI owns schema and .agentera/
         contract per D69."
       - "Prime startup: capabilityContext/ modules by state family with slim
-        re-export barrel; orientation.ts still centralizes hej briefing
+        re-export barrel; orientation.ts still centralizes status briefing
         summaries."
       - "Testing approach: 884 vitest cases including upgrade parity, prime
         source_contract oracles, and packaging prepack tarball gates."
@@ -1584,17 +1584,17 @@ audits:
       - name: Coupling health
         grade: B
         summary: Prime startup coupling dropped with prime/ and contracts/ slices, but
-          orientation.ts still aggregates summary builders for hej and prime.
+          orientation.ts still aggregates summary builders for status and prime.
         findings:
-          - heading: "⇉ orientation.ts remains prime/hej summary hub, warning (confidence:
+          - heading: "⇉ orientation.ts remains prime/status summary hub, warning (confidence:
               80)"
             severity: warning
             confidence: 80
             location: packages/cli/src/cli/orientation.ts:62
             evidence: orientation.ts is 673 lines; only cli/orientation/attention.ts
               extracted so far; healthSummary, planSummary, docsSummary, and
-              selectHejNextAction still share one module.
-            impact: Hej and prime orientation edits still touch a dense file despite
+              selectStatusNextAction still share one module.
+            impact: Status and prime orientation edits still touch a dense file despite
               capabilityContext/ modularization elsewhere.
             suggested_action: Continue extracting state-family summary builders into
               cli/orientation/ slices mirroring capabilityContext/.

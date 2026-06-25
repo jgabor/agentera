@@ -24,45 +24,45 @@ mapping:
 - artifact: VISION.md
   path: .agentera/vision.yaml
   producers:
-  - visionera
-  - realisera
+  - vision
+  - build
 - artifact: TODO.md
   path: TODO.md
   producers:
-  - realisera
-  - inspektera
+  - build
+  - audit
 - artifact: CHANGELOG.md
   path: CHANGELOG.md
   producers:
-  - realisera
+  - build
 - artifact: DECISIONS.md
   path: .agentera/decisions.yaml
   producers:
-  - resonera
+  - discuss
 - artifact: PLAN.md
   path: .agentera/plan.yaml
   producers:
-  - planera
+  - plan
 - artifact: PROGRESS.md
   path: .agentera/progress.yaml
   producers:
-  - realisera
+  - build
 - artifact: HEALTH.md
   path: .agentera/health.yaml
   producers:
-  - inspektera
+  - audit
 - artifact: DOCS.md
   path: .agentera/docs.yaml
   producers:
-  - dokumentera
+  - document
 - artifact: DESIGN.md
   path: DESIGN.md
   producers:
-  - visualisera
+  - design
 - artifact: PROFILE.md
   path: '$PROFILERA_PROFILE_DIR/PROFILE.md (default: $XDG_DATA_HOME/agentera/PROFILE.md)'
   producers:
-  - profilera
+  - profile
 - artifact: USAGE.md
   path: '$AGENTERA_USAGE_DIR/USAGE.md (default: $XDG_DATA_HOME/agentera/USAGE.md, sibling of PROFILE.md)'
   producers:
@@ -466,7 +466,7 @@ audit_log:
       schema self-validation, edited capability validation, PLAN and SESSION
       artifact validation, and `git diff --check`; the focused verification suite
       reported 346 passing tests. Known non-blocking caveats remain the OpenCode
-      bootstrap environment propagation assertion and Planera full-plan lint
+      bootstrap environment propagation assertion and Plan full-plan lint
       verbosity advisory.
     resolution: fixed
     severity: info
@@ -495,7 +495,7 @@ audit_log:
     resolution: noted
     severity: info
 - date: '2026-05-15'
-  label: 2.3.12 Realisera execution-context source-contract patch metadata sync
+  label: 2.3.12 Build execution-context source-contract patch metadata sync
   findings:
   - type: checked
     description: >
@@ -506,9 +506,9 @@ audit_log:
     severity: info
   - type: checked
     description: >
-      The 2.3.12 patch covers the completed Realisera execution-context
-      source-contract patch: `agentera hej --format json --capability-context
-      realisera` exposes selected work, task details, acceptance criteria,
+      The 2.3.12 patch covers the completed Build execution-context
+      source-contract patch: `agentera status --format json --capability-context
+      build` exposes selected work, task details, acceptance criteria,
       constraints, verification expectations, artifact update requirements,
       progress logging requirements, changelog boundary, conservative scope
       boundary, git boundary, read-only plan-completion sweep metadata, fallbacks,
@@ -527,13 +527,13 @@ audit_log:
   - type: version-policy
     description: >
       Release readiness is local-only: no publication, tag, remote push, installed
-      app refresh, profile refresh, vision edit, objective-state edit, Optimera
+      app refresh, profile refresh, vision edit, objective-state edit, Optimize
       objective-state mutation, automatic dispatch, or unsupported capability CLI
       command introduction was performed.
     resolution: noted
     severity: info
 - date: '2026-05-15'
-  label: 2.3.11 Optimera benchmark-context source-contract patch metadata sync
+  label: 2.3.11 Optimize benchmark-context source-contract patch metadata sync
   findings:
   - type: checked
     description: >
@@ -544,9 +544,9 @@ audit_log:
     severity: info
   - type: checked
     description: >
-      The 2.3.11 patch covers the completed Optimera benchmark-context
-      source-contract patch: `agentera hej --format json --capability-context
-      optimera` exposes retained startup benchmark source status, latest report
+      The 2.3.11 patch covers the completed Optimize benchmark-context
+      source-contract patch: `agentera status --format json --capability-context
+      optimize` exposes retained startup benchmark source status, latest report
       summary, aggregate history, runtime coverage caveats, state-access rates,
       token-impact estimates, comparison status, bounded recommendation action,
       manual-refresh guidance, privacy boundary, fallbacks, and raw-read-last-resort
@@ -560,19 +560,19 @@ audit_log:
       already selected exact 2.3.11 source-contract patch train target for this
       bounded CLI-context contract; future unselected feature targets must apply
       this document's `semver_policy` before selecting a version. The 2.3.12
-      Realisera execution-context source-contract work remains deferred.
+      Build execution-context source-contract work remains deferred.
     resolution: noted
     severity: info
   - type: version-policy
     description: >
       Release readiness is local-only: no publication, tag, remote push, installed
-      app refresh, profile refresh, vision edit, objective-state edit, Optimera
+      app refresh, profile refresh, vision edit, objective-state edit, Optimize
       objective-state mutation, real local benchmark execution, or unsupported
       capability CLI command was performed.
     resolution: noted
     severity: info
 - date: '2026-05-15'
-  label: 2.3.10 Inspektera evidence-context source-contract patch metadata sync
+  label: 2.3.10 Audit evidence-context source-contract patch metadata sync
   findings:
   - type: checked
     description: >
@@ -585,9 +585,9 @@ audit_log:
     severity: info
   - type: checked
     description: >
-      The 2.3.10 patch release covers the completed Inspektera evidence-context
-      source-contract patch: `agentera hej --format json --capability-context
-      inspektera` exposes evaluation target, plan criteria, progress verification,
+      The 2.3.10 patch release covers the completed Audit evidence-context
+      source-contract patch: `agentera status --format json --capability-context
+      audit` exposes evaluation target, plan criteria, progress verification,
       docs and health state, TODO state, protected/version checks, compacted decision
       caveats, attributed residual risks, fallback commands, provenance, non-empty
       evidence flags, and raw-read-last-resort policy.
@@ -611,7 +611,7 @@ audit_log:
     resolution: noted
     severity: info
 - date: '2026-05-15'
-  label: 2.3.9 Dokumentera closeout-context source-contract patch metadata sync
+  label: 2.3.9 Document closeout-context source-contract patch metadata sync
   findings:
   - type: checked
     description: >
@@ -622,9 +622,9 @@ audit_log:
     severity: info
   - type: checked
     description: >
-      The 2.3.9 patch release covers the completed Dokumentera closeout-context
-      source-contract patch: `agentera hej --format json --capability-context
-      dokumentera` exposes artifact mappings, version policy, TODO blockers,
+      The 2.3.9 patch release covers the completed Document closeout-context
+      source-contract patch: `agentera status --format json --capability-context
+      document` exposes artifact mappings, version policy, TODO blockers,
       changelog and release boundaries, progress and benchmark evidence, fallback
       commands, caveats, non-empty evidence flags, and raw-read-last-resort policy.
     resolution: fixed
@@ -658,9 +658,9 @@ audit_log:
     severity: info
   - type: checked
     description: >
-      The 2.3.8 patch release covers the completed Orkestrera orchestration-context
-      source-contract patch: `agentera hej --format json --capability-context
-      orkestrera` exposes dependency-ready tasks, blocked reasons, selected task,
+      The 2.3.8 patch release covers the completed Orchestrate orchestration-context
+      source-contract patch: `agentera status --format json --capability-context
+      orchestrate` exposes dependency-ready tasks, blocked reasons, selected task,
       progress verification, retry-state provenance, evaluator handoff fields,
       caveats, fallback commands, and raw-read-last-resort policy.
     resolution: fixed
@@ -697,7 +697,7 @@ audit_log:
       The 2.3.7 patch release covers the completed decision-context
       source-contract patch: `agentera decisions --format json` exposes source
       contract metadata, stable returned-decision fields, compacted-entry caveats,
-      and Resonera guidance without normal raw decision artifact reads or
+      and Discuss guidance without normal raw decision artifact reads or
       git-history fallback.
     resolution: fixed
     severity: info
@@ -839,7 +839,7 @@ audit_log:
   findings:
   - type: checked
     description: >
-      Startup completeness/source contract behavior, full `hej` startup coverage,
+      Startup completeness/source contract behavior, full `status` startup coverage,
       docs mapping/source metadata, progress verification metadata, and
       `--capability-context` fallback policy are now recorded as the completed
       product scope for the Reduce Post-CLI Startup Artifact Reads plan.
@@ -957,8 +957,8 @@ audit_log:
       access after CLI state metric. This replaces an uncommitted draft that
       measured only slash-route or assistant-intro startup windows. State-gathering
       sequences start from Agentera CLI state calls after capability-related user
-      turns, including bare names such as `planera` and natural-language handoffs
-      such as `run orkestrera`, and stop at implementation work or the next user
+      turns, including bare names such as `plan` and natural-language handoffs
+      such as `run orchestrate`, and stop at implementation work or the next user
       turn.
     resolution: fixed
     severity: info
@@ -1093,7 +1093,7 @@ audit_log:
       Release-state artifacts now document runtime-injected exact
       deprecated-default `AGENTERA_HOME` recovery, safe platform app-home repair,
       read-only doctor boundaries, explicit `--install-root` authority, and
-      Profilera corpus parity deferred beyond 2.3.1.
+      Profile corpus parity deferred beyond 2.3.1.
     resolution: fixed
     severity: info
   - type: checked
@@ -1129,7 +1129,7 @@ audit_log:
   - type: checked
     description: >
       The `.agentera/decisions.yaml` worktree diff is explicitly treated as
-      pre-existing source context from earlier Resonera Decision 50 logging and
+      pre-existing source context from earlier Discuss Decision 50 logging and
       Decision 40 compaction, not as Task 6 output. Task 6 did not edit the
       decision file and only reflected Decisions 47, 48, and 50 in downstream
       docs, TODO, docs state, capability prose, and focused tests.
@@ -1147,7 +1147,7 @@ audit_log:
   findings:
   - type: checked
     description: >
-      README, UPGRADE, Agentera dispatcher guidance, hej capability prose,
+      README, UPGRADE, Agentera dispatcher guidance, status capability prose,
       vocabulary guidance, changelog, TODO, and docs state now describe 2.3.0
       as the focused Decisions 47/48/50 reliability release: app-home
       migration, `agentera lint`, installed schema/helper discovery, and
@@ -1158,14 +1158,14 @@ audit_log:
     description: >
       The included 2.3.0 reliability TODOs for app-home migration, schema
       discovery, split-root diagnostics, and self-audit helper exposure are
-      resolved; Profilera corpus parity remains open and explicitly retargeted
+      resolved; Profile corpus parity remains open and explicitly retargeted
       beyond 2.3.0 by Decision 50.
     resolution: fixed
     severity: info
   - type: checked
     description: >
       Focused verification passed with packaged CLI, describe introspection,
-      self-audit, and hej capability validation; the known stale packaged
+      self-audit, and status capability validation; the known stale packaged
       app-home marker expectation was aligned to
       `$AGENTERA_HOME/app/.agentera-bundle.json` without running broad Task 8
       validation.
@@ -1193,7 +1193,7 @@ audit_log:
     resolution: fixed
     severity: info
   - type: checked
-    description: 'CHANGELOG.md records the 2.2.3 patch scope: Profilera staleness suggestion, all-runtime live smoke with Claude auth skip, generated OpenCode install-root contract, Codex live hook trust, and installed Codex hook trust.'
+    description: 'CHANGELOG.md records the 2.2.3 patch scope: Profile staleness suggestion, all-runtime live smoke with Claude auth skip, generated OpenCode install-root contract, Codex live hook trust, and installed Codex hook trust.'
     resolution: fixed
     severity: info
   - type: checked
@@ -1216,7 +1216,7 @@ audit_log:
     resolution: fixed
     severity: info
   - type: checked
-    description: TODO, changelog, progress, docs, and version surfaces agree on 2.2.2 patch scope while the 2.3.x Profilera corpus feature and optional live-smoke work remain open.
+    description: TODO, changelog, progress, docs, and version surfaces agree on 2.2.2 patch scope while the 2.3.x Profile corpus feature and optional live-smoke work remain open.
     resolution: fixed
     severity: info
   - type: checked
@@ -1231,7 +1231,7 @@ audit_log:
     resolution: fixed
     severity: info
   - type: checked
-    description: Local routine state commands emitted parseable JSON for describe, hej, plan, progress, health, todo, decisions, docs, objective, and experiments.
+    description: Local routine state commands emitted parseable JSON for describe, status, plan, progress, health, todo, decisions, docs, objective, and experiments.
     resolution: fixed
     severity: info
   - type: checked
@@ -1242,7 +1242,7 @@ audit_log:
   label: 2.2.2 metadata sync
   findings:
   - type: checked
-    description: The two selected 2.2.x fix TODOs are resolved as 2.2.2 work, while the Profilera corpus feature remains targeted to 2.3.x.
+    description: The two selected 2.2.x fix TODOs are resolved as 2.2.2 work, while the Profile corpus feature remains targeted to 2.3.x.
     resolution: fixed
     severity: info
   - type: checked
@@ -1250,7 +1250,7 @@ audit_log:
     resolution: fixed
     severity: info
   - type: checked
-    description: Focused hej routing and TODO Resolved compaction tests pass locally; no push, publication, package update, installed app refresh, live install proof claim, vision edit, objective edit, or release tag operation was performed.
+    description: Focused status routing and TODO Resolved compaction tests pass locally; no push, publication, package update, installed app refresh, live install proof claim, vision edit, objective edit, or release tag operation was performed.
     resolution: fixed
     severity: info
 - date: '2026-05-08'
@@ -1261,7 +1261,7 @@ audit_log:
     resolution: fixed
     severity: info
   - type: checked
-    description: The four approved 2.2.1 TODOs are resolved, while the release-readiness live install proof, repeated fresh-project hej loop, TODO Resolved compaction, optional Claude live smoke, and generated JS contract follow-up remain open or deferred.
+    description: The four approved 2.2.1 TODOs are resolved, while the release-readiness live install proof, repeated fresh-project status loop, TODO Resolved compaction, optional Claude live smoke, and generated JS contract follow-up remain open or deferred.
     resolution: fixed
     severity: info
   - type: checked
@@ -1272,7 +1272,7 @@ audit_log:
   label: 2.2.1 Task 5 metadata sync
   findings:
   - type: checked
-    description: Only the question-tool gating TODO was promoted from `[fix:2.2.x]` to `[fix:2.2.1]`; the repeated fresh-project hej loop and TODO Resolved compaction remain deferred 2.2.x work.
+    description: Only the question-tool gating TODO was promoted from `[fix:2.2.x]` to `[fix:2.2.1]`; the repeated fresh-project status loop and TODO Resolved compaction remain deferred 2.2.x work.
     resolution: fixed
     severity: info
   - type: checked
@@ -1291,7 +1291,7 @@ audit_log:
     resolution: fixed
     severity: info
   - type: checked
-    description: Capability prose now avoids standalone slash-capability handoff labels; explicit current invocation examples use `/agentera <alias>` route documentation and path-like `.agentera/optimera/` references remain unchanged.
+    description: Capability prose now avoids standalone slash-capability handoff labels; explicit current invocation examples use `/agentera <alias>` route documentation and path-like `.agentera/optimize/` references remain unchanged.
     resolution: fixed
     severity: info
   - type: checked
@@ -1317,7 +1317,7 @@ audit_log:
   label: Decision 45 Task 8 final pre-closure state sync
   findings:
   - type: plan-state
-    description: The active Decision 45 plan remains active with Tasks 1-7 complete and Task 8 pending; conductor owns marking Task 8 complete and closing the plan after inspektera PASS.
+    description: The active Decision 45 plan remains active with Tasks 1-7 complete and Task 8 pending; conductor owns marking Task 8 complete and closing the plan after audit PASS.
     resolution: fixed
     severity: info
   - type: evidence-sync
@@ -1400,7 +1400,7 @@ audit_log:
   label: Decision 45 Task 3 structured routine output
   findings:
   - type: cli-contract
-    description: Routine state commands now expose --format json|yaml with command, status, entries, counts, source metadata, filters, and summary where applicable; hej exposes its composite source contract separately.
+    description: Routine state commands now expose --format json|yaml with command, status, entries, counts, source metadata, filters, and summary where applicable; status exposes its composite source contract separately.
     resolution: fixed
     severity: info
   - type: boundary
@@ -1419,7 +1419,7 @@ audit_log:
     resolution: fixed
     severity: info
   - type: boundary
-    description: README, UPGRADE, CHANGELOG, vocabulary, and dispatcher guidance keep agentera health and inspektera as the project artifact health and codebase audit surfaces rather than doctor.
+    description: README, UPGRADE, CHANGELOG, vocabulary, and dispatcher guidance keep agentera health and audit as the project artifact health and codebase audit surfaces rather than doctor.
     resolution: fixed
     severity: info
   - type: verified
@@ -1445,7 +1445,7 @@ audit_log:
   label: Decision 44 Task 8 final pre-closure state sync
   findings:
   - type: plan-state
-    description: The active plan remains active with Task 8 pending; Tasks 1-7 are complete, and conductor closure is the only remaining plan-state mutation after inspektera PASS.
+    description: The active plan remains active with Task 8 pending; Tasks 1-7 are complete, and conductor closure is the only remaining plan-state mutation after audit PASS.
     resolution: fixed
     severity: info
   - type: evidence-sync
@@ -1583,7 +1583,7 @@ audit_log:
   label: install-root runtime adapter alignment
   findings:
   - type: freshness
-    description: README, UPGRADE, dispatcher, hej prose, TODO, and adapter references now point Agentera install-root semantics at scripts/install_root.py for AGENTERA_HOME, default durable root, managed, stale, and unmanaged root behavior.
+    description: README, UPGRADE, dispatcher, status prose, TODO, and adapter references now point Agentera install-root semantics at scripts/install_root.py for AGENTERA_HOME, default durable root, managed, stale, and unmanaged root behavior.
     resolution: fixed
     severity: info
   - type: scoped-deferral
@@ -1605,18 +1605,18 @@ audit_log:
   label: self-healing bundle refresh
   findings:
   - type: freshness
-    description: README, UPGRADE, CHANGELOG, dispatcher guidance, and hej prose now distinguish package-managed skill updates from durable AGENTERA_HOME bundle refresh.
+    description: README, UPGRADE, CHANGELOG, dispatcher guidance, and status prose now distinguish package-managed skill updates from durable AGENTERA_HOME bundle refresh.
     resolution: fixed
     severity: info
   - type: verified
-    description: Focused doctor regressions exercise stale markers, missing hej, unsafe roots, dry-run before apply, same-root refresh, unavailable bundle-status alias, and pre-argparse CLI failures.
+    description: Focused doctor regressions exercise stale markers, missing status, unsafe roots, dry-run before apply, same-root refresh, unavailable bundle-status alias, and pre-argparse CLI failures.
     resolution: fixed
     severity: info
 - date: '2026-05-05'
   label: v2.1.0 dashboard repair
   findings:
   - type: freshness
-    description: README, UPGRADE, CHANGELOG, DOCS, PLAN, and PROGRESS now describe agentera hej as the data layer behind the rendered hej dashboard, not a replacement for it.
+    description: README, UPGRADE, CHANGELOG, DOCS, PLAN, and PROGRESS now describe agentera status as the data layer behind the rendered status dashboard, not a replacement for it.
     resolution: fixed
     severity: info
   - type: verified
@@ -1627,11 +1627,11 @@ audit_log:
   label: flat state CLI closeout
   findings:
   - type: freshness
-    description: README, UPGRADE, CHANGELOG, DOCS, PLAN, and PROGRESS now describe the flat top-level State CLI, composite hej briefing, and advanced-only structured query escape hatch.
+    description: README, UPGRADE, CHANGELOG, DOCS, PLAN, and PROGRESS now describe the flat top-level State CLI, composite status briefing, and advanced-only structured query escape hatch.
     resolution: fixed
     severity: info
   - type: verified
-    description: Focused CLI, hej, semantic fixture, capability contract, lifecycle metadata, AGENTERA_HOME schema-discovery smoke, and full pytest validation passed for the closeout.
+    description: Focused CLI, status, semantic fixture, capability contract, lifecycle metadata, AGENTERA_HOME schema-discovery smoke, and full pytest validation passed for the closeout.
     resolution: fixed
     severity: info
 - date: '2026-04-30'
@@ -1677,7 +1677,7 @@ audit_log:
   label: post-plan coverage refresh
   findings:
   - type: stale
-    description: Coverage reported 523 tests after the Optimera analysis reliability
+    description: Coverage reported 523 tests after the Optimize analysis reliability
     resolution: fixed
     severity: info
   - type: freshness
@@ -1685,10 +1685,10 @@ audit_log:
     resolution: fixed
     severity: info
 - date: '2026-04-30'
-  label: optimera analysis contract
+  label: optimize analysis contract
   findings:
   - type: gap
-    description: Optimera's skill documentation did not state how rich experiment records
+    description: Optimize's skill documentation did not state how rich experiment records
     resolution: fixed
     severity: info
   - type: gap
@@ -1696,7 +1696,7 @@ audit_log:
     resolution: fixed
     severity: info
 - date: '2026-04-29'
-  label: optimera objective docs refresh
+  label: optimize objective docs refresh
   findings:
   - type: stale
     description: README's state artifact reference listed root and operational artifacts
@@ -1785,7 +1785,7 @@ audit_log:
   label: README memory and hooks refinement
   findings:
   - type: cleanup
-    description: README underplayed profilera and exposed hook adapter internals in
+    description: README underplayed profile and exposed hook adapter internals in
     resolution: fixed
     severity: info
 - date: '2026-04-28'
@@ -2012,7 +2012,7 @@ audit_log:
   label: Live Copilot/Codex smoke
   findings:
   - type: gap
-    description: 'Live host caveat narrowed: Codex `$hej` and installed Copilot skills work, but current-checkout Copilot
+    description: 'Live host caveat narrowed: Codex `$status` and installed Copilot skills work, but current-checkout Copilot
       plugin loading rejects `../../skills`'
     resolution: info
     severity: info
@@ -2028,10 +2028,10 @@ audit_log:
     resolution: info
     severity: info
 - date: '2026-04-24'
-  label: Task 6 profilera integration
+  label: Task 6 profile integration
   findings:
   - type: stale
-    description: README.md and Codex metadata still described profilera as missing Copilot/Codex collectors after collectors
+    description: README.md and Codex metadata still described profile as missing Copilot/Codex collectors after collectors
       landed
     resolution: warning
     severity: warning
@@ -2136,7 +2136,7 @@ audit_log:
     resolution: warning
     severity: warning
   - type: stale
-    description: README.md inspektera description says "six dimensions", now 9
+    description: README.md audit description says "six dimensions", now 9
     resolution: warning
     severity: warning
   - type: stale
@@ -2175,7 +2175,7 @@ audit_log:
     resolution: warning
     severity: warning
   - type: misaligned
-    description: the spec Section 16 orkestrera row described proportionality forwarding instead of anti-bias constraint
+    description: the spec Section 16 orchestrate row described proportionality forwarding instead of anti-bias constraint
     resolution: warning
     severity: warning
   - type: misaligned
@@ -2198,16 +2198,16 @@ audit_log:
   label: Audit 4
   findings:
   - type: stale
-    description: README.md line 52 referenced /loop without mentioning /orkestrera as primary autonomous execution method
+    description: README.md line 52 referenced /loop without mentioning /orchestrate as primary autonomous execution method
     resolution: warning
     severity: warning
   - type: misaligned
-    description: README.md ecosystem diagram showed orkestrera → realisera but omitted orkestrera ↔ inspektera evaluation
+    description: README.md ecosystem diagram showed orchestrate → build but omitted orchestrate ↔ audit evaluation
       link
     resolution: warning
     severity: warning
   - type: misaligned
-    description: README.md and the spec.md VISION.md consumers missing orkestrera (reads during bootstrap)
+    description: README.md and the spec.md VISION.md consumers missing orchestrate (reads during bootstrap)
     resolution: warning
     severity: warning
   - type: stale
@@ -2230,7 +2230,7 @@ audit_log:
   label: Audit 3
   findings:
   - type: stale
-    description: the spec.md + all 11 SKILL.md say "ten-skill", actually eleven after hej
+    description: the spec.md + all 11 SKILL.md say "ten-skill", actually eleven after status
     resolution: critical
     severity: critical
   - type: gap
@@ -2238,7 +2238,7 @@ audit_log:
     resolution: critical
     severity: critical
   - type: stale
-    description: marketplace.json description missing hej and visualisera activities
+    description: marketplace.json description missing status and design activities
     resolution: warning
     severity: warning
   - type: misaligned
@@ -2250,7 +2250,7 @@ audit_log:
     resolution: warning
     severity: warning
   - type: misaligned
-    description: registry.json inspirera said "an external link" vs plural elsewhere
+    description: registry.json research said "an external link" vs plural elsewhere
     resolution: warning
     severity: warning
   - type: stale
@@ -2274,7 +2274,7 @@ audit_log:
     resolution: info
     severity: info
   - type: stale
-    description: README DOCS.md row said "dokumentera, inspektera", now consumed by all skills
+    description: README DOCS.md row said "document, audit", now consumed by all skills
     resolution: warning
     severity: warning
   - type: stale
@@ -2294,15 +2294,15 @@ audit_log:
     resolution: critical
     severity: critical
   - type: stale
-    description: registry.json truncated descriptions for optimera, resonera, dokumentera
+    description: registry.json truncated descriptions for optimize, discuss, document
     resolution: warning
     severity: warning
   - type: misaligned
-    description: plugin.json descriptions for inspirera/realisera/visionera diverged from canonical
+    description: plugin.json descriptions for research/build/vision diverged from canonical
     resolution: warning
     severity: warning
   - type: misaligned
-    description: README.md OBJECTIVE.md listed resonera as maintainer; only optimera maintains it
+    description: README.md OBJECTIVE.md listed discuss as maintainer; only optimize maintains it
     resolution: warning
     severity: warning
   - type: redundant
