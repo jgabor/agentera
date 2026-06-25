@@ -148,7 +148,7 @@ export function closeoutReleaseBoundary(changelogBoundary: Dict, bundle: Dict): 
   };
 }
 
-export function dokumenteraCloseoutContext(
+export function documentCloseoutContext(
   capability: string | null,
   schemas: Record<string, SchemaInfo>,
   plan: Dict,

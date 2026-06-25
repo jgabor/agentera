@@ -394,7 +394,7 @@ export function docsSummary(schemas: Record<string, SchemaInfo>): DocsSummary {
         "plan task details, dependencies, acceptance criteria, and evidence summaries",
         "docs artifact mapping and source-contract completeness metadata",
         "latest progress verification metadata needed for Orkestrera evaluation",
-        "Dokumentera closeout context metadata for docs/TODO/changelog/progress synchronization",
+        "Document closeout context metadata for docs/TODO/changelog/progress synchronization",
       ],
     },
     indexed_documents: index.length,
