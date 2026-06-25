@@ -1,4 +1,4 @@
-# Semantic Fixture: hej-cli-budget
+# Semantic Fixture: status-cli-budget
 
 ## Prompt
 

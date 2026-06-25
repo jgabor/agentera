@@ -11,7 +11,7 @@ import {
 } from "../../src/cli/commands/verify.js";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "..");
-const SEMANTIC_FIXTURE = path.join(repoRoot, "fixtures", "semantic", "hej-bare-message.md");
+const SEMANTIC_FIXTURE = path.join(repoRoot, "fixtures", "semantic", "status-bare-message.md");
 
 function run(args: VerifyArgs): { rc: number; out: string; err: string } {
   let out = "";

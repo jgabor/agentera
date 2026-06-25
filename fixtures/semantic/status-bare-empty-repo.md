@@ -1,4 +1,4 @@
-# Semantic Fixture: hej-bare-message
+# Semantic Fixture: status-bare-empty-repo
 
 ## Prompt
 
@@ -8,12 +8,7 @@ hej
 
 ```json
 {
-  "files": [
-    {
-      "path": ".agentera/plan.yaml",
-      "content": "header:\n  status: active\n  title: Bare Hej Routing\ntasks:\n  - number: 2\n    name: Verify bare hej path\n    status: pending\n"
-    }
-  ]
+  "files": []
 }
 ```
 
@@ -26,21 +21,17 @@ hej
 
 ─── status ─────────────────────────────
 
-  ≡ plan      [░░░░░░░░░░] 0/1 tasks
+  ⌂ project   new
 
-  The active plan has one concrete next step: verify the bare hej path.
-
-─── attention ──────────────────────────
-
-  → PLAN Task 2: Verify bare hej path
+  No saved Agentera project state is present yet. Start by defining the project direction.
 
 ─── next ───────────────────────────────
 
-  suggested → ⎈ orkestrera (PLAN Task 2)
+  suggested → ⛥ visionera (define project direction)
 ```
 
 ⌂ hej · waiting
-Briefed the project from `agentera prime`; continue with the suggested plan task when ready.
+Briefed the empty project from `agentera prime`; continue with the suggested project-direction step when ready.
 
 ## Tool Trace
 
@@ -59,8 +50,8 @@ Briefed the project from `agentera prime`; continue with the suggested plan task
   "required_output": [
     "┌─┐┌─┐┌─┐",
     "─── status ─────────────────────────────",
-    "→ PLAN Task 2: Verify bare hej path",
-    "suggested → ⎈ orkestrera (PLAN Task 2)",
+    "─── next ───────────────────────────────",
+    "suggested → ⛥ visionera (define project direction)",
     "⌂ hej · waiting"
   ],
   "forbidden_output": [
@@ -74,7 +65,6 @@ Briefed the project from `agentera prime`; continue with the suggested plan task
     "agentera prime\nmode:",
     "next_action:",
     "source_contract:",
-    "object=PLAN Task 2",
     "question menu"
   ],
   "required_tool_calls": [

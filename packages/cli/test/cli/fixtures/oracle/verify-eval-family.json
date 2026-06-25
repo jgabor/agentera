@@ -42,7 +42,7 @@
         "verify",
         "eval",
         "semantic",
-        "fixtures/semantic/hej-bare-message.md",
+        "fixtures/semantic/status-bare-message.md",
         "--format",
         "json"
       ],
