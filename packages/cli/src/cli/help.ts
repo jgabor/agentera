@@ -4,7 +4,7 @@ const TOP_LEVEL = [
   "prime",
   "schema",
   "state",
-  ...CAPABILITY_ROUTING_NAMES.filter((n) => n !== "status"),
+  ...CAPABILITY_ROUTING_NAMES,
   "upgrade",
   "app-home",
   "doctor",
@@ -27,7 +27,7 @@ export function printTopLevelHelp(): string {
       "prime               Composite orientation briefing, capability startup context, or static guidance",
       "schema              Runtime CLI/schema introspection",
       "state               Routine artifact reads and advanced artifact query",
-      ...CAPABILITY_ROUTING_NAMES.filter((n) => n !== "status").map(
+      ...CAPABILITY_ROUTING_NAMES.map(
         (name) => `${name.padEnd(19)} Route to ${name} capability guidance`,
       ),
     ]),
