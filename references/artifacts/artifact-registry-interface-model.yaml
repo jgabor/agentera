@@ -204,10 +204,10 @@ explicit_special_cases:
     display_name: PROFILE.md
     artifact_type: global_user_state
     scope: global_user_state
-    default_path: $PROFILERA_PROFILE_DIR/PROFILE.md
+    default_path: $AGENTERA_PROFILE_DIR/PROFILE.md
     path_template:
       env_precedence:
-        - PROFILERA_PROFILE_DIR
+        - AGENTERA_PROFILE_DIR
         - XDG_DATA_HOME/agentera
         - ~/.local/share/agentera
     docs_yaml_can_override_path: false

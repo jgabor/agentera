@@ -139,7 +139,7 @@ Three project-facing files at the project root; nine operational files in `.agen
 | DOCS.md        | Documentation contract + optional artifact path overrides               |
 | archive/       | Completed plans, superseded visions and designs                         |
 
-**PROFILE.md** is global. Profilera determines the platform-appropriate data directory: `$PROFILERA_PROFILE_DIR/PROFILE.md` (defaulting to `$XDG_DATA_HOME/agentera/PROFILE.md` on Linux, `~/Library/Application Support/agentera/PROFILE.md` on macOS, `%APPDATA%/agentera/PROFILE.md` on Windows). <!-- platform: profile-path --> Skills read it from the profilera-determined path directly. PROFILERA_PROFILE_DIR is the sibling of AGENTERA_HOME (Section 7): both are adapter-injected env vars. PROFILERA_PROFILE_DIR scopes to profile data; AGENTERA_HOME scopes to the Agentera app home. User data such as PROFILE.md, USAGE.md, history, and intermediate corpus data stays at the app-home root; managed app code lives separately under `$AGENTERA_HOME/app`.
+**PROFILE.md** is global. Profilera determines the platform-appropriate data directory: `$AGENTERA_PROFILE_DIR/PROFILE.md` (defaulting to `$XDG_DATA_HOME/agentera/PROFILE.md` on Linux, `~/Library/Application Support/agentera/PROFILE.md` on macOS, `%APPDATA%/agentera/PROFILE.md` on Windows). <!-- platform: profile-path --> Skills read it from the profilera-determined path directly. AGENTERA_PROFILE_DIR is the sibling of AGENTERA_HOME (Section 7): both are adapter-injected env vars. AGENTERA_PROFILE_DIR scopes to profile data; AGENTERA_HOME scopes to the Agentera app home. User data such as PROFILE.md, USAGE.md, history, and intermediate corpus data stays at the app-home root; managed app code lives separately under `$AGENTERA_HOME/app`.
 
 ### Format contracts
 
@@ -349,7 +349,7 @@ Skills that read the decision profile use one of two patterns:
 ### Script pattern (for skills that need confidence-weighted summaries)
 
 ```
-Read `$PROFILERA_PROFILE_DIR/PROFILE.md` directly
+Read `$AGENTERA_PROFILE_DIR/PROFILE.md` directly
 ```
 
 Run from the profilera skill directory. Mentioned skills: realisera, optimera, inspektera, planera, inspirera.
@@ -361,14 +361,14 @@ Standard threshold language (after migration to 0-100):
 
 ### Direct read pattern (for skills that need qualitative profile context)
 
-Read PROFILE.md from the profilera-determined profile path (`$PROFILERA_PROFILE_DIR/PROFILE.md`, defaulting to `$XDG_DATA_HOME/agentera/PROFILE.md` on Linux). <!-- platform: profile-path --> Mentioned skills: resonera, visionera, dokumentera, visualisera.
+Read PROFILE.md from the profilera-determined profile path (`$AGENTERA_PROFILE_DIR/PROFILE.md`, defaulting to `$XDG_DATA_HOME/agentera/PROFILE.md` on Linux). <!-- platform: profile-path --> Mentioned skills: resonera, visionera, dokumentera, visualisera.
 
 Both patterns MUST include a fallback instruction:
 "If the script or PROFILE.md is missing, proceed without persona grounding."
 
 **Linter check**: Deterministic. Script invocation syntax, threshold values, fallback instruction presence.
 
-PROFILERA_PROFILE_DIR is the sibling of AGENTERA_HOME (Section 7): both are adapter-injected env vars, but they scope to different surfaces. PROFILERA_PROFILE_DIR names the profile data directory where PROFILE.md lives; AGENTERA_HOME names the Agentera app home. User data remains at the app-home root; helper scripts referenced by skill prose live in the managed app under `$AGENTERA_HOME/app`.
+AGENTERA_PROFILE_DIR is the sibling of AGENTERA_HOME (Section 7): both are adapter-injected env vars, but they scope to different surfaces. AGENTERA_PROFILE_DIR names the profile data directory where PROFILE.md lives; AGENTERA_HOME names the Agentera app home. User data remains at the app-home root; helper scripts referenced by skill prose live in the managed app under `$AGENTERA_HOME/app`.
 
 ## 11. Exit Signals
 
