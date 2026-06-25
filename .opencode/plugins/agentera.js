@@ -18,18 +18,18 @@ const OPENCODE_SKILL_INSTALL_COMMAND = "npx skills add jgabor/agentera -g -a ope
 const REQUIRED_SKILL_NAMES = ["agentera"];
 const LEGACY_BRIDGE_SKILL_NAMES = new Set(["hej"]);
 const REQUIRED_AGENT_NAMES = [
-  "hej",
-  "visionera",
-  "resonera",
-  "inspirera",
-  "planera",
-  "realisera",
-  "optimera",
-  "inspektera",
-  "dokumentera",
-  "profilera",
-  "visualisera",
-  "orkestrera",
+  "status",
+  "vision",
+  "discuss",
+  "research",
+  "plan",
+  "build",
+  "optimize",
+  "audit",
+  "document",
+  "profile",
+  "design",
+  "orchestrate",
 ];
 const AGENTERA_AGENT_MARKER = "<!-- agentera: managed -->";
 
@@ -38,13 +38,13 @@ const COMMAND_TEMPLATES = {
 description: "Compound agent orchestration suite: 12 capabilities in one bundled skill; exact bare hej routes to the Agentera dashboard"
 agentera_managed: true
 ---
-Load and execute the agentera bundled skill for this project. If the user's complete message is exactly hej, route it through Agentera's hej dashboard path instead of a generic greeting.
+Load and execute the agentera bundled skill for this project. If the user's complete message is exactly hej, route it through Agentera's status dashboard path instead of a generic greeting.
 `,
   "hej": `---
 description: "Legacy /hej slash bridge only; bare text hej routes through agentera"
 agentera_managed: true
 ---
-Use this only for explicit legacy /hej slash-command upgrades. For a bare text message exactly hej, load agentera and run the Agentera hej dashboard path.
+Use this only for explicit legacy /hej slash-command upgrades. For a bare text message exactly hej, load agentera and run the Agentera status dashboard path.
 `,
 };
 
@@ -52,7 +52,7 @@ const BARE_HEJ_ROUTED_PROMPT = [
   "agentera",
   "",
   "OpenCode adapter note: the original complete user message was exactly `hej`.",
-  "Route it as Agentera Layer 1 bare `hej`: run `agentera hej` first, render the hej dashboard, and do not answer as a generic greeting.",
+  "Route it as Agentera Layer 1 bare `hej`: run `agentera prime` first, render the status dashboard, and do not answer as a generic greeting.",
 ].join("\n");
 
 function meaningfulParts(parts) {
@@ -407,7 +407,7 @@ function isArtifactPath(filePath, root) {
   ];
   return artifacts.includes(rel)
     || (
-      rel.startsWith(path.join(".agentera", "optimera") + path.sep)
+      rel.startsWith(path.join(".agentera", "optimize") + path.sep)
       && ["objective.yaml", "experiments.yaml"].includes(path.basename(rel))
     );
 }
@@ -603,7 +603,7 @@ function writeSessionBookmark(projectRoot) {
 
 function formatCompactionStateContext(state) {
   if (!state || typeof state !== "object") return null;
-  const lines = ["Agentera project state summary from `agentera hej --format json`:"];
+  const lines = ["Agentera project state summary from `agentera prime --format json`:"];
   if (state.mode) lines.push(`- mode: ${state.mode}`);
   if (state.profile?.status) lines.push(`- profile: ${state.profile.status}`);
   if (state.health?.grade) lines.push(`- health: ${state.health.grade}${state.health.trajectory ? `; ${state.health.trajectory}` : ""}`);
@@ -632,7 +632,7 @@ function formatCompactionStateContext(state) {
 function buildCompactionContext(projectRoot) {
   try {
     const args = NPX_CLI_ENTRYPOINT.split(/\s+/).slice(1);
-    args.push("hej", "--format", "json");
+    args.push("prime", "--format", "json");
     const stdout = execFileSync("npx", args, {
       cwd: projectRoot,
       encoding: "utf8",
