@@ -293,19 +293,19 @@ tests, labels, or active state.
 | Form                                       | Meaning                                                                                 | Example                                                                   |
 | ------------------------------------------ | --------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
 | `Each invocation = one ...`                | Capability scope limit.                                                                 | `Each invocation = one experiment.`                                       |
-| `─── <glyph> <capability> · <context> ───` | Capability introduction marker.                                                         | `─── ⎘ optimera · measure ───`                                            |
+| `─── <glyph> <capability> · <context> ───` | Capability introduction marker.                                                         | `─── ⎘ optimize · measure ───`                                            |
 | `── step N/M: verb`                        | Capability-local progress marker.                                                       | `── step 4/8: implement`                                                  |
 | `## Safety rails` plus `<critical>`        | Non-negotiable constraints.                                                             | `NEVER push to remote repos without explicit instruction.`                |
-| `Detect mode/context/level`                | Step 0 classification before the main workflow.                                         | Dokumentera detects create, update, audit, or first-run survey.           |
-| Decision gate                              | Explicit condition-based branch before proceeding.                                      | Optimera keep/discard decision.                                           |
+| `Detect mode/context/level`                | Step 0 classification before the main workflow.                                         | Document detects create, update, audit, or first-run survey.            |
+| Decision gate                              | Explicit condition-based branch before proceeding.                                      | Optimize keep/discard decision.                                           |
 | Exit-early stop condition                  | Stop condition when work is already complete or unnecessary.                            | Docs current, no stale work found.                                        |
-| Behavioral verification gate               | Realisera check that behavior was verified against real project state.                  | Tests, builds, or manual verification.                                    |
+| Behavioral verification gate               | Build check that behavior was verified against real project state.                  | Tests, builds, or manual verification.                                    |
 | Pre-write self-audit                       | Prose check for verbosity mismatch, abstraction creep, and filler accumulation.         | `agentera lint --artifact <ARTIFACT>` exposes the checks through the CLI. |
-| Plan-completion sweep                      | Realisera cleanup when plan tasks finish.                                               | Progress rollup, changelog, TODO, health cross-reference, archive.        |
-| Worker spawn                               | Isolated implementation or measurement by a worker through the host subagent mechanism. | Realisera and optimera can use it.                                        |
+| Plan-completion sweep                      | Build cleanup when plan tasks finish.                                               | Progress rollup, changelog, TODO, health cross-reference, archive.        |
+| Worker spawn                               | Isolated implementation or measurement by a worker through the host subagent mechanism. | Build and optimize can use it.                                        |
 | Stale-base awareness                       | Prevent workers from branching from old `origin/main` or stale HEAD.                    | Use pre-spawn Git commits before spawning workers.                        |
-| Orchestration loop                         | Orkestrera loop: select, delegate, evaluate, resolve, log.                              | Orkestrera delegates; it does not implement.                              |
-| Evidence audit                             | Check that recorded verification actually proves acceptance criteria.                   | Orkestrera and inspektera use this language.                              |
+| Orchestration loop                         | Orchestrate loop: select, delegate, evaluate, resolve, log.                              | Orchestrate delegates; it does not implement.                              |
+| Evidence audit                             | Check that recorded verification actually proves acceptance criteria.                   | Orchestrate and audit use this language.                              |
 | Loop stop condition                        | Stop repeated failed cycles, tasks, or experiments.                                     | Prevents endless retries.                                                 |
 
 For user-facing operations, prefer plain aliases when the branded phrase does
@@ -333,18 +333,18 @@ not add precision:
 
 | Capability  | Common terms                                                                                                                        |
 | ----------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| hej         | Orientation, dashboard, returning project, fresh project, attention, next action, concrete object, route suggestion.                |
-| visionera   | North star, persona, principles, direction, identity, tensions, create/refine/replace/audit modes.                                  |
-| resonera    | Socratic questioning, one question at a time, honest friction, steelman, tradeoffs, decision pressure.                              |
-| inspirera   | Source analysis, pattern extraction, cross-pollination, worth stealing, external practice, adaptation.                              |
-| planera     | WHAT and WHY, behavioral acceptance criteria, scope, included/excluded/deferred, task dependencies, plan-level current-state check. |
-| realisera   | Cycle, orient/select/research/plan/spawn/verify/commit/audit/log, HOW, progress log, worker spawn.                                  |
-| optimera    | Objective, experiment, baseline, harness, locked measurement, hypothesis, metric, regression, keep/discard gate.                    |
-| inspektera  | Audit, health grade, dimensions, findings, evidence, impact, suggested action, artifact current-state review, deliberate decisions. |
-| dokumentera | Intent-first docs, explore-and-generate, update-and-verify, first-run survey, evergreen docs, docs become the spec.                 |
-| profilera   | Decision profile, signal extraction, confidence, preference, validation, reusable user model.                                       |
-| visualisera | Visual identity, design tokens, semantic weight, terminal-native, glyphs, logo scarcity.                                            |
-| orkestrera  | Plan execution, delegate, task-notification result, presence check, evaluate, resolve, loop stop condition.                         |
+| status      | Orientation, dashboard, returning project, fresh project, attention, next action, concrete object, route suggestion.                |
+| vision      | North star, persona, principles, direction, identity, tensions, create/refine/replace/audit modes.                                  |
+| discuss     | Socratic questioning, one question at a time, honest friction, steelman, tradeoffs, decision pressure.                              |
+| research    | Source analysis, pattern extraction, cross-pollination, worth stealing, external practice, adaptation.                              |
+| plan        | WHAT and WHY, behavioral acceptance criteria, scope, included/excluded/deferred, task dependencies, plan-level current-state check. |
+| build       | Cycle, orient/select/research/plan/spawn/verify/commit/audit/log, HOW, progress log, worker spawn.                                  |
+| optimize    | Objective, experiment, baseline, harness, locked measurement, hypothesis, metric, regression, keep/discard gate.                    |
+| audit       | Audit, health grade, dimensions, findings, evidence, impact, suggested action, artifact current-state review, deliberate decisions. |
+| document    | Intent-first docs, explore-and-generate, update-and-verify, first-run survey, evergreen docs, docs become the spec.                 |
+| profile     | Decision profile, signal extraction, confidence, preference, validation, reusable user model.                                       |
+| design      | Visual identity, design tokens, semantic weight, terminal-native, glyphs, logo scarcity.                                            |
+| orchestrate | Plan execution, delegate, task-notification result, presence check, evaluate, resolve, loop stop condition.                         |
 
 ## Runtime, install, and release grammar
 
@@ -379,7 +379,7 @@ Decision 54 makes app lifecycle state a protocol surface, not ad hoc output
 copy. The machine-readable authority is
 `references/cli/app-lifecycle-vocabulary.yaml`; it owns the canonical status
 order, status definitions, deprecated aliases, cross-major status concepts,
-scoped operation verbs, and consumer ownership boundaries for doctor, hej,
+scoped operation verbs, and consumer ownership boundaries for doctor, status,
 upgrade, docs, and tests.
 
 Use this prose as guidance only: human-readable text can be friendlier, but it
@@ -471,7 +471,7 @@ human-facing boundary.
 | Startup-overhead analysis   | Local-only Decision 51 measurement surface for raw Agentera artifact access after CLI state calls during capability startup/state gathering. It replaced an uncommitted route/intro startup-window draft that found zero qualifying windows, and must report the retained `CLI state -> raw artifact access` metric before recommending a startup envelope or guidance fix. |
 | Startup report              | Human-readable and structured report pair that includes boundary source, runtime coverage, startup metrics, threshold rationale, recommendation, and privacy caveats without raw transcript text or raw local paths.                                                                                                                                                        |
 | Seeded project state        | Fixture-provided artifacts used as the source of truth for expected behavior.                                                                                                                                                                                                                                                                                               |
-| Oracle                      | Artifact-derived expectation, such as the exact plan task hej should route to.                                                                                                                                                                                                                                                                                              |
+| Oracle                      | Artifact-derived expectation, such as the exact plan task status should route to.                                                                                                                                                                                                                                                                                              |
 | Regression                  | Required safety check for behavior that must not degrade.                                                                                                                                                                                                                                                                                                                   |
 | Harness                     | Optimera measurement substrate. Once approved, it is immutable ground truth.                                                                                                                                                                                                                                                                                                |
 | Objective                   | Measurable optimization charter under `.agentera/optimera/<name>/`.                                                                                                                                                                                                                                                                                                         |
@@ -499,9 +499,9 @@ Visualisera owns visual identity in `DESIGN.md`. Protocol owns token meanings in
 | “Opinionated mobile-first coding agent.”                                  | Product identity.                                      |
 | “One install, one entry point, one query interface to all project state.” | CLI state-access promise (internals/contributor docs). |
 | “Continuity lives in files, not memory.”                                  | Realisera/project-state principle.                     |
-| “The conversation preserves reasoning; the artifact preserves the plan.”  | Planera boundary.                                      |
-| “Planera owns WHAT and WHY; realisera owns HOW.”                          | Planning/building boundary.                            |
-| “The colleague says what they think, then shows the evidence.”            | Inspektera voice.                                      |
+| “The conversation preserves reasoning; the artifact preserves the plan.”  | Plan boundary.                                      |
+| “Plan owns WHAT and WHY; build owns HOW.”                          | Planning/building boundary.                            |
+| “The colleague says what they think, then shows the evidence.”            | Audit voice.                                      |
 | “Findings contradicting deliberate decisions are not findings.”           | Audit boundary.                                        |
 | “Select the concrete next action before selecting the skill.”             | Hej routing discipline.                                |
 | “A skill name without a concrete object is not a valid suggestion.”       | Hej next-action rule.                                  |
