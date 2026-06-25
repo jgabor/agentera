@@ -1,87 +1,87 @@
 display_name: Agentera
-description: Portable Agentera suite for Codex: one bundled skill with exact bare hej routing and twelve routed capabilities.
+description: Portable Agentera suite for Codex: one bundled skill with exact bare `/agentera` routing and twelve routed capabilities.
 icon: AG
 brand_color: "#111827"
-default_prompt: Use $agentera to inspect project state and route to the right capability; exact bare hej uses the agentera hej dashboard path.
+default_prompt: Use $agentera to inspect project state and route to the right capability; exact bare `/agentera` uses the agentera prime dashboard path.
 policy:
   allow_implicit_invocation: true
 support:
   skill_discovery: /skills
   plugin_discovery: /plugins
   explicit_invocation: $agentera
-  implicit_invocation: the bundled skill may be invoked implicitly; exact bare text hej belongs to agentera, not the legacy hej bridge
+  implicit_invocation: the bundled skill may be invoked implicitly; exact bare `/agentera` belongs to agentera, not the legacy hej bridge
   lifecycle_hooks: stable via codex_hooks; bundled config lives at hooks/codex-hooks.json and can be copied to ~/.codex/hooks.json or a project .codex/hooks.json for apply_patch artifact validation
 skills:
   - name: agentera
     display_name: agentera
     path: ./skills/agentera
     metadata: ./agents/openai.yaml
-    description: Compound agent orchestration suite with exact bare hej routing and twelve capabilities in one bundled skill.
-    invocation_hint: Use $agentera, or inspect it with /skills and /plugins. For a complete bare hej message, use the agentera hej dashboard path.
+    description: Compound agent orchestration suite with exact bare `/agentera` routing and twelve capabilities in one bundled skill.
+    invocation_hint: Use $agentera, or inspect it with /skills and /plugins. For a complete bare `/agentera` message, use the agentera prime dashboard path.
     policy:
       allow_implicit_invocation: true
     capabilities:
-      - name: hej
-        description: Entry-point orientation and routing for fresh or returning projects, including a complete user message exactly `hej`.
-        invocation_hint: Use $agentera hej or ask $agentera for project status; exact bare hej uses this dashboard path.
+      - name: status
+        description: Entry-point orientation and routing for fresh or returning projects, including a complete user message exactly `/agentera`.
+        invocation_hint: Use $agentera status or ask $agentera for project status; exact bare `/agentera` uses this dashboard path.
         policy:
           allow_implicit_invocation: true
-      - name: inspirera
+      - name: research
         description: External-source analysis mapped onto a project through Agentera artifacts.
-        invocation_hint: Use $agentera inspirera for links or external source analysis.
+        invocation_hint: Use $agentera research for links or external source analysis.
         policy:
           allow_implicit_invocation: true
-      - name: profilera
+      - name: profile
         description: Decision-profile mining. Limited to available bounded Codex history, session, or config corpus data.
-        invocation_hint: Use $agentera profilera when bounded Codex history, session, or config corpus data is available.
+        invocation_hint: Use $agentera profile when bounded Codex history, session, or config corpus data is available.
         policy:
           allow_implicit_invocation: false
         required_capabilities:
           - name: codex_session_corpus
             status: ok
-            action: Run profilera extraction; bounded Codex history, session, or config corpus data lands in the Section 22 corpus when present, with absent source families reported in corpus metadata.
-      - name: realisera
+            action: Run profile extraction; bounded Codex history, session, or config corpus data lands in the Section 22 corpus when present, with absent source families reported in corpus metadata.
+      - name: build
         description: Autonomous development cycles grounded in project vision, TODO, and verification.
-        invocation_hint: Use $agentera realisera for autonomous development cycles.
+        invocation_hint: Use $agentera build for autonomous development cycles.
         policy:
           allow_implicit_invocation: true
-      - name: optimera
+      - name: optimize
         description: Metric-driven optimization loops for measurable objectives.
-        invocation_hint: Use $agentera optimera for measured optimization work.
+        invocation_hint: Use $agentera optimize for measured optimization work.
         policy:
           allow_implicit_invocation: true
-      - name: resonera
+      - name: discuss
         description: Structured deliberation for consequential decisions and tradeoffs.
-        invocation_hint: Use $agentera resonera for decision framing.
+        invocation_hint: Use $agentera discuss for decision framing.
         policy:
           allow_implicit_invocation: true
-      - name: inspektera
+      - name: audit
         description: Codebase health audits with severity, confidence, and trend tracking.
-        invocation_hint: Use $agentera inspektera for codebase health audits.
+        invocation_hint: Use $agentera audit for codebase health audits.
         policy:
           allow_implicit_invocation: true
-      - name: planera
+      - name: plan
         description: Scale-adaptive planning with behavioral acceptance criteria.
-        invocation_hint: Use $agentera planera for multi-step planning.
+        invocation_hint: Use $agentera plan for multi-step planning.
         policy:
           allow_implicit_invocation: true
-      - name: visionera
+      - name: vision
         description: Project vision creation and refinement.
-        invocation_hint: Use $agentera visionera for project direction work.
+        invocation_hint: Use $agentera vision for project direction work.
         policy:
           allow_implicit_invocation: true
-      - name: dokumentera
+      - name: document
         description: DTC-first documentation creation, maintenance, and audit.
-        invocation_hint: Use $agentera dokumentera for documentation work.
+        invocation_hint: Use $agentera document for documentation work.
         policy:
           allow_implicit_invocation: true
-      - name: visualisera
+      - name: design
         description: Visual identity system creation, refinement, and audit.
-        invocation_hint: Use $agentera visualisera for design system work.
+        invocation_hint: Use $agentera design for design system work.
         policy:
           allow_implicit_invocation: true
-      - name: orkestrera
+      - name: orchestrate
         description: Plan-driven orchestration that dispatches capabilities and evaluates results.
-        invocation_hint: Use $agentera orkestrera for plan execution.
+        invocation_hint: Use $agentera orchestrate for plan execution.
         policy:
           allow_implicit_invocation: true
