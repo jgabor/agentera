@@ -16,7 +16,7 @@ import {
 } from "./lifecycleAdapters/legacyPythonParity.js";
 import {
   validateCodex,
-  validateCodexProfileraMetadata,
+  validateCodexProfileMetadata,
   validateCopilot,
   validateCopilotHooks,
   validateCursor,
@@ -35,7 +35,7 @@ import { loadJson, packageManifest, registryContractError, rootDefault } from ".
 
 export {
   validateCodex,
-  validateCodexProfileraMetadata,
+  validateCodexProfileMetadata,
   validateCopilot,
   validateCopilotHooks,
   validateCursor,
@@ -88,7 +88,7 @@ export function lifecycleMain(opts: LifecycleMainOptions = {}): number {
   errors.push(...validateCursorHooks(root, reg));
   const codex = loadJson(path.join(root, ".codex-plugin/plugin.json"));
   errors.push(...validateCodex(codex, reg));
-  errors.push(...validateCodexProfileraMetadata(root, codex));
+  errors.push(...validateCodexProfileMetadata(root, codex));
   errors.push(...validateOpencode(root, reg));
   const packageManifestReg = packageManifest(root);
   errors.push(...validateSuiteBundleSurface(root, null, packageManifestReg));

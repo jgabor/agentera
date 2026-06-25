@@ -5,7 +5,7 @@ import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import {
-  checkProfileraStaleness,
+  checkProfileStaleness,
   healthSummary,
   issueCounts,
   loadTodoItems,
@@ -157,10 +157,10 @@ function writeProfile(tmpDir: string, header: string): string {
   return profilePath;
 }
 
-describe("checkProfileraStaleness", () => {
+describe("checkProfileStaleness", () => {
   it("marks profiles stale from Generated when Validated is absent", () => {
     const profilePath = writeProfile(tmp, `<!-- Generated: ${isoDaysAgo(10)} | Data: x -->`);
-    const result = checkProfileraStaleness(profilePath, { AGENTERA_PROFILERA_MAX_AGE_DAYS: "7" });
+    const result = checkProfileStaleness(profilePath, { AGENTERA_PROFILE_MAX_AGE_DAYS: "7" });
     expect(result).toEqual([true, 10, 7]);
   });
 
@@ -169,7 +169,7 @@ describe("checkProfileraStaleness", () => {
       tmp,
       `<!-- Generated: ${isoDaysAgo(10)} | Data: x | Validated: ${isoDaysAgo(1)} -->`,
     );
-    const result = checkProfileraStaleness(profilePath, { AGENTERA_PROFILERA_MAX_AGE_DAYS: "7" });
+    const result = checkProfileStaleness(profilePath, { AGENTERA_PROFILE_MAX_AGE_DAYS: "7" });
     expect(result).toEqual([false, 1, 7]);
   });
 

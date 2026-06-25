@@ -14,7 +14,7 @@ export type Dict = JsonObject;
 
 export const REGISTRY_CONTRACT_ERROR_PREFIX = "registry contract error";
 
-export const CODEX_PROFILERA_TERMS = [
+export const CODEX_PROFILE_TERMS = [
   "allow_implicit_invocation: false",
   "codex_session_corpus",
   "bounded Codex history, session, or config corpus data",
@@ -22,7 +22,7 @@ export const CODEX_PROFILERA_TERMS = [
 
 export const CODEX_AGENTERA_METADATA_TERMS = ["$agentera", "bounded Codex session corpus data", "AGENTERA_HOME"];
 
-export const CODEX_PROFILERA_STATUS_VALUES = ["ok", "degraded"];
+export const CODEX_PROFILE_STATUS_VALUES = ["ok", "degraded"];
 
 export const HARD_GATE_DOC_REQUIREMENTS: Record<string, string[]> = {
   "references/adapters/runtime-feature-parity.md": ["opencode", "copilot", "cursor"],

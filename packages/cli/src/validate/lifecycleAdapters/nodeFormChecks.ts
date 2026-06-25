@@ -10,8 +10,8 @@ import {
 import type { JsonObject } from "../../core/jsonValue.js";
 import {
   CODEX_AGENTERA_METADATA_TERMS,
-  CODEX_PROFILERA_STATUS_VALUES,
-  CODEX_PROFILERA_TERMS,
+  CODEX_PROFILE_STATUS_VALUES,
+  CODEX_PROFILE_TERMS,
   HARD_GATE_DOC_REQUIREMENTS,
   codexLifecycleStatusValues,
   codexLimitationTerms,
@@ -420,7 +420,7 @@ export function validateCodex(plugin: JsonObject, registry: RuntimeAdapterRegist
   return errors;
 }
 
-export function validateCodexProfileraMetadata(root: string, plugin: JsonObject): string[] {
+export function validateCodexProfileMetadata(root: string, plugin: JsonObject): string[] {
   const errors: string[] = [];
   const skillMetadata = Array.isArray(plugin.skillMetadata) ? plugin.skillMetadata : [];
   const agentera = skillMetadata.find(
@@ -460,13 +460,13 @@ export function validateCodexProfileraMetadata(root: string, plugin: JsonObject)
         errors.push(`codex.agentera: ${rel} carries stale v1 skill path '${stalePath}'`);
       }
     }
-    for (const term of CODEX_PROFILERA_TERMS) {
+    for (const term of CODEX_PROFILE_TERMS) {
       if (!text.includes(term)) errors.push(`codex.agentera: ${rel} missing '${term}'`);
     }
-    if (!CODEX_PROFILERA_STATUS_VALUES.some((value) => text.includes(`status: ${value}`))) {
+    if (!CODEX_PROFILE_STATUS_VALUES.some((value) => text.includes(`status: ${value}`))) {
       errors.push(
         `codex.agentera: ${rel} missing status declaration (expected one of ` +
-          CODEX_PROFILERA_STATUS_VALUES.join(", ") +
+          CODEX_PROFILE_STATUS_VALUES.join(", ") +
           ")",
       );
     }

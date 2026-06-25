@@ -8,7 +8,7 @@ import { resolveSourceRootStrict } from "../../../upgrade/appModel.js";
 import { discoverSchemasDir, loadSchemas } from "../../appContext.js";
 import {
   activeObjectiveSummary,
-  checkProfileraStaleness,
+  checkProfileStaleness,
   decisionFollowUp,
   decisionReviewAttention,
   docsSummary,
@@ -46,7 +46,7 @@ export function collectOrientationState(opts: PrimeOpts): OrientationState {
   const profile = registryArtifactPath("profile", schemasDir);
   const profileExists = fs.existsSync(profile);
   const profileStatus = profileExists ? "loaded" : "not found";
-  const profileStaleness = profileExists ? checkProfileraStaleness(profile, env) : null;
+  const profileStaleness = profileExists ? checkProfileStaleness(profile, env) : null;
   const profileDict: ProfileSummary = { status: profileStatus, path: profile };
   if (profileStatus === "not found") profileDict.suggested_action = "Run profile to generate PROFILE.md";
   if (profileStaleness !== null) {
