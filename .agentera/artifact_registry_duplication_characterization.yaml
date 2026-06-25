@@ -37,7 +37,7 @@ duplication_inventory:
       classification: Canonical artifact identity is repeated as schema names, display names, docs mapping keys, and validator/CLI translation tables.
   repeated_paths:
     - sources:
-        - skill-level schema meta.path fields, for example .agentera/plan.yaml, TODO.md, and .agentera/optimera/<name>/objective.yaml
+        - skill-level schema meta.path fields, for example .agentera/plan.yaml, TODO.md, and .agentera/optimize/<name>/objective.yaml
         - capability-local path fields, often with prose suffixes such as 'or mapped path per docs.yaml' or '(per DOCS.md mapping)'
         - .agentera/docs.yaml mapping paths for runtime project resolution
         - scripts/agentera _resolve_artifact_path and _active_objective_name behavior at lines 192-237
@@ -69,7 +69,7 @@ duplication_inventory:
         - scripts/validate_cross_capability.py _normalize_path special handling for docs mapping suffixes and <objective-name> at lines 90-96
         - scripts/agentera _profile_path global profile path resolver at lines 250-256
         - scripts/agentera objective directory and <name> resolution at lines 192-237 and 984-1012
-        - capability-local PLAN_archive and harness entries in planera and optimera schemas
+        - capability-local PLAN_archive and harness entries in plan and optimize schemas
       classification: Special cases are encoded as validator exceptions, CLI helpers, and capability-only entries rather than explicit registry scope or path-template facts.
 docs_yaml_classification:
   source: .agentera/docs.yaml lines 21-71
@@ -100,7 +100,7 @@ consumer_characterization:
       - docs.yaml mapping artifact/path pairs from _load_artifact_overrides
       - active objective directory selection for objective-scoped path templates
       - global profile path from PROFILERA_PROFILE_DIR or XDG_DATA_HOME
-    observable_behavior_boundary: Preserve routine command outputs for hej, todo, docs, objective, experiments, plan, progress, health, decisions, and generic query behavior including query --list-artifacts and representative custom queries.
+    observable_behavior_boundary: Preserve routine command outputs for status, todo, docs, objective, experiments, plan, progress, health, decisions, and generic query behavior including query --list-artifacts and representative custom queries.
     current_duplication_boundary: CLI path resolution duplicates canonical display-name mapping and objective/profile special-case path semantics outside the artifact schemas.
   tests/test_validate_cross_capability.py:
     identity_consumed:
@@ -112,29 +112,29 @@ special_cases:
   PROFILE.md:
     current_sources:
       - .agentera/docs.yaml lines 64-67
-      - capability-local artifacts.yaml entries across hej, planera, realisera, optimera, profilera, and other capabilities
+      - capability-local artifacts.yaml entries across status, plan, build, optimize, profile, and other capabilities
       - scripts/agentera _profile_path at lines 250-256
       - scripts/validate_cross_capability.py EXTERNAL_OR_LOCAL_ARTIFACTS
     registry_case: global artifact with environment/XDG path template and explicit non-project scope.
   PLAN_archive:
     current_sources:
-      - planera capability artifacts lines 13-22
-      - planera and realisera prose descriptions of plan archival
+      - plan capability artifacts lines 13-22
+      - plan and build prose descriptions of plan archival
       - scripts/validate_cross_capability.py EXTERNAL_OR_LOCAL_ARTIFACTS
     registry_case: archive artifact or archive path template scoped under .agentera/archive rather than an unknown-artifact validator exception.
   harness:
     current_sources:
-      - optimera capability artifacts lines 13-22
+      - optimize capability artifacts lines 13-22
       - objective schema measurement fields that mention harness behavior
       - scripts/validate_cross_capability.py EXTERNAL_OR_LOCAL_ARTIFACTS
-    registry_case: objective-scoped local path template under .agentera/optimera/<name>/harness with lifecycle metadata.
+    registry_case: objective-scoped local path template under .agentera/optimize/<name>/harness with lifecycle metadata.
   objective_paths:
     current_sources:
       - objective and experiments skill-level schema meta.path values using <name>
       - capability-local OBJECTIVE.md and EXPERIMENTS.md paths using <objective-name>
       - scripts/validate_cross_capability.py path normalization replacing <objective-name> with <name>
       - scripts/agentera active objective discovery and <name> substitution
-    registry_case: scoped path templates for optimera objective state, with a single placeholder convention and active-objective resolution handled after identity lookup.
+    registry_case: scoped path templates for optimize objective state, with a single placeholder convention and active-objective resolution handled after identity lookup.
   global_and_local_artifacts:
     current_sources:
       - human-facing root defaults TODO.md, CHANGELOG.md, and DESIGN.md in skill-level schemas and capability schemas

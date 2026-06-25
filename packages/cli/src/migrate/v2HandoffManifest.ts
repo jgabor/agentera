@@ -214,7 +214,9 @@ function agenteraUserStateDirIsRecognized(dir: string): boolean {
     if (AGENTERA_USER_STATE_NAMES.has(entry) && st.isFile()) {
       continue;
     }
-    if (entry === "optimera" && st.isDirectory()) {
+    if ((entry === "optimize" || entry === "optimera") && st.isDirectory()) {
+      // "optimera" is the v2 stable legacy objective dir name; keep it
+      // recognized so v2->v3 migration preserves legacy objective state.
       continue;
     }
     return false;

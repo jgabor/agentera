@@ -61,7 +61,7 @@ cycles:
     shebang/fallthrough) were already implemented at `nextMajorDoctor.ts:104-113`
     and `resolve.mjs`/`exec.mjs` per git log `4722c6bb` and `e6381b08`; a third (dead
     code at `installRoot.ts:304-315`) was the actual open work and is removed here.
-    Hej/prime attention block was stale (Audit 24 health data).
+    Status/prime attention block was stale (Audit 24 health data).
   verified: "pnpm -C packages/cli run typecheck clean; vitest test/upgrade/nextMajorDoctor.test.ts\n\
     \    20/20 pass, test/state/installRoot 12/12 pass, test/upgrade/{versionResolution,projectIntegration}\
     \ 14/14 pass; pnpm -C packages/cli build clean; check compact status=pass over_limit=0;\
@@ -81,7 +81,7 @@ cycles:
   type: fix
   phase: build
   what: Align parity oracle retryCommand pin with string|null contract.
-  discovered: Surfaced by inspektera post-plan health check after the cutover-stability
+  discovered: Surfaced by audit post-plan health check after the cutover-stability
     batch 1; the contract was widened to string|null but the fixture pin was missed.
   verified: "pnpm -C packages/cli test \u2192 986/986; typecheck clean; compact pass."
   next: Defer hasBundleRootEvidence consolidation and detectContentLanguage alignment
@@ -97,7 +97,7 @@ cycles:
   phase: build
   what: 'Backport fix: remove empty-severity-section rejection from validate_artifact.py
     on main.'
-  inspiration: "Hit the bug during resonera TODO fold-in \u2014 the hook blocked TODO.md\
+  inspiration: "Hit the bug during discuss TODO fold-in \u2014 the hook blocked TODO.md\
     \ edits when Critical section was empty."
   discovered: The v3 TS rewrite already dropped this check; the v2 Python hook on
     main was the only surface still rejecting empty severity sections. The opencode
@@ -119,8 +119,8 @@ cycles:
   type: fix
   phase: build
   what: Fix stale YAML schema example, deprecated lint command, and archive reference
-    in resonera instructions.
-  inspiration: Planera light plan for three degraded TODOs targeting resonera/instructions.ts
+    in discuss instructions.
+  inspiration: Plan light plan for three degraded TODOs targeting discuss/instructions.ts
     prose accuracy.
   discovered: "TODO.md edit hook blocks writes when Critical section is empty \u2014\
     \ pre-existing issue (TODO line 13); bypassed via bash write. Plan schema requires\
@@ -133,12 +133,12 @@ cycles:
     prime --context (#4), over-prescription language audit (#5), lint extension for
     decisional language (#6).'
   context:
-    intent: Correct three stale references in resonera instructions that cause agents
+    intent: Correct three stale references in discuss instructions that cause agents
       to produce invalid decisions.yaml entries and emit deprecation noise.
-    constraints: Single-file scope (resonera/instructions.ts); no schema changes;
+    constraints: Single-file scope (discuss/instructions.ts); no schema changes;
       must not break capability routing tests.
     unknowns: None.
-    scope: packages/cli/src/capabilities/resonera/instructions.ts, .agentera/plan.yaml,
+    scope: packages/cli/src/capabilities/discuss/instructions.ts, .agentera/plan.yaml,
       TODO.md, .agentera/progress.yaml
 - number: 670
   timestamp: 2026-06-18 22:15
@@ -270,7 +270,7 @@ archive:
 - summary: "Cycle 665 (2026-06-18): Plan T1 \u2014 vitest/repo gate inventory: classified\
     \ all REPO_ROOT couplings in packages/cli/test; documented mutable-state vs..."
 - summary: "Cycle 664 (2026-06-18): Plan T7 \u2014 state sync and plan closeout: archived\
-    \ PLAN-2026-06-18-profilera-corpus-coverage-trust.yaml; cleared active plan slot;\
+    \ PLAN-2026-06-18-profile-corpus-coverage-trust.yaml; cleared active plan slot;\
     \ six..."
 - summary: "Cycle 663 (2026-06-18): Plan T6 \u2014 runtime metadata clarity and flag\
     \ docs: renamed runtime_statuses[].candidate_count to file_count; documented --no-<runtime>..."
@@ -299,7 +299,7 @@ archive:
 - summary: "Cycle 653 (2026-06-10): Plan T3 \u2014 lifecycle adapters node default,\
     \ legacy Python gated: split lifecycleAdapters into shared.ts, nodeFormChecks.ts,..."
 - summary: "Cycle 652 (2026-06-10): Plan T2 \u2014 dispatch hygiene and mechanical\
-    \ deduplication (3 parallel realisera workstreams merged): shared `cli/dispatch/argvParser.ts`;..."
+    \ deduplication (3 parallel build workstreams merged): shared `cli/dispatch/argvParser.ts`;..."
 - summary: "Cycle 651 (2026-06-09): Plan T1 \u2014 canonical bundle and orientation\
     \ contracts: added `core/jsonValue.ts`, `cli/contracts/bundleStatus.ts`, and `cli/contracts/orientationState.ts`;\
     \ typed `buildDoctorStatus`,..."
@@ -329,7 +329,7 @@ archive:
 - summary: "Cycle 641 (2026-06-03): D65 per-capability content surface \u2014 relocated\
     \ 12 capability prose files from skills/agentera/capabilities/<name>/instructions.md\
     \ to packages/cli/src/capabilities/<name>/instructions.ts as..."
-- summary: "Cycle 640 (2026-06-03): Orkestrera task_queue dependency lookup \u2014\
+- summary: "Cycle 640 (2026-06-03): Orchestrate task_queue dependency lookup \u2014\
     \ planTaskRefKeys normalization in orchestrationContext and dependencyReadyTasks;\
     \ regression tests in packages/cli/test/cli/prime.test.ts."
 - summary: "Cycle 639 (2026-06-03): Durable pre-commit hooks \u2014 citation-anchor-todo.md\
@@ -348,7 +348,7 @@ archive:
     \ into CHANGELOG [2.7.7]; marked plan task 4 complete."
 - summary: 'Cycle 632 (2026-06-03): 2.7.7 version bump and CHANGELOG update; marked
     plan task 4 complete.'
-- summary: "Cycle 631 (2026-06-03): Inspektera WARN/FAIL file:line citation enforcement\
+- summary: "Cycle 631 (2026-06-03): Audit WARN/FAIL file:line citation enforcement\
     \ \u2014 added evaluator_handoff schema to capability-instruction-contract.yaml,\
     \ evaluatorHandoffContract.ts registry with report..."
 - summary: "Cycle 630 (2026-06-03): D66 drop progress.yaml per-cycle commit field\

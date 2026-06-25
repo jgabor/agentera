@@ -151,11 +151,11 @@ export function computeCompactionStatus(projectRoot: string): CompactionStatus[]
     });
   }
 
-  const optimeraDir = path.join(projectRoot, ".agentera", "optimera");
-  if (fs.existsSync(optimeraDir) && fs.statSync(optimeraDir).isDirectory()) {
+  const optimizeDir = path.join(projectRoot, ".agentera", "optimize");
+  if (fs.existsSync(optimizeDir) && fs.statSync(optimizeDir).isDirectory()) {
     const experimentPaths: string[] = [];
-    for (const sub of fs.readdirSync(optimeraDir).sort()) {
-      const expPath = path.join(optimeraDir, sub, "experiments.yaml");
+    for (const sub of fs.readdirSync(optimizeDir).sort()) {
+      const expPath = path.join(optimizeDir, sub, "experiments.yaml");
       if (fs.existsSync(expPath)) experimentPaths.push(expPath);
     }
     for (const expPath of experimentPaths) {
