@@ -70,8 +70,8 @@ const TODO_PLANERA_SIGNALS = new Set([
   "cross-capability", "docs", "metadata", "migration", "schema", "startup", "surface", "test", "validation",
 ]);
 
-const PROFILERA_STALE_DAYS_ENV = "AGENTERA_PROFILERA_MAX_AGE_DAYS";
-const DEFAULT_PROFILERA_STALE_DAYS = 7;
+const PROFILE_STALE_DAYS_ENV = "AGENTERA_PROFILE_MAX_AGE_DAYS";
+const DEFAULT_PROFILE_STALE_DAYS = 7;
 const INSPEKTERA_STALE_DAYS_ENV = "AGENTERA_INSPEKTERA_MAX_AGE_DAYS";
 const DEFAULT_INSPEKTERA_STALE_DAYS = 30;
 const INSPEKTERA_STALE_CYCLES_ENV = "AGENTERA_INSPEKTERA_MAX_CYCLES";
@@ -160,7 +160,7 @@ function profileRefreshAnchorUtc(text: string): number | null {
   return Math.max(generatedUtc, validatedUtc);
 }
 
-export function checkProfileraStaleness(profilePath: string, env: Env = process.env): [boolean, number, number] | null {
+export function checkProfileStaleness(profilePath: string, env: Env = process.env): [boolean, number, number] | null {
   if (!fs.existsSync(profilePath)) return null;
   let text: string;
   try {
@@ -171,7 +171,7 @@ export function checkProfileraStaleness(profilePath: string, env: Env = process.
   }
   const anchor = profileRefreshAnchorUtc(text);
   if (anchor === null) return null;
-  const staleDays = intEnv(env, PROFILERA_STALE_DAYS_ENV, DEFAULT_PROFILERA_STALE_DAYS);
+  const staleDays = intEnv(env, PROFILE_STALE_DAYS_ENV, DEFAULT_PROFILE_STALE_DAYS);
   const since = daysSince(anchor);
   return [since >= staleDays, since, staleDays];
 }
