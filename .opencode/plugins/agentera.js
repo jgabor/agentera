@@ -646,19 +646,38 @@ function buildCompactionContext(projectRoot) {
   }
 }
 
+// One-time deprecation guard for the PROFILERA_PROFILE_DIR → AGENTERA_PROFILE_DIR
+// rename. Resettable via Agentera.__test.profileraDeprecation so tests can verify
+// the "fires only once per process" contract in isolation.
+const profileraDeprecation = { warned: false };
+
 function setProfileDir() {
-  if (process.env.PROFILERA_PROFILE_DIR) return;
+  // 1. AGENTERA_PROFILE_DIR already set (canonical): respect it.
+  if (process.env.AGENTERA_PROFILE_DIR) return;
+  // 2. Legacy PROFILERA_PROFILE_DIR set by a v2 install: adopt its value as the
+  //    canonical AGENTERA_PROFILE_DIR and warn once per process.
+  if (process.env.PROFILERA_PROFILE_DIR) {
+    process.env.AGENTERA_PROFILE_DIR = process.env.PROFILERA_PROFILE_DIR;
+    if (!profileraDeprecation.warned) {
+      profileraDeprecation.warned = true;
+      process.stderr.write(
+        "[agentera] PROFILERA_PROFILE_DIR is deprecated; run `agentera upgrade` to migrate to AGENTERA_PROFILE_DIR\n",
+      );
+    }
+    return;
+  }
+  // 3. Neither set: seed AGENTERA_PROFILE_DIR from the platform data-home default.
   if (process.platform === "darwin") {
-    process.env.PROFILERA_PROFILE_DIR = path.join(
+    process.env.AGENTERA_PROFILE_DIR = path.join(
       process.env.HOME, "Library", "Application Support", "agentera"
     );
   } else if (process.platform === "win32") {
-    process.env.PROFILERA_PROFILE_DIR = path.join(
+    process.env.AGENTERA_PROFILE_DIR = path.join(
       process.env.APPDATA || path.join(process.env.USERPROFILE, "AppData", "Roaming"),
       "agentera"
     );
   } else {
-    process.env.PROFILERA_PROFILE_DIR = path.join(
+    process.env.AGENTERA_PROFILE_DIR = path.join(
       process.env.XDG_DATA_HOME || path.join(process.env.HOME, ".local", "share"),
       "agentera"
     );
@@ -757,6 +776,8 @@ Agentera.__test = {
   resolveOpencodeAgentsDir,
   resolveOpencodeSkillsDir,
   routeBareHejMessage,
+  setProfileDir,
+  profileraDeprecation,
   skillBootstrap,
   validateArtifactCandidate,
   writeSessionBookmark,

@@ -72,7 +72,7 @@ function validateUsageRequest(format: string): string {
 
 /** Faithful port of `_stats_corpus_path`. */
 export function statsCorpusPath(env: Env = process.env, platform: NodeJS.Platform = process.platform): string {
-  const override = env.PROFILERA_PROFILE_DIR;
+  const override = env.AGENTERA_PROFILE_DIR;
   if (override) return path.join(override, "intermediate", "corpus.json");
   const appHome = env.AGENTERA_HOME;
   if (appHome) return path.join(appHome, "intermediate", "corpus.json");
@@ -171,7 +171,7 @@ export function cmdReport(args: ReportArgs, io: Io = {}): number {
         engine: { command: engineCommand },
         diagnostics: [
           "dry-run does not read runtime history or write corpus files",
-          "generated corpus is internal state for stats at $PROFILERA_PROFILE_DIR/intermediate/corpus.json",
+          "generated corpus is internal state for stats at $AGENTERA_PROFILE_DIR/intermediate/corpus.json",
         ],
       };
       if (outputFormat === "json") {

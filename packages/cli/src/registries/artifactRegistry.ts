@@ -234,9 +234,9 @@ export function resolveArtifactPath(
   if (artifactPath.includes("<name>") && activeObjectiveName) {
     artifactPath = artifactPath.replace(/<name>/g, activeObjectiveName);
   }
-  const profilePrefix = "$PROFILERA_PROFILE_DIR/";
+  const profilePrefix = "$AGENTERA_PROFILE_DIR/";
   if (artifactPath.startsWith(profilePrefix)) {
-    const explicit = env.PROFILERA_PROFILE_DIR;
+    const explicit = env.AGENTERA_PROFILE_DIR;
     const suffix = artifactPath.slice(profilePrefix.length);
     if (explicit) {
       return path.join(explicit, suffix);

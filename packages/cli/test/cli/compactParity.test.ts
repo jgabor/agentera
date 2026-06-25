@@ -64,13 +64,13 @@ let prevProfilera: string | undefined;
 
 beforeEach(() => {
   tmp = fs.mkdtempSync(path.join(os.tmpdir(), "compact-parity-"));
-  prevProfilera = process.env.PROFILERA_PROFILE_DIR;
-  process.env.PROFILERA_PROFILE_DIR = path.join(tmp, "profile");
+  prevProfilera = process.env.AGENTERA_PROFILE_DIR;
+  process.env.AGENTERA_PROFILE_DIR = path.join(tmp, "profile");
 });
 
 afterEach(() => {
-  if (prevProfilera === undefined) delete process.env.PROFILERA_PROFILE_DIR;
-  else process.env.PROFILERA_PROFILE_DIR = prevProfilera;
+  if (prevProfilera === undefined) delete process.env.AGENTERA_PROFILE_DIR;
+  else process.env.AGENTERA_PROFILE_DIR = prevProfilera;
   fs.rmSync(tmp, { recursive: true, force: true });
 });
 
@@ -149,7 +149,7 @@ describe("compaction parity (D56 T3)", () => {
   });
 
   it("check compact tolerates an oversized corpus.json without Node string-limit crash (pass)", () => {
-    const corpusDir = path.join(process.env.PROFILERA_PROFILE_DIR!, "intermediate");
+    const corpusDir = path.join(process.env.AGENTERA_PROFILE_DIR!, "intermediate");
     fs.mkdirSync(corpusDir, { recursive: true });
     const corpusPath = path.join(corpusDir, "corpus.json");
     const fd = fs.openSync(corpusPath, "w");
