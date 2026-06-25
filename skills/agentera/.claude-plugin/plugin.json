@@ -1,25 +1,25 @@
 {
   "name": "agentera",
   "version": "2.0.3",
-  "description": "The open protocol for turning AI agents into engineering teams. One bundled skill with twelve capabilities. Use for /agentera and for a complete user message exactly `hej`; bare `hej` runs the Agentera dashboard path.",
+  "description": "The open protocol for turning AI agents into engineering teams. One bundled skill with twelve capabilities. Use for /agentera and Agentera capability requests; bare `/agentera` runs the Agentera prime dashboard path.",
   "author": {
     "name": "jgabor"
   },
   "agentera": {
     "packageShape": "bundled-skill",
     "capabilities": [
-      "hej",
-      "visionera",
-      "resonera",
-      "inspirera",
-      "planera",
-      "realisera",
-      "optimera",
-      "inspektera",
-      "dokumentera",
-      "profilera",
-      "visualisera",
-      "orkestrera"
+      "status",
+      "vision",
+      "discuss",
+      "research",
+      "plan",
+      "build",
+      "optimize",
+      "audit",
+      "document",
+      "profile",
+      "design",
+      "orchestrate"
     ],
     "schemas": "schemas",
     "protocol": "protocol.yaml"
