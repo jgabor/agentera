@@ -32,6 +32,7 @@ const PYTHON_MANAGED_PATTERNS = [
 
 const RUNTIME_MIGRATION_ACTIONS = new Set([
   "rewire-runtime",
+  "rewire-env-var",
   "retire-hooks",
   "copy-plugin",
   "copy-agent",
@@ -91,6 +92,10 @@ export function textUsesPythonManagedEntrypoint(text: string): boolean {
   return PYTHON_MANAGED_PATTERNS.some((pattern) => pattern.test(text));
 }
 
+export function textUsesProfileraProfileDir(text: string): boolean {
+  return /PROFILERA_PROFILE_DIR/.test(text);
+}
+
 export function rewireRuntimeText(text: string, runtime: string, commands: NpxHookCommands): string {
   let next = text;
   next = next.replace(
@@ -132,6 +137,10 @@ export function rewireRuntimeText(text: string, runtime: string, commands: NpxHo
     next = next.replace(/set\s*=\s*\{\s*\}/g, "set = { }");
   }
   return next;
+}
+
+export function rewireProfileraEnvVar(text: string): string {
+  return text.replaceAll("PROFILERA_PROFILE_DIR", "AGENTERA_PROFILE_DIR");
 }
 
 function needsChannelNpxRewire(text: string, cliEntrypoint: string): boolean {
@@ -177,6 +186,31 @@ function pushRewireItem(
       status === "pending"
         ? "will rewire runtime config from Python managed app-home to npm self-contained entrypoint"
         : "runtime config uses Python managed paths but could not be rewritten safely",
+  });
+}
+
+function pushEnvVarRewireItem(
+  items: MigrationPhaseItem[],
+  runtime: string,
+  filePath: string,
+): void {
+  const text = fs.readFileSync(filePath, "utf8");
+  if (!textUsesProfileraProfileDir(text)) {
+    return;
+  }
+  const newText = rewireProfileraEnvVar(text);
+  const status: MigrationStatus = newText === text ? "noop" : "pending";
+  items.push({
+    status,
+    action: "rewire-env-var",
+    runtime,
+    source: filePath,
+    target: filePath,
+    newText,
+    message:
+      status === "pending"
+        ? "will rewire PROFILERA_PROFILE_DIR to AGENTERA_PROFILE_DIR"
+        : "PROFILERA_PROFILE_DIR reference already migrated",
   });
 }
 
@@ -494,6 +528,28 @@ function planEnvRuntimeNoops(items: MigrationPhaseItem[], runtime: string, messa
   }
 }
 
+function planEnvVarRewireItems(ctx: MigrationContext, items: MigrationPhaseItem[]): void {
+  const home = resolvePath(ctx.home);
+  const project = resolvePath(ctx.project);
+  const env = ctx.env!;
+  const configDir = opencodeConfigDir(home, env);
+  const candidates: Array<{ runtime: string; filePath: string }> = [
+    { runtime: "opencode", filePath: path.join(configDir, "plugins", "agentera.js") },
+    { runtime: "cursor", filePath: path.join(project, ".cursor", "hooks.json") },
+    { runtime: "cursor", filePath: path.join(home, ".cursor", "hooks.json") },
+    { runtime: "codex", filePath: path.join(home, ".codex", "config.toml") },
+    { runtime: "codex", filePath: path.join(home, ".codex", "hooks", "codex-hooks.json") },
+  ];
+  const hooksDir = path.join(project, ".github", "hooks");
+  for (const hookFile of walkJsonHookFiles(hooksDir)) {
+    candidates.push({ runtime: "copilot", filePath: hookFile });
+  }
+  for (const { runtime, filePath } of candidates) {
+    if (!isFile(filePath)) continue;
+    pushEnvVarRewireItem(items, runtime, filePath);
+  }
+}
+
 export function planRuntimeMigrationItems(ctx: MigrationContext): MigrationPhaseItem[] {
   if (!ctx.env) {
     throw new Error(
@@ -511,6 +567,7 @@ export function planRuntimeMigrationItems(ctx: MigrationContext): MigrationPhase
   planCursorItems(items, home, project, sourceRoot, commands);
   planOpencodeItems(items, home, sourceRoot, env, commands);
   planCopilotItems(items, project, commands);
+  planEnvVarRewireItems(ctx, items);
   planEnvRuntimeNoops(
     items,
     "claude",
@@ -541,6 +598,17 @@ export function applyRuntimeMigrationItem(item: MigrationPhaseItem, commands: Np
         fs.writeFileSync(item.target, item.newText, "utf8");
         item.status = "applied";
         item.message = "runtime config rewired to npm self-contained entrypoint";
+        break;
+      }
+      case "rewire-env-var": {
+        if (!item.target || item.newText === undefined) {
+          item.status = "failed";
+          item.message = "rewire-env-var missing target or newText";
+          return;
+        }
+        fs.writeFileSync(item.target, item.newText, "utf8");
+        item.status = "applied";
+        item.message = "rewired PROFILERA_PROFILE_DIR to AGENTERA_PROFILE_DIR";
         break;
       }
       case "copy-plugin":
