@@ -3,7 +3,7 @@ import { orchestrationContext } from "./orchestration.js";
 import { dokumenteraCloseoutContext } from "./closeout.js";
 import { inspekteraEvidenceContext } from "./evidence.js";
 import { optimeraBenchmarkContext } from "./benchmark.js";
-import { realiseraExecutionContext } from "./realisera.js";
+import { buildExecutionContext } from "./realisera.js";
 import { slimOrchestrationContext, slimEvidenceContext, slimCloseoutContext } from "./slim.js";
 
 export function slimBespokeContext(name: string, value: Dict): Dict {
@@ -47,7 +47,7 @@ export function bespokeCapabilityContexts(capabilityName: string | null, state: 
       state.app,
     ),
     benchmark_context: optimeraBenchmarkContext(capabilityName),
-    execution_context: realiseraExecutionContext(
+    execution_context: buildExecutionContext(
       capabilityName,
       state.schemas,
       state.plan,

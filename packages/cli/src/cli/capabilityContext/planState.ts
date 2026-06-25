@@ -154,7 +154,7 @@ export function planContextField(plan: Dict, field: string): any {
   return field in summary ? summary[field] : plan[field];
 }
 
-export function realiseraScopeBoundary(plan: Dict, selected: Dict | null): Dict {
+export function buildScopeBoundary(plan: Dict, selected: Dict | null): Dict {
   const explicitPaths: string[] = [];
   const scopeField = planContextField(plan, "scope");
   const sources = [selected ?? {}, scopeField && typeof scopeField === "object" ? scopeField : {}];
@@ -177,7 +177,7 @@ export function realiseraScopeBoundary(plan: Dict, selected: Dict | null): Dict 
   };
 }
 
-export function realiseraArtifactUpdateRequirements(plan: Dict, docs: Dict): Dict {
+export function buildArtifactUpdateRequirements(plan: Dict, docs: Dict): Dict {
   const mapping = asList(docs.mapping);
   const mapped = mapping.filter((e) => e && typeof e === "object" && e.artifact).map((e) => e.artifact);
   return {
@@ -191,13 +191,13 @@ export function realiseraArtifactUpdateRequirements(plan: Dict, docs: Dict): Dic
   };
 }
 
-export function realiseraPlanCompletionSweep(plan: Dict): Dict {
+export function buildPlanCompletionSweep(plan: Dict): Dict {
   const complete = Boolean(plan.complete_plan);
   return {
     status: complete ? "eligible" : "not_eligible",
     mutation_allowed: false,
     required_updates: ["progress aggregate cycle", "changelog plan-level entries", "TODO milestone advance", "health cross-reference"],
-    archive_candidate: complete ? "active plan archive path is generated only during Realisera sweep execution" : null,
+    archive_candidate: complete ? "active plan archive path is generated only during Build sweep execution" : null,
     caveats: complete ? [] : ["Plan completion sweep is not eligible until every plan task is complete."],
     source_provenance: sourceProvenance("plan", "agentera plan --format json", "summary.status"),
   };
