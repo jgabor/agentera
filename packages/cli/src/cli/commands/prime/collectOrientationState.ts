@@ -19,13 +19,13 @@ import {
   planSummary,
   progressSummary,
   registryArtifactPath,
-  selectHejNextAction,
+  selectStatusNextAction,
   statePresence,
 } from "../../orientation.js";
 import { buildOrientationAttention } from "../../orientation/attention.js";
 import { corpusCoverageSummary } from "../../orientation/corpusCoverage.js";
 import type { OrientationState, ProfileSummary } from "../../contracts/orientationState.js";
-import { hejBundleStatus } from "./bundleStatus.js";
+import { statusBundleStatus } from "./bundleStatus.js";
 import type { PrimeOpts } from "./types.js";
 import { v1MigrationSummary } from "./v1Migration.js";
 
@@ -35,7 +35,7 @@ export function collectOrientationState(opts: PrimeOpts): OrientationState {
   const sourceRoot = resolveSourceRootStrict(env);
   const schemasDir = discoverSchemasDir();
   const schemas = loadSchemas(schemasDir);
-  const bundle = hejBundleStatus(opts);
+  const bundle = statusBundleStatus(opts);
   let savedContext = false;
   try {
     savedContext = fs.readdirSync(path.join(process.cwd(), ".agentera")).some((f) => f.endsWith(".yaml"));
@@ -88,7 +88,7 @@ export function collectOrientationState(opts: PrimeOpts): OrientationState {
     bundleStatus: String(bundle.status),
     crossMajorBoundary: Boolean(bundle.crossMajorBoundary),
   });
-  const defaultNextAction = selectHejNextAction(plan, health, objective, todoItems, decision, savedContext);
+  const defaultNextAction = selectStatusNextAction(plan, health, objective, todoItems, decision, savedContext);
   const nextAction =
     projectIntegration.recommendation === "upgrade"
       ? {

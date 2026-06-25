@@ -9,7 +9,7 @@ export type { PrimeArgs } from "./prime/types.js";
 export { collectOrientationState } from "./prime/collectOrientationState.js";
 
 /**
- * prime orientation command. Port of scripts/agentera cmd_prime / cmd_hej.
+ * prime orientation command. Port of scripts/agentera cmd_prime / cmd_status.
  * The text briefing (default) and --guidance are wired; the JSON/dashboard/
  * context paths depend on the 5 bespoke capability contexts (pending slice).
  */

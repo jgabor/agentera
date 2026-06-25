@@ -10,7 +10,7 @@ import { startupCompletenessContract } from "../../startupCompletenessContract.j
 
 export { startupCompletenessContract } from "../../startupCompletenessContract.js";
 
-const HEJ_STRUCTURED_FIELDS = [
+const STATUS_STRUCTURED_FIELDS = [
   "command", "status", "app_home", "app", "mode", "profile", "v1_migration", "health",
   "issues", "plan", "docs", "progress", "objective", "state_presence", "project_integration", "attention",
   "decision_attention", "next_action", "orchestration_context", "closeout_context",
@@ -44,11 +44,11 @@ export function buildOrientationJsonPayload(
     execution_context: null,
   };
   const render =
-    command === "hej"
+    command === "status"
       ? "caller-owned README-style prime orientation dashboard"
       : "caller-owned README-style prime orientation dashboard";
   const access =
-    command === "hej"
+    command === "status"
       ? "single installed CLI call; app/v1/profile safety included; no preflight glob/read/import/doctor calls during normal prime"
       : "single installed CLI call; app/v1/profile safety included; no preflight glob/read/import/doctor calls during normal prime";
   return {
@@ -81,7 +81,7 @@ export function buildOrientationJsonPayload(
       artifacts_present: state.mode === "returning",
     },
     source_contract: {
-      fields: HEJ_STRUCTURED_FIELDS,
+      fields: STATUS_STRUCTURED_FIELDS,
       render,
       access,
       empty_state: "fresh mode with missing artifact summaries and zero issue counts",
@@ -92,8 +92,8 @@ export function buildOrientationJsonPayload(
 }
 
 function availablePrimeFields(command: string): string[] {
-  if (command === "prime") return [...HEJ_STRUCTURED_FIELDS, "capability_context"];
-  return HEJ_STRUCTURED_FIELDS;
+  if (command === "prime") return [...STATUS_STRUCTURED_FIELDS, "capability_context"];
+  return STATUS_STRUCTURED_FIELDS;
 }
 
 export function emitPrime(

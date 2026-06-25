@@ -96,7 +96,7 @@ export function orchestrationContext(
       complete_for_orchestration_context: complete,
       raw_artifact_reads_required: false,
       raw_artifact_read_policy:
-        "Use this orchestration_context and included hej state first. Run listed routine CLI fallback commands " +
+        "Use this orchestration_context and included status state first. Run listed routine CLI fallback commands " +
         "for missing or incomplete state families; raw artifact reads are last-resort diagnostics, not normal startup behavior.",
       included_state_families: capabilityContract.included_state_families ?? [],
       missing_state_families: capabilityContract.missing_state_families ?? [],

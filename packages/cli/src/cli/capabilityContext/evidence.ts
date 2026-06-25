@@ -436,7 +436,7 @@ export function auditEvidenceContext(
       caveated: stateCaveats.length > 0,
       raw_artifact_reads_required: false,
       raw_artifact_read_policy:
-        "Use this evidence_context and included hej state first. Run listed routine/query CLI fallback commands " +
+        "Use this evidence_context and included status state first. Run listed routine/query CLI fallback commands " +
         "for missing or incomplete evidence state; raw artifact reads are last-resort diagnostics, not normal evaluation startup behavior.",
       included_state_families: capabilityContract.included_state_families ?? [],
       missing_state_families: capabilityContract.missing_state_families ?? [],

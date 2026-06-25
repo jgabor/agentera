@@ -64,7 +64,7 @@ function visibleSkillVersion(home: string, env: Env): [string | null, string | n
   return [versions[0][1], versions[0][2]];
 }
 
-function hejExpectedVersion(opts: PrimeOpts, sourceRoot: string, home: string, env: Env): [string | null, string] {
+function statusExpectedVersion(opts: PrimeOpts, sourceRoot: string, home: string, env: Env): [string | null, string] {
   if (opts.expectedVersion) return [opts.expectedVersion, "--expected-version"];
   if (env.AGENTERA_EXPECTED_VERSION) return [env.AGENTERA_EXPECTED_VERSION, "AGENTERA_EXPECTED_VERSION"];
   const sourceVersion = loadSuiteVersion(sourceRoot);
@@ -75,7 +75,7 @@ function hejExpectedVersion(opts: PrimeOpts, sourceRoot: string, home: string, e
   return [sourceVersion, "source registry"];
 }
 
-export function hejBundleStatus(opts: PrimeOpts): BundleStatus {
+export function statusBundleStatus(opts: PrimeOpts): BundleStatus {
   const env = opts.env ?? process.env;
   const home = opts.home ? opts.home : os.homedir();
   const sourceRoot = resolveSourceRootStrict(env);
@@ -84,7 +84,7 @@ export function hejBundleStatus(opts: PrimeOpts): BundleStatus {
     env,
     sourceRoot,
   });
-  const [expected, expectedSource] = hejExpectedVersion(opts, sourceRoot, home, env);
+  const [expected, expectedSource] = statusExpectedVersion(opts, sourceRoot, home, env);
   const status = buildDoctorStatus(installRoot, {
     rootSource,
     sourceRoot,

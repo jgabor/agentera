@@ -10,7 +10,7 @@ export const CLI_COMMAND_ARTIFACTS: Record<string, Set<string>> = {
   docs: new Set(["docs"]),
   objective: new Set(["objective"]),
   experiments: new Set(["experiments"]),
-  hej: new Set(["plan", "progress", "health", "todo", "docs", "decisions"]),
+  status: new Set(["plan", "progress", "health", "todo", "docs", "decisions"]),
   prime: new Set(["plan", "progress", "health", "todo", "docs", "decisions", "changelog"]),
 };
 export const QUERY_ARTIFACTS: Record<string, string> = {

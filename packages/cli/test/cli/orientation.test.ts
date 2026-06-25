@@ -12,7 +12,7 @@ import {
   parseProfileHeaderDates,
   planSummary,
   progressSummary,
-  selectHejNextAction,
+  selectStatusNextAction,
   statePresence,
 } from "../../src/cli/orientation.js";
 import type { SchemaInfo } from "../../src/cli/appContext.js";
@@ -42,7 +42,7 @@ describe("orientation: pure helpers", () => {
 
   it("selects the first pending plan task as next action", () => {
     const plan = { first_pending: { number: 3, name: "Wire prime" } };
-    const action = selectHejNextAction(plan, {}, {}, [], null, true);
+    const action = selectStatusNextAction(plan, {}, {}, [], null, true);
     expect(action).toEqual({
       object: "PLAN Task 3: Wire prime",
       capability: "orchestrate",
@@ -50,11 +50,11 @@ describe("orientation: pure helpers", () => {
     });
   });
 
-  it("routes a complex TODO to planera and a simple one to realisera", () => {
+  it("routes a complex TODO to plan and a simple one to build", () => {
     const complex = [{ severity: "normal", status: "open", text: "update the schema contract and validation surface" }];
-    expect(selectHejNextAction({}, {}, {}, complex, null, true).capability).toBe("plan");
+    expect(selectStatusNextAction({}, {}, {}, complex, null, true).capability).toBe("plan");
     const simple = [{ severity: "normal", status: "open", text: "rename a thing" }];
-    expect(selectHejNextAction({}, {}, {}, simple, null, true).capability).toBe("build");
+    expect(selectStatusNextAction({}, {}, {}, simple, null, true).capability).toBe("build");
   });
 
   it("summarizes state presence", () => {
