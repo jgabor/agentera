@@ -1,6 +1,6 @@
 import type { Dict } from "./types.js";
 import { orchestrationContext } from "./orchestration.js";
-import { dokumenteraCloseoutContext } from "./closeout.js";
+import { documentCloseoutContext } from "./closeout.js";
 import { auditEvidenceContext } from "./evidence.js";
 import { optimizeBenchmarkContext } from "./benchmark.js";
 import { buildExecutionContext } from "./realisera.js";
@@ -25,7 +25,7 @@ export function bespokeCapabilityContexts(capabilityName: string | null, state: 
       state.profile_dict,
       state.next_action,
     ),
-    closeout_context: dokumenteraCloseoutContext(
+    closeout_context: documentCloseoutContext(
       capabilityName,
       state.schemas,
       state.plan,
