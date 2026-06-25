@@ -111,7 +111,7 @@ describe("corpus coverage attention", () => {
         records: [],
       }),
     );
-    const summary = corpusCoverageSummary({ PROFILERA_PROFILE_DIR: profileDir }, "linux");
+    const summary = corpusCoverageSummary({ AGENTERA_PROFILE_DIR: profileDir }, "linux");
     expect(summary.status).toBe("loaded");
     expect(summary.available_but_not_selected).toEqual([
       { runtime: "opencode", reason: "disabled_by_flag", store_path: "/tmp/opencode.db" },

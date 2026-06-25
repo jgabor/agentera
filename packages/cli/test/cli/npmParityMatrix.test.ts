@@ -66,13 +66,13 @@ let tmpProfile: string;
 
 beforeEach(() => {
   tmpProfile = fs.mkdtempSync(path.join(os.tmpdir(), "npm-parity-profile-"));
-  prevProfilera = process.env.PROFILERA_PROFILE_DIR;
-  process.env.PROFILERA_PROFILE_DIR = tmpProfile;
+  prevProfilera = process.env.AGENTERA_PROFILE_DIR;
+  process.env.AGENTERA_PROFILE_DIR = tmpProfile;
 });
 
 afterEach(() => {
-  if (prevProfilera === undefined) delete process.env.PROFILERA_PROFILE_DIR;
-  else process.env.PROFILERA_PROFILE_DIR = prevProfilera;
+  if (prevProfilera === undefined) delete process.env.AGENTERA_PROFILE_DIR;
+  else process.env.AGENTERA_PROFILE_DIR = prevProfilera;
   fs.rmSync(tmpProfile, { recursive: true, force: true });
 });
 

@@ -85,7 +85,7 @@ export function defaultAgenteraHome(env: Env = process.env, platform: NodeJS.Pla
 }
 
 export function defaultProfileDir(env: Env = process.env, platform: NodeJS.Platform = process.platform): string {
-  const override = env.PROFILERA_PROFILE_DIR;
+  const override = env.AGENTERA_PROFILE_DIR;
   if (override) return override;
   return defaultAgenteraHome(env, platform);
 }

@@ -155,10 +155,10 @@ describe("loadCorpusOrRaise", () => {
 });
 
 describe("default paths", () => {
-  it("honors AGENTERA_USAGE_DIR and PROFILERA_PROFILE_DIR overrides", () => {
+  it("honors AGENTERA_USAGE_DIR and AGENTERA_PROFILE_DIR overrides", () => {
     expect(defaultUsageDir({ AGENTERA_USAGE_DIR: "/x/usage" })).toBe("/x/usage");
-    expect(defaultUsageDir({ PROFILERA_PROFILE_DIR: "/x/prof" })).toBe("/x/prof");
-    expect(defaultCorpusPath({ PROFILERA_PROFILE_DIR: "/x/prof" })).toBe(
+    expect(defaultUsageDir({ AGENTERA_PROFILE_DIR: "/x/prof" })).toBe("/x/prof");
+    expect(defaultCorpusPath({ AGENTERA_PROFILE_DIR: "/x/prof" })).toBe(
       path.join("/x/prof", "intermediate", "corpus.json"),
     );
   });

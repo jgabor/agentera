@@ -311,7 +311,7 @@ function homeDir(env: Env): string {
 export function defaultUsageDir(env: Env = process.env, platform: NodeJS.Platform = process.platform): string {
   const override = env.AGENTERA_USAGE_DIR;
   if (override) return override;
-  const profileOverride = env.PROFILERA_PROFILE_DIR;
+  const profileOverride = env.AGENTERA_PROFILE_DIR;
   if (profileOverride) return profileOverride;
   const home = homeDir(env);
   if (platform === "darwin") return path.join(home, "Library", "Application Support", "agentera");
@@ -324,7 +324,7 @@ export function defaultUsageDir(env: Env = process.env, platform: NodeJS.Platfor
 }
 
 export function defaultCorpusPath(env: Env = process.env, platform: NodeJS.Platform = process.platform): string {
-  const profileOverride = env.PROFILERA_PROFILE_DIR;
+  const profileOverride = env.AGENTERA_PROFILE_DIR;
   if (profileOverride) return path.join(profileOverride, "intermediate", "corpus.json");
   const home = homeDir(env);
   let base: string;

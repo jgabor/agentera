@@ -63,8 +63,8 @@ describe("statsExistingCorpusStatus", () => {
 });
 
 describe("statsCorpusPath", () => {
-  it("prefers PROFILERA_PROFILE_DIR, then AGENTERA_HOME", () => {
-    expect(statsCorpusPath({ PROFILERA_PROFILE_DIR: "/p" }, "linux")).toBe(path.join("/p", "intermediate", "corpus.json"));
+  it("prefers AGENTERA_PROFILE_DIR, then AGENTERA_HOME", () => {
+    expect(statsCorpusPath({ AGENTERA_PROFILE_DIR: "/p" }, "linux")).toBe(path.join("/p", "intermediate", "corpus.json"));
     expect(statsCorpusPath({ AGENTERA_HOME: "/h" }, "linux")).toBe(path.join("/h", "intermediate", "corpus.json"));
   });
 });
@@ -75,17 +75,17 @@ describe("cmdReport", () => {
   let prevHome: string | undefined;
   beforeEach(() => {
     tmp = fs.mkdtempSync(path.join(os.tmpdir(), "report-"));
-    prev = process.env.PROFILERA_PROFILE_DIR;
+    prev = process.env.AGENTERA_PROFILE_DIR;
     prevHome = process.env.HOME;
-    process.env.PROFILERA_PROFILE_DIR = tmp;
+    process.env.AGENTERA_PROFILE_DIR = tmp;
     process.env.HOME = tmp;
     process.env.XDG_DATA_HOME = path.join(tmp, ".local", "share");
     process.env.CURSOR_HOME = path.join(tmp, ".cursor");
     process.env.COPILOT_HOME = path.join(tmp, ".copilot");
   });
   afterEach(() => {
-    if (prev === undefined) delete process.env.PROFILERA_PROFILE_DIR;
-    else process.env.PROFILERA_PROFILE_DIR = prev;
+    if (prev === undefined) delete process.env.AGENTERA_PROFILE_DIR;
+    else process.env.AGENTERA_PROFILE_DIR = prev;
     if (prevHome === undefined) delete process.env.HOME;
     else process.env.HOME = prevHome;
     delete process.env.XDG_DATA_HOME;
@@ -148,7 +148,7 @@ describe("cmdReport", () => {
     });
     expect(payload.diagnostics).toEqual([
       "dry-run does not read runtime history or write corpus files",
-      "generated corpus is internal state for stats at $PROFILERA_PROFILE_DIR/intermediate/corpus.json",
+      "generated corpus is internal state for stats at $AGENTERA_PROFILE_DIR/intermediate/corpus.json",
     ]);
     expect(fs.existsSync(outp)).toBe(false); // dry-run writes nothing
   });
