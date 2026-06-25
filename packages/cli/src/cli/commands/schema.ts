@@ -27,13 +27,13 @@ const CAPABILITY_NAMES = [
   "optimize", "audit", "document", "profile", "design", "orchestrate",
 ];
 const ROUTINE_STATE_COMMANDS = [
-  "hej", "plan", "progress", "health", "todo", "decisions", "docs", "objective", "experiments",
+  "status", "plan", "progress", "health", "todo", "decisions", "docs", "objective", "experiments",
 ];
 const DOCTOR_SIGNAL_KINDS = [
   "missing_bundle", "invalid_install_root", "unmanaged_install_root", "invalid_bundle",
   "missing_marker", "version_mismatch", "cli_probe_unavailable", "cli_probe_failed", "missing_command",
 ];
-const HEJ_STRUCTURED_FIELDS = [
+const STATUS_STRUCTURED_FIELDS = [
   "command", "status", "app_home", "app", "mode", "profile", "v1_migration", "health",
   "issues", "plan", "docs", "progress", "objective", "state_presence", "attention",
   "decision_attention", "next_action", "orchestration_context", "closeout_context",
@@ -41,7 +41,7 @@ const HEJ_STRUCTURED_FIELDS = [
 ];
 const COMMAND_DESCRIPTIONS: Record<string, string> = {
   prime: "Composite orientation briefing and capability startup context.",
-  hej: "Deprecated alias for prime.",
+  status: "Deprecated alias for prime.",
   schema: "Runtime CLI/schema introspection.",
   plan: "Deprecated alias for state plan. Active plan summary.",
   progress: "Deprecated alias for state progress. Recent cycle summary.",
@@ -61,21 +61,21 @@ const COMMAND_DESCRIPTIONS: Record<string, string> = {
 };
 const COMMAND_FILTERS_SCHEMA: Record<string, string[]> = {
   prime: [],
-  hej: [],
+  status: [],
   schema: ["format"],
   describe: ["format"],
 };
 
 function availableStructuredFields(command: string): string[] {
-  if (command === "prime") return [...HEJ_STRUCTURED_FIELDS, "capability_context"];
-  if (command === "hej") return HEJ_STRUCTURED_FIELDS;
+  if (command === "prime") return [...STATUS_STRUCTURED_FIELDS, "capability_context"];
+  if (command === "status") return STATUS_STRUCTURED_FIELDS;
   if (CAPABILITY_NAMES.includes(command)) return ["command", "status", "capability", "routing"];
   return ROUTINE_STRUCTURED_FIELDS;
 }
 
 // COMMAND_FILTERS for the routine/state/lint/gate/compact/doctor/upgrade commands.
 const COMMAND_FILTERS_ALL: Record<string, string[]> = {
-  hej: [],
+  status: [],
   plan: ["status"],
   progress: ["topic", "status", "limit"],
   health: ["dimension"],
@@ -168,7 +168,7 @@ function describeCommands(): Dict[] {
     commandDescription("prime", "orientation", availableStructuredFields("prime")),
   ];
   for (const name of CAPABILITY_NAMES) {
-    if (name === "hej") continue;
+    if (name === "status") continue;
     commands.push(commandDescription(name, "capability_routing", availableStructuredFields(name)));
   }
   for (const name of ROUTINE_STATE_COMMANDS) {
@@ -296,7 +296,7 @@ export function buildSchemaPayload(command = "schema"): Dict {
       formats: isDict(structuredOutput) ? structuredOutput.formats ?? ["json", "yaml"] : "unknown",
       fields_by_command: {
         routine_state_commands: ROUTINE_STRUCTURED_FIELDS,
-        hej: HEJ_STRUCTURED_FIELDS,
+        status: STATUS_STRUCTURED_FIELDS,
       },
     },
     field_selection: {

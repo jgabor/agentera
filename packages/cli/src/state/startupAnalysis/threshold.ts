@@ -85,7 +85,7 @@ export function boundedRuntimeStatus(status: Dict): Dict {
 }
 
 export const STATE_CLI_COMMANDS = new Set([
-  "hej",
+  "status",
   "prime",
   "plan",
   "progress",

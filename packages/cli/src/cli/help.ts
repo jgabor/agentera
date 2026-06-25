@@ -27,7 +27,7 @@ export function printTopLevelHelp(): string {
       "prime               Composite orientation briefing, capability startup context, or static guidance",
       "schema              Runtime CLI/schema introspection",
       "state               Routine artifact reads and advanced artifact query",
-      ...CAPABILITY_ROUTING_NAMES.filter((n) => n !== "hej").map(
+      ...CAPABILITY_ROUTING_NAMES.filter((n) => n !== "status").map(
         (name) => `${name.padEnd(19)} Route to ${name} capability guidance`,
       ),
     ]),

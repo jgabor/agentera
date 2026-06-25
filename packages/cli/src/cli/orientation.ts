@@ -54,9 +54,9 @@ export type {
 } from "./contracts/orientationState.js";
 
 /**
- * Orientation summaries layer for prime/hej. Faithful port of the
+ * Orientation summaries layer for prime/status. Faithful port of the
  * scripts/agentera `_*_summary`, `_load_todo_items`, `_issue_counts`,
- * `_decision_*`, `_select_hej_next_action`, and staleness helpers.
+ * `_decision_*`, `_select_status_next_action`, and staleness helpers.
  */
 
 export const DONE_STATUSES = new Set(["complete", "completed", "closed", "done", "resolved", "retired"]);
@@ -614,7 +614,7 @@ export function formatNextAction(action: NextAction | Record<string, string> | n
   return `object=${truncate(action.object)} | capability=${action.capability} | reason=${action.reason}`;
 }
 
-export function selectHejNextAction(
+export function selectStatusNextAction(
   plan: PlanSummary,
   health: HealthSummary,
   objective: ObjectiveSummary,
