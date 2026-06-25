@@ -23,6 +23,7 @@ const OPENCODE_HOME_CHECK = diagnosticCheckNames("opencode")[1];
 const OPENCODE_COMMANDS_CHECK = diagnosticCheckNames("opencode")[2];
 const OPENCODE_SKILL_PATHS_CHECK = diagnosticCheckNames("opencode")[3];
 const OPENCODE_SUPPORT_CHECK = diagnosticCheckNames("opencode")[4];
+const OPENCODE_PROFILE_DIR_CHECK = diagnosticCheckNames("opencode")[5];
 const OC_MSG = diagnosticMessages("opencode");
 const OPENCODE_COMMANDS_CURRENT_MESSAGE = OC_MSG[4];
 const OPENCODE_COMMANDS_DRIFT_MESSAGE = OC_MSG[5];
@@ -30,12 +31,15 @@ const OPENCODE_SKILL_PATHS_CURRENT_MESSAGE = OC_MSG[6];
 const OPENCODE_SKILL_PATHS_DRIFT_MESSAGE = OC_MSG[7];
 const OPENCODE_SUPPORT_REFERENCES_PASS_MESSAGE = OC_MSG[8];
 const OPENCODE_SUPPORT_REFERENCES_DRIFT_MESSAGE = OC_MSG[9];
+const OPENCODE_PROFILE_DIR_CURRENT_MESSAGE = OC_MSG[10];
+const OPENCODE_PROFILE_DIR_DEPRECATED_MESSAGE = OC_MSG[11];
 const OPENCODE_PASS_STATUS = diagnosticStatusLabels("opencode")[0];
 const OPENCODE_WARN_STATUS = diagnosticStatusLabels("opencode")[1];
 const OC_GAP = diagnosticGapLabels("opencode");
 const OPENCODE_COMMAND_DRIFT_GAP = OC_GAP[2];
 const OPENCODE_SKILL_PATH_DRIFT_GAP = OC_GAP[3];
 const OPENCODE_VALIDATION_DRIFT_GAP = OC_GAP[4];
+const OPENCODE_USER_ENVIRONMENT_GAP = OC_GAP[1];
 
 export function opencodeConfigDir(home: string, env: Env): string {
   const explicit = env.OPENCODE_CONFIG_DIR;
@@ -259,6 +263,15 @@ const OPENCODE_PLUGIN_MISSING_MESSAGE = OC_MSG[1];
 const OPENCODE_HOME_MISSING_MESSAGE = OC_MSG[3];
 const OPENCODE_RUNTIME_CONFIG_GAP = OC_GAP[0];
 
+export function diagnoseOpencodeProfileDir(installRoot: string, home: string, env: Env): Dict {
+  if (env.PROFILERA_PROFILE_DIR) {
+    return mkCheck(OPENCODE_PROFILE_DIR_CHECK, OPENCODE_WARN_STATUS, OPENCODE_PROFILE_DIR_DEPRECATED_MESSAGE, {
+      gap: OPENCODE_USER_ENVIRONMENT_GAP,
+    });
+  }
+  return mkCheck(OPENCODE_PROFILE_DIR_CHECK, OPENCODE_PASS_STATUS, OPENCODE_PROFILE_DIR_CURRENT_MESSAGE, {});
+}
+
 export function diagnoseOpencode(installRoot: string, home: string, env: Env): Dict {
   const checks: Dict[] = [];
   const configDir = opencodeConfigDir(home, env);
@@ -299,6 +312,7 @@ export function diagnoseOpencode(installRoot: string, home: string, env: Env): D
   checks.push(diagnoseOpencodeCommands(home, env));
   checks.push(diagnoseOpencodeSkillPaths(installRoot, home, env));
   checks.push(diagnoseBundledReferenceValidation(installRoot));
+  checks.push(diagnoseOpencodeProfileDir(installRoot, home, env));
   return runtimeResult("opencode", env, checks);
 }
 
