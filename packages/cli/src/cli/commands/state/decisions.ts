@@ -348,7 +348,7 @@ export function decisionSourceContract(source: Dict, entries: Dict[], filters: D
       normal_deliberation:
         "skip raw `.agentera/decisions.yaml` reads when complete_for_normal_deliberation_context=true",
       allowed_raw_artifact_uses: [
-        "Resonera-owned decision writes or repairs",
+        "Discuss-owned decision writes or repairs",
         "artifact corruption diagnostics",
         "CLI defect investigation",
       ],
