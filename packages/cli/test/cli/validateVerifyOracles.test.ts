@@ -107,7 +107,7 @@ const REPO_ROOT = path.resolve(
   "..",
   "..",
 );
-const SEMANTIC_FIXTURE = path.join(REPO_ROOT, "fixtures", "semantic", "hej-bare-message.md");
+const SEMANTIC_FIXTURE = path.join(REPO_ROOT, "fixtures", "semantic", "status-bare-message.md");
 const ARTIFACT_VALIDATE_TARGET = "PLAN.md";
 
 const fixtureRoots: string[] = [];

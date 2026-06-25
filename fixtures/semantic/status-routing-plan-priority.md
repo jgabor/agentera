@@ -1,4 +1,4 @@
-# Semantic Fixture: hej-routing-plan-priority
+# Semantic Fixture: status-routing-plan-priority
 
 ## Prompt
 
