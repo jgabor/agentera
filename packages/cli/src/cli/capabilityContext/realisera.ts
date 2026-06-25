@@ -8,16 +8,16 @@ import {
   dependencyReadyTasks,
   orchestrationTaskSummary,
   planContextField,
-  realiseraArtifactUpdateRequirements,
-  realiseraPlanCompletionSweep,
-  realiseraScopeBoundary,
+  buildArtifactUpdateRequirements,
+  buildPlanCompletionSweep,
+  buildScopeBoundary,
   selectEvidenceTarget,
   taskByRef,
 } from "./planState.js";
 import { progressVerificationSummary } from "./progress.js";
 import type { Dict } from "./types.js";
 
-export function realiseraExecutionContext(
+export function buildExecutionContext(
   capability: string | null,
   schemas: Record<string, SchemaInfo>,
   plan: Dict,
@@ -36,7 +36,7 @@ export function realiseraExecutionContext(
   const acceptance = selected && typeof selected === "object" ? asList(selected.acceptance) : [];
   const progressVerification = progressVerificationSummary(progress);
   const changelogBoundary = closeoutChangelogBoundary(schemas, plan);
-  const sweep = realiseraPlanCompletionSweep(plan);
+  const sweep = buildPlanCompletionSweep(plan);
 
   let mode: string;
   if (plan.complete_plan) mode = "completed_plan_sweep";
@@ -59,7 +59,7 @@ export function realiseraExecutionContext(
     fallbackCommands.push("agentera state plan --format json");
   }
   if (mode === "plan_driven" && acceptance.length === 0) {
-    stateCaveats.push("Selected Realisera task has no acceptance criteria in CLI plan state.");
+    stateCaveats.push("Selected Build task has no acceptance criteria in CLI plan state.");
     fallbackCommands.push("agentera state plan --format json");
   }
   if (!progress.exists) {
@@ -90,7 +90,7 @@ export function realiseraExecutionContext(
   if (bundle.status !== "up_to_date") {
     stateCaveats.push("Agentera app files are not up to date; this is a caveat, not approval to repair or update app files.");
   }
-  const scopeBoundary = realiseraScopeBoundary(plan, selected);
+  const scopeBoundary = buildScopeBoundary(plan, selected);
   if (scopeBoundary.source_scope.status === "unspecified") {
     stateCaveats.push("source-file scope is unspecified; no allowed or prohibited source paths were inferred.");
   }
@@ -138,16 +138,16 @@ export function realiseraExecutionContext(
         "no dispatch without explicit cycle execution",
         "no commit/push/tag/publication without explicit approval",
       ],
-      unsupported_cli_command_policy: "Do not introduce capability-name or slash-alias CLI commands for Realisera.",
+      unsupported_cli_command_policy: "Do not introduce capability-name or slash-alias CLI commands for Build.",
       source_provenance: sourceProvenance("plan", "agentera plan --format json", "summary.constraints"),
     },
     scope_boundary: scopeBoundary,
     verification_expectations: {
       latest_progress_verification: progressVerification,
-      expected_commands: ["focused pytest targets", "Realisera capability validation", "self-validation", "agentera gate", "compaction check", "git diff --check"],
+      expected_commands: ["focused pytest targets", "Build capability validation", "self-validation", "agentera gate", "compaction check", "git diff --check"],
       source_provenance: sourceProvenance("plan", "agentera plan --format json", "entries.acceptance"),
     },
-    artifact_update_requirements: realiseraArtifactUpdateRequirements(plan, docs),
+    artifact_update_requirements: buildArtifactUpdateRequirements(plan, docs),
     progress_logging_requirements: {
       append_cycle: true,
       verified_field_mandatory: true,
@@ -170,7 +170,7 @@ export function realiseraExecutionContext(
       raw_artifact_reads_required: false,
       raw_artifact_read_policy:
         "Use this execution_context and included hej state first. Run listed routine/query CLI fallback commands " +
-        "for missing or incomplete execution state; raw artifact reads are last-resort diagnostics, not normal Realisera startup behavior.",
+        "for missing or incomplete execution state; raw artifact reads are last-resort diagnostics, not normal Build startup behavior.",
       included_state_families: capabilityContract.included_state_families ?? [],
       missing_state_families: capabilityContract.missing_state_families ?? [],
       required_execution_state: requiredState,

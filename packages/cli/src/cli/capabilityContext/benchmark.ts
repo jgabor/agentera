@@ -522,7 +522,7 @@ export function optimeraBenchmarkContext(capability: string | null): Dict | null
         "raw-read-last-resort policy",
         "truthful completeness metadata",
       ],
-      deferred: ["2.3.12 Realisera execution-context state"],
+      deferred: ["2.3.12 Build execution-context state"],
     },
   };
 }
