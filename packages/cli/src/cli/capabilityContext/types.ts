@@ -22,26 +22,26 @@ export const STARTUP_ENVELOPE_STATE_FAMILIES = new Set([
   "plan", "docs", "progress", "health", "todo", "objective", "benchmark_context",
 ]);
 
-export const PLANERA_STARTUP_CONTRACT_VERSION = "agentera.planeraStartup.v1";
-export const PLANERA_PLANNING_LEVELS = ["skip", "light", "full"];
-export const PLANERA_STEP_VERBS = ["orient", "specify", "review", "audit", "write", "handoff"];
-export const PLANERA_INSTRUCTIONS_AUTHORITY_EXCEPTIONS = [
-  "editing Planera behavior or instructions",
+export const PLAN_STARTUP_CONTRACT_VERSION = "agentera.planeraStartup.v1";
+export const PLAN_PLANNING_LEVELS = ["skip", "light", "full"];
+export const PLAN_STEP_VERBS = ["orient", "specify", "review", "audit", "write", "handoff"];
+export const PLAN_INSTRUCTIONS_AUTHORITY_EXCEPTIONS = [
+  "editing Plan behavior or instructions",
   "resolving contradiction or ambiguity in compact context",
   "validating detailed behavior not covered by compact context",
   "investigating benchmark or read-trigger evidence",
 ];
-export const PLANERA_RAW_PLAN_ACCESS_ALLOWED_FOR = [
+export const PLAN_RAW_PLAN_ACCESS_ALLOWED_FOR = [
   "writing a new plan",
   "archiving a completed plan",
   "artifact validation",
   "corruption diagnostics",
   "unavailable or incomplete CLI state after CLI fallbacks",
 ];
-export const PLANERA_COMPLETED_PLAN_ARCHIVE_CONFIRMATION = {
-  direct_planera_invocation:
+export const PLAN_COMPLETED_PLAN_ARCHIVE_CONFIRMATION = {
+  direct_plan_invocation:
     "Archiving an already completed existing plan before writing its replacement is implicit " +
-    "in the direct Planera invocation and does not require a separate pre-write confirmation.",
+    "in the direct Plan invocation and does not require a separate pre-write confirmation.",
   human_initiated_plan_write: "Plan approval is still required before writing a human-initiated replacement plan.",
   active_or_incomplete_plan:
     "Replacing, discarding, or archiving an active or incomplete plan is not implicit; " +

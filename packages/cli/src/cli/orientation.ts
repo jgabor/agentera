@@ -65,7 +65,7 @@ export const DECISION_ATTENTION_MAX_ENTRIES = 3;
 const TODO_SECTION_SEVERITIES: Record<string, string> = Object.fromEntries(
   TODO_SEVERITY_ORDER_KEYS.map((key) => [key, key]),
 );
-const TODO_PLANERA_SIGNALS = new Set([
+const TODO_PLAN_SIGNALS = new Set([
   "acceptance", "artifact", "capability", "capability-context", "compatibility", "contract",
   "cross-capability", "docs", "metadata", "migration", "schema", "startup", "surface", "test", "validation",
 ]);
@@ -305,10 +305,10 @@ export function issueCounts(todoItems: Array<Record<string, string>>): IssueCoun
   return counts;
 }
 
-function todoNeedsPlanera(item: Record<string, string>): boolean {
+function todoNeedsPlan(item: Record<string, string>): boolean {
   const text = item.text.toLowerCase();
   let signalCount = 0;
-  for (const signal of TODO_PLANERA_SIGNALS) if (text.includes(signal)) signalCount += 1;
+  for (const signal of TODO_PLAN_SIGNALS) if (text.includes(signal)) signalCount += 1;
   return signalCount >= 2 || (signalCount >= 1 && text.length > 180);
 }
 
@@ -644,7 +644,7 @@ export function selectHejNextAction(
     const item = [...todoItems].sort(
       (a, b) => (TODO_SEVERITY_ORDER[a.severity] ?? 2) - (TODO_SEVERITY_ORDER[b.severity] ?? 2),
     )[0];
-    if (todoNeedsPlanera(item)) {
+    if (todoNeedsPlan(item)) {
       return { object: `TODO: ${item.text}`, capability: "plan", reason: "complex TODO needs planning" };
     }
     return { object: `TODO: ${item.text}`, capability: "build", reason: "highest-priority open TODO" };
