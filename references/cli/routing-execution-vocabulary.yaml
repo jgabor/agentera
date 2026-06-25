@@ -31,7 +31,7 @@ compatibility_boundary: >-
 canonical_concept_order:
   - request_to_capability_routing
   - next_action_recommendation
-  - orkestrera_task_assignment
+  - orchestrate_task_assignment
   - worker_launch
   - runtime_subagent_support
   - worker_safety_git_commit
@@ -40,7 +40,7 @@ canonical_concepts:
     definition: >-
       Agentera chooses the capability that should handle a user request, using
       direct routes, primary route aliases, trigger schemas, disambiguation, or
-      fallback to hej.
+      fallback to status.
     preferred_terms:
       - Agentera router
       - request-to-capability routing
@@ -65,15 +65,15 @@ canonical_concepts:
       - force
       - chain
       - conductor handoff
-  orkestrera_task_assignment:
+  orchestrate_task_assignment:
     definition: >-
-      Orkestrera assigns approved plan work to a worker capability during an
+      Orchestrate assigns approved plan work to a worker capability during an
       explicitly orchestrated flow; it evaluates the result instead of implementing
       the task itself.
     preferred_terms:
       - delegate
       - delegation
-      - Orkestrera task delegation
+      - Orchestrate task delegation
       - assigned plan work
     forbidden_ambiguous_shortcuts:
       - conductor
@@ -82,7 +82,7 @@ canonical_concepts:
       - orchestrator implementation
   worker_launch:
     definition: >-
-      Realisera or Optimera starts a worker through the host runtime when an
+      Build or Optimize starts a worker through the host runtime when an
       implementation or measurement cycle needs isolated execution.
     preferred_terms:
       - spawn

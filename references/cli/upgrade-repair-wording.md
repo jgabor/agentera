@@ -12,9 +12,9 @@ Treat the project as v3 when **all twelve** instruction modules exist:
 
 `packages/cli/src/capabilities/<name>/instructions.ts`
 
-for every routed capability (`hej`, `visionera`, `resonera`, `inspirera`,
-`planera`, `realisera`, `optimera`, `inspektera`, `dokumentera`, `profilera`,
-`visualisera`, `orkestrera`).
+for every routed capability (`status`, `vision`, `discuss`, `research`,
+`plan`, `build`, `optimize`, `audit`, `document`, `profile`,
+`design`, `orchestrate`).
 
 If any module is missing, preserve v2 upgrade behavior (copy/refresh managed
 agents from the bundle).
