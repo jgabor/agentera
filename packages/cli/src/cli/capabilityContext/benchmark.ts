@@ -425,7 +425,7 @@ export function benchmarkPrivacyBoundary(): Dict {
   };
 }
 
-export function optimeraBenchmarkContext(capability: string | null): Dict | null {
+export function optimizeBenchmarkContext(capability: string | null): Dict | null {
   if (capability !== "optimize") return null;
   const benchmarkDir = startupBenchmarkDir();
   const [latestStatus, latestData, latestCaveats] = readBenchmarkJson(path.join(benchmarkDir, "latest-report.json"), BENCHMARK_LATEST_REPORT_LABEL);
