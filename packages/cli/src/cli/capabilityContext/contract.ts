@@ -4,12 +4,12 @@ import { loadYamlMapping } from "../../core/yaml.js";
 import { activeAppModel, discoverSchemasDir } from "../appContext.js";
 import { capabilityStartupCommand } from "../../capabilities/index.js";
 import {
-  PLANERA_COMPLETED_PLAN_ARCHIVE_CONFIRMATION,
-  PLANERA_INSTRUCTIONS_AUTHORITY_EXCEPTIONS,
-  PLANERA_PLANNING_LEVELS,
-  PLANERA_RAW_PLAN_ACCESS_ALLOWED_FOR,
-  PLANERA_STARTUP_CONTRACT_VERSION,
-  PLANERA_STEP_VERBS,
+  PLAN_COMPLETED_PLAN_ARCHIVE_CONFIRMATION,
+  PLAN_INSTRUCTIONS_AUTHORITY_EXCEPTIONS,
+  PLAN_PLANNING_LEVELS,
+  PLAN_RAW_PLAN_ACCESS_ALLOWED_FOR,
+  PLAN_STARTUP_CONTRACT_VERSION,
+  PLAN_STEP_VERBS,
   STARTUP_ENVELOPE_STATE_FAMILIES,
   STATE_FAMILY_FALLBACK_COMMANDS,
 } from "./types.js";
@@ -72,23 +72,23 @@ export function firstInvocationReadMetadata(capability: string): Dict {
   };
 }
 
-export function planeraStartupContract(): Dict {
+export function planStartupContract(): Dict {
   return {
-    schemaVersion: PLANERA_STARTUP_CONTRACT_VERSION,
+    schemaVersion: PLAN_STARTUP_CONTRACT_VERSION,
     status: "implemented_compact_normal_startup_contract",
     canonical_surface: "agentera prime --context plan --format json",
     bounded: true,
     instructions_runtime_read_required: false,
     instructions_authority: {
       normal_startup:
-        "Use this compact context for normal Planera execution startup; " +
-        "shell out to `agentera prime --context plan --format json` for the full Planera prose.",
-      read_planera_instructions_when: PLANERA_INSTRUCTIONS_AUTHORITY_EXCEPTIONS,
+        "Use this compact context for normal Plan execution startup; " +
+        "shell out to `agentera prime --context plan --format json` for the full Plan prose.",
+      read_plan_instructions_when: PLAN_INSTRUCTIONS_AUTHORITY_EXCEPTIONS,
     },
     planning: {
-      levels: PLANERA_PLANNING_LEVELS,
+      levels: PLAN_PLANNING_LEVELS,
       step_marker_format: "── step N/6: verb",
-      required_steps: PLANERA_STEP_VERBS,
+      required_steps: PLAN_STEP_VERBS,
       full_plan_review_required: true,
       pre_write_self_audit_required: true,
       max_full_plan_tasks: 8,
@@ -105,8 +105,8 @@ export function planeraStartupContract(): Dict {
       skip_raw_plan_artifact_when:
         "`agentera plan --format json` reports source_contract.complete_for_plan_artifact=true " +
         "during normal read-only startup or evaluation.",
-      raw_plan_artifact_allowed_for: PLANERA_RAW_PLAN_ACCESS_ALLOWED_FOR,
-      completed_plan_archive_confirmation: PLANERA_COMPLETED_PLAN_ARCHIVE_CONFIRMATION,
+      raw_plan_artifact_allowed_for: PLAN_RAW_PLAN_ACCESS_ALLOWED_FOR,
+      completed_plan_archive_confirmation: PLAN_COMPLETED_PLAN_ARCHIVE_CONFIRMATION,
       artifact_mapping_source: "agentera docs/query artifact mapping before writes or closeout",
     },
     handoff_expectations: [
@@ -191,6 +191,6 @@ export function capabilityContext(capability: string | null): Dict | null {
       "If needed families are missing or CLI state is incomplete, run the CLI fallback commands before raw file access.",
     schema_error: error,
   };
-  if (capability === "plan") context.startup_contract = planeraStartupContract();
+  if (capability === "plan") context.startup_contract = planStartupContract();
   return context;
 }
