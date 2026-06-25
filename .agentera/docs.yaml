@@ -60,7 +60,7 @@ mapping:
   producers:
   - design
 - artifact: PROFILE.md
-  path: '$PROFILERA_PROFILE_DIR/PROFILE.md (default: $XDG_DATA_HOME/agentera/PROFILE.md)'
+  path: '$AGENTERA_PROFILE_DIR/PROFILE.md (default: $XDG_DATA_HOME/agentera/PROFILE.md)'
   producers:
   - profile
 - artifact: USAGE.md

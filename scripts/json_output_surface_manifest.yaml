@@ -5,7 +5,7 @@ scope:
     diagnostic. Historical classification source:
     .agentera/archive/d58-json-output-surface-inventory.md. Capability-context rows
     expand across all twelve CAPABILITY_NAMES. Uses repo-root fixtures, isolated temp
-    projects, and AGENTERA_HOME / PROFILERA_PROFILE_DIR overrides so doctor, upgrade,
+    projects, and AGENTERA_HOME / AGENTERA_PROFILE_DIR overrides so doctor, upgrade,
     prime, check compact, and report paths do not mutate the caller's app or profile state.
   historical_inventory: .agentera/archive/d58-json-output-surface-inventory.md
   budget_proposal_archive: .agentera/archive/d59-json-output-budget-proposal.md

@@ -82,14 +82,14 @@ Each Agentera skill entry file contains YAML frontmatter with `name` and `descri
 
 **Adapter approach**: Place PROFILE.md at `~/.config/opencode/profile/PROFILE.md` (or `~/.config/opencode/PROFILE.md` for simplicity). Update the profile-path references:
 
-- Skills reference `$PROFILERA_PROFILE_DIR/PROFILE.md` (default: `$XDG_DATA_HOME/agentera/PROFILE.md`) with `<!-- platform: profile-path -->` annotations
+- Skills reference `$AGENTERA_PROFILE_DIR/PROFILE.md` (default: `$XDG_DATA_HOME/agentera/PROFILE.md`) with `<!-- platform: profile-path -->` annotations
 - The OpenCode adapter substitutes `~/.config/opencode/profile/PROFILE.md`
 - Profile writes to this path when generating the profile
 
 **Concrete substitution**: In contract.md files, the annotated line:
 
 ```
-Read PROFILE.md from the profile-determined profile path (`$PROFILERA_PROFILE_DIR/PROFILE.md`, defaulting to `$XDG_DATA_HOME/agentera/PROFILE.md` on Linux). <!-- platform: profile-path -->
+Read PROFILE.md from the profile-determined profile path (`$AGENTERA_PROFILE_DIR/PROFILE.md`, defaulting to `$XDG_DATA_HOME/agentera/PROFILE.md` on Linux). <!-- platform: profile-path -->
 ```
 
 becomes in the OpenCode context:

@@ -880,7 +880,7 @@ usage_namespace:
       behavior: >-
         Uses the supplied Section 22 corpus.json envelope. When omitted, default
         corpus lookup remains owned by `agentera usage` and follows
-        `PROFILERA_PROFILE_DIR/intermediate/corpus.json` before platform data-home
+        `AGENTERA_PROFILE_DIR/intermediate/corpus.json` before platform data-home
         defaults.
     project:
       syntax: --project VALUE
@@ -900,14 +900,14 @@ usage_namespace:
   path_contract:
     report_precedence:
       - AGENTERA_USAGE_DIR/USAGE.md
-      - PROFILERA_PROFILE_DIR/USAGE.md
+      - AGENTERA_PROFILE_DIR/USAGE.md
       - platform data home agentera/USAGE.md
     corpus_precedence:
-      - PROFILERA_PROFILE_DIR/intermediate/corpus.json
+      - AGENTERA_PROFILE_DIR/intermediate/corpus.json
       - platform data home agentera/intermediate/corpus.json
     test_isolation: >-
       Facade tests that exercise default text writes must set temporary
-      `AGENTERA_USAGE_DIR` and `PROFILERA_PROFILE_DIR` values and must not write the
+      `AGENTERA_USAGE_DIR` and `AGENTERA_PROFILE_DIR` values and must not write the
       real user data home.
   invalid_input_behavior:
     format_error: >-
