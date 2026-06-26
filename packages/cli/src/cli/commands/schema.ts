@@ -35,7 +35,7 @@ const DOCTOR_SIGNAL_KINDS = [
 ];
 const STATUS_STRUCTURED_FIELDS = [
   "command", "status", "app_home", "app", "mode", "profile", "v1_migration", "health",
-  "issues", "plan", "docs", "progress", "objective", "state_presence", "attention",
+  "todo", "plan", "docs", "progress", "objective", "state_presence", "attention",
   "decision_attention", "next_action", "orchestration_context", "closeout_context",
   "evidence_context", "benchmark_context", "execution_context", "source", "source_contract",
 ];

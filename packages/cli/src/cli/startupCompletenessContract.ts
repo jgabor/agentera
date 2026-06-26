@@ -8,7 +8,7 @@ export const STARTUP_AVAILABLE_STATE_FIELDS = [
   "profile",
   "v1_migration",
   "health",
-  "issues",
+  "todo",
   "plan",
   "docs",
   "progress",

@@ -38,7 +38,7 @@ describe("cli prime", () => {
     expect(out).toContain("app_home: install_track=");
     expect(out).toContain("status=");
     expect(out).toContain("mode: ");
-    expect(out).toContain("issues: critical=");
+    expect(out).toContain("todo: critical=");
     expect(out).toContain("next_action:");
     expect(out).toContain("source_contract:");
     expect(out).toContain("capability_startup_complete=true");
