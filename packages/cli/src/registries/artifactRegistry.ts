@@ -234,15 +234,17 @@ export function resolveArtifactPath(
   if (artifactPath.includes("<name>") && activeObjectiveName) {
     artifactPath = artifactPath.replace(/<name>/g, activeObjectiveName);
   }
-  const profilePrefix = "$AGENTERA_PROFILE_DIR/";
-  if (artifactPath.startsWith(profilePrefix)) {
-    const explicit = env.AGENTERA_PROFILE_DIR;
-    const suffix = artifactPath.slice(profilePrefix.length);
-    if (explicit) {
-      return path.join(explicit, suffix);
+  const profileDirPrefixes = ["$AGENTERA_PROFILE_DIR/", "$PROFILERA_PROFILE_DIR/"] as const;
+  for (const prefix of profileDirPrefixes) {
+    if (artifactPath.startsWith(prefix)) {
+      const suffix = artifactPath.slice(prefix.length);
+      const explicit = env.AGENTERA_PROFILE_DIR ?? env.PROFILERA_PROFILE_DIR;
+      if (explicit) {
+        return path.join(explicit, suffix);
+      }
+      const [base] = resolveCandidate(null, { env, home: os.homedir() });
+      return path.join(base, suffix);
     }
-    const [base] = resolveCandidate(null, { env, home: os.homedir() });
-    return path.join(base, suffix);
   }
   return projectPath(projectRoot, artifactPath, record.artifactId);
 }
