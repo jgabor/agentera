@@ -84,7 +84,7 @@ agentera/
 │   │   └── package.json
 │   ├── web/                 # @agentera/web — Astro + Starlight
 │   └── cli/                 # agentera npm CLI + bundled skills/references
-├── skills/agentera/         # Internal agent engine (editor runtimes)
+├── skills/agentera/         # Internal skill bundle (editor runtimes)
 └── references/              # Internal schemas, adapters, vocabulary
 ```
 
@@ -118,8 +118,10 @@ flowchart TB
 | **`@agentera/cli`** / **`agentera`** | Agent runtime and state CLI (npm package name `agentera`) |
 | **`.agentera/`**                     | User project state directory (like Pi’s `.pi/`)           |
 
-Retired as **public headline**: “open protocol for turning AI agents into
-engineering teams.” Internal docs may still describe schemas and CLI mechanics.
+Retired as **public headline**: "open protocol for turning AI agents into
+engineering teams" and "opinionated mobile-first coding agent." Replaced by
+"turn your coding agent into an engineering team." Internal docs may still
+describe schemas and CLI mechanics.
 
 ### Vision placement
 

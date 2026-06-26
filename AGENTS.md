@@ -12,7 +12,7 @@ Agentera is an opinionated mobile-first coding agent shipped as a monorepo:
 | `@agentera/web` | Marketing site and Starlight docs |
 | `@agentera/cli` | Agent runtime and `.agentera/` project-state CLI |
 
-The skill bundle (`skills/agentera/`) with twelve capabilities remains the internal contract for the agent engine. Each capability is defined by human-readable prose (`packages/cli/src/capabilities/<name>/instructions.ts`) and machine-readable schemas (`triggers.yaml`, `artifacts.yaml`, `validation.yaml`, `exit.yaml`). The Agentera router routes incoming requests to the right capability. The runtime serves the prose through `agentera prime --context <name> --format json`.
+The skill bundle (`skills/agentera/`) with twelve capabilities remains the internal contract for capability routing. Each capability is defined by human-readable prose (`packages/cli/src/capabilities/<name>/instructions.ts`) and machine-readable schemas (`triggers.yaml`, `artifacts.yaml`, `validation.yaml`, `exit.yaml`). The Agentera router routes incoming requests to the right capability. The runtime serves the prose through `agentera prime --context <name> --format json`.
 
 Mobile uses Cursor SDK directly — not skill routing from `skills/agentera/SKILL.md`.
 

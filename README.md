@@ -5,9 +5,9 @@
 ┴ ┴└─┘└─┘┘└┘ ┴ └─┘┴└─┴ ┴
 </pre>
 
-<strong>Opinionated mobile-first coding agent.</strong>
+<strong>Turn your coding agent into an engineering team.</strong>
 
-Ship a working change from anywhere — discuss, plan, build, review — in one continuous conversation.
+Specialized roles, shared project artifacts, verification gates, and portable context across runtimes.
 
 <p>
 <a href="#packages">Packages</a> ·

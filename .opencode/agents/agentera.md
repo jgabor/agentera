@@ -1,5 +1,6 @@
 ---
-description: Agentera agent engine — orientation, routing, and capability dispatch.
+color: "#fcd116"
+description: Turn your coding agent into an engineering team.
 mode: primary
 permission:
   write: allow
