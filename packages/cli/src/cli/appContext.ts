@@ -71,14 +71,25 @@ export function activeAppModel(env: Record<string, string | undefined> = process
       runtimeRoot: sourceRoot,
     };
   }
-  if (!env.AGENTERA_HOME && !env.AGENTERA_DEFAULT_INSTALL_ROOT && isLocalAgenteraCheckout(sourceRoot)) {
+  if (isLocalAgenteraCheckout(sourceRoot) && !isNpxBundleRoot(sourceRoot)) {
+    const checkoutSkillRoot = path.join(sourceRoot, "skills", "agentera");
+    if (env.AGENTERA_HOME || env.AGENTERA_DEFAULT_INSTALL_ROOT) {
+      const selected = resolveActiveAppModel(null, { home: os.homedir(), env });
+      return {
+        ...selected,
+        activeBundleRoot: sourceRoot,
+        authoritativeRoot: sourceRoot,
+        skillRoot: checkoutSkillRoot,
+        runtimeRoot: sourceRoot,
+      };
+    }
     return {
       appHome: sourceRoot,
       appHomeSource: "local checkout",
       managedAppRoot: sourceRoot,
       activeBundleRoot: sourceRoot,
       authoritativeRoot: sourceRoot,
-      skillRoot: path.join(sourceRoot, "skills", "agentera"),
+      skillRoot: checkoutSkillRoot,
       runtimeRoot: sourceRoot,
     };
   }

@@ -1,6 +1,9 @@
 import type { JsonObject } from "../core/jsonValue.js";
 
-export const STARTUP_COMPLETENESS_MISSING_STATE: string[] = [];
+export interface StartupCompletenessInput {
+  schemaError?: string | null;
+  profileStatus?: string;
+}
 
 export const STARTUP_AVAILABLE_STATE_FIELDS = [
   "app_home",
@@ -36,8 +39,16 @@ export const STARTUP_COMPLETENESS_CLI_FALLBACK = [
   "agentera progress --format json",
 ] as const;
 
-export function startupCompletenessContract(): JsonObject {
-  const complete = STARTUP_COMPLETENESS_MISSING_STATE.length === 0;
+export function startupCompletenessContract(input: StartupCompletenessInput = {}): JsonObject {
+  const missingState: string[] = [];
+  const schemaError = input.schemaError ?? null;
+  if (schemaError) {
+    missingState.push(schemaError);
+  }
+  if (input.profileStatus === "not found") {
+    missingState.push("profile not found");
+  }
+  const complete = missingState.length === 0;
   return {
     complete_for_capability_startup: complete,
     raw_artifact_reads_required: false,
@@ -45,12 +56,12 @@ export function startupCompletenessContract(): JsonObject {
       "Do not read raw artifacts when complete_for_capability_startup is true. " +
       "When incomplete, try cli_fallback first; raw artifact reads are only a last-resort fallback.",
     available_state: [...STARTUP_AVAILABLE_STATE_FIELDS],
-    missing_state: STARTUP_COMPLETENESS_MISSING_STATE,
+    missing_state: missingState,
     confidence_caveats: [...STARTUP_COMPLETENESS_CONFIDENCE_CAVEATS],
     cli_fallback: [...STARTUP_COMPLETENESS_CLI_FALLBACK],
   };
 }
 
-export function capabilityStartupComplete(): boolean {
-  return STARTUP_COMPLETENESS_MISSING_STATE.length === 0;
+export function capabilityStartupComplete(input: StartupCompletenessInput = {}): boolean {
+  return Boolean(startupCompletenessContract(input).complete_for_capability_startup);
 }
