@@ -240,7 +240,7 @@ result. The CLI output is source data, not the user-facing dashboard; do not
 relay raw `agentera prime` lines as the final briefing. Do not run individual `state plan`, `state progress`, `state health`,
 `state todo`, or `state decisions` commands unless `agentera prime` fails or explicitly asks
 for fallback. The final response must
-transform source labels such as `mode:`, `profile:`, `health:`, `issues:`,
+transform source labels such as `mode:`, `profile:`, `health:`, `todo:`,
 `plan:`, `objective:`, `attention:`, `next_action:`, `app_home:`,
 `v1_migration:`, and `source_contract:` into the dashboard below; never paste
 those labels as the briefing.
@@ -253,14 +253,14 @@ Bare `/agentera` returning-project output must include these visible markers:
 ┴ ┴└─┘└─┘┘└┘ ┴ └─┘┴└─┴ ┴
 
 ─── status ─────────────────────────────
-  [metric lines: health, issues, plan, objective, profile as available]
+  [metric lines: health, todo, plan, objective, profile as available]
   [1-2 sentence narrative read closing the status section]
 ─── attention ──────────────────────────
 ─── next ───────────────────────────────
 ```
 
 Use the README-style layout from status Step 1b: metrics first, narrative read
-inside `status`, then attention and next. The issues summary line uses
+inside `status`, then attention and next. The todo summary line uses
 `critical · degraded · normal · annoying` in the order prime emits them. Omit `attention` only when the source has no attention items. Always include the
 mandatory `⌂ status · <status>` marker below the dashboard code fence, and ask for
 confirmation before invoking the suggested downstream capability. For
