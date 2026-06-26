@@ -496,7 +496,7 @@ Visualisera owns visual identity in `DESIGN.md`. Protocol owns token meanings in
 
 | Phrase                                                                    | Use                                                    |
 | ------------------------------------------------------------------------- | ------------------------------------------------------ |
-| “Opinionated mobile-first coding agent.”                                  | Product identity.                                      |
+| "Turn your coding agent into an engineering team."                         | Product identity.                                      |
 | “One install, one entry point, one query interface to all project state.” | CLI state-access promise (internals/contributor docs). |
 | “Continuity lives in files, not memory.”                                  | Realisera/project-state principle.                     |
 | “The conversation preserves reasoning; the artifact preserves the plan.”  | Plan boundary.                                      |

@@ -1,7 +1,7 @@
 ---
 name: agentera
 description: >
-  Agentera agent engine for editor runtimes. One Agentera skill with twelve
+  Turn your coding agent into an engineering team. One skill with twelve
   capabilities; per-capability prose lives in
   `packages/cli/src/capabilities/<name>/instructions.ts` and the runtime serves
   it through `agentera prime --context <name> --format json`. Use this skill

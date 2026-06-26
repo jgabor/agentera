@@ -1,5 +1,5 @@
 ---
-description: Agentera agent engine — orientation, routing, and capability dispatch.
+description: Turn your coding agent into an engineering team.
 ---
 
 <!-- agentera: managed -->

@@ -1,7 +1,7 @@
 {
   "name": "agentera",
   "version": "2.0.3",
-  "description": "The open protocol for turning AI agents into engineering teams. One bundled skill with twelve capabilities. Use for /agentera and Agentera capability requests; bare `/agentera` runs the Agentera prime dashboard path.",
+  "description": "Turn your coding agent into an engineering team. One bundled skill with twelve capabilities. Use for /agentera and Agentera capability requests; bare `/agentera` runs the Agentera prime dashboard path.",
   "author": {
     "name": "jgabor"
   },
