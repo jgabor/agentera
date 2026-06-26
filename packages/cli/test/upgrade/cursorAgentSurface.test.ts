@@ -5,7 +5,6 @@ import { fileURLToPath } from "node:url";
 
 import { describe, expect, it } from "vitest";
 
-import { CAPABILITY_INSTRUCTIONS } from "../../src/capabilities/index.js";
 import {
   applyRuntimeRewirePhase,
   planRuntimeRewirePhase,
@@ -17,10 +16,9 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "../../../..");
 const FIXTURES = path.join(__dirname, "fixtures");
 const AGENTS_DIR = path.join(REPO_ROOT, ".cursor", "agents");
+const MANAGED_AGENT_FILE = path.join(AGENTS_DIR, "agentera.md");
 const LEGACY_AGENT_SUBSTRING = /Read .*capabilities\/[^/]+\/instructions\.md/;
-const D65_PRIME_CONTEXT = /Run `agentera prime --context [a-z]+ --format json`/;
-
-const CAPABILITY_NAMES = Object.keys(CAPABILITY_INSTRUCTIONS);
+const D65_PRIME_CONTEXT = /run `agentera prime --context [a-z]+ --format json`/i;
 
 describe("v3 cursor agent surface (T7)", () => {
   it("detects the agentera repo as a v3 capability-surface project", () => {
@@ -72,48 +70,40 @@ describe("v3 cursor agent surface (T7)", () => {
     }
   });
 
-  it("does not regress in-tree agents when runtime upgrade applies against a legacy bundle", () => {
+  it("does not regress in-tree agentera.md when runtime upgrade applies against a legacy bundle", () => {
     const home = fs.mkdtempSync(path.join(os.tmpdir(), "t7-apply-"));
     try {
-      const before = new Map<string, string>();
-      for (const name of CAPABILITY_NAMES) {
-        const file = path.join(AGENTS_DIR, `${name}.md`);
-        before.set(name, fs.readFileSync(file, "utf8"));
-      }
+      const before = fs.readFileSync(MANAGED_AGENT_FILE, "utf8");
       const appHome = path.join(home, "agentera");
       const legacyAgents = path.join(appHome, ".cursor", "agents");
       fs.mkdirSync(legacyAgents, { recursive: true });
-      for (const name of CAPABILITY_NAMES) {
-        fs.writeFileSync(
-          path.join(legacyAgents, `${name}.md`),
-          `<!-- agentera: managed -->\nRead \${AGENTERA_HOME}/app/skills/agentera/capabilities/${name}/instructions.md\n`,
-          "utf8",
-        );
-      }
+      fs.writeFileSync(
+        path.join(legacyAgents, "agentera.md"),
+        "<!-- agentera: managed -->\nRead ${AGENTERA_HOME}/app/skills/agentera/capabilities/build/instructions.md\n",
+        "utf8",
+      );
       const ctx = migrationCtx(appHome, REPO_ROOT, home, REPO_ROOT);
       const phase = planRuntimeRewirePhase(ctx);
       applyRuntimeRewirePhase(phase, ctx);
-      for (const name of CAPABILITY_NAMES) {
-        const file = path.join(AGENTS_DIR, `${name}.md`);
-        expect(fs.readFileSync(file, "utf8")).toBe(before.get(name));
-        expect(fs.readFileSync(file, "utf8")).not.toMatch(LEGACY_AGENT_SUBSTRING);
-        expect(fs.readFileSync(file, "utf8")).toMatch(D65_PRIME_CONTEXT);
-      }
+      const after = fs.readFileSync(MANAGED_AGENT_FILE, "utf8");
+      expect(after).toBe(before);
+      expect(after).not.toMatch(LEGACY_AGENT_SUBSTRING);
+      expect(after).toMatch(D65_PRIME_CONTEXT);
     } finally {
       fs.rmSync(home, { recursive: true, force: true });
     }
   });
 
-  it.each(CAPABILITY_NAMES)("in-tree %s agent uses D65 prime --context form", (name) => {
-    const body = fs.readFileSync(path.join(AGENTS_DIR, `${name}.md`), "utf8");
-    expect(body).toMatch(new RegExp(`Run \`agentera prime --context ${name} --format json\``));
+  it("in-tree agentera.md uses D65 prime --context dispatch form", () => {
+    const body = fs.readFileSync(MANAGED_AGENT_FILE, "utf8");
+    expect(body).toMatch(D65_PRIME_CONTEXT);
     expect(body).not.toMatch(LEGACY_AGENT_SUBSTRING);
   });
 
-  it.each(CAPABILITY_NAMES)("rejects legacy instructions.md reference in %s fixture body", (name) => {
-    const legacy = `Read \${AGENTERA_HOME}/app/skills/agentera/capabilities/${name}/instructions.md`;
+  it("rejects legacy instructions.md reference in agentera.md fixture body", () => {
+    const legacy = "Read ${AGENTERA_HOME}/app/skills/agentera/capabilities/build/instructions.md";
     expect(legacy).toMatch(LEGACY_AGENT_SUBSTRING);
-    const d65 = `Run \`agentera prime --context ${name} --format json\``;
+    const d65 = "Run `agentera prime --context build --format json`";
     expect(d65).toMatch(D65_PRIME_CONTEXT);
     expect(d65).not.toMatch(LEGACY_AGENT_SUBSTRING);
   });

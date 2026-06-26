@@ -161,9 +161,9 @@ describe("cli validate descriptors", () => {
     expect(payload.command).toBe("validate");
     expect(payload.target_family).toBe("descriptors");
     expect(payload.target).toBe("agent-descriptors");
-    // 12 capabilities x 2 runtimes = 24 checks
-    expect(payload.checks).toHaveLength(24);
-    expect(payload.summary.passed + payload.summary.failed).toBe(24);
+    // 12 capabilities x 1 runtime (codex) = 12 checks
+    expect(payload.checks).toHaveLength(12);
+    expect(payload.summary.passed + payload.summary.failed).toBe(12);
   });
 });
 

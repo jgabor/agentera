@@ -49,7 +49,7 @@ install steps also live in [`README.md`](../../README.md) and
 This repository dogfoods committed Cursor surfaces:
 
 - `.cursor/hooks.json` — sessionStart env export, preToolUse hard gate, postToolUse advisory validation
-- `.cursor/agents/*.md` — twelve managed capability descriptors
+- `.cursor/agents/agentera.md` — single managed agent descriptor (D73)
 - `.cursor-plugin/plugin.json` — marketplace submission-ready manifest
 
 Hooks invoke the TypeScript CLI through `npx -y agentera hook …` (or

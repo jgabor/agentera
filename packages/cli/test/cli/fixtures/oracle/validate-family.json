@@ -153,10 +153,10 @@
       "targetValue": "agent-descriptors",
       "checksValueType": "array<object>",
       "checkItemRequiredKeys": ["runtime", "capability", "path", "status"],
-      "checkItemRuntimeValueUnion": ["codex", "opencode"],
+      "checkItemRuntimeValueUnion": ["codex"],
       "checkItemStatusValueUnion": ["pass", "fail"],
       "summaryRequiredKeys": ["passed", "failed"],
-      "summaryCheckCount": 24
+      "summaryCheckCount": 12
     },
     "artifact": {
       "argv": ["check", "validate", "artifact", "--artifact", "plan", "--format", "json"],

@@ -287,8 +287,8 @@ export function validateCursor(
       const resolved = resolveInside(root, agentPath.replace(/^\.\//, ""));
       if (resolved === null || !isDir(resolved)) {
         errors.push("cursor.agents must resolve to .cursor/agents");
-      } else if (fs.readdirSync(resolved).filter((n) => n.endsWith(".md")).length < 12) {
-        errors.push("cursor.agents must expose twelve managed capability descriptors");
+      } else if (fs.readdirSync(resolved).filter((n) => n.endsWith(".md")).length < 1) {
+        errors.push("cursor.agents must expose the single managed agent descriptor");
       }
     }
   }

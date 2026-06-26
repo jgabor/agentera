@@ -174,7 +174,7 @@
       "forbiddenSubstrings": ["agentera corpus", "raw runtime history read without --consent"]
     },
     "runtime_adapter_hooks": {
-      "description": "OpenCode/Codex/Cursor/Copilot hook surface coverage + per-runtime `subagent_dispatch` parity + descriptor bodies and trust hashes parity. T7 closes this row when `check validate descriptors --format json` is parity-green (24 checks: 12 codex + 12 opencode) and lifecycle adapter metadata validates.",
+      "description": "OpenCode/Codex/Cursor/Copilot hook surface coverage + per-runtime `subagent_dispatch` parity + descriptor bodies and trust hashes parity. T7 closes this row when `check validate descriptors --format json` is parity-green (12 checks: 12 codex; OpenCode uses single agent per D73) and lifecycle adapter metadata validates.",
       "python_commit": "382fa5ee0dcb4bab19e5b938a9337cad21443acc",
       "argv": ["check", "validate", "descriptors", "--format", "json"],
       "exitCode": 0,
@@ -187,12 +187,12 @@
         "target": "string",
         "target_value": "agent-descriptors",
         "checks": "array",
-        "checksLength": 24,
+        "checksLength": 12,
         "violations": "array",
         "summary": "object",
         "summaryRequiredKeys": ["passed", "failed"],
         "checkItemRequiredKeys": ["runtime", "capability", "path", "status"],
-        "checkItemRuntimeUnion": ["codex", "opencode"],
+        "checkItemRuntimeUnion": ["codex"],
         "checkItemStatusUnion": ["pass", "fail"]
       },
       "forbiddenSubstrings": [
