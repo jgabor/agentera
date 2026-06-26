@@ -113,3 +113,58 @@ else:
 PY
 
 "$SCRIPT_DIR/scan-python-leftovers.sh" "$SANDBOX"
+
+# Post-migration prime smoke: upgraded install must resolve profile and start cleanly.
+prime_out="$SANDBOX/prime-post-migration.json"
+prime_stderr="$SANDBOX/prime-post-migration.stderr"
+if [[ ! -f "$APP_HOME/PROFILE.md" ]]; then
+  printf '%s\n' '<!-- Generated: 2026-06-26 -->' >"$APP_HOME/PROFILE.md"
+fi
+set +e
+(
+  cd "$PROJECT"
+  env -i \
+    HOME="$HOME" \
+    XDG_CONFIG_HOME="$XDG_CONFIG_HOME" \
+    AGENTERA_BOOTSTRAP_SOURCE_ROOT="$REPO_ROOT" \
+    PATH="${PATH:-/usr/bin:/bin}" \
+    USER="${USER:-sandbox}" \
+    $CLI prime --format json
+) >"$prime_out" 2>"$prime_stderr"
+prime_rc=$?
+set -e
+
+if [[ "$prime_rc" -ne 0 ]]; then
+  echo "assert_post_migration_prime: prime exited $prime_rc" >&2
+  cat "$prime_stderr" >&2 || true
+  exit 1
+fi
+
+python3 - <<'PY' "$prime_out"
+import json, sys
+payload = json.load(open(sys.argv[1]))
+profile = payload.get("profile") or {}
+profile_status = payload.get("profile_status") or profile.get("status")
+if profile_status != "loaded":
+    raise SystemExit(
+        f"assert_post_migration_prime: profile status is {profile_status!r}, expected 'loaded'"
+    )
+app = payload.get("app") or {}
+startup = (payload.get("source_contract") or {}).get("capability_startup") or {}
+if profile_status == "not found" or startup.get("complete_for_capability_startup") is False:
+    missing = startup.get("missing_state") or []
+    if any("profile" in str(item).lower() or "schema" in str(item).lower() for item in missing):
+        raise SystemExit(
+            "assert_post_migration_prime: capability startup incomplete due to profile/schema error"
+        )
+signals = app.get("signals") or []
+for signal in signals:
+    kind = str(signal.get("kind") or "")
+    if kind in {"schema_error", "profile_error", "profile_not_found"}:
+        raise SystemExit(
+            f"assert_post_migration_prime: app signal {kind!r} indicates profile/schema failure"
+        )
+print("assert_post_migration_prime: ok")
+PY
+
+echo "assert-v2v3-migration: ok"

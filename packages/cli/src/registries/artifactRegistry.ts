@@ -95,6 +95,8 @@ function projectPath(projectRoot: string, artifactPath: string, artifactId: stri
   return resolved;
 }
 
+export const EXPECTED_ARTIFACT_SCHEMA_VERSION = "1.0.0";
+
 function schemaMetas(dir: string): Map<string, Record<string, unknown>> {
   const metas = new Map<string, Record<string, unknown>>();
   if (!fs.existsSync(dir) || !fs.statSync(dir).isDirectory()) {
@@ -107,9 +109,19 @@ function schemaMetas(dir: string): Map<string, Record<string, unknown>> {
   for (const name of files) {
     const meta = loadYaml(path.join(dir, name)).meta;
     if (!meta || typeof meta !== "object" || Array.isArray(meta)) {
+      process.stderr.write(
+        `warning: artifact schema ${name} is missing meta; expected v3 schema version ${EXPECTED_ARTIFACT_SCHEMA_VERSION}\n`,
+      );
       continue;
     }
     const m = meta as Record<string, unknown>;
+    const version = String(m.version ?? "").trim();
+    if (!version || version !== EXPECTED_ARTIFACT_SCHEMA_VERSION) {
+      const reported = version || "(missing)";
+      process.stderr.write(
+        `warning: artifact schema ${name} version ${reported} does not match expected v3 schema version ${EXPECTED_ARTIFACT_SCHEMA_VERSION}\n`,
+      );
+    }
     const artifactId = String(m.name ?? "").trim();
     if (artifactId) {
       metas.set(artifactId, m);
@@ -137,8 +149,14 @@ export function loadArtifactRegistry(
       }
       const id = identity as Record<string, unknown>;
       const artifactId = String(id.artifact_id ?? "").trim();
+      if (!artifactId) {
+        continue;
+      }
       const meta = metas.get(artifactId);
-      if (!artifactId || !meta) {
+      if (!meta) {
+        process.stderr.write(
+          `warning: required artifact identity '${artifactId}' has no matching schema file in ${artifactSchemasDirPath}\n`,
+        );
         continue;
       }
       const template = id.path_template;
@@ -234,15 +252,17 @@ export function resolveArtifactPath(
   if (artifactPath.includes("<name>") && activeObjectiveName) {
     artifactPath = artifactPath.replace(/<name>/g, activeObjectiveName);
   }
-  const profilePrefix = "$AGENTERA_PROFILE_DIR/";
-  if (artifactPath.startsWith(profilePrefix)) {
-    const explicit = env.AGENTERA_PROFILE_DIR;
-    const suffix = artifactPath.slice(profilePrefix.length);
-    if (explicit) {
-      return path.join(explicit, suffix);
+  const profileDirPrefixes = ["$AGENTERA_PROFILE_DIR/", "$PROFILERA_PROFILE_DIR/"] as const;
+  for (const prefix of profileDirPrefixes) {
+    if (artifactPath.startsWith(prefix)) {
+      const suffix = artifactPath.slice(prefix.length);
+      const explicit = env.AGENTERA_PROFILE_DIR ?? env.PROFILERA_PROFILE_DIR;
+      if (explicit) {
+        return path.join(explicit, suffix);
+      }
+      const [base] = resolveCandidate(null, { env, home: os.homedir() });
+      return path.join(base, suffix);
     }
-    const [base] = resolveCandidate(null, { env, home: os.homedir() });
-    return path.join(base, suffix);
   }
   return projectPath(projectRoot, artifactPath, record.artifactId);
 }
