@@ -94,7 +94,7 @@ tasks:
   - number: 3
     name: Update hej/status skill rendering prose to reference todo as the source label
     depends_on: ['1']
-    status: pending
+    status: complete
     acceptance:
       - 'GIVEN skills/agentera/SKILL.md WHEN inspected THEN the source-label transform list (currently mode, profile, health, issues, plan, ...) lists todo in place of issues'
       - 'GIVEN skills/agentera/SKILL.md WHEN inspected THEN the dashboard metric-lines marker references todo instead of issues'
@@ -115,7 +115,7 @@ tasks:
   - number: 5
     name: Update references docs that list the issues field name
     depends_on: ['1']
-    status: pending
+    status: complete
     acceptance:
       - 'GIVEN references/cli/vocabulary.md WHEN inspected THEN the source-label field list (currently mode, profile, health, issues, plan, objective) lists todo in place of issues'
       - 'GIVEN references/cli/agent-ready-state-contract.yaml line ~232 WHEN inspected THEN the prime fields list contains todo and not issues'
