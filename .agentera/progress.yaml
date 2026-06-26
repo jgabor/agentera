@@ -1,4 +1,52 @@
 cycles:
+- number: 676
+  timestamp: 2026-06-26 20:30
+  type: feat
+  phase: build
+  what: "D73 single Agentera agent plan closeout. Implementation shipped in a prior\
+    \ session (commit d1b4145d: replaced 12 per-capability managed subagents with\
+    \ a single agentera.md for OpenCode and Cursor, restricted the runtimeMigration\
+    \ copy-agent loop to agentera.md only, rewrote cursorAgentSurface.test.ts for\
+    \ the single-agent model) but the plan artifact was left stale \u2014 all 5 tasks\
+    \ still pending, plan not archived. Verified all five tasks' acceptance criteria\
+    \ met via working-tree inspection, marked the plan complete, archived to .agentera/archive/PLAN-2026-06-26-d73-single-agentera-agent.md,\
+    \ and cleared the active plan slot. Plan is now free for the v2/v3 coexistence\
+    \ fix batches (docs/notes/v2-v3-coexistence-defects.md).\n"
+  discovered: "Plan-artifact fold-in gap \u2014 the implementation commit created\
+    \ the plan but never updated task statuses from pending to complete. This is the\
+    \ known pattern where implementation and plan state drift apart when the fold-in\
+    \ step is missed. The prime/state-plan CLI faithfully reported the stale state,\
+    \ which made it look like D73 had never started.\n"
+  verified: 'Working-tree inspection confirmed: both agentera.md files exist with
+    correct frontmatter and dispatch body; all 24 per-capability agent files removed
+    from .opencode/agents/ and .cursor/agents/; runtimeMigration.ts uses explicit
+    CURSOR_MANAGED_AGENT and OPENCODE_MANAGED_AGENT constants; cursorAgentSurface.test.ts
+    no longer imports CAPABILITY_INSTRUCTIONS and verifies the single-agent model;
+    SKILL.md was already consistent (no changes needed).
+
+    '
+  next: 'Plan slot is free. Next work is v2/v3 coexistence fix batch B1 (split-brain
+    root cause: AGENTERA_HOME set makes v3 CLI read v2 app schemas instead of repo
+    v3 schemas). See docs/notes/v2-v3-coexistence-defects.md batch plan.
+
+    '
+  context:
+    intent: 'Remediate the stale D73 plan artifact so the plan slot is free for the
+      v2/v3 coexistence fix work. The implementation was already done; this cycle
+      only fixes the artifact state.
+
+      '
+    constraints: "Do not re-implement D73 work. Do not create standalone bookkeeping\
+      \ commits \u2014 this cycle's artifact edits should fold into the next substantive\
+      \ commit. Archive history is immutable.\n"
+    unknowns: "Whether the implementation commit's build/typecheck/test/validate/compact\
+      \ (Task 5 acceptance) all passed at the time \u2014 assumed green based on the\
+      \ commit landing on feat/v3 without a revert, but not re-verified in this session.\n"
+    scope: '.agentera/plan.yaml (cleared with previous_plan_archived reference); .agentera/archive/PLAN-2026-06-26-d73-single-agentera-agent.md
+      (new archive file); .agentera/progress.yaml (this cycle); docs/notes/v2-v3-coexistence-defects.md
+      (remove D73 gate language).
+
+      '
 - number: 675
   timestamp: 2026-06-23 18:15
   type: feat
@@ -135,8 +183,8 @@ cycles:
   context:
     intent: Correct three stale references in discuss instructions that cause agents
       to produce invalid decisions.yaml entries and emit deprecation noise.
-    constraints: Single-file scope (discuss/instructions.ts); no schema changes;
-      must not break capability routing tests.
+    constraints: Single-file scope (discuss/instructions.ts); no schema changes; must
+      not break capability routing tests.
     unknowns: None.
     scope: packages/cli/src/capabilities/discuss/instructions.ts, .agentera/plan.yaml,
       TODO.md, .agentera/progress.yaml
@@ -243,30 +291,10 @@ cycles:
     unknowns: None for T2 acceptance.
     scope: packages/cli/test/hooks/compaction.test.ts, packages/cli/test/README.md,
       .agentera/plan.yaml, .agentera/progress.yaml
-- number: 666
-  timestamp: 2026-06-18 24:45
-  type: chore
-  phase: build
-  what: "Plan T3 \u2014 shared repo-state fixture harness: added packages/cli/test/fixtures/repo-state/\
-    \ variants (ok, todo-resolved-over-limit, progress-at-cap, progress-over-limit,\
-    \ invalid-progress-yaml), useFixtureProject helper, fixture README, and helper\
-    \ regression tests."
-  inspiration: "Decouple vitest from live repo artifact state plan T3 \u2014 pinned\
-    \ project trees before migrating compaction and validation consumers."
-  discovered: todo-resolved-over-limit uses 16 full + 30 oneline Resolved rows for
-    over_limit_count 6; progress-at-cap is 10 cycles + 40 archive at 50 total without
-    triggering over_limit.
-  verified: pnpm -C packages/cli test test/helpers/useFixtureProject.test.ts passes;
-    each useFixtureProject call copies into an isolated temp dir.
-  next: "Task 2 \u2014 compaction tests use fixtures only; Task 4 \u2014 decouple\
-    \ validateArtifact and validate oracles."
-  context:
-    intent: "Task 3 only \u2014 harness and variants, no consumer migration yet."
-    constraints: feat/v3; no commit unless user asks.
-    unknowns: None for T3 acceptance.
-    scope: packages/cli/test/fixtures/repo-state/, packages/cli/test/helpers/useFixtureProject.ts,
-      packages/cli/test/helpers/useFixtureProject.test.ts, .agentera/plan.yaml, .agentera/progress.yaml
 archive:
+- summary: "Cycle 666 (2026-06-18): Plan T3 \u2014 shared repo-state fixture harness:\
+    \ added packages/cli/test/fixtures/repo-state/ variants (ok, todo-resolved-over-limit,\
+    \ progress-at-cap, progress-over-limit, invalid-progress-yaml),..."
 - summary: "Cycle 665 (2026-06-18): Plan T1 \u2014 vitest/repo gate inventory: classified\
     \ all REPO_ROOT couplings in packages/cli/test; documented mutable-state vs..."
 - summary: "Cycle 664 (2026-06-18): Plan T7 \u2014 state sync and plan closeout: archived\
@@ -365,5 +393,3 @@ archive:
     \ for the 3.0 TypeScript CLI \u2014 new emitInvalidInput helper,..."
 - summary: 'Cycle 625 (2026-06-02): npm shim runBackend app-home branch now forwards
     the user''s cwd to the spawned Python CLI...'
-- summary: 'Cycle 624 (2026-06-02): Shim cwd preservation plan replaces the completed
-    npm 3.x CLI parity tranche 1; targets the...'

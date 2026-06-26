@@ -1,113 +1,166 @@
+previous_plan_archived: 'archive/PLAN-2026-06-26-d73-single-agentera-agent.md'
 header:
   level: full
   created: '2026-06-26'
   status: active
   reviewed: '2026-06-26'
-  critic_issues: '5 found, 5 addressed, 0 dismissed'
-  revised: 'Critic flagged (1) cursorAgentSurface.test.ts iterates 12 capability names and reads individual agent files, addressed by task 4 rewriting tests for single agent; (2) OpenCode copy-agent loop does not filter by managed marker, addressed by task 3 restricting to agentera.md; (3) unused CAPABILITY_INSTRUCTIONS import in test after removing per-capability agents, addressed by task 4 removing the import; (4) plan did not verify OpenCode built-in build.md and plan.md in user config dir are not touched, addressed by task 3 acceptance criterion; (5) plan did not address Cursor skip condition interaction with new agentera.md, addressed by task 3 acceptance verifying skip still applies and agentera.md is in-tree only for v3 projects.'
-  title: Ship single Agentera agent (D73)
+  critic_issues: '3 found, 3 addressed, 0 dismissed'
+  revised: 'Critic flagged (1) Task 2 name misspelled PROFILERA_PROFILE_DIR as PROLERA_PROFILE_DIR, addressed by correcting the task name; (2) Task 4 acceptance says derive from actual state but does not specify how startupCompletenessContract receives capability-context and profile data since it is currently a zero-argument function, addressed by adding acceptance criterion that the function signature accepts capability-context state and profile status as parameters; (3) Task 7 references check validate capability-audit with a hyphen but the CLI syntax is space-separated check validate capability audit, addressed by correcting the acceptance criterion syntax.'
+  title: v2/v3 coexistence B1 — split-brain root cause
 what: >
-  Replace 12 per-capability managed subagents (audit.md, build.md, design.md,
-  etc.) with a single primary agent named "Agentera" (agentera.md) for both
-  OpenCode and Cursor runtimes. The Agentera agent loads the skill for
-  routing, fetches capability prose via the CLI, and dispatches to the
-  runtime built-in general subagent for execution with the prose as the
-  task prompt. Body is minimal (dispatch mechanism only; no routing logic
-  duplication).
+  Fix the root cause of the v2/v3 coexistence defect surface: when
+  AGENTERA_HOME is set (standard for v2 users), the v3 CLI's
+  activeAppModel() skips the local-checkout shortcut and resolves skillRoot
+  to the installed v2 app, while resolveSourceRoot() resolves to the v3
+  repo. This split-brain makes the v3 CLI read v2-vintage schemas, Swedish
+  capability names, and v2 env-var literals. Also adds the
+  PROFILERA_PROFILE_DIR env-var fallback, schema-version validation,
+  accurate capability-startup readiness signaling, and a post-migration
+  smoke test.
 why: >
-  D65 made per-capability subagents redundant. They are fetch-and-execute
-  wrappers around CLI-served prose. A single agent eliminates the collision
-  where Agentera build.md and plan.md clobber OpenCode built-in Build and
-  Plan agents (doom_loop, plan_exit, plan_enter permissions). D73 resolved
-  the design. Broad permissions (write+bash allow), Task dispatch to
-  general subagents, minimal body, routing stays in SKILL.md.
+  This single fix collapses ~9 defects and makes the validator truthful.
+  Without it, every prime/status/state/schema path and prime --context
+  reads v2 schemas while check validate reads v3 repo schemas — a
+  false-green that lets production bugs ship. See
+  docs/notes/v2-v3-coexistence-defects.md batch plan.
 constraints: >
-  Must not clobber OpenCode built-in Build and Plan agents in user config
-  dirs. Cross-runtime scope is OpenCode and Cursor only. Claude, Codex,
-  and Copilot have no managed agents. Routing logic stays in SKILL.md
-  (D65). Branch is feat/v3. Do not touch the v2-to-v3 upgrade cleanup of
-  stale Swedish-verb agents (separate TODO). Do not touch vision.yaml or
-  objective state. Do not modify the Cursor v3 skip condition behavior for
-  external projects (Cursor uses the skill directly there).
+  All work on feat/v3 only. Do not touch .agentera/vision.yaml or objective
+  state. Do not break the npx-bundle path (isNpxBundleRoot) or the
+  installed-managed-app path (isInstalledManagedApp). Do not change how
+  appHome resolves from AGENTERA_HOME for user-data purposes (PROFILE.md,
+  sessions, history). Only fix skillRoot/schema/capability/contract
+  resolution. Preserve the AGENTERA_HOME > AGENTERA_DEFAULT_INSTALL_ROOT >
+  default precedence for appHome. Do not modify the Cursor v3 skip
+  condition. Do not rewire the OpenCode plugin (B4). Do not fix
+  channel/bundle-status resolution (B3).
 scope:
   included:
-    - '.opencode/agents/ — create agentera.md, remove 12 per-capability files'
-    - '.cursor/agents/ — create agentera.md, remove 12 per-capability files'
-    - 'packages/cli/src/upgrade/runtimeMigration.ts — restrict copy-agent loop'
-    - 'packages/cli/test/upgrade/cursorAgentSurface.test.ts — rewrite for single agent'
-    - 'skills/agentera/SKILL.md — update handoff and agent dispatch language'
+    - 'packages/cli/src/cli/appContext.ts — fix activeAppModel() local-checkout guard'
+    - 'packages/cli/src/registries/artifactRegistry.ts — add $PROFILERA_PROFILE_DIR/ fallback and schema-version validation'
+    - 'packages/cli/src/cli/startupCompletenessContract.ts — derive missing_state from actual schema-error/profile state'
+    - 'scripts/sandbox/assert-v2v3-migration.sh — add post-migration prime smoke test'
+    - 'packages/cli/test/ — add split-brain and env-var-fallback test coverage'
   excluded:
-    - 'v2-to-v3 upgrade cleanup of stale Swedish-verb agents (TODO line 35)'
-    - '.claude-plugin/, .codex-plugin/, .cursor-plugin/ description text'
+    - 'OpenCode plugin rewire (B4): .opencode/plugins/agentera.js'
+    - 'Channel/bundle-status fixes (B3): doctor.ts, projectIntegration.ts, channels.ts'
+    - 'Installed-app content refresh on upgrade (B6)'
+    - 'v2 residue cleanup (B7)'
     - '.agentera/vision.yaml, objective state'
-    - 'Cursor skip condition logic for external projects'
   deferred:
-    - 'Cleanup of stale Swedish-verb agents in user config dirs (TODO line 35)'
+    - 'Env-var precedence-level restoration for USAGE/corpus/profile resolvers (B2: #14)'
+    - 'docs.yaml schema-doc $PROFILERA_PROFILE_DIR correction (B2: #21)'
+    - 'XDG_DATA_HOME tilde expansion divergence (B2: #16)'
 design: >
-  Two phases. First create the replacement agent, then remove the old
-  surface and update the distribution and test layers. Creation establishes
-  the replacement before removal eliminates the old surface. The
-  distribution surface (copy loop) is updated to sync only agentera.md so
-  future non-managed md files are not accidentally copied. Tests are
-  rewritten last to reflect the final single-agent state. SKILL.md handoff
-  language tracks the change throughout.
+  Three independent fix axes converge on the same root cause. First, fix
+  activeAppModel() to prefer the local v3 checkout for skillRoot/schema
+  resolution when sourceRoot is a local checkout, even when AGENTERA_HOME
+  is set — but keep appHome resolving from AGENTERA_HOME so user data is
+  unaffected. Second, add the $PROFILERA_PROFILE_DIR/ prefix as a fallback
+  alias in resolveArtifactPath during the v2/v3 migration window. Third,
+  add defense-in-depth: schema-version validation warns when v2-vintage
+  schemas are loaded, and the capability-startup readiness signal is
+  computed from actual schema-error/profile state rather than hardcoded.
+  A post-migration smoke test and split-brain test coverage close the test
+  gaps that let these defects ship green. Verification of collapsed defects
+  confirms the root fix resolves the schema-content drift without separate
+  remediation.
 tasks:
   - number: 1
-    name: Create agentera.md for OpenCode and Cursor
+    name: Fix activeAppModel() local-checkout guard in appContext.ts
     depends_on: []
     status: pending
     acceptance:
-      - 'GIVEN .opencode/agents/agentera.md WHEN inspected THEN it has mode set to primary, write set to allow, bash set to allow, the managed marker comment, and a minimal body'
-      - 'GIVEN .cursor/agents/agentera.md WHEN inspected THEN it has a description field, the managed marker comment, and the same minimal dispatch body (Cursor frontmatter has no mode or permission)'
-      - 'GIVEN both agent files WHEN the body is inspected THEN it instructs loading the Agentera skill for routing, fetching prose via prime --context, and dispatching to a general subagent with the prose as the task prompt'
-      - 'GIVEN both agent files WHEN inspected THEN neither contains per-capability routing logic, trigger patterns, or handoff verb definitions'
+      - 'GIVEN the v3 CLI running from a local checkout with AGENTERA_HOME set to a v2 installed app WHEN prime --format json runs THEN source.schemas_dir resolves to the repo schemas dir, not the installed v2 app schemas dir'
+      - 'GIVEN the v3 CLI running from a local checkout with AGENTERA_HOME set WHEN prime --format json runs THEN app.appHome still resolves from AGENTERA_HOME (user data paths unaffected)'
+      - 'GIVEN the v3 CLI running from a local checkout with AGENTERA_HOME set WHEN prime --format json runs THEN app.skillRoot resolves to the repo skills/agentera, not the installed v2 app skills/agentera'
+      - 'GIVEN the v3 CLI running from an npx bundle (no AGENTERA_HOME) WHEN prime runs THEN the npx-bundle path is unchanged (isNpxBundleRoot branch still returns sourceRoot for all fields)'
+      - 'GIVEN the v3 CLI running from an installed managed app (isInstalledManagedApp true) WHEN prime runs THEN the installed-app path is unchanged'
   - number: 2
-    name: Remove 12 per-capability agent files from both runtimes
-    depends_on: ['1']
+    name: Add $PROFILERA_PROFILE_DIR/ fallback in resolveArtifactPath
+    depends_on: []
     status: pending
     acceptance:
-      - 'GIVEN .opencode/agents/ WHEN listed THEN only agentera.md remains (no audit.md, build.md, design.md, discuss.md, document.md, optimize.md, orchestrate.md, plan.md, profile.md, research.md, status.md, vision.md)'
-      - 'GIVEN .cursor/agents/ WHEN listed THEN only agentera.md remains (same 12 files removed)'
-      - 'GIVEN the repository WHEN searched for managed agent source files in .opencode/agents/ and .cursor/agents/ THEN no per-capability agent files exist'
+      - 'GIVEN resolveArtifactPath called with a record whose defaultPath is $PROFILERA_PROFILE_DIR/PROFILE.md and env.PROFILERA_PROFILE_DIR set WHEN the path is resolved THEN it expands to env.PROFILERA_PROFILE_DIR/PROFILE.md, not a literal $PROFILERA_PROFILE_DIR directory under the project root'
+      - 'GIVEN resolveArtifactPath called with defaultPath $PROFILERA_PROFILE_DIR/PROFILE.md and both AGENTERA_PROFILE_DIR and PROFILERA_PROFILE_DIR set WHEN resolved THEN AGENTERA_PROFILE_DIR takes precedence (the v3 name wins)'
+      - 'GIVEN resolveArtifactPath called with defaultPath $PROFILERA_PROFILE_DIR/PROFILE.md and neither env var set WHEN resolved THEN it falls back to the platform data home, not a literal project-relative path'
+      - 'GIVEN resolveArtifactPath called with defaultPath $AGENTERA_PROFILE_DIR/PROFILE.md (v3 name) WHEN resolved THEN existing behavior is unchanged'
   - number: 3
-    name: Update runtimeMigration.ts copy loop and verify Cursor skip condition
-    depends_on: ['2']
+    name: Add schema-version validation in loadArtifactRegistry
+    depends_on: []
     status: pending
     acceptance:
-      - 'GIVEN the OpenCode copy-agent loop in runtimeMigration.ts WHEN inspected THEN it syncs only agentera.md explicitly (not iterating all md files in the agents source dir)'
-      - 'GIVEN the Cursor agent copy section WHEN inspected THEN the v3 skip condition still applies and does not attempt to copy per-capability agents (none exist in source)'
-      - 'GIVEN a dry-run upgrade preview against this repo WHEN run THEN copy-agent items reference only agentera.md for OpenCode and Cursor agents are skipped (v3 skip condition)'
-      - 'GIVEN the copy loop WHEN a user has OpenCode built-in build.md and plan.md in their config dir THEN the loop does not touch them (they are not in the source agents dir and not named agentera.md)'
+      - 'GIVEN loadArtifactRegistry reading a schemas dir WHEN a schema file lacks a version field or declares a v2-vintage version THEN a warning is emitted to stderr naming the file and the expected v3 schema version'
+      - 'GIVEN loadArtifactRegistry reading v3 schemas WHEN all schema files declare the expected version THEN no warning is emitted'
+      - 'GIVEN the warning WHEN prime --format json runs THEN the warning does not break JSON output (stderr only, not stdout)'
+      - 'GIVEN loadArtifactRegistry reading a schemas dir with missing schema files for required_artifact_identities entries WHEN loaded THEN the missing entries are noted in a warning, not silently skipped'
   - number: 4
-    name: Rewrite cursorAgentSurface.test.ts and update SKILL.md
-    depends_on: ['1', '2', '3']
+    name: Fix complete_for_capability_startup to derive from actual state
+    depends_on: []
     status: pending
     acceptance:
-      - 'GIVEN cursorAgentSurface.test.ts WHEN inspected THEN it no longer iterates CAPABILITY_INSTRUCTIONS to read per-capability agent files'
-      - 'GIVEN cursorAgentSurface.test.ts WHEN inspected THEN the unused CAPABILITY_INSTRUCTIONS import is removed'
-      - 'GIVEN cursorAgentSurface.test.ts WHEN the regression test runs THEN it verifies agentera.md is unchanged after runtime upgrade apply (replacing the old per-capability loop)'
-      - 'GIVEN cursorAgentSurface.test.ts WHEN the D65 prime-context test runs THEN it verifies agentera.md uses the prime --context dispatch form'
-      - 'GIVEN cursorAgentSurface.test.ts WHEN the skip test runs THEN it still verifies cursor copy-agent items are skipped for v3 projects'
-      - 'GIVEN skills/agentera/SKILL.md WHEN inspected THEN handoff labels use capability names with glyphs (unchanged) and do not reference per-capability subagent files or dispatch to named agents'
-      - 'GIVEN skills/agentera/SKILL.md WHEN inspected THEN any language implying per-capability managed agents exist is removed or updated to reflect the single Agentera agent model'
+      - 'GIVEN startupCompletenessContract called WHEN a capability-context schema_error is present THEN missing_state includes the schema_error and complete_for_capability_startup is false'
+      - 'GIVEN startupCompletenessContract called WHEN profile resolution failed (profile_status is "not found") THEN missing_state includes the profile resolution failure and complete_for_capability_startup is false'
+      - 'GIVEN startupCompletenessContract called WHEN no schema_error and profile_status is "loaded" THEN complete_for_capability_startup is true and missing_state is empty'
+      - 'GIVEN startupCompletenessContract called WHEN the computation runs THEN the function accepts capability-context state and profile status as parameters rather than being a zero-argument function with a hardcoded empty array'
   - number: 5
+    name: Add post-migration prime smoke test to assert-v2v3-migration.sh
+    depends_on:
+      - '1'
+      - '2'
+    status: pending
+    acceptance:
+      - 'GIVEN scripts/sandbox/assert-v2v3-migration.sh WHEN the migration apply phase completes THEN the script runs "$CLI" prime --format json against the migrated install'
+      - 'GIVEN the post-migration prime output WHEN profile_status is checked THEN it is "loaded" (not "not found")'
+      - 'GIVEN the post-migration prime output WHEN app.status is checked THEN it is not "manual_review_needed" due to a schema or profile error'
+      - 'GIVEN the smoke test WHEN it fails THEN the script exits non-zero with a clear message'
+  - number: 6
+    name: Add split-brain test coverage
+    depends_on:
+      - '1'
+    status: pending
+    acceptance:
+      - 'GIVEN a test that sets AGENTERA_HOME to a fixture v2 app dir and runs activeAppModel() from a local checkout WHEN the model is inspected THEN skillRoot resolves to the local checkout, not the fixture v2 app'
+      - 'GIVEN a test that sets AGENTERA_HOME to a fixture v2 app dir and runs activeAppModel() from a local checkout WHEN the model is inspected THEN appHome still resolves from AGENTERA_HOME'
+      - 'GIVEN a test that sets PROFILERA_PROFILE_DIR (not AGENTERA_PROFILE_DIR) and runs resolveArtifactPath with a $PROFILERA_PROFILE_DIR/ path WHEN the result is inspected THEN it expands to the PROFILERA_PROFILE_DIR value'
+      - 'GIVEN a test with no AGENTERA_HOME set and an npx bundle sourceRoot WHEN activeAppModel() runs THEN the npx-bundle branch is unchanged'
+  - number: 7
+    name: Verify collapsed defects resolved
+    depends_on:
+      - '1'
+      - '2'
+      - '3'
+      - '4'
+    status: pending
+    acceptance:
+      - 'GIVEN the v3 CLI running from a local checkout with AGENTERA_HOME set to a v2 app WHEN prime --context audit --format json runs THEN capability_context.state.schema_error is null or empty (not "No capability artifact schema found")'
+      - 'GIVEN the v3 CLI running from a local checkout with AGENTERA_HOME set WHEN prime --format json runs THEN profile.status is "loaded" (not "not found") and profile.path resolves to a real existing file'
+      - 'GIVEN the v3 CLI running from a local checkout with AGENTERA_HOME set WHEN prime --format json runs THEN source_contract.capability_startup.complete_for_capability_startup is true for the right reason (no schema_error, profile loaded), not because it is hardcoded'
+      - 'GIVEN the v3 CLI running from a local checkout with AGENTERA_HOME set WHEN state query --list-artifacts --format json runs THEN artifact producers/consumers use English names (not Swedish)'
+      - 'GIVEN the v3 CLI running from a local checkout with AGENTERA_HOME set WHEN check validate capability audit runs THEN it validates against the same schemas prime reads (both use the repo root)'
+  - number: 8
     name: Build, typecheck, test, validate, and compact
-    depends_on: ['1', '2', '3', '4']
+    depends_on:
+      - '1'
+      - '2'
+      - '3'
+      - '4'
+      - '5'
+      - '6'
+      - '7'
     status: pending
     acceptance:
       - 'GIVEN pnpm -C packages/cli run typecheck WHEN run THEN it succeeds with no type errors'
       - 'GIVEN pnpm -C packages/cli build WHEN run THEN it succeeds'
-      - 'GIVEN pnpm -C packages/cli test WHEN run THEN all tests pass'
+      - 'GIVEN pnpm -C packages/cli test WHEN run THEN all tests pass including the new split-brain and env-var-fallback tests'
       - 'GIVEN node packages/cli/dist/bin/agentera.js check validate capability-contract --format json WHEN run THEN it passes'
       - 'GIVEN node packages/cli/dist/bin/agentera.js check compact WHEN run THEN no budget regression'
 overall_acceptance: >
-  All tasks complete. The repository .opencode/agents/ and .cursor/agents/
-  each contain only agentera.md. A dry-run upgrade preview shows copy-agent
-  items referencing only agentera.md for OpenCode and Cursor agents skipped
-  (v3 skip condition). OpenCode built-in build.md and plan.md in user config
-  dirs are not clobbered. pnpm -C packages/cli run typecheck and pnpm -C
-  packages/cli build both succeed. pnpm -C packages/cli test passes in full.
-  node packages/cli/dist/bin/agentera.js check validate capability-contract
-  --format json passes. node packages/cli/dist/bin/agentera.js check compact
-  reports no budget regression.
+  The split-brain root cause is fixed: a v3 CLI running from a local
+  checkout reads repo v3 schemas, capabilities, and contracts even when
+  AGENTERA_HOME points at a v2 installed app. The $PROFILERA_PROFILE_DIR
+  env-var fallback resolves profile paths correctly during the migration
+  window. Schema-version validation warns when v2 schemas are loaded.
+  The capability-startup readiness signal is computed, not hardcoded.
+  A post-migration prime smoke test catches profile-misreport regressions.
+  All new tests pass; typecheck, build, validate, and compact are green.
 surprises: []
