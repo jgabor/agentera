@@ -105,7 +105,7 @@ tasks:
   - number: 4
     name: Update tests asserting on the issues field/label name to cover todo primary and issues alias
     depends_on: ['1', '2']
-    status: pending
+    status: complete
     acceptance:
       - 'GIVEN packages/cli/test/cli/prime.test.ts WHEN the text-briefing test runs THEN it asserts out contains "todo: critical=" (not "issues: critical=")'
       - 'GIVEN packages/cli/test/cli/prime.test.ts WHEN the JSON-payload test runs THEN it asserts payload.todo is present and equals the counts object AND payload.issues is present as the deprecated alias with the same value'
