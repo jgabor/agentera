@@ -146,7 +146,7 @@ the prose module directly.
 
 CLI-visible `agentera prime` labels are source labels. Preserve them in CLI tests
 and parsing code, but transform them before presenting a user dashboard:
-`mode:`, `profile:`, `health:`, `issues:`, `plan:`, `objective:`,
+`mode:`, `profile:`, `health:`, `todo:`, `plan:`, `objective:`,
 `attention:`, `next_action:`, and `source_contract:`.
 
 Primary route aliases are slash-route vocabulary, not CLI command vocabulary:

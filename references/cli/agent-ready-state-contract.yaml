@@ -229,7 +229,7 @@ structured_output:
         - profile
         - v1_migration
         - health
-        - issues
+        - todo
         - plan
         - docs
         - progress
@@ -589,7 +589,7 @@ field_selection:
         - profile
         - v1_migration
         - health
-        - issues
+        - todo
         - plan
         - docs
         - progress
