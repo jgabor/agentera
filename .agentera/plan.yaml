@@ -83,7 +83,7 @@ tasks:
   - number: 2
     name: Add deprecated issues JSON alias mirroring todo with one-time-per-invocation stderr warning
     depends_on: ['1']
-    status: pending
+    status: complete
     acceptance:
       - 'GIVEN agentera prime --format json runs WHEN the payload is parsed THEN payload.issues exists AND equals payload.todo (same counts object)'
       - 'GIVEN a single agentera prime --format json invocation WHEN stdout and stderr are captured separately THEN stdout is valid JSON with no warning text AND stderr contains exactly one deprecation warning mentioning that issues is deprecated and will be dropped at the 3.0.0 stable cut'

@@ -17,6 +17,28 @@ const STATUS_STRUCTURED_FIELDS = [
   "evidence_context", "benchmark_context", "execution_context", "source", "source_contract",
 ];
 
+/** Deprecated JSON field selectors kept for pre-3.0.0 consumers; not listed in source_contract.fields. */
+const DEPRECATED_PRIME_FIELD_ALIASES = ["issues"] as const;
+
+const ISSUES_FIELD_DEPRECATION_MESSAGE =
+  "Deprecation: prime JSON field 'issues' is deprecated; use 'todo'. The 'issues' field will be removed at the 3.0.0 stable cut.\n";
+
+function shouldEmitIssuesDeprecation(requested: string[], payload: Record<string, unknown>): boolean {
+  if (!("issues" in payload)) return false;
+  if (requested.length === 0) return true;
+  return requested.includes("issues");
+}
+
+function emitIssuesFieldDeprecationWarning(
+  requested: string[],
+  payload: Record<string, unknown>,
+  err: (t: string) => void,
+): void {
+  if (shouldEmitIssuesDeprecation(requested, payload)) {
+    err(ISSUES_FIELD_DEPRECATION_MESSAGE);
+  }
+}
+
 function orientationAppHome(bundle: BundleStatus): JsonObject {
   return {
     install_track: projectInstallTrack(bundle.installKind),
@@ -62,6 +84,7 @@ export function buildOrientationJsonPayload(
     project_integration: state.project_integration,
     health: state.health,
     todo: state.counts,
+    issues: state.counts,
     plan: state.plan,
     docs: state.docs,
     progress: state.progress,
@@ -92,8 +115,8 @@ export function buildOrientationJsonPayload(
 }
 
 function availablePrimeFields(command: string): string[] {
-  if (command === "prime") return [...STATUS_STRUCTURED_FIELDS, "capability_context"];
-  return STATUS_STRUCTURED_FIELDS;
+  const base = command === "prime" ? [...STATUS_STRUCTURED_FIELDS, "capability_context"] : STATUS_STRUCTURED_FIELDS;
+  return [...base, ...DEPRECATED_PRIME_FIELD_ALIASES];
 }
 
 export function emitPrime(
@@ -105,6 +128,7 @@ export function emitPrime(
   err: (t: string) => void,
 ): number {
   const requested = requestedFields(fieldsArg);
+  emitIssuesFieldDeprecationWarning(requested, payload, err);
   if (requested.length === 0) {
     emitStructured(payload, format, out);
     return 0;
