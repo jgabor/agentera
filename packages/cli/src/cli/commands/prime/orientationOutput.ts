@@ -108,7 +108,7 @@ export function buildOrientationJsonPayload(
       render,
       access,
       empty_state: "fresh mode with missing artifact summaries and zero issue counts",
-      capability_startup: startupCompletenessContract(),
+      capability_startup: startupCompletenessContract({ profileStatus: state.profile_status }),
       capability_context: null,
     },
   };
@@ -213,7 +213,7 @@ export function printOrientationTextBriefing(state: OrientationState, command: s
   );
   out(`- render=caller-owned README-style ${dashboardLabel}\n`);
   out("- access=single installed CLI call; app/v1/profile safety included; no preflight glob/read/import/doctor calls\n");
-  const startup = startupCompletenessContract();
+  const startup = startupCompletenessContract({ profileStatus: state.profile_status });
   out(`- capability_startup_complete=${String(startup.complete_for_capability_startup).toLowerCase()}\n`);
   out(
     `- raw_artifact_reads_required=${String(startup.raw_artifact_reads_required).toLowerCase()}; policy=${startup.raw_artifact_read_policy}\n`,
