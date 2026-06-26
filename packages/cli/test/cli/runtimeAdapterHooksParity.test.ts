@@ -35,7 +35,7 @@ describe("runtime adapter hooks parity (D56 T7)", () => {
     expect(isParityFamilyClosed("runtime_adapter_hooks")).toBe(true);
   });
 
-  it("passes check validate descriptors with 24 codex+opencode checks", () => {
+  it("passes check validate descriptors with 12 codex checks", () => {
     const { rc, out } = capture((io) =>
       main(["node", "agentera", "check", "validate", "descriptors", "--format", "json"], io),
     );
@@ -44,8 +44,8 @@ describe("runtime adapter hooks parity (D56 T7)", () => {
     expect(payload.command).toBe("validate");
     expect(payload.target_family).toBe("descriptors");
     expect(payload.target).toBe("agent-descriptors");
-    expect(payload.checks).toHaveLength(24);
-    expect(payload.summary.passed).toBe(24);
+    expect(payload.checks).toHaveLength(12);
+    expect(payload.summary.passed).toBe(12);
     expect(payload.summary.failed).toBe(0);
     expect(JSON.stringify(payload)).not.toContain("Read ${AGENTERA_HOME}/app/skills/agentera/capabilities");
     expect(JSON.stringify(payload)).not.toContain("experimental.session.compacting missing");

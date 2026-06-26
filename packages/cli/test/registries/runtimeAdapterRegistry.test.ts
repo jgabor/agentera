@@ -44,7 +44,7 @@ describe("runtime adapter registry", () => {
     expect(opencodeLifecycle.unsupported_events).not.toContain("session.idle");
     expect(opencodeLifecycle.event_status["session.created"]).toBe("supported_via_event");
     expect(opencodeLifecycle.event_status["session.idle"]).toBe("supported_via_event");
-    expect(registry.get("opencode").subagent_dispatch.invocation_pattern.startsWith("Use @<capability>")).toBe(true);
+    expect(registry.get("opencode").subagent_dispatch.invocation_pattern.startsWith("Use @agentera")).toBe(true);
     expect(registry.get("codex").subagent_dispatch.descriptor_sources).toContain(
       "skills/agentera/agents/*.toml",
     );

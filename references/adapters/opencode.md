@@ -112,14 +112,14 @@ Read PROFILE.md from the runtime-provided profile path (Section 21). In OpenCode
 
 **Adapter approach**: Map agentera's worktree isolation to one of two strategies:
 
-**Strategy A: Managed descriptor dispatch (recommended for current port)**
+**Strategy A: Single agent dispatch (D73)**
 
-- Define Agentera's dispatched capabilities as OpenCode subagents
-- Each capability gets a managed markdown file in `.opencode/agents/`
-- Descriptor frontmatter stays within documented OpenCode agent fields: `description` and `mode: subagent`; the file name supplies the agent name.
-- Agentera ownership is recorded in a body comment marker, not custom frontmatter, so unknown options are not passed through as model options.
-- The OpenCode plugin copies those descriptors to `~/.config/opencode/agents/` on startup and preserves user-owned collisions
-- The orchestrating skill (build, orchestrate) uses `@<capability>` to invoke work
+- A single Agentera primary agent (`agentera.md`) in `.opencode/agents/`
+- The agent loads the Agentera skill for routing, runs `agentera prime --context <capability> --format json` to fetch instructions, then dispatches to a built-in `general` subagent
+- Descriptor frontmatter uses `description` and `mode: primary` with broad `permission` (write+bash allow)
+- Agentera ownership is recorded in a body comment marker
+- The OpenCode plugin copies the agent descriptor to `~/.config/opencode/agents/` on startup
+- The orchestrating skill (build, orchestrate) uses `@agentera` to invoke work
 - Limitation: runs in the same working tree, not isolated. Suitable for non-destructive work.
 
 **Strategy B: Manual git worktree (full isolation parity)**
@@ -137,11 +137,11 @@ Read PROFILE.md from the runtime-provided profile path (Section 21). In OpenCode
 Spawn a Sonnet implementation agent in a worktree (isolation: "worktree")
 
 # OpenCode Strategy A
-Invoke the relevant managed capability descriptor, for example @build, with the implementation plan
+Invoke the Agentera agent (@agentera) with the implementation plan
 
 # OpenCode Strategy B
 git worktree add ../worktree-branch branch-name
-Dispatch the relevant managed descriptor with cwd set to ../worktree-branch
+Dispatch @agentera with cwd set to ../worktree-branch
 After completion: git merge, git worktree remove
 ```
 

@@ -336,10 +336,10 @@ function planCursorItems(
           "v3 capability instruction modules present; in-tree .cursor/agents/ uses prime --context and is not overwritten",
       });
     } else if (pathExists(agentsSource)) {
-      for (const entry of fs.readdirSync(agentsSource)) {
-        if (!entry.endsWith(".md")) continue;
-        const src = path.join(agentsSource, entry);
-        const dst = path.join(agentsDir, entry);
+      const CURSOR_MANAGED_AGENT = "agentera.md";
+      const src = path.join(agentsSource, CURSOR_MANAGED_AGENT);
+      if (isFile(src)) {
+        const dst = path.join(agentsDir, CURSOR_MANAGED_AGENT);
         if (!isFile(dst)) {
           items.push({
             status: "pending",
@@ -347,21 +347,21 @@ function planCursorItems(
             runtime: "cursor",
             source: src,
             target: dst,
-            message: "will copy managed Cursor capability agent",
+            message: "will copy managed Cursor Agentera agent",
           });
-          continue;
-        }
-        const dstText = fs.readFileSync(dst, "utf8");
-        const srcText = fs.readFileSync(src, "utf8");
-        if (hasCursorManagedAgentMarker(dstText) && dstText !== srcText) {
-          items.push({
-            status: "pending",
-            action: "copy-agent",
-            runtime: "cursor",
-            source: src,
-            target: dst,
-            message: "will refresh stale managed Cursor capability agent",
-          });
+        } else {
+          const dstText = fs.readFileSync(dst, "utf8");
+          const srcText = fs.readFileSync(src, "utf8");
+          if (hasCursorManagedAgentMarker(dstText) && dstText !== srcText) {
+            items.push({
+              status: "pending",
+              action: "copy-agent",
+              runtime: "cursor",
+              source: src,
+              target: dst,
+              message: "will refresh stale managed Cursor Agentera agent",
+            });
+          }
         }
       }
     }
@@ -414,11 +414,11 @@ function planOpencodeItems(
   }
   const agentsSourceDir = path.join(sourceRoot, ".opencode", "agents");
   const agentsTargetDir = path.join(configDir, "agents");
+  const OPENCODE_MANAGED_AGENT = "agentera.md";
   if (pathExists(agentsSourceDir)) {
-    for (const entry of fs.readdirSync(agentsSourceDir)) {
-      if (!entry.endsWith(".md")) continue;
-      const src = path.join(agentsSourceDir, entry);
-      const dst = path.join(agentsTargetDir, entry);
+    const src = path.join(agentsSourceDir, OPENCODE_MANAGED_AGENT);
+    if (isFile(src)) {
+      const dst = path.join(agentsTargetDir, OPENCODE_MANAGED_AGENT);
       const needsCopy = !isFile(dst) || !fs.readFileSync(src).equals(fs.readFileSync(dst));
       items.push({
         status: needsCopy ? "pending" : "noop",
@@ -426,7 +426,7 @@ function planOpencodeItems(
         runtime: "opencode",
         source: src,
         target: dst,
-        message: needsCopy ? "will copy managed OpenCode capability agent" : "OpenCode agent already current",
+        message: needsCopy ? "will copy managed OpenCode Agentera agent" : "OpenCode Agentera agent already current",
       });
     }
   }

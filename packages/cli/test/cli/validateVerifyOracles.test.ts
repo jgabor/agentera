@@ -345,19 +345,19 @@ describe("validate family envelope (oracle parity)", () => {
     }
   });
 
-  it("descriptors family has runtime x capability checks and a 24-check count", () => {
+  it("descriptors family has runtime x capability checks and a 12-check count", () => {
     const spec = VALIDATE_FAMILY_ORACLE.families["descriptors"];
     const { rc, payload } = capturePassEnvelope("descriptors");
     expect(rc).toBe(spec.exitCode);
     const checks = payload.checks as Array<Record<string, unknown>>;
     const summary = payload.summary as Record<string, unknown>;
-    expect(checks.length, "descriptors check count is 24").toBe(24);
+    expect(checks.length, "descriptors check count is 12").toBe(12);
     expect(
       checks.length,
       "descriptors summary.passed + summary.failed equals checks.length",
     ).toBe(Number(summary.passed) + Number(summary.failed));
     for (const check of checks) {
-      expect(["codex", "opencode"], "descriptors check runtime").toContain(check.runtime as string);
+      expect(["codex"], "descriptors check runtime").toContain(check.runtime as string);
       expect(typeof check.capability, "descriptors check capability is a string").toBe("string");
       expect(typeof check.path, "descriptors check path is a string").toBe("string");
       expect(["pass", "fail"], "descriptors check status").toContain(check.status as string);

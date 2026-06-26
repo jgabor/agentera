@@ -39,7 +39,7 @@ Characterized runtime actions:
 | Codex CLI | `copy-agent` | `~/.codex/agents/*.toml` | `pending` | copies managed capability descriptors, then reports `runtime update applied` |
 | Copilot CLI | `configure` | none | `noop` | no local config write; use per-invocation `AGENTERA_HOME` |
 | OpenCode | `copy-plugin` | `~/.config/opencode/plugins/agentera.js` | `pending` | copies plugin, then reports `runtime update applied` |
-| OpenCode | `copy-agent` | `~/.config/opencode/agents/*.md` | `pending` | copies managed capability descriptors, then reports `runtime update applied` |
+| OpenCode | `copy-agent` | `~/.config/opencode/agents/agentera.md` | `pending` | copies single managed agent descriptor (D73), then reports `runtime update applied` |
 
 Package-phase items currently expose `runtime`, `action`, `command`, `status`,
 and `message`. Without `--update-packages`, package items are `skipped`; with it,

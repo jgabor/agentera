@@ -371,7 +371,6 @@ function pySplitlinesText(s: string): string[] {
 function descriptorValidationPayload(): Dict {
   const sourceRoot = resolveSourceRoot();
   const codexDir = path.join(sourceRoot, "skills", "agentera", "agents");
-  const opencodeDir = path.join(sourceRoot, ".opencode", "agents");
   const classificationPath = path.join(sourceRoot, "references", "cli", "capability-tool-classification.yaml");
   const checks: Dict[] = [];
   const violations: string[] = [];
@@ -441,75 +440,6 @@ function descriptorValidationPayload(): Dict {
       }
     }
     checks.push(check);
-
-    const opencodePath = path.join(opencodeDir, `${name}.md`);
-    let ocheck: Dict = { runtime: "opencode", capability: name, path: opencodePath, status: "pass" };
-    let otext: string;
-    try {
-      otext = fsReadFileSync(opencodePath, "utf8");
-    } catch (exc) {
-      ocheck = { ...ocheck, status: "fail", message: (exc as Error).message };
-      violations.push(`opencode ${name}: ${(exc as Error).message}`);
-      checks.push(ocheck);
-      continue;
-    }
-
-    let frontmatter: Dict = {};
-    try {
-      const lines = pySplitlinesText(otext);
-      if (lines.length > 0 && lines[0] === "---") {
-        const closing = lines.indexOf("---", 1);
-        if (closing !== -1) {
-          const frontmatterText = lines.slice(1, closing).join("\n");
-          frontmatter = loadYamlMapping(frontmatterText) as Dict;
-        }
-      }
-    } catch {
-      frontmatter = {};
-    }
-
-    const expectedRefO = `agentera prime --context ${name} --format json`;
-    const legacyRefO = `capabilities/${name}/instructions.md`;
-    const expectedPermission = (capPermissions[name] ?? {}) as Dict;
-    const actualPermission = frontmatter.permission;
-
-    if ("name" in frontmatter) {
-      ocheck = { ...ocheck, status: "fail", message: "name frontmatter must be omitted" };
-      violations.push(`opencode ${name}: name frontmatter must be omitted`);
-    } else if (frontmatter.agentera_managed === "true") {
-      ocheck = { ...ocheck, status: "fail", message: "agentera_managed frontmatter must be omitted" };
-      violations.push(`opencode ${name}: agentera_managed frontmatter must be omitted`);
-    } else if (frontmatter.mode !== "subagent") {
-      ocheck = { ...ocheck, status: "fail", message: "mode: subagent frontmatter is required" };
-      violations.push(`opencode ${name}: mode: subagent frontmatter is required`);
-    } else if (!frontmatter.description) {
-      ocheck = { ...ocheck, status: "fail", message: "description is required" };
-      violations.push(`opencode ${name}: description is required`);
-    } else if (!actualPermission || typeof actualPermission !== "object" || Array.isArray(actualPermission)) {
-      ocheck = { ...ocheck, status: "fail", message: "permission frontmatter is required and must be an object" };
-      violations.push(`opencode ${name}: permission frontmatter is required and must be an object`);
-    } else if (
-      (actualPermission as Dict).write !== expectedPermission.write ||
-      (actualPermission as Dict).bash !== expectedPermission.bash
-    ) {
-      ocheck = { ...ocheck, status: "fail", message: "permission frontmatter does not match classification" };
-      violations.push(
-        `opencode ${name}: permission frontmatter must be write: ${expectedPermission.write}, bash: ${expectedPermission.bash}`,
-      );
-    } else if (!otext.includes("<!-- agentera: managed -->")) {
-      ocheck = { ...ocheck, status: "fail", message: "managed body marker is required" };
-      violations.push(`opencode ${name}: managed body marker is required`);
-    } else if (!otext.includes(expectedRefO)) {
-      ocheck = { ...ocheck, status: "fail", message: "descriptor must reference capability instructions" };
-      violations.push(`opencode ${name}: descriptor must reference ${expectedRefO}`);
-    } else if (otext.includes(legacyRefO)) {
-      ocheck = { ...ocheck, status: "fail", message: "descriptor must not reference the retired on-disk instructions.md" };
-      violations.push(`opencode ${name}: descriptor must not reference ${legacyRefO} (use the prime --context command)`);
-    } else if (otext.includes("Dispatch only through the runtime-native") || otext.includes(`\`@${name}\``)) {
-      ocheck = { ...ocheck, status: "fail", message: "descriptor must not self-dispatch from a subagent" };
-      violations.push(`opencode ${name}: descriptor must execute directly without self-dispatch`);
-    }
-    checks.push(ocheck);
   }
 
   return {
