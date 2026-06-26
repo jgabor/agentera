@@ -51,7 +51,7 @@ describe("cli prime", () => {
   });
 
   it("emits a default JSON orientation payload (bespoke contexts null)", () => {
-    const { rc, out } = capture((io) => cmdPrime({ command: "prime", format: "json" }, io));
+    const { rc, out, err } = capture((io) => cmdPrime({ command: "prime", format: "json" }, io));
     expect(rc).toBe(0);
     const payload = JSON.parse(out);
     expect(payload.command).toBe("prime");
@@ -60,7 +60,21 @@ describe("cli prime", () => {
     expect(payload.closeout_context).toBeNull();
     expect(payload.execution_context).toBeNull();
     expect(payload.source_contract.capability_context).toBeNull();
+    expect(payload.source_contract.fields).toContain("todo");
+    expect(payload.source_contract.fields).not.toContain("issues");
     expect(payload.source_contract.fields).toContain("next_action");
+    expect(payload.todo).toEqual(
+      expect.objectContaining({
+        critical: expect.any(Number),
+        degraded: expect.any(Number),
+        normal: expect.any(Number),
+        annoying: expect.any(Number),
+      }),
+    );
+    expect(payload.issues).toEqual(payload.todo);
+    expect(err).toContain("Deprecation: prime JSON field 'issues' is deprecated; use 'todo'");
+    expect(err).toContain("3.0.0 stable cut");
+    expect(out).not.toContain("Deprecation:");
     expect(payload.app).toBeTruthy();
     expect(payload.app_home.install_track).toBeTruthy();
     expect(typeof payload.app.status).toBe("string");
@@ -76,6 +90,43 @@ describe("cli prime", () => {
     expect(rc).toBe(0);
     const payload = JSON.parse(out);
     expect(Object.keys(payload).sort()).toEqual(["command", "plan", "status"]);
+  });
+
+  it("selects todo via --fields without emitting a deprecation warning", () => {
+    const { rc, out, err } = capture((io) =>
+      cmdPrime({ command: "prime", format: "json", fields: "todo" }, io),
+    );
+    expect(rc).toBe(0);
+    const payload = JSON.parse(out);
+    expect(Object.keys(payload).sort()).toEqual(["command", "status", "todo"]);
+    expect(payload.todo).toEqual(
+      expect.objectContaining({
+        critical: expect.any(Number),
+        degraded: expect.any(Number),
+        normal: expect.any(Number),
+        annoying: expect.any(Number),
+      }),
+    );
+    expect(err).toBe("");
+  });
+
+  it("selects issues via --fields with a deprecation warning", () => {
+    const { rc, out, err } = capture((io) =>
+      cmdPrime({ command: "prime", format: "json", fields: "issues" }, io),
+    );
+    expect(rc).toBe(0);
+    const payload = JSON.parse(out);
+    expect(Object.keys(payload).sort()).toEqual(["command", "issues", "status"]);
+    expect(payload.issues).toEqual(
+      expect.objectContaining({
+        critical: expect.any(Number),
+        degraded: expect.any(Number),
+        normal: expect.any(Number),
+        annoying: expect.any(Number),
+      }),
+    );
+    expect(err).toContain("Deprecation: prime JSON field 'issues' is deprecated; use 'todo'");
+    expect(err).toContain("3.0.0 stable cut");
   });
 
   it("rejects an unsupported --fields value for prime", () => {
