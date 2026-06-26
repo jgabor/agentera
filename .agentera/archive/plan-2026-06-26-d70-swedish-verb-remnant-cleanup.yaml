@@ -1,0 +1,191 @@
+header:
+  level: full
+  created: "2026-06-25"
+  status: complete
+  reviewed: "2026-06-26"
+  critic_issues: ""
+  title: "Plan: D70 Swedish Verb Remnant Cleanup"
+what: >
+  Complete the Decision 70 capability rename by eliminating all Swedish -era
+  verb remnants from source, config, data, and runtime state files. Commit
+  bbe98135 renamed directories, files, and barrel imports to English IDs but
+  left ~400+ identifier bodies, env vars, plugin templates, agent defs, and
+  active runtime state in Swedish. Four parallel audit agents mapped the
+  full remnant surface across src, bundle/data, docs/config, and tests.
+why: >
+  Decision 70 (firm, user-confirmed satisfied 2026-06-09) chose English
+  capability IDs as canonical. Decision 58 requires zero post-3.0 surfaces
+  may retain legacy aliases. Commit bbe98135 claimed completion with "1007
+  tests pass, typecheck clean" but the rename was structural-only.
+  The TODO entry marking D70 implementation as Resolved (line 38) is
+  premature.
+constraints: >
+  D70 firm: English IDs canonical. D58 firm: zero post-3.0 legacy aliases.
+  Schema version strings (agentera.inspekteraEvaluationReport.v1,
+  agentera.coexistenceProbe.v1, agentera.capabilityContext.v1,
+  agentera.planeraStartup.v1) remain as compat identifiers. CHANGELOG.md,
+  UPGRADE.md, .agentera/archive/ are historical — do not rewrite.
+  Backward-compat route alias maps exempt. PROFILERA_PROFILE_DIR retains a
+  deprecated alias fallback until v3 stable (Task 16 TODO).
+scope:
+  included:
+    - "packages/cli/src/ — all Swedish verb identifiers, strings, comments (102 remnants)"
+    - "packages/cli/src/cli/schema.ts:171 — dead Swedish guard over English list"
+    - "packages/cli/src/cli/help.ts:30 — dead Swedish filter"
+    - ".opencode/plugins/agentera.js — REQUIRED_AGENT_NAMES, COMMAND_TEMPLATES"
+    - ".opencode/agents/*.md and .cursor/agents/*.md — managed agent stub body text"
+    - "agents/openai.yaml — OpenAI agent capability definitions (31 matches)"
+    - "skills/agentera/SKILL.md — routing tables and capability listings"
+    - "skills/agentera/.claude-plugin/plugin.json — Claude plugin command list (13 matches)"
+    - "skills/agentera/capabilities/*/instructions.ts — prose body references"
+    - "references/adapters/*.md — dispatch tables, subagent mechanism tables"
+    - "hooks/ — Swedish verb references"
+    - ".agentera/*.yaml — active runtime state"
+    - "fixtures/hej-*.md — test fixtures (4 files)"
+  excluded:
+    - "CHANGELOG.md and UPGRADE.md — historical migration documentation"
+    - ".agentera/archive/ — historical artifacts"
+    - "packages/cli/dist/ and packages/cli/bundle/ — regenerated output"
+    - "Schema version compatibility strings"
+    - "Backward-compat route alias maps"
+  deferred: []
+design: >
+  Tasks 1-5 parallel-safe (independent Swedish verbs in src). Tasks 6-11
+  depend on src cleanup. Task 12 is a decision item. Each task verifiable
+  via rg plus vitest plus tsc.
+overall_acceptance: >
+  GIVEN the cleanup is complete, WHEN rg -i searches the 12 Swedish verbs
+  across packages/cli/src/, skills/, references/, .opencode/, .cursor/,
+  agents/, hooks/ (excluding CHANGELOG, UPGRADE, archive, dist, schema
+  version strings), THEN zero REMNANT matches remain. AND all tests pass.
+  AND tsc --noEmit clean. AND validate capability-contract passes.
+surprises: >
+  Tasks 12-16 shipped in implementation commits (0c0559e0, dfa245c5,
+  7196e1b8, b76581d5, db161c36) before plan.yaml was tracked; this archive
+  and slot clear are remediation closeout on 2026-06-26.
+previous_plan_archived: .agentera/archive/PLAN-2026-06-24-d70-capability-rename.yaml
+tasks:
+  - number: 1
+    name: "Clean profilera remnants in packages/cli/src/"
+    depends_on: []
+    status: complete
+    acceptance:
+      - "GIVEN profilera renamed to profile, WHEN rg -i 'profilera' runs against packages/cli/src/ excluding schema version strings, THEN zero matches remain except compat identifiers"
+      - "AND vitest run passes AND tsc --noEmit clean"
+  - number: 2
+    name: "Clean planera remnants in packages/cli/src/"
+    depends_on: []
+    status: complete
+    acceptance:
+      - "GIVEN planera renamed to plan, WHEN rg -i 'planera' runs against packages/cli/src/ excluding schema version strings, THEN zero matches remain except agentera.planeraStartup.v1"
+      - "AND vitest run passes AND tsc --noEmit clean"
+  - number: 3
+    name: "Clean realisera remnants in packages/cli/src/"
+    depends_on: []
+    status: complete
+    acceptance:
+      - "GIVEN realisera renamed to build, WHEN rg -i 'realisera' runs against packages/cli/src/, THEN zero matches remain"
+      - "AND capabilities/build/instructions.ts body references 'build' not 'realisera'"
+      - "AND vitest run passes AND tsc --noEmit clean"
+  - number: 4
+    name: "Clean hej remnants in packages/cli/src/"
+    depends_on: []
+    status: complete
+    acceptance:
+      - "GIVEN hej renamed to status, WHEN rg -i '\\bhej\\b' runs against packages/cli/src/ excluding fixtures, THEN zero matches remain"
+      - "AND provenance strings use 'agentera prime' not 'agentera hej'"
+      - "AND vitest run passes AND tsc --noEmit clean"
+  - number: 5
+    name: "Clean remaining 8 Swedish verbs in packages/cli/src/"
+    depends_on: []
+    status: complete
+    acceptance:
+      - "GIVEN visionera, resonera, inspirera, optimera, inspektera, dokumentera, visualisera, orkestrera renamed, WHEN rg -i for each runs against packages/cli/src/ excluding schema version strings, THEN zero matches remain"
+      - "AND vitest run passes AND tsc --noEmit clean"
+  - number: 6
+    name: "Fix dead Swedish guards in schema.ts and help.ts"
+    depends_on: ["1", "2"]
+    status: complete
+    acceptance:
+      - "GIVEN schema.ts:171 dead Swedish guard removed, WHEN validator runs, THEN it validates against English list directly"
+      - "GIVEN help.ts:30 dead Swedish filter removed, WHEN help runs, THEN it lists English names with no Swedish filter"
+      - "AND vitest run passes"
+  - number: 7
+    name: "Update .opencode/plugins/agentera.js and .opencode/agents/*.md"
+    depends_on: ["1", "2", "3", "4", "5"]
+    status: complete
+    acceptance:
+      - "GIVEN REQUIRED_AGENT_NAMES lists English names, WHEN plugin bootstraps, THEN it reads English-named agent files"
+      - "AND COMMAND_TEMPLATES keys are English"
+      - "AND .opencode/agents/*.md stub bodies reference English capability names"
+      - "AND plugin smoke test passes"
+  - number: 8
+    name: "Update agents/openai.yaml and .claude-plugin/plugin.json"
+    depends_on: ["1", "2", "3", "4", "5"]
+    status: complete
+    acceptance:
+      - "GIVEN agents/openai.yaml uses English names, WHEN loaded, THEN all 12 capabilities referenced by English IDs"
+      - "GIVEN .claude-plugin/plugin.json uses English names, WHEN Claude plugin loads, THEN all commands use English IDs"
+      - "AND validate capability-contract passes"
+  - number: 9
+    name: "Update SKILL.md, capability instructions, and references"
+    depends_on: ["1", "2", "3", "4", "5"]
+    status: complete
+    acceptance:
+      - "GIVEN SKILL.md routing tables use English names, WHEN skill loads, THEN all 12 capabilities listed by English ID"
+      - "GIVEN references/adapters/*.md use English names, WHEN read, THEN no Swedish verbs in active dispatch tables"
+      - "AND instructions.ts prose bodies reference English capability names"
+  - number: 10
+    name: "Migrate .agentera/ runtime state to English capability IDs"
+    depends_on: ["7", "8", "9"]
+    status: complete
+    acceptance:
+      - "GIVEN .agentera/*.yaml migrated, WHEN agentera prime runs, THEN all capability references use English IDs"
+      - "AND .agentera/archive/ NOT modified"
+      - "AND agentera state health and state decisions return valid output"
+  - number: 11
+    name: "Rename fixtures/hej-*.md test fixtures"
+    depends_on: ["4"]
+    status: complete
+    acceptance:
+      - "GIVEN fixtures renamed to status-*.md, WHEN vitest runs, THEN all tests pass with updated paths"
+      - "AND no test fixture filename contains a Swedish verb"
+  - number: 12
+    name: "Rename PROFILERA_PROFILE_DIR to AGENTERA_PROFILE_DIR with deprecated alias"
+    depends_on: ["1"]
+    status: complete
+    acceptance:
+      - "GIVEN PROFILERA_PROFILE_DIR is renamed to AGENTERA_PROFILE_DIR in source, WHEN rg 'PROFILERA_PROFILE_DIR' runs against packages/cli/src/ and .opencode/plugins/, THEN zero matches remain except in the deprecated alias fallback"
+      - "AND setProfileDir reads AGENTERA_PROFILE_DIR first, falls back to PROFILERA_PROFILE_DIR with one-time stderr warning"
+      - "AND all tests pass AND tsc --noEmit clean"
+  - number: 13
+    name: "Add upgrade migration step for env var rewire"
+    depends_on: ["12"]
+    status: complete
+    acceptance:
+      - "GIVEN a new planEnvVarRewirePhase exists in runtimeMigration.ts, WHEN upgrade --dry-run runs on a v2 install, THEN it detects PROFILERA_PROFILE_DIR references in runtime config files and previews rewire to AGENTERA_PROFILE_DIR"
+      - "AND upgrade --yes applies the rewire"
+      - "AND the migration item uses action: rewire-env-var"
+      - "AND all tests pass"
+  - number: 14
+    name: "Add doctor check for deprecated PROFILERA_PROFILE_DIR"
+    depends_on: ["12"]
+    status: complete
+    acceptance:
+      - "GIVEN a new diagnoseOpencodeProfileDir check exists in doctor/opencode.ts, WHEN doctor runs and PROFILERA_PROFILE_DIR is detected in env or config, THEN it emits a warn with migration guidance"
+      - "AND the check name is registered in runtime-adapter-registry.yaml"
+      - "AND all tests pass"
+  - number: 15
+    name: "Update docs and references for AGENTERA_PROFILE_DIR"
+    depends_on: ["12"]
+    status: complete
+    acceptance:
+      - "GIVEN references/adapters/opencode.md, contract.md, agent-ready-state-contract.yaml, artifact-registry-interface-model.yaml, .agentera/docs.yaml, and json_output_surface_manifest.yaml are updated, WHEN searched, THEN all profile-path references use AGENTERA_PROFILE_DIR"
+      - "AND CHANGELOG.md and .agentera/archive/ are NOT modified"
+  - number: 16
+    name: "Add TODO for removing deprecated alias before v3 stable"
+    depends_on: ["12"]
+    status: complete
+    acceptance:
+      - "GIVEN a TODO entry exists in TODO.md under Normal priority, WHEN v3 stable release approaches, THEN the deprecated PROFILERA_PROFILE_DIR fallback in setProfileDir can be removed"
+      - "AND the TODO references Task 12 of the D70 cleanup plan"
