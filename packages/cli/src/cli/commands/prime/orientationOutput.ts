@@ -12,7 +12,7 @@ export { startupCompletenessContract } from "../../startupCompletenessContract.j
 
 const STATUS_STRUCTURED_FIELDS = [
   "command", "status", "app_home", "app", "mode", "profile", "v1_migration", "health",
-  "issues", "plan", "docs", "progress", "objective", "state_presence", "project_integration", "attention",
+  "todo", "plan", "docs", "progress", "objective", "state_presence", "project_integration", "attention",
   "decision_attention", "next_action", "orchestration_context", "closeout_context",
   "evidence_context", "benchmark_context", "execution_context", "source", "source_contract",
 ];
@@ -61,7 +61,7 @@ export function buildOrientationJsonPayload(
     v1_migration: state.v1_migration,
     project_integration: state.project_integration,
     health: state.health,
-    issues: state.counts,
+    todo: state.counts,
     plan: state.plan,
     docs: state.docs,
     progress: state.progress,
@@ -161,7 +161,7 @@ export function printOrientationTextBriefing(state: OrientationState, command: s
         `trajectory=${health.trajectory || "unknown"} | worst=${worstText}\n`,
     );
   }
-  out(`issues: critical=${counts.critical} | degraded=${counts.degraded} | normal=${counts.normal} | annoying=${counts.annoying}\n`);
+  out(`todo: critical=${counts.critical} | degraded=${counts.degraded} | normal=${counts.normal} | annoying=${counts.annoying}\n`);
   if (!presence.any_active) {
     const missing = Object.keys(presence.absence).sort().join(", ") || "none";
     out(`state: no active plan or objective | missing=${missing}\n`);
@@ -185,7 +185,7 @@ export function printOrientationTextBriefing(state: OrientationState, command: s
   out(`- ${formatNextAction(nextAction)}\n`);
   out("source_contract:\n");
   out(
-    "- fields=app_home,mode,profile,v1_migration,project_integration,health,issues,plan,docs,progress,objective,state_presence,attention,decision_attention,next_action,orchestration_context,closeout_context,evidence_context,benchmark_context,execution_context\n",
+    "- fields=app_home,mode,profile,v1_migration,project_integration,health,todo,plan,docs,progress,objective,state_presence,attention,decision_attention,next_action,orchestration_context,closeout_context,evidence_context,benchmark_context,execution_context\n",
   );
   out(`- render=caller-owned README-style ${dashboardLabel}\n`);
   out("- access=single installed CLI call; app/v1/profile safety included; no preflight glob/read/import/doctor calls\n");
