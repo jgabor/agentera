@@ -68,7 +68,7 @@ export function collectOrientationState(opts: PrimeOpts): OrientationState {
   const v1Artifacts = detectV1ArtifactPairs(process.cwd());
   const v1Migration = v1MigrationSummary(v1Artifacts, { sourceRoot, home, env });
   const plan = planSummary(schemas);
-  const docs = docsSummary(schemas);
+  const docs = docsSummary(schemas, { profileStatus });
   const progress = progressSummary(schemas);
   const health = healthSummary(schemas, env);
   const objective = activeObjectiveSummary();

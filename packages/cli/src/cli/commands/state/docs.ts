@@ -20,13 +20,17 @@ import {
   structuredState,
   truncate,
 } from "../../stateQuery.js";
-import { SchemaInfo, artifactPath } from "../../appContext.js";
+import { SchemaInfo, artifactPath, discoverSchemasDir } from "../../appContext.js";
+import fs from "node:fs";
+import { registryArtifactPath } from "../../orientation.js";
 import { capabilityStartupComplete } from "../../startupCompletenessContract.js";
 import { out, err, StateArgs, Io } from "./shared.js";
 
 export function queryDocs(args: StateArgs, schemas: Record<string, SchemaInfo>, io: Io): number {
   const o = out(io);
   const e = err(io);
+  const profilePath = registryArtifactPath("profile", discoverSchemasDir());
+  const profileStatus = fs.existsSync(profilePath) ? "loaded" : "not found";
   const info = schemas.docs;
   if (!info) {
     e(missingSchemaError("docs") + "\n");
@@ -102,7 +106,7 @@ export function queryDocs(args: StateArgs, schemas: Record<string, SchemaInfo>, 
           mapping_entries: mapping.length,
           coverage,
           source_contract: {
-            capability_startup_complete: capabilityStartupComplete(),
+            capability_startup_complete: capabilityStartupComplete({ profileStatus }),
             raw_artifact_reads_required: false,
           },
         },

@@ -24,7 +24,7 @@ import { decisionContextEntry, latestHealthAudit, normalizeSeverity } from "./co
 import { isResolvedTodoMarkdownStatus, parseTodoMarkdownListItem } from "./todoMarkdown.js";
 import type { JsonObject } from "../core/jsonValue.js";
 import { TODO_SEVERITY_ORDER, TODO_SEVERITY_ORDER_KEYS } from "./todoSeverity.js";
-import { capabilityStartupComplete } from "./startupCompletenessContract.js";
+import { capabilityStartupComplete, type StartupCompletenessInput } from "./startupCompletenessContract.js";
 import type {
   DecisionFollowUp,
   DecisionReviewAttention,
@@ -369,7 +369,10 @@ export function planSummary(schemas: Record<string, SchemaInfo>): PlanSummary {
   };
 }
 
-export function docsSummary(schemas: Record<string, SchemaInfo>): DocsSummary {
+export function docsSummary(
+  schemas: Record<string, SchemaInfo>,
+  startupInput: StartupCompletenessInput = {},
+): DocsSummary {
   const data = loadNamedArtifact(schemas, "docs");
   if (!data || typeof data !== "object" || Array.isArray(data)) {
     return { exists: false, status: "absent", absence_reason: "No docs mapping artifact is available from agentera docs." };
@@ -388,7 +391,7 @@ export function docsSummary(schemas: Record<string, SchemaInfo>): DocsSummary {
     mapping_entries: mapping.length,
     coverage,
     source_contract: {
-      capability_startup_complete: capabilityStartupComplete(),
+      capability_startup_complete: capabilityStartupComplete(startupInput),
       raw_artifact_reads_required: false,
       state_families: [
         "plan task details, dependencies, acceptance criteria, and evidence summaries",
