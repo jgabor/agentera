@@ -13,6 +13,14 @@ import {
   diagnosticGapLabels,
   COPILOT_MARKER,
 } from "./core.js";
+import {
+  CURSOR_MANAGED_AGENT,
+  findCursorAgentsSurface,
+  findExistingCursorHooks,
+  formatCursorProbePaths,
+  hasAgenteraHookReferences,
+  resolveCursorProject,
+} from "../cursorSurfaces.js";
 import { diagnoseOpencode } from "./opencode.js";
 
 type Dict = Record<string, any>;
@@ -188,16 +196,6 @@ export function diagnoseCodex(installRoot: string, home: string, env: Env): Dict
   return runtimeResult("codex", env, checks);
 }
 
-function globMdFiles(dir: string): string[] {
-  let entries: string[];
-  try {
-    entries = fs.readdirSync(dir);
-  } catch {
-    return [];
-  }
-  return entries.filter((e) => e.endsWith(".md") && isFile(path.join(dir, e))).sort();
-}
-
 export function diagnoseCursor(installRoot: string, home: string, env: Env): Dict {
   const checks: Dict[] = [];
   const value = env.AGENTERA_HOME;
@@ -214,10 +212,12 @@ export function diagnoseCursor(installRoot: string, home: string, env: Env): Dic
     );
   }
 
-  const hooksPath = path.join(installRoot, ".cursor", "hooks.json");
-  if (isFile(hooksPath)) {
+  const project = resolveCursorProject(env);
+  const probePaths = formatCursorProbePaths(project, home, "hooks.json");
+  const hooksPath = findExistingCursorHooks(project, home);
+  if (hooksPath) {
     const text = fs.readFileSync(hooksPath, "utf8");
-    if (text.includes("cursor_session_start.py") && text.includes("cursor_pre_tool_use.py")) {
+    if (hasAgenteraHookReferences(text)) {
       checks.push(
         mkCheck(CURSOR_HOOKS_CHECK, CURSOR_PASS_STATUS, "Cursor hooks.json is present and references Agentera helpers", {
           path: hooksPath,
@@ -233,16 +233,16 @@ export function diagnoseCursor(installRoot: string, home: string, env: Env): Dic
     }
   } else {
     checks.push(
-      mkCheck(CURSOR_HOOKS_CHECK, CURSOR_FAIL_STATUS, "Cursor hooks.json is missing", {
-        path: hooksPath,
+      mkCheck(CURSOR_HOOKS_CHECK, CURSOR_FAIL_STATUS, `Cursor hooks.json is missing at ${probePaths}`, {
+        path: probePaths,
         gap: CURSOR_HOOK_DRIFT_GAP,
       }),
     );
   }
 
-  const agentsDir = path.join(installRoot, ".cursor", "agents");
-  const managed = globMdFiles(agentsDir);
-  if (managed.length >= 12) {
+  const agentsProbePaths = formatCursorProbePaths(project, home, "agents");
+  const { dir: agentsDir, managed, hasManagedAgent } = findCursorAgentsSurface(project, home);
+  if (hasManagedAgent) {
     checks.push(
       mkCheck(CURSOR_AGENTS_CHECK, CURSOR_PASS_STATUS, "Cursor managed capability agents are current", {
         path: agentsDir,
@@ -251,15 +251,20 @@ export function diagnoseCursor(installRoot: string, home: string, env: Env): Dic
     );
   } else if (managed.length > 0) {
     checks.push(
-      mkCheck(CURSOR_AGENTS_CHECK, CURSOR_WARN_STATUS, `Cursor managed agents incomplete (${managed.length}/12)`, {
-        path: agentsDir,
-        gap: CURSOR_AGENT_DRIFT_GAP,
-      }),
+      mkCheck(
+        CURSOR_AGENTS_CHECK,
+        CURSOR_WARN_STATUS,
+        `Cursor managed agents incomplete (missing ${CURSOR_MANAGED_AGENT})`,
+        {
+          path: agentsDir,
+          gap: CURSOR_AGENT_DRIFT_GAP,
+        },
+      ),
     );
   } else {
     checks.push(
-      mkCheck(CURSOR_AGENTS_CHECK, CURSOR_FAIL_STATUS, "Cursor managed capability agents are missing", {
-        path: agentsDir,
+      mkCheck(CURSOR_AGENTS_CHECK, CURSOR_FAIL_STATUS, `Cursor managed capability agents are missing at ${agentsProbePaths}`, {
+        path: agentsProbePaths,
         gap: CURSOR_AGENT_DRIFT_GAP,
       }),
     );

@@ -98,7 +98,7 @@ tasks:
   - number: 2
     name: "Fix Cursor doctor hooks/agents path probing (#22)"
     depends_on: []
-    status: pending
+    status: complete
     acceptance:
       - "GIVEN feat/v3 base WHERE setup/doctor/diagnostics.ts:217 probes `installRoot/.cursor/hooks.json` and :243 probes `installRoot/.cursor/agents/`, and setup/cursor.ts:126 probes the same installRoot path WHEN Cursor actually reads hooks from project-level `.cursor/hooks.json` and user-level `~/.cursor/hooks.json` THEN the doctor is fixed to probe the correct project + user-level paths (not the v2-layout installRoot bundle path) for both `hooks.json` and `agents/`; the report passes when the project or user level is correctly wired."
       - "WHEN `agentera doctor --runtime cursor` (or the doctor diagnostic) runs against a project with repo-native `.cursor/hooks.json` and no installRoot bundle THEN the Cursor hooks/agents checks report pass (status `pass`), not fail; the v2-layout installRoot path is no longer the probed source of truth."

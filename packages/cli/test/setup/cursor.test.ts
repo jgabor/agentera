@@ -44,10 +44,11 @@ describe("setup cursor", () => {
 
   it("diagnoses a managed root with cursor hooks present", () => {
     const root = path.join(tmp, "managed");
+    const project = path.join(tmp, "project");
     managedFresh(root);
-    fs.mkdirSync(path.join(root, ".cursor"), { recursive: true });
-    fs.writeFileSync(path.join(root, ".cursor", "hooks.json"), "{}");
-    const report = diagnose(root, path.join(tmp, "home"), { AGENTERA_HOME: root });
+    fs.mkdirSync(path.join(project, ".cursor"), { recursive: true });
+    fs.writeFileSync(path.join(project, ".cursor", "hooks.json"), "{}");
+    const report = diagnose(root, path.join(tmp, "home"), { AGENTERA_HOME: root, AGENTERA_PROJECT: project });
     expect(report.runtime).toBe("cursor");
     expect(report.status).toBe("pass");
     expect(report.checks.find((c) => c.name === "cursor.hooks")?.status).toBe("pass");

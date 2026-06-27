@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 import { isFile, pathExists, resolvePath } from "../core/paths.js";
+import { findExistingCursorHooks, formatCursorProbePaths, resolveCursorProject } from "./cursorSurfaces.js";
 import { SETUP_EVIDENCE, classifyResolvedRoot } from "../state/installRoot.js";
 
 /**
@@ -123,14 +124,15 @@ export function diagnose(installRoot: string, home: string, env: Env = process.e
     });
   }
 
-  const hooksPath = path.join(installRoot, ".cursor", "hooks.json");
-  if (isFile(hooksPath)) {
+  const project = resolveCursorProject(env);
+  const hooksPath = findExistingCursorHooks(project, home);
+  if (hooksPath) {
     checks.push({ name: "cursor.hooks", status: "pass", message: hooksPath });
   } else {
     checks.push({
       name: "cursor.hooks",
       status: "fail",
-      message: "missing repo-native .cursor/hooks.json",
+      message: `missing project or user .cursor/hooks.json (${formatCursorProbePaths(project, home, "hooks.json")})`,
     });
   }
 

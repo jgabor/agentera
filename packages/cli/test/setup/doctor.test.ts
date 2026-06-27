@@ -399,15 +399,17 @@ describe("setup doctor: per-runtime diagnostics", () => {
 
   it("classifies cursor hooks + agents drift", () => {
     const root = path.join(tmp, "root");
+    const project = path.join(tmp, "project");
+    const home = path.join(tmp, "home");
     managedRoot(root);
-    fs.mkdirSync(path.join(root, ".cursor", "agents"), { recursive: true });
+    fs.mkdirSync(path.join(project, ".cursor", "agents"), { recursive: true });
     fs.writeFileSync(
-      path.join(root, ".cursor", "hooks.json"),
-      '{"h":["cursor_session_start.py","cursor_pre_tool_use.py"]}',
+      path.join(project, ".cursor", "hooks.json"),
+      '{"hooks":{"sessionStart":[{"command":"npx -y agentera@next hook cursor-session-start"}],"preToolUse":[{"command":"npx -y agentera@next hook cursor-pre-tool-use"}]}}',
     );
-    for (let i = 0; i < 12; i++) fs.writeFileSync(path.join(root, ".cursor", "agents", `a${i}.md`), "x");
+    fs.writeFileSync(path.join(project, ".cursor", "agents", "agentera.md"), "x");
     const bin = fakeBin(path.join(tmp, "bin"));
-    const r = diagnoseCursor(root, path.join(tmp, "h"), { PATH: bin, AGENTERA_HOME: root });
+    const r = diagnoseCursor(root, home, { PATH: bin, AGENTERA_HOME: root, AGENTERA_PROJECT: project });
     expect(r.status).toBe("pass");
     const checkStatuses = (r.checks as Array<{ status: string }>).map((c) => c.status);
     expect(checkStatuses.every((sv) => sv === "pass")).toBe(true);
