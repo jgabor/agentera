@@ -3,6 +3,7 @@ import os from "node:os";
 import path from "node:path";
 
 import { expanduser, isFile, pathExists, resolvePath } from "../core/paths.js";
+import { resolveProfileDirOverride } from "../core/envPaths.js";
 import { resolveSourceRoot } from "../core/sourceRoot.js";
 import {
   Classification,
@@ -184,6 +185,10 @@ export function resolveInstallRoot(
       return platformDefault;
     }
     return candidate;
+  }
+  const profileDir = resolveProfileDirOverride(env);
+  if (profileDir) {
+    return resolvePath(profileDir);
   }
   const def = env[DEFAULT_INSTALL_ROOT_ENV];
   if (def) {
