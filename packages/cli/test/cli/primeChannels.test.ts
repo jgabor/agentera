@@ -65,6 +65,25 @@ describe("prime channel-aware migration and app_home gates", () => {
   });
 
   it("does not suggest v2→v3 preview while stable successor is unannounced", () => {
+    const unannouncedRoot = path.join(tmp, "unannounced-prime");
+    fs.mkdirSync(path.join(unannouncedRoot, ".git"), { recursive: true });
+    fs.mkdirSync(path.join(unannouncedRoot, "skills", "agentera"), { recursive: true });
+    fs.writeFileSync(path.join(unannouncedRoot, "skills", "agentera", "SKILL.md"), "x");
+    fs.copyFileSync(path.join(REPO_ROOT, "registry.json"), path.join(unannouncedRoot, "registry.json"));
+    fs.cpSync(path.join(REPO_ROOT, "references"), path.join(unannouncedRoot, "references"), { recursive: true });
+    const channelsPath = path.join(unannouncedRoot, "references/cli/update-channels.yaml");
+    let channels = fs.readFileSync(channelsPath, "utf8");
+    const stableStart = channels.indexOf("  stable:");
+    const devStart = channels.indexOf("  development:");
+    const stableBlock = channels.slice(stableStart, devStart);
+    channels =
+      channels.slice(0, stableStart) +
+      stableBlock.replace(/\n      announced: (true|false)/, "\n      announced: false") +
+      channels.slice(devStart);
+    fs.writeFileSync(channelsPath, channels);
+    resetUpdateChannelsAuthorityCache();
+    process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT = unannouncedRoot;
+
     const appHome = process.env.AGENTERA_HOME as string;
     managedV2(appHome);
     const project = path.join(tmp, "proj");

@@ -196,7 +196,7 @@ describe("update channels vocabulary authority", () => {
     expect(stableNext.concept).toBe("forward_successor_line");
     expect(stableNext.channel).toBe("development");
     expect(stableNext.version).toBe("3.0.0");
-    expect(stableNext.announced).toBe(false);
+    expect(stableNext.announced).toBe(true);
     expect((stableNext.npm as Dict).dist_tag).toBe("next");
     expect(String(stableNext.preview_command)).toContain("@next");
     const devNext = development.next_major as Dict;

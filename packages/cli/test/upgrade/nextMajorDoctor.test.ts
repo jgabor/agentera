@@ -40,7 +40,7 @@ describe("update-channels authority next_major", () => {
     expect(block.concept).toBe("forward_successor_line");
     expect(block.channel).toBe("development");
     expect(block.version).toBe("3.0.0");
-    expect(block.announced).toBe(false);
+    expect(block.announced).toBe(true);
     expect((block.npm as Record<string, unknown>).dist_tag).toBe("next");
     expect(String(block.guide_url)).toContain("UPGRADE.md");
     expect(block.preview_command).toContain("@next");
@@ -88,9 +88,14 @@ function authorityRootWithAnnouncedSuccessor(announced: boolean): string {
   );
   const authorityPath = path.join(authorityRoot, "references/cli/update-channels.yaml");
   const text = fs.readFileSync(authorityPath, "utf8");
-  const patched = announced
-    ? text.replace("announced: false", "announced: true")
-    : text;
+  const stableStart = text.indexOf("  stable:");
+  const devStart = text.indexOf("  development:");
+  const stableBlock = text.slice(stableStart, devStart);
+  const patchedStable = stableBlock.replace(
+    /\n      announced: (true|false)/,
+    `\n      announced: ${announced}`,
+  );
+  const patched = text.slice(0, stableStart) + patchedStable + text.slice(devStart);
   fs.writeFileSync(authorityPath, patched);
   return authorityRoot;
 }
@@ -181,19 +186,16 @@ describe("isStableSuccessorAnnounced", () => {
     expect(isStableSuccessorAnnounced(authorityRoot, "development")).toBe(false);
   });
 
-  it("returns false on stable channel when stable.next_major.announced=false", () => {
-    expect(isStableSuccessorAnnounced(REPO_ROOT, "stable")).toBe(false);
-  });
-
   it("returns true on stable channel when stable.next_major.announced=true", () => {
-    const authorityRoot = authorityRootWithAnnouncedSuccessor(true);
-    expect(isStableSuccessorAnnounced(authorityRoot, "stable")).toBe(true);
+    expect(isStableSuccessorAnnounced(REPO_ROOT, "stable")).toBe(true);
+    const authorityRoot = authorityRootWithAnnouncedSuccessor(false);
+    expect(isStableSuccessorAnnounced(authorityRoot, "stable")).toBe(false);
   });
 
   it("defaults to stable when the channel argument is omitted (legacy callers)", () => {
-    expect(isStableSuccessorAnnounced(REPO_ROOT)).toBe(false);
-    const authorityRoot = authorityRootWithAnnouncedSuccessor(true);
-    expect(isStableSuccessorAnnounced(authorityRoot)).toBe(true);
+    expect(isStableSuccessorAnnounced(REPO_ROOT)).toBe(true);
+    const authorityRoot = authorityRootWithAnnouncedSuccessor(false);
+    expect(isStableSuccessorAnnounced(authorityRoot)).toBe(false);
   });
 
   it("does not consult the stable channel when development is requested", () => {
@@ -204,8 +206,9 @@ describe("isStableSuccessorAnnounced", () => {
 
 describe("resolveNextMajorDoctorLines", () => {
   it("omits the section when stable successor is not announced", () => {
+    const authorityRoot = authorityRootWithAnnouncedSuccessor(false);
     const lines = resolveNextMajorDoctorLines({
-      sourceRoot: REPO_ROOT,
+      sourceRoot: authorityRoot,
       home: tmp,
       channel: "stable",
       runningVersion: "2.7.7",
