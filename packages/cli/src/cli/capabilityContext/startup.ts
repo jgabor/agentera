@@ -14,6 +14,7 @@ import {
   taskRef,
 } from "./shared.js";
 import type { Dict } from "./types.js";
+import type { OrientationState } from "../contracts/orientationState.js";
 
 export function slimPlanState(plan: Dict): Dict {
   const firstPending = plan.first_pending;
@@ -178,8 +179,7 @@ export function slimCapabilityContext(
   todoItems: Array<Record<string, string>>,
   bespokeContexts: Dict | null,
 ): Dict {
-  const context =
-    capabilityContext(capability) ?? {
+  const context: Dict = capabilityContext(capability) ?? {
       capability,
       declared_state_needs: [],
       declared_write_targets: [],
@@ -234,10 +234,13 @@ export function orientationAppHome(bundle: Dict): Dict {
   };
 }
 
-export function buildPrimeCapabilityContextPayload(state: Dict, capabilityName: string, command = "prime"): Dict {
+export function buildPrimeCapabilityContextPayload(state: OrientationState, capabilityName: string, command = "prime"): Dict {
+  // cast: orientation state is assembled from parsed .agentera artifacts; slim/bespoke
+  // builders consume JsonObject shapes for these state families.
+  const stateDict = state as unknown as Dict;
   const bundlePublic = publicDoctorStatus(state.app);
-  const appHome = orientationAppHome(state.app);
-  const bespoke = bespokeCapabilityContexts(capabilityName, state);
+  const appHome = orientationAppHome(stateDict.app as Dict);
+  const bespoke = bespokeCapabilityContexts(capabilityName, stateDict);
   return {
     command,
     status: "ok",
@@ -245,12 +248,13 @@ export function buildPrimeCapabilityContextPayload(state: Dict, capabilityName: 
       capabilityName,
       state.mode,
       appHome,
-      bundlePublic,
-      state.profile_dict,
-      state.plan,
-      state.docs,
-      state.progress,
-      state.health,
+      // cast: bundlePublic is a distilled app-bundle status (interface) consumed as JsonObject by slim context
+      bundlePublic as unknown as Dict,
+      stateDict.profile_dict as Dict,
+      stateDict.plan as Dict,
+      stateDict.docs as Dict,
+      stateDict.progress as Dict,
+      stateDict.health as Dict,
       state.todo_items,
       bespoke,
     ),

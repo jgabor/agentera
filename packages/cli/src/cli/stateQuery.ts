@@ -6,10 +6,9 @@ import { loadYamlMapping } from "../core/yaml.js";
 import { activeAppModel, discoverSchemasDir, SchemaInfo } from "./appContext.js";
 import { validateAgentString, validateIdentifier } from "./argvalidate.js";
 import { emitStructured } from "./structured.js";
+import type { JsonObject, JsonValue } from "../core/jsonValue.js";
 
 /** Shared state-query infrastructure ported from scripts/agentera. */
-
-type Dict = Record<string, any>;
 
 export const REQUIRED_SPARSE_CONTEXT_FIELDS = ["command", "status"];
 export const ROUTINE_STRUCTURED_FIELDS = [
@@ -36,13 +35,13 @@ export const COMMAND_FILTERS: Record<string, string[]> = {
   query: ["list_artifacts", "topic", "severity", "dimension", "status", "limit"],
 };
 
-export function appModelPayload(model: Dict = activeAppModel()): Record<string, string> {
+export function appModelPayload(model: ReturnType<typeof activeAppModel> = activeAppModel()): Record<string, string> {
   const out: Record<string, string> = {};
   for (const [k, v] of Object.entries(model)) out[k] = String(v);
   return out;
 }
 
-export function surfaceMissingMessage(surface: string, p: string, model: Dict = activeAppModel()): string {
+export function surfaceMissingMessage(surface: string, p: string, model: ReturnType<typeof activeAppModel> = activeAppModel()): string {
   const payload = appModelPayload(model);
   return (
     `${surface} is missing. Agentera cannot find it at ${p}. ` +
@@ -76,17 +75,20 @@ export function loadArtifact(p: string): unknown {
   }
 }
 
-export function extractEntries(data: unknown): Dict[] {
+export function extractEntries(data: unknown): JsonObject[] {
   if (data === null || data === undefined) return [];
   if (Array.isArray(data)) return data.filter((e) => e && typeof e === "object" && !Array.isArray(e));
   if (typeof data === "object") {
-    for (const [key, val] of Object.entries(data as Dict)) {
+    // cast: data is the parsed artifact body from loadArtifact (YAML/JSON IO boundary)
+    for (const [key, val] of Object.entries(data as JsonObject)) {
       if (key === "archive") continue;
       if (Array.isArray(val) && val.length > 0 && val[0] && typeof val[0] === "object" && !Array.isArray(val[0])) {
-        return val as Dict[];
+        // cast: val is an entries array selected from the parsed artifact (IO boundary)
+        return val as JsonObject[];
       }
     }
-    return [data as Dict];
+    // cast: single-object artifact body from loadArtifact (IO boundary)
+    return [data as JsonObject];
   }
   return [];
 }
@@ -98,7 +100,8 @@ function pyStr(val: unknown): string {
   if (val === false) return "False";
   if (Array.isArray(val)) return "[" + val.map((v) => pyReprInner(v)).join(", ") + "]";
   if (typeof val === "object") {
-    return "{" + Object.entries(val as Dict).map(([k, v]) => `${pyReprInner(k)}: ${pyReprInner(v)}`).join(", ") + "}";
+    // cast: val is an artifact-scalar object being rendered for display (IO boundary)
+    return "{" + Object.entries(val as JsonObject).map(([k, v]) => `${pyReprInner(k)}: ${pyReprInner(v)}`).join(", ") + "}";
   }
   return String(val);
 }
@@ -125,7 +128,7 @@ export function asList(value: unknown): any[] {
   return Array.isArray(value) ? value : [];
 }
 
-export function firstPresent(entry: Dict, names: string[], deflt: unknown = ""): unknown {
+export function firstPresent(entry: JsonObject, names: string[], deflt: JsonValue = ""): JsonValue {
   for (const name of names) {
     const value = entry[name];
     if (value !== null && value !== undefined && value !== "") return value;
@@ -144,21 +147,22 @@ export function printStatusCounts(prefix: string, counts: Record<string, number>
   }
 }
 
-export function stringFieldNames(fields: Dict): string[] {
+export function stringFieldNames(fields: JsonObject): string[] {
   return Object.entries(fields)
-    .filter(([, d]) => (d as Dict)?.type === "string")
+    // cast: field descriptor read from a parsed artifact schema (YAML IO boundary)
+    .filter(([, d]) => (d as JsonObject)?.type === "string")
     .map(([n]) => n);
 }
 
-export function filterByTopic(entries: Dict[], topic: string, fields: Dict): Dict[] {
+export function filterByTopic(entries: JsonObject[], topic: string, fields: JsonObject): JsonObject[] {
   const t = topic.toLowerCase();
   const fnames = stringFieldNames(fields);
   return entries.filter((e) => fnames.some((fn) => String(e[fn] ?? "").toLowerCase().includes(t)));
 }
 
-export function filterByFieldValue(entries: Dict[], fieldName: string, value: string, substring = false): Dict[] {
+export function filterByFieldValue(entries: JsonObject[], fieldName: string, value: string, substring = false): JsonObject[] {
   const vl = value.toLowerCase();
-  const result: Dict[] = [];
+  const result: JsonObject[] = [];
   for (const e of entries) {
     const v = e[fieldName];
     if (v === null || v === undefined) continue;
@@ -168,14 +172,15 @@ export function filterByFieldValue(entries: Dict[], fieldName: string, value: st
       const strs = v.map((x) => String(x).toLowerCase());
       if (strs.includes(vl) || (substring && strs.some((s) => s.includes(vl)))) result.push(e);
     } else if (v && typeof v === "object") {
-      const keys = Object.keys(v as Dict);
+      // cast: v is a field value drawn from a parsed artifact entry (IO boundary)
+      const keys = Object.keys(v as JsonObject);
       if (keys.includes(value) || (substring && keys.some((k) => k.toLowerCase().includes(vl)))) result.push(e);
     }
   }
   return result;
 }
 
-function cycleSortKey(entry: Dict): [number, number | string] {
+function cycleSortKey(entry: JsonObject): [number, number | string] {
   const number = entry.number;
   if (typeof number === "number" && Number.isInteger(number)) return [1, number];
   if (typeof number === "string" && /^\d+$/.test(number)) return [1, parseInt(number, 10)];
@@ -184,16 +189,16 @@ function cycleSortKey(entry: Dict): [number, number | string] {
   return [0, ""];
 }
 
-export function omitProgressCommit(entry: Dict): Dict {
+export function omitProgressCommit(entry: JsonObject): JsonObject {
   const { commit: _commit, ...rest } = entry;
   return rest;
 }
 
-export function progressEntriesForOutput(entries: Dict[]): Dict[] {
+export function progressEntriesForOutput(entries: JsonObject[]): JsonObject[] {
   return entries.map(omitProgressCommit);
 }
 
-export function recentCycles(entries: Dict[], limit: number): Dict[] {
+export function recentCycles(entries: JsonObject[], limit: number): JsonObject[] {
   const sorted = [...entries].sort((a, b) => {
     const ka = cycleSortKey(a);
     const kb = cycleSortKey(b);
@@ -205,7 +210,7 @@ export function recentCycles(entries: Dict[], limit: number): Dict[] {
   return sorted.slice(0, limit);
 }
 
-export function formatEntry(entry: Dict, fields: string[]): string {
+export function formatEntry(entry: JsonObject, fields: string[]): string {
   const parts: string[] = [];
   for (const field of fields) {
     const value = entry[field];
@@ -216,7 +221,7 @@ export function formatEntry(entry: Dict, fields: string[]): string {
   return parts.join(" | ");
 }
 
-export function statusCounts(entries: Dict[]): Record<string, number> {
+export function statusCounts(entries: JsonObject[]): Record<string, number> {
   const counts: Record<string, number> = {};
   for (const entry of entries) {
     const raw = "status" in entry ? entry.status : "unknown";
@@ -226,7 +231,7 @@ export function statusCounts(entries: Dict[]): Record<string, number> {
   return counts;
 }
 
-export function sourceMetadata(command: string, p: string | null, schema: string | null = null): Dict {
+export function sourceMetadata(command: string, p: string | null, schema: string | null = null): JsonObject {
   return {
     artifact: schema ?? command,
     path: p !== null ? p : null,
@@ -237,11 +242,11 @@ export function sourceMetadata(command: string, p: string | null, schema: string
 
 export function structuredState(
   command: string,
-  entries: Dict[],
-  source: Dict,
-  opts: { filters?: Dict; summary?: Dict; sourceContract?: Dict } = {},
-): Dict {
-  const payload: Dict = {
+  entries: JsonObject[],
+  source: JsonObject,
+  opts: { filters?: JsonObject; summary?: JsonObject; sourceContract?: JsonObject } = {},
+): JsonObject {
+  const payload: JsonObject = {
     command,
     status: entries.length > 0 || source.exists ? "ok" : "empty",
     entries,
@@ -275,10 +280,10 @@ function availableStructuredFields(command: string): string[] {
 
 export function selectStructuredFields(
   command: string,
-  value: Dict,
+  value: JsonObject,
   fieldsArg: string | null | undefined,
   err: (t: string) => void,
-): Dict | null {
+): JsonObject | null {
   const requested = requestedFields(fieldsArg);
   const working = value;
   if (requested.length === 0) return working;
@@ -288,7 +293,7 @@ export function selectStructuredFields(
     err(`Error: unsupported field '${unsupported[0]}' for ${command}. Available fields: ${available.join(", ")}\n`);
     return null;
   }
-  const selected: Dict = {};
+  const selected: JsonObject = {};
   for (const field of [...REQUIRED_SPARSE_CONTEXT_FIELDS, ...requested]) {
     if (field in working && !(field in selected)) selected[field] = working[field];
   }
@@ -297,7 +302,7 @@ export function selectStructuredFields(
 
 export function emitStateStructured(
   command: string,
-  value: Dict,
+  value: JsonObject,
   format: string,
   fieldsArg: string | null | undefined,
   out: (t: string) => void,
@@ -309,7 +314,7 @@ export function emitStateStructured(
   return 0;
 }
 
-export function validateFilterValues(args: Dict, names: string[]): void {
+export function validateFilterValues(args: JsonObject, names: string[]): void {
   for (const name of names) {
     const value = args[name];
     const values = Array.isArray(value) ? value : [value];

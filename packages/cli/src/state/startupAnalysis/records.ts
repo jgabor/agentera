@@ -21,7 +21,8 @@ function hasTranscriptBearingField(record: Dict): boolean {
 }
 
 function boundedReason(reason: string, contract: Dict): string {
-  const allowed = new Set([...(contract.degradation_reasons ?? []), ...BOUNDARY_DEGRADATION_REASONS]);
+  const reasons = Array.isArray(contract.degradation_reasons) ? contract.degradation_reasons : [];
+  const allowed = new Set([...reasons, ...BOUNDARY_DEGRADATION_REASONS]);
   return allowed.has(reason) ? reason : "malformed_record";
 }
 
@@ -78,7 +79,9 @@ function eventOutput(
 export function classifyStartupRecords(corpus: Dict, opts: { salt: string; contract?: Dict | null }): Dict {
   const salt = opts.salt;
   const loaded = opts.contract ?? loadContract();
-  const boundary = timestampUtc((loaded.boundary ?? {}).committed_at);
+  const boundaryInfo =
+    loaded.boundary && typeof loaded.boundary === "object" && !Array.isArray(loaded.boundary) ? loaded.boundary : {};
+  const boundary = timestampUtc(boundaryInfo.committed_at);
   const records = corpus && typeof corpus === "object" && !Array.isArray(corpus) ? (corpus.records ?? []) : [];
   const degradations: Dict[] = [];
   const groups = new Map<string, Dict[]>();
@@ -168,6 +171,15 @@ export function classifyStartupRecords(corpus: Dict, opts: { salt: string; contr
         state.active = newSequence(conversationKey, state.segmentCapability, salt);
       }
       if (state.active === null) continue;
+      // cast: state.active is built by newSequence with typed array/counter/estimate fields
+      const active = state.active as Dict & {
+        counts: Record<string, number>;
+        events: Dict[];
+        raw_artifact_labels_after_cli: string[];
+        redundant_raw_artifact_labels: string[];
+        estimated_raw_after_cli_tokens_by_artifact: Record<string, number>;
+        estimated_redundant_raw_tokens_by_artifact: Record<string, number>;
+      };
       if (eventClass === "cli_state_call") {
         for (const label of cliArtifactLabels) state.cliArtifactsSeen.add(label);
       }
@@ -176,8 +188,8 @@ export function classifyStartupRecords(corpus: Dict, opts: { salt: string; contr
           ? state.cliArtifactsSeen.has(artifactLabel)
           : null;
       const phase = eventClass === "implementation_boundary" ? "implementation_boundary" : "state_gathering";
-      state.active.counts[eventClass] += 1;
-      state.active.events.push(
+      active.counts[eventClass] += 1;
+      active.events.push(
         eventOutput(record, {
           eventClass,
           phase,
@@ -188,13 +200,13 @@ export function classifyStartupRecords(corpus: Dict, opts: { salt: string; contr
         }),
       );
       if (eventClass === "raw_artifact_access" && artifactLabel) {
-        state.active.raw_artifact_labels_after_cli.push(artifactLabel);
+        active.raw_artifact_labels_after_cli.push(artifactLabel);
         const estimatedTokens = estimatedToolArgumentTokens(record);
-        const rawEstimates = state.active.estimated_raw_after_cli_tokens_by_artifact;
+        const rawEstimates = active.estimated_raw_after_cli_tokens_by_artifact;
         rawEstimates[artifactLabel] = (rawEstimates[artifactLabel] ?? 0) + estimatedTokens;
         if (redundant) {
-          state.active.redundant_raw_artifact_labels.push(artifactLabel);
-          const redundantEstimates = state.active.estimated_redundant_raw_tokens_by_artifact;
+          active.redundant_raw_artifact_labels.push(artifactLabel);
+          const redundantEstimates = active.estimated_redundant_raw_tokens_by_artifact;
           redundantEstimates[artifactLabel] = (redundantEstimates[artifactLabel] ?? 0) + estimatedTokens;
         }
       }
@@ -215,7 +227,7 @@ export function classifyStartupRecords(corpus: Dict, opts: { salt: string; contr
   }
   return {
     contract_version: loaded.version,
-    boundary_source: (loaded.boundary ?? {}).source,
+    boundary_source: boundaryInfo.source,
     state_gathering_sequences: sequences,
     degradations,
   };

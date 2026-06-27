@@ -21,8 +21,7 @@ import {
 } from "../../stateQuery.js";
 import { SchemaInfo, artifactPath } from "../../appContext.js";
 import { out, err, StateArgs, Io } from "./shared.js";
-
-type Dict = Record<string, any>;
+import type { JsonObject } from "../../../core/jsonValue.js";
 
 export function queryExperiments(args: StateArgs, schemas: Record<string, SchemaInfo>, io: Io): number {
   const o = out(io);
@@ -51,7 +50,8 @@ export function queryExperiments(args: StateArgs, schemas: Record<string, Schema
     }
     return 0;
   }
-  const d = data as Dict;
+  // cast: data is the parsed experiments artifact from loadArtifact (YAML IO boundary)
+  const d = data as JsonObject;
   let entries = asList(d.experiments);
   const statusFilter = args.status ?? null;
   if (statusFilter) entries = filterByFieldValue(entries, "status", statusFilter);

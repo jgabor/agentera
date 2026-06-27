@@ -16,10 +16,10 @@ import {
   surfaceMissingMessage,
 } from "../stateQuery.js";
 import { artifactLocationContract } from "./query.js";
+import type { JsonObject } from "../../core/jsonValue.js";
 
 /** Port of scripts/agentera cmd_schema / _build_schema_payload. */
 
-type Dict = Record<string, any>;
 type Io = { out?: (t: string) => void; err?: (t: string) => void };
 
 const CAPABILITY_NAMES = [
@@ -99,7 +99,7 @@ function contractPath(): string {
   return path.join(sourceRoot, "references", "cli", "agent-ready-state-contract.yaml");
 }
 
-function loadDecision45Contract(): [Dict | null, string | null] {
+function loadDecision45Contract(): [JsonObject | null, string | null] {
   const p = contractPath();
   let isFile = false;
   try {
@@ -109,13 +109,14 @@ function loadDecision45Contract(): [Dict | null, string | null] {
   }
   if (!isFile) return [null, "Decision 45 CLI contract is missing"];
   try {
-    return [parseYaml(fs.readFileSync(p, "utf8")) as Dict, null];
+    // cast: parseYaml result of the Decision 45 contract file (YAML IO boundary)
+    return [parseYaml(fs.readFileSync(p, "utf8")) as JsonObject, null];
   } catch (exc) {
     return [null, `Decision 45 CLI contract could not be read: ${(exc as Error).message}`];
   }
 }
 
-function schemaFieldDescription(entry: Dict): Dict {
+function schemaFieldDescription(entry: JsonObject): JsonObject {
   return {
     id: entry.id ?? null,
     field: entry.field ?? null,
@@ -130,13 +131,15 @@ const FIELD_SKIP = new Set([
   "meta", "GROUP_PREFIXES", "BUDGET", "COMPACTION", "VALIDATION", "ARCHIVE", "CONVENTION", "CONVENTIONS",
 ]);
 
-function describeSchemaFields(schema: Dict): Dict[] {
-  const fields: Dict[] = [];
+function describeSchemaFields(schema: JsonObject): JsonObject[] {
+  const fields: JsonObject[] = [];
   for (const [groupKey, groupVal] of Object.entries(schema)) {
     if (FIELD_SKIP.has(groupKey) || !groupVal || typeof groupVal !== "object" || Array.isArray(groupVal)) continue;
-    for (const entry of Object.values(groupVal as Dict)) {
+    // cast: groupVal is a parsed artifact schema field group (YAML IO boundary)
+    for (const entry of Object.values(groupVal as JsonObject)) {
       if (entry && typeof entry === "object" && !Array.isArray(entry) && "field" in entry) {
-        const field = schemaFieldDescription(entry as Dict);
+        // cast: entry is a parsed field descriptor from the schema (YAML IO boundary)
+        const field = schemaFieldDescription(entry as JsonObject);
         field.group = groupKey;
         fields.push(field);
       }
@@ -145,7 +148,7 @@ function describeSchemaFields(schema: Dict): Dict[] {
   return fields;
 }
 
-function commandDescription(name: string, kind: string, fields: string[] | null = null): Dict {
+function commandDescription(name: string, kind: string, fields: string[] | null = null): JsonObject {
   let outputFormats = ["text", "json", "yaml"];
   if (name === "lint") outputFormats = ["text", "json"];
   else if (name === "compact" || name === "gate") outputFormats = ["text", "json"];
@@ -163,8 +166,8 @@ function commandDescription(name: string, kind: string, fields: string[] | null 
   };
 }
 
-function describeCommands(): Dict[] {
-  const commands: Dict[] = [
+function describeCommands(): JsonObject[] {
+  const commands: JsonObject[] = [
     commandDescription("prime", "orientation", availableStructuredFields("prime")),
   ];
   for (const name of CAPABILITY_NAMES) {
@@ -185,7 +188,7 @@ function describeCommands(): Dict[] {
   return commands;
 }
 
-function contractSection(contract: Dict | null, key: string, gaps: Dict[]): any {
+function contractSection(contract: JsonObject | null, key: string, gaps: JsonObject[]): any {
   if (contract && typeof contract === "object" && !Array.isArray(contract) && key in contract) {
     return contract[key];
   }
@@ -196,10 +199,10 @@ function contractSection(contract: Dict | null, key: string, gaps: Dict[]): any 
 function describeArtifactSchemas(
   schemasDir: string,
   schemas: Record<string, SchemaInfo>,
-  model: Dict,
-  artifactLocations: Record<string, Dict> | null,
-): [Dict[], Dict[]] {
-  const gaps: Dict[] = [];
+  model: ReturnType<typeof activeAppModel>,
+  artifactLocations: Record<string, JsonObject> | null,
+): [JsonObject[], JsonObject[]] {
+  const gaps: JsonObject[] = [];
   let isDir = false;
   try {
     isDir = fs.statSync(schemasDir).isDirectory();
@@ -214,11 +217,12 @@ function describeArtifactSchemas(
     });
     return [[], gaps];
   }
-  const artifacts: Dict[] = [];
+  const artifacts: JsonObject[] = [];
   for (const name of Object.keys(schemas).sort()) {
     const info = schemas[name];
     const schema = info.schema && typeof info.schema === "object" ? info.schema : {};
-    const meta = (schema.meta ?? {}) as Dict;
+    // cast: schema.meta is read from a parsed artifact schema (YAML IO boundary)
+    const meta = (schema.meta ?? {}) as JsonObject;
     const schemaFile = path.join(schemasDir, `${name}.yaml`);
     const location = artifactLocations ? artifactLocations[name] ?? null : null;
     const hasMeta = meta && Object.keys(meta).length > 0;
@@ -257,17 +261,18 @@ function dirExists(p: string): boolean {
   }
 }
 
-export function buildSchemaPayload(command = "schema"): Dict {
+export function buildSchemaPayload(command = "schema"): JsonObject {
   const [contract, contractError] = loadDecision45Contract();
   const appModel = activeAppModel();
   const schemasDir = discoverSchemasDir(appModel);
   const schemas = loadSchemas(schemasDir);
-  const gaps: Dict[] = [];
+  const gaps: JsonObject[] = [];
   if (contractError) gaps.push({ scope: "contract", status: "missing", message: contractError });
   const artifactLocationsPayload = artifactLocationContract(schemasDir, schemas);
-  const artifactLocations: Record<string, Dict> = {};
-  for (const entry of artifactLocationsPayload.artifacts as Dict[]) artifactLocations[entry.name] = entry;
-  const [artifactSchemas, schemaGaps] = describeArtifactSchemas(schemasDir, schemas, appModel as unknown as Dict, artifactLocations);
+  const artifactLocations: Record<string, JsonObject> = {};
+  // cast: artifacts payload is built by query.ts over on-disk schemas/registry (IO boundary)
+  for (const entry of artifactLocationsPayload.artifacts as JsonObject[]) artifactLocations[String(entry.name)] = entry;
+  const [artifactSchemas, schemaGaps] = describeArtifactSchemas(schemasDir, schemas, appModel, artifactLocations);
   gaps.push(...schemaGaps);
 
   const slashAliases = contractSection(contract, "slash_route_aliases", gaps);
@@ -288,7 +293,7 @@ export function buildSchemaPayload(command = "schema"): Dict {
       schemas_dir: schemasDir,
       schemas_dir_exists: dirExists(schemasDir),
       schema_count: artifactSchemas.length,
-      app_model: appModelPayload(appModel as unknown as Dict),
+      app_model: appModelPayload(appModel),
     },
     commands: describeCommands(),
     routine_state_commands: ROUTINE_STATE_COMMANDS,

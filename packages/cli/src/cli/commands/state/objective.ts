@@ -19,8 +19,7 @@ import {
 import { SchemaInfo, artifactPath } from "../../appContext.js";
 import { firstPresent } from "../../stateQuery.js";
 import { out, err, StateArgs, Io } from "./shared.js";
-
-type Dict = Record<string, any>;
+import type { JsonObject } from "../../../core/jsonValue.js";
 
 export function queryObjective(args: StateArgs, schemas: Record<string, SchemaInfo>, io: Io): number {
   const o = out(io);
@@ -47,7 +46,8 @@ export function queryObjective(args: StateArgs, schemas: Record<string, SchemaIn
     }
     return 0;
   }
-  const d = data as Dict;
+  // cast: data is the parsed objective artifact from loadArtifact (YAML/MD IO boundary)
+  const d = data as JsonObject;
   const legacyEntries = asList(d.entries);
   if (legacyEntries.length > 0) {
     let entries = legacyEntries;

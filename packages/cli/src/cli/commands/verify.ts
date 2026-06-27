@@ -1,8 +1,8 @@
 import { main as evalSkillsMain } from "../../eval/evalSkills.js";
 import { main as semanticEvalMain } from "../../eval/semanticEval.js";
+import type { JsonObject } from "../../core/jsonValue.js";
 
 type Io = { out?: (t: string) => void; err?: (t: string) => void };
-type Dict = Record<string, any>;
 
 export const VERIFY_FAMILIES = ["eval"] as const;
 export const RETIRED_VERIFY_FAMILIES = ["smoke"] as const;
@@ -11,6 +11,19 @@ export const VERIFY_TARGETS: Record<string, string[]> = {
 };
 export const VERIFY_FORMATS = ["text", "json"] as const;
 export const VERIFY_DIAGNOSTIC_LINE_LIMIT = 20;
+
+// Locally-typed payload shape for the verify command output (typed construction;
+// the canonical JsonObject remains the single JSON-shape source of truth).
+interface VerifyPayload {
+  command: string;
+  status: string;
+  family: string;
+  target: string;
+  format: string;
+  engine: { command: string[]; exit_code: number };
+  diagnostics: { stdout: string[]; stderr: string[]; line_limit: number };
+  safety: JsonObject;
+}
 
 export interface VerifyArgs {
   family?: string | null;
@@ -116,14 +129,14 @@ interface EngineResult {
  * run in-process (ported TS). Only the eval family is supported; the smoke
  * family (maintainer/CI harnesses) was retired in the self-contained package.
  */
-function runVerifyEngine(family: string, target: string, args: VerifyArgs): { result: EngineResult; safety: Dict } {
+function runVerifyEngine(family: string, target: string, args: VerifyArgs): { result: EngineResult; safety: JsonObject } {
   if (family === "eval" && target === "skills") {
     const runtime = String(args.runtime ?? "auto");
     const parallel = String(args.parallel ?? 1);
     const timeout = String(args.timeout ?? 120);
     const engineArgs: string[] = [];
     if (args.skill) engineArgs.push("--skill", args.skill);
-    let safety: Dict;
+    let safety: JsonObject;
     if (args.run) {
       engineArgs.push("--parallel", parallel, "--timeout", timeout, "--runtime", runtime);
       safety = {
@@ -204,8 +217,8 @@ export function buildVerifyPayload(
   target: string,
   outputFormat: string,
   result: EngineResult,
-  safety: Dict,
-): Dict {
+  safety: JsonObject,
+): VerifyPayload {
   return {
     command: "verify",
     status: verifyStatus(result),
@@ -222,14 +235,14 @@ export function buildVerifyPayload(
   };
 }
 
-function emitVerifyText(payload: Dict, out: (t: string) => void): void {
+function emitVerifyText(payload: VerifyPayload, out: (t: string) => void): void {
   const engine = payload.engine;
   const safety = payload.safety;
   out(`verify ${payload.family} ${payload.target}: ${payload.status} (engine_exit=${engine.exit_code})\n`);
   out(`engine=${engine.command.join(" ")}\n`);
   out(`safety=${safety.mode}; ${safety.summary}\n`);
-  const stdout = payload.diagnostics.stdout as string[];
-  const stderr = payload.diagnostics.stderr as string[];
+  const stdout = payload.diagnostics.stdout;
+  const stderr = payload.diagnostics.stderr;
   if (stdout.length > 0) {
     out("stdout:\n");
     for (const line of stdout) out(`  ${line}\n`);

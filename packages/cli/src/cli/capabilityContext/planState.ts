@@ -11,6 +11,7 @@ import {
   uniqueList,
 } from "./shared.js";
 import type { Dict } from "./types.js";
+import type { JsonValue } from "../../core/jsonValue.js";
 
 export function orchestrationTaskSummary(task: Dict): Dict {
   const evidence = task.evidence;
@@ -44,7 +45,7 @@ export function formatPlanTaskDepRef(dep: unknown): string {
   return keys.length > 0 ? keys[0]! : String(dep);
 }
 
-export function planDependsOnList(task: Dict): unknown[] {
+export function planDependsOnList(task: Dict): JsonValue[] {
   const raw = task.depends_on;
   if (Array.isArray(raw)) return raw;
   if (raw === null || raw === undefined || raw === "") return [];

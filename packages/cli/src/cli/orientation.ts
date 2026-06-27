@@ -441,11 +441,13 @@ export function healthSummary(schemas: Record<string, SchemaInfo>, env: Env = pr
   const trajectory = String(latest.trajectory ?? "");
   const auditDate = healthAuditDate(latest);
   const dateStr = auditDate !== null ? isoFromUtc(auditDate) : null;
+  const latestNumber = typeof latest.number === "string" || typeof latest.number === "number" ? latest.number : "?";
+  const latestTimestamp = typeof latest.timestamp === "string" ? latest.timestamp : null;
   const summary: HealthSummary = {
     exists: true,
-    number: latest.number ?? "?",
+    number: latestNumber,
     date: dateStr,
-    timestamp: dateStr ?? latest.timestamp ?? null,
+    timestamp: dateStr ?? latestTimestamp,
     trajectory,
     grade: worst ? worst[1] : "",
     worst,
@@ -562,8 +564,9 @@ export function decisionFollowUp(schemas: Record<string, SchemaInfo>): DecisionF
   for (const rawEntry of extractEntries(data)) {
     const entry = decisionContextEntry(rawEntry);
     const satisfaction = entry.satisfaction;
-    if (!satisfaction || typeof satisfaction !== "object" || !satisfaction.review_needed) continue;
-    const number = entry.number ?? "?";
+    if (!satisfaction || typeof satisfaction !== "object" || Array.isArray(satisfaction) || !satisfaction.review_needed)
+      continue;
+    const number = typeof entry.number === "string" || typeof entry.number === "number" ? entry.number : "?";
     const title = firstPresent(entry, ["question", "choice"], "decision follow-up");
     return { object: `DECISION ${number} follow-up`, title: String(title) };
   }
@@ -586,11 +589,12 @@ export function decisionReviewAttention(schemas: Record<string, SchemaInfo>): De
   for (const rawEntry of extractEntries(data)) {
     const entry = decisionContextEntry(rawEntry);
     const satisfaction = entry.satisfaction;
-    if (!satisfaction || typeof satisfaction !== "object" || !satisfaction.review_needed) continue;
+    if (!satisfaction || typeof satisfaction !== "object" || Array.isArray(satisfaction) || !satisfaction.review_needed)
+      continue;
     const state = decisionAttentionState(satisfaction);
     stateCounts[state] = (stateCounts[state] ?? 0) + 1;
     reviewEntries.push({
-      number: entry.number ?? "?",
+      number: typeof entry.number === "string" || typeof entry.number === "number" ? entry.number : "?",
       title: truncate(firstPresent(entry, ["question", "choice", "summary"], "decision review"), 80),
       state,
       source: satisfaction.source ?? null,

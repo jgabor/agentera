@@ -16,19 +16,18 @@ import {
 } from "../../stateQuery.js";
 import { SchemaInfo, artifactPath } from "../../appContext.js";
 import { out, err, StateArgs, Io } from "./shared.js";
+import type { JsonObject } from "../../../core/jsonValue.js";
 
-type Dict = Record<string, any>;
-
-export function healthAuditNumber(entry: Dict): number | null {
+export function healthAuditNumber(entry: JsonObject): number | null {
   const number = entry.number;
   if (typeof number === "number" && Number.isInteger(number)) return number;
   if (typeof number === "string" && /^\d+$/.test(number)) return parseInt(number, 10);
   return null;
 }
 
-export function latestHealthAudit(entries: Dict[]): Dict | null {
+export function latestHealthAudit(entries: JsonObject[]): JsonObject | null {
   if (entries.length === 0) return null;
-  let best: Dict | null = null;
+  let best: JsonObject | null = null;
   let bestNumber = -1;
   for (const entry of entries) {
     const number = healthAuditNumber(entry);
@@ -67,7 +66,7 @@ export function queryHealth(args: StateArgs, schemas: Record<string, SchemaInfo>
     if (Array.isArray(details)) {
       matched =
         matched ||
-        details.some((d) => d && typeof d === "object" && String(d.name ?? "").toLowerCase().includes(dimLower));
+        details.some((d) => d && typeof d === "object" && !Array.isArray(d) && String(d.name ?? "").toLowerCase().includes(dimLower));
     }
     if (!matched) latestEntries = [];
   }
@@ -91,7 +90,8 @@ export function queryHealth(args: StateArgs, schemas: Record<string, SchemaInfo>
   if (!latest) return 0;
   if (dimension) {
     const dimLower = dimension.toLowerCase();
-    const grades = (latest.grades ?? {}) as Dict;
+    // cast: latest.grades is read from a parsed health.yaml audit entry (IO boundary)
+    const grades = (latest.grades ?? {}) as JsonObject;
     let matched = false;
     for (const [gk, gv] of Object.entries(grades)) {
       if (String(gk).toLowerCase().includes(dimLower)) {
@@ -116,7 +116,8 @@ export function queryHealth(args: StateArgs, schemas: Record<string, SchemaInfo>
     const num = latest.number ?? "?";
     const traj = latest.trajectory ?? "";
     o(`Audit ${num}: ${traj}\n`);
-    const grades = (latest.grades ?? {}) as Dict;
+    // cast: latest.grades is read from a parsed health.yaml audit entry (IO boundary)
+    const grades = (latest.grades ?? {}) as JsonObject;
     for (const [gk, gv] of Object.entries(grades)) {
       o(`  ${gk}: ${gv}\n`);
     }

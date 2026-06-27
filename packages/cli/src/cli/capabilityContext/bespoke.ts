@@ -1,4 +1,5 @@
 import type { Dict } from "./types.js";
+import type { SchemaInfo } from "../appContext.js";
 import { orchestrationContext } from "./orchestration.js";
 import { documentCloseoutContext } from "./closeout.js";
 import { auditEvidenceContext } from "./evidence.js";
@@ -14,49 +15,60 @@ export function slimBespokeContext(name: string, value: Dict): Dict {
 }
 
 export function bespokeCapabilityContexts(capabilityName: string | null, state: Dict): Dict {
+  // cast: orientation state fields are assembled from parsed .agentera artifacts;
+  // bespoke builders consume JsonObject/typed shapes for these state families.
+  const plan = state.plan as Dict;
+  const progress = state.progress as Dict;
+  const health = state.health as Dict;
+  const docs = state.docs as Dict;
+  const profile = state.profile_dict as Dict;
+  const nextAction = state.next_action as Dict;
+  const bundle = state.app as Dict;
+  const todoItems = state.todo_items as unknown as Array<Record<string, string>>;
+  const schemas = state.schemas as unknown as Record<string, SchemaInfo>;
   return {
     orchestration_context: orchestrationContext(
       capabilityName,
-      state.plan,
-      state.progress,
-      state.health,
-      state.todo_items,
-      state.docs,
-      state.profile_dict,
-      state.next_action,
+      plan,
+      progress,
+      health,
+      todoItems,
+      docs,
+      profile,
+      nextAction,
     ),
     closeout_context: documentCloseoutContext(
       capabilityName,
-      state.schemas,
-      state.plan,
-      state.progress,
-      state.todo_items,
-      state.docs,
-      state.profile_dict,
-      state.app,
+      schemas,
+      plan,
+      progress,
+      todoItems,
+      docs,
+      profile,
+      bundle,
     ),
     evidence_context: auditEvidenceContext(
       capabilityName,
-      state.schemas,
-      state.plan,
-      state.progress,
-      state.health,
-      state.todo_items,
-      state.docs,
-      state.profile_dict,
-      state.app,
+      schemas,
+      plan,
+      progress,
+      health,
+      todoItems,
+      docs,
+      profile,
+      bundle,
     ),
     benchmark_context: optimizeBenchmarkContext(capabilityName),
     execution_context: buildExecutionContext(
       capabilityName,
-      state.schemas,
-      state.plan,
-      state.progress,
-      state.health,
-      state.todo_items,
-      state.docs,
-      state.profile_dict,
-      state.app,
+      schemas,
+      plan,
+      progress,
+      health,
+      todoItems,
+      docs,
+      profile,
+      bundle,
     ),
   };
 }

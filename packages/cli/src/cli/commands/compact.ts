@@ -1,10 +1,32 @@
 import { resolvePath } from "../../core/paths.js";
 import { runCompaction, CompactionOperation } from "../../hooks/compaction/index.js";
 import { emitStructured } from "../structured.js";
+import type { JsonObject } from "../../core/jsonValue.js";
 
 /** Port of scripts/agentera cmd_compact and its _compaction_* helpers. */
 
-type Dict = Record<string, any>;
+// Locally-typed payload shape for compaction output (typed construction;
+// JsonObject remains the canonical JSON-shape source of truth).
+interface CompactionSummary {
+  status: string;
+  mode: string;
+  artifact_count: number;
+  over_limit_count: number;
+  protected_overflow_count: number;
+  error_count: number;
+  changed_count: number;
+  action_counts: Record<string, number>;
+  guidance: string;
+}
+
+interface CompactionPayload {
+  command: string;
+  status: string;
+  project: string;
+  summary: CompactionSummary;
+  operations: JsonObject[];
+  gate?: string;
+}
 
 function pyStr(value: unknown): string {
   if (value === null || value === undefined) return "None";
@@ -20,9 +42,9 @@ export interface CompactArgs {
   format?: string;
 }
 
-function compactionOperationPayload(op: CompactionOperation): Dict {
+function compactionOperationPayload(op: CompactionOperation): JsonObject {
   const status = op.status;
-  const payload: Dict = {
+  const payload: JsonObject = {
     artifact: status.artifact,
     path: status.path,
     exists: status.exists,
@@ -77,7 +99,7 @@ function compactionGuidance(mode: string, operations: CompactionOperation[]): st
   return "No repair needed. Compactable artifacts are within uniform_10_40_50 limits.";
 }
 
-function compactionSummary(mode: string, operations: CompactionOperation[]): Dict {
+function compactionSummary(mode: string, operations: CompactionOperation[]): CompactionSummary {
   const counts: Record<string, number> = {};
   for (const op of operations) counts[op.action] = (counts[op.action] ?? 0) + 1;
   const overLimit = operations.filter((op) => op.action === "over_limit" || op.action === "pending_fix").length;
@@ -105,7 +127,7 @@ function compactionExitCode(mode: string, operations: CompactionOperation[]): nu
   return 0;
 }
 
-function compactionPayload(command: string, project: string, mode: string, operations: CompactionOperation[]): Dict {
+function compactionPayload(command: string, project: string, mode: string, operations: CompactionOperation[]): CompactionPayload {
   const summary = compactionSummary(mode, operations);
   return {
     command,
@@ -116,8 +138,8 @@ function compactionPayload(command: string, project: string, mode: string, opera
   };
 }
 
-function emitCompactionPayload(payload: Dict, mode: string, format: string, out: (t: string) => void): void {
-  const summary = payload.summary as Dict;
+function emitCompactionPayload(payload: CompactionPayload, mode: string, format: string, out: (t: string) => void): void {
+  const summary = payload.summary;
   const project = payload.project;
   if (format === "json") {
     emitStructured(payload, "json", out);
@@ -132,7 +154,7 @@ function emitCompactionPayload(payload: Dict, mode: string, format: string, out:
       `errors:${summary.error_count} ` +
       `changed:${summary.changed_count}\n`,
   );
-  for (const item of payload.operations as Dict[]) {
+  for (const item of payload.operations) {
     out(
       `- artifact=${item.artifact} | action=${item.action} | ` +
         `classification=${item.classification} | path=${item.path} | ` +

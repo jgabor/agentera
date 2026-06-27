@@ -24,11 +24,10 @@ import { SchemaInfo } from "../../appContext.js";
 import { artifactPath } from "../../appContext.js";
 import { firstPresent } from "../../stateQuery.js";
 import { out, err, StateArgs, Io } from "./shared.js";
+import type { JsonObject } from "../../../core/jsonValue.js";
 
-type Dict = Record<string, any>;
-
-function planArtifactSummary(data: Dict, header: Dict): Dict {
-  const summary: Dict = {
+function planArtifactSummary(data: JsonObject, header: JsonObject): JsonObject {
+  const summary: JsonObject = {
     header,
     title: firstPresent(header, ["title"], data.title ?? ""),
     status: firstPresent(header, ["status"], data.status ?? ""),
@@ -42,14 +41,14 @@ function planArtifactSummary(data: Dict, header: Dict): Dict {
     surprises: data.surprises,
     previous_plan_archived: data.previous_plan_archived,
   };
-  const out: Dict = {};
+  const out: JsonObject = {};
   for (const [k, v] of Object.entries(summary)) {
     if (v !== null && v !== undefined && v !== "") out[k] = v;
   }
   return out;
 }
 
-function planSourceContract(source: Dict, summary: Dict): Dict {
+function planSourceContract(source: JsonObject, summary: JsonObject): JsonObject {
   const legacyEntries = Boolean(summary.legacy_entries);
   const complete = Boolean(source.exists) && !legacyEntries;
   const missingState: string[] = [];
@@ -141,7 +140,8 @@ export function queryPlan(args: StateArgs, schemas: Record<string, SchemaInfo>, 
     }
     return 0;
   }
-  const dataDict = data as Dict;
+  // cast: data is the parsed plan artifact from loadArtifact (YAML IO boundary)
+  const dataDict = data as JsonObject;
 
   const legacyEntries = asList(dataDict.entries);
   if (legacyEntries.length > 0) {

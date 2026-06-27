@@ -1,3 +1,4 @@
+import type { JsonObject } from "../../core/jsonValue.js";
 import { type Dict, canonicalArtifactLabel, hashLabel, loadContract } from "./contract.js";
 import {
   inc,
@@ -170,8 +171,8 @@ export function classifyStartupEvent(record: Dict): [string, string | null, stri
 }
 function eventWarningKeys(event: Dict): string[] {
   const keys: string[] = [];
-  for (const warning of event.warnings ?? []) {
-    if (!warning || typeof warning !== "object") continue;
+  for (const warning of Array.isArray(event.warnings) ? event.warnings : []) {
+    if (!warning || typeof warning !== "object" || Array.isArray(warning)) continue;
     const family = warning.family;
     const category = warning.category;
     if (typeof family === "string" && typeof category === "string") keys.push(`${family}.${category}`);
@@ -210,13 +211,13 @@ export function scanThresholdEvidence(
   let runtimeStatuses = metadata.runtime_statuses;
   if (!Array.isArray(runtimeStatuses)) runtimeStatuses = [];
   const runtimeCoverage = runtimeStatuses
-    .filter((s: unknown) => s && typeof s === "object" && !Array.isArray(s))
-    .map((s: Dict) => boundedRuntimeStatus(s));
+    .filter((s): s is JsonObject => s !== null && typeof s === "object" && !Array.isArray(s))
+    .map((s) => boundedRuntimeStatus(s));
   const coverageCaveats: string[] = [];
   if (runtimeCoverage.length === 0) {
     coverageCaveats.push("No runtime coverage metadata was available for threshold evidence scanning.");
   }
-  if (runtimeCoverage.some((s: Dict) => ["missing", "sparse", "degraded", "skipped"].includes(s.status))) {
+  if (runtimeCoverage.some((s) => ["missing", "sparse", "degraded", "skipped"].includes(s.status as string))) {
     coverageCaveats.push("Runtime coverage is incomplete or degraded; absence of warning evidence is not proof of absence.");
   }
 
@@ -287,7 +288,7 @@ export function scanThresholdEvidence(
         inc(capabilityCounts, capability);
         for (const warning of warnings) {
           inc(warningCounts, `${warning.family}.${warning.category}`);
-          inc(sourceCounts, warning.threshold_source);
+          inc(sourceCounts, warning.threshold_source as string);
         }
       }
 
@@ -313,7 +314,7 @@ export function scanThresholdEvidence(
       }
     }
     for (const pendingItem of pending) {
-      inc(detailStatusCounts, pendingItem.event.detail_loss_status);
+      inc(detailStatusCounts, pendingItem.event.detail_loss_status as string);
     }
   }
 
@@ -392,7 +393,7 @@ export function scanRetainedThresholdEvidence(
     inc(detailStatusCounts, detailStatus);
     for (const warning of warnings) {
       inc(warningCounts, `${warning.family}.${warning.category}`);
-      inc(sourceCounts, warning.threshold_source);
+      inc(sourceCounts, warning.threshold_source as string);
     }
   }
 
@@ -423,13 +424,23 @@ export function scanRetainedThresholdEvidence(
   };
 }
 
+interface CategoryEntry {
+  warning: string;
+  event_count: number;
+  artifacts: Set<string>;
+  capabilities: Set<string>;
+  classification_counts: Record<string, number>;
+  detail_loss_status_counts: Record<string, number>;
+  event_labels: string[];
+}
+
 export function classifyThresholdEvidence(scan: Dict): Dict {
   let events = scan.warning_events;
   if (!Array.isArray(events)) events = [];
   let coverageCaveats = scan.coverage_caveats;
   if (!Array.isArray(coverageCaveats)) coverageCaveats = [];
 
-  const byCategory = new Map<string, Dict>();
+  const byCategory = new Map<string, CategoryEntry>();
   const coverageCaveated = coverageCaveats.length > 0;
   const unsupported = coverageCaveats.length > 0 && events.length === 0;
 
@@ -447,9 +458,9 @@ export function classifyThresholdEvidence(scan: Dict): Dict {
           event_count: 0,
           artifacts: new Set<string>(),
           capabilities: new Set<string>(),
-          classification_counts: {} as Record<string, number>,
-          detail_loss_status_counts: {} as Record<string, number>,
-          event_labels: [] as string[],
+          classification_counts: {},
+          detail_loss_status_counts: {},
+          event_labels: [],
         };
         byCategory.set(key, entry);
       }
@@ -510,7 +521,7 @@ export function classifyThresholdEvidence(scan: Dict): Dict {
       by_classification: counterDict(classificationCounts),
       category_count: categories.length,
       repeated_false_positive_categories: categories.filter(
-        (c) => c.classification === "likely_false_positive" && c.event_count >= 2,
+        (c) => c.classification === "likely_false_positive" && Number(c.event_count) >= 2,
       ).length,
     },
     recommendation,

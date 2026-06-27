@@ -343,7 +343,8 @@ export function benchmarkComparison(reportStatus: string, report: Dict | null): 
     };
   }
   const saved = report.estimated_tokens_saved_vs_previous;
-  const reason = report.estimated_tokens_saved_vs_previous_null_reason;
+  // cast: report fields come from parsed latest-report.json (startup benchmark IO)
+  const reason = report.estimated_tokens_saved_vs_previous_null_reason as string;
   let status: string;
   let caveats: string[];
   if (safeBenchmarkNumber(saved) !== null) {
@@ -378,7 +379,7 @@ export function benchmarkRecommendation(reportStatus: string, report: Dict | nul
   }
   const rec = recommendation as Dict;
   const caveats: string[] = [];
-  let action = rec.action;
+  let action = rec.action as string;
   if (!BENCHMARK_RECOMMENDATION_ACTIONS.has(action)) {
     action = "omitted_by_privacy_boundary";
     caveats.push("Startup benchmark recommendation action was omitted because it is not a supported bounded value.");
@@ -403,7 +404,7 @@ export function benchmarkRecommendation(reportStatus: string, report: Dict | nul
 export function benchmarkManualRefresh(complete: boolean, latestReport: Dict, stateMetrics: Dict): Dict {
   const caveats = ["The CLI did not run `mage bench:startupState`; benchmark refresh is manual-only by design."];
   let status: string;
-  if (["missing", "empty", "malformed", "unreadable"].includes(latestReport.status)) {
+  if (["missing", "empty", "malformed", "unreadable"].includes(latestReport.status as string)) {
     status = "requires_manual_run";
     caveats.push("Retained startup benchmark evidence is absent or invalid; run the manual benchmark before using it for optimization decisions.");
   } else if (stateMetrics.total_state_sequences === 0) {
@@ -446,11 +447,11 @@ export function optimizeBenchmarkContext(capability: string | null): Dict | null
   const privacyBoundary = benchmarkPrivacyBoundary();
   const requiredState: Record<string, boolean> = {
     latest_report: latestReport.status === "available" && Boolean(latestReport.non_empty_evidence_present),
-    history_summary: ["available", "empty"].includes(historySummary.status),
+    history_summary: ["available", "empty"].includes(historySummary.status as string),
     runtime_coverage: runtimeCoverage.status !== "missing",
     state_access_metrics: stateMetrics.status === "available",
-    token_impact_status: ["available", "missing"].includes(tokenImpact.status),
-    recommendation_status: ["available", "missing"].includes(recommendation.status),
+    token_impact_status: ["available", "missing"].includes(tokenImpact.status as string),
+    recommendation_status: ["available", "missing"].includes(recommendation.status as string),
     source_contract: true,
   };
   const missingRequired = Object.entries(requiredState).filter(([, present]) => !present).map(([k]) => k);

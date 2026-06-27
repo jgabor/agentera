@@ -10,6 +10,7 @@ import { sourceMetadata } from "../stateQuery.js";
 import { selectEvidenceTarget } from "./planState.js";
 import { progressVerificationSummary, retryState } from "./progress.js";
 import type { Dict } from "./types.js";
+import type { JsonObject } from "../../core/jsonValue.js";
 
 export function dateFromIsoUtc(s: string): number | null {
   const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(s.trim());
@@ -216,13 +217,18 @@ export function decisionContextRisk(schemas: Record<string, SchemaInfo>): Dict {
     };
   }
   const contract = decisionSourceContract(source, entries, {});
-  const compacted = contract.completeness.compacted_entries;
-  const missing = contract.completeness.entries_with_missing_fields;
-  const caveats = compacted || missing ? (contract.caveats ?? []) : [];
+  const completeness =
+    contract.completeness && typeof contract.completeness === "object" && !Array.isArray(contract.completeness)
+      ? contract.completeness
+      : {};
+  const compacted = completeness.compacted_entries;
+  const missing = completeness.entries_with_missing_fields;
+  const caveatsSource = compacted || missing ? (contract.caveats ?? []) : [];
+  const caveats = Array.isArray(caveatsSource) ? caveatsSource : [];
   return {
     status: caveats.length > 0 ? "caveated" : "available",
     source_provenance: sourceProvenance("decisions", "agentera decisions --format json"),
-    summary: contract.completeness,
+    summary: completeness,
     caveats,
   };
 }
@@ -273,10 +279,14 @@ export function decisionReviewPressure(schemas: Record<string, SchemaInfo>): Dic
   const dd = data && typeof data === "object" && !Array.isArray(data) ? (data as Dict) : {};
   const active = Array.isArray(dd.decisions) ? dd.decisions : [];
   const archive = Array.isArray(dd.archive) ? dd.archive : [];
-  const activeEntries = active.filter((e: unknown) => e && typeof e === "object" && !Array.isArray(e)).map((e: Dict) => decisionContextEntry(e));
-  const archiveEntries = archive.filter((e: unknown) => e && typeof e === "object" && !Array.isArray(e)).map((e: Dict) => decisionContextEntry(e));
-  const protectedActive = activeEntries.filter((e: Dict) => e.satisfaction && typeof e.satisfaction === "object" && e.satisfaction.review_needed);
-  const protectedArchive = archiveEntries.filter((e: Dict) => e.satisfaction && typeof e.satisfaction === "object" && e.satisfaction.review_needed);
+  const activeEntries = active
+    .filter((e): e is JsonObject => Boolean(e && typeof e === "object" && !Array.isArray(e)))
+    .map((e) => decisionContextEntry(e));
+  const archiveEntries = archive
+    .filter((e): e is JsonObject => Boolean(e && typeof e === "object" && !Array.isArray(e)))
+    .map((e) => decisionContextEntry(e));
+  const protectedActive = activeEntries.filter((e: Dict) => e.satisfaction && typeof e.satisfaction === "object" && !Array.isArray(e.satisfaction) && e.satisfaction.review_needed);
+  const protectedArchive = archiveEntries.filter((e: Dict) => e.satisfaction && typeof e.satisfaction === "object" && !Array.isArray(e.satisfaction) && e.satisfaction.review_needed);
   const today = todayUtcMs();
   const stale: Dict[] = [];
   let caveats: string[] = [];
@@ -366,21 +376,23 @@ export function auditEvidenceContext(
   for (const component of [evaluationTarget, planCriteria, progressVerification, docsState, healthState, todoState, protectedStateChecks, versionChecks]) {
     for (const caveat of (component.caveats ?? []) as string[]) {
       stateCaveats.push(caveat);
-      attributedRisks.push(residualRiskEntry("evidence_family", "caveated", caveat, component.source_provenance ?? sourceProvenance("evidence_context", "agentera prime --context audit --format json")));
+      // cast: component source_provenance comes from evidence builders backed by parsed artifact/decision state
+      const componentSp = component.source_provenance ?? sourceProvenance("evidence_context", "agentera prime --context audit --format json");
+      attributedRisks.push(residualRiskEntry("evidence_family", "caveated", caveat, componentSp as Dict));
     }
   }
   for (const caveat of (decisionRisk.caveats ?? []) as string[]) {
     stateCaveats.push(caveat);
-    attributedRisks.push(residualRiskEntry("decisions_context", decisionRisk.status, caveat, decisionRisk.source_provenance));
+    attributedRisks.push(residualRiskEntry("decisions_context", decisionRisk.status as string, caveat, decisionRisk.source_provenance as Dict));
   }
   for (const caveat of (reviewPressure.caveats ?? []) as string[]) {
     stateCaveats.push(caveat);
-    attributedRisks.push(residualRiskEntry("decision_review_pressure", reviewPressure.status, caveat, reviewPressure.source_provenance));
+    attributedRisks.push(residualRiskEntry("decision_review_pressure", reviewPressure.status as string, caveat, reviewPressure.source_provenance as Dict));
   }
   const retry = retryState();
   for (const caveat of (retry.caveats ?? []) as string[]) {
     stateCaveats.push(caveat);
-    attributedRisks.push(residualRiskEntry("retry_state", retry.status, caveat, retry.source_provenance));
+    attributedRisks.push(residualRiskEntry("retry_state", retry.status as string, caveat, retry.source_provenance as Dict));
   }
   stateCaveats = uniqueList(stateCaveats);
   const dedupedRisks: Dict[] = [];

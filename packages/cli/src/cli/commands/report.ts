@@ -7,10 +7,10 @@ import { expanduser } from "../../core/paths.js";
 
 import { usageMain, corpusTooLargeReason } from "../../analytics/usageStats.js";
 import { extractCorpusMain } from "../../analytics/extractCorpus.js";
+import type { JsonObject } from "../../core/jsonValue.js";
 
 type Io = { out?: (t: string) => void; err?: (t: string) => void };
 type Env = Record<string, string | undefined>;
-type Dict = Record<string, any>;
 
 export interface ReportArgs {
   action?: string | null; // "refresh" or null
@@ -91,7 +91,7 @@ export function statsCorpusPath(env: Env = process.env, platform: NodeJS.Platfor
 }
 
 /** Faithful port of `_stats_existing_corpus_status`. */
-export function statsExistingCorpusStatus(corpusPath: string): Dict {
+export function statsExistingCorpusStatus(corpusPath: string): JsonObject {
   if (!fs.existsSync(corpusPath)) {
     return { status: "missing", path: corpusPath, reason: "corpus file does not exist" };
   }
