@@ -5,9 +5,9 @@ import {
 } from "../../registries/evaluatorHandoffContract.js";
 import { capabilityInstructionContractPath } from "./contract.js";
 import { hasRecordedValue, isFile, sourceProvenance, taskRef } from "./shared.js";
-import type { Dict } from "./types.js";
+import type { JsonObject } from "../../core/jsonValue.js";
 
-export function progressVerificationSummary(progress: Dict): Dict {
+export function progressVerificationSummary(progress: JsonObject): JsonObject {
   const source = { source_family: "progress", command: "agentera progress --format json" };
   if (!progress.exists) {
     return {
@@ -26,7 +26,7 @@ export function progressVerificationSummary(progress: Dict): Dict {
   const latest = progress.latest && typeof progress.latest === "object" && !Array.isArray(progress.latest) ? progress.latest : {};
   const verified = latest.verified;
   const verifiedPresent = hasRecordedValue(verified);
-  const cycle: Dict = {};
+  const cycle: JsonObject = {};
   for (const key of ["number", "timestamp", "type", "phase"]) {
     if (latest[key] !== null && latest[key] !== undefined && latest[key] !== "") cycle[key] = latest[key];
   }
@@ -47,7 +47,7 @@ export function progressVerificationSummary(progress: Dict): Dict {
   };
 }
 
-export function retryState(): Dict {
+export function retryState(): JsonObject {
   return {
     status: "not_recorded",
     source_provenance: {
@@ -59,19 +59,19 @@ export function retryState(): Dict {
   };
 }
 
-export function evaluatorHandoffOutputRequirementsFromContract(): Dict {
+export function evaluatorHandoffOutputRequirementsFromContract(): JsonObject {
   const contractPath = capabilityInstructionContractPath();
   if (!isFile(contractPath)) return {};
   try {
     const contract = loadEvaluatorHandoffContract(contractPath);
     // cast: contract loaded from parsed capability-instruction-contract.yaml; registry returns Record<string,unknown>
-    return evaluatorHandoffOutputRequirements(contract) as unknown as Dict;
+    return evaluatorHandoffOutputRequirements(contract) as unknown as JsonObject;
   } catch {
     return {};
   }
 }
 
-export function evaluatorHandoff(selected: Dict | null, progressVerification: Dict, retry: Dict, stateCaveats: string[]): Dict {
+export function evaluatorHandoff(selected: JsonObject | null, progressVerification: JsonObject, retry: JsonObject, stateCaveats: string[]): JsonObject {
   const caveats = [...stateCaveats, ...((progressVerification.caveats ?? []) as string[]), ...((retry.caveats ?? []) as string[])];
   const outputRequirements = evaluatorHandoffOutputRequirementsFromContract();
   if (selected === null) {
@@ -88,7 +88,7 @@ export function evaluatorHandoff(selected: Dict | null, progressVerification: Di
   }
   const evidenceSummary =
     selected.evidence_summary && typeof selected.evidence_summary === "object" && !Array.isArray(selected.evidence_summary)
-      ? (selected.evidence_summary as Dict)
+      ? (selected.evidence_summary as JsonObject)
       : null;
   const evidenceRequirements = (evidenceSummary?.items ?? []) as any[];
   if (evidenceRequirements.length === 0) {
@@ -96,7 +96,7 @@ export function evaluatorHandoff(selected: Dict | null, progressVerification: Di
   }
   const acceptanceSummary =
     selected.acceptance_summary && typeof selected.acceptance_summary === "object" && !Array.isArray(selected.acceptance_summary)
-      ? (selected.acceptance_summary as Dict)
+      ? (selected.acceptance_summary as JsonObject)
       : null;
   return {
     status: "ready",

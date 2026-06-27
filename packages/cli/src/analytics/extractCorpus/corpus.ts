@@ -1,7 +1,6 @@
 import fs from "node:fs";
 
 import {
-  type Dict,
   ADAPTER_VERSION,
   FAMILIES,
   isoNow,
@@ -9,6 +8,7 @@ import {
   discoverRuntimeStore,
   COPILOT_SPARSE_REMEDIATION,
 } from "./core.js";
+import type { JsonObject } from "../../core/jsonValue.js";
 import { isPlainObject } from "./core.js";
 import { extractInstructionDocuments, extractProjectConfigSignals } from "./filesystemSources.js";
 import { extractCodexSessions, extractClaudeProjectSessions } from "./jsonlSessions.js";
@@ -34,8 +34,8 @@ export interface CorpusMetadata {
   extracted_at: string;
   runtimes: string[];
   adapter_version: string;
-  families: Dict;
-  runtime_statuses: Dict[];
+  families: JsonObject;
+  runtime_statuses: JsonObject[];
   available_runtimes: string[];
   selected_runtimes: string[];
   available_but_not_selected: Array<{ runtime: string; reason: string; store_path: string }>;
@@ -45,7 +45,7 @@ export interface CorpusMetadata {
 
 export interface CorpusEnvelope {
   metadata: CorpusMetadata;
-  records: Dict[];
+  records: JsonObject[];
 }
 
 export interface BuildCorpusOpts {
@@ -60,7 +60,7 @@ export interface BuildCorpusOpts {
   sqliteCaps?: SqliteCaps;
 }
 
-type Extractor = (storePath: string | null, errors: string[], ctx?: ExtractorContext) => Dict[];
+type Extractor = (storePath: string | null, errors: string[], ctx?: ExtractorContext) => JsonObject[];
 
 function extractRuntimeStore(
   runtime: string,
@@ -68,12 +68,12 @@ function extractRuntimeStore(
   errors: string[],
   extractor: Extractor,
   sqliteCaps?: SqliteCaps,
-): [Dict[], Dict] {
+): [JsonObject[], JsonObject] {
   const discovery = discoverRuntimeStore(runtime, storePath);
   if (discovery.status !== "available") return [[], discovery];
   const errorStart = errors.length;
   const ctx: ExtractorContext = { sqliteCaps };
-  let records: Dict[];
+  let records: JsonObject[];
   try {
     records = extractor(storePath, errors, ctx);
   } catch (exc) {
@@ -110,10 +110,10 @@ function extractRuntimeStore(
   ];
 }
 
-export function dedupeRecords(records: Dict[]): Dict[] {
-  const byId = new Map<string, Dict>();
+export function dedupeRecords(records: JsonObject[]): JsonObject[] {
+  const byId = new Map<string, JsonObject>();
   for (const item of records) byId.set(item.source_id as string, item);
-  const actorOrder = (item: Dict): number => {
+  const actorOrder = (item: JsonObject): number => {
     const actor = isPlainObject(item.data) ? item.data.actor : null;
     return actor === "user" ? 0 : actor === "assistant" ? 1 : 2;
   };
@@ -134,9 +134,9 @@ export function dedupeRecords(records: Dict[]): Dict[] {
 }
 
 export function buildMetadata(
-  records: Dict[],
+  records: JsonObject[],
   errors: string[],
-  runtimeStatuses: Dict[],
+  runtimeStatuses: JsonObject[],
   coverage?: CorpusEnvelopeCoverage,
 ): CorpusMetadata {
   const counts = new Map<string, number>();
@@ -144,7 +144,7 @@ export function buildMetadata(
     const sk = item.source_kind as string;
     if ((FAMILIES as readonly string[]).includes(sk)) counts.set(sk, (counts.get(sk) ?? 0) + 1);
   }
-  const families: Dict = {};
+  const families: JsonObject = {};
   for (const family of FAMILIES) {
     const count = counts.get(family) ?? 0;
     families[family] = { count, status: count ? "ok" : "missing" };
@@ -177,10 +177,10 @@ export function buildCorpus(opts: BuildCorpusOpts): CorpusEnvelope {
     if (fs.existsSync(root)) normalizedRoots.push(resolvePath(root));
     else errors.push(`${root}: project root does not exist`);
   }
-  const records: Dict[] = [];
+  const records: JsonObject[] = [];
   records.push(...extractInstructionDocuments(normalizedRoots, errors));
   records.push(...extractProjectConfigSignals(normalizedRoots, errors));
-  const runtimeStatuses: Dict[] = [];
+  const runtimeStatuses: JsonObject[] = [];
   const runtimes: Array<[string, string | null, Extractor]> = [
     ["codex", opts.codexSessionsDir, extractCodexSessions],
     ["claude-code", opts.claudeProjectsDir, extractClaudeProjectSessions],

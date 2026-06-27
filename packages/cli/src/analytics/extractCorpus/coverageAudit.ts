@@ -2,7 +2,6 @@ import fs from "node:fs";
 import path from "node:path";
 
 import {
-  type Dict,
   type Env,
   discoverRuntimeStore,
   eventTimestamp,
@@ -10,6 +9,7 @@ import {
   iterJsonl,
   rglob,
 } from "./core.js";
+import type { JsonObject } from "../../core/jsonValue.js";
 import { isFilePath, isDir } from "./core.js";
 import {
   resolveCopilotStorePath,
@@ -204,7 +204,7 @@ function probeSqliteTimestamps(storePath: string, runtime: string): { earliest: 
           else if (typeof payload === "string") raw = payload;
           if (!raw) continue;
           try {
-            const parsed = JSON.parse(raw) as Dict;
+            const parsed = JSON.parse(raw) as JsonObject; // cast: IO boundary — parsed subprocess stdout JSON
             const ts = eventTimestamp(parsed, fallback);
             earliest = trackEarliest(earliest, ts);
             latest = trackLatest(latest, ts);

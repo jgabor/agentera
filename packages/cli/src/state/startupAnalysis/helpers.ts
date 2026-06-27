@@ -1,5 +1,6 @@
 import { pyJsonDumps as pyJsonDumpsCore, pyJsonString as pyJsonStringCore } from "../../core/pyjson.js";
-import { type Dict, hashLabel } from "./contract.js";
+import { hashLabel } from "./contract.js";
+import type { JsonObject } from "../../core/jsonValue.js";
 
 export const CLI_COMMAND_ARTIFACTS: Record<string, Set<string>> = {
   plan: new Set(["plan"]),
@@ -80,7 +81,7 @@ export function wordCount(text: string): number {
 
 let _fallbackIdSeq = 0;
 const _fallbackIds = new WeakMap<object, number>();
-export function recordLabel(record: Dict, salt: string): string {
+export function recordLabel(record: JsonObject, salt: string): string {
   let key: unknown = record.source_id;
   if (key === null || key === undefined || key === "") {
     let id = _fallbackIds.get(record);
@@ -93,7 +94,7 @@ export function recordLabel(record: Dict, salt: string): string {
   return hashLabel("record", key, salt);
 }
 
-export function extractText(record: Dict): string {
+export function extractText(record: JsonObject): string {
   const data = record.data;
   if (data && typeof data === "object" && !Array.isArray(data)) {
     const value = data.content || data.text || data.message || data.prompt;
@@ -101,7 +102,7 @@ export function extractText(record: Dict): string {
   }
   return "";
 }
-export function toolArguments(record: Dict): Dict {
+export function toolArguments(record: JsonObject): JsonObject {
   const data = record.data;
   if (data && typeof data === "object" && !Array.isArray(data)) {
     const args = data.arguments;
@@ -118,7 +119,7 @@ export function toolArguments(record: Dict): Dict {
   }
   return record;
 }
-export function toolName(record: Dict): string {
+export function toolName(record: JsonObject): string {
   const data = record.data;
   const values = [record.tool, record.tool_name, record.name];
   if (data && typeof data === "object" && !Array.isArray(data)) {
@@ -129,7 +130,7 @@ export function toolName(record: Dict): string {
   }
   return "";
 }
-export function toolArgument(record: Dict, ...keys: string[]): string {
+export function toolArgument(record: JsonObject, ...keys: string[]): string {
   const args = toolArguments(record);
   const candidates: unknown[] = keys.map((k) => args[k]);
   candidates.push(...keys.map((k) => record[k]));
@@ -149,7 +150,7 @@ function startupJsonScalar(value: unknown): string | undefined {
 export function pyJsonDumps(value: unknown): string {
   return pyJsonDumpsCore(value, startupJsonScalar);
 }
-export function argumentsText(record: Dict): string {
+export function argumentsText(record: JsonObject): string {
   return pyJsonDumps(toolArguments(record));
 }
 
@@ -195,7 +196,7 @@ export function capabilityInvocation(text: string): string | null {
   if (lowered.includes("agentera")) return "agentera";
   return null;
 }
-export function recordThresholdText(record: Dict): string {
+export function recordThresholdText(record: JsonObject): string {
   const parts = [extractText(record)];
   if (record.source_kind === "tool_call") parts.push(argumentsText(record));
   return parts.filter((p) => p).join("\n");
@@ -203,8 +204,8 @@ export function recordThresholdText(record: Dict): string {
 export function detailMetrics(text: string): { word_count: number; anchor_count: number } {
   return { word_count: wordCount(text), anchor_count: countMatches(DETAIL_ANCHOR_RE, text) };
 }
-export function thresholdWarnings(text: string): Array<Dict> {
-  const warnings: Dict[] = [];
+export function thresholdWarnings(text: string): Array<JsonObject> {
+  const warnings: JsonObject[] = [];
   const seen = new Set<string>();
   for (const [family, category, source, pattern] of THRESHOLD_WARNING_PATTERNS) {
     if (pattern.test(text)) {

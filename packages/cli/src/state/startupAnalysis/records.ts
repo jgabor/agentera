@@ -1,4 +1,5 @@
-import { type Dict, hashLabel, loadContract, parseTimestamp } from "./contract.js";
+import { hashLabel, loadContract, parseTimestamp } from "./contract.js";
+import type { JsonObject } from "../../core/jsonValue.js";
 import {
   argumentsText,
   capabilityInvocation,
@@ -14,19 +15,19 @@ import {
   startupConversationKey,
 } from "./threshold.js";
 
-function hasTranscriptBearingField(record: Dict): boolean {
+function hasTranscriptBearingField(record: JsonObject): boolean {
   if ("transcript" in record) return true;
   const data = record.data;
   return Boolean(data && typeof data === "object" && !Array.isArray(data) && "transcript" in data);
 }
 
-function boundedReason(reason: string, contract: Dict): string {
+function boundedReason(reason: string, contract: JsonObject): string {
   const reasons = Array.isArray(contract.degradation_reasons) ? contract.degradation_reasons : [];
   const allowed = new Set([...reasons, ...BOUNDARY_DEGRADATION_REASONS]);
   return allowed.has(reason) ? reason : "malformed_record";
 }
 
-function estimatedToolArgumentTokens(record: Dict): number {
+function estimatedToolArgumentTokens(record: JsonObject): number {
   return Math.ceil(Buffer.byteLength(argumentsText(record), "utf8") / 4);
 }
 
@@ -34,7 +35,7 @@ function timestampUtc(value: unknown): Date | null {
   return parseTimestamp(value);
 }
 
-function newSequence(conversationKey: string, capability: string | null, salt: string): Dict {
+function newSequence(conversationKey: string, capability: string | null, salt: string): JsonObject {
   const counts: Record<string, number> = {};
   for (const eventClass of [...STATE_EVENT_CLASSES].sort()) counts[eventClass] = 0;
   return {
@@ -53,7 +54,7 @@ function newSequence(conversationKey: string, capability: string | null, salt: s
 }
 
 function eventOutput(
-  record: Dict,
+  record: JsonObject,
   opts: {
     eventClass: string;
     phase: string;
@@ -62,8 +63,8 @@ function eventOutput(
     stateCommand?: string | null;
     redundantWithCli?: boolean | null;
   },
-): Dict {
-  const item: Dict = {
+): JsonObject {
+  const item: JsonObject = {
     record: recordLabel(record, opts.salt),
     event_class: STATE_EVENT_CLASSES.has(opts.eventClass) ? opts.eventClass : "non_state_context",
     phase: opts.phase,
@@ -76,15 +77,15 @@ function eventOutput(
   return item;
 }
 
-export function classifyStartupRecords(corpus: Dict, opts: { salt: string; contract?: Dict | null }): Dict {
+export function classifyStartupRecords(corpus: JsonObject, opts: { salt: string; contract?: JsonObject | null }): JsonObject {
   const salt = opts.salt;
   const loaded = opts.contract ?? loadContract();
   const boundaryInfo =
     loaded.boundary && typeof loaded.boundary === "object" && !Array.isArray(loaded.boundary) ? loaded.boundary : {};
   const boundary = timestampUtc(boundaryInfo.committed_at);
   const records = corpus && typeof corpus === "object" && !Array.isArray(corpus) ? (corpus.records ?? []) : [];
-  const degradations: Dict[] = [];
-  const groups = new Map<string, Dict[]>();
+  const degradations: JsonObject[] = [];
+  const groups = new Map<string, JsonObject[]>();
   for (const record of Array.isArray(records) ? records : []) {
     if (!record || typeof record !== "object" || Array.isArray(record)) {
       degradations.push({ reason: boundedReason("malformed_record", loaded) });
@@ -112,7 +113,7 @@ export function classifyStartupRecords(corpus: Dict, opts: { salt: string; contr
     groups.get(key)!.push(record);
   }
 
-  const sequences: Dict[] = [];
+  const sequences: JsonObject[] = [];
   for (const [conversationKey, items] of groups) {
     items.sort((a, b) => {
       const ta = String(a.timestamp ?? "");
@@ -120,7 +121,7 @@ export function classifyStartupRecords(corpus: Dict, opts: { salt: string; contr
       return ta < tb ? -1 : ta > tb ? 1 : 0;
     });
     const state = {
-      active: null as Dict | null,
+      active: null as JsonObject | null,
       segmentCapability: null as string | null,
       segmentOpen: false,
       segmentHadStateSequence: false,
@@ -172,9 +173,9 @@ export function classifyStartupRecords(corpus: Dict, opts: { salt: string; contr
       }
       if (state.active === null) continue;
       // cast: state.active is built by newSequence with typed array/counter/estimate fields
-      const active = state.active as Dict & {
+      const active = state.active as JsonObject & {
         counts: Record<string, number>;
-        events: Dict[];
+        events: JsonObject[];
         raw_artifact_labels_after_cli: string[];
         redundant_raw_artifact_labels: string[];
         estimated_raw_after_cli_tokens_by_artifact: Record<string, number>;

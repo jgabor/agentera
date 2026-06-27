@@ -1,4 +1,3 @@
-export type { Dict } from "./contract.js";
 export {
   TRANSCRIPT_KEYS,
   SESSION_KEYS,

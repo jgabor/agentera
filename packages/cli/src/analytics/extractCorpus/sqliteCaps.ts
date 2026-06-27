@@ -1,9 +1,9 @@
 import {
-  type Dict,
   type Env,
   MAX_SQLITE_ROWS,
   MAX_SQLITE_SESSIONS,
 } from "./core.js";
+import type { JsonObject } from "../../core/jsonValue.js";
 
 export interface SqliteCaps {
   maxSessions: number;
@@ -39,7 +39,7 @@ export function resolveSqliteCaps(
   };
 }
 
-export function formatTruncationWarnings(runtimeStatuses: Dict[]): string {
+export function formatTruncationWarnings(runtimeStatuses: JsonObject[]): string {
   const lines: string[] = [];
   for (const status of runtimeStatuses) {
     const truncatedAt = status.truncated_at;
@@ -53,7 +53,7 @@ export function formatTruncationWarnings(runtimeStatuses: Dict[]): string {
   return ["SQLite extraction truncated (history beyond cap omitted):", ...lines].join("\n");
 }
 
-export function applyTruncationToStatus(status: Dict, truncation: SqliteTruncationInfo | null | undefined): Dict {
+export function applyTruncationToStatus(status: JsonObject, truncation: SqliteTruncationInfo | null | undefined): JsonObject {
   if (!truncation) return status;
   return {
     ...status,

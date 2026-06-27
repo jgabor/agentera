@@ -6,7 +6,7 @@ import { asList, firstPresent } from "../stateQuery.js";
 import { CAPABILITY_NAMES } from "./types.js";
 
 export { CAPABILITY_NAMES };
-import type { Dict } from "./types.js";
+import type { JsonObject } from "../../core/jsonValue.js";
 
 export function isFile(p: string): boolean {
   try {
@@ -16,7 +16,7 @@ export function isFile(p: string): boolean {
   }
 }
 
-export function entryStatus(entry: Dict, def = "open"): string {
+export function entryStatus(entry: JsonObject, def = "open"): string {
   const raw = "status" in entry ? entry.status : def;
   return String(raw || def).toLowerCase();
 }
@@ -39,17 +39,17 @@ export function appendUnique(items: string[], value: string): void {
   if (value && !items.includes(value)) items.push(value);
 }
 
-export function taskRef(task: Dict): Dict {
+export function taskRef(task: JsonObject): JsonObject {
   return { number: task.number ?? null, name: firstPresent(task, ["name", "title"], ""), status: entryStatus(task, "pending") };
 }
 
-export function sourceProvenance(sourceFamily: string, command: string, field: string | null = null): Dict {
-  const provenance: Dict = { source_family: sourceFamily, command };
+export function sourceProvenance(sourceFamily: string, command: string, field: string | null = null): JsonObject {
+  const provenance: JsonObject = { source_family: sourceFamily, command };
   if (field) provenance.field = field;
   return provenance;
 }
 
-export function docsConventions(docs: Dict): Dict {
+export function docsConventions(docs: JsonObject): JsonObject {
   const conventions = docs.conventions;
   return conventions && typeof conventions === "object" && !Array.isArray(conventions) ? conventions : {};
 }
@@ -58,15 +58,15 @@ export function hasRecordedValue(value: unknown): boolean {
   if (value === null || value === undefined) return false;
   if (typeof value === "string") return value.trim().length > 0;
   if (Array.isArray(value)) return value.length > 0;
-  if (typeof value === "object") return Object.keys(value as Dict).length > 0;
+  if (typeof value === "object") return Object.keys(value as JsonObject).length > 0;
   return true;
 }
 
-export function fallbackStatePointer(artifactId: string, command: string): Dict {
+export function fallbackStatePointer(artifactId: string, command: string): JsonObject {
   return { status: "fallback_only", artifact_id: artifactId, fallback_command: command, raw_artifact_reads_required: false };
 }
 
-export function capabilityContextAppSummary(appHome: Dict, bundle: Dict): Dict {
+export function capabilityContextAppSummary(appHome: JsonObject, bundle: JsonObject): JsonObject {
   const caveats: string[] = [];
   if (appHome.status !== "up_to_date") {
     caveats.push("Agentera app files are not up to date; this is a caveat, not approval to repair or update app files.");
@@ -82,11 +82,11 @@ export function capabilityContextAppSummary(appHome: Dict, bundle: Dict): Dict {
   };
 }
 
-export function capabilityContextProfileSummary(profile: Dict): Dict {
+export function capabilityContextProfileSummary(profile: JsonObject): JsonObject {
   const caveats: string[] = [];
   if (profile.status !== "loaded") caveats.push("profile-derived state is unavailable in prime --context response.");
   else if (profile.stale === true) caveats.push("profile-derived state is stale; this is a caveat, not approval to refresh profile state.");
-  const summary: Dict = {};
+  const summary: JsonObject = {};
   for (const key of ["status", "path", "stale", "days_since_generated", "stale_threshold_days", "suggested_action"]) {
     if (key in profile) summary[key] = profile[key];
   }

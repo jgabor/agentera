@@ -9,7 +9,6 @@ import crypto from "node:crypto";
 import type { JsonObject, JsonValue } from "../../core/jsonValue.js";
 import { resolvePath } from "../../core/paths.js";
 
-export type Dict = JsonObject;
 export type Env = Record<string, string | undefined>;
 
 export const ADAPTER_VERSION = "agentera-v2-corpus-1";
@@ -110,8 +109,8 @@ export interface RuntimeStatusOpts {
   truncationLimit?: number | null;
 }
 
-export function runtimeStatus(runtime: string, opts: RuntimeStatusOpts): Dict {
-  const item: Dict = { runtime, status: opts.status, reason: opts.reason };
+export function runtimeStatus(runtime: string, opts: RuntimeStatusOpts): JsonObject {
+  const item: JsonObject = { runtime, status: opts.status, reason: opts.reason };
   if (opts.storePath !== null && opts.storePath !== undefined) item.store_path = opts.storePath;
   if (opts.fileCount !== null && opts.fileCount !== undefined) item.file_count = opts.fileCount;
   if (opts.recordCount !== null && opts.recordCount !== undefined) item.record_count = opts.recordCount;
@@ -162,7 +161,7 @@ function rglob(root: string, pattern: string): string[] {
   return out.sort();
 }
 
-export function discoverRuntimeStore(runtime: string, storePath: string | null): Dict {
+export function discoverRuntimeStore(runtime: string, storePath: string | null): JsonObject {
   if (storePath === null) {
     return runtimeStatus(runtime, { status: "skipped", reason: "disabled", storePath: null });
   }
@@ -221,13 +220,13 @@ export interface RecordOpts {
   timestamp: string;
   projectPath: string | null;
   runtime: string;
-  data: Dict;
+  data: JsonObject;
   sourceParts: unknown[];
   sessionId?: string | null;
 }
 
-export function record(opts: RecordOpts): Dict {
-  const item: Dict = {
+export function record(opts: RecordOpts): JsonObject {
+  const item: JsonObject = {
     source_id: stableId(opts.sourceKind, ...opts.sourceParts),
     timestamp: opts.timestamp,
     project_id: projectIdFromPath(opts.projectPath),
@@ -244,11 +243,11 @@ export function record(opts: RecordOpts): Dict {
   return item;
 }
 
-function isPlainObject(v: unknown): v is Dict {
+function isPlainObject(v: unknown): v is JsonObject {
   return typeof v === "object" && v !== null && !Array.isArray(v);
 }
 
-export function payloadItem(event: Dict): Dict {
+export function payloadItem(event: JsonObject): JsonObject {
   const payload = event.payload;
   if (isPlainObject(payload)) {
     const nested = payload.item;
@@ -258,7 +257,7 @@ export function payloadItem(event: Dict): Dict {
   return event;
 }
 
-export function eventKind(event: Dict): string {
+export function eventKind(event: JsonObject): string {
   for (const key of ["type", "event", "name"]) {
     const value = event[key];
     if (typeof value === "string") return value;
@@ -266,12 +265,12 @@ export function eventKind(event: Dict): string {
   return "";
 }
 
-export function eventTimestamp(item: Dict, fallback: string): string {
+export function eventTimestamp(item: JsonObject, fallback: string): string {
   const payload = isPlainObject(item.payload) ? item.payload : {};
   const nested = isPlainObject(payload.item) ? payload.item : {};
   for (const source of [item, payload, nested]) {
     for (const key of ["timestamp", "created_at", "createdAt", "time"]) {
-      const value = (source as Dict)[key];
+      const value = (source as JsonObject)[key];
       if (typeof value === "string" && value) return value;
       if (typeof value === "number") {
         return new Date(value * 1000).toISOString();
@@ -298,8 +297,8 @@ export function textFromContent(value: unknown): string {
   return pyStr(value);
 }
 
-export function claudeContentItems(event: Dict): Dict[] {
-  const items: Dict[] = [];
+export function claudeContentItems(event: JsonObject): JsonObject[] {
+  const items: JsonObject[] = [];
   const msg = isPlainObject(event.message) ? event.message : null;
   for (const source of [event, msg]) {
     if (!isPlainObject(source)) continue;
@@ -313,7 +312,7 @@ export function claudeContentItems(event: Dict): Dict[] {
   return items;
 }
 
-export function* iterJsonl(p: string, errors: string[]): Generator<Dict> {
+export function* iterJsonl(p: string, errors: string[]): Generator<JsonObject> {
   let text: string;
   try {
     text = fs.readFileSync(p, "utf-8");
@@ -344,15 +343,15 @@ export function signalType(text: string): string | null {
 }
 
 export function toolCallRecordFromItem(args: {
-  item: Dict;
-  event: Dict;
+  item: JsonObject;
+  event: JsonObject;
   fallbackTimestamp: string;
   projectPath: string | null;
   runtime: string;
   sourcePath: string;
   index: number;
   sessionId: string;
-}): Dict | null {
+}): JsonObject | null {
   const { item, event } = args;
   const kind = eventKind(event);
   const itemType = item.type;
@@ -385,14 +384,14 @@ export function toolCallRecordFromItem(args: {
 }
 
 export function toolCallRecord(args: {
-  event: Dict;
+  event: JsonObject;
   fallbackTimestamp: string;
   projectPath: string | null;
   runtime: string;
   sourcePath: string;
   index: number;
   sessionId: string;
-}): Dict | null {
+}): JsonObject | null {
   return toolCallRecordFromItem({ ...args, item: payloadItem(args.event) });
 }
 

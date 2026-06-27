@@ -116,9 +116,15 @@ tasks:
   - number: 6
     name: Cross-cutting cast audit + re-export deletion
     depends_on: ["1", "2", "3", "4", "5"]
-    status: pending
+    status: complete
     acceptance:
       - GIVEN all consumers now import the canonical type directly WHEN the orphaned re-export passthroughs are deleted THEN the tree compiles with no surviving internal cast tied to the JSON-value shape except at file/parse/external-input boundaries.
+    evidence:
+      - "Converted ~28 consumer files (capabilityContext 12, startupAnalysis 6, extractCorpus ~10, the missed test/registries/artifactRegistry.test.ts) from importing `Dict` to importing `JsonObject` directly; 5 sanctioned passthroughs deleted."
+      - "Discovered and removed a 6th passthrough: state/startupAnalysis/index.ts re-export `export type { Dict } from \"./contract.js\"`."
+      - "`rg \"\\bDict\\b\" packages/cli/src packages/cli/test | rg -v core/jsonValue` returns NONE — overall acceptance gate MET; only the canonical deprecated `Dict = JsonObject` alias in core/jsonValue.ts remains (deferred removal)."
+      - "Cast audit: 5 IO-boundary cast comments added; internal casts reviewed and kept (no control-flow rewrite, behavior preserved)."
+      - "typecheck 0 errors; 1145/1145 tests green (one flaky prepack/parity run observed, stable on re-run); 0 fixture drift."
   - number: 7
     name: Final state sync and verification
     depends_on: ["1", "2", "3", "4", "5", "6"]

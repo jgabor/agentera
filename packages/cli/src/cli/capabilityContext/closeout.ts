@@ -8,9 +8,9 @@ import { docsConventions, entryStatus, sourceProvenance, uniqueList } from "./sh
 import { closeoutChangelogBoundary } from "./planState.js";
 import { progressVerificationSummary } from "./progress.js";
 import { decisionReviewPressure } from "./evidence.js";
-import type { Dict } from "./types.js";
+import type { JsonObject } from "../../core/jsonValue.js";
 
-export function closeoutArtifactMappings(docs: Dict): Dict {
+export function closeoutArtifactMappings(docs: JsonObject): JsonObject {
   const mapping = asList(docs.mapping);
   const ok = Boolean(docs.exists) && mapping.length > 0;
   return {
@@ -22,7 +22,7 @@ export function closeoutArtifactMappings(docs: Dict): Dict {
   };
 }
 
-export function closeoutVersionPolicy(docs: Dict): Dict {
+export function closeoutVersionPolicy(docs: JsonObject): JsonObject {
   const conventions = docsConventions(docs);
   const semverPolicy = conventions.semver_policy && typeof conventions.semver_policy === "object" && !Array.isArray(conventions.semver_policy) ? conventions.semver_policy : {};
   const versionFiles = asList(conventions.version_files);
@@ -38,7 +38,7 @@ export function closeoutVersionPolicy(docs: Dict): Dict {
   };
 }
 
-export function closeoutTodoBlockers(schemas: Record<string, SchemaInfo>, todoItems: Array<Record<string, string>>): Dict {
+export function closeoutTodoBlockers(schemas: Record<string, SchemaInfo>, todoItems: Array<Record<string, string>>): JsonObject {
   const info: SchemaInfo = schemas.todo ?? { path: "TODO.md", record: undefined, schema: {}, fields: {} };
   const exists = fs.existsSync(artifactPath(info, "todo"));
   return {
@@ -50,7 +50,7 @@ export function closeoutTodoBlockers(schemas: Record<string, SchemaInfo>, todoIt
   };
 }
 
-export function closeoutBenchmarkEvidence(docs: Dict): Dict {
+export function closeoutBenchmarkEvidence(docs: JsonObject): JsonObject {
   const coverage = docs.coverage && typeof docs.coverage === "object" && !Array.isArray(docs.coverage) ? docs.coverage : {};
   const testsSummary = String(coverage.tests ?? "").trim();
   if (testsSummary && testsSummary.toLowerCase().includes("benchmark")) {
@@ -77,7 +77,7 @@ export function closeoutBenchmarkEvidence(docs: Dict): Dict {
   };
 }
 
-export function localGitTagEvidence(targetVersion: string | null): Dict {
+export function localGitTagEvidence(targetVersion: string | null): JsonObject {
   const tag = targetVersion ? `v${targetVersion}` : null;
   const source = { source_family: "local_git", command: "git tag --list <target-tag>", remote: false };
   if (!tag) {
@@ -112,7 +112,7 @@ export function localGitTagEvidence(targetVersion: string | null): Dict {
   };
 }
 
-export function closeoutReleaseBoundary(changelogBoundary: Dict, bundle: Dict): Dict {
+export function closeoutReleaseBoundary(changelogBoundary: JsonObject, bundle: JsonObject): JsonObject {
   const targetVersion = changelogBoundary.selected_target_version;
   const localTag = localGitTagEvidence(targetVersion ? String(targetVersion) : null);
   const metadataRecorded = Boolean(changelogBoundary.selected_target_recorded);
@@ -151,13 +151,13 @@ export function closeoutReleaseBoundary(changelogBoundary: Dict, bundle: Dict): 
 export function documentCloseoutContext(
   capability: string | null,
   schemas: Record<string, SchemaInfo>,
-  plan: Dict,
-  progress: Dict,
+  plan: JsonObject,
+  progress: JsonObject,
   todoItems: Array<Record<string, string>>,
-  docs: Dict,
-  profile: Dict,
-  bundle: Dict,
-): Dict | null {
+  docs: JsonObject,
+  profile: JsonObject,
+  bundle: JsonObject,
+): JsonObject | null {
   if (capability !== "document") return null;
   const capabilityContract = capabilityContext(capability) ?? {};
   const artifactMappings = closeoutArtifactMappings(docs);

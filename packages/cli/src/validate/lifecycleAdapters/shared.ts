@@ -10,8 +10,6 @@ import {
 } from "../../registries/packageRegistry.js";
 import { RuntimeAdapterRegistry } from "../../registries/runtimeAdapterRegistry.js";
 
-export type Dict = JsonObject;
-
 export const REGISTRY_CONTRACT_ERROR_PREFIX = "registry contract error";
 
 export const CODEX_PROFILE_TERMS = [
@@ -37,7 +35,7 @@ function packageRegistryPath(root: string): string {
   return path.join(root, "references/adapters/package-registry.yaml");
 }
 
-export function isMapping(v: unknown): v is Dict {
+export function isMapping(v: unknown): v is JsonObject {
   return v !== null && typeof v === "object" && !Array.isArray(v);
 }
 
@@ -57,7 +55,7 @@ export function stringField(obj: JsonObject, key: string): string {
   return typeof value === "string" ? value : "";
 }
 
-export function loadJson(p: string): Dict {
+export function loadJson(p: string): JsonObject {
   const data = JSON.parse(fs.readFileSync(p, "utf8"));
   if (!isMapping(data)) {
     throw new Error(`${p}: expected JSON object`);
@@ -69,7 +67,7 @@ export function registryContractError(exc: Error): string {
   return `${REGISTRY_CONTRACT_ERROR_PREFIX}: ${exc.message}`;
 }
 
-export function runtimeView(registry: RuntimeAdapterRegistry, runtime: string): Dict {
+export function runtimeView(registry: RuntimeAdapterRegistry, runtime: string): JsonObject {
   return registry.consumerView("lifecycle", runtime);
 }
 

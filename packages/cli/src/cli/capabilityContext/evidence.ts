@@ -9,7 +9,6 @@ import { loadNamedArtifact } from "../orientation.js";
 import { sourceMetadata } from "../stateQuery.js";
 import { selectEvidenceTarget } from "./planState.js";
 import { progressVerificationSummary, retryState } from "./progress.js";
-import type { Dict } from "./types.js";
 import type { JsonObject } from "../../core/jsonValue.js";
 
 export function dateFromIsoUtc(s: string): number | null {
@@ -34,7 +33,7 @@ export function currentStateStatus(value: unknown, label: string, staleAfterDays
   return ["current", null];
 }
 
-export function evidenceDocsState(docs: Dict): Dict {
+export function evidenceDocsState(docs: JsonObject): JsonObject {
   const available = Boolean(docs.exists);
   const nonEmptyFields = ["mapping_entries", "indexed_documents", "last_audit"].filter((f) => hasRecordedValue(docs[f]));
   const [currentState, currentStateCaveat] = currentStateStatus(docs.last_audit, "Docs");
@@ -54,9 +53,9 @@ export function evidenceDocsState(docs: Dict): Dict {
   };
 }
 
-export function evidenceHealthState(health: Dict): Dict {
+export function evidenceHealthState(health: JsonObject): JsonObject {
   const available = Boolean(health.exists);
-  const merged: Dict = { audit_number: health.number, ...health };
+  const merged: JsonObject = { audit_number: health.number, ...health };
   const nonEmptyFields = ["audit_number", "trajectory", "grade"].filter((f) => hasRecordedValue(merged[f]));
   const auditDate = health.date ?? health.timestamp ?? null;
   const [currentState, currentStateCaveat] = currentStateStatus(auditDate, "Health");
@@ -79,7 +78,7 @@ export function evidenceHealthState(health: Dict): Dict {
   };
 }
 
-export function evidenceTodoState(schemas: Record<string, SchemaInfo>, todoItems: Array<Record<string, string>>): Dict {
+export function evidenceTodoState(schemas: Record<string, SchemaInfo>, todoItems: Array<Record<string, string>>): JsonObject {
   const info: SchemaInfo = schemas.todo ?? { path: "TODO.md", record: undefined, schema: {}, fields: {} };
   const exists = fs.existsSync(artifactPath(info, "todo"));
   return {
@@ -93,7 +92,7 @@ export function evidenceTodoState(schemas: Record<string, SchemaInfo>, todoItems
   };
 }
 
-export function evidenceProtectedStateChecks(): Dict {
+export function evidenceProtectedStateChecks(): JsonObject {
   const source = sourceProvenance("evidence_context", "agentera prime --context audit --format json", "protected_state_checks");
   return {
     status: "not_checked_by_design",
@@ -121,13 +120,13 @@ export function evidenceProtectedStateChecks(): Dict {
   };
 }
 
-export function evidenceVersionChecks(docs: Dict): Dict {
+export function evidenceVersionChecks(docs: JsonObject): JsonObject {
   const conventions = docsConventions(docs);
   const versionFiles = asList(conventions.version_files);
   const semverPolicy = conventions.semver_policy && typeof conventions.semver_policy === "object" && !Array.isArray(conventions.semver_policy) ? conventions.semver_policy : {};
   const source = sourceProvenance("docs", "agentera docs --format json", "summary.conventions");
   const ec = (field: string) => sourceProvenance("evidence_context", "agentera prime --context audit --format json", field);
-  const checks: Dict[] = [
+  const checks: JsonObject[] = [
     {
       name: "docs_version_policy",
       status: Object.keys(semverPolicy).length > 0 ? "verified_local" : "unavailable",
@@ -178,9 +177,9 @@ export function evidenceVersionChecks(docs: Dict): Dict {
   };
 }
 
-export function evidencePlanCriteria(plan: Dict, target: Dict): Dict {
+export function evidencePlanCriteria(plan: JsonObject, target: JsonObject): JsonObject {
   const taskRefObj = target.task && typeof target.task === "object" && !Array.isArray(target.task) ? target.task : null;
-  let selected: Dict | null = null;
+  let selected: JsonObject | null = null;
   if (taskRefObj) {
     const tasks = asList(plan.tasks).filter((t) => t && typeof t === "object" && !Array.isArray(t));
     selected = tasks.find((t) => t.number === taskRefObj.number) ?? null;
@@ -198,11 +197,11 @@ export function evidencePlanCriteria(plan: Dict, target: Dict): Dict {
   };
 }
 
-export function residualRiskEntry(category: string, status: string, message: string, sp: Dict): Dict {
+export function residualRiskEntry(category: string, status: string, message: string, sp: JsonObject): JsonObject {
   return { category, status, message, source_provenance: sp };
 }
 
-export function decisionContextRisk(schemas: Record<string, SchemaInfo>): Dict {
+export function decisionContextRisk(schemas: Record<string, SchemaInfo>): JsonObject {
   const info: SchemaInfo = schemas.decisions ?? { path: ".agentera/decisions.yaml", record: undefined, schema: {}, fields: {} };
   const p = artifactPath(info, "decisions");
   const source = sourceMetadata("decisions", p);
@@ -238,7 +237,7 @@ export function parseDecisionReviewDate(value: unknown): number | null {
   return dateFromIsoUtc(value.trim().slice(0, 10));
 }
 
-export function decisionReviewDue(entry: Dict): [string | null, number | null] {
+export function decisionReviewDue(entry: JsonObject): [string | null, number | null] {
   const satisfaction = entry.satisfaction && typeof entry.satisfaction === "object" && !Array.isArray(entry.satisfaction) ? entry.satisfaction : {};
   const candidates: Array<[string, unknown]> = [
     ["review_date", entry.review_date],
@@ -254,7 +253,7 @@ export function decisionReviewDue(entry: Dict): [string | null, number | null] {
   return [null, null];
 }
 
-export function decisionLabel(entry: Dict): string {
+export function decisionLabel(entry: JsonObject): string {
   const number = entry.number;
   if (number !== null && number !== undefined && number !== "") return `Decision ${number}`;
   const summary = entry.summary;
@@ -267,7 +266,7 @@ export function isoFromUtcMs(utc: number): string {
   return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
 }
 
-export function decisionReviewPressure(schemas: Record<string, SchemaInfo>): Dict {
+export function decisionReviewPressure(schemas: Record<string, SchemaInfo>): JsonObject {
   const info: SchemaInfo = schemas.decisions ?? { path: ".agentera/decisions.yaml", record: undefined, schema: {}, fields: {} };
   const p = artifactPath(info, "decisions");
   const source = sourceMetadata("decisions", p);
@@ -276,7 +275,7 @@ export function decisionReviewPressure(schemas: Record<string, SchemaInfo>): Dic
     return { status: "unavailable", source_provenance: sp, summary: null, stale_protected_decisions: [], caveats: [] };
   }
   const data = loadNamedArtifact(schemas, "decisions");
-  const dd = data && typeof data === "object" && !Array.isArray(data) ? (data as Dict) : {};
+  const dd = data && typeof data === "object" && !Array.isArray(data) ? (data as JsonObject) : {};
   const active = Array.isArray(dd.decisions) ? dd.decisions : [];
   const archive = Array.isArray(dd.archive) ? dd.archive : [];
   const activeEntries = active
@@ -285,12 +284,12 @@ export function decisionReviewPressure(schemas: Record<string, SchemaInfo>): Dic
   const archiveEntries = archive
     .filter((e): e is JsonObject => Boolean(e && typeof e === "object" && !Array.isArray(e)))
     .map((e) => decisionContextEntry(e));
-  const protectedActive = activeEntries.filter((e: Dict) => e.satisfaction && typeof e.satisfaction === "object" && !Array.isArray(e.satisfaction) && e.satisfaction.review_needed);
-  const protectedArchive = archiveEntries.filter((e: Dict) => e.satisfaction && typeof e.satisfaction === "object" && !Array.isArray(e.satisfaction) && e.satisfaction.review_needed);
+  const protectedActive = activeEntries.filter((e: JsonObject) => e.satisfaction && typeof e.satisfaction === "object" && !Array.isArray(e.satisfaction) && e.satisfaction.review_needed);
+  const protectedArchive = archiveEntries.filter((e: JsonObject) => e.satisfaction && typeof e.satisfaction === "object" && !Array.isArray(e.satisfaction) && e.satisfaction.review_needed);
   const today = todayUtcMs();
-  const stale: Dict[] = [];
+  const stale: JsonObject[] = [];
   let caveats: string[] = [];
-  for (const [collection, entries] of [["decisions", protectedActive], ["archive", protectedArchive]] as Array<[string, Dict[]]>) {
+  for (const [collection, entries] of [["decisions", protectedActive], ["archive", protectedArchive]] as Array<[string, JsonObject[]]>) {
     for (const entry of entries) {
       const [field, reviewDate] = decisionReviewDue(entry);
       if (reviewDate === null || reviewDate > today) continue;
@@ -331,14 +330,14 @@ export function decisionReviewPressure(schemas: Record<string, SchemaInfo>): Dic
 export function auditEvidenceContext(
   capability: string | null,
   schemas: Record<string, SchemaInfo>,
-  plan: Dict,
-  progress: Dict,
-  health: Dict,
+  plan: JsonObject,
+  progress: JsonObject,
+  health: JsonObject,
   todoItems: Array<Record<string, string>>,
-  docs: Dict,
-  profile: Dict,
-  bundle: Dict,
-): Dict | null {
+  docs: JsonObject,
+  profile: JsonObject,
+  bundle: JsonObject,
+): JsonObject | null {
   if (capability !== "audit") return null;
   const capabilityContract = capabilityContext(capability) ?? {};
   const evaluationTarget = selectEvidenceTarget(plan);
@@ -353,7 +352,7 @@ export function auditEvidenceContext(
   const reviewPressure = decisionReviewPressure(schemas);
 
   let stateCaveats: string[] = [];
-  const attributedRisks: Dict[] = [];
+  const attributedRisks: JsonObject[] = [];
   for (const family of (capabilityContract.missing_state_families ?? []) as string[]) {
     const message = `${family} state is not included in prime --context startup context.`;
     stateCaveats.push(message);
@@ -378,24 +377,24 @@ export function auditEvidenceContext(
       stateCaveats.push(caveat);
       // cast: component source_provenance comes from evidence builders backed by parsed artifact/decision state
       const componentSp = component.source_provenance ?? sourceProvenance("evidence_context", "agentera prime --context audit --format json");
-      attributedRisks.push(residualRiskEntry("evidence_family", "caveated", caveat, componentSp as Dict));
+      attributedRisks.push(residualRiskEntry("evidence_family", "caveated", caveat, componentSp as JsonObject));
     }
   }
   for (const caveat of (decisionRisk.caveats ?? []) as string[]) {
     stateCaveats.push(caveat);
-    attributedRisks.push(residualRiskEntry("decisions_context", decisionRisk.status as string, caveat, decisionRisk.source_provenance as Dict));
+    attributedRisks.push(residualRiskEntry("decisions_context", decisionRisk.status as string, caveat, decisionRisk.source_provenance as JsonObject));
   }
   for (const caveat of (reviewPressure.caveats ?? []) as string[]) {
     stateCaveats.push(caveat);
-    attributedRisks.push(residualRiskEntry("decision_review_pressure", reviewPressure.status as string, caveat, reviewPressure.source_provenance as Dict));
+    attributedRisks.push(residualRiskEntry("decision_review_pressure", reviewPressure.status as string, caveat, reviewPressure.source_provenance as JsonObject));
   }
   const retry = retryState();
   for (const caveat of (retry.caveats ?? []) as string[]) {
     stateCaveats.push(caveat);
-    attributedRisks.push(residualRiskEntry("retry_state", retry.status as string, caveat, retry.source_provenance as Dict));
+    attributedRisks.push(residualRiskEntry("retry_state", retry.status as string, caveat, retry.source_provenance as JsonObject));
   }
   stateCaveats = uniqueList(stateCaveats);
-  const dedupedRisks: Dict[] = [];
+  const dedupedRisks: JsonObject[] = [];
   const seen = new Set<string>();
   for (const risk of attributedRisks) {
     const key = `${risk.category}\u0000${risk.message}`;

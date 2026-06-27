@@ -1,7 +1,5 @@
 import { CAPABILITY_INSTRUCTIONS } from "../../capabilities/index.js";
-import type { JsonObject } from "../../core/jsonValue.js";
 
-export type Dict = JsonObject;
 export type Env = Record<string, string | undefined>;
 
 export const CAPABILITY_NAMES = Object.keys(CAPABILITY_INSTRUCTIONS);

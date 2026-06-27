@@ -5,7 +5,8 @@ import { capabilityContext } from "./contract.js";
 import { resolveProfileDirOverride, resolveXdgDataHome } from "../../core/envPaths.js";
 import { expanduser } from "../../core/paths.js";
 import { sourceProvenance, uniqueList } from "./shared.js";
-import type { Dict, Env } from "./types.js";
+import type { Env } from "./types.js";
+import type { JsonObject } from "../../core/jsonValue.js";
 
 export const BENCHMARK_CONTEXT_CMD = "agentera prime --context optimize --format json";
 export const BENCHMARK_LATEST_REPORT_LABEL = "startup_benchmark_latest_report";
@@ -72,7 +73,7 @@ export function safeBenchmarkLabelCounts(value: unknown, family: string): [Recor
   if (!value || typeof value !== "object" || Array.isArray(value)) return [{}, []];
   const counts: Record<string, number> = {};
   let dropped = 0;
-  for (const [key, rawCount] of Object.entries(value as Dict)) {
+  for (const [key, rawCount] of Object.entries(value as JsonObject)) {
     const label = safeBenchmarkLabel(key);
     const count = safeBenchmarkNumber(rawCount);
     if (label === null || count === null) {
@@ -88,7 +89,7 @@ export function safeBenchmarkLabelCounts(value: unknown, family: string): [Recor
   return [sorted, caveats];
 }
 
-export function readBenchmarkJson(p: string, label: string): [string, Dict | null, string[]] {
+export function readBenchmarkJson(p: string, label: string): [string, JsonObject | null, string[]] {
   let text: string;
   try {
     text = fs.readFileSync(p, "utf8");
@@ -103,13 +104,13 @@ export function readBenchmarkJson(p: string, label: string): [string, Dict | nul
   } catch {
     return ["malformed", null, [`${label} is malformed JSON.`]];
   }
-  if (!data || typeof data !== "object" || Array.isArray(data) || Object.keys(data as Dict).length === 0) {
+  if (!data || typeof data !== "object" || Array.isArray(data) || Object.keys(data as JsonObject).length === 0) {
     return ["empty", null, [`${label} did not contain a non-empty JSON object.`]];
   }
-  return ["available", data as Dict, []];
+  return ["available", data as JsonObject, []];
 }
 
-export function readBenchmarkHistory(p: string): [string, Dict[], string[]] {
+export function readBenchmarkHistory(p: string): [string, JsonObject[], string[]] {
   let text: string;
   try {
     text = fs.readFileSync(p, "utf8");
@@ -119,7 +120,7 @@ export function readBenchmarkHistory(p: string): [string, Dict[], string[]] {
   }
   const lines = text.split(/\r\n|\r|\n/).filter((line) => line.trim());
   if (lines.length === 0) return ["empty", [], ["Startup benchmark aggregate history exists but has no rows."]];
-  const rows: Dict[] = [];
+  const rows: JsonObject[] = [];
   let malformed = 0;
   for (const line of lines) {
     let row: unknown;
@@ -129,7 +130,7 @@ export function readBenchmarkHistory(p: string): [string, Dict[], string[]] {
       malformed += 1;
       continue;
     }
-    if (row && typeof row === "object" && !Array.isArray(row)) rows.push(row as Dict);
+    if (row && typeof row === "object" && !Array.isArray(row)) rows.push(row as JsonObject);
     else malformed += 1;
   }
   if (malformed) return ["malformed", rows, [`Startup benchmark aggregate history has ${malformed} malformed row(s).`]];
@@ -137,7 +138,7 @@ export function readBenchmarkHistory(p: string): [string, Dict[], string[]] {
   return ["available", rows, []];
 }
 
-export function latestBenchmarkSummary(status: string, report: Dict | null, caveats: string[]): Dict {
+export function latestBenchmarkSummary(status: string, report: JsonObject | null, caveats: string[]): JsonObject {
   const source = sourceProvenance("benchmark_context", BENCHMARK_CONTEXT_CMD, "latest_report");
   if (status !== "available" || report === null) {
     return {
@@ -169,9 +170,9 @@ export function latestBenchmarkSummary(status: string, report: Dict | null, cave
   };
 }
 
-export function historyBenchmarkSummary(status: string, rows: Dict[], caveats: string[]): Dict {
+export function historyBenchmarkSummary(status: string, rows: JsonObject[], caveats: string[]): JsonObject {
   const latest = rows.length > 0 ? rows[rows.length - 1] : null;
-  let latestSummary: Dict | null = null;
+  let latestSummary: JsonObject | null = null;
   const sc = [...caveats];
   if (latest) {
     const runtimeScope = Array.isArray(latest.runtime_scope) ? latest.runtime_scope : [];
@@ -201,16 +202,16 @@ export function historyBenchmarkSummary(status: string, rows: Dict[], caveats: s
   };
 }
 
-export function runtimeBenchmarkCoverage(reportStatus: string, report: Dict | null): Dict {
+export function runtimeBenchmarkCoverage(reportStatus: string, report: JsonObject | null): JsonObject {
   const source = sourceProvenance("benchmark_context", BENCHMARK_CONTEXT_CMD, "runtime_coverage");
-  const miss = (caveat: string): Dict => ({
+  const miss = (caveat: string): JsonObject => ({
     status: "missing", source_label: BENCHMARK_LATEST_REPORT_LABEL, source_provenance: source,
     non_empty_evidence_present: false, items: [], status_counts: {}, caveats: [caveat],
   });
   if (reportStatus !== "available" || report === null) return miss("Runtime coverage is unavailable without a valid latest startup benchmark report.");
   const rawItems = report.runtime_coverage;
   if (!Array.isArray(rawItems)) return miss("Latest startup benchmark report has no runtime_coverage list.");
-  const items: Dict[] = [];
+  const items: JsonObject[] = [];
   let caveats: string[] = [];
   const statusCounts: Record<string, number> = {};
   for (const raw of rawItems.slice(0, 12)) {
@@ -227,7 +228,7 @@ export function runtimeBenchmarkCoverage(reportStatus: string, report: Dict | nu
     }
     status = status || "unknown";
     statusCounts[status] = (statusCounts[status] ?? 0) + 1;
-    const item: Dict = { runtime, status };
+    const item: JsonObject = { runtime, status };
     if (reason) item.reason = reason;
     for (const key of ["record_count", "file_count", "error_count"]) {
       const number = safeBenchmarkNumber(raw[key]);
@@ -261,7 +262,7 @@ export function runtimeBenchmarkCoverage(reportStatus: string, report: Dict | nu
   };
 }
 
-export function stateAccessBenchmarkMetrics(reportStatus: string, report: Dict | null): Dict {
+export function stateAccessBenchmarkMetrics(reportStatus: string, report: JsonObject | null): JsonObject {
   const source = sourceProvenance("benchmark_context", BENCHMARK_CONTEXT_CMD, "state_access_metrics");
   if (reportStatus !== "available" || report === null) {
     return {
@@ -302,7 +303,7 @@ export function stateAccessBenchmarkMetrics(reportStatus: string, report: Dict |
   };
 }
 
-export function tokenBenchmarkImpact(reportStatus: string, report: Dict | null): Dict {
+export function tokenBenchmarkImpact(reportStatus: string, report: JsonObject | null): JsonObject {
   const source = sourceProvenance("benchmark_context", BENCHMARK_CONTEXT_CMD, "token_impact");
   if (reportStatus !== "available" || report === null) {
     return {
@@ -333,7 +334,7 @@ export function tokenBenchmarkImpact(reportStatus: string, report: Dict | null):
   };
 }
 
-export function benchmarkComparison(reportStatus: string, report: Dict | null): Dict {
+export function benchmarkComparison(reportStatus: string, report: JsonObject | null): JsonObject {
   const source = sourceProvenance("benchmark_context", BENCHMARK_CONTEXT_CMD, "comparison");
   if (reportStatus !== "available" || report === null) {
     return {
@@ -365,9 +366,9 @@ export function benchmarkComparison(reportStatus: string, report: Dict | null): 
   };
 }
 
-export function benchmarkRecommendation(reportStatus: string, report: Dict | null): Dict {
+export function benchmarkRecommendation(reportStatus: string, report: JsonObject | null): JsonObject {
   const source = sourceProvenance("benchmark_context", BENCHMARK_CONTEXT_CMD, "recommendation");
-  const miss = (caveat: string): Dict => ({
+  const miss = (caveat: string): JsonObject => ({
     status: "missing", source_label: BENCHMARK_LATEST_REPORT_LABEL, source_provenance: source,
     action: null, measured_trigger: null, rationale: null, rationale_present: false,
     rationale_boundary: "not_emitted_from_retained_report", implementation_recommended: false, caveats: [caveat],
@@ -377,7 +378,7 @@ export function benchmarkRecommendation(reportStatus: string, report: Dict | nul
   if (!recommendation || typeof recommendation !== "object" || Array.isArray(recommendation)) {
     return miss("Latest startup benchmark report has no startup_recommendation object.");
   }
-  const rec = recommendation as Dict;
+  const rec = recommendation as JsonObject;
   const caveats: string[] = [];
   let action = rec.action as string;
   if (!BENCHMARK_RECOMMENDATION_ACTIONS.has(action)) {
@@ -401,7 +402,7 @@ export function benchmarkRecommendation(reportStatus: string, report: Dict | nul
   };
 }
 
-export function benchmarkManualRefresh(complete: boolean, latestReport: Dict, stateMetrics: Dict): Dict {
+export function benchmarkManualRefresh(complete: boolean, latestReport: JsonObject, stateMetrics: JsonObject): JsonObject {
   const caveats = ["The CLI did not run `mage bench:startupState`; benchmark refresh is manual-only by design."];
   let status: string;
   if (["missing", "empty", "malformed", "unreadable"].includes(latestReport.status as string)) {
@@ -418,7 +419,7 @@ export function benchmarkManualRefresh(complete: boolean, latestReport: Dict, st
   return { status, command: "mage bench:startupState", execution_status: "not_run_by_design", auto_run: false, caveats: uniqueList(caveats) };
 }
 
-export function benchmarkPrivacyBoundary(): Dict {
+export function benchmarkPrivacyBoundary(): JsonObject {
   return {
     status: "enforced",
     source_provenance: sourceProvenance("benchmark_context", BENCHMARK_CONTEXT_CMD, "privacy_boundary"),
@@ -432,7 +433,7 @@ export function benchmarkPrivacyBoundary(): Dict {
   };
 }
 
-export function optimizeBenchmarkContext(capability: string | null): Dict | null {
+export function optimizeBenchmarkContext(capability: string | null): JsonObject | null {
   if (capability !== "optimize") return null;
   const benchmarkDir = startupBenchmarkDir();
   const [latestStatus, latestData, latestCaveats] = readBenchmarkJson(path.join(benchmarkDir, "latest-report.json"), BENCHMARK_LATEST_REPORT_LABEL);

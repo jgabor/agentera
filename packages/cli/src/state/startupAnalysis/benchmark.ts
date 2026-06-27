@@ -5,7 +5,7 @@ import { spawnSync as _spawnSync } from "node:child_process";
 import { pyJsonIndent } from "../../core/pyjson.js";
 import { loadTomlFile } from "../../core/toml.js";
 import { resolveSourceRoot } from "../../core/sourceRoot.js";
-import { type Dict, loadContract, parseTimestamp, formatTimestamp } from "./contract.js";
+import { loadContract, parseTimestamp, formatTimestamp } from "./contract.js";
 import type { JsonObject } from "../../core/jsonValue.js";
 import { inc, counterDict, safeInt, pyJsonDumps } from "./helpers.js";
 import { boundedRuntimeStatus } from "./threshold.js";
@@ -29,7 +29,7 @@ function maxRecordTimestamp(records: unknown[], after: Date | null = null): Date
   let latest: Date | null = null;
   for (const record of records) {
     if (!record || typeof record !== "object" || Array.isArray(record)) continue;
-    const ts = parseTimestamp((record as Dict).timestamp);
+    const ts = parseTimestamp((record as JsonObject).timestamp);
     if (ts === null) continue;
     if (after !== null && ts.getTime() <= after.getTime()) continue;
     if (latest === null || ts.getTime() > latest.getTime()) latest = ts;
@@ -37,7 +37,7 @@ function maxRecordTimestamp(records: unknown[], after: Date | null = null): Date
   return latest;
 }
 
-function artifactLabelCounts(sequences: Dict[]): Record<string, number> {
+function artifactLabelCounts(sequences: JsonObject[]): Record<string, number> {
   const counts: Record<string, number> = {};
   for (const sequence of sequences) {
     for (const event of Array.isArray(sequence.events) ? sequence.events : []) {
@@ -53,7 +53,7 @@ function runtimeRecordCounts(records: unknown[]): Record<string, number> {
   const counts: Record<string, number> = {};
   for (const record of records) {
     if (record && typeof record === "object") {
-      const runtime = (record as Dict).runtime;
+      const runtime = (record as JsonObject).runtime;
       if (typeof runtime === "string") inc(counts, runtime);
     }
   }
@@ -62,10 +62,10 @@ function runtimeRecordCounts(records: unknown[]): Record<string, number> {
 
 function agenteraVersion(root: string = resolveSourceRoot()): string {
   try {
-    const data = loadTomlFile(path.join(root, "pyproject.toml")) as Dict;
+    const data = loadTomlFile(path.join(root, "pyproject.toml")) as JsonObject; // cast: IO boundary — TOML parse of pyproject.toml
     const project = data.project;
-    if (project && typeof project === "object" && typeof (project as Dict).version === "string") {
-      return (project as Dict).version as string;
+    if (project && typeof project === "object" && typeof (project as JsonObject).version === "string") {
+      return (project as JsonObject).version as string;
     }
   } catch {
     return "unknown";
@@ -79,13 +79,13 @@ function gitOutput(args: string[], root: string = resolveSourceRoot()): string |
   return (result.stdout ?? "").trim();
 }
 
-function gitMetadata(root: string = resolveSourceRoot()): Dict {
+function gitMetadata(root: string = resolveSourceRoot()): JsonObject {
   const commit = gitOutput(["rev-parse", "HEAD"], root) || "unknown";
   const status = gitOutput(["status", "--porcelain"], root);
   return { git_commit: commit, git_dirty: status !== null ? Boolean(status) : false };
 }
 
-function runtimeScope(metrics: Dict, approvedScope: string[] | null = null): string[] {
+function runtimeScope(metrics: JsonObject, approvedScope: string[] | null = null): string[] {
   if (approvedScope && approvedScope.length > 0) {
     return [...new Set(approvedScope.filter((l) => l).map((l) => String(l)))].sort();
   }
@@ -101,7 +101,7 @@ function runtimeScope(metrics: Dict, approvedScope: string[] | null = null): str
   return sorted.length > 0 ? sorted : ["unknown"];
 }
 
-function runtimeScopeMatches(row: Dict, scope: string[]): boolean {
+function runtimeScopeMatches(row: JsonObject, scope: string[]): boolean {
   const value = row.runtime_scope;
   if (!Array.isArray(value)) return false;
   const a = value.map((l) => String(l)).sort();
@@ -120,7 +120,7 @@ export function previousBenchmarkWatermark(benchmarkDir: string, scope: string[]
   let watermark: Date | null = null;
   for (const line of lines) {
     if (!line.trim()) continue;
-    let row: Dict;
+    let row: JsonObject;
     try {
       row = JSON.parse(line);
     } catch {
@@ -133,7 +133,7 @@ export function previousBenchmarkWatermark(benchmarkDir: string, scope: string[]
   return watermark;
 }
 
-function previousBenchmarkRow(benchmarkDir: string, scope: string[]): Dict | null {
+function previousBenchmarkRow(benchmarkDir: string, scope: string[]): JsonObject | null {
   const historyPath = path.join(benchmarkDir, BENCHMARK_HISTORY_JSONL);
   let lines: string[];
   try {
@@ -141,10 +141,10 @@ function previousBenchmarkRow(benchmarkDir: string, scope: string[]): Dict | nul
   } catch {
     return null;
   }
-  let previous: Dict | null = null;
+  let previous: JsonObject | null = null;
   for (const line of lines) {
     if (!line.trim()) continue;
-    let row: Dict;
+    let row: JsonObject;
     try {
       row = JSON.parse(line);
     } catch {
@@ -155,8 +155,8 @@ function previousBenchmarkRow(benchmarkDir: string, scope: string[]): Dict | nul
   return previous;
 }
 
-function withEstimatedTokensSaved(metrics: Dict, benchmarkDir: string, scope: string[]): Dict {
-  const enriched: Dict = { ...metrics };
+function withEstimatedTokensSaved(metrics: JsonObject, benchmarkDir: string, scope: string[]): JsonObject {
+  const enriched: JsonObject = { ...metrics };
   const previous = previousBenchmarkRow(benchmarkDir, scope);
   const currentVersion = enriched.token_estimator_version;
   const currentRedundant = enriched.estimated_redundant_raw_tokens;
@@ -187,7 +187,7 @@ function withEstimatedTokensSaved(metrics: Dict, benchmarkDir: string, scope: st
   return enriched;
 }
 
-export function buildBenchmarkHistoryRow(metrics: Dict, scope: string[] | null = null): Dict {
+export function buildBenchmarkHistoryRow(metrics: JsonObject, scope: string[] | null = null): JsonObject {
   const recommendation =
     metrics && typeof metrics === "object" && metrics.startup_recommendation && typeof metrics.startup_recommendation === "object" && !Array.isArray(metrics.startup_recommendation)
       ? metrics.startup_recommendation
@@ -236,7 +236,7 @@ function temporaryPeerPath(p: string): string {
 }
 
 export function persistStartupBenchmark(
-  metrics: Dict,
+  metrics: JsonObject,
   benchmarkDir: string,
   scope: string[] | null = null,
 ): Record<string, string> {
@@ -277,14 +277,14 @@ export function persistStartupBenchmark(
 
 export interface BuildIntermediateOptions {
   salt: string;
-  contract?: Dict | null;
+  contract?: JsonObject | null;
   benchmarkMode?: string | null;
   benchmarkPreviousWatermarkAt?: Date | null;
   benchmarkWindowStartedAfter?: Date | null;
   benchmarkWatermarkAt?: Date | null;
 }
 
-export function buildStartupIntermediate(corpus: Dict, opts: BuildIntermediateOptions): Dict {
+export function buildStartupIntermediate(corpus: JsonObject, opts: BuildIntermediateOptions): JsonObject {
   const salt = opts.salt;
   const loaded = opts.contract ?? loadContract();
   let records = corpus && typeof corpus === "object" && !Array.isArray(corpus) ? (corpus.records ?? []) : [];
@@ -300,7 +300,7 @@ export function buildStartupIntermediate(corpus: Dict, opts: BuildIntermediateOp
   const watermarkAt = opts.benchmarkWatermarkAt ?? maxRecordTimestamp(records, windowStartedAfter);
 
   const classified = classifyStartupRecords(corpus, { salt, contract: loaded });
-  const sequences = (Array.isArray(classified.state_gathering_sequences) ? classified.state_gathering_sequences : []) as Dict[];
+  const sequences = (Array.isArray(classified.state_gathering_sequences) ? classified.state_gathering_sequences : []) as JsonObject[];
   const degradations = classified.degradations;
   const runtimeCoverage = runtimeStatuses
     .filter((s): s is JsonObject => Boolean(s && typeof s === "object" && !Array.isArray(s)))
@@ -329,8 +329,8 @@ export function buildStartupIntermediate(corpus: Dict, opts: BuildIntermediateOp
 }
 
 export function buildNoRuntimeStartupIntermediate(
-  opts: { contract?: Dict | null; benchmarkMode?: string; benchmarkPreviousWatermarkAt?: Date | null } = {},
-): Dict {
+  opts: { contract?: JsonObject | null; benchmarkMode?: string; benchmarkPreviousWatermarkAt?: Date | null } = {},
+): JsonObject {
   const loaded = opts.contract ?? loadContract();
   const boundaryInfo =
     loaded.boundary && typeof loaded.boundary === "object" && !Array.isArray(loaded.boundary) ? loaded.boundary : {};
@@ -360,9 +360,9 @@ export function buildNoRuntimeStartupIntermediate(
 
 export function extractStartupIntermediateFromCorpusFile(
   corpusPath: string,
-  opts: { salt: string; outputPath?: string | null; contract?: Dict | null },
-): Dict {
-  let corpus: Dict;
+  opts: { salt: string; outputPath?: string | null; contract?: JsonObject | null },
+): JsonObject {
+  let corpus: JsonObject;
   try {
     corpus = JSON.parse(fs.readFileSync(corpusPath, "utf8"));
   } catch {

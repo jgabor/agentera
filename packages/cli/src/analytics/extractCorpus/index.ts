@@ -1,4 +1,4 @@
-export type { Dict, Env, RecordOpts, RuntimeStatusOpts } from "./core.js";
+export type { Env, RecordOpts, RuntimeStatusOpts } from "./core.js";
 export type { BuildCorpusOpts } from "./corpus.js";
 export type { ExtractArgs, ExtractMainIo } from "./cli.js";
 export {

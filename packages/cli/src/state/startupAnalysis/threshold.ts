@@ -1,5 +1,5 @@
 import type { JsonObject } from "../../core/jsonValue.js";
-import { type Dict, canonicalArtifactLabel, hashLabel, loadContract } from "./contract.js";
+import { canonicalArtifactLabel, hashLabel, loadContract } from "./contract.js";
 import {
   inc,
   counterDict,
@@ -66,11 +66,11 @@ export const BOUNDED_RUNTIME_REASONS = new Set([
   "store_unreadable",
 ]);
 
-export function boundedRuntimeStatus(status: Dict): Dict {
+export function boundedRuntimeStatus(status: JsonObject): JsonObject {
   const runtime = String(status.runtime ?? "unknown");
   const state = String(status.status ?? "degraded");
   const reason = String(status.reason ?? "schema_divergent");
-  const item: Dict = {
+  const item: JsonObject = {
     runtime,
     status: BOUNDED_RUNTIME_STATUSES.has(state) ? state : "degraded",
     reason: BOUNDED_RUNTIME_REASONS.has(reason) ? reason : "schema_divergent",
@@ -98,7 +98,7 @@ export const STATE_CLI_COMMANDS = new Set([
   "experiments",
   "query",
 ]);
-export function startupConversationKey(record: Dict): string | null {
+export function startupConversationKey(record: JsonObject): string | null {
   const key = record.conversation_key;
   if (typeof key === "string" && key) return key;
   const sid = record.session_id;
@@ -138,7 +138,7 @@ function stateCliArtifacts(command: string, stateCommand: string): Set<string> {
   }
   return new Set(CLI_COMMAND_ARTIFACTS[stateCommand] ?? []);
 }
-export function classifyStartupEvent(record: Dict): [string, string | null, string | null, Set<string>] {
+export function classifyStartupEvent(record: JsonObject): [string, string | null, string | null, Set<string>] {
   if (!record || typeof record !== "object" || Array.isArray(record) || record.source_kind !== "tool_call") {
     return ["non_state_context", null, null, new Set()];
   }
@@ -169,7 +169,7 @@ export function classifyStartupEvent(record: Dict): [string, string | null, stri
   }
   return ["non_state_context", null, null, new Set()];
 }
-function eventWarningKeys(event: Dict): string[] {
+function eventWarningKeys(event: JsonObject): string[] {
   const keys: string[] = [];
   for (const warning of Array.isArray(event.warnings) ? event.warnings : []) {
     if (!warning || typeof warning !== "object" || Array.isArray(warning)) continue;
@@ -179,7 +179,7 @@ function eventWarningKeys(event: Dict): string[] {
   }
   return keys;
 }
-function eventClassification(event: Dict, coverageCaveated: boolean): string {
+function eventClassification(event: JsonObject, coverageCaveated: boolean): string {
   const status = event.detail_loss_status;
   if (status === "possible_useful_detail_removed") return "likely_false_positive";
   if (status === "retained_artifact_false_positive_signal") return "likely_false_positive";
@@ -199,9 +199,9 @@ function nowIsoSeconds(): string {
 }
 
 export function scanThresholdEvidence(
-  corpus: Dict,
-  opts: { salt: string; contract?: Dict | null },
-): Dict {
+  corpus: JsonObject,
+  opts: { salt: string; contract?: JsonObject | null },
+): JsonObject {
   const salt = opts.salt;
   const loaded = opts.contract ?? loadContract();
   let records = corpus && typeof corpus === "object" && !Array.isArray(corpus) ? (corpus.records ?? []) : [];
@@ -221,8 +221,8 @@ export function scanThresholdEvidence(
     coverageCaveats.push("Runtime coverage is incomplete or degraded; absence of warning evidence is not proof of absence.");
   }
 
-  const groups = new Map<string, Dict[]>();
-  const degradations: Dict[] = [];
+  const groups = new Map<string, JsonObject[]>();
+  const degradations: JsonObject[] = [];
   for (const record of records) {
     if (!record || typeof record !== "object" || Array.isArray(record)) {
       degradations.push({ reason: "malformed_record" });
@@ -242,7 +242,7 @@ export function scanThresholdEvidence(
   const capabilityCounts: Record<string, number> = {};
   const sourceCounts: Record<string, number> = {};
   const detailStatusCounts: Record<string, number> = {};
-  const warningEvents: Dict[] = [];
+  const warningEvents: JsonObject[] = [];
 
   for (const [conversationKey, items] of groups) {
     items.sort((a, b) => {
@@ -251,7 +251,7 @@ export function scanThresholdEvidence(
       return ta < tb ? -1 : ta > tb ? 1 : 0;
     });
     let capability = "unknown";
-    let pending: Array<{ event: Dict; metrics: { word_count: number; anchor_count: number } }> = [];
+    let pending: Array<{ event: JsonObject; metrics: { word_count: number; anchor_count: number } }> = [];
     for (const record of items) {
       const text = recordThresholdText(record);
       const data = record.data && typeof record.data === "object" && !Array.isArray(record.data) ? record.data : {};
@@ -269,7 +269,7 @@ export function scanThresholdEvidence(
       if (warnings.length > 0) {
         const artifactLabel = canonicalArtifactLabel(text, loaded) || "unknown";
         const beforeMetrics = detailMetrics(text);
-        const event: Dict = {
+        const event: JsonObject = {
           event_label: recordLabel(record, salt),
           conversation: hashLabel("session", conversationKey, salt),
           capability,
@@ -351,15 +351,15 @@ export function scanThresholdEvidence(
 
 export function scanRetainedThresholdEvidence(
   artifacts: Record<string, string>,
-  opts: { salt: string; contract?: Dict | null },
-): Dict {
+  opts: { salt: string; contract?: JsonObject | null },
+): JsonObject {
   const salt = opts.salt;
   const loaded = opts.contract ?? loadContract();
   const warningCounts: Record<string, number> = {};
   const artifactCounts: Record<string, number> = {};
   const sourceCounts: Record<string, number> = {};
   const detailStatusCounts: Record<string, number> = {};
-  const warningEvents: Dict[] = [];
+  const warningEvents: JsonObject[] = [];
 
   for (const sourceLabel of Object.keys(artifacts).sort()) {
     const text = artifacts[sourceLabel];
@@ -374,7 +374,7 @@ export function scanRetainedThresholdEvidence(
     const detailStatus =
       postAuditMarkers && fullPlanBudgetPressure ? "retained_artifact_false_positive_signal" : "not_assessed";
 
-    const event: Dict = {
+    const event: JsonObject = {
       event_label: hashLabel("record", sourceLabel, salt),
       conversation: "retained_artifacts",
       capability: "agentera",
@@ -434,7 +434,7 @@ interface CategoryEntry {
   event_labels: string[];
 }
 
-export function classifyThresholdEvidence(scan: Dict): Dict {
+export function classifyThresholdEvidence(scan: JsonObject): JsonObject {
   let events = scan.warning_events;
   if (!Array.isArray(events)) events = [];
   let coverageCaveats = scan.coverage_caveats;
@@ -473,7 +473,7 @@ export function classifyThresholdEvidence(scan: Dict): Dict {
     }
   }
 
-  const categories: Dict[] = [];
+  const categories: JsonObject[] = [];
   let repeatedFalsePositive = false;
   const classificationCounts: Record<string, number> = {};
   for (const key of [...byCategory.keys()].sort()) {
@@ -494,7 +494,7 @@ export function classifyThresholdEvidence(scan: Dict): Dict {
   }
   if (unsupported) inc(classificationCounts, "unsupported_by_available_coverage");
 
-  let recommendation: Dict;
+  let recommendation: JsonObject;
   if (repeatedFalsePositive) {
     recommendation = {
       action: "consider_minimal_threshold_or_diagnostic_change",
