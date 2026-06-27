@@ -102,4 +102,8 @@ case "$SCENARIO" in
     ;;
 esac
 
+if [[ -d "$HOME/.local/share/agentera" ]]; then
+  export PROFILERA_PROFILE_DIR="$HOME/.local/share/agentera"
+fi
+
 echo "$SANDBOX"

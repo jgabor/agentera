@@ -25,8 +25,8 @@ let tmp: string;
 beforeEach(() => {
   tmp = fs.mkdtempSync(path.join(os.tmpdir(), "ver-"));
   setVersionCatalogForTests({
-    stable: "3.1.6",
-    development: "4.2.1",
+    stable: "2.7.7",
+    development: "3.0.0-next.1",
   });
   setSuccessorAnnouncedOverrideForTests(true);
 });
@@ -57,7 +57,7 @@ describe("parseSemverMajor", () => {
 });
 
 describe("classifyUpgradeOutcome", () => {
-  it("classifies forward major upgrade on development channel", () => {
+  it("classifies same-major update for source checkout on development channel", () => {
     const appHome = path.join(tmp, "empty");
     fs.mkdirSync(appHome, { recursive: true });
     const install = classifyInstall({ appHome, sourceRoot: REPO_ROOT });
@@ -68,10 +68,10 @@ describe("classifyUpgradeOutcome", () => {
       sourceRoot: REPO_ROOT,
       install,
       channel,
-      catalog: { stable: "3.1.6", development: "4.0.2" },
+      catalog: { stable: "2.7.7", development: "3.0.0-next.1" },
     });
-    expect(outcome.kind).toBe("forward_major_upgrade");
-    expect(outcome.latestOnChannel).toBe("4.0.2");
+    expect(outcome.kind).toBe("same_major_update");
+    expect(outcome.latestOnChannel).toBe("3.0.0-next.1");
   });
 
   it("treats v2 managed layout as up_to_date when successor is unannounced", () => {
@@ -127,22 +127,22 @@ describe("classifyUpgradeOutcome", () => {
     expect(outcome.kind).toBe("blocked_downgrade_to_v2");
   });
 
-  it("classifies channel line mismatch for dev build on stable channel", () => {
+  it("classifies channel line mismatch for dev build on development channel", () => {
     const appHome = path.join(tmp, "v4dev");
     fs.mkdirSync(path.join(appHome, "skills", "agentera"), { recursive: true });
     fs.writeFileSync(path.join(appHome, "skills", "agentera", "SKILL.md"), "x");
     fs.writeFileSync(
       path.join(appHome, BUNDLE_MARKER),
-      JSON.stringify({ schemaVersion: "agentera.bundle.v1", version: "4.2.1" }),
+      JSON.stringify({ schemaVersion: "agentera.bundle.v1", version: "4.0.0" }),
     );
     const install = classifyInstall({ appHome, sourceRoot: REPO_ROOT });
-    const channel = resolveUpdateChannel({ sourceRoot: REPO_ROOT, channel: "stable", home: tmp });
+    const channel = resolveUpdateChannel({ sourceRoot: REPO_ROOT, channel: "development", home: tmp });
     const outcome = classifyUpgradeOutcome({
       appHome,
       sourceRoot: REPO_ROOT,
       install,
       channel,
-      catalog: { stable: "3.1.6", development: "4.2.1" },
+      catalog: { stable: "2.7.7", development: "3.0.0-next.1" },
     });
     expect(outcome.kind).toBe("channel_line_mismatch");
   });
