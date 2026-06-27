@@ -9,9 +9,10 @@ header:
     check in hasManagedBundleEvidence, so the v3 npm sentinel IS now checked;
     task scoped to verify-and-lock + harden the residual v2 `scripts/agentera`
     fallback rather than a fresh fix. (2) #42: the only non-archived volatile
-    `TODO line N` reference is progress.yaml:245 (`TODO line 13`); the
-    `TODO line 35` reference lives in the immutable archived d73 plan — task
-    fixes active artifacts and guards the plan-authoring practice. (3) #32: the
+    TODO line-number reference is progress.yaml:245 (`TODO.md @ ⇶ Critical`);
+    the archived d73 plan's `[chore:3.0.0] v2→v3 upgrade cleanup` reference is
+    immutable — task fixes active artifacts and guards the plan-authoring
+    practice. (3) #32: the
     v2 Python CLI itself is a main-branch surface this feat/v3 worktree cannot
     mutate; task fixes the feat/v3-side v3-successor surfacing for v2 install
     tracks and documents the main-branch backport as a known limitation.
@@ -53,7 +54,8 @@ constraints: >-
   eight tasks. Do not touch .agentera/vision.yaml or objective state. The
   defects doc docs/notes/v2-v3-coexistence-defects.md is the triage source, not
   ground truth; verify each defect against current feat/v3 source before fixing.
-  Archived plans (e.g. the d73 plan's `TODO line 35` reference) are immutable and
+  Archived plans (e.g. the d73 plan's `[chore:3.0.0] v2→v3 upgrade cleanup`
+  reference) are immutable and
   excluded from edits. The v2 Python CLI source on main cannot be mutated from
   this feat/v3 worktree (#32 v2-side writer is a both-branch backport).
 
@@ -81,9 +83,9 @@ scope:
     - "packages/cli/src/upgrade/nextMajorDoctor.ts and references/cli/update-channels.yaml (v2-to-v3 successor surfacing)"
     - "Active artifacts carrying volatile TODO line-number references (.agentera/progress.yaml, the new plan.yaml)"
   excluded:
-    - "The immutable archived d73 plan (.agentera/archive/PLAN-2026-06-26-d73-...) — archived plans are not edited; its `TODO line 35` reference is historical."
+    - "The immutable archived d73 plan (.agentera/archive/PLAN-2026-06-26-d73-...) — archived plans are not edited; its `[chore:3.0.0] v2→v3 upgrade cleanup` reference is historical."
     - "The v2 Python CLI source on main (#32 v2-side writer) — feat/v3 cannot mutate main-branch Python; documented as a both-branch backport limitation."
-    - "TODO.md:34 (the D73 single-agent task) content edits — that is a product TODO, not a B7 fix; B7 only removes the residue its design left behind."
+    - "TODO.md D73 single-agent task (`[feat:3.0.0] Ship a single primary agent named Agentera`) content edits — that is a product TODO, not a B7 fix; B7 only removes the residue its design left behind."
 
 tasks:
   - number: 1
@@ -152,9 +154,9 @@ tasks:
   - number: 8
     name: "Replace volatile TODO line-number references with stable identifiers (#42)"
     depends_on: []
-    status: pending
+    status: complete
     acceptance:
-      - "GIVEN feat/v3 base WHERE the archived d73 plan references `TODO line 35` (immutable, excluded) and .agentera/progress.yaml:245 references `TODO line 13` WHEN the fix lands THEN every active (non-archived) artifact that pins a volatile `TODO line N` reference is rewritten to a stable identifier: the task's leading `[tag:horizon]`/date marker, the task content's first noun phrase, or a `TODO.md @ <section>` href — never a raw line number; progress.yaml:245's `TODO line 13` is replaced with the stable task marker."
+      - "GIVEN feat/v3 base WHERE the archived d73 plan references `[chore:3.0.0] v2→v3 upgrade cleanup` (immutable, excluded) and .agentera/progress.yaml:245 references `TODO.md @ ⇶ Critical` WHEN the fix lands THEN every active (non-archived) artifact that pins a volatile TODO line-number reference is rewritten to a stable identifier: the task's leading `[tag:horizon]`/date marker, the task content's first noun phrase, or a `TODO.md @ <section>` href — never a raw line number; progress.yaml:245's volatile ref is replaced with the stable task marker."
       - "WHEN this plan.yaml is authored THEN it contains zero `TODO line N` references; all TODO cross-references use stable markers (e.g. `TODO.md D73 single-agent task`, `TODO.md [feat:3.0.0] statusline`)."
       - 'GIVEN the fix WHEN `packages/cli/test/plan/noVolatileTodoLineRefs.test.ts` is authored THEN it scans `.agentera/*.yaml` (excluding `archive/`) and fails on any `TODO line \d+` or `TODO.md:\d+` reference; the regression is green; per V5 one pass + one fail (volatile-ref-introduced = fail, stable = pass = 2 cases).'
 
@@ -186,10 +188,11 @@ surprises: >-
   (1) #37 was partially addressed by B6: hasManagedBundleEvidence already checks
   the v3 BUNDLE_MARKER first; the brief's `.agentera-npx-bundle.json` marker
   name is stale (actual marker is `.agentera-bundle.json`), so #37 is scoped to
-  verify-and-lock + harden rather than a fresh fix. (2) #42's `TODO line 35`
-  reference lives only in the immutable archived d73 plan; the only active
-  volatile ref is progress.yaml:245 (`TODO line 13`), a separate pre-existing
-  issue. Both are fixed by the stable-identifier rule and the guard regression.
+  verify-and-lock + harden rather than a fresh fix. (2) #42's `[chore:3.0.0]
+  v2→v3 upgrade cleanup` reference lives only in the immutable archived d73
+  plan; the only active volatile ref was progress.yaml:245 (`TODO.md @ ⇶
+  Critical`), a separate pre-existing issue. Both are fixed by the
+  stable-identifier rule and the guard regression.
   (3) #32's v2 Python CLI writer is a main-branch surface this feat/v3 worktree
   cannot mutate; the feat/v3 side surfaces the v3 successor to v2 install tracks
   and the v2 writer backport is documented as a both-branch item, not a pytest in
