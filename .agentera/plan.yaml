@@ -176,9 +176,9 @@ tasks:
       - 'GIVEN the installed protocol.yaml, WHEN `agentera prime --format json` reads glyph/phase metadata, THEN it resolves English names with no Swedish fallback'
       - 'AND a regression test asserts the installed protocol.yaml matches the repo v3 protocol.yaml and has no Swedish -era verbs in SKILL_GLYPHS/PHASES'
   - number: 6
-    name: Pin npmParityMatrix oracle to main and wire rebase_oracle.sh --check into CI/precommit drift gate (#34) — pending
+    name: Pin npmParityMatrix oracle to main and wire rebase_oracle.sh --check into CI/precommit drift gate (#34) — complete
     depends_on: []
-    status: pending
+    status: complete
     acceptance:
       - 'GIVEN packages/cli/test/cli/fixtures/oracle/parity-remaining-families.json has a python_commit pin, WHEN `git rev-parse origin/main` resolves the current main HEAD, THEN the pin either matches main HEAD or rebase_oracle.sh --check reports drift:detected with the diff paths'
       - 'GIVEN rebase_oracle.sh --check exists, WHEN CI (and/or precommit) runs, THEN it invokes rebase_oracle.sh --check --json and fails non-zero on drift:detected so the oracle cannot silently drift from main (the #34 footgun)'
