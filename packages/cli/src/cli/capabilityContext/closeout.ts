@@ -174,7 +174,7 @@ export function documentCloseoutContext(
     todo_blockers: todoBlockers.status === "available",
     changelog_boundary: Boolean(changelogBoundary.boundary_present),
     progress_evidence: progressEvidence.status === "available",
-    benchmark_evidence_or_caveat: benchmarkEvidence.status === "available" || (benchmarkEvidence.caveats ?? []).length > 0,
+    benchmark_evidence_or_caveat: benchmarkEvidence.status === "available" || ((benchmarkEvidence.caveats ?? []) as string[]).length > 0,
     decision_review_pressure: reviewPressure.status !== "review_required",
   };
   const missingRequired = Object.entries(requiredState).filter(([, present]) => !present).map(([k]) => k);

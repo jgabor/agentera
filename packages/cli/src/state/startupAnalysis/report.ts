@@ -29,13 +29,31 @@ function markdownTable(headers: string[], rows: Array<Array<unknown>>): string[]
 }
 
 export function renderStartupReport(metrics: Dict): string {
-  const threshold = (metrics.threshold_derivation ?? {}).action_thresholds ?? {};
-  const envelopeThreshold = threshold.startup_envelope ?? {};
-  const guidanceThreshold = threshold.targeted_guidance ?? {};
-  const recommendation = metrics.startup_recommendation ?? {};
-  const measuredDistribution = (metrics.threshold_derivation ?? {}).measured_distribution ?? {};
+  const thresholdDerivation =
+    metrics.threshold_derivation && typeof metrics.threshold_derivation === "object" && !Array.isArray(metrics.threshold_derivation)
+      ? metrics.threshold_derivation
+      : {};
+  const threshold =
+    thresholdDerivation.action_thresholds && typeof thresholdDerivation.action_thresholds === "object" && !Array.isArray(thresholdDerivation.action_thresholds)
+      ? thresholdDerivation.action_thresholds
+      : {};
+  const envelopeThreshold =
+    threshold.startup_envelope && typeof threshold.startup_envelope === "object" && !Array.isArray(threshold.startup_envelope) ? threshold.startup_envelope : {};
+  const guidanceThreshold =
+    threshold.targeted_guidance && typeof threshold.targeted_guidance === "object" && !Array.isArray(threshold.targeted_guidance) ? threshold.targeted_guidance : {};
+  const recommendation =
+    metrics.startup_recommendation && typeof metrics.startup_recommendation === "object" && !Array.isArray(metrics.startup_recommendation)
+      ? metrics.startup_recommendation
+      : {};
+  const measuredDistribution =
+    thresholdDerivation.measured_distribution && typeof thresholdDerivation.measured_distribution === "object" && !Array.isArray(thresholdDerivation.measured_distribution)
+      ? thresholdDerivation.measured_distribution
+      : {};
   const runtimeCoverage = Array.isArray(metrics.runtime_coverage) ? metrics.runtime_coverage : [];
-  const capabilityCounts = metrics.per_capability_state_counts ?? {};
+  const capabilityCounts =
+    metrics.per_capability_state_counts && typeof metrics.per_capability_state_counts === "object" && !Array.isArray(metrics.per_capability_state_counts)
+      ? metrics.per_capability_state_counts
+      : {};
 
   const lines: string[] = [
     "# Agentera Startup State-Access Analysis",

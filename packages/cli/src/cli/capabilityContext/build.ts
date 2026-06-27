@@ -32,7 +32,7 @@ export function buildExecutionContext(
   const capabilityContract = capabilityContext(capability) ?? {};
   const tasks = asList(plan.tasks).filter((t) => t && typeof t === "object" && !Array.isArray(t));
   const target = selectEvidenceTarget(plan);
-  const selected = taskByRef(plan, target && typeof target === "object" ? target.task : null);
+  const selected = taskByRef(plan, (target && typeof target === "object" ? target.task : null) as Dict | null);
   const acceptance = selected && typeof selected === "object" ? asList(selected.acceptance) : [];
   const progressVerification = progressVerificationSummary(progress);
   const changelogBoundary = closeoutChangelogBoundary(schemas, plan);
@@ -91,7 +91,11 @@ export function buildExecutionContext(
     stateCaveats.push("Agentera app files are not up to date; this is a caveat, not approval to repair or update app files.");
   }
   const scopeBoundary = buildScopeBoundary(plan, selected);
-  if (scopeBoundary.source_scope.status === "unspecified") {
+  const sourceScope =
+    scopeBoundary.source_scope && typeof scopeBoundary.source_scope === "object" && !Array.isArray(scopeBoundary.source_scope)
+      ? scopeBoundary.source_scope
+      : {};
+  if (sourceScope.status === "unspecified") {
     stateCaveats.push("source-file scope is unspecified; no allowed or prohibited source paths were inferred.");
   }
   fallbackCommands = uniqueList(fallbackCommands);
@@ -100,7 +104,7 @@ export function buildExecutionContext(
     work_selection: mode === "plan_driven" || mode === "completed_plan_sweep",
     acceptance_criteria: mode === "completed_plan_sweep" || acceptance.length > 0,
     artifact_update_requirements: Boolean(docs.exists),
-    progress_logging_requirements: progressVerification.status === "available" || (progressVerification.caveats ?? []).length > 0,
+    progress_logging_requirements: progressVerification.status === "available" || ((progressVerification.caveats ?? []) as string[]).length > 0,
     changelog_boundary: changelogBoundary.status === "available",
     scope_boundary: true,
     safety_boundaries: true,

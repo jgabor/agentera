@@ -28,8 +28,8 @@ import {
   validateFilterValues,
 } from "../stateQuery.js";
 import { displayFields, queryTodo, StateArgs } from "./state/index.js";
+import type { JsonObject } from "../../core/jsonValue.js";
 
-type Dict = Record<string, any>;
 type Io = { out?: (t: string) => void; err?: (t: string) => void };
 
 const ENCODED_TRAVERSAL_RE = /%(?:2e|2f|5c)/i;
@@ -80,7 +80,7 @@ function projectRelativeOrAbsolute(p: string): string {
   return rel;
 }
 
-function artifactReadInterfaces(name: string, record: ArtifactRecord | null): Dict {
+function artifactReadInterfaces(name: string, record: ArtifactRecord | null): JsonObject {
   const artifactId = record !== null ? record.artifactId : name;
   const routineCommand = STATE_COMMAND_NAMES.has(artifactId) ? `agentera ${artifactId} --format json` : null;
   let advancedCommand: string | null;
@@ -106,10 +106,11 @@ function artifactLocationRecord(
   info: SchemaInfo,
   schemasDir: string,
   docsOverrides: Record<string, string>,
-): Dict {
+): JsonObject {
   const record = info.record ?? null;
   const schema = info.schema && typeof info.schema === "object" ? info.schema : {};
-  const meta = (schema.meta ?? {}) as Dict;
+  // cast: schema.meta is read from a parsed artifact schema (YAML IO boundary)
+  const meta = (schema.meta ?? {}) as JsonObject;
   const schemaFile = path.join(schemasDir, `${name}.yaml`);
   const artifactId = record !== null ? record.artifactId : name;
   const displayName = record !== null ? record.displayName : String(meta.name ?? name);
@@ -166,10 +167,11 @@ function fileExists(p: string): boolean {
   }
 }
 
-export function artifactLocationContract(schemasDir: string, schemas: Record<string, SchemaInfo>): Dict {
+export function artifactLocationContract(schemasDir: string, schemas: Record<string, SchemaInfo>): JsonObject {
   const docsOverrides = loadDocsPathOverrides(process.cwd());
   const names = Object.keys(schemas).sort();
   const records = names.map((name) => artifactLocationRecord(name, schemas[name], schemasDir, docsOverrides));
+  // cast: record.caveats is built from schema/registry path resolution (IO boundary)
   const caveats = records.flatMap((record) => record.caveats as string[]);
   return {
     schemaVersion: "agentera.artifact_locations.v1",
@@ -200,7 +202,7 @@ function dirExists(p: string): boolean {
   }
 }
 
-function queryGenericEntries(args: QueryArgs, schemas: Record<string, SchemaInfo>, name: string): Dict[] {
+function queryGenericEntries(args: QueryArgs, schemas: Record<string, SchemaInfo>, name: string): JsonObject[] {
   const info = schemas[name];
   const data = loadArtifact(artifactPath(info, name));
   let entries = extractEntries(data);
@@ -312,7 +314,8 @@ export function cmdQuery(args: QueryArgs, io: Io): number {
   const o = out(io);
   const e = err(io);
   const format = args.format ?? "text";
-  validateFilterValues(args as Dict, COMMAND_FILTERS.query);
+  // cast: args are parsed CLI argv values passed to the filter validator (external-input boundary)
+  validateFilterValues(args as JsonObject, COMMAND_FILTERS.query);
   if (args.limit !== null && args.limit !== undefined && args.limit < 0) {
     throw new Error("limit must be zero or greater");
   }

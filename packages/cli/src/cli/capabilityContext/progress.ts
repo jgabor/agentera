@@ -64,14 +64,15 @@ export function evaluatorHandoffOutputRequirementsFromContract(): Dict {
   if (!isFile(contractPath)) return {};
   try {
     const contract = loadEvaluatorHandoffContract(contractPath);
-    return evaluatorHandoffOutputRequirements(contract);
+    // cast: contract loaded from parsed capability-instruction-contract.yaml; registry returns Record<string,unknown>
+    return evaluatorHandoffOutputRequirements(contract) as unknown as Dict;
   } catch {
     return {};
   }
 }
 
 export function evaluatorHandoff(selected: Dict | null, progressVerification: Dict, retry: Dict, stateCaveats: string[]): Dict {
-  const caveats = [...stateCaveats, ...(progressVerification.caveats ?? []), ...(retry.caveats ?? [])];
+  const caveats = [...stateCaveats, ...((progressVerification.caveats ?? []) as string[]), ...((retry.caveats ?? []) as string[])];
   const outputRequirements = evaluatorHandoffOutputRequirementsFromContract();
   if (selected === null) {
     caveats.push("No dependency-ready task is selected for evaluator handoff.");
@@ -85,14 +86,22 @@ export function evaluatorHandoff(selected: Dict | null, progressVerification: Di
       output_requirements: outputRequirements,
     };
   }
-  const evidenceRequirements = (selected.evidence_summary?.items ?? []) as any[];
+  const evidenceSummary =
+    selected.evidence_summary && typeof selected.evidence_summary === "object" && !Array.isArray(selected.evidence_summary)
+      ? (selected.evidence_summary as Dict)
+      : null;
+  const evidenceRequirements = (evidenceSummary?.items ?? []) as any[];
   if (evidenceRequirements.length === 0) {
     caveats.push("Selected task has no explicit evidence requirements recorded in plan state.");
   }
+  const acceptanceSummary =
+    selected.acceptance_summary && typeof selected.acceptance_summary === "object" && !Array.isArray(selected.acceptance_summary)
+      ? (selected.acceptance_summary as Dict)
+      : null;
   return {
     status: "ready",
     task: taskRef(selected),
-    acceptance_criteria: selected.acceptance_summary?.items ?? [],
+    acceptance_criteria: acceptanceSummary?.items ?? [],
     evidence_requirements: evidenceRequirements,
     latest_progress_verification_pointer: progressVerification.latest_progress_verification_pointer ?? null,
     evaluation_caveats: caveats,

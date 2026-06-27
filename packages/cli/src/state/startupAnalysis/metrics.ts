@@ -1,4 +1,5 @@
 import { type Dict } from "./contract.js";
+import type { JsonObject } from "../../core/jsonValue.js";
 import {
   inc,
   counterDict,
@@ -24,11 +25,12 @@ function mergeTokenEstimates(counter: Record<string, number>, value: unknown): v
 
 function sequenceCount(sequence: Dict, eventClass: string): number {
   const counts = sequence.counts;
-  if (counts && typeof counts === "object" && typeof counts[eventClass] === "number") {
-    return counts[eventClass];
+  if (counts && typeof counts === "object" && !Array.isArray(counts) && typeof (counts as Dict)[eventClass] === "number") {
+    return (counts as Dict)[eventClass] as number;
   }
-  return (sequence.events ?? []).filter(
-    (event: Dict) => event && typeof event === "object" && event.event_class === eventClass,
+  const events = Array.isArray(sequence.events) ? sequence.events : [];
+  return events.filter(
+    (event) => Boolean(event && typeof event === "object" && !Array.isArray(event) && (event as Dict).event_class === eventClass),
   ).length;
 }
 
@@ -51,7 +53,7 @@ function distribution(values: number[]): Dict {
     count: ordered.length,
     min: ordered[0],
     max: ordered[ordered.length - 1],
-    mean: flt(pyRound(ordered.reduce((a, b) => a + b, 0) / ordered.length, 2)),
+    mean: flt(pyRound(ordered.reduce((a, b) => a + b, 0) / ordered.length, 2)) as unknown as JsonObject,
     p50: percentile(0.5),
     p75: percentile(0.75),
     histogram,
@@ -107,7 +109,7 @@ function deriveStateThresholds(args: {
   let broadTrigger: Dict | null = null;
   if (credibleDistribution) {
     for (const [label, item] of Object.entries(redundantArtifacts)) {
-      if (item.count >= (redundantSequenceThreshold as number) && item.capability_count >= 2) {
+      if (safeInt(item.count) >= (redundantSequenceThreshold as number) && safeInt(item.capability_count) >= 2) {
         broadTrigger = {
           event_class: "raw_artifact_access",
           artifact_label: label,
@@ -205,8 +207,9 @@ export function aggregateStartupMetrics(intermediateInput: Dict): Dict {
   const redundantRawPerSequence: number[] = [];
 
   for (const item of degradations) {
-    if (item && typeof item === "object" && typeof item.reason === "string") {
-      inc(degradationCounts, item.reason);
+    if (item && typeof item === "object" && !Array.isArray(item)) {
+      const reason = (item as Dict).reason;
+      if (typeof reason === "string") inc(degradationCounts, reason);
     }
   }
 
@@ -224,11 +227,13 @@ export function aggregateStartupMetrics(intermediateInput: Dict): Dict {
         implementation_boundary: 0,
       };
     }
-    const cc = perCapability[capability];
+    const cc = perCapability[capability] as Dict & Record<string, number>;
     cc.state_sequences += 1;
     const cliCount = sequenceCount(sequence, "cli_state_call");
-    const rawCount = (sequence.raw_artifact_labels_after_cli ?? []).length;
-    const redundantCount = (sequence.redundant_raw_artifact_labels ?? []).length;
+    const rawList = Array.isArray(sequence.raw_artifact_labels_after_cli) ? sequence.raw_artifact_labels_after_cli : [];
+    const redundantList = Array.isArray(sequence.redundant_raw_artifact_labels) ? sequence.redundant_raw_artifact_labels : [];
+    const rawCount = rawList.length;
+    const redundantCount = redundantList.length;
     const proseCount = sequenceCount(sequence, "capability_prose_read");
     const implCount = sequenceCount(sequence, "implementation_boundary");
     cc.cli_state_call += cliCount;
@@ -243,8 +248,8 @@ export function aggregateStartupMetrics(intermediateInput: Dict): Dict {
     mergeTokenEstimates(rawAfterCliTokenEstimates, sequence.estimated_raw_after_cli_tokens_by_artifact);
     mergeTokenEstimates(redundantRawTokenEstimates, sequence.estimated_redundant_raw_tokens_by_artifact);
 
-    for (const event of sequence.events ?? []) {
-      if (!event || typeof event !== "object") continue;
+    for (const event of Array.isArray(sequence.events) ? sequence.events : []) {
+      if (!event || typeof event !== "object" || Array.isArray(event)) continue;
       const stateCommand = event.state_command;
       if (event.event_class === "cli_state_call" && typeof stateCommand === "string") {
         inc(cliCommandCounts, stateCommand);
@@ -259,24 +264,24 @@ export function aggregateStartupMetrics(intermediateInput: Dict): Dict {
         }
       }
     }
-    for (const reason of sequence.degradation_reasons ?? []) {
+    for (const reason of Array.isArray(sequence.degradation_reasons) ? sequence.degradation_reasons : []) {
       if (typeof reason === "string") inc(degradationCounts, reason);
     }
   }
 
-  const totalSequences = sequences.filter((s: Dict) => s && typeof s === "object" && !Array.isArray(s)).length;
-  let runtimeCoverage = Array.isArray(intermediate.runtime_coverage) ? intermediate.runtime_coverage : [];
-  runtimeCoverage = runtimeCoverage
-    .filter((s: unknown) => s && typeof s === "object" && !Array.isArray(s))
-    .map((s: Dict) => boundedRuntimeStatus(s));
+  const totalSequences = sequences.filter((s) => Boolean(s && typeof s === "object" && !Array.isArray(s))).length;
+  const runtimeCoverage = (Array.isArray(intermediate.runtime_coverage) ? intermediate.runtime_coverage : [])
+    .filter((s): s is JsonObject => Boolean(s && typeof s === "object" && !Array.isArray(s)))
+    .map((s) => boundedRuntimeStatus(s));
   const runtimeStatusCounts: Record<string, number> = {};
   for (const status of runtimeCoverage) {
-    if (status && typeof status === "object" && typeof status.status === "string") inc(runtimeStatusCounts, status.status);
+    const st = status.status;
+    if (typeof st === "string") inc(runtimeStatusCounts, st);
   }
 
   const confidenceCaveats: string[] = [];
   if (totalSequences === 0) confidenceCaveats.push("insufficient_post_2_3_state_sequences");
-  if (runtimeCoverage.some((s: Dict) => s && typeof s === "object" && ["missing", "sparse", "degraded", "skipped"].includes(s.status))) {
+  if (runtimeCoverage.some((s) => typeof s.status === "string" && ["missing", "sparse", "degraded", "skipped"].includes(s.status))) {
     confidenceCaveats.push("runtime_coverage_incomplete_or_degraded");
   }
   if (Object.keys(degradationCounts).length > 0) confidenceCaveats.push("some_records_or_sequences_degraded");
@@ -292,7 +297,10 @@ export function aggregateStartupMetrics(intermediateInput: Dict): Dict {
   });
   const sequencesWithRaw = rawAfterCliPerSequence.filter((v) => v > 0).length;
   const sequencesWithRedundant = redundantRawPerSequence.filter((v) => v > 0).length;
-  const recommendation = thresholdDerivation.recommendation;
+  const recommendation =
+    thresholdDerivation.recommendation && typeof thresholdDerivation.recommendation === "object" && !Array.isArray(thresholdDerivation.recommendation)
+      ? thresholdDerivation.recommendation
+      : {};
 
   const sortedPerCapability: Record<string, Dict> = {};
   for (const key of Object.keys(perCapability).sort()) sortedPerCapability[key] = perCapability[key];
@@ -322,8 +330,8 @@ export function aggregateStartupMetrics(intermediateInput: Dict): Dict {
     total_cli_state_calls: sumValues(cliCommandCounts),
     total_raw_artifact_access_after_cli: sumValues(rawAfterCliCounts),
     total_redundant_raw_artifact_accesses: sumValues(redundantRawCounts),
-    raw_after_cli_sequence_rate: totalSequences ? flt(pyRound(sequencesWithRaw / totalSequences, 4)) : 0,
-    redundant_raw_sequence_rate: totalSequences ? flt(pyRound(sequencesWithRedundant / totalSequences, 4)) : 0,
+    raw_after_cli_sequence_rate: totalSequences ? (flt(pyRound(sequencesWithRaw / totalSequences, 4)) as unknown as JsonObject) : 0,
+    redundant_raw_sequence_rate: totalSequences ? (flt(pyRound(sequencesWithRedundant / totalSequences, 4)) as unknown as JsonObject) : 0,
     per_capability_state_counts: sortedPerCapability,
     cli_state_command_counts: counterDict(cliCommandCounts),
     raw_artifact_access_after_cli_counts: counterDict(rawAfterCliCounts),

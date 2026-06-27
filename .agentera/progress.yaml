@@ -1,4 +1,36 @@
 cycles:
+- number: 680
+  timestamp: 2026-06-27 12:30
+  type: refactor
+  phase: build
+  what: "Plan tasks 2+3 (coupled) of chore:3.0.0: consolidate Dict aliases in the\
+    \ CLI command/state-query surface (task 2, 13 files incl. state/shared.ts thin\
+    \ passthrough) and in capabilityContext & startup-analysis (task 3, ~21 consumer\
+    \ files incl. types.ts and contract.ts thin passthroughs). Cross-subsystem consumer\
+    \ coupling surfaced: tightening exported return types in decisions.ts/health.ts\
+    \ broke cli/orientation.ts and capabilityContext/evidence.ts consumers \u2014\
+    \ resolved by narrowing with !Array.isArray guards and IO-boundary casts. Same\
+    \ JsonValue strictness tightening as task 1 (~latent dynamic-access errors, in-scope\
+    \ via guards/typed shapes/IO casts)."
+  discovered: "Tasks 2 and 3 are genuinely coupled, not artificially separable \u2014\
+    \ the tree only compiles after both land. Confirms critic Issue 3. Small local\
+    \ interfaces (e.g. CategoryEntry in threshold.ts) resolved Set<string>-vs-JsonValue\
+    \ accumulator conflicts cleanly without new exported interfaces."
+  verified: 'pnpm -C packages/cli run typecheck: 0 errors. pnpm -C packages/cli test:
+    1145/1145 pass (132 files), incl. packaging prepack tsc-gate (was failing in baseline
+    task 2). Passthroughs confirmed: only state/shared.ts, capabilityContext/types.ts,
+    startupAnalysis/contract.ts remain as `Dict = JsonObject` passthroughs (task 6
+    deletes). 0 fixture/snapshot drift.'
+  next: "Next dependency-ready: tasks 4 (registries & validate \u2014 was blocked\
+    \ on 3) and 5 (long-tail). Task 6 (cross-cutting cast audit + re-export deletion)\
+    \ then 7 (final sync)."
+  context:
+    intent: Type-only consolidation of JSON-value aliases; narrow `as` casts to IO
+      boundaries. No behavior change.
+    constraints: Task-2 + task-3 scopes only. core/jsonValue.ts untouched. No new
+      public API. feat/v3 only.
+    artifacts:
+      plan: .agentera/plan.yaml (tasks 2,3 -> complete; surprise 2 recorded)
 - number: 679
   timestamp: 2026-06-27 12:00
   type: refactor
@@ -291,32 +323,10 @@ cycles:
     unknowns: None.
     scope: packages/cli/src/capabilities/discuss/instructions.ts, .agentera/plan.yaml,
       TODO.md, .agentera/progress.yaml
-- number: 670
-  timestamp: 2026-06-18 22:15
-  type: chore
-  phase: audit
-  what: "Plan T6 \u2014 verification and closeout: archived PLAN-2026-06-18-decouple-vitest-live-repo.yaml;\
-    \ cleared active plan slot; confirmed vitest decoupled from live artifact state\
-    \ without compact pre-run."
-  inspiration: "Decouple vitest from live repo artifact state plan T6 \u2014 prove\
-    \ the six-task plan on feat/v3 before archive."
-  discovered: Full suite 941/941 pass (101 files) without pre-running compact; check
-    compact pass on committed artifacts (todo 40/40, progress 50/50, decisions 50/50,
-    health 25/25).
-  verified: "pnpm -C packages/cli test \u2014 941/941 pass (101 files); pnpm -C packages/cli\
-    \ build && node packages/cli/dist/bin/agentera.js check compact \u2014 status=pass,\
-    \ over_limit=0."
-  next: No active plan; deferred items include optional test:repo-gates script and
-    prime/orientation process.cwd() follow-on.
-  context:
-    intent: "Task 6 only \u2014 verification and plan closeout; no commit unless user\
-      \ asks."
-    constraints: feat/v3; archive to .agentera/archive/; delete active plan slot per
-      repo convention.
-    unknowns: None for T6 acceptance.
-    scope: .agentera/archive/PLAN-2026-06-18-decouple-vitest-live-repo.yaml, .agentera/plan.yaml
-      (deleted), .agentera/progress.yaml, packages/cli/test/README.md
 archive:
+- summary: "Cycle 670 (2026-06-18): Plan T6 \u2014 verification and closeout: archived\
+    \ PLAN-2026-06-18-decouple-vitest-live-repo.yaml; cleared active plan slot; confirmed\
+    \ vitest decoupled..."
 - summary: "Cycle 669 (2026-06-18): Plan T5 \u2014 decouple registry and evaluator\
     \ TODO coupling: packageRegistry and artifactRegistry tests read fixture..."
 - summary: "Cycle 668 (2026-06-18): Plan T4 \u2014 decouple artifact validation and\
@@ -417,6 +427,3 @@ archive:
 - summary: "Cycle 629 (2026-06-02): Freeze source_contract internals \u2014 new oracle\
     \ fixture (source-contract.json) and new parity test (sourceContractOracles.test.ts)\
     \ that pin..."
-- summary: "Cycle 628 (2026-06-02): Freeze validate/verify family parity oracles \u2014\
-    \ two new oracle fixtures (validate-family.json, verify-eval-family.json) and\
-    \ a new..."

@@ -21,8 +21,7 @@ import {
 } from "../../stateQuery.js";
 import { SchemaInfo, artifactPath } from "../../appContext.js";
 import { out, err, StateArgs, Io } from "./shared.js";
-
-type Dict = Record<string, any>;
+import type { JsonObject } from "../../../core/jsonValue.js";
 
 const DECISION_CONTEXT_FIELDS = [
   "number",
@@ -44,7 +43,7 @@ const PRIORITY_FIELDS = [
 
 const DECISION_ARCHIVE_RE = /Decision\s+(?<number>\d+)(?:\s+\((?<date>\d{4}-\d{2}-\d{2})\))?:\s*(?<summary>.*)/;
 
-export function displayFields(fields: Dict, limit = 6): string[] {
+export function displayFields(fields: JsonObject, limit = 6): string[] {
   const ordered = PRIORITY_FIELDS.filter((p) => p in fields);
   for (const fn of Object.keys(fields)) {
     if (!ordered.includes(fn)) ordered.push(fn);
@@ -53,18 +52,20 @@ export function displayFields(fields: Dict, limit = 6): string[] {
 }
 
 function isEmptyValue(v: unknown): boolean {
+  // cast: v is a field value from a parsed decisions.yaml entry (IO boundary)
   return (
     v === null ||
     v === undefined ||
     v === "" ||
     (Array.isArray(v) && v.length === 0) ||
-    (typeof v === "object" && !Array.isArray(v) && Object.keys(v as Dict).length === 0)
+    (typeof v === "object" && !Array.isArray(v) && Object.keys(v as JsonObject).length === 0)
   );
 }
 
-function decisionArchiveEntry(entry: unknown): Dict {
-  const archiveEntry: Dict =
-    entry && typeof entry === "object" && !Array.isArray(entry) ? { ...(entry as Dict) } : { summary: String(entry) };
+function decisionArchiveEntry(entry: unknown): JsonObject {
+  // cast: entry comes from the parsed decisions archive array (YAML IO boundary)
+  const archiveEntry: JsonObject =
+    entry && typeof entry === "object" && !Array.isArray(entry) ? { ...(entry as JsonObject) } : { summary: String(entry) };
   archiveEntry.compacted = true;
   const summary = String(archiveEntry.summary ?? "");
   const match = DECISION_ARCHIVE_RE.exec(summary);
@@ -75,13 +76,14 @@ function decisionArchiveEntry(entry: unknown): Dict {
   return archiveEntry;
 }
 
-export function extractDecisionEntries(data: unknown): Dict[] {
+export function extractDecisionEntries(data: unknown): JsonObject[] {
   if (!data || typeof data !== "object" || Array.isArray(data)) return extractEntries(data);
-  const d = data as Dict;
+  // cast: data is the parsed decisions artifact from loadArtifact (YAML IO boundary)
+  const d = data as JsonObject;
   const decisions = d.decisions ?? [];
   const archive = d.archive ?? [];
-  const entries: Dict[] = Array.isArray(decisions)
-    ? decisions.filter((e) => e && typeof e === "object" && !Array.isArray(e))
+  const entries: JsonObject[] = Array.isArray(decisions)
+    ? decisions.filter((e): e is JsonObject => Boolean(e && typeof e === "object" && !Array.isArray(e)))
     : [];
   if (Array.isArray(archive)) {
     for (const entry of archive) entries.push(decisionArchiveEntry(entry));
@@ -89,17 +91,17 @@ export function extractDecisionEntries(data: unknown): Dict[] {
   return entries;
 }
 
-function filterDecisionsByTopic(entries: Dict[], topic: string, fields: Dict): Dict[] {
+function filterDecisionsByTopic(entries: JsonObject[], topic: string, fields: JsonObject): JsonObject[] {
   const t = topic.toLowerCase();
   const fnames = [...stringFieldNames(fields), "summary", "outcome"];
   return entries.filter((entry) => fnames.some((f) => String(entry[f] ?? "").toLowerCase().includes(t)));
 }
 
-function decisionFieldMissing(entry: Dict, field: string): boolean {
+function decisionFieldMissing(entry: JsonObject, field: string): boolean {
   return isEmptyValue(entry[field]);
 }
 
-function decisionDownstreamReferences(entry: Dict): Array<Record<string, string>> | null {
+function decisionDownstreamReferences(entry: JsonObject): Array<Record<string, string>> | null {
   const value = entry.feeds_into;
   if (value === null || value === undefined || value === "") return null;
   let refs: string[];
@@ -115,7 +117,7 @@ function decisionDownstreamReferences(entry: Dict): Array<Record<string, string>
   return refs.map((ref) => ({ source_field: "feeds_into", reference: ref }));
 }
 
-export function decisionSatisfactionContext(entry: Dict): Dict {
+export function decisionSatisfactionContext(entry: JsonObject): JsonObject {
   const satisfaction = entry.satisfaction;
   if (!satisfaction || typeof satisfaction !== "object" || Array.isArray(satisfaction)) {
     return {
@@ -127,7 +129,8 @@ export function decisionSatisfactionContext(entry: Dict): Dict {
       caveats: ["Missing legacy satisfaction state is not treated as satisfied."],
     };
   }
-  const sat = satisfaction as Dict;
+  // cast: satisfaction is read from a parsed decisions.yaml entry (IO boundary)
+  const sat = satisfaction as JsonObject;
   const state = sat.state;
   const evidence = sat.evidence ?? null;
   const userConfirmation = sat.user_confirmation ?? null;
@@ -135,9 +138,10 @@ export function decisionSatisfactionContext(entry: Dict): Dict {
   let caveats: string[] = [];
   let reviewNeeded = true;
   if (state === "user_confirmed_satisfied") {
+    // cast: user_confirmation is read from a parsed decisions.yaml entry (IO boundary)
     reviewNeeded =
       !(userConfirmation && typeof userConfirmation === "object" && !Array.isArray(userConfirmation)) ||
-      Object.keys(userConfirmation as Dict).length === 0;
+      Object.keys(userConfirmation as JsonObject).length === 0;
     if (reviewNeeded) caveats.push("User-confirmed satisfaction is missing explicit user confirmation metadata.");
   } else if (state === "provisionally_satisfied") {
     if (isEmptyValue(evidence)) caveats.push("Provisional satisfaction is missing concrete evidence.");
@@ -154,7 +158,7 @@ export function decisionSatisfactionContext(entry: Dict): Dict {
   const originalCaveats = sat.caveats;
   if (Array.isArray(originalCaveats)) caveats = [...originalCaveats.map((c) => String(c)), ...caveats];
   else if (typeof originalCaveats === "string") caveats = [originalCaveats, ...caveats];
-  const enriched: Dict = { ...sat };
+  const enriched: JsonObject = { ...sat };
   if (!("evidence" in enriched)) enriched.evidence = evidence;
   if (!("user_confirmation" in enriched)) enriched.user_confirmation = userConfirmation;
   enriched.review_needed = reviewNeeded;
@@ -163,8 +167,8 @@ export function decisionSatisfactionContext(entry: Dict): Dict {
   return enriched;
 }
 
-export function decisionContextEntry(entry: Dict): Dict {
-  const enriched: Dict = { ...entry };
+export function decisionContextEntry(entry: JsonObject): JsonObject {
+  const enriched: JsonObject = { ...entry };
   if ((enriched.outcome === null || enriched.outcome === undefined || enriched.outcome === "") &&
       enriched.choice !== null && enriched.choice !== undefined && enriched.choice !== "") {
     enriched.outcome = enriched.choice;
@@ -198,20 +202,21 @@ export function decisionContextEntry(entry: Dict): Dict {
   return enriched;
 }
 
-export function decisionSourceContract(source: Dict, entries: Dict[], filters: Dict): Dict {
+export function decisionSourceContract(source: JsonObject, entries: JsonObject[], filters: JsonObject): JsonObject {
   const sourceExists = Boolean(source.exists);
   const activeFilters = Object.fromEntries(Object.entries(filters).filter(([, v]) => v !== null && v !== undefined));
   const filteredNoMatch = sourceExists && Object.keys(activeFilters).length > 0 && entries.length === 0;
   const compactedEntries = entries.filter((e) => e.compacted).length;
-  const entriesWithMissingFields = entries.filter((e) => e.missing_fields && e.missing_fields.length > 0).length;
+  const entriesWithMissingFields = entries.filter((e) => Array.isArray(e.missing_fields) && e.missing_fields.length > 0).length;
   const entriesWithoutDownstream = entries.filter((e) => e.downstream_consequence_references === null).length;
   const entriesRequiringSatisfactionReview = entries.filter(
-    (e) => e.satisfaction && typeof e.satisfaction === "object" && e.satisfaction.review_needed,
+    (e) => e.satisfaction && typeof e.satisfaction === "object" && !Array.isArray(e.satisfaction) && e.satisfaction.review_needed,
   ).length;
   const userConfirmedSatisfied = entries.filter(
     (e) =>
       e.satisfaction &&
       typeof e.satisfaction === "object" &&
+      !Array.isArray(e.satisfaction) &&
       e.satisfaction.state === "user_confirmed_satisfied" &&
       !e.satisfaction.review_needed,
   ).length;

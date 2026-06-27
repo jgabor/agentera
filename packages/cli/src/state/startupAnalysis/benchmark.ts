@@ -6,6 +6,7 @@ import { pyJsonIndent } from "../../core/pyjson.js";
 import { loadTomlFile } from "../../core/toml.js";
 import { resolveSourceRoot } from "../../core/sourceRoot.js";
 import { type Dict, loadContract, parseTimestamp, formatTimestamp } from "./contract.js";
+import type { JsonObject } from "../../core/jsonValue.js";
 import { inc, counterDict, safeInt, pyJsonDumps } from "./helpers.js";
 import { boundedRuntimeStatus } from "./threshold.js";
 import { classifyStartupRecords } from "./records.js";
@@ -39,8 +40,8 @@ function maxRecordTimestamp(records: unknown[], after: Date | null = null): Date
 function artifactLabelCounts(sequences: Dict[]): Record<string, number> {
   const counts: Record<string, number> = {};
   for (const sequence of sequences) {
-    for (const event of sequence.events ?? []) {
-      if (event && typeof event === "object" && typeof event.artifact_label === "string") {
+    for (const event of Array.isArray(sequence.events) ? sequence.events : []) {
+      if (event && typeof event === "object" && !Array.isArray(event) && typeof event.artifact_label === "string") {
         inc(counts, event.artifact_label);
       }
     }
@@ -51,8 +52,9 @@ function artifactLabelCounts(sequences: Dict[]): Record<string, number> {
 function runtimeRecordCounts(records: unknown[]): Record<string, number> {
   const counts: Record<string, number> = {};
   for (const record of records) {
-    if (record && typeof record === "object" && typeof (record as Dict).runtime === "string") {
-      inc(counts, (record as Dict).runtime);
+    if (record && typeof record === "object") {
+      const runtime = (record as Dict).runtime;
+      if (typeof runtime === "string") inc(counts, runtime);
     }
   }
   return counterDict(counts);
@@ -63,7 +65,7 @@ function agenteraVersion(root: string = resolveSourceRoot()): string {
     const data = loadTomlFile(path.join(root, "pyproject.toml")) as Dict;
     const project = data.project;
     if (project && typeof project === "object" && typeof (project as Dict).version === "string") {
-      return (project as Dict).version;
+      return (project as Dict).version as string;
     }
   } catch {
     return "unknown";
@@ -88,8 +90,8 @@ function runtimeScope(metrics: Dict, approvedScope: string[] | null = null): str
     return [...new Set(approvedScope.filter((l) => l).map((l) => String(l)))].sort();
   }
   const labels = new Set<string>();
-  for (const item of metrics.runtime_coverage ?? []) {
-    if (item && typeof item === "object" && typeof item.runtime === "string") labels.add(item.runtime);
+  for (const item of Array.isArray(metrics.runtime_coverage) ? metrics.runtime_coverage : []) {
+    if (item && typeof item === "object" && !Array.isArray(item) && typeof item.runtime === "string") labels.add(item.runtime);
   }
   const runtimeCounts = metrics.runtime_record_counts;
   if (runtimeCounts && typeof runtimeCounts === "object") {
@@ -187,7 +189,7 @@ function withEstimatedTokensSaved(metrics: Dict, benchmarkDir: string, scope: st
 
 export function buildBenchmarkHistoryRow(metrics: Dict, scope: string[] | null = null): Dict {
   const recommendation =
-    metrics && typeof metrics === "object" && metrics.startup_recommendation && typeof metrics.startup_recommendation === "object"
+    metrics && typeof metrics === "object" && metrics.startup_recommendation && typeof metrics.startup_recommendation === "object" && !Array.isArray(metrics.startup_recommendation)
       ? metrics.startup_recommendation
       : {};
   return {
@@ -291,22 +293,24 @@ export function buildStartupIntermediate(corpus: Dict, opts: BuildIntermediateOp
   if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) metadata = {};
   let runtimeStatuses = metadata.runtime_statuses;
   if (!Array.isArray(runtimeStatuses)) runtimeStatuses = [];
-  const boundary = parseTimestamp((loaded.boundary ?? {}).committed_at);
+  const boundaryInfo =
+    loaded.boundary && typeof loaded.boundary === "object" && !Array.isArray(loaded.boundary) ? loaded.boundary : {};
+  const boundary = parseTimestamp(boundaryInfo.committed_at);
   const windowStartedAfter = opts.benchmarkWindowStartedAfter ?? boundary;
   const watermarkAt = opts.benchmarkWatermarkAt ?? maxRecordTimestamp(records, windowStartedAfter);
 
   const classified = classifyStartupRecords(corpus, { salt, contract: loaded });
-  const sequences = classified.state_gathering_sequences;
+  const sequences = (Array.isArray(classified.state_gathering_sequences) ? classified.state_gathering_sequences : []) as Dict[];
   const degradations = classified.degradations;
   const runtimeCoverage = runtimeStatuses
-    .filter((s: unknown) => s && typeof s === "object" && !Array.isArray(s))
-    .map((s: Dict) => boundedRuntimeStatus(s));
+    .filter((s): s is JsonObject => Boolean(s && typeof s === "object" && !Array.isArray(s)))
+    .map((s) => boundedRuntimeStatus(s));
   return {
     output_envelope: STARTUP_INTERMEDIATE_ENVELOPE,
     contract_version: loaded.version ?? null,
-    boundary_source: (loaded.boundary ?? {}).source ?? null,
-    boundary_commit: (loaded.boundary ?? {}).commit ?? null,
-    boundary_committed_at: (loaded.boundary ?? {}).committed_at ?? null,
+    boundary_source: boundaryInfo.source ?? null,
+    boundary_commit: boundaryInfo.commit ?? null,
+    boundary_committed_at: boundaryInfo.committed_at ?? null,
     benchmark_mode: opts.benchmarkMode || "full_boundary_snapshot",
     benchmark_previous_watermark_at: formatTimestamp(opts.benchmarkPreviousWatermarkAt ?? null),
     benchmark_window_started_after: formatTimestamp(windowStartedAfter),
@@ -328,14 +332,16 @@ export function buildNoRuntimeStartupIntermediate(
   opts: { contract?: Dict | null; benchmarkMode?: string; benchmarkPreviousWatermarkAt?: Date | null } = {},
 ): Dict {
   const loaded = opts.contract ?? loadContract();
-  const boundary = parseTimestamp((loaded.boundary ?? {}).committed_at);
+  const boundaryInfo =
+    loaded.boundary && typeof loaded.boundary === "object" && !Array.isArray(loaded.boundary) ? loaded.boundary : {};
+  const boundary = parseTimestamp(boundaryInfo.committed_at);
   const windowStartedAfter = opts.benchmarkPreviousWatermarkAt ?? boundary;
   return {
     output_envelope: STARTUP_INTERMEDIATE_ENVELOPE,
     contract_version: loaded.version ?? null,
-    boundary_source: (loaded.boundary ?? {}).source ?? null,
-    boundary_commit: (loaded.boundary ?? {}).commit ?? null,
-    boundary_committed_at: (loaded.boundary ?? {}).committed_at ?? null,
+    boundary_source: boundaryInfo.source ?? null,
+    boundary_commit: boundaryInfo.commit ?? null,
+    boundary_committed_at: boundaryInfo.committed_at ?? null,
     benchmark_mode: opts.benchmarkMode ?? "since_previous_benchmark",
     benchmark_previous_watermark_at: formatTimestamp(opts.benchmarkPreviousWatermarkAt ?? null),
     benchmark_window_started_after: formatTimestamp(windowStartedAfter),

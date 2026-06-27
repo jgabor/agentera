@@ -4,8 +4,9 @@ import path from "node:path";
 
 import { loadYamlMapping } from "../../core/yaml.js";
 import { resolveSourceRoot } from "../../core/sourceRoot.js";
+import type { JsonObject } from "../../core/jsonValue.js";
 
-export type Dict = Record<string, any>;
+export type Dict = JsonObject;
 
 export const TRANSCRIPT_KEYS = new Set([
   "content",
@@ -25,7 +26,8 @@ export function contractPath(root: string = resolveSourceRoot()): string {
 }
 
 export function loadContract(p: string = contractPath()): Dict {
-  return loadYamlMapping(fs.readFileSync(p, "utf8"));
+  // cast: YAML parse returns Record<string,unknown>; privacy-boundary contract is JSON-native
+  return loadYamlMapping(fs.readFileSync(p, "utf8")) as unknown as Dict;
 }
 
 export function hashLabel(kind: string, value: unknown, salt: string): string {
@@ -63,7 +65,11 @@ const FALLBACK_ARTIFACT_LABELS: Array<[string, string]> = [
 export function canonicalArtifactLabel(value: unknown, contract: Dict | null = null): string | null {
   const text = String(value).replace(/\\/g, "/");
   const loaded = contract ?? loadContract();
-  const labels = (loaded.privacy_boundary ?? {}).canonical_artifact_labels;
+  const privacyBoundary =
+    loaded.privacy_boundary && typeof loaded.privacy_boundary === "object" && !Array.isArray(loaded.privacy_boundary)
+      ? loaded.privacy_boundary
+      : {};
+  const labels = privacyBoundary.canonical_artifact_labels;
   if (labels && typeof labels === "object" && !Array.isArray(labels)) {
     for (const [suffix, label] of Object.entries(labels)) {
       const normalized = String(suffix).replace(/\\/g, "/");

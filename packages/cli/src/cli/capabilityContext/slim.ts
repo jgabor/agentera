@@ -46,7 +46,7 @@ export function truncateContextText(value: any, maxChars = 240): any {
 
 export function compactItemsState(value: any, maxItems = 3, maxChars = 180): any {
   if (!value || typeof value !== "object" || Array.isArray(value)) return value;
-  const compact: Dict = {};
+  const compact: Record<string, unknown> = {};
   for (const [key, item] of Object.entries(value)) {
     if (!["items", "attributed_items", "summary"].includes(key)) compact[key] = item;
   }
@@ -80,7 +80,10 @@ export function compactVersionChecks(value: any): any {
     compact.checks = checks.map((check) => {
       const out: Dict = {};
       for (const key of ["name", "status", "refresh_performed", "remote_checks_performed", "registry_checks_performed"]) {
-        if (check && typeof check === "object" && key in check) out[key] = check[key];
+        if (check && typeof check === "object" && !Array.isArray(check) && key in check) {
+          const c = check as Dict;
+          out[key] = c[key];
+        }
       }
       return out;
     });

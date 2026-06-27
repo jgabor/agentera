@@ -19,10 +19,10 @@ import {
   normalizeArtifactProtocolId,
 } from "../../registries/artifactProtocolIds.js";
 import { emitStructured } from "../structured.js";
+import type { JsonObject, JsonValue } from "../../core/jsonValue.js";
 
 /** Port of scripts/agentera cmd_validate delegated-script family. */
 
-type Dict = Record<string, any>;
 type Io = { out?: (t: string) => void; err?: (t: string) => void };
 
 interface ProcResult {
@@ -115,10 +115,10 @@ function validationProcessPayload(
   target: string,
   p: string | null,
   result: ProcResult,
-): Dict {
+): JsonObject {
   const lines = pySplitlines(result.stderr).map((l) => l.trim());
   const violations = lines.filter((l) => l.trim()).map((l) => (l.startsWith("  ") ? l.slice(2) : l));
-  const payload: Dict = {
+  const payload: JsonObject = {
     command: "validate",
     status: result.returncode === 0 ? "pass" : "fail",
     target_family: targetFamily,
@@ -134,9 +134,10 @@ function validationProcessPayload(
   return payload;
 }
 
-function delegatedValidationPayload(targetFamily: string, result: ProcResult, engineCommand: string): Dict {
+function delegatedValidationPayload(targetFamily: string, result: ProcResult, engineCommand: string): JsonObject {
   const payload = validationProcessPayload(targetFamily, targetFamily, null, result);
-  payload.engine = { ...payload.engine, command: engineCommand };
+  // cast: payload.engine carries captured subprocess stdout/stderr (IO boundary)
+  payload.engine = { ...(payload.engine as JsonObject), command: engineCommand };
   return payload;
 }
 
@@ -263,6 +264,7 @@ export function cmdValidateCapability(target: string, args: { format?: string },
           target,
           path: resolvePath(capDir),
           checks,
+          // cast: c.violations are captured validation-engine lines (subprocess IO boundary)
           violations: checks.flatMap((c) => c.violations as string[]),
           summary: {
             passed: checks.filter((c) => c.status === "pass").length,
@@ -344,6 +346,7 @@ export function cmdValidateCapabilityContract(args: { format?: string }, io: Io)
         target_family: "capability-contract",
         target: "capability-schema-contract-and-protocol",
         checks,
+        // cast: c.violations are captured validation-engine lines (subprocess IO boundary)
         violations: checks.flatMap((c) => c.violations as string[]),
         summary: {
           passed: results.filter(([, r]) => r.returncode === 0).length,
@@ -368,20 +371,22 @@ function pySplitlinesText(s: string): string[] {
   return s.split(/\r\n|\r|\n/);
 }
 
-function descriptorValidationPayload(): Dict {
+function descriptorValidationPayload(): JsonObject {
   const sourceRoot = resolveSourceRoot();
   const codexDir = path.join(sourceRoot, "skills", "agentera", "agents");
   const classificationPath = path.join(sourceRoot, "references", "cli", "capability-tool-classification.yaml");
-  const checks: Dict[] = [];
+  const checks: JsonObject[] = [];
   const violations: string[] = [];
 
-  let capPermissions: Record<string, Dict> = {};
+  let capPermissions: Record<string, JsonValue> = {};
   try {
+    // cast: classificationData is a parsed YAML mapping (YAML IO boundary); subsequent
+    // categoryData/capData casts traverse that parsed classification structure.
     const classificationData = loadYamlMapping(fsReadFileSync(classificationPath, "utf8"));
     capPermissions = {};
-    for (const categoryData of Object.values((classificationData as Dict).classification as Dict)) {
-      for (const [capability, capData] of Object.entries((categoryData as Dict).capabilities as Dict)) {
-        capPermissions[capability] = (capData as Dict).permission;
+    for (const categoryData of Object.values((classificationData as JsonObject).classification as JsonObject)) {
+      for (const [capability, capData] of Object.entries((categoryData as JsonObject).capabilities as JsonObject)) {
+        capPermissions[capability] = (capData as JsonObject).permission;
       }
     }
   } catch (exc) {
@@ -391,12 +396,13 @@ function descriptorValidationPayload(): Dict {
 
   for (const name of CAPABILITY_NAMES) {
     const codexPath = path.join(codexDir, `${name}.toml`);
-    let check: Dict = { runtime: "codex", capability: name, path: codexPath, status: "pass" };
+    let check: JsonObject = { runtime: "codex", capability: name, path: codexPath, status: "pass" };
     let text: string;
-    let parsed: Dict;
+    let parsed: JsonObject;
     try {
       text = fsReadFileSync(codexPath, "utf8");
-      parsed = parseTomlValidate(text) as Dict;
+      // cast: parseTomlValidate result of a managed codex descriptor (TOML IO boundary)
+      parsed = parseTomlValidate(text) as JsonObject;
     } catch (exc) {
       check = { ...check, status: "fail", message: (exc as Error).message };
       violations.push(`codex ${name}: ${(exc as Error).message}`);
@@ -422,7 +428,8 @@ function descriptorValidationPayload(): Dict {
       violations.push(`codex ${name}: managed marker is required`);
     } else {
       const devInst = parsed.developer_instructions as string;
-      const expectedPermission = (capPermissions[name] ?? {}) as Dict;
+      // cast: capPermissions entry is read from the parsed classification YAML (IO boundary)
+      const expectedPermission = (capPermissions[name] ?? {}) as JsonObject;
       if (expectedPermission && Object.keys(expectedPermission).length > 0) {
         let expectedGuidance: string;
         if (expectedPermission.write === "allow" && expectedPermission.bash === "allow") {
@@ -463,8 +470,9 @@ export function cmdValidateDescriptors(args: { format?: string }, io: Io): numbe
   if ((args.format ?? "text") === "json") {
     emitStructured(payload, "json", out);
   } else {
+    // cast: payload.summary/violations derive from parsed codex TOML + classification YAML (IO boundary)
     out(
-      `descriptor validation ${payload.status}: ${(payload.summary as Dict).passed} passed, ${(payload.summary as Dict).failed} failed\n`,
+      `descriptor validation ${payload.status}: ${(payload.summary as JsonObject).passed} passed, ${(payload.summary as JsonObject).failed} failed\n`,
     );
     for (const violation of payload.violations as string[]) err(`- ${violation}\n`);
   }
@@ -497,7 +505,7 @@ export function cmdValidateArtifact(
   const adapter = new HookCliAdapter();
   const [rc, payload] = adapter.runExplicit(artifact, args.file ?? null, cwd);
   if ((args.format ?? "text") === "json") {
-    const wrapped: Dict = {
+    const wrapped: JsonObject = {
       ...payload,
       command: "validate",
       status: payload.status ?? "fail",
@@ -514,6 +522,7 @@ export function cmdValidateArtifact(
       `file=${payload.file} | docs_mapped_default=${payload.docs_mapped_default} | ` +
       `path_source=${payload.path_source}\n`,
   );
+  // cast: payload.violations come from the artifact-validation hook (subprocess IO boundary)
   for (const violation of payload.violations as string[]) err(`${violation}\n`);
   return rc;
 }

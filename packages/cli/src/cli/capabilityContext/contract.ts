@@ -19,7 +19,7 @@ import type { Dict } from "./types.js";
 
 export function capabilityInstructionContractPath(): string {
   const model = activeAppModel();
-  const active = path.join(String((model as Dict).authoritativeRoot ?? model.activeBundleRoot), "references", "cli", "capability-instruction-contract.yaml");
+  const active = path.join(String(model.authoritativeRoot ?? model.activeBundleRoot), "references", "cli", "capability-instruction-contract.yaml");
   if (isFile(active)) return active;
   return path.join(path.resolve(discoverSchemasDir(), "..", "..", "..", ".."), "references", "cli", "capability-instruction-contract.yaml");
 }
@@ -49,8 +49,12 @@ export function capabilityInstructionTarget(capability: string): Dict {
 
 export function firstInvocationReadMetadata(capability: string): Dict {
   const authority = capabilityInstructionContract();
-  const firstRead = authority.first_invocation_read && typeof authority.first_invocation_read === "object" ? authority.first_invocation_read : {};
-  const allowedValues = firstRead.allowed_values && typeof firstRead.allowed_values === "object" ? firstRead.allowed_values : {};
+  const firstRead: Dict =
+    authority.first_invocation_read && typeof authority.first_invocation_read === "object" && !Array.isArray(authority.first_invocation_read)
+      ? authority.first_invocation_read
+      : {};
+  const allowedValues: Dict =
+    firstRead.allowed_values && typeof firstRead.allowed_values === "object" && !Array.isArray(firstRead.allowed_values) ? firstRead.allowed_values : {};
   const value = "prime_context";
   const valueContract = (allowedValues[value] ?? {}) as Dict;
   return {
@@ -132,7 +136,7 @@ export function planStartupContract(): Dict {
 }
 
 export function capabilityArtifactInventory(capability: string): [Dict, string | null] {
-  const inventory: Dict = { read_needs: [], write_targets: [] };
+  const inventory: Dict & { read_needs: string[]; write_targets: string[] } = { read_needs: [], write_targets: [] };
   const capabilityDir = path.join(String(activeAppModel().skillRoot), "capabilities", capability);
   const p = path.join(capabilityDir, "schemas", "artifacts.yaml");
   if (!isFile(p)) return [inventory, `No capability artifact schema found for ${capability}.`];

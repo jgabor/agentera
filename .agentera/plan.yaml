@@ -75,15 +75,23 @@ tasks:
   - number: 2
     name: CLI commands & state-query surface — alias elimination + cast narrowing
     depends_on: ["1"]
-    status: pending
+    status: complete
     acceptance:
       - GIVEN the command/state-query surface WHEN its local aliases and the state-shared re-export are converted to a thin canonical passthrough THEN downstream consumers still compile and the command fixtures are unchanged.
+    evidence:
+      - "13 cli command/state-query files converted; state/shared.ts re-export now `export type Dict = JsonObject` thin passthrough."
+      - "Coupled consumer fix: cli/orientation.ts (omitted from initial task-2 list) narrowed with !Array.isArray guards and IO-boundary casts on latestHealthAudit/decisionContext/decisionSourceContract field access."
+      - "typecheck 0 errors; 1145/1145 tests green incl. packaging tsc-gate (was broken before orientation.ts fix); 0 fixture/snapshot drift."
   - number: 3
     name: capabilityContext & startup-analysis — alias elimination + cast narrowing
     depends_on: ["1"]
-    status: pending
+    status: complete
     acceptance:
       - GIVEN the capability-context type surface WHEN its re-export becomes a thin canonical passthrough and local aliases are removed THEN every consumer compiles and the startup-context JSON shape is unchanged.
+    evidence:
+      - "capabilityContext/types.ts and state/startupAnalysis/contract.ts re-exports converted to `export type Dict = JsonObject` thin passthroughs."
+      - "Consumer files (startup, slim, evidence, build, contract, bespoke, closeout, benchmark, orchestration, planState, progress, records, metrics, threshold, report, index, helpers) narrowed with Array.isArray guards, local CategoryEntry interface (threshold.ts), and IO-boundary casts."
+      - "evidence.ts field-access errors from task-2 coupling resolved in-scope; startup-context JSON shape unchanged."
   - number: 4
     name: Registries & validate subsystems — alias elimination + cast narrowing
     depends_on: ["1", "3"]
@@ -119,10 +127,17 @@ overall_acceptance: >
   modules that read/parse external input and carry an inline `why` comment
   (review-verified).
 surprises: >
-  JsonObject is NOT structurally compatible with Record<string, any>: the strict
-  JsonValue member union surfaced ~80 typecheck errors in hooks
+  1) JsonObject is NOT structurally compatible with Record<string, any>: the
+  strict JsonValue member union surfaced ~80 typecheck errors in hooks
   (schema/dryRun/apply/retention/session*/index/runtime/violations), all from
   dynamic property access on parsed-JSON maps. Resolved within scope by keeping
   IO-boundary casts and narrowing via type guards (e.g. isMapping in
   violations.ts). Corrects the design-phase assumption that the swap is largely
   mechanical; expect the same tightening surface in tasks 2-5 and budget for it.
+  2) Cross-subsystem consumer coupling (critic Issue 3 realized): tightening
+  exported return types of builders in decisions.ts/health.ts (task 2) broke
+  consumers in cli/orientation.ts (task 2 surface, omitted from initial list)
+  and capabilityContext/evidence.ts (task 3). The tree only compiles after
+  both task 2's consumer remainder (orientation.ts) and task 3 (incl. evidence.ts)
+  land. Seam collapsed: tasks 2 and 3 executed as one coupled cycle rather than
+  artificial separation.
