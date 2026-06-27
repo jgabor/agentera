@@ -3,6 +3,7 @@ import os from "node:os";
 import path from "node:path";
 
 import { isFile, pathExists, resolvePath } from "../core/paths.js";
+import { AGENTERA_PROFILE_DIR_ENV, PROFILERA_PROFILE_DIR_ENV } from "../core/envPaths.js";
 import { resolveSourceRoot } from "../core/sourceRoot.js";
 import { registryModelPath } from "../registries/artifactRegistry.js";
 import { loadRegistry } from "../registries/runtimeAdapterRegistry.js";
@@ -94,7 +95,7 @@ export function textUsesPythonManagedEntrypoint(text: string): boolean {
 }
 
 export function textUsesProfileraProfileDir(text: string): boolean {
-  return /PROFILERA_PROFILE_DIR/.test(text);
+  return text.includes(PROFILERA_PROFILE_DIR_ENV);
 }
 
 export function rewireRuntimeText(text: string, runtime: string, commands: NpxHookCommands): string {
@@ -141,7 +142,7 @@ export function rewireRuntimeText(text: string, runtime: string, commands: NpxHo
 }
 
 export function rewireProfileraEnvVar(text: string): string {
-  return text.replaceAll("PROFILERA_PROFILE_DIR", "AGENTERA_PROFILE_DIR");
+  return text.replaceAll(PROFILERA_PROFILE_DIR_ENV, AGENTERA_PROFILE_DIR_ENV);
 }
 
 function needsChannelNpxRewire(text: string, cliEntrypoint: string): boolean {

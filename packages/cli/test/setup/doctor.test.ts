@@ -1,4 +1,5 @@
 import fs from "node:fs";
+import { pluginSourceHasUnmigratedProfileDirSchema } from "../../src/core/envPaths.js";
 import os from "node:os";
 import path from "node:path";
 
@@ -24,6 +25,7 @@ import {
   diagnoseBundledReferenceValidation,
   diagnoseOpencodeCommands,
   diagnoseOpencodeProfileDir,
+  diagnoseOpencodeProfileDirSchemaLiteral,
   diagnoseOpencodeSkillPaths,
   extractReferencePaths,
   hasManagedMarker,
@@ -248,6 +250,73 @@ describe("setup doctor: OpenCode diagnostics", () => {
       expect(c.status).toBe("pass");
       expect(c.name).toBe("profile_dir_deprecated");
       expect(c.message).toBe("profile dir env var is current");
+      expect(c.gap).toBeNull();
+    });
+  });
+
+  describe("profile_dir_schema_literal", () => {
+    function writeOpencodePlugin(home: string, source: string): string {
+      const pluginDir = path.join(home, ".config", "opencode", "plugins");
+      fs.mkdirSync(pluginDir, { recursive: true });
+      const pluginPath = path.join(pluginDir, "agentera.js");
+      fs.writeFileSync(pluginPath, source);
+      return pluginPath;
+    }
+
+    it("predicate flags PROFILERA-only source and accepts migrated dual-name source", () => {
+      expect(pluginSourceHasUnmigratedProfileDirSchema("process.env.PROFILERA_PROFILE_DIR")).toBe(true);
+      expect(pluginSourceHasUnmigratedProfileDirSchema("process.env.AGENTERA_PROFILE_DIR")).toBe(false);
+      expect(
+        pluginSourceHasUnmigratedProfileDirSchema(
+          "process.env.AGENTERA_PROFILE_DIR || process.env.PROFILERA_PROFILE_DIR",
+        ),
+      ).toBe(false);
+      expect(pluginSourceHasUnmigratedProfileDirSchema("")).toBe(false);
+    });
+
+    it("warns when installed plugin source only references PROFILERA_PROFILE_DIR", () => {
+      const home = path.join(tmp, "home-schema-unmigrated");
+      const pluginPath = writeOpencodePlugin(
+        home,
+        `function setProfileDir() {
+  if (process.env.PROFILERA_PROFILE_DIR) return;
+  process.env.PROFILERA_PROFILE_DIR = "/tmp/profile";
+}`,
+      );
+      const c = diagnoseOpencodeProfileDirSchemaLiteral(home, {});
+      expect(c.status).toBe("warn");
+      expect(c.name).toBe("profile_dir_schema_literal");
+      expect(c.message).toContain("agentera upgrade");
+      expect(c.message).toContain("AGENTERA_PROFILE_DIR");
+      expect(c.message).toContain("PROFILERA_PROFILE_DIR");
+      expect(c.path).toBe(pluginPath);
+      expect(c.gap).toBe("runtime_config");
+    });
+
+    it("passes when installed plugin follows the migrated setProfileDir contract", () => {
+      const home = path.join(tmp, "home-schema-migrated");
+      writeOpencodePlugin(
+        home,
+        `function setProfileDir() {
+  if (process.env.AGENTERA_PROFILE_DIR) return;
+  if (process.env.PROFILERA_PROFILE_DIR) {
+    process.env.AGENTERA_PROFILE_DIR = process.env.PROFILERA_PROFILE_DIR;
+    return;
+  }
+  process.env.AGENTERA_PROFILE_DIR = "/default/profile";
+}`,
+      );
+      const c = diagnoseOpencodeProfileDirSchemaLiteral(home, {});
+      expect(c.status).toBe("pass");
+      expect(c.name).toBe("profile_dir_schema_literal");
+      expect(c.message).toBe("OpenCode plugin profile-dir schema is current");
+      expect(c.gap).toBeNull();
+    });
+
+    it("passes when the OpenCode plugin file is not installed", () => {
+      const c = diagnoseOpencodeProfileDirSchemaLiteral(path.join(tmp, "home-no-plugin"), {});
+      expect(c.status).toBe("pass");
+      expect(c.name).toBe("profile_dir_schema_literal");
       expect(c.gap).toBeNull();
     });
   });
