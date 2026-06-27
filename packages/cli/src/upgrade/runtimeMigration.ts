@@ -18,11 +18,21 @@ import {
   opencodeConfigDir,
 } from "../setup/opencode.js";
 import { resolveUpdateChannel } from "./channels.js";
+import {
+  applyInstalledHooksRetirementItems,
+  planInstalledHooksRetirementItems,
+  textReferencesV2InstalledHooks,
+} from "./installedHooksRetirement.js";
 import type { MigrationContext, MigrationPhaseItem, MigrationStatus } from "./migrateArtifactsV2ToV3.js";
 import { projectUsesV3CapabilityInstructionModules } from "./v3CapabilitySurface.js";
 
 const PYTHON_MANAGED_PATTERNS = [
   /hooks\/validate_artifact\.py/,
+  /hooks\/cursor_session_start\.py/,
+  /hooks\/cursor_pre_tool_use\.py/,
+  /hooks\/cursor_session_stop\.py/,
+  /hooks\/session_start\.py/,
+  /hooks\/session_stop\.py/,
   /\buv run\b/,
   /\buvx\b/,
   /scripts\/agentera/,
@@ -105,9 +115,14 @@ export function rewireRuntimeText(text: string, runtime: string, commands: NpxHo
     commands.validate,
   );
   next = next.replace(
+    /uv run\s+\\?"?\$\{AGENTERA_HOME\}\/app\/hooks\/validate_artifact\.py\\?"?/g,
+    commands.validate,
+  );
+  next = next.replace(
     /uv run\s+\\?"?\$\{PLUGIN_ROOT\}\/hooks\/validate_artifact\.py\\?"?/g,
     commands.validate,
   );
+  next = next.replace(/uv run\s+hooks\/validate_artifact\.py/g, commands.validate);
   if (next.includes("validate_artifact.py")) {
     next = next.replace(
       /["']?[^"'\n]*hooks\/validate_artifact\.py[^"'\n]*["']?/g,
@@ -163,7 +178,7 @@ function pushRewireItem(
 ): void {
   const text = fs.readFileSync(filePath, "utf8");
   const needsBare = needsChannelNpxRewire(text, commands.cliEntrypoint);
-  if (!textUsesPythonManagedEntrypoint(text) && !needsBare) {
+  if (!textUsesPythonManagedEntrypoint(text) && !textReferencesV2InstalledHooks(text) && !needsBare) {
     if (text.includes(commands.cliEntrypoint)) {
       items.push({
         status: "noop",
@@ -574,6 +589,10 @@ export function planRuntimeMigrationItems(ctx: MigrationContext): MigrationPhase
   planOpencodeItems(items, home, sourceRoot, env, commands);
   planCopilotItems(items, project, commands);
   planEnvVarRewireItems(ctx, items);
+  const hookRetirement = planInstalledHooksRetirementItems(ctx).filter((item) => item.status === "pending");
+  if (hookRetirement.length > 0 && items.some((item) => item.action === "rewire-runtime" && item.status === "pending")) {
+    items.push(...hookRetirement);
+  }
   planEnvRuntimeNoops(
     items,
     "claude",
@@ -691,4 +710,5 @@ export function applyRuntimeMigrationItems(
   for (const item of items) {
     applyRuntimeMigrationItem(item, commands);
   }
+  applyInstalledHooksRetirementItems(items, ctx);
 }

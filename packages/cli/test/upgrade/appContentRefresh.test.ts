@@ -57,6 +57,34 @@ function seedV2SkillMd(appBundleRoot: string): void {
   );
 }
 
+function seedV2InstalledHooks(appHome: string): void {
+  const hooksDir = path.join(appHome, "hooks");
+  fs.mkdirSync(hooksDir, { recursive: true });
+  fs.writeFileSync(
+    path.join(hooksDir, "validate_artifact.py"),
+    "#!/usr/bin/env python3\n# v2 installed hook stub\n",
+    "utf8",
+  );
+  fs.writeFileSync(
+    path.join(hooksDir, "codex-hooks.json"),
+    JSON.stringify(
+      {
+        hooks: {
+          PreToolUse: [
+            {
+              matcher: "^apply_patch$",
+              hooks: [{ type: "command", command: "uv run hooks/validate_artifact.py" }],
+            },
+          ],
+        },
+      },
+      null,
+      2,
+    ),
+    "utf8",
+  );
+}
+
 function capturePrime(context: string, env: Record<string, string>): Record<string, unknown> {
   const saved: Record<string, string | undefined> = {};
   for (const key of Object.keys(env)) {
@@ -117,6 +145,7 @@ describe("detectStaleAppContentSurfaces", () => {
   it("flags v2 Swedish SKILL.md and every listed surface on a managed v2 app home", () => {
     const appHome = copyFixture("v2-app-home", path.join(tmp, "detect"));
     seedV2SkillMd(path.join(appHome, "app"));
+    seedV2InstalledHooks(appHome);
     const stale = detectStaleAppContentSurfaces(appHome, REPO_ROOT);
     expect(stale).toContain("SKILL.md");
     expect(stale).toContain("protocol.yaml");
