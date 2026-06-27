@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 
+import type { JsonObject } from "../core/jsonValue.js";
 import { resolveSourceRoot } from "../core/sourceRoot.js";
 import { loadYamlMapping } from "../core/yaml.js";
 import {
@@ -17,8 +18,6 @@ import {
  * for all real (bare-integer) schema keys.
  */
 
-type Dict = Record<string, any>;
-
 export const PROTOCOL_GROUPS = [
   "CONFIDENCE_SCALE",
   "SEVERITY_FINDING",
@@ -33,7 +32,7 @@ export const PROTOCOL_GROUPS = [
 
 export { loadCapabilitySchemaContract };
 
-function isMapping(value: unknown): value is Dict {
+function isMapping(value: unknown): value is JsonObject {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
@@ -64,16 +63,16 @@ function pyListRepr(values: readonly string[]): string {
   return "[" + values.map((v) => `'${v}'`).join(", ") + "]";
 }
 
-export function loadContract(contractPath: string): Dict {
-  return loadYamlMapping(fs.readFileSync(contractPath, "utf8"));
+export function loadContract(contractPath: string): JsonObject {
+  return loadYamlMapping(fs.readFileSync(contractPath, "utf8")) as JsonObject; // cast: YAML parse IO boundary
 }
 
-export function loadSchemaFile(p: string): Dict {
-  return loadYamlMapping(fs.readFileSync(p, "utf8"));
+export function loadSchemaFile(p: string): JsonObject {
+  return loadYamlMapping(fs.readFileSync(p, "utf8")) as JsonObject; // cast: YAML parse IO boundary
 }
 
-export function loadProtocol(protocolPath: string): Dict {
-  return loadYamlMapping(fs.readFileSync(protocolPath, "utf8"));
+export function loadProtocol(protocolPath: string): JsonObject {
+  return loadYamlMapping(fs.readFileSync(protocolPath, "utf8")) as JsonObject; // cast: YAML parse IO boundary
 }
 
 function listSchemaFiles(schemasDir: string, glob: string): string[] {
@@ -93,8 +92,8 @@ export function collectSchemaGroups(
   schemasDir: string,
   requiredGroups: readonly string[],
   schemaGlob = "*.yaml",
-): Dict {
-  const combined: Dict = {};
+): JsonObject {
+  const combined: JsonObject = {};
   for (const yamlFile of listSchemaFiles(schemasDir, schemaGlob)) {
     const data = loadSchemaFile(yamlFile);
     for (const [groupName, groupData] of Object.entries(data)) {
@@ -103,7 +102,7 @@ export function collectSchemaGroups(
           combined[groupName] = {};
         }
         if (isMapping(groupData)) {
-          Object.assign(combined[groupName], groupData);
+          Object.assign(combined[groupName] as JsonObject, groupData); // cast: parsed schema IO data
         }
       }
     }
@@ -140,7 +139,7 @@ export function checkDirectoryStructure(capDir: string, contract: CapabilitySche
 }
 
 export function checkRequiredGroups(
-  groups: Dict,
+  groups: JsonObject,
   sourceLabel: string,
   contract: CapabilitySchemaContract,
 ): string[] {
@@ -154,7 +153,7 @@ export function checkRequiredGroups(
 }
 
 export function checkNumberedEntries(
-  groups: Dict,
+  groups: JsonObject,
   sourceLabel: string,
   contract: CapabilitySchemaContract,
 ): string[] {
@@ -177,7 +176,7 @@ export function checkNumberedEntries(
 }
 
 export function checkStableIds(
-  groups: Dict,
+  groups: JsonObject,
   sourceLabel: string,
   contract: CapabilitySchemaContract,
 ): string[] {
@@ -210,7 +209,7 @@ export function checkStableIds(
 }
 
 export function checkTriggerPriorities(
-  groups: Dict,
+  groups: JsonObject,
   sourceLabel: string,
   contract: CapabilitySchemaContract,
 ): string[] {
@@ -227,7 +226,7 @@ export function checkTriggerPriorities(
     const priority = entry.priority ?? null;
     if (priority === null && priorityRules.required) {
       errors.push(`V5b [error]: TRIGGERS entry ${key} in ${sourceLabel} missing 'priority'`);
-    } else if (priority !== null && !priorityRules.allowedValues.includes(priority)) {
+    } else if (priority !== null && !priorityRules.allowedValues.includes(priority as string)) { // cast: parsed schema IO data
       errors.push(
         `V5b [error]: TRIGGERS entry ${key} in ${sourceLabel} has invalid priority=${valueRepr(priority)} ` +
           `(must be one of: ${priorityRules.allowedValues.join(", ")})`,
@@ -238,7 +237,7 @@ export function checkTriggerPriorities(
 }
 
 export function checkDeprecation(
-  groups: Dict,
+  groups: JsonObject,
   sourceLabel: string,
   contract: CapabilitySchemaContract,
 ): string[] {
@@ -289,7 +288,7 @@ export function validateContractSelf(contractPath: string): string[] {
   const data = loadContract(contractPath);
   const errors: string[] = [];
 
-  const groups: Dict = {};
+  const groups: JsonObject = {};
   for (const groupName of contract.requiredGroups) {
     if (groupName in data && isMapping(data[groupName])) {
       groups[groupName] = data[groupName];
@@ -334,7 +333,7 @@ export function validateCapability(capDir: string, contractPath: string): string
   return allErrors;
 }
 
-export function buildProtocolValueLookup(protocolData: Dict): Record<string, Set<string>> {
+export function buildProtocolValueLookup(protocolData: JsonObject): Record<string, Set<string>> {
   const lookup: Record<string, Set<string>> = {};
   for (const groupName of PROTOCOL_GROUPS) {
     const group = protocolData[groupName];
@@ -347,7 +346,7 @@ export function buildProtocolValueLookup(protocolData: Dict): Record<string, Set
         continue;
       }
       if ("value" in entry) {
-        values.add(entry.value);
+        values.add(entry.value as string); // cast: parsed protocol IO data
       }
     }
     if (values.size > 0) {
@@ -357,7 +356,7 @@ export function buildProtocolValueLookup(protocolData: Dict): Record<string, Set
   return lookup;
 }
 
-export function checkProtocolStructure(protocolData: Dict, sourceLabel: string): string[] {
+export function checkProtocolStructure(protocolData: JsonObject, sourceLabel: string): string[] {
   const errors: string[] = [];
   const prefixes = protocolData.GROUP_PREFIXES ?? {};
   if (!isMapping(prefixes)) {
@@ -372,7 +371,7 @@ export function checkProtocolStructure(protocolData: Dict, sourceLabel: string):
       continue;
     }
 
-    const expectedPrefix = prefixes[groupName] ?? "";
+    const expectedPrefix = (prefixes[groupName] ?? "") as string; // cast: parsed protocol IO data
     const validIds = new Set<string>();
     for (const [key, entry] of Object.entries(group)) {
       if (!isNumericKey(key)) {
@@ -407,7 +406,7 @@ export function checkProtocolStructure(protocolData: Dict, sourceLabel: string):
             `[warning]: entry ${key} (${entry.id ?? "?"}) ` +
               `in ${groupName} is deprecated but has no replaced_by`,
           );
-        } else if (!validIds.has(replaced)) {
+        } else if (!validIds.has(replaced as string)) { // cast: parsed protocol IO data
           errors.push(
             `[warning]: entry ${key} (${entry.id ?? "?"}) ` +
               `in ${groupName} has replaced_by=${valueRepr(replaced)} ` +
@@ -421,7 +420,7 @@ export function checkProtocolStructure(protocolData: Dict, sourceLabel: string):
   return errors;
 }
 
-export function checkPhaseTransitions(protocolData: Dict, sourceLabel: string): string[] {
+export function checkPhaseTransitions(protocolData: JsonObject, sourceLabel: string): string[] {
   const errors: string[] = [];
   void sourceLabel;
   const phasesGroup = protocolData.PHASES;
@@ -432,7 +431,7 @@ export function checkPhaseTransitions(protocolData: Dict, sourceLabel: string): 
   const phaseValues = new Set<string>();
   for (const [key, entry] of Object.entries(phasesGroup)) {
     if (isNumericKey(key) && isMapping(entry) && "value" in entry) {
-      phaseValues.add(entry.value);
+      phaseValues.add(entry.value as string); // cast: parsed protocol IO data
     }
   }
 
@@ -440,7 +439,7 @@ export function checkPhaseTransitions(protocolData: Dict, sourceLabel: string): 
     if (!isNumericKey(key) || !isMapping(entry)) {
       continue;
     }
-    const successors = entry.valid_successors ?? [];
+    const successors = (entry.valid_successors ?? []) as string[]; // cast: parsed protocol IO data
     const entryId = entry.id ?? `entry ${key}`;
     for (const s of successors) {
       if (!phaseValues.has(s)) {
@@ -450,7 +449,7 @@ export function checkPhaseTransitions(protocolData: Dict, sourceLabel: string): 
         );
       }
     }
-    if (entry.self_transition && !successors.includes(entry.value)) {
+    if (entry.self_transition && !successors.includes(entry.value as string)) {
       errors.push(
         `[error]: ${entryId} in PHASES has self_transition=true ` +
           `but ${valueRepr(entry.value)} not in valid_successors`,
@@ -504,7 +503,7 @@ export function checkPrimitiveReferences(
           for (const v of valuesToCheck) {
             let resolved = false;
             for (const pg of protocolGroups) {
-              if (pg in lookup && lookup[pg].has(v)) {
+              if (pg in lookup && lookup[pg].has(v as string)) { // cast: parsed schema/protocol IO data
                 resolved = true;
                 break;
               }

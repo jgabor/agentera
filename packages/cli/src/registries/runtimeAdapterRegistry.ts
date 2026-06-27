@@ -1,12 +1,11 @@
 import fs from "node:fs";
 import path from "node:path";
 
+import type { JsonObject } from "../core/jsonValue.js";
 import { loadYamlMapping } from "../core/yaml.js";
 import { resolveSourceRoot } from "../core/sourceRoot.js";
 
 /** RuntimeAdapter registry loader and contract validator. Port of scripts/runtime_adapter_registry.py. */
-
-type Dict = Record<string, any>;
 
 export const EXPECTED_RUNTIME_ORDER = [
   "claude",
@@ -166,7 +165,7 @@ export function defaultRegistryPath(): string {
   return defaultRegistryPathValue();
 }
 
-function isMapping(value: unknown): value is Dict {
+function isMapping(value: unknown): value is JsonObject {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
@@ -182,32 +181,32 @@ function isStringMap(value: unknown): boolean {
 }
 
 export class RuntimeAdapterRegistry {
-  records: Dict[];
+  records: JsonObject[];
 
-  constructor(records: Dict[]) {
+  constructor(records: JsonObject[]) {
     this.records = records;
   }
 
   get runtimeIds(): string[] {
-    return this.records.map((record) => record.identity.runtime_id);
+    return this.records.map((record) => (record.identity as JsonObject).runtime_id as string); // cast: parsed registry IO data
   }
 
-  get(runtimeId: string): Dict {
+  get(runtimeId: string): JsonObject {
     for (const record of this.records) {
-      if (record.identity.runtime_id === runtimeId) {
+      if (((record.identity as JsonObject).runtime_id as string) === runtimeId) { // cast: parsed registry IO data
         return record;
       }
     }
     throw new RegistryError(`unknown runtime id: ${runtimeId}`);
   }
 
-  consumerView(consumer: string, runtimeId: string): Dict {
+  consumerView(consumer: string, runtimeId: string): JsonObject {
     const groups = CONSUMER_GROUPS[consumer];
     if (groups === undefined) {
       throw new RegistryError(`unknown registry consumer: ${consumer}`);
     }
     const record = this.get(runtimeId);
-    const view: Dict = {};
+    const view: JsonObject = {};
     for (const group of groups) {
       view[group] = record[group];
     }
@@ -221,7 +220,7 @@ export function loadRegistry(registryPath: string = defaultRegistryPathValue()):
   if (errors.length > 0) {
     throw new RegistryError("RuntimeAdapter registry validation failed: " + errors.join("; "));
   }
-  return new RuntimeAdapterRegistry((data as Dict).records as Dict[]);
+  return new RuntimeAdapterRegistry((data as JsonObject).records as JsonObject[]); // cast: YAML parse IO boundary
 }
 
 export function validateRegistryFile(registryPath: string = defaultRegistryPathValue()): string[] {
@@ -299,7 +298,7 @@ export function validateRegistryData(data: unknown): string[] {
   return errors;
 }
 
-function validateGroup(prefix: string, group: string, value: Dict): string[] {
+function validateGroup(prefix: string, group: string, value: JsonObject): string[] {
   const errors: string[] = [];
   errors.push(...validateForbiddenFields(prefix, value));
   for (const field of REQUIRED_FIELDS[group]) {
@@ -325,7 +324,7 @@ function validateGroup(prefix: string, group: string, value: Dict): string[] {
   return errors;
 }
 
-function validateEventNames(prefix: string, value: Dict): string[] {
+function validateEventNames(prefix: string, value: JsonObject): string[] {
   const errors: string[] = [];
   for (const field of ["supported_events", "unsupported_events", "validation_events"]) {
     const events = value[field];
@@ -333,7 +332,7 @@ function validateEventNames(prefix: string, value: Dict): string[] {
       continue;
     }
     for (const event of events) {
-      if (!SUPPORTED_EVENT_NAMES.has(event)) {
+      if (typeof event !== "string" || !SUPPORTED_EVENT_NAMES.has(event)) {
         errors.push(`${prefix}.${field}: unsupported event name ${event}`);
       }
     }
@@ -349,7 +348,7 @@ function validateEventNames(prefix: string, value: Dict): string[] {
   return errors;
 }
 
-function validateForbiddenFields(prefix: string, value: Dict): string[] {
+function validateForbiddenFields(prefix: string, value: JsonObject): string[] {
   return Object.keys(value)
     .sort()
     .filter((field) => FORBIDDEN_OWNERSHIP_FIELDS.has(field))

@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 
+import type { JsonObject } from "../core/jsonValue.js";
 import { resolvePath } from "../core/paths.js";
 import { resolveSourceRoot } from "../core/sourceRoot.js";
 import { loadYamlMappingFile } from "../core/yaml.js";
@@ -17,8 +18,6 @@ import {
  * vocabulary, Decision 57 first_invocation_read, update channels, index order).
  * Emits the same delegated validate envelope shape as lifecycle-adapters.
  */
-
-type Dict = Record<string, unknown>;
 
 const EXPECTED_STATUSES = [
   "up_to_date",
@@ -44,19 +43,19 @@ function authorityPath(root: string, relative: string): string {
   return path.join(root, relative);
 }
 
-function canonicalStatuses(authority: Dict): Set<string> {
-  return new Set(Object.keys(authority.canonical_statuses as Dict));
+function canonicalStatuses(authority: JsonObject): Set<string> {
+  return new Set(Object.keys(authority.canonical_statuses as JsonObject));
 }
 
-function rejectedLifecycleStatusValues(authority: Dict): Set<string> {
-  const statuses = authority.canonical_statuses as Dict;
-  const verbs = authority.operation_verbs as Dict;
+function rejectedLifecycleStatusValues(authority: JsonObject): Set<string> {
+  const statuses = authority.canonical_statuses as JsonObject;
+  const verbs = authority.operation_verbs as JsonObject;
   const deprecated = Object.values(statuses).flatMap((entry) => {
-    const aliases = (entry as Dict).deprecated_aliases;
+    const aliases = (entry as JsonObject).deprecated_aliases;
     return Array.isArray(aliases) ? aliases : [];
   });
   const nonLifecycleVerbs = Object.entries(verbs)
-    .filter(([, entry]) => (entry as Dict).lifecycle_allowed === false)
+    .filter(([, entry]) => (entry as JsonObject).lifecycle_allowed === false)
     .map(([name]) => name);
   return new Set([...deprecated, ...nonLifecycleVerbs].map(String));
 }
@@ -64,9 +63,9 @@ function rejectedLifecycleStatusValues(authority: Dict): Set<string> {
 function validateLifecycleAuthority(root: string): string[] {
   const errors: string[] = [];
   const p = authorityPath(root, "references/cli/app-lifecycle-vocabulary.yaml");
-  let authority: Dict;
+  let authority: JsonObject;
   try {
-    authority = loadYamlMappingFile(p);
+    authority = loadYamlMappingFile(p) as JsonObject; // cast: YAML parse IO boundary
   } catch (exc) {
     return [`app-lifecycle-vocabulary.yaml: ${(exc as Error).message}`];
   }
@@ -79,21 +78,21 @@ function validateLifecycleAuthority(root: string): string[] {
     errors.push("app-lifecycle-vocabulary.yaml: canonical_status_order drifted from Decision 54 pin");
   }
 
-  const statusKeys = Object.keys(authority.canonical_statuses as Dict);
+  const statusKeys = Object.keys(authority.canonical_statuses as JsonObject);
   if (JSON.stringify(statusKeys) !== JSON.stringify([...EXPECTED_STATUSES])) {
     errors.push("app-lifecycle-vocabulary.yaml: canonical_statuses keys drifted from Decision 54 pin");
   }
 
   for (const status of EXPECTED_STATUSES) {
-    const entry = (authority.canonical_statuses as Dict)[status] as Dict | undefined;
+    const entry = (authority.canonical_statuses as JsonObject)[status] as JsonObject | undefined;
     if (!entry || !String(entry.concept ?? "").trim() || !String(entry.definition ?? "").trim()) {
       errors.push(`app-lifecycle-vocabulary.yaml: canonical status '${status}' is incomplete`);
     }
   }
 
   const aliasToStatus = new Map<string, string>();
-  for (const [status, raw] of Object.entries(authority.canonical_statuses as Dict)) {
-    for (const alias of (raw as Dict).deprecated_aliases as string[]) {
+  for (const [status, raw] of Object.entries(authority.canonical_statuses as JsonObject)) {
+    for (const alias of (raw as JsonObject).deprecated_aliases as string[]) {
       aliasToStatus.set(alias, status);
     }
   }
@@ -111,7 +110,7 @@ function validateLifecycleAuthority(root: string): string[] {
   }
 
   const doctorAllowed = new Set(
-    ((authority.consumers as Dict).doctor as Dict).may_emit_statuses as string[],
+    ((authority.consumers as JsonObject).doctor as JsonObject).may_emit_statuses as string[],
   );
   const observed = [
     APP_UP_TO_DATE,
@@ -141,7 +140,7 @@ function validateLifecycleAuthority(root: string): string[] {
   const allowedStatuses = new Set(EXPECTED_STATUSES);
   const allowedVerbs = new Set(EXPECTED_VERBS);
   for (const consumer of EXPECTED_LIFECYCLE_CONSUMERS) {
-    const entry = (authority.consumers as Dict)[consumer] as Dict | undefined;
+    const entry = (authority.consumers as JsonObject)[consumer] as JsonObject | undefined;
     if (!entry) {
       errors.push(`app-lifecycle-vocabulary.yaml: missing consumer '${consumer}'`);
       continue;
@@ -161,7 +160,7 @@ function validateLifecycleAuthority(root: string): string[] {
     }
   }
 
-  const delegation = authority.docs_delegation as Dict | undefined;
+  const delegation = authority.docs_delegation as JsonObject | undefined;
   if (
     delegation?.document !== "references/cli/vocabulary.md" ||
     delegation?.required_anchor !== "App lifecycle status vocabulary" ||
@@ -176,9 +175,9 @@ function validateLifecycleAuthority(root: string): string[] {
 function validateUpdateChannelsAuthority(root: string): string[] {
   const errors: string[] = [];
   const p = authorityPath(root, "references/cli/update-channels.yaml");
-  let authority: Dict;
+  let authority: JsonObject;
   try {
-    authority = loadYamlMappingFile(p);
+    authority = loadYamlMappingFile(p) as JsonObject; // cast: YAML parse IO boundary
   } catch (exc) {
     return [`update-channels.yaml: ${(exc as Error).message}`];
   }
@@ -190,13 +189,13 @@ function validateUpdateChannelsAuthority(root: string): string[] {
     errors.push("update-channels.yaml: channel_order drifted");
   }
 
-  const stable = (authority.channels as Dict).stable as Dict | undefined;
-  const development = (authority.channels as Dict).development as Dict | undefined;
+  const stable = (authority.channels as JsonObject).stable as JsonObject | undefined;
+  const development = (authority.channels as JsonObject).development as JsonObject | undefined;
   if (!stable || !development) {
     errors.push("update-channels.yaml: stable and development channels are required");
   } else {
-    const stableNpm = (stable.resolution as Dict)?.npm as Dict | undefined;
-    const devNpm = (development.resolution as Dict)?.npm as Dict | undefined;
+    const stableNpm = (stable.resolution as JsonObject)?.npm as JsonObject | undefined;
+    const devNpm = (development.resolution as JsonObject)?.npm as JsonObject | undefined;
     if (stableNpm?.dist_tag !== "latest" || devNpm?.dist_tag !== "next") {
       errors.push("update-channels.yaml: npm dist_tag pins drifted");
     }
@@ -206,8 +205,8 @@ function validateUpdateChannelsAuthority(root: string): string[] {
     if (!String(devNpm?.update_command ?? "").includes("@next")) {
       errors.push("update-channels.yaml: development npm update_command must reference @next");
     }
-    if ((development.resolution as Dict)?.git && (development.resolution as Dict).git) {
-      const devGit = (development.resolution as Dict).git as Dict;
+    if ((development.resolution as JsonObject)?.git && (development.resolution as JsonObject).git) {
+      const devGit = (development.resolution as JsonObject).git as JsonObject;
       if (devGit.supported !== false) {
         errors.push("update-channels.yaml: development git resolution must be unsupported");
       }
@@ -222,7 +221,7 @@ function validateUpdateChannelsAuthority(root: string): string[] {
     errors.push("update-channels.yaml: consumer_order drifted");
   }
 
-  const delegation = authority.docs_delegation as Dict | undefined;
+  const delegation = authority.docs_delegation as JsonObject | undefined;
   if (
     delegation?.document !== "references/cli/vocabulary.md" ||
     delegation?.required_anchor !== "Update channels" ||
@@ -237,24 +236,24 @@ function validateUpdateChannelsAuthority(root: string): string[] {
 function validateInstructionContract(root: string): string[] {
   const errors: string[] = [];
   const p = authorityPath(root, "references/cli/capability-instruction-contract.yaml");
-  let authority: Dict;
+  let authority: JsonObject;
   try {
-    authority = loadYamlMappingFile(p);
+    authority = loadYamlMappingFile(p) as JsonObject; // cast: YAML parse IO boundary
   } catch (exc) {
     return [`capability-instruction-contract.yaml: ${(exc as Error).message}`];
   }
 
-  const firstRead = authority.first_invocation_read as Dict | undefined;
+  const firstRead = authority.first_invocation_read as JsonObject | undefined;
   if (!firstRead) {
     errors.push("capability-instruction-contract.yaml: first_invocation_read block is required");
     return errors;
   }
 
-  const allowed = firstRead.allowed_values as Dict | undefined;
+  const allowed = firstRead.allowed_values as JsonObject | undefined;
   if (!allowed || typeof allowed.prime_context !== "object") {
     errors.push("capability-instruction-contract.yaml: first_invocation_read.allowed_values.prime_context is required");
   } else {
-    const meaning = String((allowed.prime_context as Dict).meaning ?? "");
+    const meaning = String((allowed.prime_context as JsonObject).meaning ?? "");
     if (!meaning.includes("agentera prime --context")) {
       errors.push("capability-instruction-contract.yaml: prime_context obligation must reference agentera prime --context");
     }
@@ -264,12 +263,12 @@ function validateInstructionContract(root: string): string[] {
     errors.push("capability-instruction-contract.yaml: first_invocation_read.default_rule must be prime_context");
   }
 
-  const cliMeta = (authority.current_state as Dict | undefined)?.cli_metadata as Dict | undefined;
+  const cliMeta = (authority.current_state as JsonObject | undefined)?.cli_metadata as JsonObject | undefined;
   if (cliMeta?.field !== "first_invocation_read") {
     errors.push("capability-instruction-contract.yaml: cli_metadata.field must be first_invocation_read");
   }
 
-  const delegation = authority.docs_delegation as Dict | undefined;
+  const delegation = authority.docs_delegation as JsonObject | undefined;
   if (
     delegation?.document !== "references/cli/vocabulary.md" ||
     delegation?.required_anchor !== "Capability instruction contract" ||
@@ -284,9 +283,9 @@ function validateInstructionContract(root: string): string[] {
 function validateVocabularyIndex(root: string): string[] {
   const errors: string[] = [];
   const p = authorityPath(root, "references/cli/vocabulary-index.yaml");
-  let index: Dict;
+  let index: JsonObject;
   try {
-    index = loadYamlMappingFile(p);
+    index = loadYamlMappingFile(p) as JsonObject; // cast: YAML parse IO boundary
   } catch (exc) {
     return [`vocabulary-index.yaml: ${(exc as Error).message}`];
   }
