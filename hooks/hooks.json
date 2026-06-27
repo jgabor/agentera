@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "npx -y agentera hook session-start"
+            "command": "npx -y agentera@next hook session-start"
           }
         ]
       }
@@ -16,7 +16,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "npx -y agentera hook session-stop"
+            "command": "npx -y agentera@next hook session-stop"
           }
         ]
       }
@@ -27,7 +27,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "npx -y agentera hook validate-artifact"
+            "command": "npx -y agentera@next hook validate-artifact"
           }
         ]
       }
