@@ -4,10 +4,10 @@ import path from "node:path";
 
 import { pyJsonIndent } from "../../core/pyjson.js";
 import {
-  type Dict,
   type Env,
   defaultOutputPath,
 } from "./core.js";
+import type { JsonObject } from "../../core/jsonValue.js";
 import { buildCorpus } from "./corpus.js";
 import {
   COVERAGE_EXIT_FLAGGED,
@@ -157,11 +157,11 @@ export function extractCorpusMain(argv: string[], io: ExtractMainIo = {}): numbe
   });
   fs.mkdirSync(path.dirname(args.output), { recursive: true });
   fs.writeFileSync(args.output, pyJsonIndent(corpus) + "\n", "utf-8");
-  const truncationWarning = formatTruncationWarnings(corpus.metadata.runtime_statuses as Dict[]);
+  const truncationWarning = formatTruncationWarnings(corpus.metadata.runtime_statuses as JsonObject[]);
   if (truncationWarning) err(truncationWarning);
   const total = corpus.metadata.total_records;
   const familyBits = Object.entries(corpus.metadata.families)
-    .map(([name, summary]) => `${name}=${(summary as Dict).count}`)
+    .map(([name, summary]) => `${name}=${(summary as JsonObject).count}`)
     .join(", ");
   out(`wrote corpus: ${args.output} (${total} records; ${familyBits})`);
   return 0;

@@ -1,4 +1,37 @@
 cycles:
+- number: 683
+  timestamp: 2026-06-27 15:00
+  type: refactor
+  phase: build
+  what: Plan task 6 of chore:3.0.0 (cross-cutting cast audit + re-export deletion).
+    Converted ~28 consumer files from `import { Dict } from <passthrough>` to `import
+    { JsonObject } from core/jsonValue` and replaced every `Dict` token. Deleted the
+    5 sanctioned re-export passthroughs (capabilityContext/types, startupAnalysis/contract,
+    cli/commands/state/shared, analytics/extractCorpus/core, validate/lifecycleAdapters/shared).
+    Discovered and removed a 6th passthrough (startupAnalysis/index.ts re-export).
+    Fixed the missed test file test/registries/artifactRegistry.test.ts (local `type
+    Dict = Record<string, any>` -> JsonObject). Added `// cast:` comments to 5 IO-boundary
+    casts. JsonObject is now the only JSON-value type name in use; the deprecated
+    `Dict` alias survives only inside core/jsonValue.ts (removal deferred).
+  discovered: A 6th passthrough existed (startupAnalysis/index.ts re-export of Dict)
+    not in the original sanctioned-5 list; same pattern as the extractCorpus/index.ts
+    re-export, handled identically. One flaky test run observed (file-generating extractCorpusParity/prepack
+    tests); stable on re-run, not a regression.
+  verified: "pnpm -C packages/cli run typecheck: 0 errors. pnpm -C packages/cli test:\
+    \ 1145/1145 pass (132 files) \u2014 confirmed stable across 2 runs. `rg \"\\\\\
+    bDict\\\\b\" packages/cli/src packages/cli/test | rg -v core/jsonValue`: NONE.\
+    \ `rg \"export type Dict\" packages/cli/src`: only core/jsonValue.ts:13. 0 fixture/snapshot\
+    \ drift."
+  next: 'Task 7 (final): re-run full typecheck/build/vitest/compaction gate from a
+    clean tree, archive plan, close the critical [chore:3.0.0] TODO, fold artifacts
+    into the same commit.'
+  context:
+    intent: Make JsonObject the single JSON-value source of truth; narrow `as` casts
+      to IO boundaries. Type-only, no behavior change.
+    constraints: Task-6 scope. core/jsonValue.ts untouched (deprecated Dict alias
+      retained). No new public API. feat/v3 only.
+    artifacts:
+      plan: .agentera/plan.yaml (task 6 -> complete)
 - number: 682
   timestamp: 2026-06-27 14:00
   type: refactor
@@ -320,22 +353,9 @@ cycles:
     unknowns: Whether to schedule the `--force-major-boundary` escape hatch next.
     scope: packages/cli/src/state/installRoot.ts (1 function removed); TODO.md, CHANGELOG.md,
       .agentera/progress.yaml fold-ins.
-- number: 673
-  timestamp: 2026-06-23 00:30
-  type: fix
-  phase: build
-  what: Align parity oracle retryCommand pin with string|null contract.
-  discovered: Surfaced by audit post-plan health check after the cutover-stability
-    batch 1; the contract was widened to string|null but the fixture pin was missed.
-  verified: "pnpm -C packages/cli test \u2192 986/986; typecheck clean; compact pass."
-  next: Defer hasBundleRootEvidence consolidation and detectContentLanguage alignment
-    to next plan.
-  context:
-    intent: Close surfaced debt from cutover-stability batch 1.
-    constraints: Scope limited to parity fixture pin; no behavior change.
-    unknowns: When to schedule refactor of duplicated hasBundleRootEvidence.
-    scope: 1 file, 1 line plus artifact fold-ins (CHANGELOG, PROGRESS).
 archive:
+- summary: 'Cycle 673 (2026-06-23): Align parity oracle retryCommand pin with string|null
+    contract.'
 - summary: 'Cycle 672 (2026-06-22): Backport fix: remove empty-severity-section rejection
     from validate_artifact.py on main.'
 - summary: 'Cycle 671 (2026-06-22): Fix stale YAML schema example, deprecated lint
@@ -435,6 +455,3 @@ archive:
     \ into CHANGELOG [2.7.7]; marked plan task 4 complete."
 - summary: 'Cycle 632 (2026-06-03): 2.7.7 version bump and CHANGELOG update; marked
     plan task 4 complete.'
-- summary: "Cycle 631 (2026-06-03): Audit WARN/FAIL file:line citation enforcement\
-    \ \u2014 added evaluator_handoff schema to capability-instruction-contract.yaml,\
-    \ evaluatorHandoffContract.ts registry with report..."

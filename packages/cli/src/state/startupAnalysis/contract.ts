@@ -6,8 +6,6 @@ import { loadYamlMapping } from "../../core/yaml.js";
 import { resolveSourceRoot } from "../../core/sourceRoot.js";
 import type { JsonObject } from "../../core/jsonValue.js";
 
-export type Dict = JsonObject;
-
 export const TRANSCRIPT_KEYS = new Set([
   "content",
   "text",
@@ -25,9 +23,9 @@ export function contractPath(root: string = resolveSourceRoot()): string {
   return path.join(root, "references", "analysis", "startup-measurement-contract.yaml");
 }
 
-export function loadContract(p: string = contractPath()): Dict {
+export function loadContract(p: string = contractPath()): JsonObject {
   // cast: YAML parse returns Record<string,unknown>; privacy-boundary contract is JSON-native
-  return loadYamlMapping(fs.readFileSync(p, "utf8")) as unknown as Dict;
+  return loadYamlMapping(fs.readFileSync(p, "utf8")) as unknown as JsonObject;
 }
 
 export function hashLabel(kind: string, value: unknown, salt: string): string {
@@ -62,7 +60,7 @@ const FALLBACK_ARTIFACT_LABELS: Array<[string, string]> = [
   [".agentera/experiments.yaml", "experiments"],
 ];
 
-export function canonicalArtifactLabel(value: unknown, contract: Dict | null = null): string | null {
+export function canonicalArtifactLabel(value: unknown, contract: JsonObject | null = null): string | null {
   const text = String(value).replace(/\\/g, "/");
   const loaded = contract ?? loadContract();
   const privacyBoundary =
@@ -89,7 +87,7 @@ export function canonicalArtifactLabel(value: unknown, contract: Dict | null = n
   return null;
 }
 
-export function redactForStartupOutput(value: any, salt: string, contract: Dict | null = null): any {
+export function redactForStartupOutput(value: any, salt: string, contract: JsonObject | null = null): any {
   const loaded = contract ?? loadContract();
   if (Array.isArray(value)) {
     return value.map((item) => redactForStartupOutput(item, salt, loaded));
@@ -97,7 +95,7 @@ export function redactForStartupOutput(value: any, salt: string, contract: Dict 
   if (value === null || typeof value !== "object") {
     return value;
   }
-  const redacted: Dict = {};
+  const redacted: JsonObject = {};
   for (const [key, item] of Object.entries(value)) {
     const keyText = String(key);
     if (TRANSCRIPT_KEYS.has(keyText)) {

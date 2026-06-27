@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 
-import { type Dict } from "./contract.js";
+import type { JsonObject } from "../../core/jsonValue.js";
 import { pyJsonIndentSorted } from "../../core/pyjson.js";
 import { Flt, formatFloat, pyFmt, pyJsonDumps, pyJsonString } from "./helpers.js";
 
@@ -28,7 +28,7 @@ function markdownTable(headers: string[], rows: Array<Array<unknown>>): string[]
   return [...lines, ...rows.map((row) => "| " + row.map((v) => pyFmt(v)).join(" | ") + " |")];
 }
 
-export function renderStartupReport(metrics: Dict): string {
+export function renderStartupReport(metrics: JsonObject): string {
   const thresholdDerivation =
     metrics.threshold_derivation && typeof metrics.threshold_derivation === "object" && !Array.isArray(metrics.threshold_derivation)
       ? metrics.threshold_derivation
@@ -165,7 +165,7 @@ export function renderStartupReport(metrics: Dict): string {
   return lines.join("\n");
 }
 
-export function writeStartupReports(metrics: Dict, outputDir: string): Record<string, string> {
+export function writeStartupReports(metrics: JsonObject, outputDir: string): Record<string, string> {
   fs.mkdirSync(outputDir, { recursive: true });
   const jsonPath = path.join(outputDir, STARTUP_REPORT_JSON);
   const markdownPath = path.join(outputDir, STARTUP_REPORT_MARKDOWN);

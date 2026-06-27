@@ -10,10 +10,10 @@ import {
   hasRecordedValue,
   uniqueList,
 } from "./shared.js";
-import type { Dict } from "./types.js";
+import type { JsonObject } from "../../core/jsonValue.js";
 import type { JsonValue } from "../../core/jsonValue.js";
 
-export function orchestrationTaskSummary(task: Dict): Dict {
+export function orchestrationTaskSummary(task: JsonObject): JsonObject {
   const evidence = task.evidence;
   const evidenceItems = Array.isArray(evidence) ? evidence : evidence === null || evidence === undefined || evidence === "" ? [] : [evidence];
   return {
@@ -28,7 +28,7 @@ export function orchestrationTaskSummary(task: Dict): Dict {
 export function planTaskRefKeys(value: unknown): string[] {
   if (value === null || value === undefined) return [];
   if (typeof value === "object" && !Array.isArray(value)) {
-    const entry = value as Dict;
+    const entry = value as JsonObject;
     const nested = entry.number ?? entry.task_number ?? entry.id;
     return nested === null || nested === undefined ? [] : planTaskRefKeys(nested);
   }
@@ -45,15 +45,15 @@ export function formatPlanTaskDepRef(dep: unknown): string {
   return keys.length > 0 ? keys[0]! : String(dep);
 }
 
-export function planDependsOnList(task: Dict): JsonValue[] {
+export function planDependsOnList(task: JsonObject): JsonValue[] {
   const raw = task.depends_on;
   if (Array.isArray(raw)) return raw;
   if (raw === null || raw === undefined || raw === "") return [];
   return [raw];
 }
 
-export function indexPlanTasksByNumber(tasks: Dict[]): Record<string, Dict> {
-  const taskByNumber: Record<string, Dict> = {};
+export function indexPlanTasksByNumber(tasks: JsonObject[]): Record<string, JsonObject> {
+  const taskByNumber: Record<string, JsonObject> = {};
   for (const task of tasks) {
     if (task.number === null || task.number === undefined) continue;
     for (const key of planTaskRefKeys(task.number)) taskByNumber[key] = task;
@@ -61,7 +61,7 @@ export function indexPlanTasksByNumber(tasks: Dict[]): Record<string, Dict> {
   return taskByNumber;
 }
 
-export function resolvePlanTaskByRef(taskByNumber: Record<string, Dict>, dep: unknown): Dict | undefined {
+export function resolvePlanTaskByRef(taskByNumber: Record<string, JsonObject>, dep: unknown): JsonObject | undefined {
   for (const key of planTaskRefKeys(dep)) {
     const hit = taskByNumber[key];
     if (hit !== undefined) return hit;
@@ -74,9 +74,9 @@ export const BLOCKED_STATUSES_ORCH = new Set(["blocked", "stuck"]);
 
 export const TARGET_VERSION_RE = /\b\d+\.\d+\.\d+\b/;
 
-export function dependencyReadyTasks(tasks: Dict[]): Dict[] {
+export function dependencyReadyTasks(tasks: JsonObject[]): JsonObject[] {
   const taskByNumber = indexPlanTasksByNumber(tasks);
-  const ready: Dict[] = [];
+  const ready: JsonObject[] = [];
   for (const task of tasks) {
     const status = entryStatus(task, "pending");
     if (DONE_STATUSES_ORCH.has(status) || BLOCKED_STATUSES_ORCH.has(status)) continue;
@@ -93,7 +93,7 @@ export function dependencyReadyTasks(tasks: Dict[]): Dict[] {
   return ready;
 }
 
-export function selectEvidenceTarget(plan: Dict): Dict {
+export function selectEvidenceTarget(plan: JsonObject): JsonObject {
   const tasks = asList(plan.tasks).filter((t) => t && typeof t === "object" && !Array.isArray(t));
   const noTarget = {
     status: "no_target",
@@ -142,7 +142,7 @@ export function selectEvidenceTarget(plan: Dict): Dict {
   return noTarget;
 }
 
-export function taskByRef(plan: Dict, ref: Dict | null): Dict | null {
+export function taskByRef(plan: JsonObject, ref: JsonObject | null): JsonObject | null {
   if (!ref) return null;
   for (const task of asList(plan.tasks)) {
     if (task && typeof task === "object" && !Array.isArray(task) && task.number === ref.number) return task;
@@ -150,19 +150,19 @@ export function taskByRef(plan: Dict, ref: Dict | null): Dict | null {
   return null;
 }
 
-export function planContextField(plan: Dict, field: string): any {
+export function planContextField(plan: JsonObject, field: string): any {
   const summary = plan.summary && typeof plan.summary === "object" && !Array.isArray(plan.summary) ? plan.summary : {};
   return field in summary ? summary[field] : plan[field];
 }
 
-export function buildScopeBoundary(plan: Dict, selected: Dict | null): Dict {
+export function buildScopeBoundary(plan: JsonObject, selected: JsonObject | null): JsonObject {
   const explicitPaths: string[] = [];
   const scopeField = planContextField(plan, "scope");
   const sources = [selected ?? {}, scopeField && typeof scopeField === "object" ? scopeField : {}];
   for (const source of sources) {
     if (!source || typeof source !== "object" || Array.isArray(source)) continue;
     for (const key of ["source_files", "files", "paths"]) {
-      for (const value of asList((source as Dict)[key])) {
+      for (const value of asList((source as JsonObject)[key])) {
         const text = String(value).trim();
         if (text && !explicitPaths.includes(text)) explicitPaths.push(text);
       }
@@ -178,7 +178,7 @@ export function buildScopeBoundary(plan: Dict, selected: Dict | null): Dict {
   };
 }
 
-export function buildArtifactUpdateRequirements(plan: Dict, docs: Dict): Dict {
+export function buildArtifactUpdateRequirements(plan: JsonObject, docs: JsonObject): JsonObject {
   const mapping = asList(docs.mapping);
   const mapped = mapping.filter((e) => e && typeof e === "object" && e.artifact).map((e) => e.artifact);
   return {
@@ -192,7 +192,7 @@ export function buildArtifactUpdateRequirements(plan: Dict, docs: Dict): Dict {
   };
 }
 
-export function buildPlanCompletionSweep(plan: Dict): Dict {
+export function buildPlanCompletionSweep(plan: JsonObject): JsonObject {
   const complete = Boolean(plan.complete_plan);
   return {
     status: complete ? "eligible" : "not_eligible",
@@ -204,7 +204,7 @@ export function buildPlanCompletionSweep(plan: Dict): Dict {
   };
 }
 
-export function selectedTargetVersion(plan: Dict): string | null {
+export function selectedTargetVersion(plan: JsonObject): string | null {
   const textParts = [String(plan.title ?? "")];
   const firstPending = plan.first_pending;
   if (firstPending && typeof firstPending === "object" && !Array.isArray(firstPending)) {
@@ -226,12 +226,12 @@ export function changelogRecordsTarget(text: string, targetVersion: string | nul
   return text.split(/\r\n|\r|\n/).some((line) => re.test(line));
 }
 
-export function closeoutChangelogBoundary(schemas: Record<string, SchemaInfo>, plan: Dict): Dict {
+export function closeoutChangelogBoundary(schemas: Record<string, SchemaInfo>, plan: JsonObject): JsonObject {
   const info: SchemaInfo = schemas.changelog ?? { path: "CHANGELOG.md", record: undefined, schema: {}, fields: {} };
   const p = artifactPath(info, "changelog");
   const source = sourceMetadata("changelog", p);
   const targetVersion = selectedTargetVersion(plan);
-  const unavailable = (caveat: string): Dict => ({
+  const unavailable = (caveat: string): JsonObject => ({
     status: "unavailable",
     source,
     source_provenance: sourceProvenance("changelog", "agentera query changelog --format json"),

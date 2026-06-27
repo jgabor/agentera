@@ -15,7 +15,7 @@ import {
 } from "./types.js";
 import { CAPABILITY_INSTRUCTIONS, capabilityInstructionModulePath } from "../../capabilities/index.js";
 import { isFile, pyRepr, appendUnique } from "./shared.js";
-import type { Dict } from "./types.js";
+import type { JsonObject } from "../../core/jsonValue.js";
 
 export function capabilityInstructionContractPath(): string {
   const model = activeAppModel();
@@ -24,18 +24,18 @@ export function capabilityInstructionContractPath(): string {
   return path.join(path.resolve(discoverSchemasDir(), "..", "..", "..", ".."), "references", "cli", "capability-instruction-contract.yaml");
 }
 
-export function capabilityInstructionContract(): Dict {
+export function capabilityInstructionContract(): JsonObject {
   const p = capabilityInstructionContractPath();
   if (!isFile(p)) return {};
   try {
-    return loadYamlMapping(fs.readFileSync(p, "utf8")) as Dict;
+    return loadYamlMapping(fs.readFileSync(p, "utf8")) as JsonObject; // cast: IO boundary — YAML parse of capability-instruction contract file
   } catch (exc) {
     process.stderr.write(`warning: failed to load capability instruction contract: ${(exc as Error).message}\n`);
     return {};
   }
 }
 
-export function capabilityInstructionTarget(capability: string): Dict {
+export function capabilityInstructionTarget(capability: string): JsonObject {
   const module = capabilityInstructionModulePath(capability);
   const prose = CAPABILITY_INSTRUCTIONS[capability] ?? null;
   return {
@@ -47,16 +47,16 @@ export function capabilityInstructionTarget(capability: string): Dict {
   };
 }
 
-export function firstInvocationReadMetadata(capability: string): Dict {
+export function firstInvocationReadMetadata(capability: string): JsonObject {
   const authority = capabilityInstructionContract();
-  const firstRead: Dict =
+  const firstRead: JsonObject =
     authority.first_invocation_read && typeof authority.first_invocation_read === "object" && !Array.isArray(authority.first_invocation_read)
       ? authority.first_invocation_read
       : {};
-  const allowedValues: Dict =
+  const allowedValues: JsonObject =
     firstRead.allowed_values && typeof firstRead.allowed_values === "object" && !Array.isArray(firstRead.allowed_values) ? firstRead.allowed_values : {};
   const value = "prime_context";
-  const valueContract = (allowedValues[value] ?? {}) as Dict;
+  const valueContract = (allowedValues[value] ?? {}) as JsonObject;
   return {
     field: "first_invocation_read",
     value,
@@ -76,7 +76,7 @@ export function firstInvocationReadMetadata(capability: string): Dict {
   };
 }
 
-export function planStartupContract(): Dict {
+export function planStartupContract(): JsonObject {
   return {
     schemaVersion: PLAN_STARTUP_CONTRACT_VERSION,
     status: "implemented_compact_normal_startup_contract",
@@ -135,14 +135,14 @@ export function planStartupContract(): Dict {
   };
 }
 
-export function capabilityArtifactInventory(capability: string): [Dict, string | null] {
-  const inventory: Dict & { read_needs: string[]; write_targets: string[] } = { read_needs: [], write_targets: [] };
+export function capabilityArtifactInventory(capability: string): [JsonObject, string | null] {
+  const inventory: JsonObject & { read_needs: string[]; write_targets: string[] } = { read_needs: [], write_targets: [] };
   const capabilityDir = path.join(String(activeAppModel().skillRoot), "capabilities", capability);
   const p = path.join(capabilityDir, "schemas", "artifacts.yaml");
   if (!isFile(p)) return [inventory, `No capability artifact schema found for ${capability}.`];
-  let data: Dict;
+  let data: JsonObject;
   try {
-    data = loadYamlMapping(fs.readFileSync(p, "utf8")) as Dict;
+    data = loadYamlMapping(fs.readFileSync(p, "utf8")) as JsonObject; // cast: IO boundary — YAML parse of artifact inventory file
   } catch (exc) {
     return [inventory, `Capability artifact schema for ${capability} could not be read: ${(exc as Error).message}`];
   }
@@ -151,12 +151,12 @@ export function capabilityArtifactInventory(capability: string): [Dict, string |
     return [inventory, `Capability artifact schema for ${capability} has no ARTIFACTS mapping.`];
   }
   const errors: string[] = [];
-  for (const [key, entry] of Object.entries(artifacts as Dict)) {
+  for (const [key, entry] of Object.entries(artifacts as JsonObject)) {
     if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
       errors.push(`entry ${key} is not a mapping`);
       continue;
     }
-    const e = entry as Dict;
+    const e = entry as JsonObject;
     const artifactId = String(e.artifact_id ?? "").trim();
     const localRole = String(e.local_role ?? "").trim();
     if (!artifactId) {
@@ -174,14 +174,14 @@ export function capabilityArtifactInventory(capability: string): [Dict, string |
   return [inventory, error];
 }
 
-export function capabilityContext(capability: string | null): Dict | null {
+export function capabilityContext(capability: string | null): JsonObject | null {
   if (!capability) return null;
   const [inventory, error] = capabilityArtifactInventory(capability);
   const needs = inventory.read_needs as string[];
   const writeTargets = inventory.write_targets as string[];
   const missing = needs.filter((name) => !STARTUP_ENVELOPE_STATE_FAMILIES.has(name));
   const cliFallback = missing.filter((name) => name in STATE_FAMILY_FALLBACK_COMMANDS).map((name) => STATE_FAMILY_FALLBACK_COMMANDS[name]);
-  const context: Dict = {
+  const context: JsonObject = {
     capability,
     first_invocation_read: firstInvocationReadMetadata(capability),
     declared_state_needs: needs,

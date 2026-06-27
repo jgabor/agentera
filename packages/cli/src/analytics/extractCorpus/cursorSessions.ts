@@ -6,7 +6,6 @@ import { execFileSync } from "node:child_process";
 
 import { expanduser, resolvePath } from "../../core/paths.js";
 import {
-  type Dict,
   type Env,
   MAX_TOOL_ARG_TEXT,
   eventTimestamp,
@@ -18,6 +17,7 @@ import {
   textFromContent,
   toolCallRecordFromItem,
 } from "./core.js";
+import type { JsonObject } from "../../core/jsonValue.js";
 import { isPlainObject, rglob, isDir } from "./core.js";
 import {
   type SqliteDb,
@@ -96,8 +96,8 @@ function cursorProjectPathFromDir(projectDir: string): string | null {
   return null;
 }
 
-function boundToolArguments(args: Dict): Dict {
-  const bounded: Dict = {};
+function boundToolArguments(args: JsonObject): JsonObject {
+  const bounded: JsonObject = {};
   for (const [key, value] of Object.entries(args)) {
     if (typeof value === "string" && value.length > MAX_TOOL_ARG_TEXT) {
       bounded[key] = value.slice(0, MAX_TOOL_ARG_TEXT) + "…";
@@ -114,7 +114,7 @@ function boundToolArguments(args: Dict): Dict {
   return bounded;
 }
 
-function cursorContentItems(event: Dict): Dict[] {
+function cursorContentItems(event: JsonObject): JsonObject[] {
   const message = event.message;
   if (!isPlainObject(message)) return [];
   const content = message.content;
@@ -151,12 +151,12 @@ export function extractCursorSessions(
   projectsDir: string | null,
   errors: string[],
   projectRoots: string[] | null = null,
-): Dict[] {
+): JsonObject[] {
   if (projectsDir === null || !fs.existsSync(projectsDir)) return [];
   const roots = projectRoots || [];
   const slugToRoot = new Map<string, string>();
   for (const root of roots) slugToRoot.set(cursorProjectDirSlug(root), root);
-  const records: Dict[] = [];
+  const records: JsonObject[] = [];
   for (const p of iterCursorTranscriptPaths(projectsDir, roots)) {
     const fallbackTimestamp = isoFromMtime(p);
     const sessionId = path.basename(path.dirname(p)) || pathStem(p);
@@ -196,7 +196,7 @@ export function extractCursorSessions(
       const content = textFromContent(items.length > 0 ? items : event.message);
       if (!content) continue;
       const timestamp = eventTimestamp(event, fallbackTimestamp);
-      const data: Dict = { actor: role, content };
+      const data: JsonObject = { actor: role, content };
       if (role === "user") {
         if (previousAssistant) data.preceding_context = previousAssistant.slice(-2000);
         const sig = signalType(content);
@@ -245,7 +245,7 @@ function cursorJsonlSessionIds(projectsDir: string | null, projectRoots: string[
   return ids;
 }
 
-function cursorAgentMessageText(message: Dict): string {
+function cursorAgentMessageText(message: JsonObject): string {
   const content = message.content;
   if (typeof content === "string") return content.trim();
   if (Array.isArray(content)) {
@@ -262,8 +262,8 @@ function cursorAgentMessageText(message: Dict): string {
   return textFromContent(content);
 }
 
-function cursorAgentToolItems(message: Dict): Dict[] {
-  const items: Dict[] = [];
+function cursorAgentToolItems(message: JsonObject): JsonObject[] {
+  const items: JsonObject[] = [];
   const content = message.content;
   if (!Array.isArray(content)) return items;
   for (const item of content) {
@@ -309,10 +309,10 @@ function iterCursorAgentStorePaths(
   return items;
 }
 
-function cursorAgentBlobMessages(storeDb: string, errors: string[]): Array<[string, Dict]> {
-  const messages: Array<[string, Dict]> = [];
+function cursorAgentBlobMessages(storeDb: string, errors: string[]): Array<[string, JsonObject]> {
+  const messages: Array<[string, JsonObject]> = [];
   let conn: SqliteDb | null = null;
-  let rows: Dict[];
+  let rows: JsonObject[];
   try {
     conn = openSqlite(storeDb);
   } catch (exc) {
@@ -354,11 +354,11 @@ export function extractCursorAgentSessions(
   errors: string[],
   projectRoots: string[] | null = null,
   cursorProjectsDir: string | null = null,
-): Dict[] {
+): JsonObject[] {
   if (chatsDir === null || !fs.existsSync(chatsDir)) return [];
   const roots = projectRoots || [];
   const jsonlSessionIds = cursorJsonlSessionIds(cursorProjectsDir, roots);
-  const records: Dict[] = [];
+  const records: JsonObject[] = [];
   for (const [storeDb, projectPath, sessionId] of iterCursorAgentStorePaths(chatsDir, roots, jsonlSessionIds)) {
     const fallbackTimestamp = isoFromMtime(storeDb);
     let previousAssistant = "";
@@ -390,7 +390,7 @@ export function extractCursorAgentSessions(
       const content = cursorAgentMessageText(message);
       if (!content) continue;
       const timestamp = eventTimestamp(message, fallbackTimestamp);
-      const data: Dict = { actor: role, content };
+      const data: JsonObject = { actor: role, content };
       if (role === "user") {
         if (previousAssistant) data.preceding_context = previousAssistant.slice(-2000);
         const sig = signalType(content);

@@ -11,23 +11,23 @@ import {
   BLOCKED_STATUSES_ORCH,
 } from "./planState.js";
 import { progressVerificationSummary, retryState, evaluatorHandoff } from "./progress.js";
-import type { Dict } from "./types.js";
+import type { JsonObject } from "../../core/jsonValue.js";
 
 export function orchestrationContext(
   capability: string | null,
-  plan: Dict,
-  progress: Dict,
-  health: Dict,
+  plan: JsonObject,
+  progress: JsonObject,
+  health: JsonObject,
   todoItems: Array<Record<string, string>>,
-  docs: Dict,
-  profile: Dict,
-  nextAction: Dict,
-): Dict | null {
+  docs: JsonObject,
+  profile: JsonObject,
+  nextAction: JsonObject,
+): JsonObject | null {
   if (capability !== "orchestrate") return null;
   const tasks = asList(plan.tasks).filter((t) => t && typeof t === "object" && !Array.isArray(t));
   const taskByNumber = indexPlanTasksByNumber(tasks);
-  const dependencyReady: Dict[] = [];
-  const blocked: Dict[] = [];
+  const dependencyReady: JsonObject[] = [];
+  const blocked: JsonObject[] = [];
   for (const task of tasks) {
     const status = entryStatus(task, "pending");
     if (DONE_STATUSES_ORCH.has(status)) continue;

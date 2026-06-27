@@ -15,24 +15,24 @@ import {
   taskByRef,
 } from "./planState.js";
 import { progressVerificationSummary } from "./progress.js";
-import type { Dict } from "./types.js";
+import type { JsonObject } from "../../core/jsonValue.js";
 
 export function buildExecutionContext(
   capability: string | null,
   schemas: Record<string, SchemaInfo>,
-  plan: Dict,
-  progress: Dict,
-  health: Dict,
+  plan: JsonObject,
+  progress: JsonObject,
+  health: JsonObject,
   todoItems: Array<Record<string, string>>,
-  docs: Dict,
-  profile: Dict,
-  bundle: Dict,
-): Dict | null {
+  docs: JsonObject,
+  profile: JsonObject,
+  bundle: JsonObject,
+): JsonObject | null {
   if (capability !== "build") return null;
   const capabilityContract = capabilityContext(capability) ?? {};
   const tasks = asList(plan.tasks).filter((t) => t && typeof t === "object" && !Array.isArray(t));
   const target = selectEvidenceTarget(plan);
-  const selected = taskByRef(plan, (target && typeof target === "object" ? target.task : null) as Dict | null);
+  const selected = taskByRef(plan, (target && typeof target === "object" ? target.task : null) as JsonObject | null);
   const acceptance = selected && typeof selected === "object" ? asList(selected.acceptance) : [];
   const progressVerification = progressVerificationSummary(progress);
   const changelogBoundary = closeoutChangelogBoundary(schemas, plan);

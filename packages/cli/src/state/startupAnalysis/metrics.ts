@@ -1,4 +1,3 @@
-import { type Dict } from "./contract.js";
 import type { JsonObject } from "../../core/jsonValue.js";
 import {
   inc,
@@ -23,18 +22,18 @@ function mergeTokenEstimates(counter: Record<string, number>, value: unknown): v
   }
 }
 
-function sequenceCount(sequence: Dict, eventClass: string): number {
+function sequenceCount(sequence: JsonObject, eventClass: string): number {
   const counts = sequence.counts;
-  if (counts && typeof counts === "object" && !Array.isArray(counts) && typeof (counts as Dict)[eventClass] === "number") {
-    return (counts as Dict)[eventClass] as number;
+  if (counts && typeof counts === "object" && !Array.isArray(counts) && typeof (counts as JsonObject)[eventClass] === "number") {
+    return (counts as JsonObject)[eventClass] as number;
   }
   const events = Array.isArray(sequence.events) ? sequence.events : [];
   return events.filter(
-    (event) => Boolean(event && typeof event === "object" && !Array.isArray(event) && (event as Dict).event_class === eventClass),
+    (event) => Boolean(event && typeof event === "object" && !Array.isArray(event) && (event as JsonObject).event_class === eventClass),
   ).length;
 }
 
-function distribution(values: number[]): Dict {
+function distribution(values: number[]): JsonObject {
   if (values.length === 0) {
     return { count: 0, min: 0, max: 0, mean: 0, p50: 0, p75: 0, histogram: {} };
   }
@@ -68,18 +67,18 @@ function unionAll(map: Record<string, Set<string>>): Set<string> {
 
 function deriveStateThresholds(args: {
   totalSequences: number;
-  perCapability: Record<string, Dict>;
+  perCapability: Record<string, JsonObject>;
   rawAfterCliPerSequence: number[];
   redundantRawPerSequence: number[];
   redundantCounts: Record<string, number>;
   redundantCapabilities: Record<string, Set<string>>;
   confidenceCaveats: string[];
-}): Dict {
+}): JsonObject {
   const capabilityCount = Object.keys(args.perCapability).length;
   const credibleDistribution = args.totalSequences >= 3;
   const rawDistribution = distribution(args.rawAfterCliPerSequence);
   const redundantDistribution = distribution(args.redundantRawPerSequence);
-  const redundantArtifacts: Record<string, Dict> = {};
+  const redundantArtifacts: Record<string, JsonObject> = {};
   for (const label of Object.keys(args.redundantCounts).sort()) {
     const count = args.redundantCounts[label];
     if (count > 0) {
@@ -106,7 +105,7 @@ function deriveStateThresholds(args: {
     thresholdReason = "No broad-envelope threshold: fewer than three state-gathering sequences were measured.";
   }
 
-  let broadTrigger: Dict | null = null;
+  let broadTrigger: JsonObject | null = null;
   if (credibleDistribution) {
     for (const [label, item] of Object.entries(redundantArtifacts)) {
       if (safeInt(item.count) >= (redundantSequenceThreshold as number) && safeInt(item.capability_count) >= 2) {
@@ -132,7 +131,7 @@ function deriveStateThresholds(args: {
     }
   }
 
-  let recommendation: Dict;
+  let recommendation: JsonObject;
   if (broadTrigger !== null) {
     const trigger = broadTrigger.aggregate
       ? `redundant_raw_artifact_access in ${broadTrigger.count} of ${args.totalSequences} state sequences`
@@ -188,12 +187,12 @@ function deriveStateThresholds(args: {
   };
 }
 
-export function aggregateStartupMetrics(intermediateInput: Dict): Dict {
+export function aggregateStartupMetrics(intermediateInput: JsonObject): JsonObject {
   const intermediate = intermediateInput && typeof intermediateInput === "object" && !Array.isArray(intermediateInput) ? intermediateInput : {};
   const sequences = Array.isArray(intermediate.state_gathering_sequences) ? intermediate.state_gathering_sequences : [];
   const degradations = Array.isArray(intermediate.degradations) ? intermediate.degradations : [];
 
-  const perCapability: Record<string, Dict> = {};
+  const perCapability: Record<string, JsonObject> = {};
   const cliCommandCounts: Record<string, number> = {};
   const rawAfterCliCounts: Record<string, number> = {};
   const redundantRawCounts: Record<string, number> = {};
@@ -208,7 +207,7 @@ export function aggregateStartupMetrics(intermediateInput: Dict): Dict {
 
   for (const item of degradations) {
     if (item && typeof item === "object" && !Array.isArray(item)) {
-      const reason = (item as Dict).reason;
+      const reason = (item as JsonObject).reason;
       if (typeof reason === "string") inc(degradationCounts, reason);
     }
   }
@@ -227,7 +226,7 @@ export function aggregateStartupMetrics(intermediateInput: Dict): Dict {
         implementation_boundary: 0,
       };
     }
-    const cc = perCapability[capability] as Dict & Record<string, number>;
+    const cc = perCapability[capability] as JsonObject & Record<string, number>;
     cc.state_sequences += 1;
     const cliCount = sequenceCount(sequence, "cli_state_call");
     const rawList = Array.isArray(sequence.raw_artifact_labels_after_cli) ? sequence.raw_artifact_labels_after_cli : [];
@@ -302,12 +301,12 @@ export function aggregateStartupMetrics(intermediateInput: Dict): Dict {
       ? thresholdDerivation.recommendation
       : {};
 
-  const sortedPerCapability: Record<string, Dict> = {};
+  const sortedPerCapability: Record<string, JsonObject> = {};
   for (const key of Object.keys(perCapability).sort()) sortedPerCapability[key] = perCapability[key];
 
   const sumValues = (o: Record<string, number>): number => Object.values(o).reduce((a, b) => a + b, 0);
 
-  const result: Dict = {
+  const result: JsonObject = {
     output_envelope: STARTUP_METRICS_ENVELOPE,
     input_envelope: intermediate.output_envelope ?? null,
     contract_version: intermediate.contract_version ?? null,

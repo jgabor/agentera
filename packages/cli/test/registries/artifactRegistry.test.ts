@@ -11,6 +11,7 @@ import {
   loadDocsPathOverrides,
   resolveArtifactPath,
 } from "../../src/registries/artifactRegistry.js";
+import type { JsonObject } from "../../src/core/jsonValue.js";
 import { repoStateFixturePath } from "../helpers/useFixtureProject.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -20,20 +21,18 @@ const ARTIFACT_SCHEMA_DIR = path.join(REPO_ROOT, "skills/agentera/schemas/artifa
 const CAPABILITY_DIR = path.join(REPO_ROOT, "skills/agentera/capabilities");
 const DOCS_PATH = path.join(repoStateFixturePath("ok"), ".agentera/docs.yaml");
 
-type Dict = Record<string, any>;
-
-function loadYaml(p: string): Dict {
+function loadYaml(p: string): JsonObject {
   const data = YAML.parse(fs.readFileSync(p, "utf8"));
   expect(typeof data).toBe("object");
-  return data as Dict;
+  return data as JsonObject; // cast: IO boundary — YAML.parse of registry fixture; guarded by typeof expect above
 }
 
-function modelFixture(): Dict {
+function modelFixture(): JsonObject {
   return loadYaml(MODEL_PATH);
 }
 
-function artifactSchemaMetas(): Record<string, Dict> {
-  const metas: Record<string, Dict> = {};
+function artifactSchemaMetas(): Record<string, JsonObject> {
+  const metas: Record<string, JsonObject> = {};
   const files = fs.readdirSync(ARTIFACT_SCHEMA_DIR).filter((n) => n.endsWith(".yaml")).sort();
   for (const name of files) {
     const meta = loadYaml(path.join(ARTIFACT_SCHEMA_DIR, name)).meta;
@@ -49,7 +48,7 @@ function asList(value: any): any[] {
   return Array.isArray(value) ? value : [value];
 }
 
-function knownDisplayNames(model: Dict): Set<string> {
+function knownDisplayNames(model: JsonObject): Set<string> {
   const names = new Set<string>();
   for (const records of Object.values(model.required_artifact_identities) as any[][]) {
     for (const record of records) names.add(record.display_name);
@@ -58,7 +57,7 @@ function knownDisplayNames(model: Dict): Set<string> {
   return names;
 }
 
-function validateRegistryContract(model: Dict, metas: Record<string, Dict>): string[] {
+function validateRegistryContract(model: JsonObject, metas: Record<string, JsonObject>): string[] {
   const errors: string[] = [];
   const enumValues = model.owned_enums ?? {};
   const artifactTypes = new Set<string>(enumValues.artifact_type ?? []);
@@ -111,7 +110,7 @@ function validateRegistryContract(model: Dict, metas: Record<string, Dict>): str
     });
   }
 
-  (model.explicit_special_cases ?? []).forEach((record: Dict, index: number) => {
+  (model.explicit_special_cases ?? []).forEach((record: JsonObject, index: number) => {
     const prefix = `explicit_special_cases[${index}]`;
     for (const field of [
       "artifact_id",
@@ -152,7 +151,7 @@ function validateRegistryContract(model: Dict, metas: Record<string, Dict>): str
   return errors;
 }
 
-function validateCapabilityReference(reference: Dict, model: Dict): string[] {
+function validateCapabilityReference(reference: JsonObject, model: JsonObject): string[] {
   const errors: string[] = [];
   const validIds = new Set<string>();
   for (const records of Object.values(model.required_artifact_identities) as any[][]) {
@@ -176,8 +175,8 @@ function validateCapabilityReference(reference: Dict, model: Dict): string[] {
   return errors;
 }
 
-function capabilityArtifactEntries(): Record<string, Dict[]> {
-  const entriesByCapability: Record<string, Dict[]> = {};
+function capabilityArtifactEntries(): Record<string, JsonObject[]> {
+  const entriesByCapability: Record<string, JsonObject[]> = {};
   const capDirs = fs.existsSync(CAPABILITY_DIR) ? fs.readdirSync(CAPABILITY_DIR).sort() : [];
   for (const cap of capDirs) {
     const p = path.join(CAPABILITY_DIR, cap, "schemas", "artifacts.yaml");
@@ -190,7 +189,7 @@ function capabilityArtifactEntries(): Record<string, Dict[]> {
   return entriesByCapability;
 }
 
-function validateCapabilityArtifactEntries(model: Dict): string[] {
+function validateCapabilityArtifactEntries(model: JsonObject): string[] {
   const errors: string[] = [];
   for (const [capability, entries] of Object.entries(capabilityArtifactEntries())) {
     for (const entry of entries) {
@@ -207,7 +206,7 @@ function validateCapabilityArtifactEntries(model: Dict): string[] {
   return errors;
 }
 
-function validateDocsMappingOverrides(docs: Dict, model: Dict): string[] {
+function validateDocsMappingOverrides(docs: JsonObject, model: JsonObject): string[] {
   const errors: string[] = [];
   const knownNames = knownDisplayNames(model);
   const forbiddenCanonicalFields = new Set([

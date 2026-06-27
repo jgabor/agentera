@@ -3,7 +3,6 @@ import path from "node:path";
 
 import { resolvePath } from "../../core/paths.js";
 import {
-  type Dict,
   claudeContentItems,
   eventKind,
   eventTimestamp,
@@ -18,6 +17,7 @@ import {
   toolCallRecord,
   toolCallRecordFromItem,
 } from "./core.js";
+import type { JsonObject } from "../../core/jsonValue.js";
 
 function pathStem(p: string): string {
   const base = path.basename(p);
@@ -25,9 +25,9 @@ function pathStem(p: string): string {
   return ext ? base.slice(0, -ext.length) : base;
 }
 
-export function extractCodexSessions(sessionsDir: string | null, errors: string[]): Dict[] {
+export function extractCodexSessions(sessionsDir: string | null, errors: string[]): JsonObject[] {
   if (sessionsDir === null || !fs.existsSync(sessionsDir)) return [];
-  const records: Dict[] = [];
+  const records: JsonObject[] = [];
   for (const p of rglob(sessionsDir, "*.jsonl")) {
     const fallbackTimestamp = isoFromMtime(p);
     let sessionId = pathStem(p);
@@ -66,7 +66,7 @@ export function extractCodexSessions(sessionsDir: string | null, errors: string[
       const content = textFromContent(item.content || item.text || item.message);
       if (!content) continue;
       const timestamp = eventTimestamp(event, fallbackTimestamp);
-      const data: Dict = { actor: role, content };
+      const data: JsonObject = { actor: role, content };
       if (role === "user") {
         if (previousAssistant) data.preceding_context = previousAssistant.slice(-2000);
         const sig = signalType(content);
@@ -106,9 +106,9 @@ export function extractCodexSessions(sessionsDir: string | null, errors: string[
   return records;
 }
 
-export function extractClaudeProjectSessions(projectsDir: string | null, errors: string[]): Dict[] {
+export function extractClaudeProjectSessions(projectsDir: string | null, errors: string[]): JsonObject[] {
   if (projectsDir === null || !fs.existsSync(projectsDir)) return [];
-  const records: Dict[] = [];
+  const records: JsonObject[] = [];
   for (const p of rglob(projectsDir, "*.jsonl")) {
     const fallbackTimestamp = isoFromMtime(p);
     let sessionId = pathStem(p);
@@ -152,7 +152,7 @@ export function extractClaudeProjectSessions(projectsDir: string | null, errors:
       const content = textFromContent(event.content || event.text || (isPlainObject(event.message) ? event.message : null));
       if (!content) continue;
       const timestamp = eventTimestamp(event, fallbackTimestamp);
-      const data: Dict = { actor: role, content };
+      const data: JsonObject = { actor: role, content };
       if (role === "user") {
         if (previousAssistant) data.preceding_context = previousAssistant.slice(-2000);
         const sig = signalType(content);

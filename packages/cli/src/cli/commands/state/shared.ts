@@ -7,13 +7,6 @@
  * stdout/stderr write helpers.
  */
 
-import type { JsonObject } from "../../../core/jsonValue.js";
-
-// thin canonical passthrough: consumers still import Dict from state/shared,
-// but the single source of truth is core/jsonValue. Full re-export removal
-// is tracked as a later task.
-export type Dict = JsonObject;
-
 export type Io = { out?: (t: string) => void; err?: (t: string) => void };
 
 export interface StateArgs {

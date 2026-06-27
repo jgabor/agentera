@@ -2,12 +2,12 @@ import fs from "node:fs";
 
 import { resolvePath } from "../../core/paths.js";
 import {
-  type Dict,
   isoFromMtime,
   record,
   signalType,
   textFromContent,
 } from "./core.js";
+import type { JsonObject } from "../../core/jsonValue.js";
 import { isPlainObject, rglob, isFilePath } from "./core.js";
 import {
   type SqliteCaps,
@@ -30,7 +30,7 @@ function copilotDbCandidates(storePath: string): string[] {
   return rglob(storePath, "session-store.db");
 }
 
-function copilotRows(conn: SqliteDb, caps: SqliteCaps): Dict[] {
+function copilotRows(conn: SqliteDb, caps: SqliteCaps): JsonObject[] {
   const tables = new Set(
     conn.prepare("SELECT name FROM sqlite_master WHERE type = 'table'").all().map((r) => String(r.name)),
   );
@@ -129,7 +129,7 @@ export function probeCopilotTruncation(
   return { truncatedAt, cap: "rows", limit: caps.maxRows };
 }
 
-function copilotArgumentDict(value: unknown): Dict {
+function copilotArgumentDict(value: unknown): JsonObject {
   if (isPlainObject(value)) {
     const stateInput = value.input;
     if (isPlainObject(stateInput) && !("command" in value)) return stateInput;
@@ -146,7 +146,7 @@ function copilotArgumentDict(value: unknown): Dict {
   return {};
 }
 
-function copilotJsonTools(value: unknown, errors?: string[], malformedLabel?: string): Dict[] {
+function copilotJsonTools(value: unknown, errors?: string[], malformedLabel?: string): JsonObject[] {
   if (typeof value === "string" && value) {
     const raw = value;
     try {
@@ -157,7 +157,7 @@ function copilotJsonTools(value: unknown, errors?: string[], malformedLabel?: st
     }
   }
   if (Array.isArray(value)) {
-    const tools: Dict[] = [];
+    const tools: JsonObject[] = [];
     for (const item of value) tools.push(...copilotJsonTools(item, errors, malformedLabel));
     return tools;
   }
@@ -176,7 +176,7 @@ function copilotJsonTools(value: unknown, errors?: string[], malformedLabel?: st
       },
     ];
   }
-  const tools: Dict[] = [];
+  const tools: JsonObject[] = [];
   for (const key of ["tool_calls", "toolCalls", "tools", "content", "parts", "items"]) {
     const nested = value[key];
     if (isPlainObject(nested) || Array.isArray(nested)) tools.push(...copilotJsonTools(nested, errors, malformedLabel));
@@ -184,7 +184,7 @@ function copilotJsonTools(value: unknown, errors?: string[], malformedLabel?: st
   return tools;
 }
 
-function copilotRowTools(row: Dict, errors: string[]): Dict[] {
+function copilotRowTools(row: JsonObject, errors: string[]): JsonObject[] {
   const tools = copilotJsonTools(row.turn_data, errors, "copilot malformed json tool payload");
   tools.push(...copilotJsonTools(row.turn_text));
   const toolName = row.tool_name;
@@ -201,13 +201,13 @@ export function extractCopilotSessions(
   storePath: string | null,
   errors: string[],
   ctx?: ExtractorContext,
-): Dict[] {
+): JsonObject[] {
   if (storePath === null || !fs.existsSync(storePath)) return [];
   const caps = ctx?.sqliteCaps ?? resolveSqliteCaps();
-  const records: Dict[] = [];
+  const records: JsonObject[] = [];
   for (const dbPath of copilotDbCandidates(storePath).slice(0, 1)) {
     const fallbackTimestamp = isoFromMtime(dbPath);
-    let rows: Dict[];
+    let rows: JsonObject[];
     let conn: SqliteDb | null = null;
     try {
       conn = openSqlite(dbPath);
@@ -239,7 +239,7 @@ export function extractCopilotSessions(
       const projectPath = row.project_path ? String(row.project_path) : null;
       const timestamp = sqliteTimestamp(row.turn_time || row.session_time, fallbackTimestamp);
       if (content) {
-        const data: Dict = { actor: role, content };
+        const data: JsonObject = { actor: role, content };
         if (role === "user") {
           if (previousAssistant) data.preceding_context = previousAssistant.slice(-2000);
           const sig = signalType(content);

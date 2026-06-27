@@ -3,15 +3,15 @@ import path from "node:path";
 
 import { resolvePath } from "../../core/paths.js";
 import {
-  type Dict,
   isPlainObject,
   isoFromMtime,
   record,
   splitLines,
 } from "./core.js";
+import type { JsonObject } from "../../core/jsonValue.js";
 
-export function extractInstructionDocuments(projectRoots: string[], errors: string[]): Dict[] {
-  const records: Dict[] = [];
+export function extractInstructionDocuments(projectRoots: string[], errors: string[]): JsonObject[] {
+  const records: JsonObject[] = [];
   const docNames: Array<[string, string]> = [
     ["AGENTS.md", "agents_md"],
     ["CLAUDE.md", "claude_md"],
@@ -86,8 +86,8 @@ function textConfigSignals(p: string, configType: string): string[] {
   return signals;
 }
 
-export function extractProjectConfigSignals(projectRoots: string[], errors: string[]): Dict[] {
-  const records: Dict[] = [];
+export function extractProjectConfigSignals(projectRoots: string[], errors: string[]): JsonObject[] {
+  const records: JsonObject[] = [];
   const configFiles: Array<[string, string, (p: string) => string[]]> = [
     ["package.json", "package_json", packageJsonSignals],
     ["pyproject.toml", "pyproject", (p) => textConfigSignals(p, "pyproject")],

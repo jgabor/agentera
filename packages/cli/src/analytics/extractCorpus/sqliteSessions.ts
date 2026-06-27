@@ -3,9 +3,8 @@ import path from "node:path";
 import { createRequire } from "node:module";
 
 import { resolvePath } from "../../core/paths.js";
-import type { JsonValue } from "../../core/jsonValue.js";
+import type { JsonValue, JsonObject } from "../../core/jsonValue.js";
 import {
-  type Dict,
   isoFromMtime,
   record,
   signalType,
@@ -21,7 +20,7 @@ import {
 const requireCjs = createRequire(import.meta.url);
 
 export interface SqliteDb {
-  prepare(sql: string): { all(...params: unknown[]): Dict[]; get(...params: unknown[]): Dict | undefined };
+  prepare(sql: string): { all(...params: unknown[]): JsonObject[]; get(...params: unknown[]): JsonObject | undefined };
   close(): void;
 }
 
@@ -54,7 +53,7 @@ export function sqliteTimestamp(value: unknown, fallback: string): string {
   return fallback;
 }
 
-export function jsonDict(value: unknown): Dict {
+export function jsonDict(value: unknown): JsonObject {
   if (isPlainObject(value)) return value;
   if (typeof value === "string" && value) {
     try {
@@ -67,7 +66,7 @@ export function jsonDict(value: unknown): Dict {
   return {};
 }
 
-function nestedTimeCreated(data: Dict): unknown {
+function nestedTimeCreated(data: JsonObject): unknown {
   const timeData = data.time;
   if (isPlainObject(timeData)) return timeData.created || timeData.start;
   return data.time_created || data.timestamp;
@@ -120,7 +119,7 @@ interface OpencodeMessage {
 interface OpencodeTool {
   part_id: JsonValue;
   tool_name: string;
-  arguments: Dict;
+  arguments: JsonObject;
   timestamp: string;
 }
 
@@ -179,7 +178,7 @@ function resolveOpencodeSchema(conn: SqliteDb): OpencodeSchema {
   };
 }
 
-function opencodeRows(conn: SqliteDb, caps: SqliteCaps, schema: OpencodeSchema): Dict[] {
+function opencodeRows(conn: SqliteDb, caps: SqliteCaps, schema: OpencodeSchema): JsonObject[] {
   const {
     sessionId,
     messageId,
@@ -334,13 +333,13 @@ export function extractOpencodeSessions(
   storePath: string | null,
   errors: string[],
   ctx?: ExtractorContext,
-): Dict[] {
+): JsonObject[] {
   if (storePath === null || !fs.existsSync(storePath)) return [];
   const caps = ctx?.sqliteCaps ?? resolveSqliteCaps();
-  const records: Dict[] = [];
+  const records: JsonObject[] = [];
   for (const dbPath of opencodeDbCandidates(storePath).slice(0, 1)) {
     const fallbackTimestamp = isoFromMtime(dbPath);
-    let rows: Dict[];
+    let rows: JsonObject[];
     let conn: SqliteDb | null = null;
     try {
       conn = openSqlite(dbPath);
@@ -409,7 +408,7 @@ export function extractOpencodeSessions(
       if (!content && item.tools.length === 0) continue;
       const projectPath = item.project_path ? String(item.project_path) : null;
       if (content) {
-        const data: Dict = { actor: role, content };
+        const data: JsonObject = { actor: role, content };
         if (role === "user") {
           if (previousAssistant) data.preceding_context = previousAssistant.slice(-2000);
           const sig = signalType(content);

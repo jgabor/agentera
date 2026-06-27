@@ -13,10 +13,10 @@ import {
   sourceProvenance,
   taskRef,
 } from "./shared.js";
-import type { Dict } from "./types.js";
+import type { JsonObject } from "../../core/jsonValue.js";
 import type { OrientationState } from "../contracts/orientationState.js";
 
-export function slimPlanState(plan: Dict): Dict {
+export function slimPlanState(plan: JsonObject): JsonObject {
   const firstPending = plan.first_pending;
   return {
     exists: Boolean(plan.exists),
@@ -29,7 +29,7 @@ export function slimPlanState(plan: Dict): Dict {
   };
 }
 
-export function slimDocsState(docs: Dict): Dict {
+export function slimDocsState(docs: JsonObject): JsonObject {
   const conventions = docsConventions(docs);
   return {
     exists: Boolean(docs.exists),
@@ -43,9 +43,9 @@ export function slimDocsState(docs: Dict): Dict {
   };
 }
 
-export function slimProgressState(progress: Dict): Dict {
+export function slimProgressState(progress: JsonObject): JsonObject {
   const latest = progress.latest && typeof progress.latest === "object" && !Array.isArray(progress.latest) ? progress.latest : {};
-  const latestCycle: Dict = {};
+  const latestCycle: JsonObject = {};
   for (const key of ["number", "timestamp", "type", "phase"]) {
     if (latest[key] !== null && latest[key] !== undefined && latest[key] !== "") latestCycle[key] = latest[key];
   }
@@ -58,7 +58,7 @@ export function slimProgressState(progress: Dict): Dict {
   };
 }
 
-export function slimHealthState(health: Dict): Dict {
+export function slimHealthState(health: JsonObject): JsonObject {
   return {
     exists: Boolean(health.exists),
     number: health.number ?? null,
@@ -70,7 +70,7 @@ export function slimHealthState(health: Dict): Dict {
   };
 }
 
-export function slimTodoState(todoItems: Array<Record<string, string>>): Dict {
+export function slimTodoState(todoItems: Array<Record<string, string>>): JsonObject {
   const severityCounts: Record<string, number> = {};
   for (const item of todoItems) {
     const severity = String(item.severity ?? "normal");
@@ -85,14 +85,14 @@ export function slimTodoState(todoItems: Array<Record<string, string>>): Dict {
 
 export function genericSlimStartupContext(
   capability: string,
-  context: Dict,
-  plan: Dict,
-  docs: Dict,
-  progress: Dict,
-  health: Dict,
+  context: JsonObject,
+  plan: JsonObject,
+  docs: JsonObject,
+  progress: JsonObject,
+  health: JsonObject,
   todoItems: Array<Record<string, string>>,
-  profile: Dict,
-): Dict {
+  profile: JsonObject,
+): JsonObject {
   const decisionsPointer = fallbackStatePointer("decisions", "agentera state decisions --format json");
   const docsState = slimDocsState(docs);
   const profileState = capabilityContextProfileSummary(profile);
@@ -169,17 +169,17 @@ export function genericSlimStartupContext(
 export function slimCapabilityContext(
   capability: string,
   mode: string,
-  appHome: Dict,
-  bundle: Dict,
-  profile: Dict,
-  plan: Dict,
-  docs: Dict,
-  progress: Dict,
-  health: Dict,
+  appHome: JsonObject,
+  bundle: JsonObject,
+  profile: JsonObject,
+  plan: JsonObject,
+  docs: JsonObject,
+  progress: JsonObject,
+  health: JsonObject,
   todoItems: Array<Record<string, string>>,
-  bespokeContexts: Dict | null,
-): Dict {
-  const context: Dict = capabilityContext(capability) ?? {
+  bespokeContexts: JsonObject | null,
+): JsonObject {
+  const context: JsonObject = capabilityContext(capability) ?? {
       capability,
       declared_state_needs: [],
       declared_write_targets: [],
@@ -192,14 +192,14 @@ export function slimCapabilityContext(
         "If needed families are missing or CLI state is incomplete, run the CLI fallback commands before raw file access.",
       schema_error: `No capability context found for ${capability}.`,
     };
-  const contextPayload: Dict = { capability, schema_error: context.schema_error ?? null };
+  const contextPayload: JsonObject = { capability, schema_error: context.schema_error ?? null };
   Object.assign(contextPayload, genericSlimStartupContext(capability, context, plan, docs, progress, health, todoItems, profile));
   const firstRead = context.first_invocation_read;
   if (firstRead !== null && firstRead !== undefined) contextPayload.first_invocation_read = firstRead;
   // bespoke contexts are all null for the six non-bespoke capabilities.
   if (bespokeContexts) {
     for (const [name, value] of Object.entries(bespokeContexts)) {
-      if (value !== null && value !== undefined) contextPayload[name] = slimBespokeContext(name, value as Dict);
+      if (value !== null && value !== undefined) contextPayload[name] = slimBespokeContext(name, value as JsonObject);
     }
   }
   const prose = CAPABILITY_INSTRUCTIONS[capability] ?? null;
@@ -224,7 +224,7 @@ export function slimCapabilityContext(
   };
 }
 
-export function orientationAppHome(bundle: Dict): Dict {
+export function orientationAppHome(bundle: JsonObject): JsonObject {
   return {
     status: bundle.status,
     home: bundle.appHome,
@@ -234,12 +234,12 @@ export function orientationAppHome(bundle: Dict): Dict {
   };
 }
 
-export function buildPrimeCapabilityContextPayload(state: OrientationState, capabilityName: string, command = "prime"): Dict {
+export function buildPrimeCapabilityContextPayload(state: OrientationState, capabilityName: string, command = "prime"): JsonObject {
   // cast: orientation state is assembled from parsed .agentera artifacts; slim/bespoke
   // builders consume JsonObject shapes for these state families.
-  const stateDict = state as unknown as Dict;
+  const stateDict = state as unknown as JsonObject;
   const bundlePublic = publicDoctorStatus(state.app);
-  const appHome = orientationAppHome(stateDict.app as Dict);
+  const appHome = orientationAppHome(stateDict.app as JsonObject);
   const bespoke = bespokeCapabilityContexts(capabilityName, stateDict);
   return {
     command,
@@ -249,12 +249,12 @@ export function buildPrimeCapabilityContextPayload(state: OrientationState, capa
       state.mode,
       appHome,
       // cast: bundlePublic is a distilled app-bundle status (interface) consumed as JsonObject by slim context
-      bundlePublic as unknown as Dict,
-      stateDict.profile_dict as Dict,
-      stateDict.plan as Dict,
-      stateDict.docs as Dict,
-      stateDict.progress as Dict,
-      stateDict.health as Dict,
+      bundlePublic as unknown as JsonObject,
+      stateDict.profile_dict as JsonObject,
+      stateDict.plan as JsonObject,
+      stateDict.docs as JsonObject,
+      stateDict.progress as JsonObject,
+      stateDict.health as JsonObject,
       state.todo_items,
       bespoke,
     ),
