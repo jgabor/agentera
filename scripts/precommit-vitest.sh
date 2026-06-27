@@ -63,6 +63,9 @@ for f in "${STAGED[@]}"; do
     skills/*|references/*)
       RUN_FULL=true
       ;;
+    scripts/sandbox/*)
+      RUN_FULL=true
+      ;;
     TODO.md|CHANGELOG.md|.agentera/*)
       for smoke in "${SMOKE[@]}"; do add_target "$smoke"; done
       ;;
@@ -71,6 +74,15 @@ for f in "${STAGED[@]}"; do
       ;;
   esac
 done
+
+if [[ -n "${PRECOMMIT_VITEST_PRINT_ROUTE:-}" ]]; then
+  if [[ "$RUN_FULL" == true ]]; then
+    echo run_full
+  else
+    echo run_targeted
+  fi
+  exit 0
+fi
 
 if [[ "$RUN_FULL" == true ]]; then
   exec pnpm test
