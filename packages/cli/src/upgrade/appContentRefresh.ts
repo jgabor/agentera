@@ -5,6 +5,13 @@ import { CAPABILITY_INSTRUCTIONS } from "../capabilities/index.js";
 import { isFile, pathExists, resolvePath } from "../core/paths.js";
 import { doctorRoots } from "./appModel.js";
 import { hasBundleRootEvidence } from "./bundleEvidence.js";
+import {
+  INSTALLED_HOOKS_SURFACE_LABEL,
+  applyInstalledHooksRetirementItems,
+  detectStaleInstalledHooksSurface,
+  planInstalledHooksRetirementItems,
+  retireInstalledV2Hooks,
+} from "./installedHooksRetirement.js";
 import type { MigrationContext, MigrationPhaseItem, MigrationStatus } from "./migrateArtifactsV2ToV3.js";
 
 export const APP_CONTENT_REFRESH_ACTION = "refresh-app-content";
@@ -18,6 +25,7 @@ export const APP_CONTENT_SURFACE_LABELS = [
   "references/",
   "registry.json",
   "dist/capabilities",
+  INSTALLED_HOOKS_SURFACE_LABEL,
 ] as const;
 
 const V2_CAPABILITY_VERBS = [
@@ -252,6 +260,10 @@ export function detectStaleAppContentSurfaces(appHome: string, sourceRoot: strin
     stale.push("dist/capabilities");
   }
 
+  if (detectStaleInstalledHooksSurface(appHome)) {
+    stale.push(INSTALLED_HOOKS_SURFACE_LABEL);
+  }
+
   return stale;
 }
 
@@ -304,6 +316,8 @@ export function applyAppContentRefresh(appHome: string, sourceRoot: string): voi
   if (sources.distCapabilities) {
     copyTree(sources.distCapabilities, path.join(targetRoot, "dist", "capabilities"), "dist/capabilities");
   }
+
+  retireInstalledV2Hooks(appHome);
 }
 
 function refreshItemStatus(staleSurfaces: string[]): MigrationStatus {
@@ -323,7 +337,8 @@ export function planAppContentRefreshItems(ctx: MigrationContext): MigrationPhas
   }
 
   const staleSurfaces = detectStaleAppContentSurfaces(appHome, resolvedSourceRoot);
-  if (staleSurfaces.length === 0) {
+  const hookItems = planInstalledHooksRetirementItems(ctx);
+  if (staleSurfaces.length === 0 && hookItems.every((item) => item.status === "noop")) {
     return [
       {
         status: "noop",
@@ -336,7 +351,7 @@ export function planAppContentRefreshItems(ctx: MigrationContext): MigrationPhas
   }
 
   const targetRoot = refreshAppContentTargetRoot(appHome);
-  return staleSurfaces.map((surface) => ({
+  const refreshItems = staleSurfaces.map((surface) => ({
     status: refreshItemStatus([surface]),
     action: APP_CONTENT_REFRESH_ACTION,
     runtime: "installed-app",
@@ -346,6 +361,7 @@ export function planAppContentRefreshItems(ctx: MigrationContext): MigrationPhas
     preserved: [...APP_CONTENT_SURFACE_LABELS],
     removedPreview: staleSurfaces,
   }));
+  return [...refreshItems, ...hookItems.filter((item) => item.status !== "noop")];
 }
 
 export function applyAppContentRefreshItem(item: MigrationPhaseItem, ctx: MigrationContext): void {
@@ -364,6 +380,7 @@ export function applyAppContentRefreshItem(item: MigrationPhaseItem, ctx: Migrat
 }
 
 export function applyAppContentRefreshItems(items: MigrationPhaseItem[], ctx: MigrationContext): void {
+  applyInstalledHooksRetirementItems(items, ctx);
   const pending = items.filter((item) => item.action === APP_CONTENT_REFRESH_ACTION && item.status === "pending");
   if (pending.length === 0) {
     return;
@@ -371,8 +388,10 @@ export function applyAppContentRefreshItems(items: MigrationPhaseItem[], ctx: Mi
   applyAppContentRefreshItem(pending[0]!, ctx);
   if (pending[0]?.status === "applied") {
     for (const item of pending.slice(1)) {
-      item.status = "applied";
-      item.message = "refreshed installed app content from v3 sourceRoot";
+      if (item.action === APP_CONTENT_REFRESH_ACTION) {
+        item.status = "applied";
+        item.message = "refreshed installed app content from v3 sourceRoot";
+      }
     }
   }
 }
