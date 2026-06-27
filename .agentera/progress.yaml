@@ -1,4 +1,41 @@
 cycles:
+- number: 677
+  timestamp: 2026-06-27 10:00
+  type: fix
+  phase: build
+  what: "v2/v3 coexistence B2 \u2014 env-var & path resolution remainder. Restored\
+    \ PROFILERA_PROFILE_DIR as a lower-precedence fallback in all v3 env-var resolvers\
+    \ (profile, usage, corpus, benchmark). Widened rewireProfileraEnvVar to update\
+    \ installed-app artifact path mappings and schema literals (docs.yaml, registry\
+    \ model). Unified XDG_DATA_HOME tilde expansion across all resolvers using expanduser().\
+    \ Aligned docs.yaml schema documentation with resolver support. Fixed startupBenchmarkDir\
+    \ to accept caller-provided env parameter. Added install-root precedence profile\
+    \ layer and removed visibleSkillVersion v2 residue probe. Closed test gaps G1\
+    \ (PROFILERA_PROFILE_DIR-only test), G2 (seed-v2-fixture sets PROFILERA_PROFILE_DIR),\
+    \ G4 (mock version catalog aligned to 2.7.7/3.0.0-next.1). 1027 tests pass (+11\
+    \ from 1016).\n"
+  discovered: "T1+T3 were combined into one commit (a82914d7) since they touch the\
+    \ same resolver surface. The mock version catalog in versionResolution.test.ts\
+    \ was 3 majors ahead of reality (3.1.6/4.2.1 vs 2.7.7/3.0.0-next.1) \u2014 this\
+    \ masked version-boundary edge cases.\n"
+  verified: 'pnpm -C packages/cli run typecheck passes. pnpm -C packages/cli build\
+    \ succeeds. pnpm -C packages/cli test: 109 files, 1027 tests pass. node packages/cli/dist/bin/agentera.js\
+    \ check validate capability-contract --format json: pass. node packages/cli/dist/bin/agentera.js\
+    \ check compact: no budget regression.'
+  next: 'Plan slot is free. Next work is B3 (bundle-status & channel resolution: #5,\
+    \ #6, #17, #18, #19, #39). See docs/notes/v2-v3-coexistence-defects.md batch plan.'
+  context:
+    intent: Fix all env-var and path-resolution defects remaining after B1. B1 fixed\
+      \ the split-brain root cause and added the resolveArtifactPath fallback; B2\
+      \ widens that to all resolvers, fixes migration rewire scope, unifies tilde\
+      \ expansion, aligns schema docs, and closes the test gaps that masked the original\
+      \ defects.
+    constraints: All work on feat/v3 only. Do not touch .agentera/vision.yaml. Do\
+      \ not rewire OpenCode plugin (B4). Do not fix channel/bundle-status (B3). Do\
+      \ not fix repo hook npm tags (B5). Do not refresh installed-app content (B6).\
+      \ Preserve AGENTERA_PROFILE_DIR > PROFILERA_PROFILE_DIR > default precedence.
+    unknowns: Whether the install-root precedence profile layer has any downstream\
+      \ effects on the bundle-status channel resolution (B3 scope).
 - number: 676
   timestamp: 2026-06-26 20:30
   type: feat
@@ -267,31 +304,10 @@ cycles:
     scope: packages/cli/test/hooks/validateArtifact.test.ts, packages/cli/test/cli/validate.test.ts,
       packages/cli/test/cli/validateVerifyOracles.test.ts, packages/cli/test/fixtures/repo-state/ok/.agentera/*,
       packages/cli/test/README.md, .agentera/plan.yaml, .agentera/progress.yaml
-- number: 667
-  timestamp: 2026-06-18 25:15
-  type: chore
-  phase: build
-  what: "Plan T2 \u2014 compaction tests use fixtures only: removed real-repo computeCompactionStatus/checkCompaction\
-    \ budget asserts from compaction.test.ts; added repo-state fixture cases for 46\
-    \ Resolved over_limit (count 6), ok within uniform_10_40_50, and progress-at-cap."
-  inspiration: "Decouple vitest from live repo artifact state plan T2 \u2014 live\
-    \ artifact budgets stay owned by agentera check compact in CI."
-  discovered: todo-resolved-over-limit and progress-at-cap acceptance cases already
-    exercised in useFixtureProject.test.ts; compaction.test.ts now mirrors them without
-    REPO_ROOT coupling.
-  verified: pnpm -C packages/cli test test/hooks/compaction.test.ts passes; no REPO_ROOT
-    budget asserts remain in compaction.test.ts; CI still runs check compact after
-    vitest.
-  next: "Task 4 \u2014 decouple validateArtifact and validate oracles; Task 5 \u2014\
-    \ registry and evaluator TODO coupling."
-  context:
-    intent: "Task 2 only \u2014 compaction fixture migration, no commit unless user\
-      \ asks."
-    constraints: feat/v3; CI check compact unchanged.
-    unknowns: None for T2 acceptance.
-    scope: packages/cli/test/hooks/compaction.test.ts, packages/cli/test/README.md,
-      .agentera/plan.yaml, .agentera/progress.yaml
 archive:
+- summary: "Cycle 667 (2026-06-18): Plan T2 \u2014 compaction tests use fixtures only:\
+    \ removed real-repo computeCompactionStatus/checkCompaction budget asserts from\
+    \ compaction.test.ts;..."
 - summary: "Cycle 666 (2026-06-18): Plan T3 \u2014 shared repo-state fixture harness:\
     \ added packages/cli/test/fixtures/repo-state/ variants (ok, todo-resolved-over-limit,\
     \ progress-at-cap, progress-over-limit, invalid-progress-yaml),..."
@@ -391,5 +407,3 @@ archive:
     CLI surfaces (lint, backfill, state, query, compact, schema,...'
 - summary: "Cycle 626 (2026-06-02): Freeze the invalid-input error envelope contract\
     \ for the 3.0 TypeScript CLI \u2014 new emitInvalidInput helper,..."
-- summary: 'Cycle 625 (2026-06-02): npm shim runBackend app-home branch now forwards
-    the user''s cwd to the spawned Python CLI...'
