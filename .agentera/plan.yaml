@@ -150,7 +150,7 @@ tasks:
   - number: 4
     name: Add Codex project-level config detection in planCodexItems (#27)
     depends_on: []
-    status: pending
+    status: complete
     acceptance:
       - 'GIVEN planCodexItems (packages/cli/src/upgrade/runtimeMigration.ts:239) WHEN a project-level .codex/config.toml or .codex/hooks/codex-hooks.json exists THEN it is detected and rewired, mirroring planCursorItems which checks both project and home paths'
       - 'GIVEN the planCodexItems signature WHEN updated THEN it accepts the project path (matching planCursorItems) and the single caller at runtimeMigration.ts:572 passes it'
