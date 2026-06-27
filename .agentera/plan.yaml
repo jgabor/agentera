@@ -125,7 +125,7 @@ tasks:
   - number: 5
     name: "Deduplicate CAPABILITY_NAMES to a single source (#33)"
     depends_on: []
-    status: pending
+    status: complete
     acceptance:
       - "GIVEN feat/v3 base WHERE CAPABILITY_NAMES is a hardcoded array in cli/capabilityContext/types.ts and CAPABILITY_INSTRUCTIONS is a Record in capabilities/index.ts (two sources of truth) WHEN the dedup lands THEN CAPABILITY_NAMES is derived from `Object.keys(CAPABILITY_INSTRUCTIONS)` (or a single shared source) so the two surfaces cannot drift; the export shape consumed by capabilityContext/shared.ts:29 and contract.ts:40 is preserved."
       - "WHEN `packages/cli/test/cli/capabilityNamesDedup.test.ts` is authored THEN it asserts CAPABILITY_NAMES equals Object.keys(CAPABILITY_INSTRUCTIONS) (order-independent) and fails if a future capability is added to one source but not the other; the regression is green; per V5 one pass + one fail (drift-introduced = fail, synchronized = pass = 2 cases)."
