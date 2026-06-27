@@ -3,6 +3,7 @@ import os from "node:os";
 import path from "node:path";
 
 import { loadYamlMapping } from "../core/yaml.js";
+import { resolveProfileDirOverride } from "../core/envPaths.js";
 import { resolvePath } from "../core/paths.js";
 import { resolveSourceRoot } from "../core/sourceRoot.js";
 import { resolveCandidate } from "../state/installRoot.js";
@@ -256,7 +257,7 @@ export function resolveArtifactPath(
   for (const prefix of profileDirPrefixes) {
     if (artifactPath.startsWith(prefix)) {
       const suffix = artifactPath.slice(prefix.length);
-      const explicit = env.AGENTERA_PROFILE_DIR ?? env.PROFILERA_PROFILE_DIR;
+      const explicit = resolveProfileDirOverride(env);
       if (explicit) {
         return path.join(explicit, suffix);
       }

@@ -1,6 +1,9 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+
+import { resolveProfileDirOverride, resolveXdgDataHome } from "../../core/envPaths.js";
+import { expanduser } from "../../core/paths.js";
 import crypto from "node:crypto";
 
 import { resolvePath } from "../../core/paths.js";
@@ -74,19 +77,18 @@ export function projectIdFromPath(p: string | null): string {
 
 export function defaultAgenteraHome(env: Env = process.env, platform: NodeJS.Platform = process.platform): string {
   const override = env.AGENTERA_HOME;
-  if (override) return override;
+  if (override) return expanduser(override);
   if (platform === "darwin") return path.join(os.homedir(), "Library", "Application Support", "agentera");
   if (platform === "win32") {
     const appdata = env.APPDATA || path.join(os.homedir(), "AppData", "Roaming");
-    return path.join(appdata, "agentera");
+    return path.join(expanduser(appdata), "agentera");
   }
-  const xdg = env.XDG_DATA_HOME || path.join(os.homedir(), ".local", "share");
-  return path.join(xdg, "agentera");
+  return path.join(resolveXdgDataHome(env), "agentera");
 }
 
 export function defaultProfileDir(env: Env = process.env, platform: NodeJS.Platform = process.platform): string {
-  const override = env.AGENTERA_PROFILE_DIR;
-  if (override) return override;
+  const override = resolveProfileDirOverride(env);
+  if (override) return expanduser(override);
   return defaultAgenteraHome(env, platform);
 }
 

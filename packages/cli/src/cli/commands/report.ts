@@ -2,6 +2,9 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
+import { resolveProfileDirOverride, resolveXdgDataHome } from "../../core/envPaths.js";
+import { expanduser } from "../../core/paths.js";
+
 import { usageMain, corpusTooLargeReason } from "../../analytics/usageStats.js";
 import { extractCorpusMain } from "../../analytics/extractCorpus.js";
 
@@ -72,17 +75,17 @@ function validateUsageRequest(format: string): string {
 
 /** Faithful port of `_stats_corpus_path`. */
 export function statsCorpusPath(env: Env = process.env, platform: NodeJS.Platform = process.platform): string {
-  const override = env.AGENTERA_PROFILE_DIR;
-  if (override) return path.join(override, "intermediate", "corpus.json");
+  const profileOverride = resolveProfileDirOverride(env);
+  if (profileOverride) return path.join(expanduser(profileOverride), "intermediate", "corpus.json");
   const appHome = env.AGENTERA_HOME;
-  if (appHome) return path.join(appHome, "intermediate", "corpus.json");
+  if (appHome) return path.join(expanduser(appHome), "intermediate", "corpus.json");
   let base: string;
   if (platform === "darwin") {
     base = path.join(os.homedir(), "Library", "Application Support", "agentera");
   } else if (platform === "win32") {
-    base = path.join(env.APPDATA || path.join(os.homedir(), "AppData", "Roaming"), "agentera");
+    base = path.join(expanduser(env.APPDATA || path.join(os.homedir(), "AppData", "Roaming")), "agentera");
   } else {
-    base = path.join(env.XDG_DATA_HOME || path.join(os.homedir(), ".local", "share"), "agentera");
+    base = path.join(resolveXdgDataHome(env), "agentera");
   }
   return path.join(base, "intermediate", "corpus.json");
 }

@@ -126,10 +126,14 @@ export function loadNamedArtifact(schemas: Record<string, SchemaInfo>, name: str
   return loadArtifact(artifactPath(info, name));
 }
 
-export function registryArtifactPath(artifactId: string, schemasDir: string): string {
+export function registryArtifactPath(
+  artifactId: string,
+  schemasDir: string,
+  env: Record<string, string | undefined> = process.env,
+): string {
   const record = loadRegistryForSchemas(schemasDir).get(artifactId);
   if (record === undefined) throw new Error(`artifact registry does not define '${artifactId}'`);
-  return resolveArtifactPath(record as ArtifactRecord, process.cwd(), activeObjectiveName());
+  return resolveArtifactPath(record as ArtifactRecord, process.cwd(), activeObjectiveName(), env);
 }
 
 // ── staleness ───────────────────────────────────────────────────────

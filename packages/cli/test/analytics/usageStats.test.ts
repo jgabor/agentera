@@ -163,6 +163,13 @@ describe("default paths", () => {
     );
   });
 
+  it("falls back to PROFILERA_PROFILE_DIR when AGENTERA_PROFILE_DIR is unset", () => {
+    expect(defaultUsageDir({ PROFILERA_PROFILE_DIR: "/legacy/prof" })).toBe("/legacy/prof");
+    expect(defaultCorpusPath({ PROFILERA_PROFILE_DIR: "/legacy/prof" })).toBe(
+      path.join("/legacy/prof", "intermediate", "corpus.json"),
+    );
+  });
+
   it("uses XDG default on linux", () => {
     expect(defaultUsageDir({ HOME: "/home/u", XDG_DATA_HOME: "/home/u/.local/share" }, "linux")).toBe(
       path.join("/home/u/.local/share", "agentera"),
