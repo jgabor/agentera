@@ -6,6 +6,8 @@ import { fileURLToPath } from "node:url";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { collectOrientationState } from "../../src/cli/commands/prime.js";
+import { resetUpdateChannelsAuthorityCache } from "../../src/upgrade/channels.js";
+import { isStableSuccessorAnnounced } from "../../src/upgrade/nextMajorDoctor.js";
 import { BUNDLE_MARKER } from "../../src/state/installRoot.js";
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..");
@@ -27,6 +29,7 @@ function managedV2(appHome: string): void {
 }
 
 beforeEach(() => {
+  resetUpdateChannelsAuthorityCache();
   tmp = fs.mkdtempSync(path.join(os.tmpdir(), "prime-ch-"));
   home = path.join(tmp, "home");
   fs.mkdirSync(home, { recursive: true });
@@ -37,6 +40,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  resetUpdateChannelsAuthorityCache();
   process.chdir(prevCwd);
   delete process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT;
   delete process.env.AGENTERA_UPDATE_CHANNEL;
@@ -83,6 +87,12 @@ describe("prime channel-aware migration and app_home gates", () => {
     fs.writeFileSync(path.join(authorityRoot, "skills", "agentera", "SKILL.md"), "x");
     fs.copyFileSync(path.join(REPO_ROOT, "registry.json"), path.join(authorityRoot, "registry.json"));
     fs.cpSync(path.join(REPO_ROOT, "references"), path.join(authorityRoot, "references"), { recursive: true });
+    const channelsPath = path.join(authorityRoot, "references/cli/update-channels.yaml");
+    const channels = fs
+      .readFileSync(channelsPath, "utf8")
+      .replace("announced: false", "announced: true");
+    fs.writeFileSync(channelsPath, channels);
+    resetUpdateChannelsAuthorityCache();
     process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT = authorityRoot;
     process.env.AGENTERA_UPDATE_CHANNEL = "development";
 
@@ -91,6 +101,8 @@ describe("prime channel-aware migration and app_home gates", () => {
     const project = path.join(tmp, "proj-announced");
     fs.mkdirSync(project, { recursive: true });
     process.chdir(project);
+
+    expect(isStableSuccessorAnnounced(authorityRoot, "stable")).toBe(true);
 
     const state = collectOrientationState({ home, installRoot: appHome, env: process.env });
     expect(state.project_integration.recommendation).toBe("upgrade");

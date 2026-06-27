@@ -103,7 +103,7 @@ describe("buildDoctorStatus channel-aware commands", () => {
       probeCli: false,
     });
     expect(status.crossMajorBoundary).toBe(true);
-    expect(status.dryRunCommand).toContain("agentera@latest");
+    expect(status.dryRunCommand).toContain("agentera@next");
     expect(status.dryRunCommand).not.toContain("--target-major");
   });
 });

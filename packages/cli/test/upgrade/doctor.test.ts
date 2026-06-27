@@ -93,7 +93,7 @@ describe("buildDoctorStatus", () => {
     expect(status.status).toBe(APP_OUTDATED);
     expect(status.signals.some((s: any) => s.kind === "version_mismatch")).toBe(true);
     expect(status.markerVersion).toBe("old");
-    expect(status.dryRunCommand).toContain("npx -y agentera@latest");
+    expect(status.dryRunCommand).toContain("npx -y agentera@next");
     expect(status.dryRunCommand).toContain("upgrade");
     expect(status.applyCommand).toContain("--yes");
     expect(status.approval).toBe(appLifecycleApprovalPhrase(APP_OUTDATED, appHome));
@@ -156,8 +156,11 @@ describe("buildDoctorStatus", () => {
     });
     expect(status.status).toBe(APP_MANUAL_REVIEW_NEEDED);
     expect(status.crossMajorBoundary).toBe(false);
+    expect(status.crossMajorBoundaryDetected).toBe(true);
     expect(status.dryRunCommand).toBeNull();
     expect(status.applyCommand).toBeNull();
+    expect(status.approval).toContain("no upgrade offered");
+    expect(status.approval).not.toMatch(/approve app files/i);
     const pending = status.signals.find((s: { kind?: string }) => s.kind === "cross_major_pending");
     expect(pending).toBeTruthy();
     expect(pending?.status).toBe(APP_MANUAL_REVIEW_NEEDED);
@@ -246,8 +249,8 @@ function managedWithScript(
   }
 }
 
-describe("buildDoctorStatus shebang-aware retryCommand", () => {
-  it("builds retryCommand with 'uv run' for a Python shebang managed script", () => {
+describe("buildDoctorStatus invoking-cli retryCommand", () => {
+  it("builds retryCommand with npx for a v3 Node CLI against a Python managed script", () => {
     const appHome = path.join(tmp, "python-shebang");
     managedWithScript(
       appHome,
@@ -257,13 +260,13 @@ describe("buildDoctorStatus shebang-aware retryCommand", () => {
     );
     const status = buildDoctorStatus(appHome, { rootSource: "explicit --install-root", ...common });
     expect(status.retryCommand).not.toBeNull();
-    expect(status.retryCommand).toMatch(/^uv run /);
-    expect(status.retryCommand).toContain("scripts/agentera");
+    expect(status.retryCommand).toMatch(/^npx -y /);
+    expect(status.retryCommand).toContain("agentera");
     expect(status.retryCommand).toMatch(/prime$/);
-    expect(status.retryCommand).not.toMatch(/^node /);
+    expect(status.retryCommand).not.toMatch(/^uv run /);
   });
 
-  it("builds retryCommand with 'node' for a Node shebang managed script", () => {
+  it("builds retryCommand with npx for a v3 Node CLI against a Node shebang managed script", () => {
     const appHome = path.join(tmp, "node-shebang");
     managedWithScript(
       appHome,
@@ -273,12 +276,59 @@ describe("buildDoctorStatus shebang-aware retryCommand", () => {
     );
     const status = buildDoctorStatus(appHome, { rootSource: "explicit --install-root", ...common });
     expect(status.retryCommand).not.toBeNull();
-    expect(status.retryCommand).toMatch(/^node /);
+    expect(status.retryCommand).toMatch(/^npx -y /);
+    expect(status.retryCommand).toContain("agentera");
+    expect(status.retryCommand).toMatch(/prime$/);
+  });
+
+  it("builds retryCommand with uv run for a v2 CLI against a Python managed script", () => {
+    const v2Source = path.join(tmp, "v2-cli-source-retry");
+    fs.mkdirSync(path.join(v2Source, "skills", "agentera"), { recursive: true });
+    fs.writeFileSync(path.join(v2Source, "skills", "agentera", "SKILL.md"), "x");
+    fs.writeFileSync(
+      path.join(v2Source, "registry.json"),
+      JSON.stringify({ skills: [{ name: "agentera", version: "2.7.9" }] }),
+    );
+    fs.mkdirSync(path.join(v2Source, "references", "cli"), { recursive: true });
+    fs.copyFileSync(
+      path.join(REPO_ROOT, "references", "cli", "update-channels.yaml"),
+      path.join(v2Source, "references", "cli", "update-channels.yaml"),
+    );
+    const appHome = path.join(tmp, "v2-python-shebang");
+    managedWithScript(
+      appHome,
+      "2.7.9",
+      "import argparse\ndef main():\n    pass\n",
+      "#!/usr/bin/env python3",
+    );
+    const status = buildDoctorStatus(appHome, {
+      rootSource: "explicit --install-root",
+      sourceRoot: v2Source,
+      home: path.join(tmp, "home"),
+      project: path.join(tmp, "proj"),
+      expectedVersion: "2.7.9",
+      probeCli: false,
+      env: { AGENTERA_CLI_RUNTIME: "python" },
+    });
+    expect(status.retryCommand).not.toBeNull();
+    expect(status.retryCommand).toMatch(/^uv run /);
     expect(status.retryCommand).toContain("scripts/agentera");
     expect(status.retryCommand).toMatch(/prime$/);
   });
 
-  it("sets retryCommand to null for a managed script with no shebang", () => {
+  it("sets retryCommand to null for a managed script with no shebang on v2 CLI", () => {
+    const v2Source = path.join(tmp, "v2-cli-source-no-shebang");
+    fs.mkdirSync(path.join(v2Source, "skills", "agentera"), { recursive: true });
+    fs.writeFileSync(path.join(v2Source, "skills", "agentera", "SKILL.md"), "x");
+    fs.writeFileSync(
+      path.join(v2Source, "registry.json"),
+      JSON.stringify({ skills: [{ name: "agentera", version: "2.7.9" }] }),
+    );
+    fs.mkdirSync(path.join(v2Source, "references", "cli"), { recursive: true });
+    fs.copyFileSync(
+      path.join(REPO_ROOT, "references", "cli", "update-channels.yaml"),
+      path.join(v2Source, "references", "cli", "update-channels.yaml"),
+    );
     const appHome = path.join(tmp, "no-shebang");
     managedWithScript(
       appHome,
@@ -286,7 +336,15 @@ describe("buildDoctorStatus shebang-aware retryCommand", () => {
       "console.log('no shebang');\n",
       null,
     );
-    const status = buildDoctorStatus(appHome, { rootSource: "explicit --install-root", ...common });
+    const status = buildDoctorStatus(appHome, {
+      rootSource: "explicit --install-root",
+      sourceRoot: v2Source,
+      home: path.join(tmp, "home"),
+      project: path.join(tmp, "proj"),
+      expectedVersion: "2.7.9",
+      probeCli: false,
+      env: { AGENTERA_CLI_RUNTIME: "python" },
+    });
     expect(status.retryCommand).toBeNull();
   });
 
