@@ -228,11 +228,16 @@ export function applyRuntimeRewirePhase(phase: MigrationPhase, ctx?: MigrationCo
   phase.summary = updated.summary;
 }
 
-function hasManagedBundleEvidence(managedAppRoot: string): boolean {
+/** Whether `app/` under app-home still carries a managed bundle worth removing during v2→v3 cleanup. */
+export function hasManagedBundleEvidence(managedAppRoot: string): boolean {
+  // v3 npm-managed installs write BUNDLE_MARKER at pack/refresh time.
+  if (isFile(path.join(managedAppRoot, BUNDLE_MARKER))) {
+    return true;
+  }
+  // Legacy v2 Python-managed installs lacked the marker but always shipped this pair.
   return (
-    isFile(path.join(managedAppRoot, BUNDLE_MARKER)) ||
-    (isFile(path.join(managedAppRoot, "scripts", "agentera")) &&
-      isFile(path.join(managedAppRoot, "skills", "agentera", "SKILL.md")))
+    isFile(path.join(managedAppRoot, "scripts", "agentera")) &&
+    isFile(path.join(managedAppRoot, "skills", "agentera", "SKILL.md"))
   );
 }
 
