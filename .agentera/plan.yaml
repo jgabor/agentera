@@ -89,7 +89,7 @@ tasks:
   - number: 1
     name: "Remove orphaned Swedish-verb agents on upgrade (#20)"
     depends_on: []
-    status: pending
+    status: complete
     acceptance:
       - "GIVEN feat/v3 base WHERE runtimeMigration.ts copies only `agentera.md` into `.cursor/agents/` and `.opencode/agents/` (CURSOR_MANAGED_AGENT at runtimeMigration.ts:356) WHEN a v2-era home has the 12 Swedish-verb agent files (`dokumentera.md`, `hej.md`, `inspektera.md`, `inspirera.md`, `optimera.md`, `orkestrera.md`, `planera.md`, `profilera.md`, `realisera.md`, `resonera.md`, `visionera.md`, `visualisera.md`) in `.cursor/agents/` and `.opencode/agents/` THEN a new cleanup migration item in planCleanupPhase (migrateArtifactsV2ToV3.ts:259) removes that closed set after preview and confirmation, preserving user-owned non-listed files; the item reuses the v1LegacyCruft scan pattern to guard reintroduction."
       - "WHEN `node packages/cli/dist/bin/agentera.js upgrade --dry-run` runs on a fixture v2 home with the 12 Swedish-verb agents present THEN the dry-run lists each as a pending `remove-legacy-agent` item with its source path; applying via `--yes` removes exactly the closed set and no others."
