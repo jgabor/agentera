@@ -122,7 +122,7 @@ tasks:
   - number: 1
     name: Unify repo hook npm tags to npx -y agentera@next (#23)
     depends_on: []
-    status: pending
+    status: complete
     acceptance:
       - 'GIVEN hooks/hooks.json and hooks/codex-hooks.json WHEN inspected THEN every hook command uses npx -y agentera@next (no bare `npx -y agentera` without @next)'
       - 'GIVEN .cursor/hooks.json, .github/hooks/*.json, and hooks/codex-plugin-hooks.json WHEN inspected THEN they already use npx -y agentera@next and are left unchanged'
