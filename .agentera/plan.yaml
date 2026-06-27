@@ -168,9 +168,9 @@ tasks:
       - 'GIVEN any Swedish producer/consumer or stale v2 limit is found in a live schema (triage says possible, ground-truth inspect), WHEN the inspection runs, THEN the task either fixes it in the repo source and lets the refresh carry the fix, or records a verify-and-lock assertion if already English'
       - 'AND a regression test asserts no capabilities/*/schemas/*.yaml in the app home contains Swedish producer/consumer tokens'
   - number: 5
-    name: Verify installed protocol.yaml has English SKILL_GLYPHS/PHASES, zero Swedish -era residues, lock with regression test (#28) — pending
+    name: Verify installed protocol.yaml has English SKILL_GLYPHS/PHASES, zero Swedish -era residues, lock with regression test (#28) — complete
     depends_on: ['1']
-    status: pending
+    status: complete
     acceptance:
       - 'GIVEN skills/agentera/protocol.yaml in the repo already uses English SKILL_GLYPHS and PHASES labels (verified on feat/v3-b6 via D70), WHEN the upgrade refresh copies protocol.yaml into the app home, THEN installed protocol.yaml SKILL_GLYPHS and PHASES are English and contain zero Swedish -era verbs'
       - 'GIVEN the installed protocol.yaml, WHEN `agentera prime --format json` reads glyph/phase metadata, THEN it resolves English names with no Swedish fallback'
