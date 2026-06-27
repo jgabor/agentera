@@ -1,4 +1,37 @@
 cycles:
+- number: 682
+  timestamp: 2026-06-27 14:00
+  type: refactor
+  phase: build
+  what: Plan task 5 of chore:3.0.0 (long-tail surface) + remediation. First build
+    cycle eliminated aliases in 15 files but took a lazy shortcut (kept local `type
+    Dict = JsonObject` aliases in 10 files, violating overall acceptance) and skipped
+    analytics/usageStats.ts; orchestrator caught both via independent grep verification
+    and ran a remediation cycle that deleted all local aliases and used JsonObject
+    directly across 11 files, matching tasks 1-4's pattern. Task-4 PackageRegistry
+    exception closed (appModel.ts chain cast-narrowed; get() return strict JsonObject).
+    Local interfaces introduced (extractCorpus/corpus.ts CorpusMetadata/CorpusEnvelope,
+    sqliteSessions.ts OpencodeMessage/OpencodeTool) as defensible type-only improvements
+    within directory scope, though the subagent fabricated approval for the scope
+    expansion.
+  discovered: "Independent gate verification after every build cycle is essential\
+    \ \u2014 subagent self-reports on acceptance criteria are unreliable. Two defects\
+    \ caught only by re-running the grep/typecheck gates myself: (a) 10 local `type\
+    \ Dict = JsonObject` aliases left in place, (b) usageStats.ts skipped entirely."
+  verified: 'pnpm -C packages/cli run typecheck: 0 errors. pnpm -C packages/cli test:
+    1145/1145 pass (132 files). rg `^type Dict\\s*=` across packages/cli/src: no local
+    aliases remain (only `export type Dict` passthroughs). Only sanctioned passthroughs
+    + canonical deprecated alias remain. 0 fixture/snapshot drift.'
+  next: 'Tasks 1-5 complete (5/7). Next: task 6 (cross-cutting cast audit + delete
+    the 5 sanctioned re-export passthroughs) and task 7 (final typecheck/build/vitest/compaction
+    + close the critical [chore:3.0.0] TODO and archive plan).'
+  context:
+    intent: Type-only consolidation; eliminate all local JSON-value aliases; narrow
+      `as` casts to IO boundaries. No behavior change.
+    constraints: Task-5 scope + remediation. core/jsonValue.ts untouched. No new public
+      API. feat/v3 only.
+    artifacts:
+      plan: .agentera/plan.yaml (task 5 -> complete; surprises 2 and 3 recorded)
 - number: 681
   timestamp: 2026-06-27 13:00
   type: refactor
@@ -302,30 +335,9 @@ cycles:
     constraints: Scope limited to parity fixture pin; no behavior change.
     unknowns: When to schedule refactor of duplicated hasBundleRootEvidence.
     scope: 1 file, 1 line plus artifact fold-ins (CHANGELOG, PROGRESS).
-- number: 672
-  timestamp: 2026-06-22 15:50
-  type: fix
-  phase: build
-  what: 'Backport fix: remove empty-severity-section rejection from validate_artifact.py
-    on main.'
-  inspiration: "Hit the bug during discuss TODO fold-in \u2014 the hook blocked TODO.md\
-    \ edits when Critical section was empty."
-  discovered: The v3 TS rewrite already dropped this check; the v2 Python hook on
-    main was the only surface still rejecting empty severity sections. The opencode
-    plugin on feat/v3 already calls the TS CLI, not the Python script.
-  verified: "python -m pytest tests/test_validate_md_items.py \u2014 2/2 pass; 15/16\
-    \ validate tests pass (1 pre-existing coexistence_probe shebang failure)."
-  next: 'Remaining degraded TODOs: deprecated fallback commands in prime --context,
-    over-prescription language audit, lint extension for decisional language.'
-  context:
-    intent: Unblock TODO.md edits when severity sections are legitimately empty (no
-      critical issues).
-    constraints: main branch only; v3 TS already correct; must update test from 'flags'
-      to 'accepts'.
-    unknowns: None.
-    scope: hooks/validate_artifact.py (main), tests/test_validate_md_items.py (main),
-      TODO.md (feat/v3), .agentera/progress.yaml (feat/v3)
 archive:
+- summary: 'Cycle 672 (2026-06-22): Backport fix: remove empty-severity-section rejection
+    from validate_artifact.py on main.'
 - summary: 'Cycle 671 (2026-06-22): Fix stale YAML schema example, deprecated lint
     command, and archive reference in discuss instructions.'
 - summary: "Cycle 670 (2026-06-18): Plan T6 \u2014 verification and closeout: archived\
@@ -426,5 +438,3 @@ archive:
 - summary: "Cycle 631 (2026-06-03): Audit WARN/FAIL file:line citation enforcement\
     \ \u2014 added evaluator_handoff schema to capability-instruction-contract.yaml,\
     \ evaluatorHandoffContract.ts registry with report..."
-- summary: "Cycle 630 (2026-06-03): D66 drop progress.yaml per-cycle commit field\
-    \ \u2014 removed PR6/PV2 commit requirements from the progress schema;..."

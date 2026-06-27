@@ -15,6 +15,7 @@ import {
 } from "../state/installRoot.js";
 import { loadRegistry } from "../registries/packageRegistry.js";
 import { hasBundleRootEvidence } from "./bundleEvidence.js";
+import type { JsonObject } from "../core/jsonValue.js";
 
 /**
  * App-home / app-model resolution used by doctor and upgrade. Faithful TS port
@@ -70,8 +71,8 @@ function sourceRootMissing(root: string): string[] {
 
 export function loadSuiteVersion(sourceRoot: string): string | null {
   const record = loadRegistry().get("agentera");
-  const authority = record.version_authority;
-  const authorityPath = path.join(sourceRoot, authority.persisted_authority);
+  const authority = record.version_authority as JsonObject; // cast: parsed registry IO boundary
+  const authorityPath = path.join(sourceRoot, authority.persisted_authority as string); // cast: parsed registry IO boundary
   if (!isFile(authorityPath)) {
     return null;
   }

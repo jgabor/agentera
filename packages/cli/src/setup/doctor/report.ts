@@ -5,8 +5,10 @@ import path from "node:path";
 import { expanduser, pathExists, resolvePath } from "../../core/paths.js";
 import { pyJsonIndentSorted } from "../../core/pyjson.js";
 import { planChange as codexPlanChange } from "../codex.js";
+import type { Outcome } from "../codex/state.js";
 import { resolveSourceRootStrict } from "../../upgrade/appModel.js";
 import { runNpmSmokeChecks } from "../smokeChecks.js";
+import type { JsonObject } from "../../core/jsonValue.js";
 import {
   SCHEMA_VERSION,
   STATUSES,
@@ -23,14 +25,13 @@ import {
 import { smokeCheck } from "./opencode.js";
 import { CODEX_HOME_CHECK, CODEX_RUNTIME_CONFIG_GAP, DIAGNOSTICS } from "./diagnostics.js";
 
-type Dict = Record<string, any>;
 type Env = Record<string, string | undefined>;
 
 export function pyJsonIndent(value: unknown, level = 0): string {
   return pyJsonIndentSorted(value, 2, level);
 }
 
-function summarize(runtimes: Record<string, Dict>): Record<string, number> {
+function summarize(runtimes: Record<string, JsonObject>): Record<string, number> {
   return summarizeStatuses(runtimes);
 }
 
@@ -43,7 +44,7 @@ export interface BuildReportOptions {
   liveModelAllowed?: boolean;
 }
 
-export function buildReport(opts: BuildReportOptions = {}): Dict {
+export function buildReport(opts: BuildReportOptions = {}): JsonObject {
   const runtimes = opts.runtimes ?? RUNTIMES;
   const liveModelAllowed = opts.liveModelAllowed ?? false;
   const sourceEnv: Env = { ...(opts.env ?? process.env) };
@@ -51,13 +52,13 @@ export function buildReport(opts: BuildReportOptions = {}): Dict {
   const rootPath = rootReport.path ? (rootReport.path as string) : null;
   const homePath = resolvePath(expanduser(opts.home ?? os.homedir()));
 
-  const runtimeReports: Record<string, Dict> = {};
+  const runtimeReports: Record<string, JsonObject> = {};
   if (rootPath === null || rootReport.status === "fail") {
     for (const runtime of runtimes) {
       runtimeReports[runtime] = runtimeResult(runtime, sourceEnv, [
         mkCheck("install_root", "fail", "runtime diagnosis requires a valid Agentera install root", {
-          gap: rootReport.gap,
-          details: rootReport.missing,
+          gap: rootReport.gap as string | null,
+          details: rootReport.missing as string[] | null,
         }),
       ]);
     }
@@ -70,7 +71,7 @@ export function buildReport(opts: BuildReportOptions = {}): Dict {
   const summaryCounts = summarize(runtimeReports);
   const emptySummary: Record<string, number> = {};
   for (const status of STATUSES) emptySummary[status] = 0;
-  let smokeReport: Dict = {
+  let smokeReport: JsonObject = {
     enabled: false,
     liveModelAllowed,
     modelCallsAttempted: false,
@@ -99,7 +100,7 @@ export function buildReport(opts: BuildReportOptions = {}): Dict {
     }
   }
 
-  const ok = rootReport.status !== "fail" && summaryCounts.fail === 0 && (smokeReport.summary as Dict).fail === 0;
+  const ok = rootReport.status !== "fail" && summaryCounts.fail === 0 && (smokeReport.summary as JsonObject).fail === 0;
   return {
     schemaVersion: SCHEMA_VERSION,
     ok,
@@ -110,32 +111,36 @@ export function buildReport(opts: BuildReportOptions = {}): Dict {
   };
 }
 
-export function renderHuman(report: Dict): string {
+export function renderHuman(report: JsonObject): string {
+  const installRoot = report.installRoot as JsonObject;
   const lines = [
     "Agentera setup doctor",
-    `install root: ${report.installRoot.status} - ${report.installRoot.message}`,
+    `install root: ${installRoot.status} - ${installRoot.message}`,
   ];
-  if (report.installRoot.path) lines.push(`  path: ${report.installRoot.path}`);
-  if (report.installRoot.missing && report.installRoot.missing.length > 0) {
-    lines.push("  missing: " + report.installRoot.missing.join(", "));
+  if (installRoot.path) lines.push(`  path: ${installRoot.path}`);
+  const missing = installRoot.missing as string[] | null;
+  if (missing && missing.length > 0) {
+    lines.push("  missing: " + missing.join(", "));
   }
-  for (const [runtime, result] of Object.entries(report.runtimes as Record<string, Dict>)) {
+  for (const [runtime, result] of Object.entries(report.runtimes as Record<string, JsonObject>)) {
     lines.push(`${runtime}: ${result.status}`);
-    for (const check of result.checks as Dict[]) {
+    for (const check of result.checks as JsonObject[]) {
       const suffix = check.gap ? ` [${check.gap}]` : "";
       lines.push(`  - ${check.name}: ${check.status} - ${check.message}${suffix}`);
       if (check.path) lines.push(`    path: ${check.path}`);
-      if (check.details && check.details.length > 0) lines.push("    details: " + check.details.join(", "));
+      const details = check.details as string[];
+      if (details && details.length > 0) lines.push("    details: " + details.join(", "));
     }
   }
-  const smoke = report.smoke ?? {};
+  const smoke = (report.smoke ?? {}) as JsonObject;
   if (smoke.enabled) {
     lines.push("smoke: enabled");
     lines.push(`  model calls attempted: ${pyBool(smoke.modelCallsAttempted)}`);
-    for (const check of (smoke.checks ?? []) as Dict[]) {
+    for (const check of (smoke.checks ?? []) as JsonObject[]) {
       lines.push(`  - ${check.name}: ${check.status} - ${check.message} [${check.category}]`);
       if (check.path) lines.push(`    path: ${check.path}`);
-      if (check.details && check.details.length > 0) lines.push("    details: " + check.details.join(", "));
+      const details = check.details as string[];
+      if (details && details.length > 0) lines.push("    details: " + details.join(", "));
     }
   }
   return lines.join("\n");
@@ -145,37 +150,37 @@ function pyBool(value: unknown): string {
   return value ? "True" : "False";
 }
 
-export function renderInstaller(installer: Dict): string {
+export function renderInstaller(installer: JsonObject): string {
   const lines = ["Agentera setup installer", `status: ${installer.message}`];
-  if (!installer.changes || installer.changes.length === 0) return lines.join("\n");
-  for (const change of installer.changes as Dict[]) {
+  if (!installer.changes || (installer.changes as JsonObject[]).length === 0) return lines.join("\n");
+  for (const change of installer.changes as JsonObject[]) {
     lines.push(`${change.runtime}: ${change.status}`);
     lines.push(`  target: ${change.target || "(none)"}`);
     lines.push(`  reason: ${change.reason}`);
     lines.push(`  action: ${change.action} - ${change.message}`);
   }
   if (installer.afterDoctor !== null && installer.afterDoctor !== undefined) {
-    const after = installer.afterDoctor;
+    const after = installer.afterDoctor as JsonObject;
     lines.push(
-      `doctor after install: ${after.ok ? "pass" : "fail"} (summary: ${pyDict(after.summary)})`,
+      `doctor after install: ${after.ok ? "pass" : "fail"} (summary: ${pyJsonObject(after.summary as Record<string, unknown>)})`,
     );
-  } else if (installer.summary.pending && !installer.dryRun) {
+  } else if ((installer.summary as JsonObject).pending && !installer.dryRun) {
     lines.push("confirmation required: re-run with --yes to apply these changes");
   }
   return lines.join("\n");
 }
 
 /** Python str(dict) repr for the summary line. */
-function pyDict(obj: Record<string, unknown>): string {
+function pyJsonObject(obj: Record<string, unknown>): string {
   const parts = Object.entries(obj).map(([k, v]) => `'${k}': ${typeof v === "string" ? `'${v}'` : v}`);
   return "{" + parts.join(", ") + "}";
 }
 
-export function publicInstaller(installer: Dict | null): Dict | null {
+export function publicInstaller(installer: JsonObject | null): JsonObject | null {
   if (installer === null) return null;
-  const pub: Dict = { ...installer };
-  pub.changes = (installer.changes as Dict[]).map((change) => {
-    const c: Dict = {};
+  const pub: JsonObject = { ...installer };
+  pub.changes = (installer.changes as JsonObject[]).map((change) => {
+    const c: JsonObject = {};
     for (const [key, value] of Object.entries(change)) {
       if (key !== "newText" && key !== "diff") c[key] = value;
     }
@@ -195,7 +200,7 @@ function installerChange(opts: {
   message: string;
   newText?: string;
   diff?: string;
-}): Dict {
+}): JsonObject {
   return {
     runtime: opts.runtime,
     target: opts.target,
@@ -208,24 +213,24 @@ function installerChange(opts: {
   };
 }
 
-function fixableReason(runtimeReport: Dict, checkName: string, gaps: string[] | null = null): string | null {
+function fixableReason(runtimeReport: JsonObject, checkName: string, gaps: string[] | null = null): string | null {
   if (!runtimeReport.available) return null;
   const runtime = String(runtimeReport.runtime ?? "");
   const fixableGaps = gaps ?? INSTALLER_FIXABLE_GAPS[runtime] ?? [];
-  for (const check of (runtimeReport.checks ?? []) as Dict[]) {
+  for (const check of (runtimeReport.checks ?? []) as JsonObject[]) {
     if (check.name !== checkName) continue;
     if (check.status !== WARN_STATUSES[runtime] && check.status !== FAIL_STATUSES[runtime]) continue;
-    if (!fixableGaps.includes(check.gap)) continue;
+    if (!fixableGaps.includes(check.gap as string)) continue;
     return String(check.message || "doctor found a fixable setup gap");
   }
   return null;
 }
 
-function planCodexInstallerChange(installRoot: string, home: string, runtimeReport: Dict): Dict | null {
+function planCodexInstallerChange(installRoot: string, home: string, runtimeReport: JsonObject): JsonObject | null {
   const reason = fixableReason(runtimeReport, CODEX_HOME_CHECK, [CODEX_RUNTIME_CONFIG_GAP]);
   if (reason === null) return null;
   const target = path.join(home, ".codex", "config.toml");
-  let outcome: Dict;
+  let outcome: Outcome;
   try {
     const currentText = pathExists(target) ? fs.readFileSync(target, "utf8") : null;
     outcome = codexPlanChange(currentText, installRoot, { force: false });
@@ -265,25 +270,26 @@ function planCodexInstallerChange(installRoot: string, home: string, runtimeRepo
   });
 }
 
-function planCopilotInstallerChange(): Dict | null {
+function planCopilotInstallerChange(): JsonObject | null {
   return null;
 }
 
-function summarizeInstaller(changes: Dict[]): Record<string, number> {
+function summarizeInstaller(changes: JsonObject[]): Record<string, number> {
   const statuses = ["pending", "applied", "noop", "blocked", "failed"];
   const summary: Record<string, number> = {};
   for (const status of statuses) summary[status] = 0;
-  for (const change of changes) summary[change.status] += 1;
+  for (const change of changes) summary[change.status as string] += 1;
   return summary;
 }
 
 export function buildInstallerPlan(
-  report: Dict,
+  report: JsonObject,
   opts: { home: string; env: Env; runtimes: string[]; confirmed: boolean; dryRun: boolean },
-): Dict {
-  const changes: Dict[] = [];
-  const rootPath = report.installRoot?.path;
-  if (!rootPath || report.installRoot?.status === "fail") {
+): JsonObject {
+  const changes: JsonObject[] = [];
+  const installRootJsonObject = report.installRoot as JsonObject | null;
+  const rootPath = installRootJsonObject?.path as string | null | undefined;
+  if (!rootPath || installRootJsonObject?.status === "fail") {
     return {
       schemaVersion: INSTALLER_SCHEMA_VERSION,
       confirmed: opts.confirmed,
@@ -296,8 +302,8 @@ export function buildInstallerPlan(
   }
   const installRoot = rootPath as string;
   for (const runtime of opts.runtimes) {
-    const runtimeReport = (report.runtimes as Dict)[runtime];
-    let change: Dict | null = null;
+    const runtimeReport = (report.runtimes as JsonObject)[runtime] as JsonObject;
+    let change: JsonObject | null = null;
     if (runtime === "codex") change = planCodexInstallerChange(installRoot, opts.home, runtimeReport);
     else if (runtime === "copilot") change = planCopilotInstallerChange();
     if (change !== null) changes.push(change);
@@ -313,13 +319,13 @@ export function buildInstallerPlan(
   };
 }
 
-export function applyInstallerPlan(plan: Dict): void {
-  for (const change of plan.changes as Dict[]) {
+export function applyInstallerPlan(plan: JsonObject): void {
+  for (const change of plan.changes as JsonObject[]) {
     if (change.status !== "pending") continue;
     const target = change.target as string;
     try {
       fs.mkdirSync(path.dirname(target), { recursive: true });
-      fs.writeFileSync(target, change.newText, "utf8");
+      fs.writeFileSync(target, change.newText as string, "utf8");
     } catch (exc) {
       change.status = "failed";
       change.message = `error writing ${target}: ${(exc as Error).message}`;
@@ -328,7 +334,7 @@ export function applyInstallerPlan(plan: Dict): void {
     change.status = "applied";
     change.message = `wrote ${target}: ${String(change.message).replaceAll("would ", "")}`;
   }
-  plan.summary = summarizeInstaller(plan.changes as Dict[]);
+  plan.summary = summarizeInstaller(plan.changes as JsonObject[]);
 }
 
 // ── CLI ─────────────────────────────────────────────────────────────
@@ -408,7 +414,7 @@ export function doctorMain(argv: string[] = [], io: DoctorCliIo = {}): number {
     liveModelAllowed: args.allowLiveModel,
   });
 
-  let installer: Dict | null = null;
+  let installer: JsonObject | null = null;
   if (args.install) {
     installer = buildInstallerPlan(report, {
       home,
@@ -442,9 +448,11 @@ export function doctorMain(argv: string[] = [], io: DoctorCliIo = {}): number {
   }
 
   if (installer === null) return report.ok ? 0 : 1;
-  if (installer.summary.failed || installer.summary.blocked) return 1;
-  if (installer.summary.pending && !args.dryRun && !args.yes) return 1;
-  if (installer.afterDoctor !== null && installer.afterDoctor !== undefined && !installer.afterDoctor.ok) return 1;
-  if (!report.ok && !(installer.summary.pending || installer.summary.applied)) return 1;
+  const summary = installer.summary as JsonObject;
+  if (summary.failed || summary.blocked) return 1;
+  if (summary.pending && !args.dryRun && !args.yes) return 1;
+  const afterDoctor = installer.afterDoctor as JsonObject | null;
+  if (afterDoctor !== null && afterDoctor !== undefined && !afterDoctor.ok) return 1;
+  if (!report.ok && !(summary.pending || summary.applied)) return 1;
   return 0;
 }

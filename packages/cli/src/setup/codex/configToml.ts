@@ -5,6 +5,7 @@ import path from "node:path";
 
 import { isFile, pathExists, resolvePath } from "../../core/paths.js";
 import { parseToml } from "../../core/toml.js";
+import type { JsonObject } from "../../core/jsonValue.js";
 import {
   CODEX_HOOK_COMMAND,
   CODEX_HOOK_MATCHER,
@@ -19,7 +20,6 @@ import {
   SET_SUBTABLE_NAME,
 } from "./constants.js";
 
-type Dict = Record<string, any>;
 
 export interface TomlState {
   sectionPresent: boolean;
@@ -43,16 +43,16 @@ export function classifyToml(text: string): TomlState {
   if (!text.trim()) {
     return { sectionPresent: false, setPresent: false, setTable: {}, sectionLevelHome: null };
   }
-  const parsed = parseToml(text) as Dict;
+  const parsed = parseToml(text) as JsonObject;
   const section = parsed[SECTION_NAME];
   if (!section || typeof section !== "object" || Array.isArray(section)) {
     return { sectionPresent: false, setPresent: false, setTable: {}, sectionLevelHome: null };
   }
-  const sectionDict = section as Dict;
-  const sectionHome = sectionDict[MANAGED_KEY];
+  const sectionJsonObject = section as JsonObject;
+  const sectionHome = sectionJsonObject[MANAGED_KEY];
   const sectionLevelHome =
     typeof sectionHome === "string" && sectionHome ? sectionHome : null;
-  const setValue = sectionDict.set;
+  const setValue = sectionJsonObject.set;
   if (!setValue || typeof setValue !== "object" || Array.isArray(setValue)) {
     return { sectionPresent: true, setPresent: false, setTable: {}, sectionLevelHome };
   }
@@ -75,19 +75,19 @@ export function hasSetSubtableHeader(text: string): boolean {
   return findTableHeaderIndex(plainLines, SET_SUBTABLE_NAME) !== null;
 }
 
-export function managedHomeInSet(section: Dict): string | null {
+export function managedHomeInSet(section: JsonObject): string | null {
   const setValue = section.set;
   if (!setValue || typeof setValue !== "object" || Array.isArray(setValue)) return null;
-  const value = (setValue as Dict)[MANAGED_KEY];
+  const value = (setValue as JsonObject)[MANAGED_KEY];
   return typeof value === "string" && value ? value : null;
 }
 
 export function codexManagedHomeConfigured(text: string | null): boolean {
   if (!text || !text.trim()) return false;
-  const parsed = parseToml(text) as Dict;
+  const parsed = parseToml(text) as JsonObject;
   const section = parsed[SECTION_NAME];
   if (!section || typeof section !== "object" || Array.isArray(section)) return false;
-  return managedHomeInSet(section as Dict) !== null;
+  return managedHomeInSet(section as JsonObject) !== null;
 }
 
 export function needsShellEnvNormalize(state: TomlState, text: string): boolean {
@@ -97,11 +97,11 @@ export function needsShellEnvNormalize(state: TomlState, text: string): boolean 
   return false;
 }
 
-export function mergeSetPairs(section: Dict, installRoot: string): Record<string, string> {
+export function mergeSetPairs(section: JsonObject, installRoot: string): Record<string, string> {
   const pairs: Record<string, string> = {};
   const setValue = section.set;
   if (setValue && typeof setValue === "object" && !Array.isArray(setValue)) {
-    for (const [key, value] of Object.entries(setValue as Dict)) {
+    for (const [key, value] of Object.entries(setValue as JsonObject)) {
       if (key === MANAGED_KEY) continue;
       pairs[String(key)] = typeof value === "string" ? value : pyRepr(value);
     }
@@ -127,12 +127,12 @@ function shellPolicySectionEnd(plainLines: string[], sectionIdx: number): number
 }
 
 export function normalizeShellEnvironmentPolicy(text: string, installRoot: string): string {
-  const parsed = parseToml(text) as Dict;
+  const parsed = parseToml(text) as JsonObject;
   const section = parsed[SECTION_NAME];
   if (!section || typeof section !== "object" || Array.isArray(section)) {
     throw new Error(`normalize_shell_environment_policy: [${SECTION_NAME}] missing`);
   }
-  const pairs = mergeSetPairs(section as Dict, installRoot);
+  const pairs = mergeSetPairs(section as JsonObject, installRoot);
   const linesWithEnds = splitKeepEnds(text);
   const plainLines = linesWithEnds.map(rstripEol);
   const sectionIdx = findSectionHeaderIndex(plainLines);
@@ -202,8 +202,8 @@ function canonicalJson(value: unknown): string {
   if (typeof value === "string") return jsonStringAscii(value);
   if (Array.isArray(value)) return "[" + value.map((v) => canonicalJson(v)).join(",") + "]";
   if (typeof value === "object") {
-    const keys = Object.keys(value as Dict).sort();
-    return "{" + keys.map((k) => `${jsonStringAscii(k)}:${canonicalJson((value as Dict)[k])}`).join(",") + "}";
+    const keys = Object.keys(value as JsonObject).sort();
+    return "{" + keys.map((k) => `${jsonStringAscii(k)}:${canonicalJson((value as JsonObject)[k])}`).join(",") + "}";
   }
   return "null";
 }
@@ -239,9 +239,9 @@ export function codexHookTrustedHash(
   timeout: number = CODEX_HOOK_TIMEOUT,
   statusMessage: string | null = CODEX_HOOK_STATUS_MESSAGE,
 ): string {
-  const handler: Dict = { type: "command", command, timeout, async: false };
+  const handler: JsonObject = { type: "command", command, timeout, async: false };
   if (statusMessage !== null) handler.statusMessage = statusMessage;
-  const identity: Dict = { event_name: eventLabel, hooks: [handler] };
+  const identity: JsonObject = { event_name: eventLabel, hooks: [handler] };
   if (matcher !== null) identity.matcher = matcher;
   const payload = canonicalJson(identity);
   return "sha256:" + crypto.createHash("sha256").update(payload, "utf8").digest("hex");
@@ -252,7 +252,7 @@ export function codexValidatorCommand(_installRoot: string): string {
 }
 
 export function renderCodexHooksConfig(command: string): string {
-  const hooks: Dict = {};
+  const hooks: JsonObject = {};
   for (const event of ["PreToolUse", "PostToolUse"]) {
     hooks[event] = [
       {
@@ -287,11 +287,11 @@ export function codexPluginHookStateEntries(command: string = CODEX_PLUGIN_HOOK_
 
 export function codexPluginHooksEnabled(text: string | null): boolean {
   if (!text || !text.trim()) return false;
-  const parsed = parseToml(text) as Dict;
+  const parsed = parseToml(text) as JsonObject;
   const plugins = parsed.plugins;
   if (!plugins || typeof plugins !== "object" || Array.isArray(plugins)) return false;
-  const agentera = (plugins as Dict)[CODEX_PLUGIN_ID];
-  return Boolean(agentera && typeof agentera === "object" && agentera.enabled === true);
+  const agentera = (plugins as JsonObject)[CODEX_PLUGIN_ID];
+  return Boolean(agentera && typeof agentera === "object" && !Array.isArray(agentera) && (agentera as JsonObject).enabled === true);
 }
 
 // ===========================================================================
@@ -423,14 +423,14 @@ function appendTable(text: string, table: string, lines: string[]): string {
   return prefix + `[${table}]\n` + lines.join("\n") + "\n";
 }
 
-function tomlLoadOrEmpty(text: string): Dict {
-  return text.trim() ? (parseToml(text) as Dict) : {};
+function tomlLoadOrEmpty(text: string): JsonObject {
+  return text.trim() ? (parseToml(text) as JsonObject) : {};
 }
 
 function ensureFeatureEnabled(text: string, key: string): string {
   const parsed = tomlLoadOrEmpty(text);
   const features = parsed.features;
-  if (features && typeof features === "object" && !Array.isArray(features) && (features as Dict)[key] === true) {
+  if (features && typeof features === "object" && !Array.isArray(features) && (features as JsonObject)[key] === true) {
     return text;
   }
   const lines = splitKeepEnds(text).map(rstripEol);
@@ -468,17 +468,17 @@ function removeTableKeyLine(text: string, table: string, key: string): string {
   return [...linesWithEnds.slice(0, keyIdx), ...linesWithEnds.slice(keyIdx + 1)].join("");
 }
 
-function codexMultiAgentThreadLimit(parsed: Dict): number {
+function codexMultiAgentThreadLimit(parsed: JsonObject): number {
   const agents = parsed.agents;
   if (agents && typeof agents === "object" && !Array.isArray(agents) && "max_threads" in agents) {
-    const n = Number((agents as Dict).max_threads);
+    const n = Number((agents as JsonObject).max_threads);
     if (Number.isInteger(n)) return n;
   }
   const features = parsed.features;
   if (features && typeof features === "object" && !Array.isArray(features)) {
-    const multi = (features as Dict).multi_agent_v2;
+    const multi = (features as JsonObject).multi_agent_v2;
     if (multi && typeof multi === "object" && "max_concurrent_threads_per_session" in multi) {
-      const n = Number((multi as Dict).max_concurrent_threads_per_session);
+      const n = Number((multi as JsonObject).max_concurrent_threads_per_session);
       if (Number.isInteger(n)) return n;
     }
   }
@@ -488,9 +488,9 @@ function codexMultiAgentThreadLimit(parsed: Dict): number {
 function ensureCodexMultiAgentV2(text: string, maxThreadsVal: number): string {
   const parsed = tomlLoadOrEmpty(text);
   const features = parsed.features;
-  let multi: Dict = {};
+  let multi: JsonObject = {};
   if (features && typeof features === "object" && !Array.isArray(features)) {
-    const m = (features as Dict).multi_agent_v2;
+    const m = (features as JsonObject).multi_agent_v2;
     if (m && typeof m === "object" && !Array.isArray(m)) multi = m;
   }
   if (multi.max_concurrent_threads_per_session === maxThreadsVal) return text;
@@ -512,7 +512,7 @@ export function ensureCodexAgentLimits(text: string): string {
   const agents = parsed.agents;
   const agentsMatches =
     agents && typeof agents === "object" && !Array.isArray(agents) &&
-    Object.entries(DEFAULT_AGENT_LIMITS).every(([k, v]) => (agents as Dict)[k] === v);
+    Object.entries(DEFAULT_AGENT_LIMITS).every(([k, v]) => (agents as JsonObject)[k] === v);
   if (!agentsMatches) {
     const lines = splitKeepEnds(text).map(rstripEol);
     const tableIdx = findTableHeaderIndex(lines, "agents");
@@ -545,14 +545,14 @@ function hookStateLine(key: string, trustedHash: string): string {
 function ensureCodexHookStateEntries(text: string, entries: Record<string, string>): string {
   const parsed = tomlLoadOrEmpty(text);
   const hooks = parsed.hooks;
-  let state: Dict = {};
+  let state: JsonObject = {};
   if (hooks && typeof hooks === "object" && !Array.isArray(hooks)) {
-    const s = (hooks as Dict).state;
+    const s = (hooks as JsonObject).state;
     if (s && typeof s === "object" && !Array.isArray(s)) state = s;
   }
   const allPresent = Object.entries(entries).every(([key, trustedHash]) => {
     const e = state[key];
-    return e && typeof e === "object" && e.trusted_hash === trustedHash && e.enabled === true;
+    return e && typeof e === "object" && !Array.isArray(e) && e.trusted_hash === trustedHash && e.enabled === true;
   });
   if (allPresent) return text;
 
@@ -595,7 +595,7 @@ export function codexCopiedHooksAreAgenteraOnly(text: string): boolean {
     return false;
   }
   if (!payload || typeof payload !== "object" || Array.isArray(payload)) return false;
-  const p = payload as Dict;
+  const p = payload as JsonObject;
   if (typeof p.description !== "string" || !p.description.includes("agentera v2 Codex hooks")) return false;
   const hooks = p.hooks;
   if (!hooks || typeof hooks !== "object" || Array.isArray(hooks)) return false;
@@ -608,11 +608,11 @@ export function codexCopiedHooksAreAgenteraOnly(text: string): boolean {
     if (event !== "PreToolUse" && event !== "PostToolUse") return false;
     if (!Array.isArray(entries) || entries.length !== 1) return false;
     const entry = entries[0];
-    if (!entry || typeof entry !== "object" || entry.matcher !== CODEX_HOOK_MATCHER) return false;
+    if (!entry || typeof entry !== "object" || Array.isArray(entry) || entry.matcher !== CODEX_HOOK_MATCHER) return false;
     const handlers = entry.hooks;
     if (!Array.isArray(handlers) || handlers.length !== 1) return false;
     const handler = handlers[0];
-    if (!handler || typeof handler !== "object") return false;
+    if (!handler || typeof handler !== "object" || Array.isArray(handler)) return false;
     const command = handler.command;
     if (handler.type !== "command" || typeof command !== "string") return false;
     if (!command.includes("hooks/validate_artifact.py") && !command.includes("hook validate-artifact")) return false;

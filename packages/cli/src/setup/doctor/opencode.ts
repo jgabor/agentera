@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 import { expanduser, isFile, pathExists, resolvePath } from "../../core/paths.js";
+import type { JsonObject } from "../../core/jsonValue.js";
 import {
   pluginSourceHasUnmigratedProfileDirSchema,
   PROFILERA_PROFILE_DIR_ENV,
@@ -19,7 +20,6 @@ import {
   OPENCODE_SKILL_NAMES,
 } from "./core.js";
 
-type Dict = Record<string, any>;
 type Env = Record<string, string | undefined>;
 
 const OPENCODE_PLUGIN_CHECK = diagnosticCheckNames("opencode")[0];
@@ -78,7 +78,7 @@ export function hasManagedMarker(text: string): boolean {
   return lines.slice(1, closing).some((line) => line.trim() === "agentera_managed: true");
 }
 
-export function diagnoseOpencodeCommands(home: string, env: Env): Dict {
+export function diagnoseOpencodeCommands(home: string, env: Env): JsonObject {
   const commandsDir = path.join(opencodeConfigDir(home, env), "commands");
   const missing: string[] = [];
   const stale: string[] = [];
@@ -133,7 +133,7 @@ function isSymlink(p: string): boolean {
   }
 }
 
-export function diagnoseOpencodeSkillPaths(installRoot: string, home: string, env: Env): Dict {
+export function diagnoseOpencodeSkillPaths(installRoot: string, home: string, env: Env): JsonObject {
   const skillsDir = path.join(opencodeConfigDir(home, env), "skills");
   const missing: string[] = [];
   const broken: string[] = [];
@@ -223,7 +223,7 @@ function globSkillFiles(skillsDir: string): string[] {
   return out.sort();
 }
 
-export function diagnoseBundledReferenceValidation(installRoot: string): Dict {
+export function diagnoseBundledReferenceValidation(installRoot: string): JsonObject {
   const skillsDir = path.join(installRoot, "skills");
   const missing: string[] = [];
   for (const skillFile of globSkillFiles(skillsDir)) {
@@ -253,7 +253,7 @@ export function smokeCheck(
   status: string,
   message: string,
   opts: { command?: string[] | null; path?: string | null; details?: string[] | null } = {},
-): Dict {
+): JsonObject {
   return {
     name,
     category,
@@ -270,7 +270,7 @@ const OPENCODE_PLUGIN_MISSING_MESSAGE = OC_MSG[1];
 const OPENCODE_HOME_MISSING_MESSAGE = OC_MSG[3];
 const OPENCODE_RUNTIME_CONFIG_GAP = OC_GAP[0];
 
-export function diagnoseOpencodeProfileDir(installRoot: string, home: string, env: Env): Dict {
+export function diagnoseOpencodeProfileDir(installRoot: string, home: string, env: Env): JsonObject {
   if (env[PROFILERA_PROFILE_DIR_ENV]) {
     return mkCheck(OPENCODE_PROFILE_DIR_CHECK, OPENCODE_WARN_STATUS, OPENCODE_PROFILE_DIR_DEPRECATED_MESSAGE, {
       gap: OPENCODE_USER_ENVIRONMENT_GAP,
@@ -279,7 +279,7 @@ export function diagnoseOpencodeProfileDir(installRoot: string, home: string, en
   return mkCheck(OPENCODE_PROFILE_DIR_CHECK, OPENCODE_PASS_STATUS, OPENCODE_PROFILE_DIR_CURRENT_MESSAGE, {});
 }
 
-export function diagnoseOpencodeProfileDirSchemaLiteral(home: string, env: Env): Dict {
+export function diagnoseOpencodeProfileDirSchemaLiteral(home: string, env: Env): JsonObject {
   const plugin = path.join(opencodeConfigDir(home, env), "plugins", "agentera.js");
   if (!isFile(plugin)) {
     return mkCheck(
@@ -309,8 +309,8 @@ export function diagnoseOpencodeProfileDirSchemaLiteral(home: string, env: Env):
   );
 }
 
-export function diagnoseOpencode(installRoot: string, home: string, env: Env): Dict {
-  const checks: Dict[] = [];
+export function diagnoseOpencode(installRoot: string, home: string, env: Env): JsonObject {
+  const checks: JsonObject[] = [];
   const configDir = opencodeConfigDir(home, env);
   const plugin = path.join(configDir, "plugins", "agentera.js");
   if (isFile(plugin)) {

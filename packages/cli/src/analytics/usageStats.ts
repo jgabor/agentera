@@ -4,13 +4,12 @@ import path from "node:path";
 
 import { resolveProfileDirOverride, resolveXdgDataHome } from "../core/envPaths.js";
 import { expanduser } from "../core/paths.js";
+import type { JsonObject } from "../core/jsonValue.js";
 
 /**
  * Suite usage analytics: detect skill invocations from a Section 22 corpus.
  * Faithful TS port of scripts/usage_stats.py. env/home/platform are injectable.
  */
-
-type Dict = Record<string, any>;
 type Env = Record<string, string | undefined>;
 
 export const EXIT_STATUSES = new Set(["complete", "flagged", "stuck", "waiting"]);
@@ -73,7 +72,7 @@ export function findMarkers(text: string): Marker[] {
   return markers;
 }
 
-function isMapping(value: unknown): value is Dict {
+function isMapping(value: unknown): value is JsonObject {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
@@ -85,7 +84,7 @@ export function isAssistantConversationTurn(record: unknown): boolean {
   return data.actor === "assistant";
 }
 
-function conversationKey(record: Dict): string | null {
+function conversationKey(record: JsonObject): string | null {
   const sid = record.session_id;
   if (typeof sid === "string" && sid) return sid;
   const data = record.data;
@@ -98,8 +97,8 @@ function conversationKey(record: Dict): string | null {
   return null;
 }
 
-export function groupByConversation(records: Iterable<Dict>): Map<string, Dict[]> {
-  const buckets = new Map<string, Dict[]>();
+export function groupByConversation(records: Iterable<JsonObject>): Map<string, JsonObject[]> {
+  const buckets = new Map<string, JsonObject[]>();
   for (const record of records) {
     if (!isAssistantConversationTurn(record)) continue;
     const key = conversationKey(record);
@@ -113,9 +112,9 @@ export function groupByConversation(records: Iterable<Dict>): Map<string, Dict[]
   return buckets;
 }
 
-function stableSortByTimestamp(items: Dict[]): void {
+function stableSortByTimestamp(items: JsonObject[]): void {
   items
-    .map((item, index) => [item, index] as [Dict, number])
+    .map((item, index) => [item, index] as [JsonObject, number])
     .sort((a, b) => {
       const ta = String(a[0].timestamp ?? "");
       const tb = String(b[0].timestamp ?? "");
@@ -128,13 +127,13 @@ function stableSortByTimestamp(items: Dict[]): void {
     });
 }
 
-export function pairInvocations(turns: Iterable<Dict>): Invocation[] {
+export function pairInvocations(turns: Iterable<JsonObject>): Invocation[] {
   const pending = new Map<string, Invocation[]>();
   const completed: Invocation[] = [];
   for (const turn of turns) {
     const sid = String(turn.source_id ?? "");
     const ts = String(turn.timestamp ?? "");
-    const text = (isMapping(turn.data) ? turn.data.content : "") || "";
+    const text = ((isMapping(turn.data) ? turn.data.content : "") || "") as string; // cast: corpus record content from JSON.parse IO boundary
     for (const marker of findMarkers(text)) {
       if (marker.kind === "intro") {
         if (!pending.has(marker.skill)) pending.set(marker.skill, []);
@@ -197,11 +196,11 @@ function projectMatch(recordProjectId: string, requested: string): boolean {
   return recordProjectId.includes(requested) || requested.includes(recordProjectId);
 }
 
-export function filterRecordsByProject(records: Iterable<Dict>, requested: string | null): Dict[] {
+export function filterRecordsByProject(records: Iterable<JsonObject>, requested: string | null): JsonObject[] {
   if (requested === null) {
     return [...records];
   }
-  const out: Dict[] = [];
+  const out: JsonObject[] = [];
   for (const record of records) {
     if (!isMapping(record)) continue;
     const pid = record.project_id ?? "";
@@ -212,8 +211,8 @@ export function filterRecordsByProject(records: Iterable<Dict>, requested: strin
   return out;
 }
 
-function userTurnsByConversation(records: Iterable<Dict>): Map<string, Dict[]> {
-  const buckets = new Map<string, Dict[]>();
+function userTurnsByConversation(records: Iterable<JsonObject>): Map<string, JsonObject[]> {
+  const buckets = new Map<string, JsonObject[]>();
   for (const record of records) {
     if (!isMapping(record)) continue;
     if (record.source_kind !== "conversation_turn") continue;
@@ -231,8 +230,8 @@ function userTurnsByConversation(records: Iterable<Dict>): Map<string, Dict[]> {
   return buckets;
 }
 
-function precedingUserTurn(userTurns: Dict[], assistantTimestamp: string): Dict | null {
-  let candidate: Dict | null = null;
+function precedingUserTurn(userTurns: JsonObject[], assistantTimestamp: string): JsonObject | null {
+  let candidate: JsonObject | null = null;
   for (const turn of userTurns) {
     const ts = String(turn.timestamp ?? "");
     if (ts < assistantTimestamp) {
@@ -261,8 +260,8 @@ function accumulate(bucket: Record<string, number>, inv: Invocation): void {
   bucket[inv.trigger === TRIGGER_SLASH ? "trigger_slash" : "trigger_natural"] += 1;
 }
 
-export function analyzeCorpus(corpus: Dict, projectFilter: string | null = null): CorpusAnalysis {
-  const rawRecords = isMapping(corpus) ? (corpus.records ?? []) : [];
+export function analyzeCorpus(corpus: JsonObject, projectFilter: string | null = null): CorpusAnalysis {
+  const rawRecords = (isMapping(corpus) ? (corpus.records ?? []) : []) as unknown as JsonObject[]; // cast: corpus records from JSON.parse IO boundary
   const records = filterRecordsByProject(rawRecords, projectFilter);
 
   const userTurnsByConv = userTurnsByConversation(records);
@@ -278,8 +277,8 @@ export function analyzeCorpus(corpus: Dict, projectFilter: string | null = null)
       const preceding = precedingUserTurn(userTurnsByConv.get(sid) ?? [], inv.intro_timestamp);
       let precedingText = "";
       if (preceding !== null) {
-        const data = isMapping(preceding.data) ? preceding.data : {};
-        precedingText = data.content || "";
+        const data = isMapping(preceding.data) ? preceding.data : ({} as JsonObject);
+        precedingText = (data.content || "") as string; // cast: corpus record content from JSON.parse IO boundary
       }
       inv.trigger = classifyTrigger(precedingText);
       invocations.push(inv);
@@ -360,7 +359,7 @@ export function corpusTooLargeReason(corpusPath: string): string | null {
   }
 }
 
-export function loadCorpusOrRaise(corpusPath: string): Dict {
+export function loadCorpusOrRaise(corpusPath: string): JsonObject {
   if (!fs.existsSync(corpusPath)) {
     throw new CorpusUnavailable(`corpus.json not found at ${corpusPath}. ${CORPUS_GUIDANCE}`);
   }
@@ -374,7 +373,7 @@ export function loadCorpusOrRaise(corpusPath: string): Dict {
   } catch (exc) {
     throw new CorpusUnavailable(`corpus is not readable JSON: ${(exc as Error).message}`);
   }
-  const records = isMapping(corpus) ? (corpus.records ?? []) : [];
+  const records = (isMapping(corpus) ? (corpus.records ?? []) : []) as unknown[]; // cast: corpus records from JSON.parse IO boundary
   const hasTurn = Array.isArray(records) && records.some(
     (r: unknown) => isMapping(r) && r.source_kind === "conversation_turn",
   );
@@ -383,13 +382,13 @@ export function loadCorpusOrRaise(corpusPath: string): Dict {
       `corpus at ${corpusPath} contains no conversation_turn records. ${CORPUS_GUIDANCE}`,
     );
   }
-  return corpus as Dict;
+  return corpus as JsonObject; // cast: corpus from JSON.parse IO boundary
 }
 
 export function buildJsonPayload(
   analysis: CorpusAnalysis,
   opts: { generatedAt: string; extractedAt: string | null },
-): Dict {
+): JsonObject {
   return {
     generated_at: opts.generatedAt,
     extracted_at: opts.extractedAt,
@@ -555,7 +554,7 @@ export function usageMain(argv: string[], io: UsageMainIo = {}): number {
   }
 
   const corpusPath = corpus ?? defaultCorpusPath(env, platform);
-  let corpusData: Dict;
+  let corpusData: JsonObject;
   try {
     corpusData = loadCorpusOrRaise(corpusPath);
   } catch (e) {
@@ -568,7 +567,7 @@ export function usageMain(argv: string[], io: UsageMainIo = {}): number {
 
   const analysis = analyzeCorpus(corpusData, project);
   const generatedAt = nowIso();
-  const md = (corpusData as Dict).metadata;
+  const md = (corpusData as JsonObject).metadata;
   const extractedAt =
     md && typeof md === "object" && !Array.isArray(md) ? ((md.extracted_at as string) ?? null) : null;
 

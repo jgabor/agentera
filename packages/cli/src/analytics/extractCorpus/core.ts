@@ -6,9 +6,10 @@ import { resolveProfileDirOverride, resolveXdgDataHome } from "../../core/envPat
 import { expanduser } from "../../core/paths.js";
 import crypto from "node:crypto";
 
+import type { JsonObject, JsonValue } from "../../core/jsonValue.js";
 import { resolvePath } from "../../core/paths.js";
 
-export type Dict = Record<string, any>;
+export type Dict = JsonObject;
 export type Env = Record<string, string | undefined>;
 
 export const ADAPTER_VERSION = "agentera-v2-corpus-1";
@@ -379,7 +380,7 @@ export function toolCallRecordFromItem(args: {
     runtime: args.runtime,
     sourceParts: [resolvePath(args.sourcePath), args.index, "tool", toolName],
     sessionId: args.sessionId,
-    data: { tool_name: toolName, arguments: argumentsVal },
+    data: { tool_name: toolName, arguments: argumentsVal as JsonValue }, // cast: parsed JSON IO boundary
   });
 }
 

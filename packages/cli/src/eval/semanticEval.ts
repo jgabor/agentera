@@ -1,12 +1,11 @@
 import { SemanticFixture, loadFixture, pyRepr } from "./semanticFixtures.js";
 import { pyJsonIndent } from "../core/pyjson.js";
+import type { JsonObject } from "../core/jsonValue.js";
 
 /**
  * Offline semantic eval runner for captured skill fixtures. Faithful TS port of
  * scripts/semantic_eval.py. Never invokes a model runtime.
  */
-
-type Dict = Record<string, any>;
 
 export interface CheckedFact {
   fact: string;
@@ -18,7 +17,7 @@ function utcTimestamp(): string {
   return new Date().toISOString().replace(/\.\d{3}Z$/, "Z");
 }
 
-export function evaluateFixture(fixture: SemanticFixture, source = "<fixture>"): Dict {
+export function evaluateFixture(fixture: SemanticFixture, source = "<fixture>"): JsonObject {
   const facts = [
     ...checkOutputFacts(fixture),
     ...checkToolTraceFacts(fixture),
@@ -33,10 +32,10 @@ export function evaluateFixture(fixture: SemanticFixture, source = "<fixture>"):
   };
 }
 
-export function evaluateFixtureFile(path: string): Dict {
+export function evaluateFixtureFile(path: string): JsonObject {
   const [fixture, errors] = loadFixture(path);
   if (errors.length > 0) {
-    const failing: CheckedFact = { fact: "fixture_contract", status: "fail", detail: errors.join("; ") };
+    const failing = { fact: "fixture_contract", status: "fail", detail: errors.join("; ") };
     return {
       fixture: path,
       status: "fail",
@@ -47,7 +46,7 @@ export function evaluateFixtureFile(path: string): Dict {
   return evaluateFixture(fixture!, path);
 }
 
-export function buildReport(results: Dict[]): Dict {
+export function buildReport(results: JsonObject[]): JsonObject {
   const passed = results.filter((result) => result.status === "pass").length;
   const failed = results.length - passed;
   return {
@@ -63,7 +62,9 @@ export function buildReport(results: Dict[]): Dict {
 function checkOutputFacts(fixture: SemanticFixture): CheckedFact[] {
   const facts: CheckedFact[] = [];
   const expected = fixture.expectedFacts;
-  (expected.required_output ?? []).forEach((text: string, index: number) => {
+  const requiredOutput = expected.required_output;
+  const requiredOutputArr: string[] = Array.isArray(requiredOutput) ? (requiredOutput as string[]) : []; // cast: JSON.parse fixture IO boundary
+  requiredOutputArr.forEach((text: string, index: number) => {
     const found = fixture.capturedOutput.includes(text);
     facts.push({
       fact: `required_output[${index}]`,
@@ -71,7 +72,9 @@ function checkOutputFacts(fixture: SemanticFixture): CheckedFact[] {
       detail: `captured output ${found ? "contains" : "does not contain"} ${pyRepr(text)}`,
     });
   });
-  (expected.forbidden_output ?? []).forEach((text: string, index: number) => {
+  const forbiddenOutput = expected.forbidden_output;
+  const forbiddenOutputArr: string[] = Array.isArray(forbiddenOutput) ? (forbiddenOutput as string[]) : []; // cast: JSON.parse fixture IO boundary
+  forbiddenOutputArr.forEach((text: string, index: number) => {
     const found = fixture.capturedOutput.includes(text);
     facts.push({
       fact: `forbidden_output[${index}]`,
@@ -80,7 +83,8 @@ function checkOutputFacts(fixture: SemanticFixture): CheckedFact[] {
     });
   });
 
-  const writes = expected.artifact_expectations?.writes;
+  const artifactExpectations = expected.artifact_expectations as JsonObject | null; // cast: JSON.parse fixture IO boundary
+  const writes = artifactExpectations?.writes;
   if (writes === "none") {
     facts.push({
       fact: "artifact_expectations.writes",
@@ -94,9 +98,12 @@ function checkOutputFacts(fixture: SemanticFixture): CheckedFact[] {
 function checkToolTraceFacts(fixture: SemanticFixture): CheckedFact[] {
   const facts: CheckedFact[] = [];
   const expected = fixture.expectedFacts;
-  const callList: string[] = fixture.toolTrace.calls ?? [];
+  const rawCalls = fixture.toolTrace.calls;
+  const callList: string[] = Array.isArray(rawCalls) ? (rawCalls as string[]) : []; // cast: JSON.parse fixture IO boundary
   const calls = callList.join("\n");
-  (expected.required_tool_calls ?? []).forEach((text: string, index: number) => {
+  const requiredToolCalls = expected.required_tool_calls;
+  const requiredToolCallsArr: string[] = Array.isArray(requiredToolCalls) ? (requiredToolCalls as string[]) : []; // cast: JSON.parse fixture IO boundary
+  requiredToolCallsArr.forEach((text: string, index: number) => {
     const found = calls.includes(text);
     facts.push({
       fact: `required_tool_calls[${index}]`,
@@ -104,7 +111,9 @@ function checkToolTraceFacts(fixture: SemanticFixture): CheckedFact[] {
       detail: `tool trace ${found ? "contains" : "does not contain"} ${pyRepr(text)}`,
     });
   });
-  (expected.forbidden_tool_calls ?? []).forEach((text: string, index: number) => {
+  const forbiddenToolCalls = expected.forbidden_tool_calls;
+  const forbiddenToolCallsArr: string[] = Array.isArray(forbiddenToolCalls) ? (forbiddenToolCalls as string[]) : []; // cast: JSON.parse fixture IO boundary
+  forbiddenToolCallsArr.forEach((text: string, index: number) => {
     const found = calls.includes(text);
     facts.push({
       fact: `forbidden_tool_calls[${index}]`,
@@ -112,13 +121,16 @@ function checkToolTraceFacts(fixture: SemanticFixture): CheckedFact[] {
       detail: `tool trace ${found ? "contains forbidden" : "omits forbidden"} ${pyRepr(text)}`,
     });
   });
-  for (const [text, expectedCount] of Object.entries(expected.tool_call_counts ?? {})) {
-    const actual = callList.filter((call) => call.includes(text)).length;
-    facts.push({
-      fact: `tool_call_counts[${text}]`,
-      status: actual === expectedCount ? "pass" : "fail",
-      detail: `tool trace contains ${actual} call(s) matching ${pyRepr(text)}; expected ${expectedCount}`,
-    });
+  const toolCallCounts = expected.tool_call_counts;
+  if (toolCallCounts && typeof toolCallCounts === "object" && !Array.isArray(toolCallCounts)) {
+    for (const [text, expectedCount] of Object.entries(toolCallCounts as JsonObject)) { // cast: JSON.parse fixture IO boundary
+      const actual = callList.filter((call) => call.includes(text)).length;
+      facts.push({
+        fact: `tool_call_counts[${text}]`,
+        status: actual === expectedCount ? "pass" : "fail",
+        detail: `tool trace contains ${actual} call(s) matching ${pyRepr(text)}; expected ${expectedCount}`,
+      });
+    }
   }
   return facts;
 }
@@ -126,19 +138,28 @@ function checkToolTraceFacts(fixture: SemanticFixture): CheckedFact[] {
 function checkSeededArtifactFacts(fixture: SemanticFixture): CheckedFact[] {
   const facts: CheckedFact[] = [];
   const byPath: Record<string, string> = {};
-  for (const item of fixture.seededState.files ?? []) {
-    if (item && typeof item === "object" && typeof item.path === "string") {
-      byPath[item.path] = item.content;
+  const rawFiles = fixture.seededState.files;
+  const filesArr: unknown[] = Array.isArray(rawFiles) ? rawFiles : [];
+  for (const item of filesArr) {
+    if (item && typeof item === "object" && !Array.isArray(item)) {
+      const obj = item as JsonObject; // cast: JSON.parse fixture IO boundary
+      const path = obj.path;
+      if (typeof path === "string") {
+        byPath[path] = obj.content as string; // cast: JSON.parse fixture IO boundary
+      }
     }
   }
 
-  (fixture.expectedFacts.required_artifacts ?? []).forEach((expected: any, index: number) => {
+  const requiredArtifacts = fixture.expectedFacts.required_artifacts;
+  const requiredArtifactsArr: unknown[] = Array.isArray(requiredArtifacts) ? requiredArtifacts : [];
+  requiredArtifactsArr.forEach((expected: unknown, index: number) => {
     const factName = `required_artifacts[${index}]`;
     if (!expected || typeof expected !== "object" || Array.isArray(expected)) {
       facts.push({ fact: factName, status: "fail", detail: "expected artifact fact must be an object" });
       return;
     }
-    const path = expected.path;
+    const expectedObj = expected as JsonObject; // cast: JSON.parse fixture IO boundary
+    const path = expectedObj.path;
     if (typeof path !== "string" || !path.trim()) {
       facts.push({ fact: factName, status: "fail", detail: "expected artifact fact must name a path" });
       return;
@@ -148,7 +169,9 @@ function checkSeededArtifactFacts(fixture: SemanticFixture): CheckedFact[] {
       facts.push({ fact: factName, status: "fail", detail: `seeded artifact ${pyRepr(path)} is missing` });
       return;
     }
-    const missing = (expected.contains ?? []).filter((text: string) => !content.includes(text));
+    const containsRaw = expectedObj.contains;
+    const containsArr: string[] = Array.isArray(containsRaw) ? (containsRaw as string[]) : []; // cast: JSON.parse fixture IO boundary
+    const missing = containsArr.filter((text: string) => !content.includes(text));
     if (missing.length > 0) {
       facts.push({ fact: factName, status: "fail", detail: `seeded artifact ${pyRepr(path)} lacks ${pyRepr(missing[0])}` });
     } else {

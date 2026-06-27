@@ -3,6 +3,7 @@ import path from "node:path";
 import { createRequire } from "node:module";
 
 import { resolvePath } from "../../core/paths.js";
+import type { JsonValue } from "../../core/jsonValue.js";
 import {
   type Dict,
   isoFromMtime,
@@ -105,6 +106,22 @@ interface OpencodeSchema {
   partId: string | null;
   sortExpr: string;
   recentSessionExpr: string;
+}
+
+interface OpencodeMessage {
+  role: JsonValue;
+  session_id: string;
+  project_path: JsonValue;
+  timestamp: string;
+  parts: string[];
+  tools: OpencodeTool[];
+}
+
+interface OpencodeTool {
+  part_id: JsonValue;
+  tool_name: string;
+  arguments: Dict;
+  timestamp: string;
 }
 
 function resolveOpencodeSchema(conn: SqliteDb): OpencodeSchema {
@@ -344,7 +361,7 @@ export function extractOpencodeSessions(
       }
     }
 
-    const messages = new Map<string, Dict>();
+    const messages = new Map<string, OpencodeMessage>();
     for (const row of rows) {
       const messageData = jsonDict(row.message_data);
       const partData = jsonDict(row.part_data);
@@ -359,7 +376,7 @@ export function extractOpencodeSessions(
           project_path: row.project_path,
           timestamp: sqliteTimestamp(messageTime, fallbackTimestamp),
           parts: [] as string[],
-          tools: [] as Dict[],
+          tools: [] as OpencodeTool[],
         };
         messages.set(messageId, item);
       }
@@ -388,7 +405,7 @@ export function extractOpencodeSessions(
       index += 1;
       const role = String(item.role).toLowerCase();
       if (role !== "user" && role !== "assistant") continue;
-      const content = (item.parts as string[]).filter((p: string) => p).join("\n");
+      const content = item.parts.filter((p: string) => p).join("\n");
       if (!content && item.tools.length === 0) continue;
       const projectPath = item.project_path ? String(item.project_path) : null;
       if (content) {
@@ -413,7 +430,7 @@ export function extractOpencodeSessions(
         );
       }
       let toolIndex = 0;
-      for (const toolItem of item.tools as Dict[]) {
+      for (const toolItem of item.tools) {
         toolIndex += 1;
         records.push(
           record({
