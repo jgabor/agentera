@@ -2,6 +2,8 @@ import fs from "node:fs";
 import path from "node:path";
 import os from "node:os";
 import { capabilityContext } from "./contract.js";
+import { resolveProfileDirOverride, resolveXdgDataHome } from "../../core/envPaths.js";
+import { expanduser } from "../../core/paths.js";
 import { sourceProvenance, uniqueList } from "./shared.js";
 import type { Dict, Env } from "./types.js";
 
@@ -26,15 +28,19 @@ export const BENCHMARK_SAFE_SCALAR_RE = /^[A-Za-z0-9][A-Za-z0-9 .:_+@-]{0,119}$/
 export const HEX16_RE = /^[0-9a-fA-F]{16,}$/;
 
 export function agenteraDataHome(env: Env = process.env): string {
-  const override = env.AGENTERA_HOME;
-  if (override) return override.startsWith("~") ? path.join(os.homedir(), override.slice(1)) : override;
+  const homeOverride = env.AGENTERA_HOME;
+  if (homeOverride) return expanduser(homeOverride);
+  const profileOverride = resolveProfileDirOverride(env);
+  if (profileOverride) return expanduser(profileOverride);
   if (process.platform === "darwin") return path.join(os.homedir(), "Library", "Application Support", "agentera");
-  if (process.platform === "win32") return path.join(env.APPDATA ?? path.join(os.homedir(), "AppData", "Roaming"), "agentera");
-  return path.join(env.XDG_DATA_HOME ?? path.join(os.homedir(), ".local", "share"), "agentera");
+  if (process.platform === "win32") {
+    return path.join(expanduser(env.APPDATA ?? path.join(os.homedir(), "AppData", "Roaming")), "agentera");
+  }
+  return path.join(resolveXdgDataHome(env), "agentera");
 }
 
-export function startupBenchmarkDir(): string {
-  return path.join(agenteraDataHome(), "benchmarks", "startup-state");
+export function startupBenchmarkDir(env: Env = process.env): string {
+  return path.join(agenteraDataHome(env), "benchmarks", "startup-state");
 }
 
 export function safeBenchmarkNumber(value: unknown): number | null {
