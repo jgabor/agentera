@@ -87,7 +87,7 @@ tasks:
   - number: 1
     name: Verify OpenCode hooks route through v3 npm entrypoint with no v2-script fallback (#7)
     depends_on: []
-    status: pending
+    status: complete
     acceptance:
       - 'GIVEN .opencode/plugins/agentera.js source WHEN scanned THEN it contains no `uv run`, `uvx`, or Python managed-entrypoint calls (hooks/validate_artifact.py, scripts/agentera via uv) in any hook handler (runNpxHook, validateArtifact, validateArtifactCandidate, writeSessionBookmark, buildCompactionContext)'
       - 'GIVEN the four hook handlers plus buildCompactionContext WHEN inspected THEN every CLI invocation routes through the npx v3 entrypoint constant (NPX_CLI_ENTRYPOINT = "npx -y agentera@next"), not a v2 managed script'
