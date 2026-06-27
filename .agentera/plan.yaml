@@ -135,9 +135,9 @@ overall_acceptance: >
 surprises: ''
 tasks:
   - number: 1
-    name: Add installed-app content refresh step and stale-surface gap detector (B6 root, #11) — pending
+    name: Add installed-app content refresh step and stale-surface gap detector (B6 root, #11) — complete
     depends_on: []
-    status: pending
+    status: complete
     acceptance:
       - 'GIVEN an upgrade planner exists in packages/cli/src/upgrade/, WHEN upgrade --dry-run runs against an app home whose skills/agentera/SKILL.md is v2 (Swedish or instructions.md contract), THEN the plan surfaces a content-refresh item listing every stale v2 surface (SKILL.md, protocol.yaml, capability_schema_contract.yaml, capabilities/*/schemas/*, references/, registry.json, dist/capabilities) with action refresh-app-content'
       - 'GIVEN upgrade --yes runs, WHEN the apply phase completes, THEN the managed app home contains the v3 repo source set copied from sourceRoot (skills/, references/, registry.json, dist/capabilities) and v2 stale content is superseded'

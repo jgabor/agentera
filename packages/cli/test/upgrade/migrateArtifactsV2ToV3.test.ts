@@ -17,6 +17,7 @@ import {
   planCleanupPhase,
   planRuntimeRewirePhase,
 } from "../../src/upgrade/migrateArtifactsV2ToV3.js";
+import { APP_CONTENT_REFRESH_ACTION } from "../../src/upgrade/appContentRefresh.js";
 import { migrationCtx, sandboxMigrationEnv } from "./helpers/migrationCtx.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -106,20 +107,22 @@ describe("planRuntimeRewirePhase", () => {
 describe("planCleanupPhase", () => {
   it("dry-run previews managed app-home removal with user-data preservation", () => {
     const appHome = copyFixture("v2-app-home", path.join(tmp, "app-home"));
-    const phase = planCleanupPhase({ appHome, project: appHome, home: tmp });
+    const phase = planCleanupPhase({ appHome, project: appHome, home: tmp, sourceRoot: REPO_ROOT });
     expect(phase.status).toBe("pending");
-    const item = phase.items[0];
-    expect(item?.action).toBe("remove-managed-app-home");
-    expect(item?.preserved?.some((p) => p.endsWith(".agentera/progress.yaml"))).toBe(true);
-    expect(item?.removedPreview?.some((p) => p.includes("app/scripts/agentera"))).toBe(true);
+    const removeItem = phase.items.find((item) => item.action === "remove-managed-app-home");
+    expect(removeItem?.action).toBe("remove-managed-app-home");
+    expect(removeItem?.preserved?.some((p) => p.endsWith(".agentera/progress.yaml"))).toBe(true);
+    expect(removeItem?.removedPreview?.some((p) => p.includes("app/scripts/agentera"))).toBe(true);
+    expect(phase.items.some((item) => item.action === APP_CONTENT_REFRESH_ACTION)).toBe(true);
     expect(fs.existsSync(path.join(appHome, "app", "scripts", "agentera"))).toBe(true);
     expect(fs.existsSync(path.join(appHome, ".agentera", "progress.yaml"))).toBe(true);
   });
 
   it("apply removes managed bundle but preserves user state", () => {
     const appHome = copyFixture("v2-app-home", path.join(tmp, "app-home-apply"));
-    const preview = planCleanupPhase({ appHome, project: appHome, home: tmp });
-    applyCleanupPhase(preview);
+    const ctx = migrationCtx(appHome, appHome, tmp, REPO_ROOT);
+    const preview = planCleanupPhase(ctx);
+    applyCleanupPhase(preview, ctx);
     expect(preview.status).toBe("applied");
     expect(fs.existsSync(path.join(appHome, "app"))).toBe(false);
     expect(fs.existsSync(path.join(appHome, ".agentera", "progress.yaml"))).toBe(true);

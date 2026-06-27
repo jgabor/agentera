@@ -56,7 +56,8 @@ describe("cleanupNoisyAppHome", () => {
     const noisy = path.join(tmp, "noisy");
     const phase = planCleanupPhase({ appHome: noisy, project: noisy, home: tmp });
     expect(phase.status).toBe("blocked");
-    expect(phase.items[0]?.message).toMatch(/unrecognized entries/i);
+    const blocked = phase.items.find((item) => item.status === "blocked");
+    expect(blocked?.message).toMatch(/unrecognized entries/i);
     expect(fs.existsSync(path.join(noisy, "app"))).toBe(true);
   });
 

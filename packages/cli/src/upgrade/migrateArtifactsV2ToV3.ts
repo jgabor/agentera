@@ -16,6 +16,10 @@ import {
   resolveMigrationUserStatePreflight,
 } from "../migrate/v2HandoffManifest.js";
 import {
+  applyAppContentRefreshItems,
+  planAppContentRefreshItems,
+} from "./appContentRefresh.js";
+import {
   applyRuntimeMigrationItems,
   planRuntimeMigrationItems,
   resolveNpxHookCommands,
@@ -259,37 +263,39 @@ export function planCleanupPhase(ctx: MigrationContext): MigrationPhase {
   const preflight = resolveMigrationUserStatePreflight(appHome);
   const preserved = preflight.preservedAbsolutePaths;
   const unknown = appHomeHasUnrecognizedEntriesWithPreflight(appHome, preflight);
+  const items: MigrationPhaseItem[] = [...planAppContentRefreshItems(ctx)];
 
   if (unknown.length > 0 && !ctx.force) {
-    return summarizePhase("cleanup", [
-      {
-        status: "blocked",
-        action: "remove-managed-app-home",
-        source: appHome,
-        preserved,
-        message:
-          "app home contains unrecognized entries outside preserved user state; cleanup blocked without --force",
-      },
-    ]);
+    items.push({
+      status: "blocked",
+      action: "remove-managed-app-home",
+      source: appHome,
+      preserved,
+      message:
+        "app home contains unrecognized entries outside preserved user state; cleanup blocked without --force",
+    });
+    return summarizePhase("cleanup", items);
   }
 
   if (!hasManagedBundleEvidence(managedAppRoot)) {
-    return summarizePhase("cleanup", [], "no managed Python app-home bundle to remove");
+    if (items.length === 0) {
+      return summarizePhase("cleanup", [], "no managed Python app-home bundle to remove");
+    }
+    return summarizePhase("cleanup", items);
   }
 
   const removedPreview = listManagedBundlePreview(managedAppRoot);
-  return summarizePhase("cleanup", [
-    {
-      status: "pending",
-      action: "remove-managed-app-home",
-      source: managedAppRoot,
-      target: appHome,
-      preserved,
-      removedPreview,
-      message:
-        "will remove managed Python app-home bundle under app/ while preserving user state at app-home root",
-    },
-  ]);
+  items.push({
+    status: "pending",
+    action: "remove-managed-app-home",
+    source: managedAppRoot,
+    target: appHome,
+    preserved,
+    removedPreview,
+    message:
+      "will remove managed Python app-home bundle under app/ while preserving user state at app-home root",
+  });
+  return summarizePhase("cleanup", items);
 }
 
 function removeDirectoryRecursive(dir: string): void {
@@ -299,9 +305,12 @@ function removeDirectoryRecursive(dir: string): void {
   fs.rmSync(dir, { recursive: true, force: true });
 }
 
-export function applyCleanupPhase(phase: MigrationPhase): void {
+export function applyCleanupPhase(phase: MigrationPhase, ctx?: MigrationContext): void {
+  if (ctx) {
+    applyAppContentRefreshItems(phase.items, ctx);
+  }
   for (const item of phase.items) {
-    if (item.status !== "pending" || !item.source) {
+    if (item.status !== "pending" || item.action !== "remove-managed-app-home" || !item.source) {
       continue;
     }
     try {
@@ -345,7 +354,7 @@ export function applyMigrationPhases(
     applyRuntimeRewirePhase(result.runtime, ctx);
   }
   if (only.includes("cleanup")) {
-    applyCleanupPhase(result.cleanup);
+    applyCleanupPhase(result.cleanup, ctx);
   }
   return result;
 }
