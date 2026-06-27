@@ -160,9 +160,9 @@ tasks:
       - 'GIVEN the installed contract, WHEN `npx -y agentera check validate capability-contract --format json` runs against the app home, THEN it returns green and there is no instructions.md reference in the live contract'
       - 'AND a regression test asserts the installed contract path is instructions.ts and ROUTE_ALIASES.primary_aliases are all English'
   - number: 4
-    name: Verify installed artifact schemas use English producer/consumer and v3 validation limits, no Swedish ArtifactRecord bleed-through (#12) — pending
+    name: Verify installed artifact schemas use English producer/consumer and v3 validation limits, no Swedish ArtifactRecord bleed-through (#12) — complete
     depends_on: ['1']
-    status: pending
+    status: complete
     acceptance:
       - 'GIVEN skills/agentera/capabilities/*/schemas/*.yaml are inspected for producer/consumer/validation limits, WHEN the upgrade refresh copies the schemas into the app home, THEN installed schemas declare English producer and consumer names and v3 validation limits with no Swedish -era producer/consumer and no v2 limit values propagating into ArtifactRecord'
       - 'GIVEN any Swedish producer/consumer or stale v2 limit is found in a live schema (triage says possible, ground-truth inspect), WHEN the inspection runs, THEN the task either fixes it in the repo source and lets the refresh carry the fix, or records a verify-and-lock assertion if already English'
