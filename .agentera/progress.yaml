@@ -1,4 +1,30 @@
 cycles:
+- number: 684
+  timestamp: 2026-06-27 15:30
+  type: refactor
+  phase: build
+  what: 'Plan task 7 (final) of chore:3.0.0: final verification + plan archive + TODO
+    closure. Ran full typecheck (0 errors), build (success), vitest (1145/1145, 132
+    files, stable), compaction gate (no repair needed, within uniform_10_40_50 limits).
+    Moved the critical [chore:3.0.0] Dict TODO to Critical Resolved (Resolved 2026-06-27)
+    and removed the now-empty Critical section. Archived the 7-task plan to .agentera/archive/PLAN-2026-06-27-dict-consolidation.yaml
+    and set plan header.status -> complete.'
+  discovered: "The deprecated `Dict = JsonObject` alias in core/jsonValue.ts now has\
+    \ zero consumers (task 6 eliminated the last) \u2014 its removal is unblocked\
+    \ for a future cleanup commit, still deferred per the plan to keep this cutover\
+    \ type-only and reviewable."
+  verified: typecheck 0 errors; build success; vitest 1145/1145 stable; check compact
+    no-repair-needed. agentera state plan reports status=complete with 7/7 tasks complete.
+  next: Plan C74 complete. No active plan. The deprecated Dict alias removal and the
+    remaining degraded/normal TODOs are the next backlog candidates; pick via hej
+    orientation.
+  context:
+    intent: Close out the chore:3.0.0 JSON-value consolidation plan. Verify all gates,
+      archive, fold artifacts.
+    constraints: Type-only final sync. No new public API. feat/v3 only.
+    artifacts:
+      plan: .agentera/plan.yaml (header.status -> complete; task 7 -> complete; archived)
+      todo: TODO.md (critical [chore:3.0.0] moved to Resolved 2026-06-27)
 - number: 683
   timestamp: 2026-06-27 15:00
   type: refactor
@@ -328,32 +354,9 @@ cycles:
       .agentera/plan.yaml fold-ins.
 
       '
-- number: 674
-  timestamp: 2026-06-23 17:15
-  type: fix
-  phase: build
-  what: Remove dead `missingScriptCommands` from installRoot.ts; close three stale
-    TODOs.
-  discovered: Two degraded TODOs (channel-aware `isStableSuccessorAnnounced`, shim
-    shebang/fallthrough) were already implemented at `nextMajorDoctor.ts:104-113`
-    and `resolve.mjs`/`exec.mjs` per git log `4722c6bb` and `e6381b08`; a third (dead
-    code at `installRoot.ts:304-315`) was the actual open work and is removed here.
-    Status/prime attention block was stale (Audit 24 health data).
-  verified: "pnpm -C packages/cli run typecheck clean; vitest test/upgrade/nextMajorDoctor.test.ts\n\
-    \    20/20 pass, test/state/installRoot 12/12 pass, test/upgrade/{versionResolution,projectIntegration}\
-    \ 14/14 pass; pnpm -C packages/cli build clean; check compact status=pass over_limit=0;\
-    \ prime smoke\n    exits 0."
-  next: "Remaining normal-severity open work \u2014 refactor `lifecycleAdapters.ts`\
-    \ barrel, wire cross-link between doctor and prime health summaries, add `--force-major-boundary`\
-    \ escape hatch on feat/v3."
-  context:
-    intent: Land a small focused code change with three same-commit TODO closures.
-    constraints: Single-function removal in installRoot.ts; no behavior change; no
-      test removal; TODO/CHANGELOG/progress fold-ins in the same commit.
-    unknowns: Whether to schedule the `--force-major-boundary` escape hatch next.
-    scope: packages/cli/src/state/installRoot.ts (1 function removed); TODO.md, CHANGELOG.md,
-      .agentera/progress.yaml fold-ins.
 archive:
+- summary: 'Cycle 674 (2026-06-23): Remove dead `missingScriptCommands` from installRoot.ts;
+    close three stale TODOs.'
 - summary: 'Cycle 673 (2026-06-23): Align parity oracle retryCommand pin with string|null
     contract.'
 - summary: 'Cycle 672 (2026-06-22): Backport fix: remove empty-severity-section rejection
@@ -453,5 +456,3 @@ archive:
 - summary: "Cycle 633 (2026-06-03): 2.7.7 version bump and CHANGELOG update \u2014\
     \ bumped version_files to 2.7.7, promoted D66/WARN-citation/compaction bullets\
     \ into CHANGELOG [2.7.7]; marked plan task 4 complete."
-- summary: 'Cycle 632 (2026-06-03): 2.7.7 version bump and CHANGELOG update; marked
-    plan task 4 complete.'
