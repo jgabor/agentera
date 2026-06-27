@@ -20,6 +20,10 @@ import {
   planAppContentRefreshItems,
 } from "./appContentRefresh.js";
 import {
+  applyLegacyAgentCleanupItems,
+  planLegacyAgentCleanupItems,
+} from "./legacyAgentCleanup.js";
+import {
   applyRuntimeMigrationItems,
   planRuntimeMigrationItems,
   resolveNpxHookCommands,
@@ -263,7 +267,10 @@ export function planCleanupPhase(ctx: MigrationContext): MigrationPhase {
   const preflight = resolveMigrationUserStatePreflight(appHome);
   const preserved = preflight.preservedAbsolutePaths;
   const unknown = appHomeHasUnrecognizedEntriesWithPreflight(appHome, preflight);
-  const items: MigrationPhaseItem[] = [...planAppContentRefreshItems(ctx)];
+  const items: MigrationPhaseItem[] = [
+    ...planAppContentRefreshItems(ctx),
+    ...planLegacyAgentCleanupItems(ctx),
+  ];
 
   if (unknown.length > 0 && !ctx.force) {
     items.push({
@@ -309,6 +316,7 @@ export function applyCleanupPhase(phase: MigrationPhase, ctx?: MigrationContext)
   if (ctx) {
     applyAppContentRefreshItems(phase.items, ctx);
   }
+  applyLegacyAgentCleanupItems(phase.items);
   for (const item of phase.items) {
     if (item.status !== "pending" || item.action !== "remove-managed-app-home" || !item.source) {
       continue;
