@@ -153,6 +153,7 @@ records:
         - opencode_skill_paths
         - bundled_support_references
         - profile_dir_deprecated
+        - profile_dir_schema_literal
       status_labels:
         - pass
         - warn
@@ -177,6 +178,8 @@ records:
         - bundled reference validation mismatch found despite installer status
         - profile dir env var is current
         - v2 env var PROFILERA_PROFILE_DIR detected; run `agentera upgrade` to migrate to AGENTERA_PROFILE_DIR
+        - OpenCode plugin profile-dir schema is current
+        - OpenCode plugin source uses unmigrated profile-dir schema literal (PROFILERA_PROFILE_DIR without AGENTERA_PROFILE_DIR); run `agentera upgrade`
     documentation_claims:
       reference_paths:
         - references/adapters/runtime-feature-parity.md

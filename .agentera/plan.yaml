@@ -129,7 +129,7 @@ tasks:
     name: Add persistent doctor check that catches the profile-dir schema-literal breakage (#38)
     depends_on:
       - '4'
-    status: pending
+    status: complete
     acceptance:
       - 'GIVEN the installed .opencode/plugins/agentera.js source WHEN the doctor scans it for an unmigrated profile-dir schema literal THEN it finds a breakage iff the source sets or reads PROFILERA_PROFILE_DIR without also seeding/respecting the canonical AGENTERA_PROFILE_DIR (deterministic predicate, not a brittle substring)'
       - 'GIVEN a migrated plugin source (setProfileDir follows the #24 canonical-wins contract) WHEN the doctor scan runs THEN the check passes (no false positive)'
