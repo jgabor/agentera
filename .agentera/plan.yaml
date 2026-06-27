@@ -152,9 +152,9 @@ tasks:
       - 'GIVEN the v3 CLI reads the installed SKILL.md, WHEN a user invokes /agentera plan or any capability route, THEN routing resolves the English capability name with no Swedish-name rejection (was the #4 critical failure mode)'
       - 'AND a regression test asserts the installed SKILL.md matches the repo v3 SKILL.md and contains none of the 12 Swedish -era verbs'
   - number: 3
-    name: Verify installed contract is v3 (instructions.ts per D65, English ROUTE_ALIASES per D70), lock with regression test (#13) — pending
+    name: Verify installed contract is v3 (instructions.ts per D65, English ROUTE_ALIASES per D70), lock with regression test (#13) — complete
     depends_on: ['1']
-    status: pending
+    status: complete
     acceptance:
       - 'GIVEN skills/agentera/capability_schema_contract.yaml in the repo already references packages/cli/src/capabilities/<name>/instructions.ts (D65) and ROUTE_ALIASES.primary_aliases map to English canonical names (D70, verified on feat/v3-b6), WHEN the upgrade refresh copies the contract into the app home, THEN installed capability_schema_contract.yaml references instructions.ts and English primary_aliases with Swedish names only under legacy_aliases'
       - 'GIVEN the installed contract, WHEN `npx -y agentera check validate capability-contract --format json` runs against the app home, THEN it returns green and there is no instructions.md reference in the live contract'
