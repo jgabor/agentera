@@ -13,11 +13,10 @@
 #   bash packages/cli/scripts/rebase_oracle.sh --check --json # machine-readable
 #
 # Exit codes:
-#   0   drift: none (pinned commit's tree matches `main` HEAD on the
-#              Python CLI paths; or the paths are absent in both trees,
-#              which counts as a clean baseline)
-#   1   drift: detected (paths under scripts/agentera/ or agentera/ differ
-#              between the pinned commit and the current `main` HEAD)
+#   0   drift: none (`python_commit` equals `origin/main` HEAD)
+#   1   drift: detected (`python_commit` differs from `origin/main` HEAD;
+#              diff_paths lists Python CLI paths that changed between the
+#              pinned commit and main)
 #   2   configuration error (fixture missing, python_commit missing, no
 #       git checkout found)
 #
@@ -54,7 +53,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CLI_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 REPO_ROOT="$(cd "$CLI_ROOT/../.." && pwd)"
-FIXTURE="$CLI_ROOT/test/cli/fixtures/oracle/parity-remaining-families.json"
+FIXTURE="${REBASE_ORACLE_FIXTURE:-$CLI_ROOT/test/cli/fixtures/oracle/parity-remaining-families.json}"
 
 # Path arguments to `git diff` for the Python CLI source. The Python CLI
 # canonical layout (per the install-root contract) places the executable
@@ -169,9 +168,8 @@ if [ -z "$MAIN_HEAD" ]; then
   exit 2
 fi
 
-# The actual drift check. `git diff --quiet` exits 0 when the trees are
-# equal and 1 when they differ. We aggregate the per-path exit codes; if
-# any path differs, drift is detected.
+# Primary drift check: the oracle pin must equal `origin/main` HEAD so the
+# fixture cannot silently lag behind main (#34).
 PATHS_CSV=""
 for p in "${PYTHON_CLI_PATHS[@]}"; do
   PATHS_CSV="$PATHS_CSV $p"
@@ -180,27 +178,27 @@ PATHS_CSV="${PATHS_CSV# }"
 
 DRIFT=0
 DIFF_PATHS=()
-for p in "${PYTHON_CLI_PATHS[@]}"; do
-  # `git diff --quiet` returns:
-  #   0  if the trees are equal (or both paths are absent)
-  #   1  if the trees differ
-  #   128 on error (e.g., the pinned commit is not reachable, the path
-  #       is missing in one or both trees, the ref format is invalid)
-  # We treat 0 as no-drift, 1 as drift. A 128 (path missing in one or
-  # both trees) is the v3 development baseline (the Python CLI is not
-  # in the agentera repo) and is treated as no-drift so the script
-  # remains useful before the Python CLI is migrated into the agentera
-  # tree. The rebase policy in the script header documents this.
-  set +e
-  git -C "$REPO_ROOT" diff --quiet "$PINNED".."$MAIN_HEAD" -- "$p" 2>/dev/null
-  rc=$?
-  set -e
-  case "$rc" in
-    0) ;;  # no drift on this path
-    1) DRIFT=1; DIFF_PATHS+=("$p") ;;
-    *) ;;  # 128: path missing or ref invalid; v3 baseline is no-drift
-  esac
-done
+if [ "$PINNED" != "$MAIN_HEAD" ]; then
+  DRIFT=1
+  for p in "${PYTHON_CLI_PATHS[@]}"; do
+    set +e
+    git -C "$REPO_ROOT" diff --quiet "$PINNED".."$MAIN_HEAD" -- "$p" 2>/dev/null
+    rc=$?
+    set -e
+    case "$rc" in
+      1) DIFF_PATHS+=("$p") ;;
+    esac
+  done
+fi
+
+print_rebase_procedure() {
+  log "Rebase procedure:"
+  log "  1. Update per-family python_commit in $FIXTURE to $MAIN_HEAD."
+  log "  2. Re-run: pnpm -C packages/cli test -- npmParityMatrix"
+  log "  3. If a family intentionally diverges, set version_break: true on that row."
+  log "  4. Inspect Python-side changes:"
+  log "     git -C $REPO_ROOT diff $PINNED..$MAIN_HEAD -- $PATHS_CSV"
+}
 
 if [ "$DRIFT" -eq 0 ]; then
   if [ "$JSON_MODE" -eq 1 ]; then
@@ -227,8 +225,7 @@ else
       log "    - $p"
     done
     log ""
-    log "Run: git -C $REPO_ROOT diff $PINNED..$MAIN_HEAD -- $PATHS_CSV"
-    log "Then update the python_commit in $FIXTURE to $MAIN_HEAD."
+    print_rebase_procedure
   fi
   exit 1
 fi

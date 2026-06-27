@@ -30,6 +30,10 @@ jobs:
         run: pnpm -C packages/cli build
       - name: Typecheck CLI
         run: pnpm -C packages/cli run typecheck
+      - name: Fetch main for oracle pin drift gate
+        run: git fetch origin main --depth=1
+      - name: Oracle pin drift gate (#34)
+        run: bash packages/cli/scripts/rebase_oracle.sh --check --json
       - name: Test CLI
         run: pnpm -C packages/cli test
       - name: Upgrade L0 gate
