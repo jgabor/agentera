@@ -196,12 +196,12 @@ export function classifyUpgradeOutcome(args: {
           "stable channel tracks the 2.x support line; switch to the development channel to preview v2→v3 migration",
       };
     }
-    if (!isStableSuccessorAnnounced(args.sourceRoot, args.channel.channel)) {
+    if (!isStableSuccessorAnnounced(args.sourceRoot, "stable")) {
       return {
         ...base,
         kind: "up_to_date",
         message:
-          "v3 successor line is not announced yet; v2 managed app files remain current on the stable channel",
+          `v3 successor line is not announced yet; v2 managed app files remain current on the ${args.channel.channel} channel`,
       };
     }
     return {

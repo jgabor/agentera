@@ -86,7 +86,7 @@ export function collectOrientationState(opts: PrimeOpts): OrientationState {
     env,
     installRoot: String(bundle.appHome),
     bundleStatus: String(bundle.status),
-    crossMajorBoundary: Boolean(bundle.crossMajorBoundary),
+    crossMajorBoundaryDetected: bundle.crossMajorBoundaryDetected ?? false,
   });
   const defaultNextAction = selectStatusNextAction(plan, health, objective, todoItems, decision, savedContext);
   const nextAction =
