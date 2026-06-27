@@ -37,7 +37,7 @@ channels:
       concept: forward_successor_line
       channel: development
       version: "3.0.0"
-      announced: false
+      announced: true
       npm:
         dist_tag: next
       npm_only_advisory: >-

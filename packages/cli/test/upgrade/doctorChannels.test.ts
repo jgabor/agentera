@@ -27,7 +27,21 @@ function v3SourceRoot(announced: boolean): string {
   fs.mkdirSync(path.join(root, "references", "cli"), { recursive: true });
   let channels = fs.readFileSync(path.join(REPO_ROOT, "references/cli/update-channels.yaml"), "utf8");
   if (announced) {
-    channels = channels.replace("announced: false", "announced: true");
+    const stableStart = channels.indexOf("  stable:");
+    const devStart = channels.indexOf("  development:");
+    const stableBlock = channels.slice(stableStart, devStart);
+    channels =
+      channels.slice(0, stableStart) +
+      stableBlock.replace(/\n      announced: (true|false)/, "\n      announced: true") +
+      channels.slice(devStart);
+  } else {
+    const stableStart = channels.indexOf("  stable:");
+    const devStart = channels.indexOf("  development:");
+    const stableBlock = channels.slice(stableStart, devStart);
+    channels =
+      channels.slice(0, stableStart) +
+      stableBlock.replace(/\n      announced: (true|false)/, "\n      announced: false") +
+      channels.slice(devStart);
   }
   fs.writeFileSync(path.join(root, "references/cli/update-channels.yaml"), channels);
   return root;
@@ -47,6 +61,10 @@ function managed(appHome: string, marker: string): void {
     path.join(app, BUNDLE_MARKER),
     JSON.stringify({ schemaVersion: "agentera.bundle.v1", version: marker }),
   );
+}
+
+function unannouncedV3SourceRoot(): string {
+  return v3SourceRoot(false);
 }
 
 describe("buildDoctorStatus channel-aware commands", () => {
@@ -74,7 +92,7 @@ describe("buildDoctorStatus channel-aware commands", () => {
     managed(appHome, "2.7.0");
     const status = buildDoctorStatus(appHome, {
       rootSource: "explicit --install-root",
-      sourceRoot: REPO_ROOT,
+      sourceRoot: unannouncedV3SourceRoot(),
       home: path.join(tmp, "home"),
       project: path.join(tmp, "proj"),
       expectedVersion: "3.0.0",

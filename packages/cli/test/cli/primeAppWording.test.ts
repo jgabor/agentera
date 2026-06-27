@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { collectOrientationState } from "../../src/cli/commands/prime.js";
+import { resetUpdateChannelsAuthorityCache } from "../../src/upgrade/channels.js";
 import { BUNDLE_MARKER } from "../../src/state/installRoot.js";
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..");
@@ -33,6 +34,7 @@ function managedApp(appHome: string, marker: string | null): void {
 }
 
 beforeEach(() => {
+  resetUpdateChannelsAuthorityCache();
   tmp = fs.mkdtempSync(path.join(os.tmpdir(), "prime-word-"));
   home = path.join(tmp, "home");
   fs.mkdirSync(home, { recursive: true });
@@ -43,6 +45,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  resetUpdateChannelsAuthorityCache();
   process.chdir(prevCwd);
   delete process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT;
   delete process.env.HOME;
@@ -51,20 +54,21 @@ afterEach(() => {
 });
 
 describe("prime app lifecycle wording", () => {
-  it("uses update framing when managed app files are outdated", () => {
+  it("uses cross-major upgrade framing when v2 managed app faces v3 CLI", () => {
     const appHome = process.env.AGENTERA_HOME as string;
-    managedApp(appHome, "3.0.0-next.1");
+    managedApp(appHome, "2.7.0");
     const project = path.join(tmp, "project");
     fs.mkdirSync(project, { recursive: true });
     process.chdir(project);
 
     const state = collectOrientationState({ home, installRoot: appHome, env: process.env });
-    expect(state.app.status).toBe("outdated");
+    expect(state.app.status).not.toBe("up_to_date");
+    expect(state.app.crossMajorBoundary).toBe(true);
 
     expect(state.project_integration.recommendation).toBe("upgrade");
     expect(state.project_integration.pending_runtime).toBe(0);
-    expect(state.project_integration.message).toContain("out of date");
-    expect(state.project_integration.message).toContain("update");
+    expect(state.project_integration.message).toContain("v2 while the CLI is on v3");
+    expect(state.project_integration.message).toContain("preview");
     expect(state.project_integration.update_channel).toBe("development");
     expect(state.project_integration.dry_run_command).toContain("agentera@next");
     expect(state.project_integration.major_boundary_block).toBeNull();
