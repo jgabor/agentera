@@ -4,6 +4,7 @@ import path from "node:path";
 
 import { isFile, pathExists, resolvePath } from "../core/paths.js";
 import { resolveSourceRoot } from "../core/sourceRoot.js";
+import { registryModelPath } from "../registries/artifactRegistry.js";
 import { loadRegistry } from "../registries/runtimeAdapterRegistry.js";
 import {
   codexCopiedHooksAreAgenteraOnly,
@@ -539,6 +540,10 @@ function planEnvVarRewireItems(ctx: MigrationContext, items: MigrationPhaseItem[
     { runtime: "cursor", filePath: path.join(home, ".cursor", "hooks.json") },
     { runtime: "codex", filePath: path.join(home, ".codex", "config.toml") },
     { runtime: "codex", filePath: path.join(home, ".codex", "hooks", "codex-hooks.json") },
+    { runtime: "installed-app", filePath: path.join(project, ".agentera", "docs.yaml") },
+    { runtime: "installed-app", filePath: path.join(ctx.appHome, ".agentera", "docs.yaml") },
+    { runtime: "installed-app", filePath: registryModelPath(ctx.appHome) },
+    { runtime: "installed-app", filePath: registryModelPath(path.join(ctx.appHome, "app")) },
   ];
   const hooksDir = path.join(project, ".github", "hooks");
   for (const hookFile of walkJsonHookFiles(hooksDir)) {
