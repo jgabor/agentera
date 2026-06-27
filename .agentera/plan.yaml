@@ -108,7 +108,7 @@ tasks:
   - number: 3
     name: Verify setProfileDir uses v3 canonical AGENTERA_PROFILE_DIR name (#24)
     depends_on: []
-    status: pending
+    status: complete
     acceptance:
       - 'GIVEN setProfileDir (.opencode/plugins/agentera.js:654) WHEN AGENTERA_PROFILE_DIR is already set THEN it is respected (canonical v3 name wins, no overwrite)'
       - 'GIVEN setProfileDir WHEN only the legacy PROFILERA_PROFILE_DIR is set THEN it adopts its value into AGENTERA_PROFILE_DIR and emits the one-time deprecation warning directing the user to `agentera upgrade`, and does not write a process-wide PROFILERA_PROFILE_DIR that did not previously exist'
