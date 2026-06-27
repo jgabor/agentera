@@ -43,7 +43,7 @@ export function collectOrientationState(opts: PrimeOpts): OrientationState {
     savedContext = false;
   }
   const mode = savedContext ? "returning" : "fresh";
-  const profile = registryArtifactPath("profile", schemasDir);
+  const profile = registryArtifactPath("profile", schemasDir, env);
   const profileExists = fs.existsSync(profile);
   const profileStatus = profileExists ? "loaded" : "not found";
   const profileStaleness = profileExists ? checkProfileStaleness(profile, env) : null;

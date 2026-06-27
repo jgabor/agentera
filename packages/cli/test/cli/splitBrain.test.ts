@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { activeAppModel } from "../../src/cli/appContext.js";
+import { collectOrientationState } from "../../src/cli/commands/prime.js";
 import { resolvePath } from "../../src/core/paths.js";
 import { resolveArtifactPath, type ArtifactRecord } from "../../src/registries/artifactRegistry.js";
 
@@ -93,5 +94,36 @@ describe("split-brain resolveArtifactPath env fallback", () => {
       PROFILERA_PROFILE_DIR: "/legacy/profile",
     });
     expect(resolved).toBe(path.join("/v3/profile", "PROFILE.md"));
+  });
+});
+
+describe("split-brain prime profile env fallback (G1)", () => {
+  let tmp: string;
+
+  beforeEach(() => {
+    tmp = fs.mkdtempSync(path.join(os.tmpdir(), "split-brain-prime-"));
+  });
+
+  afterEach(() => {
+    fs.rmSync(tmp, { recursive: true, force: true });
+  });
+
+  it("reports profile loaded when only PROFILERA_PROFILE_DIR is set", () => {
+    const profileDir = path.join(tmp, "profile");
+    fs.mkdirSync(profileDir, { recursive: true });
+    fs.writeFileSync(path.join(profileDir, "PROFILE.md"), "# Profile\n");
+    const v2AppHome = path.join(tmp, "v2-app-home");
+    fs.cpSync(V2_APP_HOME_FIXTURE, v2AppHome, { recursive: true });
+    const state = collectOrientationState({
+      home: tmp,
+      env: {
+        AGENTERA_BOOTSTRAP_SOURCE_ROOT: REPO_ROOT,
+        AGENTERA_HOME: v2AppHome,
+        PROFILERA_PROFILE_DIR: profileDir,
+        HOME: tmp,
+      },
+    });
+    expect(state.profile_status).toBe("loaded");
+    expect(state.profile).toBe(path.join(profileDir, "PROFILE.md"));
   });
 });

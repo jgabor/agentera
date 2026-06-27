@@ -2,6 +2,9 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
+import { resolveProfileDirOverride, resolveXdgDataHome } from "../core/envPaths.js";
+import { expanduser } from "../core/paths.js";
+
 /**
  * Suite usage analytics: detect skill invocations from a Section 22 corpus.
  * Faithful TS port of scripts/usage_stats.py. env/home/platform are injectable.
@@ -310,32 +313,30 @@ function homeDir(env: Env): string {
 
 export function defaultUsageDir(env: Env = process.env, platform: NodeJS.Platform = process.platform): string {
   const override = env.AGENTERA_USAGE_DIR;
-  if (override) return override;
-  const profileOverride = env.AGENTERA_PROFILE_DIR;
-  if (profileOverride) return profileOverride;
+  if (override) return expanduser(override);
+  const profileOverride = resolveProfileDirOverride(env);
+  if (profileOverride) return expanduser(profileOverride);
   const home = homeDir(env);
   if (platform === "darwin") return path.join(home, "Library", "Application Support", "agentera");
   if (platform === "win32") {
     const appdata = env.APPDATA ?? path.join(home, "AppData", "Roaming");
-    return path.join(appdata, "agentera");
+    return path.join(expanduser(appdata), "agentera");
   }
-  const xdg = env.XDG_DATA_HOME ?? path.join(home, ".local", "share");
-  return path.join(xdg, "agentera");
+  return path.join(resolveXdgDataHome(env, home), "agentera");
 }
 
 export function defaultCorpusPath(env: Env = process.env, platform: NodeJS.Platform = process.platform): string {
-  const profileOverride = env.AGENTERA_PROFILE_DIR;
-  if (profileOverride) return path.join(profileOverride, "intermediate", "corpus.json");
+  const profileOverride = resolveProfileDirOverride(env);
+  if (profileOverride) return path.join(expanduser(profileOverride), "intermediate", "corpus.json");
   const home = homeDir(env);
   let base: string;
   if (platform === "darwin") {
     base = path.join(home, "Library", "Application Support", "agentera");
   } else if (platform === "win32") {
     const appdata = env.APPDATA ?? path.join(home, "AppData", "Roaming");
-    base = path.join(appdata, "agentera");
+    base = path.join(expanduser(appdata), "agentera");
   } else {
-    const xdg = env.XDG_DATA_HOME ?? path.join(home, ".local", "share");
-    base = path.join(xdg, "agentera");
+    base = path.join(resolveXdgDataHome(env, home), "agentera");
   }
   return path.join(base, "intermediate", "corpus.json");
 }
