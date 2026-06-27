@@ -182,7 +182,7 @@ tasks:
   - number: 7
     name: Route scripts/sandbox path changes to full vitest in pre-commit (G5)
     depends_on: []
-    status: pending
+    status: complete
     acceptance:
       - 'GIVEN scripts/precommit-vitest.sh WHEN a scripts/sandbox/* path is staged THEN it routes to the full vitest suite, not the 2-smoke-test branch'
       - 'GIVEN the routing logic WHEN inspected THEN scripts/sandbox/* is an explicit case (not falling through the default no-op to the 2-smoke fallback)'
