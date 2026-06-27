@@ -27,12 +27,34 @@ function listRepoHookFiles(): string[] {
   return files.sort();
 }
 
+/** v3 hook commands use `npx -y agentera@next` or bare `npx -y agentera` (after tag unification). */
+const V3_HOOK_ENTRYPOINT = /npx -y agentera(?:@next)?\s+hook\b/;
+
 describe("repo hook npm tags (B5 task 1, defect #23)", () => {
   it("uses npx -y agentera@next in every repo hook file (no bare npx -y agentera)", () => {
     const violations: string[] = [];
     for (const file of listRepoHookFiles()) {
       const text = fs.readFileSync(file, "utf8");
       if (BARE_NPX_AGENTERA.test(text)) {
+        violations.push(path.relative(REPO_ROOT, file));
+      }
+    }
+    expect(violations).toEqual([]);
+  });
+});
+
+describe("repo hook descriptions (B5 task 3, defect #26)", () => {
+  it('does not claim "v2" in description when commands invoke the v3 agentera hook entrypoint', () => {
+    const violations: string[] = [];
+    for (const file of listRepoHookFiles()) {
+      const text = fs.readFileSync(file, "utf8");
+      if (!V3_HOOK_ENTRYPOINT.test(text)) {
+        continue;
+      }
+      const parsed = JSON.parse(text) as { description?: unknown };
+      const description =
+        typeof parsed.description === "string" ? parsed.description : "";
+      if (/\bv2\b/i.test(description)) {
         violations.push(path.relative(REPO_ROOT, file));
       }
     }

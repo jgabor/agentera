@@ -142,7 +142,7 @@ tasks:
     name: Correct repo template hook descriptions to reflect v3 (#26)
     depends_on:
       - '1'
-    status: pending
+    status: complete
     acceptance:
       - 'GIVEN hooks/hooks.json, hooks/codex-hooks.json, and hooks/codex-plugin-hooks.json description fields WHEN inspected THEN none claim "v2" while their commands invoke the v3 entrypoint; descriptions read as v3 hooks'
       - 'GIVEN the description wording WHEN read THEN it is consistent with the @next tag unified in Task 1 and no longer implies a v2 Python hook'
