@@ -338,7 +338,7 @@ export function summarizeProjectIntegration(args: ProjectIntegrationArgs): Proje
   return {
     recommendation: "upgrade",
     message,
-    pending_runtime: pending.length,
+    pending_runtime: pendingRuntimes.length,
     pending_runtimes: pendingRuntimes,
     pending_artifacts: v1Artifacts.length,
     dry_run_command: cmds.dryRunCommand,
