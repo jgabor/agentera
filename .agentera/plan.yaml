@@ -136,7 +136,7 @@ tasks:
   - number: 6
     name: "Verify-and-lock hasManagedBundleEvidence v3-awareness (#37)"
     depends_on: []
-    status: pending
+    status: complete
     acceptance:
       - "GIVEN feat/v3 base WHERE migrateArtifactsV2ToV3.ts:226 hasManagedBundleEvidence checks `BUNDLE_MARKER` (`.agentera-bundle.json`, the v3 sentinel) first, then falls back to the v2 `scripts/agentera` + `skills/agentera/SKILL.md` pair WHEN the verify-and-lock lands THEN a v3-bundle-marked managed root returns true via the v3 marker (not the v2 fallback); the v2 fallback's purpose (detecting v2-managed roots during migration) is documented inline or removed if it produces false positives for stale v2 roots that should be cleaned."
       - "WHEN `packages/cli/test/upgrade/managedBundleEvidence.test.ts` is authored THEN it asserts (a) a root with only `.agentera-bundle.json` -> true, (b) a root with only `scripts/agentera` + `skills/agentera/SKILL.md` -> true (v2 legacy), (c) an empty/unknown root -> false; the regression is green; per V5 one pass + one fail per evidence shape (v3 marker + v2 pair + none = 3 x 2 = 6 cases)."
