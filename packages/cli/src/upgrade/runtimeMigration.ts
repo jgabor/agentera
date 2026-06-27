@@ -239,47 +239,47 @@ function copyIfChanged(source: string, target: string): boolean {
 function planCodexItems(
   items: MigrationPhaseItem[],
   home: string,
+  project: string,
   commands: NpxHookCommands,
   force?: boolean,
 ): void {
-  const hooksPath = path.join(home, ".codex", "hooks", "codex-hooks.json");
-  const configPath = path.join(home, ".codex", "config.toml");
-  if (isFile(hooksPath)) {
-    pushRewireItem(items, "codex", hooksPath, commands);
-  }
-  if (isFile(configPath)) {
-    pushRewireItem(items, "codex", configPath, commands);
-    let configText = fs.readFileSync(configPath, "utf8");
+  for (const root of [project, home]) {
+    const hooksPath = path.join(root, ".codex", "hooks", "codex-hooks.json");
+    const configPath = path.join(root, ".codex", "config.toml");
     if (isFile(hooksPath)) {
-      configText = fs.readFileSync(configPath, "utf8");
+      pushRewireItem(items, "codex", hooksPath, commands);
     }
-    const pluginHooks = codexPluginHooksEnabled(configText);
-    if (pluginHooks && isFile(hooksPath)) {
-      let hooksText: string;
-      try {
-        hooksText = fs.readFileSync(hooksPath, "utf8");
-      } catch {
-        hooksText = "";
-      }
-      if (codexCopiedHooksAreAgenteraOnly(hooksText)) {
-        items.push({
-          status: "pending",
-          action: "retire-hooks",
-          runtime: "codex",
-          source: hooksPath,
-          target: configPath,
-          message: "will remove Agentera-owned copied Codex hooks because plugin hooks are enabled",
-        });
-      } else if (hooksText.includes("validate_artifact") || hooksText.includes("hook validate-artifact")) {
-        items.push({
-          status: force ? "pending" : "blocked",
-          action: "retire-hooks",
-          runtime: "codex",
-          source: hooksPath,
-          target: configPath,
-          message:
-            "plugin hooks are enabled, but copied hook target needs manual review before retirement",
-        });
+    if (isFile(configPath)) {
+      pushRewireItem(items, "codex", configPath, commands);
+      const configText = fs.readFileSync(configPath, "utf8");
+      const pluginHooks = codexPluginHooksEnabled(configText);
+      if (pluginHooks && isFile(hooksPath)) {
+        let hooksText: string;
+        try {
+          hooksText = fs.readFileSync(hooksPath, "utf8");
+        } catch {
+          hooksText = "";
+        }
+        if (codexCopiedHooksAreAgenteraOnly(hooksText)) {
+          items.push({
+            status: "pending",
+            action: "retire-hooks",
+            runtime: "codex",
+            source: hooksPath,
+            target: configPath,
+            message: "will remove Agentera-owned copied Codex hooks because plugin hooks are enabled",
+          });
+        } else if (hooksText.includes("validate_artifact") || hooksText.includes("hook validate-artifact")) {
+          items.push({
+            status: force ? "pending" : "blocked",
+            action: "retire-hooks",
+            runtime: "codex",
+            source: hooksPath,
+            target: configPath,
+            message:
+              "plugin hooks are enabled, but copied hook target needs manual review before retirement",
+          });
+        }
       }
     }
   }
@@ -569,7 +569,7 @@ export function planRuntimeMigrationItems(ctx: MigrationContext): MigrationPhase
   const commands = resolveNpxHookCommands({ ...ctx, home, env, sourceRoot });
   const items: MigrationPhaseItem[] = [];
 
-  planCodexItems(items, home, commands, ctx.force);
+  planCodexItems(items, home, project, commands, ctx.force);
   planCursorItems(items, home, project, sourceRoot, commands);
   planOpencodeItems(items, home, sourceRoot, env, commands);
   planCopilotItems(items, project, commands);
