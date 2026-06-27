@@ -144,9 +144,9 @@ tasks:
       - 'GIVEN the refresh ran, WHEN `agentera prime --context audit --format json` runs, THEN source_contract.complete_for_capability_startup is true and there is no schema_error and no app-side v2 read path active (closes #11 false-green by making the runtime read the same refreshed surfaces validate reads)'
       - 'AND a regression test asserts an app home seeded with v2 content is detected as stale and refreshed to v3 by the apply phase'
   - number: 2
-    name: Verify installed SKILL.md post-upgrade is v3 English routing surface, lock with regression test (#4) — pending
+    name: Verify installed SKILL.md post-upgrade is v3 English routing surface, lock with regression test (#4) — complete
     depends_on: ['1']
-    status: pending
+    status: complete
     acceptance:
       - 'GIVEN skills/agentera/SKILL.md in the repo already routes English capability names (verified on feat/v3-b6 via D70), WHEN the upgrade refresh copies SKILL.md into the app home, THEN installed skills/agentera/SKILL.md is byte-identical to the repo v3 SKILL.md'
       - 'GIVEN the v3 CLI reads the installed SKILL.md, WHEN a user invokes /agentera plan or any capability route, THEN routing resolves the English capability name with no Swedish-name rejection (was the #4 critical failure mode)'
