@@ -30,13 +30,13 @@ import {
   wordCount,
 } from "./schema.js";
 
-type Dict = Record<string, any>;
+import type { JsonObject } from "../../core/jsonValue.js";
 
 function schemasDirDefault(): string {
   return path.join(resolveSourceRoot(), "skills", "agentera", "schemas", "artifacts");
 }
 
-export function validateYamlContent(content: string, schema: Dict, name: string): string[] {
+export function validateYamlContent(content: string, schema: JsonObject, name: string): string[] {
   const violations: string[] = [];
   let data: unknown;
   try {
@@ -48,24 +48,24 @@ export function validateYamlContent(content: string, schema: Dict, name: string)
     return [`${name}: root must be a mapping`];
   }
   for (const [group, groupLower, fields] of collectSingletonGroups(schema)) {
-    let scope: Dict;
-    if (groupLower in data && isMapping((data as Dict)[groupLower])) {
-      scope = (data as Dict)[groupLower];
-    } else if (fields.some((f) => f in (data as Dict))) {
-      scope = data as Dict;
+    let scope: JsonObject;
+    if (groupLower in data && isMapping(data[groupLower])) {
+      scope = data[groupLower];
+    } else if (fields.some((f) => f in data)) {
+      scope = data as JsonObject;
     } else {
       continue;
     }
     validateSingletonGroup(violations, name, schema, group, scope, groupLower);
   }
   if (name === "plan") {
-    validatePlanKnownFields(data as Dict, schema, violations);
-    validateFullPlanContract(data as Dict, violations);
+    validatePlanKnownFields(data as JsonObject, schema, violations);
+    validateFullPlanContract(data as JsonObject, violations);
   }
-  validateSequences(data as Dict, schema, name, violations);
+  validateSequences(data as JsonObject, schema, name, violations);
   if (name === "decisions") {
-    violations.push(...validateDecisionAlternatives(data as Dict, name));
-    violations.push(...validateDecisionSatisfaction(data as Dict, name));
+    violations.push(...validateDecisionAlternatives(data as JsonObject, name));
+    violations.push(...validateDecisionSatisfaction(data as JsonObject, name));
   }
   const wordBudgetSeverity = validationRuleSeverity(schema, "word_budget");
   for (const be of Object.values(schema.BUDGET ?? {})) {
@@ -74,18 +74,18 @@ export function validateYamlContent(content: string, schema: Dict, name: string)
     const scope = be.scope ?? "";
     if (mw && String(scope).includes("full_file") && wordBudgetSeverity === "error") {
       const wc = wordCount(content);
-      if (wc > mw) violations.push(`${name}: word count (${wc}) exceeds budget (${mw})`);
+      if (wc > Number(mw)) violations.push(`${name}: word count (${wc}) exceeds budget (${mw})`);
     }
   }
   for (const groupKey of ["VALIDATION", "VALIDATION_RULES"]) {
     for (const ve of Object.values(schema[groupKey] ?? {})) {
       if (!isMapping(ve)) continue;
-      const rule = ve.rule ?? "";
+      const rule = String(ve.rule ?? "");
       if (ve.severity !== "error") continue;
       if (rule.includes("unique") && rule.includes("number")) {
-        for (const [key, val] of Object.entries(data as Dict)) {
+        for (const [key, val] of Object.entries(data)) {
           if (Array.isArray(val)) {
-            const nums = val.filter((e) => isMapping(e) && "number" in e).map((e) => e.number);
+            const nums = val.filter((e): e is JsonObject => isMapping(e) && "number" in e).map((e) => e.number as number);
             if (nums.length > 0) {
               if (nums.length !== new Set(nums).size) {
                 violations.push(`${name}: duplicate numbers in '${key}'`);
@@ -98,11 +98,11 @@ export function validateYamlContent(content: string, schema: Dict, name: string)
           }
         }
       } else if (rule === "closure_consistency") {
-        const header = isMapping((data as Dict).header) ? (data as Dict).header : {};
-        const status = (data as Dict).status ?? header.status;
+        const header: JsonObject = isMapping(data.header) ? data.header : {};
+        const status = data.status ?? header.status;
         if (typeof status === "string" && status === "closed") {
           for (const field of ["closed_at", "final_value", "target_ref", "reason"]) {
-            let val = (data as Dict)[field];
+            let val = data[field];
             if (val === null || val === undefined) val = header[field];
             if (val === null || val === undefined || (typeof val === "string" && !val.trim())) {
               violations.push(`${name}: closure field '${field}' is required when status is 'closed'`);

@@ -7,13 +7,13 @@
  * helpers shared by all the formatters.
  */
 
-type Dict = Record<string, any>;
+import type { JsonObject } from "../../core/jsonValue.js";
 
 export interface ArtifactSpec {
   name: string;
   entryHeadingRe: RegExp;
   archiveHeading: string | null;
-  formatOneline: (entry: Dict) => string;
+  formatOneline: (entry: JsonObject) => string;
   onelineHeadingRe: RegExp | null;
   scopedSection: string | null;
 }
@@ -63,11 +63,13 @@ export function parseHeader(header: string): [string, string, string] {
 }
 
 // --- one-line formatters ---------------------------------------------------
+// `entry.header`/`entry.body` below come from parsed markdown artifact text; the
+// `as string` casts sit at that markdown-parse IO boundary (runtime values are strings).
 
-function formatProgressOneline(entry: Dict): string {
-  let [number, date, title] = parseHeader(entry.header);
+function formatProgressOneline(entry: JsonObject): string {
+  let [number, date, title] = parseHeader(entry.header as string);
   if (!title) {
-    title = extractField(entry.body, "What") || firstNonEmpty(entry.body);
+    title = extractField(entry.body as string, "What") || firstNonEmpty(entry.body as string);
   }
   title = truncateWords(title || "(no summary)", 20);
   const numberPart = number ? `Cycle ${number}` : "Cycle ?";
@@ -75,22 +77,22 @@ function formatProgressOneline(entry: Dict): string {
   return `- ${numberPart}${datePart}: ${title}`;
 }
 
-function formatDecisionOneline(entry: Dict): string {
-  const [number, date] = parseHeader(entry.header);
-  let chosen = extractField(entry.body, "Chosen alternative");
-  if (!chosen) chosen = extractField(entry.body, "Chosen");
-  if (!chosen) chosen = firstNonEmpty(entry.body);
+function formatDecisionOneline(entry: JsonObject): string {
+  const [number, date] = parseHeader(entry.header as string);
+  let chosen = extractField(entry.body as string, "Chosen alternative");
+  if (!chosen) chosen = extractField(entry.body as string, "Chosen");
+  if (!chosen) chosen = firstNonEmpty(entry.body as string);
   chosen = truncateWords(chosen || "(no rationale)", 20);
   const numberPart = number ? `Decision ${number}` : "Decision ?";
   const datePart = date ? ` (${date})` : "";
   return `- ${numberPart}${datePart}: ${chosen}`;
 }
 
-function formatHealthOneline(entry: Dict): string {
-  const [number, date] = parseHeader(entry.header);
-  let grade = extractField(entry.body, "Overall");
-  if (!grade) grade = extractField(entry.body, "Grade");
-  let trajectory = extractField(entry.body, "Overall trajectory");
+function formatHealthOneline(entry: JsonObject): string {
+  const [number, date] = parseHeader(entry.header as string);
+  let grade = extractField(entry.body as string, "Overall");
+  if (!grade) grade = extractField(entry.body as string, "Grade");
+  let trajectory = extractField(entry.body as string, "Overall trajectory");
   if (!trajectory) trajectory = "";
   const summaryBits: string[] = [];
   if (grade) summaryBits.push(truncateWords(grade, 10));
@@ -101,12 +103,12 @@ function formatHealthOneline(entry: Dict): string {
   return `### ${numberPart}${datePart} (${summary})`;
 }
 
-function formatExperimentOneline(entry: Dict): string {
-  const [number] = parseHeader(entry.header);
-  let summary = extractField(entry.body, "Metric");
-  if (!summary) summary = extractField(entry.body, "Conclusion");
-  if (!summary) summary = extractField(entry.body, "Result");
-  if (!summary) summary = firstNonEmpty(entry.body);
+function formatExperimentOneline(entry: JsonObject): string {
+  const [number] = parseHeader(entry.header as string);
+  let summary = extractField(entry.body as string, "Metric");
+  if (!summary) summary = extractField(entry.body as string, "Conclusion");
+  if (!summary) summary = extractField(entry.body as string, "Result");
+  if (!summary) summary = firstNonEmpty(entry.body as string);
   summary = truncateWords(summary || "(no result)", 15);
   const numberPart = number ? `EXP-${number}` : "EXP-?";
   return `- ${numberPart}: ${summary}`;
@@ -115,7 +117,7 @@ function formatExperimentOneline(entry: Dict): string {
 const TODO_CHECKBOX_RE = /^-\s*\[x\]\s*/;
 const TODO_ISS_LABEL_RE = /ISS-\d+:?\s*/;
 
-function isTodoOnelinePassthrough(entry: Dict): boolean {
+function isTodoOnelinePassthrough(entry: JsonObject): boolean {
   return entry.kind === "oneline";
 }
 
@@ -127,7 +129,7 @@ function stripTodoMetadata(header: string): string {
   return stripped;
 }
 
-export function formatTodoOneline(entry: Dict): string {
+export function formatTodoOneline(entry: JsonObject): string {
   const header = String(entry.header).trim();
   if (isTodoOnelinePassthrough(entry)) {
     return header.startsWith("- ") ? header : `- ${header}`;

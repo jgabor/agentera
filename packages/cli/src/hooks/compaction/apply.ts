@@ -5,6 +5,10 @@
  * writes the compacted result back to disk. `compactYamlFile` is for
  * the three YAML artifacts (progress, decisions, health);
  * `compactFile` handles both YAML and markdown (TODO resolved).
+ *
+ * Note: `entry.header`/`entry.body` reads are typed `as string` because the
+ * entries originate from parsed markdown artifact text (an IO boundary); at
+ * runtime these fields are always strings.
  */
 
 import fs from "node:fs";
@@ -29,7 +33,7 @@ import {
 } from "./retention.js";
 import { normalizeTodoResolvedLayout, parseEntries, parseTodoResolved, extractResolvedSection } from "./parse.js";
 
-type Dict = Record<string, any>;
+import type { JsonObject } from "../../core/jsonValue.js";
 
 export function compactYamlFile(p: string, artifact: string): CompactResult {
   if (!(artifact in COMPACTABLE_YAML_ARTIFACTS)) {
@@ -40,7 +44,7 @@ export function compactYamlFile(p: string, artifact: string): CompactResult {
   }
   const [activeKey, archiveKey] = COMPACTABLE_YAML_ARTIFACTS[artifact];
   const specName = YAML_SPEC_BY_ARTIFACT[artifact];
-  const data = loadYamlMapping(fs.readFileSync(p, "utf8")) as Dict;
+  const data = loadYamlMapping(fs.readFileSync(p, "utf8")) as JsonObject;
 
   let active = data[activeKey] || [];
   let archive = data[archiveKey] || [];
@@ -66,7 +70,7 @@ export function compactYamlFile(p: string, artifact: string): CompactResult {
   if (specName === "decisions") {
     archiveAfter = selectDecisionArchiveEntries(archiveCandidates);
   } else {
-    const merged = applyRetentionCaps(recentFull as Dict[], archiveCandidates as Dict[]);
+    const merged = applyRetentionCaps(recentFull as JsonObject[], archiveCandidates as JsonObject[]);
     archiveAfter = merged.slice(recentFull.length);
   }
 
@@ -80,7 +84,7 @@ export function compactYamlFile(p: string, artifact: string): CompactResult {
   return { full_before: fullBefore, oneline_before: onelineBefore, full_after: fullAfter, oneline_after: onelineAfter, dropped, changed: true };
 }
 
-function detectDirection(entries: Dict[]): string {
+function detectDirection(entries: JsonObject[]): string {
   let asc = 0;
   let desc = 0;
   for (let i = 0; i < entries.length - 1; i++) {
@@ -95,18 +99,18 @@ function detectDirection(entries: Dict[]): string {
 }
 
 export function compactEntries(
-  entries: Dict[],
+  entries: JsonObject[],
   maxFull = MAX_FULL_ENTRIES,
   maxOneline = MAX_ONELINE_ENTRIES,
-  formatOneline: ((entry: Dict) => string) | null = null,
-): Dict[] {
+  formatOneline: ((entry: JsonObject) => string) | null = null,
+): JsonObject[] {
   const maxTotal = maxFull + maxOneline;
   if (entries.length === 0) return [];
   const ascending = detectDirection(entries) === "ascending";
   const newestFirst = stableSortBy(entries, yamlEntryNumber, true);
 
-  const full: Dict[] = [];
-  const archive: Dict[] = [];
+  const full: JsonObject[] = [];
+  const archive: JsonObject[] = [];
   newestFirst.forEach((entry, i) => {
     if (i < maxFull) {
       full.push(entry);
@@ -124,8 +128,8 @@ export function compactEntries(
   return result;
 }
 
-function compactTodoEntries(entries: Dict[]): Dict[] {
-  const result: Dict[] = [];
+function compactTodoEntries(entries: JsonObject[]): JsonObject[] {
+  const result: JsonObject[] = [];
   let fullCount = 0;
   let onelineCount = 0;
   for (const entry of entries) {
@@ -146,7 +150,9 @@ function compactTodoEntries(entries: Dict[]): Dict[] {
   return result;
 }
 
-function formatProgressLike(headerPrefix: string, entries: Dict[], spec: any): string {
+function formatProgressLike(headerPrefix: string, entries: JsonObject[], spec: any): string {
+  // `entry.header`/`entry.body` below come from parsed markdown artifact text; the
+  // `as string` casts sit at that markdown-parse IO boundary (runtime values are strings).
   const lines: string[] = [];
   if (headerPrefix.trim()) {
     lines.push(headerPrefix.replace(/\s+$/, ""));
@@ -155,16 +161,16 @@ function formatProgressLike(headerPrefix: string, entries: Dict[], spec: any): s
   const fullEntries = entries.filter((e) => e.kind === "full");
   const onelineEntries = entries.filter((e) => e.kind === "oneline");
   for (const entry of fullEntries) {
-    const header = entry.header;
+    const header = entry.header as string;
     const glyphMatch = /^(■)\s+(.*)$/.exec(header);
     if (glyphMatch) {
       lines.push(`${glyphMatch[1]} ## ${glyphMatch[2]}`);
     } else {
       lines.push(`## ${header}`);
     }
-    if (entry.body) {
+    if (entry.body as string) {
       lines.push("");
-      lines.push(entry.body);
+      lines.push(entry.body as string);
     }
     lines.push("");
   }
@@ -172,7 +178,7 @@ function formatProgressLike(headerPrefix: string, entries: Dict[], spec: any): s
     lines.push(spec.archiveHeading);
     lines.push("");
     for (const entry of onelineEntries) {
-      lines.push(entry.header);
+      lines.push(entry.header as string);
     }
     lines.push("");
   }
@@ -226,8 +232,8 @@ function compactTodoResolved(p: string): CompactResult {
   const newLines: string[] = [];
   for (const entry of compacted) {
     if (entry.kind === "full") {
-      newLines.push(entry.header);
-      if (entry.body) newLines.push(entry.body);
+      newLines.push(entry.header as string);
+      if (entry.body as string) newLines.push(entry.body as string);
     } else {
       newLines.push(spec.formatOneline(entry));
     }

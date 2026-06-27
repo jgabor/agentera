@@ -66,11 +66,11 @@ function validateTodoResolvedPlacement(content: string, name: string): string[] 
   return violations;
 }
 
-type Dict = Record<string, any>;
+import type { JsonObject } from "../../core/jsonValue.js";
 
 const SKIP_META = new Set(["meta", "GROUP_PREFIXES", "BUDGET", "COMPACTION", "VALIDATION", "CONVENTION"]);
 
-export function validateMd(content: string, name: string, schema: Dict | null = null): string[] {
+export function validateMd(content: string, name: string, schema: JsonObject | null = null): string[] {
   const violations: string[] = [];
   if (!content.trim()) violations.push(`${name}: empty content`);
   const fences = (content.match(/^```/gm) ?? []).length;
@@ -79,7 +79,7 @@ export function validateMd(content: string, name: string, schema: Dict | null = 
   return violations;
 }
 
-export function validateMdSchema(content: string, name: string, schema: Dict): string[] {
+export function validateMdSchema(content: string, name: string, schema: JsonObject): string[] {
   const violations: string[] = [];
   if (!content.trim()) return violations;
   for (const [groupKey, groupValue] of Object.entries(schema)) {

@@ -8,9 +8,9 @@
  * `markdown.ts` for the human-facing side.
  */
 
-type Dict = Record<string, any>;
+import type { JsonObject } from "../../core/jsonValue.js";
 
-export function isMapping(v: unknown): v is Dict {
+export function isMapping(v: unknown): v is JsonObject {
   return v !== null && typeof v === "object" && !Array.isArray(v);
 }
 
@@ -42,13 +42,13 @@ const SEQUENCE_KEYS_BY_ARTIFACT: Record<string, Record<string, string>> = {
 const NESTED_SEQUENCE_KEYS: Array<[[string, string], string]> = [[["DECISION", "ALTERNATIVE"], "alternatives"]];
 const SEQUENCE_ORDER_BY_ARTIFACT: Record<string, string> = { "progress\0cycles": "descending" };
 
-export function collectSingletonGroups(schema: Dict): Array<[string, string, string[]]> {
+export function collectSingletonGroups(schema: JsonObject): Array<[string, string, string[]]> {
   const result: Array<[string, string, string[]]> = [];
   for (const [gk, gv] of Object.entries(schema)) {
     if (SKIP_META.has(gk) || !isMapping(gv)) continue;
     let isListOrSub = false;
     for (const e of Object.values(gv)) {
-      if (isMapping(e) && (LIST_INDICATORS.has(e.field) || e.parent)) {
+      if (isMapping(e) && (LIST_INDICATORS.has(String(e.field)) || e.parent)) {
         isListOrSub = true;
         break;
       }
@@ -56,7 +56,7 @@ export function collectSingletonGroups(schema: Dict): Array<[string, string, str
     if (isListOrSub) continue;
     const fields: string[] = [];
     for (const e of Object.values(gv)) {
-      if (isMapping(e) && e.required && "field" in e) fields.push(e.field);
+      if (isMapping(e) && e.required && "field" in e) fields.push(String(e.field));
     }
     if (fields.length > 0) result.push([gk, gk.toLowerCase(), fields]);
   }
@@ -71,7 +71,7 @@ export function isEmptyRequired(value: unknown): boolean {
   return false;
 }
 
-export function* iterGroupEntries(schema: Dict, group: string): Generator<Dict> {
+export function* iterGroupEntries(schema: JsonObject, group: string): Generator<JsonObject> {
   const gv = schema[group];
   if (!isMapping(gv)) return;
   for (const entry of Object.values(gv)) {
@@ -79,7 +79,7 @@ export function* iterGroupEntries(schema: Dict, group: string): Generator<Dict> 
   }
 }
 
-export function validateField(violations: string[], name: string, scope: Dict, field: string, p: string): void {
+export function validateField(violations: string[], name: string, scope: JsonObject, field: string, p: string): void {
   const fullPath = p ? `${p}.${field}` : field;
   if (!(field in scope)) {
     violations.push(`${name}: missing required field '${fullPath}'`);
@@ -88,8 +88,9 @@ export function validateField(violations: string[], name: string, scope: Dict, f
   }
 }
 
-export function allowedValues(entry: Dict): string[] {
-  for (const rule of entry.validation ?? []) {
+export function allowedValues(entry: JsonObject): string[] {
+  // cast: schema `validation` rules parsed from a YAML artifact schema file
+  for (const rule of (entry.validation as string[]) ?? []) {
     if (typeof rule === "string" && rule.startsWith("Must be one of: ")) {
       return rule.slice("Must be one of: ".length).split(",").map((v) => v.trim());
     }
@@ -97,8 +98,8 @@ export function allowedValues(entry: Dict): string[] {
   return [];
 }
 
-export function validateAllowedValue(violations: string[], name: string, scope: Dict, entry: Dict, p: string): void {
-  const field = entry.field;
+export function validateAllowedValue(violations: string[], name: string, scope: JsonObject, entry: JsonObject, p: string): void {
+  const field = String(entry.field);
   const allowed = allowedValues(entry);
   if (!field || allowed.length === 0 || !(field in scope) || isEmptyRequired(scope[field])) return;
   const value = scope[field];
@@ -107,8 +108,8 @@ export function validateAllowedValue(violations: string[], name: string, scope: 
   }
 }
 
-export function validateFieldType(violations: string[], name: string, scope: Dict, entry: Dict, p: string): boolean {
-  const field = entry.field;
+export function validateFieldType(violations: string[], name: string, scope: JsonObject, entry: JsonObject, p: string): boolean {
+  const field = String(entry.field);
   if (!field || !(field in scope)) return true;
   const value = scope[field];
   const expectedType = entry.type;
@@ -144,11 +145,12 @@ export function validateFieldType(violations: string[], name: string, scope: Dic
   return isValid;
 }
 
-export function validateFieldConstraints(violations: string[], name: string, scope: Dict, entry: Dict, p: string): void {
-  const field = entry.field;
+export function validateFieldConstraints(violations: string[], name: string, scope: JsonObject, entry: JsonObject, p: string): void {
+  const field = String(entry.field);
   if (!field || !(field in scope)) return;
   const value = scope[field];
-  for (const rule of entry.validation ?? []) {
+  // cast: schema `validation` rules parsed from a YAML artifact schema file
+  for (const rule of (entry.validation as string[]) ?? []) {
     if (typeof rule !== "string") continue;
     if (rule === "Must be a positive integer") {
       if (typeof value === "boolean" || !(typeof value === "number" && Number.isInteger(value)) || value <= 0) {
@@ -159,9 +161,9 @@ export function validateFieldConstraints(violations: string[], name: string, sco
   }
 }
 
-export function validateRequiredFields(violations: string[], name: string, schema: Dict, group: string, scope: Dict, p: string): void {
+export function validateRequiredFields(violations: string[], name: string, schema: JsonObject, group: string, scope: JsonObject, p: string): void {
   for (const entry of iterGroupEntries(schema, group)) {
-    const field = entry.field;
+    const field = String(entry.field);
     if (entry.parent || field === "entry") continue;
     if (entry.required) validateField(violations, name, scope, field, p);
     if (field in scope && !isEmptyRequired(scope[field])) {
@@ -172,9 +174,10 @@ export function validateRequiredFields(violations: string[], name: string, schem
     }
     const value = scope[field];
     if (isMapping(value)) {
-      for (const child of entry.children ?? []) {
+      // cast: schema `children` list parsed from a YAML artifact schema file
+      for (const child of (entry.children as JsonObject[]) ?? []) {
         if (isMapping(child) && child.field) {
-          const childField = child.field;
+          const childField = String(child.field);
           const childPath = p ? `${p}.${field}` : field;
           if (child.required) validateField(violations, name, value, childField, childPath);
           if (childField in value && !isEmptyRequired(value[childField])) {
@@ -189,9 +192,9 @@ export function validateRequiredFields(violations: string[], name: string, schem
   }
 }
 
-export function validateSingletonGroup(violations: string[], name: string, schema: Dict, group: string, scope: Dict, p: string): void {
+export function validateSingletonGroup(violations: string[], name: string, schema: JsonObject, group: string, scope: JsonObject, p: string): void {
   for (const entry of iterGroupEntries(schema, group)) {
-    const field = entry.field;
+    const field = String(entry.field);
     if (entry.parent || field === "entry") continue;
     if (entry.required) validateField(violations, name, scope, field, p);
     if (field in scope && !isEmptyRequired(scope[field])) {
@@ -203,15 +206,15 @@ export function validateSingletonGroup(violations: string[], name: string, schem
   }
 }
 
-export function schemaFieldNames(schema: Dict, group: string): Set<string> {
+export function schemaFieldNames(schema: JsonObject, group: string): Set<string> {
   const out = new Set<string>();
   for (const entry of iterGroupEntries(schema, group)) {
-    if (entry.field && !entry.parent && entry.field !== "entry") out.add(entry.field);
+    if (entry.field && !entry.parent && entry.field !== "entry") out.add(String(entry.field));
   }
   return out;
 }
 
-export function validateUnknownFields(violations: string[], name: string, scope: Dict, allowed: Set<string>, p: string): void {
+export function validateUnknownFields(violations: string[], name: string, scope: JsonObject, allowed: Set<string>, p: string): void {
   for (const field of Object.keys(scope)) {
     if (!allowed.has(field)) {
       const fullPath = p ? `${p}.${field}` : field;
@@ -220,7 +223,7 @@ export function validateUnknownFields(violations: string[], name: string, scope:
   }
 }
 
-export function validatePlanKnownFields(data: Dict, schema: Dict, violations: string[]): void {
+export function validatePlanKnownFields(data: JsonObject, schema: JsonObject, violations: string[]): void {
   const groupedScopes: Record<string, string> = { header: "HEADER", scope: "SCOPE" };
   const sequenceKeys = new Set(Object.values(SEQUENCE_KEYS_BY_ARTIFACT.plan ?? {}));
   const allowedTopLevel = new Set<string>([
@@ -237,7 +240,7 @@ export function validatePlanKnownFields(data: Dict, schema: Dict, violations: st
   }
 }
 
-export function validateFullPlanContract(data: Dict, violations: string[]): void {
+export function validateFullPlanContract(data: JsonObject, violations: string[]): void {
   const header = isMapping(data.header) ? data.header : {};
   if (String(header.level ?? "").toLowerCase() !== "full") return;
   for (const field of ["reviewed", "critic_issues"]) {
@@ -264,14 +267,14 @@ export function validateFullPlanContract(data: Dict, violations: string[]): void
   });
 }
 
-export function entryMinCount(schema: Dict, group: string): number | null {
+export function entryMinCount(schema: JsonObject, group: string): number | null {
   for (const entry of iterGroupEntries(schema, group)) {
-    if (entry.field === "entry" && entry.required) return entry.min_count || 1;
+    if (entry.field === "entry" && entry.required) return (entry.min_count as number) || 1;
   }
   return null;
 }
 
-export function parentRequirements(schema: Dict, parentGroup: string): Record<string, string[]> {
+export function parentRequirements(schema: JsonObject, parentGroup: string): Record<string, string[]> {
   const requirements: Record<string, string[]> = {};
   const prefix = `${parentGroup}.`;
   for (const group of Object.keys(schema)) {
@@ -286,23 +289,23 @@ export function parentRequirements(schema: Dict, parentGroup: string): Record<st
         entry.field
       ) {
         const parentField = parent.slice(prefix.length);
-        (requirements[parentField] ??= []).push(entry.field);
+        (requirements[parentField] ??= []).push(String(entry.field));
       }
     }
   }
   return requirements;
 }
 
-export function entryRequirements(schema: Dict, group: string): string[] {
+export function entryRequirements(schema: JsonObject, group: string): string[] {
   const parent = `${group}.entry`;
   const out: string[] = [];
   for (const entry of iterGroupEntries(schema, group)) {
-    if (entry.parent === parent && entry.required && entry.field) out.push(entry.field);
+    if (entry.parent === parent && entry.required && entry.field) out.push(String(entry.field));
   }
   return out;
 }
 
-export function validateSequences(data: Dict, schema: Dict, name: string, violations: string[]): void {
+export function validateSequences(data: JsonObject, schema: JsonObject, name: string, violations: string[]): void {
   for (const [group, key] of Object.entries(SEQUENCE_KEYS_BY_ARTIFACT[name] ?? {})) {
     const seq = data[key];
     if (seq === null || seq === undefined) continue;
@@ -352,9 +355,10 @@ export function validateSequences(data: Dict, schema: Dict, name: string, violat
   }
 }
 
-export function validateDecisionAlternatives(data: Dict, name: string): string[] {
+export function validateDecisionAlternatives(data: JsonObject, name: string): string[] {
   const violations: string[] = [];
-  (data.decisions ?? []).forEach((decision: unknown, index: number) => {
+  // cast: `decisions` read from a parsed YAML artifact mapping
+  ((data.decisions as unknown[]) ?? []).forEach((decision: unknown, index: number) => {
     if (!isMapping(decision)) return;
     const alternatives = decision.alternatives ?? [];
     if (!Array.isArray(alternatives)) return;
@@ -366,12 +370,12 @@ export function validateDecisionAlternatives(data: Dict, name: string): string[]
   return violations;
 }
 
-export function validateDecisionSatisfaction(data: Dict, name: string): string[] {
+export function validateDecisionSatisfaction(data: JsonObject, name: string): string[] {
   const violations: string[] = [];
   const allowedStates = new Set(["open", "provisionally_satisfied", "user_confirmed_satisfied"]);
   const entries: Array<[string, unknown]> = [
-    ...(data.decisions ?? []).map((d: unknown, i: number): [string, unknown] => [`decisions[${i}]`, d]),
-    ...(data.archive ?? []).map((d: unknown, i: number): [string, unknown] => [`archive[${i}]`, d]),
+    ...((data.decisions as unknown[]) ?? []).map((d: unknown, i: number): [string, unknown] => [`decisions[${i}]`, d]),
+    ...((data.archive as unknown[]) ?? []).map((d: unknown, i: number): [string, unknown] => [`archive[${i}]`, d]),
   ];
   for (const [entryPath, decision] of entries) {
     if (!isMapping(decision) || !("satisfaction" in decision)) continue;
@@ -418,7 +422,7 @@ export function validateDecisionSatisfaction(data: Dict, name: string): string[]
   return violations;
 }
 
-export function validationRuleSeverity(schema: Dict, rule: string): string | null {
+export function validationRuleSeverity(schema: JsonObject, rule: string): string | null {
   for (const groupKey of ["VALIDATION", "VALIDATION_RULES"]) {
     for (const entry of Object.values(schema[groupKey] ?? {})) {
       if (isMapping(entry) && entry.rule === rule) {

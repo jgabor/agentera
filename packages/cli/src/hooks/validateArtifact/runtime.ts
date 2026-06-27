@@ -9,7 +9,7 @@
 
 import { isMapping } from "./schema.js";
 
-type Dict = Record<string, any>;
+import type { JsonObject } from "../../core/jsonValue.js";
 
 export class ArtifactWrite {
   file_path: string;
@@ -21,23 +21,25 @@ export class ArtifactWrite {
 }
 
 export class RuntimeEventParser {
-  parseClaude(data: Dict): ArtifactWrite | null {
+  parseClaude(data: JsonObject): ArtifactWrite | null {
     const ti = data.tool_input;
     if (!isMapping(ti)) return null;
     const fp = ti.file_path;
-    if (fp) return new ArtifactWrite(String(fp), ti.content ?? null);
+    // cast: tool_input.content parsed from the runtime hook's JSON stdin payload
+    if (fp) return new ArtifactWrite(String(fp), (ti.content ?? null) as string | null);
     return null;
   }
 
-  parseOpencode(data: Dict): ArtifactWrite | null {
+  parseOpencode(data: JsonObject): ArtifactWrite | null {
     const inp = data.input;
     if (!isMapping(inp)) return null;
     const fp = inp.path;
-    if (fp) return new ArtifactWrite(String(fp), inp.content ?? null);
+    // cast: input.content parsed from the runtime hook's JSON stdin payload
+    if (fp) return new ArtifactWrite(String(fp), (inp.content ?? null) as string | null);
     return null;
   }
 
-  parseCodex(data: Dict): ArtifactWrite | null {
+  parseCodex(data: JsonObject): ArtifactWrite | null {
     const ti = data.tool_input;
     if (!isMapping(ti)) return null;
     const fp = ti.path;
@@ -50,15 +52,16 @@ export class RuntimeEventParser {
     return null;
   }
 
-  parseCopilot(data: Dict): ArtifactWrite | null {
+  parseCopilot(data: JsonObject): ArtifactWrite | null {
     const inp = data.input;
     if (!isMapping(inp)) return null;
     const fp = inp.filePath || inp.file_path;
-    if (fp) return new ArtifactWrite(String(fp), inp.content ?? null);
+    // cast: input.content parsed from the runtime hook's JSON stdin payload
+    if (fp) return new ArtifactWrite(String(fp), (inp.content ?? null) as string | null);
     return null;
   }
 
-  parse(data: Dict): ArtifactWrite | null {
+  parse(data: JsonObject): ArtifactWrite | null {
     const tn = data.tool_name ?? "";
     if (tn === "apply_patch") {
       const candidate = this.parseCodex(data);
