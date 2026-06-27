@@ -1,142 +1,157 @@
-previous_plan_archived: 'archive/PLAN-2026-06-26-d73-single-agentera-agent.md'
+previous_plan_archived: 'archive/PLAN-2026-06-26-b1-split-brain-root-cause.md'
 header:
   level: full
-  created: '2026-06-26'
+  created: '2026-06-27'
   status: active
-  reviewed: '2026-06-26'
+  reviewed: '2026-06-27'
   critic_issues: '3 found, 3 addressed, 0 dismissed'
-  revised: 'Critic flagged (1) Task 2 name misspelled PROFILERA_PROFILE_DIR as PROLERA_PROFILE_DIR, addressed by correcting the task name; (2) Task 4 acceptance says derive from actual state but does not specify how startupCompletenessContract receives capability-context and profile data since it is currently a zero-argument function, addressed by adding acceptance criterion that the function signature accepts capability-context state and profile status as parameters; (3) Task 7 references check validate capability-audit with a hyphen but the CLI syntax is space-separated check validate capability audit, addressed by correcting the acceptance criterion syntax.'
-  title: v2/v3 coexistence B1 — split-brain root cause
+  revised: 'Critic flagged (1) Task 2 acceptance mentions "shell env" but a child process cannot persistently modify the parent shell environment, addressed by scoping T2 to installed-app artifact path mappings and registry model literals only, not process.env; (2) Task 4 did not specify whether it is a doc fix or code fix, addressed by clarifying that T4 verifies the resolver supports $PROFILERA_PROFILE_DIR after T1 and fixes the docs.yaml schema documentation to match the implementation, removing or correcting unsupported resolver claims; (3) Task 6 references "documented contract" for install-root precedence without naming the source, addressed by requiring the task to cite the specific contract or protocol.yaml section that defines the profile layer.'
+  title: v2/v3 coexistence B2 — env-var & path resolution remainder
 what: >
-  Fix the root cause of the v2/v3 coexistence defect surface: when
-  AGENTERA_HOME is set (standard for v2 users), the v3 CLI's
-  activeAppModel() skips the local-checkout shortcut and resolves skillRoot
-  to the installed v2 app, while resolveSourceRoot() resolves to the v3
-  repo. This split-brain makes the v3 CLI read v2-vintage schemas, Swedish
-  capability names, and v2 env-var literals. Also adds the
-  PROFILERA_PROFILE_DIR env-var fallback, schema-version validation,
-  accurate capability-startup readiness signaling, and a post-migration
-  smoke test.
+  Fix the remaining env-var and path-resolution defects that B1 did not
+  cover: restore the PROFILERA_PROFILE_DIR precedence fallback in v3
+  resolvers that dropped it during the rename, widen the migration rewire
+  to update installed-app artifact path mappings and schema literals,
+  unify XDG_DATA_HOME tilde expansion across all resolvers, align the
+  docs.yaml schema documentation with resolver support, fix
+  startupBenchmarkDir to accept caller-provided env, and fix the
+  install-root precedence to include the profile layer. Close test gaps
+  G1 (no PROFILERA_PROFILE_DIR-only test), G2 (seed-v2-fixture lacks
+  PROFILERA_PROFILE_DIR), and G4 (mock version catalog 3 majors ahead).
 why: >
-  This single fix collapses ~9 defects and makes the validator truthful.
-  Without it, every prime/status/state/schema path and prime --context
-  reads v2 schemas while check validate reads v3 repo schemas — a
-  false-green that lets production bugs ship. See
-  docs/notes/v2-v3-coexistence-defects.md batch plan.
+  B1 fixed the split-brain root cause and added the resolveArtifactPath
+  fallback, but the individual env-var resolvers still drop the v2
+  precedence level, the migration still leaves stale schema literals,
+  tilde expansion diverges across path resolvers, and three test gaps
+  masked the original defect. Without B2, v2 users with
+  PROFILERA_PROFILE_DIR set get incomplete profile resolution and
+  literal-tilde path directories. See
+  docs/notes/v2-v3-coexistence-defects.md batch plan, batch B2.
 constraints: >
-  All work on feat/v3 only. Do not touch .agentera/vision.yaml or objective
-  state. Do not break the npx-bundle path (isNpxBundleRoot) or the
-  installed-managed-app path (isInstalledManagedApp). Do not change how
-  appHome resolves from AGENTERA_HOME for user-data purposes (PROFILE.md,
-  sessions, history). Only fix skillRoot/schema/capability/contract
-  resolution. Preserve the AGENTERA_HOME > AGENTERA_DEFAULT_INSTALL_ROOT >
-  default precedence for appHome. Do not modify the Cursor v3 skip
-  condition. Do not rewire the OpenCode plugin (B4). Do not fix
-  channel/bundle-status resolution (B3).
+  All work on feat/v3 only. Do not touch .agentera/vision.yaml or
+  objective state. Do not rewire the OpenCode plugin (B4: .opencode/
+  plugins/agentera.js setProfileDir, resolveAgenteraHome). Do not fix
+  channel/bundle-status resolution (B3: doctor.ts, projectIntegration.ts,
+  channels.ts, expectedVersion). Do not fix repo hook npm tags (B5).
+  Do not refresh installed-app content on upgrade (B6: SKILL.md,
+  protocol.yaml, capability_schema_contract.yaml content). Preserve
+  the AGENTERA_PROFILE_DIR > PROFILERA_PROFILE_DIR > default precedence
+  in all resolvers (v3 name wins, v2 name is fallback only). Do not
+  modify the Cursor v3 skip condition. Do not break the npx-bundle path
+  or the installed-managed-app path.
 scope:
   included:
-    - 'packages/cli/src/cli/appContext.ts — fix activeAppModel() local-checkout guard'
-    - 'packages/cli/src/registries/artifactRegistry.ts — add $PROFILERA_PROFILE_DIR/ fallback and schema-version validation'
-    - 'packages/cli/src/cli/startupCompletenessContract.ts — derive missing_state from actual schema-error/profile state'
-    - 'scripts/sandbox/assert-v2v3-migration.sh — add post-migration prime smoke test'
-    - 'packages/cli/test/ — add split-brain and env-var-fallback test coverage'
+    - 'packages/cli/src/ — all resolver functions that read AGENTERA_PROFILE_DIR directly (profile, usage, corpus, benchmark resolvers) — add PROFILERA_PROFILE_DIR fallback (#15)'
+    - 'packages/cli/src/upgrade/runtimeMigration.ts — widen rewireProfileraEnvVar to update installed-app artifact path mappings and schema literals (#14)'
+    - 'packages/cli/src/ — resolvers that read XDG_DATA_HOME without tilde expansion — unify with installRoot.ts expansion (#16)'
+    - 'packages/cli/src/ — docs.yaml schema documentation vs resolver support alignment (#21)'
+    - 'packages/cli/src/ — startupBenchmarkDir() accept caller-provided env parameter (#29)'
+    - 'packages/cli/src/ — install-root precedence profile layer + visibleSkillVersion v2 residue probe (#30)'
+    - 'packages/cli/test/ — PROFILERA_PROFILE_DIR-only test coverage (G1)'
+    - 'scripts/sandbox/seed-v2-fixture.sh — set PROFILERA_PROFILE_DIR in synthetic v2 (G2)'
+    - 'packages/cli/test/ — align mock version catalog with reality (G4)'
   excluded:
-    - 'OpenCode plugin rewire (B4): .opencode/plugins/agentera.js'
-    - 'Channel/bundle-status fixes (B3): doctor.ts, projectIntegration.ts, channels.ts'
-    - 'Installed-app content refresh on upgrade (B6)'
-    - 'v2 residue cleanup (B7)'
+    - 'OpenCode plugin rewire (B4): .opencode/plugins/agentera.js setProfileDir, resolveAgenteraHome'
+    - 'Channel/bundle-status fixes (B3): doctor.ts, projectIntegration.ts, channels.ts, expectedVersion'
+    - 'Repo hook npm tag consistency (B5): hooks/hooks.json, .cursor/hooks.json, .github/hooks/'
+    - 'Installed-app content refresh on upgrade (B6): SKILL.md, protocol.yaml, capability_schema_contract.yaml content'
+    - 'v2 residue cleanup (B7): Swedish-verb agent files, CAPABILITY_NAMES hardcode, handoff manifest'
     - '.agentera/vision.yaml, objective state'
   deferred:
-    - 'Env-var precedence-level restoration for USAGE/corpus/profile resolvers (B2: #14)'
-    - 'docs.yaml schema-doc $PROFILERA_PROFILE_DIR correction (B2: #21)'
-    - 'XDG_DATA_HOME tilde expansion divergence (B2: #16)'
+    - 'OpenCode plugin setProfileDir using deprecated env var (B4: #24)'
+    - 'OpenCode doctor checking deprecated PROFILERA_PROFILE_DIR (B4: #36)'
+    - 'v2 Python upgrade has no v3 migration awareness (B7: #32)'
 design: >
-  Three independent fix axes converge on the same root cause. First, fix
-  activeAppModel() to prefer the local v3 checkout for skillRoot/schema
-  resolution when sourceRoot is a local checkout, even when AGENTERA_HOME
-  is set — but keep appHome resolving from AGENTERA_HOME so user data is
-  unaffected. Second, add the $PROFILERA_PROFILE_DIR/ prefix as a fallback
-  alias in resolveArtifactPath during the v2/v3 migration window. Third,
-  add defense-in-depth: schema-version validation warns when v2-vintage
-  schemas are loaded, and the capability-startup readiness signal is
-  computed from actual schema-error/profile state rather than hardcoded.
-  A post-migration smoke test and split-brain test coverage close the test
-  gaps that let these defects ship green. Verification of collapsed defects
-  confirms the root fix resolves the schema-content drift without separate
-  remediation.
+  Six independent fix axes plus test-gap closure and verification. First,
+  restore PROFILERA_PROFILE_DIR as a lower-precedence fallback in every
+  resolver that reads AGENTERA_PROFILE_DIR directly — v3 name wins, v2
+  name is the migration-window fallback. Second, widen
+  rewireProfileraEnvVar to also update installed-app artifact path
+  mappings (docs.yaml, registry model literals) so $PROFILERA_PROFILE_DIR
+  schema literals become $AGENTERA_PROFILE_DIR post-migration — scoped to
+  config-file updates only, not process.env (which a child process cannot
+  persistently modify). Third, unify tilde expansion so all resolvers
+  that read XDG_DATA_HOME expand ~ the same way installRoot.ts does.
+  Fourth, after the resolver fallback is in place, verify docs.yaml
+  schema documentation matches the implementation (remove or correct
+  resolver claims that do not work). Fifth, fix startupBenchmarkDir to
+  accept a caller-provided env parameter consistent with other
+  resolvers. Sixth, add the profile layer to install-root precedence and
+  remove the visibleSkillVersion v2 residue probe. Test-gap closure
+  (G1, G2, G4) proves the fixes work in the exact scenario that masked
+  the original defect. Final verification ensures no regressions.
 tasks:
   - number: 1
-    name: Fix activeAppModel() local-checkout guard in appContext.ts
+    name: Restore PROFILERA_PROFILE_DIR fallback in v3 env-var resolvers
     depends_on: []
-    status: pending
+    status: complete
     acceptance:
-      - 'GIVEN the v3 CLI running from a local checkout with AGENTERA_HOME set to a v2 installed app WHEN prime --format json runs THEN source.schemas_dir resolves to the repo schemas dir, not the installed v2 app schemas dir'
-      - 'GIVEN the v3 CLI running from a local checkout with AGENTERA_HOME set WHEN prime --format json runs THEN app.appHome still resolves from AGENTERA_HOME (user data paths unaffected)'
-      - 'GIVEN the v3 CLI running from a local checkout with AGENTERA_HOME set WHEN prime --format json runs THEN app.skillRoot resolves to the repo skills/agentera, not the installed v2 app skills/agentera'
-      - 'GIVEN the v3 CLI running from an npx bundle (no AGENTERA_HOME) WHEN prime runs THEN the npx-bundle path is unchanged (isNpxBundleRoot branch still returns sourceRoot for all fields)'
-      - 'GIVEN the v3 CLI running from an installed managed app (isInstalledManagedApp true) WHEN prime runs THEN the installed-app path is unchanged'
+      - 'GIVEN any resolver function that reads AGENTERA_PROFILE_DIR from process.env WHEN both AGENTERA_PROFILE_DIR and PROFILERA_PROFILE_DIR are set THEN the resolver uses AGENTERA_PROFILE_DIR (v3 name wins)'
+      - 'GIVEN any resolver function that reads AGENTERA_PROFILE_DIR from process.env WHEN only PROFILERA_PROFILE_DIR is set (AGENTERA_PROFILE_DIR unset) THEN the resolver falls back to PROFILERA_PROFILE_DIR'
+      - 'GIVEN any resolver function that reads AGENTERA_PROFILE_DIR from process.env WHEN neither env var is set THEN the resolver uses the default path as before'
+      - 'GIVEN the B1 resolveArtifactPath fallback WHEN called with a $PROFILERA_PROFILE_DIR/ path THEN it still resolves correctly (B1 fix not regressed)'
+      - 'GIVEN the v3 CLI running from a local checkout with PROFILERA_PROFILE_DIR set and AGENTERA_PROFILE_DIR unset WHEN prime --format json runs THEN profile.status is "loaded"'
   - number: 2
-    name: Add $PROFILERA_PROFILE_DIR/ fallback in resolveArtifactPath
+    name: Widen rewireProfileraEnvVar to update installed-app artifact path mappings
     depends_on: []
-    status: pending
+    status: complete
     acceptance:
-      - 'GIVEN resolveArtifactPath called with a record whose defaultPath is $PROFILERA_PROFILE_DIR/PROFILE.md and env.PROFILERA_PROFILE_DIR set WHEN the path is resolved THEN it expands to env.PROFILERA_PROFILE_DIR/PROFILE.md, not a literal $PROFILERA_PROFILE_DIR directory under the project root'
-      - 'GIVEN resolveArtifactPath called with defaultPath $PROFILERA_PROFILE_DIR/PROFILE.md and both AGENTERA_PROFILE_DIR and PROFILERA_PROFILE_DIR set WHEN resolved THEN AGENTERA_PROFILE_DIR takes precedence (the v3 name wins)'
-      - 'GIVEN resolveArtifactPath called with defaultPath $PROFILERA_PROFILE_DIR/PROFILE.md and neither env var set WHEN resolved THEN it falls back to the platform data home, not a literal project-relative path'
-      - 'GIVEN resolveArtifactPath called with defaultPath $AGENTERA_PROFILE_DIR/PROFILE.md (v3 name) WHEN resolved THEN existing behavior is unchanged'
+      - 'GIVEN rewireProfileraEnvVar running during v2-to-v3 migration WHEN the installed app has .agentera/docs.yaml path mappings containing $PROFILERA_PROFILE_DIR THEN they are updated to $AGENTERA_PROFILE_DIR'
+      - 'GIVEN rewireProfileraEnvVar running during migration WHEN the installed app registry model contains PROFILERA_PROFILE_DIR literals THEN they are updated to AGENTERA_PROFILE_DIR'
+      - 'GIVEN rewireProfileraEnvVar running during migration WHEN runtime config files are updated THEN the existing behavior is preserved (no regression)'
+      - 'GIVEN rewireProfileraEnvVar running during migration WHEN process.env is checked THEN no attempt is made to persistently modify the parent shell environment (only config files are modified)'
+      - 'GIVEN a dry-run migration preview WHEN the installed app has PROFILERA_PROFILE_DIR literals THEN the preview lists them as items to update'
   - number: 3
-    name: Add schema-version validation in loadArtifactRegistry
+    name: Unify XDG_DATA_HOME tilde expansion across all resolvers
     depends_on: []
-    status: pending
+    status: complete
     acceptance:
-      - 'GIVEN loadArtifactRegistry reading a schemas dir WHEN a schema file lacks a version field or declares a v2-vintage version THEN a warning is emitted to stderr naming the file and the expected v3 schema version'
-      - 'GIVEN loadArtifactRegistry reading v3 schemas WHEN all schema files declare the expected version THEN no warning is emitted'
-      - 'GIVEN the warning WHEN prime --format json runs THEN the warning does not break JSON output (stderr only, not stdout)'
-      - 'GIVEN loadArtifactRegistry reading a schemas dir with missing schema files for required_artifact_identities entries WHEN loaded THEN the missing entries are noted in a warning, not silently skipped'
+      - 'GIVEN a resolver that reads XDG_DATA_HOME (analytics, usage, corpus, benchmark) WHEN XDG_DATA_HOME is set to a tilde path (e.g. ~/.local/share) THEN the resolver expands ~ to the home directory (same as installRoot.ts)'
+      - 'GIVEN installRoot.ts reading XDG_DATA_HOME WHEN set to a tilde path THEN it still expands correctly (no regression)'
+      - 'GIVEN all resolvers reading XDG_DATA_HOME WHEN the same tilde path is set THEN all resolve to the same expanded directory (no divergence)'
+      - 'GIVEN XDG_DATA_HOME unset WHEN any resolver runs THEN the default path is used (no tilde literal in output)'
   - number: 4
-    name: Fix complete_for_capability_startup to derive from actual state
-    depends_on: []
-    status: pending
+    name: Align docs.yaml schema documentation with resolver support
+    depends_on:
+      - '1'
+    status: complete
     acceptance:
-      - 'GIVEN startupCompletenessContract called WHEN a capability-context schema_error is present THEN missing_state includes the schema_error and complete_for_capability_startup is false'
-      - 'GIVEN startupCompletenessContract called WHEN profile resolution failed (profile_status is "not found") THEN missing_state includes the profile resolution failure and complete_for_capability_startup is false'
-      - 'GIVEN startupCompletenessContract called WHEN no schema_error and profile_status is "loaded" THEN complete_for_capability_startup is true and missing_state is empty'
-      - 'GIVEN startupCompletenessContract called WHEN the computation runs THEN the function accepts capability-context state and profile status as parameters rather than being a zero-argument function with a hardcoded empty array'
+      - 'GIVEN the docs.yaml schema documentation WHEN it documents $PROFILERA_PROFILE_DIR as "resolved at read time" THEN the resolver actually supports it (verified by T1 fallback implementation)'
+      - 'GIVEN the docs.yaml schema documentation WHEN it documents a resolver path variable THEN the variable is actually supported by resolveArtifactPath or the relevant resolver'
+      - 'GIVEN the docs.yaml schema documentation WHEN it contains resolver claims that are not implemented THEN those claims are removed or corrected to match the implementation'
+      - 'GIVEN prime --format json WHEN source_contract fields reference docs.yaml THEN the documentation is consistent with the runtime behavior'
   - number: 5
-    name: Add post-migration prime smoke test to assert-v2v3-migration.sh
-    depends_on:
-      - '1'
-      - '2'
-    status: pending
+    name: Fix startupBenchmarkDir to accept caller-provided env
+    depends_on: []
+    status: complete
     acceptance:
-      - 'GIVEN scripts/sandbox/assert-v2v3-migration.sh WHEN the migration apply phase completes THEN the script runs "$CLI" prime --format json against the migrated install'
-      - 'GIVEN the post-migration prime output WHEN profile_status is checked THEN it is "loaded" (not "not found")'
-      - 'GIVEN the post-migration prime output WHEN app.status is checked THEN it is not "manual_review_needed" due to a schema or profile error'
-      - 'GIVEN the smoke test WHEN it fails THEN the script exits non-zero with a clear message'
+      - 'GIVEN startupBenchmarkDir called with a caller-provided env object WHEN the env object has XDG_DATA_HOME or AGENTERA_HOME set THEN the function uses the caller-provided value, not process.env'
+      - 'GIVEN startupBenchmarkDir called with no env argument (backward compat) WHEN process.env has XDG_DATA_HOME or AGENTERA_HOME set THEN the function falls back to process.env (existing behavior preserved)'
+      - 'GIVEN startupBenchmarkDir called with caller env containing PROFILERA_PROFILE_DIR (not AGENTERA_PROFILE_DIR) WHEN resolving the benchmark dir THEN it uses the PROFILERA_PROFILE_DIR fallback (consistent with T1)'
+      - 'GIVEN the function signature WHEN inspected THEN it accepts an optional env parameter consistent with other resolver functions that accept caller-provided env'
   - number: 6
-    name: Add split-brain test coverage
-    depends_on:
-      - '1'
-    status: pending
+    name: Fix install-root precedence profile layer and visibleSkillVersion v2 residue
+    depends_on: []
+    status: complete
     acceptance:
-      - 'GIVEN a test that sets AGENTERA_HOME to a fixture v2 app dir and runs activeAppModel() from a local checkout WHEN the model is inspected THEN skillRoot resolves to the local checkout, not the fixture v2 app'
-      - 'GIVEN a test that sets AGENTERA_HOME to a fixture v2 app dir and runs activeAppModel() from a local checkout WHEN the model is inspected THEN appHome still resolves from AGENTERA_HOME'
-      - 'GIVEN a test that sets PROFILERA_PROFILE_DIR (not AGENTERA_PROFILE_DIR) and runs resolveArtifactPath with a $PROFILERA_PROFILE_DIR/ path WHEN the result is inspected THEN it expands to the PROFILERA_PROFILE_DIR value'
-      - 'GIVEN a test with no AGENTERA_HOME set and an npx bundle sourceRoot WHEN activeAppModel() runs THEN the npx-bundle branch is unchanged'
+      - 'GIVEN the documented install-root precedence contract (cite the specific protocol.yaml or contract section) WHEN compared to the implementation THEN the implementation includes a profile layer (AGENTERA_PROFILE_DIR or PROFILERA_PROFILE_DIR) that was missing'
+      - 'GIVEN install-root precedence resolution WHEN AGENTERA_PROFILE_DIR is set THEN the profile layer is checked before the install-root default'
+      - 'GIVEN install-root precedence resolution WHEN only PROFILERA_PROFILE_DIR is set THEN the profile layer falls back to PROFILERA_PROFILE_DIR (consistent with T1)'
+      - 'GIVEN visibleSkillVersion WHEN probing for skill version THEN it does not probe ~/.agents/skills/agentera (v2 residue path) — it probes the v3 skill path'
+      - 'GIVEN visibleSkillVersion WHEN the v3 skill path is probed THEN it returns the v3 skill version, not a v2 residue version'
   - number: 7
-    name: Verify collapsed defects resolved
+    name: Close test gaps G1, G2, G4
     depends_on:
       - '1'
       - '2'
       - '3'
-      - '4'
-    status: pending
+    status: complete
     acceptance:
-      - 'GIVEN the v3 CLI running from a local checkout with AGENTERA_HOME set to a v2 app WHEN prime --context audit --format json runs THEN capability_context.state.schema_error is null or empty (not "No capability artifact schema found")'
-      - 'GIVEN the v3 CLI running from a local checkout with AGENTERA_HOME set WHEN prime --format json runs THEN profile.status is "loaded" (not "not found") and profile.path resolves to a real existing file'
-      - 'GIVEN the v3 CLI running from a local checkout with AGENTERA_HOME set WHEN prime --format json runs THEN source_contract.capability_startup.complete_for_capability_startup is true for the right reason (no schema_error, profile loaded), not because it is hardcoded'
-      - 'GIVEN the v3 CLI running from a local checkout with AGENTERA_HOME set WHEN state query --list-artifacts --format json runs THEN artifact producers/consumers use English names (not Swedish)'
-      - 'GIVEN the v3 CLI running from a local checkout with AGENTERA_HOME set WHEN check validate capability audit runs THEN it validates against the same schemas prime reads (both use the repo root)'
+      - 'GIVEN a test that sets PROFILERA_PROFILE_DIR and leaves AGENTERA_PROFILE_DIR unset WHEN prime/resolveArtifactPath runs THEN profile.status is "loaded" and paths resolve correctly — this is G1 closure'
+      - 'GIVEN scripts/sandbox/seed-v2-fixture.sh WHEN creating a synthetic v2 fixture THEN it sets PROFILERA_PROFILE_DIR in the fixture environment — this is G2 closure'
+      - 'GIVEN the synthetic v2 fixture with PROFILERA_PROFILE_DIR set WHEN the migration runs THEN the rewire updates the fixture correctly'
+      - 'GIVEN the mock version catalog in versionResolution.test.ts WHEN inspected THEN the stable and development versions are within one major version of the real package.json values (2.x stable, 3.x development) — this is G4 closure'
+      - 'GIVEN all new tests WHEN run THEN they pass without regressing the existing 1016 tests'
   - number: 8
     name: Build, typecheck, test, validate, and compact
     depends_on:
@@ -147,20 +162,22 @@ tasks:
       - '5'
       - '6'
       - '7'
-    status: pending
+    status: complete
     acceptance:
       - 'GIVEN pnpm -C packages/cli run typecheck WHEN run THEN it succeeds with no type errors'
       - 'GIVEN pnpm -C packages/cli build WHEN run THEN it succeeds'
-      - 'GIVEN pnpm -C packages/cli test WHEN run THEN all tests pass including the new split-brain and env-var-fallback tests'
+      - 'GIVEN pnpm -C packages/cli test WHEN run THEN all tests pass including the new PROFILERA_PROFILE_DIR-only tests and the aligned mock version catalog'
       - 'GIVEN node packages/cli/dist/bin/agentera.js check validate capability-contract --format json WHEN run THEN it passes'
       - 'GIVEN node packages/cli/dist/bin/agentera.js check compact WHEN run THEN no budget regression'
 overall_acceptance: >
-  The split-brain root cause is fixed: a v3 CLI running from a local
-  checkout reads repo v3 schemas, capabilities, and contracts even when
-  AGENTERA_HOME points at a v2 installed app. The $PROFILERA_PROFILE_DIR
-  env-var fallback resolves profile paths correctly during the migration
-  window. Schema-version validation warns when v2 schemas are loaded.
-  The capability-startup readiness signal is computed, not hardcoded.
-  A post-migration prime smoke test catches profile-misreport regressions.
-  All new tests pass; typecheck, build, validate, and compact are green.
+  The env-var and path-resolution remainder is fixed: all v3 resolvers
+  that read AGENTERA_PROFILE_DIR also check PROFILERA_PROFILE_DIR as a
+  lower-precedence fallback. The migration rewire updates installed-app
+  artifact path mappings and schema literals, not just runtime config
+  files. XDG_DATA_HOME tilde expansion is unified across all resolvers.
+  docs.yaml schema documentation matches resolver support.
+  startupBenchmarkDir accepts caller-provided env. Install-root
+  precedence includes the profile layer; visibleSkillVersion no longer
+  probes v2 residue. Test gaps G1, G2, G4 are closed. All tests pass;
+  typecheck, build, validate, and compact are green.
 surprises: []
