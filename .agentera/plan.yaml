@@ -172,7 +172,7 @@ tasks:
   - number: 6
     name: Compute CI L2 npm pin dynamically and fail loud on unpublished (#44, G6)
     depends_on: []
-    status: pending
+    status: complete
     acceptance:
       - 'GIVEN .github/workflows/ci.yml L2 step WHEN the workflow runs THEN AGENTERA_NPM_PIN is derived from packages/cli/package.json version (agentera@<version>) at runtime, not hardcoded'
       - 'GIVEN packages/cli/package.json version WHEN bumped THEN the L2 pin tracks it with no manual ci.yml edit required'
