@@ -116,7 +116,7 @@ tasks:
   - number: 4
     name: "Surface v3 successor to v2 install tracks (#32)"
     depends_on: []
-    status: pending
+    status: complete
     acceptance:
       - "GIVEN feat/v3 base WHERE references/cli/update-channels.yaml already defines a `next_major` forward_successor_line (stable 2.x -> 3.0.0, announced) and nextMajorDoctor.ts reads it WHEN a v2-classified install (install_track: v2, runningMajor 2) runs the v3 tooling (`agentera doctor`/`prime`) THEN the next-major successor block is surfaced to the user with the v3 preview command (`npx -y agentera@next upgrade --dry-run`) and the v2-to-v3 guide URL; the v2 install is not silently reported as up-to-date against the v3 line."
       - "WHEN `packages/cli/test/upgrade/nextMajorV2Surfacing.test.ts` is authored THEN it asserts a v2 install track produces the announced v3 successor line in the doctor/prime next-major section (not `up_to_date` against 3.x); the regression is green; per V5 one pass + one fail per track (v2 + v3 = 2 x 2 = 4 cases)."
