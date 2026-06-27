@@ -194,6 +194,7 @@ describe("summarizeProjectIntegration wording", () => {
         sourceRoot: authorityRoot,
         bundleStatus: "up_to_date",
         crossMajorBoundary: true,
+        crossMajorBoundaryDetected: true,
       }),
     );
 
