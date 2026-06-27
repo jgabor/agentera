@@ -143,7 +143,7 @@ tasks:
   - number: 7
     name: "Fix pending_runtime to count runtimes, not items (#40)"
     depends_on: []
-    status: pending
+    status: complete
     acceptance:
       - "GIVEN feat/v3 base WHERE projectIntegration.ts:341 sets `pending_runtime: pending.length` (the count of ALL pending migration items) and :342 sets `pending_runtimes: pendingRuntimes` (the unique runtime-name set) WHEN 4 pending items all belong to runtime `opencode` THEN `pending_runtime` reports `1` (the number of runtimes), matching the singular field name and the `pending_runtimes` length, not `4` (the item count)."
       - "WHEN the fix lands THEN projectIntegration.ts:341 reads `pending_runtime: pendingRuntimes.length` (or the summary is renamed to `pending_items` if the item count is the intended semantic — the implementer picks the option that matches the field name's singular `runtime` meaning and documents the choice); the stay-branch `pending_runtime: 0` literals at :256 and :315 remain correct."
