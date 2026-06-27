@@ -144,11 +144,28 @@ describe("buildDoctorStatus", () => {
   });
 
   it("emits cross_major_pending advisory and manual_review_needed for v2.7.9 app facing v3.0.0 CLI with successor unannounced", () => {
+    const unannouncedRoot = path.join(tmp, "unannounced-auth");
+    fs.mkdirSync(path.join(unannouncedRoot, ".git"), { recursive: true });
+    fs.mkdirSync(path.join(unannouncedRoot, "skills", "agentera"), { recursive: true });
+    fs.writeFileSync(path.join(unannouncedRoot, "skills", "agentera", "SKILL.md"), "x");
+    fs.copyFileSync(path.join(REPO_ROOT, "registry.json"), path.join(unannouncedRoot, "registry.json"));
+    fs.cpSync(path.join(REPO_ROOT, "references"), path.join(unannouncedRoot, "references"), { recursive: true });
+    const channelsPath = path.join(unannouncedRoot, "references/cli/update-channels.yaml");
+    let channels = fs.readFileSync(channelsPath, "utf8");
+    const stableStart = channels.indexOf("  stable:");
+    const devStart = channels.indexOf("  development:");
+    const stableBlock = channels.slice(stableStart, devStart);
+    channels =
+      channels.slice(0, stableStart) +
+      stableBlock.replace(/\n      announced: (true|false)/, "\n      announced: false") +
+      channels.slice(devStart);
+    fs.writeFileSync(channelsPath, channels);
+
     const appHome = path.join(tmp, "v2-cross-major");
     managed(appHome, "2.7.9");
     const status = buildDoctorStatus(appHome, {
       rootSource: "explicit --install-root",
-      sourceRoot: REPO_ROOT,
+      sourceRoot: unannouncedRoot,
       home: path.join(tmp, "home"),
       project: path.join(tmp, "proj"),
       expectedVersion: "3.0.0",

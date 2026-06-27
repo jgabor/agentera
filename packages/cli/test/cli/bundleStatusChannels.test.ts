@@ -93,7 +93,7 @@ describe("bundle-status channel resolution consistency", () => {
     expect(bundle.updateChannel).toBe("stable");
   });
 
-  it("passes crossMajorBoundaryDetected when successor is unannounced", () => {
+  it("passes crossMajorBoundary when successor is announced on v3 CLI against v2 managed app", () => {
     const appHome = process.env.AGENTERA_HOME as string;
     managedV2(appHome);
     const project = path.join(tmp, "proj-detected");
@@ -102,12 +102,31 @@ describe("bundle-status channel resolution consistency", () => {
 
     const state = collectOrientationState({ home, installRoot: appHome, env: process.env });
     expect(state.app.crossMajorBoundaryDetected).toBe(true);
-    expect(state.app.crossMajorBoundary).toBe(false);
-    expect(state.project_integration.recommendation).toBe("stay");
-    expect(state.project_integration.major_boundary_block).toContain("development channel");
+    expect(state.app.crossMajorBoundary).toBe(true);
+    expect(state.project_integration.recommendation).toBe("upgrade");
+    expect(state.project_integration.dry_run_command).toContain("agentera@next");
   });
 
-  it("crossMajorPending doctor block does not dead-end with approve wording", () => {
+  it("crossMajorPending doctor block does not dead-end with approve wording when successor is unannounced", () => {
+    const unannouncedRoot = path.join(tmp, "unannounced-bundle");
+    fs.mkdirSync(path.join(unannouncedRoot, ".git"), { recursive: true });
+    fs.mkdirSync(path.join(unannouncedRoot, "skills", "agentera"), { recursive: true });
+    fs.writeFileSync(path.join(unannouncedRoot, "skills", "agentera", "SKILL.md"), "x");
+    fs.copyFileSync(path.join(REPO_ROOT, "registry.json"), path.join(unannouncedRoot, "registry.json"));
+    fs.cpSync(path.join(REPO_ROOT, "references"), path.join(unannouncedRoot, "references"), { recursive: true });
+    const channelsPath = path.join(unannouncedRoot, "references/cli/update-channels.yaml");
+    let channels = fs.readFileSync(channelsPath, "utf8");
+    const stableStart = channels.indexOf("  stable:");
+    const devStart = channels.indexOf("  development:");
+    const stableBlock = channels.slice(stableStart, devStart);
+    channels =
+      channels.slice(0, stableStart) +
+      stableBlock.replace(/\n      announced: (true|false)/, "\n      announced: false") +
+      channels.slice(devStart);
+    fs.writeFileSync(channelsPath, channels);
+    resetUpdateChannelsAuthorityCache();
+    process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT = unannouncedRoot;
+
     const appHome = process.env.AGENTERA_HOME as string;
     managedV2(appHome);
     const project = path.join(tmp, "proj-pending");
@@ -119,6 +138,9 @@ describe("bundle-status channel resolution consistency", () => {
     expect(pending).toBe(true);
     expect(bundle.approval).not.toMatch(/approve app files/i);
     expect(bundle.approval).toContain("no upgrade offered");
+
+    process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT = REPO_ROOT;
+    resetUpdateChannelsAuthorityCache();
   });
 
   it("uses explicit channel when AGENTERA_UPDATE_CHANNEL is set", () => {
@@ -131,6 +153,6 @@ describe("bundle-status channel resolution consistency", () => {
 
     const state = collectOrientationState({ home, installRoot: appHome, env: process.env });
     expect(state.app.updateChannel).toBe("stable");
-    expect(state.project_integration.update_channel).toBe("stable");
+    expect(state.project_integration.update_channel).toBe("development");
   });
 });

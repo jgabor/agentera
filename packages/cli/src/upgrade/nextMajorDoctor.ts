@@ -140,10 +140,29 @@ export function formatNextMajorDoctorLines(args: {
   ];
 }
 
+function installTrackSkipsSuccessorBlock(
+  install: InstallClassification | null | undefined,
+  sourceRoot: string,
+): boolean {
+  if (install?.kind === "v3_self_contained_npm") {
+    return true;
+  }
+  if (install?.kind === "source_checkout" && cliDistributionMajor(sourceRoot) >= 3) {
+    return true;
+  }
+  return false;
+}
+
 export function resolveNextMajorDoctorLines(ctx: NextMajorDoctorContext): string[] | null {
   const env = ctx.env ?? process.env;
   const home = ctx.home;
   const sourceRoot = ctx.sourceRoot;
+  const install = ctx.install ?? null;
+
+  if (installTrackSkipsSuccessorBlock(install, sourceRoot)) {
+    return null;
+  }
+
   const selected = resolveSelectedChannel({
     channel: ctx.channel ?? null,
     env,
@@ -151,9 +170,14 @@ export function resolveNextMajorDoctorLines(ctx: NextMajorDoctorContext): string
     sourceRoot,
   });
   const currentChannel = selected.channel;
+  const successorChannel: UpdateChannelName =
+    install?.kind === "v2_managed_app_home" ? "stable" : currentChannel;
+  const displayChannel: UpdateChannelName =
+    install?.kind === "v2_managed_app_home" ? "stable" : currentChannel;
 
   const runningDistributionMajor =
-    ctx.runningDistributionMajor ?? cliDistributionMajor(sourceRoot);
+    ctx.runningDistributionMajor ??
+    (install?.kind === "v2_managed_app_home" ? 2 : cliDistributionMajor(sourceRoot));
 
   if (runningDistributionMajor === 1) {
     const block = V1_NEXT_MAJOR_FALLBACK;
@@ -164,25 +188,25 @@ export function resolveNextMajorDoctorLines(ctx: NextMajorDoctorContext): string
     });
   }
 
-  const authorityBlock = loadChannelNextMajor(sourceRoot, currentChannel);
+  const authorityBlock = loadChannelNextMajor(sourceRoot, successorChannel);
   if (!authorityBlock || !authorityBlock.announced) {
     return null;
   }
 
   const runningVersion =
     ctx.runningVersion ??
-    (ctx.install
+    (install
       ? resolveRunningVersion({
-          appHome: ctx.install.appHome,
+          appHome: install.appHome,
           sourceRoot,
-          install: ctx.install,
+          install,
         })
       : null) ??
     `${runningDistributionMajor}.x`;
 
   return formatNextMajorDoctorLines({
     currentVersion: runningVersion,
-    currentChannel,
+    currentChannel: displayChannel,
     block: authorityBlock,
   });
 }
