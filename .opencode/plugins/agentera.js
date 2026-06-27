@@ -11,6 +11,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 
 const AGENTERA_VERSION = "3.0.0";
+const NPX_BUNDLE_SENTINEL = ".agentera-npx-bundle.json";
 const NPX_CLI_ENTRYPOINT = "npx -y agentera@next";
 const NPX_HOOK_VALIDATE = `${NPX_CLI_ENTRYPOINT} hook validate-artifact`;
 const NPX_HOOK_SESSION_STOP = `${NPX_CLI_ENTRYPOINT} hook session-stop`;
@@ -443,9 +444,25 @@ function resolveDefaultAgenteraAppHome() {
   return path.join(process.env.XDG_DATA_HOME || path.join(process.env.HOME, ".local", "share"), "agentera");
 }
 
+function hasV3NpxBundleEvidence(candidate) {
+  return (
+    fs.existsSync(path.join(candidate, NPX_BUNDLE_SENTINEL))
+    && fs.existsSync(path.join(candidate, "skills", "agentera", "SKILL.md"))
+    && fs.existsSync(path.join(candidate, "registry.json"))
+  );
+}
+
 function isRunnableAgenteraAppRoot(candidate) {
-  return fs.existsSync(path.join(candidate, "scripts", "agentera"))
-    || fs.existsSync(path.join(candidate, "scripts", "validate_capability.py"));
+  if (!candidate || !fs.existsSync(candidate)) {
+    return false;
+  }
+  if (fs.existsSync(path.join(candidate, "scripts", "validate_capability.py"))) {
+    return true;
+  }
+  if (fs.existsSync(path.join(candidate, "scripts", "agentera"))) {
+    return true;
+  }
+  return hasV3NpxBundleEvidence(candidate);
 }
 
 function isValidAgenteraAppHome(candidate) {
@@ -453,6 +470,9 @@ function isValidAgenteraAppHome(candidate) {
 }
 
 function resolveAgenteraAppHome() {
+  if (!resolveAgenteraHome()) {
+    return null;
+  }
   return resolveUserDataHome();
 }
 
@@ -771,6 +791,8 @@ Agentera.__test = {
   resolveAgenteraHome,
   resolveAgenteraAppHome,
   resolveDefaultAgenteraAppHome,
+  isRunnableAgenteraAppRoot,
+  hasV3NpxBundleEvidence,
   isValidAgenteraAppHome,
   resolveOpencodeCommandsDir,
   resolveOpencodeAgentsDir,
