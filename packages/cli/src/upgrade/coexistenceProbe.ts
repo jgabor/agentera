@@ -5,6 +5,7 @@ import { loadYamlMappingFile } from "../core/yaml.js";
 import { NPX_BUNDLE_SENTINEL } from "../core/sourceRoot.js";
 import { BUNDLE_MARKER, defaultAppHome } from "../state/installRoot.js";
 import { hasBundleRootEvidence } from "./bundleEvidence.js";
+import type { JsonObject } from "../core/jsonValue.js";
 
 /**
  * v2/v3 coexistence doctor probe (authority: references/cli/coexistence-probe.yaml).
@@ -14,7 +15,6 @@ export const COEXISTENCE_PROBE_AUTHORITY = "references/cli/coexistence-probe.yam
 export const COEXISTENCE_SECTION_HEADER = "Coexistence";
 export const COEXISTENCE_NAMING_DIVERGENCE_LABEL = "naming divergence";
 
-type Dict = Record<string, unknown>;
 type Env = Record<string, string | undefined>;
 
 function authorityPath(sourceRoot: string): string {
@@ -25,8 +25,8 @@ function authorityPath(sourceRoot: string): string {
   return path.join(process.cwd(), COEXISTENCE_PROBE_AUTHORITY);
 }
 
-export function loadCoexistenceProbeAuthority(sourceRoot: string): Dict {
-  return loadYamlMappingFile(authorityPath(sourceRoot));
+export function loadCoexistenceProbeAuthority(sourceRoot: string): JsonObject {
+  return loadYamlMappingFile(authorityPath(sourceRoot)) as JsonObject; // cast: YAML parse IO boundary
 }
 
 /** True when the platform default app home holds a v2 Python-managed install. */
@@ -65,7 +65,7 @@ export function formatNamingDivergenceLines(raw: unknown): string[] | null {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
     return null;
   }
-  const block = raw as Dict;
+  const block = raw as JsonObject;
   const v3 = block.v3_canonical;
   const v2 = block.v2_stable;
   if (!Array.isArray(v3) || v3.length === 0 || !Array.isArray(v2) || v2.length === 0) {
@@ -78,13 +78,13 @@ export function formatNamingDivergenceLines(raw: unknown): string[] | null {
   ];
 }
 
-export function formatCoexistenceDoctorLines(contract: Dict): string[] {
+export function formatCoexistenceDoctorLines(contract: JsonObject): string[] {
   const section = String(contract.section_header ?? COEXISTENCE_SECTION_HEADER);
   const warning = contract.warning;
   if (!warning || typeof warning !== "object" || Array.isArray(warning)) {
     throw new Error("coexistence probe contract: warning must be a mapping");
   }
-  const block = warning as Dict;
+  const block = warning as JsonObject;
   const headline = String(block.headline ?? "").trim();
   const resolutions = block.resolutions;
   if (!headline || !Array.isArray(resolutions) || resolutions.length === 0) {

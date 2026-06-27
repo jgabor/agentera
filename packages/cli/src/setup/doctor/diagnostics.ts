@@ -3,6 +3,7 @@ import path from "node:path";
 
 import { expanduser, isFile, pathExists, resolvePath } from "../../core/paths.js";
 import { parseToml as parseTomlLocal } from "../../core/toml.js";
+import type { JsonObject } from "../../core/jsonValue.js";
 import {
   mkCheck,
   runtimeResult,
@@ -23,7 +24,6 @@ import {
 } from "../cursorSurfaces.js";
 import { diagnoseOpencode } from "./opencode.js";
 
-type Dict = Record<string, any>;
 type Env = Record<string, string | undefined>;
 
 const CLAUDE_ROOT_CHECK = diagnosticCheckNames("claude")[0];
@@ -64,9 +64,9 @@ const CURSOR_AGENT_HOME_CHECK = diagnosticCheckNames("cursor-agent")[0];
 const CURSOR_AGENT_WARN_STATUS = diagnosticStatusLabels("cursor-agent")[1];
 const CURSOR_AGENT_USER_ENVIRONMENT_GAP = diagnosticGapLabels("cursor-agent")[1];
 
-export function diagnoseClaude(installRoot: string, _home: string, env: Env): Dict {
+export function diagnoseClaude(installRoot: string, _home: string, env: Env): JsonObject {
   const value = env.CLAUDE_PLUGIN_ROOT;
-  let checks: Dict[];
+  let checks: JsonObject[];
   if (!value) {
     checks = [
       mkCheck(CLAUDE_ROOT_CHECK, CLAUDE_WARN_STATUS, CLAUDE_MISSING_ENV_MESSAGE, {
@@ -115,7 +115,7 @@ function copilotShellManualBoundaryMessage(prefix = ""): string {
   );
 }
 
-export function diagnoseCopilot(installRoot: string, home: string, env: Env): Dict {
+export function diagnoseCopilot(installRoot: string, home: string, env: Env): JsonObject {
   const value = env.AGENTERA_HOME;
   if (value) {
     const checks = [
@@ -139,7 +139,7 @@ export function diagnoseCopilot(installRoot: string, home: string, env: Env): Di
     if (check.status === COPILOT_PASS_STATUS) {
       check.message = COPILOT_RC_CONFIGURED_MESSAGE;
     }
-    check.message = copilotShellManualBoundaryMessage(check.message);
+    check.message = copilotShellManualBoundaryMessage(typeof check.message === "string" ? check.message : undefined);
     return runtimeResult("copilot", env, [check]);
   }
 
@@ -154,9 +154,9 @@ export function diagnoseCopilot(installRoot: string, home: string, env: Env): Di
 
 export function readCodexAgenteraHome(configPath: string): [string | null, string | null] {
   if (!isFile(configPath)) return [null, "missing"];
-  let data: Dict;
+  let data: JsonObject;
   try {
-    data = parseTomlLocal(fs.readFileSync(configPath, "utf8"));
+    data = parseTomlLocal(fs.readFileSync(configPath, "utf8")) as JsonObject; // cast: TOML parse IO boundary
   } catch (exc) {
     return [null, `invalid TOML: ${(exc as Error).message}`];
   }
@@ -164,21 +164,21 @@ export function readCodexAgenteraHome(configPath: string): [string | null, strin
   if (!policy || typeof policy !== "object" || Array.isArray(policy)) {
     return [null, "missing shell_environment_policy.set.AGENTERA_HOME"];
   }
-  const setTable = (policy as Dict).set;
+  const setTable = (policy as JsonObject).set;
   if (!setTable || typeof setTable !== "object" || Array.isArray(setTable)) {
     return [null, "missing shell_environment_policy.set.AGENTERA_HOME"];
   }
-  const value = (setTable as Dict).AGENTERA_HOME;
+  const value = (setTable as JsonObject).AGENTERA_HOME;
   if (typeof value !== "string" || !value) {
     return [null, "missing shell_environment_policy.set.AGENTERA_HOME"];
   }
   return [value, null];
 }
 
-export function diagnoseCodex(installRoot: string, home: string, env: Env): Dict {
+export function diagnoseCodex(installRoot: string, home: string, env: Env): JsonObject {
   const config = path.join(home, ".codex", "config.toml");
   const [value, error] = readCodexAgenteraHome(config);
-  let checks: Dict[];
+  let checks: JsonObject[];
   if (error !== null) {
     const status = error === "missing" || error.startsWith("missing ") ? CODEX_WARN_STATUS : CODEX_FAIL_STATUS;
     checks = [
@@ -196,8 +196,8 @@ export function diagnoseCodex(installRoot: string, home: string, env: Env): Dict
   return runtimeResult("codex", env, checks);
 }
 
-export function diagnoseCursor(installRoot: string, home: string, env: Env): Dict {
-  const checks: Dict[] = [];
+export function diagnoseCursor(installRoot: string, home: string, env: Env): JsonObject {
+  const checks: JsonObject[] = [];
   const value = env.AGENTERA_HOME;
   if (value) {
     checks.push(
@@ -272,8 +272,8 @@ export function diagnoseCursor(installRoot: string, home: string, env: Env): Dic
   return runtimeResult("cursor", env, checks);
 }
 
-export function diagnoseCursorAgent(installRoot: string, _home: string, env: Env): Dict {
-  const checks: Dict[] = [];
+export function diagnoseCursorAgent(installRoot: string, _home: string, env: Env): JsonObject {
+  const checks: JsonObject[] = [];
   const value = env.AGENTERA_HOME;
   if (value) {
     checks.push(
@@ -292,7 +292,7 @@ export function diagnoseCursorAgent(installRoot: string, _home: string, env: Env
   return runtimeResult("cursor-agent", env, checks);
 }
 
-export const DIAGNOSTICS: Record<string, (installRoot: string, home: string, env: Env) => Dict> = {
+export const DIAGNOSTICS: Record<string, (installRoot: string, home: string, env: Env) => JsonObject> = {
   claude: diagnoseClaude,
   opencode: diagnoseOpencode,
   copilot: diagnoseCopilot,

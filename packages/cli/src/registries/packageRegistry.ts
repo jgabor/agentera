@@ -108,7 +108,7 @@ export class PackageRegistry {
     return this.records.map((record) => (record.identity as JsonObject).id as string); // cast: parsed registry IO data
   }
 
-  get(packageId = "agentera"): Record<string, any> { // cast: export boundary consumed by upgrade/appModel — 2-level chain (record.version_authority.persisted_authority), looser shape strictly needed (option a)
+  get(packageId = "agentera"): JsonObject {
     for (const record of this.records) {
       if (((record.identity as JsonObject).id as string) === packageId) { // cast: parsed registry IO data
         return record;

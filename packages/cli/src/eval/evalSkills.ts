@@ -3,14 +3,13 @@ import path from "node:path";
 import { spawnSync } from "node:child_process";
 
 import { resolveSourceRoot } from "../core/sourceRoot.js";
+import type { JsonObject } from "../core/jsonValue.js";
 
 /**
  * Tier 2 eval runner for agentera skill smoke testing. Faithful TS port of
  * scripts/eval_skills.py. Crash/error detection only; output correctness is not
  * evaluated. `which`/`run` are injectable for deterministic testing.
  */
-
-type Dict = Record<string, any>;
 
 export const TRIGGER_PROMPTS: Record<string, string> = {
   document: "Audit the documentation for this project.",
@@ -140,7 +139,7 @@ export function invokeSkill(
   timeout: number,
   runtime = "claude",
   opts: { which?: WhichFn; run?: RunFn; repoRoot?: string } = {},
-): Dict {
+): JsonObject {
   const which = opts.which ?? realWhich;
   const run = opts.run ?? realRun;
   const repoRoot = opts.repoRoot ?? resolveSourceRoot();
@@ -208,13 +207,13 @@ export function runSkills(
   _parallel: number,
   runtime = "claude",
   opts: { which?: WhichFn; run?: RunFn; repoRoot?: string } = {},
-): Dict[] {
+): JsonObject[] {
   // Parallelism in the Python runner is a maintainer perf detail; the smoke
   // semantics (one result per skill, original order) are preserved sequentially.
   return skills.map((entry) => invokeSkill(entry.name, entry.prompt, timeout, runtime, opts));
 }
 
-export function buildReport(results: Dict[]): Dict {
+export function buildReport(results: JsonObject[]): JsonObject {
   const passed = results.filter((r) => r.status === "pass").length;
   const failed = results.length - passed;
   return {
@@ -230,7 +229,7 @@ export function buildDryRun(
   skills: Array<{ name: string; prompt: string }>,
   runtime = "claude",
   runtimeSource = "auto-detected",
-): Dict {
+): JsonObject {
   return {
     mode: "dry-run",
     runtime: `${runtime} (${runtimeSource})`,

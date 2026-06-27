@@ -6,8 +6,8 @@ import { resolvePath } from "../core/paths.js";
 import { HookCliAdapter } from "../hooks/validateArtifact/index.js";
 import { validateCapability } from "../validate/capability.js";
 import { smokeCheck, summarizeStatuses } from "./doctor.js";
+import type { JsonObject } from "../core/jsonValue.js";
 
-type Dict = Record<string, unknown>;
 type Env = Record<string, string | undefined>;
 
 const RUNTIME_BINARIES: Record<string, string> = {
@@ -32,7 +32,7 @@ function which(binary: string, env: Env): string | null {
   return null;
 }
 
-function runCapabilitySmoke(sourceRoot: string): Dict {
+function runCapabilitySmoke(sourceRoot: string): JsonObject {
   const contract = path.join(sourceRoot, "skills", "agentera", "capability_schema_contract.yaml");
   const statusDir = path.join(sourceRoot, "skills", "agentera", "capabilities", "status");
   const command = ["node", "agentera", "check", "validate", "capability", "status"];
@@ -57,7 +57,7 @@ function runCapabilitySmoke(sourceRoot: string): Dict {
   });
 }
 
-function runHookSmoke(): Dict {
+function runHookSmoke(): JsonObject {
   const command = ["node", "agentera", "hook", "validate-artifact"];
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-doctor-smoke-"));
   try {
@@ -92,7 +92,7 @@ function runHookSmoke(): Dict {
   }
 }
 
-function runRuntimeHostSmokes(env: Env, runtimes: string[], liveModelAllowed: boolean): Dict[] {
+function runRuntimeHostSmokes(env: Env, runtimes: string[], liveModelAllowed: boolean): JsonObject[] {
   return runtimes.map((runtime) => {
     const binary = RUNTIME_BINARIES[runtime];
     const found = which(binary, env);
@@ -125,7 +125,7 @@ export function runNpmSmokeChecks(
   sourceRoot: string,
   env: Env,
   opts: { liveModelAllowed?: boolean; runtimes?: string[] } = {},
-): Dict {
+): JsonObject {
   const runtimes = opts.runtimes ?? Object.keys(RUNTIME_BINARIES);
   const root = resolvePath(sourceRoot);
   const checks = [runCapabilitySmoke(root), runHookSmoke(), ...runRuntimeHostSmokes(env, runtimes, Boolean(opts.liveModelAllowed))];

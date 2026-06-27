@@ -7,7 +7,9 @@ import {
   SETUP_EVIDENCE,
   classifyResolvedRoot,
 } from "../../state/installRoot.js";
+import type { Classification } from "../../state/installRoot.js";
 import { loadRegistry } from "../../registries/runtimeAdapterRegistry.js";
+import type { JsonObject } from "../../core/jsonValue.js";
 
 /**
  * Setup diagnosis and confirmed installation for an Agentera suite bundle.
@@ -18,20 +20,19 @@ import { loadRegistry } from "../../registries/runtimeAdapterRegistry.js";
  * subsequent slices.
  */
 
-type Dict = Record<string, any>;
 type Env = Record<string, string | undefined>;
 
 export const SCHEMA_VERSION = "agentera.setupDoctor.v1";
 export const STATUSES = ["pass", "warn", "fail", "skip"] as const;
 
 const REGISTRY = loadRegistry();
-export const DOCTOR_RUNTIME_VIEWS: Record<string, Dict> = Object.fromEntries(
+export const DOCTOR_RUNTIME_VIEWS: Record<string, JsonObject> = Object.fromEntries(
   REGISTRY.runtimeIds.map((runtime) => [runtime, REGISTRY.consumerView("doctor", runtime)]),
 );
 export const RUNTIMES: string[] = REGISTRY.runtimeIds;
 export const WRITABLE_RUNTIMES = ["copilot", "codex"] as const;
 export const RUNTIME_BINARIES: Record<string, string> = Object.fromEntries(
-  RUNTIMES.map((runtime) => [runtime, DOCTOR_RUNTIME_VIEWS[runtime].host_detection.binary_names[0]]),
+  RUNTIMES.map((runtime) => [runtime, ((DOCTOR_RUNTIME_VIEWS[runtime].host_detection as JsonObject).binary_names as string[])[0]]), // cast: parsed registry IO data
 );
 
 export const OPENCODE_SKILL_INSTALL_COMMAND =
@@ -54,19 +55,19 @@ export const SUPPORT_PATH_RE = /(?<![\w/.$-])(?<path>references\/[A-Za-z0-9][A-Z
 // ── registry-view accessors (mirror the Python helpers) ─────────────
 
 export function diagnosticCheckNames(runtime: string): string[] {
-  return DOCTOR_RUNTIME_VIEWS[runtime].diagnostics.check_names as string[];
+  return (DOCTOR_RUNTIME_VIEWS[runtime].diagnostics as JsonObject).check_names as string[]; // cast: parsed registry IO data
 }
 export function diagnosticMessages(runtime: string): string[] {
-  return DOCTOR_RUNTIME_VIEWS[runtime].diagnostics.primary_messages as string[];
+  return (DOCTOR_RUNTIME_VIEWS[runtime].diagnostics as JsonObject).primary_messages as string[]; // cast: parsed registry IO data
 }
 export function diagnosticStatusLabels(runtime: string): string[] {
-  return DOCTOR_RUNTIME_VIEWS[runtime].diagnostics.status_labels as string[];
+  return (DOCTOR_RUNTIME_VIEWS[runtime].diagnostics as JsonObject).status_labels as string[]; // cast: parsed registry IO data
 }
 export function diagnosticGapLabels(runtime: string): string[] {
-  return DOCTOR_RUNTIME_VIEWS[runtime].diagnostics.gap_labels as string[];
+  return (DOCTOR_RUNTIME_VIEWS[runtime].diagnostics as JsonObject).gap_labels as string[]; // cast: parsed registry IO data
 }
 export function availabilityProbeLabel(runtime: string): string {
-  return String(DOCTOR_RUNTIME_VIEWS[runtime].host_detection.availability_probe_label);
+  return String((DOCTOR_RUNTIME_VIEWS[runtime].host_detection as JsonObject).availability_probe_label); // cast: parsed registry IO data
 }
 
 export const AVAILABILITY_CHECKS: Record<string, string> = Object.fromEntries(
@@ -136,7 +137,7 @@ function setupMissing(root: string): string[] {
   return SETUP_EVIDENCE.filter((entry) => !pathExists(path.join(root, entry)));
 }
 
-export function classifyInstallRoot(explicitRoot: string | null, env: Env): Dict {
+export function classifyInstallRoot(explicitRoot: string | null, env: Env): JsonObject {
   const source = explicitRoot !== null ? "argument" : "auto";
   const root = explicitRoot !== null ? resolvePath(expanduser(explicitRoot)) : autoDetectInstallRoot(env);
   if (root === null) {
@@ -188,7 +189,7 @@ export function mkCheck(
   status: string,
   message: string,
   opts: { source?: string | null; path?: string | null; gap?: string | null; details?: string[] | null } = {},
-): Dict {
+): JsonObject {
   return {
     name,
     status,
@@ -200,7 +201,7 @@ export function mkCheck(
   };
 }
 
-export function aggregateStatus(checks: Dict[]): string {
+export function aggregateStatus(checks: JsonObject[]): string {
   const statuses = checks.map((c) => c.status);
   if (statuses.length > 0 && statuses.every((s) => s === "skip")) return "skip";
   if (statuses.includes("fail")) return "fail";
@@ -209,11 +210,11 @@ export function aggregateStatus(checks: Dict[]): string {
   return "skip";
 }
 
-export function summarizeStatuses(items: Record<string, Dict> | Dict[]): Record<string, number> {
+export function summarizeStatuses(items: Record<string, JsonObject> | JsonObject[]): Record<string, number> {
   const counts: Record<string, number> = {};
   for (const status of STATUSES) counts[status] = 0;
   const values = Array.isArray(items) ? items : Object.values(items);
-  for (const item of values) counts[item.status] += 1;
+  for (const item of values) counts[String(item.status)] += 1;
   return counts;
 }
 
@@ -224,7 +225,7 @@ export function tail(text: string, limit = 5): string[] {
 
 import { classifyResolvedRoot as _classifyResolvedRoot } from "../../state/installRoot.js";
 
-function rootClassification(root: string, source: string): Dict {
+function rootClassification(root: string, source: string): Classification {
   return _classifyResolvedRoot(root, { source });
 }
 
@@ -254,7 +255,7 @@ export function which(cmd: string, pathStr: string | undefined): string | null {
   return null;
 }
 
-export function runtimeSkip(runtime: string, env: Env): Dict {
+export function runtimeSkip(runtime: string, env: Env): JsonObject {
   const binary = RUNTIME_BINARIES[runtime];
   return {
     runtime,
@@ -277,7 +278,7 @@ export function configuredRootCheck(
   candidate: string,
   installRoot: string,
   source: string,
-): Dict {
+): JsonObject {
   const classification = rootClassification(candidate, "environment");
   if (String(classification.kind).startsWith("missing_")) {
     return mkCheck(name, FAIL_STATUSES[runtime], "configured Agentera root does not exist", {
@@ -340,7 +341,7 @@ export function runtimeHostPathProblem(runtime: string, env: Env): [string, stri
   return null;
 }
 
-export function runtimeResult(runtime: string, env: Env, checks: Dict[]): Dict {
+export function runtimeResult(runtime: string, env: Env, checks: JsonObject[]): JsonObject {
   const binary = binaryPath(runtime, env);
   if (binary === null) return runtimeSkip(runtime, env);
   const binaryCheck = mkCheck(

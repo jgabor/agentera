@@ -4,6 +4,7 @@ import path from "node:path";
 import { resolvePath } from "../core/paths.js";
 import { resolveSourceRoot } from "../core/sourceRoot.js";
 import { loadYamlMappingFile } from "../core/yaml.js";
+import type { JsonObject } from "../core/jsonValue.js";
 
 /**
  * Release-metadata parity validator.
@@ -46,8 +47,6 @@ import { loadYamlMappingFile } from "../core/yaml.js";
  * flow and the lefthook pre-commit hook.
  */
 
-type Dict = Record<string, unknown>;
-
 export interface ReleaseMetadataSnapshot {
   /** Authoritative version from `registry.json` `skills[0].version`. */
   authoritativeVersion: string | null;
@@ -86,9 +85,9 @@ function rootDefault(): string {
   return resolveSourceRoot();
 }
 
-function readJson(pathname: string): Dict | null {
+function readJson(pathname: string): JsonObject | null {
   try {
-    return JSON.parse(fs.readFileSync(pathname, "utf8")) as Dict;
+    return JSON.parse(fs.readFileSync(pathname, "utf8")) as JsonObject;
   } catch {
     return null;
   }
@@ -108,11 +107,11 @@ function readRegistryVersion(root: string): { version: string | null; source: st
   if (!first || typeof first !== "object") {
     return { version: null, source };
   }
-  const version = (first as Dict).version;
+  const version = (first as JsonObject).version;
   return { version: typeof version === "string" ? version : null, source };
 }
 
-function readPackageJson(root: string): Dict | null {
+function readPackageJson(root: string): JsonObject | null {
   const candidate = path.join(root, "packages/cli/package.json");
   if (!fs.existsSync(candidate)) {
     return null;
@@ -120,13 +119,13 @@ function readPackageJson(root: string): Dict | null {
   return readJson(candidate);
 }
 
-function readUpdateChannels(root: string): Dict | null {
+function readUpdateChannels(root: string): JsonObject | null {
   const candidate = path.join(root, "references/cli/update-channels.yaml");
   if (!fs.existsSync(candidate)) {
     return null;
   }
   try {
-    return loadYamlMappingFile(candidate);
+    return loadYamlMappingFile(candidate) as JsonObject; // cast: YAML parse IO boundary
   } catch {
     return null;
   }
@@ -157,16 +156,16 @@ function parseSemverCore(version: string): { core: string; preRelease: string | 
   return { core, preRelease: preMatch ? preMatch[1] : null };
 }
 
-function pickChannelDefaults(authority: Dict | null): {
+function pickChannelDefaults(authority: JsonObject | null): {
   development: string | null;
   stable: string | null;
 } {
   if (authority === null) {
     return { development: null, stable: null };
   }
-  const versionResolution = authority.version_resolution as Dict | undefined;
-  const latestOnChannel = versionResolution?.latest_on_channel as Dict | undefined;
-  const defaults = (latestOnChannel?.offline_defaults ?? {}) as Dict;
+  const versionResolution = authority.version_resolution as JsonObject | undefined;
+  const latestOnChannel = versionResolution?.latest_on_channel as JsonObject | undefined;
+  const defaults = (latestOnChannel?.offline_defaults ?? {}) as JsonObject;
   return {
     development: typeof defaults.development === "string" ? defaults.development : null,
     stable: typeof defaults.stable === "string" ? defaults.stable : null,
@@ -182,7 +181,7 @@ export function readReleaseMetadata(root: string = rootDefault()): ReleaseMetada
 
   const topVersion = pkg && typeof pkg.version === "string" ? pkg.version : null;
   const agenteraBlock = pkg && typeof pkg.agentera === "object" && pkg.agentera !== null
-    ? (pkg.agentera as Dict)
+    ? (pkg.agentera as JsonObject)
     : null;
   const suiteVersion = agenteraBlock && typeof agenteraBlock.suiteVersion === "string"
     ? agenteraBlock.suiteVersion

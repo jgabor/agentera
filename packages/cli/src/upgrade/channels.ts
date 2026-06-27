@@ -7,6 +7,7 @@ import { isNpxBundleRoot, resolveSourceRoot } from "../core/sourceRoot.js";
 import { loadTomlFile, parseToml } from "../core/toml.js";
 import { loadYamlMappingFile } from "../core/yaml.js";
 import { cliDistributionMajor } from "./compatibility.js";
+import type { JsonObject } from "../core/jsonValue.js";
 
 /**
  * Update channel resolution for upgrade, doctor, and prime.
@@ -41,7 +42,6 @@ export interface ResolveUpdateChannelArgs {
   sourceRoot?: string;
 }
 
-type Dict = Record<string, unknown>;
 
 const CHANNEL_NAMES: readonly UpdateChannelName[] = ["stable", "development"];
 
@@ -62,7 +62,7 @@ function authorityRootFor(sourceRoot: string): string {
   return sourceRoot;
 }
 
-let cachedAuthority: Dict | null = null;
+let cachedAuthority: JsonObject | null = null;
 let cachedAuthorityRoot: string | null = null;
 
 function isUpdateChannelName(value: string): value is UpdateChannelName {
@@ -82,14 +82,14 @@ function parseChannelValue(
   return normalized;
 }
 
-function readNestedKey(mapping: Dict, dottedKey: string): unknown {
+function readNestedKey(mapping: JsonObject, dottedKey: string): unknown {
   const parts = dottedKey.split(".");
   let current: unknown = mapping;
   for (const part of parts) {
     if (!current || typeof current !== "object" || Array.isArray(current)) {
       return undefined;
     }
-    current = (current as Dict)[part];
+    current = (current as JsonObject)[part];
   }
   return current;
 }
@@ -103,9 +103,9 @@ function readConfigChannel(home: string): UpdateChannelName | null {
   if (!fs.existsSync(configPath)) {
     return null;
   }
-  let mapping: Dict;
+  let mapping: JsonObject;
   try {
-    mapping = loadTomlFile(configPath);
+    mapping = loadTomlFile(configPath) as JsonObject; // cast: TOML parse IO boundary
   } catch {
     return null;
   }
@@ -119,12 +119,12 @@ function readConfigChannel(home: string): UpdateChannelName | null {
   return parseChannelValue(raw, "config_file");
 }
 
-export function loadUpdateChannelsAuthority(sourceRoot: string): Dict {
+export function loadUpdateChannelsAuthority(sourceRoot: string): JsonObject {
   const authorityPath = path.join(authorityRootFor(sourceRoot), UPDATE_CHANNELS_AUTHORITY);
-  return loadYamlMappingFile(authorityPath);
+  return loadYamlMappingFile(authorityPath) as JsonObject; // cast: YAML parse IO boundary
 }
 
-function authorityForSourceRoot(authorityRoot: string): Dict {
+function authorityForSourceRoot(authorityRoot: string): JsonObject {
   if (cachedAuthority && cachedAuthorityRoot === authorityRoot) {
     return cachedAuthority;
   }
@@ -140,34 +140,34 @@ export function resetUpdateChannelsAuthorityCache(): void {
   cachedAuthorityRoot = null;
 }
 
-function channelEntry(authority: Dict, channel: UpdateChannelName): Dict {
-  const channels = authority.channels as Dict | undefined;
+function channelEntry(authority: JsonObject, channel: UpdateChannelName): JsonObject {
+  const channels = authority.channels as JsonObject | undefined;
   const entry = channels?.[channel];
   if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
     throw new Error(`update channels authority missing channel ${channel}`);
   }
-  return entry as Dict;
+  return entry as JsonObject;
 }
 
-function npmResolution(entry: Dict): Dict {
-  const resolution = entry.resolution as Dict | undefined;
+function npmResolution(entry: JsonObject): JsonObject {
+  const resolution = entry.resolution as JsonObject | undefined;
   const npm = resolution?.npm;
   if (!npm || typeof npm !== "object" || Array.isArray(npm)) {
     throw new Error("update channels authority missing npm resolution");
   }
-  return npm as Dict;
+  return npm as JsonObject;
 }
 
-function gitResolution(entry: Dict): Dict | null {
-  const resolution = entry.resolution as Dict | undefined;
+function gitResolution(entry: JsonObject): JsonObject | null {
+  const resolution = entry.resolution as JsonObject | undefined;
   const git = resolution?.git;
   if (!git || typeof git !== "object" || Array.isArray(git)) {
     return null;
   }
-  if ((git as Dict).supported === false) {
+  if ((git as JsonObject).supported === false) {
     return null;
   }
-  return git as Dict;
+  return git as JsonObject;
 }
 
 /** Stable channel must not target 3.x pre-release dist-tags in npm update commands. */
@@ -287,7 +287,7 @@ export function resolveInvokedUpdateChannel(args: ResolveUpdateChannelArgs = {})
 
 /** Parse `update.channel` from TOML text (tests). */
 export function parseConfigUpdateChannel(text: string): UpdateChannelName | null {
-  const raw = readNestedKey(parseToml(text), CONFIG_CHANNEL_KEY);
+  const raw = readNestedKey(parseToml(text) as JsonObject, CONFIG_CHANNEL_KEY); // cast: TOML parse IO boundary
   if (raw === undefined || raw === null) {
     return null;
   }

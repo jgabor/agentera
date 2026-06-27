@@ -1,11 +1,11 @@
 import fs from "node:fs";
 
+import type { JsonObject } from "../core/jsonValue.js";
+
 /**
  * Semantic fixture contract validation for offline skill evals. Faithful TS
  * port of scripts/semantic_fixtures.py. Defines the fixture shape only.
  */
-
-type Dict = Record<string, any>;
 
 export const REQUIRED_SECTIONS = [
   "Prompt",
@@ -16,10 +16,10 @@ export const REQUIRED_SECTIONS = [
 
 export interface SemanticFixture {
   prompt: string;
-  seededState: Dict;
+  seededState: JsonObject;
   capturedOutput: string;
-  toolTrace: Dict;
-  expectedFacts: Dict;
+  toolTrace: JsonObject;
+  expectedFacts: JsonObject;
 }
 
 function nonEmptyString(value: unknown): boolean {
@@ -45,7 +45,7 @@ export function validateFixtureText(text: string): [SemanticFixture | null, stri
     errors.push("malformed section: Prompt: must be non-empty");
   }
 
-  let seededState: Dict = {};
+  let seededState: JsonObject = {};
   if ("Seeded Project State" in sections) {
     const [state, stateErrors] = validateSeededState(sections["Seeded Project State"]);
     seededState = state;
@@ -57,14 +57,14 @@ export function validateFixtureText(text: string): [SemanticFixture | null, stri
     errors.push("malformed section: Captured Output: must be non-empty");
   }
 
-  let toolTrace: Dict = { calls: [] };
+  let toolTrace: JsonObject = { calls: [] };
   if ("Tool Trace" in sections) {
     const [trace, traceErrors] = validateToolTrace(sections["Tool Trace"]);
     toolTrace = trace;
     errors.push(...traceErrors);
   }
 
-  let expectedFacts: Dict = {};
+  let expectedFacts: JsonObject = {};
   if ("Expected Facts" in sections) {
     const [facts, factErrors] = validateExpectedFacts(sections["Expected Facts"]);
     expectedFacts = facts;
@@ -100,7 +100,7 @@ function parseSections(text: string): Record<string, string> {
   return out;
 }
 
-function validateSeededState(sectionText: string): [Dict, string[]] {
+function validateSeededState(sectionText: string): [JsonObject, string[]] {
   const [data, errors] = loadJsonSection("Seeded Project State", sectionText);
   if (errors.length > 0) {
     return [{}, errors];
@@ -108,7 +108,7 @@ function validateSeededState(sectionText: string): [Dict, string[]] {
   if (data === null || typeof data !== "object" || Array.isArray(data)) {
     return [{}, ["malformed section: Seeded Project State: JSON must be an object"]];
   }
-  const files = (data as Dict).files;
+  const files = (data as JsonObject).files;
   if (!Array.isArray(files)) {
     return [{}, ["malformed section: Seeded Project State: files must be a list"]];
   }
@@ -124,10 +124,10 @@ function validateSeededState(sectionText: string): [Dict, string[]] {
       return [{}, [`malformed section: Seeded Project State: files[${index}].content must be a string`]];
     }
   }
-  return [data as Dict, []];
+  return [data as JsonObject, []];
 }
 
-function validateExpectedFacts(sectionText: string): [Dict, string[]] {
+function validateExpectedFacts(sectionText: string): [JsonObject, string[]] {
   const [data, jsonErrors] = loadJsonSection("Expected Facts", sectionText);
   if (jsonErrors.length > 0) {
     return [{}, jsonErrors];
@@ -135,7 +135,7 @@ function validateExpectedFacts(sectionText: string): [Dict, string[]] {
   if (data === null || typeof data !== "object" || Array.isArray(data)) {
     return [{}, ["malformed section: Expected Facts: JSON must be an object"]];
   }
-  const d = data as Dict;
+  const d = data as JsonObject;
   const errors: string[] = [];
   errors.push(...validateStringList(d, "required_output", false));
   errors.push(...validateStringList(d, "forbidden_output", false));
@@ -143,11 +143,21 @@ function validateExpectedFacts(sectionText: string): [Dict, string[]] {
   errors.push(...validateStringList(d, "forbidden_tool_calls", false));
   errors.push(...validateToolCallCounts(d.tool_call_counts));
 
-  const hasOutputFact = Boolean(d.required_output?.length || d.forbidden_output?.length);
+  const requiredOutput = d.required_output;
+  const forbiddenOutput = d.forbidden_output;
+  const hasOutputFact = Boolean(
+    (Array.isArray(requiredOutput) || typeof requiredOutput === "string" ? requiredOutput.length : 0) ||
+      (Array.isArray(forbiddenOutput) || typeof forbiddenOutput === "string" ? forbiddenOutput.length : 0),
+  );
+  const requiredToolCalls = d.required_tool_calls;
+  const forbiddenToolCalls = d.forbidden_tool_calls;
+  const toolCallCounts = d.tool_call_counts;
   const hasToolFact = Boolean(
-    d.required_tool_calls?.length ||
-      d.forbidden_tool_calls?.length ||
-      (d.tool_call_counts && Object.keys(d.tool_call_counts).length),
+    (Array.isArray(requiredToolCalls) || typeof requiredToolCalls === "string" ? requiredToolCalls.length : 0) ||
+      (Array.isArray(forbiddenToolCalls) || typeof forbiddenToolCalls === "string" ? forbiddenToolCalls.length : 0) ||
+      (toolCallCounts && typeof toolCallCounts === "object" && !Array.isArray(toolCallCounts)
+        ? Object.keys(toolCallCounts).length
+        : 0),
   );
   const hasArtifactFact = "artifact_expectations" in d;
   if (!hasOutputFact && !hasToolFact && !hasArtifactFact) {
@@ -161,7 +171,7 @@ function validateExpectedFacts(sectionText: string): [Dict, string[]] {
   return [d, errors];
 }
 
-function validateToolTrace(sectionText: string): [Dict, string[]] {
+function validateToolTrace(sectionText: string): [JsonObject, string[]] {
   const [data, errors] = loadJsonSection("Tool Trace", sectionText);
   if (errors.length > 0) {
     return [{}, errors];
@@ -169,18 +179,18 @@ function validateToolTrace(sectionText: string): [Dict, string[]] {
   if (data === null || typeof data !== "object" || Array.isArray(data)) {
     return [{}, ["malformed section: Tool Trace: JSON must be an object"]];
   }
-  const calls = (data as Dict).calls;
+  const calls = (data as JsonObject).calls;
   if (!Array.isArray(calls) || !calls.every((item) => nonEmptyString(item))) {
     return [{}, ["malformed section: Tool Trace: calls must be non-empty strings"]];
   }
-  return [data as Dict, []];
+  return [data as JsonObject, []];
 }
 
 function validateArtifactExpectations(value: unknown): string[] {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     return ["malformed section: Expected Facts: artifact_expectations must be an object"];
   }
-  const writes = (value as Dict).writes;
+  const writes = (value as JsonObject).writes;
   if (writes === "none") {
     return [];
   }
@@ -214,7 +224,7 @@ function validateToolCallCounts(value: unknown): string[] {
   if (typeof value !== "object" || Array.isArray(value)) {
     return ["malformed section: Expected Facts: tool_call_counts must be an object"];
   }
-  for (const [key, count] of Object.entries(value as Dict)) {
+  for (const [key, count] of Object.entries(value as JsonObject)) {
     if (!nonEmptyString(key)) {
       return ["malformed section: Expected Facts: tool_call_counts keys must be non-empty strings"];
     }
@@ -225,7 +235,7 @@ function validateToolCallCounts(value: unknown): string[] {
   return [];
 }
 
-function validateStringList(data: Dict, key: string, required: boolean): string[] {
+function validateStringList(data: JsonObject, key: string, required: boolean): string[] {
   if (!(key in data)) {
     return required ? [`malformed section: Expected Facts: ${key} is required`] : [];
   }

@@ -6,6 +6,7 @@ import {
 } from "./channels.js";
 import { resolveRunningVersion } from "./versionResolution.js";
 import type { InstallClassification } from "./compatibility.js";
+import type { JsonObject } from "../core/jsonValue.js";
 
 /**
  * Head-of-output "next major" doctor section.
@@ -53,8 +54,6 @@ export const V1_NEXT_MAJOR_FALLBACK: NextMajorBlock & { currentVersion: string; 
     "Forward migration upgrades artifact format from Markdown to YAML; review the preview before applying.",
 };
 
-type Dict = Record<string, unknown>;
-
 function parseNextMajorBlock(raw: unknown): NextMajorBlock | null {
   if (raw === null || raw === undefined) {
     return null;
@@ -62,7 +61,7 @@ function parseNextMajorBlock(raw: unknown): NextMajorBlock | null {
   if (typeof raw !== "object" || Array.isArray(raw)) {
     return null;
   }
-  const block = raw as Dict;
+  const block = raw as JsonObject;
   const channel = String(block.channel ?? "").trim().toLowerCase();
   if (channel !== "stable" && channel !== "development") {
     return null;
@@ -114,12 +113,12 @@ export function isStableSuccessorAnnounced(
 
 export function loadChannelNextMajor(sourceRoot: string, channel: UpdateChannelName): NextMajorBlock | null {
   const authority = loadUpdateChannelsAuthority(sourceRoot);
-  const channels = authority.channels as Dict | undefined;
+  const channels = authority.channels as JsonObject | undefined;
   const entry = channels?.[channel];
   if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
     return null;
   }
-  return parseNextMajorBlock((entry as Dict).next_major);
+  return parseNextMajorBlock((entry as JsonObject).next_major);
 }
 
 export function formatNextMajorDoctorLines(args: {

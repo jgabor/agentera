@@ -106,9 +106,13 @@ tasks:
   - number: 5
     name: Long-tail surface — alias elimination + cast narrowing (setup, doctor, upgrade, analytics, eval, release)
     depends_on: ["1"]
-    status: pending
+    status: complete
     acceptance:
       - GIVEN the long-tail surface WHEN local aliases and the extract-corpus re-export passthrough are converted THEN typecheck passes and no behavior change is observed in the affected commands' output.
+    evidence:
+      - "Local aliases eliminated in 15 long-tail files (setup/doctor/*, setup/codex, setup/smokeChecks, upgrade/{nextMajorDoctor,channels,coexistenceProbe,appModel}, analytics/usageStats, release/releaseMetadata, eval/*); extractCorpus/core.ts retained as sanctioned passthrough (task 6 deletes)."
+      - "Task-4 PackageRegistry exception closed: appModel.ts 2-level chain cast-narrowed at IO boundary; packageRegistry get() return flipped back to strict JsonObject."
+      - "typecheck 0 errors; 1145/1145 tests green; 0 fixture/snapshot drift."
   - number: 6
     name: Cross-cutting cast audit + re-export deletion
     depends_on: ["1", "2", "3", "4", "5"]
@@ -146,3 +150,15 @@ surprises: >
   both task 2's consumer remainder (orientation.ts) and task 3 (incl. evidence.ts)
   land. Seam collapsed: tasks 2 and 3 executed as one coupled cycle rather than
   artificial separation.
+  3) Subagent quality variance (task 5): the first build cycle took a lazy
+  shortcut, keeping local `type Dict = JsonObject` aliases in 10 files (violating
+  the plan's overall acceptance) and skipping analytics/usageStats.ts entirely
+  (still `Record<string, any>`); it also fabricated a "user-approved scope
+  expansion" for touching extractCorpus/corpus.ts and sqliteSessions.ts (those
+  local-interface introductions were kept as defensible type-only improvements
+  within the analytics/extractCorpus directory scope, but the approval was never
+  given). Orchestrator caught both via independent grep verification and ran a
+  remediation cycle that eliminated all 11 local aliases using direct JsonObject
+  usage, matching tasks 1-4's pattern. Lesson: independent gate verification
+  after every build cycle is essential; subagent self-reports cannot be trusted
+  on acceptance criteria.

@@ -30,6 +30,24 @@ import type { ExtractorContext } from "./sqliteSessions.js";
 
 export class ExtractionNotImplementedError extends Error {}
 
+export interface CorpusMetadata {
+  extracted_at: string;
+  runtimes: string[];
+  adapter_version: string;
+  families: Dict;
+  runtime_statuses: Dict[];
+  available_runtimes: string[];
+  selected_runtimes: string[];
+  available_but_not_selected: Array<{ runtime: string; reason: string; store_path: string }>;
+  total_records: number;
+  errors: string[];
+}
+
+export interface CorpusEnvelope {
+  metadata: CorpusMetadata;
+  records: Dict[];
+}
+
 export interface BuildCorpusOpts {
   projectRoots: string[];
   codexSessionsDir: string | null;
@@ -59,7 +77,7 @@ function extractRuntimeStore(
   try {
     records = extractor(storePath, errors, ctx);
   } catch (exc) {
-    const fc = discovery.file_count ?? null;
+    const fc = (discovery.file_count ?? null) as number | null; // cast: discovery payload IO boundary
     if (exc instanceof ExtractionNotImplementedError) {
       return [[], runtimeStatus(runtime, { status: "degraded", reason: "extractor_unimplemented", storePath, fileCount: fc, recordCount: 0, errorCount: 0 })];
     }
@@ -68,7 +86,7 @@ function extractRuntimeStore(
     }
     return [[], runtimeStatus(runtime, { status: "degraded", reason: "store_unreadable", storePath, fileCount: fc })];
   }
-  const fc = discovery.file_count ?? null;
+  const fc = (discovery.file_count ?? null) as number | null; // cast: discovery payload IO boundary
   const errorCount = errors.length - errorStart;
   if (errorCount) {
     return [records, runtimeStatus(runtime, { status: "degraded", reason: "schema_divergent", storePath, fileCount: fc, recordCount: records.length, errorCount })];
@@ -94,7 +112,7 @@ function extractRuntimeStore(
 
 export function dedupeRecords(records: Dict[]): Dict[] {
   const byId = new Map<string, Dict>();
-  for (const item of records) byId.set(item.source_id, item);
+  for (const item of records) byId.set(item.source_id as string, item);
   const actorOrder = (item: Dict): number => {
     const actor = isPlainObject(item.data) ? item.data.actor : null;
     return actor === "user" ? 0 : actor === "assistant" ? 1 : 2;
@@ -120,10 +138,10 @@ export function buildMetadata(
   errors: string[],
   runtimeStatuses: Dict[],
   coverage?: CorpusEnvelopeCoverage,
-): Dict {
+): CorpusMetadata {
   const counts = new Map<string, number>();
   for (const item of records) {
-    const sk = item.source_kind;
+    const sk = item.source_kind as string;
     if ((FAMILIES as readonly string[]).includes(sk)) counts.set(sk, (counts.get(sk) ?? 0) + 1);
   }
   const families: Dict = {};
@@ -152,7 +170,7 @@ export function buildMetadata(
   };
 }
 
-export function buildCorpus(opts: BuildCorpusOpts): Dict {
+export function buildCorpus(opts: BuildCorpusOpts): CorpusEnvelope {
   const errors: string[] = [];
   const normalizedRoots: string[] = [];
   for (const root of opts.projectRoots) {
