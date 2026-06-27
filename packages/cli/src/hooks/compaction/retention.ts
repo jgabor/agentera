@@ -9,7 +9,7 @@
 import { MAX_FULL_ENTRIES, MAX_ONELINE_ENTRIES, applyRetentionCaps } from "../common.js";
 import { truncateWords } from "./dryRun.js";
 
-type Dict = Record<string, any>;
+import type { JsonObject } from "../../core/jsonValue.js";
 
 export function overLimitCount(activeCount: number, archiveCount: number): number {
   const totalCount = activeCount + archiveCount;
@@ -36,10 +36,10 @@ export function stableSortBy<T>(arr: T[], key: (x: T) => number | string, revers
 export function yamlEntryNumber(entry: unknown): number {
   let summary: string;
   if (entry && typeof entry === "object" && !Array.isArray(entry)) {
-    const number = (entry as Dict).number;
+    const number = (entry as JsonObject).number;
     if (typeof number === "number" && Number.isInteger(number)) return number;
     if (typeof number === "string" && /^\d+$/.test(number)) return parseInt(number, 10);
-    summary = String((entry as Dict).summary ?? "");
+    summary = String((entry as JsonObject).summary ?? "");
   } else {
     summary = String(entry);
   }
@@ -49,12 +49,12 @@ export function yamlEntryNumber(entry: unknown): number {
 
 function yamlEntryTimestamp(entry: unknown): string {
   if (entry && typeof entry === "object" && !Array.isArray(entry)) {
-    return String((entry as Dict).timestamp || (entry as Dict).date || "");
+    return String((entry as JsonObject).timestamp || (entry as JsonObject).date || "");
   }
   return "";
 }
 
-function yamlSummaryText(entry: Dict, ...fields: string[]): string {
+function yamlSummaryText(entry: JsonObject, ...fields: string[]): string {
   for (const field of fields) {
     const value = entry[field];
     if (typeof value === "string" && value.trim()) {
@@ -80,11 +80,11 @@ function isEmptyish(v: unknown): boolean {
   );
 }
 
-export function yamlArchiveEntry(specName: string, entry: unknown): Dict {
+export function yamlArchiveEntry(specName: string, entry: unknown): JsonObject {
   if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
     return { summary: String(entry) };
   }
-  const e = entry as Dict;
+  const e = entry as JsonObject;
   if (specName === "progress") {
     const number = e.number ?? "?";
     const date = String(e.timestamp ?? "").split(/\s+/)[0] || "";
@@ -97,7 +97,7 @@ export function yamlArchiveEntry(specName: string, entry: unknown): Dict {
     const date = String(e.date ?? "");
     const datePart = date ? ` (${date})` : "";
     const choice = yamlSummaryText(e, "choice", "question");
-    const archiveEntry: Dict = { summary: `Decision ${number}${datePart}: ${choice}` };
+    const archiveEntry: JsonObject = { summary: `Decision ${number}${datePart}: ${choice}` };
     for (const field of ["number", "date", "choice", "outcome", "feeds_into", "satisfaction"]) {
       const value = e[field];
       if (!isEmptyish(value)) archiveEntry[field] = value;
@@ -164,17 +164,19 @@ export function yamlArchiveEntries(entries: any[]): any[] {
 
 function decisionSatisfactionState(entry: unknown): string | null {
   if (!entry || typeof entry !== "object") return null;
-  const satisfaction = (entry as Dict).satisfaction;
+  // cast: decision record fields read from parsed decisions.yaml
+  const satisfaction = (entry as JsonObject).satisfaction;
   if (!satisfaction || typeof satisfaction !== "object") return null;
-  const state = satisfaction.state;
+  const state = (satisfaction as JsonObject).state;
   return typeof state === "string" ? state : null;
 }
 
 function decisionRequiresUserReview(entry: unknown): boolean {
   if (!entry || typeof entry !== "object") return true;
-  const satisfaction = (entry as Dict).satisfaction;
+  // cast: decision record fields read from parsed decisions.yaml
+  const satisfaction = (entry as JsonObject).satisfaction;
   if (!satisfaction || typeof satisfaction !== "object") return true;
-  const confirmation = satisfaction.user_confirmation;
+  const confirmation = (satisfaction as JsonObject).user_confirmation;
   return (
     decisionSatisfactionState(entry) !== "user_confirmed_satisfied" ||
     !confirmation ||

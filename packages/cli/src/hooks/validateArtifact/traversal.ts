@@ -20,7 +20,7 @@ import { DEFAULT_ARTIFACT_PATHS } from "../common.js";
 import { COMPACTABLE_YAML_ARTIFACTS, compactFile, compactYamlFile } from "../compaction/index.js";
 import { isMapping } from "./schema.js";
 
-type Dict = Record<string, any>;
+import type { JsonObject } from "../../core/jsonValue.js";
 
 const AGENT_YAML_RE = /\.agentera\/([a-z_]+)\.yaml$/;
 
@@ -31,9 +31,10 @@ function resolvePathRel(fp: string, cwd: string): string {
 function docsPathOverrides(cwd: string): Record<string, string> {
   const docsPath = path.join(cwd, ".agentera", "docs.yaml");
   if (!fs.existsSync(docsPath) || !fs.statSync(docsPath).isFile()) return {};
-  let data: Dict;
+  let data: JsonObject;
   try {
-    data = loadYamlMapping(fs.readFileSync(docsPath, "utf8"));
+    // cast: docs.yaml path-override mapping parsed from a YAML file
+    data = loadYamlMapping(fs.readFileSync(docsPath, "utf8")) as JsonObject;
   } catch (exc) {
     process.stderr.write(`warning: failed to load docs path overrides: ${(exc as Error).message}\n`);
     return {};

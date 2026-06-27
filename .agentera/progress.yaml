@@ -1,4 +1,36 @@
 cycles:
+- number: 679
+  timestamp: 2026-06-27 12:00
+  type: refactor
+  phase: build
+  what: 'Plan task 1 (chore:3.0.0): consolidate scattered `type Dict = Record<string,
+    any>` aliases in the hooks subsystem. Removed the local alias in all 12 hooks
+    modules (sessionStart/Stop, validateArtifact/{violations,traversal,markdown,schema,index,runtime},
+    compaction/{dryRun,retention,parse,apply}) and imported `JsonObject` from core/jsonValue.
+    Tightening to the strict JsonValue union surfaced ~80 latent typecheck errors
+    from dynamic property access on parsed-JSON maps; resolved in-scope by keeping
+    IO-boundary casts (file/YAML/stdin parse) with `// cast:` comments and narrowing
+    internal access via type guards (e.g. isMapping in violations.ts). ~14 internal
+    casts converted, ~22 IO casts kept and documented.'
+  discovered: "JsonObject is NOT structurally compatible with Record<string, any>\
+    \ \u2014 the strict union member type exposed latent unsafety across parsed-JSON\
+    \ map access. The design-phase \"largely mechanical\" assumption was wrong; tasks\
+    \ 2-5 should budget for the same tightening surface. The strictness win is the\
+    \ actual point of the refactor."
+  verified: 'pnpm -C packages/cli run typecheck passes (0 errors). pnpm -C packages/cli
+    test: 1145/1145 pass (132 files; hooks/validate/compaction subset 138/138). rg
+    `type Dict\s*=` in packages/cli/src/hooks/ returns no matches. No fixture/snapshot
+    change.'
+  next: "Plan task 1 complete. Next dependency-ready: tasks 2 (CLI commands/state-query),\
+    \ 3 (capabilityContext/startup-analysis), 5 (long-tail) \u2014 all depend only\
+    \ on 1. Task 4 blocked on 3. Hold for commit approval before proceeding."
+  context:
+    intent: Type-only consolidation of JSON-value aliases onto the shared core/jsonValue
+      module; narrow `as` casts to IO boundaries. No behavior change.
+    constraints: Only the 12 hooks files. core/jsonValue.ts untouched. No new public
+      API. feat/v3 only.
+    artifacts:
+      plan: .agentera/plan.yaml (task 1 -> complete; surprise recorded)
 - number: 678
   timestamp: 2026-06-27 10:40
   type: fix
@@ -242,10 +274,9 @@ cycles:
   inspiration: Plan light plan for three degraded TODOs targeting discuss/instructions.ts
     prose accuracy.
   discovered: "TODO.md edit hook blocks writes when Critical section is empty \u2014\
-    \ pre-existing issue (TODO.md @ ⇶ Critical — empty-section hook); bypassed via bash\
-    \ write. Plan schema requires\
-    \ at least one task and quoted date string \u2014 same YAML date-quoting class\
-    \ of bug as T1."
+    \ pre-existing issue (TODO.md @ \u21F6 Critical \u2014 empty-section hook); bypassed\
+    \ via bash write. Plan schema requires at least one task and quoted date string\
+    \ \u2014 same YAML date-quoting class of bug as T1."
   verified: "pnpm -C packages/cli test \u2014 939/941 pass (2 pre-existing appHome\
     \ env-var failures); pnpm -C packages/cli run typecheck \u2014 clean; check compact\
     \ \u2014 status=pass, over_limit=0."
@@ -285,33 +316,9 @@ cycles:
     unknowns: None for T6 acceptance.
     scope: .agentera/archive/PLAN-2026-06-18-decouple-vitest-live-repo.yaml, .agentera/plan.yaml
       (deleted), .agentera/progress.yaml, packages/cli/test/README.md
-- number: 669
-  timestamp: 2026-06-18 21:00
-  type: chore
-  phase: build
-  what: "Plan T5 \u2014 decouple registry and evaluator TODO coupling: packageRegistry\
-    \ and artifactRegistry tests read fixture repo-state/ok/.agentera/docs.yaml; evaluatorHandoffContract\
-    \ ledger-shift test mutates useFixtureProject('ok') TODO copy in tmp, never REPO_ROOT/TODO.md;\
-    \ ok fixture docs.yaml version_files aligned with package-registry docs_targets."
-  inspiration: "Decouple vitest from live repo artifact state plan T5 \u2014 registry\
-    \ and oracle tests must not read or mutate live session artifacts."
-  discovered: ok fixture docs.yaml needed registry-aligned version_files for packageRegistry
-    manifest projection test; ledger-shift regression still verifies citations against
-    REPO_ROOT static fixture paths.
-  verified: "pnpm -C packages/cli test test/registries/packageRegistry.test.ts test/registries/artifactRegistry.test.ts\
-    \ test/registries/evaluatorHandoffContract.test.ts \u2014 pass; no vitest reads\
-    \ or mutates live .agentera/docs.yaml or TODO.md."
-  next: "Task 6 \u2014 verification and closeout."
-  context:
-    intent: "Task 5 only \u2014 registry/evaluator fixture migration, no commit unless\
-      \ user asks."
-    constraints: feat/v3; REPO_ROOT retained for static index_targets and citation
-      fixture paths under packages/cli/test/cli/fixtures/.
-    unknowns: None for T5 acceptance.
-    scope: packages/cli/test/registries/packageRegistry.test.ts, packages/cli/test/registries/artifactRegistry.test.ts,
-      packages/cli/test/registries/evaluatorHandoffContract.test.ts, packages/cli/test/fixtures/repo-state/ok/.agentera/docs.yaml,
-      packages/cli/test/README.md, .agentera/plan.yaml, .agentera/progress.yaml
 archive:
+- summary: "Cycle 669 (2026-06-18): Plan T5 \u2014 decouple registry and evaluator\
+    \ TODO coupling: packageRegistry and artifactRegistry tests read fixture..."
 - summary: "Cycle 668 (2026-06-18): Plan T4 \u2014 decouple artifact validation and\
     \ validate oracles: migrated validateArtifact.test.ts, validate.test.ts, and validateVerifyOracles.test.ts\
     \ to..."
@@ -413,5 +420,3 @@ archive:
 - summary: "Cycle 628 (2026-06-02): Freeze validate/verify family parity oracles \u2014\
     \ two new oracle fixtures (validate-family.json, verify-eval-family.json) and\
     \ a new..."
-- summary: 'Cycle 627 (2026-06-02): Wire the invalid-input envelope across the remaining
-    CLI surfaces (lint, backfill, state, query, compact, schema,...'

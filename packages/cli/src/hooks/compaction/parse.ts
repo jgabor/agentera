@@ -12,7 +12,7 @@
 import { parseTodoMarkdownListItem } from "../../cli/todoMarkdown.js";
 import { ArtifactSpec, SPECS, escapeRe } from "./dryRun.js";
 
-type Dict = Record<string, any>;
+import type { JsonObject } from "../../core/jsonValue.js";
 type TodoSectionKind = "severity" | "resolved" | "other";
 
 const SEVERITY_HEADING_RE = /^##\s*(⇶|⇉|→|⇢)\s/m;
@@ -34,8 +34,8 @@ export function splitArchive(text: string, archiveHeading: string): [string, str
   return [pre, after.trim()];
 }
 
-export function parseFullEntries(text: string, spec: ArtifactSpec): Dict[] {
-  const entries: Dict[] = [];
+export function parseFullEntries(text: string, spec: ArtifactSpec): JsonObject[] {
+  const entries: JsonObject[] = [];
   const re = new RegExp(spec.entryHeadingRe.source, "gm");
   const matches = [...text.matchAll(re)];
   for (let i = 0; i < matches.length; i++) {
@@ -61,9 +61,9 @@ export function parseFullEntries(text: string, spec: ArtifactSpec): Dict[] {
   return entries;
 }
 
-export function parseOnelineEntries(text: string, spec: ArtifactSpec): Dict[] {
+export function parseOnelineEntries(text: string, spec: ArtifactSpec): JsonObject[] {
   if (spec.onelineHeadingRe === null) return [];
-  const entries: Dict[] = [];
+  const entries: JsonObject[] = [];
   const re = new RegExp(spec.onelineHeadingRe.source);
   for (const line of text.split(/\r\n|\r|\n/)) {
     if (re.test(line)) {
@@ -82,10 +82,10 @@ export function extractResolvedSection(text: string): [number, number, string] {
   return [m.index, bodyEnd, text.slice(bodyStart, bodyEnd)];
 }
 
-export function parseTodoResolved(text: string, spec: ArtifactSpec): Dict[] {
+export function parseTodoResolved(text: string, spec: ArtifactSpec): JsonObject[] {
   const [, , body] = extractResolvedSection(text);
   if (!body) return [];
-  const entries: Dict[] = [];
+  const entries: JsonObject[] = [];
   const lines = body.split(/\r\n|\r|\n/);
   const headRe = new RegExp(spec.entryHeadingRe.source);
   let i = 0;
@@ -247,7 +247,7 @@ export function normalizeTodoResolvedLayout(content: string): { text: string; ch
   return { text, changed: text !== content };
 }
 
-export function parseEntries(text: string, specName: string): Dict[] {
+export function parseEntries(text: string, specName: string): JsonObject[] {
   const spec = SPECS[specName];
   if (spec.name === "todo-resolved") {
     return parseTodoResolved(text, spec);

@@ -14,7 +14,8 @@ import {
  * Faithful TS port of hooks/session_start.py.
  */
 
-type Dict = Record<string, any>;
+import type { JsonObject } from "../core/jsonValue.js";
+
 type Env = Record<string, string | undefined>;
 
 const END_OF_STRING = "$(?![\\s\\S])";
@@ -103,13 +104,15 @@ function loadYaml(p: string): unknown {
 
 export function extractLatestProgressYaml(data: unknown): string | null {
   if (!data || typeof data !== "object" || Array.isArray(data)) return null;
-  const cycles = (data as Dict).cycles;
+  const cycles = (data as JsonObject).cycles;
   if (!Array.isArray(cycles) || cycles.length === 0) return null;
   const latest = cycles[0] && typeof cycles[0] === "object" ? cycles[0] : null;
   if (!latest) return null;
+  // cast: progress-cycle fields read from parsed progress.yaml
+  const obj = latest as JsonObject;
   const parts: string[] = [];
   for (const key of ["number", "phase", "what", "verified", "next"]) {
-    const value = latest[key];
+    const value = obj[key];
     if (value !== null && value !== undefined && value !== "") {
       parts.push(`${key}: ${value}`);
     }
@@ -119,22 +122,25 @@ export function extractLatestProgressYaml(data: unknown): string | null {
 
 export function extractHealthGradesYaml(data: unknown): string | null {
   if (!data || typeof data !== "object" || Array.isArray(data)) return null;
-  const audits = (data as Dict).audits;
+  const audits = (data as JsonObject).audits;
   if (!Array.isArray(audits) || audits.length === 0 || typeof audits[0] !== "object") return null;
-  const grades = audits[0].grades;
+  // cast: audit grades read from parsed health.yaml
+  const grades = (audits[0] as JsonObject).grades;
   if (!grades || typeof grades !== "object" || Array.isArray(grades) || Object.keys(grades).length === 0) return null;
   return "Grades: " + Object.entries(grades).map(([k, v]) => `${k} ${v}`).join(" | ");
 }
 
 export function extractNextPlanTaskYaml(data: unknown): string | null {
   if (!data || typeof data !== "object" || Array.isArray(data)) return null;
-  const tasks = (data as Dict).tasks;
+  const tasks = (data as JsonObject).tasks;
   if (!Array.isArray(tasks)) return null;
   for (const task of tasks) {
     if (!task || typeof task !== "object") continue;
-    if (String(task.status ?? "").toLowerCase() === "complete") continue;
-    const number = task.number;
-    const name = task.name ?? "unnamed task";
+    // cast: plan-task fields read from parsed plan.yaml
+    const taskObj = task as JsonObject;
+    if (String(taskObj.status ?? "").toLowerCase() === "complete") continue;
+    const number = taskObj.number;
+    const name = taskObj.name ?? "unnamed task";
     return number !== null && number !== undefined ? `Task ${number}: ${name}` : String(name);
   }
   return null;
@@ -142,12 +148,14 @@ export function extractNextPlanTaskYaml(data: unknown): string | null {
 
 export function extractSessionSummaryYaml(data: unknown): string | null {
   if (!data || typeof data !== "object" || Array.isArray(data)) return null;
-  const bookmarks = (data as Dict).bookmarks;
+  const bookmarks = (data as JsonObject).bookmarks;
   if (!Array.isArray(bookmarks) || bookmarks.length === 0 || typeof bookmarks[0] !== "object") return null;
   const latest = bookmarks[0];
-  const timestamp = latest.timestamp ?? "";
-  const summary = latest.summary ?? "";
-  const artifacts = latest.artifacts ?? [];
+  // cast: session bookmark fields read from parsed session bookmark yaml
+  const latestObj = latest as JsonObject;
+  const timestamp = latestObj.timestamp ?? "";
+  const summary = latestObj.summary ?? "";
+  const artifacts = latestObj.artifacts ?? [];
   const lines: string[] = [];
   if (timestamp) lines.push(String(timestamp));
   if (summary) lines.push(String(summary));

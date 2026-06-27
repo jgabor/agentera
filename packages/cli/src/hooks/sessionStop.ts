@@ -20,7 +20,8 @@ import {
  * hooks/session_stop.py.
  */
 
-type Dict = Record<string, any>;
+import type { JsonObject } from "../core/jsonValue.js";
+
 type Env = Record<string, string | undefined>;
 
 export { MAX_TOTAL_ENTRIES };
@@ -87,7 +88,7 @@ export function detectModifiedArtifacts(
   return [...modifiedArtifacts].sort();
 }
 
-export function parseSessionEntries(text: string): Dict[] {
+export function parseSessionEntries(text: string): JsonObject[] {
   let data: unknown = null;
   try {
     data = loadYamlMapping(text);
@@ -95,18 +96,20 @@ export function parseSessionEntries(text: string): Dict[] {
     data = null;
   }
   if (data && typeof data === "object" && !Array.isArray(data)) {
-    const entries: Dict[] = [];
-    for (const bookmark of (data as Dict).bookmarks ?? []) {
+    const entries: JsonObject[] = [];
+    // cast: session bookmarks parsed from a YAML session-bookmark file
+    for (const bookmark of ((data as JsonObject).bookmarks as JsonObject[]) ?? []) {
       if (bookmark && typeof bookmark === "object") {
         entries.push({
           timestamp: String(bookmark.timestamp ?? ""),
-          artifacts: [...(bookmark.artifacts ?? [])],
+          artifacts: [...((bookmark.artifacts as string[]) ?? [])],
           summary: String(bookmark.summary ?? ""),
           kind: "full",
         });
       }
     }
-    for (const archived of (data as Dict).archive ?? []) {
+    // cast: archived session bookmarks parsed from a YAML session-bookmark file
+    for (const archived of ((data as JsonObject).archive as JsonObject[]) ?? []) {
       if (archived && typeof archived === "object") {
         entries.push({
           timestamp: String(archived.timestamp ?? ""),
@@ -121,7 +124,7 @@ export function parseSessionEntries(text: string): Dict[] {
     }
   }
 
-  const entries: Dict[] = [];
+  const entries: JsonObject[] = [];
   const pattern = /^##\s+(.+)$/gm;
   const matches = [...text.matchAll(pattern)];
   for (let i = 0; i < matches.length; i++) {
@@ -154,21 +157,21 @@ export function parseSessionEntries(text: string): Dict[] {
 export const compactEntryToOneline = sessionBookmarkToOneline;
 export const compactEntries = compactSessionBookmarkEntries;
 
-export function formatSessionYaml(entries: Dict[]): string {
-  const bookmarks: Dict[] = [];
-  const archive: Dict[] = [];
+export function formatSessionYaml(entries: JsonObject[]): string {
+  const bookmarks: JsonObject[] = [];
+  const archive: JsonObject[] = [];
   for (const entry of entries) {
     if (entry.kind === "full") {
       bookmarks.push({
         timestamp: entry.timestamp ?? "",
-        artifacts: [...(entry.artifacts ?? [])],
+        artifacts: [...((entry.artifacts as string[]) ?? [])],
         summary: entry.summary ?? "",
       });
     } else {
       archive.push({ timestamp: entry.timestamp ?? "", summary: entry.summary ?? "" });
     }
   }
-  const data: Dict = { bookmarks };
+  const data: JsonObject = { bookmarks };
   if (archive.length > 0) {
     data.archive = archive;
   }
@@ -183,7 +186,7 @@ function formatTimestampUtc(date: Date): string {
   );
 }
 
-export function buildBookmark(modifiedArtifacts: string[], timestamp: Date | null = null): Dict {
+export function buildBookmark(modifiedArtifacts: string[], timestamp: Date | null = null): JsonObject {
   const ts = timestamp ?? new Date();
   return {
     timestamp: formatTimestampUtc(ts),
@@ -215,7 +218,8 @@ export function writeSessionBookmark(
   const compacted = compactEntries(allEntries);
 
   fs.mkdirSync(path.dirname(sessionPath), { recursive: true });
-  fs.writeFileSync(sessionPath, formatSessionYaml(compacted));
+  // cast: compactEntries returns Record<string, unknown>[]; bookmark entries are JSON-shaped
+  fs.writeFileSync(sessionPath, formatSessionYaml(compacted as JsonObject[]));
   return true;
 }
 

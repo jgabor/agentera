@@ -25,22 +25,23 @@ import {
 import { schemasDirDefault, validateYamlContent } from "./violations.js";
 import { AGENT_FACING_ARTIFACT_IDS, HUMAN_FACING_ARTIFACT_IDS } from "./agentFacing.js";
 
-type Dict = Record<string, any>;
+import type { JsonObject } from "../../core/jsonValue.js";
 
 export class ArtifactSchemaValidator {
   schemasDir: string;
-  private schemaCache: Map<string, Dict | null>;
+  private schemaCache: Map<string, JsonObject | null>;
 
   constructor(schemasDir: string = schemasDirDefault()) {
     this.schemasDir = schemasDir;
     this.schemaCache = new Map();
   }
 
-  loadSchema(name: string): Dict | null {
+  loadSchema(name: string): JsonObject | null {
     if (!this.schemaCache.has(name)) {
       const p = path.join(this.schemasDir, `${name}.yaml`);
       if (fs.existsSync(p) && fs.statSync(p).isFile()) {
-        this.schemaCache.set(name, loadYamlMapping(fs.readFileSync(p, "utf8")));
+        // cast: artifact schema parsed from a YAML schema file
+        this.schemaCache.set(name, loadYamlMapping(fs.readFileSync(p, "utf8")) as JsonObject);
       } else {
         this.schemaCache.set(name, null);
       }
@@ -48,11 +49,11 @@ export class ArtifactSchemaValidator {
     return this.schemaCache.get(name) ?? null;
   }
 
-  validateYaml(content: string, schema: Dict, name: string): string[] {
+  validateYaml(content: string, schema: JsonObject, name: string): string[] {
     return validateYamlContent(content, schema, name);
   }
 
-  validateMarkdown(content: string, name: string, schema: Dict | null = null): string[] {
+  validateMarkdown(content: string, name: string, schema: JsonObject | null = null): string[] {
     return validateMd(content, name, schema);
   }
 
@@ -110,7 +111,7 @@ export class ArtifactSchemaValidator {
   }
 }
 
-export function loadSchema(name: string): Dict | null {
+export function loadSchema(name: string): JsonObject | null {
   return new ArtifactSchemaValidator().loadSchema(name);
 }
 
@@ -134,17 +135,18 @@ export class HookCliAdapter {
     if (!isMapping(data)) return [0, []];
     const write = this.parser.parse(data);
     if (write === null) return [0, []];
-    const cwd = (data as Dict).cwd ?? defaultCwd ?? process.cwd();
+    // cast: cwd read from the runtime hook's JSON stdin payload
+    const cwd = ((data as JsonObject).cwd ?? defaultCwd ?? process.cwd()) as string;
     const violations = this.validator.validateWrite(write, cwd);
     return violations.length > 0 ? [2, violations] : [0, []];
   }
 
-  runExplicit(artifact: string, filePath: string | null, cwd: string): [number, Dict] {
+  runExplicit(artifact: string, filePath: string | null, cwd: string): [number, JsonObject] {
     artifact = artifact.trim();
     const defaultPath = defaultArtifactPath(artifact, cwd);
     const resolvedFile = filePath ? (path.isAbsolute(filePath) ? filePath : path.join(cwd, filePath)) : defaultPath;
     const violations = this.validator.validateExplicit(artifact, resolvedFile, cwd);
-    const payload: Dict = {
+    const payload: JsonObject = {
       command: "validate-artifact",
       status: violations.length > 0 ? "fail" : "pass",
       artifact,
