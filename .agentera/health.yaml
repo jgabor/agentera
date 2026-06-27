@@ -784,7 +784,8 @@ audits:
         grade: A
         summary: "`.agentera/archive/PLAN-2026-04-29-completed-optimize-objective-archi\
           val.md:36-114` marks Tasks 1-8 complete, `.agentera/PLAN.md` is
-          absent, and `TODO.md:38` resolves the completed-objective item with
+          absent, and `TODO.md @ ✓ Resolved (completed-objective archival)` resolves
+          the completed-objective item with
           `27bb667..a1e60bd` plus the checkpoint commit."
         findings: []
       - name: Version health
@@ -1641,7 +1642,8 @@ audits:
           - heading: "⇉ Structural-debt pass is uncommitted WIP, warning (confidence: 88)"
             severity: warning
             confidence: 88
-            location: packages/cli/src/cli/commands/prime/, TODO.md:22
+            location: packages/cli/src/cli/commands/prime/, TODO.md @ ✓ Resolved
+              [chore:3.0.0] Split prime.ts
             evidence: git status shows 39 changed paths and untracked prime/, contracts/,
               argvParser.ts, jsonValue.ts, and orientation/attention.ts; net
               diff is -1711 lines but HEAD is still 606579a.
