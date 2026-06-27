@@ -161,7 +161,7 @@ tasks:
     name: Clarify hook event names and target runtime per hook file (#41)
     depends_on:
       - '1'
-    status: pending
+    status: complete
     acceptance:
       - 'GIVEN hooks/hooks.json WHEN inspected THEN its description or structure makes unambiguous which runtime it targets, and it uses that runtime canonical event names (not a mix)'
       - 'GIVEN hooks/codex-hooks.json and hooks/codex-plugin-hooks.json WHEN inspected THEN they use the Codex canonical event names (PreToolUse/PostToolUse) and clearly target Codex'

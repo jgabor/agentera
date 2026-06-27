@@ -1,5 +1,5 @@
 {
-  "description": "agentera v3 Codex plugin hooks: schema-backed apply_patch artifact validation using PLUGIN_ROOT",
+  "description": "agentera v3 Codex plugin hooks (PascalCase lifecycle events PreToolUse, PostToolUse): schema-backed apply_patch artifact validation bundled via .codex-plugin/plugin.json using PLUGIN_ROOT",
   "hooks": {
     "PreToolUse": [
       {

@@ -1,5 +1,5 @@
 {
-  "description": "agentera v3 Codex hooks: schema-backed apply_patch artifact validation, parity with Claude Code PostToolUse and OpenCode tool.execute.after",
+  "description": "agentera v3 Codex CLI hooks (PascalCase lifecycle events PreToolUse, PostToolUse): schema-backed apply_patch artifact validation; copied to ~/.codex/hooks/codex-hooks.json by upgrade",
   "hooks": {
     "PreToolUse": [
       {

@@ -1,4 +1,5 @@
 {
+  "description": "agentera v3 GitHub Copilot CLI hook (camelCase name field postToolUse): advisory artifact validation after Edit or Write",
   "name": "postToolUse",
   "matcher": "Edit|Write",
   "type": "command",

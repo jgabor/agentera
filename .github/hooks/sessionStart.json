@@ -1,4 +1,5 @@
 {
+  "description": "agentera v3 GitHub Copilot CLI hook (camelCase name field sessionStart): session context preload",
   "name": "sessionStart",
   "type": "command",
   "bash": "npx -y agentera@next hook session-start",
