@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 
+import type { JsonObject } from "../core/jsonValue.js";
 import { loadYamlMapping } from "../core/yaml.js";
 import { resolveSourceRoot } from "../core/sourceRoot.js";
 import {
@@ -13,8 +14,6 @@ import {
  * Validate cross-capability artifact producer/consumer consistency. Faithful TS
  * port of scripts/validate_cross_capability.py.
  */
-
-type Dict = Record<string, any>;
 
 export interface CanonicalArtifact {
   artifactId: string;
@@ -35,8 +34,8 @@ function capabilitiesDirDefault(): string {
   return path.join(resolveSourceRoot(), "skills", "agentera", "capabilities");
 }
 
-function loadYaml(p: string): Dict {
-  return loadYamlMapping(fs.readFileSync(p, "utf8"));
+function loadYaml(p: string): JsonObject {
+  return loadYamlMapping(fs.readFileSync(p, "utf8")) as JsonObject; // cast: YAML parse IO boundary
 }
 
 export function loadCanonicalArtifacts(
@@ -82,7 +81,7 @@ export function loadCapabilityArtifacts(
       if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
         continue;
       }
-      const e = entry as Dict;
+      const e = entry as JsonObject;
       const artifactId = String(e.artifact_id ?? "").trim();
       const localRole = String(e.local_role ?? "").trim();
       if (!artifactId) {

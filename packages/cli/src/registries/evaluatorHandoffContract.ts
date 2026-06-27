@@ -2,6 +2,7 @@ import fs from "node:fs";
 import { execSync } from "node:child_process";
 import path from "node:path";
 
+import type { JsonObject } from "../core/jsonValue.js";
 import { loadYamlMapping } from "../core/yaml.js";
 
 /**
@@ -38,9 +39,7 @@ export interface EvaluationReport {
   rows?: EvaluationReportRow[];
 }
 
-type Dict = Record<string, unknown>;
-
-function isMapping(value: unknown): value is Dict {
+function isMapping(value: unknown): value is JsonObject {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
@@ -53,7 +52,7 @@ export function defaultEvaluatorHandoffContractPath(repoRoot: string): string {
 }
 
 export function loadEvaluatorHandoffContract(contractPath: string): EvaluatorHandoffContract {
-  const data = loadYamlMapping(fs.readFileSync(contractPath, "utf8")) as Dict;
+  const data = loadYamlMapping(fs.readFileSync(contractPath, "utf8")) as JsonObject; // cast: YAML parse IO boundary
   const handoff = data.evaluator_handoff;
   if (!isMapping(handoff)) {
     throw new Error(`evaluator_handoff section missing in ${contractPath}`);
@@ -208,7 +207,7 @@ export function verifyWarnCitationAtLine(
   }
 }
 
-export function evaluatorHandoffOutputRequirements(contract: EvaluatorHandoffContract): Dict {
+export function evaluatorHandoffOutputRequirements(contract: EvaluatorHandoffContract): JsonObject {
   return {
     citation_required_for: contract.citationRequiredFor,
     warn_verify_command_required: contract.warnVerifyCommandRequired,

@@ -1,13 +1,12 @@
 import fs from "node:fs";
 import path from "node:path";
 
+import type { JsonObject } from "../core/jsonValue.js";
 import { loadYamlMapping } from "../core/yaml.js";
 import { pathExists, resolvePath } from "../core/paths.js";
 import { resolveSourceRoot } from "../core/sourceRoot.js";
 
 /** PackageManifest registry loader and contract validator. Port of scripts/package_registry.py. */
-
-type Dict = Record<string, any>;
 
 export const EXPECTED_PACKAGE_ORDER = ["agentera"] as const;
 
@@ -88,7 +87,7 @@ export function defaultRegistryPath(root: string = defaultRoot()): string {
   return path.join(root, "references/adapters/package-registry.yaml");
 }
 
-function isMapping(value: unknown): value is Dict {
+function isMapping(value: unknown): value is JsonObject {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
@@ -97,21 +96,21 @@ function isStringList(value: unknown): boolean {
 }
 
 export class PackageRegistry {
-  records: Dict[];
+  records: JsonObject[];
   root: string;
 
-  constructor(records: Dict[], root: string = defaultRoot()) {
+  constructor(records: JsonObject[], root: string = defaultRoot()) {
     this.records = records;
     this.root = root;
   }
 
   get packageIds(): string[] {
-    return this.records.map((record) => record.identity.id);
+    return this.records.map((record) => (record.identity as JsonObject).id as string); // cast: parsed registry IO data
   }
 
-  get(packageId = "agentera"): Dict {
+  get(packageId = "agentera"): Record<string, any> { // cast: export boundary consumed by upgrade/appModel — 2-level chain (record.version_authority.persisted_authority), looser shape strictly needed (option a)
     for (const record of this.records) {
-      if (record.identity.id === packageId) {
+      if (((record.identity as JsonObject).id as string) === packageId) { // cast: parsed registry IO data
         return record;
       }
     }
@@ -120,16 +119,16 @@ export class PackageRegistry {
 
   suiteVersion(packageId = "agentera"): string {
     const record = this.get(packageId);
-    const authority = record.version_authority;
+    const authority = record.version_authority as JsonObject; // cast: parsed registry IO data
     if (
       authority.persisted_authority !== "registry.json" ||
       authority.selector !== "skills[0].version"
     ) {
       throw new RegistryError("unsupported suite version authority selector");
     }
-    let data: any;
+    let data: any; // cast: JSON.parse IO boundary
     try {
-      data = JSON.parse(fs.readFileSync(path.join(this.root, authority.persisted_authority), "utf8"));
+      data = JSON.parse(fs.readFileSync(path.join(this.root, authority.persisted_authority as string), "utf8"));
     } catch (exc) {
       throw new RegistryError(`registry.json missing skills[0].version`);
     }
@@ -143,13 +142,13 @@ export class PackageRegistry {
     return version;
   }
 
-  consumerView(consumer: string, packageId = "agentera"): Dict {
+  consumerView(consumer: string, packageId = "agentera"): JsonObject {
     const groups = CONSUMER_GROUPS[consumer];
     if (groups === undefined) {
       throw new RegistryError(`unknown registry consumer: ${consumer}`);
     }
     const record = this.get(packageId);
-    const view: Dict = {};
+    const view: JsonObject = {};
     for (const group of groups) {
       view[group] = record[group];
     }
@@ -158,18 +157,22 @@ export class PackageRegistry {
   }
 
   versionSurfaceIds(packageId = "agentera"): string[] {
-    return this.get(packageId).version_surfaces.surfaces.map((s: Dict) => s.id);
+    return ((this.get(packageId).version_surfaces as JsonObject).surfaces as JsonObject[]).map(
+      (s) => s.id as string,
+    ); // cast: parsed registry IO data
   }
 
   runtimeManifestIds(packageId = "agentera"): string[] {
-    return this.get(packageId).runtime_package_manifests.manifests.map((m: Dict) => m.id);
+    return ((this.get(packageId).runtime_package_manifests as JsonObject).manifests as JsonObject[]).map(
+      (m) => m.id as string,
+    ); // cast: parsed registry IO data
   }
 
   runtimeManifestPaths(packageId = "agentera"): Record<string, string> {
     const paths: Record<string, string> = {};
-    for (const manifest of this.get(packageId).runtime_package_manifests.manifests) {
-      if (!(manifest.runtime in paths)) {
-        paths[manifest.runtime] = manifest.path;
+    for (const manifest of (this.get(packageId).runtime_package_manifests as JsonObject).manifests as JsonObject[]) { // cast: parsed registry IO data
+      if (!((manifest.runtime as string) in paths)) {
+        paths[manifest.runtime as string] = manifest.path as string;
       }
     }
     return paths;
@@ -177,24 +180,24 @@ export class PackageRegistry {
 
   runtimePackageShapes(packageId = "agentera"): Record<string, string> {
     const shapes: Record<string, string> = {};
-    for (const manifest of this.get(packageId).runtime_package_manifests.manifests) {
-      shapes[manifest.runtime] = manifest.package_shape;
+    for (const manifest of (this.get(packageId).runtime_package_manifests as JsonObject).manifests as JsonObject[]) { // cast: parsed registry IO data
+      shapes[manifest.runtime as string] = manifest.package_shape as string;
     }
     return shapes;
   }
 
   sharedPathRequirements(packageId = "agentera"): Record<string, string> {
     const requirements: Record<string, string> = {};
-    for (const entry of this.get(packageId).runtime_package_manifests.shared_paths) {
-      requirements[entry.path] = entry.kind;
+    for (const entry of (this.get(packageId).runtime_package_manifests as JsonObject).shared_paths as JsonObject[]) { // cast: parsed registry IO data
+      requirements[entry.path as string] = entry.kind as string;
     }
     return requirements;
   }
 
-  nonVersionBearingRuntimeManifests(packageId = "agentera"): Dict[] {
-    return this.get(packageId).runtime_package_manifests.manifests.filter(
-      (m: Dict) => m.version_bearing === false,
-    );
+  nonVersionBearingRuntimeManifests(packageId = "agentera"): JsonObject[] {
+    return ((this.get(packageId).runtime_package_manifests as JsonObject).manifests as JsonObject[]).filter(
+      (m) => m.version_bearing === false,
+    ); // cast: parsed registry IO data
   }
 }
 
@@ -207,7 +210,7 @@ export function loadRegistry(
   if (errors.length > 0) {
     throw new RegistryError("PackageManifest registry validation failed: " + errors.join("; "));
   }
-  return new PackageRegistry((data as Dict).records as Dict[], root);
+  return new PackageRegistry((data as JsonObject).records as JsonObject[], root); // cast: YAML parse IO boundary
 }
 
 export function validateRegistryFile(
@@ -283,7 +286,7 @@ export function validateRegistryData(data: unknown, root: string = defaultRoot()
   return errors;
 }
 
-function validateGroup(prefix: string, group: string, value: Dict, root: string): string[] {
+function validateGroup(prefix: string, group: string, value: JsonObject, root: string): string[] {
   const errors: string[] = [];
   errors.push(...validateForbiddenFields(prefix, value));
   for (const field of REQUIRED_FIELDS[group]) {
@@ -326,7 +329,7 @@ function validateGroup(prefix: string, group: string, value: Dict, root: string)
   return errors;
 }
 
-function validateIdentity(prefix: string, value: Dict, root: string): string[] {
+function validateIdentity(prefix: string, value: JsonObject, root: string): string[] {
   const errors: string[] = [];
   for (const field of ["id", "name"]) {
     if (typeof value[field] !== "string" || !value[field]) {
@@ -340,7 +343,7 @@ function validateIdentity(prefix: string, value: Dict, root: string): string[] {
   return errors;
 }
 
-function validateVersionAuthority(prefix: string, value: Dict, root: string): string[] {
+function validateVersionAuthority(prefix: string, value: JsonObject, root: string): string[] {
   const errors: string[] = [];
   errors.push(...validateRepoPath(`${prefix}.persisted_authority`, value.persisted_authority, root));
   for (const field of ["selector", "access_interface", "future_authority_change_requires"]) {
@@ -354,7 +357,7 @@ function validateVersionAuthority(prefix: string, value: Dict, root: string): st
   return errors;
 }
 
-function validateVersionSurfaces(prefix: string, value: Dict, root: string): string[] {
+function validateVersionSurfaces(prefix: string, value: JsonObject, root: string): string[] {
   const errors: string[] = [];
   const surfaces = value.surfaces;
   if (!Array.isArray(surfaces)) {
@@ -377,7 +380,7 @@ function validateVersionSurfaces(prefix: string, value: Dict, root: string): str
   return errors;
 }
 
-function validateRuntimeManifests(prefix: string, value: Dict, root: string): string[] {
+function validateRuntimeManifests(prefix: string, value: JsonObject, root: string): string[] {
   const errors: string[] = [];
   const manifests = value.manifests;
   if (!Array.isArray(manifests)) {
@@ -437,7 +440,7 @@ function validateRuntimeManifests(prefix: string, value: Dict, root: string): st
   return errors;
 }
 
-function validateBundleSurfaces(prefix: string, value: Dict, root: string): string[] {
+function validateBundleSurfaces(prefix: string, value: JsonObject, root: string): string[] {
   const errors: string[] = [];
   for (const field of ["directories", "files"]) {
     const entries = value[field];
@@ -464,7 +467,7 @@ function validateBundleSurfaces(prefix: string, value: Dict, root: string): stri
   return errors;
 }
 
-function validatePackageCommands(prefix: string, value: Dict): string[] {
+function validatePackageCommands(prefix: string, value: JsonObject): string[] {
   const errors: string[] = [];
   const commands = value.commands;
   if (!Array.isArray(commands)) {
@@ -491,7 +494,7 @@ function validatePackageCommands(prefix: string, value: Dict): string[] {
     });
   }
   const safety = value.safety;
-  const expectedSafety: Dict = {
+  const expectedSafety: JsonObject = {
     argv_only: true,
     update_packages_required_to_plan: true,
     yes_required_to_execute: true,
@@ -507,7 +510,7 @@ function validatePackageCommands(prefix: string, value: Dict): string[] {
   return errors;
 }
 
-function validateDocsTargets(prefix: string, value: Dict, root: string): string[] {
+function validateDocsTargets(prefix: string, value: JsonObject, root: string): string[] {
   const errors: string[] = [];
   if (typeof value.version_files_source !== "string" || !value.version_files_source) {
     errors.push(`${prefix}.version_files_source must be a non-empty string`);
@@ -518,7 +521,7 @@ function validateDocsTargets(prefix: string, value: Dict, root: string): string[
   return errors;
 }
 
-function validateReleasePolicy(prefix: string, value: Dict): string[] {
+function validateReleasePolicy(prefix: string, value: JsonObject): string[] {
   const errors: string[] = [];
   if (typeof value.semver_policy_source !== "string" || !value.semver_policy_source) {
     errors.push(`${prefix}.semver_policy_source must be a non-empty string`);
@@ -534,12 +537,12 @@ function validateReleasePolicy(prefix: string, value: Dict): string[] {
   return errors;
 }
 
-function validateCommandSpec(prefix: string, command: Dict): string[] {
+function validateCommandSpec(prefix: string, command: JsonObject): string[] {
   const errors: string[] = [];
-  const runtime = command.runtime;
-  const action = command.action;
-  const phase = command.phase;
-  const argv = command.argv;
+  const runtime = command.runtime as string; // cast: parsed registry IO data
+  const action = command.action as string;
+  const phase = command.phase as string;
+  const argv = command.argv as string[];
   if (!APPROVED_RUNTIMES.has(runtime)) {
     errors.push(`${prefix}.runtime ${pyRepr(runtime)} is not approved`);
   }
@@ -579,7 +582,7 @@ function validateCommandSpec(prefix: string, command: Dict): string[] {
   return errors;
 }
 
-function validateRequiredObjectFields(prefix: string, value: Dict, expected: string[]): string[] {
+function validateRequiredObjectFields(prefix: string, value: JsonObject, expected: string[]): string[] {
   const errors: string[] = [];
   for (const field of expected) {
     if (!(field in value)) {
@@ -651,7 +654,7 @@ function validateRepoPath(prefix: string, value: unknown, root: string): string[
   return [];
 }
 
-function validateForbiddenFields(prefix: string, value: Dict): string[] {
+function validateForbiddenFields(prefix: string, value: JsonObject): string[] {
   const errors: string[] = [];
   for (const field of Object.keys(value).sort()) {
     if (FORBIDDEN_INSTALL_ROOT_FIELDS.has(field)) {
@@ -674,7 +677,7 @@ function validateForbiddenFields(prefix: string, value: Dict): string[] {
   return errors;
 }
 
-function shallowEqual(a: Dict, b: Dict): boolean {
+function shallowEqual(a: JsonObject, b: JsonObject): boolean {
   const ak = Object.keys(a);
   const bk = Object.keys(b);
   if (ak.length !== bk.length) {

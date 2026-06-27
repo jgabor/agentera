@@ -1,4 +1,32 @@
 cycles:
+- number: 681
+  timestamp: 2026-06-27 13:00
+  type: refactor
+  phase: build
+  what: 'Plan task 4 of chore:3.0.0: consolidate Dict aliases in registries & validate
+    subsystems. Removed local `type Dict = Record<string, any|unknown>` in 8 files
+    (runtimeAdapterRegistry, packageRegistry, evaluatorHandoffContract, capabilityContract,
+    vocabularyAuthority, crossCapability, capability, vocabularyAuthority.test); folded
+    unknown/any variants to canonical JsonObject. lifecycleAdapters/shared.ts kept
+    as sanctioned passthrough.'
+  discovered: 'Cross-subsystem coupling with upgrade/appModel.ts (task-5 scope): a
+    2-level chain loadRegistry().get("agentera").version_authority.persisted_authority
+    required PackageRegistry.get() return to stay `Record<string, any>` (documented
+    escape-hatch exception with // cast comment). Task 5 or 6 should revisit appModel.ts
+    to narrow this to a typed shape so the export-boundary any can be removed.'
+  verified: 'pnpm -C packages/cli run typecheck: 0 errors. pnpm -C packages/cli test:
+    1145/1145 pass (132 files). rg `type Dict\s*=` in registries/validate/: only lifecycleAdapters/shared.ts
+    passthrough remains. 0 fixture/snapshot drift.'
+  next: 'Next dependency-ready: task 5 (long-tail: setup, doctor, upgrade incl. appModel/analytics/eval/release).
+    Then task 6 (cross-cutting cast audit + re-export deletion) and task 7 (final
+    sync + close critical TODO).'
+  context:
+    intent: Type-only consolidation; narrow `as` casts to IO boundaries. No behavior
+      change.
+    constraints: Task-4 scope only. core/jsonValue.ts untouched. No new public API.
+      feat/v3 only.
+    artifacts:
+      plan: .agentera/plan.yaml (task 4 -> complete; appModel exception noted)
 - number: 680
   timestamp: 2026-06-27 12:30
   type: refactor
@@ -297,33 +325,9 @@ cycles:
     unknowns: None.
     scope: hooks/validate_artifact.py (main), tests/test_validate_md_items.py (main),
       TODO.md (feat/v3), .agentera/progress.yaml (feat/v3)
-- number: 671
-  timestamp: 2026-06-22 15:30
-  type: fix
-  phase: build
-  what: Fix stale YAML schema example, deprecated lint command, and archive reference
-    in discuss instructions.
-  inspiration: Plan light plan for three degraded TODOs targeting discuss/instructions.ts
-    prose accuracy.
-  discovered: "TODO.md edit hook blocks writes when Critical section is empty \u2014\
-    \ pre-existing issue (TODO.md @ \u21F6 Critical \u2014 empty-section hook); bypassed\
-    \ via bash write. Plan schema requires at least one task and quoted date string\
-    \ \u2014 same YAML date-quoting class of bug as T1."
-  verified: "pnpm -C packages/cli test \u2014 939/941 pass (2 pre-existing appHome\
-    \ env-var failures); pnpm -C packages/cli run typecheck \u2014 clean; check compact\
-    \ \u2014 status=pass, over_limit=0."
-  next: 'Remaining capability prose hygiene TODOs: deprecated fallback commands in
-    prime --context (#4), over-prescription language audit (#5), lint extension for
-    decisional language (#6).'
-  context:
-    intent: Correct three stale references in discuss instructions that cause agents
-      to produce invalid decisions.yaml entries and emit deprecation noise.
-    constraints: Single-file scope (discuss/instructions.ts); no schema changes; must
-      not break capability routing tests.
-    unknowns: None.
-    scope: packages/cli/src/capabilities/discuss/instructions.ts, .agentera/plan.yaml,
-      TODO.md, .agentera/progress.yaml
 archive:
+- summary: 'Cycle 671 (2026-06-22): Fix stale YAML schema example, deprecated lint
+    command, and archive reference in discuss instructions.'
 - summary: "Cycle 670 (2026-06-18): Plan T6 \u2014 verification and closeout: archived\
     \ PLAN-2026-06-18-decouple-vitest-live-repo.yaml; cleared active plan slot; confirmed\
     \ vitest decoupled..."
@@ -424,6 +428,3 @@ archive:
     \ evaluatorHandoffContract.ts registry with report..."
 - summary: "Cycle 630 (2026-06-03): D66 drop progress.yaml per-cycle commit field\
     \ \u2014 removed PR6/PV2 commit requirements from the progress schema;..."
-- summary: "Cycle 629 (2026-06-02): Freeze source_contract internals \u2014 new oracle\
-    \ fixture (source-contract.json) and new parity test (sourceContractOracles.test.ts)\
-    \ that pin..."

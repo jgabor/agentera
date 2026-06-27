@@ -1,5 +1,6 @@
 import fs from "node:fs";
 
+import type { JsonObject } from "../core/jsonValue.js";
 import { loadYamlMapping } from "../core/yaml.js";
 
 /**
@@ -78,16 +79,14 @@ export interface CapabilitySchemaContract {
   routeAliases: RouteAliasRules;
 }
 
-type Dict = Record<string, unknown>;
-
-function isMapping(value: unknown): value is Dict {
+function isMapping(value: unknown): value is JsonObject {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
 export function loadCapabilitySchemaContract(contractPath: string): CapabilitySchemaContract {
-  let data: Dict;
+  let data: JsonObject;
   try {
-    data = loadYamlMapping(fs.readFileSync(contractPath, "utf8"));
+    data = loadYamlMapping(fs.readFileSync(contractPath, "utf8")) as JsonObject; // cast: YAML parse IO boundary
   } catch (exc) {
     throw new ContractBootstrapError([
       `contract root in ${contractPath} must be a mapping: ${(exc as Error).message}`,
@@ -100,7 +99,7 @@ export function loadCapabilitySchemaContract(contractPath: string): CapabilitySc
   return buildCapabilitySchemaContract(data, contractPath);
 }
 
-export function validateContractBootstrap(data: Dict, sourceLabel: string): string[] {
+export function validateContractBootstrap(data: JsonObject, sourceLabel: string): string[] {
   const errors: string[] = [];
   const requiredGroups = requiredGroupsOf(data, sourceLabel, errors);
   checkEntrySchema(data, sourceLabel, errors);
@@ -111,44 +110,44 @@ export function validateContractBootstrap(data: Dict, sourceLabel: string): stri
 }
 
 export function buildCapabilitySchemaContract(
-  data: Dict,
+  data: JsonObject,
   contractPath: string,
 ): CapabilitySchemaContract {
-  const directory = data.DIRECTORY_REQUIREMENTS as Dict;
-  const schemaFiles = directory.schema_files as Dict;
-  const entryRequirements = data.ENTRY_REQUIREMENTS as Dict;
-  const triggerPriority = ((data.FIELD_RULES as Dict).TRIGGERS as Dict).priority as Dict;
-  const primitiveRefs = data.PRIMITIVE_REFERENCE_FIELDS as Dict;
-  const routeAliases = data.ROUTE_ALIASES as Dict;
+  const directory = data.DIRECTORY_REQUIREMENTS as JsonObject;
+  const schemaFiles = directory.schema_files as JsonObject;
+  const entryRequirements = data.ENTRY_REQUIREMENTS as JsonObject;
+  const triggerPriority = ((data.FIELD_RULES as JsonObject).TRIGGERS as JsonObject).priority as JsonObject;
+  const primitiveRefs = data.PRIMITIVE_REFERENCE_FIELDS as JsonObject;
+  const routeAliases = data.ROUTE_ALIASES as JsonObject;
 
-  const groups = entryRequirements.groups as Record<string, Dict>;
+  const groups = entryRequirements.groups as Record<string, JsonObject>;
   const requiredFieldsByGroup: Record<string, string[]> = {};
   for (const [groupName, groupRule] of Object.entries(groups)) {
-    requiredFieldsByGroup[groupName] = [...((groupRule as Dict).required_fields as string[])];
+    requiredFieldsByGroup[groupName] = [...((groupRule as JsonObject).required_fields as string[])];
   }
 
   const entryRules: EntryRules = {
     defaultRequiredFields: [...(entryRequirements.default_required_fields as string[])],
     requiredFieldsByGroup,
-    deprecation: { ...(entryRequirements.deprecation as Dict) },
+    deprecation: { ...(entryRequirements.deprecation as JsonObject) },
   };
 
   const primitiveFields: Record<string, string[]> = {};
-  for (const [fieldName, fieldRule] of Object.entries(primitiveRefs.fields as Record<string, Dict>)) {
-    primitiveFields[fieldName] = [...((fieldRule as Dict).protocol_groups as string[])];
+  for (const [fieldName, fieldRule] of Object.entries(primitiveRefs.fields as Record<string, JsonObject>)) {
+    primitiveFields[fieldName] = [...((fieldRule as JsonObject).protocol_groups as string[])];
   }
 
   return {
     path: contractPath,
     requiredGroups: [...(data.REQUIRED_GROUPS as string[])],
     directoryRules: {
-      instructionPath: (directory.instruction_module as Dict).path as string,
-      instructionModulePath: (directory.instruction_module as Dict).path as string,
-      schemasPath: (directory.schemas_directory as Dict).path as string,
+      instructionPath: (directory.instruction_module as JsonObject).path as string,
+      instructionModulePath: (directory.instruction_module as JsonObject).path as string,
+      schemasPath: (directory.schemas_directory as JsonObject).path as string,
       schemaGlob: schemaFiles.glob as string,
       minimumSchemaFiles: schemaFiles.minimum_count as number,
     },
-    entrySchema: { fields: { ...((data.ENTRY_SCHEMA as Dict).fields as Record<string, Dict>) } },
+    entrySchema: { fields: { ...((data.ENTRY_SCHEMA as JsonObject).fields as Record<string, JsonObject>) } },
     entryRules,
     triggerPriorityRules: {
       required: Boolean(triggerPriority.required),
@@ -164,7 +163,7 @@ export function buildCapabilitySchemaContract(
       routePrefix: routeAliases.route_prefix as string,
       canonicalNamePrecedence: Boolean(routeAliases.canonical_name_precedence),
       cliBoundary: routeAliases.cli_boundary as string,
-      primaryAliases: (routeAliases.primary_aliases as Dict[]).map((entry) => ({
+      primaryAliases: (routeAliases.primary_aliases as JsonObject[]).map((entry) => ({
         alias: entry.alias as string,
         capability: entry.capability as string,
       })),
@@ -172,7 +171,7 @@ export function buildCapabilitySchemaContract(
   };
 }
 
-function requiredGroupsOf(data: Dict, sourceLabel: string, errors: string[]): string[] {
+function requiredGroupsOf(data: JsonObject, sourceLabel: string, errors: string[]): string[] {
   const groups = data.REQUIRED_GROUPS;
   if (
     !Array.isArray(groups) ||
@@ -187,7 +186,7 @@ function requiredGroupsOf(data: Dict, sourceLabel: string, errors: string[]): st
   return [...(groups as string[])];
 }
 
-function checkEntrySchema(data: Dict, sourceLabel: string, errors: string[]): void {
+function checkEntrySchema(data: JsonObject, sourceLabel: string, errors: string[]): void {
   const entrySchema = data.ENTRY_SCHEMA;
   if (!isMapping(entrySchema)) {
     errors.push(`bootstrap [error]: ENTRY_SCHEMA in ${sourceLabel} must be a mapping`);
@@ -209,7 +208,7 @@ function checkEntrySchema(data: Dict, sourceLabel: string, errors: string[]): vo
 }
 
 function checkGroupPrefixes(
-  data: Dict,
+  data: JsonObject,
   sourceLabel: string,
   requiredGroups: string[],
   errors: string[],
@@ -229,7 +228,7 @@ function checkGroupPrefixes(
   }
 }
 
-function checkRuleSections(data: Dict, sourceLabel: string, errors: string[]): void {
+function checkRuleSections(data: JsonObject, sourceLabel: string, errors: string[]): void {
   for (const section of BOOTSTRAP_RULE_SECTIONS) {
     if (!isMapping(data[section])) {
       errors.push(`bootstrap [error]: ${section} in ${sourceLabel} must be present as a mapping`);
@@ -242,7 +241,7 @@ function checkRuleSections(data: Dict, sourceLabel: string, errors: string[]): v
   checkRouteAliasRules(data, sourceLabel, errors);
 }
 
-function checkDirectoryRules(data: Dict, sourceLabel: string, errors: string[]): void {
+function checkDirectoryRules(data: JsonObject, sourceLabel: string, errors: string[]): void {
   const directory = data.DIRECTORY_REQUIREMENTS;
   if (!isMapping(directory)) {
     return;
@@ -293,7 +292,7 @@ function checkDirectoryRules(data: Dict, sourceLabel: string, errors: string[]):
   }
 }
 
-function checkEntryRules(data: Dict, sourceLabel: string, errors: string[]): void {
+function checkEntryRules(data: JsonObject, sourceLabel: string, errors: string[]): void {
   const rules = data.ENTRY_REQUIREMENTS;
   if (!isMapping(rules)) {
     return;
@@ -313,13 +312,13 @@ function checkEntryRules(data: Dict, sourceLabel: string, errors: string[]): voi
   }
 }
 
-function checkTriggerPriorityRules(data: Dict, sourceLabel: string, errors: string[]): void {
+function checkTriggerPriorityRules(data: JsonObject, sourceLabel: string, errors: string[]): void {
   const fieldRules = data.FIELD_RULES;
   if (!isMapping(fieldRules)) {
     return;
   }
   const triggers = isMapping(fieldRules.TRIGGERS) ? fieldRules.TRIGGERS : {};
-  const priority = (triggers as Dict).priority;
+  const priority = (triggers as JsonObject).priority;
   if (!isMapping(priority)) {
     errors.push(
       `bootstrap [error]: FIELD_RULES.TRIGGERS.priority in ${sourceLabel} must be a mapping`,
@@ -343,7 +342,7 @@ function checkTriggerPriorityRules(data: Dict, sourceLabel: string, errors: stri
   }
 }
 
-function checkPrimitiveReferenceRules(data: Dict, sourceLabel: string, errors: string[]): void {
+function checkPrimitiveReferenceRules(data: JsonObject, sourceLabel: string, errors: string[]): void {
   const primitiveRefs = data.PRIMITIVE_REFERENCE_FIELDS;
   if (!isMapping(primitiveRefs)) {
     return;
@@ -374,7 +373,7 @@ function checkPrimitiveReferenceRules(data: Dict, sourceLabel: string, errors: s
   }
 }
 
-function checkRouteAliasRules(data: Dict, sourceLabel: string, errors: string[]): void {
+function checkRouteAliasRules(data: JsonObject, sourceLabel: string, errors: string[]): void {
   const aliases = data.ROUTE_ALIASES;
   if (!isMapping(aliases)) {
     return;
@@ -441,7 +440,7 @@ function checkRouteAliasRules(data: Dict, sourceLabel: string, errors: string[])
 }
 
 function checkSelfGroups(
-  data: Dict,
+  data: JsonObject,
   sourceLabel: string,
   requiredGroups: string[],
   errors: string[],
