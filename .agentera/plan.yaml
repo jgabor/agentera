@@ -97,7 +97,7 @@ tasks:
   - number: 2
     name: Replace vestigial v2 probes in isRunnableAgenteraAppRoot/resolveAgenteraHome with v3 bundle-evidence recognition (#8)
     depends_on: []
-    status: pending
+    status: complete
     acceptance:
       - 'GIVEN isRunnableAgenteraAppRoot (.opencode/plugins/agentera.js:446) currently probing scripts/agentera OR scripts/validate_capability.py WHEN a v3 npm-bundled app home is inspected THEN it recognizes the app via v3 managed_bundle_evidence (registry.json and skills/agentera/SKILL.md and (.agentera-bundle.json OR scripts/agentera)), not via the v2 Python-script probe matching by coincidence'
       - 'GIVEN resolveAgenteraHome (line 459) and resolveAgenteraAppHome (line 455) WHEN run against a real v3 npm install (AGENTERA_HOME/app or default platform home) THEN they return the validated v3 app home, not null'
