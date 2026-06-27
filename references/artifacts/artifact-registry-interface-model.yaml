@@ -208,6 +208,7 @@ explicit_special_cases:
     path_template:
       env_precedence:
         - AGENTERA_PROFILE_DIR
+        - PROFILERA_PROFILE_DIR
         - XDG_DATA_HOME/agentera
         - ~/.local/share/agentera
     docs_yaml_can_override_path: false

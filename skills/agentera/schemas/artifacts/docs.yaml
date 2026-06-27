@@ -177,8 +177,9 @@ MAPPING:
     required: true
     description: >-
       File path for this artifact. May be absolute or relative.
-      Environment variable references (e.g., $PROFILERA_PROFILE_DIR)
-      are resolved at read time.
+      Environment variable references (e.g., $AGENTERA_PROFILE_DIR or
+      the deprecated $PROFILERA_PROFILE_DIR alias) are resolved at read
+      time with AGENTERA_PROFILE_DIR taking precedence.
     validation:
       - "Non-empty string"
   4:
