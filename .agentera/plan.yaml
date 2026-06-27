@@ -119,7 +119,7 @@ tasks:
   - number: 4
     name: Verify doctor OpenCode profile-dir check catches deprecated env var (#36)
     depends_on: []
-    status: pending
+    status: complete
     acceptance:
       - 'GIVEN diagnoseOpencodeProfileDir (packages/cli/src/setup/doctor/opencode.ts:266) WHEN PROFILERA_PROFILE_DIR is set in the environment THEN the doctor emits a deprecated/warn finding whose message directs the user to `agentera upgrade` to migrate to AGENTERA_PROFILE_DIR'
       - 'GIVEN diagnoseOpencodeProfileDir WHEN only AGENTERA_PROFILE_DIR is set (or neither) THEN the doctor emits a pass/current finding (no false deprecation)'
