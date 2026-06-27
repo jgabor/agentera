@@ -82,16 +82,20 @@ jobs:
           node-version: 22
       - run: corepack enable
       - run: pnpm install --frozen-lockfile
-      - name: Run L2 happy-path when published package resolves
+      - name: Run L2 happy-path with npm pin from package.json
         env:
           REPO_ROOT: ${{ github.workspace }}
           AGENTERA_SANDBOX_TIER: L2
-          AGENTERA_NPM_PIN: agentera@3.0.0-next.0
         run: |
-          if ! npm view agentera@3.0.0-next.0 version >/dev/null 2>&1; then
-            echo "skip: agentera@3.0.0-next.0 not published"
-            exit 0
+          set -euo pipefail
+          CLI_VERSION=$(node -p "require('./packages/cli/package.json').version")
+          AGENTERA_NPM_PIN="agentera@${CLI_VERSION}"
+          echo "L2 npm pin: ${AGENTERA_NPM_PIN}"
+          if ! npm view "${AGENTERA_NPM_PIN}" version >/dev/null 2>&1; then
+            echo "error: ${AGENTERA_NPM_PIN} is not published on npm; publish @next before L2 sandbox can run" >&2
+            exit 1
           fi
+          export AGENTERA_NPM_PIN
           bash scripts/sandbox/v2v3-upgrade-harness.sh happy-path-clean
 
   web:
