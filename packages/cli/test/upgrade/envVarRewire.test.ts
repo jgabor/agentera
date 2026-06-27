@@ -220,6 +220,37 @@ describe("planEnvVarRewireItems", () => {
     const envVarItems = phase.items.filter((item) => item.action === "rewire-env-var");
     expect(envVarItems).toEqual([]);
   });
+
+  it("rewires installed-app docs.yaml and registry model literals", () => {
+    const home = path.join(tmp, "home");
+    const project = path.join(tmp, "project");
+    const appHome = path.join(home, "agentera");
+    fs.mkdirSync(home, { recursive: true });
+    fs.mkdirSync(path.join(project, ".agentera"), { recursive: true });
+    fs.mkdirSync(path.join(appHome, "references", "artifacts"), { recursive: true });
+    fs.writeFileSync(
+      path.join(project, ".agentera", "docs.yaml"),
+      "mapping:\n  PROFILE.md:\n    path: $PROFILERA_PROFILE_DIR/PROFILE.md\n",
+    );
+    fs.writeFileSync(
+      path.join(appHome, "references", "artifacts", "artifact-registry-interface-model.yaml"),
+      "default_path: $PROFILERA_PROFILE_DIR/PROFILE.md\n",
+    );
+
+    const ctx = migrationCtx(appHome, project, home, REPO_ROOT);
+    const phase = planRuntimeRewirePhase(ctx);
+    const envVarItems = phase.items.filter(
+      (item) => item.action === "rewire-env-var" && item.status === "pending",
+    );
+    expect(envVarItems.some((item) => item.source.endsWith(".agentera/docs.yaml"))).toBe(true);
+    expect(
+      envVarItems.some((item) => item.source.endsWith("artifact-registry-interface-model.yaml")),
+    ).toBe(true);
+    for (const item of envVarItems) {
+      expect(item.newText).toContain("AGENTERA_PROFILE_DIR");
+      expect(item.newText).not.toContain("PROFILERA_PROFILE_DIR");
+    }
+  });
 });
 
 describe("applyRuntimeMigrationItem rewire-env-var", () => {
