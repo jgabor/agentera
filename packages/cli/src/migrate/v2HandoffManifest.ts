@@ -1,7 +1,13 @@
 import fs from "node:fs";
 import path from "node:path";
 
-import { isFile, pathExists, resolvePath } from "../core/paths.js";
+import {
+  AGENTERA_PROFILE_DIR_ENV,
+  PROFILERA_PROFILE_DIR_ENV,
+  resolveProfileDirOverride,
+} from "../core/envPaths.js";
+import { expanduser, isFile, pathExists, resolvePath } from "../core/paths.js";
+import { opencodeConfigDir } from "../setup/opencode.js";
 import { doctorRoots, loadSuiteVersion } from "../upgrade/appModel.js";
 import {
   AGENTERA_USER_STATE_NAMES,
@@ -61,12 +67,27 @@ export interface V2HandoffManifest {
 
 export type MigrationPreflightSource = "manifest" | "scan";
 
+export type HandoffCatalogSurface = "custom_profile_dir" | "opencode_runtime_config_dir";
+
+export interface HandoffCatalogEntry {
+  surface: HandoffCatalogSurface;
+  root: string;
+  envVar: string;
+  entries: string[];
+}
+
+export interface MigrationUserStatePreflightOpts {
+  home?: string;
+  env?: Record<string, string | undefined>;
+}
+
 export interface MigrationUserStatePreflight {
   source: MigrationPreflightSource;
   elapsedMs: number;
   manifest: V2HandoffManifest | null;
   preservedTopLevel: string[];
   preservedAbsolutePaths: string[];
+  handoffCatalog: HandoffCatalogEntry[];
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -343,8 +364,136 @@ export function isManifestCatalogEntryPreserved(
   return false;
 }
 
-export function resolveMigrationUserStatePreflight(appHome: string): MigrationUserStatePreflight {
+function profileDirEnvVar(env: Record<string, string | undefined>): string | null {
+  if (env[AGENTERA_PROFILE_DIR_ENV]) {
+    return AGENTERA_PROFILE_DIR_ENV;
+  }
+  if (env[PROFILERA_PROFILE_DIR_ENV]) {
+    return PROFILERA_PROFILE_DIR_ENV;
+  }
+  return null;
+}
+
+function opencodeConfigDirEnvVar(env: Record<string, string | undefined>): string | null {
+  if (env.OPENCODE_CONFIG_DIR) {
+    return "OPENCODE_CONFIG_DIR";
+  }
+  if (env.XDG_CONFIG_HOME) {
+    return "XDG_CONFIG_HOME";
+  }
+  return null;
+}
+
+function listUserDataPathsAtRoot(root: string): string[] {
+  const preserved = new Set<string>([root]);
+  for (const dir of USER_DATA_CATALOG_DIRS) {
+    const full = path.join(root, dir);
+    if (pathExists(full) && fs.statSync(full).isDirectory()) {
+      preserved.add(full);
+    }
+  }
+  for (const file of PROFILE_FILE_MEMBERS) {
+    const full = path.join(root, file);
+    if (isFile(full)) {
+      preserved.add(full);
+    }
+  }
+  return [...preserved].sort();
+}
+
+function opencodeConfigDirHasArtifacts(configDir: string): boolean {
+  if (isFile(path.join(configDir, "plugins", "agentera.js"))) {
+    return true;
+  }
+  const agentsDir = path.join(configDir, "agents");
+  if (pathExists(agentsDir) && fs.statSync(agentsDir).isDirectory()) {
+    if (fs.readdirSync(agentsDir).some((name) => isFile(path.join(agentsDir, name)))) {
+      return true;
+    }
+  }
+  return pathExists(path.join(configDir, "skills", "agentera"));
+}
+
+function listOpencodeConfigCatalog(configDir: string): string[] {
+  const preserved = new Set<string>([configDir]);
+  for (const rel of ["plugins/agentera.js", "agents", "commands", "skills"] as const) {
+    const full = path.join(configDir, rel);
+    if (pathExists(full)) {
+      preserved.add(full);
+    }
+  }
+  return [...preserved].sort();
+}
+
+export function buildExternalHandoffCatalog(
+  appHome: string,
+  opts?: MigrationUserStatePreflightOpts,
+): HandoffCatalogEntry[] {
+  if (!opts?.env) {
+    return [];
+  }
+  const env = opts.env;
+  const home = resolvePath(opts.home ?? appHome);
+  const resolvedAppHome = resolvePath(appHome);
+  const catalog: HandoffCatalogEntry[] = [];
+
+  const profileEnvVar = profileDirEnvVar(env);
+  const profileOverride = resolveProfileDirOverride(env);
+  if (profileEnvVar && profileOverride) {
+    const profileDir = resolvePath(expanduser(profileOverride));
+    if (profileDir !== resolvedAppHome) {
+      catalog.push({
+        surface: "custom_profile_dir",
+        root: profileDir,
+        envVar: profileEnvVar,
+        entries: listUserDataPathsAtRoot(profileDir),
+      });
+    }
+  }
+
+  const opencodeEnvVar = opencodeConfigDirEnvVar(env);
+  if (opencodeEnvVar) {
+    const configDir = opencodeConfigDir(home, env);
+    const defaultDir = resolvePath(path.join(home, ".config", "opencode"));
+    if (configDir !== defaultDir && opencodeConfigDirHasArtifacts(configDir)) {
+      catalog.push({
+        surface: "opencode_runtime_config_dir",
+        root: configDir,
+        envVar: opencodeEnvVar,
+        entries: listOpencodeConfigCatalog(configDir),
+      });
+    }
+  }
+
+  return catalog;
+}
+
+function mergePreservedAbsolutePaths(
+  base: string[],
+  handoffCatalog: HandoffCatalogEntry[],
+): string[] {
+  const merged = new Set(base);
+  for (const entry of handoffCatalog) {
+    for (const absolutePath of entry.entries) {
+      merged.add(absolutePath);
+    }
+  }
+  return [...merged].sort();
+}
+
+export function handoffCatalogMessage(entry: HandoffCatalogEntry): string {
+  if (entry.surface === "custom_profile_dir") {
+    return `custom profile dir (${entry.envVar}=${entry.root}) cataloged for v2→v3 handoff`;
+  }
+  return `opencode runtime config dir (${entry.envVar} → ${entry.root}) cataloged for v2→v3 handoff`;
+}
+
+export function resolveMigrationUserStatePreflight(
+  appHome: string,
+  opts?: MigrationUserStatePreflightOpts,
+): MigrationUserStatePreflight {
   const resolvedHome = resolvePath(appHome);
+  const handoffCatalog = buildExternalHandoffCatalog(resolvedHome, opts);
   const manifestRead = readV2HandoffManifestFile(resolvedHome);
   if (manifestRead) {
     return {
@@ -352,21 +501,26 @@ export function resolveMigrationUserStatePreflight(appHome: string): MigrationUs
       elapsedMs: manifestRead.elapsedMs,
       manifest: manifestRead.manifest,
       preservedTopLevel: listPreservedTopLevelFromManifest(manifestRead.manifest),
-      preservedAbsolutePaths: listPreservedAbsolutePathsFromManifest(
-        manifestRead.manifest,
-        resolvedHome,
+      preservedAbsolutePaths: mergePreservedAbsolutePaths(
+        listPreservedAbsolutePathsFromManifest(manifestRead.manifest, resolvedHome),
+        handoffCatalog,
       ),
+      handoffCatalog,
     };
   }
   const started = performance.now();
   const preservedTopLevel = listPreservedTopLevelFromScan(resolvedHome);
-  const preservedAbsolutePaths = listPreservedAbsolutePathsFromScan(resolvedHome);
+  const preservedAbsolutePaths = mergePreservedAbsolutePaths(
+    listPreservedAbsolutePathsFromScan(resolvedHome),
+    handoffCatalog,
+  );
   return {
     source: "scan",
     elapsedMs: performance.now() - started,
     manifest: null,
     preservedTopLevel,
     preservedAbsolutePaths,
+    handoffCatalog,
   };
 }
 

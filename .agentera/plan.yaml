@@ -109,7 +109,7 @@ tasks:
   - number: 3
     name: "Catalog custom profile/config-dir artifacts in the v2-to-v3 handoff (#31)"
     depends_on: []
-    status: pending
+    status: complete
     acceptance:
       - "GIVEN feat/v3 base WHERE resolveMigrationUserStatePreflight(appHome) (migrateArtifactsV2ToV3.ts:263) inspects only the app home WHEN a user has custom `PROFILERA_PROFILE_DIR`/`AGENTERA_PROFILE_DIR` or runtime-config-dir artifacts (opencode config dir, cursor user dir) THEN the migration preflight/handoff catalogs those custom paths in the dry-run summary so the user knows their customizations are accounted for, and the preserved-absolute-paths set includes the custom profile/config-dir root when present."
       - "WHEN `agentera upgrade --dry-run` runs on a fixture v2 home with `PROFILERA_PROFILE_DIR` set to a custom path containing profile/corpus artifacts THEN the dry-run output lists the custom profile dir and its preserved entries; the handoff summary field names the custom dir explicitly rather than silently skipping it."

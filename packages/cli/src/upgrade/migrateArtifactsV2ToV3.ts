@@ -13,6 +13,7 @@ import {
 } from "./migrateArtifactsV1ToV2.js";
 import {
   appHomeHasUnrecognizedEntriesWithPreflight,
+  handoffCatalogMessage,
   resolveMigrationUserStatePreflight,
 } from "../migrate/v2HandoffManifest.js";
 import {
@@ -264,10 +265,20 @@ export function planCleanupPhase(ctx: MigrationContext): MigrationPhase {
   const appHome = resolvePath(ctx.appHome);
   const roots = doctorRoots(appHome);
   const managedAppRoot = roots.managedAppRoot;
-  const preflight = resolveMigrationUserStatePreflight(appHome);
+  const preflight = resolveMigrationUserStatePreflight(appHome, {
+    home: ctx.home,
+    env: ctx.env,
+  });
   const preserved = preflight.preservedAbsolutePaths;
   const unknown = appHomeHasUnrecognizedEntriesWithPreflight(appHome, preflight);
   const items: MigrationPhaseItem[] = [
+    ...preflight.handoffCatalog.map((entry) => ({
+      status: "noop" as const,
+      action: "catalog-handoff",
+      source: entry.root,
+      preserved: entry.entries,
+      message: handoffCatalogMessage(entry),
+    })),
     ...planAppContentRefreshItems(ctx),
     ...planLegacyAgentCleanupItems(ctx),
   ];
