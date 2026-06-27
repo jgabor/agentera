@@ -242,7 +242,8 @@ cycles:
   inspiration: Plan light plan for three degraded TODOs targeting discuss/instructions.ts
     prose accuracy.
   discovered: "TODO.md edit hook blocks writes when Critical section is empty \u2014\
-    \ pre-existing issue (TODO line 13); bypassed via bash write. Plan schema requires\
+    \ pre-existing issue (TODO.md @ ⇶ Critical — empty-section hook); bypassed via bash\
+    \ write. Plan schema requires\
     \ at least one task and quoted date string \u2014 same YAML date-quoting class\
     \ of bug as T1."
   verified: "pnpm -C packages/cli test \u2014 939/941 pass (2 pre-existing appHome\
