@@ -247,13 +247,8 @@ export function codexHookTrustedHash(
   return "sha256:" + crypto.createHash("sha256").update(payload, "utf8").digest("hex");
 }
 
-export function codexValidatorCommand(installRoot: string): string {
-  const candidates = [
-    path.join(installRoot, "app", "hooks", "validate_artifact.py"),
-    path.join(installRoot, "hooks", "validate_artifact.py"),
-  ];
-  const validator = candidates.find((c) => isFile(c)) ?? candidates[0];
-  return `uv run "${validator}"`;
+export function codexValidatorCommand(_installRoot: string): string {
+  return CODEX_HOOK_COMMAND;
 }
 
 export function renderCodexHooksConfig(command: string): string {

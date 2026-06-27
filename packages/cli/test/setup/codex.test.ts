@@ -5,6 +5,7 @@ import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import {
+  CODEX_HOOK_COMMAND,
   CODEX_HOOK_MATCHER,
   InstallRootError,
   classifyToml,
@@ -12,6 +13,7 @@ import {
   codexHookStateEntries,
   codexHookTrustedHash,
   codexPluginHooksEnabled,
+  codexValidatorCommand,
   emitSetInlineTable,
   ensureCodexAgentLimits,
   ensureCodexHookTrust,
@@ -72,6 +74,15 @@ describe("setup codex: TOML classification + emission", () => {
     expect(text).toContain('[shell_environment_policy]\nset = { AGENTERA_HOME = "/opt/agentera" }');
     expect(text).toContain("[agents]\nmax_depth = 1");
     expect(text).toContain("[features.multi_agent_v2]");
+  });
+});
+
+describe("setup codex: validator command", () => {
+  it("delegates to CODEX_HOOK_COMMAND (v3 npx entrypoint, not uv run Python hook)", () => {
+    expect(codexValidatorCommand("/opt/agentera")).toBe(CODEX_HOOK_COMMAND);
+    expect(CODEX_HOOK_COMMAND).toBe("npx -y agentera@next hook validate-artifact");
+    expect(codexValidatorCommand("/other/root")).not.toMatch(/^uv run/);
+    expect(codexValidatorCommand("/other/root")).not.toContain("validate_artifact.py");
   });
 });
 

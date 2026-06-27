@@ -131,7 +131,7 @@ tasks:
   - number: 2
     name: Align codexValidatorCommand with v3 npx entrypoint (#25)
     depends_on: []
-    status: pending
+    status: complete
     acceptance:
       - 'GIVEN codexValidatorCommand (packages/cli/src/setup/codex/configToml.ts:250) WHEN invoked with any installRoot THEN it returns the v3 npx entrypoint npx -y agentera@next hook validate-artifact by delegating to CODEX_HOOK_COMMAND, not a uv run Python-path command'
       - 'GIVEN the function body WHEN inspected THEN it no longer constructs app/hooks/validate_artifact.py paths or a uv run prefix'
