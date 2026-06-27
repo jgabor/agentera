@@ -185,9 +185,9 @@ tasks:
       - 'GIVEN the gate fires on drift, WHEN the failure message is printed, THEN it includes the rebase procedure (update per-family python_commit to the new HEAD, re-run npmParityMatrix test, document intentional divergence with version_break: true)'
       - 'AND a regression test asserts rebase_oracle.sh --check exits 0 on a clean pin and 1 on a deliberately divergent pin'
   - number: 7
-    name: Retire v2 installed hooks on upgrade and rewire pre-upgrade active hook configs off v2 schemas (#35) — pending
+    name: Retire v2 installed hooks on upgrade and rewire pre-upgrade active hook configs off v2 schemas (#35) — complete
     depends_on: ['1']
-    status: pending
+    status: complete
     acceptance:
       - 'GIVEN the v2 installed bundle ships all-v2 hooks (`uv run hooks/*.py`), WHEN the upgrade refresh replaces the app-home hooks surface, THEN the installed bundle has no `uv run hooks/*.py` invocations and hook commands route through the v3 entrypoint (`npx -y agentera@next hook ...` or app-home equivalent)'
       - 'GIVEN a pre-upgrade active hook config references v2 schemas from the app bundle (e.g. via $AGENTERA_HOME/hooks/validate_artifact.py), WHEN the runtime rewire phase runs, THEN it rewrites those references to the v3 entrypoint (mirrors the B5/B4 rewire pattern) and retires the v2 hook file'
