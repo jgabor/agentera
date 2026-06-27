@@ -1,4 +1,38 @@
 cycles:
+- number: 678
+  timestamp: 2026-06-27 10:40
+  type: fix
+  phase: build
+  what: "v2/v3 coexistence B3 \u2014 bundle-status & channel resolution. Centralized\
+    \ channel resolution through resolveInvokedUpdateChannel so doctor and project_integration\
+    \ report the same channel. Fixed retryCommand to derive from the invoking CLI\
+    \ runtime (process.argv0/AGENTERA_CLI_RUNTIME) instead of the v2 managed script\
+    \ shebang. Made expectedVersion channel-aware (stable=installed app bundle version,\
+    \ development=source registry version). Separated crossMajorBoundary detected\
+    \ vs announced semantics so project_integration is not suppressed. Fixed dryRunCommand/applyCommand\
+    \ dead end when crossMajorPending \u2014 approval text corrected when no command\
+    \ available. Replaced hardcoded stable channel guidance text with resolved channel\
+    \ name. 1034 tests pass (+7 from 1027).\n"
+  discovered: 'The crossMajorBoundary conflation of detected vs announced was the
+    upstream feeder for multiple downstream defects (#18 dead end, #19 false-coalesce).
+    Separating the semantic in T4 unblocked T5 naturally.
+
+    '
+  verified: 'pnpm -C packages/cli run typecheck passes. pnpm -C packages/cli build\
+    \ succeeds. pnpm -C packages/cli test: 110 files, 1034 tests pass. node packages/cli/dist/bin/agentera.js\
+    \ check validate capability-contract --format json: pass. node packages/cli/dist/bin/agentera.js\
+    \ check compact: no budget regression.'
+  next: 'Plan slot is free. Next work is B4 (OpenCode plugin rewire: #7, #8, #24,\
+    \ #36, #38). See docs/notes/v2-v3-coexistence-defects.md batch plan.'
+  context:
+    intent: Fix the bundle-status and channel-resolution defects that produce\ contradictory
+      prime output when a v3 CLI runs against a v2 installed app.
+    constraints: All work on feat/v3 only. Do not touch .agentera/vision.yaml. Do\
+      \ not rewire OpenCode plugin (B4). Do not fix repo hook npm tags (B5). Do not\
+      \ refresh installed-app content (B6). Preserve resolveInvokedUpdateChannel override\
+      \ logic for v3 source.
+    unknowns: Whether the crossMajorBoundaryDetected field has downstream effects\
+      \ on the OpenCode plugin rewire (B4 scope).
 - number: 677
   timestamp: 2026-06-27 10:00
   type: fix
@@ -276,35 +310,10 @@ cycles:
     scope: packages/cli/test/registries/packageRegistry.test.ts, packages/cli/test/registries/artifactRegistry.test.ts,
       packages/cli/test/registries/evaluatorHandoffContract.test.ts, packages/cli/test/fixtures/repo-state/ok/.agentera/docs.yaml,
       packages/cli/test/README.md, .agentera/plan.yaml, .agentera/progress.yaml
-- number: 668
-  timestamp: 2026-06-18 20:15
-  type: chore
-  phase: build
-  what: "Plan T4 \u2014 decouple artifact validation and validate oracles: migrated\
-    \ validateArtifact.test.ts, validate.test.ts, and validateVerifyOracles.test.ts\
-    \ to useFixtureProject('ok'); extended ok fixture with schema-clean docs.yaml,\
-    \ vision.yaml, health.yaml, and valid plan/progress; removed plan.yaml branching\
-    \ for artifact target selection."
-  inspiration: "Decouple vitest from live repo artifact state plan T4 \u2014 validation\
-    \ tests must not depend on checkout plan slot or live .agentera files."
-  discovered: ok fixture plan.yaml and progress.yaml needed schema fixes (light header,
-    non-empty scope, descending cycle order) before cmdValidateArtifact pass envelopes
-    succeed.
-  verified: "pnpm -C packages/cli test test/hooks/validateArtifact.test.ts test/cli/validate.test.ts\
-    \ test/cli/validateVerifyOracles.test.ts \u2014 64/64 pass; no vitest branches\
-    \ on fs.existsSync(REPO_ROOT/.agentera/plan.yaml) for target selection."
-  next: "Task 5 \u2014 decouple registry and evaluatorHandoffContract TODO coupling;\
-    \ Task 6 \u2014 verification and closeout."
-  context:
-    intent: "Task 4 only \u2014 artifact validation fixture migration, no commit unless\
-      \ user asks."
-    constraints: feat/v3; REPO_ROOT retained in validateVerifyOracles only for static
-      semantic fixture path.
-    unknowns: None for T4 acceptance.
-    scope: packages/cli/test/hooks/validateArtifact.test.ts, packages/cli/test/cli/validate.test.ts,
-      packages/cli/test/cli/validateVerifyOracles.test.ts, packages/cli/test/fixtures/repo-state/ok/.agentera/*,
-      packages/cli/test/README.md, .agentera/plan.yaml, .agentera/progress.yaml
 archive:
+- summary: "Cycle 668 (2026-06-18): Plan T4 \u2014 decouple artifact validation and\
+    \ validate oracles: migrated validateArtifact.test.ts, validate.test.ts, and validateVerifyOracles.test.ts\
+    \ to..."
 - summary: "Cycle 667 (2026-06-18): Plan T2 \u2014 compaction tests use fixtures only:\
     \ removed real-repo computeCompactionStatus/checkCompaction budget asserts from\
     \ compaction.test.ts;..."
@@ -405,5 +414,3 @@ archive:
     \ a new..."
 - summary: 'Cycle 627 (2026-06-02): Wire the invalid-input envelope across the remaining
     CLI surfaces (lint, backfill, state, query, compact, schema,...'
-- summary: "Cycle 626 (2026-06-02): Freeze the invalid-input error envelope contract\
-    \ for the 3.0 TypeScript CLI \u2014 new emitInvalidInput helper,..."
