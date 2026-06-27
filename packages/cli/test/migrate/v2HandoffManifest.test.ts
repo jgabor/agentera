@@ -118,7 +118,8 @@ describe("v2 handoff manifest contract", () => {
 
     const cleanup = planCleanupPhase({ appHome: realistic, project: realistic, home: tmp });
     expect(cleanup.status).toBe("pending");
-    expect(cleanup.items[0]?.preserved?.some((p) => p.includes("benchmarks"))).toBe(true);
+    const removeItem = cleanup.items.find((item) => item.action === "remove-managed-app-home");
+    expect(removeItem?.preserved?.some((p) => p.includes("benchmarks"))).toBe(true);
   });
 
   it("falls back to directory scan when the manifest is absent", () => {
