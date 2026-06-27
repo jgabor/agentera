@@ -49,10 +49,16 @@ function versionKeyGe(a: number[], b: number[]): boolean {
   return true;
 }
 
-function visibleSkillVersion(home: string, env: Env): [string | null, string | null] {
+function visibleSkillVersion(
+  home: string,
+  env: Env,
+  installRoot: string,
+  sourceRoot: string,
+): [string | null, string | null] {
   const candidates: string[] = [];
   if (env.AGENTERA_VISIBLE_SKILL_ROOT) candidates.push(env.AGENTERA_VISIBLE_SKILL_ROOT);
-  candidates.push(path.join(home, ".agents", "skills", "agentera"));
+  candidates.push(path.join(installRoot, "skills", "agentera"));
+  candidates.push(path.join(sourceRoot, "skills", "agentera"));
   candidates.push(path.join(home, ".config", "opencode", "skills", "agentera"));
   const versions: Array<[number[], string, string]> = [];
   for (const root of candidates) {
@@ -64,11 +70,17 @@ function visibleSkillVersion(home: string, env: Env): [string | null, string | n
   return [versions[0][1], versions[0][2]];
 }
 
-function statusExpectedVersion(opts: PrimeOpts, sourceRoot: string, home: string, env: Env): [string | null, string] {
+function statusExpectedVersion(
+  opts: PrimeOpts,
+  sourceRoot: string,
+  home: string,
+  env: Env,
+  installRoot: string,
+): [string | null, string] {
   if (opts.expectedVersion) return [opts.expectedVersion, "--expected-version"];
   if (env.AGENTERA_EXPECTED_VERSION) return [env.AGENTERA_EXPECTED_VERSION, "AGENTERA_EXPECTED_VERSION"];
   const sourceVersion = loadSuiteVersion(sourceRoot);
-  const [visibleVersion, visibleSource] = visibleSkillVersion(home, env);
+  const [visibleVersion, visibleSource] = visibleSkillVersion(home, env, installRoot, sourceRoot);
   if (visibleVersion && versionKeyGe(versionKey(visibleVersion), versionKey(sourceVersion))) {
     return [visibleVersion, visibleSource || "visible skill"];
   }
@@ -84,7 +96,7 @@ export function statusBundleStatus(opts: PrimeOpts): BundleStatus {
     env,
     sourceRoot,
   });
-  const [expected, expectedSource] = statusExpectedVersion(opts, sourceRoot, home, env);
+  const [expected, expectedSource] = statusExpectedVersion(opts, sourceRoot, home, env, installRoot);
   const status = buildDoctorStatus(installRoot, {
     rootSource,
     sourceRoot,
