@@ -1,5 +1,5 @@
 {
-  "description": "agentera v3 hooks: session context preloading, session persistence, and schema-backed artifact validation against skills/agentera/schemas/artifacts/",
+  "description": "agentera v3 Claude Code hooks (PascalCase lifecycle events SessionStart, Stop, PostToolUse): session context preloading, session persistence, and schema-backed artifact validation against skills/agentera/schemas/artifacts/",
   "hooks": {
     "SessionStart": [
       {

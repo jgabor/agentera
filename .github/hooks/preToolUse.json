@@ -1,4 +1,5 @@
 {
+  "description": "agentera v3 GitHub Copilot CLI hook (camelCase name field preToolUse): artifact hard gate before tool use",
   "name": "preToolUse",
   "type": "command",
   "bash": "npx -y agentera@next hook validate-artifact",

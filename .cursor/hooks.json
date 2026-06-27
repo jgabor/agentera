@@ -1,5 +1,6 @@
 {
   "version": 1,
+  "description": "agentera v3 Cursor IDE hooks (camelCase lifecycle events sessionStart, sessionEnd, preToolUse, postToolUse): session context export, artifact hard gate, and advisory validation",
   "hooks": {
     "sessionStart": [
       {
