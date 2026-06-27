@@ -1,0 +1,246 @@
+previous_plan_archived: 'archive/PLAN-2026-06-27-b4-opencode-plugin-rewire.md'
+header:
+  level: full
+  created: '2026-06-27'
+  status: active
+  reviewed: '2026-06-27'
+  critic_issues: '5 found, 5 addressed, 0 dismissed'
+  revised: 'Critic flagged (1) Task 1 did not name the exact files needing the @next tag nor assert which sibling files are already correct, addressed by naming hooks/hooks.json and hooks/codex-hooks.json as the bare-tag residuals and requiring a regression assertion that no repo hook file contains a bare `npx -y agentera` (without @next); (2) Task 2 codexValidatorCommand has zero callers in src and tests (dead code), addressed by scoping the fix to align the function to delegate to CODEX_HOOK_COMMAND (minimal consistency fix preserving the export surface) and recording the dead-caller observation in surprises rather than asserting a caller behavior that does not exist; (3) Task 3 risked duplicating Task 1 work on the same files, addressed by making Task 3 depend_on Task 1 and scoping Task 3 strictly to description text (v2 wording) not npm tags; (4) Task 5 risked blindly normalizing all hook event names to one case, addressed by scoping to per-file runtime-target clarity — each hook file targets exactly one runtime and uses that runtime canonical event names (Codex PascalCase PreToolUse/PostToolUse, Cursor camelCase, GitHub lowercase name field), documented per file, not a global rename; (5) Task 6 did not define the unpublished-pin behavior, addressed by requiring the L2 step fail non-zero with a clear message when the dynamically computed pin is unpublished, not a silent exit 0.'
+  title: v2/v3 coexistence B5 — Runtime hooks consistency
+what: >
+  Close the runtime-hooks-consistency defect batch. The defects doc
+  (docs/notes/v2-v3-coexistence-defects.md batch plan, batch B5) is
+  triage; the live repo hook files, CLI Codex setup source, the upgrade
+  migration planner, CI workflow, and the pre-commit runner are ground
+  truth, so tasks verify what prior batches already fixed and close the
+  true residuals. Unify repo hook npm tags to npx -y agentera@next so no
+  hook file silently resolves to the v2 @latest shim. Align the Codex
+  validator command with the v3 npx entrypoint instead of a hardcoded
+  uv-run Python path. Correct repo template hook descriptions that claim
+  v2 while invoking v3 entrypoints. Add project-level Codex config
+  detection to the upgrade migration planner so it mirrors the Cursor
+  planner. Clarify which runtime each repo hook file targets and that
+  each uses that runtime canonical event names. Compute the CI L2 npm
+  pin dynamically from packages/cli/package.json and fail loud (not
+  silent skip) when the pinned version is unpublished. Fix the
+  pre-commit staged-aware runner so scripts/sandbox path changes route
+  to the full vitest suite, not the 2-smoke branch.
+why: >
+  B4 (OpenCode plugin rewire) is COMPLETE and unblocks B5; B5 does not
+  depend on B2/B3/B6/B7 sibling batches. See
+  docs/notes/v2-v3-coexistence-defects.md batch plan, batch B5. The
+  defects doc is triage, not ground truth: investigation of the live
+  repo and CLI source confirmed all six defects (#23, #25, #26, #27,
+  #41, #44) and both test gaps (G5, G6) are still live as of this
+  authoring — none were collapsed by B1-B4. Collapsed defects: #23 repo
+  hook files use inconsistent npm tags (hooks/hooks.json and
+  hooks/codex-hooks.json use bare npx -y agentera resolving to v2
+  @latest, while .cursor/hooks.json, .github/hooks/*.json, and
+  hooks/codex-plugin-hooks.json use npx -y agentera@next); #25
+  codexValidatorCommand (packages/cli/src/setup/codex/configToml.ts:250)
+  hardcodes uv run against a v2 Python hook path, inconsistent with
+  CODEX_HOOK_COMMAND in constants.ts:22 which is
+  npx -y agentera@next hook validate-artifact; #26 repo template hooks
+  have descriptions saying "agentera v2 hooks" but commands invoking v3
+  entrypoints; #27 planCodexItems
+  (packages/cli/src/upgrade/runtimeMigration.ts:239) only checks
+  home-level .codex paths, unlike planCursorItems which checks both
+  project and home, so project-level .codex/config.toml is never
+  detected or rewired; #41 hooks/hooks.json uses PascalCase event names
+  (SessionStart, Stop, PostToolUse) while .cursor/hooks.json uses
+  camelCase and .github/hooks use a lowercase name field, and it is
+  unclear which runtime hooks/hooks.json targets; #44 CI L2 sandbox
+  (.github/workflows/ci.yml:89) hardcodes
+  AGENTERA_NPM_PIN: agentera@3.0.0-next.0 (stale; package.json is
+  3.0.0-next.1) and silently exits 0 if unpublished; G5 pre-commit
+  staged-aware runner routes scripts/sandbox path changes to the
+  2-smoke-test branch (scripts/precommit-vitest.sh default case); G6 CI
+  L2 silently skips on the unpublished pin (same code as #44).
+constraints: >
+  All work on feat/v3-b5-runtime-hooks-consistency (forked from feat/v3).
+  B4 is COMPLETE; B5 may start. Do NOT depend on B2, B3, B6, or B7 — they
+  are independent sibling batches. Do not touch .agentera/vision.yaml or
+  objective state. Unify to the literal npx -y agentera@next pin; do not
+  channel-resolve the tag (channel resolution is B3 territory and
+  already done). Do not remove the PROFILERA_PROFILE_DIR alias fallback
+  (separate v3.0.0-stable chore tracked in TODO.md, out of B5 scope). Do
+  not normalize all hook event names to a single case — each runtime has
+  its own canonical convention; the fix is per-file runtime-target
+  clarity, not a global rename. codexValidatorCommand currently has zero
+  callers; align it to delegate to CODEX_HOOK_COMMAND for minimal
+  consistency — do not assert caller behavior that does not exist, and
+  leave full dead-code removal as a separate follow-up if confirmed
+  dead. Author ONLY — do not implement, do not mark tasks complete, do
+  not archive; leave the plan in the active slot, status active, tasks
+  pending.
+scope:
+  included:
+    - 'hooks/hooks.json — unify npm tag to @next and clarify target runtime + event-name convention (#23, #26, #41)'
+    - 'hooks/codex-hooks.json — unify npm tag to @next and clarify target runtime + event-name convention (#23, #26, #41)'
+    - 'hooks/codex-plugin-hooks.json — verify @next already correct; align description wording (#26)'
+    - 'packages/cli/src/setup/codex/configToml.ts — codexValidatorCommand delegate to CODEX_HOOK_COMMAND (#25)'
+    - 'packages/cli/src/upgrade/runtimeMigration.ts — planCodexItems project-level .codex detection (#27)'
+    - '.github/workflows/ci.yml — compute L2 npm pin dynamically from packages/cli/package.json and fail loud on unpublished (#44, #44/G6)'
+    - 'scripts/precommit-vitest.sh — route scripts/sandbox path changes to full vitest, not 2-smoke (G5)'
+    - 'packages/cli/test Coppilot/Cursor/Codex setup tests and new regression tests for #23/#25/#27/#41/#44/G5'
+  excluded:
+    - 'Channel-resolved / app-home-derived hook entrypoint tag (npx -y agentera@next pin stays; B3 territory)'
+    - 'Removing the PROFILERA_PROFILE_DIR alias fallback (separate v3.0.0-stable chore; TODO.md)'
+    - 'Removing codexValidatorCommand as confirmed dead code (B5 aligns it; full removal is a follow-up if a caller audit confirms dead)'
+    - 'OpenCode plugin internals (B4), installed-app content refresh on upgrade (B6), v2 Swedish-verb residue cleanup (B7), Cursor doctor path fix (#22, B7)'
+    - '.agentera/vision.yaml, objective state'
+  deferred:
+    - 'Coordinated removal of all PROFILERA_PROFILE_DIR fallbacks after v3 stable deprecation window closes — tracked in TODO.md, not B5'
+    - 'A repo-wide lint rule asserting every hook command across all runtimes derives the tag from a single shared constant (e.g. NPX_CLI_ENTRYPOINT) rather than the @next literal — follow-up after B5 unifies the literal, to avoid coupling B5 to a refactor'
+design: >
+  The live source is the authority. Investigation confirmed all eight
+  items are still live, so B5 is net-new fix work plus regression
+  coverage rather than verify-and-lock. #23 and #26 touch the same repo
+  hook files and are sequenced (Task 1 unifies tags, Task 3 fixes
+  descriptions) so the two defects do not conflict on the same lines.
+  #25 is a minimal consistency fix: codexValidatorCommand returns the v3
+  npx entrypoint by delegating to CODEX_HOOK_COMMAND instead of
+  constructing a uv-run Python path; it has zero callers, so the fix is
+  defensive (closes the literal inconsistency the defect names) and the
+  dead-caller observation is recorded in surprises. #27 mirrors the
+  proven planCursorItems shape (both project and home paths) and updates
+  the single caller at runtimeMigration.ts:572. #41 is not a global
+  rename — each hook file targets exactly one runtime and uses that
+  runtime canonical event names (Codex PreToolUse/PostToolUse, Cursor
+  camelCase, GitHub lowercase name field), made explicit in the file
+  description so the target runtime is unambiguous. #44 derives the L2
+  npm pin from packages/cli/package.json at workflow runtime (read
+  version, set AGENTERA_NPM_PIN=agentera@<version>) and replaces the
+  silent exit-0 skip with a non-zero failure carrying a clear message
+  when the computed pin is unpublished, which also closes G6 (same
+  code). G5 routes scripts/sandbox path changes to the full vitest
+  suite by adding an explicit case to precommit-vitest.sh. Each task
+  carries Given/When/Then acceptance so orkestrera can drive
+  implementation against verifiable criteria and so the consistency
+  cannot silently regress during the v3 cutover.
+tasks:
+  - number: 1
+    name: Unify repo hook npm tags to npx -y agentera@next (#23)
+    depends_on: []
+    status: pending
+    acceptance:
+      - 'GIVEN hooks/hooks.json and hooks/codex-hooks.json WHEN inspected THEN every hook command uses npx -y agentera@next (no bare `npx -y agentera` without @next)'
+      - 'GIVEN .cursor/hooks.json, .github/hooks/*.json, and hooks/codex-plugin-hooks.json WHEN inspected THEN they already use npx -y agentera@next and are left unchanged'
+      - 'GIVEN a new regression test asserting no repo hook file under hooks/, .cursor/, .github/hooks/ contains a bare `npx -y agentera` command lacking @next WHEN run THEN it passes'
+      - 'GIVEN the existing Cursor/Codex/Copilot setup tests WHEN run THEN they still pass (no regression in rendered hook config)'
+  - number: 2
+    name: Align codexValidatorCommand with v3 npx entrypoint (#25)
+    depends_on: []
+    status: pending
+    acceptance:
+      - 'GIVEN codexValidatorCommand (packages/cli/src/setup/codex/configToml.ts:250) WHEN invoked with any installRoot THEN it returns the v3 npx entrypoint npx -y agentera@next hook validate-artifact by delegating to CODEX_HOOK_COMMAND, not a uv run Python-path command'
+      - 'GIVEN the function body WHEN inspected THEN it no longer constructs app/hooks/validate_artifact.py paths or a uv run prefix'
+      - 'GIVEN CODEX_HOOK_COMMAND in packages/cli/src/setup/codex/constants.ts:22 WHEN inspected THEN it remains npx -y agentera@next hook validate-artifact (single source of truth, codexValidatorCommand delegates to it)'
+      - 'GIVEN a new regression test asserting codexValidatorCommand returns the v3 npx entrypoint and contains no uv-run/Python-path logic WHEN run THEN it passes'
+      - 'GIVEN the codexValidatorCommand caller audit WHEN run (grep across packages/ excluding dist) THEN the zero-caller observation is confirmed and recorded; full dead-code removal is left as a separate follow-up, not asserted here'
+  - number: 3
+    name: Correct repo template hook descriptions to reflect v3 (#26)
+    depends_on:
+      - '1'
+    status: pending
+    acceptance:
+      - 'GIVEN hooks/hooks.json, hooks/codex-hooks.json, and hooks/codex-plugin-hooks.json description fields WHEN inspected THEN none claim "v2" while their commands invoke the v3 entrypoint; descriptions read as v3 hooks'
+      - 'GIVEN the description wording WHEN read THEN it is consistent with the @next tag unified in Task 1 and no longer implies a v2 Python hook'
+      - 'GIVEN a new regression test asserting no repo hook file description contains the literal "v2" alongside an agentera@next (or npx -y agentera) command WHEN run THEN it passes'
+  - number: 4
+    name: Add Codex project-level config detection in planCodexItems (#27)
+    depends_on: []
+    status: pending
+    acceptance:
+      - 'GIVEN planCodexItems (packages/cli/src/upgrade/runtimeMigration.ts:239) WHEN a project-level .codex/config.toml or .codex/hooks/codex-hooks.json exists THEN it is detected and rewired, mirroring planCursorItems which checks both project and home paths'
+      - 'GIVEN the planCodexItems signature WHEN updated THEN it accepts the project path (matching planCursorItems) and the single caller at runtimeMigration.ts:572 passes it'
+      - 'GIVEN a project-level Codex config but no home-level config WHEN the migration planner runs THEN the project-level config is still planned for rewiring (not skipped)'
+      - 'GIVEN both project and home Codex configs WHEN the planner runs THEN both are planned, with no duplicate items for the same path'
+      - 'GIVEN a new regression test exercising project-only, home-only, and both Codex config layouts WHEN run THEN it passes'
+  - number: 5
+    name: Clarify hook event names and target runtime per hook file (#41)
+    depends_on:
+      - '1'
+    status: pending
+    acceptance:
+      - 'GIVEN hooks/hooks.json WHEN inspected THEN its description or structure makes unambiguous which runtime it targets, and it uses that runtime canonical event names (not a mix)'
+      - 'GIVEN hooks/codex-hooks.json and hooks/codex-plugin-hooks.json WHEN inspected THEN they use the Codex canonical event names (PreToolUse/PostToolUse) and clearly target Codex'
+      - 'GIVEN .cursor/hooks.json WHEN inspected THEN it uses Cursor canonical camelCase event names (sessionStart/preToolUse/postToolUse/sessionEnd) and clearly targets Cursor'
+      - 'GIVEN .github/hooks/*.json WHEN inspected THEN each uses the GitHub hooks lowercase name field and clearly targets GitHub Copilot'
+      - 'GIVEN a new regression test asserting each repo hook file uses its target runtime canonical event names (no cross-runtime name leakage) WHEN run THEN it passes'
+      - 'GIVEN the OpenCode plugin (.opencode/plugins/agentera.js) WHEN inspected THEN it is confirmed to use its own tool.execute.* events and not read hooks/hooks.json (documented boundary, not changed by B5)'
+  - number: 6
+    name: Compute CI L2 npm pin dynamically and fail loud on unpublished (#44, G6)
+    depends_on: []
+    status: pending
+    acceptance:
+      - 'GIVEN .github/workflows/ci.yml L2 step WHEN the workflow runs THEN AGENTERA_NPM_PIN is derived from packages/cli/package.json version (agentera@<version>) at runtime, not hardcoded'
+      - 'GIVEN packages/cli/package.json version WHEN bumped THEN the L2 pin tracks it with no manual ci.yml edit required'
+      - 'GIVEN the computed pin WHEN published on npm THEN the L2 happy-path runs'
+      - 'GIVEN the computed pin WHEN unpublished on npm THEN the L2 step fails non-zero with a clear message naming the missing version (no silent exit 0)'
+      - 'GIVEN a new regression test (or workflow-lint check) asserting the ci.yml L2 step derives the pin dynamically and has no hardcoded agentera@<version> literal WHEN run THEN it passes'
+  - number: 7
+    name: Route scripts/sandbox path changes to full vitest in pre-commit (G5)
+    depends_on: []
+    status: pending
+    acceptance:
+      - 'GIVEN scripts/precommit-vitest.sh WHEN a scripts/sandbox/* path is staged THEN it routes to the full vitest suite, not the 2-smoke-test branch'
+      - 'GIVEN the routing logic WHEN inspected THEN scripts/sandbox/* is an explicit case (not falling through the default no-op to the 2-smoke fallback)'
+      - 'GIVEN a staged change under packages/cli/* or skills/* WHEN the runner evaluates THEN existing routing behavior is preserved (no regression to the broader staged-aware logic)'
+      - 'GIVEN a new regression test asserting scripts/sandbox path changes set RUN_FULL=true (or equivalent) WHEN run THEN it passes'
+  - number: 8
+    name: Build, typecheck, test, validate, and compact
+    depends_on:
+      - '1'
+      - '2'
+      - '3'
+      - '4'
+      - '5'
+      - '6'
+      - '7'
+    status: pending
+    acceptance:
+      - 'GIVEN pnpm -C packages/cli run typecheck WHEN run THEN it succeeds with no type errors'
+      - 'GIVEN pnpm -C packages/cli build WHEN run THEN it succeeds'
+      - 'GIVEN pnpm -C packages/cli test WHEN run THEN all tests pass including the new #23/#25/#27/#41/#44/G5 regression tests and the updated #26 tests'
+      - 'GIVEN node packages/cli/dist/bin/agentera.js check validate capability-contract --format json WHEN run THEN it passes (note: a pre-existing instruction_file schema-contract defect unrelated to B5 may red this; not a B5 blocker)'
+      - 'GIVEN node packages/cli/dist/bin/agentera.js check compact WHEN run THEN no budget regression'
+overall_acceptance: >
+  All six defects (#23, #25, #26, #27, #41, #44) and both test gaps
+  (G5, G6) are resolved. Repo hook npm tags are unified to
+  npx -y agentera@next across hooks/hooks.json, hooks/codex-hooks.json,
+  .cursor/hooks.json, .github/hooks/*.json, and
+  hooks/codex-plugin-hooks.json (#23). codexValidatorCommand delegates
+  to the v3 npx entrypoint CODEX_HOOK_COMMAND (npx -y agentera@next hook
+  validate-artifact), no uv-run Python path (#25). Repo template hook
+  descriptions reflect v3, not v2 (#26). planCodexItems detects both
+  project-level and home-level .codex configs, mirroring planCursorItems
+  (#27). Each repo hook file targets exactly one runtime and uses that
+  runtime canonical event names, with the target runtime unambiguous
+  (#41). CI L2 npm pin is computed dynamically from
+  packages/cli/package.json and fails loud (non-zero, clear message)
+  when unpublished, closing both #44 and G6. Pre-commit routes
+  scripts/sandbox path changes to the full vitest suite, not 2-smoke
+  (G5). All typecheck, build, test, validate, and compact gates are
+  green (modulo the pre-existing unrelated instruction_file
+  schema-contract defect). The plan stays in the active slot, status
+  active, tasks pending, for ⎈ orkestrera execution.
+surprises: >
+  The defects doc docs/notes/v2-v3-coexistence-defects.md referenced by
+  the brief is not present in this worktree (it lives in a sibling
+  worktree on another branch); the live repo hook files, CLI Codex
+  setup, migration planner, CI workflow, and pre-commit runner were
+  used as ground truth per the brief directive. Investigation confirmed
+  all eight items are still live — none were collapsed by B1-B4.
+  codexValidatorCommand (#25) currently has zero callers in packages/
+  (excluding dist) and zero callers in tests; it is effectively dead
+  code. B5 aligns it to delegate to CODEX_HOOK_COMMAND for minimal
+  consistency with the defect as filed, but full dead-code removal is
+  left as a separate follow-up rather than asserted as B5 scope. The
+  OpenCode plugin (.opencode/plugins/agentera.js) uses its own
+  tool.execute.* events and does not read hooks/hooks.json, so #41 is
+  resolved by clarifying per-file runtime targeting, not by rewiring
+  the OpenCode plugin. The active plan YAML schema has no
+  collapsed_defects field (it is a render-time section in the archived
+  .md, as in B3 and B4), so the collapsed defect list is folded into
+  the why field above.
