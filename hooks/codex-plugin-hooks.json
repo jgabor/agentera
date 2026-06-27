@@ -1,5 +1,5 @@
 {
-  "description": "agentera v2 Codex plugin hooks: schema-backed apply_patch artifact validation using PLUGIN_ROOT",
+  "description": "agentera v3 Codex plugin hooks: schema-backed apply_patch artifact validation using PLUGIN_ROOT",
   "hooks": {
     "PreToolUse": [
       {

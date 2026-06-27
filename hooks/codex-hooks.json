@@ -1,5 +1,5 @@
 {
-  "description": "agentera v2 Codex hooks: schema-backed apply_patch artifact validation, parity with Claude Code PostToolUse and OpenCode tool.execute.after",
+  "description": "agentera v3 Codex hooks: schema-backed apply_patch artifact validation, parity with Claude Code PostToolUse and OpenCode tool.execute.after",
   "hooks": {
     "PreToolUse": [
       {
