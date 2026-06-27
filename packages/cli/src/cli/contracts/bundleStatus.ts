@@ -59,6 +59,9 @@ export interface BundleStatus {
   dryRunCommand: string | null;
   applyCommand: string | null;
   updateChannel?: string;
+  /** App major differs from CLI major (independent of successor announcement). */
+  crossMajorBoundaryDetected?: boolean;
+  /** Cross-major boundary detected and the successor line is announced. */
   crossMajorBoundary?: boolean;
   retryCommand: string | null;
   approval: string;

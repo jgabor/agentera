@@ -33,11 +33,18 @@ import {
 } from "./projectIntegrationDecision.js";
 import {
   classifyUpgradeOutcome,
+  parseSemverMajor,
+  resolveRunningVersion,
   shouldIncludeCrossMajorPlanItems,
 } from "./versionResolution.js";
 
-const MAJOR_BOUNDARY_BLOCK_MESSAGE =
-  "v3 successor line is not announced yet; v2 managed app files remain current on the stable channel";
+const MAJOR_BOUNDARY_BLOCK_MESSAGE_PREFIX =
+  "v3 successor line is not announced yet; v2 managed app files remain current on the";
+
+function majorBoundaryBlockMessage(channelName: string): string {
+  const label = channelName.trim() || "current";
+  return `${MAJOR_BOUNDARY_BLOCK_MESSAGE_PREFIX} ${label} channel`;
+}
 
 export interface ProjectIntegrationArgs {
   project: string;
@@ -47,6 +54,8 @@ export interface ProjectIntegrationArgs {
   installRoot: string;
   bundleStatus: string;
   crossMajorBoundary?: boolean;
+  /** When set, overrides cross-major detection (avoids false ?? short-circuit on announced=false). */
+  crossMajorBoundaryDetected?: boolean;
   /** CLI `--channel` override; otherwise resolved from env/config/bundle authority. */
   channel?: string | null;
 }
@@ -175,12 +184,14 @@ function resolveIntegrationTargets(args: ProjectIntegrationArgs): {
   bundleStatus: string;
   platformBundleStatus?: string;
   crossMajorBoundary: boolean;
+  crossMajorBoundaryDetected: boolean;
 } {
   if (!isNpxBundleRoot(args.sourceRoot)) {
     return {
       installRoot: args.installRoot,
       bundleStatus: args.bundleStatus,
       crossMajorBoundary: args.crossMajorBoundary ?? false,
+      crossMajorBoundaryDetected: args.crossMajorBoundaryDetected ?? false,
     };
   }
   const { platformRoot, platformStatus } = resolveNpxPlatformStatus({
@@ -194,6 +205,7 @@ function resolveIntegrationTargets(args: ProjectIntegrationArgs): {
     bundleStatus: args.bundleStatus,
     platformBundleStatus: platformStatus.status,
     crossMajorBoundary: Boolean(platformStatus.crossMajorBoundary),
+    crossMajorBoundaryDetected: Boolean(platformStatus.crossMajorBoundaryDetected),
   };
 }
 
@@ -224,22 +236,30 @@ export function summarizeProjectIntegration(args: ProjectIntegrationArgs): Proje
   const integrationTargets = resolveIntegrationTargets(args);
   const install = classifyInstall({ appHome: integrationTargets.installRoot, sourceRoot: args.sourceRoot });
   const crossMajorDetected =
-    args.crossMajorBoundary ??
-    integrationTargets.crossMajorBoundary ??
+    args.crossMajorBoundaryDetected ??
     crossMajorBoundaryApplies(install, args.sourceRoot);
-  const successorAnnounced = isStableSuccessorAnnounced(args.sourceRoot, channel.channel);
+  const successorAnnounced = isStableSuccessorAnnounced(args.sourceRoot, "stable");
   const crossMajor = crossMajorDetected && successorAnnounced;
-  if (crossMajorBoundaryApplies(install, args.sourceRoot) && !successorAnnounced) {
+  const runningMajor =
+    parseSemverMajor(
+      resolveRunningVersion({
+        appHome: integrationTargets.installRoot,
+        sourceRoot: args.sourceRoot,
+        install,
+      }),
+    ) ?? 0;
+  if (crossMajorDetected && !successorAnnounced && runningMajor > 0 && runningMajor < 3) {
+    const blockMessage = majorBoundaryBlockMessage(channel.channel);
     return {
       recommendation: "stay",
-      message: MAJOR_BOUNDARY_BLOCK_MESSAGE,
+      message: blockMessage,
       pending_runtime: 0,
       pending_runtimes: [],
       pending_artifacts: 0,
       dry_run_command: null,
       apply_command: null,
       update_channel: channel.channel,
-      major_boundary_block: MAJOR_BOUNDARY_BLOCK_MESSAGE,
+      major_boundary_block: blockMessage,
     };
   }
   const upgradeOutcome = classifyUpgradeOutcome({

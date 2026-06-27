@@ -5,8 +5,13 @@ import { expanduser, isFile, pathExists, resolvePath } from "../core/paths.js";
 import { SOURCE_LABELS, classifyResolvedRoot } from "../state/installRoot.js";
 import { doctorRoots, loadSuiteVersion } from "./appModel.js";
 import { isNpxBundleRoot } from "../core/sourceRoot.js";
-import { resolveUpdateChannel } from "./channels.js";
-import { classifyInstall, crossMajorBoundaryApplies, projectInstallTrack } from "./compatibility.js";
+import { resolveInvokedUpdateChannel, type ResolvedUpdateChannel } from "./channels.js";
+import {
+  classifyInstall,
+  cliDistributionMajor,
+  crossMajorBoundaryApplies,
+  projectInstallTrack,
+} from "./compatibility.js";
 import { isStableSuccessorAnnounced } from "./nextMajorDoctor.js";
 import { buildUpgradeCommands, commandText } from "./upgradeCommands.js";
 import { parseSemverMajor } from "./versionResolution.js";
@@ -114,7 +119,7 @@ function readManagedScriptEvidence(bundleRoot: string): ManagedScriptEvidence {
   };
 }
 
-function buildRetryCommandFromEvidence(
+function buildRetryCommandFromManagedScript(
   evidence: ManagedScriptEvidence,
   expectedCommand: string,
 ): string | null {
@@ -128,6 +133,58 @@ function buildRetryCommandFromEvidence(
     return commandText(["uv", "run", evidence.scriptPath, expectedCommand]);
   }
   return null;
+}
+
+function inferInvokingCliRuntime(
+  sourceRoot: string,
+  env: Record<string, string | undefined>,
+): ScriptRuntime {
+  const explicit = (env.AGENTERA_CLI_RUNTIME ?? "").trim().toLowerCase();
+  if (explicit === "js" || explicit === "node") {
+    return "js";
+  }
+  if (explicit === "python" || explicit === "uv") {
+    return "python";
+  }
+  const argv0 = process.argv0 ?? "";
+  if (/\bnode\b/i.test(argv0)) {
+    return "js";
+  }
+  if (/\bpython\d*\b/i.test(argv0) || /\buv\b/i.test(argv0)) {
+    return "python";
+  }
+  if (cliDistributionMajor(sourceRoot) >= 3) {
+    return "js";
+  }
+  return "unknown";
+}
+
+function buildInvokingCliRetryCommand(
+  sourceRoot: string,
+  channel: ResolvedUpdateChannel,
+  env: Record<string, string | undefined>,
+  managedScriptEvidence: ManagedScriptEvidence,
+  expectedCommand: string,
+): string | null {
+  const runtime = inferInvokingCliRuntime(sourceRoot, env);
+  if (runtime === "js") {
+    if (isNpxBundleRoot(sourceRoot)) {
+      return commandText(["npx", "-y", "agentera", expectedCommand]);
+    }
+    const packageSpec = channel.channel === "development" ? "agentera@next" : "agentera@latest";
+    return commandText(["npx", "-y", packageSpec, expectedCommand]);
+  }
+  if (runtime === "python") {
+    return buildRetryCommandFromManagedScript(managedScriptEvidence, expectedCommand);
+  }
+  if (cliDistributionMajor(sourceRoot) < 3) {
+    return buildRetryCommandFromManagedScript(managedScriptEvidence, expectedCommand);
+  }
+  return null;
+}
+
+function crossMajorPendingApprovalPhrase(): string {
+  return "no upgrade offered: v3 successor line is not announced yet";
 }
 
 /**
@@ -368,7 +425,7 @@ export function buildDoctorStatus(installRoot: string, opts: BuildDoctorStatusOp
   }
 
   const env = { ...(opts.env ?? process.env), HOME: home };
-  const channel = resolveUpdateChannel({
+  const channel = resolveInvokedUpdateChannel({
     channel: opts.channel ?? null,
     env,
     home,
@@ -376,7 +433,7 @@ export function buildDoctorStatus(installRoot: string, opts: BuildDoctorStatusOp
   });
   const install = classifyInstall({ appHome: installRoot, sourceRoot });
   const crossMajorDetected = crossMajorBoundaryApplies(install, sourceRoot);
-  const successorAnnounced = isStableSuccessorAnnounced(sourceRoot, channel.channel);
+  const successorAnnounced = isStableSuccessorAnnounced(sourceRoot, "stable");
   const crossMajorBoundary = crossMajorDetected && successorAnnounced;
   let crossMajorPending = false;
   if (crossMajorDetected && !successorAnnounced) {
@@ -448,12 +505,18 @@ export function buildDoctorStatus(installRoot: string, opts: BuildDoctorStatusOp
         ? null
         : upgradeCommands.applyCommand,
     updateChannel: channel.channel,
+    crossMajorBoundaryDetected: crossMajorDetected,
     crossMajorBoundary,
-    retryCommand: buildRetryCommandFromEvidence(
+    retryCommand: buildInvokingCliRetryCommand(
+      sourceRoot,
+      channel,
+      env,
       managedScriptEvidence,
       expectedCommands[0] ?? "prime",
     ),
-    approval: appLifecycleApprovalPhrase(status, installRoot),
+    approval: crossMajorPending
+      ? crossMajorPendingApprovalPhrase()
+      : appLifecycleApprovalPhrase(status, installRoot),
   };
 }
 

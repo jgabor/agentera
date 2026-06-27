@@ -3,8 +3,11 @@ import os from "node:os";
 import path from "node:path";
 
 import { buildDoctorStatus } from "../../../upgrade/doctor.js";
-import { loadSuiteVersion, resolveDoctorInstallRoot, resolveSourceRootStrict } from "../../../upgrade/appModel.js";
+import { doctorRoots, loadSuiteVersion, resolveDoctorInstallRoot, resolveSourceRootStrict } from "../../../upgrade/appModel.js";
 import { isNpxBundleRoot } from "../../../core/sourceRoot.js";
+import { resolveInvokedUpdateChannel, type ResolvedUpdateChannel } from "../../../upgrade/channels.js";
+import { classifyResolvedRoot } from "../../../state/installRoot.js";
+import { resolveLatestOnChannel } from "../../../upgrade/versionResolution.js";
 import { resolveNpxPlatformStatus } from "../../../upgrade/npxPlatformStatus.js";
 import type { BundleStatus } from "../../contracts/bundleStatus.js";
 import type { Env, PrimeOpts } from "./types.js";
@@ -76,9 +79,18 @@ function statusExpectedVersion(
   home: string,
   env: Env,
   installRoot: string,
+  channel: ResolvedUpdateChannel,
 ): [string | null, string] {
   if (opts.expectedVersion) return [opts.expectedVersion, "--expected-version"];
   if (env.AGENTERA_EXPECTED_VERSION) return [env.AGENTERA_EXPECTED_VERSION, "AGENTERA_EXPECTED_VERSION"];
+  if (channel.channel === "stable") {
+    const roots = doctorRoots(installRoot);
+    const classification = classifyResolvedRoot(roots.activeBundleRoot, { source: "explicit" });
+    if (classification.current_version) {
+      return [classification.current_version, "installed app registry"];
+    }
+    return [resolveLatestOnChannel(channel, sourceRoot), "stable channel catalog"];
+  }
   const sourceVersion = loadSuiteVersion(sourceRoot);
   const [visibleVersion, visibleSource] = visibleSkillVersion(home, env, installRoot, sourceRoot);
   if (visibleVersion && versionKeyGe(versionKey(visibleVersion), versionKey(sourceVersion))) {
@@ -91,12 +103,13 @@ export function statusBundleStatus(opts: PrimeOpts): BundleStatus {
   const env = opts.env ?? process.env;
   const home = opts.home ? opts.home : os.homedir();
   const sourceRoot = resolveSourceRootStrict(env);
+  const channel = resolveInvokedUpdateChannel({ env, home, sourceRoot });
   const [installRoot, rootSource] = resolveDoctorInstallRoot(opts.installRoot ?? null, {
     home,
     env,
     sourceRoot,
   });
-  const [expected, expectedSource] = statusExpectedVersion(opts, sourceRoot, home, env, installRoot);
+  const [expected, expectedSource] = statusExpectedVersion(opts, sourceRoot, home, env, installRoot, channel);
   const status = buildDoctorStatus(installRoot, {
     rootSource,
     sourceRoot,
@@ -105,6 +118,8 @@ export function statusBundleStatus(opts: PrimeOpts): BundleStatus {
     expectedVersion: expected,
     expectedCommands: ["prime"],
     probeCli: false,
+    channel: channel.channel,
+    env,
   });
   status.expectedVersionSource = expectedSource;
   if (isNpxBundleRoot(sourceRoot)) {
