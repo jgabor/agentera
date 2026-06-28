@@ -1,4 +1,33 @@
 cycles:
+- number: 690
+  timestamp: 2026-06-28 15:57
+  type: chore
+  phase: audit
+  what: "Plan task 5 (final state sync): closed the vitest 2\u21924 + Vite+ toolchain\
+    \ plan. Ran the full verification gate \u2014 typecheck, build, vitest, compaction\
+    \ \u2014 all green. Archived the plan to .agentera/archive/PLAN-2026-06-28-vitest4-vp-toolchain.yaml\
+    \ with header.status=complete and removed the active .agentera/plan.yaml."
+  discovered: Task 4's inspektera evaluation had been interrupted by a path-typo stall
+    in the prior orchestration session (/home/jjgabor/ vs /home/jgabor/). Re-ran the
+    audit with the correct path; both acceptance criteria PASS with citations. The
+    plan's surprises field already recorded the testTimeout and lint-baseline findings
+    from the earlier subagent work.
+  verified: "typecheck: 0 errors. build: clean. test: 132/132 files, 1145/1145 tests\
+    \ (21.08s). compact: within uniform_10_40_50 limits, no repair needed. Task 4\
+    \ audit PASS: precommit-vitest.sh:90 (exec pnpm test \u2192 vp test run via scripts.test)\
+    \ and :98 (exec vp test run \"${TARGETS[@]}\"); CI .github/workflows/ci.yml:38\
+    \ (pnpm -C packages/cli test \u2192 1145/1145) and :40 (pnpm -C packages/cli test\
+    \ test/upgrade/ \u2192 249/249 arg forwarding); pnpm install --frozen-lockfile\
+    \ clean."
+  next: Plan complete. No active plan remains. Next cycle is a fresh plan or session.
+  context:
+    intent: "Close out the vitest 2\u21924 + Vite+ toolchain migration plan with final\
+      \ verification and archival."
+    constraints: No behavior change to shipped CLI. Branch feat/v3 only. Same-commit
+      fold-in for plan archive and progress cycle.
+    artifacts:
+      plan: .agentera/archive/PLAN-2026-06-28-vitest4-vp-toolchain.yaml (complete,
+        archived)
 - number: 689
   timestamp: 2026-06-28 13:40
   type: chore
@@ -16,8 +45,8 @@ cycles:
     \ forwards the positional file arg and runs only that file (14 tests, not the\
     \ full suite) \u2014 confirmed vp test forwards extra args as vitest CLI args.\
     \ The `check compact` checker has no fix/repair mode (only a verifier), so the\
-    \ progress archive rotation was performed manually: cycle 679 summarized and\
-    \ moved into the archive to keep active=10 under the uniform_10_40_50 cap."
+    \ progress archive rotation was performed manually: cycle 679 summarized and moved\
+    \ into the archive to keep active=10 under the uniform_10_40_50 cap."
   verified: 'Three simulation runs on scripts/precommit-vitest.sh: (a) staged `packages/cli/test/cli/orientation.test.ts`
     -> targeted, exit 0; (b) staged `TODO.md` -> smoke route (2 files), exit 0; (c)
     no args -> full fallback (`exec pnpm test` -> `vp test run`), 1145/1145 passed.
@@ -310,39 +339,9 @@ cycles:
       feat/v3 only.
     artifacts:
       plan: .agentera/plan.yaml (task 4 -> complete; appModel exception noted)
-- number: 680
-  timestamp: 2026-06-27 12:30
-  type: refactor
-  phase: build
-  what: "Plan tasks 2+3 (coupled) of chore:3.0.0: consolidate Dict aliases in the\
-    \ CLI command/state-query surface (task 2, 13 files incl. state/shared.ts thin\
-    \ passthrough) and in capabilityContext & startup-analysis (task 3, ~21 consumer\
-    \ files incl. types.ts and contract.ts thin passthroughs). Cross-subsystem consumer\
-    \ coupling surfaced: tightening exported return types in decisions.ts/health.ts\
-    \ broke cli/orientation.ts and capabilityContext/evidence.ts consumers \u2014\
-    \ resolved by narrowing with !Array.isArray guards and IO-boundary casts. Same\
-    \ JsonValue strictness tightening as task 1 (~latent dynamic-access errors, in-scope\
-    \ via guards/typed shapes/IO casts)."
-  discovered: "Tasks 2 and 3 are genuinely coupled, not artificially separable \u2014\
-    \ the tree only compiles after both land. Confirms critic Issue 3. Small local\
-    \ interfaces (e.g. CategoryEntry in threshold.ts) resolved Set<string>-vs-JsonValue\
-    \ accumulator conflicts cleanly without new exported interfaces."
-  verified: 'pnpm -C packages/cli run typecheck: 0 errors. pnpm -C packages/cli test:
-    1145/1145 pass (132 files), incl. packaging prepack tsc-gate (was failing in baseline
-    task 2). Passthroughs confirmed: only state/shared.ts, capabilityContext/types.ts,
-    startupAnalysis/contract.ts remain as `Dict = JsonObject` passthroughs (task 6
-    deletes). 0 fixture/snapshot drift.'
-  next: "Next dependency-ready: tasks 4 (registries & validate \u2014 was blocked\
-    \ on 3) and 5 (long-tail). Task 6 (cross-cutting cast audit + re-export deletion)\
-    \ then 7 (final sync)."
-  context:
-    intent: Type-only consolidation of JSON-value aliases; narrow `as` casts to IO
-      boundaries. No behavior change.
-    constraints: Task-2 + task-3 scopes only. core/jsonValue.ts untouched. No new
-      public API. feat/v3 only.
-    artifacts:
-      plan: .agentera/plan.yaml (tasks 2,3 -> complete; surprise 2 recorded)
 archive:
+- summary: 'Cycle 680 (2026-06-27): Plan tasks 2+3 (coupled) of chore:3.0.0: consolidate
+    Dict aliases in the CLI command/state-query surface (task...'
 - summary: "Cycle 679 (2026-06-27): chore:3.0.0 plan task 1 \u2014 consolidate `type\
     \ Dict = Record<string, any>` aliases across the 12 hooks modules onto core/jsonValue's\
     \ JsonObject. Strict union surfaced ~80 latent typecheck errors; resolved in-scope\
@@ -441,6 +440,3 @@ archive:
 - summary: "Cycle 641 (2026-06-03): D65 per-capability content surface \u2014 relocated\
     \ 12 capability prose files from skills/agentera/capabilities/<name>/instructions.md\
     \ to packages/cli/src/capabilities/<name>/instructions.ts as..."
-- summary: "Cycle 640 (2026-06-03): Orchestrate task_queue dependency lookup \u2014\
-    \ planTaskRefKeys normalization in orchestrationContext and dependencyReadyTasks;\
-    \ regression tests in packages/cli/test/cli/prime.test.ts."
