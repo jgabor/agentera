@@ -95,22 +95,61 @@ function isStringList(value: unknown): boolean {
   return Array.isArray(value) && value.every((item) => typeof item === "string");
 }
 
+interface PackageRegistrySurface extends JsonObject {
+  id: string;
+  path: string;
+  selector: string;
+}
+
+interface PackageRegistryManifest extends JsonObject {
+  id: string;
+  runtime: string;
+  path: string;
+  version_bearing: boolean;
+  package_shape: string;
+}
+
+interface PackageRegistrySharedPath extends JsonObject {
+  id: string;
+  path: string;
+  kind: string;
+}
+
+interface PackageRegistryRecord extends JsonObject {
+  identity: { id: string; name: string; skill_path: string; expected_capabilities: number } & JsonObject;
+  version_authority: {
+    persisted_authority: string;
+    selector: string;
+    access_interface: string;
+    future_authority_change_requires: string;
+  } & JsonObject;
+  version_surfaces: {
+    surfaces: PackageRegistrySurface[];
+    excluded_runtime_manifests: string[];
+  } & JsonObject;
+  runtime_package_manifests: {
+    manifests: PackageRegistryManifest[];
+    shared_paths: PackageRegistrySharedPath[];
+    shared_paths_policy: string;
+  } & JsonObject;
+}
+
 export class PackageRegistry {
-  records: JsonObject[];
+  records: PackageRegistryRecord[];
   root: string;
 
-  constructor(records: JsonObject[], root: string = defaultRoot()) {
+  constructor(records: PackageRegistryRecord[], root: string = defaultRoot()) {
     this.records = records;
     this.root = root;
   }
 
   get packageIds(): string[] {
-    return this.records.map((record) => (record.identity as JsonObject).id as string); // cast: parsed registry IO data
+    return this.records.map((record) => record.identity.id);
   }
 
-  get(packageId = "agentera"): JsonObject {
+  get(packageId = "agentera"): PackageRegistryRecord {
     for (const record of this.records) {
-      if (((record.identity as JsonObject).id as string) === packageId) { // cast: parsed registry IO data
+      if (record.identity.id === packageId) {
         return record;
       }
     }
@@ -119,7 +158,7 @@ export class PackageRegistry {
 
   suiteVersion(packageId = "agentera"): string {
     const record = this.get(packageId);
-    const authority = record.version_authority as JsonObject; // cast: parsed registry IO data
+    const authority = record.version_authority;
     if (
       authority.persisted_authority !== "registry.json" ||
       authority.selector !== "skills[0].version"
@@ -128,7 +167,7 @@ export class PackageRegistry {
     }
     let data: any; // cast: JSON.parse IO boundary
     try {
-      data = JSON.parse(fs.readFileSync(path.join(this.root, authority.persisted_authority as string), "utf8"));
+      data = JSON.parse(fs.readFileSync(path.join(this.root, authority.persisted_authority), "utf8"));
     } catch (exc) {
       throw new RegistryError(`registry.json missing skills[0].version`);
     }
@@ -157,22 +196,18 @@ export class PackageRegistry {
   }
 
   versionSurfaceIds(packageId = "agentera"): string[] {
-    return ((this.get(packageId).version_surfaces as JsonObject).surfaces as JsonObject[]).map(
-      (s) => s.id as string,
-    ); // cast: parsed registry IO data
+    return this.get(packageId).version_surfaces.surfaces.map((s) => s.id);
   }
 
   runtimeManifestIds(packageId = "agentera"): string[] {
-    return ((this.get(packageId).runtime_package_manifests as JsonObject).manifests as JsonObject[]).map(
-      (m) => m.id as string,
-    ); // cast: parsed registry IO data
+    return this.get(packageId).runtime_package_manifests.manifests.map((m) => m.id);
   }
 
   runtimeManifestPaths(packageId = "agentera"): Record<string, string> {
     const paths: Record<string, string> = {};
-    for (const manifest of (this.get(packageId).runtime_package_manifests as JsonObject).manifests as JsonObject[]) { // cast: parsed registry IO data
-      if (!((manifest.runtime as string) in paths)) {
-        paths[manifest.runtime as string] = manifest.path as string;
+    for (const manifest of this.get(packageId).runtime_package_manifests.manifests) {
+      if (!(manifest.runtime in paths)) {
+        paths[manifest.runtime] = manifest.path;
       }
     }
     return paths;
@@ -180,24 +215,22 @@ export class PackageRegistry {
 
   runtimePackageShapes(packageId = "agentera"): Record<string, string> {
     const shapes: Record<string, string> = {};
-    for (const manifest of (this.get(packageId).runtime_package_manifests as JsonObject).manifests as JsonObject[]) { // cast: parsed registry IO data
-      shapes[manifest.runtime as string] = manifest.package_shape as string;
+    for (const manifest of this.get(packageId).runtime_package_manifests.manifests) {
+      shapes[manifest.runtime] = manifest.package_shape;
     }
     return shapes;
   }
 
   sharedPathRequirements(packageId = "agentera"): Record<string, string> {
     const requirements: Record<string, string> = {};
-    for (const entry of (this.get(packageId).runtime_package_manifests as JsonObject).shared_paths as JsonObject[]) { // cast: parsed registry IO data
-      requirements[entry.path as string] = entry.kind as string;
+    for (const entry of this.get(packageId).runtime_package_manifests.shared_paths) {
+      requirements[entry.path] = entry.kind;
     }
     return requirements;
   }
 
   nonVersionBearingRuntimeManifests(packageId = "agentera"): JsonObject[] {
-    return ((this.get(packageId).runtime_package_manifests as JsonObject).manifests as JsonObject[]).filter(
-      (m) => m.version_bearing === false,
-    ); // cast: parsed registry IO data
+    return this.get(packageId).runtime_package_manifests.manifests.filter((m) => m.version_bearing === false);
   }
 }
 
@@ -210,7 +243,7 @@ export function loadRegistry(
   if (errors.length > 0) {
     throw new RegistryError("PackageManifest registry validation failed: " + errors.join("; "));
   }
-  return new PackageRegistry((data as JsonObject).records as JsonObject[], root); // cast: YAML parse IO boundary
+  return new PackageRegistry(data.records as PackageRegistryRecord[], root); // cast: parsed registry IO boundary
 }
 
 export function validateRegistryFile(
