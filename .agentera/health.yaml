@@ -1,1723 +1,1472 @@
 audits:
-  - number: 15
-    date: 2026-04-26
-    dimensions:
-      - architecture alignment
-      - pattern consistency
-      - coupling health
-      - complexity hotspots
-      - test health
-      - version health
-      - artifact freshness
-      - security hygiene
-      - dependency health
-    findings_summary:
-      critical: 0
-      warning: 0
-      info: 3
-      filtered_by_confidence: 0
-    trajectory: ⮉ improving vs Audit 14. The Codex+Copilot Completion plan landed
-      two well-factored stdlib helpers, a Python smoke harness covering 11
-      black-box cases, and a clean 1.21.0 release. Audit 14 finding 1 (DOCS.md
-      staleness) is resolved; finding 3 (live-host inheritance) is narrowed to a
-      smaller residual gap on the runtime CLI side.
-    grades:
-      Architecture: A
-      Patterns: A
-      Coupling: A
-      Complexity: A
-      Tests: A
-      Version: A
-      Freshness: A
-      Security: A
-      Deps: A
-    dimension_details:
-      - name: Architecture alignment
-        grade: A
-        summary: "`scripts/setup_codex.py` and `scripts/setup_copilot.py` slot into the
-          existing repo-level utilities surface alongside `compact_artifact.py`,
-          `usage_stats.py`, and `smoke_opencode_bootstrap.mjs`. They close the
-          user-side install-friction gap on runtimes that have no plugin-level
-          env-injection API, advancing VISION.md's portable-runtime thesis
-          without forking skill behavior."
-        findings: []
-      - name: Pattern consistency
-        grade: A
-        summary: ""
-        findings:
-          - heading: "⇢ Two-helper shape is a nascent setup_*.py pattern, info (confidence:
-              55)"
-            severity: info
-            confidence: 55
-            location: >-
-              `scripts/setup_codex.py`, `scripts/setup_copilot.py`
-
-              - **Evidence**: Both files share `verify_install_root` →
-              `auto_detect_install_root` → `resolve_install_root` →
-              state-classify → `plan_change` → emit-or-write, the same
-              `--install-root` / `--dry-run` / `--force` CLI surface, and
-              identical four-entry canonical verification
-              (scripts/validate_spec.py, hooks/, skills/, SPEC.md).
-
-              - **Impact**: At two instances the duplication is correct per
-              YAGNI. A third runtime helper would justify lifting the shared
-              shape into a small shared module.
-
-              - **Suggested action**: Defer until a third helper is needed;
-              revisit if Gemini CLI or another runtime requires the same setup
-              pattern.
-            evidence: >-
-              Both files share `verify_install_root` →
-              `auto_detect_install_root` → `resolve_install_root` →
-              state-classify → `plan_change` → emit-or-write, the same
-              `--install-root` / `--dry-run` / `--force` CLI surface, and
-              identical four-entry canonical verification
-              (scripts/validate_spec.py, hooks/, skills/, SPEC.md).
-
-              - **Impact**: At two instances the duplication is correct per
-              YAGNI. A third runtime helper would justify lifting the shared
-              shape into a small shared module.
-
-              - **Suggested action**: Defer until a third helper is needed;
-              revisit if Gemini CLI or another runtime requires the same setup
-              pattern.
-            impact: >-
-              At two instances the duplication is correct per YAGNI. A third
-              runtime helper would justify lifting the shared shape into a small
-              shared module.
-
-              - **Suggested action**: Defer until a third helper is needed;
-              revisit if Gemini CLI or another runtime requires the same setup
-              pattern.
-            suggested_action: Defer until a third helper is needed; revisit if Gemini CLI or
-              another runtime requires the same setup pattern.
-      - name: Coupling health
-        grade: A
-        summary: The new helpers are stdlib-only and import nothing from `hooks/`,
-          `skills/`, or each other. `scripts/smoke_setup_helpers.py` invokes
-          both as black-box subprocesses, so the harness survives helper
-          internals refactors. Test files use the standard `conftest.py`
-          importlib pattern.
-        findings: []
-      - name: Complexity hotspots
-        grade: A
-        summary: '`setup_codex.py` (795 lines, 19 functions) and `setup_copilot.py` (717
-          lines, 16 functions) are the two largest stdlib scripts but stay
-          well-factored: clear section banners, single-responsibility functions,
-          linear `main()` orchestration, no nested-loop hotspots. The 541-line
-          smoke harness uses 11 sequential numbered cases — the right shape for
-          "the harness IS the test."'
-        findings: []
-      - name: Test health
-        grade: A
-        summary: ""
-        findings:
-          - heading: "⇢ Codex and Copilot live-host AGENTERA_HOME inheritance still
-              untested, info (confidence: 50)"
-            severity: info
-            confidence: 50
-            location: >-
-              `scripts/smoke_setup_helpers.py`, `tests/test_runtime_adapters.py`
-
-              - **Evidence**: 412 → 433 tests (+10 codex, +11 copilot). The
-              smoke harness verifies the WRITE side of the AGENTERA_HOME
-              contract (helpers correctly emit `[shell_environment_policy]` and
-              shell-rc export blocks). Whether Codex and Copilot CLIs actually
-              inherit AGENTERA_HOME at runtime from those files remains
-              unverified by an automated test.
-
-              - **Impact**: Narrower than Audit 14 finding 3 (write side is now
-              covered). Future runtime updates could still regress the read-side
-              inheritance without the suite catching it.
-
-              - **Suggested action**: Continue treating as a deferred caveat
-              until a live-host harness lands. No standalone action recommended.
-            evidence: >-
-              412 → 433 tests (+10 codex, +11 copilot). The smoke harness
-              verifies the WRITE side of the AGENTERA_HOME contract (helpers
-              correctly emit `[shell_environment_policy]` and shell-rc export
-              blocks). Whether Codex and Copilot CLIs actually inherit
-              AGENTERA_HOME at runtime from those files remains unverified by an
-              automated test.
-
-              - **Impact**: Narrower than Audit 14 finding 3 (write side is now
-              covered). Future runtime updates could still regress the read-side
-              inheritance without the suite catching it.
-
-              - **Suggested action**: Continue treating as a deferred caveat
-              until a live-host harness lands. No standalone action recommended.
-            impact: >-
-              Narrower than Audit 14 finding 3 (write side is now covered).
-              Future runtime updates could still regress the read-side
-              inheritance without the suite catching it.
-
-              - **Suggested action**: Continue treating as a deferred caveat
-              until a live-host harness lands. No standalone action recommended.
-            suggested_action: Continue treating as a deferred caveat until a live-host
-              harness lands. No standalone action recommended.
-      - name: Version health
-        grade: A
-        summary: "Two minor bumps today (1.19.0 → 1.20.0 → 1.21.0), both justified per
-          `feat = minor`: 1.20.0 carried the AGENTERA_HOME contract plus
-          OpenCode bootstrap, 1.21.0 carries the two setup helpers plus smoke
-          harness. Splitting was correct because Audit 14 had already
-          snapshotted 1.20.0 as a coherent unit. No unbumped commits since
-          9773f35."
-        findings: []
-      - name: Artifact freshness
-        grade: A
-        summary: "Audit 14 finding 1 resolved by T4 (commit 8e57ef4): DOCS.md Index now
-          reads 433 tests across 17 files, the six previously-stale rows show
-          2026-04-26, and three new Index rows for `setup_codex.py`,
-          `setup_copilot.py`, `smoke_setup_helpers.py` are present. PROGRESS,
-          TODO, CHANGELOG, README, HEALTH all touched today. SPEC.md, DESIGN.md,
-          VISION.md older than the plan, but the owning skills (design,
-          vision) were not dispatched."
-        findings: []
-      - name: Security hygiene
-        grade: A
-        summary: '`setup_copilot.py` writes user shell rc files but the injection
-          surface is well-controlled. Install-root verification rejects
-          malicious paths before any write (a path lacking the four canonical
-          entries fails). `_quote_for_shell` escapes `\` and `"` for
-          bash/zsh/fish, and `_toml_basic_string` handles all TOML 1.0
-          basic-string escapes plus unicode-escapes control characters.
-          Idempotency anchors on a literal marker comment, so user-written
-          `AGENTERA_HOME` lines stay untouched. No `eval`, `exec`, `os.system`,
-          or `shell=True`; subprocess calls are list-form with hardcoded args.'
-        findings:
-          - heading: "⇢ PROFILERA_PROFILE_DIR and AGENTERA_HOME injection asymmetry, info
-              (confidence: 60)"
-            severity: info
-            confidence: 60
-            location: >-
-              `.opencode/plugins/agentera.js:191`,
-              `.opencode/plugins/agentera.js:231`, `SPEC.md` Section 7
-
-              - **Evidence**: Carry-forward from Audit 14. PROFILERA_PROFILE_DIR
-              is set by mutating `process.env`; AGENTERA_HOME is set via the
-              `shell.env` hook. Both correct for their consumers, surface still
-              looks inconsistent.
-
-              - **Impact**: Same as Audit 14 — readability tax, not a defect.
-
-              - **Suggested action**: One sentence in SPEC Section 7 naming the
-              asymmetry as principled. Defer until SPEC.md sees its next
-              substantive edit.
-            evidence: >-
-              Carry-forward from Audit 14. PROFILERA_PROFILE_DIR is set by
-              mutating `process.env`; AGENTERA_HOME is set via the `shell.env`
-              hook. Both correct for their consumers, surface still looks
-              inconsistent.
-
-              - **Impact**: Same as Audit 14 — readability tax, not a defect.
-
-              - **Suggested action**: One sentence in SPEC Section 7 naming the
-              asymmetry as principled. Defer until SPEC.md sees its next
-              substantive edit.
-            impact: >-
-              Same as Audit 14 — readability tax, not a defect.
-
-              - **Suggested action**: One sentence in SPEC Section 7 naming the
-              asymmetry as principled. Defer until SPEC.md sees its next
-              substantive edit.
-            suggested_action: One sentence in SPEC Section 7 naming the asymmetry as
-              principled. Defer until SPEC.md sees its next substantive edit.
-      - name: Dependency health
-        grade: A
-        summary: "No new third-party dependencies. Both helpers are stdlib-only
-          (argparse, pathlib, re, sys, os, tomllib, NamedTuple). `tomllib` is
-          Python 3.11+ stdlib already implicit in the project. OpenCode Node dep
-          unchanged. ### Trends vs Audit 14 - **Improved**: Freshness B → A
-          (Audit 14's DOCS.md Index/Coverage warning resolved by T4). Tests stay
-          A but the live-host gap narrowed: helpers + smoke harness cover the
-          write side, residual confidence drops 65 → 50. - **Degraded**: none. -
-          **Stable**: Architecture A, Patterns A (one new info on shape
-          duplication, advisory only), Coupling A, Complexity A, Version A,
-          Security A, Deps A. - **Resolved**: Audit 14 finding 1 (DOCS.md Index
-          dates + Coverage line stale). - **Carried forward**: Audit 14 finding
-          2 (PROFILERA_PROFILE_DIR vs AGENTERA_HOME asymmetry, conf 60). Audit
-          14 finding 3 narrowed (live-host inheritance, conf 65 → 50). - **New
-          findings**: Two-helper shape is a nascent pattern (info, conf 55,
-          advisory). ### Patterns Observed - Module structure: repo-level
-          `scripts/` is the canonical surface for stdlib utilities. `setup_*.py`
-          is the third archetype after `compact_artifact.py` (artifact
-          compaction), `usage_stats.py` (corpus analytics), and the validators.
-          - Helper shape: `verify_install_root` → `auto_detect_install_root` →
-          `resolve_install_root` → state-classify → `plan_change` →
-          emit-or-write is now a duplicated-but-parallel structure across two
-          files. Pattern in waiting. - Idempotency pattern: literal marker
-          comment + line-anchored read/rewrite, with byte-identity preservation
-          of unrelated lines. Both helpers converged on this independently. -
-          Smoke testing: language matches the system under test (Node smoke for
-          OpenCode JS plugin, Python smoke for Python helpers). Black-box
-          subprocess invocation rather than internal imports. - Release pattern:
-          same-day double minor bumps remain acceptable when each bump
-          represents a coherent unit; the prior audit snapshot determines the
-          split point."
-        findings: []
-    trends:
-      improved: >-
-        Freshness B → A (Audit 14's DOCS.md Index/Coverage warning resolved by
-        T4). Tests stay A but the live-host gap narrowed: helpers + smoke
-        harness cover the write side, residual confidence drops 65 → 50.
-
-        - **Degraded**: none.
-
-        - **Stable**: Architecture A, Patterns A (one new info on shape
-        duplication, advisory only), Coupling A, Complexity A, Version A,
-        Security A, Deps A.
-
-        - **Resolved**: Audit 14 finding 1 (DOCS.md Index dates + Coverage line
-        stale).
-
-        - **Carried forward**: Audit 14 finding 2 (PROFILERA_PROFILE_DIR vs
-        AGENTERA_HOME asymmetry, conf 60). Audit 14 finding 3 narrowed
-        (live-host inheritance, conf 65 → 50).
-
-        - **New findings**: Two-helper shape is a nascent pattern (info, conf
-        55, advisory).
-      degraded: >-
-        none.
-
-        - **Stable**: Architecture A, Patterns A (one new info on shape
-        duplication, advisory only), Coupling A, Complexity A, Version A,
-        Security A, Deps A.
-
-        - **Resolved**: Audit 14 finding 1 (DOCS.md Index dates + Coverage line
-        stale).
-
-        - **Carried forward**: Audit 14 finding 2 (PROFILERA_PROFILE_DIR vs
-        AGENTERA_HOME asymmetry, conf 60). Audit 14 finding 3 narrowed
-        (live-host inheritance, conf 65 → 50).
-
-        - **New findings**: Two-helper shape is a nascent pattern (info, conf
-        55, advisory).
-      stable: >-
-        Architecture A, Patterns A (one new info on shape duplication, advisory
-        only), Coupling A, Complexity A, Version A, Security A, Deps A.
-
-        - **Resolved**: Audit 14 finding 1 (DOCS.md Index dates + Coverage line
-        stale).
-
-        - **Carried forward**: Audit 14 finding 2 (PROFILERA_PROFILE_DIR vs
-        AGENTERA_HOME asymmetry, conf 60). Audit 14 finding 3 narrowed
-        (live-host inheritance, conf 65 → 50).
-
-        - **New findings**: Two-helper shape is a nascent pattern (info, conf
-        55, advisory).
-      new_findings: Two-helper shape is a nascent pattern (info, conf 55, advisory).
-      resolved: >-
-        Audit 14 finding 1 (DOCS.md Index dates + Coverage line stale).
-
-        - **Carried forward**: Audit 14 finding 2 (PROFILERA_PROFILE_DIR vs
-        AGENTERA_HOME asymmetry, conf 60). Audit 14 finding 3 narrowed
-        (live-host inheritance, conf 65 → 50).
-
-        - **New findings**: Two-helper shape is a nascent pattern (info, conf
-        55, advisory).
-      carried_forward: >-
-        Audit 14 finding 2 (PROFILERA_PROFILE_DIR vs AGENTERA_HOME asymmetry,
-        conf 60). Audit 14 finding 3 narrowed (live-host inheritance, conf 65 →
-        50).
-
-        - **New findings**: Two-helper shape is a nascent pattern (info, conf
-        55, advisory).
-    patterns:
-      - "Module structure: repo-level `scripts/` is the canonical surface for
-        stdlib utilities. `setup_*.py` is the third archetype after
-        `compact_artifact.py` (artifact compaction), `usage_stats.py` (corpus
-        analytics), and the validators."
-      - "Helper shape: `verify_install_root` → `auto_detect_install_root` →
-        `resolve_install_root` → state-classify → `plan_change` → emit-or-write
-        is now a duplicated-but-parallel structure across two files. Pattern in
-        waiting."
-      - "Idempotency pattern: literal marker comment + line-anchored
-        read/rewrite, with byte-identity preservation of unrelated lines. Both
-        helpers converged on this independently."
-      - "Smoke testing: language matches the system under test (Node smoke for
-        OpenCode JS plugin, Python smoke for Python helpers). Black-box
-        subprocess invocation rather than internal imports."
-      - "Release pattern: same-day double minor bumps remain acceptable when
-        each bump represents a coherent unit; the prior audit snapshot
-        determines the split point."
-  - number: 16
-    date: 2026-04-28
-    dimensions:
-      - architecture alignment
-      - pattern consistency
-      - coupling health
-      - complexity hotspots
-      - test health
-      - version health
-      - artifact freshness
-      - security hygiene
-      - dependency health
-    findings_summary:
-      critical: 0
-      warning: 0
-      info: 1
-      filtered_by_confidence: 0
-    trajectory: ⮉ improving vs Audit 15. The setup bundle plan landed the shared
-      package-root story, read-only doctor, offline smoke evidence, confirmed
-      installer, and 1.21.0 release metadata without breaking validators or
-      tests. The only new risk is concentration in `setup_doctor.py`, which is
-      acceptable until another runtime or installer path expands it.
-    grades:
-      Architecture: A
-      Patterns: A
-      Coupling: A
-      Complexity: A
-      Tests: A
-      Version: A
-      Freshness: A
-      Security: A
-      Deps: A
-    dimension_details:
-      - name: Architecture alignment
-        grade: A
-        summary: Decision 33's suite-bundle boundary is reflected in aggregate runtime
-          metadata and lifecycle validation. Shared infrastructure lives at the
-          bundle root; skill-local scripts remain in owning skills; single-skill
-          core behavior is still described as independent of suite tools.
-        findings: []
-      - name: Pattern consistency
-        grade: A
-        summary: Executable suite scripts now share uv script headers and empty
-          dependency metadata. Doctor output keeps the existing pass, warn,
-          fail, skip status vocabulary, and installer planning reuses the
-          existing Codex and Copilot helper logic instead of inventing a
-          parallel writer.
-        findings: []
-      - name: Coupling health
-        grade: A
-        summary: Runtime package-shape checks stay centralized in
-          `scripts/validate_lifecycle_adapters.py`, while
-          `scripts/setup_doctor.py` depends only on stdlib code and the existing
-          setup helpers. Tests exercise the doctor mostly through subprocess or
-          public module functions, so internal reshaping remains possible.
-        findings: []
-      - name: Complexity hotspots
-        grade: A
-        summary: ""
-        findings:
-          - heading: "⇢ Setup doctor is the new setup hotspot, info (confidence: 65)"
-            severity: info
-            confidence: 65
-            location: >-
-              `scripts/setup_doctor.py:332`, `scripts/setup_doctor.py:588`,
-              `scripts/setup_doctor.py:969`, `scripts/setup_doctor.py:1184`
-
-              - **Evidence**: One 1285-line script now owns smoke checks, four
-              runtime diagnoses, installer planning and writes, report
-              rendering, and CLI flow.
-
-              - **Impact**: Current shape is sectioned and tested, but the next
-              writable runtime or live-host branch could make the file harder to
-              change safely.
-
-              - **Suggested action**: Keep it whole for now; split doctor,
-              smoke, and installer helpers only when another setup path lands.
-            evidence: >-
-              One 1285-line script now owns smoke checks, four runtime
-              diagnoses, installer planning and writes, report rendering, and
-              CLI flow.
-
-              - **Impact**: Current shape is sectioned and tested, but the next
-              writable runtime or live-host branch could make the file harder to
-              change safely.
-
-              - **Suggested action**: Keep it whole for now; split doctor,
-              smoke, and installer helpers only when another setup path lands.
-            impact: >-
-              Current shape is sectioned and tested, but the next writable
-              runtime or live-host branch could make the file harder to change
-              safely.
-
-              - **Suggested action**: Keep it whole for now; split doctor,
-              smoke, and installer helpers only when another setup path lands.
-            suggested_action: Keep it whole for now; split doctor, smoke, and installer
-              helpers only when another setup path lands.
-      - name: Test health
-        grade: A
-        summary: "Coverage is proportional to the risk surface: bundle metadata has
-          pass/fail fixtures, script hygiene has one failure per rule, and setup
-          doctor tests cover runtime pass, classified gaps, skips, non-mutation,
-          smoke failure visibility, denied writes, confirmed writes, and
-          idempotent reruns. Full collection reports 477 tests across 17 files."
-        findings: []
-      - name: Version health
-        grade: A
-        summary: The setup feature and fix commits are covered by the `1.21.0` bump, and
-          no `feat` or `fix` commits landed after the bump. Version target scans
-          found no stale `1.20.x` or local `1.22.0` residues in listed suite
-          surfaces.
-        findings: []
-      - name: Artifact freshness
-        grade: A
-        summary: PLAN, PROGRESS, TODO, CHANGELOG, and DOCS were all updated at
-          `2026-04-28T21:55:28+02:00`, after the plan creation date. README
-          setup guidance was updated during Task 7, and this audit updates
-          HEALTH for the post-plan check.
-        findings: []
-      - name: Security hygiene
-        grade: A
-        summary: Secret-pattern hits are limited to audit's own documented
-          examples. Setup doctor and smoke subprocess calls use list-form
-          commands with timeouts and no `shell=True`; installer writes are
-          limited to confirmed Codex and Copilot runtime-native config targets.
-        findings: []
-      - name: Dependency health
-        grade: A
-        summary: "No new third-party Python dependencies were introduced; executable
-          suite scripts declare `dependencies = []`. The only external runtime
-          dependency remains the pinned OpenCode plugin package in
-          `.opencode/package.json`. ### Trends vs Audit 15 - **Improved**:
-          Architecture and freshness now capture the suite-bundle setup surface
-          rather than two separate setup helpers. Tests grew from 433 to 477 and
-          cover doctor, smoke, installer, package-shape, and uv metadata
-          behavior. - **Degraded**: none. - **Stable**: Version, security, and
-          dependency posture remain green. - **New findings**: `setup_doctor.py`
-          is a large but acceptable setup hotspot. - **Resolved**: Audit 15's
-          \"two-helper shape\" note is absorbed into the bundle-owned doctor and
-          installer surface. - **Carried forward**: Richer live-host proof
-          remains deferred by plan, but default doctor smoke explicitly avoids
-          live model calls. ### Patterns Observed - Module structure: shared
-          suite infrastructure lives in root `scripts/`, `hooks/`, manifests,
-          and references; behavioral scripts remain inside owning skills. -
-          Validation ownership: lifecycle/package-shape drift belongs to
-          `scripts/validate_lifecycle_adapters.py`; spec and contract drift stay
-          in `validate_spec.py` and `generate_contracts.py`. - Testing approach:
-          setup behavior is verified by focused subprocess smoke tests plus
-          public-function fixtures, not by reaching through private runtime
-          internals. - Dependency patterns: Python remains stdlib-only;
-          runtime-specific metadata carries host requirements rather than adding
-          a common abstraction layer."
-        findings: []
-    trends:
-      improved: >-
-        Architecture and freshness now capture the suite-bundle setup surface
-        rather than two separate setup helpers. Tests grew from 433 to 477 and
-        cover doctor, smoke, installer, package-shape, and uv metadata behavior.
-
-        - **Degraded**: none.
-
-        - **Stable**: Version, security, and dependency posture remain green.
-
-        - **New findings**: `setup_doctor.py` is a large but acceptable setup
-        hotspot.
-
-        - **Resolved**: Audit 15's "two-helper shape" note is absorbed into the
-        bundle-owned doctor and installer surface.
-
-        - **Carried forward**: Richer live-host proof remains deferred by plan,
-        but default doctor smoke explicitly avoids live model calls.
-      degraded: >-
-        none.
-
-        - **Stable**: Version, security, and dependency posture remain green.
-
-        - **New findings**: `setup_doctor.py` is a large but acceptable setup
-        hotspot.
-
-        - **Resolved**: Audit 15's "two-helper shape" note is absorbed into the
-        bundle-owned doctor and installer surface.
-
-        - **Carried forward**: Richer live-host proof remains deferred by plan,
-        but default doctor smoke explicitly avoids live model calls.
-      stable: >-
-        Version, security, and dependency posture remain green.
-
-        - **New findings**: `setup_doctor.py` is a large but acceptable setup
-        hotspot.
-
-        - **Resolved**: Audit 15's "two-helper shape" note is absorbed into the
-        bundle-owned doctor and installer surface.
-
-        - **Carried forward**: Richer live-host proof remains deferred by plan,
-        but default doctor smoke explicitly avoids live model calls.
-      new_findings: >-
-        `setup_doctor.py` is a large but acceptable setup hotspot.
-
-        - **Resolved**: Audit 15's "two-helper shape" note is absorbed into the
-        bundle-owned doctor and installer surface.
-
-        - **Carried forward**: Richer live-host proof remains deferred by plan,
-        but default doctor smoke explicitly avoids live model calls.
-      resolved: >-
-        Audit 15's "two-helper shape" note is absorbed into the bundle-owned
-        doctor and installer surface.
-
-        - **Carried forward**: Richer live-host proof remains deferred by plan,
-        but default doctor smoke explicitly avoids live model calls.
-      carried_forward: Richer live-host proof remains deferred by plan, but default
-        doctor smoke explicitly avoids live model calls.
-    patterns:
-      - "Module structure: shared suite infrastructure lives in root `scripts/`,
-        `hooks/`, manifests, and references; behavioral scripts remain inside
-        owning skills."
-      - "Validation ownership: lifecycle/package-shape drift belongs to
-        `scripts/validate_lifecycle_adapters.py`; spec and contract drift stay
-        in `validate_spec.py` and `generate_contracts.py`."
-      - "Testing approach: setup behavior is verified by focused subprocess
-        smoke tests plus public-function fixtures, not by reaching through
-        private runtime internals."
-      - "Dependency patterns: Python remains stdlib-only; runtime-specific
-        metadata carries host requirements rather than adding a common
-        abstraction layer."
-  - number: 17
-    date: 2026-04-29
-    dimensions:
-      - architecture alignment
-      - pattern consistency
-      - coupling health
-      - complexity hotspots
-      - test health
-      - version health
-      - artifact freshness
-      - prose health
-      - security hygiene
-      - dependency health
-    findings_summary:
-      critical: 0
-      warning: 1
-      info: 0
-      filtered_by_confidence: 0
-    trajectory: ⮋ degrading vs Audit 16. The Steelman-Informed Decision Pressure
-      plan preserved suite architecture, contracts, tests, and release metadata.
-      DOCS.md freshness slipped after the 511-test validation baseline.
-    grades:
-      Architecture: A
-      Patterns: A
-      Coupling: A
-      Complexity: A
-      Tests: A
-      Version: A
-      Freshness: B
-      Prose: A
-      Security: A
-      Deps: A
-    dimension_details:
-      - name: Architecture alignment
-        grade: A
-        summary: Discuss remains the deliberation owner. Plan and optimize received
-          only local effort-bias guards, matching
-          `.agentera/archive/PLAN-2026-04-29-steelman-informed-decision-pressure.md:16-21`.
-        findings: []
-      - name: Pattern consistency
-        grade: A
-        summary: Pressure testing, win conditions, and effort-bias resets use existing
-          workflow prose. `skills/discuss/SKILL.md:182-217`,
-          `skills/plan/SKILL.md:112`, and `skills/optimize/SKILL.md:221`
-          avoid new modes, artifacts, or confidence labels.
-        findings: []
-      - name: Coupling health
-        grade: A
-        summary: DECISIONS.md compatibility stayed intact.
-          `skills/discuss/references/templates/DECISIONS-template.md:36-38`
-          keeps win conditions inside Alternatives bullets while preserving
-          current top-level fields.
-        findings: []
-      - name: Complexity hotspots
-        grade: A
-        summary: No new code hotspot landed. The plan changed skill prose, templates,
-          generated schema evidence, release metadata, and artifacts; no
-          validator or runtime implementation path grew.
-        findings: []
-      - name: Test health
-        grade: A
-        summary: Full verification passed with `python3 -m pytest -q` reporting 511
-          passed. Existing decision validation coverage remained sufficient
-          because validation behavior did not change.
-        findings: []
-      - name: Version health
-        grade: A
-        summary: 1.24.0 metadata is aligned across registry, per-skill manifests,
-          aggregate marketplace, Copilot, Codex, and OpenCode surfaces.
-          Post-bump commits are release-evidence and freshness chores.
-        findings: []
-      - name: Artifact freshness
-        grade: B
-        summary: ""
-        findings:
-          - heading: "⇉ DOCS.md coverage baseline is stale, warning (confidence: 92)"
-            severity: warning
-            confidence: 92
-            location: >-
-              `.agentera/DOCS.md:94`, `.agentera/DOCS.md:85`
-
-              - **Evidence**: DOCS reports "477 tests across 17 files" and a
-              2026-04-28 test-suite row. Current verification is 511 passed
-              across 18 `tests/test*.py` files.
-
-              - **Impact**: Orientation consumers see stale validation scale
-              after 1.22-1.24 work.
-
-              - **Suggested action**: Run document to refresh DOCS.md Index
-              and Coverage for the 511-test baseline.
-            evidence: >-
-              DOCS reports "477 tests across 17 files" and a 2026-04-28
-              test-suite row. Current verification is 511 passed across 18
-              `tests/test*.py` files.
-
-              - **Impact**: Orientation consumers see stale validation scale
-              after 1.22-1.24 work.
-
-              - **Suggested action**: Run document to refresh DOCS.md Index
-              and Coverage for the 511-test baseline.
-            impact: >-
-              Orientation consumers see stale validation scale after 1.22-1.24
-              work.
-
-              - **Suggested action**: Run document to refresh DOCS.md Index
-              and Coverage for the 511-test baseline.
-            suggested_action: Run document to refresh DOCS.md Index and Coverage for the
-              511-test baseline.
-      - name: Prose health
-        grade: A
-        summary: "`python3 scripts/self_audit.py
-          .agentera/archive/PLAN-2026-04-29-steelman-informed-decision-pressure\
-          .md CHANGELOG.md .agentera/PROGRESS.md TODO.md .agentera/DOCS.md`
-          exited 0."
-        findings: []
-      - name: Security hygiene
-        grade: A
-        summary: Secret-pattern hits are limited to audit examples and prior HEALTH
-          prose. The Steelman plan added no new executable code or shell
-          construction.
-        findings: []
-      - name: Dependency health
-        grade: A
-        summary: "No production dependencies changed. `.opencode/package-lock.json`
-          audit returned 0 vulnerabilities, and the Python surface remains
-          stdlib-only. ### Trends vs Audit 16 - **Improved**: Decision workflow
-          discipline is stronger without adding a skill or artifact contract. -
-          **Degraded**: Freshness A→B because DOCS.md coverage stayed at 477
-          tests after 511-test validation. - **Stable**: Architecture, patterns,
-          coupling, complexity, tests, version, security, and dependency posture
-          remain green. - **New findings**: DOCS.md coverage baseline stale. -
-          **Resolved**: Audit 16 setup-doctor hotspot remains acceptable and was
-          not touched by this plan. ### Patterns Observed - Module structure:
-          skill behavior remains in `skills/*/SKILL.md`; artifact contracts stay
-          in SPEC, generated contracts, and templates. - Decision pattern:
-          discuss owns pressure testing and win-condition capture; adjacent
-          skills receive only selection-bias guards. - Testing approach:
-          deterministic validators and full pytest cover contracts; live eval
-          remains blocked by external API credit. - Release pattern:
-          feature-scoped decision workflow changes drive a minor suite bump plus
-          plan-level freshness checkpoint."
-        findings: []
-    trends:
-      improved: >-
-        Decision workflow discipline is stronger without adding a skill or
-        artifact contract.
-
-        - **Degraded**: Freshness A→B because DOCS.md coverage stayed at 477
-        tests after 511-test validation.
-
-        - **Stable**: Architecture, patterns, coupling, complexity, tests,
-        version, security, and dependency posture remain green.
-
-        - **New findings**: DOCS.md coverage baseline stale.
-
-        - **Resolved**: Audit 16 setup-doctor hotspot remains acceptable and was
-        not touched by this plan.
-      degraded: >-
-        Freshness A→B because DOCS.md coverage stayed at 477 tests after
-        511-test validation.
-
-        - **Stable**: Architecture, patterns, coupling, complexity, tests,
-        version, security, and dependency posture remain green.
-
-        - **New findings**: DOCS.md coverage baseline stale.
-
-        - **Resolved**: Audit 16 setup-doctor hotspot remains acceptable and was
-        not touched by this plan.
-      stable: >-
-        Architecture, patterns, coupling, complexity, tests, version, security,
-        and dependency posture remain green.
-
-        - **New findings**: DOCS.md coverage baseline stale.
-
-        - **Resolved**: Audit 16 setup-doctor hotspot remains acceptable and was
-        not touched by this plan.
-      new_findings: >-
-        DOCS.md coverage baseline stale.
-
-        - **Resolved**: Audit 16 setup-doctor hotspot remains acceptable and was
-        not touched by this plan.
-      resolved: Audit 16 setup-doctor hotspot remains acceptable and was not touched
-        by this plan.
-    patterns:
-      - "Module structure: skill behavior remains in `skills/*/SKILL.md`;
-        artifact contracts stay in SPEC, generated contracts, and templates."
-      - "Decision pattern: discuss owns pressure testing and win-condition
-        capture; adjacent skills receive only selection-bias guards."
-      - "Testing approach: deterministic validators and full pytest cover
-        contracts; live eval remains blocked by external API credit."
-      - "Release pattern: feature-scoped decision workflow changes drive a minor
-        suite bump plus plan-level freshness checkpoint."
-  - number: 18
-    date: 2026-04-29
-    dimensions:
-      - artifact freshness
-      - version health
-      - validation health
-      - documentation coherence
-      - forbidden objective layout
-    findings_summary:
-      critical: 0
-      warning: 0
-      info: 0
-      filtered_by_confidence: 0
-    trajectory: ⮉ improving vs Audit 17. The Completed Optimize Objective Archival
-      plan resolved the DOCS coverage warning and closed the plan without adding
-      forbidden objective surfaces.
-    grades:
-      Freshness: A
-      Version: A
-      Validation: A
-      Docs: A
-      Layout: A
-    dimension_details:
-      - name: Artifact freshness
-        grade: A
-        summary: "`.agentera/archive/PLAN-2026-04-29-completed-optimize-objective-archi\
-          val.md:36-114` marks Tasks 1-8 complete, `.agentera/PLAN.md` is
-          absent, and `TODO.md @ ✓ Resolved (completed-objective archival)` resolves
-          the completed-objective item with
-          `27bb667..a1e60bd` plus the checkpoint commit."
-        findings: []
-      - name: Version health
-        grade: A
-        summary: "`registry.json`, 12 skill plugin manifests, `plugin.json`,
-          `.github/plugin/plugin.json`, `.codex-plugin/plugin.json`,
-          `.claude-plugin/marketplace.json`, and `.opencode/plugins/agentera.js`
-          report `1.24.1`. `.agents/plugins/marketplace.json` still has no
-          version field, matching Cycle 231 evidence."
-        findings: []
-      - name: Validation health
-        grade: A
-        summary: "Current reruns passed: `python3 scripts/validate_spec.py`, `python3
-          scripts/generate_contracts.py --check`, `python3
-          scripts/validate_lifecycle_adapters.py`, artifact self-audit, and
-          `python3 -m pytest -q` with 523 passed."
-        findings: []
-      - name: Documentation coherence
-        grade: A
-        summary: "`CHANGELOG.md:7-15`, `PROGRESS.md:3-21`, `.agentera/DOCS.md:90-108`,
-          `README.md:461-471`, and `SPEC.md:151-162` describe the completed
-          lifecycle consistently. Audit 17's DOCS coverage warning is resolved:
-          DOCS now reports 523 tests across 19 files."
-        findings: []
-      - name: Forbidden objective layout
-        grade: A
-        summary: "Glob checks found no active root `OBJECTIVE.md`, root
-          `EXPERIMENTS.md`, or `.agentera/PLAN.md`. DOCS Artifact Mapping has no
-          fixed OBJECTIVE/EXPERIMENTS rows; README and SPEC explicitly preserve
-          per-objective `.agentera/optimize/<name>/` layout without registries
-          or symlinks. ### Trends vs Audit 17 - **Improved**: Freshness B→A;
-          DOCS coverage now matches the 523-test suite. - **Degraded**: none. -
-          **Stable**: Version, validation, documentation, and objective layout
-          are coherent. - **Resolved**: Audit 17 DOCS coverage baseline stale
-          warning. ### Patterns Observed - Objective lifecycle: optimize keeps
-          state self-contained under `.agentera/optimize/<name>/` and excludes
-          closed objectives before active-work inference. - Release pattern:
-          completed-objective fix landed as patch release `1.24.1`, followed by
-          a plan-level freshness checkpoint. - Validation pattern: spec,
-          contracts, lifecycle adapters, prose self-audit, and full pytest are
-          the closure gate."
-        findings: []
-    trends:
-      improved: >-
-        Freshness B→A; DOCS coverage now matches the 523-test suite.
-
-        - **Degraded**: none.
-
-        - **Stable**: Version, validation, documentation, and objective layout
-        are coherent.
-
-        - **Resolved**: Audit 17 DOCS coverage baseline stale warning.
-      degraded: >-
-        none.
-
-        - **Stable**: Version, validation, documentation, and objective layout
-        are coherent.
-
-        - **Resolved**: Audit 17 DOCS coverage baseline stale warning.
-      stable: |-
-        Version, validation, documentation, and objective layout are coherent.
-        - **Resolved**: Audit 17 DOCS coverage baseline stale warning.
-      resolved: Audit 17 DOCS coverage baseline stale warning.
-    patterns:
-      - "Objective lifecycle: optimize keeps state self-contained under
-        `.agentera/optimize/<name>/` and excludes closed objectives before
-        active-work inference."
-      - "Release pattern: completed-objective fix landed as patch release
-        `1.24.1`, followed by a plan-level freshness checkpoint."
-      - "Validation pattern: spec, contracts, lifecycle adapters, prose
-        self-audit, and full pytest are the closure gate."
-  - number: 19
-    date: 2026-04-30
-    dimensions:
-      - artifact freshness
-      - optimize analyzer health
-      - test and validation health
-      - version health
-      - unintended-change hygiene
-    findings_summary:
-      critical: 0
-      warning: 1
-      info: 0
-      filtered_by_confidence: 0
-    trajectory: stable vs Audit 18. Optimize analyzer reliability landed cleanly,
-      but DOCS coverage evidence lags the 536-test suite.
-    grades:
-      Freshness: A
-      Analyzer: A
-      Tests: B
-      Version: A
-      Change hygiene: A
-    dimension_details:
-      - name: Artifact freshness
-        grade: A
-        summary: "`5ee6db0` updates CHANGELOG, TODO, PROGRESS, and the archived plan
-          after `2026-04-30` plan creation. `.agentera/PLAN.md` is absent, and
-          this audit updates HEALTH."
-        findings: []
-      - name: Optimize analyzer health
-        grade: A
-        summary: "`skills/optimize/scripts/analyze_experiments.py:39-444` keeps parsing,
-          target extraction, analysis, and frontier rendering separated. Live
-          build-token smoke produced 6 experiments, 2 kept, best metric
-          12055, and Markdown frontier output."
-        findings: []
-      - name: Test and validation health
-        grade: B
-        summary: "Focused analyzer tests passed: `19 passed`. Full suite passed: `536
-          passed`. Spec, contract, lifecycle-adapter, eval dry-run, live
-          analyzer, frontier, and artifact self-audit checks passed."
-        findings:
-          - heading: "⇉ DOCS coverage count is stale, warning (confidence: 95)"
-            severity: warning
-            confidence: 95
-            location: >-
-              `.agentera/DOCS.md:95`
-
-              - **Evidence**: DOCS reports "523 tests across 19 files". Current
-              `python3 -m pytest --collect-only -q` reports 536 tests collected.
-
-              - **Impact**: Orientation consumers see stale validation scale
-              after analyzer reliability tests landed.
-
-              - **Suggested action**: Run document to refresh DOCS.md
-              Coverage and Test suite rows to 536 tests.
-            evidence: >-
-              DOCS reports "523 tests across 19 files". Current `python3 -m
-              pytest --collect-only -q` reports 536 tests collected.
-
-              - **Impact**: Orientation consumers see stale validation scale
-              after analyzer reliability tests landed.
-
-              - **Suggested action**: Run document to refresh DOCS.md
-              Coverage and Test suite rows to 536 tests.
-            impact: >-
-              Orientation consumers see stale validation scale after analyzer
-              reliability tests landed.
-
-              - **Suggested action**: Run document to refresh DOCS.md
-              Coverage and Test suite rows to 536 tests.
-            suggested_action: Run document to refresh DOCS.md Coverage and Test suite
-              rows to 536 tests.
-      - name: Version health
-        grade: A
-        summary: "Version-bearing targets report `1.25.0`: `registry.json`,
-          root/Copilot/Codex manifests, 12 skill plugin manifests, Claude
-          marketplace, and OpenCode `AGENTERA_VERSION`. No `feat` or `fix`
-          commits landed after the bump."
-        findings: []
-      - name: Unintended-change hygiene
-        grade: A
-        summary: "Only `.agentera/HEALTH.md` is modified after this audit. Plan commits
-          changed the expected analyzer, tests, metadata, CHANGELOG, TODO,
-          PROGRESS, and archived plan surfaces. ### Trends vs Audit 18 -
-          **Improved**: Optimize analyzer reliability now has real-artifact JSON
-          and frontier smoke evidence. - **Degraded**: Test evidence freshness B
-          because DOCS coverage stayed at 523 after the 536-test suite. -
-          **Stable**: Artifact lifecycle, version metadata, and change hygiene
-          remain green. - **New findings**: DOCS coverage count stale. -
-          **Resolved**: No prior Audit 18 findings were open. ### Patterns
-          Observed - Optimize analyzer: one stdlib script owns parse, target
-          extraction, analysis, and optional frontier rendering. - Testing
-          approach: parser edge cases, target diagnostics, CLI mode
-          compatibility, and frontier ordering are covered in
-          `tests/test_analyze_experiments.py`. - Release pattern:
-          feature-bearing analyzer work drove minor release `1.25.0`, then a
-          freshness checkpoint archived the plan."
-        findings: []
-    trends:
-      improved: >-
-        Optimize analyzer reliability now has real-artifact JSON and frontier
-        smoke evidence.
-
-        - **Degraded**: Test evidence freshness B because DOCS coverage stayed
-        at 523 after the 536-test suite.
-
-        - **Stable**: Artifact lifecycle, version metadata, and change hygiene
-        remain green.
-
-        - **New findings**: DOCS coverage count stale.
-
-        - **Resolved**: No prior Audit 18 findings were open.
-      degraded: >-
-        Test evidence freshness B because DOCS coverage stayed at 523 after the
-        536-test suite.
-
-        - **Stable**: Artifact lifecycle, version metadata, and change hygiene
-        remain green.
-
-        - **New findings**: DOCS coverage count stale.
-
-        - **Resolved**: No prior Audit 18 findings were open.
-      stable: |-
-        Artifact lifecycle, version metadata, and change hygiene remain green.
-        - **New findings**: DOCS coverage count stale.
-        - **Resolved**: No prior Audit 18 findings were open.
-      new_findings: |-
-        DOCS coverage count stale.
-        - **Resolved**: No prior Audit 18 findings were open.
-      resolved: No prior Audit 18 findings were open.
-    patterns:
-      - "Optimize analyzer: one stdlib script owns parse, target extraction,
-        analysis, and optional frontier rendering."
-      - "Testing approach: parser edge cases, target diagnostics, CLI mode
-        compatibility, and frontier ordering are covered in
-        `tests/test_analyze_experiments.py`."
-      - "Release pattern: feature-bearing analyzer work drove minor release
-        `1.25.0`, then a freshness checkpoint archived the plan."
-  - number: 20
-    date: 2026-05-05
-    dimensions:
-      - architecture alignment
-      - pattern consistency
-      - coupling health
-      - complexity hotspots
-      - test health
-      - dependency health
-      - version health
-      - artifact freshness
-      - prose health
-      - security hygiene
-    findings_summary:
-      critical: 0
-      warning: 1
-      info: 0
-      filtered_by_confidence: 0
-    trajectory: stable vs Audit 19. The v2 and v2.1 release train improved CLI,
-      bundle freshness, docs, and validation evidence; direct health output
-      still reads stale history.
-    grades:
-      Architecture: A
-      Patterns: A
-      Coupling: A
-      Complexity: A
-      Tests: B
-      Deps: B
-      Version: A
-      Freshness: B
-      Prose: A
-      Security: A
-    dimension_details:
-      - name: Architecture alignment
-        grade: A
-        summary: "The repository now matches Decision 39's single bundled skill model:
-          `skills/agentera/SKILL.md` dispatches 12 capabilities, schemas live
-          beside capability prose, and the CLI owns routine state access."
-        findings: []
-      - name: Pattern consistency
-        grade: A
-        summary: Capability directories share `prose.md` plus four schema files. Runtime
-          adapters consistently expose one active `agentera` skill plus the
-          temporary legacy `status` bridge.
-        findings: []
-      - name: Coupling health
-        grade: A
-        summary: Cross-capability validation passed, and bundle-refresh logic stays
-          centralized in `scripts/agentera_upgrade.py` while `scripts/agentera`
-          remains the state and dispatch CLI surface.
-        findings: []
-      - name: Complexity hotspots
-        grade: A
-        summary: "`scripts/agentera` and `scripts/agentera_upgrade.py` are large, but
-          their command parsing, doctor, upgrade, and artifact-query
-          responsibilities remain sectioned and covered by focused tests."
-        findings: []
-      - name: Test health
-        grade: B
-        summary: Full pytest passed with `573 passed, 1 skipped`, plus cross-capability,
-          lifecycle-adapter, self-audit, and representative capability
-          validators. Targeted regression coverage now rejects invalid progress
-          phase enum values; stale direct health command selection remains open.
-        findings: []
-      - name: Dependency health
-        grade: B
-        summary: "Python dependency surface is small: `agentera -> pyyaml 6.0.3`.
-          `.opencode/package.json` pins `@opencode-ai/plugin` 1.14.33, but `npm
-          audit --audit-level=moderate` failed at the registry audit endpoint
-          during this audit."
-        findings: []
-      - name: Version health
-        grade: A
-        summary: "Version-bearing release surfaces report `2.1.0`: `pyproject.toml`,
-          `registry.json`, root/Copilot/Codex manifests, Claude marketplace,
-          OpenCode marker, `CHANGELOG.md`, and `uv.lock` evidence."
-        findings: []
-      - name: Artifact freshness
-        grade: B
-        summary: Progress cycle phases now align with the protocol enum; direct health
-          state output remains stale.
-        findings:
-          - heading: "⇉ Direct health state command reports stale audit history, warning
-              (confidence: 94)"
-            severity: warning
-            confidence: 94
-            location: "`scripts/agentera:479`, `.agentera/health.yaml:2`"
-            evidence: "`uv run scripts/agentera health` reports Audit 10 even though
-              `.agentera/health.yaml` is newest-first and now starts with Audit
-              20."
-            impact: Agents using the routine top-level health command can receive stale
-              grades and miss current findings, despite the CLI-first state
-              access contract.
-            suggested_action: Update `_query_health` to select the newest health entry
-              consistently with `_health_summary` and add a regression test
-              against newest-first health data.
-      - name: Prose health
-        grade: A
-        summary: "`uv run scripts/self_audit.py .agentera/health.yaml TODO.md
-          .agentera/docs.yaml .agentera/progress.yaml .agentera/plan.yaml`
-          exited 0. Recent docs and artifacts stay concrete and compact enough
-          for operational use."
-        findings: []
-      - name: Security hygiene
-        grade: A
-        summary: Secret and dangerous-call scan found documented examples, test-loader
-          `exec(compile(...))` usage, and environment-sourced API key handling
-          in an optimize token counter. No committed literal secret or
-          shell-injection path was identified.
-        findings: []
-    trends:
-      improved: DOCS coverage evidence now matches the full-suite result of `573
-        passed, 1 skipped`, and Agentera state access is flatter and better
-        tested than Audit 19.
-      degraded: Direct health output still reads stale history.
-      stable: Architecture, patterns, coupling, complexity, version, prose, and
-        security remain healthy.
-      new_findings: Direct health state command reports stale audit history.
-      resolved: "Audit 19 DOCS coverage-count warning is resolved; progress cycle
-        phases now use protocol values and validation rejects `phase: verify`."
-    patterns:
-      - "Module structure: one bundled `skills/agentera` skill owns capability
-        prose and schemas; root `skills/status` remains a temporary v1 bridge."
-      - "State access: `scripts/agentera` provides flat routine state commands
-        plus advanced `query` for custom artifact access."
-      - "Validation approach: pytest, capability schema validation,
-        cross-capability graph validation, lifecycle metadata validation, and
-        self-audit combine as the release gate."
-      - "Runtime pattern: packaging metadata targets Claude Code, OpenCode,
-        Copilot, and Codex while shared bundle infrastructure lives under root
-        `scripts/`, `hooks/`, and manifests."
-  - number: 21
-    date: 2026-05-23
-    dimensions:
-      - architecture alignment
-      - pattern consistency
-      - coupling health
-      - complexity hotspots
-      - test health
-      - dependency health
-      - version health
-      - artifact freshness
-      - prose health
-      - security hygiene
-    findings_summary:
-      critical: 0
-      warning: 2
-      info: 1
-      filtered_by_confidence: 0
-    trajectory: improving vs Audit 20. Health CLI now selects the latest audit by
-      number, status exposes hybrid audit staleness, and Audit 20
-      stale-history warning is resolved; uncommitted feat work remains a release
-      cleanup item.
-    grades:
-      Architecture: A
-      Patterns: A
-      Coupling: A
-      Complexity: B
-      Tests: A
-      Deps: B
-      Version: B
-      Freshness: A
-      Prose: A
-      Security: A
-    dimension_details:
-      - name: Architecture alignment
-        grade: A
-        summary: Hybrid audit staleness extends the profile capability's profile-age seam in
-          scripts/agentera without duplicating plan-relative artifact freshness
-          in status.
-        findings: []
-      - name: Pattern consistency
-        grade: A
-        summary: Audit staleness mirrors profile env-threshold parsing,
-          structured status metadata, and attention copy.
-        findings: []
-      - name: Coupling health
-        grade: A
-        summary: Latest-audit selection and staleness helpers stay inside
-          scripts/agentera and are shared by health, status, and prime evidence
-          state.
-        findings: []
-      - name: Complexity hotspots
-        grade: B
-        summary: scripts/agentera grew with hybrid staleness helpers, but
-          responsibilities remain sectioned and covered by focused regressions.
-        findings: []
-      - name: Test health
-        grade: A
-        summary: Full pytest reported 1199 passed, 1 failed before active plan removal;
-          nine hybrid-staleness regressions pass and Audit 20 health-selection
-          gap is closed.
-        findings: []
-      - name: Dependency health
-        grade: B
-        summary: "Python dependency surface unchanged: pyproject.toml -> pyyaml 6.0.3."
-        findings: []
-      - name: Version health
-        grade: B
-        summary: Release surfaces report 2.6.1, but uncommitted hybrid-staleness feat
-          work and post-2.6.1 fixes remain without a coordinated bump.
-        findings:
-          - heading: "⇉ Unreleased feat/fix work since 2.6.1, warning (confidence: 88)"
-            severity: warning
-            confidence: 88
-            location: "`pyproject.toml:7`, recent git history"
-            evidence: Checkout includes hybrid audit staleness CLI work and upgrade
-              postflight fixes after 2.6.1 release surfaces were aligned.
-            impact: Installed app metadata and changelog can drift from the working tree
-              until a release commit lands.
-            suggested_action: Fold hybrid staleness into one commit and run release metadata
-              sync when ready.
-      - name: Artifact freshness
-        grade: A
-        summary: _latest_health_audit and schema date fields now drive health, status, and
-          prime evidence state; status hybrid staleness surfaces overdue audits.
-        findings:
-          - heading: "⇢ Audit 20 stale health selection resolved, info (confidence: 96)"
-            severity: info
-            confidence: 96
-            location: "`scripts/agentera`, `tests/test_query_cli.py`"
-            evidence: uv run scripts/agentera health --format json returns Audit 20 from
-              ascending-order fixtures; status reports Audit 20 with hybrid stale
-              metadata.
-            impact: Orientation no longer misreads older audits when health.yaml lists
-              audits ascending by number.
-            suggested_action: Treat this Audit 21 entry as the resolution marker for Audit
-              20 artifact-freshness warning.
-      - name: Prose health
-        grade: A
-        summary: Status and audit instruction updates stay compact and name the
-          env-var contract explicitly.
-        findings: []
-      - name: Security hygiene
-        grade: A
-        summary: Hybrid staleness changes add date parsing and progress counting only;
-          no new secret handling paths were introduced.
-        findings: []
-    trends:
-      improved: Health CLI and status now agree on latest audit number and date; hybrid
-        audit staleness closes the orientation gap profile already
-        covered for profiles.
-      degraded: None material beyond normal release-prep drift.
-      stable: Architecture, patterns, coupling, dependency, prose, and security remain
-        healthy.
-      new_findings: Unreleased post-2.6.1 feat/fix work.
-      resolved: Audit 20 direct health state command stale audit history warning.
-    patterns:
-      - "Orientation staleness: the profile capability's profile age and the audit capability's audit age
-        both surface through status attention with env-configurable thresholds."
-      - "Health state: latest audit selection by number is shared across health,
-        status, and prime evidence context in the checkout CLI."
-      - "Testing approach: hybrid staleness adds focused status and health
-        regressions alongside the existing query-cli contract suite."
-  - number: 22
-    date: 2026-05-30
-    dimensions:
-      - architecture alignment
-      - pattern consistency
-      - coupling health
-      - complexity hotspots
-      - test health
-      - dependency health
-      - version health
-      - artifact freshness
-      - prose health
-      - security hygiene
-    findings_summary:
-      critical: 0
-      warning: 4
-      info: 1
-      filtered_by_confidence: 0
-    trajectory: improving vs Audit 21 on v2→v3 upgrade architecture and channel
-      guard rails; complexity remains the weakest grade as TS monoliths replace
-      the Python CLI.
-    grades:
-      Architecture: A
-      Patterns: A
-      Coupling: B
-      Complexity: C
-      Tests: B
-      Deps: A
-      Version: C
-      Freshness: A
-      Prose: A
-      Security: A
-    dimension_details:
-      - name: Architecture alignment
-        grade: A
-        summary: Upgrade work splits channels, compatibility, migration, orchestration,
-          and shared command rendering; backport-safety tests encode the
-          stable-channel major-boundary contract from Decision 56.
-        findings: []
-      - name: Pattern consistency
-        grade: A
-        summary: doctor, prime, and upgradeOrchestrator share upgradeCommands.ts and
-          resolveUpdateChannel(); vocabulary authorities stay in
-          references/cli/*.yaml.
-        findings: []
-      - name: Coupling health
-        grade: B
-        summary: New upgrade modules are narrow, but capabilityContext.ts and
-          startupAnalysis.ts remain high-fan-in hubs for prime and state
-          startup.
-        findings: []
-      - name: Complexity hotspots
-        grade: C
-        summary: Python scripts/agentera is gone, but five TS modules exceed 900 lines
-          and capabilityContext.ts is 2542 lines.
-        findings:
-          - heading: "⇉ TS monolith hotspots persist after rewrite, warning (confidence:
-              88)"
-            severity: warning
-            confidence: 88
-            location: packages/cli/src/cli/capabilityContext.ts, startupAnalysis.ts,
-              extractCorpus.ts
-            evidence: capabilityContext.ts 2542 lines; startupAnalysis.ts 2047;
-              extractCorpus.ts 1828; state.ts 1178; setup/doctor.ts 1385.
-            impact: Prime and analytics paths stay hard to navigate and risky to change
-              without focused regressions.
-            suggested_action: Plan a follow-up slice to split capabilityContext and
-              startupAnalysis by state family before 3.0 RC.
-      - name: Test health
-        grade: B
-        summary: Vitest reports 541/543 passed including 60 upgrade tests; two failures
-          are repo-state housekeeping, not migration logic regressions.
-        findings:
-          - heading: "⇉ Compaction and plan-validate tests fail on current artifacts,
-              warning (confidence: 90)"
-            severity: warning
-            confidence: 90
-            location: packages/cli/test/hooks/compaction.test.ts:41,
-              test/cli/validate.test.ts
-            evidence: compaction.test expects no over_limit ops but progress.yaml exceeds
-              budget after cycles 616–622; validate.test expects an active
-              plan.yaml after orchestration archived the completed plan.
-            impact: Full vitest is red on CI-style gates even when upgrade work is sound.
-            suggested_action: Compact progress.yaml or adjust compaction policy; update
-              validate fixture to tolerate archived-plan closeout or restore a
-              stub plan for validation-only.
-      - name: Dependency health
-        grade: A
-        summary: npm audit reports 0 vulnerabilities; runtime deps are yaml and
-          smol-toml only with pinned dev tooling.
-        findings: []
-      - name: Version health
-        grade: C
-        summary: suiteVersion and offline_defaults now carry 2.7.7 on feat/v3, but
-          package.json remains 3.0.0-dev.4 while the @next channel publishes the
-          TS rewrite; release-metadata parity across npm and suite surfaces
-          stays open.
-        findings:
-          - heading: "⇉ npm @next dev series vs suiteVersion channel split, warning
-              (confidence: 88)"
-            severity: warning
-            confidence: 88
-            location: packages/cli/package.json, references/cli/update-channels.yaml
-            evidence: version 3.0.0-dev.4 vs suiteVersion 2.7.7; @next ships the TS CLI
-              while stable @latest remains on 2.x until explicit retirement.
-            impact: Installed-app expectations and publish metadata can disagree until the
-              3.0 RC alignment pass lands.
-            suggested_action: Coordinate release-metadata parity when the 3.0 RC cuts; keep
-              stable channel on 2.x until explicit retirement.
-      - name: Artifact freshness
-        grade: A
-        summary: The 2.7.7 plan archived to `.agentera/archive/plan-2026-06-03.yaml`,
-          active plan slot cleared, progress.yaml at 10/40/50 under the
-          compaction cap, and TODO 2.7.7 ledger reconciled.
-        findings: []
-      - name: Prose health
-        grade: A
-        summary: UPGRADE.md channel and backport sections stay factual; new vocabulary
-          authorities delegate prose to YAML without table duplication.
-        findings: []
-      - name: Security hygiene
-        grade: A
-        summary: No hardcoded secrets or dangerous eval/exec on user input in scanned TS
-          sources; extractCorpus keeps consent-gated local-history reads.
-        findings:
-          - heading: "⇢ Dedicated security tooling still recommended, info (confidence: 60)"
-            severity: info
-            confidence: 60
-            location: repository-wide
-            evidence: Regex hygiene scan only; npm audit clean.
-            impact: Surface scan cannot replace dependency or secret-scan CI for publish.
-            suggested_action: Keep npm audit and secret scanning in release CI for 3.x.
-    trends:
-      improved: v2→v3 migration architecture, dual update channels, 60 upgrade vitest
-        cases, backport-safety gates, 2.7.7 suiteVersion bump, progress.yaml
-        compaction enforcement, D66 commit-field removal, and audit
-        WARN/FAIL citation contract on feat/v3.
-      degraded: Complexity grade slips as large TS modules replace the Python CLI
-        monolith; npm @next dev-series vs suiteVersion channel split persists.
-      stable: Dependency, prose, and security posture remain healthy.
-      new_findings: npm @next 3.0.0-dev.4 vs suiteVersion 2.7.7 release-metadata
-        divergence; Python stable mirrors for 2.7.7 both-branch items deferred.
-      resolved: progress.yaml over-budget compaction pressure; D66 progress commit
-        field and backfill flow; audit WARN false-positive citation gap;
-        2.7.7 plan archived and active plan slot cleared; Audit 21
-        hybrid-staleness and health-selection issues remain fixed in the ported
-        TS CLI paths.
-    patterns:
-      - "Upgrade architecture: channels.ts → compatibility.ts →
-        migrateArtifactsV2ToV3.ts → upgradeOrchestrator.ts with shared
-        upgradeCommands.ts for doctor/prime."
-      - "Distribution model: self-contained npm package with references/cli
-        bundled; stable vs development channels encoded in
-        update-channels.yaml."
-      - "Testing approach: vitest fixture trees under
-        packages/cli/test/upgrade/fixtures/ with Python-oracle parity JSON for
-        contract-first migration work."
-  - number: 23
-    date: 2026-06-07
-    dimensions:
-      - architecture alignment
-      - pattern consistency
-      - coupling health
-      - complexity hotspots
-      - test health
-      - dependency health
-      - version health
-      - artifact freshness
-      - prose health
-      - security hygiene
-    findings_summary:
-      critical: 0
-      warning: 1
-      info: 1
-      filtered_by_confidence: 0
-    trajectory: improving vs Audit 22 on mobile monorepo closeout (progress cycle
-      650), capabilityContext split, vitest 884/884 green, and suiteVersion
-      3.0.0 alignment; orientation.ts remains the prime/status hub.
-    grades:
-      Architecture: A
-      Patterns: A
-      Coupling: B
-      Complexity: B
-      Tests: A
-      Deps: A
-      Version: B
-      Freshness: A
-      Prose: A
-      Security: A
-    dimension_details:
-      - name: Architecture alignment
-        grade: A
-        summary: Decision 69 CLI narrow waist and monorepo-plan.md package table match
-          the checkout; packages/mobile is a documented docs-only stub per
-          D67/D68 with lefthook wired.
-        findings: []
-      - name: Pattern consistency
-        grade: A
-        summary: vp is the workspace entrypoint for web and mobile; TODO checkbox
-          convention aligns across TODO.md, todo.yaml, compaction dryRun, and
-          packages/mobile/TODO.md.
-        findings: []
-      - name: Coupling health
-        grade: B
-        summary: capabilityContext/ split reduced prime startup coupling, but
-          orientation.ts still aggregates status, prime, and state summaries in one
-          module.
-        findings:
-          - heading: "⇉ orientation.ts remains prime/status state hub, warning (confidence:
-              82)"
-            severity: warning
-            confidence: 82
-            location: packages/cli/src/cli/orientation.ts:407
-            evidence: orientation.ts is 650 lines; healthSummary, planSummary, docsSummary,
-              and selectStatusNextAction share one module imported by prime.ts and
-              capabilityContext/evidence.ts.
-            impact: Status and prime orientation changes still touch a single dense file
-              despite capabilityContext modularization elsewhere.
-            suggested_action: Extract state-family summary builders into cli/orientation/
-              slices mirroring the capabilityContext split.
-            verify_command: wc -l packages/cli/src/cli/orientation.ts
-      - name: Complexity hotspots
-        grade: B
-        summary: No TS module exceeds 900 lines after capabilityContext/ and
-          startupAnalysis/ splits; largest files are orientation.ts (650) and
-          capabilityContext/benchmark.ts (528).
-        findings: []
-      - name: Test health
-        grade: A
-        summary: Vitest reports 884/884 passed in 91 files; prior compaction and
-          plan-validate housekeeping failures from Audit 22 are resolved.
-        findings: []
-      - name: Dependency health
-        grade: A
-        summary: pnpm audit --prod reports 0 vulnerabilities; runtime deps remain yaml
-          and smol-toml only.
-        findings: []
-      - name: Version health
-        grade: B
-        summary: packages/cli/package.json carries version 3.0.0-dev.6 with
-          agentera.suiteVersion 3.0.0; one fix commit since the dev.6 bump;
-          stable-channel shim at 2.7.7 remains intentional per Decision 56.
-        findings: []
-      - name: Artifact freshness
-        grade: A
-        summary: progress.yaml cycle 650 and docs.yaml index updated 2026-06-07 for
-          mobile monorepo closeout; no active plan slot.
-        findings: []
-      - name: Prose health
-        grade: A
-        summary: monorepo-plan.md and mobile-open-decisions.md stay factual with
-          concrete package paths and decision references.
-        findings: []
-      - name: Security hygiene
-        grade: A
-        summary: No hardcoded secrets in scanned TS sources; RegExp.exec matches are
-          parsing helpers, not dynamic code execution on user input.
-        findings:
-          - heading: "⇢ Dedicated security tooling still recommended, info (confidence: 60)"
-            severity: info
-            confidence: 60
-            location: repository-wide
-            evidence: Regex hygiene scan only; pnpm audit --prod clean on packages/cli.
-            impact: Surface scan cannot replace dependency or secret-scan CI for publish.
-            suggested_action: Keep pnpm audit and secret scanning in release CI for 3.x.
-    trends:
-      improved: Mobile monorepo closeout (D67/D68/D69), capabilityContext monolith
-        split (2542 to 528 max module), startupAnalysis modularization, vitest
-        884/884 green, suiteVersion 3.0.0 aligned with @next dev.6, profile
-        Validated-header fix.
-      degraded: none.
-      stable: Dependency, prose, and security posture remain healthy; stable @latest
-        shim stays on 2.7.7 by design.
-      new_findings: orientation.ts prime/status hub density after capabilityContext split.
-      resolved: Audit 22 TS monolith hotspots (capabilityContext.ts 2542 lines);
-        compaction and plan-validate vitest failures; npm @next dev.4 vs
-        suiteVersion 2.7.7 release-metadata divergence.
-    patterns:
-      - "Monorepo layout: packages/mobile (flagship stub), packages/web
-        (Starlight), packages/cli (agentera npm); CLI owns schema and .agentera/
-        contract per D69."
-      - "Prime startup: capabilityContext/ modules by state family with slim
-        re-export barrel; orientation.ts still centralizes status briefing
-        summaries."
-      - "Testing approach: 884 vitest cases including upgrade parity, prime
-        source_contract oracles, and packaging prepack tarball gates."
-  - number: 24
-    date: 2026-06-10
-    dimensions:
-      - architecture alignment
-      - pattern consistency
-      - coupling health
-      - complexity hotspots
-      - test health
-      - dependency health
-      - version health
-      - artifact freshness
-      - security hygiene
-    findings_summary:
-      critical: 0
-      warning: 2
-      info: 2
-      filtered_by_confidence: 0
-    trajectory: improving vs Audit 23. The v3 CLI structural-debt pass split prime
-      (78 lines), lifecycleAdapters (107-line barrel), and doctor/integration
-      surfaces; vitest is 916/916 green; monolith lint passes. orientation.ts
-      hub density and a large uncommitted WIP remain the main residual debt.
-    grades:
-      Architecture: A
-      Patterns: A
-      Coupling: B
-      Complexity: B
-      Tests: A
-      Deps: A
-      Version: B
-      Freshness: B
-      Security: A
-    dimension_details:
-      - name: Architecture alignment
-        grade: A
-        summary: prime.ts delegates to cli/commands/prime/{collectOrientationState,
-          bundleStatus, orientationOutput, v1Migration, types};
-          lifecycleAdapters splits nodeFormChecks and legacyPythonParity behind
-          a thin barrel; upgrade/doctorClassifier and projectIntegrationDecision
-          encode typed scenario tables per D69 narrow waist.
-        findings: []
-      - name: Pattern consistency
-        grade: A
-        summary: Shared argvParser, npxPlatformStatus, todoSeverity, pyjson, jsonValue
-          contracts, and DISPATCHER_COMMANDS consolidate duplicated dispatch and
-          doctor patterns; upgrade-vs-repair wording uses lifecycle status
-          nouns.
-        findings: []
-      - name: Coupling health
-        grade: B
-        summary: Prime startup coupling dropped with prime/ and contracts/ slices, but
-          orientation.ts still aggregates summary builders for status and prime.
-        findings:
-          - heading: "⇉ orientation.ts remains prime/status summary hub, warning (confidence:
-              80)"
-            severity: warning
-            confidence: 80
-            location: packages/cli/src/cli/orientation.ts:62
-            evidence: orientation.ts is 673 lines; only cli/orientation/attention.ts
-              extracted so far; healthSummary, planSummary, docsSummary, and
-              selectStatusNextAction still share one module.
-            impact: Status and prime orientation edits still touch a dense file despite
-              capabilityContext/ modularization elsewhere.
-            suggested_action: Continue extracting state-family summary builders into
-              cli/orientation/ slices mirroring capabilityContext/.
-            verify_command: wc -l packages/cli/src/cli/orientation.ts
-      - name: Complexity hotspots
-        grade: B
-        summary: No source file exceeds the 1000-line monolith gate; prime.ts is 78
-          lines and lifecycleAdapters.ts is 107; largest modules are
-          packageRegistry.ts (700) and orientation.ts (673).
-        findings:
-          - heading: "⇢ Dict aliases remain in ~42 CLI modules, info (confidence: 75)"
-            severity: info
-            confidence: 75
-            location: packages/cli/src/core/jsonValue.ts:13
-            evidence: core/jsonValue.ts exports JsonObject but retains deprecated Dict; grep
-              finds Dict usage across validate, hooks, capabilityContext, and
-              analytics modules.
-            impact: IO boundaries stay loosely typed until repo-wide Dict elimination lands.
-            suggested_action: Continue TODO chore:3.0.0 Dict→JsonObject migration module by
-              module.
-      - name: Test health
-        grade: A
-        summary: pnpm -C packages/cli test reports 916/916 passed in 98 files; typecheck
-          and build clean; monolithLint green; cross-platform cursor fixture
-          tests require non-sandbox .cursor directory creation.
-        findings: []
-      - name: Dependency health
-        grade: A
-        summary: Runtime deps remain yaml and smol-toml; pnpm audit --prod reports 0
-          vulnerabilities on packages/cli.
-        findings: []
-      - name: Version health
-        grade: B
-        summary: packages/cli/package.json is 3.0.0-dev.6 with suiteVersion 3.0.0; fix
-          commits landed after the dev.6 bump; stable @latest shim at 2.7.7
-          remains per D56.
-        findings: []
-      - name: Artifact freshness
-        grade: B
-        summary: progress.yaml cycle 657 records this audit; structural-debt refactors
-          are largely uncommitted WIP while TODO Resolved lines claim 2026-06-10
-          closeout.
-        findings:
-          - heading: "⇉ Structural-debt pass is uncommitted WIP, warning (confidence: 88)"
-            severity: warning
-            confidence: 88
-            location: packages/cli/src/cli/commands/prime/, TODO.md @ ✓ Resolved
-              [chore:3.0.0] Split prime.ts
-            evidence: git status shows 39 changed paths and untracked prime/, contracts/,
-              argvParser.ts, jsonValue.ts, and orientation/attention.ts; net
-              diff is -1711 lines but HEAD is still 606579a.
-            impact: Resolved TODO ledger can run ahead of git history until the WIP lands in
-              one commit.
-            suggested_action: Commit the structural-debt slice with tests green before the
-              next release-metadata bump.
-            verify_command: git status --short packages/cli/src/cli/commands/prime/
-      - name: Security hygiene
-        grade: A
-        summary: No hardcoded secrets in scanned TS sources; legacy Python parity probes
-          are opt-in via AGENTERA_LEGACY_PYTHON_PARITY.
-        findings:
-          - heading: "⇢ Dedicated security tooling still recommended, info (confidence: 60)"
-            severity: info
-            confidence: 60
-            location: repository-wide
-            evidence: Regex hygiene scan only; pnpm audit --prod clean.
-            impact: Surface scan cannot replace secret-scan CI for publish.
-            suggested_action: Keep pnpm audit and secret scanning in release CI for 3.x.
-    trends:
-      improved: prime split (721→78 lines), lifecycleAdapters split, doctorClassifier
-        and projectIntegrationDecision tables, typed
-        BundleStatus/OrientationState contracts, argvParser and
-        npxPlatformStatus dedup, vitest 884→916 green, upgrade-vs-repair wording
-        fix, cross-platform test hardening.
-      degraded: none.
-      stable: Dependency and security posture remain healthy; stable @latest shim
-        stays on 2.7.7 by design.
-      new_findings: Uncommitted structural-debt WIP ahead of TODO Resolved ledger;
-        Dict alias count still open.
-      resolved: Audit 23 orientation hub finding partially addressed via
-        orientation/attention.ts and prime/ module split; thermo-nuclear
-        follow-ups (npx platform status, dispatcher commands, cliProbe,
-        lifecycle argv parser, legacy Python parity gate) landed in WIP.
-      carried_forward: orientation.ts summary hub density; macOS/Windows CI jobs and
-        Decision 70 capability rename remain open in TODO.md.
-    patterns:
-      - "Prime startup: thin cmdPrime dispatch delegates to prime/ modules and
-        contracts/orientationState; attention assembly lives in
-        orientation/attention.ts."
-      - "Validate path: default lifecycle adapters skip Python parity probes;
-        maintainer parity is opt-in via --legacy-python-parity or env flag."
-      - "Upgrade surface: doctorClassifier and projectIntegrationDecision own
-        install-root and scenario messaging; npxPlatformStatus unifies bundle
-        probes."
-      - "Testing approach: 916 vitest cases with monolith lint gate, packaging
-        prepack tarball regressions, and cursor fixture tests that need real
-        .cursor directory creation."
+- number: 16
+  date: 2026-04-28
+  dimensions:
+  - architecture alignment
+  - pattern consistency
+  - coupling health
+  - complexity hotspots
+  - test health
+  - version health
+  - artifact freshness
+  - security hygiene
+  - dependency health
+  findings_summary:
+    critical: 0
+    warning: 0
+    info: 1
+    filtered_by_confidence: 0
+  trajectory: "\u2B89 improving vs Audit 15. The setup bundle plan landed the shared\
+    \ package-root story, read-only doctor, offline smoke evidence, confirmed installer,\
+    \ and 1.21.0 release metadata without breaking validators or tests. The only new\
+    \ risk is concentration in `setup_doctor.py`, which is acceptable until another\
+    \ runtime or installer path expands it."
+  grades:
+    Architecture: A
+    Patterns: A
+    Coupling: A
+    Complexity: A
+    Tests: A
+    Version: A
+    Freshness: A
+    Security: A
+    Deps: A
+  dimension_details:
+  - name: Architecture alignment
+    grade: A
+    summary: Decision 33's suite-bundle boundary is reflected in aggregate runtime
+      metadata and lifecycle validation. Shared infrastructure lives at the bundle
+      root; skill-local scripts remain in owning skills; single-skill core behavior
+      is still described as independent of suite tools.
+    findings: []
+  - name: Pattern consistency
+    grade: A
+    summary: Executable suite scripts now share uv script headers and empty dependency
+      metadata. Doctor output keeps the existing pass, warn, fail, skip status vocabulary,
+      and installer planning reuses the existing Codex and Copilot helper logic instead
+      of inventing a parallel writer.
+    findings: []
+  - name: Coupling health
+    grade: A
+    summary: Runtime package-shape checks stay centralized in `scripts/validate_lifecycle_adapters.py`,
+      while `scripts/setup_doctor.py` depends only on stdlib code and the existing
+      setup helpers. Tests exercise the doctor mostly through subprocess or public
+      module functions, so internal reshaping remains possible.
+    findings: []
+  - name: Complexity hotspots
+    grade: A
+    summary: ''
+    findings:
+    - heading: "\u21E2 Setup doctor is the new setup hotspot, info (confidence: 65)"
+      severity: info
+      confidence: 65
+      location: '`scripts/setup_doctor.py:332`, `scripts/setup_doctor.py:588`, `scripts/setup_doctor.py:969`,
+        `scripts/setup_doctor.py:1184`
+
+        - **Evidence**: One 1285-line script now owns smoke checks, four runtime diagnoses,
+        installer planning and writes, report rendering, and CLI flow.
+
+        - **Impact**: Current shape is sectioned and tested, but the next writable
+        runtime or live-host branch could make the file harder to change safely.
+
+        - **Suggested action**: Keep it whole for now; split doctor, smoke, and installer
+        helpers only when another setup path lands.'
+      evidence: 'One 1285-line script now owns smoke checks, four runtime diagnoses,
+        installer planning and writes, report rendering, and CLI flow.
+
+        - **Impact**: Current shape is sectioned and tested, but the next writable
+        runtime or live-host branch could make the file harder to change safely.
+
+        - **Suggested action**: Keep it whole for now; split doctor, smoke, and installer
+        helpers only when another setup path lands.'
+      impact: 'Current shape is sectioned and tested, but the next writable runtime
+        or live-host branch could make the file harder to change safely.
+
+        - **Suggested action**: Keep it whole for now; split doctor, smoke, and installer
+        helpers only when another setup path lands.'
+      suggested_action: Keep it whole for now; split doctor, smoke, and installer
+        helpers only when another setup path lands.
+  - name: Test health
+    grade: A
+    summary: 'Coverage is proportional to the risk surface: bundle metadata has pass/fail
+      fixtures, script hygiene has one failure per rule, and setup doctor tests cover
+      runtime pass, classified gaps, skips, non-mutation, smoke failure visibility,
+      denied writes, confirmed writes, and idempotent reruns. Full collection reports
+      477 tests across 17 files.'
+    findings: []
+  - name: Version health
+    grade: A
+    summary: The setup feature and fix commits are covered by the `1.21.0` bump, and
+      no `feat` or `fix` commits landed after the bump. Version target scans found
+      no stale `1.20.x` or local `1.22.0` residues in listed suite surfaces.
+    findings: []
+  - name: Artifact freshness
+    grade: A
+    summary: PLAN, PROGRESS, TODO, CHANGELOG, and DOCS were all updated at `2026-04-28T21:55:28+02:00`,
+      after the plan creation date. README setup guidance was updated during Task
+      7, and this audit updates HEALTH for the post-plan check.
+    findings: []
+  - name: Security hygiene
+    grade: A
+    summary: Secret-pattern hits are limited to audit's own documented examples. Setup
+      doctor and smoke subprocess calls use list-form commands with timeouts and no
+      `shell=True`; installer writes are limited to confirmed Codex and Copilot runtime-native
+      config targets.
+    findings: []
+  - name: Dependency health
+    grade: A
+    summary: 'No new third-party Python dependencies were introduced; executable suite
+      scripts declare `dependencies = []`. The only external runtime dependency remains
+      the pinned OpenCode plugin package in `.opencode/package.json`. ### Trends vs
+      Audit 15 - **Improved**: Architecture and freshness now capture the suite-bundle
+      setup surface rather than two separate setup helpers. Tests grew from 433 to
+      477 and cover doctor, smoke, installer, package-shape, and uv metadata behavior.
+      - **Degraded**: none. - **Stable**: Version, security, and dependency posture
+      remain green. - **New findings**: `setup_doctor.py` is a large but acceptable
+      setup hotspot. - **Resolved**: Audit 15''s "two-helper shape" note is absorbed
+      into the bundle-owned doctor and installer surface. - **Carried forward**: Richer
+      live-host proof remains deferred by plan, but default doctor smoke explicitly
+      avoids live model calls. ### Patterns Observed - Module structure: shared suite
+      infrastructure lives in root `scripts/`, `hooks/`, manifests, and references;
+      behavioral scripts remain inside owning skills. - Validation ownership: lifecycle/package-shape
+      drift belongs to `scripts/validate_lifecycle_adapters.py`; spec and contract
+      drift stay in `validate_spec.py` and `generate_contracts.py`. - Testing approach:
+      setup behavior is verified by focused subprocess smoke tests plus public-function
+      fixtures, not by reaching through private runtime internals. - Dependency patterns:
+      Python remains stdlib-only; runtime-specific metadata carries host requirements
+      rather than adding a common abstraction layer.'
+    findings: []
+  trends:
+    improved: 'Architecture and freshness now capture the suite-bundle setup surface
+      rather than two separate setup helpers. Tests grew from 433 to 477 and cover
+      doctor, smoke, installer, package-shape, and uv metadata behavior.
+
+      - **Degraded**: none.
+
+      - **Stable**: Version, security, and dependency posture remain green.
+
+      - **New findings**: `setup_doctor.py` is a large but acceptable setup hotspot.
+
+      - **Resolved**: Audit 15''s "two-helper shape" note is absorbed into the bundle-owned
+      doctor and installer surface.
+
+      - **Carried forward**: Richer live-host proof remains deferred by plan, but
+      default doctor smoke explicitly avoids live model calls.'
+    degraded: 'none.
+
+      - **Stable**: Version, security, and dependency posture remain green.
+
+      - **New findings**: `setup_doctor.py` is a large but acceptable setup hotspot.
+
+      - **Resolved**: Audit 15''s "two-helper shape" note is absorbed into the bundle-owned
+      doctor and installer surface.
+
+      - **Carried forward**: Richer live-host proof remains deferred by plan, but
+      default doctor smoke explicitly avoids live model calls.'
+    stable: 'Version, security, and dependency posture remain green.
+
+      - **New findings**: `setup_doctor.py` is a large but acceptable setup hotspot.
+
+      - **Resolved**: Audit 15''s "two-helper shape" note is absorbed into the bundle-owned
+      doctor and installer surface.
+
+      - **Carried forward**: Richer live-host proof remains deferred by plan, but
+      default doctor smoke explicitly avoids live model calls.'
+    new_findings: '`setup_doctor.py` is a large but acceptable setup hotspot.
+
+      - **Resolved**: Audit 15''s "two-helper shape" note is absorbed into the bundle-owned
+      doctor and installer surface.
+
+      - **Carried forward**: Richer live-host proof remains deferred by plan, but
+      default doctor smoke explicitly avoids live model calls.'
+    resolved: 'Audit 15''s "two-helper shape" note is absorbed into the bundle-owned
+      doctor and installer surface.
+
+      - **Carried forward**: Richer live-host proof remains deferred by plan, but
+      default doctor smoke explicitly avoids live model calls.'
+    carried_forward: Richer live-host proof remains deferred by plan, but default
+      doctor smoke explicitly avoids live model calls.
+  patterns:
+  - 'Module structure: shared suite infrastructure lives in root `scripts/`, `hooks/`,
+    manifests, and references; behavioral scripts remain inside owning skills.'
+  - 'Validation ownership: lifecycle/package-shape drift belongs to `scripts/validate_lifecycle_adapters.py`;
+    spec and contract drift stay in `validate_spec.py` and `generate_contracts.py`.'
+  - 'Testing approach: setup behavior is verified by focused subprocess smoke tests
+    plus public-function fixtures, not by reaching through private runtime internals.'
+  - 'Dependency patterns: Python remains stdlib-only; runtime-specific metadata carries
+    host requirements rather than adding a common abstraction layer.'
+- number: 17
+  date: 2026-04-29
+  dimensions:
+  - architecture alignment
+  - pattern consistency
+  - coupling health
+  - complexity hotspots
+  - test health
+  - version health
+  - artifact freshness
+  - prose health
+  - security hygiene
+  - dependency health
+  findings_summary:
+    critical: 0
+    warning: 1
+    info: 0
+    filtered_by_confidence: 0
+  trajectory: "\u2B8B degrading vs Audit 16. The Steelman-Informed Decision Pressure\
+    \ plan preserved suite architecture, contracts, tests, and release metadata. DOCS.md\
+    \ freshness slipped after the 511-test validation baseline."
+  grades:
+    Architecture: A
+    Patterns: A
+    Coupling: A
+    Complexity: A
+    Tests: A
+    Version: A
+    Freshness: B
+    Prose: A
+    Security: A
+    Deps: A
+  dimension_details:
+  - name: Architecture alignment
+    grade: A
+    summary: Discuss remains the deliberation owner. Plan and optimize received only
+      local effort-bias guards, matching `.agentera/archive/PLAN-2026-04-29-steelman-informed-decision-pressure.md:16-21`.
+    findings: []
+  - name: Pattern consistency
+    grade: A
+    summary: Pressure testing, win conditions, and effort-bias resets use existing
+      workflow prose. `skills/discuss/SKILL.md:182-217`, `skills/plan/SKILL.md:112`,
+      and `skills/optimize/SKILL.md:221` avoid new modes, artifacts, or confidence
+      labels.
+    findings: []
+  - name: Coupling health
+    grade: A
+    summary: DECISIONS.md compatibility stayed intact. `skills/discuss/references/templates/DECISIONS-template.md:36-38`
+      keeps win conditions inside Alternatives bullets while preserving current top-level
+      fields.
+    findings: []
+  - name: Complexity hotspots
+    grade: A
+    summary: No new code hotspot landed. The plan changed skill prose, templates,
+      generated schema evidence, release metadata, and artifacts; no validator or
+      runtime implementation path grew.
+    findings: []
+  - name: Test health
+    grade: A
+    summary: Full verification passed with `python3 -m pytest -q` reporting 511 passed.
+      Existing decision validation coverage remained sufficient because validation
+      behavior did not change.
+    findings: []
+  - name: Version health
+    grade: A
+    summary: 1.24.0 metadata is aligned across registry, per-skill manifests, aggregate
+      marketplace, Copilot, Codex, and OpenCode surfaces. Post-bump commits are release-evidence
+      and freshness chores.
+    findings: []
+  - name: Artifact freshness
+    grade: B
+    summary: ''
+    findings:
+    - heading: "\u21C9 DOCS.md coverage baseline is stale, warning (confidence: 92)"
+      severity: warning
+      confidence: 92
+      location: '`.agentera/DOCS.md:94`, `.agentera/DOCS.md:85`
+
+        - **Evidence**: DOCS reports "477 tests across 17 files" and a 2026-04-28
+        test-suite row. Current verification is 511 passed across 18 `tests/test*.py`
+        files.
+
+        - **Impact**: Orientation consumers see stale validation scale after 1.22-1.24
+        work.
+
+        - **Suggested action**: Run document to refresh DOCS.md Index and Coverage
+        for the 511-test baseline.'
+      evidence: 'DOCS reports "477 tests across 17 files" and a 2026-04-28 test-suite
+        row. Current verification is 511 passed across 18 `tests/test*.py` files.
+
+        - **Impact**: Orientation consumers see stale validation scale after 1.22-1.24
+        work.
+
+        - **Suggested action**: Run document to refresh DOCS.md Index and Coverage
+        for the 511-test baseline.'
+      impact: 'Orientation consumers see stale validation scale after 1.22-1.24 work.
+
+        - **Suggested action**: Run document to refresh DOCS.md Index and Coverage
+        for the 511-test baseline.'
+      suggested_action: Run document to refresh DOCS.md Index and Coverage for the
+        511-test baseline.
+  - name: Prose health
+    grade: A
+    summary: '`python3 scripts/self_audit.py .agentera/archive/PLAN-2026-04-29-steelman-informed-decision-pressure.md
+      CHANGELOG.md .agentera/PROGRESS.md TODO.md .agentera/DOCS.md` exited 0.'
+    findings: []
+  - name: Security hygiene
+    grade: A
+    summary: Secret-pattern hits are limited to audit examples and prior HEALTH prose.
+      The Steelman plan added no new executable code or shell construction.
+    findings: []
+  - name: Dependency health
+    grade: A
+    summary: "No production dependencies changed. `.opencode/package-lock.json` audit\
+      \ returned 0 vulnerabilities, and the Python surface remains stdlib-only. ###\
+      \ Trends vs Audit 16 - **Improved**: Decision workflow discipline is stronger\
+      \ without adding a skill or artifact contract. - **Degraded**: Freshness A\u2192\
+      B because DOCS.md coverage stayed at 477 tests after 511-test validation. -\
+      \ **Stable**: Architecture, patterns, coupling, complexity, tests, version,\
+      \ security, and dependency posture remain green. - **New findings**: DOCS.md\
+      \ coverage baseline stale. - **Resolved**: Audit 16 setup-doctor hotspot remains\
+      \ acceptable and was not touched by this plan. ### Patterns Observed - Module\
+      \ structure: skill behavior remains in `skills/*/SKILL.md`; artifact contracts\
+      \ stay in SPEC, generated contracts, and templates. - Decision pattern: discuss\
+      \ owns pressure testing and win-condition capture; adjacent skills receive only\
+      \ selection-bias guards. - Testing approach: deterministic validators and full\
+      \ pytest cover contracts; live eval remains blocked by external API credit.\
+      \ - Release pattern: feature-scoped decision workflow changes drive a minor\
+      \ suite bump plus plan-level freshness checkpoint."
+    findings: []
+  trends:
+    improved: "Decision workflow discipline is stronger without adding a skill or\
+      \ artifact contract.\n- **Degraded**: Freshness A\u2192B because DOCS.md coverage\
+      \ stayed at 477 tests after 511-test validation.\n- **Stable**: Architecture,\
+      \ patterns, coupling, complexity, tests, version, security, and dependency posture\
+      \ remain green.\n- **New findings**: DOCS.md coverage baseline stale.\n- **Resolved**:\
+      \ Audit 16 setup-doctor hotspot remains acceptable and was not touched by this\
+      \ plan."
+    degraded: "Freshness A\u2192B because DOCS.md coverage stayed at 477 tests after\
+      \ 511-test validation.\n- **Stable**: Architecture, patterns, coupling, complexity,\
+      \ tests, version, security, and dependency posture remain green.\n- **New findings**:\
+      \ DOCS.md coverage baseline stale.\n- **Resolved**: Audit 16 setup-doctor hotspot\
+      \ remains acceptable and was not touched by this plan."
+    stable: 'Architecture, patterns, coupling, complexity, tests, version, security,
+      and dependency posture remain green.
+
+      - **New findings**: DOCS.md coverage baseline stale.
+
+      - **Resolved**: Audit 16 setup-doctor hotspot remains acceptable and was not
+      touched by this plan.'
+    new_findings: 'DOCS.md coverage baseline stale.
+
+      - **Resolved**: Audit 16 setup-doctor hotspot remains acceptable and was not
+      touched by this plan.'
+    resolved: Audit 16 setup-doctor hotspot remains acceptable and was not touched
+      by this plan.
+  patterns:
+  - 'Module structure: skill behavior remains in `skills/*/SKILL.md`; artifact contracts
+    stay in SPEC, generated contracts, and templates.'
+  - 'Decision pattern: discuss owns pressure testing and win-condition capture; adjacent
+    skills receive only selection-bias guards.'
+  - 'Testing approach: deterministic validators and full pytest cover contracts; live
+    eval remains blocked by external API credit.'
+  - 'Release pattern: feature-scoped decision workflow changes drive a minor suite
+    bump plus plan-level freshness checkpoint.'
+- number: 18
+  date: 2026-04-29
+  dimensions:
+  - artifact freshness
+  - version health
+  - validation health
+  - documentation coherence
+  - forbidden objective layout
+  findings_summary:
+    critical: 0
+    warning: 0
+    info: 0
+    filtered_by_confidence: 0
+  trajectory: "\u2B89 improving vs Audit 17. The Completed Optimize Objective Archival\
+    \ plan resolved the DOCS coverage warning and closed the plan without adding forbidden\
+    \ objective surfaces."
+  grades:
+    Freshness: A
+    Version: A
+    Validation: A
+    Docs: A
+    Layout: A
+  dimension_details:
+  - name: Artifact freshness
+    grade: A
+    summary: "`.agentera/archive/PLAN-2026-04-29-completed-optimize-objective-archival.md:36-114`\
+      \ marks Tasks 1-8 complete, `.agentera/PLAN.md` is absent, and `TODO.md @ \u2713\
+      \ Resolved (completed-objective archival)` resolves the completed-objective\
+      \ item with `27bb667..a1e60bd` plus the checkpoint commit."
+    findings: []
+  - name: Version health
+    grade: A
+    summary: '`registry.json`, 12 skill plugin manifests, `plugin.json`, `.github/plugin/plugin.json`,
+      `.codex-plugin/plugin.json`, `.claude-plugin/marketplace.json`, and `.opencode/plugins/agentera.js`
+      report `1.24.1`. `.agents/plugins/marketplace.json` still has no version field,
+      matching Cycle 231 evidence.'
+    findings: []
+  - name: Validation health
+    grade: A
+    summary: 'Current reruns passed: `python3 scripts/validate_spec.py`, `python3
+      scripts/generate_contracts.py --check`, `python3 scripts/validate_lifecycle_adapters.py`,
+      artifact self-audit, and `python3 -m pytest -q` with 523 passed.'
+    findings: []
+  - name: Documentation coherence
+    grade: A
+    summary: '`CHANGELOG.md:7-15`, `PROGRESS.md:3-21`, `.agentera/DOCS.md:90-108`,
+      `README.md:461-471`, and `SPEC.md:151-162` describe the completed lifecycle
+      consistently. Audit 17''s DOCS coverage warning is resolved: DOCS now reports
+      523 tests across 19 files.'
+    findings: []
+  - name: Forbidden objective layout
+    grade: A
+    summary: "Glob checks found no active root `OBJECTIVE.md`, root `EXPERIMENTS.md`,\
+      \ or `.agentera/PLAN.md`. DOCS Artifact Mapping has no fixed OBJECTIVE/EXPERIMENTS\
+      \ rows; README and SPEC explicitly preserve per-objective `.agentera/optimize/<name>/`\
+      \ layout without registries or symlinks. ### Trends vs Audit 17 - **Improved**:\
+      \ Freshness B\u2192A; DOCS coverage now matches the 523-test suite. - **Degraded**:\
+      \ none. - **Stable**: Version, validation, documentation, and objective layout\
+      \ are coherent. - **Resolved**: Audit 17 DOCS coverage baseline stale warning.\
+      \ ### Patterns Observed - Objective lifecycle: optimize keeps state self-contained\
+      \ under `.agentera/optimize/<name>/` and excludes closed objectives before active-work\
+      \ inference. - Release pattern: completed-objective fix landed as patch release\
+      \ `1.24.1`, followed by a plan-level freshness checkpoint. - Validation pattern:\
+      \ spec, contracts, lifecycle adapters, prose self-audit, and full pytest are\
+      \ the closure gate."
+    findings: []
+  trends:
+    improved: "Freshness B\u2192A; DOCS coverage now matches the 523-test suite.\n\
+      - **Degraded**: none.\n- **Stable**: Version, validation, documentation, and\
+      \ objective layout are coherent.\n- **Resolved**: Audit 17 DOCS coverage baseline\
+      \ stale warning."
+    degraded: 'none.
+
+      - **Stable**: Version, validation, documentation, and objective layout are coherent.
+
+      - **Resolved**: Audit 17 DOCS coverage baseline stale warning.'
+    stable: 'Version, validation, documentation, and objective layout are coherent.
+
+      - **Resolved**: Audit 17 DOCS coverage baseline stale warning.'
+    resolved: Audit 17 DOCS coverage baseline stale warning.
+  patterns:
+  - 'Objective lifecycle: optimize keeps state self-contained under `.agentera/optimize/<name>/`
+    and excludes closed objectives before active-work inference.'
+  - 'Release pattern: completed-objective fix landed as patch release `1.24.1`, followed
+    by a plan-level freshness checkpoint.'
+  - 'Validation pattern: spec, contracts, lifecycle adapters, prose self-audit, and
+    full pytest are the closure gate.'
+- number: 19
+  date: 2026-04-30
+  dimensions:
+  - artifact freshness
+  - optimize analyzer health
+  - test and validation health
+  - version health
+  - unintended-change hygiene
+  findings_summary:
+    critical: 0
+    warning: 1
+    info: 0
+    filtered_by_confidence: 0
+  trajectory: stable vs Audit 18. Optimize analyzer reliability landed cleanly, but
+    DOCS coverage evidence lags the 536-test suite.
+  grades:
+    Freshness: A
+    Analyzer: A
+    Tests: B
+    Version: A
+    Change hygiene: A
+  dimension_details:
+  - name: Artifact freshness
+    grade: A
+    summary: '`5ee6db0` updates CHANGELOG, TODO, PROGRESS, and the archived plan after
+      `2026-04-30` plan creation. `.agentera/PLAN.md` is absent, and this audit updates
+      HEALTH.'
+    findings: []
+  - name: Optimize analyzer health
+    grade: A
+    summary: '`skills/optimize/scripts/analyze_experiments.py:39-444` keeps parsing,
+      target extraction, analysis, and frontier rendering separated. Live build-token
+      smoke produced 6 experiments, 2 kept, best metric 12055, and Markdown frontier
+      output.'
+    findings: []
+  - name: Test and validation health
+    grade: B
+    summary: 'Focused analyzer tests passed: `19 passed`. Full suite passed: `536
+      passed`. Spec, contract, lifecycle-adapter, eval dry-run, live analyzer, frontier,
+      and artifact self-audit checks passed.'
+    findings:
+    - heading: "\u21C9 DOCS coverage count is stale, warning (confidence: 95)"
+      severity: warning
+      confidence: 95
+      location: '`.agentera/DOCS.md:95`
+
+        - **Evidence**: DOCS reports "523 tests across 19 files". Current `python3
+        -m pytest --collect-only -q` reports 536 tests collected.
+
+        - **Impact**: Orientation consumers see stale validation scale after analyzer
+        reliability tests landed.
+
+        - **Suggested action**: Run document to refresh DOCS.md Coverage and Test
+        suite rows to 536 tests.'
+      evidence: 'DOCS reports "523 tests across 19 files". Current `python3 -m pytest
+        --collect-only -q` reports 536 tests collected.
+
+        - **Impact**: Orientation consumers see stale validation scale after analyzer
+        reliability tests landed.
+
+        - **Suggested action**: Run document to refresh DOCS.md Coverage and Test
+        suite rows to 536 tests.'
+      impact: 'Orientation consumers see stale validation scale after analyzer reliability
+        tests landed.
+
+        - **Suggested action**: Run document to refresh DOCS.md Coverage and Test
+        suite rows to 536 tests.'
+      suggested_action: Run document to refresh DOCS.md Coverage and Test suite rows
+        to 536 tests.
+  - name: Version health
+    grade: A
+    summary: 'Version-bearing targets report `1.25.0`: `registry.json`, root/Copilot/Codex
+      manifests, 12 skill plugin manifests, Claude marketplace, and OpenCode `AGENTERA_VERSION`.
+      No `feat` or `fix` commits landed after the bump.'
+    findings: []
+  - name: Unintended-change hygiene
+    grade: A
+    summary: 'Only `.agentera/HEALTH.md` is modified after this audit. Plan commits
+      changed the expected analyzer, tests, metadata, CHANGELOG, TODO, PROGRESS, and
+      archived plan surfaces. ### Trends vs Audit 18 - **Improved**: Optimize analyzer
+      reliability now has real-artifact JSON and frontier smoke evidence. - **Degraded**:
+      Test evidence freshness B because DOCS coverage stayed at 523 after the 536-test
+      suite. - **Stable**: Artifact lifecycle, version metadata, and change hygiene
+      remain green. - **New findings**: DOCS coverage count stale. - **Resolved**:
+      No prior Audit 18 findings were open. ### Patterns Observed - Optimize analyzer:
+      one stdlib script owns parse, target extraction, analysis, and optional frontier
+      rendering. - Testing approach: parser edge cases, target diagnostics, CLI mode
+      compatibility, and frontier ordering are covered in `tests/test_analyze_experiments.py`.
+      - Release pattern: feature-bearing analyzer work drove minor release `1.25.0`,
+      then a freshness checkpoint archived the plan.'
+    findings: []
+  trends:
+    improved: 'Optimize analyzer reliability now has real-artifact JSON and frontier
+      smoke evidence.
+
+      - **Degraded**: Test evidence freshness B because DOCS coverage stayed at 523
+      after the 536-test suite.
+
+      - **Stable**: Artifact lifecycle, version metadata, and change hygiene remain
+      green.
+
+      - **New findings**: DOCS coverage count stale.
+
+      - **Resolved**: No prior Audit 18 findings were open.'
+    degraded: 'Test evidence freshness B because DOCS coverage stayed at 523 after
+      the 536-test suite.
+
+      - **Stable**: Artifact lifecycle, version metadata, and change hygiene remain
+      green.
+
+      - **New findings**: DOCS coverage count stale.
+
+      - **Resolved**: No prior Audit 18 findings were open.'
+    stable: 'Artifact lifecycle, version metadata, and change hygiene remain green.
+
+      - **New findings**: DOCS coverage count stale.
+
+      - **Resolved**: No prior Audit 18 findings were open.'
+    new_findings: 'DOCS coverage count stale.
+
+      - **Resolved**: No prior Audit 18 findings were open.'
+    resolved: No prior Audit 18 findings were open.
+  patterns:
+  - 'Optimize analyzer: one stdlib script owns parse, target extraction, analysis,
+    and optional frontier rendering.'
+  - 'Testing approach: parser edge cases, target diagnostics, CLI mode compatibility,
+    and frontier ordering are covered in `tests/test_analyze_experiments.py`.'
+  - 'Release pattern: feature-bearing analyzer work drove minor release `1.25.0`,
+    then a freshness checkpoint archived the plan.'
+- number: 20
+  date: 2026-05-05
+  dimensions:
+  - architecture alignment
+  - pattern consistency
+  - coupling health
+  - complexity hotspots
+  - test health
+  - dependency health
+  - version health
+  - artifact freshness
+  - prose health
+  - security hygiene
+  findings_summary:
+    critical: 0
+    warning: 1
+    info: 0
+    filtered_by_confidence: 0
+  trajectory: stable vs Audit 19. The v2 and v2.1 release train improved CLI, bundle
+    freshness, docs, and validation evidence; direct health output still reads stale
+    history.
+  grades:
+    Architecture: A
+    Patterns: A
+    Coupling: A
+    Complexity: A
+    Tests: B
+    Deps: B
+    Version: A
+    Freshness: B
+    Prose: A
+    Security: A
+  dimension_details:
+  - name: Architecture alignment
+    grade: A
+    summary: 'The repository now matches Decision 39''s single bundled skill model:
+      `skills/agentera/SKILL.md` dispatches 12 capabilities, schemas live beside capability
+      prose, and the CLI owns routine state access.'
+    findings: []
+  - name: Pattern consistency
+    grade: A
+    summary: Capability directories share `prose.md` plus four schema files. Runtime
+      adapters consistently expose one active `agentera` skill plus the temporary
+      legacy `status` bridge.
+    findings: []
+  - name: Coupling health
+    grade: A
+    summary: Cross-capability validation passed, and bundle-refresh logic stays centralized
+      in `scripts/agentera_upgrade.py` while `scripts/agentera` remains the state
+      and dispatch CLI surface.
+    findings: []
+  - name: Complexity hotspots
+    grade: A
+    summary: '`scripts/agentera` and `scripts/agentera_upgrade.py` are large, but
+      their command parsing, doctor, upgrade, and artifact-query responsibilities
+      remain sectioned and covered by focused tests.'
+    findings: []
+  - name: Test health
+    grade: B
+    summary: Full pytest passed with `573 passed, 1 skipped`, plus cross-capability,
+      lifecycle-adapter, self-audit, and representative capability validators. Targeted
+      regression coverage now rejects invalid progress phase enum values; stale direct
+      health command selection remains open.
+    findings: []
+  - name: Dependency health
+    grade: B
+    summary: 'Python dependency surface is small: `agentera -> pyyaml 6.0.3`. `.opencode/package.json`
+      pins `@opencode-ai/plugin` 1.14.33, but `npm audit --audit-level=moderate` failed
+      at the registry audit endpoint during this audit.'
+    findings: []
+  - name: Version health
+    grade: A
+    summary: 'Version-bearing release surfaces report `2.1.0`: `pyproject.toml`, `registry.json`,
+      root/Copilot/Codex manifests, Claude marketplace, OpenCode marker, `CHANGELOG.md`,
+      and `uv.lock` evidence.'
+    findings: []
+  - name: Artifact freshness
+    grade: B
+    summary: Progress cycle phases now align with the protocol enum; direct health
+      state output remains stale.
+    findings:
+    - heading: "\u21C9 Direct health state command reports stale audit history, warning\
+        \ (confidence: 94)"
+      severity: warning
+      confidence: 94
+      location: '`scripts/agentera:479`, `.agentera/health.yaml:2`'
+      evidence: '`uv run scripts/agentera health` reports Audit 10 even though `.agentera/health.yaml`
+        is newest-first and now starts with Audit 20.'
+      impact: Agents using the routine top-level health command can receive stale
+        grades and miss current findings, despite the CLI-first state access contract.
+      suggested_action: Update `_query_health` to select the newest health entry consistently
+        with `_health_summary` and add a regression test against newest-first health
+        data.
+  - name: Prose health
+    grade: A
+    summary: '`uv run scripts/self_audit.py .agentera/health.yaml TODO.md .agentera/docs.yaml
+      .agentera/progress.yaml .agentera/plan.yaml` exited 0. Recent docs and artifacts
+      stay concrete and compact enough for operational use.'
+    findings: []
+  - name: Security hygiene
+    grade: A
+    summary: Secret and dangerous-call scan found documented examples, test-loader
+      `exec(compile(...))` usage, and environment-sourced API key handling in an optimize
+      token counter. No committed literal secret or shell-injection path was identified.
+    findings: []
+  trends:
+    improved: DOCS coverage evidence now matches the full-suite result of `573 passed,
+      1 skipped`, and Agentera state access is flatter and better tested than Audit
+      19.
+    degraded: Direct health output still reads stale history.
+    stable: Architecture, patterns, coupling, complexity, version, prose, and security
+      remain healthy.
+    new_findings: Direct health state command reports stale audit history.
+    resolved: 'Audit 19 DOCS coverage-count warning is resolved; progress cycle phases
+      now use protocol values and validation rejects `phase: verify`.'
+  patterns:
+  - 'Module structure: one bundled `skills/agentera` skill owns capability prose and
+    schemas; root `skills/status` remains a temporary v1 bridge.'
+  - 'State access: `scripts/agentera` provides flat routine state commands plus advanced
+    `query` for custom artifact access.'
+  - 'Validation approach: pytest, capability schema validation, cross-capability graph
+    validation, lifecycle metadata validation, and self-audit combine as the release
+    gate.'
+  - 'Runtime pattern: packaging metadata targets Claude Code, OpenCode, Copilot, and
+    Codex while shared bundle infrastructure lives under root `scripts/`, `hooks/`,
+    and manifests.'
+- number: 21
+  date: 2026-05-23
+  dimensions:
+  - architecture alignment
+  - pattern consistency
+  - coupling health
+  - complexity hotspots
+  - test health
+  - dependency health
+  - version health
+  - artifact freshness
+  - prose health
+  - security hygiene
+  findings_summary:
+    critical: 0
+    warning: 2
+    info: 1
+    filtered_by_confidence: 0
+  trajectory: improving vs Audit 20. Health CLI now selects the latest audit by number,
+    status exposes hybrid audit staleness, and Audit 20 stale-history warning is resolved;
+    uncommitted feat work remains a release cleanup item.
+  grades:
+    Architecture: A
+    Patterns: A
+    Coupling: A
+    Complexity: B
+    Tests: A
+    Deps: B
+    Version: B
+    Freshness: A
+    Prose: A
+    Security: A
+  dimension_details:
+  - name: Architecture alignment
+    grade: A
+    summary: Hybrid audit staleness extends the profile capability's profile-age seam
+      in scripts/agentera without duplicating plan-relative artifact freshness in
+      status.
+    findings: []
+  - name: Pattern consistency
+    grade: A
+    summary: Audit staleness mirrors profile env-threshold parsing, structured status
+      metadata, and attention copy.
+    findings: []
+  - name: Coupling health
+    grade: A
+    summary: Latest-audit selection and staleness helpers stay inside scripts/agentera
+      and are shared by health, status, and prime evidence state.
+    findings: []
+  - name: Complexity hotspots
+    grade: B
+    summary: scripts/agentera grew with hybrid staleness helpers, but responsibilities
+      remain sectioned and covered by focused regressions.
+    findings: []
+  - name: Test health
+    grade: A
+    summary: Full pytest reported 1199 passed, 1 failed before active plan removal;
+      nine hybrid-staleness regressions pass and Audit 20 health-selection gap is
+      closed.
+    findings: []
+  - name: Dependency health
+    grade: B
+    summary: 'Python dependency surface unchanged: pyproject.toml -> pyyaml 6.0.3.'
+    findings: []
+  - name: Version health
+    grade: B
+    summary: Release surfaces report 2.6.1, but uncommitted hybrid-staleness feat
+      work and post-2.6.1 fixes remain without a coordinated bump.
+    findings:
+    - heading: "\u21C9 Unreleased feat/fix work since 2.6.1, warning (confidence:\
+        \ 88)"
+      severity: warning
+      confidence: 88
+      location: '`pyproject.toml:7`, recent git history'
+      evidence: Checkout includes hybrid audit staleness CLI work and upgrade postflight
+        fixes after 2.6.1 release surfaces were aligned.
+      impact: Installed app metadata and changelog can drift from the working tree
+        until a release commit lands.
+      suggested_action: Fold hybrid staleness into one commit and run release metadata
+        sync when ready.
+  - name: Artifact freshness
+    grade: A
+    summary: _latest_health_audit and schema date fields now drive health, status,
+      and prime evidence state; status hybrid staleness surfaces overdue audits.
+    findings:
+    - heading: "\u21E2 Audit 20 stale health selection resolved, info (confidence:\
+        \ 96)"
+      severity: info
+      confidence: 96
+      location: '`scripts/agentera`, `tests/test_query_cli.py`'
+      evidence: uv run scripts/agentera health --format json returns Audit 20 from
+        ascending-order fixtures; status reports Audit 20 with hybrid stale metadata.
+      impact: Orientation no longer misreads older audits when health.yaml lists audits
+        ascending by number.
+      suggested_action: Treat this Audit 21 entry as the resolution marker for Audit
+        20 artifact-freshness warning.
+  - name: Prose health
+    grade: A
+    summary: Status and audit instruction updates stay compact and name the env-var
+      contract explicitly.
+    findings: []
+  - name: Security hygiene
+    grade: A
+    summary: Hybrid staleness changes add date parsing and progress counting only;
+      no new secret handling paths were introduced.
+    findings: []
+  trends:
+    improved: Health CLI and status now agree on latest audit number and date; hybrid
+      audit staleness closes the orientation gap profile already covered for profiles.
+    degraded: None material beyond normal release-prep drift.
+    stable: Architecture, patterns, coupling, dependency, prose, and security remain
+      healthy.
+    new_findings: Unreleased post-2.6.1 feat/fix work.
+    resolved: Audit 20 direct health state command stale audit history warning.
+  patterns:
+  - 'Orientation staleness: the profile capability''s profile age and the audit capability''s
+    audit age both surface through status attention with env-configurable thresholds.'
+  - 'Health state: latest audit selection by number is shared across health, status,
+    and prime evidence context in the checkout CLI.'
+  - 'Testing approach: hybrid staleness adds focused status and health regressions
+    alongside the existing query-cli contract suite.'
+- number: 22
+  date: 2026-05-30
+  dimensions:
+  - architecture alignment
+  - pattern consistency
+  - coupling health
+  - complexity hotspots
+  - test health
+  - dependency health
+  - version health
+  - artifact freshness
+  - prose health
+  - security hygiene
+  findings_summary:
+    critical: 0
+    warning: 4
+    info: 1
+    filtered_by_confidence: 0
+  trajectory: "improving vs Audit 21 on v2\u2192v3 upgrade architecture and channel\
+    \ guard rails; complexity remains the weakest grade as TS monoliths replace the\
+    \ Python CLI."
+  grades:
+    Architecture: A
+    Patterns: A
+    Coupling: B
+    Complexity: C
+    Tests: B
+    Deps: A
+    Version: C
+    Freshness: A
+    Prose: A
+    Security: A
+  dimension_details:
+  - name: Architecture alignment
+    grade: A
+    summary: Upgrade work splits channels, compatibility, migration, orchestration,
+      and shared command rendering; backport-safety tests encode the stable-channel
+      major-boundary contract from Decision 56.
+    findings: []
+  - name: Pattern consistency
+    grade: A
+    summary: doctor, prime, and upgradeOrchestrator share upgradeCommands.ts and resolveUpdateChannel();
+      vocabulary authorities stay in references/cli/*.yaml.
+    findings: []
+  - name: Coupling health
+    grade: B
+    summary: New upgrade modules are narrow, but capabilityContext.ts and startupAnalysis.ts
+      remain high-fan-in hubs for prime and state startup.
+    findings: []
+  - name: Complexity hotspots
+    grade: C
+    summary: Python scripts/agentera is gone, but five TS modules exceed 900 lines
+      and capabilityContext.ts is 2542 lines.
+    findings:
+    - heading: "\u21C9 TS monolith hotspots persist after rewrite, warning (confidence:\
+        \ 88)"
+      severity: warning
+      confidence: 88
+      location: packages/cli/src/cli/capabilityContext.ts, startupAnalysis.ts, extractCorpus.ts
+      evidence: capabilityContext.ts 2542 lines; startupAnalysis.ts 2047; extractCorpus.ts
+        1828; state.ts 1178; setup/doctor.ts 1385.
+      impact: Prime and analytics paths stay hard to navigate and risky to change
+        without focused regressions.
+      suggested_action: Plan a follow-up slice to split capabilityContext and startupAnalysis
+        by state family before 3.0 RC.
+  - name: Test health
+    grade: B
+    summary: Vitest reports 541/543 passed including 60 upgrade tests; two failures
+      are repo-state housekeeping, not migration logic regressions.
+    findings:
+    - heading: "\u21C9 Compaction and plan-validate tests fail on current artifacts,\
+        \ warning (confidence: 90)"
+      severity: warning
+      confidence: 90
+      location: packages/cli/test/hooks/compaction.test.ts:41, test/cli/validate.test.ts
+      evidence: "compaction.test expects no over_limit ops but progress.yaml exceeds\
+        \ budget after cycles 616\u2013622; validate.test expects an active plan.yaml\
+        \ after orchestration archived the completed plan."
+      impact: Full vitest is red on CI-style gates even when upgrade work is sound.
+      suggested_action: Compact progress.yaml or adjust compaction policy; update
+        validate fixture to tolerate archived-plan closeout or restore a stub plan
+        for validation-only.
+  - name: Dependency health
+    grade: A
+    summary: npm audit reports 0 vulnerabilities; runtime deps are yaml and smol-toml
+      only with pinned dev tooling.
+    findings: []
+  - name: Version health
+    grade: C
+    summary: suiteVersion and offline_defaults now carry 2.7.7 on feat/v3, but package.json
+      remains 3.0.0-dev.4 while the @next channel publishes the TS rewrite; release-metadata
+      parity across npm and suite surfaces stays open.
+    findings:
+    - heading: "\u21C9 npm @next dev series vs suiteVersion channel split, warning\
+        \ (confidence: 88)"
+      severity: warning
+      confidence: 88
+      location: packages/cli/package.json, references/cli/update-channels.yaml
+      evidence: version 3.0.0-dev.4 vs suiteVersion 2.7.7; @next ships the TS CLI
+        while stable @latest remains on 2.x until explicit retirement.
+      impact: Installed-app expectations and publish metadata can disagree until the
+        3.0 RC alignment pass lands.
+      suggested_action: Coordinate release-metadata parity when the 3.0 RC cuts; keep
+        stable channel on 2.x until explicit retirement.
+  - name: Artifact freshness
+    grade: A
+    summary: The 2.7.7 plan archived to `.agentera/archive/plan-2026-06-03.yaml`,
+      active plan slot cleared, progress.yaml at 10/40/50 under the compaction cap,
+      and TODO 2.7.7 ledger reconciled.
+    findings: []
+  - name: Prose health
+    grade: A
+    summary: UPGRADE.md channel and backport sections stay factual; new vocabulary
+      authorities delegate prose to YAML without table duplication.
+    findings: []
+  - name: Security hygiene
+    grade: A
+    summary: No hardcoded secrets or dangerous eval/exec on user input in scanned
+      TS sources; extractCorpus keeps consent-gated local-history reads.
+    findings:
+    - heading: "\u21E2 Dedicated security tooling still recommended, info (confidence:\
+        \ 60)"
+      severity: info
+      confidence: 60
+      location: repository-wide
+      evidence: Regex hygiene scan only; npm audit clean.
+      impact: Surface scan cannot replace dependency or secret-scan CI for publish.
+      suggested_action: Keep npm audit and secret scanning in release CI for 3.x.
+  trends:
+    improved: "v2\u2192v3 migration architecture, dual update channels, 60 upgrade\
+      \ vitest cases, backport-safety gates, 2.7.7 suiteVersion bump, progress.yaml\
+      \ compaction enforcement, D66 commit-field removal, and audit WARN/FAIL citation\
+      \ contract on feat/v3."
+    degraded: Complexity grade slips as large TS modules replace the Python CLI monolith;
+      npm @next dev-series vs suiteVersion channel split persists.
+    stable: Dependency, prose, and security posture remain healthy.
+    new_findings: npm @next 3.0.0-dev.4 vs suiteVersion 2.7.7 release-metadata divergence;
+      Python stable mirrors for 2.7.7 both-branch items deferred.
+    resolved: progress.yaml over-budget compaction pressure; D66 progress commit field
+      and backfill flow; audit WARN false-positive citation gap; 2.7.7 plan archived
+      and active plan slot cleared; Audit 21 hybrid-staleness and health-selection
+      issues remain fixed in the ported TS CLI paths.
+  patterns:
+  - "Upgrade architecture: channels.ts \u2192 compatibility.ts \u2192 migrateArtifactsV2ToV3.ts\
+    \ \u2192 upgradeOrchestrator.ts with shared upgradeCommands.ts for doctor/prime."
+  - 'Distribution model: self-contained npm package with references/cli bundled; stable
+    vs development channels encoded in update-channels.yaml.'
+  - 'Testing approach: vitest fixture trees under packages/cli/test/upgrade/fixtures/
+    with Python-oracle parity JSON for contract-first migration work.'
+- number: 23
+  date: 2026-06-07
+  dimensions:
+  - architecture alignment
+  - pattern consistency
+  - coupling health
+  - complexity hotspots
+  - test health
+  - dependency health
+  - version health
+  - artifact freshness
+  - prose health
+  - security hygiene
+  findings_summary:
+    critical: 0
+    warning: 1
+    info: 1
+    filtered_by_confidence: 0
+  trajectory: improving vs Audit 22 on mobile monorepo closeout (progress cycle 650),
+    capabilityContext split, vitest 884/884 green, and suiteVersion 3.0.0 alignment;
+    orientation.ts remains the prime/status hub.
+  grades:
+    Architecture: A
+    Patterns: A
+    Coupling: B
+    Complexity: B
+    Tests: A
+    Deps: A
+    Version: B
+    Freshness: A
+    Prose: A
+    Security: A
+  dimension_details:
+  - name: Architecture alignment
+    grade: A
+    summary: Decision 69 CLI narrow waist and monorepo-plan.md package table match
+      the checkout; packages/mobile is a documented docs-only stub per D67/D68 with
+      lefthook wired.
+    findings: []
+  - name: Pattern consistency
+    grade: A
+    summary: vp is the workspace entrypoint for web and mobile; TODO checkbox convention
+      aligns across TODO.md, todo.yaml, compaction dryRun, and packages/mobile/TODO.md.
+    findings: []
+  - name: Coupling health
+    grade: B
+    summary: capabilityContext/ split reduced prime startup coupling, but orientation.ts
+      still aggregates status, prime, and state summaries in one module.
+    findings:
+    - heading: "\u21C9 orientation.ts remains prime/status state hub, warning (confidence:\
+        \ 82)"
+      severity: warning
+      confidence: 82
+      location: packages/cli/src/cli/orientation.ts:407
+      evidence: orientation.ts is 650 lines; healthSummary, planSummary, docsSummary,
+        and selectStatusNextAction share one module imported by prime.ts and capabilityContext/evidence.ts.
+      impact: Status and prime orientation changes still touch a single dense file
+        despite capabilityContext modularization elsewhere.
+      suggested_action: Extract state-family summary builders into cli/orientation/
+        slices mirroring the capabilityContext split.
+      verify_command: wc -l packages/cli/src/cli/orientation.ts
+  - name: Complexity hotspots
+    grade: B
+    summary: No TS module exceeds 900 lines after capabilityContext/ and startupAnalysis/
+      splits; largest files are orientation.ts (650) and capabilityContext/benchmark.ts
+      (528).
+    findings: []
+  - name: Test health
+    grade: A
+    summary: Vitest reports 884/884 passed in 91 files; prior compaction and plan-validate
+      housekeeping failures from Audit 22 are resolved.
+    findings: []
+  - name: Dependency health
+    grade: A
+    summary: pnpm audit --prod reports 0 vulnerabilities; runtime deps remain yaml
+      and smol-toml only.
+    findings: []
+  - name: Version health
+    grade: B
+    summary: packages/cli/package.json carries version 3.0.0-dev.6 with agentera.suiteVersion
+      3.0.0; one fix commit since the dev.6 bump; stable-channel shim at 2.7.7 remains
+      intentional per Decision 56.
+    findings: []
+  - name: Artifact freshness
+    grade: A
+    summary: progress.yaml cycle 650 and docs.yaml index updated 2026-06-07 for mobile
+      monorepo closeout; no active plan slot.
+    findings: []
+  - name: Prose health
+    grade: A
+    summary: monorepo-plan.md and mobile-open-decisions.md stay factual with concrete
+      package paths and decision references.
+    findings: []
+  - name: Security hygiene
+    grade: A
+    summary: No hardcoded secrets in scanned TS sources; RegExp.exec matches are parsing
+      helpers, not dynamic code execution on user input.
+    findings:
+    - heading: "\u21E2 Dedicated security tooling still recommended, info (confidence:\
+        \ 60)"
+      severity: info
+      confidence: 60
+      location: repository-wide
+      evidence: Regex hygiene scan only; pnpm audit --prod clean on packages/cli.
+      impact: Surface scan cannot replace dependency or secret-scan CI for publish.
+      suggested_action: Keep pnpm audit and secret scanning in release CI for 3.x.
+  trends:
+    improved: Mobile monorepo closeout (D67/D68/D69), capabilityContext monolith split
+      (2542 to 528 max module), startupAnalysis modularization, vitest 884/884 green,
+      suiteVersion 3.0.0 aligned with @next dev.6, profile Validated-header fix.
+    degraded: none.
+    stable: Dependency, prose, and security posture remain healthy; stable @latest
+      shim stays on 2.7.7 by design.
+    new_findings: orientation.ts prime/status hub density after capabilityContext
+      split.
+    resolved: Audit 22 TS monolith hotspots (capabilityContext.ts 2542 lines); compaction
+      and plan-validate vitest failures; npm @next dev.4 vs suiteVersion 2.7.7 release-metadata
+      divergence.
+  patterns:
+  - 'Monorepo layout: packages/mobile (flagship stub), packages/web (Starlight), packages/cli
+    (agentera npm); CLI owns schema and .agentera/ contract per D69.'
+  - 'Prime startup: capabilityContext/ modules by state family with slim re-export
+    barrel; orientation.ts still centralizes status briefing summaries.'
+  - 'Testing approach: 884 vitest cases including upgrade parity, prime source_contract
+    oracles, and packaging prepack tarball gates.'
+- number: 24
+  date: 2026-06-10
+  dimensions:
+  - architecture alignment
+  - pattern consistency
+  - coupling health
+  - complexity hotspots
+  - test health
+  - dependency health
+  - version health
+  - artifact freshness
+  - security hygiene
+  findings_summary:
+    critical: 0
+    warning: 2
+    info: 2
+    filtered_by_confidence: 0
+  trajectory: improving vs Audit 23. The v3 CLI structural-debt pass split prime (78
+    lines), lifecycleAdapters (107-line barrel), and doctor/integration surfaces;
+    vitest is 916/916 green; monolith lint passes. orientation.ts hub density and
+    a large uncommitted WIP remain the main residual debt.
+  grades:
+    Architecture: A
+    Patterns: A
+    Coupling: B
+    Complexity: B
+    Tests: A
+    Deps: A
+    Version: B
+    Freshness: B
+    Security: A
+  dimension_details:
+  - name: Architecture alignment
+    grade: A
+    summary: prime.ts delegates to cli/commands/prime/{collectOrientationState, bundleStatus,
+      orientationOutput, v1Migration, types}; lifecycleAdapters splits nodeFormChecks
+      and legacyPythonParity behind a thin barrel; upgrade/doctorClassifier and projectIntegrationDecision
+      encode typed scenario tables per D69 narrow waist.
+    findings: []
+  - name: Pattern consistency
+    grade: A
+    summary: Shared argvParser, npxPlatformStatus, todoSeverity, pyjson, jsonValue
+      contracts, and DISPATCHER_COMMANDS consolidate duplicated dispatch and doctor
+      patterns; upgrade-vs-repair wording uses lifecycle status nouns.
+    findings: []
+  - name: Coupling health
+    grade: B
+    summary: Prime startup coupling dropped with prime/ and contracts/ slices, but
+      orientation.ts still aggregates summary builders for status and prime.
+    findings:
+    - heading: "\u21C9 orientation.ts remains prime/status summary hub, warning (confidence:\
+        \ 80)"
+      severity: warning
+      confidence: 80
+      location: packages/cli/src/cli/orientation.ts:62
+      evidence: orientation.ts is 673 lines; only cli/orientation/attention.ts extracted
+        so far; healthSummary, planSummary, docsSummary, and selectStatusNextAction
+        still share one module.
+      impact: Status and prime orientation edits still touch a dense file despite
+        capabilityContext/ modularization elsewhere.
+      suggested_action: Continue extracting state-family summary builders into cli/orientation/
+        slices mirroring capabilityContext/.
+      verify_command: wc -l packages/cli/src/cli/orientation.ts
+  - name: Complexity hotspots
+    grade: B
+    summary: No source file exceeds the 1000-line monolith gate; prime.ts is 78 lines
+      and lifecycleAdapters.ts is 107; largest modules are packageRegistry.ts (700)
+      and orientation.ts (673).
+    findings:
+    - heading: "\u21E2 Dict aliases remain in ~42 CLI modules, info (confidence: 75)"
+      severity: info
+      confidence: 75
+      location: packages/cli/src/core/jsonValue.ts:13
+      evidence: core/jsonValue.ts exports JsonObject but retains deprecated Dict;
+        grep finds Dict usage across validate, hooks, capabilityContext, and analytics
+        modules.
+      impact: IO boundaries stay loosely typed until repo-wide Dict elimination lands.
+      suggested_action: "Continue TODO chore:3.0.0 Dict\u2192JsonObject migration\
+        \ module by module."
+  - name: Test health
+    grade: A
+    summary: pnpm -C packages/cli test reports 916/916 passed in 98 files; typecheck
+      and build clean; monolithLint green; cross-platform cursor fixture tests require
+      non-sandbox .cursor directory creation.
+    findings: []
+  - name: Dependency health
+    grade: A
+    summary: Runtime deps remain yaml and smol-toml; pnpm audit --prod reports 0 vulnerabilities
+      on packages/cli.
+    findings: []
+  - name: Version health
+    grade: B
+    summary: packages/cli/package.json is 3.0.0-dev.6 with suiteVersion 3.0.0; fix
+      commits landed after the dev.6 bump; stable @latest shim at 2.7.7 remains per
+      D56.
+    findings: []
+  - name: Artifact freshness
+    grade: B
+    summary: progress.yaml cycle 657 records this audit; structural-debt refactors
+      are largely uncommitted WIP while TODO Resolved lines claim 2026-06-10 closeout.
+    findings:
+    - heading: "\u21C9 Structural-debt pass is uncommitted WIP, warning (confidence:\
+        \ 88)"
+      severity: warning
+      confidence: 88
+      location: "packages/cli/src/cli/commands/prime/, TODO.md @ \u2713 Resolved [chore:3.0.0]\
+        \ Split prime.ts"
+      evidence: git status shows 39 changed paths and untracked prime/, contracts/,
+        argvParser.ts, jsonValue.ts, and orientation/attention.ts; net diff is -1711
+        lines but HEAD is still 606579a.
+      impact: Resolved TODO ledger can run ahead of git history until the WIP lands
+        in one commit.
+      suggested_action: Commit the structural-debt slice with tests green before the
+        next release-metadata bump.
+      verify_command: git status --short packages/cli/src/cli/commands/prime/
+  - name: Security hygiene
+    grade: A
+    summary: No hardcoded secrets in scanned TS sources; legacy Python parity probes
+      are opt-in via AGENTERA_LEGACY_PYTHON_PARITY.
+    findings:
+    - heading: "\u21E2 Dedicated security tooling still recommended, info (confidence:\
+        \ 60)"
+      severity: info
+      confidence: 60
+      location: repository-wide
+      evidence: Regex hygiene scan only; pnpm audit --prod clean.
+      impact: Surface scan cannot replace secret-scan CI for publish.
+      suggested_action: Keep pnpm audit and secret scanning in release CI for 3.x.
+  trends:
+    improved: "prime split (721\u219278 lines), lifecycleAdapters split, doctorClassifier\
+      \ and projectIntegrationDecision tables, typed BundleStatus/OrientationState\
+      \ contracts, argvParser and npxPlatformStatus dedup, vitest 884\u2192916 green,\
+      \ upgrade-vs-repair wording fix, cross-platform test hardening."
+    degraded: none.
+    stable: Dependency and security posture remain healthy; stable @latest shim stays
+      on 2.7.7 by design.
+    new_findings: Uncommitted structural-debt WIP ahead of TODO Resolved ledger; Dict
+      alias count still open.
+    resolved: Audit 23 orientation hub finding partially addressed via orientation/attention.ts
+      and prime/ module split; thermo-nuclear follow-ups (npx platform status, dispatcher
+      commands, cliProbe, lifecycle argv parser, legacy Python parity gate) landed
+      in WIP.
+    carried_forward: orientation.ts summary hub density; macOS/Windows CI jobs and
+      Decision 70 capability rename remain open in TODO.md.
+  patterns:
+  - 'Prime startup: thin cmdPrime dispatch delegates to prime/ modules and contracts/orientationState;
+    attention assembly lives in orientation/attention.ts.'
+  - 'Validate path: default lifecycle adapters skip Python parity probes; maintainer
+    parity is opt-in via --legacy-python-parity or env flag.'
+  - 'Upgrade surface: doctorClassifier and projectIntegrationDecision own install-root
+    and scenario messaging; npxPlatformStatus unifies bundle probes.'
+  - 'Testing approach: 916 vitest cases with monolith lint gate, packaging prepack
+    tarball regressions, and cursor fixture tests that need real .cursor directory
+    creation.'
+- number: 25
+  date: 2026-06-28
+  dimensions:
+  - architecture alignment
+  - pattern consistency
+  - coupling health
+  - complexity hotspots
+  - test health
+  - dependency health
+  - version health
+  - artifact freshness
+  - security hygiene
+  findings_summary:
+    critical: 0
+    warning: 2
+    info: 2
+    filtered_by_confidence: 0
+  trajectory: "\u2B89 improving vs Audit 24. Plan C74 consolidated ~44 Dict aliases,\
+    \ 9 Record<string, unknown> variants, and 6 re-export passthroughs into the shared\
+    \ core/jsonValue.ts JsonObject; casts narrowed to IO boundaries with // cast markers;\
+    \ vitest 1145/1145 green; typecheck 0 errors. Single source of truth for JSON-value\
+    \ types achieved in src/. Residual debt: one test-local JsonObject shadow, PackageRegistry\
+    \ cast density, and the deferred deprecated Dict alias."
+  grades:
+    Architecture: A
+    Patterns: B
+    Coupling: B
+    Complexity: A
+    Tests: A
+    Deps: A
+    Version: A
+    Freshness: A
+    Security: A
+  dimension_details:
+  - name: Architecture alignment
+    grade: A
+    summary: C74 was type-only; module boundaries, layering, and the prime/ contracts/
+      orientation/ split from Audit 24 are unchanged. No boundary violations introduced.
+    findings: []
+  - name: Pattern consistency
+    grade: B
+    summary: Single JSON-value type authority achieved in src/ (core/jsonValue.ts
+      JsonObject); casts carry // cast markers at IO boundaries. One test file bypasses
+      the canonical type via a local shadow that tsc does not enforce.
+    findings:
+    - heading: "\u21C9 Test-local JsonObject shadow bypasses canonical type, warning\
+        \ (confidence: 80)"
+      severity: warning
+      confidence: 80
+      location: packages/cli/test/validate/vocabularyAuthority.test.ts:41
+      evidence: Line 7 imports `type { JsonObject }` from core/jsonValue.js, then
+        line 41 declares `type JsonObject = Record<string, unknown>`, shadowing the
+        strict JsonValue union with a looser record. The imported canonical type is
+        dead. tsc -p tsconfig.json does not include test files, so the drift is invisible
+        to typecheck.
+      impact: Test code silently diverges from the canonical JSON-value type; a future
+        removal of JsonObject would not break this test, and the looser shape weakens
+        the type contract C74 established.
+      suggested_action: Delete the local shadow on line 41 and use the imported canonical
+        JsonObject; add test files to the typecheck config or a separate vitest tsconfig
+        to catch future drift.
+      verify_command: sed -n '7p;41p' packages/cli/test/validate/vocabularyAuthority.test.ts
+  - name: Coupling health
+    grade: B
+    summary: Type-alias coupling eliminated (Dict to JsonObject single source); casts
+      narrowed to IO boundaries. PackageRegistry parsed-record type is still untyped,
+      forcing repeated casts. orientation.ts hub density persists but is no longer
+      the worst coupling issue.
+    findings:
+    - heading: "\u21C9 PackageRegistry parsed-record type is untyped, 21 casts in\
+        \ one file, warning (confidence: 72)"
+      severity: warning
+      confidence: 72
+      location: packages/cli/src/registries/packageRegistry.ts:108
+      evidence: REQUIRED_FIELDS and REQUIRED_GROUPS document the registry schema,
+        but the parsed record is typed as JsonObject and every access (record.identity,
+        .version_authority, .runtime_package_manifests) casts via `as JsonObject`.
+        10 `as JsonObject` and 21 total cast expressions appear in this one file.
+      impact: Each consumer reaches into untyped record internals with casts; schema
+        drift between REQUIRED_FIELDS and the parsed shape is invisible to the compiler.
+        C74 narrowed casts to IO boundaries but made their density conspicuous.
+      suggested_action: Lift the registry record to a typed PackageRegistryRecord
+        interface (identity, version_authority, runtime_package_manifests, etc.) and
+        parse into it at the YAML IO boundary, eliminating per-access casts.
+      verify_command: rg -c "as (JsonObject|string|string\[\]|JsonObject\[\])" packages/cli/src/registries/packageRegistry.ts
+  - name: Complexity hotspots
+    grade: A
+    summary: Dict alias proliferation across ~42 modules (Audit 24 info) is resolved;
+      only a single deprecated Dict = JsonObject alias remains with zero consumers.
+      No source file exceeds the 1000-line gate; largest are packageRegistry.ts (703)
+      and orientation.ts (684).
+    findings:
+    - heading: "\u21E2 orientation.ts hub density unchanged, 684 lines, info (confidence:\
+        \ 75)"
+      severity: info
+      confidence: 75
+      location: packages/cli/src/cli/orientation.ts:62
+      evidence: orientation.ts grew 673 to 684 lines during C74 (added !Array.isArray
+        guards and IO casts in task 2); the summary-builder aggregation that Audit
+        24 flagged is unchanged.
+      impact: Status and prime orientation edits still touch a dense file. Not worsened
+        since Audit 24; carried forward.
+      suggested_action: Continue extracting state-family summary builders into cli/orientation/
+        slices.
+      verify_command: wc -l packages/cli/src/cli/orientation.ts
+    - heading: "\u21E2 Deprecated Dict alias is dead code, zero consumers, info (confidence:\
+        \ 78)"
+      severity: info
+      confidence: 78
+      location: packages/cli/src/core/jsonValue.ts:13
+      evidence: '`export type Dict = JsonObject;` survives with zero imports across
+        src/ and test/ (the only Dict match is the unrelated counterDict function
+        name). C74 task 6 deferred removal.'
+      impact: Dead export violates YAGNI; the canonical JsonObject is the sole consumed
+        JSON-value type name.
+      suggested_action: Delete the deprecated Dict alias from core/jsonValue.ts.
+      verify_command: rg -n "import.*\bDict\b" packages/cli/src packages/cli/test
+  - name: Test health
+    grade: A
+    summary: pnpm -C packages/cli test reports 1145/1145 passed (up from 916 at Audit
+      24); typecheck 0 errors; compaction gate passes. The extractCorpusParity Python-probe
+      test is environment-coupled (uv run) and tracked under the TODO legacy-python-parity
+      flag item.
+    findings: []
+  - name: Dependency health
+    grade: A
+    summary: C74 was type-only; no dependency changes. Runtime deps remain yaml and
+      smol-toml. Not re-audited at depth (no dep-graph delta).
+    findings: []
+  - name: Version health
+    grade: A
+    summary: packages/cli/package.json is 3.0.0-next.1, bumped 2026-06-23. All 6 C74
+      commits are chore(cli) (non-bumping per docs convention). Zero unbumped feat/fix
+      commits since the bump.
+    findings: []
+  - name: Artifact freshness
+    grade: A
+    summary: Plan C74 archived to .agentera/archive/; progress.yaml cycle 684 (2026-06-27
+      build phase) verified present; TODO chore:3.0.0 Dict consolidation closed; health.yaml
+      refreshed by this audit. All fresh.
+    findings: []
+  - name: Security hygiene
+    grade: A
+    summary: No hardcoded secrets or dangerous eval/exec in scanned TS sources; the
+      only eval-pattern match is JSON.parse on a string literal in capability instructions,
+      not user input. Dedicated security tooling still recommended for release CI.
+    findings: []
+  trends:
+    improved: Dict alias proliferation (~42 modules) consolidated to single JsonObject
+      source; casts narrowed to IO boundaries with cast markers; vitest 916 to 1145
+      green; package.json bumped to 3.0.0-next.1 with zero unbumped feat/fix; C74
+      WIP committed cleanly (resolves Audit 24 uncommitted-WIP warning); plan archived
+      and TODO closed.
+    degraded: "Pattern consistency A to B \u2014 one test file shadows the canonical\
+      \ JsonObject with a looser Record and tsc does not cover test files, so the\
+      \ drift is unenforced."
+    stable: Architecture, Coupling (B, but the worst warning shifted from orientation
+      hub to PackageRegistry cast density), Tests, Deps, Security.
+    new_findings: Test-local JsonObject shadow; PackageRegistry cast density.
+    resolved: "Audit 24 Complexity finding (Dict aliases in ~42 modules) \u2014 systemic\
+      \ duplication eliminated."
+    carried_forward: "orientation.ts summary hub density (Audit 24 Coupling warning,\
+      \ now downgraded to info \u2014 not worsened); deprecated Dict alias (residual\
+      \ of the resolved systemic issue); dedicated security tooling recommendation."
+  patterns:
+  - 'JSON-value typing: core/jsonValue.ts JsonObject is the sole canonical type for
+    parsed JSON/YAML/TOML records; IO boundaries cast with explicit cast marker comments.'
+  - 'Registry access: parsed records stay loosely typed (JsonObject) and consumers
+    cast per-access at the IO boundary; schema lives in REQUIRED_FIELDS validation
+    tables, not in a TS interface.'
+  - 'Test typing: test files are excluded from tsc -p tsconfig.json; vitest transforms
+    handle them, allowing type drift from canonical types to pass typecheck silently.'
+  - 'Testing approach: 1145 vitest cases; monolith lint and compaction budget gates
+    run via the built CLI; analytics parity tests couple to an external Python (uv)
+    probe.'
+  notes:
+  - '[lint-gate-unavailable] agentera lint is not ported to the v3 CLI; pre-write
+    self-audit was a manual compactness pass against the health.yaml schema and verbosity
+    rules.'
+  - Audit 24's uncommitted-WIP warning is resolved (C74 committed across 6 commits
+    2715bd28 to 8e9f2447).
+  - health.yaml now holds 11 full audits (15-25); the 10-full compaction threshold
+    is exceeded. Per explicit instruction to preserve all existing entries intact,
+    no compaction was applied. The next audit should archive Audit 15 to a one-line
+    summary.
+  - Decision context is caveated (40 compacted entries, 8 require satisfaction review);
+    no decision satisfaction was inferred or user-confirmed by this audit.
+  - Protected state (vision, objective) was not read or modified; not-checked-by-design
+    caveats preserved.
 archive:
-  - summary: "Audit 14 (2026-04-26): stable vs Audit 13. Cross-Runtime Portability
-      landed the AGENTERA_HOME contract cleanly across SPEC, OpenCode,
-      Codex,..."
-  - summary: "Audit 14 (2026-04-26): stable vs Audit 13; cross-runtime AGENTERA_HOME
-      landed at 1.20.0; Freshness B (DOCS Index drift); all other dimensions A."
-  - summary: "Audit 13 (2026-04-25): stable vs Audit 12. Copilot marketplace plan
-      preserved evidence boundaries; all dimensions graded A."
-  - summary: "Audit 12 (2026-04-25): ⮉ improving vs Audit 11. Audit 11 cleanup
-      resolved the prior portability warnings without widening..."
-  - summary: "Audit 11 (2026-04-24): stable vs Audit 10. Runtime portability moved
-      forward, but collector validation and metadata drift guards..."
-  - summary: "Audit 10 (2026-04-23): ⮉ improving vs Audit 9. Native Copilot and
-      Codex metadata extends the portability thesis without..."
-  - Audit 9 · 2026-04-23 (⮉ improving vs Audit 8. Complexity C→B (Audit 8's
-    78-line...)
-  - Audit 8 · 2026-04-20 (stable vs Audit 7. Version B→C (6 unbumped feat/fix
-    commits)....)
-  - Audit 7 · 2026-04-11 (⮉ improving vs Audit 6. Tests B→A (240 tests, 18/18...)
-  - Audit 6 · 2026-04-02 (⮉ improving. Tests D→B (171 tests, all 13 linter
-    checks...)
-  - Audit 5 · 2026-04-02 (⮉ improving. Architecture B (was C), Patterns A (was
-    B),...)
-  - Audit 4 · 2026-04-01 (first full audit (6 dimensions vs prior 2);
-    architecture ⮋...)
-  - Audit 3 · 2026-03-31 (⮉ improving vs Audit 2)
-  - Audit 2 · 2026-03-31 (improving vs Audit 1)
-  - Audit 1 · 2026-03-30 (first audit (no prior baseline))
+- summary: "Audit 15 (2026-04-26): \u2B89 improving vs Audit 14. The Codex+Copilot\
+    \ Completion plan landed two well-factored stdlib helpers, a..."
+- summary: 'Audit 14 (2026-04-26): stable vs Audit 13. Cross-Runtime Portability landed
+    the AGENTERA_HOME contract cleanly across SPEC, OpenCode, Codex,...'
+- summary: 'Audit 14 (2026-04-26): stable vs Audit 13; cross-runtime AGENTERA_HOME
+    landed at 1.20.0; Freshness B (DOCS Index drift); all other dimensions A.'
+- summary: 'Audit 13 (2026-04-25): stable vs Audit 12. Copilot marketplace plan preserved
+    evidence boundaries; all dimensions graded A.'
+- summary: "Audit 12 (2026-04-25): \u2B89 improving vs Audit 11. Audit 11 cleanup\
+    \ resolved the prior portability warnings without widening..."
+- summary: 'Audit 11 (2026-04-24): stable vs Audit 10. Runtime portability moved forward,
+    but collector validation and metadata drift guards...'
+- summary: "Audit 10 (2026-04-23): \u2B89 improving vs Audit 9. Native Copilot and\
+    \ Codex metadata extends the portability thesis without..."
+- "Audit 9 \xB7 2026-04-23 (\u2B89 improving vs Audit 8. Complexity C\u2192B (Audit\
+  \ 8's 78-line...)"
+- "Audit 8 \xB7 2026-04-20 (stable vs Audit 7. Version B\u2192C (6 unbumped feat/fix\
+  \ commits)....)"
+- "Audit 7 \xB7 2026-04-11 (\u2B89 improving vs Audit 6. Tests B\u2192A (240 tests,\
+  \ 18/18...)"
+- "Audit 6 \xB7 2026-04-02 (\u2B89 improving. Tests D\u2192B (171 tests, all 13 linter\
+  \ checks...)"
+- "Audit 5 \xB7 2026-04-02 (\u2B89 improving. Architecture B (was C), Patterns A (was\
+  \ B),...)"
+- "Audit 4 \xB7 2026-04-01 (first full audit (6 dimensions vs prior 2); architecture\
+  \ \u2B8B...)"
+- "Audit 3 \xB7 2026-03-31 (\u2B89 improving vs Audit 2)"
+- "Audit 2 \xB7 2026-03-31 (improving vs Audit 1)"
+- "Audit 1 \xB7 2026-03-30 (first audit (no prior baseline))"
