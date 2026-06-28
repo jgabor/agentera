@@ -5,9 +5,11 @@
 ┴ ┴└─┘└─┘┘└┘ ┴ └─┘┴└─┴ ┴
 </pre>
 
-<strong>Turn your coding agent into an engineering team.</strong>
+<strong>One agent, one CLI, many capabilities.</strong>
 
-Specialized roles, shared project artifacts, verification gates, and portable context across runtimes.
+The colleague, not the team — one persistent identity that thinks through every
+step and keeps working when you walk away. Host coding agents are harnesses;
+Agentera provides the identity, memory, discipline, and routing.
 
 <p>
 <a href="#packages">Packages</a> ·
@@ -22,17 +24,33 @@ Specialized roles, shared project artifacts, verification gates, and portable co
 
 | Package              | Path                                   | What it is                                                                   |
 | -------------------- | -------------------------------------- | ---------------------------------------------------------------------------- |
-| **@agentera/mobile** | [`packages/mobile`](./packages/mobile) | Mobile/web app — primary product surface (SvelteKit, Cursor SDK, Cloudflare) |
+| **@agentera/cli**    | [`packages/cli`](./packages/cli)       | Agent runtime — owns routing, memory, capability prose, worker-spec contract. Published to npm as `agentera`. The narrow waist: every other surface is a client. |
+| **@agentera/mobile** | [`packages/mobile`](./packages/mobile) | Flagship product surface — SvelteKit, Cursor SDK, Cloudflare. Presentation-only tiering as a client of the CLI engine. |
 | **@agentera/web**    | [`packages/web`](./packages/web)       | Marketing site and published Starlight docs                                  |
-| **@agentera/cli**    | [`packages/cli`](./packages/cli)       | Agent runtime and `.agentera/` project-state CLI (npm: `agentera`)           |
 
-Agentera does not support extensions, plugins, or MCP servers in the mobile product. It ships with a fixed system prompt, fixed tools, and a workflow that works out of the box.
+No extensions, plugins, MCP servers, or user skill loading on any surface —
+ever. Missing behavior is built into Agentera, not loaded from outside.
 
 ## Quick start
 
-### Mobile app (primary product)
+### CLI (the agent runtime)
 
-Development lives in [`packages/mobile`](./packages/mobile).
+```bash
+npx -y agentera@next prime --format json
+npx -y agentera@next state plan --format json
+```
+
+`prime` returns the orientation briefing and suggests the next capability.
+State commands read targeted slices; the CLI never asks you to raw-read
+`.agentera/*.yaml`.
+
+See [`packages/cli/README.md`](./packages/cli/README.md) for channels, upgrade paths, and contributor build steps.
+
+### Mobile app (flagship surface)
+
+Development lives in [`packages/mobile`](./packages/mobile). Mobile is a client
+of the CLI engine — Cursor SDK registered as a Layer B adapter behind the CLI,
+not a separate Agentera loop.
 
 ```bash
 pnpm install
@@ -41,7 +59,6 @@ vp run mobile:check    # same — no app dev server yet
 ```
 
 See [`packages/mobile/README.md`](./packages/mobile/README.md) for product philosophy, UI conventions, and dev commands.
-
 Monorepo consolidation plan: [`docs/consolidation/monorepo-plan.md`](./docs/consolidation/monorepo-plan.md).
 Open decisions (CLI ↔ mobile integration, publish identity): [`docs/consolidation/mobile-open-decisions.md`](./docs/consolidation/mobile-open-decisions.md).
 
@@ -54,15 +71,6 @@ vp run web:check
 ```
 
 See [`packages/web/README.md`](./packages/web/README.md).
-
-### CLI
-
-```bash
-npx -y agentera@next prime --format json
-npx -y agentera@next state plan --format json
-```
-
-See [`packages/cli/README.md`](./packages/cli/README.md) for channels, upgrade paths, and contributor build steps.
 
 ## What you get
 
@@ -80,11 +88,15 @@ Agentera tracks project direction, active work, shipped evidence, deliberation h
 
 Human-facing artifacts at the project root when useful: `TODO.md`, `CHANGELOG.md`, `DESIGN.md`.
 
-The mobile app is the primary surface for living inside this workflow. The CLI queries targeted slices (`prime`, `state plan`, `state progress`, …) instead of raw-reading whole YAML files.
+The CLI is the colleague's brain and spine. Host agents learn one contract
+(the CLI) and route through it for state access, capability prose, and worker
+dispatch. Mobile is the flagship surface for living inside the workflow.
 
 ## Capabilities
 
-Twelve built-in workflows. v3 (`@next`) uses English capability names everywhere; v2 stable (`@latest`) retains the legacy Swedish `-era` IDs (Decision 70).
+Eleven top-level capabilities plus one background utility. v3 (`@next`) uses
+English capability names everywhere; v2 stable (`@latest`) retains the legacy
+Swedish `-era` IDs (Decision 70).
 
 |     | Capability  | Use it when you need...                   |
 | --- | ----------- | ----------------------------------------- |
@@ -98,8 +110,10 @@ Twelve built-in workflows. v3 (`@next`) uses English capability names everywhere
 | ▤   | document    | Documentation aligned with code           |
 | ◰   | design      | Visual identity and design tokens         |
 | ⛶   | audit       | Architecture and project health audits    |
-| ♾   | profile     | Reusable decision profile                 |
 | ⎈   | orchestrate | Autonomous plan execution with evaluation |
+
+`profile` is a background utility that surfaces through existing capabilities
+(discuss, plan, status) — not a top-level peer of the eleven above.
 
 Say what you want — "help me decide" routes to discuss; Agentera guides from there.
 
@@ -129,15 +143,16 @@ Python 3.11+ with [uv](https://docs.astral.sh/uv/) is still used for the stable 
 
 ## Internals
 
-Editor skill and plugin installs are **delivery surfaces** for the same Agentera
-product — same fixed workflow, different shell. Schema contracts and runtime
-adapters in the monorepo power every surface; they stay documented here for
-contributors, not as a separate protocol headline.
+Host runtimes (Claude, Cursor, Codex, Copilot, OpenCode) are **harnesses** for
+the same Agentera agent — the host provides the model and tool runtime, Agentera
+provides the identity, memory, discipline, and routing. Schema contracts and
+runtime adapters in the monorepo power every surface; they stay documented here
+for contributors, not as a separate protocol headline.
 
 <details>
-<summary><strong>Editor runtime installs (CLI skill bundle)</strong></summary>
+<summary><strong>Host runtime installs (CLI skill bundle)</strong></summary>
 
-Install the Agentera CLI first (`npx -y agentera@next`), then pick a runtime:
+Install the Agentera CLI first (`npx -y agentera@next`), then pick a host:
 
 **Claude Code**
 

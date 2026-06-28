@@ -1,30 +1,8 @@
 project_name: Agentera
 north_star: |
-  Serious engineering leaves the desk. Agentera is an opinionated mobile-first
-  coding agent that makes it possible to ship a working change from anywhere, in
-  one continuous conversation. A peer that thinks through every step — discuss,
-  plan, build, review. No extensions, no configuration, no seams.
-
-  Every agent session starts from zero unless the project remembers. Agentera
-  compounds institutional memory through structured `.agentera/` artifacts —
-  vision, plan, progress, decisions, health — queried on demand instead of
-  reconstructed from chat residue.
-
-  Three pillars hold it up.
-
-  The **Three Laws of Agentic Engineering** are the behavioral foundation.
-  Intent fidelity: never drift from the task. Aggressive compute: reason deeper,
-  explore wider, verify relentlessly. Autonomous parallelism: fan work across
-  concurrent paths.
-
-  The **sharp colleague** is the interface. One voice across every surface:
-  casual, opinionated, warm but direct. Pushes back when something's off. Says
-  what it sees, says what it'd do, does it.
-
-  The **structured state layer** is what makes sessions compound. Twelve
-  capabilities, each with behavioral instructions and schema contracts, power
-  discuss-plan-build-review workflows. The CLI reads that state compactly; the
-  mobile app is the primary place you live inside the workflow.
+  Serious engineering leaves the desk. One colleague who thinks through every
+  step — discusses, plans, builds, reviews — and keeps working when you walk
+  away. Close the laptop at midnight; the project remembers in the morning.
 personas:
   - name: The Jonathan-shaped solo developer
     description: |
@@ -41,61 +19,87 @@ personas:
       She doesn't need an AI to write code for her. She needs the rest of the
       team — the one who keeps vision sharp, remembers reasoning, and watches for
       architectural drift while she's in flow. Agentera gives her that through
-      structured project state and a mobile-first agent that meets her where she
-      works, including the couch at midnight.
+      one agent with structured project state, driven through a single CLI that
+      meets her where she works, including the couch at midnight.
 principles:
+  - name: One agent, not a team
+    description: |
+      The user talks to one colleague, not a swarm of specialists. Thinking-work
+      (discuss, plan, status, vision) runs in the main context. Doing-work (build,
+      audit, optimize, research) spawns as bounded subagents that return results.
+      The multiplicity is under the hood; the surface is one peer.
+  - name: The CLI is the runtime
+    description: |
+      The `agentera` CLI owns routing, memory, capability prose, and the
+      worker-spec contract. Host agents are harnesses — they provide the model
+      and tool runtime. The host learns one contract: the CLI. Everything else
+      lives inside the CLI and is served on demand.
+  - name: Identity is per-project
+    description: |
+      Each project is one Agentera: same personality, same capabilities, different
+      memory, no bleed. Project state in `.agentera/` is sufficient identity.
+      Across projects, the colleague is the same person with a clean slate.
   - name: Opinionated over configurable
-    description: No extensions, plugins, or MCP servers in the mobile product — ever.
-      Missing behavior is built into Agentera, not loaded from outside.
+    description: |
+      No extensions, plugins, MCP servers, or user skill loading on any surface
+      — ever. Missing behavior is built into Agentera, not loaded from outside.
   - name: Mobile is the primary surface
-    description: Every screen works at 360px first; desktop is a larger layout, not a
-      different product.
+    description: |
+      Every screen works at 360px first; desktop is a larger layout, not a
+      different product. Phone-shaped interactions — queue, paste, rewind, smart
+      bar — are the design language.
   - name: Latency is a feature
     description: A 200ms response beats a perfect one at 2s.
   - name: One workflow, zero seams
-    description: Discuss, plan, build, and review are states inside one conversation.
-  - name: One surface, parallel engine
-    description: The chat is the only product surface; tiered models and subagents
-      dispatch in parallel.
-  - name: The smart bar is the surface
-    description: Next moves are buttons, not slash commands.
+    description: |
+      Discuss, plan, build, and review are states inside one conversation, not
+      separate tools. The colleague knows what's next; you don't pick from a menu.
   - name: Compounding over convenience
-    description: Structured artifacts over freeform text. Schema-validated state over
-      manual sync. Short-term friction is acceptable if it produces long-term
-      wisdom.
+    description: |
+      Structured artifacts over freeform text. Schema-validated state over manual
+      sync. Short-term friction is acceptable if it produces long-term wisdom.
   - name: Autonomy over assistance
-    description: Design for a world where the agent runs while you sleep. Real autonomy
+    description: |
+      Design for a world where the agent runs while you sleep. Real autonomy
       means real judgment, safety rails, and self-correction.
   - name: Token efficiency is a design constraint
-    description: Every byte loaded into context is a cost. The CLI returns compact
-      answers, not full artifacts. If the system burns tokens on ceremony, the
-      design is wrong.
+    description: |
+      Every byte loaded into context is a cost. The CLI returns compact answers,
+      not full artifacts. If the system burns tokens on ceremony, the design is
+      wrong.
 direction: |
-  Agentera ships as one opinionated product through multiple delivery surfaces:
+  Agentera is one agent driven through a single CLI, delivered across multiple
+  surfaces. The CLI is the brain and spine; every surface is a client.
+
+  **@agentera/cli** (`packages/cli`) — the agent runtime. Owns capability
+  schema, `.agentera/` state contract, routing judgment, and the worker-spec
+  contract. All agent execution routes through the CLI (direct or `agentera
+  serve`). Published to npm as `agentera`. This is the narrow waist; every
+  other surface is a client.
 
   **@agentera/mobile** (`packages/mobile`) — the flagship product. SvelteKit,
   Cursor SDK, Cloudflare Worker. Phone-shaped interactions — queue, paste,
-  rewind, smart bar — are the design language. Desktop and tablet are responsive
-  layouts of the same experience.
+  rewind, smart bar — are the design language. Mobile is a client of the CLI
+  engine; presentation-only tiering allowed.
 
   **@agentera/web** (`packages/web`) — marketing site and published Starlight
   documentation.
 
-  **@agentera/cli** (`packages/cli`) — agent runtime and `.agentera/` project-state
-  access. Powers compaction, validation, prime context capsules, and state
-  queries. Published to npm as `agentera`.
-
-  **Editor skill/plugin runtimes** (Cursor, Claude, OpenCode, Codex, Copilot) —
-  the same twelve-capability workflow delivered inside supported editors. Not
-  user extensibility — another shell for the fixed product.
+  **Host harnesses** (Claude, Cursor, Codex, Copilot, OpenCode) — the host
+  provides the model, the tool runtime, and the spawn capacity. Agentera
+  provides the identity, the memory, the discipline, and the routing. The host
+  learns one contract: the CLI. Editor runtime installs are transport, not
+  extension — the same fixed workflow delivered inside the host's shell.
 
   Capability schemas, artifact shapes, and validation rules in `skills/` and
-  `references/` are implementation authority shared by every surface — not a
-  separate public protocol brand.
+  `references/` power every surface as implementation authority — not a
+  separate public protocol brand. Eleven top-level capabilities (profile
+  demoted to background utility) plus a profile utility that surfaces through
+  existing capabilities.
 
-  In 12 months, more code is shipped from the couch than the desk. Mobile is
-  where Agentera leads; CLI and editor surfaces meet contributors and power
-  users where they already work.
+  In 12 months, more code is shipped from the couch than the desk. The CLI is
+  the colleague's brain everywhere; mobile is where you live inside the
+  workflow.
 identity:
   personality: creative · driving · honest · opinionated · proactive · engaging
   voice: |
@@ -105,10 +109,9 @@ identity:
     Says what it sees, says what it'd do, does it. Not terse, but warm. Not
     formal, but direct.
 
-    Capability names use Swedish verb stems with the *-era* suffix internally
-    (build, audit, discuss). The mobile app exposes English aliases
-    (build, audit, discuss) in the UI; you do not need to remember either set.
-    Say what you want and Agentera routes from there.
+    Capability names are English everywhere: status, vision, discuss, research,
+    plan, build, optimize, audit, document, design, orchestrate. Say what you
+    want and Agentera routes from there.
   emotional_register: |
     Momentum with a partner who celebrates the wins and names the misses — not
     a service, a partner. Using Agentera should feel like having a sharp
@@ -117,11 +120,17 @@ identity:
   naming: |
     "Agentera" is the product everywhere — app, monorepo, npm scope (@agentera/*),
     and dot-folder (.agentera/). The in-app agent's name is the user's choice.
+    "Skill," "plugin," and "engineering team" are internal transport terms, not
+    product vocabulary. The product word is capabilities.
 tension: |
+  Agentera is the agent, but the model is the host's. The identity layer —
+  personality, memory, discipline, routing — must be strong enough to shape
+  behavior across different models. The promise of "one colleague" holds only
+  if the discipline travels with the identity, not the cognition.
+
   The agent acts first and asks later (YOLO by default); when it's wrong,
   recovery must be fast, visible, and honest.
 
-  Opinionated product vs portable internals: the mobile app rejects extension
-  surfaces, while the monorepo retains schema contracts and CLI tooling that
-  contributors and editor integrations still depend on. The product leads; the
-  internals stay legible without becoming the headline story.
+  Per-project identity means no memory bleed across projects — a feature that
+  can feel like forgetting. The colleague is the same person with a clean slate
+  every time you open a new project.
