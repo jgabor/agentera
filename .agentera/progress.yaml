@@ -1,4 +1,41 @@
 cycles:
+- number: 689
+  timestamp: 2026-06-28 13:40
+  type: chore
+  phase: build
+  what: "Plan task 4 of the vitest 2->4 toolchain modernization: align the pre-commit\
+    \ hook script with the `vp test run` entry point. Updated `scripts/precommit-vitest.sh`\
+    \ line 96 from `exec pnpm exec vitest run \"${TARGETS[@]}\"` to `exec vp test\
+    \ run \"${TARGETS[@]}\"` (verified `vp test run <file>` forwards positional args\
+    \ to vitest). Left line 88 (`exec pnpm test`) as-is since `pnpm test` already\
+    \ delegates to `vp test run` via package.json#scripts.test \u2014 single source\
+    \ of truth (DRY); added a comment making the chain explicit. Updated the header\
+    \ comment to mention the `vp test run` entry point. `.lefthook.yml` and `.github/workflows/ci.yml`\
+    \ intentionally untouched (out of scope; transitive chain satisfies CI)."
+  discovered: "No material surprises. `vp test run test/cli/orientation.test.ts` correctly\
+    \ forwards the positional file arg and runs only that file (14 tests, not the\
+    \ full suite) \u2014 confirmed vp test forwards extra args as vitest CLI args.\
+    \ The `check compact` checker has no fix/repair mode (only a verifier), so the\
+    \ progress archive rotation was performed manually: cycle 679 summarized and\
+    \ moved into the archive to keep active=10 under the uniform_10_40_50 cap."
+  verified: 'Three simulation runs on scripts/precommit-vitest.sh: (a) staged `packages/cli/test/cli/orientation.test.ts`
+    -> targeted, exit 0; (b) staged `TODO.md` -> smoke route (2 files), exit 0; (c)
+    no args -> full fallback (`exec pnpm test` -> `vp test run`), 1145/1145 passed.
+    Direct `pnpm -C packages/cli test` shows `> vp test run` banner; 1145/1145 pass,
+    132 files. `pnpm -C packages/cli run typecheck`: 0 errors. `pnpm -C packages/cli
+    build`: clean. `node packages/cli/dist/bin/agentera.js check compact`: pass; progress
+    active=10 archive=41 total=51 (post-rotation).'
+  next: Plan task 5 (final state sync and verification). Depends on tasks 1-4, all
+    now complete.
+  context:
+    intent: Keep the pre-commit vitest runner consistent with the `vp test run` entry
+      point adopted in plan task 2; confirm CI's `pnpm -C packages/cli test` chain
+      still delegates to `vp test run`.
+    constraints: "No behavior change to shipped CLI. Branch feat/v3 only. Task-4 scope\
+      \ only \u2014 do not modify .lefthook.yml or .github/workflows/ci.yml. Do not\
+      \ touch vite.config.ts or package.json (tasks 2/3 own them)."
+    artifacts:
+      plan: .agentera/plan.yaml (task 4 -> complete)
 - number: 688
   timestamp: 2026-06-28 12:55
   type: chore
@@ -28,9 +65,9 @@ cycles:
     \ place (exit 0)."
   verified: 'pnpm -C packages/cli run lint (= vp lint unscoped): 111 warnings, 0 errors,
     exit 0 (matches baseline). vp fmt --check src/: 151 files would be reformatted,
-    exit 1. `pnpm -C packages/cli run typecheck`: 0 errors. `pnpm -C packages/cli build`:
-    clean. `pnpm -C packages/cli test` (vp test run): 1145/1145 passed, 132 files, 21.68s.
-    Re-ran vp lint after baseline recapture: 111 warnings stable (non-regression).'
+    exit 1. `pnpm -C packages/cli run typecheck`: 0 errors. `pnpm -C packages/cli
+    build`: clean. `pnpm -C packages/cli test` (vp test run): 1145/1145 passed, 132
+    files, 21.68s. Re-ran vp lint after baseline recapture: 111 warnings stable (non-regression).'
   next: Plan task 4 (update precommit-vitest.sh and verify CI runs vp test run cleanly).
     Depends on tasks 2 and 3, both now complete.
   context:
@@ -305,39 +342,12 @@ cycles:
       public API. feat/v3 only.
     artifacts:
       plan: .agentera/plan.yaml (tasks 2,3 -> complete; surprise 2 recorded)
-- number: 679
-  timestamp: 2026-06-27 12:00
-  type: refactor
-  phase: build
-  what: 'Plan task 1 (chore:3.0.0): consolidate scattered `type Dict = Record<string,
-    any>` aliases in the hooks subsystem. Removed the local alias in all 12 hooks
-    modules (sessionStart/Stop, validateArtifact/{violations,traversal,markdown,schema,index,runtime},
-    compaction/{dryRun,retention,parse,apply}) and imported `JsonObject` from core/jsonValue.
-    Tightening to the strict JsonValue union surfaced ~80 latent typecheck errors
-    from dynamic property access on parsed-JSON maps; resolved in-scope by keeping
-    IO-boundary casts (file/YAML/stdin parse) with `// cast:` comments and narrowing
-    internal access via type guards (e.g. isMapping in violations.ts). ~14 internal
-    casts converted, ~22 IO casts kept and documented.'
-  discovered: "JsonObject is NOT structurally compatible with Record<string, any>\
-    \ \u2014 the strict union member type exposed latent unsafety across parsed-JSON\
-    \ map access. The design-phase \"largely mechanical\" assumption was wrong; tasks\
-    \ 2-5 should budget for the same tightening surface. The strictness win is the\
-    \ actual point of the refactor."
-  verified: 'pnpm -C packages/cli run typecheck passes (0 errors). pnpm -C packages/cli
-    test: 1145/1145 pass (132 files; hooks/validate/compaction subset 138/138). rg
-    `type Dict\s*=` in packages/cli/src/hooks/ returns no matches. No fixture/snapshot
-    change.'
-  next: "Plan task 1 complete. Next dependency-ready: tasks 2 (CLI commands/state-query),\
-    \ 3 (capabilityContext/startup-analysis), 5 (long-tail) \u2014 all depend only\
-    \ on 1. Task 4 blocked on 3. Hold for commit approval before proceeding."
-  context:
-    intent: Type-only consolidation of JSON-value aliases onto the shared core/jsonValue
-      module; narrow `as` casts to IO boundaries. No behavior change.
-    constraints: Only the 12 hooks files. core/jsonValue.ts untouched. No new public
-      API. feat/v3 only.
-    artifacts:
-      plan: .agentera/plan.yaml (task 1 -> complete; surprise recorded)
 archive:
+- summary: "Cycle 679 (2026-06-27): chore:3.0.0 plan task 1 \u2014 consolidate `type\
+    \ Dict = Record<string, any>` aliases across the 12 hooks modules onto core/jsonValue's\
+    \ JsonObject. Strict union surfaced ~80 latent typecheck errors; resolved in-scope\
+    \ by keeping IO-boundary casts with `// cast:` comments and narrowing access via\
+    \ type guards. Typecheck 0 errors; suite 1145/1145 green."
 - summary: "Cycle 678 (2026-06-27): v2/v3 coexistence B3 \u2014 bundle-status & channel\
     \ resolution. Centralized channel resolution through resolveInvokedUpdateChannel\
     \ so doctor..."
@@ -434,6 +444,3 @@ archive:
 - summary: "Cycle 640 (2026-06-03): Orchestrate task_queue dependency lookup \u2014\
     \ planTaskRefKeys normalization in orchestrationContext and dependencyReadyTasks;\
     \ regression tests in packages/cli/test/cli/prime.test.ts."
-- summary: "Cycle 639 (2026-06-03): Durable pre-commit hooks \u2014 citation-anchor-todo.md\
-    \ fixture, stronger verifyWarnCitationAtLine, scripts/precommit-vitest.sh and\
-    \ precommit-pytest.sh, lefthook wiring, AGENTS.md emergency-bypass..."
