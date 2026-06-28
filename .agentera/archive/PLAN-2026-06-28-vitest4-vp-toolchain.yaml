@@ -1,7 +1,7 @@
 header:
   level: full
   created: "2026-06-28"
-  status: active
+  status: complete
   reviewed: "2026-06-28"
   critic_issues: "4 found, 4 addressed, 0 dismissed"
   title: "Plan: Upgrade vitest 2→4 and adopt the Vite+ toolchain for the CLI"
@@ -105,10 +105,14 @@ tasks:
   - number: 5
     name: "Final state sync and verification"
     depends_on: ["1", "2", "3", "4"]
-    status: pending
+    status: complete
     acceptance:
       - "GIVEN a clean tree WHEN the full gate sequence runs — `pnpm -C packages/cli run typecheck`, `pnpm -C packages/cli build`, `pnpm -C packages/cli test`, `node packages/cli/dist/bin/agentera.js check compact` — THEN typecheck is 0 errors, build is clean, vitest is 1145/1145 green, and compaction is within `uniform_10_40_50` limits."
       - "GIVEN this plan's work is complete WHEN the plan closes THEN `.agentera/plan.yaml` is archived and `.agentera/progress.yaml` cycle evidence is folded into the final task commit per the AGENTS.md same-commit fold-in rule (no standalone bookkeeping commit)."
+    evidence:
+      - "typecheck: 0 errors. build: clean. test: 132/132 files, 1145/1145 tests (21.08s). compact: within uniform_10_40_50 limits, no repair needed."
+      - "Task 4 audit (inspektera) PASS: both acceptance criteria verified with citations — precommit-vitest.sh routes through vp test run (line 90 exec pnpm test → scripts.test, line 98 exec vp test run); CI pnpm -C packages/cli test → vp test run → 1145/1145; pnpm -C packages/cli test test/upgrade/ → 249/249 (arg forwarding verified); pnpm install --frozen-lockfile clean."
+      - "Plan archived to .agentera/archive/PLAN-2026-06-28-vitest4-vp-toolchain.yaml; header.status → complete."
 overall_acceptance: >
   GIVEN `packages/cli` WHEN its toolchain is inspected THEN vitest runs at
   `^4.1.0` (directly or transitively via `vite-plus`), the test script
