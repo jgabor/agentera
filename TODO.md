@@ -36,6 +36,7 @@
 - [ ] [feat:3.0.0] Add `--version` / `version` command to the CLI so consumers can check the installed Agentera version. `npx -y agentera@next --version` returns "unknown or not-yet-ported command"; the 3.0.0 CLI exposes no version introspection surface. Discovered during Plan Task 6 verification where `npx -y agentera@next --version` was an acceptance criterion. (Branch: `feat/v3` — implement on `feat/v3`.)
 
 - [ ] [chore:3.0.0] Remove deprecated `PROFILERA_PROFILE_DIR` alias fallback from `setProfileDir()` in `.opencode/plugins/agentera.js` before v3 stable release. Task 12 of the D70 cleanup plan added the fallback as a migration bridge; the upgrade migration step (Task 13) rewires config files automatically. Before v3 stable, verify no v2 users still depend on the old name, then remove the fallback code and the `profileraDeprecation` flag. The v2→v3 upgrade window is the only period where the alias is needed.
+- [ ] [chore:3.0.0] Address pre-existing lint findings surfaced by the `vp lint` migration in `packages/cli`. The toolchain-cutover plan (Task 3) wired `scripts.lint` → `vp lint` and recorded a baseline of 101 warnings / 0 errors over 190 files (exit 0) at `packages/cli/.lint-baseline.txt`; `vp fmt --check src/` reports 151 files would be reformatted. Non-regression is the gate held here — address the findings (unused imports, regex-preference, control-char, etc.) in a separate cleanup pass, not as part of the toolchain migration.
 
 ## ✓ Resolved
 
