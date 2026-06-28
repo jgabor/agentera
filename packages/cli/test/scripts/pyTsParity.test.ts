@@ -9,7 +9,7 @@ import { describe, expect, it } from "vitest";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PKG_ROOT = path.resolve(__dirname, "..", "..");
 const REPO_ROOT = path.resolve(PKG_ROOT, "..", "..");
-const SCRIPT = path.join(PKG_ROOT, "scripts", "rebase_oracle.sh");
+const SCRIPT = path.join(PKG_ROOT, "scripts", "py_ts_parity.sh");
 const FIXTURE = path.join(
   PKG_ROOT,
   "test/cli/fixtures/oracle/parity-remaining-families.json",
@@ -37,7 +37,7 @@ function runCheckJson(extraEnv: NodeJS.ProcessEnv = {}): {
   return { status: result.status, payload: JSON.parse(line) as Record<string, unknown> };
 }
 
-describe("packages/cli/scripts/rebase_oracle.sh --check", () => {
+describe("packages/cli/scripts/py_ts_parity.sh --check", () => {
   it("exits 0 when python_commit matches origin/main HEAD", () => {
     const mainRef = spawnSync("git", ["-C", REPO_ROOT, "rev-parse", "origin/main"], {
       encoding: "utf8",
@@ -57,7 +57,7 @@ describe("packages/cli/scripts/rebase_oracle.sh --check", () => {
   });
 
   it("exits 1 with drift:detected and rebase procedure for a divergent pin", () => {
-    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "rebase-oracle-"));
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "py-ts-parity-"));
     const divergentFixture = path.join(tmpDir, "parity-remaining-families.json");
     const fixture = JSON.parse(fs.readFileSync(FIXTURE, "utf8")) as Record<string, unknown>;
     const divergentPin = "0".repeat(40);
@@ -68,7 +68,7 @@ describe("packages/cli/scripts/rebase_oracle.sh --check", () => {
     }
     fs.writeFileSync(divergentFixture, JSON.stringify(fixture, null, 2));
 
-    const { status, stdout } = runCheck({ REBASE_ORACLE_FIXTURE: divergentFixture });
+    const { status, stdout } = runCheck({ PY_TS_PARITY_FIXTURE: divergentFixture });
     expect(status).toBe(1);
     expect(stdout).toContain("drift: detected");
     expect(stdout).toContain("Rebase procedure:");
@@ -77,13 +77,13 @@ describe("packages/cli/scripts/rebase_oracle.sh --check", () => {
   });
 
   it("emits drift:detected in --json mode for a divergent pin", () => {
-    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "rebase-oracle-json-"));
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "py-ts-parity-json-"));
     const divergentFixture = path.join(tmpDir, "parity-remaining-families.json");
     const fixture = JSON.parse(fs.readFileSync(FIXTURE, "utf8")) as Record<string, unknown>;
     fixture.python_commit = "1".repeat(40);
     fs.writeFileSync(divergentFixture, JSON.stringify(fixture, null, 2));
 
-    const { status, payload } = runCheckJson({ REBASE_ORACLE_FIXTURE: divergentFixture });
+    const { status, payload } = runCheckJson({ PY_TS_PARITY_FIXTURE: divergentFixture });
     expect(status).toBe(1);
     expect(payload.drift).toBe("detected");
     expect(payload.pinned).toBe("1".repeat(40));

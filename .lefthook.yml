@@ -13,8 +13,8 @@ pre-commit:
   commands:
     agentera:
       run: pnpm -C packages/cli build && node packages/cli/dist/bin/agentera.js check compact
-    oracle-pin:
-      run: bash packages/cli/scripts/rebase_oracle.sh --check --json
+    py-ts-parity:
+      run: bash packages/cli/scripts/py_ts_parity.sh --check --json
     docs:
       run: bunx markdownlint --dot --fix --disable MD013 MD024 MD029 MD033 MD036 MD040 MD041 MD060 -- {staged_files}
       stage_fixed: true
@@ -23,7 +23,7 @@ pre-commit:
         - "docs/plans/*.md"
         - "skills/*/references/contract.md"
     configs:
-      run: bunx prettier --write {staged_files}
+      run: vp fmt --write {staged_files}
       stage_fixed: true
       glob: "*.json"
       exclude:

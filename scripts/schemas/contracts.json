@@ -14,14 +14,7 @@
     "CHANGELOG.md": 5000
   },
   "artifact_required_keys": {
-    "VISION.md": [
-      "project_name",
-      "north_star",
-      "personas",
-      "principles",
-      "direction",
-      "identity"
-    ],
+    "VISION.md": ["project_name", "north_star", "personas", "principles", "direction", "identity"],
     "TODO.md": ["^# TODO"],
     "DECISIONS.md": ["decisions"],
     "PLAN.md": ["header", "what", "why", "tasks"],
@@ -52,10 +45,5 @@
     "DOCS.md": ".agentera/docs.yaml",
     "PROFILE.md": "(profile-path capability) <!-- platform: profile-path -->"
   },
-  "todo_severity_headings": [
-    "^## .*Critical",
-    "^## .*Degraded",
-    "^## .*Normal",
-    "^## .*Annoying"
-  ]
+  "todo_severity_headings": ["^## .*Critical", "^## .*Degraded", "^## .*Normal", "^## .*Annoying"]
 }
