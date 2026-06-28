@@ -1,0 +1,124 @@
+header:
+  level: full
+  created: "2026-06-28"
+  status: active
+  reviewed: "2026-06-28"
+  critic_issues: "4 found, 4 addressed, 0 dismissed"
+  title: "Plan: Upgrade vitest 2→4 and adopt the Vite+ toolchain for the CLI"
+what: >
+  Two-phase toolchain modernization of `packages/cli`. Phase 1 bumps the
+  vitest devDep from `^2.1.8` to `^4.1.0` and drops the v4-removed
+  `minWorkers` field, keeping the worker-budget config that prevents OOM
+  under multi-agent test runs. Phase 2 adopts the Vite+ (`vp`) entry point
+  already used by `@agentera/web` and `@agentera/mobile`: the test script
+  moves from `vitest run` to `vp test run`, vitest config migrates from
+  `vitest.config.ts` to a `vite.config.ts` ship under `vite-plus`, and
+  lint/fmt scripts are wired through `vp lint`/`vp fmt` against a recorded
+  baseline.
+why: >
+  vitest 2.x is two majors behind stable (v4.1.7) and exposes the CLI to
+  regressions already fixed upstream. The workspace is split-brain:
+  web/mobile run on `vite-plus ^0.1.22` (which bundles vitest 4), while
+  the CLI still pins vitest 2.x as a direct devDep. Consolidating onto
+  `vp` removes the double-knowledge cost and aligns the CLI with the
+  ecosystem direction stated in `AGENTS.md` (web/mobile DX already use
+  `vp`). No behavior change to the shipped CLI; runtime output and JSON
+  shapes stay byte-stable.
+constraints: >
+  No behavior change. The shipped CLI command surface, JSON output
+  shapes, exit codes, and artifact shapes stay byte-stable where asserted
+  by fixtures. The `tsc` build stays in place; `vp pack --exe` (single-binary
+  replacement for `bun build --compile`) is explicitly out of scope — tracked
+  as deferred phase 3b. Lefthook `bunx markdownlint`/`bunx prettier`
+  replacement is deferred phase 3a. No version-bump task — toolchain-only
+  work does not bump per DOCS semver policy unless packaging surfaces shift.
+  Branch: `feat/v3`. No `engines.node` change: vp test does not require
+  Node 25+ (only `vp pack --exe` does, which is out of scope).
+scope:
+  included:
+    - "`packages/cli/package.json` vitest devDep bump and vite-plus addition."
+    - "`packages/cli/vitest.config.ts` migration to `packages/cli/vite.config.ts` under `vite-plus`."
+    - "`packages/cli` test/lint/fmt scripts moved to `vp test run`/`vp lint`/`vp fmt`."
+    - "`scripts/precommit-vitest.sh` test invocation updated to stay consistent."
+    - "Verifying `.github/workflows/ci.yml` CLI test job still passes."
+  excluded:
+    - "`vp pack --exe` single-binary migration (phase 3b; requires Node 25.7+ build host)."
+    - "Lefthook `bunx` → `vp` migration for markdownlint/prettier (phase 3a)."
+    - "`scripts/single-binary.sh` and `docs/packaging/v3-packaging.md`."
+    - "Web/mobile packages (already on vp)."
+    - "CLI `tsc` build replacement (build stays `tsc -p tsconfig.json`)."
+    - "Fixing all pre-existing lint findings surfaced by `vp lint`."
+  deferred:
+    - "Phase 3a: lefthook `bunx` → `vp` for repo-wide docs/config formatting."
+    - "Phase 3b: `bun build --compile` → `vp pack --exe` (gated on Node 25.7+ build host decision)."
+    - "Addressing the full `vp lint` baseline if it surfaces a large count of findings."
+design: >
+  Phase 1 lands first in isolation so the vitest 4 upgrade is reviewable on
+  its own (small blast radius, easy rollback). The v4 migration guide was
+  cross-checked against this codebase: no `poolOptions`, no `workspace`, no
+  browser provider, no snapshots, no `vi.fn` constructor/getter usage that
+  the v4 mocking changes affect. The only edit needed beyond the version
+  bump is dropping `minWorkers: 1` (removed in v4 per the migration guide).
+  `experimentalFsModuleCache` stays (still valid in v4.1.7 docs).
+  Phase 2 then migrates the entry point: vitest config moves into
+  `vite.config.ts` under `vite-plus`'s `defineConfig` (mirroring
+  `packages/web/vite.config.ts`), the direct `vitest` devDep is dropped
+  (vite-plus provides vitest transitively), and `test/lint/fmt` scripts
+  move to `vp`. Lint is wired with a recorded baseline — the task does not
+  attempt to fix every pre-existing finding; non-regression is the gate.
+  The pre-commit targeted runner is updated in the same change so its
+  filename-filter semantics stay consistent with `vp test run` forwarding
+  to vitest.
+tasks:
+  - number: 1
+    name: "Bump vitest 2→4 in packages/cli and drop removed minWorkers field"
+    depends_on: []
+    status: complete
+    acceptance:
+      - "GIVEN packages/cli/devDeps WHEN `vitest` is bumped to `^4.1.0` and `minWorkers: 1` is removed from `vitest.config.ts` THEN `pnpm -C packages/cli install && pnpm -C packages/cli test` runs and 1145/1145 tests pass with no fixture drift."
+      - "GIVEN the worker-budget config WHEN the suite runs on a 16-core host THEN peak RSS stays near the 2.4 GiB measured at maxWorkers=4 (no regression vs the v2 measurement)."
+      - "GIVEN vitest 4's breaking-change surfaces WHEN the suite runs THEN no `poolOptions`/`workspace`/`minWorkers` errors surface and no mock/snapshot test fails (codebase cross-checked: zero exposure to v4 mock-getter, constructor, or snapshot changes)."
+  - number: 2
+    name: "Migrate CLI to vite.config.ts under vite-plus; drop direct vitest devDep; move test script to vp test run"
+    depends_on: ["1"]
+    status: pending
+    acceptance:
+      - "GIVEN packages/cli WHEN `vite-plus` and `vite` are added as devDeps and the direct `vitest` devDep is removed THEN `pnpm -C packages/cli install` resolves cleanly and `vp test run` resolves vitest 4 transitively."
+      - "GIVEN the migrated `packages/cli/vite.config.ts` (test block moved from `vitest.config.ts`, `defineConfig` imported from `vite-plus`) WHEN `vp test run` runs THEN 1145/1145 tests pass with the same maxWorkers/VITEST_MAX_WORKERS budget behavior."
+      - "GIVEN `package.json#scripts.test` updated to `vp test run` WHEN `pnpm -C packages/cli test` runs THEN it invokes `vp test run` and the suite passes."
+      - "GIVEN nothing in the workspace imports `packages/cli/vitest.config.ts` directly WHEN the file is renamed/deleted THEN no consumer breaks (typecheck and build clean)."
+  - number: 3
+    name: "Wire vp lint and vp fmt scripts; record lint baseline; gate on non-regression not zero-findings"
+    depends_on: ["2"]
+    status: pending
+    acceptance:
+      - "GIVEN `packages/cli/vite.config.ts` has `lint` and `fmt` blocks mirroring `packages/web/vite.config.ts` patterns WHEN `vp lint src/` and `vp fmt src/` run THEN both commands execute without crashing; findings are recorded as a baseline file."
+      - "GIVEN `package.json#scripts.lint` and `scripts.fmt` updated to `vp lint` and `vp fmt` WHEN `pnpm -C packages/cli run lint` runs THEN it exits with the same pass/fail behavior it had at baseline (non-regression; not zero-findings)."
+      - "GIVEN pre-existing lint findings WHEN this task closes THEN they are listed in TODO.md as a follow-up `[chore:3.0.0]` item, not addressed in-scope."
+  - number: 4
+    name: "Update precommit-vitest.sh and verify CI runs vp test run cleanly"
+    depends_on: ["2", "3"]
+    status: pending
+    acceptance:
+      - "GIVEN `scripts/precommit-vitest.sh` line 88 (`exec pnpm test`) and line 96 (`exec pnpm exec vitest run \"${TARGETS[@]}\"`) WHEN the script is updated to invoke `vp test run` consistently THEN staged targeted tests run the correct files (critic issue 1 verified) and the full-mode fallback still passes."
+      - "GIVEN `.github/workflows/ci.yml` runs `pnpm -C packages/cli test` WHEN the job runs in CI THEN `vp test run` executes and 1145/1145 tests pass."
+  - number: 5
+    name: "Final state sync and verification"
+    depends_on: ["1", "2", "3", "4"]
+    status: pending
+    acceptance:
+      - "GIVEN a clean tree WHEN the full gate sequence runs — `pnpm -C packages/cli run typecheck`, `pnpm -C packages/cli build`, `pnpm -C packages/cli test`, `node packages/cli/dist/bin/agentera.js check compact` — THEN typecheck is 0 errors, build is clean, vitest is 1145/1145 green, and compaction is within `uniform_10_40_50` limits."
+      - "GIVEN this plan's work is complete WHEN the plan closes THEN `.agentera/plan.yaml` is archived and `.agentera/progress.yaml` cycle evidence is folded into the final task commit per the AGENTS.md same-commit fold-in rule (no standalone bookkeeping commit)."
+overall_acceptance: >
+  GIVEN `packages/cli` WHEN its toolchain is inspected THEN vitest runs at
+  `^4.1.0` (directly or transitively via `vite-plus`), the test script
+  invokes `vp test run`, `vite.config.ts` is the single config ship under
+  `vite-plus`, and `lint`/`fmt` scripts use `vp`. GIVEN the full vitest
+  suite WHEN run from a clean build THEN 1145/1145 tests pass with no
+  fixture drift. GIVEN the compaction gate WHEN run via the built CLI
+  THEN it passes. GIVEN pre-commit and CI WHEN the test step runs THEN
+  both use the new `vp test run` entry point and pass. GIVEN the worker-
+  budget config WHEN multiple agents run the suite concurrently THEN
+  peak RSS stays near 2.4 GiB per run (no regression vs the v2 baseline
+  that motivated the cap).
+surprises: "vitest 4 enforces the 5000ms default testTimeout on blocking spawnSync/DB tests where v2 did not — the extractCorpusParity Python-probe tests (~9-16s legit) timed out at 5000ms on v4 despite passing on v2. Unanticipated by the design note's cross-check (which covered pool/workspace/minWorkers/mock/snapshot but not timeout-enforcement tightening). Fixed in-scope by adding a global testTimeout: 30_000 to vitest.config.ts (restores v2 effective behavior with 2x headroom); no test file edits needed."
