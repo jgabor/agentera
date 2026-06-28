@@ -1,4 +1,38 @@
 cycles:
+- number: 685
+  timestamp: 2026-06-28 09:30
+  type: chore
+  phase: audit
+  what: Audit 25 of the feat/v3 CLI. Evaluated the C74 Dict-consolidation refactor
+    (commits 2715bd28..8e9f2447, 6 commits) against Audit 24's baseline. Overall grade
+    B (stable); trajectory improving. Complexity B->A, Version B->A, Freshness B->A
+    (C74 resolved the uncommitted-WIP freshness warning and the Dict-sprawl complexity
+    finding). Patterns A->B -- audit caught a test-local JsonObject shadow in vocabularyAuthority.test.ts
+    that tsc excludes from typecheck, a defect introduced by C74 task 4 and invisible
+    to the build cycle's own verification gates. Coupling B stable (orientation.ts
+    hub downgraded to info; new PackageRegistry cast-density warning is the task-4
+    escape-hatch residue). Deprecated Dict alias now has zero consumers -- removal
+    unblocked.
+  discovered: 'Independent audit capability caught a defect the build cycle self-verification
+    missed: a test-local type JsonObject = Record<string, unknown> shadow in vocabularyAuthority.test.ts
+    that tsc excludes by design (tests use vitest vite transform). Validates running
+    inspektera after multi-cycle refactors -- typecheck + vitest green does not catch
+    type drift in test files.'
+  verified: 'agentera state health --format json confirms entry 25 is latest (date
+    2026-06-28) and entry 24 physically preserved at line 1100. Only .agentera/health.yaml
+    modified. Findings use correct severity/confidence vocabulary. audit exit signal:
+    complete.'
+  next: 'Two warning findings to address via build: (1) delete test-local JsonObject
+    shadow in vocabularyAuthority.test.ts; (2) lift PackageRegistry parsed records
+    to a typed PackageRegistryRecord interface. Both file-scoped.'
+  context:
+    intent: Codebase health audit -- evaluate C74 Dict consolidation against Audit
+      24 baseline.
+    constraints: Type-only audit context. No vision/objective state touched. No app/profile
+      refresh. feat/v3 only.
+    artifacts:
+      health: .agentera/health.yaml (entry 25 written; entry 15 auto-archived to one-line
+        summary by 10-full rule)
 - number: 684
   timestamp: 2026-06-27 15:30
   type: refactor
@@ -302,59 +336,9 @@ cycles:
       (remove D73 gate language).
 
       '
-- number: 675
-  timestamp: 2026-06-23 18:15
-  type: feat
-  phase: build
-  what: 'Rename published prerelease version suffix from -dev.N to -next.N across
-    live source, tests, CI L2 pin, sandbox harness, README, and packaging docs; add
-    publish-next and publish-latest CI jobs gated by NPM_TOKEN and sort -V version-newer-than-published
-    compare. Closes TODO L7 (no publish step) and TODO L8 (@next hook version drift).
-
-    '
-  discovered: 'publish-stable.mjs is a maintainer workflow (write-back version bump
-    + publish + human commit), not directly CI-translatable. CI job design shifts
-    the maintainer workflow to "commit bump, CI publishes" -- symmetric to publish-next.
-    The stable publish surface is packages/cli/shim (0.0.x version, suiteVersion 2.7.7,
-    delegates to Python CLI via uv/uvx).
-
-    '
-  verified: Vitest 1000/1000 pass; pnpm -C packages/cli run typecheck exit 0; pnpm
-    -C packages/cli build exit 0; node packages/cli/dist/bin/agentera.js check compact
-    status=pass over_limit=0 errors=0. First publish smoke (plan Task 6) deferred
-    to real push to feat/v3 with NPM_TOKEN set in repo secrets.
-  next: 'After first publish-next fires on push to feat/v3, verify `npm view agentera@next
-    version` returns 3.0.0-next.1 and runtime hook consumers (.cursor/hooks.json,
-    .github/hooks/*, hooks/codex-plugin-hooks.json) spawn cleanly against the published
-    @next. Doctor/prime hook-drift probe (remaining half of original TODO L8) deferred
-    to separate TODO.
-
-    '
-  context:
-    intent: 'Align npm prerelease suffix with @next dist-tag per ecosystem convention
-      (Next.js, TypeScript, Vite, Astro); close TODO L7 delivery gap (source fixes
-      in 3.0.0-dev.7 never reached npx consumers because @next was pinned to 3.0.0-dev.6);
-      fix TODO L8 hook version drift via auto-publish.
-
-      '
-    constraints: 'All rename and CI work on feat/v3 only. Archive/health audit history
-      immutable and untouched. Dist-tag vocabulary unchanged. Convergence of @next
-      and @latest at 3.0.0 stable release is out of scope.
-
-      '
-    unknowns: 'Whether NPM_TOKEN is configured in GitHub Actions secrets on feat/v3
-      (maintainer setup); whether 3.0.0-next.1 actually publishes successfully on
-      first push (npm propagation, publish conflict if maintainer also publishes manually).
-
-      '
-    scope: 'packages/cli/{package.json, src/upgrade/channels.ts:181, src/release/releaseMetadata.ts:21,
-      test/** (10 files)}; .github/workflows/ci.yml (publish-next and publish-latest
-      jobs + L2 pin update); scripts/sandbox/{v2v3-upgrade-harness.sh, README.md};
-      README.md:218; docs/packaging/v3-packaging.md:150; TODO.md, .agentera/progress.yaml,
-      .agentera/plan.yaml fold-ins.
-
-      '
 archive:
+- summary: 'Cycle 675 (2026-06-23): Rename published prerelease version suffix from
+    -dev.N to -next.N across live source, tests, CI L2...'
 - summary: 'Cycle 674 (2026-06-23): Remove dead `missingScriptCommands` from installRoot.ts;
     close three stale TODOs.'
 - summary: 'Cycle 673 (2026-06-23): Align parity oracle retryCommand pin with string|null
@@ -453,6 +437,3 @@ archive:
     \ and head-of-output..."
 - summary: 'Cycle 634 (2026-06-03): Final state sync and plan archive. Archived the
     2.7.7 plan to .agentera/archive/plan-2026-06-03.yaml, cleared the active...'
-- summary: "Cycle 633 (2026-06-03): 2.7.7 version bump and CHANGELOG update \u2014\
-    \ bumped version_files to 2.7.7, promoted D66/WARN-citation/compaction bullets\
-    \ into CHANGELOG [2.7.7]; marked plan task 4 complete."
