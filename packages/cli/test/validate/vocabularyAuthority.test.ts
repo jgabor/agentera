@@ -38,8 +38,6 @@ const EXPECTED_LIFECYCLE_CONSUMERS = ["doctor", "status", "upgrade", "docs", "te
 const EXPECTED_CHANNELS = ["stable", "development"] as const;
 const EXPECTED_CHANNEL_CONSUMERS = ["upgrade", "doctor", "prime", "docs", "tests"] as const;
 
-type JsonObject = Record<string, unknown>;
-
 function lifecycleAuthority(): JsonObject {
   return loadYamlMappingFile(LIFECYCLE_AUTHORITY) as JsonObject; // cast: YAML parse IO boundary
 }
@@ -101,7 +99,7 @@ describe("app lifecycle vocabulary authority", () => {
     expect(authority.status_concept_order).toEqual(["major_boundary_crossing"]);
     const concept = (authority.status_concepts as JsonObject).major_boundary_crossing as JsonObject;
     expect(String(concept.definition)).toContain("v2→v3");
-    expect((concept.requires_forward_major_confirmation as Record<string, unknown>).mechanism).toBe(
+    expect((concept.requires_forward_major_confirmation as JsonObject).mechanism).toBe(
       "semver_compare_running_to_latest_on_selected_channel",
     );
     expect(concept.irreversible_exit_lines).toEqual(["v2_python_managed_app_home"]);
@@ -231,9 +229,9 @@ describe("update channels vocabulary authority", () => {
 
   it("defines version resolution and irreversibility rules", () => {
     const authority = updateChannelsAuthority();
-    const vr = authority.version_resolution as Record<string, unknown>;
+    const vr = authority.version_resolution as JsonObject;
     expect(vr.forward_major_gate).toBeTruthy();
-    expect((vr.irreversibility as Record<string, unknown>).downgrade_to_v2).toBe("permanently_blocked");
+    expect((vr.irreversibility as JsonObject).downgrade_to_v2).toBe("permanently_blocked");
   });
 
   it("declares docs delegation contract", () => {
