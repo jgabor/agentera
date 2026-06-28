@@ -1,4 +1,4 @@
-import { defineConfig } from "vitest/config";
+import { defineConfig } from "vite-plus";
 import os from "node:os";
 
 // Cap worker parallelism so multiple concurrent agents don't OOM the box.

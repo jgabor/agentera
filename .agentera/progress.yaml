@@ -1,4 +1,46 @@
 cycles:
+- number: 687
+  timestamp: 2026-06-28 12:35
+  type: chore
+  phase: build
+  what: 'Plan task 2 of the vitest 2->4 toolchain modernization: migrate the CLI test
+    entry point onto vite-plus. Moved `packages/cli/vitest.config.ts` -> `packages/cli/vite.config.ts`
+    with `defineConfig` imported from `vite-plus` (test block preserved byte-for-byte:
+    include, environment, globals, maxWorkers, testTimeout, experimentalFsModuleCache,
+    and all worker-budget comments). Added `vite ^6.3.5` and `vite-plus ^0.1.22` to
+    packages/cli devDeps (mirroring packages/web pins) and removed the direct `vitest`
+    devDep (vite-plus provides vitest 4.1.9 transitively). Updated `scripts.test`
+    -> `vp test run` and migrated `scripts.test:watch` -> `vp test watch`. Lockfile
+    resolved cleanly; typecheck 0 errors; build clean; suite 1145/1145 green over
+    132 files (26.89s at maxWorkers=4).'
+  discovered: No material surprises. `pnpm why vitest` returns no direct dep rows
+    for packages/cli (the `pnpm why` CLI produced empty output here, but `ls node_modules/.pnpm`
+    shows vitest@4.1.9 resolved via vite-plus's transitive chain on vite 7.3.3, and
+    `packages/cli/node_modules/vitest` is absent confirming the direct devDep drop).
+    vitest@2.1.9 still appears in the root .pnpm store from another workspace consumer
+    but does not flow into packages/cli. `vp test` accepts `run`/`watch` subcommands
+    and forwards the rest to vitest, so `test:watch` migrated cleanly to `vp test
+    watch`.
+  verified: 'pnpm -C packages/cli install: clean. `pnpm -C packages/cli run typecheck`:
+    0 errors. `pnpm -C packages/cli build`: clean (tsc -> dist). `pnpm -C packages/cli
+    test` (now `vp test run`): 1145/1145 passed, 132 files, 26.89s. `ls packages/cli/node_modules/vitest`:
+    absent (direct devDep dropped). vitest 4.1.9 resolved transitively via vite-plus.
+    No workspace consumer imports `vitest.config` (rg scoped to repo root returns
+    only docs/plan/progress string references).'
+  next: Plan task 3 (wire `vp lint` and `vp fmt` scripts into `packages/cli/vite.config.ts`;
+    record lint baseline; gate on non-regression not zero-findings). Depends on task
+    2, now unblocked. Task 4 (precommit-vitest.sh + CI) depends on tasks 2 and 3.
+  context:
+    intent: Migrate the CLI test entry point from direct `vitest` to vite-plus (`vp
+      test run`), dropping the direct vitest devDep and moving the vitest config into
+      a vite.config.ts ship under vite-plus (phase 2 of the two-phase toolchain modernization).
+    constraints: No behavior change to shipped CLI. Branch feat/v3 only. Task-2 scope
+      only -- do not touch precommit-vitest.sh or .github/workflows/ci.yml (task 4)
+      and do not wire vp lint/vp fmt blocks in vite.config.ts (task 3). Worker-budget
+      caps (maxWorkers=cpu/4, testTimeout=30_000, experimentalFsModuleCache) MUST
+      be preserved byte-for-byte.
+    artifacts:
+      plan: .agentera/plan.yaml (task 2 -> complete)
 - number: 686
   timestamp: 2026-06-28 12:00
   type: chore
@@ -286,44 +328,9 @@ cycles:
       \ logic for v3 source.
     unknowns: Whether the crossMajorBoundaryDetected field has downstream effects\
       \ on the OpenCode plugin rewire (B4 scope).
-- number: 677
-  timestamp: 2026-06-27 10:00
-  type: fix
-  phase: build
-  what: "v2/v3 coexistence B2 \u2014 env-var & path resolution remainder. Restored\
-    \ PROFILERA_PROFILE_DIR as a lower-precedence fallback in all v3 env-var resolvers\
-    \ (profile, usage, corpus, benchmark). Widened rewireProfileraEnvVar to update\
-    \ installed-app artifact path mappings and schema literals (docs.yaml, registry\
-    \ model). Unified XDG_DATA_HOME tilde expansion across all resolvers using expanduser().\
-    \ Aligned docs.yaml schema documentation with resolver support. Fixed startupBenchmarkDir\
-    \ to accept caller-provided env parameter. Added install-root precedence profile\
-    \ layer and removed visibleSkillVersion v2 residue probe. Closed test gaps G1\
-    \ (PROFILERA_PROFILE_DIR-only test), G2 (seed-v2-fixture sets PROFILERA_PROFILE_DIR),\
-    \ G4 (mock version catalog aligned to 2.7.7/3.0.0-next.1). 1027 tests pass (+11\
-    \ from 1016).\n"
-  discovered: "T1+T3 were combined into one commit (a82914d7) since they touch the\
-    \ same resolver surface. The mock version catalog in versionResolution.test.ts\
-    \ was 3 majors ahead of reality (3.1.6/4.2.1 vs 2.7.7/3.0.0-next.1) \u2014 this\
-    \ masked version-boundary edge cases.\n"
-  verified: 'pnpm -C packages/cli run typecheck passes. pnpm -C packages/cli build\
-    \ succeeds. pnpm -C packages/cli test: 109 files, 1027 tests pass. node packages/cli/dist/bin/agentera.js\
-    \ check validate capability-contract --format json: pass. node packages/cli/dist/bin/agentera.js\
-    \ check compact: no budget regression.'
-  next: 'Plan slot is free. Next work is B3 (bundle-status & channel resolution: #5,\
-    \ #6, #17, #18, #19, #39). See docs/notes/v2-v3-coexistence-defects.md batch plan.'
-  context:
-    intent: Fix all env-var and path-resolution defects remaining after B1. B1 fixed\
-      \ the split-brain root cause and added the resolveArtifactPath fallback; B2\
-      \ widens that to all resolvers, fixes migration rewire scope, unifies tilde\
-      \ expansion, aligns schema docs, and closes the test gaps that masked the original\
-      \ defects.
-    constraints: All work on feat/v3 only. Do not touch .agentera/vision.yaml. Do\
-      \ not rewire OpenCode plugin (B4). Do not fix channel/bundle-status (B3). Do\
-      \ not fix repo hook npm tags (B5). Do not refresh installed-app content (B6).\
-      \ Preserve AGENTERA_PROFILE_DIR > PROFILERA_PROFILE_DIR > default precedence.
-    unknowns: Whether the install-root precedence profile layer has any downstream\
-      \ effects on the bundle-status channel resolution (B3 scope).
 archive:
+- summary: "Cycle 677 (2026-06-27): v2/v3 coexistence B2 \u2014 env-var & path resolution\
+    \ remainder. Restored PROFILERA_PROFILE_DIR as a lower-precedence fallback..."
 - summary: 'Cycle 676 (2026-06-26): D73 single Agentera agent plan closeout. Implementation
     shipped in a prior session (commit d1b4145d: replaced...'
 - summary: 'Cycle 675 (2026-06-23): Rename published prerelease version suffix from
@@ -421,6 +428,3 @@ archive:
 - summary: "Cycle 638 (2026-06-03): TODO.md GitHub checkbox parsing \u2014 shared\
     \ parseTodoMarkdownListItem in packages/cli/src/cli/todoMarkdown.ts; loadTodoItems\
     \ and queryTodo markdown paths classify..."
-- summary: "Cycle 635 (2026-06-03): Next-major doctor section \u2014 extended references/cli/update-channels.yaml\
-    \ with per-channel next_major on stable, added packages/cli/src/upgrade/nextMajorDoctor.ts\
-    \ and head-of-output..."
