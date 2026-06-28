@@ -1,4 +1,39 @@
 cycles:
+- number: 686
+  timestamp: 2026-06-28 12:00
+  type: chore
+  phase: build
+  what: 'Plan task 1 of the vitest 2->4 toolchain modernization: bump the `vitest`
+    devDep `^2.1.8` -> `^4.1.0` in packages/cli/package.json, drop the v4-removed
+    `minWorkers: 1` field from vitest.config.ts, fold in the worker-budget config
+    (maxWorkers = cpu/4, experimentalFsModuleCache) staged in the working tree, and
+    add a global `testTimeout: 30_000` to restore v2 effective timeout behavior (see
+    discovered). Lockfile updated cleanly; vitest resolved to 4.1.9. Typecheck 0 errors.
+    Suite 1145/1145 green over 132 files (37.6s at maxWorkers=4).'
+  discovered: 'vitest 4 enforces the 5000ms default testTimeout on blocking spawnSync/DB
+    tests where v2 did not. The extractCorpusParity Python-probe tests run ~9-16s
+    legitimately and passed unconstrained on v2, but timed out at 5000ms on v4 with
+    no test slowdown (v4 durations 9.0s/15.5s vs v2 9.8s/12.3s -- comparable). This
+    tightening was not anticipated by the plan design note''s cross-check, which covered
+    pool/workspace/minWorkers/mock/snapshot but not timeout enforcement. Fixed in-scope
+    by adding `testTimeout: 30_000` to vitest.config.ts (2x headroom over the observed
+    16s peak; still catches hung tests). Recorded in plan.yaml `surprises`.'
+  verified: 'pnpm -C packages/cli install: clean (vitest 2.1.9 -> 4.1.9). `pnpm -C
+    packages/cli run typecheck`: 0 errors. `pnpm -C packages/cli test`: 1145/1145
+    passed, 132 files, 37.58s. `pnpm why vitest` reports 4.1.9. minWorkers line gone;
+    maxWorkers + experimentalFsModuleCache preserved. No mock/snapshot/poolOptions/workspace
+    errors surfaced.'
+  next: Plan task 2 (migrate CLI to vite.config.ts under vite-plus; drop direct vitest
+    devDep; test script -> `vp test run`). Depends on task 1, now unblocked.
+  context:
+    intent: Upgrade packages/cli from vitest 2.x to 4.x in isolation (phase 1 of a
+      two-phase toolchain modernization).
+    constraints: No behavior change to shipped CLI. Branch feat/v3 only. Worker-budget
+      caps (maxWorkers=cpu/4) and experimentalFsModuleCache MUST stay (OOM guard for
+      multi-agent runs). No vite.config.ts / vite-plus / test-script changes (task
+      2 scope). No precommit-vitest.sh changes (task 4 scope).
+    artifacts:
+      plan: .agentera/plan.yaml (task 1 -> complete; surprises field populated)
 - number: 685
   timestamp: 2026-06-28 09:30
   type: chore
@@ -288,55 +323,9 @@ cycles:
       \ Preserve AGENTERA_PROFILE_DIR > PROFILERA_PROFILE_DIR > default precedence.
     unknowns: Whether the install-root precedence profile layer has any downstream\
       \ effects on the bundle-status channel resolution (B3 scope).
-- number: 676
-  timestamp: 2026-06-26 20:30
-  type: feat
-  phase: build
-  what: "D73 single Agentera agent plan closeout. Implementation shipped in a prior\
-    \ session (commit d1b4145d: replaced 12 per-capability managed subagents with\
-    \ a single agentera.md for OpenCode and Cursor, restricted the runtimeMigration\
-    \ copy-agent loop to agentera.md only, rewrote cursorAgentSurface.test.ts for\
-    \ the single-agent model) but the plan artifact was left stale \u2014 all 5 tasks\
-    \ still pending, plan not archived. Verified all five tasks' acceptance criteria\
-    \ met via working-tree inspection, marked the plan complete, archived to .agentera/archive/PLAN-2026-06-26-d73-single-agentera-agent.md,\
-    \ and cleared the active plan slot. Plan is now free for the v2/v3 coexistence\
-    \ fix batches (docs/notes/v2-v3-coexistence-defects.md).\n"
-  discovered: "Plan-artifact fold-in gap \u2014 the implementation commit created\
-    \ the plan but never updated task statuses from pending to complete. This is the\
-    \ known pattern where implementation and plan state drift apart when the fold-in\
-    \ step is missed. The prime/state-plan CLI faithfully reported the stale state,\
-    \ which made it look like D73 had never started.\n"
-  verified: 'Working-tree inspection confirmed: both agentera.md files exist with
-    correct frontmatter and dispatch body; all 24 per-capability agent files removed
-    from .opencode/agents/ and .cursor/agents/; runtimeMigration.ts uses explicit
-    CURSOR_MANAGED_AGENT and OPENCODE_MANAGED_AGENT constants; cursorAgentSurface.test.ts
-    no longer imports CAPABILITY_INSTRUCTIONS and verifies the single-agent model;
-    SKILL.md was already consistent (no changes needed).
-
-    '
-  next: 'Plan slot is free. Next work is v2/v3 coexistence fix batch B1 (split-brain
-    root cause: AGENTERA_HOME set makes v3 CLI read v2 app schemas instead of repo
-    v3 schemas). See docs/notes/v2-v3-coexistence-defects.md batch plan.
-
-    '
-  context:
-    intent: 'Remediate the stale D73 plan artifact so the plan slot is free for the
-      v2/v3 coexistence fix work. The implementation was already done; this cycle
-      only fixes the artifact state.
-
-      '
-    constraints: "Do not re-implement D73 work. Do not create standalone bookkeeping\
-      \ commits \u2014 this cycle's artifact edits should fold into the next substantive\
-      \ commit. Archive history is immutable.\n"
-    unknowns: "Whether the implementation commit's build/typecheck/test/validate/compact\
-      \ (Task 5 acceptance) all passed at the time \u2014 assumed green based on the\
-      \ commit landing on feat/v3 without a revert, but not re-verified in this session.\n"
-    scope: '.agentera/plan.yaml (cleared with previous_plan_archived reference); .agentera/archive/PLAN-2026-06-26-d73-single-agentera-agent.md
-      (new archive file); .agentera/progress.yaml (this cycle); docs/notes/v2-v3-coexistence-defects.md
-      (remove D73 gate language).
-
-      '
 archive:
+- summary: 'Cycle 676 (2026-06-26): D73 single Agentera agent plan closeout. Implementation
+    shipped in a prior session (commit d1b4145d: replaced...'
 - summary: 'Cycle 675 (2026-06-23): Rename published prerelease version suffix from
     -dev.N to -next.N across live source, tests, CI L2...'
 - summary: 'Cycle 674 (2026-06-23): Remove dead `missingScriptCommands` from installRoot.ts;
@@ -435,5 +424,3 @@ archive:
 - summary: "Cycle 635 (2026-06-03): Next-major doctor section \u2014 extended references/cli/update-channels.yaml\
     \ with per-channel next_major on stable, added packages/cli/src/upgrade/nextMajorDoctor.ts\
     \ and head-of-output..."
-- summary: 'Cycle 634 (2026-06-03): Final state sync and plan archive. Archived the
-    2.7.7 plan to .agentera/archive/plan-2026-06-03.yaml, cleared the active...'
