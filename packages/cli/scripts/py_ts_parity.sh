@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# rebase_oracle.sh — Python CLI parity oracle rebase policy and drift check.
+# py_ts_parity.sh — Python CLI parity oracle rebase policy and drift check.
 #
 # The npm `@next` parity oracle is pinned to a single commit on the agentera
 # `main` branch (the `python_commit` field in
@@ -8,9 +8,9 @@
 # source drifts in a parity-impacting way.
 #
 # Usage:
-#   bash packages/cli/scripts/rebase_oracle.sh                # print rebase policy
-#   bash packages/cli/scripts/rebase_oracle.sh --check        # emit drift status
-#   bash packages/cli/scripts/rebase_oracle.sh --check --json # machine-readable
+#   bash packages/cli/scripts/py_ts_parity.sh                # print rebase policy
+#   bash packages/cli/scripts/py_ts_parity.sh --check        # emit drift status
+#   bash packages/cli/scripts/py_ts_parity.sh --check --json # machine-readable
 #
 # Exit codes:
 #   0   drift: none (`python_commit` equals `origin/main` HEAD)
@@ -32,7 +32,7 @@
 #      failure is traced to a Python-side JSON shape change.
 #
 # Rebase procedure:
-#   1. Run `bash packages/cli/scripts/rebase_oracle.sh --check` to confirm
+#   1. Run `bash packages/cli/scripts/py_ts_parity.sh --check` to confirm
 #      the drift and identify which paths diverged.
 #   2. Inspect the diff: `git diff <pinned>..origin/main -- scripts/agentera agentera`
 #   3. Update the per-family `python_commit` in
@@ -53,7 +53,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CLI_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 REPO_ROOT="$(cd "$CLI_ROOT/../.." && pwd)"
-FIXTURE="${REBASE_ORACLE_FIXTURE:-$CLI_ROOT/test/cli/fixtures/oracle/parity-remaining-families.json}"
+FIXTURE="${PY_TS_PARITY_FIXTURE:-$CLI_ROOT/test/cli/fixtures/oracle/parity-remaining-families.json}"
 
 # Path arguments to `git diff` for the Python CLI source. The Python CLI
 # canonical layout (per the install-root contract) places the executable
@@ -79,7 +79,7 @@ for arg in "$@"; do
       exit 0
       ;;
     *)
-      echo "rebase_oracle.sh: unknown argument '$arg'" >&2
+      echo "py_ts_parity.sh: unknown argument '$arg'" >&2
       exit 2
       ;;
   esac
@@ -95,7 +95,7 @@ if [ ! -f "$FIXTURE" ]; then
   if [ "$JSON_MODE" -eq 1 ]; then
     printf '{"drift":"error","reason":"fixture_missing","path":"%s"}\n' "$FIXTURE"
   else
-    log "rebase_oracle.sh: fixture not found at $FIXTURE"
+    log "py_ts_parity.sh: fixture not found at $FIXTURE"
   fi
   exit 2
 fi
@@ -109,17 +109,17 @@ if [ -z "$PINNED" ] || [ "${#PINNED}" -ne 40 ]; then
   if [ "$JSON_MODE" -eq 1 ]; then
     printf '{"drift":"error","reason":"python_commit_invalid","value":"%s"}\n' "$PINNED"
   else
-    log "rebase_oracle.sh: python_commit missing or not a 40-char SHA in $FIXTURE"
+    log "py_ts_parity.sh: python_commit missing or not a 40-char SHA in $FIXTURE"
   fi
   exit 2
 fi
 
 # If --check is not set, print the policy and exit 0. The rebase policy
 # is documented in the script header (the comment block at the top of
-# this file) and is also re-emitted to stdout so `bash rebase_oracle.sh`
+# this file) and is also re-emitted to stdout so `bash py_ts_parity.sh`
 # is self-documenting.
 if [ "$CHECK_MODE" -eq 0 ]; then
-  log "rebase_oracle.sh — Python CLI parity oracle rebase policy"
+  log "py_ts_parity.sh — Python CLI parity oracle rebase policy"
   log ""
   log "Pinned commit: $PINNED"
   log "Fixture:       $FIXTURE"
@@ -163,7 +163,7 @@ if [ -z "$MAIN_HEAD" ]; then
   if [ "$JSON_MODE" -eq 1 ]; then
     printf '{"drift":"error","reason":"no_git_ref","pinned":"%s"}\n' "$PINNED"
   else
-    log "rebase_oracle.sh: could not resolve origin/main / main / HEAD in $REPO_ROOT"
+    log "py_ts_parity.sh: could not resolve origin/main / main / HEAD in $REPO_ROOT"
   fi
   exit 2
 fi

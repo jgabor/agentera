@@ -1,15 +1,18 @@
 {
-  "type": "module",
-  "main": "./plugins/agentera.js",
-  "exports": {
-    ".": "./plugins/agentera.js"
-  },
   "files": [
     "plugins/agentera.js",
     "commands",
     "agents",
     "package.json"
   ],
+  "type": "module",
+  "main": "./plugins/agentera.js",
+  "exports": {
+    ".": "./plugins/agentera.js"
+  },
+  "dependencies": {
+    "@opencode-ai/plugin": "1.14.33"
+  },
   "agentera": {
     "packageShape": "npm-loadable-plugin",
     "opencodePlugin": "./plugins/agentera.js",
@@ -26,8 +29,5 @@
       "pyproject.toml"
     ],
     "singleSkillInstall": "Single-skill installs keep core SKILL.md workflow behavior; suite tools are bundle-only enhancements."
-  },
-  "dependencies": {
-    "@opencode-ai/plugin": "1.14.33"
   }
 }
