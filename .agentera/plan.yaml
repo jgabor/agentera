@@ -98,7 +98,7 @@ tasks:
   - number: 4
     name: "Update precommit-vitest.sh and verify CI runs vp test run cleanly"
     depends_on: ["2", "3"]
-    status: pending
+    status: complete
     acceptance:
       - "GIVEN `scripts/precommit-vitest.sh` line 88 (`exec pnpm test`) and line 96 (`exec pnpm exec vitest run \"${TARGETS[@]}\"`) WHEN the script is updated to invoke `vp test run` consistently THEN staged targeted tests run the correct files (critic issue 1 verified) and the full-mode fallback still passes."
       - "GIVEN `.github/workflows/ci.yml` runs `pnpm -C packages/cli test` WHEN the job runs in CI THEN `vp test run` executes and 1145/1145 tests pass."

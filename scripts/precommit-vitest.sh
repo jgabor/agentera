@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # Staged-aware vitest runner for lefthook pre-commit on feat/v3.
+# Routes through the `vp test run` entry point (packages/cli package.json#scripts.test).
 set -euo pipefail
 
 ROOT="$(git rev-parse --show-toplevel)"
@@ -85,6 +86,7 @@ if [[ -n "${PRECOMMIT_VITEST_PRINT_ROUTE:-}" ]]; then
 fi
 
 if [[ "$RUN_FULL" == true ]]; then
+  # full suite → packages/cli#scripts.test → "vp test run"
   exec pnpm test
 fi
 
@@ -93,4 +95,4 @@ if [[ ${#TARGETS[@]} -eq 0 ]]; then
 fi
 
 echo "precommit-vitest: running ${#TARGETS[@]} file(s): ${TARGETS[*]}"
-exec pnpm exec vitest run "${TARGETS[@]}"
+exec vp test run "${TARGETS[@]}"
