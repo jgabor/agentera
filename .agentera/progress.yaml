@@ -1,4 +1,47 @@
 cycles:
+- number: 688
+  timestamp: 2026-06-28 12:55
+  type: chore
+  phase: build
+  what: "Plan task 3 of the vitest 2->4 toolchain modernization: wire `vp lint` and\
+    \ `vp fmt` scripts into packages/cli and record a lint baseline. Added `lint`\
+    \ and `fmt` blocks to `packages/cli/vite.config.ts` (mirroring the web pattern;\
+    \ no `staged` block \u2014 CLI uses scripts/precommit-vitest.sh which Task 4 owns).\
+    \ ignorePatterns cover `dist/**`, `bundle/**`, `node_modules/**`, `**/*.generated.*`.\
+    \ Added `scripts.lint` -> `vp lint` and `scripts.fmt` -> `vp fmt` to packages/cli/package.json\
+    \ (both newly added; no prior lint/fmt scripts existed). Recorded baseline at\
+    \ `packages/cli/.lint-baseline.txt` (unscoped `vp lint`, matching `scripts.lint`):\
+    \ 111 warnings / 0 errors over 339 files (exit 0). `vp fmt --check src/` reports\
+    \ 151 files would be reformatted, exit 1 (prettier non-zero on format issues;\
+    \ the in-place `vp fmt` at exit 0 is the non-regression gate, not `--check`).\
+    \ Non-regression is the gate held here; pre-existing findings deferred to a [chore:3.0.0]\
+    \ TODO."
+  discovered: "vp lint exits 0 even with warnings present (Oxlint treats warnings\
+    \ as non-fatal by default) \u2014 so the non-regression gate is exit 0 plus finding\
+    \ count stable (baseline 111 warnings over 339 files), not an exit-code flip to\
+    \ non-zero. Documented in plan.yaml surprises. Baseline-scope correction (this\
+    \ amend): the first attempt captured `vp lint src/` (101 warnings / 190 files),\
+    \ which does not match what `pnpm -C packages/cli run lint` (=`vp lint`, unscoped)\
+    \ actually produces; recaptured the unscoped baseline (111 warnings / 339 files)\
+    \ so the recorded baseline represents `scripts.lint`. Note `vp fmt --check src/`\
+    \ exits 1 (prettier non-zero on format issues); non-regression uses `vp fmt` in\
+    \ place (exit 0)."
+  verified: 'pnpm -C packages/cli run lint (= vp lint unscoped): 111 warnings, 0 errors,
+    exit 0 (matches baseline). vp fmt --check src/: 151 files would be reformatted,
+    exit 1. `pnpm -C packages/cli run typecheck`: 0 errors. `pnpm -C packages/cli build`:
+    clean. `pnpm -C packages/cli test` (vp test run): 1145/1145 passed, 132 files, 21.68s.
+    Re-ran vp lint after baseline recapture: 111 warnings stable (non-regression).'
+  next: Plan task 4 (update precommit-vitest.sh and verify CI runs vp test run cleanly).
+    Depends on tasks 2 and 3, both now complete.
+  context:
+    intent: Wire vp lint and vp fmt scripts; record lint baseline; gate on non-regression
+      not zero-findings.
+    constraints: "No behavior change to shipped CLI. Branch feat/v3 only. Task-3 scope\
+      \ only \u2014 do not touch precommit-vitest.sh or .github/workflows/ci.yml (task\
+      \ 4). Do not add a staged block (web/mobile concern). Do not fix pre-existing\
+      \ lint findings in-scope (deferred [chore:3.0.0])."
+    artifacts:
+      plan: .agentera/plan.yaml (task 3 -> complete; surprise appended)
 - number: 687
   timestamp: 2026-06-28 12:35
   type: chore
@@ -294,41 +337,10 @@ cycles:
       API. feat/v3 only.
     artifacts:
       plan: .agentera/plan.yaml (task 1 -> complete; surprise recorded)
-- number: 678
-  timestamp: 2026-06-27 10:40
-  type: fix
-  phase: build
-  what: "v2/v3 coexistence B3 \u2014 bundle-status & channel resolution. Centralized\
-    \ channel resolution through resolveInvokedUpdateChannel so doctor and project_integration\
-    \ report the same channel. Fixed retryCommand to derive from the invoking CLI\
-    \ runtime (process.argv0/AGENTERA_CLI_RUNTIME) instead of the v2 managed script\
-    \ shebang. Made expectedVersion channel-aware (stable=installed app bundle version,\
-    \ development=source registry version). Separated crossMajorBoundary detected\
-    \ vs announced semantics so project_integration is not suppressed. Fixed dryRunCommand/applyCommand\
-    \ dead end when crossMajorPending \u2014 approval text corrected when no command\
-    \ available. Replaced hardcoded stable channel guidance text with resolved channel\
-    \ name. 1034 tests pass (+7 from 1027).\n"
-  discovered: 'The crossMajorBoundary conflation of detected vs announced was the
-    upstream feeder for multiple downstream defects (#18 dead end, #19 false-coalesce).
-    Separating the semantic in T4 unblocked T5 naturally.
-
-    '
-  verified: 'pnpm -C packages/cli run typecheck passes. pnpm -C packages/cli build\
-    \ succeeds. pnpm -C packages/cli test: 110 files, 1034 tests pass. node packages/cli/dist/bin/agentera.js\
-    \ check validate capability-contract --format json: pass. node packages/cli/dist/bin/agentera.js\
-    \ check compact: no budget regression.'
-  next: 'Plan slot is free. Next work is B4 (OpenCode plugin rewire: #7, #8, #24,\
-    \ #36, #38). See docs/notes/v2-v3-coexistence-defects.md batch plan.'
-  context:
-    intent: Fix the bundle-status and channel-resolution defects that produce\ contradictory
-      prime output when a v3 CLI runs against a v2 installed app.
-    constraints: All work on feat/v3 only. Do not touch .agentera/vision.yaml. Do\
-      \ not rewire OpenCode plugin (B4). Do not fix repo hook npm tags (B5). Do not\
-      \ refresh installed-app content (B6). Preserve resolveInvokedUpdateChannel override\
-      \ logic for v3 source.
-    unknowns: Whether the crossMajorBoundaryDetected field has downstream effects\
-      \ on the OpenCode plugin rewire (B4 scope).
 archive:
+- summary: "Cycle 678 (2026-06-27): v2/v3 coexistence B3 \u2014 bundle-status & channel\
+    \ resolution. Centralized channel resolution through resolveInvokedUpdateChannel\
+    \ so doctor..."
 - summary: "Cycle 677 (2026-06-27): v2/v3 coexistence B2 \u2014 env-var & path resolution\
     \ remainder. Restored PROFILERA_PROFILE_DIR as a lower-precedence fallback..."
 - summary: 'Cycle 676 (2026-06-26): D73 single Agentera agent plan closeout. Implementation
@@ -425,6 +437,3 @@ archive:
 - summary: "Cycle 639 (2026-06-03): Durable pre-commit hooks \u2014 citation-anchor-todo.md\
     \ fixture, stronger verifyWarnCitationAtLine, scripts/precommit-vitest.sh and\
     \ precommit-pytest.sh, lefthook wiring, AGENTS.md emergency-bypass..."
-- summary: "Cycle 638 (2026-06-03): TODO.md GitHub checkbox parsing \u2014 shared\
-    \ parseTodoMarkdownListItem in packages/cli/src/cli/todoMarkdown.ts; loadTodoItems\
-    \ and queryTodo markdown paths classify..."

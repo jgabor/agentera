@@ -1,0 +1,1105 @@
+VITE+ - The Unified Toolchain for the Web
+
+
+  ! eslint(no-unused-vars): Function 'readTextOrNull' is declared but never used.
+     ,-[src/setup/codex/agents.ts:106:10]
+ 105 | 
+ 106 | function readTextOrNull(p: string): string | null {
+     :          ^^^^^^^|^^^^^^
+     :                 `-- 'readTextOrNull' is declared here
+ 107 |   if (!pathExists(p)) return null;
+     `----
+  help: Consider removing this declaration.
+
+  ! eslint(no-unused-vars): Variable 'stateArgs' is declared but never used. Unused variables should start with a '_'.
+     ,-[src/cli/commands/query.ts:361:9]
+ 360 |   const schemas = loadSchemas(discoverSchemasDir());
+ 361 |   const stateArgs = args as unknown as StateArgs;
+     :         ^^^^|^^^^
+     :             `-- 'stateArgs' is declared here
+ 362 |   const handlers: Record<string, (a: QueryArgs, s: Record<string, SchemaInfo>, io: Io) => number> = {
+     `----
+  help: Consider removing this declaration.
+
+  ! eslint(no-unused-vars): Identifier 'aggregateStartupMetrics' is imported but never used.
+    ,-[src/state/startupAnalysis/benchmark.ts:13:10]
+ 12 | import { classifyStartupRecords } from "./records.js";
+ 13 | import { aggregateStartupMetrics } from "./metrics.js";
+    :          ^^^^^^^^^^^|^^^^^^^^^^^
+    :                     `-- 'aggregateStartupMetrics' is imported here
+ 14 | import { renderStartupReport } from "./report.js";
+    `----
+  help: Consider removing this import.
+
+  ! eslint(no-unused-vars): Identifier 'planRuntimeRewirePhase' is imported but never used.
+    ,-[test/upgrade/gapRegistry.test.ts:17:10]
+ 16 | } from "./gapRegistry.js";
+ 17 | import { planRuntimeRewirePhase } from "../../src/upgrade/migrateArtifactsV2ToV3.js";
+    :          ^^^^^^^^^^^|^^^^^^^^^^
+    :                     `-- 'planRuntimeRewirePhase' is imported here
+ 18 | 
+    `----
+  help: Consider removing this import.
+
+  ! eslint(no-unused-vars): Variable 'FIXTURES' is declared but never used. Unused variables should start with a '_'.
+    ,-[test/upgrade/gapRegistry.test.ts:20:7]
+ 19 | const __dirname = path.dirname(fileURLToPath(import.meta.url));
+ 20 | const FIXTURES = path.join(__dirname, "fixtures");
+    :       ^^^^|^^^
+    :           `-- 'FIXTURES' is declared here
+ 21 | 
+    `----
+  help: Consider removing this declaration.
+
+  ! eslint(no-unused-vars): Identifier 'emitStructured' is imported but never used.
+    ,-[src/cli/commands/doctor.ts:34:10]
+ 33 | } from "../../upgrade/nextMajorDoctor.js";
+ 34 | import { emitStructured } from "../structured.js";
+    :          ^^^^^^^|^^^^^^
+    :                 `-- 'emitStructured' is imported here
+ 35 | 
+    `----
+  help: Consider removing this import.
+
+  ! eslint(no-unused-vars): Type 'DoctorSignal' is imported but never used.
+    ,-[src/upgrade/doctor.ts:18:29]
+ 17 | import { parseSemverMajor } from "./versionResolution.js";
+ 18 | import type { BundleStatus, DoctorSignal, PublicBundleStatus } from "../cli/contracts/bundleStatus.js";
+    :                             ^^^^^^|^^^^^
+    :                                   `-- 'DoctorSignal' is imported here
+ 19 | import { type ProbeResult, type ProbeRunner } from "./cliProbe.js";
+    `----
+  help: Consider removing this import.
+
+  ! eslint(no-unused-vars): Type 'ProbeResult' is imported but never used.
+    ,-[src/upgrade/doctor.ts:19:15]
+ 18 | import type { BundleStatus, DoctorSignal, PublicBundleStatus } from "../cli/contracts/bundleStatus.js";
+ 19 | import { type ProbeResult, type ProbeRunner } from "./cliProbe.js";
+    :               ^^^^^|^^^^^
+    :                    `-- 'ProbeResult' is imported here
+ 20 | import { classifyInstallRootStatus } from "./doctorClassifier.js";
+    `----
+  help: Consider removing this import.
+
+  ! eslint(no-unused-vars): Function 'legacyAppHomeHasBundle' is declared but never used.
+     ,-[src/upgrade/doctor.ts:257:10]
+ 256 | 
+ 257 | function legacyAppHomeHasBundle(appHome: string): boolean {
+     :          ^^^^^^^^^^^|^^^^^^^^^^
+     :                     `-- 'legacyAppHomeHasBundle' is declared here
+ 258 |   return hasBundleRootEvidence(appHome) && !pathExists(path.join(appHome, ".git"));
+     `----
+  help: Consider removing this declaration.
+
+  ! eslint(no-unused-vars): Identifier 'defaultAppHome' is imported but never used.
+    ,-[src/upgrade/appModel.ts:12:3]
+ 11 |   classifyResolvedRoot,
+ 12 |   defaultAppHome,
+    :   ^^^^^^^|^^^^^^
+    :          `-- 'defaultAppHome' is imported here
+ 13 |   isForeignPlatformDefaultAppHome,
+    `----
+  help: Consider removing this import.
+
+  ! eslint(no-unused-vars): Identifier 'pathExists' is imported but never used.
+   ,-[src/registries/packageRegistry.ts:6:10]
+ 5 | import { loadYamlMapping } from "../core/yaml.js";
+ 6 | import { pathExists, resolvePath } from "../core/paths.js";
+   :          ^^^^^|^^^^
+   :               `-- 'pathExists' is imported here
+ 7 | import { resolveSourceRoot } from "../core/sourceRoot.js";
+   `----
+  help: Consider removing this import.
+
+  ! eslint(no-unused-vars): Catch parameter 'exc' is caught but never used.
+     ,-[src/registries/packageRegistry.ts:171:14]
+ 170 |       data = JSON.parse(fs.readFileSync(path.join(this.root, authority.persisted_authority), "utf8"));
+ 171 |     } catch (exc) {
+     :              ^|^
+     :               `-- 'exc' is declared here
+ 172 |       throw new RegistryError(`registry.json missing skills[0].version`);
+     `----
+  help: Consider handling this error.
+
+  ! eslint(no-unused-vars): Identifier 'path' is imported but never used.
+   ,-[src/upgrade/doctorClassifier.ts:1:8]
+ 1 | import path from "node:path";
+   :        ^^|^
+   :          `-- 'path' is imported here
+ 2 | 
+   `----
+  help: Consider removing this import.
+
+  ! oxc(const-comparisons): Both sides of the logical operator are the same
+     ,-[src/validate/vocabularyAuthority.ts:208:9]
+ 207 |     }
+ 208 |     if ((development.resolution as JsonObject)?.git && (development.resolution as JsonObject).git) {
+     :         ^^^^^^^^^^^^^^^^^^^^^|^^^^^^^^^^^^^^^^^^^^^    ^^^^^^^^^^^^^^^^^^^^^|^^^^^^^^^^^^^^^^^^^^
+     :                              |                                              `-- This expression will always evaluate to true
+     :                              `-- If this expression evaluates to true
+ 209 |       const devGit = (development.resolution as JsonObject).git as JsonObject;
+     `----
+  help: This logical expression will always evaluate to the same value as the expression itself.
+
+  ! eslint(no-unused-vars): Identifier 'path' is imported but never used.
+   ,-[src/cli/commands/capability.ts:1:8]
+ 1 | import path from "node:path";
+   :        ^^|^
+   :          `-- 'path' is imported here
+ 2 | 
+   `----
+  help: Consider removing this import.
+
+  ! eslint(no-unused-vars): Identifier 'LEGACY_PYTHON_PARITY_FLAG' is imported but never used.
+    ,-[src/validate/lifecycleAdapters.ts:11:3]
+ 10 |   type LegacyPythonParityOptions,
+ 11 |   LEGACY_PYTHON_PARITY_FLAG,
+    :   ^^^^^^^^^^^^|^^^^^^^^^^^^
+    :               `-- 'LEGACY_PYTHON_PARITY_FLAG' is imported here
+ 12 |   legacyPythonParityEnabled,
+    `----
+  help: Consider removing this import.
+
+  ! eslint(no-unused-vars): Identifier 'validatePackagedPythonScripts' is imported but never used.
+    ,-[src/validate/lifecycleAdapters.ts:14:3]
+ 13 |   runLegacyPythonParityChecks,
+ 14 |   validatePackagedPythonScripts,
+    :   ^^^^^^^^^^^^^^|^^^^^^^^^^^^^^
+    :                 `-- 'validatePackagedPythonScripts' is imported here
+ 15 |   validateUvRuntime,
+    `----
+  help: Consider removing this import.
+
+  ! eslint(no-unused-vars): Identifier 'validateUvRuntime' is imported but never used.
+    ,-[src/validate/lifecycleAdapters.ts:15:3]
+ 14 |   validatePackagedPythonScripts,
+ 15 |   validateUvRuntime,
+    :   ^^^^^^^^|^^^^^^^^
+    :           `-- 'validateUvRuntime' is imported here
+ 16 | } from "./lifecycleAdapters/legacyPythonParity.js";
+    `----
+  help: Consider removing this import.
+
+  ! eslint(no-useless-escape): Unnecessary escape character '"'
+    ,-[src/upgrade/upgradeCommands.ts:19:36]
+ 18 |   }
+ 19 |   return `'${value.replace(/'/g, `'\"'\"'`)}'`;
+    :                                    ^^
+ 20 | }
+    `----
+  help: Replace `\"` with `"`.
+
+  ! eslint(no-useless-escape): Unnecessary escape character '"'
+    ,-[src/upgrade/upgradeCommands.ts:19:39]
+ 18 |   }
+ 19 |   return `'${value.replace(/'/g, `'\"'\"'`)}'`;
+    :                                       ^^
+ 20 | }
+    `----
+  help: Replace `\"` with `"`.
+
+  ! eslint(no-unused-vars): Identifier 'cmdGate' is imported but never used.
+   ,-[src/cli/dispatch/check.ts:2:22]
+ 1 | import { cmdLint, LintArgs } from "../commands/lint.js";
+ 2 | import { cmdCompact, cmdGate, CompactArgs } from "../commands/compact.js";
+   :                      ^^^|^^^
+   :                         `-- 'cmdGate' is imported here
+ 3 | import { cmdSchema } from "../commands/schema.js";
+   `----
+  help: Consider removing this import.
+
+  ! eslint(no-unused-vars): Parameter 'prog' is declared but never used. Unused parameters should start with a '_'.
+    ,-[src/cli/dispatch/check.ts:53:49]
+ 52 | 
+ 53 | export function runLint(argv: string[], io: Io, prog = "agentera lint"): number {
+    :                                                 ^^|^
+    :                                                   `-- 'prog' is declared here
+ 54 |   const parsed = parseLintArgs(argv);
+    `----
+  help: Consider removing this parameter.
+
+  ! eslint(no-unused-vars): Parameter 'prog' is declared but never used. Unused parameters should start with a '_'.
+     ,-[src/cli/dispatch/check.ts:108:52]
+ 107 | 
+ 108 | export function runCompact(argv: string[], io: Io, prog: string): number {
+     :                                                    ^^|^
+     :                                                      `-- 'prog' is declared here
+ 109 |   const parsed = parseCompactArgs(argv);
+     `----
+  help: Consider removing this parameter.
+
+  ! eslint(no-unused-vars): Parameter 'prog' is declared but never used. Unused parameters should start with a '_'.
+     ,-[src/cli/dispatch/check.ts:126:53]
+ 125 | 
+ 126 | export function runValidate(argv: string[], io: Io, prog: string): number {
+     :                                                     ^^|^
+     :                                                       `-- 'prog' is declared here
+ 127 |   let family: string | null = null;
+     `----
+  help: Consider removing this parameter.
+
+  ! eslint(no-unused-vars): Parameter 'prog' is declared but never used. Unused parameters should start with a '_'.
+     ,-[src/cli/dispatch/check.ts:280:51]
+ 279 | 
+ 280 | export function runSchema(argv: string[], io: Io, prog: string): number {
+     :                                                   ^^|^
+     :                                                     `-- 'prog' is declared here
+ 281 |   let format = "json";
+     `----
+  help: Consider removing this parameter.
+
+  ! unicorn(no-useless-fallback-in-spread): Empty fallbacks in spreads are unnecessary
+    ,-[src/upgrade/npxPlatformStatus.ts:24:33]
+ 23 | ): NpxPlatformStatusResult {
+ 24 |   const env = { ...process.env, ...(opts.env ?? {}), HOME: expanduser(opts.home) };
+    :                                 ^^^^^^^^^^^^^^^^^^^
+ 25 |   const platformRoot = resolvePlatformAppHome(opts.home, env);
+    `----
+  help: Spreading falsy values in object literals won't add any unexpected properties, so it's unnecessary to add an empty object as fallback.
+
+  ! eslint(no-unused-vars): Variable 'err' is declared but never used. Unused variables should start with a '_'.
+     ,-[src/release/releaseMetadata.ts:336:9]
+ 335 |   const out = opts.out ?? ((line: string) => process.stdout.write(line + "\n"));
+ 336 |   const err = opts.err ?? ((line: string) => process.stderr.write(line + "\n"));
+     :         ^|^
+     :          `-- 'err' is declared here
+ 337 |   const errors = validateReleaseMetadata(root);
+     `----
+  help: Consider removing this declaration.
+
+  ! eslint(no-unused-vars): Parameter 'prog' is declared but never used. Unused parameters should start with a '_'.
+    ,-[src/cli/dispatch/state.ts:49:67]
+ 48 | 
+ 49 | export function runState(command: string, argv: string[], io: Io, prog: string): number {
+    :                                                                   ^^|^
+    :                                                                     `-- 'prog' is declared here
+ 50 |   const parsed = parseStateArgs(command, argv);
+    `----
+  help: Consider removing this parameter.
+
+  ! eslint(no-unused-vars): Parameter 'prog' is declared but never used. Unused parameters should start with a '_'.
+     ,-[src/cli/dispatch/state.ts:108:50]
+ 107 | 
+ 108 | export function runQuery(argv: string[], io: Io, prog: string): number {
+     :                                                  ^^|^
+     :                                                    `-- 'prog' is declared here
+ 109 |   const parsed = parseQueryArgs(argv);
+     `----
+  help: Consider removing this parameter.
+
+  ! eslint(no-unused-vars): Identifier 'emitInvalidInput' is imported but never used.
+   ,-[src/cli/dispatch/shared.ts:2:3]
+ 1 | import {
+ 2 |   emitInvalidInput,
+   :   ^^^^^^^^|^^^^^^^
+   :           `-- 'emitInvalidInput' is imported here
+ 3 |   type InvalidInputErrorBody,
+   `----
+  help: Consider removing this import.
+
+  ! eslint(no-unused-vars): Identifier 'path' is imported but never used.
+   ,-[src/hooks/sessionStart.ts:2:8]
+ 1 | import fs from "node:fs";
+ 2 | import path from "node:path";
+   :        ^^|^
+   :          `-- 'path' is imported here
+ 3 | 
+   `----
+  help: Consider removing this import.
+
+  ! unicorn(prefer-string-starts-ends-with): Prefer String#startsWith over a regex with a caret.
+    ,-[src/hooks/sessionStart.ts:39:9]
+ 38 |   for (const line of text.split(/\r\n|\r|\n/)) {
+ 39 |     if (/^\*\*Grades\*\*:/.test(line)) {
+    :         ^^^^^^^^^^^^^^^^^^^^^^^
+ 40 |       return line.trim();
+    `----
+  help: Replace `/^\*\*Grades\*\*:/.test(line)` with `line.startsWith('**Grades**:')`.
+
+  ! eslint(no-control-regex): Unexpected control characters
+    ,-[src/registries/artifactRegistry.ts:65:27]
+ 64 | 
+ 65 | const CONTROL_CHAR_RE = /[\x00-\x1f\x7f]/;
+    :                           ^^|^ ^^|^
+    :                             |    `-- 'U+001F' is a control character.
+    :                             `-- 'U+0000' is a control character.
+ 66 | const URI_SCHEME_RE = /^[A-Za-z][A-Za-z0-9+.-]*:/;
+    `----
+  help: Avoid matching control characters in regular expressions. If intentional, consider using a Unicode escape instead.
+
+  ! eslint(no-unused-vars): Identifier 'cmdQuery' is imported but never used.
+   ,-[test/cli/sourceContractOracles.test.ts:7:10]
+ 6 | import { cmdPrime } from "../../src/cli/commands/prime.js";
+ 7 | import { cmdQuery } from "../../src/cli/commands/query.js";
+   :          ^^^^|^^^
+   :              `-- 'cmdQuery' is imported here
+ 8 | import { cmdState } from "../../src/cli/commands/state/index.js";
+   `----
+  help: Consider removing this import.
+
+  ! eslint(no-unused-vars): Identifier 'cmdState' is imported but never used.
+   ,-[test/cli/sourceContractOracles.test.ts:8:10]
+ 7 | import { cmdQuery } from "../../src/cli/commands/query.js";
+ 8 | import { cmdState } from "../../src/cli/commands/state/index.js";
+   :          ^^^^|^^^
+   :              `-- 'cmdState' is imported here
+ 9 | import { main } from "../../src/cli/dispatch.js";
+   `----
+  help: Consider removing this import.
+
+  ! eslint(no-unused-vars): Variable 'REPO_ROOT' is declared but never used. Unused variables should start with a '_'.
+     ,-[test/cli/sourceContractOracles.test.ts:137:7]
+ 136 | 
+ 137 | const REPO_ROOT = path.resolve(
+     :       ^^^^|^^^^
+     :           `-- 'REPO_ROOT' is declared here
+ 138 |   path.dirname(fileURLToPath(import.meta.url)),
+     `----
+  help: Consider removing this declaration.
+
+  ! eslint(no-unused-vars): Parameter 'capability' is declared but never used. Unused parameters should start with a '_'.
+     ,-[test/cli/sourceContractOracles.test.ts:359:72]
+ 358 | 
+ 359 |   function readBespokeSourceContract(payload: Record<string, unknown>, capability: string): Record<string, unknown> | null {
+     :                                                                        ^^^^^|^^^^
+     :                                                                             `-- 'capability' is declared here
+ 360 |     const capCtx = payload.capability_context as Record<string, unknown> | undefined;
+     `----
+  help: Consider removing this parameter.
+
+  ! eslint(no-unused-vars): Parameter 'prog' is declared but never used. Unused parameters should start with a '_'.
+   ,-[src/cli/dispatch/prime.ts:7:72]
+ 6 | 
+ 7 | export function runCapability(command: string, argv: string[], io: Io, prog: string): number {
+   :                                                                        ^^|^
+   :                                                                          `-- 'prog' is declared here
+ 8 |   let format = "text";
+   `----
+  help: Consider removing this parameter.
+
+  ! eslint(no-unused-vars): Parameter 'prog' is declared but never used. Unused parameters should start with a '_'.
+    ,-[src/cli/dispatch/prime.ts:52:67]
+ 51 | 
+ 52 | export function runPrime(command: string, argv: string[], io: Io, prog: string): number {
+    :                                                                   ^^|^
+    :                                                                     `-- 'prog' is declared here
+ 53 |   const args: PrimeArgs = { command, guidance: false, context: null, dashboard: false, orientation: false, format: "text" };
+    `----
+  help: Consider removing this parameter.
+
+  ! eslint(no-unused-vars): Identifier 'applyMigrationPhases' is imported but never used.
+    ,-[test/upgrade/dataPreservation.test.ts:10:3]
+  9 |   applyCleanupPhase,
+ 10 |   applyMigrationPhases,
+    :   ^^^^^^^^^^|^^^^^^^^^
+    :             `-- 'applyMigrationPhases' is imported here
+ 11 |   dryRunMigration,
+    `----
+  help: Consider removing this import.
+
+  ! eslint(no-unused-vars): Identifier 'entryStatus' is imported but never used.
+    ,-[src/cli/capabilityContext/startup.ts:10:3]
+  9 |   docsConventions,
+ 10 |   entryStatus,
+    :   ^^^^^|^^^^^
+    :        `-- 'entryStatus' is imported here
+ 11 |   fallbackStatePointer,
+    `----
+  help: Consider removing this import.
+
+  ! eslint(no-control-regex): Unexpected control characters
+   ,-[src/cli/argvalidate.ts:5:27]
+ 4 | 
+ 5 | const CONTROL_CHAR_RE = /[\u0000-\u001f\u007f]/;
+   :                           ^^^|^^ ^^^|^^
+   :                              |      `-- 'U+001F' is a control character.
+   :                              `-- 'U+0000' is a control character.
+ 6 | const ENCODED_TRAVERSAL_RE = /%(?:2e|2f|5c)/i;
+   `----
+  help: Avoid matching control characters in regular expressions. If intentional, consider using a Unicode escape instead.
+
+  ! eslint(no-unused-vars): Identifier 'publicDoctorStatus' is imported but never used.
+   ,-[src/cli/capabilityContext/build.ts:1:10]
+ 1 | import { publicDoctorStatus } from "../../upgrade/doctor.js";
+   :          ^^^^^^^^^|^^^^^^^^
+   :                   `-- 'publicDoctorStatus' is imported here
+ 2 | import type { SchemaInfo } from "../appContext.js";
+   `----
+  help: Consider removing this import.
+
+  ! eslint(no-unused-vars): Identifier 'entryStatus' is imported but never used.
+   ,-[src/cli/capabilityContext/build.ts:5:10]
+ 4 | import { capabilityContext } from "./contract.js";
+ 5 | import { entryStatus, sourceProvenance, uniqueList, hasRecordedValue, taskRef } from "./shared.js";
+   :          ^^^^^|^^^^^
+   :               `-- 'entryStatus' is imported here
+ 6 | import {
+   `----
+  help: Consider removing this import.
+
+  ! eslint(no-unused-vars): Identifier 'dependencyReadyTasks' is imported but never used.
+   ,-[src/cli/capabilityContext/build.ts:8:3]
+ 7 |   closeoutChangelogBoundary,
+ 8 |   dependencyReadyTasks,
+   :   ^^^^^^^^^^|^^^^^^^^^
+   :             `-- 'dependencyReadyTasks' is imported here
+ 9 |   orchestrationTaskSummary,
+   `----
+  help: Consider removing this import.
+
+  ! eslint(no-unused-vars): Identifier 'capabilityContext' is imported but never used.
+   ,-[src/cli/capabilityContext/benchmark.ts:4:10]
+ 3 | import os from "node:os";
+ 4 | import { capabilityContext } from "./contract.js";
+   :          ^^^^^^^^|^^^^^^^^
+   :                  `-- 'capabilityContext' is imported here
+ 5 | import { resolveProfileDirOverride, resolveXdgDataHome } from "../../core/envPaths.js";
+   `----
+  help: Consider removing this import.
+
+  ! eslint(no-unused-vars): Identifier 'isFile' is imported but never used.
+   ,-[src/setup/codex/configToml.ts:6:10]
+ 5 | 
+ 6 | import { isFile, pathExists, resolvePath } from "../../core/paths.js";
+   :          ^^^|^^
+   :             `-- 'isFile' is imported here
+ 7 | import { parseToml } from "../../core/toml.js";
+   `----
+  help: Consider removing this import.
+
+  ! eslint(no-unused-vars): Parameter 'prog' is declared but never used. Unused parameters should start with a '_'.
+    ,-[src/cli/dispatch/lifecycle.ts:32:49]
+ 31 | 
+ 32 | export function runGate(argv: string[], io: Io, prog: string): number {
+    :                                                 ^^|^
+    :                                                   `-- 'prog' is declared here
+ 33 |   const parsed = parseCompactArgs(argv);
+    `----
+  help: Consider removing this parameter.
+
+  ! eslint(no-unused-vars): Parameter 'prog' is declared but never used. Unused parameters should start with a '_'.
+    ,-[src/cli/dispatch/lifecycle.ts:50:52]
+ 49 | 
+ 50 | export function runAppHome(argv: string[], io: Io, prog: string): number {
+    :                                                    ^^|^
+    :                                                      `-- 'prog' is declared here
+ 51 |   const out = io.out ?? ((t: string) => process.stdout.write(t));
+    `----
+  help: Consider removing this parameter.
+
+  ! eslint(no-unused-vars): Parameter 'prog' is declared but never used. Unused parameters should start with a '_'.
+     ,-[src/cli/dispatch/lifecycle.ts:99:51]
+  98 | 
+  99 | export function runDoctor(argv: string[], io: Io, prog: string): number {
+     :                                                   ^^|^
+     :                                                     `-- 'prog' is declared here
+ 100 |   const err = io.err ?? ((t: string) => process.stderr.write(t));
+     `----
+  help: Consider removing this parameter.
+
+  ! eslint(no-unused-vars): Parameter 'prog' is declared but never used. Unused parameters should start with a '_'.
+     ,-[src/cli/dispatch/lifecycle.ts:209:50]
+ 208 | 
+ 209 | export function runUsage(argv: string[], io: Io, prog: string): number {
+     :                                                  ^^|^
+     :                                                    `-- 'prog' is declared here
+ 210 |   const realOut = io.out ?? ((t: string) => process.stdout.write(t));
+     `----
+  help: Consider removing this parameter.
+
+  ! eslint(no-unused-vars): Parameter 'prog' is declared but never used. Unused parameters should start with a '_'.
+     ,-[src/cli/dispatch/lifecycle.ts:267:52]
+ 266 | 
+ 267 | export function runUpgrade(argv: string[], io: Io, prog: string): number {
+     :                                                    ^^|^
+     :                                                      `-- 'prog' is declared here
+ 268 |   const err = io.err ?? ((t: string) => process.stderr.write(t));
+     `----
+  help: Consider removing this parameter.
+
+  ! eslint(no-unused-vars): Variable 'err' is declared but never used. Unused variables should start with a '_'.
+     ,-[src/cli/dispatch/lifecycle.ts:268:9]
+ 267 | export function runUpgrade(argv: string[], io: Io, prog: string): number {
+ 268 |   const err = io.err ?? ((t: string) => process.stderr.write(t));
+     :         ^|^
+     :          `-- 'err' is declared here
+ 269 |   const out = io.out ?? ((t: string) => process.stdout.write(t));
+     `----
+  help: Consider removing this declaration.
+
+  ! eslint(no-unused-vars): Parameter 'prog' is declared but never used. Unused parameters should start with a '_'.
+     ,-[src/cli/dispatch/lifecycle.ts:371:51]
+ 370 | 
+ 371 | export function runVerify(argv: string[], io: Io, prog: string): number {
+     :                                                   ^^|^
+     :                                                     `-- 'prog' is declared here
+ 372 |   const args: VerifyArgs = {
+     `----
+  help: Consider removing this parameter.
+
+  ! eslint(no-unused-vars): Parameter 'prog' is declared but never used. Unused parameters should start with a '_'.
+     ,-[src/cli/dispatch/lifecycle.ts:432:51]
+ 431 | 
+ 432 | export function runReport(argv: string[], io: Io, prog: string): number {
+     :                                                   ^^|^
+     :                                                     `-- 'prog' is declared here
+ 433 |   const args: ReportArgs = {
+     `----
+  help: Consider removing this parameter.
+
+  ! eslint(no-unused-vars): Identifier 'entryStatus' is imported but never used.
+   ,-[src/cli/capabilityContext/closeout.ts:7:27]
+ 6 | import { capabilityContext } from "./contract.js";
+ 7 | import { docsConventions, entryStatus, sourceProvenance, uniqueList } from "./shared.js";
+   :                           ^^^^^|^^^^^
+   :                                `-- 'entryStatus' is imported here
+ 8 | import { closeoutChangelogBoundary } from "./planState.js";
+   `----
+  help: Consider removing this import.
+
+  ! eslint(no-unused-vars): Type 'JsonValue' is imported but never used.
+   ,-[src/validate/lifecycleAdapters/shared.ts:4:27]
+ 3 | 
+ 4 | import type { JsonObject, JsonValue } from "../../core/jsonValue.js";
+   :                           ^^^^|^^^^
+   :                               `-- 'JsonValue' is imported here
+ 5 | import { resolvePath } from "../../core/paths.js";
+   `----
+  help: Consider removing this import.
+
+  ! eslint(no-unused-vars): Identifier 'wordCount' is imported but never used.
+   ,-[src/state/startupAnalysis/threshold.ts:7:3]
+ 6 |   countMatches,
+ 7 |   wordCount,
+   :   ^^^^|^^^^
+   :       `-- 'wordCount' is imported here
+ 8 |   recordLabel,
+   `----
+  help: Consider removing this import.
+
+  ! eslint(no-unused-vars): Identifier 'extractText' is imported but never used.
+    ,-[src/state/startupAnalysis/threshold.ts:16:3]
+ 15 |   QUERY_ARTIFACTS,
+ 16 |   extractText,
+    :   ^^^^^|^^^^^
+    :        `-- 'extractText' is imported here
+ 17 |   toolName,
+    `----
+  help: Consider removing this import.
+
+  ! eslint(no-unused-vars): Identifier 'routeCapability' is imported but never used.
+    ,-[src/state/startupAnalysis/threshold.ts:20:3]
+ 19 |   capabilityInvocation,
+ 20 |   routeCapability,
+    :   ^^^^^^^|^^^^^^^
+    :          `-- 'routeCapability' is imported here
+ 21 |   introCapability,
+    `----
+  help: Consider removing this import.
+
+  ! eslint(no-unused-vars): Identifier 'pyJsonDumps' is imported but never used.
+    ,-[src/state/startupAnalysis/threshold.ts:22:3]
+ 21 |   introCapability,
+ 22 |   pyJsonDumps,
+    :   ^^^^^|^^^^^
+    :        `-- 'pyJsonDumps' is imported here
+ 23 |   BUDGET_PRESSURE_RE,
+    `----
+  help: Consider removing this import.
+
+  ! eslint(no-unused-vars): Identifier 'boundedRuntimeStatus' is imported but never used.
+    ,-[src/state/startupAnalysis/records.ts:13:3]
+ 12 |   STATE_EVENT_CLASSES,
+ 13 |   boundedRuntimeStatus,
+    :   ^^^^^^^^^^|^^^^^^^^^
+    :             `-- 'boundedRuntimeStatus' is imported here
+ 14 |   classifyStartupEvent,
+    `----
+  help: Consider removing this import.
+
+  ! eslint(no-unused-vars): Identifier 'asList' is imported but never used.
+   ,-[src/cli/capabilityContext/progress.ts:1:10]
+ 1 | import { asList } from "../stateQuery.js";
+   :          ^^^|^^
+   :             `-- 'asList' is imported here
+ 2 | import {
+   `----
+  help: Consider removing this import.
+
+  ! eslint(no-unused-vars): Identifier 'sourceProvenance' is imported but never used.
+   ,-[src/cli/capabilityContext/progress.ts:7:36]
+ 6 | import { capabilityInstructionContractPath } from "./contract.js";
+ 7 | import { hasRecordedValue, isFile, sourceProvenance, taskRef } from "./shared.js";
+   :                                    ^^^^^^^^|^^^^^^^
+   :                                            `-- 'sourceProvenance' is imported here
+ 8 | import type { JsonObject } from "../../core/jsonValue.js";
+   `----
+  help: Consider removing this import.
+
+  ! eslint(no-unused-vars): Identifier 'pyJsonString' is imported but never used.
+   ,-[src/state/startupAnalysis/report.ts:6:48]
+ 5 | import { pyJsonIndentSorted } from "../../core/pyjson.js";
+ 6 | import { Flt, formatFloat, pyFmt, pyJsonDumps, pyJsonString } from "./helpers.js";
+   :                                                ^^^^^^|^^^^^
+   :                                                      `-- 'pyJsonString' is imported here
+ 7 | 
+   `----
+  help: Consider removing this import.
+
+  ! eslint(no-unused-vars): Identifier 'entryStatus' is imported but never used.
+   ,-[src/cli/capabilityContext/evidence.ts:7:27]
+ 6 | import { capabilityContext } from "./contract.js";
+ 7 | import { docsConventions, entryStatus, sourceProvenance, uniqueList, hasRecordedValue } from "./shared.js";
+   :                           ^^^^^|^^^^^
+   :                                `-- 'entryStatus' is imported here
+ 8 | import { loadNamedArtifact } from "../orientation.js";
+   `----
+  help: Consider removing this import.
+
+  ! eslint(no-unused-vars): Identifier 'sourceProvenance' is imported but never used.
+   ,-[src/cli/capabilityContext/orchestration.ts:3:23]
+ 2 | import { capabilityContext } from "./contract.js";
+ 3 | import { entryStatus, sourceProvenance, uniqueList } from "./shared.js";
+   :                       ^^^^^^^^|^^^^^^^
+   :                               `-- 'sourceProvenance' is imported here
+ 4 | import {
+   `----
+  help: Consider removing this import.
+
+  ! eslint(no-unused-vars): Identifier 'jsonDict' is imported but never used.
+    ,-[src/analytics/extractCorpus/cursorSessions.ts:25:3]
+ 24 |   openSqlite,
+ 25 |   jsonDict,
+    :   ^^^^|^^^
+    :       `-- 'jsonDict' is imported here
+ 26 | } from "./sqliteSessions.js";
+    `----
+  help: Consider removing this import.
+
+  ! eslint(no-unused-vars): Parameter 'env' is declared but never used. Unused parameters should start with a '_'.
+    ,-[src/analytics/extractCorpus/cursorSessions.ts:34:39]
+ 33 | 
+ 34 | export function resolveOpencodeDbPath(env: Env = process.env): string | null {
+    :                                       ^|^
+    :                                        `-- 'env' is declared here
+ 35 |   let out: string;
+    `----
+  help: Consider removing this parameter.
+
+  ! eslint(no-unused-vars): Identifier 'path' is imported but never used.
+   ,-[src/cli/capabilityContext/shared.ts:2:8]
+ 1 | import fs from "node:fs";
+ 2 | import path from "node:path";
+   :        ^^|^
+   :          `-- 'path' is imported here
+ 3 | import { loadYamlMapping } from "../../core/yaml.js";
+   `----
+  help: Consider removing this import.
+
+  ! eslint(no-unused-vars): Identifier 'loadYamlMapping' is imported but never used.
+   ,-[src/cli/capabilityContext/shared.ts:3:10]
+ 2 | import path from "node:path";
+ 3 | import { loadYamlMapping } from "../../core/yaml.js";
+   :          ^^^^^^^|^^^^^^^
+   :                 `-- 'loadYamlMapping' is imported here
+ 4 | import { activeAppModel, discoverSchemasDir } from "../appContext.js";
+   `----
+  help: Consider removing this import.
+
+  ! eslint(no-unused-vars): Identifier 'activeAppModel' is imported but never used.
+   ,-[src/cli/capabilityContext/shared.ts:4:10]
+ 3 | import { loadYamlMapping } from "../../core/yaml.js";
+ 4 | import { activeAppModel, discoverSchemasDir } from "../appContext.js";
+   :          ^^^^^^^|^^^^^^
+   :                 `-- 'activeAppModel' is imported here
+ 5 | import { asList, firstPresent } from "../stateQuery.js";
+   `----
+  help: Consider removing this import.
+
+  ! eslint(no-unused-vars): Identifier 'discoverSchemasDir' is imported but never used.
+   ,-[src/cli/capabilityContext/shared.ts:4:26]
+ 3 | import { loadYamlMapping } from "../../core/yaml.js";
+ 4 | import { activeAppModel, discoverSchemasDir } from "../appContext.js";
+   :                          ^^^^^^^^^|^^^^^^^^
+   :                                   `-- 'discoverSchemasDir' is imported here
+ 5 | import { asList, firstPresent } from "../stateQuery.js";
+   `----
+  help: Consider removing this import.
+
+  ! eslint(no-unused-vars): Identifier 'asList' is imported but never used.
+   ,-[src/cli/capabilityContext/shared.ts:5:10]
+ 4 | import { activeAppModel, discoverSchemasDir } from "../appContext.js";
+ 5 | import { asList, firstPresent } from "../stateQuery.js";
+   :          ^^^|^^
+   :             `-- 'asList' is imported here
+ 6 | import { CAPABILITY_NAMES } from "./types.js";
+   `----
+  help: Consider removing this import.
+
+  ! eslint(no-unused-vars): Identifier 'loadNamedArtifact' is imported but never used.
+   ,-[src/cli/capabilityContext/planState.ts:4:10]
+ 3 | import { artifactPath, type SchemaInfo } from "../appContext.js";
+ 4 | import { loadNamedArtifact } from "../orientation.js";
+   :          ^^^^^^^^|^^^^^^^^
+   :                  `-- 'loadNamedArtifact' is imported here
+ 5 | import { sourceMetadata } from "../stateQuery.js";
+   `----
+  help: Consider removing this import.
+
+  ! eslint(no-unused-vars): Identifier 'uniqueList' is imported but never used.
+    ,-[src/cli/capabilityContext/planState.ts:11:3]
+ 10 |   hasRecordedValue,
+ 11 |   uniqueList,
+    :   ^^^^^|^^^^
+    :        `-- 'uniqueList' is imported here
+ 12 | } from "./shared.js";
+    `----
+  help: Consider removing this import.
+
+  ! eslint(no-unused-vars): Identifier 'path' is imported but never used.
+   ,-[src/analytics/extractCorpus/sqliteSessions.ts:2:8]
+ 1 | import fs from "node:fs";
+ 2 | import path from "node:path";
+   :        ^^|^
+   :          `-- 'path' is imported here
+ 3 | import { createRequire } from "node:module";
+   `----
+  help: Consider removing this import.
+
+  ! eslint(no-unused-vars): Variable 'sessionTime' is declared but never used. Unused variables should start with a '_'.
+     ,-[src/analytics/extractCorpus/sqliteSessions.ts:192:5]
+ 191 |     partTime,
+ 192 |     sessionTime,
+     :     ^^^^^|^^^^^
+     :          `-- 'sessionTime' is declared here
+ 193 |     projectCol,
+     `----
+  help: Consider removing this declaration.
+
+  ! eslint(no-unused-vars): Variable 'sessionUpdated' is declared but never used. Unused variables should start with a '_'.
+     ,-[src/analytics/extractCorpus/sqliteSessions.ts:249:35]
+ 248 |   const schema = resolveOpencodeSchema(conn);
+ 249 |   const { sessionId, sessionTime, sessionUpdated, recentSessionExpr } = schema;
+     :                                   ^^^^^^^|^^^^^^
+     :                                          `-- 'sessionUpdated' is declared here
+ 250 |   const sessionTimeCol = sessionTime || sessionId;
+     `----
+  help: Consider removing this declaration.
+
+  ! eslint(no-unused-vars): Variable 'roleCol' is declared but never used. Unused variables should start with a '_'.
+     ,-[src/analytics/extractCorpus/sqliteSessions.ts:272:5]
+ 271 |     partMessage,
+ 272 |     roleCol,
+     :     ^^^|^^^
+     :        `-- 'roleCol' is declared here
+ 273 |     messageTime,
+     `----
+  help: Consider removing this declaration.
+
+  ! eslint(no-unused-vars): Variable 'messageTime' is declared but never used. Unused variables should start with a '_'.
+     ,-[src/analytics/extractCorpus/sqliteSessions.ts:273:5]
+ 272 |     roleCol,
+ 273 |     messageTime,
+     :     ^^^^^|^^^^^
+     :          `-- 'messageTime' is declared here
+ 274 |     partTime,
+     `----
+  help: Consider removing this declaration.
+
+  ! eslint(no-unused-vars): Variable 'partTime' is declared but never used. Unused variables should start with a '_'.
+     ,-[src/analytics/extractCorpus/sqliteSessions.ts:274:5]
+ 273 |     messageTime,
+ 274 |     partTime,
+     :     ^^^^|^^^
+     :         `-- 'partTime' is declared here
+ 275 |     messageData,
+     `----
+  help: Consider removing this declaration.
+
+  ! eslint(no-unused-vars): Variable 'messageData' is declared but never used. Unused variables should start with a '_'.
+     ,-[src/analytics/extractCorpus/sqliteSessions.ts:275:5]
+ 274 |     partTime,
+ 275 |     messageData,
+     :     ^^^^^|^^^^^
+     :          `-- 'messageData' is declared here
+ 276 |     partData,
+     `----
+  help: Consider removing this declaration.
+
+  ! eslint(no-unused-vars): Variable 'partData' is declared but never used. Unused variables should start with a '_'.
+     ,-[src/analytics/extractCorpus/sqliteSessions.ts:276:5]
+ 275 |     messageData,
+ 276 |     partData,
+     :     ^^^^|^^^
+     :         `-- 'partData' is declared here
+ 277 |     messageText,
+     `----
+  help: Consider removing this declaration.
+
+  ! eslint(no-unused-vars): Variable 'messageText' is declared but never used. Unused variables should start with a '_'.
+     ,-[src/analytics/extractCorpus/sqliteSessions.ts:277:5]
+ 276 |     partData,
+ 277 |     messageText,
+     :     ^^^^^|^^^^^
+     :          `-- 'messageText' is declared here
+ 278 |     partText,
+     `----
+  help: Consider removing this declaration.
+
+  ! eslint(no-unused-vars): Variable 'partText' is declared but never used. Unused variables should start with a '_'.
+     ,-[src/analytics/extractCorpus/sqliteSessions.ts:278:5]
+ 277 |     messageText,
+ 278 |     partText,
+     :     ^^^^|^^^
+     :         `-- 'partText' is declared here
+ 279 |     partType,
+     `----
+  help: Consider removing this declaration.
+
+  ! eslint(no-unused-vars): Variable 'partType' is declared but never used. Unused variables should start with a '_'.
+     ,-[src/analytics/extractCorpus/sqliteSessions.ts:279:5]
+ 278 |     partText,
+ 279 |     partType,
+     :     ^^^^|^^^
+     :         `-- 'partType' is declared here
+ 280 |     partId,
+     `----
+  help: Consider removing this declaration.
+
+  ! eslint(no-unused-vars): Identifier 'resolveOpencodeDbPath' is imported but never used.
+    ,-[src/analytics/extractCorpus/corpus.ts:20:3]
+ 19 |   extractCursorAgentSessions,
+ 20 |   resolveOpencodeDbPath,
+    :   ^^^^^^^^^^|^^^^^^^^^^
+    :             `-- 'resolveOpencodeDbPath' is imported here
+ 21 |   resolveCopilotStorePath,
+    `----
+  help: Consider removing this import.
+
+  ! eslint(no-unused-vars): Identifier 'resolveCopilotStorePath' is imported but never used.
+    ,-[src/analytics/extractCorpus/corpus.ts:21:3]
+ 20 |   resolveOpencodeDbPath,
+ 21 |   resolveCopilotStorePath,
+    :   ^^^^^^^^^^^|^^^^^^^^^^^
+    :              `-- 'resolveCopilotStorePath' is imported here
+ 22 |   resolveCursorProjectsPath,
+    `----
+  help: Consider removing this import.
+
+  ! eslint(no-unused-vars): Identifier 'resolveCursorProjectsPath' is imported but never used.
+    ,-[src/analytics/extractCorpus/corpus.ts:22:3]
+ 21 |   resolveCopilotStorePath,
+ 22 |   resolveCursorProjectsPath,
+    :   ^^^^^^^^^^^^|^^^^^^^^^^^^
+    :               `-- 'resolveCursorProjectsPath' is imported here
+ 23 |   resolveCursorChatsPath,
+    `----
+  help: Consider removing this import.
+
+  ! eslint(no-unused-vars): Identifier 'resolveCursorChatsPath' is imported but never used.
+    ,-[src/analytics/extractCorpus/corpus.ts:23:3]
+ 22 |   resolveCursorProjectsPath,
+ 23 |   resolveCursorChatsPath,
+    :   ^^^^^^^^^^^|^^^^^^^^^^
+    :              `-- 'resolveCursorChatsPath' is imported here
+ 24 | } from "./cursorSessions.js";
+    `----
+  help: Consider removing this import.
+
+  ! eslint(no-unused-vars): Identifier 'fs' is imported but never used.
+   ,-[src/analytics/extractCorpus/coverageAudit.ts:1:8]
+ 1 | import fs from "node:fs";
+   :        ^|
+   :         `-- 'fs' is imported here
+ 2 | import path from "node:path";
+   `----
+  help: Consider removing this import.
+
+  ! eslint(no-unused-vars): Identifier 'path' is imported but never used.
+   ,-[src/analytics/extractCorpus/coverageAudit.ts:2:8]
+ 1 | import fs from "node:fs";
+ 2 | import path from "node:path";
+   :        ^^|^
+   :          `-- 'path' is imported here
+ 3 | 
+   `----
+  help: Consider removing this import.
+
+  ! eslint(no-unused-vars): Parameter 'platform' is declared but never used. Unused parameters should start with a '_'.
+    ,-[src/analytics/extractCorpus/coverageAudit.ts:80:3]
+ 79 |   env: Env = process.env,
+ 80 |   platform: NodeJS.Platform = process.platform,
+    :   ^^^^|^^^
+    :       `-- 'platform' is declared here
+ 81 | ): RuntimeStoreConfig[] {
+    `----
+  help: Consider removing this parameter.
+
+  ! unicorn(no-useless-spread): `Set` accepts an iterable, so it's unnecessary to convert the iterable to an array.
+    ,-[src/state/startupAnalysis/helpers.ts:42:43]
+ 41 | };
+ 42 | const CAPABILITIES_WITH_STATUS = new Set([...Object.values(PRIMARY_ROUTE_TO_CAPABILITY)]);
+    :                                           ^^^
+ 43 | const MARKER_RE = /─{2,}\s+(\S)\s+(status|vision|discuss|research|plan|build|optimize|audit|document|profile|design|orchestrate)\s+·\s+([a-z]+(?:\s+\d+)?)\s+─{2,}/g;
+    `----
+  help: Consider removing the spread operator.
+
+  ! eslint(no-unused-vars): Identifier 'APP_MANUAL_REVIEW_NEEDED' is imported but never used.
+   ,-[src/upgrade/projectIntegration.ts:4:3]
+ 3 | import {
+ 4 |   APP_MANUAL_REVIEW_NEEDED,
+   :   ^^^^^^^^^^^^|^^^^^^^^^^^
+   :               `-- 'APP_MANUAL_REVIEW_NEEDED' is imported here
+ 5 |   APP_MIGRATION_NEEDED,
+   `----
+  help: Consider removing this import.
+
+  ! eslint(no-unused-vars): Variable 'RUNTIME_MIGRATION_ACTIONS' is declared but never used. Unused variables should start with a '_'.
+    ,-[src/upgrade/runtimeMigration.ts:45:7]
+ 44 | 
+ 45 | const RUNTIME_MIGRATION_ACTIONS = new Set([
+    :       ^^^^^^^^^^^^|^^^^^^^^^^^^
+    :                   `-- 'RUNTIME_MIGRATION_ACTIONS' is declared here
+ 46 |   "rewire-runtime",
+    `----
+  help: Consider removing this declaration.
+
+  ! eslint(no-unused-vars): Parameter 'commands' is declared but never used. Unused parameters should start with a '_'.
+     ,-[src/upgrade/runtimeMigration.ts:611:69]
+ 610 | 
+ 611 | export function applyRuntimeMigrationItem(item: MigrationPhaseItem, commands: NpxHookCommands): void {
+     :                                                                     ^^^^|^^^
+     :                                                                         `-- 'commands' is declared here
+ 612 |   if (item.status !== "pending") {
+     `----
+  help: Consider removing this parameter.
+
+  ! eslint(no-unused-vars): Variable 'REPO_ROOT' is declared but never used. Unused variables should start with a '_'.
+    ,-[test/cli/orientationCorpusCoverage.test.ts:16:7]
+ 15 | const __dirname = path.dirname(fileURLToPath(import.meta.url));
+ 16 | const REPO_ROOT = path.resolve(__dirname, "../../../..");
+    :       ^^^^|^^^^
+    :           `-- 'REPO_ROOT' is declared here
+ 17 | const V2_APP_HOME_FIXTURE = path.join(__dirname, "../upgrade/fixtures/v2-app-home");
+    `----
+  help: Consider removing this declaration.
+
+  ! eslint(no-unused-vars): Identifier 'parseEntries' is imported but never used.
+    ,-[src/hooks/compaction/status.ts:23:36]
+ 22 | import { compactFile, compactYamlFile } from "./apply.js";
+ 23 | import { countTodoResolvedEntries, parseEntries } from "./parse.js";
+    :                                    ^^^^^^|^^^^^
+    :                                          `-- 'parseEntries' is imported here
+ 24 | import { YAML_SPEC_BY_ARTIFACT } from "./dryRun.js";
+    `----
+  help: Consider removing this import.
+
+  ! eslint(no-unused-vars): Parameter 'command' is declared but never used. Unused parameters should start with a '_'.
+     ,-[src/cli/stateQuery.ts:276:36]
+ 275 | 
+ 276 | function availableStructuredFields(command: string): string[] {
+     :                                    ^^^|^^^
+     :                                       `-- 'command' is declared here
+ 277 |   // State commands only; prime/capability handled by their own commands.
+     `----
+  help: Consider removing this parameter.
+
+  ! eslint(no-unused-vars): Identifier 'isEmptyRequired' is imported but never used.
+    ,-[src/hooks/validateArtifact/violations.ts:17:3]
+ 16 |   expectedSequenceOrder,
+ 17 |   isEmptyRequired,
+    :   ^^^^^^^|^^^^^^^
+    :          `-- 'isEmptyRequired' is imported here
+ 18 |   isMapping,
+    `----
+  help: Consider removing this import.
+
+  ! eslint(no-unused-vars): Identifier 'schemaFieldNames' is imported but never used.
+    ,-[src/hooks/validateArtifact/violations.ts:19:3]
+ 18 |   isMapping,
+ 19 |   schemaFieldNames,
+    :   ^^^^^^^^|^^^^^^^
+    :           `-- 'schemaFieldNames' is imported here
+ 20 |   sequenceInOrder,
+    `----
+  help: Consider removing this import.
+
+  ! eslint(no-unused-vars): Identifier 'validateField' is imported but never used.
+    ,-[src/hooks/validateArtifact/violations.ts:24:3]
+ 23 |   validateDecisionSatisfaction,
+ 24 |   validateField,
+    :   ^^^^^^|^^^^^^
+    :         `-- 'validateField' is imported here
+ 25 |   validateFullPlanContract,
+    `----
+  help: Consider removing this import.
+
+  ! eslint(no-unused-vars): Variable 'COMMAND_FILTERS_SCHEMA' is declared but never used. Unused variables should start with a '_'.
+    ,-[src/cli/commands/schema.ts:62:7]
+ 61 | };
+ 62 | const COMMAND_FILTERS_SCHEMA: Record<string, string[]> = {
+    :       ^^^^^^^^^^^|^^^^^^^^^^
+    :                  `-- 'COMMAND_FILTERS_SCHEMA' is declared here
+ 63 |   prime: [],
+    `----
+  help: Consider removing this declaration.
+
+  ! eslint(no-unused-vars): Identifier 'pathExists' is imported but never used.
+   ,-[src/setup/doctor/diagnostics.ts:4:30]
+ 3 | 
+ 4 | import { expanduser, isFile, pathExists, resolvePath } from "../../core/paths.js";
+   :                              ^^^^^|^^^^
+   :                                   `-- 'pathExists' is imported here
+ 5 | import { parseToml as parseTomlLocal } from "../../core/toml.js";
+   `----
+  help: Consider removing this import.
+
+  ! eslint(no-unused-vars): Identifier 'fs' is imported but never used.
+   ,-[test/cli/inspekteraEvaluationReport.test.ts:1:8]
+ 1 | import fs from "node:fs";
+   :        ^|
+   :         `-- 'fs' is imported here
+ 2 | import path from "node:path";
+   `----
+  help: Consider removing this import.
+
+  ! eslint(no-unused-vars): Identifier 'isEmptyRequired' is imported but never used.
+    ,-[src/hooks/validateArtifact/markdown.ts:13:21]
+ 12 | } from "../compaction/parse.js";
+ 13 | import { isMapping, isEmptyRequired } from "./schema.js";
+    :                     ^^^^^^^|^^^^^^^
+    :                            `-- 'isEmptyRequired' is imported here
+ 14 | 
+    `----
+  help: Consider removing this import.
+
+  ! eslint(no-useless-escape): Unnecessary escape character '['
+     ,-[src/upgrade/migrateArtifactsV1ToV2.ts:175:45]
+ 174 |         } else {
+ 175 |           const plain = trimmed.match(/([^-:\[\]]+?):\s*(.*)/);
+     :                                             ^^
+ 176 |           if (plain) {
+     `----
+  help: Replace `\[` with `[`.
+
+  ! unicorn(no-useless-fallback-in-spread): Empty fallbacks in spreads are unnecessary
+     ,-[test/cli/npmParityMatrix.test.ts:175:7]
+ 174 |     const literalPins = {
+ 175 |       ...(row.literalPins ?? {}),
+     :       ^^^^^^^^^^^^^^^^^^^^^^^^^^
+ 176 |       ...(row.commandValue !== undefined ? { command: row.commandValue } : {}),
+     `----
+  help: Spreading falsy values in object literals won't add any unexpected properties, so it's unnecessary to add an empty object as fallback.
+
+  ! eslint(no-unused-vars): Parameter 'cwd' is declared but never used. Unused parameters should start with a '_'.
+    ,-[src/hooks/validateArtifact/index.ts:89:56]
+ 88 | 
+ 89 |   validateExplicit(artifact: string, filePath: string, cwd: string): string[] {
+    :                                                        ^|^
+    :                                                         `-- 'cwd' is declared here
+ 90 |     const content = readIfNeeded(null, filePath);
+    `----
+  help: Consider removing this parameter.
+
+Found 111 warnings and 0 errors.
+Finished in 87ms on 339 files with 95 rules using 16 threads.

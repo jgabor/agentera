@@ -90,7 +90,7 @@ tasks:
   - number: 3
     name: "Wire vp lint and vp fmt scripts; record lint baseline; gate on non-regression not zero-findings"
     depends_on: ["2"]
-    status: pending
+    status: complete
     acceptance:
       - "GIVEN `packages/cli/vite.config.ts` has `lint` and `fmt` blocks mirroring `packages/web/vite.config.ts` patterns WHEN `vp lint src/` and `vp fmt src/` run THEN both commands execute without crashing; findings are recorded as a baseline file."
       - "GIVEN `package.json#scripts.lint` and `scripts.fmt` updated to `vp lint` and `vp fmt` WHEN `pnpm -C packages/cli run lint` runs THEN it exits with the same pass/fail behavior it had at baseline (non-regression; not zero-findings)."
@@ -121,4 +121,4 @@ overall_acceptance: >
   budget config WHEN multiple agents run the suite concurrently THEN
   peak RSS stays near 2.4 GiB per run (no regression vs the v2 baseline
   that motivated the cap).
-surprises: "vitest 4 enforces the 5000ms default testTimeout on blocking spawnSync/DB tests where v2 did not — the extractCorpusParity Python-probe tests (~9-16s legit) timed out at 5000ms on v4 despite passing on v2. Unanticipated by the design note's cross-check (which covered pool/workspace/minWorkers/mock/snapshot but not timeout-enforcement tightening). Fixed in-scope by adding a global testTimeout: 30_000 to vitest.config.ts (restores v2 effective behavior with 2x headroom); no test file edits needed."
+surprises: 'vitest 4 enforces the 5000ms default testTimeout on blocking spawnSync/DB tests where v2 did not — the extractCorpusParity Python-probe tests (~9-16s legit) timed out at 5000ms on v4 despite passing on v2. Unanticipated by the design note''s cross-check (which covered pool/workspace/minWorkers/mock/snapshot but not timeout-enforcement tightening). Fixed in-scope by adding a global testTimeout: 30_000 to vitest.config.ts (restores v2 effective behavior with 2x headroom); no test file edits needed. Task 3 surprise: vp lint exits 0 even with warnings present (Oxlint treats warnings as non-fatal by default) — non-regression gate is exit 0 plus finding count stable (baseline 111 warnings / 0 errors over 339 files, unscoped `vp lint` matching `scripts.lint`). The first attempt recorded a src/-scoped baseline (101 warnings / 190 files) that did not match what `pnpm -C packages/cli run lint` actually produces; recaptured the unscoped baseline in the amend. `vp fmt --check src/` exits 1 (prettier non-zero on format issues); non-regression uses `vp fmt` in place (exit 0), not `--check`. A future cleanup pass promoting warnings to errors would change this; deferred as a [chore:3.0.0] TODO.'
