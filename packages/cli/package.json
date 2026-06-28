@@ -30,8 +30,8 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "prepack": "tsc -p tsconfig.json && node scripts/copy-bundle.mjs",
-    "test": "vitest run",
-    "test:watch": "vitest",
+    "test": "vp test run",
+    "test:watch": "vp test watch",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "bundle:data": "node scripts/copy-bundle.mjs",
     "publish:dev": "set -a; [ -f ../../.env ] && . ../../.env; set +a; npm run build && npm run bundle:data && npm publish --tag next"
@@ -51,6 +51,7 @@
   "devDependencies": {
     "@types/node": "^22.10.0",
     "typescript": "^5.7.2",
-    "vitest": "^4.1.0"
+    "vite": "^6.3.5",
+    "vite-plus": "^0.1.22"
   }
 }

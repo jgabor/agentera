@@ -81,7 +81,7 @@ tasks:
   - number: 2
     name: "Migrate CLI to vite.config.ts under vite-plus; drop direct vitest devDep; move test script to vp test run"
     depends_on: ["1"]
-    status: pending
+    status: complete
     acceptance:
       - "GIVEN packages/cli WHEN `vite-plus` and `vite` are added as devDeps and the direct `vitest` devDep is removed THEN `pnpm -C packages/cli install` resolves cleanly and `vp test run` resolves vitest 4 transitively."
       - "GIVEN the migrated `packages/cli/vite.config.ts` (test block moved from `vitest.config.ts`, `defineConfig` imported from `vite-plus`) WHEN `vp test run` runs THEN 1145/1145 tests pass with the same maxWorkers/VITEST_MAX_WORKERS budget behavior."
