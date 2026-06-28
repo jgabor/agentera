@@ -12,82 +12,117 @@ step and keeps working when you walk away. Close the laptop at midnight; the
 project remembers in the morning.
 
 <p>
-<a href="#packages">Packages</a> ·
-<a href="#quick-start">Quick start</a> ·
+<a href="#get-started">Get started</a> ·
+<a href="#what-you-get">What you get</a> ·
 <a href="#capabilities">Capabilities</a> ·
-<a href="#development">Development</a> ·
-<a href="#internals">Internals</a>
+<a href="#development">Development</a>
 </p>
 </div>
 
-## Packages
+## Get started
 
-| Package              | Path                                   | What it is                                                          |
-| -------------------- | -------------------------------------- | ------------------------------------------------------------------- |
-| **@agentera/cli**    | [`packages/cli`](./packages/cli)       | The agent. One CLI that owns memory, routing, and capabilities.     |
-| **@agentera/mobile** | [`packages/mobile`](./packages/mobile) | The flagship app — SvelteKit, Cursor SDK, Cloudflare.             |
-| **@agentera/web**    | [`packages/web`](./packages/web)       | Marketing site and published docs.                                 |
+1. Install Agentera inside your coding agent (see below).
+2. Open a git project.
+3. Run `/agentera` (`$agentera` in Codex).
 
-Missing behavior is built into Agentera, never bolted on. No extensions,
-plugins, or MCP servers anywhere.
+Your first run bootstraps project memory (`.agentera/`) as you work.
 
-## Quick start
+### For LLMs
 
-### CLI
+If your coding agent doesn't have a native install path, paste this into its chat:
 
-```bash
-npx -y agentera@next prime
+```text
+Install Agentera as your project memory and routing layer.
+
+1. Run: npx -y agentera@next prime
+2. Based on the briefing you get back, tell me what to do next.
+
+After bootstrap, route via "/agentera <capability>" or plain language like "help me decide".
 ```
 
-`prime` returns a briefing on the current project and suggests what to do next.
-You talk to the colleague; the CLI handles the rest.
-
-See [`packages/cli/README.md`](./packages/cli/README.md) for channels, upgrade paths, and contributor build steps.
-
-### Mobile app
-
-The mobile app is the primary place you live inside the workflow. Development lives in [`packages/mobile`](./packages/mobile).
+<details>
+<summary><strong>Claude Code</strong></summary>
 
 ```bash
-pnpm install
-vp run mobile:dev      # fmt/lint via Vite+ stub until SvelteKit lands
-vp run mobile:check    # same — no app dev server yet
+npx skills add jgabor/agentera -g -a claude-code --skill agentera -y
 ```
 
-See [`packages/mobile/README.md`](./packages/mobile/README.md) for product philosophy, UI conventions, and dev commands.
-Monorepo consolidation plan: [`docs/consolidation/monorepo-plan.md`](./docs/consolidation/monorepo-plan.md).
-Open decisions (CLI ↔ mobile integration, publish identity): [`docs/consolidation/mobile-open-decisions.md`](./docs/consolidation/mobile-open-decisions.md).
+</details>
 
-### Website
+<details>
+<summary><strong>OpenCode</strong></summary>
+
+Install the skill and the plugin (both steps):
 
 ```bash
-pnpm install
-vp run web:dev         # http://localhost:4321
-vp run web:check
+npx skills add jgabor/agentera -g -a opencode --skill agentera -y
+mkdir -p ~/.config/opencode/plugins
+curl -fsSL https://raw.githubusercontent.com/jgabor/agentera/main/.opencode/plugins/agentera.js \
+  -o ~/.config/opencode/plugins/agentera.js
 ```
 
-See [`packages/web/README.md`](./packages/web/README.md).
+OpenCode also routes a bare message `hej` to the same dashboard.
+
+</details>
+
+<details>
+<summary><strong>Cursor</strong></summary>
+
+Install the skill:
+
+```bash
+npx skills add jgabor/agentera -g -a cursor --skill agentera -y
+```
+
+Or install from a local clone:
+
+```bash
+git clone https://github.com/jgabor/agentera.git ~/.cursor/plugins/local/agentera
+```
+
+</details>
+
+<details>
+<summary><strong>Copilot CLI</strong></summary>
+
+```bash
+copilot plugin marketplace add jgabor/agentera
+copilot plugin install jgabor/agentera
+```
+
+</details>
+
+<details>
+<summary><strong>Codex CLI</strong></summary>
+
+```bash
+codex plugin marketplace add jgabor/agentera
+codex plugin add agentera@agentera
+```
+
+Open `/plugins`, enable Agentera, then run `$agentera`.
+
+</details>
+
+Something broken after install? See [Troubleshooting](#troubleshooting).
 
 ## What you get
 
 Every project Agentera works on gets a structured memory under `.agentera/`:
 
-```text
-.agentera/
-  vision.yaml              product direction
-  plan.yaml                active plan and acceptance criteria
-  progress.yaml            shipped work and verification evidence
-  decisions.yaml           durable reasoning trail
-  health.yaml              architecture, test, dependency, and artifact health
-  docs.yaml                documentation inventory
-```
+- **Project direction remembered** → `.agentera/vision.yaml`
+- **Plan tracked with acceptance criteria** → `.agentera/plan.yaml`
+- **Shipped work with verification evidence** → `.agentera/progress.yaml`
+- **Durable reasoning trail for why decisions were made** → `.agentera/decisions.yaml`
+- **Architecture, test, dependency, and artifact health grades** → `.agentera/health.yaml`
+- **Documentation inventory and drift** → `.agentera/docs.yaml`
 
 Human-facing artifacts at the project root when useful: `TODO.md`, `CHANGELOG.md`, `DESIGN.md`.
 
 The CLI is the colleague's brain. It remembers what was decided, what was
 planned, what shipped, and what's broken — so you don't have to scroll chat
-history to recover context. Mobile is the primary surface for living inside
-the workflow; the CLI is the brain underneath it.
+history to recover context. Open a project, ask for a briefing, and pick up
+where you left off.
 
 ## Capabilities
 
@@ -112,111 +147,24 @@ Say what you want — "help me decide" routes to discuss; Agentera guides from t
 
 ## Development
 
-Requires Node.js 22+ with pnpm 10.30.3. Contributor rules: [`AGENTS.md`](./AGENTS.md).
-
-```bash
-pnpm install
-lefthook install
-
-# Package shortcuts from repo root
-vp run web:dev
-vp run web:check
-vp run mobile:dev      # packages/mobile
-vp run mobile:check
-
-# CLI
-pnpm -C packages/cli test
-pnpm -C packages/cli build
-node packages/cli/dist/bin/agentera.js check validate capability-contract --format json
-```
+Requires Node.js 22+ with pnpm 10.30.3. Contributor rules, build commands, and test layout live in [`AGENTS.md`](./AGENTS.md). CLI channels and upgrade paths: [`packages/cli/README.md`](./packages/cli/README.md).
 
 ---
 
-## Internals
+## Troubleshooting
 
-Agentera runs inside the coding agent you already use — Claude Code, Cursor,
-Codex, Copilot, OpenCode. The host provides the model; Agentera provides the
-colleague. Same workflow, same memory, same capabilities — wherever you work.
-
-<details>
-<summary><strong>Install inside a host agent</strong></summary>
-
-Install the Agentera CLI first (`npx -y agentera@next`), then pick a host:
-
-**Claude Code**
-
-```bash
-npx skills add jgabor/agentera -g -a claude-code --skill agentera -y
-```
-
-**OpenCode**
-
-```bash
-npx skills add jgabor/agentera -g -a opencode --skill agentera -y
-mkdir -p ~/.config/opencode/plugins
-curl -fsSL https://raw.githubusercontent.com/jgabor/agentera/main/.opencode/plugins/agentera.js \
-  -o ~/.config/opencode/plugins/agentera.js
-```
-
-**Cursor**
-
-```bash
-git clone https://github.com/jgabor/agentera.git ~/.cursor/plugins/local/agentera
-# or: npx skills add jgabor/agentera -g -a cursor --skill agentera -y
-# plus: uvx --from git+https://github.com/jgabor/agentera agentera upgrade --project "$PWD" --runtime cursor --yes
-```
-
-**Copilot CLI**
-
-```bash
-copilot plugin marketplace add jgabor/agentera
-copilot plugin install jgabor/agentera
-```
-
-**Codex CLI**
-
-```bash
-codex plugin marketplace add jgabor/agentera
-codex plugin add agentera@agentera
-```
-
-Runtime parity details: [`references/adapters/runtime-feature-parity.md`](./references/adapters/runtime-feature-parity.md).
-
-</details>
-
-<details>
-<summary><strong>CLI channels and upgrade</strong></summary>
-
-| Channel                    | npm tag   | Use for                  |
-| -------------------------- | --------- | ------------------------ |
-| development (3.x)          | `@next`   | `npx -y agentera@next`   |
-| stable (2.x until cutover) | `@latest` | `npx -y agentera@latest` |
-
-Upgrade and migration: [`UPGRADE.md`](./UPGRADE.md).
-
-Troubleshooting:
+Install or app home looks wrong:
 
 ```bash
 npx -y agentera@next doctor
-npx -y agentera@next upgrade --dry-run --channel development
 ```
 
-</details>
+Doctor checks the CLI, app files status, and runtime wiring, and prints repair commands when something's off.
 
-<details>
-<summary><strong>How structured state works</strong></summary>
+Upgrade and migration from v1: [`UPGRADE.md`](./UPGRADE.md).
 
-Each capability reads what earlier ones wrote, does its work, and leaves evidence for the next run. Agents query through the CLI:
-
-```bash
-npx -y agentera@next state query --list-artifacts
-npx -y agentera@next prime --context plan --format json
-```
-
-Capability schemas: `skills/agentera/capabilities/<name>/schemas/`. Instruction modules: `packages/cli/src/capabilities/<name>/instructions.ts`.
-
-</details>
+Runtime parity details (validation strictness, session preload, hook behavior by host): [`references/adapters/runtime-feature-parity.md`](./references/adapters/runtime-feature-parity.md).
 
 ---
 
-**License:** [Apache-2.0](./LICENSE) · **Version:** 3.0.0-next.1 · **Author:** Jonathan Gabor [jgabor.se](https://jgabor.se)
+**License:** [Apache-2.0](./LICENSE) · **Author:** Jonathan Gabor [jgabor.se](https://jgabor.se)
