@@ -8,17 +8,19 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "../../../..");
 const SKILL = path.join(REPO_ROOT, "skills", "agentera", "SKILL.md");
 
-describe("SKILL.md installed CLI gate", () => {
-  it("documents the two-step app-home and prime gate", () => {
+describe("SKILL.md bootstrap contract", () => {
+  it("documents agentera prime as the single bootstrap entry point", () => {
     const text = fs.readFileSync(SKILL, "utf8");
-    expect(text).toContain("Single-call installed CLI gate");
-    expect(text).toContain("Resolve `RESOLVED_AGENTERA_HOME` with the app-home precedence");
-    expect(text).toContain("agentera app-home");
-    expect(text).toContain("Do not substitute");
-    expect(text).toContain("Linux-only");
-    expect(text).toContain("macOS or");
-    expect(text).toContain("Windows");
-    expect(text).toContain("Never combine the app-home assignment");
-    expect(text).toContain('RESOLVED_AGENTERA_HOME="$(npx -y agentera app-home)"');
+    expect(text).toContain("agentera prime");
+    expect(text).toContain("Bootstrap");
+  });
+
+  it("does not require the host agent to run app-home separately", () => {
+    const text = fs.readFileSync(SKILL, "utf8");
+    // prime handles app-home internally; the host agent does not need
+    // to resolve RESOLVED_AGENTERA_HOME or run agentera app-home as a
+    // separate gate step before prime.
+    expect(text).not.toContain("RESOLVED_AGENTERA_HOME");
+    expect(text).not.toContain("Single-call installed CLI gate");
   });
 });
