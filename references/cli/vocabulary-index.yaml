@@ -26,12 +26,15 @@ authority_order:
   - DESIGN.md
   - .agentera/
 normalization_rules:
-  - rule: Internal workflows are capabilities.
-    use: capability, twelve capabilities, capability prose, capability schemas
-    avoid: Calling status/build/etc. standalone skills, except in v1 history.
-  - rule: The runtime surface is a skill.
-    use: Agentera skill, single installed Agentera app
-    avoid: twelve-skill suite for v2 behavior.
+  - rule: Agentera is one agent, not a team; workflows are capabilities.
+    use: capability, twelve capabilities, one agent with many capabilities, capability prose, capability schemas
+    avoid: Calling status/build/etc. standalone skills or agents; "engineering team" as a product word; except in v1 history.
+  - rule: The runtime install is internal transport, not a product surface.
+    use: single Agentera agent, capabilities (the product word); "skill" and "plugin" survive only as internal transport (the skills/ directory and plugin.json manifests host editors require)
+    avoid: '"Agentera skill" or "plugin" as product words; "twelve-skill suite" or "plugin suite" for the capability set.'
+  - rule: Agentera is the agent; the host is the harness (Decision 74).
+    use: host runtime, harness, host coding agent (Claude, Cursor, Codex, Copilot, OpenCode); the CLI owns routing, memory, capability prose, and the worker-spec contract
+    avoid: Calling host coding agents peers or extension hosts of Agentera; implying Agentera is a module loaded into the host.
   - rule: /agentera is the main invocation.
     use: /agentera, $agentera for Codex-specific docs
     avoid: /hej except as a legacy bridge.
@@ -152,10 +155,10 @@ decision_44:
       boundary: Preserve current command names, parseable labels, exit codes, and source-contract labels unless an explicit CLI migration is recorded.
     - surface: Canonical capability names (v3 surface)
       boundary: >-
-        Preserve the Decision 43 English alias set as the binding canonical names for v3 and onward: status, vision, discuss, research, plan, build, optimize, audit, document, profile, design, orchestrate. Future capability additions follow the same transfer-friendly English-verb pattern (Decision 70). Per Decision 70, the D43 alias set is the binding name set; future renames require a new decision.
+        Preserve the Decision 43 English alias set as the binding canonical names for v3 and onward under the single-agent identity (Decision 74): status, vision, discuss, research, plan, build, optimize, audit, document, profile, design, orchestrate. Future capability additions follow the same transfer-friendly English-verb pattern (Decision 70). Per Decisions 70 and 74, the D43 alias set is the binding name set under one agent, one CLI, many capabilities; future renames require a new decision.
     - surface: Legacy Swedish capability names (v2 stable only)
       boundary: >-
-        Preserve hej, visionera, resonera, inspirera, planera, realisera, optimera, inspektera, dokumentera, profilera, visualisera, and orkestrera for the v2 stable distribution (`npx -y agentera@latest`, ships from `main`) and as historical references in archived plans, decisions, and changelogs. Out of scope for v3 surface per Decision 70. Coexistence probe surfaces per-distribution naming divergence.
+        Preserve hej, visionera, resonera, inspirera, planera, realisera, optimera, inspektera, dokumentera, profilera, visualisera, and orkestrera for the v2 stable distribution (`npx -y agentera@latest`, ships from `main`) and as historical references in archived plans, decisions, and changelogs. Out of scope for v3 surface per Decisions 70 and 74; the single-agent identity uses English capability names exclusively. Coexistence probe surfaces per-distribution naming divergence.
     - surface: Historical artifacts
       boundary: Do not rewrite old progress, changelog, archived plans, or decisions solely for vocabulary cleanup.
     - surface: Release version
