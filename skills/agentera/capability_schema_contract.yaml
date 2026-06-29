@@ -55,7 +55,9 @@ ENTRY_SCHEMA:
       required: false
       description: >-
         Priority of this trigger entry for routing confidence. Used in the
-        five-layer routing model (Decision 42). Valid values: high, medium, low.
+        five-layer routing model (Decision 42); see
+        references/cli/routing-model.md for the layer definitions and routing
+        semantics. Valid values: high, medium, low.
         Required for all TRIGGERS entries.
     deprecated:
       type: boolean
@@ -141,7 +143,11 @@ FIELD_RULES:
         - high
         - medium
         - low
-      description: Priority of this trigger entry for routing confidence.
+      description: >-
+        Priority of this trigger entry for routing confidence. Feeds the
+        five-layer routing model (Decision 42); see
+        references/cli/routing-model.md for layer definitions and routing
+        semantics.
 
 PROSE_CONVENTIONS:
   description: >-
