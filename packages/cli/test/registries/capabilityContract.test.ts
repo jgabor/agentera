@@ -104,6 +104,55 @@ describe("capability schema contract loader", () => {
     });
   });
 
+  it("exposes the TRIGGER_ENRICHMENT defaults and resolved capability IDs from the valid contract", () => {
+    const model = loadCapabilitySchemaContract(CONTRACT_PATH);
+    expect(model.triggerEnrichment.spec).toBe("references/cli/trigger-schema-enrichment.md");
+    expect(model.triggerEnrichment.contractDefaults).toEqual({
+      confidenceThreshold: 50,
+      borderlineBand: 15,
+    });
+    const fieldNames = Object.keys(model.triggerEnrichment.fields).sort();
+    expect(fieldNames).toEqual(
+      ["borderline_band", "confidence_threshold", "disambiguates_against", "patterns_regex"].sort(),
+    );
+    expect(model.triggerEnrichment.fields.confidence_threshold).toMatchObject({
+      type: "integer",
+      required: false,
+      min: 0,
+      max: 100,
+      default: 50,
+    });
+    expect(model.triggerEnrichment.fields.borderline_band).toMatchObject({
+      type: "integer",
+      required: false,
+      min: 0,
+      max: 100,
+      default: 15,
+    });
+    expect(model.triggerEnrichment.fields.patterns_regex.eachMustBeValidRegex).toBe(true);
+    const capRule = model.triggerEnrichment.fields.disambiguates_against.entries?.capability;
+    expect(capRule?.required).toBe(true);
+    expect(capRule?.enumSource).toBe("ROUTE_ALIASES.primary_aliases.capability");
+    expect(model.triggerEnrichment.fields.disambiguates_against.entries?.hint).toMatchObject({
+      required: true,
+      nonEmpty: true,
+    });
+    expect(model.triggerEnrichment.allowedCapabilityIds).toEqual([
+      "status",
+      "vision",
+      "discuss",
+      "research",
+      "plan",
+      "build",
+      "optimize",
+      "audit",
+      "document",
+      "profile",
+      "design",
+      "orchestrate",
+    ]);
+  });
+
   const malformed: Array<[(data: any) => void, string]> = [
     [(data) => delete data.REQUIRED_GROUPS, "REQUIRED_GROUPS in fixture.yaml must be a non-empty list of strings"],
     [(data) => delete data.ENTRY_SCHEMA.fields, "ENTRY_SCHEMA.fields in fixture.yaml must be a mapping"],
@@ -173,6 +222,26 @@ describe("capability schema contract loader", () => {
     [
       (data) => data.ROUTE_ALIASES.primary_aliases.push({ alias: "duplicate", capability: "status" }),
       "ROUTE_ALIASES.primary_aliases capability 'status' in fixture.yaml must be unique",
+    ],
+    [
+      (data) => delete data.TRIGGER_ENRICHMENT,
+      "TRIGGER_ENRICHMENT in fixture.yaml must be present as a mapping",
+    ],
+    [
+      (data) => (data.TRIGGER_ENRICHMENT.contract_defaults.confidence_threshold = 150),
+      "TRIGGER_ENRICHMENT.contract_defaults.confidence_threshold in fixture.yaml must be an integer in range 0..100",
+    ],
+    [
+      (data) => delete data.TRIGGER_ENRICHMENT.fields.confidence_threshold,
+      "TRIGGER_ENRICHMENT.fields.confidence_threshold in fixture.yaml must be a mapping",
+    ],
+    [
+      (data) => (data.TRIGGER_ENRICHMENT.fields.confidence_threshold.required = true),
+      "TRIGGER_ENRICHMENT.fields.confidence_threshold.required in fixture.yaml must be false (enrichment is opt-in)",
+    ],
+    [
+      (data) => (data.TRIGGER_ENRICHMENT.fields.disambiguates_against.entries.capability.enum_source = "wrong"),
+      "TRIGGER_ENRICHMENT.fields.disambiguates_against.entries.capability.enum_source in fixture.yaml must be ROUTE_ALIASES.primary_aliases.capability",
     ],
   ];
   it.each(ruleFamily)("each rule family has a focused failing fixture", (mutate, message) => {
