@@ -114,7 +114,7 @@ tasks:
   - number: 5
     name: Implement trigger schema loader
     depends_on: ["4"]
-    status: in_progress
+    status: complete
     acceptance:
       - "GIVEN the loader is invoked WHEN all twelve triggers.yaml files exist THEN it returns a trigger model containing all entries"
       - "GIVEN the loader is invoked WHEN a triggers.yaml file has a regex pattern THEN the regex is compiled and usable for matching"
