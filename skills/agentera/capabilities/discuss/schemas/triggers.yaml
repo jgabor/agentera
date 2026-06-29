@@ -8,6 +8,8 @@ TRIGGERS:
     patterns:
       - "discuss"
       - "/discuss"
+    confidence_threshold: 60
+    borderline_band: 10
   2:
     id: T2
     description: >-
@@ -23,6 +25,7 @@ TRIGGERS:
       - "what are the tradeoffs"
       - "brainstorm"
       - "rubber duck"
+    confidence_threshold: 50
   3:
     id: T3
     description: >-
@@ -34,6 +37,7 @@ TRIGGERS:
       - "I'm torn between"
       - "what's the right approach"
       - "let's reason about"
+    confidence_threshold: 50
   4:
     id: T4
     description: >-
@@ -44,3 +48,7 @@ TRIGGERS:
       - "scope this out"
       - "before I build this"
       - "talk me through"
+    confidence_threshold: 50
+    disambiguates_against:
+      - capability: plan
+        hint: "discuss explores options before committing; plan structures committed work"

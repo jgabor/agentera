@@ -8,6 +8,8 @@ TRIGGERS:
     patterns:
       - "vision"
       - "/vision"
+    confidence_threshold: 60
+    borderline_band: 10
   2:
     id: T2
     description: >-
@@ -20,6 +22,7 @@ TRIGGERS:
       - "define the direction"
       - "set the north star"
       - "dream bigger"
+    confidence_threshold: 50
   3:
     id: T3
     description: >-
@@ -30,6 +33,13 @@ TRIGGERS:
       - "rethink the vision"
       - "refine the vision"
       - "update VISION.md"
+    confidence_threshold: 50
+    disambiguates_against:
+      - capability: build
+        hint: "vision refines existing project direction; build implements code"
+    patterns_regex:
+      - "\\brefine\\s+the\\s+vision\\b"
+      - "update\\s+VISION\\.md"
   4:
     id: T4
     description: >-
@@ -39,3 +49,7 @@ TRIGGERS:
     patterns:
       - "bootstrap the project"
       - "what should this project become"
+    confidence_threshold: 50
+    disambiguates_against:
+      - capability: plan
+        hint: "vision defines what a project should become; plan structures the work"

@@ -8,6 +8,10 @@ TRIGGERS:
     patterns:
       - "plan"
       - "/plan"
+    confidence_threshold: 60
+    borderline_band: 10
+    patterns_regex:
+      - "\\b/plan\\b"
   2:
     id: T2
     description: >-
@@ -21,6 +25,10 @@ TRIGGERS:
       - "decompose this"
       - "spec this out"
       - "plan before building"
+    confidence_threshold: 50
+    disambiguates_against:
+      - capability: build
+        hint: "plan structures work into tasks before coding; build implements the work"
   3:
     id: T3
     description: >-
@@ -32,3 +40,7 @@ TRIGGERS:
       - "how should we build this"
       - "multi-step feature"
       - "this is too big for one cycle"
+    confidence_threshold: 50
+    disambiguates_against:
+      - capability: build
+        hint: "plan sizes work before implementation; build runs the development cycle"

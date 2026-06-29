@@ -8,6 +8,11 @@ TRIGGERS:
     patterns:
       - "optimize"
       - "/optimize"
+    confidence_threshold: 60
+    borderline_band: 20
+    disambiguates_against:
+      - capability: audit
+        hint: "optimize tunes existing code; audit reviews codebase health"
   2:
     id: T2
     description: >-
@@ -26,6 +31,8 @@ TRIGGERS:
       - "get the score up"
       - "hit the target"
       - "improve the metric"
+    confidence_threshold: 50
+    borderline_band: 20
   3:
     id: T3
     description: >-
@@ -37,3 +44,4 @@ TRIGGERS:
       - "run experiments"
       - "tune"
       - "experiment until"
+    confidence_threshold: 50

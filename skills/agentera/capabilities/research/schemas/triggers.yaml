@@ -8,6 +8,7 @@ TRIGGERS:
     patterns:
       - "research"
       - "/research"
+    confidence_threshold: 55
   2:
     id: T2
     description: >-
@@ -21,6 +22,7 @@ TRIGGERS:
       - "is this relevant to"
       - "what can I take from this"
       - "should I adopt"
+    confidence_threshold: 45
   3:
     id: T3
     description: >-
@@ -32,3 +34,7 @@ TRIGGERS:
       - "review this repo for ideas"
       - "anything worth stealing from"
       - "how does this compare to what I'm doing"
+    confidence_threshold: 45
+    disambiguates_against:
+      - capability: audit
+        hint: "research reviews external resources for ideas; audit reviews the local codebase for health"

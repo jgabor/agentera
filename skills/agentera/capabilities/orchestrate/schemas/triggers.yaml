@@ -8,6 +8,10 @@ TRIGGERS:
     patterns:
       - "orchestrate"
       - "/orchestrate"
+    confidence_threshold: 60
+    borderline_band: 10
+    patterns_regex:
+      - "\\b/orchestrate\\b"
   2:
     id: T2
     description: >-
@@ -21,6 +25,10 @@ TRIGGERS:
       - "keep going until done"
       - "run through the plan"
       - "build everything"
+    confidence_threshold: 55
+    disambiguates_against:
+      - capability: build
+        hint: "orchestrate runs the whole plan autonomously; build executes one development cycle"
   3:
     id: T3
     description: >-
@@ -32,6 +40,7 @@ TRIGGERS:
       - "orchestrate"
       - "orchestrate skills"
       - "multi-cycle"
+    confidence_threshold: 50
   4:
     id: T4
     description: >-
@@ -40,3 +49,7 @@ TRIGGERS:
     priority: medium
     patterns:
       - "autonomous plan execution"
+    confidence_threshold: 50
+    disambiguates_against:
+      - capability: build
+        hint: "orchestrate chains multi-cycle execution; build runs a single cycle"

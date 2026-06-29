@@ -8,6 +8,8 @@ TRIGGERS:
     patterns:
       - "status"
       - "/status"
+    confidence_threshold: 60
+    borderline_band: 10
   2:
     id: T2
     description: >-
@@ -21,6 +23,7 @@ TRIGGERS:
       - "begin"
       - "getting started"
       - "onboard me"
+    confidence_threshold: 40
   3:
     id: T3
     description: >-
@@ -35,6 +38,7 @@ TRIGGERS:
       - "brief me"
       - "update me"
       - "what needs attention"
+    confidence_threshold: 45
   4:
     id: T4
     description: >-
@@ -46,6 +50,7 @@ TRIGGERS:
       - "catch me up"
       - "what should I work on"
       - "what's next"
+    confidence_threshold: 45
   5:
     id: T5
     description: >-
@@ -56,3 +61,4 @@ TRIGGERS:
       - "*"
     fallback: true
     priority: low
+    confidence_threshold: 0

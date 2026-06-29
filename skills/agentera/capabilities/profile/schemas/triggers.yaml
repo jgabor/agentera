@@ -8,6 +8,7 @@ TRIGGERS:
     patterns:
       - "profile"
       - "/profile"
+    confidence_threshold: 55
   2:
     id: T2
     description: >-
@@ -19,6 +20,7 @@ TRIGGERS:
       - "generate decision profile"
       - "rebuild my profile"
       - "regenerate profile"
+    confidence_threshold: 45
   3:
     id: T3
     description: >-
@@ -31,6 +33,7 @@ TRIGGERS:
       - "validate my profile"
       - "check my profile"
       - "quick profile check"
+    confidence_threshold: 45
   4:
     id: T4
     description: >-
@@ -43,3 +46,4 @@ TRIGGERS:
       - "mine my sessions"
       - "decision patterns"
       - "review my decision history"
+    confidence_threshold: 45

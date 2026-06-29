@@ -8,6 +8,10 @@ TRIGGERS:
     patterns:
       - "design"
       - "/design"
+    confidence_threshold: 60
+    borderline_band: 10
+    patterns_regex:
+      - "\\b/design\\b"
   2:
     id: T2
     description: >-
@@ -21,6 +25,7 @@ TRIGGERS:
       - "visual identity"
       - "define the aesthetic"
       - "set up design system"
+    confidence_threshold: 50
   3:
     id: T3
     description: >-
@@ -31,3 +36,10 @@ TRIGGERS:
       - "audit design"
       - "refine design system"
       - "update DESIGN.md"
+    confidence_threshold: 50
+    disambiguates_against:
+      - capability: audit
+        hint: "design here is about visual identity, not codebase auditing"
+    patterns_regex:
+      - "\\baudit\\s+design\\b"
+      - "update\\s+DESIGN\\.md"
