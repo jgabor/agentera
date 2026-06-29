@@ -122,7 +122,7 @@ tasks:
   - number: 6
     name: Implement Layer 3-4 routing engine
     depends_on: ["3", "5"]
-    status: in_progress
+    status: complete
     acceptance:
       - "GIVEN a test corpus of 3 inputs per capability (36 total) WHEN the engine evaluates each input THEN it returns the correct capability with confidence above threshold for at least 85 percent of inputs"
       - "GIVEN 5 adversarial inputs that match multiple capabilities within the borderline band WHEN the engine evaluates them THEN it returns disambiguation candidates with their scores"
@@ -131,7 +131,7 @@ tasks:
   - number: 7
     name: Implement prime --route CLI command
     depends_on: ["6"]
-    status: pending
+    status: in_progress
     acceptance:
       - 'GIVEN the command "agentera prime --route help me decide" WHEN it runs THEN it returns JSON with capability discuss and a confidence score'
       - 'GIVEN the command "agentera prime --route refine the vision" WHEN it runs THEN it returns disambiguation candidates for vision and build'
