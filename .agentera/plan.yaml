@@ -96,7 +96,7 @@ tasks:
   - number: 3
     name: Enrich the twelve triggers.yaml files
     depends_on: ["1"]
-    status: in_progress
+    status: complete
     acceptance:
       - "GIVEN any capability's triggers.yaml WHEN validated against the enriched contract THEN validation passes"
       - "GIVEN the vision capability's triggers.yaml WHEN inspected THEN it declares disambiguates_against for build on the shared pattern"
