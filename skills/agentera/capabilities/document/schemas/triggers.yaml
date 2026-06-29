@@ -8,6 +8,10 @@ TRIGGERS:
     patterns:
       - "document"
       - "/document"
+    confidence_threshold: 60
+    borderline_band: 10
+    patterns_regex:
+      - "\\b/document\\b"
   2:
     id: T2
     description: >-
@@ -22,6 +26,7 @@ TRIGGERS:
       - "write AGENTS.md"
       - "docs first"
       - "document before building"
+    confidence_threshold: 50
   3:
     id: T3
     description: >-
@@ -33,3 +38,9 @@ TRIGGERS:
       - "audit docs"
       - "check documentation"
       - "docs out of sync"
+    confidence_threshold: 50
+    disambiguates_against:
+      - capability: audit
+        hint: "document maintains project docs; audit reviews codebase health"
+    patterns_regex:
+      - "\\baudit\\s+docs?\\b"

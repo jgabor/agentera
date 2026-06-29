@@ -8,6 +8,8 @@ TRIGGERS:
     patterns:
       - "build"
       - "/build"
+    confidence_threshold: 60
+    borderline_band: 10
   2:
     id: T2
     description: >-
@@ -19,6 +21,7 @@ TRIGGERS:
       - "evolve the project"
       - "develop autonomously"
       - "build the next feature"
+    confidence_threshold: 50
   3:
     id: T3
     description: >-
@@ -29,6 +32,7 @@ TRIGGERS:
       - "keep building"
       - "start building"
       - "work on the project"
+    confidence_threshold: 50
   4:
     id: T4
     description: >-
@@ -37,3 +41,9 @@ TRIGGERS:
     priority: medium
     patterns:
       - "refine the vision"
+    confidence_threshold: 50
+    disambiguates_against:
+      - capability: vision
+        hint: "build implements code after vision work; vision defines direction"
+    patterns_regex:
+      - "\\brefine\\s+the\\s+vision\\b"

@@ -8,6 +8,10 @@ TRIGGERS:
     patterns:
       - "audit"
       - "/audit"
+    confidence_threshold: 60
+    borderline_band: 10
+    patterns_regex:
+      - "\\b/audit\\b"
   2:
     id: T2
     description: >-
@@ -26,6 +30,7 @@ TRIGGERS:
       - "pattern audit"
       - "dependency check"
       - "test coverage audit"
+    confidence_threshold: 55
   3:
     id: T3
     description: >-
@@ -36,3 +41,7 @@ TRIGGERS:
     patterns:
       - "health check overdue"
       - "audit after build"
+    confidence_threshold: 50
+    disambiguates_against:
+      - capability: build
+        hint: "audit checks codebase health after build activity; build continues development"
