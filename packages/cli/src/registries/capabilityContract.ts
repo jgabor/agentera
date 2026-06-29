@@ -15,6 +15,7 @@ export const BOOTSTRAP_RULE_SECTIONS = [
   "FIELD_RULES",
   "PRIMITIVE_REFERENCE_FIELDS",
   "ROUTE_ALIASES",
+  "TRIGGER_ENRICHMENT",
 ] as const;
 
 export class ContractBootstrapError extends Error {
@@ -66,6 +67,44 @@ export interface RouteAliasRules {
   primaryAliases: RouteAlias[];
 }
 
+/**
+ * Per-entry field rule inside a `disambiguates_against` list element.
+ * Owned by TRIGGER_ENRICHMENT.fields.disambiguates_against.entries.
+ */
+export interface DisambiguateAgainstEntryRule {
+  readonly type: string;
+  readonly required: boolean;
+  readonly nonEmpty: boolean;
+  readonly enumSource: string;
+}
+
+/**
+ * Optional trigger-entry enrichment field rule (TRIGGER_ENRICHMENT.fields),
+ * the single authority for the four enriched-field shapes and their contract
+ * defaults per Decision 75 / references/cli/trigger-schema-enrichment.md.
+ */
+export interface TriggerEnrichmentFieldRule {
+  readonly type: string;
+  readonly required: boolean;
+  readonly default: unknown;
+  readonly min?: number;
+  readonly max?: number;
+  readonly eachMustBeValidRegex?: boolean;
+  readonly entries?: Record<string, DisambiguateAgainstEntryRule>;
+}
+
+/**
+ * Resolved TRIGGER_ENRICHMENT model. `allowedCapabilityIds` is resolved from
+ * ROUTE_ALIASES.primary_aliases.capability values so the validator can enforce
+ * `disambiguates_against.capability` without re-reading ROUTE_ALIASES.
+ */
+export interface TriggerEnrichmentRules {
+  readonly spec: string;
+  readonly contractDefaults: { readonly confidenceThreshold: number; readonly borderlineBand: number };
+  readonly fields: Record<string, TriggerEnrichmentFieldRule>;
+  readonly allowedCapabilityIds: string[];
+}
+
 export interface CapabilitySchemaContract {
   path: string;
   requiredGroups: string[];
@@ -77,6 +116,7 @@ export interface CapabilitySchemaContract {
   groupPrefixes: Record<string, string>;
   primitiveReferences: PrimitiveReferenceRules;
   routeAliases: RouteAliasRules;
+  triggerEnrichment: TriggerEnrichmentRules;
 }
 
 function isMapping(value: unknown): value is JsonObject {
@@ -168,7 +208,61 @@ export function buildCapabilitySchemaContract(
         capability: entry.capability as string,
       })),
     },
+    triggerEnrichment: buildTriggerEnrichmentRules(data),
   };
+}
+
+function buildTriggerEnrichmentRules(data: JsonObject): TriggerEnrichmentRules {
+  const enrichment = data.TRIGGER_ENRICHMENT as JsonObject;
+  const defaults = enrichment.contract_defaults as JsonObject;
+  const fields = enrichment.fields as Record<string, JsonObject>;
+  const primaryAliases = (data.ROUTE_ALIASES as JsonObject).primary_aliases as JsonObject[];
+  const allowedCapabilityIds: string[] = primaryAliases.map((entry) => entry.capability as string);
+
+  return {
+    spec: enrichment.spec as string,
+    contractDefaults: {
+      confidenceThreshold: defaults.confidence_threshold as number,
+      borderlineBand: defaults.borderline_band as number,
+    },
+    fields: Object.fromEntries(
+      Object.entries(fields).map(([name, raw]) => [name, buildEnrichmentFieldRule(raw)]),
+    ),
+    allowedCapabilityIds,
+  };
+}
+
+function buildEnrichmentFieldRule(raw: JsonObject): TriggerEnrichmentFieldRule {
+  const rule: {
+    type: string;
+    required: boolean;
+    default: unknown;
+    min?: number;
+    max?: number;
+    eachMustBeValidRegex?: boolean;
+    entries?: Record<string, DisambiguateAgainstEntryRule>;
+  } = {
+    type: raw.type as string,
+    required: Boolean(raw.required),
+    default: raw.default,
+  };
+  if (typeof raw.min === "number") rule.min = raw.min;
+  if (typeof raw.max === "number") rule.max = raw.max;
+  if (raw.each_must_be_valid_regex === true) rule.eachMustBeValidRegex = true;
+  if (isMapping(raw.entries)) {
+    const entries: Record<string, DisambiguateAgainstEntryRule> = {};
+    for (const [entryName, entryRaw] of Object.entries(raw.entries)) {
+      const e = entryRaw as JsonObject;
+      entries[entryName] = {
+        type: e.type as string,
+        required: Boolean(e.required),
+        nonEmpty: e.non_empty === true,
+        enumSource: typeof e.enum_source === "string" ? (e.enum_source as string) : "",
+      };
+    }
+    rule.entries = entries;
+  }
+  return rule;
 }
 
 function requiredGroupsOf(data: JsonObject, sourceLabel: string, errors: string[]): string[] {
@@ -239,6 +333,7 @@ function checkRuleSections(data: JsonObject, sourceLabel: string, errors: string
   checkTriggerPriorityRules(data, sourceLabel, errors);
   checkPrimitiveReferenceRules(data, sourceLabel, errors);
   checkRouteAliasRules(data, sourceLabel, errors);
+  checkTriggerEnrichmentRules(data, sourceLabel, errors);
 }
 
 function checkDirectoryRules(data: JsonObject, sourceLabel: string, errors: string[]): void {
@@ -450,6 +545,158 @@ function checkSelfGroups(
       errors.push(`bootstrap [error]: self group ${groupName} missing in ${sourceLabel}`);
     } else if (!isMapping(data[groupName])) {
       errors.push(`bootstrap [error]: self group ${groupName} in ${sourceLabel} must be a mapping`);
+    }
+  }
+}
+
+/**
+ * Required integer range field inside TRIGGER_ENRICHMENT (defaults and
+ * per-field min/max). Used by both the contract_defaults and field-level
+ * constraint checks below.
+ */
+function checkEnrichmentIntegerField(
+  value: unknown,
+  label: string,
+  sourceLabel: string,
+  errors: string[],
+): void {
+  if (typeof value !== "number" || !Number.isInteger(value) || value < 0 || value > 100) {
+    errors.push(
+      `bootstrap [error]: ${label} in ${sourceLabel} must be an integer in range 0..100`,
+    );
+  }
+}
+
+function checkTriggerEnrichmentRules(data: JsonObject, sourceLabel: string, errors: string[]): void {
+  const enrichment = data.TRIGGER_ENRICHMENT;
+  if (!isMapping(enrichment)) {
+    errors.push(
+      `bootstrap [error]: TRIGGER_ENRICHMENT in ${sourceLabel} must be present as a mapping`,
+    );
+    return;
+  }
+  if (typeof enrichment.spec !== "string" || !enrichment.spec) {
+    errors.push(
+      `bootstrap [error]: TRIGGER_ENRICHMENT.spec in ${sourceLabel} must be a non-empty string`,
+    );
+  }
+  const defaults = enrichment.contract_defaults;
+  if (!isMapping(defaults)) {
+    errors.push(
+      `bootstrap [error]: TRIGGER_ENRICHMENT.contract_defaults in ${sourceLabel} must be a mapping`,
+    );
+  } else {
+    checkEnrichmentIntegerField(
+      defaults.confidence_threshold,
+      "TRIGGER_ENRICHMENT.contract_defaults.confidence_threshold",
+      sourceLabel,
+      errors,
+    );
+    checkEnrichmentIntegerField(
+      defaults.borderline_band,
+      "TRIGGER_ENRICHMENT.contract_defaults.borderline_band",
+      sourceLabel,
+      errors,
+    );
+  }
+
+  const fields = enrichment.fields;
+  if (!isMapping(fields)) {
+    errors.push(`bootstrap [error]: TRIGGER_ENRICHMENT.fields in ${sourceLabel} must be a mapping`);
+    return;
+  }
+  // The four canonical enrichment field names. Each must exist as a mapping
+  // with the documented shape; the loader reads them faithfully.
+  const expected: Record<string, string> = {
+    confidence_threshold: "integer",
+    borderline_band: "integer",
+    patterns_regex: "list_of_strings",
+    disambiguates_against: "list_of_mappings",
+  };
+  for (const [fieldName, expectedType] of Object.entries(expected)) {
+    if (!isMapping(fields[fieldName])) {
+      errors.push(
+        `bootstrap [error]: TRIGGER_ENRICHMENT.fields.${fieldName} in ${sourceLabel} must be a mapping`,
+      );
+      continue;
+    }
+    if (fields[fieldName].type !== expectedType) {
+      errors.push(
+        `bootstrap [error]: TRIGGER_ENRICHMENT.fields.${fieldName}.type in ${sourceLabel} must be ${expectedType}`,
+      );
+    }
+    if (fields[fieldName].required !== false) {
+      errors.push(
+        `bootstrap [error]: TRIGGER_ENRICHMENT.fields.${fieldName}.required in ${sourceLabel} must be false (enrichment is opt-in)`,
+      );
+    }
+    const min = fields[fieldName].min;
+    const max = fields[fieldName].max;
+    if (expectedType === "integer") {
+      if (typeof min !== "number" || min !== 0) {
+        errors.push(
+          `bootstrap [error]: TRIGGER_ENRICHMENT.fields.${fieldName}.min in ${sourceLabel} must be 0`,
+        );
+      }
+      if (typeof max !== "number" || max !== 100) {
+        errors.push(
+          `bootstrap [error]: TRIGGER_ENRICHMENT.fields.${fieldName}.max in ${sourceLabel} must be 100`,
+        );
+      }
+      checkEnrichmentIntegerField(
+        fields[fieldName].default,
+        `TRIGGER_ENRICHMENT.fields.${fieldName}.default`,
+        sourceLabel,
+        errors,
+      );
+    }
+    if (expectedType === "list_of_strings" && fields[fieldName].each_must_be_valid_regex !== true) {
+      errors.push(
+        `bootstrap [error]: TRIGGER_ENRICHMENT.fields.${fieldName}.each_must_be_valid_regex in ${sourceLabel} must be true`,
+      );
+    }
+  }
+
+  // disambiguates_against.entries capability/hint shape
+  const disambig = isMapping(fields.disambiguates_against) ? fields.disambiguates_against : null;
+  const entriesList = disambig && isMapping(disambig.entries) ? disambig.entries : null;
+  if (disambig && !entriesList) {
+    errors.push(
+      `bootstrap [error]: TRIGGER_ENRICHMENT.fields.disambiguates_against.entries in ${sourceLabel} must be a mapping`,
+    );
+  }
+  if (entriesList) {
+    if (!isMapping(entriesList.capability)) {
+      errors.push(
+        `bootstrap [error]: TRIGGER_ENRICHMENT.fields.disambiguates_against.entries.capability in ${sourceLabel} must be a mapping`,
+      );
+    } else {
+      if (entriesList.capability.required !== true) {
+        errors.push(
+          `bootstrap [error]: TRIGGER_ENRICHMENT.fields.disambiguates_against.entries.capability.required in ${sourceLabel} must be true`,
+        );
+      }
+      if (entriesList.capability.enum_source !== "ROUTE_ALIASES.primary_aliases.capability") {
+        errors.push(
+          `bootstrap [error]: TRIGGER_ENRICHMENT.fields.disambiguates_against.entries.capability.enum_source in ${sourceLabel} must be ROUTE_ALIASES.primary_aliases.capability`,
+        );
+      }
+    }
+    if (!isMapping(entriesList.hint)) {
+      errors.push(
+        `bootstrap [error]: TRIGGER_ENRICHMENT.fields.disambiguates_against.entries.hint in ${sourceLabel} must be a mapping`,
+      );
+    } else {
+      if (entriesList.hint.required !== true) {
+        errors.push(
+          `bootstrap [error]: TRIGGER_ENRICHMENT.fields.disambiguates_against.entries.hint.required in ${sourceLabel} must be true`,
+        );
+      }
+      if (entriesList.hint.non_empty !== true) {
+        errors.push(
+          `bootstrap [error]: TRIGGER_ENRICHMENT.fields.disambiguates_against.entries.hint.non_empty in ${sourceLabel} must be true`,
+        );
+      }
     }
   }
 }

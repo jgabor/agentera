@@ -10,6 +10,7 @@ import {
   buildProtocolValueLookup,
   checkDeprecation,
   checkPrimitiveReferences,
+  checkTriggerEnrichment,
   collectSchemaGroups,
   loadCapabilitySchemaContract,
   validateCapability,
@@ -268,6 +269,166 @@ describe("validateCapability", () => {
   it("declares group prefixes without enforcing them", () => {
     const capDir = writeCapability(path.join(tmp, "wrong-prefix"), validSchema({ triggerId: "WRONG1" }));
     expect(validateCapability(capDir, CONTRACT_PATH)).toEqual([]);
+  });
+});
+
+describe("trigger enrichment (V7)", () => {
+  // Each `extra` block is a sibling-yielded YAML fragment at the trigger-entry
+  // level (col-0 aligned by the caller). The helper prefixes every line with
+  // 4 spaces so the fragment nests correctly under entry 1 (which sits at
+  // col 4).
+  function triggerSchema(extra: string): string {
+    const indented = extra
+      .split("\n")
+      .map((l) => "    " + l)
+      .join("\n");
+    return [
+      "TRIGGERS:",
+      "  1:",
+      "    id: T1",
+      "    description: Trigger entry.",
+      "    priority: high",
+      indented,
+      "ARTIFACTS:",
+      "  1:",
+      "    id: A1",
+      "    description: Artifact entry.",
+      "VALIDATION:",
+      "  1:",
+      "    id: V1",
+      "    description: Validation entry.",
+      "EXIT_CONDITIONS:",
+      "  1:",
+      "    id: E1",
+      "    description: Exit entry.",
+    ].join("\n");
+  }
+
+  it("accepts a triggers.yaml that omits all enriched fields (backward compatibility)", () => {
+    const capDir = writeCapability(path.join(tmp, "bare"), validSchema());
+    expect(validateCapability(capDir, CONTRACT_PATH)).toEqual([]);
+  });
+
+  it("accepts a fully enriched triggers.yaml with valid confidence_threshold, borderline_band, patterns_regex, and disambiguates_against", () => {
+    const capDir = writeCapability(
+      path.join(tmp, "enriched"),
+      triggerSchema(`patterns:
+  - "refine the vision"
+confidence_threshold: 55
+borderline_band: 10
+patterns_regex:
+  - "\\\\brefine\\\\s+the\\\\s+vision\\\\b"
+disambiguates_against:
+  - capability: build
+    hint: "vision refines existing project direction; build implements code"
+  - capability: optimize
+    hint: "vision is about what to build, not tuning existing code"`),
+    );
+    expect(validateCapability(capDir, CONTRACT_PATH)).toEqual([]);
+  });
+
+  it("fails when confidence_threshold is above 100 with the valid range and offending entry ID", () => {
+    const capDir = writeCapability(
+      path.join(tmp, "ct-high"),
+      triggerSchema("confidence_threshold: 150"),
+    );
+    expect(validateCapability(capDir, CONTRACT_PATH)).toEqual([
+      `V7 [error]: TRIGGERS entry 1 (T1) in ${capDir} has confidence_threshold=150 (must be an integer in range 0..100)`,
+    ]);
+  });
+
+  it("fails when confidence_threshold is below 0", () => {
+    const capDir = writeCapability(
+      path.join(tmp, "ct-low"),
+      triggerSchema("confidence_threshold: -5"),
+    );
+    expect(validateCapability(capDir, CONTRACT_PATH)).toEqual([
+      `V7 [error]: TRIGGERS entry 1 (T1) in ${capDir} has confidence_threshold=-5 (must be an integer in range 0..100)`,
+    ]);
+  });
+
+  it("fails when confidence_threshold is a non-integer", () => {
+    const capDir = writeCapability(
+      path.join(tmp, "ct-float"),
+      triggerSchema("confidence_threshold: 12.5"),
+    );
+    expect(validateCapability(capDir, CONTRACT_PATH)).toEqual([
+      `V7 [error]: TRIGGERS entry 1 (T1) in ${capDir} has confidence_threshold=12.5 (must be an integer in range 0..100)`,
+    ]);
+  });
+
+  it("fails when disambiguates_against.capability references a non-existent capability", () => {
+    const capDir = writeCapability(
+      path.join(tmp, "da-bad-cap"),
+      triggerSchema(`disambiguates_against:
+  - capability: nonexistent_capability
+    hint: "distinguishes from undefined"`),
+    );
+    const allowed =
+      "status, vision, discuss, research, plan, build, optimize, audit, document, profile, design, orchestrate";
+    expect(validateCapability(capDir, CONTRACT_PATH)).toEqual([
+      `V7 [error]: TRIGGERS entry 1 (T1) in ${capDir} disambiguates_against[0].capability='nonexistent_capability' is not a canonical capability ID (must be one of: ${allowed})`,
+    ]);
+  });
+
+  it("fails when disambiguates_against entry is missing the hint", () => {
+    const capDir = writeCapability(
+      path.join(tmp, "da-no-hint"),
+      triggerSchema(`disambiguates_against:
+  - capability: build`),
+    );
+    expect(validateCapability(capDir, CONTRACT_PATH)).toEqual([
+      `V7 [error]: TRIGGERS entry 1 (T1) in ${capDir} disambiguates_against[0] missing or empty 'hint' (must be a non-empty string distinguishing this trigger from the named capability)`,
+    ]);
+  });
+
+  it("fails when disambiguates_against hint is empty whitespace", () => {
+    const capDir = writeCapability(
+      path.join(tmp, "da-blank-hint"),
+      triggerSchema(`disambiguates_against:
+  - capability: build
+    hint: "   "`),
+    );
+    expect(validateCapability(capDir, CONTRACT_PATH)).toEqual([
+      `V7 [error]: TRIGGERS entry 1 (T1) in ${capDir} disambiguates_against[0] missing or empty 'hint' (must be a non-empty string distinguishing this trigger from the named capability)`,
+    ]);
+  });
+
+  it("fails when disambiguates_against is not a list", () => {
+    const capDir = writeCapability(
+      path.join(tmp, "da-string"),
+      triggerSchema('disambiguates_against: "build"'),
+    );
+    expect(validateCapability(capDir, CONTRACT_PATH)).toEqual([
+      `V7 [error]: TRIGGERS entry 1 (T1) in ${capDir} has disambiguates_against='build' (must be a list of mappings each with 'capability' and 'hint')`,
+    ]);
+  });
+
+  it("fails when patterns_regex contains an invalid regex", () => {
+    const capDir = writeCapability(
+      path.join(tmp, "pr-bad-regex"),
+      triggerSchema(`patterns_regex:
+  - "[unclosed"`),
+    );
+    expect(validateCapability(capDir, CONTRACT_PATH)).toEqual([
+      `V7 [error]: TRIGGERS entry 1 (T1) in ${capDir} patterns_regex[0]='[unclosed' is not a valid regular expression`,
+    ]);
+  });
+
+  it("fails when borderline_band is out of range", () => {
+    const capDir = writeCapability(
+      path.join(tmp, "bb-high"),
+      triggerSchema("borderline_band: 150"),
+    );
+    expect(validateCapability(capDir, CONTRACT_PATH)).toEqual([
+      `V7 [error]: TRIGGERS entry 1 (T1) in ${capDir} has borderline_band=150 (must be an integer in range 0..100)`,
+    ]);
+  });
+
+  it("validates the contract file against its own enrichment rules", () => {
+    const contract = loadCapabilitySchemaContract(CONTRACT_PATH);
+    const groups = { TRIGGERS: { 1: { id: "T1", description: "x", priority: "high" } } };
+    expect(checkTriggerEnrichment(groups, "self", contract)).toEqual([]);
   });
 });
 

@@ -96,7 +96,7 @@ tasks:
   - number: 3
     name: Enrich the twelve triggers.yaml files
     depends_on: ["1"]
-    status: pending
+    status: in_progress
     acceptance:
       - "GIVEN any capability's triggers.yaml WHEN validated against the enriched contract THEN validation passes"
       - "GIVEN the vision capability's triggers.yaml WHEN inspected THEN it declares disambiguates_against for build on the shared pattern"
@@ -105,7 +105,7 @@ tasks:
   - number: 4
     name: Update capability schema contract and TS loader
     depends_on: ["1"]
-    status: pending
+    status: complete
     acceptance:
       - "GIVEN the updated contract WHEN a triggers.yaml file has a confidence_threshold outside 0-100 THEN validation fails with a clear error message including the valid range"
       - "GIVEN the updated contract WHEN a triggers.yaml file has disambiguates_against referencing a non-existent capability THEN validation fails"

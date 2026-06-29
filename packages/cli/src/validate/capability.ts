@@ -236,6 +236,140 @@ export function checkTriggerPriorities(
   return errors;
 }
 
+/**
+ * V7 trigger-entry enrichment validation. Enforces the four optional fields
+ * declared in TRIGGER_ENRICHMENT in capability_schema_contract.yaml. Every
+ * field is OPTIONAL; a triggers.yaml entry that omits all enriched fields
+ * passes (backward compatibility per spec §6). Error messages include the
+ * valid range/value and the offending entry ID so authors can locate the
+ * violation without grepping the contract.
+ */
+export function checkTriggerEnrichment(
+  groups: JsonObject,
+  sourceLabel: string,
+  contract: CapabilitySchemaContract,
+): string[] {
+  const errors: string[] = [];
+  const triggers = groups.TRIGGERS ?? {};
+  if (!isMapping(triggers)) {
+    return errors;
+  }
+  const enrichment = contract.triggerEnrichment;
+  const confidenceField = enrichment.fields.confidence_threshold;
+  const borderlineField = enrichment.fields.borderline_band;
+  const allowedIds = enrichment.allowedCapabilityIds;
+
+  for (const [key, entry] of Object.entries(triggers)) {
+    if (!isMapping(entry)) {
+      continue;
+    }
+    const entryId = entry.id ?? key;
+    const location = `TRIGGERS entry ${key} (${entryId}) in ${sourceLabel}`;
+
+    if (entry.confidence_threshold !== undefined) {
+      const value = entry.confidence_threshold;
+      const min = confidenceField.min ?? 0;
+      const max = confidenceField.max ?? 100;
+      if (
+        typeof value !== "number" ||
+        !Number.isInteger(value) ||
+        value < min ||
+        value > max
+      ) {
+        errors.push(
+          `V7 [error]: ${location} has confidence_threshold=${valueRepr(value)} ` +
+            `(must be an integer in range ${min}..${max})`,
+        );
+      }
+    }
+
+    if (entry.borderline_band !== undefined) {
+      const value = entry.borderline_band;
+      const min = borderlineField.min ?? 0;
+      const max = borderlineField.max ?? 100;
+      if (
+        typeof value !== "number" ||
+        !Number.isInteger(value) ||
+        value < min ||
+        value > max
+      ) {
+        errors.push(
+          `V7 [error]: ${location} has borderline_band=${valueRepr(value)} ` +
+            `(must be an integer in range ${min}..${max})`,
+        );
+      }
+    }
+
+    if (entry.patterns_regex !== undefined) {
+      const value = entry.patterns_regex;
+      if (!Array.isArray(value)) {
+        errors.push(
+          `V7 [error]: ${location} has patterns_regex=${valueRepr(value)} ` +
+            `(must be a list of regex strings)`,
+        );
+      } else {
+        for (let i = 0; i < value.length; i++) {
+          const pattern = value[i];
+          if (typeof pattern !== "string") {
+            errors.push(
+              `V7 [error]: ${location} patterns_regex[${i}] is not a string`,
+            );
+            continue;
+          }
+          try {
+            new RegExp(pattern);
+          } catch {
+            errors.push(
+              `V7 [error]: ${location} patterns_regex[${i}]=${valueRepr(pattern)} ` +
+                `is not a valid regular expression`,
+            );
+          }
+        }
+      }
+    }
+
+    if (entry.disambiguates_against !== undefined) {
+      const value = entry.disambiguates_against;
+      if (!Array.isArray(value)) {
+        errors.push(
+          `V7 [error]: ${location} has disambiguates_against=${valueRepr(value)} ` +
+            `(must be a list of mappings each with 'capability' and 'hint')`,
+        );
+        continue;
+      }
+      for (let i = 0; i < value.length; i++) {
+        const item = value[i];
+        if (!isMapping(item)) {
+          errors.push(
+            `V7 [error]: ${location} disambiguates_against[${i}] must be a mapping with 'capability' and 'hint'`,
+          );
+          continue;
+        }
+        const capability = item.capability;
+        if (typeof capability !== "string" || !capability) {
+          errors.push(
+            `V7 [error]: ${location} disambiguates_against[${i}] missing 'capability' ` +
+              `(must be one of: ${allowedIds.join(", ")})`,
+          );
+        } else if (!allowedIds.includes(capability)) {
+          errors.push(
+            `V7 [error]: ${location} disambiguates_against[${i}].capability=${valueRepr(capability)} ` +
+              `is not a canonical capability ID (must be one of: ${allowedIds.join(", ")})`,
+          );
+        }
+        const hint = item.hint;
+        if (typeof hint !== "string" || hint.trim() === "") {
+          errors.push(
+            `V7 [error]: ${location} disambiguates_against[${i}] missing or empty 'hint' ` +
+              `(must be a non-empty string distinguishing this trigger from the named capability)`,
+          );
+        }
+      }
+    }
+  }
+  return errors;
+}
+
 export function checkDeprecation(
   groups: JsonObject,
   sourceLabel: string,
@@ -299,6 +433,7 @@ export function validateContractSelf(contractPath: string): string[] {
   errors.push(...checkNumberedEntries(groups, contractPath, contract));
   errors.push(...checkStableIds(groups, contractPath, contract));
   errors.push(...checkTriggerPriorities(groups, contractPath, contract));
+  errors.push(...checkTriggerEnrichment(groups, contractPath, contract));
 
   for (const w of checkDeprecation(groups, contractPath, contract)) {
     process.stderr.write(w + "\n");
@@ -324,6 +459,7 @@ export function validateCapability(capDir: string, contractPath: string): string
     allErrors.push(...checkNumberedEntries(groups, capDir, contract));
     allErrors.push(...checkStableIds(groups, capDir, contract));
     allErrors.push(...checkTriggerPriorities(groups, capDir, contract));
+    allErrors.push(...checkTriggerEnrichment(groups, capDir, contract));
 
     for (const w of checkDeprecation(groups, capDir, contract)) {
       process.stderr.write(w + "\n");
