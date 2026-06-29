@@ -75,7 +75,7 @@ tasks:
   - number: 1
     name: Design trigger schema enrichment contract and record decision
     depends_on: []
-    status: in_progress
+    status: complete
     acceptance:
       - "GIVEN the enrichment spec WHEN a triggers.yaml file includes confidence_threshold THEN the field is a 0-100 integer with a documented contract default"
       - "GIVEN the enrichment spec WHEN a triggers.yaml file includes disambiguates_against THEN each entry references a valid capability ID and includes a hint string"
@@ -88,7 +88,7 @@ tasks:
   - number: 2
     name: Restore five-layer routing model definition in repo
     depends_on: []
-    status: in_progress
+    status: complete
     acceptance:
       - "GIVEN a developer reading the repo WHEN they search for the routing model THEN they find a definition of what Layers 1-5 are and what each layer's routing semantics are"
       - "GIVEN the routing model definition WHEN Layer 3 and Layer 4 are referenced in code or tests THEN the definition explains what those layers mean"
