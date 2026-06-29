@@ -1,4 +1,35 @@
 cycles:
+- number: 691
+  timestamp: 2026-06-29 18:45
+  type: feat
+  phase: build
+  what: "Plan task 5 (Implement trigger schema loader): added packages/cli/src/registries/triggerLoader.ts\
+    \ and packages/cli/test/registries/triggerLoader.test.ts. The loader reads all\
+    \ twelve capabilities/*/schemas/triggers.yaml files into a typed TriggerModel,\
+    \ applies TRIGGER_ENRICHMENT contract defaults for absent fields, compiles patterns_regex\
+    \ entries into RegExp objects (case-insensitive per spec \xA71.3), and validates\
+    \ disambiguates_against.capability references resolve to a capability present\
+    \ in the model with at least one trigger entry."
+  discovered: The contract already exposes TriggerEnrichmentRules and allowedCapabilityIds\
+    via the capabilityContract loader, so the trigger loader reads defaults (50/15)\
+    \ straight from the contract model rather than re-declaring them \u2014 matches\
+    \ the AGENTS.md rule against duplicating contract-owned values. Vision T3 ships\
+    \ two patterns_regex entries that the loader now exposes as compiled RegExp[]\
+    \ for the routing engine (Task 6) to consume.
+  verified: 'typecheck: 0 errors. build: clean. test: 133/133 files, 1174/1174 tests
+    (21.07s) including 10 new triggerLoader tests. check validate capability-contract:
+    passed (2/2, 0 violations). check compact: within uniform_10_40_50 limits, no
+    repair needed.'
+  next: Task 6 (Layer 3-4 routing engine) can consume loadTriggerModel(contract,\
+    \ {sourceRoot}) and implement the scoring/disambiguation algorithm from references/cli/trigger-schema-enrichment.md.
+  context:
+    intent: Build the trigger schema loader so the routing engine (Task 6) and prime
+      --route (Task 7) can read triggers.yaml into a typed runtime model.
+    constraints: No routing-engine implementation (Task 6); no prime --route CLI\
+      \ command (Task 7). Loader colocated with existing registries at packages/cli/src/registries/.
+    artifacts:
+      implementation: packages/cli/src/registries/triggerLoader.ts
+      tests: packages/cli/test/registries/triggerLoader.test.ts
 - number: 690
   timestamp: 2026-06-28 15:57
   type: chore
@@ -311,35 +342,9 @@ cycles:
       API. feat/v3 only.
     artifacts:
       plan: .agentera/plan.yaml (task 5 -> complete; surprises 2 and 3 recorded)
-- number: 681
-  timestamp: 2026-06-27 13:00
-  type: refactor
-  phase: build
-  what: 'Plan task 4 of chore:3.0.0: consolidate Dict aliases in registries & validate
-    subsystems. Removed local `type Dict = Record<string, any|unknown>` in 8 files
-    (runtimeAdapterRegistry, packageRegistry, evaluatorHandoffContract, capabilityContract,
-    vocabularyAuthority, crossCapability, capability, vocabularyAuthority.test); folded
-    unknown/any variants to canonical JsonObject. lifecycleAdapters/shared.ts kept
-    as sanctioned passthrough.'
-  discovered: 'Cross-subsystem coupling with upgrade/appModel.ts (task-5 scope): a
-    2-level chain loadRegistry().get("agentera").version_authority.persisted_authority
-    required PackageRegistry.get() return to stay `Record<string, any>` (documented
-    escape-hatch exception with // cast comment). Task 5 or 6 should revisit appModel.ts
-    to narrow this to a typed shape so the export-boundary any can be removed.'
-  verified: 'pnpm -C packages/cli run typecheck: 0 errors. pnpm -C packages/cli test:
-    1145/1145 pass (132 files). rg `type Dict\s*=` in registries/validate/: only lifecycleAdapters/shared.ts
-    passthrough remains. 0 fixture/snapshot drift.'
-  next: 'Next dependency-ready: task 5 (long-tail: setup, doctor, upgrade incl. appModel/analytics/eval/release).
-    Then task 6 (cross-cutting cast audit + re-export deletion) and task 7 (final
-    sync + close critical TODO).'
-  context:
-    intent: Type-only consolidation; narrow `as` casts to IO boundaries. No behavior
-      change.
-    constraints: Task-4 scope only. core/jsonValue.ts untouched. No new public API.
-      feat/v3 only.
-    artifacts:
-      plan: .agentera/plan.yaml (task 4 -> complete; appModel exception noted)
 archive:
+- summary: 'Cycle 681 (2026-06-27): Plan task 4 of chore:3.0.0: consolidate Dict aliases
+    in registries & validate subsystems. Removed local...'
 - summary: 'Cycle 680 (2026-06-27): Plan tasks 2+3 (coupled) of chore:3.0.0: consolidate
     Dict aliases in the CLI command/state-query surface (task...'
 - summary: "Cycle 679 (2026-06-27): chore:3.0.0 plan task 1 \u2014 consolidate `type\
@@ -437,6 +442,3 @@ archive:
     \ CLI surface families to TypeScript and proved..."
 - summary: "Cycle 642 (2026-06-04): Plan: Decision 56 parity closeout \u2014 drafted\
     \ the first plan in the v3-rewrite sequence targeting..."
-- summary: "Cycle 641 (2026-06-03): D65 per-capability content surface \u2014 relocated\
-    \ 12 capability prose files from skills/agentera/capabilities/<name>/instructions.md\
-    \ to packages/cli/src/capabilities/<name>/instructions.ts as..."
