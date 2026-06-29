@@ -13,6 +13,7 @@ project remembers in the morning.
 
 <p>
 <a href="#get-started">Get started</a> ·
+<a href="#what-you-see">What you see</a> ·
 <a href="#what-you-get">What you get</a> ·
 <a href="#capabilities">Capabilities</a> ·
 <a href="#development">Development</a>
@@ -68,17 +69,11 @@ OpenCode also routes a bare message `hej` to the same dashboard.
 <details>
 <summary><strong>Cursor</strong></summary>
 
-Install the skill:
-
-```bash
-npx skills add jgabor/agentera -g -a cursor --skill agentera -y
-```
-
-Or install from a local clone:
-
 ```bash
 git clone https://github.com/jgabor/agentera.git ~/.cursor/plugins/local/agentera
 ```
+
+Restart Cursor or run **Developer: Reload Window**.
 
 </details>
 
@@ -104,7 +99,39 @@ Open `/plugins`, enable Agentera, then run `$agentera`.
 
 </details>
 
-Something broken after install? See [Troubleshooting](#troubleshooting).
+## What you see
+
+Run `/agentera` (`$agentera` in Codex) and get a project briefing that reads
+your repo instead of guessing from chat history.
+
+```text
+┌─┐┌─┐┌─┐┌┐┌┌┬┐┌─┐┬─┐┌─┐
+├─┤│ ┬├┤ │││ │ ├┤ ├┬┘├─┤
+┴ ┴└─┘└─┘┘└┘ ┴ └─┘┴└─┴ ┴
+
+─── status ─────────────────────────────
+
+  ⛶ health    ⮉ B+ (testing: C)
+  ⇶ issues    0 critical · 2 degraded · 5 annoying
+  ≡ plan      [██████▓░░░] 6/10 tasks
+  ♾ profile   loaded
+
+  Shipped auth middleware and rate limiting last cycle.
+  Health trending up, test coverage still lagging.
+
+─── attention ──────────────────────────
+
+  ⇉ test coverage below 60%, degrading since cycle 8
+  ⇉ task 7 blocked on API schema decision
+
+─── next ───────────────────────────────
+
+  suggested → ❈ discuss (resolve API schema to unblock task 7)
+```
+
+The briefing pulls from many artifacts (plan, progress, decisions, health,
+issues) but only the slices that matter right now. You get breadth without
+paying for a full dump of project state on every turn.
 
 ## What you get
 
@@ -148,22 +175,6 @@ Say what you want — "help me decide" routes to discuss; Agentera guides from t
 ## Development
 
 Requires Node.js 22+ with pnpm 10.30.3. Contributor rules, build commands, and test layout live in [`AGENTS.md`](./AGENTS.md). CLI channels and upgrade paths: [`packages/cli/README.md`](./packages/cli/README.md).
-
----
-
-## Troubleshooting
-
-Install or app home looks wrong:
-
-```bash
-npx -y agentera@next doctor
-```
-
-Doctor checks the CLI, app files status, and runtime wiring, and prints repair commands when something's off.
-
-Upgrade and migration from v1: [`UPGRADE.md`](./UPGRADE.md).
-
-Runtime parity details (validation strictness, session preload, hook behavior by host): [`references/adapters/runtime-feature-parity.md`](./references/adapters/runtime-feature-parity.md).
 
 ---
 
