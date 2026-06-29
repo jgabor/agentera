@@ -76,6 +76,13 @@ Capability names are the routing identity: `status`, `vision`, `discuss`,
 next`, `plan this`) match against each capability's `schemas/triggers.yaml`,
 not hardcoded here.
 
+The full five-layer routing model (Decision 42) — Layer 1 bare `/agentera`,
+Layer 2 capability/alias direct route, Layer 3 high-confidence natural-language
+match, Layer 4 borderline disambiguation, Layer 5 no-match fallback to status —
+is defined in [`references/cli/routing-model.md`](../../references/cli/routing-model.md).
+Layers 1, 2, and 5 are implemented; Layers 3 and 4 are being built by the Trigger
+Schema Enrichment and Layer 3-4 Routing plan.
+
 Handoff verbs:
 
 - `route`: user directly invoked a capability. Consent to invoke; no extra confirmation.
