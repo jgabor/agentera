@@ -1,0 +1,159 @@
+header:
+  level: full
+  created: "2026-06-29"
+  status: active
+  reviewed: "2026-06-29"
+  critic_issues: "16 found, 14 addressed, 2 dismissed"
+  title: Trigger Schema Enrichment and Layer 3-4 Routing
+what: >
+  Enrich Agentera's twelve capability trigger schemas with confidence thresholds,
+  disambiguation metadata, and optional regex patterns to enable request-derived
+  natural-language routing. Build the routing engine and expose it through
+  prime --route as a path distinct from the existing state-derived next_action.
+why: >
+  The audit found that prime returns state-derived next_action (what the project
+  needs), not request-derived routing (what the user asked for). SKILL.md promises
+  triggers.yaml owns matching semantics, but all twelve files carry only priority
+  and keyword patterns — no confidence thresholds, no disambiguation metadata, no
+  regex expressions. Layer 3-4 routing code is completely absent from the CLI.
+  Without this work, natural-language capability routing is a documented promise
+  with no implementation.
+constraints: >
+  Schema-first architecture: routing semantics must live in triggers.yaml and the
+  capability schema contract, not hardcoded in CLI source. YAGNI: enrich with what
+  is needed for Layers 3-4, nothing more — no session state, no FSM, no
+  embedding-based matching beyond regex. The routing engine is a pure function:
+  (input text, trigger schemas) to (matched capability or disambiguation candidates
+  or fallback). Backward compatible: triggers.yaml without enriched fields must
+  still validate. No changes to the state-derived next_action cascade or to Layers
+  1, 2, 5. Max 8 tasks.
+scope:
+  included:
+    - "Trigger schema enrichment (confidence thresholds, disambiguation metadata, regex patterns) across all twelve capabilities"
+    - "Capability schema contract updates and validation enforcement"
+    - "Trigger schema loader for runtime consumption"
+    - "Layer 3-4 routing engine (pure function)"
+    - "prime --route CLI command"
+    - "Five-layer routing model definition restored to repo"
+  excluded:
+    - "Changes to the state-derived next_action cascade (--route is additive)"
+    - "Changes to Layers 1, 2, 5 routing (already implemented)"
+    - "Semantic or embedding-based matching (YAGNI; regex and keywords sufficient for v1)"
+  deferred:
+    - "Four-question repair framing in prime JSON (separate light plan; independent of routing work)"
+    - "State-augmented disambiguation (if text-only disambiguation proves insufficient, add optional state context in a follow-up)"
+design: >
+  Four phases:
+
+  1. Contract phase: Define the enrichment fields that trigger schemas gain for
+  Layer 3-4 semantics — per-trigger confidence thresholds, cross-capability
+  disambiguation declarations with hints, optional regex patterns, and the
+  borderline band (contract-owned default with per-trigger override). The scoring
+  algorithm (how pattern matches and regex matches combine into a confidence
+  score) is specified at the contract level, not left to the implementer.
+  The relationship between prime --route (request-derived) and prime
+  (state-derived) output is defined: --route is a mutually exclusive mode that
+  suppresses state-derived output. The engine is pure request-derived for v1 —
+  no state context, no session. A decision artifact records the design choices
+  and rejected alternatives.
+
+  2. Model phase: Restore the five-layer routing model definition to the repo so
+  Layer 3-4 implementation has an in-repo contract to reference. The model
+  defines what each layer is and how layers interact.
+
+  3. Population phase: Apply the enriched contract to all twelve capability
+  trigger schemas, encoding the cross-capability conflicts discovered in the
+  audit (e.g., refine the vision shared between vision and build) and applying
+  priority hints from the cross-cutting vs. state-primary distinction
+  (status, research, profile as cross-cutting).
+
+  4. Runtime phase: Build the trigger loader (schema to runtime model) and the
+  routing engine (pure function: text plus triggers yields matched capability or
+  disambiguation candidates or fallback). Expose through prime --route as the
+  request-derived routing path.
+tasks:
+  - number: 1
+    name: Design trigger schema enrichment contract and record decision
+    depends_on: []
+    status: in_progress
+    acceptance:
+      - "GIVEN the enrichment spec WHEN a triggers.yaml file includes confidence_threshold THEN the field is a 0-100 integer with a documented contract default"
+      - "GIVEN the enrichment spec WHEN a triggers.yaml file includes disambiguates_against THEN each entry references a valid capability ID and includes a hint string"
+      - "GIVEN the enrichment spec WHEN a triggers.yaml file includes patterns_regex THEN each entry is a valid regex string"
+      - "GIVEN the enrichment spec WHEN both patterns and patterns_regex match the same input THEN the scoring algorithm defines how they combine with regex weighted higher than substring"
+      - "GIVEN the enrichment spec WHEN multiple capabilities score within the borderline band THEN the disambiguation behavior is defined with a contract default and per-trigger override"
+      - "GIVEN the enrichment spec WHEN --route is invoked THEN the output schema is mutually exclusive with state-derived next_action and does not include the next_action field"
+      - "GIVEN the enrichment spec WHEN triggers.yaml omits all new fields THEN the file is still valid and the routing engine applies documented defaults"
+      - "GIVEN the decision artifact WHEN reviewed THEN it lists each design choice, at least one alternative, and the selection rationale"
+  - number: 2
+    name: Restore five-layer routing model definition in repo
+    depends_on: []
+    status: in_progress
+    acceptance:
+      - "GIVEN a developer reading the repo WHEN they search for the routing model THEN they find a definition of what Layers 1-5 are and what each layer's routing semantics are"
+      - "GIVEN the routing model definition WHEN Layer 3 and Layer 4 are referenced in code or tests THEN the definition explains what those layers mean"
+      - "GIVEN the routing model definition WHEN Layers 1, 2, and 5 are referenced THEN the definition confirms they are already implemented and unchanged by this plan"
+  - number: 3
+    name: Enrich the twelve triggers.yaml files
+    depends_on: ["1"]
+    status: pending
+    acceptance:
+      - "GIVEN any capability's triggers.yaml WHEN validated against the enriched contract THEN validation passes"
+      - "GIVEN the vision capability's triggers.yaml WHEN inspected THEN it declares disambiguates_against for build on the shared pattern"
+      - "GIVEN all twelve triggers.yaml files WHEN validated THEN all pass capability validation"
+      - "GIVEN a triggers.yaml file without enriched fields WHEN validated THEN it still passes (backward compatible)"
+  - number: 4
+    name: Update capability schema contract and TS loader
+    depends_on: ["1"]
+    status: pending
+    acceptance:
+      - "GIVEN the updated contract WHEN a triggers.yaml file has a confidence_threshold outside 0-100 THEN validation fails with a clear error message including the valid range"
+      - "GIVEN the updated contract WHEN a triggers.yaml file has disambiguates_against referencing a non-existent capability THEN validation fails"
+      - "GIVEN the updated contract WHEN a triggers.yaml file has all new fields correctly THEN validation passes"
+      - "GIVEN the existing triggers.yaml files without enrichment WHEN validated THEN they still pass"
+  - number: 5
+    name: Implement trigger schema loader
+    depends_on: ["4"]
+    status: pending
+    acceptance:
+      - "GIVEN the loader is invoked WHEN all twelve triggers.yaml files exist THEN it returns a trigger model containing all entries"
+      - "GIVEN the loader is invoked WHEN a triggers.yaml file has a regex pattern THEN the regex is compiled and usable for matching"
+      - "GIVEN the loader is invoked WHEN a triggers.yaml file has disambiguates_against references THEN each reference resolves to the named capability's trigger entries"
+  - number: 6
+    name: Implement Layer 3-4 routing engine
+    depends_on: ["3", "5"]
+    status: pending
+    acceptance:
+      - "GIVEN a test corpus of 3 inputs per capability (36 total) WHEN the engine evaluates each input THEN it returns the correct capability with confidence above threshold for at least 85 percent of inputs"
+      - "GIVEN 5 adversarial inputs that match multiple capabilities within the borderline band WHEN the engine evaluates them THEN it returns disambiguation candidates with their scores"
+      - "GIVEN 5 adversarial inputs that match no triggers WHEN the engine evaluates them THEN it returns fallback to status"
+      - "GIVEN the same input text WHEN the engine is called twice THEN it returns identical results (pure function, no side effects)"
+  - number: 7
+    name: Implement prime --route CLI command
+    depends_on: ["6"]
+    status: pending
+    acceptance:
+      - 'GIVEN the command "agentera prime --route help me decide" WHEN it runs THEN it returns JSON with capability discuss and a confidence score'
+      - 'GIVEN the command "agentera prime --route refine the vision" WHEN it runs THEN it returns disambiguation candidates for vision and build'
+      - 'GIVEN the command "agentera prime --route xyzzy nonsense" WHEN it runs THEN it returns fallback to status with low confidence'
+      - 'GIVEN the command "agentera prime --route text --format json" THEN the output is valid JSON with fields capability, confidence, candidates, and fallback'
+      - 'GIVEN the command "agentera prime --route text" THEN the output does NOT include the state-derived next_action field (mutually exclusive mode)'
+      - "GIVEN existing prime tests WHEN run THEN they still pass (no regression to prime without --route)"
+  - number: 8
+    name: Current-state sync and full validation
+    depends_on: ["1", "2", "3", "4", "5", "6", "7"]
+    status: pending
+    acceptance:
+      - "GIVEN all prior tasks complete WHEN capability-contract validation runs THEN it exits 0"
+      - "GIVEN all prior tasks complete WHEN typecheck runs THEN it exits 0"
+      - "GIVEN all prior tasks complete WHEN build runs THEN it exits 0"
+      - "GIVEN all prior tasks complete WHEN the full vitest suite runs THEN all tests pass including updated assertions for the new schema shape and --route output"
+overall_acceptance: >
+  The five-layer routing model is defined in the repo with each layer's semantics
+  documented. All twelve capabilities' triggers.yaml pass validation against the
+  enriched contract, and triggers without enriched fields still pass (backward
+  compatible). prime --route returns a capability match, disambiguation candidates,
+  or fallback for any input from the test corpus — never an error or empty
+  response. Layer 3 and Layer 4 have dedicated tests; Layers 1, 2, and 5 are
+  unchanged and their existing tests pass.
+surprises: []
