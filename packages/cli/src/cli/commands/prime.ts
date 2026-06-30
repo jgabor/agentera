@@ -1,5 +1,5 @@
 import { PRIME_BLOB } from "../prime-blob.js";
-import { BESPOKE_CONTEXT_CAPABILITIES, buildPrimeCapabilityContextPayload, validatePrimeCapability } from "../capabilityContext.js";
+import { buildPrimeCapabilityContextPayload, validatePrimeCapability } from "../capabilityContext.js";
 import { collectOrientationState } from "./prime/collectOrientationState.js";
 import { buildOrientationJsonPayload, emitPrime, printOrientationTextBriefing } from "./prime/orientationOutput.js";
 import type { PrimeArgs, Io } from "./prime/types.js";
@@ -10,8 +10,8 @@ export { collectOrientationState } from "./prime/collectOrientationState.js";
 
 /**
  * prime orientation command. Port of scripts/agentera cmd_prime / cmd_status.
- * The text briefing (default) and --guidance are wired; the JSON/dashboard/
- * context paths depend on the 5 bespoke capability contexts (pending slice).
+ * The text briefing (default), --guidance, --dashboard, --context, and
+ * --format json paths are all wired.
  */
 
 export function cmdPrime(args: PrimeArgs, io: Io = {}): number {
@@ -50,10 +50,6 @@ export function cmdPrime(args: PrimeArgs, io: Io = {}): number {
     if (format === "text") {
       err("Error: prime --context requires --format json\n");
       return 2;
-    }
-    if (BESPOKE_CONTEXT_CAPABILITIES.has(capability)) {
-      err("agentera: prime --context for this capability is not yet ported (pending its bespoke context)\n");
-      return 1;
     }
     const state = collectOrientationState(collectOpts);
     const payload = buildPrimeCapabilityContextPayload(state, capability, command);
