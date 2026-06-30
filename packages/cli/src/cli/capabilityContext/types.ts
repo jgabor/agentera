@@ -3,7 +3,6 @@ import { CAPABILITY_INSTRUCTIONS } from "../../capabilities/index.js";
 export type Env = Record<string, string | undefined>;
 
 export const CAPABILITY_NAMES = Object.keys(CAPABILITY_INSTRUCTIONS);
-export const BESPOKE_CONTEXT_CAPABILITIES = new Set<string>([]);
 
 export const STATE_FAMILY_FALLBACK_COMMANDS: Record<string, string> = {
   plan: "agentera state plan --format json",
