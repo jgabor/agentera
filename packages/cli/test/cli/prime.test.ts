@@ -40,6 +40,8 @@ describe("cli prime", () => {
     expect(out).toContain("mode: ");
     expect(out).toContain("todo: critical=");
     expect(out).toContain("next_action:");
+    expect(out).toContain("| phase=");
+    expect(out).toContain("- alt: ");
     expect(out).toContain("source_contract:");
     expect(out).toContain("capability_startup_complete=true");
   });
@@ -78,6 +80,29 @@ describe("cli prime", () => {
     expect(payload.app).toBeTruthy();
     expect(payload.app_home.install_track).toBeTruthy();
     expect(typeof payload.app.status).toBe("string");
+  });
+
+  it("surfaces ranked next_action with alternatives and phase in JSON", () => {
+    const { rc, out } = capture((io) => cmdPrime({ command: "prime", format: "json" }, io));
+    expect(rc).toBe(0);
+    const nextAction = JSON.parse(out).next_action as Record<string, unknown>;
+    expect(typeof nextAction.object).toBe("string");
+    expect((nextAction.object as string).length).toBeGreaterThan(0);
+    expect(typeof nextAction.capability).toBe("string");
+    expect((nextAction.capability as string).length).toBeGreaterThan(0);
+    expect(typeof nextAction.reason).toBe("string");
+    expect(typeof nextAction.phase).toBe("string");
+    expect((nextAction.phase as string).length).toBeGreaterThan(0);
+    const alternatives = nextAction.alternatives as Array<Record<string, unknown>>;
+    expect(Array.isArray(alternatives)).toBe(true);
+    expect(alternatives.length).toBeGreaterThan(0);
+    for (const alt of alternatives) {
+      expect(typeof alt.object).toBe("string");
+      expect(typeof alt.capability).toBe("string");
+      expect(typeof alt.reason).toBe("string");
+      expect(typeof alt.phase).toBe("string");
+      expect((alt.phase as string).length).toBeGreaterThan(0);
+    }
   });
 
   it("requires json for --dashboard and --context", () => {

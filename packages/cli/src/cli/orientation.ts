@@ -623,8 +623,9 @@ export function decisionReviewAttention(schemas: Record<string, SchemaInfo>): De
 }
 
 export function formatNextAction(action: NextAction | Record<string, string> | null): string {
-  if (!action) return "object=VISION refresh | capability=vision | reason=no executable follow-up";
-  return `object=${truncate(action.object)} | capability=${action.capability} | reason=${action.reason}`;
+  if (!action) return "object=VISION refresh | capability=vision | reason=no executable follow-up | phase=envision";
+  const phase = "phase" in action && action.phase ? ` | phase=${action.phase}` : "";
+  return `object=${truncate(action.object)} | capability=${action.capability} | reason=${action.reason}${phase}`;
 }
 
 /**

@@ -82,7 +82,7 @@ tasks:
   name: Update prime JSON and text output for the ranked next_action hint
   depends_on:
   - '1'
-  status: pending
+  status: complete
   acceptance:
   - GIVEN a returning project with a pending plan WHEN agentera prime --format json
     is called THEN the next_action field carries the recommended capability AND a
