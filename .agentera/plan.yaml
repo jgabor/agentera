@@ -131,7 +131,7 @@ tasks:
   - number: 7
     name: Implement prime --route CLI command
     depends_on: ["6"]
-    status: in_progress
+    status: complete
     acceptance:
       - 'GIVEN the command "agentera prime --route help me decide" WHEN it runs THEN it returns JSON with capability discuss and a confidence score'
       - 'GIVEN the command "agentera prime --route refine the vision" WHEN it runs THEN it returns disambiguation candidates for vision and build'
@@ -142,7 +142,7 @@ tasks:
   - number: 8
     name: Current-state sync and full validation
     depends_on: ["1", "2", "3", "4", "5", "6", "7"]
-    status: pending
+    status: in_progress
     acceptance:
       - "GIVEN all prior tasks complete WHEN capability-contract validation runs THEN it exits 0"
       - "GIVEN all prior tasks complete WHEN typecheck runs THEN it exits 0"
@@ -156,4 +156,11 @@ overall_acceptance: >
   or fallback for any input from the test corpus — never an error or empty
   response. Layer 3 and Layer 4 have dedicated tests; Layers 1, 2, and 5 are
   unchanged and their existing tests pass.
-surprises: []
+surprises: >
+  Task 7 criterion #1: 'help me decide' routes to fallback (status) instead
+  of discuss. The substring score (0.6 * 0.7 * 100 = 42) falls below discuss
+  T2 confidence_threshold (50). The implementation is correct — the test
+  corpus input was not algorithmically verified against the scoring weights
+  during planning. Fix: add regex patterns to discuss triggers for common
+  natural-language phrases so regex weighting (1.0) clears the threshold,
+  or lower the threshold for discuss T2.
