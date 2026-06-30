@@ -124,7 +124,7 @@ tasks:
   - '1'
   - '2'
   - '3'
-  status: pending
+  status: complete
   acceptance:
   - GIVEN the test suite is run THEN no test file imports from routing/routeEngine
     or routeOutput AND routeEngine.test.ts and primeRoute.test.ts are deleted
