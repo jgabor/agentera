@@ -162,14 +162,15 @@ export function printReportHelp(): string {
 export function printPrimeHelp(): string {
   return [
     "usage: agentera prime [-h] [--format {text,json,yaml}] [--context CAPABILITY]",
-    "                       [--guidance] [--dashboard] [--orientation] [--fields FIELDS]",
+    "                       [--route TEXT] [--guidance] [--dashboard] [--orientation] [--fields FIELDS]",
     "",
     "Composite orientation briefing, capability startup context, or static guidance.",
     "",
     "options:",
-    "  -h, --help            show this help message and exit",
+    "  -h, --help            show this help message and end",
     "  --format FORMAT       Output format: text, json, or yaml",
     "  --context CAPABILITY  Emit startup context for a capability (e.g. plan)",
+    "  --route TEXT          Route natural-language input via the Layer 3-4 engine (JSON)",
     "  --guidance            Emit static routing guidance",
     "  --dashboard           Emit the prime orientation dashboard",
     "  --orientation         Emit orientation briefing sections",

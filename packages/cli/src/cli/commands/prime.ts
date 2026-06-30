@@ -2,6 +2,8 @@ import { PRIME_BLOB } from "../prime-blob.js";
 import { BESPOKE_CONTEXT_CAPABILITIES, buildPrimeCapabilityContextPayload, validatePrimeCapability } from "../capabilityContext.js";
 import { collectOrientationState } from "./prime/collectOrientationState.js";
 import { buildOrientationJsonPayload, emitPrime, printOrientationTextBriefing } from "./prime/orientationOutput.js";
+import { buildRoutePayload } from "./prime/routeOutput.js";
+import { emitStructured } from "../structured.js";
 import type { PrimeArgs, Io } from "./prime/types.js";
 
 export type { OrientationState } from "../contracts/orientationState.js";
@@ -21,6 +23,7 @@ export function cmdPrime(args: PrimeArgs, io: Io = {}): number {
   const capability = args.context ?? null;
   const dashboard = Boolean(args.dashboard || args.orientation);
   const guidance = Boolean(args.guidance);
+  const route = args.route ?? null;
   if (capability !== null && dashboard) {
     err("Error: prime --context and prime --dashboard/--orientation are mutually exclusive\n");
     return 2;
@@ -32,6 +35,23 @@ export function cmdPrime(args: PrimeArgs, io: Io = {}): number {
   if (dashboard && guidance) {
     err("Error: prime --dashboard/--orientation and prime --guidance are mutually exclusive\n");
     return 2;
+  }
+  if (route !== null) {
+    if (capability !== null) {
+      err("Error: prime --route and prime --context are mutually exclusive\n");
+      return 2;
+    }
+    if (dashboard) {
+      err("Error: prime --route and prime --dashboard/--orientation are mutually exclusive\n");
+      return 2;
+    }
+    if (guidance) {
+      err("Error: prime --route and prime --guidance are mutually exclusive\n");
+      return 2;
+    }
+    const payload = buildRoutePayload(route);
+    emitStructured(payload, "json", out);
+    return 0;
   }
   if (guidance) {
     out(PRIME_BLOB);

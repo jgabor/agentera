@@ -13,6 +13,7 @@ export interface PrimeArgs {
   context?: string | null;
   dashboard?: boolean;
   orientation?: boolean;
+  route?: string | null;
   format?: string;
   fields?: string | null;
   home?: string | null;
