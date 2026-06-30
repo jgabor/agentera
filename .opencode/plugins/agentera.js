@@ -10,7 +10,7 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 
-const AGENTERA_VERSION = "3.0.0";
+const AGENTERA_VERSION = "3.1.0";
 const NPX_BUNDLE_SENTINEL = ".agentera-npx-bundle.json";
 const NPX_CLI_ENTRYPOINT = "npx -y agentera@next";
 const NPX_HOOK_VALIDATE = `${NPX_CLI_ENTRYPOINT} hook validate-artifact`;

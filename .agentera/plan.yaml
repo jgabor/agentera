@@ -1,7 +1,7 @@
 header:
   level: full
   created: '2026-06-30'
-  status: active
+  status: complete
   reviewed: '2026-06-30'
   critic_issues: 5 found, 3 addressed, 2 dismissed
   title: 'Decision 76: LLM-Primary Routing and Evolved State-Readiness Hint'
@@ -142,7 +142,7 @@ tasks:
   - '3'
   - '4'
   - '5'
-  status: pending
+  status: complete
   acceptance:
   - GIVEN all prior tasks are complete WHEN check compact is run THEN all compactable
     artifacts are within uniform_10_40_50 limits

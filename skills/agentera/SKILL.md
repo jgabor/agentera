@@ -6,7 +6,7 @@ description: >
   it through `agentera prime --context <name> --format json`. Use this skill
   for /agentera and Agentera capability requests; bare `/agentera` runs the
   agentera prime orientation dashboard path instead of a generic greeting.
-version: "3.0.0"
+version: "3.1.0"
 spec_sections: [1, 2, 3, 4, 5, 6, 11, 13, 18, 19, 20, 22, 23]
 capabilities:
   - status

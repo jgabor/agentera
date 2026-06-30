@@ -1,11 +1,11 @@
 {
   "metadata": {
-    "version": "3.0.0"
+    "version": "3.1.0"
   },
   "plugins": [
     {
       "name": "agentera",
-      "version": "3.0.0",
+      "version": "3.1.0",
       "description": "Compound agent orchestration suite - 12 capabilities in one bundled skill; exact bare hej uses the Agentera dashboard path",
       "author": { "name": "jgabor" },
       "source": "./skills/agentera",
