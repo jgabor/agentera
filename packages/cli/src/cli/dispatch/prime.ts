@@ -50,7 +50,7 @@ export function runCapability(command: string, argv: string[], io: Io, prog: str
 }
 
 export function runPrime(command: string, argv: string[], io: Io, prog: string): number {
-  const args: PrimeArgs = { command, guidance: false, context: null, dashboard: false, orientation: false, format: "text" };
+  const args: PrimeArgs = { command, guidance: false, context: null, dashboard: false, orientation: false, route: null, format: "text" };
   let i = 0;
   const value = makeArgvValueReader(argv, () => i, (n) => {
     i = n;
@@ -62,6 +62,7 @@ export function runPrime(command: string, argv: string[], io: Io, prog: string):
     else if (a === "--dashboard") args.dashboard = true;
     else if (a === "--orientation") args.orientation = true;
     else if ((v = value("--context")) !== null) args.context = v;
+    else if ((v = value("--route")) !== null) args.route = v;
     else if ((v = value("--format")) !== null) {
       if (v !== "text" && v !== "json" && v !== "yaml") {
         return emitInvalidInput(io, {
