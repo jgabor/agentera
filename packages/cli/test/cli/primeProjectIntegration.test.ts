@@ -72,7 +72,7 @@ describe("prime project_integration", () => {
     const attention = (state.attention as string[]).find((line) => line.includes("runtime wiring"));
     expect(attention).toBeTruthy();
 
-    const nextAction = state.next_action as Record<string, string>;
+    const nextAction = state.next_action.recommended;
     expect(nextAction.object).toContain('Upgrade');
     expect(nextAction.capability).toBe('status');
   });
@@ -100,7 +100,7 @@ describe("prime project_integration", () => {
     expect(integration.dry_run_command).not.toContain("--project");
     expect(integration.dry_run_command).toContain("@next");
 
-    const nextAction = state.next_action as Record<string, string>;
+    const nextAction = state.next_action.recommended;
     expect(nextAction.object).toBe("Upgrade Agentera artifacts");
   });
 });

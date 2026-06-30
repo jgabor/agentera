@@ -58,7 +58,10 @@ function minimalOrientationState(corpusCoverage: OrientationState["corpus_covera
     todo_items: [],
     counts: { critical: 0, degraded: 0, normal: 0, annoying: 0 },
     decision_attention: null,
-    next_action: { object: "none", capability: "status", reason: "none" },
+    next_action: {
+      recommended: { object: "none", capability: "status", reason: "none", phase: "audit" },
+      alternatives: [],
+    },
     attention: [],
   };
 }

@@ -111,6 +111,15 @@ export interface NextAction {
   object: string;
   capability: string;
   reason: string;
+  /** Protocol phase tag (PH1-PH5): envision, deliberate, plan, build, or audit. */
+  phase: string;
+}
+
+/** Ranked state-readiness hint: position 1 (`recommended`) is the cascade winner;
+ *  `alternatives` are the branches the early-return cascade would have skipped. */
+export interface ReadinessHint {
+  recommended: NextAction;
+  alternatives: NextAction[];
 }
 
 export interface DecisionFollowUp {
@@ -170,6 +179,6 @@ export interface OrientationState {
   todo_items: Array<Record<string, string>>;
   counts: IssueCounts;
   decision_attention: DecisionReviewAttention | null;
-  next_action: NextAction | Record<string, string>;
+  next_action: ReadinessHint;
   attention: string[];
 }

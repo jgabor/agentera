@@ -22,7 +22,7 @@ export function bespokeCapabilityContexts(capabilityName: string | null, state: 
   const health = state.health as JsonObject;
   const docs = state.docs as JsonObject;
   const profile = state.profile_dict as JsonObject;
-  const nextAction = state.next_action as JsonObject;
+  const nextAction = (state.next_action as { recommended: JsonObject }).recommended;
   const bundle = state.app as JsonObject;
   const todoItems = state.todo_items as unknown as Array<Record<string, string>>;
   const schemas = state.schemas as unknown as Record<string, SchemaInfo>;

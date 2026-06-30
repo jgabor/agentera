@@ -19,12 +19,12 @@ import {
   planSummary,
   progressSummary,
   registryArtifactPath,
-  selectStatusNextAction,
+  selectStatusReadiness,
   statePresence,
 } from "../../orientation.js";
 import { buildOrientationAttention } from "../../orientation/attention.js";
 import { corpusCoverageSummary } from "../../orientation/corpusCoverage.js";
-import type { OrientationState, ProfileSummary } from "../../contracts/orientationState.js";
+import type { NextAction, OrientationState, ProfileSummary, ReadinessHint } from "../../contracts/orientationState.js";
 import { statusBundleStatus } from "./bundleStatus.js";
 import type { PrimeOpts } from "./types.js";
 import { v1MigrationSummary } from "./v1Migration.js";
@@ -88,26 +88,31 @@ export function collectOrientationState(opts: PrimeOpts): OrientationState {
     bundleStatus: String(bundle.status),
     crossMajorBoundaryDetected: bundle.crossMajorBoundaryDetected ?? false,
   });
-  const defaultNextAction = selectStatusNextAction(plan, health, objective, todoItems, decision, savedContext);
-  const nextAction =
+  const readiness = selectStatusReadiness(plan, health, objective, todoItems, decision, savedContext);
+  const nextAction: ReadinessHint =
     projectIntegration.recommendation === "upgrade"
-      ? {
-          object:
-            (projectIntegration.pending_artifacts as number) > 0
-              ? "Upgrade Agentera artifacts"
-              : (projectIntegration.pending_runtime as number) > 0
-                ? "Upgrade Agentera runtime wiring"
-                : "Upgrade Agentera",
-          capability: "status",
-          reason: projectIntegration.message,
-        }
+      ? withRecommended(
+          readiness,
+          {
+            object:
+              (projectIntegration.pending_artifacts as number) > 0
+                ? "Upgrade Agentera artifacts"
+                : (projectIntegration.pending_runtime as number) > 0
+                  ? "Upgrade Agentera runtime wiring"
+                  : "Upgrade Agentera",
+            capability: "status",
+            reason: projectIntegration.message,
+            phase: "build",
+          },
+        )
       : projectIntegration.major_boundary_block
-        ? {
+        ? withRecommended(readiness, {
             object: "Await v3 successor announcement",
             capability: "status",
             reason: projectIntegration.major_boundary_block,
-          }
-        : defaultNextAction;
+            phase: "audit",
+          })
+        : readiness;
 
   const attention = buildOrientationAttention({
     schemas_dir: schemasDir,
@@ -155,5 +160,17 @@ export function collectOrientationState(opts: PrimeOpts): OrientationState {
     decision_attention: decisionAttention,
     next_action: nextAction,
     attention,
+  };
+}
+
+/** Promote `newRecommended` to position 1, demoting the prior recommendation
+ *  (and its alternatives) into `alternatives`. Used when a project-integration
+ *  override (upgrade, major-boundary block) takes precedence over the
+ *  state-derived cascade; the demoted candidates remain visible as what to do
+ *  once the override is resolved. */
+function withRecommended(hint: ReadinessHint, newRecommended: NextAction): ReadinessHint {
+  return {
+    recommended: newRecommended,
+    alternatives: [hint.recommended, ...hint.alternatives],
   };
 }

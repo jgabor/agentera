@@ -58,7 +58,7 @@ tasks:
   - number: 1
     name: "Evolve NextAction type and selectStatusNextAction into ranked readiness hint"
     depends_on: []
-    status: pending
+    status: complete
     acceptance:
       - "GIVEN a project with a pending plan task WHEN selectStatusReadiness is called THEN the top-priority entry's object contains 'PLAN Task' AND its phase equals 'build' AND at least one alternative entry is returned"
       - "GIVEN a project with no plan but degrading health WHEN selectStatusReadiness is called THEN the top-priority entry's capability equals 'audit' AND its phase equals 'audit'"

@@ -36,6 +36,7 @@ import type {
   ObjectiveSummary,
   PlanSummary,
   ProgressSummary,
+  ReadinessHint,
   StatePresenceSummary,
 } from "./contracts/orientationState.js";
 
@@ -50,6 +51,7 @@ export type {
   ObjectiveSummary,
   PlanSummary,
   ProgressSummary,
+  ReadinessHint,
   StatePresenceSummary,
 } from "./contracts/orientationState.js";
 
@@ -625,6 +627,96 @@ export function formatNextAction(action: NextAction | Record<string, string> | n
   return `object=${truncate(action.object)} | capability=${action.capability} | reason=${action.reason}`;
 }
 
+/**
+ * Evolved state-readiness hint (Decision 76). Evaluates every cascade branch
+ * (no early-return); each candidate carries a protocol.yaml phase tag (PH1
+ * envision → PH5 audit). Position 1 (`recommended`) is the branch that would
+ * have won under the legacy early-return cascade.
+ */
+export function selectStatusReadiness(
+  plan: PlanSummary,
+  health: HealthSummary,
+  objective: ObjectiveSummary,
+  todoItems: Array<Record<string, string>>,
+  decision: DecisionFollowUp | null,
+  savedContext: boolean,
+): ReadinessHint {
+  const candidates: NextAction[] = [];
+
+  const pending = plan.first_pending;
+  if (pending && typeof pending === "object" && !Array.isArray(pending)) {
+    const number = pending.number ?? "?";
+    const title = firstPresent(pending, ["name", "title"], "pending task");
+    candidates.push({
+      object: `PLAN Task ${number}: ${title}`,
+      capability: "orchestrate",
+      reason: "first pending plan task",
+      phase: "build",
+    });
+  }
+  if (health.degrading) {
+    const worst = health.worst;
+    const target = worst ? `${worst[0]}:${worst[1]}` : "degrading health";
+    candidates.push({
+      object: `HEALTH: ${target}`,
+      capability: "audit",
+      reason: "critical or degrading health",
+      phase: "audit",
+    });
+  }
+  if (objective.active) {
+    candidates.push({
+      object: `OBJECTIVE: ${objective.metric || objective.title}`,
+      capability: "optimize",
+      reason: "active non-closed objective",
+      phase: "build",
+    });
+  }
+  if (todoItems.length > 0) {
+    const item = [...todoItems].sort(
+      (a, b) => (TODO_SEVERITY_ORDER[a.severity] ?? 2) - (TODO_SEVERITY_ORDER[b.severity] ?? 2),
+    )[0];
+    if (todoNeedsPlan(item)) {
+      candidates.push({ object: `TODO: ${item.text}`, capability: "plan", reason: "complex TODO needs planning", phase: "plan" });
+    } else {
+      candidates.push({ object: `TODO: ${item.text}`, capability: "build", reason: "highest-priority open TODO", phase: "build" });
+    }
+  }
+  if (health.stale && !health.degrading) {
+    candidates.push({
+      object: `HEALTH: Audit ${health.number ?? "?"} stale`,
+      capability: "audit",
+      reason: "stale health audit",
+      phase: "audit",
+    });
+  }
+  if (decision) {
+    candidates.push({
+      object: String(decision.object),
+      capability: "discuss",
+      reason: "unresolved decision follow-up",
+      phase: "deliberate",
+    });
+  }
+  const visionExists = fs.existsSync(path.join(process.cwd(), ".agentera", "vision.yaml"));
+  if ((plan.exists && !plan.complete_plan) || visionExists) {
+    candidates.push({ object: "VISION refresh", capability: "plan", reason: "no executable follow-up", phase: "envision" });
+  }
+  if (savedContext && !visionExists) {
+    candidates.push({ object: "Direction clarification", capability: "discuss", reason: "saved context without vision", phase: "envision" });
+  }
+  candidates.push({ object: "VISION refresh", capability: "vision", reason: "fresh project direction", phase: "envision" });
+  // Guarantee at least one alternative so the hint never collapses to a single entry.
+  if (candidates.length < 2) {
+    candidates.push({ object: "Direction clarification", capability: "discuss", reason: "clarify project direction", phase: "envision" });
+  }
+
+  const [recommended, ...alternatives] = candidates;
+  return { recommended, alternatives };
+}
+
+/** Legacy single-entry projection of {@link selectStatusReadiness}: the
+ *  top-priority candidate as `{object, capability, reason}` (no `phase`). */
 export function selectStatusNextAction(
   plan: PlanSummary,
   health: HealthSummary,
@@ -633,52 +725,6 @@ export function selectStatusNextAction(
   decision: DecisionFollowUp | null,
   savedContext: boolean,
 ): Record<string, string> {
-  const pending = plan.first_pending;
-  if (pending && typeof pending === "object" && !Array.isArray(pending)) {
-    const number = pending.number ?? "?";
-    const title = firstPresent(pending, ["name", "title"], "pending task");
-    return { object: `PLAN Task ${number}: ${title}`, capability: "orchestrate", reason: "first pending plan task" };
-  }
-  if (health.degrading) {
-    const worst = health.worst;
-    const target = worst ? `${worst[0]}:${worst[1]}` : "degrading health";
-    return { object: `HEALTH: ${target}`, capability: "audit", reason: "critical or degrading health" };
-  }
-  if (objective.active) {
-    return {
-      object: `OBJECTIVE: ${objective.metric || objective.title}`,
-      capability: "optimize",
-      reason: "active non-closed objective",
-    };
-  }
-  if (todoItems.length > 0) {
-    const item = [...todoItems].sort(
-      (a, b) => (TODO_SEVERITY_ORDER[a.severity] ?? 2) - (TODO_SEVERITY_ORDER[b.severity] ?? 2),
-    )[0];
-    if (todoNeedsPlan(item)) {
-      return { object: `TODO: ${item.text}`, capability: "plan", reason: "complex TODO needs planning" };
-    }
-    return { object: `TODO: ${item.text}`, capability: "build", reason: "highest-priority open TODO" };
-  }
-  if (health.stale && !health.degrading) {
-    return {
-      object: `HEALTH: Audit ${health.number ?? "?"} stale`,
-      capability: "audit",
-      reason: "stale health audit",
-    };
-  }
-  if (decision) {
-    return { object: String(decision.object), capability: "discuss", reason: "unresolved decision follow-up" };
-  }
-  const visionExists = fs.existsSync(path.join(process.cwd(), ".agentera", "vision.yaml"));
-  if (plan.exists && !plan.complete_plan) {
-    return { object: "VISION refresh", capability: "plan", reason: "no executable follow-up" };
-  }
-  if (visionExists) {
-    return { object: "VISION refresh", capability: "plan", reason: "no executable follow-up" };
-  }
-  if (savedContext) {
-    return { object: "Direction clarification", capability: "discuss", reason: "saved context without vision" };
-  }
-  return { object: "VISION refresh", capability: "vision", reason: "fresh project direction" };
+  const { recommended } = selectStatusReadiness(plan, health, objective, todoItems, decision, savedContext);
+  return { object: recommended.object, capability: recommended.capability, reason: recommended.reason };
 }

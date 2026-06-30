@@ -107,7 +107,7 @@ describe("prime major-boundary gate", () => {
 
       const state = collectOrientationState({ home, installRoot: appHome, env: process.env });
 
-      const nextAction = state.next_action as { object: string; capability: string; reason: string };
+      const nextAction = state.next_action.recommended;
       expect(nextAction.object).toBe("Await v3 successor announcement");
       expect(nextAction.capability).toBe("status");
       expect(nextAction.reason).toContain("v3 successor line is not announced yet");
@@ -142,7 +142,7 @@ describe("prime major-boundary gate", () => {
 
       const state = collectOrientationState({ home, installRoot: appHome, env: process.env });
 
-      const nextAction = state.next_action as { object: string; capability: string; reason: string };
+      const nextAction = state.next_action.recommended;
       expect(nextAction.object).toContain("Upgrade");
       expect(nextAction.capability).toBe("status");
     });
@@ -174,7 +174,7 @@ describe("prime major-boundary gate", () => {
 
       const state = collectOrientationState({ home, installRoot: appHome, env: process.env });
 
-      const nextAction = state.next_action as { object: string; reason: string };
+      const nextAction = state.next_action.recommended;
       expect(nextAction.object).not.toBe("Await v3 successor announcement");
     });
   });
