@@ -9,14 +9,7 @@
 #   3. Deprecation protocol (deprecated + replaced_by)
 #   4. Directory structure requirements (instruction module, schemas/)
 #   5. Machine-readable validation rules consumed by future contract loaders
-#   6. Optional trigger-entry intent documentation (TRIGGER_ENRICHMENT, Decision 76)
-#
-# D65: the per-capability `instructions.md` Markdown file is retired. The
-# behavioral instructions now live at
-# `packages/cli/src/capabilities/<name>/instructions.ts` as a default-exported
-# string constant. The directory requirement below points at the new path;
-# the V1 directory_structure rule's `checks` list and the ARTIFACTS A3 path
-# text follow the same move.
+#   6. Optional trigger-entry intent documentation (TRIGGER_ENRICHMENT)
 
 meta:
   name: capability_schema_contract
@@ -55,13 +48,9 @@ ENTRY_SCHEMA:
       type: string
       required: false
       description: >-
-        Advisory relevance-precedence hint the LLM host reads alongside
-        description. Origin in the five-layer routing model (Decision 42);
-        Decision 76 repositioned it as an advisory hint the host consults,
-        not a routing-confidence scoring weight. See
-        references/cli/routing-model.md for the layer definitions and routing
-        semantics. Valid values: high, medium, low.
-        Required for all TRIGGERS entries.
+        Advisory relevance-precedence hint the LLM host reads alongside the
+        entry description. Required for all TRIGGERS entries.
+        Valid values: high, medium, low.
     deprecated:
       type: boolean
       required: false
@@ -147,30 +136,21 @@ FIELD_RULES:
         - medium
         - low
       description: >-
-        Advisory relevance-precedence hint the LLM host reads (Decision 76
-        repositioned it from a routing-confidence weight to an advisory
-        hint). Used in the five-layer routing model (Decision 42); see
-        references/cli/routing-model.md for layer definitions and routing
-        semantics.
+        Relevance-precedence hint the LLM host reads when ordering
+        candidate capabilities for a request. See
+        references/cli/routing-model.md for routing semantics.
 
 TRIGGER_ENRICHMENT:
   description: >-
-    Optional trigger-entry intent documentation for Layer 3 LLM-native
-    capability routing (Decision 76). Decision 76 retires the deterministic
-    routing engine; the LLM host owns natural-language routing and consults
-    these fields as intent documentation rather than scoring inputs. Every
-    field in this section is OPTIONAL: a triggers.yaml entry that omits all
-    enriched fields remains valid. The scoring role of confidence_threshold,
-    borderline_band, and patterns_regex is retired per Decision 76; their
-    shape is retained here for documentation and so existing triggers.yaml
-    files that carry them still validate. The only field with a current role
-    in the Decision 76 model is disambiguates_against (advisory hint the LLM
-    host consults). The single authority for field shapes and
-    intent-documentation behavior is references/cli/trigger-schema-enrichment.md.
+    Optional trigger-entry intent-documentation fields. Every field is
+    OPTIONAL: a triggers.yaml entry that omits all enriched fields remains
+    valid. The LLM host consumes description and disambiguates_against at
+    runtime; confidence_threshold, borderline_band, and patterns_regex are
+    retained as shape-validated documentation so triggers.yaml files that
+    carry them still validate.
   spec: references/cli/trigger-schema-enrichment.md
   contract_defaults:
-    # Retained for documentation; scoring role retired per Decision 76. The LLM
-    # host owns routing and does not consume these values.
+    # Default values for optional enriched fields.
     confidence_threshold: 50
     borderline_band: 15
   fields:
@@ -181,11 +161,10 @@ TRIGGER_ENRICHMENT:
       max: 100
       default: 50
       description: >-
-        Scoring role retired per Decision 76; the LLM host owns natural-language
-        routing and does not consume this value. The shape is retained for
-        documentation and so triggers.yaml files that carry the field still
-        validate. A non-integer or a value outside 0..100 fails V7 validation
-        with the valid range and the offending entry ID.
+        Optional integer 0-100. Not consumed by the LLM host; retained so
+        triggers.yaml files carrying the field still validate. A non-integer
+        or value outside 0..100 fails V7 validation with the valid range
+        and the offending entry ID.
     borderline_band:
       type: integer
       required: false
@@ -193,22 +172,19 @@ TRIGGER_ENRICHMENT:
       max: 100
       default: 15
       description: >-
-        Scoring role retired per Decision 76; the LLM host resolves ambiguity
-        natively and does not consume this value. The shape is retained for
-        documentation and so triggers.yaml files that carry the field still
-        validate. A non-integer or a value outside 0..100 fails V7 validation.
+        Optional integer 0-100. Not consumed by the LLM host; retained so
+        triggers.yaml files carrying the field still validate. A non-integer
+        or value outside 0..100 fails V7 validation.
     patterns_regex:
       type: list_of_strings
       required: false
       default: []
       each_must_be_valid_regex: true
       description: >-
-        Scoring role retired per Decision 76; the LLM host reads the trigger
-        `description`, not regex patterns, and does not consume this value. The
-        shape is retained for documentation and so triggers.yaml files that
-        carry the field still validate. The loader compiles each entry during
-        validation; a compile failure fails V7 validation naming the offending
-        entry and pattern.
+        Optional list of regex strings. Not consumed by the LLM host;
+        retained so triggers.yaml files carrying the field still validate.
+        The loader compiles each entry during validation; a compile failure
+        fails V7 validation naming the offending entry and pattern.
     disambiguates_against:
       type: list_of_mappings
       required: false
@@ -242,8 +218,8 @@ TRIGGER_ENRICHMENT:
 
 PROSE_CONVENTIONS:
   description: >-
-    Authoring rules for capability behavioral instructions (Decision 71).
-    These conventions govern the prose in
+    Authoring rules for capability behavioral instructions. These
+    conventions govern the prose in
     packages/cli/src/capabilities/<name>/instructions.ts.
   modal_vocabulary:
     authority: RFC 2119
@@ -297,14 +273,11 @@ PRIMITIVE_REFERENCE_FIELDS:
 
 ROUTE_ALIASES:
   description: >-
-    Primary plain slash-route aliases from Decision 43, flipped to English
-    canonical by Decision 70. These aliases are exact `/agentera <alias>`
-    routes for users; English capability names are canonical protocol identity.
-    The Decision 43 alias set and the canonical capability directory IDs
-    converge: the plain English route word is now the canonical ID itself.
-    Swedish -era names are legacy v2-stable references, preserved for the v2
-    stable distribution and historical artifacts (see legacy_aliases). Alias
-    routes are not CLI commands.
+    Primary `/agentera <alias>` slash-route aliases for each capability.
+    English capability names are canonical protocol identity; the route alias
+    word is the canonical ID itself. Swedish -era names are legacy v2-stable
+    references, preserved for the v2 stable distribution and historical
+    artifacts (see legacy_aliases). Alias routes are not CLI commands.
   route_prefix: /agentera
   canonical_name_precedence: true
   cli_boundary: >-
@@ -437,9 +410,7 @@ ARTIFACTS:
       Behavioral instructions the agent reads. TypeScript module that exports
       a default-exported string constant. The runtime loads it via the
       compiled .js path and serves the prose through
-      `agentera prime --context <name> --format json`. The Markdown
-      `instructions.md` file is no longer part of the on-disk capability
-      surface (D65).
+      `agentera prime --context <name> --format json`.
     produces: false
     consumes: true
   4:
@@ -525,11 +496,11 @@ VALIDATION:
     rule: trigger_enrichment_fields
     description: >-
       Trigger entries MAY carry the optional intent-documentation fields
-      defined in TRIGGER_ENRICHMENT (Decision 76). Enrichment is opt-in per
-      entry; triggers omitting every enriched field remain valid. Decision 76
-      retired the scoring role of confidence_threshold, borderline_band, and
-      patterns_regex; this rule still validates their shape so triggers.yaml
-      files that carry them continue to validate. Validating an entry with
+      defined in TRIGGER_ENRICHMENT. Enrichment is opt-in per entry;
+      triggers omitting every enriched field remain valid.
+      confidence_threshold, borderline_band, and patterns_regex are
+      retained as shape-validated documentation; disambiguates_against
+      is consumed by the LLM host at runtime. Validating an entry with
       enriched fields fails when the rules below are violated.
     severity: error
     checks:
@@ -551,8 +522,8 @@ EXIT_CONDITIONS:
     id: E2
     condition: invalid_structure
     description: >-
-      Directory structure validation failed. Missing instructions.md, schemas/
-      directory, or YAML files.
+      Directory structure validation failed. Missing instruction module,
+      schemas/ directory, or YAML files.
     exit_code: 1
   3:
     id: E3
