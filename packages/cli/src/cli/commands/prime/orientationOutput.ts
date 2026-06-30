@@ -5,19 +5,28 @@ import { requestedFields, REQUIRED_SPARSE_CONTEXT_FIELDS } from "../../stateQuer
 import { emitStructured } from "../../structured.js";
 import type { JsonObject } from "../../../core/jsonValue.js";
 import type { BundleStatus } from "../../contracts/bundleStatus.js";
-import type { OrientationState } from "../../contracts/orientationState.js";
+import type { NextAction, OrientationState } from "../../contracts/orientationState.js";
 import { startupCompletenessContract } from "../../startupCompletenessContract.js";
 
 export { startupCompletenessContract } from "../../startupCompletenessContract.js";
 
-/** Pre-D76 `next_action` view: the recommended entry projected to
- *  `{object, capability, reason}` (no `phase`, no alternatives). Task 2
- *  replaces this with the ranked-hint emission; until then the JSON/text output
- *  keeps the historical single-entry shape so the state can carry the full
- *  {@link ReadinessHint} without changing what consumers observe. */
-function nextActionRecord(state: OrientationState): Record<string, string> {
-  const { object, capability, reason } = state.next_action.recommended;
-  return { object, capability, reason };
+/** Project a single {@link NextAction} to its JSON record shape. */
+function nextActionEntry(action: NextAction): Record<string, string> {
+  return { object: action.object, capability: action.capability, reason: action.reason, phase: action.phase };
+}
+
+/** Ranked state-readiness hint for the prime JSON `next_action` field (D76).
+ *  The recommended entry is flattened to top-level `object`/`capability`/
+ *  `reason`/`phase` so consumers reading `next_action.object` keep working,
+ *  and `alternatives` carries the cascade branches the early-return model
+ *  would have skipped, each with the same `{object, capability, reason, phase}`
+ *  shape. */
+function nextActionPayload(state: OrientationState): Record<string, unknown> {
+  const { recommended, alternatives } = state.next_action;
+  return {
+    ...nextActionEntry(recommended),
+    alternatives: alternatives.map(nextActionEntry),
+  };
 }
 
 const STATUS_STRUCTURED_FIELDS = [
@@ -102,7 +111,7 @@ export function buildOrientationJsonPayload(
     state_presence: state.state_presence,
     attention: state.attention.slice(0, 6),
     decision_attention: state.decision_attention,
-    next_action: nextActionRecord(state),
+    next_action: nextActionPayload(state),
     orchestration_context: bespoke.orchestration_context,
     closeout_context: bespoke.closeout_context,
     evidence_context: bespoke.evidence_context,
@@ -168,7 +177,7 @@ export function printOrientationTextBriefing(state: OrientationState, command: s
   const objective = state.objective;
   const presence = state.state_presence;
   const attention = state.attention;
-  const nextAction = state.next_action.recommended;
+  const nextAction = state.next_action;
   const dashboardLabel = command === "prime" ? "prime orientation dashboard" : "prime orientation dashboard";
 
   out(`agentera ${command}\n`);
@@ -216,7 +225,10 @@ export function printOrientationTextBriefing(state: OrientationState, command: s
     for (const item of attention.slice(0, 6)) out(`- ${item}\n`);
   }
   out("next_action:\n");
-  out(`- ${formatNextAction(nextAction)}\n`);
+  out(`- ${formatNextAction(nextAction.recommended)}\n`);
+  for (const alt of nextAction.alternatives) {
+    out(`- alt: ${formatNextAction(alt)}\n`);
+  }
   out("source_contract:\n");
   out(
     "- fields=app_home,mode,profile,v1_migration,project_integration,health,todo,plan,docs,progress,objective,state_presence,attention,decision_attention,next_action,orchestration_context,closeout_context,evidence_context,benchmark_context,execution_context\n",
