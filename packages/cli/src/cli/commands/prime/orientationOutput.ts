@@ -10,6 +10,16 @@ import { startupCompletenessContract } from "../../startupCompletenessContract.j
 
 export { startupCompletenessContract } from "../../startupCompletenessContract.js";
 
+/** Pre-D76 `next_action` view: the recommended entry projected to
+ *  `{object, capability, reason}` (no `phase`, no alternatives). Task 2
+ *  replaces this with the ranked-hint emission; until then the JSON/text output
+ *  keeps the historical single-entry shape so the state can carry the full
+ *  {@link ReadinessHint} without changing what consumers observe. */
+function nextActionRecord(state: OrientationState): Record<string, string> {
+  const { object, capability, reason } = state.next_action.recommended;
+  return { object, capability, reason };
+}
+
 const STATUS_STRUCTURED_FIELDS = [
   "command", "status", "app_home", "app", "mode", "profile", "v1_migration", "health",
   "todo", "plan", "docs", "progress", "objective", "state_presence", "project_integration", "attention",
@@ -92,7 +102,7 @@ export function buildOrientationJsonPayload(
     state_presence: state.state_presence,
     attention: state.attention.slice(0, 6),
     decision_attention: state.decision_attention,
-    next_action: state.next_action,
+    next_action: nextActionRecord(state),
     orchestration_context: bespoke.orchestration_context,
     closeout_context: bespoke.closeout_context,
     evidence_context: bespoke.evidence_context,
@@ -158,7 +168,7 @@ export function printOrientationTextBriefing(state: OrientationState, command: s
   const objective = state.objective;
   const presence = state.state_presence;
   const attention = state.attention;
-  const nextAction = state.next_action;
+  const nextAction = state.next_action.recommended;
   const dashboardLabel = command === "prime" ? "prime orientation dashboard" : "prime orientation dashboard";
 
   out(`agentera ${command}\n`);
