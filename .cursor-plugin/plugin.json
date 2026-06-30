@@ -1,6 +1,6 @@
 {
   "name": "agentera",
-  "version": "3.0.0",
+  "version": "3.1.0",
   "description": "Agentera compound agent orchestration suite — twelve capabilities in one bundled skill; exact bare /agentera belongs to the bundled agentera dashboard path. Cloud agents are unsupported in v1.",
   "author": {
     "name": "Jonathan Gabor",

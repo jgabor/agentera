@@ -1,6 +1,6 @@
 {
   "name": "agentera",
-  "version": "3.0.0-next.1",
+  "version": "3.1.0-next.0",
   "description": "Agentera app-home protocol and CLI (TypeScript)",
   "keywords": [
     "agentera",
@@ -53,7 +53,7 @@
     "node": ">=22"
   },
   "agentera": {
-    "suiteVersion": "3.0.0",
+    "suiteVersion": "3.1.0",
     "gitRef": "2521c7a8f4d33a52c0198944b5cac4bf1e58f0b7"
   }
 }

@@ -1,6 +1,6 @@
 {
   "name": "agentera",
-  "version": "3.0.0",
+  "version": "3.1.0",
   "description": "Compound agent orchestration suite \u2014 12 capabilities in one bundled skill; exact bare /agentera belongs to the bundled agentera dashboard path",
   "author": {
     "name": "Jonathan Gabor",
