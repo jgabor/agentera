@@ -1,7 +1,7 @@
 header:
   level: full
   created: "2026-06-29"
-  status: active
+  status: complete
   reviewed: "2026-06-29"
   critic_issues: "16 found, 14 addressed, 2 dismissed"
   title: Trigger Schema Enrichment and Layer 3-4 Routing
@@ -142,7 +142,7 @@ tasks:
   - number: 8
     name: Current-state sync and full validation
     depends_on: ["1", "2", "3", "4", "5", "6", "7"]
-    status: in_progress
+    status: complete
     acceptance:
       - "GIVEN all prior tasks complete WHEN capability-contract validation runs THEN it exits 0"
       - "GIVEN all prior tasks complete WHEN typecheck runs THEN it exits 0"
