@@ -9,7 +9,7 @@
 #   3. Deprecation protocol (deprecated + replaced_by)
 #   4. Directory structure requirements (instruction module, schemas/)
 #   5. Machine-readable validation rules consumed by future contract loaders
-#   6. Optional trigger-entry enrichment fields (TRIGGER_ENRICHMENT, Decision 75)
+#   6. Optional trigger-entry intent documentation (TRIGGER_ENRICHMENT, Decision 76)
 #
 # D65: the per-capability `instructions.md` Markdown file is retired. The
 # behavioral instructions now live at
@@ -55,8 +55,10 @@ ENTRY_SCHEMA:
       type: string
       required: false
       description: >-
-        Priority of this trigger entry for routing confidence. Used in the
-        five-layer routing model (Decision 42); see
+        Advisory relevance-precedence hint the LLM host reads alongside
+        description. Origin in the five-layer routing model (Decision 42);
+        Decision 76 repositioned it as an advisory hint the host consults,
+        not a routing-confidence scoring weight. See
         references/cli/routing-model.md for the layer definitions and routing
         semantics. Valid values: high, medium, low.
         Required for all TRIGGERS entries.
@@ -145,21 +147,30 @@ FIELD_RULES:
         - medium
         - low
       description: >-
-        Priority of this trigger entry for routing confidence. Feeds the
-        five-layer routing model (Decision 42); see
+        Advisory relevance-precedence hint the LLM host reads (Decision 76
+        repositioned it from a routing-confidence weight to an advisory
+        hint). Used in the five-layer routing model (Decision 42); see
         references/cli/routing-model.md for layer definitions and routing
         semantics.
 
 TRIGGER_ENRICHMENT:
   description: >-
-    Optional trigger-entry enrichment fields for Layer 3-4 request-derived
-    capability routing (Decision 75). Every field in this section is OPTIONAL:
-    a triggers.yaml entry that omits all enriched fields remains valid and
-    the routing engine applies the contract defaults documented below. The
-    single authority for field shapes, scoring, and disambiguation behavior
-    is references/cli/trigger-schema-enrichment.md.
+    Optional trigger-entry intent documentation for Layer 3 LLM-native
+    capability routing (Decision 76). Decision 76 retires the deterministic
+    routing engine; the LLM host owns natural-language routing and consults
+    these fields as intent documentation rather than scoring inputs. Every
+    field in this section is OPTIONAL: a triggers.yaml entry that omits all
+    enriched fields remains valid. The scoring role of confidence_threshold,
+    borderline_band, and patterns_regex is retired per Decision 76; their
+    shape is retained here for documentation and so existing triggers.yaml
+    files that carry them still validate. The only field with a current role
+    in the Decision 76 model is disambiguates_against (advisory hint the LLM
+    host consults). The single authority for field shapes and
+    intent-documentation behavior is references/cli/trigger-schema-enrichment.md.
   spec: references/cli/trigger-schema-enrichment.md
   contract_defaults:
+    # Retained for documentation; scoring role retired per Decision 76. The LLM
+    # host owns routing and does not consume these values.
     confidence_threshold: 50
     borderline_band: 15
   fields:
@@ -170,10 +181,11 @@ TRIGGER_ENRICHMENT:
       max: 100
       default: 50
       description: >-
-        Minimum confidence score (0..100) required for this trigger entry to
-        be considered a route match. Applied by the routing engine's Layer 3
-        scorer (see spec §3.3). A non-integer or a value outside 0..100
-        fails V7 validation with the valid range and the offending entry ID.
+        Scoring role retired per Decision 76; the LLM host owns natural-language
+        routing and does not consume this value. The shape is retained for
+        documentation and so triggers.yaml files that carry the field still
+        validate. A non-integer or a value outside 0..100 fails V7 validation
+        with the valid range and the offending entry ID.
     borderline_band:
       type: integer
       required: false
@@ -181,28 +193,32 @@ TRIGGER_ENRICHMENT:
       max: 100
       default: 15
       description: >-
-        Per-trigger override for the disambiguation band (spec §1.4, §4).
-        When the top two candidate capabilities score within this band the
-        engine returns disambiguation candidates instead of a single match.
-        A non-integer or a value outside 0..100 fails V7 validation.
+        Scoring role retired per Decision 76; the LLM host resolves ambiguity
+        natively and does not consume this value. The shape is retained for
+        documentation and so triggers.yaml files that carry the field still
+        validate. A non-integer or a value outside 0..100 fails V7 validation.
     patterns_regex:
       type: list_of_strings
       required: false
       default: []
       each_must_be_valid_regex: true
       description: >-
-        Regex patterns for more precise matching than the substring
-        `patterns` field (spec §1.3, §3.4). The loader compiles each entry
-        during validation; a compile failure fails V7 validation naming the
-        offending entry and pattern.
+        Scoring role retired per Decision 76; the LLM host reads the trigger
+        `description`, not regex patterns, and does not consume this value. The
+        shape is retained for documentation and so triggers.yaml files that
+        carry the field still validate. The loader compiles each entry during
+        validation; a compile failure fails V7 validation naming the offending
+        entry and pattern.
     disambiguates_against:
       type: list_of_mappings
       required: false
       default: []
       description: >-
-        Declares which other capabilities this trigger's pattern set could
-        collide with, with a hint the agent surfaces when disambiguation
-        fires (spec §1.2, §4.2). Each entry MUST be a mapping with
+        Declares which other capabilities this trigger's intent could be
+        confused with, with a hint the LLM host consults when a request could
+        match more than one capability (spec §1.2). Advisory: the LLM host
+        resolves ambiguity natively and MAY surface the hint when asking the
+        user to confirm or clarify. Each entry MUST be a mapping with
         `capability` and `hint`.
       entries:
         capability:
@@ -221,7 +237,7 @@ TRIGGER_ENRICHMENT:
           non_empty: true
           description: >-
             Non-empty string distinguishing this trigger's intent from the
-            named capability on near-equal scores. A missing or empty hint
+            named capability on near-equal requests. A missing or empty hint
             fails V7 validation.
 
 PROSE_CONVENTIONS:
@@ -508,10 +524,13 @@ VALIDATION:
     id: V7
     rule: trigger_enrichment_fields
     description: >-
-      Trigger entries MAY carry the optional enrichment fields defined in
-      TRIGGER_ENRICHMENT (Decision 75). Enrichment is opt-in per entry;
-      triggers omitting every enriched field remain valid. Validating an
-      entry with enriched fields fails when the rules below are violated.
+      Trigger entries MAY carry the optional intent-documentation fields
+      defined in TRIGGER_ENRICHMENT (Decision 76). Enrichment is opt-in per
+      entry; triggers omitting every enriched field remain valid. Decision 76
+      retired the scoring role of confidence_threshold, borderline_band, and
+      patterns_regex; this rule still validates their shape so triggers.yaml
+      files that carry them continue to validate. Validating an entry with
+      enriched fields fails when the rules below are violated.
     severity: error
     checks:
       - "confidence_threshold, when present, is an integer in 0..100"
