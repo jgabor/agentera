@@ -139,6 +139,48 @@ describe("compactYamlFile", () => {
   });
 });
 
+describe("compactYamlFile decisions archive ordering", () => {
+  function decisionEntry(n: number): Record<string, unknown> {
+    return {
+      number: n,
+      date: `2026-01-${String((n % 28) + 1).padStart(2, "0")}`,
+      question: `Should we do thing ${n}?`,
+      choice: `Yes, do thing ${n}`,
+      alternatives: [{ status: "rejected", summary: `No to thing ${n}` }],
+      outcome: `Implemented thing ${n}`,
+      satisfaction: {
+        state: "user_confirmed_satisfied",
+        user_confirmation: { by: "test", date: "2026-01-01" },
+      },
+    };
+  }
+
+  it("writes the decisions archive in ascending order after compaction", () => {
+    const decisions = Array.from({ length: 15 }, (_, i) => decisionEntry(i + 1));
+    const p = path.join(tmp, "decisions.yaml");
+    fs.writeFileSync(p, YAML.stringify({ decisions, archive: [] }));
+
+    const result = compactYamlFile(p, "decisions");
+    expect(result.changed).toBe(true);
+    expect(result.full_after).toBe(10);
+    expect(result.oneline_after).toBe(5);
+
+    const data = YAML.parse(fs.readFileSync(p, "utf8")) as {
+      decisions: { number: number }[];
+      archive: { number?: number; summary: string }[];
+    };
+    // Active entries ascending (6-15).
+    expect(data.decisions[0].number).toBe(6);
+    expect(data.decisions[9].number).toBe(15);
+    // Archive entries ascending (1-5) — the bug produced descending (5,4,3,2,1).
+    const archiveNumbers = data.archive.map((e) => e.number ?? 0);
+    const sorted = [...archiveNumbers].sort((a, b) => a - b);
+    expect(archiveNumbers).toEqual(sorted);
+    expect(archiveNumbers[0]).toBe(1);
+    expect(archiveNumbers[4]).toBe(5);
+  });
+});
+
 describe("parseEntries todo-resolved + compactEntries", () => {
   it("parses resolved checkbox bullets and detects full vs oneline", () => {
     const todo = "# TODO\n\n## Resolved\n- [x] Fixed the leak\n    detail line\n- [x] Quick fix\n";

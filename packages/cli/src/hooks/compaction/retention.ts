@@ -221,7 +221,7 @@ export function selectDecisionArchiveEntries(archiveCandidates: any[]): any[] {
   }
   const satisfied = archiveCandidates.filter((e) => !decisionRequiresUserReview(e));
   const keepSatisfied = yamlArchiveEntries(satisfied).slice(0, MAX_ONELINE_ENTRIES - protectedEntries.length);
-  return yamlArchiveEntries([...protectedEntries, ...keepSatisfied]);
+  return yamlSortEntries([...protectedEntries, ...keepSatisfied], "decisions");
 }
 
 export { applyRetentionCaps };
