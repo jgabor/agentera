@@ -117,7 +117,6 @@ export function statusBundleStatus(opts: PrimeOpts): BundleStatus {
     project: process.cwd(),
     expectedVersion: expected,
     expectedCommands: ["prime"],
-    probeCli: false,
     channel: channel.channel,
     env,
   });

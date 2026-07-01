@@ -20,7 +20,6 @@ import {
   EXPECTED_STATE_COMMANDS,
   doctorParityJsonEnvelope,
 } from "../../upgrade/doctor.js";
-import { inProcessProbe } from "../../upgrade/cliProbe.js";
 import { classifyInstall } from "../../upgrade/compatibility.js";
 import type { UpdateChannelName } from "../../upgrade/channels.js";
 import {
@@ -35,9 +34,8 @@ import { emitStructured } from "../structured.js";
 
 /**
  * `agentera doctor` — app/runtime status. Port of agentera_upgrade.cmd_doctor +
- * render_doctor_status. build_doctor_status is reused (upgrade/doctor.ts). The CLI
- * probe verifies the TS dispatcher exposes the expected state commands in-process;
- * the upgrade/retry command strings use the TS invocation form (npx/node), which
+ * render_doctor_status. build_doctor_status is reused (upgrade/doctor.ts). The
+ * upgrade/retry command strings use the TS invocation form (npx/node), which
  * is the intended runtime form rather than Python's `uv run`.
  */
 
@@ -93,7 +91,7 @@ export function renderDoctorStatus(status: BundleStatus): string {
       lines.push(`  3. Then retry Agentera: ${status.retryCommand}`);
     } else {
       lines.push(
-        "  3. Then retry Agentera once the managed script runtime is restored (retryCommand unavailable).",
+        "  3. Then retry Agentera once a retry command is available.",
       );
     }
   } else {
@@ -149,8 +147,6 @@ export function cmdDoctor(args: DoctorArgs, io: Io = {}): number {
     project: resolvePath(expanduser(args.project ?? process.cwd())),
     expectedVersion: args.expectedVersion ?? null,
     expectedCommands,
-    probeCli: true,
-    probeRunner: inProcessProbe,
   });
   let smokeReport: JsonObject | null = null;
   if (args.smoke) {

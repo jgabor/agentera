@@ -1,0 +1,43 @@
+header:
+  level: light
+  created: "2026-06-30"
+  status: complete
+  title: "Decision 77: Retire probeCli flag, cliProbe module, and managed-script evidence"
+what: >
+  Remove the probeCli flag from BuildDoctorStatusOptions and all callers. Delete
+  cliProbe.ts (the in-process Set-lookup probe), the ProbeResult/ProbeRunner
+  types, the appendCliProbeSignals function in doctorClassifier.ts, and the
+  managedScriptEvidence shebang-mismatch check in doctor.ts (also v2-era: only
+  meaningful for the Python managed script at scripts/agentera, which v3 does
+  not ship). Update all test files that pass probeCli to remove the option.
+why: >
+  Decision 77 (firm) determined the probeCli flag is v2-era debt. The in-process
+  probe is tautological in v3 — if prime is running, the dispatcher works. The
+  flag created an asymmetry where prime (probeCli:false) and doctor
+  (probeCli:true) could produce different statuses for the same install. The
+  managedScriptEvidence check is also v2 debt: it checks the shebang of
+  scripts/agentera against its content language, but v3 has no managed Python
+  script at that path. Removing both eliminates the asymmetry and simplifies the
+  doctor path to file/version presence + install-root classification.
+constraints: >
+  v3 has not shipped. No backward compatibility constraints. The doctor command
+  must still produce a valid BundleStatus and exit cleanly. The status output
+  must not reference probeCli, ProbeResult, or runtime_mismatch signals.
+overall_acceptance: >
+  D77 implementation is complete when buildDoctorStatus no longer takes a
+  probeCli option or probeRunner, cliProbe.ts is deleted, doctorClassifier no
+  longer appends CLI probe signals, the managed-script evidence check is
+  removed, prime and doctor produce the same status for the same install,
+  all tests pass, and check compact + validate artifact are green.
+tasks:
+  - number: 1
+    name: "Remove probeCli flag, cliProbe module, and managed-script evidence"
+    depends_on: []
+    status: complete
+    acceptance:
+      - "GIVEN buildDoctorStatus is called THEN it no longer accepts probeCli or probeRunner options AND BundleStatus is still produced with file/version presence + install-root classification"
+      - "GIVEN agentera prime and agentera doctor are run against the same install THEN both produce the same app_home.status (no probeCli asymmetry)"
+      - "GIVEN cliProbe.ts is checked THEN the file does not exist AND no source file imports ProbeResult, ProbeRunner, or inProcessProbe"
+      - "GIVEN doctor.ts is inspected THEN managedScriptEvidence and the runtime_mismatch signal are gone (v3 has no scripts/agentera managed script)"
+      - "GIVEN pnpm -C packages/cli test is run THEN all tests pass with zero failures and no test passes probeCli or references the probe module"
+surprises: []

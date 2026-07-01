@@ -77,7 +77,6 @@ describe("buildDoctorStatus channel-aware commands", () => {
       home: path.join(tmp, "home"),
       project: path.join(tmp, "proj"),
       expectedVersion: "v9",
-      probeCli: false,
       channel: "stable",
     });
     expect(status.status).toBe(APP_OUTDATED);
@@ -96,7 +95,6 @@ describe("buildDoctorStatus channel-aware commands", () => {
       home: path.join(tmp, "home"),
       project: path.join(tmp, "proj"),
       expectedVersion: "3.0.0",
-      probeCli: false,
     });
     expect(status.crossMajorBoundary).toBe(false);
     expect(status.status).toBe("manual_review_needed");
@@ -118,7 +116,6 @@ describe("buildDoctorStatus channel-aware commands", () => {
       home: path.join(tmp, "home"),
       project: path.join(tmp, "proj"),
       expectedVersion: "3.0.0",
-      probeCli: false,
     });
     expect(status.crossMajorBoundary).toBe(true);
     expect(status.dryRunCommand).toContain("agentera@next");

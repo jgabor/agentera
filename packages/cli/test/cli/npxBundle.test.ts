@@ -115,7 +115,6 @@ describe("self-contained doctor/upgrade semantics", () => {
       home: os.homedir(),
       project: bundle,
       expectedVersion: "9.9.9",
-      probeCli: false,
     });
     expect(status.status).toBe("up_to_date");
     expect(status.appHome).toBe(bundle);

@@ -157,7 +157,6 @@ describe("hasBundleRootEvidence — uniform application across the 4 call sites"
       home: "/tmp/bundle-evidence-home",
       project: "/tmp/bundle-evidence-proj",
       expectedVersion: "v9",
-      probeCli: false,
     });
     expect(doctorStatus.signals.some((s: { kind?: string }) => s.kind === "missing_bundle")).toBe(false);
   });
@@ -189,7 +188,6 @@ describe("hasBundleRootEvidence — uniform application across the 4 call sites"
         home: "/tmp/bundle-evidence-home",
         project: "/tmp/bundle-evidence-proj",
         expectedVersion: "v9",
-        probeCli: false,
       });
       expect(doctorStatus.status).not.toBe("up_to_date");
     } finally {

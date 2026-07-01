@@ -9,7 +9,6 @@ import {
   APP_OUTDATED,
   APP_REPAIR_NEEDED,
 } from "./doctor.js";
-import { inProcessProbe, type ProbeResult, type ProbeRunner } from "./cliProbe.js";
 
 /** Install-root kinds produced by classifyResolvedRoot. */
 export type InstallRootKind =
@@ -31,8 +30,6 @@ export interface ClassifierContext {
   recoverableStaleDefault: boolean;
   legacyBundleRoot: boolean;
   userDataOnly: boolean;
-  probeCli: boolean;
-  probeRunner?: ProbeRunner;
   project: string;
   expectedCommands: readonly string[];
 }
@@ -197,35 +194,6 @@ function appendManagedStaleSignals(ctx: ClassifierContext, signals: DoctorSignal
   }
 }
 
-function appendCliProbeSignals(ctx: ClassifierContext, signals: DoctorSignal[]): void {
-  const probe: ProbeResult = ctx.probeCli
-    ? (ctx.probeRunner ?? inProcessProbe)({
-        bundleRoot: ctx.roots.activeBundleRoot,
-        appHome: ctx.installRoot,
-        project: ctx.project,
-        expectedCommands: ctx.expectedCommands,
-      })
-    : { ok: true };
-  if (probe.ok) {
-    return;
-  }
-  let kind = "cli_probe_unavailable";
-  if (probe.returnCode !== null && probe.returnCode !== undefined && probe.returnCode !== 0) {
-    kind = "cli_probe_failed";
-  } else if (probe.missingCommands && probe.missingCommands.length > 0) {
-    kind = "missing_command";
-  }
-  signals.push({
-    status: APP_REPAIR_NEEDED,
-    kind,
-    message: probe.message,
-    returnCode: probe.returnCode ?? null,
-    missingCommands: probe.missingCommands ?? [],
-    stdoutTail: probe.stdoutTail ?? [],
-    stderrTail: probe.stderrTail ?? [],
-  });
-}
-
 function classifyManaged(ctx: ClassifierContext): ClassifierResult {
   const signals: DoctorSignal[] = [];
   if (ctx.legacyBundleRoot) {
@@ -238,7 +206,6 @@ function classifyManaged(ctx: ClassifierContext): ClassifierResult {
     });
   }
   appendManagedStaleSignals(ctx, signals);
-  appendCliProbeSignals(ctx, signals);
   return {
     rootStatus: "managed",
     blocked: false,

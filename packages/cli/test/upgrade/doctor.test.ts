@@ -53,7 +53,6 @@ const common = {
   home: "/tmp/doctor-home",
   project: "/tmp/doctor-proj",
   expectedVersion: "v9",
-  probeCli: false,
 };
 
 describe("buildDoctorStatus", () => {
@@ -169,7 +168,6 @@ describe("buildDoctorStatus", () => {
       home: path.join(tmp, "home"),
       project: path.join(tmp, "proj"),
       expectedVersion: "3.0.0",
-      probeCli: false,
     });
     expect(status.status).toBe(APP_MANUAL_REVIEW_NEEDED);
     expect(status.crossMajorBoundary).toBe(false);
@@ -222,7 +220,6 @@ describe("buildDoctorStatus", () => {
       home: path.join(tmp, "home"),
       project: path.join(tmp, "proj"),
       expectedVersion: "2.7.9",
-      probeCli: false,
     });
     expect(status.status).toBe(APP_UP_TO_DATE);
     expect(status.signals.some((s: { kind?: string }) => s.kind === "cross_major_pending")).toBe(false);
@@ -298,41 +295,6 @@ describe("buildDoctorStatus invoking-cli retryCommand", () => {
     expect(status.retryCommand).toMatch(/prime$/);
   });
 
-  it("builds retryCommand with uv run for a v2 CLI against a Python managed script", () => {
-    const v2Source = path.join(tmp, "v2-cli-source-retry");
-    fs.mkdirSync(path.join(v2Source, "skills", "agentera"), { recursive: true });
-    fs.writeFileSync(path.join(v2Source, "skills", "agentera", "SKILL.md"), "x");
-    fs.writeFileSync(
-      path.join(v2Source, "registry.json"),
-      JSON.stringify({ skills: [{ name: "agentera", version: "2.7.9" }] }),
-    );
-    fs.mkdirSync(path.join(v2Source, "references", "cli"), { recursive: true });
-    fs.copyFileSync(
-      path.join(REPO_ROOT, "references", "cli", "update-channels.yaml"),
-      path.join(v2Source, "references", "cli", "update-channels.yaml"),
-    );
-    const appHome = path.join(tmp, "v2-python-shebang");
-    managedWithScript(
-      appHome,
-      "2.7.9",
-      "import argparse\ndef main():\n    pass\n",
-      "#!/usr/bin/env python3",
-    );
-    const status = buildDoctorStatus(appHome, {
-      rootSource: "explicit --install-root",
-      sourceRoot: v2Source,
-      home: path.join(tmp, "home"),
-      project: path.join(tmp, "proj"),
-      expectedVersion: "2.7.9",
-      probeCli: false,
-      env: { AGENTERA_CLI_RUNTIME: "python" },
-    });
-    expect(status.retryCommand).not.toBeNull();
-    expect(status.retryCommand).toMatch(/^uv run /);
-    expect(status.retryCommand).toContain("scripts/agentera");
-    expect(status.retryCommand).toMatch(/prime$/);
-  });
-
   it("sets retryCommand to null for a managed script with no shebang on v2 CLI", () => {
     const v2Source = path.join(tmp, "v2-cli-source-no-shebang");
     fs.mkdirSync(path.join(v2Source, "skills", "agentera"), { recursive: true });
@@ -359,188 +321,8 @@ describe("buildDoctorStatus invoking-cli retryCommand", () => {
       home: path.join(tmp, "home"),
       project: path.join(tmp, "proj"),
       expectedVersion: "2.7.9",
-      probeCli: false,
       env: { AGENTERA_CLI_RUNTIME: "python" },
     });
     expect(status.retryCommand).toBeNull();
-  });
-
-  it("emits a runtime_mismatch signal for a managed script with mismatched shebang and content (probeCli: true)", () => {
-    const appHome = path.join(tmp, "mismatch");
-    managedWithScript(
-      appHome,
-      "v9",
-      "import argparse\ndef main():\n    pass\n",
-      "#!/usr/bin/env node",
-    );
-    const status = buildDoctorStatus(appHome, {
-      rootSource: "explicit --install-root",
-      ...common,
-      probeCli: true,
-    });
-    const mismatch = status.signals.find((s: { kind?: string }) => s.kind === "runtime_mismatch");
-    expect(mismatch).toBeTruthy();
-    expect(mismatch?.status).toBe("repair_needed");
-    expect(mismatch?.message).toMatch(/shebang/i);
-    expect(mismatch?.message).toMatch(/content/i);
-  });
-
-  it("does not emit a runtime_mismatch signal for a mismatched shebang when probeCli is false", () => {
-    const appHome = path.join(tmp, "mismatch-no-probe");
-    managedWithScript(
-      appHome,
-      "v9",
-      "import argparse\ndef main():\n    pass\n",
-      "#!/usr/bin/env node",
-    );
-    const status = buildDoctorStatus(appHome, {
-      rootSource: "explicit --install-root",
-      ...common,
-      probeCli: false,
-    });
-    expect(status.signals.some((s: { kind?: string }) => s.kind === "runtime_mismatch")).toBe(false);
-  });
-
-  it("does not emit a runtime_mismatch signal for a script whose shebang matches its content", () => {
-    const appHome = path.join(tmp, "matched");
-    managedWithScript(
-      appHome,
-      "v9",
-      "import argparse\ndef main():\n    pass\n",
-      "#!/usr/bin/env python3",
-    );
-    const status = buildDoctorStatus(appHome, {
-      rootSource: "explicit --install-root",
-      ...common,
-      probeCli: true,
-    });
-    expect(status.signals.some((s: { kind?: string }) => s.kind === "runtime_mismatch")).toBe(false);
-  });
-});
-
-describe("buildDoctorStatus runtime_mismatch JS detection", () => {
-  it("emits runtime_mismatch for a python shebang with a const-declared JS body", () => {
-    const appHome = path.join(tmp, "py-shebang-const-body");
-    managedWithScript(
-      appHome,
-      "v9",
-      "const x = 1\n",
-      "#!/usr/bin/env python3",
-    );
-    const status = buildDoctorStatus(appHome, {
-      rootSource: "explicit --install-root",
-      ...common,
-      probeCli: true,
-    });
-    const mismatch = status.signals.find((s: { kind?: string }) => s.kind === "runtime_mismatch");
-    expect(mismatch).toBeTruthy();
-    expect(mismatch?.message).toMatch(/content language/);
-    expect(mismatch?.message).toContain("python");
-    expect(mismatch?.message).toContain("js");
-  });
-
-  it("emits runtime_mismatch for a python shebang with `import foo from \"bar\"` JS body", () => {
-    const appHome = path.join(tmp, "py-shebang-import-from-body");
-    managedWithScript(
-      appHome,
-      "v9",
-      'import foo from "bar"\n',
-      "#!/usr/bin/env python3",
-    );
-    const status = buildDoctorStatus(appHome, {
-      rootSource: "explicit --install-root",
-      ...common,
-      probeCli: true,
-    });
-    const mismatch = status.signals.find((s: { kind?: string }) => s.kind === "runtime_mismatch");
-    expect(mismatch).toBeTruthy();
-    expect(mismatch?.message).toMatch(/content language/);
-  });
-
-  it("emits runtime_mismatch for a node shebang with a `def main()` python body", () => {
-    const appHome = path.join(tmp, "node-shebang-def-body");
-    managedWithScript(
-      appHome,
-      "v9",
-      "def main():\n    pass\n",
-      "#!/usr/bin/env node",
-    );
-    const status = buildDoctorStatus(appHome, {
-      rootSource: "explicit --install-root",
-      ...common,
-      probeCli: true,
-    });
-    const mismatch = status.signals.find((s: { kind?: string }) => s.kind === "runtime_mismatch");
-    expect(mismatch).toBeTruthy();
-    expect(mismatch?.message).toContain("js");
-    expect(mismatch?.message).toContain("python");
-  });
-
-  it("emits runtime_mismatch for a node shebang with an `import sys` python body", () => {
-    const appHome = path.join(tmp, "node-shebang-import-sys-body");
-    managedWithScript(
-      appHome,
-      "v9",
-      "import sys\n",
-      "#!/usr/bin/env node",
-    );
-    const status = buildDoctorStatus(appHome, {
-      rootSource: "explicit --install-root",
-      ...common,
-      probeCli: true,
-    });
-    const mismatch = status.signals.find((s: { kind?: string }) => s.kind === "runtime_mismatch");
-    expect(mismatch).toBeTruthy();
-  });
-
-  it("emits runtime_mismatch for a python shebang with a JS body when probeCli is true (acceptance)", () => {
-    const appHome = path.join(tmp, "py-shebang-js-body");
-    managedWithScript(
-      appHome,
-      "v9",
-      "import foo from 'bar'\nexport const main = () => {};\n",
-      "#!/usr/bin/env python3",
-    );
-    const status = buildDoctorStatus(appHome, {
-      rootSource: "explicit --install-root",
-      ...common,
-      probeCli: true,
-    });
-    const mismatch = status.signals.find((s: { kind?: string }) => s.kind === "runtime_mismatch");
-    expect(mismatch).toBeTruthy();
-    expect(mismatch?.status).toBe("repair_needed");
-  });
-
-  it("emits runtime_mismatch for a python shebang with a require()-based JS body", () => {
-    const appHome = path.join(tmp, "py-shebang-require-body");
-    managedWithScript(
-      appHome,
-      "v9",
-      "const fs = require('node:fs');\n",
-      "#!/usr/bin/env python3",
-    );
-    const status = buildDoctorStatus(appHome, {
-      rootSource: "explicit --install-root",
-      ...common,
-      probeCli: true,
-    });
-    const mismatch = status.signals.find((s: { kind?: string }) => s.kind === "runtime_mismatch");
-    expect(mismatch).toBeTruthy();
-  });
-
-  it("does not emit runtime_mismatch for a node shebang with a matched JS const body", () => {
-    const appHome = path.join(tmp, "node-shebang-js-body-match");
-    managedWithScript(
-      appHome,
-      "v9",
-      "import fs from 'node:fs';\nconst x = 1\n",
-      "#!/usr/bin/env node",
-    );
-    const status = buildDoctorStatus(appHome, {
-      rootSource: "explicit --install-root",
-      ...common,
-      probeCli: true,
-    });
-    expect(status.signals.some((s: { kind?: string }) => s.kind === "runtime_mismatch")).toBe(false);
   });
 });
