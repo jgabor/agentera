@@ -22,7 +22,7 @@ describe("cli schema", () => {
     expect(["ok", "incomplete"]).toContain(payload.status);
     expect(Array.isArray(payload.commands)).toBe(true);
     expect(payload.routine_state_commands).toContain("plan");
-    expect(payload.doctor.signal_kinds).toContain("cli_probe_failed");
+    expect(payload.doctor.signal_kinds).toContain("missing_marker");
     expect(Array.isArray(payload.artifact_schemas)).toBe(true);
     expect(payload.artifact_locations.schemaVersion).toBe("agentera.artifact_locations.v1");
   });

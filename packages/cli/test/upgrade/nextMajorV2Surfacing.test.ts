@@ -112,7 +112,6 @@ describe("v2 install track successor surfacing (#32)", () => {
       home: path.join(tmp, "home-v2"),
       project: path.join(tmp, "proj-v2"),
       expectedVersion: "3.0.0",
-      probeCli: false,
     });
     expect(status.status).not.toBe(APP_UP_TO_DATE);
     expect(status.crossMajorBoundary).toBe(true);
@@ -153,7 +152,6 @@ describe("v2 install track successor surfacing (#32)", () => {
       home: path.join(tmp, "home-v2-u"),
       project: path.join(tmp, "proj-v2-u"),
       expectedVersion: "3.0.0",
-      probeCli: false,
     });
     expect(status.crossMajorBoundary).toBe(false);
     expect(status.dryRunCommand).toBeNull();

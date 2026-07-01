@@ -31,7 +31,7 @@ const ROUTINE_STATE_COMMANDS = [
 ];
 const DOCTOR_SIGNAL_KINDS = [
   "missing_bundle", "invalid_install_root", "unmanaged_install_root", "invalid_bundle",
-  "missing_marker", "version_mismatch", "cli_probe_unavailable", "cli_probe_failed", "missing_command",
+  "missing_marker", "version_mismatch",
 ];
 const STATUS_STRUCTURED_FIELDS = [
   "command", "status", "app_home", "app", "mode", "profile", "v1_migration", "health",

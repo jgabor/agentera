@@ -128,7 +128,6 @@ describe("doctor upgrade safety parity (D56 T4)", () => {
       home,
       project: path.join(tmp, "proj"),
       expectedVersion: "3.0.0",
-      probeCli: false,
     });
     const envelope = doctorParityJsonEnvelope(status);
     expect(envelope.command).toBe("doctor");
@@ -204,7 +203,6 @@ describe("doctor upgrade safety parity (D56 T4)", () => {
           home,
           project: path.join(tmp, "proj"),
           expectedVersion: "3.0.0",
-          probeCli: false,
         });
         return { status: status.status, serialized: JSON.stringify(doctorParityJsonEnvelope(status)) };
       },
@@ -219,7 +217,6 @@ describe("doctor upgrade safety parity (D56 T4)", () => {
           home,
           project: path.join(tmp, "proj"),
           expectedVersion: "3.0.0",
-          probeCli: false,
         });
         return { status: status.status, serialized: JSON.stringify(doctorParityJsonEnvelope(status)) };
       },
@@ -234,7 +231,6 @@ describe("doctor upgrade safety parity (D56 T4)", () => {
           home,
           project: path.join(tmp, "proj"),
           expectedVersion: "3.0.0",
-          probeCli: false,
         });
         return { status: status.status, serialized: JSON.stringify(doctorParityJsonEnvelope(status)) };
       },

@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 
-import { expanduser, isFile, pathExists, resolvePath } from "../core/paths.js";
+import { expanduser, pathExists, resolvePath } from "../core/paths.js";
 import { SOURCE_LABELS, classifyResolvedRoot } from "../state/installRoot.js";
 import { doctorRoots, loadSuiteVersion } from "./appModel.js";
 import { isNpxBundleRoot } from "../core/sourceRoot.js";
@@ -16,129 +16,15 @@ import { isStableSuccessorAnnounced } from "./nextMajorDoctor.js";
 import { buildUpgradeCommands, commandText } from "./upgradeCommands.js";
 import { parseSemverMajor } from "./versionResolution.js";
 import type { BundleStatus, DoctorSignal, PublicBundleStatus } from "../cli/contracts/bundleStatus.js";
-import { type ProbeResult, type ProbeRunner } from "./cliProbe.js";
 import { classifyInstallRootStatus } from "./doctorClassifier.js";
-import { hasBundleRootEvidence, readScriptHead } from "./bundleEvidence.js";
-
-export type { ProbeResult, ProbeRunner } from "./cliProbe.js";
+import { hasBundleRootEvidence } from "./bundleEvidence.js";
 
 export type { BundleStatus, DoctorSignal, PublicBundleStatus } from "../cli/contracts/bundleStatus.js";
-
-type ScriptRuntime = "js" | "python" | "unknown";
-
-interface ManagedScriptEvidence {
-  scriptPath: string;
-  hasScript: boolean;
-  shebang: string | null;
-  runtime: ScriptRuntime;
-  contentLanguage: ScriptRuntime;
-  mismatch: boolean;
-}
-
-function shebangRuntime(shebang: string): ScriptRuntime {
-  if (/\bnode\b/.test(shebang)) {
-    return "js";
-  }
-  if (/\bpython\d*\b/.test(shebang) || /\buv\b[^\n]*\brun\b/.test(shebang)) {
-    return "python";
-  }
-  return "unknown";
-}
-
-function detectContentLanguage(body: string): ScriptRuntime {
-  if (body.includes("# /// script")) {
-    return "python";
-  }
-  if (/\brequire\s*\(/.test(body) || /\bmodule\.exports\b/.test(body)) {
-    return "js";
-  }
-  if (/^\s*import\s+[^'"\n]+\s+from\s+['"]/m.test(body)) {
-    return "js";
-  }
-  if (/^\s*import\s+['"]/m.test(body)) {
-    return "js";
-  }
-  const lines = body.split("\n").slice(0, 30);
-  for (const raw of lines) {
-    const t = raw.trimStart();
-    if (
-      /^import\s+\w+\s*$/.test(t) ||
-      t.startsWith("from ") ||
-      t.startsWith("def ") ||
-      t.startsWith("class ")
-    ) {
-      return "python";
-    }
-    if (
-      t.startsWith("const ") ||
-      t.startsWith("let ") ||
-      t.startsWith("var ") ||
-      t.startsWith("export ")
-    ) {
-      return "js";
-    }
-  }
-  return "unknown";
-}
-
-function readManagedScriptEvidence(bundleRoot: string): ManagedScriptEvidence {
-  const scriptPath = path.join(bundleRoot, "scripts", "agentera");
-  if (!isFile(scriptPath)) {
-    return {
-      scriptPath,
-      hasScript: false,
-      shebang: null,
-      runtime: "unknown",
-      contentLanguage: "unknown",
-      mismatch: false,
-    };
-  }
-  const head = readScriptHead(scriptPath);
-  let shebang: string | null = null;
-  let runtime: ScriptRuntime = "unknown";
-  let contentLanguage: ScriptRuntime = "unknown";
-  if (head !== null) {
-    const nl = head.indexOf("\n");
-    const firstLine = (nl >= 0 ? head.slice(0, nl) : head).trim();
-    if (firstLine.startsWith("#!")) {
-      shebang = firstLine;
-      runtime = shebangRuntime(firstLine);
-    }
-    const body = nl >= 0 ? head.slice(nl + 1) : "";
-    contentLanguage = detectContentLanguage(body);
-  }
-  const mismatch =
-    runtime !== "unknown" && contentLanguage !== "unknown" && runtime !== contentLanguage;
-  return {
-    scriptPath,
-    hasScript: true,
-    shebang,
-    runtime,
-    contentLanguage,
-    mismatch,
-  };
-}
-
-function buildRetryCommandFromManagedScript(
-  evidence: ManagedScriptEvidence,
-  expectedCommand: string,
-): string | null {
-  if (!evidence.hasScript) {
-    return null;
-  }
-  if (evidence.runtime === "js") {
-    return commandText(["node", evidence.scriptPath, expectedCommand]);
-  }
-  if (evidence.runtime === "python") {
-    return commandText(["uv", "run", evidence.scriptPath, expectedCommand]);
-  }
-  return null;
-}
 
 function inferInvokingCliRuntime(
   sourceRoot: string,
   env: Record<string, string | undefined>,
-): ScriptRuntime {
+): "js" | "python" | "unknown" {
   const explicit = (env.AGENTERA_CLI_RUNTIME ?? "").trim().toLowerCase();
   if (explicit === "js" || explicit === "node") {
     return "js";
@@ -163,24 +49,17 @@ function buildInvokingCliRetryCommand(
   sourceRoot: string,
   channel: ResolvedUpdateChannel,
   env: Record<string, string | undefined>,
-  managedScriptEvidence: ManagedScriptEvidence,
   expectedCommand: string,
 ): string | null {
   const runtime = inferInvokingCliRuntime(sourceRoot, env);
-  if (runtime === "js") {
-    if (isNpxBundleRoot(sourceRoot)) {
-      return commandText(["npx", "-y", "agentera", expectedCommand]);
-    }
-    const packageSpec = channel.channel === "development" ? "agentera@next" : "agentera@latest";
-    return commandText(["npx", "-y", packageSpec, expectedCommand]);
+  if (runtime !== "js") {
+    return null;
   }
-  if (runtime === "python") {
-    return buildRetryCommandFromManagedScript(managedScriptEvidence, expectedCommand);
+  if (isNpxBundleRoot(sourceRoot)) {
+    return commandText(["npx", "-y", "agentera", expectedCommand]);
   }
-  if (cliDistributionMajor(sourceRoot) < 3) {
-    return buildRetryCommandFromManagedScript(managedScriptEvidence, expectedCommand);
-  }
-  return null;
+  const packageSpec = channel.channel === "development" ? "agentera@next" : "agentera@latest";
+  return commandText(["npx", "-y", packageSpec, expectedCommand]);
 }
 
 function crossMajorPendingApprovalPhrase(): string {
@@ -325,8 +204,6 @@ export interface BuildDoctorStatusOptions {
   project: string;
   expectedVersion?: string | null;
   expectedCommands?: readonly string[];
-  probeCli?: boolean;
-  probeRunner?: ProbeRunner;
   /** Override update channel (tests); default stable via resolveUpdateChannel. */
   channel?: string | null;
   env?: Record<string, string | undefined>;
@@ -340,7 +217,6 @@ export function buildDoctorStatus(installRoot: string, opts: BuildDoctorStatusOp
   const home = opts.home;
   const project = opts.project;
   const expectedCommands = opts.expectedCommands ?? EXPECTED_STATE_COMMANDS;
-  const probeCli = opts.probeCli ?? true;
 
   // Fully self-contained npx bundle: the bundle IS the app and is always current
   // (its version is the package version), so there is no install/upgrade step.
@@ -379,7 +255,6 @@ export function buildDoctorStatus(installRoot: string, opts: BuildDoctorStatusOp
   const expected = opts.expectedVersion || loadSuiteVersion(sourceRoot) || "unknown";
   const roots = doctorRoots(installRoot);
   const activeBundleRoot = roots.activeBundleRoot;
-  const managedScriptEvidence = readManagedScriptEvidence(activeBundleRoot);
   const classification = classifyResolvedRoot(activeBundleRoot, {
     source: sourceKey(rootSource),
     expectedVersion: expected,
@@ -403,26 +278,12 @@ export function buildDoctorStatus(installRoot: string, opts: BuildDoctorStatusOp
     recoverableStaleDefault,
     legacyBundleRoot,
     userDataOnly,
-    probeCli,
-    probeRunner: opts.probeRunner,
     project,
     expectedCommands,
   });
   const rootStatus = classified.rootStatus;
   const signals = classified.signals;
   const blocked = classified.blocked;
-
-  if (probeCli && managedScriptEvidence.mismatch) {
-    signals.push({
-      status: APP_REPAIR_NEEDED,
-      kind: "runtime_mismatch",
-      message:
-        `Managed script shebang (${managedScriptEvidence.runtime}) does not match ` +
-        `content language (${managedScriptEvidence.contentLanguage}); ` +
-        `expected ${managedScriptEvidence.runtime} but found ${managedScriptEvidence.contentLanguage}`,
-      managedAppRoot: roots.managedAppRoot,
-    });
-  }
 
   const env = { ...(opts.env ?? process.env), HOME: home };
   const channel = resolveInvokedUpdateChannel({
@@ -511,7 +372,6 @@ export function buildDoctorStatus(installRoot: string, opts: BuildDoctorStatusOp
       sourceRoot,
       channel,
       env,
-      managedScriptEvidence,
       expectedCommands[0] ?? "prime",
     ),
     approval: crossMajorPending

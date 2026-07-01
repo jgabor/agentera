@@ -29,7 +29,6 @@ export function resolveNpxPlatformStatus(
     home: opts.home,
     project: opts.project,
     expectedCommands: opts.expectedCommands ?? ["prime"],
-    probeCli: false,
     skipNpxBundleShortCircuit: true,
     env,
   };
