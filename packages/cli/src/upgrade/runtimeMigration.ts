@@ -12,7 +12,6 @@ import {
 } from "../setup/codex.js";
 import {
   hasManagedMarker,
-  opencodeCommandTemplate,
   opencodeConfigDir,
 } from "../setup/opencode.js";
 import { resolveUpdateChannel } from "./channels.js";
@@ -378,10 +377,9 @@ function planOpencodeItems(
   const commandsTargetDir = path.join(configDir, "commands");
   for (const name of OPENCODE_COMMAND_NAMES) {
     const src = path.join(commandsSourceDir, `${name}.md`);
-    const expected = opencodeCommandTemplate(name);
     const dst = path.join(commandsTargetDir, `${name}.md`);
     if (isFile(src)) {
-      const needsCopy = !isFile(dst) || (hasManagedMarker(fs.readFileSync(dst, "utf8")) && fs.readFileSync(dst, "utf8") !== expected);
+      const needsCopy = !isFile(dst) || (hasManagedMarker(fs.readFileSync(dst, "utf8")) && !fs.readFileSync(src).equals(fs.readFileSync(dst)));
       items.push({
         status: needsCopy ? "pending" : "noop",
         action: "copy-command",
