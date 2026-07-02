@@ -22,7 +22,7 @@ import {
 } from "./versionResolution.js";
 import { resolveUpdateChannel, type ResolvedUpdateChannel } from "./channels.js";
 import { buildUpgradeCommands, type UpgradeOnlyPhase } from "./upgradeCommands.js";
-import { projectHasPendingRuntimeRewire } from "./projectIntegration.js";
+import { pendingRuntimeMigrationItems, projectHasPendingRuntimeRewire } from "./projectIntegration.js";
 import {
   MIGRATION_STATUSES,
   applyMigrationPhases,
@@ -238,12 +238,13 @@ export function buildUpgradePlan(args: UpgradeOrchestratorArgs): UpgradePlanV2 {
     env,
   };
   const pendingRuntimeRewire = projectHasPendingRuntimeRewire(migrationCtx);
+  const pendingRuntimeSync = pendingRuntimeMigrationItems(migrationCtx).length > 0;
   const pendingV1Artifacts = detectV1ArtifactPairs(project).length > 0;
   const crossMajorMigration =
     crossMajorBoundary && shouldIncludeCrossMajorPlanItems(channel, upgradeOutcome);
   const artifactsOnlyMigration = pendingV1Artifacts && !crossMajorMigration;
-  const runtimeOnlyMigration = pendingRuntimeRewire && !crossMajorMigration && !artifactsOnlyMigration;
-  const runMigration = crossMajorMigration || pendingRuntimeRewire || pendingV1Artifacts;
+  const runtimeOnlyMigration = (pendingRuntimeRewire || pendingRuntimeSync) && !crossMajorMigration && !artifactsOnlyMigration;
+  const runMigration = crossMajorMigration || pendingRuntimeRewire || pendingRuntimeSync || pendingV1Artifacts;
   const effectiveOnly =
     args.only && args.only.length > 0
       ? args.only
