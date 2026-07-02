@@ -18,20 +18,7 @@ const NPX_HOOK_SESSION_STOP = `${NPX_CLI_ENTRYPOINT} hook session-stop`;
 const OPENCODE_SKILL_INSTALL_COMMAND = "npx skills add jgabor/agentera -g -a opencode --skill agentera -y";
 const REQUIRED_SKILL_NAMES = ["agentera"];
 const LEGACY_BRIDGE_SKILL_NAMES = new Set(["hej"]);
-const REQUIRED_AGENT_NAMES = [
-  "status",
-  "vision",
-  "discuss",
-  "research",
-  "plan",
-  "build",
-  "optimize",
-  "audit",
-  "document",
-  "profile",
-  "design",
-  "orchestrate",
-];
+const REQUIRED_AGENT_NAMES = ["agentera"];
 const AGENTERA_AGENT_MARKER = "<!-- agentera: managed -->";
 
 const COMMAND_TEMPLATES = {
