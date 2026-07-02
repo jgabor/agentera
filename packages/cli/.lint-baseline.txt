@@ -954,16 +954,6 @@ VITE+ - The Unified Toolchain for the Web
    `----
   help: Consider removing this import.
 
-  ! eslint(no-unused-vars): Variable 'RUNTIME_MIGRATION_ACTIONS' is declared but never used. Unused variables should start with a '_'.
-    ,-[src/upgrade/runtimeMigration.ts:45:7]
- 44 | 
- 45 | const RUNTIME_MIGRATION_ACTIONS = new Set([
-    :       ^^^^^^^^^^^^|^^^^^^^^^^^^
-    :                   `-- 'RUNTIME_MIGRATION_ACTIONS' is declared here
- 46 |   "rewire-runtime",
-    `----
-  help: Consider removing this declaration.
-
   ! eslint(no-unused-vars): Parameter 'commands' is declared but never used. Unused parameters should start with a '_'.
      ,-[src/upgrade/runtimeMigration.ts:611:69]
  610 | 
