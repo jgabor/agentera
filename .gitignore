@@ -8,6 +8,7 @@ docs/*
 __pycache__/
 *.pyc
 .env
+.npmrc
 node_modules
 package-lock.json
 bun.lock
