@@ -104,6 +104,12 @@ export function textUsesPythonManagedEntrypoint(text: string): boolean {
   return PYTHON_MANAGED_PATTERNS.some((pattern) => pattern.test(text));
 }
 
+const V3_NPX_ENTRYPOINT = /\bnpx\s+-y\s+agentera\b/;
+
+export function textUsesV3NpmEntrypoint(text: string): boolean {
+  return V3_NPX_ENTRYPOINT.test(text);
+}
+
 export function textUsesProfileraProfileDir(text: string): boolean {
   return text.includes(PROFILERA_PROFILE_DIR_ENV);
 }
@@ -179,13 +185,21 @@ function pushRewireItem(
   const text = fs.readFileSync(filePath, "utf8");
   const needsBare = needsChannelNpxRewire(text, commands.cliEntrypoint);
   if (!textUsesPythonManagedEntrypoint(text) && !textReferencesV2InstalledHooks(text) && !needsBare) {
-    if (text.includes(commands.cliEntrypoint)) {
+    if (textUsesV3NpmEntrypoint(text)) {
       items.push({
         status: "noop",
         action: "rewire-runtime",
         runtime,
         source: filePath,
         message: "runtime config already references npm self-contained entrypoint",
+      });
+    } else {
+      items.push({
+        status: "blocked",
+        action: "rewire-runtime",
+        runtime,
+        source: filePath,
+        message: "runtime config has neither v2 Python patterns nor v3 npm entrypoint; manual review needed",
       });
     }
     return;

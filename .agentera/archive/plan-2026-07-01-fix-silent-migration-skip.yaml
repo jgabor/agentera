@@ -1,0 +1,50 @@
+header:
+  level: light
+  created: "2026-07-01"
+  status: complete
+  title: "Fix silent migration skip for partial hand-edited runtime configs"
+what: >
+  The v2→v3 runtime migration rewire detection silently skips runtime config
+  files that have neither v2 Python patterns nor the v3 npm entrypoint. When
+  pushRewireItem evaluates a file where the user removed v2 references (uv run,
+  Python hooks, scripts/agentera) but did not add the v3 npm entrypoint (npx -y
+  agentera), the function returns without producing any migration item — not
+  even a noop. The file is invisible to the migration report, and the user's
+  hooks are left in a broken state with no diagnostic. The fix adds a positive
+  v3 entrypoint check and flags files that match neither v2 nor v3 as needing
+  manual review instead of silently skipping them.
+why: >
+  This is a silent migration failure. The migration reports success with no
+  warnings, but the user's hooks are left pointing at stale references that no
+  longer exist after the v2→v3 upgrade. Power users who manually edited their
+  hook configs — the exact beta early-adopter audience — are the most likely to
+  hit this. A public 3.0.0-beta must not silently leave users with broken hooks
+  after a migration that reports success.
+constraints: >
+  Must not change behavior for configs that already reference the v3 npm
+  entrypoint (those correctly report noop). Must not change behavior for configs
+  with v2 Python patterns (those correctly produce pending or blocked rewire
+  items). Must produce a human-readable diagnostic naming the file and explaining
+  that neither v2 nor v3 entrypoint was detected. Must work across all runtime
+  adapters: codex, cursor, copilot, opencode. Out of scope: auto-fixing the
+  broken config — the plan covers detection and flagging only. Tests must not
+  break the existing vitest green count.
+overall_acceptance: >
+  A user who partially hand-edited their runtime hook configs to remove v2
+  Python references but did not add the v3 npm entrypoint no longer gets a
+  silent migration. The migration rewire phase produces a review-flagged item
+  naming the file and explaining that neither v2 nor v3 entrypoint was detected,
+  visible in both agentera upgrade --dry-run output and the migration items
+  list. Configs already on v3 still report noop. Configs with v2 patterns still
+  produce pending or blocked rewire items. All existing vitest tests pass.
+tasks:
+  - number: 1
+    name: "Detect and flag runtime configs with neither v2 nor v3 entrypoint"
+    depends_on: []
+    status: complete
+    acceptance:
+      - "GIVEN a runtime config file with no v2 Python patterns and no v3 npm entrypoint WHEN the migration rewire phase evaluates the file THEN a migration item is produced (not silently skipped) with a diagnostic message explaining that neither v2 nor v3 entrypoint was detected"
+      - "GIVEN a runtime config file that already references the v3 npm entrypoint and has no v2 patterns WHEN the migration rewire phase evaluates the file THEN the phase produces a noop item with the already-references-npm message (unchanged behavior)"
+      - "GIVEN a runtime config file with v2 Python patterns WHEN the migration rewire phase evaluates the file THEN the phase produces a rewire item with pending or blocked status (unchanged behavior)"
+      - "GIVEN a runtime config file with neither v2 nor v3 patterns WHEN agentera upgrade --dry-run runs THEN the output includes the file name and a diagnostic message visible to the user"
+      - "GIVEN a project with mixed runtime configs (some v2, some v3, some neither) WHEN the migration rewire phase completes THEN every evaluated file is classified into exactly one of: noop (v3 present), pending or blocked (v2 present, rewire attempted), or a manual-review-flagged status (neither present)"
