@@ -193,15 +193,9 @@ function pushRewireItem(
         source: filePath,
         message: "runtime config already references npm self-contained entrypoint",
       });
-    } else {
-      items.push({
-        status: "blocked",
-        action: "rewire-runtime",
-        runtime,
-        source: filePath,
-        message: "runtime config has neither v2 Python patterns nor v3 npm entrypoint; manual review needed",
-      });
     }
+    // If the file has no Agentera content at all (no v2 Python, no v3 npm),
+    // it is not Agentera-managed. Do not push a blocked item — just return.
     return;
   }
   const newText = rewireRuntimeText(text, runtime, commands);

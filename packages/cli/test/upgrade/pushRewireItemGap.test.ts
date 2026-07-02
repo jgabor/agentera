@@ -27,7 +27,7 @@ function makeCodexConfig(root: string, content: string): void {
 }
 
 describe("pushRewireItem gap detection", () => {
-  it("flags blocked when config has neither v2 Python nor v3 npm entrypoint", () => {
+  it("does not push any item when config has no Agentera content", () => {
     const home = path.join(tmp, "home-neither");
     const project = path.join(tmp, "project-neither");
     fs.mkdirSync(home, { recursive: true });
@@ -37,15 +37,13 @@ describe("pushRewireItem gap detection", () => {
     fs.mkdirSync(appHome, { recursive: true });
     const ctx = migrationCtx(appHome, project, home, REPO_ROOT);
     const items = planRuntimeMigrationItems(ctx);
-    const blocked = items.filter(
+    const codexItems = items.filter(
       (item) =>
         item.runtime === "codex" &&
         item.action === "rewire-runtime" &&
-        item.status === "blocked" &&
         item.source === path.join(home, ".codex", "config.toml"),
     );
-    expect(blocked.length).toBe(1);
-    expect(blocked[0].message).toContain("neither v2 Python patterns nor v3 npm entrypoint");
+    expect(codexItems.length).toBe(0);
   });
 
   it("reports noop when config already references v3 npm entrypoint", () => {
@@ -130,7 +128,7 @@ describe("pushRewireItem gap detection", () => {
       '[hooks]\ncommand = "npx -y agentera@next hook validate-artifact"\n',
     );
 
-    // neither v2 nor v3 at a third location
+    // neither v2 nor v3 at a third location — non-Agentera file, skipped entirely
     const homeCodexHooks = path.join(home, ".codex", "hooks", "codex-hooks.json");
     fs.writeFileSync(homeCodexHooks, '{"hooks": {"preToolUse": [{"command": "/bin/echo"}]}}');
 
@@ -148,5 +146,8 @@ describe("pushRewireItem gap detection", () => {
     const statuses = rewireItems.map((item) => item.status);
     expect(statuses).toContain("pending");
     expect(statuses).toContain("noop");
+
+    // non-Agentera files must produce no rewire item
+    expect(rewireItems.find((item) => item.source === homeCodexHooks)).toBeUndefined();
   });
 });
