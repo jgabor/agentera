@@ -11,9 +11,12 @@ import { opencodeConfigDir } from "../../src/setup/opencode.js";
 import { setSuccessorAnnouncedOverrideForTests } from "../../src/upgrade/nextMajorDoctor.js";
 import {
   REMOVE_LEGACY_AGENT_ACTION,
+  V2_ENGLISH_CAPABILITY_AGENT_FILES,
   V2_SWEDISH_VERB_AGENT_FILES,
   applyLegacyAgentCleanupItems,
   planLegacyAgentCleanupItems,
+  planLegacyCapabilityAgentCleanupItems,
+  scanLegacyCapabilityAgentPaths,
   scanLegacySwedishVerbAgentViolations,
 } from "../../src/upgrade/legacyAgentCleanup.js";
 import {
@@ -66,6 +69,14 @@ function seedPreservedAgents(agentsDir: string): void {
   writeLegacyAgent(agentsDir, "agentera.md", "<!-- agentera: managed -->\nprime --context\n");
   writeLegacyAgent(agentsDir, "custom-agent.md", "# user custom agent\n");
   writeLegacyAgent(agentsDir, "agentera.md.bak", "# user backup\n");
+}
+
+function seedManagedCapabilityAgent(agentsDir: string, name: string): void {
+  writeLegacyAgent(agentsDir, name, `<!-- agentera: managed -->\nContext capability ${name}\n`);
+}
+
+function seedUnmanagedCapabilityAgent(agentsDir: string, name: string): void {
+  writeLegacyAgent(agentsDir, name, `# user-authored ${name}\n`);
 }
 
 beforeEach(() => {
@@ -273,5 +284,125 @@ describe("applyLegacyAgentCleanupItems safety", () => {
     applyLegacyAgentCleanupItems(items);
     expect(items[0]?.status).toBe("noop");
     expect(fs.existsSync(path.join(agentsDir, "custom-agent.md"))).toBe(true);
+  });
+});
+
+describe("legacy English per-capability agent cleanup", () => {
+  it("scanLegacyCapabilityAgentPaths targets managed English-named agents", () => {
+    const agentsDir = path.join(tmp, "scan-managed");
+    seedManagedCapabilityAgent(agentsDir, "audit.md");
+    seedManagedCapabilityAgent(agentsDir, "build.md");
+    const hits = scanLegacyCapabilityAgentPaths(agentsDir);
+    expect(hits).toHaveLength(2);
+    expect(hits.some((p) => p.endsWith("audit.md"))).toBe(true);
+    expect(hits.some((p) => p.endsWith("build.md"))).toBe(true);
+  });
+
+  it("scanLegacyCapabilityAgentPaths skips unmanaged English-named agents", () => {
+    const agentsDir = path.join(tmp, "scan-unmanaged");
+    seedManagedCapabilityAgent(agentsDir, "audit.md");
+    seedUnmanagedCapabilityAgent(agentsDir, "build.md");
+    const hits = scanLegacyCapabilityAgentPaths(agentsDir);
+    expect(hits).toHaveLength(1);
+    expect(hits[0]).toMatch(/audit\.md$/);
+    expect(fs.existsSync(path.join(agentsDir, "build.md"))).toBe(true);
+  });
+
+  it("scanLegacyCapabilityAgentPaths does not target agentera.md", () => {
+    const agentsDir = path.join(tmp, "scan-agentera");
+    seedPreservedAgents(agentsDir);
+    expect(scanLegacyCapabilityAgentPaths(agentsDir)).toEqual([]);
+  });
+
+  it("planLegacyCapabilityAgentCleanupItems returns a pending item for each managed English file", () => {
+    const appHome = path.join(home, "agentera");
+    managedV2(appHome);
+    const project = copyFixture("v2-yaml-project", path.join(tmp, "cap-project"));
+    const cursorAgents = path.join(project, ".cursor", "agents");
+    for (const name of V2_ENGLISH_CAPABILITY_AGENT_FILES) {
+      seedManagedCapabilityAgent(cursorAgents, name);
+    }
+    seedPreservedAgents(cursorAgents);
+
+    const ctx = migrationCtx(appHome, project, home, REPO_ROOT);
+    const items = planLegacyCapabilityAgentCleanupItems(ctx);
+    expect(items).toHaveLength(V2_ENGLISH_CAPABILITY_AGENT_FILES.length);
+    expect(items.every((item) => item.action === REMOVE_LEGACY_AGENT_ACTION && item.status === "pending")).toBe(
+      true,
+    );
+    for (const name of V2_ENGLISH_CAPABILITY_AGENT_FILES) {
+      expect(items.some((item) => item.source?.endsWith(path.join(".cursor", "agents", name)))).toBe(true);
+    }
+    expect(items.some((item) => item.source?.endsWith("agentera.md"))).toBe(false);
+  });
+
+  it("planLegacyCapabilityAgentCleanupItems skips unmanaged English agents", () => {
+    const appHome = path.join(home, "agentera");
+    managedV2(appHome);
+    const project = copyFixture("v2-yaml-project", path.join(tmp, "cap-unmanaged"));
+    const cursorAgents = path.join(project, ".cursor", "agents");
+    seedUnmanagedCapabilityAgent(cursorAgents, "build.md");
+    seedUnmanagedCapabilityAgent(cursorAgents, "design.md");
+
+    const ctx = migrationCtx(appHome, project, home, REPO_ROOT);
+    const items = planLegacyCapabilityAgentCleanupItems(ctx);
+    expect(items).toEqual([]);
+  });
+
+  it("does not target agentera.md (primary v3 agent is preserved)", () => {
+    const appHome = path.join(home, "agentera");
+    managedV2(appHome);
+    const project = copyFixture("v2-yaml-project", path.join(tmp, "cap-primary"));
+    const cursorAgents = path.join(project, ".cursor", "agents");
+    seedPreservedAgents(cursorAgents);
+    seedManagedCapabilityAgent(cursorAgents, "audit.md");
+
+    const ctx = migrationCtx(appHome, project, home, REPO_ROOT);
+    const items = planLegacyCapabilityAgentCleanupItems(ctx);
+    expect(items).toHaveLength(1);
+    expect(items[0]?.source).toMatch(/audit\.md$/);
+    expect(fs.existsSync(path.join(cursorAgents, "agentera.md"))).toBe(true);
+  });
+
+  it("apply removes the managed English file and marks it applied", () => {
+    const appHome = path.join(home, "agentera");
+    managedV2(appHome);
+    const project = copyFixture("v2-yaml-project", path.join(tmp, "cap-apply"));
+    const cursorAgents = path.join(project, ".cursor", "agents");
+    seedManagedCapabilityAgent(cursorAgents, "audit.md");
+    seedPreservedAgents(cursorAgents);
+    seedUnmanagedCapabilityAgent(cursorAgents, "build.md");
+
+    const ctx = migrationCtx(appHome, project, home, REPO_ROOT);
+    const preview = planCleanupPhase(ctx);
+    applyCleanupPhase(preview, ctx);
+
+    expect(fs.existsSync(path.join(cursorAgents, "audit.md"))).toBe(false);
+    expect(fs.existsSync(path.join(cursorAgents, "build.md"))).toBe(true);
+    expect(fs.existsSync(path.join(cursorAgents, "agentera.md"))).toBe(true);
+    expect(fs.existsSync(path.join(cursorAgents, "custom-agent.md"))).toBe(true);
+
+    const legacyItems = preview.items.filter((item) => item.action === REMOVE_LEGACY_AGENT_ACTION);
+    expect(legacyItems.every((item) => item.status === "applied")).toBe(true);
+  });
+
+  it("combine: Swedish-verb and English capability items both appear in planCleanupPhase", () => {
+    const appHome = path.join(home, "agentera");
+    managedV2(appHome);
+    const project = copyFixture("v2-yaml-project", path.join(tmp, "cap-combined"));
+    const cursorAgents = path.join(project, ".cursor", "agents");
+    seedSwedishVerbAgents(cursorAgents);
+    for (const name of V2_ENGLISH_CAPABILITY_AGENT_FILES) {
+      seedManagedCapabilityAgent(cursorAgents, name);
+    }
+    seedPreservedAgents(cursorAgents);
+
+    const ctx = migrationCtx(appHome, project, home, REPO_ROOT);
+    const preview = planCleanupPhase(ctx);
+    const legacyItems = preview.items.filter((item) => item.action === REMOVE_LEGACY_AGENT_ACTION);
+    expect(legacyItems).toHaveLength(
+      V2_SWEDISH_VERB_AGENT_FILES.length + V2_ENGLISH_CAPABILITY_AGENT_FILES.length,
+    );
+    expect(legacyItems.some((item) => item.source?.endsWith("agentera.md"))).toBe(false);
   });
 });

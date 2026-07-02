@@ -23,6 +23,7 @@ import {
 import {
   applyLegacyAgentCleanupItems,
   planLegacyAgentCleanupItems,
+  planLegacyCapabilityAgentCleanupItems,
 } from "./legacyAgentCleanup.js";
 import {
   applyRuntimeMigrationItems,
@@ -286,6 +287,7 @@ export function planCleanupPhase(ctx: MigrationContext): MigrationPhase {
     })),
     ...planAppContentRefreshItems(ctx),
     ...planLegacyAgentCleanupItems(ctx),
+    ...planLegacyCapabilityAgentCleanupItems(ctx),
   ];
 
   if (unknown.length > 0 && !ctx.force) {
