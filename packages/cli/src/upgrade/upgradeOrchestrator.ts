@@ -242,18 +242,8 @@ export function buildUpgradePlan(args: UpgradeOrchestratorArgs): UpgradePlanV2 {
   const pendingV1Artifacts = detectV1ArtifactPairs(project).length > 0;
   const crossMajorMigration =
     crossMajorBoundary && shouldIncludeCrossMajorPlanItems(channel, upgradeOutcome);
-  const artifactsOnlyMigration = pendingV1Artifacts && !crossMajorMigration;
-  const runtimeOnlyMigration = (pendingRuntimeRewire || pendingRuntimeSync) && !crossMajorMigration && !artifactsOnlyMigration;
-  const runMigration = crossMajorMigration || pendingRuntimeRewire || pendingRuntimeSync || pendingV1Artifacts;
-  const effectiveOnly =
-    args.only && args.only.length > 0
-      ? args.only
-      : artifactsOnlyMigration
-        ? (["artifacts"] as const)
-        : runtimeOnlyMigration
-          ? (["runtime"] as const)
-          : MIGRATION_ONLY_PHASES;
-
+  const runMigration =
+    pendingRuntimeSync || pendingRuntimeRewire || pendingV1Artifacts || crossMajorMigration;
 
   const phases: UpgradeOrchestratorPhase[] = [];
 
@@ -264,7 +254,11 @@ export function buildUpgradePlan(args: UpgradeOrchestratorArgs): UpgradePlanV2 {
   let migrationPreview = runMigration ? dryRunMigration(migrationCtx) : null;
 
   if (args.yes && migrationPreview) {
-    migrationPreview = applyMigrationPhases(migrationCtx, migrationPreview, effectiveOnly);
+    migrationPreview = applyMigrationPhases(
+      migrationCtx,
+      migrationPreview,
+      args.only ?? MIGRATION_ONLY_PHASES,
+    );
   }
 
   if (migrationPreview) {
@@ -314,7 +308,7 @@ export function buildUpgradePlan(args: UpgradeOrchestratorArgs): UpgradePlanV2 {
     project,
     installRoot: crossMajorMigration || crossMajorBoundary ? installRoot : null,
     channel,
-    only: args.only ?? (artifactsOnlyMigration ? ["artifacts"] : runtimeOnlyMigration ? ["runtime"] : undefined),
+    only: args.only,
     cwdDefault: true,
   });
 
