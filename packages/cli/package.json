@@ -29,8 +29,8 @@
     "tag": "next"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json",
-    "prepack": "tsc -p tsconfig.json && node scripts/copy-bundle.mjs",
+    "build": "rm -rf dist && tsc -p tsconfig.json",
+    "prepack": "rm -rf dist && tsc -p tsconfig.json && node scripts/copy-bundle.mjs",
     "test": "vp test run",
     "test:watch": "vp test watch",
     "lint": "vp lint",
