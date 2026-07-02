@@ -22,7 +22,7 @@ import {
 } from "./versionResolution.js";
 import { resolveUpdateChannel, type ResolvedUpdateChannel } from "./channels.js";
 import { buildUpgradeCommands, type UpgradeOnlyPhase } from "./upgradeCommands.js";
-import { pendingRuntimeMigrationItems, projectHasPendingRuntimeRewire } from "./projectIntegration.js";
+import { pendingRuntimeMigrationItems } from "./projectIntegration.js";
 import {
   MIGRATION_STATUSES,
   applyMigrationPhases,
@@ -237,13 +237,12 @@ export function buildUpgradePlan(args: UpgradeOrchestratorArgs): UpgradePlanV2 {
     channel: args.channel ?? null,
     env,
   };
-  const pendingRuntimeRewire = projectHasPendingRuntimeRewire(migrationCtx);
   const pendingRuntimeSync = pendingRuntimeMigrationItems(migrationCtx).length > 0;
   const pendingV1Artifacts = detectV1ArtifactPairs(project).length > 0;
   const crossMajorMigration =
     crossMajorBoundary && shouldIncludeCrossMajorPlanItems(channel, upgradeOutcome);
   const runMigration =
-    pendingRuntimeSync || pendingRuntimeRewire || pendingV1Artifacts || crossMajorMigration;
+    crossMajorMigration || pendingRuntimeSync || pendingV1Artifacts;
 
   const phases: UpgradeOrchestratorPhase[] = [];
 

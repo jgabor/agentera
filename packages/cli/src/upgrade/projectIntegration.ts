@@ -113,20 +113,6 @@ function isPendingRuntimeMigrationItem(item: MigrationPhaseItem): boolean {
   return RUNTIME_MIGRATION_ACTIONS.has(item.action);
 }
 
-function isPythonManagedRewireItem(item: MigrationPhaseItem): boolean {
-  if (item.action === "retire-hooks") {
-    return item.status === "pending";
-  }
-  if (item.action !== "rewire-runtime" || item.status !== "pending" || !item.source) {
-    return false;
-  }
-  try {
-    return textUsesPythonManagedEntrypoint(fs.readFileSync(item.source, "utf8"));
-  } catch {
-    return false;
-  }
-}
-
 function isGlobalStaleRuntimeItem(item: MigrationPhaseItem, ctx: MigrationContext): boolean {
   const homeRoot = resolvePath(ctx.home);
   if (!item.source?.startsWith(homeRoot)) {
@@ -161,12 +147,6 @@ export function pendingRuntimeMigrationItems(ctx: MigrationContext): MigrationPh
     }
     return isGlobalStaleRuntimeItem(item, ctx);
   });
-}
-
-/** True when runtime hooks/config still need npm self-contained rewiring. */
-export function projectHasPendingRuntimeRewire(ctx: MigrationContext): boolean {
-  const phase = planRuntimeRewirePhase(ctx);
-  return phase.items.some((item) => isPythonManagedRewireItem(item));
 }
 
 function appNeedsUpgrade(bundleStatus: string): boolean {
