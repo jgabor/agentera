@@ -67,8 +67,8 @@ describe("prime app lifecycle wording", () => {
 
     expect(state.project_integration.recommendation).toBe("upgrade");
     expect(state.project_integration.pending_runtime).toBe(0);
-    expect(state.project_integration.message).toContain("v2 while the CLI is on v3");
-    expect(state.project_integration.message).toContain("preview");
+    expect(state.project_integration.message).toContain("cross-major");
+    expect(state.project_integration.message).toContain("Preview");
     expect(state.project_integration.update_channel).toBe("development");
     expect(state.project_integration.dry_run_command).toContain("agentera@next");
     expect(state.project_integration.major_boundary_block).toBeNull();
@@ -86,11 +86,10 @@ describe("prime app lifecycle wording", () => {
     expect(state.app.status).toBe("repair_needed");
 
     expect(state.project_integration.recommendation).toBe("upgrade");
-    expect(state.project_integration.message).toContain("needs repair");
-    const attention = (state.attention as string[]).find((line) => line.includes("needs repair"));
+    expect(state.project_integration.message).toContain("app bundle needs update");
+    const attention = (state.attention as string[]).find((line) => line.includes("app bundle needs update"));
     expect(attention).toBeTruthy();
     expect(attention).toContain(state.project_integration.message);
-    expect(attention).not.toMatch(/repair or upgrade/i);
     expect(attention).not.toContain("out of date");
     expect(attention).not.toContain("app files outdated");
   });

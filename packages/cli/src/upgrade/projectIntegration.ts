@@ -1,7 +1,6 @@
 import { expanduser, isFile, resolvePath } from "../core/paths.js";
 import { isNpxBundleRoot } from "../core/sourceRoot.js";
 import {
-  APP_MANUAL_REVIEW_NEEDED,
   APP_MIGRATION_NEEDED,
   APP_OUTDATED,
   APP_REPAIR_NEEDED,
@@ -27,9 +26,8 @@ import { buildUpgradeCommands, type UpgradeOnlyPhase } from "./upgradeCommands.j
 import {
   classifyIntegrationScenario,
   integrationScenarioMessage,
-  integrationScenarioNeedsInstallRoot,
-  integrationScenarioOnlyPhases,
   integrationScenarioRecommendation,
+  type IntegrationScenarioFacts,
 } from "./projectIntegrationDecision.js";
 import {
   classifyUpgradeOutcome,
@@ -293,7 +291,7 @@ export function summarizeProjectIntegration(args: ProjectIntegrationArgs): Proje
         v1Artifacts.length === 0
       : appNeedsUpgrade(classificationBundleStatus);
 
-  const scenario = classifyIntegrationScenario({
+  const facts: IntegrationScenarioFacts = {
     bundleStatus: classificationBundleStatus,
     pendingRuntimeCount: pending.length,
     pendingArtifactCount: v1Artifacts.length,
@@ -301,12 +299,10 @@ export function summarizeProjectIntegration(args: ProjectIntegrationArgs): Proje
     crossMajorMigration,
     crossMajorNeedsPreview,
     needsAppUpgrade,
-  });
+  };
+  const scenario = classifyIntegrationScenario(facts);
   const recommendation = integrationScenarioRecommendation(scenario);
-  const message = integrationScenarioMessage(scenario, {
-    projectLevelRuntimeHooks: projectHasProjectLevelRuntimeHooks(args.project),
-    pendingRuntimes,
-  });
+  const message = integrationScenarioMessage(scenario, facts);
 
   if (recommendation === "stay") {
     return {
@@ -323,15 +319,11 @@ export function summarizeProjectIntegration(args: ProjectIntegrationArgs): Proje
   }
 
   const cmdsChannel = commandChannel(args, channel, crossMajor, upgradeOutcome);
-  const onlyPhases = integrationScenarioOnlyPhases(scenario);
-  const installRootForCommands = integrationScenarioNeedsInstallRoot(scenario)
-    ? integrationTargets.installRoot
-    : null;
   const cmds = buildUpgradeCommands({
     project: args.project,
-    installRoot: installRootForCommands,
+    installRoot: null,
     channel: cmdsChannel,
-    only: onlyPhases,
+    only: null,
     cwdDefault: true,
   });
 
@@ -344,7 +336,7 @@ export function summarizeProjectIntegration(args: ProjectIntegrationArgs): Proje
     dry_run_command: cmds.dryRunCommand,
     apply_command: cmds.applyCommand,
     update_channel: cmdsChannel.channel,
-    upgrade_only: onlyPhases,
+    upgrade_only: undefined,
     major_boundary_block: null,
   };
 }
@@ -355,8 +347,7 @@ export function projectIntegrationAttention(summary: ProjectIntegrationSummary):
   }
   const preview = summary.dry_run_command ? `\`${summary.dry_run_command}\`` : "the preview command";
   const prefix =
-    summary.pending_artifacts > 0 ||
-    (summary.pending_runtime > 0 && summary.upgrade_only?.includes("runtime"))
+    summary.pending_artifacts > 0 || summary.pending_runtime > 0
       ? "normal"
       : "degraded";
   return `${prefix}: ${summary.message} Preview ${preview}.`;

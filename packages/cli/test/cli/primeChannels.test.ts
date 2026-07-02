@@ -126,7 +126,7 @@ describe("prime channel-aware migration and app_home gates", () => {
     const state = collectOrientationState({ home, installRoot: appHome, env: process.env });
     expect(state.project_integration.recommendation).toBe("upgrade");
     const crossMajorAttention = (state.attention as string[]).find((line) =>
-      line.includes("v2 while the CLI is on v3"),
+      line.includes("cross-major"),
     );
     expect(crossMajorAttention).toBeTruthy();
     expect(crossMajorAttention).toContain("agentera@next");

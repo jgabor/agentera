@@ -67,7 +67,7 @@ describe("prime project_integration", () => {
     expect(integration.pending_runtimes).toContain("cursor");
     expect(integration.dry_run_command).toContain("upgrade");
     expect(integration.dry_run_command).not.toContain("--project");
-    expect(integration.upgrade_only).toEqual(["runtime"]);
+    expect(integration.upgrade_only).toBeUndefined();
 
     const attention = (state.attention as string[]).find((line) => line.includes("runtime wiring"));
     expect(attention).toBeTruthy();
@@ -95,8 +95,8 @@ describe("prime project_integration", () => {
 
     expect(integration.recommendation).toBe("upgrade");
     expect(integration.pending_artifacts).toBe(1);
-    expect(integration.upgrade_only).toEqual(["artifacts"]);
-    expect(integration.dry_run_command).toContain("--only artifacts");
+    expect(integration.upgrade_only).toBeUndefined();
+    expect(integration.dry_run_command).toContain("upgrade");
     expect(integration.dry_run_command).not.toContain("--project");
     expect(integration.dry_run_command).toContain("@next");
 

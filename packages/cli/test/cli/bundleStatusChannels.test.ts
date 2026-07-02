@@ -153,6 +153,7 @@ describe("bundle-status channel resolution consistency", () => {
 
     const state = collectOrientationState({ home, installRoot: appHome, env: process.env });
     expect(state.app.updateChannel).toBe("stable");
-    expect(state.project_integration.update_channel).toBe("development");
+    expect(state.project_integration.update_channel).toBe("stable");
+    expect(state.project_integration.recommendation).toBe("stay");
   });
 });

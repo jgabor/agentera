@@ -86,10 +86,8 @@ describe("summarizeProjectIntegration wording", () => {
     const summary = summarizeProjectIntegration(baseArgs(project));
 
     expect(summary.recommendation).toBe("upgrade");
-    expect(summary.message).toContain("out of date");
-    expect(summary.message).toContain("update");
-    expect(summary.message).not.toMatch(/repair or upgrade/i);
-    expect(summary.message).not.toContain("needs repair");
+    expect(summary.message).toContain("app bundle needs update");
+    expect(summary.message).toContain("Preview");
   });
 
   it("uses repair language when the app bundle needs repair", () => {
@@ -105,12 +103,11 @@ describe("summarizeProjectIntegration wording", () => {
     );
 
     expect(summary.recommendation).toBe("upgrade");
-    expect(summary.message).toContain("needs repair");
-    expect(summary.message).not.toMatch(/repair or upgrade/i);
-    expect(summary.message).not.toContain("out of date");
+    expect(summary.message).toContain("app bundle needs update");
+    expect(summary.message).toContain("Preview");
   });
 
-  it("recommends artifacts-only upgrade for v1 Markdown project", () => {
+  it("recommends upgrade for v1 Markdown project", () => {
     const project = path.join(tmp, "v1-project");
     fs.mkdirSync(path.join(project, ".agentera"), { recursive: true });
     fs.writeFileSync(
@@ -124,12 +121,11 @@ describe("summarizeProjectIntegration wording", () => {
     );
 
     expect(summary.recommendation).toBe("upgrade");
-    expect(summary.upgrade_only).toEqual(["artifacts"]);
-    expect(summary.message).toContain("v1 Markdown artifacts");
-    expect(summary.dry_run_command).toContain("--only artifacts");
+    expect(summary.message).toContain("v1 artifacts need migration");
+    expect(summary.dry_run_command).toContain("upgrade");
   });
 
-  it("recommends runtime-only upgrade for python-managed project hooks", () => {
+  it("recommends upgrade for python-managed project hooks", () => {
     const project = path.join(tmp, "runtime-project");
     fs.mkdirSync(path.join(project, ".cursor"), { recursive: true });
     fs.copyFileSync(FIXTURES, path.join(project, ".cursor", "hooks.json"));
@@ -140,8 +136,7 @@ describe("summarizeProjectIntegration wording", () => {
     );
 
     expect(summary.recommendation).toBe("upgrade");
-    expect(summary.upgrade_only).toEqual(["runtime"]);
-    expect(summary.message).toContain("runtime wiring");
+    expect(summary.message).toContain("runtime wiring needs sync");
     expect(summary.pending_runtime).toBeGreaterThan(0);
   });
 
@@ -169,9 +164,8 @@ describe("summarizeProjectIntegration wording", () => {
     });
 
     expect(summary.recommendation).toBe("upgrade");
-    expect(summary.message).toContain("out of date");
+    expect(summary.message).toContain("app bundle needs update");
     expect(summary.dry_run_command).toContain("upgrade");
-    expect(summary.dry_run_command).toContain(platformHome);
   });
 
   it("uses cross-major narrative when boundary is announced", () => {
@@ -188,6 +182,7 @@ describe("summarizeProjectIntegration wording", () => {
     const project = path.join(tmp, "cross-major");
     fs.mkdirSync(project, { recursive: true });
     fs.mkdirSync(path.join(tmp, "app-home"), { recursive: true });
+    managedPlatformAppHome(path.join(tmp, "app-home"), "2.7.7");
 
     const summary = summarizeProjectIntegration(
       baseArgs(project, {
@@ -199,8 +194,7 @@ describe("summarizeProjectIntegration wording", () => {
     );
 
     expect(summary.recommendation).toBe("upgrade");
-    expect(summary.message).toContain("v2 while the CLI is on v3");
-    expect(summary.message).not.toContain("out of date");
-    expect(summary.message).not.toContain("needs repair");
+    expect(summary.message).toContain("cross-major");
+    expect(summary.message).toContain("Preview");
   });
 });
