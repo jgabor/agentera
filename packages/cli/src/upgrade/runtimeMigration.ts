@@ -500,6 +500,44 @@ export function planStaleCommandCleanupItems(
   }
 }
 
+export function planStaleSkillCleanupItems(
+  ctx: MigrationContext,
+  items: MigrationPhaseItem[],
+): void {
+  const env = ctx.env ?? process.env;
+  const home = resolvePath(ctx.home);
+  const skillsDir = path.join(opencodeConfigDir(home, env), "skills");
+  if (!pathExists(skillsDir) || !fs.statSync(skillsDir).isDirectory()) {
+    return;
+  }
+  const requiredNames = new Set<string>(OPENCODE_SKILL_NAMES);
+  for (const entry of fs.readdirSync(skillsDir, { withFileTypes: true })) {
+    if (!entry.isSymbolicLink()) {
+      continue;
+    }
+    const linkPath = path.join(skillsDir, entry.name);
+    let linkTarget: string;
+    try {
+      linkTarget = fs.readlinkSync(linkPath);
+    } catch {
+      continue;
+    }
+    if (!linkTarget.toLowerCase().includes("agentera")) {
+      continue;
+    }
+    if (requiredNames.has(entry.name)) {
+      continue;
+    }
+    items.push({
+      status: "pending",
+      action: "remove-stale-skill",
+      runtime: "opencode",
+      source: linkPath,
+      message: `will remove stale Agentera skill symlink ${entry.name}`,
+    });
+  }
+}
+
 function walkJsonHookFiles(dir: string): string[] {
   if (!pathExists(dir)) {
     return [];
@@ -562,6 +600,7 @@ export function planRuntimeMigrationItems(ctx: MigrationContext): MigrationPhase
   planCursorItems(items, home, project, sourceRoot, commands);
   planOpencodeItems(items, home, sourceRoot, env, commands);
   planStaleCommandCleanupItems(ctx, items);
+  planStaleSkillCleanupItems(ctx, items);
   planCopilotItems(items, project, commands);
   const hookRetirement = planInstalledHooksRetirementItems(ctx).filter((item) => item.status === "pending");
   if (hookRetirement.length > 0 && items.some((item) => item.action === "rewire-runtime" && item.status === "pending")) {
@@ -669,6 +708,28 @@ export function applyRuntimeMigrationItem(item: MigrationPhaseItem, commands: Np
         } else {
           item.status = "noop";
           item.message = `stale command already absent at ${item.source}`;
+        }
+        break;
+      }
+      case "remove-stale-skill": {
+        if (!item.source) {
+          item.status = "failed";
+          item.message = "remove-stale-skill missing source";
+          return;
+        }
+        try {
+          const stat = fs.lstatSync(item.source);
+          if (stat.isSymbolicLink()) {
+            fs.unlinkSync(item.source);
+            item.status = "applied";
+            item.message = `removed stale skill symlink ${path.basename(item.source)}`;
+          } else {
+            item.status = "noop";
+            item.message = "skill path is not a symlink; skipped";
+          }
+        } catch {
+          item.status = "noop";
+          item.message = "stale skill already absent";
         }
         break;
       }
