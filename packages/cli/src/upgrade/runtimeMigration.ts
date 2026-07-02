@@ -463,6 +463,43 @@ function planOpencodeItems(
   }
 }
 
+export function planStaleCommandCleanupItems(
+  ctx: MigrationContext,
+  items: MigrationPhaseItem[],
+): void {
+  const env = ctx.env ?? process.env;
+  const home = resolvePath(ctx.home);
+  const commandsDir = path.join(opencodeConfigDir(home, env), "commands");
+  if (!pathExists(commandsDir) || !fs.statSync(commandsDir).isDirectory()) {
+    return;
+  }
+  const currentNames = new Set<string>(OPENCODE_COMMAND_NAMES);
+  for (const entry of fs.readdirSync(commandsDir)) {
+    if (!entry.endsWith(".md")) {
+      continue;
+    }
+    const filePath = path.join(commandsDir, entry);
+    if (!isFile(filePath)) {
+      continue;
+    }
+    const body = fs.readFileSync(filePath, "utf8");
+    if (!hasManagedMarker(body)) {
+      continue;
+    }
+    const name = entry.slice(0, -3);
+    if (currentNames.has(name)) {
+      continue;
+    }
+    items.push({
+      status: "pending",
+      action: "remove-stale-command",
+      runtime: "opencode",
+      source: filePath,
+      message: `will remove stale managed command ${path.basename(filePath)}`,
+    });
+  }
+}
+
 function walkJsonHookFiles(dir: string): string[] {
   if (!pathExists(dir)) {
     return [];
@@ -524,6 +561,7 @@ export function planRuntimeMigrationItems(ctx: MigrationContext): MigrationPhase
   planCodexItems(items, home, project, commands, ctx.force);
   planCursorItems(items, home, project, sourceRoot, commands);
   planOpencodeItems(items, home, sourceRoot, env, commands);
+  planStaleCommandCleanupItems(ctx, items);
   planCopilotItems(items, project, commands);
   const hookRetirement = planInstalledHooksRetirementItems(ctx).filter((item) => item.status === "pending");
   if (hookRetirement.length > 0 && items.some((item) => item.action === "rewire-runtime" && item.status === "pending")) {
@@ -616,6 +654,22 @@ export function applyRuntimeMigrationItem(item: MigrationPhaseItem, commands: Np
         }
         item.status = "applied";
         item.message = "retired Agentera-owned copied Codex hooks";
+        break;
+      }
+      case "remove-stale-command": {
+        if (!item.source) {
+          item.status = "failed";
+          item.message = "remove-stale-command missing source";
+          return;
+        }
+        if (isFile(item.source)) {
+          fs.rmSync(item.source, { force: true });
+          item.status = "applied";
+          item.message = `removed stale managed command ${path.basename(item.source)}`;
+        } else {
+          item.status = "noop";
+          item.message = `stale command already absent at ${item.source}`;
+        }
         break;
       }
       default:
