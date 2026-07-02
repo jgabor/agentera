@@ -19,7 +19,7 @@ function lines(title: string, items: string[]): string[] {
 export function printTopLevelHelp(): string {
   const choices = TOP_LEVEL.join(",");
   return [
-    `usage: agentera [-h] {${choices}} ...`,
+    `usage: agentera [-h] [--version] {${choices}} ...`,
     "",
     "agentera: read project state, upgrade installs, and print priming guidance",
     "",
@@ -36,12 +36,14 @@ export function printTopLevelHelp(): string {
       "app-home            Resolve the platform Agentera app-home path",
       "doctor              Check Agentera CLI, app, and runtime status",
       "report              Privacy-gated usage analytics",
+      "--version           Print the installed Agentera CLI version",
     ]),
     ...lines("Maintainer commands:", [
       "check               Validation, verification, lint, and repository compaction gates",
     ]),
     "options:",
     "  -h, --help          show this help message and exit",
+    "  --version           print the installed Agentera CLI version and exit",
     "",
     "Examples: agentera prime; agentera state plan --format json; agentera check verify eval skills --dry-run; agentera report refresh --dry-run",
   ].join("\n");
@@ -225,6 +227,9 @@ export function printCommandHelp(command: string, rest: string[] = []): string |
       return printReportHelp();
     case "verify":
       return printCheckHelp("verify");
+    case "--version":
+    case "version":
+      return "usage: agentera --version [--format {text,json}]\n\nPrint the installed Agentera CLI version.\n";
     default:
       if ((CAPABILITY_ROUTING_NAMES as readonly string[]).includes(command)) {
         return printCapabilityHelp(command);

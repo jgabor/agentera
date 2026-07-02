@@ -1,4 +1,7 @@
 import fsForHooks from "node:fs";
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { cmdAppHome, AppHomeArgs } from "../commands/appHome.js";
 import { cmdDoctor, DoctorArgs } from "../commands/doctor.js";
 import { cmdUpgrade, UpgradeArgs, type UpgradeOnlyPhase } from "../commands/upgrade.js";
@@ -494,4 +497,59 @@ export function runReport(argv: string[], io: Io, prog: string): number {
       body: { class: "unsupported_target", message: (exc as Error).message },
     });
   }
+}
+
+function resolveCliVersion(): string {
+  const moduleDir = path.dirname(fileURLToPath(import.meta.url));
+  const candidates = [
+    path.resolve(moduleDir, "..", "..", "package.json"),
+    path.resolve(moduleDir, "..", "..", "..", "package.json"),
+  ];
+  for (const pkgPath of candidates) {
+    try {
+      const pkg = JSON.parse(fs.readFileSync(pkgPath, "utf8"));
+      if (typeof pkg.version === "string" && pkg.version) {
+        return pkg.version;
+      }
+    } catch {
+      continue;
+    }
+  }
+  return "unknown";
+}
+
+export function runVersion(argv: string[], io: Io): number {
+  const out = io.out ?? ((t: string) => process.stdout.write(t));
+  const err = io.err ?? ((t: string) => process.stderr.write(t));
+  let format: "text" | "json" = "text";
+  for (let i = 0; i < argv.length; i++) {
+    const a = argv[i];
+    if (a === "--format") {
+      const v = argv[++i];
+      if (v !== "text" && v !== "json") {
+        return emitInvalidInput(io, {
+          format: "text",
+          body: {
+            class: "invalid_choice",
+            message: `argument --format: invalid choice: '${v}' (choose from 'text', 'json')`,
+            valid_values: ["text", "json"],
+          },
+        });
+      }
+      format = v;
+    } else if (a === "--help" || a === "-h") {
+      out("usage: agentera --version [--format {text,json}]\n\nPrint the installed Agentera CLI version.\n");
+      return 0;
+    } else {
+      err(`agentera --version: unrecognized argument: ${a}\n`);
+      return 2;
+    }
+  }
+  const version = resolveCliVersion();
+  if (format === "json") {
+    out(JSON.stringify({ version }) + "\n");
+  } else {
+    out(version + "\n");
+  }
+  return 0;
 }
