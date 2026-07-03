@@ -24,6 +24,10 @@ import { resolveUpdateChannel, type ResolvedUpdateChannel } from "./channels.js"
 import { buildUpgradeCommands, type UpgradeOnlyPhase } from "./upgradeCommands.js";
 import { pendingRuntimeMigrationItems } from "./projectIntegration.js";
 import {
+  planLegacyAgentCleanupItems,
+  planLegacyCapabilityAgentCleanupItems,
+} from "./legacyAgentCleanup.js";
+import {
   MIGRATION_STATUSES,
   applyMigrationPhases,
   detectV1ArtifactPairs,
@@ -241,8 +245,11 @@ export function buildUpgradePlan(args: UpgradeOrchestratorArgs): UpgradePlanV2 {
   const pendingV1Artifacts = detectV1ArtifactPairs(project).length > 0;
   const crossMajorMigration =
     crossMajorBoundary && shouldIncludeCrossMajorPlanItems(channel, upgradeOutcome);
+  const pendingCleanup =
+    planLegacyAgentCleanupItems(migrationCtx).some((i) => i.status === "pending") ||
+    planLegacyCapabilityAgentCleanupItems(migrationCtx).some((i) => i.status === "pending");
   const runMigration =
-    crossMajorMigration || pendingRuntimeSync || pendingV1Artifacts;
+    crossMajorMigration || pendingRuntimeSync || pendingV1Artifacts || pendingCleanup;
 
   const phases: UpgradeOrchestratorPhase[] = [];
 
