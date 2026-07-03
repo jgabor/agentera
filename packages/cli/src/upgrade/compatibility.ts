@@ -244,18 +244,6 @@ function groupItemsByPhase(items: CrossMajorPlanItem[]): UpgradePreviewPhase[] {
   return phases;
 }
 
-export function collectV3MigrationOperations(preview: UpgradePreviewV2): CrossMajorPlanItem[] {
-  const out: CrossMajorPlanItem[] = [];
-  for (const phase of preview.phases) {
-    for (const item of phase.items) {
-      if (item.verb === "migrate" && item.tag === MAJOR_BOUNDARY_ITEM_TAG) {
-        out.push(item);
-      }
-    }
-  }
-  return out;
-}
-
 export function previewCrossMajorGuard(args: PreviewCrossMajorGuardArgs): UpgradePreviewV2 {
   const channel = resolveUpdateChannel(args);
   const install = classifyInstall({ appHome: args.appHome, sourceRoot: args.sourceRoot });

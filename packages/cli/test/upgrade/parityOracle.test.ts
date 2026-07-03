@@ -17,8 +17,8 @@ import {
   STATUS_NO_CHANGES_NEEDED,
   STATUS_READY_TO_APPLY,
   UPGRADE_PREVIEW_SCHEMA,
-  collectV3MigrationOperations,
 } from "../../src/upgrade/compatibility.js";
+import { collectV3MigrationOperations } from "./helpers/collectV3MigrationOperations.js";
 import { setSuccessorAnnouncedOverrideForTests } from "../../src/upgrade/nextMajorDoctor.js";
 import {
   buildUpgradePlan,

@@ -10,9 +10,9 @@ import { BUNDLE_MARKER } from "../../src/state/installRoot.js";
 import {
   STATUS_READY_TO_APPLY,
   UPGRADE_PREVIEW_SCHEMA,
-  collectV3MigrationOperations,
   previewCrossMajorGuard,
 } from "../../src/upgrade/compatibility.js";
+import { collectV3MigrationOperations } from "./helpers/collectV3MigrationOperations.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "../../../..");

@@ -13,10 +13,10 @@ import {
   STATUS_NO_CHANGES_NEEDED,
   STATUS_READY_TO_APPLY,
   classifyInstall,
-  collectV3MigrationOperations,
   previewCrossMajorGuard,
   projectInstallTrack,
 } from "../../src/upgrade/compatibility.js";
+import { collectV3MigrationOperations } from "./helpers/collectV3MigrationOperations.js";
 import { setSuccessorAnnouncedOverrideForTests } from "../../src/upgrade/nextMajorDoctor.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
