@@ -216,6 +216,35 @@ describe("runtime", () => {
     expect(fs.existsSync(target)).toBe(false);
   });
 
+  it("sourceDisappearsBetweenPlanAndApply: marks item failed and leaves no symlink when source dir is gone", () => {
+    const sandbox = path.join(tmp, "link-source-gone");
+    const source = path.join(sandbox, "skill-src");
+    const target = path.join(sandbox, "skills", "agentera");
+    fs.mkdirSync(source, { recursive: true });
+    fs.writeFileSync(path.join(source, "SKILL.md"), "# skill\n");
+    fs.mkdirSync(path.dirname(target), { recursive: true });
+
+    const item = {
+      status: "pending" as const,
+      action: "link-skill" as const,
+      runtime: "opencode",
+      source,
+      target,
+      message: "test",
+    };
+    fs.rmSync(source, { recursive: true, force: true });
+
+    const symlinkSpy = vi.spyOn(fs, "symlinkSync");
+    applyRuntimeMigrationItem(item, npxCommands);
+    symlinkSpy.mockRestore();
+
+    expect(item.status).toBe("failed");
+    expect(item.message).toBe(`link-skill source disappeared between plan and apply: ${source}`);
+    expect(fs.existsSync(target)).toBe(false);
+    expect(() => fs.lstatSync(target)).toThrow();
+    expect(symlinkSpy).not.toHaveBeenCalled();
+  });
+
   it("mixedVersionsReconcile: per-runtime rewire is planned independently for codex and cursor configs", () => {
     const home = path.join(tmp, "home-mixed");
     fs.cpSync(path.join(FIXTURES, "v2-runtime-codex-full"), home, { recursive: true });

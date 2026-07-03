@@ -660,6 +660,11 @@ export function applyRuntimeMigrationItem(item: MigrationPhaseItem, commands: Np
           item.message = "link-skill missing source or target";
           return;
         }
+        if (!pathExists(item.source)) {
+          item.status = "failed";
+          item.message = `link-skill source disappeared between plan and apply: ${item.source}`;
+          return;
+        }
         fs.mkdirSync(path.dirname(item.target), { recursive: true });
         // lstat (not stat): stat follows symlinks and ENOENTs on dangling links; rmSync then fails.
         let targetStat: Stats | null = null;
