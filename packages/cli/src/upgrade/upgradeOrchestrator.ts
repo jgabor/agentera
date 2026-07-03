@@ -11,7 +11,6 @@ import {
   UPGRADE_PREVIEW_SCHEMA,
   classifyInstall,
   crossMajorBoundaryApplies,
-  previewCrossMajorGuard,
   type InstallClassification,
 } from "./compatibility.js";
 import {
@@ -276,32 +275,6 @@ export function buildUpgradePlan(args: UpgradeOrchestratorArgs): UpgradePlanV2 {
     }
     if (phaseFilter.has("cleanup")) {
       phases.push(migrationPhaseToOrchestrator(migrationPreview.cleanup));
-    }
-  } else if (crossMajorBoundary) {
-    const guard = previewCrossMajorGuard({
-      appHome: installRoot,
-      sourceRoot,
-      channel: args.channel ?? null,
-      env,
-      home,
-      catalog: null,
-    });
-    for (const guardPhase of guard.phases) {
-      if (guardPhase.name === "detect" || !phaseFilter.has(guardPhase.name as UpgradePhaseName)) {
-        continue;
-      }
-      const items: MigrationPhaseItem[] = guardPhase.items.map((item) => ({
-        status: "blocked",
-        action: item.verb,
-        message: `${item.name} requires semver forward-major confirmation on the selected channel`,
-      }));
-      phases.push({
-        name: guardPhase.name as UpgradePhaseName,
-        status: items.length > 0 ? "blocked" : "noop",
-        summary: { ...emptySummary(), blocked: items.length },
-        items,
-        message: "",
-      });
     }
   }
 
