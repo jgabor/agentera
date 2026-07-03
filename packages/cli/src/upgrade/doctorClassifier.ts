@@ -180,6 +180,16 @@ function appendManagedStaleSignals(ctx: ClassifierContext, signals: DoctorSignal
       kind: "missing_marker",
       message: "Agentera app files need repair",
     });
+  } else if (reason === "corrupt_marker") {
+    if (ctx.recoverableStaleDefault) {
+      signals.push(recoverableStaleDefaultSignal(ctx.installRoot, ctx.roots));
+    }
+    const markerPath = String(ctx.classification.diagnostic.evidence.markerPath);
+    signals.push({
+      status: APP_REPAIR_NEEDED,
+      kind: "corrupt_bundle_marker",
+      message: `bundle marker file is corrupt: ${markerPath}`,
+    });
   } else if (reason === "version_mismatch") {
     if (ctx.recoverableStaleDefault) {
       signals.push(recoverableStaleDefaultSignal(ctx.installRoot, ctx.roots));

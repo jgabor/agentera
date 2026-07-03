@@ -266,18 +266,24 @@ function missingEntries(root: string, entries: readonly string[]): string[] {
   return entries.filter((entry) => !pathExists(path.join(root, entry)));
 }
 
-function readBundleMarker(root: string): Record<string, unknown> | null {
+type BundleMarkerRead =
+  | { kind: "absent" }
+  | { kind: "corrupt" }
+  | { kind: "valid"; data: Record<string, unknown> };
+
+function readBundleMarker(root: string): BundleMarkerRead {
   const marker = path.join(root, BUNDLE_MARKER);
   if (!isFile(marker)) {
-    return null;
+    return { kind: "absent" };
   }
   try {
     const data = JSON.parse(fs.readFileSync(marker, "utf8"));
-    return data && typeof data === "object" && !Array.isArray(data)
-      ? (data as Record<string, unknown>)
-      : null;
+    if (data && typeof data === "object" && !Array.isArray(data)) {
+      return { kind: "valid", data: data as Record<string, unknown> };
+    }
+    return { kind: "corrupt" };
   } catch {
-    return null;
+    return { kind: "corrupt" };
   }
 }
 
@@ -372,7 +378,8 @@ export function classifyResolvedRoot(
   const hasSetupEvidence = setupMissing.length === 0;
   const hasBundleEvidence = bundleMissing.length === 0;
   const presentEvidence = MANAGED_EVIDENCE.filter((entry) => pathExists(path.join(root, entry)));
-  const marker = readBundleMarker(root);
+  const markerRead = readBundleMarker(root);
+  const marker = markerRead.kind === "valid" ? markerRead.data : null;
   let current = (marker?.version as string | undefined) ?? null;
   // Fall back to pyproject.toml when the marker version is not a valid semver
   // (e.g. stale "v1" or placeholder "current" from v2-era installs).
@@ -388,6 +395,21 @@ export function classifyResolvedRoot(
   }
 
   if (hasBundleEvidence) {
+    if (markerRead.kind === "corrupt") {
+      return managedStale(
+        root,
+        source,
+        expected,
+        current,
+        ["a valid bundle marker file"],
+        "corrupt_marker",
+        {
+          expectedVersion: expected,
+          currentVersion: current,
+          markerPath: path.join(root, BUNDLE_MARKER),
+        },
+      );
+    }
     if (expected !== null && current !== expected) {
       return managedStale(
         root,

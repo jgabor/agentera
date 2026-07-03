@@ -376,7 +376,7 @@ describe("buildDoctorStatus invoking-cli retryCommand", () => {
 });
 
 describe("doctor", () => {
-  it("corruptBundleMarker: a malformed bundle marker is classified without throwing JSON.parse", () => {
+  it("corruptBundleMarker: a malformed bundle marker is classified as repair_needed, not outdated", () => {
     const appHome = path.join(tmp, "corrupt-marker");
     managed(appHome, "v9");
     fs.writeFileSync(path.join(appHome, "app", ".agentera-bundle.json"), '{"version":');
@@ -386,9 +386,11 @@ describe("doctor", () => {
       ...common,
     });
 
-    expect(status.status).toBe(APP_OUTDATED);
-    const signal = status.signals.find((s: { kind?: string }) => s.kind === "version_mismatch");
+    expect(status.status).toBe(APP_REPAIR_NEEDED);
+    expect(status.signals.some((s: { kind?: string }) => s.kind === "version_mismatch")).toBe(false);
+    const signal = status.signals.find((s: { kind?: string }) => s.kind === "corrupt_bundle_marker");
     expect(signal).toBeDefined();
-    expect((signal as { actual?: string | null }).actual).toBeNull();
+    expect((signal as { message?: string }).message).toContain("corrupt");
+    expect((signal as { message?: string }).message).toContain(".agentera-bundle.json");
   });
 });
