@@ -249,3 +249,42 @@ describe("cli dispatch: upgrade --verify / --restore", () => {
     expect(parsed.status).toBe("failed");
   });
 });
+
+describe("verify", () => {
+  function capture(argv: string[]): { rc: number; out: string; err: string } {
+    let out = "";
+    let err = "";
+    const rc = main(argv, { out: (t) => (out += t), err: (t) => (err += t) });
+    return { rc, out, err };
+  }
+
+  it("fullUpgradeThenDoctorAndPrime: upgrade --yes --verify exits 0 with doctor up_to_date and N prime schema_error: null", () => {
+    const appHome = path.join(home, ".local", "share", "agentera");
+    fs.mkdirSync(path.join(appHome, ".agentera"), { recursive: true });
+    fs.writeFileSync(path.join(appHome, ".agentera", "progress.yaml"), "cycles: []\n");
+    fs.writeFileSync(path.join(appHome, "v3-handoff.json"), "{}");
+    const project = path.join(tmp, "empty-project");
+    fs.mkdirSync(project, { recursive: true });
+
+    const { rc, err } = capture([
+      "node",
+      "agentera",
+      "upgrade",
+      "--yes",
+      "--verify",
+      "--home",
+      home,
+      "--project",
+      project,
+      "--channel",
+      "development",
+    ]);
+
+    expect(rc).toBe(0);
+    expect(err).toContain("status: passed");
+    expect(err).toContain("status=up_to_date");
+    expect(err).toContain("schema_error: null");
+    const primeMatches = err.match(/prime --context /g) ?? [];
+    expect(primeMatches.length).toBe(Object.keys(CAPABILITY_INSTRUCTIONS).length);
+  });
+});

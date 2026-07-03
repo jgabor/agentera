@@ -1,15 +1,25 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
+import {
+  APP_UP_TO_DATE,
+  buildDoctorStatus,
+} from "../../src/upgrade/doctor.js";
+import { setSuccessorAnnouncedOverrideForTests } from "../../src/upgrade/nextMajorDoctor.js";
+import { BUNDLE_MARKER } from "../../src/state/installRoot.js";
 import {
   removeUpgradeSnapshot,
   restoreFromSnapshot,
   snapshotManagedApp,
   upgradeSnapshotManifestPath,
 } from "../../src/upgrade/upgradeSnapshot.js";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const REPO_ROOT = path.resolve(__dirname, "../../../..");
 
 let tmp: string;
 let appHome: string;
@@ -105,5 +115,44 @@ describe("removeUpgradeSnapshot + restoreFromSnapshot interplay", () => {
     expect(result.restored).toBe(false);
     expect(result.source).toBeNull();
     expect(result.fileCount).toBe(0);
+  });
+});
+
+describe("restore", () => {
+  it("reversesManagedAppHomeRemoval: after --restore app/ is back and doctor returns up_to_date", () => {
+    setSuccessorAnnouncedOverrideForTests(true);
+    try {
+      const appRoot = path.join(appHome, "app");
+      fs.mkdirSync(path.join(appRoot, "scripts"), { recursive: true });
+      fs.writeFileSync(path.join(appRoot, "scripts", "agentera"), "#!/usr/bin/env node\n");
+      fs.mkdirSync(path.join(appRoot, "skills", "agentera"), { recursive: true });
+      fs.writeFileSync(path.join(appRoot, "skills", "agentera", "SKILL.md"), "# skill\n");
+      fs.writeFileSync(path.join(appRoot, "registry.json"), "{}");
+      fs.writeFileSync(
+        path.join(appRoot, BUNDLE_MARKER),
+        JSON.stringify({ schemaVersion: "agentera.bundle.v1", version: "3.0.0" }),
+      );
+
+      snapshotManagedApp(appRoot, appHome);
+      fs.rmSync(appRoot, { recursive: true, force: true });
+      expect(fs.existsSync(appRoot)).toBe(false);
+
+      const result = restoreFromSnapshot(appHome);
+      expect(result.restored).toBe(true);
+      expect(fs.existsSync(path.join(appRoot, "registry.json"))).toBe(true);
+      expect(fs.existsSync(path.join(appRoot, "skills", "agentera", "SKILL.md"))).toBe(true);
+
+      const status = buildDoctorStatus(appHome, {
+        rootSource: "explicit --install-root",
+        sourceRoot: REPO_ROOT,
+        home: path.join(tmp, "doc-home"),
+        project: path.join(tmp, "doc-proj"),
+        expectedVersion: "3.0.0",
+      });
+      expect(status.status).toBe(APP_UP_TO_DATE);
+      expect(status.signals).toEqual([]);
+    } finally {
+      setSuccessorAnnouncedOverrideForTests(null);
+    }
   });
 });

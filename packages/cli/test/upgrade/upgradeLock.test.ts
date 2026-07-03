@@ -144,3 +144,18 @@ describe("applyMigrationPhases lock integration", () => {
     expect(fs.existsSync(upgradeLockPath(appRoot))).toBe(false);
   });
 });
+
+describe("concurrency", () => {
+  it("lockReleasedOnExit: the lock is released when apply throws before completion", () => {
+    const home = copyFixture("v2-runtime-python", path.join(tmp, "home-throw"));
+    const appRoot = copyFixture("v2-app-home", path.join(home, "agentera"));
+    const project = copyFixture("v2-yaml-project", path.join(home, "project"));
+    const ctx = migrationCtx(appRoot, project, home, REPO_ROOT);
+    const preview = dryRunMigration(ctx);
+
+    const throwingCtx = { ...ctx, channel: "bogus" };
+
+    expect(() => applyMigrationPhases(throwingCtx, preview, ["runtime"])).toThrow();
+    expect(fs.existsSync(upgradeLockPath(appRoot))).toBe(false);
+  });
+});

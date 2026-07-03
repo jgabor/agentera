@@ -18,7 +18,13 @@ import {
   buildUpgradePlan,
   upgradeExitCode,
 } from "../../src/upgrade/upgradeOrchestrator.js";
+import { setSuccessorAnnouncedOverrideForTests } from "../../src/upgrade/nextMajorDoctor.js";
 import { BUNDLE_MARKER } from "../../src/state/installRoot.js";
+import {
+  assertChecksumsUnchanged,
+  checksumManifest,
+  listProjectArtifactRelPaths,
+} from "./helpers/preservation.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "../../../..");
@@ -56,9 +62,11 @@ beforeEach(() => {
   fs.mkdirSync(home, { recursive: true });
   process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT = REPO_ROOT;
   process.env.HOME = home;
+  setSuccessorAnnouncedOverrideForTests(true);
 });
 
 afterEach(() => {
+  setSuccessorAnnouncedOverrideForTests(null);
   delete process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT;
   delete process.env.HOME;
   fs.rmSync(tmp, { recursive: true, force: true });
@@ -81,5 +89,36 @@ describe("idempotency", () => {
     expect(second.schemaVersion).toBe(UPGRADE_PREVIEW_SCHEMA);
     expect(second.lifecycleStatus).toBe(STATUS_NO_CHANGES_NEEDED);
     expect(upgradeExitCode(second)).toBe(0);
+  });
+
+  it("applyRepeatYes: a second upgrade --yes on an already-applied install exits 0 with no pending items and unchanged file checksums", () => {
+    const { appHome, project } = seedLayout(tmp);
+
+    buildUpgradePlan({
+      installRoot: appHome,
+      home,
+      project,
+      channel: "development",
+      yes: true,
+    });
+
+    const projectBefore = checksumManifest(project, listProjectArtifactRelPaths(project));
+    const runtimeBefore = checksumManifest(home, [".codex/config.toml", ".cursor/hooks.json"]);
+    expect(Object.keys(projectBefore).length).toBeGreaterThan(0);
+    expect(Object.keys(runtimeBefore).length).toBeGreaterThan(0);
+
+    const second = buildUpgradePlan({
+      installRoot: appHome,
+      home,
+      project,
+      channel: "development",
+      yes: true,
+    });
+
+    expect(upgradeExitCode(second)).toBe(0);
+    expect(second.summary.pending).toBe(0);
+    expect(second.summary.failed).toBe(0);
+    assertChecksumsUnchanged(project, projectBefore);
+    assertChecksumsUnchanged(home, runtimeBefore);
   });
 });

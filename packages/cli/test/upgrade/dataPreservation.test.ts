@@ -82,3 +82,23 @@ describe("dataPreservation", () => {
     assertChecksumsUnchanged(appHome, before);
   });
 });
+
+describe("preserve", () => {
+  it("symlinkedUserStateNotDeleted: rmSync of app/ does not follow a symlink to an outside target", () => {
+    const appHome = copyFixture("v2-app-home", path.join(tmp, "symlink-home"));
+    const outsideFile = path.join(tmp, "outside-profile.md");
+    fs.writeFileSync(outsideFile, "outside-profile-content");
+
+    fs.symlinkSync(outsideFile, path.join(appHome, "app", "linked-to-outside"));
+    fs.symlinkSync(outsideFile, path.join(appHome, "PROFILE.md"));
+
+    const preview = planCleanupPhase({ appHome, project: appHome, home: tmp });
+    expect(preview.status).toBe("pending");
+    applyCleanupPhase(preview);
+
+    expect(fs.existsSync(path.join(appHome, "app"))).toBe(false);
+    expect(fs.readFileSync(outsideFile, "utf8")).toBe("outside-profile-content");
+    expect(fs.lstatSync(path.join(appHome, "PROFILE.md")).isSymbolicLink()).toBe(true);
+    expect(fs.readlinkSync(path.join(appHome, "PROFILE.md"))).toBe(outsideFile);
+  });
+});

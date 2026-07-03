@@ -3,7 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { opencodeConfigDir } from "../../src/setup/doctor.js";
 import {
@@ -175,5 +175,74 @@ describe("applyRuntimeMigrationItem link-skill", () => {
     expect(item.status).toBe("applied");
     expect(fs.readlinkSync(target)).toBe(source);
     expect(fs.existsSync(path.join(source, "SKILL.md"))).toBe(true);
+  });
+});
+
+const npxCommands = {
+  cliEntrypoint: "npx -y agentera@next",
+  validate: "npx -y agentera@next hook validate-artifact",
+  cursorSessionStart: "npx -y agentera@next hook cursor-session-start",
+  cursorSessionStop: "npx -y agentera@next hook session-stop",
+  cursorPreTool: "npx -y agentera@next hook cursor-pre-tool-use",
+};
+
+describe("runtime", () => {
+  it("symlinkTargetDisappears: when symlink creation fails the link-skill item fails recoverably with no half-state", () => {
+    const sandbox = path.join(tmp, "link-disappears");
+    const source = path.join(sandbox, "skill-src");
+    const target = path.join(sandbox, "skills", "agentera");
+    fs.mkdirSync(source, { recursive: true });
+    fs.writeFileSync(path.join(source, "SKILL.md"), "# skill\n");
+    fs.mkdirSync(path.dirname(target), { recursive: true });
+
+    const item = {
+      status: "pending" as const,
+      action: "link-skill" as const,
+      runtime: "opencode",
+      source,
+      target,
+      message: "test",
+    };
+    vi.spyOn(fs, "symlinkSync").mockImplementationOnce(() => {
+      const err = new Error("ENOENT: no such file or directory") as NodeJS.ErrnoException;
+      err.code = "ENOENT";
+      throw err;
+    });
+
+    applyRuntimeMigrationItem(item, npxCommands);
+
+    expect(item.status).toBe("failed");
+    expect(item.message).toMatch(/link-skill failed/);
+    expect(fs.existsSync(target)).toBe(false);
+  });
+
+  it("mixedVersionsReconcile: per-runtime rewire is planned independently for codex and cursor configs", () => {
+    const home = path.join(tmp, "home-mixed");
+    fs.cpSync(path.join(FIXTURES, "v2-runtime-codex-full"), home, { recursive: true });
+    const project = path.join(tmp, "project-mixed");
+    fs.cpSync(path.join(FIXTURES, "v2-runtime-cursor-full", "project"), project, { recursive: true });
+    const appHome = path.join(home, "agentera");
+    fs.mkdirSync(appHome, { recursive: true });
+    const ctx = migrationCtx(appHome, project, home, REPO_ROOT);
+    const phase = planRuntimeRewirePhase(ctx);
+
+    const pendingRuntimes = new Set(
+      phase.items
+        .filter((i) => i.status === "pending" && i.action === "rewire-runtime")
+        .map((i) => i.runtime),
+    );
+    expect(pendingRuntimes.has("codex")).toBe(true);
+    expect(pendingRuntimes.has("cursor")).toBe(true);
+
+    applyRuntimeRewirePhase(phase, ctx);
+    expect(phase.status).toBe("applied");
+
+    const codexConfig = fs.readFileSync(path.join(home, ".codex", "config.toml"), "utf8");
+    expect(codexConfig).not.toContain("AGENTERA_HOME");
+    const codexHooksPath = path.join(home, ".codex", "hooks", "codex-hooks.json");
+    expect(fs.existsSync(codexHooksPath)).toBe(false);
+    const cursorHooks = fs.readFileSync(path.join(project, ".cursor", "hooks.json"), "utf8");
+    expect(cursorHooks).toContain("npx -y agentera");
+    expect(cursorHooks).not.toContain("cursor_session_start.py");
   });
 });

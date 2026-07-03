@@ -374,3 +374,21 @@ describe("buildDoctorStatus invoking-cli retryCommand", () => {
     expect(status.retryCommand).toBeNull();
   });
 });
+
+describe("doctor", () => {
+  it("corruptBundleMarker: a malformed bundle marker is classified without throwing JSON.parse", () => {
+    const appHome = path.join(tmp, "corrupt-marker");
+    managed(appHome, "v9");
+    fs.writeFileSync(path.join(appHome, "app", ".agentera-bundle.json"), '{"version":');
+
+    const status = buildDoctorStatus(appHome, {
+      rootSource: "explicit --install-root",
+      ...common,
+    });
+
+    expect(status.status).toBe(APP_OUTDATED);
+    const signal = status.signals.find((s: { kind?: string }) => s.kind === "version_mismatch");
+    expect(signal).toBeDefined();
+    expect((signal as { actual?: string | null }).actual).toBeNull();
+  });
+});

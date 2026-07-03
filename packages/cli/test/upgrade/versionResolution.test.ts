@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { BUNDLE_MARKER } from "../../src/state/installRoot.js";
+import { NPX_BUNDLE_SENTINEL } from "../../src/core/sourceRoot.js";
 import { classifyInstall } from "../../src/upgrade/compatibility.js";
 import { resolveUpdateChannel } from "../../src/upgrade/channels.js";
 import { setSuccessorAnnouncedOverrideForTests } from "../../src/upgrade/nextMajorDoctor.js";
@@ -165,5 +166,40 @@ describe("resolveLatestOnChannel", () => {
     expect(
       resolveLatestOnChannel(channel, REPO_ROOT, { stable: "2.7.7", development: "3.0.0-next.0" }),
     ).toBe("3.0.0-next.0");
+  });
+});
+
+describe("resolution", () => {
+  it("networkFailureFallback: without a catalog it falls back to offline defaults, running version to 0.0.0, and the upgrade gate still produces", () => {
+    setVersionCatalogForTests(null);
+
+    const channel = resolveUpdateChannel({ sourceRoot: REPO_ROOT, channel: "development", home: tmp });
+    const latest = resolveLatestOnChannel(channel, REPO_ROOT, null);
+    expect(typeof latest).toBe("string");
+    expect(latest.length).toBeGreaterThan(0);
+    expect(latest).not.toBe("0.0.0");
+
+    const appHome = path.join(tmp, "empty");
+    fs.mkdirSync(appHome, { recursive: true });
+    const install = classifyInstall({ appHome, sourceRoot: REPO_ROOT });
+    const outcome = classifyUpgradeOutcome({
+      appHome,
+      sourceRoot: REPO_ROOT,
+      install,
+      channel,
+      catalog: null,
+    });
+    expect(outcome.latestOnChannel).toBe(latest);
+    expect(outcome.kind).toBeDefined();
+
+    const npxRoot = path.join(tmp, "npx-bundle");
+    fs.mkdirSync(path.join(npxRoot, "skills", "agentera"), { recursive: true });
+    fs.writeFileSync(path.join(npxRoot, "skills", "agentera", "SKILL.md"), "x");
+    fs.writeFileSync(path.join(npxRoot, "registry.json"), "{}");
+    fs.writeFileSync(path.join(npxRoot, NPX_BUNDLE_SENTINEL), "{}");
+    const npxInstall = classifyInstall({ appHome: npxRoot, sourceRoot: npxRoot });
+    expect(
+      resolveRunningVersion({ appHome: npxRoot, sourceRoot: npxRoot, install: npxInstall }),
+    ).toBe("0.0.0");
   });
 });
