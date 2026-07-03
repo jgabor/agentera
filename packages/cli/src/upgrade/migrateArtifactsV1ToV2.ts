@@ -4,6 +4,7 @@ import path from "node:path";
 import YAML from "yaml";
 
 import { isFile, pathExists, resolvePath } from "../core/paths.js";
+import { writeFileAtomic } from "./atomicWriter.js";
 import type { MigrationPhaseItem, MigrationPhase, MigrationPhaseSummary, MigrationStatus } from "./migrateArtifactsV2ToV3.js";
 
 function emptySummary(): MigrationPhaseSummary {
@@ -581,7 +582,7 @@ export function applyV1ArtifactsPhase(phase: MigrationPhase, project: string, fo
         fs.copyFileSync(sourcePath, backup);
       }
       fs.mkdirSync(path.dirname(targetPath), { recursive: true });
-      fs.writeFileSync(targetPath, yamlContent, "utf8");
+      writeFileAtomic(targetPath, yamlContent, "utf8");
       fs.unlinkSync(sourcePath);
       item.status = "applied";
       item.message = "migrated and archived source";

@@ -8,6 +8,14 @@ import {
   AGENTERA_USER_STATE_NAMES,
 } from "./doctor.js";
 import {
+  acquireUpgradeLock,
+  releaseUpgradeLock,
+} from "./upgradeLock.js";
+import {
+  removeUpgradeSnapshot,
+  snapshotManagedApp,
+} from "./upgradeSnapshot.js";
+import {
   applyV1ArtifactsPhase,
   planV1ArtifactsPhase,
 } from "./migrateArtifactsV1ToV2.js";
@@ -332,17 +340,33 @@ export function applyCleanupPhase(phase: MigrationPhase, ctx?: MigrationContext)
     applyAppContentRefreshItems(phase.items, ctx);
   }
   applyLegacyAgentCleanupItems(phase.items);
+  const snapshots: { appHome: string; dir: string }[] = [];
   for (const item of phase.items) {
     if (item.status !== "pending" || item.action !== "remove-managed-app-home" || !item.source) {
       continue;
     }
+    const appHome = ctx?.appHome ?? item.target ?? "";
     try {
+      if (appHome) {
+        const snapshotDir = snapshotManagedApp(item.source, appHome);
+        if (snapshotDir) {
+          snapshots.push({ appHome, dir: snapshotDir });
+        }
+      }
       removeDirectoryRecursive(item.source);
       item.status = "applied";
       item.message = "managed Python app-home bundle removed; user state preserved";
     } catch (exc) {
       item.status = "failed";
       item.message = `cleanup failed: ${(exc as Error).message}`;
+    }
+  }
+  const cleanupFailed = phase.items.some(
+    (item) => item.action === "remove-managed-app-home" && item.status === "failed",
+  );
+  if (!cleanupFailed) {
+    for (const snap of snapshots) {
+      removeUpgradeSnapshot(snap.appHome, snap.dir);
     }
   }
   const updated = summarizePhase("cleanup", phase.items, phase.message);
@@ -365,19 +389,24 @@ export function applyMigrationPhases(
   preview: DryRunMigrationResult,
   only: readonly MigrationPhaseName[] = ["artifacts", "runtime", "cleanup"],
 ): DryRunMigrationResult {
-  const result: DryRunMigrationResult = {
-    artifacts: { ...preview.artifacts, items: preview.artifacts.items.map((item) => ({ ...item })) },
-    runtime: { ...preview.runtime, items: preview.runtime.items.map((item) => ({ ...item })) },
-    cleanup: { ...preview.cleanup, items: preview.cleanup.items.map((item) => ({ ...item })) },
-  };
-  if (only.includes("artifacts")) {
-    applyArtifactsPhase(result.artifacts, ctx.project, ctx.force);
+  acquireUpgradeLock(ctx.appHome);
+  try {
+    const result: DryRunMigrationResult = {
+      artifacts: { ...preview.artifacts, items: preview.artifacts.items.map((item) => ({ ...item })) },
+      runtime: { ...preview.runtime, items: preview.runtime.items.map((item) => ({ ...item })) },
+      cleanup: { ...preview.cleanup, items: preview.cleanup.items.map((item) => ({ ...item })) },
+    };
+    if (only.includes("artifacts")) {
+      applyArtifactsPhase(result.artifacts, ctx.project, ctx.force);
+    }
+    if (only.includes("runtime")) {
+      applyRuntimeRewirePhase(result.runtime, ctx);
+    }
+    if (only.includes("cleanup")) {
+      applyCleanupPhase(result.cleanup, ctx);
+    }
+    return result;
+  } finally {
+    releaseUpgradeLock(ctx.appHome);
   }
-  if (only.includes("runtime")) {
-    applyRuntimeRewirePhase(result.runtime, ctx);
-  }
-  if (only.includes("cleanup")) {
-    applyCleanupPhase(result.cleanup, ctx);
-  }
-  return result;
 }

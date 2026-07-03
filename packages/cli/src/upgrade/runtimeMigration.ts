@@ -16,6 +16,7 @@ import {
 } from "../setup/opencode.js";
 import { OPENCODE_SKILL_NAMES } from "../setup/opencodeConstants.js";
 import { resolveUpdateChannel } from "./channels.js";
+import { writeFileAtomic } from "./atomicWriter.js";
 import {
   applyInstalledHooksRetirementItems,
   planInstalledHooksRetirementItems,
@@ -209,7 +210,8 @@ function copyIfChanged(source: string, target: string): boolean {
     }
   }
   fs.mkdirSync(path.dirname(target), { recursive: true });
-  fs.copyFileSync(source, target);
+  const sourceBytes = fs.readFileSync(source);
+  writeFileAtomic(target, sourceBytes);
   return true;
 }
 
@@ -634,7 +636,7 @@ export function applyRuntimeMigrationItem(item: MigrationPhaseItem, commands: Np
           item.message = "rewire-runtime missing target or newText";
           return;
         }
-        fs.writeFileSync(item.target, item.newText, "utf8");
+        writeFileAtomic(item.target, item.newText, "utf8");
         item.status = "applied";
         item.message = "runtime config rewired to npm self-contained entrypoint";
         break;
@@ -690,7 +692,7 @@ export function applyRuntimeMigrationItem(item: MigrationPhaseItem, commands: Np
         if (item.target && isFile(item.target)) {
           const configText = fs.readFileSync(item.target, "utf8");
           const next = retireCodexCopiedHookTrust(configText, item.source);
-          fs.writeFileSync(item.target, next, "utf8");
+          writeFileAtomic(item.target, next, "utf8");
         }
         item.status = "applied";
         item.message = "retired Agentera-owned copied Codex hooks";
