@@ -63,10 +63,6 @@ function buildInvokingCliRetryCommand(
   return commandText(["npx", "-y", packageSpec, expectedCommand]);
 }
 
-function crossMajorPendingApprovalPhrase(): string {
-  return "no upgrade offered: v3 successor line is not announced yet";
-}
-
 /**
  * Doctor status build. Faithful TS port of build_doctor_status /
  * public_doctor_status from scripts/agentera_upgrade.py.
@@ -94,12 +90,6 @@ export function appLifecycleActionNoun(status: string): string {
   return "repair";
 }
 
-export function appLifecycleApprovalPhrase(status: string, installRoot: string): string {
-  if (status === APP_UP_TO_DATE) {
-    return "no action needed: Agentera app files are up to date";
-  }
-  return `approve app files ${appLifecycleActionNoun(status)} for ${installRoot}`;
-}
 export const BUNDLE_MARKER = ".agentera-bundle.json";
 
 /** Agentera user state preserved during v2→v3 managed app-home cleanup. */
