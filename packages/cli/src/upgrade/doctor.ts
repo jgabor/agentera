@@ -10,6 +10,7 @@ import {
   classifyInstall,
   cliDistributionMajor,
   crossMajorBoundaryApplies,
+  isSourceCheckoutRoot,
   projectInstallTrack,
 } from "./compatibility.js";
 import { isStableSuccessorAnnounced } from "./nextMajorDoctor.js";
@@ -116,6 +117,7 @@ export const ROOT_USER_STATE_FILE_NAMES = new Set([
   "TODO.md",
   "CHANGELOG.md",
   "DESIGN.md",
+  "v3-handoff.json",
 ]);
 export const ROOT_USER_STATE_DIR_NAMES = new Set([
   "history",
@@ -249,6 +251,41 @@ export function buildDoctorStatus(installRoot: string, opts: BuildDoctorStatusOp
       applyCommand: null,
       retryCommand: commandText(["npx", "-y", "agentera", expectedCommands[0] ?? "prime"]),
       approval: "no action needed: self-contained app bundle is current",
+    };
+  }
+
+  // Source checkout: the CLI invocation IS the app, so the install root is
+  // user state only and never needs upgrade gating. Narrowed to the default
+  // app home AND an existing install root so an explicit --install-root, a
+  // missing default app home (still a real diagnostic), and AGENTERA_HOME
+  // overrides all keep their existing inspection behavior.
+  if (isSourceCheckoutRoot(sourceRoot) && rootSource === SOURCE_LABELS.default && pathExists(installRoot)) {
+    const checkoutExpected = opts.expectedVersion || loadSuiteVersion(sourceRoot) || "unknown";
+    return {
+      schemaVersion: "agentera.bundleStatus.v1",
+      status: APP_UP_TO_DATE,
+      expectedVersion: checkoutExpected,
+      appHome: installRoot,
+      appHomeSource: rootSource,
+      managedAppRoot: installRoot,
+      userDataRoot: installRoot,
+      activeAppRoot: installRoot,
+      authoritativeRoot: installRoot,
+      skillRoot: path.join(sourceRoot, "skills", "agentera"),
+      runtimeRoot: sourceRoot,
+      sourceRoot,
+      installRoot,
+      installRootSource: rootSource,
+      home,
+      project,
+      rootStatus: "source",
+      installKind: "source_checkout",
+      markerVersion: null,
+      signals: [],
+      dryRunCommand: null,
+      applyCommand: null,
+      retryCommand: null,
+      approval: "no action needed: running from source checkout is current",
     };
   }
 

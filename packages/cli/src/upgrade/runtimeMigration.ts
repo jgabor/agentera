@@ -358,10 +358,13 @@ function planOpencodeItems(
   const pluginSource = path.join(sourceRoot, ".opencode", "plugins", "agentera.js");
   const pluginTarget = path.join(configDir, "plugins", "agentera.js");
   if (isFile(pluginSource)) {
+    const targetContent = isFile(pluginTarget) ? fs.readFileSync(pluginTarget, "utf8") : "";
+    const sourceContent = fs.readFileSync(pluginSource, "utf8");
     const needsCopy =
       !isFile(pluginTarget) ||
-      textUsesPythonManagedEntrypoint(fs.readFileSync(pluginTarget, "utf8")) ||
-      needsChannelNpxRewire(fs.readFileSync(pluginTarget, "utf8"), commands.cliEntrypoint);
+      (targetContent !== sourceContent &&
+        (textUsesPythonManagedEntrypoint(targetContent) ||
+          needsChannelNpxRewire(targetContent, commands.cliEntrypoint)));
     items.push({
       status: needsCopy ? "pending" : "noop",
       action: "copy-plugin",

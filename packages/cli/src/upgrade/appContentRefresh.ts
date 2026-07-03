@@ -333,7 +333,20 @@ export function planAppContentRefreshItems(ctx: MigrationContext): MigrationPhas
   const resolvedSourceRoot = resolvePath(sourceRoot);
   const installedRoot = installedRootForDetection(appHome);
   if (!installedRoot) {
-    return [];
+    if (!pathExists(appHome)) {
+      return [];
+    }
+    return [
+      {
+        status: "pending",
+        action: APP_CONTENT_REFRESH_ACTION,
+        runtime: "installed-app",
+        source: resolvedSourceRoot,
+        target: refreshAppContentTargetRoot(appHome),
+        message:
+          "install root has user data only; will install v3 app content (skills, references, registry, dist/capabilities)",
+      },
+    ];
   }
 
   const staleSurfaces = detectStaleAppContentSurfaces(appHome, resolvedSourceRoot);

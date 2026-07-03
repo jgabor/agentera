@@ -225,6 +225,63 @@ describe("buildDoctorStatus", () => {
     expect(status.signals.some((s: { kind?: string }) => s.kind === "cross_major_pending")).toBe(false);
     expect(status.signals.some((s: { kind?: string }) => s.kind === "version_mismatch")).toBe(false);
   });
+
+  it("recognizes a user-data-only install root with v3-handoff.json as user_data_only (Gap 9 fix 1)", () => {
+    const appHome = path.join(tmp, "handoff-userdata");
+    fs.mkdirSync(path.join(appHome, ".agentera"), { recursive: true });
+    fs.writeFileSync(path.join(appHome, ".agentera", "progress.yaml"), "cycles: []\n");
+    fs.writeFileSync(path.join(appHome, "PROFILE.md"), "# profile\n");
+    fs.writeFileSync(
+      path.join(appHome, "v3-handoff.json"),
+      JSON.stringify({
+        app_home_path: appHome,
+        installed_v2_version: "2.7.11",
+        schema_version: "agentera.v3_handoff_manifest.v1",
+        user_data_inventory: [],
+        written_at: "2026-06-24T10:22:41Z",
+      }),
+    );
+    const status = buildDoctorStatus(appHome, {
+      rootSource: "explicit --install-root",
+      ...common,
+    });
+    expect(status.status).toBe(APP_REPAIR_NEEDED);
+    expect(status.rootStatus).toBe("user_data_only");
+    expect(status.signals.some((s: { kind?: string }) => s.kind === "user_data_only_app_home")).toBe(true);
+    expect(status.signals.some((s: { kind?: string }) => s.kind === "unmanaged_install_root")).toBe(false);
+  });
+
+  it("short-circuits to APP_UP_TO_DATE for a source-checkout sourceRoot with default app home (Gap 9 fix 3)", () => {
+    const appHome = path.join(tmp, "source-default-handoff");
+    fs.mkdirSync(path.join(appHome, ".agentera"), { recursive: true });
+    fs.writeFileSync(path.join(appHome, ".agentera", "progress.yaml"), "cycles: []\n");
+    fs.writeFileSync(path.join(appHome, "v3-handoff.json"), "{}");
+    const status = buildDoctorStatus(appHome, {
+      rootSource: "default app home",
+      ...common,
+    });
+    expect(status.status).toBe(APP_UP_TO_DATE);
+    expect(status.rootStatus).toBe("source");
+    expect(status.signals).toEqual([]);
+    expect(status.dryRunCommand).toBeNull();
+    expect(status.applyCommand).toBeNull();
+    expect(status.appHome).toBe(appHome);
+    expect(status.approval).toContain("source checkout");
+  });
+
+  it("does NOT short-circuit for a source-checkout sourceRoot with explicit --install-root (Gap 9 fix 3 narrow)", () => {
+    const appHome = path.join(tmp, "source-explicit-handoff");
+    fs.mkdirSync(path.join(appHome, ".agentera"), { recursive: true });
+    fs.writeFileSync(path.join(appHome, ".agentera", "progress.yaml"), "cycles: []\n");
+    fs.writeFileSync(path.join(appHome, "v3-handoff.json"), "{}");
+    const status = buildDoctorStatus(appHome, {
+      rootSource: "explicit --install-root",
+      ...common,
+    });
+    expect(status.status).toBe(APP_REPAIR_NEEDED);
+    expect(status.rootStatus).toBe("user_data_only");
+    expect(status.signals.some((s: { kind?: string }) => s.kind === "user_data_only_app_home")).toBe(true);
+  });
 });
 
 describe("publicDoctorStatus", () => {

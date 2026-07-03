@@ -113,7 +113,7 @@ const CROSS_MAJOR_ITEMS: ReadonlyArray<Omit<CrossMajorPlanItem, "statusConcept" 
   { phase: "cleanup", verb: "migrate", name: "v2_to_v3_app_home_cleanup" },
 ];
 
-function isSourceCheckoutRoot(sourceRoot: string): boolean {
+export function isSourceCheckoutRoot(sourceRoot: string): boolean {
   return (
     pathExists(path.join(sourceRoot, ".git")) &&
     isFile(path.join(sourceRoot, "skills", "agentera", "SKILL.md")) &&
