@@ -9,10 +9,9 @@
     "applied": "applied",
     "noop": "no_changes_needed",
     "blocked": "manual_review_needed",
-    "failed": "manual_review_needed",
-    "skipped": "no_changes_needed"
+    "failed": "manual_review_needed"
   },
-  "workflowStatuses": ["pending", "applied", "noop", "blocked", "failed", "skipped"],
+  "workflowStatuses": ["pending", "applied", "noop", "blocked", "failed"],
   "lifecycleStatuses": ["manual_review_needed", "no_changes_needed", "ready_to_apply", "applied"],
   "exitCodeRules": {
     "mutuallyExclusiveYesDryRun": 2,

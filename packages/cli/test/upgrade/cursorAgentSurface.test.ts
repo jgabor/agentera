@@ -40,7 +40,7 @@ describe("v3 cursor agent surface (T7)", () => {
         (item) => item.runtime === "cursor" && item.action === "copy-agent",
       );
       expect(cursorAgentItems.length).toBeGreaterThan(0);
-      expect(cursorAgentItems.every((item) => item.status === "skipped")).toBe(true);
+      expect(cursorAgentItems.every((item) => item.status === "noop")).toBe(true);
       expect(
         cursorAgentItems.every((item) =>
           item.message?.includes("v3 capability instruction modules present"),

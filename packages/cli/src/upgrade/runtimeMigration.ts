@@ -307,7 +307,7 @@ function planCursorItems(
       root === project && projectUsesV3CapabilityInstructionModules(project);
     if (skipInTreeCursorAgents) {
       items.push({
-        status: "skipped",
+        status: "noop",
         action: "copy-agent",
         runtime: "cursor",
         target: agentsDir,

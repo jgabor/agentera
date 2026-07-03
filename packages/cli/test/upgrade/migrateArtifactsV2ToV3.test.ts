@@ -63,8 +63,8 @@ describe("planArtifactsPhase", () => {
     const preview = planArtifactsPhase(project);
     const applied = applyMigrationPhases({ appHome: project, project, home: tmp }, {
       artifacts: preview,
-      runtime: { name: "runtime", status: "noop", summary: { pending: 0, applied: 0, noop: 0, blocked: 0, failed: 0, skipped: 0 }, items: [], message: "" },
-      cleanup: { name: "cleanup", status: "noop", summary: { pending: 0, applied: 0, noop: 0, blocked: 0, failed: 0, skipped: 0 }, items: [], message: "" },
+      runtime: { name: "runtime", status: "noop", summary: { pending: 0, applied: 0, noop: 0, blocked: 0, failed: 0 }, items: [], message: "" },
+      cleanup: { name: "cleanup", status: "noop", summary: { pending: 0, applied: 0, noop: 0, blocked: 0, failed: 0 }, items: [], message: "" },
     }, ["artifacts"]);
     expect(applied.artifacts.status).toBe("applied");
     expect(fs.existsSync(path.join(project, ".agentera/progress.yaml"))).toBe(true);

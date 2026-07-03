@@ -37,7 +37,7 @@ import {
  * v1 Markdown→YAML migration uses detectV1ArtifactPairs (shared with prime).
  */
 
-export const MIGRATION_STATUSES = ["pending", "applied", "noop", "blocked", "failed", "skipped"] as const;
+export const MIGRATION_STATUSES = ["pending", "applied", "noop", "blocked", "failed"] as const;
 export type MigrationStatus = (typeof MIGRATION_STATUSES)[number];
 
 export const V1_ARTIFACT_PAIRS: ReadonlyArray<readonly [string, string]> = [
@@ -76,7 +76,6 @@ export interface MigrationPhaseSummary {
   noop: number;
   blocked: number;
   failed: number;
-  skipped: number;
 }
 
 export interface MigrationPhase {
@@ -104,7 +103,7 @@ export interface DryRunMigrationResult {
 }
 
 function emptySummary(): MigrationPhaseSummary {
-  return { pending: 0, applied: 0, noop: 0, blocked: 0, failed: 0, skipped: 0 };
+  return { pending: 0, applied: 0, noop: 0, blocked: 0, failed: 0 };
 }
 
 export function summarizePhase(
@@ -125,8 +124,6 @@ export function summarizePhase(
     status = "pending";
   } else if (summary.applied > 0) {
     status = "applied";
-  } else if (summary.skipped > 0 && summary.noop === 0 && summary.applied === 0) {
-    status = "skipped";
   } else {
     status = "noop";
   }

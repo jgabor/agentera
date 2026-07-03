@@ -7,7 +7,7 @@ import { isFile, pathExists, resolvePath } from "../core/paths.js";
 import type { MigrationPhaseItem, MigrationPhase, MigrationPhaseSummary, MigrationStatus } from "./migrateArtifactsV2ToV3.js";
 
 function emptySummary(): MigrationPhaseSummary {
-  return { pending: 0, applied: 0, noop: 0, blocked: 0, failed: 0, skipped: 0 };
+  return { pending: 0, applied: 0, noop: 0, blocked: 0, failed: 0 };
 }
 
 function summarizePhase(
@@ -28,8 +28,6 @@ function summarizePhase(
     status = "pending";
   } else if (summary.applied > 0) {
     status = "applied";
-  } else if (summary.skipped > 0 && summary.noop === 0 && summary.applied === 0) {
-    status = "skipped";
   } else {
     status = "noop";
   }

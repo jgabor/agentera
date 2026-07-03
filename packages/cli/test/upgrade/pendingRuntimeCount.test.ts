@@ -47,7 +47,6 @@ function mockRuntimePhase(items: MigrationPhaseItem[]): void {
       noop: 0,
       blocked: 0,
       failed: 0,
-      skipped: 0,
     },
     items,
   });

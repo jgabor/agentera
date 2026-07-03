@@ -54,7 +54,6 @@ const LIFECYCLE_BY_WORKFLOW: Record<MigrationStatus, string> = {
   noop: STATUS_NO_CHANGES_NEEDED,
   blocked: STATUS_MANUAL_REVIEW_NEEDED,
   failed: STATUS_MANUAL_REVIEW_NEEDED,
-  skipped: STATUS_NO_CHANGES_NEEDED,
 };
 
 let tmp: string;
@@ -144,13 +143,13 @@ describe("Python main oracle contract parity", () => {
   });
 
   it("matches Python cmd_upgrade exit-code rules", () => {
-    expect(upgradeExitCode(planWithSummary({ pending: 1, applied: 0, noop: 0, blocked: 0, failed: 0, skipped: 0 }))).toBe(
+    expect(upgradeExitCode(planWithSummary({ pending: 1, applied: 0, noop: 0, blocked: 0, failed: 0 }))).toBe(
       ORACLE.exitCodeRules.planWithPendingSummary,
     );
-    expect(upgradeExitCode(planWithSummary({ pending: 0, applied: 0, noop: 0, blocked: 1, failed: 0, skipped: 0 }))).toBe(
+    expect(upgradeExitCode(planWithSummary({ pending: 0, applied: 0, noop: 0, blocked: 1, failed: 0 }))).toBe(
       ORACLE.exitCodeRules.blockedOrFailedSummary,
     );
-    expect(upgradeExitCode(planWithSummary({ pending: 0, applied: 0, noop: 1, blocked: 0, failed: 0, skipped: 0 }))).toBe(
+    expect(upgradeExitCode(planWithSummary({ pending: 0, applied: 0, noop: 1, blocked: 0, failed: 0 }))).toBe(
       ORACLE.exitCodeRules.success,
     );
 
@@ -196,7 +195,6 @@ describe("Python main oracle contract parity", () => {
           noop: scenario.workflowPhaseStatus === "noop" ? 1 : 0,
           blocked: scenario.workflowPhaseStatus === "blocked" ? 1 : 0,
           failed: scenario.workflowPhaseStatus === "failed" ? 1 : 0,
-          skipped: scenario.workflowPhaseStatus === "skipped" ? 1 : 0,
         };
         expect(upgradeExitCode(planWithSummary(summary))).toBe(scenario.pythonReturncode);
       }

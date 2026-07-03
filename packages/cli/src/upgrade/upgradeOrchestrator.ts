@@ -90,7 +90,7 @@ export interface UpgradePlanV2 {
 }
 
 function emptySummary(): MigrationPhaseSummary {
-  return { pending: 0, applied: 0, noop: 0, blocked: 0, failed: 0, skipped: 0 };
+  return { pending: 0, applied: 0, noop: 0, blocked: 0, failed: 0 };
 }
 
 function aggregateSummary(phases: UpgradeOrchestratorPhase[]): MigrationPhaseSummary {
@@ -108,7 +108,6 @@ function workflowStatus(summary: MigrationPhaseSummary): MigrationStatus {
   if (summary.failed > 0) return "failed";
   if (summary.pending > 0) return "pending";
   if (summary.applied > 0) return "applied";
-  if (summary.skipped > 0 && summary.noop === 0 && summary.applied === 0) return "skipped";
   return "noop";
 }
 
@@ -119,7 +118,6 @@ function lifecycleStatusFromWorkflow(workflow: MigrationStatus, mode: "plan" | "
     case "applied":
       return STATUS_APPLIED;
     case "noop":
-    case "skipped":
       return STATUS_NO_CHANGES_NEEDED;
     case "blocked":
     case "failed":
@@ -156,7 +154,6 @@ function summarizeOrchestratorPhase(
   else if (summary.failed > 0) status = "failed";
   else if (summary.pending > 0) status = "pending";
   else if (summary.applied > 0) status = "applied";
-  else if (summary.skipped > 0 && summary.noop === 0 && summary.applied === 0) status = "skipped";
   else status = "noop";
   return { name, status, summary, items, message };
 }
