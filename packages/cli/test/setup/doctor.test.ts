@@ -30,7 +30,6 @@ import {
   extractReferencePaths,
   hasManagedMarker,
   normalizeReference,
-  opencodeCommandTemplate,
   runtimeResult,
   runtimeSkip,
   which,
@@ -186,35 +185,134 @@ describe("setup doctor: runtime detection", () => {
 });
 
 describe("setup doctor: OpenCode diagnostics", () => {
-  it("renders a managed command template and detects its marker", () => {
-    const tpl = opencodeCommandTemplate("agentera");
-    expect(tpl).toContain("agentera_managed: true");
-    expect(hasManagedMarker(tpl)).toBe(true);
+  it("detects a managed command marker", () => {
+    const managed = [
+      "---",
+      'description: "agentera"',
+      "agentera_managed: true",
+      "---",
+      "Load and execute the agentera skill for this project.\n",
+    ].join("\n");
+    expect(hasManagedMarker(managed)).toBe(true);
+    expect(hasManagedMarker("---\nagentera_managed: true\n---\nbody\n")).toBe(true);
     expect(hasManagedMarker("no frontmatter")).toBe(false);
+    expect(hasManagedMarker("---\ndescription: \"x\"\n---\nbody\n")).toBe(false);
   });
 
-  it("passes when the managed command file is current", () => {
+  it("passes when the managed command file matches the source bytes", () => {
+    const root = path.join(tmp, "root");
+    const sourceDir = path.join(root, ".opencode", "commands");
+    fs.mkdirSync(sourceDir, { recursive: true });
+    const body = [
+      "---",
+      'description: "agentera"',
+      "agentera_managed: true",
+      "---",
+      "Load and execute the agentera skill for this project.\n",
+    ].join("\n");
+    fs.writeFileSync(path.join(sourceDir, "agentera.md"), body);
     const home = path.join(tmp, "home");
     const cmds = path.join(home, ".config", "opencode", "commands");
     fs.mkdirSync(cmds, { recursive: true });
-    fs.writeFileSync(path.join(cmds, "agentera.md"), opencodeCommandTemplate("agentera"));
-    const c = diagnoseOpencodeCommands(home, {});
+    fs.writeFileSync(path.join(cmds, "agentera.md"), body);
+    const c = diagnoseOpencodeCommands(root, home, {});
     expect(c.status).toBe("pass");
   });
 
   it("warns when the managed command is missing", () => {
+    const root = path.join(tmp, "root2");
+    const sourceDir = path.join(root, ".opencode", "commands");
+    fs.mkdirSync(sourceDir, { recursive: true });
+    fs.writeFileSync(path.join(sourceDir, "agentera.md"), "source body\n");
     const home = path.join(tmp, "home2");
     fs.mkdirSync(path.join(home, ".config", "opencode", "commands"), { recursive: true });
-    const c = diagnoseOpencodeCommands(home, {});
+    const c = diagnoseOpencodeCommands(root, home, {});
     expect(c.status).toBe("warn");
     expect(c.details).toContain("missing: agentera");
   });
 
-  it("passes skill paths when the symlink resolves to a SKILL.md", () => {
+  it("warns stale when a managed command drifts from the source bytes", () => {
+    const root = path.join(tmp, "root3");
+    const sourceDir = path.join(root, ".opencode", "commands");
+    fs.mkdirSync(sourceDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(sourceDir, "agentera.md"),
+      [
+        "---",
+        'description: "agentera"',
+        "agentera_managed: true",
+        "---",
+        "Load and execute the agentera skill for this project.\n",
+      ].join("\n"),
+    );
+    const home = path.join(tmp, "home3");
+    const cmds = path.join(home, ".config", "opencode", "commands");
+    fs.mkdirSync(cmds, { recursive: true });
+    fs.writeFileSync(
+      path.join(cmds, "agentera.md"),
+      [
+        "---",
+        'description: "agentera"',
+        "agentera_managed: true",
+        "---",
+        "Stale managed body that differs from source.\n",
+      ].join("\n"),
+    );
+    const c = diagnoseOpencodeCommands(root, home, {});
+    expect(c.status).toBe("warn");
+    expect(c.details).toContain("stale: agentera");
+  });
+
+  it("skips command names whose source is absent (no false positive)", () => {
+    const root = path.join(tmp, "root4");
+    const sourceDir = path.join(root, ".opencode", "commands");
+    fs.mkdirSync(sourceDir, { recursive: true });
+    const body = [
+      "---",
+      'description: "agentera"',
+      "agentera_managed: true",
+      "---",
+      "Load and execute the agentera skill for this project.\n",
+    ].join("\n");
+    fs.writeFileSync(path.join(sourceDir, "agentera.md"), body);
+    const home = path.join(tmp, "home4");
+    const cmds = path.join(home, ".config", "opencode", "commands");
+    fs.mkdirSync(cmds, { recursive: true });
+    fs.writeFileSync(path.join(cmds, "agentera.md"), body);
+    fs.writeFileSync(
+      path.join(cmds, "status.md"),
+      [
+        "---",
+        'description: "status"',
+        "agentera_managed: true",
+        "---",
+        "Stale status command with no source counterpart.\n",
+      ].join("\n"),
+    );
+    const c = diagnoseOpencodeCommands(root, home, {});
+    expect(c.status).toBe("pass");
+  });
+
+  it("passes skill paths when both managed symlinks resolve to a SKILL.md", () => {
     const root = path.join(tmp, "root");
+    for (const name of ["agentera", "status"]) {
+      fs.mkdirSync(path.join(root, "skills", name), { recursive: true });
+      fs.writeFileSync(path.join(root, "skills", name, "SKILL.md"), `# ${name}`);
+    }
+    const home = path.join(tmp, "h");
+    const skills = path.join(home, ".config", "opencode", "skills");
+    fs.mkdirSync(skills, { recursive: true });
+    fs.symlinkSync(path.join(root, "skills", "agentera"), path.join(skills, "agentera"));
+    fs.symlinkSync(path.join(root, "skills", "status"), path.join(skills, "status"));
+    const c = diagnoseOpencodeSkillPaths(root, home, {});
+    expect(c.status).toBe("pass");
+  });
+
+  it("skips skill names whose source is absent rather than warning", () => {
+    const root = path.join(tmp, "root-skip");
     fs.mkdirSync(path.join(root, "skills", "agentera"), { recursive: true });
     fs.writeFileSync(path.join(root, "skills", "agentera", "SKILL.md"), "s");
-    const home = path.join(tmp, "h");
+    const home = path.join(tmp, "h-skip");
     const skills = path.join(home, ".config", "opencode", "skills");
     fs.mkdirSync(skills, { recursive: true });
     fs.symlinkSync(path.join(root, "skills", "agentera"), path.join(skills, "agentera"));

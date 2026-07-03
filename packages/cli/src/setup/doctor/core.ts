@@ -35,12 +35,7 @@ export const RUNTIME_BINARIES: Record<string, string> = Object.fromEntries(
   RUNTIMES.map((runtime) => [runtime, ((DOCTOR_RUNTIME_VIEWS[runtime].host_detection as JsonObject).binary_names as string[])[0]]), // cast: parsed registry IO data
 );
 
-export const OPENCODE_SKILL_INSTALL_COMMAND =
-  "npx skills add jgabor/agentera -g -a opencode --skill agentera -y";
-export const OPENCODE_SKILL_NAMES = ["agentera"] as const;
-export const OPENCODE_COMMAND_DESCRIPTIONS: Record<string, string> = {
-  agentera: "Compound agent orchestration suite: 12 capabilities in one bundled skill",
-};
+export { OPENCODE_SKILL_NAMES } from "../opencodeConstants.js";
 
 export const CANONICAL_ENTRIES = SETUP_EVIDENCE;
 // Self-contained model: runtime hooks invoke the bundled CLI (npx -y agentera

@@ -11,7 +11,6 @@
  */
 export {
   opencodeConfigDir,
-  opencodeCommandTemplate,
   hasManagedMarker,
   diagnoseOpencodeCommands,
   diagnoseOpencodeSkillPaths,

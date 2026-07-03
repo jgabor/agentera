@@ -15,8 +15,6 @@ import {
   diagnosticMessages,
   diagnosticStatusLabels,
   diagnosticGapLabels,
-  OPENCODE_COMMAND_DESCRIPTIONS,
-  OPENCODE_SKILL_INSTALL_COMMAND,
   OPENCODE_SKILL_NAMES,
 } from "./core.js";
 
@@ -60,16 +58,6 @@ export function opencodeConfigDir(home: string, env: Env): string {
   return path.join(home, ".config", "opencode");
 }
 
-export function opencodeCommandTemplate(name: string): string {
-  return (
-    "---\n" +
-    `description: "${OPENCODE_COMMAND_DESCRIPTIONS[name]}"\n` +
-    "agentera_managed: true\n" +
-    "---\n" +
-    `Load and execute the ${name} skill for this project.\n`
-  );
-}
-
 export function hasManagedMarker(text: string): boolean {
   const lines = text.split("\n");
   if (lines.length === 0 || lines[0] !== "---") return false;
@@ -78,23 +66,26 @@ export function hasManagedMarker(text: string): boolean {
   return lines.slice(1, closing).some((line) => line.trim() === "agentera_managed: true");
 }
 
-export function diagnoseOpencodeCommands(home: string, env: Env): JsonObject {
+export function diagnoseOpencodeCommands(installRoot: string, home: string, env: Env): JsonObject {
   const commandsDir = path.join(opencodeConfigDir(home, env), "commands");
+  const sourceCommandsDir = path.join(installRoot, ".opencode", "commands");
   const missing: string[] = [];
   const stale: string[] = [];
   const userOwned: string[] = [];
   for (const name of OPENCODE_SKILL_NAMES) {
+    const source = path.join(sourceCommandsDir, `${name}.md`);
+    if (!isFile(source)) continue;
+    const sourceBytes = fs.readFileSync(source);
     const command = path.join(commandsDir, `${name}.md`);
-    const expected = opencodeCommandTemplate(name);
-    let actual: string;
+    let installedBytes: Buffer;
     try {
-      actual = fs.readFileSync(command, "utf8");
+      installedBytes = fs.readFileSync(command);
     } catch {
       missing.push(name);
       continue;
     }
-    if (actual === expected) continue;
-    if (hasManagedMarker(actual)) stale.push(name);
+    if (installedBytes.equals(sourceBytes)) continue;
+    if (hasManagedMarker(installedBytes.toString("utf8"))) stale.push(name);
     else userOwned.push(name);
   }
   if (missing.length === 0 && stale.length === 0) {
@@ -138,14 +129,10 @@ export function diagnoseOpencodeSkillPaths(installRoot: string, home: string, en
   const missing: string[] = [];
   const broken: string[] = [];
   const userOwned: string[] = [];
-  const missingSource: string[] = [];
   for (const name of OPENCODE_SKILL_NAMES) {
     const source = path.join(installRoot, "skills", name, "SKILL.md");
+    if (!isFile(source)) continue;
     const target = path.join(skillsDir, name);
-    if (!isFile(source)) {
-      missingSource.push(name);
-      continue;
-    }
     if (!pathExists(target) && !isSymlink(target)) {
       missing.push(name);
       continue;
@@ -154,7 +141,7 @@ export function diagnoseOpencodeSkillPaths(installRoot: string, home: string, en
     if (isAgenteraManagedSkillPath(target, name)) broken.push(name);
     else userOwned.push(name);
   }
-  if (missing.length === 0 && broken.length === 0 && missingSource.length === 0) {
+  if (missing.length === 0 && broken.length === 0) {
     const details = userOwned.map((name) => `user-owned skill path preserved: ${name}`);
     return mkCheck(OPENCODE_SKILL_PATHS_CHECK, OPENCODE_PASS_STATUS, OPENCODE_SKILL_PATHS_CURRENT_MESSAGE, {
       path: skillsDir,
@@ -162,12 +149,7 @@ export function diagnoseOpencodeSkillPaths(installRoot: string, home: string, en
     });
   }
   const details = [...missing.map((n) => `missing: ${n}`), ...broken.map((n) => `broken: ${n}`)];
-  if (missingSource.length > 0) {
-    details.push(...missingSource.map((n) => `missing install source: ${n}`));
-    details.push(`action: ${OPENCODE_SKILL_INSTALL_COMMAND}`);
-  } else {
-    details.push("action: start OpenCode with the Agentera plugin to restore managed skill paths");
-  }
+  details.push("action: start OpenCode with the Agentera plugin to restore managed skill paths");
   if (userOwned.length > 0) details.push(...userOwned.map((n) => `user-owned skill path preserved: ${n}`));
   return mkCheck(OPENCODE_SKILL_PATHS_CHECK, OPENCODE_WARN_STATUS, OPENCODE_SKILL_PATHS_DRIFT_MESSAGE, {
     path: skillsDir,
@@ -346,7 +328,7 @@ export function diagnoseOpencode(installRoot: string, home: string, env: Env): J
     }
   }
 
-  checks.push(diagnoseOpencodeCommands(home, env));
+  checks.push(diagnoseOpencodeCommands(installRoot, home, env));
   checks.push(diagnoseOpencodeSkillPaths(installRoot, home, env));
   checks.push(diagnoseBundledReferenceValidation(installRoot));
   checks.push(diagnoseOpencodeProfileDir(installRoot, home, env));

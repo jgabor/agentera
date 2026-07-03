@@ -14,6 +14,7 @@ import {
   hasManagedMarker,
   opencodeConfigDir,
 } from "../setup/opencode.js";
+import { OPENCODE_SKILL_NAMES } from "../setup/opencodeConstants.js";
 import { resolveUpdateChannel } from "./channels.js";
 import {
   applyInstalledHooksRetirementItems,
@@ -51,7 +52,6 @@ export function projectHasProjectLevelRuntimeHooks(project: string): boolean {
 }
 
 const OPENCODE_COMMAND_NAMES = ["agentera"] as const;
-const OPENCODE_SKILL_NAMES = ["agentera", "status"] as const;
 const CURSOR_AGENT_MARKER = "<!-- agentera: managed -->";
 
 export interface NpxHookCommands {
