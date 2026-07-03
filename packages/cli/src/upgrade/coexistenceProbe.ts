@@ -121,5 +121,3 @@ export function prependCoexistenceDoctorSection(text: string, sectionLines: stri
   return `${sectionLines.join("\n")}\n\n${text}`;
 }
 
-/** Reset nothing today; reserved for future contract caching in tests. */
-export function resetCoexistenceProbeCache(): void {}
