@@ -84,21 +84,9 @@ function migrationContext(args: ProjectIntegrationArgs, channel: ResolvedUpdateC
   };
 }
 
-const RUNTIME_MIGRATION_ACTIONS = new Set([
-  "rewire-runtime",
-  "retire-hooks",
-  "copy-plugin",
-  "copy-agent",
-  "copy-command",
-  "link-skill",
-]);
-
 function isPendingRuntimeMigrationItem(item: MigrationPhaseItem): boolean {
   if (item.status !== "pending" || item.action === "configure") {
     return false;
-  }
-  if (item.action === "retire-hooks") {
-    return true;
   }
   if (item.action === "rewire-runtime") {
     if (!item.source) {
@@ -110,7 +98,7 @@ function isPendingRuntimeMigrationItem(item: MigrationPhaseItem): boolean {
       return false;
     }
   }
-  return RUNTIME_MIGRATION_ACTIONS.has(item.action);
+  return true;
 }
 
 function isGlobalStaleRuntimeItem(item: MigrationPhaseItem, ctx: MigrationContext): boolean {
