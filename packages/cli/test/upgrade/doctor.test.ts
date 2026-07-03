@@ -10,7 +10,6 @@ import {
   APP_OUTDATED,
   APP_REPAIR_NEEDED,
   APP_UP_TO_DATE,
-  appLifecycleApprovalPhrase,
   buildDoctorStatus,
   publicDoctorStatus,
 } from "../../src/upgrade/doctor.js";
@@ -95,9 +94,6 @@ describe("buildDoctorStatus", () => {
     expect(status.dryRunCommand).toContain("npx -y agentera@next");
     expect(status.dryRunCommand).toContain("upgrade");
     expect(status.applyCommand).toContain("--yes");
-    expect(status.approval).toBe(appLifecycleApprovalPhrase(APP_OUTDATED, appHome));
-    expect(status.approval).toContain("update");
-    expect(status.approval).not.toContain("repair");
     const rendered = renderDoctorStatus(status);
     expect(rendered).toContain("Preview the update:");
     expect(rendered).not.toContain("Preview the repair:");
@@ -109,8 +105,6 @@ describe("buildDoctorStatus", () => {
     fs.writeFileSync(path.join(appHome, ".agentera", "progress.yaml"), "cycles: []\n");
     const status = buildDoctorStatus(appHome, { rootSource: "explicit --install-root", ...common });
     expect(status.status).toBe(APP_REPAIR_NEEDED);
-    expect(status.approval).toContain("repair");
-    expect(status.approval).not.toContain("update");
     const rendered = renderDoctorStatus(status);
     expect(rendered).toContain("Preview the repair:");
   });
@@ -174,8 +168,6 @@ describe("buildDoctorStatus", () => {
     expect(status.crossMajorBoundaryDetected).toBe(true);
     expect(status.dryRunCommand).toBeNull();
     expect(status.applyCommand).toBeNull();
-    expect(status.approval).toContain("no upgrade offered");
-    expect(status.approval).not.toMatch(/approve app files/i);
     const pending = status.signals.find((s: { kind?: string }) => s.kind === "cross_major_pending");
     expect(pending).toBeTruthy();
     expect(pending?.status).toBe(APP_MANUAL_REVIEW_NEEDED);
@@ -266,7 +258,6 @@ describe("buildDoctorStatus", () => {
     expect(status.dryRunCommand).toBeNull();
     expect(status.applyCommand).toBeNull();
     expect(status.appHome).toBe(appHome);
-    expect(status.approval).toContain("source checkout");
   });
 
   it("does NOT short-circuit for a source-checkout sourceRoot with explicit --install-root (Gap 9 fix 3 narrow)", () => {

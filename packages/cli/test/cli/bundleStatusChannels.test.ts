@@ -136,8 +136,6 @@ describe("bundle-status channel resolution consistency", () => {
     const bundle = statusBundleStatus({ home, installRoot: appHome, env: process.env });
     const pending = bundle.signals.some((s) => s.kind === "cross_major_pending");
     expect(pending).toBe(true);
-    expect(bundle.approval).not.toMatch(/approve app files/i);
-    expect(bundle.approval).toContain("no upgrade offered");
 
     process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT = REPO_ROOT;
     resetUpdateChannelsAuthorityCache();

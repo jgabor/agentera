@@ -241,8 +241,6 @@ export function buildDoctorStatus(installRoot: string, opts: BuildDoctorStatusOp
       sourceRoot,
       installRoot: sourceRoot,
       installRootSource: "bundled app",
-      home,
-      project,
       rootStatus: "bundled",
       installKind: "v3_self_contained_npm",
       markerVersion: bundleExpected,
@@ -250,7 +248,6 @@ export function buildDoctorStatus(installRoot: string, opts: BuildDoctorStatusOp
       dryRunCommand: null,
       applyCommand: null,
       retryCommand: commandText(["npx", "-y", "agentera", expectedCommands[0] ?? "prime"]),
-      approval: "no action needed: self-contained app bundle is current",
     };
   }
 
@@ -276,8 +273,6 @@ export function buildDoctorStatus(installRoot: string, opts: BuildDoctorStatusOp
       sourceRoot,
       installRoot,
       installRootSource: rootSource,
-      home,
-      project,
       rootStatus: "source",
       installKind: "source_checkout",
       markerVersion: null,
@@ -285,7 +280,6 @@ export function buildDoctorStatus(installRoot: string, opts: BuildDoctorStatusOp
       dryRunCommand: null,
       applyCommand: null,
       retryCommand: null,
-      approval: "no action needed: running from source checkout is current",
     };
   }
 
@@ -388,8 +382,6 @@ export function buildDoctorStatus(installRoot: string, opts: BuildDoctorStatusOp
     sourceRoot,
     installRoot,
     installRootSource: rootSource,
-    home,
-    project,
     rootStatus,
     installKind: install.kind,
     markerVersion,
@@ -411,9 +403,6 @@ export function buildDoctorStatus(installRoot: string, opts: BuildDoctorStatusOp
       env,
       expectedCommands[0] ?? "prime",
     ),
-    approval: crossMajorPending
-      ? crossMajorPendingApprovalPhrase()
-      : appLifecycleApprovalPhrase(status, installRoot),
   };
 }
 

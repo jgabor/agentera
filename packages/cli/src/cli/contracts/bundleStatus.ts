@@ -50,8 +50,6 @@ export interface BundleStatus {
   sourceRoot: string;
   installRoot: string;
   installRootSource: string;
-  home: string;
-  project: string;
   rootStatus: string;
   installKind: InstallKind;
   markerVersion: string | null;
@@ -64,7 +62,6 @@ export interface BundleStatus {
   /** Cross-major boundary detected and the successor line is announced. */
   crossMajorBoundary?: boolean;
   retryCommand: string | null;
-  approval: string;
   platformAppHome?: NpxPlatformAppHome;
   cliApp?: NpxCliApp;
 }
