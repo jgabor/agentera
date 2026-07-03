@@ -43,6 +43,8 @@ describe("cli help", () => {
     expect(text).toContain("--yes");
     expect(text).toContain("--only");
     expect(text).toContain("--format {text,json}");
+    expect(text).toContain("--verify");
+    expect(text).toContain("--restore");
   });
 
   it("routes top-level --help through main", () => {

@@ -45,3 +45,68 @@ export function removeUpgradeSnapshot(appHome: string, snapshotDir: string): voi
     fs.rmSync(manifestPath, { force: true });
   }
 }
+
+export interface RestoreResult {
+  restored: boolean;
+  source: string | null;
+  snapshotDir: string | null;
+  created: string | null;
+  fileCount: number;
+}
+
+interface SnapshotManifest {
+  path?: string;
+  created?: string;
+  source?: string;
+}
+
+function countFilesRecursive(root: string): number {
+  let count = 0;
+  const visit = (dir: string): void => {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) visit(full);
+      else count += 1;
+    }
+  };
+  visit(root);
+  return count;
+}
+
+function emptyRestore(): RestoreResult {
+  return { restored: false, source: null, snapshotDir: null, created: null, fileCount: 0 };
+}
+
+export function restoreFromSnapshot(appHome: string): RestoreResult {
+  const manifestPath = upgradeSnapshotManifestPath(appHome);
+  if (!pathExists(manifestPath)) {
+    return emptyRestore();
+  }
+  let manifest: SnapshotManifest;
+  try {
+    manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8")) as SnapshotManifest;
+  } catch {
+    return emptyRestore();
+  }
+  const snapshotDir = manifest.path ?? null;
+  const source = manifest.source ?? null;
+  const created = manifest.created ?? null;
+  if (!snapshotDir || !source) {
+    return { restored: false, source, snapshotDir, created, fileCount: 0 };
+  }
+  if (source === appHome || path.relative(appHome, source) === "") {
+    return { restored: false, source, snapshotDir, created, fileCount: 0 };
+  }
+  if (!pathExists(snapshotDir)) {
+    removeUpgradeSnapshot(appHome, snapshotDir);
+    return { restored: false, source, snapshotDir, created, fileCount: 0 };
+  }
+  if (pathExists(source)) {
+    fs.rmSync(source, { recursive: true, force: true });
+  }
+  fs.mkdirSync(path.dirname(source), { recursive: true });
+  fs.cpSync(snapshotDir, source, { recursive: true });
+  const fileCount = countFilesRecursive(source);
+  removeUpgradeSnapshot(appHome, snapshotDir);
+  return { restored: true, source, snapshotDir, created, fileCount };
+}

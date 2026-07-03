@@ -54,7 +54,7 @@ export function printUpgradeHelp(): string {
     "usage: agentera upgrade [-h] [--project PROJECT] [--install-root INSTALL_ROOT]",
     "                        [--home HOME] [--channel {stable,development}]",
     "                        [--only {artifacts,runtime,cleanup}] [--dry-run] [--yes]",
-    "                        [--force] [--format {text,json}]",
+    "                        [--force] [--verify] [--restore] [--format {text,json}]",
     "",
     "options:",
     "  -h, --help            show this help message and exit",
@@ -66,6 +66,8 @@ export function printUpgradeHelp(): string {
     "  --dry-run             Plan only and write nothing",
     "  --yes                 Apply pending local upgrade actions",
     "  --force               Overwrite managed runtime files or conflicting backups",
+    "  --verify              Post-apply verify: doctor status + 12 prime capability schema checks",
+    "  --restore             Reverse remove-managed-app-home from the latest upgrade snapshot",
     "  --format {text,json}  Structured output format",
   ].join("\n");
 }

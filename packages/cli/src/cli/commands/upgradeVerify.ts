@@ -1,0 +1,123 @@
+import os from "node:os";
+
+import { expanduser, resolvePath } from "../../core/paths.js";
+import { resolveDoctorInstallRoot, resolveSourceRootStrict } from "../../upgrade/appModel.js";
+import { APP_UP_TO_DATE, buildDoctorStatus } from "../../upgrade/doctor.js";
+import { CAPABILITY_INSTRUCTIONS } from "../../capabilities/index.js";
+import { buildPrimeCapabilityContextPayload } from "../capabilityContext.js";
+import { collectOrientationState } from "./prime/collectOrientationState.js";
+import type { JsonObject } from "../../core/jsonValue.js";
+
+export interface VerifyCheck {
+  name: string;
+  passed: boolean;
+  detail: string;
+}
+
+export interface VerifyResult {
+  passed: boolean;
+  checks: VerifyCheck[];
+}
+
+export interface VerifyContext {
+  installRoot?: string | null;
+  home?: string | null;
+  project?: string | null;
+  expectedVersion?: string | null;
+}
+
+export function verifyUpgrade(ctx: VerifyContext): VerifyResult {
+  const sourceRoot = resolveSourceRootStrict();
+  const home = resolvePath(expanduser(ctx.home ?? os.homedir()));
+  const project = resolvePath(expanduser(ctx.project ?? process.cwd()));
+  const [installRoot, rootSource] = resolveDoctorInstallRoot(ctx.installRoot ?? null, {
+    home,
+    sourceRoot,
+  });
+
+  const checks: VerifyCheck[] = [];
+
+  const status = buildDoctorStatus(installRoot, {
+    rootSource,
+    sourceRoot,
+    home,
+    project,
+    expectedVersion: ctx.expectedVersion ?? null,
+  });
+  const doctorOk = status.status === APP_UP_TO_DATE && status.signals.length === 0;
+  checks.push({
+    name: "doctor",
+    passed: doctorOk,
+    detail: `status=${status.status}; signals=${status.signals.length}`,
+  });
+
+  const state = collectOrientationState({
+    home,
+    installRoot,
+    expectedVersion: ctx.expectedVersion ?? null,
+  });
+
+  for (const capability of Object.keys(CAPABILITY_INSTRUCTIONS)) {
+    const payload = buildPrimeCapabilityContextPayload(state, capability, "prime");
+    const capabilityContext = payload.capability_context as JsonObject | undefined;
+    const stateBlock = capabilityContext?.state as JsonObject | undefined;
+    const schemaError = stateBlock?.schema_error ?? null;
+    const passed = schemaError === null;
+    checks.push({
+      name: `prime --context ${capability}`,
+      passed,
+      detail: passed ? "schema_error: null" : `schema_error: ${String(schemaError)}`,
+    });
+  }
+
+  return { passed: checks.every((c) => c.passed), checks };
+}
+
+export function renderVerifySummary(result: VerifyResult, json: boolean): string {
+  if (json) {
+    return (
+      JSON.stringify(
+        {
+          command: "upgrade --verify",
+          status: result.passed ? "passed" : "failed",
+          checks: result.checks,
+        },
+        null,
+        2,
+      ) + "\n"
+    );
+  }
+  const lines = [
+    "Agentera verify",
+    `status: ${result.passed ? "passed" : "failed"}`,
+    "checks:",
+  ];
+  for (const check of result.checks) {
+    lines.push(`  - ${check.name}: ${check.passed ? "passed" : "failed"}  (${check.detail})`);
+  }
+  return lines.join("\n") + "\n";
+}
+
+export function renderRestoreSummary(
+  appHome: string,
+  result: {
+    restored: boolean;
+    source: string | null;
+    snapshotDir: string | null;
+    created: string | null;
+    fileCount: number;
+  },
+): string {
+  if (result.restored) {
+    const created = result.created ?? "unknown";
+    return [
+      "Agentera restore",
+      `restored ${result.fileCount} files to ${result.source}`,
+      `from snapshot created ${created}`,
+    ].join("\n") + "\n";
+  }
+  if (result.snapshotDir === null && result.source === null) {
+    return `Agentera restore\nno upgrade snapshot found at ${appHome}\n`;
+  }
+  return `Agentera restore\nsnapshot was incomplete; manifest cleared\n`;
+}

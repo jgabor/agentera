@@ -284,6 +284,8 @@ export function runUpgrade(argv: string[], io: Io, prog: string): number {
     dryRun: false,
     only: [],
     force: false,
+    verify: false,
+    restore: false,
     format: "text",
   };
   let jsonFlag = false;
@@ -333,6 +335,8 @@ export function runUpgrade(argv: string[], io: Io, prog: string): number {
     } else if (a === "--yes") args.yes = true;
     else if (a === "--dry-run") args.dryRun = true;
     else if (a === "--force") args.force = true;
+    else if (a === "--verify") args.verify = true;
+    else if (a === "--restore") args.restore = true;
     else if (a === "--update-packages") {
       return rejectUnsupportedUpgradeFlag(
         io,
