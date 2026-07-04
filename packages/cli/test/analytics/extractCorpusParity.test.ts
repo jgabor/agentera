@@ -91,6 +91,16 @@ describe("extractCorpusParity manifest", () => {
 });
 
 describe("parityCheck opencode.db", () => {
+  let tsReference!: ReturnType<typeof opencodeParitySnapshot>;
+
+  beforeAll(() => {
+    const refDir = fs.mkdtempSync(path.join(os.tmpdir(), "extract-parity-ref-"));
+    const refDb = path.join(refDir, "opencode.db");
+    seedOpencodeParityFixture(refDb);
+    tsReference = opencodeParitySnapshot(refDb);
+    fs.rmSync(refDir, { recursive: true, force: true });
+  }, 30_000);
+
   it("matches record_count, earliest, and latest across probe shapes for TS", () => {
     const dbp = path.join(tmp, "opencode.db");
     seedOpencodeParityFixture(dbp);
@@ -106,11 +116,17 @@ describe("parityCheck opencode.db", () => {
     expect(snapshot.latest).toMatch(/^2023-11-14T22:13:20/);
   });
 
-  it("matches TypeScript and generated Python extractor probes on seeded opencode.db", () => {
+  it("matches TypeScript extractor probe on seeded opencode.db", () => {
     const dbp = path.join(tmp, "opencode.db");
     seedOpencodeParityFixture(dbp);
     const tsSnapshot = opencodeParitySnapshot(dbp);
+    expect(tsSnapshot).toEqual(tsReference);
+  });
+
+  it("matches generated Python extractor probe on seeded opencode.db", () => {
+    const dbp = path.join(tmp, "opencode.db");
+    seedOpencodeParityFixture(dbp);
     const pySnapshot = runPythonParityProbe(dbp);
-    expect(pySnapshot).toEqual(tsSnapshot);
+    expect(pySnapshot).toEqual(tsReference);
   });
 });
