@@ -16,6 +16,20 @@ import type { MigrationContext, MigrationPhaseItem, MigrationStatus } from "./mi
 
 export const APP_CONTENT_REFRESH_ACTION = "refresh-app-content";
 
+/**
+ * Top-level app-home entry names written and refreshed by {@link applyAppContentRefresh}.
+ * The cleanup gate treats these as refreshable managed app content (not user state,
+ * not genuinely unrecognized) so v3's own content surface is never flagged as a
+ * false-positive "unrecognized entries" block. Sourced here as the single authority;
+ * do not mirror this list in the gate or doctor.
+ */
+export const MANAGED_APP_CONTENT_ROOT_ENTRIES = new Set([
+  "skills",
+  "references",
+  "registry.json",
+  "dist",
+]);
+
 /** Stale-surface labels surfaced in upgrade dry-run (B6 / defect #11). */
 export const APP_CONTENT_SURFACE_LABELS = [
   "SKILL.md",

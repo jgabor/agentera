@@ -58,6 +58,8 @@ describe("cleanupNoisyAppHome", () => {
     expect(phase.status).toBe("blocked");
     const blocked = phase.items.find((item) => item.status === "blocked");
     expect(blocked?.message).toMatch(/unrecognized entries/i);
+    expect(blocked?.message).toContain("backup");
+    expect(blocked?.message).toContain("notes.txt");
     expect(fs.existsSync(path.join(noisy, "app"))).toBe(true);
   });
 
@@ -74,6 +76,28 @@ describe("cleanupNoisyAppHome", () => {
     expect(preview.status).toBe("applied");
     expect(fs.existsSync(path.join(appHome, "app"))).toBe(false);
     expect(fs.existsSync(path.join(appHome, "notes.txt"))).toBe(true);
+    assertChecksumsUnchanged(appHome, before);
+  });
+
+  it("does not block v3 app home with managed content at root (skills, references, registry.json, dist)", () => {
+    const copied = fs.cpSync(
+      path.join(FIXTURES, "v3-app-home-managed-content"),
+      path.join(tmp, "v3-managed"),
+      { recursive: true },
+    );
+    void copied;
+    const appHome = path.join(tmp, "v3-managed");
+    const before = checksumManifest(appHome, listPreservedAppHomeRelPaths(appHome));
+    const preview = planCleanupPhase({ appHome, project: appHome, home: tmp });
+    const blocked = preview.items.find((item) => item.status === "blocked");
+    expect(blocked).toBeUndefined();
+    expect(fs.existsSync(path.join(appHome, "skills"))).toBe(true);
+    expect(fs.existsSync(path.join(appHome, "references"))).toBe(true);
+    expect(fs.existsSync(path.join(appHome, "registry.json"))).toBe(true);
+    expect(fs.existsSync(path.join(appHome, "dist"))).toBe(true);
+    expect(fs.existsSync(path.join(appHome, "sessions"))).toBe(true);
+    expect(fs.existsSync(path.join(appHome, "benchmarks"))).toBe(true);
+    expect(fs.existsSync(path.join(appHome, "PROFILE.md"))).toBe(true);
     assertChecksumsUnchanged(appHome, before);
   });
 });

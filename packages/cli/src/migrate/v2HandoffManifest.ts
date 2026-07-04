@@ -9,6 +9,7 @@ import {
 import { expanduser, isFile, pathExists, resolvePath } from "../core/paths.js";
 import { opencodeConfigDir } from "../setup/opencode.js";
 import { doctorRoots, loadSuiteVersion } from "../upgrade/appModel.js";
+import { MANAGED_APP_CONTENT_ROOT_ENTRIES } from "../upgrade/appContentRefresh.js";
 import {
   AGENTERA_USER_STATE_NAMES,
   ROOT_USER_STATE_DIR_NAMES,
@@ -534,6 +535,9 @@ export function appHomeHasUnrecognizedEntriesWithPreflight(
   const unknown: string[] = [];
   for (const entry of fs.readdirSync(appHome)) {
     if (entry === "app" || entry === V2_HANDOFF_MANIFEST_FILENAME) {
+      continue;
+    }
+    if (MANAGED_APP_CONTENT_ROOT_ENTRIES.has(entry)) {
       continue;
     }
     if (preflight.source === "manifest" && preflight.manifest) {

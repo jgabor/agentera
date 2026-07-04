@@ -297,12 +297,11 @@ export function planCleanupPhase(ctx: MigrationContext): MigrationPhase {
 
   if (unknown.length > 0 && !ctx.force) {
     items.push({
-      status: "blocked",
+      status: "blocked" as const,
       action: "remove-managed-app-home",
       source: appHome,
       preserved,
-      message:
-        "app home contains unrecognized entries outside preserved user state; cleanup blocked without --force",
+      message: `app home has unrecognized entries (not preserved user state or managed app content): ${unknown.join(", ")}; cleanup blocked without --force`,
     });
     return summarizePhase("cleanup", items);
   }
