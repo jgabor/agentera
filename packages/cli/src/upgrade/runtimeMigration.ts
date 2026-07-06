@@ -414,7 +414,11 @@ function planOpencodeItems(
     }
   }
   const skillsSourceRoot = path.join(sourceRoot, "skills");
-  const skillsTargetDir = path.join(configDir, "skills");
+  // D78: ~/.agents/skills is the canonical agent-compatible root (opencode loads
+  // from both ~/.config/opencode/skills and ~/.agents/skills and requires skill
+  // names unique across locations — opencode.ai/docs/skills). Maintain the link
+  // here; the legacy ~/.config/opencode/skills entry is retired below.
+  const skillsTargetDir = path.join(home, ".agents", "skills");
   for (const name of OPENCODE_SKILL_NAMES) {
     const src = path.join(skillsSourceRoot, name);
     const dst = path.join(skillsTargetDir, name);
@@ -462,6 +466,71 @@ function planOpencodeItems(
         target: dst,
         message: "will replace non-symlink OpenCode skill path with managed link",
       });
+    }
+  }
+  // D78: retire the legacy opencode-specific skill symlinks now that
+  // ~/.agents/skills is canonical. The opencode doc requires skill names
+  // unique across its discovery locations; a skill present in both
+  // ~/.config/opencode/skills and ~/.agents/skills is the duplicate-name error
+  // that let a stale copy load.
+  const legacySkillsDir = path.join(configDir, "skills");
+  if (pathExists(legacySkillsDir) && fs.statSync(legacySkillsDir).isDirectory()) {
+    for (const name of OPENCODE_SKILL_NAMES) {
+      const legacy = path.join(legacySkillsDir, name);
+      let linkTarget: string | null = null;
+      try {
+        linkTarget = fs.readlinkSync(legacy);
+      } catch {
+        linkTarget = null;
+      }
+      if (linkTarget !== null) {
+        if (linkTarget.toLowerCase().includes("agentera") || path.basename(linkTarget) === name) {
+          items.push({
+            status: "pending",
+            action: "remove-stale-skill",
+            runtime: "opencode",
+            source: legacy,
+            message: `will retire duplicate OpenCode skill symlink ${name} (agent-compatible root ~/.agents/skills is canonical; D78)`,
+          });
+        } else {
+          items.push({
+            status: "blocked",
+            action: "remove-stale-skill",
+            runtime: "opencode",
+            source: legacy,
+            message: `legacy OpenCode skill symlink ${name} targets a non-agentera path; manual review required`,
+          });
+        }
+      } else if (pathExists(legacy)) {
+        try {
+          const dirEntries = fs.readdirSync(legacy);
+          if (dirEntries.length === 0) {
+            items.push({
+              status: "pending",
+              action: "remove-stale-skill",
+              runtime: "opencode",
+              source: legacy,
+              message: `will retire empty legacy OpenCode skill directory ${name} (agent-compatible root ~/.agents/skills is canonical; D78)`,
+            });
+          } else {
+            items.push({
+              status: "blocked",
+              action: "remove-stale-skill",
+              runtime: "opencode",
+              source: legacy,
+              message: `legacy OpenCode skill path ${name} is a non-empty real directory (entries: ${dirEntries.length}); manual review required (D78 retires agentera-managed symlinks and empty dirs only)`,
+            });
+          }
+        } catch {
+          items.push({
+            status: "blocked",
+            action: "remove-stale-skill",
+            runtime: "opencode",
+            source: legacy,
+            message: `legacy OpenCode skill path ${name} could not be inspected; manual review required`,
+          });
+        }
+      }
     }
   }
 }
@@ -731,9 +800,19 @@ export function applyRuntimeMigrationItem(item: MigrationPhaseItem, commands: Np
             fs.unlinkSync(item.source);
             item.status = "applied";
             item.message = `removed stale skill symlink ${path.basename(item.source)}`;
+          } else if (stat.isDirectory()) {
+            const entries = fs.readdirSync(item.source);
+            if (entries.length === 0) {
+              fs.rmdirSync(item.source);
+              item.status = "applied";
+              item.message = `removed empty skill directory ${path.basename(item.source)}`;
+            } else {
+              item.status = "blocked";
+              item.message = `skill directory ${path.basename(item.source)} is non-empty (entries: ${entries.length}); manual review required`;
+            }
           } else {
             item.status = "noop";
-            item.message = "skill path is not a symlink; skipped";
+            item.message = "skill path is not a symlink or directory; skipped";
           }
         } catch {
           item.status = "noop";

@@ -25,6 +25,14 @@ export function buildOrientationAttention(state: OrientationState): string[] {
       `normal: v2/v3 coexistence at ${state.app.appHome}; pick one line: complete v3 migration, uninstall v3, or stay on v2`,
     );
   }
+  const skillDivergenceSignals = (state.app.signals ?? []).filter(
+    (s) => s.kind === "skill_root_divergence",
+  );
+  for (const signal of skillDivergenceSignals) {
+    attention.push(
+      `degraded: skill-root divergence — ${signal.message ?? "a recognized skill root is below expected"}; run \`npx -y agentera@next upgrade --dry-run --channel development\` to preview repair (D78)`,
+    );
+  }
   const integrationAttention = projectIntegrationAttention(projectIntegration);
   if (integrationAttention) {
     attention.push(integrationAttention);

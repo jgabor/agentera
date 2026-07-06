@@ -178,7 +178,7 @@ describe("applyRuntimeMigrationItem remove-stale-skill", () => {
     expect(fs.existsSync(hejLink)).toBe(false);
   });
 
-  it("preserves valid agentera and user-owned symlinks during apply", () => {
+  it("retires the legacy agentera symlink and preserves user-owned symlinks during apply", () => {
     const skillsDir = skillsDirFor(home);
     const agenteraApp = path.join(tmp, "agentera-app", "skills");
 
@@ -193,7 +193,7 @@ describe("applyRuntimeMigrationItem remove-stale-skill", () => {
     applyRuntimeMigrationItems(items, ctx);
 
     expect(fs.existsSync(hejLink)).toBe(false);
-    expect(fs.lstatSync(agenteraLink).isSymbolicLink()).toBe(true);
+    expect(fs.existsSync(agenteraLink)).toBe(false);
     expect(fs.lstatSync(userLink).isSymbolicLink()).toBe(true);
   });
 
@@ -230,7 +230,7 @@ describe("applyRuntimeMigrationItem remove-stale-skill", () => {
     expect(item.message).toContain("missing source");
   });
 
-  it("is a noop when the path is not a symlink", () => {
+  it("removes an empty real directory and marks applied (D78 empty-dir retirement)", () => {
     const skillsDir = skillsDirFor(home);
     fs.mkdirSync(skillsDir, { recursive: true });
     const realDir = path.join(skillsDir, "real-dir");
@@ -248,9 +248,34 @@ describe("applyRuntimeMigrationItem remove-stale-skill", () => {
 
     applyRuntimeMigrationItem(item, commands);
 
-    expect(item.status).toBe("noop");
-    expect(item.message).toContain("not a symlink");
+    expect(item.status).toBe("applied");
+    expect(item.message).toContain("empty skill directory");
+    expect(fs.existsSync(realDir)).toBe(false);
+  });
+
+  it("blocks when the skill path is a non-empty real directory", () => {
+    const skillsDir = skillsDirFor(home);
+    fs.mkdirSync(skillsDir, { recursive: true });
+    const realDir = path.join(skillsDir, "real-dir");
+    fs.mkdirSync(realDir, { recursive: true });
+    fs.writeFileSync(path.join(realDir, "user-file.md"), "# user content");
+
+    const ctx = migrationCtx(path.join(home, "agentera"), path.join(tmp, "project"), home, REPO_ROOT);
+    const commands = resolveNpxHookCommands(ctx);
+    const item: MigrationPhaseItem = {
+      status: "pending",
+      action: "remove-stale-skill",
+      runtime: "opencode",
+      source: realDir,
+      message: "will remove stale skill symlink real-dir",
+    };
+
+    applyRuntimeMigrationItem(item, commands);
+
+    expect(item.status).toBe("blocked");
+    expect(item.message).toContain("non-empty");
     expect(fs.existsSync(realDir)).toBe(true);
+    expect(fs.existsSync(path.join(realDir, "user-file.md"))).toBe(true);
   });
 
   it("skips non-pending items", () => {
@@ -272,7 +297,7 @@ describe("applyRuntimeMigrationItem remove-stale-skill", () => {
 });
 
 describe("applyRuntimeMigrationItems integration", () => {
-  it("removes stale skill symlinks and preserves valid ones", () => {
+  it("removes stale skill symlinks and retires the legacy agentera duplicate", () => {
     const skillsDir = skillsDirFor(home);
     const agenteraApp = path.join(tmp, "agentera-app", "skills");
 
@@ -287,7 +312,7 @@ describe("applyRuntimeMigrationItems integration", () => {
     applyRuntimeMigrationItems(items, ctx);
 
     expect(fs.existsSync(hejLink)).toBe(false);
-    expect(fs.lstatSync(agenteraLink).isSymbolicLink()).toBe(true);
+    expect(fs.existsSync(agenteraLink)).toBe(false);
     expect(fs.lstatSync(userLink).isSymbolicLink()).toBe(true);
     const stale = items.filter((item) => item.action === "remove-stale-skill");
     expect(stale.every((item) => item.status === "applied")).toBe(true);

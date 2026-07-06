@@ -1,0 +1,91 @@
+header:
+  level: light
+  created: 2026-07-06
+  status: complete
+  title: "Plan: OpenCode skill-path topology reconciliation"
+what: >
+  Close the opencode skill-path topology mismatch (Decision 78) so prime never
+  reports up_to_date while the host loads a divergent skill copy, and so upgrade
+  maintains ~/.agents/skills/agentera as the canonical agent-compatible symlink
+  root while retiring the opencode-specific symlink.
+why: >
+  A hej/status session bootstrapped via the bundled skill and executed stale v2
+  commands (uvx, uv run, Swedish capability names) from the v2.7.11
+  ~/.agents/skills/agentera copy while prime reported up_to_date against a clean
+  v3 symlink at ~/.config/opencode/skills/agentera — a path opencode doesn't
+  load. D78 (provisional) determined the defect is the topology mismatch, not
+  stale documentation; the opencode doc requires skill names unique across its
+  six discovery locations, so the duplicate is the error.
+constraints: >
+  D78 is provisional; the cross-runtime deprecation direction is policy, NOT
+  in-scope for this plan. Do not push to remotes. Do not edit the source
+  skills/agentera/SKILL.md (already v3-clean; not the defect). Preserve
+  agentera's single-source symlink topology; do not introduce a second real
+  copy. Verify per-runtime before deprecating any runtime-specific dir not
+  confirmed to natively support ~/.agents/skills.
+scope:
+  included:
+    - packages/cli/src/cli/commands/prime/bundleStatus.ts candidate list +
+      up_to_date gate
+    - packages/cli/src/upgrade/runtimeMigration.ts symlink maintenance +
+      ~/.agents/skills/agentera repair + ~/.config/opencode/skills/agentera
+      retirement
+    - packages/cli/src/setup/doctor/opencode.ts default-skill-root consistency
+      with bundleStatus
+    - regression tests in packages/cli/test for the detect + repair behavior
+  excluded:
+    - editing the source skills/agentera/SKILL.md (already v3-clean; not the
+      defect)
+    - P2 status instructions.ts RESOLVED_AGENTERA_HOME remnant (covered by the
+      existing "Audit and review status capability instructions" TODO)
+    - deprecating runtime-specific dirs for Cursor / GitHub Copilot / Codex
+  deferred:
+    - cross-runtime deprecation direction (D78 outcome); per-runtime verification
+      of native ~/.agents/skills support, then deprecate runtime-specific dirs
+      for confirmed runtimes. Tracked as a follow-up once this plan lands.
+tasks:
+  - number: 1
+    name: Detect - add ~/.agents/skills/agentera to bundleStatus candidates
+    depends_on: []
+    status: complete
+    acceptance:
+      - GIVEN ~/.agents/skills/agentera is divergent WHEN prime runs THEN bundle
+        status surfaces staleness at that path as an attention item and never
+        reports up_to_date
+      - GIVEN all recognized skill roots match the canonical source WHEN prime
+        runs THEN up_to_date holds
+  - number: 2
+    name: Repair - upgrade maintains the ~/.agents symlink and retires the opencode-specific symlink
+    depends_on:
+      - Task 1
+    status: complete
+    acceptance:
+      - GIVEN a divergent real directory at ~/.agents/skills/agentera WHEN
+        upgrade runs THEN it is replaced with a symlink to the canonical source
+        matching the agent-compatible pattern
+      - GIVEN an upgrade run WHEN ~/.config/opencode/skills/agentera exists
+        THEN it is retired (removed) per the opencode doc's cross-location
+        uniqueness rule
+      - GIVEN the host loads skills from ~/.agents/skills/<name>/ THEN it loads
+        the live canonical source
+  - number: 3
+    name: Regression tests + doctor consistency
+    depends_on:
+      - Task 2
+    status: complete
+    acceptance:
+      - GIVEN a fixture with a divergent ~/.agents copy WHEN prime runs THEN a
+        regression test asserts prime surfaces staleness rather than false
+        up_to_date
+      - GIVEN upgrade on a divergent copy THEN a test asserts the path is now a
+        symlink to the canonical source and the opencode-specific symlink is gone
+      - GIVEN doctor runs THEN it still recognizes the canonical
+        default-skill-root without drift between doctor and bundleStatus lists
+overall_acceptance: >
+  A hej/status session loading the bundled skill always serves the live v3
+  code: prime reports up_to_date only when ~/.agents/skills/agentera matches the
+  canonical source; upgrade repairs divergence to a symlink and retires the
+  opencode-specific symlink; the standing "Reconcile bundled SKILL.md" TODO is
+  re-scoped (source already v3) rather than treated as a docs edit. D78 P2
+  remains tracked by the existing status-instructions audit TODO.
+surprises: []

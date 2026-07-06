@@ -2,7 +2,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
-import { buildDoctorStatus } from "../../../upgrade/doctor.js";
+import { APP_OUTDATED, buildDoctorStatus } from "../../../upgrade/doctor.js";
 import { doctorRoots, loadSuiteVersion, resolveDoctorInstallRoot, resolveSourceRootStrict } from "../../../upgrade/appModel.js";
 import { isNpxBundleRoot } from "../../../core/sourceRoot.js";
 import { resolveInvokedUpdateChannel, type ResolvedUpdateChannel } from "../../../upgrade/channels.js";
@@ -63,6 +63,7 @@ function visibleSkillVersion(
   candidates.push(path.join(installRoot, "skills", "agentera"));
   candidates.push(path.join(sourceRoot, "skills", "agentera"));
   candidates.push(path.join(home, ".config", "opencode", "skills", "agentera"));
+  candidates.push(path.join(home, ".agents", "skills", "agentera"));
   const versions: Array<[number[], string, string]> = [];
   for (const root of candidates) {
     const version = frontmatterVersion(path.join(root, "SKILL.md"));
@@ -71,6 +72,50 @@ function visibleSkillVersion(
   if (versions.length === 0) return [null, null];
   versions.sort((a, b) => (versionKeyGe(a[0], b[0]) ? -1 : 1));
   return [versions[0][1], versions[0][2]];
+}
+
+function recognizedSkillRoots(
+  home: string,
+  env: Env,
+  installRoot: string,
+  sourceRoot: string,
+): string[] {
+  const roots: string[] = [];
+  if (env.AGENTERA_VISIBLE_SKILL_ROOT) roots.push(env.AGENTERA_VISIBLE_SKILL_ROOT);
+  roots.push(path.join(installRoot, "skills", "agentera"));
+  roots.push(path.join(sourceRoot, "skills", "agentera"));
+  roots.push(path.join(home, ".config", "opencode", "skills", "agentera"));
+  roots.push(path.join(home, ".agents", "skills", "agentera"));
+  return roots;
+}
+
+interface DivergentSkillRoot {
+  root: string;
+  version: string;
+}
+
+function detectSkillRootDivergence(
+  home: string,
+  env: Env,
+  installRoot: string,
+  sourceRoot: string,
+  expected: string | null,
+): DivergentSkillRoot[] {
+  if (!expected) return [];
+  const expectedKey = versionKey(expected);
+  if (expectedKey.length === 0) return [];
+  const divergent: DivergentSkillRoot[] = [];
+  const seen = new Set<string>();
+  for (const root of recognizedSkillRoots(home, env, installRoot, sourceRoot)) {
+    if (seen.has(root)) continue;
+    seen.add(root);
+    const version = frontmatterVersion(path.join(root, "SKILL.md"));
+    if (!version) continue;
+    if (!versionKeyGe(versionKey(version), expectedKey)) {
+      divergent.push({ root, version });
+    }
+  }
+  return divergent;
 }
 
 function statusExpectedVersion(
@@ -142,6 +187,19 @@ export function statusBundleStatus(opts: PrimeOpts): BundleStatus {
       status: status.status,
       rootStatus: status.rootStatus,
     };
+  }
+  const divergent = detectSkillRootDivergence(home, env, installRoot, sourceRoot, expected);
+  if (divergent.length > 0) {
+    status.status = APP_OUTDATED;
+    for (const d of divergent) {
+      status.signals.push({
+        status: APP_OUTDATED,
+        kind: "skill_root_divergence",
+        message: `skill root ${d.root} is at v${d.version}; expected v${expected}`,
+        expected: expected ?? undefined,
+        actual: d.version,
+      });
+    }
   }
   return status;
 }
