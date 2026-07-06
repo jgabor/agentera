@@ -13,12 +13,10 @@ TRIGGERS:
   2:
     id: T2
     description: >-
-      Greetings and session-start signals. Matches casual greetings or
-      explicit session start requests.
+      Session-start signals. Matches explicit session-start or returning-to-project
+      requests from a user resuming work.
     priority: medium
     patterns:
-      - "hello"
-      - "hi"
       - "start"
       - "begin"
       - "getting started"

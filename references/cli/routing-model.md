@@ -18,15 +18,13 @@ resolves ambiguity natively, using `disambiguates_against` hints as advisory
 context. Decision 75's request-vs-state mutual exclusivity is dissolved: request
 intent and state-readiness are both advisory context the LLM consults.
 
-## Layer 1: Bare `/agentera` or bare `hej` — delegate to prime
+## Layer 1: Bare `/agentera` — delegate to prime
 
-- **Input pattern**: the request is `/agentera` with no additional text, or the
-  complete user message is exactly `hej`.
+- **Input pattern**: the request is `/agentera` with no additional text.
 - **Action**: delegate immediately to the status capability. Status performs
   state-aware routing through the `agentera prime` composite result, which
   condenses project artifacts and suggests the most useful next capability.
-  This is deterministic and never wrong. Bare `hej` must not be handled as a
-  generic greeting.
+  This is deterministic and never wrong.
 - **Implementation status**: implemented and unchanged.
 
 ## Layer 2: capability name or `/agentera <primary-alias>` — direct route
@@ -75,8 +73,8 @@ disambiguation-engine output schema.
 
 - **Input pattern**: the LLM host cannot map the request to any capability from
   the trigger schema's intent descriptions.
-- **Action**: route to status for orientation. Status handles greetings, status
-  requests, and ambiguous inputs.
+- **Action**: route to status for orientation. Status handles status requests
+  and ambiguous inputs.
 - **Implementation status**: implemented and unchanged.
 
 ## Ownership boundaries

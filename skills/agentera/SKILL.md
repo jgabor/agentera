@@ -96,27 +96,12 @@ Capability handoffs use glyph plus canonical name (e.g. `⧉ build`, `≡ plan`)
 
 ## Dashboard rendering
 
-When rendering the prime dashboard for the user, transform the CLI's source
-labels into the README-style layout. Do not paste raw `prime` JSON or raw
-labels (`mode:`, `profile:`, `health:`, etc.) as the briefing.
-
-```text
-┌─┐┌─┐┌─┐┌┐┌┌┬┐┌─┐┬─┐┌─┐
-├─┤│ ┬├┤ │││ │ ├┤ ├┬┘├─┤
-┴ ┴└─┘└─┘┘└┘ ┴ └─┘┴└─┴ ┴
-
-─── status ─────────────────────────────
-  [metric lines: health, todo, plan, objective, profile as available]
-  [1-2 sentence narrative read closing the status section]
-─── attention ──────────────────────────
-─── next ───────────────────────────────
-```
-
-Metrics first, narrative read inside `status`, then attention and next. The todo
-summary line uses `critical · degraded · normal · annoying` in the order prime
-emits them. Omit `attention` only when the source has no attention items.
-Always include the `⌂ status · <status>` marker below the dashboard, and ask
-for confirmation before invoking the suggested downstream capability.
+The prime dashboard rendering contract — template, field-by-field rules, output
+budget, attention-item ordering, exit marker — is owned by the status capability
+prose. Run `agentera prime --context status --format json` and follow the
+`capability_context.prose` body for layout, inclusion/exclusion rules, and the
+mandatory `⌂ status · <status>` exit marker. Ask for confirmation before
+invoking a state-changing downstream capability.
 
 The first response in a fresh interaction delivers the brief and a free-form
 continuation prompt, not a native question menu — unless the user explicitly

@@ -1,47 +1,4 @@
 decisions:
-  - number: 67
-    date: 2026-06-05
-    question: How should Agentera reposition from open protocol to mobile-first product?
-    context: The agentera-mobile staging repo and monorepo README previously framed
-      Agentera as an open protocol with runtime adapters as the primary story.
-      The mobile app is the flagship consumer product. Pi and T3 Code use one
-      product name across monorepo packages.
-    alternatives:
-      - name: Single brand everywhere
-        status: chosen
-        description: Agentera is the product. @agentera/mobile, @agentera/web,
-          @agentera/cli are product surfaces. Skills and references are internal
-          implementation contracts.
-      - name: Keep open protocol as public headline
-        status: rejected
-        description: Conflicts with mobile-first product direction and opinionated
-          no-extensions policy.
-      - name: Agentera Mobile as separate product name
-        status: rejected
-        description: Adds naming friction when mobile is the primary surface.
-    choice: Adopt single-brand product positioning. Merge mobile vision into root
-      .agentera/vision.yaml. Restructure root README as Pi-style package index
-      with @agentera/mobile as flagship. Demote editor runtime install matrices
-      to README Internals and packages/cli/README.md. Document capability
-      English aliases in packages/mobile/README.md without renaming schema IDs
-      yet. Add DESIGN.md surface register (terminal vs mobile).
-    reasoning: One north star, one product name, package READMEs for
-      surface-specific DX — matches Pi/T3 monorepo patterns and the user's
-      merged-vision choice.
-    confidence: firm
-    feeds_into: README.md, .agentera/vision.yaml, AGENTS.md, DESIGN.md,
-      packages/mobile/, references/cli/vocabulary.md, .agentera/docs.yaml,
-      docs/consolidation/monorepo-plan.md
-    satisfaction:
-      state: user_confirmed_satisfied
-      evidence: Decision 68 (2026-06-05) corrected D67 skills-as-internals ceiling to
-        a delivery surface, removed SaaS/PaaS framing, and reaffirmed
-        multi-surface product boundary. User confirmed D67 satisfaction
-        2026-06-05 in current discuss deliberation. D67 feeds_into list is
-        satisfied.
-      user_confirmation:
-        confirmed_by: user
-        confirmed_at: 2026-06-05
   - number: 68
     date: 2026-06-05
     question: Should Agentera expand from a skill suite into a multi-surface product
@@ -747,10 +704,10 @@ decisions:
         tradeoffs: Add ~/.agents/skills/agentera to bundleStatus candidates (detect;
           never false up_to_date) and have upgrade maintain that path as a
           symlink to the canonical source (repair; retiring the
-          ~/.config/opencode/skills symlink per the opencode doc's cross-location
-          uniqueness rule). Closes the loop end-to-end so the host can't silently
-          run v2 again, and adopts ~/.agents/skills as the canonical
-          agent-compatible root.
+          ~/.config/opencode/skills symlink per the opencode doc's
+          cross-location uniqueness rule). Closes the loop end-to-end so the
+          host can't silently run v2 again, and adopts ~/.agents/skills as the
+          canonical agent-compatible root.
         win_condition: prime reports up_to_date only when ~/.agents/skills/agentera
           matches the canonical source; upgrade converts a divergent real
           directory at that path to a symlink and retires the
@@ -820,15 +777,138 @@ decisions:
       natively supporting it (OpenCode, Claude-compatible, Pi); deprecate their
       runtime-specific skill dirs; keep runtime-specific dirs only for runtimes
       lacking native ~/.agents/skills support (verify per-runtime during build —
-      e.g. Cursor, GitHub Copilot, Codex). P2
-      (docs) folds into the existing Audit and review status capability
-      instructions TODO — strip the RESOLVED_AGENTERA_HOME and v2 resolver-flow
-      remnant from packages/cli/src/capabilities/status/instructions.ts. The
-      Reconcile bundled SKILL.md TODO is re-scoped: source is already v3, so the
-      fix is P1's topology repair, not a source edit. Sequence P1 first (it
-      silently broke bootstrap); P2 second. Symlink target (repo source vs
-      managed app home) and dead-code retirement are implementation details for
-      plan/build."
+      e.g. Cursor, GitHub Copilot, Codex). P2 (docs) folds into the existing
+      Audit and review status capability instructions TODO — strip the
+      RESOLVED_AGENTERA_HOME and v2 resolver-flow remnant from
+      packages/cli/src/capabilities/status/instructions.ts. The Reconcile
+      bundled SKILL.md TODO is re-scoped: source is already v3, so the fix is
+      P1's topology repair, not a source edit. Sequence P1 first (it silently
+      broke bootstrap); P2 second. Symlink target (repo source vs managed app
+      home) and dead-code retirement are implementation details for plan/build."
+  - number: 79
+    date: 2026-07-06
+    question: How should the status capability prose be designed to maximize
+      effectiveness and token efficiency under the v3
+      source_contract.capability_startup contract, and which v2-era residue
+      should be cut from the most frequently invoked capability surface?
+    context: Status is invoked on every /agentera session — first impression and the
+      most frequently called capability. Per D57 (firm) the instructions.ts
+      module is canonical; per D65 (firm) the runtime serves it via agentera
+      prime --context <name>. Per D71 (firm but unreflected in status prose) RFC
+      2119 modal vocabulary is the convention enforced in
+      capability_schema_contract.yaml#modal_vocabulary. Per D72 (firm but
+      straggler in status prose) the bundle to app rename landed in prime output
+      but status prose still said bundle.status. The
+      source_contract.capability_startup field declares
+      complete_for_capability_startup=true and
+      raw_artifact_reads_required=false, providing a machine-readable startup
+      contract; the prose nonetheless triple-stated the rule (use prime, do not
+      read raw .yaml), restated forbidden-command lists (drifted — prose forbade
+      agentera plan while v3 uses agentera state plan), re-enumerated all
+      protocol token IDs (drift risk versus protocol.yaml), and inlined ~3K
+      chars of install-recovery procedure (AGENTERA_HOME broken-copy, 1.x
+      managed marker cleanup, npx skills update cross-runtime leak,
+      bundle.status inspection gate) that belongs to the upgrade capability and
+      agentera doctor command. SKILL.md and instructions.ts both defined the
+      dashboard rendering contract with drifted shapes (SKILL.md said
+      health/todo/plan/objective/profile; instructions.ts said
+      health/todo/plan/optim/profile — different field orders; SKILL.md showed
+      all four severities on todo summary; instructions.ts drops normal and
+      routes it through attention). Discuss ran a five-question deliberation
+      over philosophy, ownership, scope, structure, and synthesis mode.
+    alternatives:
+      - name: Direct contract — lean on source_contract; status owns dashboard
+        status: chosen
+        tradeoffs: Prose only states what the contract cannot encode (dashboard
+          template, routing priority tree, exit markers, safety rails,
+          conventions). Source_contract.capability_startup mechanizes what the
+          prose previously re-encoded (complete_for_capability_startup,
+          raw_artifact_reads_required, cli_fallback list). Cuts ~7K chars of
+          redundant rules (-42% total). Status prose owns the dashboard
+          contract; SKILL.md delegates. Trust that the runtime serves the prose
+          via prime --context (D65) and that the source_contract fields are
+          machine-readable by capable models.
+        win_condition: Prose drops to ~10K chars; v2-era field and command names gone
+          (no bundle.status, no agentera plan, no --install-root, no
+          AGENTERA_HOME resolver); SKILL.md dashboard block replaced with a
+          pointer to status prose; routing priority tree and exit markers
+          preserved verbatim; D71 modal vocab applied throughout; D72
+          terminology applied throughout.
+      - name: Self-contained operator manual — defense-in-depth
+        status: rejected
+        tradeoffs: Preserve every rule in prose. Apply D71 + D72.
+        reason_rejected: Duplication persists and drift will recur on the next contract
+          change; proven drift in this audit (forbidden-command list said
+          agentera plan while v3 uses agentera state plan; prose gated on
+          bundle.status while prime emits app.status). Defense-in-depth is the
+          source_contract's job — the contract field is the canonical,
+          machine-readable declaration; re-stating it in prose waters down the
+          contract as the source of truth. D71 modal vocab is the weak-model
+          mitigation (RFC 2119 keywords), not prose duplication.
+      - name: Hybrid — contract spine + relocated recovery
+        status: rejected
+        tradeoffs: Lean on contract for startup; keep AGENTERA_HOME recovery flow with a
+          pointer to references/cli/upgrade-repair-wording.md.
+        reason_rejected: Keeps the procedural content somewhere — adds a pointer to
+          maintain. Status's actual rendering obligation for upgrade state is
+          one paragraph (render project_integration.message; preview dry-run;
+          ask before apply); the procedural recovery content is upgrade/doctor
+          capability territory, not status. A pointer is unnecessary; the
+          rendering rule is what stays.
+    choice: Direct contract — lean on source_contract.capability_startup; status
+      prose owns the dashboard rendering contract (SKILL.md delegates); cut all
+      procedural install-recovery content (status renders project_integration
+      fields when present and routes to upgrade/doctor for procedure);
+      three-phase structure (Dashboard rendering then Briefing then Routing
+      suggestion); apply D71 RFC 2119 modal vocabulary throughout; apply D72
+      bundle-to-app terminology throughout.
+    reasoning: The source_contract.capability_startup field exists to be the
+      machine-readable contract between the CLI and the host; re-encoding it in
+      prose creates a second source of truth that drifts, as proven by the audit
+      findings (forbidden-command list drift, bundle.status straggler). Status's
+      actual obligations are (1) render the dashboard per a canonical template,
+      (2) suggest a concrete next action with a named artifact item, (3) emit a
+      mandatory exit marker, (4) stay read-only. Procedural install recovery
+      belongs to the upgrade capability and agentera doctor command, not status.
+      Owning the dashboard template in status prose (where the only job is
+      briefing and routing) aligns ownership with responsibility and eliminates
+      the SKILL.md and instructions.ts drift class. D71 modal vocab addresses
+      the weak-model failure mode (instructions read literally as user commands)
+      without duplicating contract-encoded rules.
+    confidence: firm
+    feeds_into: packages/cli/src/capabilities/status/instructions.ts,
+      skills/agentera/SKILL.md,
+      skills/agentera/capabilities/status/schemas/triggers.yaml,
+      skills/agentera/capabilities/status/schemas/validation.yaml,
+      references/cli/routing-model.md, capability_schema_contract.yaml, TODO.md
+    outcome: "Status prose rewritten from 18,035 to 10,389 chars (-42%). Three
+      phases (Dashboard rendering then Briefing then Routing suggestion). D71
+      RFC 2119 modal vocab applied (5 MUST, 5 MUST NOT). D72 terminology applied
+      (bundle fields replaced with app fields). v2-era residue cut:
+      AGENTERA_HOME broken-copy recovery (~1.5K), 1.x managed marker paragraph,
+      npx skills update cross-runtime leak, bundle.status gate procedure, Step
+      0.5 CLI-owned checks (~1K), triple-stated do-not-read-raw-yaml rules
+      (~800), duplicate forbidden-command list (~400, also v2-era agentera plan
+      names), contract-values token enumeration (~400, replaced with one-line
+      reference to protocol.yaml), artifact-path-resolution subsection (~700,
+      delegated to SKILL.md), agentera query reference (unported — actual v3 is
+      agentera state query), PROFILE.md global path detail (prime profile.path
+      surfaces), PROGRESS.md recency heuristic mention (prime health.stale
+      surfaces). Generic greeting wording rephrased to conversational smalltalk
+      — drops greeting terminology entirely. SKILL.md dashboard rendering block
+      (22 lines) replaced with 7-line pointer delegating to status prose.
+      triggers.yaml T2 entry dropped hello/hi greeting patterns and Greetings
+      description (relics from when status was named hej). routing-model.md
+      Layer 1 hej mention and Layer 5 greetings mention cleaned up. 1271/1271
+      vitest green; typecheck 0 errors; capability validation PASS;
+      capability-contract self-validation PASS; protocol internally consistent;
+      artifact compaction within budget. Preserved verbatim (routing priority
+      tree with 8-bullet decision logic plus anti-regression rule, ASCII
+      dashboard template, ≤120-word output constraint, exit marker rule with
+      EX1-EX4, 6 safety rails with D71 modal cleanup, cross-capability
+      integration paragraph). TODO.md status-audit task and
+      prose-to-instructions rename task marked resolved in this commit.
+      Satisfaction deferred to the user per discuss rules."
 archive:
   - summary: "Staging D1 (2026-06-05, agentera-mobile): **Question**: How should
       Agentera name itself after the mobile product pivot? **Choice**: Single
@@ -859,13 +939,6 @@ archive:
       user_confirmation:
         confirmed_by: user
         confirmed_at: 2026-05-23
-  - summary: "Decision 34 (2026-04-29): [Self-audit protocol] — Producing skills run
-      prose checks before artifact writes."
-    satisfaction:
-      state: user_confirmed_satisfied
-      user_confirmation:
-        confirmed_by: user
-        confirmed_at: 2026-05-15
   - summary: "Decision 35 (2026-04-29): [Build shared self_audit.py module] — Shared
       module plus hook enforce self-audit checks."
     satisfaction:
@@ -1619,6 +1692,36 @@ archive:
       backfill/rewrite/ancestry machinery. Do not retain `commit` as
       optional—D58 rejects parallel linkage sources. Follow-up build plan
       implements removal; this decision is design-only.
+  - summary: "Decision 67 (2026-06-05): Adopt single-brand product positioning.
+      Merge mobile vision into root .agentera/vision.yaml. Restructure root
+      README as Pi-style..."
+    number: 67
+    date: 2026-06-05
+    choice: Adopt single-brand product positioning. Merge mobile vision into root
+      .agentera/vision.yaml. Restructure root README as Pi-style package index
+      with @agentera/mobile as flagship. Demote editor runtime install matrices
+      to README Internals and packages/cli/README.md. Document capability
+      English aliases in packages/mobile/README.md without renaming schema IDs
+      yet. Add DESIGN.md surface register (terminal vs mobile).
+    feeds_into: README.md, .agentera/vision.yaml, AGENTS.md, DESIGN.md,
+      packages/mobile/, references/cli/vocabulary.md, .agentera/docs.yaml,
+      docs/consolidation/monorepo-plan.md
+    satisfaction:
+      state: user_confirmed_satisfied
+      evidence: Decision 68 (2026-06-05) corrected D67 skills-as-internals ceiling to
+        a delivery surface, removed SaaS/PaaS framing, and reaffirmed
+        multi-surface product boundary. User confirmed D67 satisfaction
+        2026-06-05 in current discuss deliberation. D67 feeds_into list is
+        satisfied.
+      user_confirmation:
+        confirmed_by: user
+        confirmed_at: 2026-06-05
+    outcome: Adopt single-brand product positioning. Merge mobile vision into root
+      .agentera/vision.yaml. Restructure root README as Pi-style package index
+      with @agentera/mobile as flagship. Demote editor runtime install matrices
+      to README Internals and packages/cli/README.md. Document capability
+      English aliases in packages/mobile/README.md without renaming schema IDs
+      yet. Add DESIGN.md surface register (terminal vs mobile).
   - number: 74
     date: 2026-06-28
     summary: 'Decision 74 (2026-06-28): Adopt the crystallized vision: "One agent,
