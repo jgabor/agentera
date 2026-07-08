@@ -31,7 +31,8 @@ interface PrimeCommandSpec {
   accessSubstring: string;
   emptyStateValueType: "string";
   capabilityStartupValueType: "object";
-  capabilityContextValue: null;
+  capabilityContextRequiredKeys: string[];
+  capabilityContextFieldTypes: FieldTypeMap;
   capabilityStartupRequiredKeys: string[];
   capabilityStartupFieldTypes: FieldTypeMap;
   rawArtifactReadsRequiredDefault: false;
@@ -325,7 +326,12 @@ describe("prime source_contract (oracle parity)", () => {
     expect(typeof sc.access, "access is a string").toBe("string");
     expect((sc.access as string).includes(spec.accessSubstring), "access substring pinned").toBe(true);
     expect(sc.empty_state, "empty_state is a string").toEqual(expect.any(String));
-    expect(sc.capability_context, "capability_context is null on the bare prime path").toBeNull();
+    const cc = sc.capability_context as Record<string, unknown>;
+    expect(cc, "capability_context is an inlined rendering contract on the bare prime path").not.toBeNull();
+    expect(typeof cc).toBe("object");
+    assertRequiredKeys(cc, spec.capabilityContextRequiredKeys, "prime.capability_context", "source-contract.json");
+    assertExactKeys(cc, spec.capabilityContextRequiredKeys, "prime.capability_context", "source-contract.json");
+    assertValueTypes(cc, spec.capabilityContextFieldTypes, "prime.capability_context", "source-contract.json");
   });
 
   it("prime capability_startup sub-object matches the TODO-reconciled field set (AC1/AC2)", () => {
@@ -629,7 +635,7 @@ describe("source_contract drift detector (AC3)", () => {
       access: "x",
       empty_state: "x",
       capability_startup: {},
-      capability_context: null,
+      capability_context: { capability: "status", prose: "x", source: "x", note: "x" },
     };
     expect(() => assertExactKeys(matching, baseRequired, "prime", "source-contract.json")).not.toThrow();
     const extra = { ...matching, brand_new_field: "x" };

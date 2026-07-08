@@ -14,8 +14,6 @@ const NPX_BUNDLE_SENTINEL = ".agentera-npx-bundle.json";
 const NPX_CLI_ENTRYPOINT = "npx -y agentera@next";
 const NPX_HOOK_VALIDATE = `${NPX_CLI_ENTRYPOINT} hook validate-artifact`;
 const NPX_HOOK_SESSION_STOP = `${NPX_CLI_ENTRYPOINT} hook session-stop`;
-const OPENCODE_SKILL_INSTALL_COMMAND = "npx skills add jgabor/agentera -g -a opencode --skill agentera -y";
-const REQUIRED_SKILL_NAMES = ["agentera"];
 const REQUIRED_AGENT_NAMES = ["agentera"];
 const AGENTERA_AGENT_MARKER = "<!-- agentera: managed -->";
 
@@ -32,12 +30,6 @@ function resolveOpencodeCommandsDir() {
   return process.env.OPENCODE_CONFIG_DIR
     ? path.join(process.env.OPENCODE_CONFIG_DIR, "commands")
     : path.join(process.env.HOME, ".config", "opencode", "commands");
-}
-
-function resolveOpencodeSkillsDir() {
-  return process.env.OPENCODE_CONFIG_DIR
-    ? path.join(process.env.OPENCODE_CONFIG_DIR, "skills")
-    : path.join(process.env.HOME, ".config", "opencode", "skills");
 }
 
 function resolveOpencodeAgentsDir() {
@@ -76,45 +68,6 @@ function hasManagedAgentMarker(filePath) {
 }
 
 const commandBootstrap = { lastReport: null };
-
-function validSkillDir(skillDir, name) {
-  return fs.existsSync(path.join(skillDir, name, "SKILL.md"));
-}
-
-function validManagedSkillDir(skillDir, name) {
-  return validSkillDir(skillDir, name);
-}
-
-function resolveInstalledAgenteraSkillsDir() {
-  const pluginRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-  const candidates = [
-    path.join(pluginRoot, "skills"),
-    path.join(process.env.HOME, ".config", "opencode", "skills"),
-    path.join(process.env.HOME, ".agents", "skills"),
-  ].filter(Boolean);
-
-  for (const candidate of candidates) {
-    if (REQUIRED_SKILL_NAMES.every((name) => validManagedSkillDir(candidate, name))) {
-      return candidate;
-    }
-  }
-
-  return null;
-}
-
-function isManagedSkillSymlink(targetPath, name) {
-  let linkTarget;
-  try {
-    linkTarget = fs.readlinkSync(targetPath);
-  } catch {
-    return false;
-  }
-
-  const normalized = linkTarget.toLowerCase();
-  return normalized.includes("agentera") || path.basename(linkTarget) === name;
-}
-
-const skillBootstrap = { lastReport: null };
 
 function validAgentDescriptor(sourceDir, name) {
   const descriptor = path.join(sourceDir, `${name}.md`);
@@ -208,67 +161,6 @@ function bootstrapAgents() {
   return report;
 }
 
-function bootstrapSkills() {
-  const report = {
-    repaired: [],
-    restored: [],
-    skippedUserOwned: [],
-    unchanged: [],
-    missingSource: [],
-    installCommand: null,
-  };
-
-  try {
-    const sourceDir = resolveInstalledAgenteraSkillsDir();
-    if (!sourceDir) {
-      report.installCommand = OPENCODE_SKILL_INSTALL_COMMAND;
-      console.error(`[agentera] OpenCode skills not found. Install with: ${OPENCODE_SKILL_INSTALL_COMMAND}`);
-      skillBootstrap.lastReport = report;
-      return report;
-    }
-
-    const targetDir = resolveOpencodeSkillsDir();
-    fs.mkdirSync(targetDir, { recursive: true });
-
-    for (const name of Object.keys(COMMAND_TEMPLATES)) {
-      const sourceSkill = path.join(sourceDir, name);
-      const targetSkill = path.join(targetDir, name);
-      if (!validManagedSkillDir(sourceDir, name)) {
-        report.missingSource.push(name);
-        continue;
-      }
-
-      let stat = null;
-      try {
-        stat = fs.lstatSync(targetSkill);
-      } catch {
-        fs.symlinkSync(sourceSkill, targetSkill, "dir");
-        report.restored.push(name);
-        continue;
-      }
-
-      if (fs.existsSync(path.join(targetSkill, "SKILL.md"))) {
-        report.unchanged.push(name);
-        continue;
-      }
-
-      if (!stat.isSymbolicLink() || !isManagedSkillSymlink(targetSkill, name)) {
-        report.skippedUserOwned.push(name);
-        continue;
-      }
-
-      fs.unlinkSync(targetSkill);
-      fs.symlinkSync(sourceSkill, targetSkill, "dir");
-      report.repaired.push(name);
-    }
-  } catch (err) {
-    console.error("[agentera] bootstrapSkills error:", err);
-  }
-
-  skillBootstrap.lastReport = report;
-  return report;
-}
-
 function bootstrapCommands() {
   const report = {
     restored: [],
@@ -278,7 +170,6 @@ function bootstrapCommands() {
     markerVersion: null,
   };
   try {
-    const sourceDir = resolveInstalledAgenteraSkillsDir();
     const targetDir = resolveOpencodeCommandsDir();
     fs.mkdirSync(targetDir, { recursive: true });
 
@@ -649,7 +540,6 @@ export const Agentera = async (input = {}, _options) => {
 
   setProfileDir();
   bootstrapCommands();
-  bootstrapSkills();
   bootstrapAgents();
 
   // Resolve app home once at init. shell.env must propagate the validated app
@@ -699,12 +589,10 @@ export const Agentera = async (input = {}, _options) => {
 Agentera.__test = {
   AGENTERA_VERSION,
   AGENTERA_AGENT_MARKER,
-  OPENCODE_SKILL_INSTALL_COMMAND,
   COMMAND_TEMPLATES,
   REQUIRED_AGENT_NAMES,
   bootstrapCommands,
   bootstrapAgents,
-  bootstrapSkills,
   agentBootstrap,
   commandBootstrap,
   hasManagedAgentMarker,
@@ -720,10 +608,8 @@ Agentera.__test = {
   isValidAgenteraAppHome,
   resolveOpencodeCommandsDir,
   resolveOpencodeAgentsDir,
-  resolveOpencodeSkillsDir,
   setProfileDir,
   profileraDeprecation,
-  skillBootstrap,
   validateArtifactCandidate,
   writeSessionBookmark,
 };

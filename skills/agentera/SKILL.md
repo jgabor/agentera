@@ -65,10 +65,10 @@ The CLI routes. The host agent follows.
 
 | Request shape | Route |
 |---|---|
-| Bare `/agentera` | Run `agentera prime`. Render the dashboard from the data returned. Follow `next_action` to suggest the next capability. |
-| `/agentera <capability-name>` | Run `agentera prime --context <capability>`. Follow the capability's prose and contract. |
+| Bare `/agentera` | 1. Run `agentera prime --format json` for state data + inlined rendering contract. 2. Follow `source_contract.capability_context.prose` for dashboard template, field rules, and exit marker. 3. Render the dashboard from the state data per the prose. 4. Follow `next_action` to suggest the next capability. |
+| `/agentera <capability-name>` | Run `agentera prime --context <capability> --format json`. Follow the capability's prose and contract. |
 | `/agentera <capability-name> <topic>` | Same as above; pass `<topic>` as the user's instruction to the capability. |
-| Natural language | Run `agentera prime`. Use `next_action.capability` to suggest the matching capability. If no high-confidence match, present a disambiguation prompt. |
+| Natural language | Run `agentera prime --format json`. Follow the inlined status prose to render the briefing. Use `next_action.capability` to suggest the matching capability. If no high-confidence match, present a disambiguation prompt. |
 
 Capability names are the routing identity: `status`, `vision`, `discuss`,
 `research`, `plan`, `build`, `optimize`, `audit`, `document`, `profile`,
@@ -98,10 +98,11 @@ Capability handoffs use glyph plus canonical name (e.g. `⧉ build`, `≡ plan`)
 
 The prime dashboard rendering contract — template, field-by-field rules, output
 budget, attention-item ordering, exit marker — is owned by the status capability
-prose. Run `agentera prime --context status --format json` and follow the
-`capability_context.prose` body for layout, inclusion/exclusion rules, and the
-mandatory `⌂ status · <status>` exit marker. Ask for confirmation before
-invoking a state-changing downstream capability.
+prose. Bare `agentera prime --format json` inlines this prose in
+`source_contract.capability_context.prose` (source: `inlined_for_layer_1`);
+follow it for layout, inclusion/exclusion rules, and the mandatory
+`⌂ status · <status>` exit marker. Ask for confirmation before invoking a
+state-changing downstream capability.
 
 The first response in a fresh interaction delivers the brief and a free-form
 continuation prompt, not a native question menu — unless the user explicitly

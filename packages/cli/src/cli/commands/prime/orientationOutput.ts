@@ -1,5 +1,6 @@
 import { publicDoctorStatus } from "../../../upgrade/doctor.js";
 import { projectInstallTrack } from "../../../upgrade/compatibility.js";
+import { CAPABILITY_INSTRUCTIONS } from "../../../capabilities/index.js";
 import { formatNextAction } from "../../orientation.js";
 import { requestedFields, REQUIRED_SPARSE_CONTEXT_FIELDS } from "../../stateQuery.js";
 import { emitStructured } from "../../structured.js";
@@ -69,6 +70,16 @@ function orientationAppHome(bundle: BundleStatus): JsonObject {
   };
 }
 
+function inlinedRenderingContract(): JsonObject {
+  const prose = CAPABILITY_INSTRUCTIONS["status"] ?? "";
+  return {
+    capability: "status",
+    prose,
+    source: "inlined_for_layer_1",
+    note: "Rendering contract for the prime dashboard. Follow the prose for template, field rules, and exit marker before rendering.",
+  };
+}
+
 export function buildOrientationJsonPayload(
   state: OrientationState,
   command: string,
@@ -128,7 +139,7 @@ export function buildOrientationJsonPayload(
       access,
       empty_state: "fresh mode with missing artifact summaries and zero issue counts",
       capability_startup: startupCompletenessContract({ profileStatus: state.profile_status }),
-      capability_context: null,
+      capability_context: inlinedRenderingContract(),
     },
   };
 }
@@ -237,6 +248,7 @@ export function printOrientationTextBriefing(state: OrientationState, command: s
   out("- access=single installed CLI call; app/v1/profile safety included; no preflight glob/read/import/doctor calls\n");
   const startup = startupCompletenessContract({ profileStatus: state.profile_status });
   out(`- capability_startup_complete=${String(startup.complete_for_capability_startup).toLowerCase()}\n`);
+  out(`- rendering_contract: inlined in --format json source_contract.capability_context (capability=status)\n`);
   out(
     `- raw_artifact_reads_required=${String(startup.raw_artifact_reads_required).toLowerCase()}; policy=${startup.raw_artifact_read_policy}\n`,
   );

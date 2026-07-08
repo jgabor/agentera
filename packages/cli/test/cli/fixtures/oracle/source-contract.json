@@ -43,7 +43,7 @@
       "argv": ["prime", "--format", "json"],
       "exitCode": 0,
       "sourceContractLocation": "payload.source_contract",
-      "description": "Top-level `source_contract` for `agentera prime` (no `--context`). Holds the dashboard-level orientation field set plus a `capability_startup` sub-object that pins the boolean/string/array contract from the TODO enumeration. The `capability_context` key is always null on the bare `prime` path; it is filled in only on the `prime --context` path.",
+      "description": "Top-level `source_contract` for `agentera prime` (no `--context`). Holds the dashboard-level orientation field set plus a `capability_startup` sub-object that pins the boolean/string/array contract from the TODO enumeration. The `capability_context` key carries an inlined rendering contract (the status capability prose) on the bare `prime` path; this eliminates the two-call gap where an agent running bare `prime` would never know it needed to fetch `prime --context status` separately. The full capability context capsule (with state families, first_invocation_read metadata, etc.) is available on the `prime --context` path.",
       "requiredTopLevelKeys": [
         "fields",
         "render",
@@ -58,7 +58,7 @@
         "access": "string",
         "empty_state": "string",
         "capability_startup": "object",
-        "capability_context": "null"
+        "capability_context": "object"
       },
       "fieldsValueType": "array<string>",
       "renderValueType": "string",
@@ -67,7 +67,13 @@
       "accessSubstring": "single installed CLI call",
       "emptyStateValueType": "string",
       "capabilityStartupValueType": "object",
-      "capabilityContextValue": null,
+      "capabilityContextRequiredKeys": ["capability", "prose", "source", "note"],
+      "capabilityContextFieldTypes": {
+        "capability": "string",
+        "prose": "string",
+        "source": "string",
+        "note": "string"
+      },
       "capabilityStartupRequiredKeys": [
         "complete_for_capability_startup",
         "raw_artifact_reads_required",
