@@ -76,7 +76,8 @@ npx -y agentera check validate capability-contract --format json
 1. Create `packages/cli/src/capabilities/<name>/instructions.ts` that exports the behavioral instructions as a default-exported string constant named `instructions`
 2. Create `skills/agentera/capabilities/<name>/schemas/` with the four schema files: `triggers.yaml`, `artifacts.yaml`, `validation.yaml`, `exit.yaml`
 3. Update the capability table in `skills/agentera/SKILL.md`
-4. Validate: `npx -y agentera check validate capability <name-or-path>`
+4. Verify every command name, file path, env var, and contract reference in the prose against the v3 runtime surface (`--help` or filesystem check); v2-era prose drifts from v3 reality and ships ghosts that pass lint but mislead agents at runtime.
+5. Validate: `npx -y agentera check validate capability <name-or-path>`
 
 ## Artifact path resolution
 
