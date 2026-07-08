@@ -110,7 +110,7 @@ against D80 plus this reference doc.
 | Capability | Shape | Length | D71 modal | D72 terms | Direct contract | Deviations | Audit |
 |---|---|---|---|---|---|---|---|
 | ⌂ status | Linear | 10,389 | Yes | Yes | Yes | None | Complete (D79) |
-| ⛥ vision | Mode-split | 17,076 | Not audited | Not audited | Not audited | Has vision.yaml shape subsection | Not audited |
+| ⛥ vision | Mode-split | 16,667 | Yes | Yes | Yes | Has vision.yaml shape subsection; shared pre-write self-audit hoist (DRY between Create and Refine modes) | Complete (D81) |
 | ❈ discuss | Loop | 13,816 | Not audited | Not audited | Not audited | Has deliverable template; has Getting started to fold | Not audited |
 | ⬚ research | Linear | 12,251 | Not audited | Not audited | Not audited | Has deliverable template; has Notes on depth | Not audited |
 | ≡ plan | Mode-split | 14,800 | Not audited | Not audited | Not audited | Has light/normal/full modes; has How build reads PLAN.md | Not audited |

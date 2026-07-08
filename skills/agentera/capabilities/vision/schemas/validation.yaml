@@ -51,15 +51,13 @@ VALIDATION:
     checks:
       - "Vision contains specific direction"
       - "Vision contains actionable principles"
-  6:
-    id: V6
-    rule: principle_brevity
-    description: >-
-      Each principle in VISION.md MUST be ≤20 words. Principles are
-      decision guides, not essays. Brevity forces clarity.
-    severity: warning
-    checks:
-      - "Each principle ≤ 20 words"
+  # V6 (principle_brevity) retired per Decision 81: linter does not enforce word
+  # count on principle descriptions; the live vision artifact violates the limit
+  # intentionally (principles carry rationale, not just labels). The
+  # MUST-state-tradeoff / SHOULD-name-prevention / MUST-NOT-name-implementations
+  # rules in capability instructions and the lint abstraction/filler checks
+  # cover principle quality holistically. ID gap (V6 → V7) preserved to avoid
+  # breaking external references to V7.
   7:
     id: V7
     rule: exit_marker_required
