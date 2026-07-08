@@ -1,6 +1,5 @@
 import { publicDoctorStatus } from "../../../upgrade/doctor.js";
 import { projectInstallTrack } from "../../../upgrade/compatibility.js";
-import { CAPABILITY_INSTRUCTIONS } from "../../../capabilities/index.js";
 import { formatNextAction } from "../../orientation.js";
 import { requestedFields, REQUIRED_SPARSE_CONTEXT_FIELDS } from "../../stateQuery.js";
 import { emitStructured } from "../../structured.js";
@@ -70,13 +69,12 @@ function orientationAppHome(bundle: BundleStatus): JsonObject {
   };
 }
 
-function inlinedRenderingContract(): JsonObject {
-  const prose = CAPABILITY_INSTRUCTIONS["status"] ?? "";
+function capabilityContextPointer(): JsonObject {
   return {
     capability: "status",
-    prose,
-    source: "inlined_for_layer_1",
-    note: "Rendering contract for the prime dashboard. Follow the prose for template, field rules, and exit marker before rendering.",
+    fetch_command: "agentera prime --context status --format json",
+    required_before_rendering: true,
+    note: "Dashboard rendering instructions (template, field rules, exit marker) are owned by the status capability. Run the fetch_command before rendering.",
   };
 }
 
@@ -139,7 +137,7 @@ export function buildOrientationJsonPayload(
       access,
       empty_state: "fresh mode with missing artifact summaries and zero issue counts",
       capability_startup: startupCompletenessContract({ profileStatus: state.profile_status }),
-      capability_context: inlinedRenderingContract(),
+      capability_context: capabilityContextPointer(),
     },
   };
 }
@@ -248,7 +246,7 @@ export function printOrientationTextBriefing(state: OrientationState, command: s
   out("- access=single installed CLI call; app/v1/profile safety included; no preflight glob/read/import/doctor calls\n");
   const startup = startupCompletenessContract({ profileStatus: state.profile_status });
   out(`- capability_startup_complete=${String(startup.complete_for_capability_startup).toLowerCase()}\n`);
-  out(`- rendering_contract: inlined in --format json source_contract.capability_context (capability=status)\n`);
+  out(`- capability_context: fetch rendering instructions via \`agentera prime --context status --format json\`\n`);
   out(
     `- raw_artifact_reads_required=${String(startup.raw_artifact_reads_required).toLowerCase()}; policy=${startup.raw_artifact_read_policy}\n`,
   );

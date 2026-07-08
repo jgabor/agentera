@@ -43,7 +43,7 @@
       "argv": ["prime", "--format", "json"],
       "exitCode": 0,
       "sourceContractLocation": "payload.source_contract",
-      "description": "Top-level `source_contract` for `agentera prime` (no `--context`). Holds the dashboard-level orientation field set plus a `capability_startup` sub-object that pins the boolean/string/array contract from the TODO enumeration. The `capability_context` key carries an inlined rendering contract (the status capability prose) on the bare `prime` path; this eliminates the two-call gap where an agent running bare `prime` would never know it needed to fetch `prime --context status` separately. The full capability context capsule (with state families, first_invocation_read metadata, etc.) is available on the `prime --context` path.",
+      "description": "Top-level `source_contract` for `agentera prime` (no `--context`). Holds the dashboard-level orientation field set plus a `capability_startup` sub-object that pins the boolean/string/array contract from the TODO enumeration. The `capability_context` key carries a pointer to the status capability rendering instructions on the bare `prime` path; this eliminates the two-call gap where an agent running bare `prime` would never know it needed to fetch `prime --context status` separately. The full capability context capsule (with state families, first_invocation_read metadata, etc.) is available on the `prime --context` path.",
       "requiredTopLevelKeys": [
         "fields",
         "render",
@@ -67,11 +67,16 @@
       "accessSubstring": "single installed CLI call",
       "emptyStateValueType": "string",
       "capabilityStartupValueType": "object",
-      "capabilityContextRequiredKeys": ["capability", "prose", "source", "note"],
+      "capabilityContextRequiredKeys": [
+        "capability",
+        "fetch_command",
+        "required_before_rendering",
+        "note"
+      ],
       "capabilityContextFieldTypes": {
         "capability": "string",
-        "prose": "string",
-        "source": "string",
+        "fetch_command": "string",
+        "required_before_rendering": "boolean",
         "note": "string"
       },
       "capabilityStartupRequiredKeys": [

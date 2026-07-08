@@ -1,7 +1,7 @@
 ---
 name: agentera
 description: >
-  One agent, one CLI, many capabilities. Per-capability prose lives in
+  One agent, one CLI, many capabilities. Per-capability instructions live in
   `packages/cli/src/capabilities/<name>/instructions.ts` and the runtime serves
   it through `agentera prime --context <name> --format json`. Use this skill
   for /agentera and Agentera capability requests; bare `/agentera` runs the
@@ -26,7 +26,7 @@ capabilities:
 # agentera
 
 One agent, one CLI, many capabilities. The CLI is the routing brain — it owns
-project memory, capability prose, routing judgment, and the worker-spec contract.
+project memory, capability instructions, routing judgment, and the worker-spec contract.
 The host agent learns one contract: the CLI.
 
 ---
@@ -47,7 +47,7 @@ For capability-specific startup context:
 npx -y agentera prime --context <capability> --format json
 ```
 
-This returns the capability's prose, declared read/write needs, artifact
+This returns the capability's instructions, declared read/write needs, artifact
 inventory, included/missing state, and fallback commands. Use it before
 reading the instructions module directly.
 
@@ -65,10 +65,10 @@ The CLI routes. The host agent follows.
 
 | Request shape | Route |
 |---|---|
-| Bare `/agentera` | 1. Run `agentera prime --format json` for state data + inlined rendering contract. 2. Follow `source_contract.capability_context.prose` for dashboard template, field rules, and exit marker. 3. Render the dashboard from the state data per the prose. 4. Follow `next_action` to suggest the next capability. |
-| `/agentera <capability-name>` | Run `agentera prime --context <capability> --format json`. Follow the capability's prose and contract. |
+| Bare `/agentera` | 1. Run `agentera prime --format json` for state data. 2. Run the `fetch_command` from `source_contract.capability_context` to get rendering instructions. 3. Follow `capability_context.instructions` for dashboard template, field rules, and exit marker. 4. Render the dashboard from the state data per the instructions. 5. Follow `next_action` to suggest the next capability. |
+| `/agentera <capability-name>` | Run `agentera prime --context <capability> --format json`. Follow the capability's instructions and contract. |
 | `/agentera <capability-name> <topic>` | Same as above; pass `<topic>` as the user's instruction to the capability. |
-| Natural language | Run `agentera prime --format json`. Follow the inlined status prose to render the briefing. Use `next_action.capability` to suggest the matching capability. If no high-confidence match, present a disambiguation prompt. |
+| Natural language | Run `agentera prime --format json`. Run the `fetch_command` from `source_contract.capability_context` for rendering instructions. Use `next_action.capability` to suggest the matching capability. If no high-confidence match, present a disambiguation prompt. |
 
 Capability names are the routing identity: `status`, `vision`, `discuss`,
 `research`, `plan`, `build`, `optimize`, `audit`, `document`, `profile`,
@@ -98,11 +98,11 @@ Capability handoffs use glyph plus canonical name (e.g. `⧉ build`, `≡ plan`)
 
 The prime dashboard rendering contract — template, field-by-field rules, output
 budget, attention-item ordering, exit marker — is owned by the status capability
-prose. Bare `agentera prime --format json` inlines this prose in
-`source_contract.capability_context.prose` (source: `inlined_for_layer_1`);
-follow it for layout, inclusion/exclusion rules, and the mandatory
-`⌂ status · <status>` exit marker. Ask for confirmation before invoking a
-state-changing downstream capability.
+instructions. Bare `agentera prime --format json` returns a pointer at
+`source_contract.capability_context` with a `fetch_command` to retrieve them;
+run it, then follow `capability_context.instructions` for layout,
+inclusion/exclusion rules, and the mandatory `⌂ status · <status>` exit marker.
+Ask for confirmation before invoking a state-changing downstream capability.
 
 The first response in a fresh interaction delivers the brief and a free-form
 continuation prompt, not a native question menu — unless the user explicitly

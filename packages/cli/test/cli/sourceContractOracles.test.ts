@@ -327,7 +327,7 @@ describe("prime source_contract (oracle parity)", () => {
     expect((sc.access as string).includes(spec.accessSubstring), "access substring pinned").toBe(true);
     expect(sc.empty_state, "empty_state is a string").toEqual(expect.any(String));
     const cc = sc.capability_context as Record<string, unknown>;
-    expect(cc, "capability_context is an inlined rendering contract on the bare prime path").not.toBeNull();
+    expect(cc, "capability_context is a pointer to the status rendering instructions on the bare prime path").not.toBeNull();
     expect(typeof cc).toBe("object");
     assertRequiredKeys(cc, spec.capabilityContextRequiredKeys, "prime.capability_context", "source-contract.json");
     assertExactKeys(cc, spec.capabilityContextRequiredKeys, "prime.capability_context", "source-contract.json");
@@ -635,7 +635,7 @@ describe("source_contract drift detector (AC3)", () => {
       access: "x",
       empty_state: "x",
       capability_startup: {},
-      capability_context: { capability: "status", prose: "x", source: "x", note: "x" },
+      capability_context: { capability: "x", fetch_command: "x", required_before_rendering: true, note: "x" },
     };
     expect(() => assertExactKeys(matching, baseRequired, "prime", "source-contract.json")).not.toThrow();
     const extra = { ...matching, brand_new_field: "x" };

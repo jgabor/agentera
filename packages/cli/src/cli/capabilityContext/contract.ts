@@ -37,13 +37,13 @@ export function capabilityInstructionContract(): JsonObject {
 
 export function capabilityInstructionTarget(capability: string): JsonObject {
   const module = capabilityInstructionModulePath(capability);
-  const prose = CAPABILITY_INSTRUCTIONS[capability] ?? null;
+  const instructions = CAPABILITY_INSTRUCTIONS[capability] ?? null;
   return {
     module,
-    exists: prose !== null && prose.length > 0,
+    exists: instructions !== null && instructions.length > 0,
     runtime_path: module,
-    prose_present: prose !== null,
-    prose_length: prose === null ? 0 : prose.length,
+    instructions_present: instructions !== null,
+    instructions_length: instructions === null ? 0 : instructions.length,
   };
 }
 
@@ -86,7 +86,7 @@ export function planStartupContract(): JsonObject {
     instructions_authority: {
       normal_startup:
         "Use this compact context for normal Plan execution startup; " +
-        "shell out to `agentera prime --context plan --format json` for the full Plan prose.",
+        "shell out to `agentera prime --context plan --format json` for the full Plan instructions.",
       read_plan_instructions_when: PLAN_INSTRUCTIONS_AUTHORITY_EXCEPTIONS,
     },
     planning: {

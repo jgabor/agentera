@@ -202,7 +202,7 @@ export function slimCapabilityContext(
       if (value !== null && value !== undefined) contextPayload[name] = slimBespokeContext(name, value as JsonObject);
     }
   }
-  const prose = CAPABILITY_INSTRUCTIONS[capability] ?? null;
+  const instructions = CAPABILITY_INSTRUCTIONS[capability] ?? null;
   return {
     schemaVersion: "agentera.capabilityContext.v1",
     capability,
@@ -219,7 +219,7 @@ export function slimCapabilityContext(
       schema_error: context.schema_error ?? null,
     },
     context: contextPayload,
-    prose: prose ?? "",
+    instructions: instructions ?? "",
     raw_artifact_read_policy: context.raw_artifact_read_policy ?? null,
   };
 }

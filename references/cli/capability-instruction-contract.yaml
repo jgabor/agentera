@@ -29,8 +29,8 @@ current_state:
     definition: >-
       The TypeScript module that exports the capability's behavioral
       instructions as a default-exported string constant. The runtime loads
-      the compiled .js path and serves the prose through the slim
-      `capability_context` capsule's `prose` field.
+      the compiled .js path and serves the instructions through the slim
+      `capability_context` capsule's `instructions` field.
   legacy_instruction_file:
     path: skills/agentera/capabilities/<name>/instructions.md
     status: historical_or_compatibility_evidence_only
@@ -57,8 +57,8 @@ current_state:
     current_behavior: >-
       `agentera prime --context <name> --format json` emits
       `capability_context` metadata including `first_invocation_read`
-      (value: `prime_context`, runtime_enforcement: true) and the full prose
-      in the `prose` field for supported capabilities. Historical
+      (value: `prime_context`, runtime_enforcement: true) and the full instructions
+      in the `instructions` field for supported capabilities. Historical
       `hej --capability-context` is removed in 3.0.
 first_invocation_read:
   field_status: runtime_enforced
@@ -66,21 +66,21 @@ first_invocation_read:
     Capability metadata declaring what instruction content an agent must
     read on the first invocation of that capability in a session. Decision
     65 collapses the legacy `full`/`compact_startup` distinction into a
-    single `prime_context` value because the CLI now owns the prose and
+    single `prime_context` value because the CLI now owns the instructions and
     the runtime can mechanically shell out to the prime command.
   allowed_values:
     prime_context:
       meaning: >-
         The first capability invocation must shell out to
         `agentera prime --context <name> --format json` and read the
-        returned `prose` field (the full Markdown body) before executing
+        returned `instructions` field (the full Markdown body) before executing
         capability-specific work.
       obligation: shell out to agentera prime --context <name> --format json
   default_rule: prime_context
   full_read_obligation: >-
     On initial capability invocation, shell out to
     `agentera prime --context <name> --format json` and read the
-    `capability_context.prose` field in full.
+    `capability_context.instructions` field in full.
 implementation_state:
   instructions_ts_modules: implemented
   validators_require_instructions_ts: true

@@ -64,9 +64,8 @@ describe("cli prime", () => {
     expect(payload.source_contract.capability_context).not.toBeNull();
     expect(typeof payload.source_contract.capability_context).toBe("object");
     expect(payload.source_contract.capability_context.capability).toBe("status");
-    expect(typeof payload.source_contract.capability_context.prose).toBe("string");
-    expect(payload.source_contract.capability_context.prose.length).toBeGreaterThan(0);
-    expect(payload.source_contract.capability_context.source).toBe("inlined_for_layer_1");
+    expect(payload.source_contract.capability_context.fetch_command).toBe("agentera prime --context status --format json");
+    expect(payload.source_contract.capability_context.required_before_rendering).toBe(true);
     expect(payload.source_contract.fields).toContain("todo");
     expect(payload.source_contract.fields).not.toContain("issues");
     expect(payload.source_contract.fields).toContain("next_action");
