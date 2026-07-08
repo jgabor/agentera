@@ -98,7 +98,6 @@ records:
     lifecycle_events:
       supported_events:
         - shell.env
-        - chat.message
         - tool.execute.before
         - tool.execute.after
         - experimental.session.compacting
@@ -107,7 +106,6 @@ records:
       unsupported_events: []
       event_status:
         shell.env: supported
-        chat.message: supported
         tool.execute.before: supported
         tool.execute.after: supported
         experimental.session.compacting: supported
@@ -115,7 +113,6 @@ records:
         session.idle: supported_via_event
       limitations:
         - OpenCode session preload observes session.created but has no verified context injection path.
-        - OpenCode docs omit chat.message, but the exported plugin Hooks interface defines it.
         - OpenCode compaction context is bounded to CLI-first Agentera summaries.
     artifact_validation:
       validation_events:
@@ -186,12 +183,10 @@ records:
         - references/adapters/opencode.md
       parity_claims:
         - Blocks invalid reconstructable artifact candidates.
-        - Routes exact bare text /agentera through chat.message to the bundled Agentera dashboard path.
       install_claims:
         - OpenCode plugin is copied to the native plugin path.
       known_drifts:
         - OpenCode session preload observes session.created but has no verified context injection path.
-        - OpenCode docs omit chat.message even though the plugin source Hooks interface exposes it.
   - identity:
       runtime_id: copilot
       display_name: Copilot CLI

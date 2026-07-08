@@ -107,7 +107,6 @@ const SUPPORTED_EVENT_NAMES = new Set([
   "userPromptSubmitted",
   "errorOccurred",
   "shell.env",
-  "chat.message",
   "tool.execute.before",
   "tool.execute.after",
   "experimental.session.compacting",

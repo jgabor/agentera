@@ -37,7 +37,7 @@ describe("runtime adapter registry", () => {
       "Cursor Agent CLI",
     ]);
     const opencodeLifecycle = registry.get("opencode").lifecycle_events;
-    expect(opencodeLifecycle.supported_events).toContain("chat.message");
+    expect(opencodeLifecycle.supported_events).toContain("tool.execute.before");
     expect(opencodeLifecycle.supported_events).toContain("session.created");
     expect(opencodeLifecycle.supported_events).toContain("session.idle");
     expect(opencodeLifecycle.unsupported_events).not.toContain("session.created");

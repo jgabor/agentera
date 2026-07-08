@@ -1,7 +1,7 @@
 /**
  * OpenCode runtime adapter setup and diagnostics.
  *
- * OpenCode hook surfaces (event, shell.env, chat.message, tool.execute.before/after,
+ * OpenCode hook surfaces (event, shell.env, tool.execute.before/after,
  * experimental.session.compacting) ship in `.opencode/plugins/agentera.js` and are
  * validated by `validate/lifecycleAdapters.ts`. Managed commands, agents, and
  * skill paths are diagnosed here and installed by `upgrade/runtimeMigration.ts`.

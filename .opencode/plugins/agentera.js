@@ -1,8 +1,7 @@
 // Agentera plugin for OpenCode
 // Bootstraps slash commands at plugin init, injects AGENTERA_HOME via shell.env,
-// writes runtime-local session bookmarks via the generic event hook, routes exact bare
-// `hej` messages through Agentera via chat.message, and validates artifact
-// writes via tool.execute.before plus tool.execute.after.
+// writes runtime-local session bookmarks via the generic event hook, and validates
+// artifact writes via tool.execute.before plus tool.execute.after.
 // Install: copy to ~/.config/opencode/plugins/agentera.js or .opencode/plugins/agentera.js
 
 import { execFileSync, spawnSync } from "child_process";
@@ -17,63 +16,17 @@ const NPX_HOOK_VALIDATE = `${NPX_CLI_ENTRYPOINT} hook validate-artifact`;
 const NPX_HOOK_SESSION_STOP = `${NPX_CLI_ENTRYPOINT} hook session-stop`;
 const OPENCODE_SKILL_INSTALL_COMMAND = "npx skills add jgabor/agentera -g -a opencode --skill agentera -y";
 const REQUIRED_SKILL_NAMES = ["agentera"];
-const LEGACY_BRIDGE_SKILL_NAMES = new Set(["hej"]);
 const REQUIRED_AGENT_NAMES = ["agentera"];
 const AGENTERA_AGENT_MARKER = "<!-- agentera: managed -->";
 
 const COMMAND_TEMPLATES = {
   "agentera": `---
-description: "Compound agent orchestration suite: 12 capabilities in one bundled skill; exact bare hej routes to the Agentera dashboard"
+description: "Compound agent orchestration suite: 12 capabilities in one bundled skill"
 agentera_managed: true
 ---
-Load and execute the agentera bundled skill for this project. If the user's complete message is exactly hej, route it through Agentera's status dashboard path instead of a generic greeting.
-`,
-  "hej": `---
-description: "Legacy /hej slash bridge only; bare text hej routes through agentera"
-agentera_managed: true
----
-Use this only for explicit legacy /hej slash-command upgrades. For a bare text message exactly hej, load agentera and run the Agentera status dashboard path.
+Load and execute the agentera bundled skill for this project.
 `,
 };
-
-const BARE_HEJ_ROUTED_PROMPT = [
-  "agentera",
-  "",
-  "OpenCode adapter note: the original complete user message was exactly `hej`.",
-  "Route it as Agentera Layer 1 bare `hej`: run `agentera prime` first, render the status dashboard, and do not answer as a generic greeting.",
-].join("\n");
-
-function meaningfulParts(parts) {
-  return Array.isArray(parts)
-    ? parts.filter((part) => part && part.ignored !== true)
-    : [];
-}
-
-function normalizeBareHejTransportText(text) {
-  // `opencode run "hej"` arrives as `hej\n`; strip only that transport newline.
-  return text.replace(/\r?\n$/, "");
-}
-
-function isBareHejUserMessage(parts) {
-  const active = meaningfulParts(parts);
-  if (active.length !== 1) return false;
-  const [part] = active;
-  return part.type === "text"
-    && typeof part.text === "string"
-    && normalizeBareHejTransportText(part.text) === "hej";
-}
-
-function routeBareHejMessage(output) {
-  if (!isBareHejUserMessage(output?.parts)) return false;
-  const part = meaningfulParts(output.parts)[0];
-  part.text = BARE_HEJ_ROUTED_PROMPT;
-  part.metadata = {
-    ...(part.metadata || {}),
-    agenteraRoute: "bare-hej",
-    originalText: "hej",
-  };
-  return true;
-}
 
 function resolveOpencodeCommandsDir() {
   return process.env.OPENCODE_CONFIG_DIR
@@ -129,13 +82,7 @@ function validSkillDir(skillDir, name) {
 }
 
 function validManagedSkillDir(skillDir, name) {
-  if (!validSkillDir(skillDir, name)) return false;
-  if (!LEGACY_BRIDGE_SKILL_NAMES.has(name)) return true;
-  try {
-    return fs.readFileSync(path.join(skillDir, name, "SKILL.md"), "utf8").includes("legacy_bridge: true");
-  } catch {
-    return false;
-  }
+  return validSkillDir(skillDir, name);
 }
 
 function resolveInstalledAgenteraSkillsDir() {
@@ -345,9 +292,6 @@ function bootstrapCommands() {
     report.markerVersion = existingVersion;
 
     for (const [name, content] of Object.entries(COMMAND_TEMPLATES)) {
-      if (LEGACY_BRIDGE_SKILL_NAMES.has(name) && (!sourceDir || !validManagedSkillDir(sourceDir, name))) {
-        continue;
-      }
       const targetFile = path.join(targetDir, `${name}.md`);
       if (!fs.existsSync(targetFile)) {
         fs.writeFileSync(targetFile, content);
@@ -730,10 +674,6 @@ export const Agentera = async (input = {}, _options) => {
       env.AGENTERA_HOME = initialAgenteraAppHome;
     },
 
-    "chat.message": async (_input, output) => {
-      routeBareHejMessage(output);
-    },
-
     "tool.execute.before": async (input, output) => {
       hardGateArtifactCandidate(input, output, projectRoot);
     },
@@ -761,7 +701,6 @@ Agentera.__test = {
   AGENTERA_AGENT_MARKER,
   OPENCODE_SKILL_INSTALL_COMMAND,
   COMMAND_TEMPLATES,
-  BARE_HEJ_ROUTED_PROMPT,
   REQUIRED_AGENT_NAMES,
   bootstrapCommands,
   bootstrapAgents,
@@ -772,9 +711,7 @@ Agentera.__test = {
   hasManagedMarker,
   buildCompactionContext,
   formatCompactionStateContext,
-  isBareHejUserMessage,
   lifecycle,
-  normalizeBareHejTransportText,
   resolveAgenteraHome,
   resolveAgenteraAppHome,
   resolveDefaultAgenteraAppHome,
@@ -784,7 +721,6 @@ Agentera.__test = {
   resolveOpencodeCommandsDir,
   resolveOpencodeAgentsDir,
   resolveOpencodeSkillsDir,
-  routeBareHejMessage,
   setProfileDir,
   profileraDeprecation,
   skillBootstrap,
