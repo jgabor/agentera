@@ -3,7 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { NPX_BUNDLE_SENTINEL } from "../../src/core/sourceRoot.js";
 import { BUNDLE_MARKER } from "../../src/state/installRoot.js";
@@ -12,7 +12,9 @@ import {
   STATUS_MANUAL_REVIEW_NEEDED,
   STATUS_NO_CHANGES_NEEDED,
   STATUS_READY_TO_APPLY,
+  __resetDistributionMajorWarnedForTests,
   classifyInstall,
+  cliDistributionMajor,
   previewCrossMajorGuard,
   projectInstallTrack,
 } from "../../src/upgrade/compatibility.js";
@@ -122,6 +124,89 @@ describe("projectInstallTrack", () => {
     fs.writeFileSync(path.join(appHome, "notes.txt"), "not agentera\n");
     const result = classifyInstall({ appHome, sourceRoot: appHome });
     expect(projectInstallTrack(result.kind)).toBe("unknown");
+  });
+});
+
+describe("cliDistributionMajor", () => {
+  let stderrSpy: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    __resetDistributionMajorWarnedForTests();
+    stderrSpy = vi.spyOn(process.stderr, "write").mockImplementation(() => true);
+  });
+
+  afterEach(() => {
+    stderrSpy.mockRestore();
+  });
+
+  it("returns 3 from package.json when registry.json version is missing", () => {
+    const root = path.join(tmp, "v3-pkg-json");
+    fs.mkdirSync(root, { recursive: true });
+    fs.writeFileSync(
+      path.join(root, "package.json"),
+      JSON.stringify({ name: "agentera", version: "3.0.0-dev.13" }),
+    );
+    expect(cliDistributionMajor(root)).toBe(3);
+    expect(stderrSpy).not.toHaveBeenCalled();
+  });
+
+  it("returns 3 from package.json when registry.json is corrupted JSON", () => {
+    const root = path.join(tmp, "corrupted-registry");
+    fs.mkdirSync(root, { recursive: true });
+    fs.writeFileSync(path.join(root, "registry.json"), "{ corrupted json");
+    fs.writeFileSync(
+      path.join(root, "package.json"),
+      JSON.stringify({ version: "3.1.0" }),
+    );
+    expect(cliDistributionMajor(root)).toBe(3);
+    expect(stderrSpy).not.toHaveBeenCalled();
+  });
+
+  it("returns 2 and warns when both registry.json and package.json are missing", () => {
+    const root = path.join(tmp, "both-missing");
+    fs.mkdirSync(root, { recursive: true });
+    expect(cliDistributionMajor(root)).toBe(2);
+    expect(stderrSpy).toHaveBeenCalledTimes(1);
+    expect(stderrSpy.mock.calls[0][0]).toContain("could not determine distribution major version");
+    expect(stderrSpy.mock.calls[0][0]).toContain(root);
+  });
+
+  it("returns 2 and warns when package.json has no version field", () => {
+    const root = path.join(tmp, "pkg-no-version");
+    fs.mkdirSync(root, { recursive: true });
+    fs.writeFileSync(
+      path.join(root, "package.json"),
+      JSON.stringify({ name: "some-package" }),
+    );
+    expect(cliDistributionMajor(root)).toBe(2);
+    expect(stderrSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it("returns 2 and warns when package.json is malformed", () => {
+    const root = path.join(tmp, "malformed-pkg");
+    fs.mkdirSync(root, { recursive: true });
+    fs.writeFileSync(path.join(root, "package.json"), "{ broken");
+    expect(cliDistributionMajor(root)).toBe(2);
+    expect(stderrSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it("returns 2 without warning when registry.json has valid v2 version", () => {
+    const root = path.join(tmp, "v2-valid-registry");
+    fs.mkdirSync(root, { recursive: true });
+    fs.writeFileSync(
+      path.join(root, "registry.json"),
+      JSON.stringify({ skills: [{ name: "agentera", version: "2.7.0" }] }),
+    );
+    expect(cliDistributionMajor(root)).toBe(2);
+    expect(stderrSpy).not.toHaveBeenCalled();
+  });
+
+  it("warns only once for repeated calls on the same unresolved root", () => {
+    const root = path.join(tmp, "repeated-calls");
+    fs.mkdirSync(root, { recursive: true });
+    expect(cliDistributionMajor(root)).toBe(2);
+    expect(cliDistributionMajor(root)).toBe(2);
+    expect(stderrSpy).toHaveBeenCalledTimes(1);
   });
 });
 

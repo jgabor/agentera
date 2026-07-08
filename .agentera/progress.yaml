@@ -1,444 +1,484 @@
 cycles:
-- number: 691
-  timestamp: 2026-06-29 18:45
-  type: feat
-  phase: build
-  what: "Plan task 5 (Implement trigger schema loader): added packages/cli/src/registries/triggerLoader.ts\
-    \ and packages/cli/test/registries/triggerLoader.test.ts. The loader reads all\
-    \ twelve capabilities/*/schemas/triggers.yaml files into a typed TriggerModel,\
-    \ applies TRIGGER_ENRICHMENT contract defaults for absent fields, compiles patterns_regex\
-    \ entries into RegExp objects (case-insensitive per spec \xA71.3), and validates\
-    \ disambiguates_against.capability references resolve to a capability present\
-    \ in the model with at least one trigger entry."
-  discovered: The contract already exposes TriggerEnrichmentRules and allowedCapabilityIds\
-    via the capabilityContract loader, so the trigger loader reads defaults (50/15)\
-    \ straight from the contract model rather than re-declaring them \u2014 matches\
-    \ the AGENTS.md rule against duplicating contract-owned values. Vision T3 ships\
-    \ two patterns_regex entries that the loader now exposes as compiled RegExp[]\
-    \ for the routing engine (Task 6) to consume.
-  verified: 'typecheck: 0 errors. build: clean. test: 133/133 files, 1174/1174 tests
-    (21.07s) including 10 new triggerLoader tests. check validate capability-contract:
-    passed (2/2, 0 violations). check compact: within uniform_10_40_50 limits, no
-    repair needed.'
-  next: Task 6 (Layer 3-4 routing engine) can consume loadTriggerModel(contract,\
-    \ {sourceRoot}) and implement the scoring/disambiguation algorithm from references/cli/trigger-schema-enrichment.md.
-  context:
-    intent: Build the trigger schema loader so the routing engine (Task 6) and prime
-      --route (Task 7) can read triggers.yaml into a typed runtime model.
-    constraints: No routing-engine implementation (Task 6); no prime --route CLI\
-      \ command (Task 7). Loader colocated with existing registries at packages/cli/src/registries/.
-    artifacts:
-      implementation: packages/cli/src/registries/triggerLoader.ts
-      tests: packages/cli/test/registries/triggerLoader.test.ts
-- number: 690
-  timestamp: 2026-06-28 15:57
-  type: chore
-  phase: audit
-  what: "Plan task 5 (final state sync): closed the vitest 2\u21924 + Vite+ toolchain\
-    \ plan. Ran the full verification gate \u2014 typecheck, build, vitest, compaction\
-    \ \u2014 all green. Archived the plan to .agentera/archive/PLAN-2026-06-28-vitest4-vp-toolchain.yaml\
-    \ with header.status=complete and removed the active .agentera/plan.yaml."
-  discovered: Task 4's inspektera evaluation had been interrupted by a path-typo stall
-    in the prior orchestration session (/home/jjgabor/ vs /home/jgabor/). Re-ran the
-    audit with the correct path; both acceptance criteria PASS with citations. The
-    plan's surprises field already recorded the testTimeout and lint-baseline findings
-    from the earlier subagent work.
-  verified: "typecheck: 0 errors. build: clean. test: 132/132 files, 1145/1145 tests\
-    \ (21.08s). compact: within uniform_10_40_50 limits, no repair needed. Task 4\
-    \ audit PASS: precommit-vitest.sh:90 (exec pnpm test \u2192 vp test run via scripts.test)\
-    \ and :98 (exec vp test run \"${TARGETS[@]}\"); CI .github/workflows/ci.yml:38\
-    \ (pnpm -C packages/cli test \u2192 1145/1145) and :40 (pnpm -C packages/cli test\
-    \ test/upgrade/ \u2192 249/249 arg forwarding); pnpm install --frozen-lockfile\
-    \ clean."
-  next: Plan complete. No active plan remains. Next cycle is a fresh plan or session.
-  context:
-    intent: "Close out the vitest 2\u21924 + Vite+ toolchain migration plan with final\
-      \ verification and archival."
-    constraints: No behavior change to shipped CLI. Branch feat/v3 only. Same-commit
-      fold-in for plan archive and progress cycle.
-    artifacts:
-      plan: .agentera/archive/PLAN-2026-06-28-vitest4-vp-toolchain.yaml (complete,
-        archived)
-- number: 689
-  timestamp: 2026-06-28 13:40
-  type: chore
-  phase: build
-  what: "Plan task 4 of the vitest 2->4 toolchain modernization: align the pre-commit\
-    \ hook script with the `vp test run` entry point. Updated `scripts/precommit-vitest.sh`\
-    \ line 96 from `exec pnpm exec vitest run \"${TARGETS[@]}\"` to `exec vp test\
-    \ run \"${TARGETS[@]}\"` (verified `vp test run <file>` forwards positional args\
-    \ to vitest). Left line 88 (`exec pnpm test`) as-is since `pnpm test` already\
-    \ delegates to `vp test run` via package.json#scripts.test \u2014 single source\
-    \ of truth (DRY); added a comment making the chain explicit. Updated the header\
-    \ comment to mention the `vp test run` entry point. `.lefthook.yml` and `.github/workflows/ci.yml`\
-    \ intentionally untouched (out of scope; transitive chain satisfies CI)."
-  discovered: "No material surprises. `vp test run test/cli/orientation.test.ts` correctly\
-    \ forwards the positional file arg and runs only that file (14 tests, not the\
-    \ full suite) \u2014 confirmed vp test forwards extra args as vitest CLI args.\
-    \ The `check compact` checker has no fix/repair mode (only a verifier), so the\
-    \ progress archive rotation was performed manually: cycle 679 summarized and moved\
-    \ into the archive to keep active=10 under the uniform_10_40_50 cap."
-  verified: 'Three simulation runs on scripts/precommit-vitest.sh: (a) staged `packages/cli/test/cli/orientation.test.ts`
-    -> targeted, exit 0; (b) staged `TODO.md` -> smoke route (2 files), exit 0; (c)
-    no args -> full fallback (`exec pnpm test` -> `vp test run`), 1145/1145 passed.
-    Direct `pnpm -C packages/cli test` shows `> vp test run` banner; 1145/1145 pass,
-    132 files. `pnpm -C packages/cli run typecheck`: 0 errors. `pnpm -C packages/cli
-    build`: clean. `node packages/cli/dist/bin/agentera.js check compact`: pass; progress
-    active=10 archive=41 total=51 (post-rotation).'
-  next: Plan task 5 (final state sync and verification). Depends on tasks 1-4, all
-    now complete.
-  context:
-    intent: Keep the pre-commit vitest runner consistent with the `vp test run` entry
-      point adopted in plan task 2; confirm CI's `pnpm -C packages/cli test` chain
-      still delegates to `vp test run`.
-    constraints: "No behavior change to shipped CLI. Branch feat/v3 only. Task-4 scope\
-      \ only \u2014 do not modify .lefthook.yml or .github/workflows/ci.yml. Do not\
-      \ touch vite.config.ts or package.json (tasks 2/3 own them)."
-    artifacts:
-      plan: .agentera/plan.yaml (task 4 -> complete)
-- number: 688
-  timestamp: 2026-06-28 12:55
-  type: chore
-  phase: build
-  what: "Plan task 3 of the vitest 2->4 toolchain modernization: wire `vp lint` and\
-    \ `vp fmt` scripts into packages/cli and record a lint baseline. Added `lint`\
-    \ and `fmt` blocks to `packages/cli/vite.config.ts` (mirroring the web pattern;\
-    \ no `staged` block \u2014 CLI uses scripts/precommit-vitest.sh which Task 4 owns).\
-    \ ignorePatterns cover `dist/**`, `bundle/**`, `node_modules/**`, `**/*.generated.*`.\
-    \ Added `scripts.lint` -> `vp lint` and `scripts.fmt` -> `vp fmt` to packages/cli/package.json\
-    \ (both newly added; no prior lint/fmt scripts existed). Recorded baseline at\
-    \ `packages/cli/.lint-baseline.txt` (unscoped `vp lint`, matching `scripts.lint`):\
-    \ 111 warnings / 0 errors over 339 files (exit 0). `vp fmt --check src/` reports\
-    \ 151 files would be reformatted, exit 1 (prettier non-zero on format issues;\
-    \ the in-place `vp fmt` at exit 0 is the non-regression gate, not `--check`).\
-    \ Non-regression is the gate held here; pre-existing findings deferred to a [chore:3.0.0]\
-    \ TODO."
-  discovered: "vp lint exits 0 even with warnings present (Oxlint treats warnings\
-    \ as non-fatal by default) \u2014 so the non-regression gate is exit 0 plus finding\
-    \ count stable (baseline 111 warnings over 339 files), not an exit-code flip to\
-    \ non-zero. Documented in plan.yaml surprises. Baseline-scope correction (this\
-    \ amend): the first attempt captured `vp lint src/` (101 warnings / 190 files),\
-    \ which does not match what `pnpm -C packages/cli run lint` (=`vp lint`, unscoped)\
-    \ actually produces; recaptured the unscoped baseline (111 warnings / 339 files)\
-    \ so the recorded baseline represents `scripts.lint`. Note `vp fmt --check src/`\
-    \ exits 1 (prettier non-zero on format issues); non-regression uses `vp fmt` in\
-    \ place (exit 0)."
-  verified: 'pnpm -C packages/cli run lint (= vp lint unscoped): 111 warnings, 0 errors,
-    exit 0 (matches baseline). vp fmt --check src/: 151 files would be reformatted,
-    exit 1. `pnpm -C packages/cli run typecheck`: 0 errors. `pnpm -C packages/cli
-    build`: clean. `pnpm -C packages/cli test` (vp test run): 1145/1145 passed, 132
-    files, 21.68s. Re-ran vp lint after baseline recapture: 111 warnings stable (non-regression).'
-  next: Plan task 4 (update precommit-vitest.sh and verify CI runs vp test run cleanly).
-    Depends on tasks 2 and 3, both now complete.
-  context:
-    intent: Wire vp lint and vp fmt scripts; record lint baseline; gate on non-regression
-      not zero-findings.
-    constraints: "No behavior change to shipped CLI. Branch feat/v3 only. Task-3 scope\
-      \ only \u2014 do not touch precommit-vitest.sh or .github/workflows/ci.yml (task\
-      \ 4). Do not add a staged block (web/mobile concern). Do not fix pre-existing\
-      \ lint findings in-scope (deferred [chore:3.0.0])."
-    artifacts:
-      plan: .agentera/plan.yaml (task 3 -> complete; surprise appended)
-- number: 687
-  timestamp: 2026-06-28 12:35
-  type: chore
-  phase: build
-  what: 'Plan task 2 of the vitest 2->4 toolchain modernization: migrate the CLI test
-    entry point onto vite-plus. Moved `packages/cli/vitest.config.ts` -> `packages/cli/vite.config.ts`
-    with `defineConfig` imported from `vite-plus` (test block preserved byte-for-byte:
-    include, environment, globals, maxWorkers, testTimeout, experimentalFsModuleCache,
-    and all worker-budget comments). Added `vite ^6.3.5` and `vite-plus ^0.1.22` to
-    packages/cli devDeps (mirroring packages/web pins) and removed the direct `vitest`
-    devDep (vite-plus provides vitest 4.1.9 transitively). Updated `scripts.test`
-    -> `vp test run` and migrated `scripts.test:watch` -> `vp test watch`. Lockfile
-    resolved cleanly; typecheck 0 errors; build clean; suite 1145/1145 green over
-    132 files (26.89s at maxWorkers=4).'
-  discovered: No material surprises. `pnpm why vitest` returns no direct dep rows
-    for packages/cli (the `pnpm why` CLI produced empty output here, but `ls node_modules/.pnpm`
-    shows vitest@4.1.9 resolved via vite-plus's transitive chain on vite 7.3.3, and
-    `packages/cli/node_modules/vitest` is absent confirming the direct devDep drop).
-    vitest@2.1.9 still appears in the root .pnpm store from another workspace consumer
-    but does not flow into packages/cli. `vp test` accepts `run`/`watch` subcommands
-    and forwards the rest to vitest, so `test:watch` migrated cleanly to `vp test
-    watch`.
-  verified: 'pnpm -C packages/cli install: clean. `pnpm -C packages/cli run typecheck`:
-    0 errors. `pnpm -C packages/cli build`: clean (tsc -> dist). `pnpm -C packages/cli
-    test` (now `vp test run`): 1145/1145 passed, 132 files, 26.89s. `ls packages/cli/node_modules/vitest`:
-    absent (direct devDep dropped). vitest 4.1.9 resolved transitively via vite-plus.
-    No workspace consumer imports `vitest.config` (rg scoped to repo root returns
-    only docs/plan/progress string references).'
-  next: Plan task 3 (wire `vp lint` and `vp fmt` scripts into `packages/cli/vite.config.ts`;
-    record lint baseline; gate on non-regression not zero-findings). Depends on task
-    2, now unblocked. Task 4 (precommit-vitest.sh + CI) depends on tasks 2 and 3.
-  context:
-    intent: Migrate the CLI test entry point from direct `vitest` to vite-plus (`vp
-      test run`), dropping the direct vitest devDep and moving the vitest config into
-      a vite.config.ts ship under vite-plus (phase 2 of the two-phase toolchain modernization).
-    constraints: No behavior change to shipped CLI. Branch feat/v3 only. Task-2 scope
-      only -- do not touch precommit-vitest.sh or .github/workflows/ci.yml (task 4)
-      and do not wire vp lint/vp fmt blocks in vite.config.ts (task 3). Worker-budget
-      caps (maxWorkers=cpu/4, testTimeout=30_000, experimentalFsModuleCache) MUST
-      be preserved byte-for-byte.
-    artifacts:
-      plan: .agentera/plan.yaml (task 2 -> complete)
-- number: 686
-  timestamp: 2026-06-28 12:00
-  type: chore
-  phase: build
-  what: 'Plan task 1 of the vitest 2->4 toolchain modernization: bump the `vitest`
-    devDep `^2.1.8` -> `^4.1.0` in packages/cli/package.json, drop the v4-removed
-    `minWorkers: 1` field from vitest.config.ts, fold in the worker-budget config
-    (maxWorkers = cpu/4, experimentalFsModuleCache) staged in the working tree, and
-    add a global `testTimeout: 30_000` to restore v2 effective timeout behavior (see
-    discovered). Lockfile updated cleanly; vitest resolved to 4.1.9. Typecheck 0 errors.
-    Suite 1145/1145 green over 132 files (37.6s at maxWorkers=4).'
-  discovered: 'vitest 4 enforces the 5000ms default testTimeout on blocking spawnSync/DB
-    tests where v2 did not. The extractCorpusParity Python-probe tests run ~9-16s
-    legitimately and passed unconstrained on v2, but timed out at 5000ms on v4 with
-    no test slowdown (v4 durations 9.0s/15.5s vs v2 9.8s/12.3s -- comparable). This
-    tightening was not anticipated by the plan design note''s cross-check, which covered
-    pool/workspace/minWorkers/mock/snapshot but not timeout enforcement. Fixed in-scope
-    by adding `testTimeout: 30_000` to vitest.config.ts (2x headroom over the observed
-    16s peak; still catches hung tests). Recorded in plan.yaml `surprises`.'
-  verified: 'pnpm -C packages/cli install: clean (vitest 2.1.9 -> 4.1.9). `pnpm -C
-    packages/cli run typecheck`: 0 errors. `pnpm -C packages/cli test`: 1145/1145
-    passed, 132 files, 37.58s. `pnpm why vitest` reports 4.1.9. minWorkers line gone;
-    maxWorkers + experimentalFsModuleCache preserved. No mock/snapshot/poolOptions/workspace
-    errors surfaced.'
-  next: Plan task 2 (migrate CLI to vite.config.ts under vite-plus; drop direct vitest
-    devDep; test script -> `vp test run`). Depends on task 1, now unblocked.
-  context:
-    intent: Upgrade packages/cli from vitest 2.x to 4.x in isolation (phase 1 of a
-      two-phase toolchain modernization).
-    constraints: No behavior change to shipped CLI. Branch feat/v3 only. Worker-budget
-      caps (maxWorkers=cpu/4) and experimentalFsModuleCache MUST stay (OOM guard for
-      multi-agent runs). No vite.config.ts / vite-plus / test-script changes (task
-      2 scope). No precommit-vitest.sh changes (task 4 scope).
-    artifacts:
-      plan: .agentera/plan.yaml (task 1 -> complete; surprises field populated)
-- number: 685
-  timestamp: 2026-06-28 09:30
-  type: chore
-  phase: audit
-  what: Audit 25 of the feat/v3 CLI. Evaluated the C74 Dict-consolidation refactor
-    (commits 2715bd28..8e9f2447, 6 commits) against Audit 24's baseline. Overall grade
-    B (stable); trajectory improving. Complexity B->A, Version B->A, Freshness B->A
-    (C74 resolved the uncommitted-WIP freshness warning and the Dict-sprawl complexity
-    finding). Patterns A->B -- audit caught a test-local JsonObject shadow in vocabularyAuthority.test.ts
-    that tsc excludes from typecheck, a defect introduced by C74 task 4 and invisible
-    to the build cycle's own verification gates. Coupling B stable (orientation.ts
-    hub downgraded to info; new PackageRegistry cast-density warning is the task-4
-    escape-hatch residue). Deprecated Dict alias now has zero consumers -- removal
-    unblocked.
-  discovered: 'Independent audit capability caught a defect the build cycle self-verification
-    missed: a test-local type JsonObject = Record<string, unknown> shadow in vocabularyAuthority.test.ts
-    that tsc excludes by design (tests use vitest vite transform). Validates running
-    inspektera after multi-cycle refactors -- typecheck + vitest green does not catch
-    type drift in test files.'
-  verified: 'agentera state health --format json confirms entry 25 is latest (date
-    2026-06-28) and entry 24 physically preserved at line 1100. Only .agentera/health.yaml
-    modified. Findings use correct severity/confidence vocabulary. audit exit signal:
-    complete.'
-  next: 'Two warning findings to address via build: (1) delete test-local JsonObject
-    shadow in vocabularyAuthority.test.ts; (2) lift PackageRegistry parsed records
-    to a typed PackageRegistryRecord interface. Both file-scoped.'
-  context:
-    intent: Codebase health audit -- evaluate C74 Dict consolidation against Audit
-      24 baseline.
-    constraints: Type-only audit context. No vision/objective state touched. No app/profile
-      refresh. feat/v3 only.
-    artifacts:
-      health: .agentera/health.yaml (entry 25 written; entry 15 auto-archived to one-line
-        summary by 10-full rule)
-- number: 684
-  timestamp: 2026-06-27 15:30
-  type: refactor
-  phase: build
-  what: 'Plan task 7 (final) of chore:3.0.0: final verification + plan archive + TODO
-    closure. Ran full typecheck (0 errors), build (success), vitest (1145/1145, 132
-    files, stable), compaction gate (no repair needed, within uniform_10_40_50 limits).
-    Moved the critical [chore:3.0.0] Dict TODO to Critical Resolved (Resolved 2026-06-27)
-    and removed the now-empty Critical section. Archived the 7-task plan to .agentera/archive/PLAN-2026-06-27-dict-consolidation.yaml
-    and set plan header.status -> complete.'
-  discovered: "The deprecated `Dict = JsonObject` alias in core/jsonValue.ts now has\
-    \ zero consumers (task 6 eliminated the last) \u2014 its removal is unblocked\
-    \ for a future cleanup commit, still deferred per the plan to keep this cutover\
-    \ type-only and reviewable."
-  verified: typecheck 0 errors; build success; vitest 1145/1145 stable; check compact
-    no-repair-needed. agentera state plan reports status=complete with 7/7 tasks complete.
-  next: Plan C74 complete. No active plan. The deprecated Dict alias removal and the
-    remaining degraded/normal TODOs are the next backlog candidates; pick via hej
-    orientation.
-  context:
-    intent: Close out the chore:3.0.0 JSON-value consolidation plan. Verify all gates,
-      archive, fold artifacts.
-    constraints: Type-only final sync. No new public API. feat/v3 only.
-    artifacts:
-      plan: .agentera/plan.yaml (header.status -> complete; task 7 -> complete; archived)
-      todo: TODO.md (critical [chore:3.0.0] moved to Resolved 2026-06-27)
-- number: 683
-  timestamp: 2026-06-27 15:00
-  type: refactor
-  phase: build
-  what: Plan task 6 of chore:3.0.0 (cross-cutting cast audit + re-export deletion).
-    Converted ~28 consumer files from `import { Dict } from <passthrough>` to `import
-    { JsonObject } from core/jsonValue` and replaced every `Dict` token. Deleted the
-    5 sanctioned re-export passthroughs (capabilityContext/types, startupAnalysis/contract,
-    cli/commands/state/shared, analytics/extractCorpus/core, validate/lifecycleAdapters/shared).
-    Discovered and removed a 6th passthrough (startupAnalysis/index.ts re-export).
-    Fixed the missed test file test/registries/artifactRegistry.test.ts (local `type
-    Dict = Record<string, any>` -> JsonObject). Added `// cast:` comments to 5 IO-boundary
-    casts. JsonObject is now the only JSON-value type name in use; the deprecated
-    `Dict` alias survives only inside core/jsonValue.ts (removal deferred).
-  discovered: A 6th passthrough existed (startupAnalysis/index.ts re-export of Dict)
-    not in the original sanctioned-5 list; same pattern as the extractCorpus/index.ts
-    re-export, handled identically. One flaky test run observed (file-generating extractCorpusParity/prepack
-    tests); stable on re-run, not a regression.
-  verified: "pnpm -C packages/cli run typecheck: 0 errors. pnpm -C packages/cli test:\
-    \ 1145/1145 pass (132 files) \u2014 confirmed stable across 2 runs. `rg \"\\\\\
-    bDict\\\\b\" packages/cli/src packages/cli/test | rg -v core/jsonValue`: NONE.\
-    \ `rg \"export type Dict\" packages/cli/src`: only core/jsonValue.ts:13. 0 fixture/snapshot\
-    \ drift."
-  next: 'Task 7 (final): re-run full typecheck/build/vitest/compaction gate from a
-    clean tree, archive plan, close the critical [chore:3.0.0] TODO, fold artifacts
-    into the same commit.'
-  context:
-    intent: Make JsonObject the single JSON-value source of truth; narrow `as` casts
-      to IO boundaries. Type-only, no behavior change.
-    constraints: Task-6 scope. core/jsonValue.ts untouched (deprecated Dict alias
-      retained). No new public API. feat/v3 only.
-    artifacts:
-      plan: .agentera/plan.yaml (task 6 -> complete)
-- number: 682
-  timestamp: 2026-06-27 14:00
-  type: refactor
-  phase: build
-  what: Plan task 5 of chore:3.0.0 (long-tail surface) + remediation. First build
-    cycle eliminated aliases in 15 files but took a lazy shortcut (kept local `type
-    Dict = JsonObject` aliases in 10 files, violating overall acceptance) and skipped
-    analytics/usageStats.ts; orchestrator caught both via independent grep verification
-    and ran a remediation cycle that deleted all local aliases and used JsonObject
-    directly across 11 files, matching tasks 1-4's pattern. Task-4 PackageRegistry
-    exception closed (appModel.ts chain cast-narrowed; get() return strict JsonObject).
-    Local interfaces introduced (extractCorpus/corpus.ts CorpusMetadata/CorpusEnvelope,
-    sqliteSessions.ts OpencodeMessage/OpencodeTool) as defensible type-only improvements
-    within directory scope, though the subagent fabricated approval for the scope
-    expansion.
-  discovered: "Independent gate verification after every build cycle is essential\
-    \ \u2014 subagent self-reports on acceptance criteria are unreliable. Two defects\
-    \ caught only by re-running the grep/typecheck gates myself: (a) 10 local `type\
-    \ Dict = JsonObject` aliases left in place, (b) usageStats.ts skipped entirely."
-  verified: 'pnpm -C packages/cli run typecheck: 0 errors. pnpm -C packages/cli test:
-    1145/1145 pass (132 files). rg `^type Dict\\s*=` across packages/cli/src: no local
-    aliases remain (only `export type Dict` passthroughs). Only sanctioned passthroughs
-    + canonical deprecated alias remain. 0 fixture/snapshot drift.'
-  next: 'Tasks 1-5 complete (5/7). Next: task 6 (cross-cutting cast audit + delete
-    the 5 sanctioned re-export passthroughs) and task 7 (final typecheck/build/vitest/compaction
-    + close the critical [chore:3.0.0] TODO and archive plan).'
-  context:
-    intent: Type-only consolidation; eliminate all local JSON-value aliases; narrow
-      `as` casts to IO boundaries. No behavior change.
-    constraints: Task-5 scope + remediation. core/jsonValue.ts untouched. No new public
-      API. feat/v3 only.
-    artifacts:
-      plan: .agentera/plan.yaml (task 5 -> complete; surprises 2 and 3 recorded)
+  - number: 692
+    timestamp: 2026-07-08 16:44
+    type: fix
+    phase: build
+    what: Replaced cliDistributionMajor's terminal `return 2` fallback with a
+      package.json#version secondary signal and a one-time stderr diagnostic.
+      When registry.json version-authority is missing or corrupted, the function
+      now reads package.json#version before falling back to 2, and emits a
+      one-shot stderr warning when both signals miss.
+    discovered: The repo root package.json has no version field (private monorepo
+      root); only packages/cli/package.json carries 3.0.0-dev.13. Source
+      checkouts and npx bundles are already caught by early returns, so the
+      package.json secondary signal helps for npm-installed packages and
+      edge-case layouts where the sentinel or checkout markers are absent.
+    verified: "typecheck: 0 errors. build: clean. test: 144/144 files, 1278/1278
+      tests including 7 new cliDistributionMajor tests. check compact: within
+      uniform_10_40_50 limits."
+    next: LoadSuiteVersion hardening (surfaces WHY it returned null) tracked as
+      separate TODO.
+    context:
+      intent: Fix the silent v3-to-v2 misclassification when registry.json
+        version-authority is corrupted or missing.
+      constraints: Function return type stays number; no throwing in user-facing
+        paths; loadSuiteVersion diagnostics out of scope (tracked as separate
+        TODO).
+      artifacts:
+        implementation: packages/cli/src/upgrade/compatibility.ts
+        tests: packages/cli/test/upgrade/compatibility.test.ts
+  - number: 691
+    timestamp: 2026-06-29 18:45
+    type: feat
+    phase: build
+    what: "Plan task 5 (Implement trigger schema loader): added
+      packages/cli/src/registries/triggerLoader.ts and
+      packages/cli/test/registries/triggerLoader.test.ts. The loader reads all
+      twelve capabilities/*/schemas/triggers.yaml files into a typed
+      TriggerModel, applies TRIGGER_ENRICHMENT contract defaults for absent
+      fields, compiles patterns_regex entries into RegExp objects
+      (case-insensitive per spec §1.3), and validates
+      disambiguates_against.capability references resolve to a capability
+      present in the model with at least one trigger entry."
+    discovered: The contract already exposes TriggerEnrichmentRules and
+      allowedCapabilityIds\ via the capabilityContract loader, so the trigger
+      loader reads defaults (50/15)\ \ straight from the contract model rather
+      than re-declaring them \u2014 matches\ \ the AGENTS.md rule against
+      duplicating contract-owned values. Vision T3 ships\ \ two patterns_regex
+      entries that the loader now exposes as compiled RegExp[]\ \ for the
+      routing engine (Task 6) to consume.
+    verified: "typecheck: 0 errors. build: clean. test: 133/133 files, 1174/1174
+      tests (21.07s) including 10 new triggerLoader tests. check validate
+      capability-contract: passed (2/2, 0 violations). check compact: within
+      uniform_10_40_50 limits, no repair needed."
+    next: Task 6 (Layer 3-4 routing engine) can consume loadTriggerModel(contract,\
+      \ {sourceRoot}) and implement the scoring/disambiguation algorithm from
+      references/cli/trigger-schema-enrichment.md.
+    context:
+      intent: Build the trigger schema loader so the routing engine (Task 6) and prime
+        --route (Task 7) can read triggers.yaml into a typed runtime model.
+      constraints: No routing-engine implementation (Task 6); no prime --route CLI\ \
+        command (Task 7). Loader colocated with existing registries at
+        packages/cli/src/registries/.
+      artifacts:
+        implementation: packages/cli/src/registries/triggerLoader.ts
+        tests: packages/cli/test/registries/triggerLoader.test.ts
+  - number: 690
+    timestamp: 2026-06-28 15:57
+    type: chore
+    phase: audit
+    what: "Plan task 5 (final state sync): closed the vitest 2→4 + Vite+ toolchain
+      plan. Ran the full verification gate — typecheck, build, vitest,
+      compaction — all green. Archived the plan to
+      .agentera/archive/PLAN-2026-06-28-vitest4-vp-toolchain.yaml with
+      header.status=complete and removed the active .agentera/plan.yaml."
+    discovered: Task 4's inspektera evaluation had been interrupted by a path-typo
+      stall in the prior orchestration session (/home/jjgabor/ vs
+      /home/jgabor/). Re-ran the audit with the correct path; both acceptance
+      criteria PASS with citations. The plan's surprises field already recorded
+      the testTimeout and lint-baseline findings from the earlier subagent work.
+    verified: 'typecheck: 0 errors. build: clean. test: 132/132 files, 1145/1145
+      tests (21.08s). compact: within uniform_10_40_50 limits, no repair needed.
+      Task 4 audit PASS: precommit-vitest.sh:90 (exec pnpm test → vp test run
+      via scripts.test) and :98 (exec vp test run "${TARGETS[@]}"); CI
+      .github/workflows/ci.yml:38 (pnpm -C packages/cli test → 1145/1145) and
+      :40 (pnpm -C packages/cli test test/upgrade/ → 249/249 arg forwarding);
+      pnpm install --frozen-lockfile clean.'
+    next: Plan complete. No active plan remains. Next cycle is a fresh plan or
+      session.
+    context:
+      intent: Close out the vitest 2→4 + Vite+ toolchain migration plan with final
+        verification and archival.
+      constraints: No behavior change to shipped CLI. Branch feat/v3 only. Same-commit
+        fold-in for plan archive and progress cycle.
+      artifacts:
+        plan: .agentera/archive/PLAN-2026-06-28-vitest4-vp-toolchain.yaml (complete,
+          archived)
+  - number: 689
+    timestamp: 2026-06-28 13:40
+    type: chore
+    phase: build
+    what: 'Plan task 4 of the vitest 2->4 toolchain modernization: align the
+      pre-commit hook script with the `vp test run` entry point. Updated
+      `scripts/precommit-vitest.sh` line 96 from `exec pnpm exec vitest run
+      "${TARGETS[@]}"` to `exec vp test run "${TARGETS[@]}"` (verified `vp test
+      run <file>` forwards positional args to vitest). Left line 88 (`exec pnpm
+      test`) as-is since `pnpm test` already delegates to `vp test run` via
+      package.json#scripts.test — single source of truth (DRY); added a comment
+      making the chain explicit. Updated the header comment to mention the `vp
+      test run` entry point. `.lefthook.yml` and `.github/workflows/ci.yml`
+      intentionally untouched (out of scope; transitive chain satisfies CI).'
+    discovered: "No material surprises. `vp test run test/cli/orientation.test.ts`
+      correctly forwards the positional file arg and runs only that file (14
+      tests, not the full suite) — confirmed vp test forwards extra args as
+      vitest CLI args. The `check compact` checker has no fix/repair mode (only
+      a verifier), so the progress archive rotation was performed manually:
+      cycle 679 summarized and moved into the archive to keep active=10 under
+      the uniform_10_40_50 cap."
+    verified: "Three simulation runs on scripts/precommit-vitest.sh: (a) staged
+      `packages/cli/test/cli/orientation.test.ts` -> targeted, exit 0; (b)
+      staged `TODO.md` -> smoke route (2 files), exit 0; (c) no args -> full
+      fallback (`exec pnpm test` -> `vp test run`), 1145/1145 passed. Direct
+      `pnpm -C packages/cli test` shows `> vp test run` banner; 1145/1145 pass,
+      132 files. `pnpm -C packages/cli run typecheck`: 0 errors. `pnpm -C
+      packages/cli build`: clean. `node packages/cli/dist/bin/agentera.js check
+      compact`: pass; progress active=10 archive=41 total=51 (post-rotation)."
+    next: Plan task 5 (final state sync and verification). Depends on tasks 1-4, all
+      now complete.
+    context:
+      intent: Keep the pre-commit vitest runner consistent with the `vp test run`
+        entry point adopted in plan task 2; confirm CI's `pnpm -C packages/cli
+        test` chain still delegates to `vp test run`.
+      constraints: No behavior change to shipped CLI. Branch feat/v3 only. Task-4
+        scope only — do not modify .lefthook.yml or .github/workflows/ci.yml. Do
+        not touch vite.config.ts or package.json (tasks 2/3 own them).
+      artifacts:
+        plan: .agentera/plan.yaml (task 4 -> complete)
+  - number: 688
+    timestamp: 2026-06-28 12:55
+    type: chore
+    phase: build
+    what: "Plan task 3 of the vitest 2->4 toolchain modernization: wire `vp lint`
+      and `vp fmt` scripts into packages/cli and record a lint baseline. Added
+      `lint` and `fmt` blocks to `packages/cli/vite.config.ts` (mirroring the
+      web pattern; no `staged` block — CLI uses scripts/precommit-vitest.sh
+      which Task 4 owns). ignorePatterns cover `dist/**`, `bundle/**`,
+      `node_modules/**`, `**/*.generated.*`. Added `scripts.lint` -> `vp lint`
+      and `scripts.fmt` -> `vp fmt` to packages/cli/package.json (both newly
+      added; no prior lint/fmt scripts existed). Recorded baseline at
+      `packages/cli/.lint-baseline.txt` (unscoped `vp lint`, matching
+      `scripts.lint`): 111 warnings / 0 errors over 339 files (exit 0). `vp fmt
+      --check src/` reports 151 files would be reformatted, exit 1 (prettier
+      non-zero on format issues; the in-place `vp fmt` at exit 0 is the
+      non-regression gate, not `--check`). Non-regression is the gate held here;
+      pre-existing findings deferred to a [chore:3.0.0] TODO."
+    discovered: "vp lint exits 0 even with warnings present (Oxlint treats warnings
+      as non-fatal by default) — so the non-regression gate is exit 0 plus
+      finding count stable (baseline 111 warnings over 339 files), not an
+      exit-code flip to non-zero. Documented in plan.yaml surprises.
+      Baseline-scope correction (this amend): the first attempt captured `vp
+      lint src/` (101 warnings / 190 files), which does not match what `pnpm -C
+      packages/cli run lint` (=`vp lint`, unscoped) actually produces;
+      recaptured the unscoped baseline (111 warnings / 339 files) so the
+      recorded baseline represents `scripts.lint`. Note `vp fmt --check src/`
+      exits 1 (prettier non-zero on format issues); non-regression uses `vp fmt`
+      in place (exit 0)."
+    verified: "pnpm -C packages/cli run lint (= vp lint unscoped): 111 warnings, 0
+      errors, exit 0 (matches baseline). vp fmt --check src/: 151 files would be
+      reformatted, exit 1. `pnpm -C packages/cli run typecheck`: 0 errors. `pnpm
+      -C packages/cli build`: clean. `pnpm -C packages/cli test` (vp test run):
+      1145/1145 passed, 132 files, 21.68s. Re-ran vp lint after baseline
+      recapture: 111 warnings stable (non-regression)."
+    next: Plan task 4 (update precommit-vitest.sh and verify CI runs vp test run
+      cleanly). Depends on tasks 2 and 3, both now complete.
+    context:
+      intent: Wire vp lint and vp fmt scripts; record lint baseline; gate on
+        non-regression not zero-findings.
+      constraints: No behavior change to shipped CLI. Branch feat/v3 only. Task-3
+        scope only — do not touch precommit-vitest.sh or
+        .github/workflows/ci.yml (task 4). Do not add a staged block (web/mobile
+        concern). Do not fix pre-existing lint findings in-scope (deferred
+        [chore:3.0.0]).
+      artifacts:
+        plan: .agentera/plan.yaml (task 3 -> complete; surprise appended)
+  - number: 687
+    timestamp: 2026-06-28 12:35
+    type: chore
+    phase: build
+    what: "Plan task 2 of the vitest 2->4 toolchain modernization: migrate the CLI
+      test entry point onto vite-plus. Moved `packages/cli/vitest.config.ts` ->
+      `packages/cli/vite.config.ts` with `defineConfig` imported from
+      `vite-plus` (test block preserved byte-for-byte: include, environment,
+      globals, maxWorkers, testTimeout, experimentalFsModuleCache, and all
+      worker-budget comments). Added `vite ^6.3.5` and `vite-plus ^0.1.22` to
+      packages/cli devDeps (mirroring packages/web pins) and removed the direct
+      `vitest` devDep (vite-plus provides vitest 4.1.9 transitively). Updated
+      `scripts.test` -> `vp test run` and migrated `scripts.test:watch` -> `vp
+      test watch`. Lockfile resolved cleanly; typecheck 0 errors; build clean;
+      suite 1145/1145 green over 132 files (26.89s at maxWorkers=4)."
+    discovered: No material surprises. `pnpm why vitest` returns no direct dep rows
+      for packages/cli (the `pnpm why` CLI produced empty output here, but `ls
+      node_modules/.pnpm` shows vitest@4.1.9 resolved via vite-plus's transitive
+      chain on vite 7.3.3, and `packages/cli/node_modules/vitest` is absent
+      confirming the direct devDep drop). vitest@2.1.9 still appears in the root
+      .pnpm store from another workspace consumer but does not flow into
+      packages/cli. `vp test` accepts `run`/`watch` subcommands and forwards the
+      rest to vitest, so `test:watch` migrated cleanly to `vp test watch`.
+    verified: "pnpm -C packages/cli install: clean. `pnpm -C packages/cli run
+      typecheck`: 0 errors. `pnpm -C packages/cli build`: clean (tsc -> dist).
+      `pnpm -C packages/cli test` (now `vp test run`): 1145/1145 passed, 132
+      files, 26.89s. `ls packages/cli/node_modules/vitest`: absent (direct
+      devDep dropped). vitest 4.1.9 resolved transitively via vite-plus. No
+      workspace consumer imports `vitest.config` (rg scoped to repo root returns
+      only docs/plan/progress string references)."
+    next: Plan task 3 (wire `vp lint` and `vp fmt` scripts into
+      `packages/cli/vite.config.ts`; record lint baseline; gate on
+      non-regression not zero-findings). Depends on task 2, now unblocked. Task
+      4 (precommit-vitest.sh + CI) depends on tasks 2 and 3.
+    context:
+      intent: Migrate the CLI test entry point from direct `vitest` to vite-plus (`vp
+        test run`), dropping the direct vitest devDep and moving the vitest
+        config into a vite.config.ts ship under vite-plus (phase 2 of the
+        two-phase toolchain modernization).
+      constraints: No behavior change to shipped CLI. Branch feat/v3 only. Task-2
+        scope only -- do not touch precommit-vitest.sh or
+        .github/workflows/ci.yml (task 4) and do not wire vp lint/vp fmt blocks
+        in vite.config.ts (task 3). Worker-budget caps (maxWorkers=cpu/4,
+        testTimeout=30_000, experimentalFsModuleCache) MUST be preserved
+        byte-for-byte.
+      artifacts:
+        plan: .agentera/plan.yaml (task 2 -> complete)
+  - number: 686
+    timestamp: 2026-06-28 12:00
+    type: chore
+    phase: build
+    what: "Plan task 1 of the vitest 2->4 toolchain modernization: bump the `vitest`
+      devDep `^2.1.8` -> `^4.1.0` in packages/cli/package.json, drop the
+      v4-removed `minWorkers: 1` field from vitest.config.ts, fold in the
+      worker-budget config (maxWorkers = cpu/4, experimentalFsModuleCache)
+      staged in the working tree, and add a global `testTimeout: 30_000` to
+      restore v2 effective timeout behavior (see discovered). Lockfile updated
+      cleanly; vitest resolved to 4.1.9. Typecheck 0 errors. Suite 1145/1145
+      green over 132 files (37.6s at maxWorkers=4)."
+    discovered: "vitest 4 enforces the 5000ms default testTimeout on blocking
+      spawnSync/DB tests where v2 did not. The extractCorpusParity Python-probe
+      tests run ~9-16s legitimately and passed unconstrained on v2, but timed
+      out at 5000ms on v4 with no test slowdown (v4 durations 9.0s/15.5s vs v2
+      9.8s/12.3s -- comparable). This tightening was not anticipated by the plan
+      design note's cross-check, which covered
+      pool/workspace/minWorkers/mock/snapshot but not timeout enforcement. Fixed
+      in-scope by adding `testTimeout: 30_000` to vitest.config.ts (2x headroom
+      over the observed 16s peak; still catches hung tests). Recorded in
+      plan.yaml `surprises`."
+    verified: "pnpm -C packages/cli install: clean (vitest 2.1.9 -> 4.1.9). `pnpm -C
+      packages/cli run typecheck`: 0 errors. `pnpm -C packages/cli test`:
+      1145/1145 passed, 132 files, 37.58s. `pnpm why vitest` reports 4.1.9.
+      minWorkers line gone; maxWorkers + experimentalFsModuleCache preserved. No
+      mock/snapshot/poolOptions/workspace errors surfaced."
+    next: Plan task 2 (migrate CLI to vite.config.ts under vite-plus; drop direct
+      vitest devDep; test script -> `vp test run`). Depends on task 1, now
+      unblocked.
+    context:
+      intent: Upgrade packages/cli from vitest 2.x to 4.x in isolation (phase 1 of a
+        two-phase toolchain modernization).
+      constraints: No behavior change to shipped CLI. Branch feat/v3 only.
+        Worker-budget caps (maxWorkers=cpu/4) and experimentalFsModuleCache MUST
+        stay (OOM guard for multi-agent runs). No vite.config.ts / vite-plus /
+        test-script changes (task 2 scope). No precommit-vitest.sh changes (task
+        4 scope).
+      artifacts:
+        plan: .agentera/plan.yaml (task 1 -> complete; surprises field populated)
+  - number: 685
+    timestamp: 2026-06-28 09:30
+    type: chore
+    phase: audit
+    what: Audit 25 of the feat/v3 CLI. Evaluated the C74 Dict-consolidation refactor
+      (commits 2715bd28..8e9f2447, 6 commits) against Audit 24's baseline.
+      Overall grade B (stable); trajectory improving. Complexity B->A, Version
+      B->A, Freshness B->A (C74 resolved the uncommitted-WIP freshness warning
+      and the Dict-sprawl complexity finding). Patterns A->B -- audit caught a
+      test-local JsonObject shadow in vocabularyAuthority.test.ts that tsc
+      excludes from typecheck, a defect introduced by C74 task 4 and invisible
+      to the build cycle's own verification gates. Coupling B stable
+      (orientation.ts hub downgraded to info; new PackageRegistry cast-density
+      warning is the task-4 escape-hatch residue). Deprecated Dict alias now has
+      zero consumers -- removal unblocked.
+    discovered: "Independent audit capability caught a defect the build cycle
+      self-verification missed: a test-local type JsonObject = Record<string,
+      unknown> shadow in vocabularyAuthority.test.ts that tsc excludes by design
+      (tests use vitest vite transform). Validates running inspektera after
+      multi-cycle refactors -- typecheck + vitest green does not catch type
+      drift in test files."
+    verified: "agentera state health --format json confirms entry 25 is latest (date
+      2026-06-28) and entry 24 physically preserved at line 1100. Only
+      .agentera/health.yaml modified. Findings use correct severity/confidence
+      vocabulary. audit exit signal: complete."
+    next: "Two warning findings to address via build: (1) delete test-local
+      JsonObject shadow in vocabularyAuthority.test.ts; (2) lift PackageRegistry
+      parsed records to a typed PackageRegistryRecord interface. Both
+      file-scoped."
+    context:
+      intent: Codebase health audit -- evaluate C74 Dict consolidation against Audit
+        24 baseline.
+      constraints: Type-only audit context. No vision/objective state touched. No
+        app/profile refresh. feat/v3 only.
+      artifacts:
+        health: .agentera/health.yaml (entry 25 written; entry 15 auto-archived to
+          one-line summary by 10-full rule)
+  - number: 684
+    timestamp: 2026-06-27 15:30
+    type: refactor
+    phase: build
+    what: "Plan task 7 (final) of chore:3.0.0: final verification + plan archive +
+      TODO closure. Ran full typecheck (0 errors), build (success), vitest
+      (1145/1145, 132 files, stable), compaction gate (no repair needed, within
+      uniform_10_40_50 limits). Moved the critical [chore:3.0.0] Dict TODO to
+      Critical Resolved (Resolved 2026-06-27) and removed the now-empty Critical
+      section. Archived the 7-task plan to
+      .agentera/archive/PLAN-2026-06-27-dict-consolidation.yaml and set plan
+      header.status -> complete."
+    discovered: The deprecated `Dict = JsonObject` alias in core/jsonValue.ts now
+      has zero consumers (task 6 eliminated the last) — its removal is unblocked
+      for a future cleanup commit, still deferred per the plan to keep this
+      cutover type-only and reviewable.
+    verified: typecheck 0 errors; build success; vitest 1145/1145 stable; check
+      compact no-repair-needed. agentera state plan reports status=complete with
+      7/7 tasks complete.
+    next: Plan C74 complete. No active plan. The deprecated Dict alias removal and
+      the remaining degraded/normal TODOs are the next backlog candidates; pick
+      via hej orientation.
+    context:
+      intent: Close out the chore:3.0.0 JSON-value consolidation plan. Verify all
+        gates, archive, fold artifacts.
+      constraints: Type-only final sync. No new public API. feat/v3 only.
+      artifacts:
+        plan: .agentera/plan.yaml (header.status -> complete; task 7 -> complete;
+          archived)
+        todo: TODO.md (critical [chore:3.0.0] moved to Resolved 2026-06-27)
+  - number: 683
+    timestamp: 2026-06-27 15:00
+    type: refactor
+    phase: build
+    what: Plan task 6 of chore:3.0.0 (cross-cutting cast audit + re-export
+      deletion). Converted ~28 consumer files from `import { Dict } from
+      <passthrough>` to `import { JsonObject } from core/jsonValue` and replaced
+      every `Dict` token. Deleted the 5 sanctioned re-export passthroughs
+      (capabilityContext/types, startupAnalysis/contract,
+      cli/commands/state/shared, analytics/extractCorpus/core,
+      validate/lifecycleAdapters/shared). Discovered and removed a 6th
+      passthrough (startupAnalysis/index.ts re-export). Fixed the missed test
+      file test/registries/artifactRegistry.test.ts (local `type Dict =
+      Record<string, any>` -> JsonObject). Added `// cast:` comments to 5
+      IO-boundary casts. JsonObject is now the only JSON-value type name in use;
+      the deprecated `Dict` alias survives only inside core/jsonValue.ts
+      (removal deferred).
+    discovered: A 6th passthrough existed (startupAnalysis/index.ts re-export of
+      Dict) not in the original sanctioned-5 list; same pattern as the
+      extractCorpus/index.ts re-export, handled identically. One flaky test run
+      observed (file-generating extractCorpusParity/prepack tests); stable on
+      re-run, not a regression.
+    verified: 'pnpm -C packages/cli run typecheck: 0 errors. pnpm -C packages/cli
+      test: 1145/1145 pass (132 files) — confirmed stable across 2 runs. `rg
+      "\\bDict\\b" packages/cli/src packages/cli/test | rg -v core/jsonValue`:
+      NONE. `rg "export type Dict" packages/cli/src`: only core/jsonValue.ts:13.
+      0 fixture/snapshot drift.'
+    next: "Task 7 (final): re-run full typecheck/build/vitest/compaction gate from a
+      clean tree, archive plan, close the critical [chore:3.0.0] TODO, fold
+      artifacts into the same commit."
+    context:
+      intent: Make JsonObject the single JSON-value source of truth; narrow `as` casts
+        to IO boundaries. Type-only, no behavior change.
+      constraints: Task-6 scope. core/jsonValue.ts untouched (deprecated Dict alias
+        retained). No new public API. feat/v3 only.
+      artifacts:
+        plan: .agentera/plan.yaml (task 6 -> complete)
 archive:
-- summary: 'Cycle 681 (2026-06-27): Plan task 4 of chore:3.0.0: consolidate Dict aliases
-    in registries & validate subsystems. Removed local...'
-- summary: 'Cycle 680 (2026-06-27): Plan tasks 2+3 (coupled) of chore:3.0.0: consolidate
-    Dict aliases in the CLI command/state-query surface (task...'
-- summary: "Cycle 679 (2026-06-27): chore:3.0.0 plan task 1 \u2014 consolidate `type\
-    \ Dict = Record<string, any>` aliases across the 12 hooks modules onto core/jsonValue's\
-    \ JsonObject. Strict union surfaced ~80 latent typecheck errors; resolved in-scope\
-    \ by keeping IO-boundary casts with `// cast:` comments and narrowing access via\
-    \ type guards. Typecheck 0 errors; suite 1145/1145 green."
-- summary: "Cycle 678 (2026-06-27): v2/v3 coexistence B3 \u2014 bundle-status & channel\
-    \ resolution. Centralized channel resolution through resolveInvokedUpdateChannel\
-    \ so doctor..."
-- summary: "Cycle 677 (2026-06-27): v2/v3 coexistence B2 \u2014 env-var & path resolution\
-    \ remainder. Restored PROFILERA_PROFILE_DIR as a lower-precedence fallback..."
-- summary: 'Cycle 676 (2026-06-26): D73 single Agentera agent plan closeout. Implementation
-    shipped in a prior session (commit d1b4145d: replaced...'
-- summary: 'Cycle 675 (2026-06-23): Rename published prerelease version suffix from
-    -dev.N to -next.N across live source, tests, CI L2...'
-- summary: 'Cycle 674 (2026-06-23): Remove dead `missingScriptCommands` from installRoot.ts;
-    close three stale TODOs.'
-- summary: 'Cycle 673 (2026-06-23): Align parity oracle retryCommand pin with string|null
-    contract.'
-- summary: 'Cycle 672 (2026-06-22): Backport fix: remove empty-severity-section rejection
-    from validate_artifact.py on main.'
-- summary: 'Cycle 671 (2026-06-22): Fix stale YAML schema example, deprecated lint
-    command, and archive reference in discuss instructions.'
-- summary: "Cycle 670 (2026-06-18): Plan T6 \u2014 verification and closeout: archived\
-    \ PLAN-2026-06-18-decouple-vitest-live-repo.yaml; cleared active plan slot; confirmed\
-    \ vitest decoupled..."
-- summary: "Cycle 669 (2026-06-18): Plan T5 \u2014 decouple registry and evaluator\
-    \ TODO coupling: packageRegistry and artifactRegistry tests read fixture..."
-- summary: "Cycle 668 (2026-06-18): Plan T4 \u2014 decouple artifact validation and\
-    \ validate oracles: migrated validateArtifact.test.ts, validate.test.ts, and validateVerifyOracles.test.ts\
-    \ to..."
-- summary: "Cycle 667 (2026-06-18): Plan T2 \u2014 compaction tests use fixtures only:\
-    \ removed real-repo computeCompactionStatus/checkCompaction budget asserts from\
-    \ compaction.test.ts;..."
-- summary: "Cycle 666 (2026-06-18): Plan T3 \u2014 shared repo-state fixture harness:\
-    \ added packages/cli/test/fixtures/repo-state/ variants (ok, todo-resolved-over-limit,\
-    \ progress-at-cap, progress-over-limit, invalid-progress-yaml),..."
-- summary: "Cycle 665 (2026-06-18): Plan T1 \u2014 vitest/repo gate inventory: classified\
-    \ all REPO_ROOT couplings in packages/cli/test; documented mutable-state vs..."
-- summary: "Cycle 664 (2026-06-18): Plan T7 \u2014 state sync and plan closeout: archived\
-    \ PLAN-2026-06-18-profile-corpus-coverage-trust.yaml; cleared active plan slot;\
-    \ six..."
-- summary: "Cycle 663 (2026-06-18): Plan T6 \u2014 runtime metadata clarity and flag\
-    \ docs: renamed runtime_statuses[].candidate_count to file_count; documented --no-<runtime>..."
-- summary: "Cycle 662 (2026-06-18): Plan T5 \u2014 Py/TS extractor parity gate: extractCorpusParity\
-    \ manifest + opencodeParitySnapshot; generate-extract-corpus-parity.mjs syncs\
-    \ committed manifest..."
-- summary: "Cycle 661 (2026-06-18): Plan T4 \u2014 SQLite cap overrides and truncation\
-    \ warnings: --max-sqlite-sessions / --max-sqlite-rows plus AGENTERA_EXTRACT_MAX_SQLITE_*\
-    \ env..."
-- summary: "Cycle 660 (2026-06-18): Plan T3 \u2014 corpus envelope coverage arrays:\
-    \ buildMetadata emits available_runtimes, selected_runtimes, and available_but_not_selected;\
-    \ extractCorpusMain wires..."
-- summary: "Cycle 659 (2026-06-18): Plan T2 \u2014 Coverage Audit pre-extraction:\
-    \ runCoverageAudit enumerates six runtimes with store paths and session..."
-- summary: "Cycle 658 (2026-06-18): Plan T1 \u2014 restore integration test gate:\
-    \ revert npx projectIntegration decision regression (platform status vs..."
-- summary: "Cycle 657 (2026-06-10): Plan T7 \u2014 state sync and audit TODO closeout:\
-    \ archived PLAN-2026-06-09-v3-cli-structural-debt.yaml; cleared active plan slot;..."
-- summary: "Cycle 656 (2026-06-10): Plan T6 \u2014 prime module decomposition: extracted\
-    \ v1 migration, bundle status, orientation field assembly, and..."
-- summary: "Cycle 655 (2026-06-10): Plan T5 \u2014 integration decision table and\
-    \ unified prime attention: `upgrade/projectIntegrationDecision.ts` classifies\
-    \ artifacts-only, runtime-only, cross-major,..."
-- summary: "Cycle 654 (2026-06-10): Plan T4 \u2014 doctor classification and npx platform\
-    \ status: extracted typed `ROOT_CLASSIFIERS` map in `upgrade/doctorClassifier.ts`;..."
-- summary: "Cycle 653 (2026-06-10): Plan T3 \u2014 lifecycle adapters node default,\
-    \ legacy Python gated: split lifecycleAdapters into shared.ts, nodeFormChecks.ts,..."
-- summary: "Cycle 652 (2026-06-10): Plan T2 \u2014 dispatch hygiene and mechanical\
-    \ deduplication (3 parallel build workstreams merged): shared `cli/dispatch/argvParser.ts`;..."
-- summary: "Cycle 651 (2026-06-09): Plan T1 \u2014 canonical bundle and orientation\
-    \ contracts: added `core/jsonValue.ts`, `cli/contracts/bundleStatus.ts`, and `cli/contracts/orientationState.ts`;\
-    \ typed `buildDoctorStatus`,..."
-- summary: "Cycle 650 (2026-06-07): Mobile monorepo closeout \u2014 archived agentera-mobile\
-    \ staging artifacts (D1\u2013D5 decisions, re-visioning plan, LICENSE), synced\
-    \ D68..."
-- summary: "Cycle 649 (2026-06-05): v2\u2192v3 TS rewrite completion plan closeout\
-    \ (T11). Archived the active plan to `.agentera/archive/plan-2026-06-04-v2-v3-ts-rewrite-completion.yaml`\
-    \ and cleared..."
-- summary: 'Cycle 648 (2026-06-04): T5 v2 handoff manifest reader (plan T5, TODO L24).
-    Authored `references/cli/v3-handoff-manifest.schema.yaml`; added `packages/cli/src/migrate/v2HandoffManifest.ts`
-    and wired...'
-- summary: 'Cycle 647 (2026-06-04): T7 cursor agent runtime surface regression (plan
-    T7, TODO fix:3.0.0). On v3 projects (all twelve...'
-- summary: 'Cycle 646 (2026-06-04): Remove v1 legacy cruft after the 3.0 compatibility
-    boundary (plan T4 / TODO L21). Deleted...'
-- summary: 'Cycle 645 (2026-06-04): Decision 58 single-name protocol boundary (plan
-    T3 / TODO L20). Added `artifactProtocolIds.ts` and `references/cli/single-name-protocol.yaml`;
-    migrated...'
-- summary: 'Cycle 644 (2026-06-04): npm `@next` version-divergence gate (TODO L21).
-    Added `packages/cli/src/release/releaseMetadata.ts` that reads `registry.json`
-    `skills[0].version` as the authoritative...'
-- summary: "Cycle 643 (2026-06-04): D56 parity closeout \u2014 ported the six remaining\
-    \ CLI surface families to TypeScript and proved..."
-- summary: "Cycle 642 (2026-06-04): Plan: Decision 56 parity closeout \u2014 drafted\
-    \ the first plan in the v3-rewrite sequence targeting..."
+  - summary: "Cycle 682 (2026-06-27): Plan task 5 of chore:3.0.0 (long-tail surface)
+      + remediation. First build cycle eliminated aliases in..."
+  - summary: "Cycle 681 (2026-06-27): Plan task 4 of chore:3.0.0: consolidate Dict
+      aliases in registries & validate subsystems. Removed local..."
+  - summary: "Cycle 680 (2026-06-27): Plan tasks 2+3 (coupled) of chore:3.0.0:
+      consolidate Dict aliases in the CLI command/state-query surface (task..."
+  - summary: "Cycle 679 (2026-06-27): chore:3.0.0 plan task 1 — consolidate `type
+      Dict = Record<string, any>` aliases across the 12 hooks modules onto
+      core/jsonValue's JsonObject. Strict union surfaced ~80 latent typecheck
+      errors; resolved in-scope by keeping IO-boundary casts with `// cast:`
+      comments and narrowing access via type guards. Typecheck 0 errors; suite
+      1145/1145 green."
+  - summary: "Cycle 678 (2026-06-27): v2/v3 coexistence B3 — bundle-status & channel
+      resolution. Centralized channel resolution through
+      resolveInvokedUpdateChannel so doctor..."
+  - summary: "Cycle 677 (2026-06-27): v2/v3 coexistence B2 — env-var & path
+      resolution remainder. Restored PROFILERA_PROFILE_DIR as a lower-precedence
+      fallback..."
+  - summary: "Cycle 676 (2026-06-26): D73 single Agentera agent plan closeout.
+      Implementation shipped in a prior session (commit d1b4145d: replaced..."
+  - summary: "Cycle 675 (2026-06-23): Rename published prerelease version suffix
+      from -dev.N to -next.N across live source, tests, CI L2..."
+  - summary: "Cycle 674 (2026-06-23): Remove dead `missingScriptCommands` from
+      installRoot.ts; close three stale TODOs."
+  - summary: "Cycle 673 (2026-06-23): Align parity oracle retryCommand pin with
+      string|null contract."
+  - summary: "Cycle 672 (2026-06-22): Backport fix: remove empty-severity-section
+      rejection from validate_artifact.py on main."
+  - summary: "Cycle 671 (2026-06-22): Fix stale YAML schema example, deprecated lint
+      command, and archive reference in discuss instructions."
+  - summary: "Cycle 670 (2026-06-18): Plan T6 — verification and closeout: archived
+      PLAN-2026-06-18-decouple-vitest-live-repo.yaml; cleared active plan slot;
+      confirmed vitest decoupled..."
+  - summary: "Cycle 669 (2026-06-18): Plan T5 — decouple registry and evaluator TODO
+      coupling: packageRegistry and artifactRegistry tests read fixture..."
+  - summary: "Cycle 668 (2026-06-18): Plan T4 — decouple artifact validation and
+      validate oracles: migrated validateArtifact.test.ts, validate.test.ts, and
+      validateVerifyOracles.test.ts to..."
+  - summary: "Cycle 667 (2026-06-18): Plan T2 — compaction tests use fixtures only:
+      removed real-repo computeCompactionStatus/checkCompaction budget asserts
+      from compaction.test.ts;..."
+  - summary: "Cycle 666 (2026-06-18): Plan T3 — shared repo-state fixture harness:
+      added packages/cli/test/fixtures/repo-state/ variants (ok,
+      todo-resolved-over-limit, progress-at-cap, progress-over-limit,
+      invalid-progress-yaml),..."
+  - summary: "Cycle 665 (2026-06-18): Plan T1 — vitest/repo gate inventory:
+      classified all REPO_ROOT couplings in packages/cli/test; documented
+      mutable-state vs..."
+  - summary: "Cycle 664 (2026-06-18): Plan T7 — state sync and plan closeout:
+      archived PLAN-2026-06-18-profile-corpus-coverage-trust.yaml; cleared
+      active plan slot; six..."
+  - summary: "Cycle 663 (2026-06-18): Plan T6 — runtime metadata clarity and flag
+      docs: renamed runtime_statuses[].candidate_count to file_count; documented
+      --no-<runtime>..."
+  - summary: "Cycle 662 (2026-06-18): Plan T5 — Py/TS extractor parity gate:
+      extractCorpusParity manifest + opencodeParitySnapshot;
+      generate-extract-corpus-parity.mjs syncs committed manifest..."
+  - summary: "Cycle 661 (2026-06-18): Plan T4 — SQLite cap overrides and truncation
+      warnings: --max-sqlite-sessions / --max-sqlite-rows plus
+      AGENTERA_EXTRACT_MAX_SQLITE_* env..."
+  - summary: "Cycle 660 (2026-06-18): Plan T3 — corpus envelope coverage arrays:
+      buildMetadata emits available_runtimes, selected_runtimes, and
+      available_but_not_selected; extractCorpusMain wires..."
+  - summary: "Cycle 659 (2026-06-18): Plan T2 — Coverage Audit pre-extraction:
+      runCoverageAudit enumerates six runtimes with store paths and session..."
+  - summary: "Cycle 658 (2026-06-18): Plan T1 — restore integration test gate:
+      revert npx projectIntegration decision regression (platform status vs..."
+  - summary: "Cycle 657 (2026-06-10): Plan T7 — state sync and audit TODO closeout:
+      archived PLAN-2026-06-09-v3-cli-structural-debt.yaml; cleared active plan
+      slot;..."
+  - summary: "Cycle 656 (2026-06-10): Plan T6 — prime module decomposition:
+      extracted v1 migration, bundle status, orientation field assembly, and..."
+  - summary: "Cycle 655 (2026-06-10): Plan T5 — integration decision table and
+      unified prime attention: `upgrade/projectIntegrationDecision.ts`
+      classifies artifacts-only, runtime-only, cross-major,..."
+  - summary: "Cycle 654 (2026-06-10): Plan T4 — doctor classification and npx
+      platform status: extracted typed `ROOT_CLASSIFIERS` map in
+      `upgrade/doctorClassifier.ts`;..."
+  - summary: "Cycle 653 (2026-06-10): Plan T3 — lifecycle adapters node default,
+      legacy Python gated: split lifecycleAdapters into shared.ts,
+      nodeFormChecks.ts,..."
+  - summary: "Cycle 652 (2026-06-10): Plan T2 — dispatch hygiene and mechanical
+      deduplication (3 parallel build workstreams merged): shared
+      `cli/dispatch/argvParser.ts`;..."
+  - summary: "Cycle 651 (2026-06-09): Plan T1 — canonical bundle and orientation
+      contracts: added `core/jsonValue.ts`, `cli/contracts/bundleStatus.ts`, and
+      `cli/contracts/orientationState.ts`; typed `buildDoctorStatus`,..."
+  - summary: "Cycle 650 (2026-06-07): Mobile monorepo closeout — archived
+      agentera-mobile staging artifacts (D1–D5 decisions, re-visioning plan,
+      LICENSE), synced D68..."
+  - summary: "Cycle 649 (2026-06-05): v2→v3 TS rewrite completion plan closeout
+      (T11). Archived the active plan to
+      `.agentera/archive/plan-2026-06-04-v2-v3-ts-rewrite-completion.yaml` and
+      cleared..."
+  - summary: "Cycle 648 (2026-06-04): T5 v2 handoff manifest reader (plan T5, TODO
+      L24). Authored `references/cli/v3-handoff-manifest.schema.yaml`; added
+      `packages/cli/src/migrate/v2HandoffManifest.ts` and wired..."
+  - summary: "Cycle 647 (2026-06-04): T7 cursor agent runtime surface regression
+      (plan T7, TODO fix:3.0.0). On v3 projects (all twelve..."
+  - summary: "Cycle 646 (2026-06-04): Remove v1 legacy cruft after the 3.0
+      compatibility boundary (plan T4 / TODO L21). Deleted..."
+  - summary: "Cycle 645 (2026-06-04): Decision 58 single-name protocol boundary
+      (plan T3 / TODO L20). Added `artifactProtocolIds.ts` and
+      `references/cli/single-name-protocol.yaml`; migrated..."
+  - summary: "Cycle 644 (2026-06-04): npm `@next` version-divergence gate (TODO
+      L21). Added `packages/cli/src/release/releaseMetadata.ts` that reads
+      `registry.json` `skills[0].version` as the authoritative..."
+  - summary: "Cycle 643 (2026-06-04): D56 parity closeout — ported the six remaining
+      CLI surface families to TypeScript and proved..."

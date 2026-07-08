@@ -143,6 +143,29 @@ function hasV2ManagedEvidence(signals: InstallSignals, activeBundleRoot: string)
   );
 }
 
+let distributionMajorWarned = false;
+
+function readPackageJsonMajor(sourceRoot: string): number | null {
+  const pkgPath = path.join(sourceRoot, "package.json");
+  if (!isFile(pkgPath)) {
+    return null;
+  }
+  try {
+    const data: unknown = JSON.parse(fs.readFileSync(pkgPath, "utf8"));
+    const version = (data as { version?: unknown } | null)?.version;
+    if (typeof version !== "string" || !version) {
+      return null;
+    }
+    const major = Number.parseInt(version.split(".")[0] ?? "", 10);
+    if (Number.isFinite(major) && major > 0) {
+      return major;
+    }
+  } catch {
+    // Malformed package.json — fall through to diagnostic
+  }
+  return null;
+}
+
 export function cliDistributionMajor(sourceRoot: string): number {
   if (isSourceCheckoutRoot(sourceRoot)) {
     return 3;
@@ -157,7 +180,21 @@ export function cliDistributionMajor(sourceRoot: string): number {
       return major;
     }
   }
+  const pkgMajor = readPackageJsonMajor(sourceRoot);
+  if (pkgMajor !== null) {
+    return pkgMajor;
+  }
+  if (!distributionMajorWarned) {
+    distributionMajorWarned = true;
+    process.stderr.write(
+      `agentera: could not determine distribution major version from registry.json or package.json at ${sourceRoot}; defaulting to 2\n`,
+    );
+  }
   return 2;
+}
+
+export function __resetDistributionMajorWarnedForTests(): void {
+  distributionMajorWarned = false;
 }
 
 export function classifyInstall(args: ClassifyInstallArgs): InstallClassification {
