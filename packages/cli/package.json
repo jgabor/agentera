@@ -1,7 +1,7 @@
 {
   "name": "agentera",
-  "version": "3.0.0-dev.9",
-  "description": "Agentera app-home protocol and CLI (TypeScript)",
+  "version": "3.0.0-dev.11",
+  "description": "One CLI, many capabilities: project state, artifact validation, and capability routing for AI coding agents",
   "keywords": [
     "agentera",
     "agents",
