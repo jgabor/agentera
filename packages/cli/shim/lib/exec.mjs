@@ -2,6 +2,27 @@ import { spawnSync } from "node:child_process";
 
 import { resolveBackend } from "./resolve.mjs";
 
+const V3_NEXT_COMMAND = "npx -y agentera@next prime";
+
+/**
+ * Print the v3 deprecation hint to stderr unless the user opted out via
+ * AGENTERA_NO_V3_HINT=1. Called once per dispatch (after the --version
+ * early-return) so every v2 invocation surfaces the @next pointer while the
+ * Python CLI remains on @latest.
+ *
+ * @param {{ logStderr?: (message: string) => void }} [options]
+ * @returns {void}
+ */
+export function printV3Hint(options = {}) {
+  if (process.env.AGENTERA_NO_V3_HINT === "1") {
+    return;
+  }
+  const log = options.logStderr ?? ((msg) => console.error(msg));
+  log("agentera 2.x (Python) is in maintenance; the v3 TypeScript CLI is ready on the @next tag:");
+  log(`  ${V3_NEXT_COMMAND}`);
+  log("Set AGENTERA_NO_V3_HINT=1 to suppress this message.");
+}
+
 /**
  * @typedef {object} RunBackendResult
  * @property {number} exitCode
@@ -83,6 +104,8 @@ export function dispatch(argv, options = {}) {
     return 0;
   }
 
+  printV3Hint({ logStderr: options.logStderr });
+
   let backend = resolveBackend({
     cwd: options.cwd,
     env: options.env,
@@ -132,6 +155,11 @@ export function printInstallHelp(reason) {
   const lines = [
     "agentera: npm CLI shim (0.x) — native TypeScript CLI ships in Agentera 3.0.",
     reason ? `agentera: ${reason}` : "",
+  ];
+  if (process.env.AGENTERA_NO_V3_HINT !== "1") {
+    lines.push("", "The v3 TypeScript CLI is ready now on the @next tag:", `  ${V3_NEXT_COMMAND}`);
+  }
+  lines.push(
     "",
     "Install Agentera for your runtime:",
     "  npx skills add jgabor/agentera -g -a claude-code --skill agentera -y",
@@ -144,8 +172,8 @@ export function printInstallHelp(reason) {
     "  uv run scripts/agentera prime",
     "",
     "https://github.com/jgabor/agentera#install",
-  ].filter(Boolean);
-  for (const line of lines) {
+  );
+  for (const line of lines.filter(Boolean)) {
     console.error(line);
   }
 }

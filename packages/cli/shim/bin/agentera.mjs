@@ -35,6 +35,9 @@ if (userArgs[0] === "--help" || userArgs[0] === "-h") {
   console.log("  2. scripts/agentera in a parent repo (uv run)");
   console.log("  3. uvx --from git+https://github.com/jgabor/agentera@<tag> agentera");
   console.log("");
+  console.log("v3 (TypeScript) is available now on the @next tag:");
+  console.log("  npx -y agentera@next prime");
+  console.log("");
   console.log("https://github.com/jgabor/agentera");
   process.exit(0);
 }

@@ -30,6 +30,7 @@
 
 ### Key highlights
 
+- **npm shim 0.0.2 v3 deprecation hint**: the `agentera@0.0.2` npm shim on `@latest` now emits a three-line stderr banner on every invocation pointing users to `npx -y agentera@next prime` for the v3 TypeScript CLI. `--help` lists the `@next` command; the install-help failure path leads with the `@next` pointer; `--version` stays banner-free so `--json` and pipe consumers stay clean. Set `AGENTERA_NO_V3_HINT=1` to suppress for CI and scripted invocations.
 - **npm shim 0.0.0 cwd preservation**: the `agentera@0.0.0` npm shim on `@latest` now forwards the user's working directory to the installed Python CLI for the `app-home` backend, so `npx -y agentera` state and prime reads resolve the project's `.agentera/` artifacts instead of the app home. The shim remains the 2.x transitional entry point; the native TypeScript CLI is `npx -y agentera@next` until the 3.0 cutover graduates `@latest`.
 
 ## [3.0.0] · 2026-06-04

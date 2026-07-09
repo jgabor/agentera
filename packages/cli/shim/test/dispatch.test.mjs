@@ -5,7 +5,6 @@ import os from "node:os";
 import path from "node:path";
 
 import { dispatch } from "../lib/exec.mjs";
-
 function mktmp(prefix = "shim-dispatch-") {
   return fs.mkdtempSync(path.join(os.tmpdir(), prefix));
 }
@@ -196,16 +195,69 @@ test("dispatch returns the --version exit code without spawning", () => {
   try {
     const { logPath } = writeFakeUv(uvDir);
 
-    const code = withPath(uvDir, () =>
-      dispatch(["node", "agentera", "--version"], {
-        cwd: uvDir,
-        env: {},
-      }),
-    );
+    const stderr = captureStderr(() => {
+      const code = withPath(uvDir, () =>
+        dispatch(["node", "agentera", "--version"], {
+          cwd: uvDir,
+          env: {},
+        }),
+      );
+      assert.equal(code, 0);
+    });
 
-    assert.equal(code, 0);
     assert.equal(fs.existsSync(logPath) ? fs.readFileSync(logPath, "utf8") : "", "");
+    assert.doesNotMatch(stderr, /@next/, "--version must not emit the v3 hint");
   } finally {
     clean(uvDir);
+  }
+});
+
+test("dispatch emits the v3 deprecation banner to stderr", () => {
+  const tmp = mktmp("shim-no-backend-");
+  try {
+    const stderr = captureStderr(() => {
+      const code = withPath("", () =>
+        dispatch(["node", "agentera", "prime"], {
+          cwd: tmp,
+          env: { AGENTERA_HOME: undefined },
+        }),
+      );
+      assert.notEqual(code, 0);
+    });
+
+    assert.match(stderr, /agentera 2\.x .* is in maintenance/);
+    assert.match(stderr, /npx -y agentera@next prime/);
+    assert.match(stderr, /AGENTERA_NO_V3_HINT=1/);
+    assert.match(stderr, /Install Agentera/);
+  } finally {
+    clean(tmp);
+  }
+});
+
+test("dispatch suppresses the v3 banner when AGENTERA_NO_V3_HINT=1", () => {
+  const tmp = mktmp("shim-no-backend-");
+  const original = process.env.AGENTERA_NO_V3_HINT;
+  process.env.AGENTERA_NO_V3_HINT = "1";
+  try {
+    const stderr = captureStderr(() => {
+      const code = withPath("", () =>
+        dispatch(["node", "agentera", "prime"], {
+          cwd: tmp,
+          env: { AGENTERA_HOME: undefined },
+        }),
+      );
+      assert.notEqual(code, 0);
+    });
+
+    assert.doesNotMatch(stderr, /@next/, "suppression flag must hide the @next pointer");
+    assert.doesNotMatch(stderr, /in maintenance/, "suppression flag must hide the banner");
+    assert.match(stderr, /Install Agentera/, "install-help failure path still prints");
+  } finally {
+    if (original === undefined) {
+      delete process.env.AGENTERA_NO_V3_HINT;
+    } else {
+      process.env.AGENTERA_NO_V3_HINT = original;
+    }
+    clean(tmp);
   }
 });

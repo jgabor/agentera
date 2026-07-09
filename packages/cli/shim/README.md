@@ -12,6 +12,29 @@ npx agentera prime
 npm install -g agentera
 ```
 
+## v3 hint
+
+While the Python CLI remains on `@latest`, every 0.x shim invocation emits a
+three-line deprecation hint to **stderr** telling the user the v3 TypeScript
+CLI is ready on the `@next` tag:
+
+```
+agentera 2.x (Python) is in maintenance; the v3 TypeScript CLI is ready on the @next tag:
+  npx -y agentera@next prime
+Set AGENTERA_NO_V3_HINT=1 to suppress this message.
+```
+
+The hint never appears on `--version`/`-V` and never touches stdout, so
+`--json` and pipe consumers stay clean. `--help`/`-h` also lists the `@next`
+pointer, and the install-help failure path (no backend available) leads with
+the `@next` line.
+
+Suppress the hint for non-interactive CI or scripted invocations:
+
+```bash
+AGENTERA_NO_V3_HINT=1 npx agentera prime
+```
+
 ## Delegation order
 
 When you run `agentera`, the shim forwards to the existing Python CLI using the first match:
