@@ -112,7 +112,7 @@ against D80 plus this reference doc.
 | ⌂ status | Linear | 10,389 | Yes | Yes | Yes | None | Complete (D79) |
 | ⛥ vision | Mode-split | 16,667 | Yes | Yes | Yes | Has vision.yaml shape subsection; shared pre-write self-audit hoist (DRY between Create and Refine modes) | Complete (D81) |
 | ❈ discuss | Loop | 12,045 | Yes | Yes | Yes | Has decisions.yaml shape subsection; Getting started folded into §6; loop shape named "The deliberation loop" (§3); fog-aware readiness check at Done; steering rules (breadth-first, ask-user-to-sketch); schema files use artifact-id labels not canonical filenames | Complete (D82) |
-| ⬚ research | Linear | 12,251 | Not audited | Not audited | Not audited | Has deliverable template; has Notes on depth | Not audited |
+| ⬚ research | Linear | 12,484 | Yes | Yes | Yes | Has deliverable template; has transferable concepts checkpoint between source reading and target exploration; runtime-agnostic tool references | Complete (D83) |
 | ≡ plan | Mode-split | 14,800 | Not audited | Not audited | Not audited | Has light/normal/full modes; has How build reads PLAN.md | Not audited |
 | ⧉ build | Cycle | 20,662 | Not audited | Not audited | Not audited | Has Handling blocked work; no Getting started | Not audited |
 | ⎘ optimize | Cycle | 25,990 | Not audited | Not audited | Not audited | Has Handling blocked experiments | Not audited |

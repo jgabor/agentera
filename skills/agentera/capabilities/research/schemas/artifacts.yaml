@@ -19,6 +19,6 @@ ARTIFACTS:
     artifact_id: profile
     local_role: consumes
     description: >-
-      Research reads this via the effective profile script to weight
-      applicability judgments. If missing, research proceeds without persona
-      grounding.
+      Research reads the profile via research_context.profile from the prime
+      context to weight applicability judgments. If missing, research proceeds
+      without persona grounding.
