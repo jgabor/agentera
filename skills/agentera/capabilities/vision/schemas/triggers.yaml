@@ -18,7 +18,7 @@ TRIGGERS:
     priority: medium
     patterns:
       - "create a vision"
-      - "write VISION.md"
+      - "write the vision"
       - "define the direction"
       - "set the north star"
       - "dream bigger"
@@ -32,14 +32,14 @@ TRIGGERS:
     patterns:
       - "rethink the vision"
       - "refine the vision"
-      - "update VISION.md"
+      - "update the vision"
     confidence_threshold: 50
     disambiguates_against:
       - capability: build
         hint: "vision refines existing project direction; build implements code"
     patterns_regex:
       - "\\brefine\\s+the\\s+vision\\b"
-      - "update\\s+VISION\\.md"
+      - "update\\s+the\\s+vision"
   4:
     id: T4
     description: >-

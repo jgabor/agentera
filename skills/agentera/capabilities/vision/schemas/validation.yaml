@@ -3,8 +3,8 @@ VALIDATION:
     id: V1
     rule: user_approval_required
     description: >-
-      VISION.md MUST NOT be written or modified without explicit user
-      approval. Present drafts and get confirmation before writing.
+      The vision artifact MUST NOT be written or modified without explicit
+      user approval. Present drafts and get confirmation before writing.
       This applies to both Create and Refine modes.
     severity: critical
     checks:
@@ -14,12 +14,12 @@ VALIDATION:
     id: V2
     rule: no_realisera_modification
     description: >-
-      VISION.md MUST NOT be modified during a build execution cycle.
-      Vision changes happen only in dedicated vision sessions. This
-      prevents vision drift during autonomous development.
+      The vision artifact MUST NOT be modified during a build execution
+      cycle. Vision changes happen only in dedicated vision sessions.
+      This prevents vision drift during autonomous development.
     severity: critical
     checks:
-      - "VISION.md not written during build cycle"
+      - "Vision artifact not written during build cycle"
   3:
     id: V3
     rule: inspirational_tone
@@ -29,7 +29,7 @@ VALIDATION:
       should inspire and guide, not specify.
     severity: warning
     checks:
-      - "VISION.md is aspirational, not prescriptive"
+      - "The vision artifact is aspirational, not prescriptive"
   4:
     id: V4
     rule: codebase_exploration_required
