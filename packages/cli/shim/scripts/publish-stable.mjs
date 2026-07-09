@@ -1,11 +1,16 @@
 #!/usr/bin/env node
 import { execFileSync, spawnSync } from "node:child_process";
-import { readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const shimDir = resolve(__dirname, "..");
+const rootDir = resolve(shimDir, "../..");
+const rootNpmrc = resolve(rootDir, ".npmrc");
+if (existsSync(rootNpmrc)) {
+  process.env.NPM_CONFIG_USERCONFIG = rootNpmrc;
+}
 const pkgPath = resolve(shimDir, "package.json");
 const original = readFileSync(pkgPath, "utf8");
 
