@@ -54,8 +54,35 @@ VALIDATION:
     rule: skip_level_for_trivial_work
     description: >-
       Plan MUST detect skip level for trivial work (single-file change,
-      bug fix, config tweak, < 50 lines) and route directly to /build
-      without producing a PLAN.md.
+      localized defect fix, or config tweak that touches no shared
+      abstraction) and route directly to /build without producing a
+      PLAN.md. LOC count is not a skip signal because small changes to
+      shared exports can ripple across many consumers.
     severity: critical
     checks:
       - "Trivial work routed to /build without plan"
+  7:
+    id: V7
+    rule: full_plan_unknowns_required
+    description: >-
+      Every full plan MUST surface at least one planning-time known-unknown
+      in the `unknowns:` field. Each entry MUST include question,
+      affects_task, and resolve_by. Skip level and light plans are exempt
+      because they do not decompose work into interdependent tasks.
+    severity: warning
+    checks:
+      - "Full plans have a non-empty `unknowns:` list"
+      - "Each unknown entry has question, affects_task, resolve_by fields"
+  8:
+    id: V8
+    rule: adversarial_review_dismissals_persisted
+    description: >-
+      Full plans MUST persist dismissed adversarial-review findings in the
+      artifact's `rejected:` field, each with issue text and rationale, so
+      downstream consumers (build, orchestrate, audit) inherit the
+      adjudication rather than relitigating. V3 enforces the review ran;
+      V8 enforces the dismissal provenance persists.
+    severity: warning
+    checks:
+      - "Full plans with dismissed critic findings have `rejected:` entries"
+      - "Each rejection has issue and rationale fields"

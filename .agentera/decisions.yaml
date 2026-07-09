@@ -1,90 +1,4 @@
 decisions:
-  - number: 72
-    date: 2026-06-24
-    question: >
-      How should Agentera consolidate three parallel install-state concepts so
-      users never guess which v2/v3 path they are on?
-    context: >
-      The CLI has three parallel concepts for install identity that overlap and
-      create internal confusion about which is canonical: InstallKind
-      (compatibility.ts, 4 values: v2_managed_app_home, v3_self_contained_npm,
-      source_checkout, unknown_foreign), Classification.kind (installRoot.ts, 7
-      values for root state), and rootStatus (BundleStatus, 7 public values).
-      None surface as a unified user-facing label in prime output. Users see
-      bundle.status (5-value health indicator) but cannot tell at a glance
-      whether they are running v2, v3, or from source. The coexistence probe
-      (coexistenceProbe.ts) already detects v2+v3 mixed states and warns "pick
-      one line" via doctor, but this warning does not surface in prime. Decision
-      47 (firm) already decided to replace bundle terminology with app
-      terminology; the bundle field name in public output is a D47 straggler.
-      Decision 58 (firm) mandates one canonical name per concept. Decision 44
-      (firm) mandates plain English for field values.
-    alternatives:
-      - name: Promote InstallKind, retire rootStatus
-        status: chosen
-        description: >
-          Promote the existing internal InstallKind to a public install_track
-          field in prime and doctor output. Rename values to plain English (v2,
-          v3, source, unknown). Retire rootStatus from public output; keep
-          Classification.kind internal for doctor classifier logic. Keep
-          app.status (renamed from bundle.status) as an orthogonal health field.
-          Rename bundle to app in public output (D47 straggler). Add coexistence
-          warning as an attention item in prime via existing attention
-          mechanism. No new composite field; no new concept.
-      - name: New composite install_track field
-        status: rejected
-        description: >
-          Add a new composite field combining lineage and health into one label
-          (e.g. v2-stale, v3-fresh). Retire all three internal concepts.
-          Rejected because it violates YAGNI (profile conf:80) by adding a new
-          component when an existing internal concept already classifies
-          installs correctly.
-      - name: Clarify roles, no new field
-        status: rejected
-        description: >
-          Keep all three concepts but document their separation. Rejected
-          because the user identified the problem as internal confusion from
-          overlapping concepts, not poor documentation. Adding docs does not
-          consolidate the source of truth.
-      - name: Surface InstallKind without retiring rootStatus
-        status: rejected
-        description: >
-          Add InstallKind to public output alongside rootStatus and bundle
-          status. Rejected because it adds a third public field answering
-          similar questions, deepening the confusion rather than resolving it.
-    choice: >
-      Promote the existing internal InstallKind to a public install_track field
-      in prime and doctor output. Rename values to plain English: v2, v3,
-      source, unknown. Retire rootStatus from public output; keep
-      Classification.kind internal for doctor classifier logic. Keep app.status
-      (renamed from bundle.status) as an orthogonal health field alongside
-      install_track. Rename bundle to app in public output per D47. Add
-      coexistence warning (v2 app + v3 hooks) as an attention item in prime via
-      the existing attention mechanism; keep the existing doctor coexistence
-      section. The coexistence contract message stays "pick one line."
-      install_track surfaces in prime and doctor only; upgrade output already
-      shows the version transition. Breaking change accepted (v3 pre-release);
-      update all consumers in the same commit.
-    reasoning: >
-      The root problem is internal confusion from three parallel concepts
-      answering overlapping questions about install identity. InstallKind
-      already classifies installs into the right four categories; the fix is
-      promoting it to public, not creating a fourth concept. This satisfies D58
-      (one canonical name per concept) by making InstallKind the sole public
-      identity field. YAGNI is satisfied because no new component is added; an
-      existing internal concept is promoted. The single-source-of-truth profile
-      pattern (conf:88) is satisfied by retiring rootStatus from public output.
-      The D47 bundle-to-app rename folds in because touching the output contract
-      is the natural moment to clean up the terminology straggler. Coexistence
-      stays a warning state (not a healthy track) per the coexistence contract;
-      install_track makes the state visible without promoting it to a target.
-      The breaking change is acceptable because v3 is pre-release on the
-      development channel and all consumers are internal to the repository.
-    confidence: firm
-    feeds_into: packages/cli/src/upgrade/compatibility.ts,
-      packages/cli/src/cli/contracts/bundleStatus.ts,
-      packages/cli/src/cli/commands/prime/, packages/cli/src/upgrade/doctor.ts,
-      packages/cli/src/upgrade/coexistenceProbe.ts, TODO.md
   - number: 73
     date: 2026-06-26
     question: How should Agentera design the single primary agent to replace 12
@@ -942,11 +856,122 @@ decisions:
     confidence: firm
     feeds_into: references/cli/capability-instruction-structure.md,
       packages/cli/src/capabilities/research/, TODO.md
+  - number: 84
+    date: 2026-07-09
+    question: How should the plan capability instructions be audited and rewritten
+      to align with D80 six-section spine, D79 direct-contract philosophy, and
+      D81 voice delegation, while adopting substance design improvements
+      (unknowns/rejected fields, fog check at handoff, qualitative replan trigger)
+      from the prior discuss and research audits (D82, D83)?
+    context: 'Fifth capability audit (D79 status, D81 vision, D82 discuss, D83
+      research done). Plan is a mode-split shape bridging deliberation (discuss)
+      and execution (build), frequently called. Pre-flight grounding found v2-era
+      ghosts: standalone "Visual identity" section (D79/D81 fold glyph into
+      Purpose); "Skill introduction" line (D79/D82 cut); "Contract values"
+      subsection enumerating VT5-VT8 IDs (D79 pattern: one-line reference to
+      protocol.yaml); contract.md pointer (D79 removed from status/vision);
+      `$AGENTERA_PROFILE_DIR/PROFILE.md` direct reads (v3 serves
+      `planning_context.profile.path`); full artifact-path-resolution subsection
+      (SKILL.md owns per D79); standalone Getting-started section (D80 spine:
+      fold into section 6); `## How build reads PLAN.md` section (scope leak:
+      build consumption flow belongs in build audit, not plan prose); hardcoded
+      "sharp colleague" personality (D81 violation); re-encodings of
+      `planning_context.startup_contract` rules (planning levels, step markers,
+      max-tasks, cli-first orientation, artifact access boundaries, handoff
+      expectations — runtime already mechanizes these); canonical-filename
+      references (VISION.md, DECISIONS.md, TODO.md, HEALTH.md, PROGRESS.md — v3
+      serves as artifact-id + CLI mediation); CLAUDE.md reference (v3 uses
+      AGENTS.md); `agentera plan --format json` for state (v3 state lives at
+      `agentera state plan --format json`); `agentera describe`, `agentera
+      query`, `agentera decisions`, `agentera lint` ghosts (v3 uses `agentera
+      schema`, `agentera state query`, `agentera state decisions`, `agentera
+      check lint`); contract Section 24 conventions reference (contract.md tops
+      at Section 23 — ghost); `complete_for_normal_deliberation_context` wrong
+      contract key (runtime serves `complete_for_plan_artifact`);
+      `agentera lint --artifact` command shape in Step 4 prose
+      (capability-instruction contract owns command shape). Schema version
+      `agentera.planeraStartup.v1` still uses Swedish name (runtime field; out
+      of scope for the prose audit — flagged for separate runtime cleanup).
+      Substance design decisions: (S1) Skip-level criteria drops the 50-LOC
+      threshold in favor of shape-only signals (single-file, localized defect,
+      config tweak) AND touches-no-shared-abstraction. LOC count ignores
+      shared-export impact; a 10-LOC change to a public export can ripple
+      across many consumers. (S2) Effort-bias check cut entirely — plan picks
+      ONE shape per request, there are no multi-option comparisons to bias.
+      Rule was misplaced from discuss. (S3) Adversarial-review dismissed
+      findings now persist in the artifact `rejected:` field (issue +
+      rationale) rather than ephemera — downstream consumers inherit the
+      adjudication instead of relitigating. (S4) Plan-level unknowns field
+      added: every full plan surfaces at least one planning-time known-unknown
+      (task X outcome determines whether task Y is needed) with question,
+      affects_task, resolve_by. Mirrors discuss D82 fog-aware readiness check.
+      (S5) Replanning trigger defined qualitatively: re-invoke plan when
+      surprises on one task alter the acceptance criteria of downstream tasks
+      — not a numeric threshold. (S6) `## How build reads PLAN.md` section
+      cut; plan declares only the artifact read contract in section 2 (status
+      enum, archive lifecycle, surprises+unknowns logging). Build consumption
+      flow lives in build audit. (S7) Full-plan YAML formats reordered
+      intent-first: what/why/overall_acceptance precede scope/design/tasks.
+      Drift cleanup aligns with D79/D81/D82/D83 precedent. Safety rails
+      converted from NEVER to MUST NOT (D71); added explicit
+      consent-on-handoff rule. New length 14,515 chars (was 14,800 — substance
+      additions balanced drift cuts).
+      references/cli/capability-instruction-structure.md plan row Complete
+      (D84). TODO.md plan audit marked resolved. typecheck 0 errors;
+      capability and contract validation PASS; check compact within limits;
+      vitest 1278/1278 green.'
+    alternatives:
+      - name: Rewrite with substance improvements, drift cleanup, scope-leak cut
+        status: chosen
+        reason_chosen: >
+          All seven substance findings (skip-threshold shape-only, effort-bias
+          cut, dismissal persistence, plan-level unknowns, qualitative replan
+          trigger, scope-leak cut, intent-first artifact ordering) address real
+          capability design gaps. Drift cleanup aligns with D79/D81/D82/D83
+          precedent. Fog identification and rejected-field persistence
+          propagate to remaining 7 unaudited capabilities as needed substance
+          vocabulary.
+      - name: Drift-only cleanup without substance changes
+        status: rejected
+        reason_rejected: >
+          Would leave the effort-bias check mis-applied to single-option
+          selection, the ephemeral dismissal provenance gap, the absence of
+          planning-time fog capture, and the `How build reads PLAN.md` scope
+          leak — a capability that writes a clean artifact but loses
+          adjudication history and known-unknown foreshadowing downstream.
+    choice: Rewrite with substance improvements, drift cleanup, scope-leak cut
+    reasoning: >
+      The discuss (D82) and research (D83) audits established substance findings
+      as the highest-leverage changes. Plan's effort-bias check, ephemeral
+      dismissal provenance, absence of planning-time fog capture, and
+      `How build reads PLAN.md` scope leak are the same class of finding.
+      Unknowns and rejected fields propagate to orchestrate and build audits
+      as needed (orchestrate will check unknowns-list state; build will write
+      surprises referencing the resolved unknowns).
+    confidence: firm
+    feeds_into: references/cli/capability-instruction-structure.md,
+      packages/cli/src/capabilities/plan/, TODO.md
+    satisfaction:
+      state: user_confirmed_satisfied
+      evidence: >-
+        Plan capability rewritten per D80 six-section spine, D79 direct-
+        contract, D81 voice delegation. User approved each cadence step —
+        substance decisions S1-S7 individually confirmed at the recommended
+        route, structural findings batch accepted as a group, outline
+        confirmed before drafting, draft approved before applying to
+        instructions.ts. Validation evidence: typecheck 0 errors; build
+        clean; capability plan validation PASS; capability-contract
+        validation PASS (0 violations); check compact within uniform_10_40_50
+        limits; vitest 1278/1278 green. Sibling files updated: deviation table
+        plan row Complete (D84); TODO.md plan audit marked resolved;
+        validation.yaml extended with V7 (full_plan_unknowns_required) and V8
+        (adversarial_review_dismissals_persisted) plus V6 skip-criteria
+        description realigned to shape-only per S1.
+      user_confirmation:
+        confirmed_by: user
+        confirmed_at: 2026-07-09
 archive:
-  - summary: "Staging D1 (2026-06-05, agentera-mobile): **Question**: How should
-      Agentera name itself after the mobile product pivot? **Choice**: Single
-      brand everywhere — Agentera is the product; @agentera/* scoped packages.
-      **Confidence**: firm."
+  - summary: "Decision 72 (2026-06-24): **Question**: How should Agentera consolidate three parallel install-state concepts so users never guess which v2/v3 path they are on? **Choice**: Promote the existing internal InstallKind to a public install_track field in prime and doctor output. Rename values to plain English (v2, v3, source, unknown). Retire rootStatus from public output; keep Classification.kind internal for doctor classifier logic. Keep app.status (renamed from bundle.status) as an orthogonal health field. Rename bundle to app in public output (D47 straggler). Add coexistence warning (v2 app + v3 hooks) as an attention item in prime via existing attention mechanism. No new composite field; no new concept. **Confidence**: firm (compacted during D84 audit closeout; satisfaction not user-reviewed before archive)."
   - summary: "Staging D2 (2026-06-05, agentera-mobile): **Question**: Where does the
       mobile product vision live? **Choice**: Merge mobile vision into root
       `.agentera/vision.yaml`; package README holds DX. **Confidence**: firm."

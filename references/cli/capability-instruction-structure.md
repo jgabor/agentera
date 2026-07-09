@@ -113,7 +113,7 @@ against D80 plus this reference doc.
 | ⛥ vision | Mode-split | 16,667 | Yes | Yes | Yes | Has vision.yaml shape subsection; shared pre-write self-audit hoist (DRY between Create and Refine modes) | Complete (D81) |
 | ❈ discuss | Loop | 12,045 | Yes | Yes | Yes | Has decisions.yaml shape subsection; Getting started folded into §6; loop shape named "The deliberation loop" (§3); fog-aware readiness check at Done; steering rules (breadth-first, ask-user-to-sketch); schema files use artifact-id labels not canonical filenames | Complete (D82) |
 | ⬚ research | Linear | 12,484 | Yes | Yes | Yes | Has deliverable template; has transferable concepts checkpoint between source reading and target exploration; runtime-agnostic tool references | Complete (D83) |
-| ≡ plan | Mode-split | 14,800 | Not audited | Not audited | Not audited | Has light/normal/full modes; has How build reads PLAN.md | Not audited |
+| ≡ plan | Mode-split | 14,515 | Yes | Yes | Yes | Has skip/light/full modes; `unknowns:` and `rejected:` full-plan fields; `How build reads PLAN.md` removed (artifact read contract declared in §2 only); fog-check at handoff; replan trigger qualitative (surprises on one task alter downstream acceptance); Getting started folded into §6; YAML formats reordered intent-first | Complete (D84) |
 | ⧉ build | Cycle | 20,662 | Not audited | Not audited | Not audited | Has Handling blocked work; no Getting started | Not audited |
 | ⎘ optimize | Cycle | 25,990 | Not audited | Not audited | Not audited | Has Handling blocked experiments | Not audited |
 | ⛶ audit | Linear | 31,313 | Not audited | Not audited | Not audited | Has finding taxonomy plus health.yaml write; Steps 1-7 | Not audited |
