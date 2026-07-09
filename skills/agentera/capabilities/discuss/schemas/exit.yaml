@@ -4,7 +4,7 @@ EXIT_CONDITIONS:
     condition: complete
     description: >-
       Deliberation reached a conclusion the user chose to act on; any
-      requested artifacts (DECISIONS.md, VISION.md, OBJECTIVE.md, TODO.md)
+      requested artifacts (decisions, vision, objective, todo)
       were written with user approval, and the decision confidence level
       was captured.
     exit_signal: complete
@@ -15,7 +15,7 @@ EXIT_CONDITIONS:
       Deliberation concluded but the decision remains unresolved or
       provisional: the user wrapped up without a clear choice, significant
       tensions could not be resolved, or the conclusion contradicts prior
-      decisions in DECISIONS.md without explicit acknowledgment.
+      decisions without explicit acknowledgment.
     exit_signal: flagged
   3:
     id: E3

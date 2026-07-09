@@ -13,16 +13,17 @@ VALIDATION:
     id: V2
     rule: user_approval_for_artifact_writes
     description: >-
-      Discuss MUST NOT modify VISION.md, OBJECTIVE.md, or TODO.md without
-      explicit user confirmation. Present drafts and get approval.
+      Discuss MUST NOT modify vision, objective, or todo artifacts (the
+      protected_write_boundaries) without explicit user confirmation. Present
+      drafts and get approval.
     severity: critical
     checks:
-      - "User confirmation obtained before writing to VISION.md, OBJECTIVE.md, or TODO.md"
+      - "User confirmation obtained before writing to vision, objective, or todo artifacts"
   3:
     id: V3
     rule: decision_confidence_required
     description: >-
-      Every DECISIONS.md entry MUST have a Confidence field with one of the
+      Every decision entry MUST have a Confidence field with one of the
       protocol-defined labels: firm (DL1), provisional (DL2), or
       exploratory (DL3).
     severity: critical
@@ -33,7 +34,7 @@ VALIDATION:
     id: V4
     rule: preserved_decision_fields
     description: >-
-      DECISIONS.md entries MUST preserve the canonical top-level fields:
+      Decision entries MUST preserve the canonical top-level fields:
       Question, Context, Alternatives, Choice, Reasoning, Confidence,
       Feeds into. Win conditions stay inside Alternatives bullets.
     severity: critical
