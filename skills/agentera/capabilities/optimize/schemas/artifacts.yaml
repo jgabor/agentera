@@ -10,7 +10,7 @@ ARTIFACTS:
       canonical closure.
   2:
     id: A2
-    artifact_id: optimera_harness
+    artifact_id: optimize_harness
     local_role: produces
     description: >-
       Eval script that measures the metric and outputs structured JSON. Written

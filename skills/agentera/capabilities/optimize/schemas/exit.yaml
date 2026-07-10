@@ -5,7 +5,7 @@ EXIT_CONDITIONS:
     description: >-
       One experiment completed the full cycle: hypothesis formulated,
       implementation dispatched, regression check passed, metric measured,
-      decision made (kept or discarded), and EXPERIMENTS.md updated.
+      decision made (kept or discarded), and experiments.yaml updated.
     exit_signal: complete
   2:
     id: E2
@@ -20,7 +20,7 @@ EXIT_CONDITIONS:
     id: E3
     condition: stuck
     description: >-
-      Cannot proceed because OBJECTIVE.md is missing and the brainstorm cannot
+      Cannot proceed because objective.yaml is missing and the brainstorm cannot
       be completed without user input, the eval harness is broken and cannot
       be repaired without user approval, or the regression check infrastructure
       is unavailable.

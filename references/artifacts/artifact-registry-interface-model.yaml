@@ -221,11 +221,11 @@ explicit_special_cases:
       placeholder: '{date}'
       meaning: archive date or archive-safe plan suffix
     docs_yaml_can_override_path: false
-  - artifact_id: optimera_harness
+  - artifact_id: optimize_harness
     display_name: harness
     artifact_type: local_harness
     scope: local_harness
-    default_path: .agentera/optimera/<name>/harness
+    default_path: .agentera/optimize/<name>/harness
     path_template:
       placeholder: <name>
       meaning: active objective directory name

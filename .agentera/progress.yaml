@@ -1,4 +1,29 @@
 cycles:
+  - number: 694
+    timestamp: 2026-07-10 12:30
+    type: docs
+    phase: build
+    what: Audited and rewrote optimize capability instructions following six-section
+      spine and direct-contract philosophy.
+    discovered: optimera_harness artifact_id in registry and vocabulary needed
+      updating alongside schema files; cross-capability graph validator catches
+      mismatched artifact_ids. Decisions.yaml reflowed by opencode YAML hook
+      during edit.
+    verified: "typecheck: 0 errors. build: clean. capability validation: PASS.
+      contract validation: PASS (0 violations). check compact: within limits.
+      vitest: 144/144 files, 1278/1278 tests green."
+    next: Audit capability audit is next per TODO.md open items.
+    context:
+      intent: Ground-up audit of optimize capability instructions per the audit prompt
+        docs/notes/audit-prompt.md.
+      constraints: Follow six-section spine, direct-contract philosophy, voice
+        delegation. No project-tracking markers in shipped code.
+      unknowns: Whether the decisions.yaml reflow from the opencode hook will cause
+        diff noise in the commit.
+      scope: instructions.ts rewritten; validation.yaml, exit.yaml, artifacts.yaml
+        schema files updated; deviation table row filled; artifact registry and
+        vocabulary updated; TODO resolved; D86 decision entry added; D73
+        compacted to archive.
   - number: 693
     timestamp: 2026-07-10 09:36
     type: docs
@@ -330,37 +355,9 @@ cycles:
       artifacts:
         health: .agentera/health.yaml (entry 25 written; entry 15 auto-archived to
           one-line summary by 10-full rule)
-  - number: 684
-    timestamp: 2026-06-27 15:30
-    type: refactor
-    phase: build
-    what: "Plan task 7 (final) of chore:3.0.0: final verification + plan archive +
-      TODO closure. Ran full typecheck (0 errors), build (success), vitest
-      (1145/1145, 132 files, stable), compaction gate (no repair needed, within
-      uniform_10_40_50 limits). Moved the critical [chore:3.0.0] Dict TODO to
-      Critical Resolved (Resolved 2026-06-27) and removed the now-empty Critical
-      section. Archived the 7-task plan to
-      .agentera/archive/PLAN-2026-06-27-dict-consolidation.yaml and set plan
-      header.status -> complete."
-    discovered: The deprecated `Dict = JsonObject` alias in core/jsonValue.ts now
-      has zero consumers (task 6 eliminated the last) — its removal is unblocked
-      for a future cleanup commit, still deferred per the plan to keep this
-      cutover type-only and reviewable.
-    verified: typecheck 0 errors; build success; vitest 1145/1145 stable; check
-      compact no-repair-needed. agentera state plan reports status=complete with
-      7/7 tasks complete.
-    next: Plan C74 complete. No active plan. The deprecated Dict alias removal and
-      the remaining degraded/normal TODOs are the next backlog candidates; pick
-      via hej orientation.
-    context:
-      intent: Close out the chore:3.0.0 JSON-value consolidation plan. Verify all
-        gates, archive, fold artifacts.
-      constraints: Type-only final sync. No new public API. feat/v3 only.
-      artifacts:
-        plan: .agentera/plan.yaml (header.status -> complete; task 7 -> complete;
-          archived)
-        todo: TODO.md (critical [chore:3.0.0] moved to Resolved 2026-06-27)
 archive:
+  - summary: "Cycle 684 (2026-06-27): Plan task 7 (final) of chore:3.0.0: final
+      verification + plan archive + TODO closure. Ran..."
   - summary: "Cycle 683 (2026-06-27): Plan task 6 of chore:3.0.0 (cross-cutting cast
       audit + re-export deletion). Converted ~28 consumer files..."
   - summary: "Cycle 682 (2026-06-27): Plan task 5 of chore:3.0.0 (long-tail surface)
@@ -467,6 +464,3 @@ archive:
   - summary: "Cycle 645 (2026-06-04): Decision 58 single-name protocol boundary
       (plan T3 / TODO L20). Added `artifactProtocolIds.ts` and
       `references/cli/single-name-protocol.yaml`; migrated..."
-  - summary: "Cycle 644 (2026-06-04): npm `@next` version-divergence gate (TODO
-      L21). Added `packages/cli/src/release/releaseMetadata.ts` that reads
-      `registry.json` `skills[0].version` as the authoritative..."

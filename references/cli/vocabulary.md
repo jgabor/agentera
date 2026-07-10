@@ -221,7 +221,7 @@ ambiguous-term sweep remain separate follow-up work.
 
 Canonical artifact IDs include `vision`, `decisions`, `plan`, `progress`,
 `todo`, `health`, `docs`, `design`, `profile`, `objective`, `experiments`,
-`changelog`, `session`, `plan_archive`, `optimera_harness`, and
+`changelog`, `session`, `plan_archive`, `optimize_harness`, and
 `semantic_fixture`.
 
 ## Status, severity, confidence, and exits
