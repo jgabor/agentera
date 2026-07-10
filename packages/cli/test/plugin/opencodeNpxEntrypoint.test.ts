@@ -1,5 +1,8 @@
 // Regression: OpenCode plugin hook handlers route through the v3 npm entrypoint
 // (npx -y agentera@next), not uv-run / v2 Python managed scripts (defect #7, B4 task 1).
+// Updated for local-dist preference: when packages/cli/dist/bin/agentera.js exists
+// in the project, the plugin uses `node <local-dist>` instead of npx so local
+// threshold changes take effect immediately without republishing.
 import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
@@ -13,9 +16,11 @@ const HOOK_HANDLERS = [
   "validateArtifactCandidate",
   "writeSessionBookmark",
   "buildCompactionContext",
+  "buildHookArgs",
+  "resolveLocalCli",
 ] as const;
 
-const DIRECT_NPX_HANDLERS = ["runNpxHook", "validateArtifactCandidate", "buildCompactionContext"] as const;
+const HANDLERS_WITH_NPX_FALLBACK = ["buildHookArgs", "validateArtifactCandidate", "buildCompactionContext"] as const;
 
 const DELEGATES_TO_RUN_NPX_HOOK = ["validateArtifact", "writeSessionBookmark"] as const;
 
@@ -60,7 +65,7 @@ describe("OpenCode plugin v3 npx entrypoint source contract (B4-1, defect #7)", 
     }
   });
 
-  it.each(DIRECT_NPX_HANDLERS)("%s routes CLI invocations through NPX_CLI_ENTRYPOINT", (handler) => {
+  it.each(HANDLERS_WITH_NPX_FALLBACK)("%s routes CLI invocations through NPX_CLI_ENTRYPOINT as fallback", (handler) => {
     const body = extractFunctionBody(source, handler);
     expect(body).toContain("NPX_CLI_ENTRYPOINT");
   });
@@ -70,22 +75,35 @@ describe("OpenCode plugin v3 npx entrypoint source contract (B4-1, defect #7)", 
     expect(body).toContain("runNpxHook(");
   });
 
-  it("runNpxHook builds an npx execFileSync command", () => {
-    const body = extractFunctionBody(source, "runNpxHook");
-    expect(body).toMatch(/execFileSync\s*\(\s*["']npx["']/);
-    expect(body).toContain('args.push("hook", subcommand)');
+  it("buildHookArgs prefers local dist when available", () => {
+    const body = extractFunctionBody(source, "buildHookArgs");
+    expect(body).toContain("resolveLocalCli");
+    expect(body).toContain('cmd: "node"');
   });
 
-  it("runNpxHook does not gate on v2 managed scripts before invoking npx", () => {
+  it("buildHookArgs falls back to npx when local dist is absent", () => {
+    const body = extractFunctionBody(source, "buildHookArgs");
+    expect(body).toContain("NPX_CLI_ENTRYPOINT");
+    expect(body).toContain('cmd: "npx"');
+  });
+
+  it("runNpxHook uses execFileSync with buildHookArgs result", () => {
+    const body = extractFunctionBody(source, "runNpxHook");
+    expect(body).toContain("buildHookArgs");
+    expect(body).toMatch(/execFileSync\s*\(\s*cmd/);
+  });
+
+  it("runNpxHook does not gate on v2 managed scripts before invoking", () => {
     const body = extractFunctionBody(source, "runNpxHook");
     expect(body).not.toContain("resolveAgenteraHome");
     expect(body).not.toContain("isRunnableAgenteraAppRoot");
     expect(body).not.toContain("scripts/agentera");
   });
 
-  it("validateArtifactCandidate uses spawnSync with npx", () => {
+  it("validateArtifactCandidate uses spawnSync with local CLI or npx", () => {
     const body = extractFunctionBody(source, "validateArtifactCandidate");
-    expect(body).toMatch(/spawnSync\s*\(\s*["']npx["']/);
+    expect(body).toMatch(/spawnSync/);
+    expect(body).toContain("resolveLocalCli");
   });
 
   it("buildCompactionContext uses execFileSync with npx", () => {

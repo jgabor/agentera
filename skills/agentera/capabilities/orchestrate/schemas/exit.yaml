@@ -3,7 +3,7 @@ EXIT_CONDITIONS:
     id: E1
     condition: complete
     description: >-
-      All PLAN.md tasks are complete, the health check passed, and the
+      All plan tasks are complete, the health check passed, and the
       orchestration session concluded with all planned work finished.
     exit_signal: complete
   2:
@@ -18,7 +18,7 @@ EXIT_CONDITIONS:
     id: E3
     condition: stuck
     description: >-
-      Cannot proceed. PLAN.md has circular dependencies preventing any task
+      Cannot proceed. The plan has circular dependencies preventing any task
       from becoming eligible, no target capabilities are available to
       delegate, or file access prevents reading or updating artifacts.
       The exit marker explains what is blocking progress.
@@ -27,8 +27,9 @@ EXIT_CONDITIONS:
     id: E4
     condition: waiting
     description: >-
-      No PLAN.md exists and the bootstrap chain cannot proceed because
-      VISION.md is absent and the user has not confirmed how to create one,
-      or a dispatched capability returned waiting status requiring user input.
-      The waiting bullet identifies the specific decision needed.
+      No plan exists and the bootstrap chain cannot proceed because the
+      vision artifact is absent and the user has not confirmed how to
+      create one, or a dispatched capability returned waiting status
+      requiring user input. The waiting bullet identifies the specific
+      decision needed.
     exit_signal: waiting

@@ -319,10 +319,26 @@ function resolveAgenteraHome() {
   return null;
 }
 
-function runNpxHook(subcommand, payload) {
+function resolveLocalCli(projectRoot) {
+  if (!projectRoot) return null;
+  const localDist = path.join(projectRoot, "packages", "cli", "dist", "bin", "agentera.js");
+  if (fs.existsSync(localDist)) return localDist;
+  return null;
+}
+
+function buildHookArgs(projectRoot, subcommand) {
+  const localCli = resolveLocalCli(projectRoot);
+  if (localCli) {
+    return { cmd: "node", args: [localCli, "hook", subcommand] };
+  }
   const args = NPX_CLI_ENTRYPOINT.split(/\s+/).slice(1);
   args.push("hook", subcommand);
-  execFileSync("npx", args, {
+  return { cmd: "npx", args };
+}
+
+function runNpxHook(subcommand, payload, projectRoot) {
+  const { cmd, args } = buildHookArgs(projectRoot || process.cwd(), subcommand);
+  execFileSync(cmd, args, {
     input: payload,
     timeout: 30000,
     stdio: ["pipe", "pipe", "pipe"],
@@ -339,7 +355,7 @@ function validateArtifact(filePath, projectRoot) {
       tool_name: "Edit",
       tool_input: { file_path: filePath },
     });
-    runNpxHook("validate-artifact", payload);
+    runNpxHook("validate-artifact", payload, projectRoot);
   } catch {}
 }
 
@@ -403,15 +419,27 @@ function validateArtifactCandidate(filePath, content, projectRoot) {
       tool_name: "Edit",
       tool_input: { file_path: filePath, content },
     });
-    const args = NPX_CLI_ENTRYPOINT.split(/\s+/).slice(1);
-    args.push("hook", "validate-artifact");
-    const result = spawnSync("npx", args, {
-      input: payload,
-      encoding: "utf8",
-      timeout: 30000,
-      stdio: ["pipe", "pipe", "pipe"],
-      env: { ...process.env, AGENTERA_HOME: resolveUserDataHome() },
-    });
+    const localCli = resolveLocalCli(projectRoot);
+    let result;
+    if (localCli) {
+      result = spawnSync("node", [localCli, "hook", "validate-artifact"], {
+        input: payload,
+        encoding: "utf8",
+        timeout: 30000,
+        stdio: ["pipe", "pipe", "pipe"],
+        env: { ...process.env, AGENTERA_HOME: resolveUserDataHome() },
+      });
+    } else {
+      const args = NPX_CLI_ENTRYPOINT.split(/\s+/).slice(1);
+      args.push("hook", "validate-artifact");
+      result = spawnSync("npx", args, {
+        input: payload,
+        encoding: "utf8",
+        timeout: 30000,
+        stdio: ["pipe", "pipe", "pipe"],
+        env: { ...process.env, AGENTERA_HOME: resolveUserDataHome() },
+      });
+    }
     if (result.status === 2) {
       const reason = String(result.stderr || "Artifact validation failed").trim();
       return {

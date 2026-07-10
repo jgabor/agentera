@@ -1,36 +1,36 @@
 VALIDATION:
   1:
     id: V1
-    rule: never_read_source
+    rule: must_not_read_source
     description: >-
-      Orchestrate MUST NEVER read implementation source code. It dispatches
-      capabilities; it does not implement. Artifact files (PLAN.md, HEALTH.md,
-      DECISIONS.md, PROGRESS.md, etc.) are not source code and are expected
-      to be read. This rule verifies the prose explicitly states the
-      source-code read prohibition.
+      Orchestrate MUST NOT read implementation source code. It dispatches
+      capabilities; it does not implement. Artifact files (`.agentera/*.yaml`,
+      `TODO.md`) are state records, not source code; raw reads are last-resort
+      after CLI context and listed fallback commands. This rule verifies the
+      instructions explicitly state the source-code read prohibition.
     severity: critical
     checks:
-      - "orchestrate prose (packages/cli/src/capabilities/orchestrate/instructions.ts) contains NEVER read implementation source code"
+      - "orchestrate instructions (packages/cli/src/capabilities/orchestrate/instructions.ts) contains MUST NOT read implementation source code"
   2:
     id: V2
     rule: evaluation_gate_required
     description: >-
       Every completed task MUST be verified by audit before being marked
       complete. The orchestrator MUST NOT skip evaluation. This rule verifies
-      the prose contains the never-skip-evaluation safety rail.
+      the instructions contain the must-not-skip-evaluation safety rail.
     severity: critical
     checks:
-      - "orchestrate prose contains NEVER skip evaluation"
+      - "orchestrate instructions contains MUST NOT skip evaluation"
   3:
     id: V3
     rule: retry_budget_enforced
     description: >-
       No task may be retried more than 2 times. After the second failure,
       the task must be marked blocked. This rule verifies the retry budget
-      is stated in the prose and safety rails.
+      is stated in the instructions and safety rails.
     severity: critical
     checks:
-      - "orchestrate prose contains retry budget of 2"
+      - "orchestrate instructions contains retry a task more than 2 times"
   4:
     id: V4
     rule: exit_marker_required
@@ -40,22 +40,22 @@ VALIDATION:
       where status is one of EX1-EX4.
     severity: critical
     checks:
-      - "orchestrate prose contains exit marker with glyph ⎈ (SG12)"
-      - "orchestrate prose references exit signals EX1-EX4"
+      - "orchestrate instructions contains exit marker with glyph ⎈ (SG12)"
+      - "orchestrate instructions references exit signals EX1-EX4"
   5:
     id: V5
     rule: orchestrator_read_only_artifacts
     description: >-
-      The orchestrator reads artifacts and updates PLAN.md task statuses and
-      TODO.md blocked entries. It does NOT write to PROGRESS.md, CHANGELOG.md,
+      The orchestrator reads artifacts and updates plan task statuses and
+      TODO.md blocked entries. It does NOT write to progress, changelog,
       or any other capability-owned artifact. This rule verifies the
       artifacts schema reflects this constraint.
     severity: warning
     checks:
-      - "PROGRESS.md is consumes only (not produces)"
-      - "HEALTH.md is consumes only (not produces)"
-      - "DECISIONS.md is consumes only (not produces)"
-      - "VISION.md is consumes only (not produces)"
+      - "progress is consumes only (not produces)"
+      - "health is consumes only (not produces)"
+      - "decisions is consumes only (not produces)"
+      - "vision is consumes only (not produces)"
   6:
     id: V6
     rule: orchestration_context_first
@@ -66,19 +66,19 @@ VALIDATION:
       or decisions artifact reads.
     severity: critical
     checks:
-      - "orchestrate prose contains agentera prime --context orchestrate --format json"
-      - "orchestrate prose contains Use the returned `orchestration_context` before raw plan, progress, health, TODO, or decisions artifacts"
-      - "orchestrate prose contains If `source_contract.complete_for_orchestration_context` is true, do not read raw plan, progress, health, TODO, or decisions artifacts"
+      - "orchestrate instructions contains agentera prime --context orchestrate --format json"
+      - "orchestrate instructions contains complete_for_orchestration_context"
+      - "orchestrate instructions contains no raw plan, progress, health, TODO, or decisions reads"
   7:
     id: V7
     rule: cli_fallback_before_raw_read
     description: >-
       When orchestration context is incomplete, Orchestrate MUST run listed
-      routine CLI fallback commands before any last-resort raw artifact read.
+      fallback commands before any raw artifact read.
     severity: critical
     checks:
-      - "orchestrate prose contains run the listed routine CLI fallback commands"
-      - "orchestrate prose contains Read a raw artifact only as a last-resort diagnostic"
+      - "orchestrate instructions contains run listed fallback commands"
+      - "orchestrate instructions contains last-resort diagnostics"
   8:
     id: V8
     rule: caveats_preserved_for_evaluation
@@ -88,9 +88,9 @@ VALIDATION:
       audit.
     severity: critical
     checks:
-      - "orchestrate prose contains compacted decision caveats"
-      - "orchestrate prose contains stale health/profile/app caveats"
-      - "orchestrate prose contains retry-state provenance"
+      - "orchestrate instructions contains compacted decision caveats"
+      - "orchestrate instructions contains stale health/profile/app caveats"
+      - "orchestrate instructions contains retry-state provenance"
   9:
     id: V9
     rule: satisfaction_authority_boundary
@@ -107,14 +107,14 @@ VALIDATION:
       - "Missing or compacted satisfaction caveats are preserved"
   10:
     id: V10
-    rule: inspektera_citation_required
+    rule: audit_citation_required
     description: >-
       Orchestrate Step 3 Surface 2 audit delegation MUST require a
-      citation: <file>:<line> (or not-applicable: <reason>) for every WARN and
-      FAIL finding, and require verify_command for WARN rows with file:line
+      citation: <file>:<line> (or not-applicable: <reason>) for every FAIL
+      finding, and require verify_command for FAIL rows with file:line
       citations. Authority: references/cli/capability-instruction-contract.yaml#evaluator_handoff.
     severity: critical
     checks:
-      - "orchestrate prose contains citation: `<file>:<line>` OR `not-applicable: <reason>`"
-      - "orchestrate prose contains verify_command"
-      - "orchestrate prose contains evaluator_handoff.output_requirements"
+      - "orchestrate instructions contains citation: `<file>:<line>` OR `not-applicable: <reason>`"
+      - "orchestrate instructions contains verify_command"
+      - "orchestrate instructions contains evaluator_handoff.output_requirements"
