@@ -119,7 +119,7 @@ against D80 plus this reference doc.
 | ⛶ audit | Linear | 18,401 | Yes | Yes | Yes | Has finding taxonomy plus health.yaml shape; has 3 agentera-specific dimension mechanics (Version health, Artifact freshness, Prose health); Getting started folded into §6; self-audit folded into Report (7→6 steps); subagent spawning compressed to brief pointer; evidence_context startup delegation (bespoke); decision satisfaction authority rule in Safety rails | Complete (D87) |
 | ▤ document | Mode-split | 14,886 | Yes | Yes | Yes | Has docs.yaml shape; closeout context lean pointer; Getting started folded into §6; self-audit folded into write steps; doc-prose enforcement compressed to lint+report; Step 0 mode detection folded into opening; decision satisfaction in Safety rails | Complete (D88) |
 | ♾ profile | Mode-split | 19,567 | Yes | Yes | Yes | Has PROFILE.md template flex section; coverage+extraction merged (6→4 Full steps); prediction validation folded into Generate + EX2 for <3/5; Validate V3+V4 merged (4→3); Getting started folded into §6; startup contract delegation | Complete (D89) |
-| ◰ design | Mode-split | 20,596 | Not audited | Not audited | Not audited | Has Colors/Typography domain content; has DESIGN.md format | Not audited |
+| ◰ design | Mode-split | 16,383 | Yes | Yes | Yes | Has DESIGN.md format subsection in State artifacts; self-audit folded into Write/Update steps; Step 0 folded into opening; Getting started folded into §6 | Complete (D90) |
 | ⎈ orchestrate | Multi-surface | 28,544 | Not audited | Not audited | Not audited | Has three surface templates; has Keeping the orchestrator lean | Not audited |
 
 ---

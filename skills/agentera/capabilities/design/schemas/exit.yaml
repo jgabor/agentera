@@ -4,16 +4,16 @@ EXIT_CONDITIONS:
     condition: complete
     description: >-
       DESIGN.md was written (Create/Replace mode), updated (Refine mode),
-      or audited with findings reported (Audit mode). Validation script
-      ran without errors, and all changes had explicit user approval.
+      or audited with findings reported (Audit mode). agentera check lint
+      --artifact design passed, and all changes had explicit user approval.
     exit_signal: complete
   2:
     id: E2
     condition: flagged
     description: >-
       The design system was produced or audited but with issues worth
-      surfacing. Possible causes: validation passed with advisory warnings,
-      the design drifts from VISION.md Identity, or audit findings were
+      surfacing. Possible causes: lint passed with advisory warnings,
+      the design drifts from vision Identity, or audit findings were
       neither fixed nor filed.
     exit_signal: flagged
   3:
@@ -21,7 +21,7 @@ EXIT_CONDITIONS:
     condition: stuck
     description: >-
       Cannot write DESIGN.md because the user declined to approve the
-      draft, the validation script reports unresolvable errors, or the
+      draft, agentera check lint reports unresolvable errors, or the
       project's UI stack is inaccessible.
     exit_signal: stuck
   4:

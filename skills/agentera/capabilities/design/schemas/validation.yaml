@@ -14,13 +14,13 @@ VALIDATION:
     id: V2
     rule: vision_identity_coherence
     description: >-
-      Design tokens MUST NOT conflict with VISION.md Identity. If the
+      Design tokens MUST NOT conflict with vision Identity. If the
       verbal identity says "warm and approachable" and the user wants a
       cold brutalist palette, the tension MUST be surfaced explicitly
       for the user to resolve.
     severity: critical
     checks:
-      - "Design tokens cohere with VISION.md Identity"
+      - "Design tokens cohere with vision Identity"
       - "Tensions surfaced when detected"
   3:
     id: V3
