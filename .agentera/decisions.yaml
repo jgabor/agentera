@@ -1,200 +1,4 @@
 decisions:
-  - number: 76
-    date: 2026-06-30
-    question: How should Agentera route requests to capabilities, and what role
-      should the deterministic `prime --route` trigger engine play?
-    context: "Decision 75 (firm, review_needed) built a pure request-derived Layer
-      3-4 engine: substring/regex weighted-average scoring (W_REGEX=1.0,
-      W_SUBSTRING=0.6), per-entry confidence_threshold (default 50),
-      borderline-band disambiguation (default 15), and mutual exclusivity
-      between request-derived `prime --route` and state-derived `next_action`. A
-      TODO item flagged that common natural-language inputs (\"help me decide\")
-      score below threshold (medium-priority substring-only = 42 < 50) and
-      proposed regex patterns or threshold tuning. Resonera deliberation
-      re-derived the routing model from the ground up and confronted a class
-      ceiling Decision 75's alternatives did not: a closed set of hand-authored
-      patterns can never cover open-ended natural language, and the LLM host
-      that receives the user's message already routes NL better than any
-      weighted-substring engine ever will. The audit confirmed no non-LLM
-      consumer needs request-derived routing today (mobile is
-      Cursor-SDK/LLM-driven, web is static, CLI state commands are
-      deterministic)."
-    alternatives:
-      - name: Tune the existing engine (regex patterns, lower thresholds)
-        status: rejected
-        description: "Apply the TODO fix: add patterns_regex entries for common NL
-          phrasings (e.g. \\bhelp\\s+me\\s+(decide|think|figure)\\b for discuss
-          T2) so regex weighting clears the threshold, or lower
-          confidence_threshold for medium-priority substring-only triggers.
-          Apply across all twelve capabilities."
-        reason_rejected: Permanent whack-a-mole. Closed-world pattern matching has a
-          class ceiling on open-ended NL — every phrasing the author did not
-          anticipate fails. The LLM host already understands "help me decide"
-          natively; tuning a weaker router to approximate what the host already
-          does is maintenance for a non-load-bearing surface.
-      - name: Keep `prime --route` as a low-stakes request-intent hint input
-        status: rejected
-        description: "Reposition (not retire) the engine: `--route` becomes one of
-          several advisory signals the LLM consults alongside a state-readiness
-          hint. Preserves a programmatic non-LLM routing surface for future
-          consumers."
-        reason_rejected: No non-LLM consumer exists today (mobile, web, and CLI state
-          are all LLM-driven or already deterministic). Maintaining a scoring
-          engine whose NL failures are expected, to feed a hint the LLM does not
-          need, buys advisory value near zero. YAGNI for a consumer that does
-          not exist; defer reintroducing a programmatic router until a real
-          non-LLM consumer appears.
-      - name: Retire `--route`; evolve next_action into a ranked state-readiness hint;
-          LLM owns routing
-        status: chosen
-        description: "The LLM host owns the final route natively. The load-bearing
-          deterministic surface becomes an evolved `next_action`: a ranked
-          state-readiness hint hung on the protocol phases
-          (envision/deliberate/plan/build/audit), where position 1 is always a
-          clear recommendation and the rest are visible alternatives — plugging
-          into hej's existing recommended+alternatives dashboard pattern. `prime
-          --route` is retired as a router. The trigger schema (description,
-          disambiguates_against, priority, phase context) is repositioned as
-          LLM-readable intent documentation the host consults, not a match
-          substrate. Decision 75's request-vs-state mutual exclusivity (choice
-          4) is dissolved — both feed the LLM as advisory context."
-        reason_chosen: "Separates the two concerns correctly: the LLM is the only
-          component that can route open-ended NL, and the deterministic value
-          lives in state-readiness (evolved next_action), not request-pattern
-          matching. Evolving next_action leverages the existing cascade
-          (orientation.ts selectStatusNextAction: plan-pending, degrading
-          health, active objective, TODO, stale health, decision follow-up,
-          vision refresh) and protocol.yaml phase model rather than greenfield —
-          delivering \"much simpler than aila\" because both halves already
-          exist unstitched. Retire is clean because no non-LLM consumer needs
-          request-derived routing today. The TODO's \"trigger tuning\" symptom
-          evaporates: \"help me decide\" routes to discuss because the LLM reads
-          the discuss intent description, not because a regex cleared 50."
-    choice: LLM-primary routing. Retire `prime --route` as a router and reposition
-      the trigger schema as LLM-readable intent documentation (descriptions,
-      disambiguation guidance, phase/precedence context). Evolve `next_action`
-      into a ranked state-readiness hint hung on protocol phases, where position
-      1 is always a clear recommendation and the rest are visible alternatives,
-      plugging into hej's recommended+alternatives pattern. Dissolve Decision
-      75's request-vs-state mutual exclusivity; both become advisory context the
-      LLM consults. Supersedes Decision 75 design choices 2 (request-derived
-      scoring as router), 4 (mutual exclusivity), and 5 (pure request-derived).
-    reasoning: "Re-derived from the ground up: the trigger engine has a class
-      ceiling on natural language that no threshold tuning or regex patch can
-      lift (closed patterns cannot cover open-ended phrasing), yet the LLM host
-      already routes NL natively. Therefore the load-bearing deterministic
-      surface is state-readiness — the evolved next_action — not request-pattern
-      matching, and the load-bearing authoring investment is decision-tree
-      clarity the LLM reads (descriptions and disambiguation, not patterns).
-      Evolving next_action rides the existing cascade and the protocol.yaml
-      phase model plus hej's recommended+alternatives render, so the work is
-      stitching and re-exposure, not greenfield; that is what makes it simpler
-      than aila's FSM-plus-policy split. Retire is defensible because the audit
-      found no non-LLM consumer (mobile, web, and CLI are all LLM-driven or
-      deterministic) and reintroducing a programmatic router is deferred until a
-      real non-LLM consumer appears. The reversal of a firm decision made
-      yesterday is justified because D75 carried review_needed and its
-      alternatives never confronted the class ceiling that the LLM host already
-      routes NL better than any weighted-substring engine ever will."
-    confidence: firm
-    feeds_into: references/cli/routing-model.md,
-      references/cli/trigger-schema-enrichment.md,
-      skills/agentera/capability_schema_contract.yaml,
-      packages/cli/src/cli/orientation.ts,
-      packages/cli/src/routing/routeEngine.ts, .agentera/decisions.yaml, TODO.md
-    satisfaction:
-      state: user_confirmed_satisfied
-      evidence: prime --route retired (CLI rejects --route as unrecognized argument);
-        routeEngine.ts deleted; next_action evolved into ranked
-        recommended+alternatives structure consumed live during this session —
-        prime output returned next_action.object, next_action.capability, and
-        next_action.alternatives as designed. LLM-primary routing validated in
-        practice.
-      user_confirmation:
-        confirmed_by: user
-        confirmed_at: 2026-07-10
-  - number: 77
-    date: 2026-06-30
-    question: Should the probeCli flag and the in-process CLI probe in
-      buildDoctorStatus be retired?
-    context: "The TODO 'Doctor and prime health data sources are independent and can
-      disagree' bundled three concerns: (a) prime runs buildDoctorStatus with
-      probeCli:false while agentera doctor uses probeCli:true, (b) doctor status
-      and health audit are independent and can disagree, (c) stale health audits
-      aren't surfaced. Resonera separated the concerns: doctor and health audit
-      measure different things (app install vs codebase quality) and should
-      remain independent. Health staleness is already surfaced via
-      healthSummary's stale/days_since_audit fields. The probeCli flag is v2-era
-      debt: the in-process probe (cliProbe.ts) checks whether the dispatcher
-      command set includes expected commands via a Set lookup — it does not
-      spawn a subprocess. It was a safety net for Python-managed installs. In
-      v3, file/version presence is sufficient."
-    alternatives:
-      - name: Retire the probeCli flag, the cliProbe module, and the probe concept
-          entirely
-        status: chosen
-        tradeoffs: "Removes the flag, the probe module, and the dual-path asymmetry.
-          File/version presence and install-root classification remain as the
-          doctor's health check. Acceptable risk: if the CLI binary exists but
-          is corrupted in a way file checks don't catch, doctor won't detect it
-          until the user runs a command."
-        win_condition: buildDoctorStatus no longer takes a probeCli option; cliProbe.ts
-          is deleted; doctorClassifier no longer has the probeCli/probeRunner
-          parameters; prime and doctor produce the same status for the same
-          install; test suite passes.
-      - name: Keep the probe always-on, remove only the flag
-        status: rejected
-        tradeoffs: "The in-process probe is cheap, but tautological in v3: if prime is
-          running, the dispatcher works."
-        reason_rejected: The probe checks whether the dispatcher exposes expected
-          commands — but if prime is running, the dispatcher obviously works.
-      - name: Keep the flag, document the asymmetry as intentional
-        status: rejected
-        tradeoffs: Prime skips the probe for startup speed; the user runs agentera
-          doctor for the full probe. Documented as by design.
-        reason_rejected: The user identified the probeCli flag as v2 debt, not as an
-          intentional design choice. Documenting a footgun doesn't make it not a
-          footgun.
-      - name: Cross-link doctor status and health audit
-        status: rejected
-        tradeoffs: Make prime treat a doctor failure as a health signal and a stale
-          audit as a doctor signal.
-        reason_rejected: Doctor (app install health) and health audit (codebase quality)
-          measure different things. Conflating them creates coupling where a
-          stale audit pollutes the doctor status or a broken app pollutes the
-          health grade. They should remain independent; the user reads both
-          fields.
-    choice: Retire the probeCli flag, the cliProbe.ts module, and the probe concept
-      entirely. File/version presence and install-root classification are
-      sufficient to determine app install health in v3. Stale health audits are
-      already surfaced via healthSummary fields; no elevation to attention items
-      is needed.
-    reasoning: "The probe was a v2 safety net for Python-managed installs where the
-      binary could exist but fail to execute. In v3, the in-process probe is
-      tautological: it checks whether the dispatcher exposes expected commands,
-      but if prime is running, the dispatcher works. The probeCli flag created
-      an asymmetry where prime and doctor could produce different statuses for
-      the same install. Removing the flag, the probe module, and the probeRunner
-      concept eliminates the asymmetry and simplifies the doctor path."
-    confidence: firm
-    feeds_into: packages/cli/src/upgrade/doctor.ts,
-      packages/cli/src/upgrade/cliProbe.ts,
-      packages/cli/src/upgrade/doctorClassifier.ts,
-      packages/cli/src/cli/commands/prime/bundleStatus.ts,
-      packages/cli/src/upgrade/npxPlatformStatus.ts,
-      packages/cli/src/cli/commands/doctor.ts, TODO.md
-    satisfaction:
-      state: user_confirmed_satisfied
-      evidence: cliProbe.ts deleted; zero probeCli references remain in
-        packages/cli/src/; prime app.status reports up_to_date without any
-        probe. Doctor path works on file/version presence and install-root
-        classification as designed.
-      user_confirmation:
-        confirmed_by: user
-        confirmed_at: 2026-07-10
-    outcome: Retire the probeCli flag, cliProbe.ts, and the probe concept.
-      File/version presence and install-root classification determine app
-      install health. Doctor and health audit remain independent.
   - number: 78
     date: 2026-07-06
     question: How should Agentera close the opencode skill-path topology mismatch
@@ -941,96 +745,302 @@ decisions:
       (self-audit fold, subagent spawning compression, benchmark context lean
       seam, experiments context block, brainstorm ceremony cut) from prior
       audits?
-    context: 'Seventh capability audit. Optimize is a cycle-based shape — metric-driven
-      optimization, one experiment per invocation. Shares the cycle shape with
-      build; D85 explicitly noted subagent spawning compression "propagates to
-      optimize audit." Pre-flight grounding found v2-era ghosts: `agentera lint
-      --artifact` (v3: `agentera check lint --artifact`); `npx -y agentera
-      experiments` (v3: `agentera state experiments`); `agentera decisions`
-      (v3: `agentera state decisions`); `CLAUDE.md` in project discovery (v3:
-      `AGENTS.md`); `PROGRESS.md` as direct filename read (v3:
-      `.agentera/progress.yaml` via `agentera state progress`); `$AGENTERA_PROFILE_DIR/PROFILE.md`
-      resolver flow (v3: `status.profile` from prime); `OBJECTIVE.md` and
-      `EXPERIMENTS.md` in schema file references (v3: `objective.yaml` and
-      `experiments.yaml`); `optimera_harness` artifact_id in schemas (v3:
-      `optimize_harness`, D72); standalone "Visual identity" section (fold into
-      Purpose); "Skill introduction" line (cut); full "Contract values" token
-      enumeration (protocol.yaml is authority); full artifact-path-resolution
-      subsection (SKILL.md owns); contract.md pointer (removed from status and
-      build); "Experiment history analyzer contract" ghost section (references
-      non-existent `npx -y agentera experiments` command); "The sharp colleague"
-      personality in brainstorm (D81 violation); "Narration voice (riff, don''t
-      script)" personality leak; NEVER in safety rails (D71: MUST NOT); `/loop`
-      host concept referenced as if a CLI command; full runtime subagent spawning
-      table (~40 lines, shared verbatim with pre-D85 build); two separate
-      self-audit steps (brainstorm Step 5 + cycle Step 7, should be pre-write
-      gates inside write steps); comment header D65 tracking marker in shipped
-      code; "Getting started" as standalone section (fold into §6). Substance
-      design decisions: (S1) self-audit folded into Log — 8 steps becomes 7
-      (orient, analyze, hypothesize, implement, measure, decide, log); (S2)
-      subagent spawning table compressed to one-line pointer — D85 propagation;
-      (S3) benchmark context 30-line section replaced with lean 8-line seam
-      matching build''s execution_context pattern (D79); (S4) experiments.yaml
-      gets context block (intent, constraints, unknowns, scope) — matches
-      build''s progress.yaml pattern; (S5) brainstorm stripped to 4 questions
-      + write + approve, personality removed. New length 20,622 chars (was
-      25,990 — 21% reduction). references/cli/capability-instruction-structure.md
-      optimize row Complete (D86).'
+    context: "Seventh capability audit. Optimize is a cycle-based shape —
+      metric-driven optimization, one experiment per invocation. Shares the
+      cycle shape with build; D85 explicitly noted subagent spawning compression
+      \"propagates to optimize audit.\" Pre-flight grounding found v2-era
+      ghosts: `agentera lint --artifact` (v3: `agentera check lint --artifact`);
+      `npx -y agentera experiments` (v3: `agentera state experiments`);
+      `agentera decisions` (v3: `agentera state decisions`); `CLAUDE.md` in
+      project discovery (v3: `AGENTS.md`); `PROGRESS.md` as direct filename read
+      (v3: `.agentera/progress.yaml` via `agentera state progress`);
+      `$AGENTERA_PROFILE_DIR/PROFILE.md` resolver flow (v3: `status.profile`
+      from prime); `OBJECTIVE.md` and `EXPERIMENTS.md` in schema file references
+      (v3: `objective.yaml` and `experiments.yaml`); `optimera_harness`
+      artifact_id in schemas (v3: `optimize_harness`, D72); standalone \"Visual
+      identity\" section (fold into Purpose); \"Skill introduction\" line (cut);
+      full \"Contract values\" token enumeration (protocol.yaml is authority);
+      full artifact-path-resolution subsection (SKILL.md owns); contract.md
+      pointer (removed from status and build); \"Experiment history analyzer
+      contract\" ghost section (references non-existent `npx -y agentera
+      experiments` command); \"The sharp colleague\" personality in brainstorm
+      (D81 violation); \"Narration voice (riff, don't script)\" personality
+      leak; NEVER in safety rails (D71: MUST NOT); `/loop` host concept
+      referenced as if a CLI command; full runtime subagent spawning table (~40
+      lines, shared verbatim with pre-D85 build); two separate self-audit steps
+      (brainstorm Step 5 + cycle Step 7, should be pre-write gates inside write
+      steps); comment header D65 tracking marker in shipped code; \"Getting
+      started\" as standalone section (fold into §6). Substance design
+      decisions: (S1) self-audit folded into Log — 8 steps becomes 7 (orient,
+      analyze, hypothesize, implement, measure, decide, log); (S2) subagent
+      spawning table compressed to one-line pointer — D85 propagation; (S3)
+      benchmark context 30-line section replaced with lean 8-line seam matching
+      build's execution_context pattern (D79); (S4) experiments.yaml gets
+      context block (intent, constraints, unknowns, scope) — matches build's
+      progress.yaml pattern; (S5) brainstorm stripped to 4 questions + write +
+      approve, personality removed. New length 20,622 chars (was 25,990 — 21%
+      reduction). references/cli/capability-instruction-structure.md optimize
+      row Complete (D86)."
     alternatives:
-    - name: Rewrite with substance improvements, drift cleanup, spawning compression
-      status: chosen
-      reason_chosen: >-
-        All five substance findings (self-audit fold, subagent spawning
-        compression, benchmark context lean seam, experiments context block,
-        brainstorm ceremony cut) address real capability design gaps. Drift
-        cleanup aligns with prior audit precedent (D79-D85). Subagent spawning
-        compression completes the D85 propagation noted explicitly. Benchmark
-        context lean seam closes the last D79 direct-contract violation among
-        cycle-based capabilities. Experiments context block brings optimize's
-        experiment log to parity with build's progress.yaml.
-    - name: Drift-only cleanup without substance changes
-      status: rejected
-      reason_rejected: >-
-        Would leave the self-audit as a standalone step (inconsistent with D85
-        build), the subagent spawning table at 40 lines (D85 explicitly said to
-        propagate), the benchmark context section re-encoding rules the contract
-        already mechanizes, the experiment log without context, and the
-        brainstorm with personality — a capability that follows the spine but
-        asks the wrong questions still fails the audit.
+      - name: Rewrite with substance improvements, drift cleanup, spawning compression
+        status: chosen
+        reason_chosen: All five substance findings (self-audit fold, subagent spawning
+          compression, benchmark context lean seam, experiments context block,
+          brainstorm ceremony cut) address real capability design gaps. Drift
+          cleanup aligns with prior audit precedent (D79-D85). Subagent spawning
+          compression completes the D85 propagation noted explicitly. Benchmark
+          context lean seam closes the last D79 direct-contract violation among
+          cycle-based capabilities. Experiments context block brings optimize's
+          experiment log to parity with build's progress.yaml.
+      - name: Drift-only cleanup without substance changes
+        status: rejected
+        reason_rejected: Would leave the self-audit as a standalone step (inconsistent
+          with D85 build), the subagent spawning table at 40 lines (D85
+          explicitly said to propagate), the benchmark context section
+          re-encoding rules the contract already mechanizes, the experiment log
+          without context, and the brainstorm with personality — a capability
+          that follows the spine but asks the wrong questions still fails the
+          audit.
     choice: Rewrite with substance improvements, drift cleanup, spawning compression
-    reasoning: >-
-      Prior audits (D82 discuss, D83 research, D84 plan, D85 build) established
-      substance findings as the highest-leverage changes. Optimize substance
-      findings follow the same pattern: the self-audit fold, subagent spawning
-      compression, benchmark context lean seam, experiments context block, and
-      brainstorm ceremony cut are the same class of finding as D85's minimal
-      vision fallback, subagent spawning compression, and plan unknowns
+    reasoning: "Prior audits (D82 discuss, D83 research, D84 plan, D85 build)
+      established substance findings as the highest-leverage changes. Optimize
+      substance findings follow the same pattern: the self-audit fold, subagent
+      spawning compression, benchmark context lean seam, experiments context
+      block, and brainstorm ceremony cut are the same class of finding as D85's
+      minimal vision fallback, subagent spawning compression, and plan unknowns
       consumption. Subagent spawning compression completes the D85 propagation.
       Benchmark context lean seam closes the last D79 direct-contract violation
-      among cycle-based capabilities. Experiments context block connects optimize's
-      experiment log to the same shape as build's progress.yaml.
+      among cycle-based capabilities. Experiments context block connects
+      optimize's experiment log to the same shape as build's progress.yaml."
     confidence: firm
     feeds_into: references/cli/capability-instruction-structure.md,
       packages/cli/src/capabilities/optimize/, TODO.md
     satisfaction:
       state: user_confirmed_satisfied
-      evidence: >-
-        Optimize capability rewritten per six-section spine, direct-contract,
+      evidence: "Optimize capability rewritten per six-section spine, direct-contract,
         voice delegation. User approved each cadence step — substance decisions
-        S1-S5 individually confirmed. structural findings batch approved. outline
-        confirmed before drafting. draft approved before applying to
+        S1-S5 individually confirmed. structural findings batch approved.
+        outline confirmed before drafting. draft approved before applying to
         instructions.ts. Validation: typecheck 0 errors; build clean; capability
         validation PASS; contract validation PASS (0 violations); check compact
         within limits; vitest green. Sibling files updated: deviation table
         optimize row Complete (D86); artifacts/validation/exit schema files
-        updated; TODO resolved; D73 compacted to archive.
+        updated; TODO resolved; D73 compacted to archive."
+      user_confirmation:
+        confirmed_by: user
+        confirmed_at: 2026-07-10
+  - number: 87
+    date: 2026-07-10
+    question: How should the audit capability instructions be audited, improved, and
+      rewritten for the D80 six-section spine, D79 direct-contract delegation,
+      D71 modal vocabulary, D81 voice delegation, and v3 reality?
+    context: 'Audit was the most bloated unaudited capability at 31,313 chars — 3x
+      the D79 reference implementation. The audit prompt required ground-up
+      audit with substance challenge (is the capability asking the right
+      questions?) before structural challenge (are the instructions
+      well-formed?). Four substance findings surfaced individually: (S1)
+      per-dimension methodology is misplaced — ~60% of the 31K chars teach how
+      to analyze source code per dimension (how to evaluate coupling, how to
+      test quality, etc.) when the dimension table already provides sufficient
+      guidance and the model knows SE methodology; (S2) self-audit as separate
+      step should fold into Report per D85/D86 precedent; (S3) subagent spawning
+      template should compress to brief pointer per D85/D86, with load-bearing
+      citation standard relocated to State artifacts; (S4) "quick checklist"
+      concept has no checklist items — a ghost reference. Structural findings:
+      v2-era command references (agentera describe → agentera schema, agentera
+      lint → agentera check lint, agentera decisions → agentera state
+      decisions), v2-era file references (HEALTH.md, DECISIONS.md, PROGRESS.md,
+      PLAN.md, VISION.md, DOCS.md, CLAUDE.md → .agentera/*.yaml + AGENTS.md),
+      ghost file (references/audit-commands.md), spine violations (standalone
+      Visual identity section, Artifact path resolution subsection, Contract
+      subsection, Getting started section), personality leaks ("the colleague",
+      narration voice, "hey I noticed this"), NEVER → MUST NOT (D71), comment
+      header with decision ID.'
+    alternatives:
+      - name: Compress per-dimension methodology, fold self-audit, compress subagent
+          spawning, cut quick checklist, apply all structural fixes
+        status: chosen
+        description: Keep the Available dimensions table verbatim. Cut the 7 standard SE
+          dimension methodology sections (Architecture alignment, Pattern
+          consistency, Coupling health, Complexity hotspots, Test health,
+          Dependency health, Security hygiene). Retain the 3 agentera-specific
+          dimension mechanics (Version health docs.yaml convention detection,
+          Artifact freshness plan-relative staleness, Prose health self-audit
+          rules). Fold self-audit into Report step (7→6 steps). Compress
+          subagent spawning template to brief pointer. Relocate citation
+          standard to State artifacts finding shape. Cut ghost quick checklist.
+          Apply all structural fixes (D80 spine, D79 direct-contract, D71 modal
+          vocab, D81 voice delegation, v3 reality command/file references).
+        reason_chosen: 'Precedent from all prior audits (D79-D86): instructions define
+          process, not methodology. Build does not teach coding; research does
+          not teach web reading; discuss does not teach deliberation. The
+          dimension table with "What it evaluates" / "When to include" columns
+          is the right granularity. The 7 cut dimensions are standard SE
+          analysis the model already knows; the 3 retained dimensions have
+          agentera-specific mechanics the model cannot derive. Self-audit
+          fold-in and subagent spawning compression match D85/D86 precedent. The
+          41% reduction (31,313 → 18,401 chars) is consistent with the 20-46%
+          reductions achieved by prior audits.'
+      - name: Retain per-dimension methodology
+        status: rejected
+        description: Keep all 10 per-dimension methodology sections at full detail.
+          Preserves maximum guidance.
+        reason_rejected: At 31K chars (3x the reference implementation), the
+          instructions waste tokens teaching what a capable model already knows.
+          The methodology bloat is the root cause of the instruction size
+          problem. Every prior audit of bloated capabilities (D85 build
+          20,662→15,081, D86 optimize 25,990→20,622) cut methodology content,
+          not just drift.
+      - name: Externalize methodology to a reference file
+        status: rejected
+        description: Move per-dimension methodology to a separate reference document
+          (like the non-existent references/audit-commands.md) and reference it
+          from instructions.
+        reason_rejected: Adds a file to maintain that the instructions would need to
+          reference. The non-existent references/audit-commands.md was a ghost
+          reference — creating it would add maintenance burden without reducing
+          the instructions served to the model. The dimension table is
+          sufficient guidance.
+    choice: Compress per-dimension methodology (S1), fold self-audit into Report
+      (S2), compress subagent spawning to brief pointer with citation standard
+      relocated (S3), cut ghost quick checklist (S4), apply all structural fixes
+      (D80 spine, D79 direct-contract, D71 modal vocab, D81 voice delegation, v3
+      reality command/file references). 31,313 → 18,401 chars (-41%). Six
+      workflow steps (orient, select, assess, distill, report, connect).
+    reasoning: "The audit capability was the most bloated unaudited capability at
+      31K chars, with ~60% of content being per-dimension SE methodology the
+      model already knows. The substance challenge revealed this as the root
+      cause — not drift, not spine violations, but misplaced methodology. The
+      precedent from all seven prior audits (D79-D86) is consistent:
+      instructions define process (when to do what, what structure outputs
+      take), not methodology (how to write code, how to evaluate coupling). The
+      dimension table already provides sufficient \"what to evaluate\" and
+      \"when to include\" guidance per dimension; the 3 agentera-specific
+      dimension mechanics (Version health's docs.yaml convention detection,
+      Artifact freshness's plan-relative staleness logic, Prose health's
+      self-audit rules) were retained because they encode agentera-specific
+      processes the model cannot derive. The self-audit fold-in and subagent
+      spawning compression propagate the D85/D86 precedent to the seventh
+      audited capability, and the structural fixes (D80 spine, D79
+      direct-contract, D71 modal vocab, D81 voice delegation, v3 reality) bring
+      audit to full compliance with all cross-cutting rules."
+    confidence: firm
+    feeds_into: packages/cli/src/capabilities/audit/instructions.ts,
+      references/cli/capability-instruction-structure.md,
+      skills/agentera/capabilities/audit/schemas/validation.yaml,
+      skills/agentera/capabilities/audit/schemas/exit.yaml,
+      .agentera/decisions.yaml, TODO.md
+    satisfaction:
+      state: user_confirmed_satisfied
+      evidence: "S1-S4 substance findings confirmed individually. Structural findings
+        A-G approved as batch. Outline confirmed before drafting. Draft approved
+        before applying to instructions.ts. Validation: typecheck 0 errors;
+        build clean; capability validation PASS; drift verification confirms
+        zero v2-era residue (NEVER=absent, CLAUDE.md=absent, agentera
+        describe=absent, agentera lint=absent,
+        HEALTH.md/DECISIONS.md/PROGRESS.md/PLAN.md/VISION.md/DOCS.md as
+        standalone filenames=absent, Visual identity section=absent, Skill
+        introduction=absent, personality leaks=absent, audit-commands.md
+        ghost=absent, contract.md pointer=absent). Sibling files:
+        validation.yaml V3 DECISIONS.md→.agentera/decisions.yaml; exit.yaml E1
+        HEALTH.md→health artifact; deviation table row Complete (D87). D76
+        compacted to archive to make room."
+      user_confirmation:
+        confirmed_by: user
+        confirmed_at: 2026-07-10
+  - number: 88
+    date: 2026-07-10
+    question: >-
+      How should the document capability instructions be audited, improved, and
+      rewritten for the D80 six-section spine, D79 direct-contract delegation,
+      D71 modal vocabulary, D81 voice delegation, and v3 reality?
+    context: >-
+      Eighth capability audit. Document is a mode-split shape — the DTC
+      docs-first workflow with four modes: first-run survey, intent-first,
+      explore-and-generate, update-and-verify. Pre-flight grounding found v2-era
+      ghost commands: `agentera describe` (v3: `agentera schema`);
+      `agentera query --list-artifacts` (v3: `agentera state query
+      --list-artifacts`); `agentera query changelog` (v3: `agentera state query
+      changelog`); `agentera lint --artifact` (v3: `agentera check lint
+      --artifact`, 4 occurrences); `agentera decisions` (v3: `agentera state
+      decisions`); `agentera docs` (v3: `agentera state docs`); `agentera
+      progress` (v3: `agentera state progress`); `agentera todo` (v3:
+      `agentera state todo`). Ghost contract Section 24 cited 3x (contract tops
+      at 23). `CLAUDE.md` references 3x (v3: `AGENTS.md`). Canonical filenames
+      as direct reads (VISION.md, PROGRESS.md, DECISIONS.md, HEALTH.md; v3
+      uses `agentera state <name>` or `.agentera/*.yaml`). Standalone Visual
+      identity section (fold into Purpose). Contract values token enumeration
+      (protocol.yaml is authority). contract.md pointer (removed from all
+      audited capabilities). Full artifact-path-resolution subsection (SKILL.md
+      owns). Standalone Closeout context startup 40-line section re-encoding
+      source_contract rules (D79 violation). Decision satisfaction authority
+      10-line subsection (D87 compressed to Safety rail one-liner). Step 0
+      Detect context step-numbering bloat. Doc-prose enforcement step
+      re-encoding self-audit rules that `agentera check lint` already checks.
+      Triple-stated self-audit text (4 identical standalone steps plus
+      narration voice personality, D81 violation). NEVER in safety rails (D71:
+      MUST NOT). Comment header D65 tracking marker. Getting started as
+      standalone section (fold into section 6). Substance design decisions:
+      (S1) self-audit folded into write steps, 4 standalone steps removed,
+      D85/D86/D87 propagation; (S2) closeout context compressed to 3-line
+      pointer (D79 pattern from build/audit); (S3) decision satisfaction moved
+      to Safety rails one-liner (D87 pattern); (S4) Step 0 mode detection
+      folded into opening paragraph; (S5) doc-prose enforcement compressed to
+      lint plus report in Verify step. New length 14886 chars (was 21779, 32%
+      reduction). references/cli/capability-instruction-structure.md document
+      row Complete (D88). D77 compacted to archive for D88 entry.
+    alternatives:
+    - name: Rewrite with substance improvements and drift cleanup
+      status: chosen
+      reason_chosen: >-
+        All five substance findings (self-audit fold, closeout context
+        compression, decision satisfaction to Safety rails, Step 0 removal,
+        doc-prose enforcement compression) address real capability design gaps.
+        Drift cleanup aligns with prior audit precedent (D79-D87). Closeout
+        context compression closes the last D79 direct-contract violation
+        among mode-split capabilities. Self-audit fold completes the
+        D85/D86/D87 propagation. Doc-prose enforcement compression eliminates
+        triple-stated self-audit rules.
+    - name: Drift-only cleanup without substance changes
+      status: rejected
+      reason_rejected: >-
+        Would leave the self-audit as 4 standalone steps (inconsistent with
+        D85/D86/D87), the closeout context section re-encoding contract rules
+        (D79 violation), the decision satisfaction as a 10-line subsection
+        (D87 compressed it), Step 0 numbering bloat, and the doc-prose
+        enforcement step re-stating rules the lint command already checks; a
+        capability that follows the spine but retains v2-era waste still
+        fails the audit.
+    choice: Rewrite with substance improvements and drift cleanup
+    reasoning: >-
+      Prior audits (D82 discuss, D83 research, D84 plan, D85 build, D86
+      optimize, D87 audit) established substance findings as the highest-leverage
+      changes. Document substance findings follow the same pattern: the
+      self-audit fold, closeout context compression, decision satisfaction to
+      Safety rails, Step 0 removal, and doc-prose enforcement compression are
+      the same class of finding. Closeout context compression closes the last
+      D79 direct-contract violation among mode-split capabilities. Self-audit
+      fold completes D85/D86/D87 propagation. Doc-prose enforcement
+      compression eliminates triple-stated self-audit rules.
+    confidence: firm
+    feeds_into: references/cli/capability-instruction-structure.md,
+      packages/cli/src/capabilities/document/, TODO.md
+    satisfaction:
+      state: user_confirmed_satisfied
+      evidence: >-
+        Document capability rewritten per six-section spine, direct-contract,
+        voice delegation. User approved each cadence step: substance decisions
+        S1-S5 individually confirmed; structural findings batch approved;
+        outline confirmed before drafting; draft approved before applying to
+        instructions.ts. Sibling files updated: triggers.yaml CLAUDE.md to
+        AGENTS.md; deviation table document row Complete (D88); D77 compacted
+        to archive. typecheck 0 errors; build clean; capability validation
+        PASS; contract validation PASS (0 violations); check compact within
+        limits; vitest 144/144 files, 1278/1278 tests green.
       user_confirmation:
         confirmed_by: user
         confirmed_at: '2026-07-10'
 archive:
-  - summary: "Staging D2 (2026-06-05, agentera-mobile): **Question**: Where does the
-      mobile product vision live? **Choice**: Merge mobile vision into root
-      `.agentera/vision.yaml`; package README holds DX. **Confidence**: firm."
   - summary: "Staging D3 (2026-06-05, agentera-mobile): **Question**: How should
       mobile capability names relate to internal -era names? **Choice**: Docs
       alias table only — English UX labels in mobile; internal -era IDs
@@ -1040,6 +1050,17 @@ archive:
       Agentera's extensibility policy for the mobile product? **Choice**: Mobile
       never supports extensions, plugins, MCP, or user skill loading; sidebar
       shortcuts are app-defined. **Confidence**: firm."
+  - summary: "D76 (2026-06-30, routing): **Question**: How should Agentera route
+      requests to capabilities? **Choice**: LLM-primary routing. Retire prime
+      --route; evolve next_action into ranked state-readiness hint. Dissolve D75
+      request-vs-state mutual exclusivity. **Confidence**: firm.
+      **Satisfaction**: user_confirmed_satisfied 2026-07-10."
+  - summary: "D77 (2026-06-30, doctor): **Question**: Should the probeCli flag and
+      in-process CLI probe in buildDoctorStatus be retired? **Choice**: Retire
+      the probeCli flag, cliProbe.ts, and the probe concept. File/version
+      presence and install-root classification are sufficient for app install
+      health in v3. **Confidence**: firm. **Satisfaction**:
+      user_confirmed_satisfied 2026-07-10. Compacted during D88 audit closeout."
   - summary: "Decision 30 (2026-04-12): **Question**: How should the build-token
       harness be redesigned after three consecutive discarded experiments where
       run-to-run variance (13-20%) drowned the optimization..."
@@ -1053,13 +1074,6 @@ archive:
       user_confirmation:
         confirmed_by: user
         confirmed_at: 2026-05-23
-  - summary: "Decision 41 (2026-05-04): Record the benchmark as complete for the
-      revised v2.0 target. Initial v2 measurement was 313,356..."
-    satisfaction:
-      state: user_confirmed_satisfied
-      user_confirmation:
-        confirmed_by: user
-        confirmed_at: 2026-05-15
   - summary: "Decision 42 (2026-05-04): Five-layer dispatch model, heuristics
       hardcoded in `SKILL.md`: 1. **Bare `/agentera`** → deterministic heuristic
       decision tree...."

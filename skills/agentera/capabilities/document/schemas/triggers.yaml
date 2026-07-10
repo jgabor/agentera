@@ -22,7 +22,6 @@ TRIGGERS:
       - "write docs"
       - "document this"
       - "create README"
-      - "write CLAUDE.md"
       - "write AGENTS.md"
       - "docs first"
       - "document before building"

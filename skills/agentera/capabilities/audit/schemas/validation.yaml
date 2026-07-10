@@ -24,9 +24,10 @@ VALIDATION:
     id: V3
     rule: decisions_respected
     description: >-
-      Findings that contradict deliberate decisions documented in DECISIONS.md
-      MUST be discarded or downgraded to info (SF3). A deliberate decision is
-      not a finding; it is an implementation of that decision.
+      Findings that contradict deliberate decisions documented in
+      .agentera/decisions.yaml MUST be discarded or downgraded to info
+      (SF3). A deliberate decision is not a finding; it is an
+      implementation of that decision.
     severity: critical
     checks:
       - "No finding contradicts a known deliberate decision"

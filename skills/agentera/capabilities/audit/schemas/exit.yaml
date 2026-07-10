@@ -4,8 +4,8 @@ EXIT_CONDITIONS:
     condition: complete
     description: >-
       All selected audit dimensions were assessed, findings were synthesized,
-      grades were assigned, HEALTH.md was updated, and the user was presented
-      with actionable results.
+      grades were assigned, the health artifact was updated, and the user was
+      presented with actionable results.
     exit_signal: complete
   2:
     id: E2
