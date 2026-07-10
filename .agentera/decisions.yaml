@@ -1,133 +1,4 @@
 decisions:
-  - number: 78
-    date: 2026-07-06
-    question: How should Agentera close the opencode skill-path topology mismatch
-      where prime reports up_to_date against a clean symlink opencode never
-      loads while the host runs a diverged real directory?
-    context: "A hej/status session on feat/v3 bootstrapped via the bundled SKILL.md
-      and executed stale v2 commands (uvx, uv run, Swedish capability names).
-      Checks across all five SKILL.md copies found: the repo source and three
-      agentera-managed roots (~/.local/share/agentera,
-      ~/.config/opencode/skills/agentera, packages/cli/bundle) are all v3.0.0
-      and clean; only ~/.agents/skills/agentera is a real v2.7.11 directory.
-      runtimeMigration maintains a clean v3 symlink at
-      ~/.config/opencode/skills/agentera, but opencode's skill loader reads from
-      ~/.agents/skills/agentera — a path agentera never writes. prime
-      bundleStatus (bundleStatus.ts:63-65) checks installRoot, sourceRoot, and
-      ~/.config/opencode/skills/agentera but omits ~/.agents/skills/agentera,
-      while setup/doctor/opencode.ts:315 lists that same path as a
-      default-skill-root. So up_to_date reports clean against a path opencode
-      doesn't load while the host runs stale. The standing docs TODO to
-      reconcile bundled SKILL.md is misframed: the source is already v3; the
-      defect is the opencode skill-path topology, not documentation. Verified
-      against opencode.ai/docs/skills: opencode searches six skill locations
-      including both ~/.config/opencode/skills/<name>/ (opencode-specific) and
-      ~/.agents/skills/<name>/ (agent-compatible, industry path), and requires
-      skill names unique across all — so a skill present in both is itself the
-      configuration error that let opencode load the stale copy."
-    alternatives:
-      - name: Detect + repair via topology reconciliation
-        status: chosen
-        tradeoffs: Add ~/.agents/skills/agentera to bundleStatus candidates (detect;
-          never false up_to_date) and have upgrade maintain that path as a
-          symlink to the canonical source (repair; retiring the
-          ~/.config/opencode/skills symlink per the opencode doc's
-          cross-location uniqueness rule). Closes the loop end-to-end so the
-          host can't silently run v2 again, and adopts ~/.agents/skills as the
-          canonical agent-compatible root.
-        win_condition: prime reports up_to_date only when ~/.agents/skills/agentera
-          matches the canonical source; upgrade converts a divergent real
-          directory at that path to a symlink and retires the
-          ~/.config/opencode/skills/agentera symlink; ~/.agents/skills becomes
-          the canonical agent-compatible root, with direction to deprecate
-          runtime-specific skill dirs for runtimes natively supporting
-          ~/.agents/skills; the Reconcile bundled SKILL.md TODO is re-scoped to
-          the topology fix rather than a source edit.
-      - name: Detect-only (surface divergence, host reinstalls)
-        status: rejected
-        tradeoffs: Add the path to bundleStatus candidates so prime surfaces staleness;
-          host or opencode reinstalls. Keeps agentera's write boundary narrow.
-        reason_rejected: agentera already recognizes ~/.agents/skills/agentera as a
-          default-skill-root (opencode.ts:315). Detect-only leaves the repair
-          loop open — the divergence that broke this session's bootstrap would
-          recur silently until a manual reinstall.
-      - name: Overwrite-in-place (second real copy)
-        status: rejected
-        tradeoffs: Copy canonical skills/agentera over ~/.agents/skills/agentera on each
-          upgrade when diverged. Pragmatic and fast.
-        reason_rejected: Keeps a second real copy alongside the managed home; divergence
-          can recur unless paired with a drift gate, and it diverges from
-          agentera's existing single-source symlink topology.
-      - name: Treat as a docs task (reconcile the source SKILL.md)
-        status: rejected
-        tradeoffs: Edit skills/agentera/SKILL.md to remove v2 references.
-        reason_rejected: The source is already v3-clean (npx, English names, prime
-          --context). The v2 commands executed this session came from the
-          ~/.agents straggler install, not the source. Editing the source would
-          do nothing.
-    choice: Detect + repair via topology reconciliation. Add
-      ~/.agents/skills/agentera to bundleStatus candidate list so prime never
-      reports up_to_date while the host-loaded copy is diverged; have upgrade
-      maintain ~/.agents/skills/agentera as a symlink to the canonical source as
-      the canonical agent-compatible root; and retire the
-      ~/.config/opencode/skills/agentera symlink (justified by the opencode
-      doc's cross-location uniqueness rule — opencode loads from both paths, so
-      a duplicate skill name is itself the config error). Broader direction —
-      standardize on ~/.agents/skills as the single skill root for runtimes
-      natively supporting it (OpenCode, Claude-compatible, Pi); deprecate their
-      runtime-specific skill dirs; keep runtime-specific dirs only for runtimes
-      lacking native ~/.agents/skills support (verify per-runtime during build).
-    reasoning: The defect is neither broken install propagation nor stale
-      documentation. agentera's managed locations are all v3.0.0 and clean and
-      the source is clean; the defect is that agentera symlinks the
-      opencode-skill path opencode doesn't load (~/.config/opencode/skills)
-      while leaving diverged the path opencode does load (~/.agents/skills).
-      bundleStatus checks the clean symlink, declares up_to_date, and the host
-      runs the stale real directory. Reconciling the topology — detecting
-      staleness at the host-loaded path and repairing it to a symlink, and
-      retiring the opencode-specific symlink per the doc's uniqueness rule —
-      matches agentera's existing runtimeMigration pattern and structurally
-      prevents recurrence while standardizing on the agent-compatible root.
-    confidence: firm
-    feeds_into: packages/cli/src/cli/commands/prime/bundleStatus.ts,
-      packages/cli/src/upgrade/runtimeMigration.ts,
-      packages/cli/src/setup/doctor/opencode.ts,
-      packages/cli/src/upgrade/appContentRefresh.ts, TODO.md
-    satisfaction:
-      state: user_confirmed_satisfied
-      evidence: "P1 shipped: bundleStatus.ts:65-66 includes ~/.agents/skills/agentera
-        in its candidate and doctorRoots lists; runtimeMigration.ts:417-513
-        implements detect + symlink repair + retirement of the duplicate
-        ~/.config/opencode/skills/agentera; verified on disk that
-        ~/.agents/skills/agentera is a symlink to the canonical source and
-        ~/.config/opencode/skills/agentera no longer exists. P2 shipped:
-        RESOLVED_AGENTERA_HOME remnant stripped from
-        packages/cli/src/capabilities/status/instructions.ts. User confirmed in
-        discuss deliberation 2026-07-10 that the silent-stale risk is genuinely
-        closed; broader ~/.agents/skills standardization is held as loose
-        direction with no separate artifact."
-      user_confirmation:
-        confirmed_by: user
-        confirmed_at: 2026-07-10
-    outcome: "P1 (CLI): bundleStatus adds ~/.agents/skills/agentera to its candidate
-      list so prime surfaces staleness there as attention and never reports
-      up_to_date while diverged; upgrade maintains ~/.agents/skills/agentera as
-      a symlink to the canonical source (the canonical agent-compatible root)
-      and RETIRES the ~/.config/opencode/skills/agentera symlink — the opencode
-      doc confirms opencode loads from both paths and requires skill names
-      unique across locations, so the duplicate is the error. Broader direction:
-      standardize on ~/.agents/skills as the single skill root for runtimes
-      natively supporting it (OpenCode, Claude-compatible, Pi); deprecate their
-      runtime-specific skill dirs; keep runtime-specific dirs only for runtimes
-      lacking native ~/.agents/skills support (verify per-runtime during build —
-      e.g. Cursor, GitHub Copilot, Codex). P2 (docs) folds into the existing
-      Audit and review status capability instructions TODO — strip the
-      RESOLVED_AGENTERA_HOME and v2 resolver-flow remnant from
-      packages/cli/src/capabilities/status/instructions.ts. The Reconcile
-      bundled SKILL.md TODO is re-scoped: source is already v3, so the fix is
-      P1's topology repair, not a source edit. Sequence P1 first (it silently
-      broke bootstrap); P2 second. Symlink target (repo source vs managed app
-      home) and dead-code retirement are implementation details for plan/build."
   - number: 79
     date: 2026-07-06
     question: How should the status capability prose be designed to maximize
@@ -1040,16 +911,102 @@ decisions:
       user_confirmation:
         confirmed_by: user
         confirmed_at: '2026-07-10'
+  - number: 89
+    date: 2026-07-10
+    question: >-
+      How should the profile capability instructions be audited, improved, and
+      rewritten for the D80 six-section spine, D79 direct-contract delegation,
+      D71 modal vocabulary, D81 voice delegation, and v3 reality?
+    context: >-
+      Ninth capability audit. Profile is a mode-split shape — persona
+      reconstruction with Full and Validate modes. Pre-flight grounding found
+      v2-era ghosts: crystallized.json (does not exist in v3); effective
+      profile script (4x in cross-capability; v3 capabilities consume
+      status.profile); ~/.claude/profile/ migration claim (no v3 code);
+      agentera decisions (v3: agentera state decisions); CLAUDE.md (v3:
+      AGENTS.md); Python is unavailable in EX3 (v3 is TypeScript);
+      $AGENTERA_PROFILE_DIR hardcoded 6x (v3 serves
+      profile_context.profile.path); $XDG_DATA_HOME resolver flow; DECISIONS.md
+      canonical filename (D82: artifact-id); D65 comment header marker.
+      Spine violations: standalone Visual identity, Contract values, Artifact
+      path resolution, contract.md pointer, Getting started, Notes on depth,
+      Step 0 numbering. Personality leaks D81: sharp colleague, narration
+      voice, colleague voice. NEVER in safety rails (D71: MUST NOT). npx -y
+      agentera (audited capabilities use bare agentera). Substance design
+      decisions: (S1) coverage audit + extraction merged into single step
+      (6→4 Full steps, preserving multi-select and EX2 gating substance per
+      user pushback); (S2) prediction validation folded into Generate step with
+      low accuracy <3/5 triggering EX2 flagged (D85-D88 self-audit fold
+      pattern); (S3) Validate V3+V4 merged (4→3 steps). New length 19567 chars
+      (was 24219, 19% reduction). references/cli/capability-instruction-structure.md
+      profile row Complete (D89). D78 compacted to archive for D89 entry.
+    alternatives:
+    - name: Rewrite with substance improvements and drift cleanup
+      status: chosen
+      reason_chosen: >-
+        All three substance findings (extraction step compression, prediction
+        validation fold + EX2, Validate V3+V4 merge) address real capability
+        design gaps. Drift cleanup aligns with prior audit precedent (D79-D88).
+        Extraction step compression respects user pushback to value each step
+        on actual importance. Prediction validation EX2 closes the quality
+        signal loop. Validate V3+V4 fold follows the D85-D88 self-audit fold
+        pattern.
+    - name: Drift-only cleanup without substance changes
+      status: rejected
+      reason_rejected: >-
+        Would leave extraction mechanics dominating the capability identity (3
+        of 6 steps are infrastructure), prediction validation as a standalone
+        step that doesn't close the loop (low accuracy noted but not acted
+        on), and Validate V4 as thin I/O masquerading as a step; a capability
+        that follows the spine but asks the wrong questions still fails the
+        audit.
+    choice: Rewrite with substance improvements and drift cleanup
+    reasoning: >-
+      Prior audits (D82 discuss, D83 research, D84 plan, D85 build, D86
+      optimize, D87 audit, D88 document) established substance findings as the
+      highest-leverage changes. Profile substance findings follow the same
+      pattern: extraction step compression, prediction validation fold + EX2,
+      and Validate V3+V4 merge are the same class of finding. Prediction
+      validation EX2 closes the quality signal loop — the capability asks how
+      it knows the profile is good and now acts on the answer. Extraction
+      compression respects the user pushback to value each step by merging only
+      the tightly-coupled coverage+extraction flow, not all three extraction
+      steps.
+    confidence: firm
+    feeds_into: references/cli/capability-instruction-structure.md,
+      packages/cli/src/capabilities/profile/, TODO.md
+    satisfaction:
+      state: user_confirmed_satisfied
+      evidence: >-
+        Profile capability rewritten per six-section spine, direct-contract,
+        voice delegation. User approved each cadence step: substance decisions
+        S1-S3 individually confirmed; structural findings batch approved;
+        outline confirmed before drafting; draft approved before applying to
+        instructions.ts. Sibling files updated: exit.yaml Python ghost removed;
+        deviation table profile row Complete (D89); D78 compacted to archive.
+        typecheck 0 errors; build clean; capability validation PASS; contract
+        validation PASS (0 violations); check compact within limits.
+      user_confirmation:
+        confirmed_by: user
+        confirmed_at: '2026-07-10'
+    outcome: Rewrite with substance improvements and drift cleanup
+    downstream_consequence_references:
+      - source_field: feeds_into
+        reference: references/cli/capability-instruction-structure.md
+      - source_field: feeds_into
+        reference: packages/cli/src/capabilities/profile/
+      - source_field: feeds_into
+        reference: TODO.md
+    context_complete: true
+    missing_fields: []
+    compacted: false
+    caveats: []
+
 archive:
-  - summary: "Staging D3 (2026-06-05, agentera-mobile): **Question**: How should
-      mobile capability names relate to internal -era names? **Choice**: Docs
-      alias table only — English UX labels in mobile; internal -era IDs
-      unchanged until a dedicated rename pass. **Confidence**: provisional
-      (alias table)."
-  - summary: "Staging D4 (2026-06-05, agentera-mobile): **Question**: What is
-      Agentera's extensibility policy for the mobile product? **Choice**: Mobile
-      never supports extensions, plugins, MCP, or user skill loading; sidebar
-      shortcuts are app-defined. **Confidence**: firm."
+  - summary: "Staging D3+D4 (2026-06-05, agentera-mobile): Mobile capability
+      names use docs alias table only (English UX, internal -era IDs unchanged);
+      mobile never supports extensions, plugins, MCP, or user skill loading.
+      **Confidence**: provisional/firm. Merged during D89 compaction."
   - summary: "D76 (2026-06-30, routing): **Question**: How should Agentera route
       requests to capabilities? **Choice**: LLM-primary routing. Retire prime
       --route; evolve next_action into ranked state-readiness hint. Dissolve D75
@@ -1061,6 +1018,16 @@ archive:
       presence and install-root classification are sufficient for app install
       health in v3. **Confidence**: firm. **Satisfaction**:
       user_confirmed_satisfied 2026-07-10. Compacted during D88 audit closeout."
+  - summary: "D78 (2026-07-06, routing): **Question**: How should Agentera close the
+      opencode skill-path topology mismatch where prime reports up_to_date against a
+      clean symlink opencode never loads while the host runs a diverged real directory?
+      **Choice**: Detect + repair via topology reconciliation — add ~/.agents/skills/agentera
+      to bundleStatus candidates; upgrade maintains that path as a symlink to the canonical
+      source; retire the ~/.config/opencode/skills/agentera symlink per the opencode doc's
+      cross-location uniqueness rule. Standardize on ~/.agents/skills as the canonical
+      agent-compatible root. **Confidence**: firm. **Satisfaction**: user_confirmed_satisfied
+      2026-07-10. Compacted during D89 audit closeout."
+
   - summary: "Decision 30 (2026-04-12): **Question**: How should the build-token
       harness be redesigned after three consecutive discarded experiments where
       run-to-run variance (13-20%) drowned the optimization..."

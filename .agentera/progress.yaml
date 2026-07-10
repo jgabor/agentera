@@ -1,4 +1,27 @@
 cycles:
+  - number: 695
+    timestamp: 2026-07-10 15:09
+    type: docs
+    phase: build
+    what: Audited and rewrote profile capability instructions following six-section
+      spine and direct-contract philosophy.
+    discovered: exit.yaml E3 had "Python is unavailable" v2 ghost (removed); D3+D4
+      staging archive entries merged to maintain uniform_10_40_50 archive limit
+      during D78 compaction.
+    verified: "typecheck: 0 errors. build: clean. capability validation: PASS.
+      contract validation: PASS (0 violations). check compact: within limits.
+      vitest: 144/144 files, 1278/1278 tests green."
+    next: Design capability audit is next per TODO.md open items.
+    context:
+      intent: Ground-up audit of profile capability instructions per the audit prompt
+        docs/notes/audit-prompt.md.
+      constraints: Follow six-section spine, direct-contract philosophy, voice
+        delegation. No project-tracking markers in shipped code.
+      unknowns: Whether archive entry merging (D3+D4) sets precedent for future
+        compaction gates when archive exceeds 40.
+      scope: instructions.ts rewritten; exit.yaml Python ghost removed; deviation
+        table profile row Complete (D89); D78 compacted to archive; D3+D4
+        merged; TODO resolved.
   - number: 694
     timestamp: 2026-07-10 12:30
     type: docs
@@ -318,44 +341,9 @@ cycles:
         4 scope).
       artifacts:
         plan: .agentera/plan.yaml (task 1 -> complete; surprises field populated)
-  - number: 685
-    timestamp: 2026-06-28 09:30
-    type: chore
-    phase: audit
-    what: Audit 25 of the feat/v3 CLI. Evaluated the C74 Dict-consolidation refactor
-      (commits 2715bd28..8e9f2447, 6 commits) against Audit 24's baseline.
-      Overall grade B (stable); trajectory improving. Complexity B->A, Version
-      B->A, Freshness B->A (C74 resolved the uncommitted-WIP freshness warning
-      and the Dict-sprawl complexity finding). Patterns A->B -- audit caught a
-      test-local JsonObject shadow in vocabularyAuthority.test.ts that tsc
-      excludes from typecheck, a defect introduced by C74 task 4 and invisible
-      to the build cycle's own verification gates. Coupling B stable
-      (orientation.ts hub downgraded to info; new PackageRegistry cast-density
-      warning is the task-4 escape-hatch residue). Deprecated Dict alias now has
-      zero consumers -- removal unblocked.
-    discovered: "Independent audit capability caught a defect the build cycle
-      self-verification missed: a test-local type JsonObject = Record<string,
-      unknown> shadow in vocabularyAuthority.test.ts that tsc excludes by design
-      (tests use vitest vite transform). Validates running inspektera after
-      multi-cycle refactors -- typecheck + vitest green does not catch type
-      drift in test files."
-    verified: "agentera state health --format json confirms entry 25 is latest (date
-      2026-06-28) and entry 24 physically preserved at line 1100. Only
-      .agentera/health.yaml modified. Findings use correct severity/confidence
-      vocabulary. audit exit signal: complete."
-    next: "Two warning findings to address via build: (1) delete test-local
-      JsonObject shadow in vocabularyAuthority.test.ts; (2) lift PackageRegistry
-      parsed records to a typed PackageRegistryRecord interface. Both
-      file-scoped."
-    context:
-      intent: Codebase health audit -- evaluate C74 Dict consolidation against Audit
-        24 baseline.
-      constraints: Type-only audit context. No vision/objective state touched. No
-        app/profile refresh. feat/v3 only.
-      artifacts:
-        health: .agentera/health.yaml (entry 25 written; entry 15 auto-archived to
-          one-line summary by 10-full rule)
 archive:
+  - summary: "Cycle 685 (2026-06-28): Audit 25 of the feat/v3 CLI. Evaluated the C74
+      Dict-consolidation refactor (commits 2715bd28..8e9f2447, 6 commits)..."
   - summary: "Cycle 684 (2026-06-27): Plan task 7 (final) of chore:3.0.0: final
       verification + plan archive + TODO closure. Ran..."
   - summary: "Cycle 683 (2026-06-27): Plan task 6 of chore:3.0.0 (cross-cutting cast
@@ -461,6 +449,3 @@ archive:
       (plan T7, TODO fix:3.0.0). On v3 projects (all twelve..."
   - summary: "Cycle 646 (2026-06-04): Remove v1 legacy cruft after the 3.0
       compatibility boundary (plan T4 / TODO L21). Deleted..."
-  - summary: "Cycle 645 (2026-06-04): Decision 58 single-name protocol boundary
-      (plan T3 / TODO L20). Added `artifactProtocolIds.ts` and
-      `references/cli/single-name-protocol.yaml`; migrated..."

@@ -22,8 +22,7 @@ EXIT_CONDITIONS:
     condition: stuck
     description: >-
       Cannot generate or validate a profile because extraction scripts
-      failed entirely, Python is unavailable, or session data sources
-      are unreadable.
+      failed entirely or session data sources are unreadable.
     exit_signal: stuck
   4:
     id: E4
