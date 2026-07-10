@@ -3,7 +3,7 @@ VALIDATION:
     id: V1
     rule: verified_field_mandatory
     description: >-
-      Every PROGRESS.md cycle entry MUST have a verified field. The field
+      Every progress.yaml cycle entry MUST have a verified field. The field
       carries either observed output from the primary entrypoint, an allowlisted
       N/A tag, or a free-form rationale of at least 8 words.
     severity: critical
@@ -14,9 +14,9 @@ VALIDATION:
     id: V2
     rule: one_cycle_per_invocation
     description: >-
-      Build executes exactly one cycle per invocation. After logging (Step 9),
+      Build executes exactly one cycle per invocation. After logging (Step 8),
       the capability MUST stop. Multiple cycles require separate invocations or
-      /loop.
+      an explicit user request.
     severity: critical
     checks:
       - "Only one cycle entry appended to PROGRESS.md per invocation"
@@ -24,7 +24,7 @@ VALIDATION:
     id: V3
     rule: no_remote_push
     description: >-
-      Build MUST NEVER push to any remote repository. All commits are local
+      Build MUST NOT push to any remote repository. All commits are local
       only. Remote operations require explicit user instruction outside this
       capability.
     severity: critical
@@ -35,7 +35,7 @@ VALIDATION:
     rule: vision_readonly_during_cycle
     description: >-
       The canonical vision artifact MUST NOT be modified during a cycle. It may only be written
-      during a brainstorm session (bootstrap or user-requested refinement).
+      during a vision bootstrap.
     severity: critical
     checks:
       - "Vision artifact not modified outside brainstorm"
@@ -43,7 +43,7 @@ VALIDATION:
     id: V5
     rule: consecutive_failure_guard
     description: >-
-      If the last 3 PROGRESS.md entries all record failed cycles, build
+      If the last 3 progress.yaml entries all record failed cycles, build
       MUST stop and surface the pattern to the user. Do not attempt a 4th
       consecutive cycle on the same failing problem.
     severity: critical
@@ -59,7 +59,7 @@ VALIDATION:
       other agent-facing artifacts as YAML in .agentera/).
     severity: warning
     checks:
-      - "DOCS.md checked before artifact access"
+      - "docs.yaml checked before artifact access"
   7:
     id: V7
     rule: execution_context_first
@@ -93,7 +93,7 @@ VALIDATION:
     severity: critical
     checks:
       - "No protected state mutation during context generation"
-      - "No unsupported `agentera build` or `agentera build` command introduced"
+      - "No unsupported `agentera build` command introduced"
   10:
     id: V10
     rule: satisfaction_authority_boundary

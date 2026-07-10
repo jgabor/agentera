@@ -6,7 +6,7 @@ ARTIFACTS:
     description: >-
       Build consumes this through CLI execution_context caveats or explicit
       fallback state when available, and never modifies it during cycles. Created
-      during brainstorm (bootstrap or user-requested refinement).
+      during vision bootstrap.
   2:
     id: A2
     artifact_id: todo

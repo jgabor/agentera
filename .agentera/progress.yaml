@@ -1,4 +1,29 @@
 cycles:
+  - number: 693
+    timestamp: 2026-07-10 09:36
+    type: docs
+    phase: build
+    what: Audited and rewrote build capability instructions following six-section
+      spine and direct-contract philosophy.
+    discovered: Subagent spawning table is shared verbatim with optimize — propagate
+      compression in optimize audit. Comment headers across audited capability
+      files still carry decision IDs (D57, D65, D71, D82) — project-tracking
+      marker leak in shipped code per ktx precedent.
+    verified: "typecheck: 0 errors. build: clean. capability validation: PASS.
+      contract validation: PASS (0 violations). check compact: within limits.
+      vitest: 144/144 files, 1278/1278 tests green."
+    next: Optimize capability audit is next — propagate subagent spawning
+      compression and shared drift patterns.
+    context:
+      intent: Ground-up audit of build capability instructions per the audit prompt
+        docs/notes/audit-prompt.md.
+      constraints: Follow six-section spine, direct-contract philosophy, voice
+        delegation. No project-tracking markers in shipped code.
+      unknowns: Whether D85 satisfaction will be confirmed; whether the comment-header
+        leak cleanup across other audited capabilities is a separate task.
+      scope: instructions.ts rewritten; validation.yaml, exit.yaml, artifacts.yaml
+        schema files updated; deviation table row filled; TODO resolved; D85
+        decision entry added.
   - number: 692
     timestamp: 2026-07-08 16:44
     type: fix
@@ -335,44 +360,9 @@ cycles:
         plan: .agentera/plan.yaml (header.status -> complete; task 7 -> complete;
           archived)
         todo: TODO.md (critical [chore:3.0.0] moved to Resolved 2026-06-27)
-  - number: 683
-    timestamp: 2026-06-27 15:00
-    type: refactor
-    phase: build
-    what: Plan task 6 of chore:3.0.0 (cross-cutting cast audit + re-export
-      deletion). Converted ~28 consumer files from `import { Dict } from
-      <passthrough>` to `import { JsonObject } from core/jsonValue` and replaced
-      every `Dict` token. Deleted the 5 sanctioned re-export passthroughs
-      (capabilityContext/types, startupAnalysis/contract,
-      cli/commands/state/shared, analytics/extractCorpus/core,
-      validate/lifecycleAdapters/shared). Discovered and removed a 6th
-      passthrough (startupAnalysis/index.ts re-export). Fixed the missed test
-      file test/registries/artifactRegistry.test.ts (local `type Dict =
-      Record<string, any>` -> JsonObject). Added `// cast:` comments to 5
-      IO-boundary casts. JsonObject is now the only JSON-value type name in use;
-      the deprecated `Dict` alias survives only inside core/jsonValue.ts
-      (removal deferred).
-    discovered: A 6th passthrough existed (startupAnalysis/index.ts re-export of
-      Dict) not in the original sanctioned-5 list; same pattern as the
-      extractCorpus/index.ts re-export, handled identically. One flaky test run
-      observed (file-generating extractCorpusParity/prepack tests); stable on
-      re-run, not a regression.
-    verified: 'pnpm -C packages/cli run typecheck: 0 errors. pnpm -C packages/cli
-      test: 1145/1145 pass (132 files) — confirmed stable across 2 runs. `rg
-      "\\bDict\\b" packages/cli/src packages/cli/test | rg -v core/jsonValue`:
-      NONE. `rg "export type Dict" packages/cli/src`: only core/jsonValue.ts:13.
-      0 fixture/snapshot drift.'
-    next: "Task 7 (final): re-run full typecheck/build/vitest/compaction gate from a
-      clean tree, archive plan, close the critical [chore:3.0.0] TODO, fold
-      artifacts into the same commit."
-    context:
-      intent: Make JsonObject the single JSON-value source of truth; narrow `as` casts
-        to IO boundaries. Type-only, no behavior change.
-      constraints: Task-6 scope. core/jsonValue.ts untouched (deprecated Dict alias
-        retained). No new public API. feat/v3 only.
-      artifacts:
-        plan: .agentera/plan.yaml (task 6 -> complete)
 archive:
+  - summary: "Cycle 683 (2026-06-27): Plan task 6 of chore:3.0.0 (cross-cutting cast
+      audit + re-export deletion). Converted ~28 consumer files..."
   - summary: "Cycle 682 (2026-06-27): Plan task 5 of chore:3.0.0 (long-tail surface)
       + remediation. First build cycle eliminated aliases in..."
   - summary: "Cycle 681 (2026-06-27): Plan task 4 of chore:3.0.0: consolidate Dict
@@ -480,5 +470,3 @@ archive:
   - summary: "Cycle 644 (2026-06-04): npm `@next` version-divergence gate (TODO
       L21). Added `packages/cli/src/release/releaseMetadata.ts` that reads
       `registry.json` `skills[0].version` as the authoritative..."
-  - summary: "Cycle 643 (2026-06-04): D56 parity closeout — ported the six remaining
-      CLI surface families to TypeScript and proved..."
