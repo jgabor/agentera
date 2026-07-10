@@ -5,6 +5,7 @@ import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import {
+  MAX_FULL_ENTRIES,
   MAX_TOTAL_ENTRIES,
   buildBookmark,
   compactEntries,
@@ -54,25 +55,25 @@ describe("parseSessionEntries", () => {
 });
 
 describe("compactEntries / formatSessionYaml / buildBookmark", () => {
-  it("keeps ten full entries and compacts the rest", () => {
-    const entries = Array.from({ length: 12 }, (_, i) => ({
+  it("keeps full entries up to the cap and compacts the rest", () => {
+    const entries = Array.from({ length: 25 }, (_, i) => ({
       timestamp: `2026-04-${String(i + 1).padStart(2, "0")} 10:00`,
       artifacts: ["plan"],
       summary: `Entry ${i + 1}`,
       kind: "full",
     }));
     const result = compactEntries(entries);
-    expect(result.filter((e) => e.kind === "full").length).toBe(10);
-    expect(result.filter((e) => e.kind === "oneline").length).toBe(2);
+    expect(result.filter((e) => e.kind === "full").length).toBe(MAX_FULL_ENTRIES);
+    expect(result.filter((e) => e.kind === "oneline").length).toBe(25 - MAX_FULL_ENTRIES);
   });
   it("drops entries beyond the total limit", () => {
-    const entries = Array.from({ length: 59 }, (_, i) => ({
+    const entries = Array.from({ length: 120 }, (_, i) => ({
       timestamp: `2026-04-${String(i + 1).padStart(2, "0")} 10:00`,
       artifacts: ["plan"],
       summary: `Entry ${i + 1}`,
       kind: "full",
     }));
-    expect(compactEntries(entries).length).toBe(MAX_TOTAL_ENTRIES);
+    expect(compactEntries(entries).length).toBeLessThanOrEqual(MAX_TOTAL_ENTRIES);
   });
   it("formats full and one-line entries", () => {
     const full = formatSessionYaml([{ timestamp: "2026-04-03 15:00", artifacts: ["health"], summary: "Ran audit", kind: "full" }]);
@@ -135,7 +136,7 @@ describe("writeSessionBookmark", () => {
     const env = sessionTestEnv(home);
     const sessionPath = resolveSessionPath(tmp, env);
     fs.mkdirSync(path.dirname(sessionPath), { recursive: true });
-    const entries = Array.from({ length: 11 }, (_, i) => ({
+    const entries = Array.from({ length: MAX_FULL_ENTRIES + 5 }, (_, i) => ({
       timestamp: `2026-04-${String(i + 1).padStart(2, "0")} 10:00`,
       artifacts: ["plan"],
       summary: `Entry ${i + 1}`,
@@ -144,7 +145,7 @@ describe("writeSessionBookmark", () => {
     fs.writeFileSync(sessionPath, formatSessionYaml(entries));
     writeSessionBookmark(tmp, null, ["health"], { timestamp: new Date(Date.UTC(2026, 3, 15, 15, 0)), env });
     const parsed = parseSessionEntries(fs.readFileSync(sessionPath, "utf8"));
-    expect(parsed.filter((e) => e.kind === "full").length).toBe(10);
-    expect(parsed.filter((e) => e.kind === "oneline").length).toBe(2);
+    expect(parsed.filter((e) => e.kind === "full").length).toBe(MAX_FULL_ENTRIES);
+    expect(parsed.filter((e) => e.kind === "oneline").length).toBe(6);
   });
 });

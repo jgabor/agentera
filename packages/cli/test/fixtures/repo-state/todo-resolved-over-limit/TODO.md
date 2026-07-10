@@ -42,6 +42,26 @@
     detail for item 15
 - [x] Resolved full item 16
     detail for item 16
+- [x] Resolved full item 17
+    detail for item 17
+- [x] Resolved full item 18
+    detail for item 18
+- [x] Resolved full item 19
+    detail for item 19
+- [x] Resolved full item 20
+    detail for item 20
+- [x] Resolved full item 21
+    detail for item 21
+- [x] Resolved full item 22
+    detail for item 22
+- [x] Resolved full item 23
+    detail for item 23
+- [x] Resolved full item 24
+    detail for item 24
+- [x] Resolved full item 25
+    detail for item 25
+- [x] Resolved full item 26
+    detail for item 26
 - [x] Resolved oneline 1
 - [x] Resolved oneline 2
 - [x] Resolved oneline 3

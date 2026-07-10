@@ -7,6 +7,7 @@ import YAML from "yaml";
 import { resolvePath } from "../core/paths.js";
 import { loadYamlMapping } from "../core/yaml.js";
 import {
+  MAX_FULL_ENTRIES,
   MAX_TOTAL_ENTRIES,
   compactSessionBookmarkEntries,
   loadArtifactOverrides,
@@ -24,7 +25,7 @@ import type { JsonObject } from "../core/jsonValue.js";
 
 type Env = Record<string, string | undefined>;
 
-export { MAX_TOTAL_ENTRIES };
+export { MAX_FULL_ENTRIES, MAX_TOTAL_ENTRIES };
 
 import { TRACKED_ARTIFACT_IDS } from "../registries/artifactProtocolIds.js";
 

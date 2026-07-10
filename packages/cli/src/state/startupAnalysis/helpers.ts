@@ -54,7 +54,7 @@ export const THRESHOLD_WARNING_PATTERNS: Array<[string, string, string, RegExp]>
   ],
   ["self_audit", "abstraction", "self_audit.abstraction", /abstraction creep/i],
   ["self_audit", "filler", "self_audit.filler", /\bfiller\s*:/i],
-  ["compaction", "over_limit", "compaction.uniform_10_40_50", /over(?:\s+|_)limit|uniform_10_40_50/i],
+  ["compaction", "over_limit", "compaction.uniform_20_50_100", /over(?:\s+|_)limit|uniform_20_50_100/i],
   ["compaction", "protected_overflow", "compaction.protected_overflow", /protected[-_ ]overflow/i],
 ];
 export const POST_AUDIT_FLAG_RE = /\[post-audit-flagged(?::[^\]]*)?\]/gi;

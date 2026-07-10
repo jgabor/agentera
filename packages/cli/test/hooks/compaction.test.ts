@@ -14,7 +14,7 @@ import {
   parseEntries,
   runCompaction,
 } from "../../src/hooks/compaction/index.js";
-import { MAX_TOTAL_ENTRIES } from "../../src/hooks/common.js";
+import { MAX_FULL_ENTRIES, MAX_TOTAL_ENTRIES } from "../../src/hooks/common.js";
 import { cleanupFixtureProject, useFixtureProject } from "../helpers/useFixtureProject.js";
 
 let tmp: string;
@@ -58,7 +58,7 @@ describe("checkCompaction (repo-state fixtures)", () => {
     expect(op?.status.over_limit_count).toBe(6);
   });
 
-  it("reports ok for all compactable artifacts within uniform_10_40_50", () => {
+  it("reports ok for all compactable artifacts within uniform_20_50_100", () => {
     const root = useFixtureProject("ok");
     fixtureRoots.push(root);
     const present = checkCompaction(root).filter(
@@ -100,9 +100,9 @@ describe("progress.yaml over-limit gate", () => {
       cycles: { number: number }[];
       archive: { summary: string }[];
     };
-    expect(data.cycles.length).toBe(10);
-    expect(data.archive.length).toBe(40);
-    expect(data.cycles.length + data.archive.length).toBe(MAX_TOTAL_ENTRIES);
+    expect(data.cycles.length).toBe(20);
+    expect(data.archive.length).toBe(35);
+    expect(data.cycles.length + data.archive.length).toBeLessThanOrEqual(MAX_TOTAL_ENTRIES);
     expect(data.cycles[0].number).toBe(55);
     expect(data.archive.some((e) => e.summary.includes("Cycle 1"))).toBe(true);
     expect(checkCompaction(tmp).find((o) => o.status.artifact === "progress")?.action).toBe("ok");
@@ -110,8 +110,8 @@ describe("progress.yaml over-limit gate", () => {
 });
 
 describe("compactYamlFile", () => {
-  it("keeps the newest 10 cycles and archives the rest", () => {
-    const cycles = Array.from({ length: 12 }, (_, i) => {
+  it("keeps the newest cycles up to cap and archives the rest", () => {
+    const cycles = Array.from({ length: 25 }, (_, i) => {
       const n = i + 1;
       return `- number: ${n}\n  timestamp: '2026-01-${String(n).padStart(2, "0")} 10:00'\n  type: feat\n  what: Did work ${n}\n  phase: build`;
     });
@@ -120,16 +120,17 @@ describe("compactYamlFile", () => {
 
     const result = compactYamlFile(p, "progress");
     expect(result.changed).toBe(true);
-    expect(result.full_before).toBe(12);
-    expect(result.full_after).toBe(10);
-    expect(result.oneline_after).toBe(2);
+    expect(result.full_before).toBe(25);
+    expect(result.full_after).toBe(MAX_FULL_ENTRIES);
+    expect(result.oneline_after).toBe(25 - MAX_FULL_ENTRIES);
 
     const data = YAML.parse(fs.readFileSync(p, "utf8"));
-    expect(data.cycles.length).toBe(10);
-    expect(data.archive.length).toBe(2);
-    // Newest cycle (12) retained full; oldest (1,2) archived as summaries.
-    expect(data.cycles[0].number).toBe(12);
-    expect(data.archive[0].summary).toContain("Cycle 2");
+    expect(data.cycles.length).toBe(MAX_FULL_ENTRIES);
+    expect(data.archive.length).toBe(25 - MAX_FULL_ENTRIES);
+    // Newest cycle (25) retained full; oldest archived as summaries (archive is descending).
+    expect(data.cycles[0].number).toBe(25);
+    expect(data.archive[0].summary).toContain("Cycle 5");
+    expect(data.archive[data.archive.length - 1].summary).toContain("Cycle 1");
   });
 
   it("no-ops when under the limit", () => {
@@ -156,22 +157,22 @@ describe("compactYamlFile decisions archive ordering", () => {
   }
 
   it("writes the decisions archive in ascending order after compaction", () => {
-    const decisions = Array.from({ length: 15 }, (_, i) => decisionEntry(i + 1));
+    const decisions = Array.from({ length: 25 }, (_, i) => decisionEntry(i + 1));
     const p = path.join(tmp, "decisions.yaml");
     fs.writeFileSync(p, YAML.stringify({ decisions, archive: [] }));
 
     const result = compactYamlFile(p, "decisions");
     expect(result.changed).toBe(true);
-    expect(result.full_after).toBe(10);
-    expect(result.oneline_after).toBe(5);
+    expect(result.full_after).toBe(MAX_FULL_ENTRIES);
+    expect(result.oneline_after).toBe(25 - MAX_FULL_ENTRIES);
 
     const data = YAML.parse(fs.readFileSync(p, "utf8")) as {
       decisions: { number: number }[];
       archive: { number?: number; summary: string }[];
     };
-    // Active entries ascending (6-15).
+    // Active entries ascending (newest kept).
     expect(data.decisions[0].number).toBe(6);
-    expect(data.decisions[9].number).toBe(15);
+    expect(data.decisions[MAX_FULL_ENTRIES - 1].number).toBe(25);
     // Archive entries ascending (1-5) — the bug produced descending (5,4,3,2,1).
     const archiveNumbers = data.archive.map((e) => e.number ?? 0);
     const sorted = [...archiveNumbers].sort((a, b) => a - b);

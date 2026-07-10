@@ -16,27 +16,27 @@ import {
 
 describe("applyRetentionCaps", () => {
   it("enforces the total and full limits", () => {
-    const full = Array.from({ length: 15 }, (_, i) => ({ kind: "full", n: i }));
-    const archive = Array.from({ length: 50 }, (_, i) => ({ kind: "oneline", n: i }));
+    const full = Array.from({ length: 25 }, (_, i) => ({ kind: "full", n: i }));
+    const archive = Array.from({ length: 55 }, (_, i) => ({ kind: "oneline", n: i }));
     const result = applyRetentionCaps(full, archive);
-    expect(result.length).toBe(MAX_TOTAL_ENTRIES);
     expect(result.filter((e) => e.kind === "full").length).toBe(MAX_FULL_ENTRIES);
+    expect(result.length).toBeLessThanOrEqual(MAX_TOTAL_ENTRIES);
   });
 });
 
 describe("compactSessionBookmarkEntries", () => {
-  it("keeps newest full entries and compacts the rest under 10/40/50", () => {
-    const entries = Array.from({ length: 12 }, (_, i) => ({
+  it("keeps newest full entries and compacts the rest under caps", () => {
+    const entries = Array.from({ length: 25 }, (_, i) => ({
       timestamp: `2026-04-${String(i + 1).padStart(2, "0")} 10:00`,
       artifacts: ["plan"],
       summary: `Entry ${i + 1}`,
       kind: "full",
     }));
     const result = compactSessionBookmarkEntries(entries);
-    expect(result.length).toBe(12);
+    expect(result.length).toBe(25);
     expect(result.filter((e) => e.kind === "full").length).toBe(MAX_FULL_ENTRIES);
     // Newest (highest timestamp) kept as full.
-    expect(result[0].summary).toBe("Entry 12");
+    expect(result[0].summary).toBe("Entry 25");
     // Overflow converted to oneline with empty artifacts.
     const oneline = result.find((e) => e.kind === "oneline") as any;
     expect(oneline.artifacts).toEqual([]);

@@ -15,6 +15,7 @@ import { loadYamlMapping } from "../../core/yaml.js";
 import { COMPACTABLE_YAML_ARTIFACTS, NON_COMPACTABLE_ARTIFACTS } from "./dryRun.js";
 import {
   decisionProtectedOverflowCount,
+  decisionSatisfiedActiveCount,
   overLimitCount,
   yamlArchiveEntries,
 } from "./retention.js";
@@ -88,8 +89,10 @@ function countStatus(
   activeCount: number,
   archiveCount: number,
   protectedOverflowCount = 0,
+  budgetActiveCount?: number,
 ): CompactionStatus {
   const totalCount = activeCount + archiveCount;
+  const budgetActive = budgetActiveCount ?? activeCount;
   return {
     artifact,
     path: p,
@@ -97,8 +100,8 @@ function countStatus(
     active_count: activeCount,
     archive_count: archiveCount,
     total_count: totalCount,
-    over_limit_count: overLimitCount(activeCount, archiveCount),
-    reason: protectedOverflowCount ? "protected-overflow review pressure" : "uniform_10_40_50",
+    over_limit_count: overLimitCount(budgetActive, archiveCount),
+    reason: protectedOverflowCount ? "protected-overflow review pressure" : "uniform_20_50_100",
     protected_overflow_count: protectedOverflowCount,
     exists: true,
   };
@@ -129,7 +132,9 @@ export function computeCompactionStatus(projectRoot: string): CompactionStatus[]
       }
       const protectedOverflowCount =
         artifact === "decisions" ? decisionProtectedOverflowCount(active, archive) : 0;
-      statuses.push(countStatus(artifact, p, active.length, archive.length, protectedOverflowCount));
+      const budgetActiveCount =
+        artifact === "decisions" ? decisionSatisfiedActiveCount(active) : undefined;
+      statuses.push(countStatus(artifact, p, active.length, archive.length, protectedOverflowCount, budgetActiveCount));
     } else {
       statuses.push(missingStatus(artifact, p, "compactable"));
     }
@@ -203,10 +208,10 @@ function operationForStatus(status: CompactionStatus, mode: string): CompactionO
   if (status.protected_overflow_count) {
     return base("protected_overflow", `protected-overflow review pressure by ${status.protected_overflow_count}`);
   }
-  if (!status.over_limit_count) return base("ok", "within uniform_10_40_50 limits");
+  if (!status.over_limit_count) return base("ok", "within uniform_20_50_100 limits");
   return base(
     mode === "check" ? "over_limit" : "pending_fix",
-    `over uniform_10_40_50 limit by ${status.over_limit_count}`,
+    `over uniform_20_50_100 limit by ${status.over_limit_count}`,
   );
 }
 

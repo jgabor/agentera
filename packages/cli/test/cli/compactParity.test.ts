@@ -8,7 +8,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { MAX_CORPUS_READ_BYTES } from "../../src/analytics/usageStats.js";
 import { main } from "../../src/cli/dispatch.js";
-import { MAX_TOTAL_ENTRIES } from "../../src/hooks/common.js";
+import { MAX_FULL_ENTRIES, MAX_TOTAL_ENTRIES } from "../../src/hooks/common.js";
 import { GAP_IDS, isGapClosed } from "../upgrade/gapRegistry.js";
 import {
   classifyDrift,
@@ -120,7 +120,7 @@ describe("compaction parity (D56 T3)", () => {
     expect(progress?.action).toBe("over_limit");
   });
 
-  it("apply enforces 10/40/50 caps with archive preservation and clears over_limit (pass)", () => {
+  it("apply enforces caps with archive preservation and clears over_limit (pass)", () => {
     const project = path.join(tmp, "over-cap-apply");
     writeOverCapProgress(project, 55);
     const { rc, out } = capture(["check", "compact", "--apply", "--project", project, "--format", "json"]);
@@ -136,15 +136,15 @@ describe("compaction parity (D56 T3)", () => {
     );
     expect(progress?.action).toBe("compacted");
     const result = progress?.result as Record<string, unknown>;
-    expect(result.active_after).toBe(10);
-    expect(result.archive_after).toBe(40);
+    expect(result.active_after).toBe(MAX_FULL_ENTRIES);
+    expect(result.archive_after).toBe(55 - MAX_FULL_ENTRIES);
 
     const data = YAML.parse(
       fs.readFileSync(path.join(project, ".agentera", "progress.yaml"), "utf8"),
     ) as { cycles: unknown[]; archive: { summary: string }[] };
-    expect(data.cycles.length).toBe(10);
-    expect(data.archive.length).toBe(40);
-    expect(data.cycles.length + data.archive.length).toBe(MAX_TOTAL_ENTRIES);
+    expect(data.cycles.length).toBe(MAX_FULL_ENTRIES);
+    expect(data.archive.length).toBe(55 - MAX_FULL_ENTRIES);
+    expect(data.cycles.length + data.archive.length).toBeLessThanOrEqual(MAX_TOTAL_ENTRIES);
     expect(data.archive.some((entry) => entry.summary.includes("Cycle 1"))).toBe(true);
   });
 

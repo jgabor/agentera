@@ -6,7 +6,7 @@
  * and by `status.ts` (which counts overflow without writing).
  */
 
-import { MAX_FULL_ENTRIES, MAX_ONELINE_ENTRIES, applyRetentionCaps } from "../common.js";
+import { MAX_FULL_ENTRIES, MAX_ONELINE_ENTRIES, MAX_TOTAL_ENTRIES, applyRetentionCaps } from "../common.js";
 import { truncateWords } from "./dryRun.js";
 
 import type { JsonObject } from "../../core/jsonValue.js";
@@ -16,7 +16,7 @@ export function overLimitCount(activeCount: number, archiveCount: number): numbe
   return Math.max(
     Math.max(activeCount - MAX_FULL_ENTRIES, 0),
     Math.max(archiveCount - MAX_ONELINE_ENTRIES, 0),
-    Math.max(totalCount - 50, 0),
+    Math.max(totalCount - MAX_TOTAL_ENTRIES, 0),
   );
 }
 
@@ -185,13 +185,17 @@ function decisionRequiresUserReview(entry: unknown): boolean {
   );
 }
 
+export function decisionSatisfiedActiveCount(active: any[]): number {
+  return active.filter((e) => !decisionRequiresUserReview(e)).length;
+}
+
 export function decisionProtectedOverflowCount(active: any[], archive: any[]): number {
   const protectedActive = active.filter((e) => decisionRequiresUserReview(e)).length;
   const protectedArchive = archive.filter((e) => decisionRequiresUserReview(e)).length;
   return Math.max(
     protectedActive - MAX_FULL_ENTRIES,
     protectedArchive - MAX_ONELINE_ENTRIES,
-    protectedActive + protectedArchive - 50,
+    protectedActive + protectedArchive - MAX_TOTAL_ENTRIES,
     0,
   );
 }
