@@ -1,0 +1,22 @@
+{
+  "all_runtime_order": {
+    "selector": "all",
+    "runtimeIds": ["opencode", "codex", "cursor", "copilot"],
+    "operationPrefix": ["canonical_skill", "opencode.plugin", "opencode.agent", "codex.hooks"]
+  },
+  "selected_cursor": {
+    "selector": "cursor",
+    "runtimeIds": ["cursor"],
+    "operationIds": ["canonical_skill", "cursor.plugin", "cursor.hooks", "cursor.agent"]
+  },
+  "exact": { "selector": "opencode", "state": "exact", "action": "noop" },
+  "drifted": { "selector": "opencode", "state": "modified", "action": "update" },
+  "missing_parent": { "selector": "cursor", "state": "unsafe_path", "action": "action_required" },
+  "unowned_collision": { "selector": "opencode", "state": "unowned", "action": "blocked_unowned" },
+  "unknown_trust": { "selector": "codex", "trust": "unknown", "action": "action_required" },
+  "denied_trust": { "selector": "cursor", "trust": "denied", "action": "action_required" },
+  "native_action_required": { "selector": "copilot", "action": "action_required" },
+  "unsupported_platform": { "selector": "opencode", "action": "action_required" },
+  "cursor_surfaces": { "selector": "cursor", "surfaces": ["cli", "ide"] },
+  "retired_cleanup": { "selector": null, "legacyCleanup": "claude", "activeRuntime": false }
+}

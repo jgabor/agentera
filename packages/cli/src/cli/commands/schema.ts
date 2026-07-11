@@ -28,6 +28,10 @@ import {
   LIFECYCLE_STATUS_VOCABULARY_VERSION,
   LIFECYCLE_SUMMARY_SCHEMA_VERSION,
 } from "../../runtime/lifecycleSnapshot.js";
+import {
+  ACTIVE_RUNTIME_SELECTORS,
+  LIFECYCLE_UPGRADE_SCHEMA,
+} from "../../upgrade/lifecycleUpgrade.js";
 
 /** Port of scripts/agentera cmd_schema / _build_schema_payload. */
 
@@ -67,7 +71,7 @@ const COMMAND_DESCRIPTIONS: Record<string, string> = {
   lint: "Deprecated alias for check lint. Run pre-write artifact prose self-audit.",
   gate: "Deprecated alias for check compact. Run check-only repository gates.",
   compact: "Deprecated alias for check compact. Check or fix artifact compaction budgets.",
-  upgrade: "Preview or apply phased upgrade with semver and channel gate; v2→v3 migrates to latest on selected channel (irreversible).",
+  upgrade: "Preview or apply app migration plus explicitly selected Agentera-owned runtime lifecycle repair.",
   doctor: "Check Agentera CLI, app, and runtime status.",
   describe: "Deprecated alias for schema.",
 };
@@ -101,7 +105,7 @@ const COMMAND_FILTERS_ALL: Record<string, string[]> = {
   gate: ["project", "format"],
   compact: ["project", "mode", "format"],
   doctor: ["install_root", "home", "project", "expected_version", "expect_command"],
-  upgrade: ["project", "install_root", "home", "runtime", "only", "dry_run", "yes", "force", "update_packages", "channel"],
+  upgrade: ["project", "install_root", "home", "runtime", "legacy_cleanup", "only", "dry_run", "yes", "force", "channel"],
   describe: ["format"],
   schema: ["format"],
 };
@@ -194,7 +198,10 @@ function describeCommands(): JsonObject[] {
     commandDescription("lint", "artifact_lint", ["command", "status", "artifact", "checks", "summary"]),
     commandDescription("compact", "artifact_compaction", ["command", "status", "project", "summary", "operations"]),
     commandDescription("schema", "runtime_introspection"),
-    commandDescription("upgrade", "upgrade"),
+    commandDescription("upgrade", "upgrade", [
+      "schemaVersion", "mode", "status", "phases", "lifecycle", "summary",
+      "dryRunCommand", "applyCommand",
+    ]),
     commandDescription("doctor", "self_check"),
   );
   return commands;
@@ -321,6 +328,22 @@ export function buildSchemaPayload(command = "schema"): JsonObject {
       projections: {
         prime: "bounded summary without category evidence or native command lists",
         doctor: "detailed surfaces, eight categories, evidence, precedence, and user-owned native steps",
+        upgrade: "explicitly selected read-only preview or approved Agentera-owned lifecycle apply",
+      },
+      upgrade: {
+        schema_version: LIFECYCLE_UPGRADE_SCHEMA,
+        command: "agentera upgrade --runtime <all|runtime> --dry-run|--yes",
+        selectors: ["all", ...ACTIVE_RUNTIME_SELECTORS],
+        default_without_runtime_selector: "app_upgrade_only",
+        preview: "strictly_read_only",
+        apply_requires: "--yes",
+        approval_scope: "declared_agentera_owned_operations_only",
+        native_actions: "reported_action_required_never_executed",
+        trust_actions: "reported_action_required_never_approved",
+        ownership_journal: ".agentera/runtime-lifecycle/ownership-journal-v1 under the selected app home",
+        recovery: "append_only_fsynced_snapshots_with_invalid_tail_recovery_and_per_operation_reobservation",
+        retired_cleanup: "--legacy-cleanup claude (legacy-only, explicit, never active runtime identity)",
+        exits: { success: 0, non_success: 1, usage: 2 },
       },
       support_floor: {
         mandatory_evidence_fields: lifecycleAuthority.evidenceFields,

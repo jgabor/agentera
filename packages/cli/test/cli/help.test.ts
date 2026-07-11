@@ -43,6 +43,9 @@ describe("cli help", () => {
     expect(text).toContain("--dry-run");
     expect(text).toContain("--yes");
     expect(text).toContain("--only");
+    expect(text).toContain("--runtime {all,opencode,codex,cursor,copilot}");
+    expect(text).toContain("--legacy-cleanup {claude}");
+    expect(text).toContain("never native/trust actions");
     expect(text).toContain("--format {text,json}");
     expect(text).toContain("--verify");
     expect(text).toContain("--restore");

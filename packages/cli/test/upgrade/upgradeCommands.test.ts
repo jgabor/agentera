@@ -74,4 +74,25 @@ describe("buildUpgradeCommands", () => {
     expect(cmds.applyCommand).not.toContain("--project");
     expect(cmds.dryRunCommand).toContain("--dry-run");
   });
+
+  it("preserves lifecycle and retired-cleanup selection from preview into explicit apply", () => {
+    const channel = resolveUpdateChannel({
+      channel: "development",
+      sourceRoot: REPO_ROOT,
+      home: "/tmp/home",
+    });
+    const cmds = buildUpgradeCommands({
+      project: "/tmp/proj",
+      installRoot: "/tmp/agentera",
+      channel,
+      runtime: "cursor",
+      legacyCleanup: "claude",
+    });
+
+    expect(cmds.dryRunCommand).toContain("--runtime cursor");
+    expect(cmds.dryRunCommand).toContain("--legacy-cleanup claude");
+    expect(cmds.applyCommand).toContain("--runtime cursor");
+    expect(cmds.applyCommand).toContain("--legacy-cleanup claude");
+    expect(cmds.applyCommand).toContain("--yes");
+  });
 });

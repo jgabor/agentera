@@ -1,4 +1,43 @@
 cycles:
+  - number: 711
+    timestamp: 2026-07-11 22:16
+    type: feat
+    phase: build
+    what: Integrated lifecycle repair and convergence into the upgrade namespace.
+    inspiration: Active plan Task 7 and Decision 92.
+    discovered: The existing app runtime phase would publish the same resources
+      before ownership recording, and the npm bundle omitted declared repair
+      sources; lifecycle-selected upgrades now make the shared engine the sole
+      runtime mutator and package those sources.
+    verified: pnpm -C packages/cli run typecheck and build passed. pnpm -C
+      packages/cli run test --reporter=json
+      --outputFile=/tmp/agentera-task7-final-tests.json passed 158 files/1461
+      tests. lifecycle-adapters, capability build, capability-contract,
+      cross-capability, app-home-contract, and vocabularyAuthority validation
+      passed. schema, check compact, git diff --check, and lint passed; lint
+      retained the 99-warning/0-error baseline. npm pack --dry-run --json
+      --ignore-scripts reported 557 files with lifecycle code, contracts, and
+      declared repair sources; production source/dist/bundle contained no
+      AGENTERA_TEST token. Preview tree/byte snapshots were unchanged and
+      native-command traps stayed untouched. Crash tests covered interruption
+      before/after resource and ledger publication, restart, independent
+      continuation, dependency skip, and noop convergence. Live prime and doctor
+      agreed on blocked status for all four runtimes.
+    next: Task 8 owns the broad release docs, changelog, TODO, version, and package
+      synchronization sweep; Decision 92 satisfaction remains
+      user-review-needed.
+    context:
+      intent: "Execute active plan Task 7: provide truthful read-only lifecycle
+        preview, explicitly approved owned apply, crash recovery, independent
+        failure continuation, and convergent reruns."
+      constraints: Preserved user TODO, decisions, active plan status, vision, native
+        trust/auth/package ownership, app-only upgrade behavior, and no-push
+        boundary.
+      unknowns: No Task 7 implementation unknowns remain; release-surface
+        synchronization is intentionally deferred to Task 8.
+      scope: Upgrade CLI/help/schema; lifecycle planner, journal, contracts, app
+        integration, prime/doctor ledger reads; runtime
+        fixtures/recovery/package tests and npm repair-source bundle inputs.
   - number: 710
     timestamp: 2026-07-11 21:26
     type: fix
@@ -325,39 +364,9 @@ cycles:
         unsupported wherever first-party evidence is absent.
       scope: Runtime lifecycle adapter contract, four concrete adapters, lifecycle
         validation, fixture matrix tests, and typed progress evidence.
-  - number: 701
-    timestamp: 2026-07-11 12:02
-    type: fix
-    phase: build
-    what: Hardened the shared lifecycle engine against publication-time target and
-      parent substitution.
-    inspiration: Task 3 retry 1 and the independent audit finding on path-based
-      publication races.
-    discovered: Portable Node has no conditional unlink or conditional
-      symlink-replacement primitive, so destructive path mutations must fail
-      closed; Linux proc descriptor paths provide the supported anchored
-      publication boundary.
-    verified: "Focused lifecycle suite: 2 files and 32 tests passed. Full CLI suite:
-      150 files and 1,368 tests passed. Typecheck and build passed.
-      Lifecycle-adapters, build-capability, and capability-contract validations
-      passed. Compaction and git diff checks passed. Lint completed with 0
-      errors and the standing 108-warning baseline. Built smoke observed preview
-      create, apply applied, retry noop, aggregate success."
-    next: Run the independent Task 3 retry audit against the new final-publication
-      adversarial coverage.
-    context:
-      intent: Close the independent audit failure without weakening Decision 92
-        ownership or preview guarantees.
-      constraints: Preserved Decision 92, preview purity, successful retry work,
-        existing TODO and decision edits, plan in_progress status, and the
-        no-native-operation boundary.
-      unknowns: Independent audit acceptance remains external; non-Linux apply
-        intentionally fails because the secure proc descriptor boundary is
-        unavailable.
-      scope: Lifecycle publication helper, operation engine and ledger identity
-        contract, adversarial lifecycle tests, and runtime lifecycle operation
-        contract.
 archive:
+  - summary: "Cycle 701 (2026-07-11): Hardened the shared lifecycle engine against
+      publication-time target and parent substitution."
   - summary: "Cycle 700 (2026-07-11): Built the shared runtime-neutral lifecycle
       operation engine with declared manifests, ownership ledgers, safe
       filesystem actions,..."
@@ -457,6 +466,3 @@ archive:
   - summary: "Cycle 662 (2026-06-18): Plan T5 — Py/TS extractor parity gate:
       extractCorpusParity manifest + opencodeParitySnapshot;
       generate-extract-corpus-parity.mjs syncs committed manifest..."
-  - summary: "Cycle 661 (2026-06-18): Plan T4 — SQLite cap overrides and truncation
-      warnings: --max-sqlite-sessions / --max-sqlite-rows plus
-      AGENTERA_EXTRACT_MAX_SQLITE_* env..."

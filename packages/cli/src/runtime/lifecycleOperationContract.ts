@@ -40,12 +40,33 @@ export function validateLifecycleOperationContractData(value: unknown): string[]
   if (typeof ownership?.removal_rule !== "string" || !ownership.removal_rule.includes("identity and fingerprint")) {
     errors.push("ownership.removal_rule must require matching identity and fingerprint");
   }
+  if (
+    typeof ownership?.journal_rule !== "string"
+    || !ownership.journal_rule.includes("append-only")
+    || !ownership.journal_rule.includes("last valid ownership evidence")
+  ) {
+    errors.push("ownership.journal_rule must preserve the last valid evidence through append-only publication");
+  }
+  if (
+    typeof ownership?.recovery_rule !== "string"
+    || !ownership.recovery_rule.includes("last valid connected journal event")
+    || !ownership.recovery_rule.includes("re-observes each resource")
+  ) {
+    errors.push("ownership.recovery_rule must recover interrupted tails and re-observe resources");
+  }
   const publication = data.publication_policy as Record<string, unknown> | undefined;
   if (publication?.supported_platform !== "linux_proc_self_fd") {
     errors.push("publication_policy.supported_platform must be linux_proc_self_fd");
   }
   if (publication?.unsupported_platform_result !== "action_required") {
     errors.push("publication_policy.unsupported_platform_result must be action_required");
+  }
+  if (
+    typeof publication?.apply_serialization !== "string"
+    || !publication.apply_serialization.includes("proc-fd-pinned")
+    || !publication.apply_serialization.includes("stale-lock recovery")
+  ) {
+    errors.push("publication_policy.apply_serialization must pin and recover the lifecycle apply lock");
   }
   if (publication?.destructive_path_mutations !== "owned_removal_only") {
     errors.push("publication_policy.destructive_path_mutations must be owned_removal_only");

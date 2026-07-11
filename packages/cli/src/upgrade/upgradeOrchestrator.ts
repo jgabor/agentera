@@ -1,4 +1,5 @@
 import os from "node:os";
+import path from "node:path";
 
 import { expanduser, resolvePath } from "../core/paths.js";
 import { resolveDoctorInstallRoot, resolveSourceRootStrict } from "./appModel.js";
@@ -36,13 +37,24 @@ import {
   type MigrationPhaseSummary,
   type MigrationStatus,
 } from "./migrateArtifactsV2ToV3.js";
+import {
+  runLifecycleUpgrade,
+  type LifecycleRuntimeSelector,
+  type LifecycleUpgradeResult,
+} from "./lifecycleUpgrade.js";
+import {
+  acquireLifecycleOwnershipJournalLock,
+  lifecycleOwnershipJournalPath,
+  releaseLifecycleOwnershipJournalLock,
+} from "../runtime/lifecycleOwnershipJournal.js";
+import { secureLifecycleRemovalAvailable } from "../runtime/lifecyclePublication.js";
 
 /**
  * Phased upgrade orchestration for v2→v3 migration and project-level migration work.
  * Behavior oracle: scripts/agentera_upgrade.py (phase structure, lifecycle mapping).
  */
 
-export type UpgradePhaseName = "detect" | "artifacts" | "runtime" | "cleanup";
+export type UpgradePhaseName = "detect" | "artifacts" | "runtime" | "cleanup" | "lifecycle";
 export type { UpgradeOnlyPhase } from "./upgradeCommands.js";
 
 const DEFAULT_PHASES: readonly UpgradePhaseName[] = ["detect", "artifacts", "runtime", "cleanup"];
@@ -57,6 +69,8 @@ export interface UpgradeOrchestratorArgs {
   dryRun?: boolean;
   only?: readonly UpgradeOnlyPhase[] | null;
   force?: boolean;
+  runtime?: LifecycleRuntimeSelector | null;
+  legacyCleanup?: "claude" | null;
 }
 
 export interface UpgradeOrchestratorPhase {
@@ -84,6 +98,7 @@ export interface UpgradePlanV2 {
   appHome: string;
   home: string;
   phases: UpgradeOrchestratorPhase[];
+  lifecycle: LifecycleUpgradeResult | null;
   summary: MigrationPhaseSummary;
   dryRunCommand: string | null;
   applyCommand: string | null;
@@ -207,10 +222,71 @@ function migrationPhaseToOrchestrator(phase: MigrationPhase): UpgradeOrchestrato
   };
 }
 
+function lifecyclePhase(result: LifecycleUpgradeResult): UpgradeOrchestratorPhase {
+  const items: MigrationPhaseItem[] = result.operations.map((operation) => {
+    let status: MigrationStatus;
+    if (result.mode === "preview") {
+      if (operation.action === "noop") status = "noop";
+      else if (["blocked_unowned", "action_required"].includes(operation.action)) status = "blocked";
+      else status = "pending";
+    } else {
+      switch (operation.outcome) {
+        case "applied": status = "applied"; break;
+        case "noop": status = "noop"; break;
+        case "failed": status = "failed"; break;
+        default: status = "blocked"; break;
+      }
+    }
+    return {
+      status,
+      action: `lifecycle:${operation.id}`,
+      runtime: operation.runtime,
+      target: operation.destination,
+      message: operation.blockedReason ?? operation.remediation.join(" "),
+    };
+  });
+  for (const action of result.userActions) {
+    items.push({
+      status: "blocked",
+      action: `action-required:${action.id}`,
+      runtime: action.runtime,
+      message: action.command === null
+        ? action.instruction
+        : `${Array.isArray(action.command) ? action.command.join(" ") : action.command}: ${action.instruction}`,
+    });
+  }
+  const retired = result.retiredCleanup;
+  if (retired) {
+    const retiredOperations = "plan" in retired ? retired.plan.operations : retired.operations;
+    for (const operation of retiredOperations) {
+      const outcome = "status" in operation ? operation.status : null;
+      let status: MigrationStatus;
+      if (result.mode === "preview") {
+        status = operation.action === "noop" ? "noop" : operation.action === "blocked_unowned" ? "blocked" : "pending";
+      } else if (outcome === "applied") status = "applied";
+      else if (outcome === "noop") status = "noop";
+      else if (outcome === "failed") status = "failed";
+      else status = "blocked";
+      items.push({
+        status,
+        action: `legacy-cleanup:${operation.id}`,
+        runtime: "retired:claude",
+        target: operation.destination,
+        message: operation.reason,
+      });
+    }
+  }
+  return summarizeOrchestratorPhase(
+    "lifecycle",
+    items,
+    "Agentera-owned runtime lifecycle operations; native actions remain user-owned",
+  );
+}
+
 export function buildUpgradePlan(args: UpgradeOrchestratorArgs): UpgradePlanV2 {
   const sourceRoot = resolveSourceRootStrict();
   const home = resolvePath(expanduser(args.home ?? os.homedir()));
-  const env = { ...process.env, HOME: home };
+  const env: Record<string, string | undefined> = { ...process.env, HOME: home };
   const project = resolvePath(expanduser(args.project ?? process.cwd()));
   const [installRoot] = resolveDoctorInstallRoot(args.installRoot ?? null, { home, sourceRoot });
   const channel = resolveUpdateChannel({
@@ -228,6 +304,7 @@ export function buildUpgradePlan(args: UpgradeOrchestratorArgs): UpgradePlanV2 {
   });
   const crossMajorBoundary = crossMajorBoundaryApplies(install, sourceRoot);
   const phaseFilter = selectedPhases(args.only);
+  if (args.runtime) phaseFilter.delete("runtime");
   const migrationCtx = {
     appHome: installRoot,
     project,
@@ -236,6 +313,7 @@ export function buildUpgradePlan(args: UpgradeOrchestratorArgs): UpgradePlanV2 {
     sourceRoot,
     channel: args.channel ?? null,
     env,
+    installAppContentIfMissing: Boolean(args.runtime),
   };
   const pendingRuntimeSync = pendingRuntimeMigrationItems(migrationCtx).length > 0;
   const pendingV1Artifacts = detectV1ArtifactPairs(project).length > 0;
@@ -245,7 +323,7 @@ export function buildUpgradePlan(args: UpgradeOrchestratorArgs): UpgradePlanV2 {
     planLegacyAgentCleanupItems(migrationCtx).some((i) => i.status === "pending") ||
     planLegacyCapabilityAgentCleanupItems(migrationCtx).some((i) => i.status === "pending");
   const runMigration =
-    crossMajorMigration || pendingRuntimeSync || pendingV1Artifacts || pendingCleanup;
+    crossMajorMigration || pendingRuntimeSync || pendingV1Artifacts || pendingCleanup || Boolean(args.runtime);
 
   const phases: UpgradeOrchestratorPhase[] = [];
 
@@ -256,10 +334,12 @@ export function buildUpgradePlan(args: UpgradeOrchestratorArgs): UpgradePlanV2 {
   let migrationPreview = runMigration ? dryRunMigration(migrationCtx) : null;
 
   if (args.yes && migrationPreview) {
+    const applyPhases = (args.only ?? MIGRATION_ONLY_PHASES)
+      .filter((phase) => !(args.runtime && phase === "runtime"));
     migrationPreview = applyMigrationPhases(
       migrationCtx,
       migrationPreview,
-      args.only ?? MIGRATION_ONLY_PHASES,
+      applyPhases,
     );
   }
 
@@ -275,16 +355,48 @@ export function buildUpgradePlan(args: UpgradeOrchestratorArgs): UpgradePlanV2 {
     }
   }
 
+  const appSummary = aggregateSummary(phases);
+  const appApplyBlocked = appSummary.blocked > 0 || appSummary.failed > 0;
+  let lifecycle: LifecycleUpgradeResult | null = null;
+  if (args.runtime || args.legacyCleanup) {
+    const lifecycleArgs = {
+      selector: args.runtime ?? null,
+      home,
+      project,
+      sourceRoot,
+      appHome: installRoot,
+      env,
+      canonicalSkillTarget: path.join(installRoot, "skills", "agentera"),
+      apply: Boolean(args.yes),
+      retiredCleanup: args.legacyCleanup ?? null,
+    };
+    if (args.yes && secureLifecycleRemovalAvailable()) {
+      const lifecycleLock = acquireLifecycleOwnershipJournalLock(
+        lifecycleOwnershipJournalPath(installRoot),
+      );
+      try {
+        lifecycle = runLifecycleUpgrade(lifecycleArgs);
+      } finally {
+        releaseLifecycleOwnershipJournalLock(lifecycleLock);
+      }
+    } else {
+      lifecycle = runLifecycleUpgrade(lifecycleArgs);
+    }
+    phases.push(lifecyclePhase(lifecycle));
+  }
+
   const summary = aggregateSummary(phases);
   const status = workflowStatus(summary);
   const mode = args.yes ? "apply" : "plan";
   const lifecycleStatus = lifecycleStatusFromWorkflow(status, mode);
-  const blocked = status === "blocked" || status === "failed";
+  const hasPending = summary.pending > 0;
   const commands = buildUpgradeCommands({
     project,
     installRoot: crossMajorMigration || crossMajorBoundary ? installRoot : null,
     channel,
     only: args.only,
+    runtime: args.runtime,
+    legacyCleanup: args.legacyCleanup,
     cwdDefault: true,
   });
 
@@ -301,9 +413,10 @@ export function buildUpgradePlan(args: UpgradeOrchestratorArgs): UpgradePlanV2 {
     appHome: installRoot,
     home,
     phases,
+    lifecycle,
     summary,
-    dryRunCommand: blocked || lifecycleStatus === STATUS_NO_CHANGES_NEEDED ? null : commands.dryRunCommand,
-    applyCommand: blocked || lifecycleStatus === STATUS_NO_CHANGES_NEEDED ? null : commands.applyCommand,
+    dryRunCommand: appApplyBlocked || !hasPending ? null : commands.dryRunCommand,
+    applyCommand: appApplyBlocked || !hasPending ? null : commands.applyCommand,
   };
 }
 
@@ -356,6 +469,33 @@ export function renderUpgradePlan(plan: UpgradePlanV2): string {
       if (item.message) {
         lines.push(`    ${item.message}`);
       }
+    }
+  }
+  if (plan.lifecycle) {
+    lines.push("");
+    lines.push("runtime lifecycle details:");
+    lines.push(`  selection: ${plan.lifecycle.selection.requested} (${plan.lifecycle.selection.runtimeIds.join(", ") || "retired cleanup only"})`);
+    lines.push(`  ownership journal: ${plan.lifecycle.ownershipJournal.state} at ${plan.lifecycle.ownershipJournal.path}`);
+    lines.push(`  secure publication: ${plan.lifecycle.platform.securePublication ? "available" : "unavailable"} (${plan.lifecycle.platform.requirement})`);
+    for (const operation of plan.lifecycle.operations) {
+      lines.push(`  - ${operation.id}: ${operation.outcome ?? operation.action}`);
+      lines.push(`    runtime/surface/category/resource: ${operation.runtime}/${operation.surface}/${operation.category}/${operation.resource}`);
+      lines.push(`    desired/current: ${operation.desiredState}/${operation.currentState}`);
+      lines.push(`    ownership: ${operation.ownership}; ledger: ${operation.ownershipEvidence.ledgerRecord?.status ?? "absent"}`);
+      lines.push(`    required: ${operation.required ? "yes" : "no"}; dependencies: ${operation.dependencies.join(", ") || "none"}`);
+      if (operation.blockedReason) lines.push(`    blocked: ${operation.blockedReason}`);
+      for (const remediation of operation.remediation) lines.push(`    remediation: ${remediation}`);
+    }
+    for (const action of plan.lifecycle.userActions) {
+      lines.push(`  - action_required: ${action.id}`);
+      lines.push(`    runtime/surface/category: ${action.runtime}/${action.surface}/${action.category}`);
+      if (action.command !== null) {
+        lines.push(`    native step (run manually): ${Array.isArray(action.command) ? action.command.join(" ") : action.command}`);
+      }
+      lines.push(`    remediation: ${action.instruction}`);
+    }
+    if (plan.lifecycle.retiredCleanup) {
+      lines.push("  retired cleanup: claude (legacy-only, explicitly selected; user data excluded)");
     }
   }
   if (plan.mode === "plan" && plan.summary.pending > 0 && plan.applyCommand) {

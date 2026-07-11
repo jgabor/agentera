@@ -78,6 +78,15 @@ describe("cli schema", () => {
         }),
       }),
     ]);
+    expect(payload.runtime_lifecycle.upgrade).toMatchObject({
+      schema_version: "agentera.lifecycleUpgrade.v1",
+      selectors: ["all", "opencode", "codex", "cursor", "copilot"],
+      default_without_runtime_selector: "app_upgrade_only",
+      preview: "strictly_read_only",
+      apply_requires: "--yes",
+      native_actions: "reported_action_required_never_executed",
+      exits: { success: 0, non_success: 1, usage: 2 },
+    });
     const decisions = (
       payload.artifact_schemas as Array<{ name: string; write_interface: unknown }>
     ).find((artifact) => artifact.name === "decisions");

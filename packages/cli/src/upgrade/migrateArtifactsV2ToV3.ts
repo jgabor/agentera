@@ -102,6 +102,7 @@ export interface MigrationContext {
   sourceRoot?: string;
   channel?: string | null;
   env?: Record<string, string | undefined>;
+  installAppContentIfMissing?: boolean;
 }
 
 export interface DryRunMigrationResult {

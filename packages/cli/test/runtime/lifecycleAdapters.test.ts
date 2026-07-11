@@ -209,7 +209,8 @@ describe("supported runtime adapter matrix", () => {
         }
       }
       expect(report.caveats.some((caveat) =>
-        caveat.includes("existing ownership ledger") && caveat.includes("fails closed"))).toBe(true);
+        caveat.includes("Append-only ownership journal recovery")
+        && caveat.includes("last valid snapshot"))).toBe(true);
     }
     expect(matrix.lifecycleState.activeRuntimeIds).toEqual(["opencode", "codex", "cursor", "copilot"]);
     expect(matrix.lifecycleState.releaseBlocked).toBe(true);

@@ -655,6 +655,30 @@ describe("apply convergence", () => {
     expect(writeSpy).not.toHaveBeenCalled();
   });
 
+  it("recovers an exact publication after restart when only the pre-create journal record survived", () => {
+    const destination = path.join(root, "published-before-ledger.txt");
+    const spec = fileSpec("published-before-ledger", destination, "published\n");
+    fs.writeFileSync(destination, spec.content as string);
+    const pending = recordFor(spec, { status: "pending_create", identity: null });
+
+    const preview = planLifecycleOperations({
+      allowedRoots: [root],
+      operations: [spec],
+      manifest: createLifecycleOwnershipManifest([spec]),
+      ledger: ledger([pending]),
+    });
+
+    expect(preview.operations[0]).toMatchObject({
+      state: "exact",
+      action: "finalize_ownership",
+      ownership: "managed",
+    });
+    const restarted = applyLifecycleOperations(preview);
+    expect(restarted.operations[0]).toMatchObject({ status: "applied", action: "finalize_ownership" });
+    expect(restarted.ownershipLedger.records[0]).toMatchObject({ status: "managed" });
+    expect(restarted.ownershipLedger.records[0].identity).not.toBeNull();
+  });
+
   it("fails closed for removal when Node cannot conditionally unlink the validated inode", () => {
     const destination = path.join(root, "remove.txt");
     fs.writeFileSync(destination, "managed\n");
@@ -695,5 +719,27 @@ describe("ownership ledger persistence", () => {
     writeLifecycleOwnershipLedgerAtomic(ledgerPath, ownership);
     expect(readLifecycleOwnershipLedger(ledgerPath)).toEqual(ownership);
     expect(fs.readdirSync(path.dirname(ledgerPath))).toEqual(["ownership.json"]);
+  });
+
+  it("preserves the previous complete snapshot when replacement is interrupted before publication", () => {
+    const ledgerPath = path.join(root, "ownership.json");
+    const previous = ledger([{
+      resourceId: "durable",
+      destination: path.join(root, "durable"),
+      kind: "file",
+      scope: "whole",
+      status: "pending_create",
+      fingerprint: "sha256:durable",
+      identity: null,
+    }]);
+    writeLifecycleOwnershipLedgerAtomic(ledgerPath, previous);
+    vi.spyOn(fs, "renameSync").mockImplementation(() => {
+      throw new Error("simulated interruption before ledger publication");
+    });
+
+    expect(() => writeLifecycleOwnershipLedgerAtomic(ledgerPath, emptyLifecycleOwnershipLedger()))
+      .toThrow("simulated interruption");
+    expect(readLifecycleOwnershipLedger(ledgerPath)).toEqual(previous);
+    expect(fs.readdirSync(root).filter((name) => name.includes(".next-"))).toEqual([]);
   });
 });

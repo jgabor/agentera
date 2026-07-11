@@ -348,7 +348,14 @@ export function planAppContentRefreshItems(ctx: MigrationContext): MigrationPhas
   const installedRoot = installedRootForDetection(appHome);
   if (!installedRoot) {
     if (!pathExists(appHome)) {
-      return [];
+      return ctx.installAppContentIfMissing ? [{
+        status: "pending",
+        action: APP_CONTENT_REFRESH_ACTION,
+        runtime: "installed-app",
+        source: resolvedSourceRoot,
+        target: refreshAppContentTargetRoot(appHome),
+        message: "will install stable app content required by selected lifecycle repair",
+      }] : [];
     }
     return [
       {

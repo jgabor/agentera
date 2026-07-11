@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { isLifecycleOwnershipStateDirectory } from "../runtime/lifecycleOwnershipJournal.js";
 
 import {
   AGENTERA_PROFILE_DIR_ENV,
@@ -239,6 +240,9 @@ function agenteraUserStateDirIsRecognized(dir: string): boolean {
     if ((entry === "optimize" || entry === "optimera") && st.isDirectory()) {
       // "optimera" is the v2 stable legacy objective dir name; keep it
       // recognized so v2->v3 migration preserves legacy objective state.
+      continue;
+    }
+    if (entry === "runtime-lifecycle" && isLifecycleOwnershipStateDirectory(full)) {
       continue;
     }
     return false;

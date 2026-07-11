@@ -263,13 +263,16 @@ export function validateRuntimeLifecycleAdapterContractData(
   const caveats = stringList(data.known_caveats);
   if (
     caveats.length === 0
-    || !caveats.some((caveat) => caveat.includes("existing ownership ledger") && caveat.includes("fails closed"))
+    || !caveats.some((caveat) =>
+      caveat.includes("Append-only ownership journal recovery")
+      && caveat.includes("last valid snapshot")
+      && caveat.includes("re-observes every resource"))
   ) {
     errors.push(
       sourceError(
         sourcePath,
         "known_caveats",
-        "must preserve the interrupted existing-ledger rewrite fail-closed warning",
+        "must declare append-only interrupted-tail recovery and per-resource re-observation",
       ),
     );
   }

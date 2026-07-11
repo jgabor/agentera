@@ -316,16 +316,50 @@ export function writeLifecycleOwnershipLedgerAtomic(
   }
   const observation = observeLifecyclePath(ledgerPath, [parent]);
   if (observation.unsafeReason) throw new LifecycleOperationError(observation.unsafeReason);
-  publishLifecycleResource(
-    {
-      id: "ownership-ledger",
-      destination: ledgerPath,
-      kind: "file",
-      content: `${JSON.stringify(ledger, null, 2)}\n`,
-    },
-    observation.kind === "missing" ? "create" : "update",
-    observation,
-  );
+  if (observation.kind !== "missing" && observation.kind !== "file") {
+    throw new LifecycleOperationError("ownership ledger must be a regular file or absent");
+  }
+
+  // Ledger snapshots are replaced only after the complete new bytes are durable.
+  // A process interruption therefore leaves either the previous valid snapshot or
+  // the next valid snapshot, never an in-place truncation of ownership evidence.
+  const temporary = `${ledgerPath}.next-${process.pid}-${crypto.randomUUID()}`;
+  let fd: number | null = null;
+  try {
+    fd = fs.openSync(
+      temporary,
+      fs.constants.O_WRONLY
+        | fs.constants.O_CREAT
+        | fs.constants.O_EXCL
+        | (fs.constants.O_NOFOLLOW ?? 0),
+      0o600,
+    );
+    const bytes = Buffer.from(`${JSON.stringify(ledger, null, 2)}\n`);
+    let offset = 0;
+    while (offset < bytes.length) {
+      const written = fs.writeSync(fd, bytes, offset, bytes.length - offset, offset);
+      if (written === 0) throw new LifecycleOperationError("ownership ledger write made no progress");
+      offset += written;
+    }
+    fs.fsyncSync(fd);
+    fs.closeSync(fd);
+    fd = null;
+    fs.renameSync(temporary, ledgerPath);
+    const parentFd = fs.openSync(parent, fs.constants.O_RDONLY | (fs.constants.O_DIRECTORY ?? 0));
+    try {
+      fs.fsyncSync(parentFd);
+    } finally {
+      fs.closeSync(parentFd);
+    }
+  } finally {
+    if (fd !== null) fs.closeSync(fd);
+    try {
+      fs.unlinkSync(temporary);
+    } catch {
+      // A complete old or new ledger remains authoritative; stale staging bytes
+      // are never read as ownership evidence.
+    }
+  }
 }
 
 function cloneLedger(ledger: LifecycleOwnershipLedger): LifecycleOwnershipLedger {
@@ -520,6 +554,23 @@ function planOne(
       "wrong_type",
       record?.status === "legacy" ? "legacy" : "managed",
       `resource kind ${observation.kind} does not match declared kind ${spec.kind}`,
+    );
+  }
+  if (record?.status === "pending_create" && !record.identity) {
+    if (observation.fingerprint === expectedFingerprint) {
+      return planned(
+        spec,
+        "exact",
+        "managed",
+        "finalize_ownership",
+        "interrupted create published exact bytes before its identity record; ownership can be recovered from the observed resource",
+      );
+    }
+    return actionRequired(
+      spec,
+      "partial_managed",
+      "partial",
+      "interrupted create has no recorded publication identity and the observed resource does not match exactly",
     );
   }
   if (!record?.identity) {

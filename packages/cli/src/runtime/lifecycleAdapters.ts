@@ -44,6 +44,7 @@ export interface RuntimeAdapterInspectionContext {
   project: string;
   sourceRoot: string;
   env?: Record<string, string | undefined>;
+  canonicalSkillTarget?: string;
   ledger?: LifecycleOwnershipLedger;
   surfaceEvidence?: Record<string, Partial<Record<SurfaceEvidenceField, LifecycleEvidenceValue>>>;
   categoryEvidence?: Partial<
@@ -766,10 +767,24 @@ export class RuntimeLifecycleAdapter {
       if (!declaration) throw new Error(`${this.runtimeId}: missing declared resource ${id}`);
       return declaration;
     });
-    const expanded = declarations.flatMap((declaration) => expandResource(declaration, values));
+    const expanded = declarations.flatMap((declaration) => expandResource(declaration, values))
+      .map((resource) => {
+        if (
+          resource.declaration.id !== "canonical_skill"
+          || resource.operation?.kind !== "symlink"
+          || !context.canonicalSkillTarget
+        ) return resource;
+        const target = path.resolve(context.canonicalSkillTarget);
+        return {
+          ...resource,
+          sourcePath: target,
+          operation: { ...resource.operation, linkTarget: target },
+        };
+      });
     const operations = expanded.flatMap((resource) => resource.operation ? [resource.operation] : []);
     const allowedRoots = [...new Set([
       path.resolve(context.sourceRoot),
+      ...(context.canonicalSkillTarget ? [path.resolve(context.canonicalSkillTarget, "..")] : []),
       ...expanded.map((resource) => path.dirname(resource.destinationPath)),
     ])];
     const repairPlan = planLifecycleOperations({

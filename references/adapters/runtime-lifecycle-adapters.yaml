@@ -67,7 +67,7 @@ path_policy:
     - .pnpm-store
     - marketplace-cache
 known_caveats:
-  - Interrupted rewrites of an existing ownership ledger can corrupt that ledger; subsequent lifecycle work fails closed until the ledger is repaired.
+  - Append-only ownership journal recovery ignores incomplete tail events, preserves the last valid snapshot, and re-observes every resource before retry.
 shared_resources:
   - id: canonical_skill
     category: skills

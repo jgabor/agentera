@@ -4,7 +4,7 @@ import path from "node:path";
 
 import { detectV1ArtifactPairs } from "../../../upgrade/migrateArtifactsV2ToV3.js";
 import { summarizeProjectIntegration } from "../../../upgrade/projectIntegration.js";
-import { resolveSourceRootStrict } from "../../../upgrade/appModel.js";
+import { doctorRoots, resolveSourceRootStrict } from "../../../upgrade/appModel.js";
 import { discoverSchemasDir, loadSchemas } from "../../appContext.js";
 import {
   activeObjectiveSummary,
@@ -32,6 +32,10 @@ import {
   observeRuntimeLifecycle,
   summarizeRuntimeLifecycle,
 } from "../../../runtime/lifecycleSnapshot.js";
+import {
+  lifecycleOwnershipJournalPath,
+  readLifecycleOwnershipJournal,
+} from "../../../runtime/lifecycleOwnershipJournal.js";
 
 export function collectOrientationState(opts: PrimeOpts): OrientationState {
   const env = opts.env ?? process.env;
@@ -92,11 +96,21 @@ export function collectOrientationState(opts: PrimeOpts): OrientationState {
     bundleStatus: String(bundle.status),
     crossMajorBoundaryDetected: bundle.crossMajorBoundaryDetected ?? false,
   });
+  const lifecycleOwnership = readLifecycleOwnershipJournal(
+    lifecycleOwnershipJournalPath(String(bundle.appHome)),
+  );
+  const canonicalSkillTarget = path.join(
+    doctorRoots(String(bundle.appHome)).activeBundleRoot,
+    "skills",
+    "agentera",
+  );
   const runtimeLifecycle = summarizeRuntimeLifecycle(observeRuntimeLifecycle({
     home,
     project,
     sourceRoot,
     env,
+    ledger: lifecycleOwnership.ledger,
+    canonicalSkillTarget,
   }));
   const readiness = selectStatusReadiness(plan, health, objective, todoItems, decision, savedContext);
   const nextAction: ReadinessHint =

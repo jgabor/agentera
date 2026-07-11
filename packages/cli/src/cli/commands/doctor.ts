@@ -1,10 +1,12 @@
 import os from "node:os";
+import path from "node:path";
 
 import { expanduser, resolvePath } from "../../core/paths.js";
 import { pyJsonIndentSorted } from "../../core/pyjson.js";
 import {
   resolveDoctorInstallRoot,
   resolveSourceRootStrict,
+  doctorRoots,
 } from "../../upgrade/appModel.js";
 import { runNpmSmokeChecks } from "../../setup/smokeChecks.js";
 import type { JsonObject } from "../../core/jsonValue.js";
@@ -35,6 +37,10 @@ import {
   observeRuntimeLifecycle,
   type RuntimeLifecycleSnapshot,
 } from "../../runtime/lifecycleSnapshot.js";
+import {
+  lifecycleOwnershipJournalPath,
+  readLifecycleOwnershipJournal,
+} from "../../runtime/lifecycleOwnershipJournal.js";
 
 /**
  * `agentera doctor` — app/runtime status. Port of agentera_upgrade.cmd_doctor +
@@ -209,11 +215,21 @@ export function cmdDoctor(args: DoctorArgs, io: Io = {}): number {
     expectedVersion: args.expectedVersion ?? null,
     expectedCommands,
   });
+  const lifecycleOwnership = readLifecycleOwnershipJournal(
+    lifecycleOwnershipJournalPath(installRoot),
+  );
+  const canonicalSkillTarget = path.join(
+    doctorRoots(installRoot).activeBundleRoot,
+    "skills",
+    "agentera",
+  );
   const runtimeLifecycle = observeRuntimeLifecycle({
     home,
     project,
     sourceRoot,
     env: { ...process.env, HOME: home },
+    ledger: lifecycleOwnership.ledger,
+    canonicalSkillTarget,
   });
   let smokeReport: JsonObject | null = null;
   if (args.smoke) {

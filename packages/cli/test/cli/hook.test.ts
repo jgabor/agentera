@@ -93,13 +93,20 @@ describe("agentera upgrade dispatch", () => {
     expect(err).toContain("unrecognized arguments: --bogus");
   });
 
-  it("rejects --runtime with explicit guidance", () => {
+  it("rejects retired and surface-only runtime selectors with actionable guidance", () => {
     let err = "";
-    const rc = main(["node", "agentera", "upgrade", "--runtime", "cursor", "--dry-run"], {
+    const claude = main(["node", "agentera", "upgrade", "--runtime", "claude", "--dry-run"], {
       err: (t) => (err += t),
     });
-    expect(rc).toBe(2);
-    expect(err).toContain("--runtime is not yet supported");
+    expect(claude).toBe(2);
+    expect(err).toContain("--legacy-cleanup claude");
+
+    err = "";
+    const cursorAgent = main(["node", "agentera", "upgrade", "--runtime", "cursor-agent", "--dry-run"], {
+      err: (t) => (err += t),
+    });
+    expect(cursorAgent).toBe(2);
+    expect(err).toContain("use --runtime cursor");
   });
 
   it("rejects --opencode-config-dir with explicit guidance", () => {
@@ -109,6 +116,15 @@ describe("agentera upgrade dispatch", () => {
     });
     expect(rc).toBe(2);
     expect(err).toContain("--opencode-config-dir is not yet supported");
+  });
+
+  it("rejects partial app phases combined with lifecycle selection", () => {
+    let err = "";
+    const rc = main([
+      "node", "agentera", "upgrade", "--runtime", "cursor", "--only", "runtime", "--dry-run",
+    ], { err: (t) => (err += t) });
+    expect(rc).toBe(2);
+    expect(err).toContain("lifecycle preview must include the complete app phase");
   });
 
   it("rejects --update-packages with explicit guidance", () => {

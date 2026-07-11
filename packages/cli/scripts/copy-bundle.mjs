@@ -11,6 +11,7 @@
  *                     capabilities/*, schemas/*)
  *   - references/    (artifact-registry interface model + reference paths)
  *   - registry.json  (artifact registry at the source root)
+ *   - declared OpenCode, Codex, and Cursor lifecycle repair source files
  *
  * D65: per-capability instructions.md files are no longer copied because
  * they do not exist on disk. The per-capability prose ships via the
@@ -34,7 +35,15 @@ const repoRoot = path.resolve(pkgRoot, "..", "..");
 const bundleRoot = path.join(pkgRoot, "bundle");
 
 const DIRS = ["skills", "references"];
-const FILES = ["registry.json"];
+const FILES = [
+  "registry.json",
+  ".opencode/plugins/agentera.js",
+  ".opencode/agents/agentera.md",
+  "hooks/codex-hooks.json",
+  ".cursor-plugin/plugin.json",
+  ".cursor/hooks.json",
+  ".cursor/agents/agentera.md",
+];
 const SKIP_PARTS = new Set(["__pycache__", ".pytest_cache", "node_modules"]);
 const SKIP_SUFFIXES = new Set([".pyc", ".pyo"]);
 
@@ -87,7 +96,9 @@ for (const dir of DIRS) {
 for (const file of FILES) {
   const src = path.join(repoRoot, file);
   if (fs.existsSync(src)) {
-    fs.copyFileSync(src, path.join(bundleRoot, file));
+    const destination = path.join(bundleRoot, file);
+    fs.mkdirSync(path.dirname(destination), { recursive: true });
+    fs.copyFileSync(src, destination);
     copied += 1;
   } else {
     console.error(`copy-bundle: missing data file ${file} at ${src}`);

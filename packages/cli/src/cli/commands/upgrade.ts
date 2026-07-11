@@ -31,6 +31,8 @@ export interface UpgradeArgs {
   dryRun?: boolean;
   only?: readonly UpgradeOnlyPhase[] | null;
   force?: boolean;
+  runtime?: UpgradeOrchestratorArgs["runtime"];
+  legacyCleanup?: UpgradeOrchestratorArgs["legacyCleanup"];
   verify?: boolean;
   restore?: boolean;
   format?: string;
@@ -49,6 +51,8 @@ function toOrchestratorArgs(args: UpgradeArgs): UpgradeOrchestratorArgs {
     dryRun: args.dryRun ?? false,
     only: args.only && args.only.length > 0 ? args.only : null,
     force: args.force ?? false,
+    runtime: args.runtime ?? null,
+    legacyCleanup: args.legacyCleanup ?? null,
   };
 }
 
@@ -71,13 +75,35 @@ export function cmdUpgrade(args: UpgradeArgs, io: Io = {}): number {
     return 2;
   }
 
-  if (args.restore && (orchestratorArgs.yes || orchestratorArgs.dryRun || args.verify)) {
-    err("upgrade error: --restore is mutually exclusive with --yes, --dry-run, and --verify\n");
+  if (
+    (orchestratorArgs.runtime || orchestratorArgs.legacyCleanup)
+    && orchestratorArgs.only
+    && orchestratorArgs.only.length > 0
+  ) {
+    err("upgrade error: --only cannot be combined with --runtime or --legacy-cleanup; lifecycle preview must include the complete app phase\n");
+    return 2;
+  }
+
+  if (args.restore && (
+    orchestratorArgs.yes
+    || orchestratorArgs.dryRun
+    || args.verify
+    || orchestratorArgs.runtime
+    || orchestratorArgs.legacyCleanup
+  )) {
+    err("upgrade error: --restore is mutually exclusive with --yes, --dry-run, --verify, --runtime, and --legacy-cleanup\n");
     return 2;
   }
 
   if (args.verify && orchestratorArgs.dryRun) {
     err("upgrade error: --verify cannot be combined with --dry-run\n");
+    return 2;
+  }
+
+  if (args.verify && !orchestratorArgs.yes && (
+    orchestratorArgs.runtime || orchestratorArgs.legacyCleanup
+  )) {
+    err("upgrade error: lifecycle selection with --verify requires --yes; preview lifecycle work with --dry-run instead\n");
     return 2;
   }
 

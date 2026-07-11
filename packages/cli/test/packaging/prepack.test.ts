@@ -112,6 +112,16 @@ describe("v3 packaging (T1)", () => {
       expect([...filePaths].some((p) => p.startsWith("bundle/skills/agentera/capabilities/"))).toBe(
         true,
       );
+      for (const runtimeSource of [
+        "bundle/.opencode/plugins/agentera.js",
+        "bundle/.opencode/agents/agentera.md",
+        "bundle/hooks/codex-hooks.json",
+        "bundle/.cursor-plugin/plugin.json",
+        "bundle/.cursor/hooks.json",
+        "bundle/.cursor/agents/agentera.md",
+      ]) {
+        expect(filePaths.has(runtimeSource), `${runtimeSource} must ship for lifecycle repair`).toBe(true);
+      }
     });
 
     it("PASS: production source and packed files contain no test environment token", () => {
@@ -194,6 +204,17 @@ describe("v3 packaging (T1)", () => {
       fs.mkdirSync(path.join(fakeRoot, "references"), { recursive: true });
       fs.writeFileSync(path.join(fakeRoot, "references", "fixture.md"), "# Fixture\n");
       fs.writeFileSync(path.join(fakeRoot, "registry.json"), JSON.stringify({ skills: [] }));
+      for (const runtimeSource of [
+        ".opencode/plugins/agentera.js",
+        ".opencode/agents/agentera.md",
+        "hooks/codex-hooks.json",
+        ".cursor-plugin/plugin.json",
+        ".cursor/hooks.json",
+        ".cursor/agents/agentera.md",
+      ]) {
+        fs.mkdirSync(path.join(fakeRoot, path.dirname(runtimeSource)), { recursive: true });
+        fs.writeFileSync(path.join(fakeRoot, runtimeSource), "fixture\n");
+      }
       const fakePkg = path.join(fakeRoot, "packages", "cli");
       fs.mkdirSync(path.join(fakePkg, "scripts"), { recursive: true });
       fs.copyFileSync(
