@@ -65,8 +65,8 @@ canonical_concepts:
       - bundled suite
   plugin_shipped_hooks:
     definition: >-
-      Hooks that are shipped by runtime plugin package surfaces such as Codex,
-      OpenCode, Claude, or GitHub plugin metadata.
+      Hooks that are shipped by active runtime plugin package surfaces such as
+      Codex, OpenCode, Cursor, or GitHub plugin metadata.
     allowed_terms:
       - plugin-shipped hooks
       - plugin-bundled hooks

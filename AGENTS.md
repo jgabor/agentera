@@ -197,7 +197,7 @@ Conventional Commits: `feat(scope): …`, `fix(scope): …`, `docs(scope): …`,
 | `package` | `registry.json`, plugin manifests, lockfiles, version-bearing package surfaces |
 | `runtime` | Cross-runtime behavior or shared adapter contracts |
 | `opencode` | OpenCode-specific runtime behavior or packaging |
-| `claude` | Claude-specific runtime behavior or packaging |
+| `claude` | Retired Claude migration or historical-import behavior only |
 | `codex` | Codex-specific runtime behavior or packaging |
 | `copilot` | Copilot-specific runtime behavior or packaging |
 | `cursor` | Cursor IDE and cursor-agent CLI runtime behavior, hooks, agents, packaging |

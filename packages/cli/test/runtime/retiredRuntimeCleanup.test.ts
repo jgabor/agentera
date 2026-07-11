@@ -31,7 +31,7 @@ function destination(): string {
   return path.join(home, ".claude", "skills", "agentera");
 }
 
-function installLegacySymlink(): { target: string; ledger: LifecycleOwnershipLedger } {
+function installLegacySymlink(status: "legacy" | "managed" = "legacy"): { target: string; ledger: LifecycleOwnershipLedger } {
   const target = path.join(home, ".agents", "skills", "agentera");
   fs.mkdirSync(target, { recursive: true });
   fs.writeFileSync(path.join(target, "SKILL.md"), "owned target\n");
@@ -52,7 +52,7 @@ function installLegacySymlink(): { target: string; ledger: LifecycleOwnershipLed
           destination: destination(),
           kind: "symlink",
           scope: "whole",
-          status: "legacy",
+          status,
           fingerprint: observation.fingerprint as string,
           identity: observation.identity as { device: string; inode: string },
         },
@@ -105,7 +105,7 @@ describe("retired runtime cleanup contract", () => {
         id: "claude",
         active_runtime: true,
         source_product: "claude-code",
-        resources: [{ id: "claude.agentera-skill-link", kind: "symlink", intent: "remove", destination: "{home}/.claude/skills/agentera" }],
+        resources: [{ id: "claude.agentera-skill-link", kind: "symlink", intent: "remove", destination: "{home}/.claude/skills/agentera", ledger_status: "legacy" }],
         never_touch: ["projects", "settings", "credentials", "conversations", "cache", "stats"],
       }],
     };
@@ -158,6 +158,55 @@ describe("retired Claude resource cleanup", () => {
 
     expect(applied.status).toBe("non_success");
     expect(applied.operations[0].status).toBe("blocked_unowned");
+    expect(snapshot(home)).toEqual(before);
+  });
+
+  it("blocks a managed ledger record in preview and apply without changing data or ownership", () => {
+    const { ledger } = installLegacySymlink("managed");
+    const before = snapshot(home);
+
+    const preview = previewRetiredRuntimeCleanup({ runtimeId: "claude", home, ledger });
+    expect(preview).toMatchObject({
+      ownershipRequirement: "matching_whole_resource_legacy_ledger",
+      ledgerAuthorization: "blocked",
+      plan: { operations: [expect.objectContaining({ action: "blocked_unowned" })] },
+    });
+    expect(preview.ledgerDiagnostics.join(" ")).toContain("ledger status legacy");
+
+    const applied = applyRetiredRuntimeCleanup(preview, { approved: true });
+    expect(applied.status).toBe("non_success");
+    expect(applied.operations[0].status).toBe("blocked_unowned");
+    expect(applied.ownershipLedger).toEqual(ledger);
+    expect(snapshot(home)).toEqual(before);
+  });
+
+  it("blocks malformed ledger input without touching the resource", () => {
+    const { ledger } = installLegacySymlink();
+    const malformed = { ...ledger, schemaVersion: "broken" } as unknown as LifecycleOwnershipLedger;
+    const before = snapshot(home);
+
+    const preview = previewRetiredRuntimeCleanup({ runtimeId: "claude", home, ledger: malformed });
+    expect(preview.ledgerAuthorization).toBe("blocked");
+    expect(preview.ledgerDiagnostics.join(" ")).toContain("invalid ownership ledger");
+    expect(preview.plan.operations[0].action).toBe("blocked_unowned");
+    expect(applyRetiredRuntimeCleanup(preview, { approved: true }).status).toBe("non_success");
+    expect(snapshot(home)).toEqual(before);
+  });
+
+  it("blocks changed legacy fingerprint evidence and preserves the resource", () => {
+    const { ledger } = installLegacySymlink();
+    ledger.records[0].fingerprint = "sha256:changed";
+    const before = snapshot(home);
+
+    const preview = previewRetiredRuntimeCleanup({ runtimeId: "claude", home, ledger });
+    expect(preview.plan.operations[0]).toMatchObject({
+      action: "action_required",
+      reason: expect.stringContaining("fingerprint must match"),
+    });
+    const applied = applyRetiredRuntimeCleanup(preview, { approved: true });
+    expect(applied.status).toBe("non_success");
+    expect(applied.operations[0].status).toBe("action_required");
+    expect(applied.ownershipLedger).toEqual(ledger);
     expect(snapshot(home)).toEqual(before);
   });
 

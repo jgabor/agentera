@@ -33,7 +33,7 @@ normalization_rules:
     use: single Agentera agent, capabilities (the product word); "skill" and "plugin" survive only as internal transport (the skills/ directory and plugin.json manifests host editors require)
     avoid: '"Agentera skill" or "plugin" as product words; "twelve-skill suite" or "plugin suite" for the capability set.'
   - rule: Agentera is the agent; the host is the harness (Decision 74).
-    use: host runtime, harness, host coding agent (Claude, Cursor, Codex, Copilot, OpenCode); the CLI owns routing, memory, capability prose, and the worker-spec contract
+    use: host runtime, harness, host coding agent (OpenCode, Codex, Cursor, Copilot); the CLI owns routing, memory, capability prose, and the worker-spec contract
     avoid: Calling host coding agents peers or extension hosts of Agentera; implying Agentera is a module loaded into the host.
   - rule: /agentera is the main invocation.
     use: /agentera, $agentera for Codex-specific docs

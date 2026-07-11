@@ -42,15 +42,6 @@ After bootstrap, route via "/agentera <capability>" or plain language like "help
 ```
 
 <details>
-<summary><strong>Claude Code</strong></summary>
-
-```bash
-npx skills add jgabor/agentera -g -a claude-code --skill agentera -y
-```
-
-</details>
-
-<details>
 <summary><strong>OpenCode</strong></summary>
 
 Install the skill and the plugin (both steps):

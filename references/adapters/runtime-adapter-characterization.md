@@ -1,11 +1,12 @@
 # Runtime Adapter Characterization
 
-Task 2 of `Deepen RuntimeAdapter Registry` records current behavior before any
-registry extraction. This is a characterization artifact, not the new registry.
+Historical Task 2 snapshot from before the RuntimeAdapter registry extraction.
+The executable registry now owns current behavior. Claude rows below record
+pre-retirement history only and do not advertise active support.
 
 ## Doctor Output
 
-Current JSON envelope fields are `schemaVersion`, `ok`, `installRoot`,
+At characterization time, JSON envelope fields were `schemaVersion`, `ok`, `installRoot`,
 `runtimes`, `summary`, and `smoke`. Each runtime result exposes `runtime`,
 `status`, `available`, `binary`, and `checks`. Each check exposes `name`,
 `status`, `message`, `source`, `path`, `gap`, and `details`.
@@ -19,13 +20,13 @@ Primary pass messages by runtime:
 | Copilot CLI | `AGENTERA_HOME` | `pass` | `runtime can reach shared Agentera helper scripts` | none |
 | Codex CLI | `config.AGENTERA_HOME` | `pass` | `runtime can reach shared Agentera helper scripts` | none |
 
-Current diagnostic labels that are intentionally public are `user_environment`,
+The snapshot's public diagnostic labels were `user_environment`,
 `runtime_config`, `bundle_packaging`, `command_drift`, `skill_path_drift`, and
 `validation_drift`.
 
 ## Upgrade Planning
 
-Runtime-phase items currently expose `runtime`, `action`, `target`, `status`,
+Runtime-phase items in this historical snapshot exposed `runtime`, `action`, `target`, `status`,
 and `message`; copy operations also expose `source`, and configure operations
 carry private `newText` until public JSON rendering strips it.
 
@@ -41,21 +42,21 @@ Characterized runtime actions:
 | OpenCode | `copy-plugin` | `~/.config/opencode/plugins/agentera.js` | `pending` | copies plugin, then reports `runtime update applied` |
 | OpenCode | `copy-agent` | `~/.config/opencode/agents/agentera.md` | `pending` | copies single managed agent descriptor (D73), then reports `runtime update applied` |
 
-Package-phase items currently expose `runtime`, `action`, `command`, `status`,
+Package-phase items in this historical snapshot exposed `runtime`, `action`, `command`, `status`,
 and `message`. Without `--update-packages`, package items are `skipped`; with it,
-Claude Code and OpenCode package commands become `pending` and apply through the
+Claude Code and OpenCode package commands became `pending` and applied through the
 external command runner. Copilot CLI and Codex CLI have no package command item in
-the current upgrade phase.
+that upgrade phase.
 
 ## Lifecycle Validation
 
-Current pass output from `scripts/validate_lifecycle_adapters.py` is exactly:
+The characterized pass output from `scripts/validate_lifecycle_adapters.py` was:
 
 ```text
 lifecycle adapter metadata ok
 ```
 
-Current failure output begins with:
+The characterized failure output began with:
 
 ```text
 lifecycle adapter validation failed:
@@ -72,8 +73,8 @@ missing `codex_hooks` limitation text.
 | Drift point | Decision | Before-migration handling |
 |-------------|----------|---------------------------|
 | duplicated runtime order appears in doctor, upgrade, and tests | `standardize` | Later registry extraction should define one runtime order and have consumers read it. |
-| upgrade package phase only manages Claude Code and OpenCode | `preserve` | This is current behavior, not a registry gap; Copilot CLI and Codex CLI package command support is separate future work. |
+| upgrade package phase managed Claude Code and OpenCode | `retired` | Historical pre-retirement behavior; current package planning must not expose Claude. |
 | Codex supports hook events but shipped config wires only apply_patch validation | `preserve` | Keep the distinction between host support and shipped Agentera wiring. |
-| Claude lifecycle behavior is validated through native hook files, not lifecycle metadata | `defer` | Do not invent Claude lifecycle metadata in Task 2; decide during registry interface design. |
+| Claude lifecycle behavior was validated through native hook files, not lifecycle metadata | `retired` | Historical pre-retirement behavior only. |
 | OpenCode session preload observes `session.created` but has no verified context injection path | `preserve` | Keep degraded preload semantics in docs and diagnostics. |
 | hard-gate docs only claim blocking for reconstructable OpenCode and Copilot candidates | `preserve` | Keep scoped claims; do not standardize to full hard-gate parity. |

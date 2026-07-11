@@ -162,7 +162,6 @@ export function printInstallHelp(reason) {
   lines.push(
     "",
     "Install Agentera for your runtime:",
-    "  npx skills add jgabor/agentera -g -a claude-code --skill agentera -y",
     "  npx skills add jgabor/agentera -g -a opencode --skill agentera -y",
     "",
     "Upgrade / app-home CLI (requires uv):",

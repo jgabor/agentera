@@ -62,7 +62,8 @@ Each Agentera skill entry file contains YAML frontmatter with `name` and `descri
 
 **Skill loading**: OpenCode loads skills on-demand via a native `skill` tool. Agents see available skills listed in the tool description and load full content by calling `skill({ name: "agentera" })`. Agentera works unmodified: it is loaded into the agent's context when invoked.
 
-**Gap**: None. OpenCode's skill discovery is more flexible than Claude Code's (supports `.opencode/`, `.claude/`, and `.agents/` paths). Agentera skills install cleanly.
+**Gap**: None. OpenCode skill discovery supports `.opencode/`, `.claude/`
+compatibility, and `.agents/` paths. Agentera skills install cleanly.
 
 ### Artifact resolution (Required)
 
@@ -133,8 +134,8 @@ Read PROFILE.md from the runtime-provided profile path (Section 21). In OpenCode
 **Concrete mapping for build Step 5 dispatch**:
 
 ```
-# Claude Code (reference)
-Spawn a Sonnet implementation agent in a worktree (isolation: "worktree")
+# Runtime-neutral requirement
+Spawn an implementation agent in an isolated worktree
 
 # OpenCode Strategy A
 Invoke the Agentera agent (@agentera) with the implementation plan
@@ -167,7 +168,8 @@ opencode run "Explain closures in JavaScript"
 opencode run --format json "Explain closures in JavaScript"
 ```
 
-The `--format json` flag produces a raw JSON event stream, comparable to `claude -p --output-format json`. Each event is a separate JSON object representing a message part, tool call, or status update.
+The `--format json` flag produces a raw JSON event stream. Each event is a
+separate JSON object representing a message part, tool call, or status update.
 
 For long-running sessions, OpenCode's server mode provides an HTTP API with the same structured output:
 
@@ -176,15 +178,8 @@ opencode serve --port 4096
 # Then POST to the API with session creation and message sending
 ```
 
-**Adapter approach**: Map `claude -p --output-format json` to `opencode run --format json`:
-
-| Claude Code | OpenCode |
-|-------------|----------|
-| `claude -p "prompt"` | `opencode run "prompt"` |
-| `claude -p --output-format json` | `opencode run --format json "prompt"` |
-| `claude -p --skill build` | `opencode run "prompt"` (skill loaded via discovery) |
-
-The agentera eval runner (`scripts/eval_skills.py`) would need an OpenCode dispatch mode that calls `opencode run --format json` instead of `claude -p --output-format json`. The dispatch wrapper:
+**Adapter approach**: The eval runner invokes `opencode run --format json`
+directly and parses OpenCode's event schema. The dispatch wrapper:
 
 ```python
 def dispatch_opencode(skill_name: str, prompt: str) -> dict:
@@ -195,7 +190,9 @@ def dispatch_opencode(skill_name: str, prompt: str) -> dict:
     return {"output": result.stdout, "exit_code": result.returncode}
 ```
 
-**Gap**: Minimal. `opencode run --format json` provides structured JSON events directly comparable to `claude -p --output-format json`. The eval runner adapter parses the JSON event stream using the same pattern as the Claude Code adapter, though the event schema differs and requires a separate parser module. For smoke tests (the eval runner's primary use case), text output with exit-code checking is also sufficient.
+**Gap**: Minimal. `opencode run --format json` provides structured JSON events.
+The eval runner uses a dedicated OpenCode parser. For smoke tests, text output
+with exit-code checking is also sufficient.
 
 ### Hook lifecycle (Optional but recommended)
 
@@ -276,9 +273,11 @@ This keeps the plugin thin while matching the packaged Python script contract.
 
 Profilera mines five canonical record types from host session data. This section maps each record type to OpenCode's data sources.
 
-### memory_entry (Claude Code runtime extension)
+### memory_entry (retired historical-import extension)
 
-**Agentera contract**: This record type is a Claude Code runtime extension, not part of the portable corpus. Claude Code's memory files are emitted as instruction_document records with `doc_type: "claude_memory"`.
+**Agentera contract**: This retired-source record type is not part of the
+portable active corpus. It may appear only in explicitly consented historical
+imports and remains excluded from default analytics.
 
 **OpenCode source**: OpenCode does not have a built-in memory system. The memory_entry extension does not apply.
 
@@ -315,7 +314,7 @@ Profilera mines five canonical record types from host session data. This section
 }
 ```
 
-**Gap**: None. OpenCode has richer instruction document support than Claude Code (remote URLs, glob patterns, explicit config).
+**Gap**: None. OpenCode supports remote URLs, glob patterns, and explicit config.
 
 ### history_prompt
 
@@ -336,7 +335,7 @@ The SDK exposes message history with timestamps, project context, and session me
 1. Enumerate sessions via `opencode session list --format json`
 2. Export each session via `opencode export [sessionID]`
 3. Filter for user-originated messages from the export JSON
-4. Apply decision-pattern regex (same patterns profile uses for Claude Code history) to classify prompts as `"decision"`, `"correction"`, or `"question"`
+4. Apply the shared decision-pattern classifier to label prompts as `"decision"`, `"correction"`, or `"question"`
 5. Produce history_prompt records with session and project metadata
 
 ```python
@@ -400,13 +399,13 @@ The SDK approach remains preferable for programmatic integration (e.g., as an Op
 
 **OpenCode source**: OpenCode projects are standard filesystem directories. Config files are accessible via direct file reads.
 
-**Adapter extraction**: Identical to Claude Code extraction. Scan the project root for known config types:
+**Adapter extraction**: Scan the project root for known config types:
 
 - `package.json`, `go.mod`, `Cargo.toml`, `pyproject.toml`
 - `.golangci.yml`, `tsconfig.json`, `ruff.toml`
 - `Makefile`, `magefile.go`, `justfile`, `taskfile.yaml`
 
-No runtime-specific adaptation needed. The adapter uses the same config type list and extraction logic as the Claude Code adapter.
+No runtime-specific adaptation is needed; the config scan is runtime-agnostic.
 
 ```python
 {
@@ -436,7 +435,7 @@ Summary of which corpus families the OpenCode adapter can produce:
 | Crystallized decisions | instruction_document | Yes | AGENTS.md files (global and project), instructions config |
 | Decision history | history_prompt | Yes (CLI) | `opencode session list --format json` enumerates sessions; `opencode export [sessionID]` provides full message JSON for prompt extraction |
 | Conversation exchanges | conversation_turn | Yes (CLI) | `opencode export [sessionID]` provides full session JSON with paired user-assistant turns |
-| Config patterns | project_config_signal | Yes | Direct filesystem scan, identical to Claude Code |
+| Config patterns | project_config_signal | Yes | Direct filesystem scan |
 
 **Initial port profile mode**: Full. All four source families are available via included OpenCode functionality. Crystallized decisions come from AGENTS.md files and instructions config. Decision history and conversation exchanges come from `opencode export` CLI output. Config patterns come from direct filesystem scan.
 
@@ -511,7 +510,7 @@ OpenCode repair is ownership-gated. Managed slash commands include `agentera_man
 | Gap | Impact | Mitigation |
 |-----|--------|------------|
 | Sub-agent dispatch lacks built-in worktree isolation | build/orchestrate run in same working tree | Strategy A (Task tool) for initial port; manual `git worktree` commands for full isolation |
-| `opencode run --format json` event schema differs from `claude -p --output-format json` | Eval runner needs a separate JSON event parser | Implement an OpenCode-specific parser module in eval_skills.py; event stream structure is straightforward |
+| `opencode run --format json` uses an OpenCode-specific event schema | Eval runner needs a dedicated parser | Use the OpenCode parser module in eval_skills.py; event stream structure is straightforward |
 | Session history requires JSON event schema mapping | history_prompt and conversation_turn need export parser | `opencode export [sessionID]` provides full session JSON; adapter parses the export output |
 | Python scripts require Python runtime | Hook plugin calls Python via shell | Python is already a prerequisite for agentera scripts |
 
@@ -523,7 +522,7 @@ To verify the adapter is sufficient, check each acceptance criterion from PLAN.m
 
 1. **Each of the six host capabilities is mapped**: Yes. Skill discovery, artifact resolution, and profile path have direct OpenCode equivalents with no gaps. Sub-agent dispatch maps to the Task tool (with manual git worktree as an alternative). Eval mechanism maps to `opencode run --format json`. Hook lifecycle maps to the plugin event system.
 
-2. **Session Corpus Contract is mapped per record type**: Yes. All four portable record types are mapped. instruction_document and project_config_signal have immediate extraction paths. history_prompt and conversation_turn are extractable via `opencode export` CLI output. The memory_entry Claude Code extension does not apply to OpenCode.
+2. **Session Corpus Contract is mapped per record type**: Yes. All four portable record types are mapped. instruction_document and project_config_signal have immediate extraction paths. history_prompt and conversation_turn are extractable via `opencode export` CLI output. The retired historical-import extension does not apply to OpenCode.
 
 3. **A developer can implement OpenCode support without reading skill entry file source**: Yes. This document specifies the adapter mapping, installation steps, extraction logic, and remaining gaps independently.
 

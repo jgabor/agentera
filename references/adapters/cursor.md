@@ -1,14 +1,11 @@
 # Cursor adapter reference
 
-Agentera v1 ships Cursor as two registry identities:
-
-| Identity | Host | Support status |
-| -------- | ---- | -------------- |
-| `cursor` | Cursor IDE (Composer / Agent) | supported |
-| `cursor-agent` | Cursor Agent CLI (`cursor-agent`, `agent`) | degraded |
+Agentera ships one active Cursor registry identity: `cursor`. The accepted
+`cursor-agent` spelling is an inactive compatibility alias that resolves to
+Cursor-owned behavior and source data; it is not independently discoverable.
 
 Decision 63 owns v1 scope. Cloud agents are unsupported. Bare text `hej` routing
-stays metadata-only like Claude, Copilot, and Codex.
+stays metadata-only like Copilot and Codex.
 
 ## Quick install
 
@@ -89,8 +86,9 @@ IDE: managed descriptors under `.cursor/agents/` with `<!-- agentera: managed --
 ownership markers. Upgrade refreshes Agentera-owned targets and preserves unknown
 collisions.
 
-CLI: host-managed `cursor-agent` print mode; no separate TOML descriptor install.
-Eval coverage targets `cursor-agent` first.
+CLI: host-managed `cursor-agent` print mode through the inactive Cursor alias;
+there is no separate descriptor install. Eval coverage may accept the alias but
+must report the canonical runtime identity as `cursor`.
 
 ## Upgrade and doctor
 
@@ -118,7 +116,7 @@ bounded timeouts because some CLI builds hang after completion.
 - Cloud agents (no project hook or managed-agent guarantees)
 - Bare `hej` prompt rewrite routing
 - Session compaction injection beyond shared hook helpers
-- Separate cursor-agent hook install distinct from IDE workspace surfaces
+- No separate Cursor Agent CLI hook install distinct from Cursor workspace surfaces
 
 ## Profilera session corpus (Section 22)
 
@@ -156,9 +154,9 @@ Each line is a JSON object:
 Roles are `user` or `assistant`. `message.content` is a list of blocks. Text blocks
 use `type: "text"`. Tool blocks use `type: "tool_use"` with `name` and `input`.
 
-### Cursor Agent CLI `store.db` shape
+### Cursor source-product `store.db` shape
 
-Runtime id `cursor-agent` reads SQLite stores at
+The inactive `cursor-agent` input alias reads Cursor-owned SQLite stores at
 `~/.config/cursor/chats/<workspace-hash>/<session-id>/store.db`. Each store has:
 
 | Table | Purpose |

@@ -1,7 +1,14 @@
+import { spawnSync } from "node:child_process";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
 import { describe, expect, it } from "vitest";
 
 import { buildSchemaPayload, cmdSchema } from "../../src/cli/commands/schema.js";
 import { main } from "../../src/cli/dispatch.js";
+
+const packageRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
+const cliBin = path.join(packageRoot, "dist", "bin", "agentera.js");
 
 function capture(fn: (io: { out: (t: string) => void; err: (t: string) => void }) => number): {
   rc: number;
@@ -73,6 +80,22 @@ describe("cli schema", () => {
     expect(rc).toBe(0);
     const payload = JSON.parse(out);
     expect(payload.schemaVersion).toBe("agentera.schema.v1");
+  });
+
+  it("drains large JSON output before the child process exits", () => {
+    const child = spawnSync(process.execPath, [cliBin, "schema", "--format", "json"], {
+      cwd: path.resolve(packageRoot, "..", ".."),
+      encoding: "utf8",
+      maxBuffer: 2 * 1024 * 1024,
+    });
+
+    expect(child.status).toBe(0);
+    expect(Buffer.byteLength(child.stdout)).toBeGreaterThan(65_536);
+    expect(() => JSON.parse(child.stdout)).not.toThrow();
+    expect(JSON.parse(child.stdout)).toMatchObject({
+      schemaVersion: "agentera.schema.v1",
+      status: expect.stringMatching(/^(ok|incomplete)$/),
+    });
   });
 
   it("describes the prime/hej commands with their structured fields", () => {

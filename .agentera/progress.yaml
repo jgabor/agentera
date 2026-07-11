@@ -1,4 +1,44 @@
 cycles:
+  - number: 705
+    timestamp: 2026-07-11 16:55
+    type: fix
+    phase: build
+    what: "Retried Task 5 after audit: removed active Claude advertisements, drained
+      large CLI output, and restricted retired cleanup to exact legacy
+      ownership."
+    inspiration: Task 5 retry 1 independent audit findings.
+    discovered: The bin called process.exit before piped stdout drained; retired
+      cleanup inherited active-resource semantics where managed and legacy
+      ledger records both authorize removal.
+    verified: "Focused: pnpm -C packages/cli test test/cli/schema.test.ts
+      test/runtime/retiredRuntimeCleanup.test.ts
+      test/runtime/retiredRuntimeSurfacePolicy.test.ts
+      test/cli/profileRuntimePolicy.test.ts passed 4 files/21 tests. Full pnpm
+      -C packages/cli test passed 154 files/1,408 tests; typecheck/build passed.
+      Child schema JSON parsed at 103,242 bytes with active IDs
+      opencode,codex,cursor,copilot; cursor-agent inactive and Claude retired.
+      Seven current install surfaces had 0 Claude claims; served orchestrate had
+      no Claude Task-tool claim. Cleanup tests observed managed
+      blocked/unchanged, exact legacy success then noop, and
+      missing/malformed/changed/identity-swapped/parent-swapped evidence blocked
+      with data preserved. Default analytics performed no Claude read; opt-in
+      records retained historical provenance and default exclusion.
+      Lifecycle/build-capability/capability-contract/app-home/vocabulary
+      validations, extraction parity, compaction, and diff checks passed. Lint:
+      99 warnings/0 errors. vp run web:check hit known cache database version
+      12; pnpm -C packages/web exec astro check passed 11 files/0 diagnostics."
+    next: Keep Task 5 in_progress for independent re-audit; Task 8 owns changelog,
+      version, TODO, and plan closeout.
+    context:
+      intent: Close AC1 and AC2 audit failures while preserving Decision 92
+        historical-import analytics, active runtime authority, user-data
+        boundaries, and the in-progress plan state.
+      constraints: Do not alter plan status, Decision 92 analytics, active-resource
+        managed semantics, user data, pre-existing TODO/decisions/plan changes,
+        or release bookkeeping.
+      unknowns: Independent retry audit remains pending.
+      scope: CLI process lifecycle; served/install/support prose; retired cleanup
+        contract and tests; active runtime vocabulary and web install docs.
   - number: 704
     timestamp: 2026-07-11 16:13
     type: feat
@@ -265,30 +305,9 @@ cycles:
       scope: packages/cli state writer modules, CLI dispatch/help/errors, registry
         path safety, YAML/atomic utilities, compaction authority, producer
         capability instructions, schemas, tests, and CHANGELOG.md.
-  - number: 695
-    timestamp: 2026-07-10 15:09
-    type: docs
-    phase: build
-    what: Audited and rewrote profile capability instructions following six-section
-      spine and direct-contract philosophy.
-    discovered: exit.yaml E3 had "Python is unavailable" v2 ghost (removed); D3+D4
-      staging archive entries merged to maintain uniform_10_40_50 archive limit
-      during D78 compaction.
-    verified: "typecheck: 0 errors. build: clean. capability validation: PASS.
-      contract validation: PASS (0 violations). check compact: within limits.
-      vitest: 144/144 files, 1278/1278 tests green."
-    next: Design capability audit is next per TODO.md open items.
-    context:
-      intent: Ground-up audit of profile capability instructions per the audit prompt
-        docs/notes/audit-prompt.md.
-      constraints: Follow six-section spine, direct-contract philosophy, voice
-        delegation. No project-tracking markers in shipped code.
-      unknowns: Whether archive entry merging (D3+D4) sets precedent for future
-        compaction gates when archive exceeds 40.
-      scope: instructions.ts rewritten; exit.yaml Python ghost removed; deviation
-        table profile row Complete (D89); D78 compacted to archive; D3+D4
-        merged; TODO resolved.
 archive:
+  - summary: "Cycle 695 (2026-07-10): Audited and rewrote profile capability
+      instructions following six-section spine and direct-contract philosophy."
   - summary: "Cycle 694 (2026-07-10): Audited and rewrote optimize capability
       instructions following six-section spine and direct-contract philosophy."
   - summary: "Cycle 693 (2026-07-10): Audited and rewrote build capability
@@ -388,6 +407,3 @@ archive:
       slot;..."
   - summary: "Cycle 656 (2026-06-10): Plan T6 — prime module decomposition:
       extracted v1 migration, bundle status, orientation field assembly, and..."
-  - summary: "Cycle 655 (2026-06-10): Plan T5 — integration decision table and
-      unified prime attention: `upgrade/projectIntegrationDecision.ts`
-      classifies artifacts-only, runtime-only, cross-major,..."

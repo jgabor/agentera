@@ -19,6 +19,7 @@ retired_runtimes:
         kind: symlink
         intent: remove
         destination: "{home}/.claude/skills/agentera"
+        ledger_status: legacy
     never_touch:
       - "{home}/.claude/projects"
       - "{home}/.claude/statsig"

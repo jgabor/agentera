@@ -740,9 +740,16 @@ Realisera holds the primary enforcement contract because it is the skill that ac
 
 ## 22. Session Corpus Contract
 
-Profilera mines decision patterns from host session data to produce PROFILE.md. The extraction currently depends on Claude Code's internal storage layout (JSONL files, memory directories, project-scoped configs). This section defines the normalized data model that any host adapter can produce, decoupling profilera's behavioral contract from a specific runtime's file layout.
+Profilera mines decision patterns from host session data to produce PROFILE.md.
+Claude-specific entries in this legacy section describe the retired,
+consent-gated historical importer only. They are inactive, excluded from default
+analytics, and do not define runtime support. This section defines the normalized
+data model that any active host adapter or explicit historical importer can produce.
 
-The contract is a data model, not a path model. It specifies what profilera needs to observe, not where the host stores it. Claude Code continues to derive this corpus from its native paths; other runtimes produce the same normalized records from their own storage.
+The contract is a data model, not a path model. It specifies what profilera needs
+to observe, not where the host stores it. Active runtimes produce normalized
+records from their own storage; the retired Claude parser runs only after explicit
+historical-import consent.
 
 ### Record types
 

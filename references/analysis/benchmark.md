@@ -83,11 +83,11 @@ Status interpretation is intentionally split:
 | No matching records | `sparse` / `no_matching_records` | Candidate storage was readable and schema-compatible, but no supported records were extracted. Treat this as sparse coverage evidence. |
 | Successful zero-record window | `ok` / `records_extracted` with `record_count: 0` and `error_count: 0` | Extraction succeeded, but the incremental benchmark window has no records after the previous watermark. Treat this as compatible successful behavior. |
 
-Current known runtime caveats are extraction caveats, not CLI behavior evidence:
-`claude-code` is degraded by `schema_divergent` with 4836 candidates, 0 records,
-and 2 errors; `github-copilot` is degraded by `schema_divergent` with 1
-candidate, 0 records, and 1 error; `opencode` currently contributes records;
-`codex` can validly report `ok` with zero records and zero errors for an empty
+Known active-runtime caveats are extraction caveats, not CLI behavior evidence:
+`cursor` is degraded by `schema_divergent` with 4836 candidates, 0 records,
+and 2 errors; `copilot` is degraded by `schema_divergent` with 1 candidate,
+0 records, and 1 error; `opencode` currently contributes records; `codex` can
+validly report `ok` with zero records and zero errors for an empty
 incremental window.
 
 Runtime-store runs are incremental by default. The first run for a runtime scope

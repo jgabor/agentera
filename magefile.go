@@ -16,10 +16,10 @@ import (
 )
 
 var allowedStartupRuntimes = map[string]bool{
-	"claude-code":    true,
-	"codex":          true,
-	"github-copilot": true,
-	"opencode":       true,
+	"opencode": true,
+	"codex":    true,
+	"cursor":   true,
+	"copilot":  true,
 }
 
 // Bench contains manual benchmark targets.
@@ -143,7 +143,7 @@ func validateRuntimeStoreApproval(value string) error {
 		return errors.New("runtime approval must use RUNTIME=/absolute/path")
 	}
 	if !allowedStartupRuntimes[runtime] {
-		return fmt.Errorf("unsupported runtime %q; valid runtimes: claude-code, codex, github-copilot, opencode", runtime)
+		return fmt.Errorf("unsupported runtime %q; valid runtimes: opencode, codex, cursor, copilot", runtime)
 	}
 	_, err := absolutePath(path, "runtime-store")
 	return err
@@ -161,7 +161,7 @@ func startupBenchUsage(reason string) error {
 
 bench:startupState can run with no environment variables; that default run uses documented runtime-store defaults.
 To override runtime history sources, set AGENTERA_BENCH_RUNTIME_STORES=RUNTIME=/absolute/path for each runtime store; separate multiple overrides with commas.
-Valid runtimes: claude-code, codex, github-copilot, opencode.
+Valid runtimes: opencode, codex, cursor, copilot.
 Optional: AGENTERA_BENCH_SALT, AGENTERA_BENCH_PROJECT_ROOTS, and AGENTERA_BENCH_OUTPUT_DIR. Path options must use absolute paths. AGENTERA_BENCH_OUTPUT_DIR overrides the durable benchmark directory.
 Example: AGENTERA_BENCH_RUNTIME_STORES=opencode=/tmp/fixture/opencode.db mage bench:startupState`, reason)
 }

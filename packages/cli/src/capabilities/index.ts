@@ -43,6 +43,11 @@ const servedProfileInstructions = profileInstructions.replace(
   profileRuntimeSourcePolicy,
 );
 
+const servedOrchestrateInstructions = orchestrateInstructions.replace(
+  /Each runtime provides its own subagent substrate \([^)]*\)\./,
+  "Each active runtime provides its own subagent substrate (OpenCode: `~/.config/opencode/agents/*.md` descriptors; Codex CLI: `~/.codex/agents/*.toml`; Cursor: `.cursor/agents/*.md` descriptors; Copilot CLI: user-driven `/fleet`).",
+);
+
 export const CAPABILITY_INSTRUCTIONS: Record<string, string> = {
   status: statusInstructions,
   vision: visionInstructions,
@@ -55,7 +60,7 @@ export const CAPABILITY_INSTRUCTIONS: Record<string, string> = {
   document: documentInstructions,
   profile: servedProfileInstructions,
   design: designInstructions,
-  orchestrate: orchestrateInstructions,
+  orchestrate: servedOrchestrateInstructions,
 };
 
 export function capabilityInstructionModulePath(capability: string): string {

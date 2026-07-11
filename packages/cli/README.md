@@ -21,7 +21,7 @@ Full preview instructions, channels, and migration paths: [`UPGRADE.md`](../../U
 
 ## Editor runtime installs
 
-Agentera ships a skill bundle for supported editor runtimes (Claude Code, OpenCode, Cursor, Copilot CLI, Codex CLI). Install steps and parity details live in the [repository README — Internals](../../README.md#internals) and [`references/adapters/runtime-feature-parity.md`](../../references/adapters/runtime-feature-parity.md).
+Agentera ships a skill bundle for four supported runtime identities: OpenCode, Codex CLI, Cursor, and Copilot CLI. Install steps and parity details live in the [repository README — Internals](../../README.md#internals) and [`references/adapters/runtime-feature-parity.md`](../../references/adapters/runtime-feature-parity.md).
 
 ## Package layout
 

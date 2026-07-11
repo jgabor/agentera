@@ -9,6 +9,7 @@ import {
   createLifecycleOwnershipManifest,
   emptyLifecycleOwnershipLedger,
   planLifecycleOperations,
+  validateLifecycleOwnershipLedger,
   type AppliedLifecycleOperation,
   type LifecycleApplyOptions,
   type LifecycleApplyResult,
@@ -26,6 +27,7 @@ export interface RetiredRuntimeResourceDefinition {
   id: string;
   kind: "file" | "directory" | "symlink";
   destination: string;
+  ledgerStatus: "legacy";
 }
 
 export interface RetiredRuntimeDefinition {
@@ -49,6 +51,9 @@ export interface RetiredRuntimeCleanupPreview {
   activeRuntime: false;
   sourceProduct: string;
   approvalRequired: true;
+  ownershipRequirement: "matching_whole_resource_legacy_ledger";
+  ledgerAuthorization: "legacy_match_or_absent_noop" | "blocked";
+  ledgerDiagnostics: string[];
   plan: LifecycleOperationPlan;
   neverTouch: string[];
   safetyNote: string;
@@ -113,8 +118,9 @@ export function validateRetiredRuntimeCleanupContractData(value: unknown): strin
     || resources[0].kind !== "symlink"
     || resources[0].intent !== "remove"
     || resources[0].destination !== "{home}/.claude/skills/agentera"
+    || resources[0].ledger_status !== "legacy"
   ) {
-    errors.push("Claude cleanup resource must be the legacy Agentera skill symlink removal");
+    errors.push("Claude cleanup resource must be the legacy-ledger Agentera skill symlink removal");
   }
   const neverTouch = stringList(claude.never_touch);
   for (const required of ["projects", "settings", "credentials", "conversations", "cache", "stats"]) {
@@ -139,6 +145,7 @@ export function loadRetiredRuntimeCleanupContract(
       id: resource.id as string,
       kind: resource.kind as "file" | "directory" | "symlink",
       destination: resource.destination as string,
+      ledgerStatus: resource.ledger_status as "legacy",
     })),
     neverTouch: runtime.never_touch as string[],
     safetyNote: runtime.safety_note as string,
@@ -167,6 +174,49 @@ function expandHome(template: string, home: string): string {
   return path.join(path.resolve(home), template.slice("{home}/".length));
 }
 
+function legacyLedgerDiagnostics(plan: LifecycleOperationPlan): string[] {
+  const ledger = plan.request.ledger ?? emptyLifecycleOwnershipLedger();
+  const diagnostics: string[] = [];
+  for (const operation of plan.request.operations) {
+    const planned = plan.operations.find((candidate) => candidate.id === operation.id);
+    const records = ledger.records.filter((record) => record.resourceId === operation.id);
+    if (records.length === 0 && planned?.action === "noop") continue;
+    if (records.length !== 1) {
+      diagnostics.push(`${operation.id}: retired cleanup requires exactly one ownership ledger record`);
+      continue;
+    }
+    const record = records[0];
+    if (
+      record.status !== "legacy"
+      || record.scope !== "whole"
+      || path.resolve(record.destination) !== path.resolve(operation.destination)
+      || record.kind !== operation.kind
+      || record.identity === null
+      || record.fingerprint === null
+    ) {
+      diagnostics.push(
+        `${operation.id}: retired cleanup requires matching whole-resource ledger status legacy with identity and fingerprint`,
+      );
+    }
+  }
+  return diagnostics;
+}
+
+function blockedRetiredPlan(plan: LifecycleOperationPlan, diagnostics: string[]): LifecycleOperationPlan {
+  return {
+    ...plan,
+    operations: plan.operations.map((operation) => operation.action === "blocked_unowned"
+      ? operation
+      : {
+          ...operation,
+          state: "ambiguous_ownership",
+          ownership: "ambiguous",
+          action: "blocked_unowned",
+          reason: diagnostics.join("; "),
+        }),
+  };
+}
+
 export function previewRetiredRuntimeCleanup(opts: {
   runtimeId: string;
   home: string;
@@ -183,12 +233,20 @@ export function previewRetiredRuntimeCleanup(opts: {
     intent: "remove",
     required: true,
   }));
+  const suppliedLedger = opts.ledger ?? emptyLifecycleOwnershipLedger();
+  const ledgerErrors = validateLifecycleOwnershipLedger(suppliedLedger);
   const plan = planLifecycleOperations({
     allowedRoots: [path.resolve(opts.home)],
     operations,
     manifest: createLifecycleOwnershipManifest(operations),
-    ledger: opts.ledger ?? emptyLifecycleOwnershipLedger(),
+    ledger: ledgerErrors.length === 0 ? suppliedLedger : emptyLifecycleOwnershipLedger(),
   });
+  const ledgerDiagnostics = ledgerErrors.length > 0
+    ? ledgerErrors.map((error) => `invalid ownership ledger: ${error}`)
+    : legacyLedgerDiagnostics(plan);
+  const authorizedPlan = ledgerDiagnostics.length === 0
+    ? plan
+    : blockedRetiredPlan(plan, ledgerDiagnostics);
   return {
     schemaVersion: "agentera.retiredRuntimeCleanupPreview.v1",
     mode: "preview",
@@ -196,7 +254,10 @@ export function previewRetiredRuntimeCleanup(opts: {
     activeRuntime: false,
     sourceProduct: runtime.sourceProduct,
     approvalRequired: true,
-    plan,
+    ownershipRequirement: "matching_whole_resource_legacy_ledger",
+    ledgerAuthorization: ledgerDiagnostics.length === 0 ? "legacy_match_or_absent_noop" : "blocked",
+    ledgerDiagnostics,
+    plan: authorizedPlan,
     neverTouch: runtime.neverTouch.map((entry) => expandHome(entry, opts.home)),
     safetyNote: runtime.safetyNote,
   };
@@ -240,7 +301,10 @@ export function applyRetiredRuntimeCleanup(
   preview: RetiredRuntimeCleanupPreview,
   options: LifecycleApplyOptions & { approved: boolean },
 ): RetiredRuntimeCleanupResult {
-  const result = options.approved
+  const currentLedgerDiagnostics = legacyLedgerDiagnostics(preview.plan);
+  const authorized = preview.ledgerAuthorization === "legacy_match_or_absent_noop"
+    && currentLedgerDiagnostics.length === 0;
+  const result = options.approved && authorized
     ? applyLifecycleOperations(preview.plan, options)
     : approvalRequiredResult(preview);
   return {

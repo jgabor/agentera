@@ -300,9 +300,14 @@ delegate with stderr deprecation but no longer appear in `agentera --help`.
 
 ## Runtime notes
 
-### Claude Code
+### Retired Claude migration
 
-`agentera upgrade` does not require Claude access and does not run Claude smoke tests. Package refresh is skipped unless `--update-packages` is set.
+Claude Code is not an active Agentera runtime. Cleanup is limited to the exact
+legacy Agentera skill symlink declared in the retired-resource contract and
+requires explicit approval plus matching whole-resource `legacy` ledger evidence.
+Projects, settings, credentials, conversations, caches, and stats remain outside
+the cleanup boundary. Historical transcript import is a separate explicit,
+local, read-only opt-in via `--import-source claude`; default analytics exclude it.
 
 ### OpenCode
 
