@@ -2,6 +2,7 @@ schema_version: agentera.runtimeLifecycleAuthority.v1
 status: active_authority
 decision: 92
 operation_contract: references/adapters/runtime-lifecycle-operation-contract.yaml
+adapter_contract: references/adapters/runtime-lifecycle-adapters.yaml
 canonical_skill:
   path: ~/.agents/skills/agentera
   required_for_support_floor: true

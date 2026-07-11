@@ -1,4 +1,35 @@
 cycles:
+  - number: 702
+    timestamp: 2026-07-11 12:33
+    type: feat
+    phase: build
+    what: Implemented authority-bound lifecycle adapters for OpenCode, Codex,
+      Cursor, and Copilot with explicit eight-category surface reports, safe
+      repair declarations, and fail-closed support floors.
+    inspiration: Active plan Task 4 and Decision 92.
+    discovered: Safe automatic repair requires an existing safe destination parent;
+      user-owned parents, symlink replacement, and unverified host behavior
+      remain explicit action_required or unavailable states.
+    verified: "Focused adapter and lifecycle tests: 3 files and 34 tests passed.
+      Full CLI suite: 151 files and 1,385 tests passed. Typecheck and build
+      passed. Lifecycle-adapters, Build capability, and capability-contract
+      validations passed. Compaction and built adapter smoke passed. Lint
+      completed with 0 errors and the standing 108-warning baseline. Git diff
+      checks passed."
+    next: Keep Task 4 open. Task 5 may retire Claude support and analytics; Tasks
+      6-7 may integrate lifecycle reports into commands; Task 8 owns release and
+      documentation surfaces.
+    context:
+      intent: Deliver Task 4 runtime observation and repair adapters on the Task 2
+        authority and Task 3 operation engine.
+      constraints: Did not integrate prime, doctor, or upgrade; retire Claude or
+        analytics; update release, docs, TODO, plan status, or versions; execute
+        native actions; or change Task 3 publication behavior.
+      unknowns: Interrupted existing-ledger rewrites remain the preserved Task 3
+        fail-closed audit warning. Runtime-specific behavior remains unknown or
+        unsupported wherever first-party evidence is absent.
+      scope: Runtime lifecycle adapter contract, four concrete adapters, lifecycle
+        validation, fixture matrix tests, and typed progress evidence.
   - number: 701
     timestamp: 2026-07-11 12:02
     type: fix
@@ -241,35 +272,10 @@ cycles:
       scope: instructions.ts rewritten; validation.yaml, exit.yaml, artifacts.yaml
         schema files updated; deviation table row filled; TODO resolved; D85
         decision entry added.
-  - number: 692
-    timestamp: 2026-07-08 16:44
-    type: fix
-    phase: build
-    what: Replaced cliDistributionMajor's terminal `return 2` fallback with a
-      package.json#version secondary signal and a one-time stderr diagnostic.
-      When registry.json version-authority is missing or corrupted, the function
-      now reads package.json#version before falling back to 2, and emits a
-      one-shot stderr warning when both signals miss.
-    discovered: The repo root package.json has no version field (private monorepo
-      root); only packages/cli/package.json carries 3.0.0-dev.13. Source
-      checkouts and npx bundles are already caught by early returns, so the
-      package.json secondary signal helps for npm-installed packages and
-      edge-case layouts where the sentinel or checkout markers are absent.
-    verified: "typecheck: 0 errors. build: clean. test: 144/144 files, 1278/1278
-      tests including 7 new cliDistributionMajor tests. check compact: within
-      uniform_10_40_50 limits."
-    next: LoadSuiteVersion hardening (surfaces WHY it returned null) tracked as
-      separate TODO.
-    context:
-      intent: Fix the silent v3-to-v2 misclassification when registry.json
-        version-authority is corrupted or missing.
-      constraints: Function return type stays number; no throwing in user-facing
-        paths; loadSuiteVersion diagnostics out of scope (tracked as separate
-        TODO).
-      artifacts:
-        implementation: packages/cli/src/upgrade/compatibility.ts
-        tests: packages/cli/test/upgrade/compatibility.test.ts
 archive:
+  - summary: "Cycle 692 (2026-07-08): Replaced cliDistributionMajor's terminal
+      `return 2` fallback with a package.json#version secondary signal and a
+      one-time stderr..."
   - summary: "Cycle 691 (2026-06-29): Plan task 5 (Implement trigger schema loader):
       added packages/cli/src/registries/triggerLoader.ts and
       packages/cli/test/registries/triggerLoader.test.ts. The loader reads
@@ -371,6 +377,3 @@ archive:
   - summary: "Cycle 653 (2026-06-10): Plan T3 — lifecycle adapters node default,
       legacy Python gated: split lifecycleAdapters into shared.ts,
       nodeFormChecks.ts,..."
-  - summary: "Cycle 652 (2026-06-10): Plan T2 — dispatch hygiene and mechanical
-      deduplication (3 parallel build workstreams merged): shared
-      `cli/dispatch/argvParser.ts`;..."

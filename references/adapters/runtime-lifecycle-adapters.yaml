@@ -1,0 +1,285 @@
+schema_version: agentera.runtimeLifecycleAdapters.v1
+status: active_contract
+decision: 92
+authority: references/adapters/runtime-lifecycle-authority.yaml
+operation_contract: references/adapters/runtime-lifecycle-operation-contract.yaml
+categories:
+  - skills
+  - plugins
+  - hooks
+  - agents
+  - configuration
+  - enablement
+  - trust
+  - native_actions
+category_contract:
+  required_fields:
+    - capability
+    - evidence
+    - remediation
+  capabilities:
+    - repairable
+    - observable
+    - action_required
+    - unsupported
+    - unverified
+    - not_applicable
+  evidence_states:
+    - confirmed
+    - absent
+    - drifted
+    - shadowed
+    - denied
+    - unknown
+    - blocked_unowned
+    - unsupported
+    - not_applicable
+    - action_required
+  remediation_kinds:
+    - none
+    - repair
+    - action_required
+    - unavailable
+support_floor:
+  required_category: skills
+  required_capability: repairable
+  unknown_or_unverified_required_detection_blocks: true
+  incomplete_required_diagnosis_blocks: true
+native_policy:
+  execution: forbidden
+  exact_action_required_only: true
+  install_update_enable_auth_trust_are_user_owned: true
+path_policy:
+  destination_templates_are_declarations: true
+  matching_ledger_required_for_existing_resources: true
+  equality_or_name_never_establishes_ownership: true
+  forbidden_destination_segments:
+    - cache
+    - caches
+    - cacheddata
+    - node_modules
+    - .npm
+    - .pnpm-store
+    - marketplace-cache
+known_caveats:
+  - Interrupted rewrites of an existing ownership ledger can corrupt that ledger; subsequent lifecycle work fails closed until the ledger is repaired.
+shared_resources:
+  - id: canonical_skill
+    category: skills
+    kind: symlink
+    source: "{source_root}/skills/agentera"
+    destination: "{home}/.agents/skills/agentera"
+    required: true
+managed_resources:
+  - id: opencode.plugin
+    runtime_id: opencode
+    surface_id: host
+    category: plugins
+    kind: file
+    source: "{source_root}/.opencode/plugins/agentera.js"
+    destination: "{opencode_config}/plugins/agentera.js"
+    required: false
+  - id: opencode.agent
+    runtime_id: opencode
+    surface_id: host
+    category: agents
+    kind: file
+    source: "{source_root}/.opencode/agents/agentera.md"
+    destination: "{opencode_config}/agents/agentera.md"
+    required: false
+  - id: codex.hooks
+    runtime_id: codex
+    surface_id: cli
+    category: hooks
+    kind: file
+    source: "{source_root}/hooks/codex-hooks.json"
+    destination: "{home}/.codex/hooks.json"
+    required: false
+  - id: codex.agents
+    runtime_id: codex
+    surface_id: cli
+    category: agents
+    kind: directory_files
+    source: "{source_root}/skills/agentera/agents"
+    destination: "{home}/.codex/agents"
+    extension: .toml
+    required: false
+  - id: cursor.plugin
+    runtime_id: cursor
+    surface_id: ide
+    category: plugins
+    kind: file
+    source: "{source_root}/.cursor-plugin/plugin.json"
+    destination: "{project}/.cursor-plugin/plugin.json"
+    required: false
+  - id: cursor.hooks
+    runtime_id: cursor
+    surface_id: ide
+    category: hooks
+    kind: file
+    source: "{source_root}/.cursor/hooks.json"
+    destination: "{project}/.cursor/hooks.json"
+    required: false
+  - id: cursor.agent
+    runtime_id: cursor
+    surface_id: ide
+    category: agents
+    kind: file
+    source: "{source_root}/.cursor/agents/agentera.md"
+    destination: "{project}/.cursor/agents/agentera.md"
+    required: false
+adapters:
+  - runtime_id: opencode
+    binaries:
+      host: [opencode]
+    resource_refs: [canonical_skill, opencode.plugin, opencode.agent]
+    skill_locations:
+      - path: "{project}/.opencode/skills/agentera"
+        scope: project_runtime
+      - path: "{project}/.agents/skills/agentera"
+        scope: project_shared
+      - path: "{home}/.agents/skills/agentera"
+        scope: personal_shared
+        canonical: true
+      - path: "{opencode_config}/skills/agentera"
+        scope: personal_runtime
+    categories:
+      skills:
+        host: { capability: repairable, evidence: filesystem, remediation: shared_engine, required: true }
+      plugins:
+        host: { capability: repairable, evidence: filesystem, remediation: shared_engine }
+      hooks:
+        host: { capability: observable, evidence: managed_resource:opencode.plugin, remediation: shared_engine:opencode.plugin }
+      agents:
+        host: { capability: repairable, evidence: filesystem, remediation: shared_engine }
+      configuration:
+        host: { capability: not_applicable, evidence: plugin_autodiscovery, remediation: none }
+      enablement:
+        host: { capability: observable, evidence: managed_resource:opencode.plugin, remediation: shared_engine:opencode.plugin }
+      trust:
+        host: { capability: unverified, evidence: external_observation, remediation: unavailable }
+      native_actions:
+        host: { capability: unverified, evidence: no_verified_native_action, remediation: unavailable }
+    native_actions: []
+  - runtime_id: codex
+    binaries:
+      cli: [codex]
+    resource_refs: [canonical_skill, codex.hooks, codex.agents]
+    skill_locations:
+      - path: "{project}/.agents/skills/agentera"
+        scope: project_shared
+      - path: "{home}/.agents/skills/agentera"
+        scope: personal_shared
+        canonical: true
+    categories:
+      skills:
+        cli: { capability: repairable, evidence: filesystem, remediation: shared_engine, required: true }
+      plugins:
+        cli: { capability: unverified, evidence: external_observation, remediation: unavailable }
+      hooks:
+        cli: { capability: repairable, evidence: filesystem, remediation: shared_engine }
+      agents:
+        cli: { capability: repairable, evidence: filesystem, remediation: shared_engine }
+      configuration:
+        cli: { capability: observable, evidence: "path:{home}/.codex/config.toml", remediation: action_required }
+      enablement:
+        cli: { capability: unverified, evidence: external_observation, remediation: unavailable }
+      trust:
+        cli: { capability: observable, evidence: external_observation, remediation: action_required }
+      native_actions:
+        cli: { capability: unverified, evidence: no_verified_native_action, remediation: unavailable }
+    native_actions: []
+  - runtime_id: cursor
+    binaries:
+      cli: [cursor-agent]
+      ide: [cursor]
+    resource_refs: [canonical_skill, cursor.plugin, cursor.hooks, cursor.agent]
+    skill_locations:
+      - path: "{project}/.agents/skills/agentera"
+        scope: project_shared
+        surfaces: [cli, ide]
+      - path: "{project}/.cursor/skills/agentera"
+        scope: project_runtime
+        surfaces: [cli, ide]
+      - path: "{home}/.agents/skills/agentera"
+        scope: personal_shared
+        surfaces: [cli, ide]
+        canonical: true
+      - path: "{home}/.cursor/skills/agentera"
+        scope: personal_runtime
+        surfaces: [cli, ide]
+    categories:
+      skills:
+        cli: { capability: repairable, evidence: filesystem, remediation: shared_engine, required: true }
+        ide: { capability: repairable, evidence: filesystem, remediation: shared_engine, required: false }
+      plugins:
+        cli: { capability: not_applicable, evidence: no_cli_plugin_claim, remediation: none }
+        ide: { capability: repairable, evidence: filesystem, remediation: shared_engine }
+      hooks:
+        cli: { capability: unverified, evidence: no_verified_cli_hook_claim, remediation: unavailable }
+        ide: { capability: repairable, evidence: filesystem, remediation: shared_engine }
+      agents:
+        cli: { capability: unverified, evidence: no_verified_cli_agent_claim, remediation: unavailable }
+        ide: { capability: repairable, evidence: filesystem, remediation: shared_engine }
+      configuration:
+        cli: { capability: not_applicable, evidence: skill_autodiscovery, remediation: none }
+        ide: { capability: not_applicable, evidence: plugin_manifest, remediation: none }
+      enablement:
+        cli: { capability: observable, evidence: canonical_skill, remediation: shared_engine:canonical_skill }
+        ide: { capability: unverified, evidence: external_observation, remediation: unavailable }
+      trust:
+        cli: { capability: unverified, evidence: external_observation, remediation: unavailable }
+        ide: { capability: observable, evidence: external_observation, remediation: action_required }
+      native_actions:
+        cli: { capability: unverified, evidence: no_verified_native_action, remediation: unavailable }
+        ide: { capability: unverified, evidence: no_verified_native_action, remediation: unavailable }
+    native_actions: []
+  - runtime_id: copilot
+    binaries:
+      cli: [copilot]
+    resource_refs: [canonical_skill]
+    skill_locations:
+      - path: "{project}/.github/skills/agentera"
+        scope: project_runtime
+      - path: "{project}/.agents/skills/agentera"
+        scope: project_shared
+      - path: "{project}/.claude/skills/agentera"
+        scope: project_compatibility
+      - path: "{home}/.copilot/skills/agentera"
+        scope: personal_runtime
+      - path: "{home}/.agents/skills/agentera"
+        scope: personal_shared
+        canonical: true
+    categories:
+      skills:
+        cli: { capability: repairable, evidence: filesystem, remediation: shared_engine, required: true }
+      plugins:
+        cli: { capability: unverified, evidence: external_observation, remediation: unavailable }
+      hooks:
+        cli: { capability: unverified, evidence: external_observation, remediation: unavailable }
+      agents:
+        cli: { capability: unsupported, evidence: no_verified_agent_surface, remediation: unavailable }
+      configuration:
+        cli: { capability: observable, evidence: env:AGENTERA_HOME, remediation: action_required }
+      enablement:
+        cli: { capability: observable, evidence: canonical_skill, remediation: shared_engine:canonical_skill }
+      trust:
+        cli: { capability: unverified, evidence: external_observation, remediation: unavailable }
+      native_actions:
+        cli: { capability: action_required, evidence: verified_host_actions, remediation: action_required }
+    native_actions:
+      - id: copilot.skills.list
+        surface_id: cli
+        action_kind: slash_action
+        command: /skills list
+        instruction: Run `/skills list` in Copilot CLI to inspect discovered skills.
+      - id: copilot.skills.info
+        surface_id: cli
+        action_kind: slash_action
+        command: /skills info agentera
+        instruction: Run `/skills info agentera` in Copilot CLI to inspect the Agentera skill.
+      - id: copilot.skills.reload
+        surface_id: cli
+        action_kind: slash_action
+        command: /skills reload
+        instruction: Run `/skills reload` in Copilot CLI after an approved filesystem repair.

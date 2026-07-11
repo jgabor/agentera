@@ -9,6 +9,8 @@ import { LIFECYCLE_OPERATION_CONTRACT_RELATIVE_PATH } from "./lifecycleOperation
 
 export const LIFECYCLE_AUTHORITY_RELATIVE_PATH =
   "references/adapters/runtime-lifecycle-authority.yaml";
+export const LIFECYCLE_ADAPTER_CONTRACT_RELATIVE_PATH =
+  "references/adapters/runtime-lifecycle-adapters.yaml";
 
 const EXPECTED_ACTIVE_RUNTIME_ORDER = "opencode,codex,cursor,copilot";
 const EXPECTED_EVIDENCE_FIELDS = ["host_present", "installed", "enabled", "trusted"] as const;
@@ -137,6 +139,15 @@ export function validateLifecycleAuthorityData(
         sourcePath,
         "operation_contract",
         `must point to ${LIFECYCLE_OPERATION_CONTRACT_RELATIVE_PATH}`,
+      ),
+    );
+  }
+  if (data.adapter_contract !== LIFECYCLE_ADAPTER_CONTRACT_RELATIVE_PATH) {
+    errors.push(
+      sourceError(
+        sourcePath,
+        "adapter_contract",
+        `must point to ${LIFECYCLE_ADAPTER_CONTRACT_RELATIVE_PATH}`,
       ),
     );
   }
