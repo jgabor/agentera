@@ -31,6 +31,10 @@ import {
   resolveNextMajorDoctorLines,
 } from "../../upgrade/nextMajorDoctor.js";
 import { emitStructured } from "../structured.js";
+import {
+  observeRuntimeLifecycle,
+  type RuntimeLifecycleSnapshot,
+} from "../../runtime/lifecycleSnapshot.js";
 
 /**
  * `agentera doctor` — app/runtime status. Port of agentera_upgrade.cmd_doctor +
@@ -127,6 +131,56 @@ function renderDoctorSmoke(smoke: JsonObject): string {
   return lines.join("\n");
 }
 
+export function renderRuntimeLifecycleDiagnosis(snapshot: RuntimeLifecycleSnapshot): string {
+  const lines = [
+    "",
+    "Runtime lifecycle diagnosis:",
+    `  snapshot: ${snapshot.schemaVersion}`,
+    `  status vocabulary: ${snapshot.statusVocabularyVersion}`,
+    `  release blocked: ${snapshot.releaseBlocked ? "yes" : "no"}`,
+  ];
+  for (const runtime of snapshot.runtimes) {
+    lines.push(`${runtime.runtimeId}: ${runtime.status}`);
+    lines.push(
+      `  support floor: ${runtime.supportFloor.met ? "met" : "unmet"}; ` +
+        `blockers=${runtime.blockers.length}; actions=${runtime.actionCount}`,
+    );
+    lines.push(`  canonical skill: ${String(runtime.canonicalSkill.detected)} at ${runtime.canonicalSkill.path}`);
+    for (const surface of runtime.surfaces) {
+      lines.push(
+        `  surface ${surface.id}: ${surface.status}; expected=${surface.expected ? "yes" : "no"}; ` +
+          `installed=${String(surface.evidence.installed ?? "unknown")}; ` +
+          `enabled=${String(surface.evidence.enabled ?? "unknown")}; ` +
+          `trusted=${String(surface.evidence.trusted ?? "unknown")}`,
+      );
+      for (const category of surface.categories) {
+        lines.push(
+          `    ${category.category}: ${category.state}; capability=${category.capability}; source=${category.source}`,
+        );
+        for (const evidence of category.evidence) {
+          lines.push(
+            `      evidence: ${evidence.state} - ${evidence.detail}` +
+              (evidence.path ? ` (${evidence.path})` : ""),
+          );
+        }
+        if (category.precedence) {
+          const winner = category.precedence.winner?.path ?? "none";
+          const shadowing = category.precedence.shadowing.map((entry) => entry.path).join(", ") || "none";
+          lines.push(`      precedence: winner=${winner}; shadowing=${shadowing}`);
+        }
+        if (category.remediation.kind !== "none") {
+          lines.push(`      action: ${category.remediation.kind} - ${category.remediation.summary}`);
+          for (const action of category.remediation.nativeActions) {
+            const command = Array.isArray(action.command) ? action.command.join(" ") : action.command;
+            lines.push(`      native step: ${command} - ${action.instruction}`);
+          }
+        }
+      }
+    }
+  }
+  return lines.join("\n");
+}
+
 export function cmdDoctor(args: DoctorArgs, io: Io = {}): number {
   const out = io.out ?? ((t: string) => process.stdout.write(t));
   const err = io.err ?? ((t: string) => process.stderr.write(t));
@@ -138,15 +192,22 @@ export function cmdDoctor(args: DoctorArgs, io: Io = {}): number {
     return 2;
   }
   const home = resolvePath(expanduser(args.home ?? os.homedir()));
+  const project = resolvePath(expanduser(args.project ?? process.cwd()));
   const [installRoot, rootSource] = resolveDoctorInstallRoot(args.installRoot ?? null, { home, sourceRoot });
   const expectedCommands = args.expectCommand && args.expectCommand.length > 0 ? args.expectCommand : [...EXPECTED_STATE_COMMANDS];
   const status = buildDoctorStatus(installRoot, {
     rootSource,
     sourceRoot,
     home,
-    project: resolvePath(expanduser(args.project ?? process.cwd())),
+    project,
     expectedVersion: args.expectedVersion ?? null,
     expectedCommands,
+  });
+  const runtimeLifecycle = observeRuntimeLifecycle({
+    home,
+    project,
+    sourceRoot,
+    env: { ...process.env, HOME: home },
   });
   let smokeReport: JsonObject | null = null;
   if (args.smoke) {
@@ -156,6 +217,7 @@ export function cmdDoctor(args: DoctorArgs, io: Io = {}): number {
   }
   if ((args.format ?? "text") === "json") {
     const payload = doctorParityJsonEnvelope(status);
+    payload.runtime_lifecycle = runtimeLifecycle;
     if (smokeReport) payload.smoke = smokeReport;
     out(pyJsonIndentSorted(payload) + "\n");
   } else {
@@ -176,7 +238,7 @@ export function cmdDoctor(args: DoctorArgs, io: Io = {}): number {
       prependCoexistenceDoctorSection(
         prependNextMajorDoctorSection(renderDoctorStatus(status), nextMajorLines),
         coexistenceLines,
-      ) + (smokeReport ? renderDoctorSmoke(smokeReport) : "");
+      ) + renderRuntimeLifecycleDiagnosis(runtimeLifecycle) + (smokeReport ? renderDoctorSmoke(smokeReport) : "");
     out(body + "\n");
   }
   if (args.smoke) {

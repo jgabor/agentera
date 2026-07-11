@@ -103,6 +103,8 @@ export function printDoctorHelp(): string {
     "  --smoke                 Run bounded offline smoke checks (no live model calls by default)",
     "  --allow-live-model      Record permission for future live model smoke probes",
     "  --format {text,json}    Structured output format",
+    "",
+    "Reports detailed read-only lifecycle evidence and manual native steps for OpenCode, Codex, Cursor, and Copilot.",
   ].join("\n");
 }
 
@@ -195,7 +197,7 @@ export function printPrimeHelp(): string {
     "  --orientation         Emit orientation briefing sections",
     "  --fields FIELDS       Comma-separated field filter for JSON/YAML output",
     "",
-    "JSON source contract includes artifact_writes discovery metadata.",
+    "JSON output includes a bounded four-runtime lifecycle summary; source_contract includes artifact_writes discovery metadata.",
   ].join("\n");
 }
 

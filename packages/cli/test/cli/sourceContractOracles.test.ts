@@ -383,7 +383,8 @@ describe("prime --context <capability> source_contract (oracle parity)", () => {
       const { rc, payload } = capturePrimeContext(capability);
       expect(rc, `prime --context ${capability} rc`).toBe(spec.exitCode);
       // The top-level source_contract is intentionally absent on the --context path;
-      // only `command`, `status`, and `capability_context` are at the top level.
+      // `command`, `status`, bounded `runtime_lifecycle`, and
+      // `capability_context` are at the top level.
       expect(
         "source_contract" in payload,
         `${capability} top-level source_contract is absent`,

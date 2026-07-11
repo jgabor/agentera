@@ -77,6 +77,7 @@ export interface RuntimeAdapterCategorySurfaceReport {
   expected: boolean;
   state: RuntimeAdapterEvidenceState;
   capability: RuntimeAdapterCapability;
+  source: string;
   required: boolean;
   diagnosisComplete: boolean;
   evidence: RuntimeAdapterEvidence[];
@@ -560,6 +561,7 @@ function categorySurface(
       expected: false,
       state: "not_applicable",
       capability: "not_applicable",
+      source: claim.evidence,
       required: false,
       diagnosisComplete: true,
       evidence: [{
@@ -682,6 +684,7 @@ function categorySurface(
     expected,
     state,
     capability: claim.capability,
+    source: claim.evidence,
     required: claim.required,
     diagnosisComplete,
     evidence,

@@ -69,6 +69,9 @@ describe("cli doctor", () => {
     expect(typeof payload.status).toBe("string");
     expect("expectedVersion" in payload).toBe(true);
     expect(typeof payload.install_track).toBe("string");
+    expect(payload.runtime_lifecycle.activeRuntimeIds).toEqual(["opencode", "codex", "cursor", "copilot"]);
+    expect(payload.runtime_lifecycle.runtimes.every((runtime: { surfaces: Array<{ categories: unknown[] }> }) =>
+      runtime.surfaces.every((surface) => surface.categories.length === 8))).toBe(true);
     expect(JSON.stringify(payload)).not.toContain("bundle");
   });
 

@@ -28,6 +28,10 @@ import type { NextAction, OrientationState, ProfileSummary, ReadinessHint } from
 import { statusBundleStatus } from "./bundleStatus.js";
 import type { PrimeOpts } from "./types.js";
 import { v1MigrationSummary } from "./v1Migration.js";
+import {
+  observeRuntimeLifecycle,
+  summarizeRuntimeLifecycle,
+} from "../../../runtime/lifecycleSnapshot.js";
 
 export function collectOrientationState(opts: PrimeOpts): OrientationState {
   const env = opts.env ?? process.env;
@@ -88,6 +92,12 @@ export function collectOrientationState(opts: PrimeOpts): OrientationState {
     bundleStatus: String(bundle.status),
     crossMajorBoundaryDetected: bundle.crossMajorBoundaryDetected ?? false,
   });
+  const runtimeLifecycle = summarizeRuntimeLifecycle(observeRuntimeLifecycle({
+    home,
+    project,
+    sourceRoot,
+    env,
+  }));
   const readiness = selectStatusReadiness(plan, health, objective, todoItems, decision, savedContext);
   const nextAction: ReadinessHint =
     projectIntegration.recommendation === "upgrade"
@@ -124,6 +134,7 @@ export function collectOrientationState(opts: PrimeOpts): OrientationState {
     profile,
     v1_migration: v1Migration,
     project_integration: projectIntegration,
+    runtime_lifecycle: runtimeLifecycle,
     plan,
     docs,
     progress,
@@ -148,6 +159,7 @@ export function collectOrientationState(opts: PrimeOpts): OrientationState {
     profile,
     v1_migration: v1Migration,
     project_integration: projectIntegration,
+    runtime_lifecycle: runtimeLifecycle,
     plan,
     docs,
     progress,

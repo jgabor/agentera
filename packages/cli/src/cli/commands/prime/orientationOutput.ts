@@ -33,6 +33,7 @@ function nextActionPayload(state: OrientationState): Record<string, unknown> {
 const STATUS_STRUCTURED_FIELDS = [
   "command", "status", "app_home", "app", "mode", "profile", "v1_migration", "health",
   "todo", "plan", "docs", "progress", "objective", "state_presence", "project_integration", "attention",
+  "runtime_lifecycle",
   "decision_attention", "next_action", "orchestration_context", "closeout_context",
   "evidence_context", "benchmark_context", "execution_context", "source", "source_contract",
 ];
@@ -111,6 +112,7 @@ export function buildOrientationJsonPayload(
     profile: state.profile_dict,
     v1_migration: state.v1_migration,
     project_integration: state.project_integration,
+    runtime_lifecycle: state.runtime_lifecycle,
     health: state.health,
     todo: state.counts,
     issues: state.counts,
@@ -206,6 +208,19 @@ export function printOrientationTextBriefing(state: OrientationState, command: s
   if (projectIntegration.recommendation === "upgrade" && projectIntegration.message) {
     out(`project_integration_message: ${projectIntegration.message}\n`);
   }
+  out(
+    `runtime_lifecycle: snapshot=${state.runtime_lifecycle.snapshotVersion} | ` +
+      `release_blocked=${String(state.runtime_lifecycle.releaseBlocked)}\n`,
+  );
+  for (const runtime of state.runtime_lifecycle.runtimes) {
+    const surfaces = runtime.surfaces
+      .map((surface) => `${surface.id}:${surface.expected ? surface.status : "not_applicable"}`)
+      .join(",");
+    out(
+      `- ${runtime.runtimeId}: status=${runtime.status} | support_floor=${runtime.supportFloor.met ? "met" : "unmet"} | ` +
+        `surfaces=${surfaces} | blockers=${runtime.blockerCount} | actions=${runtime.actionCount}\n`,
+    );
+  }
   out(`profile: ${profileStatus} | path=${profile}\n`);
   if (health.exists) {
     const worst = health.worst;
@@ -242,7 +257,7 @@ export function printOrientationTextBriefing(state: OrientationState, command: s
   }
   out("source_contract:\n");
   out(
-    "- fields=app_home,mode,profile,v1_migration,project_integration,health,todo,plan,docs,progress,objective,state_presence,attention,decision_attention,next_action,orchestration_context,closeout_context,evidence_context,benchmark_context,execution_context\n",
+    "- fields=app_home,mode,profile,v1_migration,project_integration,runtime_lifecycle,health,todo,plan,docs,progress,objective,state_presence,attention,decision_attention,next_action,orchestration_context,closeout_context,evidence_context,benchmark_context,execution_context\n",
   );
   out(`- render=caller-owned README-style ${dashboardLabel}\n`);
   out("- access=single installed CLI call; app/v1/profile safety included; no preflight glob/read/import/doctor calls\n");

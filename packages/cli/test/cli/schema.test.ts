@@ -50,6 +50,11 @@ describe("cli schema", () => {
       ]),
     );
     expect(payload.runtime_lifecycle.active_runtime_ids).toEqual(["opencode", "codex", "cursor", "copilot"]);
+    expect(payload.runtime_lifecycle).toMatchObject({
+      snapshot_schema_version: "agentera.runtimeLifecycleSnapshot.v1",
+      summary_schema_version: "agentera.runtimeLifecycleSummary.v1",
+      status_vocabulary_version: "agentera.runtimeLifecycleStatus.v1",
+    });
     expect(payload.runtime_lifecycle.migration_aliases["cursor-agent"]).toMatchObject({
       runtime_id: "cursor",
       active_runtime: false,

@@ -23,6 +23,11 @@ import {
 } from "../../state/write/operations.js";
 import { loadLifecycleAuthority } from "../../runtime/lifecycleAuthority.js";
 import { loadRetiredRuntimeCleanupContract } from "../../runtime/retiredRuntimeCleanup.js";
+import {
+  LIFECYCLE_SNAPSHOT_SCHEMA_VERSION,
+  LIFECYCLE_STATUS_VOCABULARY_VERSION,
+  LIFECYCLE_SUMMARY_SCHEMA_VERSION,
+} from "../../runtime/lifecycleSnapshot.js";
 
 /** Port of scripts/agentera cmd_schema / _build_schema_payload. */
 
@@ -42,6 +47,7 @@ const DOCTOR_SIGNAL_KINDS = [
 const STATUS_STRUCTURED_FIELDS = [
   "command", "status", "app_home", "app", "mode", "profile", "v1_migration", "health",
   "todo", "plan", "docs", "progress", "objective", "state_presence", "attention",
+  "runtime_lifecycle",
   "decision_attention", "next_action", "orchestration_context", "closeout_context",
   "evidence_context", "benchmark_context", "execution_context", "source", "source_contract",
 ];
@@ -309,6 +315,13 @@ export function buildSchemaPayload(command = "schema"): JsonObject {
     state_writer: stateWriterContract(),
     runtime_lifecycle: {
       authority: lifecycleAuthority.sourcePath,
+      snapshot_schema_version: LIFECYCLE_SNAPSHOT_SCHEMA_VERSION,
+      summary_schema_version: LIFECYCLE_SUMMARY_SCHEMA_VERSION,
+      status_vocabulary_version: LIFECYCLE_STATUS_VOCABULARY_VERSION,
+      projections: {
+        prime: "bounded summary without category evidence or native command lists",
+        doctor: "detailed surfaces, eight categories, evidence, precedence, and user-owned native steps",
+      },
       ["active_runtime_" + "ids"]: lifecycleAuthority.runtimes.map((runtime) => runtime.id),
       migration_aliases: {
         "cursor-agent": { runtime_id: "cursor", surface_id: "cli", active_runtime: false },
@@ -362,6 +375,8 @@ export function buildSchemaPayload(command = "schema"): JsonObject {
       excludes: isDict(doctorContract) ? doctorContract.excludes ?? "unknown" : "unknown",
       adjacent_surfaces: isDict(doctorContract) ? doctorContract.adjacent_surfaces ?? "unknown" : "unknown",
       signal_kinds: DOCTOR_SIGNAL_KINDS,
+      runtime_lifecycle_field: "runtime_lifecycle",
+      runtime_lifecycle_mode: "read_only_detailed_diagnosis",
     },
     gaps,
   };

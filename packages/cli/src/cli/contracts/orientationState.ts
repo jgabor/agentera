@@ -2,6 +2,7 @@ import type { JsonObject, JsonValue } from "../../core/jsonValue.js";
 import type { SchemaInfo } from "../appContext.js";
 import type { BundleStatus } from "./bundleStatus.js";
 import type { ProjectIntegrationSummary } from "../../upgrade/projectIntegration.js";
+import type { RuntimeLifecycleSummary } from "../../runtime/lifecycleSnapshot.js";
 
 export interface ProfileSummary {
   status: string;
@@ -169,6 +170,7 @@ export interface OrientationState {
   profile: string;
   v1_migration: V1MigrationSummary;
   project_integration: ProjectIntegrationSummary;
+  runtime_lifecycle: RuntimeLifecycleSummary;
   plan: PlanSummary;
   docs: DocsSummary;
   progress: ProgressSummary;

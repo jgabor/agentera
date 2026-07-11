@@ -245,6 +245,7 @@ export function buildPrimeCapabilityContextPayload(state: OrientationState, capa
   return {
     command,
     status: "ok",
+    runtime_lifecycle: stateDict.runtime_lifecycle,
     capability_context: slimCapabilityContext(
       capabilityName,
       state.mode,

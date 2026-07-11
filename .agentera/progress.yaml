@@ -1,4 +1,51 @@
 cycles:
+  - number: 708
+    timestamp: 2026-07-11 20:47
+    type: feat
+    phase: build
+    what: Integrated one authoritative read-only runtime lifecycle snapshot into
+      bounded prime orientation and detailed doctor diagnosis.
+    inspiration: Active plan Task 6 and Decision 92 lifecycle support-floor and
+      trust policy.
+    discovered: The legacy doctor app-status parity envelope needed to remain
+      independently comparable after adding the additive runtime_lifecycle
+      diagnosis; its oracle now excludes only that extension.
+    verified: Focused pnpm -C packages/cli test
+      test/cli/lifecycleStatusDiagnosis.test.ts
+      test/runtime/lifecycleAdapters.test.ts test/cli/prime.test.ts
+      test/cli/doctor.test.ts test/cli/schema.test.ts
+      test/cli/sourceContractOracles.test.ts test/cli/npmParityMatrix.test.ts
+      passed 7 files/101 tests. Full pnpm -C packages/cli test passed 155
+      files/1,422 tests. pnpm -C packages/cli run typecheck and pnpm -C
+      packages/cli build passed. pnpm -C packages/cli run lint returned 99
+      pre-existing warnings/0 errors. Local built CLI check validate
+      lifecycle-adapters, capability status, capability build,
+      capability-contract, cross-capability, app-home-contract, and
+      vocabularyAuthority passed. node packages/cli/dist/bin/agentera.js schema
+      --format json parsed with lifecycle contracts; node
+      packages/cli/dist/bin/agentera.js check compact passed 9 artifacts with
+      zero over-limit/errors; git diff --check passed. Child-process fixtures
+      observed no target writes or native invocation, retained complete doctor
+      JSON above 65,536 bytes, and covered absent hosts, missing parents,
+      collisions, shadowing, trust distinctions, unsupported categories, Cursor
+      CLI/IDE conditions, and all-ready state. Live node
+      packages/cli/dist/bin/agentera.js prime --format json --fields
+      runtime_lifecycle was 2,890 bytes versus 59,502-byte doctor detail;
+      authority, snapshot/status vocabulary, IDs, statuses, support floors,
+      blockers, actions, and surfaces agreed.
+    next: Task 7 may consume this snapshot for mutation UX without changing Task 6
+      diagnosis semantics.
+    context:
+      intent: Complete active plan Task 6 with four-runtime status parity, truthful
+        category evidence, and user-owned native steps.
+      constraints: No Task 7 upgrade preview/apply, Task 8 release sweep,
+        cleanup/import semantic change, vision edit, plan status edit,
+        package-manager/native action, or remote push.
+      unknowns: None; current-host degraded states reflect observed unknown trust and
+        optional lifecycle gaps, not support-floor failure.
+      scope: Lifecycle snapshot service; prime and doctor JSON/text projections;
+        schema/help compatibility; integration, child-process, parity, and
+        regression tests.
   - number: 707
     timestamp: 2026-07-11 17:25
     type: fix
@@ -288,29 +335,9 @@ cycles:
       scope: references/adapters/runtime-lifecycle-authority.yaml, runtime adapter
         catalog routing, packages/cli/src/runtime/lifecycleAuthority.ts,
         lifecycle validation, and focused tests.
-  - number: 698
-    timestamp: 2026-07-11 09:02
-    type: fix
-    phase: build
-    what: Eliminated the CLI test suite's shared dist race by building package
-      output once in Vitest global setup, removing worker-local rebuilds, and
-      isolating copy-bundle integration tests in temporary repositories.
-    discovered: Seven worker test files mutated shared dist or bundle state;
-      repeated commit hooks failed npm pack with different ENOENT paths while
-      concurrent builds ran rm -rf dist.
-    verified: "affected parallel suite: 7 files, 26 tests passed; two consecutive
-      normal full CLI runs: 148 files and 1335 tests passed each; typecheck:
-      clean."
-    next: Commit the complete typed state writer and deterministic test-isolation
-      fix.
-    context:
-      intent: Make normal parallel test and pre-commit runs deterministic without
-        serial-worker overrides or hook bypasses.
-      constraints: Keep Vitest worker parallelism and every pre-commit hook enabled;
-        shared package outputs are immutable after global setup.
-      scope: Vite test global setup, packaging/parity tests, installed-app tests, and
-        progress evidence.
 archive:
+  - summary: "Cycle 698 (2026-07-11): Eliminated the CLI test suite's shared dist
+      race by building package output once in Vitest..."
   - summary: "Cycle 697 (2026-07-11): Resolved state-writer review findings:
       preserved legacy scalar health archives, bounded plan archives and lock
       directories..."
@@ -411,5 +438,3 @@ archive:
       available_but_not_selected; extractCorpusMain wires..."
   - summary: "Cycle 659 (2026-06-18): Plan T2 — Coverage Audit pre-extraction:
       runCoverageAudit enumerates six runtimes with store paths and session..."
-  - summary: "Cycle 658 (2026-06-18): Plan T1 — restore integration test gate:
-      revert npx projectIntegration decision regression (platform status vs..."

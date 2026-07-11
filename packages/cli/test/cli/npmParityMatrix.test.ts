@@ -150,7 +150,7 @@ function runMatrixRow(row: ParityRow): MatrixResult {
     process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT = bundleTmp;
   }
   try {
-    return runMatrixRowInner(row);
+    return runMatrixRowInner(row, doctorParity);
   } finally {
     if (bundleTmp) {
       fs.rmSync(bundleTmp, { recursive: true, force: true });
@@ -162,7 +162,7 @@ function runMatrixRow(row: ParityRow): MatrixResult {
   }
 }
 
-function runMatrixRowInner(row: ParityRow): MatrixResult {
+function runMatrixRowInner(row: ParityRow, doctorParity: boolean): MatrixResult {
   const { rc, out, err } = capture((io) => main(["node", "agentera", ...row.argv], io));
   let payload: Record<string, unknown> | null = null;
   let normalized: Record<string, unknown> | null = null;
@@ -170,7 +170,12 @@ function runMatrixRowInner(row: ParityRow): MatrixResult {
   let drift_direction: DriftDirection;
   try {
     payload = JSON.parse(out) as Record<string, unknown>;
-    normalized = normalizeEnvelope(payload) as Record<string, unknown>;
+    // The closed Python parity family owns the legacy app-status envelope.
+    // Task 6 adds an independent, additive runtime_lifecycle diagnosis while
+    // preserving every legacy key through doctorParityJsonEnvelope.
+    const parityPayload = doctorParity ? { ...payload } : payload;
+    if (doctorParity) delete parityPayload.runtime_lifecycle;
+    normalized = normalizeEnvelope(parityPayload) as Record<string, unknown>;
     const literalPins = {
       ...(row.literalPins ?? {}),
       ...(row.commandValue !== undefined ? { command: row.commandValue } : {}),
