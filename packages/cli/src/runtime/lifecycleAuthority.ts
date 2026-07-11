@@ -4,6 +4,8 @@ import path from "node:path";
 import type { JsonObject } from "../core/jsonValue.js";
 import { resolveSourceRoot } from "../core/sourceRoot.js";
 import { loadYamlMapping } from "../core/yaml.js";
+import { validateLifecycleOperationContractRoot } from "./lifecycleOperationContract.js";
+import { LIFECYCLE_OPERATION_CONTRACT_RELATIVE_PATH } from "./lifecycleOperations.js";
 
 export const LIFECYCLE_AUTHORITY_RELATIVE_PATH =
   "references/adapters/runtime-lifecycle-authority.yaml";
@@ -128,6 +130,15 @@ export function validateLifecycleAuthorityData(
   }
   if (data.decision !== 92) {
     errors.push(sourceError(sourcePath, "decision", "must cite approved Decision 92"));
+  }
+  if (data.operation_contract !== LIFECYCLE_OPERATION_CONTRACT_RELATIVE_PATH) {
+    errors.push(
+      sourceError(
+        sourcePath,
+        "operation_contract",
+        `must point to ${LIFECYCLE_OPERATION_CONTRACT_RELATIVE_PATH}`,
+      ),
+    );
   }
 
   const canonicalSkill = data.canonical_skill;
@@ -338,6 +349,7 @@ export function validateLifecycleAuthorityRoot(root = resolveSourceRoot()): stri
     return [`${LIFECYCLE_AUTHORITY_RELATIVE_PATH}:1: could not parse authority: ${(error as Error).message}`];
   }
   const errors = validateLifecycleAuthorityData(data, LIFECYCLE_AUTHORITY_RELATIVE_PATH);
+  errors.push(...validateLifecycleOperationContractRoot(root));
   for (const location of inventoryDeclarations(root, path.resolve(authorityPath))) {
     errors.push(
       `${location}: duplicate active runtime inventory; authority is ${LIFECYCLE_AUTHORITY_RELATIVE_PATH}:active_runtimes`,

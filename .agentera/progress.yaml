@@ -1,4 +1,35 @@
 cycles:
+  - number: 700
+    timestamp: 2026-07-11 11:38
+    type: feat
+    phase: build
+    what: Built the shared runtime-neutral lifecycle operation engine with declared
+      manifests, ownership ledgers, safe filesystem actions, dependency
+      outcomes, and convergent retries.
+    inspiration: Active plan Task 3 and approved Decision 92 ownership and preview policy.
+    discovered: Pending-create ledger records preserve truthful ownership across
+      resource or ledger publication failures without using content equality as
+      ownership.
+    verified: "Focused lifecycle suite: 3 files and 34 tests passed. Full CLI suite:
+      150 files and 1,363 tests passed. Typecheck and build passed. Built
+      lifecycle-adapter, build-capability, and capability-contract validations
+      passed. Compaction and git diff checks passed. Lint completed with 0
+      errors and the standing 108-warning baseline. Built smoke observed preview
+      create, apply applied, retry noop, aggregate success."
+    next: Orchestrator audits Task 3 and owns its plan status; Task 4 can add
+      OpenCode, Codex, Cursor, and Copilot resource declarations and
+      observations.
+    context:
+      intent: Execute active plan Task 3 by establishing one deterministic planner and
+        apply foundation for later runtime adapters.
+      constraints: Runtime mappings, Claude cleanup, prime, doctor, upgrade
+        projection, native installers, package managers, auth, and trust
+        mutation remained out of scope.
+      unknowns: Runtime-specific destination inventories and host evidence remain
+        intentionally deferred to Task 4.
+      scope: Shared lifecycle operation TypeScript modules, runtime lifecycle
+        authority pointer, common operation contract, and exhaustive
+        runtime-neutral tests.
   - number: 699
     timestamp: 2026-07-11 11:16
     type: feat
@@ -242,38 +273,9 @@ cycles:
       artifacts:
         implementation: packages/cli/src/registries/triggerLoader.ts
         tests: packages/cli/test/registries/triggerLoader.test.ts
-  - number: 690
-    timestamp: 2026-06-28 15:57
-    type: chore
-    phase: audit
-    what: "Plan task 5 (final state sync): closed the vitest 2→4 + Vite+ toolchain
-      plan. Ran the full verification gate — typecheck, build, vitest,
-      compaction — all green. Archived the plan to
-      .agentera/archive/PLAN-2026-06-28-vitest4-vp-toolchain.yaml with
-      header.status=complete and removed the active .agentera/plan.yaml."
-    discovered: Task 4's inspektera evaluation had been interrupted by a path-typo
-      stall in the prior orchestration session (/home/jjgabor/ vs
-      /home/jgabor/). Re-ran the audit with the correct path; both acceptance
-      criteria PASS with citations. The plan's surprises field already recorded
-      the testTimeout and lint-baseline findings from the earlier subagent work.
-    verified: 'typecheck: 0 errors. build: clean. test: 132/132 files, 1145/1145
-      tests (21.08s). compact: within uniform_10_40_50 limits, no repair needed.
-      Task 4 audit PASS: precommit-vitest.sh:90 (exec pnpm test → vp test run
-      via scripts.test) and :98 (exec vp test run "${TARGETS[@]}"); CI
-      .github/workflows/ci.yml:38 (pnpm -C packages/cli test → 1145/1145) and
-      :40 (pnpm -C packages/cli test test/upgrade/ → 249/249 arg forwarding);
-      pnpm install --frozen-lockfile clean.'
-    next: Plan complete. No active plan remains. Next cycle is a fresh plan or
-      session.
-    context:
-      intent: Close out the vitest 2→4 + Vite+ toolchain migration plan with final
-        verification and archival.
-      constraints: No behavior change to shipped CLI. Branch feat/v3 only. Same-commit
-        fold-in for plan archive and progress cycle.
-      artifacts:
-        plan: .agentera/archive/PLAN-2026-06-28-vitest4-vp-toolchain.yaml (complete,
-          archived)
 archive:
+  - summary: "Cycle 690 (2026-06-28): Plan task 5 (final state sync): closed the
+      vitest 2→4 + Vite+ toolchain plan. Ran..."
   - summary: "Cycle 689 (2026-06-28): Plan task 4 of the vitest 2->4 toolchain
       modernization: align the pre-commit hook script with..."
   - summary: "Cycle 688 (2026-06-28): Plan task 3 of the vitest 2->4 toolchain
@@ -375,6 +377,3 @@ archive:
   - summary: "Cycle 651 (2026-06-09): Plan T1 — canonical bundle and orientation
       contracts: added `core/jsonValue.ts`, `cli/contracts/bundleStatus.ts`, and
       `cli/contracts/orientationState.ts`; typed `buildDoctorStatus`,..."
-  - summary: "Cycle 650 (2026-06-07): Mobile monorepo closeout — archived
-      agentera-mobile staging artifacts (D1–D5 decisions, re-visioning plan,
-      LICENSE), synced D68..."

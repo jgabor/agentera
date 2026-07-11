@@ -13,6 +13,12 @@ import {
   validateLifecycleAuthorityData,
   validateLifecycleAuthorityRoot,
 } from "../../src/runtime/lifecycleAuthority.js";
+import {
+  LIFECYCLE_APPLY_STATUSES,
+  LIFECYCLE_PLAN_ACTIONS,
+  LIFECYCLE_RESOURCE_STATES,
+} from "../../src/runtime/lifecycleOperations.js";
+import { validateLifecycleOperationContractRoot } from "../../src/runtime/lifecycleOperationContract.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "../../../..");
@@ -45,6 +51,10 @@ describe("runtime lifecycle authority", () => {
       { id: "ide", displayName: "Cursor IDE", presence: "conditional" },
     ]);
     expect(validateLifecycleAuthorityRoot(REPO_ROOT)).toEqual([]);
+    expect(validateLifecycleOperationContractRoot(REPO_ROOT)).toEqual([]);
+    expect(LIFECYCLE_RESOURCE_STATES).toContain("unowned");
+    expect(LIFECYCLE_PLAN_ACTIONS).toContain("blocked_unowned");
+    expect(LIFECYCLE_APPLY_STATUSES).toContain("skipped_dependency");
   });
 
   it.each(["claude", "cursor-agent"])(

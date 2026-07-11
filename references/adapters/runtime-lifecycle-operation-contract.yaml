@@ -1,0 +1,62 @@
+schema_version: agentera.lifecycleOperationContract.v1
+status: active_contract
+decision: 92
+scope: runtime_neutral_filesystem_resources
+ownership:
+  manifest_schema: agentera.lifecycleOwnershipManifest.v1
+  ledger_schema: agentera.lifecycleOwnershipLedger.v1
+  owner: agentera
+  mutation_rule: A destination declaration is always required. Existing resources additionally require one matching whole-resource ledger record.
+  equality_rule: Content equality and resource names never establish ownership.
+  collision_rule: Pre-existing resources without matching ledger ownership are never replaced or removed.
+  interrupted_create_rule: A pending_create record may be finalized only when its destination and expected fingerprint match exactly.
+resource_states:
+  - exact
+  - modified
+  - missing
+  - legacy
+  - symlinked
+  - wrong_type
+  - partial_managed
+  - unowned
+  - unsafe_path
+  - ambiguous_ownership
+plan_actions:
+  - create
+  - update
+  - remove
+  - finalize_ownership
+  - noop
+  - blocked_unowned
+  - action_required
+apply_results:
+  - applied
+  - noop
+  - failed
+  - blocked_unowned
+  - skipped_dependency
+  - action_required
+aggregate_rule: Required results other than applied or noop make the aggregate non_success.
+dependency_rule: Independent operations continue after failure. Dependents skip with their failed dependency IDs.
+retry_rule: Successful work replans to noop; pending and failed work retries from observed filesystem and ledger state.
+preview_policy:
+  mode: strictly_read_only
+  forbidden:
+    - filesystem mutation
+    - directory creation
+    - locks
+    - temporary target files
+    - ownership record writes
+    - caches
+    - telemetry
+    - native commands
+    - package managers
+    - authentication
+    - trust changes
+path_safety:
+  - Destinations must be absolute and contained by an explicit existing allowed root.
+  - Parent symlink traversal, link-target escapes, wrong types, partial ownership, and ambiguous ownership require action.
+  - Directory removal is non-recursive; non-empty directories require separately declared child removals.
+native_policy:
+  install_update_auth_trust_operations: forbidden
+  trust_is_observed_only: true
