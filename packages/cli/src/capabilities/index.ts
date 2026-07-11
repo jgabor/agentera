@@ -16,38 +16,6 @@ import { instructions as profileInstructions } from "./profile/instructions.js";
 import { instructions as designInstructions } from "./design/instructions.js";
 import { instructions as orchestrateInstructions } from "./orchestrate/instructions.js";
 
-const profileRuntimeSourcePolicy = `#### Step 1: Coverage and extraction
-
-Run the active-runtime Coverage Audit as the first user-visible output of every Full-mode run:
-
-\`\`\`bash
-agentera report refresh --consent local-history --coverage-audit-only
-\`\`\`
-
-The active runtime IDs are exactly \`opencode\`, \`codex\`, \`cursor\`, and \`copilot\`. Cursor Agent CLI storage is a Cursor source product, never a separate runtime identity. Apply \`--no-codex\`, \`--no-opencode\`, \`--no-copilot\`, or \`--no-cursor\` only when the user selects a partial active-runtime corpus; available skipped sources require \`--accept-coverage-gap\`.
-
-Claude Code is not a supported runtime. Its transcript parser is available only as an explicit historical importer:
-
-\`\`\`bash
-agentera report refresh --consent local-history --import-source claude
-\`\`\`
-
-Before that opt-in, warn that transcripts can contain secrets, file contents, and command output. The import is local and read-only. Every imported record is labeled \`source_class=historical_import\`, \`source_product=claude-code\`, and \`active_runtime=false\`; default active analytics exclude it. Never describe imported records as Claude support, health, installation, or active-runtime coverage. Use \`agentera report --sources all\` only when the user explicitly asks for historical/all-source analysis, and keep provenance visible.
-
-The extractor writes instruction documents, history prompts, conversation turns, tool calls, and project config signals. Read the corpus metadata to confirm bounded source-family counts without displaying transcript contents. If an active source fails, proceed with bounded degradation evidence; if historical import fails, report only the importer failure and do not turn it into runtime health.
-
-`;
-
-const servedProfileInstructions = profileInstructions.replace(
-  /#### Step 1: Coverage and extraction[\s\S]*?(?=#### Step 2: Read corpus data)/,
-  profileRuntimeSourcePolicy,
-);
-
-const servedOrchestrateInstructions = orchestrateInstructions.replace(
-  /Each runtime provides its own subagent substrate \([^)]*\)\./,
-  "Each active runtime provides its own subagent substrate (OpenCode: `~/.config/opencode/agents/*.md` descriptors; Codex CLI: `~/.codex/agents/*.toml`; Cursor: `.cursor/agents/*.md` descriptors; Copilot CLI: user-driven `/fleet`).",
-);
-
 export const CAPABILITY_INSTRUCTIONS: Record<string, string> = {
   status: statusInstructions,
   vision: visionInstructions,
@@ -58,9 +26,9 @@ export const CAPABILITY_INSTRUCTIONS: Record<string, string> = {
   optimize: optimizeInstructions,
   audit: auditInstructions,
   document: documentInstructions,
-  profile: servedProfileInstructions,
+  profile: profileInstructions,
   design: designInstructions,
-  orchestrate: servedOrchestrateInstructions,
+  orchestrate: orchestrateInstructions,
 };
 
 export function capabilityInstructionModulePath(capability: string): string {

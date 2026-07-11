@@ -1,4 +1,63 @@
 cycles:
+  - number: 707
+    timestamp: 2026-07-11 17:25
+    type: fix
+    phase: build
+    what: Removed the last active-style Claude question-tool claim and finalized
+      canonical retirement surface enforcement.
+    verified: Final focused pnpm -C packages/cli test
+      test/runtime/retiredRuntimeSurfacePolicy.test.ts
+      test/cli/profileRuntimePolicy.test.ts test/cli/schema.test.ts
+      test/runtime/retiredRuntimeCleanup.test.ts passed 4 files/30 tests. Final
+      full pnpm -C packages/cli test passed 154 files/1,417 tests. pnpm -C
+      packages/cli run typecheck passed; standalone pnpm -C packages/cli build
+      passed after one concurrent verification attempt raced dist cleanup with
+      Directory not empty. pnpm -C packages/cli run lint returned 99 warnings/0
+      errors. All 12 raw registered capability modules decoded identically to
+      served CAPABILITY_INSTRUCTIONS; raw, served, registry-derived support, and
+      public install scans found zero current Claude Task-tool, question-tool,
+      supported-list, --no-claude, or install-command patterns. Rebuilt prime
+      served registry-declared OpenCode, Codex, one Cursor identity including
+      cursor-agent, and Copilot substrates; discuss used generic host-native
+      question tooling; profile retained only explicit --import-source claude
+      historical import. Schema active IDs were opencode,codex,cursor,copilot;
+      cursor-agent was inactive and Claude retired. Capability
+      discuss/orchestrate/profile/build, capability-contract,
+      lifecycle-adapters, app-home-contract, vocabularyAuthority,
+      cross-capability, compaction, and git diff checks passed. Cleanup and
+      schema regressions preserved AC2 and AC3.
+    next: Re-run Task 5 evidence audit against Cycle 707.
+    context:
+      intent: Supersede incomplete Cycle 706 pattern coverage with final raw and
+        served evidence for Task 5 while preserving cleanup, historical import,
+        and in-progress plan state.
+  - number: 706
+    timestamp: 2026-07-11 17:22
+    type: fix
+    phase: build
+    what: Canonicalized Claude retirement policy in raw capability instructions and
+      made registry-derived surface scans enforce it.
+    verified: Focused pnpm -C packages/cli test
+      test/runtime/retiredRuntimeSurfacePolicy.test.ts
+      test/cli/profileRuntimePolicy.test.ts test/cli/schema.test.ts
+      test/runtime/retiredRuntimeCleanup.test.ts passed 4 files/29 tests;
+      policy-only rerun passed 1 file/11 tests. Full pnpm -C packages/cli test
+      passed 154 files/1,416 tests. pnpm -C packages/cli run typecheck and pnpm
+      -C packages/cli build passed; pnpm -C packages/cli run lint returned 99
+      warnings/0 errors. All 12 raw registered capability modules decoded
+      identically to served CAPABILITY_INSTRUCTIONS and raw plus served policy
+      scans found zero current Claude patterns. Rebuilt prime served only
+      registry-declared OpenCode, Codex, Cursor, and Copilot substrates; profile
+      retained only explicit --import-source claude historical import. Schema
+      active IDs were opencode,codex,cursor,copilot; cursor-agent was inactive
+      and Claude retired. Capability orchestrate/profile/build,
+      capability-contract, lifecycle-adapters, app-home-contract,
+      vocabularyAuthority, cross-capability, compaction, and git diff checks
+      passed. Cleanup and schema regressions preserved AC2 and AC3.
+    next: Re-run Task 5 evidence audit against Cycle 706.
+    context:
+      intent: Close Task 5 AC1 canonical-source and evidence gaps while preserving AC2
+        cleanup and AC3 historical import behavior; leave plan status unchanged.
   - number: 705
     timestamp: 2026-07-11 16:55
     type: fix
@@ -251,61 +310,13 @@ cycles:
         shared package outputs are immutable after global setup.
       scope: Vite test global setup, packaging/parity tests, installed-app tests, and
         progress evidence.
-  - number: 697
-    timestamp: 2026-07-11 08:34
-    type: fix
-    phase: build
-    what: "Resolved state-writer review findings: preserved legacy scalar health
-      archives, bounded plan archives and lock directories by realpath, enforced
-      PV4 dependency references and cycle rejection across plan mutations, and
-      emitted executable plan update/status examples."
-    discovered: The package test script runs the full suite even when file arguments
-      are appended; direct vp test run is the focused route. The checkout's
-      configured hooks/validate_artifact.py pre-edit hook remains absent, so the
-      temporary compatibility symlink was removed before verification.
-    verified: "focused writer/validator tests: 61 passed; CLI suite: 148 files, 1335
-      tests passed; typecheck/build: clean; live health artifact validation:
-      pass; format check: pass; check compact: pass with 0 over-limit
-      artifacts."
-    next: Review and commit the complete writer feature; phase-2 TODO markdown
-      writes remain deferred.
-    context:
-      intent: Close all actionable correctness and boundary-safety findings in the
-        typed state writer.
-      constraints: Preserve pre-existing uncommitted writer/discoverability work and
-        legacy project state; never follow symlink paths outside the project.
-      scope: Artifact validation, writer lock/archive boundaries, plan dependency
-        invariants, explain examples, and regression tests.
-  - number: 696
-    timestamp: 2026-07-10 22:36
-    type: feat
-    phase: build
-    what: Implemented the standardized state artifact writer with typed progress,
-      decisions, plan, and health operations; schema-derived explain; bounded
-      project locking; strict mapped-path safety; exact retry replay; dry-run
-      diffs; staged compaction; final-byte validation; and atomic publication.
-    discovered: The shared compactor still enforced stale 20/50/100 constants
-      despite the repository's 10/40/50 contract; health was missing from
-      sequence validation; the local Codex hook still points at removed
-      hooks/validate_artifact.py.
-    verified: "typecheck: 0 errors; build: clean; capability validations:
-      build/discuss/plan/orchestrate/audit PASS; capability-contract PASS;
-      vitest: 148 files, 1315 tests green; focused writer suite: 29 tests green;
-      lint: 0 new-file warnings/errors; check compact: pass."
-    next: Review and commit the complete writer feature; phase-2 TODO markdown
-      writes remain deferred.
-    context:
-      intent: Ship the approved docs/notes/writer-prompt.md design as the write-side
-        dual of agentera state reads.
-      constraints: Keep vision, docs, objective, experiments, TODO, changelog, and
-        design outside the v1 YAML writer; preserve read-side argv compatibility
-        and same-commit artifact policy.
-      unknowns: None in the v1 contract; TODO markdown writes and objective-scoped
-        artifacts remain explicitly deferred by the design.
-      scope: packages/cli state writer modules, CLI dispatch/help/errors, registry
-        path safety, YAML/atomic utilities, compaction authority, producer
-        capability instructions, schemas, tests, and CHANGELOG.md.
 archive:
+  - summary: "Cycle 697 (2026-07-11): Resolved state-writer review findings:
+      preserved legacy scalar health archives, bounded plan archives and lock
+      directories..."
+  - summary: "Cycle 696 (2026-07-10): Implemented the standardized state artifact
+      writer with typed progress, decisions, plan, and health operations;
+      schema-derived..."
   - summary: "Cycle 695 (2026-07-10): Audited and rewrote profile capability
       instructions following six-section spine and direct-contract philosophy."
   - summary: "Cycle 694 (2026-07-10): Audited and rewrote optimize capability
@@ -402,8 +413,3 @@ archive:
       runCoverageAudit enumerates six runtimes with store paths and session..."
   - summary: "Cycle 658 (2026-06-18): Plan T1 — restore integration test gate:
       revert npx projectIntegration decision regression (platform status vs..."
-  - summary: "Cycle 657 (2026-06-10): Plan T7 — state sync and audit TODO closeout:
-      archived PLAN-2026-06-09-v3-cli-structural-debt.yaml; cleared active plan
-      slot;..."
-  - summary: "Cycle 656 (2026-06-10): Plan T6 — prime module decomposition:
-      extracted v1 migration, bundle status, orientation field assembly, and..."
