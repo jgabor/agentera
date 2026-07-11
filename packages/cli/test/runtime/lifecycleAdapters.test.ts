@@ -94,6 +94,18 @@ function fixture(): Fixture {
   };
 }
 
+function freshHomeFixture(): Fixture {
+  const fx = fixture();
+  fs.rmSync(fx.home, { recursive: true });
+  fs.rmSync(fx.project, { recursive: true });
+  mkdirs([fx.home, fx.project]);
+  return { ...fx, cacheMarkers: [] };
+}
+
+function treeSnapshot(root: string): string[] {
+  return fs.readdirSync(root, { recursive: true }).map(String).sort();
+}
+
 function cacheSnapshot(items: string[]): string[] {
   return items.map((item) => fs.readFileSync(item, "utf8"));
 }
@@ -138,6 +150,8 @@ describe("runtime lifecycle adapter contract", () => {
     raw.adapters[1].categories.skills.cli.capability = "unverified";
     raw.managed_resources[0].destination = "{home}/.config/opencode/cache/agentera.js";
     delete raw.adapters[2].categories.plugins.ide;
+    raw.adapters[3].categories.native_actions.cli.evidence = "external_observation";
+    raw.adapters[3].native_actions[1].id = raw.adapters[3].native_actions[0].id;
 
     const errors = validateRuntimeLifecycleAdapterContractData(raw, AUTHORITY);
 
@@ -153,6 +167,21 @@ describe("runtime lifecycle adapter contract", () => {
     expect(errors.some((error) =>
       error.includes(`${RUNTIME_LIFECYCLE_ADAPTER_CONTRACT_RELATIVE_PATH}:adapters[2].categories.plugins`)
       && error.includes("must report surfaces"))).toBe(true);
+    expect(errors).toContain(
+      `${RUNTIME_LIFECYCLE_ADAPTER_CONTRACT_RELATIVE_PATH}:adapters[3].categories.native_actions.cli: declared native actions require action_required, verified_host_actions, action_required semantics`,
+    );
+    expect(errors).toContain(
+      `${RUNTIME_LIFECYCLE_ADAPTER_CONTRACT_RELATIVE_PATH}:adapters[3].native_actions[1].id: must be non-empty and unique within the adapter`,
+    );
+  });
+
+  it("requires exact native-action claims and declarations on the same surface", () => {
+    const raw = YAML.parse(fs.readFileSync(CONTRACT_PATH, "utf8"));
+    raw.adapters[3].native_actions = [];
+
+    expect(validateRuntimeLifecycleAdapterContractData(raw, AUTHORITY)).toContain(
+      `${RUNTIME_LIFECYCLE_ADAPTER_CONTRACT_RELATIVE_PATH}:adapters[3].categories.native_actions.cli: verified native-action claims require at least one exact action for the same surface`,
+    );
   });
 });
 
@@ -238,6 +267,45 @@ describe("supported runtime adapter matrix", () => {
 });
 
 describe("repair ownership and publication boundaries", () => {
+  it("reports missing destination parents as exact action-required work across all four runtimes", () => {
+    const fx = freshHomeFixture();
+    const beforeHome = treeSnapshot(fx.home);
+    const beforeProject = treeSnapshot(fx.project);
+    const matrix = inspectRuntimeLifecycleAdapters(fx.context, CONTRACT, AUTHORITY);
+    const canonicalParent = path.join(fx.home, ".agents", "skills");
+
+    expect(matrix.lifecycleState.releaseBlocked).toBe(true);
+    for (const report of matrix.reports) {
+      const canonicalOperation = report.repairPlan.operations.find((operation) =>
+        operation.id === "canonical_skill");
+      expect(canonicalOperation).toMatchObject({
+        action: "action_required",
+        reason: "allowed root is not an existing safe directory",
+      });
+      for (const skill of report.categories.skills.surfaces.filter((surface) => surface.expected)) {
+        expect(skill.state).toBe("action_required");
+        expect(skill.remediation).toEqual({
+          kind: "action_required",
+          summary: `Create the destination parent ${canonicalParent} as a real, non-symlink directory you control, then rerun preview; Agentera will not create or replace it.`,
+          operationIds: ["canonical_skill"],
+          nativeActions: [],
+        });
+      }
+      expect(report.supportFloor).toEqual({
+        met: false,
+        diagnosisComplete: true,
+        releaseBlocking: true,
+        unmet: ["canonical_shared_skill_detected"],
+      });
+      const result = applyRuntimeAdapterRepair(report);
+      expect(result.status).toBe("non_success");
+      expect(result.operations.every((operation) => operation.status === "action_required")).toBe(true);
+    }
+    expect(fs.existsSync(canonicalParent)).toBe(false);
+    expect(treeSnapshot(fx.home)).toEqual(beforeHome);
+    expect(treeSnapshot(fx.project)).toEqual(beforeProject);
+  });
+
   it("previews purely, applies owned drift, converges, and never touches caches", () => {
     const fx = fixture();
     const adapter = new OpenCodeLifecycleAdapter(CONTRACT, AUTHORITY);
@@ -373,8 +441,24 @@ describe("Cursor aggregation and native action boundaries", () => {
   it("exposes exact Copilot slash actions but never places them in an executable repair plan", () => {
     const fx = fixture();
     const report = new CopilotLifecycleAdapter(CONTRACT, AUTHORITY).inspect(fx.context);
+    const skills = report.categories.skills.surfaces[0];
     const native = report.categories.native_actions.surfaces[0];
 
+    expect(skills.state).toBe("absent");
+    expect(skills.remediation).toMatchObject({
+      kind: "repair",
+      operationIds: ["canonical_skill"],
+      nativeActions: [],
+    });
+    expect(report.categories.enablement.surfaces[0].remediation).toMatchObject({
+      kind: "repair",
+      operationIds: ["canonical_skill"],
+      nativeActions: [],
+    });
+    for (const category of RUNTIME_ADAPTER_CATEGORIES.filter((category) => category !== "native_actions")) {
+      expect(report.categories[category].surfaces.every((surface) =>
+        surface.remediation.nativeActions.length === 0)).toBe(true);
+    }
     expect(native.state).toBe("action_required");
     expect(native.remediation.nativeActions.map((action) => action.command)).toEqual([
       "/skills list",

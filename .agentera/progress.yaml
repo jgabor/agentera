@@ -1,4 +1,34 @@
 cycles:
+  - number: 703
+    timestamp: 2026-07-11 15:31
+    type: fix
+    phase: build
+    what: Corrected runtime adapter remediation projection so Copilot native actions
+      stay in native_actions and missing destination parents remain truthful
+      action-required work.
+    inspiration: Task 4 retry 1 audit findings and Decision 92.
+    discovered: Category remediation must derive from associated planned operations;
+      probe absence cannot authorize repair when the shared engine has failed
+      closed on an unsafe parent.
+    verified: "Focused lifecycle adapter regression: 1 file and 19 tests passed.
+      Full CLI suite: 151 files and 1,387 tests passed. Typecheck and build
+      passed. Lifecycle-adapters, Build capability, and capability-contract
+      validations passed. Compaction and built fresh-home smoke passed. Lint
+      completed with 0 errors and the standing 108-warning baseline. Git diff
+      checks passed."
+    next: Keep Task 4 in_progress for orchestrator re-audit; Task 5 still owns
+      Claude and cursor-agent retirement.
+    context:
+      intent: Close the Task 4 retry findings while preserving lifecycle ownership and
+        publication boundaries.
+      constraints: Preserved Task 3 publication safety, Decision 92, caches,
+        collisions, trust, Cursor identity, command integration boundaries, and
+        existing TODO, decisions, and plan changes; did not edit plan status.
+      unknowns: Independent retry audit remains external; apply-time publication
+        failures remain represented by lifecycle apply results, while preview
+        category reports reflect planned blockers.
+      scope: Adapter report and remediation projection, native-action contract
+        validation, regression tests, and typed progress evidence.
   - number: 702
     timestamp: 2026-07-11 12:33
     type: feat
@@ -247,32 +277,9 @@ cycles:
         schema files updated; deviation table row filled; artifact registry and
         vocabulary updated; TODO resolved; D86 decision entry added; D73
         compacted to archive.
-  - number: 693
-    timestamp: 2026-07-10 09:36
-    type: docs
-    phase: build
-    what: Audited and rewrote build capability instructions following six-section
-      spine and direct-contract philosophy.
-    discovered: Subagent spawning table is shared verbatim with optimize — propagate
-      compression in optimize audit. Comment headers across audited capability
-      files still carry decision IDs (D57, D65, D71, D82) — project-tracking
-      marker leak in shipped code per ktx precedent.
-    verified: "typecheck: 0 errors. build: clean. capability validation: PASS.
-      contract validation: PASS (0 violations). check compact: within limits.
-      vitest: 144/144 files, 1278/1278 tests green."
-    next: Optimize capability audit is next — propagate subagent spawning
-      compression and shared drift patterns.
-    context:
-      intent: Ground-up audit of build capability instructions per the audit prompt
-        docs/notes/audit-prompt.md.
-      constraints: Follow six-section spine, direct-contract philosophy, voice
-        delegation. No project-tracking markers in shipped code.
-      unknowns: Whether D85 satisfaction will be confirmed; whether the comment-header
-        leak cleanup across other audited capabilities is a separate task.
-      scope: instructions.ts rewritten; validation.yaml, exit.yaml, artifacts.yaml
-        schema files updated; deviation table row filled; TODO resolved; D85
-        decision entry added.
 archive:
+  - summary: "Cycle 693 (2026-07-10): Audited and rewrote build capability
+      instructions following six-section spine and direct-contract philosophy."
   - summary: "Cycle 692 (2026-07-08): Replaced cliDistributionMajor's terminal
       `return 2` fallback with a package.json#version secondary signal and a
       one-time stderr..."
@@ -374,6 +381,3 @@ archive:
   - summary: "Cycle 654 (2026-06-10): Plan T4 — doctor classification and npx
       platform status: extracted typed `ROOT_CLASSIFIERS` map in
       `upgrade/doctorClassifier.ts`;..."
-  - summary: "Cycle 653 (2026-06-10): Plan T3 — lifecycle adapters node default,
-      legacy Python gated: split lifecycleAdapters into shared.ts,
-      nodeFormChecks.ts,..."

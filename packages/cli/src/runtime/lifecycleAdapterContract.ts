@@ -374,7 +374,9 @@ export function validateRuntimeLifecycleAdapterContractData(
         }
       }
     }
-    for (const [actionIndex, action] of (Array.isArray(adapter.native_actions) ? adapter.native_actions : []).entries()) {
+    const nativeActions = Array.isArray(adapter.native_actions) ? adapter.native_actions : [];
+    const nativeActionIds = new Set<string>();
+    for (const [actionIndex, action] of nativeActions.entries()) {
       const actionLocation = `${location}.native_actions[${actionIndex}]`;
       if (!isMapping(action)) {
         errors.push(sourceError(sourcePath, actionLocation, "must be an object"));
@@ -383,6 +385,11 @@ export function validateRuntimeLifecycleAdapterContractData(
       if (!expectedSurfaces.includes(String(action.surface_id))) {
         errors.push(sourceError(sourcePath, `${actionLocation}.surface_id`, "must name an adapter surface"));
       }
+      const actionId = stringField(action, "id");
+      if (!actionId || nativeActionIds.has(actionId)) {
+        errors.push(sourceError(sourcePath, `${actionLocation}.id`, "must be non-empty and unique within the adapter"));
+      }
+      nativeActionIds.add(actionId);
       if (!["slash_action", "argv", "instruction"].includes(String(action.action_kind))) {
         errors.push(sourceError(sourcePath, `${actionLocation}.action_kind`, "must be slash_action, argv, or instruction"));
       }
@@ -391,6 +398,30 @@ export function validateRuntimeLifecycleAdapterContractData(
         : stringList(action.command).length > 0;
       if (!commandValid || typeof action.instruction !== "string" || !action.instruction) {
         errors.push(sourceError(sourcePath, actionLocation, "must provide an exact command and instruction"));
+      }
+    }
+    const nativeClaims = isMapping(categories.native_actions) ? categories.native_actions : {};
+    for (const surface of expectedSurfaces) {
+      const claim = nativeClaims[surface];
+      if (!isMapping(claim)) continue;
+      const surfaceActions = nativeActions.filter((action) =>
+        isMapping(action) && action.surface_id === surface);
+      const exactNativeClaim = claim.capability === "action_required"
+        && claim.evidence === "verified_host_actions"
+        && claim.remediation === "action_required";
+      if (surfaceActions.length > 0 && !exactNativeClaim) {
+        errors.push(sourceError(
+          sourcePath,
+          `${location}.categories.native_actions.${surface}`,
+          "declared native actions require action_required, verified_host_actions, action_required semantics",
+        ));
+      }
+      if (surfaceActions.length === 0 && exactNativeClaim) {
+        errors.push(sourceError(
+          sourcePath,
+          `${location}.categories.native_actions.${surface}`,
+          "verified native-action claims require at least one exact action for the same surface",
+        ));
       }
     }
   });

@@ -139,11 +139,11 @@ interface SkillProbe {
 
 const STATE_PRIORITY: Record<RuntimeAdapterEvidenceState, number> = {
   blocked_unowned: 100,
+  action_required: 95,
   denied: 90,
   shadowed: 80,
   drifted: 70,
   absent: 60,
-  action_required: 50,
   unknown: 40,
   unsupported: 30,
   confirmed: 20,
@@ -359,13 +359,17 @@ function resourceReports(
   plan: LifecycleOperationPlan,
   category: RuntimeAdapterCategory,
   surfaceId: string,
-): { state: RuntimeAdapterEvidenceState; evidence: RuntimeAdapterEvidence[]; operationIds: string[] } {
+): {
+  state: RuntimeAdapterEvidenceState;
+  evidence: RuntimeAdapterEvidence[];
+  operations: PlannedLifecycleOperation[];
+} {
   const matching = expanded.filter((resource) =>
     resource.declaration.category === category
     && (resource.declaration.surfaceId === undefined || resource.declaration.surfaceId === surfaceId));
   const evidence: RuntimeAdapterEvidence[] = [];
   const states: RuntimeAdapterEvidenceState[] = [];
-  const operationIds: string[] = [];
+  const operations: PlannedLifecycleOperation[] = [];
   for (const resource of matching) {
     if (resource.sourceError) {
       states.push("unknown");
@@ -394,7 +398,7 @@ function resourceReports(
       : undefined;
     const state = operation ? nearestPlanState(operation) : "unknown";
     states.push(state);
-    if (resource.operation) operationIds.push(resource.operation.id);
+    if (operation) operations.push(operation);
     evidence.push({
       kind: "ownership",
       state,
@@ -406,20 +410,51 @@ function resourceReports(
   return {
     state: matching.length === 0 ? "unknown" : aggregateState(states),
     evidence,
-    operationIds,
+    operations,
   };
+}
+
+function actionRequiredSummary(operations: PlannedLifecycleOperation[]): string {
+  const missingParentOperations = operations.filter((operation) =>
+    operation.reason === "allowed root is not an existing safe directory");
+  if (missingParentOperations.length === operations.length) {
+    const parents = [...new Set(missingParentOperations.map((operation) => path.dirname(operation.destination)))];
+    return `Create the destination parent ${parents.join(", ")} as a real, non-symlink directory you control, then rerun preview; Agentera will not create or replace it.`;
+  }
+  return `Resolve these lifecycle blockers manually, then rerun preview: ${operations
+    .map((operation) => `${operation.id}: ${operation.reason}`)
+    .join("; ")}.`;
 }
 
 function remediationFor(
   state: RuntimeAdapterEvidenceState,
   claim: RuntimeAdapterCategoryClaim,
-  operationIds: string[],
+  operations: PlannedLifecycleOperation[],
   nativeActions: RuntimeAdapterNativeActionDeclaration[],
   runtimeId: string,
   surfaceId: string,
   evidencePath?: string,
   sourceRoot?: string,
 ): RuntimeAdapterRemediation {
+  const blockedOperations = operations.filter((operation) => operation.action === "blocked_unowned");
+  if (blockedOperations.length > 0) {
+    return {
+      kind: "action_required",
+      summary: "The destination is not ledger-owned; review the collision manually. Agentera will not adopt it by name or equality.",
+      operationIds: blockedOperations.map((operation) => operation.id),
+      nativeActions: [],
+    };
+  }
+  const actionRequiredOperations = operations.filter((operation) =>
+    operation.action === "action_required" || operation.action === "remove");
+  if (actionRequiredOperations.length > 0) {
+    return {
+      kind: "action_required",
+      summary: actionRequiredSummary(actionRequiredOperations),
+      operationIds: actionRequiredOperations.map((operation) => operation.id),
+      nativeActions: [],
+    };
+  }
   if (nativeActions.length > 0) {
     return {
       kind: "action_required",
@@ -433,27 +468,21 @@ function remediationFor(
       })),
     };
   }
-  if (["absent", "drifted"].includes(state) && operationIds.length > 0) {
+  const repairOperations = operations.filter((operation) =>
+    ["create", "update", "finalize_ownership"].includes(operation.action));
+  if (["absent", "drifted"].includes(state) && repairOperations.length > 0) {
     return {
       kind: "repair",
       summary: "Preview and approve the declared Agentera-owned operations through the shared lifecycle engine.",
-      operationIds,
-      nativeActions: [],
-    };
-  }
-  if (state === "blocked_unowned") {
-    return {
-      kind: "action_required",
-      summary: "The destination is not ledger-owned; review the collision manually. Agentera will not adopt it by name or equality.",
-      operationIds,
+      operationIds: repairOperations.map((operation) => operation.id),
       nativeActions: [],
     };
   }
   if (state === "action_required") {
     return {
       kind: "action_required",
-      summary: "Review or create the destination parent shown in evidence, then rerun preview; Agentera will not create or replace host-owned parent surfaces.",
-      operationIds,
+      summary: "Review the action-required evidence and complete the user-owned step, then rerun preview.",
+      operationIds: [],
       nativeActions: [],
     };
   }
@@ -479,6 +508,37 @@ function remediationFor(
     operationIds: [],
     nativeActions: [],
   };
+}
+
+function assertSurfaceRemediationConsistency(
+  category: RuntimeAdapterCategory,
+  state: RuntimeAdapterEvidenceState,
+  operations: PlannedLifecycleOperation[],
+  remediation: RuntimeAdapterRemediation,
+): void {
+  if (category !== "native_actions" && remediation.nativeActions.length > 0) {
+    throw new Error(`${category}: native actions may only remediate the native_actions category`);
+  }
+  const blocked = operations.some((operation) => operation.action === "blocked_unowned");
+  const actionRequired = operations.some((operation) =>
+    operation.action === "action_required" || operation.action === "remove");
+  if (blocked && (state !== "blocked_unowned" || remediation.kind !== "action_required")) {
+    throw new Error(`${category}: blocked operation must produce blocked_unowned action-required reporting`);
+  }
+  if (!blocked && actionRequired && (state !== "action_required" || remediation.kind !== "action_required")) {
+    throw new Error(`${category}: action-required operation must produce action_required reporting`);
+  }
+  if (remediation.kind === "repair") {
+    const repairableIds = new Set(operations
+      .filter((operation) => ["create", "update", "finalize_ownership"].includes(operation.action))
+      .map((operation) => operation.id));
+    if (
+      remediation.operationIds.length === 0
+      || remediation.operationIds.some((operationId) => !repairableIds.has(operationId))
+    ) {
+      throw new Error(`${category}: repair remediation must reference only repairable plan operations`);
+    }
+  }
 }
 
 function categorySurface(
@@ -514,7 +574,7 @@ function categorySurface(
 
   let state: RuntimeAdapterEvidenceState;
   let evidence: RuntimeAdapterEvidence[] = [];
-  let operationIds: string[] = [];
+  let operations: PlannedLifecycleOperation[] = [];
   let evidencePath: string | undefined;
   if (category === "skills") {
     const relevant = skills.filter((skill) => skill.surfaces.includes(surface.id));
@@ -532,10 +592,9 @@ function categorySurface(
       surfaceId: surface.id,
     }));
     const resources = resourceReports(expanded, plan, category, surface.id);
-    operationIds = resources.operationIds;
+    operations = resources.operations;
     evidence.push(...resources.evidence);
-    if (resources.state === "blocked_unowned" || resources.state === "drifted") state = resources.state;
-    else if (state !== "shadowed" && resources.state === "absent") state = "absent";
+    state = aggregateState([state, resources.state]);
   } else if (claim.capability === "repairable" || claim.evidence.startsWith("managed_resource:")) {
     const resourceCategory = claim.evidence.startsWith("managed_resource:")
       ? expanded.find((resource) => resource.declaration.id === claim.evidence.slice("managed_resource:".length))?.declaration.category ?? category
@@ -543,7 +602,7 @@ function categorySurface(
     const resources = resourceReports(expanded, plan, resourceCategory, surface.id);
     state = resources.state;
     evidence = resources.evidence;
-    operationIds = resources.operationIds;
+    operations = resources.operations;
   } else if (claim.capability === "not_applicable") {
     state = "not_applicable";
     evidence = [{ kind: "contract", state, detail: claim.evidence, surfaceId: surface.id }];
@@ -587,7 +646,10 @@ function categorySurface(
       path: canonical?.location,
       surfaceId: surface.id,
     }];
-    operationIds = resourceReports(expanded, plan, "skills", surface.id).operationIds;
+    const resources = resourceReports(expanded, plan, "skills", surface.id);
+    operations = resources.operations;
+    evidence.push(...resources.evidence);
+    state = aggregateState([state, resources.state]);
   } else {
     const override = context.categoryEvidence?.[category]?.[surface.id]
       ?? (category === "trust" ? context.surfaceEvidence?.[surface.id]?.trusted : undefined)
@@ -604,6 +666,17 @@ function categorySurface(
   const diagnosisComplete = claim.required
     ? state !== "unknown" && claim.capability !== "unverified"
     : true;
+  const remediation = remediationFor(
+    state,
+    claim,
+    operations,
+    nativeActions,
+    runtimeId,
+    surface.id,
+    evidencePath,
+    context.sourceRoot,
+  );
+  assertSurfaceRemediationConsistency(category, state, operations, remediation);
   return {
     surfaceId: surface.id,
     expected,
@@ -612,16 +685,7 @@ function categorySurface(
     required: claim.required,
     diagnosisComplete,
     evidence,
-    remediation: remediationFor(
-      state,
-      claim,
-      operationIds,
-      nativeActions,
-      runtimeId,
-      surface.id,
-      evidencePath,
-      context.sourceRoot,
-    ),
+    remediation,
   };
 }
 
@@ -733,7 +797,9 @@ export class RuntimeLifecycleAdapter {
           expanded,
           repairPlan,
           skills,
-          this.runtime.nativeActions.filter((action) => action.surfaceId === surface.id),
+          category === "native_actions"
+            ? this.runtime.nativeActions.filter((action) => action.surfaceId === surface.id)
+            : [],
         );
       });
       categories[category] = {
