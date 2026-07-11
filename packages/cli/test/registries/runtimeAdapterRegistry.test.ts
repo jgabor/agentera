@@ -23,12 +23,12 @@ function registryFixture(): any {
 }
 
 describe("runtime adapter registry", () => {
-  it("returns current runtimes in deterministic order", () => {
+  it("returns adapter catalog records in deterministic order", () => {
     const registry = loadRegistry(REGISTRY_PATH);
 
-    expect(registry.runtimeIds).toEqual(["claude", "opencode", "copilot", "codex", "cursor", "cursor-agent"]);
-    expect(registry.runtimeIds.length).toBe(new Set(registry.runtimeIds).size);
-    expect(registry.runtimeIds.map((id) => registry.get(id).identity.display_name)).toEqual([
+    expect(registry.adapterIds).toEqual(["claude", "opencode", "copilot", "codex", "cursor", "cursor-agent"]);
+    expect(registry.adapterIds.length).toBe(new Set(registry.adapterIds).size);
+    expect(registry.adapterIds.map((id) => registry.get(id).identity.display_name)).toEqual([
       "Claude Code",
       "OpenCode",
       "Copilot CLI",
@@ -79,12 +79,25 @@ describe("runtime adapter registry", () => {
     const errors = validateRegistryData(malformed);
 
     expect(errors).toContain("records[0]: missing required group diagnostics");
-    expect(errors).toContain("records[1].identity.runtime_id unknown runtime id: ghost");
+    expect(errors).toContain("records[1].identity.runtime_id unknown adapter record id: ghost");
     expect(errors).toContain("duplicate runtime id: codex");
     expect(errors).toContain(
       "records[3].lifecycle_events.supported_events: unsupported event name AfterEverything",
     );
     expect(errors).toContain("records[3]: forbidden ownership field install_root");
+  });
+
+  it("routes active lifecycle inventory ownership to the lifecycle authority", () => {
+    const fixture = registryFixture();
+    expect(fixture.lifecycle_authority).toBe(
+      "references/adapters/runtime-lifecycle-authority.yaml",
+    );
+    expect(fixture.runtime_order).toBeUndefined();
+
+    fixture.lifecycle_authority = "references/adapters/drifted-runtime-list.yaml";
+    expect(validateRegistryData(fixture)).toContain(
+      "registry.lifecycle_authority must point to references/adapters/runtime-lifecycle-authority.yaml",
+    );
   });
 
   it("consumer views share changed fixture facts", () => {

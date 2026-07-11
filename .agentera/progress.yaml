@@ -1,4 +1,34 @@
 cycles:
+  - number: 699
+    timestamp: 2026-07-11 11:16
+    type: feat
+    phase: build
+    what: Established Decision 92 runtime lifecycle authority for four active
+      identities with explicit Cursor CLI and conditional IDE surfaces.
+    inspiration: Active plan Task 2 and approved Decision 92.
+    discovered: The adapter registry mixed active inventory semantics with
+      historical adapter records; it now delegates active identity ownership to
+      the lifecycle authority.
+    verified: "Focused lifecycle, registry, and validator suite: 3 files and 23
+      tests passed. Full CLI suite: 149 files and 1,346 tests passed. Typecheck
+      and build passed. Built agentera check validate lifecycle-adapters
+      returned lifecycle adapter metadata ok. Built Cursor smoke returned active
+      IDs opencode, codex, cursor, copilot with CLI ready, IDE degraded,
+      aggregate Cursor degraded, and support floor met."
+    next: Task 3 can consume this authority when implementing shared lifecycle
+      operation planning and apply mechanics; orchestrator audit owns Task 2
+      status.
+    context:
+      intent: Make Task 2 runtime identity, support-floor, aggregation, and drift
+        rules machine-readable and testable.
+      constraints: Authority and validation only; no operation engine, runtime
+        adapters, Claude cleanup, prime/doctor/upgrade projection, plan status,
+        TODO, changelog, release, or profile changes.
+      unknowns: Runtime-specific evidence collection and repair capability mapping
+        remain Task 4.
+      scope: references/adapters/runtime-lifecycle-authority.yaml, runtime adapter
+        catalog routing, packages/cli/src/runtime/lifecycleAuthority.ts,
+        lifecycle validation, and focused tests.
   - number: 698
     timestamp: 2026-07-11 09:02
     type: fix
@@ -243,47 +273,9 @@ cycles:
       artifacts:
         plan: .agentera/archive/PLAN-2026-06-28-vitest4-vp-toolchain.yaml (complete,
           archived)
-  - number: 689
-    timestamp: 2026-06-28 13:40
-    type: chore
-    phase: build
-    what: 'Plan task 4 of the vitest 2->4 toolchain modernization: align the
-      pre-commit hook script with the `vp test run` entry point. Updated
-      `scripts/precommit-vitest.sh` line 96 from `exec pnpm exec vitest run
-      "${TARGETS[@]}"` to `exec vp test run "${TARGETS[@]}"` (verified `vp test
-      run <file>` forwards positional args to vitest). Left line 88 (`exec pnpm
-      test`) as-is since `pnpm test` already delegates to `vp test run` via
-      package.json#scripts.test — single source of truth (DRY); added a comment
-      making the chain explicit. Updated the header comment to mention the `vp
-      test run` entry point. `.lefthook.yml` and `.github/workflows/ci.yml`
-      intentionally untouched (out of scope; transitive chain satisfies CI).'
-    discovered: "No material surprises. `vp test run test/cli/orientation.test.ts`
-      correctly forwards the positional file arg and runs only that file (14
-      tests, not the full suite) — confirmed vp test forwards extra args as
-      vitest CLI args. The `check compact` checker has no fix/repair mode (only
-      a verifier), so the progress archive rotation was performed manually:
-      cycle 679 summarized and moved into the archive to keep active=10 under
-      the uniform_10_40_50 cap."
-    verified: "Three simulation runs on scripts/precommit-vitest.sh: (a) staged
-      `packages/cli/test/cli/orientation.test.ts` -> targeted, exit 0; (b)
-      staged `TODO.md` -> smoke route (2 files), exit 0; (c) no args -> full
-      fallback (`exec pnpm test` -> `vp test run`), 1145/1145 passed. Direct
-      `pnpm -C packages/cli test` shows `> vp test run` banner; 1145/1145 pass,
-      132 files. `pnpm -C packages/cli run typecheck`: 0 errors. `pnpm -C
-      packages/cli build`: clean. `node packages/cli/dist/bin/agentera.js check
-      compact`: pass; progress active=10 archive=41 total=51 (post-rotation)."
-    next: Plan task 5 (final state sync and verification). Depends on tasks 1-4, all
-      now complete.
-    context:
-      intent: Keep the pre-commit vitest runner consistent with the `vp test run`
-        entry point adopted in plan task 2; confirm CI's `pnpm -C packages/cli
-        test` chain still delegates to `vp test run`.
-      constraints: No behavior change to shipped CLI. Branch feat/v3 only. Task-4
-        scope only — do not modify .lefthook.yml or .github/workflows/ci.yml. Do
-        not touch vite.config.ts or package.json (tasks 2/3 own them).
-      artifacts:
-        plan: .agentera/plan.yaml (task 4 -> complete)
 archive:
+  - summary: "Cycle 689 (2026-06-28): Plan task 4 of the vitest 2->4 toolchain
+      modernization: align the pre-commit hook script with..."
   - summary: "Cycle 688 (2026-06-28): Plan task 3 of the vitest 2->4 toolchain
       modernization: wire `vp lint` and `vp fmt`..."
   - summary: "Cycle 687 (2026-06-28): Plan task 2 of the vitest 2->4 toolchain
@@ -386,7 +378,3 @@ archive:
   - summary: "Cycle 650 (2026-06-07): Mobile monorepo closeout — archived
       agentera-mobile staging artifacts (D1–D5 decisions, re-visioning plan,
       LICENSE), synced D68..."
-  - summary: "Cycle 649 (2026-06-05): v2→v3 TS rewrite completion plan closeout
-      (T11). Archived the active plan to
-      `.agentera/archive/plan-2026-06-04-v2-v3-ts-rewrite-completion.yaml` and
-      cleared..."

@@ -6,6 +6,7 @@ import {
   RuntimeAdapterRegistry,
   loadRegistry as loadRuntimeRegistry,
 } from "../registries/runtimeAdapterRegistry.js";
+import { validateLifecycleAuthorityRoot } from "../runtime/lifecycleAuthority.js";
 import {
   type LegacyPythonParityOptions,
   LEGACY_PYTHON_PARITY_FLAG,
@@ -61,7 +62,7 @@ export interface LifecycleMainOptions extends LegacyPythonParityOptions {
 export function lifecycleMain(opts: LifecycleMainOptions = {}): number {
   const root = resolvePath(opts.root ?? rootDefault());
   const out = opts.out ?? ((line: string) => process.stdout.write(line + "\n"));
-  const errors: string[] = [];
+  const errors: string[] = validateLifecycleAuthorityRoot(root);
   let registry: RuntimeAdapterRegistry | null = null;
   try {
     registry = loadRuntimeRegistry(path.join(root, "references/adapters/runtime-adapter-registry.yaml"));

@@ -1,0 +1,60 @@
+schema_version: agentera.runtimeLifecycleAuthority.v1
+status: active_authority
+decision: 92
+canonical_skill:
+  path: ~/.agents/skills/agentera
+  required_for_support_floor: true
+evidence_contract:
+  mandatory_fields:
+    - host_present
+    - installed
+    - enabled
+    - trusted
+  values:
+    - true
+    - false
+    - unknown
+    - denied
+    - not_applicable
+  trust_policy: Trust is observed only; unknown trust must never be promoted to trusted.
+support_floor:
+  requirements:
+    - canonical_shared_skill_detected
+    - diagnosis_complete
+    - mandatory_fields_present
+  unmet_blocks_release: true
+active_runtimes:
+  - id: opencode
+    display_name: OpenCode
+    surfaces:
+      - id: host
+        display_name: OpenCode host
+        presence: required
+  - id: codex
+    display_name: Codex
+    surfaces:
+      - id: cli
+        display_name: Codex CLI
+        presence: required
+  - id: cursor
+    display_name: Cursor
+    surfaces:
+      - id: cli
+        display_name: Cursor Agent CLI
+        presence: required
+      - id: ide
+        display_name: Cursor IDE
+        presence: conditional
+  - id: copilot
+    display_name: GitHub Copilot
+    surfaces:
+      - id: cli
+        display_name: Copilot CLI
+        presence: required
+retired_runtime_inputs:
+  - id: claude
+    purpose: consent_gated_historical_import
+migration_aliases:
+  cursor-agent:
+    runtime_id: cursor
+    surface_id: cli

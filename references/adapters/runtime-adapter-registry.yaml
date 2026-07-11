@@ -1,5 +1,6 @@
 schema_version: agentera.runtimeAdapterRegistry.v1
-runtime_order:
+lifecycle_authority: references/adapters/runtime-lifecycle-authority.yaml
+adapter_record_order:
   - claude
   - opencode
   - copilot

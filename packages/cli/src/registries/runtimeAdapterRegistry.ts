@@ -5,16 +5,7 @@ import type { JsonObject } from "../core/jsonValue.js";
 import { loadYamlMapping } from "../core/yaml.js";
 import { resolveSourceRoot } from "../core/sourceRoot.js";
 
-/** RuntimeAdapter registry loader and contract validator. Port of scripts/runtime_adapter_registry.py. */
-
-export const EXPECTED_RUNTIME_ORDER = [
-  "claude",
-  "opencode",
-  "copilot",
-  "codex",
-  "cursor",
-  "cursor-agent",
-] as const;
+/** RuntimeAdapter catalog loader and contract validator. */
 
 export const REQUIRED_GROUPS = [
   "identity",
@@ -168,7 +159,7 @@ function isMapping(value: unknown): value is JsonObject {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
-function isStringList(value: unknown): boolean {
+function isStringList(value: unknown): value is string[] {
   return Array.isArray(value) && value.every((item) => typeof item === "string");
 }
 
@@ -186,7 +177,7 @@ export class RuntimeAdapterRegistry {
     this.records = records;
   }
 
-  get runtimeIds(): string[] {
+  get adapterIds(): string[] {
     return this.records.map((record) => (record.identity as JsonObject).runtime_id as string); // cast: parsed registry IO data
   }
 
@@ -235,10 +226,16 @@ export function validateRegistryData(data: unknown): string[] {
     errors.push("registry.schema_version must be agentera.runtimeAdapterRegistry.v1");
   }
 
-  if (JSON.stringify(data.runtime_order) !== JSON.stringify([...EXPECTED_RUNTIME_ORDER])) {
+  if (data.lifecycle_authority !== "references/adapters/runtime-lifecycle-authority.yaml") {
     errors.push(
-      "registry.runtime_order must be claude, opencode, copilot, codex, cursor, cursor-agent",
+      "registry.lifecycle_authority must point to references/adapters/runtime-lifecycle-authority.yaml",
     );
+  }
+  const adapterOrder = data.adapter_record_order;
+  if (!isStringList(adapterOrder) || adapterOrder.length === 0) {
+    errors.push("registry.adapter_record_order must be a non-empty list of adapter record ids");
+  } else if (new Set(adapterOrder).size !== adapterOrder.length) {
+    errors.push("registry.adapter_record_order must not contain duplicate adapter record ids");
   }
 
   const records = data.records;
@@ -280,8 +277,8 @@ export function validateRegistryData(data: unknown): string[] {
       return;
     }
     ids.push(runtimeId);
-    if (!(EXPECTED_RUNTIME_ORDER as readonly string[]).includes(runtimeId)) {
-      errors.push(`${prefix}.identity.runtime_id unknown runtime id: ${runtimeId}`);
+    if (Array.isArray(adapterOrder) && !adapterOrder.includes(runtimeId)) {
+      errors.push(`${prefix}.identity.runtime_id unknown adapter record id: ${runtimeId}`);
     }
     if (seen.has(runtimeId)) {
       errors.push(`duplicate runtime id: ${runtimeId}`);
@@ -289,10 +286,8 @@ export function validateRegistryData(data: unknown): string[] {
     seen.add(runtimeId);
   });
 
-  if (JSON.stringify(ids) !== JSON.stringify([...EXPECTED_RUNTIME_ORDER])) {
-    errors.push(
-      "registry.records must be ordered as claude, opencode, copilot, codex, cursor, cursor-agent",
-    );
+  if (JSON.stringify(ids) !== JSON.stringify(adapterOrder)) {
+    errors.push("registry.records must follow registry.adapter_record_order");
   }
   return errors;
 }

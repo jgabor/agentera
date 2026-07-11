@@ -27,9 +27,9 @@ export const STATUSES = ["pass", "warn", "fail", "skip"] as const;
 
 const REGISTRY = loadRegistry();
 export const DOCTOR_RUNTIME_VIEWS: Record<string, JsonObject> = Object.fromEntries(
-  REGISTRY.runtimeIds.map((runtime) => [runtime, REGISTRY.consumerView("doctor", runtime)]),
+  REGISTRY.adapterIds.map((runtime) => [runtime, REGISTRY.consumerView("doctor", runtime)]),
 );
-export const RUNTIMES: string[] = REGISTRY.runtimeIds;
+export const RUNTIMES: string[] = REGISTRY.adapterIds;
 export const WRITABLE_RUNTIMES = ["copilot", "codex"] as const;
 export const RUNTIME_BINARIES: Record<string, string> = Object.fromEntries(
   RUNTIMES.map((runtime) => [runtime, ((DOCTOR_RUNTIME_VIEWS[runtime].host_detection as JsonObject).binary_names as string[])[0]]), // cast: parsed registry IO data
