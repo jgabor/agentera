@@ -1,4 +1,5 @@
 import { CAPABILITY_ROUTING_NAMES } from "./commands/capability.js";
+import { verbsForArtifact } from "../state/write/operations.js";
 
 const TOP_LEVEL = [
   "prime",
@@ -21,12 +22,12 @@ export function printTopLevelHelp(): string {
   return [
     `usage: agentera [-h] [--version] {${choices}} ...`,
     "",
-    "agentera: read project state, upgrade installs, and print priming guidance",
+    "agentera: read and write project state, upgrade installs, and print priming guidance",
     "",
     ...lines("Agent commands:", [
       "prime               Composite orientation briefing, capability startup context, or static guidance",
       "schema              Runtime CLI/schema introspection",
-      "state               Routine artifact reads and advanced artifact query",
+      "state               Routine artifact reads, writes, and advanced artifact query",
       ...CAPABILITY_ROUTING_NAMES.map(
         (name) => `${name.padEnd(19)} Route to ${name} capability guidance`,
       ),
@@ -107,8 +108,17 @@ export function printDoctorHelp(): string {
 
 export function printStateHelp(sub?: string): string {
   if (sub) {
+    const verbs = verbsForArtifact(sub);
     return [
       `usage: agentera state ${sub} [-h] [--format {text,json,yaml}] [filters]`,
+      ...(verbs.length ? [`       agentera state ${sub} {${verbs.join(",")}} [write flags]`] : []),
+      ...(verbs.length
+        ? [
+            "",
+            `Discover writes: agentera state ${sub} explain --format json`,
+            `Per verb:        agentera state ${sub} explain --verb VERB --format json`,
+          ]
+        : []),
       "",
       "options:",
       "  -h, --help            show this help message and exit",
@@ -118,7 +128,8 @@ export function printStateHelp(sub?: string): string {
   return [
     "usage: agentera state [-h] {plan,progress,health,todo,decisions,docs,objective,experiments,query} ...",
     "",
-    "Routine artifact reads and advanced artifact query.",
+    "Routine artifact reads, writes, and advanced artifact query.",
+    "Discover typed writes: agentera state <artifact> explain --format json",
   ].join("\n");
 }
 
@@ -178,6 +189,8 @@ export function printPrimeHelp(): string {
     "  --dashboard           Emit the prime orientation dashboard",
     "  --orientation         Emit orientation briefing sections",
     "  --fields FIELDS       Comma-separated field filter for JSON/YAML output",
+    "",
+    "JSON source contract includes artifact_writes discovery metadata.",
   ].join("\n");
 }
 
@@ -186,6 +199,7 @@ export function printSchemaHelp(): string {
     "usage: agentera schema [-h] [--format {json,yaml}]",
     "",
     "Runtime CLI and schema introspection.",
+    "Includes the state_writer operation matrix and per-artifact write_interface metadata.",
     "",
     "options:",
     "  -h, --help            show this help message and exit",

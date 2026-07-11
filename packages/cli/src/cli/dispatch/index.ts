@@ -7,6 +7,7 @@ import { runCapability, runPrime } from "./prime.js";
 import { runAppHome, runDoctor, runGate, runHook, runReport, runUpgrade, runUsage, runVerify, runVersion } from "./lifecycle.js";
 import { emitDeprecationAlias, type Io } from "./shared.js";
 import { emitInvalidInput } from "../errors.js";
+import { isWriteVerb } from "../../state/write/operations.js";
 
 export function main(argv: string[], io: Io = {}): number {
   const err = io.err ?? ((t: string) => process.stderr.write(t));
@@ -133,7 +134,7 @@ export function main(argv: string[], io: Io = {}): number {
         });
       }
       if (sub === "query") return runQuery(rest.slice(1), io, "agentera state query");
-      if (isPortedStateCommand(sub)) return runState(sub, rest.slice(1), io, `agentera state ${sub}`);
+      if (isPortedStateCommand(sub) || isWriteVerb(rest[1])) return runState(sub, rest.slice(1), io, `agentera state ${sub}`);
       return emitInvalidInput(io, {
         format: "text",
         body: {

@@ -1,4 +1,80 @@
 cycles:
+  - number: 698
+    timestamp: 2026-07-11 09:02
+    type: fix
+    phase: build
+    what: Eliminated the CLI test suite's shared dist race by building package
+      output once in Vitest global setup, removing worker-local rebuilds, and
+      isolating copy-bundle integration tests in temporary repositories.
+    discovered: Seven worker test files mutated shared dist or bundle state;
+      repeated commit hooks failed npm pack with different ENOENT paths while
+      concurrent builds ran rm -rf dist.
+    verified: "affected parallel suite: 7 files, 26 tests passed; two consecutive
+      normal full CLI runs: 148 files and 1335 tests passed each; typecheck:
+      clean."
+    next: Commit the complete typed state writer and deterministic test-isolation
+      fix.
+    context:
+      intent: Make normal parallel test and pre-commit runs deterministic without
+        serial-worker overrides or hook bypasses.
+      constraints: Keep Vitest worker parallelism and every pre-commit hook enabled;
+        shared package outputs are immutable after global setup.
+      scope: Vite test global setup, packaging/parity tests, installed-app tests, and
+        progress evidence.
+  - number: 697
+    timestamp: 2026-07-11 08:34
+    type: fix
+    phase: build
+    what: "Resolved state-writer review findings: preserved legacy scalar health
+      archives, bounded plan archives and lock directories by realpath, enforced
+      PV4 dependency references and cycle rejection across plan mutations, and
+      emitted executable plan update/status examples."
+    discovered: The package test script runs the full suite even when file arguments
+      are appended; direct vp test run is the focused route. The checkout's
+      configured hooks/validate_artifact.py pre-edit hook remains absent, so the
+      temporary compatibility symlink was removed before verification.
+    verified: "focused writer/validator tests: 61 passed; CLI suite: 148 files, 1335
+      tests passed; typecheck/build: clean; live health artifact validation:
+      pass; format check: pass; check compact: pass with 0 over-limit
+      artifacts."
+    next: Review and commit the complete writer feature; phase-2 TODO markdown
+      writes remain deferred.
+    context:
+      intent: Close all actionable correctness and boundary-safety findings in the
+        typed state writer.
+      constraints: Preserve pre-existing uncommitted writer/discoverability work and
+        legacy project state; never follow symlink paths outside the project.
+      scope: Artifact validation, writer lock/archive boundaries, plan dependency
+        invariants, explain examples, and regression tests.
+  - number: 696
+    timestamp: 2026-07-10 22:36
+    type: feat
+    phase: build
+    what: Implemented the standardized state artifact writer with typed progress,
+      decisions, plan, and health operations; schema-derived explain; bounded
+      project locking; strict mapped-path safety; exact retry replay; dry-run
+      diffs; staged compaction; final-byte validation; and atomic publication.
+    discovered: The shared compactor still enforced stale 20/50/100 constants
+      despite the repository's 10/40/50 contract; health was missing from
+      sequence validation; the local Codex hook still points at removed
+      hooks/validate_artifact.py.
+    verified: "typecheck: 0 errors; build: clean; capability validations:
+      build/discuss/plan/orchestrate/audit PASS; capability-contract PASS;
+      vitest: 148 files, 1315 tests green; focused writer suite: 29 tests green;
+      lint: 0 new-file warnings/errors; check compact: pass."
+    next: Review and commit the complete writer feature; phase-2 TODO markdown
+      writes remain deferred.
+    context:
+      intent: Ship the approved docs/notes/writer-prompt.md design as the write-side
+        dual of agentera state reads.
+      constraints: Keep vision, docs, objective, experiments, TODO, changelog, and
+        design outside the v1 YAML writer; preserve read-side argv compatibility
+        and same-commit artifact policy.
+      unknowns: None in the v1 contract; TODO markdown writes and objective-scoped
+        artifacts remain explicitly deferred by the design.
+      scope: packages/cli state writer modules, CLI dispatch/help/errors, registry
+        path safety, YAML/atomic utilities, compaction authority, producer
+        capability instructions, schemas, tests, and CHANGELOG.md.
   - number: 695
     timestamp: 2026-07-10 15:09
     type: docs
@@ -207,141 +283,13 @@ cycles:
         not touch vite.config.ts or package.json (tasks 2/3 own them).
       artifacts:
         plan: .agentera/plan.yaml (task 4 -> complete)
-  - number: 688
-    timestamp: 2026-06-28 12:55
-    type: chore
-    phase: build
-    what: "Plan task 3 of the vitest 2->4 toolchain modernization: wire `vp lint`
-      and `vp fmt` scripts into packages/cli and record a lint baseline. Added
-      `lint` and `fmt` blocks to `packages/cli/vite.config.ts` (mirroring the
-      web pattern; no `staged` block — CLI uses scripts/precommit-vitest.sh
-      which Task 4 owns). ignorePatterns cover `dist/**`, `bundle/**`,
-      `node_modules/**`, `**/*.generated.*`. Added `scripts.lint` -> `vp lint`
-      and `scripts.fmt` -> `vp fmt` to packages/cli/package.json (both newly
-      added; no prior lint/fmt scripts existed). Recorded baseline at
-      `packages/cli/.lint-baseline.txt` (unscoped `vp lint`, matching
-      `scripts.lint`): 111 warnings / 0 errors over 339 files (exit 0). `vp fmt
-      --check src/` reports 151 files would be reformatted, exit 1 (prettier
-      non-zero on format issues; the in-place `vp fmt` at exit 0 is the
-      non-regression gate, not `--check`). Non-regression is the gate held here;
-      pre-existing findings deferred to a [chore:3.0.0] TODO."
-    discovered: "vp lint exits 0 even with warnings present (Oxlint treats warnings
-      as non-fatal by default) — so the non-regression gate is exit 0 plus
-      finding count stable (baseline 111 warnings over 339 files), not an
-      exit-code flip to non-zero. Documented in plan.yaml surprises.
-      Baseline-scope correction (this amend): the first attempt captured `vp
-      lint src/` (101 warnings / 190 files), which does not match what `pnpm -C
-      packages/cli run lint` (=`vp lint`, unscoped) actually produces;
-      recaptured the unscoped baseline (111 warnings / 339 files) so the
-      recorded baseline represents `scripts.lint`. Note `vp fmt --check src/`
-      exits 1 (prettier non-zero on format issues); non-regression uses `vp fmt`
-      in place (exit 0)."
-    verified: "pnpm -C packages/cli run lint (= vp lint unscoped): 111 warnings, 0
-      errors, exit 0 (matches baseline). vp fmt --check src/: 151 files would be
-      reformatted, exit 1. `pnpm -C packages/cli run typecheck`: 0 errors. `pnpm
-      -C packages/cli build`: clean. `pnpm -C packages/cli test` (vp test run):
-      1145/1145 passed, 132 files, 21.68s. Re-ran vp lint after baseline
-      recapture: 111 warnings stable (non-regression)."
-    next: Plan task 4 (update precommit-vitest.sh and verify CI runs vp test run
-      cleanly). Depends on tasks 2 and 3, both now complete.
-    context:
-      intent: Wire vp lint and vp fmt scripts; record lint baseline; gate on
-        non-regression not zero-findings.
-      constraints: No behavior change to shipped CLI. Branch feat/v3 only. Task-3
-        scope only — do not touch precommit-vitest.sh or
-        .github/workflows/ci.yml (task 4). Do not add a staged block (web/mobile
-        concern). Do not fix pre-existing lint findings in-scope (deferred
-        [chore:3.0.0]).
-      artifacts:
-        plan: .agentera/plan.yaml (task 3 -> complete; surprise appended)
-  - number: 687
-    timestamp: 2026-06-28 12:35
-    type: chore
-    phase: build
-    what: "Plan task 2 of the vitest 2->4 toolchain modernization: migrate the CLI
-      test entry point onto vite-plus. Moved `packages/cli/vitest.config.ts` ->
-      `packages/cli/vite.config.ts` with `defineConfig` imported from
-      `vite-plus` (test block preserved byte-for-byte: include, environment,
-      globals, maxWorkers, testTimeout, experimentalFsModuleCache, and all
-      worker-budget comments). Added `vite ^6.3.5` and `vite-plus ^0.1.22` to
-      packages/cli devDeps (mirroring packages/web pins) and removed the direct
-      `vitest` devDep (vite-plus provides vitest 4.1.9 transitively). Updated
-      `scripts.test` -> `vp test run` and migrated `scripts.test:watch` -> `vp
-      test watch`. Lockfile resolved cleanly; typecheck 0 errors; build clean;
-      suite 1145/1145 green over 132 files (26.89s at maxWorkers=4)."
-    discovered: No material surprises. `pnpm why vitest` returns no direct dep rows
-      for packages/cli (the `pnpm why` CLI produced empty output here, but `ls
-      node_modules/.pnpm` shows vitest@4.1.9 resolved via vite-plus's transitive
-      chain on vite 7.3.3, and `packages/cli/node_modules/vitest` is absent
-      confirming the direct devDep drop). vitest@2.1.9 still appears in the root
-      .pnpm store from another workspace consumer but does not flow into
-      packages/cli. `vp test` accepts `run`/`watch` subcommands and forwards the
-      rest to vitest, so `test:watch` migrated cleanly to `vp test watch`.
-    verified: "pnpm -C packages/cli install: clean. `pnpm -C packages/cli run
-      typecheck`: 0 errors. `pnpm -C packages/cli build`: clean (tsc -> dist).
-      `pnpm -C packages/cli test` (now `vp test run`): 1145/1145 passed, 132
-      files, 26.89s. `ls packages/cli/node_modules/vitest`: absent (direct
-      devDep dropped). vitest 4.1.9 resolved transitively via vite-plus. No
-      workspace consumer imports `vitest.config` (rg scoped to repo root returns
-      only docs/plan/progress string references)."
-    next: Plan task 3 (wire `vp lint` and `vp fmt` scripts into
-      `packages/cli/vite.config.ts`; record lint baseline; gate on
-      non-regression not zero-findings). Depends on task 2, now unblocked. Task
-      4 (precommit-vitest.sh + CI) depends on tasks 2 and 3.
-    context:
-      intent: Migrate the CLI test entry point from direct `vitest` to vite-plus (`vp
-        test run`), dropping the direct vitest devDep and moving the vitest
-        config into a vite.config.ts ship under vite-plus (phase 2 of the
-        two-phase toolchain modernization).
-      constraints: No behavior change to shipped CLI. Branch feat/v3 only. Task-2
-        scope only -- do not touch precommit-vitest.sh or
-        .github/workflows/ci.yml (task 4) and do not wire vp lint/vp fmt blocks
-        in vite.config.ts (task 3). Worker-budget caps (maxWorkers=cpu/4,
-        testTimeout=30_000, experimentalFsModuleCache) MUST be preserved
-        byte-for-byte.
-      artifacts:
-        plan: .agentera/plan.yaml (task 2 -> complete)
-  - number: 686
-    timestamp: 2026-06-28 12:00
-    type: chore
-    phase: build
-    what: "Plan task 1 of the vitest 2->4 toolchain modernization: bump the `vitest`
-      devDep `^2.1.8` -> `^4.1.0` in packages/cli/package.json, drop the
-      v4-removed `minWorkers: 1` field from vitest.config.ts, fold in the
-      worker-budget config (maxWorkers = cpu/4, experimentalFsModuleCache)
-      staged in the working tree, and add a global `testTimeout: 30_000` to
-      restore v2 effective timeout behavior (see discovered). Lockfile updated
-      cleanly; vitest resolved to 4.1.9. Typecheck 0 errors. Suite 1145/1145
-      green over 132 files (37.6s at maxWorkers=4)."
-    discovered: "vitest 4 enforces the 5000ms default testTimeout on blocking
-      spawnSync/DB tests where v2 did not. The extractCorpusParity Python-probe
-      tests run ~9-16s legitimately and passed unconstrained on v2, but timed
-      out at 5000ms on v4 with no test slowdown (v4 durations 9.0s/15.5s vs v2
-      9.8s/12.3s -- comparable). This tightening was not anticipated by the plan
-      design note's cross-check, which covered
-      pool/workspace/minWorkers/mock/snapshot but not timeout enforcement. Fixed
-      in-scope by adding `testTimeout: 30_000` to vitest.config.ts (2x headroom
-      over the observed 16s peak; still catches hung tests). Recorded in
-      plan.yaml `surprises`."
-    verified: "pnpm -C packages/cli install: clean (vitest 2.1.9 -> 4.1.9). `pnpm -C
-      packages/cli run typecheck`: 0 errors. `pnpm -C packages/cli test`:
-      1145/1145 passed, 132 files, 37.58s. `pnpm why vitest` reports 4.1.9.
-      minWorkers line gone; maxWorkers + experimentalFsModuleCache preserved. No
-      mock/snapshot/poolOptions/workspace errors surfaced."
-    next: Plan task 2 (migrate CLI to vite.config.ts under vite-plus; drop direct
-      vitest devDep; test script -> `vp test run`). Depends on task 1, now
-      unblocked.
-    context:
-      intent: Upgrade packages/cli from vitest 2.x to 4.x in isolation (phase 1 of a
-        two-phase toolchain modernization).
-      constraints: No behavior change to shipped CLI. Branch feat/v3 only.
-        Worker-budget caps (maxWorkers=cpu/4) and experimentalFsModuleCache MUST
-        stay (OOM guard for multi-agent runs). No vite.config.ts / vite-plus /
-        test-script changes (task 2 scope). No precommit-vitest.sh changes (task
-        4 scope).
-      artifacts:
-        plan: .agentera/plan.yaml (task 1 -> complete; surprises field populated)
 archive:
+  - summary: "Cycle 688 (2026-06-28): Plan task 3 of the vitest 2->4 toolchain
+      modernization: wire `vp lint` and `vp fmt`..."
+  - summary: "Cycle 687 (2026-06-28): Plan task 2 of the vitest 2->4 toolchain
+      modernization: migrate the CLI test entry point..."
+  - summary: "Cycle 686 (2026-06-28): Plan task 1 of the vitest 2->4 toolchain
+      modernization: bump the `vitest` devDep `^2.1.8` ->..."
   - summary: "Cycle 685 (2026-06-28): Audit 25 of the feat/v3 CLI. Evaluated the C74
       Dict-consolidation refactor (commits 2715bd28..8e9f2447, 6 commits)..."
   - summary: "Cycle 684 (2026-06-27): Plan task 7 (final) of chore:3.0.0: final
@@ -442,10 +390,3 @@ archive:
       (T11). Archived the active plan to
       `.agentera/archive/plan-2026-06-04-v2-v3-ts-rewrite-completion.yaml` and
       cleared..."
-  - summary: "Cycle 648 (2026-06-04): T5 v2 handoff manifest reader (plan T5, TODO
-      L24). Authored `references/cli/v3-handoff-manifest.schema.yaml`; added
-      `packages/cli/src/migrate/v2HandoffManifest.ts` and wired..."
-  - summary: "Cycle 647 (2026-06-04): T7 cursor agent runtime surface regression
-      (plan T7, TODO fix:3.0.0). On v3 projects (all twelve..."
-  - summary: "Cycle 646 (2026-06-04): Remove v1 legacy cruft after the 3.0
-      compatibility boundary (plan T4 / TODO L21). Deleted..."

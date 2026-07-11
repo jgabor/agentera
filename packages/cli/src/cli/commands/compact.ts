@@ -96,7 +96,7 @@ function compactionGuidance(mode: string, operations: CompactionOperation[]): st
   if (mode === "fix" && over.length > 0) {
     return "Some artifacts remain over limit; inspect skipped or unsupported artifacts before manual remediation.";
   }
-  return "No repair needed. Compactable artifacts are within uniform_20_50_100 limits.";
+  return "No repair needed. Compactable artifacts are within uniform_10_40_50 limits.";
 }
 
 function compactionSummary(mode: string, operations: CompactionOperation[]): CompactionSummary {

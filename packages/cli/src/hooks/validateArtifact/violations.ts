@@ -23,6 +23,7 @@ import {
   validateDecisionSatisfaction,
   validateField,
   validateFullPlanContract,
+  validatePlanDependencies,
   validatePlanKnownFields,
   validateSequences,
   validateSingletonGroup,
@@ -61,6 +62,7 @@ export function validateYamlContent(content: string, schema: JsonObject, name: s
   if (name === "plan") {
     validatePlanKnownFields(data as JsonObject, schema, violations);
     validateFullPlanContract(data as JsonObject, violations);
+    validatePlanDependencies(data as JsonObject, violations);
   }
   validateSequences(data as JsonObject, schema, name, violations);
   if (name === "decisions") {
@@ -85,7 +87,9 @@ export function validateYamlContent(content: string, schema: JsonObject, name: s
       if (rule.includes("unique") && rule.includes("number")) {
         for (const [key, val] of Object.entries(data)) {
           if (Array.isArray(val)) {
-            const nums = val.filter((e): e is JsonObject => isMapping(e) && "number" in e).map((e) => e.number as number);
+            const nums = val
+              .filter((e): e is JsonObject => isMapping(e) && "number" in e)
+              .map((e) => e.number as number);
             if (nums.length > 0) {
               if (nums.length !== new Set(nums).size) {
                 violations.push(`${name}: duplicate numbers in '${key}'`);
@@ -105,7 +109,9 @@ export function validateYamlContent(content: string, schema: JsonObject, name: s
             let val = data[field];
             if (val === null || val === undefined) val = header[field];
             if (val === null || val === undefined || (typeof val === "string" && !val.trim())) {
-              violations.push(`${name}: closure field '${field}' is required when status is 'closed'`);
+              violations.push(
+                `${name}: closure field '${field}' is required when status is 'closed'`,
+              );
             }
           }
         }

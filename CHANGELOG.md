@@ -4,6 +4,7 @@
 
 ### Added
 
+- Added typed artifact writes under `agentera state`: progress/decision/audit appends, decision satisfaction updates, plan create/task/status/archive lifecycle operations, schema-derived `explain`, server-assigned identifiers, exact retry replay, dry-run diffs, project locking, strict mapped-path safety, staged 10/40/50 compaction, final-byte validation, and atomic publication.
 - Added `install_track` field to `prime --format json` (`app_home.install_track`) and `doctor --format json` output. Values: `v2`, `v3`, `source`, `unknown` — a plain-English projection of the internal install-lineage classifier (Decision 72).
 
 ### Removed
@@ -23,6 +24,7 @@
 
 ### Fixed
 
+- Fixed state writes rejecting legacy scalar health archives, accepting missing or circular plan dependencies, following symlinked lock/archive directories outside the project, and advertising invalid plan mutation examples.
 - Fixed `cliDistributionMajor` silently defaulting to v2 when `registry.json` version-authority was missing or corrupted. The function now reads `package.json#version` as a secondary signal before falling back to 2, and emits a one-time stderr diagnostic when both primary and secondary signals miss — preventing v3 installs with corrupted registry assets from being misclassified as v2 in runtime inference, cross-major boundary detection, channel resolution, and next-major doctor rendering.
 - Fixed `pnpm install` failing on hosts with a system-wide `vips` (Arch, Fedora, Nix with vips overlay, Homebrew on macOS): sharp's `useGlobalLibvips()` check returned true and the install hook fell through to a `node-gyp` source build that needed `node-addon-api`. Migrated the deprecated `pnpm.onlyBuiltDependencies` and `pnpm.overrides` from `package.json#pnpm` to `pnpm-workspace.yaml` (pnpm 10+ ignores the legacy key) and added a `preinstall` hook that re-execs `pnpm install` with `SHARP_IGNORE_GLOBAL_LIBVIPS=true` so sharp's prebuilt binary is always used.
 - Fixed `pnpm install` emitting `Failed to replace env in config: ${NPM_TOKEN}` on every invocation: scoped the npm auth config from repo root to `packages/cli/.npmrc`. Both publishing packages (the `agentera` 3.0 CLI on `@next` and the `agentera` 0.0.x shim on `@latest`) find the auth via npm's parent-directory walk; `pnpm install` from the repo root no longer reads any auth-bearing `.npmrc`.

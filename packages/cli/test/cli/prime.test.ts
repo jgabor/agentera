@@ -29,6 +29,9 @@ describe("cli prime", () => {
     const { rc, out } = capture((io) => cmdPrime({ guidance: true }, io));
     expect(rc).toBe(0);
     expect(out).toBe(PRIME_BLOB);
+    expect(out).toContain("agentera state <artifact> explain --format json");
+    expect(out).toContain("Supported typed writes:");
+    expect(out).toContain("--dry-run");
   });
 
   it("renders the default text orientation briefing", () => {
@@ -44,6 +47,7 @@ describe("cli prime", () => {
     expect(out).toContain("- alt: ");
     expect(out).toContain("source_contract:");
     expect(out).toContain("capability_startup_complete=true");
+    expect(out).toContain("artifact_writes: discover via");
   });
 
   it("rejects mutually-exclusive prime modes", () => {
@@ -66,6 +70,19 @@ describe("cli prime", () => {
     expect(payload.source_contract.capability_context.capability).toBe("status");
     expect(payload.source_contract.capability_context.fetch_command).toBe("agentera prime --context status --format json");
     expect(payload.source_contract.capability_context.required_before_rendering).toBe(true);
+    expect(payload.source_contract.artifact_writes).toMatchObject({
+      schemaVersion: "agentera.stateWriterDiscovery.v1",
+      discovery_command: "agentera schema --format json",
+    });
+    expect(payload.source_contract.artifact_writes.artifacts).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          artifact: "decisions",
+          mutations: ["append", "update"],
+          explain_command: "agentera state decisions explain --format json",
+        }),
+      ]),
+    );
     expect(payload.source_contract.fields).toContain("todo");
     expect(payload.source_contract.fields).not.toContain("issues");
     expect(payload.source_contract.fields).toContain("next_action");
@@ -175,6 +192,16 @@ describe("cli prime", () => {
     expect(payload.capability_context.context.planning_context.startup_contract.schemaVersion).toBe(
       "agentera.planeraStartup.v1",
     );
+    expect(payload.capability_context.state.write_contract).toMatchObject({
+      schemaVersion: "agentera.stateWriterDiscovery.v1",
+      artifacts: [
+        expect.objectContaining({
+          artifact: "plan",
+          mutations: ["append", "update", "set-status", "archive", "create"],
+        }),
+      ],
+      unsupported_targets: ["plan_archive"],
+    });
   });
 
   it("emits the orchestration bespoke context for orkestrera", () => {

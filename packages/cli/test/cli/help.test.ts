@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { main } from "../../src/cli/dispatch.js";
 import {
   printCommandHelp,
+  printStateHelp,
   printTopLevelHelp,
   printUpgradeHelp,
   wantsHelp,
@@ -47,6 +48,16 @@ describe("cli help", () => {
     expect(text).toContain("--restore");
   });
 
+  it("points state help at the live writer discovery contract", () => {
+    expect(printStateHelp()).toContain(
+      "agentera state <artifact> explain --format json",
+    );
+    const decisions = printStateHelp("decisions");
+    expect(decisions).toContain("{append,update,explain}");
+    expect(decisions).toContain("agentera state decisions explain --format json");
+    expect(decisions).toContain("agentera state decisions explain --verb VERB --format json");
+  });
+
   it("routes top-level --help through main", () => {
     const { rc, out } = capture((io) => main(["node", "agentera", "--help"], io));
     expect(rc).toBe(0);
@@ -78,6 +89,7 @@ describe("cli help", () => {
     expect(rc).toBe(0);
     expect(out).toContain("agentera prime [-h]");
     expect(out).toContain("--context CAPABILITY");
+    expect(out).toContain("artifact_writes discovery metadata");
     expect(out).not.toContain("app_home:");
   });
 

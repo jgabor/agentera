@@ -79,6 +79,24 @@ agentera state query --list-artifacts   # Canonical artifact inventory
 
 Canonical artifact names such as `DOCS.md` may map to YAML paths such as `.agentera/docs.yaml`; use the CLI result as the source of truth.
 
+Write `progress`, `decisions`, `plan`, and `health` through the typed state
+writer instead of hand-editing their YAML during normal capability execution.
+The writer resolves docs mappings, assigns CLI-owned fields, validates the final
+bytes, and compacts where required. Discover each live mutation contract before
+constructing a write:
+
+```bash
+agentera state decisions explain --format json
+agentera state decisions explain --verb update --format json
+agentera state progress explain --verb append --format json
+agentera state plan explain --verb create --format json
+agentera state health explain --verb append --format json
+```
+
+Use the returned examples and field definitions, and add `--dry-run` when a
+preview is appropriate. Artifacts outside those four families remain governed
+by their owning capability instructions.
+
 ## Branch model
 
 **Target:** trunk-based development on `main`. Commits land directly on `main`; branches are absent or extremely short-lived. No pull-request workflow — CI and release tags gate quality.
@@ -101,6 +119,8 @@ Invocation convention: `npx -y agentera <cmd>` invokes the published channel; ba
 | Orientation / status dashboard | `npx -y agentera prime` |
 | Capability startup context | `npx -y agentera prime --context <name> --format json` |
 | Project state | `npx -y agentera state todo` · `state plan` · `state decisions` |
+| Discover artifact writes | `npx -y agentera state <artifact> explain --format json` |
+| Inspect writer operation matrix | `npx -y agentera schema --format json` |
 | Artifact inventory | `npx -y agentera state query --list-artifacts` |
 | Validate capability or contract | `npx -y agentera check validate capability <name>` · `check validate capability-contract` |
 | CLI tests | `pnpm -C packages/cli test` |

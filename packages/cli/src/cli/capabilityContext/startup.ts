@@ -212,6 +212,7 @@ export function slimCapabilityContext(
     state: {
       declared_read_needs: context.declared_state_needs ?? [],
       declared_write_targets: context.declared_write_targets ?? [],
+      write_contract: context.write_contract ?? null,
       artifact_inventory: context.artifact_inventory ?? { read_needs: [], write_targets: [] },
       included: context.included_state_families ?? [],
       missing: context.missing_state_families ?? [],

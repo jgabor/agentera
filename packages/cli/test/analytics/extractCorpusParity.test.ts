@@ -4,7 +4,9 @@ import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
-const { DatabaseSync } = createRequire(import.meta.url)("node:sqlite") as typeof import("node:sqlite");
+const { DatabaseSync } = createRequire(import.meta.url)(
+  "node:sqlite",
+) as typeof import("node:sqlite");
 
 import { afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 
@@ -24,11 +26,29 @@ let tmp: string;
 function seedOpencodeParityFixture(dbp: string): void {
   const db = new DatabaseSync(dbp);
   db.exec("CREATE TABLE session(id TEXT, cwd TEXT, time_created INTEGER)");
-  db.exec("CREATE TABLE message(id TEXT, sessionID TEXT, role TEXT, time_created INTEGER, content TEXT, data TEXT)");
-  db.exec("CREATE TABLE part(id TEXT, messageID TEXT, type TEXT, text TEXT, data TEXT, time_created INTEGER)");
+  db.exec(
+    "CREATE TABLE message(id TEXT, sessionID TEXT, role TEXT, time_created INTEGER, content TEXT, data TEXT)",
+  );
+  db.exec(
+    "CREATE TABLE part(id TEXT, messageID TEXT, type TEXT, text TEXT, data TEXT, time_created INTEGER)",
+  );
   db.prepare("INSERT INTO session VALUES (?,?,?)").run("s1", "/proj/foo", 1_700_000_000);
-  db.prepare("INSERT INTO message VALUES (?,?,?,?,?,?)").run("m1", "s1", "user", 1_700_000_001, null, null);
-  db.prepare("INSERT INTO message VALUES (?,?,?,?,?,?)").run("m2", "s1", "assistant", 1_700_000_002, null, null);
+  db.prepare("INSERT INTO message VALUES (?,?,?,?,?,?)").run(
+    "m1",
+    "s1",
+    "user",
+    1_700_000_001,
+    null,
+    null,
+  );
+  db.prepare("INSERT INTO message VALUES (?,?,?,?,?,?)").run(
+    "m2",
+    "s1",
+    "assistant",
+    1_700_000_002,
+    null,
+    null,
+  );
   db.prepare("INSERT INTO part VALUES (?,?,?,?,?,?)").run(
     "p1",
     "m1",
@@ -57,15 +77,6 @@ function runPythonParityProbe(dbPath: string): unknown {
   return JSON.parse(proc.stdout);
 }
 
-beforeAll(() => {
-  const build = spawnSync("pnpm", ["-C", PKG_ROOT, "run", "build"], { stdio: "inherit" });
-  expect(build.status).toBe(0);
-  const gen = spawnSync(process.execPath, [path.join(PKG_ROOT, "scripts/generate-extract-corpus-parity.mjs"), "--write"], {
-    stdio: "inherit",
-  });
-  expect(gen.status).toBe(0);
-});
-
 beforeEach(() => {
   tmp = fs.mkdtempSync(path.join(os.tmpdir(), "extract-parity-"));
 });
@@ -82,10 +93,14 @@ describe("extractCorpusParity manifest", () => {
   });
 
   it("fails bundle parity check when manifest would drift", () => {
-    const check = spawnSync(process.execPath, [path.join(PKG_ROOT, "scripts/generate-extract-corpus-parity.mjs")], {
-      cwd: REPO_ROOT,
-      encoding: "utf8",
-    });
+    const check = spawnSync(
+      process.execPath,
+      [path.join(PKG_ROOT, "scripts/generate-extract-corpus-parity.mjs")],
+      {
+        cwd: REPO_ROOT,
+        encoding: "utf8",
+      },
+    );
     expect(check.status, check.stderr || check.stdout).toBe(0);
   });
 });

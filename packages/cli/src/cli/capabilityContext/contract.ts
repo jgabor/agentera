@@ -16,6 +16,7 @@ import {
 import { CAPABILITY_INSTRUCTIONS, capabilityInstructionModulePath } from "../../capabilities/index.js";
 import { isFile, pyRepr, appendUnique } from "./shared.js";
 import type { JsonObject } from "../../core/jsonValue.js";
+import { stateWriterContract } from "../../state/write/operations.js";
 
 export function capabilityInstructionContractPath(): string {
   const model = activeAppModel();
@@ -186,6 +187,7 @@ export function capabilityContext(capability: string | null): JsonObject | null 
     first_invocation_read: firstInvocationReadMetadata(capability),
     declared_state_needs: needs,
     declared_write_targets: writeTargets,
+    write_contract: stateWriterContract(writeTargets),
     artifact_inventory: inventory,
     included_state_families: needs.filter((name) => STARTUP_ENVELOPE_STATE_FAMILIES.has(name)),
     missing_state_families: missing,

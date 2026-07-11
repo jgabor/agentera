@@ -37,12 +37,12 @@ describe("useFixtureProject", () => {
     expect(fs.readFileSync(marker, "utf8")).toBe("# mutated\n");
   });
 
-  it("todo-resolved-over-limit exceeds the full-entry cap by 6", () => {
+  it("todo-resolved-over-limit exceeds the full-entry cap by 16", () => {
     const root = useFixtureProject("todo-resolved-over-limit");
     cleanups.push(root);
     const op = checkCompaction(root).find((o) => o.status.artifact === "todo#Resolved");
     expect(op?.action).toBe("over_limit");
-    expect(op?.status.over_limit_count).toBe(6);
+    expect(op?.status.over_limit_count).toBe(16);
   });
 
   it("progress-at-cap is within limits at 50 total entries", () => {

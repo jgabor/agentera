@@ -3,8 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { spawnSync } from "node:child_process";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { cmdPrime } from "../../src/cli/commands/prime.js";
 import { startupCompletenessContract } from "../../src/cli/startupCompletenessContract.js";
@@ -14,10 +13,7 @@ import {
   detectStaleAppContentSurfaces,
   skillMdLooksV2,
 } from "../../src/upgrade/appContentRefresh.js";
-import {
-  applyMigrationPhases,
-  dryRunMigration,
-} from "../../src/upgrade/migrateArtifactsV2ToV3.js";
+import { applyMigrationPhases, dryRunMigration } from "../../src/upgrade/migrateArtifactsV2ToV3.js";
 import { buildUpgradePlan as buildOrchestratorPlan } from "../../src/upgrade/upgradeOrchestrator.js";
 import { setSuccessorAnnouncedOverrideForTests } from "../../src/upgrade/nextMajorDoctor.js";
 import { migrationCtx, sandboxMigrationEnv } from "./helpers/migrationCtx.js";
@@ -95,9 +91,12 @@ function capturePrime(context: string, env: Record<string, string>): Record<stri
   try {
     const rc = cmdPrime(
       { command: "prime", context, format: "json" },
-      { out: (chunk: string) => {
-        out += chunk;
-      }, err: () => {} },
+      {
+        out: (chunk: string) => {
+          out += chunk;
+        },
+        err: () => {},
+      },
     );
     expect(rc).toBe(0);
     expect(out.trim().length).toBeGreaterThan(0);
@@ -112,17 +111,6 @@ function capturePrime(context: string, env: Record<string, string>): Record<stri
     }
   }
 }
-
-beforeAll(() => {
-  const result = spawnSync("pnpm", ["-C", "packages/cli", "build"], {
-    cwd: REPO_ROOT,
-    stdio: "pipe",
-    encoding: "utf8",
-  });
-  if (result.status !== 0) {
-    throw new Error(`pre-test cli build failed: ${result.stderr ?? result.stdout}`);
-  }
-});
 
 beforeEach(() => {
   tmp = fs.mkdtempSync(path.join(os.tmpdir(), "app-content-refresh-"));
@@ -157,9 +145,11 @@ describe("detectStaleAppContentSurfaces", () => {
     for (const label of APP_CONTENT_SURFACE_LABELS) {
       expect(stale).toContain(label);
     }
-    expect(skillMdLooksV2(fs.readFileSync(path.join(appHome, "app", "skills", "agentera", "SKILL.md"), "utf8"))).toBe(
-      true,
-    );
+    expect(
+      skillMdLooksV2(
+        fs.readFileSync(path.join(appHome, "app", "skills", "agentera", "SKILL.md"), "utf8"),
+      ),
+    ).toBe(true);
   });
 });
 
@@ -170,7 +160,9 @@ describe("upgrade planner integration", () => {
     seedV2SkillMd(path.join(appHome, "app"));
 
     const preview = dryRunMigration(migrationCtx(appHome, project, home, REPO_ROOT));
-    const refreshItems = preview.cleanup.items.filter((item) => item.action === APP_CONTENT_REFRESH_ACTION);
+    const refreshItems = preview.cleanup.items.filter(
+      (item) => item.action === APP_CONTENT_REFRESH_ACTION,
+    );
     expect(refreshItems.length).toBeGreaterThan(0);
     expect(refreshItems.every((item) => item.status === "pending")).toBe(true);
     expect(refreshItems.map((item) => item.message).join("\n")).toMatch(/SKILL\.md/);
@@ -198,9 +190,11 @@ describe("upgrade planner integration", () => {
     const preview = dryRunMigration(ctx);
     const applied = applyMigrationPhases(ctx, preview);
 
-    expect(applied.cleanup.items.some((item) => item.action === APP_CONTENT_REFRESH_ACTION && item.status === "applied")).toBe(
-      true,
-    );
+    expect(
+      applied.cleanup.items.some(
+        (item) => item.action === APP_CONTENT_REFRESH_ACTION && item.status === "applied",
+      ),
+    ).toBe(true);
     expect(fs.existsSync(path.join(appHome, "app"))).toBe(false);
 
     const installedSkill = path.join(appHome, "skills", "agentera", "SKILL.md");
@@ -211,7 +205,9 @@ describe("upgrade planner integration", () => {
 
     expect(fs.existsSync(path.join(appHome, "references"))).toBe(true);
     expect(fs.existsSync(path.join(appHome, "registry.json"))).toBe(true);
-    expect(fs.existsSync(path.join(appHome, "dist", "capabilities", "audit", "instructions.js"))).toBe(true);
+    expect(
+      fs.existsSync(path.join(appHome, "dist", "capabilities", "audit", "instructions.js")),
+    ).toBe(true);
 
     const appEnv = {
       ...sandboxMigrationEnv(home, appHome),
@@ -222,6 +218,8 @@ describe("upgrade planner integration", () => {
     const capabilityContext = payload.capability_context as Record<string, unknown>;
     const state = capabilityContext.state as Record<string, unknown>;
     expect(state.schema_error).toBeNull();
-    expect(startupCompletenessContract({ schemaError: null }).complete_for_capability_startup).toBe(true);
+    expect(startupCompletenessContract({ schemaError: null }).complete_for_capability_startup).toBe(
+      true,
+    );
   });
 });

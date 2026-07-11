@@ -117,7 +117,8 @@ Proceed/Cancel handoff.
 - NEVER push to remote repos without explicit user instruction
 - NEVER modify `.agentera/vision.yaml` or objective state during execution cycles (only the user or the owning capability may change these)
 - NEVER commit secrets or credentials to any artifact or file
-- Respect artifact path resolution: check `.agentera/docs.yaml` for path overrides before accessing any agent-facing artifact
+- For supported mutations, use the state writer; it resolves `.agentera/docs.yaml` path overrides and validates the published bytes
+- For direct access to other agent-facing artifacts, respect `.agentera/docs.yaml` path overrides
 </critical>
 
 ---
@@ -141,9 +142,49 @@ Proceed/Cancel handoff.
 
 ---
 
+## Artifact writes
+
+The CLI state writer is the canonical mutation path for `progress`, `decisions`,
+`plan`, and `health`. Do not hand-edit those artifacts during normal capability
+execution. The writer assigns numbers, validates schema fields, honors docs-mapped
+paths, serializes concurrent writes, compacts where required, and supports
+filesystem-safe previews.
+
+Discover the live contract before constructing a write:
+
+```bash
+agentera state decisions explain --format json
+agentera state decisions explain --verb update --format json
+```
+
+The same pattern applies to every writable artifact:
+
+```bash
+agentera state <progress|decisions|plan|health> explain --verb <verb> --format json
+```
+
+Common mutations:
+
+- `agentera state progress append ... --format json`
+- `agentera state decisions append ... --format json`
+- `agentera state decisions update --number N ... --format json`
+- `agentera state plan create --input plan.yaml --format json`
+- `agentera state plan append|update|set-status ... --format json`
+- `agentera state plan archive --format json`
+- `agentera state health append --input audit.yaml --format json`
+
+Add `--dry-run` to preview any mutation without publishing it. Artifacts not
+listed above are outside the typed writer contract and remain governed by their
+owning capability's instructions and safety rails. `agentera schema --format
+json` exposes the machine-readable writer operation matrix under
+`state_writer` and on each writable `artifact_schemas[*].write_interface`.
+
+---
+
 ## Artifact path resolution
 
-Before reading or writing any artifact, check if `.agentera/docs.yaml` exists.
+The state writer resolves path mappings itself. Before directly reading or
+writing an artifact outside the writer contract, check if `.agentera/docs.yaml` exists.
 If it has an Artifact Mapping section, use the path specified for each canonical
 filename. If `.agentera/docs.yaml` doesn't exist or has no mapping for a given
 artifact, use the default layout:

@@ -32,6 +32,7 @@ export default defineConfig({
   },
   test: {
     include: ["test/**/*.test.ts"],
+    globalSetup: ["./test/globalSetup.ts"],
     environment: "node",
     globals: false,
     // forks stays the default — some tests use process.chdir, so threads is not safe.

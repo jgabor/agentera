@@ -69,7 +69,7 @@ BUDGET:
 COMPACTION:
   1:
     id: DX1
-    rule: uniform_20_50_100
+    rule: uniform_10_40_50
     description: >-
       Growing artifacts follow a uniform 10/40/50 rule: 10 full-detail
       entries, 40 one-line archive entries, drop beyond 50 total.

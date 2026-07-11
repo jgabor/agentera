@@ -137,13 +137,13 @@ describe("compaction parity (D56 T3)", () => {
     expect(progress?.action).toBe("compacted");
     const result = progress?.result as Record<string, unknown>;
     expect(result.active_after).toBe(MAX_FULL_ENTRIES);
-    expect(result.archive_after).toBe(55 - MAX_FULL_ENTRIES);
+    expect(result.archive_after).toBe(MAX_TOTAL_ENTRIES - MAX_FULL_ENTRIES);
 
     const data = YAML.parse(
       fs.readFileSync(path.join(project, ".agentera", "progress.yaml"), "utf8"),
     ) as { cycles: unknown[]; archive: { summary: string }[] };
     expect(data.cycles.length).toBe(MAX_FULL_ENTRIES);
-    expect(data.archive.length).toBe(55 - MAX_FULL_ENTRIES);
+    expect(data.archive.length).toBe(MAX_TOTAL_ENTRIES - MAX_FULL_ENTRIES);
     expect(data.cycles.length + data.archive.length).toBeLessThanOrEqual(MAX_TOTAL_ENTRIES);
     expect(data.archive.some((entry) => entry.summary.includes("Cycle 1"))).toBe(true);
   });

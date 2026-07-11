@@ -101,7 +101,7 @@ function countStatus(
     archive_count: archiveCount,
     total_count: totalCount,
     over_limit_count: overLimitCount(budgetActive, archiveCount),
-    reason: protectedOverflowCount ? "protected-overflow review pressure" : "uniform_20_50_100",
+    reason: protectedOverflowCount ? "protected-overflow review pressure" : "uniform_10_40_50",
     protected_overflow_count: protectedOverflowCount,
     exists: true,
   };
@@ -208,10 +208,10 @@ function operationForStatus(status: CompactionStatus, mode: string): CompactionO
   if (status.protected_overflow_count) {
     return base("protected_overflow", `protected-overflow review pressure by ${status.protected_overflow_count}`);
   }
-  if (!status.over_limit_count) return base("ok", "within uniform_20_50_100 limits");
+  if (!status.over_limit_count) return base("ok", "within uniform_10_40_50 limits");
   return base(
     mode === "check" ? "over_limit" : "pending_fix",
-    `over uniform_20_50_100 limit by ${status.over_limit_count}`,
+    `over uniform_10_40_50 limit by ${status.over_limit_count}`,
   );
 }
 

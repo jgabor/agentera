@@ -13,7 +13,7 @@ and lefthook — not duplicated as vitest assertions against this checkout's `.a
 | ----- | ------ | ----------- |
 | Vitest | Hook/CLI behavior from fixtures and tmp project trees | `pnpm -C packages/cli test` |
 | Repo-state fixtures | Pinned `.agentera/` + `TODO.md` variants via `useFixtureProject(name)` | `packages/cli/test/fixtures/repo-state/` |
-| Repo gate | Committed `.agentera/*` and `TODO.md` within `uniform_20_50_100` | `pnpm -C packages/cli build && node packages/cli/dist/bin/agentera.js check compact` |
+| Repo gate | Committed `.agentera/*` and `TODO.md` within `uniform_10_40_50` | `pnpm -C packages/cli build && node packages/cli/dist/bin/agentera.js check compact` |
 | Release gate | Version-bearing surfaces aligned (registry, package.json, bundle sentinel) | `releaseMetadata.test.ts` live-repo describe (gate-deferred) |
 
 ## Classification key

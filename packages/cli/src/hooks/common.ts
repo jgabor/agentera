@@ -25,9 +25,9 @@ export {
 type Env = Record<string, string | undefined>;
 type Entry = Record<string, unknown>;
 
-export const MAX_FULL_ENTRIES = 20;
-export const MAX_ONELINE_ENTRIES = 50;
-export const MAX_TOTAL_ENTRIES = 100;
+export const MAX_FULL_ENTRIES = 10;
+export const MAX_ONELINE_ENTRIES = 40;
+export const MAX_TOTAL_ENTRIES = 50;
 
 export function applyRetentionCaps<T extends Entry>(
   fullEntries: T[],

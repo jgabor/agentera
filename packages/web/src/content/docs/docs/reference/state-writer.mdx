@@ -1,0 +1,114 @@
+---
+title: State writer
+description: Discover, preview, and safely mutate Agentera project artifacts.
+---
+
+Agentera provides a typed writer for four agent-facing artifact families:
+`progress`, `decisions`, `plan`, and `health`. Use it instead of hand-editing
+their YAML during normal capability execution.
+
+The writer resolves project-local paths from `.agentera/docs.yaml`, assigns
+CLI-owned numbers and timestamps, validates the final bytes, serializes
+concurrent writes, and runs artifact compaction where required.
+
+## Discover the live contract
+
+Start with `explain`. It reports the resolved path, supported verbs, required
+and optional fields, valid values, defaults, budgets, and an example command.
+
+```bash
+agentera state decisions explain --format json
+agentera state decisions explain --verb update --format json
+agentera state plan explain --verb create --format json
+```
+
+For the complete machine-readable operation matrix, including the
+`write_interface` attached to each writable artifact schema:
+
+```bash
+agentera schema --format json
+```
+
+## Preview a mutation
+
+Add `--dry-run` to any mutation. The response includes the candidate state and
+diff without publishing the artifact or creating a mapped destination directory.
+
+```bash
+agentera state decisions append \
+  --question "Where should project state writes live?" \
+  --context "Agents need one validated mutation path." \
+  --alternative-chosen "The state namespace" \
+  --alternative-rejected "Direct YAML edits" \
+  --choice "Use the typed state writer." \
+  --reasoning "It centralizes validation, numbering, and compaction." \
+  --confidence firm \
+  --dry-run \
+  --format json
+```
+
+Remove `--dry-run` to publish the exact validated candidate.
+
+## Record progress
+
+```bash
+agentera state progress append \
+  --type fix \
+  --phase build \
+  --what "Made writer discovery available from prime." \
+  --intent "Let agents find the safe mutation path." \
+  --verified "CLI tests and typecheck passed." \
+  --format json
+```
+
+The CLI assigns the cycle number and timestamp. Every progress entry must carry
+concrete verification evidence.
+
+## Record and update decisions
+
+Use `append` for a new decision. Use `update` only for the decision satisfaction
+contract:
+
+```bash
+agentera state decisions update \
+  --number 42 \
+  --satisfaction-state provisionally_satisfied \
+  --satisfaction-evidence "The implementation and regression tests now exist." \
+  --format json
+```
+
+Only the user can establish `user_confirmed_satisfied`; agents may record
+provisional satisfaction with evidence.
+
+## Create and advance plans
+
+Create a complete plan document through `--input`, then update task lifecycle
+state through typed commands:
+
+```bash
+agentera state plan create --input plan.yaml --format json
+agentera state plan set-status --task 1 --status in_progress --format json
+agentera state plan update --task 1 --evidence "Focused tests passed." --format json
+agentera state plan set-status --task 1 --status complete --format json
+agentera state plan set-status --status complete --format json
+agentera state plan archive --format json
+```
+
+Run `agentera state plan explain --verb <verb> --format json` before using a
+verb whose field contract is unfamiliar.
+
+## Append health audits
+
+Health accepts one complete audit entry as YAML or JSON. Audit numbering and
+default dates are writer-owned.
+
+```bash
+agentera state health append --input audit.yaml --format json
+agentera state health append --input - --format json < audit.json
+```
+
+## Scope
+
+The typed writer does not currently mutate `vision`, `objective`, `docs`,
+`todo`, `changelog`, `design`, or `experiments`. Follow the owning capability's
+instructions and approval boundaries for those artifacts.

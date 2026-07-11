@@ -7,7 +7,7 @@ owned by `agentera check compact`.
 
 | Variant | Intent |
 | ------- | ------ |
-| `ok` | Minimal valid project within `uniform_20_50_100` budgets; includes schema-clean `docs.yaml` (with registry-aligned `version_files`), `vision.yaml`, and `health.yaml` for artifact validation. |
+| `ok` | Minimal valid project within `uniform_10_40_50` budgets; includes schema-clean `docs.yaml` (with registry-aligned `version_files`), `vision.yaml`, and `health.yaml` for artifact validation. |
 | `todo-resolved-over-limit` | 56 Resolved entries (26 full + 30 oneline) — over full cap by 6. |
 | `progress-at-cap` | `progress.yaml` at 50 total entries (10 cycles + 40 archive) but still within limits. |
 | `progress-over-limit` | 55 progress cycles — over the 50-entry cap. |

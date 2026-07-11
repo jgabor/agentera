@@ -6,6 +6,7 @@ import { main } from "../../src/cli/dispatch.js";
 import {
   emitInvalidInput,
   INVALID_INPUT_EXIT_CODE,
+  type InvalidInputErrorClass,
   type InvalidInputEnvelope,
 } from "../../src/cli/errors.js";
 
@@ -165,6 +166,7 @@ describe("invalid-input envelope (oracle parity)", () => {
   describe("oracle contract pinning", () => {
     it("matches the helper's emitted shape for a minimal body", () => {
       const sample: InvalidInputEnvelope = {
+        schemaVersion: "agentera.invalidInputEnvelope.v2",
         status: "fail",
         error: { class: "missing_argument", message: "x" },
       };
@@ -177,17 +179,18 @@ describe("invalid-input envelope (oracle parity)", () => {
     });
 
     it("declares a fixed set of error classes", () => {
-      expect(new Set(ORACLE.errorClassUnion)).toEqual(
-        new Set([
-          "missing_argument",
-          "invalid_choice",
-          "unrecognized_argument",
-          "mutually_exclusive",
-          "invalid_int",
-          "invalid_format",
-          "unsupported_target",
-        ]),
-      );
+      const liveClasses = {
+        missing_argument: true,
+        invalid_choice: true,
+        unrecognized_argument: true,
+        mutually_exclusive: true,
+        invalid_int: true,
+        invalid_format: true,
+        unsupported_target: true,
+        schema_violation: true,
+        conflict: true,
+      } satisfies Record<InvalidInputErrorClass, true>;
+      expect(new Set(ORACLE.errorClassUnion)).toEqual(new Set(Object.keys(liveClasses)));
     });
 
     it("pins the text-mode header order", () => {

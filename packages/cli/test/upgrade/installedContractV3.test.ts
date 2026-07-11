@@ -4,8 +4,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import YAML from "yaml";
-import { afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { spawnSync } from "node:child_process";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { cmdValidateCapabilityContract } from "../../src/cli/commands/validate.js";
 import { BOOTSTRAP_SOURCE_ROOT_ENV } from "../../src/core/sourceRoot.js";
@@ -13,10 +12,7 @@ import {
   contractLooksV2,
   detectStaleAppContentSurfaces,
 } from "../../src/upgrade/appContentRefresh.js";
-import {
-  applyMigrationPhases,
-  dryRunMigration,
-} from "../../src/upgrade/migrateArtifactsV2ToV3.js";
+import { applyMigrationPhases, dryRunMigration } from "../../src/upgrade/migrateArtifactsV2ToV3.js";
 import { migrationCtx } from "./helpers/migrationCtx.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -50,7 +46,12 @@ function copyFixture(name: string, dest: string): string {
 }
 
 function seedV2Contract(appBundleRoot: string): void {
-  const contractPath = path.join(appBundleRoot, "skills", "agentera", "capability_schema_contract.yaml");
+  const contractPath = path.join(
+    appBundleRoot,
+    "skills",
+    "agentera",
+    "capability_schema_contract.yaml",
+  );
   fs.mkdirSync(path.dirname(contractPath), { recursive: true });
   fs.copyFileSync(V2_CONTRACT_FIXTURE, contractPath);
 }
@@ -61,7 +62,10 @@ function readInstalledContract(appHome: string): { text: string; data: Record<st
   return { text, data: YAML.parse(text) as Record<string, unknown> };
 }
 
-function assertInstalledContractIsV3(contract: { text: string; data: Record<string, unknown> }): void {
+function assertInstalledContractIsV3(contract: {
+  text: string;
+  data: Record<string, unknown>;
+}): void {
   const directoryRequirements = contract.data.DIRECTORY_REQUIREMENTS as Record<string, unknown>;
   const instructionModule = directoryRequirements.instruction_module as { path: string };
   expect(instructionModule.path).toBe(V3_INSTRUCTION_MODULE_PATH);
@@ -83,17 +87,23 @@ function assertInstalledContractIsV3(contract: { text: string; data: Record<stri
   }
 }
 
-function captureCapabilityContractValidation(appHome: string): { rc: number; payload: Record<string, unknown> } {
+function captureCapabilityContractValidation(appHome: string): {
+  rc: number;
+  payload: Record<string, unknown>;
+} {
   const saved = process.env[BOOTSTRAP_SOURCE_ROOT_ENV];
   process.env[BOOTSTRAP_SOURCE_ROOT_ENV] = appHome;
   let out = "";
   try {
-    const rc = cmdValidateCapabilityContract({ format: "json" }, {
-      out: (chunk: string) => {
-        out += chunk;
+    const rc = cmdValidateCapabilityContract(
+      { format: "json" },
+      {
+        out: (chunk: string) => {
+          out += chunk;
+        },
+        err: () => {},
       },
-      err: () => {},
-    });
+    );
     return { rc, payload: JSON.parse(out) as Record<string, unknown> };
   } finally {
     if (saved === undefined) {
@@ -103,17 +113,6 @@ function captureCapabilityContractValidation(appHome: string): { rc: number; pay
     }
   }
 }
-
-beforeAll(() => {
-  const result = spawnSync("pnpm", ["-C", "packages/cli", "build"], {
-    cwd: REPO_ROOT,
-    stdio: "pipe",
-    encoding: "utf8",
-  });
-  if (result.status !== 0) {
-    throw new Error(`pre-test cli build failed: ${result.stderr ?? result.stdout}`);
-  }
-});
 
 beforeEach(() => {
   tmp = fs.mkdtempSync(path.join(os.tmpdir(), "installed-contract-v3-"));

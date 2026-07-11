@@ -1,11 +1,11 @@
 {
-  "schemaVersion": "agentera.invalidInputEnvelope.v1",
+  "schemaVersion": "agentera.invalidInputEnvelope.v2",
   "notes": "Frozen contract for the canonical invalid-input error envelope. The live CLI is exercised against this oracle in packages/cli/test/cli/invalidInputEnvelope.test.ts; any drift (new required key, renamed class, missing text-mode header line) must fail the parity test or be reflected here intentionally.",
   "format": "json",
   "exitCode": 2,
-  "requiredTopLevelKeys": ["status", "error"],
+  "requiredTopLevelKeys": ["schemaVersion", "status", "error"],
   "requiredErrorKeys": ["class", "message"],
-  "optionalErrorKeys": ["valid_values", "syntax", "example"],
+  "optionalErrorKeys": ["valid_values", "syntax", "example", "violations"],
   "statusValue": "fail",
   "errorClassUnion": [
     "missing_argument",
@@ -14,7 +14,9 @@
     "mutually_exclusive",
     "invalid_int",
     "invalid_format",
-    "unsupported_target"
+    "unsupported_target",
+    "schema_violation",
+    "conflict"
   ],
   "textMode": {
     "stream": "stderr",

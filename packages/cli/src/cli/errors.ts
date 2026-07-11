@@ -17,7 +17,9 @@ export type InvalidInputErrorClass =
   | "mutually_exclusive"
   | "invalid_int"
   | "invalid_format"
-  | "unsupported_target";
+  | "unsupported_target"
+  | "schema_violation"
+  | "conflict";
 
 export interface InvalidInputErrorBody {
   class: InvalidInputErrorClass;
@@ -25,9 +27,11 @@ export interface InvalidInputErrorBody {
   valid_values?: string[];
   syntax?: string;
   example?: string;
+  violations?: string[];
 }
 
 export interface InvalidInputEnvelope {
+  schemaVersion: "agentera.invalidInputEnvelope.v2";
   status: "fail";
   error: InvalidInputErrorBody;
 }
@@ -55,6 +59,7 @@ export function emitInvalidInput(
 
   if (opts.format === "json") {
     const envelope: InvalidInputEnvelope = {
+      schemaVersion: "agentera.invalidInputEnvelope.v2",
       status: "fail",
       error: opts.body,
     };

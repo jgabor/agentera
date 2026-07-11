@@ -26,3 +26,12 @@ export function loadYamlMappingFile(path: string): Record<string, unknown> {
 export function parseYaml(text: string): unknown {
   return YAML.parse(text);
 }
+
+/** Serialize a YAML mapping with stable block-style prose and insertion-order keys. */
+export function dumpYamlMapping(doc: Record<string, unknown>): string {
+  return YAML.stringify(doc, {
+    blockQuote: "literal",
+    collectionStyle: "block",
+    lineWidth: 0,
+  });
+}

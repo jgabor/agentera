@@ -26,7 +26,6 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PKG_ROOT = path.resolve(__dirname, "..", "..");
-const REPO_ROOT = path.resolve(PKG_ROOT, "..", "..");
 const PKG_JSON = path.join(PKG_ROOT, "package.json");
 
 interface PackFile {
@@ -70,44 +69,20 @@ function scrubbedEnv(extra: Record<string, string> = {}): NodeJS.ProcessEnv {
 }
 
 /**
- * Build the package (tsc + copy-bundle) and read the `npm pack --dry-run
- * --json` manifest. We bypass the `prepack` npm-script because the script
- * is the surface we want to validate independently; the assertion still
- * checks the package layout: dist/bin/agentera.js + bundle/ + sentinel.
+ * Read the `npm pack --dry-run --json` manifest from the package output built
+ * once by Vitest global setup. Worker tests never rebuild shared dist/ or
+ * bundle/ because other parallel workers consume those directories.
  */
 function packManifestDirect(): PackEntry {
   const env = scrubbedEnv({ npm_config_ignore_scripts: "true" });
-  // Invoke the TypeScript compiler via its lib/tsc.js shim so the test does
-  // not depend on the shell-wrapper at node_modules/.bin/tsc (which is a
-  // /bin/sh script and not directly executable as a Node module).
-  const tscEntry = path.join(PKG_ROOT, "node_modules", "typescript", "lib", "tsc.js");
-  const tsc = spawnSync("node", [tscEntry, "-p", "tsconfig.json"], {
-    encoding: "utf8",
-    env,
+  const r = spawnSync("npm", ["pack", "--dry-run", "--json", "--ignore-scripts"], {
     cwd: PKG_ROOT,
-  });
-  expect(
-    tsc.status,
-    `tsc must succeed in packManifestDirect; stderr=${tsc.stderr.slice(0, 800)}`,
-  ).toBe(0);
-  const copy = spawnSync("node", [path.join(PKG_ROOT, "scripts", "copy-bundle.mjs")], {
-    cwd: REPO_ROOT,
     encoding: "utf8",
     env,
   });
-  expect(
-    copy.status,
-    `copy-bundle must succeed in packManifestDirect; stderr=${copy.stderr.slice(0, 800)}`,
-  ).toBe(0);
-  const r = spawnSync(
-    "npm",
-    ["pack", "--dry-run", "--json", "--ignore-scripts"],
-    { cwd: PKG_ROOT, encoding: "utf8", env },
+  expect(r.status, `npm pack --ignore-scripts must succeed; stderr=${r.stderr.slice(0, 800)}`).toBe(
+    0,
   );
-  expect(
-    r.status,
-    `npm pack --ignore-scripts must succeed; stderr=${r.stderr.slice(0, 800)}`,
-  ).toBe(0);
   const start = r.stdout.indexOf("[");
   expect(start, "npm pack --json must emit a JSON array").toBeGreaterThanOrEqual(0);
   const parsed = JSON.parse(r.stdout.slice(start)) as PackEntry[];
@@ -134,8 +109,9 @@ describe("v3 packaging (T1)", () => {
       expect(filePaths.has("bundle/registry.json")).toBe(true);
       expect(filePaths.has("bundle/skills/agentera/SKILL.md")).toBe(true);
       expect([...filePaths].some((p) => p.startsWith("bundle/references/"))).toBe(true);
-      expect([...filePaths].some((p) => p.startsWith("bundle/skills/agentera/capabilities/")))
-        .toBe(true);
+      expect([...filePaths].some((p) => p.startsWith("bundle/skills/agentera/capabilities/"))).toBe(
+        true,
+      );
     });
 
     it("FAIL (regression): if `files: [dist, bundle]` is dropped, the manifest loses bundle/", () => {
@@ -186,8 +162,6 @@ describe("v3 packaging (T1)", () => {
   });
 
   describe("prepack surface (copy-bundle.mjs)", () => {
-    const REAL_BUNDLE = path.join(PKG_ROOT, "bundle");
-
     function stageFakeRepo(opts: { omitSkills: boolean }): string {
       const fakeRoot = fs.mkdtempSync(path.join(os.tmpdir(), "prepack-fake-"));
       if (!opts.omitSkills) {
@@ -222,30 +196,28 @@ describe("v3 packaging (T1)", () => {
     }
 
     it("PASS: copy-bundle.mjs stages bundle/, sentinel, registry.json, skills/, references/", () => {
-      const prevSentinel = fs.existsSync(REAL_BUNDLE)
-        ? fs.readFileSync(path.join(REAL_BUNDLE, ".agentera-npx-bundle.json"), "utf8")
-        : null;
+      const fakeRoot = stageFakeRepo({ omitSkills: false });
       try {
-        const r = spawnSync("node", [path.join(PKG_ROOT, "scripts", "copy-bundle.mjs")], {
-          cwd: REPO_ROOT,
+        const fakePkg = path.join(fakeRoot, "packages", "cli");
+        const bundle = path.join(fakePkg, "bundle");
+        const r = spawnSync("node", [path.join(fakePkg, "scripts", "copy-bundle.mjs")], {
+          cwd: fakeRoot,
           encoding: "utf8",
         });
         expect(r.status, `copy-bundle must succeed; stderr=${r.stderr}`).toBe(0);
-        expect(fs.existsSync(path.join(REAL_BUNDLE, ".agentera-npx-bundle.json"))).toBe(true);
-        expect(fs.existsSync(path.join(REAL_BUNDLE, "registry.json"))).toBe(true);
-        expect(fs.existsSync(path.join(REAL_BUNDLE, "skills", "agentera", "SKILL.md"))).toBe(true);
-        const refs = fs.readdirSync(path.join(REAL_BUNDLE, "references"));
+        expect(fs.existsSync(path.join(bundle, ".agentera-npx-bundle.json"))).toBe(true);
+        expect(fs.existsSync(path.join(bundle, "registry.json"))).toBe(true);
+        expect(fs.existsSync(path.join(bundle, "skills", "agentera", "SKILL.md"))).toBe(true);
+        const refs = fs.readdirSync(path.join(bundle, "references"));
         expect(refs.length).toBeGreaterThan(0);
 
         const sentinel = JSON.parse(
-          fs.readFileSync(path.join(REAL_BUNDLE, ".agentera-npx-bundle.json"), "utf8"),
+          fs.readFileSync(path.join(bundle, ".agentera-npx-bundle.json"), "utf8"),
         );
         expect(sentinel.kind).toBe("agentera-npx-bundle");
-        expect(sentinel.suiteVersion).toBe(readPackageJson().agentera.suiteVersion);
+        expect(sentinel.suiteVersion).toBe("9.9.9-fixture");
       } finally {
-        if (prevSentinel !== null) {
-          fs.writeFileSync(path.join(REAL_BUNDLE, ".agentera-npx-bundle.json"), prevSentinel);
-        }
+        fs.rmSync(fakeRoot, { recursive: true, force: true });
       }
     });
 
@@ -301,17 +273,28 @@ describe("v3 packaging (T1)", () => {
       const outfile = path.join(tmp, "agentera-single-binary");
       const r = spawnSync(
         "bun",
-        ["build", "--compile", path.join(PKG_ROOT, "dist", "bin", "agentera.js"), "--outfile", outfile],
+        [
+          "build",
+          "--compile",
+          path.join(PKG_ROOT, "dist", "bin", "agentera.js"),
+          "--outfile",
+          outfile,
+        ],
         { cwd: tmp, encoding: "utf8" },
       );
-      expect(r.status, `bun build --compile must succeed; stderr=${r.stderr.slice(0, 500)}`).toBe(0);
+      expect(r.status, `bun build --compile must succeed; stderr=${r.stderr.slice(0, 500)}`).toBe(
+        0,
+      );
       expect(fs.existsSync(outfile)).toBe(true);
       const stat = fs.statSync(outfile);
       expect(stat.size).toBeGreaterThan(1_000_000);
       expect(stat.mode & 0o111).not.toBe(0);
 
       const prime = spawnSync(outfile, ["prime", "--format", "json"], { encoding: "utf8" });
-      expect(prime.status, `single-binary prime must exit 0; stderr=${prime.stderr.slice(0, 500)}`).toBe(0);
+      expect(
+        prime.status,
+        `single-binary prime must exit 0; stderr=${prime.stderr.slice(0, 500)}`,
+      ).toBe(0);
       const payload = JSON.parse(prime.stdout);
       expect(payload.command).toBe("prime");
       expect(payload.status).toBe("ok");
@@ -321,12 +304,20 @@ describe("v3 packaging (T1)", () => {
 
     it("FAIL (regression): bun build --compile of a missing entrypoint exits non-zero", () => {
       if (!bunAvailable()) {
-        throw new Error("bun is required for the single-binary regression gate; install bun >= 1.1.x");
+        throw new Error(
+          "bun is required for the single-binary regression gate; install bun >= 1.1.x",
+        );
       }
       const outfile = path.join(tmp, "agentera-bogus-binary");
       const r = spawnSync(
         "bun",
-        ["build", "--compile", path.join(PKG_ROOT, "dist", "bin", "does-not-exist.js"), "--outfile", outfile],
+        [
+          "build",
+          "--compile",
+          path.join(PKG_ROOT, "dist", "bin", "does-not-exist.js"),
+          "--outfile",
+          outfile,
+        ],
         { cwd: tmp, encoding: "utf8" },
       );
       expect(r.status, "bun build --compile of a missing entrypoint must fail").not.toBe(0);

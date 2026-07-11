@@ -25,6 +25,30 @@ describe("cli schema", () => {
     expect(payload.doctor.signal_kinds).toContain("missing_marker");
     expect(Array.isArray(payload.artifact_schemas)).toBe(true);
     expect(payload.artifact_locations.schemaVersion).toBe("agentera.artifact_locations.v1");
+    expect(payload.state_writer).toMatchObject({
+      schemaVersion: "agentera.stateWriterDiscovery.v1",
+      namespace: "agentera state",
+      discovery_command: "agentera schema --format json",
+    });
+    expect(payload.state_writer.artifacts).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          artifact: "decisions",
+          mutations: ["append", "update"],
+          explain_by_verb: {
+            append: "agentera state decisions explain --verb append --format json",
+            update: "agentera state decisions explain --verb update --format json",
+          },
+        }),
+      ]),
+    );
+    const decisions = (
+      payload.artifact_schemas as Array<{ name: string; write_interface: unknown }>
+    ).find((artifact) => artifact.name === "decisions");
+    expect(decisions?.write_interface).toMatchObject({
+      artifact: "decisions",
+      explain_command: "agentera state decisions explain --format json",
+    });
   });
 
   it("emits JSON by default and returns 0", () => {

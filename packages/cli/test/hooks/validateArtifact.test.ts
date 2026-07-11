@@ -3,7 +3,11 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import { ArtifactSchemaValidator, HookCliAdapter, loadSchema } from "../../src/hooks/validateArtifact/index.js";
+import {
+  ArtifactSchemaValidator,
+  HookCliAdapter,
+  loadSchema,
+} from "../../src/hooks/validateArtifact/index.js";
 import { runCursorPreToolUse } from "../../src/hooks/cursorPreToolUse.js";
 import { cleanupFixtureProject, useFixtureProject } from "../helpers/useFixtureProject.js";
 
@@ -49,6 +53,58 @@ describe("ArtifactSchemaValidator", () => {
     const violations = new ArtifactSchemaValidator().validateExplicit("DECISIONS.md", p, tmp);
     expect(violations.some((v) => v.includes("must have exactly one chosen entry"))).toBe(true);
     expect(violations.some((v) => v.includes("invalid value 'bogus_state'"))).toBe(true);
+  });
+
+  it("accepts legacy scalar health archive summaries", () => {
+    const p = path.join(tmp, "health.yaml");
+    fs.writeFileSync(
+      p,
+      [
+        "audits:",
+        "- number: 1",
+        "  date: 2026-07-11",
+        "  dimensions: [architecture_alignment]",
+        "  findings_summary: {critical: 0, warning: 0, info: 0, filtered_by_confidence: 0}",
+        "  trajectory: stable",
+        "  grades: {architecture_alignment: A}",
+        "archive:",
+        "- 'Audit 0: legacy scalar summary'",
+        "",
+      ].join("\n"),
+    );
+    expect(new ArtifactSchemaValidator().validateExplicit("HEALTH.md", p, tmp)).toEqual([]);
+  });
+
+  it("enforces plan dependency references and acyclic graphs", () => {
+    const p = path.join(tmp, "plan.yaml");
+    const plan = (dependsOn: string, secondDependsOn = "") =>
+      [
+        "header: {level: light, created: 2026-07-11, status: active, title: Test}",
+        "what: Test dependencies.",
+        "why: Keep orchestration ordered.",
+        "scope: {included: [writer], excluded: []}",
+        "tasks:",
+        "- {number: 1, name: First, status: pending, depends_on: [" + dependsOn + "]}",
+        "- {number: 2, name: Second, status: pending, depends_on: [" + secondDependsOn + "]}",
+        "",
+      ].join("\n");
+
+    fs.writeFileSync(p, plan("99"));
+    expect(
+      new ArtifactSchemaValidator()
+        .validateExplicit("PLAN.md", p, tmp)
+        .some((violation) => violation.includes("unknown task '99'") && violation.includes("PV4")),
+    ).toBe(true);
+
+    fs.writeFileSync(p, plan("2", "1"));
+    expect(
+      new ArtifactSchemaValidator()
+        .validateExplicit("PLAN.md", p, tmp)
+        .some(
+          (violation) =>
+            violation.includes("circular dependency chain") && violation.includes("PV4"),
+        ),
+    ).toBe(true);
   });
 
   it("validates human-facing TODO.md markdown", () => {
@@ -181,9 +237,7 @@ describe("ArtifactSchemaValidator", () => {
     ].join("\n");
     fs.writeFileSync(p, todo);
     const violations = new ArtifactSchemaValidator().validateExplicit("TODO.md", p, tmp);
-    expect(
-      violations.filter((v) => v.includes("nested heading")).length,
-    ).toBeGreaterThan(0);
+    expect(violations.filter((v) => v.includes("nested heading")).length).toBeGreaterThan(0);
   });
 
   it("rejects an unsupported artifact name", () => {
@@ -198,14 +252,25 @@ describe("HookCliAdapter.run", () => {
   it("returns 0 for non-artifact writes and empty input", () => {
     const adapter = new HookCliAdapter();
     expect(adapter.run("")).toEqual([0, []]);
-    expect(adapter.run(JSON.stringify({ tool_name: "Write", tool_input: { file_path: "src/x.ts" }, cwd: tmp }))).toEqual([0, []]);
+    expect(
+      adapter.run(
+        JSON.stringify({ tool_name: "Write", tool_input: { file_path: "src/x.ts" }, cwd: tmp }),
+      ),
+    ).toEqual([0, []]);
   });
 
   it("returns 2 with violations for an invalid artifact write", () => {
     fs.mkdirSync(path.join(tmp, ".agentera"), { recursive: true });
-    fs.writeFileSync(path.join(tmp, ".agentera", "progress.yaml"), "cycles:\n- number: 1\n  timestamp: x\n");
+    fs.writeFileSync(
+      path.join(tmp, ".agentera", "progress.yaml"),
+      "cycles:\n- number: 1\n  timestamp: x\n",
+    );
     const [rc, violations] = new HookCliAdapter().run(
-      JSON.stringify({ tool_name: "Write", tool_input: { file_path: ".agentera/progress.yaml" }, cwd: tmp }),
+      JSON.stringify({
+        tool_name: "Write",
+        tool_input: { file_path: ".agentera/progress.yaml" },
+        cwd: tmp,
+      }),
     );
     expect(rc).toBe(2);
     expect(violations.length).toBeGreaterThan(0);
@@ -215,18 +280,28 @@ describe("HookCliAdapter.run", () => {
 describe("runCursorPreToolUse", () => {
   it("denies an invalid artifact write and allows valid/non-artifact writes", () => {
     fs.mkdirSync(path.join(tmp, ".agentera"), { recursive: true });
-    fs.writeFileSync(path.join(tmp, ".agentera", "progress.yaml"), "cycles:\n- number: 1\n  timestamp: x\n");
+    fs.writeFileSync(
+      path.join(tmp, ".agentera", "progress.yaml"),
+      "cycles:\n- number: 1\n  timestamp: x\n",
+    );
     let denyOut = "";
     runCursorPreToolUse(
-      JSON.stringify({ tool_name: "Write", tool_input: { file_path: ".agentera/progress.yaml" }, cwd: tmp }),
+      JSON.stringify({
+        tool_name: "Write",
+        tool_input: { file_path: ".agentera/progress.yaml" },
+        cwd: tmp,
+      }),
       { out: (t) => (denyOut = t) },
     );
     expect(JSON.parse(denyOut).permission).toBe("deny");
 
     let allowOut = "";
-    runCursorPreToolUse(JSON.stringify({ tool_name: "Write", tool_input: { file_path: "src/x.ts" }, cwd: tmp }), {
-      out: (t) => (allowOut = t),
-    });
+    runCursorPreToolUse(
+      JSON.stringify({ tool_name: "Write", tool_input: { file_path: "src/x.ts" }, cwd: tmp }),
+      {
+        out: (t) => (allowOut = t),
+      },
+    );
     expect(JSON.parse(allowOut).permission).toBe("allow");
   });
 });

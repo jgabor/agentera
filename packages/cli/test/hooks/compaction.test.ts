@@ -50,15 +50,15 @@ function writeProgressYaml(dir: string, cycleCount: number, archiveCount = 0): s
 }
 
 describe("checkCompaction (repo-state fixtures)", () => {
-  it("flags 46 Resolved entries as over_limit with count 6", () => {
+  it("flags 46 full Resolved entries as 16 over the full-entry limit", () => {
     const root = useFixtureProject("todo-resolved-over-limit");
     fixtureRoots.push(root);
     const op = checkCompaction(root).find((o) => o.status.artifact === "todo#Resolved");
     expect(op?.action).toBe("over_limit");
-    expect(op?.status.over_limit_count).toBe(6);
+    expect(op?.status.over_limit_count).toBe(16);
   });
 
-  it("reports ok for all compactable artifacts within uniform_20_50_100", () => {
+  it("reports ok for all compactable artifacts within uniform_10_40_50", () => {
     const root = useFixtureProject("ok");
     fixtureRoots.push(root);
     const present = checkCompaction(root).filter(
@@ -100,8 +100,8 @@ describe("progress.yaml over-limit gate", () => {
       cycles: { number: number }[];
       archive: { summary: string }[];
     };
-    expect(data.cycles.length).toBe(20);
-    expect(data.archive.length).toBe(35);
+    expect(data.cycles.length).toBe(10);
+    expect(data.archive.length).toBe(40);
     expect(data.cycles.length + data.archive.length).toBeLessThanOrEqual(MAX_TOTAL_ENTRIES);
     expect(data.cycles[0].number).toBe(55);
     expect(data.archive.some((e) => e.summary.includes("Cycle 1"))).toBe(true);
@@ -129,7 +129,7 @@ describe("compactYamlFile", () => {
     expect(data.archive.length).toBe(25 - MAX_FULL_ENTRIES);
     // Newest cycle (25) retained full; oldest archived as summaries (archive is descending).
     expect(data.cycles[0].number).toBe(25);
-    expect(data.archive[0].summary).toContain("Cycle 5");
+    expect(data.archive[0].summary).toContain("Cycle 15");
     expect(data.archive[data.archive.length - 1].summary).toContain("Cycle 1");
   });
 
@@ -171,14 +171,14 @@ describe("compactYamlFile decisions archive ordering", () => {
       archive: { number?: number; summary: string }[];
     };
     // Active entries ascending (newest kept).
-    expect(data.decisions[0].number).toBe(6);
+    expect(data.decisions[0].number).toBe(16);
     expect(data.decisions[MAX_FULL_ENTRIES - 1].number).toBe(25);
-    // Archive entries ascending (1-5) — the bug produced descending (5,4,3,2,1).
+    // Archive entries ascending (1-15) — the prior bug produced descending order.
     const archiveNumbers = data.archive.map((e) => e.number ?? 0);
     const sorted = [...archiveNumbers].sort((a, b) => a - b);
     expect(archiveNumbers).toEqual(sorted);
     expect(archiveNumbers[0]).toBe(1);
-    expect(archiveNumbers[4]).toBe(5);
+    expect(archiveNumbers[archiveNumbers.length - 1]).toBe(15);
   });
 });
 

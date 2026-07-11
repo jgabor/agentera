@@ -62,13 +62,12 @@ export function normalizePath(p: string): string {
   return s.trim();
 }
 
-const CONTROL_CHAR_RE = /[\x00-\x1f\x7f]/;
 const URI_SCHEME_RE = /^[A-Za-z][A-Za-z0-9+.-]*:/;
 const ENCODED_TRAVERSAL_RE = /%(?:2e|2f|5c)/i;
 const WINDOWS_DRIVE_RE = /^[A-Za-z]:[\\/]/;
 
 function rejectUnsafeArtifactPath(p: string, artifactId: string): void {
-  if (CONTROL_CHAR_RE.test(p)) {
+  if ([...p].some((char) => char.charCodeAt(0) <= 31 || char.charCodeAt(0) === 127)) {
     throw new Error(`artifact '${artifactId}' path contains control characters`);
   }
   if (ENCODED_TRAVERSAL_RE.test(p)) {
@@ -208,7 +207,7 @@ export function loadArtifactRegistry(
   return records;
 }
 
-export function loadDocsPathOverrides(projectRoot: string): Record<string, string> {
+export function loadDocsPathOverrides(projectRoot: string, strict = false): Record<string, string> {
   const docsPath = path.join(projectRoot, ".agentera", "docs.yaml");
   if (!fs.existsSync(docsPath)) {
     return {};
@@ -217,16 +216,25 @@ export function loadDocsPathOverrides(projectRoot: string): Record<string, strin
   try {
     data = loadYamlMapping(fs.readFileSync(docsPath, "utf8"));
   } catch (exc) {
-    process.stderr.write(`warning: failed to load docs path overrides: ${(exc as Error).message}\n`);
+    if (strict) throw new Error(`failed to load docs path overrides: ${(exc as Error).message}`);
+    process.stderr.write(
+      `warning: failed to load docs path overrides: ${(exc as Error).message}\n`,
+    );
     return {};
   }
   const mapping = data.mapping;
   if (!Array.isArray(mapping)) {
+    if (strict && mapping !== undefined)
+      throw new Error("failed to load docs path overrides: mapping must be a list");
     return {};
   }
   const overrides: Record<string, string> = {};
   for (const entry of mapping) {
     if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
+      if (strict)
+        throw new Error(
+          "failed to load docs path overrides: every mapping entry must be a mapping",
+        );
       continue;
     }
     const e = entry as Record<string, unknown>;
@@ -234,19 +242,56 @@ export function loadDocsPathOverrides(projectRoot: string): Record<string, strin
     const p = e.path;
     if (typeof artifact === "string" && typeof p === "string") {
       overrides[artifact] = p;
+    } else if (strict) {
+      throw new Error(
+        "failed to load docs path overrides: every mapping entry requires string artifact and path fields",
+      );
     }
   }
   return overrides;
 }
 
+export interface ResolveArtifactPathOptions {
+  activeObjectiveName?: string | null;
+  strictWrite?: boolean;
+}
+
+function nearestExistingAncestor(p: string): string {
+  let current = p;
+  while (!fs.existsSync(current)) {
+    const parent = path.dirname(current);
+    if (parent === current) break;
+    current = parent;
+  }
+  return fs.realpathSync.native(current);
+}
+
+export function assertRealpathBoundary(
+  projectRoot: string,
+  artifactPath: string,
+  artifactId: string,
+): void {
+  const projectReal = nearestExistingAncestor(resolvePath(projectRoot));
+  const ancestorReal = nearestExistingAncestor(artifactPath);
+  const rel = path.relative(projectReal, ancestorReal);
+  if (rel !== "" && (rel.startsWith("..") || path.isAbsolute(rel))) {
+    throw new Error(`artifact '${artifactId}' path escapes the project boundary`);
+  }
+}
+
 export function resolveArtifactPath(
   record: ArtifactRecord,
   projectRoot: string,
-  activeObjectiveName: string | null = null,
+  activeObjectiveNameOrOptions: string | null | ResolveArtifactPathOptions = null,
   env: Record<string, string | undefined> = process.env,
 ): string {
+  const options =
+    typeof activeObjectiveNameOrOptions === "object" && activeObjectiveNameOrOptions !== null
+      ? activeObjectiveNameOrOptions
+      : { activeObjectiveName: activeObjectiveNameOrOptions };
+  const activeObjectiveName = options.activeObjectiveName ?? null;
   let artifactPath = record.defaultPath;
-  const overrides = loadDocsPathOverrides(projectRoot);
+  const overrides = loadDocsPathOverrides(projectRoot, options.strictWrite === true);
   if (record.docsYamlCanOverridePath && record.displayName in overrides) {
     artifactPath = overrides[record.displayName];
   }
@@ -265,5 +310,7 @@ export function resolveArtifactPath(
       return path.join(base, suffix);
     }
   }
-  return projectPath(projectRoot, artifactPath, record.artifactId);
+  const resolved = projectPath(projectRoot, artifactPath, record.artifactId);
+  if (options.strictWrite) assertRealpathBoundary(projectRoot, resolved, record.artifactId);
+  return resolved;
 }

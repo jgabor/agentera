@@ -17,6 +17,10 @@ import {
 } from "../stateQuery.js";
 import { artifactLocationContract } from "./query.js";
 import type { JsonObject } from "../../core/jsonValue.js";
+import {
+  stateWriterArtifactContract,
+  stateWriterContract,
+} from "../../state/write/operations.js";
 
 /** Port of scripts/agentera cmd_schema / _build_schema_payload. */
 
@@ -226,6 +230,7 @@ function describeArtifactSchemas(
     const schemaFile = path.join(schemasDir, `${name}.yaml`);
     const location = artifactLocations ? artifactLocations[name] ?? null : null;
     const hasMeta = meta && Object.keys(meta).length > 0;
+    const writeInterface = stateWriterArtifactContract(name);
     artifacts.push({
       name,
       status: hasMeta ? "discovered" : "unknown_metadata",
@@ -236,6 +241,7 @@ function describeArtifactSchemas(
       format: meta.format ?? "unknown",
       producer: meta.producer ?? "unknown",
       consumers: meta.consumers ?? "unknown",
+      write_interface: writeInterface,
       fields: describeSchemaFields(schema),
     });
     if (!hasMeta) {
@@ -296,6 +302,7 @@ export function buildSchemaPayload(command = "schema"): JsonObject {
       app_model: appModelPayload(appModel),
     },
     commands: describeCommands(),
+    state_writer: stateWriterContract(),
     routine_state_commands: ROUTINE_STATE_COMMANDS,
     structured_output: {
       formats: isDict(structuredOutput) ? structuredOutput.formats ?? ["json", "yaml"] : "unknown",

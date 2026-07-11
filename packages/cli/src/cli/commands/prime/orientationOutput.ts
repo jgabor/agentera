@@ -7,6 +7,7 @@ import type { JsonObject } from "../../../core/jsonValue.js";
 import type { BundleStatus } from "../../contracts/bundleStatus.js";
 import type { NextAction, OrientationState } from "../../contracts/orientationState.js";
 import { startupCompletenessContract } from "../../startupCompletenessContract.js";
+import { stateWriterContract } from "../../../state/write/operations.js";
 
 export { startupCompletenessContract } from "../../startupCompletenessContract.js";
 
@@ -138,6 +139,7 @@ export function buildOrientationJsonPayload(
       empty_state: "fresh mode with missing artifact summaries and zero issue counts",
       capability_startup: startupCompletenessContract({ profileStatus: state.profile_status }),
       capability_context: capabilityContextPointer(),
+      artifact_writes: stateWriterContract(),
     },
   };
 }
@@ -247,6 +249,7 @@ export function printOrientationTextBriefing(state: OrientationState, command: s
   const startup = startupCompletenessContract({ profileStatus: state.profile_status });
   out(`- capability_startup_complete=${String(startup.complete_for_capability_startup).toLowerCase()}\n`);
   out(`- capability_context: fetch rendering instructions via \`agentera prime --context status --format json\`\n`);
+  out("- artifact_writes: discover via `agentera schema --format json` or `agentera state <artifact> explain --format json`\n");
   out(
     `- raw_artifact_reads_required=${String(startup.raw_artifact_reads_required).toLowerCase()}; policy=${startup.raw_artifact_read_policy}\n`,
   );

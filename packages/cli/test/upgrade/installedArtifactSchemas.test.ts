@@ -4,14 +4,10 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import YAML from "yaml";
-import { afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { spawnSync } from "node:child_process";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { loadArtifactRegistry } from "../../src/registries/artifactRegistry.js";
-import {
-  applyMigrationPhases,
-  dryRunMigration,
-} from "../../src/upgrade/migrateArtifactsV2ToV3.js";
+import { applyMigrationPhases, dryRunMigration } from "../../src/upgrade/migrateArtifactsV2ToV3.js";
 import { setSuccessorAnnouncedOverrideForTests } from "../../src/upgrade/nextMajorDoctor.js";
 import { migrationCtx } from "./helpers/migrationCtx.js";
 
@@ -163,9 +159,10 @@ function assertCapabilitySchemaDirsEnglish(skillsRoot: string): void {
     expect(swedish.has(name), `${name} capability directory must not use a Swedish-era verb`).toBe(
       false,
     );
-    expect(english.has(name), `${name} capability directory must use an English canonical name`).toBe(
-      true,
-    );
+    expect(
+      english.has(name),
+      `${name} capability directory must use an English canonical name`,
+    ).toBe(true);
   }
 }
 
@@ -238,17 +235,6 @@ function assertInstalledArtifactSchemas(root: string): void {
     }
   }
 }
-
-beforeAll(() => {
-  const result = spawnSync("pnpm", ["-C", "packages/cli", "build"], {
-    cwd: REPO_ROOT,
-    stdio: "pipe",
-    encoding: "utf8",
-  });
-  if (result.status !== 0) {
-    throw new Error(`pre-test cli build failed: ${result.stderr ?? result.stdout}`);
-  }
-});
 
 beforeEach(() => {
   tmp = fs.mkdtempSync(path.join(os.tmpdir(), "installed-artifact-schemas-"));

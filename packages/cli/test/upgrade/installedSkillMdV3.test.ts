@@ -3,8 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { spawnSync } from "node:child_process";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { cmdPrime } from "../../src/cli/commands/prime.js";
 import { applyAppContentRefresh, skillMdLooksV2 } from "../../src/upgrade/appContentRefresh.js";
@@ -81,7 +80,10 @@ function assertV3EnglishSkillMd(text: string, label: string): void {
   }
 }
 
-function capturePrime(context: string, env: Record<string, string>): { rc: number; out: string; err: string } {
+function capturePrime(
+  context: string,
+  env: Record<string, string>,
+): { rc: number; out: string; err: string } {
   const saved: Record<string, string | undefined> = {};
   for (const key of Object.keys(env)) {
     saved[key] = process.env[key];
@@ -129,17 +131,6 @@ describe("installed SKILL.md v3 English routing (B6-2, defect #4)", () => {
     let tmp: string;
     let appHome: string;
     let home: string;
-
-    beforeAll(() => {
-      const result = spawnSync("pnpm", ["-C", "packages/cli", "build"], {
-        cwd: REPO_ROOT,
-        stdio: "pipe",
-        encoding: "utf8",
-      });
-      if (result.status !== 0) {
-        throw new Error(`pre-test cli build failed: ${result.stderr ?? result.stdout}`);
-      }
-    });
 
     beforeEach(() => {
       tmp = fs.mkdtempSync(path.join(os.tmpdir(), "installed-skill-md-v3-"));

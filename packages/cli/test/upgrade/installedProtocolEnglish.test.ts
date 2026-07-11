@@ -4,14 +4,10 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import YAML from "yaml";
-import { afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { spawnSync } from "node:child_process";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { cmdPrime } from "../../src/cli/commands/prime.js";
-import {
-  applyMigrationPhases,
-  dryRunMigration,
-} from "../../src/upgrade/migrateArtifactsV2ToV3.js";
+import { applyMigrationPhases, dryRunMigration } from "../../src/upgrade/migrateArtifactsV2ToV3.js";
 import { loadProtocol, validateProtocolSelf } from "../../src/validate/capability.js";
 import { setSuccessorAnnouncedOverrideForTests } from "../../src/upgrade/nextMajorDoctor.js";
 import { migrationCtx, sandboxMigrationEnv } from "./helpers/migrationCtx.js";
@@ -184,7 +180,12 @@ function capturePrime(
   try {
     const rc = cmdPrime(
       { command: "prime", format: "json", context: opts.context },
-      { out: (chunk: string) => { out += chunk; }, err: () => {} },
+      {
+        out: (chunk: string) => {
+          out += chunk;
+        },
+        err: () => {},
+      },
     );
     expect(rc).toBe(0);
     return JSON.parse(out) as Record<string, unknown>;
@@ -195,17 +196,6 @@ function capturePrime(
     }
   }
 }
-
-beforeAll(() => {
-  const result = spawnSync("pnpm", ["-C", "packages/cli", "build"], {
-    cwd: REPO_ROOT,
-    stdio: "pipe",
-    encoding: "utf8",
-  });
-  if (result.status !== 0) {
-    throw new Error(`pre-test cli build failed: ${result.stderr ?? result.stdout}`);
-  }
-});
 
 beforeEach(() => {
   tmp = fs.mkdtempSync(path.join(os.tmpdir(), "installed-protocol-english-"));
