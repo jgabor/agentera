@@ -51,6 +51,12 @@ function recordFor(
     scope: "whole",
     status: "managed",
     fingerprint: lifecycleOperationFingerprint(spec),
+    identity: fs.existsSync(spec.destination)
+      ? (() => {
+          const stat = fs.lstatSync(spec.destination, { bigint: true });
+          return { device: stat.dev.toString(), inode: stat.ino.toString() };
+        })()
+      : null,
     ...overrides,
   };
 }
@@ -105,7 +111,7 @@ const resourceCases: ResourceCase[] = [
   {
     name: "legacy",
     expectedState: "legacy",
-    expectedAction: "remove",
+    expectedAction: "action_required",
     expectedOwnership: "legacy",
     arrange(destination) {
       const spec: LifecycleOperationSpec = {
@@ -332,6 +338,162 @@ describe("preview purity and path safety", () => {
   });
 });
 
+describe("adversarial publication boundary", () => {
+  it("does not overwrite or claim a target that appears after the missing-resource check", () => {
+    const destination = path.join(root, "appeared.txt");
+    const spec = fileSpec("appeared", destination, "agentera\n");
+    const unlinkSpy = vi.spyOn(fs, "unlinkSync");
+
+    const first = applyLifecycleOperations(
+      planLifecycleOperations({
+        allowedRoots: [root],
+        operations: [spec],
+        manifest: createLifecycleOwnershipManifest([spec]),
+      }),
+      {
+        beforePublication(boundary) {
+          expect(boundary.action).toBe("create");
+          fs.writeFileSync(destination, "user\n");
+        },
+      },
+    );
+
+    expect(first.operations[0].status).toBe("failed");
+    expect(fs.readFileSync(destination, "utf8")).toBe("user\n");
+    expect(first.ownershipLedger.records[0]).toMatchObject({
+      status: "pending_create",
+      identity: null,
+    });
+    const retry = planLifecycleOperations({
+      allowedRoots: [root],
+      operations: [spec],
+      manifest: createLifecycleOwnershipManifest([spec]),
+      ledger: first.ownershipLedger,
+    });
+    expect(retry.operations[0]).toMatchObject({
+      state: "partial_managed",
+      action: "action_required",
+    });
+    expect(unlinkSpy).not.toHaveBeenCalled();
+  });
+
+  it("does not replace or unlink a symlink that appears at publication", () => {
+    const destination = path.join(root, "runtime-link");
+    const userTarget = path.join(root, "user-target");
+    const spec: LifecycleOperationSpec = {
+      id: "appeared-link",
+      destination,
+      kind: "symlink",
+      intent: "ensure",
+      linkTarget: "agentera-target",
+    };
+    const unlinkSpy = vi.spyOn(fs, "unlinkSync");
+
+    const result = applyLifecycleOperations(
+      planLifecycleOperations({
+        allowedRoots: [root],
+        operations: [spec],
+        manifest: createLifecycleOwnershipManifest([spec]),
+      }),
+      {
+        beforePublication() {
+          fs.symlinkSync(userTarget, destination);
+        },
+      },
+    );
+
+    expect(result.operations[0].status).toBe("failed");
+    expect(fs.readlinkSync(destination)).toBe(userTarget);
+    expect(result.ownershipLedger.records[0].identity).toBeNull();
+    expect(unlinkSpy).not.toHaveBeenCalled();
+  });
+
+  it("does not modify a target whose inode is replaced after owned-resource validation", () => {
+    const destination = path.join(root, "owned.txt");
+    const displaced = path.join(root, "owned.displaced.txt");
+    const spec = fileSpec("owned", destination, "desired\n");
+    fs.writeFileSync(destination, "managed drift\n");
+    const ownership = ledger([recordFor(spec)]);
+    const unlinkSpy = vi.spyOn(fs, "unlinkSync");
+
+    const result = applyLifecycleOperations(
+      planLifecycleOperations({
+        allowedRoots: [root],
+        operations: [spec],
+        manifest: createLifecycleOwnershipManifest([spec]),
+        ledger: ownership,
+      }),
+      {
+        beforePublication() {
+          fs.renameSync(destination, displaced);
+          fs.writeFileSync(destination, "user replacement\n");
+        },
+      },
+    );
+
+    expect(result.operations[0].status).toBe("failed");
+    expect(fs.readFileSync(destination, "utf8")).toBe("user replacement\n");
+    expect(fs.readFileSync(displaced, "utf8")).toBe("managed drift\n");
+    expect(result.ownershipLedger).toEqual(ownership);
+    expect(unlinkSpy).not.toHaveBeenCalled();
+  });
+
+  it("blocks a parent swap and symlink substitution without escaping the allowed root", () => {
+    const parent = path.join(root, "parent");
+    const displacedParent = path.join(root, "parent.displaced");
+    const outside = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-publication-outside-"));
+    fs.mkdirSync(parent);
+    const destination = path.join(parent, "owned.txt");
+    const spec = fileSpec("parent-swap", destination, "agentera\n");
+    try {
+      const result = applyLifecycleOperations(
+        planLifecycleOperations({
+          allowedRoots: [root],
+          operations: [spec],
+          manifest: createLifecycleOwnershipManifest([spec]),
+        }),
+        {
+          beforePublication() {
+            fs.renameSync(parent, displacedParent);
+            fs.symlinkSync(outside, parent);
+          },
+        },
+      );
+
+      expect(result.operations[0].status).toBe("failed");
+      expect(fs.existsSync(path.join(outside, "owned.txt"))).toBe(false);
+      expect(fs.existsSync(path.join(displacedParent, "owned.txt"))).toBe(false);
+    } finally {
+      fs.rmSync(outside, { recursive: true, force: true });
+    }
+  });
+
+  it("ignores a colliding former temp name and never unlinks it", () => {
+    const destination = path.join(root, "published.txt");
+    const formerTemporary = `${destination}.tmp.${process.pid}.123`;
+    const spec = fileSpec("temp-collision", destination, "agentera\n");
+    const unlinkSpy = vi.spyOn(fs, "unlinkSync");
+
+    const result = applyLifecycleOperations(
+      planLifecycleOperations({
+        allowedRoots: [root],
+        operations: [spec],
+        manifest: createLifecycleOwnershipManifest([spec]),
+      }),
+      {
+        beforePublication() {
+          fs.writeFileSync(formerTemporary, "user temp collision\n");
+        },
+      },
+    );
+
+    expect(result.operations[0].status).toBe("applied");
+    expect(fs.readFileSync(destination, "utf8")).toBe("agentera\n");
+    expect(fs.readFileSync(formerTemporary, "utf8")).toBe("user temp collision\n");
+    expect(unlinkSpy).not.toHaveBeenCalled();
+  });
+});
+
 describe("apply convergence", () => {
   it("continues independent work, skips dependents, and converges truthfully on retry", () => {
     const managedDir = path.join(root, "managed");
@@ -347,16 +509,30 @@ describe("apply convergence", () => {
     ];
     const manifest = createLifecycleOwnershipManifest(operations);
     const initialLedger = emptyLifecycleOwnershipLedger();
-    const originalRename = fs.renameSync.bind(fs);
+    const originalOpen = fs.openSync.bind(fs);
+    const originalWrite = fs.writeSync.bind(fs);
+    let aDescriptor: number | undefined;
     let failA = true;
-    vi.spyOn(fs, "renameSync").mockImplementation((source, destination) => {
-      if (failA && path.resolve(destination.toString()) === a) {
+    vi.spyOn(fs, "openSync").mockImplementation((target, flags, mode) => {
+      const fd = originalOpen(target, flags, mode);
+      if (
+        typeof target === "string"
+        && target.endsWith("/a.txt")
+        && typeof flags === "number"
+        && (flags & fs.constants.O_EXCL) !== 0
+      ) {
+        aDescriptor = fd;
+      }
+      return fd;
+    });
+    vi.spyOn(fs, "writeSync").mockImplementation((fd, buffer, offset, length, position) => {
+      if (failA && fd === aDescriptor) {
         failA = false;
         const error = new Error("simulated partial write failure") as NodeJS.ErrnoException;
         error.code = "EIO";
         throw error;
       }
-      return originalRename(source, destination);
+      return originalWrite(fd, buffer, offset, length, position);
     });
 
     const first = applyLifecycleOperations(
@@ -385,7 +561,8 @@ describe("apply convergence", () => {
       ["c", "skipped_dependency"],
     ]);
     expect(first.operations[3].dependencyCauses).toEqual(["a"]);
-    expect(fs.existsSync(a)).toBe(false);
+    expect(fs.existsSync(a)).toBe(true);
+    expect(fs.readFileSync(a, "utf8")).toBe("");
     expect(fs.readFileSync(b, "utf8")).toBe("B\n");
     expect(readLifecycleOwnershipLedger(ledgerPath).records.find((item) => item.resourceId === "a")?.status)
       .toBe("pending_create");
@@ -449,8 +626,8 @@ describe("apply convergence", () => {
       {
         persistLedger(next) {
           persistCalls += 1;
-          if (persistCalls === 2) throw new Error("simulated final ledger failure");
-          expect(next.records[0].status).toBe("pending_create");
+          if (persistCalls === 3) throw new Error("simulated final ledger failure");
+          if (persistCalls < 3) expect(next.records[0].status).toBe("pending_create");
         },
       },
     );
@@ -478,7 +655,7 @@ describe("apply convergence", () => {
     expect(writeSpy).not.toHaveBeenCalled();
   });
 
-  it("removes only ledger-owned resources and reruns as a no-op", () => {
+  it("fails closed for removal when Node cannot conditionally unlink the validated inode", () => {
     const destination = path.join(root, "remove.txt");
     fs.writeFileSync(destination, "managed\n");
     const spec: LifecycleOperationSpec = {
@@ -496,19 +673,12 @@ describe("apply convergence", () => {
         ledger: ledger([recordFor(spec)]),
       }),
     );
-    expect(first.operations[0].status).toBe("applied");
-    expect(first.ownershipLedger.records).toEqual([]);
-    expect(fs.existsSync(destination)).toBe(false);
-
-    const retry = applyLifecycleOperations(
-      planLifecycleOperations({
-        allowedRoots: [root],
-        operations: [spec],
-        manifest,
-        ledger: first.ownershipLedger,
-      }),
-    );
-    expect(retry.operations[0].status).toBe("noop");
+    expect(first.operations[0]).toMatchObject({
+      action: "action_required",
+      status: "action_required",
+    });
+    expect(first.ownershipLedger.records).toHaveLength(1);
+    expect(fs.readFileSync(destination, "utf8")).toBe("managed\n");
   });
 });
 

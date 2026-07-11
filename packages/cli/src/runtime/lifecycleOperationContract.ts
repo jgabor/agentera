@@ -33,6 +33,23 @@ export function validateLifecycleOperationContractData(value: unknown): string[]
   if (!sameList(data.apply_results, LIFECYCLE_APPLY_STATUSES)) {
     errors.push(`apply_results must be ${LIFECYCLE_APPLY_STATUSES.join(", ")}`);
   }
+  const ownership = data.ownership as Record<string, unknown> | undefined;
+  if (ownership?.identity_rule !== "Managed and published pending-create records bind the filesystem device and inode observed at publication.") {
+    errors.push("ownership.identity_rule must bind records to publication identity");
+  }
+  const publication = data.publication_policy as Record<string, unknown> | undefined;
+  if (publication?.supported_platform !== "linux_proc_self_fd") {
+    errors.push("publication_policy.supported_platform must be linux_proc_self_fd");
+  }
+  if (publication?.unsupported_platform_result !== "failed") {
+    errors.push("publication_policy.unsupported_platform_result must be failed");
+  }
+  if (publication?.destructive_path_mutations !== "action_required") {
+    errors.push("publication_policy.destructive_path_mutations must be action_required");
+  }
+  if (typeof publication?.cleanup_rule !== "string" || !publication.cleanup_rule.includes("never unlinks")) {
+    errors.push("publication_policy.cleanup_rule must forbid unlinking colliding or replaced paths");
+  }
   const nativePolicy = data.native_policy as Record<string, unknown> | undefined;
   if (nativePolicy?.install_update_auth_trust_operations !== "forbidden") {
     errors.push("native_policy.install_update_auth_trust_operations must be forbidden");

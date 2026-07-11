@@ -2,7 +2,16 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 
-import { writeFileAtomic } from "../core/atomicWriter.js";
+import {
+  LifecyclePublicationError,
+  observeLifecyclePath,
+  publishLifecycleResource,
+  sameLifecycleIdentity,
+  verifyLifecycleResourceAtPublication,
+  type LifecyclePathObservation,
+  type LifecyclePublicationBoundaryHook,
+  type LifecycleResourceIdentity,
+} from "./lifecyclePublication.js";
 
 export const LIFECYCLE_OPERATION_CONTRACT_RELATIVE_PATH =
   "references/adapters/runtime-lifecycle-operation-contract.yaml";
@@ -85,6 +94,7 @@ export interface LifecycleOwnershipRecord {
   scope: "whole" | "partial";
   status: "managed" | "legacy" | "pending_create";
   fingerprint: string | null;
+  identity: LifecycleResourceIdentity | null;
 }
 
 export interface LifecycleOwnershipLedger {
@@ -143,6 +153,7 @@ export interface LifecycleApplyResult {
 
 export interface LifecycleApplyOptions {
   persistLedger?: (ledger: LifecycleOwnershipLedger) => void;
+  beforePublication?: LifecyclePublicationBoundaryHook;
 }
 
 export class LifecycleOperationError extends Error {
@@ -150,11 +161,6 @@ export class LifecycleOperationError extends Error {
     super(message);
     this.name = "LifecycleOperationError";
   }
-}
-
-interface PathObservation {
-  kind: LifecycleResourceKind | "other" | "missing";
-  unsafeReason?: string;
 }
 
 function fingerprintBytes(bytes: Buffer): string {
@@ -267,6 +273,13 @@ export function validateLifecycleOwnershipLedger(value: unknown): string[] {
     if (record.fingerprint !== null && typeof record.fingerprint !== "string") {
       errors.push(`ledger.records[${index}].fingerprint must be a string or null`);
     }
+    if (record.identity !== null && (
+      !isObject(record.identity)
+      || typeof record.identity.device !== "string"
+      || typeof record.identity.inode !== "string"
+    )) {
+      errors.push(`ledger.records[${index}].identity must contain string device and inode fields or be null`);
+    }
   }
   return errors;
 }
@@ -299,7 +312,18 @@ export function writeLifecycleOwnershipLedgerAtomic(
   if (!parentStat.isDirectory() || parentStat.isSymbolicLink()) {
     throw new LifecycleOperationError(`ownership ledger parent is not a safe directory: ${parent}`);
   }
-  writeFileAtomic(ledgerPath, `${JSON.stringify(ledger, null, 2)}\n`);
+  const observation = observeLifecyclePath(ledgerPath, [parent]);
+  if (observation.unsafeReason) throw new LifecycleOperationError(observation.unsafeReason);
+  publishLifecycleResource(
+    {
+      id: "ownership-ledger",
+      destination: ledgerPath,
+      kind: "file",
+      content: `${JSON.stringify(ledger, null, 2)}\n`,
+    },
+    observation.kind === "missing" ? "create" : "update",
+    observation,
+  );
 }
 
 function cloneLedger(ledger: LifecycleOwnershipLedger): LifecycleOwnershipLedger {
@@ -327,38 +351,6 @@ function lstatMaybe(target: string): fs.Stats | null {
   }
 }
 
-function observePath(destination: string, allowedRoots: string[]): PathObservation {
-  if (!path.isAbsolute(destination)) {
-    return { kind: "missing", unsafeReason: "destination must be absolute" };
-  }
-  const resolved = path.resolve(destination);
-  const root = containingRoot(resolved, allowedRoots);
-  if (!root) return { kind: "missing", unsafeReason: "destination escapes allowed roots" };
-  const rootStat = lstatMaybe(root);
-  if (!rootStat || !rootStat.isDirectory() || rootStat.isSymbolicLink()) {
-    return { kind: "missing", unsafeReason: "allowed root is not an existing safe directory" };
-  }
-  const relative = path.relative(root, path.dirname(resolved));
-  let cursor = root;
-  for (const segment of relative === "" ? [] : relative.split(path.sep)) {
-    cursor = path.join(cursor, segment);
-    const stat = lstatMaybe(cursor);
-    if (!stat) break;
-    if (stat.isSymbolicLink()) {
-      return { kind: "missing", unsafeReason: `parent traverses symlink at ${cursor}` };
-    }
-    if (!stat.isDirectory()) {
-      return { kind: "other", unsafeReason: `parent is not a directory at ${cursor}` };
-    }
-  }
-  const stat = lstatMaybe(resolved);
-  if (!stat) return { kind: "missing" };
-  if (stat.isSymbolicLink()) return { kind: "symlink" };
-  if (stat.isFile()) return { kind: "file" };
-  if (stat.isDirectory()) return { kind: "directory" };
-  return { kind: "other" };
-}
-
 function linkTargetSafety(spec: LifecycleOperationSpec, allowedRoots: string[]): string | null {
   if (spec.kind !== "symlink" || spec.intent !== "ensure") return null;
   if (spec.linkTarget === undefined) return "symlink operation has no link target";
@@ -374,12 +366,6 @@ function linkTargetSafety(spec: LifecycleOperationSpec, allowedRoots: string[]):
     if (stat.isSymbolicLink()) return `symlink target traverses another symlink at ${cursor}`;
   }
   return null;
-}
-
-function actualFingerprint(spec: LifecycleOperationSpec): string | null {
-  if (spec.kind === "directory") return "directory";
-  if (spec.kind === "symlink") return fingerprintBytes(Buffer.from(fs.readlinkSync(spec.destination)));
-  return fingerprintBytes(fs.readFileSync(spec.destination));
 }
 
 function actionRequired(
@@ -429,6 +415,7 @@ function planOne(
   manifest: LifecycleOwnershipManifest,
   ledger: LifecycleOwnershipLedger,
   allowedRoots: string[],
+  suppliedObservation?: LifecyclePathObservation,
 ): PlannedLifecycleOperation {
   const declarations = matchingDeclarations(manifest, spec);
   if (declarations.length !== 1) {
@@ -456,7 +443,7 @@ function planOne(
       "operation does not match its Agentera ownership declaration",
     );
   }
-  const observation = observePath(spec.destination, allowedRoots);
+  const observation = suppliedObservation ?? observeLifecyclePath(spec.destination, allowedRoots);
   if (observation.unsafeReason) {
     return actionRequired(spec, "unsafe_path", "undeclared", observation.unsafeReason);
   }
@@ -533,9 +520,24 @@ function planOne(
       `resource kind ${observation.kind} does not match declared kind ${spec.kind}`,
     );
   }
+  if (!record?.identity) {
+    return actionRequired(
+      spec,
+      record?.status === "pending_create" ? "partial_managed" : "ambiguous_ownership",
+      record?.status === "pending_create" ? "partial" : "ambiguous",
+      "ownership record has no published resource identity",
+    );
+  }
+  if (!sameLifecycleIdentity(record.identity, observation.identity)) {
+    return actionRequired(
+      spec,
+      "ambiguous_ownership",
+      "ambiguous",
+      "resource identity no longer matches the ownership ledger",
+    );
+  }
   if (record?.status === "pending_create") {
-    const actual = actualFingerprint(spec);
-    if (actual === expectedFingerprint) {
+    if (observation.fingerprint === expectedFingerprint) {
       return planned(
         spec,
         "exact",
@@ -544,18 +546,31 @@ function planOne(
         "interrupted create completed; ownership ledger can be finalized",
       );
     }
-    return actionRequired(
-      spec,
-      "partial_managed",
-      "partial",
-      "pending create exists with unexpected content and cannot be claimed",
-    );
+    return spec.kind === "file" && spec.intent === "ensure"
+      ? planned(
+          spec,
+          "modified",
+          "managed",
+          "update",
+          "interrupted Agentera-created file will resume through its recorded identity",
+        )
+      : actionRequired(
+          spec,
+          "partial_managed",
+          "partial",
+          "interrupted create differs and has no safe conditional replacement primitive",
+        );
   }
   if (record?.status === "legacy") {
     if (spec.intent !== "remove") {
       return actionRequired(spec, "legacy", "legacy", "legacy resources may only be removed");
     }
-    return planned(spec, "legacy", "legacy", "remove", "owned legacy resource will be removed");
+    return actionRequired(
+      spec,
+      "legacy",
+      "legacy",
+      "safe conditional removal is unavailable through portable Node filesystem primitives",
+    );
   }
   if (spec.intent === "remove") {
     if (spec.kind === "directory" && fs.readdirSync(spec.destination).length > 0) {
@@ -566,12 +581,16 @@ function planOne(
         "non-empty directories require separately declared child removals",
       );
     }
-    return planned(spec, "exact", "managed", "remove", "owned resource will be removed");
+    return actionRequired(
+      spec,
+      "exact",
+      "managed",
+      "safe conditional removal is unavailable through portable Node filesystem primitives",
+    );
   }
 
-  const actual = actualFingerprint(spec);
-  if (actual === expectedFingerprint) {
-    if (record?.fingerprint !== expectedFingerprint) {
+  if (observation.fingerprint === expectedFingerprint) {
+    if (record.fingerprint !== expectedFingerprint) {
       return planned(
         spec,
         "exact",
@@ -581,6 +600,14 @@ function planOne(
       );
     }
     return planned(spec, "exact", "managed", "noop", "owned resource already matches");
+  }
+  if (spec.kind !== "file") {
+    return actionRequired(
+      spec,
+      "modified",
+      "managed",
+      "safe conditional replacement is unavailable for symlinks and directories",
+    );
   }
   return planned(spec, "modified", "managed", "update", "owned resource differs from declaration");
 }
@@ -654,7 +681,10 @@ export function planLifecycleOperations(request: LifecycleOperationRequest): Lif
   };
 }
 
-function nextManagedRecord(spec: LifecycleOperationSpec): LifecycleOwnershipRecord {
+function nextManagedRecord(
+  spec: LifecycleOperationSpec,
+  identity: LifecycleResourceIdentity,
+): LifecycleOwnershipRecord {
   return {
     resourceId: spec.id,
     destination: path.resolve(spec.destination),
@@ -662,6 +692,7 @@ function nextManagedRecord(spec: LifecycleOperationSpec): LifecycleOwnershipReco
     scope: "whole",
     status: "managed",
     fingerprint: lifecycleOperationFingerprint(spec),
+    identity,
   };
 }
 
@@ -681,37 +712,6 @@ function publishLedger(
 ): LifecycleOwnershipLedger {
   if (persist) persist(cloneLedger(next));
   return next;
-}
-
-function writeSymlinkAtomic(destination: string, target: string): void {
-  const temporary = `${destination}.tmp.${process.pid}.${Date.now()}`;
-  try {
-    fs.symlinkSync(target, temporary);
-    fs.renameSync(temporary, destination);
-  } catch (error) {
-    try {
-      fs.unlinkSync(temporary);
-    } catch {
-      // The temporary link may not have been created or may already be published.
-    }
-    throw error;
-  }
-}
-
-function mutateResource(spec: LifecycleOperationSpec, action: LifecyclePlanAction): void {
-  if (action === "remove") {
-    if (spec.kind === "directory") fs.rmdirSync(spec.destination);
-    else fs.unlinkSync(spec.destination);
-    return;
-  }
-  if (action !== "create" && action !== "update") return;
-  if (spec.kind === "directory") {
-    fs.mkdirSync(spec.destination);
-  } else if (spec.kind === "symlink") {
-    writeSymlinkAtomic(spec.destination, spec.linkTarget as string);
-  } else {
-    writeFileAtomic(spec.destination, spec.content as string | Buffer);
-  }
 }
 
 function applySummary(operations: AppliedLifecycleOperation[]): LifecycleApplySummary {
@@ -741,7 +741,8 @@ export function applyLifecycleOperations(
       const status = resultById.get(dependency)?.status;
       return status !== "applied" && status !== "noop";
     });
-    const current = planOne(spec, request.manifest, ledger, request.allowedRoots);
+    const observation = observeLifecyclePath(spec.destination, request.allowedRoots);
+    const current = planOne(spec, request.manifest, ledger, request.allowedRoots, observation);
     if (dependencyCauses.length > 0) {
       const result: AppliedLifecycleOperation = {
         ...current,
@@ -760,25 +761,52 @@ export function applyLifecycleOperations(
       resultById.set(spec.id, result);
       continue;
     }
+    let publishedIdentity: LifecycleResourceIdentity | undefined;
     try {
       if (current.action === "finalize_ownership") {
+        const identity = verifyLifecycleResourceAtPublication(
+          spec,
+          observation,
+          options.beforePublication,
+        );
         const next = spec.intent === "remove"
           ? withRecord(ledger, null, spec.id)
-          : withRecord(ledger, nextManagedRecord(spec), spec.id);
+          : withRecord(ledger, nextManagedRecord(spec, identity as LifecycleResourceIdentity), spec.id);
         ledger = publishLedger(next, options.persistLedger);
       } else {
         const existingRecord = ledger.records.find((record) => record.resourceId === spec.id);
         if (current.action === "create" && !existingRecord) {
           const pending: LifecycleOwnershipRecord = {
-            ...nextManagedRecord(spec),
+            resourceId: spec.id,
+            destination: path.resolve(spec.destination),
+            kind: spec.kind,
+            scope: "whole",
             status: "pending_create",
+            fingerprint: lifecycleOperationFingerprint(spec),
+            identity: null,
           };
           ledger = publishLedger(withRecord(ledger, pending, spec.id), options.persistLedger);
         }
-        mutateResource(spec, current.action);
-        const next = current.action === "remove"
-          ? withRecord(ledger, null, spec.id)
-          : withRecord(ledger, nextManagedRecord(spec), spec.id);
+        if (current.action !== "create" && current.action !== "update") {
+          throw new LifecycleOperationError(`${current.action} has no safe publication implementation`);
+        }
+        publishedIdentity = publishLifecycleResource(
+          spec,
+          current.action,
+          observation,
+          options.beforePublication,
+        );
+        if (current.action === "create") {
+          const publishedPending: LifecycleOwnershipRecord = {
+            ...nextManagedRecord(spec, publishedIdentity),
+            status: "pending_create",
+          };
+          ledger = publishLedger(
+            withRecord(ledger, publishedPending, spec.id),
+            options.persistLedger,
+          );
+        }
+        const next = withRecord(ledger, nextManagedRecord(spec, publishedIdentity), spec.id);
         ledger = publishLedger(next, options.persistLedger);
       }
       const result: AppliedLifecycleOperation = {
@@ -789,6 +817,23 @@ export function applyLifecycleOperations(
       results.push(result);
       resultById.set(spec.id, result);
     } catch (error) {
+      const createdIdentity = error instanceof LifecyclePublicationError
+        ? error.createdIdentity
+        : undefined;
+      if (current.action === "create" && createdIdentity) {
+        const publishedPending: LifecycleOwnershipRecord = {
+          ...nextManagedRecord(spec, createdIdentity),
+          status: "pending_create",
+        };
+        try {
+          ledger = publishLedger(
+            withRecord(ledger, publishedPending, spec.id),
+            options.persistLedger,
+          );
+        } catch {
+          // Keep the last ledger state; the target is never removed without a conditional unlink primitive.
+        }
+      }
       const result: AppliedLifecycleOperation = {
         ...current,
         status: "failed",

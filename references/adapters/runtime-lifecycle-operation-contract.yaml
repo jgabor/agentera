@@ -9,7 +9,8 @@ ownership:
   mutation_rule: A destination declaration is always required. Existing resources additionally require one matching whole-resource ledger record.
   equality_rule: Content equality and resource names never establish ownership.
   collision_rule: Pre-existing resources without matching ledger ownership are never replaced or removed.
-  interrupted_create_rule: A pending_create record may be finalized only when its destination and expected fingerprint match exactly.
+  identity_rule: Managed and published pending-create records bind the filesystem device and inode observed at publication.
+  interrupted_create_rule: A pending_create record may be finalized only when its recorded publication identity and expected fingerprint both match exactly.
 resource_states:
   - exact
   - modified
@@ -55,8 +56,17 @@ preview_policy:
     - trust changes
 path_safety:
   - Destinations must be absolute and contained by an explicit existing allowed root.
-  - Parent symlink traversal, link-target escapes, wrong types, partial ownership, and ambiguous ownership require action.
-  - Directory removal is non-recursive; non-empty directories require separately declared child removals.
+  - Apply pins the allowed root and every parent through Linux /proc/self/fd, then revalidates directory identities at the final publication boundary.
+  - Parent symlink traversal, parent identity substitution, link-target escapes, target identity substitution, hard-linked files, wrong types, partial ownership, and ambiguous ownership require action or fail safely.
+publication_policy:
+  supported_platform: linux_proc_self_fd
+  unsupported_platform_result: failed
+  create_protocol: directory-relative exclusive no-follow creation with no sibling temporary path
+  owned_file_update_protocol: directory-relative no-follow open, ledger and observation identity match, descriptor-local fingerprint check, in-place descriptor write, and post-write path identity check
+  destructive_path_mutations: action_required
+  destructive_path_reason: Portable Node exposes no conditional unlink or conditional symlink replacement primitive; Agentera fails closed instead of racing an unowned replacement.
+  cleanup_rule: Publication creates no sibling temporary entry and never unlinks a colliding or replaced path.
+  crash_boundary: Creates and owned file updates preserve the never-overwrite-unowned invariant but are not promised crash-atomic; a recorded pending identity makes partial Agentera-created files retryable.
 native_policy:
   install_update_auth_trust_operations: forbidden
   trust_is_observed_only: true
