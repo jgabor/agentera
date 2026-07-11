@@ -24,7 +24,15 @@ support_floor:
   requirements:
     - canonical_shared_skill_detected
     - diagnosis_complete
-    - mandatory_fields_present
+    - mandatory_evidence_resolved
+  evidence_rules:
+    unknown_or_missing_mandatory_blocks: true
+    denied_mandatory_trust_blocks: true
+    known_false_diagnoses_degraded:
+      - host_present
+      - installed
+      - enabled
+    not_applicable_scope: unobserved_conditional_surface_only
   unmet_blocks_release: true
 active_runtimes:
   - id: opencode

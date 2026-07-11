@@ -1,4 +1,44 @@
 cycles:
+  - number: 709
+    timestamp: 2026-07-11 21:10
+    type: fix
+    phase: build
+    what: Made lifecycle support-floor evidence fail closed and aligned doctor
+      release exits with prime status.
+    inspiration: Task 6 retry audit, Decision 92, and Cycle 708 evidence correction.
+    discovered: The legacy doctor app envelope can remain up_to_date while additive
+      lifecycle readiness controls the process exit; the closed Python parity
+      row therefore needs an explicit lifecycle exit override without changing
+      payload parity.
+    verified: "Seven child-process fixtures ran prime and doctor with identical
+      inputs for unknown trust, denied trust, Cursor CLI-only and conditional
+      IDE, shadowing, absent host and missing parent, unowned collision, and
+      all-ready: 14 commands total; prime exits 0,0,0,0,0,0,0 and doctor exits
+      1,1,0,0,1,0,0. Every pair compared authority, IDs, releaseBlocked, runtime
+      and surface status, support floors, blockers/actions, and observed no
+      target writes or native process invocation. Prime summaries stayed below
+      4096 bytes; live built prime was 2142 lifecycle bytes versus 70745-byte
+      doctor JSON, where app status remained up_to_date, lifecycle
+      releaseBlocked was true, and doctor exited 1. Focused verification passed
+      8 files/123 tests and final 4 files/61 tests; full pnpm -C packages/cli
+      test passed 155 files/1435 tests. Typecheck and build passed. Built
+      lifecycle-adapters, capability status, capability build,
+      capability-contract, cross-capability, app-home-contract,
+      vocabularyAuthority, schema, compact, lint, and git diff checks passed;
+      lint reported 99 pre-existing warnings/0 errors."
+    next: Re-run the independent Task 6 audit against Cycle 709; keep Task 7
+      mutation UX and Task 8 release sweep untouched.
+    context:
+      intent: Retry Task 6 after audit by enforcing Decision 92 mandatory evidence and
+        replacing overstated parity coverage with explicit CLI fixtures.
+      constraints: Preserved Task 5 retirement, Task 4 adapters, Task 3 safety, user
+        TODO/decisions/plan/.codex changes, vision, active plan status, native
+        package managers, and remotes. No Task 7 or Task 8 work.
+      unknowns: None in Task 6 scope; runtime trust remains host-owned evidence and
+        unknown on the live host.
+      scope: Lifecycle authority and adapter contracts, shared lifecycle
+        state/snapshot projection, doctor exit and blocker detail, schema
+        discovery, parity expectations, and runtime/CLI tests.
   - number: 708
     timestamp: 2026-07-11 20:47
     type: feat
@@ -305,37 +345,9 @@ cycles:
       scope: Shared lifecycle operation TypeScript modules, runtime lifecycle
         authority pointer, common operation contract, and exhaustive
         runtime-neutral tests.
-  - number: 699
-    timestamp: 2026-07-11 11:16
-    type: feat
-    phase: build
-    what: Established Decision 92 runtime lifecycle authority for four active
-      identities with explicit Cursor CLI and conditional IDE surfaces.
-    inspiration: Active plan Task 2 and approved Decision 92.
-    discovered: The adapter registry mixed active inventory semantics with
-      historical adapter records; it now delegates active identity ownership to
-      the lifecycle authority.
-    verified: "Focused lifecycle, registry, and validator suite: 3 files and 23
-      tests passed. Full CLI suite: 149 files and 1,346 tests passed. Typecheck
-      and build passed. Built agentera check validate lifecycle-adapters
-      returned lifecycle adapter metadata ok. Built Cursor smoke returned active
-      IDs opencode, codex, cursor, copilot with CLI ready, IDE degraded,
-      aggregate Cursor degraded, and support floor met."
-    next: Task 3 can consume this authority when implementing shared lifecycle
-      operation planning and apply mechanics; orchestrator audit owns Task 2
-      status.
-    context:
-      intent: Make Task 2 runtime identity, support-floor, aggregation, and drift
-        rules machine-readable and testable.
-      constraints: Authority and validation only; no operation engine, runtime
-        adapters, Claude cleanup, prime/doctor/upgrade projection, plan status,
-        TODO, changelog, release, or profile changes.
-      unknowns: Runtime-specific evidence collection and repair capability mapping
-        remain Task 4.
-      scope: references/adapters/runtime-lifecycle-authority.yaml, runtime adapter
-        catalog routing, packages/cli/src/runtime/lifecycleAuthority.ts,
-        lifecycle validation, and focused tests.
 archive:
+  - summary: "Cycle 699 (2026-07-11): Established Decision 92 runtime lifecycle
+      authority for four active identities with explicit Cursor CLI and..."
   - summary: "Cycle 698 (2026-07-11): Eliminated the CLI test suite's shared dist
       race by building package output once in Vitest..."
   - summary: "Cycle 697 (2026-07-11): Resolved state-writer review findings:
@@ -436,5 +448,3 @@ archive:
   - summary: "Cycle 660 (2026-06-18): Plan T3 — corpus envelope coverage arrays:
       buildMetadata emits available_runtimes, selected_runtimes, and
       available_but_not_selected; extractCorpusMain wires..."
-  - summary: "Cycle 659 (2026-06-18): Plan T2 — Coverage Audit pre-extraction:
-      runCoverageAudit enumerates six runtimes with store paths and session..."

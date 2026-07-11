@@ -322,6 +322,16 @@ export function buildSchemaPayload(command = "schema"): JsonObject {
         prime: "bounded summary without category evidence or native command lists",
         doctor: "detailed surfaces, eight categories, evidence, precedence, and user-owned native steps",
       },
+      support_floor: {
+        mandatory_evidence_fields: lifecycleAuthority.evidenceFields,
+        unknown_or_missing_mandatory_blocks:
+          lifecycleAuthority.supportFloorPolicy.unknownOrMissingMandatoryBlocks,
+        denied_mandatory_trust_blocks:
+          lifecycleAuthority.supportFloorPolicy.deniedMandatoryTrustBlocks,
+        known_false_diagnoses_degraded:
+          lifecycleAuthority.supportFloorPolicy.knownFalseDiagnosesDegraded,
+        not_applicable_scope: lifecycleAuthority.supportFloorPolicy.notApplicableScope,
+      },
       ["active_runtime_" + "ids"]: lifecycleAuthority.runtimes.map((runtime) => runtime.id),
       migration_aliases: {
         "cursor-agent": { runtime_id: "cursor", surface_id: "cli", active_runtime: false },

@@ -54,6 +54,13 @@ describe("cli schema", () => {
       snapshot_schema_version: "agentera.runtimeLifecycleSnapshot.v1",
       summary_schema_version: "agentera.runtimeLifecycleSummary.v1",
       status_vocabulary_version: "agentera.runtimeLifecycleStatus.v1",
+      support_floor: {
+        mandatory_evidence_fields: ["host_present", "installed", "enabled", "trusted"],
+        unknown_or_missing_mandatory_blocks: true,
+        denied_mandatory_trust_blocks: true,
+        known_false_diagnoses_degraded: ["host_present", "installed", "enabled"],
+        not_applicable_scope: "unobserved_conditional_surface_only",
+      },
     });
     expect(payload.runtime_lifecycle.migration_aliases["cursor-agent"]).toMatchObject({
       runtime_id: "cursor",

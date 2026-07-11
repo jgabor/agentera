@@ -145,6 +145,12 @@ export function renderRuntimeLifecycleDiagnosis(snapshot: RuntimeLifecycleSnapsh
       `  support floor: ${runtime.supportFloor.met ? "met" : "unmet"}; ` +
         `blockers=${runtime.blockers.length}; actions=${runtime.actionCount}`,
     );
+    for (const blocker of runtime.blockers) {
+      const evidence = blocker.evidence
+        ? `; evidence=${blocker.evidence.field}:${String(blocker.evidence.observed)}`
+        : "";
+      lines.push(`  blocker: ${blocker.code} - ${blocker.detail}${evidence}`);
+    }
     lines.push(`  canonical skill: ${String(runtime.canonicalSkill.detected)} at ${runtime.canonicalSkill.path}`);
     for (const surface of runtime.surfaces) {
       lines.push(
@@ -245,5 +251,5 @@ export function cmdDoctor(args: DoctorArgs, io: Io = {}): number {
     const failCount = Number((smokeReport?.summary as JsonObject | undefined)?.fail ?? 0);
     if (failCount > 0) return 1;
   }
-  return status.status === APP_UP_TO_DATE ? 0 : 1;
+  return status.status === APP_UP_TO_DATE && !runtimeLifecycle.releaseBlocked ? 0 : 1;
 }

@@ -116,7 +116,7 @@ describe("runtime lifecycle state", () => {
       ["ide", "degraded"],
     ]);
     expect(cursor?.status).toBe("degraded");
-    expect(cursor?.supportFloor).toEqual({ met: true, releaseBlocking: false, unmet: [] });
+    expect(cursor?.supportFloor).toEqual({ met: true, releaseBlocking: false, unmet: [], violations: [] });
     expect(state.runtimes.some((runtime) => runtime.runtimeId === "cursor-agent")).toBe(false);
   });
 
@@ -142,6 +142,89 @@ describe("runtime lifecycle state", () => {
     expect(cursor?.surfaces.find((surface) => surface.id === "ide")?.status).toBe("not_applicable");
     expect(cursor?.status).toBe("ready");
     expect(cursor?.supportFloor.met).toBe(true);
+  });
+
+  it.each([
+    {
+      name: "known false presence",
+      evidence: { ...readyEvidence, host_present: false },
+      status: "degraded",
+      met: true,
+      code: null,
+    },
+    {
+      name: "unknown mandatory trust",
+      evidence: { ...readyEvidence, trusted: "unknown" as const },
+      status: "unknown",
+      met: false,
+      code: "mandatory_evidence_unknown",
+    },
+    {
+      name: "denied mandatory trust",
+      evidence: { ...readyEvidence, trusted: "denied" as const },
+      status: "blocked",
+      met: false,
+      code: "mandatory_trust_denied",
+    },
+    {
+      name: "false mandatory trust",
+      evidence: { ...readyEvidence, trusted: false },
+      status: "blocked",
+      met: false,
+      code: "mandatory_trust_denied",
+    },
+    {
+      name: "not_applicable mandatory trust",
+      evidence: { ...readyEvidence, trusted: "not_applicable" as const },
+      status: "blocked",
+      met: false,
+      code: "mandatory_evidence_not_applicable",
+    },
+  ])("applies the support-floor truth table for $name", ({ evidence, status, met, code }) => {
+    const authority = loadLifecycleAuthority(AUTHORITY_PATH);
+    const state = buildRuntimeLifecycleState(authority, [{
+      runtimeId: "codex",
+      canonicalSkillDetected: true,
+      diagnosisComplete: true,
+      surfaces: [{ id: "cli", evidence, diagnosisComplete: true }],
+    }]);
+    const codex = state.runtimes.find((runtime) => runtime.runtimeId === "codex")!;
+
+    expect(codex.surfaces[0].status).toBe(status);
+    expect(codex.supportFloor.met).toBe(met);
+    expect(codex.supportFloor.releaseBlocking).toBe(!met);
+    if (code) expect(codex.supportFloor.violations).toContainEqual(expect.objectContaining({ code }));
+    else expect(codex.supportFloor.violations).toEqual([]);
+  });
+
+  it("does not promote an unobserved conditional surface into the mandatory floor", () => {
+    const authority = loadLifecycleAuthority(AUTHORITY_PATH);
+    const state = buildRuntimeLifecycleState(authority, [{
+      runtimeId: "cursor",
+      canonicalSkillDetected: true,
+      diagnosisComplete: true,
+      surfaces: [
+        { id: "cli", evidence: readyEvidence, diagnosisComplete: true },
+        {
+          id: "ide",
+          evidence: {
+            host_present: "unknown",
+            installed: "not_applicable",
+            enabled: "not_applicable",
+            trusted: "not_applicable",
+          },
+          diagnosisComplete: true,
+        },
+      ],
+    }]);
+    const cursor = state.runtimes.find((runtime) => runtime.runtimeId === "cursor")!;
+
+    expect(cursor.surfaces.find((surface) => surface.id === "ide")).toMatchObject({
+      expected: false,
+      status: "not_applicable",
+      releaseBlocking: false,
+    });
+    expect(cursor.supportFloor.met).toBe(true);
   });
 
   it("blocks release when canonical skill or mandatory diagnosis fields are unmet", () => {
@@ -170,11 +253,15 @@ describe("runtime lifecycle state", () => {
     expect(cursor?.supportFloor.releaseBlocking).toBe(true);
     expect(cursor?.supportFloor.unmet).toEqual(
       expect.arrayContaining([
-        "canonical_shared_skill_detected",
-        "surfaces.cli.trusted",
-        "surfaces.cli.diagnosis_complete",
+        "canonical_skill_unknown",
+        "mandatory_evidence_missing:cli:trusted",
+        "diagnosis_incomplete:cli",
       ]),
     );
+    expect(cursor?.surfaces.find((surface) => surface.id === "cli")).toMatchObject({
+      status: "unknown",
+      releaseBlocking: true,
+    });
   });
 
   it.each(["claude", "cursor-agent"])("rejects %s observations as active identities", (runtimeId) => {

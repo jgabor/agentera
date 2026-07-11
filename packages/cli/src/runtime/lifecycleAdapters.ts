@@ -9,6 +9,7 @@ import {
   type LifecycleSurfaceDefinition,
   type RuntimeLifecycleAuthority,
   type RuntimeLifecycleState,
+  type LifecycleSupportFloorViolation,
 } from "./lifecycleAuthority.js";
 import {
   RUNTIME_ADAPTER_CATEGORIES,
@@ -97,6 +98,7 @@ export interface RuntimeAdapterSupportFloor {
   diagnosisComplete: boolean;
   releaseBlocking: boolean;
   unmet: string[];
+  violations: LifecycleSupportFloorViolation[];
 }
 
 export interface RuntimeAdapterReport {
@@ -704,17 +706,17 @@ function lifecycleObservation(
   hostPresence: Record<string, LifecycleEvidenceValue>,
   categories: RuntimeAdapterReport["categories"],
   canonicalSkillDetected: LifecycleEvidenceValue,
-  supportFloor: RuntimeAdapterSupportFloor,
+  diagnosisComplete: boolean,
   context: RuntimeAdapterInspectionContext,
 ): LifecycleRuntimeObservation {
   return {
     runtimeId,
     canonicalSkillDetected,
-    diagnosisComplete: supportFloor.diagnosisComplete,
-    unmetMandatoryFields: supportFloor.diagnosisComplete ? [] : ["diagnosis_complete"],
+    diagnosisComplete,
+    unmetMandatoryFields: [],
     surfaces: surfaces.map((surface) => {
       const host = hostPresence[surface.id] ?? "unknown";
-      const expected = surface.presence === "required" || host !== false;
+      const expected = surface.presence === "required" || host === true;
       const skill = categories.skills.surfaces.find((item) => item.surfaceId === surface.id);
       const trust = context.categoryEvidence?.trust?.[surface.id]
         ?? context.surfaceEvidence?.[surface.id]?.trusted
@@ -788,7 +790,7 @@ export class RuntimeLifecycleAdapter {
     for (const category of RUNTIME_ADAPTER_CATEGORIES) {
       const surfaceReports = this.runtimeAuthority.surfaces.map((surface) => {
         const host = hostPresence[surface.id];
-        const expected = surface.presence === "required" || (host !== false && host !== "not_applicable");
+        const expected = surface.presence === "required" || host === true;
         return categorySurface(
           this.runtimeId,
           surface,
@@ -819,24 +821,22 @@ export class RuntimeLifecycleAdapter {
     const diagnosisComplete = detected !== "unknown"
       && requiredSkillReports.length > 0
       && requiredSkillReports.every((surface) => surface.diagnosisComplete);
-    const unmet: string[] = [];
-    if (detected !== true) unmet.push("canonical_shared_skill_detected");
-    if (!diagnosisComplete) unmet.push("diagnosis_complete");
-    const supportFloor: RuntimeAdapterSupportFloor = {
-      met: unmet.length === 0,
-      diagnosisComplete,
-      releaseBlocking: unmet.length > 0,
-      unmet,
-    };
     const observation = lifecycleObservation(
       this.runtimeId,
       this.runtimeAuthority.surfaces,
       hostPresence,
       categories,
       detected,
-      supportFloor,
+      diagnosisComplete,
       context,
     );
+    const authoritativeState = buildRuntimeLifecycleState(this.authority, [observation])
+      .runtimes.find((runtime) => runtime.runtimeId === this.runtimeId);
+    if (!authoritativeState) throw new Error(`${this.runtimeId}: lifecycle authority state is missing`);
+    const supportFloor: RuntimeAdapterSupportFloor = {
+      ...authoritativeState.supportFloor,
+      diagnosisComplete,
+    };
     const expectedCategorySurfaces = RUNTIME_ADAPTER_CATEGORIES.flatMap((category) =>
       categories[category].surfaces.filter((surface) => surface.expected));
     const degraded = expectedCategorySurfaces.some((surface) =>
@@ -851,7 +851,7 @@ export class RuntimeLifecycleAdapter {
       schemaVersion: "agentera.runtimeAdapterReport.v1",
       runtimeId: this.runtimeId,
       displayName: this.runtimeAuthority.displayName,
-      status: supportFloor.releaseBlocking ? "blocked" : degraded ? "degraded" : "ready",
+      status: authoritativeState.status === "blocked" ? "blocked" : degraded ? "degraded" : "ready",
       categories,
       canonicalSkill: { path: this.authority.canonicalSkillPath, detected },
       supportFloor,

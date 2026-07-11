@@ -222,7 +222,7 @@ describe("supported runtime adapter matrix", () => {
 
     for (const report of matrix.reports) {
       expect(report.supportFloor.releaseBlocking).toBe(true);
-      expect(report.supportFloor.unmet).toContain("canonical_shared_skill_detected");
+      expect(report.supportFloor.unmet).toContain("canonical_skill_not_detected");
       const requiredSurface = report.lifecycleObservation.surfaces.find((surface) =>
         AUTHORITY.runtimes.find((runtime) => runtime.id === report.runtimeId)?.surfaces
           .find((candidate) => candidate.id === surface.id)?.presence === "required");
@@ -243,10 +243,20 @@ describe("supported runtime adapter matrix", () => {
 
     expect(unknown.categories.trust.surfaces[0].state).toBe("unknown");
     expect(unknown.lifecycleObservation.surfaces[0].evidence?.trusted).toBe("unknown");
-    expect(unknown.supportFloor.met).toBe(true);
+    expect(unknown.supportFloor.met).toBe(false);
+    expect(unknown.supportFloor.violations).toContainEqual(expect.objectContaining({
+      code: "mandatory_evidence_unknown",
+      field: "trusted",
+      observed: "unknown",
+    }));
     expect(denied.categories.trust.surfaces[0].state).toBe("denied");
     expect(denied.lifecycleObservation.surfaces[0].evidence?.trusted).toBe("denied");
-    expect(denied.supportFloor.met).toBe(true);
+    expect(denied.supportFloor.met).toBe(false);
+    expect(denied.supportFloor.violations).toContainEqual(expect.objectContaining({
+      code: "mandatory_trust_denied",
+      field: "trusted",
+      observed: "denied",
+    }));
   });
 
   it("fails the mandatory floor when required canonical skill detection is unknown", () => {
@@ -257,12 +267,16 @@ describe("supported runtime adapter matrix", () => {
     const report = new CopilotLifecycleAdapter(CONTRACT, AUTHORITY).inspect(fx.context);
 
     expect(report.canonicalSkill.detected).toBe("unknown");
-    expect(report.supportFloor).toEqual({
+    expect(report.supportFloor).toMatchObject({
       met: false,
       diagnosisComplete: false,
       releaseBlocking: true,
-      unmet: ["canonical_shared_skill_detected", "diagnosis_complete"],
     });
+    expect(report.supportFloor.unmet).toEqual(expect.arrayContaining([
+      "canonical_skill_unknown",
+      "diagnosis_incomplete",
+      "mandatory_evidence_unknown:cli:trusted",
+    ]));
   });
 });
 
@@ -291,12 +305,12 @@ describe("repair ownership and publication boundaries", () => {
           nativeActions: [],
         });
       }
-      expect(report.supportFloor).toEqual({
+      expect(report.supportFloor).toMatchObject({
         met: false,
         diagnosisComplete: true,
         releaseBlocking: true,
-        unmet: ["canonical_shared_skill_detected"],
       });
+      expect(report.supportFloor.unmet).toContain("canonical_skill_not_detected");
       const result = applyRuntimeAdapterRepair(report);
       expect(result.status).toBe("non_success");
       expect(result.operations.every((operation) => operation.status === "action_required")).toBe(true);
@@ -406,7 +420,7 @@ describe("Cursor aggregation and native action boundaries", () => {
     const report = new CursorLifecycleAdapter(CONTRACT, AUTHORITY).inspect({
       ...withLedger(fx.context, ledger),
       surfaceEvidence: { cli: { host_present: true }, ide: { host_present: false } },
-      categoryEvidence: { trust: { cli: "unknown", ide: "unknown" } },
+      categoryEvidence: { trust: { cli: true, ide: "unknown" } },
     });
 
     expect(report.runtimeId).toBe("cursor");
@@ -434,7 +448,8 @@ describe("Cursor aggregation and native action boundaries", () => {
     });
 
     expect(report.categories.trust.surfaces.find((surface) => surface.surfaceId === "ide")?.state).toBe("denied");
-    expect(report.status).toBe("degraded");
+    expect(report.status).toBe("blocked");
+    expect(report.supportFloor.unmet).toContain("mandatory_trust_denied:ide:trusted");
     expect(report.lifecycleObservation.runtimeId).toBe("cursor");
   });
 

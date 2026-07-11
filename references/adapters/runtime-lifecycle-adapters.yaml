@@ -41,10 +41,15 @@ category_contract:
     - action_required
     - unavailable
 support_floor:
+  authority: references/adapters/runtime-lifecycle-authority.yaml#support_floor
   required_category: skills
   required_capability: repairable
   unknown_or_unverified_required_detection_blocks: true
   incomplete_required_diagnosis_blocks: true
+  unknown_or_missing_mandatory_evidence_blocks: true
+  denied_required_trust_blocks: true
+  known_false_presence_install_enable_is_diagnosed_degraded: true
+  not_applicable_only_for_unobserved_conditional_surface: true
 native_policy:
   execution: forbidden
   exact_action_required_only: true

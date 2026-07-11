@@ -1,3 +1,5 @@
+import fs from "node:fs";
+
 import {
   inspectRuntimeLifecycleAdapters,
   type RuntimeAdapterCategorySurfaceReport,
@@ -12,16 +14,25 @@ import {
   type RuntimeAdapterCategory,
   type RuntimeAdapterEvidenceState,
 } from "./lifecycleAdapterContract.js";
-import type {
-  LifecycleAggregateStatus,
-  LifecycleEvidenceField,
-  LifecycleEvidenceValue,
-  LifecycleSurfaceStatus,
+import {
+  isLifecycleEvidenceValue,
+  type LifecycleAggregateStatus,
+  type LifecycleEvidenceField,
+  type LifecycleEvidenceValue,
+  type LifecycleSupportFloorBlockerCode,
+  type LifecycleSupportFloorViolation,
+  type LifecycleSurfaceStatus,
 } from "./lifecycleAuthority.js";
+import {
+  validateLifecycleOwnershipLedger,
+  type LifecycleOwnershipLedger,
+} from "./lifecycleOperations.js";
 
 export const LIFECYCLE_SNAPSHOT_SCHEMA_VERSION = "agentera.runtimeLifecycleSnapshot.v1" as const;
 export const LIFECYCLE_STATUS_VOCABULARY_VERSION = "agentera.runtimeLifecycleStatus.v1" as const;
 export const LIFECYCLE_SUMMARY_SCHEMA_VERSION = "agentera.runtimeLifecycleSummary.v1" as const;
+const TEST_LIFECYCLE_INPUT_ENV = "AGENTERA_TEST_RUNTIME_LIFECYCLE_INPUT";
+const MAX_TEST_LIFECYCLE_INPUT_BYTES = 1024 * 1024;
 
 export interface LifecycleSkillPrecedence {
   winner: {
@@ -57,15 +68,22 @@ export interface LifecycleSnapshotSurface {
   evidence: Partial<Record<LifecycleEvidenceField, LifecycleEvidenceValue>>;
   diagnosisComplete: boolean;
   unmetMandatoryFields: string[];
+  releaseBlocking: boolean;
+  supportFloorViolations: LifecycleSupportFloorViolation[];
   categories: LifecycleSnapshotCategory[];
 }
 
 export interface LifecycleSnapshotBlocker {
   id: string;
+  code: LifecycleSupportFloorBlockerCode | "unowned_collision";
   kind: "support_floor" | "unowned_collision";
   surfaceId?: string;
   category?: RuntimeAdapterCategory;
   detail: string;
+  evidence?: {
+    field: LifecycleEvidenceField;
+    observed: LifecycleEvidenceValue | "missing";
+  };
 }
 
 export interface LifecycleSnapshotRuntime {
@@ -82,6 +100,7 @@ export interface LifecycleSnapshotRuntime {
     met: boolean;
     releaseBlocking: boolean;
     unmet: string[];
+    violations: LifecycleSupportFloorViolation[];
   };
   surfaces: LifecycleSnapshotSurface[];
   blockers: LifecycleSnapshotBlocker[];
@@ -115,6 +134,7 @@ export interface LifecycleRuntimeSummary {
     expected: boolean;
     detected: LifecycleEvidenceValue;
     status: LifecycleSurfaceStatus;
+    releaseBlocking: boolean;
   }>;
   blockerCount: number;
   actionCount: number;
@@ -128,6 +148,85 @@ export interface RuntimeLifecycleSummary {
   activeRuntimeIds: string[];
   releaseBlocked: boolean;
   runtimes: LifecycleRuntimeSummary[];
+}
+
+function isMapping(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+function testEvidenceMap(value: unknown, location: string): RuntimeAdapterInspectionContext["surfaceEvidence"] {
+  if (value === undefined) return undefined;
+  if (!isMapping(value)) throw new Error(`${location} must be an object`);
+  const result: NonNullable<RuntimeAdapterInspectionContext["surfaceEvidence"]> = {};
+  for (const [surfaceId, fields] of Object.entries(value)) {
+    if (!isMapping(fields)) throw new Error(`${location}.${surfaceId} must be an object`);
+    result[surfaceId] = {};
+    for (const [field, evidence] of Object.entries(fields)) {
+      if (!["host_present", "installed", "enabled", "trusted"].includes(field)) {
+        throw new Error(`${location}.${surfaceId}.${field} is not a lifecycle evidence field`);
+      }
+      if (!isLifecycleEvidenceValue(evidence)) {
+        throw new Error(`${location}.${surfaceId}.${field} is not a lifecycle evidence value`);
+      }
+      result[surfaceId][field as "host_present" | "installed" | "enabled" | "trusted"] = evidence;
+    }
+  }
+  return result;
+}
+
+function testCategoryEvidence(
+  value: unknown,
+): RuntimeAdapterInspectionContext["categoryEvidence"] {
+  if (value === undefined) return undefined;
+  if (!isMapping(value)) throw new Error("categoryEvidence must be an object");
+  const result: NonNullable<RuntimeAdapterInspectionContext["categoryEvidence"]> = {};
+  for (const [category, surfaces] of Object.entries(value)) {
+    if (!RUNTIME_ADAPTER_CATEGORIES.includes(category as RuntimeAdapterCategory)) {
+      throw new Error(`categoryEvidence.${category} is not a lifecycle category`);
+    }
+    if (!isMapping(surfaces)) throw new Error(`categoryEvidence.${category} must be an object`);
+    const values: Record<string, LifecycleEvidenceValue> = {};
+    for (const [surfaceId, evidence] of Object.entries(surfaces)) {
+      if (!isLifecycleEvidenceValue(evidence)) {
+        throw new Error(`categoryEvidence.${category}.${surfaceId} is not a lifecycle evidence value`);
+      }
+      values[surfaceId] = evidence;
+    }
+    result[category as RuntimeAdapterCategory] = values;
+  }
+  return result;
+}
+
+/**
+ * Child-process integration fixtures need to supply host-owned trust evidence
+ * without teaching production diagnosis to infer it. This seam is active only
+ * under NODE_ENV=test and reads one bounded JSON file; normal CLI execution
+ * ignores the test-only environment variable entirely.
+ */
+export function withRuntimeLifecycleTestInput(
+  context: RuntimeAdapterInspectionContext,
+): RuntimeAdapterInspectionContext {
+  const inputPath = context.env?.NODE_ENV === "test"
+    ? context.env[TEST_LIFECYCLE_INPUT_ENV]
+    : undefined;
+  if (!inputPath) return context;
+  const stat = fs.statSync(inputPath);
+  if (!stat.isFile() || stat.size > MAX_TEST_LIFECYCLE_INPUT_BYTES) {
+    throw new Error(`${TEST_LIFECYCLE_INPUT_ENV} must name a JSON file no larger than 1 MiB`);
+  }
+  const value: unknown = JSON.parse(fs.readFileSync(inputPath, "utf8"));
+  if (!isMapping(value)) throw new Error(`${TEST_LIFECYCLE_INPUT_ENV} must contain an object`);
+  const ledger = value.ledger as LifecycleOwnershipLedger | undefined;
+  if (ledger) {
+    const errors = validateLifecycleOwnershipLedger(ledger);
+    if (errors.length > 0) throw new Error(`${TEST_LIFECYCLE_INPUT_ENV} ledger: ${errors.join("; ")}`);
+  }
+  return {
+    ...context,
+    surfaceEvidence: testEvidenceMap(value.surfaceEvidence, "surfaceEvidence"),
+    categoryEvidence: testCategoryEvidence(value.categoryEvidence),
+    ...(ledger ? { ledger } : {}),
+  };
 }
 
 function isCanonicalEvidence(evidence: RuntimeAdapterEvidence): boolean {
@@ -194,13 +293,18 @@ function snapshotCategories(
 }
 
 function blockersFor(
-  supportFloorUnmet: string[],
+  supportFloorViolations: LifecycleSupportFloorViolation[],
   surfaces: LifecycleSnapshotSurface[],
 ): LifecycleSnapshotBlocker[] {
-  const blockers: LifecycleSnapshotBlocker[] = supportFloorUnmet.map((detail) => ({
-    id: `support_floor:${detail}`,
+  const blockers: LifecycleSnapshotBlocker[] = supportFloorViolations.map((violation) => ({
+    id: ["support_floor", violation.code, violation.surfaceId, violation.field].filter(Boolean).join(":"),
+    code: violation.code,
     kind: "support_floor",
-    detail,
+    ...(violation.surfaceId ? { surfaceId: violation.surfaceId } : {}),
+    detail: violation.detail,
+    ...(violation.field && violation.observed !== undefined
+      ? { evidence: { field: violation.field, observed: violation.observed } }
+      : {}),
   }));
   const seen = new Set(blockers.map((blocker) => blocker.id));
   for (const surface of surfaces) {
@@ -215,6 +319,7 @@ function blockersFor(
         seen.add(id);
         blockers.push({
           id,
+          code: "unowned_collision",
           kind: "unowned_collision",
           surfaceId: surface.id,
           category: category.category,
@@ -234,7 +339,7 @@ function blockersFor(
 export function observeRuntimeLifecycle(
   context: RuntimeAdapterInspectionContext,
 ): RuntimeLifecycleSnapshot {
-  const matrix = inspectRuntimeLifecycleAdapters(context);
+  const matrix = inspectRuntimeLifecycleAdapters(withRuntimeLifecycleTestInput(context));
   const runtimes = matrix.lifecycleState.runtimes.map((state) => {
     const report = matrix.reports.find((candidate) => candidate.runtimeId === state.runtimeId);
     if (!report) throw new Error(`${state.runtimeId}: lifecycle adapter report is missing`);
@@ -246,10 +351,12 @@ export function observeRuntimeLifecycle(
       evidence: surface.evidence,
       diagnosisComplete: surface.diagnosisComplete,
       unmetMandatoryFields: surface.unmetMandatoryFields,
+      releaseBlocking: surface.releaseBlocking,
+      supportFloorViolations: surface.supportFloorViolations,
       categories: snapshotCategories(surface.id, report.categories),
     }));
     const categories = surfaces.flatMap((surface) => surface.categories);
-    const blockers = blockersFor(state.supportFloor.unmet, surfaces);
+    const blockers = blockersFor(state.supportFloor.violations, surfaces);
     return {
       runtimeId: state.runtimeId,
       displayName: state.displayName,
@@ -289,12 +396,17 @@ export function summarizeRuntimeLifecycle(
       status: runtime.status,
       readiness: runtime.readiness,
       canonicalSkill: { detected: runtime.canonicalSkill.detected },
-      supportFloor: runtime.supportFloor,
+      supportFloor: {
+        met: runtime.supportFloor.met,
+        releaseBlocking: runtime.supportFloor.releaseBlocking,
+        unmet: runtime.supportFloor.unmet,
+      },
       surfaces: runtime.surfaces.map((surface) => ({
         id: surface.id,
         expected: surface.expected,
         detected: surface.evidence.host_present ?? "unknown",
         status: surface.status,
+        releaseBlocking: surface.releaseBlocking,
       })),
       blockerCount: runtime.blockers.length,
       actionCount: runtime.actionCount,

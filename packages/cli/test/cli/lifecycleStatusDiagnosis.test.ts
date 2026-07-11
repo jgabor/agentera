@@ -74,11 +74,16 @@ function runCli(args: string[], cwd: string, env: NodeJS.ProcessEnv): ReturnType
 }
 
 function sharedRuntimeSemantics(runtime: Record<string, unknown>): Record<string, unknown> {
+  const supportFloor = runtime.supportFloor as Record<string, unknown>;
   return {
     runtimeId: runtime.runtimeId,
     status: runtime.status,
     readiness: runtime.readiness,
-    supportFloor: runtime.supportFloor,
+    supportFloor: {
+      met: supportFloor.met,
+      releaseBlocking: supportFloor.releaseBlocking,
+      unmet: supportFloor.unmet,
+    },
     surfaces: (runtime.surfaces as Array<Record<string, unknown>>).map((surface) => ({
       id: surface.id,
       expected: surface.expected,
@@ -87,34 +92,260 @@ function sharedRuntimeSemantics(runtime: Record<string, unknown>): Record<string
   };
 }
 
+type LifecycleFixtureName =
+  | "unknown trust"
+  | "denied trust"
+  | "Cursor CLI-only / IDE conditional"
+  | "skill shadowing"
+  | "absent host / missing parent"
+  | "unowned collision"
+  | "all ready";
+
+interface LifecycleCliFixture {
+  name: LifecycleFixtureName;
+  doctorStatus: 0 | 1;
+  releaseBlocked: boolean;
+  arrange: (home: string, project: string) => {
+    surfaceEvidence: RuntimeAdapterInspectionContext["surfaceEvidence"];
+    ledger?: ReturnType<typeof emptyLifecycleOwnershipLedger>;
+  };
+  assertDiagnosis: (snapshot: Record<string, unknown>) => void;
+}
+
+const trustedEvidence = (trusted: true | "unknown" | "denied", idePresent = true) => ({
+  host: { host_present: true as const, enabled: true as const, trusted },
+  cli: { host_present: true as const, enabled: true as const, trusted },
+  ide: idePresent
+    ? { host_present: true as const, enabled: true as const, trusted }
+    : { host_present: false as const },
+});
+
+function readyContext(home: string, project: string): RuntimeAdapterInspectionContext {
+  mkdirs([
+    home,
+    project,
+    path.join(home, ".agents", "skills"),
+    path.join(home, ".config", "opencode", "plugins"),
+    path.join(home, ".config", "opencode", "agents"),
+    path.join(home, ".codex", "agents"),
+    path.join(home, ".codex"),
+    path.join(project, ".cursor", "agents"),
+    path.join(project, ".cursor"),
+  ]);
+  return {
+    home,
+    project,
+    sourceRoot: REPO_ROOT,
+    env: { PATH: "" },
+    surfaceEvidence: trustedEvidence(true),
+    categoryEvidence: {
+      trust: { host: true, cli: true, ide: true },
+      enablement: { host: true, cli: true, ide: true },
+    },
+  };
+}
+
+function installReadyLifecycle(home: string, project: string): ReturnType<typeof emptyLifecycleOwnershipLedger> {
+  const context = readyContext(home, project);
+  let ledger = emptyLifecycleOwnershipLedger();
+  for (const adapter of runtimeLifecycleAdapters()) {
+    const result = applyRuntimeAdapterRepair(adapter.inspect({ ...context, ledger }));
+    expect(result.status).toBe("success");
+    ledger = result.ownershipLedger;
+  }
+  return ledger;
+}
+
+function runtimeById(snapshot: Record<string, unknown>, runtimeId: string): Record<string, unknown> {
+  return (snapshot.runtimes as Array<Record<string, unknown>>)
+    .find((runtime) => runtime.runtimeId === runtimeId)!;
+}
+
+const cliFixtures: LifecycleCliFixture[] = [
+  {
+    name: "unknown trust",
+    doctorStatus: 1,
+    releaseBlocked: true,
+    arrange: (home, project) => ({
+      surfaceEvidence: trustedEvidence("unknown"),
+      ledger: installReadyLifecycle(home, project),
+    }),
+    assertDiagnosis: (snapshot) => {
+      const codex = runtimeById(snapshot, "codex");
+      expect(codex.status).toBe("blocked");
+      expect(codex.blockers).toContainEqual(expect.objectContaining({
+        code: "mandatory_evidence_unknown",
+        evidence: { field: "trusted", observed: "unknown" },
+      }));
+    },
+  },
+  {
+    name: "denied trust",
+    doctorStatus: 1,
+    releaseBlocked: true,
+    arrange: (home, project) => ({
+      surfaceEvidence: trustedEvidence("denied"),
+      ledger: installReadyLifecycle(home, project),
+    }),
+    assertDiagnosis: (snapshot) => {
+      const codex = runtimeById(snapshot, "codex");
+      expect((codex.surfaces as Array<Record<string, unknown>>)[0]).toMatchObject({
+        status: "blocked",
+        releaseBlocking: true,
+      });
+      expect(codex.blockers).toContainEqual(expect.objectContaining({
+        code: "mandatory_trust_denied",
+        evidence: { field: "trusted", observed: "denied" },
+      }));
+    },
+  },
+  {
+    name: "Cursor CLI-only / IDE conditional",
+    doctorStatus: 0,
+    releaseBlocked: false,
+    arrange: (home, project) => ({
+      surfaceEvidence: trustedEvidence(true, false),
+      ledger: installReadyLifecycle(home, project),
+    }),
+    assertDiagnosis: (snapshot) => {
+      const cursor = runtimeById(snapshot, "cursor");
+      expect(cursor.status).toBe("ready");
+      expect(cursor.surfaces).toEqual(expect.arrayContaining([
+        expect.objectContaining({ id: "cli", expected: true, status: "ready" }),
+        expect.objectContaining({ id: "ide", expected: false, status: "not_applicable", releaseBlocking: false }),
+      ]));
+    },
+  },
+  {
+    name: "skill shadowing",
+    doctorStatus: 0,
+    releaseBlocked: false,
+    arrange: (home, project) => {
+      const ledger = installReadyLifecycle(home, project);
+      const projectSkill = path.join(project, ".agents", "skills", "agentera");
+      fs.mkdirSync(projectSkill, { recursive: true });
+      fs.writeFileSync(path.join(projectSkill, "SKILL.md"), "---\nname: agentera\n---\n");
+      return { surfaceEvidence: trustedEvidence(true), ledger };
+    },
+    assertDiagnosis: (snapshot) => {
+      const codex = runtimeById(snapshot, "codex");
+      const skills = ((codex.surfaces as Array<Record<string, unknown>>)[0].categories as Array<Record<string, unknown>>)
+        .find((category) => category.category === "skills")!;
+      expect((skills.precedence as Record<string, unknown>).shadowing).toEqual([
+        expect.objectContaining({ canonical: true }),
+      ]);
+    },
+  },
+  {
+    name: "absent host / missing parent",
+    doctorStatus: 1,
+    releaseBlocked: true,
+    arrange: () => ({
+      surfaceEvidence: {
+        host: { host_present: false, enabled: false, trusted: true },
+        cli: { host_present: false, enabled: false, trusted: true },
+        ide: { host_present: false },
+      },
+    }),
+    assertDiagnosis: (snapshot) => {
+      const opencode = runtimeById(snapshot, "opencode");
+      expect(opencode.status).toBe("blocked");
+      expect((opencode.surfaces as Array<Record<string, unknown>>)[0]).toMatchObject({
+        status: "degraded",
+        evidence: { host_present: false, installed: false, enabled: false, trusted: true },
+      });
+      expect(opencode.blockers).toContainEqual(expect.objectContaining({
+        code: "canonical_skill_not_detected",
+      }));
+    },
+  },
+  {
+    name: "unowned collision",
+    doctorStatus: 0,
+    releaseBlocked: false,
+    arrange: (home, project) => {
+      mkdirs([home, project, path.join(home, ".agents", "skills"), path.join(home, ".config", "opencode", "plugins")]);
+      const context = readyContext(home, project);
+      const copilot = runtimeLifecycleAdapters().find((adapter) => adapter.runtimeId === "copilot")!;
+      const installed = applyRuntimeAdapterRepair(copilot.inspect(context));
+      expect(installed.status).toBe("success");
+      fs.copyFileSync(
+        path.join(REPO_ROOT, ".opencode", "plugins", "agentera.js"),
+        path.join(home, ".config", "opencode", "plugins", "agentera.js"),
+      );
+      return { surfaceEvidence: trustedEvidence(true), ledger: installed.ownershipLedger };
+    },
+    assertDiagnosis: (snapshot) => {
+      const opencode = runtimeById(snapshot, "opencode");
+      expect(opencode.blockers).toContainEqual(expect.objectContaining({
+        code: "unowned_collision",
+        category: "plugins",
+      }));
+      expect((opencode.supportFloor as Record<string, unknown>).met).toBe(true);
+    },
+  },
+  {
+    name: "all ready",
+    doctorStatus: 0,
+    releaseBlocked: false,
+    arrange: (home, project) => ({
+      surfaceEvidence: trustedEvidence(true),
+      ledger: installReadyLifecycle(home, project),
+    }),
+    assertDiagnosis: (snapshot) => {
+      const runtimes = snapshot.runtimes as Array<Record<string, unknown>>;
+      expect(runtimes.map((runtime) => runtime.status)).toEqual(["ready", "ready", "ready", "ready"]);
+      expect(runtimes.every((runtime) =>
+        (runtime.supportFloor as Record<string, unknown>).met === true)).toBe(true);
+      expect(runtimes.flatMap((runtime) => runtime.blockers as Array<Record<string, unknown>>)
+        .filter((blocker) => blocker.kind === "support_floor")).toEqual([]);
+      const copilot = runtimeById(snapshot, "copilot");
+      const agents = ((copilot.surfaces as Array<Record<string, unknown>>)[0].categories as Array<Record<string, unknown>>)
+        .find((category) => category.category === "agents")!;
+      expect(agents.state).toBe("unsupported");
+    },
+  },
+];
+
 describe("prime and doctor lifecycle integration", () => {
-  it("shares one four-runtime snapshot while preserving bounded and detailed budgets", () => {
+  it.each(cliFixtures)("runs prime and doctor with identical $name inputs", (fixture) => {
     const root = tempRoot("lifecycle-cli-");
-    const home = deepPath(root, "home", 9);
-    const project = deepPath(root, "project", 4);
+    const home = fixture.name === "unknown trust" ? deepPath(root, "home", 9) : path.join(root, "home");
+    const project = fixture.name === "unknown trust" ? deepPath(root, "project", 4) : path.join(root, "project");
     const bin = path.join(root, "bin");
     const invocationMarker = path.join(root, "native-process-invoked");
     mkdirs([home, project]);
     writeTrapBinaries(bin, invocationMarker);
-    fs.unlinkSync(path.join(bin, "opencode"));
+    const inputPath = path.join(root, "runtime-lifecycle-input.json");
+    fs.writeFileSync(inputPath, JSON.stringify(fixture.arrange(home, project)));
     const env = {
       ...process.env,
+      NODE_ENV: "test",
       HOME: home,
       PATH: bin,
+      AGENTERA_HOME: REPO_ROOT,
       AGENTERA_BOOTSTRAP_SOURCE_ROOT: REPO_ROOT,
-      AGENTERA_HOME: path.join(home, ".local", "share", "agentera"),
+      AGENTERA_TEST_RUNTIME_LIFECYCLE_INPUT: inputPath,
     };
     const before = treeSnapshot(root);
 
-    const prime = runCli(["prime", "--format", "json"], project, env);
+    const primeArgs = [
+      "prime", "--format", "json", "--fields", "runtime_lifecycle",
+    ];
+    const doctorArgs = [
+      "doctor", "--home", home, "--project", project,
+      "--format", "json",
+    ];
+    const prime = runCli(primeArgs, project, env);
     const doctor = runCli([
-      "doctor", "--home", home, "--project", project, "--format", "json",
+      ...doctorArgs,
     ], project, env);
 
     expect(prime.status, prime.stderr).toBe(0);
-    expect([0, 1]).toContain(doctor.status);
+    expect(doctor.status, doctor.stderr).toBe(fixture.doctorStatus);
     const primePayload = JSON.parse(prime.stdout) as Record<string, unknown>;
     const doctorPayload = JSON.parse(doctor.stdout) as Record<string, unknown>;
+    expect(doctorPayload.status).toBe("up_to_date");
     const summary = primePayload.runtime_lifecycle as Record<string, unknown>;
     const diagnosis = doctorPayload.runtime_lifecycle as Record<string, unknown>;
     expect(summary.activeRuntimeIds).toEqual(EXPECTED_RUNTIME_IDS);
@@ -122,8 +353,8 @@ describe("prime and doctor lifecycle integration", () => {
     expect(summary.snapshotVersion).toBe(diagnosis.schemaVersion);
     expect(summary.statusVocabularyVersion).toBe(diagnosis.statusVocabularyVersion);
     expect(summary.authority).toBe(diagnosis.authority);
-    expect(((summary.runtimes as Array<Record<string, unknown>>)[0].surfaces as Array<Record<string, unknown>>)[0].detected)
-      .toBe(false);
+    expect(summary.releaseBlocked).toBe(fixture.releaseBlocked);
+    expect(diagnosis.releaseBlocked).toBe(fixture.releaseBlocked);
 
     const primeRuntimes = summary.runtimes as Array<Record<string, unknown>>;
     const doctorRuntimes = diagnosis.runtimes as Array<Record<string, unknown>>;
@@ -138,8 +369,8 @@ describe("prime and doctor lifecycle integration", () => {
     }
 
     expect(Buffer.byteLength(JSON.stringify(summary))).toBeLessThan(4_096);
-    expect(JSON.stringify(summary)).not.toMatch(/categories|evidence|remediation|nativeActions|command/);
-    expect(Buffer.byteLength(doctor.stdout)).toBeGreaterThan(65_536);
+    expect(JSON.stringify(summary)).not.toMatch(/categories|"evidence":|remediation|nativeActions|command/);
+    expect(Buffer.byteLength(doctor.stdout)).toBeGreaterThan(32_768);
     expect(doctorRuntimes.every((runtime) =>
       (runtime.surfaces as Array<Record<string, unknown>>).every((surface) =>
         (surface.categories as unknown[]).length === 8))).toBe(true);
@@ -156,7 +387,7 @@ describe("prime and doctor lifecycle integration", () => {
     ]);
     expect(JSON.stringify(doctorRuntimes.map((runtime) => runtime.runtimeId))).not.toContain("claude");
     expect(JSON.stringify(doctorRuntimes.map((runtime) => runtime.runtimeId))).not.toContain("cursor-agent");
-    expect(fs.existsSync(path.join(home, ".agents", "skills"))).toBe(false);
+    fixture.assertDiagnosis(diagnosis);
     expect(fs.existsSync(invocationMarker)).toBe(false);
     expect(treeSnapshot(root)).toEqual(before);
   });
@@ -246,6 +477,27 @@ function readyFixture(): { context: RuntimeAdapterInspectionContext; ledger: Ret
 }
 
 describe("lifecycle snapshot edge projections", () => {
+  it("ignores the child-process evidence seam outside NODE_ENV=test", () => {
+    const fixture = readyFixture();
+    const inputPath = path.join(tempRoot("lifecycle-input-"), "input.json");
+    fs.writeFileSync(inputPath, JSON.stringify({ surfaceEvidence: trustedEvidence(true) }));
+    const snapshot = observeRuntimeLifecycle({
+      ...fixture.context,
+      ledger: fixture.ledger,
+      env: {
+        PATH: "",
+        NODE_ENV: "production",
+        AGENTERA_TEST_RUNTIME_LIFECYCLE_INPUT: inputPath,
+      },
+      surfaceEvidence: trustedEvidence("unknown"),
+      categoryEvidence: { trust: { host: "unknown", cli: "unknown", ide: "unknown" } },
+    });
+
+    expect(snapshot.releaseBlocked).toBe(true);
+    expect(runtimeById(snapshot as unknown as Record<string, unknown>, "codex").blockers)
+      .toContainEqual(expect.objectContaining({ code: "mandatory_evidence_unknown" }));
+  });
+
   it("keeps all-ready and Cursor conditional surface states truthful", () => {
     const fixture = readyFixture();
     const ready = observeRuntimeLifecycle({ ...fixture.context, ledger: fixture.ledger });
@@ -297,7 +549,13 @@ describe("lifecycle snapshot edge projections", () => {
     const codex = detailed.runtimes.find((runtime) => runtime.runtimeId === "codex")!;
     const codexSurface = codex.surfaces[0];
     expect(codexSurface.evidence.trusted).toBe("denied");
-    expect(codexSurface.status).toBe("degraded");
+    expect(codexSurface.status).toBe("blocked");
+    expect(codexSurface.releaseBlocking).toBe(true);
+    expect(codex.supportFloor.met).toBe(false);
+    expect(codex.blockers).toContainEqual(expect.objectContaining({
+      code: "mandatory_trust_denied",
+      evidence: { field: "trusted", observed: "denied" },
+    }));
     const skills = codexSurface.categories.find((category) => category.category === "skills")!;
     expect(skills.state).toBe("blocked_unowned");
     expect(skills.precedence?.winner?.path).toBe(projectSkill);
@@ -310,8 +568,12 @@ describe("lifecycle snapshot edge projections", () => {
     const summary = summarizeRuntimeLifecycle(detailed);
     const codexSummary = summary.runtimes.find((runtime) => runtime.runtimeId === "codex")!;
     expect(codexSummary.status).toBe(codex.status);
-    expect(codexSummary.supportFloor).toEqual(codex.supportFloor);
+    expect(codexSummary.supportFloor).toEqual({
+      met: codex.supportFloor.met,
+      releaseBlocking: codex.supportFloor.releaseBlocking,
+      unmet: codex.supportFloor.unmet,
+    });
     expect(codexSummary.blockerCount).toBe(codex.blockers.length);
-    expect(JSON.stringify(summary)).not.toMatch(/precedence|evidence|remediation/);
+    expect(JSON.stringify(summary)).not.toMatch(/precedence|"evidence":|remediation/);
   });
 });

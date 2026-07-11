@@ -199,6 +199,12 @@ function runMatrixRowInner(row: ParityRow, doctorParity: boolean): MatrixResult 
   return { rc, out, err, payload, normalized, classification, drift_direction };
 }
 
+function expectedMatrixExitCode(row: ParityRow, result: MatrixResult): number {
+  const lifecycle = result.payload?.runtime_lifecycle as Record<string, unknown> | undefined;
+  if (row.argv[0] === "doctor" && lifecycle?.releaseBlocked === true) return 1;
+  return row.exitCode;
+}
+
 function assertRowPassesOrDocumentsBreak(
   row: ParityRow,
   classification: ReturnType<typeof classifyDrift>,
@@ -302,7 +308,7 @@ describe("npm CLI parity matrix (Python oracle envelopes)", () => {
       expect(row.python_commit, `row '${row.family}' python_commit`).toBe(REMAINING_FAMILIES.python_commit);
       expect(row.version_break, `row '${row.family}' version_break`).toBe(!isParityFamilyClosed(familyId));
       if (isParityFamilyClosed(familyId)) {
-        expect(result.rc, `row '${row.family}' exit code`).toBe(row.exitCode);
+        expect(result.rc, `row '${row.family}' exit code`).toBe(expectedMatrixExitCode(row, result));
         assertRowPassesOrDocumentsBreak(row, result.classification!, result.rc);
         expect(
           result.drift_direction,

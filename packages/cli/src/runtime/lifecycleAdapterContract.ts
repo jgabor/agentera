@@ -229,12 +229,18 @@ export function validateRuntimeLifecycleAdapterContractData(
   }
   const supportFloor = isMapping(data.support_floor) ? data.support_floor : {};
   if (
+    supportFloor.authority !== `${LIFECYCLE_AUTHORITY_RELATIVE_PATH}#support_floor`
+    ||
     supportFloor.required_category !== "skills"
     || supportFloor.required_capability !== "repairable"
     || supportFloor.unknown_or_unverified_required_detection_blocks !== true
     || supportFloor.incomplete_required_diagnosis_blocks !== true
+    || supportFloor.unknown_or_missing_mandatory_evidence_blocks !== true
+    || supportFloor.denied_required_trust_blocks !== true
+    || supportFloor.known_false_presence_install_enable_is_diagnosed_degraded !== true
+    || supportFloor.not_applicable_only_for_unobserved_conditional_surface !== true
   ) {
-    errors.push(sourceError(sourcePath, "support_floor", "must fail closed on required canonical skill diagnosis"));
+    errors.push(sourceError(sourcePath, "support_floor", "must delegate exact fail-closed evidence semantics to lifecycle authority"));
   }
   const nativePolicy = isMapping(data.native_policy) ? data.native_policy : {};
   if (
