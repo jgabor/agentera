@@ -6,7 +6,7 @@ import { classifyResolvedRoot } from "../../state/installRoot.js";
 import { CANONICAL_ENTRIES } from "./constants.js";
 
 type Env = Record<string, string | undefined>;
-const ENV_FALLBACKS = ["AGENTERA_HOME", "CLAUDE_PLUGIN_ROOT"] as const;
+const ENV_FALLBACKS = ["AGENTERA_HOME"] as const;
 
 export const DEFAULT_CONFIG_PATH = path.join(os.homedir(), ".codex", "config.toml");
 

@@ -20,12 +20,12 @@ const CONTRACT = {
 function corpus(): any {
   return {
     metadata: {
-      runtime_statuses: [{ runtime: "claude-code", status: "ok", reason: "records_extracted", record_count: 2 }],
+      runtime_statuses: [{ runtime: "codex", status: "ok", reason: "records_extracted", record_count: 2 }],
       adapter_version: "adapterX",
     },
     records: [
-      { source_kind: "conversation_turn", runtime: "claude-code", source_id: "u1", session_id: "c1", timestamp: "2026-02-01T00:00:00Z", data: { actor: "user", content: "/build build it" } },
-      { source_kind: "tool_call", runtime: "claude-code", source_id: "t1", session_id: "c1", timestamp: "2026-02-01T00:00:01Z", data: { tool: "bash", arguments: { command: "uv run scripts/agentera plan" } } },
+      { source_kind: "conversation_turn", runtime: "codex", source_id: "u1", session_id: "c1", timestamp: "2026-02-01T00:00:00Z", data: { actor: "user", content: "/build build it" } },
+      { source_kind: "tool_call", runtime: "codex", source_id: "t1", session_id: "c1", timestamp: "2026-02-01T00:00:01Z", data: { tool: "bash", arguments: { command: "uv run scripts/agentera plan" } } },
     ],
   };
 }
@@ -45,7 +45,7 @@ describe("buildStartupIntermediate", () => {
     expect(inter.boundary_commit).toBe("abc123");
     expect(inter.corpus_adapter_version).toBe("adapterX");
     expect(inter.total_records_read).toBe(2);
-    expect(inter.runtime_record_counts).toEqual({ "claude-code": 2 });
+    expect(inter.runtime_record_counts).toEqual({ codex: 2 });
     expect(inter.benchmark_window_started_after).toBe("2025-01-01T00:00:00+00:00");
   });
 
@@ -88,8 +88,8 @@ describe("persistStartupBenchmark", () => {
       estimated_raw_after_cli_tokens: 20,
       estimated_raw_after_cli_tokens_by_artifact: {},
       estimated_redundant_raw_tokens_by_artifact: {},
-      runtime_record_counts: { "claude-code": 1 },
-      runtime_coverage: [{ runtime: "claude-code", status: "ok", reason: "records_extracted" }],
+      runtime_record_counts: { codex: 1 },
+      runtime_coverage: [{ runtime: "codex", status: "ok", reason: "records_extracted" }],
       startup_recommendation: { action: "close_without_implementation" },
     };
   }
@@ -111,7 +111,7 @@ describe("persistStartupBenchmark", () => {
     const dir = path.join(tmp, "bench2");
     const m = { ...metrics(5), benchmark_watermark_at: "2026-03-01T00:00:00+00:00" };
     persistStartupBenchmark(m, dir);
-    const wm = previousBenchmarkWatermark(dir, ["claude-code"]);
+    const wm = previousBenchmarkWatermark(dir, ["codex"]);
     expect(wm).not.toBeNull();
     expect(previousBenchmarkWatermark(dir, ["opencode"])).toBeNull();
   });

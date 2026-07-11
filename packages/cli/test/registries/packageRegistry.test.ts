@@ -42,8 +42,6 @@ describe("package registry", () => {
       "copilot-root",
       "copilot-repository",
       "codex-plugin",
-      "claude-marketplace-metadata",
-      "claude-marketplace-plugins",
       "opencode-plugin-marker",
     ]);
     expect(registry.versionSurfaceIds().length).toBe(new Set(registry.versionSurfaceIds()).size);
@@ -52,7 +50,6 @@ describe("package registry", () => {
       "copilot-repository-manifest",
       "codex-plugin-manifest",
       "cursor-plugin-manifest",
-      "claude-marketplace-manifest",
       "opencode-package-manifest",
     ]);
     const record = registry.get("agentera");
@@ -63,7 +60,6 @@ describe("package registry", () => {
     ]);
     expect(record.package_commands.commands.map((c: any) => c.id)).toEqual([
       "remove-legacy-skills",
-      "install-agentera-skill-claude",
       "install-agentera-skill-opencode",
     ]);
     expect(record.docs_targets.version_files.at(-1)).toBe("registry.json");
@@ -87,8 +83,7 @@ describe("package registry", () => {
     malformed.records.push(structuredClone(fixture.records[0]));
     malformed.records[0].version_surfaces.surfaces[1].id = "registry";
     malformed.records[0].version_surfaces.surfaces[2].path = "../escape.json";
-    malformed.records[0].package_commands.commands[1].argv =
-      "npx skills add jgabor/agentera -g -a claude-code --skill agentera -y";
+    malformed.records[0].package_commands.commands[1].argv = "not-an-array";
     malformed.records[0].version_authority.install_root = "~/.agents/agentera";
     malformed.records[0].identity.lifecycle_events = [];
 

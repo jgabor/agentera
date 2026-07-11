@@ -37,15 +37,18 @@ export function validateLifecycleOperationContractData(value: unknown): string[]
   if (ownership?.identity_rule !== "Managed and published pending-create records bind the filesystem device and inode observed at publication.") {
     errors.push("ownership.identity_rule must bind records to publication identity");
   }
+  if (typeof ownership?.removal_rule !== "string" || !ownership.removal_rule.includes("identity and fingerprint")) {
+    errors.push("ownership.removal_rule must require matching identity and fingerprint");
+  }
   const publication = data.publication_policy as Record<string, unknown> | undefined;
   if (publication?.supported_platform !== "linux_proc_self_fd") {
     errors.push("publication_policy.supported_platform must be linux_proc_self_fd");
   }
-  if (publication?.unsupported_platform_result !== "failed") {
-    errors.push("publication_policy.unsupported_platform_result must be failed");
+  if (publication?.unsupported_platform_result !== "action_required") {
+    errors.push("publication_policy.unsupported_platform_result must be action_required");
   }
-  if (publication?.destructive_path_mutations !== "action_required") {
-    errors.push("publication_policy.destructive_path_mutations must be action_required");
+  if (publication?.destructive_path_mutations !== "owned_removal_only") {
+    errors.push("publication_policy.destructive_path_mutations must be owned_removal_only");
   }
   if (typeof publication?.cleanup_rule !== "string" || !publication.cleanup_rule.includes("never unlinks")) {
     errors.push("publication_policy.cleanup_rule must forbid unlinking colliding or replaced paths");

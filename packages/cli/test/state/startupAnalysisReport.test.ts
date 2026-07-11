@@ -29,7 +29,7 @@ function metrics(): any {
   const inter = classifyStartupRecords(corpus, { salt: "SALT", contract: CONTRACT });
   inter.output_envelope = "startup_state_analysis_v1";
   inter.total_records_read = corpus.records.length;
-  inter.runtime_coverage = [{ runtime: "claude-code", status: "ok", reason: "records_extracted", record_count: 4 }];
+  inter.runtime_coverage = [{ runtime: "codex", status: "ok", reason: "records_extracted", record_count: 4 }];
   const m = aggregateStartupMetrics(inter);
   m.generated_at = "FIXED";
   return m;

@@ -29,12 +29,6 @@ records:
         - id: codex-plugin
           path: .codex-plugin/plugin.json
           selector: version
-        - id: claude-marketplace-metadata
-          path: .claude-plugin/marketplace.json
-          selector: metadata.version
-        - id: claude-marketplace-plugins
-          path: .claude-plugin/marketplace.json
-          selector: plugins[*].version
         - id: opencode-plugin-marker
           path: .opencode/plugins/agentera.js
           selector: AGENTERA_VERSION
@@ -60,11 +54,6 @@ records:
         - id: cursor-plugin-manifest
           runtime: cursor
           path: .cursor-plugin/plugin.json
-          version_bearing: true
-          package_shape: suite-bundle
-        - id: claude-marketplace-manifest
-          runtime: claude
-          path: .claude-plugin/marketplace.json
           version_bearing: true
           package_shape: suite-bundle
         - id: opencode-package-manifest
@@ -115,8 +104,6 @@ records:
           path: .cursor-plugin
         - id: cursor-agents
           path: .cursor/agents
-        - id: claude-plugin
-          path: .claude-plugin
         - id: github-hooks
           path: .github/hooks
         - id: github-plugin
@@ -182,22 +169,6 @@ records:
             - -g
             - -y
           skipped_without_update_packages_message: legacy skill removal skipped; pass --update-packages to run
-        - id: install-agentera-skill-claude
-          runtime: claude
-          action: install-agentera-skill
-          phase: runtime-install
-          argv:
-            - npx
-            - skills
-            - add
-            - jgabor/agentera
-            - -g
-            - -a
-            - claude-code
-            - --skill
-            - agentera
-            - -y
-          skipped_without_update_packages_message: external package update skipped; pass --update-packages to run
         - id: install-agentera-skill-opencode
           runtime: opencode
           action: install-agentera-skill
@@ -230,7 +201,6 @@ records:
         - .github/plugin/plugin.json
         - .codex-plugin/plugin.json
         - .cursor-plugin/plugin.json
-        - .claude-plugin/marketplace.json
         - .opencode/plugins/agentera.js
         - skills/agentera/SKILL.md
         - registry.json

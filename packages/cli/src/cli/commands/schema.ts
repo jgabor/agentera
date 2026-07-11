@@ -21,6 +21,8 @@ import {
   stateWriterArtifactContract,
   stateWriterContract,
 } from "../../state/write/operations.js";
+import { loadLifecycleAuthority } from "../../runtime/lifecycleAuthority.js";
+import { loadRetiredRuntimeCleanupContract } from "../../runtime/retiredRuntimeCleanup.js";
 
 /** Port of scripts/agentera cmd_schema / _build_schema_payload. */
 
@@ -280,6 +282,8 @@ export function buildSchemaPayload(command = "schema"): JsonObject {
   for (const entry of artifactLocationsPayload.artifacts as JsonObject[]) artifactLocations[String(entry.name)] = entry;
   const [artifactSchemas, schemaGaps] = describeArtifactSchemas(schemasDir, schemas, appModel, artifactLocations);
   gaps.push(...schemaGaps);
+  const lifecycleAuthority = loadLifecycleAuthority();
+  const retiredRuntimeCleanup = loadRetiredRuntimeCleanupContract();
 
   const slashAliases = contractSection(contract, "slash_route_aliases", gaps);
   const doctorContract = contractSection(contract, "doctor", gaps);
@@ -303,6 +307,32 @@ export function buildSchemaPayload(command = "schema"): JsonObject {
     },
     commands: describeCommands(),
     state_writer: stateWriterContract(),
+    runtime_lifecycle: {
+      authority: lifecycleAuthority.sourcePath,
+      ["active_runtime_" + "ids"]: lifecycleAuthority.runtimes.map((runtime) => runtime.id),
+      migration_aliases: {
+        "cursor-agent": { runtime_id: "cursor", surface_id: "cli", active_runtime: false },
+      },
+      retired_runtime_inputs: retiredRuntimeCleanup.runtimes.map((runtime) => ({
+        id: runtime.id,
+        active_runtime: false,
+        source_product: runtime.sourceProduct,
+        cleanup_contract: retiredRuntimeCleanup.sourcePath,
+        cleanup: {
+          preview: "strictly_read_only",
+          apply_requires: "explicit_approval",
+          ownership: "matching legacy ledger identity and fingerprint",
+        },
+        analytics: {
+          import_flag: "--import-source claude",
+          source_class: "historical_import",
+          active_runtime: false,
+          default_view: "excluded",
+          all_sources_view: "--sources all",
+          sensitivity_warning: "Transcripts can contain secrets, file contents, and command output; import is local and read-only.",
+        },
+      })),
+    },
     routine_state_commands: ROUTINE_STATE_COMMANDS,
     structured_output: {
       formats: isDict(structuredOutput) ? structuredOutput.formats ?? ["json", "yaml"] : "unknown",

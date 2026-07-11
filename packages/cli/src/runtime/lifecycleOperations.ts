@@ -6,7 +6,9 @@ import {
   LifecyclePublicationError,
   observeLifecyclePath,
   publishLifecycleResource,
+  removeLifecycleResource,
   sameLifecycleIdentity,
+  secureLifecycleRemovalAvailable,
   verifyLifecycleResourceAtPublication,
   type LifecyclePathObservation,
   type LifecyclePublicationBoundaryHook,
@@ -561,18 +563,25 @@ function planOne(
           "interrupted create differs and has no safe conditional replacement primitive",
         );
   }
-  if (record?.status === "legacy") {
-    if (spec.intent !== "remove") {
-      return actionRequired(spec, "legacy", "legacy", "legacy resources may only be removed");
-    }
-    return actionRequired(
-      spec,
-      "legacy",
-      "legacy",
-      "safe conditional removal is unavailable through portable Node filesystem primitives",
-    );
-  }
   if (spec.intent === "remove") {
+    const ownership = record?.status === "legacy" ? "legacy" : "managed";
+    const state = record?.status === "legacy" ? "legacy" : "exact";
+    if (!secureLifecycleRemovalAvailable()) {
+      return actionRequired(
+        spec,
+        state,
+        ownership,
+        "safe removal requires Linux /proc/self/fd pinned-parent access",
+      );
+    }
+    if (!record?.fingerprint || record.fingerprint !== observation.fingerprint) {
+      return actionRequired(
+        spec,
+        state,
+        ownership,
+        "ownership ledger fingerprint must match the observed resource before removal",
+      );
+    }
     if (spec.kind === "directory" && fs.readdirSync(spec.destination).length > 0) {
       return actionRequired(
         spec,
@@ -581,12 +590,16 @@ function planOne(
         "non-empty directories require separately declared child removals",
       );
     }
-    return actionRequired(
+    return planned(
       spec,
-      "exact",
-      "managed",
-      "safe conditional removal is unavailable through portable Node filesystem primitives",
+      state,
+      ownership,
+      "remove",
+      "owned resource identity and fingerprint match for pinned-parent removal",
     );
+  }
+  if (record?.status === "legacy") {
+    return actionRequired(spec, "legacy", "legacy", "legacy resources may only be removed");
   }
 
   if (observation.fingerprint === expectedFingerprint) {
@@ -787,16 +800,20 @@ export function applyLifecycleOperations(
           };
           ledger = publishLedger(withRecord(ledger, pending, spec.id), options.persistLedger);
         }
-        if (current.action !== "create" && current.action !== "update") {
+        if (current.action === "remove") {
+          removeLifecycleResource(spec, observation, options.beforePublication);
+          ledger = publishLedger(withRecord(ledger, null, spec.id), options.persistLedger);
+        } else if (current.action !== "create" && current.action !== "update") {
           throw new LifecycleOperationError(`${current.action} has no safe publication implementation`);
+        } else {
+          publishedIdentity = publishLifecycleResource(
+            spec,
+            current.action,
+            observation,
+            options.beforePublication,
+          );
         }
-        publishedIdentity = publishLifecycleResource(
-          spec,
-          current.action,
-          observation,
-          options.beforePublication,
-        );
-        if (current.action === "create") {
+        if (current.action === "create" && publishedIdentity) {
           const publishedPending: LifecycleOwnershipRecord = {
             ...nextManagedRecord(spec, publishedIdentity),
             status: "pending_create",
@@ -806,8 +823,14 @@ export function applyLifecycleOperations(
             options.persistLedger,
           );
         }
-        const next = withRecord(ledger, nextManagedRecord(spec, publishedIdentity), spec.id);
-        ledger = publishLedger(next, options.persistLedger);
+        if (current.action !== "remove") {
+          const next = withRecord(
+            ledger,
+            nextManagedRecord(spec, publishedIdentity as LifecycleResourceIdentity),
+            spec.id,
+          );
+          ledger = publishLedger(next, options.persistLedger);
+        }
       }
       const result: AppliedLifecycleOperation = {
         ...current,

@@ -14,7 +14,7 @@ type Env = Record<string, string | undefined>;
 
 export const MANAGED_KEY = "AGENTERA_HOME";
 export const MARKER_COMMENT = `# agentera: ${MANAGED_KEY} (managed)`;
-const ENV_FALLBACKS = ["AGENTERA_HOME", "CLAUDE_PLUGIN_ROOT"] as const;
+const ENV_FALLBACKS = ["AGENTERA_HOME"] as const;
 
 export class InstallRootError extends Error {
   constructor(message: string) {

@@ -42,7 +42,7 @@ export const CANONICAL_ENTRIES = SETUP_EVIDENCE;
 // hook <name>); there are no per-install helper script files to verify.
 export const HELPER_ENTRIES = [] as const;
 export const SMOKE_TIMEOUT_SECONDS = 30;
-export const ENV_FALLBACKS = ["AGENTERA_HOME", "CLAUDE_PLUGIN_ROOT"] as const;
+export const ENV_FALLBACKS = ["AGENTERA_HOME"] as const;
 export const COPILOT_MARKER = "# agentera: AGENTERA_HOME (managed)";
 export const INSTALLER_SCHEMA_VERSION = "agentera.setupInstaller.v1";
 export const SUPPORT_PATH_RE = /(?<![\w/.$-])(?<path>references\/[A-Za-z0-9][A-Za-z0-9_./-]*)/;

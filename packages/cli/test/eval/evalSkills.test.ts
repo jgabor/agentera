@@ -125,7 +125,7 @@ describe("buildReport / buildDryRun / parseArgs", () => {
     expect(def.runtime).toBe("auto");
     expect(parseArgs(["--skill", "build"]).skill).toBe("build");
     expect(parseArgs(["--runtime", "opencode"]).runtime).toBe("opencode");
-    expect(parseArgs(["--runtime", "cursor-agent"]).runtime).toBe("cursor-agent");
+    expect(parseArgs(["--runtime", "cursor"]).runtime).toBe("cursor");
   });
 });
 
@@ -133,8 +133,8 @@ describe("detectRuntime", () => {
   const which = (table: Record<string, boolean>) => (name: string) =>
     table[name] ? `/usr/bin/${name}` : null;
 
-  it("prefers claude", () => {
-    expect(detectRuntime(null, { which: which({ claude: true, opencode: true }) })).toBe("claude");
+  it("ignores retired Claude and prefers an active eval runtime", () => {
+    expect(detectRuntime(null, { which: which({ claude: true, opencode: true }) })).toBe("opencode");
   });
   it("falls back to opencode", () => {
     expect(detectRuntime(null, { which: which({ opencode: true }) })).toBe("opencode");
@@ -142,11 +142,14 @@ describe("detectRuntime", () => {
   it("honors an explicit override without PATH", () => {
     expect(detectRuntime("opencode", { which: which({}) })).toBe("opencode");
   });
-  it("accepts explicit cursor-agent when present", () => {
-    expect(detectRuntime("cursor-agent", { which: which({ "cursor-agent": true }) })).toBe("cursor-agent");
+  it("maps the cursor-agent binary to the active Cursor runtime", () => {
+    expect(detectRuntime("cursor", { which: which({ "cursor-agent": true }) })).toBe("cursor");
   });
   it("throws ExitError(1) when cursor-agent is unavailable", () => {
-    expect(() => detectRuntime("cursor-agent", { which: which({}), err: () => {} })).toThrow(ExitError);
+    expect(() => detectRuntime("cursor", { which: which({}), err: () => {} })).toThrow(ExitError);
+  });
+  it("rejects Claude even when its binary is present", () => {
+    expect(() => detectRuntime("claude", { which: which({ claude: true }), err: () => {} })).toThrow(ExitError);
   });
   it("throws ExitError(1) when nothing is available", () => {
     try {
@@ -177,7 +180,7 @@ describe("invokeSkill command selection", () => {
       captured = cmd;
       return { status: 0, stdout: "{}", stderr: "" };
     };
-    invokeSkill("status", "status briefing", 5, "cursor-agent", { which, run, repoRoot: tmp });
+    invokeSkill("status", "status briefing", 5, "cursor", { which, run, repoRoot: tmp });
     expect(captured).toEqual([
       "cursor-agent",
       "-p",
@@ -193,14 +196,14 @@ describe("main --dry-run", () => {
   it("stays smoke-compatible", () => {
     const lines: string[] = [];
     const code = main(["--dry-run"], {
-      detectRuntime: () => "claude",
+      detectRuntime: () => "opencode",
       discoverSkills: () => [{ name: "status", prompt: "Start a new session." }],
       out: (l) => lines.push(l),
     });
     expect(code).toBe(0);
     expect(JSON.parse(lines.join("\n"))).toEqual({
       mode: "dry-run",
-      runtime: "claude (auto-detected)",
+      runtime: "opencode (auto-detected)",
       skills: [{ name: "status", prompt: "Start a new session." }],
     });
   });

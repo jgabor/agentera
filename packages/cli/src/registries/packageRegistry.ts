@@ -50,8 +50,8 @@ const CONSUMER_GROUPS: Record<string, readonly string[]> = {
 
 const APPROVED_EXECUTABLES = new Set(["npx"]);
 const APPROVED_ACTIONS = new Set(["remove-legacy-skills", "install-agentera-skill"]);
-const APPROVED_RUNTIMES = new Set(["all", "claude", "opencode"]);
-const APPROVED_RUNTIME_AGENTS = new Set(["claude-code", "opencode"]);
+const APPROVED_RUNTIMES = new Set(["all", "opencode", "codex", "cursor", "copilot"]);
+const APPROVED_RUNTIME_AGENTS = new Set(["opencode"]);
 const CLEANUP_ACTIONS = new Set(["remove-legacy-skills"]);
 const RUNTIME_INSTALL_ACTIONS = new Set(["install-agentera-skill"]);
 const FORBIDDEN_INSTALL_ROOT_FIELDS = new Set([

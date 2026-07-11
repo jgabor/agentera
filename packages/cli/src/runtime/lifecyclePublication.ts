@@ -35,7 +35,7 @@ export interface LifecyclePathObservation {
 export interface LifecyclePublicationBoundary {
   operationId: string;
   destination: string;
-  action: "create" | "update" | "finalize_ownership";
+  action: "create" | "update" | "remove" | "finalize_ownership";
 }
 
 export type LifecyclePublicationBoundaryHook = (boundary: LifecyclePublicationBoundary) => void;
@@ -218,6 +218,13 @@ function assertSecurePublicationSupport(): void {
       "safe lifecycle publication requires O_DIRECTORY and O_NOFOLLOW support",
     );
   }
+}
+
+export function secureLifecycleRemovalAvailable(): boolean {
+  return process.platform === "linux"
+    && fs.existsSync("/proc/self/fd")
+    && Boolean(fs.constants.O_DIRECTORY)
+    && Boolean(fs.constants.O_NOFOLLOW);
 }
 
 function assertDirectorySnapshot(directory: ObservedDirectory): void {
@@ -422,6 +429,58 @@ export function publishLifecycleResource(
         return openedIdentity;
       } finally {
         fs.closeSync(fd);
+      }
+    },
+  );
+}
+
+export function removeLifecycleResource(
+  spec: LifecyclePublicationSpec,
+  observation: LifecyclePathObservation,
+  hook?: LifecyclePublicationBoundaryHook,
+): void {
+  withPinnedParent(
+    observation,
+    { operationId: spec.id, destination: spec.destination, action: "remove" },
+    hook,
+    (_parentFd, targetPath) => {
+      const stat = assertTargetIdentity(targetPath, observation.identity, spec.kind);
+      if (spec.kind === "file") {
+        const fd = fs.openSync(targetPath, FILE_READ_FLAGS);
+        try {
+          const opened = fs.fstatSync(fd, { bigint: true });
+          if (!sameLifecycleIdentity(observation.identity, identityOf(opened))) {
+            throw new LifecyclePublicationError("resource identity changed while opening owned file for removal");
+          }
+          if (opened.nlink !== 1n) {
+            throw new LifecyclePublicationError("owned file has additional hard links");
+          }
+          if (fingerprintBytes(readFileDescriptor(fd, opened)) !== observation.fingerprint) {
+            throw new LifecyclePublicationError("owned file content changed before removal");
+          }
+        } finally {
+          fs.closeSync(fd);
+        }
+        assertTargetIdentity(targetPath, observation.identity, "file");
+        fs.unlinkSync(targetPath);
+      } else if (spec.kind === "symlink") {
+        if (fingerprintBytes(Buffer.from(fs.readlinkSync(targetPath))) !== observation.fingerprint) {
+          throw new LifecyclePublicationError("owned symlink target changed before removal");
+        }
+        assertTargetIdentity(targetPath, observation.identity, "symlink");
+        fs.unlinkSync(targetPath);
+      } else {
+        if (fs.readdirSync(targetPath).length > 0) {
+          throw new LifecyclePublicationError("owned directory is not empty");
+        }
+        if (!stat.isDirectory() || stat.isSymbolicLink()) {
+          throw new LifecyclePublicationError("owned directory type changed before removal");
+        }
+        assertTargetIdentity(targetPath, observation.identity, "directory");
+        fs.rmdirSync(targetPath);
+      }
+      if (lstatMaybe(targetPath)) {
+        throw new LifecyclePublicationError("resource path reappeared during removal");
       }
     },
   );

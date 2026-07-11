@@ -139,6 +139,7 @@ const FORBIDDEN_OWNERSHIP_FIELDS = new Set([
   "root_diagnostics",
   "ownership",
 ]);
+const RETIRED_OR_ALIAS_RUNTIME_IDS = new Set(["claude", "cursor-agent"]);
 
 export class RegistryError extends Error {
   constructor(message: string) {
@@ -236,6 +237,8 @@ export function validateRegistryData(data: unknown): string[] {
     errors.push("registry.adapter_record_order must be a non-empty list of adapter record ids");
   } else if (new Set(adapterOrder).size !== adapterOrder.length) {
     errors.push("registry.adapter_record_order must not contain duplicate adapter record ids");
+  } else if (adapterOrder.some((id) => RETIRED_OR_ALIAS_RUNTIME_IDS.has(id))) {
+    errors.push("registry.adapter_record_order must contain active runtime records only");
   }
 
   const records = data.records;
@@ -277,6 +280,9 @@ export function validateRegistryData(data: unknown): string[] {
       return;
     }
     ids.push(runtimeId);
+    if (RETIRED_OR_ALIAS_RUNTIME_IDS.has(runtimeId)) {
+      errors.push(`${prefix}.identity.runtime_id cannot be an active adapter record: ${runtimeId}`);
+    }
     if (Array.isArray(adapterOrder) && !adapterOrder.includes(runtimeId)) {
       errors.push(`${prefix}.identity.runtime_id unknown adapter record id: ${runtimeId}`);
     }

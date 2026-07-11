@@ -35,7 +35,7 @@ export const CLI_OUTPUT_COMMANDS: string[][] = [
   ["doctor", "--json"],
   ["upgrade", "--only", "bundle", "--dry-run"],
   ["upgrade", "--only", "bundle", "--dry-run", "--json"],
-  ["upgrade", "--only", "runtime", "--runtime", "claude", "--dry-run"],
+  ["upgrade", "--only", "runtime", "--runtime", "opencode", "--dry-run"],
 ];
 
 const FORBIDDEN: Array<[RegExp, string]> = [

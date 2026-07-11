@@ -3,8 +3,8 @@
  *
  * Detects which file a runtime wants to write (or which apply_patch
  * headers describe) and packages it as an `ArtifactWrite`. The CLI
- * adapter uses this on the JSON payload that Claude, OpenCode, Codex,
- * and Copilot hand to a PostToolUse hook.
+ * adapter uses this on the JSON payload that OpenCode, Codex, Cursor,
+ * and Copilot hand to an artifact-validation hook.
  */
 
 import { isMapping } from "./schema.js";
@@ -21,7 +21,7 @@ export class ArtifactWrite {
 }
 
 export class RuntimeEventParser {
-  parseClaude(data: JsonObject): ArtifactWrite | null {
+  parseCursor(data: JsonObject): ArtifactWrite | null {
     const ti = data.tool_input;
     if (!isMapping(ti)) return null;
     const fp = ti.file_path;
@@ -68,7 +68,7 @@ export class RuntimeEventParser {
       if (candidate) return candidate;
     }
     if (tn === "Edit" || tn === "Write" || (isMapping(data.tool_input) && "file_path" in data.tool_input)) {
-      const candidate = this.parseClaude(data);
+      const candidate = this.parseCursor(data);
       if (candidate) return candidate;
     }
     if (isMapping(data.input)) {

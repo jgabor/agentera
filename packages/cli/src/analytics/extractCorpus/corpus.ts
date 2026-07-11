@@ -17,10 +17,6 @@ import { extractCopilotSessions } from "./copilotSessions.js";
 import {
   extractCursorSessions,
   extractCursorAgentSessions,
-  resolveOpencodeDbPath,
-  resolveCopilotStorePath,
-  resolveCursorProjectsPath,
-  resolveCursorChatsPath,
 } from "./cursorSessions.js";
 import { resolvePath } from "../../core/paths.js";
 import type { CorpusEnvelopeCoverage } from "./coverageAudit.js";
@@ -41,6 +37,8 @@ export interface CorpusMetadata {
   available_but_not_selected: Array<{ runtime: string; reason: string; store_path: string }>;
   total_records: number;
   errors: string[];
+  source_classes: string[];
+  source_products: string[];
 }
 
 export interface CorpusEnvelope {
@@ -63,13 +61,23 @@ export interface BuildCorpusOpts {
 type Extractor = (storePath: string | null, errors: string[], ctx?: ExtractorContext) => JsonObject[];
 
 function extractRuntimeStore(
-  runtime: string,
+  runtime: string | null,
   storePath: string | null,
   errors: string[],
   extractor: Extractor,
   sqliteCaps?: SqliteCaps,
+  provenance: {
+    sourceProduct: string;
+    sourceClass: "active_runtime" | "historical_import";
+    activeRuntime: boolean;
+    pattern?: string;
+  } = {
+    sourceProduct: runtime ?? "unknown",
+    sourceClass: "active_runtime",
+    activeRuntime: true,
+  },
 ): [JsonObject[], JsonObject] {
-  const discovery = discoverRuntimeStore(runtime, storePath);
+  const discovery = discoverRuntimeStore(runtime, storePath, provenance);
   if (discovery.status !== "available") return [[], discovery];
   const errorStart = errors.length;
   const ctx: ExtractorContext = { sqliteCaps };
@@ -79,17 +87,17 @@ function extractRuntimeStore(
   } catch (exc) {
     const fc = (discovery.file_count ?? null) as number | null; // cast: discovery payload IO boundary
     if (exc instanceof ExtractionNotImplementedError) {
-      return [[], runtimeStatus(runtime, { status: "degraded", reason: "extractor_unimplemented", storePath, fileCount: fc, recordCount: 0, errorCount: 0 })];
+      return [[], runtimeStatus(runtime, { status: "degraded", reason: "extractor_unimplemented", storePath, fileCount: fc, recordCount: 0, errorCount: 0, ...provenance })];
     }
     if (exc instanceof PermissionDeniedError) {
-      return [[], runtimeStatus(runtime, { status: "degraded", reason: "store_locked", storePath, fileCount: fc })];
+      return [[], runtimeStatus(runtime, { status: "degraded", reason: "store_locked", storePath, fileCount: fc, ...provenance })];
     }
-    return [[], runtimeStatus(runtime, { status: "degraded", reason: "store_unreadable", storePath, fileCount: fc })];
+    return [[], runtimeStatus(runtime, { status: "degraded", reason: "store_unreadable", storePath, fileCount: fc, ...provenance })];
   }
   const fc = (discovery.file_count ?? null) as number | null; // cast: discovery payload IO boundary
   const errorCount = errors.length - errorStart;
   if (errorCount) {
-    return [records, runtimeStatus(runtime, { status: "degraded", reason: "schema_divergent", storePath, fileCount: fc, recordCount: records.length, errorCount })];
+    return [records, runtimeStatus(runtime, { status: "degraded", reason: "schema_divergent", storePath, fileCount: fc, recordCount: records.length, errorCount, ...provenance })];
   }
   if (records.length === 0) {
     return [records, runtimeStatus(runtime, {
@@ -98,13 +106,14 @@ function extractRuntimeStore(
       storePath,
       fileCount: fc,
       recordCount: 0,
-      remediationLabels: runtime === "github-copilot" ? [COPILOT_SPARSE_REMEDIATION] : null,
+      remediationLabels: runtime === "copilot" ? [COPILOT_SPARSE_REMEDIATION] : null,
+      ...provenance,
     })];
   }
   return [
     records,
     applyTruncationToStatus(
-      runtimeStatus(runtime, { status: "ok", reason: "records_extracted", storePath, fileCount: fc, recordCount: records.length, errorCount: 0 }),
+      runtimeStatus(runtime, { status: "ok", reason: "records_extracted", storePath, fileCount: fc, recordCount: records.length, errorCount: 0, ...provenance }),
       ctx.truncation,
     ),
   ];
@@ -150,7 +159,11 @@ export function buildMetadata(
     families[family] = { count, status: count ? "ok" : "missing" };
     if (count === 0) families[family].error = "no records extracted for this family";
   }
-  const runtimes = Array.from(new Set(records.filter((i) => i.runtime).map((i) => String(i.runtime)))).sort();
+  const runtimes = Array.from(new Set(
+    records.filter((item) => item.active_runtime === true && item.runtime).map((item) => String(item.runtime)),
+  )).sort();
+  const sourceClasses = Array.from(new Set(records.map((item) => String(item.source_class)))).sort();
+  const sourceProducts = Array.from(new Set(records.map((item) => String(item.source_product)))).sort();
   const coverageFields = coverage ?? {
     available_runtimes: [],
     selected_runtimes: [],
@@ -167,6 +180,8 @@ export function buildMetadata(
     available_but_not_selected: coverageFields.available_but_not_selected,
     total_records: records.length,
     errors,
+    source_classes: sourceClasses,
+    source_products: sourceProducts,
   };
 }
 
@@ -181,20 +196,49 @@ export function buildCorpus(opts: BuildCorpusOpts): CorpusEnvelope {
   records.push(...extractInstructionDocuments(normalizedRoots, errors));
   records.push(...extractProjectConfigSignals(normalizedRoots, errors));
   const runtimeStatuses: JsonObject[] = [];
-  const runtimes: Array<[string, string | null, Extractor]> = [
-    ["codex", opts.codexSessionsDir, extractCodexSessions],
-    ["claude-code", opts.claudeProjectsDir, extractClaudeProjectSessions],
-    ["cursor", opts.cursorProjectsDir ?? null, (sp, err) => extractCursorSessions(sp, err, normalizedRoots)],
+  const runtimes: Array<[
+    string | null,
+    string,
+    "active_runtime" | "historical_import",
+    boolean,
+    string | null,
+    Extractor,
+    string | undefined,
+  ]> = [
+    ["codex", "codex", "active_runtime", true, opts.codexSessionsDir, extractCodexSessions, undefined],
+    ["cursor", "cursor", "active_runtime", true, opts.cursorProjectsDir ?? null, (sp, err) => extractCursorSessions(sp, err, normalizedRoots), undefined],
     [
+      "cursor",
       "cursor-agent",
+      "active_runtime",
+      true,
       opts.cursorChatsDir ?? null,
       (sp, err) => extractCursorAgentSessions(sp, err, normalizedRoots, opts.cursorProjectsDir ?? null),
+      "store.db",
     ],
-    ["opencode", opts.opencodeConversationsDir ?? null, extractOpencodeSessions],
-    ["github-copilot", opts.copilotConversationsDir ?? null, extractCopilotSessions],
+    ["opencode", "opencode", "active_runtime", true, opts.opencodeConversationsDir ?? null, extractOpencodeSessions, undefined],
+    ["copilot", "github-copilot", "active_runtime", true, opts.copilotConversationsDir ?? null, extractCopilotSessions, undefined],
   ];
-  for (const [runtime, storePath, extractor] of runtimes) {
-    const [runtimeRecords, status] = extractRuntimeStore(runtime, storePath, errors, extractor, opts.sqliteCaps);
+  if (opts.claudeProjectsDir !== null) {
+    runtimes.push([
+      null,
+      "claude-code",
+      "historical_import",
+      false,
+      opts.claudeProjectsDir,
+      extractClaudeProjectSessions,
+      "*.jsonl",
+    ]);
+  }
+  for (const [runtime, sourceProduct, sourceClass, activeRuntime, storePath, extractor, pattern] of runtimes) {
+    const [runtimeRecords, status] = extractRuntimeStore(
+      runtime,
+      storePath,
+      errors,
+      extractor,
+      opts.sqliteCaps,
+      { sourceProduct, sourceClass, activeRuntime, pattern },
+    );
     records.push(...runtimeRecords);
     runtimeStatuses.push(status);
   }

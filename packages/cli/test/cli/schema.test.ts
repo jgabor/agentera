@@ -42,6 +42,23 @@ describe("cli schema", () => {
         }),
       ]),
     );
+    expect(payload.runtime_lifecycle.active_runtime_ids).toEqual(["opencode", "codex", "cursor", "copilot"]);
+    expect(payload.runtime_lifecycle.migration_aliases["cursor-agent"]).toMatchObject({
+      runtime_id: "cursor",
+      active_runtime: false,
+    });
+    expect(payload.runtime_lifecycle.retired_runtime_inputs).toEqual([
+      expect.objectContaining({
+        id: "claude",
+        active_runtime: false,
+        source_product: "claude-code",
+        analytics: expect.objectContaining({
+          import_flag: "--import-source claude",
+          source_class: "historical_import",
+          default_view: "excluded",
+        }),
+      }),
+    ]);
     const decisions = (
       payload.artifact_schemas as Array<{ name: string; write_interface: unknown }>
     ).find((artifact) => artifact.name === "decisions");

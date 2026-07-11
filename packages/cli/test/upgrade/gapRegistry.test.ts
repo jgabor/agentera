@@ -38,6 +38,7 @@ describe("gapRegistry", () => {
   });
 
   it("documents default runtime matrix statuses for sandbox reports", () => {
+    expect(Object.keys(DEFAULT_RUNTIME_MATRIX).sort()).toEqual(["codex", "copilot", "cursor", "opencode"]);
     expect(DEFAULT_RUNTIME_MATRIX.opencode).toBe("applied");
     expect(DEFAULT_RUNTIME_MATRIX.codex).toBe("applied");
     expect(DEFAULT_RUNTIME_MATRIX.cursor).toBe("applied");

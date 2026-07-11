@@ -12,10 +12,7 @@ import type { JsonObject } from "../../core/jsonValue.js";
 
 export function extractInstructionDocuments(projectRoots: string[], errors: string[]): JsonObject[] {
   const records: JsonObject[] = [];
-  const docNames: Array<[string, string]> = [
-    ["AGENTS.md", "agents_md"],
-    ["CLAUDE.md", "claude_md"],
-  ];
+  const docNames: Array<[string, string]> = [["AGENTS.md", "agents_md"]];
   for (const root of projectRoots) {
     for (const [filename, docType] of docNames) {
       const p = path.join(root, filename);

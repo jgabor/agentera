@@ -1,4 +1,40 @@
 cycles:
+  - number: 704
+    timestamp: 2026-07-11 16:13
+    type: feat
+    phase: build
+    what: Retired Claude Code from active runtime discovery, package manifests,
+      hooks, doctor, upgrade, eval, and default analytics. Added consent-gated
+      historical import provenance and ledger-owned retired-resource cleanup
+      with pinned-parent identity and fingerprint checks.
+    inspiration: Active plan Task 5, Decision 92, and the six-record adapter
+      registry warning.
+    discovered: The legacy adapter registry still fed doctor and upgrade, the
+      packaged Claude hook and plugin manifests still claimed support, and
+      default corpus extraction still read Claude transcripts.
+    verified: "pnpm -C packages/cli test: 153 files and 1,401 tests passed; focused
+      retirement suite: 18 files and 282 tests plus served-profile policy;
+      typecheck and build passed; lifecycle-adapters, build capability,
+      capability-contract, and app-home validation passed; extract-corpus parity
+      was in sync; lint reported 99 warnings and 0 errors; check compact passed;
+      git diff --check passed."
+    next: Task 6 should integrate the four-runtime doctor projections. Task 7 should
+      expose approved repair UX. Keep Task 5 in progress until the plan owner
+      closes it.
+    context:
+      intent: Execute active-plan Task 5 under Decision 92 while preserving the
+        four-runtime authority and prior lifecycle safety contracts.
+      constraints: No Task 6 doctor detail, Task 7 upgrade repair UX, Task 8 broad
+        docs/changelog/TODO/version sweep, plan status mutation, vision
+        mutation, or remote push. User-owned Claude data and ambiguous resources
+        remain untouchable.
+      unknowns: Safe removal is intentionally available only on Linux systems with
+        procfs pinned-parent support; other platforms return action_required
+        pending a comparably strong primitive.
+      scope: packages/cli runtime lifecycle, analytics, setup, upgrade, eval, hook and
+        schema surfaces; references/adapters contracts and registries; focused
+        fixtures/tests; generated extraction parity wrapper; typed progress
+        cycle.
   - number: 703
     timestamp: 2026-07-11 15:31
     type: fix
@@ -252,32 +288,9 @@ cycles:
       scope: instructions.ts rewritten; exit.yaml Python ghost removed; deviation
         table profile row Complete (D89); D78 compacted to archive; D3+D4
         merged; TODO resolved.
-  - number: 694
-    timestamp: 2026-07-10 12:30
-    type: docs
-    phase: build
-    what: Audited and rewrote optimize capability instructions following six-section
-      spine and direct-contract philosophy.
-    discovered: optimera_harness artifact_id in registry and vocabulary needed
-      updating alongside schema files; cross-capability graph validator catches
-      mismatched artifact_ids. Decisions.yaml reflowed by opencode YAML hook
-      during edit.
-    verified: "typecheck: 0 errors. build: clean. capability validation: PASS.
-      contract validation: PASS (0 violations). check compact: within limits.
-      vitest: 144/144 files, 1278/1278 tests green."
-    next: Audit capability audit is next per TODO.md open items.
-    context:
-      intent: Ground-up audit of optimize capability instructions per the audit prompt
-        docs/notes/audit-prompt.md.
-      constraints: Follow six-section spine, direct-contract philosophy, voice
-        delegation. No project-tracking markers in shipped code.
-      unknowns: Whether the decisions.yaml reflow from the opencode hook will cause
-        diff noise in the commit.
-      scope: instructions.ts rewritten; validation.yaml, exit.yaml, artifacts.yaml
-        schema files updated; deviation table row filled; artifact registry and
-        vocabulary updated; TODO resolved; D86 decision entry added; D73
-        compacted to archive.
 archive:
+  - summary: "Cycle 694 (2026-07-10): Audited and rewrote optimize capability
+      instructions following six-section spine and direct-contract philosophy."
   - summary: "Cycle 693 (2026-07-10): Audited and rewrote build capability
       instructions following six-section spine and direct-contract philosophy."
   - summary: "Cycle 692 (2026-07-08): Replaced cliDistributionMajor's terminal
@@ -378,6 +391,3 @@ archive:
   - summary: "Cycle 655 (2026-06-10): Plan T5 — integration decision table and
       unified prime attention: `upgrade/projectIntegrationDecision.ts`
       classifies artifacts-only, runtime-only, cross-major,..."
-  - summary: "Cycle 654 (2026-06-10): Plan T4 — doctor classification and npx
-      platform status: extracted typed `ROOT_CLASSIFIERS` map in
-      `upgrade/doctorClassifier.ts`;..."

@@ -27,13 +27,13 @@ export interface ExtractArgs {
   output: string;
   projectRoot: string[];
   codexSessionsDir: string;
-  claudeProjectsDir: string;
+  claudeProjectsDir: string | null;
   opencodeConversationsDir: string | null;
   copilotConversationsDir: string | null;
   cursorProjectsDir: string | null;
   cursorChatsDir: string | null;
   noCodex: boolean;
-  noClaude: boolean;
+  importSources: string[];
   noOpencode: boolean;
   noCopilot: boolean;
   noCursor: boolean;
@@ -56,7 +56,7 @@ export function parseExtractArgs(argv: string[], env: Env = process.env, platfor
     cursorProjectsDir: null,
     cursorChatsDir: null,
     noCodex: false,
-    noClaude: false,
+    importSources: [],
     noOpencode: false,
     noCopilot: false,
     noCursor: false,
@@ -64,6 +64,7 @@ export function parseExtractArgs(argv: string[], env: Env = process.env, platfor
     coverageAuditOnly: false,
     format: "text",
   };
+  let claudeProjectsDirExplicit = false;
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     const val = (name: string): string | null => {
@@ -75,13 +76,19 @@ export function parseExtractArgs(argv: string[], env: Env = process.env, platfor
     if ((v = val("--output")) !== null) args.output = v;
     else if ((v = val("--project-root")) !== null) args.projectRoot.push(v);
     else if ((v = val("--codex-sessions-dir")) !== null) args.codexSessionsDir = v;
-    else if ((v = val("--claude-projects-dir")) !== null) args.claudeProjectsDir = v;
+    else if ((v = val("--claude-projects-dir")) !== null) {
+      args.claudeProjectsDir = v;
+      claudeProjectsDirExplicit = true;
+    }
+    else if ((v = val("--import-source")) !== null) {
+      if (v !== "claude") throw new Error(`extract-corpus: unsupported historical import source '${v}'; valid source: claude`);
+      if (!args.importSources.includes(v)) args.importSources.push(v);
+    }
     else if ((v = val("--opencode-conversations-dir")) !== null) args.opencodeConversationsDir = v;
     else if ((v = val("--copilot-conversations-dir")) !== null) args.copilotConversationsDir = v;
     else if ((v = val("--cursor-projects-dir")) !== null) args.cursorProjectsDir = v;
     else if ((v = val("--cursor-chats-dir")) !== null) args.cursorChatsDir = v;
     else if (a === "--no-codex") args.noCodex = true;
-    else if (a === "--no-claude") args.noClaude = true;
     else if (a === "--no-opencode") args.noOpencode = true;
     else if (a === "--no-copilot") args.noCopilot = true;
     else if (a === "--no-cursor") args.noCursor = true;
@@ -101,6 +108,9 @@ export function parseExtractArgs(argv: string[], env: Env = process.env, platfor
       if (v !== "text" && v !== "json") throw new Error(`extract-corpus: unsupported format '${v}'`);
       args.format = v;
     } else throw new Error(`extract-corpus: unrecognized argument: ${a}`);
+  }
+  if (claudeProjectsDirExplicit && !args.importSources.includes("claude")) {
+    throw new Error("extract-corpus: --claude-projects-dir requires explicit --import-source claude");
   }
   return args;
 }
@@ -128,6 +138,12 @@ export function extractCorpusMain(argv: string[], io: ExtractMainIo = {}): numbe
     return 2;
   }
   const projectRoots = args.projectRoot.length > 0 ? args.projectRoot : [cwd];
+  if (args.importSources.includes("claude")) {
+    err(
+      "Historical import warning: Claude transcripts can contain secrets, file contents, and command output. " +
+      "Import is local and read-only; records are labeled historical_import and excluded from active-runtime analytics.",
+    );
+  }
   const audit = runCoverageAudit(args, env, platform, args.acceptCoverageGap);
   if (args.format === "json") {
     out(JSON.stringify({ coverage_audit: audit }, null, 2));
@@ -147,7 +163,7 @@ export function extractCorpusMain(argv: string[], io: ExtractMainIo = {}): numbe
   const corpus = buildCorpus({
     projectRoots,
     codexSessionsDir: args.noCodex ? null : args.codexSessionsDir,
-    claudeProjectsDir: args.noClaude ? null : args.claudeProjectsDir,
+    claudeProjectsDir: args.importSources.includes("claude") ? args.claudeProjectsDir : null,
     opencodeConversationsDir: args.noOpencode ? null : args.opencodeConversationsDir || resolveOpencodeDbPath(env),
     copilotConversationsDir: args.noCopilot ? null : args.copilotConversationsDir || resolveCopilotStorePath(env),
     cursorProjectsDir: skipCursor ? null : args.cursorProjectsDir || resolveCursorProjectsPath(env),

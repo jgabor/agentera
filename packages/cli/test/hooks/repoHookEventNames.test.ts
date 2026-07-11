@@ -7,12 +7,11 @@ import { describe, expect, it } from "vitest";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "../../../..");
 
-const CLAUDE_PASCAL_EVENTS = new Set(["SessionStart", "Stop", "PostToolUse"]);
 const CODEX_PASCAL_EVENTS = new Set(["PreToolUse", "PostToolUse"]);
 const CURSOR_CAMEL_EVENTS = new Set(["sessionStart", "sessionEnd", "preToolUse", "postToolUse"]);
 const COPILOT_CAMEL_EVENTS = new Set(["sessionStart", "sessionEnd", "preToolUse", "postToolUse"]);
 
-/** PascalCase keys used by Claude Code and Codex — must not appear in Cursor/Copilot hook configs. */
+/** PascalCase keys used by Codex — must not appear in Cursor/Copilot hook configs. */
 const PASCAL_EVENT_KEYS = new Set([
   "SessionStart",
   "Stop",
@@ -23,7 +22,7 @@ const PASCAL_EVENT_KEYS = new Set([
   "PermissionRequest",
 ]);
 
-/** camelCase keys used by Cursor and Copilot — must not appear in Claude/Codex hook object keys. */
+/** camelCase keys used by Cursor and Copilot — must not appear in Codex hook object keys. */
 const CAMEL_EVENT_KEYS = new Set([
   "sessionStart",
   "sessionEnd",
@@ -57,10 +56,8 @@ function assertNoCrossRuntimeKeys(
 }
 
 describe("repo hook event names per runtime (B5 task 5, defect #41)", () => {
-  it("hooks/hooks.json targets Claude Code with PascalCase SessionStart, Stop, PostToolUse", () => {
-    const parsed = readJson("hooks/hooks.json") as { description?: string };
-    expect(parsed.description ?? "").toMatch(/Claude Code/i);
-    assertNoCrossRuntimeKeys("hooks/hooks.json", CLAUDE_PASCAL_EVENTS, CAMEL_EVENT_KEYS);
+  it("does not package the retired Claude hook registry", () => {
+    expect(fs.existsSync(path.join(REPO_ROOT, "hooks/hooks.json"))).toBe(false);
   });
 
   it.each(["hooks/codex-hooks.json", "hooks/codex-plugin-hooks.json"])(

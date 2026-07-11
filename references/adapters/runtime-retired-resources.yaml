@@ -1,0 +1,32 @@
+schema_version: agentera.retiredRuntimeResources.v1
+status: retired_migration_contract
+decision: 92
+authority: references/adapters/runtime-lifecycle-authority.yaml
+operation_contract: references/adapters/runtime-lifecycle-operation-contract.yaml
+policy:
+  active_inventory_exposure: forbidden
+  preview: strictly_read_only
+  apply_requires: explicit_approval
+  ownership: matching_whole_resource_legacy_ledger_identity_and_fingerprint
+  unsupported_platform_result: action_required
+retired_runtimes:
+  - id: claude
+    display_name: Claude Code historical migration
+    active_runtime: false
+    source_product: claude-code
+    resources:
+      - id: claude.agentera-skill-link
+        kind: symlink
+        intent: remove
+        destination: "{home}/.claude/skills/agentera"
+    never_touch:
+      - "{home}/.claude/projects"
+      - "{home}/.claude/statsig"
+      - "{home}/.claude/settings.json"
+      - "{home}/.claude/settings.local.json"
+      - "{home}/.claude.json"
+      - "{home}/.claude/cache"
+      - "{home}/.claude/caches"
+      - "{home}/.claude/conversations"
+      - "{home}/.claude/credentials"
+    safety_note: Only the declared Agentera skill symlink may be removed, and only when a matching legacy ownership ledger still binds its identity and target fingerprint. Transcript, settings, credential, conversation, stats, cache, and ambiguous paths are never cleanup targets.

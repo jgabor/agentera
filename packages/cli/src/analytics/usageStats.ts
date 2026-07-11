@@ -39,6 +39,9 @@ export interface Invocation {
   exit_timestamp: string | null;
   trigger: string;
   project_id: string;
+  source_class: string;
+  source_product: string;
+  active_runtime: boolean;
 }
 
 function newInvocation(init: Partial<Invocation> & { skill: string; glyph: string }): Invocation {
@@ -54,6 +57,9 @@ function newInvocation(init: Partial<Invocation> & { skill: string; glyph: strin
     exit_timestamp: init.exit_timestamp ?? null,
     trigger: init.trigger ?? TRIGGER_NATURAL,
     project_id: init.project_id ?? "",
+    source_class: init.source_class ?? "active_runtime",
+    source_product: init.source_product ?? "unknown",
+    active_runtime: init.active_runtime ?? true,
   };
 }
 
@@ -145,6 +151,9 @@ export function pairInvocations(turns: Iterable<JsonObject>): Invocation[] {
             intro_source_id: sid,
             intro_timestamp: ts,
             completed: false,
+            source_class: String(turn.source_class ?? "active_runtime"),
+            source_product: String(turn.source_product ?? turn.runtime ?? "unknown"),
+            active_runtime: turn.active_runtime !== false && turn.source_class !== "historical_import",
           }),
         );
       } else {
@@ -181,12 +190,13 @@ function stableSort<T>(items: T[], key: (item: T) => Array<string | number>): T[
     .map(([item]) => item);
 }
 
-const CLAUDE_CODE_XML_RE = /<command-name>\s*\/[A-Za-z0-9._:-]+\s*<\/command-name>/;
+// Retained only to classify command markup in consent-gated historical imports.
+const HISTORICAL_COMMAND_XML_RE = /<command-name>\s*\/[A-Za-z0-9._:-]+\s*<\/command-name>/;
 const BARE_SLASH_RE = /^\s*\/[A-Za-z0-9._:-]+(?:\s|$)/m;
 
 export function classifyTrigger(userTurnText: string | null): string {
   if (!userTurnText) return TRIGGER_NATURAL;
-  if (CLAUDE_CODE_XML_RE.test(userTurnText)) return TRIGGER_SLASH;
+  if (HISTORICAL_COMMAND_XML_RE.test(userTurnText)) return TRIGGER_SLASH;
   if (BARE_SLASH_RE.test(userTurnText)) return TRIGGER_SLASH;
   return TRIGGER_NATURAL;
 }
@@ -248,6 +258,8 @@ export interface CorpusAnalysis {
   skills: Record<string, Record<string, number>>;
   project_filter: string | null;
   per_project: Record<string, Record<string, Record<string, number>>>;
+  source_view: "active" | "all";
+  source_provenance: Array<{ source_class: string; source_product: string; active_runtime: boolean; records: number }>;
 }
 
 function emptySkillBucket(): Record<string, number> {
@@ -260,9 +272,29 @@ function accumulate(bucket: Record<string, number>, inv: Invocation): void {
   bucket[inv.trigger === TRIGGER_SLASH ? "trigger_slash" : "trigger_natural"] += 1;
 }
 
-export function analyzeCorpus(corpus: JsonObject, projectFilter: string | null = null): CorpusAnalysis {
+function activeAnalyticsRecord(record: JsonObject): boolean {
+  if (record.active_runtime === false || record.source_class === "historical_import") return false;
+  return record.runtime !== "claude" && record.runtime !== "claude-code";
+}
+
+export function analyzeCorpus(
+  corpus: JsonObject,
+  projectFilter: string | null = null,
+  sourceView: "active" | "all" = "active",
+): CorpusAnalysis {
   const rawRecords = (isMapping(corpus) ? (corpus.records ?? []) : []) as unknown as JsonObject[]; // cast: corpus records from JSON.parse IO boundary
-  const records = filterRecordsByProject(rawRecords, projectFilter);
+  const viewedRecords = sourceView === "all" ? rawRecords : rawRecords.filter(activeAnalyticsRecord);
+  const records = filterRecordsByProject(viewedRecords, projectFilter);
+  const provenanceCounts = new Map<string, { source_class: string; source_product: string; active_runtime: boolean; records: number }>();
+  for (const record of records) {
+    const sourceClass = String(record.source_class ?? (activeAnalyticsRecord(record) ? "active_runtime" : "historical_import"));
+    const sourceProduct = String(record.source_product ?? record.runtime ?? "unknown");
+    const activeRuntime = activeAnalyticsRecord(record);
+    const key = `${sourceClass}\0${sourceProduct}\0${activeRuntime}`;
+    const current = provenanceCounts.get(key) ?? { source_class: sourceClass, source_product: sourceProduct, active_runtime: activeRuntime, records: 0 };
+    current.records += 1;
+    provenanceCounts.set(key, current);
+  }
 
   const userTurnsByConv = userTurnsByConversation(records);
   const grouped = groupByConversation(records);
@@ -299,7 +331,15 @@ export function analyzeCorpus(corpus: JsonObject, projectFilter: string | null =
     }
   }
 
-  return { invocations: sorted, skills, project_filter: projectFilter, per_project: perProject };
+  return {
+    invocations: sorted,
+    skills,
+    project_filter: projectFilter,
+    per_project: perProject,
+    source_view: sourceView,
+    source_provenance: [...provenanceCounts.values()].sort((a, b) =>
+      `${a.source_class}:${a.source_product}`.localeCompare(`${b.source_class}:${b.source_product}`)),
+  };
 }
 
 // --- Paths -----------------------------------------------------------------
@@ -393,6 +433,8 @@ export function buildJsonPayload(
     generated_at: opts.generatedAt,
     extracted_at: opts.extractedAt,
     project_filter: analysis.project_filter,
+    source_view: analysis.source_view,
+    source_provenance: analysis.source_provenance,
     skills: analysis.skills,
     per_project: analysis.per_project,
     invocations: analysis.invocations.map((inv) => ({ ...inv })),
@@ -431,7 +473,11 @@ export function renderMarkdown(
   const extractedLine = opts.extractedAt || "unknown (corpus omitted extracted_at)";
 
   const lines: string[] = [];
-  lines.push("# Suite Usage", "", `- Generated: ${opts.generatedAt}`, `- Corpus extracted: ${extractedLine}`, `- Scope: ${scope}`, "");
+  lines.push("# Suite Usage", "", `- Generated: ${opts.generatedAt}`, `- Corpus extracted: ${extractedLine}`, `- Scope: ${scope}`, `- Sources: ${analysis.source_view}`, "");
+  if (analysis.source_view === "all") {
+    lines.push("## Source provenance", "", "| Source class | Source product | Active runtime | Records |", "| --- | --- | --- | --- |", ...analysis.source_provenance.map((item) =>
+      `| ${item.source_class} | ${item.source_product} | ${item.active_runtime ? "yes" : "no"} | ${item.records} |`), "");
+  }
 
   if (Object.keys(analysis.skills).length === 0) {
     lines.push("No skill invocations found in the corpus for this scope.", "");
@@ -544,6 +590,7 @@ export function usageMain(argv: string[], io: UsageMainIo = {}): number {
   let corpus: string | null = null;
   let project: string | null = null;
   let emitJson = false;
+  let sourceView: "active" | "all" = "active";
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === "--corpus") corpus = argv[++i] ?? null;
@@ -551,6 +598,14 @@ export function usageMain(argv: string[], io: UsageMainIo = {}): number {
     else if (a === "--project") project = argv[++i] ?? null;
     else if (a.startsWith("--project=")) project = a.slice("--project=".length);
     else if (a === "--json") emitJson = true;
+    else if (a === "--sources" || a.startsWith("--sources=")) {
+      const value = a === "--sources" ? argv[++i] : a.slice("--sources=".length);
+      if (value !== "active" && value !== "all") {
+        err(`usage_stats: unsupported --sources '${value}'; choose active or all`);
+        return 2;
+      }
+      sourceView = value;
+    }
   }
 
   const corpusPath = corpus ?? defaultCorpusPath(env, platform);
@@ -565,7 +620,7 @@ export function usageMain(argv: string[], io: UsageMainIo = {}): number {
     throw e;
   }
 
-  const analysis = analyzeCorpus(corpusData, project);
+  const analysis = analyzeCorpus(corpusData, project, sourceView);
   const generatedAt = nowIso();
   const md = (corpusData as JsonObject).metadata;
   const extractedAt =

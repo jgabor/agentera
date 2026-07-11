@@ -112,7 +112,9 @@ describe("cli help", () => {
     expect(rc).toBe(0);
     expect(out).toContain("--no-codex");
     expect(out).toContain("Skip codex even if");
-    expect(out).toContain("--no-claude");
+    expect(out).not.toContain("--no-claude");
+    expect(out).toContain("--import-source claude");
+    expect(out).toContain("secrets, file contents, and command output");
     expect(out).toContain("--accept-coverage-gap");
     expect(out).toContain("Coverage Audit");
   });

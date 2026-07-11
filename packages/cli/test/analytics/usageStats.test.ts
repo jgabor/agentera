@@ -128,6 +128,48 @@ describe("analyzeCorpus", () => {
     expect(payload.generated_at).toBe("GEN");
     expect(payload.invocations.length).toBe(2);
   });
+
+  it("excludes historical imports by default and includes them only in the labeled all-sources view", () => {
+    const corpus = corpusFixture();
+    corpus.records.push(
+      {
+        source_kind: "conversation_turn",
+        source_id: "hu1",
+        session_id: "historical",
+        project_id: "agentera",
+        timestamp: "2025-12-01T00:00:00Z",
+        source_class: "historical_import",
+        source_product: "claude-code",
+        active_runtime: false,
+        runtime: null,
+        data: { actor: "user", content: "/build old" },
+      },
+      {
+        source_kind: "conversation_turn",
+        source_id: "ha1",
+        session_id: "historical",
+        project_id: "agentera",
+        timestamp: "2025-12-01T00:00:01Z",
+        source_class: "historical_import",
+        source_product: "claude-code",
+        active_runtime: false,
+        runtime: null,
+        data: { actor: "assistant", content: "─── ⧉ build · cycle ───\n─── ⧉ build · complete ───" },
+      },
+    );
+
+    expect(analyzeCorpus(corpus).skills.build.total).toBe(1);
+    const all = analyzeCorpus(corpus, null, "all");
+    expect(all.skills.build.total).toBe(2);
+    expect(all.source_provenance).toContainEqual({
+      source_class: "historical_import",
+      source_product: "claude-code",
+      active_runtime: false,
+      records: 2,
+    });
+    const markdown = renderMarkdown(all, { generatedAt: "GEN", extractedAt: null });
+    expect(markdown).toContain("| historical_import | claude-code | no | 2 |");
+  });
 });
 
 describe("loadCorpusOrRaise", () => {

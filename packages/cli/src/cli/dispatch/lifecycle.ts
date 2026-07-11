@@ -441,9 +441,11 @@ export function runReport(argv: string[], io: Io, prog: string): number {
     action: null,
     format: "text",
     project: null,
+    sources: "active",
     dryRun: false,
     consent: null,
     projectRoot: [],
+    importSources: [],
   };
   const positionals: string[] = [];
   let i = 0;
@@ -455,6 +457,15 @@ export function runReport(argv: string[], io: Io, prog: string): number {
     let v: string | null;
     if ((v = value("--format")) !== null) args.format = v;
     else if ((v = value("--project")) !== null) args.project = v;
+    else if ((v = value("--sources")) !== null) {
+      if (v !== "active" && v !== "all") {
+        return emitInvalidInput(io, {
+          format: asEnvelopeFormat(args.format),
+          body: { class: "invalid_choice", message: `argument --sources: invalid choice: '${v}' (choose from 'active', 'all')`, valid_values: ["active", "all"] },
+        });
+      }
+      args.sources = v;
+    }
     else if ((v = value("--consent")) !== null) {
       if (v !== "local-history") {
         return emitInvalidInput(io, {
@@ -471,12 +482,24 @@ export function runReport(argv: string[], io: Io, prog: string): number {
     else if ((v = value("--output")) !== null) args.output = v;
     else if ((v = value("--codex-sessions-dir")) !== null) args.codexSessionsDir = v;
     else if ((v = value("--claude-projects-dir")) !== null) args.claudeProjectsDir = v;
+    else if ((v = value("--import-source")) !== null) {
+      if (v !== "claude") {
+        return emitInvalidInput(io, {
+          format: asEnvelopeFormat(args.format),
+          body: {
+            class: "invalid_choice",
+            message: `argument --import-source: invalid choice: '${v}' (choose from 'claude')`,
+            valid_values: ["claude"],
+          },
+        });
+      }
+      if (!(args.importSources as string[]).includes(v)) (args.importSources as string[]).push(v);
+    }
     else if ((v = value("--opencode-conversations-dir")) !== null) args.opencodeConversationsDir = v;
     else if ((v = value("--copilot-conversations-dir")) !== null) args.copilotConversationsDir = v;
     else if ((v = value("--cursor-projects-dir")) !== null) args.cursorProjectsDir = v;
     else if ((v = value("--cursor-chats-dir")) !== null) args.cursorChatsDir = v;
     else if (a === "--no-codex") args.noCodex = true;
-    else if (a === "--no-claude") args.noClaude = true;
     else if (a === "--no-opencode") args.noOpencode = true;
     else if (a === "--no-copilot") args.noCopilot = true;
     else if (a === "--no-cursor") args.noCursor = true;

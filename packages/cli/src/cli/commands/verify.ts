@@ -85,16 +85,16 @@ export function validateVerifyRequest(args: VerifyArgs): [string, string, string
     throw new Error(
       "unsupported eval skills request combines --run and --dry-run; choose one mode. " +
         "Safe default: omit --run to list the bounded dry-run plan without invoking a runtime. " +
-        "Syntax: agentera verify eval skills [--run] [--skill NAME] [--timeout SECONDS] [--parallel N] [--runtime auto|claude|opencode] [--format text|json]. " +
+        "Syntax: agentera verify eval skills [--run] [--skill NAME] [--timeout SECONDS] [--parallel N] [--runtime auto|opencode|cursor] [--format text|json]. " +
         "Example: agentera verify eval skills --dry-run --format json",
     );
   }
   if (family === "eval" && target === "skills") {
     const runtime = String(args.runtime ?? "auto");
-    if (!["auto", "claude", "opencode"].includes(runtime)) {
+    if (!["auto", "opencode", "cursor"].includes(runtime)) {
       throw new Error(
-        `unsupported eval skills runtime '${runtime}'; valid runtimes: auto, claude, opencode. ` +
-          "Syntax: agentera verify eval skills [--run] [--runtime auto|claude|opencode] [--format text|json]. " +
+        `unsupported eval skills runtime '${runtime}'; valid runtimes: auto, opencode, cursor. ` +
+          "Syntax: agentera verify eval skills [--run] [--runtime auto|opencode|cursor] [--format text|json]. " +
           "Example: agentera verify eval skills --format json",
       );
     }
@@ -147,11 +147,11 @@ function runVerifyEngine(family: string, target: string, args: VerifyArgs): { re
       };
     } else {
       // Pin a concrete runtime for safe discovery unless explicitly chosen.
-      const dryRunRuntime = runtime !== "auto" ? runtime : "claude";
+      const dryRunRuntime = runtime !== "auto" ? runtime : "opencode";
       engineArgs.push("--parallel", parallel, "--timeout", timeout, "--runtime", dryRunRuntime, "--dry-run");
       safety = {
         mode: "dry-run",
-        summary: "default lists skill prompts without invoking Claude Code, OpenCode, or long-running evals",
+        summary: "default lists skill prompts without invoking OpenCode, Cursor, or long-running evals",
         live: false,
         long_running_default: false,
       };

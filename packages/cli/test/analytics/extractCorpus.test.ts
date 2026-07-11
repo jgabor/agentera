@@ -4,7 +4,7 @@ import path from "node:path";
 import { createRequire } from "node:module";
 const { DatabaseSync } = createRequire(import.meta.url)("node:sqlite") as typeof import("node:sqlite");
 
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   buildCorpus,
@@ -138,11 +138,11 @@ describe("SQLite extractors (node:sqlite)", () => {
     db.close();
     const errors: string[] = [];
     const recs = extractCopilotSessions(dbp, errors);
-    expect(recs.some((r) => r.source_kind === "conversation_turn" && r.runtime === "github-copilot")).toBe(true);
+    expect(recs.some((r) => r.source_kind === "conversation_turn" && r.runtime === "copilot" && r.source_product === "github-copilot")).toBe(true);
     expect(recs.some((r) => r.source_kind === "history_prompt")).toBe(true);
   });
 
-  it("cursor-agent: extracts blob messages from store.db", () => {
+  it("Cursor CLI surface extracts blob messages without becoming a separate runtime", () => {
     const chats = path.join(tmp, "chats");
     const ws = path.join(chats, "wshash");
     const sess = path.join(ws, "sess1");
@@ -155,7 +155,7 @@ describe("SQLite extractors (node:sqlite)", () => {
     db.close();
     const errors: string[] = [];
     const recs = extractCursorAgentSessions(chats, errors, [], null);
-    expect(recs.some((r) => r.runtime === "cursor-agent" && r.source_kind === "conversation_turn")).toBe(true);
+    expect(recs.some((r) => r.runtime === "cursor" && r.source_product === "cursor-agent" && r.source_kind === "conversation_turn")).toBe(true);
   });
 });
 
@@ -204,7 +204,6 @@ describe("coverage audit", () => {
         dbp,
         "--no-opencode",
         "--no-codex",
-        "--no-claude",
         "--no-copilot",
         "--no-cursor",
       ],
@@ -234,7 +233,6 @@ describe("coverage audit", () => {
         dbp,
         "--no-opencode",
         "--no-codex",
-        "--no-claude",
         "--no-copilot",
         "--no-cursor",
         "--accept-coverage-gap",
@@ -267,7 +265,7 @@ describe("coverage audit", () => {
         cursorProjectsDir: null,
         cursorChatsDir: null,
         noCodex: true,
-        noClaude: true,
+        importSources: [],
         noOpencode: false,
         noCopilot: true,
         noCursor: true,
@@ -299,7 +297,6 @@ describe("coverage audit", () => {
         "--opencode-conversations-dir",
         dbp,
         "--no-codex",
-        "--no-claude",
         "--no-copilot",
         "--no-cursor",
         "--coverage-audit-only",
@@ -342,11 +339,12 @@ describe("buildCorpus + extractCorpusMain", () => {
       claudeProjectsDir: null,
       opencodeConversationsDir: dbp,
     });
-    expect(corpus.metadata.adapter_version).toBe("agentera-v2-corpus-1");
+    expect(corpus.metadata.adapter_version).toBe("agentera-v3-corpus-2");
     expect(corpus.metadata.families.instruction_document.count).toBe(1);
     expect(corpus.metadata.families.conversation_turn.count).toBeGreaterThanOrEqual(1);
     expect(corpus.metadata.runtimes).toContain("opencode");
-    expect(corpus.metadata.runtimes).toContain("filesystem");
+    expect(corpus.metadata.runtimes).not.toContain("filesystem");
+    expect(corpus.metadata.source_products).toContain("filesystem");
     expect(corpus.metadata.available_runtimes).toEqual([]);
     expect(corpus.metadata.selected_runtimes).toEqual([]);
     expect(corpus.metadata.available_but_not_selected).toEqual([]);
@@ -365,8 +363,6 @@ describe("buildCorpus + extractCorpusMain", () => {
         tmp,
         "--codex-sessions-dir",
         path.join(tmp, "stores", "codex"),
-        "--claude-projects-dir",
-        path.join(tmp, "stores", "claude"),
         "--opencode-conversations-dir",
         path.join(tmp, "stores", "opencode.db"),
         "--copilot-conversations-dir",
@@ -376,7 +372,6 @@ describe("buildCorpus + extractCorpusMain", () => {
         "--cursor-chats-dir",
         path.join(tmp, "stores", "cursor-chats"),
         "--no-codex",
-        "--no-claude",
         "--no-opencode",
         "--no-copilot",
         "--no-cursor",
@@ -388,6 +383,69 @@ describe("buildCorpus + extractCorpusMain", () => {
     expect(log).toContain("wrote corpus:");
     const c = JSON.parse(fs.readFileSync(outp, "utf-8"));
     expect(c.metadata.families.instruction_document.count).toBe(1);
+  });
+
+  it("does not read Claude history during default active-runtime extraction", () => {
+    const claudeDir = path.join(tmp, ".claude", "projects", "project");
+    fs.mkdirSync(claudeDir, { recursive: true });
+    const transcript = path.join(claudeDir, "session.jsonl");
+    fs.writeFileSync(transcript, '{"type":"user","message":{"role":"user","content":"secret"}}\n');
+    const readSpy = vi.spyOn(fs, "readFileSync");
+    const outp = path.join(tmp, "out", "active.json");
+
+    const rc = extractCorpusMain(
+      ["--output", outp, "--project-root", tmp, "--no-codex", "--no-opencode", "--no-copilot", "--no-cursor", "--accept-coverage-gap"],
+      { out: () => {}, err: () => {}, env: isolatedEnv(tmp), cwd: tmp },
+    );
+
+    expect(rc).toBe(0);
+    expect(readSpy.mock.calls.some(([target]) => String(target).startsWith(path.join(tmp, ".claude")))).toBe(false);
+    const corpus = JSON.parse(fs.readFileSync(outp, "utf8"));
+    expect(corpus.metadata.source_products).not.toContain("claude-code");
+    readSpy.mockRestore();
+  });
+
+  it("imports Claude history only with explicit opt-in and labels every record as historical", () => {
+    const claudeDir = path.join(tmp, "claude-history");
+    fs.mkdirSync(claudeDir, { recursive: true });
+    const transcript = path.join(claudeDir, "session.jsonl");
+    const bytes = '{"type":"user","sessionId":"s1","message":{"role":"user","content":"should we keep this?"}}\n';
+    fs.writeFileSync(transcript, bytes);
+    const outp = path.join(tmp, "out", "historical.json");
+    let warnings = "";
+
+    const rc = extractCorpusMain(
+      [
+        "--output", outp,
+        "--project-root", tmp,
+        "--import-source", "claude",
+        "--claude-projects-dir", claudeDir,
+        "--no-codex", "--no-opencode", "--no-copilot", "--no-cursor", "--accept-coverage-gap",
+      ],
+      { out: () => {}, err: (text) => (warnings += text + "\n"), env: isolatedEnv(tmp), cwd: tmp },
+    );
+
+    expect(rc).toBe(0);
+    expect(fs.readFileSync(transcript, "utf8")).toBe(bytes);
+    expect(warnings).toContain("can contain secrets, file contents, and command output");
+    expect(warnings).toContain("local and read-only");
+    const corpus = JSON.parse(fs.readFileSync(outp, "utf8"));
+    const imported = corpus.records.filter((record: any) => record.source_product === "claude-code");
+    expect(imported.length).toBeGreaterThan(0);
+    expect(imported.every((record: any) =>
+      record.source_class === "historical_import" && record.active_runtime === false && record.runtime === null)).toBe(true);
+    expect(corpus.metadata.runtimes).not.toContain("claude");
+    expect(corpus.metadata.runtimes).not.toContain("claude-code");
+  });
+
+  it("requires the import flag before accepting a Claude history path", () => {
+    let error = "";
+    const rc = extractCorpusMain(
+      ["--claude-projects-dir", path.join(tmp, "history")],
+      { out: () => {}, err: (text) => (error += text), env: isolatedEnv(tmp), cwd: tmp },
+    );
+    expect(rc).toBe(2);
+    expect(error).toContain("requires explicit --import-source claude");
   });
 });
 
@@ -422,7 +480,6 @@ describe("SQLite cap overrides and truncation", () => {
         "--opencode-conversations-dir",
         dbp,
         "--no-codex",
-        "--no-claude",
         "--no-copilot",
         "--no-cursor",
         "--max-sqlite-sessions",
@@ -450,7 +507,6 @@ describe("SQLite cap overrides and truncation", () => {
         "--opencode-conversations-dir",
         dbp,
         "--no-codex",
-        "--no-claude",
         "--no-copilot",
         "--no-cursor",
       ],
@@ -481,7 +537,6 @@ describe("SQLite cap overrides and truncation", () => {
         "--opencode-conversations-dir",
         dbp,
         "--no-codex",
-        "--no-claude",
         "--no-copilot",
         "--no-cursor",
       ],

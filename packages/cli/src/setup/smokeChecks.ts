@@ -11,12 +11,10 @@ import type { JsonObject } from "../core/jsonValue.js";
 type Env = Record<string, string | undefined>;
 
 const RUNTIME_BINARIES: Record<string, string> = {
-  claude: "claude",
   opencode: "opencode",
   copilot: "copilot",
   codex: "codex",
-  cursor: "cursor",
-  "cursor-agent": "cursor-agent",
+  cursor: "cursor-agent",
 };
 
 function which(binary: string, env: Env): string | null {

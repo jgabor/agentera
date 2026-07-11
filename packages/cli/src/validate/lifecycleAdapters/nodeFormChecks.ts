@@ -68,16 +68,7 @@ export function validateSuiteBundleSurface(
       errors.push(`${runtime}: could not read package metadata ${relativeManifest}: ${(exc as Error).message}`);
       continue;
     }
-    let metadata: JsonObject | null = isMapping(pkgJson.agentera) ? pkgJson.agentera : null;
-    if (!isMapping(metadata) && runtime === "claude") {
-      const plugins = pkgJson.plugins;
-      if (Array.isArray(plugins)) {
-        const pluginRecord = plugins.find(
-          (plugin) => isMapping(plugin) && stringField(plugin, "name") === "agentera" && isMapping(plugin.agentera),
-        );
-        metadata = pluginRecord && isMapping(pluginRecord) ? objectField(pluginRecord, "agentera") : null;
-      }
-    }
+    const metadata: JsonObject | null = isMapping(pkgJson.agentera) ? pkgJson.agentera : null;
     if (!isMapping(metadata)) {
       errors.push(`${runtime}: missing agentera app metadata`);
       continue;
@@ -386,7 +377,7 @@ export function validateCodex(plugin: JsonObject, registry: RuntimeAdapterRegist
   }
   const unsupported = lifecycle.unsupportedEvents;
   if (!Array.isArray(unsupported) || unsupported.length === 0) {
-    errors.push("codex: unsupportedEvents must list Claude-Code-specific events with no Codex equivalent");
+    errors.push("codex: unsupportedEvents must list registry-declared events with no Codex equivalent");
   } else {
     for (const entry of unsupported) {
       if (!isMapping(entry)) {

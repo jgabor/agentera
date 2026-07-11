@@ -8,6 +8,7 @@ import {
 } from "../registries/runtimeAdapterRegistry.js";
 import { validateLifecycleAuthorityRoot } from "../runtime/lifecycleAuthority.js";
 import { validateRuntimeLifecycleAdapterContractRoot } from "../runtime/lifecycleAdapterContract.js";
+import { validateRetiredRuntimeCleanupContractRoot } from "../runtime/retiredRuntimeCleanup.js";
 import {
   type LegacyPythonParityOptions,
   LEGACY_PYTHON_PARITY_FLAG,
@@ -66,6 +67,7 @@ export function lifecycleMain(opts: LifecycleMainOptions = {}): number {
   const errors: string[] = [
     ...validateLifecycleAuthorityRoot(root),
     ...validateRuntimeLifecycleAdapterContractRoot(root),
+    ...validateRetiredRuntimeCleanupContractRoot(root),
   ];
   let registry: RuntimeAdapterRegistry | null = null;
   try {

@@ -157,7 +157,7 @@ describe("planStaleCommandCleanupItems", () => {
 
     const ctx = migrationCtx(path.join(home, "agentera"), path.join(tmp, "project"), home, REPO_ROOT);
     const existing: MigrationPhaseItem[] = [
-      { status: "noop", action: "configure", runtime: "claude", message: "prev" },
+      { status: "noop", action: "configure", runtime: "opencode", message: "prev" },
     ];
     planStaleCommandCleanupItems(ctx, existing);
     expect(existing).toHaveLength(2);

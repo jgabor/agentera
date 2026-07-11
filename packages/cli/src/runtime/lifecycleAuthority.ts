@@ -11,6 +11,8 @@ export const LIFECYCLE_AUTHORITY_RELATIVE_PATH =
   "references/adapters/runtime-lifecycle-authority.yaml";
 export const LIFECYCLE_ADAPTER_CONTRACT_RELATIVE_PATH =
   "references/adapters/runtime-lifecycle-adapters.yaml";
+export const RETIRED_RUNTIME_CLEANUP_CONTRACT_RELATIVE_PATH =
+  "references/adapters/runtime-retired-resources.yaml";
 
 const EXPECTED_ACTIVE_RUNTIME_ORDER = "opencode,codex,cursor,copilot";
 const EXPECTED_EVIDENCE_FIELDS = ["host_present", "installed", "enabled", "trusted"] as const;
@@ -151,6 +153,15 @@ export function validateLifecycleAuthorityData(
       ),
     );
   }
+  if (data.retired_cleanup_contract !== RETIRED_RUNTIME_CLEANUP_CONTRACT_RELATIVE_PATH) {
+    errors.push(
+      sourceError(
+        sourcePath,
+        "retired_cleanup_contract",
+        `must point to ${RETIRED_RUNTIME_CLEANUP_CONTRACT_RELATIVE_PATH}`,
+      ),
+    );
+  }
 
   const canonicalSkill = data.canonical_skill;
   if (!isMapping(canonicalSkill) || canonicalSkill.path !== "~/.agents/skills/agentera") {
@@ -268,13 +279,16 @@ export function validateLifecycleAuthorityData(
     retiredInputs.length !== 1 ||
     !isMapping(retiredInputs[0]) ||
     retiredInputs[0].id !== "claude" ||
-    retiredInputs[0].purpose !== "consent_gated_historical_import"
+    JSON.stringify(retiredInputs[0].purposes) !== JSON.stringify([
+      "consent_gated_historical_import",
+      "owned_legacy_resource_cleanup",
+    ])
   ) {
     errors.push(
       sourceError(
         sourcePath,
         "retired_runtime_inputs",
-        "must contain only claude as a consent_gated_historical_import",
+        "must contain only claude for consent-gated historical import and owned legacy cleanup",
       ),
     );
   }

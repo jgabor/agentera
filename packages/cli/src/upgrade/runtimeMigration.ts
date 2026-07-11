@@ -649,12 +649,6 @@ function planCopilotItems(
   }
 }
 
-function planEnvRuntimeNoops(items: MigrationPhaseItem[], runtime: string, message: string): void {
-  if (!items.some((item) => item.runtime === runtime)) {
-    items.push({ status: "noop", action: "configure", runtime, message });
-  }
-}
-
 export function planRuntimeMigrationItems(ctx: MigrationContext): MigrationPhaseItem[] {
   if (!ctx.env) {
     throw new Error(
@@ -678,22 +672,11 @@ export function planRuntimeMigrationItems(ctx: MigrationContext): MigrationPhase
   if (hookRetirement.length > 0 && items.some((item) => item.action === "rewire-runtime" && item.status === "pending")) {
     items.push(...hookRetirement);
   }
-  planEnvRuntimeNoops(
-    items,
-    "claude",
-    "Claude Code plugin installs expose the app home without local config writes; use --update-packages to refresh marketplace surfaces",
-  );
-  planEnvRuntimeNoops(
-    items,
-    "cursor-agent",
-    "Cursor Agent CLI inherits workspace Cursor hooks; no separate managed install surface",
-  );
-
   void loadRegistry();
   return items;
 }
 
-export function applyRuntimeMigrationItem(item: MigrationPhaseItem, commands: NpxHookCommands): void {
+export function applyRuntimeMigrationItem(item: MigrationPhaseItem, _commands: NpxHookCommands): void {
   if (item.status !== "pending") {
     return;
   }

@@ -16,6 +16,7 @@ export interface ReportArgs {
   action?: string | null; // "refresh" or null
   format?: string;
   project?: string | null;
+  sources?: "active" | "all";
   dryRun?: boolean;
   consent?: string | null;
   projectRoot?: string[];
@@ -23,12 +24,12 @@ export interface ReportArgs {
   output?: string | null;
   codexSessionsDir?: string | null;
   claudeProjectsDir?: string | null;
+  importSources?: string[];
   opencodeConversationsDir?: string | null;
   copilotConversationsDir?: string | null;
   cursorProjectsDir?: string | null;
   cursorChatsDir?: string | null;
   noCodex?: boolean;
-  noClaude?: boolean;
   noOpencode?: boolean;
   noCopilot?: boolean;
   noCursor?: boolean;
@@ -41,12 +42,12 @@ function buildExtractArgv(args: ReportArgs, corpusPath: string): string[] {
   for (const root of args.projectRoot ?? []) argv.push("--project-root", root);
   if (args.codexSessionsDir) argv.push("--codex-sessions-dir", args.codexSessionsDir);
   if (args.claudeProjectsDir) argv.push("--claude-projects-dir", args.claudeProjectsDir);
+  for (const source of args.importSources ?? []) argv.push("--import-source", source);
   if (args.opencodeConversationsDir) argv.push("--opencode-conversations-dir", args.opencodeConversationsDir);
   if (args.copilotConversationsDir) argv.push("--copilot-conversations-dir", args.copilotConversationsDir);
   if (args.cursorProjectsDir) argv.push("--cursor-projects-dir", args.cursorProjectsDir);
   if (args.cursorChatsDir) argv.push("--cursor-chats-dir", args.cursorChatsDir);
   if (args.noCodex) argv.push("--no-codex");
-  if (args.noClaude) argv.push("--no-claude");
   if (args.noOpencode) argv.push("--no-opencode");
   if (args.noCopilot) argv.push("--no-copilot");
   if (args.noCursor) argv.push("--no-cursor");
@@ -56,7 +57,7 @@ function buildExtractArgv(args: ReportArgs, corpusPath: string): string[] {
 }
 
 function usageSyntax(): string {
-  return "agentera usage [--format text|json] [--corpus PATH] [--project VALUE]";
+  return "agentera usage [--format text|json] [--corpus PATH] [--project VALUE] [--sources active|all]";
 }
 function usageExample(): string {
   return "agentera usage --format json --project agentera";
@@ -175,6 +176,9 @@ export function cmdReport(args: ReportArgs, io: Io = {}): number {
         diagnostics: [
           "dry-run does not read runtime history or write corpus files",
           "generated corpus is internal state for stats at $AGENTERA_PROFILE_DIR/intermediate/corpus.json",
+          ...(args.importSources?.includes("claude")
+            ? ["Claude historical import can contain secrets, file contents, and command output; apply stays local and read-only"]
+            : []),
         ],
       };
       if (outputFormat === "json") {
@@ -197,7 +201,17 @@ export function cmdReport(args: ReportArgs, io: Io = {}): number {
       command: "stats refresh",
       status: refreshStatus,
       exit_signal: rc === 4 ? "EX2" : null,
-      privacy: { local_history_read: true, local_history_write: false, corpus_write: rc === 0, required_consent: "local-history", provided_consent: "local-history" },
+      privacy: {
+        local_history_read: true,
+        local_history_write: false,
+        corpus_write: rc === 0,
+        required_consent: "local-history",
+        provided_consent: "local-history",
+        historical_imports: args.importSources ?? [],
+        historical_import_warning: args.importSources?.includes("claude")
+          ? "Claude transcripts can contain secrets, file contents, and command output. Import is local and read-only."
+          : null,
+      },
       corpus_path: corpusPath,
       engine: { command: engineCommand, exit_code: rc, stdout: engineOut.split("\n").filter((l) => l), stderr: engineErr.split("\n").filter((l) => l) },
     };
@@ -249,6 +263,7 @@ export function cmdReport(args: ReportArgs, io: Io = {}): number {
   // Ready: run the usage engine over the existing corpus (passthrough).
   const engineArgs: string[] = ["--corpus", corpusPath];
   if (args.project) engineArgs.push("--project", args.project);
+  if (args.sources) engineArgs.push("--sources", args.sources);
   if (outputFormat === "json") engineArgs.push("--json");
   return usageMain(engineArgs, {
     out: (t) => out(t + "\n"),

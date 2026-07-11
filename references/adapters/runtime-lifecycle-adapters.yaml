@@ -243,8 +243,6 @@ adapters:
         scope: project_runtime
       - path: "{project}/.agents/skills/agentera"
         scope: project_shared
-      - path: "{project}/.claude/skills/agentera"
-        scope: project_compatibility
       - path: "{home}/.copilot/skills/agentera"
         scope: personal_runtime
       - path: "{home}/.agents/skills/agentera"

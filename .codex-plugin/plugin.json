@@ -74,15 +74,15 @@
     "unsupportedEvents": [
       {
         "event": "SubagentStop",
-        "reason": "Claude Code-specific lifecycle event with no Codex equivalent."
+        "reason": "This event is outside the supported Codex lifecycle contract."
       },
       {
         "event": "PreCompact",
-        "reason": "Claude Code-specific lifecycle event with no Codex equivalent."
+        "reason": "This event is outside the supported Codex lifecycle contract."
       },
       {
         "event": "Notification",
-        "reason": "Claude Code-specific lifecycle event with no Codex equivalent."
+        "reason": "This event is outside the supported Codex lifecycle contract."
       }
     ]
   },

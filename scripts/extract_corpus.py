@@ -18,18 +18,16 @@ import sys
 from pathlib import Path
 
 # GENERATED constants synced from packages/cli/src/analytics/extractCorpus/core.ts
-ADAPTER_VERSION = "agentera-v2-corpus-1"
+ADAPTER_VERSION = "agentera-v3-corpus-2"
 MAX_SQLITE_ROWS = 100000
 MAX_SQLITE_SESSIONS = 60
 MAX_TOOL_ARG_TEXT = 500
 COPILOT_SPARSE_REMEDIATION = "/chronicle reindex"
 RUNTIME_STORE_GLOBS = {
     "codex": "*.jsonl",
-    "claude-code": "*.jsonl",
     "cursor": "*.jsonl",
-    "cursor-agent": "store.db",
     "opencode": "opencode.db",
-    "github-copilot": "session-store.db"
+    "copilot": "session-store.db"
 }
 FAMILIES = ["instruction_document","history_prompt","conversation_turn","tool_call","project_config_signal"]
 

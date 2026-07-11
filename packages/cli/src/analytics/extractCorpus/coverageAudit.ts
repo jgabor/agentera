@@ -1,6 +1,3 @@
-import fs from "node:fs";
-import path from "node:path";
-
 import {
   type Env,
   discoverRuntimeStore,
@@ -29,14 +26,21 @@ import {
 export const COVERAGE_EXIT_FLAGGED = 4;
 
 export interface RuntimeStoreConfig {
-  runtime: string;
+  runtime: string | null;
+  sourceProduct: string;
+  sourceClass: "active_runtime" | "historical_import";
+  activeRuntime: boolean;
+  pattern?: string;
   storePath: string | null;
   selected: boolean;
   skipReason: string | null;
 }
 
 export interface RuntimeCoverageEntry {
-  runtime: string;
+  runtime: string | null;
+  source_product: string;
+  source_class: "active_runtime" | "historical_import";
+  active_runtime: boolean;
   store_path: string | null;
   selected: boolean;
   discovery_status: string;
@@ -77,37 +81,28 @@ export function corpusEnvelopeCoverage(audit: CoverageAuditResult): CorpusEnvelo
 export function resolveRuntimeStoreConfigs(
   args: ExtractArgs,
   env: Env = process.env,
-  platform: NodeJS.Platform = process.platform,
+  _platform: NodeJS.Platform = process.platform,
 ): RuntimeStoreConfig[] {
-  const configs: Array<[string, string | null, boolean, string | null]> = [
-    ["codex", args.codexSessionsDir, !args.noCodex, args.noCodex ? "disabled_by_flag" : null],
-    ["claude-code", args.claudeProjectsDir, !args.noClaude, args.noClaude ? "disabled_by_flag" : null],
-    ["cursor", args.cursorProjectsDir || resolveCursorProjectsPath(env), !args.noCursor, args.noCursor ? "disabled_by_flag" : null],
-    [
-      "cursor-agent",
-      args.cursorChatsDir || resolveCursorChatsPath(env),
-      !args.noCursor,
-      args.noCursor ? "disabled_by_flag" : null,
-    ],
-    [
-      "opencode",
-      args.opencodeConversationsDir || resolveOpencodeDbPath(env),
-      !args.noOpencode,
-      args.noOpencode ? "disabled_by_flag" : null,
-    ],
-    [
-      "github-copilot",
-      args.copilotConversationsDir || resolveCopilotStorePath(env),
-      !args.noCopilot,
-      args.noCopilot ? "disabled_by_flag" : null,
-    ],
+  const configs: RuntimeStoreConfig[] = [
+    { runtime: "codex", sourceProduct: "codex", sourceClass: "active_runtime", activeRuntime: true, storePath: args.codexSessionsDir, selected: !args.noCodex, skipReason: args.noCodex ? "disabled_by_flag" : null },
+    { runtime: "cursor", sourceProduct: "cursor", sourceClass: "active_runtime", activeRuntime: true, storePath: args.cursorProjectsDir || resolveCursorProjectsPath(env), selected: !args.noCursor, skipReason: args.noCursor ? "disabled_by_flag" : null },
+    { runtime: "cursor", sourceProduct: "cursor-agent", sourceClass: "active_runtime", activeRuntime: true, pattern: "store.db", storePath: args.cursorChatsDir || resolveCursorChatsPath(env), selected: !args.noCursor, skipReason: args.noCursor ? "disabled_by_flag" : null },
+    { runtime: "opencode", sourceProduct: "opencode", sourceClass: "active_runtime", activeRuntime: true, storePath: args.opencodeConversationsDir || resolveOpencodeDbPath(env), selected: !args.noOpencode, skipReason: args.noOpencode ? "disabled_by_flag" : null },
+    { runtime: "copilot", sourceProduct: "github-copilot", sourceClass: "active_runtime", activeRuntime: true, storePath: args.copilotConversationsDir || resolveCopilotStorePath(env), selected: !args.noCopilot, skipReason: args.noCopilot ? "disabled_by_flag" : null },
   ];
-  return configs.map(([runtime, storePath, selected, skipReason]) => ({
-    runtime,
-    storePath: storePath ?? null,
-    selected,
-    skipReason,
-  }));
+  if ((args.importSources ?? []).includes("claude")) {
+    configs.push({
+      runtime: null,
+      sourceProduct: "claude-code",
+      sourceClass: "historical_import",
+      activeRuntime: false,
+      pattern: "*.jsonl",
+      storePath: args.claudeProjectsDir,
+      selected: true,
+      skipReason: null,
+    });
+  }
+  return configs.map((config) => ({ ...config, storePath: config.storePath ?? null }));
 }
 
 function trackEarliest(current: string | null, candidate: string): string | null {
@@ -228,12 +223,12 @@ function probeSqliteTimestamps(storePath: string, runtime: string): { earliest: 
   return { earliest, latest };
 }
 
-function probeRuntimeTimestamps(runtime: string, storePath: string): { earliest: string | null; latest: string | null } {
-  if (runtime === "opencode" || runtime === "github-copilot" || runtime === "cursor-agent") {
-    return probeSqliteTimestamps(storePath, runtime);
+function probeRuntimeTimestamps(sourceProduct: string, storePath: string): { earliest: string | null; latest: string | null } {
+  if (sourceProduct === "opencode" || sourceProduct === "github-copilot" || sourceProduct === "cursor-agent") {
+    return probeSqliteTimestamps(storePath, sourceProduct);
   }
   if (isDir(storePath)) return probeJsonlTimestamps(storePath);
-  if (isFilePath(storePath)) return probeSqliteTimestamps(storePath, runtime);
+  if (isFilePath(storePath)) return probeSqliteTimestamps(storePath, sourceProduct);
   return { earliest: null, latest: null };
 }
 
@@ -246,21 +241,29 @@ export function runCoverageAudit(
   const runtimes: RuntimeCoverageEntry[] = [];
   const skippedAvailable: CoverageAuditResult["skipped_available"] = [];
   for (const config of resolveRuntimeStoreConfigs(args, env, platform)) {
-    const discovery = discoverRuntimeStore(config.runtime, config.storePath);
+    const discovery = discoverRuntimeStore(config.runtime, config.storePath, {
+      sourceProduct: config.sourceProduct,
+      sourceClass: config.sourceClass,
+      activeRuntime: config.activeRuntime,
+      pattern: config.pattern,
+    });
     const available = discovery.status === "available";
     let earliest: string | null = null;
     let latest: string | null = null;
     if (available && config.storePath) {
-      const bounds = probeRuntimeTimestamps(config.runtime, config.storePath);
+      const bounds = probeRuntimeTimestamps(config.sourceProduct, config.storePath);
       earliest = bounds.earliest;
       latest = bounds.latest;
     }
     const skipReason = available && !config.selected ? (config.skipReason ?? "disabled_by_flag") : null;
     if (skipReason && config.storePath) {
-      skippedAvailable.push({ runtime: config.runtime, reason: skipReason, store_path: config.storePath });
+      skippedAvailable.push({ runtime: config.runtime as string, reason: skipReason, store_path: config.storePath });
     }
     runtimes.push({
       runtime: config.runtime,
+      source_product: config.sourceProduct,
+      source_class: config.sourceClass,
+      active_runtime: config.activeRuntime,
       store_path: config.storePath,
       selected: config.selected,
       discovery_status: String(discovery.status),
@@ -271,8 +274,8 @@ export function runCoverageAudit(
       skip_reason: skipReason,
     });
   }
-  const availableRuntimes = runtimes.filter((r) => r.available).map((r) => r.runtime);
-  const selectedRuntimes = runtimes.filter((r) => r.selected).map((r) => r.runtime);
+  const availableRuntimes = [...new Set(runtimes.filter((r) => r.active_runtime && r.available).map((r) => r.runtime as string))];
+  const selectedRuntimes = [...new Set(runtimes.filter((r) => r.active_runtime && r.selected).map((r) => r.runtime as string))];
   const coverageGapFlagged = skippedAvailable.length > 0 && !acceptCoverageGap;
   return {
     runtimes,
@@ -293,10 +296,11 @@ export function formatCoverageSummaryText(audit: CoverageAuditResult): string {
         entry.earliest_session && entry.latest_session
           ? `${entry.earliest_session} .. ${entry.latest_session}`
           : "timestamps unavailable";
-      lines.push(`  ${entry.runtime}: available store=${store} sessions=${span} selected=${entry.selected ? "yes" : "no"}`);
+      const label = entry.active_runtime ? entry.runtime : `${entry.source_product} [historical import]`;
+      lines.push(`  ${label}: available store=${store} sessions=${span} selected=${entry.selected ? "yes" : "no"}`);
     } else {
       lines.push(
-        `  ${entry.runtime}: ${entry.discovery_status} (${entry.discovery_reason}) store=${store} selected=${entry.selected ? "yes" : "no"}`,
+        `  ${entry.active_runtime ? entry.runtime : `${entry.source_product} [historical import]`}: ${entry.discovery_status} (${entry.discovery_reason}) store=${store} selected=${entry.selected ? "yes" : "no"}`,
       );
     }
   }

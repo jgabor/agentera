@@ -34,7 +34,6 @@ import {
   runtimeSkip,
   which,
   DIAGNOSTICS,
-  diagnoseClaude,
   diagnoseCodex,
   diagnoseCursor,
   readCodexAgenteraHome,
@@ -63,8 +62,9 @@ function managedRoot(root: string, _withHelper = true): void {
 describe("setup doctor: registry-derived constants", () => {
   it("exposes the doctor schema + runtime roster", () => {
     expect(SCHEMA_VERSION).toBe("agentera.setupDoctor.v1");
-    expect(RUNTIMES).toContain("claude");
-    expect(RUNTIMES).toContain("codex");
+    expect(RUNTIMES).toEqual(["opencode", "copilot", "codex", "cursor"]);
+    expect(RUNTIMES).not.toContain("claude");
+    expect(RUNTIMES).not.toContain("cursor-agent");
     expect(Object.keys(AVAILABILITY_CHECKS).sort()).toEqual([...RUNTIMES].sort());
     expect(INSTALLER_FIXABLE_GAPS.copilot).toHaveLength(2);
     expect(HELPER_ENTRIES).toEqual([]);
@@ -462,21 +462,9 @@ describe("setup doctor: per-runtime diagnostics", () => {
     expect(Object.keys(DIAGNOSTICS).sort()).toEqual([...RUNTIMES].sort());
   });
 
-  it("skips a runtime whose binary is absent", () => {
-    const root = path.join(tmp, "root");
-    managedRoot(root);
-    const r = diagnoseClaude(root, path.join(tmp, "h"), {});
-    expect(r.status).toBe("skip");
-    expect(r.available).toBe(false);
-  });
-
-  it("passes claude when CLAUDE_PLUGIN_ROOT points at the install root", () => {
-    const root = path.join(tmp, "root");
-    managedRoot(root);
-    const bin = fakeBin(path.join(tmp, "bin"));
-    const r = diagnoseClaude(root, path.join(tmp, "h"), { PATH: bin, CLAUDE_PLUGIN_ROOT: root });
-    expect(r.available).toBe(true);
-    expect(r.status).toBe("pass");
+  it("does not expose retired Claude or the Cursor migration alias as doctor runtimes", () => {
+    expect(DIAGNOSTICS).not.toHaveProperty("claude");
+    expect(DIAGNOSTICS).not.toHaveProperty("cursor-agent");
   });
 
   it("reads AGENTERA_HOME from a codex config", () => {

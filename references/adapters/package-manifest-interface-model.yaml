@@ -141,10 +141,11 @@ command_safety:
     - install-agentera-skill
   approved_runtimes:
     - all
-    - claude
     - opencode
+    - codex
+    - cursor
+    - copilot
   approved_runtime_agents:
-    - claude-code
     - opencode
   approved_package_tool:
     executable: npx
@@ -188,12 +189,6 @@ sample_manifest:
       - id: codex-plugin
         path: .codex-plugin/plugin.json
         selector: version
-      - id: claude-marketplace-metadata
-        path: .claude-plugin/marketplace.json
-        selector: metadata.version
-      - id: claude-marketplace-plugins
-        path: .claude-plugin/marketplace.json
-        selector: plugins[*].version
       - id: opencode-plugin-marker
         path: .opencode/plugins/agentera.js
         selector: AGENTERA_VERSION
@@ -213,8 +208,8 @@ sample_manifest:
         path: .codex-plugin/plugin.json
         version_bearing: true
         package_shape: suite-bundle
-      - runtime: claude
-        path: .claude-plugin/marketplace.json
+      - runtime: cursor
+        path: .cursor-plugin/plugin.json
         version_bearing: true
         package_shape: suite-bundle
       - runtime: opencode
@@ -231,7 +226,7 @@ sample_manifest:
       - agents
       - .agents/plugins
       - .codex-plugin
-      - .claude-plugin
+      - .cursor-plugin
       - .github/hooks
       - .github/plugin
       - .opencode/commands
@@ -278,21 +273,6 @@ sample_manifest:
           - -g
           - -y
         skipped_without_update_packages_message: legacy skill removal skipped; pass --update-packages to run
-      - runtime: claude
-        action: install-agentera-skill
-        phase: runtime-install
-        argv:
-          - npx
-          - skills
-          - add
-          - jgabor/agentera
-          - -g
-          - -a
-          - claude-code
-          - --skill
-          - agentera
-          - -y
-        skipped_without_update_packages_message: external package update skipped; pass --update-packages to run
       - runtime: opencode
         action: install-agentera-skill
         phase: runtime-install
@@ -323,7 +303,7 @@ sample_manifest:
       - plugin.json
       - .github/plugin/plugin.json
       - .codex-plugin/plugin.json
-      - .claude-plugin/marketplace.json
+      - .cursor-plugin/plugin.json
       - .opencode/plugins/agentera.js
       - registry.json
     index_targets:

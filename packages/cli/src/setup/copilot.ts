@@ -16,7 +16,7 @@ type Env = Record<string, string | undefined>;
 export const CANONICAL_ENTRIES = SETUP_EVIDENCE;
 export const MANAGED_KEY = "AGENTERA_HOME";
 export const MARKER_COMMENT = `# agentera: ${MANAGED_KEY} (managed)`;
-const ENV_FALLBACKS = ["AGENTERA_HOME", "CLAUDE_PLUGIN_ROOT"] as const;
+const ENV_FALLBACKS = ["AGENTERA_HOME"] as const;
 
 const SHELL_TABLE: Record<string, ["bashrc" | "zshrc" | "fish", string]> = {
   bash: ["bashrc", "export"],

@@ -26,15 +26,13 @@ describe("runtime adapter registry", () => {
   it("returns adapter catalog records in deterministic order", () => {
     const registry = loadRegistry(REGISTRY_PATH);
 
-    expect(registry.adapterIds).toEqual(["claude", "opencode", "copilot", "codex", "cursor", "cursor-agent"]);
+    expect(registry.adapterIds).toEqual(["opencode", "copilot", "codex", "cursor"]);
     expect(registry.adapterIds.length).toBe(new Set(registry.adapterIds).size);
     expect(registry.adapterIds.map((id) => registry.get(id).identity.display_name)).toEqual([
-      "Claude Code",
       "OpenCode",
       "Copilot CLI",
       "Codex CLI",
       "Cursor IDE",
-      "Cursor Agent CLI",
     ]);
     const opencodeLifecycle = registry.get("opencode").lifecycle_events;
     expect(opencodeLifecycle.supported_events).toContain("tool.execute.before");
@@ -48,12 +46,12 @@ describe("runtime adapter registry", () => {
     expect(registry.get("codex").subagent_dispatch.descriptor_sources).toContain(
       "skills/agentera/agents/*.toml",
     );
-    expect(registry.get("claude").subagent_dispatch.tool_configuration).toBe("none");
     expect(registry.get("opencode").subagent_dispatch.tool_configuration).toBe("per_agent_permission");
     expect(registry.get("copilot").subagent_dispatch.tool_configuration).toBe("none");
     expect(registry.get("codex").subagent_dispatch.tool_configuration).toBe("global_sandbox_policy");
     expect(registry.get("cursor").subagent_dispatch.tool_configuration).toBe("global_full_access");
-    expect(registry.get("cursor-agent").subagent_dispatch.tool_configuration).toBe("global_full_access");
+    expect(() => registry.get("claude")).toThrow("unknown runtime id: claude");
+    expect(() => registry.get("cursor-agent")).toThrow("unknown runtime id: cursor-agent");
   });
 
   it("gives clear diagnostics for known and unknown ids", () => {
@@ -72,7 +70,7 @@ describe("runtime adapter registry", () => {
     const malformed = structuredClone(fixture);
     delete malformed.records[0].diagnostics;
     malformed.records[1].identity.runtime_id = "ghost";
-    malformed.records[2].identity.runtime_id = "codex";
+    malformed.records[2].identity.runtime_id = "opencode";
     malformed.records[3].lifecycle_events.supported_events.push("AfterEverything");
     malformed.records[3].install_root = { default_durable_root: "~/.agents/agentera" };
 
@@ -80,7 +78,7 @@ describe("runtime adapter registry", () => {
 
     expect(errors).toContain("records[0]: missing required group diagnostics");
     expect(errors).toContain("records[1].identity.runtime_id unknown adapter record id: ghost");
-    expect(errors).toContain("duplicate runtime id: codex");
+    expect(errors).toContain("duplicate runtime id: opencode");
     expect(errors).toContain(
       "records[3].lifecycle_events.supported_events: unsupported event name AfterEverything",
     );
@@ -100,10 +98,21 @@ describe("runtime adapter registry", () => {
     );
   });
 
+  it.each(["claude", "cursor-agent"])("rejects %s as an active adapter record", (runtimeId) => {
+    const fixture = registryFixture();
+    fixture.adapter_record_order.push(runtimeId);
+    const retired = structuredClone(fixture.records[0]);
+    retired.identity.runtime_id = runtimeId;
+    fixture.records.push(retired);
+    const errors = validateRegistryData(fixture);
+    expect(errors).toContain("registry.adapter_record_order must contain active runtime records only");
+    expect(errors).toContain(`records[4].identity.runtime_id cannot be an active adapter record: ${runtimeId}`);
+  });
+
   it("consumer views share changed fixture facts", () => {
     const fixture = registryFixture();
     const changed = structuredClone(fixture);
-    changed.records[2].identity.display_name = "Copilot Canary";
+    changed.records[1].identity.display_name = "Copilot Canary";
 
     expect(validateRegistryData(changed)).toEqual([]);
     const registry = new RuntimeAdapterRegistry(changed.records);

@@ -3,6 +3,7 @@ status: active_authority
 decision: 92
 operation_contract: references/adapters/runtime-lifecycle-operation-contract.yaml
 adapter_contract: references/adapters/runtime-lifecycle-adapters.yaml
+retired_cleanup_contract: references/adapters/runtime-retired-resources.yaml
 canonical_skill:
   path: ~/.agents/skills/agentera
   required_for_support_floor: true
@@ -55,7 +56,9 @@ active_runtimes:
         presence: required
 retired_runtime_inputs:
   - id: claude
-    purpose: consent_gated_historical_import
+    purposes:
+      - consent_gated_historical_import
+      - owned_legacy_resource_cleanup
 migration_aliases:
   cursor-agent:
     runtime_id: cursor

@@ -2,7 +2,7 @@
  * Tracked v2→v3 migration gaps. Flip `closed` to true when implementation lands;
  * corresponding tests must pass without skip.
  *
- * The D56 plan adds six per-family gap entries that map to the six
+ * The D56 plan adds per-family gap entries that map to the six
  * v3-remaining CLI surface families in
  * `packages/cli/test/cli/fixtures/oracle/parity-remaining-families.json`.
  * These entries start as `closed: false` (the surfaces are not yet ported
@@ -50,13 +50,13 @@ export const TRACKED_GAPS: readonly TrackedGap[] = [
     id: GAP_IDS.V2_PYTHON_SURFACE_RETIREMENT,
     description: "runtime migration retires v2 Python-managed surfaces (Codex copied hooks, OpenCode plugin, project hooks)",
     closed: true,
-    runtimeIds: ["opencode", "claude", "copilot"],
+    runtimeIds: ["opencode", "copilot"],
   },
   {
     id: GAP_IDS.CHANNEL_AWARE_NPX_DIST,
     description: "rewire constants use npx -y agentera@next on development channel",
     closed: true,
-    runtimeIds: ["codex", "cursor", "cursor-agent"],
+    runtimeIds: ["codex", "cursor"],
   },
   // D56 T2: artifact-validation CLI surface (7 validate subcommands).
   // Ported incrementally; close when all 7 subcommands are parity-green.
@@ -65,7 +65,7 @@ export const TRACKED_GAPS: readonly TrackedGap[] = [
     description:
       "D56 T2: port the 7 validate subcommands (capability, capability-contract, cross-capability, lifecycle-adapters, app-home-contract, vocabularyAuthority, selfAudit) to TS and prove byte-level parity with the Python oracle pinned at parity-remaining-families.json:python_commit.",
     closed: true,
-    runtimeIds: ["opencode", "claude", "copilot", "codex", "cursor", "cursor-agent"],
+    runtimeIds: ["opencode", "copilot", "codex", "cursor"],
   },
   // D56 T3: compaction CLI surface (apply + dry-run + retention caps).
   {
@@ -73,7 +73,7 @@ export const TRACKED_GAPS: readonly TrackedGap[] = [
     description:
       "D56 T3: port `check compact` apply + dry-run + retention caps (10/40/50) to TS with size-bounded corpus reads and archive preservation; parity row in parity-remaining-families.json:compaction closes when drift_direction === 'equal'.",
     closed: true,
-    runtimeIds: ["opencode", "claude", "copilot", "codex", "cursor", "cursor-agent"],
+    runtimeIds: ["opencode", "copilot", "codex", "cursor"],
   },
   // D56 T4: doctor/upgrade safety rails.
   {
@@ -81,7 +81,7 @@ export const TRACKED_GAPS: readonly TrackedGap[] = [
     description:
       "D56 T4: port doctor/upgrade safety rails (outdated → ready_to_apply → applied; repair_needed; manual_review_needed) to TS with Decision 54 lifecycle vocabulary and plain-language repair wording; next-major doctor parity for the npm channel.",
     closed: true,
-    runtimeIds: ["opencode", "claude", "copilot", "codex", "cursor", "cursor-agent"],
+    runtimeIds: ["opencode", "copilot", "codex", "cursor"],
   },
   // D56 T5: verify gates (check verify eval).
   {
@@ -89,7 +89,7 @@ export const TRACKED_GAPS: readonly TrackedGap[] = [
     description:
       "D56 T5: port `check verify eval` safety wrappers (retired smoke family messaging for npm distribution; bounded offline smoke without live model calls by default) and pin the agent-ready-state-contract.yaml for the npm @next distribution boundary.",
     closed: true,
-    runtimeIds: ["opencode", "claude", "copilot", "codex", "cursor", "cursor-agent"],
+    runtimeIds: ["opencode", "copilot", "codex", "cursor"],
   },
   // D56 T6: usage/stats consent semantics (closed — npmParityMatrix usage_stats_consent = equal).
   {
@@ -97,7 +97,7 @@ export const TRACKED_GAPS: readonly TrackedGap[] = [
     description:
       "D56 T6: port `stats` + `stats refresh --dry-run` + `stats refresh --consent local-history` to TS with explicit consent enforcement and size-bounded corpus reads; v1 `agentera stats` namespace owns the surface; no top-level `agentera corpus` command.",
     closed: true,
-    runtimeIds: ["opencode", "claude", "copilot", "codex", "cursor", "cursor-agent"],
+    runtimeIds: ["opencode", "copilot", "codex", "cursor"],
   },
   // D56 T7: runtime adapter hooks (OpenCode/Codex/Cursor/Copilot).
   {
@@ -105,7 +105,7 @@ export const TRACKED_GAPS: readonly TrackedGap[] = [
     description:
       "D56 T7: port runtime adapter hooks (OpenCode event/shell.env/chat.message/tool.execute.before-after/experimental.session.compacting; Codex hooks.state + PLUGIN_ROOT-safe apply_patch; Cursor preToolUse Write + session lifecycle; Copilot per-invocation AGENTERA_HOME) and per-runtime subagent_dispatch parity; descriptor bodies and trust hashes parity.",
     closed: true,
-    runtimeIds: ["opencode", "claude", "copilot", "codex", "cursor", "cursor-agent"],
+    runtimeIds: ["opencode", "copilot", "codex", "cursor"],
   },
 ] as const;
 
@@ -134,10 +134,8 @@ export function gapSkipReason(id: GapId): string {
 
 /** Default runtime matrix for sandbox-report.json on current implementation. */
 export const DEFAULT_RUNTIME_MATRIX: Record<string, RuntimeMatrixStatus> = {
-  claude: "noop",
   opencode: "applied",
   copilot: "noop",
   codex: "applied",
   cursor: "applied",
-  "cursor-agent": "noop",
 };

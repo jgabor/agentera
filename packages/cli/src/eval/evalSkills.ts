@@ -53,7 +53,11 @@ export function detectRuntime(
   const which = opts.which ?? realWhich;
   const err = opts.err ?? ((line: string) => process.stderr.write(line + "\n"));
   if (explicit && explicit !== "auto") {
-    if (explicit === "cursor-agent") {
+    if (explicit !== "opencode" && explicit !== "cursor") {
+      err(`ERROR: '${explicit}' is not an active eval runtime; choose opencode or cursor.`);
+      throw new ExitError(1);
+    }
+    if (explicit === "cursor") {
       if (which("cursor-agent") === null && which("agent") === null) {
         err(
           "ERROR: 'cursor-agent' not found on PATH. Install Cursor Agent CLI " +
@@ -65,17 +69,15 @@ export function detectRuntime(
     return explicit;
   }
 
-  const hasClaude = which("claude") !== null;
   const hasOpencode = which("opencode") !== null;
   const hasCursorAgent = which("cursor-agent") !== null || which("agent") !== null;
 
-  if (hasClaude) return "claude";
   if (hasOpencode) return "opencode";
-  if (hasCursorAgent) return "cursor-agent";
+  if (hasCursorAgent) return "cursor";
 
   err(
-    "ERROR: Neither 'claude', 'opencode', nor 'cursor-agent' found on PATH. " +
-      "Install a supported runtime host and ensure the binary is accessible.",
+    "ERROR: Neither the OpenCode nor Cursor eval surface was found on PATH. " +
+      "Install an active eval runtime host and ensure the binary is accessible.",
   );
   throw new ExitError(1);
 }
@@ -137,7 +139,7 @@ export function invokeSkill(
   name: string,
   prompt: string,
   timeout: number,
-  runtime = "claude",
+  runtime = "opencode",
   opts: { which?: WhichFn; run?: RunFn; repoRoot?: string } = {},
 ): JsonObject {
   const which = opts.which ?? realWhich;
@@ -149,13 +151,12 @@ export function invokeSkill(
   if (runtime === "opencode") {
     cmd = ["opencode", "run", "--prompt"];
     stdinPrompt = prompt;
-  } else if (runtime === "cursor-agent") {
+  } else if (runtime === "cursor") {
     const binary = which("cursor-agent") ? "cursor-agent" : "agent";
     cmd = [binary, "-p", "--output-format", "json", "--force", prompt];
     stdinPrompt = null;
   } else {
-    cmd = ["claude", "-p", "--output-format", "json"];
-    stdinPrompt = prompt;
+    throw new ExitError(1, `unsupported active eval runtime: ${runtime}`);
   }
 
   const start = Date.now();
@@ -205,7 +206,7 @@ export function runSkills(
   skills: Array<{ name: string; prompt: string }>,
   timeout: number,
   _parallel: number,
-  runtime = "claude",
+  runtime = "opencode",
   opts: { which?: WhichFn; run?: RunFn; repoRoot?: string } = {},
 ): JsonObject[] {
   // Parallelism in the Python runner is a maintainer perf detail; the smoke
@@ -227,7 +228,7 @@ export function buildReport(results: JsonObject[]): JsonObject {
 
 export function buildDryRun(
   skills: Array<{ name: string; prompt: string }>,
-  runtime = "claude",
+  runtime = "opencode",
   runtimeSource = "auto-detected",
 ): JsonObject {
   return {

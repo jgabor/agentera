@@ -11,7 +11,7 @@ import { resolvePath } from "../../core/paths.js";
 
 export type Env = Record<string, string | undefined>;
 
-export const ADAPTER_VERSION = "agentera-v2-corpus-1";
+export const ADAPTER_VERSION = "agentera-v3-corpus-2";
 export const FAMILIES = [
   "instruction_document",
   "history_prompt",
@@ -22,12 +22,14 @@ export const FAMILIES = [
 
 export const RUNTIME_STORE_GLOBS: Record<string, string> = {
   codex: "*.jsonl",
-  "claude-code": "*.jsonl",
   cursor: "*.jsonl",
-  "cursor-agent": "store.db",
   opencode: "opencode.db",
-  "github-copilot": "session-store.db",
+  copilot: "session-store.db",
 };
+export const HISTORICAL_IMPORT_STORE_GLOBS: Record<string, string> = {
+  "claude-code": "*.jsonl",
+};
+const ACTIVE_ANALYTICS_RUNTIMES = new Set(["opencode", "codex", "cursor", "copilot"]);
 export const MAX_TOOL_ARG_TEXT = 500;
 export const MAX_SQLITE_ROWS = 100_000;
 export const MAX_SQLITE_SESSIONS = 60;
@@ -107,10 +109,21 @@ export interface RuntimeStatusOpts {
   truncatedAt?: string | null;
   truncationCap?: "sessions" | "rows" | null;
   truncationLimit?: number | null;
+  sourceClass?: "active_runtime" | "historical_import";
+  sourceProduct?: string;
+  activeRuntime?: boolean;
 }
 
-export function runtimeStatus(runtime: string, opts: RuntimeStatusOpts): JsonObject {
-  const item: JsonObject = { runtime, status: opts.status, reason: opts.reason };
+export function runtimeStatus(runtime: string | null, opts: RuntimeStatusOpts): JsonObject {
+  const activeRuntime = opts.activeRuntime ?? (runtime !== null && ACTIVE_ANALYTICS_RUNTIMES.has(runtime));
+  const item: JsonObject = {
+    runtime,
+    source_class: opts.sourceClass ?? (activeRuntime ? "active_runtime" : "historical_import"),
+    source_product: opts.sourceProduct ?? runtime ?? "unknown",
+    active_runtime: activeRuntime,
+    status: opts.status,
+    reason: opts.reason,
+  };
   if (opts.storePath !== null && opts.storePath !== undefined) item.store_path = opts.storePath;
   if (opts.fileCount !== null && opts.fileCount !== undefined) item.file_count = opts.fileCount;
   if (opts.recordCount !== null && opts.recordCount !== undefined) item.record_count = opts.recordCount;
@@ -161,24 +174,35 @@ function rglob(root: string, pattern: string): string[] {
   return out.sort();
 }
 
-export function discoverRuntimeStore(runtime: string, storePath: string | null): JsonObject {
+export function discoverRuntimeStore(
+  runtime: string | null,
+  storePath: string | null,
+  opts: { sourceProduct?: string; sourceClass?: "active_runtime" | "historical_import"; activeRuntime?: boolean; pattern?: string } = {},
+): JsonObject {
+  const statusOpts = {
+    sourceProduct: opts.sourceProduct,
+    sourceClass: opts.sourceClass,
+    activeRuntime: opts.activeRuntime,
+  };
   if (storePath === null) {
-    return runtimeStatus(runtime, { status: "skipped", reason: "disabled", storePath: null });
+    return runtimeStatus(runtime, { status: "skipped", reason: "disabled", storePath: null, ...statusOpts });
   }
   if (!fs.existsSync(storePath)) {
     return runtimeStatus(runtime, {
       status: "missing",
       reason: "store_absent",
       storePath,
-      remediationLabels: runtime === "github-copilot" ? [COPILOT_SPARSE_REMEDIATION] : null,
+      remediationLabels: runtime === "copilot" ? [COPILOT_SPARSE_REMEDIATION] : null,
+      ...statusOpts,
     });
   }
-  if ((runtime === "opencode" || runtime === "github-copilot") && isFilePath(storePath)) {
+  if (isFilePath(storePath)) {
     return runtimeStatus(runtime, {
       status: "available",
       reason: "candidate_files_found",
       storePath,
       fileCount: 1,
+      ...statusOpts,
     });
   }
   if (!isDir(storePath)) {
@@ -186,7 +210,9 @@ export function discoverRuntimeStore(runtime: string, storePath: string | null):
   }
   let candidates: string[];
   try {
-    candidates = rglob(storePath, RUNTIME_STORE_GLOBS[runtime]);
+    const pattern = opts.pattern ?? (runtime === null ? undefined : RUNTIME_STORE_GLOBS[runtime]);
+    if (!pattern) throw new Error("no declared store pattern");
+    candidates = rglob(storePath, pattern);
   } catch {
     return runtimeStatus(runtime, { status: "degraded", reason: "store_unreadable", storePath });
   }
@@ -196,7 +222,8 @@ export function discoverRuntimeStore(runtime: string, storePath: string | null):
       reason: "no_candidate_files",
       storePath,
       fileCount: 0,
-      remediationLabels: runtime === "github-copilot" ? [COPILOT_SPARSE_REMEDIATION] : null,
+      remediationLabels: runtime === "copilot" ? [COPILOT_SPARSE_REMEDIATION] : null,
+      ...statusOpts,
     });
   }
   return runtimeStatus(runtime, {
@@ -204,6 +231,7 @@ export function discoverRuntimeStore(runtime: string, storePath: string | null):
     reason: "candidate_files_found",
     storePath,
     fileCount: candidates.length,
+    ...statusOpts,
   });
 }
 
@@ -219,19 +247,26 @@ export interface RecordOpts {
   sourceKind: string;
   timestamp: string;
   projectPath: string | null;
-  runtime: string;
+  runtime: string | null;
+  sourceClass?: "active_runtime" | "historical_import" | "project";
+  sourceProduct?: string;
+  activeRuntime?: boolean;
   data: JsonObject;
   sourceParts: unknown[];
   sessionId?: string | null;
 }
 
 export function record(opts: RecordOpts): JsonObject {
+  const activeRuntime = opts.activeRuntime ?? (opts.runtime !== null && ACTIVE_ANALYTICS_RUNTIMES.has(opts.runtime));
   const item: JsonObject = {
     source_id: stableId(opts.sourceKind, ...opts.sourceParts),
     timestamp: opts.timestamp,
     project_id: projectIdFromPath(opts.projectPath),
     source_kind: opts.sourceKind,
     runtime: opts.runtime,
+    source_class: opts.sourceClass ?? (activeRuntime ? "active_runtime" : "project"),
+    source_product: opts.sourceProduct ?? opts.runtime ?? "unknown",
+    active_runtime: activeRuntime,
     adapter_version: ADAPTER_VERSION,
     data: opts.data,
   };
@@ -347,7 +382,10 @@ export function toolCallRecordFromItem(args: {
   event: JsonObject;
   fallbackTimestamp: string;
   projectPath: string | null;
-  runtime: string;
+  runtime: string | null;
+  sourceClass?: RecordOpts["sourceClass"];
+  sourceProduct?: string;
+  activeRuntime?: boolean;
   sourcePath: string;
   index: number;
   sessionId: string;
@@ -377,6 +415,9 @@ export function toolCallRecordFromItem(args: {
     timestamp: eventTimestamp(event, args.fallbackTimestamp),
     projectPath: args.projectPath,
     runtime: args.runtime,
+    sourceClass: args.sourceClass,
+    sourceProduct: args.sourceProduct,
+    activeRuntime: args.activeRuntime,
     sourceParts: [resolvePath(args.sourcePath), args.index, "tool", toolName],
     sessionId: args.sessionId,
     data: { tool_name: toolName, arguments: argumentsVal as JsonValue }, // cast: parsed JSON IO boundary
@@ -387,7 +428,10 @@ export function toolCallRecord(args: {
   event: JsonObject;
   fallbackTimestamp: string;
   projectPath: string | null;
-  runtime: string;
+  runtime: string | null;
+  sourceClass?: RecordOpts["sourceClass"];
+  sourceProduct?: string;
+  activeRuntime?: boolean;
   sourcePath: string;
   index: number;
   sessionId: string;

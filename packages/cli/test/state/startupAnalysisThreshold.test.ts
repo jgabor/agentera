@@ -11,7 +11,7 @@ function corpusFixture(): any {
   return {
     metadata: {
       version: "x",
-      runtime_statuses: [{ runtime: "claude-code", status: "ok", reason: "records_extracted", record_count: 3 }],
+      runtime_statuses: [{ runtime: "codex", status: "ok", reason: "records_extracted", record_count: 3 }],
     },
     records: [
       {

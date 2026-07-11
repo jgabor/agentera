@@ -165,7 +165,7 @@ export function validateCommandHandler(errors: string[], runtime: string, event:
     errors.push(`${prefix}: handler type must be 'command'`);
   }
   if ("command" in handler) {
-    errors.push(`${prefix}: use bash/powershell, not Claude-style command`);
+    errors.push(`${prefix}: use bash/powershell, not the legacy command field`);
   }
   if (!handler.bash && !handler.powershell) {
     errors.push(`${prefix}: handler must define bash or powershell`);

@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 
-import { expanduser, isFile, pathExists, resolvePath } from "../../core/paths.js";
+import { expanduser, isFile, resolvePath } from "../../core/paths.js";
 import { parseToml as parseTomlLocal } from "../../core/toml.js";
 import type { JsonObject } from "../../core/jsonValue.js";
 import {
@@ -25,11 +25,6 @@ import {
 import { diagnoseOpencode } from "./opencode.js";
 
 type Env = Record<string, string | undefined>;
-
-const CLAUDE_ROOT_CHECK = diagnosticCheckNames("claude")[0];
-const CLAUDE_MISSING_ENV_MESSAGE = diagnosticMessages("claude")[1];
-const CLAUDE_WARN_STATUS = diagnosticStatusLabels("claude")[1];
-const CLAUDE_USER_ENVIRONMENT_GAP = diagnosticGapLabels("claude")[1];
 
 // Copilot
 const COPILOT_HOME_CHECK = diagnosticCheckNames("copilot")[0];
@@ -58,29 +53,6 @@ const CURSOR_FAIL_STATUS = diagnosticStatusLabels("cursor")[2];
 const CURSOR_USER_ENVIRONMENT_GAP = diagnosticGapLabels("cursor")[1];
 const CURSOR_HOOK_DRIFT_GAP = diagnosticGapLabels("cursor")[2];
 const CURSOR_AGENT_DRIFT_GAP = diagnosticGapLabels("cursor")[3];
-
-// Cursor-agent
-const CURSOR_AGENT_HOME_CHECK = diagnosticCheckNames("cursor-agent")[0];
-const CURSOR_AGENT_WARN_STATUS = diagnosticStatusLabels("cursor-agent")[1];
-const CURSOR_AGENT_USER_ENVIRONMENT_GAP = diagnosticGapLabels("cursor-agent")[1];
-
-export function diagnoseClaude(installRoot: string, _home: string, env: Env): JsonObject {
-  const value = env.CLAUDE_PLUGIN_ROOT;
-  let checks: JsonObject[];
-  if (!value) {
-    checks = [
-      mkCheck(CLAUDE_ROOT_CHECK, CLAUDE_WARN_STATUS, CLAUDE_MISSING_ENV_MESSAGE, {
-        source: "environment",
-        gap: CLAUDE_USER_ENVIRONMENT_GAP,
-      }),
-    ];
-  } else {
-    checks = [
-      configuredRootCheck("claude", CLAUDE_ROOT_CHECK, resolvePath(expanduser(value)), installRoot, "environment"),
-    ];
-  }
-  return runtimeResult("claude", env, checks);
-}
 
 function copilotRcPaths(home: string): string[] {
   return [
@@ -272,31 +244,9 @@ export function diagnoseCursor(installRoot: string, home: string, env: Env): Jso
   return runtimeResult("cursor", env, checks);
 }
 
-export function diagnoseCursorAgent(installRoot: string, _home: string, env: Env): JsonObject {
-  const checks: JsonObject[] = [];
-  const value = env.AGENTERA_HOME;
-  if (value) {
-    checks.push(
-      configuredRootCheck("cursor-agent", CURSOR_AGENT_HOME_CHECK, resolvePath(expanduser(value)), installRoot, "environment"),
-    );
-  } else {
-    checks.push(
-      mkCheck(
-        CURSOR_AGENT_HOME_CHECK,
-        CURSOR_AGENT_WARN_STATUS,
-        "cursor-agent helper access depends on AGENTERA_HOME or shell rc configuration",
-        { source: "environment", gap: CURSOR_AGENT_USER_ENVIRONMENT_GAP },
-      ),
-    );
-  }
-  return runtimeResult("cursor-agent", env, checks);
-}
-
 export const DIAGNOSTICS: Record<string, (installRoot: string, home: string, env: Env) => JsonObject> = {
-  claude: diagnoseClaude,
   opencode: diagnoseOpencode,
   copilot: diagnoseCopilot,
   codex: diagnoseCodex,
   cursor: diagnoseCursor,
-  "cursor-agent": diagnoseCursorAgent,
 };

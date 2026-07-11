@@ -122,7 +122,18 @@ export function extractClaudeProjectSessions(projectsDir: string | null, errors:
       const cwd = event.cwd || event.workingDirectory || event.working_directory;
       if (typeof cwd === "string" && cwd) projectPath = cwd;
 
-      const toolRecord = toolCallRecord({ event, fallbackTimestamp, projectPath, runtime: "claude-code", sourcePath: p, index, sessionId });
+      const toolRecord = toolCallRecord({
+        event,
+        fallbackTimestamp,
+        projectPath,
+        runtime: null,
+        sourceClass: "historical_import",
+        sourceProduct: "claude-code",
+        activeRuntime: false,
+        sourcePath: p,
+        index,
+        sessionId,
+      });
       if (toolRecord !== null) {
         records.push(toolRecord);
         continue;
@@ -135,7 +146,10 @@ export function extractClaudeProjectSessions(projectsDir: string | null, errors:
           event,
           fallbackTimestamp,
           projectPath,
-          runtime: "claude-code",
+          runtime: null,
+          sourceClass: "historical_import",
+          sourceProduct: "claude-code",
+          activeRuntime: false,
           sourcePath: p,
           index: index * 1000 + contentIndex,
           sessionId,
@@ -165,7 +179,10 @@ export function extractClaudeProjectSessions(projectsDir: string | null, errors:
           sourceKind: "conversation_turn",
           timestamp,
           projectPath,
-          runtime: "claude-code",
+          runtime: null,
+          sourceClass: "historical_import",
+          sourceProduct: "claude-code",
+          activeRuntime: false,
           sourceParts: [resolvePath(p), index, role, content.slice(0, 80)],
           sessionId,
           data,
@@ -179,7 +196,10 @@ export function extractClaudeProjectSessions(projectsDir: string | null, errors:
               sourceKind: "history_prompt",
               timestamp,
               projectPath,
-              runtime: "claude-code",
+              runtime: null,
+              sourceClass: "historical_import",
+              sourceProduct: "claude-code",
+              activeRuntime: false,
               sourceParts: [resolvePath(p), index, "history", content.slice(0, 120)],
               sessionId,
               data: { prompt: content, signal_type: sig },

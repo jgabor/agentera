@@ -29,7 +29,7 @@ export const STARTUP_AVAILABLE_STATE_FIELDS = [
 ] as const;
 
 export const STARTUP_COMPLETENESS_CONFIDENCE_CAVEATS = [
-  "representative benchmark evidence exists, but claude-code and github-copilot coverage is degraded by schema divergence",
+  "representative benchmark evidence exists, but some source products remain degraded by schema divergence",
   "Audit evidence context uses existing status, plan, progress, docs, health, TODO, and decisions state outputs",
 ] as const;
 
