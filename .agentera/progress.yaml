@@ -1,4 +1,47 @@
 cycles:
+  - number: 710
+    timestamp: 2026-07-11 21:26
+    type: fix
+    phase: build
+    what: Removed production lifecycle evidence injection and split synthetic parity
+      from real CLI coverage.
+    inspiration: Final Task 6 audit after Cycle 709 overstated child-process fixture
+      coverage.
+    discovered: Synthetic host-owned trust and ownership cases remain useful only
+      when clearly confined to imported observer and projection functions under
+      packages/cli/test; production CLI coverage must rely on real filesystem
+      observation.
+    verified: "Actual built CLI coverage runs prime and doctor against real temp
+      filesystem state. The production guard compares baseline calls with
+      NODE_ENV=test plus fake AGENTERA_TEST variables and a valid spoof file:
+      lifecycle output is identical, doctor remains exit 1, no target writes
+      occur, and trapped native binaries are not invoked. Separate real CLI
+      tests cover empty filesystem text output and capability startup. Seven
+      synthetic cases run only in a test-only harness that directly calls
+      exported observer and summary functions, not prime or doctor: unknown
+      trust, denied trust, Cursor conditional IDE, shadowing, absent host and
+      missing parent, unowned collision, and all-ready. Focused tests passed 2
+      files/21 tests; full tests passed 155 files/1436 tests. Typecheck and
+      build passed. Lifecycle-adapters, status, build, capability-contract,
+      cross-capability, app-home-contract, vocabulary, and schema checks passed.
+      Live built prime lifecycle was 2142 bytes; doctor JSON was 38780 bytes and
+      exited 1. Lint reported 99 pre-existing warnings/0 errors. A 547-file npm
+      tarball contained dist and bundle lifecycle authority surfaces and no
+      lifecycle injection token; production source, rebuilt dist, and bundle
+      also contained none."
+    next: Re-run the independent Task 6 audit against Cycle 710; keep Task 6 in
+      progress and leave Tasks 7 and 8 untouched.
+    context:
+      intent: Complete the final Task 6 retry by making runtime lifecycle evidence
+        impossible to spoof through NODE_ENV or AGENTERA_TEST variables.
+      constraints: Preserved support-floor, blocker, doctor-exit, shared-snapshot,
+        prime-budget, Task 5 retirement, Cursor identity, user
+        TODO/decisions/plan/.codex changes, vision, plan status, native package
+        managers, remotes, and Tasks 7 and 8.
+      unknowns: None in retry scope; live trust evidence remains host-owned and
+        unknown where the host exposes no authoritative read-only signal.
+      scope: Lifecycle snapshot production source; lifecycle diagnosis tests; npm
+        packaging policy test; typed progress evidence only.
   - number: 709
     timestamp: 2026-07-11 21:10
     type: fix
@@ -314,38 +357,10 @@ cycles:
       scope: Lifecycle publication helper, operation engine and ledger identity
         contract, adversarial lifecycle tests, and runtime lifecycle operation
         contract.
-  - number: 700
-    timestamp: 2026-07-11 11:38
-    type: feat
-    phase: build
-    what: Built the shared runtime-neutral lifecycle operation engine with declared
-      manifests, ownership ledgers, safe filesystem actions, dependency
-      outcomes, and convergent retries.
-    inspiration: Active plan Task 3 and approved Decision 92 ownership and preview policy.
-    discovered: Pending-create ledger records preserve truthful ownership across
-      resource or ledger publication failures without using content equality as
-      ownership.
-    verified: "Focused lifecycle suite: 3 files and 34 tests passed. Full CLI suite:
-      150 files and 1,363 tests passed. Typecheck and build passed. Built
-      lifecycle-adapter, build-capability, and capability-contract validations
-      passed. Compaction and git diff checks passed. Lint completed with 0
-      errors and the standing 108-warning baseline. Built smoke observed preview
-      create, apply applied, retry noop, aggregate success."
-    next: Orchestrator audits Task 3 and owns its plan status; Task 4 can add
-      OpenCode, Codex, Cursor, and Copilot resource declarations and
-      observations.
-    context:
-      intent: Execute active plan Task 3 by establishing one deterministic planner and
-        apply foundation for later runtime adapters.
-      constraints: Runtime mappings, Claude cleanup, prime, doctor, upgrade
-        projection, native installers, package managers, auth, and trust
-        mutation remained out of scope.
-      unknowns: Runtime-specific destination inventories and host evidence remain
-        intentionally deferred to Task 4.
-      scope: Shared lifecycle operation TypeScript modules, runtime lifecycle
-        authority pointer, common operation contract, and exhaustive
-        runtime-neutral tests.
 archive:
+  - summary: "Cycle 700 (2026-07-11): Built the shared runtime-neutral lifecycle
+      operation engine with declared manifests, ownership ledgers, safe
+      filesystem actions,..."
   - summary: "Cycle 699 (2026-07-11): Established Decision 92 runtime lifecycle
       authority for four active identities with explicit Cursor CLI and..."
   - summary: "Cycle 698 (2026-07-11): Eliminated the CLI test suite's shared dist
@@ -445,6 +460,3 @@ archive:
   - summary: "Cycle 661 (2026-06-18): Plan T4 — SQLite cap overrides and truncation
       warnings: --max-sqlite-sessions / --max-sqlite-rows plus
       AGENTERA_EXTRACT_MAX_SQLITE_* env..."
-  - summary: "Cycle 660 (2026-06-18): Plan T3 — corpus envelope coverage arrays:
-      buildMetadata emits available_runtimes, selected_runtimes, and
-      available_but_not_selected; extractCorpusMain wires..."

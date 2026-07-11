@@ -114,6 +114,23 @@ describe("v3 packaging (T1)", () => {
       );
     });
 
+    it("PASS: production source and packed files contain no test environment token", () => {
+      const forbidden = "AGENTERA_TEST_";
+      const sourceRoot = path.join(PKG_ROOT, "src");
+      const productionFiles = fs.readdirSync(sourceRoot, { recursive: true })
+        .map(String)
+        .map((relative) => path.join(sourceRoot, relative))
+        .filter((file) => fs.statSync(file).isFile());
+      const packedFiles = packManifestDirect().files
+        .map((file) => path.join(PKG_ROOT, file.path))
+        .filter((file) => fs.existsSync(file) && fs.statSync(file).isFile());
+      const offenders = [...new Set([...productionFiles, ...packedFiles])]
+        .filter((file) => fs.readFileSync(file).includes(forbidden))
+        .map((file) => path.relative(PKG_ROOT, file));
+
+      expect(offenders).toEqual([]);
+    });
+
     it("FAIL (regression): if `files: [dist, bundle]` is dropped, the manifest loses bundle/", () => {
       const pkg = readPackageJson();
       const without = pkg.files.filter((f) => f !== "bundle");

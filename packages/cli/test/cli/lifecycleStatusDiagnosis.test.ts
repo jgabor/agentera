@@ -92,6 +92,30 @@ function sharedRuntimeSemantics(runtime: Record<string, unknown>): Record<string
   };
 }
 
+function assertProjectionParity(
+  summary: Record<string, unknown>,
+  diagnosis: Record<string, unknown>,
+): void {
+  expect(summary.activeRuntimeIds).toEqual(EXPECTED_RUNTIME_IDS);
+  expect(diagnosis.activeRuntimeIds).toEqual(EXPECTED_RUNTIME_IDS);
+  expect(summary.snapshotVersion).toBe(diagnosis.schemaVersion);
+  expect(summary.statusVocabularyVersion).toBe(diagnosis.statusVocabularyVersion);
+  expect(summary.authority).toBe(diagnosis.authority);
+  expect(summary.releaseBlocked).toBe(diagnosis.releaseBlocked);
+
+  const primeRuntimes = summary.runtimes as Array<Record<string, unknown>>;
+  const doctorRuntimes = diagnosis.runtimes as Array<Record<string, unknown>>;
+  expect(primeRuntimes.map((runtime) => runtime.runtimeId)).toEqual(EXPECTED_RUNTIME_IDS);
+  expect(doctorRuntimes.map((runtime) => runtime.runtimeId)).toEqual(EXPECTED_RUNTIME_IDS);
+  for (const primeRuntime of primeRuntimes) {
+    const doctorRuntime = doctorRuntimes.find((runtime) => runtime.runtimeId === primeRuntime.runtimeId);
+    expect(doctorRuntime).toBeDefined();
+    expect(sharedRuntimeSemantics(primeRuntime)).toEqual(sharedRuntimeSemantics(doctorRuntime!));
+    expect(primeRuntime.blockerCount).toBe((doctorRuntime!.blockers as unknown[]).length);
+    expect(primeRuntime.actionCount).toBe(doctorRuntime!.actionCount);
+  }
+}
+
 type LifecycleFixtureName =
   | "unknown trust"
   | "denied trust"
@@ -101,7 +125,7 @@ type LifecycleFixtureName =
   | "unowned collision"
   | "all ready";
 
-interface LifecycleCliFixture {
+interface LifecycleHarnessFixture {
   name: LifecycleFixtureName;
   doctorStatus: 0 | 1;
   releaseBlocked: boolean;
@@ -161,7 +185,7 @@ function runtimeById(snapshot: Record<string, unknown>, runtimeId: string): Reco
     .find((runtime) => runtime.runtimeId === runtimeId)!;
 }
 
-const cliFixtures: LifecycleCliFixture[] = [
+const lifecycleHarnessFixtures: LifecycleHarnessFixture[] = [
   {
     name: "unknown trust",
     doctorStatus: 1,
@@ -307,70 +331,37 @@ const cliFixtures: LifecycleCliFixture[] = [
   },
 ];
 
-describe("prime and doctor lifecycle integration", () => {
-  it.each(cliFixtures)("runs prime and doctor with identical $name inputs", (fixture) => {
-    const root = tempRoot("lifecycle-cli-");
+describe("test-only lifecycle observer harness parity", () => {
+  it.each(lifecycleHarnessFixtures)("projects identical prime and doctor semantics for $name", (fixture) => {
+    const root = tempRoot("lifecycle-harness-");
     const home = fixture.name === "unknown trust" ? deepPath(root, "home", 9) : path.join(root, "home");
     const project = fixture.name === "unknown trust" ? deepPath(root, "project", 4) : path.join(root, "project");
     const bin = path.join(root, "bin");
     const invocationMarker = path.join(root, "native-process-invoked");
     mkdirs([home, project]);
     writeTrapBinaries(bin, invocationMarker);
-    const inputPath = path.join(root, "runtime-lifecycle-input.json");
-    fs.writeFileSync(inputPath, JSON.stringify(fixture.arrange(home, project)));
-    const env = {
-      ...process.env,
-      NODE_ENV: "test",
-      HOME: home,
-      PATH: bin,
-      AGENTERA_HOME: REPO_ROOT,
-      AGENTERA_BOOTSTRAP_SOURCE_ROOT: REPO_ROOT,
-      AGENTERA_TEST_RUNTIME_LIFECYCLE_INPUT: inputPath,
-    };
+    const arranged = fixture.arrange(home, project);
     const before = treeSnapshot(root);
+    const observed = observeRuntimeLifecycle({
+      home,
+      project,
+      sourceRoot: REPO_ROOT,
+      env: { PATH: bin },
+      ...arranged,
+    });
+    const diagnosis = observed as unknown as Record<string, unknown>;
+    const summary = summarizeRuntimeLifecycle(observed) as unknown as Record<string, unknown>;
 
-    const primeArgs = [
-      "prime", "--format", "json", "--fields", "runtime_lifecycle",
-    ];
-    const doctorArgs = [
-      "doctor", "--home", home, "--project", project,
-      "--format", "json",
-    ];
-    const prime = runCli(primeArgs, project, env);
-    const doctor = runCli([
-      ...doctorArgs,
-    ], project, env);
-
-    expect(prime.status, prime.stderr).toBe(0);
-    expect(doctor.status, doctor.stderr).toBe(fixture.doctorStatus);
-    const primePayload = JSON.parse(prime.stdout) as Record<string, unknown>;
-    const doctorPayload = JSON.parse(doctor.stdout) as Record<string, unknown>;
-    expect(doctorPayload.status).toBe("up_to_date");
-    const summary = primePayload.runtime_lifecycle as Record<string, unknown>;
-    const diagnosis = doctorPayload.runtime_lifecycle as Record<string, unknown>;
-    expect(summary.activeRuntimeIds).toEqual(EXPECTED_RUNTIME_IDS);
-    expect(diagnosis.activeRuntimeIds).toEqual(EXPECTED_RUNTIME_IDS);
-    expect(summary.snapshotVersion).toBe(diagnosis.schemaVersion);
-    expect(summary.statusVocabularyVersion).toBe(diagnosis.statusVocabularyVersion);
-    expect(summary.authority).toBe(diagnosis.authority);
+    assertProjectionParity(summary, diagnosis);
     expect(summary.releaseBlocked).toBe(fixture.releaseBlocked);
     expect(diagnosis.releaseBlocked).toBe(fixture.releaseBlocked);
-
-    const primeRuntimes = summary.runtimes as Array<Record<string, unknown>>;
-    const doctorRuntimes = diagnosis.runtimes as Array<Record<string, unknown>>;
-    expect(primeRuntimes.map((runtime) => runtime.runtimeId)).toEqual(EXPECTED_RUNTIME_IDS);
-    expect(doctorRuntimes.map((runtime) => runtime.runtimeId)).toEqual(EXPECTED_RUNTIME_IDS);
-    for (const primeRuntime of primeRuntimes) {
-      const doctorRuntime = doctorRuntimes.find((runtime) => runtime.runtimeId === primeRuntime.runtimeId);
-      expect(doctorRuntime).toBeDefined();
-      expect(sharedRuntimeSemantics(primeRuntime)).toEqual(sharedRuntimeSemantics(doctorRuntime!));
-      expect(primeRuntime.blockerCount).toBe((doctorRuntime!.blockers as unknown[]).length);
-      expect(primeRuntime.actionCount).toBe(doctorRuntime!.actionCount);
-    }
-
-    expect(Buffer.byteLength(JSON.stringify(summary))).toBeLessThan(4_096);
+    expect(fixture.doctorStatus).toBe(fixture.releaseBlocked ? 1 : 0);
+    const summaryBytes = Buffer.byteLength(JSON.stringify(summary));
+    const diagnosisBytes = Buffer.byteLength(JSON.stringify(diagnosis));
+    expect(summaryBytes).toBeLessThan(4_096);
     expect(JSON.stringify(summary)).not.toMatch(/categories|"evidence":|remediation|nativeActions|command/);
-    expect(Buffer.byteLength(doctor.stdout)).toBeGreaterThan(32_768);
+    expect(diagnosisBytes).toBeGreaterThan(summaryBytes * 8);
+    const doctorRuntimes = diagnosis.runtimes as Array<Record<string, unknown>>;
     expect(doctorRuntimes.every((runtime) =>
       (runtime.surfaces as Array<Record<string, unknown>>).every((surface) =>
         (surface.categories as unknown[]).length === 8))).toBe(true);
@@ -391,29 +382,98 @@ describe("prime and doctor lifecycle integration", () => {
     expect(fs.existsSync(invocationMarker)).toBe(false);
     expect(treeSnapshot(root)).toEqual(before);
   });
+});
+
+describe("prime and doctor lifecycle integration", () => {
+  it("ignores all test environment evidence in the built CLI", () => {
+    const root = tempRoot("lifecycle-production-guard-");
+    const home = path.join(root, "home");
+    const project = path.join(root, "project");
+    const bin = path.join(root, "bin");
+    const invocationMarker = path.join(root, "native-process-invoked");
+    mkdirs([home, project]);
+    writeTrapBinaries(bin, invocationMarker);
+    const fakeInputPath = path.join(root, "runtime-lifecycle-input.json");
+    fs.writeFileSync(fakeInputPath, JSON.stringify({
+      surfaceEvidence: trustedEvidence(true),
+      ledger: installReadyLifecycle(home, project),
+    }));
+    const baselineEnv = {
+      ...process.env,
+      HOME: home,
+      PATH: bin,
+      AGENTERA_HOME: REPO_ROOT,
+      AGENTERA_BOOTSTRAP_SOURCE_ROOT: REPO_ROOT,
+    };
+    delete baselineEnv.NODE_ENV;
+    for (const key of Object.keys(baselineEnv)) {
+      if (key.startsWith("AGENTERA_TEST_")) delete baselineEnv[key];
+    }
+    const spoofedEnv = {
+      ...baselineEnv,
+      NODE_ENV: "test",
+      AGENTERA_TEST_RUNTIME_LIFECYCLE_INPUT: fakeInputPath,
+      AGENTERA_TEST_UNUSED: "must-not-affect-lifecycle-evidence",
+    };
+    const before = treeSnapshot(root);
+    const primeArgs = ["prime", "--format", "json", "--fields", "runtime_lifecycle"];
+    const doctorArgs = ["doctor", "--home", home, "--project", project, "--format", "json"];
+
+    const baselinePrime = runCli(primeArgs, project, baselineEnv);
+    const baselineDoctor = runCli(doctorArgs, project, baselineEnv);
+    const spoofedPrime = runCli(primeArgs, project, spoofedEnv);
+    const spoofedDoctor = runCli(doctorArgs, project, spoofedEnv);
+
+    expect(baselinePrime.status, baselinePrime.stderr).toBe(0);
+    expect(spoofedPrime.status, spoofedPrime.stderr).toBe(0);
+    expect(baselineDoctor.status, baselineDoctor.stderr).toBe(1);
+    expect(spoofedDoctor.status, spoofedDoctor.stderr).toBe(baselineDoctor.status);
+    const baselineSummary = (JSON.parse(baselinePrime.stdout) as Record<string, unknown>)
+      .runtime_lifecycle as Record<string, unknown>;
+    const spoofedSummary = (JSON.parse(spoofedPrime.stdout) as Record<string, unknown>)
+      .runtime_lifecycle as Record<string, unknown>;
+    const baselineDiagnosis = (JSON.parse(baselineDoctor.stdout) as Record<string, unknown>)
+      .runtime_lifecycle as Record<string, unknown>;
+    const spoofedDiagnosis = (JSON.parse(spoofedDoctor.stdout) as Record<string, unknown>)
+      .runtime_lifecycle as Record<string, unknown>;
+    expect(spoofedSummary).toEqual(baselineSummary);
+    expect(spoofedDiagnosis).toEqual(baselineDiagnosis);
+    assertProjectionParity(baselineSummary, baselineDiagnosis);
+    expect(baselineDiagnosis.releaseBlocked).toBe(true);
+    expect(Buffer.byteLength(JSON.stringify(baselineSummary))).toBeLessThan(4_096);
+    expect(Buffer.byteLength(baselineDoctor.stdout)).toBeGreaterThan(32_768);
+    expect(fs.existsSync(invocationMarker)).toBe(false);
+    expect(treeSnapshot(root)).toEqual(before);
+  });
 
   it("renders bounded prime text and detailed doctor text from lifecycle projections", () => {
     const root = tempRoot("lifecycle-text-");
     const home = path.join(root, "home");
     const project = path.join(root, "project");
+    const bin = path.join(root, "bin");
+    const invocationMarker = path.join(root, "native-process-invoked");
     mkdirs([home, project]);
+    writeTrapBinaries(bin, invocationMarker);
     const env = {
       ...process.env,
       HOME: home,
-      PATH: "",
+      PATH: bin,
       AGENTERA_BOOTSTRAP_SOURCE_ROOT: REPO_ROOT,
     };
+    const before = treeSnapshot(root);
     const prime = runCli(["prime"], project, env);
     const doctor = runCli(["doctor", "--home", home, "--project", project], project, env);
     expect(prime.status, prime.stderr).toBe(0);
     expect(prime.stdout).toContain("runtime_lifecycle: snapshot=agentera.runtimeLifecycleSnapshot.v1");
     expect(prime.stdout).toContain("- cursor: status=");
     expect(prime.stdout).not.toContain("native step:");
-    expect([0, 1]).toContain(doctor.status);
+    expect(doctor.status, doctor.stderr).toBe(1);
     expect(doctor.stdout).toContain("Runtime lifecycle diagnosis:");
     expect(doctor.stdout).toContain("skills: ");
     expect(doctor.stdout).toContain("trust: unknown");
     expect(doctor.stdout).toContain("native step: /skills reload");
+    expect(fs.existsSync(invocationMarker)).toBe(false);
+    expect(treeSnapshot(root)).toEqual(before);
   });
 
   it("includes the same bounded summary in capability startup context", () => {
@@ -477,27 +537,6 @@ function readyFixture(): { context: RuntimeAdapterInspectionContext; ledger: Ret
 }
 
 describe("lifecycle snapshot edge projections", () => {
-  it("ignores the child-process evidence seam outside NODE_ENV=test", () => {
-    const fixture = readyFixture();
-    const inputPath = path.join(tempRoot("lifecycle-input-"), "input.json");
-    fs.writeFileSync(inputPath, JSON.stringify({ surfaceEvidence: trustedEvidence(true) }));
-    const snapshot = observeRuntimeLifecycle({
-      ...fixture.context,
-      ledger: fixture.ledger,
-      env: {
-        PATH: "",
-        NODE_ENV: "production",
-        AGENTERA_TEST_RUNTIME_LIFECYCLE_INPUT: inputPath,
-      },
-      surfaceEvidence: trustedEvidence("unknown"),
-      categoryEvidence: { trust: { host: "unknown", cli: "unknown", ide: "unknown" } },
-    });
-
-    expect(snapshot.releaseBlocked).toBe(true);
-    expect(runtimeById(snapshot as unknown as Record<string, unknown>, "codex").blockers)
-      .toContainEqual(expect.objectContaining({ code: "mandatory_evidence_unknown" }));
-  });
-
   it("keeps all-ready and Cursor conditional surface states truthful", () => {
     const fixture = readyFixture();
     const ready = observeRuntimeLifecycle({ ...fixture.context, ledger: fixture.ledger });
