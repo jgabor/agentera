@@ -78,7 +78,7 @@ tasks:
       - GIVEN vocabulary authority modules WHEN run in one pytest session THEN repo scans reuse cached results
       - GIVEN the full pytest suite WHEN run with xdist THEN all vocabulary authority tests still pass
     evidence:
-      - @lru_cache on decision44 _matches, bundle-skill and routing _focused_scan, lifecycle _authority
+      - "@lru_cache on decision44 _matches, bundle-skill and routing _focused_scan, lifecycle _authority"
   - number: 5
     name: Reduce subprocess overhead in hot CLI test paths
     depends_on: [2]

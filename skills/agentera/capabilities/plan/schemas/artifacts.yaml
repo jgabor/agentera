@@ -4,17 +4,18 @@ ARTIFACTS:
     artifact_id: plan
     local_role: produces_and_consumes
     description: >-
-      Active plan with tasks, dependencies, and behavioral acceptance criteria.
-      Plan writes this during the planning session and may read existing
-      plan context before replacing or refining it.
+      Current plan with tasks, dependencies, and behavioral acceptance criteria.
+      Its active position is derived from the docs-mapped current-plan path,
+      not persisted lifecycle status. Plan writes this during the planning
+      session and may read existing plan context before replacing or refining it.
   2:
     id: A2
     artifact_id: plan_archive
     local_role: produces
     description: >-
-      Created when a plan is fully
-      executed or explicitly discarded by the user. Preserved for historical
-      reference.
+      Immutable, non-executable history created when a plan is complete or
+      explicitly force-archived. Forced archival preserves an unfinished
+      plan's open status rather than claiming completion.
   3:
     id: A3
     artifact_id: vision

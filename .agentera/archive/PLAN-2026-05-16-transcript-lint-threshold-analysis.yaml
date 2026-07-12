@@ -79,4 +79,4 @@ surprises:
   - >-
     The strongest evidence was not a dedicated transcript scan artifact; it was repeated archived
     `post-audit-flagged` PLAN.md full-plan budget pressure.
-commit: 9916807 fix(cli): use full-file budgets for linted files
+commit: "9916807 fix(cli): use full-file budgets for linted files"

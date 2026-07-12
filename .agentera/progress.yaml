@@ -1,4 +1,29 @@
 cycles:
+  - number: 733
+    timestamp: 2026-07-12 19:51
+    type: docs
+    phase: build
+    what: Defined the canonical plan lifecycle contract in
+      skills/agentera/schemas/artifacts/plan.yaml and enforced its seven-family
+      inventory in planLifecycleContract.test.ts.
+    inspiration: Active plan Task 1 and repository evidence from every plan contract
+      surface.
+    discovered: Published v3 paths expose no direct-YAML consumer commitment;
+      compatibility is limited to read-only normalization of Agentera-produced
+      legacy artifacts.
+    verified: 1,542 CLI tests, typecheck, build, compact, plan capability
+      validation, capability-contract validation, and git diff --check passed.
+    next: Task 2 may implement the bounded legacy normalization and structured
+      diagnostics; no Task 2 behavior was included here.
+    context:
+      intent: Set lifecycle and compatibility contracts before changing plan readers,
+        writers, migrators, or persisted artifacts.
+      constraints: Contract and inventory only; preserved task statuses, immutable
+        evidence, v3 cutover hold, archive repairs, and decision satisfaction.
+      unknowns: "Resolved: no shipped direct-YAML external consumer requires a broader
+        legacy-read window."
+      scope: Plan artifact schema authority, plan capability artifact wording,
+        contract test, changelog, and typed Task 1 state.
   - number: 732
     timestamp: 2026-07-12 15:37
     type: fix
@@ -252,30 +277,11 @@ cycles:
         packages/cli/test/cli/orientationCorpusCoverage.test.ts;
         packages/cli/test/cli/primeProjectIntegration.test.ts;
         .agentera/plan.yaml; .agentera/progress.yaml
-  - number: 723
-    timestamp: 2026-07-12 13:23
-    type: fix
-    phase: build
-    what: "Final Task 5 read-back after the blocker regression refinement in
-      packages/cli/test/cli/primeProjectIntegration.test.ts: the full suite and
-      built prime still satisfy the repaired lifecycle attention contract."
-    inspiration: Post-build and post-full-suite read-back of the lifecycle attention
-      pipeline.
-    verified: Focused lifecycle/dashboard tests passed; typecheck, lint, build,
-      progress lint, check compact, and git diff --check passed; full CLI suite
-      passed 1498 tests with exactly 8 known 3.0.0-dev.16 versus 3.0.0 metadata
-      failures; built prime emitted exactly two lifecycle rows with preview,
-      procedure, doctor route, and lifecycle counts 12/10/5.
-    next: Task 6 remains pending and out of scope.
-    context:
-      intent: Record final verified evidence for the completed Task 5 audit repair.
-      constraints: No Task 6, vision/objective, Decision 92 satisfaction, commit,
-        push, publish, or tag.
-      scope: packages/cli/src/cli/orientation/attention.ts;
-        packages/cli/test/cli/orientationCorpusCoverage.test.ts;
-        packages/cli/test/cli/primeProjectIntegration.test.ts;
-        .agentera/plan.yaml; .agentera/progress.yaml
 archive:
+  - summary: "Cycle 723 (2026-07-12): Final Task 5 read-back after the blocker
+      regression refinement in
+      packages/cli/test/cli/primeProjectIntegration.test.ts: the full suite
+      and..."
   - summary: "Cycle 722 (2026-07-12): Revalidated the typed Task 5 closeout after
       the full-suite audit repair: cycle 721 retains the..."
   - summary: "Cycle 721 (2026-07-12): Repaired Task 5 audit criterion 1 in
@@ -371,5 +377,3 @@ archive:
       Dict-consolidation refactor (commits 2715bd28..8e9f2447, 6 commits)..."
   - summary: "Cycle 684 (2026-06-27): Plan task 7 (final) of chore:3.0.0: final
       verification + plan archive + TODO closure. Ran..."
-  - summary: "Cycle 683 (2026-06-27): Plan task 6 of chore:3.0.0 (cross-cutting cast
-      audit + re-export deletion). Converted ~28 consumer files..."

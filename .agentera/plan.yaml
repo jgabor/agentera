@@ -1,0 +1,123 @@
+header:
+  level: full
+  created: 2026-07-12
+  status: active
+  reviewed: 2026-07-12
+  critic_issues: 12 found, 12 addressed, 0 dismissed
+  title: Plan Lifecycle Clarity and Validated Publication
+what: Simplify plan validation language, make plan publication contingent on prose lint and schema validation of the final candidate, and separate persisted plan lifecycle from positional activity.
+why: The current workflow relies on agents connecting lint and publication manually, while the persisted `active` status collides conceptually with the derived `active` boolean and allows archived plans to appear executable in later sessions.
+constraints: Preserve task-level status values, immutable plan evidence, docs-mapped paths, dry-run behavior, retry safety, and crash-consistent current-plan replacement. Do not publish releases, alter runtime trust state, or extend automatic lint enforcement to non-plan artifact writers in this plan.
+overall_acceptance: GIVEN a plan draft WHEN the typed create operation succeeds THEN the exact published candidate has passed strict prose lint and schema validation. GIVEN plan lifecycle output WHEN current and archived plans are rendered THEN `active` describes canonical location and `status` uses only `open` or `complete`. GIVEN an archive-only session WHEN prime or state plan selects next work THEN archived tasks are not presented as an executable active plan. GIVEN legacy or malformed plan artifacts WHEN state is queried THEN bounded normalization or structured diagnostics make the condition explicit.
+scope:
+  included:
+    - Plan artifact schema, lifecycle vocabulary, and compatibility contract
+    - Typed plan create and archive publication behavior
+    - Plan lint integration and structured diagnostics
+    - Plan discovery, orientation, state output, and execution eligibility
+    - Migration of repository plans, migrators, fixtures, and historical archives
+    - Plan capability instructions, help, vocabulary, and regression coverage
+  excluded:
+    - Task-level status vocabulary
+    - Automatic lint integration for progress, decisions, or health writers
+    - Release publication, tags, pushes, and runtime trust remediation
+  deferred:
+    - Generalizing validated publication into a shared policy for every artifact writer
+design: Establish lifecycle and compatibility semantics before changing accepted writes. Introduce bounded legacy normalization and deterministic migration, then enforce the canonical vocabulary. Validate the fully transformed candidate before crash-consistent publication, derive positional fields only from artifact location, and simplify capability language after runtime behavior is authoritative.
+unknowns:
+  - question: Do shipped external consumers require a temporary legacy-read window for plan status `active`?
+    affects_task: 2
+    resolve_by: Task 1 inventories package, adapter, migration, and documented compatibility surfaces; retain a bounded read-only normalization window only where concrete consumers require it.
+tasks:
+  - number: 1
+    name: Set lifecycle and compatibility contracts
+    depends_on:
+      []
+    status: complete
+    acceptance:
+      - GIVEN all plan contract surfaces WHEN inventory completes THEN every reader, writer, migrator, schema, adapter, fixture, and documented external commitment is classified.
+      - GIVEN the canonical contract WHEN lifecycle terms are defined THEN `active` is positional and persisted status is limited to `open` or `complete`.
+      - GIVEN forced archival of unfinished work WHEN semantics are specified THEN status remains `open` and the archive is explicitly non-executable rather than falsely complete.
+      - GIVEN legacy consumers WHEN compatibility is decided THEN any read window has a concrete scope, removal condition, and test boundary.
+    evidence: Lifecycle authority and seven-family inventory recorded in skills/agentera/schemas/artifacts/plan.yaml; plan artifact wording aligned; contract tests and 1,542-test CLI suite pass with typecheck, build, compact, capability, and capability-contract gates.
+  - number: 2
+    name: Add legacy normalization and plan diagnostics
+    depends_on:
+      - "1"
+    status: pending
+    acceptance:
+      - GIVEN a legacy persisted `active` status WHEN read within the compatibility boundary THEN it is normalized to `open` and reported as legacy input.
+      - GIVEN malformed current plan data WHEN state is queried THEN the invalid path and diagnostic are reported instead of treating the plan as absent.
+      - GIVEN invalid archives WHEN discovered THEN parse, schema, lifecycle, and legacy conditions are categorized consistently for all plan consumers.
+      - GIVEN an archived open plan WHEN queried THEN it remains historical and supplies no executable selected task.
+  - number: 3
+    name: Provide deterministic lifecycle migration
+    depends_on:
+      - "2"
+    status: pending
+    acceptance:
+      - GIVEN legacy plans in current, archive, fixture, migrator, or docs-mapped locations WHEN migration runs THEN canonical values are produced without changing retained evidence.
+      - GIVEN migration dry-run WHEN invoked THEN proposed changes and collisions are reported without writing files.
+      - GIVEN repeated migration WHEN inputs are already canonical THEN the operation is an idempotent no-op.
+      - GIVEN archive ordering WHEN historical files are migrated THEN recency does not change merely because bytes or modification times changed.
+  - number: 4
+    name: Enforce canonical plan lifecycle writes
+    depends_on:
+      - "3"
+    status: pending
+    acceptance:
+      - GIVEN a newly written plan WHEN schema validation runs THEN `open` and `complete` are accepted and `active`, `completed`, and unknown values are rejected.
+      - GIVEN task status fields WHEN the plan-level enum changes THEN their existing vocabulary and behavior remain unchanged.
+      - GIVEN a legacy current plan during the bounded transition WHEN it is archived or replaced THEN normalization prevents the writer from becoming unusable.
+      - GIVEN canonical serialization WHEN output is inspected THEN no persisted field duplicates the positional meaning of `active`.
+  - number: 5
+    name: Implement validated crash-consistent publication
+    depends_on:
+      - "4"
+    status: pending
+    acceptance:
+      - GIVEN a plan create request WHEN CLI-owned lineage and canonical serialization are complete THEN strict prose lint and schema validation run against those exact final candidate bytes.
+      - GIVEN lint or schema failure WHEN publication is attempted THEN the current plan and immutable archives remain unchanged and structured diagnostics explain correction and retry.
+      - GIVEN dry-run WHEN validation succeeds or fails THEN the identical validation pipeline runs with no filesystem mutation.
+      - GIVEN interruption around archive creation and current-plan replacement WHEN the operation is retried THEN it converges without plan loss or duplicate divergent archives.
+      - GIVEN a transformed candidate crosses a prose budget WHEN validation runs THEN the published-byte lint catches the violation.
+  - number: 6
+    name: Correct archive discovery and session routing
+    depends_on:
+      - "2"
+      - "4"
+    status: pending
+    acceptance:
+      - GIVEN plan catalog output WHEN an artifact is current or archived THEN `active` and `archived` are derived exclusively from canonical location.
+      - GIVEN a normal or forced archive WHEN state is rendered THEN its lifecycle remains truthful and it is never presented as the executable current plan.
+      - GIVEN an archive-only project WHEN prime, status context, or state plan runs THEN no archived task populates an execution queue and planning is suggested instead.
+      - GIVEN contradictory or malformed lifecycle data WHEN queried THEN structured degraded state is shared by status, build, and orchestration consumers.
+  - number: 7
+    name: Simplify validation and publication language
+    depends_on:
+      - "5"
+      - "6"
+    status: pending
+    acceptance:
+      - GIVEN plan capability instructions WHEN read after writer integration THEN a concise validate-and- publish step replaces the standalone pre-write self-audit sequence.
+      - GIVEN help and vocabulary surfaces WHEN searched THEN they describe one authoritative writer operation and contain no contradictory manual command sequence.
+      - GIVEN an agent wants early feedback WHEN working on a draft THEN `check lint` remains available as an optional preview rather than a separate publication obligation.
+      - GIVEN bundled and source capability data WHEN validated THEN both expose the same updated contract.
+  - number: 8
+    name: Synchronize state and verify lifecycle behavior
+    depends_on:
+      - "1"
+      - "2"
+      - "3"
+      - "4"
+      - "5"
+      - "6"
+      - "7"
+    status: pending
+    acceptance:
+      - GIVEN the completed implementation WHEN full CLI tests, typecheck, build, compact, capability, and contract gates run THEN every required check passes.
+      - GIVEN current, archive-only, legacy, forced, and malformed fixtures WHEN exact prime and state plan commands run THEN lifecycle, diagnostics, and routing match the canonical contract.
+      - GIVEN repository plan surfaces WHEN searched THEN obsolete plan-level values remain only in explicit migration fixtures or immutable evidence.
+      - GIVEN task closeout WHEN state is synchronized THEN progress, TODO, and documentation evidence are updated through their owning interfaces in the implementation commit.
+surprises:
+  []

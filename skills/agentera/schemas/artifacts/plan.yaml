@@ -1,6 +1,6 @@
 # Plan Artifact Schema
 #
-# Active work plan maintained by plan. Each plan captures what will be built,
+# Current work plan maintained by plan. Each plan captures what will be built,
 # why, constraints, scope boundaries, design approach, tasks with dependencies
 # and acceptance criteria, overall acceptance, and surprises.
 #
@@ -13,7 +13,7 @@
 # ─────────────────────────────────────────────────────────────────────
 # <!-- Level: light/full -->            HEADER.level           PL1
 # <!-- Created: date -->                HEADER.created         PL2
-# <!-- Status: active/completed -->     HEADER.status          PL3
+# <!-- Status: active/completed -->     HEADER.status          PL3 (normalized)
 # <!-- Reviewed: date -->               HEADER.reviewed        PL4
 # <!-- Critic issues: N found... -->    HEADER.critic_issues   PL5
 # <!-- Revised: description -->         HEADER.revised         PL6
@@ -103,8 +103,9 @@ HEADER:
     type: string
     required: true
     description: >-
-      Plan lifecycle status. Active plans are being executed; complete
-      plans are candidates for archival.
+      Transitional persisted plan lifecycle status accepted before the
+      canonical lifecycle migration. See LIFECYCLE_CONTRACT for the target
+      vocabulary and compatibility boundary.
     validation:
       - "Must be one of: active, complete"
   4:
@@ -400,3 +401,80 @@ VALIDATION:
     checks:
       - "Per-task word count <= 100"
       - "Total file word count <= 2500"
+
+LIFECYCLE_CONTRACT:
+  authority: this schema
+  canonical:
+    persisted_status:
+      field: header.status
+      values:
+        - open
+        - complete
+      meaning:
+        open: Work is unfinished, whether the plan is current or archived.
+        complete: Every task is complete.
+    position:
+      active: The plan occupies the docs-mapped current-plan path.
+      archived: The plan occupies the sibling archive directory.
+      persisted: false
+    execution:
+      eligible: Only a plan at the current-plan path can supply executable work.
+      archived: An archived plan is historical and non-executable regardless of status.
+    forced_archive:
+      unfinished_status: open
+      effect: Move the plan to immutable history without claiming completion.
+  compatibility:
+    legacy_read_window:
+      scope: >-
+        Read-only normalization of plan-level active to open and completed to
+        complete for artifacts produced by pre-canonical Agentera versions at
+        the docs-mapped current-plan path or its sibling archive directory.
+      writers: Canonical writers and migrators must emit only open or complete.
+      removal_condition: >-
+        Remove normalization only after the deterministic migration covers
+        current plans, archives, fixtures, and bundled upgrade inputs, and
+        regression tests prove no supported producer can emit a legacy value.
+      test_boundary:
+        - current plan with active normalizes to open and reports legacy input
+        - archived plan with active normalizes to open and remains non-executable
+        - completed normalizes to complete only at the plan-level compatibility seam
+        - canonical writers reject active and completed after migration support lands
+    external_consumers:
+      evidence: >-
+        No shipped SDK, adapter, or package reads header.status directly;
+        supported consumers use the CLI plan discovery and state contracts.
+      commitment: No compatibility window is provided for direct YAML consumers.
+  inventory:
+    readers:
+      - packages/cli/src/cli/planArtifacts.ts
+      - packages/cli/src/cli/orientation.ts
+      - packages/cli/src/cli/commands/state/plan.ts
+      - packages/cli/src/cli/appContext.ts
+      - packages/cli/src/hooks/sessionStart.ts
+      - packages/cli/src/cli/capabilityContext/planState.ts
+    writers:
+      - packages/cli/src/state/write/transaction.ts
+      - packages/cli/src/state/write/operations.ts
+      - packages/cli/src/state/write/explain.ts
+    migrators:
+      - packages/cli/src/upgrade/migrateArtifactsV1ToV2.ts
+    schemas:
+      - skills/agentera/schemas/artifacts/plan.yaml
+      - skills/agentera/capabilities/plan/schemas/artifacts.yaml
+      - skills/agentera/capabilities/plan/schemas/validation.yaml
+    adapters:
+      - references/artifacts/artifact-registry-interface-model.yaml
+      - references/cli/agent-ready-state-contract.yaml
+      - references/cli/audience-namespace-cli-migration.yaml
+      - references/cli/capability-tool-classification.yaml
+    fixtures:
+      - packages/cli/test/fixtures/**/.agentera/plan.yaml
+      - packages/cli/test/upgrade/fixtures/**/.agentera/plan.yaml
+      - packages/cli/test/cli/fixtures/oracle/source-contract.json
+      - .agentera/archive/PLAN-*.yaml
+    documented_external_commitments:
+      - packages/cli/src/capabilities/plan/instructions.ts
+      - packages/cli/src/capabilities/build/instructions.ts
+      - packages/cli/src/capabilities/orchestrate/instructions.ts
+      - references/cli/agent-ready-state-contract.yaml
+      - references/cli/capability-tool-classification.yaml
