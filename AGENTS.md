@@ -131,6 +131,66 @@ Invocation convention: during the v3 rewrite, `npx -y agentera@next <cmd>` invok
 | Mobile check / dev | `vp run mobile:check` · `vp run mobile:dev` |
 | Workspace package script | `vp run @agentera/<pkg>#<script>` |
 
+## Versioning and publishing
+
+**v3 cutover hold:** Until `3.0.0` has landed on npm `@latest`, do not bump
+the suite or release metadata beyond `3.0.0`. The only permitted version bump
+is `packages/cli/package.json#version` from `3.0.0-dev.N` to the next
+`3.0.0-dev.N+1` development build. Keep every suite-bearing version surface at
+`3.0.0`, retain unreleased changelog entries under `[Unreleased]`, and publish
+these builds only to npm `@next`.
+
+Use `.agentera/docs.yaml` as the version authority: `feat` releases bump
+minor, `fix` releases bump patch, and `docs`/`chore`/`test` changes do not
+bump a version. For a release, update every path in
+`conventions.version_files` together with the matching `CHANGELOG.md` entry:
+
+- `packages/cli/package.json`
+- `plugin.json`, `.github/plugin/plugin.json`, `.codex-plugin/plugin.json`,
+  `.cursor-plugin/plugin.json`
+- `.opencode/plugins/agentera.js`, `skills/agentera/SKILL.md`, and `registry.json`
+
+The development npm package and suite metadata have distinct versions:
+`packages/cli/package.json#version` uses the publishable `X.Y.Z-dev.N`
+version, while `agentera.suiteVersion`, plugin metadata, the skill frontmatter,
+and `registry.json` use the release `X.Y.Z` version. Set
+`packages/cli/package.json#agentera.gitRef` to the immutable commit selected
+for that release. Keep the version-file list synchronized with
+`references/adapters/package-registry.yaml` rather than adding ad hoc version
+surfaces.
+
+Before publishing, run the release gates from the repository root:
+
+```bash
+pnpm -C packages/cli test
+pnpm -C packages/cli run typecheck
+pnpm -C packages/cli build
+node packages/cli/dist/bin/agentera.js check validate \
+  capability-contract --format json
+pnpm -C packages/cli exec npm publish --tag next --dry-run
+```
+
+Publish only after the release commit is clean and all gates pass. The v3
+development channel publishes `agentera` to npm `@next`; it loads `NPM_TOKEN`
+from `.env` when present:
+
+```bash
+pnpm cli:publish:dev
+```
+
+The stable channel remains the transitional shim on npm `@latest`. Its publish
+script requires a clean tree, runs its regression tests, increments the shim
+patch version, pins its `gitRef`, and publishes. It intentionally leaves the
+successful bump in `packages/cli/shim/package.json`; commit that bump after a
+successful publication:
+
+```bash
+pnpm cli:publish:stable
+```
+
+Never publish, tag, or push during normal capability execution without the
+user's explicit instruction.
+
 ### Pre-commit hooks
 
 Install hooks once after clone: `lefthook install`. Hook configuration is [`.lefthook.yml`](./.lefthook.yml) (authoritative source — verify there before relying on summaries below).
