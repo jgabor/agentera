@@ -116,7 +116,9 @@ const SUPPORTED_EVENT_NAMES = new Set([
   "stop",
 ]);
 
-const CONSUMER_GROUPS: Record<string, readonly string[]> = {
+export const RUNTIME_ADAPTER_CONSUMERS = ["lifecycle", "doctor", "upgrade", "docs", "tests"] as const;
+
+const CONSUMER_GROUPS: Record<(typeof RUNTIME_ADAPTER_CONSUMERS)[number], readonly string[]> = {
   lifecycle: ["identity", "lifecycle_events", "artifact_validation", "subagent_dispatch", "documentation_claims"],
   doctor: ["identity", "host_detection", "config_targets", "diagnostics", "documentation_claims"],
   upgrade: ["identity", "host_detection", "subagent_dispatch", "config_targets", "diagnostics"],
@@ -192,7 +194,9 @@ export class RuntimeAdapterRegistry {
   }
 
   consumerView(consumer: string, runtimeId: string): JsonObject {
-    const groups = CONSUMER_GROUPS[consumer];
+    const groups = (RUNTIME_ADAPTER_CONSUMERS as readonly string[]).includes(consumer)
+      ? CONSUMER_GROUPS[consumer as (typeof RUNTIME_ADAPTER_CONSUMERS)[number]]
+      : undefined;
     if (groups === undefined) {
       throw new RegistryError(`unknown registry consumer: ${consumer}`);
     }

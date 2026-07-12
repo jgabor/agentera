@@ -96,7 +96,7 @@ tasks:
       - "4"
       - "5"
       - "6"
-    status: pending
+    status: complete
     acceptance:
       - GIVEN one lifecycle scenario WHEN doctor, upgrade, project integration, prime, and status consume it THEN identities, applicability, classifications, counts, and commands agree.
       - GIVEN source checkout, npm development, npm stable, and explicit channel contexts WHEN commands are generated THEN invocation authority and shell-safe arguments are correct while stable v2 semantics remain unchanged.

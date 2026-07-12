@@ -42,6 +42,16 @@ function writeUserConfig(channel: string): void {
   fs.writeFileSync(path.join(dir, "config.toml"), `[update]\nchannel = "${channel}"\n`);
 }
 
+function npxBundle(version: string): string {
+  const root = path.join(home, `npx-${version}`);
+  fs.mkdirSync(path.join(root, "skills", "agentera"), { recursive: true });
+  fs.writeFileSync(path.join(root, "skills", "agentera", "SKILL.md"), "# Agentera\n");
+  fs.writeFileSync(path.join(root, "registry.json"), JSON.stringify({ skills: [{ version }] }));
+  fs.writeFileSync(path.join(root, ".agentera-npx-bundle.json"), JSON.stringify({ kind: "agentera-npx-bundle", suiteVersion: version }));
+  fs.cpSync(path.join(REPO_ROOT, "references"), path.join(root, "references"), { recursive: true });
+  return root;
+}
+
 describe("loadUpdateChannelsAuthority", () => {
   it("loads stable and development npm resolution from the repo authority", () => {
     const authority = loadUpdateChannelsAuthority(REPO_ROOT);
@@ -214,5 +224,27 @@ describe("resolveInvokedUpdateChannel", () => {
     expect(resolved.channel).toBe("stable");
     expect(resolved.distTag).toBe("latest");
     expect(resolved.updateCommand).toBe("npx -y agentera@latest");
+  });
+
+  it("derives npm bundle authority from the bundled suite major", () => {
+    const stable = resolveInvokedUpdateChannel({ env: env(), sourceRoot: npxBundle("2.7.7") });
+    const development = resolveInvokedUpdateChannel({ env: env(), sourceRoot: npxBundle("3.0.0-dev.16") });
+
+    expect(stable).toMatchObject({ channel: "stable", distTag: "latest", updateCommand: "npx -y agentera@latest" });
+    expect(development).toMatchObject({ channel: "development", distTag: "next", updateCommand: "npx -y agentera@next" });
+  });
+
+  it("honors an explicit channel even when the npm bundle major suggests another line", () => {
+    const resolved = resolveInvokedUpdateChannel({
+      channel: "stable",
+      env: env(),
+      sourceRoot: npxBundle("3.0.0-dev.16"),
+    });
+
+    expect(resolved).toMatchObject({
+      channel: "stable",
+      source: "cli_flag",
+      updateCommand: "npx -y agentera@latest",
+    });
   });
 });

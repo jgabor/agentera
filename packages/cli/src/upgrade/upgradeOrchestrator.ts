@@ -20,7 +20,7 @@ import {
   shouldIncludeCrossMajorPlanItems,
   type UpgradeOutcome,
 } from "./versionResolution.js";
-import { resolveUpdateChannel, type ResolvedUpdateChannel } from "./channels.js";
+import { resolveInvokedUpdateChannel, type ResolvedUpdateChannel } from "./channels.js";
 import { buildUpgradeCommands, type UpgradeOnlyPhase } from "./upgradeCommands.js";
 import { pendingRuntimeMigrationItems } from "./projectIntegration.js";
 import {
@@ -299,7 +299,7 @@ export function buildUpgradePlan(args: UpgradeOrchestratorArgs): UpgradePlanV2 {
   const env: Record<string, string | undefined> = { ...process.env, HOME: home };
   const project = resolvePath(expanduser(args.project ?? process.cwd()));
   const [installRoot] = resolveDoctorInstallRoot(args.installRoot ?? null, { home, sourceRoot });
-  const channel = resolveUpdateChannel({
+  const channel = resolveInvokedUpdateChannel({
     channel: args.channel ?? null,
     env,
     home,

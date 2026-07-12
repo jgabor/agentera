@@ -3,7 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { expanduser } from "../core/paths.js";
-import { isNpxBundleRoot, resolveSourceRoot } from "../core/sourceRoot.js";
+import { resolveSourceRoot } from "../core/sourceRoot.js";
 import { loadTomlFile, parseToml } from "../core/toml.js";
 import { loadYamlMappingFile } from "../core/yaml.js";
 import { cliDistributionMajor } from "./compatibility.js";
@@ -273,16 +273,14 @@ export function resolveUpdateChannel(args: ResolveUpdateChannelArgs = {}): Resol
 export function resolveInvokedUpdateChannel(args: ResolveUpdateChannelArgs = {}): ResolvedUpdateChannel {
   const env = args.env ?? process.env;
   const sourceRoot = args.sourceRoot ?? resolveSourceRoot(env);
-  if (isNpxBundleRoot(sourceRoot)) {
-    return resolveUpdateChannel({ ...args, channel: "development", sourceRoot });
+  const selected = resolveSelectedChannel({ ...args, sourceRoot });
+  if (selected.source !== "default") {
+    return resolveUpdateChannel({ ...args, sourceRoot });
   }
   if (cliDistributionMajor(sourceRoot) >= 3) {
-    const selected = resolveSelectedChannel({ ...args, sourceRoot });
-    if (selected.source === "default") {
-      return resolveUpdateChannel({ ...args, channel: "development", sourceRoot });
-    }
+    return resolveUpdateChannel({ ...args, channel: "development", sourceRoot });
   }
-  return resolveUpdateChannel(args);
+  return resolveUpdateChannel({ ...args, channel: "stable", sourceRoot });
 }
 
 /** Parse `update.channel` from TOML text (tests). */

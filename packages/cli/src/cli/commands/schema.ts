@@ -348,6 +348,7 @@ export function buildSchemaPayload(command = "schema"): JsonObject {
         schema_version: LIFECYCLE_UPGRADE_SCHEMA,
         command: "agentera upgrade --runtime <all|runtime> --dry-run|--yes",
         selectors: ["all", ...ACTIVE_RUNTIME_SELECTORS],
+        projection: "lifecycle.projection is the canonical runtime lifecycle snapshot shared with doctor, prime, status, and project integration",
         default_without_runtime_selector: "app_upgrade_only",
         preview: "strictly_read_only",
         apply_requires: "--yes",

@@ -11,6 +11,7 @@ import {
   validateHardGateDocs,
   validateOpencode,
   validatePackagedPythonScripts,
+  validateRuntimeConsumerWiring,
   validateRuntimeIdParity,
 } from "../../src/validate/lifecycleAdapters.js";
 import { loadRegistry } from "../../src/registries/runtimeAdapterRegistry.js";
@@ -93,4 +94,27 @@ describe("lifecycle adapter validators (negative)", () => {
     expect(validateRuntimeIdParity(active, [...active, runtimeId], active)).not.toEqual([]);
     expect(validateRuntimeIdParity(active, active, [...active, runtimeId])).not.toEqual([]);
   });
+
+  it.each(["opencode", "codex", "cursor", "copilot"])(
+    "rejects missing consumer wiring for active runtime %s",
+    (runtimeId) => {
+      const registry = loadRegistry(path.join(REPO_ROOT, "references/adapters/runtime-adapter-registry.yaml"));
+      registry.records = registry.records.filter(
+        (record) => (record.identity as Record<string, unknown>).runtime_id !== runtimeId,
+      );
+
+      const errors = validateRuntimeConsumerWiring(
+        ["opencode", "codex", "cursor", "copilot"],
+        registry,
+      );
+
+      expect(errors).toEqual(
+        expect.arrayContaining(
+          ["lifecycle", "doctor", "upgrade", "docs", "tests"].map(
+            (consumer) => `${runtimeId}: missing ${consumer} consumer wiring`,
+          ),
+        ),
+      );
+    },
+  );
 });

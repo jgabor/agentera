@@ -1,4 +1,30 @@
 cycles:
+  - number: 728
+    timestamp: 2026-07-12 14:34
+    type: test
+    phase: build
+    what: "Verified Task 7 consumer and distribution parity: doctor, upgrade,
+      project integration, prime, and status now share the canonical lifecycle
+      projection; active-runtime consumer wiring is contract-validated; source,
+      npm, and explicit-channel commands derive from update authority with
+      shell-safe arguments."
+    verified: "pnpm -C packages/cli test: 1526 passed, exactly 8 accepted
+      dev.16/core metadata failures and no extras; typecheck and build pass;
+      lint has 0 errors and 98 existing warnings; direct Astro check/build pass;
+      check compact pass; capability-contract validation pass; Python parity
+      pass; npm pack dry-run inspection pass; git diff --check pass."
+    next: Task 8 owns dev.17/core metadata, release-surface documentation, and
+      release closeout.
+    context:
+      intent: Complete Task 7 with one shared lifecycle scenario, distribution-context
+        parity, negative contract coverage for every active runtime, and the
+        required repository gates.
+      constraints: Task 8 version bump/docs/release closeout, publication, push, tag,
+        vision/objective changes, and Decision 92 satisfaction remain out of
+        scope.
+      unknowns: none
+      scope: packages/cli lifecycle consumers, runtime adapter validation,
+        update-channel authority, parity tests, and typed Task 7 state
   - number: 727
     timestamp: 2026-07-12 14:06
     type: test
@@ -256,36 +282,11 @@ cycles:
         packages/cli/src/upgrade/projectIntegrationDecision.ts; prime lifecycle
         snapshot wiring; focused project integration tests; .agentera
         plan/progress
-  - number: 718
-    timestamp: 2026-07-12 11:19
-    type: feat
-    phase: build
-    what: Hardened packages/cli/src/runtime/lifecycleOperations.ts and
-      lifecycleUpgrade.ts for Task 3 ownership-safe repair and retired cleanup
-      across OpenCode, Codex, Cursor, and Copilot.
-    inspiration: "Active plan Task 3: Enforce ownership-safe repair and cleanup."
-    discovered: The full CLI suite retains exactly 8 tracked Task 8 release-metadata
-      baseline failures from the 3.0.0-dev.16 versus 3.0.0 version split; no
-      additional failure appeared.
-    verified: "Focused ownership/recovery/cleanup/selector suite: 114/114 passed;
-      typecheck, build, lint with 0 errors, built CLI smoke, build capability
-      validation, capability-contract validation, operation contract validation,
-      compaction, and git diff --check passed. Full CLI suite: 1488 passed and
-      exactly 8 known baseline failures."
-    next: Continue with plan Task 4 project integration; do not broaden this cycle
-      into project-integration recommendation or status attention/ranking.
-    context:
-      intent: Enforce Decision 92 ownership, provenance, selector, dependency, and
-        retired-cleanup safety boundaries without adopting user-owned resources.
-      constraints: No name/equality adoption, native or trust execution, preview
-        writes, vision/objective edits, default Claude cleanup, push, tag, or
-        publish.
-      unknowns: Decision 92 satisfaction remains review-needed; no user confirmation
-        was inferred.
-      scope: Ownership ledger validation and guidance, lifecycle selector boundaries,
-        dependency remediation, retired summary separation, runtime contract,
-        upgrade documentation, focused tests.
 archive:
+  - summary: "Cycle 718 (2026-07-12): Hardened
+      packages/cli/src/runtime/lifecycleOperations.ts and lifecycleUpgrade.ts
+      for Task 3 ownership-safe repair and retired cleanup across OpenCode,
+      Codex,..."
   - summary: "Cycle 717 (2026-07-12): Defined default preview and explicit apply
       semantics for runtime lifecycle upgrade work."
   - summary: "Cycle 716 (2026-07-12): Established the canonical runtime lifecycle
@@ -381,6 +382,3 @@ archive:
       errors; resolved in-scope by keeping IO-boundary casts with `// cast:`
       comments and narrowing access via type guards. Typecheck 0 errors; suite
       1145/1145 green."
-  - summary: "Cycle 678 (2026-06-27): v2/v3 coexistence B3 — bundle-status & channel
-      resolution. Centralized channel resolution through
-      resolveInvokedUpdateChannel so doctor..."

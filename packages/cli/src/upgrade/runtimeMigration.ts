@@ -15,7 +15,7 @@ import {
   opencodeConfigDir,
 } from "../setup/opencode.js";
 import { OPENCODE_SKILL_NAMES } from "../setup/opencodeConstants.js";
-import { resolveUpdateChannel } from "./channels.js";
+import { resolveInvokedUpdateChannel } from "./channels.js";
 import { writeFileAtomic } from "./atomicWriter.js";
 import {
   applyInstalledHooksRetirementItems,
@@ -69,7 +69,7 @@ export function resolveNpxHookCommands(
   const env = ctx.env ?? process.env;
   const home = ctx.home ?? env.HOME ?? os.homedir();
   const sourceRoot = ctx.sourceRoot ?? resolveSourceRoot(env);
-  const channel = resolveUpdateChannel({
+  const channel = resolveInvokedUpdateChannel({
     channel: ctx.channel ?? null,
     env,
     home,

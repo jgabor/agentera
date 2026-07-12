@@ -4,6 +4,7 @@ import path from "node:path";
 import { resolvePath } from "../core/paths.js";
 import {
   RegistryError,
+  RUNTIME_ADAPTER_CONSUMERS,
   RuntimeAdapterRegistry,
   loadRegistry as loadRuntimeRegistry,
 } from "../registries/runtimeAdapterRegistry.js";
@@ -87,6 +88,28 @@ export function validateRuntimeIdParity(
   return errors;
 }
 
+/** Every active runtime must remain addressable through every declared consumer view. */
+export function validateRuntimeConsumerWiring(
+  activeIds: string[],
+  registry: RuntimeAdapterRegistry,
+): string[] {
+  const errors: string[] = [];
+  for (const runtimeId of activeIds) {
+    for (const consumer of RUNTIME_ADAPTER_CONSUMERS) {
+      try {
+        const view = registry.consumerView(consumer, runtimeId);
+        const identity = view.identity as Record<string, unknown> | undefined;
+        if (identity?.runtime_id !== runtimeId) {
+          errors.push(`${runtimeId}: ${consumer} consumer wiring resolved the wrong runtime identity`);
+        }
+      } catch {
+        errors.push(`${runtimeId}: missing ${consumer} consumer wiring`);
+      }
+    }
+  }
+  return errors;
+}
+
 function bundleCovers(relativePath: string, directories: string[], files: Set<string>): boolean {
   if (files.has(relativePath)) return true;
   return directories.some((directory) => {
@@ -111,6 +134,7 @@ function validateReleaseRuntimeParity(root: string, registry: RuntimeAdapterRegi
   const packageRegistry = packageManifest(root);
   const packageRuntimeIds = Object.keys(packageRegistry.runtimeManifestPaths());
   errors.push(...validateRuntimeIdParity(activeIds, registry.adapterIds, packageRuntimeIds));
+  errors.push(...validateRuntimeConsumerWiring(activeIds, registry));
   const suiteVersion = packageRegistry.suiteVersion();
   for (const [surface, version] of Object.entries(packageRegistry.versionSurfaceValues())) {
     if (version !== suiteVersion) {

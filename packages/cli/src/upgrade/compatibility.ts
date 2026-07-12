@@ -171,6 +171,11 @@ export function cliDistributionMajor(sourceRoot: string): number {
     return 3;
   }
   if (isNpxBundleRoot(sourceRoot)) {
+    const version = loadSuiteVersion(sourceRoot);
+    const major = version ? Number.parseInt(version.split(".")[0] ?? "", 10) : Number.NaN;
+    if (Number.isFinite(major) && major > 0) {
+      return major;
+    }
     return 3;
   }
   const version = loadSuiteVersion(sourceRoot);

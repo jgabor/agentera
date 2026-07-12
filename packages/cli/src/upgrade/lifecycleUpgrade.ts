@@ -39,6 +39,10 @@ import {
   type RuntimeAdapterInspectionContext,
   type RuntimeAdapterReport,
 } from "../runtime/lifecycleAdapters.js";
+import {
+  projectRuntimeLifecycle,
+  type RuntimeLifecycleSnapshot,
+} from "../runtime/lifecycleSnapshot.js";
 
 export const LIFECYCLE_UPGRADE_SCHEMA = "agentera.lifecycleUpgrade.v1" as const;
 export const ACTIVE_RUNTIME_SELECTORS = ["opencode", "codex", "cursor", "copilot"] as const;
@@ -116,6 +120,8 @@ export interface LifecycleUpgradeResult {
   ownershipJournal: LifecycleOwnershipJournalRead;
   operations: LifecycleUpgradeOperation[];
   userActions: LifecycleUpgradeUserAction[];
+  /** Canonical lifecycle projection used by doctor, prime, status, and integration. */
+  projection: RuntimeLifecycleSnapshot;
   retiredCleanup: RetiredRuntimeCleanupPreview | RetiredRuntimeCleanupResult | null;
   retiredSummary: LifecycleRetiredSummary | null;
   summary: LifecycleUpgradeSummary;
@@ -142,12 +148,28 @@ interface BuiltLifecycleUpgrade {
   journal: LifecycleOwnershipJournalRead;
   operations: LifecycleUpgradeOperation[];
   userActions: LifecycleUpgradeUserAction[];
+  projection: RuntimeLifecycleSnapshot;
   retiredPreview: RetiredRuntimeCleanupPreview | null;
 }
 
 function selectedRuntimeIds(selector: LifecycleRuntimeSelector | null): ActiveRuntimeSelector[] {
   if (selector === null) return [];
   return selector === "all" ? [...ACTIVE_RUNTIME_SELECTORS] : [selector];
+}
+
+function lifecycleProjection(
+  args: LifecycleUpgradeArgs,
+  ledger: LifecycleOwnershipJournalRead["ledger"],
+): RuntimeLifecycleSnapshot {
+  const matrix = inspectRuntimeLifecycleAdapters({
+    home: args.home,
+    project: args.project,
+    sourceRoot: args.sourceRoot,
+    env: args.env,
+    canonicalSkillTarget: args.canonicalSkillTarget,
+    ledger,
+  } satisfies RuntimeAdapterInspectionContext);
+  return projectRuntimeLifecycle(matrix, selectedRuntimeIds(args.selector));
 }
 
 function resourceForOperation(
@@ -409,6 +431,7 @@ function buildLifecycleUpgrade(args: LifecycleUpgradeArgs): BuiltLifecycleUpgrad
     journal,
     operations,
     userActions: userActions(reports),
+    projection: projectRuntimeLifecycle(matrix, selectedRuntimeIds(args.selector)),
     retiredPreview,
   };
 }
@@ -522,6 +545,7 @@ export function runLifecycleUpgrade(
   let retiredCleanup: RetiredRuntimeCleanupPreview | RetiredRuntimeCleanupResult | null = built.retiredPreview;
   let retiredSummary = retiredPreviewSummary(built.retiredPreview);
   let outputJournal = built.journal;
+  let projection = built.projection;
   let summary = previewSummary(operations, built.userActions);
   let requiredUnmet = [
     ...operations.filter((operation) =>
@@ -568,6 +592,7 @@ export function runLifecycleUpgrade(
       ...built.userActions.filter((action) => action.required).map((action) => action.id),
       ...(retiredCleanup && "requiredUnmet" in retiredCleanup ? retiredCleanup.requiredUnmet : []),
     ];
+    projection = lifecycleProjection(args, outputJournal.ledger);
   } else if (built.retiredPreview) {
     requiredUnmet.push(...built.retiredPreview.plan.operations
       .filter((operation) => operation.required && operation.action !== "noop")
@@ -588,6 +613,7 @@ export function runLifecycleUpgrade(
     ownershipJournal: outputJournal,
     operations,
     userActions: built.userActions,
+    projection,
     retiredCleanup,
     retiredSummary,
     summary,

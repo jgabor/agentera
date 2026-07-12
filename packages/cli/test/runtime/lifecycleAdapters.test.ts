@@ -185,6 +185,18 @@ describe("runtime lifecycle adapter contract", () => {
       `${RUNTIME_LIFECYCLE_ADAPTER_CONTRACT_RELATIVE_PATH}:adapters[3].categories.native_actions.cli: verified native-action claims require at least one exact action for the same surface`,
     );
   });
+
+  it.each(["opencode", "codex", "cursor", "copilot"])(
+    "rejects stale contract coverage when active runtime %s is absent",
+    (runtimeId) => {
+      const raw = YAML.parse(fs.readFileSync(CONTRACT_PATH, "utf8"));
+      raw.adapters = raw.adapters.filter((adapter: { runtime_id: string }) => adapter.runtime_id !== runtimeId);
+
+      expect(validateRuntimeLifecycleAdapterContractData(raw, AUTHORITY)).toContain(
+        `${RUNTIME_LIFECYCLE_ADAPTER_CONTRACT_RELATIVE_PATH}:adapters: runtime IDs must follow authority exactly: opencode, codex, cursor, copilot`,
+      );
+    },
+  );
 });
 
 describe("supported runtime adapter matrix", () => {

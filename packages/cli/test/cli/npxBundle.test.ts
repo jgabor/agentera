@@ -90,13 +90,13 @@ describe("self-contained npx bundle resolution", () => {
 
 describe("self-contained doctor/upgrade semantics", () => {
   let bundle: string;
-  function seed(root: string): void {
+  function seed(root: string, version = "9.9.9"): void {
     fs.mkdirSync(path.join(root, "skills", "agentera"), { recursive: true });
     fs.writeFileSync(path.join(root, "skills", "agentera", "SKILL.md"), "# Agentera\n");
-    fs.writeFileSync(path.join(root, "registry.json"), JSON.stringify({ skills: [{ version: "9.9.9" }] }));
+    fs.writeFileSync(path.join(root, "registry.json"), JSON.stringify({ skills: [{ version }] }));
     fs.writeFileSync(
       path.join(root, ".agentera-npx-bundle.json"),
-      JSON.stringify({ kind: "agentera-npx-bundle", suiteVersion: "9.9.9" }),
+      JSON.stringify({ kind: "agentera-npx-bundle", suiteVersion: version }),
     );
     fs.cpSync(path.join(REPO_ROOT, "references"), path.join(root, "references"), { recursive: true });
   }
@@ -134,14 +134,14 @@ describe("self-contained doctor/upgrade semantics", () => {
   });
 
   it("cmdUpgrade reports no_changes_needed for a sentinel bundle via agentera.upgrade.v2", () => {
-    seed(bundle);
+    seed(bundle, "2.7.7");
     const prev = process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT;
     process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT = bundle;
     try {
       let out = "";
       const rc = cmdUpgrade(
         {
-          expectedVersion: "9.9.9",
+          expectedVersion: "2.7.7",
           format: "json",
           installRoot: bundle,
           project: bundle,

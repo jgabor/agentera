@@ -57,11 +57,7 @@ function buildInvokingCliRetryCommand(
   if (runtime !== "js") {
     return null;
   }
-  if (isNpxBundleRoot(sourceRoot)) {
-    return commandText(["npx", "-y", "agentera", expectedCommand]);
-  }
-  const packageSpec = channel.channel === "development" ? "agentera@next" : "agentera@latest";
-  return commandText(["npx", "-y", packageSpec, expectedCommand]);
+  return commandText([...channel.updateCommand.trim().split(/\s+/).slice(0, 3), expectedCommand]);
 }
 
 /**
@@ -213,6 +209,13 @@ export function buildDoctorStatus(installRoot: string, opts: BuildDoctorStatusOp
   const home = opts.home;
   const project = opts.project;
   const expectedCommands = opts.expectedCommands ?? EXPECTED_STATE_COMMANDS;
+  const env = { ...(opts.env ?? process.env), HOME: home };
+  const channel = resolveInvokedUpdateChannel({
+    channel: opts.channel ?? null,
+    env,
+    home,
+    sourceRoot,
+  });
 
   // Fully self-contained npx bundle: the bundle IS the app and is always current
   // (its version is the package version), so there is no install/upgrade step.
@@ -241,7 +244,11 @@ export function buildDoctorStatus(installRoot: string, opts: BuildDoctorStatusOp
       signals: [],
       dryRunCommand: null,
       applyCommand: null,
-      retryCommand: commandText(["npx", "-y", "agentera", expectedCommands[0] ?? "prime"]),
+      retryCommand: commandText([
+        ...channel.updateCommand.trim().split(/\s+/).slice(0, 3),
+        expectedCommands[0] ?? "prime",
+      ]),
+      updateChannel: channel.channel,
     };
   }
 
@@ -274,6 +281,7 @@ export function buildDoctorStatus(installRoot: string, opts: BuildDoctorStatusOp
       dryRunCommand: null,
       applyCommand: null,
       retryCommand: null,
+      updateChannel: channel.channel,
     };
   }
 
@@ -310,13 +318,6 @@ export function buildDoctorStatus(installRoot: string, opts: BuildDoctorStatusOp
   const signals = classified.signals;
   const blocked = classified.blocked;
 
-  const env = { ...(opts.env ?? process.env), HOME: home };
-  const channel = resolveInvokedUpdateChannel({
-    channel: opts.channel ?? null,
-    env,
-    home,
-    sourceRoot,
-  });
   const install = classifyInstall({ appHome: installRoot, sourceRoot });
   const crossMajorDetected = crossMajorBoundaryApplies(install, sourceRoot);
   const successorAnnounced = isStableSuccessorAnnounced(sourceRoot, "stable");

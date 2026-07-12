@@ -112,4 +112,27 @@ describe("buildUpgradeCommands", () => {
     expect(cmds.applyCommand).toContain("--runtime all");
     expect(cmds.applyCommand).toContain("--yes");
   });
+
+  it("shell-quotes project and install paths while preserving authority invocation", () => {
+    const channel = resolveUpdateChannel({
+      channel: "development",
+      sourceRoot: REPO_ROOT,
+      home: "/tmp/home",
+    });
+    const cmds = buildUpgradeCommands({
+      project: "/tmp/project with spaces",
+      installRoot: "/tmp/app home",
+      channel,
+      runtime: "cursor",
+    });
+
+    expect(cmds.dryRunCommand).toBe(
+      "npx -y agentera@next upgrade --project '/tmp/project with spaces' --install-root '" +
+        "/tmp/app home' --dry-run --channel development --runtime cursor",
+    );
+    expect(cmds.applyCommand).toBe(
+      "npx -y agentera@next upgrade --project '/tmp/project with spaces' --install-root '" +
+        "/tmp/app home' --yes --channel development --runtime cursor",
+    );
+  });
 });
