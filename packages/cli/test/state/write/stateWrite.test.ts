@@ -86,7 +86,7 @@ function decisionArgs(question = "Where should writes live?"): string[] {
   ];
 }
 
-function lightPlan(title = "Writer plan", status = "active"): Record<string, unknown> {
+function lightPlan(title = "Writer plan", status = "open"): Record<string, unknown> {
   return {
     header: { level: "light", created: "2026-07-10", status, title },
     what: "Implement typed artifact writes.",
@@ -148,9 +148,31 @@ describe("state writer discovery and progress", () => {
     expect(
       run(root, ["plan", "explain", "--verb", "update", "--format", "json"]).json?.example,
     ).toBe('agentera state plan update --task 1 --name "..." --format json');
-    expect(
-      run(root, ["plan", "explain", "--verb", "set-status", "--format", "json"]).json?.example,
-    ).toBe("agentera state plan set-status --task 1 --status complete --format json");
+    const taskStatus = run(root, ["plan", "explain", "--verb", "set-status", "--format", "json"])
+      .json;
+    expect(taskStatus?.example).toBe(
+      "agentera state plan set-status --task 1 --status complete --format json",
+    );
+    expect(taskStatus?.fields).toEqual([
+      expect.objectContaining({ flag: "--task", required: true }),
+      expect.objectContaining({
+        flag: "--status",
+        valid_values: ["complete", "in_progress", "pending", "blocked"],
+        description: "Task execution status. Does not change the plan lifecycle.",
+      }),
+    ]);
+    const planStatus = run(root, ["plan", "explain", "--verb", "set-plan-status", "--format", "json"])
+      .json;
+    expect(planStatus?.example).toBe(
+      "agentera state plan set-plan-status --status complete --format json",
+    );
+    expect(planStatus?.fields).toEqual([
+      expect.objectContaining({
+        flag: "--status",
+        valid_values: ["open", "complete"],
+        description: "Plan lifecycle status. Positional activity is derived from location.",
+      }),
+    ]);
   });
 
   it("assigns numbers, publishes schema-valid bytes, and exactly replays retries", () => {
@@ -442,9 +464,10 @@ describe("decisions, health, and plan operations", () => {
       run(root, ["plan", "set-status", "--task", "2", "--status", "complete", "--format", "json"])
         .json?.operation.idempotent_replay,
     ).toBe(true);
-    expect(run(root, ["plan", "set-status", "--status", "complete", "--format", "json"]).rc).toBe(
-      0,
-    );
+    expect(
+      run(root, ["plan", "set-plan-status", "--status", "complete", "--format", "json"])
+        .rc,
+    ).toBe(0);
     const archived = run(root, ["plan", "archive", "--format", "json"]);
     expect(archived.rc).toBe(0);
     expect(fs.existsSync(String(archived.json?.state.archive_path))).toBe(true);
@@ -471,6 +494,70 @@ describe("decisions, health, and plan operations", () => {
     ]);
     expect(result.rc).toBe(0);
     expect(result.json?.written.status).toBe(status);
+  });
+
+  it("enforces canonical plan writes and isolated status domains", () => {
+    for (const status of ["open", "complete"]) {
+      const root = project();
+      const input = writeInput(root, "plan.yaml", lightPlan("Canonical", status));
+      const created = run(root, ["plan", "create", "--input", input, "--format", "json"]);
+      expect(created.rc).toBe(0);
+      const plan = loadYamlMapping(fs.readFileSync(String(created.json?.path), "utf8"));
+      expect(plan.header).toMatchObject({ status });
+      expect(plan).not.toHaveProperty("active");
+      expect(plan.header as Record<string, unknown>).not.toHaveProperty("active");
+    }
+
+    for (const status of ["active", "completed", "unknown"]) {
+      const root = project();
+      const input = writeInput(root, "plan.yaml", lightPlan("Legacy input", status));
+      const rejected = run(root, ["plan", "create", "--input", input, "--format", "json"]);
+      expect(rejected.rc).toBe(2);
+      expect(rejected.json?.error.class).toBe("schema_violation");
+    }
+
+    const root = project();
+    const input = writeInput(root, "plan.yaml", lightPlan());
+    expect(run(root, ["plan", "create", "--input", input, "--format", "json"]).rc).toBe(0);
+    expect(
+      run(root, ["plan", "set-status", "--task", "1", "--status", "open", "--format", "json"])
+        .json?.error.class,
+    ).toBe("invalid_choice");
+    expect(
+      run(root, ["plan", "set-plan-status", "--status", "pending", "--format", "json"])
+        .json?.error.class,
+    ).toBe("invalid_choice");
+    expect(
+      run(root, ["plan", "set-plan-status", "--task", "1", "--status", "open", "--format", "json"])
+        .json?.error.class,
+    ).toBe("unrecognized_argument");
+  });
+
+  it("canonicalizes legacy current plans before archive and replacement", () => {
+    const archiveRoot = project();
+    const archivePlan = lightPlan("Legacy archive", "completed");
+    (archivePlan.tasks as Array<Record<string, unknown>>)[0].status = "complete";
+    fs.mkdirSync(path.join(archiveRoot, ".agentera"), { recursive: true });
+    fs.writeFileSync(path.join(archiveRoot, ".agentera", "plan.yaml"), dumpYamlMapping(archivePlan));
+    const archived = run(archiveRoot, ["plan", "archive", "--format", "json"]);
+    expect(archived.rc).toBe(0);
+    expect(
+      loadYamlMapping(fs.readFileSync(String(archived.json?.state.archive_path), "utf8")).header,
+    ).toMatchObject({ status: "complete" });
+
+    const replaceRoot = project();
+    const legacyPlan = lightPlan("Legacy predecessor", "completed");
+    (legacyPlan.tasks as Array<Record<string, unknown>>)[0].status = "complete";
+    fs.mkdirSync(path.join(replaceRoot, ".agentera"), { recursive: true });
+    fs.writeFileSync(path.join(replaceRoot, ".agentera", "plan.yaml"), dumpYamlMapping(legacyPlan));
+    const successor = writeInput(replaceRoot, "successor.yaml", lightPlan("Successor"));
+    const replaced = run(replaceRoot, ["plan", "create", "--input", successor, "--format", "json"]);
+    expect(replaced.rc).toBe(0);
+    const active = loadYamlMapping(fs.readFileSync(path.join(replaceRoot, ".agentera", "plan.yaml"), "utf8"));
+    expect(active.header).toMatchObject({ status: "open" });
+    expect(
+      loadYamlMapping(fs.readFileSync(String(replaced.json?.state.archive_path), "utf8")).header,
+    ).toMatchObject({ status: "complete" });
   });
 
   it("does not create a mapped plan directory during create dry-run", () => {

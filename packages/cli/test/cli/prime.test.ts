@@ -199,7 +199,7 @@ describe("cli prime", () => {
       artifacts: [
         expect.objectContaining({
           artifact: "plan",
-          mutations: ["append", "update", "set-status", "archive", "create"],
+          mutations: ["append", "update", "set-status", "set-plan-status", "archive", "create"],
         }),
       ],
       unsupported_targets: ["plan_archive"],

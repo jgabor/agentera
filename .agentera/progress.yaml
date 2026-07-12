@@ -1,4 +1,23 @@
 cycles:
+  - number: 740
+    timestamp: 2026-07-12 22:23
+    type: fix
+    phase: build
+    what: Separated plan lifecycle writes from task status writes and enforced
+      canonical open or complete serialization.
+    discovered: vp run web:check reports a pre-existing formatting issue in
+      packages/web/src/content/docs/docs/index.mdx; that untouched file remains
+      out of scope.
+    verified: pnpm -C packages/cli test passed 1,556 tests; typecheck, build,
+      capability-contract validation, and built CLI contract smoke passed.
+    next: "Task 5: Implement validated crash-consistent publication."
+    context:
+      intent: Prevent positional activity from being persisted as a plan lifecycle
+        status.
+      constraints: Preserved task status vocabulary, legacy read and migration
+        compatibility, and decision satisfaction state.
+      scope: Plan writer, lifecycle schema, writer documentation, regression tests,
+        and canonical fixture.
   - number: 739
     timestamp: 2026-07-12 21:57
     type: fix
@@ -209,29 +228,10 @@ cycles:
       unknowns: none
       scope: packages/cli/src/cli/planEvidence.ts; state plan; source contract; help;
         state regressions; typed progress.
-  - number: 730
-    timestamp: 2026-07-12 15:19
-    type: fix
-    phase: build
-    what: Fixed state plan archive discovery in
-      packages/cli/src/cli/planArtifacts.ts and kept archived tasks out of
-      prime/orchestrate.
-    verified: "CLI tests: 160 files and 1537 tests passed; typecheck, build, lint (0
-      errors, 98 existing warnings), compact, capability-contract, plan
-      capability, lifecycle-adapters, and npm pack dry-run passed. Live state
-      plan returned the completed archive with 8 tasks; prime/orchestrate
-      selected no archived task."
-    next: No further Task 8 repair; publication, tagging, pushing, and stable
-      promotion remain separate.
-    context:
-      intent: Repair the canonical CLI read after Task 8 plan archival without
-        restoring an active plan.
-      constraints: No active plan restoration, archive edit, version change,
-        vision/objective edit, Decision 92 change, publish, tag, or push.
-      unknowns: none
-      scope: packages/cli/src/cli/planArtifacts.ts; state plan; orientation; tests;
-        source-contract oracle; help/schema wording.
 archive:
+  - summary: "Cycle 730 (2026-07-12): Fixed state plan archive discovery in
+      packages/cli/src/cli/planArtifacts.ts and kept archived tasks out of
+      prime/orchestrate."
   - summary: "Cycle 729 (2026-07-12): Synchronized packages/cli/package.json dev.17,
       lifecycle parity, release docs, and Task 8 state while preserving
       registry.json suiteVersion..."
@@ -334,5 +334,3 @@ archive:
       added packages/cli/src/registries/triggerLoader.ts and
       packages/cli/test/registries/triggerLoader.test.ts. The loader reads
       all..."
-  - summary: "Cycle 690 (2026-06-28): Plan task 5 (final state sync): closed the
-      vitest 2→4 + Vite+ toolchain plan. Ran..."

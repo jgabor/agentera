@@ -7,6 +7,7 @@ export const WRITE_VERBS = [
   "append",
   "update",
   "set-status",
+  "set-plan-status",
   "archive",
   "create",
   "explain",
@@ -109,6 +110,7 @@ const planTaskFields: OperationField[] = [
     kind: "string",
     required: false,
     validValues: ["complete", "in_progress", "pending", "blocked"],
+    description: "Task execution status. Does not change the plan lifecycle.",
   },
 ];
 
@@ -134,13 +136,28 @@ const SPECS: OperationSpec[] = [
     artifact: "plan",
     verb: "set-status",
     fields: [
-      { flag: "--task", field: "task", kind: "integer" },
+      { flag: "--task", field: "task", kind: "integer", required: true },
       {
         flag: "--status",
         field: "status",
         kind: "string",
         required: true,
-        validValues: ["active", "complete", "in_progress", "pending", "blocked"],
+        validValues: ["complete", "in_progress", "pending", "blocked"],
+        description: "Task execution status. Does not change the plan lifecycle.",
+      },
+    ],
+  },
+  {
+    artifact: "plan",
+    verb: "set-plan-status",
+    fields: [
+      {
+        flag: "--status",
+        field: "status",
+        kind: "string",
+        required: true,
+        validValues: ["open", "complete"],
+        description: "Plan lifecycle status. Positional activity is derived from location.",
       },
     ],
   },

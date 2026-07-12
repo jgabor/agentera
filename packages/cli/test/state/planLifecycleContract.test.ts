@@ -117,9 +117,9 @@ describe("plan lifecycle contract", () => {
     const contract = lifecycleContract();
     const window = contract.compatibility.legacy_read_window;
 
-    expect(window.scope).toContain("Read-only normalization");
+    expect(window.scope).toContain("typed-writer canonicalization");
     expect(window.removal_condition).toContain("regression tests prove");
-    expect(window.test_boundary).toHaveLength(4);
+    expect(window.test_boundary).toHaveLength(5);
     expect(contract.compatibility.external_consumers.commitment).toContain(
       "No compatibility window",
     );

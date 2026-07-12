@@ -79,7 +79,7 @@ describe("ArtifactSchemaValidator", () => {
     const p = path.join(tmp, "plan.yaml");
     const plan = (dependsOn: string, secondDependsOn = "") =>
       [
-        "header: {level: light, created: 2026-07-11, status: active, title: Test}",
+        "header: {level: light, created: 2026-07-11, status: open, title: Test}",
         "what: Test dependencies.",
         "why: Keep orchestration ordered.",
         "scope: {included: [writer], excluded: []}",
@@ -112,7 +112,7 @@ describe("ArtifactSchemaValidator", () => {
     fs.writeFileSync(
       p,
       [
-        "header: {level: full, created: 2026-07-12, reviewed: 2026-07-12, status: active, critic_issues: '1 found, 0 addressed, 1 dismissed', title: Test}",
+        "header: {level: full, created: 2026-07-12, reviewed: 2026-07-12, status: open, critic_issues: '1 found, 0 addressed, 1 dismissed', title: Test}",
         "what: Test full-plan metadata.",
         "why: Preserve planning provenance.",
         "design: Keep the schema and writer aligned.",

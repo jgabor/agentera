@@ -357,28 +357,23 @@ function mutateCandidate(
     }
     return { candidate, written: entry, assigned: { number }, replay: !changed };
   }
-  if (req.spec.verb === "set-status") {
-    const taskNumber = req.values.task === undefined ? null : Number(req.values.task);
+  if (req.spec.verb === "set-plan-status") {
     const status = String(req.values.status);
-    if (taskNumber === null) {
-      if (!["active", "complete"].includes(status))
-        reject({
-          class: "invalid_choice",
-          message: `argument --status: invalid choice: '${status}' (choose from 'active', 'complete')`,
-          valid_values: ["active", "complete"],
-        });
-      if (status === "complete" && tasks.some((task) => task.status !== "complete")) {
-        reject({
-          class: "conflict",
-          message: "plan cannot be marked complete while incomplete tasks remain",
-        });
-      }
-      const header = mapping(candidate.header);
-      const replay = header.status === status;
-      header.status = status;
-      candidate.header = header;
-      return { candidate, written: header, assigned: {}, replay };
+    if (status === "complete" && tasks.some((task) => task.status !== "complete")) {
+      reject({
+        class: "conflict",
+        message: "plan cannot be marked complete while incomplete tasks remain",
+      });
     }
+    const header = mapping(candidate.header);
+    const replay = header.status === status;
+    header.status = status;
+    candidate.header = header;
+    return { candidate, written: header, assigned: {}, replay };
+  }
+  if (req.spec.verb === "set-status") {
+    const taskNumber = Number(req.values.task);
+    const status = String(req.values.status);
     if (!["complete", "in_progress", "pending", "blocked"].includes(status))
       reject({
         class: "invalid_choice",
@@ -490,6 +485,17 @@ function validatePlanCreateInput(input: Record<string, unknown>): void {
   }
 }
 
+function canonicalPlanDocumentForWrite(doc: Record<string, unknown>): Record<string, unknown> {
+  const header = mapping(doc.header);
+  const status = String(header.status ?? "");
+  if (status !== "active" && status !== "completed") return doc;
+  const canonicalStatus =
+    status === "active" || array(doc, "tasks").some((task) => task.status !== "complete")
+      ? "open"
+      : "complete";
+  return { ...doc, header: { ...header, status: canonicalStatus } };
+}
+
 function ensureArchive(archivePath: string, bytes: string): boolean {
   fs.mkdirSync(path.dirname(archivePath), { recursive: true });
   if (!fs.existsSync(archivePath)) {
@@ -515,6 +521,7 @@ function planLifecycle(
   req: StateWriteRequest,
   target: string,
   existing: { doc: Record<string, unknown>; bytes: string },
+  legacyLifecycle = false,
 ): StateWriteEnvelope {
   if (req.spec.verb === "archive") {
     const archiveDir = path.join(req.projectRoot, ".agentera", "archive");
@@ -549,7 +556,7 @@ function planLifecycle(
       });
     const archivePath = archivePathFor(req.projectRoot, existing.doc);
     if (!req.dryRun) {
-      ensureArchive(archivePath, existing.bytes);
+      ensureArchive(archivePath, dumpYamlMapping(existing.doc));
       fs.unlinkSync(target);
     }
     return envelope(req, target, {}, mapping(existing.doc.header), {}, false, null, {
@@ -570,7 +577,7 @@ function planLifecycle(
     const existingWithoutLineage = structuredClone(existing.doc);
     delete existingWithoutLineage.previous_plan_archived;
     const sameWithoutLineage = isDeepStrictEqual(existingWithoutLineage, input);
-    if (sameWithoutLineage)
+    if (sameWithoutLineage && !legacyLifecycle)
       return envelope(
         req,
         target,
@@ -581,13 +588,15 @@ function planLifecycle(
         null,
         req.dryRun ? { diff: "", before: existing.doc, after: existing.doc } : {},
       );
-    if (oldStatus !== "complete" && !req.force)
-      reject({
-        class: "conflict",
-        message: `active plan "${mapping(existing.doc.header).title ?? existing.doc.title ?? "untitled"}" has status ${oldStatus || "unknown"}; replacing it would discard incomplete work`,
-      });
-    archivePath = archivePathFor(req.projectRoot, existing.doc);
-    input.previous_plan_archived = path.relative(req.projectRoot, archivePath);
+    if (!sameWithoutLineage) {
+      if (oldStatus !== "complete" && !req.force)
+        reject({
+          class: "conflict",
+          message: `active plan "${mapping(existing.doc.header).title ?? existing.doc.title ?? "untitled"}" has status ${oldStatus || "unknown"}; replacing it would discard incomplete work`,
+        });
+      archivePath = archivePathFor(req.projectRoot, existing.doc);
+      input.previous_plan_archived = path.relative(req.projectRoot, archivePath);
+    }
   }
   const bytes = dumpYamlMapping(input);
   const violations = validateArtifactBytes("plan", bytes);
@@ -601,7 +610,7 @@ function planLifecycle(
       throw new Error(`writer staging invariant failure: ${finalViolations.join("; ")}`);
     const finalDoc = loadYamlMapping(finalBytes);
     if (!req.dryRun) {
-      if (existing.bytes && archivePath) ensureArchive(archivePath, existing.bytes);
+      if (existing.bytes && archivePath) ensureArchive(archivePath, dumpYamlMapping(existing.doc));
       fs.renameSync(stage, target);
     }
     return envelope(req, target, finalDoc, mapping(finalDoc.header), {}, false, null, {
@@ -678,8 +687,14 @@ export function executeStateWrite(req: StateWriteRequest): StateWriteEnvelope {
       throw error;
     }
     const existing = readExisting(target);
+    const legacyLifecycle =
+      req.artifact === "plan" && ["active", "completed"].includes(String(mapping(existing.doc.header).status ?? ""));
+    if (legacyLifecycle)
+      existing.doc = canonicalPlanDocumentForWrite(existing.doc);
     if (existing.bytes) {
-      const violations = validateArtifactBytes(req.artifact, existing.bytes);
+      const validationBytes =
+        req.artifact === "plan" ? dumpYamlMapping(existing.doc) : existing.bytes;
+      const violations = validateArtifactBytes(req.artifact, validationBytes);
       if (violations.length) {
         throw new Error(
           `existing artifact '${target}' is schema-invalid: ${violations.join("; ")}; repair it before retrying`,
@@ -687,7 +702,7 @@ export function executeStateWrite(req: StateWriteRequest): StateWriteEnvelope {
       }
     }
     if (req.artifact === "plan" && ["archive", "create"].includes(req.spec.verb))
-      return planLifecycle(req, target, existing);
+      return planLifecycle(req, target, existing, legacyLifecycle);
     if (!existing.bytes && req.artifact === "plan")
       reject({
         class: "unsupported_target",

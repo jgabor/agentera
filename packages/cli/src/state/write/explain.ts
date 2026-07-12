@@ -122,6 +122,8 @@ export function exampleFor(artifact: WritableArtifact, verb: string): string {
   if (verb === "update") return 'agentera state plan update --task 1 --name "..." --format json';
   if (verb === "set-status")
     return "agentera state plan set-status --task 1 --status complete --format json";
+  if (verb === "set-plan-status")
+    return "agentera state plan set-plan-status --status complete --format json";
   return `agentera state plan ${verb} --name "..."`;
 }
 

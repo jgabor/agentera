@@ -103,11 +103,10 @@ HEADER:
     type: string
     required: true
     description: >-
-      Transitional persisted plan lifecycle status accepted before the
-      canonical lifecycle migration. See LIFECYCLE_CONTRACT for the target
-      vocabulary and compatibility boundary.
+      Canonical plan lifecycle. Positional activity is derived from the
+      plan's location and is not persisted.
     validation:
-      - "Must be one of: active, complete"
+      - "Must be one of: open, complete"
   4:
     id: PH4
     field: reviewed
@@ -361,7 +360,7 @@ VALIDATION:
     checks:
       - "level is present and is 'light' or 'full'"
       - "created is present and matches YYYY-MM-DD"
-      - "status is present and is 'active' or 'completed'"
+      - "status is present and is 'open' or 'complete'"
       - "title is present and non-empty"
       - "what is present and non-empty"
       - "why is present and non-empty"
@@ -426,9 +425,10 @@ LIFECYCLE_CONTRACT:
   compatibility:
     legacy_read_window:
       scope: >-
-        Read-only normalization of plan-level active to open and completed to
-        complete for artifacts produced by pre-canonical Agentera versions at
-        the docs-mapped current-plan path or its sibling archive directory.
+        Read normalization and typed-writer canonicalization of plan-level
+        active to open and completed to complete for artifacts produced by
+        pre-canonical Agentera versions at the docs-mapped current-plan path
+        or its sibling archive directory.
       writers: Canonical writers and migrators must emit only open or complete.
       removal_condition: >-
         Remove normalization only after the deterministic migration covers
@@ -439,6 +439,7 @@ LIFECYCLE_CONTRACT:
         - archived plan with active normalizes to open and remains non-executable
         - completed normalizes to complete only at the plan-level compatibility seam
         - canonical writers reject active and completed after migration support lands
+        - typed writes canonicalize a legacy current plan before publication
     external_consumers:
       evidence: >-
         No shipped SDK, adapter, or package reads header.status directly;

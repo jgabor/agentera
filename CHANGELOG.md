@@ -25,6 +25,10 @@
 - Changed corrupt or disconnected ownership-journal blockers to report stable causes without volatile event filenames across preview and apply.
 - Synchronized lifecycle projections across prime, status, project integration, and doctor while keeping Cursor CLI required, IDE conditional, and Claude cleanup explicit.
 
+### Fixed
+
+- Fixed `agentera state plan`: `set-status --task` accepts task values, and `set-plan-status` accepts `open` or `complete`.
+
 ## [3.0.0] · 2026-07-12
 
 ### Key highlights
