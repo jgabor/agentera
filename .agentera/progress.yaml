@@ -1,4 +1,200 @@
 cycles:
+  - number: 726
+    timestamp: 2026-07-12 13:46
+    type: fix
+    phase: audit
+    what: "Completed the final Task 5 audit repair: blocker-only lifecycle output
+      now suppresses generic project-integration guidance while retaining exact
+      manual and doctor actions; total lifecycle presentation is capped across
+      the full attention pipeline; manual procedure text is bounded; and the
+      complete status briefing is checked against the canonical 120-word
+      contract with command tokens counted normally."
+    inspiration: Task 5 audit repair attempt 2.
+    discovered: The repository has no executable host dashboard renderer; prime JSON
+      is the caller-owned rendering boundary, while the status instruction
+      contract and offline semantic fixture evaluator provide the validation
+      surfaces.
+    verified: "Focused dashboard/orientation/prime: 60 passed. Typecheck passed.
+      Lint passed with 0 errors and 98 existing warnings. Build passed. Full
+      CLI: 1501 passed and exactly 8 accepted release-metadata baseline failures
+      for 3.0.0-dev.16 versus 3.0.0. Semantic status fixture passed. Prime JSON
+      smoke exited 0 with exactly 2 lifecycle rows, exact upgrade preview, exact
+      /skills list procedure, exact agentera doctor --format json route,
+      truthful lifecycle summary, and Task 5 complete."
+    next: Main session may commit Task 5; do not begin Task 6.
+    context:
+      intent: Close the final Task 5 criterion-1 audit findings without changing
+        lifecycle authority, ownership, Task 6, vision, objective, or Decision
+        92.
+      constraints: No commit in this session; no push, publish, tag, vision/objective
+        edits, or Decision 92 changes.
+      scope: packages/cli/src/cli/orientation/attention.ts;
+        packages/cli/test/cli/orientationCorpusCoverage.test.ts;
+        packages/cli/test/cli/statusDashboardBudget.test.ts; typed .agentera
+        progress and plan state
+  - number: 725
+    timestamp: 2026-07-12 13:40
+    type: fix
+    phase: build
+    what: "Completed the final Task 5 audit repair in
+      packages/cli/src/cli/orientation/attention.ts: blocker-only lifecycle
+      states no longer compose generic integration guidance with blocker
+      guidance, and manual procedures are bounded for the complete status
+      briefing budget."
+    inspiration: Task 5 repair attempt 2 after audit criterion 1 found duplicate
+      blocker-only composition and row-only budget evidence.
+    discovered: The status renderer is caller-owned; the canonical contract lives in
+      status instructions and validation schema. The regression now uses the
+      actual prime JSON payload, derives the 120-word and 15-word limits from
+      that contract, counts command tokens normally, and keeps lifecycle rows
+      plus normal metrics, narrative, attention, and next suggestion within the
+      whole briefing budget.
+    verified: "Focused dashboard/orientation/prime suite: 60/60 passed; status
+      semantic fixture harness passed; typecheck passed; lint passed with 0
+      errors and 98 existing warnings; build passed; full CLI suite: 1501 passed
+      and exactly 8 known release-metadata failures from 3.0.0-dev.16 versus
+      core 3.0.0; no additional failures."
+    next: Task 6 remains pending and out of scope.
+    context:
+      intent: Make prime/status lifecycle presentation bounded across the full
+        pipeline while preserving canonical projection reuse and exact
+        actionable commands.
+      constraints: Task 5 only; preserve all four criteria, canonical lifecycle
+        projection and ownership logic, attention ordering, vision/objective
+        state, and Decision 92 satisfaction; no commit, push, publish, or tag.
+      scope: packages/cli/src/cli/orientation/attention.ts;
+        packages/cli/test/cli/orientationCorpusCoverage.test.ts;
+        packages/cli/test/cli/statusDashboardBudget.test.ts;
+        packages/cli/test/cli/primeProjectIntegration.test.ts;
+        .agentera/progress.yaml; .agentera/plan.yaml
+  - number: 724
+    timestamp: 2026-07-12 13:25
+    type: fix
+    phase: build
+    what: "Closed the Task 5 audit repair in
+      packages/cli/src/cli/orientation/attention.ts and its dashboard
+      regressions: bounded both manual metadata and fallback reasons while
+      preserving the exact procedure command."
+    inspiration: Final focused and full CLI verification after the audit criterion 1 repair.
+    verified: "Focused dashboard/orientation/prime tests: 58/58 passed; typecheck
+      passed; lint passed with 0 errors and 98 existing warnings; build passed;
+      full CLI suite: 1499 passed and exactly 8 known release-metadata failures
+      from 3.0.0-dev.16 versus core 3.0.0."
+    next: Task 6 remains pending; stop this cycle.
+    context:
+      intent: Leave Task 5 complete with final source, regression, and full-suite
+        evidence.
+      constraints: Task 5 only; no Task 6, vision/objective, Decision 92 satisfaction,
+        commit, push, publish, or tag.
+      scope: packages/cli/src/cli/orientation/attention.ts;
+        packages/cli/test/cli/orientationCorpusCoverage.test.ts;
+        packages/cli/test/cli/primeProjectIntegration.test.ts;
+        .agentera/plan.yaml; .agentera/progress.yaml
+  - number: 723
+    timestamp: 2026-07-12 13:23
+    type: fix
+    phase: build
+    what: "Final Task 5 read-back after the blocker regression refinement in
+      packages/cli/test/cli/primeProjectIntegration.test.ts: the full suite and
+      built prime still satisfy the repaired lifecycle attention contract."
+    inspiration: Post-build and post-full-suite read-back of the lifecycle attention
+      pipeline.
+    verified: Focused lifecycle/dashboard tests passed; typecheck, lint, build,
+      progress lint, check compact, and git diff --check passed; full CLI suite
+      passed 1498 tests with exactly 8 known 3.0.0-dev.16 versus 3.0.0 metadata
+      failures; built prime emitted exactly two lifecycle rows with preview,
+      procedure, doctor route, and lifecycle counts 12/10/5.
+    next: Task 6 remains pending and out of scope.
+    context:
+      intent: Record final verified evidence for the completed Task 5 audit repair.
+      constraints: No Task 6, vision/objective, Decision 92 satisfaction, commit,
+        push, publish, or tag.
+      scope: packages/cli/src/cli/orientation/attention.ts;
+        packages/cli/test/cli/orientationCorpusCoverage.test.ts;
+        packages/cli/test/cli/primeProjectIntegration.test.ts;
+        .agentera/plan.yaml; .agentera/progress.yaml
+  - number: 722
+    timestamp: 2026-07-12 13:21
+    type: fix
+    phase: build
+    what: "Revalidated the typed Task 5 closeout after the full-suite audit repair:
+      cycle 721 retains the implementation evidence, plan task 5 is complete,
+      and Task 6 remains pending."
+    inspiration: Post-verification artifact read-back for .agentera/plan.yaml and
+      .agentera/progress.yaml.
+    verified: state plan set-status --task 5 --status complete passed; the progress
+      writer passed validation and compacted the artifact; no source, vision,
+      objective, or Decision 92 edits were made.
+    next: Do not begin Task 6 in this cycle.
+    context:
+      intent: Keep the final Task 5 evidence and lifecycle dashboard state within the
+        typed artifact budgets.
+      constraints: Task 5 only; no commit, push, publish, tag, or protected-state changes.
+      scope: .agentera/plan.yaml; .agentera/progress.yaml
+  - number: 721
+    timestamp: 2026-07-12 13:20
+    type: fix
+    phase: build
+    what: "Repaired Task 5 audit criterion 1 in
+      packages/cli/src/cli/orientation/attention.ts: the full attention pipeline
+      now caps project integration plus lifecycle presentation at two rows,
+      bounds manual guidance, and preserves exact host and doctor procedures."
+    inspiration: Task 5 audit repair after criterion 1 found
+      projectIntegrationAttention was outside the lifecycle row cap.
+    discovered: Mixed upgrade, repairable_owned, and blocker projections require
+      suppressing the duplicate integration attention when executable lifecycle
+      work is present; blocker-only app or cross-major integration guidance
+      remains available.
+    verified: "Focused dashboard/orientation/prime tests: 57/57 passed; typecheck
+      passed; lint passed with 0 errors and 98 existing warnings; build passed;
+      check compact passed; full CLI suite: 1498 passed and exactly 8 known
+      release-metadata failures from 3.0.0-dev.16 versus core 3.0.0; built prime
+      smoke showed two lifecycle rows, exact preview, bounded host procedure,
+      doctor route, and no ineffective --yes."
+    next: Task 6 remains pending; do not begin selector, ownership, convergence, or
+      safety verification in this cycle.
+    context:
+      intent: Surface lifecycle attention and next actions without duplicating
+        canonical lifecycle authority or exceeding the status dashboard budget.
+      constraints: Task 5 only; preserve Decision 92, vision/objective state,
+        lifecycle authority, ownership logic, attention ordering and budget; no
+        commit, push, publish, tag, or Task 6 work.
+      scope: packages/cli/src/cli/orientation/attention.ts;
+        packages/cli/src/cli/commands/prime/collectOrientationState.ts;
+        packages/cli/src/cli/contracts/orientationState.ts;
+        packages/cli/test/cli/orientationCorpusCoverage.test.ts;
+        packages/cli/test/cli/primeProjectIntegration.test.ts;
+        .agentera/progress.yaml; .agentera/plan.yaml
+  - number: 720
+    timestamp: 2026-07-12 12:39
+    type: feat
+    phase: build
+    what: Surface bounded lifecycle attention rows and exact next-action guidance in
+      prime/status.
+    inspiration: "Active plan Task 5: Surface lifecycle attention and next actions."
+    discovered: The existing canonical lifecycle snapshot already supplies action
+      classes, runtime IDs, manual procedures, and command eligibility;
+      presentation now consumes that projection without reclassifying ownership.
+    verified: "Focused dashboard/orientation/prime run: 3 files and 30 tests passed.
+      Full CLI suite: 1496 tests passed with exactly 8 known release-metadata
+      failures caused by packages/cli 3.0.0-dev.16 versus suite 3.0.0. Typecheck
+      passed, lint reported 0 errors, build passed, built prime smoke showed two
+      lifecycle rows, exact runtime preview, host procedure, doctor route, and
+      no ineffective --yes for blockers."
+    next: Task 6 remains pending; do not begin selector, ownership, convergence, or
+      safety verification in this cycle.
+    context:
+      intent: Make lifecycle drift actionable in the existing prime/status attention
+        and next-action budget without duplicating lifecycle authority or
+        ownership logic.
+      constraints: Only Task 5; preserve Decision 92, vision/objective state,
+        lifecycle authority, ownership logic, attention budget, and ordering
+        contracts; no push, publish, tag, or Task 6 work.
+      scope: packages/cli/src/cli/orientation/attention.ts;
+        packages/cli/src/cli/commands/prime/collectOrientationState.ts;
+        packages/cli/src/cli/contracts/orientationState.ts;
+        packages/cli/test/cli/orientationCorpusCoverage.test.ts; CHANGELOG.md;
+        .agentera/plan.yaml
   - number: 719
     timestamp: 2026-07-12 12:23
     type: feat
@@ -90,262 +286,22 @@ cycles:
         packages/cli/test/upgrade/{upgradeOrchestrator,upgradeCommands,lifecycleUpgrade,idempotency,parityOracle}.test.ts,
         packages/cli/test/cli/doctorUpgradeParity.test.ts, README.md,
         UPGRADE.md, CHANGELOG.md
-  - number: 716
-    timestamp: 2026-07-12 10:34
-    type: feat
-    phase: build
-    what: Established the canonical runtime lifecycle projection for Task 1.
-    discovered: Cursor IDE integration includes detected non-canonical runtime skill
-      locations; full suite validation still reports the pre-existing
-      3.0.0-dev.16 versus 3.0.0 release-surface mismatch.
-    verified: "Focused lifecycle authority, adapter, status-diagnosis, and schema
-      tests passed: 58 tests. pnpm -C packages/cli run typecheck passed. pnpm -C
-      packages/cli build passed. Built prime --context build and schema output
-      exposed the projection contract, four active runtime IDs, applicability
-      values, action classes, counts, and command eligibility. Built prime and
-      doctor lifecycle tests passed: 47 tests. git diff --check passed."
-    next: "Continue with Task 2 only: default preview and explicit apply semantics."
-    context:
-      intent: Make lifecycle applicability, ownership, action classification, counts,
-        and command eligibility come from one deterministic projection.
-      constraints: Decision 92 remains authoritative. Cursor CLI stays required and
-        Cursor IDE stays conditional. Native install, authentication,
-        enablement, and trust remain user-owned. Claude remains retired. No
-        vision, objective, push, tag, or publish changes.
-      unknowns: none
-      scope: packages/cli/src/runtime/lifecycleAuthority.ts;
-        packages/cli/src/runtime/lifecycleAdapterContract.ts;
-        packages/cli/src/runtime/lifecycleAdapters.ts;
-        packages/cli/src/runtime/lifecycleSnapshot.ts; schema and lifecycle
-        tests; runtime authority contract; CHANGELOG.md; .agentera/plan.yaml
-  - number: 715
-    timestamp: 2026-07-12 07:10
-    type: fix
-    phase: build
-    what: "Cycle 715 supersedes the inaccurate portion of Cycle 714: the earlier
-      retry did not remove stale public agentera hook examples from the active
-      Cursor adapter. Corrected the adapter to name upgrade --runtime cursor as
-      the shipped lifecycle-managed installation and repair mechanism and to
-      describe installed hook callbacks as private runtime wiring."
-    inspiration: Task 8 implementation retry 2 fresh audit and the append-only
-      progress contract.
-    discovered: Cycle 714 left three stale public hook-command claims even though
-      the hook namespace is absent from public v3 help. Cursor Agent CLI and
-      Cursor IDE are surfaces of one cursor runtime; the CLI has no verified
-      hook or separate managed-agent install, while conditional IDE hooks,
-      agent, and plugin resources are managed by upgrade.
-    verified: Public local v3 help exited 0 for upgrade, doctor, check verify eval
-      skills, and report refresh. Active-doc search found no stale npx agentera
-      hook, uvx Agentera, uv run scripts/agentera, or agentera stats examples in
-      the Cursor and related adapter docs. check validate lifecycle-adapters and
-      release-metadata passed; check validate artifact --artifact docs and
-      progress passed; progress text lint passed; git diff --check passed.
-    next: Return Task 8 in_progress to independent audit; do not complete the task
-      or archive the plan.
-    context:
-      intent: Close the final Task 8 audit blocker without rewriting Cycle 714 or
-        changing Task 8 status.
-      constraints: No commit, push, tag, publish, plan archive, Task 8 completion,
-        protected-state edit, or rewrite of historical Cycle 714 evidence.
-      unknowns: None.
-      scope: references/adapters/cursor.md and typed .agentera/progress.yaml Cycle 715
-        evidence.
-  - number: 714
-    timestamp: 2026-07-12 07:03
-    type: fix
-    phase: build
-    what: Corrected the two Task 8 independent-audit blockers in Cursor
-      documentation and documentation inventory metadata.
-    inspiration: Task 8 implementation retry 1 independent audit.
-    discovered: The retired Cursor doctor example used an unsupported --runtime
-      flag; v3 doctor reports all active runtimes.
-    verified: rg found no retired uv run scripts/agentera upgrade or doctor commands
-      in references/adapters/cursor.md. Decisions, Progress, TODO, and Changelog
-      inventory dates are 2026-07-12. docs artifact, lifecycle-adapters,
-      release-metadata, and git diff --check passed.
-    next: Return Task 8 to independent audit without completing or archiving the
-      plan.
-    context:
-      intent: Make the existing uncommitted Task 8 delivery accurate for the v3 npm
-        release and current artifact dates.
-      constraints: Changed only the two reported blockers plus required typed retry
-        evidence; no commit, push, tag, publish, plan archive, or Task 8
-        completion.
-      unknowns: None.
-      scope: references/adapters/cursor.md, .agentera/docs.yaml, and typed
-        .agentera/progress.yaml retry evidence.
-  - number: 713
-    timestamp: 2026-07-12 06:56
-    type: fix
-    phase: build
-    what: Synchronized the Agentera 3.0.0 release surface across lifecycle
-      authority, runtime and package registries, packaging, CLI help and schema,
-      public documentation, changelog, TODO, mobile stubs, and current-surface
-      policy tests.
-    inspiration: Active plan Task 8, Decision 92 constraints, AGENTS.md release
-      conventions, and the typed package and lifecycle authorities.
-    discovered: The package registry still declared removed Python version files and
-      bundle sources that copy-bundle did not stage. The scan classified Claude
-      references as historical or state 74 files and 503 matches, retired
-      cleanup 9 and 67, consent import 17 and 95, OpenCode compatibility 1 and
-      7, CLAUDE.md compatibility 1 and 1, and tests 22 and 138; overlapping
-      categories are intentional. Cursor-agent remains only as documented alias
-      or source product in 9 documentation files and 14 matches, 20 source or
-      contract files and 40 matches, and 14 test or fixture files and 29
-      matches. The protected vision artifact retains one host-harness phrase and
-      was not edited.
-    verified: pnpm -C packages/cli test passed 158 files and 1486 tests. Typecheck
-      and build passed; lint passed with 97 warnings and 0 errors. All 12
-      capabilities plus capability-contract, cross-capability,
-      lifecycle-adapters, app-home-contract, vocabularyAuthority, selfAudit, and
-      release-metadata passed. Compact checked 9 artifacts with 0 over limit and
-      0 errors. Direct Astro check passed 11 files with 0 diagnostics and Astro
-      build passed. Markdown checked 16 documents and 12 relative links with 0
-      missing. bundle:data staged 21 surfaces; npm pack dry-run inspected
-      agentera 3.0.0 with 573 files, 4302998 unpacked bytes, 16 required
-      assertions, 0 missing, and 0 retired identity paths. Nine tracked version
-      values equal 3.0.0. git diff --check passed.
-    next: Independent audit should inspect this uncommitted Task 8 delivery. The
-      orchestrator may then complete Task 8, archive the plan, run the post-plan
-      health audit, and commit the release, state, and health changes together.
-      Decision 92 satisfaction remains user-owned.
-    context:
-      intent: Complete active-surface retirement and Cursor identity review, make
-        stale four-runtime claims fail validation, align every tracked version
-        surface, and leave an independently auditable Task 8 delivery.
-      constraints: No commit, push, tag, publication, plan status change, plan
-        archive, vision or profile edit, health write, or Decision 92
-        satisfaction change. Existing user-owned Decision 92, TODO, and plan
-        edits were preserved.
-      unknowns: The Vite Plus cache reports unrecognized database version 12, so
-        workspace web and mobile wrappers could not initialize; direct
-        authoritative Astro checks passed, and mobile changes are
-        documentation-only. Stable dist-tag promotion and the final package
-        gitRef remain publication-phase work.
-      scope: README.md, UPGRADE.md, CHANGELOG.md, TODO.md, .agentera/docs.yaml,
-        runtime and package contracts, CLI validation and packaging sources,
-        parity and policy tests, package manifests, web docs, mobile docs, and
-        plugin version surfaces.
-  - number: 712
-    timestamp: 2026-07-12 06:17
-    type: fix
-    phase: build
-    what: Hardened Task 7 ownership journal recovery and apply locking after audit.
-    inspiration: "Task 7 audit retry 1: middle-chain event-2 corruption and
-      apply.lock publication race."
-    discovered: Exact event-2 corruption in a nine-event chain now yields corrupt
-      with validEvents 1 and ignoredEvents 8; preview and apply preserve every
-      journal/resource byte and append nothing. A live prepared lock blocks
-      contenders before final publication, while simultaneous publishers produce
-      exactly one winner.
-    verified: Focused lifecycle ownership/recovery/upgrade tests passed 3 files and
-      39 tests; full pnpm -C packages/cli test passed. Typecheck and build
-      passed. lifecycle-adapters, build capability, capability-contract,
-      cross-capability, app-home-contract, vocabularyAuthority, schema, check
-      compact, git diff --check, and lint passed; lint retained 99 warnings and
-      0 errors. Package dry-run contained 557 files including lifecycle journal,
-      upgrade, and bundled contract. Regressions cover gaps, forks, duplicate
-      sequences, body/name mismatch, bad digest, disconnection, terminal
-      partial, multiple temporaries, restart, live/dead/PID-reuse/prior-boot
-      locks, malformed final locks, release token mismatch, live preparation
-      blocking, and two-process publication.
-    next: Re-run Task 7 audit against this retry commit; keep Task 7 in_progress and
-      Task 8 untouched until audit acceptance.
-    context:
-      intent: Block lifecycle mutation on any broken middle hash chain and eliminate
-        incomplete-lock publication races without changing Task 7 plan status or
-        Task 8.
-      constraints: Preserved pre-existing TODO.md, decisions.yaml, plan.yaml, and
-        Codex hook changes; no vision, native runtime, remote, publication, Task
-        8, or plan-status mutation.
-      unknowns: Audit acceptance remains external. A legacy incomplete final event is
-        readable as recoverable_terminal_tail but intentionally
-        mutation-blocking until explicitly resolved.
-      scope: Lifecycle journal and lock runtime, upgrade blocking, lifecycle
-        validators/contracts, CLI schema/help, and focused regressions.
-  - number: 711
-    timestamp: 2026-07-11 22:16
-    type: feat
-    phase: build
-    what: Integrated lifecycle repair and convergence into the upgrade namespace.
-    inspiration: Active plan Task 7 and Decision 92.
-    discovered: The existing app runtime phase would publish the same resources
-      before ownership recording, and the npm bundle omitted declared repair
-      sources; lifecycle-selected upgrades now make the shared engine the sole
-      runtime mutator and package those sources.
-    verified: pnpm -C packages/cli run typecheck and build passed. pnpm -C
-      packages/cli run test --reporter=json
-      --outputFile=/tmp/agentera-task7-final-tests.json passed 158 files/1461
-      tests. lifecycle-adapters, capability build, capability-contract,
-      cross-capability, app-home-contract, and vocabularyAuthority validation
-      passed. schema, check compact, git diff --check, and lint passed; lint
-      retained the 99-warning/0-error baseline. npm pack --dry-run --json
-      --ignore-scripts reported 557 files with lifecycle code, contracts, and
-      declared repair sources; production source/dist/bundle contained no
-      AGENTERA_TEST token. Preview tree/byte snapshots were unchanged and
-      native-command traps stayed untouched. Crash tests covered interruption
-      before/after resource and ledger publication, restart, independent
-      continuation, dependency skip, and noop convergence. Live prime and doctor
-      agreed on blocked status for all four runtimes.
-    next: Task 8 owns the broad release docs, changelog, TODO, version, and package
-      synchronization sweep; Decision 92 satisfaction remains
-      user-review-needed.
-    context:
-      intent: "Execute active plan Task 7: provide truthful read-only lifecycle
-        preview, explicitly approved owned apply, crash recovery, independent
-        failure continuation, and convergent reruns."
-      constraints: Preserved user TODO, decisions, active plan status, vision, native
-        trust/auth/package ownership, app-only upgrade behavior, and no-push
-        boundary.
-      unknowns: No Task 7 implementation unknowns remain; release-surface
-        synchronization is intentionally deferred to Task 8.
-      scope: Upgrade CLI/help/schema; lifecycle planner, journal, contracts, app
-        integration, prime/doctor ledger reads; runtime
-        fixtures/recovery/package tests and npm repair-source bundle inputs.
-  - number: 710
-    timestamp: 2026-07-11 21:26
-    type: fix
-    phase: build
-    what: Removed production lifecycle evidence injection and split synthetic parity
-      from real CLI coverage.
-    inspiration: Final Task 6 audit after Cycle 709 overstated child-process fixture
-      coverage.
-    discovered: Synthetic host-owned trust and ownership cases remain useful only
-      when clearly confined to imported observer and projection functions under
-      packages/cli/test; production CLI coverage must rely on real filesystem
-      observation.
-    verified: "Actual built CLI coverage runs prime and doctor against real temp
-      filesystem state. The production guard compares baseline calls with
-      NODE_ENV=test plus fake AGENTERA_TEST variables and a valid spoof file:
-      lifecycle output is identical, doctor remains exit 1, no target writes
-      occur, and trapped native binaries are not invoked. Separate real CLI
-      tests cover empty filesystem text output and capability startup. Seven
-      synthetic cases run only in a test-only harness that directly calls
-      exported observer and summary functions, not prime or doctor: unknown
-      trust, denied trust, Cursor conditional IDE, shadowing, absent host and
-      missing parent, unowned collision, and all-ready. Focused tests passed 2
-      files/21 tests; full tests passed 155 files/1436 tests. Typecheck and
-      build passed. Lifecycle-adapters, status, build, capability-contract,
-      cross-capability, app-home-contract, vocabulary, and schema checks passed.
-      Live built prime lifecycle was 2142 bytes; doctor JSON was 38780 bytes and
-      exited 1. Lint reported 99 pre-existing warnings/0 errors. A 547-file npm
-      tarball contained dist and bundle lifecycle authority surfaces and no
-      lifecycle injection token; production source, rebuilt dist, and bundle
-      also contained none."
-    next: Re-run the independent Task 6 audit against Cycle 710; keep Task 6 in
-      progress and leave Tasks 7 and 8 untouched.
-    context:
-      intent: Complete the final Task 6 retry by making runtime lifecycle evidence
-        impossible to spoof through NODE_ENV or AGENTERA_TEST variables.
-      constraints: Preserved support-floor, blocker, doctor-exit, shared-snapshot,
-        prime-budget, Task 5 retirement, Cursor identity, user
-        TODO/decisions/plan/.codex changes, vision, plan status, native package
-        managers, remotes, and Tasks 7 and 8.
-      unknowns: None in retry scope; live trust evidence remains host-owned and
-        unknown where the host exposes no authoritative read-only signal.
-      scope: Lifecycle snapshot production source; lifecycle diagnosis tests; npm
-        packaging policy test; typed progress evidence only.
 archive:
+  - summary: "Cycle 716 (2026-07-12): Established the canonical runtime lifecycle
+      projection for Task 1."
+  - summary: "Cycle 715 (2026-07-12): Cycle 715 supersedes the inaccurate portion of
+      Cycle 714: the earlier retry did not remove..."
+  - summary: "Cycle 714 (2026-07-12): Corrected the two Task 8 independent-audit
+      blockers in Cursor documentation and documentation inventory metadata."
+  - summary: "Cycle 713 (2026-07-12): Synchronized the Agentera 3.0.0 release
+      surface across lifecycle authority, runtime and package registries,
+      packaging, CLI..."
+  - summary: "Cycle 712 (2026-07-12): Hardened Task 7 ownership journal recovery and
+      apply locking after audit."
+  - summary: "Cycle 711 (2026-07-11): Integrated lifecycle repair and convergence
+      into the upgrade namespace."
+  - summary: "Cycle 710 (2026-07-11): Removed production lifecycle evidence
+      injection and split synthetic parity from real CLI coverage."
   - summary: "Cycle 709 (2026-07-11): Made lifecycle support-floor evidence fail
       closed and aligned doctor release exits with prime status."
   - summary: "Cycle 708 (2026-07-11): Integrated one authoritative read-only runtime
@@ -430,18 +386,3 @@ archive:
   - summary: "Cycle 677 (2026-06-27): v2/v3 coexistence B2 — env-var & path
       resolution remainder. Restored PROFILERA_PROFILE_DIR as a lower-precedence
       fallback..."
-  - summary: "Cycle 676 (2026-06-26): D73 single Agentera agent plan closeout.
-      Implementation shipped in a prior session (commit d1b4145d: replaced..."
-  - summary: "Cycle 675 (2026-06-23): Rename published prerelease version suffix
-      from -dev.N to -next.N across live source, tests, CI L2..."
-  - summary: "Cycle 674 (2026-06-23): Remove dead `missingScriptCommands` from
-      installRoot.ts; close three stale TODOs."
-  - summary: "Cycle 673 (2026-06-23): Align parity oracle retryCommand pin with
-      string|null contract."
-  - summary: "Cycle 672 (2026-06-22): Backport fix: remove empty-severity-section
-      rejection from validate_artifact.py on main."
-  - summary: "Cycle 671 (2026-06-22): Fix stale YAML schema example, deprecated lint
-      command, and archive reference in discuss instructions."
-  - summary: "Cycle 670 (2026-06-18): Plan T6 — verification and closeout: archived
-      PLAN-2026-06-18-decouple-vitest-live-repo.yaml; cleared active plan slot;
-      confirmed vitest decoupled..."

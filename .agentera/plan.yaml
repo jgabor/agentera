@@ -73,7 +73,7 @@ tasks:
     name: Surface lifecycle attention and next actions
     depends_on:
       - "4"
-    status: pending
+    status: complete
     acceptance:
       - GIVEN runtime work during prime/status WHEN rendered THEN at most two lifecycle rows summarize affected runtimes, action class, and truncation without exceeding the existing dashboard budget.
       - GIVEN repairable owned work WHEN ranked THEN an exact authority-derived preview may outrank unrelated TODO work; warning-only blockers do not displace executable work.

@@ -5,6 +5,7 @@
 ### Added
 
 - Added a canonical runtime lifecycle projection with deterministic snapshot identity, applicability, ownership, action classes, counts, and command eligibility for OpenCode, Codex, Cursor, and Copilot.
+- Added bounded prime/status lifecycle attention rows with runtime-scoped repair previews, exact manual procedures, and doctor diagnostics for non-executable blockers.
 
 ### Changed
 

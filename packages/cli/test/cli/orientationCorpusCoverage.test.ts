@@ -11,6 +11,11 @@ import {
   corpusCoverageSummary,
 } from "../../src/cli/orientation/corpusCoverage.js";
 import type { OrientationState } from "../../src/cli/contracts/orientationState.js";
+import { projectIntegrationAttention } from "../../src/upgrade/projectIntegration.js";
+import type {
+  LifecycleProjectedAction,
+  RuntimeLifecycleSnapshot,
+} from "../../src/runtime/lifecycleSnapshot.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "../../../..");
@@ -63,6 +68,79 @@ function minimalOrientationState(corpusCoverage: OrientationState["corpus_covera
       alternatives: [],
     },
     attention: [],
+  };
+}
+
+function lifecycleAction(
+  actionClass: LifecycleProjectedAction["actionClass"],
+  runtimeIds: string[],
+  instruction?: string,
+): LifecycleProjectedAction {
+  return {
+    id: `${actionClass}:${runtimeIds.join(",")}`,
+    runtimeIds,
+    surfaceId: "cli",
+    category: "skills",
+    resourceId: "canonical_skill",
+    destination: "/tmp/agentera",
+    applicability: "required",
+    ownership: actionClass === "repairable_owned" ? "claimable" : "user_owned",
+    actionClass,
+    required: true,
+    reason: instruction ?? `${actionClass} fixture`,
+    operation: actionClass === "repairable_owned" ? "create" : null,
+    commandEligibility: {
+      preview: actionClass === "repairable_owned",
+      apply: actionClass === "repairable_owned",
+      manual: actionClass === "manual_verification",
+      diagnostic: actionClass === "unobservable_gap",
+    },
+    manual:
+      actionClass === "manual_verification"
+        ? { command: "/skills list", instruction: instruction ?? "Run `/skills list` in the host." }
+        : null,
+  };
+}
+
+function lifecycleSnapshot(actions: LifecycleProjectedAction[]): RuntimeLifecycleSnapshot {
+  const runtimes = ["opencode", "codex", "cursor", "copilot"].map((runtimeId) => ({
+    runtimeId,
+    displayName: runtimeId,
+    status: "blocked" as const,
+    readiness: "blocked" as const,
+    canonicalSkill: { path: "/tmp/agentera", detected: true as const },
+    diagnosisComplete: true,
+    supportFloor: { met: false, releaseBlocking: true, unmet: [], violations: [] },
+    surfaces: [],
+    blockers: [],
+    counts: {
+      total: actions.filter((action) => action.runtimeIds.includes(runtimeId)).length,
+      repairableOwned: 0,
+      manualVerification: 0,
+      unobservableGap: 0,
+      commandEligible: 0,
+    },
+    actionCount: actions.filter((action) => action.runtimeIds.includes(runtimeId)).length,
+  }));
+  return {
+    schemaVersion: "agentera.runtimeLifecycleSnapshot.v1",
+    projectionVersion: "agentera.runtimeLifecycleProjection.v1",
+    snapshotId: "sha256:orientation-fixture",
+    statusVocabularyVersion: "agentera.runtimeLifecycleStatus.v1",
+    authority: "fixture",
+    activeRuntimeIds: runtimes.map((runtime) => runtime.runtimeId),
+    selection: { runtimeIds: runtimes.map((runtime) => runtime.runtimeId) },
+    releaseBlocked: true,
+    sharedResources: [],
+    actions,
+    counts: {
+      total: actions.length,
+      repairableOwned: actions.filter((action) => action.actionClass === "repairable_owned").length,
+      manualVerification: actions.filter((action) => action.actionClass === "manual_verification").length,
+      unobservableGap: actions.filter((action) => action.actionClass === "unobservable_gap").length,
+      commandEligible: actions.length,
+    },
+    runtimes,
   };
 }
 
@@ -162,5 +240,156 @@ describe("coexistence attention", () => {
     state.app.appHome = path.join(tmp, "clean-app-home");
     const attention = buildOrientationAttention(state);
     expect(attention.some((item) => item.includes("v2/v3 coexistence"))).toBe(false);
+  });
+});
+
+describe("lifecycle attention", () => {
+  it("keeps executable and blocker lifecycle rows bounded and truthful", () => {
+    const state = minimalOrientationState({
+      path: "",
+      status: "missing",
+      available_runtimes: [],
+      selected_runtimes: [],
+      available_but_not_selected: [],
+    });
+    state.project_integration = {
+      ...state.project_integration,
+      recommendation: "upgrade",
+      message: "This project needs an Agentera upgrade (runtime wiring needs sync). Preview the upgrade command.",
+      pending_runtime: 1,
+      pending_artifacts: 0,
+      aggregate_status: "upgrade",
+      dry_run_command: "npx -y agentera@next upgrade --dry-run --runtime codex",
+    } as typeof state.project_integration;
+    state.runtime_lifecycle_snapshot = lifecycleSnapshot([
+      lifecycleAction("repairable_owned", ["codex"]),
+      lifecycleAction("manual_verification", ["opencode", "codex", "cursor", "copilot"], "Run `/skills list` in the host."),
+      lifecycleAction("unobservable_gap", ["cursor"], "No verified safe remediation is declared."),
+    ]);
+
+    const integrationRow = projectIntegrationAttention(state.project_integration);
+    const lifecyclePresentation = buildOrientationAttention(state).filter(
+      (item) => item === integrationRow || item.includes("lifecycle action_class="),
+    );
+
+    expect(lifecyclePresentation).toHaveLength(2);
+    expect(lifecyclePresentation.filter((item) => item.includes("lifecycle action_class="))).toHaveLength(2);
+    expect(lifecyclePresentation).not.toContain(integrationRow);
+    expect(lifecyclePresentation[0]).toContain("action_class=repairable_owned");
+    expect(lifecyclePresentation[0]).toContain("preview=`npx -y agentera@next upgrade --dry-run --runtime codex`");
+    expect(lifecyclePresentation[1]).toContain("action_class=manual_verification+unobservable_gap");
+    expect(lifecyclePresentation[1]).toContain("+1 more runtimes");
+    expect(lifecyclePresentation[1]).toContain("procedure=/skills list: Run `/skills list` in the host.");
+    expect(lifecyclePresentation[1]).toContain("doctor=`agentera doctor --format json`");
+    expect(lifecyclePresentation.join("\n")).not.toContain("--yes");
+    expect(lifecyclePresentation.join(" ").split(/\s+/).length).toBeLessThanOrEqual(120);
+  });
+
+  it("does not duplicate generic integration guidance for blocker-only lifecycle work", () => {
+    const state = minimalOrientationState({
+      path: "",
+      status: "missing",
+      available_runtimes: [],
+      selected_runtimes: [],
+      available_but_not_selected: [],
+    });
+    state.project_integration = {
+      ...state.project_integration,
+      recommendation: "upgrade",
+      message: "This project needs an Agentera upgrade because lifecycle blockers need review.",
+      pending_runtime: 0,
+      pending_artifacts: 0,
+      aggregate_status: "blocked",
+      dry_run_command: null,
+      phases: {
+        app: { status: "stay", counts: { total: 0, pending: 0, blocked: 0 }, blockers: [] },
+        lifecycle: {
+          status: "blocked",
+          counts: { total: 2, pending: 0, blocked: 2 },
+          blockers: ["manual_verification: host action", "unobservable_gap: no safe probe"],
+        },
+      },
+    } as typeof state.project_integration;
+    state.runtime_lifecycle_snapshot = lifecycleSnapshot([
+      lifecycleAction("manual_verification", ["copilot"], "Run `/skills list` in the host."),
+      lifecycleAction("unobservable_gap", ["cursor"], "No verified safe remediation is declared."),
+    ]);
+
+    const integrationRow = projectIntegrationAttention(state.project_integration);
+    const attention = buildOrientationAttention(state);
+    const lifecyclePresentation = attention.filter(
+      (item) => item === integrationRow || item.includes("lifecycle action_class="),
+    );
+
+    expect(lifecyclePresentation).toHaveLength(1);
+    expect(lifecyclePresentation[0]).not.toBe(integrationRow);
+    expect(lifecyclePresentation[0]).toContain("action_class=manual_verification+unobservable_gap");
+    expect(lifecyclePresentation[0]).toContain("procedure=/skills list: Run `/skills list` in the host.");
+    expect(lifecyclePresentation[0]).toContain("doctor=`agentera doctor --format json`");
+    expect(lifecyclePresentation[0]).not.toContain("--yes");
+  });
+
+  it("bounds long manual guidance while preserving the exact host command", () => {
+    const state = minimalOrientationState({
+      path: "",
+      status: "missing",
+      available_runtimes: [],
+      selected_runtimes: [],
+      available_but_not_selected: [],
+    });
+    const longInstruction = Array.from({ length: 200 }, (_, index) => `instruction-${index}`).join(" ");
+    state.runtime_lifecycle_snapshot = lifecycleSnapshot([
+      lifecycleAction("manual_verification", ["copilot"], longInstruction),
+    ]);
+
+    const row = buildOrientationAttention(state).find((item) => item.includes("lifecycle action_class="));
+
+    expect(row).toBeTruthy();
+    expect(row).toContain("procedure=/skills list:");
+    expect(row).toContain("instruction-10…");
+    expect(row?.split(/\s+/).length ?? 0).toBeLessThan(120);
+  });
+
+  it("bounds fallback manual reasons when procedure metadata is absent", () => {
+    const state = minimalOrientationState({
+      path: "",
+      status: "missing",
+      available_runtimes: [],
+      selected_runtimes: [],
+      available_but_not_selected: [],
+    });
+    const action = lifecycleAction(
+      "manual_verification",
+      ["copilot"],
+      Array.from({ length: 200 }, (_, index) => `reason-${index}`).join(" "),
+    );
+    action.manual = null;
+    state.runtime_lifecycle_snapshot = lifecycleSnapshot([action]);
+
+    const row = buildOrientationAttention(state).find((item) => item.includes("lifecycle action_class="));
+
+    expect(row).toContain("procedure=reason-0");
+    expect(row).toContain("reason-10…");
+    expect(row?.split(/\s+/).length ?? 0).toBeLessThan(120);
+  });
+
+  it("omits lifecycle attention rows when the canonical projection is clean", () => {
+    const state = minimalOrientationState({
+      path: "",
+      status: "missing",
+      available_runtimes: [],
+      selected_runtimes: [],
+      available_but_not_selected: [],
+    });
+    state.runtime_lifecycle_snapshot = lifecycleSnapshot([]);
+
+    expect(buildOrientationAttention(state).filter((item) => item.includes("lifecycle action_class="))).toEqual([]);
+    expect(state.runtime_lifecycle_snapshot.counts).toEqual({
+      total: 0,
+      repairableOwned: 0,
+      manualVerification: 0,
+      unobservableGap: 0,
+      commandEligible: 0,
+    });
   });
 });

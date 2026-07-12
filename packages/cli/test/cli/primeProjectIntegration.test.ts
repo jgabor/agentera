@@ -6,7 +6,10 @@ import { fileURLToPath } from "node:url";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { collectOrientationState } from "../../src/cli/commands/prime.js";
+import { selectProjectIntegrationNextAction } from "../../src/cli/commands/prime/collectOrientationState.js";
+import type { ReadinessHint } from "../../src/cli/contracts/orientationState.js";
 import { NPX_BUNDLE_SENTINEL } from "../../src/core/sourceRoot.js";
+import type { ProjectIntegrationSummary } from "../../src/upgrade/projectIntegration.js";
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..");
 const FIXTURES = path.resolve(
@@ -70,12 +73,65 @@ describe("prime project_integration", () => {
     expect(integration.dry_run_command).not.toContain("--project");
     expect(integration.upgrade_only).toBeUndefined();
 
-    const attention = (state.attention as string[]).find((line) => line.includes("runtime wiring"));
+    const attention = (state.attention as string[]).find((line) => line.includes("lifecycle action_class="));
     expect(attention).toBeTruthy();
 
     const nextAction = state.next_action.recommended;
     expect(nextAction.object).toContain('Upgrade');
     expect(nextAction.capability).toBe('status');
+  });
+
+  it("does not let warning-only lifecycle blockers replace executable readiness work", () => {
+    const readiness: ReadinessHint = {
+      recommended: {
+        object: "TODO: remove stale fixture",
+        capability: "build",
+        reason: "highest-priority open TODO",
+        phase: "build",
+      },
+      alternatives: [
+        {
+          object: "VISION refresh",
+          capability: "vision",
+          reason: "fresh project direction",
+          phase: "envision",
+        },
+      ],
+    };
+    const warningOnlyIntegration: ProjectIntegrationSummary = {
+      recommendation: "stay",
+      major_boundary_block: null,
+      message: "Manual review is required for lifecycle blockers.",
+      pending_runtime: 0,
+      pending_runtimes: [],
+      pending_artifacts: 0,
+      dry_run_command: null,
+      apply_command: null,
+      update_channel: "development",
+      phases: {
+        app: { status: "stay", counts: { total: 0, pending: 0, blocked: 0 }, blockers: [] },
+        lifecycle: {
+          status: "blocked",
+          counts: { total: 1, pending: 0, blocked: 1 },
+          blockers: ["manual_verification: host trust remains user-owned"],
+        },
+      },
+      aggregate_status: "blocked",
+      guidance: {
+        route: "manual_review",
+        runtimes: ["codex"],
+        manual_review_runtimes: ["codex"],
+        host_action_runtimes: [],
+        doctor_runtimes: [],
+        message: "Review the host trust UI manually.",
+      },
+      exit: { code: 1, meaning: "manual_review_required" },
+      retry: { command: null, guidance: "Resolve the host blocker, then retry." },
+    };
+
+    const nextAction = selectProjectIntegrationNextAction(readiness, warningOnlyIntegration);
+
+    expect(nextAction.recommended).toEqual(readiness.recommended);
   });
 
   it("recommends artifact upgrade for v1 Markdown project on npx bundle", () => {

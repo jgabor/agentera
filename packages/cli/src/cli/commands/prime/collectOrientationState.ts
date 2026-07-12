@@ -106,30 +106,7 @@ export function collectOrientationState(opts: PrimeOpts): OrientationState {
     lifecycleSnapshot,
   });
   const readiness = selectStatusReadiness(plan, health, objective, todoItems, decision, savedContext);
-  const nextAction: ReadinessHint =
-    projectIntegration.recommendation === "upgrade"
-      ? withRecommended(
-          readiness,
-          {
-            object:
-              (projectIntegration.pending_artifacts as number) > 0
-                ? "Upgrade Agentera artifacts"
-                : (projectIntegration.pending_runtime as number) > 0
-                  ? "Upgrade Agentera runtime wiring"
-                  : "Upgrade Agentera",
-            capability: "status",
-            reason: projectIntegration.message,
-            phase: "build",
-          },
-        )
-      : projectIntegration.major_boundary_block
-        ? withRecommended(readiness, {
-            object: "Await v3 successor announcement",
-            capability: "status",
-            reason: projectIntegration.major_boundary_block,
-            phase: "audit",
-          })
-        : readiness;
+  const nextAction = selectProjectIntegrationNextAction(readiness, projectIntegration);
 
   const attention = buildOrientationAttention({
     schemas_dir: schemasDir,
@@ -141,6 +118,7 @@ export function collectOrientationState(opts: PrimeOpts): OrientationState {
     profile,
     v1_migration: v1Migration,
     project_integration: projectIntegration,
+    runtime_lifecycle_snapshot: lifecycleSnapshot,
     runtime_lifecycle: runtimeLifecycle,
     plan,
     docs,
@@ -166,6 +144,7 @@ export function collectOrientationState(opts: PrimeOpts): OrientationState {
     profile,
     v1_migration: v1Migration,
     project_integration: projectIntegration,
+    runtime_lifecycle_snapshot: lifecycleSnapshot,
     runtime_lifecycle: runtimeLifecycle,
     plan,
     docs,
@@ -187,6 +166,36 @@ export function collectOrientationState(opts: PrimeOpts): OrientationState {
  *  override (upgrade, major-boundary block) takes precedence over the
  *  state-derived cascade; the demoted candidates remain visible as what to do
  *  once the override is resolved. */
+export function selectProjectIntegrationNextAction(
+  readiness: ReadinessHint,
+  projectIntegration: OrientationState["project_integration"],
+): ReadinessHint {
+  if (projectIntegration.recommendation === "upgrade") {
+    return withRecommended(readiness, {
+      object:
+        (projectIntegration.pending_artifacts as number) > 0
+          ? "Upgrade Agentera artifacts"
+          : (projectIntegration.pending_runtime as number) > 0
+            ? "Upgrade Agentera runtime wiring"
+            : "Upgrade Agentera",
+      capability: "status",
+      reason: projectIntegration.dry_run_command
+        ? `${projectIntegration.message} Exact preview: ${projectIntegration.dry_run_command}`
+        : projectIntegration.message,
+      phase: "build",
+    });
+  }
+  if (projectIntegration.major_boundary_block) {
+    return withRecommended(readiness, {
+      object: "Await v3 successor announcement",
+      capability: "status",
+      reason: projectIntegration.major_boundary_block,
+      phase: "audit",
+    });
+  }
+  return readiness;
+}
+
 function withRecommended(hint: ReadinessHint, newRecommended: NextAction): ReadinessHint {
   return {
     recommended: newRecommended,
