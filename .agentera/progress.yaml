@@ -1,4 +1,23 @@
 cycles:
+  - number: 737
+    timestamp: 2026-07-12 21:05
+    type: test
+    phase: build
+    what: Added behavioral lifecycle-scan safety coverage for every claimed
+      traversal boundary.
+    inspiration: Plan Lifecycle Clarity and Validated Publication Task 1 audit.
+    discovered: The scanner enforced boundaries, but regression coverage had only
+      asserted schema declarations for most of them.
+    verified: 8 focused tests; 1,548 CLI tests; typecheck; build;
+      capability-contract validation; compact gate.
+    next: Task 2 remains eligible and intentionally out of scope for this cycle.
+    context:
+      intent: Supersede Cycle 736 with deterministic proof of scanner safety behavior.
+      constraints: Classifier test coverage only; no lifecycle behavior, Tasks 2-8,
+        TODO state, or decision satisfaction changes.
+      unknowns: none
+      scope: packages/cli/test/state/planLifecycleContract.test.ts; Task 1 evidence;
+        progress.
   - number: 736
     timestamp: 2026-07-12 20:50
     type: fix
@@ -226,37 +245,10 @@ cycles:
       unknowns: none
       scope: packages/cli lifecycle consumers, runtime adapter validation,
         update-channel authority, parity tests, and typed Task 7 state
-  - number: 727
-    timestamp: 2026-07-12 14:06
-    type: test
-    phase: build
-    what: Verified runtime lifecycle selectors, ownership safety, preview purity,
-      and retry convergence across OpenCode, Codex, Cursor, and Copilot;
-      stabilized corrupt-journal blocker causes by removing volatile event
-      filenames.
-    inspiration: Active Agentera plan Task 6 and Decision 92 ownership and trust boundaries.
-    discovered: Codex directory-file resources expand into one operation per agent;
-      Copilot contributes shared canonical-skill work and native actions rather
-      than a runtime-specific filesystem resource.
-    verified: "Focused Task 6 lifecycle suite: 52 passed. Related
-      lifecycle/orchestrator/recovery suite: 117 passed. Typecheck passed. Lint
-      passed with 0 errors and 98 existing warnings. Build passed. Compact gate
-      passed. Full CLI: 1514 passed and exactly 8 accepted 3.0.0-dev.16 versus
-      core 3.0.0 metadata failures; no extras. Capability and
-      capability-contract validation passed; git diff --check passed."
-    next: Task 7 remains pending; do not begin consumer or distribution parity in
-      this cycle.
-    context:
-      intent: Close active plan Task 6 with executable pass/fail evidence for
-        selectors, ownership, side effects, and convergence.
-      constraints: No vision or objective edits, no Decision 92 satisfaction change,
-        no native install/auth/trust actions, no push/publish/tag, and no Task 7
-        work.
-      unknowns: none
-      scope: packages/cli/src/upgrade/lifecycleUpgrade.ts;
-        packages/cli/test/upgrade/lifecycleUpgrade.test.ts; .agentera/plan.yaml;
-        .agentera/progress.yaml
 archive:
+  - summary: "Cycle 727 (2026-07-12): Verified runtime lifecycle selectors,
+      ownership safety, preview purity, and retry convergence across OpenCode,
+      Codex, Cursor,..."
   - summary: "Cycle 726 (2026-07-12): Completed the final Task 5 audit repair:
       blocker-only lifecycle output now suppresses generic project-integration
       guidance..."
@@ -357,5 +349,3 @@ archive:
       modernization: align the pre-commit hook script with..."
   - summary: "Cycle 688 (2026-06-28): Plan task 3 of the vitest 2->4 toolchain
       modernization: wire `vp lint` and `vp fmt`..."
-  - summary: "Cycle 687 (2026-06-28): Plan task 2 of the vitest 2->4 toolchain
-      modernization: migrate the CLI test entry point..."
