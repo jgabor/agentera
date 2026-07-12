@@ -86,7 +86,7 @@ tasks:
       - GIVEN dry-run WHEN validation succeeds or fails THEN the identical validation pipeline runs with no filesystem mutation.
       - GIVEN interruption around archive creation and current-plan replacement WHEN the operation is retried THEN it converges without plan loss or duplicate divergent archives.
       - GIVEN a transformed candidate crosses a prose budget WHEN validation runs THEN the published-byte lint catches the violation.
-    evidence: 1,559 CLI tests; typecheck; lint (0 errors, 99 pre-existing warnings); build; capability-contract validation; compact; built CLI strict-lint smoke.
+    evidence: "Supersedes prior evidence: 1,563 CLI tests including fault-injected midnight retry and canonical overall acceptance regression; typecheck; lint (0 errors, 99 existing warnings); build; capability-contract validation; compact; built CLI replay, archive dry-run, and strict active-plan lint smoke."
   - number: 6
     name: Correct archive discovery and session routing
     depends_on:

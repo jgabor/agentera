@@ -57,7 +57,7 @@ const BANNED_PATTERNS: Array<[string, RegExp]> = [
   ["filler introductions", /After\s+careful\s+consideration\b/i],
   ["summary preambles", /\bIn\s+summary\b/i],
   ["summary preambles", /\bTo\s+recap\b/i],
-  ["summary preambles", /\bOverall\b/i],
+  ["summary preambles", /\bOverall\b(?!\s+acceptance\b)/i],
   ["excessive justification", /I\s+chose\s+this\s+approach\s+because\b/i],
 ];
 

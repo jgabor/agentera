@@ -735,6 +735,20 @@ describe("decisions, health, and plan operations", () => {
     expect(fs.existsSync(path.join(root, ".agentera"))).toBe(false);
   });
 
+  it("keeps documented overall acceptance vocabulary eligible for replay and archive", () => {
+    const root = project();
+    const plan = lightPlan("Overall acceptance", "complete");
+    (plan.tasks as Array<Record<string, unknown>>)[0].acceptance = [
+      "GIVEN the documented plan shape WHEN published THEN its overall acceptance remains usable.",
+    ];
+    const input = writeInput(root, "overall-acceptance.yaml", plan);
+    expect(run(root, ["plan", "create", "--input", input, "--format", "json"]).rc).toBe(0);
+    expect(
+      run(root, ["plan", "create", "--input", input, "--dry-run", "--format", "json"]).rc,
+    ).toBe(0);
+    expect(run(root, ["plan", "archive", "--dry-run", "--format", "json"]).rc).toBe(0);
+  });
+
   it("converges archive and replacement retries after publication interruptions", () => {
     const archiveRoot = project();
     const archiveInput = writeInput(archiveRoot, "archive.yaml", lightPlan("Interrupted archive", "complete"));
@@ -779,6 +793,43 @@ describe("decisions, health, and plan operations", () => {
     expect(run(replaceRoot, ["plan", "create", "--input", successor, "--format", "json"]).rc).toBe(0);
     expect(archiveFiles(replaceRoot)).toHaveLength(1);
     expect(fs.readFileSync(replaceTarget, "utf8")).toContain("previous_plan_archived");
+  });
+
+  it("reuses the persisted archive identity across a midnight retry", () => {
+    const root = project();
+    const input = writeInput(root, "midnight.yaml", lightPlan("Midnight archive", "complete"));
+    const target = path.join(root, ".agentera", "plan.yaml");
+    vi.useFakeTimers();
+    try {
+      vi.setSystemTime(new Date("2026-07-10T23:59:59"));
+      expect(run(root, ["plan", "create", "--input", input, "--format", "json"]).rc).toBe(0);
+      const originalUnlink = fs.unlinkSync.bind(fs);
+      const unlink = vi.spyOn(fs, "unlinkSync").mockImplementation(((candidate) => {
+        if (String(candidate) === target) {
+          throw Object.assign(new Error("injected current removal interruption"), { code: "ENOSPC" });
+        }
+        return originalUnlink(candidate);
+      }) as typeof fs.unlinkSync);
+      try {
+        expect(run(root, ["plan", "archive", "--format", "json"]).rc).toBe(1);
+        expect(archiveFiles(root)).toHaveLength(1);
+      } finally {
+        unlink.mockRestore();
+      }
+
+      const archiveBeforeMidnight = archiveFiles(root);
+      vi.setSystemTime(new Date("2026-07-11T00:00:01"));
+      expect(run(root, ["plan", "archive", "--format", "json"]).rc).toBe(0);
+      expect(archiveFiles(root)).toEqual(archiveBeforeMidnight);
+
+      vi.setSystemTime(new Date("2026-07-12T00:00:01"));
+      const replay = run(root, ["plan", "archive", "--format", "json"]);
+      expect(replay.rc).toBe(0);
+      expect(replay.json?.operation.idempotent_replay).toBe(true);
+      expect(archiveFiles(root)).toEqual(archiveBeforeMidnight);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("round-trips unknown artifact and entry keys", () => {

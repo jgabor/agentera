@@ -27,7 +27,7 @@
 
 ### Fixed
 
-- Fixed `agentera state plan create` and `archive` publication to validate final serialized bytes with strict prose lint and schema checks; retries converge after interrupted archive/current handoffs.
+- Fixed `agentera state plan create` and `archive` publication to use stable archive identities across retries, validate final serialized bytes with strict prose lint and schema checks, and retain canonical `overall acceptance` vocabulary.
 - Fixed `agentera state plan`: `set-status --task` accepts task values, and `set-plan-status` accepts `open` or `complete`.
 
 ## [3.0.0] · 2026-07-12

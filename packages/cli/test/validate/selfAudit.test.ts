@@ -99,6 +99,18 @@ describe("checkFiller", () => {
     expect(detail).toContain("summary preambles");
   });
 
+  it("keeps the canonical plan term overall acceptance out of filler diagnostics", () => {
+    const [passed, detail] = checkFiller("The overall acceptance contract is schema-backed.");
+    expect(passed).toBe(true);
+    expect(detail).toBe("");
+  });
+
+  it("continues to reject an overall summary preamble", () => {
+    const [passed, detail] = checkFiller("Overall, this plan is complete.");
+    expect(passed).toBe(false);
+    expect(detail).toContain("summary preambles");
+  });
+
   it("treats empty text as clean", () => {
     const [passed, detail] = checkFiller("");
     expect(passed).toBe(true);

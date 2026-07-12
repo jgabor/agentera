@@ -10,7 +10,6 @@ output: [
   ]
 
 pre-commit:
-  parallel: false
   commands:
     agentera:
       run: pnpm -C packages/cli build && node packages/cli/dist/bin/agentera.js check compact

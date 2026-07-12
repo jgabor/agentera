@@ -1,4 +1,23 @@
 cycles:
+  - number: 742
+    timestamp: 2026-07-12 23:06
+    type: fix
+    phase: build
+    what: Updated packages/cli/src/state/write/transaction.ts with stable archive
+      identities across midnight retries and canonical overall acceptance lint
+      support.
+    verified: 64 focused and 1,563 full CLI tests; typecheck; lint; build;
+      capability-contract validation; compact; built CLI replay/archive
+      dry-run/strict lint smoke.
+    next: "Task 6: repair execution eligibility and orchestration retry semantics
+      only."
+    context:
+      intent: Repair audited Task 5 plan publication failures.
+      constraints: Only audited Task 5 failures; restored the pre-commit hook
+        configuration and did not change decisions.
+      unknowns: none
+      scope: Plan publication, prose lint, regression tests, hook revert, and
+        changelog.
   - number: 741
     timestamp: 2026-07-12 22:45
     type: fix
@@ -195,31 +214,10 @@ cycles:
         legacy-read window."
       scope: Plan artifact schema authority, plan capability artifact wording,
         contract test, changelog, and typed Task 1 state.
-  - number: 732
-    timestamp: 2026-07-12 15:37
-    type: fix
-    phase: build
-    what: Finalized lifecycle-plan evidence joins in
-      packages/cli/src/cli/planEvidence.ts after the full 1539-test suite;
-      unrelated plans now report missing evidence.
-    verified: "Full CLI: 160 files and 1539 tests passed after the lifecycle-title
-      join guard. Typecheck, build, lint (0 errors, 98 existing warnings),
-      compact, capability plan, capability-contract, lifecycle-adapters, direct
-      Astro check/build, npm dry-run, package content inspection, and git diff
-      --check passed. Live Task 1-8 archive read exposes nonempty evidence and
-      provenance for all tasks; an unrelated completed task reports status
-      incomplete and complete_for_plan_artifact=false."
-    next: Task 8 repair is complete; publication, tagging, pushing, stable
-      promotion, and native runtime actions remain separate.
-    context:
-      intent: Record final green evidence for the Task 8 archived-plan contract repair.
-      constraints: No archive edit, version change, active-plan restoration,
-        vision/objective/protected-state/Decision 92 change, publish, tag, or
-        push.
-      unknowns: none
-      scope: packages/cli/src/cli/planEvidence.ts; state plan; source contract; help;
-        state-plan regressions; typed progress.
 archive:
+  - summary: "Cycle 732 (2026-07-12): Finalized lifecycle-plan evidence joins in
+      packages/cli/src/cli/planEvidence.ts after the full 1539-test suite;
+      unrelated plans now report..."
   - summary: "Cycle 731 (2026-07-12): Resolved archived Task 1-8 evidence projection
       in packages/cli/src/cli/planEvidence.ts with deterministic typed-progress
       provenance and incomplete-state reporting."
@@ -321,6 +319,3 @@ archive:
       instructions following six-section spine and direct-contract philosophy."
   - summary: "Cycle 693 (2026-07-10): Audited and rewrote build capability
       instructions following six-section spine and direct-contract philosophy."
-  - summary: "Cycle 692 (2026-07-08): Replaced cliDistributionMajor's terminal
-      `return 2` fallback with a package.json#version secondary signal and a
-      one-time stderr..."

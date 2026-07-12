@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { isDeepStrictEqual } from "node:util";
@@ -473,16 +474,30 @@ function assertWriterBoundary(projectRoot: string, candidate: string, artifactId
   }
 }
 
-function archivePathFor(projectRoot: string, doc: Record<string, unknown>): string {
-  const title = mapping(doc.header).title ?? doc.title;
+function archivePathFor(projectRoot: string, doc: Record<string, unknown>, bytes: string): string {
+  const header = mapping(doc.header);
+  const created = String(header.created ?? "undated").replace(/[^0-9-]/g, "") || "undated";
+  const title = header.title ?? doc.title;
+  // Archive identity must survive a retry that crosses a calendar boundary.
+  const identity = createHash("sha256").update(bytes).digest("hex").slice(0, 16);
   const archivePath = path.join(
     projectRoot,
     ".agentera",
     "archive",
-    `PLAN-${localDate()}-${slug(title)}.yaml`,
+    `PLAN-${created}-${slug(title)}-${identity}.yaml`,
   );
   assertWriterBoundary(projectRoot, archivePath, "plan archive");
   return archivePath;
+}
+
+function latestArchivePath(archiveDirectory: string): string | null {
+  if (!fs.existsSync(archiveDirectory)) return null;
+  const latest = fs
+    .readdirSync(archiveDirectory)
+    .filter((name) => name.startsWith("PLAN-") && name.endsWith(".yaml"))
+    .sort()
+    .at(-1);
+  return latest ? path.join(archiveDirectory, latest) : null;
 }
 
 function validatePlanCreateInput(input: Record<string, unknown>): void {
@@ -597,17 +612,9 @@ function planLifecycle(
     const archiveDir = path.join(req.projectRoot, ".agentera", "archive");
     assertWriterBoundary(req.projectRoot, archiveDir, "plan archive");
     if (!existing.bytes) {
-      const prefix = `PLAN-${localDate()}-`;
-      const candidates = fs.existsSync(archiveDir)
-        ? fs
-            .readdirSync(archiveDir)
-            .filter((name) => name.startsWith(prefix) && name.endsWith(".yaml"))
-            .sort()
-        : [];
-      const latest = candidates.at(-1);
-      if (!latest)
+      const archivePath = latestArchivePath(archiveDir);
+      if (!archivePath)
         reject({ class: "unsupported_target", message: "no active plan exists to archive" });
-      const archivePath = path.join(archiveDir, latest);
       const archived = readExisting(archivePath);
       return envelope(req, target, {}, mapping(archived.doc.header), {}, true, null, {
         archivePath,
@@ -624,8 +631,8 @@ function planLifecycle(
         message: `active plan "${mapping(existing.doc.header).title ?? existing.doc.title ?? "untitled"}" has status ${status || "unknown"} or incomplete tasks; archiving would discard incomplete work`,
         syntax: "agentera state plan archive --force",
       });
-    const archivePath = archivePathFor(req.projectRoot, existing.doc);
     const archiveBytes = dumpYamlMapping(existing.doc);
+    const archivePath = archivePathFor(req.projectRoot, existing.doc, archiveBytes);
     validatePlanPublicationCandidate(archiveBytes);
     if (!req.dryRun) {
       // Archive creation and current-plan removal cannot be one filesystem transaction.
@@ -647,6 +654,7 @@ function planLifecycle(
   if (!candidateStatus)
     reject({ class: "schema_violation", message: "plan create input requires header.status" });
   let archivePath: string | undefined;
+  let predecessorBytes: string | null = null;
   if (existing.bytes) {
     const oldStatus = String(mapping(existing.doc.header).status ?? existing.doc.status ?? "");
     const existingWithoutLineage = structuredClone(existing.doc);
@@ -671,12 +679,12 @@ function planLifecycle(
           class: "conflict",
           message: `active plan "${mapping(existing.doc.header).title ?? existing.doc.title ?? "untitled"}" has status ${oldStatus || "unknown"}; replacing it would discard incomplete work`,
         });
-      archivePath = archivePathFor(req.projectRoot, existing.doc);
+      predecessorBytes = dumpYamlMapping(existing.doc);
+      archivePath = archivePathFor(req.projectRoot, existing.doc, predecessorBytes);
       input.previous_plan_archived = path.relative(req.projectRoot, archivePath);
     }
   }
   const bytes = dumpYamlMapping(input);
-  const predecessorBytes = existing.bytes && archivePath ? dumpYamlMapping(existing.doc) : null;
   if (predecessorBytes) validatePlanPublicationCandidate(predecessorBytes);
   validatePlanPublicationCandidate(bytes);
   const finalDoc = loadYamlMapping(bytes);
