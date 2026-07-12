@@ -445,36 +445,94 @@ LIFECYCLE_CONTRACT:
         supported consumers use the CLI plan discovery and state contracts.
       commitment: No compatibility window is provided for direct YAML consumers.
   inventory:
+    method: >-
+      Classification is pattern-based and enforced by a bounded repository
+      scan. Every file under scan.roots containing a discovery marker must
+      match at least one family pattern unless an explicit exclusion applies.
+    scan:
+      roots:
+        - packages/cli/src
+        - packages/cli/test
+        - skills/agentera
+        - references
+        - .agentera/plan.yaml
+        - .agentera/archive
+        - AGENTS.md
+        - README.md
+        - UPGRADE.md
+      markers:
+        - planDocumentParts
+        - discoverPlanArtifacts
+        - resolvePlanTaskEvidence
+        - header.status
+        - previous_plan_archived
+        - plan_archive
+        - state plan
+        - .agentera/plan.yaml
+        - artifact_id: plan
+        - artifact: plan
+        - active plan
+        - archived plan
+        - plan lifecycle
+      exclusions:
+        - .agentera/archive/PLAN-*.md
+        - references/adapters/runtime-lifecycle-*.yaml
+        - packages/cli/src/runtime/lifecycle*.ts
+        - packages/cli/src/upgrade/lifecycle*.ts
+        - packages/cli/test/runtime/lifecycle*.test.ts
+        - packages/cli/test/upgrade/lifecycle*.test.ts
+        - packages/cli/test/cli/lifecycle*.test.ts
+        - packages/cli/test/validate/lifecycle*.test.ts
     readers:
-      - packages/cli/src/cli/planArtifacts.ts
+      - packages/cli/src/cli/plan*.ts
       - packages/cli/src/cli/orientation.ts
-      - packages/cli/src/cli/commands/state/plan.ts
       - packages/cli/src/cli/appContext.ts
+      - packages/cli/src/cli/commands/state/plan.ts
+      - packages/cli/src/cli/commands/prime/*.ts
+      - packages/cli/src/cli/capabilityContext/*.ts
+      - packages/cli/src/cli/contracts/orientationState.ts
+      - packages/cli/src/cli/startupCompletenessContract.ts
       - packages/cli/src/hooks/sessionStart.ts
-      - packages/cli/src/cli/capabilityContext/planState.ts
+      - packages/cli/src/eval/evalSkills.ts
     writers:
-      - packages/cli/src/state/write/transaction.ts
-      - packages/cli/src/state/write/operations.ts
-      - packages/cli/src/state/write/explain.ts
+      - packages/cli/src/state/write/*.ts
+      - packages/cli/src/cli/commands/state/write.ts
     migrators:
-      - packages/cli/src/upgrade/migrateArtifactsV1ToV2.ts
+      - packages/cli/src/upgrade/migrateArtifacts*.ts
+      - packages/cli/src/upgrade/upgradeOrchestrator.ts
+      - packages/cli/src/upgrade/doctor.ts
+      - packages/cli/src/cli/commands/prime/v1Migration.ts
     schemas:
-      - skills/agentera/schemas/artifacts/plan.yaml
-      - skills/agentera/capabilities/plan/schemas/artifacts.yaml
-      - skills/agentera/capabilities/plan/schemas/validation.yaml
+      - skills/agentera/schemas/artifacts/*.yaml
+      - skills/agentera/capabilities/*/schemas/*.yaml
+      - skills/agentera/capability_schema_contract.yaml
     adapters:
-      - references/artifacts/artifact-registry-interface-model.yaml
-      - references/cli/agent-ready-state-contract.yaml
-      - references/cli/audience-namespace-cli-migration.yaml
-      - references/cli/capability-tool-classification.yaml
+      - references/**/*.yaml
+      - packages/cli/src/registries/*.ts
+      - packages/cli/src/state/startupAnalysis/*.ts
+      - packages/cli/src/cli/commands/schema.ts
+      - packages/cli/src/cli/commands/validate.ts
+      - packages/cli/src/cli/help.ts
+      - packages/cli/src/cli/prime-blob.ts
+      - packages/cli/src/hooks/validateArtifact/*.ts
+      - packages/cli/src/validate/selfAudit.ts
+      - packages/cli/src/hooks/compaction/*.ts
+      - packages/cli/src/cli/dispatch/*.ts
     fixtures:
-      - packages/cli/test/fixtures/**/.agentera/plan.yaml
-      - packages/cli/test/upgrade/fixtures/**/.agentera/plan.yaml
-      - packages/cli/test/cli/fixtures/oracle/source-contract.json
-      - .agentera/archive/PLAN-*.yaml
+      - packages/cli/test/**/*.ts
+      - packages/cli/test/fixtures/**
+      - packages/cli/test/fixtures/**/.agentera/*
+      - packages/cli/test/upgrade/fixtures/**
+      - packages/cli/test/upgrade/fixtures/**/.agentera/*
+      - packages/cli/test/cli/fixtures/**
+      - .agentera/plan.yaml
+      - .agentera/archive/**
     documented_external_commitments:
-      - packages/cli/src/capabilities/plan/instructions.ts
-      - packages/cli/src/capabilities/build/instructions.ts
-      - packages/cli/src/capabilities/orchestrate/instructions.ts
-      - references/cli/agent-ready-state-contract.yaml
-      - references/cli/capability-tool-classification.yaml
+      - packages/cli/src/capabilities/*/instructions.ts
+      - skills/agentera/SKILL.md
+      - skills/agentera/agents/*
+      - skills/agentera/references/*
+      - references/**/*.md
+      - AGENTS.md
+      - README.md
+      - UPGRADE.md

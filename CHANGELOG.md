@@ -10,6 +10,7 @@
 ### Changed
 
 - Defined plan lifecycle status as `open` or `complete`, with activity derived from the current-plan path and forced unfinished archives remaining open and non-executable.
+- Enforced plan lifecycle surface classification with a bounded repository scan covering readers, writers, migrators, schemas, adapters, fixtures, and documented commitments.
 - Changed v3 development-channel dry-runs without `--runtime` to show all active runtime lifecycle findings; generated lifecycle apply commands include `--runtime all --yes`, while apply without a selector remains app-only.
 - Changed lifecycle repair to fail closed on incomplete ownership provenance, isolate narrowed runtime selectors, and count explicit Claude cleanup separately from active-runtime work.
 - Changed corrupt or disconnected ownership-journal blockers to report stable causes without volatile event filenames across preview and apply.

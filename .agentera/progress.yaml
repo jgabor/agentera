@@ -1,4 +1,29 @@
 cycles:
+  - number: 734
+    timestamp: 2026-07-12 20:14
+    type: fix
+    phase: build
+    what: Repaired Task 1 lifecycle inventory completeness with scan-enforced
+      classification patterns in skills/agentera/schemas/artifacts/plan.yaml.
+    inspiration: Audit identified omitted planEvidence.ts, state/write.ts,
+      capability-context, validation, migration, schema, adapter, and commitment
+      surfaces.
+    discovered: The bounded inventory scans 706 files and classifies 161
+      lifecycle-bearing candidates with zero unclassified surfaces.
+    verified: "Focused contract test and full CLI suite pass: 161 files, 1,542
+      tests. Typecheck, build, compact, plan capability validation,
+      capability-contract validation, and git diff --check pass."
+    next: Task 1 evidence is repaired; Task 2 remains the next executable plan task.
+    context:
+      intent: Correct the audit failure by proving every lifecycle-bearing reader,
+        writer, migrator, schema, adapter, fixture, and documented commitment is
+        classified.
+      constraints: Task 1 repair only; preserved Criteria 2-4, immutable history, v3
+        cutover hold, stale profile caveat, and decision satisfaction.
+      unknowns: None; the prior completeness claim is replaced by mechanically
+        enforced bounded scan evidence.
+      scope: Plan lifecycle schema inventory, lifecycle contract regression test,
+        changelog, typed Task 1 evidence, and progress.
   - number: 733
     timestamp: 2026-07-12 19:51
     type: docs
@@ -254,30 +279,10 @@ cycles:
         packages/cli/test/cli/statusDashboardBudget.test.ts;
         packages/cli/test/cli/primeProjectIntegration.test.ts;
         .agentera/progress.yaml; .agentera/plan.yaml
-  - number: 724
-    timestamp: 2026-07-12 13:25
-    type: fix
-    phase: build
-    what: "Closed the Task 5 audit repair in
-      packages/cli/src/cli/orientation/attention.ts and its dashboard
-      regressions: bounded both manual metadata and fallback reasons while
-      preserving the exact procedure command."
-    inspiration: Final focused and full CLI verification after the audit criterion 1 repair.
-    verified: "Focused dashboard/orientation/prime tests: 58/58 passed; typecheck
-      passed; lint passed with 0 errors and 98 existing warnings; build passed;
-      full CLI suite: 1499 passed and exactly 8 known release-metadata failures
-      from 3.0.0-dev.16 versus core 3.0.0."
-    next: Task 6 remains pending; stop this cycle.
-    context:
-      intent: Leave Task 5 complete with final source, regression, and full-suite
-        evidence.
-      constraints: Task 5 only; no Task 6, vision/objective, Decision 92 satisfaction,
-        commit, push, publish, or tag.
-      scope: packages/cli/src/cli/orientation/attention.ts;
-        packages/cli/test/cli/orientationCorpusCoverage.test.ts;
-        packages/cli/test/cli/primeProjectIntegration.test.ts;
-        .agentera/plan.yaml; .agentera/progress.yaml
 archive:
+  - summary: "Cycle 724 (2026-07-12): Closed the Task 5 audit repair in
+      packages/cli/src/cli/orientation/attention.ts and its dashboard
+      regressions: bounded both manual..."
   - summary: "Cycle 723 (2026-07-12): Final Task 5 read-back after the blocker
       regression refinement in
       packages/cli/test/cli/primeProjectIntegration.test.ts: the full suite
@@ -375,5 +380,3 @@ archive:
       modernization: bump the `vitest` devDep `^2.1.8` ->..."
   - summary: "Cycle 685 (2026-06-28): Audit 25 of the feat/v3 CLI. Evaluated the C74
       Dict-consolidation refactor (commits 2715bd28..8e9f2447, 6 commits)..."
-  - summary: "Cycle 684 (2026-06-27): Plan task 7 (final) of chore:3.0.0: final
-      verification + plan archive + TODO closure. Ran..."
