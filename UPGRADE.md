@@ -64,6 +64,11 @@ Agentera-owned by the append-only ownership journal. Matching names or bytes do
 not establish ownership. User-owned, ambiguous, shadowed, or malformed targets
 remain blocked.
 
+For every blocked collision, the exact remediation is: “The destination is not
+ledger-owned; review the collision manually. Agentera will not adopt it by name
+or equality.” The destination remains unchanged until authoritative ownership is
+available.
+
 The operation outcomes are:
 
 - `applied` — the declared change was published;

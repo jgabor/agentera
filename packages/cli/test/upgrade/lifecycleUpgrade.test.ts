@@ -136,6 +136,8 @@ describe("upgrade lifecycle preview", () => {
     expect(preview.userActions.some((action) =>
       action.kind === "native" && action.status === "action_required")).toBe(true);
     expect(preview.ownershipJournal.state).toBe("absent");
+    expect(preview.retiredCleanup).toBeNull();
+    expect(preview.retiredSummary).toBeNull();
     expect(treeBytes(fx.root)).toEqual(before);
     expect(fs.existsSync(fx.trap)).toBe(false);
   });
@@ -148,6 +150,19 @@ describe("upgrade lifecycle preview", () => {
     expect(new Set(preview.operations.map((operation) => operation.runtime))).toEqual(new Set(["shared", "cursor"]));
     expect(preview.userActions.some((action) => action.runtime === "cursor" && action.surface === "ide"))
       .toBe(true);
+  });
+
+  it("keeps runtime-specific resources outside a narrowed selector unchanged during apply", () => {
+    const opencode = run("opencode", true);
+    expect(opencode.operations.some((operation) => operation.id === "opencode.plugin")).toBe(true);
+    const plugin = path.join(fx.home, ".config", "opencode", "plugins", "agentera.js");
+    fs.writeFileSync(plugin, "leave this outside the Cursor selection\n");
+
+    const cursor = run("cursor", true);
+
+    expect(cursor.operations.every((operation) =>
+      !operation.id.startsWith("opencode.") || operation.id === "canonical_skill")).toBe(true);
+    expect(fs.readFileSync(plugin, "utf8")).toBe("leave this outside the Cursor selection\n");
   });
 
   it("keeps app and lifecycle preview byte-read-only while exposing both phases", () => {
@@ -264,6 +279,8 @@ describe("upgrade lifecycle preview", () => {
     expect(preview.selection).toEqual({ requested: "none", runtimeIds: [] });
     expect(preview.operations).toEqual([]);
     expect(preview.retiredCleanup).toMatchObject({ runtimeId: "claude", activeRuntime: false });
+    expect(preview.retiredSummary).toMatchObject({ pending: 0, noop: 1 });
+    expect(preview.summary.pending).toBe(0);
     expect(treeBytes(claude)).toEqual(before);
   });
 });

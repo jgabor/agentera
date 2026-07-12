@@ -28,6 +28,7 @@ import {
   applyLifecycleOperations,
   createLifecycleOwnershipManifest,
   emptyLifecycleOwnershipLedger,
+  LIFECYCLE_MANUAL_REVIEW_GUIDANCE,
   planLifecycleOperations,
   type LifecycleApplyOptions,
   type LifecycleApplyResult,
@@ -502,7 +503,7 @@ function remediationFor(
   if (blockedOperations.length > 0) {
     return {
       kind: "action_required",
-      summary: "The destination is not ledger-owned; review the collision manually. Agentera will not adopt it by name or equality.",
+      summary: LIFECYCLE_MANUAL_REVIEW_GUIDANCE,
       operationIds: blockedOperations.map((operation) => operation.id),
       nativeActions: [],
     };

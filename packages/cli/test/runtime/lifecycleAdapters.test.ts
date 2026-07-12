@@ -28,6 +28,7 @@ import {
 } from "../../src/runtime/lifecycleAuthority.js";
 import {
   emptyLifecycleOwnershipLedger,
+  LIFECYCLE_MANUAL_REVIEW_GUIDANCE,
   type LifecycleOwnershipLedger,
 } from "../../src/runtime/lifecycleOperations.js";
 import { observeRuntimeLifecycle } from "../../src/runtime/lifecycleSnapshot.js";
@@ -392,6 +393,8 @@ describe("repair ownership and publication boundaries", () => {
     const plugin = report.repairPlan.operations.find((operation) => operation.id === "opencode.plugin");
 
     expect(plugin?.action).toBe("blocked_unowned");
+    expect(report.categories.plugins.surfaces.find((surface) => surface.surfaceId === "host")?.remediation.summary)
+      .toBe(LIFECYCLE_MANUAL_REVIEW_GUIDANCE);
     expect(report.categories.plugins.state).toBe("blocked_unowned");
     const result = applyRuntimeAdapterRepair(report);
     expect(result.operations.find((operation) => operation.id === "opencode.plugin")?.status)

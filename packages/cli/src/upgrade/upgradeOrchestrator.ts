@@ -510,6 +510,12 @@ export function renderUpgradePlan(plan: UpgradePlanV2): string {
     }
     if (plan.lifecycle.retiredCleanup) {
       lines.push("  retired cleanup: claude (legacy-only, explicitly selected; user data excluded)");
+      if (plan.lifecycle.retiredSummary) {
+        const retired = plan.lifecycle.retiredSummary;
+        lines.push(
+          `  retired cleanup counts: pending=${retired.pending}, applied=${retired.applied}, noop=${retired.noop}, blocked=${retired.blocked_unowned + retired.action_required}`,
+        );
+      }
     }
   }
   if (plan.mode === "plan" && plan.summary.pending > 0 && plan.applyCommand) {

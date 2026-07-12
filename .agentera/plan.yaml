@@ -51,7 +51,7 @@ tasks:
     name: Enforce ownership-safe repair and cleanup
     depends_on:
       - "2"
-    status: pending
+    status: complete
     acceptance:
       - GIVEN a declared absent destination or authoritative matching ledger record WHEN selected THEN the operation is claimable or managed; missing, corrupt, disconnected, or mismatched ownership fails closed.
       - GIVEN an unowned overlapping or outdated resource WHEN previewed or applied THEN it remains unchanged and receives exact manual review guidance.

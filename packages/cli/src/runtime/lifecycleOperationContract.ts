@@ -41,6 +41,12 @@ export function validateLifecycleOperationContractData(value: unknown): string[]
     errors.push("ownership.removal_rule must require matching identity and fingerprint");
   }
   if (
+    ownership?.manual_review_guidance !==
+    "The destination is not ledger-owned; review the collision manually. Agentera will not adopt it by name or equality."
+  ) {
+    errors.push("ownership.manual_review_guidance must provide the exact no-adoption review guidance");
+  }
+  if (
     typeof ownership?.journal_rule !== "string"
     || !ownership.journal_rule.includes("append-only")
     || !ownership.journal_rule.includes("atomically at final names")

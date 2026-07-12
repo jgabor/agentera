@@ -5,6 +5,7 @@ import { loadYamlMapping } from "../core/yaml.js";
 import { resolveSourceRoot } from "../core/sourceRoot.js";
 import {
   LIFECYCLE_OPERATION_CONTRACT_RELATIVE_PATH,
+  LIFECYCLE_MANUAL_REVIEW_GUIDANCE,
   applyLifecycleOperations,
   createLifecycleOwnershipManifest,
   emptyLifecycleOwnershipLedger,
@@ -203,16 +204,23 @@ function legacyLedgerDiagnostics(plan: LifecycleOperationPlan): string[] {
 }
 
 function blockedRetiredPlan(plan: LifecycleOperationPlan, diagnostics: string[]): LifecycleOperationPlan {
+  const reason = `${diagnostics.join("; ")} ${LIFECYCLE_MANUAL_REVIEW_GUIDANCE}`;
   return {
     ...plan,
-    operations: plan.operations.map((operation) => operation.action === "blocked_unowned"
-      ? operation
-      : {
+    operations: plan.operations.map((operation) =>
+      operation.action === "noop"
+        ? operation
+        : operation.action === "remove" && operation.ownership === "managed"
+          ? {
+              ...operation,
+              state: "ambiguous_ownership",
+              ownership: "ambiguous",
+              action: "blocked_unowned",
+              reason,
+            }
+        : {
           ...operation,
-          state: "ambiguous_ownership",
-          ownership: "ambiguous",
-          action: "blocked_unowned",
-          reason: diagnostics.join("; "),
+          reason: `${operation.reason}; ${reason}`,
         }),
   };
 }

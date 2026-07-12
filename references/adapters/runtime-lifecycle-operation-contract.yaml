@@ -11,6 +11,7 @@ ownership:
   collision_rule: Pre-existing resources without matching ledger ownership are never replaced or removed.
   identity_rule: Managed and published pending-create records bind the filesystem device and inode observed at publication.
   removal_rule: Removal requires a matching whole-resource ledger identity and fingerprint, a pinned non-symlink parent, and Linux /proc/self/fd directory-relative access.
+  manual_review_guidance: The destination is not ledger-owned; review the collision manually. Agentera will not adopt it by name or equality.
   interrupted_create_rule: A pending_create record may be finalized when its recorded identity and expected fingerprint match, or when the durable pre-create record survived and the exclusively declared resource is observed at the exact expected kind and fingerprint after restart.
   journal_rule: Apply publishes fsynced append-only ledger snapshots atomically at final names and accepts only a contiguous sequence-one hash chain with no gaps, forks, duplicate sequences, digest mismatches, or disconnected events.
   journal_statuses:

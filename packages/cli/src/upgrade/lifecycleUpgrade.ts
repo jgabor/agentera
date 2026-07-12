@@ -96,6 +96,10 @@ export interface LifecycleUpgradeSummary extends LifecycleApplySummary {
   manualActionRequired: number;
 }
 
+export interface LifecycleRetiredSummary extends LifecycleApplySummary {
+  pending: number;
+}
+
 export interface LifecycleUpgradeResult {
   schemaVersion: typeof LIFECYCLE_UPGRADE_SCHEMA;
   mode: "preview" | "apply";
@@ -113,6 +117,7 @@ export interface LifecycleUpgradeResult {
   operations: LifecycleUpgradeOperation[];
   userActions: LifecycleUpgradeUserAction[];
   retiredCleanup: RetiredRuntimeCleanupPreview | RetiredRuntimeCleanupResult | null;
+  retiredSummary: LifecycleRetiredSummary | null;
   summary: LifecycleUpgradeSummary;
   requiredUnmet: string[];
 }
@@ -166,13 +171,19 @@ function aggregatePlan(
   reports: RuntimeAdapterReport[],
   ledger: LifecycleOwnershipJournalRead["ledger"],
   appHome: string,
+  selectedRuntimeIds: ReadonlySet<string>,
 ): LifecycleOperationPlan {
   const operations: LifecycleOperationSpec[] = [];
   const byId = new Map<string, LifecycleOperationSpec>();
   const allowedRoots = new Set<string>([path.resolve(appHome)]);
+  const contract = loadRuntimeLifecycleAdapterContract();
   for (const report of reports) {
     for (const root of report.repairPlan.request.allowedRoots) allowedRoots.add(root);
     for (const spec of report.repairPlan.request.operations) {
+      const resource = resourceForOperation(spec.id, contract.resources);
+      if (resource.runtimeId !== undefined && !selectedRuntimeIds.has(resource.runtimeId)) {
+        throw new Error(`${spec.id}: selected lifecycle plan includes an unselected runtime resource`);
+      }
       const previous = byId.get(spec.id);
       if (previous) {
         if (!sameSpec(previous, spec)) throw new Error(`${spec.id}: selected adapters disagree on shared operation`);
@@ -225,6 +236,7 @@ function publicOperation(
   const resource = resourceForOperation(operation.id, resources);
   const detail = operationEvidence(operation.id, reports);
   const record = journal.ledger.records.find((candidate) => candidate.resourceId === operation.id);
+  const needsOutcomeRemediation = outcome?.status === "failed" || outcome?.status === "skipped_dependency";
   return {
     id: operation.id,
     runtime: resource.runtimeId ?? "shared",
@@ -254,9 +266,12 @@ function publicOperation(
     required: operation.required,
     optional: !operation.required,
     blockedReason: ["blocked_unowned", "action_required"].includes(operation.action)
+      || needsOutcomeRemediation
       ? operation.reason
       : null,
-    remediation: detail.remediation.length > 0 ? detail.remediation : [operation.reason],
+    remediation: needsOutcomeRemediation
+      ? [operation.reason, ...detail.remediation]
+      : detail.remediation.length > 0 ? detail.remediation : [operation.reason],
     evidence: detail.evidence,
     outcome: outcome?.status ?? null,
     dependencyCauses: outcome?.dependencyCauses ?? [],
@@ -354,7 +369,7 @@ function buildLifecycleUpgrade(args: LifecycleUpgradeArgs): BuiltLifecycleUpgrad
   } satisfies RuntimeAdapterInspectionContext);
   const runtimeIds = new Set(selectedRuntimeIds(args.selector));
   const reports = matrix.reports.filter((report) => runtimeIds.has(report.runtimeId as ActiveRuntimeSelector));
-  let plan = aggregatePlan(reports, journal.ledger, args.appHome);
+  let plan = aggregatePlan(reports, journal.ledger, args.appHome, runtimeIds);
   if (
     args.apply
     && args.canonicalSkillTarget
@@ -444,11 +459,43 @@ function previewSummary(
   return summary;
 }
 
+function emptyRetiredSummary(): LifecycleRetiredSummary {
+  return { ...emptyApplySummary(), pending: 0 };
+}
+
+function retiredPreviewSummary(
+  preview: RetiredRuntimeCleanupPreview | null,
+): LifecycleRetiredSummary | null {
+  if (!preview) return null;
+  const summary = emptyRetiredSummary();
+  for (const operation of preview.plan.operations) {
+    if (operation.action === "noop") summary.noop += 1;
+    else if (operation.action === "blocked_unowned") summary.blocked_unowned += 1;
+    else if (operation.action === "action_required") summary.action_required += 1;
+    else summary.pending += 1;
+  }
+  return summary;
+}
+
+function retiredResultSummary(
+  result: RetiredRuntimeCleanupResult | null,
+): LifecycleRetiredSummary | null {
+  if (!result) return null;
+  return { ...result.summary, pending: 0 };
+}
+
 function resultStatus(
   mode: "preview" | "apply",
   summary: LifecycleUpgradeSummary,
+  retiredSummary: LifecycleRetiredSummary | null,
   requiredUnmet: string[],
 ): LifecycleUpgradeResult["status"] {
+  const retiredHasFailure = retiredSummary !== null && (
+    retiredSummary.failed > 0
+    || retiredSummary.blocked_unowned > 0
+    || retiredSummary.skipped_dependency > 0
+    || retiredSummary.action_required > 0
+  );
   if (
     summary.failed > 0
     || summary.blocked_unowned > 0
@@ -457,9 +504,10 @@ function resultStatus(
     || summary.nativeActionRequired > 0
     || summary.manualActionRequired > 0
   ) return "non_success";
+  if (retiredHasFailure) return "non_success";
   if (requiredUnmet.length > 0) return "non_success";
-  if (mode === "preview" && summary.pending > 0) return "pending";
-  if (mode === "apply" && summary.applied > 0) return "success";
+  if (mode === "preview" && (summary.pending > 0 || (retiredSummary?.pending ?? 0) > 0)) return "pending";
+  if (mode === "apply" && (summary.applied > 0 || (retiredSummary?.applied ?? 0) > 0)) return "success";
   return "noop";
 }
 
@@ -470,16 +518,9 @@ export function runLifecycleUpgrade(
   const built = buildLifecycleUpgrade(args);
   let operations = built.operations;
   let retiredCleanup: RetiredRuntimeCleanupPreview | RetiredRuntimeCleanupResult | null = built.retiredPreview;
+  let retiredSummary = retiredPreviewSummary(built.retiredPreview);
   let outputJournal = built.journal;
   let summary = previewSummary(operations, built.userActions);
-  if (built.retiredPreview) {
-    for (const operation of built.retiredPreview.plan.operations) {
-      if (operation.action === "noop") summary.noop += 1;
-      else if (operation.action === "blocked_unowned") summary.blocked_unowned += 1;
-      else if (operation.action === "action_required") summary.action_required += 1;
-      else summary.pending += 1;
-    }
-  }
   let requiredUnmet = [
     ...operations.filter((operation) =>
       operation.required && ["blocked_unowned", "action_required"].includes(operation.action),
@@ -511,6 +552,7 @@ export function runLifecycleUpgrade(
         approved: true,
         persistLedger,
       });
+      retiredSummary = retiredResultSummary(retiredCleanup);
       outputJournal = readLifecycleOwnershipJournal(built.journal.path);
     }
     summary = {
@@ -519,13 +561,6 @@ export function runLifecycleUpgrade(
       nativeActionRequired: built.userActions.filter((action) => action.kind === "native").length,
       manualActionRequired: built.userActions.filter((action) => action.kind === "manual").length,
     };
-    if (retiredCleanup && "summary" in retiredCleanup) {
-      for (const status of [
-        "applied", "noop", "failed", "blocked_unowned", "skipped_dependency", "action_required",
-      ] as const) {
-        summary[status] += retiredCleanup.summary[status];
-      }
-    }
     requiredUnmet = [
       ...applied.requiredUnmet,
       ...built.userActions.filter((action) => action.required).map((action) => action.id),
@@ -542,7 +577,7 @@ export function runLifecycleUpgrade(
     schemaVersion: LIFECYCLE_UPGRADE_SCHEMA,
     mode: args.apply ? "apply" : "preview",
     selection: { requested: args.selector ?? "none", runtimeIds: selectedRuntimeIds(args.selector) },
-    status: resultStatus(args.apply ? "apply" : "preview", summary, requiredUnmet),
+    status: resultStatus(args.apply ? "apply" : "preview", summary, retiredSummary, requiredUnmet),
     approval: args.apply ? "approved" : "not_requested",
     platform: {
       securePublication: secureLifecycleRemovalAvailable(),
@@ -552,6 +587,7 @@ export function runLifecycleUpgrade(
     operations,
     userActions: built.userActions,
     retiredCleanup,
+    retiredSummary,
     summary,
     requiredUnmet,
   };

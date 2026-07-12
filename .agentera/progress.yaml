@@ -1,4 +1,33 @@
 cycles:
+  - number: 718
+    timestamp: 2026-07-12 11:19
+    type: feat
+    phase: build
+    what: Hardened packages/cli/src/runtime/lifecycleOperations.ts and
+      lifecycleUpgrade.ts for Task 3 ownership-safe repair and retired cleanup
+      across OpenCode, Codex, Cursor, and Copilot.
+    inspiration: "Active plan Task 3: Enforce ownership-safe repair and cleanup."
+    discovered: The full CLI suite retains exactly 8 tracked Task 8 release-metadata
+      baseline failures from the 3.0.0-dev.16 versus 3.0.0 version split; no
+      additional failure appeared.
+    verified: "Focused ownership/recovery/cleanup/selector suite: 114/114 passed;
+      typecheck, build, lint with 0 errors, built CLI smoke, build capability
+      validation, capability-contract validation, operation contract validation,
+      compaction, and git diff --check passed. Full CLI suite: 1488 passed and
+      exactly 8 known baseline failures."
+    next: Continue with plan Task 4 project integration; do not broaden this cycle
+      into project-integration recommendation or status attention/ranking.
+    context:
+      intent: Enforce Decision 92 ownership, provenance, selector, dependency, and
+        retired-cleanup safety boundaries without adopting user-owned resources.
+      constraints: No name/equality adoption, native or trust execution, preview
+        writes, vision/objective edits, default Claude cleanup, push, tag, or
+        publish.
+      unknowns: Decision 92 satisfaction remains review-needed; no user confirmation
+        was inferred.
+      scope: Ownership ledger validation and guidance, lifecycle selector boundaries,
+        dependency remediation, retired summary separation, runtime contract,
+        upgrade documentation, focused tests.
   - number: 717
     timestamp: 2026-07-12 10:57
     type: feat
@@ -325,54 +354,10 @@ cycles:
       scope: Lifecycle authority and adapter contracts, shared lifecycle
         state/snapshot projection, doctor exit and blocker detail, schema
         discovery, parity expectations, and runtime/CLI tests.
-  - number: 708
-    timestamp: 2026-07-11 20:47
-    type: feat
-    phase: build
-    what: Integrated one authoritative read-only runtime lifecycle snapshot into
-      bounded prime orientation and detailed doctor diagnosis.
-    inspiration: Active plan Task 6 and Decision 92 lifecycle support-floor and
-      trust policy.
-    discovered: The legacy doctor app-status parity envelope needed to remain
-      independently comparable after adding the additive runtime_lifecycle
-      diagnosis; its oracle now excludes only that extension.
-    verified: Focused pnpm -C packages/cli test
-      test/cli/lifecycleStatusDiagnosis.test.ts
-      test/runtime/lifecycleAdapters.test.ts test/cli/prime.test.ts
-      test/cli/doctor.test.ts test/cli/schema.test.ts
-      test/cli/sourceContractOracles.test.ts test/cli/npmParityMatrix.test.ts
-      passed 7 files/101 tests. Full pnpm -C packages/cli test passed 155
-      files/1,422 tests. pnpm -C packages/cli run typecheck and pnpm -C
-      packages/cli build passed. pnpm -C packages/cli run lint returned 99
-      pre-existing warnings/0 errors. Local built CLI check validate
-      lifecycle-adapters, capability status, capability build,
-      capability-contract, cross-capability, app-home-contract, and
-      vocabularyAuthority passed. node packages/cli/dist/bin/agentera.js schema
-      --format json parsed with lifecycle contracts; node
-      packages/cli/dist/bin/agentera.js check compact passed 9 artifacts with
-      zero over-limit/errors; git diff --check passed. Child-process fixtures
-      observed no target writes or native invocation, retained complete doctor
-      JSON above 65,536 bytes, and covered absent hosts, missing parents,
-      collisions, shadowing, trust distinctions, unsupported categories, Cursor
-      CLI/IDE conditions, and all-ready state. Live node
-      packages/cli/dist/bin/agentera.js prime --format json --fields
-      runtime_lifecycle was 2,890 bytes versus 59,502-byte doctor detail;
-      authority, snapshot/status vocabulary, IDs, statuses, support floors,
-      blockers, actions, and surfaces agreed.
-    next: Task 7 may consume this snapshot for mutation UX without changing Task 6
-      diagnosis semantics.
-    context:
-      intent: Complete active plan Task 6 with four-runtime status parity, truthful
-        category evidence, and user-owned native steps.
-      constraints: No Task 7 upgrade preview/apply, Task 8 release sweep,
-        cleanup/import semantic change, vision edit, plan status edit,
-        package-manager/native action, or remote push.
-      unknowns: None; current-host degraded states reflect observed unknown trust and
-        optional lifecycle gaps, not support-floor failure.
-      scope: Lifecycle snapshot service; prime and doctor JSON/text projections;
-        schema/help compatibility; integration, child-process, parity, and
-        regression tests.
 archive:
+  - summary: "Cycle 708 (2026-07-11): Integrated one authoritative read-only runtime
+      lifecycle snapshot into bounded prime orientation and detailed doctor
+      diagnosis."
   - summary: "Cycle 707 (2026-07-11): Removed the last active-style Claude
       question-tool claim and finalized canonical retirement surface
       enforcement."
@@ -469,6 +454,3 @@ archive:
       confirmed vitest decoupled..."
   - summary: "Cycle 669 (2026-06-18): Plan T5 — decouple registry and evaluator TODO
       coupling: packageRegistry and artifactRegistry tests read fixture..."
-  - summary: "Cycle 668 (2026-06-18): Plan T4 — decouple artifact validation and
-      validate oracles: migrated validateArtifact.test.ts, validate.test.ts, and
-      validateVerifyOracles.test.ts to..."

@@ -224,6 +224,19 @@ describe("lifecycle resource planning", () => {
       action: "action_required",
     });
   });
+
+  it("fails closed when managed provenance has no publication identity", () => {
+    const destination = path.join(root, "resource");
+    const spec = fileSpec("resource", destination);
+    fs.writeFileSync(destination, spec.content as string);
+
+    expect(() => planLifecycleOperations({
+      allowedRoots: [root],
+      operations: [spec],
+      manifest: createLifecycleOwnershipManifest([spec]),
+      ledger: ledger([recordFor(spec, { identity: null })]),
+    })).toThrow("identity is required for managed ownership");
+  });
 });
 
 function snapshotTree(directory: string): Record<string, string> {

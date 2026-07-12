@@ -49,7 +49,7 @@ function ledger(resourceId: string): LifecycleOwnershipLedger {
       kind: "file",
       scope: "whole",
       status: "pending_create",
-      fingerprint: "sha256:pending",
+      fingerprint: `sha256:${"0".repeat(64)}`,
       identity: null,
     }],
   };

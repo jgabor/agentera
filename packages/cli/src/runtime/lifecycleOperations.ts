@@ -50,6 +50,9 @@ export const LIFECYCLE_APPLY_STATUSES = [
   "action_required",
 ] as const;
 
+export const LIFECYCLE_MANUAL_REVIEW_GUIDANCE =
+  "The destination is not ledger-owned; review the collision manually. Agentera will not adopt it by name or equality.";
+
 export type LifecycleResourceKind = "file" | "directory" | "symlink";
 export type LifecycleOperationIntent = "ensure" | "remove";
 export type LifecycleResourceState = (typeof LIFECYCLE_RESOURCE_STATES)[number];
@@ -260,7 +263,11 @@ export function validateLifecycleOwnershipLedger(value: unknown): string[] {
     } else if (seen.has(id)) {
       errors.push(`ledger.records[${index}].resourceId duplicates ${id}`);
     } else seen.add(id);
-    if (typeof record.destination !== "string" || !path.isAbsolute(record.destination)) {
+    if (
+      typeof record.destination !== "string"
+      || !path.isAbsolute(record.destination)
+      || path.resolve(record.destination) !== record.destination
+    ) {
       errors.push(`ledger.records[${index}].destination must be absolute`);
     }
     if (!(["file", "directory", "symlink"] as unknown[]).includes(record.kind)) {
@@ -278,9 +285,14 @@ export function validateLifecycleOwnershipLedger(value: unknown): string[] {
     if (record.identity !== null && (
       !isObject(record.identity)
       || typeof record.identity.device !== "string"
+      || !/^\d+$/.test(record.identity.device as string)
       || typeof record.identity.inode !== "string"
+      || !/^\d+$/.test(record.identity.inode as string)
     )) {
       errors.push(`ledger.records[${index}].identity must contain string device and inode fields or be null`);
+    }
+    if (["managed", "legacy"].includes(record.status as string) && record.identity === null) {
+      errors.push(`ledger.records[${index}].identity is required for ${String(record.status)} ownership`);
     }
   }
   return errors;
