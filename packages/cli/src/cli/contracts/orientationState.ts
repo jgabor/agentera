@@ -43,6 +43,9 @@ export interface PlanSummary {
   total?: number;
   complete_plan?: boolean;
   first_pending?: JsonObject | null;
+  archived_plans?: JsonObject[];
+  archive_count?: number;
+  invalid_archive_paths?: string[];
 }
 
 export interface DocsSummary {

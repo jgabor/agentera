@@ -178,6 +178,32 @@ function seedPlan(): string {
   return p;
 }
 
+function writeArchivedPlan(planPath: string, filename: string, title: string, status = "complete"): string {
+  const archiveDir = path.join(path.dirname(planPath), "archive");
+  fs.mkdirSync(archiveDir, { recursive: true });
+  const archivePath = path.join(archiveDir, filename);
+  fs.writeFileSync(
+    archivePath,
+    [
+      "header:",
+      `  title: ${title}`,
+      `  status: ${status}`,
+      "  created: '2026-07-12'",
+      "overall_acceptance:",
+      "  - lifecycle visible",
+      "tasks:",
+      "  - number: 8",
+      `    status: ${status}`,
+      "    name: Runtime lifecycle visibility",
+      "    evidence:",
+      "      - command: pnpm -C packages/cli test",
+      "        result: passed",
+      "",
+    ].join("\n"),
+  );
+  return archivePath;
+}
+
 describe("cli state plan", () => {
   it("renders the plan header, task status counts, and tasks as text", () => {
     const p = seedPlan();
@@ -215,6 +241,45 @@ describe("cli state plan", () => {
     expect(payload.status).toBe("empty");
     expect(payload.summary.absence_reason).toContain("No plan artifact");
     expect(payload.source_contract.complete_for_plan_artifact).toBe(false);
+  });
+
+  it("reads a valid archived plan when no active plan remains", () => {
+    const p = path.join(tmp, "plan.yaml");
+    const archivePath = writeArchivedPlan(p, "PLAN-2026-07-12-lifecycle.yaml", "Archived lifecycle", "complete");
+    fs.writeFileSync(path.join(tmp, "archive", "PLAN-malformed.yaml"), "header: [broken\n");
+    fs.writeFileSync(path.join(tmp, "archive", "notes.yaml"), "notes: unrelated\n");
+
+    const { rc, out } = capture((io) => queryPlan({ command: "plan", format: "json" }, planSchema(p), io));
+    expect(rc).toBe(0);
+    const payload = JSON.parse(out);
+    expect(payload.status).toBe("ok");
+    expect(payload.summary.status).toBe("complete");
+    expect(payload.entries[0].status).toBe("complete");
+    expect(payload.entries[0].evidence[0].result).toBe("passed");
+    expect(payload.source.path).toBe(archivePath);
+    expect(payload.source.active).toBe(false);
+    expect(payload.source_contract.complete_for_plan_artifact).toBe(true);
+    expect(payload.source_contract.complete_for_normal_startup_evaluation).toBe(false);
+    expect(payload.source_contract.invalid_archive_paths).toEqual([path.join(tmp, "archive", "PLAN-malformed.yaml")]);
+    expect(payload.plans).toHaveLength(1);
+    expect(payload.plans[0].archived).toBe(true);
+  });
+
+  it("keeps the active plan first and archives in deterministic newest-first order", () => {
+    const p = seedPlan();
+    const older = writeArchivedPlan(p, "PLAN-2026-07-10-older.yaml", "Older archive");
+    const newer = writeArchivedPlan(p, "PLAN-2026-07-11-newer.yaml", "Newer archive");
+
+    const { rc, out } = capture((io) => queryPlan({ command: "plan", format: "json" }, planSchema(p), io));
+    expect(rc).toBe(0);
+    const payload = JSON.parse(out);
+    expect(payload.plans.map((plan: { path: string }) => plan.path)).toEqual([p, newer, older]);
+    expect(payload.plans[0].active).toBe(true);
+    expect(payload.plans[0].task_count).toBe(2);
+    expect(payload.plans[1].archived).toBe(true);
+    expect(payload.plans[2].archived).toBe(true);
+    expect(payload.entries).toHaveLength(2);
+    expect(payload.summary.title).toBe("Migrate CLI to TypeScript");
   });
 });
 
@@ -429,4 +494,3 @@ describe("cli state decisions", () => {
     expect(entry.date).toBe("2026-01-02");
   });
 });
-

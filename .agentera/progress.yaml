@@ -1,4 +1,26 @@
 cycles:
+  - number: 730
+    timestamp: 2026-07-12 15:19
+    type: fix
+    phase: build
+    what: Fixed state plan archive discovery in
+      packages/cli/src/cli/planArtifacts.ts and kept archived tasks out of
+      prime/orchestrate.
+    verified: "CLI tests: 160 files and 1537 tests passed; typecheck, build, lint (0
+      errors, 98 existing warnings), compact, capability-contract, plan
+      capability, lifecycle-adapters, and npm pack dry-run passed. Live state
+      plan returned the completed archive with 8 tasks; prime/orchestrate
+      selected no archived task."
+    next: No further Task 8 repair; publication, tagging, pushing, and stable
+      promotion remain separate.
+    context:
+      intent: Repair the canonical CLI read after Task 8 plan archival without
+        restoring an active plan.
+      constraints: No active plan restoration, archive edit, version change,
+        vision/objective edit, Decision 92 change, publish, tag, or push.
+      unknowns: none
+      scope: packages/cli/src/cli/planArtifacts.ts; state plan; orientation; tests;
+        source-contract oracle; help/schema wording.
   - number: 729
     timestamp: 2026-07-12 14:54
     type: chore
@@ -255,37 +277,9 @@ cycles:
         packages/cli/test/cli/orientationCorpusCoverage.test.ts;
         packages/cli/test/cli/primeProjectIntegration.test.ts;
         .agentera/progress.yaml; .agentera/plan.yaml
-  - number: 720
-    timestamp: 2026-07-12 12:39
-    type: feat
-    phase: build
-    what: Surface bounded lifecycle attention rows and exact next-action guidance in
-      prime/status.
-    inspiration: "Active plan Task 5: Surface lifecycle attention and next actions."
-    discovered: The existing canonical lifecycle snapshot already supplies action
-      classes, runtime IDs, manual procedures, and command eligibility;
-      presentation now consumes that projection without reclassifying ownership.
-    verified: "Focused dashboard/orientation/prime run: 3 files and 30 tests passed.
-      Full CLI suite: 1496 tests passed with exactly 8 known release-metadata
-      failures caused by packages/cli 3.0.0-dev.16 versus suite 3.0.0. Typecheck
-      passed, lint reported 0 errors, build passed, built prime smoke showed two
-      lifecycle rows, exact runtime preview, host procedure, doctor route, and
-      no ineffective --yes for blockers."
-    next: Task 6 remains pending; do not begin selector, ownership, convergence, or
-      safety verification in this cycle.
-    context:
-      intent: Make lifecycle drift actionable in the existing prime/status attention
-        and next-action budget without duplicating lifecycle authority or
-        ownership logic.
-      constraints: Only Task 5; preserve Decision 92, vision/objective state,
-        lifecycle authority, ownership logic, attention budget, and ordering
-        contracts; no push, publish, tag, or Task 6 work.
-      scope: packages/cli/src/cli/orientation/attention.ts;
-        packages/cli/src/cli/commands/prime/collectOrientationState.ts;
-        packages/cli/src/cli/contracts/orientationState.ts;
-        packages/cli/test/cli/orientationCorpusCoverage.test.ts; CHANGELOG.md;
-        .agentera/plan.yaml
 archive:
+  - summary: "Cycle 720 (2026-07-12): Surface bounded lifecycle attention rows and
+      exact next-action guidance in prime/status."
   - summary: "Cycle 719 (2026-07-12): Drove project integration from the canonical
       runtime lifecycle projection, preserving separate app and lifecycle
       phases..."
@@ -380,5 +374,3 @@ archive:
       + remediation. First build cycle eliminated aliases in..."
   - summary: "Cycle 681 (2026-06-27): Plan task 4 of chore:3.0.0: consolidate Dict
       aliases in registries & validate subsystems. Removed local..."
-  - summary: "Cycle 680 (2026-06-27): Plan tasks 2+3 (coupled) of chore:3.0.0:
-      consolidate Dict aliases in the CLI command/state-query surface (task..."

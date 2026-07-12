@@ -25,6 +25,7 @@ import { isResolvedTodoMarkdownStatus, parseTodoMarkdownListItem } from "./todoM
 import type { JsonObject } from "../core/jsonValue.js";
 import { TODO_SEVERITY_ORDER, TODO_SEVERITY_ORDER_KEYS } from "./todoSeverity.js";
 import { capabilityStartupComplete, type StartupCompletenessInput } from "./startupCompletenessContract.js";
+import { discoverPlanArtifacts, planDocumentParts } from "./planArtifacts.js";
 import type {
   DecisionFollowUp,
   DecisionReviewAttention,
@@ -321,8 +322,8 @@ function todoNeedsPlan(item: Record<string, string>): boolean {
 // ── per-artifact summaries ──────────────────────────────────────────
 
 export function planSummary(schemas: Record<string, SchemaInfo>): PlanSummary {
-  const data = loadNamedArtifact(schemas, "plan");
-  if (!data || typeof data !== "object" || Array.isArray(data)) {
+  const info = schemas.plan;
+  if (!info) {
     return {
       exists: false,
       active: false,
@@ -332,21 +333,47 @@ export function planSummary(schemas: Record<string, SchemaInfo>): PlanSummary {
       absence_reason: "No active plan artifact is available from agentera plan.",
     };
   }
-  const d = data as JsonObject;
-  const legacyEntries = asList(d.entries);
-  let tasks: JsonObject[];
-  let status: string;
-  let title: string;
-  if (legacyEntries.length > 0) {
-    tasks = legacyEntries;
-    status = entryStatusPy(tasks[0], "");
-    title = String(firstPresent(tasks[0], ["title", "name"], ""));
-  } else {
-    const header = d.header && typeof d.header === "object" && !Array.isArray(d.header) ? d.header : {};
-    tasks = asList(d.tasks);
-    status = String(firstPresent(header, ["status"], d.status ?? "") || "");
-    title = String(firstPresent(header, ["title"], d.title ?? "") || "");
+  const discovery = discoverPlanArtifacts(artifactPath(info, "plan"));
+  const archivedPlans = discovery.archived.map((artifact) => {
+    const parts = planDocumentParts(artifact.data);
+    return {
+      path: artifact.path,
+      active: false,
+      archived: true,
+      title: parts.title,
+      status: parts.status,
+      created: parts.created,
+      task_count: parts.tasks.length,
+    } as JsonObject;
+  });
+  if (!discovery.active) {
+    return {
+      exists: archivedPlans.length > 0,
+      active: false,
+      tasks: [],
+      status: archivedPlans.length > 0 ? "archived" : "absent",
+      title: "",
+      absence_reason:
+        archivedPlans.length > 0
+          ? "No active plan artifact is available; archived plan state is history only."
+          : "No active plan artifact is available from agentera plan.",
+      complete: 0,
+      total: 0,
+      complete_plan: archivedPlans.length > 0,
+      first_pending: null,
+      archived_plans: archivedPlans,
+      archive_count: archivedPlans.length,
+      invalid_archive_paths: discovery.invalidArchivePaths,
+    };
   }
+
+  const d = discovery.active.data;
+  const parts = planDocumentParts(d);
+  const tasks = parts.tasks;
+  const status = parts.legacyEntries ? entryStatusPy(tasks[0], "") : parts.status;
+  const title = parts.legacyEntries
+    ? String(firstPresent(tasks[0] ?? {}, ["title", "name"], ""))
+    : parts.title;
   const complete = tasks.filter((task) => DONE_STATUSES.has(entryStatusPy(task, ""))).length;
   const total = tasks.length;
   const completePlan = DONE_STATUSES.has(status.toLowerCase()) && complete === total;
@@ -372,6 +399,9 @@ export function planSummary(schemas: Record<string, SchemaInfo>): PlanSummary {
     active: !completePlan,
     complete_plan: completePlan,
     first_pending: firstPending,
+    archived_plans: archivedPlans,
+    archive_count: archivedPlans.length,
+    invalid_archive_paths: discovery.invalidArchivePaths,
   };
 }
 

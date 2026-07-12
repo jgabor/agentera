@@ -134,7 +134,7 @@ HEADER:
     type: string
     required: true
     description: >-
-      Short plan title. Used in archive naming and plan listing.
+      Short plan title. Used in archive naming and active/archived plan listing.
       Format: 'Plan: <descriptive name>'.
     validation:
       - "Non-empty string"

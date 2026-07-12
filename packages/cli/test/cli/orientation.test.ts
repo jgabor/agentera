@@ -16,6 +16,8 @@ import {
   selectStatusReadiness,
   statePresence,
 } from "../../src/cli/orientation.js";
+import { orchestrationContext } from "../../src/cli/capabilityContext/orchestration.js";
+import type { JsonObject } from "../../src/core/jsonValue.js";
 import type {
   DecisionFollowUp,
   HealthSummary,
@@ -98,6 +100,48 @@ describe("orientation: artifact summaries", () => {
     const summary = planSummary(schema("plan", path.join(tmp, "missing.yaml")));
     expect(summary.exists).toBe(false);
     expect(summary.absence_reason).toContain("No active plan artifact");
+  });
+
+  it("keeps an archived completed plan visible as history, not active work", () => {
+    const p = path.join(tmp, "plan.yaml");
+    const archiveDir = path.join(tmp, "archive");
+    fs.mkdirSync(archiveDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(archiveDir, "PLAN-2026-07-12-completed.yaml"),
+      [
+        "header:",
+        "  title: Completed lifecycle plan",
+        "  status: complete",
+        "tasks:",
+        "  - number: 8",
+        "    status: complete",
+        "    name: Runtime lifecycle visibility",
+        "",
+      ].join("\n"),
+    );
+
+    const summary = planSummary(schema("plan", p));
+    expect(summary.exists).toBe(true);
+    expect(summary.active).toBe(false);
+    expect(summary.complete_plan).toBe(true);
+    expect(summary.tasks).toEqual([]);
+    expect(summary.archived_plans).toHaveLength(1);
+
+    const readiness = selectStatusReadiness(summary, { exists: false }, { exists: false }, [], null, false);
+    expect(readiness.recommended.object).not.toContain("PLAN Task");
+
+    const context = orchestrationContext(
+      "orchestrate",
+      summary as unknown as JsonObject,
+      { exists: false },
+      { exists: false },
+      [],
+      { exists: false },
+      { status: "not found" },
+      { object: "VISION refresh", capability: "vision", reason: "fresh project direction" },
+    );
+    expect(context?.task_queue).toMatchObject({ total: 0, dependency_ready_tasks: [], blocked_tasks: [] });
+    expect(context?.selected_next_task).toBeNull();
   });
 
   it("summarizes the latest progress cycle", () => {

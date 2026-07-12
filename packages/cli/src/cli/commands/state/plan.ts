@@ -1,5 +1,5 @@
 /**
- * `state plan` query (active PLAN.yaml → summary + task list).
+ * `state plan` query (active PLAN.yaml + immutable archive history).
  *
  * Source-contract builder for plan artifacts: declares the
  * `complete_for_plan_artifact` / `complete_for_normal_startup_evaluation`
@@ -8,11 +8,9 @@
  */
 
 import {
-  asList,
   emitStateStructured,
   filterByFieldValue,
   formatEntry,
-  loadArtifact,
   missingSchemaError,
   printStatusCounts,
   sourceMetadata,
@@ -25,8 +23,17 @@ import { artifactPath } from "../../appContext.js";
 import { firstPresent } from "../../stateQuery.js";
 import { out, err, StateArgs, Io } from "./shared.js";
 import type { JsonObject } from "../../../core/jsonValue.js";
+import {
+  discoverPlanArtifacts,
+  planDocumentParts,
+  planCatalogEntry,
+  type PlanArtifact,
+  type PlanArtifactDiscovery,
+} from "../../planArtifacts.js";
 
-function planArtifactSummary(data: JsonObject, header: JsonObject): JsonObject {
+function planArtifactSummary(artifact: PlanArtifact): JsonObject {
+  const { data } = artifact;
+  const { header } = planDocumentParts(data);
   const summary: JsonObject = {
     header,
     title: firstPresent(header, ["title"], data.title ?? ""),
@@ -48,11 +55,36 @@ function planArtifactSummary(data: JsonObject, header: JsonObject): JsonObject {
   return out;
 }
 
-function planSourceContract(source: JsonObject, summary: JsonObject): JsonObject {
+function planSource(primary: PlanArtifact | null, discovery: PlanArtifactDiscovery): JsonObject {
+  const source = sourceMetadata("plan", primary?.path ?? discovery.activePath);
+  source.active = Boolean(discovery.active);
+  source.archived = Boolean(primary?.archived);
+  source.active_path = discovery.activePath;
+  source.archive_paths = discovery.archived.map((artifact) => artifact.path);
+  if (discovery.invalidArchivePaths.length > 0) source.invalid_archive_paths = discovery.invalidArchivePaths;
+  return source;
+}
+
+function planCatalog(discovery: PlanArtifactDiscovery): JsonObject[] {
+  const artifacts = [
+    ...(discovery.active ? [discovery.active] : []),
+    ...discovery.archived,
+  ];
+  return artifacts.map(planCatalogEntry);
+}
+
+function planSourceContract(
+  source: JsonObject,
+  summary: JsonObject,
+  discovery: PlanArtifactDiscovery,
+): JsonObject {
   const legacyEntries = Boolean(summary.legacy_entries);
   const complete = Boolean(source.exists) && !legacyEntries;
+  const active = source.active === true;
+  const startupComplete = complete && active;
   const missingState: string[] = [];
   if (!source.exists) missingState.push("plan artifact");
+  else if (!active) missingState.push("active plan artifact");
   if (legacyEntries) missingState.push("current plan task artifact shape");
   const summaryFields = Object.keys(summary).sort();
   const entryFields = ["number", "name", "depends_on", "status", "acceptance", "evidence", "blocked_reason"];
@@ -60,8 +92,13 @@ function planSourceContract(source: JsonObject, summary: JsonObject): JsonObject
     artifact: "plan",
     canonical_artifact_label: "plan",
     persisted_artifact_path: source.path,
+    active_plan_path: discovery.activePath,
+    active_plan_exists: active,
+    archived_plan_count: discovery.archived.length,
+    archive_paths: discovery.archived.map((artifact) => artifact.path),
+    invalid_archive_paths: discovery.invalidArchivePaths,
     complete_for_plan_artifact: complete,
-    complete_for_normal_startup_evaluation: complete,
+    complete_for_normal_startup_evaluation: startupComplete,
     raw_artifact_reads_required: false,
     raw_artifact_read_policy:
       "Use `agentera state plan --format json` entries, summary, source, and source_contract before raw plan access. " +
@@ -82,11 +119,12 @@ function planSourceContract(source: JsonObject, summary: JsonObject): JsonObject
       "overall_acceptance",
       "surprises",
       "previous_plan_archived",
+      "archived plan history",
     ],
     complete_state: {
       summary: summaryFields,
       entries: entryFields,
-      normal_startup_evaluation: complete,
+      normal_startup_evaluation: startupComplete,
     },
     raw_artifact_access_boundary: {
       normal_read_only_startup_evaluation: "skip raw plan artifact reads when complete_for_plan_artifact is true",
@@ -117,21 +155,24 @@ export function queryPlan(args: StateArgs, schemas: Record<string, SchemaInfo>, 
     return 1;
   }
   const p = artifactPath(info, "plan");
-  const data = loadArtifact(p);
-  const isDict = data !== null && typeof data === "object" && !Array.isArray(data);
+  const discovery = discoverPlanArtifacts(p);
+  const primary = discovery.active ?? discovery.archived[0] ?? null;
   const format = args.format ?? "text";
+  const catalog = planCatalog(discovery);
 
-  if (!isDict) {
+  if (!primary) {
     if (format !== "text") {
-      const source = sourceMetadata("plan", p);
+      const source = planSource(null, discovery);
       const summary = { absence_reason: "No plan artifact is available from agentera plan." };
+      const payload = structuredState("plan", [], source, {
+        filters: { status: args.status ?? null },
+        summary,
+        sourceContract: planSourceContract(source, summary, discovery),
+      });
+      payload.plans = catalog;
       return emitStateStructured(
         "plan",
-        structuredState("plan", [], source, {
-          filters: { status: args.status ?? null },
-          summary,
-          sourceContract: planSourceContract(source, summary),
-        }),
+        payload,
         format,
         args.fields,
         o,
@@ -140,61 +181,33 @@ export function queryPlan(args: StateArgs, schemas: Record<string, SchemaInfo>, 
     }
     return 0;
   }
-  // cast: data is the parsed plan artifact from loadArtifact (YAML IO boundary)
-  const dataDict = data as JsonObject;
-
-  const legacyEntries = asList(dataDict.entries);
-  if (legacyEntries.length > 0) {
-    let entries = legacyEntries;
-    const statusFilter = args.status ?? null;
-    if (statusFilter) entries = filterByFieldValue(entries, "status", statusFilter);
-    const source = sourceMetadata("plan", p);
-    const summary = { legacy_entries: true };
-    if (format !== "text") {
-      return emitStateStructured(
-        "plan",
-        structuredState("plan", entries, source, {
-          filters: { status: statusFilter },
-          summary,
-          sourceContract: planSourceContract(source, summary),
-        }),
-        format,
-        args.fields,
-        o,
-        e,
-      );
-    }
-    for (const entry of entries) {
-      const line = formatEntry(entry, ["status", "title", "name"]);
-      if (line) o(line + "\n");
-    }
-    return 0;
-  }
-
-  const header =
-    dataDict.header && typeof dataDict.header === "object" && !Array.isArray(dataDict.header) ? dataDict.header : {};
-  const summary = planArtifactSummary(dataDict, header);
+  const dataDict = primary.data;
+  const parts = planDocumentParts(dataDict);
+  const summary = parts.legacyEntries ? { legacy_entries: true } : planArtifactSummary(primary);
   const title = summary.title ?? "";
   const status = summary.status ?? "";
   const created = summary.created ?? "";
-  let tasks = asList(dataDict.tasks);
+  let tasks = parts.tasks;
   const statusFilter = args.status ?? null;
   if (statusFilter) tasks = filterByFieldValue(tasks, "status", statusFilter);
-  const source = sourceMetadata("plan", p);
+  const source = planSource(primary, discovery);
   if (format !== "text") {
+    const payload = structuredState("plan", tasks, source, {
+      filters: { status: statusFilter },
+      summary,
+      sourceContract: planSourceContract(source, summary, discovery),
+    });
+    payload.plans = catalog;
     return emitStateStructured(
       "plan",
-      structuredState("plan", tasks, source, {
-        filters: { status: statusFilter },
-        summary,
-        sourceContract: planSourceContract(source, summary),
-      }),
+      payload,
       format,
       args.fields,
       o,
       e,
     );
   }
+  if (primary.archived) o(`Plan source: archived | path=${primary.path}\n`);
   o(`Plan: status=${status || "unknown"} | title=${truncate(title)} | created=${created || "-"}\n`);
   for (const key of ["what", "why"]) {
     const value = dataDict[key];

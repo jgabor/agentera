@@ -21,7 +21,7 @@ export const PRIME_BLOB =
     "  agentera state decisions [--topic TOPIC]      # Decision log",
     "  agentera state health [--dimension DIM]       # Latest health audit",
     "  agentera state todo [--severity LEVEL]        # TODO summary",
-    "  agentera state plan                           # Active plan + task status",
+    "  agentera state plan                           # Active plan, archive history + task status",
     "  agentera state progress [--limit N]           # Recent cycle summary",
     "  agentera state docs                           # Docs mappings + stale docs",
     "  agentera state objective                      # Active optimize objective",

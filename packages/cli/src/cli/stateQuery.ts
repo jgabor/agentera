@@ -19,6 +19,7 @@ export const ROUTINE_STRUCTURED_FIELDS = [
   "source",
   "filters",
   "summary",
+  "plans",
   "source_contract",
 ];
 
