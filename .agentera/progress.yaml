@@ -1,4 +1,38 @@
 cycles:
+  - number: 729
+    timestamp: 2026-07-12 14:54
+    type: chore
+    phase: build
+    what: Synchronized packages/cli/package.json dev.17, lifecycle parity, release
+      docs, and Task 8 state while preserving registry.json suiteVersion 3.0.0.
+    inspiration: Task 8 in .agentera/plan.yaml and the canonical version inventory
+      in .agentera/docs.yaml.
+    discovered: The tracked version inventory excludes the ignored local
+      package-lock.json; the npm package surface is the only development
+      prerelease surface validated against the 3.0.0 suite core.
+    verified: "Full CLI: 160 files and 1534 tests passed. Typecheck and build
+      passed. Lint passed with 0 errors and 98 existing warnings. Build
+      capability, capability-contract, and lifecycle-adapters validation passed.
+      Direct Astro check and build passed. npm pack dry-run reported
+      agentera@3.0.0-dev.17 with 573 files and required CLI, sentinel, skill,
+      upgrade, and changelog content. Built --version is 3.0.0-dev.17; package
+      suiteVersion, registry, and bundle sentinel are 3.0.0.
+      Prime/doctor/upgrade preview confirmed shared lifecycle projection,
+      all-runtime development preview, explicit runtime apply/yes, and
+      fail-closed host blockers."
+    next: No further Task 8 work; stable promotion, publication, tagging, pushing,
+      and user-owned runtime enablement remain separate.
+    context:
+      intent: Close final Task 8 release-preparation gaps across metadata,
+        documentation, package assertions, and typed project state.
+      constraints: No publish, tag, push, vision edit, objective edit, or Decision 92
+        satisfaction change.
+      unknowns: Host enablement and trust evidence remains unknown, so prime and
+        doctor correctly report releaseBlocked=true.
+      scope: packages/cli/package.json; lifecycle parity validator and package
+        assertion; README.md; UPGRADE.md; packages/cli/README.md;
+        runtime/package references; CHANGELOG.md; TODO.md; typed progress,
+        health, and plan state.
   - number: 728
     timestamp: 2026-07-12 14:34
     type: test
@@ -251,38 +285,10 @@ cycles:
         packages/cli/src/cli/contracts/orientationState.ts;
         packages/cli/test/cli/orientationCorpusCoverage.test.ts; CHANGELOG.md;
         .agentera/plan.yaml
-  - number: 719
-    timestamp: 2026-07-12 12:23
-    type: feat
-    phase: build
-    what: Drove project integration from the canonical runtime lifecycle projection,
-      preserving separate app and lifecycle phases and routing owned, manual,
-      host, and diagnostic outcomes.
-    inspiration: Task 4 acceptance criteria and the Task 1-3 runtime lifecycle
-      projection contract.
-    discovered: Prime now reuses one observed lifecycle snapshot for project
-      integration and the bounded runtime lifecycle summary; legacy
-      migration-item counting remains only in the upgrade orchestrator.
-    verified: "Focused Task 4 project-integration suite: 20/20 passed.
-      Prime/doctor/lifecycle/orchestrator parity suite: 57/57 passed. Full CLI
-      suite: 1494 passed and exactly 8 documented release-metadata baseline
-      failures caused by top-level 3.0.0-dev.16 versus core 3.0.0. Typecheck,
-      build, lint with 0 errors, compaction, Build capability validation,
-      capability-contract validation, built CLI smoke, and git diff --check
-      passed."
-    next: Keep Task 5 lifecycle attention and ranking pending; do not begin it in
-      this cycle.
-    context:
-      intent: "Complete active plan Task 4: Drive project integration from lifecycle
-        state."
-      constraints: Task 4 only; no vision or objective edits, no Decision 92
-        satisfaction change, no Task 5 work, no publication, tag, or push.
-      unknowns: None in Task 4 scope.
-      scope: packages/cli/src/upgrade/projectIntegration.ts;
-        packages/cli/src/upgrade/projectIntegrationDecision.ts; prime lifecycle
-        snapshot wiring; focused project integration tests; .agentera
-        plan/progress
 archive:
+  - summary: "Cycle 719 (2026-07-12): Drove project integration from the canonical
+      runtime lifecycle projection, preserving separate app and lifecycle
+      phases..."
   - summary: "Cycle 718 (2026-07-12): Hardened
       packages/cli/src/runtime/lifecycleOperations.ts and lifecycleUpgrade.ts
       for Task 3 ownership-safe repair and retired cleanup across OpenCode,
@@ -376,9 +382,3 @@ archive:
       aliases in registries & validate subsystems. Removed local..."
   - summary: "Cycle 680 (2026-06-27): Plan tasks 2+3 (coupled) of chore:3.0.0:
       consolidate Dict aliases in the CLI command/state-query surface (task..."
-  - summary: "Cycle 679 (2026-06-27): chore:3.0.0 plan task 1 — consolidate `type
-      Dict = Record<string, any>` aliases across the 12 hooks modules onto
-      core/jsonValue's JsonObject. Strict union surfaced ~80 latent typecheck
-      errors; resolved in-scope by keeping IO-boundary casts with `// cast:`
-      comments and narrowing access via type guards. Typecheck 0 errors; suite
-      1145/1145 green."

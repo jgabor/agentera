@@ -13,7 +13,8 @@ npx -y agentera@next doctor --format json
 ```
 
 `prime` returns a bounded project and four-runtime lifecycle summary. `doctor`
-returns detailed read-only evidence and exact user actions.
+returns detailed read-only evidence and exact user actions. The status and
+project-integration projections consume the same lifecycle snapshot.
 
 ## Runtime lifecycle
 
@@ -24,14 +25,17 @@ required and IDE is conditional. The canonical shared skill path is
 `~/.agents/skills/agentera`.
 
 ```bash
+npx -y agentera@next upgrade --dry-run --channel development
 npx -y agentera@next upgrade --runtime all --dry-run
 npx -y agentera@next upgrade --runtime all --yes
 ```
 
-Use one active ID instead of `all` to scope the operation. `--dry-run` has zero
-filesystem or state side effects. `--yes` approves only declared Agentera-owned
-operations; native install/update, authentication, enablement, and trust remain
-user-owned. Secure automatic apply is Linux-only and reports
+On v3 development, the selector-free dry-run previews all active runtimes.
+Use one active ID instead of `all` to scope runtime work. A selector-free apply
+remains app-only; runtime apply requires the selector and `--yes`. `--dry-run`
+has zero filesystem or state side effects. `--yes` approves only declared
+Agentera-owned operations; native install/update, authentication, enablement,
+and trust remain user-owned. Secure automatic apply is Linux-only and reports
 `action_required` elsewhere.
 
 Retired Claude cleanup is intentionally separate:

@@ -183,9 +183,6 @@ sample_manifest:
       - id: cli-suite-marker
         path: packages/cli/package.json
         selector: agentera.suiteVersion
-      - id: cli-package-lock
-        path: packages/cli/package-lock.json
-        selector: version
       - id: copilot-root
         path: plugin.json
         selector: version
@@ -310,7 +307,6 @@ sample_manifest:
     version_files_source: .agentera/docs.yaml conventions.version_files
     version_files:
       - packages/cli/package.json
-      - packages/cli/package-lock.json
       - plugin.json
       - .github/plugin/plugin.json
       - .codex-plugin/plugin.json

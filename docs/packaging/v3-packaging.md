@@ -147,15 +147,14 @@ release-metadata contract`) stay in lockstep:
 
 | Surface | Source | Example (T1) |
 | --- | --- | --- |
-| `packages/cli/package.json#version` | npm-published version | `3.0.0-next.1` |
+| `packages/cli/package.json#version` | npm-published development version | `3.0.0-dev.17` |
 | `packages/cli/package.json#agentera.suiteVersion` | suite authority | `3.0.0` |
 | `packages/cli/package.json#agentera.gitRef` | git commit pin | `dd3ea28813c6c787104519d41ec478c67488050e` |
 | `registry.json#skills[0].version` | agentera-app registry authority | `3.0.0` |
 
 `packages/cli/scripts/copy-bundle.mjs` reads `agentera.suiteVersion` and
-embeds it in the `.agentera-npx-bundle.json` sentinel. T10's v3 cutover
-publish bumps all four surfaces in lockstep; T1 does not change any of
-them.
+embeds it in the `.agentera-npx-bundle.json` sentinel. The npm package carries
+the development suffix; suite-bearing surfaces remain `3.0.0`.
 
 ## File map
 

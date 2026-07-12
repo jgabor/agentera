@@ -17,6 +17,7 @@ import {
   validateRuntimeLifecycleAdapterContractRoot,
 } from "../runtime/lifecycleAdapterContract.js";
 import { validateRetiredRuntimeCleanupContractRoot } from "../runtime/retiredRuntimeCleanup.js";
+import { parseSemverCore } from "../release/releaseMetadata.js";
 import {
   type LegacyPythonParityOptions,
   LEGACY_PYTHON_PARITY_FLAG,
@@ -137,7 +138,12 @@ function validateReleaseRuntimeParity(root: string, registry: RuntimeAdapterRegi
   errors.push(...validateRuntimeConsumerWiring(activeIds, registry));
   const suiteVersion = packageRegistry.suiteVersion();
   for (const [surface, version] of Object.entries(packageRegistry.versionSurfaceValues())) {
-    if (version !== suiteVersion) {
+    const developmentPackage = surface === "cli-package";
+    const parsed = typeof version === "string" ? parseSemverCore(version) : null;
+    const matchesSuite = version === suiteVersion || (
+      developmentPackage && parsed?.core === suiteVersion && parsed.preRelease !== null
+    );
+    if (!matchesSuite) {
       errors.push(`${surface}: version ${String(version)} must match suite version ${suiteVersion}`);
     }
   }

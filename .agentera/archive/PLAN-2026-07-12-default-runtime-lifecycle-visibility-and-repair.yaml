@@ -1,7 +1,7 @@
 header:
   level: full
   created: 2026-07-12
-  status: active
+  status: complete
   reviewed: 2026-07-12
   critic_issues: 14 found, 14 addressed, 0 dismissed
   revised: Added applicability and action classification, preserved explicit apply scope, separated active and retired cleanup, defined phase and routing semantics, bounded status output, and split verification.
@@ -106,7 +106,7 @@ tasks:
     name: Synchronize release surfaces and project state
     depends_on:
       - "7"
-    status: pending
+    status: complete
     acceptance:
       - GIVEN accepted behavior WHEN release metadata is prepared THEN npm development advances from 3.0.0-dev.16 to 3.0.0-dev.17 while core suite surfaces remain 3.0.0.
       - GIVEN changed command and projection contracts WHEN inspected THEN schema, help, upgrade guidance, runtime documentation, and changelog describe the same defaults and safety boundaries.

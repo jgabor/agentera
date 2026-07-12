@@ -66,6 +66,9 @@ Secure automatic lifecycle apply currently requires Linux `/proc/self/fd`.
 Other platforms still receive the complete preview and explicit manual actions,
 but filesystem operations remain `action_required`.
 
+`prime`, status, and project-integration output summarize the same lifecycle
+snapshot, including runtime counts, blockers, and the recommended next action.
+
 Claude Code is retired from active support. Its only lifecycle command is a
 separate, explicit cleanup of the exact Agentera-owned legacy skill link:
 

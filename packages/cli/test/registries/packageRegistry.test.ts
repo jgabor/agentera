@@ -17,6 +17,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "../../../..");
 const REGISTRY_PATH = path.join(REPO_ROOT, "references/adapters/package-registry.yaml");
 const PACKAGE_MANIFEST_PATH = path.join(REPO_ROOT, "registry.json");
+const CLI_PACKAGE_PATH = path.join(REPO_ROOT, "packages/cli/package.json");
 const FIXTURE_DOCS_PATH = path.join(repoStateFixturePath("ok"), ".agentera/docs.yaml");
 
 function registryFixture(): any {
@@ -48,7 +49,13 @@ describe("package registry", () => {
       "skill-frontmatter",
     ]);
     expect(registry.versionSurfaceIds().length).toBe(new Set(registry.versionSurfaceIds()).size);
-    expect(new Set(Object.values(registry.versionSurfaceValues()))).toEqual(new Set(["3.0.0"]));
+    const versions = registry.versionSurfaceValues();
+    const developmentVersion = JSON.parse(fs.readFileSync(CLI_PACKAGE_PATH, "utf8")).version;
+    expect(developmentVersion).toBe("3.0.0-dev.17");
+    expect(versions["cli-package"]).toBe(developmentVersion);
+    expect(new Set(Object.entries(versions)
+      .filter(([surface]) => surface !== "cli-package")
+      .map(([, version]) => version))).toEqual(new Set(["3.0.0"]));
     expect(registry.runtimeManifestIds()).toEqual([
       "copilot-root-manifest",
       "copilot-repository-manifest",

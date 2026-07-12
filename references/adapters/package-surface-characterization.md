@@ -6,13 +6,13 @@ Current Agentera 3.0 package behavior is owned by
 
 ## Version matrix
 
-`registry.json` `skills[0].version` is the persisted suite authority. These
-mirrors must match it:
+`registry.json` `skills[0].version` is the persisted suite authority. Tracked
+suite mirrors must match it exactly. The npm package `version` may carry a
+development pre-release suffix, but its `X.Y.Z` core must match the suite:
 
 | Surface | Selector |
 | --- | --- |
-| `packages/cli/package.json` | `version` and `agentera.suiteVersion` |
-| `packages/cli/package-lock.json` | `version` |
+| `packages/cli/package.json` | `version` (development pre-release) and `agentera.suiteVersion` (suite) |
 | `plugin.json` | `version` |
 | `.github/plugin/plugin.json` | `version` |
 | `.codex-plugin/plugin.json` | `version` |

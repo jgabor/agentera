@@ -46,6 +46,9 @@ npx -y agentera@next prime --format json
 npx -y agentera@next doctor --format json
 ```
 
+Status and project-integration recommendations use the same lifecycle identity,
+counts, blockers, and retry guidance as `prime` and `doctor`.
+
 ## Apply approved Agentera-owned work
 
 After reviewing an all-runtime preview, use its generated command or rerun the

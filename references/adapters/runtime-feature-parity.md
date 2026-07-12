@@ -25,7 +25,10 @@ diagnosed as degraded. An unobserved conditional Cursor IDE is
 `not_applicable` and does not block CLI support.
 
 `prime` projects a bounded summary from this lifecycle snapshot. `doctor`
-projects detailed evidence and exact actions from the same snapshot.
+projects detailed evidence and exact actions from the same snapshot. The
+`status` projection and project-integration recommendation consume that same
+snapshot, so runtime identities, counts, blockers, and next actions do not
+drift between surfaces.
 
 ## Common adapter contract
 
@@ -67,7 +70,12 @@ are emitted as `action_required`.
 
 ## Lifecycle repair
 
+On the v3 development channel, a dry-run without `--runtime` previews all
+active runtimes. Applying without a selector remains the existing app-only
+operation; runtime apply requires an explicit selector and `--yes`:
+
 ```bash
+agentera upgrade --dry-run --channel development
 agentera upgrade --runtime all --dry-run
 agentera upgrade --runtime all --yes
 ```
@@ -116,6 +124,6 @@ runtime source:
 - all eight categories and every declared runtime surface;
 - package-manifest coverage for all active runtimes;
 - npm-bundle coverage for every lifecycle source and runtime manifest;
-- 3.0.0 version mirrors;
+- 3.0.0 suite mirrors and the development package core;
 - runtime-specific hook and documentation claims;
 - absence of retired Claude package manifests.

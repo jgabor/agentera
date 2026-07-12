@@ -146,7 +146,7 @@ function readBundleSentinel(root: string): { version: string | null; source: str
 }
 
 /** Parse `X.Y.Z` core (ignore pre-release and build metadata). */
-function parseSemverCore(version: string): { core: string; preRelease: string | null } | null {
+export function parseSemverCore(version: string): { core: string; preRelease: string | null } | null {
   const match = SEMVER_CORE_RE.exec(version);
   if (!match) {
     return null;
