@@ -1,4 +1,19 @@
 cycles:
+  - number: 746
+    timestamp: 2026-07-13 00:27
+    type: test
+    phase: build
+    what: Verified packages/cli/test/state/planLifecycleContract.test.ts and closed
+      the plan lifecycle publication rollout.
+    verified: 1,577 CLI tests; typecheck, build, compact, plan and contract
+      validation, lifecycle adapter validation, npm pack/publish dry-runs, and
+      68 lifecycle fixture tests passed.
+    next: Orchestrator-owned post-evaluation archive only.
+    context:
+      intent: Complete Task 8 with behavioral lifecycle fixtures and release gates.
+      constraints: No push, publish, tag, runtime refresh, or decision satisfaction changes.
+      unknowns: Immutable historical archive diagnostics remain.
+      scope: Plan lifecycle state, TODO, and state-writer documentation.
   - number: 745
     timestamp: 2026-07-13 00:10
     type: fix
@@ -167,27 +182,9 @@ cycles:
       unknowns: none
       scope: packages/cli/test/state/planLifecycleContract.test.ts; Task 1 evidence;
         progress.
-  - number: 736
-    timestamp: 2026-07-12 20:50
-    type: fix
-    phase: build
-    what: Repaired lifecycle inventory classification for OpenCode plan projections
-      and generated-output pruning.
-    inspiration: Plan Lifecycle Clarity and Validated Publication Task 1.
-    discovered: Constructed plan paths and state.plan.* projections were not
-      markers; generated deployment and package outputs were not fully pruned.
-    verified: Focused classifier test; 1,542 CLI tests; typecheck; build;
-      capability-contract validation; compact gate; root scan 908/200/0.
-    next: Task 2 is now eligible but intentionally remains out of scope for this
-      cycle.
-    context:
-      intent: Complete Task 1 after the audit found a missed plan consumer and
-        generated paths.
-      constraints: Only inventory schema and test correctness; no lifecycle behavior,
-        Tasks 2-8, or decision satisfaction changes.
-      unknowns: none
-      scope: plan schema, lifecycle contract test, plan/progress state, and TODO.
 archive:
+  - summary: "Cycle 736 (2026-07-12): Repaired lifecycle inventory classification
+      for OpenCode plan projections and generated-output pruning."
   - summary: "Cycle 735 (2026-07-12): Completed Task 1 lifecycle classification with
       a safely pruned repository-root scan in
       skills/agentera/schemas/artifacts/plan.yaml."
@@ -292,6 +289,3 @@ archive:
   - summary: "Cycle 697 (2026-07-11): Resolved state-writer review findings:
       preserved legacy scalar health archives, bounded plan archives and lock
       directories..."
-  - summary: "Cycle 696 (2026-07-10): Implemented the standardized state artifact
-      writer with typed progress, decisions, plan, and health operations;
-      schema-derived..."

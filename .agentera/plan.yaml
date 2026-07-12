@@ -1,7 +1,7 @@
 header:
   level: full
   created: 2026-07-12
-  status: open
+  status: complete
   reviewed: 2026-07-12
   critic_issues: 12 found, 12 addressed, 0 dismissed
   title: Plan Lifecycle Clarity and Validated Publication
@@ -123,11 +123,12 @@ tasks:
       - "5"
       - "6"
       - "7"
-    status: pending
+    status: complete
     acceptance:
       - GIVEN the completed implementation WHEN full CLI tests, typecheck, build, compact, capability, and contract gates run THEN every required check passes.
       - GIVEN current, archive-only, legacy, forced, and malformed fixtures WHEN exact prime and state plan commands run THEN lifecycle, diagnostics, and routing match the canonical contract.
       - GIVEN repository plan surfaces WHEN searched THEN obsolete plan-level values remain only in explicit migration fixtures or immutable evidence.
       - GIVEN task closeout WHEN state is synchronized THEN progress, TODO, and documentation evidence are updated through their owning interfaces in the implementation commit.
+    evidence: 1,577 CLI tests; typecheck, build, compact, plan and contract validation, lifecycle adapter validation, npm pack/publish dry-runs, and 68 lifecycle fixture tests passed.
 surprises:
   []

@@ -94,6 +94,10 @@ agentera state plan set-plan-status --status complete --format json
 agentera state plan archive --format json
 ```
 
+After every task is `complete`, use `set-plan-status` to complete the active
+plan lifecycle. `archive` then moves that plan into immutable history;
+archived plans never provide executable task work.
+
 Run `agentera state plan explain --verb <verb> --format json` before using a
 verb whose field contract is unfamiliar.
 

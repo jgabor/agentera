@@ -39,6 +39,7 @@
 ## ✓ Resolved
 
 - [x] ~~[fix:3.0.0] Align the plan capability's published YAML format with the typed writer schema. Resolved 2026-07-13: PLAN exposes one writer-backed publication gate, valid scalar acceptance and string dependency shapes, and an omission rule for empty `rejected`; source/compiled contract coverage submits the full documented example through the typed writer.~~
+- [x] ~~[test:3.0.0] Verify Plan Lifecycle Clarity and Validated Publication closeout. Resolved 2026-07-13: `packages/cli/test/state/planLifecycleContract.test.ts`, lifecycle fixtures, and release gates passed; the active plan is lifecycle-complete and awaits orchestrator-owned archival.~~
 - [x] ~~[fix:3.0.0] Make plan next-task output dependency-aware. Resolved 2026-07-12: status and typed plan writes now return only dependency-ready pending work; dependency-blocked work returns null.~~
 - [x] ~~[fix:3.0.0] Persist orchestration retry state through the typed plan interface. Resolved 2026-07-12: `record-evaluation` persists CLI-owned attempts, verdict, failure evidence, and provenance idempotently, then blocks the second failed evaluation.~~
 - [x] ~~[refactor:3.0.0] Separate plan-level and task-level status mutation contracts. Resolved 2026-07-12: `agentera state plan set-status --task` now accepts only task values, while `agentera state plan set-plan-status` accepts `open` or `complete`; typed writes serialize legacy current-plan lifecycle values canonically.~~
