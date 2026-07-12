@@ -39,7 +39,8 @@ tasks:
       - GIVEN the canonical contract WHEN lifecycle terms are defined THEN `active` is positional and persisted status is limited to `open` or `complete`.
       - GIVEN forced archival of unfinished work WHEN semantics are specified THEN status remains `open` and the archive is explicitly non-executable rather than falsely complete.
       - GIVEN legacy consumers WHEN compatibility is decided THEN any read window has a concrete scope, removal condition, and test boundary.
-    evidence: Repository-root scan now covers all in-repo surfaces except documented VCS, vendor, environment, cache, snapshot, generated-output, symlink, and local-secret exclusions. It scanned 920 files, classified 184 lifecycle-bearing candidates, and found 0 unclassified; root semantic fixtures, .agentera/docs.yaml, scripts/schemas/contracts.json, and scripts/json_output_surface_manifest.yaml are asserted. Full 1,542-test suite and all gates pass.
+    evidence: Repository-root scan selected .opencode/plugins/agentera.js from plan.yaml and state.plan. markers; it scanned 908 files, classified 200 candidates, and found 0 unclassified. Focused test, 1,542 CLI tests, typecheck, build, capability-contract validation, and compact gate passed.
+    blocked_reason: ""
   - number: 2
     name: Add legacy normalization and plan diagnostics
     depends_on:

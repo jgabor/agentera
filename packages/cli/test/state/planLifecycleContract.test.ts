@@ -17,19 +17,28 @@ function filesUnder(
   exclusions: string[],
   excludedDirectoryNames: string[],
 ): string[] {
-  const normalized = target === "." ? target : target.replace(/^\.\//, "");
-  if (normalized !== "." && matchesAny(normalized, exclusions)) return [];
-  const absolute = path.join(REPO_ROOT, target);
-  if (!fs.existsSync(absolute)) return [];
-  if (fs.statSync(absolute).isFile()) return [target];
+  const normalized = target === "." ? "" : target.replace(/^\.\//, "");
+  if (normalized && matchesAny(normalized, exclusions)) return [];
+  const absolute = path.resolve(REPO_ROOT, normalized || ".");
+  if (absolute !== REPO_ROOT && !absolute.startsWith(`${REPO_ROOT}${path.sep}`)) return [];
+
+  let stats: fs.Stats;
+  try {
+    stats = fs.lstatSync(absolute);
+  } catch {
+    return [];
+  }
+  if (stats.isSymbolicLink()) return [];
+  if (stats.isFile()) return [normalized];
+  if (!stats.isDirectory()) return [];
+
   return fs.readdirSync(absolute, { withFileTypes: true }).flatMap((entry) => {
-    const child = target === "." ? entry.name : path.posix.join(target, entry.name);
+    const child = normalized ? path.posix.join(normalized, entry.name) : entry.name;
     if (matchesAny(child, exclusions)) return [];
     if (entry.isSymbolicLink()) return [];
     if (entry.isDirectory() && excludedDirectoryNames.includes(entry.name)) return [];
-    return entry.isDirectory()
-      ? filesUnder(child, exclusions, excludedDirectoryNames)
-      : [child];
+    if (entry.isDirectory()) return filesUnder(child, exclusions, excludedDirectoryNames);
+    return entry.isFile() ? [child] : [];
   });
 }
 
@@ -94,14 +103,25 @@ describe("plan lifecycle contract", () => {
     const excludedDirectoryNames = inventory.scan.excluded_directory_names.names;
     expect(inventory.scan.excluded_directory_names.reason).toContain("any repository depth");
     expect(excludedDirectoryNames).toEqual(
-      expect.arrayContaining([".git", "node_modules", "dist", "__pycache__", ".snapshots"]),
+      expect.arrayContaining([
+        ".git",
+        "node_modules",
+        "dist",
+        "__pycache__",
+        ".snapshots",
+        ".wrangler",
+      ]),
     );
+    expect(inventory.scan.markers).toEqual(expect.arrayContaining(["plan.yaml", "state.plan."]));
+    expect(exclusions).toContain("**/*.tgz");
     for (const exclusion of inventory.scan.exclusions) {
       expect(exclusion.patterns.length).toBeGreaterThan(0);
       expect(exclusion.reason.length).toBeGreaterThan(20);
     }
-    const candidates = inventory.scan.roots
-      .flatMap((root: string) => filesUnder(root, exclusions, excludedDirectoryNames))
+    const scanned = inventory.scan.roots.flatMap((root: string) =>
+      filesUnder(root, exclusions, excludedDirectoryNames),
+    );
+    const candidates = scanned
       .filter((file: string) => {
         const text = fs.readFileSync(path.join(REPO_ROOT, file), "utf8");
         return inventory.scan.markers.some((marker: string) => text.includes(marker));
@@ -125,6 +145,7 @@ describe("plan lifecycle contract", () => {
     expect(
       matchesAny("packages/cli/src/upgrade/upgradeOrchestrator.ts", inventory.migrators),
     ).toBe(true);
+    expect(matchesAny(".opencode/plugins/agentera.js", inventory.readers)).toBe(true);
     expect(matchesAny("fixtures/semantic/status-cli-budget.md", inventory.fixtures)).toBe(true);
     expect(matchesAny("fixtures/semantic/status-bare-message.md", inventory.fixtures)).toBe(true);
     expect(matchesAny(".agentera/docs.yaml", inventory.adapters)).toBe(true);
@@ -137,9 +158,16 @@ describe("plan lifecycle contract", () => {
         ".agentera/docs.yaml",
         "scripts/schemas/contracts.json",
         "scripts/json_output_surface_manifest.yaml",
+        ".opencode/plugins/agentera.js",
       ]),
     );
     expect(filesUnder("node_modules", exclusions, excludedDirectoryNames)).toEqual([]);
     expect(filesUnder(".git", exclusions, excludedDirectoryNames)).toEqual([]);
+    expect(filesUnder("packages/web/.wrangler", exclusions, excludedDirectoryNames)).toEqual([]);
+    expect(
+      filesUnder("packages/cli/agentera-3.0.0-dev.1.tgz", exclusions, excludedDirectoryNames),
+    ).toEqual([]);
+    expect(scanned.some((file: string) => file.split("/").includes(".wrangler"))).toBe(false);
+    expect(scanned.some((file: string) => file.endsWith(".tgz"))).toBe(false);
   });
 });

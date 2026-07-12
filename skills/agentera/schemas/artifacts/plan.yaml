@@ -470,6 +470,7 @@ LIFECYCLE_CONTRACT:
           - bundle
           - .astro
           - .svelte-kit
+          - .wrangler
         reason: >-
           Directory-name pruning prevents traversal of VCS metadata, vendor
           dependencies, environments, caches, snapshots, bytecode, and generated
@@ -483,6 +484,8 @@ LIFECYCLE_CONTRACT:
         - plan_archive
         - state plan
         - .agentera/plan.yaml
+        - plan.yaml
+        - state.plan.
         - artifact_id: plan
         - artifact: plan
         - active plan
@@ -503,8 +506,10 @@ LIFECYCLE_CONTRACT:
           reason: Compiled, bundled, and coverage outputs are generated from classified sources.
         - patterns: [packages/cli/bundle, packages/cli/bundle/**, "**/.astro", "**/.astro/**", "**/.svelte-kit", "**/.svelte-kit/**"]
           reason: Runtime bundles and framework outputs are generated publication artifacts.
-        - patterns: [.env]
-          reason: Local secrets are neither read nor classified by repository contract tests.
+        - patterns: [.wrangler, .wrangler/**, "**/.wrangler", "**/.wrangler/**", "*.tgz", "**/*.tgz"]
+          reason: Deployment outputs and package tarballs are generated publication artifacts.
+        - patterns: [.env, .env.*, "**/.env", "**/.env.*", "*.pem", "**/*.pem", "*.key", "**/*.key"]
+          reason: Local secret files are neither read nor classified by repository contract tests.
         - patterns:
             - references/adapters/runtime-lifecycle-*.yaml
             - packages/cli/src/runtime/lifecycle*.ts
@@ -517,6 +522,7 @@ LIFECYCLE_CONTRACT:
     readers:
       - src/**
       - hooks/**
+      - .opencode/plugins/**/*.js
       - packages/cli/src/cli/plan*.ts
       - packages/cli/src/cli/orientation.ts
       - packages/cli/src/cli/appContext.ts
@@ -555,6 +561,7 @@ LIFECYCLE_CONTRACT:
       - scripts/**
     fixtures:
       - packages/cli/test/**/*.ts
+      - packages/cli/test/**/*.md
       - packages/cli/test/fixtures/**
       - packages/cli/test/fixtures/**/.agentera/*
       - packages/cli/test/upgrade/fixtures/**

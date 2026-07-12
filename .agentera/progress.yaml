@@ -1,4 +1,24 @@
 cycles:
+  - number: 736
+    timestamp: 2026-07-12 20:50
+    type: fix
+    phase: build
+    what: Repaired lifecycle inventory classification for OpenCode plan projections
+      and generated-output pruning.
+    inspiration: Plan Lifecycle Clarity and Validated Publication Task 1.
+    discovered: Constructed plan paths and state.plan.* projections were not
+      markers; generated deployment and package outputs were not fully pruned.
+    verified: Focused classifier test; 1,542 CLI tests; typecheck; build;
+      capability-contract validation; compact gate; root scan 908/200/0.
+    next: Task 2 is now eligible but intentionally remains out of scope for this
+      cycle.
+    context:
+      intent: Complete Task 1 after the audit found a missed plan consumer and
+        generated paths.
+      constraints: Only inventory schema and test correctness; no lifecycle behavior,
+        Tasks 2-8, or decision satisfaction changes.
+      unknowns: none
+      scope: plan schema, lifecycle contract test, plan/progress state, and TODO.
   - number: 735
     timestamp: 2026-07-12 20:23
     type: fix
@@ -236,40 +256,10 @@ cycles:
       scope: packages/cli/src/upgrade/lifecycleUpgrade.ts;
         packages/cli/test/upgrade/lifecycleUpgrade.test.ts; .agentera/plan.yaml;
         .agentera/progress.yaml
-  - number: 726
-    timestamp: 2026-07-12 13:46
-    type: fix
-    phase: audit
-    what: "Completed the final Task 5 audit repair: blocker-only lifecycle output
-      now suppresses generic project-integration guidance while retaining exact
-      manual and doctor actions; total lifecycle presentation is capped across
-      the full attention pipeline; manual procedure text is bounded; and the
-      complete status briefing is checked against the canonical 120-word
-      contract with command tokens counted normally."
-    inspiration: Task 5 audit repair attempt 2.
-    discovered: The repository has no executable host dashboard renderer; prime JSON
-      is the caller-owned rendering boundary, while the status instruction
-      contract and offline semantic fixture evaluator provide the validation
-      surfaces.
-    verified: "Focused dashboard/orientation/prime: 60 passed. Typecheck passed.
-      Lint passed with 0 errors and 98 existing warnings. Build passed. Full
-      CLI: 1501 passed and exactly 8 accepted release-metadata baseline failures
-      for 3.0.0-dev.16 versus 3.0.0. Semantic status fixture passed. Prime JSON
-      smoke exited 0 with exactly 2 lifecycle rows, exact upgrade preview, exact
-      /skills list procedure, exact agentera doctor --format json route,
-      truthful lifecycle summary, and Task 5 complete."
-    next: Main session may commit Task 5; do not begin Task 6.
-    context:
-      intent: Close the final Task 5 criterion-1 audit findings without changing
-        lifecycle authority, ownership, Task 6, vision, objective, or Decision
-        92.
-      constraints: No commit in this session; no push, publish, tag, vision/objective
-        edits, or Decision 92 changes.
-      scope: packages/cli/src/cli/orientation/attention.ts;
-        packages/cli/test/cli/orientationCorpusCoverage.test.ts;
-        packages/cli/test/cli/statusDashboardBudget.test.ts; typed .agentera
-        progress and plan state
 archive:
+  - summary: "Cycle 726 (2026-07-12): Completed the final Task 5 audit repair:
+      blocker-only lifecycle output now suppresses generic project-integration
+      guidance..."
   - summary: "Cycle 725 (2026-07-12): Completed the final Task 5 audit repair in
       packages/cli/src/cli/orientation/attention.ts: blocker-only lifecycle
       states no longer compose..."
@@ -369,5 +359,3 @@ archive:
       modernization: wire `vp lint` and `vp fmt`..."
   - summary: "Cycle 687 (2026-06-28): Plan task 2 of the vitest 2->4 toolchain
       modernization: migrate the CLI test entry point..."
-  - summary: "Cycle 686 (2026-06-28): Plan task 1 of the vitest 2->4 toolchain
-      modernization: bump the `vitest` devDep `^2.1.8` ->..."
