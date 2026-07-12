@@ -8,6 +8,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { cmdUpgrade } from "../../src/cli/commands/upgrade.js";
 import { BUNDLE_MARKER } from "../../src/state/installRoot.js";
 import {
+  STATUS_MANUAL_REVIEW_NEEDED,
   STATUS_NO_CHANGES_NEEDED,
   STATUS_READY_TO_APPLY,
   UPGRADE_PREVIEW_SCHEMA,
@@ -110,12 +111,62 @@ describe("buildUpgradePlan", () => {
 
     expect(plan.schemaVersion).toBe(UPGRADE_PREVIEW_SCHEMA);
     expect(plan.channel.channel).toBe("development");
-    expect(plan.phases.map((p) => p.name)).toEqual(["detect", "artifacts", "runtime", "cleanup"]);
+    expect(plan.phases.map((p) => p.name)).toEqual(["detect", "artifacts", "runtime", "cleanup", "lifecycle"]);
     expect(plan.phases.every((p) => p.summary && Array.isArray(p.items))).toBe(true);
     expect(plan.dryRunCommand).toContain("--dry-run");
     expect(plan.applyCommand).toContain("--yes");
+    expect(plan.applyCommand).toContain("--runtime all");
     expect(plan.applyCommand).not.toContain("--target-major");
     expect(plan.upgradeOutcome.kind).toBe("migration_to_latest_on_channel");
+    expect(plan.lifecycle?.selection).toEqual({
+      requested: "all",
+      runtimeIds: ["opencode", "codex", "cursor", "copilot"],
+    });
+  });
+
+  it("keeps lifecycle findings visible when a development-channel app phase is blocked", () => {
+    const appHome = path.join(home, "agentera-blocked");
+    managedV2(appHome);
+    fs.writeFileSync(path.join(appHome, "unrecognized-entry"), "user-owned\n");
+    const project = copyFixture("v2-yaml-project", path.join(tmp, "blocked-project"));
+
+    const plan = buildUpgradePlan({
+      installRoot: appHome,
+      home,
+      project,
+      channel: "development",
+      dryRun: true,
+    });
+
+    expect(plan.summary.blocked).toBeGreaterThan(0);
+    expect(plan.lifecycle?.selection.runtimeIds).toEqual(["opencode", "codex", "cursor", "copilot"]);
+    expect(new Set(plan.lifecycle?.operations.map((operation) => operation.runtime))).toEqual(
+      new Set(["shared", "opencode", "codex", "cursor"]),
+    );
+  });
+
+  it("keeps stable previews and applies without a selector app-only", () => {
+    const appHome = path.join(home, "agentera-stable");
+    managedV2(appHome);
+    const project = copyFixture("v2-yaml-project", path.join(tmp, "stable-project"));
+
+    const stablePreview = buildUpgradePlan({
+      installRoot: appHome,
+      home,
+      project,
+      channel: "stable",
+      dryRun: true,
+    });
+    const developmentApply = buildUpgradePlan({
+      installRoot: appHome,
+      home,
+      project,
+      channel: "development",
+      yes: true,
+    });
+
+    expect(stablePreview.lifecycle).toBeNull();
+    expect(developmentApply.lifecycle).toBeNull();
   });
 
 
@@ -220,8 +271,10 @@ describe("cmdUpgrade integration", () => {
     expect(payload.channel.distTag).toBe("next");
     expect(payload.dryRunCommand).toContain("--dry-run");
     expect(payload.applyCommand).toContain("--yes");
+    expect(payload.applyCommand).toContain("--runtime all");
+    expect(payload.lifecycle.selection.requested).toBe("all");
     expect(payload.summary.pending).toBeGreaterThan(0);
-    expect(payload.lifecycleStatus).toBe(STATUS_READY_TO_APPLY);
+    expect(payload.lifecycleStatus).toBe(STATUS_MANUAL_REVIEW_NEEDED);
   });
 
   it("exits non-zero with plain-language error on --yes for stable cross-major v2 home", () => {

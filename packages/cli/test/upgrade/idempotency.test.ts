@@ -84,7 +84,6 @@ describe("idempotency", () => {
       home,
       project,
       channel: "development",
-      dryRun: true,
     });
     expect(second.schemaVersion).toBe(UPGRADE_PREVIEW_SCHEMA);
     expect(second.lifecycleStatus).toBe(STATUS_NO_CHANGES_NEEDED);

@@ -41,7 +41,7 @@ tasks:
     name: Define default preview and explicit apply semantics
     depends_on:
       - "1"
-    status: pending
+    status: complete
     acceptance:
       - GIVEN a v3 dry-run without --runtime WHEN it executes THEN lifecycle findings for all active runtimes appear even when the app or channel phase is blocked.
       - GIVEN v2 stable behavior or apply without --runtime WHEN invoked THEN existing app-only write semantics remain unchanged.

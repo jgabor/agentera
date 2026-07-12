@@ -222,6 +222,16 @@ function migrationPhaseToOrchestrator(phase: MigrationPhase): UpgradeOrchestrato
   };
 }
 
+function previewLifecycleSelector(
+  args: UpgradeOrchestratorArgs,
+  channel: ResolvedUpdateChannel,
+): LifecycleRuntimeSelector | null {
+  if (args.runtime) {
+    return args.runtime;
+  }
+  return args.dryRun && !args.yes && channel.distributionMajor >= 3 ? "all" : null;
+}
+
 function lifecyclePhase(result: LifecycleUpgradeResult): UpgradeOrchestratorPhase {
   const items: MigrationPhaseItem[] = result.operations.map((operation) => {
     let status: MigrationStatus;
@@ -303,6 +313,7 @@ export function buildUpgradePlan(args: UpgradeOrchestratorArgs): UpgradePlanV2 {
     channel,
   });
   const crossMajorBoundary = crossMajorBoundaryApplies(install, sourceRoot);
+  const lifecycleSelector = previewLifecycleSelector(args, channel);
   const phaseFilter = selectedPhases(args.only);
   if (args.runtime) phaseFilter.delete("runtime");
   const migrationCtx = {
@@ -313,7 +324,7 @@ export function buildUpgradePlan(args: UpgradeOrchestratorArgs): UpgradePlanV2 {
     sourceRoot,
     channel: args.channel ?? null,
     env,
-    installAppContentIfMissing: Boolean(args.runtime),
+    installAppContentIfMissing: Boolean(lifecycleSelector),
   };
   const pendingRuntimeSync = pendingRuntimeMigrationItems(migrationCtx).length > 0;
   const pendingV1Artifacts = detectV1ArtifactPairs(project).length > 0;
@@ -323,7 +334,7 @@ export function buildUpgradePlan(args: UpgradeOrchestratorArgs): UpgradePlanV2 {
     planLegacyAgentCleanupItems(migrationCtx).some((i) => i.status === "pending") ||
     planLegacyCapabilityAgentCleanupItems(migrationCtx).some((i) => i.status === "pending");
   const runMigration =
-    crossMajorMigration || pendingRuntimeSync || pendingV1Artifacts || pendingCleanup || Boolean(args.runtime);
+    crossMajorMigration || pendingRuntimeSync || pendingV1Artifacts || pendingCleanup || Boolean(lifecycleSelector);
 
   const phases: UpgradeOrchestratorPhase[] = [];
 
@@ -358,9 +369,12 @@ export function buildUpgradePlan(args: UpgradeOrchestratorArgs): UpgradePlanV2 {
   const appSummary = aggregateSummary(phases);
   const appApplyBlocked = appSummary.blocked > 0 || appSummary.failed > 0;
   let lifecycle: LifecycleUpgradeResult | null = null;
-  if (args.runtime || args.legacyCleanup) {
+  if (lifecycleSelector || args.legacyCleanup) {
+    // App migration, including any content refresh, is complete before this
+    // observation. Lifecycle planning must see the refreshed desired content
+    // and the filesystem state that runtime writes will actually target.
     const lifecycleArgs = {
-      selector: args.runtime ?? null,
+      selector: lifecycleSelector,
       home,
       project,
       sourceRoot,
@@ -395,7 +409,7 @@ export function buildUpgradePlan(args: UpgradeOrchestratorArgs): UpgradePlanV2 {
     installRoot: crossMajorMigration || crossMajorBoundary ? installRoot : null,
     channel,
     only: args.only,
-    runtime: args.runtime,
+    runtime: lifecycleSelector,
     legacyCleanup: args.legacyCleanup,
     cwdDefault: true,
   });

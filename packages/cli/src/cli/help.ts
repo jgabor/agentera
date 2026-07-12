@@ -65,7 +65,7 @@ export function printUpgradeHelp(): string {
     "  --install-root PATH   Agentera app home to wire into runtime configs",
     "  --home HOME           Home directory for runtime config writes/detection",
     "  --channel CHANNEL     Update channel: stable (2.x) or development (3.x npm)",
-    "  --runtime RUNTIME     Preview/apply Agentera-owned lifecycle work for all or one active runtime",
+    "  --runtime RUNTIME     Select all or one runtime; development dry-runs default to all, apply without it stays app-only",
     "  --legacy-cleanup ID   Explicitly include legacy-only retired Claude cleanup",
     "  --only PHASE          Upgrade phase to include; may be repeated",
     "  --dry-run             Strict read-only preview; no files, locks, caches, native commands, or telemetry",

@@ -47,8 +47,9 @@ Cursor Agent CLI is the required Cursor surface and Cursor IDE is conditional;
 both belong to the single `cursor` runtime identity. The canonical portable
 skill is `~/.agents/skills/agentera`.
 
-Runtime lifecycle work is explicit. Preview all active runtimes without making
-changes, then approve Agentera-owned operations separately:
+On the v3 development channel, a dry-run without a selector previews lifecycle
+findings for all active runtimes without making changes. Approve Agentera-owned
+runtime operations separately:
 
 ```bash
 npx -y agentera@next upgrade --runtime all --dry-run

@@ -6,6 +6,10 @@
 
 - Added a canonical runtime lifecycle projection with deterministic snapshot identity, applicability, ownership, action classes, counts, and command eligibility for OpenCode, Codex, Cursor, and Copilot.
 
+### Changed
+
+- Changed v3 development-channel dry-runs without `--runtime` to show all active runtime lifecycle findings; generated lifecycle apply commands include `--runtime all --yes`, while apply without a selector remains app-only.
+
 ## [3.0.0] · 2026-07-12
 
 ### Key highlights

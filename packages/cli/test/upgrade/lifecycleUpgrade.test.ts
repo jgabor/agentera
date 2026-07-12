@@ -170,6 +170,27 @@ describe("upgrade lifecycle preview", () => {
     expect(fs.existsSync(fx.trap)).toBe(false);
   });
 
+  it("refreshes app content before observing and applying lifecycle state", () => {
+    const plan = buildUpgradePlan({
+      installRoot: fx.appHome,
+      home: fx.home,
+      project: fx.project,
+      channel: "development",
+      runtime: "opencode",
+      yes: true,
+    });
+
+    const refresh = plan.phases
+      .find((phase) => phase.name === "cleanup")?.items
+      .find((item) => item.action === "refresh-app-content");
+    const canonical = plan.lifecycle?.operations.find((operation) => operation.id === "canonical_skill");
+
+    expect(refresh?.status).toBe("applied");
+    expect(canonical?.outcome).toBe("applied");
+    expect(fs.existsSync(path.join(fx.appHome, "skills", "agentera", "SKILL.md"))).toBe(true);
+    expect(fs.lstatSync(path.join(fx.home, ".agents", "skills", "agentera")).isSymbolicLink()).toBe(true);
+  });
+
   it("reports missing parents, unowned collisions, native actions, and unsupported publication explicitly", () => {
     fs.rmSync(path.join(fx.project, ".cursor"), { recursive: true });
     fs.rmSync(path.join(fx.project, ".cursor-plugin"), { recursive: true });

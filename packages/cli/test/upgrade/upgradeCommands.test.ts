@@ -95,4 +95,21 @@ describe("buildUpgradeCommands", () => {
     expect(cmds.applyCommand).toContain("--legacy-cleanup claude");
     expect(cmds.applyCommand).toContain("--yes");
   });
+
+  it("renders an explicit all-runtime apply command for a default lifecycle preview", () => {
+    const channel = resolveUpdateChannel({
+      channel: "development",
+      sourceRoot: REPO_ROOT,
+      home: "/tmp/home",
+    });
+    const cmds = buildUpgradeCommands({
+      project: "/tmp/proj",
+      installRoot: "/tmp/agentera",
+      channel,
+      runtime: "all",
+    });
+
+    expect(cmds.applyCommand).toContain("--runtime all");
+    expect(cmds.applyCommand).toContain("--yes");
+  });
 });

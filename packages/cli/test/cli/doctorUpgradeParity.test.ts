@@ -247,7 +247,6 @@ describe("doctor upgrade safety parity (D56 T4)", () => {
           home,
           project,
           channel: "development",
-          dryRun: true,
         });
         return { status: plan.lifecycleStatus, serialized: JSON.stringify(plan) };
       },

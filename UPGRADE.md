@@ -10,11 +10,12 @@ not publish or retag as part of an upgrade run.
 ## Start with a preview
 
 ```bash
-npx -y agentera@next upgrade --dry-run
+npx -y agentera@next upgrade --dry-run --channel development
 ```
 
-Without `--runtime`, upgrade handles only applicable project/app migration.
-Runtime lifecycle repair is opt-in:
+On the v3 development channel, a dry-run without `--runtime` also observes all
+active runtimes so blocked app or channel phases do not hide lifecycle findings.
+The preview remains read-only. Runtime apply is explicit:
 
 ```bash
 npx -y agentera@next upgrade --runtime all --dry-run
@@ -47,11 +48,16 @@ npx -y agentera@next doctor --format json
 
 ## Apply approved Agentera-owned work
 
-After reviewing the preview, rerun the same selection with `--yes`:
+After reviewing an all-runtime preview, use its generated command or rerun the
+selection explicitly with `--runtime all --yes`:
 
 ```bash
 npx -y agentera@next upgrade --runtime all --yes
 ```
+
+An apply invoked without `--runtime` retains the existing app-only behavior.
+Named selectors such as `--runtime cursor` limit runtime-specific writes to that
+identity. Stable-channel v2 behavior remains app-only.
 
 Apply can write only resources declared by the lifecycle contract and proven
 Agentera-owned by the append-only ownership journal. Matching names or bytes do

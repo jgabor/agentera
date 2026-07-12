@@ -1,4 +1,35 @@
 cycles:
+  - number: 717
+    timestamp: 2026-07-12 10:57
+    type: feat
+    phase: build
+    what: Defined default preview and explicit apply semantics for runtime lifecycle
+      upgrade work.
+    inspiration: Active plan Task 2 and canonical lifecycle projection from commit 962467f8.
+    discovered: The full suite reproduces exactly eight tracked release-metadata
+      failures because packages/cli is 3.0.0-dev.16 while core release metadata
+      remains 3.0.0; no additional failures remain.
+    verified: Implemented packages/cli/src/upgrade/upgradeOrchestrator.ts selection
+      and phase ordering, updated upgrade/lifecycle tests (focused set 52 tests
+      and safety set 61 tests passed), pnpm -C packages/cli run typecheck
+      passed, pnpm -C packages/cli build passed, rebuilt CLI smoke showed
+      development dry-run selection all with an explicit --runtime all --yes
+      apply command and stable dry-run lifecycle null, check compact passed,
+      capability and capability-contract validation passed, and git diff --check
+      passed.
+    next: Continue with Task 3 ownership-safe repair and cleanup; do not expand into
+      project integration or status attention/ranking.
+    context:
+      intent: Complete active plan Task 2 while preserving stable v2 app-only behavior
+        and Decision 92 safety boundaries.
+      constraints: Preview is read-only; native install, authentication, enablement,
+        and trust remain user-owned; apply without --runtime remains app-only;
+        no vision, objective, push, tag, or publication changes.
+      unknowns: none
+      scope: packages/cli/src/upgrade/upgradeOrchestrator.ts,
+        packages/cli/test/upgrade/{upgradeOrchestrator,upgradeCommands,lifecycleUpgrade,idempotency,parityOracle}.test.ts,
+        packages/cli/test/cli/doctorUpgradeParity.test.ts, README.md,
+        UPGRADE.md, CHANGELOG.md
   - number: 716
     timestamp: 2026-07-12 10:34
     type: feat
@@ -341,39 +372,10 @@ cycles:
       scope: Lifecycle snapshot service; prime and doctor JSON/text projections;
         schema/help compatibility; integration, child-process, parity, and
         regression tests.
-  - number: 707
-    timestamp: 2026-07-11 17:25
-    type: fix
-    phase: build
-    what: Removed the last active-style Claude question-tool claim and finalized
-      canonical retirement surface enforcement.
-    verified: Final focused pnpm -C packages/cli test
-      test/runtime/retiredRuntimeSurfacePolicy.test.ts
-      test/cli/profileRuntimePolicy.test.ts test/cli/schema.test.ts
-      test/runtime/retiredRuntimeCleanup.test.ts passed 4 files/30 tests. Final
-      full pnpm -C packages/cli test passed 154 files/1,417 tests. pnpm -C
-      packages/cli run typecheck passed; standalone pnpm -C packages/cli build
-      passed after one concurrent verification attempt raced dist cleanup with
-      Directory not empty. pnpm -C packages/cli run lint returned 99 warnings/0
-      errors. All 12 raw registered capability modules decoded identically to
-      served CAPABILITY_INSTRUCTIONS; raw, served, registry-derived support, and
-      public install scans found zero current Claude Task-tool, question-tool,
-      supported-list, --no-claude, or install-command patterns. Rebuilt prime
-      served registry-declared OpenCode, Codex, one Cursor identity including
-      cursor-agent, and Copilot substrates; discuss used generic host-native
-      question tooling; profile retained only explicit --import-source claude
-      historical import. Schema active IDs were opencode,codex,cursor,copilot;
-      cursor-agent was inactive and Claude retired. Capability
-      discuss/orchestrate/profile/build, capability-contract,
-      lifecycle-adapters, app-home-contract, vocabularyAuthority,
-      cross-capability, compaction, and git diff checks passed. Cleanup and
-      schema regressions preserved AC2 and AC3.
-    next: Re-run Task 5 evidence audit against Cycle 707.
-    context:
-      intent: Supersede incomplete Cycle 706 pattern coverage with final raw and
-        served evidence for Task 5 while preserving cleanup, historical import,
-        and in-progress plan state.
 archive:
+  - summary: "Cycle 707 (2026-07-11): Removed the last active-style Claude
+      question-tool claim and finalized canonical retirement surface
+      enforcement."
   - summary: "Cycle 706 (2026-07-11): Canonicalized Claude retirement policy in raw
       capability instructions and made registry-derived surface scans enforce
       it."
@@ -470,6 +472,3 @@ archive:
   - summary: "Cycle 668 (2026-06-18): Plan T4 — decouple artifact validation and
       validate oracles: migrated validateArtifact.test.ts, validate.test.ts, and
       validateVerifyOracles.test.ts to..."
-  - summary: "Cycle 667 (2026-06-18): Plan T2 — compaction tests use fixtures only:
-      removed real-repo computeCompactionStatus/checkCompaction budget asserts
-      from compaction.test.ts;..."
