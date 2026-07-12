@@ -318,11 +318,19 @@ function blockedPlan(
   return {
     ...plan,
     operations: plan.operations.map((operation) =>
-      ["create", "update", "remove", "finalize_ownership"].includes(operation.action)
+      operation.action !== "noop"
         ? { ...operation, action: "action_required", reason }
         : operation,
     ),
   };
+}
+
+function journalBlocksMutation(journal: LifecycleOwnershipJournalRead): boolean {
+  return !["absent", "clean"].includes(journal.state);
+}
+
+function journalBlocker(journal: LifecycleOwnershipJournalRead): string {
+  return `ownership journal is ${journal.state}: ${journal.diagnostics.join("; ")}`;
 }
 
 function blockOperation(plan: LifecycleOperationPlan, operationId: string, reason: string): LifecycleOperationPlan {
@@ -358,8 +366,8 @@ function buildLifecycleUpgrade(args: LifecycleUpgradeArgs): BuiltLifecycleUpgrad
       `stable canonical skill source is unavailable at ${args.canonicalSkillTarget}; app refresh must succeed before lifecycle publication`,
     );
   }
-  if (journal.state === "corrupt") {
-    plan = blockedPlan(plan, `ownership journal is corrupt: ${journal.diagnostics.join("; ")}`);
+  if (journalBlocksMutation(journal)) {
+    plan = blockedPlan(plan, journalBlocker(journal));
   } else if (!secureLifecycleRemovalAvailable()) {
     plan = blockedPlan(plan, "safe lifecycle apply requires Linux /proc/self/fd directory-relative access");
   }
@@ -367,9 +375,17 @@ function buildLifecycleUpgrade(args: LifecycleUpgradeArgs): BuiltLifecycleUpgrad
   const operations = plan.operations.map((operation) =>
     publicOperation(operation, reports, contract.resources, journal),
   );
-  const retiredPreview = args.retiredCleanup === "claude"
+  let retiredPreview = args.retiredCleanup === "claude"
     ? previewRetiredRuntimeCleanup({ runtimeId: "claude", home: args.home, ledger: journal.ledger })
     : null;
+  if (retiredPreview && journalBlocksMutation(journal)) {
+    retiredPreview = {
+      ...retiredPreview,
+      ledgerAuthorization: "blocked",
+      ledgerDiagnostics: [...retiredPreview.ledgerDiagnostics, journalBlocker(journal)],
+      plan: blockedPlan(retiredPreview.plan, journalBlocker(journal)),
+    };
+  }
   return {
     reports,
     plan,
@@ -472,7 +488,7 @@ export function runLifecycleUpgrade(
   ];
 
   if (args.apply) {
-    const blocked = built.journal.state === "corrupt" || !secureLifecycleRemovalAvailable();
+    const blocked = journalBlocksMutation(built.journal) || !secureLifecycleRemovalAvailable();
     const persistLedger = (ledger: LifecycleOwnershipJournalRead["ledger"]): void => {
       appendLifecycleOwnershipJournal(built.journal.path, ledger);
     };
@@ -484,7 +500,7 @@ export function runLifecycleUpgrade(
     operations = applied.operations.map((operation) =>
       publicOperation(operation, built.reports, contract.resources, outputJournal, operation),
     );
-    if (built.retiredPreview) {
+    if (built.retiredPreview && !blocked) {
       const currentRetiredPreview = previewRetiredRuntimeCleanup({
         runtimeId: "claude",
         home: args.home,

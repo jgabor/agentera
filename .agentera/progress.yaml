@@ -1,4 +1,41 @@
 cycles:
+  - number: 712
+    timestamp: 2026-07-12 06:17
+    type: fix
+    phase: build
+    what: Hardened Task 7 ownership journal recovery and apply locking after audit.
+    inspiration: "Task 7 audit retry 1: middle-chain event-2 corruption and
+      apply.lock publication race."
+    discovered: Exact event-2 corruption in a nine-event chain now yields corrupt
+      with validEvents 1 and ignoredEvents 8; preview and apply preserve every
+      journal/resource byte and append nothing. A live prepared lock blocks
+      contenders before final publication, while simultaneous publishers produce
+      exactly one winner.
+    verified: Focused lifecycle ownership/recovery/upgrade tests passed 3 files and
+      39 tests; full pnpm -C packages/cli test passed. Typecheck and build
+      passed. lifecycle-adapters, build capability, capability-contract,
+      cross-capability, app-home-contract, vocabularyAuthority, schema, check
+      compact, git diff --check, and lint passed; lint retained 99 warnings and
+      0 errors. Package dry-run contained 557 files including lifecycle journal,
+      upgrade, and bundled contract. Regressions cover gaps, forks, duplicate
+      sequences, body/name mismatch, bad digest, disconnection, terminal
+      partial, multiple temporaries, restart, live/dead/PID-reuse/prior-boot
+      locks, malformed final locks, release token mismatch, live preparation
+      blocking, and two-process publication.
+    next: Re-run Task 7 audit against this retry commit; keep Task 7 in_progress and
+      Task 8 untouched until audit acceptance.
+    context:
+      intent: Block lifecycle mutation on any broken middle hash chain and eliminate
+        incomplete-lock publication races without changing Task 7 plan status or
+        Task 8.
+      constraints: Preserved pre-existing TODO.md, decisions.yaml, plan.yaml, and
+        Codex hook changes; no vision, native runtime, remote, publication, Task
+        8, or plan-status mutation.
+      unknowns: Audit acceptance remains external. A legacy incomplete final event is
+        readable as recoverable_terminal_tail but intentionally
+        mutation-blocking until explicitly resolved.
+      scope: Lifecycle journal and lock runtime, upgrade blocking, lifecycle
+        validators/contracts, CLI schema/help, and focused regressions.
   - number: 711
     timestamp: 2026-07-11 22:16
     type: feat
@@ -333,38 +370,10 @@ cycles:
         category reports reflect planned blockers.
       scope: Adapter report and remediation projection, native-action contract
         validation, regression tests, and typed progress evidence.
-  - number: 702
-    timestamp: 2026-07-11 12:33
-    type: feat
-    phase: build
-    what: Implemented authority-bound lifecycle adapters for OpenCode, Codex,
-      Cursor, and Copilot with explicit eight-category surface reports, safe
-      repair declarations, and fail-closed support floors.
-    inspiration: Active plan Task 4 and Decision 92.
-    discovered: Safe automatic repair requires an existing safe destination parent;
-      user-owned parents, symlink replacement, and unverified host behavior
-      remain explicit action_required or unavailable states.
-    verified: "Focused adapter and lifecycle tests: 3 files and 34 tests passed.
-      Full CLI suite: 151 files and 1,385 tests passed. Typecheck and build
-      passed. Lifecycle-adapters, Build capability, and capability-contract
-      validations passed. Compaction and built adapter smoke passed. Lint
-      completed with 0 errors and the standing 108-warning baseline. Git diff
-      checks passed."
-    next: Keep Task 4 open. Task 5 may retire Claude support and analytics; Tasks
-      6-7 may integrate lifecycle reports into commands; Task 8 owns release and
-      documentation surfaces.
-    context:
-      intent: Deliver Task 4 runtime observation and repair adapters on the Task 2
-        authority and Task 3 operation engine.
-      constraints: Did not integrate prime, doctor, or upgrade; retire Claude or
-        analytics; update release, docs, TODO, plan status, or versions; execute
-        native actions; or change Task 3 publication behavior.
-      unknowns: Interrupted existing-ledger rewrites remain the preserved Task 3
-        fail-closed audit warning. Runtime-specific behavior remains unknown or
-        unsupported wherever first-party evidence is absent.
-      scope: Runtime lifecycle adapter contract, four concrete adapters, lifecycle
-        validation, fixture matrix tests, and typed progress evidence.
 archive:
+  - summary: "Cycle 702 (2026-07-11): Implemented authority-bound lifecycle adapters
+      for OpenCode, Codex, Cursor, and Copilot with explicit eight-category
+      surface reports,..."
   - summary: "Cycle 701 (2026-07-11): Hardened the shared lifecycle engine against
       publication-time target and parent substitution."
   - summary: "Cycle 700 (2026-07-11): Built the shared runtime-neutral lifecycle
@@ -463,6 +472,3 @@ archive:
   - summary: "Cycle 663 (2026-06-18): Plan T6 — runtime metadata clarity and flag
       docs: renamed runtime_statuses[].candidate_count to file_count; documented
       --no-<runtime>..."
-  - summary: "Cycle 662 (2026-06-18): Plan T5 — Py/TS extractor parity gate:
-      extractCorpusParity manifest + opencodeParitySnapshot;
-      generate-extract-corpus-parity.mjs syncs committed manifest..."

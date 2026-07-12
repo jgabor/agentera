@@ -70,6 +70,7 @@ export function printUpgradeHelp(): string {
     "  --only PHASE          Upgrade phase to include; may be repeated",
     "  --dry-run             Strict read-only preview; no files, locks, caches, native commands, or telemetry",
     "  --yes                 Explicitly approve declared Agentera-owned operations; never native/trust actions",
+    "                        Corrupt/disconnected ownership journals and malformed locks fail closed",
     "  --force               Overwrite managed runtime files or conflicting backups",
     "  --verify              Post-apply verify: doctor status + 12 prime capability schema checks",
     "  --restore             Reverse remove-managed-app-home from the latest upgrade snapshot",

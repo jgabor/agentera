@@ -265,14 +265,15 @@ export function validateRuntimeLifecycleAdapterContractData(
     caveats.length === 0
     || !caveats.some((caveat) =>
       caveat.includes("Append-only ownership journal recovery")
-      && caveat.includes("last valid snapshot")
+      && caveat.includes("strict contiguous hash chain")
+      && caveat.includes("blocks malformed or disconnected final events")
       && caveat.includes("re-observes every resource"))
   ) {
     errors.push(
       sourceError(
         sourcePath,
         "known_caveats",
-        "must declare append-only interrupted-tail recovery and per-resource re-observation",
+        "must declare strict append-only chain validation, atomic-tail recovery, and per-resource re-observation",
       ),
     );
   }

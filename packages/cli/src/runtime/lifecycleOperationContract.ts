@@ -43,16 +43,28 @@ export function validateLifecycleOperationContractData(value: unknown): string[]
   if (
     typeof ownership?.journal_rule !== "string"
     || !ownership.journal_rule.includes("append-only")
-    || !ownership.journal_rule.includes("last valid ownership evidence")
+    || !ownership.journal_rule.includes("atomically at final names")
+    || !ownership.journal_rule.includes("contiguous sequence-one hash chain")
   ) {
-    errors.push("ownership.journal_rule must preserve the last valid evidence through append-only publication");
+    errors.push("ownership.journal_rule must require atomic append-only publication and a strict contiguous hash chain");
+  }
+  const journalStatuses = ownership?.journal_statuses as Record<string, unknown> | undefined;
+  if (
+    !journalStatuses
+    || !["absent", "clean", "recoverable_terminal_tail", "corrupt"]
+      .every((state) => typeof journalStatuses[state] === "string")
+    || !(journalStatuses.recoverable_terminal_tail as string).includes("every mutation is blocked")
+    || !(journalStatuses.corrupt as string).includes("digest mismatch")
+  ) {
+    errors.push("ownership.journal_statuses must define the four strict read and mutation states");
   }
   if (
     typeof ownership?.recovery_rule !== "string"
-    || !ownership.recovery_rule.includes("last valid connected journal event")
+    || !ownership.recovery_rule.includes("non-authoritative publication temporaries")
+    || !ownership.recovery_rule.includes("rolled-back prefix")
     || !ownership.recovery_rule.includes("re-observes each resource")
   ) {
-    errors.push("ownership.recovery_rule must recover interrupted tails and re-observe resources");
+    errors.push("ownership.recovery_rule must ignore only publication temporaries, block rollback append, and re-observe resources");
   }
   const publication = data.publication_policy as Record<string, unknown> | undefined;
   if (publication?.supported_platform !== "linux_proc_self_fd") {
@@ -63,10 +75,25 @@ export function validateLifecycleOperationContractData(value: unknown): string[]
   }
   if (
     typeof publication?.apply_serialization !== "string"
-    || !publication.apply_serialization.includes("proc-fd-pinned")
-    || !publication.apply_serialization.includes("stale-lock recovery")
+    || !publication.apply_serialization.includes("complete live preparation blocks contenders")
+    || !publication.apply_serialization.includes("Linux boot ID")
+    || !publication.apply_serialization.includes("process start ticks")
   ) {
-    errors.push("publication_policy.apply_serialization must pin and recover the lifecycle apply lock");
+    errors.push("publication_policy.apply_serialization must atomically publish a complete strong-identity lock");
+  }
+  if (
+    typeof publication?.lock_recovery !== "string"
+    || !publication.lock_recovery.includes("Malformed or incomplete final locks fail closed")
+    || !publication.lock_recovery.includes("full identity and token")
+  ) {
+    errors.push("publication_policy.lock_recovery must fail closed and verify identity on stale recovery and release");
+  }
+  if (
+    typeof publication?.journal_publication !== "string"
+    || !publication.journal_publication.includes("non-authoritative temporary name")
+    || !publication.journal_publication.includes("hard-linked atomically")
+  ) {
+    errors.push("publication_policy.journal_publication must atomically publish durable complete final events");
   }
   if (publication?.destructive_path_mutations !== "owned_removal_only") {
     errors.push("publication_policy.destructive_path_mutations must be owned_removal_only");

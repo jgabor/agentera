@@ -72,12 +72,12 @@ function persist(next: LifecycleOwnershipLedger): void {
   appendLifecycleOwnershipJournal(journalPath, next);
 }
 
-function partialTail(sequence: number): void {
+function interruptedPublicationTemporary(sequence: number): void {
   fs.mkdirSync(journalPath, { recursive: true });
   fs.writeFileSync(
     path.join(
       journalPath,
-      `${String(sequence).padStart(20, "0")}-00000000-0000-4000-8000-${String(sequence).padStart(12, "0")}.json`,
+      `.event-${String(sequence).padStart(20, "0")}-00000000-0000-4000-8000-${String(sequence).padStart(12, "0")}.tmp`,
     ),
     '{"schemaVersion":"agentera.lifecycleOwnershipJournalEvent.v1"',
   );
@@ -117,30 +117,30 @@ describe("lifecycle crash recovery and convergence", () => {
     expect(retry.ownershipLedger.records[0]).toMatchObject({ status: "managed" });
   });
 
-  it("ignores an interrupted ledger publication and converges from the previous durable event", () => {
+  it("ignores an interrupted non-authoritative publication and converges from the durable event", () => {
     const operation = spec("before-ledger");
     appendLifecycleOwnershipJournal(journalPath, pendingLedger(operation));
     fs.writeFileSync(operation.destination, operation.content as string);
-    partialTail(2);
+    interruptedPublicationTemporary(2);
 
     const restarted = readLifecycleOwnershipJournal(journalPath);
-    expect(restarted.state).toBe("recovered");
+    expect(restarted).toMatchObject({ state: "clean", temporaryArtifacts: 1 });
     expect(restarted.ledger.records[0]).toMatchObject({ status: "pending_create", identity: null });
 
     const retry = applyLifecycleOperations(plan([operation], restarted.ledger), { persistLedger: persist });
     expect(retry.operations[0]).toMatchObject({ action: "finalize_ownership", status: "applied" });
   });
 
-  it("keeps completed work noop after a durable ledger event plus interrupted tail", () => {
+  it("keeps completed work noop after a durable event plus interrupted publication temporary", () => {
     const operation = spec("after-ledger");
     const first = applyLifecycleOperations(plan([operation], emptyLifecycleOwnershipLedger()), {
       persistLedger: persist,
     });
     expect(first.operations[0].status).toBe("applied");
-    partialTail(readLifecycleOwnershipJournal(journalPath).validEvents + 1);
+    interruptedPublicationTemporary(readLifecycleOwnershipJournal(journalPath).validEvents + 1);
 
     const restarted = readLifecycleOwnershipJournal(journalPath);
-    expect(restarted.state).toBe("recovered");
+    expect(restarted).toMatchObject({ state: "clean", temporaryArtifacts: 1 });
     const retry = applyLifecycleOperations(plan([operation], restarted.ledger), { persistLedger: persist });
     expect(retry.operations[0]).toMatchObject({ action: "noop", status: "noop" });
   });

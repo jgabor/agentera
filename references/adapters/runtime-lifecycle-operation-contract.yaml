@@ -12,8 +12,13 @@ ownership:
   identity_rule: Managed and published pending-create records bind the filesystem device and inode observed at publication.
   removal_rule: Removal requires a matching whole-resource ledger identity and fingerprint, a pinned non-symlink parent, and Linux /proc/self/fd directory-relative access.
   interrupted_create_rule: A pending_create record may be finalized when its recorded identity and expected fingerprint match, or when the durable pre-create record survived and the exclusively declared resource is observed at the exact expected kind and fingerprint after restart.
-  journal_rule: Apply persists fsynced append-only ledger snapshots; an incomplete tail event cannot replace or truncate the last valid ownership evidence.
-  recovery_rule: Restart folds the last valid connected journal event, ignores incomplete tail events, and re-observes each resource before retry.
+  journal_rule: Apply publishes fsynced append-only ledger snapshots atomically at final names and accepts only a contiguous sequence-one hash chain with no gaps, forks, duplicate sequences, digest mismatches, or disconnected events.
+  journal_statuses:
+    absent: No journal directory exists; preview remains zero-write and apply may publish sequence one.
+    clean: Every authoritative final event is complete, schema-valid, digest-valid, and connected; mutation may append the next sequence.
+    recoverable_terminal_tail: Exactly one syntactically incomplete final event follows the clean prefix with no successor; reads preserve the prefix but every mutation is blocked until the tail is resolved.
+    corrupt: Any malformed complete event, middle incomplete event, gap, fork, duplicate sequence, body or filename mismatch, digest mismatch, disconnection, or unsafe entry blocks every mutation.
+  recovery_rule: Restart ignores uniquely named non-authoritative publication temporaries, folds only the strict connected final chain, and re-observes each resource before retry; append never continues from a rolled-back prefix or past an unresolved final tail.
 resource_states:
   - exact
   - modified
@@ -64,7 +69,9 @@ path_safety:
 publication_policy:
   supported_platform: linux_proc_self_fd
   unsupported_platform_result: action_required
-  apply_serialization: lifecycle apply uses a proc-fd-pinned ownership-journal lock with bounded stale-lock recovery
+  apply_serialization: lifecycle apply prepares a complete fsynced uniquely named lock directory and atomically renames it into final position; a complete live preparation blocks contenders, and the immutable owner record binds token, PID, Linux boot ID, and /proc process start ticks.
+  lock_recovery: Malformed or incomplete final locks fail closed. A complete lock is stale only when boot ID or process start ticks prove that exact owner identity is gone; release verifies the full identity and token before removing the owner record and lock directory.
+  journal_publication: Event bytes are fsynced under a unique non-authoritative temporary name, hard-linked atomically to the exclusive final event name, and followed by directory fsync before temporary cleanup.
   create_protocol: directory-relative exclusive no-follow creation with no sibling temporary path
   owned_file_update_protocol: directory-relative no-follow open, ledger and observation identity match, descriptor-local fingerprint check, in-place descriptor write, and post-write path identity check
   destructive_path_mutations: owned_removal_only

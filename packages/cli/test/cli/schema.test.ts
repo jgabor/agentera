@@ -84,6 +84,8 @@ describe("cli schema", () => {
       default_without_runtime_selector: "app_upgrade_only",
       preview: "strictly_read_only",
       apply_requires: "--yes",
+      journal_states: ["absent", "clean", "recoverable_terminal_tail", "corrupt"],
+      journal_publication: "fsynced_unique_temporary_then_atomic_exclusive_final_link_and_directory_fsync",
       native_actions: "reported_action_required_never_executed",
       exits: { success: 0, non_success: 1, usage: 2 },
     });

@@ -46,6 +46,7 @@ describe("cli help", () => {
     expect(text).toContain("--runtime {all,opencode,codex,cursor,copilot}");
     expect(text).toContain("--legacy-cleanup {claude}");
     expect(text).toContain("never native/trust actions");
+    expect(text).toContain("ownership journals and malformed locks fail closed");
     expect(text).toContain("--format {text,json}");
     expect(text).toContain("--verify");
     expect(text).toContain("--restore");

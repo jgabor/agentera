@@ -67,7 +67,7 @@ path_policy:
     - .pnpm-store
     - marketplace-cache
 known_caveats:
-  - Append-only ownership journal recovery ignores incomplete tail events, preserves the last valid snapshot, and re-observes every resource before retry.
+  - Append-only ownership journal recovery accepts only a strict contiguous hash chain, ignores uniquely named non-authoritative publication temporaries, blocks malformed or disconnected final events, and re-observes every resource before retry.
 shared_resources:
   - id: canonical_skill
     category: skills

@@ -12,6 +12,7 @@ import {
   CursorLifecycleAdapter,
 } from "../../src/runtime/lifecycleAdapters.js";
 import {
+  appendLifecycleOwnershipJournal,
   lifecycleOwnershipJournalPath,
   readLifecycleOwnershipJournal,
 } from "../../src/runtime/lifecycleOwnershipJournal.js";
@@ -250,7 +251,7 @@ describe("upgrade lifecycle apply and convergence", () => {
   it("applies selected owned operations, persists ownership, and reruns completed work as noop", () => {
     const first = run("opencode", true);
     expect(first.operations.every((operation) => operation.outcome === "applied")).toBe(true);
-    expect(first.ownershipJournal.state).toBe("ok");
+    expect(first.ownershipJournal.state).toBe("clean");
 
     const exact = run("opencode", false);
     expect(exact.operations.every((operation) => operation.action === "noop")).toBe(true);
@@ -301,6 +302,34 @@ describe("upgrade lifecycle apply and convergence", () => {
       ["opencode.agent", "noop"],
     ]);
     expect(run("opencode", false).operations.every((operation) => operation.action === "noop")).toBe(true);
+  });
+
+  it("blocks preview and apply on exact event-2 corruption in a nine-event chain without mutation", () => {
+    const applied = run("opencode", true);
+    const journalPath = lifecycleOwnershipJournalPath(fx.appHome);
+    let journal = readLifecycleOwnershipJournal(journalPath);
+    while (journal.validEvents < 9) {
+      journal = appendLifecycleOwnershipJournal(journalPath, journal.ledger);
+    }
+    const events = fs.readdirSync(journalPath).filter((name) => name.endsWith(".json")).sort();
+    fs.writeFileSync(
+      path.join(journalPath, events[1]!),
+      '{"schemaVersion":"agentera.lifecycleOwnershipJournalEvent.v1"',
+    );
+    const before = treeBytes(fx.root);
+
+    const preview = run("opencode", false);
+    const attempted = run("opencode", true);
+
+    expect(applied.status).toBe("success");
+    expect(preview.ownershipJournal).toMatchObject({ state: "corrupt", validEvents: 1, ignoredEvents: 8 });
+    expect(preview.operations.filter((operation) => operation.action !== "noop")
+      .every((operation) => operation.action === "action_required"
+        && operation.blockedReason?.includes("incomplete publication occurs before a successor"))).toBe(true);
+    expect(attempted.status).toBe("non_success");
+    expect(attempted.ownershipJournal).toMatchObject({ state: "corrupt", validEvents: 1, ignoredEvents: 8 });
+    expect(treeBytes(fx.root)).toEqual(before);
+    expect(fs.existsSync(fx.trap)).toBe(false);
   });
 
   it("makes doctor consume the persisted ledger after apply", () => {
