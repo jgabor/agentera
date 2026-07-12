@@ -26,7 +26,7 @@ export const PRIME_BLOB =
     "  agentera state docs                           # Docs mappings + stale docs",
     "  agentera state objective                      # Active optimize objective",
     "  agentera state experiments                    # Active optimize experiments",
-    "  agentera check lint --artifact PROGRESS.md --file .agentera/progress.yaml  # Pre-write artifact prose self-audit",
+    "  agentera check lint --artifact PLAN.md --file plan.yaml  # Optional draft prose preview; the writer validates published bytes",
     "  agentera state query --list-artifacts         # Discover advanced schema names",
     "  agentera state query <artifact-name>          # Advanced custom artifact query",
     "",

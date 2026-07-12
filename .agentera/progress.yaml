@@ -1,4 +1,18 @@
 cycles:
+  - number: 745
+    timestamp: 2026-07-13 00:10
+    type: fix
+    phase: build
+    what: Updated packages/cli/src/capabilities/plan/instructions.ts so state plan
+      create is the final publication gate and its YAML examples pass the typed
+      writer.
+    verified: "pnpm -C packages/cli test: 1,576 tests passed; typecheck, build, plan
+      capability and capability-contract validation, compact, and writer-backed
+      example publication passed."
+    next: "Task 8: synchronize state and verify lifecycle behavior."
+    context:
+      intent: Complete active plan Task 7 without changing decisions or unrelated
+        capabilities.
   - number: 744
     timestamp: 2026-07-12 23:53
     type: fix
@@ -173,32 +187,10 @@ cycles:
         Tasks 2-8, or decision satisfaction changes.
       unknowns: none
       scope: plan schema, lifecycle contract test, plan/progress state, and TODO.
-  - number: 735
-    timestamp: 2026-07-12 20:23
-    type: fix
-    phase: build
-    what: Completed Task 1 lifecycle classification with a safely pruned
-      repository-root scan in skills/agentera/schemas/artifacts/plan.yaml.
-    inspiration: Second audit identified root fixtures, .agentera/docs.yaml, and
-      script schema/manifest omissions from the prior bounded roots.
-    discovered: After documented exclusions, the scan reads 920 repository files and
-      classifies 184 lifecycle-bearing candidates with zero unclassified.
-    verified: "Focused contract test and full CLI suite pass: 161 files, 1,542
-      tests. Typecheck, build, compact, plan capability validation,
-      capability-contract validation, and git diff --check pass."
-    next: Task 1 Criterion 1 is repaired; Task 2 remains next.
-    context:
-      intent: Repair Criterion 1 by covering root, hidden, fixture, script contract,
-        and equivalent repository surfaces without traversing unsafe or
-        generated locations.
-      constraints: Criterion 1 only; Criteria 2-4 unchanged. Excludes
-        VCS/vendor/environment/cache/snapshot/generated output, symlinks, and
-        .env; preserves decision satisfaction and v3 hold.
-      unknowns: None within the declared repository boundary; excluded paths are
-        explicit and rationale-backed.
-      scope: Lifecycle authority scan boundary and patterns, regression test,
-        changelog, typed Task 1 evidence, and progress.
 archive:
+  - summary: "Cycle 735 (2026-07-12): Completed Task 1 lifecycle classification with
+      a safely pruned repository-root scan in
+      skills/agentera/schemas/artifacts/plan.yaml."
   - summary: "Cycle 734 (2026-07-12): Repaired Task 1 lifecycle inventory
       completeness with scan-enforced classification patterns in
       skills/agentera/schemas/artifacts/plan.yaml."
@@ -303,5 +295,3 @@ archive:
   - summary: "Cycle 696 (2026-07-10): Implemented the standardized state artifact
       writer with typed progress, decisions, plan, and health operations;
       schema-derived..."
-  - summary: "Cycle 695 (2026-07-10): Audited and rewrote profile capability
-      instructions following six-section spine and direct-contract philosophy."

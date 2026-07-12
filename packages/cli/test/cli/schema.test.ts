@@ -136,8 +136,13 @@ describe("cli schema", () => {
       (c) => c.name === "prime",
     );
     expect(prime?.structured_fields).toContain("capability_context");
-    const lint = (payload.commands as Array<{ name: string; output_formats: string[] }>).find((c) => c.name === "lint");
+    const lint = (
+      payload.commands as Array<{ name: string; output_formats: string[]; description: string }>
+    ).find((c) => c.name === "lint");
     expect(lint?.output_formats).toEqual(["text", "json"]);
+    expect(lint?.description).toBe(
+      "Deprecated alias for check lint. Optional draft prose preview; typed writers validate published bytes.",
+    );
   });
 });
 

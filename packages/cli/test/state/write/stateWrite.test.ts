@@ -755,7 +755,9 @@ describe("decisions, health, and plan operations", () => {
     expect(lintResult.json?.error.violations).toEqual(
       expect.arrayContaining([expect.stringContaining("strict prose lint verbosity")]),
     );
-    expect(lintResult.json?.error.syntax).toContain("check lint");
+    expect(lintResult.json?.error.syntax).toBe(
+      "agentera state plan create --input plan.yaml --format json",
+    );
     expect(fs.readFileSync(target, "utf8")).toBe(before);
     expect(archiveFiles(lintRoot)).toEqual([]);
 

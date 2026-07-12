@@ -23,4 +23,9 @@ describe("agentera prime --guidance (Phase 0 spike)", () => {
     expect(PRIME_BLOB.endsWith("repair preview.\n")).toBe(true);
     expect(PRIME_BLOB.endsWith("\n\n")).toBe(false);
   });
+
+  it("describes lint as an optional draft preview", () => {
+    expect(PRIME_BLOB).toContain("Optional draft prose preview; the writer validates published bytes");
+    expect(PRIME_BLOB).not.toContain("Pre-write artifact prose self-audit");
+  });
 });

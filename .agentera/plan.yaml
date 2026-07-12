@@ -105,13 +105,14 @@ tasks:
     depends_on:
       - "5"
       - "6"
-    status: pending
+    status: complete
     acceptance:
       - GIVEN plan capability instructions WHEN read after writer integration THEN a concise validate-and-publish step replaces the standalone pre-write self-audit sequence.
       - GIVEN help and vocabulary surfaces WHEN searched THEN they describe one authoritative writer operation and contain no contradictory manual command sequence.
       - GIVEN an agent wants early feedback WHEN working on a draft THEN `check lint` remains available as an optional preview rather than a separate publication obligation.
       - GIVEN bundled and source capability data WHEN validated THEN both expose the same updated contract.
       - GIVEN the documented plan YAML example WHEN submitted unchanged through the typed writer THEN its overall acceptance, dependency, and optional rejected-section shapes validate successfully in a regression test.
+    evidence: PLAN now describes optional lint preview and state plan create as the final gate; its examples use scalar overall acceptance, string dependencies, and a valid optional rejected shape. Added source/compiled parity and typed-writer regression coverage. Verified 1,576 CLI tests, typecheck, build, plan capability and contract validation, and compact.
   - number: 8
     name: Synchronize state and verify lifecycle behavior
     depends_on:

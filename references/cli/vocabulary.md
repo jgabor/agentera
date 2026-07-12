@@ -301,7 +301,7 @@ tests, labels, or active state.
 | Decision gate                              | Explicit condition-based branch before proceeding.                                      | Optimize keep/discard decision.                                           |
 | Exit-early stop condition                  | Stop condition when work is already complete or unnecessary.                            | Docs current, no stale work found.                                        |
 | Behavioral verification gate               | Build check that behavior was verified against real project state.                  | Tests, builds, or manual verification.                                    |
-| Pre-write self-audit                       | Prose check for verbosity mismatch, abstraction creep, and filler accumulation.         | `agentera lint --artifact <ARTIFACT>` exposes the checks through the CLI. |
+| Draft lint preview                         | Optional early feedback for verbosity mismatch, abstraction creep, and filler accumulation. | `agentera check lint --artifact <ARTIFACT>` previews a draft; the typed writer validates final bytes when publishing. |
 | Plan-completion sweep                      | Build cleanup when plan tasks finish.                                               | Progress rollup, changelog, TODO, health cross-reference, archive.        |
 | Worker spawn                               | Isolated implementation or measurement by a worker through the host subagent mechanism. | Build and optimize can use it.                                        |
 | Stale-base awareness                       | Prevent workers from branching from old `origin/main` or stale HEAD.                    | Use pre-spawn Git commits before spawning workers.                        |

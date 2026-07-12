@@ -74,7 +74,7 @@ const COMMAND_DESCRIPTIONS: Record<string, string> = {
   objective: "Deprecated alias for state objective. Active optimize objective summary.",
   experiments: "Deprecated alias for state experiments. Active optimize experiments summary.",
   query: "Deprecated alias for state query. Advanced custom artifact query.",
-  lint: "Deprecated alias for check lint. Run pre-write artifact prose self-audit.",
+  lint: "Deprecated alias for check lint. Optional draft prose preview; typed writers validate published bytes.",
   gate: "Deprecated alias for check compact. Run check-only repository gates.",
   compact: "Deprecated alias for check compact. Check or fix artifact compaction budgets.",
   upgrade: "Preview or apply app migration plus explicitly selected Agentera-owned runtime lifecycle repair.",

@@ -184,8 +184,8 @@ function validatePlanPublicationCandidate(bytes: string): void {
     class: "schema_violation",
     message: "plan publication candidate failed strict prose lint or schema validation; correct the reported violations and retry",
     violations,
-    syntax: "agentera check lint --artifact plan --file PATH --strict --format json",
-    example: "agentera check lint --artifact plan --file .agentera/plan.yaml --strict --format json",
+    syntax: "agentera state plan create --input plan.yaml --format json",
+    example: "agentera state plan create --input plan.yaml --format json",
   });
 }
 
