@@ -1,4 +1,26 @@
 cycles:
+  - number: 739
+    timestamp: 2026-07-12 21:57
+    type: fix
+    phase: build
+    what: Added packages/cli/src/upgrade/migrateArtifactsV2ToV3.ts migration for
+      legacy plan lifecycle values in docs-mapped current plans and archives.
+    inspiration: Plan Lifecycle Clarity and Validated Publication Task 3.
+    discovered: Historical task completed values are retained as evidence; only
+      header.status changes, and incomplete completed plans report a collision
+      before becoming open.
+    verified: 1,554 CLI tests; typecheck; lint (0 errors, 99 existing warnings);
+      build; built CLI upgrade dry-run; compact.
+    next: Task 4 may enforce canonical plan writes; do not change routing, retries,
+      or prose.
+    context:
+      intent: Complete active plan Task 3 with deterministic lifecycle migration.
+      constraints: Task 3 only; no canonical writer enforcement, routing/retry
+        changes, prose simplification, decision satisfaction, vision edits,
+        push, or publication.
+      unknowns: none
+      scope: CLI lifecycle migration, archive discovery, upgrade tests, plan task
+        evidence, and progress.
   - number: 738
     timestamp: 2026-07-12 21:29
     type: fix
@@ -209,41 +231,10 @@ cycles:
       unknowns: none
       scope: packages/cli/src/cli/planArtifacts.ts; state plan; orientation; tests;
         source-contract oracle; help/schema wording.
-  - number: 729
-    timestamp: 2026-07-12 14:54
-    type: chore
-    phase: build
-    what: Synchronized packages/cli/package.json dev.17, lifecycle parity, release
-      docs, and Task 8 state while preserving registry.json suiteVersion 3.0.0.
-    inspiration: Task 8 in .agentera/plan.yaml and the canonical version inventory
-      in .agentera/docs.yaml.
-    discovered: The tracked version inventory excludes the ignored local
-      package-lock.json; the npm package surface is the only development
-      prerelease surface validated against the 3.0.0 suite core.
-    verified: "Full CLI: 160 files and 1534 tests passed. Typecheck and build
-      passed. Lint passed with 0 errors and 98 existing warnings. Build
-      capability, capability-contract, and lifecycle-adapters validation passed.
-      Direct Astro check and build passed. npm pack dry-run reported
-      agentera@3.0.0-dev.17 with 573 files and required CLI, sentinel, skill,
-      upgrade, and changelog content. Built --version is 3.0.0-dev.17; package
-      suiteVersion, registry, and bundle sentinel are 3.0.0.
-      Prime/doctor/upgrade preview confirmed shared lifecycle projection,
-      all-runtime development preview, explicit runtime apply/yes, and
-      fail-closed host blockers."
-    next: No further Task 8 work; stable promotion, publication, tagging, pushing,
-      and user-owned runtime enablement remain separate.
-    context:
-      intent: Close final Task 8 release-preparation gaps across metadata,
-        documentation, package assertions, and typed project state.
-      constraints: No publish, tag, push, vision edit, objective edit, or Decision 92
-        satisfaction change.
-      unknowns: Host enablement and trust evidence remains unknown, so prime and
-        doctor correctly report releaseBlocked=true.
-      scope: packages/cli/package.json; lifecycle parity validator and package
-        assertion; README.md; UPGRADE.md; packages/cli/README.md;
-        runtime/package references; CHANGELOG.md; TODO.md; typed progress,
-        health, and plan state.
 archive:
+  - summary: "Cycle 729 (2026-07-12): Synchronized packages/cli/package.json dev.17,
+      lifecycle parity, release docs, and Task 8 state while preserving
+      registry.json suiteVersion..."
   - summary: "Cycle 728 (2026-07-12): Verified Task 7 consumer and distribution
       parity: doctor, upgrade, project integration, prime, and status now..."
   - summary: "Cycle 727 (2026-07-12): Verified runtime lifecycle selectors,
@@ -345,5 +336,3 @@ archive:
       all..."
   - summary: "Cycle 690 (2026-06-28): Plan task 5 (final state sync): closed the
       vitest 2→4 + Vite+ toolchain plan. Ran..."
-  - summary: "Cycle 689 (2026-06-28): Plan task 4 of the vitest 2->4 toolchain
-      modernization: align the pre-commit hook script with..."

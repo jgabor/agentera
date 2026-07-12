@@ -181,19 +181,11 @@ export function discoverPlanArtifacts(activePath: string): PlanArtifactDiscovery
     else invalidArchivePaths.push(archivePath);
   }
 
-  // Archive names carry a calendar date but can collide on the same day. The
-  // writer's filesystem publication time is the authoritative recency signal;
-  // use the path only as a stable tie-breaker for copied fixtures.
+  // Lifecycle migration updates bytes and therefore mtimes. Persisted creation
+  // dates, followed by the immutable path, keep historical order stable.
   archived.sort((a, b) => {
-    const mtime = (candidate: PlanArtifact): number => {
-      try {
-        return fs.statSync(candidate.path).mtimeMs;
-      } catch {
-        return 0;
-      }
-    };
-    const delta = mtime(b) - mtime(a);
-    return delta === 0 ? b.path.localeCompare(a.path) : delta;
+    const createdDelta = planDocumentParts(b.data).created.localeCompare(planDocumentParts(a.data).created);
+    return createdDelta === 0 ? b.path.localeCompare(a.path) : createdDelta;
   });
   return { activePath, archiveDirectory, active, archived, invalidArchivePaths, diagnostics };
 }

@@ -295,7 +295,7 @@ function parsePlan(text: string): Record<string, unknown> {
   const createdMatch = text.match(/Created:\s*(\d{4}-\d{2}-\d{2})/);
   header.created = createdMatch ? createdMatch[1] : "";
   const statusMatch = text.match(/Status:\s*(active|completed)/);
-  header.status = statusMatch ? statusMatch[1] : "active";
+  header.status = statusMatch?.[1] === "completed" ? "complete" : "open";
   const reviewedMatch = text.match(/Reviewed:\s*(\d{4}-\d{2}-\d{2})/);
   header.reviewed = reviewedMatch ? reviewedMatch[1] : "";
   const criticMatch = text.match(/Critic issues:\s*(.+?)\s*\|/);

@@ -32,6 +32,7 @@ import {
   applyMigrationPhases,
   detectV1ArtifactPairs,
   dryRunMigration,
+  hasPendingPlanLifecycleMigration,
   type MigrationPhase,
   type MigrationPhaseItem,
   type MigrationPhaseSummary,
@@ -328,13 +329,14 @@ export function buildUpgradePlan(args: UpgradeOrchestratorArgs): UpgradePlanV2 {
   };
   const pendingRuntimeSync = pendingRuntimeMigrationItems(migrationCtx).length > 0;
   const pendingV1Artifacts = detectV1ArtifactPairs(project).length > 0;
+  const pendingPlanLifecycleMigration = hasPendingPlanLifecycleMigration(project);
   const crossMajorMigration =
     crossMajorBoundary && shouldIncludeCrossMajorPlanItems(channel, upgradeOutcome);
   const pendingCleanup =
     planLegacyAgentCleanupItems(migrationCtx).some((i) => i.status === "pending") ||
     planLegacyCapabilityAgentCleanupItems(migrationCtx).some((i) => i.status === "pending");
   const runMigration =
-    crossMajorMigration || pendingRuntimeSync || pendingV1Artifacts || pendingCleanup || Boolean(lifecycleSelector);
+    crossMajorMigration || pendingRuntimeSync || pendingV1Artifacts || pendingPlanLifecycleMigration || pendingCleanup || Boolean(lifecycleSelector);
 
   const phases: UpgradeOrchestratorPhase[] = [];
 

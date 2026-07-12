@@ -77,7 +77,7 @@ describe("idempotency", () => {
     const { appHome, project } = seedLayout(tmp);
     const ctx = migrationCtx(appHome, project, home, REPO_ROOT);
     const preview = dryRunMigration(ctx);
-    applyMigrationPhases(ctx, preview, ["runtime", "cleanup"]);
+    applyMigrationPhases(ctx, preview, ["artifacts", "runtime", "cleanup"]);
 
     const second = buildUpgradePlan({
       installRoot: appHome,

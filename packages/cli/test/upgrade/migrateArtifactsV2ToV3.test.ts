@@ -41,11 +41,17 @@ afterEach(() => {
 });
 
 describe("planArtifactsPhase", () => {
-  it("reports noop for v2 YAML project layouts", () => {
+  it("plans lifecycle migration for legacy v2 YAML plan fixtures", () => {
     const project = copyFixture("v2-yaml-project", path.join(tmp, "yaml-project"));
     const phase = planArtifactsPhase(project);
-    expect(phase.status).toBe("noop");
-    expect(phase.items.every((item) => item.status === "noop")).toBe(true);
+    expect(phase.status).toBe("pending");
+    expect(phase.items).toContainEqual(
+      expect.objectContaining({
+        action: "normalize-plan-lifecycle",
+        source: ".agentera/plan.yaml",
+        status: "pending",
+      }),
+    );
     expect(phase.items.some((item) => item.source === ".agentera/progress.yaml")).toBe(true);
   });
 
@@ -138,7 +144,7 @@ describe("dryRunMigration", () => {
     expect(result.artifacts.name).toBe("artifacts");
     expect(result.runtime.name).toBe("runtime");
     expect(result.cleanup.name).toBe("cleanup");
-    expect(result.artifacts.status).toBe("noop");
+    expect(result.artifacts.status).toBe("pending");
     expect(result.runtime.status).toBe("pending");
     expect(result.cleanup.status).toBe("pending");
   });

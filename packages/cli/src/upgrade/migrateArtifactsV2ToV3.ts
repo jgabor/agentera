@@ -1,7 +1,11 @@
 import fs from "node:fs";
 import path from "node:path";
 
+import YAML from "yaml";
+
 import { isFile, pathExists, resolvePath } from "../core/paths.js";
+import { loadYamlMapping } from "../core/yaml.js";
+import { loadArtifactRegistry, resolveArtifactPath } from "../registries/artifactRegistry.js";
 import { BUNDLE_MARKER } from "../state/installRoot.js";
 import { doctorRoots } from "./appModel.js";
 import {
@@ -39,6 +43,7 @@ import {
   resolveNpxHookCommands,
   rewireRuntimeText,
 } from "./runtimeMigration.js";
+import { writeFileAtomic } from "./atomicWriter.js";
 
 /**
  * v2→v3 migration phases: artifacts (noop for YAML), runtime rewire, cleanup.
@@ -74,6 +79,7 @@ export interface MigrationPhaseItem {
   target?: string;
   runtime?: string;
   preserved?: string[];
+  collisions?: string[];
   removedPreview?: string[];
   newText?: string;
 }
@@ -92,6 +98,136 @@ export interface MigrationPhase {
   summary: MigrationPhaseSummary;
   items: MigrationPhaseItem[];
   message: string;
+}
+
+const PLAN_ARCHIVE_FILE = /^PLAN-.+\.ya?ml$/i;
+const PLAN_LIFECYCLE_ACTION = "normalize-plan-lifecycle";
+
+function isMapping(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+function relativeToProject(project: string, artifactPath: string): string {
+  return path.relative(project, artifactPath);
+}
+
+function planTaskList(data: Record<string, unknown>): unknown[] | null {
+  if (Array.isArray(data.tasks)) return data.tasks;
+  if (Array.isArray(data.entries)) return data.entries;
+  return null;
+}
+
+function completedTasksOnly(tasks: unknown[]): boolean {
+  return tasks.every(
+    (task) => isMapping(task) && (task.status === "complete" || task.status === "completed"),
+  );
+}
+
+function rewritePlanStatus(text: string, status: "open" | "complete"): string {
+  const document = YAML.parseDocument(text);
+  if (document.errors.length > 0) {
+    throw new Error(document.errors.map((error) => error.message).join("; "));
+  }
+  document.setIn(["header", "status"], status);
+  return document.toString();
+}
+
+function lifecycleMigrationItem(project: string, artifactPath: string): MigrationPhaseItem {
+  const source = relativeToProject(project, artifactPath);
+  try {
+    const text = fs.readFileSync(artifactPath, "utf8");
+    const data = loadYamlMapping(text);
+    const header = isMapping(data.header) ? data.header : null;
+    const tasks = planTaskList(data);
+    if (!header || tasks === null) {
+      return {
+        status: "blocked",
+        action: PLAN_LIFECYCLE_ACTION,
+        source,
+        target: source,
+        message: "plan requires a header mapping and a tasks or entries array before lifecycle migration",
+      };
+    }
+    const status = typeof header.status === "string" ? header.status : "";
+    if (status === "open" || status === "complete") {
+      return {
+        status: "noop",
+        action: PLAN_LIFECYCLE_ACTION,
+        source,
+        target: source,
+        preserved: ["all plan fields"],
+        message: "plan lifecycle is already canonical",
+      };
+    }
+    if (status !== "active" && status !== "completed") {
+      return {
+        status: "blocked",
+        action: PLAN_LIFECYCLE_ACTION,
+        source,
+        target: source,
+        message: `plan header.status must be active, completed, open, or complete; received ${status || "missing"}`,
+      };
+    }
+
+    const collisions: string[] = [];
+    const targetStatus: "open" | "complete" = status === "active" || !completedTasksOnly(tasks)
+      ? "open"
+      : "complete";
+    if (status === "completed" && targetStatus === "open") {
+      collisions.push("header.status=completed conflicts with unfinished task evidence; preserving task evidence and migrating status to open");
+    }
+    return {
+      status: "pending",
+      action: PLAN_LIFECYCLE_ACTION,
+      source,
+      target: source,
+      preserved: ["all plan fields except header.status"],
+      ...(collisions.length > 0 ? { collisions } : {}),
+      newText: rewritePlanStatus(text, targetStatus),
+      message: `will migrate plan lifecycle ${status} to ${targetStatus}`,
+    };
+  } catch (error) {
+    return {
+      status: "blocked",
+      action: PLAN_LIFECYCLE_ACTION,
+      source,
+      target: source,
+      message: `cannot migrate plan lifecycle: ${(error as Error).message}`,
+    };
+  }
+}
+
+function lifecyclePlanArtifacts(project: string): MigrationPhaseItem[] {
+  const root = resolvePath(project);
+  let activePath: string;
+  try {
+    const record = loadArtifactRegistry().get("plan");
+    if (!record) throw new Error("plan artifact is not registered");
+    activePath = resolveArtifactPath(record, root, { strictWrite: true });
+  } catch (error) {
+    return [{
+      status: "blocked",
+      action: PLAN_LIFECYCLE_ACTION,
+      message: `cannot resolve docs-mapped plan path: ${(error as Error).message}`,
+    }];
+  }
+
+  const artifacts = isFile(activePath) ? [activePath] : [];
+  const archiveDirectory = path.join(path.dirname(activePath), "archive");
+  try {
+    for (const name of fs.readdirSync(archiveDirectory).sort()) {
+      if (!PLAN_ARCHIVE_FILE.test(name)) continue;
+      const archivePath = path.join(archiveDirectory, name);
+      if (isFile(archivePath)) artifacts.push(archivePath);
+    }
+  } catch {
+    // A missing archive directory is normal before the first archive.
+  }
+  return artifacts.map((artifactPath) => lifecycleMigrationItem(root, artifactPath));
+}
+
+export function hasPendingPlanLifecycleMigration(project: string): boolean {
+  return lifecyclePlanArtifacts(project).some((item) => item.status === "pending");
 }
 
 export interface MigrationContext {
@@ -183,21 +319,27 @@ export function planArtifactsPhase(project: string): MigrationPhase {
   }
 
   const v1Pairs = detectV1ArtifactPairs(root);
-  if (v1Pairs.length > 0) {
-    return planV1ArtifactsPhase(root);
-  }
+  const v1Items = v1Pairs.length > 0 ? planV1ArtifactsPhase(root).items : [];
 
   const yamlArtifacts = listV2YamlArtifacts(root);
-  if (yamlArtifacts.length === 0) {
+  const lifecycleItems = lifecyclePlanArtifacts(root);
+  if (yamlArtifacts.length === 0 && v1Items.length === 0 && lifecycleItems.length === 0) {
     return summarizePhase("artifacts", [], "no project artifacts found");
   }
 
-  const items: MigrationPhaseItem[] = yamlArtifacts.map((source) => ({
-    status: "noop",
-    action: "preserve",
-    source,
-    message: "v2 YAML artifact preserved; no v2→v3 schema migration required",
-  }));
+  const lifecycleSources = new Set(
+    lifecycleItems.flatMap((item) => item.source ? [item.source] : []),
+  );
+  const items: MigrationPhaseItem[] = [
+    ...v1Items,
+    ...yamlArtifacts.filter((source) => !lifecycleSources.has(source)).map((source) => ({
+      status: "noop" as const,
+      action: "preserve",
+      source,
+      message: "v2 YAML artifact preserved; no v2→v3 schema migration required",
+    })),
+    ...lifecycleItems,
+  ];
   return summarizePhase("artifacts", items);
 }
 
@@ -206,9 +348,34 @@ export function applyArtifactsPhase(phase: MigrationPhase, project: string, forc
   const hasV1Migration = phase.items.some((item) => item.action === "migrate");
   if (hasV1Migration) {
     applyV1ArtifactsPhase(phase, root, force);
-    return;
   }
-  phase.status = summarizePhase("artifacts", phase.items, phase.message).status;
+  for (const item of phase.items) {
+    if (item.status !== "pending" || item.action !== PLAN_LIFECYCLE_ACTION || !item.source) continue;
+    const sourcePath = path.join(root, item.source);
+    const current = lifecycleMigrationItem(root, sourcePath);
+    if (current.status !== "pending") {
+      item.status = current.status;
+      item.message = current.message;
+      item.collisions = current.collisions;
+      continue;
+    }
+    if (current.newText !== item.newText) {
+      item.status = "blocked";
+      item.message = "plan changed after migration preview; rerun dry-run before applying";
+      continue;
+    }
+    try {
+      writeFileAtomic(sourcePath, current.newText!, "utf8");
+      item.status = "applied";
+      item.message = "migrated plan lifecycle without changing retained evidence";
+    } catch (error) {
+      item.status = "failed";
+      item.message = `plan lifecycle migration failed: ${(error as Error).message}`;
+    }
+  }
+  const updated = summarizePhase("artifacts", phase.items, phase.message);
+  phase.status = updated.status;
+  phase.summary = updated.summary;
 }
 
 export function planRuntimeRewirePhase(ctx: MigrationContext): MigrationPhase {

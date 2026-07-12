@@ -42,6 +42,7 @@
 
 ## ✓ Resolved
 
+- [x] ~~[fix:3.0.0] Provide deterministic plan lifecycle migration. Resolved 2026-07-12: `agentera upgrade --only artifacts --dry-run|--yes` migrates legacy current and archived plan statuses through docs-mapped paths, preserves retained task evidence, reports unfinished-status collisions, and keeps archive order stable by persisted creation date.~~
 - [x] ~~[fix:3.0.0] Complete the plan lifecycle inventory classifier before resuming "Plan Lifecycle Clarity and Validated Publication". Resolved 2026-07-12: `packages/cli/test/state/planLifecycleContract.test.ts` selects `.opencode/plugins/agentera.js`, prunes `.wrangler` and `*.tgz`, and reports 908 scanned files, 200 candidates, and zero unclassified.~~
 - [x] ~~[fix:3.0.0] Reconcile the canonical OpenCode/shared skill topology. Resolved 2026-07-12: the lifecycle authority makes `~/.agents/skills/agentera` canonical for all four runtimes, treats runtime-specific locations as additional discovery paths, and requires complete diagnosis before the support floor can pass.~~
 - [x] ~~[docs:3.0.0] Update root README.md for v3. Resolved 2026-07-12: README, CLI README, upgrade guide, web lifecycle docs, and mobile capability vocabulary now describe the npm command tree, one Cursor identity, canonical skill, bounded prime/detailed doctor split, and ownership-safe upgrade flow.~~

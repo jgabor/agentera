@@ -9,6 +9,11 @@
 
 ### Changed
 
+- Changed `agentera upgrade --only artifacts` to preview and apply deterministic
+  plan lifecycle migration for docs-mapped current plans and archives. Legacy
+  `active` and `completed` plan statuses become `open` and `complete` without
+  rewriting retained task evidence; archive recency now uses persisted creation
+  dates instead of file modification times.
 - Changed plan reads to normalize legacy `active` and `completed` statuses within
   the current-plan and archive boundary, with structured diagnostics for
   malformed current plans and archives.
