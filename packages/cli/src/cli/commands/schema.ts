@@ -65,7 +65,7 @@ const COMMAND_DESCRIPTIONS: Record<string, string> = {
   prime: "Composite orientation briefing and capability startup context.",
   status: "Deprecated alias for prime.",
   schema: "Runtime CLI/schema introspection.",
-  plan: "Deprecated alias for state plan. Active plan and archived history summary.",
+  plan: "Deprecated alias for state plan. Plans, archived history, task evidence, and provenance.",
   progress: "Deprecated alias for state progress. Recent cycle summary.",
   health: "Deprecated alias for state health. Latest project artifact health audit.",
   todo: "Deprecated alias for state todo. TODO summary.",

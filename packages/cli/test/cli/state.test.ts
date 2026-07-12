@@ -149,9 +149,10 @@ describe("cli dispatch: state routing", () => {
 });
 
 
-function planSchema(absPath: string): Record<string, SchemaInfo> {
+function planSchema(absPath: string, progressPath = path.join(path.dirname(absPath), "progress.yaml")): Record<string, SchemaInfo> {
   return {
     plan: { path: absPath, record: undefined, schema: {}, fields: { title: { type: "string" } } },
+    progress: { path: progressPath, record: undefined, schema: {}, fields: {} },
   };
 }
 
@@ -169,9 +170,15 @@ function seedPlan(): string {
       "  - number: 1",
       "    status: done",
       "    name: Foundation",
+      "    evidence:",
+      "      - command: seed",
+      "        result: passed",
       "  - number: 2",
       "    status: pending",
       "    name: State commands",
+      "    evidence:",
+      "      - command: seed",
+      "        result: pending",
       "",
     ].join("\n"),
   );
@@ -202,6 +209,55 @@ function writeArchivedPlan(planPath: string, filename: string, title: string, st
     ].join("\n"),
   );
   return archivePath;
+}
+
+const LIFECYCLE_TASK_NAMES = [
+  "Establish canonical applicability and action projection",
+  "Define default preview and explicit apply semantics",
+  "Enforce ownership-safe repair and cleanup",
+  "Drive project integration from lifecycle state",
+  "Surface lifecycle attention and next actions",
+  "Verify selectors, ownership, safety, and convergence",
+  "Verify consumer and distribution parity",
+  "Synchronize release surfaces and project state",
+];
+
+const LIFECYCLE_PROGRESS_SUMMARIES = [
+  "Cycle 716 (2026-07-12): Established the canonical runtime lifecycle projection for Task 1.",
+  "Cycle 717 (2026-07-12): Defined default preview and explicit apply semantics for runtime lifecycle upgrade work.",
+  "Cycle 718 (2026-07-12): Hardened lifecycle operations for Task 3 ownership-safe repair and retired cleanup.",
+  "Cycle 719 (2026-07-12): Drove project integration from the canonical runtime lifecycle projection.",
+  "Cycle 720 (2026-07-12): Surface bounded lifecycle attention rows and exact next-action guidance in prime/status.",
+  "Cycle 727 (2026-07-12): Verified runtime lifecycle selectors, ownership safety, preview purity, and retry convergence.",
+  "Cycle 728 (2026-07-12): Verified Task 7 consumer and distribution parity across lifecycle consumers.",
+  "Cycle 729 (2026-07-12): Synchronized packages/cli/package.json dev.17 and Task 8 state.",
+];
+
+function writeLifecycleArchive(planPath: string): string {
+  const archiveDir = path.join(path.dirname(planPath), "archive");
+  fs.mkdirSync(archiveDir, { recursive: true });
+  const archivePath = path.join(archiveDir, "PLAN-2026-07-12-lifecycle.yaml");
+  const lines = [
+    "header:",
+    "  title: Default Runtime Lifecycle Visibility and Repair",
+    "  status: complete",
+    "  created: '2026-07-12'",
+    "tasks:",
+  ];
+  for (const [index, name] of LIFECYCLE_TASK_NAMES.entries()) {
+    lines.push(`  - number: ${index + 1}`, "    status: complete", `    name: ${name}`, "    acceptance:", "      - GIVEN verified behavior THEN retain it");
+  }
+  fs.writeFileSync(archivePath, lines.concat("").join("\n"));
+  return archivePath;
+}
+
+function writeLifecycleProgress(planPath: string, summaries = LIFECYCLE_PROGRESS_SUMMARIES): string {
+  const progressPath = path.join(path.dirname(planPath), "progress.yaml");
+  fs.writeFileSync(
+    progressPath,
+    ["cycles: []", "archive:", ...summaries.map((summary) => `  - summary: ${JSON.stringify(summary)}`), ""].join("\n"),
+  );
+  return progressPath;
 }
 
 describe("cli state plan", () => {
@@ -256,6 +312,8 @@ describe("cli state plan", () => {
     expect(payload.summary.status).toBe("complete");
     expect(payload.entries[0].status).toBe("complete");
     expect(payload.entries[0].evidence[0].result).toBe("passed");
+    expect(payload.entries[0].evidence_provenance[0].source_family).toBe("plan");
+    expect(payload.entries[0].evidence_provenance[0].artifact_path).toBe(archivePath);
     expect(payload.source.path).toBe(archivePath);
     expect(payload.source.active).toBe(false);
     expect(payload.source_contract.complete_for_plan_artifact).toBe(true);
@@ -263,6 +321,60 @@ describe("cli state plan", () => {
     expect(payload.source_contract.invalid_archive_paths).toEqual([path.join(tmp, "archive", "PLAN-malformed.yaml")]);
     expect(payload.plans).toHaveLength(1);
     expect(payload.plans[0].archived).toBe(true);
+  });
+
+  it("projects deterministic typed-progress evidence for every archived lifecycle task", () => {
+    const p = path.join(tmp, "plan.yaml");
+    const archivePath = writeLifecycleArchive(p);
+    const progressPath = writeLifecycleProgress(p);
+
+    const { rc, out } = capture((io) => queryPlan({ command: "plan", format: "json" }, planSchema(p, progressPath), io));
+    expect(rc).toBe(0);
+    const payload = JSON.parse(out);
+    expect(payload.source.path).toBe(archivePath);
+    expect(payload.summary.evidence_status).toBe("complete");
+    expect(payload.source_contract.complete_for_plan_artifact).toBe(true);
+    expect(payload.entries).toHaveLength(8);
+    expect(payload.entries.map((task: { evidence_provenance: Array<{ cycle_number: number }> }) => task.evidence_provenance[0].cycle_number)).toEqual([
+      716, 717, 718, 719, 720, 727, 728, 729,
+    ]);
+    for (const task of payload.entries) {
+      expect(task.evidence).toHaveLength(1);
+      expect(task.evidence[0].source).toBe("progress");
+      expect(task.evidence_provenance[0].source_family).toBe("progress");
+      expect(task.evidence_provenance[0].artifact_path).toBe(progressPath);
+      expect(task.evidence_status).toBe("present");
+    }
+  });
+
+  it("surfaces completed tasks with missing evidence as incomplete", () => {
+    const p = path.join(tmp, "plan.yaml");
+    const archiveDir = path.join(tmp, "archive");
+    fs.mkdirSync(archiveDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(archiveDir, "PLAN-2026-07-12-missing-evidence.yaml"),
+      [
+        "header:",
+        "  title: Missing evidence",
+        "  status: complete",
+        "tasks:",
+        "  - number: 1",
+        "    status: complete",
+        "    name: Unmapped task",
+        "",
+      ].join("\n"),
+    );
+    const progressPath = writeLifecycleProgress(p, ["Cycle 999 (2026-07-12): Unrelated verification only."]);
+    const { rc, out } = capture((io) => queryPlan({ command: "plan", format: "json" }, planSchema(p, progressPath), io));
+    expect(rc).toBe(0);
+    const payload = JSON.parse(out);
+    expect(payload.status).toBe("incomplete");
+    expect(payload.summary.evidence_status).toBe("incomplete");
+    expect(payload.entries[0].evidence).toEqual([]);
+    expect(payload.entries[0].evidence_status).toBe("missing");
+    expect(payload.entries[0].evidence_provenance).toEqual([]);
+    expect(payload.source_contract.complete_for_plan_artifact).toBe(false);
+    expect(payload.source_contract.missing_state).toContain("task evidence");
   });
 
   it("keeps the active plan first and archives in deterministic newest-first order", () => {
@@ -280,6 +392,7 @@ describe("cli state plan", () => {
     expect(payload.plans[2].archived).toBe(true);
     expect(payload.entries).toHaveLength(2);
     expect(payload.summary.title).toBe("Migrate CLI to TypeScript");
+    expect(payload.source_contract.complete_for_plan_artifact).toBe(true);
   });
 });
 

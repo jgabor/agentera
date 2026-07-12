@@ -30,6 +30,7 @@ import {
   type PlanArtifact,
   type PlanArtifactDiscovery,
 } from "../../planArtifacts.js";
+import { resolvePlanTaskEvidence } from "../../planEvidence.js";
 
 function planArtifactSummary(artifact: PlanArtifact): JsonObject {
   const { data } = artifact;
@@ -79,15 +80,27 @@ function planSourceContract(
   discovery: PlanArtifactDiscovery,
 ): JsonObject {
   const legacyEntries = Boolean(summary.legacy_entries);
-  const complete = Boolean(source.exists) && !legacyEntries;
+  const evidenceIncomplete = summary.evidence_status === "incomplete";
+  const complete = Boolean(source.exists) && !legacyEntries && !evidenceIncomplete;
   const active = source.active === true;
   const startupComplete = complete && active;
   const missingState: string[] = [];
   if (!source.exists) missingState.push("plan artifact");
   else if (!active) missingState.push("active plan artifact");
   if (legacyEntries) missingState.push("current plan task artifact shape");
+  if (evidenceIncomplete) missingState.push("task evidence");
   const summaryFields = Object.keys(summary).sort();
-  const entryFields = ["number", "name", "depends_on", "status", "acceptance", "evidence", "blocked_reason"];
+  const entryFields = [
+    "number",
+    "name",
+    "depends_on",
+    "status",
+    "acceptance",
+    "evidence",
+    "evidence_status",
+    "evidence_provenance",
+    "blocked_reason",
+  ];
   return {
     artifact: "plan",
     canonical_artifact_label: "plan",
@@ -116,6 +129,7 @@ function planSourceContract(
       "task dependencies",
       "task acceptance criteria",
       "task evidence",
+      "task evidence provenance",
       "overall_acceptance",
       "surprises",
       "previous_plan_archived",
@@ -183,11 +197,14 @@ export function queryPlan(args: StateArgs, schemas: Record<string, SchemaInfo>, 
   }
   const dataDict = primary.data;
   const parts = planDocumentParts(dataDict);
+  const evidence = resolvePlanTaskEvidence(primary, parts.tasks, schemas);
   const summary = parts.legacyEntries ? { legacy_entries: true } : planArtifactSummary(primary);
+  summary.evidence_status = evidence.complete ? "complete" : "incomplete";
+  summary.evidence_sources = evidence.sources;
   const title = summary.title ?? "";
   const status = summary.status ?? "";
   const created = summary.created ?? "";
-  let tasks = parts.tasks;
+  let tasks = evidence.tasks;
   const statusFilter = args.status ?? null;
   if (statusFilter) tasks = filterByFieldValue(tasks, "status", statusFilter);
   const source = planSource(primary, discovery);
@@ -197,6 +214,7 @@ export function queryPlan(args: StateArgs, schemas: Record<string, SchemaInfo>, 
       summary,
       sourceContract: planSourceContract(source, summary, discovery),
     });
+    if (!evidence.complete) payload.status = "incomplete";
     payload.plans = catalog;
     return emitStateStructured(
       "plan",
@@ -209,6 +227,7 @@ export function queryPlan(args: StateArgs, schemas: Record<string, SchemaInfo>, 
   }
   if (primary.archived) o(`Plan source: archived | path=${primary.path}\n`);
   o(`Plan: status=${status || "unknown"} | title=${truncate(title)} | created=${created || "-"}\n`);
+  if (!evidence.complete) o("Evidence: incomplete | missing authoritative task evidence\n");
   for (const key of ["what", "why"]) {
     const value = dataDict[key];
     if (value) o(`${key}: ${truncate(value)}\n`);

@@ -1,4 +1,54 @@
 cycles:
+  - number: 732
+    timestamp: 2026-07-12 15:37
+    type: fix
+    phase: build
+    what: Finalized lifecycle-plan evidence joins in
+      packages/cli/src/cli/planEvidence.ts after the full 1539-test suite;
+      unrelated plans now report missing evidence.
+    verified: "Full CLI: 160 files and 1539 tests passed after the lifecycle-title
+      join guard. Typecheck, build, lint (0 errors, 98 existing warnings),
+      compact, capability plan, capability-contract, lifecycle-adapters, direct
+      Astro check/build, npm dry-run, package content inspection, and git diff
+      --check passed. Live Task 1-8 archive read exposes nonempty evidence and
+      provenance for all tasks; an unrelated completed task reports status
+      incomplete and complete_for_plan_artifact=false."
+    next: Task 8 repair is complete; publication, tagging, pushing, stable
+      promotion, and native runtime actions remain separate.
+    context:
+      intent: Record final green evidence for the Task 8 archived-plan contract repair.
+      constraints: No archive edit, version change, active-plan restoration,
+        vision/objective/protected-state/Decision 92 change, publish, tag, or
+        push.
+      unknowns: none
+      scope: packages/cli/src/cli/planEvidence.ts; state plan; source contract; help;
+        state-plan regressions; typed progress.
+  - number: 731
+    timestamp: 2026-07-12 15:35
+    type: fix
+    phase: build
+    what: Resolved archived Task 1-8 evidence projection in
+      packages/cli/src/cli/planEvidence.ts with deterministic typed-progress
+      provenance and incomplete-state reporting.
+    verified: "Full CLI: 160 files and 1539 tests passed. Typecheck and build
+      passed. Lint passed with 0 errors and 98 existing warnings. Compact, plan
+      capability, capability-contract, lifecycle-adapters, direct Astro
+      check/build, and package dry-run/content inspection passed. Live archived
+      lifecycle plan returned nonempty evidence for all 8 tasks: progress
+      archive cycles 716, 717, 718, 720; stored plan evidence for Task 4;
+      progress verified cycles 727, 728, 729. Missing-evidence regression
+      reports incomplete and source_contract.complete_for_plan_artifact=false."
+    next: No further Task 8 repair; publication, tagging, pushing, stable promotion,
+      and native runtime actions remain separate.
+    context:
+      intent: Repair the final Task 8 audit mismatch between archived completed tasks
+        and the state-plan evidence contract.
+      constraints: No archive edit, version change, active-plan restoration,
+        vision/objective/protected-state/Decision 92 change, publish, tag, or
+        push.
+      unknowns: none
+      scope: packages/cli/src/cli/planEvidence.ts; state plan; source contract; help;
+        state regressions; typed progress.
   - number: 730
     timestamp: 2026-07-12 15:19
     type: fix
@@ -225,59 +275,12 @@ cycles:
         packages/cli/test/cli/orientationCorpusCoverage.test.ts;
         packages/cli/test/cli/primeProjectIntegration.test.ts;
         .agentera/plan.yaml; .agentera/progress.yaml
-  - number: 722
-    timestamp: 2026-07-12 13:21
-    type: fix
-    phase: build
-    what: "Revalidated the typed Task 5 closeout after the full-suite audit repair:
-      cycle 721 retains the implementation evidence, plan task 5 is complete,
-      and Task 6 remains pending."
-    inspiration: Post-verification artifact read-back for .agentera/plan.yaml and
-      .agentera/progress.yaml.
-    verified: state plan set-status --task 5 --status complete passed; the progress
-      writer passed validation and compacted the artifact; no source, vision,
-      objective, or Decision 92 edits were made.
-    next: Do not begin Task 6 in this cycle.
-    context:
-      intent: Keep the final Task 5 evidence and lifecycle dashboard state within the
-        typed artifact budgets.
-      constraints: Task 5 only; no commit, push, publish, tag, or protected-state changes.
-      scope: .agentera/plan.yaml; .agentera/progress.yaml
-  - number: 721
-    timestamp: 2026-07-12 13:20
-    type: fix
-    phase: build
-    what: "Repaired Task 5 audit criterion 1 in
-      packages/cli/src/cli/orientation/attention.ts: the full attention pipeline
-      now caps project integration plus lifecycle presentation at two rows,
-      bounds manual guidance, and preserves exact host and doctor procedures."
-    inspiration: Task 5 audit repair after criterion 1 found
-      projectIntegrationAttention was outside the lifecycle row cap.
-    discovered: Mixed upgrade, repairable_owned, and blocker projections require
-      suppressing the duplicate integration attention when executable lifecycle
-      work is present; blocker-only app or cross-major integration guidance
-      remains available.
-    verified: "Focused dashboard/orientation/prime tests: 57/57 passed; typecheck
-      passed; lint passed with 0 errors and 98 existing warnings; build passed;
-      check compact passed; full CLI suite: 1498 passed and exactly 8 known
-      release-metadata failures from 3.0.0-dev.16 versus core 3.0.0; built prime
-      smoke showed two lifecycle rows, exact preview, bounded host procedure,
-      doctor route, and no ineffective --yes."
-    next: Task 6 remains pending; do not begin selector, ownership, convergence, or
-      safety verification in this cycle.
-    context:
-      intent: Surface lifecycle attention and next actions without duplicating
-        canonical lifecycle authority or exceeding the status dashboard budget.
-      constraints: Task 5 only; preserve Decision 92, vision/objective state,
-        lifecycle authority, ownership logic, attention ordering and budget; no
-        commit, push, publish, tag, or Task 6 work.
-      scope: packages/cli/src/cli/orientation/attention.ts;
-        packages/cli/src/cli/commands/prime/collectOrientationState.ts;
-        packages/cli/src/cli/contracts/orientationState.ts;
-        packages/cli/test/cli/orientationCorpusCoverage.test.ts;
-        packages/cli/test/cli/primeProjectIntegration.test.ts;
-        .agentera/progress.yaml; .agentera/plan.yaml
 archive:
+  - summary: "Cycle 722 (2026-07-12): Revalidated the typed Task 5 closeout after
+      the full-suite audit repair: cycle 721 retains the..."
+  - summary: "Cycle 721 (2026-07-12): Repaired Task 5 audit criterion 1 in
+      packages/cli/src/cli/orientation/attention.ts: the full attention pipeline
+      now caps project..."
   - summary: "Cycle 720 (2026-07-12): Surface bounded lifecycle attention rows and
       exact next-action guidance in prime/status."
   - summary: "Cycle 719 (2026-07-12): Drove project integration from the canonical
@@ -370,7 +373,3 @@ archive:
       verification + plan archive + TODO closure. Ran..."
   - summary: "Cycle 683 (2026-06-27): Plan task 6 of chore:3.0.0 (cross-cutting cast
       audit + re-export deletion). Converted ~28 consumer files..."
-  - summary: "Cycle 682 (2026-06-27): Plan task 5 of chore:3.0.0 (long-tail surface)
-      + remediation. First build cycle eliminated aliases in..."
-  - summary: "Cycle 681 (2026-06-27): Plan task 4 of chore:3.0.0: consolidate Dict
-      aliases in registries & validate subsystems. Removed local..."
