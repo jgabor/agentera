@@ -147,7 +147,20 @@ npx -y agentera@next report refresh --import-source claude
 Imported records carry `historical_import` provenance, have no active runtime
 ID, and remain excluded from default active-runtime analytics.
 
-## v2 to v3 project migration
+## Recommended upgrade v1 & v2 stable channel
+
+The stable `@latest` channel remains on the supported 2.x line. Preview before
+applying an in-line upgrade:
+
+```bash
+npx -y agentera@latest upgrade --dry-run
+npx -y agentera@latest upgrade --yes
+```
+
+Use the v3 development migration below only when you explicitly intend to
+leave the stable line.
+
+## Upgrading v2 to v3 development channel (irreversible)
 
 Use the development channel explicitly while 3.0 is on `@next`:
 
@@ -160,6 +173,10 @@ The preview reports artifact migration, app migration, legacy cleanup, and any
 explicitly selected runtime work as separate phases. It does not cross the
 major boundary or mutate the project without `--yes`.
 
+Forward migration to v3 is one-way. Returning to the prior Python 2.x support
+line is permanently unsupported; review the development-channel preview before
+applying it.
+
 Useful phase filters are repeatable:
 
 ```bash
@@ -167,6 +184,12 @@ npx -y agentera@next upgrade --only artifacts --dry-run
 npx -y agentera@next upgrade --only runtime --dry-run
 npx -y agentera@next upgrade --only cleanup --dry-run
 ```
+
+`--only runtime` filters the v2-to-v3 project-migration runtime phase. It does
+not select an Agentera runtime identity or limit lifecycle diagnosis. Use
+`--runtime all|opencode|codex|cursor|copilot` for lifecycle work; it cannot be
+combined with `--only`. Development-channel dry-runs without `--runtime` still
+observe all active lifecycle runtimes.
 
 ## Verification and recovery
 
@@ -177,7 +200,9 @@ npx -y agentera@next doctor --format json
 npx -y agentera@next prime --format json
 ```
 
-`upgrade --verify` adds doctor and capability-schema checks to an upgrade run.
+`upgrade --verify` without `--yes` is a read-only doctor and capability-context
+verification. With `--yes`, it runs those checks after the approved upgrade
+apply. Lifecycle selections with `--verify` require `--yes`.
 `upgrade --restore` restores the latest supported app-migration snapshot; it
 does not bypass lifecycle ownership or trust checks. For lifecycle partial
 failure, rerun the same preview and apply selection. Do not delete or hand-edit

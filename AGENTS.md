@@ -110,19 +110,19 @@ Note: global agent guidance includes worktree tooling (`wt switch --create feat/
 
 ## Commands
 
-Invocation convention: `npx -y agentera <cmd>` invokes the published channel; bare `agentera` requires an installed CLI or `packages/cli/dist/bin/agentera.js`. Use contributor paths (`pnpm -C packages/cli`, `node packages/cli/dist/bin/agentera.js`) when modifying CLI source; use `vp run` for web and mobile workspace scripts.
+Invocation convention: during the v3 rewrite, `npx -y agentera@next <cmd>` invokes the published v3 channel; `npx -y agentera@latest` remains the stable v2.x channel until promotion. Bare `agentera` requires an installed CLI or `packages/cli/dist/bin/agentera.js`. Use contributor paths (`pnpm -C packages/cli`, `node packages/cli/dist/bin/agentera.js`) when modifying CLI source; use `vp run` for web and mobile workspace scripts.
 
 ### Recipe-first entry points (run from repo root unless noted)
 
 | When | Command |
 | ---- | ------- |
-| Orientation / status dashboard | `npx -y agentera prime` |
-| Capability startup context | `npx -y agentera prime --context <name> --format json` |
-| Project state | `npx -y agentera state todo` · `state plan` · `state decisions` |
-| Discover artifact writes | `npx -y agentera state <artifact> explain --format json` |
-| Inspect writer operation matrix | `npx -y agentera schema --format json` |
-| Artifact inventory | `npx -y agentera state query --list-artifacts` |
-| Validate capability or contract | `npx -y agentera check validate capability <name>` · `check validate capability-contract` |
+| Orientation / status dashboard | `npx -y agentera@next prime` |
+| Capability startup context | `npx -y agentera@next prime --context <name> --format json` |
+| Project state | `npx -y agentera@next state todo` · `state plan` · `state decisions` |
+| Discover artifact writes | `npx -y agentera@next state <artifact> explain --format json` |
+| Inspect writer operation matrix | `npx -y agentera@next schema --format json` |
+| Artifact inventory | `npx -y agentera@next state query --list-artifacts` |
+| Validate capability or contract | `npx -y agentera@next check validate capability <name>` · `check validate capability-contract` |
 | CLI tests | `pnpm -C packages/cli test` |
 | CLI typecheck / build | `pnpm -C packages/cli run typecheck` · `pnpm -C packages/cli build` |
 | Compaction gate | `pnpm -C packages/cli build && node packages/cli/dist/bin/agentera.js check compact` |
@@ -164,18 +164,18 @@ When vitest passes but `check compact` fails, fix committed artifacts or run com
 2. Create schema files under `skills/agentera/capabilities/<name>/schemas/`: `triggers.yaml`, `artifacts.yaml`, `validation.yaml`, `exit.yaml`.
 3. Update the capability table in `skills/agentera/SKILL.md`.
 4. Verify every command name, file path, env var, and contract reference in the prose against the v3 runtime (`--help`, filesystem check). v2-era prose drifts from v3 reality and ships ghosts that pass lint but mislead agents at runtime.
-5. Validate: `npx -y agentera check validate capability <name-or-path>`.
+5. Validate: `npx -y agentera@next check validate capability <name-or-path>`.
 
 ### Validation
 
 `capability_schema_contract.yaml` (`skills/agentera/capability_schema_contract.yaml`) owns capability schema structure; `packages/cli/src/registries/capabilityContract.ts` loads the model consumed by the validator. Do not duplicate contract-owned groups, priority values, directory rules, or primitive-reference field mappings in tests or docs unless a validation check ties them back to the loader/model.
 
 ```bash
-npx -y agentera check validate capability <name-or-path>
-npx -y agentera check validate capability-contract --format json
+npx -y agentera@next check validate capability <name-or-path>
+npx -y agentera@next check validate capability-contract --format json
 ```
 
-Top-level `agentera validate` remains a migration alias during the namespace rollout; prefer `agentera check validate`.
+Top-level `agentera validate` remains a migration alias during the namespace rollout; prefer `agentera check validate`. Use `agentera prime` for status and `agentera state todo` or `agentera state docs` for artifact reads; top-level `status`, `todo`, and `docs` are not v3 commands.
 
 ## Commits
 
@@ -247,7 +247,6 @@ Comments explain **why the code is shaped as it is** for a reader who has never 
 - **Never modify `.agentera/vision.yaml`** unless running the `vision` capability or an explicit vision task.
 - **Never use `LEFTHOOK=0` as a routine shortcut** — emergency bypass only when the hook config itself is broken or a failure is tracked for CI.
 - **Never create standalone `chore:` commits for state artifact bookkeeping** — fold into the implementation commit (see above).
-- Top-level aliases such as `status`, `todo`, and `docs` remain during migration with stderr deprecation; prefer `agentera state <subcmd>`.
 - Shared primitives live in `protocol.yaml`, not per-skill specs.
 - Visual identity (glyphs, semantic tokens) defined in `protocol.yaml`.
 - Versioning convention in `.agentera/docs.yaml`: `version_files` lists what to bump; `semver_policy` maps commit types to bump levels.
@@ -255,7 +254,8 @@ Comments explain **why the code is shaped as it is** for a reader who has never 
 ## Gotchas
 
 - **`vp dev packages/web` starts Vite in client-only mode** and returns 404 for SSR routes. Use `cd packages/web && npx astro dev` for full SSR dev experience.
-- **The published `agentera` npm package is self-contained**: it bundles app data (`skills/`, `references/`, `registry.json`) under `packages/cli/bundle/` at pack time, so `npx -y agentera` works with no repo checkout and no `AGENTERA_HOME`.
+- **The published v3 npm package is self-contained**: it bundles app data (`skills/`, `references/`, `registry.json`) under `packages/cli/bundle/` at pack time, so `npx -y agentera@next` works with no repo checkout and no `AGENTERA_HOME`.
+- **Runtime lifecycle commands require explicit intent**: `upgrade --dry-run` is read-only; runtime writes require an explicit selector and `--yes`. The active runtime and ownership contract lives in `UPGRADE.md`.
 - **`.lefthook.yml` is the source of truth for pre-commit behavior** — verify there before relying on the summary above.
 - **`.opencode/` requires a standalone `npm install`** (not managed by the pnpm workspace) — provides `@opencode-ai/plugin` types used by some tests.
 - Requires Node.js 22+ with pnpm 10.30.3 (enable via `corepack enable`).
@@ -264,7 +264,7 @@ Comments explain **why the code is shaped as it is** for a reader who has never 
 
 ### Helper script policy
 
-`npx -y agentera ...` is the canonical documented entry point for normal users and agents. Direct helper scripts in `scripts/` are maintainer-only unless they back an `agentera` namespace command. When adding helpers, prefer exposing a stable `agentera` namespace; otherwise document the helper explicitly as local-only with privacy/scope caveats. Do not add broad new top-level CLI commands for implementation details.
+`npx -y agentera@next ...` is the canonical documented entry point until v3 is promoted to the stable dist-tag. Direct helper scripts in `scripts/` are maintainer-only unless they back an `agentera` namespace command. When adding helpers, prefer exposing a stable `agentera` namespace; otherwise document the helper explicitly as local-only with privacy/scope caveats. Do not add broad new top-level CLI commands for implementation details.
 
 ### Changelog
 
