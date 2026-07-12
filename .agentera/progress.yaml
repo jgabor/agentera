@@ -1,4 +1,35 @@
 cycles:
+  - number: 719
+    timestamp: 2026-07-12 12:23
+    type: feat
+    phase: build
+    what: Drove project integration from the canonical runtime lifecycle projection,
+      preserving separate app and lifecycle phases and routing owned, manual,
+      host, and diagnostic outcomes.
+    inspiration: Task 4 acceptance criteria and the Task 1-3 runtime lifecycle
+      projection contract.
+    discovered: Prime now reuses one observed lifecycle snapshot for project
+      integration and the bounded runtime lifecycle summary; legacy
+      migration-item counting remains only in the upgrade orchestrator.
+    verified: "Focused Task 4 project-integration suite: 20/20 passed.
+      Prime/doctor/lifecycle/orchestrator parity suite: 57/57 passed. Full CLI
+      suite: 1494 passed and exactly 8 documented release-metadata baseline
+      failures caused by top-level 3.0.0-dev.16 versus core 3.0.0. Typecheck,
+      build, lint with 0 errors, compaction, Build capability validation,
+      capability-contract validation, built CLI smoke, and git diff --check
+      passed."
+    next: Keep Task 5 lifecycle attention and ranking pending; do not begin it in
+      this cycle.
+    context:
+      intent: "Complete active plan Task 4: Drive project integration from lifecycle
+        state."
+      constraints: Task 4 only; no vision or objective edits, no Decision 92
+        satisfaction change, no Task 5 work, no publication, tag, or push.
+      unknowns: None in Task 4 scope.
+      scope: packages/cli/src/upgrade/projectIntegration.ts;
+        packages/cli/src/upgrade/projectIntegrationDecision.ts; prime lifecycle
+        snapshot wiring; focused project integration tests; .agentera
+        plan/progress
   - number: 718
     timestamp: 2026-07-12 11:19
     type: feat
@@ -314,47 +345,9 @@ cycles:
         unknown where the host exposes no authoritative read-only signal.
       scope: Lifecycle snapshot production source; lifecycle diagnosis tests; npm
         packaging policy test; typed progress evidence only.
-  - number: 709
-    timestamp: 2026-07-11 21:10
-    type: fix
-    phase: build
-    what: Made lifecycle support-floor evidence fail closed and aligned doctor
-      release exits with prime status.
-    inspiration: Task 6 retry audit, Decision 92, and Cycle 708 evidence correction.
-    discovered: The legacy doctor app envelope can remain up_to_date while additive
-      lifecycle readiness controls the process exit; the closed Python parity
-      row therefore needs an explicit lifecycle exit override without changing
-      payload parity.
-    verified: "Seven child-process fixtures ran prime and doctor with identical
-      inputs for unknown trust, denied trust, Cursor CLI-only and conditional
-      IDE, shadowing, absent host and missing parent, unowned collision, and
-      all-ready: 14 commands total; prime exits 0,0,0,0,0,0,0 and doctor exits
-      1,1,0,0,1,0,0. Every pair compared authority, IDs, releaseBlocked, runtime
-      and surface status, support floors, blockers/actions, and observed no
-      target writes or native process invocation. Prime summaries stayed below
-      4096 bytes; live built prime was 2142 lifecycle bytes versus 70745-byte
-      doctor JSON, where app status remained up_to_date, lifecycle
-      releaseBlocked was true, and doctor exited 1. Focused verification passed
-      8 files/123 tests and final 4 files/61 tests; full pnpm -C packages/cli
-      test passed 155 files/1435 tests. Typecheck and build passed. Built
-      lifecycle-adapters, capability status, capability build,
-      capability-contract, cross-capability, app-home-contract,
-      vocabularyAuthority, schema, compact, lint, and git diff checks passed;
-      lint reported 99 pre-existing warnings/0 errors."
-    next: Re-run the independent Task 6 audit against Cycle 709; keep Task 7
-      mutation UX and Task 8 release sweep untouched.
-    context:
-      intent: Retry Task 6 after audit by enforcing Decision 92 mandatory evidence and
-        replacing overstated parity coverage with explicit CLI fixtures.
-      constraints: Preserved Task 5 retirement, Task 4 adapters, Task 3 safety, user
-        TODO/decisions/plan/.codex changes, vision, active plan status, native
-        package managers, and remotes. No Task 7 or Task 8 work.
-      unknowns: None in Task 6 scope; runtime trust remains host-owned evidence and
-        unknown on the live host.
-      scope: Lifecycle authority and adapter contracts, shared lifecycle
-        state/snapshot projection, doctor exit and blocker detail, schema
-        discovery, parity expectations, and runtime/CLI tests.
 archive:
+  - summary: "Cycle 709 (2026-07-11): Made lifecycle support-floor evidence fail
+      closed and aligned doctor release exits with prime status."
   - summary: "Cycle 708 (2026-07-11): Integrated one authoritative read-only runtime
       lifecycle snapshot into bounded prime orientation and detailed doctor
       diagnosis."
@@ -452,5 +445,3 @@ archive:
   - summary: "Cycle 670 (2026-06-18): Plan T6 — verification and closeout: archived
       PLAN-2026-06-18-decouple-vitest-live-repo.yaml; cleared active plan slot;
       confirmed vitest decoupled..."
-  - summary: "Cycle 669 (2026-06-18): Plan T5 — decouple registry and evaluator TODO
-      coupling: packageRegistry and artifactRegistry tests read fixture..."

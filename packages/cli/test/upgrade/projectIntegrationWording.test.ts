@@ -7,6 +7,10 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { APP_OUTDATED, APP_REPAIR_NEEDED, APP_UP_TO_DATE } from "../../src/upgrade/doctor.js";
 import { summarizeProjectIntegration } from "../../src/upgrade/projectIntegration.js";
+import type {
+  LifecycleProjectedAction,
+  RuntimeLifecycleSnapshot,
+} from "../../src/runtime/lifecycleSnapshot.js";
 import { NPX_BUNDLE_SENTINEL } from "../../src/core/sourceRoot.js";
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..");
@@ -69,6 +73,61 @@ function baseArgs(project: string, overrides: Record<string, unknown> = {}) {
   };
 }
 
+function projectedAction(
+  runtime: string,
+  actionClass: LifecycleProjectedAction["actionClass"],
+  ownership: LifecycleProjectedAction["ownership"] = "managed",
+  command: string | null = null,
+): LifecycleProjectedAction {
+  return {
+    id: `${actionClass}:${runtime}`,
+    runtimeIds: [runtime],
+    surfaceId: "cli",
+    category: "skills",
+    resourceId: "canonical_skill",
+    destination: `/tmp/${runtime}/agentera`,
+    applicability: "required",
+    ownership,
+    actionClass,
+    required: true,
+    reason: `${runtime} fixture action`,
+    operation: actionClass === "unobservable_gap" ? null : "create",
+    commandEligibility: {
+      preview: actionClass === "repairable_owned",
+      apply: actionClass === "repairable_owned",
+      manual: actionClass === "manual_verification",
+      diagnostic: actionClass === "unobservable_gap",
+    },
+    manual:
+      actionClass === "manual_verification"
+        ? { command, instruction: `${runtime} fixture manual action` }
+        : null,
+  };
+}
+
+function lifecycleSnapshot(actions: LifecycleProjectedAction[]): RuntimeLifecycleSnapshot {
+  return {
+    schemaVersion: "agentera.runtimeLifecycleSnapshot.v1",
+    projectionVersion: "agentera.runtimeLifecycleProjection.v1",
+    snapshotId: "sha256:project-integration-fixture",
+    statusVocabularyVersion: "agentera.runtimeLifecycleStatus.v1",
+    authority: "fixture",
+    activeRuntimeIds: ["opencode", "codex", "cursor", "copilot"],
+    selection: { runtimeIds: ["opencode", "codex", "cursor", "copilot"] },
+    releaseBlocked: false,
+    sharedResources: [],
+    actions,
+    counts: {
+      total: actions.length,
+      repairableOwned: actions.filter((action) => action.actionClass === "repairable_owned").length,
+      manualVerification: actions.filter((action) => action.actionClass === "manual_verification").length,
+      unobservableGap: actions.filter((action) => action.actionClass === "unobservable_gap").length,
+      commandEligible: actions.length,
+    },
+    runtimes: [],
+  };
+}
+
 beforeEach(() => {
   tmp = fs.mkdtempSync(path.join(os.tmpdir(), "proj-int-word-"));
 });
@@ -117,7 +176,10 @@ describe("summarizeProjectIntegration wording", () => {
     fs.mkdirSync(path.join(tmp, "app-home"), { recursive: true });
 
     const summary = summarizeProjectIntegration(
-      baseArgs(project, { bundleStatus: "up_to_date", crossMajorBoundary: false }),
+      baseArgs(project, {
+        bundleStatus: "up_to_date",
+        crossMajorBoundary: false,
+      }),
     );
 
     expect(summary.recommendation).toBe("upgrade");
@@ -132,12 +194,18 @@ describe("summarizeProjectIntegration wording", () => {
     fs.mkdirSync(path.join(tmp, "app-home"), { recursive: true });
 
     const summary = summarizeProjectIntegration(
-      baseArgs(project, { bundleStatus: "up_to_date", crossMajorBoundary: false }),
+      baseArgs(project, {
+        bundleStatus: "up_to_date",
+        crossMajorBoundary: false,
+        lifecycleSnapshot: lifecycleSnapshot([projectedAction("cursor", "repairable_owned")]),
+      }),
     );
 
     expect(summary.recommendation).toBe("upgrade");
     expect(summary.message).toContain("runtime wiring needs sync");
     expect(summary.pending_runtime).toBeGreaterThan(0);
+    expect(summary.pending_runtimes).toEqual(["cursor"]);
+    expect(summary.dry_run_command).toContain("--runtime cursor");
   });
 
   it("recommends app upgrade when npx bundle is current but platform app home is outdated", () => {
@@ -196,5 +264,106 @@ describe("summarizeProjectIntegration wording", () => {
     expect(summary.recommendation).toBe("upgrade");
     expect(summary.message).toContain("cross-major");
     expect(summary.message).toContain("Preview");
+  });
+
+  it("routes owned lifecycle work to an affected-runtime upgrade preview", () => {
+    const project = path.join(tmp, "owned-lifecycle");
+    fs.mkdirSync(project, { recursive: true });
+
+    const summary = summarizeProjectIntegration(
+      baseArgs(project, {
+        bundleStatus: APP_UP_TO_DATE,
+        lifecycleSnapshot: lifecycleSnapshot([
+          projectedAction("codex", "repairable_owned"),
+        ]),
+      }),
+    );
+
+    expect(summary.recommendation).toBe("upgrade");
+    expect(summary.guidance.route).toBe("upgrade_preview");
+    expect(summary.guidance.runtimes).toEqual(["codex"]);
+    expect(summary.dry_run_command).toContain("--runtime codex");
+    expect(summary.phases.lifecycle.counts).toEqual({ total: 1, pending: 1, blocked: 0 });
+  });
+
+  it.each([
+    {
+      label: "unowned collision",
+      action: projectedAction("cursor", "manual_verification", "unowned"),
+      route: "manual_review",
+      phrase: "Manual review",
+    },
+    {
+      label: "user-owned native action",
+      action: projectedAction("copilot", "manual_verification", "user_owned", "/skills reload"),
+      route: "host_action",
+      phrase: "host action",
+    },
+    {
+      label: "unobservable gap",
+      action: projectedAction("opencode", "unobservable_gap", "undeclared"),
+      route: "doctor",
+      phrase: "doctor diagnostics",
+    },
+  ])("routes $label without an ineffective upgrade", ({ action, route, phrase }) => {
+    const project = path.join(tmp, route);
+    fs.mkdirSync(project, { recursive: true });
+
+    const summary = summarizeProjectIntegration(
+      baseArgs(project, {
+        bundleStatus: APP_UP_TO_DATE,
+        lifecycleSnapshot: lifecycleSnapshot([action]),
+      }),
+    );
+
+    expect(summary.recommendation).toBe("stay");
+    expect(summary.dry_run_command).toBeNull();
+    expect(summary.guidance.route).toBe(route);
+    expect(summary.message).toContain(phrase);
+    expect(summary.exit.code).toBe(1);
+  });
+
+  it("keeps clean integration at stay with a zero exit meaning", () => {
+    const project = path.join(tmp, "clean");
+    fs.mkdirSync(project, { recursive: true });
+
+    const summary = summarizeProjectIntegration(
+      baseArgs(project, {
+        bundleStatus: APP_UP_TO_DATE,
+        lifecycleSnapshot: lifecycleSnapshot([]),
+      }),
+    );
+
+    expect(summary.recommendation).toBe("stay");
+    expect(summary.aggregate_status).toBe("stay");
+    expect(summary.exit).toEqual({ code: 0, meaning: "no_changes_needed" });
+    expect(summary.retry.guidance).toContain("No retry");
+  });
+
+  it("keeps app and lifecycle phases distinct when both have work and blockers", () => {
+    const project = path.join(tmp, "simultaneous");
+    fs.mkdirSync(project, { recursive: true });
+
+    const summary = summarizeProjectIntegration(
+      baseArgs(project, {
+        bundleStatus: APP_OUTDATED,
+        retryCommand: "npx -y agentera prime",
+        lifecycleSnapshot: lifecycleSnapshot([
+          projectedAction("codex", "repairable_owned"),
+          projectedAction("cursor", "manual_verification", "unowned"),
+        ]),
+      }),
+    );
+
+    expect(summary.recommendation).toBe("upgrade");
+    expect(summary.aggregate_status).toBe("upgrade");
+    expect(summary.phases.app.counts).toEqual({ total: 1, pending: 1, blocked: 0 });
+    expect(summary.phases.lifecycle.counts).toEqual({ total: 2, pending: 1, blocked: 1 });
+    expect(summary.exit).toEqual({ code: 1, meaning: "preview_and_blockers" });
+    expect(summary.retry).toEqual({
+      command: "npx -y agentera prime",
+      guidance: "Resolve the reported blockers, apply the approved preview, then retry Agentera.",
+    });
+    expect(summary.guidance.runtimes).toEqual(["codex", "cursor"]);
   });
 });

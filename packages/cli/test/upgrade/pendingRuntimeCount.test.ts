@@ -9,6 +9,7 @@ import type { MigrationPhaseItem } from "../../src/upgrade/migrateArtifactsV2ToV
 import * as migrate from "../../src/upgrade/migrateArtifactsV2ToV3.js";
 import { APP_UP_TO_DATE } from "../../src/upgrade/doctor.js";
 import { summarizeProjectIntegration } from "../../src/upgrade/projectIntegration.js";
+import type { RuntimeLifecycleSnapshot } from "../../src/runtime/lifecycleSnapshot.js";
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..");
 
@@ -52,6 +53,23 @@ function mockRuntimePhase(items: MigrationPhaseItem[]): void {
   });
 }
 
+function emptyLifecycleSnapshot(): RuntimeLifecycleSnapshot {
+  return {
+    schemaVersion: "agentera.runtimeLifecycleSnapshot.v1",
+    projectionVersion: "agentera.runtimeLifecycleProjection.v1",
+    snapshotId: "sha256:empty-pending-runtime-fixture",
+    statusVocabularyVersion: "agentera.runtimeLifecycleStatus.v1",
+    authority: "fixture",
+    activeRuntimeIds: ["opencode", "codex", "cursor", "copilot"],
+    selection: { runtimeIds: ["opencode", "codex", "cursor", "copilot"] },
+    releaseBlocked: false,
+    sharedResources: [],
+    actions: [],
+    counts: { total: 0, repairableOwned: 0, manualVerification: 0, unobservableGap: 0, commandEligible: 0 },
+    runtimes: [],
+  };
+}
+
 function summarizeWithPendingItems(
   pending: MigrationPhaseItem[],
   projectDir = path.join(tmp, "project"),
@@ -62,6 +80,42 @@ function summarizeWithPendingItems(
   fs.mkdirSync(path.join(home, "agentera"), { recursive: true });
   fs.writeFileSync(path.join(home, "hooks.json"), "{}");
   mockRuntimePhase(pending);
+  const actions = pending.map((item, index) => ({
+    id: `operation:fixture-${index}`,
+    runtimeIds: item.runtime ? [item.runtime] : [],
+    surfaceId: "cli",
+    category: "hooks" as const,
+    resourceId: "fixture",
+    destination: item.target ?? path.join(home, `fixture-${index}`),
+    applicability: "required" as const,
+    ownership: "managed" as const,
+    actionClass: "repairable_owned" as const,
+    required: true,
+    reason: item.message,
+    operation: "update" as const,
+    commandEligibility: { preview: true, apply: true, manual: false, diagnostic: false },
+    manual: null,
+  }));
+  const lifecycleSnapshot = {
+    schemaVersion: "agentera.runtimeLifecycleSnapshot.v1" as const,
+    projectionVersion: "agentera.runtimeLifecycleProjection.v1" as const,
+    snapshotId: "sha256:pending-runtime-fixture",
+    statusVocabularyVersion: "agentera.runtimeLifecycleStatus.v1" as const,
+    authority: "fixture",
+    activeRuntimeIds: ["opencode", "codex", "cursor", "copilot"],
+    selection: { runtimeIds: ["opencode", "codex", "cursor", "copilot"] },
+    releaseBlocked: false,
+    sharedResources: [],
+    actions,
+    counts: {
+      total: actions.length,
+      repairableOwned: actions.length,
+      manualVerification: 0,
+      unobservableGap: 0,
+      commandEligible: actions.length,
+    },
+    runtimes: [],
+  } as unknown as RuntimeLifecycleSnapshot;
   return summarizeProjectIntegration({
     project: projectDir,
     sourceRoot: REPO_ROOT,
@@ -70,6 +124,7 @@ function summarizeWithPendingItems(
     installRoot: path.join(home, "agentera"),
     bundleStatus: APP_UP_TO_DATE,
     crossMajorBoundary: false,
+    lifecycleSnapshot,
   });
 }
 
@@ -101,7 +156,7 @@ describe("pending_runtime counts runtimes not migration items (#40)", () => {
     expect(summary.recommendation).toBe("upgrade");
     expect(pending).toHaveLength(4);
     expect(summary.pending_runtime).toBe(expectedRuntimeCount);
-    expect(summary.pending_runtimes).toEqual([...runtimes]);
+    expect(summary.pending_runtimes).toEqual([...runtimes].sort());
     expect(summary.pending_runtime).toBe(summary.pending_runtimes.length);
   });
 
@@ -139,6 +194,7 @@ describe("pending_runtime counts runtimes not migration items (#40)", () => {
       installRoot: path.join(home, "agentera"),
       bundleStatus: APP_UP_TO_DATE,
       crossMajorBoundary: false,
+      lifecycleSnapshot: emptyLifecycleSnapshot(),
     });
 
     expect(summary.recommendation).toBe("stay");
@@ -161,6 +217,7 @@ describe("pending_runtime counts runtimes not migration items (#40)", () => {
       installRoot: path.join(home, "agentera"),
       bundleStatus: APP_UP_TO_DATE,
       crossMajorBoundary: false,
+      lifecycleSnapshot: emptyLifecycleSnapshot(),
     });
 
     expect(summary.pending_runtime).not.toBeGreaterThan(0);

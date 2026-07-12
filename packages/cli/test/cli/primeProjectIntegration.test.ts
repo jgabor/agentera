@@ -56,6 +56,7 @@ describe("prime project_integration", () => {
     const project = path.join(tmp, "project");
     fs.mkdirSync(path.join(project, ".cursor"), { recursive: true });
     fs.copyFileSync(FIXTURES, path.join(project, ".cursor", "hooks.json"));
+    fs.mkdirSync(path.join(home, ".agents", "skills"), { recursive: true });
     process.chdir(project);
 
     const state = collectOrientationState({ home, env: process.env });

@@ -3,8 +3,11 @@ import os from "node:os";
 import path from "node:path";
 
 import { detectV1ArtifactPairs } from "../../../upgrade/migrateArtifactsV2ToV3.js";
-import { summarizeProjectIntegration } from "../../../upgrade/projectIntegration.js";
-import { doctorRoots, resolveSourceRootStrict } from "../../../upgrade/appModel.js";
+import {
+  observeProjectIntegrationLifecycle,
+  summarizeProjectIntegration,
+} from "../../../upgrade/projectIntegration.js";
+import { resolveSourceRootStrict } from "../../../upgrade/appModel.js";
 import { discoverSchemasDir, loadSchemas } from "../../appContext.js";
 import {
   activeObjectiveSummary,
@@ -29,13 +32,8 @@ import { statusBundleStatus } from "./bundleStatus.js";
 import type { PrimeOpts } from "./types.js";
 import { v1MigrationSummary } from "./v1Migration.js";
 import {
-  observeRuntimeLifecycle,
   summarizeRuntimeLifecycle,
 } from "../../../runtime/lifecycleSnapshot.js";
-import {
-  lifecycleOwnershipJournalPath,
-  readLifecycleOwnershipJournal,
-} from "../../../runtime/lifecycleOwnershipJournal.js";
 
 export function collectOrientationState(opts: PrimeOpts): OrientationState {
   const env = opts.env ?? process.env;
@@ -87,6 +85,15 @@ export function collectOrientationState(opts: PrimeOpts): OrientationState {
   const decisionAttention = decisionReviewAttention(schemas);
   const corpusCoverage = corpusCoverageSummary(env, process.platform);
   const project = process.cwd();
+  const lifecycleSnapshot = observeProjectIntegrationLifecycle({
+    home,
+    project,
+    sourceRoot,
+    env,
+    installRoot: String(bundle.appHome),
+    bundleStatus: String(bundle.status),
+  });
+  const runtimeLifecycle = summarizeRuntimeLifecycle(lifecycleSnapshot);
   const projectIntegration = summarizeProjectIntegration({
     project,
     sourceRoot,
@@ -94,24 +101,10 @@ export function collectOrientationState(opts: PrimeOpts): OrientationState {
     env,
     installRoot: String(bundle.appHome),
     bundleStatus: String(bundle.status),
+    retryCommand: bundle.retryCommand,
     crossMajorBoundaryDetected: bundle.crossMajorBoundaryDetected ?? false,
+    lifecycleSnapshot,
   });
-  const lifecycleOwnership = readLifecycleOwnershipJournal(
-    lifecycleOwnershipJournalPath(String(bundle.appHome)),
-  );
-  const canonicalSkillTarget = path.join(
-    doctorRoots(String(bundle.appHome)).activeBundleRoot,
-    "skills",
-    "agentera",
-  );
-  const runtimeLifecycle = summarizeRuntimeLifecycle(observeRuntimeLifecycle({
-    home,
-    project,
-    sourceRoot,
-    env,
-    ledger: lifecycleOwnership.ledger,
-    canonicalSkillTarget,
-  }));
   const readiness = selectStatusReadiness(plan, health, objective, todoItems, decision, savedContext);
   const nextAction: ReadinessHint =
     projectIntegration.recommendation === "upgrade"
