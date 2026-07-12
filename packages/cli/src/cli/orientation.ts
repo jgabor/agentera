@@ -25,7 +25,9 @@ import { isResolvedTodoMarkdownStatus, parseTodoMarkdownListItem } from "./todoM
 import type { JsonObject } from "../core/jsonValue.js";
 import { TODO_SEVERITY_ORDER, TODO_SEVERITY_ORDER_KEYS } from "./todoSeverity.js";
 import { capabilityStartupComplete, type StartupCompletenessInput } from "./startupCompletenessContract.js";
-import { discoverPlanArtifacts, planDocumentParts } from "./planArtifacts.js";
+import { discoverPlanArtifacts, planCatalogEntry, planDocumentParts } from "./planArtifacts.js";
+import { planLifecycleState } from "./planLifecycleState.js";
+import { dependencyReadyTasks } from "./capabilityContext/planState.js";
 import type {
   DecisionFollowUp,
   DecisionReviewAttention,
@@ -324,38 +326,31 @@ function todoNeedsPlan(item: Record<string, string>): boolean {
 export function planSummary(schemas: Record<string, SchemaInfo>): PlanSummary {
   const info = schemas.plan;
   if (!info) {
-    return {
+    const summary: PlanSummary = {
       exists: false,
       active: false,
       tasks: [],
       status: "absent",
       title: "",
+      active_path: "",
       absence_reason: "No active plan artifact is available from agentera plan.",
     };
+    summary.lifecycle_state = planLifecycleState(summary as unknown as JsonObject);
+    return summary;
   }
   const discovery = discoverPlanArtifacts(artifactPath(info, "plan"));
   const activeDiagnostics = discovery.diagnostics.filter(
     (diagnostic) => diagnostic.path === discovery.activePath && diagnostic.category !== "legacy",
   );
-  const archivedPlans = discovery.archived.map((artifact) => {
-    const parts = planDocumentParts(artifact.data);
-    return {
-      path: artifact.path,
-      active: false,
-      archived: true,
-      title: parts.title,
-      status: parts.status,
-      created: parts.created,
-      task_count: parts.tasks.length,
-    } as JsonObject;
-  });
+  const archivedPlans = discovery.archived.map((artifact) => planCatalogEntry(artifact, discovery.activePath));
   if (!discovery.active) {
-    return {
+    const summary: PlanSummary = {
       exists: activeDiagnostics.length === 0 && archivedPlans.length > 0,
       active: false,
       tasks: [],
       status: activeDiagnostics.length > 0 ? "invalid" : archivedPlans.length > 0 ? "archived" : "absent",
       title: "",
+      active_path: discovery.activePath,
       absence_reason:
         activeDiagnostics.length > 0
           ? "Current plan artifact is invalid; see diagnostics."
@@ -372,6 +367,8 @@ export function planSummary(schemas: Record<string, SchemaInfo>): PlanSummary {
       ...(activeDiagnostics.length > 0 ? { invalid_path: discovery.activePath } : {}),
       diagnostics: discovery.diagnostics,
     };
+    summary.lifecycle_state = planLifecycleState(summary as unknown as JsonObject);
+    return summary;
   }
 
   const d = discovery.active.data;
@@ -384,26 +381,21 @@ export function planSummary(schemas: Record<string, SchemaInfo>): PlanSummary {
   const complete = tasks.filter((task) => DONE_STATUSES.has(entryStatusPy(task, ""))).length;
   const total = tasks.length;
   const completePlan = DONE_STATUSES.has(status.toLowerCase()) && complete === total;
-  let firstPending: JsonObject | null = null;
-  if (!completePlan) {
-    for (const task of tasks) {
-      const ts = entryStatusPy(task, "pending");
-      if (DONE_STATUSES.has(ts) || BLOCKED_STATUSES.has(ts)) continue;
-      firstPending = task;
-      break;
-    }
-  }
-  return {
+  const firstPending = completePlan
+    ? null
+    : dependencyReadyTasks(tasks).find((task) => entryStatusPy(task, "pending") === "pending") ?? null;
+  const summary: PlanSummary = {
     exists: true,
     status,
     title,
+    active_path: discovery.activePath,
     constraints: d.constraints ?? null,
     scope: d.scope ?? null,
     design: d.design ?? null,
     tasks,
     complete,
     total,
-    active: !completePlan,
+    active: true,
     complete_plan: completePlan,
     first_pending: firstPending,
     archived_plans: archivedPlans,
@@ -411,6 +403,8 @@ export function planSummary(schemas: Record<string, SchemaInfo>): PlanSummary {
     invalid_archive_paths: discovery.invalidArchivePaths,
     diagnostics: discovery.diagnostics,
   };
+  summary.lifecycle_state = planLifecycleState(summary as unknown as JsonObject);
+  return summary;
 }
 
 export function docsSummary(

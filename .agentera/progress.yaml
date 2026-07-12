@@ -1,4 +1,21 @@
 cycles:
+  - number: 743
+    timestamp: 2026-07-12 23:35
+    type: fix
+    phase: build
+    what: Implemented packages/cli/src/state/write/transaction.ts dependency-ready
+      next work, mapped archive publication, lifecycle diagnostics, and
+      evaluator retry persistence.
+    inspiration: Plan Task 6
+    verified: pnpm -C packages/cli test (1,570); typecheck; build; capability and
+      contract validation; compact; built CLI mutation contract smoke.
+    next: "Task 7: simplify validation and publication language only."
+    context:
+      intent: Complete Task 6 of the active Plan Lifecycle Clarity plan.
+      constraints: Task 6 only; preserve user-only decision satisfaction authority and
+        do not change decisions.
+      scope: Plan state discovery, typed plan writes, orchestration context, schemas,
+        and regression tests.
   - number: 742
     timestamp: 2026-07-12 23:06
     type: fix
@@ -189,32 +206,10 @@ cycles:
         enforced bounded scan evidence.
       scope: Plan lifecycle schema inventory, lifecycle contract regression test,
         changelog, typed Task 1 evidence, and progress.
-  - number: 733
-    timestamp: 2026-07-12 19:51
-    type: docs
-    phase: build
-    what: Defined the canonical plan lifecycle contract in
-      skills/agentera/schemas/artifacts/plan.yaml and enforced its seven-family
-      inventory in planLifecycleContract.test.ts.
-    inspiration: Active plan Task 1 and repository evidence from every plan contract
-      surface.
-    discovered: Published v3 paths expose no direct-YAML consumer commitment;
-      compatibility is limited to read-only normalization of Agentera-produced
-      legacy artifacts.
-    verified: 1,542 CLI tests, typecheck, build, compact, plan capability
-      validation, capability-contract validation, and git diff --check passed.
-    next: Task 2 may implement the bounded legacy normalization and structured
-      diagnostics; no Task 2 behavior was included here.
-    context:
-      intent: Set lifecycle and compatibility contracts before changing plan readers,
-        writers, migrators, or persisted artifacts.
-      constraints: Contract and inventory only; preserved task statuses, immutable
-        evidence, v3 cutover hold, archive repairs, and decision satisfaction.
-      unknowns: "Resolved: no shipped direct-YAML external consumer requires a broader
-        legacy-read window."
-      scope: Plan artifact schema authority, plan capability artifact wording,
-        contract test, changelog, and typed Task 1 state.
 archive:
+  - summary: "Cycle 733 (2026-07-12): Defined the canonical plan lifecycle contract
+      in skills/agentera/schemas/artifacts/plan.yaml and enforced its
+      seven-family inventory in planLifecycleContract.test.ts."
   - summary: "Cycle 732 (2026-07-12): Finalized lifecycle-plan evidence joins in
       packages/cli/src/cli/planEvidence.ts after the full 1539-test suite;
       unrelated plans now report..."
@@ -316,6 +311,4 @@ archive:
   - summary: "Cycle 695 (2026-07-10): Audited and rewrote profile capability
       instructions following six-section spine and direct-contract philosophy."
   - summary: "Cycle 694 (2026-07-10): Audited and rewrote optimize capability
-      instructions following six-section spine and direct-contract philosophy."
-  - summary: "Cycle 693 (2026-07-10): Audited and rewrote build capability
       instructions following six-section spine and direct-contract philosophy."

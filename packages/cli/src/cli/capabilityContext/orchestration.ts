@@ -11,6 +11,7 @@ import {
   BLOCKED_STATUSES_ORCH,
 } from "./planState.js";
 import { progressVerificationSummary, retryState, evaluatorHandoff } from "./progress.js";
+import { planLifecycleState } from "../planLifecycleState.js";
 import type { JsonObject } from "../../core/jsonValue.js";
 
 export function orchestrationContext(
@@ -24,7 +25,11 @@ export function orchestrationContext(
   nextAction: JsonObject,
 ): JsonObject | null {
   if (capability !== "orchestrate") return null;
-  const tasks = asList(plan.tasks).filter((t) => t && typeof t === "object" && !Array.isArray(t));
+  const lifecycle = planLifecycleState(plan);
+  const tasks =
+    lifecycle.current_plan_degraded === true
+      ? []
+      : asList(plan.tasks).filter((t) => t && typeof t === "object" && !Array.isArray(t));
   const taskByNumber = indexPlanTasksByNumber(tasks);
   const dependencyReady: JsonObject[] = [];
   const blocked: JsonObject[] = [];
@@ -55,6 +60,10 @@ export function orchestrationContext(
     stateCaveats.push("plan state is unavailable; task queue cannot be complete.");
     fallbackCommands.push("agentera state plan --format json");
   }
+  if (lifecycle.status === "degraded") {
+    stateCaveats.push(...((lifecycle.caveats ?? []) as string[]));
+    fallbackCommands.push("agentera state plan --format json");
+  }
   if (!progress.exists) {
     stateCaveats.push("progress state is unavailable; latest verification is not summarized here.");
     fallbackCommands.push("agentera state progress --format json");
@@ -78,7 +87,7 @@ export function orchestrationContext(
   }
   fallbackCommands = uniqueList(fallbackCommands);
   const progressVerification = progressVerificationSummary(progress);
-  const retry = retryState();
+  const retry = retryState(selected, tasks);
   const handoff = evaluatorHandoff(selected, progressVerification, retry, stateCaveats);
   const complete = Boolean(plan.exists) && tasks.length > 0 && stateCaveats.length === 0;
   return {
@@ -88,6 +97,7 @@ export function orchestrationContext(
     selected_next_action: nextAction,
     progress_verification: progressVerification,
     retry_state: retry,
+    plan_lifecycle_state: lifecycle,
     evaluator_handoff: handoff,
     task_summaries: tasks.map((task) => orchestrationTaskSummary(task)),
     state_family_caveats: stateCaveats,
@@ -112,6 +122,7 @@ export function orchestrationContext(
         "retry_state provenance",
         "evaluator handoff inputs",
         "state-family caveats",
+        "plan lifecycle state",
       ],
       deferred: [],
     },

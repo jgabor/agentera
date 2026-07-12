@@ -40,6 +40,8 @@ export interface PlanDocumentParts {
   legacyEntries: boolean;
 }
 
+const COMPLETE_TASK_STATUSES = new Set(["complete", "completed", "closed", "done", "resolved", "retired"]);
+
 function isMapping(value: unknown): value is JsonObject {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
@@ -72,6 +74,19 @@ function isPlanDocument(value: unknown): value is JsonObject {
   if (!isMapping(value) || !isMapping(value.header)) return false;
   const entries = Array.isArray(value.entries) ? value.entries : value.tasks;
   return Array.isArray(entries) && entries.every(isMapping);
+}
+
+function taskIsComplete(task: JsonObject): boolean {
+  return COMPLETE_TASK_STATUSES.has(String(task.status ?? "").toLowerCase());
+}
+
+function lifecycleContradiction(data: JsonObject, status: string): string | null {
+  const tasks = (Array.isArray(data.entries) ? data.entries : data.tasks) as unknown[];
+  const taskEntries = tasks.filter(isMapping);
+  const allComplete = taskEntries.length > 0 && taskEntries.every(taskIsComplete);
+  if (status === "complete" && !allComplete)
+    return "plan header.status complete requires every task to be complete";
+  return null;
 }
 
 function inspectionDiagnostic(path: string, category: PlanDiagnosticCategory, message: string): PlanArtifactDiagnostic {
@@ -114,6 +129,14 @@ function inspectPlanArtifact(
           `plan header.status must be open or complete; received ${status || "missing"}`,
         ),
       ],
+    };
+  }
+
+  const contradiction = lifecycleContradiction(data, normalizeLegacyStatus(status));
+  if (contradiction) {
+    return {
+      artifact: null,
+      diagnostics: [inspectionDiagnostic(artifactPath, "lifecycle", contradiction)],
     };
   }
 
@@ -190,12 +213,13 @@ export function discoverPlanArtifacts(activePath: string): PlanArtifactDiscovery
   return { activePath, archiveDirectory, active, archived, invalidArchivePaths, diagnostics };
 }
 
-export function planCatalogEntry(artifact: PlanArtifact): JsonObject {
+export function planCatalogEntry(artifact: PlanArtifact, activePath: string): JsonObject {
   const parts = planDocumentParts(artifact.data);
+  const active = artifact.path === activePath;
   return {
     path: artifact.path,
-    active: !artifact.archived,
-    archived: artifact.archived,
+    active,
+    archived: !active,
     title: parts.title,
     status: parts.status,
     created: parts.created,

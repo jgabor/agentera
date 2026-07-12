@@ -23,6 +23,7 @@ describe("producer capability writer integration", () => {
     expect(planInstructions).toContain("agentera state plan create --input PATH");
     expect(planInstructions).toContain("agentera state plan archive --format json");
     expect(orchestrateInstructions).toContain("agentera state plan set-status");
+    expect(orchestrateInstructions).toContain("agentera state plan record-evaluation");
     expect(auditInstructions).toContain("agentera state health append --input PATH");
   });
 

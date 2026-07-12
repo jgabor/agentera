@@ -21,6 +21,7 @@ export function orchestrationTaskSummary(task: JsonObject): JsonObject {
     depends_on: planDependsOnList(task),
     acceptance_summary: { count: asList(task.acceptance).length, items: asList(task.acceptance) },
     evidence_summary: { count: evidenceItems.length, items: evidenceItems },
+    evaluation_state: task.evaluation ?? null,
   };
 }
 
@@ -79,7 +80,7 @@ export function dependencyReadyTasks(tasks: JsonObject[]): JsonObject[] {
   const ready: JsonObject[] = [];
   for (const task of tasks) {
     const status = entryStatus(task, "pending");
-    if (DONE_STATUSES_ORCH.has(status) || BLOCKED_STATUSES_ORCH.has(status)) continue;
+    if (status !== "pending") continue;
     let blocked = false;
     for (const dep of planDependsOnList(task)) {
       const dependency = resolvePlanTaskByRef(taskByNumber, dep);

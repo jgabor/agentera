@@ -17,6 +17,7 @@ import {
   statePresence,
 } from "../../src/cli/orientation.js";
 import { orchestrationContext } from "../../src/cli/capabilityContext/orchestration.js";
+import { buildExecutionContext } from "../../src/cli/capabilityContext/build.js";
 import type { JsonObject } from "../../src/core/jsonValue.js";
 import type {
   DecisionFollowUp,
@@ -142,6 +143,113 @@ describe("orientation: artifact summaries", () => {
     );
     expect(context?.task_queue).toMatchObject({ total: 0, dependency_ready_tasks: [], blocked_tasks: [] });
     expect(context?.selected_next_task).toBeNull();
+  });
+
+  it("withholds blocked dependent work from status next-work selection", () => {
+    const p = path.join(tmp, "plan.yaml");
+    fs.writeFileSync(
+      p,
+      [
+        "header:",
+        "  title: Blocked dependency",
+        "  status: open",
+        "tasks:",
+        "  - number: 1",
+        "    name: Blocked prerequisite",
+        "    status: blocked",
+        "  - number: 2",
+        "    name: Pending dependent",
+        "    status: pending",
+        "    depends_on: ['1']",
+        "",
+      ].join("\n"),
+    );
+    const summary = planSummary(schema("plan", p));
+    expect(summary.first_pending).toBeNull();
+    expect(selectStatusNextAction(summary, { exists: false }, { exists: false }, [], null, false).object).not.toContain("PLAN Task");
+  });
+
+  it("shares degraded lifecycle state with build and orchestration", () => {
+    const p = path.join(tmp, "plan.yaml");
+    fs.writeFileSync(
+      p,
+      [
+        "header:",
+        "  title: Contradictory",
+        "  status: complete",
+        "tasks:",
+        "  - number: 1",
+        "    name: Still pending",
+        "    status: pending",
+        "",
+      ].join("\n"),
+    );
+    const schemas = schema("plan", p);
+    const summary = planSummary(schemas);
+    expect(summary.lifecycle_state).toMatchObject({ status: "degraded", diagnostic_count: 1 });
+
+    const orchestration = orchestrationContext(
+      "orchestrate",
+      summary as unknown as JsonObject,
+      { exists: true },
+      { exists: true },
+      [{ severity: "normal", status: "open", text: "issue" }],
+      { exists: true },
+      { status: "loaded" },
+      { object: "Next", capability: "build", reason: "test" },
+    );
+    expect(orchestration?.plan_lifecycle_state).toMatchObject({ status: "degraded" });
+    expect(orchestration?.selected_next_task).toBeNull();
+
+    const build = buildExecutionContext(
+      "build",
+      schemas,
+      summary as unknown as JsonObject,
+      { exists: true },
+      { exists: true },
+      [{ severity: "normal", status: "open", text: "issue" }],
+      { exists: true },
+      { status: "loaded" },
+      { status: "up_to_date" },
+    );
+    expect(build?.plan_lifecycle_state).toMatchObject({ status: "degraded" });
+  });
+
+  it("exposes persisted evaluation attempts and retry exhaustion to orchestration", () => {
+    const context = orchestrationContext(
+      "orchestrate",
+      {
+        exists: true,
+        active: true,
+        tasks: [
+          {
+            number: 1,
+            name: "Blocked after evaluation",
+            status: "blocked",
+            evaluation: {
+              attempt_count: 2,
+              failure_count: 2,
+              last_verdict: "fail",
+              last_failure_evidence: "audit:1",
+              provenance: { attempt_id: "audit-2", source: "audit report", recorded_at: "2026-07-12 12:00" },
+            },
+          },
+        ],
+      },
+      { exists: true },
+      { exists: true },
+      [{ severity: "normal", status: "open", text: "issue" }],
+      { exists: true },
+      { status: "loaded" },
+      { object: "Next", capability: "build", reason: "test" },
+    );
+    expect(context?.retry_state).toMatchObject({
+      status: "exhausted",
+      attempt_count: 2,
+      last_verdict: "fail",
+      failure_evidence: "audit:1",
+      provenance: { attempt_id: "audit-2" },
+    });
   });
 
   it("shares categorized archive diagnostics with orientation consumers", () => {

@@ -33,7 +33,7 @@ export const PRIME_BLOB =
     "Supported typed writes:",
     "  agentera state progress append ...            # Record verified cycle evidence",
     "  agentera state decisions append|update ...    # Record decisions or satisfaction",
-    "  agentera state plan append|update|set-status|set-plan-status|archive|create ...",
+    "  agentera state plan append|update|set-status|set-plan-status|record-evaluation|archive|create ...",
     "  agentera state health append --input PATH     # Record one complete audit",
     "  Add --dry-run to preview any mutation without publishing it.",
     "",

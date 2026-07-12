@@ -15,6 +15,7 @@ import {
   taskByRef,
 } from "./planState.js";
 import { progressVerificationSummary } from "./progress.js";
+import { planLifecycleState } from "../planLifecycleState.js";
 import type { JsonObject } from "../../core/jsonValue.js";
 
 export function buildExecutionContext(
@@ -30,7 +31,11 @@ export function buildExecutionContext(
 ): JsonObject | null {
   if (capability !== "build") return null;
   const capabilityContract = capabilityContext(capability) ?? {};
-  const tasks = asList(plan.tasks).filter((t) => t && typeof t === "object" && !Array.isArray(t));
+  const lifecycle = planLifecycleState(plan);
+  const tasks =
+    lifecycle.current_plan_degraded === true
+      ? []
+      : asList(plan.tasks).filter((t) => t && typeof t === "object" && !Array.isArray(t));
   const target = selectEvidenceTarget(plan);
   const selected = taskByRef(plan, (target && typeof target === "object" ? target.task : null) as JsonObject | null);
   const acceptance = selected && typeof selected === "object" ? asList(selected.acceptance) : [];
@@ -52,6 +57,10 @@ export function buildExecutionContext(
   fallbackCommands.push(...((capabilityContract.cli_fallback ?? []) as string[]));
   if (!plan.exists) {
     stateCaveats.push("plan state is unavailable; execution context cannot select plan-driven work.");
+    fallbackCommands.push("agentera state plan --format json");
+  }
+  if (lifecycle.status === "degraded") {
+    stateCaveats.push(...((lifecycle.caveats ?? []) as string[]));
     fallbackCommands.push("agentera state plan --format json");
   }
   if (mode === "blocked_or_dependency_unready") {
@@ -166,6 +175,7 @@ export function buildExecutionContext(
       source_provenance: sourceProvenance("execution_context", "agentera prime --context build --format json", "git_boundary"),
     },
     plan_completion_sweep: sweep,
+    plan_lifecycle_state: lifecycle,
     state_family_caveats: stateCaveats,
     fallback_commands: fallbackCommands,
     source_contract: {
@@ -192,6 +202,7 @@ export function buildExecutionContext(
         "scope boundary",
         "read-only plan completion sweep metadata",
         "truthful completeness metadata",
+        "plan lifecycle state",
       ],
       deferred: [],
     },

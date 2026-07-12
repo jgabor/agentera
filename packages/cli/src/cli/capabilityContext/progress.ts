@@ -47,15 +47,52 @@ export function progressVerificationSummary(progress: JsonObject): JsonObject {
   };
 }
 
-export function retryState(): JsonObject {
+export function retryState(selected: JsonObject | null = null, tasks: JsonObject[] = []): JsonObject {
+  const task =
+    selected ??
+    tasks.find((candidate) => {
+      const evaluation = candidate.evaluation;
+      return Boolean(evaluation && typeof evaluation === "object" && !Array.isArray(evaluation));
+    }) ??
+    null;
+  const evaluation =
+    task && task.evaluation_state && typeof task.evaluation_state === "object" && !Array.isArray(task.evaluation_state)
+      ? (task.evaluation_state as JsonObject)
+      : task && task.evaluation && typeof task.evaluation === "object" && !Array.isArray(task.evaluation)
+        ? (task.evaluation as JsonObject)
+        : null;
+  const source = {
+    source_family: "plan",
+    command: "agentera state plan record-evaluation --task N --attempt-id ID --verdict {pass,fail}",
+  };
+  if (evaluation) {
+    const attemptCount = Number(evaluation.attempt_count ?? 0);
+    const failureCount = Number(evaluation.failure_count ?? 0);
+    const exhausted = failureCount >= 2;
+    return {
+      status: exhausted ? "exhausted" : "recorded",
+      task: taskRef(task as JsonObject),
+      attempt_count: Number.isInteger(attemptCount) ? attemptCount : null,
+      failure_count: Number.isInteger(failureCount) ? failureCount : null,
+      retry_budget: 2,
+      last_verdict: evaluation.last_verdict ?? null,
+      failure_evidence: evaluation.last_failure_evidence ?? null,
+      provenance: evaluation.provenance ?? null,
+      source_provenance: source,
+      caveats: exhausted ? ["Evaluation retry budget is exhausted; the task is blocked."] : [],
+    };
+  }
   return {
     status: "not_recorded",
-    source_provenance: {
-      source_family: "progress",
-      command: "agentera progress --format json",
-      reason: "Current CLI/artifact state records progress cycles but no retry attempt state for orchestration tasks.",
-    },
-    caveats: ["Retry attempt state is not recorded; no attempt count is exposed."],
+    task: task ? taskRef(task) : null,
+    attempt_count: 0,
+    failure_count: 0,
+    retry_budget: 2,
+    last_verdict: null,
+    failure_evidence: null,
+    provenance: null,
+    source_provenance: source,
+    caveats: [],
   };
 }
 

@@ -21,6 +21,8 @@ import { localDate, localTimestamp, nextEntryNumber, nextTaskNumber } from "./as
 import type { OperationSpec, WritableArtifact } from "./operations.js";
 import { reject } from "./errors.js";
 import { validateArtifactBytes } from "./validate.js";
+import { dependencyReadyTasks } from "../../cli/capabilityContext/planState.js";
+import type { JsonObject } from "../../core/jsonValue.js";
 
 export interface StateWriteRequest {
   artifact: WritableArtifact;
@@ -411,6 +413,74 @@ function mutateCandidate(
     entry.status = status;
     return { candidate, written: entry, assigned: { number: taskNumber }, replay };
   }
+  if (req.spec.verb === "record-evaluation") {
+    const taskNumber = Number(req.values.task);
+    const entry = findByNumber(tasks, taskNumber);
+    if (!entry)
+      reject({ class: "unsupported_target", message: `no plan task with number ${taskNumber}` });
+    const evaluationInput = mapping(req.values.evaluation);
+    const attemptId = String(evaluationInput.attempt_id ?? "").trim();
+    const verdict = String(evaluationInput.verdict ?? "");
+    const provenance = String(evaluationInput.provenance ?? "").trim();
+    const failureEvidence = String(evaluationInput.failure_evidence ?? "").trim();
+    if (!attemptId || !provenance)
+      reject({ class: "schema_violation", message: "evaluation requires non-empty --attempt-id and --provenance" });
+    if (verdict === "fail" && !failureEvidence)
+      reject({ class: "schema_violation", message: "a failed evaluation requires non-empty --failure-evidence" });
+    if (verdict === "pass" && failureEvidence)
+      reject({ class: "schema_violation", message: "--failure-evidence applies only to a failed evaluation" });
+    const prior = mapping(entry.evaluation);
+    const priorProvenance = mapping(prior.provenance);
+    if (priorProvenance.attempt_id === attemptId) {
+      const replay =
+        prior.last_verdict === verdict &&
+        priorProvenance.source === provenance &&
+        (verdict !== "fail" || prior.last_failure_evidence === failureEvidence);
+      if (!replay)
+        reject({
+          class: "conflict",
+          message: `evaluation attempt '${attemptId}' already exists with different result data`,
+        });
+      return {
+        candidate,
+        written: entry,
+        assigned: { number: taskNumber, attempt_count: prior.attempt_count ?? 0 },
+        replay: true,
+      };
+    }
+    if (["complete", "blocked"].includes(String(entry.status ?? "")))
+      reject({ class: "conflict", message: `plan task ${taskNumber} is ${entry.status} and cannot accept another evaluation` });
+    const attemptCount = Number(prior.attempt_count ?? 0);
+    const failureCount = Number(prior.failure_count ?? 0);
+    if (!Number.isInteger(attemptCount) || attemptCount < 0 || !Number.isInteger(failureCount) || failureCount < 0)
+      reject({ class: "schema_violation", message: `plan task ${taskNumber} has malformed evaluation state` });
+    if (verdict === "fail" && failureCount >= 2)
+      reject({ class: "conflict", message: `plan task ${taskNumber} has exhausted its evaluation retry budget` });
+    const nextFailureCount = failureCount + (verdict === "fail" ? 1 : 0);
+    entry.evaluation = {
+      attempt_count: attemptCount + 1,
+      failure_count: nextFailureCount,
+      last_verdict: verdict,
+      last_failure_evidence: verdict === "fail" ? failureEvidence : prior.last_failure_evidence ?? null,
+      provenance: {
+        attempt_id: attemptId,
+        source: provenance,
+        recorded_at: localTimestamp(),
+        writer_command: "agentera state plan record-evaluation",
+      },
+    };
+    if (nextFailureCount >= 2) entry.status = "blocked";
+    return {
+      candidate,
+      written: entry,
+      assigned: {
+        number: taskNumber,
+        attempt_count: attemptCount + 1,
+        failure_count: nextFailureCount,
+      },
+      replay: false,
+    };
+  }
   throw new Error(`unsupported transaction ${req.artifact} ${req.spec.verb}`);
 }
 
@@ -435,7 +505,8 @@ function stateSlice(
       title: mapping(doc.header).title ?? doc.title ?? null,
       status: mapping(doc.header).status ?? doc.status ?? null,
       task_count: tasks.length,
-      next_pending_task: tasks.find((task) => task.status === "pending") ?? null,
+      next_pending_task:
+        dependencyReadyTasks(tasks as unknown as JsonObject[]).find((task) => task.status === "pending") ?? null,
       ...(archivePath ? { archive_path: archivePath } : {}),
     };
   }
@@ -474,15 +545,14 @@ function assertWriterBoundary(projectRoot: string, candidate: string, artifactId
   }
 }
 
-function archivePathFor(projectRoot: string, doc: Record<string, unknown>, bytes: string): string {
+function archivePathFor(projectRoot: string, target: string, doc: Record<string, unknown>, bytes: string): string {
   const header = mapping(doc.header);
   const created = String(header.created ?? "undated").replace(/[^0-9-]/g, "") || "undated";
   const title = header.title ?? doc.title;
   // Archive identity must survive a retry that crosses a calendar boundary.
   const identity = createHash("sha256").update(bytes).digest("hex").slice(0, 16);
   const archivePath = path.join(
-    projectRoot,
-    ".agentera",
+    path.dirname(target),
     "archive",
     `PLAN-${created}-${slug(title)}-${identity}.yaml`,
   );
@@ -532,6 +602,14 @@ function canonicalPlanDocumentForWrite(doc: Record<string, unknown>): Record<str
       ? "open"
       : "complete";
   return { ...doc, header: { ...header, status: canonicalStatus } };
+}
+
+function canonicalPlanDocumentForArchive(doc: Record<string, unknown>): Record<string, unknown> {
+  const candidate = structuredClone(doc);
+  const tasks = array(candidate, "tasks");
+  const complete = tasks.length > 0 && tasks.every((task) => task.status === "complete");
+  candidate.header = { ...mapping(candidate.header), status: complete ? "complete" : "open" };
+  return candidate;
 }
 
 function fsyncDirectory(directory: string): void {
@@ -609,7 +687,7 @@ function planLifecycle(
   legacyLifecycle = false,
 ): StateWriteEnvelope {
   if (req.spec.verb === "archive") {
-    const archiveDir = path.join(req.projectRoot, ".agentera", "archive");
+    const archiveDir = path.join(path.dirname(target), "archive");
     assertWriterBoundary(req.projectRoot, archiveDir, "plan archive");
     if (!existing.bytes) {
       const archivePath = latestArchivePath(archiveDir);
@@ -631,8 +709,9 @@ function planLifecycle(
         message: `active plan "${mapping(existing.doc.header).title ?? existing.doc.title ?? "untitled"}" has status ${status || "unknown"} or incomplete tasks; archiving would discard incomplete work`,
         syntax: "agentera state plan archive --force",
       });
-    const archiveBytes = dumpYamlMapping(existing.doc);
-    const archivePath = archivePathFor(req.projectRoot, existing.doc, archiveBytes);
+    const archiveDoc = canonicalPlanDocumentForArchive(existing.doc);
+    const archiveBytes = dumpYamlMapping(archiveDoc);
+    const archivePath = archivePathFor(req.projectRoot, target, archiveDoc, archiveBytes);
     validatePlanPublicationCandidate(archiveBytes);
     if (!req.dryRun) {
       // Archive creation and current-plan removal cannot be one filesystem transaction.
@@ -641,7 +720,7 @@ function planLifecycle(
       ensureArchive(archivePath, archiveBytes);
       removeCurrentPlan(target);
     }
-    return envelope(req, target, {}, mapping(existing.doc.header), {}, false, null, {
+    return envelope(req, target, {}, mapping(archiveDoc.header), {}, false, null, {
       archivePath,
       diff: diffText(existing.bytes, "", target),
       before: existing.doc,
@@ -680,7 +759,7 @@ function planLifecycle(
           message: `active plan "${mapping(existing.doc.header).title ?? existing.doc.title ?? "untitled"}" has status ${oldStatus || "unknown"}; replacing it would discard incomplete work`,
         });
       predecessorBytes = dumpYamlMapping(existing.doc);
-      archivePath = archivePathFor(req.projectRoot, existing.doc, predecessorBytes);
+      archivePath = archivePathFor(req.projectRoot, target, existing.doc, predecessorBytes);
       input.previous_plan_archived = path.relative(req.projectRoot, archivePath);
     }
   }

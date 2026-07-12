@@ -338,6 +338,15 @@ TASK:
       Acceptance criteria for this task. Each entry is a GIVEN/WHEN/THEN
       statement that must hold for the task to be considered complete.
       Required for full-level plans.
+  6:
+    id: PT20
+    field: evaluation
+    type: mapping
+    required: false
+    description: >-
+      CLI-owned evaluator state written only by `agentera state plan
+      record-evaluation`. It records attempt and failure counts, the latest
+      verdict, retained failure evidence, and stable attempt provenance.
 
 VALIDATION:
   1:

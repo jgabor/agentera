@@ -383,6 +383,8 @@ describe("cli state plan", () => {
     expect(payload.source_contract.complete_for_plan_artifact).toBe(true);
     expect(payload.source_contract.complete_for_normal_startup_evaluation).toBe(false);
     expect(payload.source_contract.invalid_archive_paths).toEqual([path.join(tmp, "archive", "PLAN-malformed.yaml")]);
+    expect(payload.source_contract.lifecycle_state.status).toBe("degraded");
+    expect(payload.source_contract.lifecycle_state.current_plan_degraded).toBe(false);
     expect(payload.plans).toHaveLength(1);
     expect(payload.plans[0].archived).toBe(true);
   });
@@ -457,6 +459,32 @@ describe("cli state plan", () => {
     expect(payload.entries).toHaveLength(2);
     expect(payload.summary.title).toBe("Migrate CLI to TypeScript");
     expect(payload.source_contract.complete_for_plan_artifact).toBe(true);
+  });
+
+  it("derives catalog position from canonical location rather than persisted fields", () => {
+    const p = path.join(tmp, "plan.yaml");
+    fs.writeFileSync(
+      p,
+      [
+        "header:",
+        "  title: Current",
+        "  status: complete",
+        "active: false",
+        "archived: true",
+        "tasks:",
+        "  - number: 1",
+        "    name: Current task",
+        "    status: complete",
+        "",
+      ].join("\n"),
+    );
+    const archive = writeArchivedPlan(p, "PLAN-2026-07-12-history.yaml", "History", "open");
+    fs.appendFileSync(archive, "active: true\narchived: false\n");
+
+    const { out } = capture((io) => queryPlan({ command: "plan", format: "json" }, planSchema(p), io));
+    const payload = JSON.parse(out);
+    expect(payload.plans).toContainEqual(expect.objectContaining({ path: p, active: true, archived: false }));
+    expect(payload.plans).toContainEqual(expect.objectContaining({ path: archive, active: false, archived: true }));
   });
 });
 

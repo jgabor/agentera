@@ -8,6 +8,7 @@ export const WRITE_VERBS = [
   "update",
   "set-status",
   "set-plan-status",
+  "record-evaluation",
   "archive",
   "create",
   "explain",
@@ -114,6 +115,27 @@ const planTaskFields: OperationField[] = [
   },
 ];
 
+const planEvaluationFields: OperationField[] = [
+  { flag: "--task", field: "task", kind: "integer", required: true },
+  { flag: "--attempt-id", field: "evaluation.attempt_id", kind: "string", required: true },
+  {
+    flag: "--verdict",
+    field: "evaluation.verdict",
+    kind: "string",
+    required: true,
+    validValues: ["pass", "fail"],
+    description: "Evaluator verdict for this idempotent attempt.",
+  },
+  { flag: "--failure-evidence", field: "evaluation.failure_evidence", kind: "string" },
+  {
+    flag: "--provenance",
+    field: "evaluation.provenance",
+    kind: "string",
+    required: true,
+    description: "Stable source reference for the evaluator result.",
+  },
+];
+
 const SPECS: OperationSpec[] = [
   { artifact: "progress", verb: "append", fields: progressAppend, compacts: true },
   { artifact: "decisions", verb: "append", fields: decisionAppend, compacts: true },
@@ -161,6 +183,7 @@ const SPECS: OperationSpec[] = [
       },
     ],
   },
+  { artifact: "plan", verb: "record-evaluation", fields: planEvaluationFields },
   { artifact: "plan", verb: "archive", fields: [], allowForce: true },
   {
     artifact: "plan",

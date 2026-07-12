@@ -516,6 +516,91 @@ describe("decisions, health, and plan operations", () => {
     expect(result.json?.written.status).toBe(status);
   });
 
+  it("records idempotent evaluator attempts and blocks the second failed evaluation", () => {
+    const root = project();
+    const input = writeInput(root, "plan.yaml", lightPlan());
+    expect(run(root, ["plan", "create", "--input", input, "--format", "json"]).rc).toBe(0);
+    const firstArgs = [
+      "plan",
+      "record-evaluation",
+      "--task",
+      "1",
+      "--attempt-id",
+      "audit-1",
+      "--verdict",
+      "fail",
+      "--failure-evidence",
+      "test/state/write/stateWrite.test.ts:1",
+      "--provenance",
+      "audit report 1",
+      "--format",
+      "json",
+    ];
+    const first = run(root, firstArgs);
+    expect(first.rc).toBe(0);
+    expect(first.json?.assigned).toMatchObject({ number: 1, attempt_count: 1, failure_count: 1 });
+    expect(run(root, firstArgs).json?.operation.idempotent_replay).toBe(true);
+
+    const second = run(root, [
+      "plan",
+      "record-evaluation",
+      "--task",
+      "1",
+      "--attempt-id",
+      "audit-2",
+      "--verdict",
+      "fail",
+      "--failure-evidence",
+      "test/state/write/stateWrite.test.ts:2",
+      "--provenance",
+      "audit report 2",
+      "--format",
+      "json",
+    ]);
+    expect(second.rc).toBe(0);
+    expect(second.json?.written).toMatchObject({
+      status: "blocked",
+      evaluation: {
+        attempt_count: 2,
+        failure_count: 2,
+        last_verdict: "fail",
+        last_failure_evidence: "test/state/write/stateWrite.test.ts:2",
+        provenance: { attempt_id: "audit-2", source: "audit report 2" },
+      },
+    });
+    expect(
+      run(root, [
+        "plan",
+        "record-evaluation",
+        "--task",
+        "1",
+        "--attempt-id",
+        "audit-3",
+        "--verdict",
+        "fail",
+        "--failure-evidence",
+        "third evaluation",
+        "--provenance",
+        "audit report 3",
+        "--format",
+        "json",
+      ]).json?.error.class,
+    ).toBe("conflict");
+  });
+
+  it("returns only a dependency-ready pending task from plan write state", () => {
+    const root = project();
+    const plan = lightPlan();
+    plan.tasks = [
+      { number: 1, name: "Blocked", status: "blocked" },
+      { number: 2, name: "Dependent", status: "pending", depends_on: ["1"] },
+    ];
+    const input = writeInput(root, "plan.yaml", plan);
+    const created = run(root, ["plan", "create", "--input", input, "--format", "json"]);
+    expect(created.rc).toBe(0);
+    expect(created.json?.state.next_pending_task).toBeNull();
+  });
+
   it("enforces canonical plan writes and isolated status domains", () => {
     for (const status of ["open", "complete"]) {
       const root = project();
@@ -1121,6 +1206,28 @@ describe("closed rejection catalog and mutation safety", () => {
       ]).rc,
     ).toBe(0);
     expect(run(root, [...progressArgs(), "--force"]).rc).toBe(2);
+  });
+
+  it("archives mapped plans beside the current path and keeps forced lifecycle status truthful", () => {
+    const mappedRoot = project();
+    fs.mkdirSync(path.join(mappedRoot, ".agentera"), { recursive: true });
+    fs.writeFileSync(
+      path.join(mappedRoot, ".agentera", "docs.yaml"),
+      dumpYamlMapping({ mapping: [{ artifact: "PLAN.md", path: "mapped/plans/plan.yaml" }] }),
+    );
+    const complete = writeInput(mappedRoot, "complete.yaml", lightPlan("Mapped", "complete"));
+    expect(run(mappedRoot, ["plan", "create", "--input", complete, "--format", "json"]).rc).toBe(0);
+    const archived = run(mappedRoot, ["plan", "archive", "--format", "json"]);
+    expect(archived.rc).toBe(0);
+    expect(String(archived.json?.state.archive_path)).toContain("mapped/plans/archive/PLAN-");
+    expect(loadYamlMapping(fs.readFileSync(String(archived.json?.state.archive_path), "utf8")).header).toMatchObject({ status: "complete" });
+
+    const forcedRoot = project();
+    const unfinished = writeInput(forcedRoot, "unfinished.yaml", lightPlan("Forced"));
+    expect(run(forcedRoot, ["plan", "create", "--input", unfinished, "--format", "json"]).rc).toBe(0);
+    const forced = run(forcedRoot, ["plan", "archive", "--force", "--format", "json"]);
+    expect(forced.rc).toBe(0);
+    expect(loadYamlMapping(fs.readFileSync(String(forced.json?.state.archive_path), "utf8")).header).toMatchObject({ status: "open" });
   });
 
   it("rejects protected decision overflow with byte-identical target", () => {

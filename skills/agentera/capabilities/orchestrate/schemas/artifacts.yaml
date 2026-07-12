@@ -7,7 +7,8 @@ ARTIFACTS:
       Orchestrate consumes plan task queue state through
       `agentera prime --context orchestrate --format json` before raw
       artifact access, then updates status (pending -> complete/blocked) only
-      when resolving a task.
+      when resolving a task. Failed evaluator results are recorded through the
+      retry-safe typed `record-evaluation` mutation before retry or blocking.
   2:
     id: A2
     artifact_id: progress
