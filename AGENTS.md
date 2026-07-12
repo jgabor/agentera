@@ -172,9 +172,13 @@ pnpm -C packages/cli exec npm publish --tag next --dry-run
 
 Publish only after the release commit is clean and all gates pass. The v3
 development channel publishes `agentera` to npm `@next`; it loads `NPM_TOKEN`
-from `.env` when present:
+from `.env` when present. npm rejects an already-published version, so compare
+the local package version with the current `@next` version before publishing.
+When they match, increment `packages/cli/package.json#version`, commit that
+bump, and rerun the checks before publishing:
 
 ```bash
+npm view agentera@next version
 pnpm cli:publish:dev
 ```
 
