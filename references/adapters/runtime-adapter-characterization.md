@@ -1,80 +1,44 @@
-# Runtime Adapter Characterization
+# Runtime adapter characterization
 
-Historical Task 2 snapshot from before the RuntimeAdapter registry extraction.
-The executable registry now owns current behavior. Claude rows below record
-pre-retirement history only and do not advertise active support.
+The executable lifecycle contract is split deliberately:
 
-## Doctor Output
+- `runtime-lifecycle-authority.yaml` owns active identities, surfaces, evidence,
+  support-floor rules, the Cursor alias, and retired inputs;
+- `runtime-lifecycle-adapters.yaml` owns the common eight-category adapter
+  claims and declared Agentera-managed resources;
+- `runtime-lifecycle-operation-contract.yaml` owns operation and ownership
+  semantics;
+- `runtime-retired-resources.yaml` owns bounded legacy cleanup;
+- `runtime-adapter-registry.yaml` retains host-event and behavioral parity facts
+  and must match the lifecycle authority's four identities.
 
-At characterization time, JSON envelope fields were `schemaVersion`, `ok`, `installRoot`,
-`runtimes`, `summary`, and `smoke`. Each runtime result exposes `runtime`,
-`status`, `available`, `binary`, and `checks`. Each check exposes `name`,
-`status`, `message`, `source`, `path`, `gap`, and `details`.
+## Characterized identities
 
-Primary pass messages by runtime:
+| Runtime ID | Required host surface | Additional surface | Lifecycle source highlights |
+| --- | --- | --- | --- |
+| `opencode` | OpenCode host | — | plugin and single Agentera agent |
+| `codex` | Codex CLI | — | plugin hooks, copied hooks, capability TOML agents |
+| `cursor` | Cursor Agent CLI | Cursor IDE when observed | IDE plugin, hooks, and Agentera descriptor |
+| `copilot` | GitHub Copilot CLI | — | plugin manifests and lifecycle hooks |
 
-| Runtime | Primary check | Status | Message | Diagnostic label |
-|---------|---------------|--------|---------|------------------|
-| Claude Code | `CLAUDE_PLUGIN_ROOT` | `pass` | `runtime can reach shared Agentera helper scripts` | none |
-| OpenCode | `plugin_file` | `pass` | `OpenCode plugin file is present` | none |
-| Copilot CLI | `AGENTERA_HOME` | `pass` | `runtime can reach shared Agentera helper scripts` | none |
-| Codex CLI | `config.AGENTERA_HOME` | `pass` | `runtime can reach shared Agentera helper scripts` | none |
+The inactive `cursor-agent` spelling identifies the Cursor CLI binary/source
+product only. Claude is absent from adapter records and can appear only in the
+retired cleanup or explicit historical-import contracts.
 
-The snapshot's public diagnostic labels were `user_environment`,
-`runtime_config`, `bundle_packaging`, `command_drift`, `skill_path_drift`, and
-`validation_drift`.
+## Diagnosis and remediation
 
-## Upgrade Planning
+Every adapter reports `skills`, `plugins`, `hooks`, `agents`, `configuration`,
+`enablement`, `trust`, and `native_actions`. Evidence is read-only. Trust is
+never inferred. Managed repair is planned through the shared operation engine;
+native and user-owned work is returned as `action_required`.
 
-Runtime-phase items in this historical snapshot exposed `runtime`, `action`, `target`, `status`,
-and `message`; copy operations also expose `source`, and configure operations
-carry private `newText` until public JSON rendering strips it.
+Preview has no side effects. Apply requires declared destinations and matching
+ownership-journal evidence, uses secure directory-relative publication on
+Linux, continues independent operations after failure, and converges on retry.
 
-Characterized runtime actions:
+## Validation
 
-| Runtime | Action | Target | Dry-run status | Apply behavior |
-|---------|--------|--------|----------------|----------------|
-| Claude Code | `configure` | none | `noop` | no local config write |
-| Codex CLI | `configure` | `~/.codex/config.toml` | `pending` | writes config, then reports `runtime update applied` |
-| Codex CLI | `copy-hooks` | `~/.codex/hooks.json` | `pending` | copies hooks, then reports `runtime update applied` |
-| Codex CLI | `copy-agent` | `~/.codex/agents/*.toml` | `pending` | copies managed capability descriptors, then reports `runtime update applied` |
-| Copilot CLI | `configure` | none | `noop` | no local config write; use per-invocation `AGENTERA_HOME` |
-| OpenCode | `copy-plugin` | `~/.config/opencode/plugins/agentera.js` | `pending` | copies plugin, then reports `runtime update applied` |
-| OpenCode | `copy-agent` | `~/.config/opencode/agents/agentera.md` | `pending` | copies single managed agent descriptor (D73), then reports `runtime update applied` |
-
-Package-phase items in this historical snapshot exposed `runtime`, `action`, `command`, `status`,
-and `message`. Without `--update-packages`, package items are `skipped`; with it,
-Claude Code and OpenCode package commands became `pending` and applied through the
-external command runner. Copilot CLI and Codex CLI have no package command item in
-that upgrade phase.
-
-## Lifecycle Validation
-
-The characterized pass output from `scripts/validate_lifecycle_adapters.py` was:
-
-```text
-lifecycle adapter metadata ok
-```
-
-The characterized failure output began with:
-
-```text
-lifecycle adapter validation failed:
-```
-
-Representative fail messages are characterized in `tests/test_runtime_adapters.py`:
-Copilot stale `lifecycleHooks`, unsupported hook event files, missing `preToolUse`
-artifact validation, Codex unsupported status values, malformed event containers,
-missing supported-event declarations, missing unsupported-event declarations, and
-missing `codex_hooks` limitation text.
-
-## Drift Inventory
-
-| Drift point | Decision | Before-migration handling |
-|-------------|----------|---------------------------|
-| duplicated runtime order appears in doctor, upgrade, and tests | `standardize` | Later registry extraction should define one runtime order and have consumers read it. |
-| upgrade package phase managed Claude Code and OpenCode | `retired` | Historical pre-retirement behavior; current package planning must not expose Claude. |
-| Codex supports hook events but shipped config wires only apply_patch validation | `preserve` | Keep the distinction between host support and shipped Agentera wiring. |
-| Claude lifecycle behavior was validated through native hook files, not lifecycle metadata | `retired` | Historical pre-retirement behavior only. |
-| OpenCode session preload observes `session.created` but has no verified context injection path | `preserve` | Keep degraded preload semantics in docs and diagnostics. |
-| hard-gate docs only claim blocking for reconstructable OpenCode and Copilot candidates | `preserve` | Keep scoped claims; do not standardize to full hard-gate parity. |
+`agentera check validate lifecycle-adapters` rejects identity drift, missing
+runtime/category/surface claims, unsafe destinations, unverified mandatory
+skills, missing package manifests, unbundled lifecycle sources, version drift,
+retired Claude manifests, and stale runtime-specific hook claims.

@@ -34,11 +34,25 @@ const forbiddenCurrentSupportPatterns = [
 ] as const;
 
 const publicInstallSurfaceRoots = [
+  "README.md",
   "packages/cli/README.md",
   "packages/cli/shim",
+  "packages/cli/src/cli/help.ts",
+  "packages/mobile/README.md",
+  "packages/mobile/DESIGN.md",
   "packages/web/src/components/InstallTabs.astro",
-  "packages/web/src/content/docs/docs/index.mdx",
-  "packages/web/src/content/docs/docs/getting-started",
+  "packages/web/src/content/docs/docs",
+  "UPGRADE.md",
+  "references/adapters/package-surface-characterization.md",
+  "references/adapters/runtime-adapter-characterization.md",
+] as const;
+
+const primaryLifecycleDocs = [
+  "README.md",
+  "packages/cli/README.md",
+  "UPGRADE.md",
+  "packages/web/src/content/docs/docs/getting-started/install.mdx",
+  "references/adapters/runtime-feature-parity.md",
 ] as const;
 
 const textExtensions = new Set([
@@ -205,7 +219,20 @@ describe("retired runtime current-surface policy", () => {
     expect(parity).not.toMatch(/^\| Claude Code \|/m);
 
     const vocabulary = read("references/cli/vocabulary.md");
-    expect(vocabulary).toContain("Canonical active runtime names are OpenCode, Codex CLI, Cursor IDE, and Copilot CLI");
+    expect(vocabulary).toContain("Canonical active runtime names are OpenCode, Codex, Cursor, and GitHub Copilot");
     expect(vocabulary).toContain("Claude Code is a retired migration and consent-gated historical-import source");
+  });
+
+  it("keeps current lifecycle docs on the npm CLI, one Cursor identity, and all four active runtimes", () => {
+    for (const surface of primaryLifecycleDocs) {
+      const content = read(surface);
+      expect(content, surface).toContain("OpenCode");
+      expect(content, surface).toContain("Codex");
+      expect(content, surface).toContain("Cursor");
+      expect(content, surface).toMatch(/(?:GitHub )?Copilot/);
+      expect(content, surface).not.toMatch(/\buvx\b|uv run scripts\/agentera/);
+    }
+    expect(read("README.md")).toContain("Cursor Agent CLI is the required Cursor surface and Cursor IDE is conditional");
+    expect(read("UPGRADE.md")).toContain("`cursor-agent` is not a selector");
   });
 });

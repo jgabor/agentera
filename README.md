@@ -6,167 +6,132 @@
 </pre>
 
 <strong>One agent, one CLI, many capabilities.</strong>
-
-The colleague, not the team — one persistent identity that thinks through every
-step and keeps working when you walk away. Close the laptop at midnight; the
-project remembers in the morning.
-
-<p>
-<a href="#get-started">Get started</a> ·
-<a href="#what-you-see">What you see</a> ·
-<a href="#what-you-get">What you get</a> ·
-<a href="#capabilities">Capabilities</a> ·
-<a href="#development">Development</a>
-</p>
 </div>
+
+Agentera is a project-memory and workflow layer for coding agents. It keeps
+direction, plans, decisions, progress, documentation state, and health evidence
+in the repository so work can continue across sessions and runtimes.
 
 ## Get started
 
-1. Install Agentera inside your coding agent (see below).
-2. Open a git project.
-3. Run `/agentera` (`$agentera` in Codex).
-
-Your first run bootstraps project memory (`.agentera/`) as you work.
-
-### For LLMs
-
-If your coding agent doesn't have a native install path, paste this into its chat:
-
-```text
-Install Agentera as your project memory and routing layer.
-
-1. Run: npx -y agentera@next prime
-2. Based on the briefing you get back, tell me what to do next.
-
-After bootstrap, route via "/agentera <capability>" or plain language like "help me decide".
-```
-
-<details>
-<summary><strong>OpenCode</strong></summary>
-
-Install the skill and the plugin (both steps):
+Agentera 3.0 is the self-contained TypeScript package on npm. Before the stable
+dist-tag promotion, use `@next`; after promotion, the same commands work with
+`agentera@latest` or an installed `agentera` binary.
 
 ```bash
-npx skills add jgabor/agentera -g -a opencode --skill agentera -y
-mkdir -p ~/.config/opencode/plugins
-curl -fsSL https://raw.githubusercontent.com/jgabor/agentera/main/.opencode/plugins/agentera.js \
-  -o ~/.config/opencode/plugins/agentera.js
+npx -y agentera@next prime
 ```
 
-OpenCode also routes a bare message `hej` to the same dashboard.
+Run that from a git project. In an editor runtime, invoke `/agentera`
+(`$agentera` in Codex) for the rendered status dashboard.
 
-</details>
-
-<details>
-<summary><strong>Cursor</strong></summary>
+`prime` is deliberately bounded: it summarizes current project state and the
+next useful action. Use `doctor` when you need detailed install and runtime
+evidence.
 
 ```bash
-git clone https://github.com/jgabor/agentera.git ~/.cursor/plugins/local/agentera
+npx -y agentera@next prime --format json
+npx -y agentera@next doctor --format json
 ```
 
-Restart Cursor or run **Developer: Reload Window**.
+## Supported runtimes
 
-</details>
+Agentera 3.0 has exactly four active runtime identities:
 
-<details>
-<summary><strong>Copilot CLI</strong></summary>
+- OpenCode
+- Codex
+- Cursor
+- GitHub Copilot
+
+Cursor Agent CLI is the required Cursor surface and Cursor IDE is conditional;
+both belong to the single `cursor` runtime identity. The canonical portable
+skill is `~/.agents/skills/agentera`.
+
+Runtime lifecycle work is explicit. Preview all active runtimes without making
+changes, then approve Agentera-owned operations separately:
 
 ```bash
-copilot plugin marketplace add jgabor/agentera
-copilot plugin install jgabor/agentera
+npx -y agentera@next upgrade --runtime all --dry-run
+npx -y agentera@next upgrade --runtime all --yes
 ```
 
-</details>
+You can replace `all` with `opencode`, `codex`, `cursor`, or `copilot`.
+Preview creates no files, directories, locks, caches, telemetry, or state
+changes. Apply writes only declared Agentera-owned resources. Native package
+installation, authentication, enablement, and trust remain user-owned and are
+reported as `action_required`.
 
-<details>
-<summary><strong>Codex CLI</strong></summary>
+Secure automatic lifecycle apply currently requires Linux `/proc/self/fd`.
+Other platforms still receive the complete preview and explicit manual actions,
+but filesystem operations remain `action_required`.
+
+Claude Code is retired from active support. Its only lifecycle command is a
+separate, explicit cleanup of the exact Agentera-owned legacy skill link:
 
 ```bash
-codex plugin marketplace add jgabor/agentera
-codex plugin add agentera@agentera
+npx -y agentera@next upgrade --legacy-cleanup claude --dry-run
+npx -y agentera@next upgrade --legacy-cleanup claude --yes
 ```
 
-Open `/plugins`, enable Agentera, then run `$agentera`.
+Historical Claude transcripts are excluded by default. A local import requires
+explicit `--import-source claude` consent, records historical provenance, and
+does not create an active runtime identity.
 
-</details>
+## Project state
 
-## What you see
+Agentera resolves artifact paths through the CLI and `.agentera/docs.yaml`.
+Normal reads use `agentera state`; supported writes use the typed writer.
 
-Run `/agentera` (`$agentera` in Codex) and get a project briefing that reads
-your repo instead of guessing from chat history.
-
-```text
-┌─┐┌─┐┌─┐┌┐┌┌┬┐┌─┐┬─┐┌─┐
-├─┤│ ┬├┤ │││ │ ├┤ ├┬┘├─┤
-┴ ┴└─┘└─┘┘└┘ ┴ └─┘┴└─┴ ┴
-
-─── status ─────────────────────────────
-
-  ⛶ health    ⮉ B+ (testing: C)
-  ⇶ issues    0 critical · 2 degraded · 5 annoying
-  ≡ plan      [██████▓░░░] 6/10 tasks
-  ♾ profile   loaded
-
-  Shipped auth middleware and rate limiting last cycle.
-  Health trending up, test coverage still lagging.
-
-─── attention ──────────────────────────
-
-  ⇉ test coverage below 60%, degrading since cycle 8
-  ⇉ task 7 blocked on API schema decision
-
-─── next ───────────────────────────────
-
-  suggested → ❈ discuss (resolve API schema to unblock task 7)
+```bash
+agentera state todo
+agentera state plan
+agentera state query --list-artifacts
+agentera state progress explain --verb append --format json
 ```
 
-The briefing pulls from many artifacts (plan, progress, decisions, health,
-issues) but only the slices that matter right now. You get breadth without
-paying for a full dump of project state on every turn.
+The standard project state is:
 
-## What you get
-
-Every project Agentera works on gets a structured memory under `.agentera/`:
-
-- **Project direction remembered** → `.agentera/vision.yaml`
-- **Plan tracked with acceptance criteria** → `.agentera/plan.yaml`
-- **Shipped work with verification evidence** → `.agentera/progress.yaml`
-- **Durable reasoning trail for why decisions were made** → `.agentera/decisions.yaml`
-- **Architecture, test, dependency, and artifact health grades** → `.agentera/health.yaml`
-- **Documentation inventory and drift** → `.agentera/docs.yaml`
-
-Human-facing artifacts at the project root when useful: `TODO.md`, `CHANGELOG.md`, `DESIGN.md`.
-
-The CLI is the colleague's brain. It remembers what was decided, what was
-planned, what shipped, and what's broken — so you don't have to scroll chat
-history to recover context. Open a project, ask for a briefing, and pick up
-where you left off.
+- `.agentera/vision.yaml` — product direction
+- `.agentera/plan.yaml` — active and archived plans
+- `.agentera/progress.yaml` — shipped work and verification
+- `.agentera/decisions.yaml` — durable reasoning
+- `.agentera/health.yaml` — architecture and project health
+- `.agentera/docs.yaml` — documentation inventory and path/version mappings
+- `TODO.md`, `CHANGELOG.md`, and `DESIGN.md` — human-facing project artifacts
 
 ## Capabilities
 
-Twelve built-in workflows — one colleague, many things it can do.
+| | Capability | Use it when you need... |
+| --- | --- | --- |
+| ⌂ | status | Project briefing and next best action |
+| ⛥ | vision | Product direction |
+| ❈ | discuss | Structured deliberation |
+| ⬚ | research | External pattern analysis |
+| ≡ | plan | Scoped plan with acceptance criteria |
+| ⧉ | build | One verified development cycle |
+| ⎘ | optimize | Metric-driven optimization |
+| ▤ | document | Documentation aligned with code |
+| ◰ | design | Visual identity and design tokens |
+| ⛶ | audit | Architecture and project health audits |
+| ♾ | profile | Reusable decision profile |
+| ⎈ | orchestrate | Autonomous plan execution with evaluation |
 
-|     | Capability  | Use it when you need...                   |
-| --- | ----------- | ----------------------------------------- |
-| ⌂   | status      | Project briefing and next best action     |
-| ⛥   | vision      | Product direction                         |
-| ❈   | discuss     | Structured deliberation                   |
-| ⬚   | research    | External pattern analysis                 |
-| ≡   | plan        | Scoped plan with acceptance criteria      |
-| ⧉   | build       | One verified development cycle            |
-| ⎘   | optimize    | Metric-driven optimization                |
-| ▤   | document    | Documentation aligned with code           |
-| ◰   | design      | Visual identity and design tokens         |
-| ⛶   | audit       | Architecture and project health audits    |
-| ♾   | profile     | Reusable decision profile                 |
-| ⎈   | orchestrate | Autonomous plan execution with evaluation |
+## Monorepo
 
-Say what you want — "help me decide" routes to discuss; Agentera guides from there.
+| Package | Role |
+| --- | --- |
+| `packages/cli` (`agentera`) | Primary TypeScript CLI and bundled runtime data |
+| `packages/web` (`@agentera/web`) | Marketing and Starlight documentation site |
+| `packages/mobile` (`@agentera/mobile`) | Docs-only mobile product stub |
 
-## Development
+Contributor commands and repository rules live in [AGENTS.md](./AGENTS.md).
+Migration and recovery details live in [UPGRADE.md](./UPGRADE.md).
 
-Requires Node.js 22+ with pnpm 10.30.3. Contributor rules, build commands, and test layout live in [`AGENTS.md`](./AGENTS.md). CLI channels and upgrade paths: [`packages/cli/README.md`](./packages/cli/README.md).
+```bash
+pnpm -C packages/cli test
+pnpm -C packages/cli run typecheck
+pnpm -C packages/cli build
+vp run web:check
+```
 
----
-
-**License:** [Apache-2.0](./LICENSE) · **Author:** Jonathan Gabor [jgabor.se](https://jgabor.se)
+License: [Apache-2.0](./LICENSE) · Author: Jonathan Gabor

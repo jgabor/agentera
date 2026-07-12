@@ -113,15 +113,24 @@ describe("v3 packaging (T1)", () => {
         true,
       );
       for (const runtimeSource of [
+        "bundle/plugin.json",
+        "bundle/.github/plugin/plugin.json",
+        "bundle/.github/hooks/preToolUse.json",
+        "bundle/.github/hooks/sessionStart.json",
+        "bundle/.codex-plugin/plugin.json",
+        "bundle/agents/openai.yaml",
         "bundle/.opencode/plugins/agentera.js",
         "bundle/.opencode/agents/agentera.md",
+        "bundle/.opencode/package.json",
         "bundle/hooks/codex-hooks.json",
+        "bundle/hooks/codex-plugin-hooks.json",
         "bundle/.cursor-plugin/plugin.json",
         "bundle/.cursor/hooks.json",
         "bundle/.cursor/agents/agentera.md",
       ]) {
         expect(filePaths.has(runtimeSource), `${runtimeSource} must ship for lifecycle repair`).toBe(true);
       }
+      expect([...filePaths].some((p) => p.startsWith("bundle/.claude-plugin/"))).toBe(false);
     });
 
     it("PASS: production source and packed files contain no test environment token", () => {
@@ -204,10 +213,22 @@ describe("v3 packaging (T1)", () => {
       fs.mkdirSync(path.join(fakeRoot, "references"), { recursive: true });
       fs.writeFileSync(path.join(fakeRoot, "references", "fixture.md"), "# Fixture\n");
       fs.writeFileSync(path.join(fakeRoot, "registry.json"), JSON.stringify({ skills: [] }));
+      for (const sourceFile of ["README.md", "UPGRADE.md", "CHANGELOG.md", "DESIGN.md", "LICENSE"]) {
+        fs.writeFileSync(path.join(fakeRoot, sourceFile), "fixture\n");
+      }
       for (const runtimeSource of [
+        "plugin.json",
+        ".github/plugin/plugin.json",
+        ".github/hooks/preToolUse.json",
+        ".github/hooks/sessionStart.json",
+        ".codex-plugin/plugin.json",
+        "agents/openai.yaml",
         ".opencode/plugins/agentera.js",
         ".opencode/agents/agentera.md",
+        ".opencode/package.json",
+        ".opencode/commands/agentera.md",
         "hooks/codex-hooks.json",
+        "hooks/codex-plugin-hooks.json",
         ".cursor-plugin/plugin.json",
         ".cursor/hooks.json",
         ".cursor/agents/agentera.md",

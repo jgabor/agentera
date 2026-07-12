@@ -137,11 +137,11 @@ function probeJsonlTimestamps(storePath: string): { earliest: string | null; lat
   return { earliest, latest };
 }
 
-function probeSqliteTimestamps(storePath: string, runtime: string): { earliest: string | null; latest: string | null } {
+function probeSqliteTimestamps(storePath: string, sourceProduct: string): { earliest: string | null; latest: string | null } {
   const dbPaths =
-    runtime === "opencode"
+    sourceProduct === "opencode"
       ? [storePath]
-      : runtime === "github-copilot"
+      : sourceProduct === "github-copilot"
         ? isFilePath(storePath)
           ? [storePath]
           : rglob(storePath, "session-store.db")
@@ -159,7 +159,7 @@ function probeSqliteTimestamps(storePath: string, runtime: string): { earliest: 
       continue;
     }
     try {
-      if (runtime === "opencode") {
+      if (sourceProduct === "opencode") {
         const cols = tableColumns(conn, "session");
         const timeCol = firstColumn(cols, ["time_created", "time", "timestamp", "created_at", "createdAt"]);
         if (timeCol) {
@@ -173,7 +173,7 @@ function probeSqliteTimestamps(storePath: string, runtime: string): { earliest: 
             latest = trackLatest(latest, maxTs);
           }
         }
-      } else if (runtime === "github-copilot") {
+      } else if (sourceProduct === "github-copilot") {
         const sessionCols = tableColumns(conn, "sessions");
         const turnCols = tableColumns(conn, "turns");
         const sessionTime = firstColumn(sessionCols, ["time", "timestamp", "created_at", "createdAt"]);
@@ -190,7 +190,7 @@ function probeSqliteTimestamps(storePath: string, runtime: string): { earliest: 
             latest = trackLatest(latest, maxTs);
           }
         }
-      } else if (runtime === "cursor-agent") {
+      } else if (sourceProduct === "cursor-agent") {
         const rows = conn.prepare("SELECT data FROM blobs ORDER BY id").all();
         for (const row of rows) {
           const payload = row.data;

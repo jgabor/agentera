@@ -17,9 +17,12 @@ records:
         - id: registry
           path: registry.json
           selector: skills[0].version
-        - id: python-project
-          path: pyproject.toml
-          selector: project.version
+        - id: cli-package
+          path: packages/cli/package.json
+          selector: version
+        - id: cli-suite-marker
+          path: packages/cli/package.json
+          selector: agentera.suiteVersion
         - id: copilot-root
           path: plugin.json
           selector: version
@@ -29,9 +32,15 @@ records:
         - id: codex-plugin
           path: .codex-plugin/plugin.json
           selector: version
+        - id: cursor-plugin
+          path: .cursor-plugin/plugin.json
+          selector: version
         - id: opencode-plugin-marker
           path: .opencode/plugins/agentera.js
           selector: AGENTERA_VERSION
+        - id: skill-frontmatter
+          path: skills/agentera/SKILL.md
+          selector: frontmatter.version
       excluded_runtime_manifests:
         - .opencode/package.json
     runtime_package_manifests:
@@ -65,9 +74,6 @@ records:
         - id: skills
           path: skills
           kind: dir
-        - id: scripts
-          path: scripts
-          kind: dir
         - id: hooks
           path: hooks
           kind: dir
@@ -88,26 +94,20 @@ records:
       directories:
         - id: skills
           path: skills
-        - id: scripts
-          path: scripts
-        - id: hooks
-          path: hooks
         - id: references
           path: references
         - id: agents
           path: agents
-        - id: agents-plugins
-          path: .agents/plugins
+        - id: hooks
+          path: hooks
+        - id: github-hooks
+          path: .github/hooks
         - id: codex-plugin
           path: .codex-plugin
         - id: cursor-plugin
           path: .cursor-plugin
         - id: cursor-agents
           path: .cursor/agents
-        - id: github-hooks
-          path: .github/hooks
-        - id: github-plugin
-          path: .github/plugin
         - id: opencode-commands
           path: .opencode/commands
         - id: opencode-agents
@@ -125,14 +125,12 @@ records:
           path: DESIGN.md
         - id: license
           path: LICENSE
-        - id: python-project
-          path: pyproject.toml
-        - id: python-lock
-          path: uv.lock
         - id: registry
           path: registry.json
         - id: copilot-root-manifest
           path: plugin.json
+        - id: copilot-repository-manifest
+          path: .github/plugin/plugin.json
         - id: opencode-package-manifest
           path: .opencode/package.json
         - id: cursor-hooks
@@ -195,8 +193,7 @@ records:
     docs_targets:
       version_files_source: .agentera/docs.yaml conventions.version_files
       version_files:
-        - pyproject.toml
-        - uv.lock
+        - packages/cli/package.json
         - plugin.json
         - .github/plugin/plugin.json
         - .codex-plugin/plugin.json

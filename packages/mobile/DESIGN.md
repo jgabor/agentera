@@ -51,20 +51,20 @@ Design mobile-first; enhance at larger breakpoints, never degrade below 360px.
 
 Reuse monorepo glyph assignments for capability pickers and status chips:
 
-| Glyph | User-facing | Internal    |
+| Glyph | User-facing | CLI ID      |
 | :---: | ----------- | ----------- |
-|   ⌂   | status      | hej         |
-|   ⛥   | vision      | visionera   |
-|   ❈   | discuss     | resonera    |
-|   ⬚   | research    | inspirera   |
-|   ≡   | plan        | planera     |
-|   ⧉   | build       | realisera   |
-|   ⎘   | optimize    | optimera    |
-|   ▤   | document    | dokumentera |
-|   ◰   | design      | visualisera |
-|   ⛶   | audit       | inspektera  |
-|   ♾   | profile     | profilera   |
-|   ⎈   | orchestrate | orkestrera  |
+|   ⌂   | status      | status      |
+|   ⛥   | vision      | vision      |
+|   ❈   | discuss     | discuss     |
+|   ⬚   | research    | research    |
+|   ≡   | plan        | plan        |
+|   ⧉   | build       | build       |
+|   ⎘   | optimize    | optimize    |
+|   ▤   | document    | document    |
+|   ◰   | design      | design      |
+|   ⛶   | audit       | audit       |
+|   ♾   | profile     | profile     |
+|   ⎈   | orchestrate | orchestrate |
 
 Glyphs appear in capability headers and smart-bar chips; not in every message bubble.
 

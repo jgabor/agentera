@@ -1,120 +1,94 @@
 ---
-title: Install
-description: Install Agentera on OpenCode, Codex CLI, Cursor, or Copilot CLI.
+title: Install and lifecycle
+description: Install Agentera and inspect lifecycle state on OpenCode, Codex, Cursor, or GitHub Copilot.
 ---
 
-Pick your runtime and follow the install steps below.
+Agentera 3.0 uses one canonical portable skill and one lifecycle authority for
+four active runtime identities: OpenCode, Codex, Cursor, and GitHub Copilot.
 
-## OpenCode
+Before the stable npm dist-tag promotion, use `agentera@next` for CLI commands.
 
-Install the skill and the plugin (both steps):
+## Canonical skill
+
+The canonical skill path is:
+
+```text
+~/.agents/skills/agentera
+```
+
+Preview and apply Agentera-owned lifecycle resources with the CLI:
+
+```bash
+npx -y agentera@next upgrade --runtime all --dry-run
+npx -y agentera@next upgrade --runtime all --yes
+```
+
+Replace `all` with `opencode`, `codex`, `cursor`, or `copilot` to scope the
+operation. Preview has no side effects. Apply never performs native package
+installation, authentication, enablement, or trust approval.
+
+Secure automatic apply is currently Linux-only. Other platforms receive the
+same diagnosis and explicit `action_required` steps.
+
+## Runtime package entry points
+
+### OpenCode
 
 ```bash
 npx skills add jgabor/agentera -g -a opencode --skill agentera -y
-mkdir -p ~/.config/opencode/plugins
-curl -fsSL https://raw.githubusercontent.com/jgabor/agentera/main/.opencode/plugins/agentera.js \
-  -o ~/.config/opencode/plugins/agentera.js
 ```
 
-OpenCode also routes a bare message `hej` to the same dashboard.
+The npm bundle also ships the OpenCode plugin and Agentera agent source used by
+lifecycle repair.
 
-## Cursor
+### Codex
 
-**Option A — local plugin (no Marketplace listing required)**
+Install the Agentera plugin from its marketplace entry, enable it in Codex, and
+invoke `$agentera`. The package ships the Codex plugin manifest, plugin hooks,
+copied-hook fallback, shared skill, and capability agent descriptors. Plugin
+enablement and hook trust remain user-owned.
 
-Install Agentera as a Cursor plugin from a clone or release checkout. The plugin
-root must contain `.cursor-plugin/plugin.json` (this repository already does).
+### Cursor
 
-```bash
-git clone https://github.com/jgabor/agentera.git ~/.cursor/plugins/local/agentera
-# or: ln -s /path/to/agentera ~/.cursor/plugins/local/agentera
-```
+Cursor Agent CLI and Cursor IDE are surfaces of one `cursor` identity. CLI is
+required; IDE is conditional. Lifecycle repair can install the canonical skill
+and declared Agentera-owned IDE plugin, hook, and agent sources without making
+the optional IDE a CLI support-floor requirement.
 
-Restart Cursor or run **Developer: Reload Window**. You can also load the folder
-through Cursor's local plugin UI. Agentera is not published to the Cursor
-Marketplace yet; use this manual path instead.
-
-The plugin loads the bundled skill, managed capability agents, and plugin hooks.
-`sessionStart` exports `AGENTERA_HOME` from the plugin checkout when your open
-project is not an Agentera install root.
-
-**Option B — portable skill plus project upgrade**
-
-Install the bundled skill:
-
-```bash
-npx skills add jgabor/agentera -g -a cursor --skill agentera -y
-```
-
-Install managed hooks, capability agents, and plugin metadata in your project:
-
-```bash
-uvx --from git+https://github.com/jgabor/agentera agentera upgrade --project "$PWD" --runtime cursor --yes
-```
-
-From a clone, use `uv run scripts/agentera upgrade --runtime cursor --yes` instead.
-
-Use **Option A** for a user-global plugin install. Use **Option B** when you want
-project-committed `.cursor/` surfaces (team sharing, CI doctor checks, or working
-without the plugin). You can combine both: plugin for global availability, upgrade
-for per-project `.cursor/hooks.json` and `.cursor/agents/` copies.
-
-The Agentera repository dogfoods committed `.cursor/` surfaces; other projects
-receive them through upgrade. Cloud agents are unsupported in v1. Bare message
-`hej` stays metadata-only like Copilot and Codex.
-
-Adapter details:
-[`references/adapters/cursor.md`](https://github.com/jgabor/agentera/blob/main/references/adapters/cursor.md).
-
-## Copilot CLI
+### GitHub Copilot
 
 ```bash
 copilot plugin marketplace add jgabor/agentera
 copilot plugin install jgabor/agentera
 ```
 
-## Codex CLI
+The package ships the Copilot plugin manifests and lifecycle hook files.
+
+## Diagnose
 
 ```bash
-codex plugin marketplace add jgabor/agentera
-codex plugin add agentera@agentera
+npx -y agentera@next prime --format json
+npx -y agentera@next doctor --format json
 ```
 
-Open `/plugins`, enable Agentera, then run `$agentera`.
+`prime` returns a bounded four-runtime summary. `doctor` reports detailed
+evidence, support-floor gaps, ownership state, and exact host-native actions.
 
-When the plugin is installed and enabled, Agentera uses plugin-provided hooks
-as the primary hook path. Copied `~/.codex/hooks.json` hooks remain only as a
-compatibility fallback for non-plugin installs.
+## Retired Claude data
 
-## Verify install
+Claude Code is not an active runtime. Its exact Agentera-owned legacy skill link
+can be previewed separately with:
 
 ```bash
-uvx --from git+https://github.com/jgabor/agentera agentera doctor
+npx -y agentera@next upgrade --legacy-cleanup claude --dry-run
 ```
 
-Doctor checks the managed app, Agentera app files status, and runtime wiring.
-For Cursor-specific checks:
+Historical transcript import is also explicit and excluded from default
+analytics:
 
 ```bash
-uvx --from git+https://github.com/jgabor/agentera agentera doctor --runtime cursor
+npx -y agentera@next report refresh --import-source claude
 ```
 
-From a clone: `uv run scripts/agentera doctor`.
-
-## Uninstall
-
-For Codex, disable Agentera in `/plugins` before removing the marketplace entry.
-
-```bash
-# OpenCode / Cursor
-npx skills remove jgabor/agentera -g -y
-
-# Copilot CLI
-copilot plugin uninstall jgabor/agentera
-
-# Codex CLI
-codex plugin marketplace remove jgabor/agentera
-```
-
-Managed `.cursor/` project surfaces installed by upgrade remain in the project
-until you remove or revert them manually.
+See the repository [upgrade guide](https://github.com/jgabor/agentera/blob/main/UPGRADE.md)
+for ownership, recovery, and platform details.

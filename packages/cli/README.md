@@ -1,43 +1,64 @@
-# Agentera CLI (npm)
+# Agentera CLI
 
-Native TypeScript CLI for Agentera 3.x, published as [`agentera`](https://www.npmjs.com/package/agentera).
+Native TypeScript CLI for Agentera 3.0, published as
+[`agentera`](https://www.npmjs.com/package/agentera). The npm package is
+self-contained: compiled commands live in `dist/` and runtime data, manifests,
+hooks, agents, skills, contracts, and documentation live in `bundle/`.
 
-| Dist tag | Channel | Use for |
-| --- | --- | --- |
-| `@latest` | stable (2.x) | Supported production line |
-| `@next` | development (3.x pre-releases) | Early testing of the self-contained npm CLI |
-
-## Quick start
+Until the stable dist-tag is promoted, run 3.0 through `@next`:
 
 ```bash
 npx -y agentera@next prime --format json
-npx -y agentera@next upgrade --dry-run --channel development
+npx -y agentera@next doctor --format json
 ```
 
-Run those from a project root. `prime` reports `project_integration.recommendation`
-(`stay` or `upgrade`) and suggested commands for the current repo.
+`prime` returns a bounded project and four-runtime lifecycle summary. `doctor`
+returns detailed read-only evidence and exact user actions.
 
-Full preview instructions, channels, and migration paths: [`UPGRADE.md`](../../UPGRADE.md).
+## Runtime lifecycle
 
-## Editor runtime installs
+The four active runtimes are OpenCode, Codex, Cursor, and GitHub Copilot; their
+IDs are exactly `opencode`, `codex`, `cursor`, and `copilot`.
+Cursor Agent CLI and Cursor IDE are surfaces of one `cursor` identity; CLI is
+required and IDE is conditional. The canonical shared skill path is
+`~/.agents/skills/agentera`.
 
-Agentera ships a skill bundle for four supported runtime identities: OpenCode, Codex CLI, Cursor, and Copilot CLI. Install steps and parity details live in the [repository README — Internals](../../README.md#internals) and [`references/adapters/runtime-feature-parity.md`](../../references/adapters/runtime-feature-parity.md).
+```bash
+npx -y agentera@next upgrade --runtime all --dry-run
+npx -y agentera@next upgrade --runtime all --yes
+```
 
-## Package layout
+Use one active ID instead of `all` to scope the operation. `--dry-run` has zero
+filesystem or state side effects. `--yes` approves only declared Agentera-owned
+operations; native install/update, authentication, enablement, and trust remain
+user-owned. Secure automatic apply is Linux-only and reports
+`action_required` elsewhere.
 
-- `dist/` — compiled CLI (`agentera` bin)
-- `bundle/` — shipped app data (`skills/`, `references/`, `registry.json`)
+Retired Claude cleanup is intentionally separate:
 
-Requires Node.js 22+.
+```bash
+npx -y agentera@next upgrade --legacy-cleanup claude --dry-run
+```
+
+It can remove only the exact Agentera-owned legacy link. Historical transcript
+import is also explicit (`agentera report refresh --import-source claude`) and
+is excluded from default active-runtime analytics.
+
+See [UPGRADE.md](../../UPGRADE.md) for ownership, recovery, and migration
+details and [runtime feature parity](../../references/adapters/runtime-feature-parity.md)
+for host-specific behavior.
 
 ## Contributors
 
-Build and test from the monorepo:
+Requires Node.js 22+ and pnpm 10.30.3.
 
 ```bash
-pnpm -C packages/cli build
 pnpm -C packages/cli test
-pnpm -C packages/cli run publish:dev   # publishes with @next tag
+pnpm -C packages/cli run typecheck
+pnpm -C packages/cli build
+pnpm -C packages/cli run lint
 ```
 
-See [`AGENTS.md`](../../AGENTS.md) for capability validation and commit conventions.
+Use `npm pack --dry-run --json --ignore-scripts` after `build` and
+`bundle:data` to inspect the exact publication surface. Do not publish from a
+normal development or capability cycle.

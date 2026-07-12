@@ -3,7 +3,7 @@ import path from "node:path";
 
 import type { JsonObject } from "../core/jsonValue.js";
 import { loadYamlMapping } from "../core/yaml.js";
-import { pathExists, resolvePath } from "../core/paths.js";
+import { resolvePath } from "../core/paths.js";
 import { resolveSourceRoot } from "../core/sourceRoot.js";
 
 /** PackageManifest registry loader and contract validator. Port of scripts/package_registry.py. */
@@ -134,6 +134,33 @@ interface PackageRegistryRecord extends JsonObject {
   } & JsonObject;
 }
 
+function selectorParts(selector: string): Array<string | number> {
+  const parts: Array<string | number> = [];
+  for (const match of selector.matchAll(/([^[.\]]+)|\[(\d+)\]/g)) {
+    parts.push(match[2] === undefined ? match[1] : Number(match[2]));
+  }
+  return parts;
+}
+
+function selectedVersion(root: string, surface: PackageRegistrySurface): string | null {
+  const source = fs.readFileSync(path.join(root, surface.path), "utf8");
+  if (surface.selector === "AGENTERA_VERSION") {
+    return /const\s+AGENTERA_VERSION\s*=\s*["']([^"']+)["']/.exec(source)?.[1] ?? null;
+  }
+  if (surface.selector === "frontmatter.version") {
+    return /^version:\s*["']?([^"'\s]+)["']?\s*$/m.exec(source)?.[1] ?? null;
+  }
+  let value: unknown = JSON.parse(source);
+  for (const part of selectorParts(surface.selector)) {
+    if (typeof part === "number") {
+      value = Array.isArray(value) ? value[part] : undefined;
+    } else {
+      value = isMapping(value) ? value[part] : undefined;
+    }
+  }
+  return typeof value === "string" ? value : null;
+}
+
 export class PackageRegistry {
   records: PackageRegistryRecord[];
   root: string;
@@ -168,7 +195,7 @@ export class PackageRegistry {
     let data: any; // cast: JSON.parse IO boundary
     try {
       data = JSON.parse(fs.readFileSync(path.join(this.root, authority.persisted_authority), "utf8"));
-    } catch (exc) {
+    } catch {
       throw new RegistryError(`registry.json missing skills[0].version`);
     }
     const version = data?.skills?.[0]?.version;
@@ -197,6 +224,14 @@ export class PackageRegistry {
 
   versionSurfaceIds(packageId = "agentera"): string[] {
     return this.get(packageId).version_surfaces.surfaces.map((s) => s.id);
+  }
+
+  versionSurfaceValues(packageId = "agentera"): Record<string, string | null> {
+    const values: Record<string, string | null> = {};
+    for (const surface of this.get(packageId).version_surfaces.surfaces) {
+      values[surface.id] = selectedVersion(this.root, surface);
+    }
+    return values;
   }
 
   runtimeManifestIds(packageId = "agentera"): string[] {

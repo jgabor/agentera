@@ -1,196 +1,121 @@
-# Runtime feature parity reference
+# Runtime feature parity
 
-Tracks release-relevant runtime behavior for the portable agentera suite.
-
+Release-relevant behavior is governed by
+`runtime-lifecycle-authority.yaml` and `runtime-lifecycle-adapters.yaml`.
 Active runtime IDs are exactly `opencode`, `codex`, `cursor`, and `copilot`.
-`cursor-agent` is an inactive compatibility alias for the Cursor runtime, not a
-fifth identity. Claude appears only as retired migration or consent-gated
-historical-import evidence.
 
-This reference distinguishes implemented behavior from host support. A runtime
-may expose an event while agentera still lacks a shipped adapter path for it.
+`cursor-agent` is an inactive compatibility alias and Cursor CLI source-product
+name beneath the single `cursor` identity. It is never an active runtime ID.
+Claude Code is a retired migration and consent-gated historical-import source,
+not a supported runtime.
 
-## Summary
+## Lifecycle identity and support floor
 
-| Runtime | Skill loading | Session preload | Artifact validation | Session bookmark |
-|---------|---------------|-----------------|---------------------|------------------|
-| OpenCode | Full: native `skill` tool loads `.opencode`, `.claude`, and `.agents` skill paths | Deferred for session start: `session.created` is observable, but no model-context injection path is verified. Active for compaction through bounded `experimental.session.compacting` context from `agentera hej --format json`. | Conditional hard gate for reconstructable `write` and `edit` candidates via `tool.execute.before`; `tool.execute.after` remains advisory | Active via generic `event` hook on `session.idle` |
-| Copilot CLI | Full for portable skills through plugin or skill-folder install paths | Active via `sessionStart` | Conditional hard gate via `preToolUse` when `toolArgs` include path plus candidate content or exact replacement evidence | Active via `sessionEnd` |
-| Codex CLI | Full for portable skills through plugin install, `.agents/skills`, and `$skill` invocation | Not wired by the shipped hook config | Advisory `apply_patch` path validation through shipped PreToolUse and PostToolUse hooks; final patch content is not reconstructed | Not wired by the shipped hook config |
-| Cursor IDE | Full for portable skills through local plugin (`~/.cursor/plugins/local/agentera` via `.cursor-plugin/plugin.json`), repo-native surfaces, and upgrade-installed `.cursor/` targets | Active via `sessionStart` env export plus optional `additional_context` digest; plugin-root fallback when `AGENTERA_HOME` env and project walk-up fail (`hooks/cursor_session_start.py`) | Conditional hard gate for reconstructable `Write` and `Edit` candidates via `preToolUse`; verified after live preToolUse Write smoke (2026-05-24) | Active via `sessionEnd` |
+| Runtime | Required surface | Conditional surface | Canonical skill |
+| --- | --- | --- | --- |
+| OpenCode | host | — | `~/.agents/skills/agentera` |
+| Codex | CLI | — | `~/.agents/skills/agentera` |
+| Cursor | Agent CLI | IDE | `~/.agents/skills/agentera` |
+| GitHub Copilot | CLI | — | `~/.agents/skills/agentera` |
 
-Cursor Agent CLI behavior is represented by the Cursor row through the inactive
-`cursor-agent` alias; it is not independently discoverable.
+The support floor requires the canonical skill, complete diagnosis, and
+resolved mandatory evidence. Unknown or missing mandatory evidence and denied
+trust block release. A known false installation or enablement state is
+diagnosed as degraded. An unobserved conditional Cursor IDE is
+`not_applicable` and does not block CLI support.
 
-## Profilera session corpus
+`prime` projects a bounded summary from this lifecycle snapshot. `doctor`
+projects detailed evidence and exact actions from the same snapshot.
 
-| Runtime | Local session mining | Evidence |
-| ------- | -------------------- | -------- |
-| Codex CLI | Yes: `~/.codex/sessions/**/*.jsonl` | `scripts/extract_corpus.py` |
-| OpenCode | Yes: `opencode.db` SQLite stores | `scripts/extract_corpus.py`, `references/adapters/opencode.md` |
-| Copilot CLI | Yes: `session-store.db` SQLite stores | `scripts/extract_corpus.py` |
-| Cursor IDE | Yes: `~/.cursor/projects/*/agent-transcripts/*/*.jsonl` | `scripts/extract_corpus.py`, `references/adapters/cursor.md` |
+## Common adapter contract
 
-Cursor Agent CLI storage may provide a Cursor-source gap-fill when no IDE JSONL
-exists. Claude transcript parsing is available only through explicit
-`--import-source claude` consent; imported records carry historical provenance,
-are inactive, and are excluded from default analytics.
+Every active runtime reports the same eight categories:
 
-## Bare `hej` routing
+| Category | Meaning |
+| --- | --- |
+| skills | Canonical and additional skill discovery locations |
+| plugins | Agentera plugin package or host plugin state |
+| hooks | Session and tool lifecycle wiring |
+| agents | Runtime-native Agentera descriptors |
+| configuration | User or project configuration evidence |
+| enablement | Whether the host has enabled the integration |
+| trust | Observed trust state; never inferred or approved |
+| native actions | Exact user-owned host/package-manager steps |
 
-| Runtime | Bare text `hej` behavior | Evidence |
-|---------|--------------------------|----------|
-| OpenCode | Deterministic exact-match adapter route through `chat.message`; only a complete lowercase text message `hej` is rewritten to load `agentera` and run the `agentera hej` dashboard path, accepting OpenCode's CLI-added single trailing newline as a transport artifact. | `.opencode/plugins/agentera.js`, `scripts/smoke_opencode_bootstrap.mjs`, OpenCode `packages/plugin/src/index.ts` Hooks interface |
-| Copilot CLI | Metadata/context only; skills, prompts, hooks, and plugins expose Agentera but do not guarantee pre-model bare-prompt routing. | `plugin.json`, `.github/plugin/plugin.json`, `.github/hooks` |
-| Codex CLI | Metadata/context only; `$agentera` is explicit and the legacy `$hej` bridge is not implicitly invocable. | `.codex-plugin/plugin.json`, `agents/openai.yaml` |
-| Cursor IDE | Metadata/context only; `beforeSubmitPrompt` is supported by the host but Agentera v1 does not rewrite bare `hej`. | `.cursor-plugin/plugin.json`, `.cursor/agents/*.md` |
+Each runtime/surface/category claim declares capability, evidence, and
+remediation. Unsupported or unverified host behavior cannot satisfy a mandatory
+support floor.
 
-Cursor Agent CLI follows the Cursor row through the inactive compatibility alias.
+## Host behavior
 
-## Artifact validation
+| Runtime | Skill/package source | Hook and validation behavior | Agent behavior |
+| --- | --- | --- | --- |
+| OpenCode | Portable skill plus `.opencode/plugins/agentera.js` | Conditional hard gate for reconstructable write/edit candidates; sparse or unreconstructed patches remain advisory | Single Agentera descriptor in `.opencode/agents/agentera.md` |
+| Codex | `.codex-plugin/plugin.json`, shared skill, and marketplace entry | Plugin and copied-hook sources validate `apply_patch` paths before/after use; final patch content is not reconstructed | Capability TOML descriptors under `skills/agentera/agents/` |
+| Cursor | One identity spanning Agent CLI and optional IDE plugin | IDE hooks provide session context and conditional hard-gate validation for reconstructable Write/Edit candidates | One IDE Agentera descriptor; CLI uses the Cursor-owned binary surface |
+| GitHub Copilot | Root and repository plugin manifests | `sessionStart`, `sessionEnd`, `preToolUse`, and `postToolUse`; reconstructable candidates are denied before mutation | Host-managed dispatch; no Agentera-specific Copilot agent descriptor |
 
-| Runtime | Blocking surface | Implemented gate | Evidence-insufficient paths | Verification surface |
-|---------|------------------|------------------|-----------------------------|----------------------|
-| OpenCode | `tool.execute.before` can throw before mutation | Invalid reconstructable artifact `write` and `edit` candidates are blocked | Sparse payloads and `apply_patch` `patchText` without reconstructed full content are allowed | `.opencode/plugins/agentera.js`, `scripts/smoke_opencode_bootstrap.mjs` |
-| Copilot CLI | `preToolUse` returns `permissionDecision: deny` | Invalid reconstructable artifact candidates are denied | Malformed, sparse, or non-reconstructable `toolArgs` are allowed | `.github/hooks/preToolUse.json`, `hooks/validate_artifact.py`, `tests/test_validate_artifact.py` |
-| Codex CLI | `codex_hooks` can run before and after `apply_patch` | No content hard gate is claimed; the copied user hook config parses touched paths and validates existing files; optional plugin-bundled hooks require `[features].plugin_hooks = true` plus `/hooks` review | Add-file targets and final post-patch candidate content are not reconstructed by the adapter | `~/.codex/hooks.json` generated by upgrade, `.codex-plugin/plugin.json` `hooks`, `hooks/codex-plugin-hooks.json`, `hooks/validate_artifact.py`, live apply_patch hook firing smoke |
-| Cursor IDE | `preToolUse` returns `permission: deny` when wired | Invalid reconstructable artifact candidates are denied; live preToolUse Write smoke passed 2026-05-24 | Malformed, sparse, or non-reconstructable tool_input payloads are allowed | `.cursor/hooks.json`, `hooks/cursor_pre_tool_use.py`, `hooks/validate_artifact.py`, `.agentera/smoke-cursor-pretooluse-evidence.txt` |
+The validated hard-gate claims retain their exact scope:
 
-Docs may claim functional hard-gate parity only for closeable paths that are
-implemented and verified. Today that means OpenCode, Copilot, and Cursor IDE
-reconstructable artifact candidates. Codex remains an active advisory validation
-surface, but its shipped configuration does not block every invalid artifact
-candidate before mutation.
+- OpenCode: Conditional hard gate for reconstructable write and edit candidates. Sparse payloads and apply_patch patchText without reconstructed full content are allowed.
+- GitHub Copilot: Conditional hard gate via preToolUse. Malformed, sparse, or non-reconstructable toolArgs are allowed.
+- Cursor: Conditional hard gate for reconstructable Write and Edit candidates via preToolUse; verified after live preToolUse Write smoke (2026-05-24). Malformed, sparse, or non-reconstructable tool_input payloads are allowed.
 
-## Lifecycle notes
+Agentera never upgrades a runtime binary, runs a native marketplace/package
+manager, authenticates, enables a plugin, or approves trust. Those operations
+are emitted as `action_required`.
 
-| Runtime | Runtime reason for degraded or blocked capability |
-|---------|---------------------------------------------------|
-| OpenCode preload | The `event` hook observes `session.created`, but no supported adapter path injects text into model context. |
-| OpenCode compaction context | `experimental.session.compacting` appends bounded Agentera state from `agentera hej --format json`; the plugin does not read raw `.agentera` artifacts for compaction. |
-| OpenCode `apply_patch` hard gate | The adapter receives `patchText` without reconstructing full candidate content. It allows that path rather than guessing. |
-| Copilot sparse edits | Copilot `preToolUse` stdin may omit full content or unique old/new replacement evidence. The hook allows those payloads. |
-| Codex preload/bookmarks | `codex_hooks` supports lifecycle events, but Agentera ships only `apply_patch` PreToolUse/PostToolUse wiring for copied user hooks and optional plugin-bundled hooks. |
-| Codex artifact hard gate | The adapter parses patch headers for touched paths, but it does not reconstruct final candidate content for blocking validation. |
-| Codex plugin hook trust | Plugin-bundled hooks require `[features].plugin_hooks = true` and deliberate `/hooks` review; copied `~/.codex/hooks.json` remains the default reliable install path with generated `[hooks.state]` trust hashes. |
-| Cursor cloud agents | Cloud agents are unsupported in v1; repo hooks and managed agents target local IDE sessions only. |
-| Cursor CLI hook parity | `cursor-agent` print mode is eval-covered but hook/session env parity is degraded relative to IDE wiring. |
-| Cursor hard-gate release gate | Live preToolUse Write smoke passed 2026-05-24; release tagging and publication stay blocked pending broader release closeout. |
-
-## Subagent Dispatch
-
-| Runtime | Dispatch surface | Descriptor source | Tool Access | Verification surface |
-|---------|------------------|-------------------|-------------|----------------------|
-| OpenCode | Single `agentera` primary agent with `general` subagent dispatch | `.opencode/agents/agentera.md`, bootstrapped by `.opencode/plugins/agentera.js` | Per-agent `permission` frontmatter (broad: write+bash allow) | `scripts/smoke_opencode_bootstrap.mjs`, `agentera validate descriptors` |
-| Copilot CLI | User-driven host action such as `/fleet` when available | Host-managed; no Agentera descriptor files shipped for this phase | N/A (no descriptors) | RuntimeAdapter registry |
-| Codex CLI | Native agent descriptors under `~/.codex/agents` or project `.codex/agents` with bounded `[agents]` settings | `skills/agentera/agents/*.toml`, installed by `scripts/setup_codex.py` and `agentera upgrade` | Global sandbox policy (no per-agent) | `agentera validate descriptors`, `tests/test_setup_codex.py`, `tests/test_upgrade_cli.py` |
-| Cursor IDE | Single `agentera` agent with `general` subagent dispatch | `.cursor/agents/agentera.md`, via local plugin or `agentera upgrade --runtime cursor` | Global full access (no per-agent) | `references/adapters/cursor.md`, `scripts/validate_lifecycle_adapters.py`, `tests/test_upgrade_cli.py` |
-
-Cursor Agent CLI uses Cursor-owned workspace descriptors through the inactive
-alias and has no separate descriptor install.
-
-Agentera v2 does not write legacy `[agents.<name>]` Codex config blocks. Capability dispatch must use runtime-native subagent descriptors or host Task surfaces, not unsupported `agentera <capability>` CLI commands.
-
-## Copilot install notes
-
-Recommended marketplace install:
+## Lifecycle repair
 
 ```bash
-copilot plugin marketplace add jgabor/agentera
-copilot plugin install <skill>@agentera
+agentera upgrade --runtime all --dry-run
+agentera upgrade --runtime all --yes
 ```
 
-Umbrella install:
+Preview is side-effect free. Apply is limited to declared Agentera-owned
+resources with matching ownership-journal evidence. Secure automatic
+publication currently requires Linux `/proc/self/fd`; other platforms receive
+the same plan as explicit actions.
 
-```bash
-copilot plugin install jgabor/agentera
-```
+Outcomes are `applied`, `noop`, `failed`, `blocked_unowned`,
+`skipped_dependency`, and `action_required`. Independent operations continue
+after a local failure, and retries re-observe state so completed work becomes
+`noop`.
 
-The marketplace install path is verified working. Granular installs avoid
-umbrella discovery bug `github/copilot-cli#2390`.
+## Corpus sources
 
-Granular installs provide core `SKILL.md` behavior. App-home tools such as
-doctor, installer, validators, and shared setup helpers require the managed
-Agentera app or a local clone with the shared `scripts/` directory.
+| Runtime identity | Source product | Default analytics |
+| --- | --- | --- |
+| Codex | Codex session JSONL | included |
+| OpenCode | OpenCode SQLite store | included |
+| Cursor | Cursor IDE JSONL | included |
+| Cursor | Cursor Agent CLI SQLite source (`cursor-agent`) | included as Cursor gap-fill |
+| GitHub Copilot | Copilot session SQLite store | included |
+| none | Claude Code JSONL | excluded; requires `--import-source claude` |
 
-Deprecated fallback: `copilot plugin install OWNER/REPO`, Git URLs, and local
-paths still work, but Copilot warns they are deprecated.
+Claude imports use `historical_import` provenance and `active_runtime: false`.
+They never add Claude to runtime inventories, readiness, or default analytics.
 
-## Cursor install notes
+## Package release surface
 
-**Local plugin (no Marketplace listing required)**
+The npm bundle contains the shared skill and contract data plus every declared
+runtime source:
 
-```bash
-git clone https://github.com/jgabor/agentera.git ~/.cursor/plugins/local/agentera
-# or: ln -s /path/to/agentera ~/.cursor/plugins/local/agentera
-```
+- OpenCode package, plugin, command, and agent files;
+- Codex plugin manifest, plugin hooks, copied-hook fallback, and capability agents;
+- Cursor plugin manifest, IDE hooks, and agent descriptor;
+- GitHub Copilot root/repository manifests and lifecycle hook files.
 
-Restart Cursor or run **Developer: Reload Window**. The plugin root must contain
-`.cursor-plugin/plugin.json`. Agentera is not published to the Cursor Marketplace
-yet.
+`.claude-plugin/marketplace.json` is retired and must not be packaged.
 
-The plugin loads skills, managed capability agents, and hooks. When you open a
-project that is not an Agentera install root, `sessionStart` exports
-`AGENTERA_HOME` from the plugin checkout (including a plugin-root fallback when
-env and project walk-up do not resolve a managed root).
+## Validation boundary
 
-**Portable skill plus project upgrade**
+`agentera check validate lifecycle-adapters` validates:
 
-Install the bundled skill, then install managed project surfaces:
-
-```bash
-npx skills add jgabor/agentera -g -a cursor --skill agentera -y
-uv run scripts/agentera upgrade --runtime cursor --dry-run
-uv run scripts/agentera upgrade --runtime cursor --yes
-uv run scripts/agentera doctor --runtime cursor
-```
-
-Use the plugin path for a user-global install. Use upgrade when you need
-project-committed `.cursor/hooks.json` and `.cursor/agents/` copies. Both paths can
-be combined.
-
-Repo-native dogfood in this repository uses committed `.cursor/hooks.json` and
-`.cursor/agents/*.md`. Other projects install managed surfaces with the upgrade
-commands above.
-
-Cloud agents are unsupported in v1. Conditional hard-gate validation for IDE
-reconstructable Write and Edit candidates is verified after live preToolUse Write
-smoke (2026-05-24); release tagging and publication remain blocked until explicitly
-approved.
-
-Eval coverage for automation uses:
-
-```bash
-uv run scripts/eval_skills.py --runtime cursor-agent --dry-run
-```
-
-## Source of truth
-
-Runtime adapter facts are owned by the RuntimeAdapter registry at
-`references/adapters/runtime-adapter-registry.yaml` and loaded through
-`scripts/runtime_adapter_registry.py`. This reference may describe registry
-claims, but changes to runtime identity, lifecycle events, artifact-validation
-support, subagent dispatch, config targets, diagnostics, or documentation claims must be validated
-against the registry rather than duplicated here as an independent table.
-
-App-home classification is not runtime-specific. `scripts/install_root.py` is
-the shared Module for `AGENTERA_HOME`, the normal user data root, managed app,
-out-of-date app, unknown directories, and diagnostic semantics. Package metadata
-registry work stays outside both the RuntimeAdapter registry and this shared
-classification Module.
-
-| Surface | Path |
-|---------|------|
-| Shared artifact validator | `hooks/validate_artifact.py` |
-| OpenCode plugin | `.opencode/plugins/agentera.js` |
-| OpenCode agent descriptors | `.opencode/agents/*.md` |
-| Copilot pre-write hook | `.github/hooks/preToolUse.json` |
-| Codex copied user hook config | `~/.codex/hooks.json` generated from `hooks/codex-hooks.json` with a resolved validator command |
-| Codex plugin hook config | `hooks/codex-plugin-hooks.json` via `.codex-plugin/plugin.json` `hooks` |
-| Codex agent descriptors | `skills/agentera/agents/*.toml` |
-| Cursor hook registry | `.cursor/hooks.json` |
-| Cursor agent descriptors | `.cursor/agents/*.md` |
-| Cursor plugin manifest | `.cursor-plugin/plugin.json` |
-| RuntimeAdapter registry | `references/adapters/runtime-adapter-registry.yaml` |
-| RuntimeAdapter registry loader | `scripts/runtime_adapter_registry.py` |
-| Lifecycle metadata validator | `scripts/validate_lifecycle_adapters.py` |
+- lifecycle authority and exact four-runtime identity parity;
+- all eight categories and every declared runtime surface;
+- package-manifest coverage for all active runtimes;
+- npm-bundle coverage for every lifecycle source and runtime manifest;
+- 3.0.0 version mirrors;
+- runtime-specific hook and documentation claims;
+- absence of retired Claude package manifests.

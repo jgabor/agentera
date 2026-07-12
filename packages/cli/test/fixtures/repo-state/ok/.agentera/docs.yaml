@@ -5,8 +5,7 @@ conventions:
   auto_gen:
   - none
   version_files:
-  - pyproject.toml
-  - uv.lock
+  - packages/cli/package.json
   - plugin.json
   - .github/plugin/plugin.json
   - .codex-plugin/plugin.json

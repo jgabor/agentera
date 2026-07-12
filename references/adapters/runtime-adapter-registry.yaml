@@ -112,7 +112,7 @@ records:
         - OpenCode session preload observes session.created but has no verified context injection path.
   - identity:
       runtime_id: copilot
-      display_name: Copilot CLI
+      display_name: GitHub Copilot
       adapter_family: portable-plugin
       support_status: supported
     host_detection:
@@ -194,9 +194,9 @@ records:
         - Upgrade runtime configure is noop; shell rc paths in host_detection are doctor diagnostic probes only.
   - identity:
       runtime_id: codex
-      display_name: Codex CLI
+      display_name: Codex
       adapter_family: portable-plugin
-      support_status: degraded
+      support_status: supported
     host_detection:
       binary_names:
         - codex
@@ -281,11 +281,12 @@ records:
         - Codex supports hook events but shipped config wires only apply_patch validation.
   - identity:
       runtime_id: cursor
-      display_name: Cursor IDE
+      display_name: Cursor
       adapter_family: native-plugin
       support_status: supported
     host_detection:
       binary_names:
+        - cursor-agent
         - cursor
       host_config_locations:
         - AGENTERA_HOME

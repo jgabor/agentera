@@ -37,22 +37,13 @@
     "invocationHint": "Use $agentera for explicit invocation. If the complete user message is exactly `/agentera`, route it through $agentera and the status dashboard path; $hej is only a legacy explicit bridge.",
     "limitations": [
       "profile collects bounded Codex session corpus data when present and reports any absent source families in corpus metadata.",
-      "AGENTERA_HOME must be set in ~/.codex/config.toml under [shell_environment_policy].set as the app home so SKILL.md helper-script invocations resolve through $AGENTERA_HOME/app; see README install instructions."
+      "Agentera lifecycle upgrade can install the canonical shared skill and Agentera-owned hooks or agents. AGENTERA_HOME configuration, Codex plugin enablement, and trust remain user-owned."
     ]
   },
   "agentera": {
     "packageShape": "suite-bundle",
     "installRoot": "..",
-    "sharedPaths": [
-      "skills",
-      "scripts",
-      "hooks",
-      "registry.json",
-      "plugin.json",
-      "README.md",
-      "UPGRADE.md",
-      "pyproject.toml"
-    ],
+    "sharedPaths": ["skills", "hooks", "registry.json", "plugin.json", "README.md", "UPGRADE.md"],
     "singleSkillInstall": "Single-skill installs keep core SKILL.md workflow behavior; suite tools are bundle-only enhancements."
   },
   "lifecycleHooks": {

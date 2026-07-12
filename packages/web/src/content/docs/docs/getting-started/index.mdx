@@ -3,8 +3,8 @@ title: Getting Started
 description: Install Agentera and run your first project briefing.
 ---
 
-Agentera turns AI coding agents into an engineering team through shared project
-state, specialized capabilities, and behavioral verification gates.
+Agentera gives one coding agent shared project state, specialized capabilities,
+and behavioral verification gates.
 
 ## First-run flow
 
@@ -12,7 +12,9 @@ state, specialized capabilities, and behavioral verification gates.
 2. Open a git project (existing repo or new).
 3. Run `/agentera` (`$agentera` in Codex).
 
-Supported runtime identities: OpenCode, Codex CLI, Cursor, and Copilot CLI.
+Supported runtime identities: OpenCode, Codex, Cursor, and GitHub Copilot.
+Cursor Agent CLI is required and Cursor IDE is conditional beneath one Cursor
+identity. The canonical skill path is `~/.agents/skills/agentera`.
 See [install steps](/docs/getting-started/install/) for runtime-specific wiring.
 
 Your first briefing bootstraps `.agentera/` as capabilities run. The briefing
@@ -37,8 +39,10 @@ across projects while repo artifacts stay project-local.
 ## CLI without a clone
 
 ```bash
-uvx --from git+https://github.com/jgabor/agentera agentera hej --format json
-uvx --from git+https://github.com/jgabor/agentera agentera doctor --format json
+npx -y agentera@next prime --format json
+npx -y agentera@next doctor --format json
 ```
 
-Contributors with a git clone use `uv run scripts/agentera …` instead.
+`prime` is the bounded project/runtime summary. Use `doctor` for detailed
+read-only lifecycle evidence. Agentera 3.0 remains on `@next` until the stable
+dist-tag promotion.

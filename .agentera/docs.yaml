@@ -1,17 +1,15 @@
-last_audit: '2026-06-07 (mobile monorepo closeout — packages/mobile artifact index, D68 doc sync)'
+last_audit: '2026-07-12 (3.0.0 runtime lifecycle release-surface synchronization)'
 conventions:
   doc_root: .
   style: technical, concise, sections with tables, no badges
   auto_gen:
   - none
   version_files:
-  - pyproject.toml
-  - uv.lock
+  - packages/cli/package.json
   - plugin.json
   - .github/plugin/plugin.json
   - .codex-plugin/plugin.json
   - .cursor-plugin/plugin.json
-  - .claude-plugin/marketplace.json
   - .opencode/plugins/agentera.js
   - skills/agentera/SKILL.md
   - registry.json
@@ -70,7 +68,7 @@ mapping:
 index:
 - document: README
   path: README.md
-  last_updated: '2026-06-05'
+  last_updated: '2026-07-12'
   status: current
 - document: AGENTS
   path: AGENTS.md
@@ -78,11 +76,11 @@ index:
   status: current
 - document: Mobile package README
   path: packages/mobile/README.md
-  last_updated: '2026-06-05'
+  last_updated: '2026-07-12'
   status: current
 - document: Mobile design system
   path: packages/mobile/DESIGN.md
-  last_updated: '2026-06-05'
+  last_updated: '2026-07-12'
   status: current
 - document: Mobile package AGENTS
   path: packages/mobile/AGENTS.md
@@ -104,9 +102,21 @@ index:
   path: packages/web/README.md
   last_updated: '2026-06-05'
   status: current
+- document: Web documentation home
+  path: packages/web/src/content/docs/docs/index.mdx
+  last_updated: '2026-07-12'
+  status: current
+- document: Web getting started
+  path: packages/web/src/content/docs/docs/getting-started/index.mdx
+  last_updated: '2026-07-12'
+  status: current
+- document: Web install and lifecycle guide
+  path: packages/web/src/content/docs/docs/getting-started/install.mdx
+  last_updated: '2026-07-12'
+  status: current
 - document: CLI package README
   path: packages/cli/README.md
-  last_updated: '2026-06-05'
+  last_updated: '2026-07-12'
   status: current
 - document: Monorepo consolidation plan
   path: docs/consolidation/monorepo-plan.md
@@ -126,15 +136,11 @@ index:
   status: current
 - document: Upgrade guide
   path: UPGRADE.md
-  last_updated: '2026-05-17'
-  status: current
-- document: CLAUDE.md
-  path: CLAUDE.md
-  last_updated: '2026-05-05'
+  last_updated: '2026-07-12'
   status: current
 - document: Decisions
   path: .agentera/decisions.yaml
-  last_updated: '2026-05-08'
+  last_updated: '2026-07-12'
   status: current
 - document: Vision
   path: .agentera/vision.yaml
@@ -142,15 +148,15 @@ index:
   status: current
 - document: Progress
   path: .agentera/progress.yaml
-  last_updated: '2026-05-18'
+  last_updated: '2026-07-12'
   status: current
 - document: TODO
   path: TODO.md
-  last_updated: '2026-05-18'
+  last_updated: '2026-07-12'
   status: current
 - document: Changelog
   path: CHANGELOG.md
-  last_updated: '2026-05-18'
+  last_updated: '2026-07-12'
   status: current
 - document: Health
   path: .agentera/health.yaml
@@ -192,10 +198,6 @@ index:
   path: registry.json
   last_updated: '2026-05-16'
   status: current
-- document: Marketplace manifest
-  path: .claude-plugin/marketplace.json
-  last_updated: '2026-05-16'
-  status: current
 - document: Codex marketplace manifest
   path: .agents/plugins/marketplace.json
   last_updated: '2026-04-28'
@@ -222,7 +224,7 @@ index:
   status: current
 - document: Runtime parity reference
   path: references/adapters/runtime-feature-parity.md
-  last_updated: '2026-05-17'
+  last_updated: '2026-07-12'
   status: current
 - document: Agent-ready state CLI contract
   path: references/cli/agent-ready-state-contract.yaml
@@ -250,11 +252,11 @@ index:
   status: current
 - document: RuntimeAdapter characterization
   path: references/adapters/runtime-adapter-characterization.md
-  last_updated: '2026-05-06'
+  last_updated: '2026-07-12'
   status: current
 - document: Package surface characterization
   path: references/adapters/package-surface-characterization.md
-  last_updated: '2026-05-06'
+  last_updated: '2026-07-12'
   status: current
 - document: PackageManifest interface model
   path: references/adapters/package-manifest-interface-model.yaml

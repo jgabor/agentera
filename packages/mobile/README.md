@@ -69,22 +69,23 @@ One-tap shortcuts surfaced in the smart bar or sidebar when context makes them u
 
 ### Capabilities
 
-User-facing names appear in the app; internal names match the monorepo agent runtime.
+User-facing names and internal capability IDs use the same canonical English
+v3 vocabulary.
 
-| Glyph | User-facing | Internal    | What it does                                                                       |
+| Glyph | User-facing | CLI ID      | What it does                                                                       |
 | :---: | ----------- | ----------- | ---------------------------------------------------------------------------------- |
-|   ⌂   | status      | hej         | Briefs on project status, current plan, known gaps, and suggested next action      |
-|   ⛥   | vision      | visionera   | Helps you shape the project's vision and long-term goals                           |
-|   ❈   | discuss     | resonera    | Structured deliberation before consequential choices                               |
-|   ⬚   | research    | inspirera   | Assists with adapting concepts, patterns, or solutions                             |
-|   ≡   | plan        | planera     | Scoped planning with behavioral acceptance criteria                                |
-|   ⧉   | build       | realisera   | Executes a single task or step of a plan, and then holds                           |
-|   ⎘   | optimize    | optimera    | Helps you research and design a locked harness that optimizes a metric             |
-|   ▤   | document    | dokumentera | Keeps documentation aligned with the actual project                                |
-|   ◰   | design      | visualisera | Creates a design system that is durable and understood by agents                   |
-|   ⛶   | audit       | inspektera  | Architecture, test, dependency, and project health audits                          |
-|   ♾   | profile     | profilera   | Profiles your decision thought processes from previous conversations               |
-|   ⎈   | orchestrate | orkestrera  | Bounded plan coordination with supervised child work, evaluation, and retry checks |
+|   ⌂   | status      | status      | Briefs on project status, current plan, known gaps, and suggested next action      |
+|   ⛥   | vision      | vision      | Helps you shape the project's vision and long-term goals                           |
+|   ❈   | discuss     | discuss     | Structured deliberation before consequential choices                               |
+|   ⬚   | research    | research    | Assists with adapting concepts, patterns, or solutions                             |
+|   ≡   | plan        | plan        | Scoped planning with behavioral acceptance criteria                                |
+|   ⧉   | build       | build       | Executes a single task or step of a plan, and then holds                           |
+|   ⎘   | optimize    | optimize    | Helps you research and design a locked harness that optimizes a metric             |
+|   ▤   | document    | document    | Keeps documentation aligned with the actual project                                |
+|   ◰   | design      | design      | Creates a design system that is durable and understood by agents                   |
+|   ⛶   | audit       | audit       | Architecture, test, dependency, and project health audits                          |
+|   ♾   | profile     | profile     | Profiles your decision thought processes from previous conversations               |
+|   ⎈   | orchestrate | orchestrate | Bounded plan coordination with supervised child work, evaluation, and retry checks |
 
 You do not need to remember these names. Say what you want — "Help me decide" routes to `discuss` and Agentera guides you from there.
 

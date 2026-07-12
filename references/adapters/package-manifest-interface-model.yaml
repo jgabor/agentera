@@ -5,7 +5,7 @@ intent: >
   Define the package and release-surface access Interface before introducing an
   executable registry Module. This model records ownership boundaries and the
   validation contract for future PackageManifest records. The executable registry
-  at references/adapters/package-registry.yaml and its loader scripts/package_registry.py
+  at references/adapters/package-registry.yaml and its TypeScript PackageRegistry loader
   now implement this interface; this model remains the authoritative design contract.
 record:
   required_groups:
@@ -115,7 +115,7 @@ ownership:
       explicit future ADR changes persisted authority.
     future_authority_change_requires: explicit ADR
   install_root_delegated:
-    owner: scripts/install_root.py
+    owner: packages/cli/src/state/installRoot.ts
     forbidden_in_package_manifest:
       - AGENTERA_HOME precedence
       - default app home
@@ -124,7 +124,7 @@ ownership:
       - unmanaged classification
       - app-home diagnostics
   runtime_adapter_delegated:
-    owner: scripts/runtime_adapter_registry.py
+    owner: packages/cli/src/registries/runtimeAdapterRegistry.ts
     forbidden_in_package_manifest:
       - runtime discovery
       - lifecycle events
@@ -177,9 +177,15 @@ sample_manifest:
       - id: registry
         path: registry.json
         selector: skills[0].version
-      - id: python-project
-        path: pyproject.toml
-        selector: project.version
+      - id: cli-package
+        path: packages/cli/package.json
+        selector: version
+      - id: cli-suite-marker
+        path: packages/cli/package.json
+        selector: agentera.suiteVersion
+      - id: cli-package-lock
+        path: packages/cli/package-lock.json
+        selector: version
       - id: copilot-root
         path: plugin.json
         selector: version
@@ -189,9 +195,15 @@ sample_manifest:
       - id: codex-plugin
         path: .codex-plugin/plugin.json
         selector: version
+      - id: cursor-plugin
+        path: .cursor-plugin/plugin.json
+        selector: version
       - id: opencode-plugin-marker
         path: .opencode/plugins/agentera.js
         selector: AGENTERA_VERSION
+      - id: skill-frontmatter
+        path: skills/agentera/SKILL.md
+        selector: frontmatter.version
     excluded_runtime_manifests:
       - .opencode/package.json
   runtime_package_manifests:
@@ -215,21 +227,20 @@ sample_manifest:
       - runtime: opencode
         path: .opencode/package.json
         version_bearing: false
-        package_shape: suite-bundle
+        package_shape: npm-loadable-plugin
     shared_paths_policy: validate minimum shared paths separately from full bundle includes
   bundle_surfaces:
     directories:
       - skills
-      - scripts
-      - hooks
       - references
       - agents
-      - .agents/plugins
+      - hooks
+      - .github/hooks
       - .codex-plugin
       - .cursor-plugin
-      - .github/hooks
-      - .github/plugin
+      - .cursor/agents
       - .opencode/commands
+      - .opencode/agents
       - .opencode/plugins
     files:
       - README.md
@@ -237,11 +248,11 @@ sample_manifest:
       - CHANGELOG.md
       - DESIGN.md
       - LICENSE
-      - pyproject.toml
-      - uv.lock
       - registry.json
       - plugin.json
+      - .github/plugin/plugin.json
       - .opencode/package.json
+      - .cursor/hooks.json
     skip_parts:
       - __pycache__
       - .pytest_cache
@@ -298,17 +309,19 @@ sample_manifest:
   docs_targets:
     version_files_source: .agentera/docs.yaml conventions.version_files
     version_files:
-      - pyproject.toml
-      - uv.lock
+      - packages/cli/package.json
+      - packages/cli/package-lock.json
       - plugin.json
       - .github/plugin/plugin.json
       - .codex-plugin/plugin.json
       - .cursor-plugin/plugin.json
       - .opencode/plugins/agentera.js
+      - skills/agentera/SKILL.md
       - registry.json
     index_targets:
       - references/adapters/package-surface-characterization.md
       - references/adapters/package-manifest-interface-model.yaml
+      - references/adapters/package-registry.yaml
     excluded_version_files:
       - .opencode/package.json
   release_policy:

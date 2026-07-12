@@ -38,13 +38,17 @@ describe("package registry", () => {
     expect(registry.packageIds.length).toBe(new Set(registry.packageIds).size);
     expect(registry.versionSurfaceIds()).toEqual([
       "registry",
-      "python-project",
+      "cli-package",
+      "cli-suite-marker",
       "copilot-root",
       "copilot-repository",
       "codex-plugin",
+      "cursor-plugin",
       "opencode-plugin-marker",
+      "skill-frontmatter",
     ]);
     expect(registry.versionSurfaceIds().length).toBe(new Set(registry.versionSurfaceIds()).size);
+    expect(new Set(Object.values(registry.versionSurfaceValues()))).toEqual(new Set(["3.0.0"]));
     expect(registry.runtimeManifestIds()).toEqual([
       "copilot-root-manifest",
       "copilot-repository-manifest",
@@ -55,8 +59,8 @@ describe("package registry", () => {
     const record = registry.get("agentera");
     expect(record.bundle_surfaces.directories.slice(0, 3).map((d: any) => d.id)).toEqual([
       "skills",
-      "scripts",
-      "hooks",
+      "references",
+      "agents",
     ]);
     expect(record.package_commands.commands.map((c: any) => c.id)).toEqual([
       "remove-legacy-skills",
@@ -181,7 +185,9 @@ describe("package registry", () => {
     const bundleFiles = new Set<string>(record.bundle_surfaces.files.map((e: any) => e.path));
 
     const missing: string[] = [];
+    const packageOwned = new Set(["packages/cli/package.json"]);
     for (const target of record.docs_targets.version_files) {
+      if (packageOwned.has(target)) continue;
       const isUnderDir = bundleDirs.some((dir) => {
         const rel = path.relative(dir, target);
         return rel === "" || (!rel.startsWith("..") && !path.isAbsolute(rel));

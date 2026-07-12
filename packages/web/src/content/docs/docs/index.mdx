@@ -1,9 +1,9 @@
 ---
 title: Agentera
-description: The open protocol for turning AI coding agents into an engineering team.
+description: Project memory and verified workflows for coding agents.
 template: splash
 hero:
-  tagline: Specialized roles, shared artifacts, behavioral verification gates, and portable context across runtimes.
+  tagline: One agent, one CLI, shared project state, and portable lifecycle support across runtimes.
   actions:
     - text: Get started
       link: /docs/getting-started/
@@ -14,8 +14,9 @@ hero:
       variant: minimal
 ---
 
-Agentera gives coding agents specialized roles, shared project artifacts,
-behavioral verification gates, and portable saved context across runtimes.
+Agentera gives coding agents shared project artifacts, behavioral verification
+gates, and portable saved context across OpenCode, Codex, Cursor, and GitHub
+Copilot.
 
 Run `/agentera` (`$agentera` in Codex) and get a project briefing that reads
 your repo instead of guessing from chat history.
@@ -27,7 +28,11 @@ your repo instead of guessing from chat history.
 | Prompt chains   | Sequential prompts                                                     | Chat transcript              | Low                                                   |
 | Agent platforms | Platform-owned workflows                                               | Vendor service               | Platform-bound                                        |
 | Vector memory   | Retrieved snippets                                                     | External index               | Depends on integration                                |
-| Agentera        | Capability-owned artifacts with behavioral acceptance and health gates | Your repo and data directory | OpenCode, Codex CLI, Cursor, Copilot CLI |
+| Agentera        | Capability-owned artifacts with behavioral acceptance and health gates | Your repo and data directory | OpenCode, Codex, Cursor, GitHub Copilot |
+
+Runtime lifecycle state comes from one four-runtime authority. Cursor Agent CLI
+and Cursor IDE are two surfaces of the single Cursor identity. `prime` returns a
+bounded summary; `doctor` returns detailed evidence and manual actions.
 
 ## Next steps
 

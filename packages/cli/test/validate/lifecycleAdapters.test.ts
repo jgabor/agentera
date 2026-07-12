@@ -11,6 +11,7 @@ import {
   validateHardGateDocs,
   validateOpencode,
   validatePackagedPythonScripts,
+  validateRuntimeIdParity,
 } from "../../src/validate/lifecycleAdapters.js";
 import { loadRegistry } from "../../src/registries/runtimeAdapterRegistry.js";
 
@@ -71,5 +72,25 @@ describe("lifecycle adapter validators (negative)", () => {
 
   it("flags missing codex lifecycleHooks metadata", () => {
     expect(validateCodex({}, reg)).toEqual(["codex: missing lifecycleHooks limitation metadata"]);
+  });
+
+  it.each(["opencode", "codex", "cursor", "copilot"])(
+    "rejects stale %s adapter or package coverage",
+    (runtimeId) => {
+      const active = ["opencode", "codex", "cursor", "copilot"];
+      const missing = active.filter((candidate) => candidate !== runtimeId);
+      expect(validateRuntimeIdParity(active, missing, active)).toContain(
+        "runtime adapter registry IDs must match lifecycle authority: opencode, codex, cursor, copilot",
+      );
+      expect(validateRuntimeIdParity(active, active, missing)).toContain(
+        "runtime package manifests must cover lifecycle authority exactly: opencode, codex, cursor, copilot",
+      );
+    },
+  );
+
+  it.each(["claude", "cursor-agent"])("rejects inactive %s release identities", (runtimeId) => {
+    const active = ["opencode", "codex", "cursor", "copilot"];
+    expect(validateRuntimeIdParity(active, [...active, runtimeId], active)).not.toEqual([]);
+    expect(validateRuntimeIdParity(active, active, [...active, runtimeId])).not.toEqual([]);
   });
 });

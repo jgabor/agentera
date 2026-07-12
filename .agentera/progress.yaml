@@ -1,4 +1,112 @@
 cycles:
+  - number: 715
+    timestamp: 2026-07-12 07:10
+    type: fix
+    phase: build
+    what: "Cycle 715 supersedes the inaccurate portion of Cycle 714: the earlier
+      retry did not remove stale public agentera hook examples from the active
+      Cursor adapter. Corrected the adapter to name upgrade --runtime cursor as
+      the shipped lifecycle-managed installation and repair mechanism and to
+      describe installed hook callbacks as private runtime wiring."
+    inspiration: Task 8 implementation retry 2 fresh audit and the append-only
+      progress contract.
+    discovered: Cycle 714 left three stale public hook-command claims even though
+      the hook namespace is absent from public v3 help. Cursor Agent CLI and
+      Cursor IDE are surfaces of one cursor runtime; the CLI has no verified
+      hook or separate managed-agent install, while conditional IDE hooks,
+      agent, and plugin resources are managed by upgrade.
+    verified: Public local v3 help exited 0 for upgrade, doctor, check verify eval
+      skills, and report refresh. Active-doc search found no stale npx agentera
+      hook, uvx Agentera, uv run scripts/agentera, or agentera stats examples in
+      the Cursor and related adapter docs. check validate lifecycle-adapters and
+      release-metadata passed; check validate artifact --artifact docs and
+      progress passed; progress text lint passed; git diff --check passed.
+    next: Return Task 8 in_progress to independent audit; do not complete the task
+      or archive the plan.
+    context:
+      intent: Close the final Task 8 audit blocker without rewriting Cycle 714 or
+        changing Task 8 status.
+      constraints: No commit, push, tag, publish, plan archive, Task 8 completion,
+        protected-state edit, or rewrite of historical Cycle 714 evidence.
+      unknowns: None.
+      scope: references/adapters/cursor.md and typed .agentera/progress.yaml Cycle 715
+        evidence.
+  - number: 714
+    timestamp: 2026-07-12 07:03
+    type: fix
+    phase: build
+    what: Corrected the two Task 8 independent-audit blockers in Cursor
+      documentation and documentation inventory metadata.
+    inspiration: Task 8 implementation retry 1 independent audit.
+    discovered: The retired Cursor doctor example used an unsupported --runtime
+      flag; v3 doctor reports all active runtimes.
+    verified: rg found no retired uv run scripts/agentera upgrade or doctor commands
+      in references/adapters/cursor.md. Decisions, Progress, TODO, and Changelog
+      inventory dates are 2026-07-12. docs artifact, lifecycle-adapters,
+      release-metadata, and git diff --check passed.
+    next: Return Task 8 to independent audit without completing or archiving the
+      plan.
+    context:
+      intent: Make the existing uncommitted Task 8 delivery accurate for the v3 npm
+        release and current artifact dates.
+      constraints: Changed only the two reported blockers plus required typed retry
+        evidence; no commit, push, tag, publish, plan archive, or Task 8
+        completion.
+      unknowns: None.
+      scope: references/adapters/cursor.md, .agentera/docs.yaml, and typed
+        .agentera/progress.yaml retry evidence.
+  - number: 713
+    timestamp: 2026-07-12 06:56
+    type: fix
+    phase: build
+    what: Synchronized the Agentera 3.0.0 release surface across lifecycle
+      authority, runtime and package registries, packaging, CLI help and schema,
+      public documentation, changelog, TODO, mobile stubs, and current-surface
+      policy tests.
+    inspiration: Active plan Task 8, Decision 92 constraints, AGENTS.md release
+      conventions, and the typed package and lifecycle authorities.
+    discovered: The package registry still declared removed Python version files and
+      bundle sources that copy-bundle did not stage. The scan classified Claude
+      references as historical or state 74 files and 503 matches, retired
+      cleanup 9 and 67, consent import 17 and 95, OpenCode compatibility 1 and
+      7, CLAUDE.md compatibility 1 and 1, and tests 22 and 138; overlapping
+      categories are intentional. Cursor-agent remains only as documented alias
+      or source product in 9 documentation files and 14 matches, 20 source or
+      contract files and 40 matches, and 14 test or fixture files and 29
+      matches. The protected vision artifact retains one host-harness phrase and
+      was not edited.
+    verified: pnpm -C packages/cli test passed 158 files and 1486 tests. Typecheck
+      and build passed; lint passed with 97 warnings and 0 errors. All 12
+      capabilities plus capability-contract, cross-capability,
+      lifecycle-adapters, app-home-contract, vocabularyAuthority, selfAudit, and
+      release-metadata passed. Compact checked 9 artifacts with 0 over limit and
+      0 errors. Direct Astro check passed 11 files with 0 diagnostics and Astro
+      build passed. Markdown checked 16 documents and 12 relative links with 0
+      missing. bundle:data staged 21 surfaces; npm pack dry-run inspected
+      agentera 3.0.0 with 573 files, 4302998 unpacked bytes, 16 required
+      assertions, 0 missing, and 0 retired identity paths. Nine tracked version
+      values equal 3.0.0. git diff --check passed.
+    next: Independent audit should inspect this uncommitted Task 8 delivery. The
+      orchestrator may then complete Task 8, archive the plan, run the post-plan
+      health audit, and commit the release, state, and health changes together.
+      Decision 92 satisfaction remains user-owned.
+    context:
+      intent: Complete active-surface retirement and Cursor identity review, make
+        stale four-runtime claims fail validation, align every tracked version
+        surface, and leave an independently auditable Task 8 delivery.
+      constraints: No commit, push, tag, publication, plan status change, plan
+        archive, vision or profile edit, health write, or Decision 92
+        satisfaction change. Existing user-owned Decision 92, TODO, and plan
+        edits were preserved.
+      unknowns: The Vite Plus cache reports unrecognized database version 12, so
+        workspace web and mobile wrappers could not initialize; direct
+        authoritative Astro checks passed, and mobile changes are
+        documentation-only. Stable dist-tag promotion and the final package
+        gitRef remain publication-phase work.
+      scope: README.md, UPGRADE.md, CHANGELOG.md, TODO.md, .agentera/docs.yaml,
+        runtime and package contracts, CLI validation and packaging sources,
+        parity and policy tests, package manifests, web docs, mobile docs, and
+        plugin version surfaces.
   - number: 712
     timestamp: 2026-07-12 06:17
     type: fix
@@ -264,113 +372,15 @@ cycles:
     context:
       intent: Close Task 5 AC1 canonical-source and evidence gaps while preserving AC2
         cleanup and AC3 historical import behavior; leave plan status unchanged.
-  - number: 705
-    timestamp: 2026-07-11 16:55
-    type: fix
-    phase: build
-    what: "Retried Task 5 after audit: removed active Claude advertisements, drained
-      large CLI output, and restricted retired cleanup to exact legacy
-      ownership."
-    inspiration: Task 5 retry 1 independent audit findings.
-    discovered: The bin called process.exit before piped stdout drained; retired
-      cleanup inherited active-resource semantics where managed and legacy
-      ledger records both authorize removal.
-    verified: "Focused: pnpm -C packages/cli test test/cli/schema.test.ts
-      test/runtime/retiredRuntimeCleanup.test.ts
-      test/runtime/retiredRuntimeSurfacePolicy.test.ts
-      test/cli/profileRuntimePolicy.test.ts passed 4 files/21 tests. Full pnpm
-      -C packages/cli test passed 154 files/1,408 tests; typecheck/build passed.
-      Child schema JSON parsed at 103,242 bytes with active IDs
-      opencode,codex,cursor,copilot; cursor-agent inactive and Claude retired.
-      Seven current install surfaces had 0 Claude claims; served orchestrate had
-      no Claude Task-tool claim. Cleanup tests observed managed
-      blocked/unchanged, exact legacy success then noop, and
-      missing/malformed/changed/identity-swapped/parent-swapped evidence blocked
-      with data preserved. Default analytics performed no Claude read; opt-in
-      records retained historical provenance and default exclusion.
-      Lifecycle/build-capability/capability-contract/app-home/vocabulary
-      validations, extraction parity, compaction, and diff checks passed. Lint:
-      99 warnings/0 errors. vp run web:check hit known cache database version
-      12; pnpm -C packages/web exec astro check passed 11 files/0 diagnostics."
-    next: Keep Task 5 in_progress for independent re-audit; Task 8 owns changelog,
-      version, TODO, and plan closeout.
-    context:
-      intent: Close AC1 and AC2 audit failures while preserving Decision 92
-        historical-import analytics, active runtime authority, user-data
-        boundaries, and the in-progress plan state.
-      constraints: Do not alter plan status, Decision 92 analytics, active-resource
-        managed semantics, user data, pre-existing TODO/decisions/plan changes,
-        or release bookkeeping.
-      unknowns: Independent retry audit remains pending.
-      scope: CLI process lifecycle; served/install/support prose; retired cleanup
-        contract and tests; active runtime vocabulary and web install docs.
-  - number: 704
-    timestamp: 2026-07-11 16:13
-    type: feat
-    phase: build
-    what: Retired Claude Code from active runtime discovery, package manifests,
-      hooks, doctor, upgrade, eval, and default analytics. Added consent-gated
-      historical import provenance and ledger-owned retired-resource cleanup
-      with pinned-parent identity and fingerprint checks.
-    inspiration: Active plan Task 5, Decision 92, and the six-record adapter
-      registry warning.
-    discovered: The legacy adapter registry still fed doctor and upgrade, the
-      packaged Claude hook and plugin manifests still claimed support, and
-      default corpus extraction still read Claude transcripts.
-    verified: "pnpm -C packages/cli test: 153 files and 1,401 tests passed; focused
-      retirement suite: 18 files and 282 tests plus served-profile policy;
-      typecheck and build passed; lifecycle-adapters, build capability,
-      capability-contract, and app-home validation passed; extract-corpus parity
-      was in sync; lint reported 99 warnings and 0 errors; check compact passed;
-      git diff --check passed."
-    next: Task 6 should integrate the four-runtime doctor projections. Task 7 should
-      expose approved repair UX. Keep Task 5 in progress until the plan owner
-      closes it.
-    context:
-      intent: Execute active-plan Task 5 under Decision 92 while preserving the
-        four-runtime authority and prior lifecycle safety contracts.
-      constraints: No Task 6 doctor detail, Task 7 upgrade repair UX, Task 8 broad
-        docs/changelog/TODO/version sweep, plan status mutation, vision
-        mutation, or remote push. User-owned Claude data and ambiguous resources
-        remain untouchable.
-      unknowns: Safe removal is intentionally available only on Linux systems with
-        procfs pinned-parent support; other platforms return action_required
-        pending a comparably strong primitive.
-      scope: packages/cli runtime lifecycle, analytics, setup, upgrade, eval, hook and
-        schema surfaces; references/adapters contracts and registries; focused
-        fixtures/tests; generated extraction parity wrapper; typed progress
-        cycle.
-  - number: 703
-    timestamp: 2026-07-11 15:31
-    type: fix
-    phase: build
-    what: Corrected runtime adapter remediation projection so Copilot native actions
-      stay in native_actions and missing destination parents remain truthful
-      action-required work.
-    inspiration: Task 4 retry 1 audit findings and Decision 92.
-    discovered: Category remediation must derive from associated planned operations;
-      probe absence cannot authorize repair when the shared engine has failed
-      closed on an unsafe parent.
-    verified: "Focused lifecycle adapter regression: 1 file and 19 tests passed.
-      Full CLI suite: 151 files and 1,387 tests passed. Typecheck and build
-      passed. Lifecycle-adapters, Build capability, and capability-contract
-      validations passed. Compaction and built fresh-home smoke passed. Lint
-      completed with 0 errors and the standing 108-warning baseline. Git diff
-      checks passed."
-    next: Keep Task 4 in_progress for orchestrator re-audit; Task 5 still owns
-      Claude and cursor-agent retirement.
-    context:
-      intent: Close the Task 4 retry findings while preserving lifecycle ownership and
-        publication boundaries.
-      constraints: Preserved Task 3 publication safety, Decision 92, caches,
-        collisions, trust, Cursor identity, command integration boundaries, and
-        existing TODO, decisions, and plan changes; did not edit plan status.
-      unknowns: Independent retry audit remains external; apply-time publication
-        failures remain represented by lifecycle apply results, while preview
-        category reports reflect planned blockers.
-      scope: Adapter report and remediation projection, native-action contract
-        validation, regression tests, and typed progress evidence.
 archive:
+  - summary: "Cycle 705 (2026-07-11): Retried Task 5 after audit: removed active
+      Claude advertisements, drained large CLI output, and restricted..."
+  - summary: "Cycle 704 (2026-07-11): Retired Claude Code from active runtime
+      discovery, package manifests, hooks, doctor, upgrade, eval, and
+      default..."
+  - summary: "Cycle 703 (2026-07-11): Corrected runtime adapter remediation
+      projection so Copilot native actions stay in native_actions and missing
+      destination..."
   - summary: "Cycle 702 (2026-07-11): Implemented authority-bound lifecycle adapters
       for OpenCode, Codex, Cursor, and Copilot with explicit eight-category
       surface reports,..."
@@ -463,12 +473,3 @@ archive:
       added packages/cli/test/fixtures/repo-state/ variants (ok,
       todo-resolved-over-limit, progress-at-cap, progress-over-limit,
       invalid-progress-yaml),..."
-  - summary: "Cycle 665 (2026-06-18): Plan T1 — vitest/repo gate inventory:
-      classified all REPO_ROOT couplings in packages/cli/test; documented
-      mutable-state vs..."
-  - summary: "Cycle 664 (2026-06-18): Plan T7 — state sync and plan closeout:
-      archived PLAN-2026-06-18-profile-corpus-coverage-trust.yaml; cleared
-      active plan slot; six..."
-  - summary: "Cycle 663 (2026-06-18): Plan T6 — runtime metadata clarity and flag
-      docs: renamed runtime_statuses[].candidate_count to file_count; documented
-      --no-<runtime>..."

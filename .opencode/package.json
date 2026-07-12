@@ -20,13 +20,11 @@
     "installRoot": "..",
     "sharedPaths": [
       "skills",
-      "scripts",
       "hooks",
       "registry.json",
       "plugin.json",
       "README.md",
-      "UPGRADE.md",
-      "pyproject.toml"
+      "UPGRADE.md"
     ],
     "singleSkillInstall": "Single-skill installs keep core SKILL.md workflow behavior; suite tools are bundle-only enhancements."
   }

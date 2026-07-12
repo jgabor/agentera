@@ -2,40 +2,52 @@
 
 ## [Unreleased]
 
+## [3.0.0] · 2026-07-12
+
+### Key highlights
+
+- **One runtime lifecycle contract**: OpenCode, Codex, Cursor, and GitHub Copilot now share one authority, one canonical skill at `~/.agents/skills/agentera`, one eight-category diagnosis model, and one ownership-safe operation engine.
+- **Bounded status, detailed diagnosis**: `agentera prime` exposes a compact four-runtime summary while `agentera doctor` reports complete evidence, support-floor gaps, ownership state, and exact host-native actions from the same snapshot.
+- **Previewable, convergent repair**: `agentera upgrade --runtime all|opencode|codex|cursor|copilot --dry-run` is side-effect free; rerunning the selection with `--yes` applies only declared Agentera-owned resources and safely resumes partial work.
+- **Claude retirement and one Cursor identity**: Claude Code active support and package manifests are removed. Cursor Agent CLI is required and Cursor IDE is conditional beneath the single `cursor` runtime identity.
+
 ### Added
 
+- Added runtime lifecycle schemas and adapters for skills, plugins, hooks, agents, configuration, enablement, trust, and native actions across all four active runtimes.
+- Added append-only ownership-journal recovery, exact operation dependencies, Linux secure directory-relative publication, and outcomes `applied`, `noop`, `failed`, `blocked_unowned`, `skipped_dependency`, and `action_required`.
+- Added explicit retired cleanup through `agentera upgrade --legacy-cleanup claude --dry-run|--yes`; it can remove only the ledger-owned legacy Agentera skill link and excludes user data.
 - Added typed artifact writes under `agentera state`: progress/decision/audit appends, decision satisfaction updates, plan create/task/status/archive lifecycle operations, schema-derived `explain`, server-assigned identifiers, exact retry replay, dry-run diffs, project locking, strict mapped-path safety, staged 10/40/50 compaction, final-byte validation, and atomic publication.
-- Added `install_track` field to `prime --format json` (`app_home.install_track`) and `doctor --format json` output. Values: `v2`, `v3`, `source`, `unknown` — a plain-English projection of the internal install-lineage classifier (Decision 72).
+- Added `install_track` to `prime --format json` (`app_home.install_track`) and `doctor --format json`. Values are `v2`, `v3`, `source`, and `unknown`.
 
 ### Removed
 
+- Removed Claude Code as an active runtime, runtime selector, installation target, plugin marketplace, and default analytics source. Historical transcript parsing remains available only with explicit `--import-source claude` consent and inactive provenance.
+- Removed `cursor-agent` as an independent runtime identity. Its binary and corpus source now map to the single `cursor` identity.
 - Removed `rootStatus` from public JSON output (`prime --format json` and `doctor --format json`). The field remains internal for classifier logic but is no longer exposed in diagnostic output.
-- Removed dead `missingScriptCommands` from `packages/cli/src/state/installRoot.ts`; the function was never called and its intended broken-managed-script failure mode is already covered by `detectShebangContentMismatch` in the npm shim's `resolve.mjs`.
 
 ### Changed
 
-- Renamed the top-level `bundle` field to `app` in `prime --format json` output. The nested `activeBundleRoot` key is now `activeAppRoot`, `cliBundle` is now `cliApp`, and `legacyBundleRoot` in doctor signals is now `legacyAppRoot`. Breaking JSON output change accepted for the v3 pre-release (Decision 72).
+- Changed lifecycle apply so native installation, update, authentication, enablement, and trust are always user-owned `action_required` steps. Automatic filesystem apply is Linux-only; other platforms retain complete preview and diagnosis.
+- Changed the npm package to include every declared OpenCode, Codex, Cursor, and GitHub Copilot manifest/hook/agent source and to reject package, documentation, runtime-ID, or version parity drift during validation.
+- Renamed the top-level `bundle` field to `app` in `prime --format json`. Nested names are now `activeAppRoot`, `cliApp`, and `legacyAppRoot`; this is a breaking JSON output change.
 - Added v2/v3 coexistence warning to the orientation attention list when a v2 managed app is detected at the app home alongside a v3 CLI runtime. Uses the existing "pick one line" contract message from `references/cli/coexistence-probe.yaml`.
-- Promoted Decision 43 English aliases to canonical v3 capability IDs (`status`, `vision`, `discuss`, `research`, `plan`, `build`, `optimize`, `audit`, `document`, `profile`, `design`, `orchestrate`); Swedish `-era` IDs retire from the v3 surface. `prime --context <name>` and `--context status` use English names; v2 stable (`npx -y agentera@latest`) keeps Swedish IDs. Schema version strings (`agentera.inspekteraEvaluationReport.v1`, `agentera.coexistenceProbe.v1`, `agentera.capabilityContext.v1`, `agentera.planeraStartup.v1`) remain unchanged as compatibility identifiers.
-- Documented mobile monorepo open decisions in `docs/consolidation/mobile-open-decisions.md` (CLI ↔ mobile integration options, `@agentera/mobile` publish identity, skill-bundle horizon, D3 provisional alias table, `packages/tui` vs `agentera-tui`, temporary `vite.config.ts` hook stub).
-- Closed mobile docs/artifacts monorepo integration pass: `packages/mobile/` docs stub, D67/D68 and archived staging D1–D5, D68 delivery-surface wording sync, lefthook `vp staged` hook via minimal Vite+ config (progress cycle 650).
-- Aligned audience-namespace migration docs with npm 3.x Phase 3 dispatch: top-level `hej`, `describe`, `gate`, and routine-state names are removed; transitional aliases (`validate`, `compact`, `verify`, `stats`, `lint`, `query`) still forward with stderr deprecation.
-- Set `channels.stable.next_major.announced: false` so doctor and prime omit the v2→v3 successor upgrade prompt while the 3.0.0 line is off npm pending republication.
+- Promoted English names to canonical v3 capability IDs (`status`, `vision`, `discuss`, `research`, `plan`, `build`, `optimize`, `audit`, `document`, `profile`, `design`, `orchestrate`) and retired Swedish `-era` IDs from the active command surface.
+- Removed top-level `hej`, `describe`, `gate`, and routine-state names from the v3 command tree; use `prime`, `schema`, `check`, and `state` namespaces.
 
 ### Fixed
 
+- Fixed lifecycle retries after partial writes, stale locks, ownership-journal publication interruption, malformed/forked history, and dependency failures so completed operations remain safe and pending operations converge without adopting user-owned files.
 - Fixed state writes rejecting legacy scalar health archives, accepting missing or circular plan dependencies, following symlinked lock/archive directories outside the project, and advertising invalid plan mutation examples.
 - Fixed `cliDistributionMajor` silently defaulting to v2 when `registry.json` version-authority was missing or corrupted. The function now reads `package.json#version` as a secondary signal before falling back to 2, and emits a one-time stderr diagnostic when both primary and secondary signals miss — preventing v3 installs with corrupted registry assets from being misclassified as v2 in runtime inference, cross-major boundary detection, channel resolution, and next-major doctor rendering.
 - Fixed `pnpm install` failing on hosts with a system-wide `vips` (Arch, Fedora, Nix with vips overlay, Homebrew on macOS): sharp's `useGlobalLibvips()` check returned true and the install hook fell through to a `node-gyp` source build that needed `node-addon-api`. Migrated the deprecated `pnpm.onlyBuiltDependencies` and `pnpm.overrides` from `package.json#pnpm` to `pnpm-workspace.yaml` (pnpm 10+ ignores the legacy key) and added a `preinstall` hook that re-execs `pnpm install` with `SHARP_IGNORE_GLOBAL_LIBVIPS=true` so sharp's prebuilt binary is always used.
 - Fixed `pnpm install` emitting `Failed to replace env in config: ${NPM_TOKEN}` on every invocation: scoped the npm auth config from repo root to `packages/cli/.npmrc`. Both publishing packages (the `agentera` 3.0 CLI on `@next` and the `agentera` 0.0.x shim on `@latest`) find the auth via npm's parent-directory walk; `pnpm install` from the repo root no longer reads any auth-bearing `.npmrc`.
-- Fixed parity oracle `retryCommand` pin in `packages/cli/test/cli/fixtures/oracle/parity-remaining-families.json` to match the new `string | null` contract from the doctor shebang-aware `retryCommand` work.
 
-### Key highlights
+### Migration notes
 
 - **npm shim 0.0.2 v3 deprecation hint**: the `agentera@0.0.2` npm shim on `@latest` now emits a three-line stderr banner on every invocation pointing users to `npx -y agentera@next prime` for the v3 TypeScript CLI. `--help` lists the `@next` command; the install-help failure path leads with the `@next` pointer; `--version` stays banner-free so `--json` and pipe consumers stay clean. Set `AGENTERA_NO_V3_HINT=1` to suppress for CI and scripted invocations.
 - **npm shim 0.0.0 cwd preservation**: the `agentera@0.0.0` npm shim on `@latest` now forwards the user's working directory to the installed Python CLI for the `app-home` backend, so `npx -y agentera` state and prime reads resolve the project's `.agentera/` artifacts instead of the app home. The shim remains the 2.x transitional entry point; the native TypeScript CLI is `npx -y agentera@next` until the 3.0 cutover graduates `@latest`.
 
-## [3.0.0] · 2026-06-04
+## [3.0.0-dev.0] · 2026-06-04
 
 ### Key highlights
 

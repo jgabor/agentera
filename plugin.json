@@ -1,22 +1,13 @@
 {
   "name": "agentera",
   "version": "3.0.0",
-  "description": "agentera: exact bare /agentera routing, entry-point routing, vision, deliberation, planning, autonomous development, optimization, auditing, documentation, visual identity, research, decision-profile mining, and orchestration. A complete user message exactly `/agentera` belongs to the bundled agentera skill and its agentera status dashboard path, not the legacy hej bridge. profile uses bounded Copilot corpus metadata when present; missing source families degrade in local metadata and do not imply live host behavior. Requires AGENTERA_HOME from runtime config or invocation environment as the app home so SKILL.md helper-script invocations resolve through $AGENTERA_HOME/app; see README install instructions.",
+  "description": "Agentera 3.0.0 for GitHub Copilot CLI: one portable skill, twelve capabilities, shared project state, lifecycle hooks, and exact /agentera dashboard routing. profile uses bounded Copilot corpus metadata when present and reports missing source families. Runtime installation, enablement, authentication, and trust remain user-owned.",
   "skills": "skills",
   "hooks": ".github/hooks",
   "agentera": {
     "packageShape": "suite-bundle",
     "installRoot": ".",
-    "sharedPaths": [
-      "skills",
-      "scripts",
-      "hooks",
-      "registry.json",
-      "plugin.json",
-      "README.md",
-      "UPGRADE.md",
-      "pyproject.toml"
-    ],
+    "sharedPaths": ["skills", "hooks", "registry.json", "plugin.json", "README.md", "UPGRADE.md"],
     "singleSkillInstall": "Single-skill installs keep core SKILL.md workflow behavior; suite tools are bundle-only enhancements."
   }
 }

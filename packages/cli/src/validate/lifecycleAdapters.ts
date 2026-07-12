@@ -1,3 +1,4 @@
+import fs from "node:fs";
 import path from "node:path";
 
 import { resolvePath } from "../core/paths.js";
@@ -6,8 +7,14 @@ import {
   RuntimeAdapterRegistry,
   loadRegistry as loadRuntimeRegistry,
 } from "../registries/runtimeAdapterRegistry.js";
-import { validateLifecycleAuthorityRoot } from "../runtime/lifecycleAuthority.js";
-import { validateRuntimeLifecycleAdapterContractRoot } from "../runtime/lifecycleAdapterContract.js";
+import {
+  loadLifecycleAuthority,
+  validateLifecycleAuthorityRoot,
+} from "../runtime/lifecycleAuthority.js";
+import {
+  loadRuntimeLifecycleAdapterContract,
+  validateRuntimeLifecycleAdapterContractRoot,
+} from "../runtime/lifecycleAdapterContract.js";
 import { validateRetiredRuntimeCleanupContractRoot } from "../runtime/retiredRuntimeCleanup.js";
 import {
   type LegacyPythonParityOptions,
@@ -61,6 +68,86 @@ export interface LifecycleMainOptions extends LegacyPythonParityOptions {
   out?: (line: string) => void;
 }
 
+function sameMembers(left: string[], right: string[]): boolean {
+  return JSON.stringify([...left].sort()) === JSON.stringify([...right].sort());
+}
+
+export function validateRuntimeIdParity(
+  activeIds: string[],
+  adapterIds: string[],
+  packageRuntimeIds: string[],
+): string[] {
+  const errors: string[] = [];
+  if (!sameMembers(adapterIds, activeIds)) {
+    errors.push(`runtime adapter registry IDs must match lifecycle authority: ${activeIds.join(", ")}`);
+  }
+  if (!sameMembers(packageRuntimeIds, activeIds)) {
+    errors.push(`runtime package manifests must cover lifecycle authority exactly: ${activeIds.join(", ")}`);
+  }
+  return errors;
+}
+
+function bundleCovers(relativePath: string, directories: string[], files: Set<string>): boolean {
+  if (files.has(relativePath)) return true;
+  return directories.some((directory) => {
+    const relative = path.relative(directory, relativePath);
+    return relative === "" || (!relative.startsWith("..") && !path.isAbsolute(relative));
+  });
+}
+
+function validateReleaseRuntimeParity(root: string, registry: RuntimeAdapterRegistry): string[] {
+  const errors: string[] = [];
+  const authority = loadLifecycleAuthority(path.join(root, "references/adapters/runtime-lifecycle-authority.yaml"));
+  const activeIds = authority.runtimes.map((runtime) => runtime.id);
+  for (const runtime of authority.runtimes) {
+    const record = registry.records.find((candidate) =>
+      (candidate.identity as Record<string, unknown>).runtime_id === runtime.id);
+    const displayName = (record?.identity as Record<string, unknown> | undefined)?.display_name;
+    if (displayName !== runtime.displayName) {
+      errors.push(`${runtime.id}: runtime adapter display name must match lifecycle authority (${runtime.displayName})`);
+    }
+  }
+
+  const packageRegistry = packageManifest(root);
+  const packageRuntimeIds = Object.keys(packageRegistry.runtimeManifestPaths());
+  errors.push(...validateRuntimeIdParity(activeIds, registry.adapterIds, packageRuntimeIds));
+  const suiteVersion = packageRegistry.suiteVersion();
+  for (const [surface, version] of Object.entries(packageRegistry.versionSurfaceValues())) {
+    if (version !== suiteVersion) {
+      errors.push(`${surface}: version ${String(version)} must match suite version ${suiteVersion}`);
+    }
+  }
+
+  const packageRecord = packageRegistry.get();
+  const bundleSurfaces = packageRecord.bundle_surfaces as {
+    directories: Array<{ path: string }>;
+    files: Array<{ path: string }>;
+  };
+  const directories = bundleSurfaces.directories.map((entry) => entry.path);
+  const files = new Set<string>(bundleSurfaces.files.map((entry) => entry.path));
+  const lifecycle = loadRuntimeLifecycleAdapterContract(
+    path.join(root, "references/adapters/runtime-lifecycle-adapters.yaml"),
+    authority,
+  );
+  for (const resource of lifecycle.resources) {
+    const prefix = "{source_root}/";
+    if (!resource.source.startsWith(prefix)) continue;
+    const source = resource.source.slice(prefix.length);
+    if (!bundleCovers(source, directories, files)) {
+      errors.push(`${resource.id}: lifecycle source ${source} is absent from npm bundle surfaces`);
+    }
+  }
+  for (const manifestPath of Object.values(packageRegistry.runtimeManifestPaths())) {
+    if (!bundleCovers(manifestPath, directories, files)) {
+      errors.push(`runtime package manifest ${manifestPath} is absent from npm bundle surfaces`);
+    }
+  }
+  if (fs.existsSync(path.join(root, ".claude-plugin", "marketplace.json"))) {
+    errors.push("retired Claude marketplace manifest must be absent");
+  }
+  return errors;
+}
+
 export function lifecycleMain(opts: LifecycleMainOptions = {}): number {
   const root = resolvePath(opts.root ?? rootDefault());
   const out = opts.out ?? ((line: string) => process.stdout.write(line + "\n"));
@@ -86,6 +173,7 @@ export function lifecycleMain(opts: LifecycleMainOptions = {}): number {
     return 1;
   }
   const reg = registry as RuntimeAdapterRegistry;
+  errors.push(...validateReleaseRuntimeParity(root, reg));
 
   const copilot = loadJson(path.join(root, "plugin.json"));
   errors.push(...validateCopilot(copilot, root, reg));
@@ -98,7 +186,12 @@ export function lifecycleMain(opts: LifecycleMainOptions = {}): number {
   errors.push(...validateCodexProfileMetadata(root, codex));
   errors.push(...validateOpencode(root, reg));
   const packageManifestReg = packageManifest(root);
-  errors.push(...validateSuiteBundleSurface(root, null, packageManifestReg));
+  const authority = loadLifecycleAuthority(path.join(root, "references/adapters/runtime-lifecycle-authority.yaml"));
+  errors.push(...validateSuiteBundleSurface(
+    root,
+    new Set(authority.runtimes.map((runtime) => runtime.id)),
+    packageManifestReg,
+  ));
   if (legacyPythonParityEnabled(opts)) {
     errors.push(...runLegacyPythonParityChecks(root));
   }

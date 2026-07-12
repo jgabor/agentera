@@ -30,9 +30,9 @@ describe("runtime adapter registry", () => {
     expect(registry.adapterIds.length).toBe(new Set(registry.adapterIds).size);
     expect(registry.adapterIds.map((id) => registry.get(id).identity.display_name)).toEqual([
       "OpenCode",
-      "Copilot CLI",
-      "Codex CLI",
-      "Cursor IDE",
+      "GitHub Copilot",
+      "Codex",
+      "Cursor",
     ]);
     const opencodeLifecycle = registry.get("opencode").lifecycle_events;
     expect(opencodeLifecycle.supported_events).toContain("tool.execute.before");
@@ -56,7 +56,7 @@ describe("runtime adapter registry", () => {
 
   it("gives clear diagnostics for known and unknown ids", () => {
     const registry = loadRegistry(REGISTRY_PATH);
-    expect(registry.get("codex").identity.display_name).toBe("Codex CLI");
+    expect(registry.get("codex").identity.display_name).toBe("Codex");
     expect(() => registry.get("ghost")).toThrow(RegistryError);
     try {
       registry.get("ghost");
