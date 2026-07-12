@@ -107,6 +107,28 @@ describe("ArtifactSchemaValidator", () => {
     ).toBe(true);
   });
 
+  it("accepts required full-plan unknowns and rejected critic findings", () => {
+    const p = path.join(tmp, "plan.yaml");
+    fs.writeFileSync(
+      p,
+      [
+        "header: {level: full, created: 2026-07-12, reviewed: 2026-07-12, status: active, critic_issues: '1 found, 0 addressed, 1 dismissed', title: Test}",
+        "what: Test full-plan metadata.",
+        "why: Preserve planning provenance.",
+        "design: Keep the schema and writer aligned.",
+        "scope: {included: [writer], excluded: [unrelated work]}",
+        "unknowns:",
+        "- {question: Will the writer accept the contract fields?, affects_task: 1, resolve_by: Validate the submitted plan.}",
+        "rejected:",
+        "- {issue: The plan needs no provenance, rationale: The downstream executor needs the dismissal context.}",
+        "tasks:",
+        "- {number: 1, name: Validate, status: pending, depends_on: [], acceptance: ['GIVEN a full plan WHEN submitted THEN metadata is retained']}",
+        "",
+      ].join("\n"),
+    );
+    expect(new ArtifactSchemaValidator().validateExplicit("PLAN.md", p, tmp)).toEqual([]);
+  });
+
   it("validates human-facing TODO.md markdown", () => {
     const p = path.join(tmp, "TODO.md");
     fs.writeFileSync(p, "# TODO\n\nNo sections here.\n");

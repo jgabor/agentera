@@ -32,6 +32,8 @@
 # **Acceptance**: <criteria list>       TASK.acceptance        PL19
 # ## Overall Acceptance                 PLAN.overall_acceptance PL20
 # ## Surprises                          PLAN.surprises         PL21
+# ## Unknowns                           UNKNOWN.entry          PU1
+# ## Rejected Review Findings           REJECTED.entry         PR1
 #
 # Protocol references:
 #   status visual tokens: VT1-VT4 (protocol.yaml VISUAL_TOKENS)
@@ -55,6 +57,8 @@ GROUP_PREFIXES:
   PLAN: PL
   SCOPE: PS
   TASK: PT
+  UNKNOWN: PU
+  REJECTED: PR
   VALIDATION: PV
 
 BUDGET:
@@ -200,6 +204,62 @@ PLAN:
     description: >-
       Path to the previous active plan archived when this plan was created.
       Preserves plan lineage without changing lifecycle status.
+
+UNKNOWN:
+  1:
+    id: PU1
+    field: entry
+    type: map
+    required: true
+    description: >-
+      A planning-time question that can change whether downstream work remains
+      necessary as written. Full plans require at least one entry.
+    min_count: 1
+  2:
+    id: PU2
+    field: question
+    parent: UNKNOWN.entry
+    type: string
+    required: true
+    description: "The unresolved planning-time question."
+  3:
+    id: PU3
+    field: affects_task
+    parent: UNKNOWN.entry
+    type: integer
+    required: true
+    description: "The task number whose scope depends on the answer."
+  4:
+    id: PU4
+    field: resolve_by
+    parent: UNKNOWN.entry
+    type: string
+    required: true
+    description: "How the affected task will resolve the question."
+
+REJECTED:
+  1:
+    id: PR1
+    field: entry
+    type: map
+    required: true
+    description: >-
+      A dismissed adversarial-review finding preserved with its rationale.
+    min_count: 1
+  2:
+    id: PR2
+    field: issue
+    parent: REJECTED.entry
+    type: string
+    required: true
+    description: "The critic finding that was dismissed."
+  3:
+    id: PR3
+    field: rationale
+    parent: REJECTED.entry
+    type: string
+    required: true
+    description: "Why the finding was dismissed rather than addressed."
 
 SCOPE:
   1:

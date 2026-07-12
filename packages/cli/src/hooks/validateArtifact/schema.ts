@@ -42,7 +42,7 @@ const SEQUENCE_KEYS_BY_ARTIFACT: Record<string, Record<string, string>> = {
   docs: { MAPPING: "mapping", INDEX: "index", AUDIT_LOG: "audit_log" },
   experiments: { EXPERIMENT: "experiments", ARCHIVE: "archive" },
   health: { AUDIT: "audits", ARCHIVE: "archive" },
-  plan: { TASK: "tasks" },
+  plan: { TASK: "tasks", UNKNOWN: "unknowns", REJECTED: "rejected" },
   progress: { CYCLE: "cycles", ARCHIVE: "archive" },
   session: { BOOKMARK: "bookmarks" },
   vision: { PERSONA: "personas", PRINCIPLE: "principles" },
@@ -314,6 +314,10 @@ export function validateFullPlanContract(data: JsonObject, violations: string[])
     validateField(violations, "plan", header, field, "header");
   }
   validateField(violations, "plan", data, "design", "");
+  const unknowns = data.unknowns;
+  if (!Array.isArray(unknowns) || unknowns.length === 0) {
+    violations.push("plan: full plans require at least one 'unknowns' entry");
+  }
   const criticIssues = header.critic_issues;
   if (!isEmptyRequired(criticIssues)) {
     const match = /^\s*(\d+)\s+found,\s*(\d+)\s+addressed,\s*(\d+)\s+dismissed\s*$/.exec(
@@ -366,7 +370,9 @@ export function parentRequirements(
         entry.field
       ) {
         const parentField = parent.slice(prefix.length);
-        (requirements[parentField] ??= []).push(String(entry.field));
+        const fields = requirements[parentField] ?? [];
+        fields.push(String(entry.field));
+        requirements[parentField] = fields;
       }
     }
   }
