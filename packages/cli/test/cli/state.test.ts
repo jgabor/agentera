@@ -265,7 +265,7 @@ describe("cli state plan", () => {
     const p = seedPlan();
     const { rc, out } = capture((io) => queryPlan({ command: "plan" }, planSchema(p), io));
     expect(rc).toBe(0);
-    expect(out).toContain("Plan: status=active");
+    expect(out).toContain("Plan: status=open");
     expect(out).toContain("Task status: done=1, pending=1");
     expect(out).toContain("Task: number=1 | status=done | name=Foundation");
   });
@@ -284,6 +284,12 @@ describe("cli state plan", () => {
     const payload = JSON.parse(out);
     expect(payload.command).toBe("plan");
     expect(payload.summary.title).toBe("Migrate CLI to TypeScript");
+    expect(payload.summary.status).toBe("open");
+    expect(payload.plans[0].status).toBe("open");
+    expect(payload.source.legacy_input).toBe(true);
+    expect(payload.source.diagnostics).toContainEqual(
+      expect.objectContaining({ path: p, category: "legacy", message: "legacy plan status active normalized to open" }),
+    );
     expect(payload.source_contract.complete_for_plan_artifact).toBe(true);
     expect(payload.counts.entries).toBe(2);
   });
@@ -297,6 +303,64 @@ describe("cli state plan", () => {
     expect(payload.status).toBe("empty");
     expect(payload.summary.absence_reason).toContain("No plan artifact");
     expect(payload.source_contract.complete_for_plan_artifact).toBe(false);
+  });
+
+  it("reports a malformed current plan as invalid instead of absent", () => {
+    const p = path.join(tmp, "plan.yaml");
+    fs.writeFileSync(p, "header: [broken\n");
+
+    const text = capture((io) => queryPlan({ command: "plan" }, planSchema(p), io));
+    expect(text.rc).toBe(0);
+    expect(text.out).toContain(`Plan: invalid | path=${p} | category=parse | diagnostic=`);
+
+    const { rc, out } = capture((io) => queryPlan({ command: "plan", format: "json" }, planSchema(p), io));
+    expect(rc).toBe(0);
+    const payload = JSON.parse(out);
+    expect(payload.status).toBe("incomplete");
+    expect(payload.summary).toMatchObject({
+      invalid_path: p,
+      absence_reason: "Current plan artifact is invalid.",
+      diagnostic: { path: p, category: "parse" },
+    });
+    expect(payload.source).toMatchObject({ invalid_path: p });
+    expect(payload.source.diagnostics).toContainEqual(expect.objectContaining({ path: p, category: "parse" }));
+    expect(payload.source_contract.complete_for_plan_artifact).toBe(false);
+  });
+
+  it("categorizes archive diagnostics without excluding readable legacy history", () => {
+    const p = path.join(tmp, "plan.yaml");
+    fs.writeFileSync(p, ["header:", "  title: Current", "  status: open", "tasks: []", ""].join("\n"));
+    const archiveDir = path.join(tmp, "archive");
+    fs.mkdirSync(archiveDir, { recursive: true });
+    fs.writeFileSync(path.join(archiveDir, "PLAN-parse.yaml"), "header: [broken\n");
+    fs.writeFileSync(
+      path.join(archiveDir, "PLAN-schema.yaml"),
+      ["header:", "  title: Schema", "  status: open", "tasks: invalid", ""].join("\n"),
+    );
+    fs.writeFileSync(
+      path.join(archiveDir, "PLAN-lifecycle.yaml"),
+      ["header:", "  title: Lifecycle", "  status: queued", "tasks: []", ""].join("\n"),
+    );
+    fs.writeFileSync(
+      path.join(archiveDir, "PLAN-legacy.yaml"),
+      ["header:", "  title: Legacy", "  status: active", "tasks: []", ""].join("\n"),
+    );
+
+    const { rc, out } = capture((io) => queryPlan({ command: "plan", format: "json" }, planSchema(p), io));
+    expect(rc).toBe(0);
+    const payload = JSON.parse(out);
+    expect(payload.source.diagnostics.map((diagnostic: { category: string }) => diagnostic.category).sort()).toEqual([
+      "legacy",
+      "lifecycle",
+      "parse",
+      "schema",
+    ]);
+    expect(payload.source.invalid_archive_paths).toEqual([
+      path.join(archiveDir, "PLAN-lifecycle.yaml"),
+      path.join(archiveDir, "PLAN-parse.yaml"),
+      path.join(archiveDir, "PLAN-schema.yaml"),
+    ]);
+    expect(payload.plans).toContainEqual(expect.objectContaining({ path: path.join(archiveDir, "PLAN-legacy.yaml"), status: "open" }));
   });
 
   it("reads a valid archived plan when no active plan remains", () => {

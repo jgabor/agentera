@@ -334,6 +334,9 @@ export function planSummary(schemas: Record<string, SchemaInfo>): PlanSummary {
     };
   }
   const discovery = discoverPlanArtifacts(artifactPath(info, "plan"));
+  const activeDiagnostics = discovery.diagnostics.filter(
+    (diagnostic) => diagnostic.path === discovery.activePath && diagnostic.category !== "legacy",
+  );
   const archivedPlans = discovery.archived.map((artifact) => {
     const parts = planDocumentParts(artifact.data);
     return {
@@ -348,13 +351,15 @@ export function planSummary(schemas: Record<string, SchemaInfo>): PlanSummary {
   });
   if (!discovery.active) {
     return {
-      exists: archivedPlans.length > 0,
+      exists: activeDiagnostics.length === 0 && archivedPlans.length > 0,
       active: false,
       tasks: [],
-      status: archivedPlans.length > 0 ? "archived" : "absent",
+      status: activeDiagnostics.length > 0 ? "invalid" : archivedPlans.length > 0 ? "archived" : "absent",
       title: "",
       absence_reason:
-        archivedPlans.length > 0
+        activeDiagnostics.length > 0
+          ? "Current plan artifact is invalid; see diagnostics."
+          : archivedPlans.length > 0
           ? "No active plan artifact is available; archived plan state is history only."
           : "No active plan artifact is available from agentera plan.",
       complete: 0,
@@ -364,6 +369,8 @@ export function planSummary(schemas: Record<string, SchemaInfo>): PlanSummary {
       archived_plans: archivedPlans,
       archive_count: archivedPlans.length,
       invalid_archive_paths: discovery.invalidArchivePaths,
+      ...(activeDiagnostics.length > 0 ? { invalid_path: discovery.activePath } : {}),
+      diagnostics: discovery.diagnostics,
     };
   }
 
@@ -402,6 +409,7 @@ export function planSummary(schemas: Record<string, SchemaInfo>): PlanSummary {
     archived_plans: archivedPlans,
     archive_count: archivedPlans.length,
     invalid_archive_paths: discovery.invalidArchivePaths,
+    diagnostics: discovery.diagnostics,
   };
 }
 

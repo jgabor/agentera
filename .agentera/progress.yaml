@@ -1,4 +1,28 @@
 cycles:
+  - number: 738
+    timestamp: 2026-07-12 21:29
+    type: fix
+    phase: build
+    what: packages/cli/src/cli/planArtifacts.ts now reports legacy lifecycle input
+      and malformed plan diagnostics to state and orientation consumers.
+    inspiration: Plan Lifecycle Clarity and Validated Publication Task 2.
+    discovered: The prior reader treated malformed current plans as absent and
+      reduced invalid archive state to unclassified paths.
+    verified: Focused and full CLI tests, typecheck, lint, build,
+      capability-contract validation, compact gate, and built CLI state-plan
+      smoke passed.
+    next: Task 3 deterministic migration remains pending; do not implement canonical
+      write enforcement or publication changes.
+    context:
+      intent: Complete active plan Task 2 with bounded read compatibility and no
+        persisted migration.
+      constraints: Read compatibility only; no migration writes, writer enforcement,
+        routing/retry changes, prose cleanup, decision satisfaction changes,
+        vision edits, push, or publication.
+      unknowns: Legacy values remain persisted until Task 3; canonical write
+        enforcement belongs to Task 4.
+      scope: packages/cli plan readers and tests; plan, progress, TODO, and changelog
+        artifacts.
   - number: 737
     timestamp: 2026-07-12 21:05
     type: test
@@ -219,33 +243,9 @@ cycles:
         assertion; README.md; UPGRADE.md; packages/cli/README.md;
         runtime/package references; CHANGELOG.md; TODO.md; typed progress,
         health, and plan state.
-  - number: 728
-    timestamp: 2026-07-12 14:34
-    type: test
-    phase: build
-    what: "Verified Task 7 consumer and distribution parity: doctor, upgrade,
-      project integration, prime, and status now share the canonical lifecycle
-      projection; active-runtime consumer wiring is contract-validated; source,
-      npm, and explicit-channel commands derive from update authority with
-      shell-safe arguments."
-    verified: "pnpm -C packages/cli test: 1526 passed, exactly 8 accepted
-      dev.16/core metadata failures and no extras; typecheck and build pass;
-      lint has 0 errors and 98 existing warnings; direct Astro check/build pass;
-      check compact pass; capability-contract validation pass; Python parity
-      pass; npm pack dry-run inspection pass; git diff --check pass."
-    next: Task 8 owns dev.17/core metadata, release-surface documentation, and
-      release closeout.
-    context:
-      intent: Complete Task 7 with one shared lifecycle scenario, distribution-context
-        parity, negative contract coverage for every active runtime, and the
-        required repository gates.
-      constraints: Task 8 version bump/docs/release closeout, publication, push, tag,
-        vision/objective changes, and Decision 92 satisfaction remain out of
-        scope.
-      unknowns: none
-      scope: packages/cli lifecycle consumers, runtime adapter validation,
-        update-channel authority, parity tests, and typed Task 7 state
 archive:
+  - summary: "Cycle 728 (2026-07-12): Verified Task 7 consumer and distribution
+      parity: doctor, upgrade, project integration, prime, and status now..."
   - summary: "Cycle 727 (2026-07-12): Verified runtime lifecycle selectors,
       ownership safety, preview purity, and retry convergence across OpenCode,
       Codex, Cursor,..."
@@ -347,5 +347,3 @@ archive:
       vitest 2→4 + Vite+ toolchain plan. Ran..."
   - summary: "Cycle 689 (2026-06-28): Plan task 4 of the vitest 2->4 toolchain
       modernization: align the pre-commit hook script with..."
-  - summary: "Cycle 688 (2026-06-28): Plan task 3 of the vitest 2->4 toolchain
-      modernization: wire `vp lint` and `vp fmt`..."

@@ -46,6 +46,8 @@ export interface PlanSummary {
   archived_plans?: JsonObject[];
   archive_count?: number;
   invalid_archive_paths?: string[];
+  invalid_path?: string;
+  diagnostics?: JsonObject[];
 }
 
 export interface DocsSummary {

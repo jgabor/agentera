@@ -102,20 +102,20 @@ describe("orientation: artifact summaries", () => {
     expect(summary.absence_reason).toContain("No active plan artifact");
   });
 
-  it("keeps an archived completed plan visible as history, not active work", () => {
+  it("keeps an archived open plan visible as history, not active work", () => {
     const p = path.join(tmp, "plan.yaml");
     const archiveDir = path.join(tmp, "archive");
     fs.mkdirSync(archiveDir, { recursive: true });
     fs.writeFileSync(
-      path.join(archiveDir, "PLAN-2026-07-12-completed.yaml"),
+      path.join(archiveDir, "PLAN-2026-07-12-open.yaml"),
       [
         "header:",
-        "  title: Completed lifecycle plan",
-        "  status: complete",
+        "  title: Archived open plan",
+        "  status: open",
         "tasks:",
         "  - number: 8",
-        "    status: complete",
-        "    name: Runtime lifecycle visibility",
+        "    status: pending",
+        "    name: Historical unfinished task",
         "",
       ].join("\n"),
     );
@@ -142,6 +142,39 @@ describe("orientation: artifact summaries", () => {
     );
     expect(context?.task_queue).toMatchObject({ total: 0, dependency_ready_tasks: [], blocked_tasks: [] });
     expect(context?.selected_next_task).toBeNull();
+  });
+
+  it("shares categorized archive diagnostics with orientation consumers", () => {
+    const p = path.join(tmp, "plan.yaml");
+    fs.writeFileSync(p, ["header:", "  title: Current", "  status: open", "tasks: []", ""].join("\n"));
+    const archive = path.join(tmp, "archive");
+    fs.mkdirSync(archive, { recursive: true });
+    fs.writeFileSync(path.join(archive, "PLAN-parse.yaml"), "header: [broken\n");
+    fs.writeFileSync(
+      path.join(archive, "PLAN-schema.yaml"),
+      ["header:", "  title: Schema", "  status: open", "tasks: invalid", ""].join("\n"),
+    );
+    fs.writeFileSync(
+      path.join(archive, "PLAN-lifecycle.yaml"),
+      ["header:", "  title: Lifecycle", "  status: queued", "tasks: []", ""].join("\n"),
+    );
+    fs.writeFileSync(
+      path.join(archive, "PLAN-legacy.yaml"),
+      ["header:", "  title: Legacy", "  status: active", "tasks: []", ""].join("\n"),
+    );
+
+    const summary = planSummary(schema("plan", p));
+    expect(summary.diagnostics?.map((diagnostic) => diagnostic.category).sort()).toEqual([
+      "legacy",
+      "lifecycle",
+      "parse",
+      "schema",
+    ]);
+    expect(summary.invalid_archive_paths).toEqual([
+      path.join(archive, "PLAN-lifecycle.yaml"),
+      path.join(archive, "PLAN-parse.yaml"),
+      path.join(archive, "PLAN-schema.yaml"),
+    ]);
   });
 
   it("summarizes the latest progress cycle", () => {

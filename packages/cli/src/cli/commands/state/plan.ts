@@ -34,11 +34,12 @@ import { resolvePlanTaskEvidence } from "../../planEvidence.js";
 
 function planArtifactSummary(artifact: PlanArtifact): JsonObject {
   const { data } = artifact;
-  const { header } = planDocumentParts(data);
+  const parts = planDocumentParts(data);
+  const header = { ...parts.header, status: parts.status };
   const summary: JsonObject = {
     header,
     title: firstPresent(header, ["title"], data.title ?? ""),
-    status: firstPresent(header, ["status"], data.status ?? ""),
+    status: parts.status,
     created: firstPresent(header, ["created"], data.created ?? ""),
     what: data.what,
     why: data.why,
@@ -62,6 +63,14 @@ function planSource(primary: PlanArtifact | null, discovery: PlanArtifactDiscove
   source.archived = Boolean(primary?.archived);
   source.active_path = discovery.activePath;
   source.archive_paths = discovery.archived.map((artifact) => artifact.path);
+  if (discovery.diagnostics.length > 0) source.diagnostics = discovery.diagnostics;
+  const activeDiagnostics = discovery.diagnostics.filter(
+    (diagnostic) => diagnostic.path === discovery.activePath && diagnostic.category !== "legacy",
+  );
+  if (activeDiagnostics.length > 0) source.invalid_path = discovery.activePath;
+  if (primary && discovery.diagnostics.some((diagnostic) => diagnostic.path === primary.path && diagnostic.category === "legacy")) {
+    source.legacy_input = true;
+  }
   if (discovery.invalidArchivePaths.length > 0) source.invalid_archive_paths = discovery.invalidArchivePaths;
   return source;
 }
@@ -74,6 +83,12 @@ function planCatalog(discovery: PlanArtifactDiscovery): JsonObject[] {
   return artifacts.map(planCatalogEntry);
 }
 
+function activePlanDiagnostics(discovery: PlanArtifactDiscovery): JsonObject[] {
+  return discovery.diagnostics.filter(
+    (diagnostic) => diagnostic.path === discovery.activePath && diagnostic.category !== "legacy",
+  );
+}
+
 function planSourceContract(
   source: JsonObject,
   summary: JsonObject,
@@ -81,7 +96,8 @@ function planSourceContract(
 ): JsonObject {
   const legacyEntries = Boolean(summary.legacy_entries);
   const evidenceIncomplete = summary.evidence_status === "incomplete";
-  const complete = Boolean(source.exists) && !legacyEntries && !evidenceIncomplete;
+  const currentDiagnostics = activePlanDiagnostics(discovery);
+  const complete = Boolean(source.exists) && !legacyEntries && !evidenceIncomplete && currentDiagnostics.length === 0;
   const active = source.active === true;
   const startupComplete = complete && active;
   const missingState: string[] = [];
@@ -89,6 +105,7 @@ function planSourceContract(
   else if (!active) missingState.push("active plan artifact");
   if (legacyEntries) missingState.push("current plan task artifact shape");
   if (evidenceIncomplete) missingState.push("task evidence");
+  if (currentDiagnostics.length > 0) missingState.push("valid current plan artifact");
   const summaryFields = Object.keys(summary).sort();
   const entryFields = [
     "number",
@@ -177,12 +194,20 @@ export function queryPlan(args: StateArgs, schemas: Record<string, SchemaInfo>, 
   if (!primary) {
     if (format !== "text") {
       const source = planSource(null, discovery);
-      const summary = { absence_reason: "No plan artifact is available from agentera plan." };
+      const currentDiagnostics = activePlanDiagnostics(discovery);
+      const summary: JsonObject = currentDiagnostics.length > 0
+        ? {
+            invalid_path: discovery.activePath,
+            diagnostic: currentDiagnostics[0],
+            absence_reason: "Current plan artifact is invalid.",
+          }
+        : { absence_reason: "No plan artifact is available from agentera plan." };
       const payload = structuredState("plan", [], source, {
         filters: { status: args.status ?? null },
         summary,
         sourceContract: planSourceContract(source, summary, discovery),
       });
+      if (currentDiagnostics.length > 0) payload.status = "incomplete";
       payload.plans = catalog;
       return emitStateStructured(
         "plan",
@@ -193,12 +218,24 @@ export function queryPlan(args: StateArgs, schemas: Record<string, SchemaInfo>, 
         e,
       );
     }
+    const [diagnostic] = activePlanDiagnostics(discovery);
+    if (diagnostic) {
+      o(`Plan: invalid | path=${diagnostic.path} | category=${diagnostic.category} | diagnostic=${diagnostic.message}\n`);
+    }
     return 0;
   }
   const dataDict = primary.data;
   const parts = planDocumentParts(dataDict);
   const evidence = resolvePlanTaskEvidence(primary, parts.tasks, schemas);
-  const summary = parts.legacyEntries ? { legacy_entries: true } : planArtifactSummary(primary);
+  const summary: JsonObject = {
+    ...planArtifactSummary(primary),
+    ...(parts.legacyEntries ? { legacy_entries: true } : {}),
+  };
+  const currentDiagnostics = activePlanDiagnostics(discovery);
+  if (currentDiagnostics.length > 0) {
+    summary.invalid_path = discovery.activePath;
+    summary.current_plan_diagnostic = currentDiagnostics[0];
+  }
   summary.evidence_status = evidence.complete ? "complete" : "incomplete";
   summary.evidence_sources = evidence.sources;
   const title = summary.title ?? "";
@@ -214,7 +251,7 @@ export function queryPlan(args: StateArgs, schemas: Record<string, SchemaInfo>, 
       summary,
       sourceContract: planSourceContract(source, summary, discovery),
     });
-    if (!evidence.complete) payload.status = "incomplete";
+    if (!evidence.complete || currentDiagnostics.length > 0) payload.status = "incomplete";
     payload.plans = catalog;
     return emitStateStructured(
       "plan",
@@ -226,6 +263,10 @@ export function queryPlan(args: StateArgs, schemas: Record<string, SchemaInfo>, 
     );
   }
   if (primary.archived) o(`Plan source: archived | path=${primary.path}\n`);
+  if (currentDiagnostics.length > 0) {
+    const diagnostic = currentDiagnostics[0]!;
+    o(`Plan diagnostic: path=${diagnostic.path} | category=${diagnostic.category} | diagnostic=${diagnostic.message}\n`);
+  }
   o(`Plan: status=${status || "unknown"} | title=${truncate(title)} | created=${created || "-"}\n`);
   if (!evidence.complete) o("Evidence: incomplete | missing authoritative task evidence\n");
   for (const key of ["what", "why"]) {

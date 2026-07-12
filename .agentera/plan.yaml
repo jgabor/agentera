@@ -45,12 +45,13 @@ tasks:
     name: Add legacy normalization and plan diagnostics
     depends_on:
       - "1"
-    status: pending
+    status: complete
     acceptance:
       - GIVEN a legacy persisted `active` status WHEN read within the compatibility boundary THEN it is normalized to `open` and reported as legacy input.
       - GIVEN malformed current plan data WHEN state is queried THEN the invalid path and diagnostic are reported instead of treating the plan as absent.
       - GIVEN invalid archives WHEN discovered THEN parse, schema, lifecycle, and legacy conditions are categorized consistently for all plan consumers.
       - GIVEN an archived open plan WHEN queried THEN it remains historical and supplies no executable selected task.
+    evidence: packages/cli/src/cli/planArtifacts.ts normalizes legacy active and completed statuses and emits parse, schema, lifecycle, and legacy diagnostics; state plan keeps archived open plans non-executable. Verified focused and full CLI tests, typecheck, lint, build, capability-contract validation, compact gate, and built CLI smoke.
   - number: 3
     name: Provide deterministic lifecycle migration
     depends_on:
@@ -71,6 +72,7 @@ tasks:
       - GIVEN task status fields WHEN the plan-level enum changes THEN their existing vocabulary and behavior remain unchanged.
       - GIVEN a legacy current plan during the bounded transition WHEN it is archived or replaced THEN normalization prevents the writer from becoming unusable.
       - GIVEN canonical serialization WHEN output is inspected THEN no persisted field duplicates the positional meaning of `active`.
+      - GIVEN plan-level or task-level status mutation WHEN its contract is explained or invoked THEN valid values and operations are context-specific so lifecycle values cannot be applied to tasks or task values to plans.
   - number: 5
     name: Implement validated crash-consistent publication
     depends_on:
@@ -91,8 +93,9 @@ tasks:
     acceptance:
       - GIVEN plan catalog output WHEN an artifact is current or archived THEN `active` and `archived` are derived exclusively from canonical location.
       - GIVEN a normal or forced archive WHEN state is rendered THEN its lifecycle remains truthful and it is never presented as the executable current plan.
-      - GIVEN an archive-only project WHEN prime, status context, or state plan runs THEN no archived task populates an execution queue and planning is suggested instead.
+      - GIVEN pending tasks with blocked dependencies WHEN plan state selects next work THEN it returns only a dependency-ready task or null and never labels a merely pending blocked task as next.
       - GIVEN contradictory or malformed lifecycle data WHEN queried THEN structured degraded state is shared by status, build, and orchestration consumers.
+      - GIVEN task evaluation fails or is retried WHEN orchestration state is persisted and reloaded THEN CLI-owned attempt count, last verdict, failure evidence, and retry provenance survive restart and enforce the retry budget.
   - number: 7
     name: Simplify validation and publication language
     depends_on:
@@ -100,10 +103,11 @@ tasks:
       - "6"
     status: pending
     acceptance:
-      - GIVEN plan capability instructions WHEN read after writer integration THEN a concise validate-and- publish step replaces the standalone pre-write self-audit sequence.
+      - GIVEN plan capability instructions WHEN read after writer integration THEN a concise validate-and-publish step replaces the standalone pre-write self-audit sequence.
       - GIVEN help and vocabulary surfaces WHEN searched THEN they describe one authoritative writer operation and contain no contradictory manual command sequence.
       - GIVEN an agent wants early feedback WHEN working on a draft THEN `check lint` remains available as an optional preview rather than a separate publication obligation.
       - GIVEN bundled and source capability data WHEN validated THEN both expose the same updated contract.
+      - GIVEN the documented plan YAML example WHEN submitted unchanged through the typed writer THEN its overall acceptance, dependency, and optional rejected-section shapes validate successfully in a regression test.
   - number: 8
     name: Synchronize state and verify lifecycle behavior
     depends_on:

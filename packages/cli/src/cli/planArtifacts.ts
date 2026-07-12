@@ -2,7 +2,8 @@ import fs from "node:fs";
 import path from "node:path";
 
 import type { JsonObject } from "../core/jsonValue.js";
-import { asList, firstPresent, loadArtifact } from "./stateQuery.js";
+import { loadYamlMapping } from "../core/yaml.js";
+import { asList, firstPresent } from "./stateQuery.js";
 
 /** The immutable filenames produced by the typed plan archive writer. */
 const PLAN_ARCHIVE_FILE = /^PLAN-.+\.ya?ml$/i;
@@ -13,12 +14,21 @@ export interface PlanArtifact {
   archived: boolean;
 }
 
+export type PlanDiagnosticCategory = "parse" | "schema" | "lifecycle" | "legacy";
+
+export interface PlanArtifactDiagnostic extends JsonObject {
+  path: string;
+  category: PlanDiagnosticCategory;
+  message: string;
+}
+
 export interface PlanArtifactDiscovery {
   activePath: string;
   archiveDirectory: string;
   active: PlanArtifact | null;
   archived: PlanArtifact[];
   invalidArchivePaths: string[];
+  diagnostics: PlanArtifactDiagnostic[];
 }
 
 export interface PlanDocumentParts {
@@ -34,27 +44,103 @@ function isMapping(value: unknown): value is JsonObject {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
+function normalizeLegacyStatus(status: string): string {
+  if (status === "active") return "open";
+  if (status === "completed") return "complete";
+  return status;
+}
+
+function planStatus(data: JsonObject): string {
+  const header = isMapping(data.header) ? data.header : {};
+  return String(firstPresent(header, ["status"], "") || "");
+}
+
+function normalizePlanDocument(data: JsonObject): JsonObject {
+  const header = isMapping(data.header) ? data.header : {};
+  const status = planStatus(data);
+  const normalized = normalizeLegacyStatus(status);
+  if (status === normalized) return data;
+  return { ...data, header: { ...header, status: normalized } };
+}
+
 /**
  * A plan archive is valid only when it retains the task list (including an
  * intentionally empty list). This keeps unrelated YAML and malformed plan
  * names from replacing a valid archive during discovery.
  */
 function isPlanDocument(value: unknown): value is JsonObject {
-  return isMapping(value) && (Array.isArray(value.tasks) || Array.isArray(value.entries));
+  if (!isMapping(value) || !isMapping(value.header)) return false;
+  const entries = Array.isArray(value.entries) ? value.entries : value.tasks;
+  return Array.isArray(entries) && entries.every(isMapping);
+}
+
+function inspectionDiagnostic(path: string, category: PlanDiagnosticCategory, message: string): PlanArtifactDiagnostic {
+  return { path, category, message };
+}
+
+function inspectPlanArtifact(
+  artifactPath: string,
+  archived: boolean,
+): { artifact: PlanArtifact | null; diagnostics: PlanArtifactDiagnostic[] } {
+  let data: unknown;
+  try {
+    data = loadYamlMapping(fs.readFileSync(artifactPath, "utf8"));
+  } catch (error) {
+    const message = (error as Error).message;
+    const category = message === "YAML root must be a mapping" ? "schema" : "parse";
+    return { artifact: null, diagnostics: [inspectionDiagnostic(artifactPath, category, message)] };
+  }
+  if (!isPlanDocument(data)) {
+    return {
+      artifact: null,
+      diagnostics: [
+        inspectionDiagnostic(
+          artifactPath,
+          "schema",
+          "plan requires a header mapping and a tasks or entries array of task mappings",
+        ),
+      ],
+    };
+  }
+
+  const status = planStatus(data);
+  if (!["open", "complete", "active", "completed"].includes(status)) {
+    return {
+      artifact: null,
+      diagnostics: [
+        inspectionDiagnostic(
+          artifactPath,
+          "lifecycle",
+          `plan header.status must be open or complete; received ${status || "missing"}`,
+        ),
+      ],
+    };
+  }
+
+  const diagnostics: PlanArtifactDiagnostic[] = [];
+  if (status === "active" || status === "completed") {
+    diagnostics.push(
+      inspectionDiagnostic(artifactPath, "legacy", `legacy plan status ${status} normalized to ${normalizeLegacyStatus(status)}`),
+    );
+  }
+  if (Array.isArray(data.entries)) {
+    diagnostics.push(inspectionDiagnostic(artifactPath, "legacy", "legacy entries task shape is read compatibly"));
+  }
+  return { artifact: { path: artifactPath, data: normalizePlanDocument(data), archived }, diagnostics };
 }
 
 export function planDocumentParts(data: JsonObject): PlanDocumentParts {
-  const legacyEntries = asList(data.entries);
+  const legacyEntries = Array.isArray(data.entries);
   const header = isMapping(data.header) ? data.header : {};
-  const rawTasks = legacyEntries.length > 0 ? legacyEntries : asList(data.tasks);
+  const rawTasks = legacyEntries ? asList(data.entries) : asList(data.tasks);
   const tasks = rawTasks.filter((task): task is JsonObject => isMapping(task));
   return {
     header,
     tasks,
-    status: String(firstPresent(header, ["status"], data.status ?? "") || ""),
+    status: normalizeLegacyStatus(String(firstPresent(header, ["status"], "") || "")),
     title: String(firstPresent(header, ["title"], data.title ?? "") || ""),
     created: String(firstPresent(header, ["created"], data.created ?? "") || ""),
-    legacyEntries: legacyEntries.length > 0,
+    legacyEntries,
   };
 }
 
@@ -65,10 +151,13 @@ export function planDocumentParts(data: JsonObject): PlanDocumentParts {
  */
 export function discoverPlanArtifacts(activePath: string): PlanArtifactDiscovery {
   const archiveDirectory = path.join(path.dirname(activePath), "archive");
-  const activeData = loadArtifact(activePath);
-  const active = isPlanDocument(activeData) ? { path: activePath, data: activeData, archived: false } : null;
+  const activeInspection = fs.existsSync(activePath)
+    ? inspectPlanArtifact(activePath, false)
+    : { artifact: null, diagnostics: [] };
+  const active = activeInspection.artifact;
   const archived: PlanArtifact[] = [];
   const invalidArchivePaths: string[] = [];
+  const diagnostics = [...activeInspection.diagnostics];
 
   let names: string[] = [];
   try {
@@ -86,8 +175,9 @@ export function discoverPlanArtifacts(activePath: string): PlanArtifactDiscovery
       continue;
     }
     if (!isFile) continue;
-    const data = loadArtifact(archivePath);
-    if (isPlanDocument(data)) archived.push({ path: archivePath, data, archived: true });
+    const inspection = inspectPlanArtifact(archivePath, true);
+    diagnostics.push(...inspection.diagnostics);
+    if (inspection.artifact) archived.push(inspection.artifact);
     else invalidArchivePaths.push(archivePath);
   }
 
@@ -105,7 +195,7 @@ export function discoverPlanArtifacts(activePath: string): PlanArtifactDiscovery
     const delta = mtime(b) - mtime(a);
     return delta === 0 ? b.path.localeCompare(a.path) : delta;
   });
-  return { activePath, archiveDirectory, active, archived, invalidArchivePaths };
+  return { activePath, archiveDirectory, active, archived, invalidArchivePaths, diagnostics };
 }
 
 export function planCatalogEntry(artifact: PlanArtifact): JsonObject {

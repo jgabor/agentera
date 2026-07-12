@@ -25,6 +25,8 @@ export function slimPlanState(plan: JsonObject): JsonObject {
     complete: plan.complete ?? null,
     total: plan.total ?? null,
     first_pending: firstPending && typeof firstPending === "object" && !Array.isArray(firstPending) ? taskRef(firstPending) : null,
+    diagnostics: asList(plan.diagnostics),
+    invalid_path: plan.invalid_path ?? null,
     source_provenance: sourceProvenance("plan", "agentera plan --format json"),
   };
 }
