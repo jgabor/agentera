@@ -51,7 +51,7 @@ afterEach(() => {
 });
 
 describe("prime project_integration", () => {
-  it("recommends runtime upgrade for v3 bundle with python-managed cursor hooks", () => {
+  it("requires manual review for unowned python-managed cursor hooks", () => {
     const bundle = path.join(tmp, "bundle");
     seedNpxBundle(bundle);
     process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT = bundle;
@@ -66,19 +66,19 @@ describe("prime project_integration", () => {
     const integration = state.project_integration as Record<string, unknown>;
 
     expect(state.app.status).toBe("up_to_date");
-    expect(integration.recommendation).toBe("upgrade");
-    expect(integration.pending_runtime).toBeGreaterThan(0);
-    expect(integration.pending_runtimes).toContain("cursor");
-    expect(integration.dry_run_command).toContain("upgrade");
-    expect(integration.dry_run_command).not.toContain("--project");
-    expect(integration.upgrade_only).toBeUndefined();
+    expect(integration.recommendation).toBe("stay");
+    expect(integration.pending_runtime).toBe(0);
+    expect(integration.pending_runtimes).toEqual([]);
+    expect(integration.dry_run_command).toBeNull();
+    expect(integration.phases).toMatchObject({
+      lifecycle: { status: "blocked" },
+    });
 
     const attention = (state.attention as string[]).find((line) => line.includes("lifecycle action_class="));
     expect(attention).toBeTruthy();
 
     const nextAction = state.next_action.recommended;
-    expect(nextAction.object).toContain('Upgrade');
-    expect(nextAction.capability).toBe('status');
+    expect(nextAction.object).not.toContain("Upgrade Agentera runtime wiring");
   });
 
   it("does not let warning-only lifecycle blockers replace executable readiness work", () => {

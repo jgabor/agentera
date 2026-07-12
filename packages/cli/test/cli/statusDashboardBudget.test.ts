@@ -68,7 +68,7 @@ describe("status dashboard contract", () => {
       },
     };
     const lifecycleRows = buildOrientationAttention(state).filter((item) => item.includes("lifecycle action_class="));
-    expect(lifecycleRows).toHaveLength(2);
+    expect(lifecycleRows).toHaveLength(1);
 
     const payload = buildOrientationJsonPayload(
       {
@@ -86,7 +86,6 @@ describe("status dashboard contract", () => {
     const budget = statusBudget();
 
     expect(budget).toEqual({ briefing: 120, suggestion: 15 });
-    expect(rendered).toContain("npx -y agentera@next upgrade --dry-run");
     expect(rendered).toContain("/skills list");
     expect(rendered).toContain("agentera doctor --format json");
     expect(wordCount(rendered)).toBeLessThanOrEqual(budget.briefing);
