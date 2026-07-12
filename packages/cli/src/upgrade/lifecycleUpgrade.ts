@@ -345,7 +345,9 @@ function journalBlocksMutation(journal: LifecycleOwnershipJournalRead): boolean 
 }
 
 function journalBlocker(journal: LifecycleOwnershipJournalRead): string {
-  return `ownership journal is ${journal.state}: ${journal.diagnostics.join("; ")}`;
+  const diagnostics = journal.diagnostics
+    .map((diagnostic) => diagnostic.replace(/^\d{20}-[0-9a-f-]{36}\.json:\s*/i, ""));
+  return `ownership journal is ${journal.state}: ${diagnostics.join("; ")}`;
 }
 
 function blockOperation(plan: LifecycleOperationPlan, operationId: string, reason: string): LifecycleOperationPlan {

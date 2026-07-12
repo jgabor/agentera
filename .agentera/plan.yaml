@@ -84,7 +84,7 @@ tasks:
     depends_on:
       - "2"
       - "3"
-    status: pending
+    status: complete
     acceptance:
       - GIVEN OpenCode, Codex, Cursor, and Copilot scenarios WHEN tested THEN default preview, selector narrowing, shared-resource inclusion, and Cursor applicability have pass and fail coverage.
       - GIVEN missing, corrupt, disconnected, or mismatched ownership WHEN previewed and applied THEN mutation fails closed with stable causes.

@@ -1,4 +1,5 @@
 import { spawnSync } from "node:child_process";
+import childProcess from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -16,6 +17,11 @@ import {
   lifecycleOwnershipJournalPath,
   readLifecycleOwnershipJournal,
 } from "../../src/runtime/lifecycleOwnershipJournal.js";
+import * as lifecycleJournal from "../../src/runtime/lifecycleOwnershipJournal.js";
+import * as lifecycleOperations from "../../src/runtime/lifecycleOperations.js";
+import * as lifecyclePublication from "../../src/runtime/lifecyclePublication.js";
+import * as usageStats from "../../src/analytics/usageStats.js";
+import { LIFECYCLE_MANUAL_REVIEW_GUIDANCE } from "../../src/runtime/lifecycleOperations.js";
 import { runLifecycleUpgrade } from "../../src/upgrade/lifecycleUpgrade.js";
 import { buildUpgradePlan, renderUpgradePlan, upgradeExitCode } from "../../src/upgrade/upgradeOrchestrator.js";
 
@@ -102,6 +108,48 @@ function treeBytes(root: string): string[] {
   return out;
 }
 
+type ActiveSelector = "opencode" | "codex" | "cursor" | "copilot";
+
+const ACTIVE_SELECTORS: readonly ActiveSelector[] = ["opencode", "codex", "cursor", "copilot"];
+
+const RUNTIME_COLLISION_OPERATION: Record<ActiveSelector, string> = {
+  opencode: "opencode.plugin",
+  codex: "codex.hooks",
+  cursor: "cursor.plugin",
+  copilot: "canonical_skill",
+};
+
+function ownershipEventFiles(): string[] {
+  return fs.readdirSync(lifecycleOwnershipJournalPath(fx.appHome))
+    .filter((name) => /^\d{20}-[0-9a-f-]{36}\.json$/i.test(name))
+    .sort();
+}
+
+function createRuntimeCollision(runtime: ActiveSelector): string {
+  switch (runtime) {
+    case "opencode": {
+      const target = path.join(fx.home, ".config", "opencode", "plugins", "agentera.js");
+      fs.copyFileSync(path.join(REPO_ROOT, ".opencode", "plugins", "agentera.js"), target);
+      return target;
+    }
+    case "codex": {
+      const target = path.join(fx.home, ".codex", "hooks.json");
+      fs.copyFileSync(path.join(REPO_ROOT, "hooks", "codex-hooks.json"), target);
+      return target;
+    }
+    case "cursor": {
+      const target = path.join(fx.project, ".cursor-plugin", "plugin.json");
+      fs.copyFileSync(path.join(REPO_ROOT, ".cursor-plugin", "plugin.json"), target);
+      return target;
+    }
+    case "copilot": {
+      const target = path.join(fx.home, ".agents", "skills", "agentera");
+      fs.writeFileSync(target, "user-owned collision\n");
+      return target;
+    }
+  }
+}
+
 beforeEach(() => {
   fx = fixture();
   process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT = REPO_ROOT;
@@ -116,6 +164,32 @@ afterEach(() => {
 });
 
 describe("upgrade lifecycle preview", () => {
+  it.each(ACTIVE_SELECTORS)("covers default all-runtime preview and narrowed %s selection", (runtime) => {
+    const defaultPreview = buildUpgradePlan({
+      installRoot: fx.appHome,
+      home: fx.home,
+      project: fx.project,
+      channel: "development",
+      dryRun: true,
+    });
+
+    expect(defaultPreview.lifecycle?.selection).toEqual({
+      requested: "all",
+      runtimeIds: ACTIVE_SELECTORS,
+    });
+    expect(defaultPreview.lifecycle?.operations.filter((operation) => operation.id === "canonical_skill"))
+      .toHaveLength(1);
+    expect(defaultPreview.lifecycle?.operations.some((operation) => operation.runtime === runtime)
+      || defaultPreview.lifecycle?.userActions.some((action) => action.runtime === runtime)).toBe(true);
+
+    const narrowed = run(runtime, false);
+    expect(narrowed.selection).toEqual({ requested: runtime, runtimeIds: [runtime] });
+    expect(narrowed.operations[0]?.id).toBe("canonical_skill");
+    expect(narrowed.operations.slice(1).every((operation) => operation.id.startsWith(`${runtime}.`))).toBe(true);
+    expect(narrowed.operations.some((operation) => operation.runtime === runtime)
+      || narrowed.userActions.some((action) => action.runtime === runtime)).toBe(true);
+  });
+
   it("selects all runtimes in authority order, deduplicates shared work, and performs zero writes or native execution", () => {
     const before = treeBytes(fx.root);
 
@@ -140,6 +214,74 @@ describe("upgrade lifecycle preview", () => {
     expect(preview.retiredSummary).toBeNull();
     expect(treeBytes(fx.root)).toEqual(before);
     expect(fs.existsSync(fx.trap)).toBe(false);
+  });
+
+  it("keeps preview strictly read-only across managed roots and side-effect boundaries", () => {
+    const before = treeBytes(fx.root);
+    const mutationSpies = [
+      vi.spyOn(fs, "mkdirSync"),
+      vi.spyOn(fs, "writeFileSync"),
+      vi.spyOn(fs, "renameSync"),
+      vi.spyOn(fs, "unlinkSync"),
+      vi.spyOn(fs, "rmSync"),
+      vi.spyOn(fs, "rmdirSync"),
+      vi.spyOn(fs, "symlinkSync"),
+      vi.spyOn(fs, "linkSync"),
+    ];
+    const nativeSpies = [
+      vi.spyOn(childProcess, "execFileSync"),
+      vi.spyOn(childProcess, "spawnSync"),
+      vi.spyOn(childProcess, "execFile"),
+      vi.spyOn(childProcess, "spawn"),
+    ];
+    const journalAppendSpy = vi.spyOn(lifecycleJournal, "appendLifecycleOwnershipJournal");
+    const lockSpy = vi.spyOn(lifecycleJournal, "acquireLifecycleOwnershipJournalLock");
+    const publicationSpy = vi.spyOn(lifecyclePublication, "publishLifecycleResource");
+    const ledgerSpy = vi.spyOn(lifecycleOperations, "writeLifecycleOwnershipLedgerAtomic");
+    const telemetrySpy = vi.spyOn(usageStats, "usageMain");
+
+    const preview = run("all", false);
+
+    expect(preview.mode).toBe("preview");
+    expect(treeBytes(fx.root)).toEqual(before);
+    expect(fs.existsSync(lifecycleOwnershipJournalPath(fx.appHome))).toBe(false);
+    expect(fs.existsSync(fx.trap)).toBe(false);
+    for (const spy of mutationSpies) expect(spy).not.toHaveBeenCalled();
+    for (const spy of nativeSpies) expect(spy).not.toHaveBeenCalled();
+    expect(journalAppendSpy).not.toHaveBeenCalled();
+    expect(lockSpy).not.toHaveBeenCalled();
+    expect(publicationSpy).not.toHaveBeenCalled();
+    expect(ledgerSpy).not.toHaveBeenCalled();
+    expect(telemetrySpy).not.toHaveBeenCalled();
+  });
+
+  it.each(ACTIVE_SELECTORS)("fails closed on a missing %s ownership record in preview and apply", (runtime) => {
+    const target = createRuntimeCollision(runtime);
+    const before = fs.lstatSync(target).isSymbolicLink()
+      ? `link:${fs.readlinkSync(target)}`
+      : fs.readFileSync(target, "hex");
+    const operationId = RUNTIME_COLLISION_OPERATION[runtime];
+
+    const preview = run(runtime, false);
+    const previewOperation = preview.operations.find((operation) => operation.id === operationId);
+    expect(previewOperation).toMatchObject({
+      currentState: "unowned",
+      ownership: "unowned",
+      action: "blocked_unowned",
+      blockedReason: "pre-existing resource has no matching Agentera ownership ledger record",
+      remediation: [LIFECYCLE_MANUAL_REVIEW_GUIDANCE],
+    });
+
+    const applied = run(runtime, true);
+    const appliedOperation = applied.operations.find((operation) => operation.id === operationId);
+    expect(appliedOperation).toMatchObject({
+      outcome: "blocked_unowned",
+      blockedReason: "pre-existing resource has no matching Agentera ownership ledger record",
+    });
+    expect(applied.status).toBe("non_success");
+    expect(fs.lstatSync(target).isSymbolicLink()
+      ? `link:${fs.readlinkSync(target)}`
+      : fs.readFileSync(target, "hex")).toBe(before);
   });
 
   it("selects Cursor as one identity with deterministic CLI and IDE operation metadata", () => {
@@ -234,6 +376,48 @@ describe("upgrade lifecycle preview", () => {
     expect(unsupported.platform.securePublication).toBe(false);
     expect(unsupported.operations.filter((operation) => operation.action !== "noop")
       .every((operation) => operation.action === CASES.unsupported_platform.action)).toBe(true);
+  });
+
+  it("keeps Cursor CLI required while making IDE applicability conditional", () => {
+    const cliOnly = new CursorLifecycleAdapter().inspect({
+      home: fx.home,
+      project: fx.project,
+      sourceRoot: REPO_ROOT,
+      env: fx.env,
+      surfaceEvidence: {
+        cli: { host_present: true },
+        ide: { host_present: false },
+      },
+      categoryEvidence: { trust: { cli: true, ide: "unknown" } },
+    });
+    expect(cliOnly.lifecycleObservation.surfaces.map((surface) => [surface.id, surface.applicability])).toEqual([
+      ["cli", "required"],
+      ["ide", "not_applicable"],
+    ]);
+    expect(cliOnly.lifecycleObservation.surfaces[0]?.evidence).toMatchObject({
+      host_present: true,
+      trusted: true,
+    });
+
+    const idePresent = new CursorLifecycleAdapter().inspect({
+      home: fx.home,
+      project: fx.project,
+      sourceRoot: REPO_ROOT,
+      env: fx.env,
+      surfaceEvidence: {
+        cli: { host_present: true },
+        ide: { host_present: true },
+      },
+      categoryEvidence: { trust: { cli: true, ide: "denied" } },
+    });
+    expect(idePresent.lifecycleObservation.surfaces.map((surface) => [surface.id, surface.applicability])).toEqual([
+      ["cli", "required"],
+      ["ide", "conditional"],
+    ]);
+    expect(idePresent.categories.trust.surfaces.find((surface) => surface.surfaceId === "ide")).toMatchObject({
+      state: "denied",
+      remediation: { kind: "action_required" },
+    });
   });
 
   it("keeps unknown and denied trust as action-required evidence without a production injection seam", () => {
@@ -340,6 +524,84 @@ describe("upgrade lifecycle apply and convergence", () => {
       ["opencode.agent", "noop"],
     ]);
     expect(run("opencode", false).operations.every((operation) => operation.action === "noop")).toBe(true);
+  });
+
+  it("fails closed with the same cause when a managed record no longer matches its destination", () => {
+    const first = run("opencode", true);
+    expect(first.status).toBe("success");
+    const journalPath = lifecycleOwnershipJournalPath(fx.appHome);
+    const journal = readLifecycleOwnershipJournal(journalPath);
+    const mismatchedDestination = path.join(fx.root, "different-owner-destination");
+    const mismatchedLedger = {
+      ...journal.ledger,
+      records: journal.ledger.records.map((record) => record.resourceId === "opencode.plugin"
+        ? { ...record, destination: mismatchedDestination }
+        : record),
+    };
+    appendLifecycleOwnershipJournal(journalPath, mismatchedLedger);
+
+    const plugin = path.join(fx.home, ".config", "opencode", "plugins", "agentera.js");
+    const before = fs.readFileSync(plugin, "hex");
+    const expectedCause = "ownership ledger record does not match the declared destination and kind";
+
+    const preview = run("opencode", false);
+    const previewOperation = preview.operations.find((operation) => operation.id === "opencode.plugin");
+    expect(previewOperation).toMatchObject({
+      currentState: "ambiguous_ownership",
+      ownership: "ambiguous",
+      action: "action_required",
+      blockedReason: expectedCause,
+    });
+    expect(previewOperation?.ownershipEvidence.ledgerRecord?.destination).toBe(mismatchedDestination);
+
+    const applied = run("opencode", true);
+    expect(applied.operations.find((operation) => operation.id === "opencode.plugin")).toMatchObject({
+      outcome: "action_required",
+      blockedReason: expectedCause,
+    });
+    expect(fs.readFileSync(plugin, "hex")).toBe(before);
+  });
+
+  it.each([
+    ["corrupt", "incomplete publication occurs before a successor event", (events: string[]) => {
+      fs.writeFileSync(path.join(lifecycleOwnershipJournalPath(fx.appHome), events[0]!), "{");
+    }],
+    ["disconnected", "previous digest disconnects the hash chain", (events: string[]) => {
+      const journalPath = lifecycleOwnershipJournalPath(fx.appHome);
+      const last = events.at(-1)!;
+      const eventPath = path.join(journalPath, last);
+      const event = JSON.parse(fs.readFileSync(eventPath, "utf8")) as Record<string, unknown>;
+      event.previousDigest = "sha256:disconnected";
+      fs.writeFileSync(eventPath, `${JSON.stringify(event, null, 2)}\n`);
+    }],
+  ] as const)("fails closed on a %s ownership journal in preview and apply", (_kind, expectedCause, corrupt) => {
+    run("opencode", true);
+    const plugin = path.join(fx.home, ".config", "opencode", "plugins", "agentera.js");
+    fs.writeFileSync(plugin, "owned drift before journal failure\n");
+    const journalPath = lifecycleOwnershipJournalPath(fx.appHome);
+    let journal = readLifecycleOwnershipJournal(journalPath);
+    while (journal.validEvents < 2) {
+      journal = appendLifecycleOwnershipJournal(journalPath, journal.ledger);
+    }
+    const events = ownershipEventFiles();
+    corrupt(events);
+    const before = treeBytes(fx.root);
+
+    const preview = run("opencode", false);
+    expect(preview.ownershipJournal.state).toBe("corrupt");
+    const previewBlocked = preview.operations.filter((operation) => operation.action !== "noop");
+    expect(previewBlocked.length).toBeGreaterThan(0);
+    expect(new Set(previewBlocked.map((operation) => operation.blockedReason))).toEqual(new Set([
+      `ownership journal is corrupt: ${expectedCause}`,
+    ]));
+
+    const applied = run("opencode", true);
+    expect(applied.ownershipJournal.state).toBe("corrupt");
+    expect(applied.operations.filter((operation) => operation.outcome !== "noop")
+      .every((operation) => operation.outcome === "action_required")).toBe(true);
+    expect(applied.operations.some((operation) => operation.blockedReason === `ownership journal is corrupt: ${expectedCause}`))
+      .toBe(true);
+    expect(treeBytes(fx.root)).toEqual(before);
   });
 
   it("blocks preview and apply on exact event-2 corruption in a nine-event chain without mutation", () => {

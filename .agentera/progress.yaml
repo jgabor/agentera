@@ -1,4 +1,34 @@
 cycles:
+  - number: 727
+    timestamp: 2026-07-12 14:06
+    type: test
+    phase: build
+    what: Verified runtime lifecycle selectors, ownership safety, preview purity,
+      and retry convergence across OpenCode, Codex, Cursor, and Copilot;
+      stabilized corrupt-journal blocker causes by removing volatile event
+      filenames.
+    inspiration: Active Agentera plan Task 6 and Decision 92 ownership and trust boundaries.
+    discovered: Codex directory-file resources expand into one operation per agent;
+      Copilot contributes shared canonical-skill work and native actions rather
+      than a runtime-specific filesystem resource.
+    verified: "Focused Task 6 lifecycle suite: 52 passed. Related
+      lifecycle/orchestrator/recovery suite: 117 passed. Typecheck passed. Lint
+      passed with 0 errors and 98 existing warnings. Build passed. Compact gate
+      passed. Full CLI: 1514 passed and exactly 8 accepted 3.0.0-dev.16 versus
+      core 3.0.0 metadata failures; no extras. Capability and
+      capability-contract validation passed; git diff --check passed."
+    next: Task 7 remains pending; do not begin consumer or distribution parity in
+      this cycle.
+    context:
+      intent: Close active plan Task 6 with executable pass/fail evidence for
+        selectors, ownership, side effects, and convergence.
+      constraints: No vision or objective edits, no Decision 92 satisfaction change,
+        no native install/auth/trust actions, no push/publish/tag, and no Task 7
+        work.
+      unknowns: none
+      scope: packages/cli/src/upgrade/lifecycleUpgrade.ts;
+        packages/cli/test/upgrade/lifecycleUpgrade.test.ts; .agentera/plan.yaml;
+        .agentera/progress.yaml
   - number: 726
     timestamp: 2026-07-12 13:46
     type: fix
@@ -255,38 +285,9 @@ cycles:
       scope: Ownership ledger validation and guidance, lifecycle selector boundaries,
         dependency remediation, retired summary separation, runtime contract,
         upgrade documentation, focused tests.
-  - number: 717
-    timestamp: 2026-07-12 10:57
-    type: feat
-    phase: build
-    what: Defined default preview and explicit apply semantics for runtime lifecycle
-      upgrade work.
-    inspiration: Active plan Task 2 and canonical lifecycle projection from commit 962467f8.
-    discovered: The full suite reproduces exactly eight tracked release-metadata
-      failures because packages/cli is 3.0.0-dev.16 while core release metadata
-      remains 3.0.0; no additional failures remain.
-    verified: Implemented packages/cli/src/upgrade/upgradeOrchestrator.ts selection
-      and phase ordering, updated upgrade/lifecycle tests (focused set 52 tests
-      and safety set 61 tests passed), pnpm -C packages/cli run typecheck
-      passed, pnpm -C packages/cli build passed, rebuilt CLI smoke showed
-      development dry-run selection all with an explicit --runtime all --yes
-      apply command and stable dry-run lifecycle null, check compact passed,
-      capability and capability-contract validation passed, and git diff --check
-      passed.
-    next: Continue with Task 3 ownership-safe repair and cleanup; do not expand into
-      project integration or status attention/ranking.
-    context:
-      intent: Complete active plan Task 2 while preserving stable v2 app-only behavior
-        and Decision 92 safety boundaries.
-      constraints: Preview is read-only; native install, authentication, enablement,
-        and trust remain user-owned; apply without --runtime remains app-only;
-        no vision, objective, push, tag, or publication changes.
-      unknowns: none
-      scope: packages/cli/src/upgrade/upgradeOrchestrator.ts,
-        packages/cli/test/upgrade/{upgradeOrchestrator,upgradeCommands,lifecycleUpgrade,idempotency,parityOracle}.test.ts,
-        packages/cli/test/cli/doctorUpgradeParity.test.ts, README.md,
-        UPGRADE.md, CHANGELOG.md
 archive:
+  - summary: "Cycle 717 (2026-07-12): Defined default preview and explicit apply
+      semantics for runtime lifecycle upgrade work."
   - summary: "Cycle 716 (2026-07-12): Established the canonical runtime lifecycle
       projection for Task 1."
   - summary: "Cycle 715 (2026-07-12): Cycle 715 supersedes the inaccurate portion of
@@ -383,6 +384,3 @@ archive:
   - summary: "Cycle 678 (2026-06-27): v2/v3 coexistence B3 — bundle-status & channel
       resolution. Centralized channel resolution through
       resolveInvokedUpdateChannel so doctor..."
-  - summary: "Cycle 677 (2026-06-27): v2/v3 coexistence B2 — env-var & path
-      resolution remainder. Restored PROFILERA_PROFILE_DIR as a lower-precedence
-      fallback..."
