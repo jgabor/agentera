@@ -99,7 +99,7 @@ tasks:
       - GIVEN pending tasks with blocked dependencies WHEN plan state selects next work THEN it returns only a dependency-ready task or null and never labels a merely pending blocked task as next.
       - GIVEN contradictory or malformed lifecycle data WHEN queried THEN structured degraded state is shared by status, build, and orchestration consumers.
       - GIVEN task evaluation fails or is retried WHEN orchestration state is persisted and reloaded THEN CLI-owned attempt count, last verdict, failure evidence, and retry provenance survive restart and enforce the retry budget.
-    evidence: Implemented canonical archive discovery, dependency-ready next selection, shared lifecycle degradation, and retry-safe evaluator persistence. Verified 1,570 CLI tests, typecheck, build, capability gates, compact, and built CLI contract smoke.
+    evidence: "Supersedes prior evidence: archive-only forced-open and completed plans now produce non-executable archive_only_history Build context with no selected task, completion sweep, or execution updates; active completed plans retain their pre-archive sweep. Verified 1,573 CLI tests, typecheck, build, capability gates, compact, and built CLI contract smoke."
   - number: 7
     name: Simplify validation and publication language
     depends_on:

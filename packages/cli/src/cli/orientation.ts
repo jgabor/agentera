@@ -359,7 +359,7 @@ export function planSummary(schemas: Record<string, SchemaInfo>): PlanSummary {
           : "No active plan artifact is available from agentera plan.",
       complete: 0,
       total: 0,
-      complete_plan: archivedPlans.length > 0,
+      complete_plan: false,
       first_pending: null,
       archived_plans: archivedPlans,
       archive_count: archivedPlans.length,

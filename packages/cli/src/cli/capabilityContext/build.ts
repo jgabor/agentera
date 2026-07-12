@@ -42,9 +42,11 @@ export function buildExecutionContext(
   const progressVerification = progressVerificationSummary(progress);
   const changelogBoundary = closeoutChangelogBoundary(schemas, plan);
   const sweep = buildPlanCompletionSweep(plan);
+  const archiveOnly = Boolean(plan.exists) && plan.active === false;
 
   let mode: string;
-  if (plan.complete_plan) mode = "completed_plan_sweep";
+  if (plan.active === true && plan.complete_plan) mode = "completed_plan_sweep";
+  else if (archiveOnly) mode = "archive_only_history";
   else if (!plan.exists || tasks.length === 0) mode = "no_plan";
   else if (target.status === "selected" && selected !== null) mode = "plan_driven";
   else mode = "blocked_or_dependency_unready";
@@ -162,7 +164,7 @@ export function buildExecutionContext(
     },
     artifact_update_requirements: buildArtifactUpdateRequirements(plan, docs),
     progress_logging_requirements: {
-      append_cycle: true,
+      append_cycle: !archiveOnly,
       verified_field_mandatory: true,
       latest_progress_verification_pointer: progressVerification.latest_progress_verification_pointer ?? null,
       source_provenance: sourceProvenance("progress", "agentera progress --format json"),

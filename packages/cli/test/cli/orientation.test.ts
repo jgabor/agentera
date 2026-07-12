@@ -124,7 +124,7 @@ describe("orientation: artifact summaries", () => {
     const summary = planSummary(schema("plan", p));
     expect(summary.exists).toBe(true);
     expect(summary.active).toBe(false);
-    expect(summary.complete_plan).toBe(true);
+    expect(summary.complete_plan).toBe(false);
     expect(summary.tasks).toEqual([]);
     expect(summary.archived_plans).toHaveLength(1);
 
@@ -143,6 +143,88 @@ describe("orientation: artifact summaries", () => {
     );
     expect(context?.task_queue).toMatchObject({ total: 0, dependency_ready_tasks: [], blocked_tasks: [] });
     expect(context?.selected_next_task).toBeNull();
+  });
+
+  it.each([
+    ["forced-open", "open", "pending"],
+    ["completed", "complete", "complete"],
+  ])("keeps %s archives out of Build execution and completion sweep", (_kind, status, taskStatus) => {
+    const p = path.join(tmp, "plan.yaml");
+    const archiveDir = path.join(tmp, "archive");
+    fs.mkdirSync(archiveDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(archiveDir, `PLAN-2026-07-12-${status}.yaml`),
+      [
+        "header:",
+        `  title: ${status} archive`,
+        `  status: ${status}`,
+        "tasks:",
+        "  - number: 1",
+        "    name: Historical task",
+        `    status: ${taskStatus}`,
+        "",
+      ].join("\n"),
+    );
+    const schemas = schema("plan", p);
+    const summary = planSummary(schemas);
+    const build = buildExecutionContext(
+      "build",
+      schemas,
+      summary as unknown as JsonObject,
+      { exists: true },
+      { exists: true },
+      [{ severity: "normal", status: "open", text: "issue" }],
+      { exists: true },
+      { status: "loaded" },
+      { status: "up_to_date" },
+    );
+
+    expect(summary).toMatchObject({ active: false, complete_plan: false, tasks: [] });
+    expect(build).toMatchObject({
+      mode: "archive_only_history",
+      work_selection: { task: null },
+      plan_task: null,
+      artifact_update_requirements: { required_families: [], plan_status_update_required: false },
+      progress_logging_requirements: { append_cycle: false },
+      plan_completion_sweep: { status: "not_eligible", required_updates: [], archive_candidate: null },
+    });
+  });
+
+  it("keeps an active completed plan eligible for its pre-archive sweep", () => {
+    const p = path.join(tmp, "plan.yaml");
+    fs.writeFileSync(
+      p,
+      [
+        "header:",
+        "  title: Completed current plan",
+        "  status: complete",
+        "tasks:",
+        "  - number: 1",
+        "    name: Completed task",
+        "    status: complete",
+        "",
+      ].join("\n"),
+    );
+    const schemas = schema("plan", p);
+    const summary = planSummary(schemas);
+    const build = buildExecutionContext(
+      "build",
+      schemas,
+      summary as unknown as JsonObject,
+      { exists: true },
+      { exists: true },
+      [{ severity: "normal", status: "open", text: "issue" }],
+      { exists: true },
+      { status: "loaded" },
+      { status: "up_to_date" },
+    );
+
+    expect(summary).toMatchObject({ active: true, complete_plan: true });
+    expect(build).toMatchObject({
+      mode: "completed_plan_sweep",
+      plan_completion_sweep: { status: "eligible", archive_candidate: expect.any(String) },
+      artifact_update_requirements: { plan_status_update_required: true },
+    });
   });
 
   it("withholds blocked dependent work from status next-work selection", () => {

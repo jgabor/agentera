@@ -1,4 +1,21 @@
 cycles:
+  - number: 744
+    timestamp: 2026-07-12 23:53
+    type: fix
+    phase: build
+    what: "Superseded Task 6 evidence:
+      packages/cli/src/cli/capabilityContext/build.ts keeps archive-only history
+      out of Build execution and completion sweeps."
+    inspiration: Task 6 audit FAIL
+    verified: pnpm -C packages/cli test (1,573); typecheck; build; capability and
+      contract validation; compact.
+    next: "Task 7: simplify validation and publication language only."
+    context:
+      intent: Correct the audit-found archive-only Build routing regression in Task 6.
+      constraints: Retry Task 6 only; preserve archive history, current-plan sweep
+        behavior, and decision satisfaction authority.
+      scope: Archive-only plan summary, Build routing, completion sweep metadata,
+        artifact requirements, and regressions.
   - number: 743
     timestamp: 2026-07-12 23:35
     type: fix
@@ -181,32 +198,10 @@ cycles:
         explicit and rationale-backed.
       scope: Lifecycle authority scan boundary and patterns, regression test,
         changelog, typed Task 1 evidence, and progress.
-  - number: 734
-    timestamp: 2026-07-12 20:14
-    type: fix
-    phase: build
-    what: Repaired Task 1 lifecycle inventory completeness with scan-enforced
-      classification patterns in skills/agentera/schemas/artifacts/plan.yaml.
-    inspiration: Audit identified omitted planEvidence.ts, state/write.ts,
-      capability-context, validation, migration, schema, adapter, and commitment
-      surfaces.
-    discovered: The bounded inventory scans 706 files and classifies 161
-      lifecycle-bearing candidates with zero unclassified surfaces.
-    verified: "Focused contract test and full CLI suite pass: 161 files, 1,542
-      tests. Typecheck, build, compact, plan capability validation,
-      capability-contract validation, and git diff --check pass."
-    next: Task 1 evidence is repaired; Task 2 remains the next executable plan task.
-    context:
-      intent: Correct the audit failure by proving every lifecycle-bearing reader,
-        writer, migrator, schema, adapter, fixture, and documented commitment is
-        classified.
-      constraints: Task 1 repair only; preserved Criteria 2-4, immutable history, v3
-        cutover hold, stale profile caveat, and decision satisfaction.
-      unknowns: None; the prior completeness claim is replaced by mechanically
-        enforced bounded scan evidence.
-      scope: Plan lifecycle schema inventory, lifecycle contract regression test,
-        changelog, typed Task 1 evidence, and progress.
 archive:
+  - summary: "Cycle 734 (2026-07-12): Repaired Task 1 lifecycle inventory
+      completeness with scan-enforced classification patterns in
+      skills/agentera/schemas/artifacts/plan.yaml."
   - summary: "Cycle 733 (2026-07-12): Defined the canonical plan lifecycle contract
       in skills/agentera/schemas/artifacts/plan.yaml and enforced its
       seven-family inventory in planLifecycleContract.test.ts."
@@ -309,6 +304,4 @@ archive:
       writer with typed progress, decisions, plan, and health operations;
       schema-derived..."
   - summary: "Cycle 695 (2026-07-10): Audited and rewrote profile capability
-      instructions following six-section spine and direct-contract philosophy."
-  - summary: "Cycle 694 (2026-07-10): Audited and rewrote optimize capability
       instructions following six-section spine and direct-contract philosophy."

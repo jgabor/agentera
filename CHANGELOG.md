@@ -29,7 +29,7 @@
 
 - Fixed `agentera state plan create` and `archive` publication to use stable archive identities across retries, validate final serialized bytes with strict prose lint and schema checks, and retain canonical `overall acceptance` vocabulary.
 - Fixed `agentera state plan`: `set-status --task` accepts task values, and `set-plan-status` accepts `open` or `complete`.
-- Fixed plan discovery to derive activity from canonical paths, with dependency-ready next work, shared lifecycle diagnostics, and retry-safe evaluator state through `state plan record-evaluation`.
+- Fixed plan discovery to derive activity from canonical paths: archive-only history is non-executable and cannot trigger a Build completion sweep; next work is dependency-ready, lifecycle diagnostics are shared, and evaluator state is retry-safe through `state plan record-evaluation`.
 
 ## [3.0.0] · 2026-07-12
 

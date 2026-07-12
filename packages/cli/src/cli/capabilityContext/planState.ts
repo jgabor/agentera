@@ -182,25 +182,32 @@ export function buildScopeBoundary(plan: JsonObject, selected: JsonObject | null
 export function buildArtifactUpdateRequirements(plan: JsonObject, docs: JsonObject): JsonObject {
   const mapping = asList(docs.mapping);
   const mapped = mapping.filter((e) => e && typeof e === "object" && e.artifact).map((e) => e.artifact);
+  const archiveOnly = Boolean(plan.exists) && plan.active === false;
   return {
-    required_families: ["plan", "progress", "todo", "changelog"],
+    required_families: archiveOnly ? [] : ["plan", "progress", "todo", "changelog"],
     protected_families: ["vision", "objective", "profile", "installed_app"],
     docs_mapping_available: Boolean(docs.exists && mapping.length > 0),
     mapped_artifacts: mapped,
-    plan_status_update_required: Boolean(plan.exists),
-    policy: "Update execution artifacts during the cycle; do not mutate protected state without explicit approval.",
+    plan_status_update_required: plan.active === true,
+    policy: archiveOnly
+      ? "Archived plan history is non-executable and requires no execution artifact updates."
+      : "Update execution artifacts during the cycle; do not mutate protected state without explicit approval.",
     source_provenance: sourceProvenance("docs", "agentera docs --format json", "summary.mapping"),
   };
 }
 
 export function buildPlanCompletionSweep(plan: JsonObject): JsonObject {
-  const complete = Boolean(plan.complete_plan);
+  const complete = plan.active === true && Boolean(plan.complete_plan);
   return {
     status: complete ? "eligible" : "not_eligible",
     mutation_allowed: false,
-    required_updates: ["progress aggregate cycle", "changelog plan-level entries", "TODO milestone advance", "health cross-reference"],
+    required_updates: complete ? ["progress aggregate cycle", "changelog plan-level entries", "TODO milestone advance", "health cross-reference"] : [],
     archive_candidate: complete ? "active plan archive path is generated only during Build sweep execution" : null,
-    caveats: complete ? [] : ["Plan completion sweep is not eligible until every plan task is complete."],
+    caveats: complete
+      ? []
+      : plan.active === false && plan.exists
+        ? ["Archived plan history is non-executable and cannot trigger a completion sweep."]
+        : ["Plan completion sweep is not eligible until every plan task is complete."],
     source_provenance: sourceProvenance("plan", "agentera plan --format json", "summary.status"),
   };
 }
