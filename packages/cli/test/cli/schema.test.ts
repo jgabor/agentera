@@ -52,8 +52,16 @@ describe("cli schema", () => {
     expect(payload.runtime_lifecycle.active_runtime_ids).toEqual(["opencode", "codex", "cursor", "copilot"]);
     expect(payload.runtime_lifecycle).toMatchObject({
       snapshot_schema_version: "agentera.runtimeLifecycleSnapshot.v1",
+      projection_schema_version: "agentera.runtimeLifecycleProjection.v1",
       summary_schema_version: "agentera.runtimeLifecycleSummary.v1",
       status_vocabulary_version: "agentera.runtimeLifecycleStatus.v1",
+      projection: {
+        snapshot_identity: "deterministic_sha256",
+        applicability: ["required", "conditional", "not_applicable"],
+        action_classes: ["repairable_owned", "manual_verification", "unobservable_gap"],
+        command_eligibility: ["preview", "apply", "manual", "diagnostic"],
+        shared_resource_rule: "selected_and_required_by_at_least_one_selected_runtime",
+      },
       support_floor: {
         mandatory_evidence_fields: ["host_present", "installed", "enabled", "trusted"],
         unknown_or_missing_mandatory_blocks: true,

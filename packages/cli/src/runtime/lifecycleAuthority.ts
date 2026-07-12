@@ -16,6 +16,22 @@ export const RETIRED_RUNTIME_CLEANUP_CONTRACT_RELATIVE_PATH =
 
 const EXPECTED_ACTIVE_RUNTIME_ORDER = "opencode,codex,cursor,copilot";
 const EXPECTED_EVIDENCE_FIELDS = ["host_present", "installed", "enabled", "trusted"] as const;
+export const LIFECYCLE_APPLICABILITY_VALUES = [
+  "required",
+  "conditional",
+  "not_applicable",
+] as const;
+export const LIFECYCLE_ACTION_CLASS_VALUES = [
+  "repairable_owned",
+  "manual_verification",
+  "unobservable_gap",
+] as const;
+export const LIFECYCLE_COMMAND_ELIGIBILITY_VALUES = [
+  "preview",
+  "apply",
+  "manual",
+  "diagnostic",
+] as const;
 const EVIDENCE_VALUES = new Set<LifecycleEvidenceValue>([
   true,
   false,
@@ -32,7 +48,15 @@ const INVENTORY_SCAN_EXTENSIONS = new Set([".json", ".ts", ".yaml", ".yml"]);
 export type LifecycleEvidenceField = (typeof EXPECTED_EVIDENCE_FIELDS)[number];
 export type LifecycleEvidenceValue = boolean | "unknown" | "denied" | "not_applicable";
 export type LifecycleAggregateStatus = "ready" | "degraded" | "blocked";
-export type LifecycleSurfaceStatus = "ready" | "degraded" | "blocked" | "unknown" | "not_applicable";
+export type LifecycleSurfaceStatus =
+  | "ready"
+  | "degraded"
+  | "blocked"
+  | "unknown"
+  | "not_applicable";
+export type LifecycleApplicability = (typeof LIFECYCLE_APPLICABILITY_VALUES)[number];
+export type LifecycleActionClass = (typeof LIFECYCLE_ACTION_CLASS_VALUES)[number];
+export type LifecycleCommandEligibility = (typeof LIFECYCLE_COMMAND_ELIGIBILITY_VALUES)[number];
 
 export type LifecycleSupportFloorBlockerCode =
   | "canonical_skill_unknown"
@@ -79,6 +103,7 @@ export interface RuntimeLifecycleAuthority {
 
 export interface LifecycleSurfaceObservation {
   id: string;
+  applicability?: LifecycleApplicability;
   evidence?: Partial<Record<LifecycleEvidenceField, LifecycleEvidenceValue>>;
   diagnosisComplete?: boolean;
   unmetMandatoryFields?: string[];
@@ -94,6 +119,7 @@ export interface LifecycleRuntimeObservation {
 
 export interface LifecycleSurfaceState extends LifecycleSurfaceDefinition {
   expected: boolean;
+  applicability: LifecycleApplicability;
   status: LifecycleSurfaceStatus;
   evidence: Partial<Record<LifecycleEvidenceField, LifecycleEvidenceValue>>;
   diagnosisComplete: boolean;
@@ -154,7 +180,9 @@ export function validateLifecycleAuthorityData(
   if (!isMapping(data)) return [sourceError(sourcePath, "1", "authority must be a YAML object")];
   const errors: string[] = [];
   if (data.schema_version !== "agentera.runtimeLifecycleAuthority.v1") {
-    errors.push(sourceError(sourcePath, "schema_version", "must be agentera.runtimeLifecycleAuthority.v1"));
+    errors.push(
+      sourceError(sourcePath, "schema_version", "must be agentera.runtimeLifecycleAuthority.v1"),
+    );
   }
   if (data.status !== "active_authority") {
     errors.push(sourceError(sourcePath, "status", "must be active_authority"));
@@ -202,6 +230,78 @@ export function validateLifecycleAuthorityData(
     );
   }
 
+  const projection = data.projection_contract;
+  if (
+    !isMapping(projection) ||
+    projection.schema_version !== "agentera.runtimeLifecycleProjection.v1"
+  ) {
+    errors.push(
+      sourceError(
+        sourcePath,
+        "projection_contract.schema_version",
+        "must be agentera.runtimeLifecycleProjection.v1",
+      ),
+    );
+  }
+  if (!isMapping(projection) || projection.snapshot_identity !== "deterministic_sha256") {
+    errors.push(
+      sourceError(
+        sourcePath,
+        "projection_contract.snapshot_identity",
+        "must be deterministic_sha256",
+      ),
+    );
+  }
+  if (
+    !isMapping(projection) ||
+    JSON.stringify(projection.applicability) !== JSON.stringify(LIFECYCLE_APPLICABILITY_VALUES)
+  ) {
+    errors.push(
+      sourceError(
+        sourcePath,
+        "projection_contract.applicability",
+        `must be ${LIFECYCLE_APPLICABILITY_VALUES.join(", ")}`,
+      ),
+    );
+  }
+  if (
+    !isMapping(projection) ||
+    JSON.stringify(projection.action_classes) !== JSON.stringify(LIFECYCLE_ACTION_CLASS_VALUES)
+  ) {
+    errors.push(
+      sourceError(
+        sourcePath,
+        "projection_contract.action_classes",
+        `must be ${LIFECYCLE_ACTION_CLASS_VALUES.join(", ")}`,
+      ),
+    );
+  }
+  if (
+    !isMapping(projection) ||
+    JSON.stringify(projection.command_eligibility) !==
+      JSON.stringify(LIFECYCLE_COMMAND_ELIGIBILITY_VALUES)
+  ) {
+    errors.push(
+      sourceError(
+        sourcePath,
+        "projection_contract.command_eligibility",
+        `must be ${LIFECYCLE_COMMAND_ELIGIBILITY_VALUES.join(", ")}`,
+      ),
+    );
+  }
+  if (
+    !isMapping(projection) ||
+    projection.shared_resource_rule !== "selected_and_required_by_at_least_one_selected_runtime"
+  ) {
+    errors.push(
+      sourceError(
+        sourcePath,
+        "projection_contract.shared_resource_rule",
+        "must require selection and at least one selected runtime",
+      ),
+    );
+  }
+
   const evidence = data.evidence_contract;
   const evidenceFields = isMapping(evidence) ? evidence.mandatory_fields : null;
   if (JSON.stringify(evidenceFields) !== JSON.stringify(EXPECTED_EVIDENCE_FIELDS)) {
@@ -217,43 +317,65 @@ export function validateLifecycleAuthorityData(
   if (!isMapping(supportFloor) || supportFloor.unmet_blocks_release !== true) {
     errors.push(sourceError(sourcePath, "support_floor.unmet_blocks_release", "must be true"));
   }
-  if (!isMapping(supportFloor) || JSON.stringify(supportFloor.requirements) !== JSON.stringify([
-    "canonical_shared_skill_detected",
-    "diagnosis_complete",
-    "mandatory_evidence_resolved",
-  ])) {
-    errors.push(sourceError(
-      sourcePath,
-      "support_floor.requirements",
-      "must require canonical skill detection, complete diagnosis, and resolved mandatory evidence",
-    ));
+  if (
+    !isMapping(supportFloor) ||
+    JSON.stringify(supportFloor.requirements) !==
+      JSON.stringify([
+        "canonical_shared_skill_detected",
+        "diagnosis_complete",
+        "mandatory_evidence_resolved",
+      ])
+  ) {
+    errors.push(
+      sourceError(
+        sourcePath,
+        "support_floor.requirements",
+        "must require canonical skill detection, complete diagnosis, and resolved mandatory evidence",
+      ),
+    );
   }
-  const evidenceRules = isMapping(supportFloor) && isMapping(supportFloor.evidence_rules)
-    ? supportFloor.evidence_rules
-    : {};
+  const evidenceRules =
+    isMapping(supportFloor) && isMapping(supportFloor.evidence_rules)
+      ? supportFloor.evidence_rules
+      : {};
   if (evidenceRules.unknown_or_missing_mandatory_blocks !== true) {
-    errors.push(sourceError(sourcePath, "support_floor.evidence_rules.unknown_or_missing_mandatory_blocks", "must be true"));
+    errors.push(
+      sourceError(
+        sourcePath,
+        "support_floor.evidence_rules.unknown_or_missing_mandatory_blocks",
+        "must be true",
+      ),
+    );
   }
   if (evidenceRules.denied_mandatory_trust_blocks !== true) {
-    errors.push(sourceError(sourcePath, "support_floor.evidence_rules.denied_mandatory_trust_blocks", "must be true"));
+    errors.push(
+      sourceError(
+        sourcePath,
+        "support_floor.evidence_rules.denied_mandatory_trust_blocks",
+        "must be true",
+      ),
+    );
   }
-  if (JSON.stringify(evidenceRules.known_false_diagnoses_degraded) !== JSON.stringify([
-    "host_present",
-    "installed",
-    "enabled",
-  ])) {
-    errors.push(sourceError(
-      sourcePath,
-      "support_floor.evidence_rules.known_false_diagnoses_degraded",
-      "must be host_present, installed, enabled",
-    ));
+  if (
+    JSON.stringify(evidenceRules.known_false_diagnoses_degraded) !==
+    JSON.stringify(["host_present", "installed", "enabled"])
+  ) {
+    errors.push(
+      sourceError(
+        sourcePath,
+        "support_floor.evidence_rules.known_false_diagnoses_degraded",
+        "must be host_present, installed, enabled",
+      ),
+    );
   }
   if (evidenceRules.not_applicable_scope !== "unobserved_conditional_surface_only") {
-    errors.push(sourceError(
-      sourcePath,
-      "support_floor.evidence_rules.not_applicable_scope",
-      "must be unobserved_conditional_surface_only",
-    ));
+    errors.push(
+      sourceError(
+        sourcePath,
+        "support_floor.evidence_rules.not_applicable_scope",
+        "must be unobserved_conditional_surface_only",
+      ),
+    );
   }
 
   const runtimes = data.active_runtimes;
@@ -290,14 +412,24 @@ export function validateLifecycleAuthorityData(
     const surfaces = runtime.surfaces;
     if (!Array.isArray(surfaces) || surfaces.length === 0) {
       errors.push(
-        sourceError(sourcePath, `active_runtimes[${runtimeIndex}].surfaces`, "must be a non-empty list"),
+        sourceError(
+          sourcePath,
+          `active_runtimes[${runtimeIndex}].surfaces`,
+          "must be a non-empty list",
+        ),
       );
       return;
     }
-    const surfaceIds = surfaces.map((surface) => (isMapping(surface) ? stringField(surface, "id") : ""));
+    const surfaceIds = surfaces.map((surface) =>
+      isMapping(surface) ? stringField(surface, "id") : "",
+    );
     if (new Set(surfaceIds).size !== surfaceIds.length) {
       errors.push(
-        sourceError(sourcePath, `active_runtimes[${runtimeIndex}].surfaces`, "surface IDs must be unique"),
+        sourceError(
+          sourcePath,
+          `active_runtimes[${runtimeIndex}].surfaces`,
+          "surface IDs must be unique",
+        ),
       );
     }
     surfaces.forEach((surface, surfaceIndex) => {
@@ -344,10 +476,8 @@ export function validateLifecycleAuthorityData(
     retiredInputs.length !== 1 ||
     !isMapping(retiredInputs[0]) ||
     retiredInputs[0].id !== "claude" ||
-    JSON.stringify(retiredInputs[0].purposes) !== JSON.stringify([
-      "consent_gated_historical_import",
-      "owned_legacy_resource_cleanup",
-    ])
+    JSON.stringify(retiredInputs[0].purposes) !==
+      JSON.stringify(["consent_gated_historical_import", "owned_legacy_resource_cleanup"])
   ) {
     errors.push(
       sourceError(
@@ -381,7 +511,9 @@ export function loadLifecycleAuthority(
   const data = loadYamlMapping(fs.readFileSync(authorityPath, "utf8"));
   const errors = validateLifecycleAuthorityData(data, authorityPath);
   if (errors.length > 0) {
-    throw new LifecycleAuthorityError(`Runtime lifecycle authority validation failed: ${errors.join("; ")}`);
+    throw new LifecycleAuthorityError(
+      `Runtime lifecycle authority validation failed: ${errors.join("; ")}`,
+    );
   }
   const canonicalSkill = data.canonical_skill as JsonObject;
   const evidence = data.evidence_contract as JsonObject;
@@ -403,8 +535,10 @@ export function loadLifecycleAuthority(
     supportFloorPolicy: {
       unknownOrMissingMandatoryBlocks: evidenceRules.unknown_or_missing_mandatory_blocks as boolean,
       deniedMandatoryTrustBlocks: evidenceRules.denied_mandatory_trust_blocks as boolean,
-      knownFalseDiagnosesDegraded: evidenceRules.known_false_diagnoses_degraded as LifecycleEvidenceField[],
-      notApplicableScope: evidenceRules.not_applicable_scope as "unobserved_conditional_surface_only",
+      knownFalseDiagnosesDegraded:
+        evidenceRules.known_false_diagnoses_degraded as LifecycleEvidenceField[],
+      notApplicableScope:
+        evidenceRules.not_applicable_scope as "unobserved_conditional_surface_only",
     },
     runtimes,
   };
@@ -419,7 +553,10 @@ function inventoryDeclarations(root: string, canonicalPath: string): string[] {
       for (const name of fs.readdirSync(entryPath).sort()) visit(path.join(entryPath, name));
       return;
     }
-    if (!INVENTORY_SCAN_EXTENSIONS.has(path.extname(entryPath)) || path.resolve(entryPath) === canonicalPath) {
+    if (
+      !INVENTORY_SCAN_EXTENSIONS.has(path.extname(entryPath)) ||
+      path.resolve(entryPath) === canonicalPath
+    ) {
       return;
     }
     fs.readFileSync(entryPath, "utf8")
@@ -444,7 +581,9 @@ export function validateLifecycleAuthorityRoot(root = resolveSourceRoot()): stri
   try {
     data = loadYamlMapping(fs.readFileSync(authorityPath, "utf8"));
   } catch (error) {
-    return [`${LIFECYCLE_AUTHORITY_RELATIVE_PATH}:1: could not parse authority: ${(error as Error).message}`];
+    return [
+      `${LIFECYCLE_AUTHORITY_RELATIVE_PATH}:1: could not parse authority: ${(error as Error).message}`,
+    ];
   }
   const errors = validateLifecycleAuthorityData(data, LIFECYCLE_AUTHORITY_RELATIVE_PATH);
   errors.push(...validateLifecycleOperationContractRoot(root));
@@ -462,10 +601,14 @@ function observedSurfaceExpected(
   authority: RuntimeLifecycleAuthority,
 ): boolean {
   if (definition.presence === "required") return true;
+  if (observation?.applicability === "conditional") return true;
+  if (observation?.applicability === "not_applicable") return false;
   const hostPresent = observation?.evidence?.host_present;
-  return authority.supportFloorPolicy.notApplicableScope === "unobserved_conditional_surface_only"
-    && observation !== undefined
-    && hostPresent === true;
+  return (
+    authority.supportFloorPolicy.notApplicableScope === "unobserved_conditional_surface_only" &&
+    observation !== undefined &&
+    hostPresent === true
+  );
 }
 
 function mandatoryEvidenceViolation(
@@ -494,9 +637,9 @@ function mandatoryEvidenceViolation(
     };
   }
   if (
-    field === "trusted"
-    && authority.supportFloorPolicy.deniedMandatoryTrustBlocks
-    && (value === "denied" || value === false)
+    field === "trusted" &&
+    authority.supportFloorPolicy.deniedMandatoryTrustBlocks &&
+    (value === "denied" || value === false)
   ) {
     return {
       code: "mandatory_trust_denied",
@@ -524,7 +667,10 @@ function mandatoryEvidenceViolation(
       observed: value,
     };
   }
-  if (value === false && !authority.supportFloorPolicy.knownFalseDiagnosesDegraded.includes(field)) {
+  if (
+    value === false &&
+    !authority.supportFloorPolicy.knownFalseDiagnosesDegraded.includes(field)
+  ) {
     return {
       code: "mandatory_evidence_denied",
       detail: `${location} is required but false is not a diagnosed degraded state for this field`,
@@ -543,22 +689,36 @@ function surfaceState(
 ): LifecycleSurfaceState {
   const evidence = observation?.evidence ?? {};
   const expected = observedSurfaceExpected(definition, observation, authority);
-  const missing = expected ? authority.evidenceFields.filter((field) => evidence[field] === undefined) : [];
+  const applicability: LifecycleApplicability =
+    definition.presence === "required" ? "required" : expected ? "conditional" : "not_applicable";
+  const missing = expected
+    ? authority.evidenceFields.filter((field) => evidence[field] === undefined)
+    : [];
   const unmet = [...new Set([...(observation?.unmetMandatoryFields ?? []), ...missing])];
   const diagnosisComplete = observation?.diagnosisComplete === true && unmet.length === 0;
   const supportFloorViolations = expected
     ? authority.evidenceFields.flatMap((field) => {
-      const violation = mandatoryEvidenceViolation(field, evidence[field], definition.id, authority);
-      return violation ? [violation] : [];
-    })
+        const violation = mandatoryEvidenceViolation(
+          field,
+          evidence[field],
+          definition.id,
+          authority,
+        );
+        return violation ? [violation] : [];
+      })
     : [];
   const releaseBlocking = supportFloorViolations.length > 0 || !diagnosisComplete;
   let status: LifecycleSurfaceStatus;
   if (!expected) status = "not_applicable";
-  else if (supportFloorViolations.some((violation) =>
-    violation.code === "mandatory_trust_denied"
-    || violation.code === "mandatory_evidence_denied"
-    || violation.code === "mandatory_evidence_not_applicable")) status = "blocked";
+  else if (
+    supportFloorViolations.some(
+      (violation) =>
+        violation.code === "mandatory_trust_denied" ||
+        violation.code === "mandatory_evidence_denied" ||
+        violation.code === "mandatory_evidence_not_applicable",
+    )
+  )
+    status = "blocked";
   else if (!diagnosisComplete || supportFloorViolations.length > 0) status = "unknown";
   else if (Object.values(evidence).some((value) => value === false)) {
     status = "degraded";
@@ -566,6 +726,7 @@ function surfaceState(
   return {
     ...definition,
     expected,
+    applicability,
     status,
     evidence,
     diagnosisComplete,
@@ -652,13 +813,18 @@ export function buildRuntimeLifecycleState(
         });
       }
     }
-    const uniqueViolations = violations.filter((violation, index, all) =>
-      all.findIndex((candidate) =>
-        candidate.code === violation.code
-        && candidate.surfaceId === violation.surfaceId
-        && candidate.field === violation.field) === index);
+    const uniqueViolations = violations.filter(
+      (violation, index, all) =>
+        all.findIndex(
+          (candidate) =>
+            candidate.code === violation.code &&
+            candidate.surfaceId === violation.surfaceId &&
+            candidate.field === violation.field,
+        ) === index,
+    );
     const unmet = uniqueViolations.map((violation) =>
-      [violation.code, violation.surfaceId, violation.field].filter(Boolean).join(":"));
+      [violation.code, violation.surfaceId, violation.field].filter(Boolean).join(":"),
+    );
     const blocked = uniqueViolations.length > 0;
     const degraded = surfaces.some((surface) => surface.expected && surface.status !== "ready");
     return {

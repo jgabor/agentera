@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Added
+
+- Added a canonical runtime lifecycle projection with deterministic snapshot identity, applicability, ownership, action classes, counts, and command eligibility for OpenCode, Codex, Cursor, and Copilot.
+
 ## [3.0.0] · 2026-07-12
 
 ### Key highlights

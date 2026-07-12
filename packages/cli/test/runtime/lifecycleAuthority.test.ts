@@ -7,7 +7,10 @@ import YAML from "yaml";
 import { describe, expect, it } from "vitest";
 
 import {
+  LIFECYCLE_ACTION_CLASS_VALUES,
+  LIFECYCLE_APPLICABILITY_VALUES,
   LIFECYCLE_AUTHORITY_RELATIVE_PATH,
+  LIFECYCLE_COMMAND_ELIGIBILITY_VALUES,
   buildRuntimeLifecycleState,
   loadLifecycleAuthority,
   validateLifecycleAuthorityData,
@@ -46,6 +49,13 @@ describe("runtime lifecycle authority", () => {
       "copilot",
     ]);
     expect(authority.canonicalSkillPath).toBe("~/.agents/skills/agentera");
+    expect(LIFECYCLE_APPLICABILITY_VALUES).toEqual(["required", "conditional", "not_applicable"]);
+    expect(LIFECYCLE_ACTION_CLASS_VALUES).toEqual([
+      "repairable_owned",
+      "manual_verification",
+      "unobservable_gap",
+    ]);
+    expect(LIFECYCLE_COMMAND_ELIGIBILITY_VALUES).toEqual(["preview", "apply", "manual", "diagnostic"]);
     expect(authority.runtimes.find((runtime) => runtime.id === "cursor")?.surfaces).toEqual([
       { id: "cli", displayName: "Cursor Agent CLI", presence: "required" },
       { id: "ide", displayName: "Cursor IDE", presence: "conditional" },

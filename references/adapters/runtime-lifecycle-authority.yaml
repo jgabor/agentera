@@ -7,6 +7,23 @@ retired_cleanup_contract: references/adapters/runtime-retired-resources.yaml
 canonical_skill:
   path: ~/.agents/skills/agentera
   required_for_support_floor: true
+projection_contract:
+  schema_version: agentera.runtimeLifecycleProjection.v1
+  snapshot_identity: deterministic_sha256
+  applicability:
+    - required
+    - conditional
+    - not_applicable
+  action_classes:
+    - repairable_owned
+    - manual_verification
+    - unobservable_gap
+  command_eligibility:
+    - preview
+    - apply
+    - manual
+    - diagnostic
+  shared_resource_rule: selected_and_required_by_at_least_one_selected_runtime
 evidence_contract:
   mandatory_fields:
     - host_present

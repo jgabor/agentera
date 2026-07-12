@@ -119,7 +119,7 @@ function assertProjectionParity(
 type LifecycleFixtureName =
   | "unknown trust"
   | "denied trust"
-  | "Cursor CLI-only / IDE conditional"
+  | "Cursor Agentera-integrated / IDE conditional"
   | "skill shadowing"
   | "absent host / missing parent"
   | "unowned collision"
@@ -224,19 +224,22 @@ const lifecycleHarnessFixtures: LifecycleHarnessFixture[] = [
     },
   },
   {
-    name: "Cursor CLI-only / IDE conditional",
+    name: "Cursor Agentera-integrated / IDE conditional",
     doctorStatus: 0,
     releaseBlocked: false,
     arrange: (home, project) => ({
-      surfaceEvidence: trustedEvidence(true, false),
+      surfaceEvidence: {
+        ...trustedEvidence(true, false),
+        ide: { host_present: false, enabled: true, trusted: true },
+      },
       ledger: installReadyLifecycle(home, project),
     }),
     assertDiagnosis: (snapshot) => {
       const cursor = runtimeById(snapshot, "cursor");
-      expect(cursor.status).toBe("ready");
+      expect(cursor.status).toBe("degraded");
       expect(cursor.surfaces).toEqual(expect.arrayContaining([
         expect.objectContaining({ id: "cli", expected: true, status: "ready" }),
-        expect.objectContaining({ id: "ide", expected: false, status: "not_applicable", releaseBlocking: false }),
+        expect.objectContaining({ id: "ide", expected: true, applicability: "conditional", status: "degraded", releaseBlocking: false }),
       ]));
     },
   },
@@ -359,7 +362,7 @@ describe("test-only lifecycle observer harness parity", () => {
     const summaryBytes = Buffer.byteLength(JSON.stringify(summary));
     const diagnosisBytes = Buffer.byteLength(JSON.stringify(diagnosis));
     expect(summaryBytes).toBeLessThan(4_096);
-    expect(JSON.stringify(summary)).not.toMatch(/categories|"evidence":|remediation|nativeActions|command/);
+    expect(JSON.stringify(summary)).not.toMatch(/categories|"evidence":|remediation|nativeActions|"command":/);
     expect(diagnosisBytes).toBeGreaterThan(summaryBytes * 8);
     const doctorRuntimes = diagnosis.runtimes as Array<Record<string, unknown>>;
     expect(doctorRuntimes.every((runtime) =>
@@ -543,19 +546,19 @@ describe("lifecycle snapshot edge projections", () => {
     expect(ready.runtimes.map((runtime) => runtime.status)).toEqual(["ready", "ready", "ready", "ready"]);
     expect(ready.runtimes.every((runtime) => runtime.supportFloor.met)).toBe(true);
 
-    const cliOnly = observeRuntimeLifecycle({
+    const integrated = observeRuntimeLifecycle({
       ...fixture.context,
       ledger: fixture.ledger,
       surfaceEvidence: {
         cli: { host_present: true, enabled: true, trusted: true },
-        ide: { host_present: false },
+        ide: { host_present: false, enabled: true, trusted: true },
       },
-      categoryEvidence: { trust: { cli: true, ide: "not_applicable" } },
+      categoryEvidence: { trust: { cli: true, ide: true } },
     });
-    const cliOnlyCursor = cliOnly.runtimes.find((runtime) => runtime.runtimeId === "cursor")!;
-    expect(cliOnlyCursor.surfaces.map((surface) => [surface.id, surface.expected, surface.status])).toEqual([
+    const integratedCursor = integrated.runtimes.find((runtime) => runtime.runtimeId === "cursor")!;
+    expect(integratedCursor.surfaces.map((surface) => [surface.id, surface.expected, surface.status])).toEqual([
       ["cli", true, "ready"],
-      ["ide", false, "not_applicable"],
+      ["ide", true, "degraded"],
     ]);
 
     const ideOnly = observeRuntimeLifecycle({

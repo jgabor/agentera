@@ -30,6 +30,7 @@ import {
   emptyLifecycleOwnershipLedger,
   type LifecycleOwnershipLedger,
 } from "../../src/runtime/lifecycleOperations.js";
+import { observeRuntimeLifecycle } from "../../src/runtime/lifecycleSnapshot.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "../../../..");
@@ -440,6 +441,44 @@ describe("Cursor aggregation and native action boundaries", () => {
       });
   });
 
+  it("projects Cursor CLI-only, IDE-present, and Agentera-integrated applicability", () => {
+    const fx = fixture();
+    const ledger = installCanonicalSkill(fx);
+    const inspect = (idePresent: boolean) => observeRuntimeLifecycle({
+      ...withLedger(fx.context, ledger),
+      surfaceEvidence: {
+        cli: { host_present: true, enabled: true, trusted: true },
+        ide: { host_present: idePresent, enabled: true, trusted: true },
+      },
+      categoryEvidence: { trust: { cli: true, ide: true } },
+    }, ["cursor"]).runtimes[0];
+
+    const cliOnly = inspect(false);
+    expect(cliOnly.surfaces.map((surface) => [surface.id, surface.applicability])).toEqual([
+      ["cli", "required"],
+      ["ide", "not_applicable"],
+    ]);
+
+    const idePresent = inspect(true);
+    expect(idePresent.surfaces.map((surface) => [surface.id, surface.applicability])).toEqual([
+      ["cli", "required"],
+      ["ide", "conditional"],
+    ]);
+
+    fs.writeFileSync(path.join(fx.project, ".cursor", "hooks.json"), "{}\n");
+    const integrated = inspect(false);
+    expect(integrated.surfaces.map((surface) => [surface.id, surface.applicability])).toEqual([
+      ["cli", "required"],
+      ["ide", "conditional"],
+    ]);
+    expect(integrated.surfaces.find((surface) => surface.id === "ide")?.evidence.host_present).toBe(false);
+
+    fs.mkdirSync(path.join(fx.project, ".cursor", "skills", "agentera"), { recursive: true });
+    fs.writeFileSync(path.join(fx.project, ".cursor", "skills", "agentera", "SKILL.md"), "---\nname: agentera\n---\n");
+    const skillIntegrated = inspect(false);
+    expect(skillIntegrated.surfaces.find((surface) => surface.id === "ide")?.applicability).toBe("conditional");
+  });
+
   it("reports an expected degraded IDE without splitting Cursor into another runtime", () => {
     const fx = fixture();
     const ledger = installCanonicalSkill(fx);
@@ -497,5 +536,99 @@ describe("Cursor aggregation and native action boundaries", () => {
     const result = applyRuntimeAdapterRepair(report);
 
     expect(result.ownershipLedger.records.map((record) => record.resourceId)).toEqual(["canonical_skill"]);
+  });
+});
+
+describe("canonical lifecycle projection", () => {
+  it("supplies stable identity, action classes, counts, and invariant shared-resource eligibility", () => {
+    const fx = fixture();
+    const context: RuntimeAdapterInspectionContext = {
+      ...fx.context,
+      surfaceEvidence: {
+        host: { host_present: true, enabled: true, trusted: "unknown" },
+        cli: { host_present: true, enabled: true, trusted: "unknown" },
+        ide: { host_present: false },
+      },
+      categoryEvidence: {
+        trust: { host: "unknown", cli: "unknown", ide: "not_applicable" },
+      },
+    };
+
+    const first = observeRuntimeLifecycle(context, ["codex", "opencode"]);
+    const second = observeRuntimeLifecycle(context, ["opencode", "codex"]);
+    expect(first.projectionVersion).toBe("agentera.runtimeLifecycleProjection.v1");
+    expect(first.snapshotId).toMatch(/^sha256:[a-f0-9]{64}$/);
+    expect(first.snapshotId).toBe(second.snapshotId);
+    expect(first.selection.runtimeIds).toEqual(["opencode", "codex"]);
+    expect(first.activeRuntimeIds).toEqual(["opencode", "codex", "cursor", "copilot"]);
+    expect(first.activeRuntimeIds).not.toContain("claude");
+    expect(first.sharedResources).toEqual([expect.objectContaining({
+      id: "canonical_skill",
+      applicability: "required",
+      selectedByRuntimeIds: ["opencode", "codex"],
+      requiredByRuntimeIds: ["opencode", "codex"],
+    })]);
+    expect(first.sharedResources).toEqual(second.sharedResources);
+
+    const repair = first.actions.find((action) => action.id === "operation:canonical_skill");
+    expect(repair).toMatchObject({
+      ownership: "claimable",
+      actionClass: "repairable_owned",
+      commandEligibility: { preview: true, apply: true, manual: false, diagnostic: false },
+    });
+    expect(first.actions).toContainEqual(expect.objectContaining({
+      id: "diagnostic:opencode:host:trust",
+      actionClass: "unobservable_gap",
+      ownership: "undeclared",
+      commandEligibility: { preview: false, apply: false, manual: false, diagnostic: true },
+    }));
+    expect(first.actions).toContainEqual(expect.objectContaining({
+      id: "manual:codex:cli:trust",
+      actionClass: "manual_verification",
+      ownership: "user_owned",
+      commandEligibility: { preview: false, apply: false, manual: true, diagnostic: false },
+    }));
+    expect(first.actions.filter((action) => action.category === "trust"))
+      .not.toContainEqual(expect.objectContaining({ actionClass: "repairable_owned" }));
+    expect(first.counts.total).toBe(first.actions.length);
+    expect(first.counts.repairableOwned).toBeGreaterThan(0);
+    expect(first.counts.manualVerification).toBeGreaterThan(0);
+    expect(first.counts.unobservableGap).toBeGreaterThan(0);
+  });
+
+  it("classifies an undeclared pre-existing destination as manual unowned work", () => {
+    const fx = fixture();
+    const destination = path.join(fx.home, ".agents", "skills", "agentera");
+    fs.symlinkSync(path.join(REPO_ROOT, "skills", "agentera"), destination, "dir");
+
+    const projection = observeRuntimeLifecycle({
+      ...fx.context,
+      surfaceEvidence: { host: { host_present: true, enabled: true, trusted: true } },
+      categoryEvidence: { trust: { host: true } },
+    }, ["opencode"]);
+
+    expect(projection.actions).toContainEqual(expect.objectContaining({
+      id: "operation:canonical_skill",
+      ownership: "unowned",
+      actionClass: "manual_verification",
+      commandEligibility: { preview: false, apply: false, manual: true, diagnostic: false },
+    }));
+  });
+
+  it("requires shared resources to have invariant applicability and an active consumer", () => {
+    const raw = YAML.parse(fs.readFileSync(CONTRACT_PATH, "utf8"));
+    raw.adapters.forEach((adapter: { resource_refs: string[] }) => {
+      adapter.resource_refs = adapter.resource_refs.filter((id) => id !== "canonical_skill");
+    });
+    raw.shared_resources[0].surface_id = "host";
+
+    const errors = validateRuntimeLifecycleAdapterContractData(raw, AUTHORITY);
+
+    expect(errors).toContain(
+      `${RUNTIME_LIFECYCLE_ADAPTER_CONTRACT_RELATIVE_PATH}:shared_resources[0].id: canonical_skill must be required by at least one active runtime adapter`,
+    );
+    expect(errors).toContain(
+      `${RUNTIME_LIFECYCLE_ADAPTER_CONTRACT_RELATIVE_PATH}:shared_resources[0]: shared resources cannot declare a runtime or surface applicability`,
+    );
   });
 });

@@ -21,10 +21,16 @@ import {
   stateWriterArtifactContract,
   stateWriterContract,
 } from "../../state/write/operations.js";
-import { loadLifecycleAuthority } from "../../runtime/lifecycleAuthority.js";
+import {
+  LIFECYCLE_ACTION_CLASS_VALUES,
+  LIFECYCLE_APPLICABILITY_VALUES,
+  LIFECYCLE_COMMAND_ELIGIBILITY_VALUES,
+  loadLifecycleAuthority,
+} from "../../runtime/lifecycleAuthority.js";
 import { loadRetiredRuntimeCleanupContract } from "../../runtime/retiredRuntimeCleanup.js";
 import {
   LIFECYCLE_SNAPSHOT_SCHEMA_VERSION,
+  LIFECYCLE_PROJECTION_SCHEMA_VERSION,
   LIFECYCLE_STATUS_VOCABULARY_VERSION,
   LIFECYCLE_SUMMARY_SCHEMA_VERSION,
 } from "../../runtime/lifecycleSnapshot.js";
@@ -323,8 +329,16 @@ export function buildSchemaPayload(command = "schema"): JsonObject {
     runtime_lifecycle: {
       authority: lifecycleAuthority.sourcePath,
       snapshot_schema_version: LIFECYCLE_SNAPSHOT_SCHEMA_VERSION,
+      projection_schema_version: LIFECYCLE_PROJECTION_SCHEMA_VERSION,
       summary_schema_version: LIFECYCLE_SUMMARY_SCHEMA_VERSION,
       status_vocabulary_version: LIFECYCLE_STATUS_VOCABULARY_VERSION,
+      projection: {
+        snapshot_identity: "deterministic_sha256",
+        applicability: [...LIFECYCLE_APPLICABILITY_VALUES],
+        action_classes: [...LIFECYCLE_ACTION_CLASS_VALUES],
+        command_eligibility: [...LIFECYCLE_COMMAND_ELIGIBILITY_VALUES],
+        shared_resource_rule: "selected_and_required_by_at_least_one_selected_runtime",
+      },
       projections: {
         prime: "bounded summary without category evidence or native command lists",
         doctor: "detailed surfaces, eight categories, evidence, precedence, and user-owned native steps",

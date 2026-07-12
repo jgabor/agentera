@@ -1,4 +1,32 @@
 cycles:
+  - number: 716
+    timestamp: 2026-07-12 10:34
+    type: feat
+    phase: build
+    what: Established the canonical runtime lifecycle projection for Task 1.
+    discovered: Cursor IDE integration includes detected non-canonical runtime skill
+      locations; full suite validation still reports the pre-existing
+      3.0.0-dev.16 versus 3.0.0 release-surface mismatch.
+    verified: "Focused lifecycle authority, adapter, status-diagnosis, and schema
+      tests passed: 58 tests. pnpm -C packages/cli run typecheck passed. pnpm -C
+      packages/cli build passed. Built prime --context build and schema output
+      exposed the projection contract, four active runtime IDs, applicability
+      values, action classes, counts, and command eligibility. Built prime and
+      doctor lifecycle tests passed: 47 tests. git diff --check passed."
+    next: "Continue with Task 2 only: default preview and explicit apply semantics."
+    context:
+      intent: Make lifecycle applicability, ownership, action classification, counts,
+        and command eligibility come from one deterministic projection.
+      constraints: Decision 92 remains authoritative. Cursor CLI stays required and
+        Cursor IDE stays conditional. Native install, authentication,
+        enablement, and trust remain user-owned. Claude remains retired. No
+        vision, objective, push, tag, or publish changes.
+      unknowns: none
+      scope: packages/cli/src/runtime/lifecycleAuthority.ts;
+        packages/cli/src/runtime/lifecycleAdapterContract.ts;
+        packages/cli/src/runtime/lifecycleAdapters.ts;
+        packages/cli/src/runtime/lifecycleSnapshot.ts; schema and lifecycle
+        tests; runtime authority contract; CHANGELOG.md; .agentera/plan.yaml
   - number: 715
     timestamp: 2026-07-12 07:10
     type: fix
@@ -345,34 +373,10 @@ cycles:
       intent: Supersede incomplete Cycle 706 pattern coverage with final raw and
         served evidence for Task 5 while preserving cleanup, historical import,
         and in-progress plan state.
-  - number: 706
-    timestamp: 2026-07-11 17:22
-    type: fix
-    phase: build
-    what: Canonicalized Claude retirement policy in raw capability instructions and
-      made registry-derived surface scans enforce it.
-    verified: Focused pnpm -C packages/cli test
-      test/runtime/retiredRuntimeSurfacePolicy.test.ts
-      test/cli/profileRuntimePolicy.test.ts test/cli/schema.test.ts
-      test/runtime/retiredRuntimeCleanup.test.ts passed 4 files/29 tests;
-      policy-only rerun passed 1 file/11 tests. Full pnpm -C packages/cli test
-      passed 154 files/1,416 tests. pnpm -C packages/cli run typecheck and pnpm
-      -C packages/cli build passed; pnpm -C packages/cli run lint returned 99
-      warnings/0 errors. All 12 raw registered capability modules decoded
-      identically to served CAPABILITY_INSTRUCTIONS and raw plus served policy
-      scans found zero current Claude patterns. Rebuilt prime served only
-      registry-declared OpenCode, Codex, Cursor, and Copilot substrates; profile
-      retained only explicit --import-source claude historical import. Schema
-      active IDs were opencode,codex,cursor,copilot; cursor-agent was inactive
-      and Claude retired. Capability orchestrate/profile/build,
-      capability-contract, lifecycle-adapters, app-home-contract,
-      vocabularyAuthority, cross-capability, compaction, and git diff checks
-      passed. Cleanup and schema regressions preserved AC2 and AC3.
-    next: Re-run Task 5 evidence audit against Cycle 706.
-    context:
-      intent: Close Task 5 AC1 canonical-source and evidence gaps while preserving AC2
-        cleanup and AC3 historical import behavior; leave plan status unchanged.
 archive:
+  - summary: "Cycle 706 (2026-07-11): Canonicalized Claude retirement policy in raw
+      capability instructions and made registry-derived surface scans enforce
+      it."
   - summary: "Cycle 705 (2026-07-11): Retried Task 5 after audit: removed active
       Claude advertisements, drained large CLI output, and restricted..."
   - summary: "Cycle 704 (2026-07-11): Retired Claude Code from active runtime
@@ -469,7 +473,3 @@ archive:
   - summary: "Cycle 667 (2026-06-18): Plan T2 — compaction tests use fixtures only:
       removed real-repo computeCompactionStatus/checkCompaction budget asserts
       from compaction.test.ts;..."
-  - summary: "Cycle 666 (2026-06-18): Plan T3 — shared repo-state fixture harness:
-      added packages/cli/test/fixtures/repo-state/ variants (ok,
-      todo-resolved-over-limit, progress-at-cap, progress-over-limit,
-      invalid-progress-yaml),..."

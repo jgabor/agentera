@@ -47,9 +47,7 @@ export interface RuntimeAdapterInspectionContext {
   canonicalSkillTarget?: string;
   ledger?: LifecycleOwnershipLedger;
   surfaceEvidence?: Record<string, Partial<Record<SurfaceEvidenceField, LifecycleEvidenceValue>>>;
-  categoryEvidence?: Partial<
-    Record<RuntimeAdapterCategory, Record<string, LifecycleEvidenceValue>>
-  >;
+  categoryEvidence?: Partial<Record<RuntimeAdapterCategory, Record<string, LifecycleEvidenceValue>>>;
 }
 
 export interface RuntimeAdapterEvidence {
@@ -184,34 +182,46 @@ function expandTemplate(template: string, values: Record<string, string>): strin
   return path.resolve(expanded);
 }
 
-function expandResource(
-  declaration: RuntimeAdapterResourceDeclaration,
-  values: Record<string, string>,
-): ExpandedResource[] {
+function expandResource(declaration: RuntimeAdapterResourceDeclaration, values: Record<string, string>): ExpandedResource[] {
   const sourcePath = expandTemplate(declaration.source, values);
   const destinationPath = expandTemplate(declaration.destination, values);
   if (declaration.kind === "directory_files") {
     let entries: string[];
     try {
-      entries = fs.readdirSync(sourcePath)
+      entries = fs
+        .readdirSync(sourcePath)
         .filter((name) => name.endsWith(declaration.extension as string))
         .sort();
     } catch (error) {
-      return [{
-        declaration,
-        sourcePath,
-        destinationPath,
-        sourceError: `could not read declared source directory: ${(error as Error).message}`,
-      }];
+      return [
+        {
+          declaration,
+          sourcePath,
+          destinationPath,
+          sourceError: `could not read declared source directory: ${(error as Error).message}`,
+        },
+      ];
     }
     if (entries.length === 0) {
-      return [{ declaration, sourcePath, destinationPath, sourceError: "declared source directory is empty" }];
+      return [
+        {
+          declaration,
+          sourcePath,
+          destinationPath,
+          sourceError: "declared source directory is empty",
+        },
+      ];
     }
     return entries.map((name) => {
       const source = path.join(sourcePath, name);
       const destination = path.join(destinationPath, name);
       if (source === destination) {
-        return { declaration, sourcePath: source, destinationPath: destination, alreadyInPlace: true };
+        return {
+          declaration,
+          sourcePath: source,
+          destinationPath: destination,
+          alreadyInPlace: true,
+        };
       }
       try {
         return {
@@ -242,55 +252,74 @@ function expandResource(
   }
   if (declaration.kind === "symlink") {
     if (!fs.existsSync(sourcePath)) {
-      return [{ declaration, sourcePath, destinationPath, sourceError: "declared symlink source is missing" }];
+      return [
+        {
+          declaration,
+          sourcePath,
+          destinationPath,
+          sourceError: "declared symlink source is missing",
+        },
+      ];
     }
-    return [{
-      declaration,
-      sourcePath,
-      destinationPath,
-      operation: {
-        id: declaration.id,
-        destination: destinationPath,
-        kind: "symlink",
-        intent: "ensure",
-        linkTarget: sourcePath,
-        required: declaration.required,
+    return [
+      {
+        declaration,
+        sourcePath,
+        destinationPath,
+        operation: {
+          id: declaration.id,
+          destination: destinationPath,
+          kind: "symlink",
+          intent: "ensure",
+          linkTarget: sourcePath,
+          required: declaration.required,
+        },
       },
-    }];
+    ];
   }
   try {
-    return [{
-      declaration,
-      sourcePath,
-      destinationPath,
-      operation: {
-        id: declaration.id,
-        destination: destinationPath,
-        kind: "file",
-        intent: "ensure",
-        content: fs.readFileSync(sourcePath),
-        required: declaration.required,
+    return [
+      {
+        declaration,
+        sourcePath,
+        destinationPath,
+        operation: {
+          id: declaration.id,
+          destination: destinationPath,
+          kind: "file",
+          intent: "ensure",
+          content: fs.readFileSync(sourcePath),
+          required: declaration.required,
+        },
       },
-    }];
+    ];
   } catch (error) {
-    return [{
-      declaration,
-      sourcePath,
-      destinationPath,
-      sourceError: `could not read declared source: ${(error as Error).message}`,
-    }];
+    return [
+      {
+        declaration,
+        sourcePath,
+        destinationPath,
+        sourceError: `could not read declared source: ${(error as Error).message}`,
+      },
+    ];
   }
 }
 
 function nearestPlanState(operation: PlannedLifecycleOperation): RuntimeAdapterEvidenceState {
   switch (operation.action) {
-    case "noop": return "confirmed";
-    case "create": return "absent";
+    case "noop":
+      return "confirmed";
+    case "create":
+      return "absent";
     case "update":
-    case "finalize_ownership": return "drifted";
-    case "blocked_unowned": return "blocked_unowned";
-    case "action_required": return operation.ownership === "unowned" ? "blocked_unowned" : "action_required";
-    case "remove": return "action_required";
+    case "finalize_ownership":
+      return "drifted";
+    case "blocked_unowned":
+      return "blocked_unowned";
+    case "action_required":
+      return operation.ownership === "unowned" ? "blocked_unowned" : "action_required";
+    case "remove":
+      return "action_required";
   }
 }
 
@@ -299,7 +328,13 @@ function probeSkill(location: string, canonical: boolean, surfaces: string[]): S
   try {
     const stat = fs.lstatSync(skillFile);
     if (!stat.isFile()) {
-      return { location, canonical, surfaces, state: "drifted", detail: "SKILL.md is not a regular file" };
+      return {
+        location,
+        canonical,
+        surfaces,
+        state: "drifted",
+        detail: "SKILL.md is not a regular file",
+      };
     }
     const handle = fs.openSync(skillFile, "r");
     try {
@@ -307,15 +342,33 @@ function probeSkill(location: string, canonical: boolean, surfaces: string[]): S
       fs.readSync(handle, bytes, 0, bytes.length, 0);
       const text = bytes.toString("utf8");
       if (!/^name:\s*agentera\s*$/m.test(text)) {
-        return { location, canonical, surfaces, state: "drifted", detail: "SKILL.md does not declare name: agentera" };
+        return {
+          location,
+          canonical,
+          surfaces,
+          state: "drifted",
+          detail: "SKILL.md does not declare name: agentera",
+        };
       }
-      return { location, canonical, surfaces, state: "confirmed", detail: "Agentera SKILL.md detected" };
+      return {
+        location,
+        canonical,
+        surfaces,
+        state: "confirmed",
+        detail: "Agentera SKILL.md detected",
+      };
     } finally {
       fs.closeSync(handle);
     }
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      return { location, canonical, surfaces, state: "absent", detail: "Agentera SKILL.md is absent" };
+      return {
+        location,
+        canonical,
+        surfaces,
+        state: "absent",
+        detail: "Agentera SKILL.md is absent",
+      };
     }
     return {
       location,
@@ -327,10 +380,7 @@ function probeSkill(location: string, canonical: boolean, surfaces: string[]): S
   }
 }
 
-function probeBinary(
-  binaries: string[],
-  env: Record<string, string | undefined>,
-): LifecycleEvidenceValue {
+function probeBinary(binaries: string[], env: Record<string, string | undefined>): LifecycleEvidenceValue {
   const searchPath = env.PATH;
   if (searchPath === undefined) return "unknown";
   let unknown = false;
@@ -368,9 +418,7 @@ function resourceReports(
   evidence: RuntimeAdapterEvidence[];
   operations: PlannedLifecycleOperation[];
 } {
-  const matching = expanded.filter((resource) =>
-    resource.declaration.category === category
-    && (resource.declaration.surfaceId === undefined || resource.declaration.surfaceId === surfaceId));
+  const matching = expanded.filter((resource) => resource.declaration.category === category && (resource.declaration.surfaceId === undefined || resource.declaration.surfaceId === surfaceId));
   const evidence: RuntimeAdapterEvidence[] = [];
   const states: RuntimeAdapterEvidenceState[] = [];
   const operations: PlannedLifecycleOperation[] = [];
@@ -397,9 +445,7 @@ function resourceReports(
       });
       continue;
     }
-    const operation = resource.operation
-      ? plan.operations.find((candidate) => candidate.id === resource.operation?.id)
-      : undefined;
+    const operation = resource.operation ? plan.operations.find((candidate) => candidate.id === resource.operation?.id) : undefined;
     const state = operation ? nearestPlanState(operation) : "unknown";
     states.push(state);
     if (operation) operations.push(operation);
@@ -418,16 +464,28 @@ function resourceReports(
   };
 }
 
+function hasObservedAgenteraIntegration(surfaceId: string, expanded: ExpandedResource[], plan: LifecycleOperationPlan, skills: SkillProbe[]): boolean {
+  const resourceIntegration = expanded.some((resource) => {
+    if (resource.declaration.surfaceId !== surfaceId) return false;
+    if (resource.alreadyInPlace) return true;
+    const operation = resource.operation ? plan.operations.find((candidate) => candidate.id === resource.operation?.id) : undefined;
+    return operation !== undefined && operation.state !== "missing";
+  });
+  const skillIntegration = skills.some((skill) => !skill.canonical && skill.surfaces.includes(surfaceId) && !["absent", "unknown", "not_applicable"].includes(skill.state));
+  return resourceIntegration || skillIntegration;
+}
+
+function lifecycleSurfaceExpected(surface: LifecycleSurfaceDefinition, hostPresence: LifecycleEvidenceValue, expanded: ExpandedResource[], plan: LifecycleOperationPlan, skills: SkillProbe[]): boolean {
+  return surface.presence === "required" || hostPresence === true || hasObservedAgenteraIntegration(surface.id, expanded, plan, skills);
+}
+
 function actionRequiredSummary(operations: PlannedLifecycleOperation[]): string {
-  const missingParentOperations = operations.filter((operation) =>
-    operation.reason === "allowed root is not an existing safe directory");
+  const missingParentOperations = operations.filter((operation) => operation.reason === "allowed root is not an existing safe directory");
   if (missingParentOperations.length === operations.length) {
     const parents = [...new Set(missingParentOperations.map((operation) => path.dirname(operation.destination)))];
     return `Create the destination parent ${parents.join(", ")} as a real, non-symlink directory you control, then rerun preview; Agentera will not create or replace it.`;
   }
-  return `Resolve these lifecycle blockers manually, then rerun preview: ${operations
-    .map((operation) => `${operation.id}: ${operation.reason}`)
-    .join("; ")}.`;
+  return `Resolve these lifecycle blockers manually, then rerun preview: ${operations.map((operation) => `${operation.id}: ${operation.reason}`).join("; ")}.`;
 }
 
 function remediationFor(
@@ -449,8 +507,7 @@ function remediationFor(
       nativeActions: [],
     };
   }
-  const actionRequiredOperations = operations.filter((operation) =>
-    operation.action === "action_required" || operation.action === "remove");
+  const actionRequiredOperations = operations.filter((operation) => operation.action === "action_required" || operation.action === "remove");
   if (actionRequiredOperations.length > 0) {
     return {
       kind: "action_required",
@@ -472,8 +529,7 @@ function remediationFor(
       })),
     };
   }
-  const repairOperations = operations.filter((operation) =>
-    ["create", "update", "finalize_ownership"].includes(operation.action));
+  const repairOperations = operations.filter((operation) => ["create", "update", "finalize_ownership"].includes(operation.action));
   if (["absent", "drifted"].includes(state) && repairOperations.length > 0) {
     return {
       kind: "repair",
@@ -502,30 +558,27 @@ function remediationFor(
     return { kind: "action_required", summary, operationIds: [], nativeActions: [] };
   }
   if (state === "confirmed" || state === "not_applicable") {
-    return { kind: "none", summary: "No remediation is required.", operationIds: [], nativeActions: [] };
+    return {
+      kind: "none",
+      summary: "No remediation is required.",
+      operationIds: [],
+      nativeActions: [],
+    };
   }
   return {
     kind: "unavailable",
-    summary: claim.capability === "unsupported"
-      ? "The host surface is explicitly unsupported."
-      : "No verified safe remediation is declared for this host surface.",
+    summary: claim.capability === "unsupported" ? "The host surface is explicitly unsupported." : "No verified safe remediation is declared for this host surface.",
     operationIds: [],
     nativeActions: [],
   };
 }
 
-function assertSurfaceRemediationConsistency(
-  category: RuntimeAdapterCategory,
-  state: RuntimeAdapterEvidenceState,
-  operations: PlannedLifecycleOperation[],
-  remediation: RuntimeAdapterRemediation,
-): void {
+function assertSurfaceRemediationConsistency(category: RuntimeAdapterCategory, state: RuntimeAdapterEvidenceState, operations: PlannedLifecycleOperation[], remediation: RuntimeAdapterRemediation): void {
   if (category !== "native_actions" && remediation.nativeActions.length > 0) {
     throw new Error(`${category}: native actions may only remediate the native_actions category`);
   }
   const blocked = operations.some((operation) => operation.action === "blocked_unowned");
-  const actionRequired = operations.some((operation) =>
-    operation.action === "action_required" || operation.action === "remove");
+  const actionRequired = operations.some((operation) => operation.action === "action_required" || operation.action === "remove");
   if (blocked && (state !== "blocked_unowned" || remediation.kind !== "action_required")) {
     throw new Error(`${category}: blocked operation must produce blocked_unowned action-required reporting`);
   }
@@ -533,13 +586,8 @@ function assertSurfaceRemediationConsistency(
     throw new Error(`${category}: action-required operation must produce action_required reporting`);
   }
   if (remediation.kind === "repair") {
-    const repairableIds = new Set(operations
-      .filter((operation) => ["create", "update", "finalize_ownership"].includes(operation.action))
-      .map((operation) => operation.id));
-    if (
-      remediation.operationIds.length === 0
-      || remediation.operationIds.some((operationId) => !repairableIds.has(operationId))
-    ) {
+    const repairableIds = new Set(operations.filter((operation) => ["create", "update", "finalize_ownership"].includes(operation.action)).map((operation) => operation.id));
+    if (remediation.operationIds.length === 0 || remediation.operationIds.some((operationId) => !repairableIds.has(operationId))) {
       throw new Error(`${category}: repair remediation must reference only repairable plan operations`);
     }
   }
@@ -567,13 +615,20 @@ function categorySurface(
       source: claim.evidence,
       required: false,
       diagnosisComplete: true,
-      evidence: [{
-        kind: "host_probe",
-        state: "not_applicable",
-        detail: "conditional host surface is absent",
-        surfaceId: surface.id,
-      }],
-      remediation: { kind: "none", summary: "No remediation is required.", operationIds: [], nativeActions: [] },
+      evidence: [
+        {
+          kind: "host_probe",
+          state: "not_applicable",
+          detail: "conditional host surface is absent",
+          surfaceId: surface.id,
+        },
+      ],
+      remediation: {
+        kind: "none",
+        summary: "No remediation is required.",
+        operationIds: [],
+        nativeActions: [],
+      },
     };
   }
 
@@ -590,9 +645,7 @@ function categorySurface(
     evidence = relevant.map((skill) => ({
       kind: "filesystem",
       state: skill.state,
-      detail: skill.canonical
-        ? `${skill.detail}; canonical shared location`
-        : `${skill.detail}; additional discovery location can shadow or collide with canonical Agentera`,
+      detail: skill.canonical ? `${skill.detail}; canonical shared location` : `${skill.detail}; additional discovery location can shadow or collide with canonical Agentera`,
       path: skill.location,
       surfaceId: surface.id,
     }));
@@ -601,9 +654,7 @@ function categorySurface(
     evidence.push(...resources.evidence);
     state = aggregateState([state, resources.state]);
   } else if (claim.capability === "repairable" || claim.evidence.startsWith("managed_resource:")) {
-    const resourceCategory = claim.evidence.startsWith("managed_resource:")
-      ? expanded.find((resource) => resource.declaration.id === claim.evidence.slice("managed_resource:".length))?.declaration.category ?? category
-      : category;
+    const resourceCategory = claim.evidence.startsWith("managed_resource:") ? (expanded.find((resource) => resource.declaration.id === claim.evidence.slice("managed_resource:".length))?.declaration.category ?? category) : category;
     const resources = resourceReports(expanded, plan, resourceCategory, surface.id);
     state = resources.state;
     evidence = resources.evidence;
@@ -630,57 +681,59 @@ function categorySurface(
     } catch (error) {
       state = (error as NodeJS.ErrnoException).code === "ENOENT" ? "absent" : "unknown";
     }
-    evidence = [{ kind: "filesystem", state, detail: claim.evidence, path: evidencePath, surfaceId: surface.id }];
+    evidence = [
+      {
+        kind: "filesystem",
+        state,
+        detail: claim.evidence,
+        path: evidencePath,
+        surfaceId: surface.id,
+      },
+    ];
   } else if (claim.evidence.startsWith("env:")) {
     const key = claim.evidence.slice("env:".length);
     const value = (context.env ?? process.env)[key];
     state = value ? "confirmed" : "absent";
-    evidence = [{
-      kind: "environment",
-      state,
-      detail: value ? `${key} is present` : `${key} is absent`,
-      surfaceId: surface.id,
-    }];
+    evidence = [
+      {
+        kind: "environment",
+        state,
+        detail: value ? `${key} is present` : `${key} is absent`,
+        surfaceId: surface.id,
+      },
+    ];
   } else if (claim.evidence === "canonical_skill") {
     const canonical = skills.find((skill) => skill.canonical && skill.surfaces.includes(surface.id));
     state = canonical?.state ?? "unknown";
-    evidence = [{
-      kind: "filesystem",
-      state,
-      detail: canonical?.detail ?? "canonical skill was not diagnosed",
-      path: canonical?.location,
-      surfaceId: surface.id,
-    }];
+    evidence = [
+      {
+        kind: "filesystem",
+        state,
+        detail: canonical?.detail ?? "canonical skill was not diagnosed",
+        path: canonical?.location,
+        surfaceId: surface.id,
+      },
+    ];
     const resources = resourceReports(expanded, plan, "skills", surface.id);
     operations = resources.operations;
     evidence.push(...resources.evidence);
     state = aggregateState([state, resources.state]);
   } else {
-    const override = context.categoryEvidence?.[category]?.[surface.id]
-      ?? (category === "trust" ? context.surfaceEvidence?.[surface.id]?.trusted : undefined)
-      ?? (category === "enablement" ? context.surfaceEvidence?.[surface.id]?.enabled : undefined);
+    const override =
+      context.categoryEvidence?.[category]?.[surface.id] ?? (category === "trust" ? context.surfaceEvidence?.[surface.id]?.trusted : undefined) ?? (category === "enablement" ? context.surfaceEvidence?.[surface.id]?.enabled : undefined);
     state = evidenceState(override ?? "unknown", category);
-    evidence = [{
-      kind: "contract",
-      state,
-      detail: override === undefined ? `${claim.evidence}; no verified host observation was supplied` : claim.evidence,
-      surfaceId: surface.id,
-    }];
+    evidence = [
+      {
+        kind: "contract",
+        state,
+        detail: override === undefined ? `${claim.evidence}; no verified host observation was supplied` : claim.evidence,
+        surfaceId: surface.id,
+      },
+    ];
   }
 
-  const diagnosisComplete = claim.required
-    ? state !== "unknown" && claim.capability !== "unverified"
-    : true;
-  const remediation = remediationFor(
-    state,
-    claim,
-    operations,
-    nativeActions,
-    runtimeId,
-    surface.id,
-    evidencePath,
-    context.sourceRoot,
-  );
+  const diagnosisComplete = claim.required ? state !== "unknown" && claim.capability !== "unverified" : true;
+  const remediation = remediationFor(state, claim, operations, nativeActions, runtimeId, surface.id, evidencePath, context.sourceRoot);
   assertSurfaceRemediationConsistency(category, state, operations, remediation);
   return {
     surfaceId: surface.id,
@@ -705,6 +758,7 @@ function lifecycleObservation(
   runtimeId: string,
   surfaces: LifecycleSurfaceDefinition[],
   hostPresence: Record<string, LifecycleEvidenceValue>,
+  expectedSurfaces: Record<string, boolean>,
   categories: RuntimeAdapterReport["categories"],
   canonicalSkillDetected: LifecycleEvidenceValue,
   diagnosisComplete: boolean,
@@ -717,11 +771,9 @@ function lifecycleObservation(
     unmetMandatoryFields: [],
     surfaces: surfaces.map((surface) => {
       const host = hostPresence[surface.id] ?? "unknown";
-      const expected = surface.presence === "required" || host === true;
+      const expected = expectedSurfaces[surface.id] === true;
       const skill = categories.skills.surfaces.find((item) => item.surfaceId === surface.id);
-      const trust = context.categoryEvidence?.trust?.[surface.id]
-        ?? context.surfaceEvidence?.[surface.id]?.trusted
-        ?? "unknown";
+      const trust = context.categoryEvidence?.trust?.[surface.id] ?? context.surfaceEvidence?.[surface.id]?.trusted ?? "unknown";
       let enabled: LifecycleEvidenceValue;
       if (!expected) enabled = "not_applicable";
       else if (context.surfaceEvidence?.[surface.id]?.enabled !== undefined) {
@@ -731,6 +783,7 @@ function lifecycleObservation(
       else enabled = "unknown";
       return {
         id: surface.id,
+        applicability: surface.presence === "required" ? "required" : expected ? "conditional" : "not_applicable",
         evidence: {
           host_present: host,
           installed: !expected ? "not_applicable" : canonicalSkillDetected,
@@ -767,13 +820,10 @@ export class RuntimeLifecycleAdapter {
       if (!declaration) throw new Error(`${this.runtimeId}: missing declared resource ${id}`);
       return declaration;
     });
-    const expanded = declarations.flatMap((declaration) => expandResource(declaration, values))
+    const expanded = declarations
+      .flatMap((declaration) => expandResource(declaration, values))
       .map((resource) => {
-        if (
-          resource.declaration.id !== "canonical_skill"
-          || resource.operation?.kind !== "symlink"
-          || !context.canonicalSkillTarget
-        ) return resource;
+        if (resource.declaration.id !== "canonical_skill" || resource.operation?.kind !== "symlink" || !context.canonicalSkillTarget) return resource;
         const target = path.resolve(context.canonicalSkillTarget);
         return {
           ...resource,
@@ -781,31 +831,25 @@ export class RuntimeLifecycleAdapter {
           operation: { ...resource.operation, linkTarget: target },
         };
       });
-    const operations = expanded.flatMap((resource) => resource.operation ? [resource.operation] : []);
-    const allowedRoots = [...new Set([
-      path.resolve(context.sourceRoot),
-      ...(context.canonicalSkillTarget ? [path.resolve(context.canonicalSkillTarget, "..")] : []),
-      ...expanded.map((resource) => path.dirname(resource.destinationPath)),
-    ])];
+    const operations = expanded.flatMap((resource) => (resource.operation ? [resource.operation] : []));
+    const allowedRoots = [...new Set([path.resolve(context.sourceRoot), ...(context.canonicalSkillTarget ? [path.resolve(context.canonicalSkillTarget, "..")] : []), ...expanded.map((resource) => path.dirname(resource.destinationPath))])];
     const repairPlan = planLifecycleOperations({
       allowedRoots,
       operations,
       manifest: createLifecycleOwnershipManifest(operations),
       ledger: context.ledger ?? emptyLifecycleOwnershipLedger(),
     });
-    const skills = this.runtime.skillLocations.map((location) =>
-      probeSkill(expandTemplate(location.path, values), location.canonical, location.surfaces));
+    const skills = this.runtime.skillLocations.map((location) => probeSkill(expandTemplate(location.path, values), location.canonical, location.surfaces));
     const hostPresence: Record<string, LifecycleEvidenceValue> = {};
     for (const surface of this.runtimeAuthority.surfaces) {
-      hostPresence[surface.id] = context.surfaceEvidence?.[surface.id]?.host_present
-        ?? probeBinary(this.runtime.binaries[surface.id], env);
+      hostPresence[surface.id] = context.surfaceEvidence?.[surface.id]?.host_present ?? probeBinary(this.runtime.binaries[surface.id], env);
     }
+    const expectedSurfaces = Object.fromEntries(this.runtimeAuthority.surfaces.map((surface) => [surface.id, lifecycleSurfaceExpected(surface, hostPresence[surface.id], expanded, repairPlan, skills)]));
 
     const categories = {} as RuntimeAdapterReport["categories"];
     for (const category of RUNTIME_ADAPTER_CATEGORIES) {
       const surfaceReports = this.runtimeAuthority.surfaces.map((surface) => {
-        const host = hostPresence[surface.id];
-        const expected = surface.presence === "required" || host === true;
+        const expected = expectedSurfaces[surface.id] === true;
         return categorySurface(
           this.runtimeId,
           surface,
@@ -817,9 +861,7 @@ export class RuntimeLifecycleAdapter {
           expanded,
           repairPlan,
           skills,
-          category === "native_actions"
-            ? this.runtime.nativeActions.filter((action) => action.surfaceId === surface.id)
-            : [],
+          category === "native_actions" ? this.runtime.nativeActions.filter((action) => action.surfaceId === surface.id) : [],
         );
       });
       categories[category] = {
@@ -833,35 +875,17 @@ export class RuntimeLifecycleAdapter {
 
     const detected = canonicalDetection(skills);
     const requiredSkillReports = categories.skills.surfaces.filter((surface) => surface.required);
-    const diagnosisComplete = detected !== "unknown"
-      && requiredSkillReports.length > 0
-      && requiredSkillReports.every((surface) => surface.diagnosisComplete);
-    const observation = lifecycleObservation(
-      this.runtimeId,
-      this.runtimeAuthority.surfaces,
-      hostPresence,
-      categories,
-      detected,
-      diagnosisComplete,
-      context,
-    );
-    const authoritativeState = buildRuntimeLifecycleState(this.authority, [observation])
-      .runtimes.find((runtime) => runtime.runtimeId === this.runtimeId);
+    const diagnosisComplete = detected !== "unknown" && requiredSkillReports.length > 0 && requiredSkillReports.every((surface) => surface.diagnosisComplete);
+    const observation = lifecycleObservation(this.runtimeId, this.runtimeAuthority.surfaces, hostPresence, expectedSurfaces, categories, detected, diagnosisComplete, context);
+    const authoritativeState = buildRuntimeLifecycleState(this.authority, [observation]).runtimes.find((runtime) => runtime.runtimeId === this.runtimeId);
     if (!authoritativeState) throw new Error(`${this.runtimeId}: lifecycle authority state is missing`);
     const supportFloor: RuntimeAdapterSupportFloor = {
       ...authoritativeState.supportFloor,
       diagnosisComplete,
     };
-    const expectedCategorySurfaces = RUNTIME_ADAPTER_CATEGORIES.flatMap((category) =>
-      categories[category].surfaces.filter((surface) => surface.expected));
-    const degraded = expectedCategorySurfaces.some((surface) =>
-      !["confirmed", "not_applicable"].includes(surface.state));
-    const caveats = [
-      ...this.contract.caveats,
-      ...expanded
-      .filter((resource) => resource.sourceError)
-      .map((resource) => `${resource.declaration.id}: ${resource.sourceError}`),
-    ];
+    const expectedCategorySurfaces = RUNTIME_ADAPTER_CATEGORIES.flatMap((category) => categories[category].surfaces.filter((surface) => surface.expected));
+    const degraded = expectedCategorySurfaces.some((surface) => !["confirmed", "not_applicable"].includes(surface.state));
+    const caveats = [...this.contract.caveats, ...expanded.filter((resource) => resource.sourceError).map((resource) => `${resource.declaration.id}: ${resource.sourceError}`)];
     return {
       schemaVersion: "agentera.runtimeAdapterReport.v1",
       runtimeId: this.runtimeId,
@@ -901,23 +925,11 @@ export class CopilotLifecycleAdapter extends RuntimeLifecycleAdapter {
   }
 }
 
-export function runtimeLifecycleAdapters(
-  contract = loadRuntimeLifecycleAdapterContract(),
-  authority = loadLifecycleAuthority(),
-): RuntimeLifecycleAdapter[] {
-  return [
-    new OpenCodeLifecycleAdapter(contract, authority),
-    new CodexLifecycleAdapter(contract, authority),
-    new CursorLifecycleAdapter(contract, authority),
-    new CopilotLifecycleAdapter(contract, authority),
-  ];
+export function runtimeLifecycleAdapters(contract = loadRuntimeLifecycleAdapterContract(), authority = loadLifecycleAuthority()): RuntimeLifecycleAdapter[] {
+  return [new OpenCodeLifecycleAdapter(contract, authority), new CodexLifecycleAdapter(contract, authority), new CursorLifecycleAdapter(contract, authority), new CopilotLifecycleAdapter(contract, authority)];
 }
 
-export function inspectRuntimeLifecycleAdapters(
-  context: RuntimeAdapterInspectionContext,
-  contract = loadRuntimeLifecycleAdapterContract(),
-  authority = loadLifecycleAuthority(),
-): RuntimeAdapterMatrixReport {
+export function inspectRuntimeLifecycleAdapters(context: RuntimeAdapterInspectionContext, contract = loadRuntimeLifecycleAdapterContract(), authority = loadLifecycleAuthority()): RuntimeAdapterMatrixReport {
   const reports = runtimeLifecycleAdapters(contract, authority).map((adapter) => adapter.inspect(context));
   return {
     schemaVersion: "agentera.runtimeAdapterMatrix.v1",
@@ -929,9 +941,6 @@ export function inspectRuntimeLifecycleAdapters(
   };
 }
 
-export function applyRuntimeAdapterRepair(
-  report: RuntimeAdapterReport,
-  options: LifecycleApplyOptions = {},
-): LifecycleApplyResult {
+export function applyRuntimeAdapterRepair(report: RuntimeAdapterReport, options: LifecycleApplyOptions = {}): LifecycleApplyResult {
   return applyLifecycleOperations(report.repairPlan, options);
 }
