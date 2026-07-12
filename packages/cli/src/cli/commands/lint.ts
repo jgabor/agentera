@@ -122,9 +122,13 @@ function lintChecks(text: string, artifact: string, fullArtifact: boolean): Arra
   return checks;
 }
 
-export function lintPayload(args: LintArgs): Record<string, any> {
-  const [text, source, fullArtifact, budgetArtifact] = lintInputText(args);
-  const artifact = budgetArtifact || String(args.artifact);
+function lintPayloadForContent(
+  artifact: string,
+  text: string,
+  source: string,
+  fullArtifact: boolean,
+  strict = false,
+): Record<string, any> {
   validateAgentString(artifact, "artifact");
   const checks = lintChecks(text, artifact, fullArtifact);
   const failures = checks.filter((c) => c.status === "fail");
@@ -133,14 +137,25 @@ export function lintPayload(args: LintArgs): Record<string, any> {
     status: failures.length > 0 ? "fail" : "pass",
     artifact,
     source,
-    strict: Boolean(args.strict),
+    strict,
     checks,
     summary: {
       failed: failures.length,
       passed: checks.length - failures.length,
-      advisory: !args.strict,
+      advisory: !strict,
     },
   };
+}
+
+/** Runs the same full-artifact checks as `check lint --file` without a staging file. */
+export function lintFullArtifactPayload(artifact: string, content: string): Record<string, any> {
+  return lintPayloadForContent(artifact, content, "candidate", true, true);
+}
+
+export function lintPayload(args: LintArgs): Record<string, any> {
+  const [text, source, fullArtifact, budgetArtifact] = lintInputText(args);
+  const artifact = budgetArtifact || String(args.artifact);
+  return lintPayloadForContent(artifact, text, source, fullArtifact, Boolean(args.strict));
 }
 
 function emitLintText(payload: Record<string, any>, out: (text: string) => void): void {

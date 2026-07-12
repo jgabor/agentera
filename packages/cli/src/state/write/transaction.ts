@@ -4,6 +4,7 @@ import { isDeepStrictEqual } from "node:util";
 
 import { splitLinesKeepEnds, unifiedDiff } from "../../core/difflib.js";
 import { dumpYamlMapping, loadYamlMapping } from "../../core/yaml.js";
+import { lintFullArtifactPayload } from "../../cli/commands/lint.js";
 import {
   compactYamlFile,
   decisionProtectedOverflowCount,
@@ -161,6 +162,28 @@ function normalizedDecisionPayload(values: Record<string, unknown>): Record<stri
 
 function schemaViolation(violations: string[]): never {
   reject({ class: "schema_violation", message: violations[0], violations });
+}
+
+function validatePlanPublicationCandidate(bytes: string): void {
+  const lint = lintFullArtifactPayload("plan", bytes);
+  const lintViolations = (lint.checks as Array<Record<string, string>>)
+    .filter((check) => check.status === "fail")
+    .map(
+      (check) =>
+        `strict prose lint ${check.name}: ${check.detail}; action: ${check.action}`,
+    );
+  const schemaViolations = validateArtifactBytes("plan", bytes).map(
+    (violation) => `schema validation: ${violation}`,
+  );
+  const violations = [...lintViolations, ...schemaViolations];
+  if (violations.length === 0) return;
+  reject({
+    class: "schema_violation",
+    message: "plan publication candidate failed strict prose lint or schema validation; correct the reported violations and retry",
+    violations,
+    syntax: "agentera check lint --artifact plan --file PATH --strict --format json",
+    example: "agentera check lint --artifact plan --file .agentera/plan.yaml --strict --format json",
+  });
 }
 
 function findByNumber(
@@ -496,19 +519,66 @@ function canonicalPlanDocumentForWrite(doc: Record<string, unknown>): Record<str
   return { ...doc, header: { ...header, status: canonicalStatus } };
 }
 
+function fsyncDirectory(directory: string): void {
+  const fd = fs.openSync(directory, "r");
+  try {
+    fs.fsyncSync(fd);
+  } finally {
+    fs.closeSync(fd);
+  }
+}
+
 function ensureArchive(archivePath: string, bytes: string): boolean {
-  fs.mkdirSync(path.dirname(archivePath), { recursive: true });
-  if (!fs.existsSync(archivePath)) {
-    fs.writeFileSync(archivePath, bytes, { flag: "wx" });
-    return true;
+  const directory = path.dirname(archivePath);
+  fs.mkdirSync(directory, { recursive: true });
+  const stage = path.join(
+    directory,
+    `.${path.basename(archivePath)}.writer.${process.pid}.${Date.now()}.tmp`,
+  );
+  let stageCreated = false;
+  let fd: number | undefined;
+  try {
+    fd = fs.openSync(stage, "wx");
+    stageCreated = true;
+    fs.writeFileSync(fd, bytes, "utf8");
+    fs.fsyncSync(fd);
+    fs.closeSync(fd);
+    fd = undefined;
+    try {
+      fs.linkSync(stage, archivePath);
+      fsyncDirectory(directory);
+      return true;
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error;
+      if (fs.readFileSync(archivePath, "utf8") !== bytes) {
+        reject({
+          class: "conflict",
+          message: `archive path '${archivePath}' already exists with different content; historical archives are immutable`,
+        });
+      }
+      return false;
+    }
+  } finally {
+    if (fd !== undefined) fs.closeSync(fd);
+    if (stageCreated) {
+      try {
+        fs.unlinkSync(stage);
+        fsyncDirectory(directory);
+      } catch {
+        // A published archive is authoritative; a leftover private stage is ignored on retry.
+      }
+    }
   }
-  if (fs.readFileSync(archivePath, "utf8") !== bytes) {
-    reject({
-      class: "conflict",
-      message: `archive path '${archivePath}' already exists with different content; historical archives are immutable`,
-    });
-  }
-  return false;
+}
+
+function publishStagedPlan(stage: string, target: string): void {
+  fs.renameSync(stage, target);
+  fsyncDirectory(path.dirname(target));
+}
+
+function removeCurrentPlan(target: string): void {
+  fs.unlinkSync(target);
+  fsyncDirectory(path.dirname(target));
 }
 
 function stagingPath(req: StateWriteRequest, target: string): string {
@@ -555,9 +625,14 @@ function planLifecycle(
         syntax: "agentera state plan archive --force",
       });
     const archivePath = archivePathFor(req.projectRoot, existing.doc);
+    const archiveBytes = dumpYamlMapping(existing.doc);
+    validatePlanPublicationCandidate(archiveBytes);
     if (!req.dryRun) {
-      ensureArchive(archivePath, dumpYamlMapping(existing.doc));
-      fs.unlinkSync(target);
+      // Archive creation and current-plan removal cannot be one filesystem transaction.
+      // The durable archive is published first; retries remove the current plan only after
+      // they observe that exact immutable archive.
+      ensureArchive(archivePath, archiveBytes);
+      removeCurrentPlan(target);
     }
     return envelope(req, target, {}, mapping(existing.doc.header), {}, false, null, {
       archivePath,
@@ -577,7 +652,8 @@ function planLifecycle(
     const existingWithoutLineage = structuredClone(existing.doc);
     delete existingWithoutLineage.previous_plan_archived;
     const sameWithoutLineage = isDeepStrictEqual(existingWithoutLineage, input);
-    if (sameWithoutLineage && !legacyLifecycle)
+    if (sameWithoutLineage && !legacyLifecycle) {
+      validatePlanPublicationCandidate(dumpYamlMapping(existing.doc));
       return envelope(
         req,
         target,
@@ -588,6 +664,7 @@ function planLifecycle(
         null,
         req.dryRun ? { diff: "", before: existing.doc, after: existing.doc } : {},
       );
+    }
     if (!sameWithoutLineage) {
       if (oldStatus !== "complete" && !req.force)
         reject({
@@ -599,33 +676,32 @@ function planLifecycle(
     }
   }
   const bytes = dumpYamlMapping(input);
-  const violations = validateArtifactBytes("plan", bytes);
-  if (violations.length) schemaViolation(violations);
-  const stage = stagingPath(req, target);
-  try {
-    fs.writeFileSync(stage, bytes);
-    const finalBytes = fs.readFileSync(stage, "utf8");
-    const finalViolations = validateArtifactBytes("plan", finalBytes);
-    if (finalViolations.length)
-      throw new Error(`writer staging invariant failure: ${finalViolations.join("; ")}`);
-    const finalDoc = loadYamlMapping(finalBytes);
-    if (!req.dryRun) {
-      if (existing.bytes && archivePath) ensureArchive(archivePath, dumpYamlMapping(existing.doc));
-      fs.renameSync(stage, target);
-    }
-    return envelope(req, target, finalDoc, mapping(finalDoc.header), {}, false, null, {
-      archivePath,
-      diff: diffText(existing.bytes, finalBytes, target),
-      before: existing.doc,
-      after: finalDoc,
-    });
-  } finally {
+  const predecessorBytes = existing.bytes && archivePath ? dumpYamlMapping(existing.doc) : null;
+  if (predecessorBytes) validatePlanPublicationCandidate(predecessorBytes);
+  validatePlanPublicationCandidate(bytes);
+  const finalDoc = loadYamlMapping(bytes);
+  if (!req.dryRun) {
+    const stage = stagingPath(req, target);
     try {
-      fs.unlinkSync(stage);
-    } catch {
-      /* published or already removed */
+      fs.writeFileSync(stage, bytes);
+      // Archive and current replacement are deliberately two durable operations. If the
+      // process stops between them, retry sees the exact archive and converges on this plan.
+      if (predecessorBytes && archivePath) ensureArchive(archivePath, predecessorBytes);
+      publishStagedPlan(stage, target);
+    } finally {
+      try {
+        fs.unlinkSync(stage);
+      } catch {
+        /* published or already removed */
+      }
     }
   }
+  return envelope(req, target, finalDoc, mapping(finalDoc.header), {}, false, null, {
+    archivePath,
+    diff: diffText(existing.bytes, bytes, target),
+    before: existing.doc,
+    after: finalDoc,
+  });
 }
 
 function envelope(
@@ -674,7 +750,9 @@ function envelope(
 
 export function executeStateWrite(req: StateWriteRequest): StateWriteEnvelope {
   assertWriterBoundary(req.projectRoot, path.join(req.projectRoot, ".agentera"), "writer lock");
-  const lock = acquireWriterLock(req.projectRoot);
+  const planPublication =
+    req.artifact === "plan" && ["archive", "create"].includes(req.spec.verb);
+  const lock = req.dryRun && planPublication ? null : acquireWriterLock(req.projectRoot);
   try {
     const record = loadArtifactRegistry().get(req.artifact);
     if (!record) throw new Error(`artifact '${req.artifact}' is not registered`);
@@ -757,6 +835,6 @@ export function executeStateWrite(req: StateWriteRequest): StateWriteEnvelope {
       }
     }
   } finally {
-    lock.release();
+    lock?.release();
   }
 }

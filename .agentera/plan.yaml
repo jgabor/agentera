@@ -79,13 +79,14 @@ tasks:
     name: Implement validated crash-consistent publication
     depends_on:
       - "4"
-    status: pending
+    status: complete
     acceptance:
       - GIVEN a plan create request WHEN CLI-owned lineage and canonical serialization are complete THEN strict prose lint and schema validation run against those exact final candidate bytes.
       - GIVEN lint or schema failure WHEN publication is attempted THEN the current plan and immutable archives remain unchanged and structured diagnostics explain correction and retry.
       - GIVEN dry-run WHEN validation succeeds or fails THEN the identical validation pipeline runs with no filesystem mutation.
       - GIVEN interruption around archive creation and current-plan replacement WHEN the operation is retried THEN it converges without plan loss or duplicate divergent archives.
       - GIVEN a transformed candidate crosses a prose budget WHEN validation runs THEN the published-byte lint catches the violation.
+    evidence: 1,559 CLI tests; typecheck; lint (0 errors, 99 pre-existing warnings); build; capability-contract validation; compact; built CLI strict-lint smoke.
   - number: 6
     name: Correct archive discovery and session routing
     depends_on:

@@ -4,6 +4,7 @@ import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { main } from "../../../src/cli/dispatch.js";
+import { lintFullArtifactPayload } from "../../../src/cli/commands/lint.js";
 import { dumpYamlMapping, loadYamlMapping } from "../../../src/core/yaml.js";
 import { ArtifactSchemaValidator } from "../../../src/hooks/validateArtifact/index.js";
 
@@ -89,7 +90,7 @@ function decisionArgs(question = "Where should writes live?"): string[] {
 function lightPlan(title = "Writer plan", status = "open"): Record<string, unknown> {
   return {
     header: { level: "light", created: "2026-07-10", status, title },
-    what: "Implement typed artifact writes.",
+    what: "Implement `state/write` artifact writes.",
     why: "Agents need a safe mutation path.",
     scope: { included: ["state writer"], excluded: ["vision"] },
     tasks: [
@@ -102,6 +103,25 @@ function writeInput(root: string, name: string, value: Record<string, unknown>):
   const p = path.join(root, name);
   fs.writeFileSync(p, dumpYamlMapping(value));
   return p;
+}
+
+function archiveFiles(root: string): string[] {
+  const directory = path.join(root, ".agentera", "archive");
+  return fs.existsSync(directory)
+    ? fs.readdirSync(directory).filter((name) => name.startsWith("PLAN-")).sort()
+    : [];
+}
+
+function planAtLastFullLintPass(): Record<string, unknown> {
+  const candidate = lightPlan("Budget successor");
+  for (let words = 2450; words < 2600; words += 1) {
+    candidate.what = Array.from({ length: words }, () => "src/plan.ts").join(" ");
+    if (lintFullArtifactPayload("plan", dumpYamlMapping(candidate)).status === "fail") {
+      candidate.what = Array.from({ length: words - 1 }, () => "src/plan.ts").join(" ");
+      return candidate;
+    }
+  }
+  throw new Error("expected a full-file plan lint boundary");
 }
 
 function validAudit(): Record<string, unknown> {
@@ -627,6 +647,138 @@ describe("decisions, health, and plan operations", () => {
     expect(fs.readFileSync(path.join(collisionRoot, ".agentera", "plan.yaml"), "utf8")).toBe(
       before,
     );
+  });
+
+  it("validates final lineaged bytes and rejects lint or schema failures before publication", () => {
+    const lintRoot = project();
+    const predecessor = writeInput(lintRoot, "predecessor.yaml", lightPlan("Predecessor", "complete"));
+    expect(run(lintRoot, ["plan", "create", "--input", predecessor, "--format", "json"]).rc).toBe(0);
+    const target = path.join(lintRoot, ".agentera", "plan.yaml");
+    const before = fs.readFileSync(target, "utf8");
+    const successor = planAtLastFullLintPass();
+    expect(lintFullArtifactPayload("plan", dumpYamlMapping(successor)).status).toBe("pass");
+    const lintResult = run(lintRoot, [
+      "plan",
+      "create",
+      "--input",
+      writeInput(lintRoot, "budget-successor.yaml", successor),
+      "--format",
+      "json",
+    ]);
+    expect(lintResult.rc).toBe(2);
+    expect(lintResult.json?.error.class).toBe("schema_violation");
+    expect(lintResult.json?.error.violations).toEqual(
+      expect.arrayContaining([expect.stringContaining("strict prose lint verbosity")]),
+    );
+    expect(lintResult.json?.error.syntax).toContain("check lint");
+    expect(fs.readFileSync(target, "utf8")).toBe(before);
+    expect(archiveFiles(lintRoot)).toEqual([]);
+
+    const schemaRoot = project();
+    const schemaPredecessor = writeInput(
+      schemaRoot,
+      "predecessor.yaml",
+      lightPlan("Schema predecessor", "complete"),
+    );
+    expect(run(schemaRoot, ["plan", "create", "--input", schemaPredecessor, "--format", "json"]).rc).toBe(0);
+    const schemaTarget = path.join(schemaRoot, ".agentera", "plan.yaml");
+    const schemaBefore = fs.readFileSync(schemaTarget, "utf8");
+    const invalid = { ...lightPlan("Schema successor"), unsupported_publication_field: true };
+    const validate = vi.spyOn(ArtifactSchemaValidator.prototype, "validateYaml");
+    try {
+      const schemaResult = run(schemaRoot, [
+        "plan",
+        "create",
+        "--input",
+        writeInput(schemaRoot, "invalid-successor.yaml", invalid),
+        "--format",
+        "json",
+      ]);
+      expect(schemaResult.rc).toBe(2);
+      expect(schemaResult.json?.error.violations).toEqual(
+        expect.arrayContaining([expect.stringContaining("schema validation")]),
+      );
+      expect(validate.mock.calls.map(([bytes]) => bytes)).toEqual(
+        expect.arrayContaining([
+          expect.stringContaining("previous_plan_archived"),
+          expect.stringContaining("unsupported_publication_field"),
+        ]),
+      );
+    } finally {
+      validate.mockRestore();
+    }
+    expect(fs.readFileSync(schemaTarget, "utf8")).toBe(schemaBefore);
+    expect(archiveFiles(schemaRoot)).toEqual([]);
+  });
+
+  it("runs the plan publication pipeline without filesystem mutation in dry-run", () => {
+    const root = project();
+    const valid = writeInput(root, "valid.yaml", lightPlan("Dry-run candidate"));
+    expect(run(root, ["plan", "create", "--input", valid, "--dry-run", "--format", "json"]).rc).toBe(0);
+    expect(fs.existsSync(path.join(root, ".agentera"))).toBe(false);
+
+    const invalid = lightPlan("Rejected dry-run candidate");
+    invalid.what = "In summary, `state/write` needs validation.";
+    const rejected = run(root, [
+      "plan",
+      "create",
+      "--input",
+      writeInput(root, "invalid.yaml", invalid),
+      "--dry-run",
+      "--format",
+      "json",
+    ]);
+    expect(rejected.rc).toBe(2);
+    expect(rejected.json?.error.violations).toEqual(
+      expect.arrayContaining([expect.stringContaining("strict prose lint filler")]),
+    );
+    expect(fs.existsSync(path.join(root, ".agentera"))).toBe(false);
+  });
+
+  it("converges archive and replacement retries after publication interruptions", () => {
+    const archiveRoot = project();
+    const archiveInput = writeInput(archiveRoot, "archive.yaml", lightPlan("Interrupted archive", "complete"));
+    expect(run(archiveRoot, ["plan", "create", "--input", archiveInput, "--format", "json"]).rc).toBe(0);
+    const archiveTarget = path.join(archiveRoot, ".agentera", "plan.yaml");
+    const archiveBefore = fs.readFileSync(archiveTarget, "utf8");
+    const link = vi.spyOn(fs, "linkSync").mockImplementation(() => {
+      throw Object.assign(new Error("injected archive interruption"), { code: "ENOSPC" });
+    });
+    try {
+      expect(run(archiveRoot, ["plan", "archive", "--format", "json"]).rc).toBe(1);
+      expect(fs.readFileSync(archiveTarget, "utf8")).toBe(archiveBefore);
+      expect(archiveFiles(archiveRoot)).toEqual([]);
+    } finally {
+      link.mockRestore();
+    }
+    expect(run(archiveRoot, ["plan", "archive", "--format", "json"]).rc).toBe(0);
+
+    const replaceRoot = project();
+    const first = writeInput(replaceRoot, "first.yaml", lightPlan("Interrupted predecessor", "complete"));
+    expect(run(replaceRoot, ["plan", "create", "--input", first, "--format", "json"]).rc).toBe(0);
+    const replaceTarget = path.join(replaceRoot, ".agentera", "plan.yaml");
+    const replaceBefore = fs.readFileSync(replaceTarget, "utf8");
+    const successor = writeInput(replaceRoot, "successor.yaml", lightPlan("Recovered successor"));
+    const originalRename = fs.renameSync.bind(fs);
+    const rename = vi.spyOn(fs, "renameSync").mockImplementation(((from, to) => {
+      if (String(from).includes(".writer.") && String(to) === replaceTarget) {
+        throw Object.assign(new Error("injected current replacement interruption"), { code: "ENOSPC" });
+      }
+      return originalRename(from, to);
+    }) as typeof fs.renameSync);
+    try {
+      expect(run(replaceRoot, ["plan", "create", "--input", successor, "--format", "json"]).rc).toBe(1);
+      expect(fs.readFileSync(replaceTarget, "utf8")).toBe(replaceBefore);
+      expect(archiveFiles(replaceRoot)).toHaveLength(1);
+      expect(
+        fs.readFileSync(path.join(replaceRoot, ".agentera", "archive", archiveFiles(replaceRoot)[0]), "utf8"),
+      ).toBe(replaceBefore);
+    } finally {
+      rename.mockRestore();
+    }
+    expect(run(replaceRoot, ["plan", "create", "--input", successor, "--format", "json"]).rc).toBe(0);
+    expect(archiveFiles(replaceRoot)).toHaveLength(1);
+    expect(fs.readFileSync(replaceTarget, "utf8")).toContain("previous_plan_archived");
   });
 
   it("round-trips unknown artifact and entry keys", () => {
