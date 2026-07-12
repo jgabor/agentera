@@ -12,13 +12,24 @@ function lifecycleContract(): Record<string, any> {
   return schema.LIFECYCLE_CONTRACT;
 }
 
-function filesUnder(target: string): string[] {
+function filesUnder(
+  target: string,
+  exclusions: string[],
+  excludedDirectoryNames: string[],
+): string[] {
+  const normalized = target === "." ? target : target.replace(/^\.\//, "");
+  if (normalized !== "." && matchesAny(normalized, exclusions)) return [];
   const absolute = path.join(REPO_ROOT, target);
   if (!fs.existsSync(absolute)) return [];
   if (fs.statSync(absolute).isFile()) return [target];
   return fs.readdirSync(absolute, { withFileTypes: true }).flatMap((entry) => {
-    const child = path.posix.join(target, entry.name);
-    return entry.isDirectory() ? filesUnder(child) : [child];
+    const child = target === "." ? entry.name : path.posix.join(target, entry.name);
+    if (matchesAny(child, exclusions)) return [];
+    if (entry.isSymbolicLink()) return [];
+    if (entry.isDirectory() && excludedDirectoryNames.includes(entry.name)) return [];
+    return entry.isDirectory()
+      ? filesUnder(child, exclusions, excludedDirectoryNames)
+      : [child];
   });
 }
 
@@ -75,9 +86,22 @@ describe("plan lifecycle contract", () => {
       "documented_external_commitments",
     ];
     const classifiedPatterns = families.flatMap((family) => inventory[family]);
+    const exclusions = inventory.scan.exclusions.flatMap(
+      (entry: { patterns: string[] }) => entry.patterns,
+    );
+    expect(inventory.scan.roots).toEqual(["."]);
+    expect(inventory.scan.symlinks).toContain("leave the repository boundary");
+    const excludedDirectoryNames = inventory.scan.excluded_directory_names.names;
+    expect(inventory.scan.excluded_directory_names.reason).toContain("any repository depth");
+    expect(excludedDirectoryNames).toEqual(
+      expect.arrayContaining([".git", "node_modules", "dist", "__pycache__", ".snapshots"]),
+    );
+    for (const exclusion of inventory.scan.exclusions) {
+      expect(exclusion.patterns.length).toBeGreaterThan(0);
+      expect(exclusion.reason.length).toBeGreaterThan(20);
+    }
     const candidates = inventory.scan.roots
-      .flatMap(filesUnder)
-      .filter((file: string) => !matchesAny(file, inventory.scan.exclusions))
+      .flatMap((root: string) => filesUnder(root, exclusions, excludedDirectoryNames))
       .filter((file: string) => {
         const text = fs.readFileSync(path.join(REPO_ROOT, file), "utf8");
         return inventory.scan.markers.some((marker: string) => text.includes(marker));
@@ -101,5 +125,21 @@ describe("plan lifecycle contract", () => {
     expect(
       matchesAny("packages/cli/src/upgrade/upgradeOrchestrator.ts", inventory.migrators),
     ).toBe(true);
+    expect(matchesAny("fixtures/semantic/status-cli-budget.md", inventory.fixtures)).toBe(true);
+    expect(matchesAny("fixtures/semantic/status-bare-message.md", inventory.fixtures)).toBe(true);
+    expect(matchesAny(".agentera/docs.yaml", inventory.adapters)).toBe(true);
+    expect(matchesAny("scripts/schemas/contracts.json", inventory.adapters)).toBe(true);
+    expect(matchesAny("scripts/json_output_surface_manifest.yaml", inventory.adapters)).toBe(true);
+    expect(candidates).toEqual(
+      expect.arrayContaining([
+        "fixtures/semantic/status-cli-budget.md",
+        "fixtures/semantic/status-bare-message.md",
+        ".agentera/docs.yaml",
+        "scripts/schemas/contracts.json",
+        "scripts/json_output_surface_manifest.yaml",
+      ]),
+    );
+    expect(filesUnder("node_modules", exclusions, excludedDirectoryNames)).toEqual([]);
+    expect(filesUnder(".git", exclusions, excludedDirectoryNames)).toEqual([]);
   });
 });

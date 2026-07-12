@@ -451,15 +451,29 @@ LIFECYCLE_CONTRACT:
       match at least one family pattern unless an explicit exclusion applies.
     scan:
       roots:
-        - packages/cli/src
-        - packages/cli/test
-        - skills/agentera
-        - references
-        - .agentera/plan.yaml
-        - .agentera/archive
-        - AGENTS.md
-        - README.md
-        - UPGRADE.md
+        - .
+      symlinks: Excluded because their targets may leave the repository boundary.
+      excluded_directory_names:
+        names:
+          - .git
+          - node_modules
+          - .pnpm-store
+          - .venv
+          - .pytest_cache
+          - .ruff_cache
+          - .cache
+          - .snapshots
+          - __pycache__
+          - dist
+          - build
+          - coverage
+          - bundle
+          - .astro
+          - .svelte-kit
+        reason: >-
+          Directory-name pruning prevents traversal of VCS metadata, vendor
+          dependencies, environments, caches, snapshots, bytecode, and generated
+          build or publication outputs at any repository depth.
       markers:
         - planDocumentParts
         - discoverPlanArtifacts
@@ -475,15 +489,34 @@ LIFECYCLE_CONTRACT:
         - archived plan
         - plan lifecycle
       exclusions:
-        - .agentera/archive/PLAN-*.md
-        - references/adapters/runtime-lifecycle-*.yaml
-        - packages/cli/src/runtime/lifecycle*.ts
-        - packages/cli/src/upgrade/lifecycle*.ts
-        - packages/cli/test/runtime/lifecycle*.test.ts
-        - packages/cli/test/upgrade/lifecycle*.test.ts
-        - packages/cli/test/cli/lifecycle*.test.ts
-        - packages/cli/test/validate/lifecycle*.test.ts
+        - patterns: [.git, .git/**]
+          reason: Git object and worktree metadata is not a repository contract surface.
+        - patterns: [node_modules, node_modules/**, "**/node_modules", "**/node_modules/**"]
+          reason: Installed third-party dependencies are vendor content.
+        - patterns: [.pnpm-store, .pnpm-store/**, .venv, .venv/**]
+          reason: Package and Python environments are external dependency caches.
+        - patterns: [.pytest_cache, .pytest_cache/**, .ruff_cache, .ruff_cache/**]
+          reason: Tool caches are generated and carry no product contract.
+        - patterns: ["**/.cache", "**/.cache/**", .snapshots, .snapshots/**]
+          reason: Caches and filesystem snapshots are generated or external state.
+        - patterns: ["**/dist", "**/dist/**", "**/build", "**/build/**", "**/coverage", "**/coverage/**"]
+          reason: Compiled, bundled, and coverage outputs are generated from classified sources.
+        - patterns: [packages/cli/bundle, packages/cli/bundle/**, "**/.astro", "**/.astro/**", "**/.svelte-kit", "**/.svelte-kit/**"]
+          reason: Runtime bundles and framework outputs are generated publication artifacts.
+        - patterns: [.env]
+          reason: Local secrets are neither read nor classified by repository contract tests.
+        - patterns:
+            - references/adapters/runtime-lifecycle-*.yaml
+            - packages/cli/src/runtime/lifecycle*.ts
+            - packages/cli/src/upgrade/lifecycle*.ts
+            - packages/cli/test/runtime/lifecycle*.test.ts
+            - packages/cli/test/upgrade/lifecycle*.test.ts
+            - packages/cli/test/cli/lifecycle*.test.ts
+            - packages/cli/test/validate/lifecycle*.test.ts
+          reason: These surfaces govern runtime installation lifecycle, not plan artifact lifecycle.
     readers:
+      - src/**
+      - hooks/**
       - packages/cli/src/cli/plan*.ts
       - packages/cli/src/cli/orientation.ts
       - packages/cli/src/cli/appContext.ts
@@ -518,6 +551,8 @@ LIFECYCLE_CONTRACT:
       - packages/cli/src/validate/selfAudit.ts
       - packages/cli/src/hooks/compaction/*.ts
       - packages/cli/src/cli/dispatch/*.ts
+      - .agentera/docs.yaml
+      - scripts/**
     fixtures:
       - packages/cli/test/**/*.ts
       - packages/cli/test/fixtures/**
@@ -525,14 +560,18 @@ LIFECYCLE_CONTRACT:
       - packages/cli/test/upgrade/fixtures/**
       - packages/cli/test/upgrade/fixtures/**/.agentera/*
       - packages/cli/test/cli/fixtures/**
-      - .agentera/plan.yaml
-      - .agentera/archive/**
+      - tests/**
+      - fixtures/**
+      - .agentera/**
     documented_external_commitments:
       - packages/cli/src/capabilities/*/instructions.ts
       - skills/agentera/SKILL.md
       - skills/agentera/agents/*
       - skills/agentera/references/*
       - references/**/*.md
+      - docs/**
+      - packages/web/src/**
+      - "*.md"
       - AGENTS.md
       - README.md
       - UPGRADE.md

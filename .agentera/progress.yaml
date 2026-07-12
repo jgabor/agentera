@@ -1,4 +1,29 @@
 cycles:
+  - number: 735
+    timestamp: 2026-07-12 20:23
+    type: fix
+    phase: build
+    what: Completed Task 1 lifecycle classification with a safely pruned
+      repository-root scan in skills/agentera/schemas/artifacts/plan.yaml.
+    inspiration: Second audit identified root fixtures, .agentera/docs.yaml, and
+      script schema/manifest omissions from the prior bounded roots.
+    discovered: After documented exclusions, the scan reads 920 repository files and
+      classifies 184 lifecycle-bearing candidates with zero unclassified.
+    verified: "Focused contract test and full CLI suite pass: 161 files, 1,542
+      tests. Typecheck, build, compact, plan capability validation,
+      capability-contract validation, and git diff --check pass."
+    next: Task 1 Criterion 1 is repaired; Task 2 remains next.
+    context:
+      intent: Repair Criterion 1 by covering root, hidden, fixture, script contract,
+        and equivalent repository surfaces without traversing unsafe or
+        generated locations.
+      constraints: Criterion 1 only; Criteria 2-4 unchanged. Excludes
+        VCS/vendor/environment/cache/snapshot/generated output, symlinks, and
+        .env; preserves decision satisfaction and v3 hold.
+      unknowns: None within the declared repository boundary; excluded paths are
+        explicit and rationale-backed.
+      scope: Lifecycle authority scan boundary and patterns, regression test,
+        changelog, typed Task 1 evidence, and progress.
   - number: 734
     timestamp: 2026-07-12 20:14
     type: fix
@@ -244,42 +269,10 @@ cycles:
         packages/cli/test/cli/orientationCorpusCoverage.test.ts;
         packages/cli/test/cli/statusDashboardBudget.test.ts; typed .agentera
         progress and plan state
-  - number: 725
-    timestamp: 2026-07-12 13:40
-    type: fix
-    phase: build
-    what: "Completed the final Task 5 audit repair in
-      packages/cli/src/cli/orientation/attention.ts: blocker-only lifecycle
-      states no longer compose generic integration guidance with blocker
-      guidance, and manual procedures are bounded for the complete status
-      briefing budget."
-    inspiration: Task 5 repair attempt 2 after audit criterion 1 found duplicate
-      blocker-only composition and row-only budget evidence.
-    discovered: The status renderer is caller-owned; the canonical contract lives in
-      status instructions and validation schema. The regression now uses the
-      actual prime JSON payload, derives the 120-word and 15-word limits from
-      that contract, counts command tokens normally, and keeps lifecycle rows
-      plus normal metrics, narrative, attention, and next suggestion within the
-      whole briefing budget.
-    verified: "Focused dashboard/orientation/prime suite: 60/60 passed; status
-      semantic fixture harness passed; typecheck passed; lint passed with 0
-      errors and 98 existing warnings; build passed; full CLI suite: 1501 passed
-      and exactly 8 known release-metadata failures from 3.0.0-dev.16 versus
-      core 3.0.0; no additional failures."
-    next: Task 6 remains pending and out of scope.
-    context:
-      intent: Make prime/status lifecycle presentation bounded across the full
-        pipeline while preserving canonical projection reuse and exact
-        actionable commands.
-      constraints: Task 5 only; preserve all four criteria, canonical lifecycle
-        projection and ownership logic, attention ordering, vision/objective
-        state, and Decision 92 satisfaction; no commit, push, publish, or tag.
-      scope: packages/cli/src/cli/orientation/attention.ts;
-        packages/cli/test/cli/orientationCorpusCoverage.test.ts;
-        packages/cli/test/cli/statusDashboardBudget.test.ts;
-        packages/cli/test/cli/primeProjectIntegration.test.ts;
-        .agentera/progress.yaml; .agentera/plan.yaml
 archive:
+  - summary: "Cycle 725 (2026-07-12): Completed the final Task 5 audit repair in
+      packages/cli/src/cli/orientation/attention.ts: blocker-only lifecycle
+      states no longer compose..."
   - summary: "Cycle 724 (2026-07-12): Closed the Task 5 audit repair in
       packages/cli/src/cli/orientation/attention.ts and its dashboard
       regressions: bounded both manual..."
@@ -378,5 +371,3 @@ archive:
       modernization: migrate the CLI test entry point..."
   - summary: "Cycle 686 (2026-06-28): Plan task 1 of the vitest 2->4 toolchain
       modernization: bump the `vitest` devDep `^2.1.8` ->..."
-  - summary: "Cycle 685 (2026-06-28): Audit 25 of the feat/v3 CLI. Evaluated the C74
-      Dict-consolidation refactor (commits 2715bd28..8e9f2447, 6 commits)..."
