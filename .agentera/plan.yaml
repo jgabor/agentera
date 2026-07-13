@@ -55,7 +55,7 @@ tasks:
     name: Deliver archive discovery and entry validation
     depends_on:
       - "1"
-    status: pending
+    status: complete
     acceptance:
       - GIVEN valid numbered archive records WHEN discovered THEN they are parsed, validated, numerically ordered, and attributed to one supported artifact.
       - GIVEN malformed names, envelopes, hashes, duplicate IDs, unsafe paths, symlinks, or unrelated root archives WHEN discovery runs THEN each is rejected or ignored according to the authority.

@@ -259,6 +259,34 @@ describe("state writer discovery and progress", () => {
     expect(third.json?.assigned.number).toBe(2);
     const validator = new ArtifactSchemaValidator();
     expect(validator.validateExplicit("progress", target, root)).toEqual([]);
+    expect(fs.existsSync(path.join(root, ".agentera", "archive", "progress", "1.yaml"))).toBe(true);
+  });
+
+  it("recovers the original number when projection publication stops after archive publication", () => {
+    const root = project();
+    const target = path.join(root, ".agentera", "progress.yaml");
+    const originalRename = fs.renameSync.bind(fs);
+    const rename = vi.spyOn(fs, "renameSync").mockImplementation(((from, to) => {
+      if (String(from).includes(".writer.") && String(to) === target) {
+        throw Object.assign(new Error("injected projection publication failure"), { code: "ENOSPC" });
+      }
+      return originalRename(from, to);
+    }) as typeof fs.renameSync);
+    try {
+      expect(run(root, progressArgs(), "").rc).toBe(1);
+      expect(fs.existsSync(path.join(root, ".agentera", "archive", "progress", "1.yaml"))).toBe(true);
+      expect(fs.existsSync(target)).toBe(false);
+    } finally {
+      rename.mockRestore();
+    }
+
+    const retry = run(root, progressArgs());
+    expect(retry.rc, retry.err || retry.out).toBe(0);
+    expect(retry.json?.operation.idempotent_replay).toBe(true);
+    expect(retry.json?.assigned.number).toBe(1);
+    const projection = loadYamlMapping(fs.readFileSync(target, "utf8"));
+    expect(projection.cycles).toHaveLength(1);
+    expect((projection.cycles as Array<Record<string, unknown>>)[0]?.number).toBe(1);
   });
 
   it("dry-runs the final staged bytes without changing the filesystem", () => {
@@ -1356,7 +1384,7 @@ describe("closed rejection catalog and mutation safety", () => {
     expect(fs.readFileSync(target, "utf8")).toBe(before);
   });
 
-  it("cleans the stage and preserves the target when atomic publication fails", () => {
+  it("cleans the stage, preserves the target, and retains the durable archive when projection fails", () => {
     const root = project();
     const originalRename = fs.renameSync.bind(fs);
     const rename = vi.spyOn(fs, "renameSync").mockImplementation(((from, to) => {
@@ -1371,7 +1399,8 @@ describe("closed rejection catalog and mutation safety", () => {
       expect(result.err).toContain("injected rename ENOSPC");
       const dir = path.join(root, ".agentera");
       expect(fs.existsSync(path.join(dir, "progress.yaml"))).toBe(false);
-      expect(fs.existsSync(dir) ? fs.readdirSync(dir) : []).toEqual([]);
+      expect(fs.existsSync(path.join(dir, "archive", "progress", "1.yaml"))).toBe(true);
+      expect(fs.readdirSync(dir).filter((name) => name.startsWith(".progress.yaml.writer."))).toEqual([]);
     } finally {
       rename.mockRestore();
     }

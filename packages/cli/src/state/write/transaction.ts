@@ -23,6 +23,16 @@ import { reject } from "./errors.js";
 import { validateArtifactBytes } from "./validate.js";
 import { dependencyReadyTasks } from "../../cli/capabilityContext/planState.js";
 import type { JsonObject } from "../../core/jsonValue.js";
+import {
+  publishImmutableFile,
+  publishNumberedArchive,
+  type ArchivePublicationResult,
+} from "../archivePublication.js";
+import {
+  findArchivedReplay,
+  isExactArchiveReplay,
+  recoverArchivedEntry,
+} from "../archiveReplay.js";
 
 export interface StateWriteRequest {
   artifact: WritableArtifact;
@@ -54,29 +64,6 @@ function array(doc: Record<string, unknown>, key: string): Record<string, unknow
     : [];
 }
 
-function setNested(target: Record<string, unknown>, field: string, value: unknown): void {
-  const parts = field.split(".");
-  let cursor = target;
-  for (const part of parts.slice(0, -1)) {
-    if (!cursor[part] || typeof cursor[part] !== "object" || Array.isArray(cursor[part]))
-      cursor[part] = {};
-    cursor = cursor[part] as Record<string, unknown>;
-  }
-  cursor[parts.at(-1) as string] = value;
-}
-
-function project(
-  entry: Record<string, unknown>,
-  payload: Record<string, unknown>,
-): Record<string, unknown> {
-  const result: Record<string, unknown> = {};
-  for (const [key, expected] of Object.entries(payload)) {
-    const actual = mappingPath(entry, key);
-    if (expected !== undefined) setNested(result, key, actual);
-  }
-  return result;
-}
-
 function mappingPath(entry: Record<string, unknown>, field: string): unknown {
   let value: unknown = entry;
   for (const part of field.split(".")) {
@@ -84,13 +71,6 @@ function mappingPath(entry: Record<string, unknown>, field: string): unknown {
     value = (value as Record<string, unknown>)[part];
   }
   return value;
-}
-
-function exactReplay(
-  entry: Record<string, unknown> | undefined,
-  payload: Record<string, unknown>,
-): boolean {
-  return Boolean(entry && isDeepStrictEqual(project(entry, payload), payload));
 }
 
 function readExisting(target: string): { doc: Record<string, unknown>; bytes: string } {
@@ -199,6 +179,7 @@ function findByNumber(
 function mutateCandidate(
   req: StateWriteRequest,
   doc: Record<string, unknown>,
+  recovered?: Record<string, unknown>,
 ): {
   candidate: Record<string, unknown>;
   written: Record<string, unknown>;
@@ -209,13 +190,23 @@ function mutateCandidate(
   if (req.artifact === "progress") {
     const payload = req.callerPayload;
     const entries = array(candidate, "cycles");
-    if (exactReplay(entries[0], payload))
+    const replay = entries.find((entry) => isExactArchiveReplay(entry, payload));
+    if (replay)
       return {
         candidate,
-        written: entries[0],
-        assigned: { number: entries[0].number, timestamp: entries[0].timestamp },
+        written: replay,
+        assigned: { number: replay.number, timestamp: replay.timestamp },
         replay: true,
       };
+    if (recovered) {
+      recoverArchivedEntry(candidate, "cycles", entries, recovered, true);
+      return {
+        candidate,
+        written: recovered,
+        assigned: { number: recovered.number, timestamp: recovered.timestamp },
+        replay: true,
+      };
+    }
     const entry = buildProgress(candidate, req.values);
     candidate.cycles = [entry, ...entries];
     return {
@@ -228,12 +219,22 @@ function mutateCandidate(
   if (req.artifact === "decisions" && req.spec.verb === "append") {
     const entries = array(candidate, "decisions");
     const payload = normalizedDecisionPayload(req.callerPayload);
-    if (exactReplay(entries.at(-1), payload)) {
-      const entry = entries.at(-1) as Record<string, unknown>;
+    const replay = entries.find((entry) => isExactArchiveReplay(entry, payload));
+    if (replay) {
+      const entry = replay;
       return {
         candidate,
         written: entry,
         assigned: { number: entry.number, date: entry.date },
+        replay: true,
+      };
+    }
+    if (recovered) {
+      recoverArchivedEntry(candidate, "decisions", entries, recovered, false);
+      return {
+        candidate,
+        written: recovered,
+        assigned: { number: recovered.number, date: recovered.date },
         replay: true,
       };
     }
@@ -305,12 +306,22 @@ function mutateCandidate(
     }
     const entries = array(candidate, "audits");
     const payload = req.callerPayload;
-    if (exactReplay(entries.at(-1), payload)) {
-      const entry = entries.at(-1) as Record<string, unknown>;
+    const replay = entries.find((entry) => isExactArchiveReplay(entry, payload));
+    if (replay) {
+      const entry = replay;
       return {
         candidate,
         written: entry,
         assigned: { number: entry.number, date: entry.date },
+        replay: true,
+      };
+    }
+    if (recovered) {
+      recoverArchivedEntry(candidate, "audits", entries, recovered, false);
+      return {
+        candidate,
+        written: recovered,
+        assigned: { number: recovered.number, date: recovered.date },
         replay: true,
       };
     }
@@ -332,7 +343,7 @@ function mutateCandidate(
     const sameName = tasks.find((task) => task.name === req.values.name);
     const payload = req.callerPayload;
     if (sameName) {
-      if (exactReplay(sameName, payload))
+      if (isExactArchiveReplay(sameName, payload))
         return {
           candidate,
           written: sameName,
@@ -516,6 +527,7 @@ function stateSlice(
     active_count: active.length,
     archive_count: archive.length,
     next_number: nextEntryNumber(doc, activeKey(artifact)),
+    ...(archivePath ? { archive_path: archivePath } : {}),
   };
 }
 
@@ -622,46 +634,15 @@ function fsyncDirectory(directory: string): void {
 }
 
 function ensureArchive(archivePath: string, bytes: string): boolean {
-  const directory = path.dirname(archivePath);
-  fs.mkdirSync(directory, { recursive: true });
-  const stage = path.join(
-    directory,
-    `.${path.basename(archivePath)}.writer.${process.pid}.${Date.now()}.tmp`,
-  );
-  let stageCreated = false;
-  let fd: number | undefined;
-  try {
-    fd = fs.openSync(stage, "wx");
-    stageCreated = true;
-    fs.writeFileSync(fd, bytes, "utf8");
-    fs.fsyncSync(fd);
-    fs.closeSync(fd);
-    fd = undefined;
-    try {
-      fs.linkSync(stage, archivePath);
-      fsyncDirectory(directory);
-      return true;
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error;
-      if (fs.readFileSync(archivePath, "utf8") !== bytes) {
+  return publishImmutableFile(archivePath, bytes, {
+    onExisting: () => {
+      if (fs.readFileSync(archivePath, "utf8") !== bytes)
         reject({
           class: "conflict",
           message: `archive path '${archivePath}' already exists with different content; historical archives are immutable`,
         });
-      }
-      return false;
-    }
-  } finally {
-    if (fd !== undefined) fs.closeSync(fd);
-    if (stageCreated) {
-      try {
-        fs.unlinkSync(stage);
-        fsyncDirectory(directory);
-      } catch {
-        // A published archive is authoritative; a leftover private stage is ignored on retry.
-      }
-    }
-  }
+    },
+  });
 }
 
 function publishStagedPlan(stage: string, target: string): void {
@@ -874,8 +855,27 @@ export function executeStateWrite(req: StateWriteRequest): StateWriteEnvelope {
         message: "no active plan exists; create one before appending a task",
         example: "agentera state plan create --input plan.yaml",
       });
-    const mutated = mutateCandidate(req, existing.doc);
-    if (mutated.replay)
+    const numberedAppend =
+      req.spec.verb === "append" && ["progress", "decisions", "health"].includes(req.artifact);
+    const replayPayload =
+      req.artifact === "decisions"
+        ? normalizedDecisionPayload(req.callerPayload)
+        : req.callerPayload;
+    const mutated = mutateCandidate(
+      req,
+      existing.doc,
+      numberedAppend ? findArchivedReplay(req.projectRoot, req.artifact, replayPayload) : undefined,
+    );
+    if (mutated.replay && isDeepStrictEqual(mutated.candidate, existing.doc)) {
+      let archive: ArchivePublicationResult | undefined;
+      if (numberedAppend && !req.dryRun) {
+        archive = publishNumberedArchive(
+          req.projectRoot,
+          req.artifact,
+          Number(mutated.written.number),
+          mutated.written as JsonObject,
+        );
+      }
       return envelope(
         req,
         target,
@@ -884,8 +884,12 @@ export function executeStateWrite(req: StateWriteRequest): StateWriteEnvelope {
         mutated.assigned,
         true,
         null,
-        req.dryRun ? { diff: "", before: existing.doc, after: mutated.candidate } : {},
+        {
+          ...(archive ? { archivePath: archive.path } : {}),
+          ...(req.dryRun ? { diff: "", before: existing.doc, after: mutated.candidate } : {}),
+        },
       );
+    }
     const candidateBytes = dumpYamlMapping(mutated.candidate);
     const candidateViolations = validateArtifactBytes(req.artifact, candidateBytes);
     if (candidateViolations.length) schemaViolation(candidateViolations);
@@ -912,8 +916,25 @@ export function executeStateWrite(req: StateWriteRequest): StateWriteEnvelope {
           { diff, before: existing.doc, after: finalDoc },
         );
       }
+      const archive = numberedAppend
+        ? publishNumberedArchive(
+            req.projectRoot,
+            req.artifact,
+            Number(mutated.written.number),
+            mutated.written as JsonObject,
+          )
+        : undefined;
       fs.renameSync(stage, target);
-      return envelope(req, target, finalDoc, mutated.written, mutated.assigned, false, compaction);
+      return envelope(
+        req,
+        target,
+        finalDoc,
+        mutated.written,
+        mutated.assigned,
+        mutated.replay,
+        compaction,
+        archive ? { archivePath: archive.path } : {},
+      );
     } finally {
       try {
         fs.unlinkSync(stage);

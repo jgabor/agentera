@@ -1,4 +1,41 @@
 cycles:
+  - number: 750
+    timestamp: 2026-07-13 11:28
+    type: feat
+    phase: build
+    what: Published immutable numbered progress, decisions, and health archives with
+      deterministic replay and orphan recovery.
+    inspiration: The state-storage authority and the proven immutable plan archive
+      publication primitive.
+    discovered: Canonical record hashing must sort object keys recursively while
+      preserving array order; hard-link publication preserves existing bytes on
+      immutable identity collisions; an archive can safely remain orphaned when
+      projection publication fails because retry searches validated archives by
+      caller payload.
+    verified: "Focused archivePublication and stateWrite tests: 63 tests passed.
+      Full pnpm -C packages/cli test: 1,606 tests passed across 165 files. pnpm
+      -C packages/cli run typecheck passed. pnpm -C packages/cli build passed.
+      capability-contract validation, build capability validation, and check
+      compact --format json passed with zero over-limit artifacts."
+    next: Task 3 evaluator review; Task 4 remains pending and must unify broader
+      writer transactions separately.
+    context:
+      intent: Preserve complete state records before bounded projections without
+        duplicate logical entries.
+      constraints: Task 3 only. Existing plan and vision archive behavior is
+        unchanged. Decision satisfaction and caveats, overlays, health, vision,
+        versions, TODO, publishing, Git behavior, projection reads, migration,
+        and experiments were not changed.
+      unknowns: Task 3 remains pending in the active plan for evaluator ownership;
+        later transaction, overlay, projection, migration, and durability tasks
+        remain unimplemented.
+      scope: packages/cli/src/state/archiveDiscovery.ts;
+        packages/cli/src/state/archivePublication.ts;
+        packages/cli/src/state/archiveReplay.ts;
+        packages/cli/src/state/write/transaction.ts;
+        packages/cli/test/state/archivePublication.test.ts;
+        packages/cli/test/state/write/stateWrite.test.ts; .agentera/plan.yaml;
+        .agentera/progress.yaml
   - number: 749
     timestamp: 2026-07-13 10:58
     type: feat
@@ -185,26 +222,9 @@ cycles:
         not change decisions.
       unknowns: none
       scope: Plan writer, lint helper, regression tests, and changelog.
-  - number: 740
-    timestamp: 2026-07-12 22:23
-    type: fix
-    phase: build
-    what: Separated plan lifecycle writes from task status writes and enforced
-      canonical open or complete serialization.
-    discovered: vp run web:check reports a pre-existing formatting issue in
-      packages/web/src/content/docs/docs/index.mdx; that untouched file remains
-      out of scope.
-    verified: pnpm -C packages/cli test passed 1,556 tests; typecheck, build,
-      capability-contract validation, and built CLI contract smoke passed.
-    next: "Task 5: Implement validated crash-consistent publication."
-    context:
-      intent: Prevent positional activity from being persisted as a plan lifecycle
-        status.
-      constraints: Preserved task status vocabulary, legacy read and migration
-        compatibility, and decision satisfaction state.
-      scope: Plan writer, lifecycle schema, writer documentation, regression tests,
-        and canonical fixture.
 archive:
+  - summary: "Cycle 740 (2026-07-12): Separated plan lifecycle writes from task
+      status writes and enforced canonical open or complete serialization."
   - summary: "Cycle 739 (2026-07-12): Added
       packages/cli/src/upgrade/migrateArtifactsV2ToV3.ts migration for legacy
       plan lifecycle values in docs-mapped current plans and archives."
@@ -309,6 +329,3 @@ archive:
       surface reports,..."
   - summary: "Cycle 701 (2026-07-11): Hardened the shared lifecycle engine against
       publication-time target and parent substitution."
-  - summary: "Cycle 700 (2026-07-11): Built the shared runtime-neutral lifecycle
-      operation engine with declared manifests, ownership ledgers, safe
-      filesystem actions,..."

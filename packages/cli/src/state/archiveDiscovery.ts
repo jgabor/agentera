@@ -60,6 +60,15 @@ interface SupportedArtifact {
   entryNumberField: string;
 }
 
+export interface NumberedArchiveContract {
+  artifactId: string;
+  entryCollection: string;
+  entryNumberField: string;
+  archiveRoot: string;
+  archiveExtension: string;
+  entrySchemaVersion: string;
+}
+
 interface ArchiveAuthority {
   archiveRoot: string;
   archiveExtension: string;
@@ -286,6 +295,27 @@ function canonicalJson(value: unknown, ancestors = new Set<object>()): string {
     return serialized;
   }
   throw new Error("record contains a value that cannot be represented as canonical JSON");
+}
+
+export function canonicalRecordJson(value: unknown): string {
+  return canonicalJson(value);
+}
+
+export function numberedArchiveContract(
+  artifactId: string,
+  sourceRoot: string = resolveSourceRoot(),
+): NumberedArchiveContract {
+  const authority = loadAuthority(sourceRoot);
+  const artifact = authority.supportedArtifacts.get(artifactId);
+  if (!artifact) throw new Error(`unsupported numbered archive artifact '${artifactId}'`);
+  return {
+    artifactId: artifact.artifactId,
+    entryCollection: artifact.entryCollection,
+    entryNumberField: artifact.entryNumberField,
+    archiveRoot: authority.archiveRoot,
+    archiveExtension: authority.archiveExtension,
+    entrySchemaVersion: authority.entrySchemaVersion,
+  };
 }
 
 function positiveEntryNumber(value: unknown): number | null {
