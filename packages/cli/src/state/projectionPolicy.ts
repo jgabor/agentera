@@ -22,7 +22,20 @@ export interface ProjectionOmissionMetadata extends JsonObject {
   omitted_count: number;
   omission_reason: string;
   retrieval: JsonObject;
+  omission_provenance: JsonValue;
 }
+
+export type ProjectionOmissionSource = "archive" | "legacy_summary" | "current_projection";
+
+export interface ProjectionOmissionProvenance extends JsonObject {
+  source: ProjectionOmissionSource;
+  detail_availability: "full" | "summary" | "unavailable";
+  compatibility: "complete" | "degraded";
+  archive_verified: boolean;
+  omitted_count: number;
+}
+
+const NUMBERED_ARTIFACTS = new Set(["progress", "decisions", "health"]);
 
 function mapping(value: unknown): Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value)
@@ -67,19 +80,28 @@ export function loadProjectionPolicy(sourceRoot: string = resolveSourceRoot()): 
 }
 
 export function projectionRetrieval(command: string): JsonObject {
-  return { command: `agentera state ${command} get --number N --format json` };
+  if (NUMBERED_ARTIFACTS.has(command)) {
+    return { available: true, command: `agentera state ${command} get --number N --format json` };
+  }
+  return {
+    available: false,
+    reason: "unsupported_numbered_retrieval",
+    artifact_id: command,
+  };
 }
 
 export function projectionOmission(
   command: string,
   count: number,
   reason: string,
+  options: { forceOmitted?: boolean; provenance?: ProjectionOmissionProvenance | ProjectionOmissionProvenance[] } = {},
 ): ProjectionOmissionMetadata {
   return {
-    omitted: count > 0,
+    omitted: options.forceOmitted ?? count > 0,
     omitted_count: count,
     omission_reason: reason,
     retrieval: projectionRetrieval(command),
+    omission_provenance: options.provenance ?? null,
   };
 }
 
@@ -126,7 +148,59 @@ function boundedValue(
       returned_entries: items.length,
     };
   }
-  return { ...result, ...projectionOmission(command, omittedCount, "projection_byte_budget") };
+  return {
+    ...result,
+    ...projectionOmission(command, omittedCount, "projection_byte_budget", { forceOmitted: true }),
+  };
+}
+
+function minimalBudgetedProjection(
+  command: string,
+  omittedCount: number,
+  policy: ProjectionPolicy,
+  format: string,
+): JsonObject {
+  const omission = projectionOmission(command, omittedCount, "projection_required_fields_exceed_budget", {
+    forceOmitted: true,
+    provenance: {
+      source: "current_projection",
+      detail_availability: "unavailable",
+      compatibility: "degraded",
+      archive_verified: false,
+      omitted_count: omittedCount,
+    },
+  });
+  const fallback: JsonObject = {
+    command,
+    status: "degraded",
+    entries: [],
+    counts: { entries: omittedCount, returned_entries: 0 },
+    source: { artifact: command, detail_availability: "unavailable", source: "current_projection" },
+    ...omission,
+    error: {
+      class: "projection_output_budget",
+      message: "optional projection detail was omitted because required output fields exceeded the authority byte budget",
+      syntax: `agentera state ${command} --format json`,
+      example: `agentera state ${command} --format json`,
+      recovery: omission.retrieval.available === true
+        ? String(omission.retrieval.command)
+        : "No direct retrieval route is declared for this artifact; use its supported state command.",
+    },
+  };
+  if (serializedProjectionBytes(fallback, format) <= policy.maxUtf8Bytes) return fallback;
+
+  const minimal: JsonObject = {
+    command,
+    status: "degraded",
+    omitted: true,
+    omitted_count: omittedCount,
+    omission_reason: "projection_output_budget",
+    retrieval: omission.retrieval,
+  };
+  if (serializedProjectionBytes(minimal, format) > policy.maxUtf8Bytes) {
+    throw new Error(`projection output budget ${policy.maxUtf8Bytes} bytes is too small for required omission metadata`);
+  }
+  return minimal;
 }
 
 /**
@@ -147,13 +221,7 @@ export function boundStructuredProjection(
     : Array.isArray(value.operations)
       ? "operations"
       : null;
-  if (itemKey === null) {
-    return {
-      command: value.command ?? command,
-      status: value.status ?? "ok",
-      ...projectionOmission(command, 0, "projection_required_fields_exceed_budget"),
-    };
-  }
+  if (itemKey === null) return minimalBudgetedProjection(command, 0, policy, format);
 
   const items = value[itemKey] as JsonValue[];
   const removalOrder = items
@@ -172,10 +240,5 @@ export function boundStructuredProjection(
 
   let result = boundedValue(value, itemKey, retained, omitted, command);
   if (serializedProjectionBytes(result, format) <= policy.maxUtf8Bytes) return result;
-
-  // Optional narrative/source-contract fields cannot justify an over-budget
-  // response after all detail entries have been omitted.
-  const { summary: _summary, source_contract: _sourceContract, filters: _filters, ...sparse } = result;
-  result = sparse;
-  return result;
+  return minimalBudgetedProjection(command, omitted, policy, format);
 }

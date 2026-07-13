@@ -73,6 +73,12 @@ describe("state storage authority", () => {
       semantics: expect.stringContaining("not retention or deletion limits"),
     });
     expect(authority.projections.summary.omission).toContain("never silently");
+    expect(authority.projections.current.legacy_summary_overflow).toMatchObject({
+      source: "legacy_summary",
+      compatibility: "degraded",
+      detail_availability: "unavailable",
+      archive_verified: false,
+    });
     expect(authority.failures.envelope.error_required_fields).toEqual([
       "class",
       "message",
@@ -159,6 +165,7 @@ describe("state storage authority", () => {
     expect(authority.budgets.startup.surfaces.prime_dashboard.max_utf8_bytes).toBe(surfaces["prime-dashboard"]);
     expect(authority.budgets.startup.surfaces.prime_sparse.max_utf8_bytes).toBe(surfaces["prime-fields-sparse"]);
     expect(authority.budgets.projection.omission_semantics).toContain("Never split UTF-8");
+    expect(authority.budgets.projection.omission_semantics).toContain("measured minimal degraded envelope");
     expect(authority.budgets.startup.omission_semantics).toContain("distinguish omitted detail");
   });
 

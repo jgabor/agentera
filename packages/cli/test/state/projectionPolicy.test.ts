@@ -88,6 +88,39 @@ describe("lossless projection policy", () => {
     expect(discovery.entries.filter((entry) => entry.artifactId === "progress")).toHaveLength(55);
   });
 
+  it("bounds legacy inline summaries without presenting them as verified archives", () => {
+    const root = project();
+    const target = path.join(root, ".agentera", "progress.yaml");
+    fs.mkdirSync(path.dirname(target), { recursive: true });
+    fs.writeFileSync(
+      target,
+      YAML.stringify({
+        cycles: Array.from({ length: 10 }, (_, index) => cycle(index + 46)),
+        archive: Array.from({ length: 45 }, (_, index) => ({
+          summary: `Cycle ${index + 1}: legacy summary ${index + 1}`,
+        })),
+      }),
+    );
+
+    const result = compactYamlFile(target, "progress", root);
+    const current = YAML.parse(fs.readFileSync(target, "utf8")) as Record<string, any>;
+    const provenance = current.omission_provenance as Array<Record<string, unknown>>;
+
+    expect(result.dropped).toBe(0);
+    expect(result.omitted_count).toBe(5);
+    expect(current.archive).toHaveLength(40);
+    expect(provenance).toEqual([
+      {
+        source: "legacy_summary",
+        detail_availability: "unavailable",
+        compatibility: "degraded",
+        archive_verified: false,
+        omitted_count: 5,
+      },
+    ]);
+    expect(discoverNumberedArchives(root, { sourceRoot }).entries).toEqual([]);
+  });
+
   it("keeps unresolved decision pressure writable beyond active capacity", () => {
     const root = project();
     const target = path.join(root, ".agentera", "decisions.yaml");
@@ -139,6 +172,48 @@ describe("lossless projection policy", () => {
     expect(returned.map((entry) => entry.number)).toEqual(
       [...returned.map((entry) => entry.number)].sort((left, right) => Number(left) - Number(right)),
     );
+  });
+
+  it.each(["json", "yaml"] as const)("replaces oversized required fields with a measured fallback (%s)", (format) => {
+    const value = {
+      command: "progress",
+      status: "ok",
+      entries: [],
+      counts: { entries: 0 },
+      source: { artifact: "progress", path: "source-".repeat(20000), exists: true },
+      filters: {},
+      summary: {},
+    };
+    const bounded = boundStructuredProjection(value, "progress", format);
+
+    expect(serializedProjectionBytes(bounded, format)).toBeLessThanOrEqual(32768);
+    expect(bounded.omitted).toBe(true);
+    expect(bounded.omission_reason).toBe("projection_required_fields_exceed_budget");
+    expect(bounded.error).toMatchObject({ class: "projection_output_budget" });
+    expect((bounded.source as Record<string, unknown>).path).toBeUndefined();
+  });
+
+  it("does not emit a ghost get pointer for unnumbered TODO output", () => {
+    const value = {
+      command: "todo",
+      status: "ok",
+      entries: Array.from({ length: 20 }, (_, index) => ({
+        number: index + 1,
+        detail: "TODO🙂".repeat(3000),
+      })),
+      counts: { entries: 20 },
+      source: { artifact: "todo", exists: true },
+      filters: {},
+      summary: {},
+    };
+    const bounded = boundStructuredProjection(value, "todo", "json");
+    const retrieval = bounded.retrieval as Record<string, unknown>;
+
+    expect(serializedProjectionBytes(bounded, "json")).toBeLessThanOrEqual(32768);
+    expect(bounded.omitted).toBe(true);
+    expect(retrieval.available).toBe(false);
+    expect(retrieval.command).toBeUndefined();
+    expect(retrieval.reason).toBe("unsupported_numbered_retrieval");
   });
 
   it("enforces the same budget at the state progress response surface", () => {

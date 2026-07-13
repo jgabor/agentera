@@ -1,4 +1,41 @@
 cycles:
+  - number: 758
+    timestamp: 2026-07-13 14:49
+    type: fix
+    phase: build
+    what: Fixed Task 7 attempt-1 audit findings for legacy summary bounds,
+      byte-budget fallbacks, and retrieval provenance.
+    inspiration: Task 7 audit failure recorded in .agentera/plan.yaml and
+      references/artifacts/state-storage-authority.yaml.
+    discovered: Legacy inline summaries now stay bounded with explicit degraded
+      incomplete provenance; required/source field overflow returns a measured
+      minimal envelope; only progress, decisions, and health expose numbered get
+      pointers.
+    verified: "Focused: pnpm -C packages/cli exec vp test run
+      test/state/projectionPolicy.test.ts test/state/archiveAuthority.test.ts
+      test/hooks/compaction.test.ts test/state/decisionOverlay.test.ts
+      test/cli/compactParity.test.ts test/state/write/stateWrite.test.ts: 6
+      files and 107 tests passed. Non-packaging full: pnpm -C packages/cli exec
+      vp test run --exclude test/packaging/prepack.test.ts: 167 files and 1634
+      tests passed. Typecheck, pnpm -C packages/cli build, capability-contract
+      validation, progress/decisions/health artifact validation, and check
+      compact passed."
+    next: Task 7 remains pending after retry; preserve attempt-1 failure metadata
+      and do not mark the task complete. Task 8 owns direct get/list retrieval
+      and Task 10 owns prime/orientation integration.
+    context:
+      intent: Retry Task 7 after evaluation attempt 1 without marking the task
+        complete or broadening into get/list, consumers, migration, Git,
+        release, or packaging work.
+      constraints: Preserve Task 7 attempt-1 failure evaluation in plan.yaml. Do not
+        modify health, vision, profile, decisions, TODO, changelog, version,
+        publish, push, tag, or packaging state.
+      unknowns: The excluded npm12 packaging failures remain pre-existing and outside
+        this retry; no packaging files were changed.
+      scope: references/artifacts/state-storage-authority.yaml;
+        packages/cli/src/state/projectionPolicy.ts;
+        packages/cli/src/hooks/compaction/apply.ts; projection and authority
+        tests; .agentera/progress.yaml; .agentera/plan.yaml
   - number: 757
     timestamp: 2026-07-13 14:24
     type: feat

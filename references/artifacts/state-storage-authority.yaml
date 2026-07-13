@@ -204,6 +204,16 @@ projections:
         outside the default display capacity remain in the numbered archive;
         entries whose archive cannot be verified remain full in the projection
         with recovery metadata rather than being discarded.
+    legacy_summary_overflow:
+      source: legacy_summary
+      compatibility: degraded
+      detail_availability: unavailable
+      archive_verified: false
+      semantics: >-
+        Legacy inline summaries without a verified numbered record are bounded
+        like every other projection item. If omitted, omission_provenance keeps
+        their degraded and incomplete status explicit; omission never promotes
+        them to archive-backed detail or reconstructs missing fields.
     paths:
       progress: .agentera/progress.yaml
       decisions: .agentera/decisions.yaml
@@ -410,7 +420,9 @@ budgets:
       Remove optional detail entries in deterministic numeric order from the
       response, retain required identity/count/source fields, and expose a next
       retrieval pointer. Never split UTF-8, truncate a scalar, or silently drop
-      an entry.
+      an entry. If required/source fields themselves exceed the budget, emit a
+      measured minimal degraded envelope with projection output-budget error
+      metadata rather than returning an over-budget payload.
   startup:
     source_manifest: scripts/json_output_surface_manifest.yaml
     surfaces:
