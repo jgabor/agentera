@@ -28,10 +28,10 @@ import {
 import {
   publishNumberedArchive,
 } from "./archivePublication.js";
+import { collectGitHistory } from "./gitBackfillHistory.js";
 
 const GIT_TIMEOUT_MS = 1_000;
 const GIT_MAX_BUFFER = 4 * 1024 * 1024;
-const REFLOG_LIMIT = 32;
 
 export type BackfillFormat = "text" | "json" | "yaml";
 export type BackfillMode = "inventory" | "preview" | "apply";
@@ -47,7 +47,8 @@ export type BackfillReason =
   | "scan_bounded"
   | "git_unavailable"
   | "immutable_conflict"
-  | "candidate_changed";
+  | "candidate_changed"
+  | "no_matching_pin";
 
 export interface GitBackfillArgs {
   project?: string | null;
@@ -102,6 +103,17 @@ export interface CandidateGroup {
   versions: Map<string, Occurrence[]>;
 }
 
+export interface HistoricalIssue {
+  commit: string;
+  path: string;
+  gitPath: string;
+  blobId: string;
+  entryId: string;
+  contentHash: null;
+  reachable: boolean;
+  message: string;
+}
+
 export interface ScanResult {
   projectRoot: string;
   sourceRoot: string;
@@ -114,15 +126,18 @@ export interface ScanResult {
   shallow: boolean;
   gitReason?: string;
   bounded: boolean;
+  boundedReasons: string[];
+  historyBytes: number;
   targets: Map<string, ProjectionTarget>;
   groups: Map<string, CandidateGroup>;
   rewritten: Map<string, Occurrence[]>;
-  invalid: Set<string>;
+  invalid: Map<string, HistoricalIssue[]>;
+  reachableCommits: Set<string>;
   diagnostics: string[];
   projectionHashes: Record<string, string>;
 }
 
-interface GitContext {
+export interface GitContext {
   root?: string;
   before?: string;
   refs: string[];
@@ -151,7 +166,7 @@ export interface EntryOutput {
     path: string;
     blob_id: string;
     entry_id: string;
-    content_hash: string;
+    content_hash: string | null;
     reachable: boolean;
   }>;
   proposed_archive_bytes?: string;
@@ -178,6 +193,8 @@ export interface GitBackfillResponse {
     bounded: boolean;
     commits_limit: number;
     history_bytes_limit: number;
+    history_bytes_used: number;
+    bounded_reasons: string[];
   };
   counts: {
     targets: number;
@@ -395,7 +412,8 @@ function projectionHashes(projectRoot: string, sourceRoot: string): Record<strin
   return hashes;
 }
 
-function parseTreeEntry(stdout: string): { blobId: string; path: string } | undefined {
+function parseTreeEntries(stdout: string): Array<{ blobId: string; path: string }> {
+  const entries: Array<{ blobId: string; path: string }> = [];
   for (const item of stdout.split("\0")) {
     if (!item) continue;
     const tab = item.indexOf("\t");
@@ -403,49 +421,75 @@ function parseTreeEntry(stdout: string): { blobId: string; path: string } | unde
     const metadata = item.slice(0, tab).trim().split(/\s+/);
     const treePath = item.slice(tab + 1);
     if (metadata[1] === "blob" && /^[0-9a-f]+$/.test(metadata[2] ?? "") && safePath(treePath)) {
-      return { blobId: metadata[2], path: treePath };
+      entries.push({ blobId: metadata[2], path: treePath });
     }
   }
-  return undefined;
+  return entries;
 }
 
-function logPaths(chunk: string, fallback: string): string[] {
-  const lines = chunk.split(/\r?\n/).filter((line) => line.length > 0);
-  const paths: string[] = [];
-  for (const line of lines.slice(1)) {
-    const fields = line.split("\t");
-    if (fields.length < 2) continue;
-    const status = fields[0] ?? "";
-    const candidate = status.startsWith("R") || status.startsWith("C")
-      ? fields[fields.length - 1]
-      : fields[1];
-    if (candidate && safePath(candidate) && !paths.includes(candidate)) paths.push(candidate);
+function parseTreeEntry(stdout: string): { blobId: string; path: string } | undefined {
+  return parseTreeEntries(stdout)[0];
+}
+
+export type OccurrenceBase = Omit<Occurrence, "entryId" | "artifactId" | "entryNumber" | "contentHash" | "record">;
+
+function addHistoricalIssue(
+  invalid: Map<string, HistoricalIssue[]>,
+  base: OccurrenceBase,
+  artifactId: string,
+  entryId: string,
+  message: string,
+): void {
+  const values = invalid.get(entryId) ?? [];
+  if (!values.some((value) => value.commit === base.commit && value.path === base.path && value.blobId === base.blobId)) {
+    values.push({
+      ...base,
+      artifactId,
+      entryId,
+      contentHash: null,
+      message,
+    } as HistoricalIssue);
   }
-  return paths.length > 0 ? paths : [fallback];
+  invalid.set(entryId, values);
+}
+
+function targetIdsForArtifact(targetIds: Set<string>, artifactId: string): string[] {
+  return [...targetIds].filter((entryId) => entryId.startsWith(`${artifactId}:`));
 }
 
 function occurrenceFromProjection(
   bytes: string,
-  occurrence: Omit<Occurrence, "entryId" | "artifactId" | "entryNumber" | "contentHash" | "record">,
+  occurrence: OccurrenceBase,
   artifactId: string,
   sourceRoot: string,
   targetIds: Set<string>,
-  invalid: Set<string>,
+  invalid: Map<string, HistoricalIssue[]>,
   add: (item: Occurrence) => void,
 ): void {
   const parsed = parseProjection(bytes, artifactId, sourceRoot);
+  if (parsed.error) {
+    for (const entryId of targetIdsForArtifact(targetIds, artifactId)) {
+      addHistoricalIssue(invalid, occurrence, artifactId, entryId, parsed.error);
+    }
+    return;
+  }
   for (const item of parsed.records) {
-    if (item.entryNumber === undefined) continue;
+    if (item.entryNumber === undefined) {
+      for (const entryId of targetIdsForArtifact(targetIds, artifactId)) {
+        addHistoricalIssue(invalid, occurrence, artifactId, entryId, "historical record has no valid entry number");
+      }
+      continue;
+    }
     const entryId = `${artifactId}:${item.entryNumber}`;
     if (!targetIds.has(entryId) && targetIds.size > 0) continue;
     if (!item.record) {
-      invalid.add(entryId);
+      addHistoricalIssue(invalid, occurrence, artifactId, entryId, "historical record is not a mapping");
       continue;
     }
     try {
       const violations = validateStateRecord(sourceRoot, artifactId, item.record);
       if (violations.length > 0) {
-        invalid.add(entryId);
+        addHistoricalIssue(invalid, occurrence, artifactId, entryId, violations.join("; "));
         continue;
       }
       const contentHash = createHash("sha256")
@@ -459,8 +503,8 @@ function occurrenceFromProjection(
         contentHash,
         record: item.record,
       });
-    } catch {
-      invalid.add(entryId);
+    } catch (error) {
+      addHistoricalIssue(invalid, occurrence, artifactId, entryId, (error as Error).message);
     }
   }
 }
@@ -484,228 +528,20 @@ function addGroup(groups: Map<string, CandidateGroup>, occurrence: Occurrence): 
   group.versions.set(occurrence.contentHash, version);
 }
 
-function historyLog(
-  run: GitCommandRunner,
-  context: GitContext,
-  gitPath: string,
-  maxCommits: number,
-): { commits: Array<{ commit: string; paths: string[] }>; bounded: boolean; reason?: string } {
-  if (!context.root) return { commits: [], bounded: false, reason: context.reason ?? "git_unavailable" };
-  const result = run(
-    [
-      "log",
-      "--date-order",
-      "--format=%H",
-      "--name-status",
-      `--max-count=${maxCommits + 1}`,
-      ...context.refs,
-      "--",
-      path.posix.dirname(gitPath),
-    ],
-    context.root,
-  );
-  if (!successful(result)) return { commits: [], bounded: false, reason: failureReason(result) };
-  const commits: Array<{ commit: string; paths: string[] }> = [];
-  const seen = new Set<string>();
-  let currentCommit: string | undefined;
-  let currentLines: string[] = [];
-  const flush = (): void => {
-    if (!currentCommit || seen.has(currentCommit)) return;
-    seen.add(currentCommit);
-    commits.push({ commit: currentCommit, paths: logPaths([currentCommit, ...currentLines].join("\n"), gitPath) });
-  };
-  for (const line of result.stdout.split(/\r?\n/)) {
-    const value = line.trim();
-    if (/^[0-9a-f]{40,64}$/.test(value)) {
-      flush();
-      currentCommit = value;
-      currentLines = [];
-    } else if (currentCommit) {
-      currentLines.push(line);
-    }
-  }
-  flush();
-  return { commits: commits.slice(0, maxCommits), bounded: commits.length > maxCommits };
+function markBounded(scan: ScanResult, reason: string): void {
+  scan.bounded = true;
+  if (!scan.boundedReasons.includes(reason)) scan.boundedReasons.push(reason);
 }
 
-function projectionPathFamily(gitPath: string, candidate: string): boolean {
-  const directory = path.posix.dirname(gitPath);
-  const stem = path.posix.basename(gitPath, ".yaml");
-  return (
-    safePath(candidate) &&
-    path.posix.dirname(candidate) === directory &&
-    path.posix.basename(candidate).startsWith(`${stem}`) &&
-    candidate.endsWith(".yaml")
-  );
-}
-
-function changedProjectionPaths(
-  run: GitCommandRunner,
-  root: string,
-  commit: string,
-  gitPath: string,
-): string[] {
-  const result = run(["diff-tree", "--root", "-r", "-M", "--name-status", commit], root);
-  if (!successful(result)) return [];
-  const paths: string[] = [];
-  for (const line of result.stdout.split(/\r?\n/)) {
-    const fields = line.split("\t");
-    if (fields.length < 2) continue;
-    const status = fields[0] ?? "";
-    const candidates = status.startsWith("R") || status.startsWith("C")
-      ? fields.slice(1)
-      : [fields[1]];
-    for (const candidate of candidates) {
-      if (candidate && projectionPathFamily(gitPath, candidate) && !paths.includes(candidate)) paths.push(candidate);
-    }
+function chargeHistoryBytes(scan: ScanResult, bytes: string): boolean {
+  const size = Buffer.byteLength(bytes, "utf8");
+  if (scan.historyBytes + size > scan.contract.maximumHistoryBytes) {
+    markBounded(scan, "history_bytes");
+    scan.diagnostics.push("history byte budget exhausted; remaining Git history was not inspected");
+    return false;
   }
-  return paths;
-}
-
-function collectReachable(
-  scan: ScanResult,
-  run: GitCommandRunner,
-  context: GitContext,
-): void {
-  if (!context.root) return;
-  const targetIds = new Set(scan.targets.keys());
-  const artifactPaths = scan.contract.supportedArtifacts.map((artifactId) => ({
-    artifactId,
-    gitPath: projectGitPath(
-      scan.projectRoot,
-      context.root as string,
-      path.relative(scan.projectRoot, stateCurrentProjectionPath(scan.projectRoot, artifactId, scan.sourceRoot)),
-    ),
-  }));
-  const seenOccurrences = new Set<string>();
-  let commitsSeen = 0;
-  let historyBytes = 0;
-  for (const item of artifactPaths) {
-    if (!item.gitPath) {
-      scan.diagnostics.push(`${item.artifactId} projection is outside the selected Git project`);
-      continue;
-    }
-    const projectionGitPath = item.gitPath;
-    const log = historyLog(run, context, projectionGitPath, scan.contract.maximumCommits);
-    if (log.reason) {
-      scan.diagnostics.push(`${item.artifactId} history scan failed: ${log.reason}`);
-      continue;
-    }
-    if (log.bounded) scan.bounded = true;
-    for (const commit of log.commits) {
-      if (commitsSeen >= scan.contract.maximumCommits) {
-        scan.bounded = true;
-        break;
-      }
-      commitsSeen += 1;
-      const paths = [...new Set([
-        ...commit.paths,
-        ...changedProjectionPaths(run, context.root, commit.commit, projectionGitPath),
-      ])].filter((candidate) => projectionPathFamily(projectionGitPath, candidate));
-      for (const gitPath of paths) {
-        const tree = run(["ls-tree", "-r", "-z", commit.commit, "--", gitPath], context.root);
-        if (!successful(tree)) {
-          scan.diagnostics.push(`cannot inspect ${commit.commit}:${gitPath}: ${failureReason(tree)}`);
-          continue;
-        }
-        const treeEntry = parseTreeEntry(tree.stdout);
-        if (!treeEntry) continue;
-        const display = displayPath(scan.projectRoot, context.root, treeEntry.path);
-        if (!display) continue;
-        const occurrenceKey = `${commit.commit}:${display}:${treeEntry.blobId}:${item.artifactId}`;
-        if (seenOccurrences.has(occurrenceKey)) continue;
-        seenOccurrences.add(occurrenceKey);
-        const content = run(["cat-file", "-p", treeEntry.blobId], context.root);
-        if (!successful(content)) {
-          scan.diagnostics.push(`cannot read ${commit.commit}:${treeEntry.path}: ${failureReason(content)}`);
-          continue;
-        }
-        historyBytes += Buffer.byteLength(content.stdout, "utf8");
-        if (historyBytes > scan.contract.maximumHistoryBytes) {
-          scan.bounded = true;
-          break;
-        }
-        occurrenceFromProjection(
-          content.stdout,
-          {
-            commit: commit.commit,
-            path: display,
-            gitPath: treeEntry.path,
-            blobId: treeEntry.blobId,
-            reachable: true,
-          },
-          item.artifactId,
-          scan.sourceRoot,
-          targetIds,
-          scan.invalid,
-          (occurrence) => addGroup(scan.groups, occurrence),
-        );
-      }
-      if (historyBytes > scan.contract.maximumHistoryBytes) break;
-    }
-    if (historyBytes > scan.contract.maximumHistoryBytes) break;
-  }
-}
-
-function collectRewritten(
-  scan: ScanResult,
-  run: GitCommandRunner,
-  context: GitContext,
-): void {
-  if (!context.root || scan.targets.size === 0) return;
-  const reflog = run(
-    ["reflog", "show", "--format=%H", "--max-count", String(REFLOG_LIMIT), "HEAD"],
-    context.root,
-  );
-  if (!successful(reflog)) return;
-  const reachableCommits = new Set<string>();
-  for (const group of scan.groups.values()) {
-    for (const occurrences of group.versions.values()) {
-      for (const occurrence of occurrences) reachableCommits.add(occurrence.commit);
-    }
-  }
-  const paths = scan.contract.supportedArtifacts.map((artifactId) => ({
-    artifactId,
-    gitPath: projectGitPath(
-      scan.projectRoot,
-      context.root as string,
-      path.relative(scan.projectRoot, stateCurrentProjectionPath(scan.projectRoot, artifactId, scan.sourceRoot)),
-    ),
-  }));
-  for (const commit of reflog.stdout.split(/\r?\n/).map((value) => value.trim())) {
-    if (!/^[0-9a-f]{40,64}$/.test(commit) || reachableCommits.has(commit)) continue;
-    for (const item of paths) {
-      if (!item.gitPath) continue;
-      const tree = run(["ls-tree", "-r", "-z", commit, "--", item.gitPath], context.root);
-      const treeEntry = successful(tree) ? parseTreeEntry(tree.stdout) : undefined;
-      if (!treeEntry) continue;
-      const display = displayPath(scan.projectRoot, context.root, treeEntry.path);
-      if (!display) continue;
-      const content = run(["cat-file", "-p", treeEntry.blobId], context.root);
-      if (!successful(content)) continue;
-      occurrenceFromProjection(
-        content.stdout,
-        {
-          commit,
-          path: display,
-          gitPath: treeEntry.path,
-          blobId: treeEntry.blobId,
-          reachable: false,
-        },
-        item.artifactId,
-        scan.sourceRoot,
-        new Set(scan.targets.keys()),
-        new Set(),
-        (occurrence) => {
-          const values = scan.rewritten.get(occurrence.entryId) ?? [];
-          if (!values.some((value) => value.commit === occurrence.commit && value.contentHash === occurrence.contentHash)) {
-            values.push(occurrence);
-          }
-          scan.rewritten.set(occurrence.entryId, values);
-        },
-      );
-    }
-  }
+  scan.historyBytes += size;
+  return true;
 }
 
 function scanBackfill(
@@ -732,15 +568,35 @@ function scanBackfill(
     refs: context.refs,
     shallow: context.shallow,
     bounded: false,
+    boundedReasons: [],
+    historyBytes: 0,
     targets: targetState.targets,
     groups: new Map(),
     rewritten: new Map(),
-    invalid: new Set(),
+    invalid: new Map(),
+    reachableCommits: new Set(),
     diagnostics: [...targetState.diagnostics, ...(context.reason ? [`Git unavailable: ${context.reason}`] : [])],
     projectionHashes: hashes,
   };
-  if (context.root && context.before) collectReachable(scan, run, context);
-  if (context.root && context.before) collectRewritten(scan, run, context);
+  if (context.root && context.before) {
+    collectGitHistory(scan, run, context, {
+      projectionGitPath: (currentScan, gitRoot, artifactId) =>
+        projectGitPath(
+          currentScan.projectRoot,
+          gitRoot,
+          path.relative(
+            currentScan.projectRoot,
+            stateCurrentProjectionPath(currentScan.projectRoot, artifactId, currentScan.sourceRoot),
+          ),
+        ),
+      displayPath,
+      parseTreeEntry,
+      occurrenceFromProjection,
+      addGroup,
+      markBounded,
+      chargeHistoryBytes,
+    });
+  }
   const after = context.root ? readHead(run, context.root) : undefined;
   if (after?.value) scan.afterHead = after.value;
   if (scan.beforeHead && !scan.afterHead) {
@@ -794,6 +650,7 @@ function revalidate(
   if (!treeEntry || treeEntry.blobId !== candidate.blobId) return { ok: false, reason: "candidate_changed" };
   const content = run(["cat-file", "-p", candidate.blobId], scan.gitRoot);
   if (!successful(content)) return { ok: false, reason: "candidate_changed" };
+  if (!chargeHistoryBytes(scan, content.stdout)) return { ok: false, reason: "candidate_changed" };
   let matched = false;
   occurrenceFromProjection(
     content.stdout,
@@ -801,7 +658,7 @@ function revalidate(
     candidate.artifactId,
     scan.sourceRoot,
     new Set([candidate.entryId]),
-    new Set(),
+    new Map(),
     (value) => {
       if (value.entryId === candidate.entryId && value.contentHash === candidate.contentHash) matched = true;
     },
@@ -845,7 +702,9 @@ export function inspectGitBackfill(
   }
   const status: BackfillStatus = !scan.gitRoot
     ? "unavailable"
-    : scan.headStatus !== "stable" || scan.bounded || entries.some((entry) => entry.ambiguity_reason !== "none")
+    : entries.some((entry) => entry.ambiguity_reason === "no_matching_pin")
+      ? "blocked"
+      : scan.headStatus !== "stable" || scan.bounded || entries.some((entry) => entry.ambiguity_reason !== "none")
       ? "degraded"
       : "complete";
   return buildResponse(scan, "inventory", entries, scan.diagnostics, status);
@@ -861,15 +720,17 @@ export function previewGitBackfill(
   const entries = groups
     .slice(0, args.limit ?? scan.contract.defaultLimit)
     .map((group) => buildEntryOutput(scan, group, args, true));
-  const status: BackfillStatus = entries.some((entry) => entry.proposed_archive_bytes !== undefined)
-    ? entries.some((entry) => !entry.eligible) || scan.headStatus !== "stable" || scan.bounded
-      ? "degraded"
-      : "complete"
-    : scan.gitRoot
-      ? entries.some((entry) => entry.ambiguity_reason !== "none")
+  const status: BackfillStatus = entries.some((entry) => entry.ambiguity_reason === "no_matching_pin")
+    ? "blocked"
+    : entries.some((entry) => entry.proposed_archive_bytes !== undefined)
+      ? entries.some((entry) => !entry.eligible) || scan.headStatus !== "stable" || scan.bounded
         ? "degraded"
-        : "blocked"
-      : "unavailable";
+        : "complete"
+      : scan.gitRoot
+        ? entries.some((entry) => entry.ambiguity_reason !== "none")
+          ? "degraded"
+          : "blocked"
+        : "unavailable";
   return buildResponse(scan, "preview", entries, scan.diagnostics, status);
 }
 
@@ -894,7 +755,7 @@ export function applyGitBackfill(
     response.active_projections_unchanged = true;
     return response;
   }
-  const candidate = selectedOccurrence(group, args);
+  const candidate = selectedOccurrence(scan, group, args);
   const entry = buildEntryOutput(scan, group, args, true);
   if (!candidate || !entry.eligible) {
     entry.operation = "refused";

@@ -13,6 +13,7 @@ import type {
   EntryOutput,
   GitBackfillArgs,
   GitBackfillResponse,
+  HistoricalIssue,
   Occurrence,
   ScanResult,
 } from "./gitBackfill.js";
@@ -51,16 +52,20 @@ export function groupReason(scan: ScanResult, group: CandidateGroup): BackfillRe
   if (scan.headStatus === "unavailable") {
     return scan.gitReason === "missing_commit" ? "missing_history" : "git_unavailable";
   }
+  const reachableHashes = new Set(group.versions.keys());
+  if ((scan.rewritten.get(group.entryId) ?? []).some((value) => !reachableHashes.has(value.contentHash))) {
+    return "history_rewritten";
+  }
+  if (scan.invalid.has(group.entryId)) return "corrupt_history";
   if (scan.bounded) return "scan_bounded";
   if (scan.shallow) return "shallow_history";
   if (group.versions.size > 1) return "conflicting_versions";
   if (group.versions.size === 1) return "none";
   if (scan.rewritten.has(group.entryId)) return "history_rewritten";
-  if (scan.invalid.has(group.entryId)) return "corrupt_history";
   return "missing_history";
 }
 
-export function provenanceFor(values: Occurrence[]): EntryOutput["provenance"] {
+export function provenanceFor(values: Array<Occurrence | HistoricalIssue>): EntryOutput["provenance"] {
   return values.map((value) => ({
     commit: value.commit,
     path: value.path,
@@ -96,9 +101,15 @@ function existingArchiveState(
   return "none";
 }
 
-function occurrenceFor(group: CandidateGroup, args: GitBackfillArgs): Occurrence | undefined {
-  return occurrences(group).find(
+function occurrenceFor(scan: ScanResult, group: CandidateGroup, args: GitBackfillArgs): Occurrence | undefined {
+  const values = [
+    ...occurrences(group),
+    ...(scan.rewritten.get(group.entryId) ?? []),
+  ];
+  if (!args.commit && !args.path) return values[0];
+  return values.find(
     (value) =>
+      value.reachable &&
       (!args.commit || value.commit === args.commit) &&
       (!args.path || value.path === args.path),
   );
@@ -110,23 +121,28 @@ export function buildEntryOutput(
   args: GitBackfillArgs,
   includeBytes: boolean,
 ): EntryOutput {
-  const reason = groupReason(scan, group);
+  const pinRequested = Boolean(args.commit || args.path);
+  const selected = occurrenceFor(scan, group, args);
+  const reason = pinRequested && !selected ? "no_matching_pin" : groupReason(scan, group);
   const values = occurrences(group);
-  const selected = occurrenceFor(group, args) ?? values[0];
-  const eligible = reason === "none" && group.versions.size === 1 && selected !== undefined;
+  const rewritten = scan.rewritten.get(group.entryId) ?? [];
+  const invalid = scan.invalid.get(group.entryId) ?? [];
+  const eligible = reason === "none" && group.versions.size === 1 && selected?.reachable === true;
+  const source = selected ?? invalid[0];
   const output: EntryOutput = {
     entry_id: group.entryId,
     artifact_id: group.artifactId,
     entry_number: group.entryNumber,
-    commit: selected?.commit ?? null,
-    path: selected?.path ?? null,
-    blob_id: selected?.blobId ?? null,
-    content_hash: selected?.contentHash ?? null,
+    commit: source?.commit ?? null,
+    path: source?.path ?? null,
+    blob_id: source?.blobId ?? null,
+    content_hash: source?.contentHash ?? null,
     ambiguity_reason: reason,
     eligible,
-    reachable: selected?.reachable ?? false,
-    provenance: provenanceFor(values),
+    reachable: source?.reachable ?? false,
+    provenance: provenanceFor([...values, ...rewritten, ...invalid]),
     operation: eligible ? "candidate" : "refused",
+    ...(reason === "no_matching_pin" ? { refusal: "no reachable occurrence matches the requested --commit/--path pin" } : {}),
   };
   if (includeBytes && eligible && selected) {
     const serialized = serializeNumberedArchive(
@@ -149,8 +165,12 @@ export function archiveState(
   return existingArchiveState(projectRoot, sourceRoot, group);
 }
 
-export function selectedOccurrence(group: CandidateGroup, args: GitBackfillArgs): Occurrence | undefined {
-  return occurrenceFor(group, args);
+export function selectedOccurrence(
+  scan: ScanResult,
+  group: CandidateGroup,
+  args: GitBackfillArgs,
+): Occurrence | undefined {
+  return occurrenceFor(scan, group, args);
 }
 
 export function buildResponse(
@@ -185,6 +205,8 @@ export function buildResponse(
       bounded: scan.bounded,
       commits_limit: scan.contract.maximumCommits,
       history_bytes_limit: scan.contract.maximumHistoryBytes,
+      history_bytes_used: scan.historyBytes,
+      bounded_reasons: scan.boundedReasons,
     },
     counts: {
       targets: scan.targets.size,

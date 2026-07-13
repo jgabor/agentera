@@ -268,6 +268,16 @@ tasks:
       - GIVEN an exact unique candidate WHEN backfill is previewed THEN proposed immutable bytes and provenance are shown without writing.
       - GIVEN explicit application and a still-valid candidate WHEN publication runs THEN retries converge while active projections remain unchanged on failure.
       - GIVEN shallow, rewritten, missing, ambiguous, or conflicting history WHEN backfill runs THEN no detail is invented or overwritten.
+    evaluation:
+      attempt_count: 1
+      failure_count: 1
+      last_verdict: fail
+      last_failure_evidence: Git backfill mishandles rewritten conflicting content, renamed rewritten paths, reflog byte bounds, unmatched commit/path pins, and malformed historical YAML classification.
+      provenance:
+        attempt_id: task-14-attempt-1
+        source: audit-task-14-f285b2d0
+        recorded_at: 2026-07-13 18:35
+        writer_command: agentera state plan record-evaluation
   - number: 15
     name: Integrate optional Git recovery with legacy migration
     depends_on:

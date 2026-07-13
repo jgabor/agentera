@@ -1,4 +1,36 @@
 cycles:
+  - number: 769
+    timestamp: 2026-07-13 18:58
+    type: fix
+    phase: build
+    what: "Retried Task14 Git legacy backfill: bounded all historical Git reads by
+      the shared commit and byte budgets, covered reachable and reflog path
+      history, preserved malformed-history provenance, made pins reachable-only
+      with no_matching_pin refusal, added early authority state-failure output,
+      and split history traversal to satisfy the monolith gate."
+    inspiration: Task14 failed evaluation findings and the active plan safety boundaries.
+    discovered: Reflog path coverage must inspect both changed paths and the
+      projection path family at each historical commit; npm 12 still emits
+      non-JSON notices before npm pack JSON.
+    verified: pnpm -C packages/cli run typecheck; focused Git backfill tests 11/11;
+      non-packaging suite 1709/1709; full suite 1713/1718 with only five known
+      npm 12 packaging parser failures; build; capability-contract validation;
+      monolith lint; check compact; lint 102 warnings and 0 errors.
+    next: Keep Task14 pending. Resolve the environment-specific npm 12 packaging
+      failures separately, then run the full release gates before any apply or
+      plan closeout.
+    context:
+      intent: Resolve the failed Task14 evaluation findings without mutating active
+        projections or closing Task14.
+      constraints: No state projection writes, no archive recovery, no remote/custom
+        refs, no version or publish changes, preserve Task9 blocked and Task14
+        failed-evaluation metadata.
+      scope: packages/cli/src/cli/commands/backfill.ts;
+        packages/cli/src/state/gitBackfill.ts;
+        packages/cli/src/state/gitBackfillHistory.ts;
+        packages/cli/src/state/gitBackfillOutput.ts;
+        packages/cli/test/state/gitBackfill.test.ts;
+        references/artifacts/state-storage-authority.yaml
   - number: 768
     timestamp: 2026-07-13 18:22
     type: feat
@@ -482,53 +514,6 @@ cycles:
         packages/cli/src/cli/help.ts;
         packages/cli/test/state/directRetrieval.test.ts;
         .agentera/progress.yaml; .agentera/plan.yaml
-  - number: 759
-    timestamp: 2026-07-13 15:18
-    type: feat
-    phase: build
-    what: Exposed stable-ID direct retrieval for progress, decisions, and health
-      with exact archive lookup, provenance, overlay composition, and structured
-      diagnostics.
-    inspiration: Active Agentera plan Task 8 and
-      references/artifacts/state-storage-authority.yaml.
-    discovered: Direct archive lookup validates only the requested numbered path;
-      legacy full, legacy summary, archive-backed, and decision-overlay states
-      require distinct provenance. Decision overlays apply only
-      authority-declared mutable paths.
-    verified: "Focused: pnpm -C packages/cli exec vp test run
-      test/state/directRetrieval.test.ts: 1 file and 29 tests passed. Adjacent:
-      pnpm -C packages/cli exec vp test run test/state/directRetrieval.test.ts
-      test/state/archiveDiscovery.test.ts test/state/archiveRecovery.test.ts
-      test/state/archiveAuthority.test.ts test/state/decisionOverlay.test.ts
-      test/state/projectionPolicy.test.ts test/cli/state.test.ts: 7 files and
-      105 tests passed. Non-packaging full: pnpm -C packages/cli exec vp test
-      run --exclude test/packaging/prepack.test.ts: 168 files and 1663 tests
-      passed. Full: pnpm -C packages/cli test: 169 files, 1667 of 1672 tests
-      passed; 5 pre-existing npm pack --dry-run --json parsing failures in
-      test/packaging/prepack.test.ts. pnpm -C packages/cli run typecheck passed;
-      pnpm -C packages/cli build passed; capability-contract and
-      progress/decisions/health artifact validation passed; node
-      packages/cli/dist/bin/agentera.js check compact --format json passed with
-      zero over-limit and protected-overflow counts, while existing unarchived
-      progress cycles 747-750 retained recovery refusals."
-    next: Task 8 remains pending for evaluator review; Task 9 listing, Task 10 prime
-      consumers, migration, Git durability, and release work remain out of
-      scope.
-    context:
-      intent: Implement only the authority-defined stable-ID get read path and its DTC
-        fixture matrix without closing Task 8.
-      constraints: Do not implement paginated list, prime consumers, migration, Git
-        durability, health, vision, profile, decisions, TODO, version, publish,
-        push, or tag changes.
-      unknowns: The five npm12 packaging JSON parsing failures remain pre-existing and
-        outside this change.
-      scope: packages/cli/src/state/directRetrieval.ts;
-        packages/cli/src/state/archiveDiscovery.ts;
-        packages/cli/src/cli/commands/state/get.ts;
-        packages/cli/src/cli/dispatch/{index,state}.ts;
-        packages/cli/src/cli/help.ts;
-        packages/cli/test/state/directRetrieval.test.ts;
-        .agentera/progress.yaml; .agentera/plan.yaml
   - number: 749
     timestamp: 2026-07-13 10:58
     type: feat
@@ -646,6 +631,9 @@ cycles:
       intent: Complete active plan Task 7 without changing decisions or unrelated
         capabilities.
 archive:
+  - summary: "Cycle 759 (2026-07-13): Exposed stable-ID direct retrieval for
+      progress, decisions, and health with exact archive lookup, provenance,
+      overlay..."
   - summary: "Cycle 758 (2026-07-13): Fixed Task 7 attempt-1 audit findings for
       legacy summary bounds, byte-budget fallbacks, and retrieval provenance."
   - summary: "Cycle 757 (2026-07-13): Replaced numbered-state retention limits with
@@ -749,15 +737,18 @@ archive:
       packaging, CLI..."
   - summary: "Cycle 712 (2026-07-12): Hardened Task 7 ownership journal recovery and
       apply locking after audit."
-  - summary: "Cycle 711 (2026-07-11): Integrated lifecycle repair and convergence
-      into the upgrade namespace."
 omitted: true
-omitted_count: 6
+omitted_count: 7
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded

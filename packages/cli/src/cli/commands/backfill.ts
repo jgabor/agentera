@@ -3,6 +3,10 @@ import { emitStructured } from "../structured.js";
 import type { Io } from "../dispatch/shared.js";
 import { resolvePath } from "../../core/paths.js";
 import { resolveSourceRoot } from "../../core/sourceRoot.js";
+import {
+  StateRetrievalFailure,
+  type StateFailureBody,
+} from "../../state/directRetrieval.js";
 import { numberedArchiveArtifacts } from "../../state/archiveDiscovery.js";
 import { stateGitBackfillContract } from "../../state/gitBackfillAuthority.js";
 import {
@@ -13,6 +17,9 @@ import {
   type GitBackfillResponse,
 } from "../../state/gitBackfill.js";
 import { renderGitBackfillText } from "../../state/gitBackfillOutput.js";
+
+const BACKFILL_SYNTAX =
+  "agentera state backfill [--project PATH] [--artifact ARTIFACT] [--number N] [--commit HASH] [--path PATH] [--limit N] [--dry-run|--apply --force] --format {text,json,yaml}";
 
 export function requestedBackfillFormat(argv: string[]): "text" | "json" | "yaml" {
   for (let index = 0; index < argv.length; index += 1) {
@@ -30,21 +37,44 @@ export function requestedBackfillFormat(argv: string[]): "text" | "json" | "yaml
 
 function failure(
   message: string,
-  sourceRoot: string,
   format: "text" | "json",
+  syntax = BACKFILL_SYNTAX,
   validValues?: string[],
 ): { format: "text" | "json"; body: InvalidInputErrorBody } {
-  const contract = stateGitBackfillContract(sourceRoot);
   return {
     format,
     body: {
       class: "invalid_request",
       message,
-      syntax: contract.command,
+      syntax,
       example: "agentera state backfill --artifact progress --number 1 --dry-run --format json",
       ...(validValues ? { valid_values: validValues } : {}),
     },
   };
+}
+
+function authorityFailure(error: unknown): StateRetrievalFailure {
+  const body: StateFailureBody = {
+    schemaVersion: "agentera.stateFailure.v1",
+    status: "fail",
+    error: {
+      class: "unsupported_state",
+      message: `Git backfill authority could not be loaded: ${(error as Error).message}`,
+      syntax: BACKFILL_SYNTAX,
+      example: "agentera state backfill --artifact progress --number 1 --dry-run --format json",
+      recovery: "Repair references/artifacts/state-storage-authority.yaml and retry; no state was changed.",
+      details: { authority: "references/artifacts/state-storage-authority.yaml" },
+    },
+  };
+  return new StateRetrievalFailure(body, 1);
+}
+
+function emitAuthorityFailure(failure: StateRetrievalFailure, format: "text" | "json" | "yaml", io: Io): number {
+  const out = io.out ?? ((text: string) => process.stdout.write(text));
+  const err = io.err ?? ((text: string) => process.stderr.write(text));
+  if (format === "json" || format === "yaml") emitStructured(failure.body, format, out);
+  else err(`Error: ${failure.body.error.message}\nSyntax: ${failure.body.error.syntax}\nRecovery: ${failure.body.error.recovery}\n`);
+  return failure.exitCode;
 }
 
 export function parseBackfillArgs(argv: string[]): GitBackfillArgs | { error: string } {
@@ -106,17 +136,28 @@ function validateBackfillArgs(args: GitBackfillArgs, sourceRoot: string): string
   return null;
 }
 
-export function runBackfill(argv: string[], io: Io): number {
+export function runBackfill(argv: string[], io: Io, sourceRootOverride?: string): number {
   const format = requestedBackfillFormat(argv);
-  const sourceRoot = resolveSourceRoot();
+  const sourceRoot = sourceRootOverride ?? resolveSourceRoot();
+  let contract: ReturnType<typeof stateGitBackfillContract>;
+  try {
+    contract = stateGitBackfillContract(sourceRoot);
+  } catch (error) {
+    return emitAuthorityFailure(authorityFailure(error), format, io);
+  }
   const parsed = parseBackfillArgs(argv);
   if ("error" in parsed) {
-    const invalid = failure(parsed.error, sourceRoot, format === "yaml" ? "text" : format);
+    const invalid = failure(parsed.error, format === "yaml" ? "text" : format, contract.command);
     return emitInvalidInput(io, invalid);
   }
-  const validation = validateBackfillArgs(parsed, sourceRoot);
+  let validation: string | null;
+  try {
+    validation = validateBackfillArgs(parsed, sourceRoot);
+  } catch (error) {
+    return emitAuthorityFailure(authorityFailure(error), format, io);
+  }
   if (validation) {
-    const invalid = failure(validation, sourceRoot, format === "yaml" ? "text" : format, numberedArchiveArtifacts(sourceRoot));
+    const invalid = failure(validation, format === "yaml" ? "text" : format, contract.command, numberedArchiveArtifacts(sourceRoot));
     return emitInvalidInput(io, invalid);
   }
   const mode = parsed.apply ? "apply" : parsed.dryRun ? "preview" : "inventory";
@@ -128,7 +169,8 @@ export function runBackfill(argv: string[], io: Io): number {
     else if (mode === "preview") response = previewGitBackfill(project, parsed, options);
     else response = inspectGitBackfill(project, parsed, options);
   } catch (error) {
-    const invalid = failure((error as Error).message, sourceRoot, format === "yaml" ? "text" : format);
+    if (error instanceof StateRetrievalFailure) return emitAuthorityFailure(error, format, io);
+    const invalid = failure((error as Error).message, format === "yaml" ? "text" : format, contract.command);
     return emitInvalidInput(io, invalid);
   }
   const out = io.out ?? ((text: string) => process.stdout.write(text));

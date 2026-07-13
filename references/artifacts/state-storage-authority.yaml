@@ -340,6 +340,7 @@ api:
       - git_unavailable
       - immutable_conflict
       - candidate_changed
+      - no_matching_pin
     guarantees:
       read_only_inventory_and_preview: true
       apply_requires_force: true

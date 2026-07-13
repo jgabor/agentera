@@ -1,0 +1,18 @@
+schemaVersion: agentera.stateArchiveEntry.v1
+artifact_id: progress
+entry_number: 769
+record:
+  number: 769
+  timestamp: 2026-07-13 18:58
+  type: fix
+  phase: build
+  what: "Retried Task14 Git legacy backfill: bounded all historical Git reads by the shared commit and byte budgets, covered reachable and reflog path history, preserved malformed-history provenance, made pins reachable-only with no_matching_pin refusal, added early authority state-failure output, and split history traversal to satisfy the monolith gate."
+  inspiration: Task14 failed evaluation findings and the active plan safety boundaries.
+  discovered: Reflog path coverage must inspect both changed paths and the projection path family at each historical commit; npm 12 still emits non-JSON notices before npm pack JSON.
+  verified: pnpm -C packages/cli run typecheck; focused Git backfill tests 11/11; non-packaging suite 1709/1709; full suite 1713/1718 with only five known npm 12 packaging parser failures; build; capability-contract validation; monolith lint; check compact; lint 102 warnings and 0 errors.
+  next: Keep Task14 pending. Resolve the environment-specific npm 12 packaging failures separately, then run the full release gates before any apply or plan closeout.
+  context:
+    intent: Resolve the failed Task14 evaluation findings without mutating active projections or closing Task14.
+    constraints: No state projection writes, no archive recovery, no remote/custom refs, no version or publish changes, preserve Task9 blocked and Task14 failed-evaluation metadata.
+    scope: packages/cli/src/cli/commands/backfill.ts; packages/cli/src/state/gitBackfill.ts; packages/cli/src/state/gitBackfillHistory.ts; packages/cli/src/state/gitBackfillOutput.ts; packages/cli/test/state/gitBackfill.test.ts; references/artifacts/state-storage-authority.yaml
+record_sha256: e9f23fe59232cca8557294ca42db69e31f042407595d85225bf4047e80f36d01

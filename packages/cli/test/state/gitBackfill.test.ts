@@ -6,6 +6,7 @@ import { spawnSync } from "node:child_process";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { dumpYamlMapping } from "../../src/core/yaml.js";
+import { runBackfill } from "../../src/cli/commands/backfill.js";
 import { main } from "../../src/cli/dispatch/index.js";
 import { publishNumberedArchive } from "../../src/state/archivePublication.js";
 import {
@@ -225,6 +226,76 @@ describe("Git legacy backfill", () => {
     expect(pathResult.entries.some((entry) => entry.path?.startsWith(".agentera/progress"))).toBe(true);
   });
 
+  it("does not let an unreachable reflog occurrence satisfy a pin", () => {
+    const root = project();
+    init(root);
+    writeProgress(root, [progress(11, "Old reachable only before rewrite")]);
+    const oldCommit = commit(root, "old pinned occurrence");
+    git(root, ["checkout", "--quiet", "--orphan", "replacement"]);
+    git(root, ["branch", "-D", "main"]);
+    fs.rmSync(path.join(root, ".agentera"), { recursive: true, force: true });
+    writeProgress(root, [progress(11, "Current replacement occurrence")]);
+    commit(root, "replacement occurrence");
+
+    const result = inspectGitBackfill(
+      root,
+      { artifact: "progress", number: 11, commit: oldCommit },
+      { sourceRoot, runGit: realGitRunner },
+    );
+    expect(result.status).toBe("blocked");
+    expect(result.entries[0]).toMatchObject({
+      ambiguity_reason: "no_matching_pin",
+      eligible: false,
+      reachable: false,
+    });
+    expect(result.entries[0]?.provenance.some((value) => value.commit === oldCommit && !value.reachable)).toBe(true);
+  });
+
+  it("retains provenance for malformed historical content", () => {
+    const root = project();
+    init(root);
+    fs.mkdirSync(path.join(root, ".agentera"), { recursive: true });
+    fs.writeFileSync(path.join(root, ".agentera/progress.yaml"), "cycles: [malformed\n");
+    const oldCommit = commit(root, "malformed historical projection");
+    git(root, ["checkout", "--quiet", "--orphan", "replacement"]);
+    git(root, ["branch", "-D", "main"]);
+    fs.rmSync(path.join(root, ".agentera"), { recursive: true, force: true });
+    writeProgress(root, [progress(12, "Current valid projection")]);
+    commit(root, "valid replacement projection");
+
+    const result = inspectGitBackfill(
+      root,
+      { artifact: "progress", number: 12 },
+      { sourceRoot, runGit: realGitRunner },
+    );
+    expect(result.entries[0]?.ambiguity_reason).toBe("corrupt_history");
+    expect(result.entries[0]?.provenance.some((value) => value.commit === oldCommit && value.content_hash === null)).toBe(true);
+  });
+
+  it("reports and enforces the shared history byte budget", () => {
+    const root = project();
+    init(root);
+    writeProgress(root, [progress(13, "Bounded history")]);
+    commit(root, "bounded history");
+    const oversizedRunner = (args: string[], cwd: string) => {
+      const result = realGitRunner(args, cwd);
+      if (args[0] === "cat-file" && args[1] === "-p") {
+        return { ...result, stdout: "x".repeat(16_777_217) };
+      }
+      return result;
+    };
+
+    const result = inspectGitBackfill(
+      root,
+      { artifact: "progress", number: 13 },
+      { sourceRoot, runGit: oversizedRunner },
+    );
+    expect(result.status).toBe("degraded");
+    expect(result.scan.history_bytes_used).toBeLessThanOrEqual(result.scan.history_bytes_limit);
+    expect(result.scan.bounded_reasons).toContain("history_bytes");
+    expect(result.entries[0]?.ambiguity_reason).toBe("scan_bounded");
+  });
+
   it("refuses immutable conflicts and changed HEAD before publication", () => {
     const root = project();
     init(root);
@@ -281,6 +352,25 @@ describe("Git legacy backfill", () => {
         class: "invalid_request",
         message: "--apply requires explicit --force intent",
         syntax: expect.stringContaining("agentera state backfill"),
+      },
+    });
+  });
+
+  it("fails before parsing or scanning when the authority cannot be loaded", () => {
+    const root = project("agentera-git-backfill-authority-");
+    const authority = path.join(root, "references/artifacts/state-storage-authority.yaml");
+    fs.mkdirSync(path.dirname(authority), { recursive: true });
+    fs.writeFileSync(authority, "schema_version: unsupported\n");
+    let out = "";
+    const rc = runBackfill(["--dry-run", "--format", "json"], { out: (text) => (out += text), err: () => undefined }, root);
+    expect(rc).toBe(1);
+    expect(JSON.parse(out)).toMatchObject({
+      schemaVersion: "agentera.stateFailure.v1",
+      status: "fail",
+      error: {
+        class: "unsupported_state",
+        syntax: expect.stringContaining("agentera state backfill"),
+        recovery: expect.stringContaining("no state was changed"),
       },
     });
   });
