@@ -112,6 +112,19 @@ describe("state storage authority", () => {
     expect(api.list.response_fields.required).toEqual(
       expect.arrayContaining(["entries", "counts", "snapshot", "source_contract"]),
     );
+    expect(api.durability).toMatchObject({
+      command: "agentera check durability [--project PATH] [--artifact ARTIFACT] [--number N] [--limit N] --format json",
+      default_limit: 100,
+      maximum_limit: 100,
+      status_values: ["complete", "degraded", "unavailable"],
+      local_values: ["verified", "unavailable", "corrupt"],
+      git_values: ["verified", "degraded", "unavailable"],
+    });
+    expect(api.durability.guarantees).toMatchObject({
+      read_only: true,
+      remote_contact: "forbidden",
+      writes_independent: true,
+    });
   });
 
   it("rejects an API that loses snapshot stability or has an invalid limit", () => {

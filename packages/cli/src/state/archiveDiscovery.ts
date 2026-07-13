@@ -83,6 +83,15 @@ export interface StateProjectionPolicy {
   maxUtf8Bytes: number;
 }
 
+export interface StateDurabilityContract {
+  command: string;
+  defaultLimit: number;
+  maximumLimit: number;
+  statusValues: string[];
+  localValues: string[];
+  gitValues: string[];
+}
+
 export interface DecisionOverlayContract {
   location: string;
   schemaVersion: string;
@@ -107,6 +116,7 @@ interface ArchiveAuthority {
   ignoredRootNames: Set<string>;
   decisionOverlay: DecisionOverlayContract;
   projection: StateProjectionPolicy;
+  durability: StateDurabilityContract;
 }
 
 function isMapping(value: unknown): value is AuthorityMapping {
@@ -309,6 +319,27 @@ function loadAuthority(sourceRoot: string): ArchiveAuthority {
     "budgets.projection.max_utf8_bytes",
   );
 
+  const durability = mapping(mapping(authority.api).durability);
+  const durabilityCommand = requiredString(durability.command, "api.durability.command");
+  const durabilityFormats = requiredStringList(durability.formats, "api.durability.formats");
+  if (durabilityFormats.join(",") !== "text,json,yaml") {
+    throw new Error("state storage authority durability formats must be text, json, yaml");
+  }
+  const durabilityDefaultLimit = requiredPositiveInteger(
+    durability.default_limit,
+    "api.durability.default_limit",
+  );
+  const durabilityMaximumLimit = requiredPositiveInteger(
+    durability.maximum_limit,
+    "api.durability.maximum_limit",
+  );
+  if (durabilityDefaultLimit > durabilityMaximumLimit) {
+    throw new Error("state storage authority durability default limit exceeds maximum limit");
+  }
+  const durabilityStatuses = requiredStringList(durability.status_values, "api.durability.status_values");
+  const localStatuses = requiredStringList(durability.local_values, "api.durability.local_values");
+  const gitStatuses = requiredStringList(durability.git_values, "api.durability.git_values");
+
   return {
     archiveRoot,
     archiveExtension: extension,
@@ -321,6 +352,14 @@ function loadAuthority(sourceRoot: string): ArchiveAuthority {
     ignoredRootNames,
     decisionOverlay,
     projection: { activeEntries, summaryEntries, totalEntries, maxUtf8Bytes },
+    durability: {
+      command: durabilityCommand,
+      defaultLimit: durabilityDefaultLimit,
+      maximumLimit: durabilityMaximumLimit,
+      statusValues: durabilityStatuses,
+      localValues: localStatuses,
+      gitValues: gitStatuses,
+    },
   };
 }
 
@@ -444,6 +483,12 @@ export function stateProjectionPolicy(
   sourceRoot: string = resolveSourceRoot(),
 ): StateProjectionPolicy {
   return loadAuthority(sourceRoot).projection;
+}
+
+export function stateDurabilityContract(
+  sourceRoot: string = resolveSourceRoot(),
+): StateDurabilityContract {
+  return loadAuthority(sourceRoot).durability;
 }
 
 export function stateCurrentProjectionPath(

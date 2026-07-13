@@ -151,11 +151,28 @@ export function printCheckHelp(sub?: string): string {
       "use the stable Python line for smoke maintainer harnesses.",
     ].join("\n");
   }
+  if (sub === "durability") {
+    return [
+      "usage: agentera check durability [-h] [--project PATH] [--artifact ARTIFACT]",
+      "                                [--number N] [--limit N] --format {text,json,yaml}",
+      "",
+      "Read-only local archive and optional reachable Git durability evidence.",
+      "Git is never required for local state writes and no remote is contacted.",
+      "",
+      "options:",
+      "  -h, --help            show this help message and exit",
+      "  --project PATH        Project directory to inspect",
+      "  --artifact ARTIFACT   progress, decisions, or health",
+      "  --number N            Positive archive entry number; requires --artifact",
+      "  --limit N             Bound returned archive entries (maximum 100)",
+      "  --format FORMAT       Output format: text, json, or yaml",
+    ].join("\n");
+  }
   if (sub) {
     return [`usage: agentera check ${sub} [-h] [options]`, "", "options:", "  -h, --help            show this help message and exit"].join("\n");
   }
   return [
-    "usage: agentera check [-h] {validate,verify,lint,compact} ...",
+    "usage: agentera check [-h] {validate,verify,lint,compact,durability} ...",
     "",
     "Validation, verification, lint, and repository compaction gates.",
   ].join("\n");

@@ -276,6 +276,31 @@ api:
       entry: [stable_id, artifact_id, entry_number, current_status, detail_availability, source, compatibility, provenance]
       optional_entry: [summary, record_status, overlay_applied, retrieval]
     empty_result: status=ok with entries=[] and counts.total=0; absence is not an error
+  durability:
+    command: agentera check durability [--project PATH] [--artifact ARTIFACT] [--number N] [--limit N] --format json
+    formats: [text, json, yaml]
+    selectors:
+      artifact: optional supported numbered archive artifact ID
+      number: optional positive entry number; requires artifact
+      limit: optional bounded result count
+    default_limit: 100
+    maximum_limit: 100
+    status_values: [complete, degraded, unavailable]
+    local_values: [verified, unavailable, corrupt]
+    git_values: [verified, degraded, unavailable]
+    response_fields:
+      required: [command, status, project, read_only, remote_contact, head, counts, entries, diagnostics, source_contract]
+      entry: [stable_id, artifact_id, entry_number, status, local, git]
+    guarantees:
+      read_only: true
+      remote_contact: forbidden
+      writes_independent: true
+      head_capture: >-
+        Capture the local HEAD before inspection and after inspection. If the
+        values differ, report changed_head and do not claim committed recovery.
+      deterministic: >-
+        With unchanged local files and reachable refs, repeated checks emit the
+        same ordered result and do not create state or contact a remote.
   cursor:
     syntax: opaque TOKEN returned as response.next_cursor
     first_page: omit --cursor to establish a snapshot

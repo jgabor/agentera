@@ -1,7 +1,7 @@
 import { isPortedStateCommand } from "../commands/state/index.js";
 import { CAPABILITY_ROUTING_NAMES } from "../commands/capability.js";
 import { printCommandHelp, printTopLevelHelp, splitHelpArgs } from "../help.js";
-import { compactModeOf, runCompact, runLint, runSchema, runValidate } from "./check.js";
+import { compactModeOf, runCompact, runDurability, runLint, runSchema, runValidate } from "./check.js";
 import { runQuery, runState } from "./state.js";
 import { runCapability, runPrime } from "./prime.js";
 import { runAppHome, runDoctor, runGate, runHook, runReport, runUpgrade, runUsage, runVerify, runVersion } from "./lifecycle.js";
@@ -89,12 +89,13 @@ export function main(argv: string[], io: Io = {}): number {
           body: {
             class: "missing_argument",
             message: "the following arguments are required: check_command",
-            valid_values: ["validate", "verify", "lint", "compact"],
+            valid_values: ["validate", "verify", "lint", "compact", "durability"],
           },
         });
       }
       if (sub === "validate") return runValidate(rest.slice(1), io, "agentera check validate");
       if (sub === "verify") return runVerify(rest.slice(1), io, "agentera check verify");
+      if (sub === "durability") return runDurability(rest.slice(1), io, "agentera check durability");
       if (sub === "lint") return runLint(rest.slice(1), io, "agentera check lint");
       if (sub === "compact") {
         const subArgs = rest.slice(1);
@@ -107,7 +108,7 @@ export function main(argv: string[], io: Io = {}): number {
         body: {
           class: "unsupported_target",
           message: `unknown or not-yet-ported check subcommand: ${sub}`,
-          valid_values: ["validate", "verify", "lint", "compact"],
+          valid_values: ["validate", "verify", "lint", "compact", "durability"],
         },
       });
     }
