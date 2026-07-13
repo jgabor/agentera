@@ -113,6 +113,28 @@ function lightPlan(title = "Writer plan", status = "open"): Record<string, unkno
   };
 }
 
+function historicalOverflowPlan(title = "Historical predecessor"): Record<string, unknown> {
+  const plan = lightPlan(title);
+  (plan.tasks as Array<Record<string, unknown>>)[0] = {
+    number: 1,
+    name: "Blocked historical task",
+    status: "blocked",
+    evaluation: {
+      attempt_count: 2,
+      failure_count: 2,
+      last_verdict: "fail",
+      last_failure_evidence: Array.from({ length: 2500 }, () => "src/evaluation.ts").join(" "),
+      provenance: {
+        attempt_id: "task-1-attempt-2",
+        source: "focused audit",
+        recorded_at: "2026-07-13 19:10",
+        writer_command: "agentera state plan record-evaluation",
+      },
+    },
+  };
+  return plan;
+}
+
 function progressWrite(
   root: string,
   failAfter?: MutationFailureBoundary,
@@ -825,6 +847,162 @@ describe("decisions, health, and plan operations", () => {
       run(root, ["plan", "create", "--input", second, "--format", "json"]).json?.operation
         .idempotent_replay,
     ).toBe(true);
+  });
+
+  it("preserves exact CLI-owned overflow predecessors only on forced archive and replacement", () => {
+    const replaceRoot = project();
+    const predecessor = historicalOverflowPlan();
+    predecessor.previous_plan_archived = ".agentera/archive/PLAN-prior.yaml";
+    const predecessorBytes = dumpYamlMapping(predecessor);
+    const target = path.join(replaceRoot, ".agentera", "plan.yaml");
+    fs.mkdirSync(path.dirname(target), { recursive: true });
+    fs.writeFileSync(target, predecessorBytes);
+    expect(lintFullArtifactPayload("plan", predecessorBytes).status).toBe("fail");
+
+    const successor = writeInput(replaceRoot, "successor.yaml", lightPlan("Reviewed continuation"));
+    const dryRun = run(replaceRoot, [
+      "plan",
+      "create",
+      "--input",
+      successor,
+      "--force",
+      "--dry-run",
+      "--format",
+      "json",
+    ]);
+    expect(dryRun.rc).toBe(0);
+    expect(dryRun.json?.validation.diagnostics).toEqual([
+      expect.stringContaining("historical predecessor accepted"),
+    ]);
+    expect(fs.readFileSync(target, "utf8")).toBe(predecessorBytes);
+    expect(archiveFiles(replaceRoot)).toEqual([]);
+
+    const replaced = run(replaceRoot, [
+      "plan",
+      "create",
+      "--input",
+      successor,
+      "--force",
+      "--format",
+      "json",
+    ]);
+    expect(replaced.rc).toBe(0);
+    const archivePath = String(replaced.json?.state.archive_path);
+    expect(fs.readFileSync(archivePath, "utf8")).toBe(predecessorBytes);
+    const archived = loadYamlMapping(fs.readFileSync(archivePath, "utf8"));
+    expect(archived.tasks).toEqual(predecessor.tasks);
+    expect(loadYamlMapping(fs.readFileSync(target, "utf8")).previous_plan_archived).toBe(
+      path.relative(replaceRoot, archivePath),
+    );
+
+    const retryRoot = project();
+    const retryPredecessorBytes = dumpYamlMapping(historicalOverflowPlan("Interrupted historical predecessor"));
+    const retryTarget = path.join(retryRoot, ".agentera", "plan.yaml");
+    fs.mkdirSync(path.dirname(retryTarget), { recursive: true });
+    fs.writeFileSync(retryTarget, retryPredecessorBytes);
+    const retrySuccessor = writeInput(retryRoot, "successor.yaml", lightPlan("Retry successor"));
+    const originalRename = fs.renameSync.bind(fs);
+    const rename = vi.spyOn(fs, "renameSync").mockImplementation(((from, to) => {
+      if (String(from).includes(".writer.") && String(to) === retryTarget)
+        throw Object.assign(new Error("injected historical replacement interruption"), { code: "ENOSPC" });
+      return originalRename(from, to);
+    }) as typeof fs.renameSync);
+    try {
+      expect(
+        run(retryRoot, [
+          "plan",
+          "create",
+          "--input",
+          retrySuccessor,
+          "--force",
+          "--format",
+          "json",
+        ]).rc,
+      ).toBe(1);
+      expect(fs.readFileSync(retryTarget, "utf8")).toBe(retryPredecessorBytes);
+      expect(fs.readFileSync(path.join(retryRoot, ".agentera", "archive", archiveFiles(retryRoot)[0]), "utf8")).toBe(
+        retryPredecessorBytes,
+      );
+    } finally {
+      rename.mockRestore();
+    }
+    expect(
+      run(retryRoot, [
+        "plan",
+        "create",
+        "--input",
+        retrySuccessor,
+        "--force",
+        "--format",
+        "json",
+      ]).rc,
+    ).toBe(0);
+    expect(archiveFiles(retryRoot)).toHaveLength(1);
+
+    const archiveRoot = project();
+    const archiveTarget = path.join(archiveRoot, ".agentera", "plan.yaml");
+    fs.mkdirSync(path.dirname(archiveTarget), { recursive: true });
+    fs.writeFileSync(archiveTarget, predecessorBytes);
+    const archivedResult = run(archiveRoot, ["plan", "archive", "--force", "--format", "json"]);
+    expect(archivedResult.rc).toBe(0);
+    expect(fs.readFileSync(String(archivedResult.json?.state.archive_path), "utf8")).toBe(
+      predecessorBytes,
+    );
+    expect(fs.existsSync(archiveTarget)).toBe(false);
+  });
+
+  it("rejects forced historical exceptions for malformed or user-authored predecessor state", () => {
+    const malformedRoot = project();
+    const malformedTarget = path.join(malformedRoot, ".agentera", "plan.yaml");
+    fs.mkdirSync(path.dirname(malformedTarget), { recursive: true });
+    fs.writeFileSync(malformedTarget, "header: [\n");
+    const malformed = run(malformedRoot, ["plan", "archive", "--force", "--format", "json"]);
+    expect(malformed.rc).toBe(1);
+    expect(`${malformed.out}${malformed.err}`).toContain("cannot parse existing artifact");
+
+    const schemaRoot = project();
+    const schemaPlan = historicalOverflowPlan("Schema-invalid predecessor");
+    (schemaPlan.tasks as Array<Record<string, unknown>>)[0].depends_on = ["missing-task"];
+    const schemaTarget = path.join(schemaRoot, ".agentera", "plan.yaml");
+    fs.mkdirSync(path.dirname(schemaTarget), { recursive: true });
+    fs.writeFileSync(schemaTarget, dumpYamlMapping(schemaPlan));
+    const schemaInvalid = run(schemaRoot, ["plan", "archive", "--force", "--format", "json"]);
+    expect(schemaInvalid.rc).toBe(1);
+    expect(`${schemaInvalid.out}${schemaInvalid.err}`).toContain("is schema-invalid");
+    expect(archiveFiles(schemaRoot)).toEqual([]);
+
+    const authoredRoot = project();
+    const authoredPlan = historicalOverflowPlan("User-authored overflow");
+    authoredPlan.what = Array.from({ length: 2500 }, () => "src/user-plan.ts").join(" ");
+    const authoredTarget = path.join(authoredRoot, ".agentera", "plan.yaml");
+    fs.mkdirSync(path.dirname(authoredTarget), { recursive: true });
+    fs.writeFileSync(authoredTarget, dumpYamlMapping(authoredPlan));
+    const authored = run(authoredRoot, ["plan", "archive", "--force", "--format", "json"]);
+    expect(authored.rc).toBe(2);
+    expect(authored.json?.error.violations).toEqual(
+      expect.arrayContaining([expect.stringContaining("user-authored plan content")]),
+    );
+    expect(archiveFiles(authoredRoot)).toEqual([]);
+    expect(fs.readFileSync(authoredTarget, "utf8")).toBe(dumpYamlMapping(authoredPlan));
+  });
+
+  it("does not let force bypass a new over-budget candidate", () => {
+    const root = project();
+    const candidate = writeInput(root, "over-budget.yaml", historicalOverflowPlan("New candidate"));
+    const result = run(root, [
+      "plan",
+      "create",
+      "--input",
+      candidate,
+      "--force",
+      "--format",
+      "json",
+    ]);
+    expect(result.rc).toBe(2);
+    expect(result.json?.error.violations).toEqual(
+      expect.arrayContaining([expect.stringContaining("strict prose lint verbosity")]),
+    );
+    expect(fs.existsSync(path.join(root, ".agentera", "plan.yaml"))).toBe(false);
   });
 
   it("recovers exact partial archives and refuses immutable archive collisions", () => {

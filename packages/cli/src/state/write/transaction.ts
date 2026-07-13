@@ -5,7 +5,6 @@ import { isDeepStrictEqual } from "node:util";
 
 import { splitLinesKeepEnds, unifiedDiff } from "../../core/difflib.js";
 import { dumpYamlMapping, loadYamlMapping } from "../../core/yaml.js";
-import { lintFullArtifactPayload } from "../../cli/commands/lint.js";
 import {
   compactYamlFile,
   decisionProtectedOverflowCount,
@@ -25,6 +24,10 @@ import { localDate, localTimestamp, nextEntryNumber, nextTaskNumber } from "./as
 import type { OperationSpec, WritableArtifact } from "./operations.js";
 import { reject } from "./errors.js";
 import { validateArtifactBytes } from "./validate.js";
+import {
+  planEvaluationViolations,
+  validatePlanPublicationCandidate,
+} from "./planPublication.js";
 import { dependencyReadyTasks } from "../../cli/capabilityContext/planState.js";
 import type { JsonObject } from "../../core/jsonValue.js";
 import {
@@ -153,28 +156,6 @@ function normalizedDecisionPayload(values: Record<string, unknown>): Record<stri
 
 function schemaViolation(violations: string[]): never {
   reject({ class: "schema_violation", message: violations[0], violations });
-}
-
-function validatePlanPublicationCandidate(bytes: string): void {
-  const lint = lintFullArtifactPayload("plan", bytes);
-  const lintViolations = (lint.checks as Array<Record<string, string>>)
-    .filter((check) => check.status === "fail")
-    .map(
-      (check) =>
-        `strict prose lint ${check.name}: ${check.detail}; action: ${check.action}`,
-    );
-  const schemaViolations = validateArtifactBytes("plan", bytes).map(
-    (violation) => `schema validation: ${violation}`,
-  );
-  const violations = [...lintViolations, ...schemaViolations];
-  if (violations.length === 0) return;
-  reject({
-    class: "schema_violation",
-    message: "plan publication candidate failed strict prose lint or schema validation; correct the reported violations and retry",
-    violations,
-    syntax: "agentera state plan create --input plan.yaml --format json",
-    example: "agentera state plan create --input plan.yaml --format json",
-  });
 }
 
 function findByNumber(
@@ -662,10 +643,13 @@ function planLifecycle(
         message: `active plan "${mapping(existing.doc.header).title ?? existing.doc.title ?? "untitled"}" has status ${status || "unknown"} or incomplete tasks; archiving would discard incomplete work`,
         syntax: "agentera state plan archive --force",
       });
-    const archiveDoc = canonicalPlanDocumentForArchive(existing.doc);
-    const archiveBytes = dumpYamlMapping(archiveDoc);
+    const preserveExactBytes = req.force && !legacyLifecycle;
+    const archiveDoc = preserveExactBytes ? existing.doc : canonicalPlanDocumentForArchive(existing.doc);
+    const archiveBytes = preserveExactBytes ? existing.bytes : dumpYamlMapping(archiveDoc);
     const archivePath = archivePathFor(req.projectRoot, target, archiveDoc, archiveBytes);
-    validatePlanPublicationCandidate(archiveBytes);
+    const predecessorValidation = validatePlanPublicationCandidate(archiveBytes, {
+      allowHistoricalBudgetOverflow: req.force,
+    });
     if (!req.dryRun) {
       // Archive creation and current-plan removal cannot be one filesystem transaction.
       // The durable archive is published first; retries remove the current plan only after
@@ -678,6 +662,7 @@ function planLifecycle(
       diff: diffText(existing.bytes, "", target),
       before: existing.doc,
       after: {},
+      validationDiagnostics: predecessorValidation.diagnostics,
     });
   }
   const input = structuredClone(req.input ?? {});
@@ -693,7 +678,10 @@ function planLifecycle(
     delete existingWithoutLineage.previous_plan_archived;
     const sameWithoutLineage = isDeepStrictEqual(existingWithoutLineage, input);
     if (sameWithoutLineage && !legacyLifecycle) {
-      validatePlanPublicationCandidate(dumpYamlMapping(existing.doc));
+      const predecessorBytes = req.force ? existing.bytes : dumpYamlMapping(existing.doc);
+      const predecessorValidation = validatePlanPublicationCandidate(predecessorBytes, {
+        allowHistoricalBudgetOverflow: req.force,
+      });
       return envelope(
         req,
         target,
@@ -702,7 +690,14 @@ function planLifecycle(
         {},
         true,
         null,
-        req.dryRun ? { diff: "", before: existing.doc, after: existing.doc } : {},
+        req.dryRun
+          ? {
+              diff: "",
+              before: existing.doc,
+              after: existing.doc,
+              validationDiagnostics: predecessorValidation.diagnostics,
+            }
+          : { validationDiagnostics: predecessorValidation.diagnostics },
       );
     }
     if (!sameWithoutLineage) {
@@ -711,13 +706,15 @@ function planLifecycle(
           class: "conflict",
           message: `active plan "${mapping(existing.doc.header).title ?? existing.doc.title ?? "untitled"}" has status ${oldStatus || "unknown"}; replacing it would discard incomplete work`,
         });
-      predecessorBytes = dumpYamlMapping(existing.doc);
+      predecessorBytes = req.force && !legacyLifecycle ? existing.bytes : dumpYamlMapping(existing.doc);
       archivePath = archivePathFor(req.projectRoot, target, existing.doc, predecessorBytes);
       input.previous_plan_archived = path.relative(req.projectRoot, archivePath);
     }
   }
   const bytes = dumpYamlMapping(input);
-  if (predecessorBytes) validatePlanPublicationCandidate(predecessorBytes);
+  const predecessorValidation = predecessorBytes
+    ? validatePlanPublicationCandidate(predecessorBytes, { allowHistoricalBudgetOverflow: req.force })
+    : { diagnostics: [] };
   validatePlanPublicationCandidate(bytes);
   const finalDoc = loadYamlMapping(bytes);
   if (!req.dryRun) {
@@ -741,6 +738,7 @@ function planLifecycle(
     diff: diffText(existing.bytes, bytes, target),
     before: existing.doc,
     after: finalDoc,
+    validationDiagnostics: predecessorValidation.diagnostics,
   });
 }
 
@@ -755,6 +753,7 @@ function envelope(
   extra: {
     archivePath?: string;
     protectedOverflowCount?: number;
+    validationDiagnostics?: string[];
     diff?: string;
     before?: Record<string, unknown>;
     after?: Record<string, unknown>;
@@ -775,7 +774,13 @@ function envelope(
     assigned,
     written,
     state: stateSlice(req.artifact, finalDoc, extra.archivePath),
-    validation: { status: "pass", violations: [] },
+    validation: {
+      status: "pass",
+      violations: [],
+      ...(extra.validationDiagnostics && extra.validationDiagnostics.length > 0
+        ? { diagnostics: extra.validationDiagnostics }
+        : {}),
+    },
     compaction:
       compaction && req.artifact === "decisions"
         ? { ...compaction, protected_overflow_count: extra.protectedOverflowCount ?? 0 }
@@ -829,6 +834,13 @@ function executeStateWriteUnlocked(
       throw new Error(
         `existing artifact '${target}' is schema-invalid: ${violations.join("; ")}; repair it before retrying`,
       );
+    }
+    if (req.artifact === "plan") {
+      const evaluationViolations = planEvaluationViolations(existing.doc);
+      if (evaluationViolations.length > 0)
+        throw new Error(
+          `existing artifact '${target}' is schema-invalid: ${evaluationViolations.join("; ")}; repair it before retrying`,
+        );
     }
   }
   if (req.artifact === "decisions" && req.spec.verb === "update") {

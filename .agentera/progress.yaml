@@ -1,4 +1,39 @@
 cycles:
+  - number: 770
+    timestamp: 2026-07-13 19:53
+    type: fix
+    phase: build
+    what: Allowed forced plan archive and replacement to preserve exact schema-valid
+      predecessors whose only full-file overflow is CLI-owned lineage or
+      evaluation metadata; kept new candidates strict and added rejection,
+      immutability, and interruption-retry coverage.
+    discovered: The predecessor is 2760 words with only strict full-file verbosity
+      failing; removing CLI-owned lifecycle and evaluation fields makes the
+      historical attribution pass, while user-authored overflow remains
+      rejected.
+    verified: pnpm -C packages/cli exec vp test run
+      test/state/write/stateWrite.test.ts (60/60); pnpm -C packages/cli exec vp
+      test run --exclude 'test/packaging/**' (1712/1712); pnpm -C packages/cli
+      test (1716/1721, five known npm 12 packaging parser failures in
+      test/packaging/prepack.test.ts); pnpm -C packages/cli run typecheck; pnpm
+      -C packages/cli build; node packages/cli/dist/bin/agentera.js check
+      validate capability plan --format json; node
+      packages/cli/dist/bin/agentera.js check validate capability-contract
+      --format json; node packages/cli/dist/bin/agentera.js check compact
+      --format json; node packages/cli/dist/bin/agentera.js state plan create
+      --input /tmp/opencode/storage-continuation-plan.yaml --force --dry-run
+      --format json (pass); node packages/cli/dist/bin/agentera.js state plan
+      archive --force --dry-run --format json (pass).
+    next: Return control to the plan capability; do not publish the reviewed
+      continuation plan.
+    context:
+      intent: Unblock the approved continuation without rewriting failed-attempt
+        lineage.
+      constraints: Do not modify health, decisions, vision, profile, TODO, versions,
+        publish, push, or tag state.
+      scope: packages/cli/src/state/write/planPublication.ts;
+        packages/cli/src/state/write/transaction.ts;
+        packages/cli/test/state/write/stateWrite.test.ts; .agentera/plan.yaml
   - number: 769
     timestamp: 2026-07-13 18:58
     type: fix
@@ -468,52 +503,6 @@ cycles:
         packages/cli/src/cli/commands/state/get.ts;
         packages/cli/test/state/directRetrieval.test.ts; .agentera/plan.yaml;
         .agentera/progress.yaml
-  - number: 760
-    timestamp: 2026-07-13 15:21
-    type: fix
-    phase: build
-    what: Corrected Task 8 verification counts after adding unsupported-state
-      archive fixtures; Cycle 759 evidence remains immutable and is superseded
-      only for final counts.
-    inspiration: Final Task 8 verification rerun after separating unsupported
-      archive schemas from corrupt archive bytes.
-    discovered: The final DTC matrix has 32 focused tests across the three supported
-      families; the adjacent state suite has 109 tests, and the non-packaging
-      full suite has 1666 tests.
-    verified: "Focused: pnpm -C packages/cli exec vp test run
-      test/state/directRetrieval.test.ts: 1 file and 32 tests passed. Adjacent:
-      pnpm -C packages/cli exec vp test run test/state/directRetrieval.test.ts
-      test/state/archiveDiscovery.test.ts test/state/archiveRecovery.test.ts
-      test/state/archiveAuthority.test.ts test/state/decisionOverlay.test.ts
-      test/state/projectionPolicy.test.ts test/cli/state.test.ts: 7 files and
-      109 tests passed. Non-packaging full: pnpm -C packages/cli exec vp test
-      run --exclude test/packaging/prepack.test.ts: 168 files and 1666 tests
-      passed. Full: pnpm -C packages/cli test: 169 files, 1670 of 1675 tests
-      passed; exactly 5 pre-existing npm pack --dry-run --json parsing failures
-      in test/packaging/prepack.test.ts. pnpm -C packages/cli run typecheck
-      passed; pnpm -C packages/cli build passed; capability-contract and
-      progress/decisions/health artifact validation passed; node
-      packages/cli/dist/bin/agentera.js check compact --format json passed with
-      zero over-limit, protected-overflow, and error counts, retaining five
-      degraded recovery refusals for unarchived progress cycles 745-749."
-    next: Task 8 remains pending for evaluator review; Task 9 listing, Task 10 prime
-      consumers, migration, Git durability, and release work remain out of
-      scope.
-    context:
-      intent: Publish append-only final verification evidence without rewriting Cycle
-        759, closing Task 8, or changing unrelated state.
-      constraints: Do not implement paginated list, prime consumers, migration, Git
-        durability, health, vision, profile, decisions, TODO, version, publish,
-        push, or tag changes.
-      unknowns: The five npm12 packaging JSON parsing failures remain pre-existing and
-        outside this change.
-      scope: packages/cli/src/state/directRetrieval.ts;
-        packages/cli/src/state/archiveDiscovery.ts;
-        packages/cli/src/cli/commands/state/get.ts;
-        packages/cli/src/cli/dispatch/{index,state}.ts;
-        packages/cli/src/cli/help.ts;
-        packages/cli/test/state/directRetrieval.test.ts;
-        .agentera/progress.yaml; .agentera/plan.yaml
   - number: 749
     timestamp: 2026-07-13 10:58
     type: feat
@@ -631,6 +620,9 @@ cycles:
       intent: Complete active plan Task 7 without changing decisions or unrelated
         capabilities.
 archive:
+  - summary: "Cycle 760 (2026-07-13): Corrected Task 8 verification counts after
+      adding unsupported-state archive fixtures; Cycle 759 evidence remains
+      immutable..."
   - summary: "Cycle 759 (2026-07-13): Exposed stable-ID direct retrieval for
       progress, decisions, and health with exact archive lookup, provenance,
       overlay..."
@@ -735,15 +727,18 @@ archive:
   - summary: "Cycle 713 (2026-07-12): Synchronized the Agentera 3.0.0 release
       surface across lifecycle authority, runtime and package registries,
       packaging, CLI..."
-  - summary: "Cycle 712 (2026-07-12): Hardened Task 7 ownership journal recovery and
-      apply locking after audit."
 omitted: true
-omitted_count: 7
+omitted_count: 8
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded
