@@ -1,4 +1,54 @@
 cycles:
+  - number: 772
+    timestamp: 2026-07-13 21:06
+    type: fix
+    phase: build
+    what: "Made legacy state listing identity-safe and physically truthful: explicit
+      canonical numbers and decisions Dnn shorthand are addressable; unnumbered
+      and multi-shorthand staging rows stay list-only; current/archive mirrors,
+      duplicate rows, and conflicts are classified. Added nullable list
+      representation and physical accounting, typed health repair, adversarial
+      fixtures, and live parity checks. Repaired duplicate Audit14 by retaining
+      the canonical summary and removing only the duplicate row."
+    inspiration: Continuation plan Task2 after Task1 cursor traversal; Task1 is
+      complete in the active plan and remains uncommitted.
+    discovered: Physical counts are raw current, summary, and numbered archive rows;
+      addressable_ids is unique logical identity, while mirrors, duplicates, and
+      conflicts are overlapping diagnostics. The live health archive held two
+      Audit14 summaries; byte-preserving validated repair removed one without
+      reserializing unrelated evidence.
+    verified: "Focused state/list, direct-get, and writer tests: 126/126 passed
+      before final extraction; non-packaging CLI suite: 171 files and 1731/1731
+      tests passed; full CLI suite: 172 files and 1735/1740 passed, with five
+      known npm 12 npm pack --dry-run --json parser failures in
+      test/packaging/prepack.test.ts. Typecheck and build passed. Plan,
+      capability-contract, progress, decisions, and health validation passed.
+      check compact passed with 0 errors, 0 over-limit, 0 protected-overflow,
+      and 0 changed counts. Live JSON/YAML parity passed for progress,
+      decisions, and health with --limit 1."
+    next: Keep Task2 pending; do not close it. Task3 remains the next plan task. Do
+      not update vision, profile, decisions, TODO, version, publish, push, or
+      tag state.
+    context:
+      intent: "Execute continuation plan Task2 without closing it: make legacy
+        identity and physical count semantics truthful, repair duplicate current
+        health history, and preserve the stable get contract."
+      constraints: Preserve Task1 completion status, stable numeric get selectors,
+        archive immutability, no inferred identity, no fabricated audit,
+        unrelated health evidence, and the requested state-change exclusions.
+      unknowns: none for Task2; Task3 source-work bounds remains unresolved by design.
+      scope: packages/cli/src/state/listRetrieval.ts;
+        packages/cli/src/state/listAccounting.ts;
+        packages/cli/src/state/healthRepair.ts;
+        packages/cli/src/state/write/transaction.ts;
+        packages/cli/src/state/write/operations.ts;
+        packages/cli/src/state/write/explain.ts;
+        packages/cli/src/state/write/helpers.ts;
+        packages/cli/test/state/listRetrieval.test.ts;
+        packages/cli/test/state/directRetrieval.test.ts;
+        packages/cli/test/state/write/stateWrite.test.ts;
+        references/artifacts/state-storage-authority.yaml;
+        .agentera/health.yaml; .agentera/plan.yaml; .agentera/progress.yaml
   - number: 771
     timestamp: 2026-07-13 20:22
     type: fix
@@ -441,67 +491,6 @@ cycles:
         packages/cli/test/state/archiveAuthority.test.ts;
         references/artifacts/state-storage-authority.yaml;
         .agentera/progress.yaml
-  - number: 762
-    timestamp: 2026-07-13 16:10
-    type: feat
-    phase: build
-    what: Implemented snapshot-stable bounded state listing for progress, decisions,
-      and health with numeric ordering, opaque signed cursors, append-excluding
-      snapshots, current/archive row provenance, legacy compatibility, and
-      JSON/YAML/text byte bounds. Added deterministic pagination,
-      tamper/stale/filter diagnostics, overlay revision binding, and an
-      authority-backed 100/1000-entry benchmark fixture; measured 156.1 ms and
-      1.41 s latency, 95 KB and 8.98 MB heap delta, and 22.5 KB and 22.6 KB JSON
-      responses, so the declared no-index decision remains supported.
-    inspiration: Active Agentera plan Task 9 and the state-storage authority list contract.
-    discovered: Archive enumeration remains within the declared no-index thresholds
-      at 100 and 1000 validated entries; legacy current rows can be listed
-      truthfully without reconstructing missing fields. The full suite still has
-      exactly five pre-existing npm 12 npm pack --dry-run --json parsing
-      failures in test/packaging/prepack.test.ts.
-    verified: "Focused: pnpm -C packages/cli exec vp test run
-      test/state/listRetrieval.test.ts test/state/archiveAuthority.test.ts, 2
-      files and 17 tests passed. Adjacent: pnpm -C packages/cli exec vp test run
-      test/state/listRetrieval.test.ts test/state/archiveAuthority.test.ts
-      test/state/archiveDiscovery.test.ts test/state/archiveRecovery.test.ts
-      test/state/archivePublication.test.ts test/state/directRetrieval.test.ts
-      test/state/decisionOverlay.test.ts test/state/projectionPolicy.test.ts
-      test/cli/state.test.ts test/cli/compactParity.test.ts, 10 files and 132
-      tests passed before the final overlay assertion-only addition.
-      Non-packaging: pnpm -C packages/cli exec vp test run --exclude
-      test/packaging/prepack.test.ts, 169 files and 1677 tests passed before the
-      final overlay assertion-only addition. Full: pnpm -C packages/cli test,
-      169 of 170 files and 1681 of 1686 tests passed; the five failures are the
-      pre-existing npm 12 packaging JSON parsing failures. pnpm -C packages/cli
-      run typecheck passed; pnpm -C packages/cli build passed; node
-      packages/cli/dist/bin/agentera.js check validate capability-contract
-      --format json passed; progress, decisions, and health artifact validation
-      passed; node packages/cli/dist/bin/agentera.js check compact --format json
-      passed with zero over-limit and protected-overflow counts, with existing
-      progress archive recovery refusals retained."
-    next: Task 9 remains pending for evaluator review; inspect the committed list
-      surface and rerun the required final gates after state synchronization.
-      Task 10 prime consumers, migration, Git durability, and release work
-      remain out of scope.
-    context:
-      intent: Execute Task 9 list read surface without changing consumers, migration,
-        Git, or Task 9 plan status.
-      constraints: Do not mark Task 9 complete. Do not modify prime or capability
-        consumers, migration, Git, health, vision, profile, decisions, TODO,
-        version, publish, push, or tag surfaces. The npm 12 packaging failures
-        are pre-existing and packaging files were not changed.
-      unknowns: Whether evaluator review accepts the no-index threshold margin under a
-        different filesystem remains unmeasured; no persistent index is
-        introduced unless the authority trigger is met.
-      scope: packages/cli/src/state/listRetrieval.ts;
-        packages/cli/src/cli/commands/state/list.ts;
-        packages/cli/src/cli/dispatch/state.ts; packages/cli/src/cli/help.ts;
-        packages/cli/src/state/archiveDiscovery.ts;
-        packages/cli/src/state/directRetrieval.ts;
-        packages/cli/test/state/listRetrieval.test.ts;
-        packages/cli/test/state/archiveAuthority.test.ts;
-        references/artifacts/state-storage-authority.yaml;
-        .agentera/progress.yaml
   - number: 749
     timestamp: 2026-07-13 10:58
     type: feat
@@ -619,6 +608,9 @@ cycles:
       intent: Complete active plan Task 7 without changing decisions or unrelated
         capabilities.
 archive:
+  - summary: "Cycle 762 (2026-07-13): Implemented snapshot-stable bounded state
+      listing for progress, decisions, and health with numeric ordering, opaque
+      signed..."
   - summary: "Cycle 761 (2026-07-13): Retried Task 8 after evaluation failure:
       direct decision get now preserves absent outcome metadata, and..."
   - summary: "Cycle 760 (2026-07-13): Corrected Task 8 verification counts after
@@ -723,15 +715,18 @@ archive:
       projection for Task 1."
   - summary: "Cycle 715 (2026-07-12): Cycle 715 supersedes the inaccurate portion of
       Cycle 714: the earlier retry did not remove..."
-  - summary: "Cycle 714 (2026-07-12): Corrected the two Task 8 independent-audit
-      blockers in Cursor documentation and documentation inventory metadata."
 omitted: true
-omitted_count: 9
+omitted_count: 10
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded

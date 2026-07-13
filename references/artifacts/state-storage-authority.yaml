@@ -103,6 +103,28 @@ identity:
     list: entry_number descending, numerically rather than lexicographically
     tie_breaker: stable_id ascending (defensive only; numbers are unique per artifact)
     get: exact stable_id match; no topic or summary scan is a substitute
+  legacy_rows:
+    canonical_number: >-
+      A positive entry_number field, or an artifact-labelled summary beginning
+      with Cycle N, Decision N, Audit N, or the decisions-only shorthand DNN.
+      The number is accepted only from that explicit position; arbitrary prose
+      and nested values never establish identity.
+    unaddressable: >-
+      A physical current or legacy-summary row without one explicit number.
+      It is list-only and uses stable_id: null and entry_number: null; no
+      synthetic number, position, or inferred reference is permitted.
+    ambiguous: >-
+      A row containing multiple explicit decision shorthands such as
+      Staging D3+D4. It remains list-only with stable_id: null and is never
+      assigned the first or most recent shorthand.
+    physical_accounting: >-
+      physical counts raw current rows, current archive-summary rows, and
+      validated or rejected numbered archive files. addressable counts those
+      physical rows carrying one explicit number; unaddressable and ambiguous
+      partition the remaining physical rows. addressable_ids counts unique
+      stable-ID groups. mirrored, duplicate, and conflict are non-additive
+      redundancy classifications over addressable rows; omitted counts rows
+      not emitted on the current bounded page.
 
 envelope:
   schema_version: agentera.stateArchiveEntry.v1
@@ -228,9 +250,20 @@ projections:
       time and do not rewrite archive bytes.
   summary:
     role: bounded list and startup representation
-    required_item_fields: [stable_id, artifact_id, entry_number, detail_availability, source]
+    required_item_fields: [stable_id, artifact_id, entry_number, addressable, classification, detail_availability, source]
+    nullable_item_fields:
+      - stable_id
+      - entry_number
     detail_availability: [full, summary, unavailable]
     source_values: [archive, current_projection, legacy_full, legacy_summary]
+    classification_values: [canonical, mirrored, duplicate, conflict, ambiguous, unaddressable, corrupt]
+    counts:
+      required: [physical, addressable, addressable_ids, unaddressable, ambiguous, mirrored, duplicate, conflict, omitted]
+      reconciliation: >-
+        physical = addressable + unaddressable + ambiguous;
+        addressable_ids is the unique logical count and is not added to the
+        physical count; mirrored, duplicate, and conflict are overlapping
+        redundancy diagnostics, not partition buckets.
     omission: >-
       Omitted detail is represented by omitted=true, omitted_count,
       omission_reason, and a get command pointer. It is never silently

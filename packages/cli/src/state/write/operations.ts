@@ -9,6 +9,7 @@ export const WRITE_VERBS = [
   "set-status",
   "set-plan-status",
   "record-evaluation",
+  "repair",
   "archive",
   "create",
   "explain",
@@ -200,6 +201,15 @@ const SPECS: OperationSpec[] = [
     inputRoot: "one audit entry",
     cliOwnedFields: ["number"],
     compacts: true,
+  },
+  {
+    artifact: "health",
+    verb: "repair",
+    fields: [
+      { flag: "--number", field: "number", kind: "integer", required: true },
+      { flag: "--keep", field: "keep", kind: "string", required: false, validValues: ["first", "last"] },
+    ],
+    allowForce: true,
   },
 ];
 

@@ -137,6 +137,41 @@ describe.each(artifacts)("direct stable-ID retrieval: %s", (artifact) => {
     expect(result.entry.record).toMatchObject(current);
   });
 
+  it("rejects duplicate current identities instead of selecting one for get", () => {
+    const root = project();
+    const current = record(artifact, 1);
+    writeProjection(root, artifact, [current, structuredClone(current)]);
+
+    expect(() => retrieveStateEntry(root, artifact, 1, { sourceRoot })).toThrowError(/duplicate identity/);
+    try {
+      retrieveStateEntry(root, artifact, 1, { sourceRoot });
+    } catch (caught) {
+      expect((caught as StateRetrievalFailure).body.error.class).toBe("ambiguous");
+    }
+  });
+
+  it("rejects conflicting archive and current content without changing the stable-ID selector", () => {
+    const root = project();
+    const current = record(artifact, 1);
+    archive(root, artifact, 1);
+    if (artifact === "progress") current.what = "conflicting current record";
+    else if (artifact === "decisions") current.question = "conflicting current record";
+    else current.trajectory = "conflicting current record";
+    writeProjection(root, artifact, [current]);
+
+    try {
+      retrieveStateEntry(root, artifact, 1, { sourceRoot });
+    } catch (caught) {
+      const failure = caught as StateRetrievalFailure;
+      expect(failure.body.error).toMatchObject({
+        class: "immutable_conflict",
+        stable_id: `${artifact}:1`,
+      });
+      return;
+    }
+    throw new Error("expected immutable conflict");
+  });
+
   it("returns the current overlay only where the authority permits it", () => {
     const root = project();
     archive(root, artifact, 1);

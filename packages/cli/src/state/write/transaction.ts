@@ -23,6 +23,7 @@ import {
 import { localDate, localTimestamp, nextEntryNumber, nextTaskNumber } from "./assign.js";
 import type { OperationSpec, WritableArtifact } from "./operations.js";
 import { reject } from "./errors.js";
+import { findByNumber, schemaViolation } from "./helpers.js";
 import { validateArtifactBytes } from "./validate.js";
 import {
   planEvaluationViolations,
@@ -44,6 +45,7 @@ import {
   hydrateDecisionRecords,
   updateDecisionOverlay,
 } from "../decisionOverlay.js";
+import { repairHealthDuplicates, repairHealthProjectionBytes } from "../healthRepair.js";
 
 export interface StateWriteRequest {
   artifact: WritableArtifact;
@@ -154,17 +156,6 @@ function normalizedDecisionPayload(values: Record<string, unknown>): Record<stri
   return payload;
 }
 
-function schemaViolation(violations: string[]): never {
-  reject({ class: "schema_violation", message: violations[0], violations });
-}
-
-function findByNumber(
-  entries: Record<string, unknown>[],
-  number: number,
-): Record<string, unknown> | undefined {
-  return entries.find((entry) => Number(entry.number) === number);
-}
-
 function mutateCandidate(
   req: StateWriteRequest,
   doc: Record<string, unknown>,
@@ -237,6 +228,14 @@ function mutateCandidate(
     };
   }
   if (req.artifact === "health") {
+    if (req.spec.verb === "repair") {
+      if (!req.force) reject({ class: "conflict", message: "health repair requires --force; use --dry-run to preview the edit" });
+      const number = Number(req.values.number);
+      const keep = req.values.keep === "last" ? "last" : "first";
+      const repaired = repairHealthDuplicates(candidate, number, keep);
+      if (repaired.removed === 0) reject({ class: "unsupported_target", message: `health audit ${number} has no duplicate current-history rows to repair` });
+      return { candidate: repaired.candidate, written: { number, removed_rows: repaired.removed, retained: keep }, assigned: { number, removed_rows: repaired.removed }, replay: false };
+    }
     if (req.input && ("audits" in req.input || "archive" in req.input)) {
       reject({
         class: "schema_violation",
@@ -927,7 +926,12 @@ function executeStateWriteUnlocked(
       },
     );
   }
-  const candidateBytes = dumpYamlMapping(mutated.candidate);
+  const repairedBytes = req.artifact === "health" && req.spec.verb === "repair"
+    ? repairHealthProjectionBytes(existing.bytes, Number(req.values.number), req.values.keep === "last" ? "last" : "first")
+    : null;
+  if (repairedBytes && repairedBytes.removed === 0)
+    reject({ class: "unsupported_target", message: `health audit ${Number(req.values.number)} has no duplicate current-history rows to repair` });
+  const candidateBytes = repairedBytes?.bytes ?? dumpYamlMapping(mutated.candidate);
   const candidateViolations = validateArtifactBytes(req.artifact, candidateBytes);
   if (candidateViolations.length) schemaViolation(candidateViolations);
   const stage = req.dryRun

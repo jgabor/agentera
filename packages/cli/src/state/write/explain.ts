@@ -101,6 +101,8 @@ export function buildExplain(
       ? "supply sequential task numbers and valid dependencies; previous_plan_archived is assigned by the CLI"
       : artifact === "plan"
         ? "task numbers are assigned by the CLI for append"
+      : artifact === "health" && verb === "repair"
+        ? "repair is a destructive projection edit; select an existing duplicate audit and pass --force"
         : "number is assigned by the CLI; do not pass --number",
     "do not embed commit hashes; evidence belongs in the commit message (Decision 66)",
     "fold the artifact write into the implementation commit per AGENTS.md",
@@ -116,6 +118,7 @@ export function exampleFor(artifact: WritableArtifact, verb: string): string {
     return 'agentera state decisions update --number 1 --satisfaction-state provisionally_satisfied --satisfaction-evidence "..."';
   if (artifact === "decisions")
     return 'agentera state decisions append --question "..." --context "..." --alternative-chosen "..." --choice "..." --reasoning "..." --confidence firm';
+  if (artifact === "health" && verb === "repair") return "agentera state health repair --number 14 --keep first --force --format json";
   if (artifact === "health") return "agentera state health append --input audit.yaml --format json";
   if (verb === "create") return "agentera state plan create --input plan.yaml --format json";
   if (verb === "archive") return "agentera state plan archive --dry-run";

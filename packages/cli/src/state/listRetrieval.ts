@@ -20,6 +20,7 @@ import {
 import { decisionOverlayPath, loadDecisionOverlay } from "./decisionOverlay.js";
 import { loadProjectionPolicy, serializedProjectionBytes } from "./projectionPolicy.js";
 import { StateRetrievalFailure, type StateFailureClass } from "./directRetrieval.js";
+import { physicalCounts, provenanceCounts } from "./listAccounting.js";
 
 const CURSOR_VERSION = 1;
 const LIST_ORDER = "entry_number_desc";
@@ -37,16 +38,38 @@ export interface StateListOptions {
 
 interface CurrentIdentity {
   path: string;
+  rowKey: string;
+  origin: "active" | "summary";
+  identity: "canonical_number" | "explicit_decision_shorthand" | "unaddressable" | "ambiguous";
+  entryNumber: number | null;
   representation: "full" | "summary";
   record?: JsonObject;
   summary?: JsonValue;
   projectionHash: string;
 }
 
+interface PhysicalRow {
+  rowKey: string;
+  source: "current_projection" | "archive";
+  origin: "active" | "summary" | "numbered_archive" | "rejected_archive";
+  path: string;
+  identity: "canonical_number" | "explicit_decision_shorthand" | "unaddressable" | "ambiguous";
+  entryNumber: number | null;
+  representation: "full" | "summary" | "unavailable";
+  projectionHash: string;
+  record?: JsonObject;
+  summary?: JsonValue;
+  rejection?: ArchiveRejection;
+}
+
 interface ListCandidate {
-  stableId: string;
+  stableId: string | null;
   artifactId: string;
-  entryNumber: number;
+  entryNumber: number | null;
+  identity: PhysicalRow["identity"];
+  classification: "canonical" | "mirrored" | "duplicate" | "conflict" | "ambiguous" | "unaddressable" | "corrupt";
+  rows: PhysicalRow[];
+  sortKey: string;
   archive?: NumberedArchiveEntry;
   corruptArchive?: ArchiveRejection;
   current?: CurrentIdentity;
@@ -67,6 +90,9 @@ interface CursorPayload {
   snapshot_id: string;
   candidate_count: number;
   candidate_max: number;
+  candidate_start_key: string;
+  candidate_end_key: string;
+  after_key: string;
   after: number;
 }
 
@@ -111,19 +137,29 @@ function positiveNumber(value: unknown): number | null {
   return null;
 }
 
-function summaryNumber(value: unknown): number | null {
+function explicitIdentity(
+  value: unknown,
+  artifactId: string,
+  entryNumberField: string,
+): { number: number | null; kind: PhysicalRow["identity"] } {
   if (isMapping(value)) {
-    const explicit = positiveNumber(value.number);
-    if (explicit !== null) return explicit;
-    for (const child of Object.values(value)) {
-      const parsed = summaryNumber(child);
-      if (parsed !== null) return parsed;
-    }
-    return null;
+    const explicit = positiveNumber(value[entryNumberField]);
+    if (explicit !== null) return { number: explicit, kind: "canonical_number" };
+    const summary = value.summary;
+    if (typeof summary === "string") return explicitIdentity(summary, artifactId, entryNumberField);
+    return { number: null, kind: "unaddressable" };
   }
-  if (typeof value !== "string") return null;
-  const match = /^(?:Cycle|Decision|Audit)\s+([1-9][0-9]*)\b/.exec(value.trim());
-  return match ? positiveNumber(match[1]) : null;
+  if (typeof value !== "string") return { number: null, kind: "unaddressable" };
+  const text = value.trim();
+  if (artifactId === "decisions") {
+    const shorthand = [...text.matchAll(/\bD([1-9][0-9]*)\b/g)];
+    if (shorthand.length > 1) return { number: null, kind: "ambiguous" };
+    const shorthandMatch = /^D([1-9][0-9]*)\b/.exec(text);
+    if (shorthandMatch) return { number: positiveNumber(shorthandMatch[1]), kind: "explicit_decision_shorthand" };
+  }
+  const label = artifactId === "progress" ? "Cycle" : artifactId === "decisions" ? "Decision" : "Audit";
+  const match = new RegExp(`^${label}\\s+([1-9][0-9]*)\\b`).exec(text);
+  return match ? { number: positiveNumber(match[1]), kind: "canonical_number" } : { number: null, kind: "unaddressable" };
 }
 
 function compactSummary(value: unknown): JsonValue | undefined {
@@ -267,6 +303,9 @@ function parseCursor(
     payload.candidate_count < 1 ||
     !Number.isSafeInteger(payload.candidate_max) ||
     payload.candidate_max < 1 ||
+    typeof payload.candidate_start_key !== "string" ||
+    typeof payload.candidate_end_key !== "string" ||
+    typeof payload.after_key !== "string" ||
     !Number.isSafeInteger(payload.after) ||
     payload.after < 1 ||
     payload.after > payload.candidate_max + 1
@@ -285,7 +324,7 @@ function readCurrentProjection(
   artifactId: string,
   contract: NumberedArchiveContract,
   sourceRoot: string,
-): { path: string; exists: boolean; entries: Map<number, CurrentIdentity> } {
+): { path: string; exists: boolean; entries: CurrentIdentity[] } {
   const projectionPath = stateCurrentProjectionPath(projectRoot, artifactId, sourceRoot);
   try {
     assertRealpathBoundary(projectRoot, projectionPath, `${artifactId} projection`);
@@ -299,7 +338,7 @@ function readCurrentProjection(
   try {
     stat = fs.lstatSync(projectionPath);
   } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") return { path: projectionPath, exists: false, entries: new Map() };
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return { path: projectionPath, exists: false, entries: [] };
     throw listFailure(1, "corrupt", `cannot read current ${artifactId} projection`, artifactId, "Repair the current projection file and retry the list command.", { path: projectionPath });
   }
   if (stat.isSymbolicLink() || !stat.isFile()) {
@@ -317,46 +356,48 @@ function readCurrentProjection(
     throw listFailure(1, "corrupt", `current ${artifactId} projection is missing its '${contract.entryCollection}' collection`, artifactId, "Restore the declared current entry collection and retry the list command.", { path: projectionPath });
   }
 
-  const entries = new Map<number, CurrentIdentity>();
-  for (const candidate of collection) {
-    if (!isMapping(candidate)) continue;
-    const number = positiveNumber(candidate[contract.entryNumberField]);
-    if (number === null) continue;
-    if (entries.has(number)) {
-      throw listFailure(1, "ambiguous", `current ${artifactId} projection contains duplicate identity ${artifactId}:${number}`, artifactId, "Remove the duplicate current identity according to the artifact schema, then retry the list command.", { path: projectionPath });
-    }
+  const entries: CurrentIdentity[] = [];
+  for (const [index, candidate] of collection.entries()) {
+    const identity = explicitIdentity(candidate, artifactId, contract.entryNumberField);
     let representation: CurrentIdentity["representation"] = "summary";
-    try {
-      representation = validateStateRecord(sourceRoot, artifactId, candidate).length === 0 ? "full" : "summary";
-    } catch (error) {
-      throw listFailure(1, "unsupported_state", `current ${artifactId} projection could not be validated: ${(error as Error).message}`, artifactId, "Use a state schema supported by the storage authority, repair the current projection, then retry the list command.", { path: projectionPath });
+    if (isMapping(candidate)) {
+      try {
+        const violations = validateStateRecord(sourceRoot, artifactId, candidate);
+        representation = violations.every((violation) => /number|entry/i.test(violation)) ? "full" : violations.length === 0 ? "full" : "summary";
+      } catch (error) {
+        throw listFailure(1, "unsupported_state", `current ${artifactId} projection could not be validated: ${(error as Error).message}`, artifactId, "Use a state schema supported by the storage authority, repair the current projection, then retry the list command.", { path: projectionPath });
+      }
     }
     const current: CurrentIdentity = {
       path: projectionPath,
+      rowKey: `${projectionPath}#${contract.entryCollection}:${index}`,
+      origin: "active",
+      identity: identity.kind,
+      entryNumber: identity.number,
       representation,
-      ...(representation === "full" ? { record: candidate } : { summary: compactSummary(candidate) }),
+      ...(representation === "full" && isMapping(candidate) ? { record: candidate } : { summary: compactSummary(candidate) }),
       projectionHash: "",
     };
     current.projectionHash = projectionHash(current);
-    entries.set(number, current);
+    entries.push(current);
   }
 
   const archive = document.archive;
   if (Array.isArray(archive)) {
-    for (const candidate of archive) {
-      const number = summaryNumber(candidate);
-      if (number === null) continue;
-      if (entries.has(number)) {
-        throw listFailure(1, "ambiguous", `current ${artifactId} projection contains duplicate identity ${artifactId}:${number}`, artifactId, "Remove the duplicate current identity according to the artifact schema, then retry the list command.", { path: projectionPath });
-      }
+    for (const [index, candidate] of archive.entries()) {
+      const identity = explicitIdentity(candidate, artifactId, contract.entryNumberField);
       const current: CurrentIdentity = {
         path: projectionPath,
+        rowKey: `${projectionPath}#archive:${index}`,
+        origin: "summary",
+        identity: identity.kind,
+        entryNumber: identity.number,
         representation: "summary",
         summary: compactSummary(candidate),
         projectionHash: "",
       };
       current.projectionHash = projectionHash(current);
-      entries.set(number, current);
+      entries.push(current);
     }
   }
   return { path: projectionPath, exists: true, entries };
@@ -387,6 +428,73 @@ function rejectionNumber(rejected: ArchiveRejection, artifactId: string): number
   return match ? positiveNumber(match[1]) : null;
 }
 
+function rejectionBelongsToArtifact(rejected: ArchiveRejection, artifactId: string): boolean {
+  return rejected.path.includes(path.join(`${path.sep}${artifactId}`, ""));
+}
+
+function physicalRowFromCurrent(current: CurrentIdentity): PhysicalRow {
+  return {
+    rowKey: current.rowKey,
+    source: "current_projection",
+    origin: current.origin,
+    path: current.path,
+    identity: current.identity,
+    entryNumber: current.entryNumber,
+    representation: current.representation,
+    projectionHash: current.projectionHash,
+    ...(current.record ? { record: current.record } : {}),
+    ...(current.summary !== undefined ? { summary: current.summary } : {}),
+  };
+}
+
+function physicalRowFromArchive(entry: NumberedArchiveEntry): PhysicalRow {
+  return {
+    rowKey: entry.path,
+    source: "archive",
+    origin: "numbered_archive",
+    path: entry.path,
+    identity: "canonical_number",
+    entryNumber: entry.entryNumber,
+    representation: "full",
+    projectionHash: entry.recordSha256,
+    record: entry.record,
+  };
+}
+
+function physicalRowFromRejection(rejected: ArchiveRejection, entryNumber: number | null): PhysicalRow {
+  return {
+    rowKey: rejected.path,
+    source: "archive",
+    origin: "rejected_archive",
+    path: rejected.path,
+    identity: entryNumber === null ? "unaddressable" : "canonical_number",
+    entryNumber,
+    representation: "unavailable",
+    projectionHash: hashValue({ path: rejected.path, reason: rejected.reason, message: rejected.message }),
+    rejection: rejected,
+  };
+}
+
+function sortKey(artifactId: string, entryNumber: number | null, rowKey: string): string {
+  if (entryNumber !== null) {
+    const descending = String(Number.MAX_SAFE_INTEGER - entryNumber).padStart(16, "0");
+    return `0:${descending}:${artifactId}:${entryNumber}`;
+  }
+  return `1:${rowKey}`;
+}
+
+function candidateClassification(rows: PhysicalRow[]): ListCandidate["classification"] {
+  if (rows.some((row) => row.rejection)) return "corrupt";
+  if (rows.some((row) => row.identity === "ambiguous")) return "ambiguous";
+  const comparable = rows.filter((row) => row.representation === "full");
+  if (new Set(comparable.map((row) => row.projectionHash)).size > 1) return "conflict";
+  const currentRows = rows.filter((row) => row.source === "current_projection");
+  const archiveRows = rows.filter((row) => row.source === "archive" && row.origin === "numbered_archive");
+  if (archiveRows.length > 0 && currentRows.length > 0 && currentRows.length === 1) return "mirrored";
+  if (rows.length > 1) return "duplicate";
+  return "canonical";
+}
+
 function buildCandidates(
   projectRoot: string,
   artifactId: string,
@@ -395,41 +503,58 @@ function buildCandidates(
 ): { candidates: ListCandidate[]; projection: { path: string; exists: boolean }; rejected: ArchiveRejection[] } {
   const current = readCurrentProjection(projectRoot, artifactId, contract, sourceRoot);
   const discovery = discoverNumberedArchives(projectRoot, { sourceRoot, artifactId });
-  const archive = new Map<number, NumberedArchiveEntry>();
-  for (const entry of discovery.entries) {
-    if (entry.artifactId === artifactId) archive.set(entry.entryNumber, entry);
-  }
-  const rejectedByNumber = new Map<number, ArchiveRejection>();
-  for (const rejected of discovery.rejected) {
-    const number = rejectionNumber(rejected, artifactId);
-    if (number !== null) rejectedByNumber.set(number, rejected);
-  }
+  const grouped = new Map<number, { rows: PhysicalRow[]; archive?: NumberedArchiveEntry; corruptArchive?: ArchiveRejection }>();
+  const unaddressable: PhysicalRow[] = [];
+  const addRow = (row: PhysicalRow, archive?: NumberedArchiveEntry, corruptArchive?: ArchiveRejection): void => {
+    if (row.entryNumber === null || row.identity === "ambiguous") {
+      unaddressable.push(row);
+      return;
+    }
+    const group = grouped.get(row.entryNumber) ?? { rows: [] };
+    group.rows.push(row);
+    if (archive) group.archive = archive;
+    if (corruptArchive) group.corruptArchive = corruptArchive;
+    grouped.set(row.entryNumber, group);
+  };
 
-  const numbers = new Set<number>([...archive.keys(), ...current.entries.keys(), ...rejectedByNumber.keys()]);
+  for (const entry of discovery.entries) addRow(physicalRowFromArchive(entry), entry);
+  for (const rejected of discovery.rejected) {
+    if (!rejectionBelongsToArtifact(rejected, artifactId)) continue;
+    const number = rejectionNumber(rejected, artifactId);
+    addRow(physicalRowFromRejection(rejected, number), undefined, number === null ? undefined : rejected);
+  }
+  for (const entry of current.entries) addRow(physicalRowFromCurrent(entry));
+
   const candidates: ListCandidate[] = [];
-  for (const entryNumber of numbers) {
+  for (const [entryNumber, group] of grouped) {
+    const rows = group.rows;
+    const currentRow = rows.find((row) => row.source === "current_projection");
+    const identity = rows.find((row) => row.identity === "explicit_decision_shorthand")?.identity ?? "canonical_number";
     candidates.push({
       stableId: `${artifactId}:${entryNumber}`,
       artifactId,
       entryNumber,
-      archive: archive.get(entryNumber),
-      corruptArchive: rejectedByNumber.get(entryNumber),
-      current: current.entries.get(entryNumber),
+      identity,
+      classification: candidateClassification(rows),
+      rows,
+      sortKey: sortKey(artifactId, entryNumber, rows[0]?.rowKey ?? ""),
+      ...(group.archive ? { archive: group.archive } : {}),
+      ...(group.corruptArchive ? { corruptArchive: group.corruptArchive } : {}),
+      ...(currentRow ? { current: current.entries.find((entry) => entry.rowKey === currentRow.rowKey) } : {}),
     });
   }
-  candidates.sort((left, right) => right.entryNumber - left.entryNumber || left.stableId.localeCompare(right.stableId));
-  for (const candidate of candidates) {
-    if (candidate.archive && candidate.current?.representation === "full") {
-      const currentRecord = candidate.current.record;
-      if (currentRecord && canonicalRecordJson(currentRecord) !== canonicalRecordJson(candidate.archive.record)) {
-        throw listFailure(1, "immutable_conflict", `state ${artifactId}:${candidate.entryNumber} differs between archive and current projection`, artifactId, "Preserve the immutable archive and reconcile the conflicting current record, then retry the list command.", {
-          stable_id: candidate.stableId,
-          archive_path: candidate.archive.path,
-          current_projection_path: candidate.current.path,
-        });
-      }
-    }
+  for (const row of unaddressable) {
+    candidates.push({
+      stableId: null,
+      artifactId,
+      entryNumber: null,
+      identity: row.identity,
+      classification: row.rejection ? "corrupt" : row.identity === "ambiguous" ? "ambiguous" : "unaddressable",
+      rows: [row],
+      sortKey: sortKey(artifactId, null, row.rowKey),
+    });
   }
+  candidates.sort((left, right) => left.sortKey.localeCompare(right.sortKey));
   return { candidates, projection: { path: current.path, exists: current.exists }, rejected: discovery.rejected };
 }
 
@@ -441,7 +566,7 @@ function stringValues(value: unknown): string[] {
 }
 
 function matchesFilter(candidate: ListCandidate, filters: StateListFilters): boolean {
-  const value = candidate.archive?.record ?? candidate.current?.record ?? candidate.current?.summary;
+  const value = candidate.archive?.record ?? candidate.current?.record ?? candidate.current?.summary ?? candidate.rows[0]?.summary;
   if (filters.topic && !stringValues(value).some((item) => item.toLowerCase().includes(filters.topic!.toLowerCase()))) return false;
   if (filters.status) {
     const record = isMapping(value) ? value : {};
@@ -485,15 +610,22 @@ function snapshotId(candidates: ListCandidate[], artifactId: string, filters: Js
     overlay_revision: overlayRevision,
     candidates: candidates.map((candidate) => ({
       stable_id: candidate.stableId,
-      archive_hash: candidate.archive?.recordSha256 ?? null,
-      legacy_projection_hash: candidate.archive ? null : candidate.current?.projectionHash ?? null,
+      sort_key: candidate.sortKey,
+      physical_rows: candidate.rows.map((row) => ({
+        row_key: row.rowKey,
+        source: row.source,
+        identity: row.identity,
+        entry_number: row.entryNumber,
+        hash: row.projectionHash,
+        rejection: row.rejection?.reason ?? null,
+      })),
     })),
   };
   return hashValue(identity as unknown as JsonObject);
 }
 
 function overlayFields(overlay: OverlayState | null, stableId: string): string[] {
-  if (!overlay?.document[stableId]) return [];
+  if (!overlay || !overlay.document[stableId]) return [];
   const selected = overlay.document[stableId];
   return overlay.mutablePaths.filter((field) => {
     let value: unknown = selected;
@@ -506,7 +638,7 @@ function overlayFields(overlay: OverlayState | null, stableId: string): string[]
 }
 
 function recordStatus(candidate: ListCandidate, overlay: OverlayState | null): string {
-  if (overlay) {
+  if (overlay && candidate.stableId !== null) {
     const selected = overlay.document[candidate.stableId];
     const state = isMapping(selected?.satisfaction) ? selected.satisfaction.state : undefined;
     if (typeof state === "string") return state;
@@ -522,20 +654,38 @@ function recordStatus(candidate: ListCandidate, overlay: OverlayState | null): s
 }
 
 function listEntry(candidate: ListCandidate, overlay: OverlayState | null, projectRoot: string, contract: NumberedArchiveContract): JsonObject {
-  const archivePath = path.join(path.resolve(projectRoot), contract.archiveRoot, candidate.artifactId, `${candidate.entryNumber}${contract.archiveExtension}`);
+  const archivePath = candidate.archive?.path ?? candidate.corruptArchive?.path ?? path.join(path.resolve(projectRoot), contract.archiveRoot, candidate.artifactId, `${candidate.entryNumber ?? "unaddressable"}${contract.archiveExtension}`);
   const hasArchive = candidate.archive !== undefined;
   const currentStatus = candidate.current ? (candidate.current.representation === "full" ? "active" : "summary") : "archive_only";
   const source = hasArchive ? "archive" : candidate.corruptArchive ? "archive" : candidate.current?.representation === "full" ? "legacy_full" : "legacy_summary";
-  const detailAvailability = hasArchive ? "full" : candidate.current?.representation === "full" ? "full" : candidate.current ? "summary" : "unavailable";
-  const fields = overlayFields(overlay, candidate.stableId);
+  const detailAvailability = hasArchive ? "full" : candidate.current?.representation === "full" ? "full" : candidate.current ? "summary" : candidate.rows[0]?.representation ?? "unavailable";
+  const fields = overlayFields(overlay, candidate.stableId ?? "");
+  const addressable = candidate.stableId !== null;
+  const physicalRows = candidate.rows.map((row) => ({
+    row_id: row.rowKey,
+    source: row.source,
+    origin: row.origin,
+    path: row.path,
+    identity: row.identity,
+    entry_number: row.entryNumber,
+    representation: row.representation,
+    ...(row.rejection ? { rejection: row.rejection.reason } : {}),
+  }));
   const entry: JsonObject = {
     stable_id: candidate.stableId,
     artifact_id: candidate.artifactId,
     entry_number: candidate.entryNumber,
+    addressable,
+    identity: candidate.identity,
+    classification: candidate.classification,
+    physical_count: candidate.rows.length,
+    cursor_key: candidate.sortKey,
     current_status: currentStatus,
     detail_availability: detailAvailability,
     source,
-    compatibility: hasArchive && !candidate.corruptArchive ? "complete" : "degraded",
+    compatibility: candidate.classification === "conflict" || candidate.classification === "ambiguous" || candidate.classification === "corrupt"
+      ? "blocked"
+      : hasArchive && !candidate.corruptArchive ? "complete" : "degraded",
     record_status: recordStatus(candidate, overlay),
     provenance: {
       archive: {
@@ -550,10 +700,13 @@ function listEntry(candidate: ListCandidate, overlay: OverlayState | null, proje
         present: candidate.current !== undefined,
         representation: candidate.current?.representation ?? "missing",
       },
+      physical_rows: physicalRows,
     },
-    retrieval: { command: `agentera state ${candidate.artifactId} get --number ${candidate.entryNumber} --format json` },
+    ...(addressable
+      ? { retrieval: { command: `agentera state ${candidate.artifactId} get --number ${candidate.entryNumber} --format json`, available: candidate.classification !== "conflict" && candidate.classification !== "ambiguous" && candidate.classification !== "corrupt" } }
+      : { retrieval: { available: false, reason: "unaddressable", message: "No stable ID was inferred from this physical row; list output is the only supported view." } }),
   };
-  if (overlay) {
+  if (overlay && addressable) {
     entry.overlay_applied = fields.length > 0;
     entry.provenance = {
       ...(entry.provenance as JsonObject),
@@ -564,17 +717,6 @@ function listEntry(candidate: ListCandidate, overlay: OverlayState | null, proje
   const summary = compactSummary(sourceValue);
   if (summary !== undefined) entry.summary = summary;
   return entry;
-}
-
-function provenanceCounts(candidates: ListCandidate[], entries: JsonObject[]): JsonObject {
-  const counts: JsonObject = { archive: 0, legacy_full: 0, legacy_summary: 0, unavailable: 0 };
-  for (const entry of entries) {
-    const source = String(entry.source ?? "unavailable");
-    if (source in counts) counts[source] = Number(counts[source]) + 1;
-    else counts.unavailable = Number(counts.unavailable) + 1;
-  }
-  counts.candidate_count = candidates.length;
-  return counts;
 }
 
 function textList(value: JsonObject): string {
@@ -620,7 +762,7 @@ function omissionMetadata(
     omitted_count: count,
     omission_reason: "list_output_byte_budget",
     retrieval: { available: true, command: `agentera ${command} [--cursor TOKEN] --format json` },
-    omission_provenance: provenanceCounts([], entries),
+    omission_provenance: provenanceCounts(entries),
   };
 }
 
@@ -663,15 +805,16 @@ export function listStateEntries(
   const overlayRevision = overlay?.revision ?? "not_applicable";
   const currentSnapshotId = snapshotId(allCandidates, artifactId, normalizedFilters, overlayRevision);
   let snapshotCandidates = allCandidates;
-  let after = 0;
   let firstPage = parsed === null;
   if (parsed) {
-    const oldCandidates = allCandidates.filter((candidate) => candidate.entryNumber <= parsed.payload.candidate_max);
+    const oldCandidates = allCandidates.filter(
+      (candidate) => candidate.sortKey >= parsed.payload.candidate_start_key && candidate.sortKey <= parsed.payload.candidate_end_key,
+    );
     const oldSnapshotId = snapshotId(oldCandidates, artifactId, normalizedFilters, overlayRevision);
     if (
       oldSnapshotId !== parsed.payload.snapshot_id ||
       oldCandidates.length !== parsed.payload.candidate_count ||
-      (oldCandidates.length > 0 && oldCandidates[0].entryNumber !== parsed.payload.candidate_max)
+      (oldCandidates.length > 0 && oldCandidates[0].sortKey !== parsed.payload.candidate_start_key)
     ) {
       throw listFailure(1, "cursor_snapshot_unavailable", `cursor snapshot for state ${artifactId} is no longer available; an existing candidate changed or disappeared`, artifactId, "Start a new listing without --cursor to establish a current snapshot.", {
         snapshot_id: parsed.payload.snapshot_id,
@@ -679,18 +822,16 @@ export function listStateEntries(
       });
     }
     snapshotCandidates = oldCandidates;
-    after = parsed.payload.after;
     firstPage = false;
   }
   const snapshot = snapshotId(snapshotCandidates, artifactId, normalizedFilters, overlayRevision);
-  if (!parsed && snapshotCandidates.length === 0) {
-    after = 0;
-  }
-  const pageCandidates = parsed ? snapshotCandidates.filter((candidate) => candidate.entryNumber < after) : snapshotCandidates;
+  const pageCandidates = parsed ? snapshotCandidates.filter((candidate) => candidate.sortKey > parsed.payload.after_key) : snapshotCandidates;
   const selected = pageCandidates.slice(0, limit);
   const rows = selected.map((candidate) => listEntry(candidate, overlay, projectRoot, contract));
   const remaining = pageCandidates.length - selected.length;
-  const nextAfter = selected.length > 0 ? selected[selected.length - 1].entryNumber : parsed?.payload.after ?? (snapshotCandidates[0]?.entryNumber ?? 1) + 1;
+  const nextAfterCandidate = selected.at(-1);
+  const nextAfterKey = nextAfterCandidate?.sortKey ?? parsed?.payload.after_key ?? "";
+  const nextAfter = nextAfterCandidate?.entryNumber ?? parsed?.payload.after ?? 1;
   const nextCursor = remaining > 0
     ? encodeCursor(
         {
@@ -701,6 +842,9 @@ export function listStateEntries(
           snapshot_id: snapshot,
           candidate_count: snapshotCandidates.length,
           candidate_max: snapshotCandidates[0]?.entryNumber ?? 1,
+          candidate_start_key: snapshotCandidates[0]?.sortKey ?? "",
+          candidate_end_key: snapshotCandidates.at(-1)?.sortKey ?? "",
+          after_key: nextAfterKey,
           after: nextAfter,
         },
         projectRoot,
@@ -712,14 +856,21 @@ export function listStateEntries(
     const state = candidate.current ? (candidate.current.representation === "full" ? "active" : "summary") : "archive_only";
     rowCounts[state] += 1;
   }
+  const allPhysicalCounts = physicalCounts(snapshotCandidates);
+  const selectedPhysical = selected.reduce((total, candidate) => total + candidate.rows.length, 0);
+  const blocked = snapshotCandidates.some((candidate) => ["conflict", "ambiguous", "corrupt"].includes(candidate.classification));
+  const degraded = snapshotCandidates.some((candidate) => candidate.classification !== "canonical" || !candidate.archive);
   return {
     command: `state ${artifactId} list`,
-    status: built.rejected.length > 0 ? "degraded" : "ok",
+    status: built.rejected.length > 0 || degraded ? "degraded" : "ok",
     entries: rows,
     counts: {
       total: snapshotCandidates.length,
       returned: rows.length,
       remaining,
+      ...allPhysicalCounts,
+      returned_physical: selectedPhysical,
+      omitted: Math.max(0, Number(allPhysicalCounts.physical ?? 0) - selectedPhysical),
       active: rowCounts.active,
       summary: rowCounts.summary,
       archive_only: rowCounts.archive_only,
@@ -727,7 +878,7 @@ export function listStateEntries(
     source: {
       artifact: artifactId,
       current_projection: { path: built.projection.path, exists: built.projection.exists },
-      archive: { root: path.join(path.resolve(projectRoot), contract.archiveRoot, artifactId), validated_entries: snapshotCandidates.filter((candidate) => candidate.archive).length, rejected_count: built.rejected.length },
+       archive: { root: path.join(path.resolve(projectRoot), contract.archiveRoot, artifactId), validated_entries: snapshotCandidates.reduce((count, candidate) => count + candidate.rows.filter((row) => row.origin === "numbered_archive").length, 0), rejected_count: built.rejected.length },
     },
     filters: normalizedFilters,
     snapshot: {
@@ -737,13 +888,15 @@ export function listStateEntries(
       has_more: remaining > 0,
       candidate_count: snapshotCandidates.length,
       candidate_max: snapshotCandidates[0]?.entryNumber ?? 0,
+      candidate_start_key: snapshotCandidates[0]?.sortKey ?? "",
+      candidate_end_key: snapshotCandidates.at(-1)?.sortKey ?? "",
       page_start: parsed?.payload.after ?? (snapshotCandidates[0]?.entryNumber ?? 0) + 1,
       append_behavior: "entries appended after this snapshot are excluded",
     },
     source_contract: {
       authority: LIST_AUTHORITY,
-      compatibility: built.candidates.some((candidate) => !candidate.archive) ? "degraded" : "complete",
-      detail: "Rows identify active, summary, and archive-only representations without reconstructing missing fields.",
+      compatibility: blocked ? "blocked" : degraded ? "degraded" : "complete",
+      detail: "Rows preserve explicit canonical numbers and decision Dnn shorthand. Unaddressable rows remain list-only; mirrors, duplicates, conflicts, and ambiguity are classified without inferred identity.",
       retrieval: `agentera state ${artifactId} get --number N --format json`,
       cursor: "opaque; bound to artifact, filters, order, candidate identity, archive hashes, and overlay revision",
     },
@@ -771,8 +924,10 @@ export function boundStateList(
     const artifactId = String(response.source.artifact ?? "state");
     const candidateMax = Number(snapshot.candidate_max ?? 0);
     const candidateCount = Number(snapshot.candidate_count ?? response.counts.total ?? 0);
-    const lastNumber = entries.length > 0 ? positiveNumber(String(entries.at(-1)?.entry_number)) : null;
-    const continuation = omittedRows > 0 && lastNumber !== null
+    const lastEntry = entries.at(-1);
+    const lastNumber = lastEntry ? positiveNumber(String(lastEntry.entry_number)) : null;
+    const lastKey = typeof lastEntry?.cursor_key === "string" ? lastEntry.cursor_key : null;
+    const continuation = omittedRows > 0 && lastKey !== null
       ? encodeCursor(
           {
             version: CURSOR_VERSION,
@@ -782,7 +937,10 @@ export function boundStateList(
             snapshot_id: String(snapshot.id),
             candidate_count: candidateCount,
             candidate_max: candidateMax,
-            after: lastNumber,
+            candidate_start_key: String(snapshot.candidate_start_key ?? ""),
+            candidate_end_key: String(snapshot.candidate_end_key ?? ""),
+            after_key: lastKey,
+            after: lastNumber ?? 1,
           },
           projectRoot,
           sourceRoot,
@@ -798,6 +956,8 @@ export function boundStateList(
         ...response.counts,
         returned: entries.length,
         remaining: Number(response.counts.remaining ?? 0) + omittedRows,
+        returned_physical: entries.reduce((total, entry) => total + Number(entry.physical_count ?? 1), 0),
+        omitted: Math.max(0, Number(response.counts.physical ?? response.counts.total ?? 0) - entries.reduce((total, entry) => total + Number(entry.physical_count ?? 1), 0)),
       },
       snapshot: { ...snapshot, has_more: continuation !== undefined },
       ...(optionalDetailOmitted + omittedRows > 0

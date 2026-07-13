@@ -57,6 +57,13 @@ function writeProjection(root: string, cycles: Array<Record<string, unknown>>, a
   fs.writeFileSync(target, YAML.stringify({ cycles, archive }));
 }
 
+function writeArtifactProjection(root: string, artifact: "decisions" | "health", entries: unknown[], archive: unknown[] = []): void {
+  const target = path.join(root, ".agentera", `${artifact}.yaml`);
+  const collection = artifact === "decisions" ? "decisions" : "audits";
+  fs.mkdirSync(path.dirname(target), { recursive: true });
+  fs.writeFileSync(target, YAML.stringify({ [collection]: entries, archive }));
+}
+
 function writeSummaryProjection(root: string, count: number): void {
   writeProjection(
     root,
@@ -317,6 +324,92 @@ describe("snapshot-stable state listing", () => {
     ]);
     expect(response.entries.every((entry) => (entry as Record<string, unknown>).source === "legacy_summary")).toBe(true);
     expect(response.entries.every((entry) => (entry as Record<string, unknown>).detail_availability === "summary")).toBe(true);
+  });
+
+  it("keeps explicit Dnn shorthand addressable and staging rows list-only", () => {
+    const root = project();
+    writeArtifactProjection(root, "decisions", [], [
+      "D76 (2026-06-30, routing): explicit decision shorthand",
+      "Staging D3+D4 (2026-06-05): merged staging material",
+      "staging note without an identity",
+    ]);
+
+    const response = listStateEntries(root, "decisions", 10, {}, undefined, { sourceRoot });
+    expect(response.entries).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          stable_id: "decisions:76",
+          entry_number: 76,
+          addressable: true,
+          identity: "explicit_decision_shorthand",
+          classification: "canonical",
+        }),
+        expect.objectContaining({
+          stable_id: null,
+          entry_number: null,
+          addressable: false,
+          identity: "ambiguous",
+          classification: "ambiguous",
+        }),
+        expect.objectContaining({
+          stable_id: null,
+          entry_number: null,
+          addressable: false,
+          identity: "unaddressable",
+          classification: "unaddressable",
+        }),
+      ]),
+    );
+    expect(response.counts).toMatchObject({
+      physical: 3,
+      addressable: 1,
+      addressable_ids: 1,
+      unaddressable: 1,
+      ambiguous: 1,
+      omitted: 0,
+    });
+
+    const page1 = listStateEntries(root, "decisions", 1, {}, undefined, { sourceRoot });
+    const page2 = listStateEntries(root, "decisions", 1, {}, page1.next_cursor, { sourceRoot });
+    const page3 = listStateEntries(root, "decisions", 1, {}, page2.next_cursor, { sourceRoot });
+    expect([...page1.entries, ...page2.entries, ...page3.entries].map((entry) => (entry as Record<string, unknown>).stable_id)).toEqual([
+      "decisions:76",
+      null,
+      null,
+    ]);
+    expect(page3.next_cursor).toBeUndefined();
+  });
+
+  it("classifies exact mirrors, duplicate rows, and conflicting versions without selecting one", () => {
+    const root = project();
+    const mirrored = cycle(5);
+    archive(root, 5);
+    writeProjection(root, [mirrored, mirrored, cycle(6, "conflicting current row")]);
+    archive(root, 6, "archive version");
+
+    const response = listStateEntries(root, "progress", 10, {}, undefined, { sourceRoot });
+    expect(response.entries).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ stable_id: "progress:5", classification: "duplicate", physical_count: 3 }),
+        expect.objectContaining({ stable_id: "progress:6", classification: "conflict", physical_count: 2 }),
+      ]),
+    );
+    expect(response.counts).toMatchObject({
+      physical: 5,
+      addressable: 5,
+      addressable_ids: 2,
+      canonical: 2,
+      mirrored: 1,
+      duplicate: 1,
+      conflict: 1,
+      unaddressable: 0,
+      ambiguous: 0,
+      omitted: 0,
+    });
+    expect(response.entries.find((entry) => (entry as Record<string, unknown>).stable_id === "progress:6")).toMatchObject({
+      retrieval: { available: false },
+      compatibility: "blocked",
+    });
   });
 
   it("ignores unrelated archive directories when listing one artifact", () => {

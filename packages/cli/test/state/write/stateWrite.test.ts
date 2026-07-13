@@ -339,6 +339,40 @@ describe("state writer discovery and progress", () => {
     expect(fs.existsSync(path.join(root, ".agentera", "archive", "progress", "1.yaml"))).toBe(true);
   });
 
+  it("repairs duplicate health history through the validated writer without appending an audit", () => {
+    const root = project();
+    const target = path.join(root, ".agentera", "health.yaml");
+    const audit = { number: 20, ...validAudit() };
+    fs.mkdirSync(path.dirname(target), { recursive: true });
+    fs.writeFileSync(
+      target,
+      dumpYamlMapping({
+        audits: [audit],
+        archive: [
+          "Audit 14 (2026-04-26): canonical history",
+          "Audit 14 (2026-04-26): duplicate history",
+          "Audit 13 (2026-04-25): unrelated history",
+        ],
+      }),
+    );
+    const before = loadYamlMapping(fs.readFileSync(target, "utf8"));
+    const dry = run(root, ["health", "repair", "--number", "14", "--keep", "first", "--force", "--dry-run", "--format", "json"]);
+    expect(dry.rc).toBe(0);
+    expect(loadYamlMapping(fs.readFileSync(target, "utf8"))).toEqual(before);
+
+    const repaired = run(root, ["health", "repair", "--number", "14", "--keep", "first", "--force", "--format", "json"]);
+    expect(repaired.rc).toBe(0);
+    const after = loadYamlMapping(fs.readFileSync(target, "utf8"));
+    expect(after.audits).toEqual([audit]);
+    expect(after.archive).toEqual([
+      "Audit 14 (2026-04-26): canonical history",
+      "Audit 13 (2026-04-25): unrelated history",
+    ]);
+    expect((repaired.json?.written as Record<string, unknown>)?.removed_rows).toBe(1);
+    expect((repaired.json?.state as Record<string, unknown>)?.next_number).toBe(21);
+    expect(new ArtifactSchemaValidator().validateExplicit("health", target, root)).toEqual([]);
+  });
+
   it("recovers the original number when projection publication stops after archive publication", () => {
     const root = project();
     const target = path.join(root, ".agentera", "progress.yaml");

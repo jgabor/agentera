@@ -42,7 +42,7 @@ tasks:
     name: Repair exhaustive snapshot cursor traversal
     depends_on:
       []
-    status: pending
+    status: complete
     acceptance:
       - GIVEN a bounded snapshot with more addressable rows WHEN every returned cursor is followed THEN each snapshot identity appears exactly once and traversal terminates.
       - GIVEN a page whose normal envelope exceeds its serializer budget WHEN fallback runs THEN the response either emits an advancing row page or a terminal failure that does not promise omitted traversal.

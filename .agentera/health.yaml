@@ -1271,8 +1271,6 @@ archive:
   - summary: "Audit 14 (2026-04-26): stable vs Audit 13. Cross-Runtime Portability
       landed the AGENTERA_HOME contract cleanly across SPEC, OpenCode,
       Codex,..."
-  - summary: "Audit 14 (2026-04-26): stable vs Audit 13; cross-runtime AGENTERA_HOME
-      landed at 1.20.0; Freshness B (DOCS Index drift); all other dimensions A."
   - summary: "Audit 13 (2026-04-25): stable vs Audit 12. Copilot marketplace plan
       preserved evidence boundaries; all dimensions graded A."
   - summary: "Audit 12 (2026-04-25): ⮉ improving vs Audit 11. Audit 11 cleanup
