@@ -20,7 +20,7 @@ import {
   yamlArchiveEntries,
 } from "./retention.js";
 import { CompactResult, CompactionOperation, CompactionStatus } from "./types.js";
-import { compactFile, compactYamlFile } from "./apply.js";
+import { compactFile, compactYamlBytes, compactYamlFile } from "./apply.js";
 import { countTodoResolvedEntries, parseEntries } from "./parse.js";
 import { YAML_SPEC_BY_ARTIFACT } from "./dryRun.js";
 import {
@@ -30,6 +30,7 @@ import {
   withStateMutation,
 } from "../../state/write/mutation.js";
 import { hydrateDecisionRecords } from "../../state/decisionOverlay.js";
+import type { ProjectionRecoveryReport } from "../../state/archiveRecovery.js";
 
 function artifactPaths(projectRoot: string): Record<string, string> {
   const paths: Record<string, string> = { ...DEFAULT_ARTIFACT_PATHS };
@@ -97,6 +98,7 @@ function countStatus(
   archiveCount: number,
   protectedOverflowCount = 0,
   budgetActiveCount?: number,
+  projectionRecovery?: ProjectionRecoveryReport,
 ): CompactionStatus {
   const totalCount = activeCount + archiveCount;
   const budgetActive = budgetActiveCount ?? activeCount;
@@ -111,7 +113,20 @@ function countStatus(
     reason: protectedOverflowCount ? "protected-overflow review pressure" : "uniform_10_40_50",
     protected_overflow_count: protectedOverflowCount,
     exists: true,
+    ...(projectionRecovery ? { projection_recovery: projectionRecovery } : {}),
   };
+}
+
+function projectionRecoveryFor(
+  projectRoot: string,
+  artifact: string,
+  p: string,
+): ProjectionRecoveryReport | undefined {
+  try {
+    return compactYamlBytes(fs.readFileSync(p, "utf8"), artifact, projectRoot).result.recovery;
+  } catch {
+    return undefined;
+  }
 }
 
 export function computeCompactionStatus(projectRoot: string): CompactionStatus[] {
@@ -148,7 +163,17 @@ export function computeCompactionStatus(projectRoot: string): CompactionStatus[]
         artifact === "decisions"
           ? decisionSatisfiedActiveCount(hydrateDecisionRecords(active, projectRoot))
           : undefined;
-      statuses.push(countStatus(artifact, p, active.length, archive.length, protectedOverflowCount, budgetActiveCount));
+       statuses.push(
+         countStatus(
+           artifact,
+           p,
+           active.length,
+           archive.length,
+           protectedOverflowCount,
+           budgetActiveCount,
+           projectionRecoveryFor(projectRoot, artifact, p),
+         ),
+       );
     } else {
       statuses.push(missingStatus(artifact, p, "compactable"));
     }
@@ -221,6 +246,12 @@ function operationForStatus(status: CompactionStatus, mode: string): CompactionO
   if (status.classification !== "compactable") return base("skipped", status.reason);
   if (status.protected_overflow_count) {
     return base("protected_overflow", `protected-overflow review pressure by ${status.protected_overflow_count}`);
+  }
+  if (status.projection_recovery?.refused_count) {
+    return base(
+      "refused",
+      `projection retained ${status.projection_recovery.retained_full} full entr${status.projection_recovery.retained_full === 1 ? "y" : "ies"}; archive recovery is required before summarization`,
+    );
   }
   if (!status.over_limit_count) return base("ok", "within uniform_10_40_50 limits");
   return base(

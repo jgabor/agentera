@@ -1,0 +1,18 @@
+schemaVersion: agentera.stateArchiveEntry.v1
+artifact_id: progress
+entry_number: 755
+record:
+  number: 755
+  timestamp: 2026-07-13 13:34
+  type: feat
+  phase: build
+  what: Gated automatic and explicit projection summaries on verified numbered archives
+  inspiration: Active lossless archive-backed state storage plan Task 6 and the archive-before-projection transaction from Task 4
+  discovered: A full entry is now summarized only after its numbered archive is discovered, schema-validated, hash-verified, and content-matched; absent, corrupt, conflicting, and unsupported archive states retain full detail and expose structured stateFailure metadata
+  verified: "Focused recovery, compaction, validation-hook, and writer tests: 96 passed. Full pnpm -C packages/cli test: 167 files and 1630 tests passed. pnpm -C packages/cli run typecheck passed; pnpm -C packages/cli build passed; capability-contract and progress/decisions/health artifact validation passed; check compact passed before this append with zero over-limit and protected-overflow counts"
+  next: Task 6 remains pending for evaluator review; preserve any post-append over-limit refusal for unverified pre-archive entries. Task 7 owns projection policy and limit removal; do not broaden into get, list, migration, Git, or release work
+  context:
+    intent: Execute active plan Task 6 without closing the task or redesigning projection policy
+    constraints: No health, vision, profile, decision satisfaction, user confirmation, TODO, version, publish, push, tag, or Task 6 completion changes
+    scope: packages/cli/src/state/archiveRecovery.ts; packages/cli/src/hooks/compaction/apply.ts; packages/cli/src/hooks/compaction/types.ts; packages/cli/src/cli/commands/compact.ts; archive recovery and compaction tests; .agentera/plan.yaml; .agentera/progress.yaml
+record_sha256: 0951acf4ae85f4662fbbab866c148f29ce0ddb6c830f4cbd1e609702f3006b91

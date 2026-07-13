@@ -3,6 +3,8 @@
  * status reporting, the apply writers, and the CLI consumers.
  */
 
+import type { ProjectionRecoveryReport } from "../../state/archiveRecovery.js";
+
 export interface CompactResult {
   full_before: number;
   oneline_before: number;
@@ -11,6 +13,7 @@ export interface CompactResult {
   dropped: number;
   changed: boolean;
   protected_overflow_count?: number;
+  recovery?: ProjectionRecoveryReport;
 }
 
 export interface CompactionStatus {
@@ -24,6 +27,7 @@ export interface CompactionStatus {
   reason: string;
   protected_overflow_count: number | null;
   exists: boolean;
+  projection_recovery?: ProjectionRecoveryReport;
 }
 
 export interface CompactionOperation {

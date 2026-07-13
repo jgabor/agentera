@@ -17,6 +17,7 @@ import {
 import { MAX_FULL_ENTRIES, MAX_TOTAL_ENTRIES } from "../../src/hooks/common.js";
 import { cleanupFixtureProject, useFixtureProject } from "../helpers/useFixtureProject.js";
 import { InjectedMutationFailure } from "../../src/state/write/mutation.js";
+import { publishNumberedArchive } from "../../src/state/archivePublication.js";
 
 let tmp: string;
 const fixtureRoots: string[] = [];
@@ -47,6 +48,7 @@ function writeProgressYaml(dir: string, cycleCount: number, archiveCount = 0): s
     summary: `Cycle ${i + 1} (2026-01-01): archived ${i + 1}`,
   }));
   fs.writeFileSync(p, YAML.stringify({ cycles, archive }));
+  for (const cycle of cycles) publishNumberedArchive(dir, "progress", cycle.number, cycle);
   return p;
 }
 
@@ -127,10 +129,27 @@ describe("compactYamlFile", () => {
   it("keeps the newest cycles up to cap and archives the rest", () => {
     const cycles = Array.from({ length: 25 }, (_, i) => {
       const n = i + 1;
-      return `- number: ${n}\n  timestamp: '2026-01-${String(n).padStart(2, "0")} 10:00'\n  type: feat\n  what: Did work ${n}\n  phase: build`;
+      return {
+        number: n,
+        timestamp: `2026-01-${String(n).padStart(2, "0")} 10:00`,
+        type: "feat",
+        phase: "build",
+        what: `Did work ${n}`,
+        context: { intent: `Test cycle ${n}` },
+      };
     });
     const p = path.join(tmp, "progress.yaml");
-    fs.writeFileSync(p, "cycles:\n" + cycles.join("\n") + "\n");
+    fs.writeFileSync(p, YAML.stringify({ cycles }));
+    for (let n = 1; n <= 25; n++) {
+      publishNumberedArchive(tmp, "progress", n, {
+        number: n,
+        timestamp: `2026-01-${String(n).padStart(2, "0")} 10:00`,
+        type: "feat",
+        phase: "build",
+        what: `Did work ${n}`,
+        context: { intent: `Test cycle ${n}` },
+      });
+    }
 
     const result = compactYamlFile(p, "progress");
     expect(result.changed).toBe(true);
@@ -160,9 +179,14 @@ describe("compactYamlFile decisions archive ordering", () => {
       number: n,
       date: `2026-01-${String((n % 28) + 1).padStart(2, "0")}`,
       question: `Should we do thing ${n}?`,
+      context: `The project needs decision ${n}.`,
       choice: `Yes, do thing ${n}`,
-      alternatives: [{ status: "rejected", summary: `No to thing ${n}` }],
-      outcome: `Implemented thing ${n}`,
+      alternatives: [
+        { name: `Yes, do thing ${n}`, status: "chosen" },
+        { name: `No to thing ${n}`, status: "rejected" },
+      ],
+      reasoning: `The evidence supports thing ${n}.`,
+      confidence: "firm",
       satisfaction: {
         state: "user_confirmed_satisfied",
         user_confirmation: { confirmed_by: "test", confirmed_at: "2026-01-01" },
@@ -174,6 +198,9 @@ describe("compactYamlFile decisions archive ordering", () => {
     const decisions = Array.from({ length: 25 }, (_, i) => decisionEntry(i + 1));
     const p = path.join(tmp, "decisions.yaml");
     fs.writeFileSync(p, YAML.stringify({ decisions, archive: [] }));
+    for (const entry of decisions) {
+      publishNumberedArchive(tmp, "decisions", Number(entry.number), entry);
+    }
 
     const result = compactYamlFile(p, "decisions");
     expect(result.changed).toBe(true);

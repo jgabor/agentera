@@ -9,6 +9,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { MAX_CORPUS_READ_BYTES } from "../../src/analytics/usageStats.js";
 import { main } from "../../src/cli/dispatch.js";
 import { MAX_FULL_ENTRIES, MAX_TOTAL_ENTRIES } from "../../src/hooks/common.js";
+import { publishNumberedArchive } from "../../src/state/archivePublication.js";
 import { GAP_IDS, isGapClosed } from "../upgrade/gapRegistry.js";
 import {
   classifyDrift,
@@ -55,8 +56,10 @@ function writeOverCapProgress(dir: string, cycleCount = 55): void {
     type: "feat",
     phase: "build",
     what: `Work cycle ${i + 1}`,
+    context: { intent: "Compaction parity fixture" },
   }));
   fs.writeFileSync(path.join(agenteraDir, "progress.yaml"), YAML.stringify({ cycles, archive: [] }));
+  for (const cycle of cycles) publishNumberedArchive(dir, "progress", cycle.number, cycle);
 }
 
 let tmp: string;

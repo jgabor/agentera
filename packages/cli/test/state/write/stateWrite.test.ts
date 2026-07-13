@@ -20,6 +20,7 @@ import {
 import { operationSpec } from "../../../src/state/write/operations.js";
 import { StateWriteInputError } from "../../../src/state/write/errors.js";
 import { discoverNumberedArchives } from "../../../src/state/archiveDiscovery.js";
+import { publishNumberedArchive } from "../../../src/state/archivePublication.js";
 
 interface Captured {
   rc: number;
@@ -397,6 +398,7 @@ describe("state writer discovery and progress", () => {
       context: { intent: "fixture" },
     }));
     fs.writeFileSync(path.join(dir, "progress.yaml"), dumpYamlMapping({ cycles }));
+    for (const cycle of cycles) publishNumberedArchive(root, "progress", cycle.number, cycle);
     const result = run(root, progressArgs("Cycle 11"));
     expect(result.rc).toBe(0);
     expect(result.json?.compaction).toMatchObject({
@@ -1508,6 +1510,34 @@ describe("closed rejection catalog and mutation safety", () => {
       expect(loadYamlMapping(fs.readFileSync(path.join(root, ".agentera", "progress.yaml"), "utf8")).cycles).toHaveLength(1);
     },
   );
+
+  it("does not expose a compacted summary when archive publication interrupts an append", () => {
+    const root = project();
+    const dir = path.join(root, ".agentera");
+    const cycles = Array.from({ length: 10 }, (_, index) => ({
+      number: 10 - index,
+      timestamp: `2026-07-${String(10 - index).padStart(2, "0")} 10:00`,
+      type: "feat",
+      phase: "build",
+      what: `Cycle ${10 - index}`,
+      context: { intent: "interruption fixture" },
+    }));
+    fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(path.join(dir, "progress.yaml"), dumpYamlMapping({ cycles }));
+    for (const cycle of cycles) publishNumberedArchive(root, "progress", cycle.number, cycle);
+
+    expect(() => progressWrite(root, "archive-publication")).toThrow(InjectedMutationFailure);
+    const interrupted = loadYamlMapping(fs.readFileSync(path.join(dir, "progress.yaml"), "utf8"));
+    expect(interrupted.cycles).toHaveLength(10);
+    expect(interrupted.archive).toBeUndefined();
+    expect(discoverNumberedArchives(root).entries.some((entry) => entry.stableId === "progress:11")).toBe(true);
+
+    const retry = progressWrite(root);
+    expect(retry.operation.idempotent_replay).toBe(true);
+    const recovered = loadYamlMapping(fs.readFileSync(path.join(dir, "progress.yaml"), "utf8"));
+    expect(recovered.cycles).toHaveLength(10);
+    expect((recovered.archive as Array<Record<string, unknown>>).some((entry) => String(entry.summary).includes("Cycle 1"))).toBe(true);
+  });
 
   it("returns a retryable conflict instead of nesting the writer lock", () => {
     const root = project();

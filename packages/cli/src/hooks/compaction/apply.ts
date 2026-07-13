@@ -36,6 +36,7 @@ import { normalizeTodoResolvedLayout, parseEntries, parseTodoResolved, extractRe
 
 import type { JsonObject } from "../../core/jsonValue.js";
 import { hydrateDecisionRecords } from "../../state/decisionOverlay.js";
+import { gateProjectionEntries } from "../../state/archiveRecovery.js";
 
 export interface CompactYamlBytesResult {
   bytes: string;
@@ -101,7 +102,11 @@ export function compactYamlBytes(
   } else {
     [recentFull, olderActive] = yamlRecentFullAndOlder(rawActive, specName);
   }
-  const compactedFromActive = olderActive.map((entry) => yamlArchiveEntry(specName, entry));
+  const projectionRoot = projectRoot ?? process.cwd();
+  const gated = gateProjectionEntries(projectionRoot, specName, olderActive as JsonObject[]);
+  const compactedFromActive = gated.verified.map((entry) => yamlArchiveEntry(specName, entry));
+  const retainedFull = gated.refused.map(({ entry }) => entry);
+  recentFull = yamlSortEntries([...recentFull, ...retainedFull], specName);
   const archiveCandidates = yamlArchiveEntries([...compactedFromActive, ...rawArchive]);
   let archiveAfter: any[];
   if (specName === "decisions") {
@@ -133,6 +138,7 @@ export function compactYamlBytes(
       oneline_after: onelineAfter,
       dropped,
       changed: true,
+      recovery: gated.recovery,
     },
   };
 }

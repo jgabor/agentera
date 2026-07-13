@@ -53,12 +53,17 @@ describe("useFixtureProject", () => {
     expect(op?.action).toBe("ok");
   });
 
-  it("progress-over-limit triggers compaction over_limit", () => {
+  it("progress-over-limit reports a safe refusal when archives are unavailable", () => {
     const root = useFixtureProject("progress-over-limit");
     cleanups.push(root);
     const op = checkCompaction(root).find((o) => o.status.artifact === "progress");
-    expect(op?.action).toBe("over_limit");
+    expect(op?.action).toBe("refused");
     expect(op?.status.total_count).toBe(55);
+    expect(op?.status.projection_recovery).toMatchObject({
+      status: "degraded",
+      refused_count: 45,
+      retained_full: 45,
+    });
   });
 
   it("invalid-progress-yaml classifies progress as error", () => {

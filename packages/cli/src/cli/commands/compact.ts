@@ -59,8 +59,10 @@ function compactionOperationPayload(op: CompactionOperation): JsonObject {
     changed: op.changed,
     message: op.message,
     reason: status.reason,
+    ...(status.projection_recovery ? { recovery: status.projection_recovery as unknown as JsonObject } : {}),
   };
   if (op.result !== null) {
+    const recovery = op.result.recovery as unknown as JsonObject | undefined;
     payload.result = {
       active_before: op.result.full_before,
       archive_before: op.result.oneline_before,
@@ -68,6 +70,7 @@ function compactionOperationPayload(op: CompactionOperation): JsonObject {
       archive_after: op.result.oneline_after,
       dropped: op.result.dropped,
       changed: op.result.changed,
+      ...(recovery ? { recovery } : {}),
     };
   }
   return payload;
@@ -77,10 +80,14 @@ function compactionGuidance(mode: string, operations: CompactionOperation[]): st
   const over = operations.filter((op) => op.action === "over_limit" || op.action === "pending_fix");
   const protectedOps = operations.filter((op) => op.action === "protected_overflow");
   const errors = operations.filter((op) => op.action === "error");
+  const refused = operations.filter((op) => op.action === "refused");
   const checkCommand = "npx -y agentera compact --mode check --format json";
   const fixCommand = "npx -y agentera compact --mode fix --format json";
   if (errors.length > 0) {
     return `Inspect the reported errors, repair invalid artifacts, then rerun \`${checkCommand}\`.`;
+  }
+  if (refused.length > 0) {
+    return "Projection changes were safely refused until each full entry has a verified numbered archive; inspect recovery metadata and retry after recovery.";
   }
   if (protectedOps.length > 0) {
     const artifacts = protectedOps.map((op) => op.status.artifact).join(", ");

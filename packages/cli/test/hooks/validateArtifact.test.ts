@@ -12,6 +12,7 @@ import {
 } from "../../src/hooks/validateArtifact/index.js";
 import { runCursorPreToolUse } from "../../src/hooks/cursorPreToolUse.js";
 import { cleanupFixtureProject, useFixtureProject } from "../helpers/useFixtureProject.js";
+import { publishNumberedArchive } from "../../src/state/archivePublication.js";
 
 let tmp: string;
 const fixtureRoots: string[] = [];
@@ -285,6 +286,7 @@ describe("HookCliAdapter.run", () => {
     fs.mkdirSync(path.join(tmp, ".agentera"), { recursive: true });
     const target = path.join(tmp, ".agentera", "progress.yaml");
     fs.writeFileSync(target, YAML.stringify({ cycles, archive: [{ summary: "Cycle 0" }] }));
+    for (const cycle of cycles) publishNumberedArchive(tmp, "progress", cycle.number, cycle);
 
     const violations = new ArtifactSchemaValidator().validateWrite(
       new ArtifactWrite(".agentera/progress.yaml"),
