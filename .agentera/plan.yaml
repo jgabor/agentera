@@ -38,18 +38,18 @@ tasks:
     name: Validate the repair and migrate the complete consumer matrix
     depends_on:
       []
-    status: complete
+    status: pending
     acceptance:
       - GIVEN the repaired Unicode suite passes WHEN a checked-in matrix and raw-read scan cover all 12 source and bundled consumers THEN every surface uses bounded get/list or names a diagnostic exception, ambiguous and satisfaction-incomplete history stays truthful under Decision 53, and the stale predecessor Task 9 TODO is resolved only from current cursor, identity, and compact evidence.
     evaluation:
-      attempt_count: 1
-      failure_count: 0
-      last_verdict: pass
-      last_failure_evidence: null
+      attempt_count: 2
+      failure_count: 1
+      last_verdict: fail
+      last_failure_evidence: Source instructions still contain unbounded state decisions/progress/health commands; consumerMatrix.test.ts applies staleCommandPattern to bundleSource but not instruction, so source enforcement is incomplete.
       provenance:
-        attempt_id: task1-consumer-matrix-audit-2026-07-14
-        source: "Independent orchestration audit: prime context, progress get, non-packaging suite, typecheck, build, progress validation, compact gate, and diff check"
-        recorded_at: 2026-07-14 00:55
+        attempt_id: task1-independent-audit-1
+        source: "Independent orchestration evaluator: consumer matrix source scan audit"
+        recorded_at: 2026-07-14 01:07
         writer_command: agentera state plan record-evaluation
   - number: 2
     name: Publish local migration inventory and mutation authority

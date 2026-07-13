@@ -62,6 +62,7 @@ describe("state consumer matrix", () => {
       expect(generatedBundle, `generated parity for ${bundlePath}`).toBe(bundleSource);
 
       const instruction = CAPABILITY_INSTRUCTIONS[String(entry.name)] ?? "";
+      expect(instruction, entry.name).not.toMatch(staleCommandPattern);
       expect(bundleSource, bundlePath).not.toMatch(staleCommandPattern);
       expect(instruction, entry.name).not.toMatch(rawReadPattern);
       expect(bundleSource, bundlePath).not.toMatch(rawReadPattern);
