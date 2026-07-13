@@ -85,12 +85,13 @@ VALIDATION:
     id: V9
     rule: closeout_context_first
     description: >-
-      During final synchronization, Document MUST use `agentera prime
-      --context document --format json` and its `closeout_context`
-      before reading TODO, docs, changelog, or progress artifacts directly.
-      Complete closeout context is the normal source for mappings, version
-      policy, blockers, boundaries, progress evidence, benchmark evidence,
-      caveats, fallback commands, raw-read policy, and completeness.
+       During final synchronization, Document MUST use `agentera prime
+       --context document --format json` and its `closeout_context`
+       before using bounded state list/get contracts for TODO, docs, changelog,
+       or progress. Raw artifact access is diagnostic-only or a write target.
+        Complete closeout context is the normal source for mappings, version
+        policy, blockers, boundaries, progress evidence, benchmark evidence,
+        caveats, fallback commands, raw-read policy, and completeness.
     severity: critical
     checks:
       - "Closeout starts from status capability context"
@@ -100,15 +101,14 @@ VALIDATION:
     id: V10
     rule: closeout_fallback_before_raw
     description: >-
-      If closeout context is incomplete or caveated, Document MUST run the
-      listed existing CLI fallback commands before any last-resort raw artifact
-      read. No unsupported capability-name command or new closeout command may
-      be introduced.
+       If closeout context is incomplete or caveated, Document MUST run the
+       listed bounded CLI fallback commands before any diagnostic-only raw
+       artifact read. No unsupported capability-name command or new closeout command may
+        be introduced.
     severity: critical
     checks:
-      - "Listed CLI fallback commands run before raw artifact reads"
-      - "Raw reads are last-resort diagnostics or write targets only"
-      - "No unsupported capability-name command is introduced"
+       - "Listed bounded CLI fallback commands run before diagnostic-only raw reads"
+       - "Raw reads are diagnostic-only or write targets"
   11:
     id: V11
     rule: closeout_caveat_preservation

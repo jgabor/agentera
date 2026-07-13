@@ -1,0 +1,19 @@
+schemaVersion: agentera.stateArchiveEntry.v1
+artifact_id: progress
+entry_number: 778
+record:
+  number: 778
+  timestamp: 2026-07-14 00:55
+  type: fix
+  phase: build
+  what: Repaired bounded orchestration verification projection and completed the independent audit for Task 1.
+  inspiration: Independent orchestration audit of the repaired consumer migration.
+  discovered: The scanner recognized block-form verified fields but not inline verified scalars, so prime reported Cycle 777 evidence as absent until the bounded presence marker was corrected.
+  verified: "Focused projection, consumer matrix, and orientation tests: 3 files and 35 tests passed; non-packaging suite: 173 files and 1,745 tests passed; typecheck and build passed; progress artifact validation passed; check compact passed with 0 errors, 0 over-limit, 0 protected-overflow, and 0 changed counts; state progress get --number 777 confirmed full verified evidence; independent prime --context orchestrate audit reported Task 1 ready with verified_present=true and non_empty_evidence_present=true."
+  next: Task 1 is complete. Do not start Task 2 parser or schema work until the operator confirms the command namespace and custom-name discovery boundary.
+  context:
+    intent: Close Task 1 only after the orchestrator can detect non-empty verified evidence through bounded prime state and the acceptance criteria are independently checked.
+    constraints: Do not refresh stale profile, edit vision, infer missing decisions, address known npm 12 packaging failures, or push.
+    unknowns: Task 2 command namespace and custom-name discovery remain operator decisions.
+    scope: packages/cli/src/state/startupProjection.ts; packages/cli/src/cli/capabilityContext/progress.ts; packages/cli/test/cli/orientation.test.ts; packages/cli/test/state/consumerMatrix.test.ts; typed plan evaluation and Task 1 status.
+record_sha256: 41b53cef24ab865823db47104470cbbb3c5b2159a92b57a00f25e8e24009eb8b

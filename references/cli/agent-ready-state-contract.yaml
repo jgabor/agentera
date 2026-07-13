@@ -79,14 +79,12 @@ doctor:
     - codebase quality audit findings
     - inspektera architecture, test, dependency, or documentation audit output
   adjacent_surfaces:
-    project_artifact_health: agentera health
     codebase_audit: /agentera audit routes to inspektera
     setup_specific_diagnostics: packages/cli/src/setup/doctor.ts
   rationale: >-
     Decision 45 rejects `bundle-status` as too narrow and rejects an alias for
-    release-clean vocabulary. `doctor` is Agentera CLI/install/runtime
-    self-check vocabulary only; artifact health and codebase audits remain owned
-    by `agentera health` and inspektera.
+     release-clean vocabulary; `doctor` is the CLI/install/runtime self-check
+     vocabulary, while artifact health and codebase audits remain separate concerns.
 schema:
   status: implemented_runtime_introspection
   command: schema
@@ -328,8 +326,9 @@ structured_output:
             `agentera prime --format json` may include one bounded `decision_attention`
             payload when returned decisions require satisfaction review. The payload
             derives from the same `_decision_context_entry` and
-            `_decision_satisfaction_context` semantics as `agentera decisions --format
-            json`, never infers satisfaction, never mutates `.agentera/decisions.yaml`,
+             `_decision_satisfaction_context` semantics as bounded `agentera state
+             decisions list --limit 20 --format json` plus exact `state decisions
+             get --number N`, never infers satisfaction, never mutates `.agentera/decisions.yaml`,
             keeps top-level attention bounded, and must not change `next_action`
             routing priority.
           evidence_context_target_contract: evidence_context_target_contract
@@ -361,8 +360,6 @@ startup_completeness:
     artifact reads for normal capability startup.
   current_cli_fallback:
     - agentera plan --format json
-    - agentera docs --format json
-    - agentera progress --format json
   state_families_added:
     - plan task details, dependencies, acceptance criteria, and evidence summaries
     - docs artifact mapping and source-contract completeness metadata
@@ -405,7 +402,7 @@ evidence_context_target_contract:
           - vision
           - profile
         fallback_commands:
-          - agentera decisions --format json
+          - agentera state decisions list --limit 20 --format json
         caveats:
           - profile-derived state is stale and must not trigger profile refresh
           - orchestration_context is incomplete for missing decisions, vision, and profile state
@@ -419,28 +416,12 @@ evidence_context_target_contract:
           - previous_plan_archived pointer
         missing_state: []
         raw_artifact_reads_required: false
-      - command: agentera progress --format json
-        included_state:
-          - latest progress cycles
-          - latest verification text
-          - cycle provenance
-        missing_state:
-          - explicit retry-attempt count
-        raw_artifact_reads_required: false
       - command: agentera docs --format json
         included_state:
           - artifact mapping
           - version files
           - semver policy
           - indexed document freshness
-        missing_state: []
-        raw_artifact_reads_required: false
-      - command: agentera health --format json
-        included_state:
-          - latest audit
-          - dimension grades
-          - findings
-          - trajectory
         missing_state: []
         raw_artifact_reads_required: false
       - command: agentera todo --format json
@@ -450,15 +431,6 @@ evidence_context_target_contract:
           - known open issues
         missing_state: []
         raw_artifact_reads_required: false
-      - command: agentera decisions --format json
-        included_state:
-          - decisions 51 and 52 with complete context
-          - compacted historical decision summaries
-        missing_state:
-          - full context for 40 compacted historical entries
-        raw_artifact_reads_required: false
-        caveats:
-          - compacted decisions expose missing_fields and caveats instead of reconstructed history
     last_resort_raw_fallbacks:
       - reason: archived previous-plan status is not exposed by routine CLI state
         path: .agentera/archive/PLAN-2026-05-15-2-3-9-dokumentera-closeout-context-source-contract.yaml
@@ -514,14 +486,14 @@ evidence_context_target_contract:
         source: agentera plan --format json entries.acceptance
         fallback: none when complete_for_plan_artifact is true
       - family: progress_verification
-        source: agentera progress --format json latest verification
-        fallback: agentera progress --format json
+        source: agentera state progress list --limit 20 --format json latest verification
+        fallback: agentera state progress get --number N --format json
       - family: docs_state
         source: agentera docs --format json summary and entries
         fallback: agentera docs --format json
       - family: health_state
-        source: agentera health --format json latest audit
-        fallback: agentera health --format json
+        source: agentera state health list --limit 20 --format json latest audit
+        fallback: agentera state health get --number N --format json
       - family: todo_state
         source: agentera todo --format json known issues and source-contract TODOs
         fallback: agentera todo --format json
@@ -530,7 +502,7 @@ evidence_context_target_contract:
         fallback: listed existing CLI commands before raw reads
     optional_or_caveated_for_normal_task_evaluation:
       - family: decisions_context
-        source: agentera decisions --format json
+        source: agentera state decisions list --limit 20 --format json
         caveat: compacted historical entries remain incomplete and must not be reconstructed from raw artifacts
       - family: vision_context
         source: hej startup only when included by capability context

@@ -1,4 +1,5 @@
 import type { JsonObject } from "../core/jsonValue.js";
+import { STATE_FAMILY_LIST_COMMANDS } from "./capabilityContext/types.js";
 
 export interface StartupCompletenessInput {
   schemaError?: string | null;
@@ -36,7 +37,7 @@ export const STARTUP_COMPLETENESS_CONFIDENCE_CAVEATS = [
 export const STARTUP_COMPLETENESS_CLI_FALLBACK = [
   "agentera plan --format json",
   "agentera docs --format json",
-  "agentera progress --format json",
+  STATE_FAMILY_LIST_COMMANDS.progress,
 ] as const;
 
 export function startupCompletenessContract(input: StartupCompletenessInput = {}): JsonObject {
@@ -54,7 +55,7 @@ export function startupCompletenessContract(input: StartupCompletenessInput = {}
     raw_artifact_reads_required: false,
     raw_artifact_read_policy:
       "Do not read raw artifacts when complete_for_capability_startup is true. " +
-      "When incomplete, try cli_fallback first; raw artifact reads are only a last-resort fallback.",
+       "When incomplete, try cli_fallback first; raw reads are permitted only for a named corruption or CLI-defect diagnostic.",
     available_state: [...STARTUP_AVAILABLE_STATE_FIELDS],
     missing_state: missingState,
     confidence_caveats: [...STARTUP_COMPLETENESS_CONFIDENCE_CAVEATS],

@@ -15,16 +15,20 @@ ARTIFACTS:
     local_role: consumes
     description: >-
       Orchestrate consumes progress verification state from the returned
-      orchestration context first, then routine CLI fallback output before any
-      last-resort raw artifact read for the Step 3 presence check.
+      orchestration context first, then bounded `agentera state progress list
+      --limit 20 --format json` fallback output. Exact detail uses `state
+      progress get --number N`; raw reads are diagnostic-only for corruption or
+      CLI-defect investigation.
   3:
     id: A3
     artifact_id: health
     local_role: consumes
     description: >-
       Orchestrate consumes returned health state first after plan completion to
-      decide whether to start a new plan cycle; raw reads are last-resort after
-      listed CLI fallbacks.
+      decide whether to start a new plan cycle; bounded `agentera state health
+      list --limit 20 --format json` and exact `state health get --number N`
+      are the fallback contracts. Raw reads are diagnostic-only for corruption
+      or CLI-defect investigation.
   4:
     id: A4
     artifact_id: todo
@@ -37,9 +41,11 @@ ARTIFACTS:
     artifact_id: decisions
     local_role: consumes
     description: >-
-      Orchestrate consumes included decision context or the listed
-      `agentera decisions --format json` fallback before raw access, preserving
-      firm constraints, exploratory uncertainties, and compacted-entry caveats.
+      Orchestrate consumes included decision context or bounded
+      `agentera state decisions list --limit 20 --format json` discovery and
+      exact `state decisions get --number N` retrieval, preserving firm
+      constraints, exploratory uncertainties, and compacted-entry caveats.
+      Raw reads are diagnostic-only for corruption or CLI-defect investigation.
   6:
     id: A6
     artifact_id: vision
@@ -61,5 +67,5 @@ ARTIFACTS:
     local_role: consumes
     description: >-
       Orchestrate uses docs mapping from CLI startup context first to resolve
-      project-local artifact mappings before any last-resort raw artifact read
-      or artifact write.
+      project-local artifact mappings before any diagnostic-only raw artifact
+      read or artifact write.

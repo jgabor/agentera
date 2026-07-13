@@ -1,0 +1,200 @@
+header:
+  level: full
+  created: 2026-07-13
+  status: open
+  reviewed: 2026-07-13
+  critic_issues: 12 found, 12 addressed, 0 dismissed
+  revised: Added predecessor lineage, split traversal, identity, and migration phases, defined bounded source work and release gates, and made Git enrichment an explicit chain.
+  title: "Plan: Complete archive-backed state delivery"
+what: Repair the blocked bounded-list contract, then finish bounded startup consumers, compatibility migration, optional Git enrichment, documentation, development release preparation, health evaluation, and final state synchronization without redoing completed storage foundations.
+why: The predecessor delivered the storage foundation, but blocked listing correctness prevents every remaining consumer and migration outcome. The writer will preserve its completed evidence, failed Task 9 evaluations, and TODO handoff as immutable lineage.
+constraints: Publish with `agentera state plan create --force`; the writer must assign `previous_plan_archived` and preserve the incomplete predecessor. Retain Decision 53 no-inference authority, archive immutability, non-Git operation, bounded reads, current get/durability/backfill contracts, and the npm 3.0 development-channel hold. No stable promotion, publication, tag, push, remote access, or completed-foundation rewrite is in scope.
+overall_acceptance: GIVEN archive-backed state and legacy projections WHEN users list, start capabilities, migrate, recover, package, and verify the project THEN every physical row is accounted for, addressable rows traverse exactly once, provenance remains truthful, source work and output stay bounded, and all governed development-release gates pass from synchronized final state.
+scope:
+  included:
+    - Typed-force replacement with immutable predecessor lineage and blocked Task 9 evidence
+    - Cursor traversal, legacy identity, physical/addressable/mirrored/duplicate/ambiguous counts, and current health duplicate repair
+    - Prime source-work and output bounds across dashboard, sparse, and capability contexts
+    - Consumer matrix for all capability and bundled decision/archive readers
+    - Local migration authority and execution, then explicit chained Git backfill enrichment
+    - Schemas, byte budgets, help, docs, generated bundle parity, targeted health audit, development version boundary, and closeout
+    - "Release gates: full CLI tests, typecheck, build, capability contract, artifact validation, compact, migration fixtures, and npm publish dry-run"
+  excluded:
+    - Redoing archive publication, transactions, overlays, projection gating, direct get, durability, or Git backfill foundations
+    - SQLite, `.agentera/history`, custom Git refs, automatic commits, or remote access
+    - Objective-scoped experiments and unnumbered Markdown artifact archives
+    - Stable `3.0.0` promotion or npm publication
+  deferred:
+    - Persistent list index unless repaired benchmarks cross the authority threshold
+design: Repair traversal and truthful legacy counts first, then bound startup work and migrate all consumers. Define migration authority before local mutation and chain optional Git backfill afterward. Align runtime before docs, audit the result, synchronize state, and rerun all gates.
+unknowns:
+  - question: What exact unaddressable representation preserves a genuinely unnumbered staging row without violating stable-ID schemas?
+    affects_task: 2
+    resolve_by: Choose and validate a nullable legacy identity or physical-only count row before modifying listing output.
+  - question: Which source-side heap, latency, and input bounds remain achievable across every prime context?
+    affects_task: 3
+    resolve_by: Measure large current projections and archives before retaining or revising schema-owned thresholds.
+  - question: Are custom legacy artifact names intentionally unsupported or discoverable under a bounded migration inventory?
+    affects_task: 5
+    resolve_by: Reconcile the existing six-pair migration boundary with the open custom-artifact TODO before publishing migration authority.
+tasks:
+  - number: 1
+    name: Repair exhaustive snapshot cursor traversal
+    depends_on:
+      []
+    status: complete
+    acceptance:
+      - GIVEN a bounded snapshot with more addressable rows WHEN every returned cursor is followed THEN each snapshot identity appears exactly once and traversal terminates.
+      - GIVEN a page whose normal envelope exceeds its serializer budget WHEN fallback runs THEN the response either emits an advancing row page or a terminal failure that does not promise omitted traversal.
+      - GIVEN appends, repeated cursors, tampered cursors, empty oversized pages, and JSON, YAML, or text output WHEN property tests run THEN no cursor repeats a page boundary.
+      - GIVEN repaired traversal WHEN small and large benchmarks run THEN latency, heap, and response bytes remain within authority thresholds or trigger the deferred-index decision.
+  - number: 2
+    name: Make legacy identity and count semantics truthful
+    depends_on:
+      - "1"
+    status: complete
+    acceptance:
+      - GIVEN canonical numbers, explicit decision shorthand, genuinely unnumbered staging rows, current/archive mirrors, duplicates, or conflicts WHEN listed THEN each physical row is classified without inferred identity.
+      - GIVEN progress, decisions, and health WHEN list and compact report state THEN physical, addressable, mirrored, duplicate, ambiguous, and omitted counts reconcile by documented semantics.
+      - GIVEN duplicate current health history WHEN repaired through a validated artifact path THEN one canonical audit identity remains and unrelated health evidence is unchanged.
+      - GIVEN live-shape and adversarial legacy fixtures WHEN tests run THEN shorthand, unaddressable, mirror, duplicate, and ambiguity cases each have pass and reject coverage.
+    evaluation:
+      attempt_count: 2
+      failure_count: 1
+      last_verdict: pass
+      last_failure_evidence: Dnn shorthand rows can be listed as addressable with get guidance while direct retrieval cannot resolve them; parity and health-preservation regressions are missing.
+      provenance:
+        attempt_id: task-2-attempt-2
+        source: audit-task-2-e87479f4+e45bac0b
+        recorded_at: 2026-07-13 21:41
+        writer_command: agentera state plan record-evaluation
+  - number: 3
+    name: Bound prime source work and serialized output
+    depends_on:
+      - "1"
+      - "2"
+    status: blocked
+    acceptance:
+      - GIVEN large current projections and archive directories WHEN dashboard, sparse, or capability prime contexts run THEN input scans, heap, latency, and serialized bytes remain within schema-owned bounds.
+      - GIVEN omitted, unaddressable, ambiguous, or corrupt history WHEN startup context is emitted THEN counts and valid retrieval routes remain truthful without loading unrelated full records.
+      - GIVEN maximum-sized Unicode fixtures WHEN every prime mode is measured THEN output bounds hold without corrupting identity, status, or continuation metadata.
+    evaluation:
+      attempt_count: 2
+      failure_count: 2
+      last_verdict: fail
+      last_failure_evidence: UTF-16 slicing remains in capabilityContext/slim.ts and orientation.ts; emoji boundary reproduction emits a lone high surrogate, so all prime modes are not Unicode-safe.
+      provenance:
+        attempt_id: task-3-attempt-2
+        source: audit-task-3-445c4a97+d6fe59e9
+        recorded_at: 2026-07-13 23:08
+        writer_command: agentera state plan record-evaluation
+  - number: 4
+    name: Migrate the complete capability consumer matrix
+    depends_on:
+      - "2"
+      - "3"
+    status: pending
+    acceptance:
+      - GIVEN every capability and bundled consumer declared to read decisions, progress, or health WHEN it needs historical detail THEN it uses bounded state get/list contracts rather than raw archive or Git traversal.
+      - GIVEN recoverable archived decisions WHEN source contracts are emitted THEN completeness and provenance replace permanent-unavailability claims.
+      - GIVEN unaddressable, ambiguous, compacted-only, or satisfaction-incomplete history WHEN consumed THEN caveats remain explicit and no absent value is inferred.
+  - number: 5
+    name: Publish local migration inventory and mutation authority
+    depends_on:
+      - "2"
+      - "4"
+    status: pending
+    acceptance:
+      - GIVEN default and custom legacy artifact names WHEN inventory runs THEN supported, intentionally unsupported, ambiguous, and unsafe candidates are classified under a bounded discovery policy.
+      - GIVEN operators inspect migration help WHEN no mutation is requested THEN exact selectors, preview/apply/force requirements, compatibility window, backups, failure classes, and examples are discoverable.
+      - GIVEN interruption, retry, conflict, or partial legacy state WHEN the authority is validated THEN local publication is monotonic, typed, project-bounded, and independent of Git.
+      - GIVEN the migration contract WHEN pass/fail tests run THEN every inventory and mutation class is schema-backed rather than prose-only.
+  - number: 6
+    name: Execute non-Git legacy migration
+    depends_on:
+      - "5"
+    status: pending
+    acceptance:
+      - GIVEN inline summaries and locally available full entries WHEN migration is previewed or explicitly applied THEN verified archives publish monotonically and projections remain compatible.
+      - GIVEN non-Git, partial, complete, conflicting, duplicate, custom-name, and summary-only projects WHEN migration runs THEN each receives deterministic per-row outcomes without rollback or recovery overclaims.
+      - GIVEN interruption or retry WHEN prior immutable archives exist THEN equality checks converge without duplicate or unrelated state changes.
+  - number: 7
+    name: Chain optional Git enrichment after local migration
+    depends_on:
+      - "6"
+    status: pending
+    acceptance:
+      - GIVEN local migration completes WHEN operators explicitly invoke the existing guarded backfill contract THEN only exact reachable candidates enrich unresolved rows.
+      - GIVEN Git is unavailable, degraded, shallow, rewritten, ambiguous, or declined WHEN the chain runs THEN local migration remains complete and each refusal preserves deterministic provenance.
+      - GIVEN partial enrichment is interrupted or retried WHEN immutable archives exist THEN head revalidation, bounded local history, and equality checks prevent duplicate or conflicting publication.
+  - number: 8
+    name: Align runtime schemas and quality budgets
+    depends_on:
+      - "3"
+      - "4"
+      - "5"
+      - "6"
+      - "7"
+    status: pending
+    acceptance:
+      - GIVEN growing artifacts and bounded consumers WHEN lint and validation run THEN schema-owned entry, input-work, and serialized-output checks replace contradictory whole-history constants.
+      - GIVEN list, archive, overlay, retrieval, durability, and migration states WHEN runtime schemas are inspected THEN identities, counts, compatibility, errors, and omission semantics agree.
+      - GIVEN source and generated contract authorities WHEN drift tests run THEN one canonical value governs each budget and status vocabulary.
+  - number: 9
+    name: Align help, documentation, and bundled surfaces
+    depends_on:
+      - "8"
+    status: pending
+    acceptance:
+      - GIVEN users inspect help, upgrade guidance, reference docs, and bundled capability data WHEN the model ships THEN commands, compatibility, durability, recovery limits, and irrecoverable cases agree.
+      - GIVEN live surfaces WHEN parity scans run THEN no current wording claims destructive deletion or permanent unavailability for recoverable records.
+      - GIVEN cold readers WHEN migration and backfill examples are followed THEN preview, explicit apply, non-Git completion, and Git refusal behavior are actionable.
+  - number: 10
+    name: Audit the delivered storage model
+    depends_on:
+      - "1"
+      - "2"
+      - "3"
+      - "4"
+      - "5"
+      - "6"
+      - "7"
+      - "8"
+      - "9"
+    status: pending
+    acceptance:
+      - GIVEN the delivered runtime and migration model WHEN a targeted health audit runs THEN architecture, state contracts, tests, compatibility, data integrity, and artifact freshness receive cited findings and grades.
+      - GIVEN the blocked predecessor finding and current duplicate/packaging caveats WHEN audit reports THEN each is resolved, carried forward, or attributed without inferred evidence.
+      - GIVEN any new critical or warning finding WHEN closeout begins THEN it is surfaced for explicit disposition rather than silently marked healthy.
+  - number: 11
+    name: Prepare the governed development release boundary
+    depends_on:
+      - "10"
+    status: pending
+    acceptance:
+      - GIVEN user-visible feature and fix work WHEN development metadata is prepared THEN the package advances only to the next permitted `3.0.0-dev.N` boundary and suite-bearing surfaces remain `3.0.0`.
+      - GIVEN the known npm 12 package-output incompatibility WHEN package verification runs THEN it is repaired or the governed package dry-run cannot pass.
+      - GIVEN release notes are read cold WHEN users upgrade THEN listing, compatibility, durability, recovery limits, migration commands, and irrecoverable cases are actionable.
+      - GIVEN package contents are inspected WHEN dry-run packaging runs THEN schemas, contracts, commands, bundled data, docs, and immutable release provenance are aligned without publishing or tagging.
+  - number: 12
+    name: Synchronize final state and rerun every release gate
+    depends_on:
+      - "1"
+      - "2"
+      - "3"
+      - "4"
+      - "5"
+      - "6"
+      - "7"
+      - "8"
+      - "9"
+      - "10"
+      - "11"
+    status: pending
+    acceptance:
+      - GIVEN all prior outcomes are verified WHEN closeout mutates state THEN predecessor lineage, progress, blocked-list TODO, targeted health audit, docs inventory, and changelog agree without manufactured evidence.
+      - GIVEN the synchronized final tree WHEN full CLI tests, typecheck, build, capability-contract validation, artifact validation, compact, migration fixtures, and npm publish dry-run rerun THEN every governed gate passes.
+      - GIVEN final evaluation succeeds WHEN the continuation plan completes and archives THEN no active plan survives and the incomplete predecessor remains discoverable through `previous_plan_archived`.
+surprises:
+  []
+previous_plan_archived: .agentera/archive/PLAN-2026-07-13-lossless-archive-backed-state-storage-a0d04027191c6dc0.yaml

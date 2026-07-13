@@ -282,7 +282,7 @@ export function scanYamlCollection(
     if (root) {
       section = BLOCK_SECTIONS.has(root[1]) && !root[2] ? root[1] : null;
       blockField = root[1] === "summary" && !root[2] ? "summary" : null;
-      if (root[1] === "verified" && !root[2]) fields.verified_present = true;
+      if (root[1] === "verified" && (root[2] === undefined || scalar(root[2]) !== undefined)) fields.verified_present = true;
       setCaptured(fields, root[1], root[2]);
       return;
     }

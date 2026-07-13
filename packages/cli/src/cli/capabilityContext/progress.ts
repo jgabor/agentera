@@ -5,10 +5,11 @@ import {
 } from "../../registries/evaluatorHandoffContract.js";
 import { capabilityInstructionContractPath } from "./contract.js";
 import { hasRecordedValue, isFile, sourceProvenance, taskRef } from "./shared.js";
+import { STATE_FAMILY_LIST_COMMANDS } from "./types.js";
 import type { JsonObject } from "../../core/jsonValue.js";
 
 export function progressVerificationSummary(progress: JsonObject): JsonObject {
-  const source = { source_family: "progress", command: "agentera progress --format json" };
+  const source = { source_family: "progress", command: STATE_FAMILY_LIST_COMMANDS.progress };
   if (!progress.exists) {
     return {
       status: "unavailable",
@@ -25,7 +26,12 @@ export function progressVerificationSummary(progress: JsonObject): JsonObject {
   }
   const latest = progress.latest && typeof progress.latest === "object" && !Array.isArray(progress.latest) ? progress.latest : {};
   const verified = latest.verified;
-  const verifiedPresent = hasRecordedValue(verified);
+  const latestVerification =
+    progress.latest_verification && typeof progress.latest_verification === "object" && !Array.isArray(progress.latest_verification)
+      ? progress.latest_verification
+      : {};
+  const projectedVerifiedPresent = latest.verified_present === true || latestVerification.present === true;
+  const verifiedPresent = hasRecordedValue(verified) || projectedVerifiedPresent;
   const cycle: JsonObject = {};
   for (const key of ["number", "timestamp", "type", "phase"]) {
     if (latest[key] !== null && latest[key] !== undefined && latest[key] !== "") cycle[key] = latest[key];
@@ -40,8 +46,8 @@ export function progressVerificationSummary(progress: JsonObject): JsonObject {
     verified_present: verifiedPresent,
     non_empty_evidence_present: verifiedPresent,
     non_empty_evidence_fields: evidenceFields,
-    verified: verifiedPresent ? verified : null,
-    verification_summary: verifiedPresent ? verified : null,
+    verified: hasRecordedValue(verified) ? verified : null,
+    verification_summary: hasRecordedValue(verified) ? verified : projectedVerifiedPresent ? { present: true } : null,
     latest_progress_verification_pointer: pointer,
     caveats,
   };

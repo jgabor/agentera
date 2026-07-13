@@ -46,7 +46,7 @@ describe("cli query", () => {
     expect(Array.isArray(payload.names)).toBe(true);
     expect(Array.isArray(payload.artifacts)).toBe(true);
     const progress = payload.artifacts.find((a: { artifact_id: string }) => a.artifact_id === "progress");
-    expect(progress.normal_read_command).toBe("agentera progress --format json");
+    expect(progress.normal_read_command).toBe("agentera state progress list --limit 20 --format json");
   });
 
   it("requires a pattern when --list-artifacts is absent", () => {

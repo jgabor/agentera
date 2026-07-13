@@ -44,6 +44,88 @@ scope:
     - design
     - objective
     - experiments
+
+consumer_matrix:
+  status: active_authority
+  purpose: >-
+    Mechanically account for every capability source and bundled artifact-schema
+    consumer of numbered decisions, progress, and health state. The artifact
+    schemas remain the role authority; this matrix binds each declared consumer
+    to the bounded startup and exact retrieval contracts below.
+  source_root: packages/cli/src/capabilities/<capability>/instructions.ts
+  bundle_root: skills/agentera/capabilities/<capability>/schemas/artifacts.yaml
+  required_capabilities:
+    - status
+    - vision
+    - discuss
+    - research
+    - plan
+    - build
+    - optimize
+    - audit
+    - document
+    - profile
+    - design
+    - orchestrate
+  access_contract:
+    startup: agentera prime --context <capability> --format json
+    list: agentera state <artifact-id> list --limit 20 --format json
+    get: agentera state <artifact-id> get --number N --format json
+    policy: >-
+      Use the bounded prime context first, then the bounded state list for
+      discovery and exact state get for requested detail. Raw artifact or Git
+      traversal is not a normal consumer path; it is allowed only for a named
+      corruption or CLI-defect diagnostic exception, and must preserve missing,
+      ambiguous, compacted, and satisfaction-incomplete provenance.
+  capabilities:
+    - name: status
+      source: packages/cli/src/capabilities/status/instructions.ts
+      bundle: skills/agentera/capabilities/status/schemas/artifacts.yaml
+      state_consumers: [decisions, progress, health]
+    - name: vision
+      source: packages/cli/src/capabilities/vision/instructions.ts
+      bundle: skills/agentera/capabilities/vision/schemas/artifacts.yaml
+      state_consumers: [decisions, progress, health]
+    - name: discuss
+      source: packages/cli/src/capabilities/discuss/instructions.ts
+      bundle: skills/agentera/capabilities/discuss/schemas/artifacts.yaml
+      state_consumers: [decisions]
+    - name: research
+      source: packages/cli/src/capabilities/research/instructions.ts
+      bundle: skills/agentera/capabilities/research/schemas/artifacts.yaml
+      state_consumers: []
+    - name: plan
+      source: packages/cli/src/capabilities/plan/instructions.ts
+      bundle: skills/agentera/capabilities/plan/schemas/artifacts.yaml
+      state_consumers: [decisions, progress, health]
+    - name: build
+      source: packages/cli/src/capabilities/build/instructions.ts
+      bundle: skills/agentera/capabilities/build/schemas/artifacts.yaml
+      state_consumers: [decisions, progress, health]
+    - name: optimize
+      source: packages/cli/src/capabilities/optimize/instructions.ts
+      bundle: skills/agentera/capabilities/optimize/schemas/artifacts.yaml
+      state_consumers: [decisions, progress]
+    - name: audit
+      source: packages/cli/src/capabilities/audit/instructions.ts
+      bundle: skills/agentera/capabilities/audit/schemas/artifacts.yaml
+      state_consumers: [decisions, progress, health]
+    - name: document
+      source: packages/cli/src/capabilities/document/instructions.ts
+      bundle: skills/agentera/capabilities/document/schemas/artifacts.yaml
+      state_consumers: [decisions, progress, health]
+    - name: profile
+      source: packages/cli/src/capabilities/profile/instructions.ts
+      bundle: skills/agentera/capabilities/profile/schemas/artifacts.yaml
+      state_consumers: [decisions]
+    - name: design
+      source: packages/cli/src/capabilities/design/instructions.ts
+      bundle: skills/agentera/capabilities/design/schemas/artifacts.yaml
+      state_consumers: [progress]
+    - name: orchestrate
+      source: packages/cli/src/capabilities/orchestrate/instructions.ts
+      bundle: skills/agentera/capabilities/orchestrate/schemas/artifacts.yaml
+      state_consumers: [decisions, progress, health]
   unchanged_archive_conventions:
     plan:
       location: .agentera/archive/plan-*.yaml

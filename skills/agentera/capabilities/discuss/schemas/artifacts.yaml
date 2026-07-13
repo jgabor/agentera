@@ -5,8 +5,9 @@ ARTIFACTS:
     local_role: produces_and_consumes
     description: >-
       Reasoning trail with confidence labels. Discuss reads existing decisions
-      through `agentera state decisions --format json` and its source_contract
-      to avoid re-deliberation, and writes new decision entries with confidence
+      through bounded `agentera state decisions list --limit 20 --format json`
+      discovery plus exact `agentera state decisions get --number N --format json`
+      retrieval and its source_contract to avoid re-deliberation, and writes new decision entries with confidence
       (DL1 firm, DL2 provisional, DL3 exploratory). Compact older entries by
       applying schema COMPACTION rules; incomplete compacted entries are
       caveated context, not a reason for historical reconstruction during

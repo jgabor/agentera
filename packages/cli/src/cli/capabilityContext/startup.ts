@@ -3,6 +3,7 @@ import { CAPABILITY_INSTRUCTIONS } from "../../capabilities/index.js";
 import { asList } from "../stateQuery.js";
 import { capabilityContext } from "./contract.js";
 import { bespokeCapabilityContexts, slimBespokeContext } from "./bespoke.js";
+import { STATE_FAMILY_GET_COMMANDS, STATE_FAMILY_LIST_COMMANDS } from "./types.js";
 import {
   capabilityContextAppSummary,
   capabilityContextProfileSummary,
@@ -57,7 +58,7 @@ export function slimProgressState(progress: JsonObject): JsonObject {
     status: progress.status ?? null,
     latest_cycle: latestCycle,
     verified_present: hasRecordedValue(latest.verified),
-    source_provenance: sourceProvenance("progress", "agentera progress --format json"),
+    source_provenance: sourceProvenance("progress", STATE_FAMILY_LIST_COMMANDS.progress),
   };
 }
 
@@ -69,7 +70,7 @@ export function slimHealthState(health: JsonObject): JsonObject {
     trajectory: health.trajectory ?? null,
     worst: health.worst ?? null,
     degrading: Boolean(health.degrading),
-    source_provenance: sourceProvenance("health", "agentera health --format json"),
+    source_provenance: sourceProvenance("health", STATE_FAMILY_LIST_COMMANDS.health),
   };
 }
 
@@ -82,8 +83,8 @@ function slimHistoryState(history: JsonObject): JsonObject {
       status: item.status ?? "degraded",
       counts: item.counts ?? {},
       retrieval: item.retrieval ?? {
-        list: `agentera state ${artifact} list --limit 20 --format json`,
-        get: `agentera state ${artifact} get --number N --format json`,
+        list: STATE_FAMILY_LIST_COMMANDS[artifact] ?? `agentera state ${artifact} list --limit 20 --format json`,
+        get: STATE_FAMILY_GET_COMMANDS[artifact] ?? `agentera state ${artifact} get --number N --format json`,
       },
       omission: item.omission && typeof item.omission === "object" && !Array.isArray(item.omission)
         ? Object.fromEntries(Object.entries(item.omission as JsonObject).filter(([key]) => ["omitted", "omitted_count", "omission_reason"].includes(key)))
@@ -116,7 +117,7 @@ export function genericSlimStartupContext(
   todoItems: Array<Record<string, string>>,
   profile: JsonObject,
 ): JsonObject {
-  const decisionsPointer = fallbackStatePointer("decisions", "agentera state decisions --format json");
+  const decisionsPointer = fallbackStatePointer("decisions", STATE_FAMILY_LIST_COMMANDS.decisions);
   const docsState = slimDocsState(docs);
   const profileState = capabilityContextProfileSummary(profile);
   if (capability === "vision") {

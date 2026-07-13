@@ -11,6 +11,7 @@ import {
   BLOCKED_STATUSES_ORCH,
 } from "./planState.js";
 import { progressVerificationSummary, retryState, evaluatorHandoff } from "./progress.js";
+import { STATE_FAMILY_FALLBACK_COMMANDS } from "./types.js";
 import { planLifecycleState } from "../planLifecycleState.js";
 import type { JsonObject } from "../../core/jsonValue.js";
 
@@ -66,11 +67,11 @@ export function orchestrationContext(
   }
   if (!progress.exists) {
     stateCaveats.push("progress state is unavailable; latest verification is not summarized here.");
-    fallbackCommands.push("agentera state progress --format json");
+     fallbackCommands.push(STATE_FAMILY_FALLBACK_COMMANDS.progress);
   }
   if (!health.exists) {
     stateCaveats.push("health state is unavailable or incomplete.");
-    fallbackCommands.push("agentera state health --format json");
+     fallbackCommands.push(STATE_FAMILY_FALLBACK_COMMANDS.health);
   }
   if (!docs.exists) {
     stateCaveats.push("docs mapping state is unavailable or incomplete.");

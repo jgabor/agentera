@@ -28,6 +28,7 @@ import {
   validateFilterValues,
 } from "../stateQuery.js";
 import { displayFields, queryTodo, StateArgs } from "./state/index.js";
+import { STATE_FAMILY_LIST_COMMANDS } from "../capabilityContext/types.js";
 import type { JsonObject } from "../../core/jsonValue.js";
 
 type Io = { out?: (t: string) => void; err?: (t: string) => void };
@@ -82,13 +83,14 @@ function projectRelativeOrAbsolute(p: string): string {
 
 function artifactReadInterfaces(name: string, record: ArtifactRecord | null): JsonObject {
   const artifactId = record !== null ? record.artifactId : name;
-  const routineCommand = STATE_COMMAND_NAMES.has(artifactId) ? `agentera ${artifactId} --format json` : null;
+  const routineCommand = STATE_FAMILY_LIST_COMMANDS[artifactId] ?? (STATE_COMMAND_NAMES.has(artifactId) ? `agentera ${artifactId} --format json` : null);
   let advancedCommand: string | null;
   if (artifactId === "benchmark_context") advancedCommand = BENCHMARK_CONTEXT_COMMAND;
   else if (STATE_COMMAND_NAMES.has(artifactId)) advancedCommand = null;
   else advancedCommand = `agentera query ${artifactId} --format json`;
   let policy: string;
-  if (routineCommand) policy = "Use the routine state command for normal content reads before any raw artifact access.";
+  if (STATE_FAMILY_LIST_COMMANDS[artifactId]) policy = "Use bounded state list for discovery and exact state get for detail before any raw artifact access.";
+  else if (routineCommand) policy = "Use the routine state command for normal content reads before any raw artifact access.";
   else if (advancedCommand) policy = "Use the listed CLI discovery/query surface before any last-resort raw artifact access.";
   else policy = "No normal content-read command is registered; raw access is limited to allowed boundary cases.";
   return {

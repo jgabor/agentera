@@ -8,7 +8,9 @@ ARTIFACTS:
       Audit writes audit entries with per-dimension grades, findings with
       severity and confidence scores, trend comparisons, and de facto
       architecture patterns. During evaluation startup, Audit consumes health
-      state through CLI `evidence_context` before raw health artifact fallback.
+      state through CLI `evidence_context`, then bounded `agentera state health
+      list --limit 20 --format json` and exact `state health get --number N`.
+      Raw health reads are diagnostic-only for corruption or CLI-defect investigation.
   2:
     id: A2
     artifact_id: vision
@@ -22,9 +24,11 @@ ARTIFACTS:
     artifact_id: decisions
     local_role: consumes
     description: >-
-      Audit consumes decision caveats through CLI `evidence_context` and the
-      listed `agentera decisions --format json` fallback before raw decisions artifact fallback.
-      Compacted decision caveats must be preserved rather than reconstructed.
+      Audit consumes decision caveats through CLI `evidence_context`, then
+      bounded `agentera state decisions list --limit 20 --format json` discovery
+      and exact `state decisions get --number N` retrieval. Raw decision reads
+      are diagnostic-only for corruption or CLI-defect investigation. Compacted
+      decision caveats must be preserved rather than reconstructed.
   4:
     id: A4
     artifact_id: todo
@@ -33,21 +37,25 @@ ARTIFACTS:
       Audit reads this to avoid re-reporting known issues and writes to it
       with user confirmation when filing
       critical and warning findings. During evaluation startup, known TODO state is
-      consumed through CLI `evidence_context` before raw TODO artifact fallback.
+      consumed through CLI `evidence_context`; raw TODO reads are diagnostic-only
+      for corruption or CLI-defect investigation.
   5:
     id: A5
     artifact_id: progress
     local_role: consumes
     description: >-
       Audit consumes latest progress verification and progress caveats through
-      CLI `evidence_context` before raw progress artifact fallback.
+      CLI `evidence_context`, then bounded `agentera state progress list --limit
+      20 --format json` discovery and exact `state progress get --number N`
+      retrieval. Raw progress reads are diagnostic-only for corruption or
+      CLI-defect investigation.
   6:
     id: A6
     artifact_id: plan
     local_role: consumes
     description: >-
       Audit consumes evaluation target and plan criteria through CLI
-      `evidence_context` before raw plan artifact fallback. The plan's Created date
+      `evidence_context` before any diagnostic-only raw plan read. The plan's Created date
       still provides the artifact-current-state baseline when that state is needed.
   7:
     id: A7
@@ -55,8 +63,8 @@ ARTIFACTS:
     local_role: consumes
     description: >-
       Audit treats design state as optional during evidence-context startup;
-      missing design caveats from CLI `evidence_context` are preserved before any raw
-      design artifact fallback.
+      missing design caveats from CLI `evidence_context` are preserved before any
+      diagnostic-only raw design read.
   8:
     id: A8
     artifact_id: docs
@@ -65,7 +73,7 @@ ARTIFACTS:
       Audit reads this first to resolve project-local artifact mappings
       and checks the versioning convention for the version health dimension. During
       evaluation startup, docs state and version-boundary caveats are consumed through
-      CLI `evidence_context` before raw docs artifact fallback.
+      CLI `evidence_context` before any diagnostic-only raw docs read.
   9:
     id: A9
     artifact_id: profile

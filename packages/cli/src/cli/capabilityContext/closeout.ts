@@ -8,6 +8,7 @@ import { docsConventions, entryStatus, sourceProvenance, uniqueList } from "./sh
 import { closeoutChangelogBoundary } from "./planState.js";
 import { progressVerificationSummary } from "./progress.js";
 import { decisionReviewPressure } from "./evidence.js";
+import { STATE_FAMILY_FALLBACK_COMMANDS } from "./types.js";
 import type { JsonObject } from "../../core/jsonValue.js";
 
 export function closeoutArtifactMappings(docs: JsonObject): JsonObject {
@@ -192,7 +193,7 @@ export function documentCloseoutContext(
   const fallbackCommands = uniqueList([
     "agentera state todo --format json",
     "agentera state docs --format json",
-    "agentera state progress --format json",
+     STATE_FAMILY_FALLBACK_COMMANDS.progress,
     "agentera state query changelog --format json",
     "agentera state query --list-artifacts --format json",
     ...((capabilityContract.cli_fallback ?? []) as string[]),

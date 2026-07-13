@@ -7,13 +7,25 @@ export const CAPABILITY_NAMES = Object.keys(CAPABILITY_INSTRUCTIONS);
 export const STATE_FAMILY_FALLBACK_COMMANDS: Record<string, string> = {
   plan: "agentera state plan --format json",
   docs: "agentera state docs --format json",
-  progress: "agentera state progress --format json",
-  health: "agentera state health --format json",
+  progress: "agentera state progress list --limit 20 --format json",
+  health: "agentera state health list --limit 20 --format json",
   todo: "agentera state todo --format json",
-  decisions: "agentera state decisions --format json",
+  decisions: "agentera state decisions list --limit 20 --format json",
   changelog: "agentera state query changelog --format json",
   objective: "agentera state objective --format json",
   experiments: "agentera state experiments --format json",
+};
+
+export const STATE_FAMILY_LIST_COMMANDS: Record<string, string> = {
+  progress: "agentera state progress list --limit 20 --format json",
+  decisions: "agentera state decisions list --limit 20 --format json",
+  health: "agentera state health list --limit 20 --format json",
+};
+
+export const STATE_FAMILY_GET_COMMANDS: Record<string, string> = {
+  progress: "agentera state progress get --number N --format json",
+  decisions: "agentera state decisions get --number N --format json",
+  health: "agentera state health get --number N --format json",
 };
 export const STARTUP_ENVELOPE_STATE_FAMILIES = new Set([
   "plan", "docs", "progress", "health", "todo", "objective", "benchmark_context",

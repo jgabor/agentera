@@ -13,6 +13,7 @@ import { scanStartupArtifact } from "../../state/startupProjection.js";
 import { sourceMetadata } from "../stateQuery.js";
 import { selectEvidenceTarget } from "./planState.js";
 import { progressVerificationSummary, retryState } from "./progress.js";
+import { STATE_FAMILY_FALLBACK_COMMANDS, STATE_FAMILY_LIST_COMMANDS } from "./types.js";
 import type { JsonObject } from "../../core/jsonValue.js";
 
 export function dateFromIsoUtc(s: string): number | null {
@@ -65,7 +66,7 @@ export function evidenceHealthState(health: JsonObject): JsonObject {
   const [currentState, currentStateCaveat] = currentStateStatus(auditDate, "Health");
   return {
     status: available ? "available" : "unavailable",
-    source_provenance: sourceProvenance("health", "agentera health --format json"),
+     source_provenance: sourceProvenance("health", STATE_FAMILY_LIST_COMMANDS.health),
     audit_number: health.number ?? null,
     date: auditDate,
     timestamp: auditDate,
@@ -213,7 +214,7 @@ export function decisionContextRisk(schemas: Record<string, SchemaInfo>): JsonOb
   if (!source.exists) {
     return {
       status: "unavailable",
-      source_provenance: sourceProvenance("decisions", "agentera decisions --format json"),
+       source_provenance: sourceProvenance("decisions", STATE_FAMILY_LIST_COMMANDS.decisions),
       summary: null,
       caveats: ["Decision state is unavailable in CLI evidence context."],
     };
@@ -229,7 +230,7 @@ export function decisionContextRisk(schemas: Record<string, SchemaInfo>): JsonOb
   const caveats = Array.isArray(caveatsSource) ? caveatsSource : [];
   return {
     status: caveats.length > 0 ? "caveated" : "available",
-    source_provenance: sourceProvenance("decisions", "agentera decisions --format json"),
+     source_provenance: sourceProvenance("decisions", STATE_FAMILY_LIST_COMMANDS.decisions),
     summary: completeness,
     caveats,
   };
@@ -273,7 +274,7 @@ export function decisionReviewPressure(schemas: Record<string, SchemaInfo>): Jso
   const info: SchemaInfo = schemas.decisions ?? { path: ".agentera/decisions.yaml", record: undefined, schema: {}, fields: {} };
   const p = artifactPath(info, "decisions");
   const source = sourceMetadata("decisions", p);
-  const sp = sourceProvenance("decisions", "agentera decisions --format json");
+   const sp = sourceProvenance("decisions", STATE_FAMILY_LIST_COMMANDS.decisions);
   if (!source.exists) {
     return { status: "unavailable", source_provenance: sp, summary: null, stale_protected_decisions: [], caveats: [] };
   }
@@ -417,9 +418,9 @@ export function auditEvidenceContext(
   const missingRequired = Object.entries(requiredState).filter(([, present]) => !present).map(([name]) => name);
   const fallbackCommands = uniqueList([
     "agentera state plan --format json",
-    "agentera state progress --format json",
+     STATE_FAMILY_FALLBACK_COMMANDS.progress,
     "agentera state docs --format json",
-    "agentera state health --format json",
+     STATE_FAMILY_FALLBACK_COMMANDS.health,
     "agentera state todo --format json",
     "agentera state query --list-artifacts --format json",
     ...((capabilityContract.cli_fallback ?? []) as string[]),

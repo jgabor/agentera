@@ -377,6 +377,7 @@ describe("orientation: artifact summaries", () => {
     expect(summary.exists).toBe(true);
     expect(summary.cycle_count).toBe(2);
     expect(summary.latest.number).toBe(2);
+    expect(summary.latest_verification).toEqual({ present: true });
   });
 
   it("summarizes the worst health grade and degrading flag", () => {

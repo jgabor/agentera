@@ -15,6 +15,7 @@ import {
   taskByRef,
 } from "./planState.js";
 import { progressVerificationSummary } from "./progress.js";
+import { STATE_FAMILY_FALLBACK_COMMANDS, STATE_FAMILY_LIST_COMMANDS } from "./types.js";
 import { planLifecycleState } from "../planLifecycleState.js";
 import type { JsonObject } from "../../core/jsonValue.js";
 
@@ -75,11 +76,11 @@ export function buildExecutionContext(
   }
   if (!progress.exists) {
     stateCaveats.push("progress state is unavailable; progress logging context is incomplete.");
-    fallbackCommands.push("agentera state progress --format json");
+     fallbackCommands.push(STATE_FAMILY_FALLBACK_COMMANDS.progress);
   }
   if (!health.exists) {
     stateCaveats.push("health state is unavailable or incomplete.");
-    fallbackCommands.push("agentera state health --format json");
+     fallbackCommands.push(STATE_FAMILY_FALLBACK_COMMANDS.health);
   }
   if (!docs.exists) {
     stateCaveats.push("docs mapping state is unavailable or incomplete.");
@@ -167,7 +168,7 @@ export function buildExecutionContext(
       append_cycle: !archiveOnly,
       verified_field_mandatory: true,
       latest_progress_verification_pointer: progressVerification.latest_progress_verification_pointer ?? null,
-      source_provenance: sourceProvenance("progress", "agentera progress --format json"),
+       source_provenance: sourceProvenance("progress", STATE_FAMILY_LIST_COMMANDS.progress),
     },
     changelog_boundary: changelogBoundary,
     git_boundary: {

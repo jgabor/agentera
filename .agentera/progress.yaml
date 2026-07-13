@@ -1,4 +1,77 @@
 cycles:
+  - number: 778
+    timestamp: 2026-07-14 00:55
+    type: fix
+    phase: build
+    what: Repaired bounded orchestration verification projection and completed the
+      independent audit for Task 1.
+    inspiration: Independent orchestration audit of the repaired consumer migration.
+    discovered: The scanner recognized block-form verified fields but not inline
+      verified scalars, so prime reported Cycle 777 evidence as absent until the
+      bounded presence marker was corrected.
+    verified: "Focused projection, consumer matrix, and orientation tests: 3 files
+      and 35 tests passed; non-packaging suite: 173 files and 1,745 tests
+      passed; typecheck and build passed; progress artifact validation passed;
+      check compact passed with 0 errors, 0 over-limit, 0 protected-overflow,
+      and 0 changed counts; state progress get --number 777 confirmed full
+      verified evidence; independent prime --context orchestrate audit reported
+      Task 1 ready with verified_present=true and
+      non_empty_evidence_present=true."
+    next: Task 1 is complete. Do not start Task 2 parser or schema work until the
+      operator confirms the command namespace and custom-name discovery
+      boundary.
+    context:
+      intent: Close Task 1 only after the orchestrator can detect non-empty verified
+        evidence through bounded prime state and the acceptance criteria are
+        independently checked.
+      constraints: Do not refresh stale profile, edit vision, infer missing decisions,
+        address known npm 12 packaging failures, or push.
+      unknowns: Task 2 command namespace and custom-name discovery remain operator
+        decisions.
+      scope: packages/cli/src/state/startupProjection.ts;
+        packages/cli/src/cli/capabilityContext/progress.ts;
+        packages/cli/test/cli/orientation.test.ts;
+        packages/cli/test/state/consumerMatrix.test.ts; typed plan evaluation
+        and Task 1 status.
+  - number: 777
+    timestamp: 2026-07-14 00:44
+    type: feat
+    phase: build
+    what: Validated the repaired Unicode surfaces and migrated the complete bounded
+      state consumer matrix across all 12 capabilities, generated bundle parity,
+      runtime fallbacks, provenance pointers, and the session-start hook.
+    inspiration: Active plan Task 1 and the state-storage authority consumer matrix.
+    discovered: The live decisions listing now accounts for 50 physical candidates,
+      including one explicit unaddressable row; compact reports the same 50
+      total with no overflow. Summary-only legacy hook rows remain bounded and
+      explicitly caveated rather than promoted to complete detail.
+    verified: "Unicode suite: pnpm -C packages/cli exec vp test run
+      test/cli/primeTask3Bounds.test.ts, 1 file and 5 tests passed before
+      consumer edits. Focused matrix and hook tests:
+      test/state/consumerMatrix.test.ts and test/hooks/sessionStart.test.ts, 2
+      files and 9 tests passed. State adjacency: listRetrieval 24,
+      directRetrieval 47, decisionOverlay 8, archiveAuthority 9, sessionStart 7,
+      primeTask3Bounds 5 passed. Typecheck and build passed. Capability
+      validation passed for status, discuss, audit, document, and
+      capability-contract. Current decisions list candidate_count=50,
+      physical=50; check compact reports decisions total_count=50,
+      over_limit_count=0, protected_overflow_count=0. git diff --check passed."
+    next: Keep Task 1 pending for independent orchestration audit; do not execute
+      migration design or later plan tasks.
+    context:
+      intent: "Execute only active plan Task 1: prove the repaired prime contract,
+        replace consumer-wide raw or unbounded state assumptions with bounded
+        list/get paths, preserve truthful history, and reconcile the stale
+        predecessor Task 9 TODO from current evidence."
+      constraints: Do not refresh stale profile, edit vision, infer missing decision
+        state, or address known npm 12 packaging failures. Preserve the
+        intentional active plan lifecycle diff and both new plan archives; do
+        not push.
+      unknowns: Independent orchestration audit and full non-packaging gate remain
+        before commit closeout.
+      scope: packages/cli bounded consumer contracts and hook; state-storage authority
+        matrix; capability schemas and references; consumer matrix tests; TODO;
+        typed progress evidence.
   - number: 776
     timestamp: 2026-07-13 23:26
     type: fix
@@ -322,115 +395,6 @@ cycles:
         packages/cli/src/state/gitBackfillOutput.ts;
         packages/cli/test/state/gitBackfill.test.ts;
         references/artifacts/state-storage-authority.yaml
-  - number: 768
-    timestamp: 2026-07-13 18:22
-    type: feat
-    phase: build
-    what: "Implemented Task14 Git legacy backfill as agentera state backfill:
-      bounded read-only local-history inventory, exact unique dry-run
-      archive-byte previews, explicit apply --force with before/apply
-      revalidation, immutable conflict refusal, idempotent retry, and projection
-      byte-preservation guards."
-    inspiration: "Active Agentera plan Task14: backfill exactly recoverable legacy
-      records from Git without changing the normal decision source contract."
-    discovered: Git evidence is restricted to HEAD plus local refs/heads and
-      refs/tags; remote-tracking and custom refs are excluded. Shallow,
-      rewritten, missing, ambiguous, corrupt, changed-head, bounded, and
-      conflicting history remain explicit refusals or degraded evidence. Git
-      provenance is output-only and never enters archive record fields.
-    verified: "Focused: pnpm -C packages/cli exec vp test run
-      test/state/gitBackfill.test.ts test/state/archiveAuthority.test.ts
-      test/state/archivePublication.test.ts, 3 files and 22 tests passed.
-      Non-packaging: pnpm -C packages/cli exec vp test run --exclude
-      test/packaging/prepack.test.ts, 171 files and 1705 tests passed. Full:
-      pnpm -C packages/cli test, 172 files and 1709 of 1714 tests passed;
-      exactly 5 pre-existing npm 12 npm pack --dry-run --json parsing failures
-      remain in test/packaging/prepack.test.ts. pnpm -C packages/cli run
-      typecheck, pnpm -C packages/cli run build, pnpm -C packages/cli lint (102
-      warnings, 0 errors), capability-contract validation, progress artifact
-      validation, and check compact all passed."
-    next: Task14 remains pending and must not be marked complete. Do not implement
-      Task13 migration or Task15 integration. Preserve Task9 blocked metadata
-      and Task12 pass/status metadata. Do not update health, vision, profile,
-      decisions, TODO, version, publish, push, tag, or remote state.
-    context:
-      intent: Execute only active Agentera plan Task14 on feat/v3 and commit the
-        implementation with exact verification evidence.
-      constraints: Maintenance backfill only; no normal reconstruction, migration
-        integration, remote contact, custom refs, automatic commits, projection
-        writes, active overlay writes, or immutable archive overwrite. npm 12
-        packaging caveat remains pre-existing.
-      scope: references/artifacts/state-storage-authority.yaml;
-        packages/cli/src/state/archiveDiscovery.ts;
-        packages/cli/src/state/archivePublication.ts;
-        packages/cli/src/state/gitBackfill.ts;
-        packages/cli/src/state/gitBackfillAuthority.ts;
-        packages/cli/src/state/gitBackfillOutput.ts;
-        packages/cli/src/cli/commands/backfill.ts;
-        packages/cli/src/cli/dispatch/index.ts; packages/cli/src/cli/errors.ts;
-        packages/cli/src/cli/help.ts;
-        packages/cli/test/state/archiveAuthority.test.ts;
-        packages/cli/test/state/gitBackfill.test.ts; .agentera/plan.yaml
-  - number: 767
-    timestamp: 2026-07-13 17:36
-    type: fix
-    phase: build
-    what: Retried Task 12 after evaluator failure. Fixed durability Git probing so
-      absent .git metadata skips Git entirely while marked worktrees distinguish
-      probe timeout/error from non-Git. Required successful before and after
-      HEAD captures before reachable committed recovery or complete status;
-      failed ending capture downgrades all Git evidence. Invalid artifact,
-      limit, and number requests now emit the authority agentera.stateFailure.v1
-      envelope with supported classes and recovery guidance. Added deterministic
-      injected timeout, final-HEAD failure, probe-error, no-Git-operation, and
-      invalid-input tests.
-    inspiration: "Task 12 attempt 1 evaluator failure recorded in
-      .agentera/plan.yaml: Git timeout/error and failed final HEAD capture were
-      treated as complete, and invalid requests used the generic envelope."
-    discovered: "A missing .git marker must be established from the selected project
-      path before invoking Git; an unrelated ancestor marker can make a
-      temporary fixture appear Git-backed, so no-Git fixtures must be isolated.
-      A successful initial HEAD is insufficient evidence: the ending capture is
-      an independent durability gate. Git probe errors and timeouts are distinct
-      from true non-Git evidence."
-    verified: "Focused: pnpm -C packages/cli exec vp test run
-      test/state/durability.test.ts test/state/archiveAuthority.test.ts, 2 files
-      and 25 tests passed. Adjacent: pnpm -C packages/cli exec vp test run
-      test/state/durability.test.ts test/state/archiveAuthority.test.ts
-      test/state/archiveRecovery.test.ts test/state/archiveDiscovery.test.ts
-      test/state/archivePublication.test.ts test/state/directRetrieval.test.ts
-      test/state/decisionOverlay.test.ts test/state/projectionPolicy.test.ts
-      test/cli/state.test.ts test/cli/compactParity.test.ts, 10 files and 141
-      tests passed. Non-packaging: pnpm -C packages/cli exec vp test run
-      --exclude test/packaging/prepack.test.ts, 170 files and 1698 tests passed.
-      Full: pnpm -C packages/cli test, 171 files and 1702 of 1707 tests passed;
-      exactly 5 pre-existing npm 12 npm pack --dry-run --json parsing failures
-      remain in test/packaging/prepack.test.ts. pnpm -C packages/cli run build
-      and pnpm -C packages/cli run typecheck passed. pnpm -C packages/cli lint
-      passed with 102 warnings and 0 errors. node
-      packages/cli/dist/bin/agentera.js check validate capability-contract
-      --format json passed; node packages/cli/dist/bin/agentera.js check
-      validate artifact --artifact progress --format json passed; node
-      packages/cli/dist/bin/agentera.js check compact --format json passed with
-      artifact_count=9, over_limit_count=0, protected_overflow_count=0,
-      error_count=0, changed_count=0."
-    next: Task 12 remains pending and must not be marked complete. Preserve Task 9
-      blocked metadata and TODO entry, and preserve the Task 12 attempt-1 failed
-      evaluation. Do not fix later tasks or perform health, vision, profile,
-      decisions, version, publish, push, tag, or remote work.
-    context:
-      intent: Retry active Agentera plan Task 12 after attempt 1 failed, preserve its
-        failed evaluation, and correct only the reported durability defects
-        without completing the task.
-      constraints: "Git is optional evidence only: no remote reads or operations, no
-        commits or mutations from the diagnostic, no custom refs, and no commit
-        fields in archive records. Local writes remain independent. The five npm
-        12 packaging failures are pre-existing."
-      scope: packages/cli/src/state/durability.ts;
-        packages/cli/src/cli/commands/durability.ts;
-        packages/cli/src/cli/dispatch/check.ts;
-        packages/cli/test/state/durability.test.ts; .agentera/plan.yaml;
-        .agentera/progress.yaml
   - number: 749
     timestamp: 2026-07-13 10:58
     type: feat
@@ -548,6 +512,11 @@ cycles:
       intent: Complete active plan Task 7 without changing decisions or unrelated
         capabilities.
 archive:
+  - summary: "Cycle 768 (2026-07-13): Implemented Task14 Git legacy backfill as
+      agentera state backfill: bounded read-only local-history inventory, exact
+      unique..."
+  - summary: "Cycle 767 (2026-07-13): Retried Task 12 after evaluator failure. Fixed
+      durability Git probing so absent .git metadata skips..."
   - summary: "Cycle 766 (2026-07-13): Implemented Task 12 read-only durability
       diagnostics under agentera check durability. The authority now publishes
       the..."
@@ -650,18 +619,23 @@ archive:
   - summary: "Cycle 721 (2026-07-12): Repaired Task 5 audit criterion 1 in
       packages/cli/src/cli/orientation/attention.ts: the full attention pipeline
       now caps project..."
-  - summary: "Cycle 720 (2026-07-12): Surface bounded lifecycle attention rows and
-      exact next-action guidance in prime/status."
-  - summary: "Cycle 719 (2026-07-12): Drove project integration from the canonical
-      runtime lifecycle projection, preserving separate app and lifecycle
-      phases..."
 omitted: true
-omitted_count: 14
+omitted_count: 16
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded

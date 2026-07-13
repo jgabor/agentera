@@ -29,24 +29,29 @@ ARTIFACTS:
     local_role: produces_and_consumes
     description: >-
       Operational cycle log. Build consumes latest progress evidence from
-      execution_context first, then appends one entry per cycle with mandatory
-      Verified field. Compacted by applying schema COMPACTION rules.
+      execution_context first, then bounded `agentera state progress list --limit
+      20 --format json` discovery or exact `state progress get --number N`
+      retrieval, and appends one entry per cycle with mandatory Verified field.
+      Compacted by applying schema COMPACTION rules.
   5:
     id: A5
     artifact_id: health
     local_role: consumes
     description: >-
       Build consumes health state from execution_context and included status
-      state before direct reads, focusing on critical and degraded findings for
-      work selection.
+      state before bounded `agentera state health list --limit 20 --format json`
+      discovery or exact `state health get --number N` retrieval, focusing on
+      critical and degraded findings for work selection. Raw reads are
+      diagnostic-only for corruption or CLI-defect investigation.
   6:
     id: A6
     artifact_id: decisions
     local_role: consumes
     description: >-
-      Build consumes decision caveats and fallback commands from
+      Build consumes decision caveats and bounded list/get fallback commands from
       execution_context first. Firm (DL1) entries are constraints and exploratory
-      (DL3) entries are uncertain foundations during work selection.
+      (DL3) entries are uncertain foundations during work selection. Raw reads are
+      diagnostic-only for corruption or CLI-defect investigation.
   7:
     id: A7
     artifact_id: plan

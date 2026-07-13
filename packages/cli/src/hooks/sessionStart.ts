@@ -3,6 +3,8 @@ import path from "node:path";
 
 import { resolvePath } from "../core/paths.js";
 import { loadYamlMapping } from "../core/yaml.js";
+import { retrieveStateEntry } from "../state/directRetrieval.js";
+import { listStateEntries } from "../state/listRetrieval.js";
 import {
   loadArtifactOverrides,
   resolveArtifactPath,
@@ -102,9 +104,33 @@ function loadYaml(p: string): unknown {
   }
 }
 
+function boundedStateRecord(projectRoot: string, artifactId: "progress" | "health"): JsonObject | null {
+  try {
+    const page = listStateEntries(projectRoot, artifactId, 1, {}, undefined);
+    const first = page.entries[0];
+    if (!first || typeof first !== "object" || Array.isArray(first)) return null;
+    const listed = first as JsonObject;
+    const entryNumber = listed.entry_number;
+    if (typeof entryNumber !== "number" || !Number.isSafeInteger(entryNumber) || entryNumber < 1) return null;
+    try {
+      return retrieveStateEntry(projectRoot, artifactId, entryNumber).entry.record;
+    } catch {
+      const summary = listed.summary && typeof listed.summary === "object" && !Array.isArray(listed.summary) ? listed.summary : {};
+      return { ...(summary as JsonObject), number: entryNumber, summary_only: true };
+    }
+  } catch {
+    return null;
+  }
+}
+
+function isDefaultStatePath(projectRoot: string, resolvedPath: string, artifactId: "progress" | "health"): boolean {
+  return path.resolve(resolvedPath) === path.resolve(projectRoot, ".agentera", `${artifactId}.yaml`);
+}
+
 export function extractLatestProgressYaml(data: unknown): string | null {
   if (!data || typeof data !== "object" || Array.isArray(data)) return null;
-  const cycles = (data as JsonObject).cycles;
+  const root = data as JsonObject;
+  const cycles = Array.isArray(root.cycles) ? root.cycles : root.summary_only === true ? [root] : null;
   if (!Array.isArray(cycles) || cycles.length === 0) return null;
   const latest = cycles[0] && typeof cycles[0] === "object" ? cycles[0] : null;
   if (!latest) return null;
@@ -123,7 +149,11 @@ export function extractLatestProgressYaml(data: unknown): string | null {
 export function extractHealthGradesYaml(data: unknown): string | null {
   if (!data || typeof data !== "object" || Array.isArray(data)) return null;
   const audits = (data as JsonObject).audits;
-  if (!Array.isArray(audits) || audits.length === 0 || typeof audits[0] !== "object") return null;
+  if (!Array.isArray(audits) || audits.length === 0 || typeof audits[0] !== "object") {
+    return (data as JsonObject).summary_only === true
+      ? "Grades unavailable: summary-only health state; exact state get may require an archive."
+      : null;
+  }
   // cast: audit grades read from parsed health.yaml
   const grades = (audits[0] as JsonObject).grades;
   if (!grades || typeof grades !== "object" || Array.isArray(grades) || Object.keys(grades).length === 0) return null;
@@ -171,16 +201,16 @@ export function buildDigest(projectRoot: string, env: Env = process.env): string
 
   const progressPath = resolveArtifactPath(projectRoot, "progress", overrides);
   if (fs.existsSync(progressPath)) {
-    const entry = progressPath.endsWith(".yaml")
-      ? extractLatestProgressYaml(loadYaml(progressPath))
+    const entry = isDefaultStatePath(projectRoot, progressPath, "progress")
+      ? extractLatestProgressYaml(boundedStateRecord(projectRoot, "progress"))
       : extractLatestProgress(fs.readFileSync(progressPath, "utf8"));
     if (entry) sections.push(`## Latest progress\n${entry}`);
   }
 
   const healthPath = resolveArtifactPath(projectRoot, "health", overrides);
   if (fs.existsSync(healthPath)) {
-    const grades = healthPath.endsWith(".yaml")
-      ? extractHealthGradesYaml(loadYaml(healthPath))
+    const grades = isDefaultStatePath(projectRoot, healthPath, "health")
+      ? extractHealthGradesYaml(boundedStateRecord(projectRoot, "health"))
       : extractHealthGrades(fs.readFileSync(healthPath, "utf8"));
     if (grades) sections.push(`## Health\n${grades}`);
   }
