@@ -66,6 +66,12 @@ describe("state storage authority", () => {
     );
     expect(authority.projections.archive.role).toContain("complete immutable");
     expect(authority.projections.current.role).toContain("bounded active");
+    expect(authority.projections.current.default_capacity).toEqual({
+      active_entries: 10,
+      summary_entries: 40,
+      total_entries: 50,
+      semantics: expect.stringContaining("not retention or deletion limits"),
+    });
     expect(authority.projections.summary.omission).toContain("never silently");
     expect(authority.failures.envelope.error_required_fields).toEqual([
       "class",

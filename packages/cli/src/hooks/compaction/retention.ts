@@ -130,13 +130,13 @@ export function yamlSortEntries(entries: any[], specName: string): any[] {
   return stableSortBy(entries, yamlEntryNumber, true);
 }
 
-export function yamlRecentFullAndOlder(entries: any[], specName: string): [any[], any[]] {
+export function yamlRecentFullAndOlder(entries: any[], specName: string, fullCapacity = MAX_FULL_ENTRIES): [any[], any[]] {
   const newestFirst =
     specName === "session"
       ? stableSortBy(entries, yamlEntryTimestamp, true)
       : stableSortBy(entries, yamlEntryNumber, true);
-  const recent = newestFirst.slice(0, MAX_FULL_ENTRIES);
-  const older = newestFirst.slice(MAX_FULL_ENTRIES);
+  const recent = newestFirst.slice(0, fullCapacity);
+  const older = newestFirst.slice(fullCapacity);
   return [yamlSortEntries(recent, specName), older];
 }
 
@@ -171,7 +171,7 @@ function decisionSatisfactionState(entry: unknown): string | null {
   return typeof state === "string" ? state : null;
 }
 
-function decisionRequiresUserReview(entry: unknown): boolean {
+export function decisionRequiresUserReview(entry: unknown): boolean {
   if (!entry || typeof entry !== "object") return true;
   // cast: decision record fields read from parsed decisions.yaml
   const satisfaction = (entry as JsonObject).satisfaction;
@@ -205,32 +205,21 @@ export function decisionProtectedOverflowCount(active: any[], archive: any[]): n
   );
 }
 
-export function selectDecisionActiveEntries(active: any[]): [any[], any[]] {
+export function selectDecisionActiveEntries(active: any[], fullCapacity = MAX_FULL_ENTRIES): [any[], any[]] {
   const protectedEntries = active.filter((e) => decisionRequiresUserReview(e));
-  if (protectedEntries.length > MAX_FULL_ENTRIES) {
-    throw new Error(
-      "decisions: protected-overflow review pressure; " +
-        `${protectedEntries.length} protected active decision(s) exceed ${MAX_FULL_ENTRIES} full-detail slots`,
-    );
-  }
   const satisfied = active.filter((e) => !decisionRequiresUserReview(e));
   const newestSatisfied = stableSortBy(satisfied, yamlEntryNumber, true);
-  const keepSatisfied = newestSatisfied.slice(0, MAX_FULL_ENTRIES - protectedEntries.length);
-  const compactSatisfied = newestSatisfied.slice(MAX_FULL_ENTRIES - protectedEntries.length);
+  const satisfiedCapacity = Math.max(fullCapacity - protectedEntries.length, 0);
+  const keepSatisfied = newestSatisfied.slice(0, satisfiedCapacity);
+  const compactSatisfied = newestSatisfied.slice(satisfiedCapacity);
   return [yamlSortEntries([...protectedEntries, ...keepSatisfied], "decisions"), compactSatisfied];
 }
 
 export function selectDecisionArchiveEntries(archiveCandidates: any[]): any[] {
-  const protectedEntries = archiveCandidates.filter((e) => decisionRequiresUserReview(e));
-  if (protectedEntries.length > MAX_ONELINE_ENTRIES) {
-    throw new Error(
-      "decisions: protected-overflow review pressure; " +
-        `${protectedEntries.length} protected archived decision(s) exceed ${MAX_ONELINE_ENTRIES} archive slots`,
-    );
-  }
-  const satisfied = archiveCandidates.filter((e) => !decisionRequiresUserReview(e));
-  const keepSatisfied = yamlArchiveEntries(satisfied).slice(0, MAX_ONELINE_ENTRIES - protectedEntries.length);
-  return yamlSortEntries([...protectedEntries, ...keepSatisfied], "decisions");
+  // Review pressure is a projection concern, not a write failure. Capacity
+  // selection happens after archive recovery so protected records are never
+  // discarded merely because they are unresolved.
+  return yamlSortEntries(archiveCandidates, "decisions");
 }
 
 export { applyRetentionCaps };

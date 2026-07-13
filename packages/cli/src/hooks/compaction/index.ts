@@ -42,6 +42,7 @@ import {
   yamlSortEntries,
   yamlEntryNumber,
   decisionProtectedOverflowCount,
+  decisionRequiresUserReview,
   selectDecisionActiveEntries,
   selectDecisionArchiveEntries,
 } from "./retention.js";
@@ -79,6 +80,7 @@ export {
   yamlSortEntries,
   yamlEntryNumber,
   decisionProtectedOverflowCount,
+  decisionRequiresUserReview,
   selectDecisionActiveEntries,
   selectDecisionArchiveEntries,
 };

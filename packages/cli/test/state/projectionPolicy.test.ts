@@ -1,0 +1,162 @@
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
+
+import YAML from "yaml";
+import { afterEach, describe, expect, it } from "vitest";
+
+import {
+  boundStructuredProjection,
+  loadProjectionPolicy,
+  serializedProjectionBytes,
+} from "../../src/state/projectionPolicy.js";
+import { checkCompaction, compactYamlFile } from "../../src/hooks/compaction/index.js";
+import { discoverNumberedArchives } from "../../src/state/archiveDiscovery.js";
+import { publishNumberedArchive } from "../../src/state/archivePublication.js";
+import { queryProgress } from "../../src/cli/commands/state/progress.js";
+
+const roots: string[] = [];
+const sourceRoot = path.resolve(import.meta.dirname, "../../../..");
+
+function project(): string {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-projection-policy-"));
+  roots.push(root);
+  return root;
+}
+
+function cycle(number: number, detail = `Cycle ${number}`): Record<string, unknown> {
+  return {
+    number,
+    timestamp: `2026-07-${String((number % 28) + 1).padStart(2, "0")} 10:00`,
+    type: "feat",
+    phase: "build",
+    what: detail,
+    context: { intent: "projection policy test" },
+  };
+}
+
+function seedProgress(root: string, count: number): string {
+  const entries = Array.from({ length: count }, (_, index) => cycle(index + 1));
+  const target = path.join(root, ".agentera", "progress.yaml");
+  fs.mkdirSync(path.dirname(target), { recursive: true });
+  fs.writeFileSync(target, YAML.stringify({ cycles: entries, archive: [] }));
+  for (const entry of entries) publishNumberedArchive(root, "progress", Number(entry.number), entry, { sourceRoot });
+  return target;
+}
+
+afterEach(() => {
+  for (const root of roots.splice(0)) fs.rmSync(root, { recursive: true, force: true });
+});
+
+describe("lossless projection policy", () => {
+  it("loads authority-owned projection defaults and byte budget", () => {
+    expect(loadProjectionPolicy()).toEqual({
+      activeEntries: 10,
+      summaryEntries: 40,
+      totalEntries: 50,
+      maxUtf8Bytes: 32768,
+    });
+  });
+
+  it.each([
+    [9, "within_defaults"],
+    [10, "within_defaults"],
+    [50, "within_defaults"],
+  ] as const)("reports %s entries without retention failure", (count, state) => {
+    const root = project();
+    const target = seedProgress(root, count);
+    if (count === 50) compactYamlFile(target, "progress", root);
+    const operation = checkCompaction(root).find((item) => item.status.artifact === "progress");
+    expect(operation?.action).toBe("ok");
+    expect(operation?.status.projection_state).toBe(state);
+    expect(operation?.status.over_limit_count).toBe(0);
+  });
+
+  it("projects above the default without deleting numbered archive records", () => {
+    const root = project();
+    const target = seedProgress(root, 55);
+    const result = compactYamlFile(target, "progress", root);
+    const current = YAML.parse(fs.readFileSync(target, "utf8")) as Record<string, any>;
+    const discovery = discoverNumberedArchives(root, { sourceRoot });
+
+    expect(result.dropped).toBe(0);
+    expect(result.omitted_count).toBe(5);
+    expect(current.cycles).toHaveLength(10);
+    expect(current.archive).toHaveLength(40);
+    expect(current.omitted).toBe(true);
+    expect(current.omitted_count).toBe(5);
+    expect(discovery.entries.filter((entry) => entry.artifactId === "progress")).toHaveLength(55);
+  });
+
+  it("keeps unresolved decision pressure writable beyond active capacity", () => {
+    const root = project();
+    const target = path.join(root, ".agentera", "decisions.yaml");
+    const decisions = Array.from({ length: 51 }, (_, index) => ({
+      number: index + 1,
+      date: "2026-07-13",
+      question: `Question ${index + 1}?`,
+      context: "Context",
+      alternatives: [{ name: "yes", status: "chosen" }],
+      choice: "yes",
+      reasoning: "Reasoning",
+      confidence: "firm",
+    }));
+    fs.mkdirSync(path.dirname(target), { recursive: true });
+    fs.writeFileSync(target, YAML.stringify({ decisions }));
+
+    const result = compactYamlFile(target, "decisions", root);
+    const current = YAML.parse(fs.readFileSync(target, "utf8")) as Record<string, any>;
+    expect(result.dropped).toBe(0);
+    expect(current.decisions).toHaveLength(51);
+    expect(checkCompaction(root).find((item) => item.status.artifact === "decisions")?.action).toBe("projection");
+  });
+
+  it("omits complete detail deterministically rather than truncating Unicode", () => {
+    const entries = Array.from({ length: 40 }, (_, index) => ({
+      number: index + 1,
+      detail: "日本語🙂漢字".repeat(1200),
+    }));
+    const value = {
+      command: "progress",
+      status: "ok",
+      entries,
+      counts: { entries: entries.length },
+      source: { artifact: "progress", exists: true },
+      filters: {},
+      summary: {},
+    };
+    const bounded = boundStructuredProjection(value, "progress", "json");
+
+    expect(serializedProjectionBytes(bounded, "json")).toBeLessThanOrEqual(32768);
+    expect(bounded.omitted).toBe(true);
+    expect(bounded.omitted_count).toBeGreaterThan(0);
+    expect(bounded.omission_reason).toBe("projection_byte_budget");
+    expect((bounded.retrieval as Record<string, unknown>).command).toBe(
+      "agentera state progress get --number N --format json",
+    );
+    const returned = bounded.entries as Array<Record<string, unknown>>;
+    expect(returned.every((entry) => typeof entry.detail === "string" && !String(entry.detail).endsWith("..."))).toBe(true);
+    expect(returned.map((entry) => entry.number)).toEqual(
+      [...returned.map((entry) => entry.number)].sort((left, right) => Number(left) - Number(right)),
+    );
+  });
+
+  it("enforces the same budget at the state progress response surface", () => {
+    const root = project();
+    const target = seedProgress(root, 12);
+    const entries = YAML.parse(fs.readFileSync(target, "utf8")).cycles as Array<Record<string, unknown>>;
+    for (const entry of entries) entry.what = "é🙂漢字".repeat(3000);
+    fs.writeFileSync(target, YAML.stringify({ cycles: entries }));
+    let output = "";
+    const rc = queryProgress(
+      { command: "progress", format: "json", limit: 12 },
+      { progress: { path: target, record: undefined, schema: {}, fields: {} } },
+      { out: (text) => (output += text), err: () => {} },
+    );
+    const payload = JSON.parse(output) as Record<string, any>;
+    expect(rc).toBe(0);
+    expect(Buffer.byteLength(output, "utf8")).toBeLessThanOrEqual(32768);
+    expect(payload.omitted).toBe(true);
+    expect(payload.omitted_count).toBeGreaterThan(0);
+  });
+});

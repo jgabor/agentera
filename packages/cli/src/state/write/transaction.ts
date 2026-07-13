@@ -930,24 +930,10 @@ function executeStateWriteUnlocked(
           hydrateDecisionRecords(array(mutated.candidate, "archive") as unknown as JsonObject[], req.projectRoot),
         )
       : 0;
-  const skipProtectedDecisionCompaction =
-    req.artifact === "decisions" && req.spec.compacts && protectedOverflowCount > 0;
   try {
     if (req.dryRun) fs.writeFileSync(stage, candidateBytes);
-    if (req.spec.compacts && !skipProtectedDecisionCompaction) {
+    if (req.spec.compacts) {
       compaction = compactYamlFile(stage, req.artifact, req.projectRoot);
-    } else if (skipProtectedDecisionCompaction) {
-      const active = array(mutated.candidate, "decisions");
-      const archive = array(mutated.candidate, "archive");
-      compaction = {
-        full_before: active.length,
-        oneline_before: archive.length,
-        full_after: active.length,
-        oneline_after: archive.length,
-        dropped: 0,
-        changed: false,
-        protected_overflow_count: protectedOverflowCount,
-      };
     }
     const finalBytes = fs.readFileSync(stage, "utf8");
     const finalViolations = validateArtifactBytes(req.artifact, finalBytes);

@@ -69,10 +69,10 @@ BUDGET:
 COMPACTION:
   1:
     id: DX1
-    rule: uniform_10_40_50
+    rule: lossless_projection
     description: >-
-      Growing artifacts follow a uniform 10/40/50 rule: 10 full-detail
-      entries, 40 one-line archive entries, drop beyond 50 total.
+      The 10/40/50 values are current projection defaults, not deletion limits.
+      Numbered archive records remain complete and unlimited.
   2:
     id: DX2
     full_detail:
@@ -93,21 +93,26 @@ COMPACTION:
       the archive section. Compact summaries preserve decision number, date,
       and chosen alternative; structured compact fields preserve outcome and
       explicit feeds_into references when present so CLI downstream references
-      remain non-inferential.
+      remain non-inferential. Entries beyond the summary default are represented
+      by omission metadata while their numbered archive records remain available.
   4:
     id: DX4
-    dropped:
-      threshold: 50
-      action: "Removed entirely"
+    omission:
+      fields: [omitted, omitted_count, omission_reason, retrieval]
+      reason: projection_capacity_or_byte_budget
     description: >-
-      Decisions older than 50 are dropped entirely.
+      Omitted projection detail is never silently deleted or truncated. The
+      numbered archive is the complete historical source and retrieval points
+      use the direct state get contract.
   5:
     id: DX5
     trigger: "When discuss writes a new decision"
     description: >-
       Compaction runs when the producing skill writes a new entry.
-      If >10 full-detail entries exist, collapse the oldest to one-line.
-      If >40 one-line entries exist, drop the oldest.
+      If >10 full-detail entries exist and their numbered archives verify,
+      collapse the oldest to one-line. If >40 summary entries exist, omit the
+      oldest from this bounded projection with metadata; never delete its
+      numbered archive record. Unresolved review entries do not block storage.
   6:
     id: DX6
     archive_section:

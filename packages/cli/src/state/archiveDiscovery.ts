@@ -69,6 +69,13 @@ export interface NumberedArchiveContract {
   entrySchemaVersion: string;
 }
 
+export interface StateProjectionPolicy {
+  activeEntries: number;
+  summaryEntries: number;
+  totalEntries: number;
+  maxUtf8Bytes: number;
+}
+
 export interface DecisionOverlayContract {
   location: string;
   schemaVersion: string;
@@ -91,6 +98,7 @@ interface ArchiveAuthority {
   supportedArtifacts: Map<string, SupportedArtifact>;
   ignoredRootNames: Set<string>;
   decisionOverlay: DecisionOverlayContract;
+  projection: StateProjectionPolicy;
 }
 
 function isMapping(value: unknown): value is AuthorityMapping {
@@ -114,6 +122,13 @@ function requiredStringList(value: unknown, field: string): string[] {
     value.some((item) => typeof item !== "string" || item.length === 0)
   ) {
     throw new Error(`state storage authority field '${field}' must be a list of non-empty strings`);
+  }
+  return value;
+}
+
+function requiredPositiveInteger(value: unknown, field: string): number {
+  if (typeof value !== "number" || !Number.isSafeInteger(value) || value < 1) {
+    throw new Error(`state storage authority field '${field}' must be a positive integer`);
   }
   return value;
 }
@@ -246,6 +261,29 @@ function loadAuthority(sourceRoot: string): ArchiveAuthority {
     allowedNext,
   };
 
+  const currentProjection = mapping(mapping(authority.projections).current);
+  const capacity = mapping(currentProjection.default_capacity);
+  const activeEntries = requiredPositiveInteger(
+    capacity.active_entries,
+    "projections.current.default_capacity.active_entries",
+  );
+  const summaryEntries = requiredPositiveInteger(
+    capacity.summary_entries,
+    "projections.current.default_capacity.summary_entries",
+  );
+  const totalEntries = requiredPositiveInteger(
+    capacity.total_entries,
+    "projections.current.default_capacity.total_entries",
+  );
+  if (activeEntries + summaryEntries !== totalEntries) {
+    throw new Error("state storage authority projection capacity must equal active plus summary entries");
+  }
+  const projectionBudget = mapping(mapping(authority.budgets).projection);
+  const maxUtf8Bytes = requiredPositiveInteger(
+    projectionBudget.max_utf8_bytes,
+    "budgets.projection.max_utf8_bytes",
+  );
+
   return {
     archiveRoot,
     archiveExtension: extension,
@@ -256,6 +294,7 @@ function loadAuthority(sourceRoot: string): ArchiveAuthority {
     supportedArtifacts,
     ignoredRootNames,
     decisionOverlay,
+    projection: { activeEntries, summaryEntries, totalEntries, maxUtf8Bytes },
   };
 }
 
@@ -369,6 +408,12 @@ export function numberedArchiveContract(
     archiveExtension: authority.archiveExtension,
     entrySchemaVersion: authority.entrySchemaVersion,
   };
+}
+
+export function stateProjectionPolicy(
+  sourceRoot: string = resolveSourceRoot(),
+): StateProjectionPolicy {
+  return loadAuthority(sourceRoot).projection;
 }
 
 export function decisionOverlayContract(

@@ -1,0 +1,19 @@
+schemaVersion: agentera.stateArchiveEntry.v1
+artifact_id: progress
+entry_number: 757
+record:
+  number: 757
+  timestamp: 2026-07-13 14:24
+  type: feat
+  phase: build
+  what: Replaced numbered-state retention limits with lossless projection defaults and deterministic omission metadata.
+  inspiration: Active lossless archive-backed state storage plan Task 7 and references/artifacts/state-storage-authority.yaml.
+  discovered: Verified numbered archives remain complete while current projections omit only recoverable detail; unresolved decision review pressure no longer blocks writes; unverified live progress entries still produce a safe recovery refusal.
+  verified: "Focused: pnpm -C packages/cli exec vp test run test/state/projectionPolicy.test.ts test/hooks/compaction.test.ts test/state/archiveRecovery.test.ts test/state/archiveAuthority.test.ts test/state/decisionOverlay.test.ts test/state/write/stateWrite.test.ts test/cli/compactParity.test.ts test/cli/state.test.ts test/cli/compact.test.ts: 9 files and 148 tests passed. Full excluding unrelated packaging: pnpm -C packages/cli exec vp test run --exclude test/packaging/prepack.test.ts: 167 files and 1630 tests passed. Typecheck, build, capability-contract validation, progress/decisions/health artifact validation, and check compact passed."
+  next: Task 7 remains pending for evaluation; do not mark it complete. Task 8 owns direct get/list retrieval and Task 10 owns prime/orientation integration.
+  context:
+    intent: Execute Task 7 without deleting logical state or implementing deferred retrieval, listing, consumer, migration, Git, or release work.
+    constraints: Fold the existing Task 6 plan-status change into this commit. Do not modify health, vision, profile, decisions, TODO, version, changelog, publish, push, or tag state.
+    unknowns: The full packaging suite still reports five npm pack JSON parsing failures outside this change; the non-packaging full suite is green.
+    scope: references/artifacts/state-storage-authority.yaml; skills/agentera/schemas/artifacts/{progress,decisions,health}.yaml; packages/cli/src/{state/projectionPolicy.ts,state/archiveDiscovery.ts,state/write/transaction.ts,cli/stateQuery.ts,cli/commands/compact.ts,hooks/compaction/*}; focused projection and compaction tests; .agentera/progress.yaml; .agentera/plan.yaml
+record_sha256: 2571170ee9fb567e703af8c7fb9954c6817cc83b6b5d4e3fe8c51e341d99d475

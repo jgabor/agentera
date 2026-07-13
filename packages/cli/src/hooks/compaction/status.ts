@@ -31,6 +31,7 @@ import {
 } from "../../state/write/mutation.js";
 import { hydrateDecisionRecords } from "../../state/decisionOverlay.js";
 import type { ProjectionRecoveryReport } from "../../state/archiveRecovery.js";
+import { loadProjectionPolicy } from "../../state/projectionPolicy.js";
 
 function artifactPaths(projectRoot: string): Record<string, string> {
   const paths: Record<string, string> = { ...DEFAULT_ARTIFACT_PATHS };
@@ -99,6 +100,7 @@ function countStatus(
   protectedOverflowCount = 0,
   budgetActiveCount?: number,
   projectionRecovery?: ProjectionRecoveryReport,
+  projectionState?: "within_defaults" | "over_defaults",
 ): CompactionStatus {
   const totalCount = activeCount + archiveCount;
   const budgetActive = budgetActiveCount ?? activeCount;
@@ -109,10 +111,17 @@ function countStatus(
     active_count: activeCount,
     archive_count: archiveCount,
     total_count: totalCount,
-    over_limit_count: overLimitCount(budgetActive, archiveCount),
-    reason: protectedOverflowCount ? "protected-overflow review pressure" : "uniform_10_40_50",
+    over_limit_count: projectionState ? 0 : overLimitCount(budgetActive, archiveCount),
+    reason: projectionState
+      ? projectionState === "over_defaults"
+        ? "lossless projection exceeds display defaults; numbered archives remain authoritative"
+        : "lossless projection is within display defaults"
+      : protectedOverflowCount
+        ? "protected-overflow review pressure"
+        : "uniform_10_40_50",
     protected_overflow_count: protectedOverflowCount,
     exists: true,
+    ...(projectionState ? { projection_state: projectionState } : {}),
     ...(projectionRecovery ? { projection_recovery: projectionRecovery } : {}),
   };
 }
@@ -131,6 +140,7 @@ function projectionRecoveryFor(
 
 export function computeCompactionStatus(projectRoot: string): CompactionStatus[] {
   const paths = artifactPaths(projectRoot);
+  const projectionPolicy = loadProjectionPolicy();
   const statuses: CompactionStatus[] = [];
 
   const todoPath = paths.todo;
@@ -170,9 +180,14 @@ export function computeCompactionStatus(projectRoot: string): CompactionStatus[]
            active.length,
            archive.length,
            protectedOverflowCount,
-           budgetActiveCount,
-           projectionRecoveryFor(projectRoot, artifact, p),
-         ),
+            budgetActiveCount,
+            projectionRecoveryFor(projectRoot, artifact, p),
+            active.length > projectionPolicy.activeEntries ||
+              archive.length > projectionPolicy.summaryEntries ||
+              active.length + archive.length > projectionPolicy.totalEntries
+              ? "over_defaults"
+              : "within_defaults",
+          ),
        );
     } else {
       statuses.push(missingStatus(artifact, p, "compactable"));
@@ -244,16 +259,26 @@ function operationForStatus(status: CompactionStatus, mode: string): CompactionO
   if (!status.exists) return base("missing", status.reason);
   if (status.classification === "error") return base("error", status.reason);
   if (status.classification !== "compactable") return base("skipped", status.reason);
-  if (status.protected_overflow_count) {
-    return base("protected_overflow", `protected-overflow review pressure by ${status.protected_overflow_count}`);
-  }
   if (status.projection_recovery?.refused_count) {
     return base(
       "refused",
       `projection retained ${status.projection_recovery.retained_full} full entr${status.projection_recovery.retained_full === 1 ? "y" : "ies"}; archive recovery is required before summarization`,
     );
   }
-  if (!status.over_limit_count) return base("ok", "within uniform_10_40_50 limits");
+  if (status.projection_state === "over_defaults") {
+    return base(
+      mode === "fix" ? "pending_projection" : "projection",
+      "projection exceeds display defaults; archive history remains lossless",
+    );
+  }
+  if (!status.over_limit_count) {
+    return base(
+      "ok",
+      status.projection_state === "within_defaults"
+        ? "within configured lossless projection defaults"
+        : "within uniform_10_40_50 limits",
+    );
+  }
   return base(
     mode === "check" ? "over_limit" : "pending_fix",
     `over uniform_10_40_50 limit by ${status.over_limit_count}`,
@@ -271,7 +296,7 @@ function fixCompactionUnlocked(
   const operations: CompactionOperation[] = [];
   for (const status of computeCompactionStatus(projectRoot)) {
     const baseline = operationForStatus(status, "fix");
-    if (baseline.action !== "pending_fix") {
+   if (baseline.action !== "pending_fix" && baseline.action !== "pending_projection") {
       operations.push(baseline);
       continue;
     }
@@ -300,7 +325,7 @@ function fixCompactionUnlocked(
       message:
         `full ${result.full_before}->${result.full_after}; ` +
         `archive ${result.oneline_before}->${result.oneline_after}; ` +
-        `dropped ${result.dropped}`,
+        `omitted ${result.omitted_count ?? 0}; dropped ${result.dropped}`,
     });
   }
   return operations;

@@ -11,6 +11,8 @@ export interface CompactResult {
   full_after: number;
   oneline_after: number;
   dropped: number;
+  omitted_count?: number;
+  omission_reason?: string;
   changed: boolean;
   protected_overflow_count?: number;
   recovery?: ProjectionRecoveryReport;
@@ -27,6 +29,7 @@ export interface CompactionStatus {
   reason: string;
   protected_overflow_count: number | null;
   exists: boolean;
+  projection_state?: "within_defaults" | "over_defaults";
   projection_recovery?: ProjectionRecoveryReport;
 }
 

@@ -87,10 +87,10 @@ BUDGET:
 COMPACTION:
   1:
     id: HX1
-    rule: uniform_10_40_50
+    rule: lossless_projection
     description: >-
-      Growing artifacts follow a uniform 10/40/50 rule: 10 full-detail
-      entries, 40 one-line archive entries, drop beyond 50 total.
+      The 10/40/50 values are current projection defaults, not deletion limits.
+      Numbered archive records remain complete and unlimited.
   2:
     id: HX2
     full_detail:
@@ -109,21 +109,27 @@ COMPACTION:
     description: >-
       Audits 11 through 50 are collapsed to one-line format under the
       archive section. One-line summaries preserve audit number, date,
-      overall grade, and trajectory.
+      overall grade, and trajectory. Entries beyond the summary default are
+      represented by omission metadata while their numbered archive records
+      remain available.
   4:
     id: HX4
-    dropped:
-      threshold: 50
-      action: "Removed entirely"
+    omission:
+      fields: [omitted, omitted_count, omission_reason, retrieval]
+      reason: projection_capacity_or_byte_budget
     description: >-
-      Audits older than 50 are dropped entirely.
+      Omitted projection detail is never silently deleted or truncated. The
+      numbered archive is the complete historical source and retrieval points
+      use the direct state get contract.
   5:
     id: HX5
     trigger: "When audit writes a new audit"
     description: >-
       Compaction runs when the producing skill writes a new entry.
-      If >10 full-detail entries exist, collapse the oldest to one-line.
-      If >40 one-line entries exist, drop the oldest.
+      If >10 full-detail entries exist and their numbered archives verify,
+      collapse the oldest to one-line. If >40 summary entries exist, omit the
+      oldest from this bounded projection with metadata; never delete its
+      numbered archive record. Unverified entries remain full for recovery.
   6:
     id: HX6
     archive_section:

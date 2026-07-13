@@ -2,6 +2,7 @@ import { resolvePath } from "../../core/paths.js";
 import { runCompaction, CompactionOperation } from "../../hooks/compaction/index.js";
 import { emitStructured } from "../structured.js";
 import type { JsonObject } from "../../core/jsonValue.js";
+import { boundStructuredProjection } from "../../state/projectionPolicy.js";
 
 /** Port of scripts/agentera cmd_compact and its _compaction_* helpers. */
 
@@ -13,6 +14,7 @@ interface CompactionSummary {
   artifact_count: number;
   over_limit_count: number;
   protected_overflow_count: number;
+  projection_count: number;
   error_count: number;
   changed_count: number;
   action_counts: Record<string, number>;
@@ -53,6 +55,7 @@ function compactionOperationPayload(op: CompactionOperation): JsonObject {
     archive_count: status.archive_count,
     total_count: status.total_count,
     over_limit_count: status.over_limit_count,
+    ...(status.projection_state ? { projection_state: status.projection_state } : {}),
     protected_overflow_count: status.protected_overflow_count ?? 0,
     mode: op.mode,
     action: op.action,
@@ -69,6 +72,8 @@ function compactionOperationPayload(op: CompactionOperation): JsonObject {
       active_after: op.result.full_after,
       archive_after: op.result.oneline_after,
       dropped: op.result.dropped,
+      omitted_count: op.result.omitted_count ?? 0,
+      ...(op.result.omission_reason ? { omission_reason: op.result.omission_reason } : {}),
       changed: op.result.changed,
       ...(recovery ? { recovery } : {}),
     };
@@ -78,6 +83,7 @@ function compactionOperationPayload(op: CompactionOperation): JsonObject {
 
 function compactionGuidance(mode: string, operations: CompactionOperation[]): string {
   const over = operations.filter((op) => op.action === "over_limit" || op.action === "pending_fix");
+  const projections = operations.filter((op) => op.action === "projection" || op.action === "pending_projection");
   const protectedOps = operations.filter((op) => op.action === "protected_overflow");
   const errors = operations.filter((op) => op.action === "error");
   const refused = operations.filter((op) => op.action === "refused");
@@ -103,23 +109,28 @@ function compactionGuidance(mode: string, operations: CompactionOperation[]): st
   if (mode === "fix" && over.length > 0) {
     return "Some artifacts remain over limit; inspect skipped or unsupported artifacts before manual remediation.";
   }
-  return "No repair needed. Compactable artifacts are within uniform_10_40_50 limits.";
+  if (projections.length > 0) {
+    return "Projection defaults are bounded; numbered archive records remain complete and authoritative.";
+  }
+  return "No repair needed. Compactable artifacts are within the configured projection defaults.";
 }
 
 function compactionSummary(mode: string, operations: CompactionOperation[]): CompactionSummary {
   const counts: Record<string, number> = {};
   for (const op of operations) counts[op.action] = (counts[op.action] ?? 0) + 1;
   const overLimit = operations.filter((op) => op.action === "over_limit" || op.action === "pending_fix").length;
+  const projections = operations.filter((op) => op.action === "projection" || op.action === "pending_projection").length;
   const protectedOverflow = operations.filter((op) => op.action === "protected_overflow").length;
   const errors = operations.filter((op) => op.action === "error").length;
   const changed = operations.filter((op) => op.changed).length;
-  const status = errors || protectedOverflow || (mode === "check" && overLimit) ? "fail" : "pass";
+  const status = errors || (mode === "check" && overLimit) ? "fail" : "pass";
   return {
     status,
     mode,
     artifact_count: operations.length,
     over_limit_count: overLimit,
     protected_overflow_count: protectedOverflow,
+    projection_count: projections,
     error_count: errors,
     changed_count: changed,
     action_counts: counts,
@@ -129,7 +140,6 @@ function compactionSummary(mode: string, operations: CompactionOperation[]): Com
 
 function compactionExitCode(mode: string, operations: CompactionOperation[]): number {
   if (operations.some((op) => op.action === "error")) return 2;
-  if (operations.some((op) => op.action === "protected_overflow")) return 1;
   if (mode === "check" && operations.some((op) => op.action === "over_limit")) return 1;
   return 0;
 }
@@ -149,7 +159,11 @@ function emitCompactionPayload(payload: CompactionPayload, mode: string, format:
   const summary = payload.summary;
   const project = payload.project;
   if (format === "json") {
-    emitStructured(payload, "json", out);
+    emitStructured(
+      boundStructuredProjection(payload as unknown as JsonObject, "compact", "json"),
+      "json",
+      out,
+    );
     return;
   }
   out(`status=${summary.status} | mode=${mode} | project=${project}\n`);

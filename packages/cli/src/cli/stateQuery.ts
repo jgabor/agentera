@@ -7,6 +7,7 @@ import { activeAppModel, discoverSchemasDir, SchemaInfo } from "./appContext.js"
 import { validateAgentString, validateIdentifier } from "./argvalidate.js";
 import { emitStructured } from "./structured.js";
 import type { JsonObject, JsonValue } from "../core/jsonValue.js";
+import { boundStructuredProjection } from "../state/projectionPolicy.js";
 
 /** Shared state-query infrastructure ported from scripts/agentera. */
 
@@ -311,7 +312,7 @@ export function emitStateStructured(
 ): number {
   const selected = selectStructuredFields(command, value, fieldsArg, err);
   if (selected === null) return 1;
-  emitStructured(selected, format, out);
+  emitStructured(boundStructuredProjection(selected, command, format), format, out);
   return 0;
 }
 

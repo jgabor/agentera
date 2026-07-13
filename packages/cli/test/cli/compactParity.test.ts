@@ -107,20 +107,21 @@ describe("compaction parity (D56 T3)", () => {
     }
   });
 
-  it("dry-run reports over_limit before apply on an over-cap fixture (fail guard)", () => {
+  it("dry-run reports projection pressure without failing on an over-cap fixture", () => {
     const project = path.join(tmp, "over-cap-dry");
     writeOverCapProgress(project, 55);
     const { rc, out } = capture(["check", "compact", "--project", project, "--format", "json"]);
-    expect(rc).toBe(1);
+    expect(rc).toBe(0);
     const payload = JSON.parse(out) as Record<string, unknown>;
     expect(payload.command).toBe("gate");
     const summary = payload.summary as Record<string, unknown>;
     expect(summary.mode).toBe("check");
-    expect(summary.over_limit_count).toBe(1);
+    expect(summary.over_limit_count).toBe(0);
     const progress = (payload.operations as Array<Record<string, unknown>>).find(
       (op) => op.artifact === "progress",
     );
-    expect(progress?.action).toBe("over_limit");
+    expect(progress?.action).toBe("projection");
+    expect(progress?.projection_state).toBe("over_defaults");
   });
 
   it("apply enforces caps with archive preservation and clears over_limit (pass)", () => {

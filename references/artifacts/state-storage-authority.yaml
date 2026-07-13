@@ -195,6 +195,15 @@ projections:
     omission: never omit fields from an archive record
   current:
     role: bounded active projection for current artifact consumers
+    default_capacity:
+      active_entries: 10
+      summary_entries: 40
+      total_entries: 50
+      semantics: >-
+        These are projection defaults, not retention or deletion limits. Entries
+        outside the default display capacity remain in the numbered archive;
+        entries whose archive cannot be verified remain full in the projection
+        with recovery metadata rather than being discarded.
     paths:
       progress: .agentera/progress.yaml
       decisions: .agentera/decisions.yaml

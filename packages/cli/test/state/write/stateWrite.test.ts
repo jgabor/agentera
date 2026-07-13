@@ -1400,7 +1400,7 @@ describe("closed rejection catalog and mutation safety", () => {
     const result = run(root, decisionArgs("Overflow?"));
     expect(result.rc).toBe(0);
     expect(result.json?.compaction).toMatchObject({
-      changed: false,
+      changed: true,
       protected_overflow_count: 1,
     });
     expect(loadYamlMapping(fs.readFileSync(target, "utf8")).decisions).toHaveLength(11);

@@ -83,13 +83,14 @@ describe("checkCompaction (repo-state fixtures)", () => {
 });
 
 describe("progress.yaml over-limit gate", () => {
-  it("fails the compaction gate when cycle count exceeds 50", () => {
+  it("reports projection pressure without failing when cycle count exceeds 50", () => {
     writeProgressYaml(tmp, 55);
     const progressOp = checkCompaction(tmp).find((o) => o.status.artifact === "progress");
-    expect(progressOp?.action).toBe("over_limit");
+    expect(progressOp?.action).toBe("projection");
     expect(progressOp?.status.total_count).toBe(55);
-    expect(progressOp?.status.over_limit_count).toBeGreaterThan(0);
-    expect(runCompaction(tmp, "check").some((o) => o.action === "over_limit")).toBe(true);
+    expect(progressOp?.status.over_limit_count).toBe(0);
+    expect(progressOp?.status.projection_state).toBe("over_defaults");
+    expect(runCompaction(tmp, "check").some((o) => o.action === "over_limit")).toBe(false);
   });
 
   it("compacts over-limit progress.yaml under the cap with archive preservation", () => {
@@ -108,6 +109,9 @@ describe("progress.yaml over-limit gate", () => {
     expect(data.cycles.length + data.archive.length).toBeLessThanOrEqual(MAX_TOTAL_ENTRIES);
     expect(data.cycles[0].number).toBe(55);
     expect(data.archive.some((e) => e.summary.includes("Cycle 1"))).toBe(true);
+    expect(data.omitted).toBe(true);
+    expect(data.omitted_count).toBe(5);
+    expect(data.omission_reason).toBe("projection_capacity");
     expect(checkCompaction(tmp).find((o) => o.status.artifact === "progress")?.action).toBe("ok");
   });
 

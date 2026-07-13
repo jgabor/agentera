@@ -308,7 +308,8 @@ describe("decision review overlays", () => {
     ]).rc).toBe(0);
     const pressure = checkCompaction(root).find((item) => item.status.artifact === "decisions");
     expect(pressure?.status.protected_overflow_count).toBeGreaterThan(0);
-    expect(pressure?.action).toBe("protected_overflow");
+    expect(pressure?.action).toBe("projection");
+    expect(pressure?.status.projection_state).toBe("over_defaults");
   });
 
   it("uses confirmed-to-open overlays for retention pressure and still permits append", () => {
@@ -345,10 +346,9 @@ describe("decision review overlays", () => {
 
     const status = checkCompaction(root).find((item) => item.status.artifact === "decisions");
     expect(status?.status.protected_overflow_count).toBe(1);
-    expect(status?.action).toBe("protected_overflow");
-    expect(() => compactYamlFile(path.join(agentera, "decisions.yaml"), "decisions", root)).toThrow(
-      /protected-overflow review pressure/,
-    );
+    expect(status?.action).toBe("projection");
+    expect(status?.status.projection_state).toBe("over_defaults");
+    expect(() => compactYamlFile(path.join(agentera, "decisions.yaml"), "decisions", root)).not.toThrow();
 
     const appended = run(root, [
       "decisions",
