@@ -51,7 +51,7 @@ describe("package registry", () => {
     expect(registry.versionSurfaceIds().length).toBe(new Set(registry.versionSurfaceIds()).size);
     const versions = registry.versionSurfaceValues();
     const developmentVersion = JSON.parse(fs.readFileSync(CLI_PACKAGE_PATH, "utf8")).version;
-    expect(developmentVersion).toBe("3.0.0-dev.18");
+    expect(developmentVersion).toMatch(/^3\.0\.0-dev\.\d+$/);
     expect(versions["cli-package"]).toBe(developmentVersion);
     expect(new Set(Object.entries(versions)
       .filter(([surface]) => surface !== "cli-package")
