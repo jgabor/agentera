@@ -169,6 +169,20 @@ describe("state storage authority", () => {
     expect(authority.budgets.startup.omission_semantics).toContain("distinguish omitted detail");
   });
 
+  it("declares bounded list benchmarks and the measured no-index trigger", () => {
+    const authority = loadYaml(AUTHORITY_PATH);
+    expect(authority.budgets.list).toMatchObject({
+      max_utf8_bytes: 32768,
+      benchmark: {
+        small: { entries: 100, max_latency_ms: 5000, max_heap_delta_bytes: 67108864 },
+        large: { entries: 1000, max_latency_ms: 15000, max_heap_delta_bytes: 268435456 },
+        response_max_utf8_bytes: 32768,
+      },
+      index_decision: { decision: "no_index" },
+    });
+    expect(String(authority.budgets.list.index_decision.trigger)).toContain("persistent index");
+  });
+
   it("rejects a budget drift or omission contract without silently accepting it", () => {
     const authority = loadYaml(AUTHORITY_PATH);
     authority.budgets.startup.surfaces.prime_briefing.max_utf8_bytes = 1;

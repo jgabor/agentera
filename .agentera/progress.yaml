@@ -1,4 +1,169 @@
 cycles:
+  - number: 764
+    timestamp: 2026-07-13 16:16
+    type: test
+    phase: build
+    what: Verified the final text list renderer includes explicit provenance and
+      compatibility for every bounded row; snapshot pagination, archive/current
+      classification, and all previously recorded gates remain unchanged. Task 9
+      remains pending.
+    inspiration: Final diff review identified that text output needed the same
+      explicit provenance contract as JSON and YAML.
+    discovered: Adding explicit text provenance did not change the deterministic
+      page, benchmark, or failure behavior; the five packaging failures remain
+      isolated to npm 12 JSON parsing.
+    verified: "Focused: pnpm -C packages/cli exec vp test run
+      test/state/listRetrieval.test.ts test/state/archiveAuthority.test.ts, 2
+      files and 17 tests passed. Adjacent: pnpm -C packages/cli exec vp test run
+      test/state/listRetrieval.test.ts test/state/archiveAuthority.test.ts
+      test/state/archiveDiscovery.test.ts test/state/archiveRecovery.test.ts
+      test/state/archivePublication.test.ts test/state/directRetrieval.test.ts
+      test/state/decisionOverlay.test.ts test/state/projectionPolicy.test.ts
+      test/cli/state.test.ts test/cli/compactParity.test.ts, 10 files and 133
+      tests passed. Non-packaging: pnpm -C packages/cli exec vp test run
+      --exclude test/packaging/prepack.test.ts, 169 files and 1678 tests passed.
+      Full: pnpm -C packages/cli test, 169 of 170 files and 1682 of 1687 tests
+      passed; exactly 5 pre-existing npm 12 npm pack --dry-run --json parsing
+      failures remain in test/packaging/prepack.test.ts. pnpm -C packages/cli
+      run typecheck passed; pnpm -C packages/cli build passed; prior lint passed
+      with 101 pre-existing warnings and 0 errors; capability-contract and
+      progress artifact validation passed; final check compact remains required
+      after this append."
+    next: Task 9 remains pending for evaluator review. Task 10 prime consumers,
+      migration, Git durability, and release work remain out of scope.
+    context:
+      intent: Record the final post-review verification for the list read surface
+        without closing Task 9 or expanding scope.
+      constraints: Do not mark Task 9 complete. Do not modify prime or capability
+        consumers, migration, Git, health, vision, profile, decisions, TODO,
+        version, publish, push, or tag surfaces. Packaging files remain
+        unchanged.
+      unknowns: No persistent index is introduced; reevaluate only if a reproducible
+        authority benchmark exceeds its declared threshold on another
+        filesystem.
+      scope: packages/cli/src/state/listRetrieval.ts;
+        packages/cli/src/cli/commands/state/list.ts;
+        packages/cli/src/cli/dispatch/state.ts; packages/cli/src/cli/help.ts;
+        packages/cli/src/state/archiveDiscovery.ts;
+        packages/cli/src/state/directRetrieval.ts;
+        packages/cli/test/state/listRetrieval.test.ts;
+        packages/cli/test/state/archiveAuthority.test.ts;
+        references/artifacts/state-storage-authority.yaml;
+        .agentera/progress.yaml
+  - number: 763
+    timestamp: 2026-07-13 16:13
+    type: test
+    phase: build
+    what: Reverified Task 9 after the final overlay provenance assertion and state
+      synchronization; the list implementation and Task 8 plan evaluation remain
+      intact, and Task 9 remains pending.
+    inspiration: Final Task 9 evaluator handoff requires exact commands and
+      post-change counts.
+    discovered: The final assertion-only test addition changes focused, adjacent,
+      and non-packaging totals by one while preserving all pass/failure classes;
+      no packaging behavior changed.
+    verified: "Focused: pnpm -C packages/cli exec vp test run
+      test/state/listRetrieval.test.ts test/state/archiveAuthority.test.ts, 2
+      files and 17 tests passed. Adjacent: pnpm -C packages/cli exec vp test run
+      test/state/listRetrieval.test.ts test/state/archiveAuthority.test.ts
+      test/state/archiveDiscovery.test.ts test/state/archiveRecovery.test.ts
+      test/state/archivePublication.test.ts test/state/directRetrieval.test.ts
+      test/state/decisionOverlay.test.ts test/state/projectionPolicy.test.ts
+      test/cli/state.test.ts test/cli/compactParity.test.ts, 10 files and 133
+      tests passed. Non-packaging: pnpm -C packages/cli exec vp test run
+      --exclude test/packaging/prepack.test.ts, 169 files and 1678 tests passed.
+      Full: pnpm -C packages/cli test, 169 of 170 files and 1682 of 1687 tests
+      passed; exactly 5 pre-existing npm 12 npm pack --dry-run --json parsing
+      failures remain in test/packaging/prepack.test.ts. pnpm -C packages/cli
+      run typecheck passed; pnpm -C packages/cli build passed; pnpm -C
+      packages/cli lint passed with 101 pre-existing warnings and 0 errors; node
+      packages/cli/dist/bin/agentera.js check validate capability-contract
+      --format json passed; progress, decisions, and health artifact validation
+      passed; node packages/cli/dist/bin/agentera.js check compact --format json
+      passed with 0 over-limit and 0 protected-overflow counts, retaining 5
+      known progress archive recovery refusals."
+    next: Task 9 remains pending for evaluator review. Task 10 prime consumers,
+      migration, Git durability, and release work remain out of scope.
+    context:
+      intent: Record exact final verification counts for the bounded list read surface
+        without changing plan status or out-of-scope consumers.
+      constraints: Do not mark Task 9 complete. Do not modify prime or capability
+        consumers, migration, Git, health, vision, profile, decisions, TODO,
+        version, publish, push, or tag surfaces. The five npm 12 packaging
+        failures remain pre-existing and packaging files were not changed.
+      unknowns: No persistent index is introduced; reevaluate only if a reproducible
+        authority benchmark exceeds its declared threshold on another
+        filesystem.
+      scope: packages/cli/src/state/listRetrieval.ts;
+        packages/cli/src/cli/commands/state/list.ts;
+        packages/cli/src/cli/dispatch/state.ts; packages/cli/src/cli/help.ts;
+        packages/cli/src/state/archiveDiscovery.ts;
+        packages/cli/src/state/directRetrieval.ts;
+        packages/cli/test/state/listRetrieval.test.ts;
+        packages/cli/test/state/archiveAuthority.test.ts;
+        references/artifacts/state-storage-authority.yaml;
+        .agentera/progress.yaml
+  - number: 762
+    timestamp: 2026-07-13 16:10
+    type: feat
+    phase: build
+    what: Implemented snapshot-stable bounded state listing for progress, decisions,
+      and health with numeric ordering, opaque signed cursors, append-excluding
+      snapshots, current/archive row provenance, legacy compatibility, and
+      JSON/YAML/text byte bounds. Added deterministic pagination,
+      tamper/stale/filter diagnostics, overlay revision binding, and an
+      authority-backed 100/1000-entry benchmark fixture; measured 156.1 ms and
+      1.41 s latency, 95 KB and 8.98 MB heap delta, and 22.5 KB and 22.6 KB JSON
+      responses, so the declared no-index decision remains supported.
+    inspiration: Active Agentera plan Task 9 and the state-storage authority list contract.
+    discovered: Archive enumeration remains within the declared no-index thresholds
+      at 100 and 1000 validated entries; legacy current rows can be listed
+      truthfully without reconstructing missing fields. The full suite still has
+      exactly five pre-existing npm 12 npm pack --dry-run --json parsing
+      failures in test/packaging/prepack.test.ts.
+    verified: "Focused: pnpm -C packages/cli exec vp test run
+      test/state/listRetrieval.test.ts test/state/archiveAuthority.test.ts, 2
+      files and 17 tests passed. Adjacent: pnpm -C packages/cli exec vp test run
+      test/state/listRetrieval.test.ts test/state/archiveAuthority.test.ts
+      test/state/archiveDiscovery.test.ts test/state/archiveRecovery.test.ts
+      test/state/archivePublication.test.ts test/state/directRetrieval.test.ts
+      test/state/decisionOverlay.test.ts test/state/projectionPolicy.test.ts
+      test/cli/state.test.ts test/cli/compactParity.test.ts, 10 files and 132
+      tests passed before the final overlay assertion-only addition.
+      Non-packaging: pnpm -C packages/cli exec vp test run --exclude
+      test/packaging/prepack.test.ts, 169 files and 1677 tests passed before the
+      final overlay assertion-only addition. Full: pnpm -C packages/cli test,
+      169 of 170 files and 1681 of 1686 tests passed; the five failures are the
+      pre-existing npm 12 packaging JSON parsing failures. pnpm -C packages/cli
+      run typecheck passed; pnpm -C packages/cli build passed; node
+      packages/cli/dist/bin/agentera.js check validate capability-contract
+      --format json passed; progress, decisions, and health artifact validation
+      passed; node packages/cli/dist/bin/agentera.js check compact --format json
+      passed with zero over-limit and protected-overflow counts, with existing
+      progress archive recovery refusals retained."
+    next: Task 9 remains pending for evaluator review; inspect the committed list
+      surface and rerun the required final gates after state synchronization.
+      Task 10 prime consumers, migration, Git durability, and release work
+      remain out of scope.
+    context:
+      intent: Execute Task 9 list read surface without changing consumers, migration,
+        Git, or Task 9 plan status.
+      constraints: Do not mark Task 9 complete. Do not modify prime or capability
+        consumers, migration, Git, health, vision, profile, decisions, TODO,
+        version, publish, push, or tag surfaces. The npm 12 packaging failures
+        are pre-existing and packaging files were not changed.
+      unknowns: Whether evaluator review accepts the no-index threshold margin under a
+        different filesystem remains unmeasured; no persistent index is
+        introduced unless the authority trigger is met.
+      scope: packages/cli/src/state/listRetrieval.ts;
+        packages/cli/src/cli/commands/state/list.ts;
+        packages/cli/src/cli/dispatch/state.ts; packages/cli/src/cli/help.ts;
+        packages/cli/src/state/archiveDiscovery.ts;
+        packages/cli/src/state/directRetrieval.ts;
+        packages/cli/test/state/listRetrieval.test.ts;
+        packages/cli/test/state/archiveAuthority.test.ts;
+        references/artifacts/state-storage-authority.yaml;
+        .agentera/progress.yaml
   - number: 761
     timestamp: 2026-07-13 15:40
     type: fix
@@ -273,106 +438,6 @@ cycles:
         packages/cli/src/hooks/compaction/types.ts;
         packages/cli/src/cli/commands/compact.ts; archive recovery and
         compaction tests; .agentera/plan.yaml; .agentera/progress.yaml
-  - number: 754
-    timestamp: 2026-07-13 13:05
-    type: fix
-    phase: build
-    what: Corrected Task 5 review-pressure consistency by hydrating decision
-      overlays before append overflow calculations, compaction selection,
-      compaction status, retention budget counts, and bounded review consumers;
-      compaction output restores raw projection satisfaction fields.
-    inspiration: Task 5 evaluation failure identified historically confirmed
-      decisions overlaid to open as invisible to append and compaction pressure.
-    discovered: Retention helpers are pure over entry values, so authoritative
-      overlay composition must happen at append, compaction, status, and
-      consumer boundaries; compaction selection must not write hydrated overlay
-      values back into projections.
-    verified: "Focused command pnpm exec vp test run
-      test/state/decisionOverlay.test.ts test/hooks/compaction.test.ts
-      test/state/write/stateWrite.test.ts test/lint/monolithLint.test.ts: 81
-      tests passed. Full pnpm -C packages/cli test: 166 files and 1623 tests
-      passed. pnpm -C packages/cli run typecheck passed. pnpm -C packages/cli
-      build passed. check validate capability-contract, discuss, and status
-      passed; check validate artifact --artifact decisions --format json passed;
-      check compact --format json passed with zero over-limit and
-      protected-overflow counts."
-    next: Task 5 remains pending for evaluator attempt 2; do not mark it complete.
-      Preserve the failed evaluation metadata in plan.yaml and retain Decision
-      53 no-inference and missing/compacted caveats. Do not broaden into
-      projection policy, direct get, listing, migration, or release work.
-    context:
-      intent: Retry Task 5 after evaluation attempt 1 failed on raw satisfaction
-        pressure calculations, without closing the task or changing the failed
-        evaluation record.
-      constraints: Correction only for authoritative overlay pressure calculations. No
-        vision, health, profile, unrelated TODO, version, publish, push, tag, or
-        evaluation-record rewrite.
-      unknowns: The evaluator may assess the remaining projection-policy boundary in
-        Task 7; this correction does not redesign projection policy.
-      scope: packages/cli/src/state/decisionOverlay.ts;
-        packages/cli/src/state/write/transaction.ts;
-        packages/cli/src/hooks/compaction/apply.ts;
-        packages/cli/src/hooks/compaction/status.ts;
-        packages/cli/src/hooks/compaction/retention.ts;
-        packages/cli/src/hooks/validateArtifact/traversal.ts; decision pressure
-        consumers; overlay regression tests; .agentera/progress.yaml
-  - number: 753
-    timestamp: 2026-07-13 12:39
-    type: feat
-    phase: build
-    what: Stored and composed current decision review state through an
-      authority-derived ID-keyed overlay; decision updates preserve immutable
-      archive and current projection bytes, hydration overlays only mutable
-      satisfaction fields, Decision 53 review semantics remain explicit, and
-      protected review pressure no longer blocks decision append storage.
-    inspiration: Active lossless archive-backed state storage plan Task 5 and
-      state-storage authority published at 7d8c0d95; shared mutation publication
-      from b122e79b.
-    discovered: The existing decision update rewrote current satisfaction and
-      protected-overflow rejection also reached the throwing compactor; overlay
-      publication can reuse the shared staged transaction, while overflow append
-      must skip only that compaction attempt and expose pressure.
-    verified: "Focused checks: 155 tests across 9 files passed. Full pnpm -C
-      packages/cli test: 166 files and 1622 tests passed. pnpm -C packages/cli
-      run typecheck passed. pnpm -C packages/cli build passed. check validate
-      capability-contract, discuss, and status passed; check validate artifact
-      --artifact decisions --format json passed; check compact --format json
-      passed with zero over-limit and protected-overflow counts."
-    next: Task 5 remains pending for evaluator review; do not mark it complete.
-      Preserve missing/compacted decision caveats and explicit user-confirmed
-      satisfaction authority. Do not broaden into projection policy, direct get,
-      listing, migration, health, vision, profile, or release work.
-    context:
-      intent: Execute active plan Task 5 without closing the task or inferring
-        satisfaction.
-      constraints: No vision, health, profile, unrelated TODO, version, publish, push,
-        tag, or user-confirmation changes. Task 4 plan status remains included
-        in the same commit.
-      unknowns: Task 5 evaluator may assess whether review pressure visibility should
-        later be surfaced on additional bounded projection surfaces; Task 7 owns
-        projection policy.
-      scope: packages/cli/src/state/decisionOverlay.ts;
-        packages/cli/src/state/archiveDiscovery.ts;
-        packages/cli/src/state/write/transaction.ts; decision state hydration
-        consumers; compaction result typing; focused overlay and writer tests;
-        .agentera/plan.yaml; .agentera/progress.yaml
-  - number: 752
-    timestamp: 2026-07-13 12:06
-    type: feat
-    phase: build
-    what: Unify state append and projection repair under one crash-consistent
-      mutation transaction.
-    discovered: The validate-artifact automatic projection hook also required the
-      shared staged publication path.
-    verified: "pnpm -C packages/cli test: 165 files and 1615 tests passed;
-      typecheck, build, capability-contract validation, artifact validation, and
-      compact gate passed; injected boundary and lock-contention tests pass."
-    next: Task 4 remains pending plan evaluation; later work must preserve
-      archive-first replay and defer decision overlays to Task 5.
-    context:
-      intent: Execute Task 4 without changing plan or vision archive behavior.
-      scope: packages/cli state writer, compaction repair, validate-artifact
-        projection, and focused tests only.
   - number: 749
     timestamp: 2026-07-13 10:58
     type: feat
@@ -490,6 +555,14 @@ cycles:
       intent: Complete active plan Task 7 without changing decisions or unrelated
         capabilities.
 archive:
+  - summary: "Cycle 754 (2026-07-13): Corrected Task 5 review-pressure consistency
+      by hydrating decision overlays before append overflow calculations,
+      compaction selection,..."
+  - summary: "Cycle 753 (2026-07-13): Stored and composed current decision review
+      state through an authority-derived ID-keyed overlay; decision updates
+      preserve..."
+  - summary: "Cycle 752 (2026-07-13): Unify state append and projection repair under
+      one crash-consistent mutation transaction."
   - summary: "Cycle 751 (2026-07-13): Corrected Cycle 750's focused-test count
       through an append-only supersession record."
   - summary: "Cycle 750 (2026-07-13): Published immutable numbered progress,
@@ -589,8 +662,20 @@ archive:
   - summary: "Cycle 707 (2026-07-11): Removed the last active-style Claude
       question-tool claim and finalized canonical retirement surface
       enforcement."
-  - summary: "Cycle 706 (2026-07-11): Canonicalized Claude retirement policy in raw
-      capability instructions and made registry-derived surface scans enforce
-      it."
-  - summary: "Cycle 705 (2026-07-11): Retried Task 5 after audit: removed active
-      Claude advertisements, drained large CLI output, and restricted..."
+omitted: true
+omitted_count: 2
+omission_reason: projection_capacity
+retrieval:
+  available: true
+  command: agentera state progress get --number N --format json
+omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1

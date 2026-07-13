@@ -1,0 +1,181 @@
+import { resolveSourceRoot } from "../../../core/sourceRoot.js";
+import {
+  listStateEntries,
+  boundStateList,
+  renderStateListText,
+  type StateListFilters,
+} from "../../../state/listRetrieval.js";
+import { numberedArchiveArtifacts } from "../../../state/archiveDiscovery.js";
+import { StateRetrievalFailure, type StateFailureBody } from "../../../state/directRetrieval.js";
+import { emitStructured } from "../../structured.js";
+import type { Io } from "../../dispatch/shared.js";
+
+interface StateListArgs {
+  limit: number;
+  cursor?: string;
+  format: "text" | "json" | "yaml";
+  filters: StateListFilters;
+}
+
+function requestedFormat(argv: string[]): "text" | "json" | "yaml" {
+  for (let index = 0; index < argv.length; index += 1) {
+    const token = argv[index];
+    if (token === "--format") {
+      const value = argv[index + 1];
+      if (value === "json" || value === "yaml") return value;
+    }
+    if (token.startsWith("--format=")) {
+      const value = token.slice("--format=".length);
+      if (value === "json" || value === "yaml") return value;
+    }
+  }
+  return "text";
+}
+
+function syntax(artifactId: string): string {
+  return `agentera state ${artifactId} list [--limit N] [--cursor TOKEN] --format json`;
+}
+
+function failure(
+  className: StateFailureBody["error"]["class"],
+  artifactId: string,
+  message: string,
+  example = `agentera state ${artifactId} list --limit 20 --format json`,
+  validValues?: string[],
+): StateRetrievalFailure {
+  return new StateRetrievalFailure(
+    {
+      schemaVersion: "agentera.stateFailure.v1",
+      status: "fail",
+      error: {
+        class: className,
+        message,
+        syntax: syntax(artifactId),
+        example,
+        recovery: "Correct the command using the valid syntax and retry; no state was changed.",
+        artifact_id: artifactId,
+        ...(validValues ? { valid_values: validValues } : {}),
+      },
+    },
+    2,
+  );
+}
+
+function readValue(argv: string[], index: number, name: string): { value: string; next: number } {
+  const token = argv[index];
+  if (token.startsWith(`${name}=`)) return { value: token.slice(name.length + 1), next: index + 1 };
+  const value = argv[index + 1];
+  if (!value || value.startsWith("--")) throw new Error(`${name} requires a value`);
+  return { value, next: index + 2 };
+}
+
+function parseListArgs(artifactId: string, argv: string[], sourceRoot: string): StateListArgs {
+  const validValues = numberedArchiveArtifacts(sourceRoot);
+  if (!validValues.includes(artifactId)) {
+    throw failure("unsupported_artifact", artifactId, `unsupported state artifact '${artifactId}'`, undefined, validValues);
+  }
+  let limit = 20;
+  let cursor: string | undefined;
+  let format: StateListArgs["format"] = "text";
+  const filters: StateListFilters = {};
+  const allowedFilters = artifactId === "progress" ? new Set(["--topic", "--status"]) : artifactId === "decisions" ? new Set(["--topic"]) : new Set(["--dimension"]);
+  let limitSupplied = false;
+  let cursorSupplied = false;
+  let formatSupplied = false;
+  const filterSupplied = new Set<string>();
+  for (let index = 0; index < argv.length; ) {
+    const token = argv[index];
+    const name = token.startsWith("--limit") ? "--limit" : token.startsWith("--cursor") ? "--cursor" : token.startsWith("--format") ? "--format" : [...allowedFilters].find((filter) => token === filter || token.startsWith(`${filter}=`)) ?? null;
+    if (!name) throw failure("invalid_request", artifactId, `unrecognized argument '${token}'`);
+    let parsed: { value: string; next: number };
+    try {
+      parsed = readValue(argv, index, name);
+    } catch (error) {
+      throw failure("invalid_request", artifactId, (error as Error).message);
+    }
+    index = parsed.next;
+    if (name === "--limit") {
+      if (limitSupplied) throw failure("invalid_request", artifactId, "--limit may only be supplied once");
+      limitSupplied = true;
+      if (!/^[1-9][0-9]*$/.test(parsed.value)) throw failure("invalid_request", artifactId, "argument --limit must be a positive canonical integer from 1 through 100");
+      limit = Number(parsed.value);
+      if (!Number.isSafeInteger(limit) || limit < 1 || limit > 100) throw failure("invalid_request", artifactId, "argument --limit must be between 1 and 100", `agentera state ${artifactId} list --limit 20 --format json`);
+    } else if (name === "--cursor") {
+      if (cursorSupplied) throw failure("invalid_request", artifactId, "--cursor may only be supplied once");
+      cursorSupplied = true;
+      if (parsed.value.length === 0) throw failure("invalid_request", artifactId, "argument --cursor must be a non-empty opaque token");
+      cursor = parsed.value;
+    } else {
+      if (name !== "--format") {
+        if (filterSupplied.has(name)) throw failure("invalid_request", artifactId, `${name} may only be supplied once`);
+        filterSupplied.add(name);
+        const key = name.slice(2) as keyof StateListFilters;
+        filters[key] = parsed.value;
+        continue;
+      }
+      if (formatSupplied) throw failure("invalid_request", artifactId, "--format may only be supplied once");
+      formatSupplied = true;
+      if (parsed.value !== "text" && parsed.value !== "json" && parsed.value !== "yaml") {
+        throw failure("invalid_request", artifactId, `argument --format: invalid choice: '${parsed.value}' (choose from 'text', 'json', 'yaml')`);
+      }
+      format = parsed.value;
+    }
+  }
+  return { limit, ...(cursor ? { cursor } : {}), format, filters };
+}
+
+function emitFailure(error: StateRetrievalFailure, format: "text" | "json" | "yaml", io: Io): number {
+  const out = io.out ?? ((text: string) => process.stdout.write(text));
+  if (format === "json" || format === "yaml") emitStructured(error.body, format, out);
+  else {
+    const details = error.body.error;
+    out(
+      [
+        `Error: ${details.message}`,
+        `Class: ${details.class}`,
+        `Syntax: ${details.syntax}`,
+        `Example: ${details.example}`,
+        `Recovery: ${details.recovery}`,
+      ].join("\n") + "\n",
+    );
+  }
+  return error.exitCode;
+}
+
+export function runStateList(artifactId: string, argv: string[], io: Io): number {
+  const format = requestedFormat(argv);
+  const sourceRoot = resolveSourceRoot();
+  try {
+    const args = parseListArgs(artifactId, argv, sourceRoot);
+    const response = boundStateList(
+      listStateEntries(process.cwd(), artifactId, args.limit, args.filters, args.cursor, { sourceRoot }),
+      args.format === "text" ? "text" : args.format,
+      sourceRoot,
+      process.cwd(),
+    );
+    const out = io.out ?? ((text: string) => process.stdout.write(text));
+    if (args.format === "text") out(renderStateListText(response));
+    else emitStructured(response, args.format, out);
+    return 0;
+  } catch (error) {
+    if (error instanceof StateRetrievalFailure) return emitFailure(error, format, io);
+    return emitFailure(
+      new StateRetrievalFailure(
+        {
+          schemaVersion: "agentera.stateFailure.v1",
+          status: "fail",
+          error: {
+            class: "unsupported_state",
+            message: (error as Error).message,
+            syntax: syntax(artifactId),
+            example: `agentera state ${artifactId} list --limit 20 --format json`,
+            recovery: "Use a state format supported by the storage authority, then retry.",
+          },
+        },
+        1,
+      ),
+      format,
+      io,
+    );
+  }
+}

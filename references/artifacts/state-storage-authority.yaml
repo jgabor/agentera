@@ -273,13 +273,15 @@ api:
     ordering: identity.ordering.list
     response_fields:
       required: [command, status, entries, counts, source, filters, snapshot, source_contract]
-      entry: [stable_id, artifact_id, entry_number, detail_availability, source]
-      optional_entry: [summary, current_status, overlay_applied, retrieval]
+      entry: [stable_id, artifact_id, entry_number, current_status, detail_availability, source, compatibility, provenance]
+      optional_entry: [summary, record_status, overlay_applied, retrieval]
     empty_result: status=ok with entries=[] and counts.total=0; absence is not an error
   cursor:
     syntax: opaque TOKEN returned as response.next_cursor
     first_page: omit --cursor to establish a snapshot
-    snapshot_identity: deterministic hash of ordered candidate IDs, archive hashes, filters, and overlay revision
+    snapshot_identity: >-
+      deterministic hash of ordered candidate IDs, archive hashes, legacy
+      projection hashes when no archive exists, filters, and overlay revision.
     snapshot_scope: artifact and filters are bound to the cursor; limit may change between pages
     append_behavior: >-
       Entries appended after the first page are excluded from that cursor's
@@ -412,6 +414,23 @@ budgets:
     json_serializer: JSON.stringify(value, null, 2) plus newline
     yaml_serializer: YAML.stringify(value) as emitted by the CLI
     measure_before_emit: true
+  list:
+    max_utf8_bytes: 32768
+    benchmark:
+      small:
+        entries: 100
+        max_latency_ms: 5000
+        max_heap_delta_bytes: 67108864
+      large:
+        entries: 1000
+        max_latency_ms: 15000
+        max_heap_delta_bytes: 268435456
+      response_max_utf8_bytes: 32768
+    index_decision:
+      decision: no_index
+      trigger: >-
+        Defer a persistent index until the large fixture exceeds any declared
+        latency, heap, or response threshold on a reproducible authority test.
   projection:
     max_utf8_bytes: 32768
     applies_to: current and summary state projection responses

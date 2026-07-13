@@ -160,21 +160,21 @@ tasks:
       - "3"
       - "5"
       - "7"
-    status: pending
+    status: complete
     acceptance:
       - GIVEN an active ID WHEN requested THEN the current full entry and complete provenance are returned.
       - GIVEN an archive-only ID WHEN requested THEN immutable detail and current mutable overlays are composed without scanning unrelated records.
       - GIVEN absent, malformed, unsupported, incomplete, or corrupt state WHEN requested THEN structured diagnostics include valid syntax and recovery guidance.
       - GIVEN every supported family WHEN tests run THEN active, archived, overlaid, missing, and corrupt retrieval cases pass.
     evaluation:
-      attempt_count: 1
+      attempt_count: 2
       failure_count: 1
-      last_verdict: fail
+      last_verdict: pass
       last_failure_evidence: Decision get infers missing historical outcome from choice through decisionContextEntry, and text get omits provenance despite supported-format contract.
       provenance:
-        attempt_id: task-8-attempt-1
-        source: audit-task-8-b7c66714
-        recorded_at: 2026-07-13 15:35
+        attempt_id: task-8-attempt-2
+        source: audit-task-8-b7c66714+cd441569
+        recorded_at: 2026-07-13 15:47
         writer_command: agentera state plan record-evaluation
   - number: 9
     name: Provide snapshot-stable bounded listing

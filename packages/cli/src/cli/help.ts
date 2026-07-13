@@ -119,6 +119,7 @@ export function printStateHelp(sub?: string): string {
     return [
       `usage: agentera state ${sub} [-h] [--format {text,json,yaml}] [filters]`,
       "       agentera state <artifact> get --number N --format {text,json,yaml}",
+      "       agentera state <artifact> list [--limit N] [--cursor TOKEN] --format {text,json,yaml}",
       ...(verbs.length ? [`       agentera state ${sub} {${verbs.join(",")}} [write flags]`] : []),
       ...(verbs.length
         ? [

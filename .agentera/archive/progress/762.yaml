@@ -1,0 +1,19 @@
+schemaVersion: agentera.stateArchiveEntry.v1
+artifact_id: progress
+entry_number: 762
+record:
+  number: 762
+  timestamp: 2026-07-13 16:10
+  type: feat
+  phase: build
+  what: Implemented snapshot-stable bounded state listing for progress, decisions, and health with numeric ordering, opaque signed cursors, append-excluding snapshots, current/archive row provenance, legacy compatibility, and JSON/YAML/text byte bounds. Added deterministic pagination, tamper/stale/filter diagnostics, overlay revision binding, and an authority-backed 100/1000-entry benchmark fixture; measured 156.1 ms and 1.41 s latency, 95 KB and 8.98 MB heap delta, and 22.5 KB and 22.6 KB JSON responses, so the declared no-index decision remains supported.
+  inspiration: Active Agentera plan Task 9 and the state-storage authority list contract.
+  discovered: Archive enumeration remains within the declared no-index thresholds at 100 and 1000 validated entries; legacy current rows can be listed truthfully without reconstructing missing fields. The full suite still has exactly five pre-existing npm 12 npm pack --dry-run --json parsing failures in test/packaging/prepack.test.ts.
+  verified: "Focused: pnpm -C packages/cli exec vp test run test/state/listRetrieval.test.ts test/state/archiveAuthority.test.ts, 2 files and 17 tests passed. Adjacent: pnpm -C packages/cli exec vp test run test/state/listRetrieval.test.ts test/state/archiveAuthority.test.ts test/state/archiveDiscovery.test.ts test/state/archiveRecovery.test.ts test/state/archivePublication.test.ts test/state/directRetrieval.test.ts test/state/decisionOverlay.test.ts test/state/projectionPolicy.test.ts test/cli/state.test.ts test/cli/compactParity.test.ts, 10 files and 132 tests passed before the final overlay assertion-only addition. Non-packaging: pnpm -C packages/cli exec vp test run --exclude test/packaging/prepack.test.ts, 169 files and 1677 tests passed before the final overlay assertion-only addition. Full: pnpm -C packages/cli test, 169 of 170 files and 1681 of 1686 tests passed; the five failures are the pre-existing npm 12 packaging JSON parsing failures. pnpm -C packages/cli run typecheck passed; pnpm -C packages/cli build passed; node packages/cli/dist/bin/agentera.js check validate capability-contract --format json passed; progress, decisions, and health artifact validation passed; node packages/cli/dist/bin/agentera.js check compact --format json passed with zero over-limit and protected-overflow counts, with existing progress archive recovery refusals retained."
+  next: Task 9 remains pending for evaluator review; inspect the committed list surface and rerun the required final gates after state synchronization. Task 10 prime consumers, migration, Git durability, and release work remain out of scope.
+  context:
+    intent: Execute Task 9 list read surface without changing consumers, migration, Git, or Task 9 plan status.
+    constraints: Do not mark Task 9 complete. Do not modify prime or capability consumers, migration, Git, health, vision, profile, decisions, TODO, version, publish, push, or tag surfaces. The npm 12 packaging failures are pre-existing and packaging files were not changed.
+    unknowns: Whether evaluator review accepts the no-index threshold margin under a different filesystem remains unmeasured; no persistent index is introduced unless the authority trigger is met.
+    scope: packages/cli/src/state/listRetrieval.ts; packages/cli/src/cli/commands/state/list.ts; packages/cli/src/cli/dispatch/state.ts; packages/cli/src/cli/help.ts; packages/cli/src/state/archiveDiscovery.ts; packages/cli/src/state/directRetrieval.ts; packages/cli/test/state/listRetrieval.test.ts; packages/cli/test/state/archiveAuthority.test.ts; references/artifacts/state-storage-authority.yaml; .agentera/progress.yaml
+record_sha256: c0f93b05ae738316cd9eae2b593196f5302f4e0c84a749f084bac7f03ae57160

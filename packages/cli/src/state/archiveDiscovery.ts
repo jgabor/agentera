@@ -52,6 +52,7 @@ export interface NumberedArchiveDiscovery {
 
 export interface ArchiveDiscoveryOptions {
   sourceRoot?: string;
+  artifactId?: string;
 }
 
 interface SupportedArtifact {
@@ -857,6 +858,10 @@ export function discoverNumberedArchives(
       continue;
     }
     const artifact = authority.supportedArtifacts.get(rootEntry.name);
+    if (options.artifactId && artifact && rootEntry.name !== options.artifactId) {
+      result.ignored.push(rootPath);
+      continue;
+    }
     if (!rootEntry.isDirectory()) {
       if (artifact) {
         const reason = rootEntry.isSymbolicLink() ? "symlink" : "unsafe_path";

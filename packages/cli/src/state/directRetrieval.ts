@@ -27,6 +27,8 @@ export type StateFailureClass =
   | "corrupt"
   | "incomplete"
   | "immutable_conflict"
+  | "cursor_invalid"
+  | "cursor_snapshot_unavailable"
   | "unsupported_state";
 
 export interface StateFailureBody {
