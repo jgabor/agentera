@@ -124,6 +124,16 @@ tasks:
       - GIVEN an absent, corrupt, conflicting, or unsupported archive WHEN projection runs THEN full detail is retained and a structured reason is reported.
       - GIVEN publication is interrupted WHEN recovery runs THEN no caller can observe a summary whose full record is unavailable.
       - GIVEN each recoverability state WHEN tests run THEN one successful and one refusal path are covered.
+    evaluation:
+      attempt_count: 1
+      failure_count: 1
+      last_verdict: fail
+      last_failure_evidence: Progress Cycle 755 records 96 focused and 1,630 full tests; reproducible Task 6 suites pass 98 focused and 1,631 full tests.
+      provenance:
+        attempt_id: task-6-attempt-1
+        source: audit-task-6-24c90ada
+        recorded_at: 2026-07-13 13:52
+        writer_command: agentera state plan record-evaluation
   - number: 7
     name: Replace retention limits with lossless projection policy
     depends_on:
