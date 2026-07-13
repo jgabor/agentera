@@ -71,7 +71,7 @@ export class ArtifactSchemaValidator {
       if (content === null) return [];
       let violations = this.validateYaml(content, schema, artifact);
       if (violations.length > 0) return violations;
-      return compactAfterValidWrite(artifact, absPath);
+      return compactAfterValidWrite(artifact, absPath, cwd);
     }
 
     if (artifact && HUMAN_FACING_ARTIFACT_IDS.has(artifact)) {
@@ -80,7 +80,7 @@ export class ArtifactSchemaValidator {
       const schema = this.loadSchema(artifact);
       const violations = this.validateMarkdown(content, artifact, schema);
       if (violations.length > 0) return violations;
-      return compactAfterValidWrite(artifact, absPath);
+      return compactAfterValidWrite(artifact, absPath, cwd);
     }
 
     return [];

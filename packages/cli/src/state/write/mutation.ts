@@ -1,0 +1,193 @@
+import fs from "node:fs";
+import path from "node:path";
+
+import type { JsonObject } from "../../core/jsonValue.js";
+import {
+  publishNumberedArchive,
+  type ArchivePublicationResult,
+} from "../archivePublication.js";
+import type { WritableArtifact } from "./operations.js";
+import { acquireWriterLock } from "./lock.js";
+
+export const MUTATION_FAILURE_BOUNDARIES = [
+  "staged-write",
+  "archive-publication",
+  "projection-publication",
+  "directory-sync",
+] as const;
+
+export type MutationFailureBoundary = (typeof MUTATION_FAILURE_BOUNDARIES)[number];
+
+export interface StateMutationOptions {
+  failAfter?: MutationFailureBoundary;
+  lockTimeoutMs?: number;
+}
+
+export class InjectedMutationFailure extends Error {
+  readonly boundary: MutationFailureBoundary;
+
+  constructor(boundary: MutationFailureBoundary) {
+    super(`injected state mutation failure after ${boundary}`);
+    this.name = "InjectedMutationFailure";
+    this.boundary = boundary;
+  }
+}
+
+let stageSequence = 0;
+
+function fsyncDirectory(directory: string): void {
+  const fd = fs.openSync(directory, "r");
+  try {
+    fs.fsyncSync(fd);
+  } finally {
+    fs.closeSync(fd);
+  }
+}
+
+function stagePath(target: string): string {
+  stageSequence += 1;
+  return path.join(
+    path.dirname(target),
+    `.${path.basename(target)}.writer.${process.pid}.${stageSequence}.tmp`,
+  );
+}
+
+function isMutationStage(name: string): boolean {
+  return /\.writer\.\d+\.\d+\.tmp$/.test(name);
+}
+
+function removeStaleStages(directory: string): void {
+  if (!fs.existsSync(directory)) return;
+  for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+    const candidate = path.join(directory, entry.name);
+    if (entry.isDirectory() && !entry.isSymbolicLink()) {
+      removeStaleStages(candidate);
+      continue;
+    }
+    if (!entry.isFile() || !isMutationStage(entry.name)) continue;
+    try {
+      fs.unlinkSync(candidate);
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+    }
+  }
+}
+
+export class StateMutationTransaction {
+  private readonly stages = new Set<string>();
+  private failureInjected = false;
+
+  constructor(
+    readonly projectRoot: string,
+    private readonly options: StateMutationOptions = {},
+  ) {}
+
+  stageProjection(target: string, bytes: string): string {
+    const directory = path.dirname(target);
+    fs.mkdirSync(directory, { recursive: true });
+    removeStaleStages(directory);
+    const stage = stagePath(target);
+    let fd: number | undefined;
+    try {
+      fd = fs.openSync(stage, "wx");
+      fs.writeFileSync(fd, bytes, "utf8");
+      fs.fsyncSync(fd);
+      fs.closeSync(fd);
+      fd = undefined;
+      this.stages.add(stage);
+      return stage;
+    } finally {
+      if (fd !== undefined) fs.closeSync(fd);
+      if (!this.stages.has(stage)) {
+        try {
+          fs.unlinkSync(stage);
+        } catch {
+          /* stage was never created or cleanup is already complete */
+        }
+      }
+    }
+  }
+
+  syncStaged(stage: string): void {
+    const fd = fs.openSync(stage, "r");
+    try {
+      fs.fsyncSync(fd);
+    } finally {
+      fs.closeSync(fd);
+    }
+    this.failAfter("staged-write");
+  }
+
+  publishArchive(
+    artifact: WritableArtifact,
+    entryNumber: number,
+    record: JsonObject,
+  ): ArchivePublicationResult {
+    const archive = publishNumberedArchive(this.projectRoot, artifact, entryNumber, record, {
+      afterDirectorySync: () => this.failAfter("directory-sync"),
+    });
+    this.failAfter("archive-publication");
+    return archive;
+  }
+
+  publishProjection(stage: string, target: string): void {
+    fs.renameSync(stage, target);
+    this.stages.delete(stage);
+    this.failAfter("projection-publication");
+    fsyncDirectory(path.dirname(target));
+    this.failAfter("directory-sync");
+  }
+
+  mutateProjection<T extends { changed: boolean }>(
+    target: string,
+    mutation: (stage: string) => T,
+  ): T {
+    const stage = this.stageProjection(target, fs.readFileSync(target, "utf8"));
+    try {
+      const result = mutation(stage);
+      if (result.changed) {
+        this.syncStaged(stage);
+        this.publishProjection(stage, target);
+      }
+      return result;
+    } finally {
+      this.removeStage(stage);
+    }
+  }
+
+  removeStage(stage: string): void {
+    this.stages.delete(stage);
+    try {
+      fs.unlinkSync(stage);
+    } catch {
+      /* published or already removed */
+    }
+  }
+
+  cleanup(): void {
+    for (const stage of this.stages) this.removeStage(stage);
+    this.stages.clear();
+  }
+
+  private failAfter(boundary: MutationFailureBoundary): void {
+    if (this.failureInjected || this.options.failAfter !== boundary) return;
+    this.failureInjected = true;
+    throw new InjectedMutationFailure(boundary);
+  }
+}
+
+export function withStateMutation<T>(
+  projectRoot: string,
+  operation: (transaction: StateMutationTransaction) => T,
+  options: StateMutationOptions = {},
+): T {
+  const lock = acquireWriterLock(projectRoot, options.lockTimeoutMs);
+  const transaction = new StateMutationTransaction(projectRoot, options);
+  try {
+    removeStaleStages(path.join(projectRoot, ".agentera"));
+    return operation(transaction);
+  } finally {
+    transaction.cleanup();
+    lock.release();
+  }
+}

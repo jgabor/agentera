@@ -16,6 +16,7 @@ import {
 } from "../../src/hooks/compaction/index.js";
 import { MAX_FULL_ENTRIES, MAX_TOTAL_ENTRIES } from "../../src/hooks/common.js";
 import { cleanupFixtureProject, useFixtureProject } from "../helpers/useFixtureProject.js";
+import { InjectedMutationFailure } from "../../src/state/write/mutation.js";
 
 let tmp: string;
 const fixtureRoots: string[] = [];
@@ -107,6 +108,19 @@ describe("progress.yaml over-limit gate", () => {
     expect(data.archive.some((e) => e.summary.includes("Cycle 1"))).toBe(true);
     expect(checkCompaction(tmp).find((o) => o.status.artifact === "progress")?.action).toBe("ok");
   });
+
+  it.each(["staged-write", "projection-publication", "directory-sync"] as const)(
+    "retries explicit projection repair after %s",
+    (boundary) => {
+      writeProgressYaml(tmp, 55);
+      expect(() => fixCompaction(tmp, { failAfter: boundary })).toThrow(InjectedMutationFailure);
+      expect(fs.readdirSync(path.join(tmp, ".agentera")).filter((name) => name.includes(".writer."))).toEqual([]);
+
+      fixCompaction(tmp);
+      const progressOp = checkCompaction(tmp).find((o) => o.status.artifact === "progress");
+      expect(progressOp?.status.over_limit_count).toBe(0);
+    },
+  );
 });
 
 describe("compactYamlFile", () => {

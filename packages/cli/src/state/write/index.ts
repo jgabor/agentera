@@ -4,6 +4,7 @@ export * from "./input.js";
 export * from "./assign.js";
 export * from "./explain.js";
 export * from "./lock.js";
+export * from "./mutation.js";
 export * from "./transaction.js";
 export * from "./validate.js";
 export * from "./serialize.js";

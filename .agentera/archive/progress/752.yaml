@@ -1,0 +1,16 @@
+schemaVersion: agentera.stateArchiveEntry.v1
+artifact_id: progress
+entry_number: 752
+record:
+  number: 752
+  timestamp: 2026-07-13 12:06
+  type: feat
+  phase: build
+  what: Unify state append and projection repair under one crash-consistent mutation transaction.
+  discovered: The validate-artifact automatic projection hook also required the shared staged publication path.
+  verified: "pnpm -C packages/cli test: 165 files and 1615 tests passed; typecheck, build, capability-contract validation, artifact validation, and compact gate passed; injected boundary and lock-contention tests pass."
+  next: Task 4 remains pending plan evaluation; later work must preserve archive-first replay and defer decision overlays to Task 5.
+  context:
+    intent: Execute Task 4 without changing plan or vision archive behavior.
+    scope: packages/cli state writer, compaction repair, validate-artifact projection, and focused tests only.
+record_sha256: 9b29b75490250348f54e3ba88fa5f98c3c9781efef6b552e59857793d8406d26

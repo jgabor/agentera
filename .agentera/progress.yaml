@@ -1,4 +1,21 @@
 cycles:
+  - number: 752
+    timestamp: 2026-07-13 12:06
+    type: feat
+    phase: build
+    what: Unify state append and projection repair under one crash-consistent
+      mutation transaction.
+    discovered: The validate-artifact automatic projection hook also required the
+      shared staged publication path.
+    verified: "pnpm -C packages/cli test: 165 files and 1615 tests passed;
+      typecheck, build, capability-contract validation, artifact validation, and
+      compact gate passed; injected boundary and lock-contention tests pass."
+    next: Task 4 remains pending plan evaluation; later work must preserve
+      archive-first replay and defer decision overlays to Task 5.
+    context:
+      intent: Execute Task 4 without changing plan or vision archive behavior.
+      scope: packages/cli state writer, compaction repair, validate-artifact
+        projection, and focused tests only.
   - number: 751
     timestamp: 2026-07-13 11:39
     type: fix
@@ -218,26 +235,10 @@ cycles:
         do not change decisions.
       scope: Plan state discovery, typed plan writes, orchestration context, schemas,
         and regression tests.
-  - number: 742
-    timestamp: 2026-07-12 23:06
-    type: fix
-    phase: build
-    what: Updated packages/cli/src/state/write/transaction.ts with stable archive
-      identities across midnight retries and canonical overall acceptance lint
-      support.
-    verified: 64 focused and 1,563 full CLI tests; typecheck; lint; build;
-      capability-contract validation; compact; built CLI replay/archive
-      dry-run/strict lint smoke.
-    next: "Task 6: repair execution eligibility and orchestration retry semantics
-      only."
-    context:
-      intent: Repair audited Task 5 plan publication failures.
-      constraints: Only audited Task 5 failures; restored the pre-commit hook
-        configuration and did not change decisions.
-      unknowns: none
-      scope: Plan publication, prose lint, regression tests, hook revert, and
-        changelog.
 archive:
+  - summary: "Cycle 742 (2026-07-12): Updated
+      packages/cli/src/state/write/transaction.ts with stable archive identities
+      across midnight retries and canonical overall acceptance lint support."
   - summary: "Cycle 741 (2026-07-12): Updated
       packages/cli/src/state/write/transaction.ts so plan create/archive
       publication validates final bytes and retries converge after
@@ -343,6 +344,3 @@ archive:
   - summary: "Cycle 703 (2026-07-11): Corrected runtime adapter remediation
       projection so Copilot native actions stay in native_actions and missing
       destination..."
-  - summary: "Cycle 702 (2026-07-11): Implemented authority-bound lifecycle adapters
-      for OpenCode, Codex, Cursor, and Copilot with explicit eight-category
-      surface reports,..."

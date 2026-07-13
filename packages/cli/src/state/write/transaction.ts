@@ -16,7 +16,11 @@ import {
   loadArtifactRegistry,
   resolveArtifactPath,
 } from "../../registries/artifactRegistry.js";
-import { acquireWriterLock } from "./lock.js";
+import {
+  StateMutationTransaction,
+  type StateMutationOptions,
+  withStateMutation,
+} from "./mutation.js";
 import { localDate, localTimestamp, nextEntryNumber, nextTaskNumber } from "./assign.js";
 import type { OperationSpec, WritableArtifact } from "./operations.js";
 import { reject } from "./errors.js";
@@ -25,7 +29,6 @@ import { dependencyReadyTasks } from "../../cli/capabilityContext/planState.js";
 import type { JsonObject } from "../../core/jsonValue.js";
 import {
   publishImmutableFile,
-  publishNumberedArchive,
   type ArchivePublicationResult,
 } from "../archivePublication.js";
 import {
@@ -816,133 +819,145 @@ function envelope(
   return result;
 }
 
-export function executeStateWrite(req: StateWriteRequest): StateWriteEnvelope {
+export function executeStateWrite(
+  req: StateWriteRequest,
+  options: StateMutationOptions = {},
+): StateWriteEnvelope {
   assertWriterBoundary(req.projectRoot, path.join(req.projectRoot, ".agentera"), "writer lock");
   const planPublication =
     req.artifact === "plan" && ["archive", "create"].includes(req.spec.verb);
-  const lock = req.dryRun && planPublication ? null : acquireWriterLock(req.projectRoot);
+  if (req.dryRun && planPublication) return executeStateWriteUnlocked(req);
+  return withStateMutation(
+    req.projectRoot,
+    (transaction) => executeStateWriteUnlocked(req, transaction),
+    options,
+  );
+}
+
+function executeStateWriteUnlocked(
+  req: StateWriteRequest,
+  transaction?: StateMutationTransaction,
+): StateWriteEnvelope {
+  const record = loadArtifactRegistry().get(req.artifact);
+  if (!record) throw new Error(`artifact '${req.artifact}' is not registered`);
+  let target: string;
   try {
-    const record = loadArtifactRegistry().get(req.artifact);
-    if (!record) throw new Error(`artifact '${req.artifact}' is not registered`);
-    let target: string;
-    try {
-      target = resolveArtifactPath(record, req.projectRoot, { strictWrite: true });
-    } catch (error) {
-      const message = (error as Error).message;
-      if (message.startsWith("artifact '")) reject({ class: "unsupported_target", message });
-      throw error;
-    }
-    const existing = readExisting(target);
-    const legacyLifecycle =
-      req.artifact === "plan" && ["active", "completed"].includes(String(mapping(existing.doc.header).status ?? ""));
-    if (legacyLifecycle)
-      existing.doc = canonicalPlanDocumentForWrite(existing.doc);
-    if (existing.bytes) {
-      const validationBytes =
-        req.artifact === "plan" ? dumpYamlMapping(existing.doc) : existing.bytes;
-      const violations = validateArtifactBytes(req.artifact, validationBytes);
-      if (violations.length) {
-        throw new Error(
-          `existing artifact '${target}' is schema-invalid: ${violations.join("; ")}; repair it before retrying`,
-        );
-      }
-    }
-    if (req.artifact === "plan" && ["archive", "create"].includes(req.spec.verb))
-      return planLifecycle(req, target, existing, legacyLifecycle);
-    if (!existing.bytes && req.artifact === "plan")
-      reject({
-        class: "unsupported_target",
-        message: "no active plan exists; create one before appending a task",
-        example: "agentera state plan create --input plan.yaml",
-      });
-    const numberedAppend =
-      req.spec.verb === "append" && ["progress", "decisions", "health"].includes(req.artifact);
-    const replayPayload =
-      req.artifact === "decisions"
-        ? normalizedDecisionPayload(req.callerPayload)
-        : req.callerPayload;
-    const mutated = mutateCandidate(
-      req,
-      existing.doc,
-      numberedAppend ? findArchivedReplay(req.projectRoot, req.artifact, replayPayload) : undefined,
-    );
-    if (mutated.replay && isDeepStrictEqual(mutated.candidate, existing.doc)) {
-      let archive: ArchivePublicationResult | undefined;
-      if (numberedAppend && !req.dryRun) {
-        archive = publishNumberedArchive(
-          req.projectRoot,
-          req.artifact,
-          Number(mutated.written.number),
-          mutated.written as JsonObject,
-        );
-      }
-      return envelope(
-        req,
-        target,
-        mutated.candidate,
-        mutated.written,
-        mutated.assigned,
-        true,
-        null,
-        {
-          ...(archive ? { archivePath: archive.path } : {}),
-          ...(req.dryRun ? { diff: "", before: existing.doc, after: mutated.candidate } : {}),
-        },
+    target = resolveArtifactPath(record, req.projectRoot, { strictWrite: true });
+  } catch (error) {
+    const message = (error as Error).message;
+    if (message.startsWith("artifact '")) reject({ class: "unsupported_target", message });
+    throw error;
+  }
+  const existing = readExisting(target);
+  const legacyLifecycle =
+    req.artifact === "plan" && ["active", "completed"].includes(String(mapping(existing.doc.header).status ?? ""));
+  if (legacyLifecycle) existing.doc = canonicalPlanDocumentForWrite(existing.doc);
+  if (existing.bytes) {
+    const validationBytes = req.artifact === "plan" ? dumpYamlMapping(existing.doc) : existing.bytes;
+    const violations = validateArtifactBytes(req.artifact, validationBytes);
+    if (violations.length) {
+      throw new Error(
+        `existing artifact '${target}' is schema-invalid: ${violations.join("; ")}; repair it before retrying`,
       );
     }
-    const candidateBytes = dumpYamlMapping(mutated.candidate);
-    const candidateViolations = validateArtifactBytes(req.artifact, candidateBytes);
-    if (candidateViolations.length) schemaViolation(candidateViolations);
-    const stage = stagingPath(req, target);
-    let compaction: CompactResult | null = null;
-    try {
-      fs.writeFileSync(stage, candidateBytes);
-      if (req.spec.compacts) compaction = compactYamlFile(stage, req.artifact);
-      const finalBytes = fs.readFileSync(stage, "utf8");
-      const finalViolations = validateArtifactBytes(req.artifact, finalBytes);
-      if (finalViolations.length)
-        throw new Error(`writer/compactor invariant failure: ${finalViolations.join("; ")}`);
-      const finalDoc = loadYamlMapping(finalBytes);
-      const diff = diffText(existing.bytes, finalBytes, target);
-      if (req.dryRun) {
-        return envelope(
-          req,
-          target,
-          finalDoc,
-          mutated.written,
-          mutated.assigned,
-          false,
-          compaction,
-          { diff, before: existing.doc, after: finalDoc },
-        );
-      }
-      const archive = numberedAppend
-        ? publishNumberedArchive(
-            req.projectRoot,
-            req.artifact,
-            Number(mutated.written.number),
-            mutated.written as JsonObject,
-          )
-        : undefined;
-      fs.renameSync(stage, target);
+  }
+  if (req.artifact === "plan" && ["archive", "create"].includes(req.spec.verb))
+    return planLifecycle(req, target, existing, legacyLifecycle);
+  if (!existing.bytes && req.artifact === "plan")
+    reject({
+      class: "unsupported_target",
+      message: "no active plan exists; create one before appending a task",
+      example: "agentera state plan create --input plan.yaml",
+    });
+  const numberedAppend =
+    req.spec.verb === "append" && ["progress", "decisions", "health"].includes(req.artifact);
+  const replayPayload =
+    req.artifact === "decisions"
+      ? normalizedDecisionPayload(req.callerPayload)
+      : req.callerPayload;
+  const mutated = mutateCandidate(
+    req,
+    existing.doc,
+    numberedAppend ? findArchivedReplay(req.projectRoot, req.artifact, replayPayload) : undefined,
+  );
+  if (mutated.replay && isDeepStrictEqual(mutated.candidate, existing.doc)) {
+    let archive: ArchivePublicationResult | undefined;
+    if (numberedAppend && !req.dryRun) {
+      if (!transaction) throw new Error("state mutation transaction is unavailable");
+      archive = transaction.publishArchive(
+        req.artifact,
+        Number(mutated.written.number),
+        mutated.written as JsonObject,
+      );
+    }
+    return envelope(
+      req,
+      target,
+      mutated.candidate,
+      mutated.written,
+      mutated.assigned,
+      true,
+      null,
+      {
+        ...(archive ? { archivePath: archive.path } : {}),
+        ...(req.dryRun ? { diff: "", before: existing.doc, after: mutated.candidate } : {}),
+      },
+    );
+  }
+  const candidateBytes = dumpYamlMapping(mutated.candidate);
+  const candidateViolations = validateArtifactBytes(req.artifact, candidateBytes);
+  if (candidateViolations.length) schemaViolation(candidateViolations);
+  const stage = req.dryRun
+    ? stagingPath(req, target)
+    : transaction?.stageProjection(target, candidateBytes);
+  if (!stage) throw new Error("state mutation transaction is unavailable");
+  let compaction: CompactResult | null = null;
+  try {
+    if (req.dryRun) fs.writeFileSync(stage, candidateBytes);
+    if (req.spec.compacts) compaction = compactYamlFile(stage, req.artifact);
+    const finalBytes = fs.readFileSync(stage, "utf8");
+    const finalViolations = validateArtifactBytes(req.artifact, finalBytes);
+    if (finalViolations.length)
+      throw new Error(`writer/compactor invariant failure: ${finalViolations.join("; ")}`);
+    if (!req.dryRun) transaction?.syncStaged(stage);
+    const finalDoc = loadYamlMapping(finalBytes);
+    const diff = diffText(existing.bytes, finalBytes, target);
+    if (req.dryRun) {
       return envelope(
         req,
         target,
         finalDoc,
         mutated.written,
         mutated.assigned,
-        mutated.replay,
+        false,
         compaction,
-        archive ? { archivePath: archive.path } : {},
+        { diff, before: existing.doc, after: finalDoc },
       );
-    } finally {
-      try {
-        fs.unlinkSync(stage);
-      } catch {
-        /* stage published or absent */
-      }
     }
+    const archive = numberedAppend
+      ? transaction?.publishArchive(
+          req.artifact,
+          Number(mutated.written.number),
+          mutated.written as JsonObject,
+        )
+      : undefined;
+    if (!req.dryRun) transaction?.publishProjection(stage, target);
+    return envelope(
+      req,
+      target,
+      finalDoc,
+      mutated.written,
+      mutated.assigned,
+      mutated.replay,
+      compaction,
+      archive ? { archivePath: archive.path } : {},
+    );
   } finally {
-    lock?.release();
+    try {
+      if (req.dryRun) fs.unlinkSync(stage);
+      else transaction?.removeStage(stage);
+    } catch {
+      /* stage published or absent */
+    }
   }
 }

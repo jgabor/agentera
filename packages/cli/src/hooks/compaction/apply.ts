@@ -35,16 +35,18 @@ import { normalizeTodoResolvedLayout, parseEntries, parseTodoResolved, extractRe
 
 import type { JsonObject } from "../../core/jsonValue.js";
 
-export function compactYamlFile(p: string, artifact: string): CompactResult {
+export interface CompactYamlBytesResult {
+  bytes: string;
+  result: CompactResult;
+}
+
+export function compactYamlBytes(bytes: string, artifact: string): CompactYamlBytesResult {
   if (!(artifact in COMPACTABLE_YAML_ARTIFACTS)) {
     throw new Error(`unsupported YAML artifact: ${artifact}`);
   }
-  if (!fs.existsSync(p)) {
-    throw new Error(p);
-  }
   const [activeKey, archiveKey] = COMPACTABLE_YAML_ARTIFACTS[artifact];
   const specName = YAML_SPEC_BY_ARTIFACT[artifact];
-  const data = loadYamlMapping(fs.readFileSync(p, "utf8")) as JsonObject;
+  const data = loadYamlMapping(bytes) as JsonObject;
 
   let active = data[activeKey] || [];
   let archive = data[archiveKey] || [];
@@ -54,7 +56,17 @@ export function compactYamlFile(p: string, artifact: string): CompactResult {
   const fullBefore = active.length;
   const onelineBefore = archive.length;
   if (overLimitCount(fullBefore, onelineBefore) === 0) {
-    return { full_before: fullBefore, oneline_before: onelineBefore, full_after: fullBefore, oneline_after: onelineBefore, dropped: 0, changed: false };
+    return {
+      bytes,
+      result: {
+        full_before: fullBefore,
+        oneline_before: onelineBefore,
+        full_after: fullBefore,
+        oneline_after: onelineBefore,
+        dropped: 0,
+        changed: false,
+      },
+    };
   }
 
   let recentFull: any[];
@@ -76,12 +88,29 @@ export function compactYamlFile(p: string, artifact: string): CompactResult {
 
   data[activeKey] = recentFull;
   data[archiveKey] = archiveAfter;
-  fs.writeFileSync(p, YAML.stringify(data));
+  const compactedBytes = YAML.stringify(data);
 
   const fullAfter = recentFull.length;
   const onelineAfter = archiveAfter.length;
   const dropped = fullBefore + onelineBefore - fullAfter - onelineAfter;
-  return { full_before: fullBefore, oneline_before: onelineBefore, full_after: fullAfter, oneline_after: onelineAfter, dropped, changed: true };
+  return {
+    bytes: compactedBytes,
+    result: {
+      full_before: fullBefore,
+      oneline_before: onelineBefore,
+      full_after: fullAfter,
+      oneline_after: onelineAfter,
+      dropped,
+      changed: true,
+    },
+  };
+}
+
+export function compactYamlFile(p: string, artifact: string): CompactResult {
+  if (!fs.existsSync(p)) throw new Error(p);
+  const compacted = compactYamlBytes(fs.readFileSync(p, "utf8"), artifact);
+  if (compacted.result.changed) fs.writeFileSync(p, compacted.bytes);
+  return compacted.result;
 }
 
 function detectDirection(entries: JsonObject[]): string {

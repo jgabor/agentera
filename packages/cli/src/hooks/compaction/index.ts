@@ -14,7 +14,13 @@
  */
 
 import { applyRetentionCaps as _applyRetentionCaps } from "../common.js";
-import { compactFile, compactYamlFile, detectOverflow, compactEntries } from "./apply.js";
+import {
+  compactFile,
+  compactYamlBytes,
+  compactYamlFile,
+  detectOverflow,
+  compactEntries,
+} from "./apply.js";
 import { checkCompaction, computeCompactionStatus, fixCompaction, runCompaction } from "./status.js";
 import {
   parseEntries,
@@ -44,6 +50,7 @@ import { CompactResult, CompactionOperation, CompactionStatus, ArtifactSpec } fr
 export { CompactResult, CompactionOperation, CompactionStatus, ArtifactSpec };
 export {
   compactFile,
+  compactYamlBytes,
   compactYamlFile,
   detectOverflow,
   compactEntries,

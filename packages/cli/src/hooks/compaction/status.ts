@@ -1,5 +1,5 @@
 /**
- * Compaction status reporting (read-only).
+ * Compaction status reporting and projection repair.
  *
  * Walks each tracked artifact path, counts active/archive entries, and
  * builds a `CompactionStatus` per artifact plus a per-status operation
@@ -23,6 +23,12 @@ import { CompactResult, CompactionOperation, CompactionStatus } from "./types.js
 import { compactFile, compactYamlFile } from "./apply.js";
 import { countTodoResolvedEntries, parseEntries } from "./parse.js";
 import { YAML_SPEC_BY_ARTIFACT } from "./dryRun.js";
+import {
+  InjectedMutationFailure,
+  type StateMutationTransaction,
+  type StateMutationOptions,
+  withStateMutation,
+} from "../../state/write/mutation.js";
 
 function artifactPaths(projectRoot: string): Record<string, string> {
   const paths: Record<string, string> = { ...DEFAULT_ARTIFACT_PATHS };
@@ -219,7 +225,10 @@ export function checkCompaction(projectRoot: string): CompactionOperation[] {
   return computeCompactionStatus(projectRoot).map((status) => operationForStatus(status, "check"));
 }
 
-export function fixCompaction(projectRoot: string): CompactionOperation[] {
+function fixCompactionUnlocked(
+  projectRoot: string,
+  transaction: StateMutationTransaction,
+): CompactionOperation[] {
   const operations: CompactionOperation[] = [];
   for (const status of computeCompactionStatus(projectRoot)) {
     const baseline = operationForStatus(status, "fix");
@@ -231,14 +240,15 @@ export function fixCompaction(projectRoot: string): CompactionOperation[] {
     let result: CompactResult;
     try {
       if (status.artifact === "todo#Resolved") {
-        result = compactFile(p, "todo-resolved");
+        result = transaction.mutateProjection(p, (stage) => compactFile(stage, "todo-resolved"));
       } else if (status.artifact in YAML_SPEC_BY_ARTIFACT) {
-        result = compactYamlFile(p, status.artifact);
+        result = transaction.mutateProjection(p, (stage) => compactYamlFile(stage, status.artifact));
       } else {
         operations.push({ status, mode: "fix", action: "skipped", changed: false, result: null, message: `no fixer registered for ${status.artifact}` });
         continue;
       }
     } catch (exc) {
+      if (exc instanceof InjectedMutationFailure) throw exc;
       operations.push({ status, mode: "fix", action: "error", changed: false, result: null, message: (exc as Error).message });
       continue;
     }
@@ -257,8 +267,23 @@ export function fixCompaction(projectRoot: string): CompactionOperation[] {
   return operations;
 }
 
-export function runCompaction(projectRoot: string, mode = "check"): CompactionOperation[] {
+export function fixCompaction(
+  projectRoot: string,
+  options: StateMutationOptions = {},
+): CompactionOperation[] {
+  return withStateMutation(
+    projectRoot,
+    (transaction) => fixCompactionUnlocked(projectRoot, transaction),
+    options,
+  );
+}
+
+export function runCompaction(
+  projectRoot: string,
+  mode = "check",
+  options: StateMutationOptions = {},
+): CompactionOperation[] {
   if (mode === "check") return checkCompaction(projectRoot);
-  if (mode === "fix") return fixCompaction(projectRoot);
+  if (mode === "fix") return fixCompaction(projectRoot, options);
   throw new Error(`unknown compaction mode: ${mode}`);
 }

@@ -35,6 +35,7 @@ export interface ArchivePublicationFileSystem {
 export interface ImmutableFilePublicationOptions {
   fileSystem?: ArchivePublicationFileSystem;
   onExisting?: () => void;
+  afterDirectorySync?: () => void;
 }
 
 const nodeFileSystem: ArchivePublicationFileSystem = {
@@ -78,6 +79,7 @@ export function publishImmutableFile(
     try {
       fileSystem.link(stage, target);
       fileSystem.syncDirectory(directory);
+      options.afterDirectorySync?.();
       return true;
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error;
@@ -223,6 +225,7 @@ export function publishNumberedArchive(
   options: {
     sourceRoot?: string;
     fileSystem?: ArchivePublicationFileSystem;
+    afterDirectorySync?: () => void;
   } = {},
 ): ArchivePublicationResult {
   const sourceRoot = options.sourceRoot ?? resolveSourceRoot();
@@ -239,6 +242,7 @@ export function publishNumberedArchive(
   });
   const published = publishImmutableFile(location.target, bytes, {
     fileSystem,
+    afterDirectorySync: options.afterDirectorySync,
     onExisting: () => {
       existingArchiveMatches(
         projectRoot,

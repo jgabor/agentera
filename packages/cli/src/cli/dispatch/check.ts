@@ -13,6 +13,7 @@ import { LEGACY_PYTHON_PARITY_FLAG } from "../../validate/lifecycleAdapters.js";
 import { makeArgvValueReader } from "./argvParser.js";
 import { asEnvelopeFormat, classifyParseError, type Io } from "./shared.js";
 import { emitInvalidInput } from "../errors.js";
+import { StateWriteInputError } from "../../state/write/errors.js";
 
 /** Minimal flag parser for the `lint` command surface. */
 export function parseLintArgs(argv: string[]): LintArgs | { error: string } {
@@ -116,6 +117,8 @@ export function runCompact(argv: string[], io: Io, prog: string): number {
   try {
     return cmdCompact(parsed, io);
   } catch (exc) {
+    if (exc instanceof StateWriteInputError)
+      return emitInvalidInput(io, { format: asEnvelopeFormat(parsed.format), body: exc.body });
     return emitInvalidInput(io, {
       format: asEnvelopeFormat(parsed.format),
       body: { class: "unsupported_target", message: (exc as Error).message },

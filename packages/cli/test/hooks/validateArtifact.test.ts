@@ -1,10 +1,12 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import YAML from "yaml";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import {
   ArtifactSchemaValidator,
+  ArtifactWrite,
   HookCliAdapter,
   loadSchema,
 } from "../../src/hooks/validateArtifact/index.js";
@@ -271,6 +273,33 @@ describe("ArtifactSchemaValidator", () => {
 });
 
 describe("HookCliAdapter.run", () => {
+  it("publishes automatic progress projection repair through the mutation transaction", () => {
+    const cycles = Array.from({ length: 55 }, (_, index) => ({
+      number: 55 - index,
+      timestamp: "2026-07-13 12:00",
+      type: "feat",
+      phase: "build",
+      what: `Cycle ${index + 1}`,
+      context: { intent: "test automatic projection" },
+    }));
+    fs.mkdirSync(path.join(tmp, ".agentera"), { recursive: true });
+    const target = path.join(tmp, ".agentera", "progress.yaml");
+    fs.writeFileSync(target, YAML.stringify({ cycles, archive: [{ summary: "Cycle 0" }] }));
+
+    const violations = new ArtifactSchemaValidator().validateWrite(
+      new ArtifactWrite(".agentera/progress.yaml"),
+      tmp,
+    );
+
+    expect(violations).toEqual([]);
+    const projected = YAML.parse(fs.readFileSync(target, "utf8")) as {
+      cycles: unknown[];
+      archive: unknown[];
+    };
+    expect(projected.cycles).toHaveLength(10);
+    expect(projected.archive).toHaveLength(40);
+  });
+
   it("returns 0 for non-artifact writes and empty input", () => {
     const adapter = new HookCliAdapter();
     expect(adapter.run("")).toEqual([0, []]);

@@ -7,6 +7,19 @@ import { main } from "../../../src/cli/dispatch.js";
 import { lintFullArtifactPayload } from "../../../src/cli/commands/lint.js";
 import { dumpYamlMapping, loadYamlMapping } from "../../../src/core/yaml.js";
 import { ArtifactSchemaValidator } from "../../../src/hooks/validateArtifact/index.js";
+import {
+  InjectedMutationFailure,
+  withStateMutation,
+  type MutationFailureBoundary,
+  type StateMutationOptions,
+} from "../../../src/state/write/mutation.js";
+import {
+  executeStateWrite,
+  type StateWriteRequest,
+} from "../../../src/state/write/transaction.js";
+import { operationSpec } from "../../../src/state/write/operations.js";
+import { StateWriteInputError } from "../../../src/state/write/errors.js";
+import { discoverNumberedArchives } from "../../../src/state/archiveDiscovery.js";
 
 interface Captured {
   rc: number;
@@ -97,6 +110,47 @@ function lightPlan(title = "Writer plan", status = "open"): Record<string, unkno
       { number: 1, name: "Implement", status: status === "complete" ? "complete" : "pending" },
     ],
   };
+}
+
+function progressWrite(
+  root: string,
+  failAfter?: MutationFailureBoundary,
+  options: StateMutationOptions = {},
+) {
+  const spec = operationSpec("progress", "append");
+  if (!spec) throw new Error("progress append operation is unavailable");
+  const payload = {
+    type: "feat",
+    phase: "build",
+    what: "Prove transaction recovery",
+    timestamp: "2026-07-13 12:00",
+    context: { intent: "Test one crash-consistent mutation" },
+  };
+  const request: StateWriteRequest = {
+    artifact: "progress",
+    spec,
+    projectRoot: root,
+    dryRun: false,
+    force: false,
+    values: payload,
+    callerPayload: payload,
+    input: null,
+  };
+  return executeStateWrite(request, { ...options, ...(failAfter ? { failAfter } : {}) });
+}
+
+function writerStages(root: string): string[] {
+  const stages: string[] = [];
+  const walk = (directory: string): void => {
+    if (!fs.existsSync(directory)) return;
+    for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+      const candidate = path.join(directory, entry.name);
+      if (entry.isDirectory() && !entry.isSymbolicLink()) walk(candidate);
+      else if (entry.isFile() && entry.name.includes(".writer.")) stages.push(candidate);
+    }
+  };
+  walk(path.join(root, ".agentera"));
+  return stages;
 }
 
 function fullPlan(taskCount = 9): Record<string, unknown> {
@@ -1422,5 +1476,51 @@ describe("closed rejection catalog and mutation safety", () => {
     } finally {
       validate.mockRestore();
     }
+  });
+
+  it.each([
+    "staged-write",
+    "archive-publication",
+    "projection-publication",
+    "directory-sync",
+  ] as MutationFailureBoundary[])(
+    "recovers after an injected %s failure without duplicate archive identity",
+    (boundary) => {
+      const root = project();
+      expect(() => progressWrite(root, boundary)).toThrow(InjectedMutationFailure);
+      expect(writerStages(root)).toEqual([]);
+
+      const archivePath = path.join(root, ".agentera", "archive", "progress", "1.yaml");
+      if (boundary === "staged-write") {
+        expect(fs.existsSync(archivePath)).toBe(false);
+        expect(fs.existsSync(path.join(root, ".agentera", "progress.yaml"))).toBe(false);
+      } else {
+        expect(fs.existsSync(archivePath)).toBe(true);
+      }
+
+      const retry = progressWrite(root);
+      expect(retry.operation).toMatchObject({ idempotent_replay: boundary !== "staged-write" });
+      expect(discoverNumberedArchives(root).entries.filter((entry) => entry.stableId === "progress:1")).toHaveLength(1);
+      expect(loadYamlMapping(fs.readFileSync(path.join(root, ".agentera", "progress.yaml"), "utf8")).cycles).toHaveLength(1);
+    },
+  );
+
+  it("returns a retryable conflict instead of nesting the writer lock", () => {
+    const root = project();
+    withStateMutation(
+      root,
+      () => {
+        try {
+          progressWrite(root, undefined, { lockTimeoutMs: 1 });
+        } catch (error) {
+          expect(error).toBeInstanceOf(StateWriteInputError);
+          expect((error as StateWriteInputError).body.class).toBe("conflict");
+          return;
+        }
+        throw new Error("nested mutation unexpectedly acquired the writer lock");
+      },
+      { lockTimeoutMs: 1 },
+    );
+    expect(writerStages(root)).toEqual([]);
   });
 });

@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 import { assertRealpathBoundary } from "../../registries/artifactRegistry.js";
+import { reject } from "./errors.js";
 
 const sleepArray = new Int32Array(new SharedArrayBuffer(4));
 const INITIALIZATION_GRACE_MS = 250;
@@ -30,6 +31,15 @@ function ownerIsDead(lockPath: string): boolean {
   }
 }
 
+function syncDirectory(directory: string): void {
+  const fd = fs.openSync(directory, "r");
+  try {
+    fs.fsyncSync(fd);
+  } finally {
+    fs.closeSync(fd);
+  }
+}
+
 export interface WriterLock {
   path: string;
   release: () => void;
@@ -52,8 +62,10 @@ export function acquireWriterLock(projectRoot: string, timeoutMs = 2000): Writer
         fd,
         JSON.stringify({ pid: process.pid, created_at: new Date().toISOString() }) + "\n",
       );
+      fs.fsyncSync(fd);
       fs.closeSync(fd);
       fd = undefined;
+      syncDirectory(dir);
       let released = false;
       return {
         path: lockPath,
@@ -64,6 +76,11 @@ export function acquireWriterLock(projectRoot: string, timeoutMs = 2000): Writer
             fs.unlinkSync(lockPath);
           } catch {
             /* already released */
+          }
+          try {
+            syncDirectory(dir);
+          } catch {
+            /* lock removal is already visible to this process */
           }
           if (createdDir) {
             try {
@@ -99,9 +116,12 @@ export function acquireWriterLock(projectRoot: string, timeoutMs = 2000): Writer
         continue;
       }
       if (Date.now() >= deadline) {
-        throw new Error(
-          `writer lock timeout at '${lockPath}'; retry the command after the active writer finishes`,
-        );
+        reject({
+          class: "conflict",
+          message: `writer lock timeout at '${lockPath}'; retry the command after the active writer finishes`,
+          syntax: "agentera state <artifact-id> <verb> ... --format json",
+          example: "retry the same command after the active writer finishes",
+        });
       }
       Atomics.wait(sleepArray, 0, 0, 25);
     }

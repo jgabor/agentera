@@ -18,6 +18,7 @@ import {
 } from "../../registries/artifactProtocolIds.js";
 import { DEFAULT_ARTIFACT_PATHS } from "../common.js";
 import { COMPACTABLE_YAML_ARTIFACTS, compactFile, compactYamlFile } from "../compaction/index.js";
+import { withStateMutation } from "../../state/write/mutation.js";
 import { isMapping } from "./schema.js";
 
 import type { JsonObject } from "../../core/jsonValue.js";
@@ -91,16 +92,17 @@ function readIfNeeded(content: string | null, absPath: string): string | null {
   }
 }
 
-function compactAfterValidWrite(artifact: string, absPath: string): string[] {
+function compactAfterValidWrite(artifact: string, absPath: string, projectRoot: string): string[] {
   if (!fs.existsSync(absPath)) return [];
   try {
-    if (artifact === "todo") {
-      compactFile(absPath, "todo-resolved");
-    } else if (artifact in COMPACTABLE_YAML_ARTIFACTS) {
-      compactYamlFile(absPath, artifact);
-    } else {
-      return [];
-    }
+    if (artifact !== "todo" && !(artifact in COMPACTABLE_YAML_ARTIFACTS)) return [];
+    withStateMutation(projectRoot, (transaction) => {
+      if (artifact === "todo") {
+        transaction.mutateProjection(absPath, (stage) => compactFile(stage, "todo-resolved"));
+      } else {
+        transaction.mutateProjection(absPath, (stage) => compactYamlFile(stage, artifact));
+      }
+    });
   } catch (exc) {
     return [`${artifact}: compaction failed: ${(exc as Error).message}`];
   }
