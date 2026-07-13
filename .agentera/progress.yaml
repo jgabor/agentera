@@ -1,4 +1,47 @@
 cycles:
+  - number: 754
+    timestamp: 2026-07-13 13:05
+    type: fix
+    phase: build
+    what: Corrected Task 5 review-pressure consistency by hydrating decision
+      overlays before append overflow calculations, compaction selection,
+      compaction status, retention budget counts, and bounded review consumers;
+      compaction output restores raw projection satisfaction fields.
+    inspiration: Task 5 evaluation failure identified historically confirmed
+      decisions overlaid to open as invisible to append and compaction pressure.
+    discovered: Retention helpers are pure over entry values, so authoritative
+      overlay composition must happen at append, compaction, status, and
+      consumer boundaries; compaction selection must not write hydrated overlay
+      values back into projections.
+    verified: "Focused command pnpm exec vp test run
+      test/state/decisionOverlay.test.ts test/hooks/compaction.test.ts
+      test/state/write/stateWrite.test.ts test/lint/monolithLint.test.ts: 81
+      tests passed. Full pnpm -C packages/cli test: 166 files and 1623 tests
+      passed. pnpm -C packages/cli run typecheck passed. pnpm -C packages/cli
+      build passed. check validate capability-contract, discuss, and status
+      passed; check validate artifact --artifact decisions --format json passed;
+      check compact --format json passed with zero over-limit and
+      protected-overflow counts."
+    next: Task 5 remains pending for evaluator attempt 2; do not mark it complete.
+      Preserve the failed evaluation metadata in plan.yaml and retain Decision
+      53 no-inference and missing/compacted caveats. Do not broaden into
+      projection policy, direct get, listing, migration, or release work.
+    context:
+      intent: Retry Task 5 after evaluation attempt 1 failed on raw satisfaction
+        pressure calculations, without closing the task or changing the failed
+        evaluation record.
+      constraints: Correction only for authoritative overlay pressure calculations. No
+        vision, health, profile, unrelated TODO, version, publish, push, tag, or
+        evaluation-record rewrite.
+      unknowns: The evaluator may assess the remaining projection-policy boundary in
+        Task 7; this correction does not redesign projection policy.
+      scope: packages/cli/src/state/decisionOverlay.ts;
+        packages/cli/src/state/write/transaction.ts;
+        packages/cli/src/hooks/compaction/apply.ts;
+        packages/cli/src/hooks/compaction/status.ts;
+        packages/cli/src/hooks/compaction/retention.ts;
+        packages/cli/src/hooks/validateArtifact/traversal.ts; decision pressure
+        consumers; overlay regression tests; .agentera/progress.yaml
   - number: 753
     timestamp: 2026-07-13 12:39
     type: feat
@@ -241,24 +284,10 @@ cycles:
     context:
       intent: Complete active plan Task 7 without changing decisions or unrelated
         capabilities.
-  - number: 744
-    timestamp: 2026-07-12 23:53
-    type: fix
-    phase: build
-    what: "Superseded Task 6 evidence:
+archive:
+  - summary: "Cycle 744 (2026-07-12): Superseded Task 6 evidence:
       packages/cli/src/cli/capabilityContext/build.ts keeps archive-only history
       out of Build execution and completion sweeps."
-    inspiration: Task 6 audit FAIL
-    verified: pnpm -C packages/cli test (1,573); typecheck; build; capability and
-      contract validation; compact.
-    next: "Task 7: simplify validation and publication language only."
-    context:
-      intent: Correct the audit-found archive-only Build routing regression in Task 6.
-      constraints: Retry Task 6 only; preserve archive history, current-plan sweep
-        behavior, and decision satisfaction authority.
-      scope: Archive-only plan summary, Build routing, completion sweep metadata,
-        artifact requirements, and regressions.
-archive:
   - summary: "Cycle 743 (2026-07-12): Implemented
       packages/cli/src/state/write/transaction.ts dependency-ready next work,
       mapped archive publication, lifecycle diagnostics, and evaluator retry
@@ -365,6 +394,3 @@ archive:
       it."
   - summary: "Cycle 705 (2026-07-11): Retried Task 5 after audit: removed active
       Claude advertisements, drained large CLI output, and restricted..."
-  - summary: "Cycle 704 (2026-07-11): Retired Claude Code from active runtime
-      discovery, package manifests, hooks, doctor, upgrade, eval, and
-      default..."

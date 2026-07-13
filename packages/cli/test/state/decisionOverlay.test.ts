@@ -21,6 +21,7 @@ import { InjectedMutationFailure } from "../../src/state/write/mutation.js";
 import { executeStateWrite, type StateWriteRequest } from "../../src/state/write/transaction.js";
 import { operationSpec } from "../../src/state/write/operations.js";
 import { checkCompaction } from "../../src/hooks/compaction/status.js";
+import { compactYamlFile } from "../../src/hooks/compaction/apply.js";
 
 interface Captured {
   rc: number;
@@ -308,5 +309,67 @@ describe("decision review overlays", () => {
     const pressure = checkCompaction(root).find((item) => item.status.artifact === "decisions");
     expect(pressure?.status.protected_overflow_count).toBeGreaterThan(0);
     expect(pressure?.action).toBe("protected_overflow");
+  });
+
+  it("uses confirmed-to-open overlays for retention pressure and still permits append", () => {
+    const root = project();
+    const agentera = path.join(root, ".agentera");
+    fs.mkdirSync(agentera, { recursive: true });
+    const decisions = Array.from({ length: 11 }, (_, index) => ({
+      number: index + 1,
+      date: "2026-07-13",
+      question: `Q${index + 1}?`,
+      context: "c",
+      alternatives: [{ name: "a", status: "chosen" }],
+      choice: "a",
+      reasoning: "r",
+      confidence: "firm",
+      satisfaction: {
+        state: "user_confirmed_satisfied",
+        user_confirmation: { confirmed_by: "user", confirmed_at: "2026-07-13" },
+      },
+    }));
+    fs.writeFileSync(path.join(agentera, "decisions.yaml"), dumpYamlMapping({ decisions }));
+    fs.mkdirSync(path.join(agentera, "overlays"), { recursive: true });
+    fs.writeFileSync(
+      path.join(agentera, "overlays", "decisions.yaml"),
+      dumpYamlMapping(
+        Object.fromEntries(
+          decisions.map((entry) => [
+            `decisions:${entry.number}`,
+            { satisfaction: { state: "open" } },
+          ]),
+        ),
+      ),
+    );
+
+    const status = checkCompaction(root).find((item) => item.status.artifact === "decisions");
+    expect(status?.status.protected_overflow_count).toBe(1);
+    expect(status?.action).toBe("protected_overflow");
+    expect(() => compactYamlFile(path.join(agentera, "decisions.yaml"), "decisions", root)).toThrow(
+      /protected-overflow review pressure/,
+    );
+
+    const appended = run(root, [
+      "decisions",
+      "append",
+      "--question",
+      "Q12?",
+      "--context",
+      "c",
+      "--alternative-chosen",
+      "a",
+      "--choice",
+      "a",
+      "--reasoning",
+      "r",
+      "--confidence",
+      "firm",
+      "--format",
+      "json",
+    ]);
+    expect(appended.rc).toBe(0);
+    expect(appended.json?.compaction).toMatchObject({ protected_overflow_count: 2 });
+    expect(fs.existsSync(path.join(root, ".agentera", "archive", "decisions", "12.yaml"))).toBe(true);
   });
 });

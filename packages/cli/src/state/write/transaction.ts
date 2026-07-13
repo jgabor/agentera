@@ -38,6 +38,7 @@ import {
 } from "../archiveReplay.js";
 import { discoverNumberedArchives } from "../archiveDiscovery.js";
 import {
+  hydrateDecisionRecords,
   updateDecisionOverlay,
 } from "../decisionOverlay.js";
 
@@ -925,8 +926,8 @@ function executeStateWriteUnlocked(
   const protectedOverflowCount =
     req.artifact === "decisions"
       ? decisionProtectedOverflowCount(
-          array(mutated.candidate, "decisions"),
-          array(mutated.candidate, "archive"),
+          hydrateDecisionRecords(array(mutated.candidate, "decisions") as unknown as JsonObject[], req.projectRoot),
+          hydrateDecisionRecords(array(mutated.candidate, "archive") as unknown as JsonObject[], req.projectRoot),
         )
       : 0;
   const skipProtectedDecisionCompaction =
@@ -934,7 +935,7 @@ function executeStateWriteUnlocked(
   try {
     if (req.dryRun) fs.writeFileSync(stage, candidateBytes);
     if (req.spec.compacts && !skipProtectedDecisionCompaction) {
-      compaction = compactYamlFile(stage, req.artifact);
+      compaction = compactYamlFile(stage, req.artifact, req.projectRoot);
     } else if (skipProtectedDecisionCompaction) {
       const active = array(mutated.candidate, "decisions");
       const archive = array(mutated.candidate, "archive");

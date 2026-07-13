@@ -100,7 +100,7 @@ function compactAfterValidWrite(artifact: string, absPath: string, projectRoot: 
       if (artifact === "todo") {
         transaction.mutateProjection(absPath, (stage) => compactFile(stage, "todo-resolved"));
       } else {
-        transaction.mutateProjection(absPath, (stage) => compactYamlFile(stage, artifact));
+        transaction.mutateProjection(absPath, (stage) => compactYamlFile(stage, artifact, projectRoot));
       }
     });
   } catch (exc) {

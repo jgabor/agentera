@@ -158,6 +158,20 @@ export function loadDecisionOverlay(
   return readOverlayDocument(projectRoot, sourceRoot).document;
 }
 
+export function hydrateDecisionRecords(
+  entries: JsonObject[],
+  source: string | DecisionOverlayDocument = process.cwd(),
+): JsonObject[] {
+  const overlay = typeof source === "string" ? loadDecisionOverlay(source) : source;
+  const contract = decisionOverlayContract();
+  return entries.map((entry) => {
+    const number = entry.number;
+    const stableId =
+      typeof number === "number" || typeof number === "string" ? `decisions:${number}` : null;
+    return composeDecisionOverlay(entry, stableId ? overlay[stableId] : undefined, contract);
+  });
+}
+
 export function composeDecisionOverlay(
   entry: JsonObject,
   overlay: JsonObject | undefined,

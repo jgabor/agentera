@@ -29,6 +29,7 @@ import {
   type StateMutationOptions,
   withStateMutation,
 } from "../../state/write/mutation.js";
+import { hydrateDecisionRecords } from "../../state/decisionOverlay.js";
 
 function artifactPaths(projectRoot: string): Record<string, string> {
   const paths: Record<string, string> = { ...DEFAULT_ARTIFACT_PATHS };
@@ -137,9 +138,16 @@ export function computeCompactionStatus(projectRoot: string): CompactionStatus[]
         continue;
       }
       const protectedOverflowCount =
-        artifact === "decisions" ? decisionProtectedOverflowCount(active, archive) : 0;
+        artifact === "decisions"
+          ? decisionProtectedOverflowCount(
+              hydrateDecisionRecords(active, projectRoot),
+              hydrateDecisionRecords(archive, projectRoot),
+            )
+          : 0;
       const budgetActiveCount =
-        artifact === "decisions" ? decisionSatisfiedActiveCount(active) : undefined;
+        artifact === "decisions"
+          ? decisionSatisfiedActiveCount(hydrateDecisionRecords(active, projectRoot))
+          : undefined;
       statuses.push(countStatus(artifact, p, active.length, archive.length, protectedOverflowCount, budgetActiveCount));
     } else {
       statuses.push(missingStatus(artifact, p, "compactable"));
@@ -242,7 +250,7 @@ function fixCompactionUnlocked(
       if (status.artifact === "todo#Resolved") {
         result = transaction.mutateProjection(p, (stage) => compactFile(stage, "todo-resolved"));
       } else if (status.artifact in YAML_SPEC_BY_ARTIFACT) {
-        result = transaction.mutateProjection(p, (stage) => compactYamlFile(stage, status.artifact));
+        result = transaction.mutateProjection(p, (stage) => compactYamlFile(stage, status.artifact, projectRoot));
       } else {
         operations.push({ status, mode: "fix", action: "skipped", changed: false, result: null, message: `no fixer registered for ${status.artifact}` });
         continue;

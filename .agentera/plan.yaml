@@ -103,6 +103,16 @@ tasks:
       - GIVEN hydration WHEN historical and overlay values differ THEN only authority-declared mutable fields come from the overlay.
       - GIVEN missing, open, provisional, confirmed, or invalid satisfaction WHEN read or updated THEN Decision 53 authority is preserved without inference.
       - GIVEN review-required decisions exceed projection defaults WHEN another decision is appended THEN storage remains available while bounded review pressure remains visible.
+    evaluation:
+      attempt_count: 1
+      failure_count: 1
+      last_verdict: fail
+      last_failure_evidence: Append and compaction pressure calculations use raw decision satisfaction instead of hydrated overlay state; overlaid open decisions can be misclassified as satisfied.
+      provenance:
+        attempt_id: task-5-attempt-1
+        source: audit-task-5-40ff149a
+        recorded_at: 2026-07-13 12:58
+        writer_command: agentera state plan record-evaluation
   - number: 6
     name: Gate projection changes on verified archive recovery
     depends_on:

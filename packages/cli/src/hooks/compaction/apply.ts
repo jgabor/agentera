@@ -12,6 +12,7 @@
  */
 
 import fs from "node:fs";
+import path from "node:path";
 
 import YAML from "yaml";
 
@@ -34,13 +35,29 @@ import {
 import { normalizeTodoResolvedLayout, parseEntries, parseTodoResolved, extractResolvedSection } from "./parse.js";
 
 import type { JsonObject } from "../../core/jsonValue.js";
+import { hydrateDecisionRecords } from "../../state/decisionOverlay.js";
 
 export interface CompactYamlBytesResult {
   bytes: string;
   result: CompactResult;
 }
 
-export function compactYamlBytes(bytes: string, artifact: string): CompactYamlBytesResult {
+function restoreRawSatisfaction(selected: any[], rawEntries: any[]): any[] {
+  return selected.map((entry) => {
+    const raw = rawEntries.find((candidate) => yamlEntryNumber(candidate) === yamlEntryNumber(entry));
+    if (!raw || typeof raw !== "object" || Array.isArray(raw)) return entry;
+    const restored = { ...entry };
+    if ("satisfaction" in raw) restored.satisfaction = raw.satisfaction;
+    else delete restored.satisfaction;
+    return restored;
+  });
+}
+
+export function compactYamlBytes(
+  bytes: string,
+  artifact: string,
+  projectRoot?: string,
+): CompactYamlBytesResult {
   if (!(artifact in COMPACTABLE_YAML_ARTIFACTS)) {
     throw new Error(`unsupported YAML artifact: ${artifact}`);
   }
@@ -52,9 +69,15 @@ export function compactYamlBytes(bytes: string, artifact: string): CompactYamlBy
   let archive = data[archiveKey] || [];
   if (!Array.isArray(active)) active = [];
   if (!Array.isArray(archive)) archive = [];
+  const rawActive = active;
+  const rawArchive = archive;
+  const selectionActive =
+    specName === "decisions" && projectRoot
+      ? hydrateDecisionRecords(rawActive as JsonObject[], projectRoot)
+      : rawActive;
 
-  const fullBefore = active.length;
-  const onelineBefore = archive.length;
+  const fullBefore = rawActive.length;
+  const onelineBefore = rawArchive.length;
   if (overLimitCount(fullBefore, onelineBefore) === 0) {
     return {
       bytes,
@@ -72,15 +95,23 @@ export function compactYamlBytes(bytes: string, artifact: string): CompactYamlBy
   let recentFull: any[];
   let olderActive: any[];
   if (specName === "decisions") {
-    [recentFull, olderActive] = selectDecisionActiveEntries(active);
+    const [selectedRecent, selectedOlder] = selectDecisionActiveEntries(selectionActive);
+    recentFull = restoreRawSatisfaction(selectedRecent, rawActive);
+    olderActive = restoreRawSatisfaction(selectedOlder, rawActive);
   } else {
-    [recentFull, olderActive] = yamlRecentFullAndOlder(active, specName);
+    [recentFull, olderActive] = yamlRecentFullAndOlder(rawActive, specName);
   }
   const compactedFromActive = olderActive.map((entry) => yamlArchiveEntry(specName, entry));
-  const archiveCandidates = yamlArchiveEntries([...compactedFromActive, ...archive]);
+  const archiveCandidates = yamlArchiveEntries([...compactedFromActive, ...rawArchive]);
   let archiveAfter: any[];
   if (specName === "decisions") {
-    archiveAfter = selectDecisionArchiveEntries(archiveCandidates);
+    const selectionArchiveCandidates = projectRoot
+      ? hydrateDecisionRecords(archiveCandidates as JsonObject[], projectRoot)
+      : archiveCandidates;
+    archiveAfter = restoreRawSatisfaction(
+      selectDecisionArchiveEntries(selectionArchiveCandidates),
+      archiveCandidates,
+    );
   } else {
     const merged = applyRetentionCaps(recentFull as JsonObject[], archiveCandidates as JsonObject[]);
     archiveAfter = merged.slice(recentFull.length);
@@ -106,9 +137,11 @@ export function compactYamlBytes(bytes: string, artifact: string): CompactYamlBy
   };
 }
 
-export function compactYamlFile(p: string, artifact: string): CompactResult {
+export function compactYamlFile(p: string, artifact: string, projectRoot?: string): CompactResult {
   if (!fs.existsSync(p)) throw new Error(p);
-  const compacted = compactYamlBytes(fs.readFileSync(p, "utf8"), artifact);
+  const inferredProjectRoot =
+    path.basename(path.dirname(p)) === ".agentera" ? path.dirname(path.dirname(p)) : path.dirname(p);
+  const compacted = compactYamlBytes(fs.readFileSync(p, "utf8"), artifact, projectRoot ?? inferredProjectRoot);
   if (compacted.result.changed) fs.writeFileSync(p, compacted.bytes);
   return compacted.result;
 }

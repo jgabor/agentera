@@ -23,10 +23,8 @@ import { SchemaInfo, artifactPath } from "../../appContext.js";
 import { out, err, StateArgs, Io } from "./shared.js";
 import type { JsonObject } from "../../../core/jsonValue.js";
 import {
-  composeDecisionOverlay,
-  loadDecisionOverlay,
+  hydrateDecisionRecords,
 } from "../../../state/decisionOverlay.js";
-import { decisionOverlayContract } from "../../../state/archiveDiscovery.js";
 
 const DECISION_CONTEXT_FIELDS = [
   "number",
@@ -100,14 +98,7 @@ export function hydrateDecisionEntries(
   entries: JsonObject[],
   projectRoot: string = process.cwd(),
 ): JsonObject[] {
-  const overlay = loadDecisionOverlay(projectRoot);
-  const contract = decisionOverlayContract();
-  return entries.map((entry) => {
-    const number = entry.number;
-    const stableId =
-      typeof number === "number" || typeof number === "string" ? `decisions:${number}` : null;
-    return composeDecisionOverlay(entry, stableId ? overlay[stableId] : undefined, contract);
-  });
+  return hydrateDecisionRecords(entries, projectRoot);
 }
 
 function filterDecisionsByTopic(entries: JsonObject[], topic: string, fields: JsonObject): JsonObject[] {
