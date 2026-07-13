@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import fs from "node:fs";
 import { StringDecoder } from "node:string_decoder";
 import path from "node:path";
@@ -7,6 +8,7 @@ import YAML from "yaml";
 import type { JsonObject, JsonValue } from "../core/jsonValue.js";
 import { resolveSourceRoot } from "../core/sourceRoot.js";
 import {
+  canonicalRecordJson,
   discoverNumberedArchives,
   numberedArchiveContract,
   stateCurrentProjectionPath,
@@ -14,6 +16,7 @@ import {
   type NumberedArchiveEntry,
 } from "./archiveDiscovery.js";
 import { legacyIdentity, type LegacyIdentity } from "./legacyIdentity.js";
+import { classifyStateRows, type StateClassification, type StateClassificationRow } from "./listClassification.js";
 
 const READ_CHUNK_BYTES = 64 * 1024;
 const MAX_CAPTURED_VALUE_CHARS = 512;
@@ -46,8 +49,11 @@ const BLOCK_SECTIONS = new Set(["grades", "satisfaction"]);
 
 export interface StartupSourceEntry {
   index: number;
+  path: string;
   fields: JsonObject;
   identity: LegacyIdentity;
+  origin: "active" | "summary";
+  projectionHash: string;
 }
 
 export interface StartupSourceScan {
@@ -127,7 +133,11 @@ function isMapping(value: unknown): value is JsonObject {
 }
 
 function capturedString(value: string): string {
-  return value.slice(0, MAX_CAPTURED_VALUE_CHARS);
+  return boundedText(value, MAX_CAPTURED_VALUE_CHARS);
+}
+
+function hashValue(value: JsonValue): string {
+  return createHash("sha256").update(canonicalRecordJson(value), "utf8").digest("hex");
 }
 
 function scalar(value: string | undefined): JsonValue | undefined {
@@ -180,11 +190,16 @@ function finalizeEntry(
   fields: JsonObject,
   artifactId: string,
   entryNumberField: string,
+  filePath: string,
+  origin: StartupSourceEntry["origin"],
 ): void {
   entries.push({
     index: entries.length,
+    path: filePath,
     fields,
     identity: legacyIdentity(fields, artifactId, entryNumberField),
+    origin,
+    projectionHash: hashValue(fields),
   });
 }
 
@@ -198,6 +213,7 @@ export function scanYamlCollection(
   collection: string,
   artifactId: string,
   entryNumberField: string,
+  origin: StartupSourceEntry["origin"] = collection === "archive" ? "summary" : "active",
 ): StartupSourceScan {
   if (!fs.existsSync(filePath)) return { path: filePath, exists: false, collection_found: false, bytes_scanned: 0, entries: [] };
   try {
@@ -229,7 +245,7 @@ export function scanYamlCollection(
   let blockField: string | null = null;
 
   const finish = (): void => {
-    if (fields !== null) finalizeEntry(entries, fields, artifactId, entryNumberField);
+    if (fields !== null) finalizeEntry(entries, fields, artifactId, entryNumberField, filePath, origin);
     fields = null;
     section = null;
     blockField = null;
@@ -340,8 +356,8 @@ export function scanStartupArtifact(
   const currentPath = stateCurrentProjectionPath(projectRoot, artifactId, sourceRoot);
   return {
     contract,
-    active: scanYamlCollection(currentPath, contract.entryCollection, artifactId, contract.entryNumberField),
-    archive: scanYamlCollection(currentPath, "archive", artifactId, contract.entryNumberField),
+    active: scanYamlCollection(currentPath, contract.entryCollection, artifactId, contract.entryNumberField, "active"),
+    archive: scanYamlCollection(currentPath, "archive", artifactId, contract.entryNumberField, "summary"),
   };
 }
 
@@ -351,14 +367,71 @@ function archiveNumber(rejection: ArchiveRejection, artifactId: string): number 
   return match ? Number(match[1]) : null;
 }
 
-function entrySummary(artifactId: string, entry: StartupSourceEntry | NumberedArchiveEntry, classification: string): JsonObject {
+function classificationRow(
+  entry: StartupSourceEntry | NumberedArchiveEntry | ArchiveRejection,
+  artifactId: string,
+): StateClassificationRow {
+  if ("path" in entry && "reason" in entry) {
+    const number = archiveNumber(entry, artifactId);
+    return {
+      source: "archive",
+      origin: "rejected_archive",
+      identity: number === null ? "unaddressable" : "canonical_number",
+      entryNumber: number,
+      representation: "unavailable",
+      projectionHash: hashValue({ path: entry.path, reason: entry.reason, message: entry.message }),
+      rejection: { reason: entry.reason },
+    };
+  }
+  if ("entryNumber" in entry) {
+    return {
+      source: "archive",
+      origin: "numbered_archive",
+      identity: "canonical_number",
+      entryNumber: entry.entryNumber,
+      representation: "summary",
+      projectionHash: entry.recordSha256,
+    };
+  }
+  return {
+    source: "current_projection",
+    origin: entry.origin,
+    identity: entry.identity.kind,
+    entryNumber: entry.identity.number,
+    // The bounded scanner retains a startup summary, not the full record. Keep
+    // it comparable for duplicate/conflict detection without retaining YAML.
+    representation: "full",
+    projectionHash: entry.projectionHash,
+  };
+}
+
+function classifyNumber(
+  artifactId: string,
+  number: number,
+  current: StartupSourceEntry[],
+  archives: NumberedArchiveEntry[],
+  rejected: ArchiveRejection[],
+): StateClassification {
+  const rows = [
+    ...current.filter((entry) => entry.identity.number === number).map((entry) => classificationRow(entry, artifactId)),
+    ...archives.filter((entry) => entry.entryNumber === number).map((entry) => classificationRow(entry, artifactId)),
+    ...rejected.filter((entry) => archiveNumber(entry, artifactId) === number).map((entry) => classificationRow(entry, artifactId)),
+  ];
+  return classifyStateRows(rows);
+}
+
+function classifyUnaddressable(entry: StartupSourceEntry | ArchiveRejection, artifactId: string): StateClassification {
+  return classifyStateRows([classificationRow(entry, artifactId)]);
+}
+
+function entrySummary(artifactId: string, entry: StartupSourceEntry | NumberedArchiveEntry, classification: StateClassification): JsonObject {
   const number = "entryNumber" in entry ? entry.entryNumber : entry.identity.number;
   const fields = "fields" in entry ? entry.fields : {};
   const summary: JsonObject = {};
   for (const key of ["summary", "status", "date", "timestamp", "trajectory", "type", "phase", "review_needed"]) {
     if (key in fields) {
       const value = fields[key];
-      summary[key] = typeof value === "string" ? value.slice(0, 160) : value;
+      summary[key] = typeof value === "string" ? boundedText(value, 160) : value;
     }
   }
   return {
@@ -367,8 +440,13 @@ function entrySummary(artifactId: string, entry: StartupSourceEntry | NumberedAr
     entry_number: number,
     addressable: number !== null,
     classification,
-    detail_availability: "summary",
+    detail_availability: "entryNumber" in entry ? "full" : "summary",
     source: "entryNumber" in entry ? "archive" : "current_projection",
+    provenance: {
+      source: "entryNumber" in entry ? "archive" : "current_projection",
+      origin: "entryNumber" in entry ? "numbered_archive" : entry.origin,
+      path: "entryNumber" in entry ? entry.path : entry.path,
+    },
     ...(Object.keys(summary).length > 0 ? { summary } : {}),
   };
 }
@@ -399,11 +477,12 @@ function countsFor(
   const ids = new Set([...currentByNumber.keys(), ...archiveByNumber.keys()]);
   let mirrored = 0;
   let duplicate = 0;
+  let conflict = 0;
   for (const number of ids) {
-    const currentCount = currentByNumber.get(number) ?? 0;
-    const archiveCount = archiveByNumber.get(number) ?? 0;
-    if (currentCount > 0 && archiveCount > 0) mirrored += 1;
-    if (currentCount + archiveCount > 1) duplicate += 1;
+    const classification = classifyNumber(artifactId, number, current, archives, rejected);
+    if (classification === "mirrored") mirrored += 1;
+    if (classification === "duplicate") duplicate += 1;
+    if (classification === "conflict") conflict += 1;
   }
   const physical = current.length + archives.length + rejected.filter((item) => item.path.includes(path.join(`${path.sep}${artifactId}`, ""))).length;
   return {
@@ -414,7 +493,7 @@ function countsFor(
     ambiguous,
     mirrored,
     duplicate,
-    conflict: 0,
+    conflict,
     omitted: Math.max(0, physical - returned),
   };
 }
@@ -423,23 +502,28 @@ function sourceRows(current: StartupSourceEntry[], archives: NumberedArchiveEntr
   const rows: JsonObject[] = [];
   for (const entry of current) {
     const number = entry.identity.number;
-    const archive = number !== null && archives.some((candidate) => candidate.entryNumber === number);
-    rows.push(entrySummary(artifactId, entry, archive ? "mirrored" : entry.identity.kind === "ambiguous" ? "ambiguous" : number === null ? "unaddressable" : "canonical"));
+    const classification = number === null
+      ? classifyUnaddressable(entry, artifactId)
+      : classifyNumber(artifactId, number, current, archives, rejected);
+    rows.push(entrySummary(artifactId, entry, classification));
   }
   for (const entry of archives) {
-    const currentEntry = current.some((candidate) => candidate.identity.number === entry.entryNumber);
-    rows.push(entrySummary(artifactId, entry, currentEntry ? "mirrored" : "canonical"));
+    rows.push(entrySummary(artifactId, entry, classifyNumber(artifactId, entry.entryNumber, current, archives, rejected)));
   }
   for (const item of rejected.filter((candidate) => candidate.path.includes(path.join(`${path.sep}${artifactId}`, "")))) {
     const number = archiveNumber(item, artifactId);
+    const classification = number === null
+      ? classifyUnaddressable(item, artifactId)
+      : classifyNumber(artifactId, number, current, archives, rejected);
     rows.push({
       stable_id: number === null ? null : `${artifactId}:${number}`,
       artifact_id: artifactId,
       entry_number: number,
       addressable: number !== null,
-      classification: "corrupt",
+      classification,
       detail_availability: "unavailable",
       source: "archive",
+      provenance: { source: "archive", origin: "rejected_archive", path: item.path },
       compatibility: "blocked",
       rejection: item.reason,
     });

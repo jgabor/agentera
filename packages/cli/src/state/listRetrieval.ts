@@ -22,6 +22,7 @@ import { loadProjectionPolicy, serializedProjectionBytes } from "./projectionPol
 import { StateRetrievalFailure, type StateFailureClass } from "./directRetrieval.js";
 import { physicalCounts, provenanceCounts } from "./listAccounting.js";
 import { legacyIdentity, type LegacyIdentityKind } from "./legacyIdentity.js";
+import { classifyStateRows, type StateClassification } from "./listClassification.js";
 
 const CURSOR_VERSION = 1;
 const LIST_ORDER = "entry_number_desc";
@@ -68,7 +69,7 @@ interface ListCandidate {
   artifactId: string;
   entryNumber: number | null;
   identity: PhysicalRow["identity"];
-  classification: "canonical" | "mirrored" | "duplicate" | "conflict" | "ambiguous" | "unaddressable" | "corrupt";
+  classification: StateClassification;
   rows: PhysicalRow[];
   sortKey: string;
   archive?: NumberedArchiveEntry;
@@ -459,18 +460,6 @@ function sortKey(artifactId: string, entryNumber: number | null, rowKey: string)
   return `1:${rowKey}`;
 }
 
-function candidateClassification(rows: PhysicalRow[]): ListCandidate["classification"] {
-  if (rows.some((row) => row.rejection)) return "corrupt";
-  if (rows.some((row) => row.identity === "ambiguous")) return "ambiguous";
-  const comparable = rows.filter((row) => row.representation === "full");
-  if (new Set(comparable.map((row) => row.projectionHash)).size > 1) return "conflict";
-  const currentRows = rows.filter((row) => row.source === "current_projection");
-  const archiveRows = rows.filter((row) => row.source === "archive" && row.origin === "numbered_archive");
-  if (archiveRows.length > 0 && currentRows.length > 0 && currentRows.length === 1) return "mirrored";
-  if (rows.length > 1) return "duplicate";
-  return "canonical";
-}
-
 function buildCandidates(
   projectRoot: string,
   artifactId: string,
@@ -511,7 +500,7 @@ function buildCandidates(
       artifactId,
       entryNumber,
       identity,
-      classification: candidateClassification(rows),
+      classification: classifyStateRows(rows),
       rows,
       sortKey: sortKey(artifactId, entryNumber, rows[0]?.rowKey ?? ""),
       ...(group.archive ? { archive: group.archive } : {}),

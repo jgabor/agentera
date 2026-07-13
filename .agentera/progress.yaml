@@ -1,4 +1,32 @@
 cycles:
+  - number: 775
+    timestamp: 2026-07-13 22:55
+    type: fix
+    phase: build
+    what: "Retried bounded prime startup projections: shared list classification now
+      drives startup conflict, duplicate, mirror, ambiguity, and corruption
+      rows; startup entries expose provenance and detail availability; bounded
+      strings truncate by Unicode code point."
+    inspiration: Active Plan Task3 retry after audit-task-3-attempt-1 identified
+      hard-coded conflict and provenance metadata plus UTF-16 truncation risk.
+    discovered: Startup history now classifies every emitted row from the same
+      classifier used by state list, while archive discovery remains
+      retainRecords=false and current scanning remains incremental.
+    verified: Focused primeTask3Bounds suite passed 4 tests; non-packaging CLI suite
+      passed 172 files and 1,741 tests; typecheck, build, git diff --check
+      passed. Existing packaging failures remain the known npm 12 npm pack
+      --dry-run --json parser incompatibility.
+    next: Keep Task3 pending for governed evaluation; do not begin Task4 migration.
+    context:
+      intent: Repair Task3 audit findings without starting Task4 consumer migration.
+      constraints: Preserve Task2 plan status/evaluation, the failed Task3 evaluator
+        record, archive immutability, source bounds, direct retrieval routes,
+        and all protected state.
+      unknowns: None for implementation; governed Task3 evaluation remains open.
+      scope: packages/cli/src/state/listClassification.ts;
+        packages/cli/src/state/listRetrieval.ts;
+        packages/cli/src/state/startupProjection.ts;
+        packages/cli/test/cli/primeTask3Bounds.test.ts
   - number: 774
     timestamp: 2026-07-13 22:26
     type: feat
@@ -424,62 +452,6 @@ cycles:
         packages/cli/test/state/archiveAuthority.test.ts;
         references/artifacts/state-storage-authority.yaml; .agentera/plan.yaml;
         TODO.md
-  - number: 765
-    timestamp: 2026-07-13 16:45
-    type: fix
-    phase: build
-    what: Retried Task 9 after evaluator attempt 1 failed. Fixed bounded-list
-      minimal fallback to preserve a new continuation cursor and has_more state,
-      recognized legacy summary mappings with IDs encoded in summary text,
-      enforced the requested JSON/YAML/text serialization budget, and scoped
-      archive discovery diagnostics to the requested artifact. Added adversarial
-      tests for 100-row fallback traversal, live-style summary counts, YAML
-      overflow, unrelated directories, and count parity while preserving cursor
-      tamper/append behavior and authority benchmarks.
-    inspiration: "Task 9 attempt-1 failure evaluation recorded in
-      .agentera/plan.yaml: fallback cursor loss, skipped legacy mappings,
-      JSON-only byte measurement, and unrelated archive diagnostics."
-    discovered: The 100-row fallback can legitimately emit an empty bounded page
-      when required row provenance exceeds the byte budget; its cursor must
-      restart at the current page boundary so no retained rows are skipped. YAML
-      becomes the governing serializer at a multiline-string boundary even when
-      JSON remains under 32768 bytes.
-    verified: "Focused: pnpm -C packages/cli exec vp test run
-      test/state/listRetrieval.test.ts test/state/archiveAuthority.test.ts, 2
-      files and 21 tests passed. Adjacent: pnpm -C packages/cli exec vp test run
-      test/state/listRetrieval.test.ts test/state/archiveAuthority.test.ts
-      test/state/archiveDiscovery.test.ts test/state/archiveRecovery.test.ts
-      test/state/archivePublication.test.ts test/state/directRetrieval.test.ts
-      test/state/decisionOverlay.test.ts test/state/projectionPolicy.test.ts
-      test/cli/state.test.ts test/cli/compactParity.test.ts, 10 files and 137
-      tests passed. Non-packaging: pnpm -C packages/cli exec vp test run
-      --exclude test/packaging/prepack.test.ts, 169 files and 1682 tests passed.
-      Full: pnpm -C packages/cli test, 169 of 170 files and 1686 of 1691 tests
-      passed; exactly 5 pre-existing npm 12 npm pack --dry-run --json parsing
-      failures remain in test/packaging/prepack.test.ts. Benchmark report: 100
-      entries 157.7 ms, 145184 B heap delta, 22527 B response; 1000 entries
-      1417.6 ms, 5446400 B heap delta, 22658 B response. pnpm -C packages/cli
-      run typecheck passed; pnpm -C packages/cli build passed; pnpm -C
-      packages/cli lint passed with 101 existing warnings and 0 errors;
-      capability-contract and plan/progress/decisions/health validation passed;
-      check compact passed with zero over-limit and protected-overflow counts
-      and five known progress archive recovery refusals."
-    next: Task 9 remains pending for evaluator review. Task 10 prime consumers,
-      migration, Git durability, and release work remain out of scope.
-    context:
-      intent: Resolve the four evaluator findings for Task 9 without changing prime
-        consumers, migration, Git, or later plan tasks.
-      constraints: Do not mark Task 9 complete. Do not modify prime or capability
-        consumers, migration, Git, health, vision, profile, decisions, TODO,
-        version, publish, push, or tag surfaces. Packaging files remain
-        unchanged; npm 12 failures remain a known caveat.
-      unknowns: No persistent index is introduced; reevaluate only if a reproducible
-        authority benchmark exceeds its declared threshold on another
-        filesystem.
-      scope: packages/cli/src/state/listRetrieval.ts;
-        packages/cli/src/state/archiveDiscovery.ts;
-        packages/cli/test/state/listRetrieval.test.ts; .agentera/plan.yaml;
-        .agentera/progress.yaml
   - number: 749
     timestamp: 2026-07-13 10:58
     type: feat
@@ -597,6 +569,8 @@ cycles:
       intent: Complete active plan Task 7 without changing decisions or unrelated
         capabilities.
 archive:
+  - summary: "Cycle 765 (2026-07-13): Retried Task 9 after evaluator attempt 1
+      failed. Fixed bounded-list minimal fallback to preserve a..."
   - summary: "Cycle 764 (2026-07-13): Verified the final text list renderer includes
       explicit provenance and compatibility for every bounded row;..."
   - summary: "Cycle 763 (2026-07-13): Reverified Task 9 after the final overlay
@@ -703,15 +677,18 @@ archive:
       packages/cli/src/runtime/lifecycleOperations.ts and lifecycleUpgrade.ts
       for Task 3 ownership-safe repair and retired cleanup across OpenCode,
       Codex,..."
-  - summary: "Cycle 717 (2026-07-12): Defined default preview and explicit apply
-      semantics for runtime lifecycle upgrade work."
 omitted: true
-omitted_count: 12
+omitted_count: 13
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded

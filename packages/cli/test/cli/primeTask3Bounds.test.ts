@@ -11,7 +11,8 @@ import { CAPABILITY_NAMES } from "../../src/cli/capabilityContext/types.js";
 import { buildPrimeCapabilityContextPayload } from "../../src/cli/capabilityContext.js";
 import { buildOrientationJsonPayload, emitPrime } from "../../src/cli/commands/prime/orientationOutput.js";
 import { collectOrientationState } from "../../src/cli/commands/prime.js";
-import { startupHistorySummary } from "../../src/state/startupProjection.js";
+import { publishNumberedArchive } from "../../src/state/archivePublication.js";
+import { boundStartupValue, startupHistorySummary } from "../../src/state/startupProjection.js";
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..");
 const AUTHORITY_PATH = path.join(REPO_ROOT, "references/artifacts/state-storage-authority.yaml");
@@ -77,6 +78,20 @@ function capture(fn: (out: (text: string) => void, err: (text: string) => void) 
 
 function jsonBytes(value: unknown): number {
   return Buffer.byteLength(`${JSON.stringify(value, null, 2)}\n`, "utf8");
+}
+
+function hasUnpairedSurrogate(value: string): boolean {
+  for (let index = 0; index < value.length; index += 1) {
+    const code = value.charCodeAt(index);
+    if (code >= 0xd800 && code <= 0xdbff) {
+      const next = value.charCodeAt(index + 1);
+      if (next < 0xdc00 || next > 0xdfff) return true;
+      index += 1;
+    } else if (code >= 0xdc00 && code <= 0xdfff) {
+      return true;
+    }
+  }
+  return false;
 }
 
 beforeEach(() => {
@@ -176,6 +191,57 @@ describe("prime Task3 bounded source projections", () => {
     expect(JSON.stringify(history)).not.toContain("not emitted in startup detail");
   });
 
+  it("uses canonical row classifications for bounded per-entry history", () => {
+    writeArtifact("progress.yaml", [
+      "cycles:",
+      "  - number: 9",
+      "    timestamp: 2026-07-09 00:00",
+      "    type: feat",
+      "    phase: build",
+      "    what: first projection",
+      "  - number: 9",
+      "    timestamp: 2026-07-09 00:00",
+      "    type: feat",
+      "    phase: build",
+      "    what: conflicting projection",
+      "",
+    ].join("\n"));
+    const conflict = startupHistorySummary(project, "progress", REPO_ROOT);
+    expect(conflict.counts.conflict).toBe(1);
+    expect((conflict.entries as Array<Record<string, any>>).every((entry) => entry.classification === "conflict")).toBe(true);
+    expect((conflict.entries as Array<Record<string, any>>)[0].provenance).toMatchObject({
+      source: "current_projection",
+      origin: "active",
+    });
+
+    writeArtifact("progress.yaml", [
+      "cycles:",
+      "  - number: 8",
+      "    timestamp: 2026-07-08 00:00",
+      "    type: feat",
+      "    phase: build",
+      "    what: mirrored projection",
+      "",
+    ].join("\n"));
+    publishNumberedArchive(project, "progress", 8, {
+      number: 8,
+      timestamp: "2026-07-08 00:00",
+      type: "feat",
+      phase: "build",
+      what: "mirrored projection",
+      context: { intent: "Task3 fixture" },
+    });
+    const mirrored = startupHistorySummary(project, "progress", REPO_ROOT);
+    expect(mirrored.counts.mirrored).toBe(1);
+    expect((mirrored.entries as Array<Record<string, any>>).map((entry) => entry.provenance.origin)).toEqual([
+      "active",
+      "numbered_archive",
+    ]);
+    expect((mirrored.entries as Array<Record<string, any>>)[0].detail_availability).toBe("summary");
+    expect((mirrored.entries as Array<Record<string, any>>)[1].detail_availability).toBe("full");
+    expect((mirrored.entries as Array<Record<string, any>>).every((entry) => entry.classification === "mirrored")).toBe(true);
+  });
+
   it("preserves Unicode-safe identity, status, and continuation metadata", () => {
     const unicode = "😀漢字".repeat(10_000);
     writeArtifact("progress.yaml", [
@@ -192,6 +258,10 @@ describe("prime Task3 bounded source projections", () => {
 
     const state = collectOrientationState({ home, env: process.env });
     const payload = buildOrientationJsonPayload(state, "prime");
+    const bounded = boundStartupValue(unicode, "what");
+    expect(Array.from(bounded as string)).toHaveLength(200);
+    expect((bounded as string).endsWith("…")).toBe(true);
+    expect(hasUnpairedSurrogate(JSON.stringify(payload))).toBe(false);
     expect(payload.progress).toMatchObject({
       exists: true,
       latest: { number: 42, status: "open" },
@@ -199,5 +269,18 @@ describe("prime Task3 bounded source projections", () => {
     expect((payload.history as any).progress.retrieval.get).toBe("agentera state progress get --number N --format json");
     expect(jsonBytes(payload)).toBeLessThanOrEqual(authority().budgets.startup.surfaces.prime_briefing.max_utf8_bytes);
     expect(JSON.stringify(payload)).not.toContain(unicode);
+    const sparse = capture((out, err) => emitPrime("prime", payload, "json", "plan,progress,docs", out, err));
+    expect(hasUnpairedSurrogate(sparse.out)).toBe(false);
+    for (const capability of CAPABILITY_NAMES) {
+      const selected = capture((out, err) => emitPrime(
+        "prime",
+        buildPrimeCapabilityContextPayload(state, capability),
+        "json",
+        "capability_context",
+        out,
+        err,
+      ));
+      expect(hasUnpairedSurrogate(selected.out), capability).toBe(false);
+    }
   });
 });
