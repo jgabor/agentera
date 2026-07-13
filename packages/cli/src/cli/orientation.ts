@@ -22,6 +22,7 @@ import {
 import { normalizeSeverity } from "./commands/state/index.js";
 import { isResolvedTodoMarkdownStatus, parseTodoMarkdownListItem } from "./todoMarkdown.js";
 import type { JsonObject } from "../core/jsonValue.js";
+import { truncateCodePoints } from "../core/text.js";
 import { TODO_SEVERITY_ORDER, TODO_SEVERITY_ORDER_KEYS } from "./todoSeverity.js";
 import { capabilityStartupComplete, type StartupCompletenessInput } from "./startupCompletenessContract.js";
 import { discoverPlanArtifacts, planCatalogEntry, planDocumentParts } from "./planArtifacts.js";
@@ -449,9 +450,9 @@ export function startupPlanSummary(plan: PlanSummary): JsonObject {
       } else if (key === "depends_on") {
         item[key] = asList(task[key]).slice(0, 20);
       } else if (key === "blocked_reasons") {
-        item[key] = asList(task[key]).slice(0, 3).map((reason) => String(reason).slice(0, 160));
+        item[key] = asList(task[key]).slice(0, 3).map((reason) => truncateCodePoints(String(reason), 160));
       } else {
-        item[key] = typeof task[key] === "string" ? String(task[key]).slice(0, 256) : task[key];
+        item[key] = typeof task[key] === "string" ? truncateCodePoints(task[key], 256) : task[key];
       }
     }
     return item;
@@ -499,7 +500,7 @@ export function docsSummary(
   const mapping = scanYamlCollection(docsPath, "mapping", "docs", "artifact");
   const index = scanYamlCollection(docsPath, "index", "docs", "artifact");
   const exists = fs.existsSync(docsPath);
-  const header = exists ? fs.readFileSync(docsPath, "utf8").slice(0, 4096) : "";
+  const header = exists ? truncateCodePoints(fs.readFileSync(docsPath, "utf8"), 4096) : "";
   const lastAudit = /^last_audit:\s*(.+)$/m.exec(header)?.[1]?.trim().replace(/^['"]|['"]$/g, "") ?? null;
   return {
     exists,

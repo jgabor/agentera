@@ -10,7 +10,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { CAPABILITY_NAMES } from "../../src/cli/capabilityContext/types.js";
 import { buildPrimeCapabilityContextPayload } from "../../src/cli/capabilityContext.js";
 import { buildOrientationJsonPayload, emitPrime } from "../../src/cli/commands/prime/orientationOutput.js";
-import { collectOrientationState } from "../../src/cli/commands/prime.js";
+import { cmdPrime, collectOrientationState } from "../../src/cli/commands/prime.js";
 import { publishNumberedArchive } from "../../src/state/archivePublication.js";
 import { boundStartupValue, startupHistorySummary } from "../../src/state/startupProjection.js";
 
@@ -92,6 +92,21 @@ function hasUnpairedSurrogate(value: string): boolean {
     }
   }
   return false;
+}
+
+function hasUnpairedSurrogateInValue(value: unknown): boolean {
+  if (typeof value === "string") return hasUnpairedSurrogate(value);
+  if (Array.isArray(value)) return value.some((item) => hasUnpairedSurrogateInValue(item));
+  if (value && typeof value === "object") return Object.values(value).some((item) => hasUnpairedSurrogateInValue(item));
+  return false;
+}
+
+function boundaryAlignedFixtureText(): { taskName: string; blockedReason: string; todoText: string } {
+  return {
+    taskName: `${"a".repeat(93)}😀${"b".repeat(160)}😀tail`,
+    blockedReason: `${"r".repeat(158)}😀${"s".repeat(18)}😀tail`,
+    todoText: `${"t".repeat(158)}😀${"u".repeat(18)}😀tail`,
+  };
 }
 
 beforeEach(() => {
@@ -282,5 +297,55 @@ describe("prime Task3 bounded source projections", () => {
       ));
       expect(hasUnpairedSurrogate(selected.out), capability).toBe(false);
     }
+  });
+
+  it("keeps boundary-aligned emoji intact on every prime output surface", () => {
+    const { taskName, blockedReason, todoText } = boundaryAlignedFixtureText();
+    writeArtifact("plan.yaml", [
+      "header:",
+      "  title: Boundary fixture",
+      "  status: open",
+      "tasks:",
+      "  - number: 1",
+      `    name: ${taskName}`,
+      "    status: pending",
+      "    depends_on: []",
+      `    blocked_reasons: [\"${blockedReason}\"]`,
+      "",
+    ].join("\n"));
+    writeArtifact("TODO.md", `# TODO\n\n## normal\n- [ ] ${todoText}\n`);
+    writeArtifact("progress.yaml", "cycles: []\n");
+    writeArtifact("decisions.yaml", "decisions: []\n");
+    writeArtifact("health.yaml", "audits: []\n");
+    writeArtifact("docs.yaml", "mapping: []\nindex: []\n");
+
+    const outputs: Array<[string, string]> = [];
+    for (const [label, args] of [
+      ["default text", { command: "prime" }],
+      ["default json", { command: "prime", format: "json" }],
+      ["dashboard", { command: "prime", dashboard: true, format: "json" }],
+      ["sparse", { command: "prime", format: "json", fields: "plan,progress,docs" }],
+    ] as const) {
+      const result = capture((out, err) => cmdPrime(args, { out, err }));
+      expect(result.rc, label).toBe(0);
+      outputs.push([label, result.out]);
+    }
+    for (const capability of CAPABILITY_NAMES) {
+      const result = capture((out, err) => cmdPrime({ command: "prime", context: capability, format: "json" }, { out, err }));
+      expect(result.rc, capability).toBe(0);
+      outputs.push([`context ${capability}`, result.out]);
+    }
+
+    for (const [label, output] of outputs) {
+      expect(hasUnpairedSurrogate(output), label).toBe(false);
+      if (label !== "default text") {
+        const parsed = JSON.parse(output);
+        expect(hasUnpairedSurrogateInValue(parsed), label).toBe(false);
+        expect(hasUnpairedSurrogate(JSON.stringify(parsed)), label).toBe(false);
+      }
+    }
+    expect(outputs.find(([label]) => label === "dashboard")?.[1]).not.toContain(blockedReason);
+    expect(outputs.find(([label]) => label === "context audit")?.[1]).not.toContain(todoText);
+    expect(outputs.find(([label]) => label === "context document")?.[1]).not.toContain(todoText);
   });
 });

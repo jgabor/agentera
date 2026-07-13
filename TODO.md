@@ -39,6 +39,7 @@
 
 ## ✓ Resolved
 
+- [x] ~~[fix:3.0.0] Repair blocked archive-storage continuation Plan Task 3. Resolved 2026-07-13: prime now shares code-point-safe truncation across bounded startup strings, with boundary-aligned emoji coverage for default/dashboard, sparse, and all 12 capability contexts.~~
 - [x] ~~[fix:3.0.0] Align the plan capability's published YAML format with the typed writer schema. Resolved 2026-07-13: PLAN exposes one writer-backed publication gate, valid scalar acceptance and string dependency shapes, and an omission rule for empty `rejected`; source/compiled contract coverage submits the full documented example through the typed writer.~~
 - [x] ~~[test:3.0.0] Verify Plan Lifecycle Clarity and Validated Publication closeout. Resolved 2026-07-13: `packages/cli/test/state/planLifecycleContract.test.ts`, lifecycle fixtures, and release gates passed; the active plan is lifecycle-complete and awaits orchestrator-owned archival.~~
 - [x] ~~[fix:3.0.0] Make plan next-task output dependency-aware. Resolved 2026-07-12: status and typed plan writes now return only dependency-ready pending work; dependency-blocked work returns null.~~

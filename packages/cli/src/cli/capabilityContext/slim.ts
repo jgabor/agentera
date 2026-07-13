@@ -1,5 +1,6 @@
 import { asList } from "../stateQuery.js";
 import type { JsonObject } from "../../core/jsonValue.js";
+import { truncateCodePoints } from "../../core/text.js";
 
 function pickObject(value: unknown, keys: string[]): JsonObject {
   if (!value || typeof value !== "object" || Array.isArray(value)) return {};
@@ -69,8 +70,8 @@ export function slimOrchestrationContext(value: JsonObject): JsonObject {
 }
 
 export function truncateContextText(value: any, maxChars = 240): any {
-  if (typeof value !== "string" || value.length <= maxChars) return value;
-  return value.slice(0, maxChars - 1).replace(/\s+$/, "") + "\u2026";
+  if (typeof value !== "string") return value;
+  return truncateCodePoints(value, maxChars, "\u2026", true);
 }
 
 export function compactItemsState(value: any, maxItems = 3, maxChars = 180): any {

@@ -73,20 +73,20 @@ tasks:
     depends_on:
       - "1"
       - "2"
-    status: pending
+    status: blocked
     acceptance:
       - GIVEN large current projections and archive directories WHEN dashboard, sparse, or capability prime contexts run THEN input scans, heap, latency, and serialized bytes remain within schema-owned bounds.
       - GIVEN omitted, unaddressable, ambiguous, or corrupt history WHEN startup context is emitted THEN counts and valid retrieval routes remain truthful without loading unrelated full records.
       - GIVEN maximum-sized Unicode fixtures WHEN every prime mode is measured THEN output bounds hold without corrupting identity, status, or continuation metadata.
     evaluation:
-      attempt_count: 1
-      failure_count: 1
+      attempt_count: 2
+      failure_count: 2
       last_verdict: fail
-      last_failure_evidence: Prime startup projection hard-codes per-entry provenance/detail and conflict=0, and UTF-16 slicing can corrupt Unicode at truncation boundaries.
+      last_failure_evidence: UTF-16 slicing remains in capabilityContext/slim.ts and orientation.ts; emoji boundary reproduction emits a lone high surrogate, so all prime modes are not Unicode-safe.
       provenance:
-        attempt_id: task-3-attempt-1
-        source: audit-task-3-445c4a97
-        recorded_at: 2026-07-13 22:43
+        attempt_id: task-3-attempt-2
+        source: audit-task-3-445c4a97+d6fe59e9
+        recorded_at: 2026-07-13 23:08
         writer_command: agentera state plan record-evaluation
   - number: 4
     name: Migrate the complete capability consumer matrix

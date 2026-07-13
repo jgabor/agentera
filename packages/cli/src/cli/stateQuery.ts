@@ -7,6 +7,7 @@ import { activeAppModel, discoverSchemasDir, SchemaInfo } from "./appContext.js"
 import { validateAgentString, validateIdentifier } from "./argvalidate.js";
 import { emitStructured } from "./structured.js";
 import type { JsonObject, JsonValue } from "../core/jsonValue.js";
+import { truncateCodePoints } from "../core/text.js";
 import { boundStructuredProjection } from "../state/projectionPolicy.js";
 
 /** Shared state-query infrastructure ported from scripts/agentera. */
@@ -116,14 +117,14 @@ function pyReprInner(val: unknown): string {
 export function formatScalar(val: unknown): string {
   if (Array.isArray(val) || (val !== null && typeof val === "object")) {
     const s = pyStr(val);
-    return s.length > 80 ? s.slice(0, 80) + "..." : s;
+    return truncateCodePoints(s, 80, "...");
   }
   return pyStr(val);
 }
 
 export function truncate(value: unknown, limit = 110): string {
   const text = formatScalar(value).replace(/\n/g, " ");
-  return text.length > limit ? text.slice(0, limit - 3) + "..." : text;
+  return truncateCodePoints(text, limit, "...");
 }
 
 export function asList(value: unknown): any[] {

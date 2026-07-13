@@ -30,6 +30,7 @@
 
 ### Fixed
 
+- Fixed prime dashboard, sparse, and capability startup output to truncate strings at Unicode code-point boundaries instead of splitting emoji surrogate pairs.
 - Fixed full-plan task guidance and startup metadata to use lifecycle and coherence boundaries instead of a fixed task-count ceiling; typed publication still validates task identity and dependencies.
 - Fixed `agentera state plan create` and `archive` publication to use stable archive identities across retries, validate final serialized bytes with strict prose lint and schema checks, and retain canonical `overall acceptance` vocabulary.
 - Fixed `agentera state plan`: `set-status --task` accepts task values, and `set-plan-status` accepts `open` or `complete`.

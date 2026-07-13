@@ -6,6 +6,7 @@ import path from "node:path";
 import YAML from "yaml";
 
 import type { JsonObject, JsonValue } from "../core/jsonValue.js";
+import { truncateCodePoints } from "../core/text.js";
 import { resolveSourceRoot } from "../core/sourceRoot.js";
 import {
   canonicalRecordJson,
@@ -108,14 +109,9 @@ const PRESERVED_STARTUP_KEYS = new Set([
   "field",
 ]);
 
-function boundedText(value: string, maxChars: number): string {
-  const characters = Array.from(value);
-  return characters.length <= maxChars ? value : `${characters.slice(0, maxChars - 1).join("")}\u2026`;
-}
-
 /** Bound optional capability startup detail without touching identity or routes. */
 export function boundStartupValue(value: JsonValue, key = "", depth = 0): JsonValue {
-  if (typeof value === "string") return PRESERVED_STARTUP_KEYS.has(key) ? value : boundedText(value, 200);
+  if (typeof value === "string") return PRESERVED_STARTUP_KEYS.has(key) ? value : truncateCodePoints(value, 200, "\u2026");
   if (Array.isArray(value)) {
     const bounded = value.slice(0, 20).map((item) => boundStartupValue(item, key, depth + 1));
     return bounded;
@@ -133,7 +129,7 @@ function isMapping(value: unknown): value is JsonObject {
 }
 
 function capturedString(value: string): string {
-  return boundedText(value, MAX_CAPTURED_VALUE_CHARS);
+  return truncateCodePoints(value, MAX_CAPTURED_VALUE_CHARS, "\u2026");
 }
 
 function hashValue(value: JsonValue): string {
@@ -431,7 +427,7 @@ function entrySummary(artifactId: string, entry: StartupSourceEntry | NumberedAr
   for (const key of ["summary", "status", "date", "timestamp", "trajectory", "type", "phase", "review_needed"]) {
     if (key in fields) {
       const value = fields[key];
-      summary[key] = typeof value === "string" ? boundedText(value, 160) : value;
+      summary[key] = typeof value === "string" ? truncateCodePoints(value, 160, "\u2026") : value;
     }
   }
   return {
