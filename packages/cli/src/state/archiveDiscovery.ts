@@ -69,6 +69,18 @@ export interface NumberedArchiveContract {
   entrySchemaVersion: string;
 }
 
+export interface DecisionOverlayContract {
+  location: string;
+  schemaVersion: string;
+  identityKey: string;
+  identityPrefix: string;
+  mutablePaths: string[];
+  derivedPaths: string[];
+  immutablePaths: string[];
+  stateValues: string[];
+  allowedNext: Record<string, string[]>;
+}
+
 interface ArchiveAuthority {
   archiveRoot: string;
   archiveExtension: string;
@@ -78,6 +90,7 @@ interface ArchiveAuthority {
   entrySchemaVersion: string;
   supportedArtifacts: Map<string, SupportedArtifact>;
   ignoredRootNames: Set<string>;
+  decisionOverlay: DecisionOverlayContract;
 }
 
 function isMapping(value: unknown): value is AuthorityMapping {
@@ -194,6 +207,45 @@ function loadAuthority(sourceRoot: string): ArchiveAuthority {
     }
   }
 
+  const overlays = mapping(authority.overlays);
+  const overlayLocation = requiredString(overlays.location, "overlays.location");
+  if (
+    path.isAbsolute(overlayLocation) ||
+    overlayLocation.split(/[\\/]/).some((part) => part === "..")
+  ) {
+    throw new Error("state storage authority decision overlay location must be project-relative");
+  }
+  const identityKey = requiredString(overlays.identity_key, "overlays.identity_key");
+  const identityPrefix = identityKey.split(":")[0];
+  if (!identityPrefix || identityKey !== `${identityPrefix}:<decision-number>`) {
+    throw new Error("state storage authority decision overlay identity_key is unsupported");
+  }
+  const transitionRules = mapping(overlays.transition_rules);
+  const stateValues = requiredStringList(overlays.state_values, "overlays.state_values");
+  const allowedNext: Record<string, string[]> = {};
+  for (const state of stateValues) {
+    const rule = mapping(transitionRules[state]);
+    const next = requiredStringList(
+      rule.allowed_next,
+      `overlays.transition_rules.${state}.allowed_next`,
+    );
+    if (next.some((value) => !stateValues.includes(value))) {
+      throw new Error(`state storage authority transition rule for ${state} contains an unknown state`);
+    }
+    allowedNext[state] = next;
+  }
+  const decisionOverlay: DecisionOverlayContract = {
+    location: overlayLocation,
+    schemaVersion: requiredString(overlays.schema_version, "overlays.schema_version"),
+    identityKey,
+    identityPrefix,
+    mutablePaths: requiredStringList(overlays.mutable_paths, "overlays.mutable_paths"),
+    derivedPaths: requiredStringList(overlays.derived_paths, "overlays.derived_paths"),
+    immutablePaths: requiredStringList(overlays.immutable_paths, "overlays.immutable_paths"),
+    stateValues,
+    allowedNext,
+  };
+
   return {
     archiveRoot,
     archiveExtension: extension,
@@ -203,6 +255,7 @@ function loadAuthority(sourceRoot: string): ArchiveAuthority {
     entrySchemaVersion,
     supportedArtifacts,
     ignoredRootNames,
+    decisionOverlay,
   };
 }
 
@@ -316,6 +369,12 @@ export function numberedArchiveContract(
     archiveExtension: authority.archiveExtension,
     entrySchemaVersion: authority.entrySchemaVersion,
   };
+}
+
+export function decisionOverlayContract(
+  sourceRoot: string = resolveSourceRoot(),
+): DecisionOverlayContract {
+  return loadAuthority(sourceRoot).decisionOverlay;
 }
 
 function positiveEntryNumber(value: unknown): number | null {

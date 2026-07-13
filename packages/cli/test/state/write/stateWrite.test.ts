@@ -1379,7 +1379,7 @@ describe("closed rejection catalog and mutation safety", () => {
     expect(loadYamlMapping(fs.readFileSync(String(forced.json?.state.archive_path), "utf8")).header).toMatchObject({ status: "open" });
   });
 
-  it("rejects protected decision overflow with byte-identical target", () => {
+  it("keeps decision storage available while exposing protected review pressure", () => {
     const root = project();
     const dir = path.join(root, ".agentera");
     fs.mkdirSync(dir, { recursive: true });
@@ -1395,10 +1395,14 @@ describe("closed rejection catalog and mutation safety", () => {
     }));
     const target = path.join(dir, "decisions.yaml");
     fs.writeFileSync(target, dumpYamlMapping({ decisions }));
-    const before = fs.readFileSync(target, "utf8");
     const result = run(root, decisionArgs("Overflow?"));
-    expect(result.json?.error.class).toBe("conflict");
-    expect(fs.readFileSync(target, "utf8")).toBe(before);
+    expect(result.rc).toBe(0);
+    expect(result.json?.compaction).toMatchObject({
+      changed: false,
+      protected_overflow_count: 1,
+    });
+    expect(loadYamlMapping(fs.readFileSync(target, "utf8")).decisions).toHaveLength(11);
+    expect(fs.existsSync(path.join(dir, "archive", "decisions", "11.yaml"))).toBe(true);
   });
 
   it("fails closed for malformed docs mapping and symlinked missing-leaf escapes", () => {

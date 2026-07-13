@@ -165,7 +165,7 @@ describe("compactYamlFile decisions archive ordering", () => {
       outcome: `Implemented thing ${n}`,
       satisfaction: {
         state: "user_confirmed_satisfied",
-        user_confirmation: { by: "test", date: "2026-01-01" },
+        user_confirmation: { confirmed_by: "test", confirmed_at: "2026-01-01" },
       },
     };
   }

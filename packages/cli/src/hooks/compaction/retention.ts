@@ -177,11 +177,16 @@ function decisionRequiresUserReview(entry: unknown): boolean {
   const satisfaction = (entry as JsonObject).satisfaction;
   if (!satisfaction || typeof satisfaction !== "object") return true;
   const confirmation = (satisfaction as JsonObject).user_confirmation;
+  const confirmedBy = confirmation && typeof confirmation === "object" ? (confirmation as JsonObject).confirmed_by : null;
+  const confirmedAt = confirmation && typeof confirmation === "object" ? (confirmation as JsonObject).confirmed_at : null;
   return (
     decisionSatisfactionState(entry) !== "user_confirmed_satisfied" ||
     !confirmation ||
     typeof confirmation !== "object" ||
-    Object.keys(confirmation).length === 0
+    typeof confirmedBy !== "string" ||
+    confirmedBy.trim() === "" ||
+    typeof confirmedAt !== "string" ||
+    confirmedAt.trim() === ""
   );
 }
 

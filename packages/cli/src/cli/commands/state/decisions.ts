@@ -22,6 +22,11 @@ import {
 import { SchemaInfo, artifactPath } from "../../appContext.js";
 import { out, err, StateArgs, Io } from "./shared.js";
 import type { JsonObject } from "../../../core/jsonValue.js";
+import {
+  composeDecisionOverlay,
+  loadDecisionOverlay,
+} from "../../../state/decisionOverlay.js";
+import { decisionOverlayContract } from "../../../state/archiveDiscovery.js";
 
 const DECISION_CONTEXT_FIELDS = [
   "number",
@@ -91,6 +96,20 @@ export function extractDecisionEntries(data: unknown): JsonObject[] {
   return entries;
 }
 
+export function hydrateDecisionEntries(
+  entries: JsonObject[],
+  projectRoot: string = process.cwd(),
+): JsonObject[] {
+  const overlay = loadDecisionOverlay(projectRoot);
+  const contract = decisionOverlayContract();
+  return entries.map((entry) => {
+    const number = entry.number;
+    const stableId =
+      typeof number === "number" || typeof number === "string" ? `decisions:${number}` : null;
+    return composeDecisionOverlay(entry, stableId ? overlay[stableId] : undefined, contract);
+  });
+}
+
 function filterDecisionsByTopic(entries: JsonObject[], topic: string, fields: JsonObject): JsonObject[] {
   const t = topic.toLowerCase();
   const fnames = [...stringFieldNames(fields), "summary", "outcome"];
@@ -137,14 +156,21 @@ export function decisionSatisfactionContext(entry: JsonObject): JsonObject {
   const explicitReviewNeeded = sat.review_needed === true;
   let caveats: string[] = [];
   let reviewNeeded = true;
-  if (state === "user_confirmed_satisfied") {
+  let source = "decision.satisfaction";
+  if (state === null || state === undefined || state === "") {
+    source = "missing_legacy_state";
+    caveats.push("Missing legacy satisfaction state is not treated as satisfied.");
+  } else if (state === "user_confirmed_satisfied") {
     // cast: user_confirmation is read from a parsed decisions.yaml entry (IO boundary)
+    const confirmation =
+      userConfirmation && typeof userConfirmation === "object" && !Array.isArray(userConfirmation)
+        ? (userConfirmation as JsonObject)
+        : {};
     reviewNeeded =
-      !(userConfirmation && typeof userConfirmation === "object" && !Array.isArray(userConfirmation)) ||
-      Object.keys(userConfirmation as JsonObject).length === 0;
+      !isNonEmptyText(confirmation.confirmed_by) || !isNonEmptyText(confirmation.confirmed_at);
     if (reviewNeeded) caveats.push("User-confirmed satisfaction is missing explicit user confirmation metadata.");
   } else if (state === "provisionally_satisfied") {
-    if (isEmptyValue(evidence)) caveats.push("Provisional satisfaction is missing concrete evidence.");
+    if (!isNonEmptyText(evidence)) caveats.push("Provisional satisfaction is missing concrete evidence.");
     caveats.push("Provisional satisfaction still requires user confirmation.");
   } else if (state === "open") {
     caveats.push("Satisfaction state is open and requires review.");
@@ -162,9 +188,13 @@ export function decisionSatisfactionContext(entry: JsonObject): JsonObject {
   if (!("evidence" in enriched)) enriched.evidence = evidence;
   if (!("user_confirmation" in enriched)) enriched.user_confirmation = userConfirmation;
   enriched.review_needed = reviewNeeded;
-  enriched.source = "decision.satisfaction";
+  enriched.source = source;
   enriched.caveats = caveats;
   return enriched;
+}
+
+function isNonEmptyText(value: unknown): boolean {
+  return typeof value === "string" && value.trim().length > 0;
 }
 
 export function decisionContextEntry(entry: JsonObject): JsonObject {
@@ -393,7 +423,7 @@ export function queryDecisions(args: StateArgs, schemas: Record<string, SchemaIn
   }
   const p = artifactPath(info, "decisions");
   const data = loadArtifact(p);
-  let entries = extractDecisionEntries(data);
+  let entries = hydrateDecisionEntries(extractDecisionEntries(data));
   const topic = args.topic ?? null;
   if (topic) entries = filterDecisionsByTopic(entries, topic, info.fields);
   const format = args.format ?? "text";

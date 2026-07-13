@@ -85,7 +85,7 @@ tasks:
     name: Unify state mutation under one crash-consistent transaction
     depends_on:
       - "3"
-    status: pending
+    status: complete
     acceptance:
       - GIVEN writer append, automatic projection, or explicit projection repair WHEN state mutates THEN one lock and publication protocol governs every changed file.
       - GIVEN failure after any staged write, archive publication, projection publication, or directory sync WHEN retry runs THEN state converges without summary-only loss or duplicate identity.

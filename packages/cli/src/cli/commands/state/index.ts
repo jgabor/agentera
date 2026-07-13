@@ -24,6 +24,7 @@ import {
   decisionSatisfactionContext,
   decisionSourceContract,
   extractDecisionEntries,
+  hydrateDecisionEntries,
   displayFields,
 } from "./decisions.js";
 
@@ -44,6 +45,7 @@ export {
   decisionSatisfactionContext,
   decisionSourceContract,
   extractDecisionEntries,
+  hydrateDecisionEntries,
   displayFields,
 };
 

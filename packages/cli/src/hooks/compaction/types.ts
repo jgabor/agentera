@@ -10,6 +10,7 @@ export interface CompactResult {
   oneline_after: number;
   dropped: number;
   changed: boolean;
+  protected_overflow_count?: number;
 }
 
 export interface CompactionStatus {

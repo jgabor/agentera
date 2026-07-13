@@ -36,6 +36,10 @@ import {
   isExactArchiveReplay,
   recoverArchivedEntry,
 } from "../archiveReplay.js";
+import { discoverNumberedArchives } from "../archiveDiscovery.js";
+import {
+  updateDecisionOverlay,
+} from "../decisionOverlay.js";
 
 export interface StateWriteRequest {
   artifact: WritableArtifact;
@@ -243,61 +247,12 @@ function mutateCandidate(
     }
     const entry = buildDecision(candidate, req.values);
     candidate.decisions = [...entries, entry];
-    if (
-      decisionProtectedOverflowCount(
-        candidate.decisions as unknown[],
-        Array.isArray(candidate.archive) ? candidate.archive : [],
-      ) > 0
-    ) {
-      reject({
-        class: "conflict",
-        message:
-          "decision append would exceed protected review capacity; review decision satisfaction first",
-      });
-    }
     return {
       candidate,
       written: entry,
       assigned: { number: entry.number, date: entry.date },
       replay: false,
     };
-  }
-  if (req.artifact === "decisions") {
-    const entries = array(candidate, "decisions");
-    const archived = array(candidate, "archive");
-    const number = Number(req.values.number);
-    const entry = findByNumber(entries, number) ?? findByNumber(archived, number);
-    if (!entry)
-      reject({
-        class: "unsupported_target",
-        message: `no decision with number ${number}; highest is ${Math.max(0, ...entries.map((e) => Number(e.number) || 0), ...archived.map((e) => Number(e.number) || 0))}`,
-      });
-    const satisfaction = mapping(req.values.satisfaction);
-    if (
-      satisfaction.state === "provisionally_satisfied" &&
-      !String(satisfaction.evidence ?? "").trim()
-    ) {
-      reject({
-        class: "schema_violation",
-        message: "provisionally_satisfied requires non-empty --satisfaction-evidence",
-      });
-    }
-    if (satisfaction.state === "user_confirmed_satisfied") {
-      const confirmation = mapping(satisfaction.user_confirmation);
-      if (
-        !String(confirmation.confirmed_by ?? "").trim() ||
-        !String(confirmation.confirmed_at ?? "").trim()
-      ) {
-        reject({
-          class: "schema_violation",
-          message: "user_confirmed_satisfied requires --confirmed-by and --confirmed-at",
-        });
-      }
-    }
-    if (isDeepStrictEqual(entry.satisfaction, satisfaction))
-      return { candidate, written: entry, assigned: { number }, replay: true };
-    entry.satisfaction = satisfaction;
-    return { candidate, written: entry, assigned: { number }, replay: false };
   }
   if (req.artifact === "health") {
     if (req.input && ("audits" in req.input || "archive" in req.input)) {
@@ -575,6 +530,19 @@ function archivePathFor(projectRoot: string, target: string, doc: Record<string,
   return archivePath;
 }
 
+function decisionRecordForUpdate(
+  projectRoot: string,
+  doc: Record<string, unknown>,
+  number: number,
+): Record<string, unknown> | null {
+  const current = findByNumber(array(doc, "decisions"), number) ?? findByNumber(array(doc, "archive"), number);
+  if (current) return current;
+  const archived = discoverNumberedArchives(projectRoot).entries.find(
+    (entry) => entry.artifactId === "decisions" && entry.entryNumber === number,
+  );
+  return archived?.record ?? null;
+}
+
 function latestArchivePath(archiveDirectory: string): string | null {
   if (!fs.existsSync(archiveDirectory)) return null;
   const latest = fs
@@ -785,6 +753,7 @@ function envelope(
   compaction: CompactResult | null,
   extra: {
     archivePath?: string;
+    protectedOverflowCount?: number;
     diff?: string;
     before?: Record<string, unknown>;
     after?: Record<string, unknown>;
@@ -808,7 +777,7 @@ function envelope(
     validation: { status: "pass", violations: [] },
     compaction:
       compaction && req.artifact === "decisions"
-        ? { ...compaction, protected_overflow_count: 0 }
+        ? { ...compaction, protected_overflow_count: extra.protectedOverflowCount ?? 0 }
         : compaction,
   };
   if (req.dryRun && extra.diff !== undefined) {
@@ -861,6 +830,47 @@ function executeStateWriteUnlocked(
       );
     }
   }
+  if (req.artifact === "decisions" && req.spec.verb === "update") {
+    const number = Number(req.values.number);
+    if (!Number.isSafeInteger(number) || number < 1)
+      reject({
+        class: "schema_violation",
+        message: "decision update requires a positive decision number",
+        syntax: "agentera state decisions update --number N --satisfaction-state STATE --format json",
+        example:
+          "agentera state decisions update --number 53 --satisfaction-state open --format json",
+      });
+    const record = decisionRecordForUpdate(req.projectRoot, existing.doc, number);
+    if (!record)
+      reject({
+        class: "unsupported_target",
+        message: `no decision with number ${number}; numbered archive or current projection record is required`,
+        syntax: "agentera state decisions update --number N --satisfaction-state STATE --format json",
+        example:
+          "agentera state decisions update --number 53 --satisfaction-state open --format json",
+      });
+    if (!transaction) throw new Error("state mutation transaction is unavailable");
+    const update = updateDecisionOverlay(
+      req.projectRoot,
+      number,
+      req.values.satisfaction,
+      record.satisfaction,
+      transaction,
+      !req.dryRun,
+    );
+    const before = dumpYamlMapping(update.before);
+    const after = dumpYamlMapping(update.after);
+    return envelope(
+      req,
+      update.path,
+      existing.doc,
+      { satisfaction: update.satisfaction },
+      { number },
+      update.replay,
+      null,
+      { diff: diffText(before, after, update.path), before: update.before, after: update.after },
+    );
+  }
   if (req.artifact === "plan" && ["archive", "create"].includes(req.spec.verb))
     return planLifecycle(req, target, existing, legacyLifecycle);
   if (!existing.bytes && req.artifact === "plan")
@@ -912,9 +922,32 @@ function executeStateWriteUnlocked(
     : transaction?.stageProjection(target, candidateBytes);
   if (!stage) throw new Error("state mutation transaction is unavailable");
   let compaction: CompactResult | null = null;
+  const protectedOverflowCount =
+    req.artifact === "decisions"
+      ? decisionProtectedOverflowCount(
+          array(mutated.candidate, "decisions"),
+          array(mutated.candidate, "archive"),
+        )
+      : 0;
+  const skipProtectedDecisionCompaction =
+    req.artifact === "decisions" && req.spec.compacts && protectedOverflowCount > 0;
   try {
     if (req.dryRun) fs.writeFileSync(stage, candidateBytes);
-    if (req.spec.compacts) compaction = compactYamlFile(stage, req.artifact);
+    if (req.spec.compacts && !skipProtectedDecisionCompaction) {
+      compaction = compactYamlFile(stage, req.artifact);
+    } else if (skipProtectedDecisionCompaction) {
+      const active = array(mutated.candidate, "decisions");
+      const archive = array(mutated.candidate, "archive");
+      compaction = {
+        full_before: active.length,
+        oneline_before: archive.length,
+        full_after: active.length,
+        oneline_after: archive.length,
+        dropped: 0,
+        changed: false,
+        protected_overflow_count: protectedOverflowCount,
+      };
+    }
     const finalBytes = fs.readFileSync(stage, "utf8");
     const finalViolations = validateArtifactBytes(req.artifact, finalBytes);
     if (finalViolations.length)
@@ -931,7 +964,7 @@ function executeStateWriteUnlocked(
         mutated.assigned,
         false,
         compaction,
-        { diff, before: existing.doc, after: finalDoc },
+        { diff, before: existing.doc, after: finalDoc, protectedOverflowCount },
       );
     }
     const archive = numberedAppend
@@ -950,7 +983,7 @@ function executeStateWriteUnlocked(
       mutated.assigned,
       mutated.replay,
       compaction,
-      archive ? { archivePath: archive.path } : {},
+      { ...(archive ? { archivePath: archive.path } : {}), protectedOverflowCount },
     );
   } finally {
     try {

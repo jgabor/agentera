@@ -2,7 +2,12 @@ import fs from "node:fs";
 import type { SchemaInfo } from "../appContext.js";
 import { artifactPath } from "../appContext.js";
 import { asList } from "../stateQuery.js";
-import { decisionContextEntry, decisionSourceContract, extractDecisionEntries } from "../commands/state/index.js";
+import {
+  decisionContextEntry,
+  decisionSourceContract,
+  extractDecisionEntries,
+  hydrateDecisionEntries,
+} from "../commands/state/index.js";
 import { capabilityContext } from "./contract.js";
 import { docsConventions, entryStatus, sourceProvenance, uniqueList, hasRecordedValue } from "./shared.js";
 import { loadNamedArtifact } from "../orientation.js";
@@ -206,7 +211,7 @@ export function decisionContextRisk(schemas: Record<string, SchemaInfo>): JsonOb
   const p = artifactPath(info, "decisions");
   const source = sourceMetadata("decisions", p);
   const data = loadNamedArtifact(schemas, "decisions");
-  const entries = extractDecisionEntries(data).map((e) => decisionContextEntry(e));
+  const entries = hydrateDecisionEntries(extractDecisionEntries(data)).map((e) => decisionContextEntry(e));
   if (!source.exists) {
     return {
       status: "unavailable",
@@ -278,12 +283,12 @@ export function decisionReviewPressure(schemas: Record<string, SchemaInfo>): Jso
   const dd = data && typeof data === "object" && !Array.isArray(data) ? (data as JsonObject) : {};
   const active = Array.isArray(dd.decisions) ? dd.decisions : [];
   const archive = Array.isArray(dd.archive) ? dd.archive : [];
-  const activeEntries = active
-    .filter((e): e is JsonObject => Boolean(e && typeof e === "object" && !Array.isArray(e)))
-    .map((e) => decisionContextEntry(e));
-  const archiveEntries = archive
-    .filter((e): e is JsonObject => Boolean(e && typeof e === "object" && !Array.isArray(e)))
-    .map((e) => decisionContextEntry(e));
+  const activeEntries = hydrateDecisionEntries(
+    active.filter((e): e is JsonObject => Boolean(e && typeof e === "object" && !Array.isArray(e))),
+  ).map((e) => decisionContextEntry(e));
+  const archiveEntries = hydrateDecisionEntries(
+    archive.filter((e): e is JsonObject => Boolean(e && typeof e === "object" && !Array.isArray(e))),
+  ).map((e) => decisionContextEntry(e));
   const protectedActive = activeEntries.filter((e: JsonObject) => e.satisfaction && typeof e.satisfaction === "object" && !Array.isArray(e.satisfaction) && e.satisfaction.review_needed);
   const protectedArchive = archiveEntries.filter((e: JsonObject) => e.satisfaction && typeof e.satisfaction === "object" && !Array.isArray(e.satisfaction) && e.satisfaction.review_needed);
   const today = todayUtcMs();

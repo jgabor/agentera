@@ -20,7 +20,12 @@ import {
   recentCycles,
   truncate,
 } from "./stateQuery.js";
-import { decisionContextEntry, latestHealthAudit, normalizeSeverity } from "./commands/state/index.js";
+import {
+  decisionContextEntry,
+  hydrateDecisionEntries,
+  latestHealthAudit,
+  normalizeSeverity,
+} from "./commands/state/index.js";
 import { isResolvedTodoMarkdownStatus, parseTodoMarkdownListItem } from "./todoMarkdown.js";
 import type { JsonObject } from "../core/jsonValue.js";
 import { TODO_SEVERITY_ORDER, TODO_SEVERITY_ORDER_KEYS } from "./todoSeverity.js";
@@ -595,7 +600,7 @@ export function statePresence(
 
 export function decisionFollowUp(schemas: Record<string, SchemaInfo>): DecisionFollowUp | null {
   const data = loadNamedArtifact(schemas, "decisions");
-  for (const rawEntry of extractEntries(data)) {
+  for (const rawEntry of hydrateDecisionEntries(extractEntries(data))) {
     const entry = decisionContextEntry(rawEntry);
     const satisfaction = entry.satisfaction;
     if (!satisfaction || typeof satisfaction !== "object" || Array.isArray(satisfaction) || !satisfaction.review_needed)
@@ -620,7 +625,7 @@ export function decisionReviewAttention(schemas: Record<string, SchemaInfo>): De
   const data = loadNamedArtifact(schemas, "decisions");
   const reviewEntries: DecisionReviewEntry[] = [];
   const stateCounts: Record<string, number> = {};
-  for (const rawEntry of extractEntries(data)) {
+  for (const rawEntry of hydrateDecisionEntries(extractEntries(data))) {
     const entry = decisionContextEntry(rawEntry);
     const satisfaction = entry.satisfaction;
     if (!satisfaction || typeof satisfaction !== "object" || Array.isArray(satisfaction) || !satisfaction.review_needed)
