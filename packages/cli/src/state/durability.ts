@@ -33,6 +33,7 @@ export interface GitCommandResult {
   status: number | null;
   stdout: string;
   timedOut: boolean;
+  error?: string;
 }
 
 export type GitCommandRunner = (args: string[], cwd: string) => GitCommandResult;
@@ -57,8 +58,15 @@ interface GitContext {
   reason: string;
   root?: string;
   before?: string;
+  beforeReason: string;
+  probeIssue?: string;
   shallow: boolean;
   run: GitCommandRunner;
+}
+
+interface HeadProbe {
+  value?: string;
+  reason: string;
 }
 
 interface GitEvidence {
@@ -131,34 +139,90 @@ function defaultGitRunner(args: string[], cwd: string): GitCommandResult {
     status: result.status,
     stdout: typeof result.stdout === "string" ? result.stdout : "",
     timedOut: (result.error as NodeJS.ErrnoException | undefined)?.code === "ETIMEDOUT" || result.signal === "SIGTERM",
+    ...((result.error as NodeJS.ErrnoException | undefined)?.code
+      ? { error: (result.error as NodeJS.ErrnoException).code }
+      : {}),
   };
 }
 
 function successful(result: GitCommandResult): boolean {
-  return result.status === 0 && !result.timedOut;
+  return result.status === 0 && !result.timedOut && !result.error;
 }
 
-function commandOutput(run: GitCommandRunner, args: string[], cwd: string): string | undefined {
+function probeFailure(result: GitCommandResult, fallback: string): string {
+  if (result.timedOut) return "git_probe_timeout";
+  if (result.error || result.status === null) return "git_probe_error";
+  return fallback;
+}
+
+function commandOutput(
+  run: GitCommandRunner,
+  args: string[],
+  cwd: string,
+): { value?: string; reason: string } {
   const result = run(args, cwd);
-  return successful(result) && result.stdout.trim() ? result.stdout.trim() : undefined;
+  if (successful(result) && result.stdout.trim()) return { value: result.stdout.trim(), reason: "available" };
+  return { reason: probeFailure(result, "git_probe_error") };
+}
+
+function hasGitMetadata(projectRoot: string): boolean {
+  let current = path.resolve(projectRoot);
+  for (;;) {
+    try {
+      fs.lstatSync(path.join(current, ".git"));
+      return true;
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== "ENOENT") return true;
+    }
+    const parent = path.dirname(current);
+    if (parent === current) return false;
+    current = parent;
+  }
+}
+
+function readHead(run: GitCommandRunner, root: string): HeadProbe {
+  const result = run(["rev-parse", "--verify", "HEAD^{commit}"], root);
+  if (successful(result) && result.stdout.trim()) return { value: result.stdout.trim(), reason: "stable" };
+  return { reason: probeFailure(result, "missing_commit") };
 }
 
 function gitContext(projectRoot: string, run: GitCommandRunner): GitContext {
+  if (!hasGitMetadata(projectRoot)) {
+    return { available: false, reason: "non_git", beforeReason: "non_git", shallow: false, run };
+  }
   const inside = commandOutput(run, ["rev-parse", "--is-inside-work-tree"], projectRoot);
-  if (inside !== "true") {
-    return { available: false, reason: "non_git", shallow: false, run };
+  if (!inside.value || inside.value !== "true") {
+    const reason = inside.value ? "git_unavailable" : inside.reason;
+    return {
+      available: false,
+      reason,
+      beforeReason: reason,
+      shallow: false,
+      run,
+    };
   }
   const rootValue = commandOutput(run, ["rev-parse", "--show-toplevel"], projectRoot);
-  if (!rootValue) return { available: false, reason: "git_unavailable", shallow: false, run };
-  const root = resolvePath(rootValue);
-  const before = commandOutput(run, ["rev-parse", "--verify", "HEAD^{commit}"], root);
-  const shallow = commandOutput(run, ["rev-parse", "--is-shallow-repository"], root) === "true";
+  if (!rootValue.value) {
+    return {
+      available: false,
+      reason: rootValue.reason,
+      beforeReason: rootValue.reason,
+      shallow: false,
+      run,
+    };
+  }
+  const root = resolvePath(rootValue.value);
+  const beforeProbe = readHead(run, root);
+  const shallowProbe = commandOutput(run, ["rev-parse", "--is-shallow-repository"], root);
+  const probeIssue = shallowProbe.reason === "available" ? undefined : shallowProbe.reason;
   return {
     available: true,
-    reason: before ? "available" : "missing_commit",
+    reason: beforeProbe.value ? "available" : beforeProbe.reason,
     root,
-    ...(before ? { before } : {}),
-    shallow,
+    ...(beforeProbe.value ? { before: beforeProbe.value } : {}),
+    beforeReason: beforeProbe.reason,
+    ...(probeIssue ? { probeIssue } : {}),
+    shallow: shallowProbe.value === "true",
     run,
   };
 }
@@ -315,8 +379,11 @@ function buildGitEvidence(
   if (!context.available) {
     return { status: "unavailable", reason: context.reason, reachableRecovery: false };
   }
+  if (context.probeIssue) {
+    return { status: "unavailable", reason: context.probeIssue, reachableRecovery: false };
+  }
   if (!context.before || !afterHead) {
-    return { status: "unavailable", reason: "missing_commit", reachableRecovery: false };
+    return { status: "unavailable", reason: context.beforeReason, reachableRecovery: false };
   }
   if (headChanged) return { status: "degraded", reason: "changed_head", reachableRecovery: false };
   const relative = context.root ? gitRelativePath(candidate.path, context.root) : undefined;
@@ -438,11 +505,22 @@ export function inspectDurability(
     });
     diagnostics.push(...diagnosticsFor(candidate, evidence));
   }
-  const after = git.available && git.root
-    ? commandOutput(run, ["rev-parse", "--verify", "HEAD^{commit}"], git.root)
-    : undefined;
+  const ending = git.available && git.root ? readHead(run, git.root) : undefined;
+  const after = ending?.value;
   const headChanged = Boolean(git.before && after && git.before !== after);
-  if (headChanged) {
+  const finalHeadUnavailable = Boolean(git.available && git.before && !after);
+  if (finalHeadUnavailable) {
+    for (const entry of entries) {
+      entry.status = "degraded";
+      entry.git = { status: "degraded", reason: "final_head_unavailable", reachable_recovery: false };
+    }
+    diagnostics.push({
+      class: "final_head_unavailable",
+      message: "repository HEAD could not be captured after the read-only durability check",
+      recovery: "Retry the diagnostic after repository activity stops; no committed recovery was claimed.",
+    });
+  }
+  if (headChanged && !finalHeadUnavailable) {
     for (const entry of entries) {
       entry.status = "degraded";
       entry.git = { status: "degraded", reason: "changed_head", reachable_recovery: false };

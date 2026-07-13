@@ -14,8 +14,16 @@ import { makeArgvValueReader } from "./argvParser.js";
 import { asEnvelopeFormat, classifyParseError, type Io } from "./shared.js";
 import { emitInvalidInput } from "../errors.js";
 import { StateWriteInputError } from "../../state/write/errors.js";
-import { cmdDurability } from "../commands/durability.js";
+import {
+  cmdDurability,
+  durabilityFailure,
+  emitDurabilityFailure,
+  requestedDurabilityFormat,
+  validateDurabilityArgs,
+} from "../commands/durability.js";
 import { type DurabilityArgs } from "../../state/durability.js";
+import { resolveSourceRoot } from "../../core/sourceRoot.js";
+import { StateRetrievalFailure } from "../../state/directRetrieval.js";
 
 /** Minimal flag parser for the `lint` command surface. */
 export function parseLintArgs(argv: string[]): LintArgs | { error: string } {
@@ -163,20 +171,26 @@ export function parseDurabilityArgs(argv: string[]): DurabilityArgs | { error: s
 }
 
 export function runDurability(argv: string[], io: Io, prog: string): number {
+  const format = requestedDurabilityFormat(argv);
+  const sourceRoot = resolveSourceRoot();
   const parsed = parseDurabilityArgs(argv);
   if ("error" in parsed) {
-    return emitInvalidInput(io, {
-      format: "text",
-      body: classifyParseError(parsed.error),
-    });
+    return emitDurabilityFailure(
+      durabilityFailure("invalid_request", parsed.error, sourceRoot),
+      format,
+      io,
+    );
   }
   try {
+    validateDurabilityArgs(parsed, sourceRoot);
     return cmdDurability(parsed, io);
   } catch (exc) {
-    return emitInvalidInput(io, {
-      format: asEnvelopeFormat(parsed.format),
-      body: { class: "unsupported_target", message: (exc as Error).message },
-    });
+    if (exc instanceof StateRetrievalFailure) return emitDurabilityFailure(exc, format, io);
+    return emitDurabilityFailure(
+      durabilityFailure("unsupported_state", (exc as Error).message, sourceRoot, parsed.artifact, parsed.number),
+      format,
+      io,
+    );
   }
 }
 

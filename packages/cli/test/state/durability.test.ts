@@ -22,6 +22,13 @@ function project(): string {
   return root;
 }
 
+function nonGitProject(): string {
+  const parent = fs.existsSync("/dev/shm") ? "/dev/shm" : os.tmpdir();
+  const root = fs.mkdtempSync(path.join(parent, "agentera-durability-non-git-"));
+  roots.push(root);
+  return root;
+}
+
 function git(root: string, args: string[]): string {
   const result = spawnSync("git", args, { cwd: root, encoding: "utf8", shell: false });
   if (result.status !== 0) throw new Error(`git ${args.join(" ")} failed: ${result.stderr}`);
@@ -104,19 +111,63 @@ describe("read-only archive and Git durability", () => {
   });
 
   it("keeps local writes usable in non-Git projects and reports Git as unavailable", () => {
-    const root = project();
+    const root = nonGitProject();
     archive(root);
-    const result = inspectDurability(root, { artifact: "progress", number: 1 }, { sourceRoot });
+    const calls: string[][] = [];
+    const result = inspectDurability(
+      root,
+      { artifact: "progress", number: 1 },
+      {
+        sourceRoot,
+        runGit: (args) => {
+          calls.push(args);
+          return { status: null, stdout: "", timedOut: true };
+        },
+      },
+    );
 
     expect(result).toMatchObject({
       status: "complete",
       entries: [{ status: "complete", local: { status: "verified" }, git: { status: "unavailable", reason: "non_git" } }],
     });
+    expect(calls).toEqual([]);
     expect(() => archive(root, 2)).not.toThrow();
   });
 
-  it("emits an unavailable diagnostic when neither local nor committed recovery exists", () => {
+  it("degrades a Git-marked project when the initial rev-parse probe times out", () => {
     const root = project();
+    fs.mkdirSync(path.join(root, ".git"));
+    archive(root);
+
+    const result = inspectDurability(root, { artifact: "progress", number: 1 }, {
+      sourceRoot,
+      runGit: () => ({ status: null, stdout: "", timedOut: true }),
+    });
+
+    expect(result).toMatchObject({
+      status: "degraded",
+      entries: [{ status: "degraded", git: { status: "unavailable", reason: "git_probe_timeout", reachable_recovery: false } }],
+    });
+  });
+
+  it("degrades a Git-marked project when the initial rev-parse probe errors", () => {
+    const root = project();
+    fs.writeFileSync(path.join(root, ".git"), "gitdir: /missing/worktree\n");
+    archive(root);
+
+    const result = inspectDurability(root, { artifact: "progress", number: 1 }, {
+      sourceRoot,
+      runGit: () => ({ status: null, stdout: "", timedOut: false, error: "EIO" }),
+    });
+
+    expect(result).toMatchObject({
+      status: "degraded",
+      entries: [{ status: "degraded", git: { status: "unavailable", reason: "git_probe_error", reachable_recovery: false } }],
+    });
+  });
+
+  it("emits an unavailable diagnostic when neither local nor committed recovery exists", () => {
+    const root = nonGitProject();
 
     const result = inspectDurability(root, { artifact: "progress", number: 1 }, { sourceRoot });
 
@@ -229,6 +280,28 @@ describe("read-only archive and Git durability", () => {
     });
   });
 
+  it("downgrades all Git evidence when the ending HEAD capture times out", () => {
+    const root = project();
+    commitArchive(root);
+    let headReads = 0;
+    const runner = (args: string[], cwd: string) => {
+      if (args[0] === "rev-parse" && args[1] === "--verify" && args[2] === "HEAD^{commit}") {
+        headReads += 1;
+        if (headReads === 2) return { status: null, stdout: "", timedOut: true };
+      }
+      const result = spawnSync("git", args, { cwd, encoding: "utf8", shell: false });
+      return { status: result.status, stdout: String(result.stdout ?? ""), timedOut: false };
+    };
+
+    const result = inspectDurability(root, { artifact: "progress", number: 1 }, { sourceRoot, runGit: runner });
+
+    expect(result).toMatchObject({
+      status: "degraded",
+      head: { status: "unavailable" },
+      entries: [{ status: "degraded", git: { status: "degraded", reason: "final_head_unavailable", reachable_recovery: false } }],
+    });
+  });
+
   it("exposes the authority syntax through the CLI without making a diagnostic a write gate", () => {
     const root = project();
     archive(root);
@@ -251,6 +324,45 @@ describe("read-only archive and Git durability", () => {
       read_only: true,
       remote_contact: false,
       source_contract: { writes_independent: true },
+    });
+  });
+
+  it.each([
+    {
+      args: ["--artifact", "bogus", "--format", "json"],
+      className: "unsupported_artifact",
+      message: "unsupported durability artifact 'bogus'",
+    },
+    {
+      args: ["--limit", "101", "--format", "json"],
+      className: "invalid_request",
+      message: "argument --limit must be between 1 and 100",
+    },
+    {
+      args: ["--artifact", "progress", "--number", "0", "--format", "json"],
+      className: "invalid_request",
+      message: "argument --number: invalid int value: '0'",
+    },
+  ])("emits an authority state failure for invalid durability input", ({ args, className, message }) => {
+    let out = "";
+    let err = "";
+    const rc = main(["node", "agentera", "check", "durability", ...args], {
+      out: (text) => (out += text),
+      err: (text) => (err += text),
+    });
+
+    expect(rc).toBe(2);
+    expect(err).toBe("");
+    expect(JSON.parse(out)).toMatchObject({
+      schemaVersion: "agentera.stateFailure.v1",
+      status: "fail",
+      error: {
+        class: className,
+        message,
+        syntax: "agentera check durability [--project PATH] [--artifact ARTIFACT] [--number N] [--limit N] --format json",
+        example: expect.stringContaining("agentera check durability"),
+        recovery: expect.any(String),
+      },
     });
   });
 });
