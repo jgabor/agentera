@@ -171,6 +171,22 @@ describe.each(artifacts)("direct stable-ID retrieval: %s", (artifact) => {
     }
   });
 
+  it("preserves an absent decision outcome and reports incomplete context metadata", () => {
+    if (artifact !== "decisions") return;
+    const root = project();
+    archive(root, artifact, 1);
+
+    const result = retrieveStateEntry(root, artifact, 1, { sourceRoot });
+    const retrieved = result.entry.record;
+
+    expect(retrieved).not.toHaveProperty("outcome");
+    expect(retrieved.missing_fields).toContain("outcome");
+    expect(retrieved.context_complete).toBe(false);
+    expect(retrieved.caveats).toEqual(expect.arrayContaining([
+      "Decision entry is missing one or more full-detail context fields.",
+    ]));
+  });
+
   it("reports absent IDs as operational not_found diagnostics", () => {
     const root = project();
     const error = expect(() => retrieveStateEntry(root, artifact, 1, { sourceRoot })).toThrow(StateRetrievalFailure);
@@ -294,9 +310,17 @@ describe("state get CLI contract", () => {
     try {
       const json = captureGet("progress", ["--number", "1", "--format", "json"]);
       const yaml = captureGet("progress", ["--number", "1", "--format", "yaml"]);
+      const text = captureGet("progress", ["--number", "1"]);
       expect(json.rc).toBe(0);
       expect(yaml.rc).toBe(0);
       expect(JSON.parse(json.out)).toEqual(YAML.parse(yaml.out));
+      expect(text.rc).toBe(0);
+      expect(text.out).toContain("provenance:");
+      expect(text.out).toContain("archive:");
+      expect(text.out).toContain("verified: true");
+      expect(text.out).toContain("current_projection:");
+      expect(text.out).toContain("representation: missing");
+      expect(text.out).toContain("record:");
     } finally {
       process.chdir(previous);
     }

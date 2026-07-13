@@ -151,8 +151,8 @@ export function runStateGet(
     if (args.format === "json" || args.format === "yaml") emitStructured(response, args.format, io.out ?? ((text: string) => process.stdout.write(text)));
     else {
       const out = io.out ?? ((text: string) => process.stdout.write(text));
-      out(`${response.entry.stable_id} source=${response.entry.source} compatibility=${response.entry.compatibility}\n`);
-      out(YAML.stringify(response.entry.record));
+      out(`command: ${response.command}\nstatus: ${response.status}\n`);
+      out(YAML.stringify(response.entry));
     }
     return 0;
   } catch (error) {

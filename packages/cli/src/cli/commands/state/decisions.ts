@@ -188,9 +188,14 @@ function isNonEmptyText(value: unknown): boolean {
   return typeof value === "string" && value.trim().length > 0;
 }
 
-export function decisionContextEntry(entry: JsonObject): JsonObject {
+export function decisionContextEntry(
+  entry: JsonObject,
+  options: { inferOutcome?: boolean } = {},
+): JsonObject {
   const enriched: JsonObject = { ...entry };
-  if ((enriched.outcome === null || enriched.outcome === undefined || enriched.outcome === "") &&
+  const inferOutcome = options.inferOutcome !== false;
+  if (inferOutcome &&
+      (enriched.outcome === null || enriched.outcome === undefined || enriched.outcome === "") &&
       enriched.choice !== null && enriched.choice !== undefined && enriched.choice !== "") {
     enriched.outcome = enriched.choice;
   }
@@ -199,7 +204,8 @@ export function decisionContextEntry(entry: JsonObject): JsonObject {
     ("summary" in enriched &&
       ["question", "reasoning", "confidence"].some((field) => decisionFieldMissing(enriched, field)));
   const missingFields = DECISION_CONTEXT_FIELDS.filter((field) => decisionFieldMissing(enriched, field));
-  if (decisionFieldMissing(enriched, "choice") && decisionFieldMissing(enriched, "outcome")) {
+  if ((inferOutcome && decisionFieldMissing(enriched, "choice") && decisionFieldMissing(enriched, "outcome")) ||
+      (!inferOutcome && decisionFieldMissing(enriched, "outcome"))) {
     missingFields.push("outcome");
   }
   const downstreamReferences = decisionDownstreamReferences(enriched);

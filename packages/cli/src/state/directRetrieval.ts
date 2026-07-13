@@ -283,7 +283,12 @@ function overlayFor(
       })
     : [];
   const composed = composeDecisionOverlay(record, selected, contract);
-  return { record: decisionContextEntry(composed), applied: fields.length > 0, fields, path: overlayPath };
+  return {
+    record: decisionContextEntry(composed, { inferOutcome: false }),
+    applied: fields.length > 0,
+    fields,
+    path: overlayPath,
+  };
 }
 
 function compose(
