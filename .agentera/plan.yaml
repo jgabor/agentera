@@ -45,7 +45,7 @@ tasks:
     name: Publish the storage, path, API, and compatibility authority
     depends_on:
       []
-    status: pending
+    status: complete
     acceptance:
       - GIVEN progress, decisions, and health WHEN the authority is inspected THEN archive identity, envelope, fixed project-root location, mutable overlays, projection roles, and error classes are explicit.
       - GIVEN direct retrieval and listing WHEN callers inspect the contract THEN command syntax, ordering, cursor snapshot behavior, limits, and structured failures are unambiguous.

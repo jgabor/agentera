@@ -1,4 +1,39 @@
 cycles:
+  - number: 749
+    timestamp: 2026-07-13 10:58
+    type: feat
+    phase: build
+    what: Delivered read-only numbered archive discovery and entry validation for
+      progress, decisions, and health.
+    inspiration: Task 1 state-storage authority and its fixed project-local archive
+      contract.
+    discovered: The exact path template makes canonical numeric ordering and
+      artifact attribution explicit; symlink checks must use lstat before
+      realpath boundary checks so escaping links are classified as unsafe
+      records.
+    verified: "Focused test/state/archiveDiscovery.test.ts: 12 tests passed. pnpm -C
+      packages/cli test: 1,599 tests passed across 164 files. pnpm -C
+      packages/cli run typecheck passed. pnpm -C packages/cli build passed.
+      Local capability-contract and build capability validation passed. node
+      packages/cli/dist/bin/agentera.js check compact passed with zero
+      over-limit artifacts."
+    next: "Task 3: publish immutable archives with deterministic replay identity;
+      keep Task 2 pending for orchestration evaluation."
+    context:
+      intent: Implement Task 2 from the active lossless archive-backed state storage
+        plan without changing archive publication, projection, migration,
+        retrieval, or plan and vision archive behavior.
+      constraints: Read-only discovery only; no archive publication, transactions,
+        overlays, projection, hydration, migration, Git scanning, get/list CLI
+        behavior, satisfaction inference, profile refresh, or plan task
+        completion.
+      unknowns: Decision satisfaction remains subject to existing review pressure;
+        historical lifecycle diagnostics remain non-executable; no satisfaction
+        or profile state was inferred or updated.
+      scope: packages/cli/src/state/archiveDiscovery.ts;
+        packages/cli/test/state/archiveDiscovery.test.ts;
+        .agentera/progress.yaml; existing uncommitted Task 1 status in
+        .agentera/plan.yaml
   - number: 748
     timestamp: 2026-07-13 10:36
     type: docs
@@ -169,29 +204,10 @@ cycles:
         compatibility, and decision satisfaction state.
       scope: Plan writer, lifecycle schema, writer documentation, regression tests,
         and canonical fixture.
-  - number: 739
-    timestamp: 2026-07-12 21:57
-    type: fix
-    phase: build
-    what: Added packages/cli/src/upgrade/migrateArtifactsV2ToV3.ts migration for
-      legacy plan lifecycle values in docs-mapped current plans and archives.
-    inspiration: Plan Lifecycle Clarity and Validated Publication Task 3.
-    discovered: Historical task completed values are retained as evidence; only
-      header.status changes, and incomplete completed plans report a collision
-      before becoming open.
-    verified: 1,554 CLI tests; typecheck; lint (0 errors, 99 existing warnings);
-      build; built CLI upgrade dry-run; compact.
-    next: Task 4 may enforce canonical plan writes; do not change routing, retries,
-      or prose.
-    context:
-      intent: Complete active plan Task 3 with deterministic lifecycle migration.
-      constraints: Task 3 only; no canonical writer enforcement, routing/retry
-        changes, prose simplification, decision satisfaction, vision edits,
-        push, or publication.
-      unknowns: none
-      scope: CLI lifecycle migration, archive discovery, upgrade tests, plan task
-        evidence, and progress.
 archive:
+  - summary: "Cycle 739 (2026-07-12): Added
+      packages/cli/src/upgrade/migrateArtifactsV2ToV3.ts migration for legacy
+      plan lifecycle values in docs-mapped current plans and archives."
   - summary: "Cycle 738 (2026-07-12): packages/cli/src/cli/planArtifacts.ts now
       reports legacy lifecycle input and malformed plan diagnostics to state and
       orientation consumers."
@@ -296,5 +312,3 @@ archive:
   - summary: "Cycle 700 (2026-07-11): Built the shared runtime-neutral lifecycle
       operation engine with declared manifests, ownership ledgers, safe
       filesystem actions,..."
-  - summary: "Cycle 699 (2026-07-11): Established Decision 92 runtime lifecycle
-      authority for four active identities with explicit Cursor CLI and..."
