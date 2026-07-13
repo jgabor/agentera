@@ -204,6 +204,11 @@ describe("cli prime", () => {
       ],
       unsupported_targets: ["plan_archive"],
     });
+    const planning = payload.capability_context.context.planning_context.startup_contract.planning;
+    expect(planning.task_coherence_rule).toBe(
+      "Keep full-plan tasks within a coherent lifecycle boundary; split only at real lifecycle or coherence boundaries.",
+    );
+    expect(planning).not.toHaveProperty(["max", "full", "plan", "tasks"].join("_"));
   });
 
   it("emits the orchestration bespoke context for orkestrera", () => {

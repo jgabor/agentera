@@ -1,4 +1,21 @@
 cycles:
+  - number: 747
+    timestamp: 2026-07-13 09:46
+    type: fix
+    phase: build
+    what: Removed the fixed full-plan task-count ceiling and added coherent
+      lifecycle-boundary guidance with nine-task publication coverage.
+    discovered: The typed writer already accepts arbitrary sequential task counts;
+      the former ceiling was declarative prose, schema, and startup metadata.
+    verified: pnpm -C packages/cli build; pnpm -C packages/cli test (1579 passed).
+    next: Run capability, contract, compact, and npm release gates; publish only the
+      development next channel.
+    context:
+      intent: Allow future coherent plans to exceed eight tasks without weakening task
+        identity, dependency, or publication validation.
+      constraints: Do not modify historical archives, suite version surfaces, or @latest.
+      scope: Plan instructions, validation schema, startup contract, tests, and
+        changelog.
   - number: 746
     timestamp: 2026-07-13 00:27
     type: test
@@ -163,26 +180,9 @@ cycles:
         enforcement belongs to Task 4.
       scope: packages/cli plan readers and tests; plan, progress, TODO, and changelog
         artifacts.
-  - number: 737
-    timestamp: 2026-07-12 21:05
-    type: test
-    phase: build
-    what: Added behavioral lifecycle-scan safety coverage for every claimed
-      traversal boundary.
-    inspiration: Plan Lifecycle Clarity and Validated Publication Task 1 audit.
-    discovered: The scanner enforced boundaries, but regression coverage had only
-      asserted schema declarations for most of them.
-    verified: 8 focused tests; 1,548 CLI tests; typecheck; build;
-      capability-contract validation; compact gate.
-    next: Task 2 remains eligible and intentionally out of scope for this cycle.
-    context:
-      intent: Supersede Cycle 736 with deterministic proof of scanner safety behavior.
-      constraints: Classifier test coverage only; no lifecycle behavior, Tasks 2-8,
-        TODO state, or decision satisfaction changes.
-      unknowns: none
-      scope: packages/cli/test/state/planLifecycleContract.test.ts; Task 1 evidence;
-        progress.
 archive:
+  - summary: "Cycle 737 (2026-07-12): Added behavioral lifecycle-scan safety
+      coverage for every claimed traversal boundary."
   - summary: "Cycle 736 (2026-07-12): Repaired lifecycle inventory classification
       for OpenCode plan projections and generated-output pruning."
   - summary: "Cycle 735 (2026-07-12): Completed Task 1 lifecycle classification with
@@ -286,6 +286,3 @@ archive:
       authority for four active identities with explicit Cursor CLI and..."
   - summary: "Cycle 698 (2026-07-11): Eliminated the CLI test suite's shared dist
       race by building package output once in Vitest..."
-  - summary: "Cycle 697 (2026-07-11): Resolved state-writer review findings:
-      preserved legacy scalar health archives, bounded plan archives and lock
-      directories..."

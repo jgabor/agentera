@@ -99,6 +99,52 @@ function lightPlan(title = "Writer plan", status = "open"): Record<string, unkno
   };
 }
 
+function fullPlan(taskCount = 9): Record<string, unknown> {
+  return {
+    header: {
+      level: "full",
+      created: "2026-07-13",
+      status: "open",
+      reviewed: "2026-07-13",
+      critic_issues: "1 found, 1 addressed, 0 dismissed",
+      title: "Plan: Coherent task sequence",
+    },
+    what: "Deliver one coherent sequence of observable outcomes.",
+    why: "The complete outcome depends on ordered work across several cycles.",
+    scope: { included: ["coherent outcome"], excluded: ["unrelated work"], deferred: [] },
+    design: "Sequence observable outcomes without prescribing implementation.",
+    overall_acceptance:
+      "GIVEN every task is complete WHEN the plan is evaluated THEN the coherent outcome is available.",
+    unknowns: [
+      {
+        question: "Will the next outcome remain necessary after the prior outcome?",
+        affects_task: 2,
+        resolve_by: "Use the prior task evidence before beginning the next task.",
+      },
+    ],
+    tasks: Array.from({ length: taskCount }, (_, index) => {
+      const number = index + 1;
+      const finalStateSync = number === taskCount;
+      return {
+        number,
+        name: finalStateSync ? "Final state sync" : `Outcome ${number}`,
+        depends_on: finalStateSync
+          ? Array.from({ length: number - 1 }, (_, dependency) => String(dependency + 1))
+          : number === 1
+            ? []
+            : [String(number - 1)],
+        status: "pending",
+        acceptance: [
+          finalStateSync
+            ? "GIVEN every prior task is complete WHEN the final state is checked THEN the plan outcome is synchronized."
+            : `GIVEN the plan reaches outcome ${number} WHEN behavior is checked THEN outcome ${number} is available.`,
+        ],
+      };
+    }),
+    surprises: [],
+  };
+}
+
 function writeInput(root: string, name: string, value: Record<string, unknown>): string {
   const p = path.join(root, name);
   fs.writeFileSync(p, dumpYamlMapping(value));
@@ -796,6 +842,25 @@ describe("decisions, health, and plan operations", () => {
     }
     expect(fs.readFileSync(schemaTarget, "utf8")).toBe(schemaBefore);
     expect(archiveFiles(schemaRoot)).toEqual([]);
+  });
+
+  it("publishes a full plan with more than eight tasks while preserving dependencies", () => {
+    const root = project();
+    const input = writeInput(root, "nine-task-plan.yaml", fullPlan());
+    const created = run(root, ["plan", "create", "--input", input, "--format", "json"]);
+
+    expect(created.rc, created.err || created.out).toBe(0);
+    expect(created.json?.state).toMatchObject({ task_count: 9 });
+    const target = String(created.json?.path);
+    const published = loadYamlMapping(fs.readFileSync(target, "utf8"));
+    const tasks = published.tasks as Array<Record<string, unknown>>;
+    expect(tasks).toHaveLength(9);
+    expect(tasks.at(-1)).toMatchObject({
+      number: 9,
+      name: "Final state sync",
+      depends_on: ["1", "2", "3", "4", "5", "6", "7", "8"],
+    });
+    expect(new ArtifactSchemaValidator().validateExplicit("plan", target, root)).toEqual([]);
   });
 
   it("runs the plan publication pipeline without filesystem mutation in dry-run", () => {

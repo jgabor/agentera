@@ -79,6 +79,23 @@ describe("producer capability writer integration", () => {
     expect(vocabulary).toContain("the typed writer validates final bytes when publishing");
   });
 
+  it("uses lifecycle coherence instead of a fixed full-plan task count", () => {
+    const validation = YAML.parse(
+      fs.readFileSync(
+        path.join(REPO_ROOT, "skills/agentera/capabilities/plan/schemas/validation.yaml"),
+        "utf8",
+      ),
+    ) as Record<string, any>;
+    const rule = validation.VALIDATION[2] as Record<string, any>;
+
+    expect(rule.rule).toBe("coherent_lifecycle_scope");
+    expect(rule.description).toContain("real lifecycle or coherence boundary");
+    expect(planInstructions).toContain("coherent lifecycle boundary");
+    expect(planInstructions).toContain("real lifecycle or coherence boundary");
+    expect(planInstructions).not.toMatch(/\*\*Task decomposition\*\*:\s*\d/);
+    expect(planInstructions).not.toMatch(/more than \d+ tasks/i);
+  });
+
   it("keeps source and bundled plan capability instructions identical", async () => {
     const compiled = await import(
       pathToFileURL(

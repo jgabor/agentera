@@ -22,6 +22,8 @@ export const STARTUP_ENVELOPE_STATE_FAMILIES = new Set([
 export const PLAN_STARTUP_CONTRACT_VERSION = "agentera.planeraStartup.v1";
 export const PLAN_PLANNING_LEVELS = ["skip", "light", "full"];
 export const PLAN_STEP_VERBS = ["orient", "specify", "review", "audit", "write", "handoff"];
+export const PLAN_TASK_COHERENCE_RULE =
+  "Keep full-plan tasks within a coherent lifecycle boundary; split only at real lifecycle or coherence boundaries.";
 export const PLAN_INSTRUCTIONS_AUTHORITY_EXCEPTIONS = [
   "editing Plan behavior or instructions",
   "resolving contradiction or ambiguity in compact context",

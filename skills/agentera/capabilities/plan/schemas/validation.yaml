@@ -12,13 +12,14 @@ VALIDATION:
       - "No implementation details in acceptance criteria"
   2:
     id: V2
-    rule: max_8_tasks
+    rule: coherent_lifecycle_scope
     description: >-
-      Full plans MUST NOT exceed 8 tasks. If work requires more, it must
-      be split into sequential plans.
+      Full plans MUST keep all tasks within a coherent lifecycle boundary.
+      Split plans only when work crosses a real lifecycle or coherence boundary.
     severity: critical
     checks:
-      - "Task count ≤ 8 in full plans"
+      - "Tasks stay within one coherent lifecycle boundary"
+      - "Splits follow real lifecycle or coherence boundaries"
   3:
     id: V3
     rule: adversarial_review_required

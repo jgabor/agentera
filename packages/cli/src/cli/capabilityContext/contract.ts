@@ -10,6 +10,7 @@ import {
   PLAN_RAW_PLAN_ACCESS_ALLOWED_FOR,
   PLAN_STARTUP_CONTRACT_VERSION,
   PLAN_STEP_VERBS,
+  PLAN_TASK_COHERENCE_RULE,
   STARTUP_ENVELOPE_STATE_FAMILIES,
   STATE_FAMILY_FALLBACK_COMMANDS,
 } from "./types.js";
@@ -96,7 +97,7 @@ export function planStartupContract(): JsonObject {
       required_steps: PLAN_STEP_VERBS,
       full_plan_review_required: true,
       pre_write_self_audit_required: true,
-      max_full_plan_tasks: 8,
+      task_coherence_rule: PLAN_TASK_COHERENCE_RULE,
     },
     cli_first_orientation: {
       use_startup_state_first: true,
