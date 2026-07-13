@@ -1,6 +1,6 @@
 import { publicDoctorStatus } from "../../../upgrade/doctor.js";
 import { projectInstallTrack } from "../../../upgrade/compatibility.js";
-import { formatNextAction } from "../../orientation.js";
+import { formatNextAction, startupPlanSummary } from "../../orientation.js";
 import { requestedFields, REQUIRED_SPARSE_CONTEXT_FIELDS } from "../../stateQuery.js";
 import { emitStructured } from "../../structured.js";
 import type { JsonObject } from "../../../core/jsonValue.js";
@@ -33,6 +33,7 @@ function nextActionPayload(state: OrientationState): Record<string, unknown> {
 const STATUS_STRUCTURED_FIELDS = [
   "command", "status", "app_home", "app", "mode", "profile", "v1_migration", "health",
   "todo", "plan", "docs", "progress", "objective", "state_presence", "project_integration", "attention",
+  "history",
   "runtime_lifecycle",
   "decision_attention", "next_action", "orchestration_context", "closeout_context",
   "evidence_context", "benchmark_context", "execution_context", "source", "source_contract",
@@ -116,13 +117,14 @@ export function buildOrientationJsonPayload(
     health: state.health,
     todo: state.counts,
     issues: state.counts,
-    plan: state.plan,
+    plan: startupPlanSummary(state.plan),
     docs: state.docs,
     progress: state.progress,
     objective: state.objective,
     state_presence: state.state_presence,
     attention: state.attention.slice(0, 6),
     decision_attention: state.decision_attention,
+    history: state.history,
     next_action: nextActionPayload(state),
     orchestration_context: bespoke.orchestration_context,
     closeout_context: bespoke.closeout_context,

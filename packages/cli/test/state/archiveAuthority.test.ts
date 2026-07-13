@@ -208,6 +208,12 @@ describe("state storage authority", () => {
       index_decision: { decision: "no_index" },
     });
     expect(String(authority.budgets.list.index_decision.trigger)).toContain("persistent index");
+    expect(authority.budgets.startup.source_work).toMatchObject({
+      schema_version: "agentera.startupSourceWorkBudget.v1",
+      small: { max_current_entries: 100, max_archive_files: 100, max_latency_ms: 5000 },
+      large: { max_current_entries: 1000, max_archive_files: 1000, max_latency_ms: 15000 },
+      serialized_output: { prime_capability_context_max_utf8_bytes: 50000 },
+    });
   });
 
   it("rejects a budget drift or omission contract without silently accepting it", () => {

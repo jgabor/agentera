@@ -27,13 +27,14 @@ import {
 } from "../../orientation.js";
 import { buildOrientationAttention } from "../../orientation/attention.js";
 import { corpusCoverageSummary } from "../../orientation/corpusCoverage.js";
-import type { NextAction, OrientationState, ProfileSummary, ReadinessHint } from "../../contracts/orientationState.js";
+import type { NextAction, OrientationState, ProfileSummary, ReadinessHint, StartupHistorySummary } from "../../contracts/orientationState.js";
 import { statusBundleStatus } from "./bundleStatus.js";
 import type { PrimeOpts } from "./types.js";
 import { v1MigrationSummary } from "./v1Migration.js";
 import {
   summarizeRuntimeLifecycle,
 } from "../../../runtime/lifecycleSnapshot.js";
+import { startupHistorySummary } from "../../../state/startupProjection.js";
 
 export function collectOrientationState(opts: PrimeOpts): OrientationState {
   const env = opts.env ?? process.env;
@@ -77,6 +78,25 @@ export function collectOrientationState(opts: PrimeOpts): OrientationState {
   const docs = docsSummary(schemas, { profileStatus });
   const progress = progressSummary(schemas);
   const health = healthSummary(schemas, env);
+  const history: Record<string, StartupHistorySummary> = {};
+  for (const artifactId of ["progress", "decisions", "health"] as const) {
+    try {
+      history[artifactId] = startupHistorySummary(process.cwd(), artifactId, sourceRoot);
+    } catch (error) {
+      history[artifactId] = {
+        artifact: artifactId,
+        status: "degraded",
+        counts: { physical: 0, addressable: 0, addressable_ids: 0, unaddressable: 0, ambiguous: 0, mirrored: 0, duplicate: 0, conflict: 0, omitted: 0 },
+        entries: [],
+        source: { error: (error as Error).message },
+        retrieval: {
+          list: `agentera state ${artifactId} list --limit 20 --format json`,
+          get: `agentera state ${artifactId} get --number N --format json`,
+        },
+        omission: { omitted: false, omitted_count: 0, omission_reason: "source_scan_failed", retrieval: {} },
+      } as StartupHistorySummary;
+    }
+  }
   const objective = activeObjectiveSummary();
   const presence = statePresence(plan, docs, progress, health, objective);
   const todoItems = loadTodoItems(schemas);
@@ -132,6 +152,7 @@ export function collectOrientationState(opts: PrimeOpts): OrientationState {
     decision_attention: decisionAttention,
     next_action: nextAction,
     attention: [],
+    history,
   });
 
   return {
@@ -158,6 +179,7 @@ export function collectOrientationState(opts: PrimeOpts): OrientationState {
     decision_attention: decisionAttention,
     next_action: nextAction,
     attention,
+    history,
   };
 }
 

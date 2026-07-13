@@ -3,14 +3,13 @@ import type { SchemaInfo } from "../appContext.js";
 import { artifactPath } from "../appContext.js";
 import { asList } from "../stateQuery.js";
 import {
-  decisionContextEntry,
   decisionSourceContract,
-  extractDecisionEntries,
-  hydrateDecisionEntries,
 } from "../commands/state/index.js";
 import { capabilityContext } from "./contract.js";
 import { docsConventions, entryStatus, sourceProvenance, uniqueList, hasRecordedValue } from "./shared.js";
-import { loadNamedArtifact } from "../orientation.js";
+import { startupDecisionEntries } from "../orientation.js";
+import { resolveSourceRoot } from "../../core/sourceRoot.js";
+import { scanStartupArtifact } from "../../state/startupProjection.js";
 import { sourceMetadata } from "../stateQuery.js";
 import { selectEvidenceTarget } from "./planState.js";
 import { progressVerificationSummary, retryState } from "./progress.js";
@@ -210,8 +209,7 @@ export function decisionContextRisk(schemas: Record<string, SchemaInfo>): JsonOb
   const info: SchemaInfo = schemas.decisions ?? { path: ".agentera/decisions.yaml", record: undefined, schema: {}, fields: {} };
   const p = artifactPath(info, "decisions");
   const source = sourceMetadata("decisions", p);
-  const data = loadNamedArtifact(schemas, "decisions");
-  const entries = hydrateDecisionEntries(extractDecisionEntries(data)).map((e) => decisionContextEntry(e));
+  const entries = startupDecisionEntries(schemas);
   if (!source.exists) {
     return {
       status: "unavailable",
@@ -279,16 +277,15 @@ export function decisionReviewPressure(schemas: Record<string, SchemaInfo>): Jso
   if (!source.exists) {
     return { status: "unavailable", source_provenance: sp, summary: null, stale_protected_decisions: [], caveats: [] };
   }
-  const data = loadNamedArtifact(schemas, "decisions");
-  const dd = data && typeof data === "object" && !Array.isArray(data) ? (data as JsonObject) : {};
-  const active = Array.isArray(dd.decisions) ? dd.decisions : [];
-  const archive = Array.isArray(dd.archive) ? dd.archive : [];
-  const activeEntries = hydrateDecisionEntries(
-    active.filter((e): e is JsonObject => Boolean(e && typeof e === "object" && !Array.isArray(e))),
-  ).map((e) => decisionContextEntry(e));
-  const archiveEntries = hydrateDecisionEntries(
-    archive.filter((e): e is JsonObject => Boolean(e && typeof e === "object" && !Array.isArray(e))),
-  ).map((e) => decisionContextEntry(e));
+  const scans = scanStartupArtifact(process.cwd(), "decisions", resolveSourceRoot());
+  const activeEntries = scans.active.entries.map((entry) => ({
+    ...entry.fields,
+    ...(entry.identity.number !== null && entry.fields.number === undefined ? { number: entry.identity.number } : {}),
+  }));
+  const archiveEntries = scans.archive.entries.map((entry) => ({
+    ...entry.fields,
+    ...(entry.identity.number !== null && entry.fields.number === undefined ? { number: entry.identity.number } : {}),
+  }));
   const protectedActive = activeEntries.filter((e: JsonObject) => e.satisfaction && typeof e.satisfaction === "object" && !Array.isArray(e.satisfaction) && e.satisfaction.review_needed);
   const protectedArchive = archiveEntries.filter((e: JsonObject) => e.satisfaction && typeof e.satisfaction === "object" && !Array.isArray(e.satisfaction) && e.satisfaction.review_needed);
   const today = todayUtcMs();

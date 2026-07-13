@@ -552,6 +552,24 @@ budgets:
       metadata rather than returning an over-budget payload.
   startup:
     source_manifest: scripts/json_output_surface_manifest.yaml
+    source_work:
+      schema_version: agentera.startupSourceWorkBudget.v1
+      measurement: >-
+        Count current projection entry rows and archive files inspected by the
+        source-side metadata query. Full archive records are never retained by
+        startup consumers.
+      small:
+        max_current_entries: 100
+        max_archive_files: 100
+        max_latency_ms: 5000
+        max_heap_delta_bytes: 67108864
+      large:
+        max_current_entries: 1000
+        max_archive_files: 1000
+        max_latency_ms: 15000
+        max_heap_delta_bytes: 268435456
+      serialized_output:
+        prime_capability_context_max_utf8_bytes: 50000
     surfaces:
       prime_briefing:
         manifest_id: prime-briefing

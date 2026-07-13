@@ -1,6 +1,35 @@
 import { asList } from "../stateQuery.js";
 import type { JsonObject } from "../../core/jsonValue.js";
 
+function pickObject(value: unknown, keys: string[]): JsonObject {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+  const source = value as JsonObject;
+  const compact: JsonObject = {};
+  for (const key of keys) if (key in source) compact[key] = source[key];
+  return compact;
+}
+
+export function slimBenchmarkContext(value: JsonObject): JsonObject {
+  const compact: JsonObject = { capability: value.capability ?? "optimize" };
+  compact.benchmark_source = pickObject(value.benchmark_source, ["status", "source_provenance", "caveats"]);
+  compact.latest_report = pickObject(value.latest_report, ["status", "source_label", "non_empty_evidence_present", "status_counts", "caveats"]);
+  compact.history_summary = pickObject(value.history_summary, ["status", "source_label", "non_empty_evidence_present", "rows", "caveats"]);
+  compact.runtime_coverage = pickObject(value.runtime_coverage, ["status", "source_label", "non_empty_evidence_present", "status_counts", "caveats"]);
+  compact.state_access_metrics = pickObject(value.state_access_metrics, [
+    "status", "total_state_sequences", "state_sequences_with_raw_after_cli", "state_sequences_with_redundant_raw_access",
+    "raw_after_cli_sequence_rate", "redundant_raw_sequence_rate", "caveats",
+  ]);
+  compact.token_impact = pickObject(value.token_impact, ["status", "estimated_tokens_saved_vs_previous", "caveats"]);
+  compact.comparison = pickObject(value.comparison, ["status", "rows", "caveats"]);
+  compact.recommendation = pickObject(value.recommendation, ["status", "action", "rationale", "caveats"]);
+  compact.manual_refresh = pickObject(value.manual_refresh, ["command", "source_provenance"]);
+  compact.privacy_boundary = pickObject(value.privacy_boundary, ["status", "excluded", "caveats"]);
+  compact.state_family_caveats = value.state_family_caveats ?? [];
+  compact.fallback_commands = value.fallback_commands ?? [];
+  compact.source_contract = value.source_contract ?? {};
+  return compact;
+}
+
 export function compactTaskSummaryForSlim(task: any): any {
   if (!task || typeof task !== "object" || Array.isArray(task)) return task;
   return {
@@ -31,11 +60,11 @@ export function slimOrchestrationContext(value: JsonObject): JsonObject {
   const taskQueue = value.task_queue && typeof value.task_queue === "object" && !Array.isArray(value.task_queue) ? value.task_queue : {};
   compact.task_queue = {
     total: taskQueue.total ?? null,
-    dependency_ready_tasks: asList(taskQueue.dependency_ready_tasks).map((t) => compactTaskSummaryForSlim(t)),
-    blocked_tasks: asList(taskQueue.blocked_tasks).map((t) => compactTaskSummaryForSlim(t)),
+    dependency_ready_tasks: asList(taskQueue.dependency_ready_tasks).slice(0, 10).map((t) => compactTaskSummaryForSlim(t)),
+    blocked_tasks: asList(taskQueue.blocked_tasks).slice(0, 10).map((t) => compactTaskSummaryForSlim(t)),
   };
   compact.progress_verification = compactProgressVerification(value.progress_verification);
-  compact.task_summaries = asList(value.task_summaries).map((t) => compactTaskSummaryForSlim(t));
+  compact.task_summaries = asList(value.task_summaries).slice(0, 10).map((t) => compactTaskSummaryForSlim(t));
   return compact;
 }
 
@@ -93,7 +122,7 @@ export function compactVersionChecks(value: any): any {
 
 export function slimEvidenceContext(value: JsonObject): JsonObject {
   const compact: JsonObject = { ...value };
-  compact.residual_risks = compactItemsState(value.residual_risks, 15, 180);
+  compact.residual_risks = compactItemsState(value.residual_risks, 5, 180);
   compact.todo_state = compactItemsState(value.todo_state, 3, 180);
   compact.progress_verification = compactProgressVerification(value.progress_verification);
   compact.version_checks = compactVersionChecks(value.version_checks);

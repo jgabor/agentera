@@ -5,12 +5,13 @@ import { documentCloseoutContext } from "./closeout.js";
 import { auditEvidenceContext } from "./evidence.js";
 import { optimizeBenchmarkContext } from "./benchmark.js";
 import { buildExecutionContext } from "./build.js";
-import { slimOrchestrationContext, slimEvidenceContext, slimCloseoutContext } from "./slim.js";
+import { slimOrchestrationContext, slimEvidenceContext, slimCloseoutContext, slimBenchmarkContext } from "./slim.js";
 
 export function slimBespokeContext(name: string, value: JsonObject): JsonObject {
   if (name === "orchestration_context") return slimOrchestrationContext(value);
   if (name === "evidence_context") return slimEvidenceContext(value);
   if (name === "closeout_context") return slimCloseoutContext(value);
+  if (name === "benchmark_context") return slimBenchmarkContext(value);
   return value;
 }
 

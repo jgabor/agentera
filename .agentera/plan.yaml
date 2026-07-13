@@ -52,21 +52,21 @@ tasks:
     name: Make legacy identity and count semantics truthful
     depends_on:
       - "1"
-    status: pending
+    status: complete
     acceptance:
       - GIVEN canonical numbers, explicit decision shorthand, genuinely unnumbered staging rows, current/archive mirrors, duplicates, or conflicts WHEN listed THEN each physical row is classified without inferred identity.
       - GIVEN progress, decisions, and health WHEN list and compact report state THEN physical, addressable, mirrored, duplicate, ambiguous, and omitted counts reconcile by documented semantics.
       - GIVEN duplicate current health history WHEN repaired through a validated artifact path THEN one canonical audit identity remains and unrelated health evidence is unchanged.
       - GIVEN live-shape and adversarial legacy fixtures WHEN tests run THEN shorthand, unaddressable, mirror, duplicate, and ambiguity cases each have pass and reject coverage.
     evaluation:
-      attempt_count: 1
+      attempt_count: 2
       failure_count: 1
-      last_verdict: fail
+      last_verdict: pass
       last_failure_evidence: Dnn shorthand rows can be listed as addressable with get guidance while direct retrieval cannot resolve them; parity and health-preservation regressions are missing.
       provenance:
-        attempt_id: task-2-attempt-1
-        source: audit-task-2-e87479f4
-        recorded_at: 2026-07-13 21:23
+        attempt_id: task-2-attempt-2
+        source: audit-task-2-e87479f4+e45bac0b
+        recorded_at: 2026-07-13 21:41
         writer_command: agentera state plan record-evaluation
   - number: 3
     name: Bound prime source work and serialized output

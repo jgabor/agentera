@@ -52,6 +52,8 @@ export interface PlanSummary {
   lifecycle_state?: JsonObject;
 }
 
+export type StartupHistorySummary = JsonObject;
+
 export interface DocsSummary {
   exists: boolean;
   status: string;
@@ -195,4 +197,5 @@ export interface OrientationState {
   decision_attention: DecisionReviewAttention | null;
   next_action: ReadinessHint;
   attention: string[];
+  history: Record<string, StartupHistorySummary>;
 }

@@ -14,6 +14,7 @@ import {
   taskRef,
 } from "./shared.js";
 import type { JsonObject } from "../../core/jsonValue.js";
+import { boundStartupValue } from "../../state/startupProjection.js";
 import type { OrientationState } from "../contracts/orientationState.js";
 
 export function slimPlanState(plan: JsonObject): JsonObject {
@@ -70,6 +71,26 @@ export function slimHealthState(health: JsonObject): JsonObject {
     degrading: Boolean(health.degrading),
     source_provenance: sourceProvenance("health", "agentera health --format json"),
   };
+}
+
+function slimHistoryState(history: JsonObject): JsonObject {
+  const result: JsonObject = {};
+  for (const [artifact, value] of Object.entries(history)) {
+    if (!value || typeof value !== "object" || Array.isArray(value)) continue;
+    const item = value as JsonObject;
+    result[artifact] = {
+      status: item.status ?? "degraded",
+      counts: item.counts ?? {},
+      retrieval: item.retrieval ?? {
+        list: `agentera state ${artifact} list --limit 20 --format json`,
+        get: `agentera state ${artifact} get --number N --format json`,
+      },
+      omission: item.omission && typeof item.omission === "object" && !Array.isArray(item.omission)
+        ? Object.fromEntries(Object.entries(item.omission as JsonObject).filter(([key]) => ["omitted", "omitted_count", "omission_reason"].includes(key)))
+        : null,
+    };
+  }
+  return result;
 }
 
 export function slimTodoState(todoItems: Array<Record<string, string>>): JsonObject {
@@ -179,6 +200,7 @@ export function slimCapabilityContext(
   progress: JsonObject,
   health: JsonObject,
   todoItems: Array<Record<string, string>>,
+  history: JsonObject,
   bespokeContexts: JsonObject | null,
 ): JsonObject {
   const context: JsonObject = capabilityContext(capability) ?? {
@@ -196,6 +218,7 @@ export function slimCapabilityContext(
     };
   const contextPayload: JsonObject = { capability, schema_error: context.schema_error ?? null };
   Object.assign(contextPayload, genericSlimStartupContext(capability, context, plan, docs, progress, health, todoItems, profile));
+  contextPayload.history = slimHistoryState(history);
   const firstRead = context.first_invocation_read;
   if (firstRead !== null && firstRead !== undefined) contextPayload.first_invocation_read = firstRead;
   // bespoke contexts are all null for the six non-bespoke capabilities.
@@ -221,7 +244,7 @@ export function slimCapabilityContext(
       fallback_commands: context.cli_fallback ?? [],
       schema_error: context.schema_error ?? null,
     },
-    context: contextPayload,
+    context: boundStartupValue(contextPayload) as JsonObject,
     instructions: instructions ?? "",
     raw_artifact_read_policy: context.raw_artifact_read_policy ?? null,
   };
@@ -260,6 +283,7 @@ export function buildPrimeCapabilityContextPayload(state: OrientationState, capa
       stateDict.progress as JsonObject,
       stateDict.health as JsonObject,
       state.todo_items,
+      stateDict.history as JsonObject,
       bespoke,
     ),
   };

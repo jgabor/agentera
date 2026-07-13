@@ -16,16 +16,10 @@ import {
   extractEntries,
   firstPresent,
   loadArtifact,
-  progressEntriesForOutput,
   recentCycles,
   truncate,
 } from "./stateQuery.js";
-import {
-  decisionContextEntry,
-  hydrateDecisionEntries,
-  latestHealthAudit,
-  normalizeSeverity,
-} from "./commands/state/index.js";
+import { normalizeSeverity } from "./commands/state/index.js";
 import { isResolvedTodoMarkdownStatus, parseTodoMarkdownListItem } from "./todoMarkdown.js";
 import type { JsonObject } from "../core/jsonValue.js";
 import { TODO_SEVERITY_ORDER, TODO_SEVERITY_ORDER_KEYS } from "./todoSeverity.js";
@@ -33,6 +27,9 @@ import { capabilityStartupComplete, type StartupCompletenessInput } from "./star
 import { discoverPlanArtifacts, planCatalogEntry, planDocumentParts } from "./planArtifacts.js";
 import { planLifecycleState } from "./planLifecycleState.js";
 import { dependencyReadyTasks } from "./capabilityContext/planState.js";
+import { resolveSourceRoot } from "../core/sourceRoot.js";
+import { scanYamlCollection } from "../state/startupProjection.js";
+import { numberedArchiveContract } from "../state/archiveDiscovery.js";
 import type {
   DecisionFollowUp,
   DecisionReviewAttention,
@@ -212,8 +209,28 @@ function progressEntryDate(entry: JsonObject): number | null {
   return null;
 }
 
+function scanSchemaArtifact(
+  schemas: Record<string, SchemaInfo>,
+  artifactId: "progress" | "decisions" | "health",
+): { active: ReturnType<typeof scanYamlCollection>; archive: ReturnType<typeof scanYamlCollection> } {
+  const info = schemas[artifactId];
+  const contract = numberedArchiveContract(artifactId, resolveSourceRoot());
+  const currentPath = info ? artifactPath(info, artifactId) : path.join(process.cwd(), ".agentera", `${artifactId}.yaml`);
+  const primary = scanYamlCollection(currentPath, contract.entryCollection, artifactId, contract.entryNumberField);
+  const active = artifactId === "progress" && !primary.collection_found
+    ? scanYamlCollection(currentPath, "progress", artifactId, contract.entryNumberField)
+    : primary;
+  return {
+    active,
+    archive: scanYamlCollection(currentPath, "archive", artifactId, contract.entryNumberField),
+  };
+}
+
 function cyclesSinceHealthAudit(schemas: Record<string, SchemaInfo>, auditDate: number): number | null {
-  const entries = extractEntries(loadNamedArtifact(schemas, "progress"));
+  const info = schemas.progress;
+  if (!info) return null;
+  const scan = scanSchemaArtifact(schemas, "progress").active;
+  const entries = scan.entries.map((entry) => entry.fields);
   if (entries.length === 0) return null;
   let count = 0;
   for (const entry of entries) {
@@ -412,27 +429,86 @@ export function planSummary(schemas: Record<string, SchemaInfo>): PlanSummary {
   return summary;
 }
 
+/** Startup keeps plan routing metadata, not the full active plan body. */
+export function startupPlanSummary(plan: PlanSummary): JsonObject {
+  const tasks = asList(plan.tasks).filter((task) => task && typeof task === "object" && !Array.isArray(task));
+  const boundedTasks = tasks.slice(0, 10).map((task) => {
+    const item: JsonObject = {};
+    for (const key of ["number", "name", "title", "status", "depends_on", "acceptance_summary", "evidence_summary", "blocked_reasons", "evaluation_state"]) {
+      if (!(key in task)) continue;
+      if (key === "acceptance_summary" || key === "evidence_summary") {
+        const summary = task[key];
+        item[key] = summary && typeof summary === "object" && !Array.isArray(summary)
+          ? { count: (summary as JsonObject).count ?? asList((summary as JsonObject).items).length }
+          : null;
+      } else if (key === "evaluation_state") {
+        const evaluation = task[key];
+        item[key] = evaluation && typeof evaluation === "object" && !Array.isArray(evaluation)
+          ? Object.fromEntries(Object.entries(evaluation as JsonObject).filter(([name]) => ["attempt_count", "failure_count", "last_verdict"].includes(name)))
+          : null;
+      } else if (key === "depends_on") {
+        item[key] = asList(task[key]).slice(0, 20);
+      } else if (key === "blocked_reasons") {
+        item[key] = asList(task[key]).slice(0, 3).map((reason) => String(reason).slice(0, 160));
+      } else {
+        item[key] = typeof task[key] === "string" ? String(task[key]).slice(0, 256) : task[key];
+      }
+    }
+    return item;
+  });
+  const archived = asList(plan.archived_plans).slice(0, 10);
+  const diagnostics = asList(plan.diagnostics).slice(0, 10);
+  return {
+    exists: Boolean(plan.exists),
+    active: Boolean(plan.active),
+    status: plan.status,
+    title: plan.title ?? "",
+    complete: plan.complete ?? 0,
+    total: plan.total ?? tasks.length,
+    complete_plan: Boolean(plan.complete_plan),
+    first_pending: plan.first_pending && typeof plan.first_pending === "object" && !Array.isArray(plan.first_pending)
+      ? { number: plan.first_pending.number ?? null, name: plan.first_pending.name ?? plan.first_pending.title ?? "", status: plan.first_pending.status ?? "pending" }
+      : null,
+    tasks: boundedTasks,
+    task_count: tasks.length,
+    omitted_task_count: Math.max(0, tasks.length - boundedTasks.length),
+    archived_plans: archived,
+    archive_count: plan.archive_count ?? archived.length,
+    omitted_archive_count: Math.max(0, Number(plan.archive_count ?? archived.length) - archived.length),
+    invalid_archive_paths: (plan.invalid_archive_paths ?? []).slice(0, 10),
+    diagnostics,
+    omitted_diagnostic_count: Math.max(0, (plan.diagnostics ?? []).length - diagnostics.length),
+    source_contract: {
+      detail_availability: tasks.length > boundedTasks.length ? "summary" : "full",
+      retrieval: "agentera state plan --format json",
+      raw_archive_records: false,
+    },
+    lifecycle_state: plan.lifecycle_state ?? null,
+  };
+}
+
 export function docsSummary(
   schemas: Record<string, SchemaInfo>,
   startupInput: StartupCompletenessInput = {},
 ): DocsSummary {
-  const data = loadNamedArtifact(schemas, "docs");
-  if (!data || typeof data !== "object" || Array.isArray(data)) {
+  const info = schemas.docs;
+  if (!info) {
     return { exists: false, status: "absent", absence_reason: "No docs mapping artifact is available from agentera docs." };
   }
-  const d = data as JsonObject;
-  const mapping = asList(d.mapping);
-  const index = asList(d.index);
-  const coverage = d.coverage && typeof d.coverage === "object" && !Array.isArray(d.coverage) ? d.coverage : {};
-  const conventions = d.conventions && typeof d.conventions === "object" && !Array.isArray(d.conventions) ? d.conventions : {};
+  const docsPath = artifactPath(info, "docs");
+  const mapping = scanYamlCollection(docsPath, "mapping", "docs", "artifact");
+  const index = scanYamlCollection(docsPath, "index", "docs", "artifact");
+  const exists = fs.existsSync(docsPath);
+  const header = exists ? fs.readFileSync(docsPath, "utf8").slice(0, 4096) : "";
+  const lastAudit = /^last_audit:\s*(.+)$/m.exec(header)?.[1]?.trim().replace(/^['"]|['"]$/g, "") ?? null;
   return {
-    exists: true,
+    exists,
     status: "available",
-    last_audit: d.last_audit ?? null,
-    conventions,
-    mapping,
-    mapping_entries: mapping.length,
-    coverage,
+    last_audit: lastAudit,
+    conventions: {},
+    mapping: mapping.entries.slice(0, 10).map((entry) => entry.fields),
+    mapping_entries: mapping.entries.length,
+    coverage: {},
     source_contract: {
       capability_startup_complete: capabilityStartupComplete(startupInput),
       raw_artifact_reads_required: false,
@@ -443,31 +519,39 @@ export function docsSummary(
         "Document closeout context metadata for docs/TODO/changelog/progress synchronization",
       ],
     },
-    indexed_documents: index.length,
+    indexed_documents: index.entries.length,
   };
 }
 
 export function progressSummary(schemas: Record<string, SchemaInfo>): ProgressSummary {
-  const data = loadNamedArtifact(schemas, "progress");
-  const entries = extractEntries(data);
+  const info = schemas.progress;
+  if (!info) return { exists: false, status: "absent", absence_reason: "No progress cycles are available from agentera progress." };
+  const scan = scanSchemaArtifact(schemas, "progress").active;
+  const entries = scan.entries.map((entry) => entry.fields);
   if (entries.length === 0) {
     return { exists: false, status: "absent", absence_reason: "No progress cycles are available from agentera progress." };
   }
-  const latest = progressEntriesForOutput(recentCycles(entries, 1))[0];
+  const latest = recentCycles(entries, 1)[0] ?? {};
+  const latestCycle: JsonObject = {};
+  for (const key of ["number", "timestamp", "type", "phase", "what", "status"]) {
+    if (key in latest) latestCycle[key] = latest[key];
+  }
   return {
     exists: true,
     status: "available",
-    latest,
-    latest_verification: latest.verified ?? null,
+    latest: latestCycle,
+    latest_verification: latest.verified_present ? { present: true } : null,
     cycle_count: entries.length,
   };
 }
 
 export function healthSummary(schemas: Record<string, SchemaInfo>, env: Env = process.env): HealthSummary {
-  const data = loadNamedArtifact(schemas, "health");
-  const entries = extractEntries(data);
+  const info = schemas.health;
+  if (!info) return { exists: false };
+  const scan = scanSchemaArtifact(schemas, "health").active;
+  const entries = scan.entries.map((entry) => entry.fields);
   if (entries.length === 0) return { exists: false };
-  const latest = latestHealthAudit(entries);
+  const latest = [...entries].sort((left, right) => Number(right.number ?? 0) - Number(left.number ?? 0))[0] ?? null;
   if (!latest) return { exists: false };
   const grades = latest.grades && typeof latest.grades === "object" && !Array.isArray(latest.grades) ? latest.grades : {};
   const gradeRank: Record<string, number> = { A: 0, B: 1, C: 2, D: 3, F: 4 };
@@ -599,9 +683,7 @@ export function statePresence(
 // ── decisions follow-up + attention ─────────────────────────────────
 
 export function decisionFollowUp(schemas: Record<string, SchemaInfo>): DecisionFollowUp | null {
-  const data = loadNamedArtifact(schemas, "decisions");
-  for (const rawEntry of hydrateDecisionEntries(extractEntries(data))) {
-    const entry = decisionContextEntry(rawEntry);
+  for (const entry of startupDecisionEntries(schemas)) {
     const satisfaction = entry.satisfaction;
     if (!satisfaction || typeof satisfaction !== "object" || Array.isArray(satisfaction) || !satisfaction.review_needed)
       continue;
@@ -610,6 +692,15 @@ export function decisionFollowUp(schemas: Record<string, SchemaInfo>): DecisionF
     return { object: `DECISION ${number} follow-up`, title: String(title) };
   }
   return null;
+}
+
+export function startupDecisionEntries(schemas: Record<string, SchemaInfo>): JsonObject[] {
+  if (!schemas.decisions) return [];
+  const scans = scanSchemaArtifact(schemas, "decisions");
+  return [...scans.active.entries, ...scans.archive.entries].map((candidate) => ({
+    ...candidate.fields,
+    ...(candidate.identity.number !== null && candidate.fields.number === undefined ? { number: candidate.identity.number } : {}),
+  }));
 }
 
 function decisionAttentionState(satisfaction: JsonObject): string {
@@ -622,11 +713,9 @@ function decisionAttentionState(satisfaction: JsonObject): string {
 }
 
 export function decisionReviewAttention(schemas: Record<string, SchemaInfo>): DecisionReviewAttention | null {
-  const data = loadNamedArtifact(schemas, "decisions");
   const reviewEntries: DecisionReviewEntry[] = [];
   const stateCounts: Record<string, number> = {};
-  for (const rawEntry of hydrateDecisionEntries(extractEntries(data))) {
-    const entry = decisionContextEntry(rawEntry);
+  for (const entry of startupDecisionEntries(schemas)) {
     const satisfaction = entry.satisfaction;
     if (!satisfaction || typeof satisfaction !== "object" || Array.isArray(satisfaction) || !satisfaction.review_needed)
       continue;

@@ -38,8 +38,8 @@ export interface NumberedArchiveEntry {
   stableId: string;
   artifactId: string;
   entryNumber: number;
-  envelope: JsonObject;
-  record: JsonObject;
+  envelope?: JsonObject;
+  record?: JsonObject;
   recordSha256: string;
 }
 
@@ -53,6 +53,8 @@ export interface NumberedArchiveDiscovery {
 export interface ArchiveDiscoveryOptions {
   sourceRoot?: string;
   artifactId?: string;
+  /** Validate archive records without retaining their full bodies for metadata scans. */
+  retainRecords?: boolean;
 }
 
 interface SupportedArtifact {
@@ -560,6 +562,7 @@ function validateCandidate(
   authority: ArchiveAuthority,
   sourceRoot: string,
   seenIds: Set<string>,
+  retainRecords = true,
 ): NumberedArchiveEntry | ArchiveRejection {
   let envelope: AuthorityMapping;
   try {
@@ -662,8 +665,7 @@ function validateCandidate(
     stableId,
     artifactId: artifact.artifactId,
     entryNumber,
-    envelope: envelope as JsonObject,
-    record,
+    ...(retainRecords ? { envelope: envelope as JsonObject, record } : {}),
     recordSha256: envelope.record_sha256,
   };
 }
@@ -726,8 +728,9 @@ export function readNumberedArchiveEntry(
     authority,
     sourceRoot,
     new Set<string>(),
+    true,
   );
-  return "record" in result ? { path: target, entry: result } : { path: target, rejection: result };
+  return "stableId" in result ? { path: target, entry: result } : { path: target, rejection: result };
 }
 
 function scanArtifactDirectory(
@@ -739,6 +742,7 @@ function scanArtifactDirectory(
   entries: NumberedArchiveEntry[],
   rejected: ArchiveRejection[],
   seenIds: Set<string>,
+  retainRecords: boolean,
 ): void {
   const directoryIssue = pathIssue(projectRoot, directory, "directory");
   if (directoryIssue) {
@@ -832,6 +836,7 @@ function scanArtifactDirectory(
       authority,
       sourceRoot,
       seenIds,
+      retainRecords,
     );
     if ("path" in result && "stableId" in result) entries.push(result);
     else rejected.push(result);
@@ -945,6 +950,7 @@ export function discoverNumberedArchives(
       result.entries,
       result.rejected,
       seenIds,
+      options.retainRecords !== false,
     );
   }
 
