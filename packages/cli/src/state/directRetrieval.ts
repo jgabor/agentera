@@ -18,6 +18,7 @@ import {
 import { composeDecisionOverlay, decisionOverlayPath, loadDecisionOverlay } from "./decisionOverlay.js";
 import { decisionContextEntry } from "../cli/commands/state/decisions.js";
 import { assertRealpathBoundary } from "../registries/artifactRegistry.js";
+import { legacyEntryNumber, legacyIdentity, type LegacyIdentityKind } from "./legacyIdentity.js";
 
 export type StateFailureClass =
   | "invalid_request"
@@ -60,6 +61,7 @@ export class StateRetrievalFailure extends Error {
 interface CurrentProjection {
   path: string;
   state: "missing" | "absent" | "full" | "summary";
+  identity?: LegacyIdentityKind;
   record?: JsonObject;
 }
 
@@ -75,8 +77,8 @@ export interface RetrievedStateEntry {
   artifact_id: string;
   entry_number: number;
   record: JsonObject;
-  source: "archive" | "legacy_full";
-  detail_availability: "full";
+  source: "archive" | "legacy_full" | "legacy_summary";
+  detail_availability: "full" | "summary";
   compatibility: "complete" | "degraded";
   provenance: JsonObject;
 }
@@ -89,22 +91,6 @@ export interface StateGetResponse {
 
 function isMapping(value: unknown): value is JsonObject {
   return value !== null && typeof value === "object" && !Array.isArray(value);
-}
-
-function numberValue(value: unknown): number | null {
-  if (typeof value === "number" && Number.isSafeInteger(value) && value > 0) return value;
-  if (typeof value === "string" && /^[1-9][0-9]*$/.test(value)) {
-    const parsed = Number(value);
-    return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : null;
-  }
-  return null;
-}
-
-function summaryNumber(value: unknown): number | null {
-  if (isMapping(value)) return numberValue(value.number);
-  if (typeof value !== "string") return null;
-  const match = /^(?:Cycle|Decision|Audit)\s+([1-9][0-9]*)\b/.exec(value.trim());
-  return match ? numberValue(match[1]) : null;
 }
 
 function stateSyntax(artifactId = "<artifact-id>"): string {
@@ -215,7 +201,7 @@ function inspectCurrentProjection(
   let matchingActive: JsonObject | undefined;
   for (const candidate of active) {
     if (!isMapping(candidate)) continue;
-    if (numberValue(candidate[contract.entryNumberField]) !== entryNumber) continue;
+    if (legacyEntryNumber(candidate, artifactId, contract.entryNumberField) !== entryNumber) continue;
     if (matchingActive) {
       throw failure(1, "ambiguous", `current ${artifactId} projection contains duplicate identity ${artifactId}:${entryNumber}`, {
         artifactId,
@@ -232,6 +218,7 @@ function inspectCurrentProjection(
       return {
         path: projectionPath,
         state: violations.length === 0 ? "full" : "summary",
+        identity: legacyIdentity(matchingActive, artifactId, contract.entryNumberField).kind,
         record: matchingActive,
       };
     } catch (error) {
@@ -245,8 +232,16 @@ function inspectCurrentProjection(
   }
 
   const archive = document.archive;
-  if (Array.isArray(archive) && archive.some((candidate) => summaryNumber(candidate) === entryNumber)) {
-    return { path: projectionPath, state: "summary" };
+  if (Array.isArray(archive)) {
+    for (const candidate of archive) {
+      if (legacyEntryNumber(candidate, artifactId, contract.entryNumberField) !== entryNumber) continue;
+      return {
+        path: projectionPath,
+        state: "summary",
+        identity: legacyIdentity(candidate, artifactId, contract.entryNumberField).kind,
+        record: isMapping(candidate) ? candidate : { summary: candidate },
+      };
+    }
   }
   return { path: projectionPath, state: "absent" };
 }
@@ -303,14 +298,6 @@ function compose(
   archiveRecord: JsonObject | undefined,
   archiveHash: string | undefined,
 ): RetrievedStateEntry {
-  if (!archiveRecord && current.state !== "full") {
-    throw failure(1, "incomplete", `state ${artifactId}:${entryNumber} is represented only by an irrecoverable legacy summary`, {
-      artifactId,
-      entryNumber,
-      recovery: "Restore or publish the validated numbered archive for this ID before retrying; missing fields are not reconstructed.",
-      details: { current_projection_path: current.path, archive_path: archivePath, current_representation: current.state },
-    });
-  }
   const record = archiveRecord ?? current.record;
   if (!record) {
     throw failure(1, "incomplete", `state ${artifactId}:${entryNumber} has no complete record available`, {
@@ -320,8 +307,17 @@ function compose(
       details: { current_projection_path: current.path, archive_path: archivePath, current_representation: current.state },
     });
   }
-  const overlay = overlayFor(projectRoot, sourceRoot, artifactId, entryNumber, record);
-  const source = archiveRecord ? "archive" : "legacy_full";
+  if (!archiveRecord && current.state === "summary" && current.identity !== "explicit_decision_shorthand") {
+    throw failure(1, "incomplete", `state ${artifactId}:${entryNumber} is represented only by an irrecoverable legacy summary`, {
+      artifactId,
+      entryNumber,
+      recovery: "Restore or publish the validated numbered archive for this ID before retrying; missing fields are not reconstructed.",
+      details: { current_projection_path: current.path, archive_path: archivePath, current_representation: current.state },
+    });
+  }
+  const complete = archiveRecord !== undefined || current.state === "full";
+  const overlay = complete ? overlayFor(projectRoot, sourceRoot, artifactId, entryNumber, record) : { record, applied: false, fields: [], path: "" };
+  const source = archiveRecord ? "archive" : current.state === "summary" ? "legacy_summary" : "legacy_full";
   const compatibility = archiveRecord ? "complete" : "degraded";
   return {
     stable_id: `${artifactId}:${entryNumber}`,
@@ -329,7 +325,7 @@ function compose(
     entry_number: entryNumber,
     record: overlay.record,
     source,
-    detail_availability: "full",
+    detail_availability: complete ? "full" : "summary",
     compatibility,
     provenance: {
       archive: {
@@ -343,7 +339,7 @@ function compose(
         present: current.state !== "missing" && current.state !== "absent",
         representation: current.state,
       },
-      ...(artifactId === "decisions"
+      ...(artifactId === "decisions" && complete
         ? { overlay: { path: overlay.path, applied: overlay.applied, fields: overlay.fields } }
         : {}),
     },

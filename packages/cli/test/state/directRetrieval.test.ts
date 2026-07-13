@@ -58,10 +58,10 @@ function projectionPath(root: string, artifact: Artifact): string {
   return path.join(root, ".agentera", `${artifact}.yaml`);
 }
 
-function writeProjection(root: string, artifact: Artifact, entries: Array<Record<string, unknown>>): void {
+function writeProjection(root: string, artifact: Artifact, entries: Array<Record<string, unknown>>, archive: unknown[] = []): void {
   fs.mkdirSync(path.dirname(projectionPath(root, artifact)), { recursive: true });
   const collection = artifact === "progress" ? "cycles" : artifact === "decisions" ? "decisions" : "audits";
-  fs.writeFileSync(projectionPath(root, artifact), YAML.stringify({ [collection]: entries, archive: [] }));
+  fs.writeFileSync(projectionPath(root, artifact), YAML.stringify({ [collection]: entries, archive }));
 }
 
 function archive(root: string, artifact: Artifact, number: number): void {
@@ -135,6 +135,44 @@ describe.each(artifacts)("direct stable-ID retrieval: %s", (artifact) => {
       },
     });
     expect(result.entry.record).toMatchObject(current);
+  });
+
+  it("retrieves a leading Dnn shorthand as a degraded summary without inferring fields", () => {
+    if (artifact !== "decisions") return;
+    const root = project();
+    const summary = "D76 (feeds into D75 and D77): explicit routing shorthand";
+    writeProjection(root, artifact, [], [{ summary }]);
+
+    const result = retrieveStateEntry(root, artifact, 76, { sourceRoot });
+
+    expect(result.entry).toMatchObject({
+      stable_id: "decisions:76",
+      entry_number: 76,
+      source: "legacy_summary",
+      detail_availability: "summary",
+      compatibility: "degraded",
+      record: { summary },
+      provenance: {
+        archive: { available: false, verified: false },
+        current_projection: { representation: "summary" },
+      },
+    });
+  });
+
+  it("rejects unnumbered summaries and incidental Dnn references without ghost identities", () => {
+    if (artifact !== "decisions") return;
+    const root = project();
+    writeProjection(root, artifact, [], ["Staging D3+D4 feeds D75 and D77"]);
+
+    for (const number of [3, 4, 75, 77]) {
+      try {
+        retrieveStateEntry(root, artifact, number, { sourceRoot });
+      } catch (caught) {
+        expect((caught as StateRetrievalFailure).body.error.class).toBe("not_found");
+        continue;
+      }
+      throw new Error(`expected no ghost decisions:${number}`);
+    }
   });
 
   it("rejects duplicate current identities instead of selecting one for get", () => {

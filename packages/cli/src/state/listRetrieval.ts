@@ -21,6 +21,7 @@ import { decisionOverlayPath, loadDecisionOverlay } from "./decisionOverlay.js";
 import { loadProjectionPolicy, serializedProjectionBytes } from "./projectionPolicy.js";
 import { StateRetrievalFailure, type StateFailureClass } from "./directRetrieval.js";
 import { physicalCounts, provenanceCounts } from "./listAccounting.js";
+import { legacyIdentity, type LegacyIdentityKind } from "./legacyIdentity.js";
 
 const CURSOR_VERSION = 1;
 const LIST_ORDER = "entry_number_desc";
@@ -40,7 +41,7 @@ interface CurrentIdentity {
   path: string;
   rowKey: string;
   origin: "active" | "summary";
-  identity: "canonical_number" | "explicit_decision_shorthand" | "unaddressable" | "ambiguous";
+  identity: LegacyIdentityKind;
   entryNumber: number | null;
   representation: "full" | "summary";
   record?: JsonObject;
@@ -53,7 +54,7 @@ interface PhysicalRow {
   source: "current_projection" | "archive";
   origin: "active" | "summary" | "numbered_archive" | "rejected_archive";
   path: string;
-  identity: "canonical_number" | "explicit_decision_shorthand" | "unaddressable" | "ambiguous";
+  identity: LegacyIdentityKind;
   entryNumber: number | null;
   representation: "full" | "summary" | "unavailable";
   projectionHash: string;
@@ -135,31 +136,6 @@ function positiveNumber(value: unknown): number | null {
     return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : null;
   }
   return null;
-}
-
-function explicitIdentity(
-  value: unknown,
-  artifactId: string,
-  entryNumberField: string,
-): { number: number | null; kind: PhysicalRow["identity"] } {
-  if (isMapping(value)) {
-    const explicit = positiveNumber(value[entryNumberField]);
-    if (explicit !== null) return { number: explicit, kind: "canonical_number" };
-    const summary = value.summary;
-    if (typeof summary === "string") return explicitIdentity(summary, artifactId, entryNumberField);
-    return { number: null, kind: "unaddressable" };
-  }
-  if (typeof value !== "string") return { number: null, kind: "unaddressable" };
-  const text = value.trim();
-  if (artifactId === "decisions") {
-    const shorthand = [...text.matchAll(/\bD([1-9][0-9]*)\b/g)];
-    if (shorthand.length > 1) return { number: null, kind: "ambiguous" };
-    const shorthandMatch = /^D([1-9][0-9]*)\b/.exec(text);
-    if (shorthandMatch) return { number: positiveNumber(shorthandMatch[1]), kind: "explicit_decision_shorthand" };
-  }
-  const label = artifactId === "progress" ? "Cycle" : artifactId === "decisions" ? "Decision" : "Audit";
-  const match = new RegExp(`^${label}\\s+([1-9][0-9]*)\\b`).exec(text);
-  return match ? { number: positiveNumber(match[1]), kind: "canonical_number" } : { number: null, kind: "unaddressable" };
 }
 
 function compactSummary(value: unknown): JsonValue | undefined {
@@ -358,7 +334,7 @@ function readCurrentProjection(
 
   const entries: CurrentIdentity[] = [];
   for (const [index, candidate] of collection.entries()) {
-    const identity = explicitIdentity(candidate, artifactId, contract.entryNumberField);
+    const identity = legacyIdentity(candidate, artifactId, contract.entryNumberField);
     let representation: CurrentIdentity["representation"] = "summary";
     if (isMapping(candidate)) {
       try {
@@ -385,7 +361,7 @@ function readCurrentProjection(
   const archive = document.archive;
   if (Array.isArray(archive)) {
     for (const [index, candidate] of archive.entries()) {
-      const identity = explicitIdentity(candidate, artifactId, contract.entryNumberField);
+      const identity = legacyIdentity(candidate, artifactId, contract.entryNumberField);
       const current: CurrentIdentity = {
         path: projectionPath,
         rowKey: `${projectionPath}#archive:${index}`,

@@ -355,6 +355,13 @@ describe("state writer discovery and progress", () => {
         ],
       }),
     );
+    const beforeBytes = fs.readFileSync(target, "utf8");
+    const duplicateText = "Audit 14 (2026-04-26): duplicate history";
+    const duplicateOffset = beforeBytes.indexOf(duplicateText);
+    expect(duplicateOffset).toBeGreaterThan(0);
+    const duplicateLineStart = beforeBytes.lastIndexOf("\n", duplicateOffset - 1) + 1;
+    const duplicateLineEnd = beforeBytes.indexOf("\n", duplicateOffset) + 1;
+    const expectedBytes = beforeBytes.slice(0, duplicateLineStart) + beforeBytes.slice(duplicateLineEnd);
     const before = loadYamlMapping(fs.readFileSync(target, "utf8"));
     const dry = run(root, ["health", "repair", "--number", "14", "--keep", "first", "--force", "--dry-run", "--format", "json"]);
     expect(dry.rc).toBe(0);
@@ -362,6 +369,7 @@ describe("state writer discovery and progress", () => {
 
     const repaired = run(root, ["health", "repair", "--number", "14", "--keep", "first", "--force", "--format", "json"]);
     expect(repaired.rc).toBe(0);
+    expect(fs.readFileSync(target, "utf8")).toBe(expectedBytes);
     const after = loadYamlMapping(fs.readFileSync(target, "utf8"));
     expect(after.audits).toEqual([audit]);
     expect(after.archive).toEqual([

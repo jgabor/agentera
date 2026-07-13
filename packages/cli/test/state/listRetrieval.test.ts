@@ -10,6 +10,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { main } from "../../src/cli/dispatch/index.js";
 import { canonicalRecordJson } from "../../src/state/archiveDiscovery.js";
 import { publishNumberedArchive } from "../../src/state/archivePublication.js";
+import { retrieveStateEntry } from "../../src/state/directRetrieval.js";
 import {
   boundStateList,
   listStateEntries,
@@ -329,7 +330,8 @@ describe("snapshot-stable state listing", () => {
   it("keeps explicit Dnn shorthand addressable and staging rows list-only", () => {
     const root = project();
     writeArtifactProjection(root, "decisions", [], [
-      "D76 (2026-06-30, routing): explicit decision shorthand",
+      "D76 (feeds into D75 and D77): explicit decision shorthand",
+      "D3+D4 (2026-06-05): merged staging material",
       "Staging D3+D4 (2026-06-05): merged staging material",
       "staging note without an identity",
     ]);
@@ -358,13 +360,20 @@ describe("snapshot-stable state listing", () => {
           identity: "unaddressable",
           classification: "unaddressable",
         }),
+        expect.objectContaining({
+          stable_id: null,
+          entry_number: null,
+          addressable: false,
+          identity: "unaddressable",
+          classification: "unaddressable",
+        }),
       ]),
     );
     expect(response.counts).toMatchObject({
-      physical: 3,
+      physical: 4,
       addressable: 1,
       addressable_ids: 1,
-      unaddressable: 1,
+      unaddressable: 2,
       ambiguous: 1,
       omitted: 0,
     });
@@ -372,12 +381,26 @@ describe("snapshot-stable state listing", () => {
     const page1 = listStateEntries(root, "decisions", 1, {}, undefined, { sourceRoot });
     const page2 = listStateEntries(root, "decisions", 1, {}, page1.next_cursor, { sourceRoot });
     const page3 = listStateEntries(root, "decisions", 1, {}, page2.next_cursor, { sourceRoot });
-    expect([...page1.entries, ...page2.entries, ...page3.entries].map((entry) => (entry as Record<string, unknown>).stable_id)).toEqual([
+    const page4 = listStateEntries(root, "decisions", 1, {}, page3.next_cursor, { sourceRoot });
+    expect([...page1.entries, ...page2.entries, ...page3.entries, ...page4.entries].map((entry) => (entry as Record<string, unknown>).stable_id)).toEqual([
       "decisions:76",
       null,
       null,
+      null,
     ]);
-    expect(page3.next_cursor).toBeUndefined();
+    expect(page4.next_cursor).toBeUndefined();
+
+    const listed = response.entries.find((entry) => (entry as Record<string, unknown>).stable_id === "decisions:76") as Record<string, unknown>;
+    const retrieved = retrieveStateEntry(root, "decisions", 76, { sourceRoot });
+    expect(retrieved.entry).toMatchObject({
+      stable_id: "decisions:76",
+      entry_number: 76,
+      source: "legacy_summary",
+      detail_availability: "summary",
+      compatibility: "degraded",
+      provenance: { current_projection: { representation: "summary" } },
+    });
+    expect(retrieved.entry.record).toEqual({ summary: listed.summary });
   });
 
   it("classifies exact mirrors, duplicate rows, and conflicting versions without selecting one", () => {
