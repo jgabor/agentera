@@ -1,4 +1,47 @@
 cycles:
+  - number: 771
+    timestamp: 2026-07-13 20:22
+    type: fix
+    phase: build
+    what: "Repaired bounded snapshot cursor traversal: serializer-aware pages now
+      retain an advancing row prefix or fail truthfully instead of issuing a
+      cursor at the already-emitted page boundary. Added exhaustive bounded CLI
+      traversal coverage across JSON, YAML, and text, append exclusion, repeated
+      cursors, tampering, over-budget advancement, and terminal oversized-page
+      behavior."
+    inspiration: Active continuation plan Task1 and the blocked listing evaluations
+      from commits 121719c6 and c4f5061e.
+    discovered: An empty fallback cursor at snapshot.page_start replays the full
+      page because page_start is the boundary before the first emitted row.
+      Required-row budget failure must be terminal; omitted rows may continue
+      only after a retained row.
+    verified: "Focused listRetrieval suite: 22/22 tests passed. Non-packaging CLI
+      suite: 171 files and 1722/1722 tests passed. Full CLI suite: 171 files and
+      1726/1731 tests passed; the five failures are the known npm 12 npm pack
+      --dry-run --json parser incompatibilities in
+      test/packaging/prepack.test.ts. Typecheck and build passed. Capability
+      plan validation and capability-contract validation passed. check compact
+      passed with 0 over-limit and 0 protected-overflow counts. Authority
+      benchmark: 100 entries 190.420868 ms, 0 B heap delta, 22527 B response;
+      1000 entries 1419.994652 ms, 64538608 B heap delta, 22658 B response;
+      no-index thresholds remain satisfied."
+    next: Keep Task1 pending for evaluation. Task2 owns legacy identity and count
+      semantics; do not implement it in this cycle. Do not update health,
+      vision, profile, decisions, TODO, version, publish, push, or tag state.
+    context:
+      intent: Execute Task1 of the active continuation plan without closing Task1 or
+        implementing Task2 legacy identity and count semantics.
+      constraints: Use the canonical authority, preserve existing list semantics, keep
+        bounded CLI traversal truthful, include the active continuation plan and
+        predecessor archive in the substantive implementation commit, and leave
+        Task1 status pending.
+      unknowns: none for the repaired traversal; reevaluate the deferred
+        persistent-index decision only if a reproducible authority benchmark
+        exceeds a declared threshold.
+      scope: packages/cli/src/state/listRetrieval.ts;
+        packages/cli/test/state/listRetrieval.test.ts; .agentera/plan.yaml;
+        .agentera/archive/PLAN-2026-07-13-lossless-archive-backed-state-storage-a0d04027191c6dc0.yaml;
+        .agentera/progress.yaml
   - number: 770
     timestamp: 2026-07-13 19:53
     type: fix
@@ -459,50 +502,6 @@ cycles:
         packages/cli/test/state/archiveAuthority.test.ts;
         references/artifacts/state-storage-authority.yaml;
         .agentera/progress.yaml
-  - number: 761
-    timestamp: 2026-07-13 15:40
-    type: fix
-    phase: build
-    what: "Retried Task 8 after evaluation failure: direct decision get now
-      preserves absent outcome metadata, and text get emits complete
-      provenance."
-    inspiration: Task 8 attempt-1 evaluator failure recorded in .agentera/plan.yaml;
-      fix only the decision projection and text provenance gaps.
-    discovered: The normal decisions query may continue deriving outcome for
-      existing consumers, but direct get requires a non-inferencing context
-      projection so choice does not become historical outcome; text output must
-      serialize the same provenance fields as structured output.
-    verified: "Focused: pnpm -C packages/cli exec vp test run
-      test/state/directRetrieval.test.ts: 1 file and 35 tests passed. Adjacent:
-      pnpm -C packages/cli exec vp test run test/state/directRetrieval.test.ts
-      test/state/archiveDiscovery.test.ts test/state/archiveRecovery.test.ts
-      test/state/archiveAuthority.test.ts test/state/decisionOverlay.test.ts
-      test/state/projectionPolicy.test.ts test/cli/state.test.ts: 7 files and
-      112 tests passed. Non-packaging full: pnpm -C packages/cli exec vp test
-      run --exclude test/packaging/prepack.test.ts: 168 files and 1669 tests
-      passed. Full: pnpm -C packages/cli test: 169 files, 1673 of 1678 tests
-      passed; exactly 5 pre-existing npm pack --dry-run --json parsing failures
-      in test/packaging/prepack.test.ts. pnpm -C packages/cli run typecheck
-      passed; pnpm -C packages/cli build passed; capability-contract and
-      progress/decisions/health artifact validation passed; node
-      packages/cli/dist/bin/agentera.js check compact --format json passed with
-      zero over-limit, protected-overflow, and error counts, retaining five
-      degraded recovery refusals for unarchived progress cycles 745-749."
-    next: Task 8 remains pending for attempt-2 evaluator review; do not implement
-      list, prime, migration, Git durability, release, or unrelated state work.
-    context:
-      intent: Retry Task 8 attempt 1 within the maximum two evaluation attempts and
-        correct only the reported decision get and text provenance defects.
-      constraints: Preserve the failed Task 8 evaluation in plan.yaml; do not mark
-        Task 8 complete; do not modify health, vision, profile, decisions, TODO,
-        version, publish, push, or tag state.
-      unknowns: The five npm12 packaging JSON parsing failures remain pre-existing and
-        outside this change.
-      scope: packages/cli/src/cli/commands/state/decisions.ts;
-        packages/cli/src/state/directRetrieval.ts;
-        packages/cli/src/cli/commands/state/get.ts;
-        packages/cli/test/state/directRetrieval.test.ts; .agentera/plan.yaml;
-        .agentera/progress.yaml
   - number: 749
     timestamp: 2026-07-13 10:58
     type: feat
@@ -620,6 +619,8 @@ cycles:
       intent: Complete active plan Task 7 without changing decisions or unrelated
         capabilities.
 archive:
+  - summary: "Cycle 761 (2026-07-13): Retried Task 8 after evaluation failure:
+      direct decision get now preserves absent outcome metadata, and..."
   - summary: "Cycle 760 (2026-07-13): Corrected Task 8 verification counts after
       adding unsupported-state archive fixtures; Cycle 759 evidence remains
       immutable..."
@@ -724,16 +725,18 @@ archive:
       Cycle 714: the earlier retry did not remove..."
   - summary: "Cycle 714 (2026-07-12): Corrected the two Task 8 independent-audit
       blockers in Cursor documentation and documentation inventory metadata."
-  - summary: "Cycle 713 (2026-07-12): Synchronized the Agentera 3.0.0 release
-      surface across lifecycle authority, runtime and package registries,
-      packaging, CLI..."
 omitted: true
-omitted_count: 8
+omitted_count: 9
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded

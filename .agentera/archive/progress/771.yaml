@@ -1,0 +1,19 @@
+schemaVersion: agentera.stateArchiveEntry.v1
+artifact_id: progress
+entry_number: 771
+record:
+  number: 771
+  timestamp: 2026-07-13 20:22
+  type: fix
+  phase: build
+  what: "Repaired bounded snapshot cursor traversal: serializer-aware pages now retain an advancing row prefix or fail truthfully instead of issuing a cursor at the already-emitted page boundary. Added exhaustive bounded CLI traversal coverage across JSON, YAML, and text, append exclusion, repeated cursors, tampering, over-budget advancement, and terminal oversized-page behavior."
+  inspiration: Active continuation plan Task1 and the blocked listing evaluations from commits 121719c6 and c4f5061e.
+  discovered: An empty fallback cursor at snapshot.page_start replays the full page because page_start is the boundary before the first emitted row. Required-row budget failure must be terminal; omitted rows may continue only after a retained row.
+  verified: "Focused listRetrieval suite: 22/22 tests passed. Non-packaging CLI suite: 171 files and 1722/1722 tests passed. Full CLI suite: 171 files and 1726/1731 tests passed; the five failures are the known npm 12 npm pack --dry-run --json parser incompatibilities in test/packaging/prepack.test.ts. Typecheck and build passed. Capability plan validation and capability-contract validation passed. check compact passed with 0 over-limit and 0 protected-overflow counts. Authority benchmark: 100 entries 190.420868 ms, 0 B heap delta, 22527 B response; 1000 entries 1419.994652 ms, 64538608 B heap delta, 22658 B response; no-index thresholds remain satisfied."
+  next: Keep Task1 pending for evaluation. Task2 owns legacy identity and count semantics; do not implement it in this cycle. Do not update health, vision, profile, decisions, TODO, version, publish, push, or tag state.
+  context:
+    intent: Execute Task1 of the active continuation plan without closing Task1 or implementing Task2 legacy identity and count semantics.
+    constraints: Use the canonical authority, preserve existing list semantics, keep bounded CLI traversal truthful, include the active continuation plan and predecessor archive in the substantive implementation commit, and leave Task1 status pending.
+    unknowns: none for the repaired traversal; reevaluate the deferred persistent-index decision only if a reproducible authority benchmark exceeds a declared threshold.
+    scope: packages/cli/src/state/listRetrieval.ts; packages/cli/test/state/listRetrieval.test.ts; .agentera/plan.yaml; .agentera/archive/PLAN-2026-07-13-lossless-archive-backed-state-storage-a0d04027191c6dc0.yaml; .agentera/progress.yaml
+record_sha256: 294e13c1483fd4241177cc21a97925a65a63ecf6d23f625a9168166496744c9e

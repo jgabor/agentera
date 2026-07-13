@@ -96,6 +96,26 @@ function captureCli(root: string, args: string[]): { rc: number; out: string; er
   }
 }
 
+function cliPage(
+  root: string,
+  format: "json" | "yaml" | "text",
+  limit: number,
+  cursor?: string,
+): { ids: string[]; nextCursor?: string } {
+  const result = captureCli(root, ["--limit", String(limit), ...(cursor ? ["--cursor", cursor] : []), "--format", format]);
+  expect(result.rc).toBe(0);
+  if (format === "json" || format === "yaml") {
+    const response = (format === "json" ? JSON.parse(result.out) : YAML.parse(result.out)) as Record<string, unknown>;
+    return {
+      ids: ((response.entries as Array<Record<string, unknown>>) ?? []).map((entry) => String(entry.stable_id)),
+      ...(typeof response.next_cursor === "string" ? { nextCursor: response.next_cursor } : {}),
+    };
+  }
+  const ids = [...result.out.matchAll(/^- ([^ ]+) /gm)].map((match) => match[1]);
+  const nextCursor = /^next_cursor: (.+)$/m.exec(result.out)?.[1];
+  return { ids, ...(nextCursor ? { nextCursor } : {}) };
+}
+
 function writeArchiveFixture(root: string, number: number): void {
   const record = cycle(number);
   const recordSha256 = createHash("sha256").update(canonicalRecordJson(record), "utf8").digest("hex");
@@ -141,6 +161,59 @@ describe("snapshot-stable state listing", () => {
     expect(page1.snapshot.order).toBe("entry_number_desc");
   });
 
+  it.each(["json", "yaml", "text"] as const)(
+    "exhaustively follows every bounded %s cursor without repeating a page boundary",
+    (format) => {
+      for (const size of [0, 1, 2, 5, 9]) {
+        const root = project();
+        for (let number = 1; number <= size; number += 1) writeArchiveFixture(root, number);
+        for (let limit = 1; limit <= 5; limit += 1) {
+          const ids: string[] = [];
+          const cursors = new Set<string>();
+          let cursor: string | undefined;
+          for (let pageNumber = 0; pageNumber <= size + 1; pageNumber += 1) {
+            const page = cliPage(root, format, limit, cursor);
+            ids.push(...page.ids);
+            if (!page.nextCursor) break;
+            expect(cursors.has(page.nextCursor)).toBe(false);
+            cursors.add(page.nextCursor);
+            cursor = page.nextCursor;
+            if (pageNumber === size + 1) throw new Error("cursor traversal did not terminate");
+          }
+
+          expect(ids).toEqual(Array.from({ length: size }, (_, index) => `progress:${size - index}`));
+          expect(new Set(ids).size).toBe(size);
+        }
+      }
+    },
+  );
+
+  it.each(["json", "yaml", "text"] as const)("returns the same bounded page for a repeated %s cursor", (format) => {
+    const root = project();
+    for (let number = 1; number <= 7; number += 1) writeArchiveFixture(root, number);
+    const first = cliPage(root, format, 2);
+    const repeated = cliPage(root, format, 2, first.nextCursor);
+    expect(repeated).toEqual(cliPage(root, format, 2, first.nextCursor));
+  });
+
+  it("keeps an appended row out of an established bounded CLI snapshot", () => {
+    const root = project();
+    for (let number = 1; number <= 5; number += 1) writeArchiveFixture(root, number);
+
+    const first = cliPage(root, "json", 2);
+    writeArchiveFixture(root, 6);
+    const continuedIds: string[] = [];
+    let cursor = first.nextCursor;
+    while (cursor) {
+      const page = cliPage(root, "json", 2, cursor);
+      continuedIds.push(...page.ids);
+      cursor = page.nextCursor;
+    }
+
+    expect(continuedIds).toEqual(["progress:3", "progress:2", "progress:1"]);
+    expect(continuedIds).not.toContain("progress:6");
+  });
+
   it("excludes deterministic appends from an established snapshot", () => {
     const root = project();
     for (let number = 1; number <= 5; number += 1) archive(root, number);
@@ -169,6 +242,9 @@ describe("snapshot-stable state listing", () => {
     const tampered = `${token.slice(0, -1)}${token.endsWith("A") ? "B" : "A"}`;
     expect(() => directList(root, 1, tampered)).toThrow(/cursor signature is invalid|cursor is not a valid/);
     expect(() => listStateEntries(root, "progress", 1, { status: "feat" }, token, { sourceRoot })).toThrow(/bound to a different list/);
+    const tamperedCli = captureCli(root, ["--limit", "1", "--cursor", tampered, "--format", "json"]);
+    expect(tamperedCli.rc).toBe(2);
+    expect(JSON.parse(tamperedCli.out)).toMatchObject({ error: { class: "cursor_invalid" } });
 
     fs.rmSync(path.join(root, ".agentera", "archive", "progress", "1.yaml"));
     try {
@@ -259,7 +335,7 @@ describe("snapshot-stable state listing", () => {
     expect(response.entries).toHaveLength(1);
   });
 
-  it("preserves a continuation cursor when a 100-row page falls back to an empty bounded response", () => {
+  it.each(["json", "yaml", "text"] as const)("fails rather than promising a repeated %s cursor when no row fits the required budget", (format) => {
     const root = project();
     for (let number = 1; number <= 100; number += 1) writeArchiveFixture(root, number);
     const response = directList(root, 100);
@@ -269,14 +345,28 @@ describe("snapshot-stable state listing", () => {
       entry.provenance.current_projection.path = "projection-path-".repeat(2000);
     }
 
+    expect(() => boundStateList(response, format, sourceRoot, root)).toThrow(
+      /cannot emit an advancing row page/,
+    );
+  });
+
+  it("trims an over-budget page only to an advancing row boundary", () => {
+    const root = project();
+    for (let number = 1; number <= 100; number += 1) writeArchiveFixture(root, number);
+    const response = directList(root, 100);
+    for (const raw of response.entries) {
+      const entry = raw as Record<string, any>;
+      entry.provenance.archive.path = "archive-path-".repeat(300);
+      entry.provenance.current_projection.path = "projection-path-".repeat(300);
+    }
+
     const bounded = boundStateList(response, "json", sourceRoot, root);
-    expect(Buffer.byteLength(JSON.stringify(bounded, null, 2) + "\n", "utf8")).toBeLessThanOrEqual(32768);
-    expect(bounded.entries).toEqual([]);
-    expect(bounded.snapshot).toMatchObject({ has_more: true });
+    expect(bounded.entries.length).toBeGreaterThan(0);
+    expect(bounded.entries.length).toBeLessThan(100);
     expect(bounded.next_cursor).toEqual(expect.any(String));
+    const lastEmitted = String((bounded.entries.at(-1) as Record<string, unknown>).stable_id);
     const continued = directList(root, 100, bounded.next_cursor);
-    expect(continued.entries).toHaveLength(100);
-    expect(continued.entries[0]).toMatchObject({ stable_id: "progress:100" });
+    expect(continued.entries[0]).not.toMatchObject({ stable_id: lastEmitted });
   });
 
   it("bounds the requested YAML serialization rather than only the JSON estimate", () => {

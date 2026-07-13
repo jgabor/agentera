@@ -758,102 +758,72 @@ export function boundStateList(
   projectRoot: string = process.cwd(),
 ): StateListResponse {
   const policy = loadProjectionPolicy(sourceRoot);
-  const measurementFormat = format;
-  if (responseBytes(response, measurementFormat) <= policy.maxUtf8Bytes) return response;
+  if (responseBytes(response, format) <= policy.maxUtf8Bytes) return response;
 
   const originalEntries = response.entries.map((entry) => entry as JsonObject);
-  let entries = originalEntries.map((entry) => copyEntryWithoutOptionalDetails(entry));
-  let bounded = { ...response, entries } as StateListResponse;
-  const optionalDetailOmitted = originalEntries.filter((entry, index) => Object.keys(entry).length !== Object.keys(entries[index]).length).length;
-  if (responseBytes(bounded, measurementFormat) <= policy.maxUtf8Bytes) {
-    if (optionalDetailOmitted === 0) return bounded;
-    const withMetadata = {
-      ...bounded,
-      status: "degraded",
-      ...omissionMetadata(response.command, optionalDetailOmitted, entries),
+  const entriesWithoutOptionalDetails = originalEntries.map((entry) => copyEntryWithoutOptionalDetails(entry));
+  const optionalDetailOmitted = originalEntries.filter(
+    (entry, index) => Object.keys(entry).length !== Object.keys(entriesWithoutOptionalDetails[index]).length,
+  ).length;
+
+  const boundedPage = (entries: JsonObject[], omittedRows: number): StateListResponse => {
+    const snapshot = response.snapshot;
+    const artifactId = String(response.source.artifact ?? "state");
+    const candidateMax = Number(snapshot.candidate_max ?? 0);
+    const candidateCount = Number(snapshot.candidate_count ?? response.counts.total ?? 0);
+    const lastNumber = entries.length > 0 ? positiveNumber(String(entries.at(-1)?.entry_number)) : null;
+    const continuation = omittedRows > 0 && lastNumber !== null
+      ? encodeCursor(
+          {
+            version: CURSOR_VERSION,
+            artifact_id: artifactId,
+            filters: response.filters,
+            order: LIST_ORDER,
+            snapshot_id: String(snapshot.id),
+            candidate_count: candidateCount,
+            candidate_max: candidateMax,
+            after: lastNumber,
+          },
+          projectRoot,
+          sourceRoot,
+        )
+      : omittedRows === 0
+        ? response.next_cursor
+        : undefined;
+    const bounded = {
+      ...response,
+      status: optionalDetailOmitted + omittedRows > 0 ? "degraded" : response.status,
+      entries,
+      counts: {
+        ...response.counts,
+        returned: entries.length,
+        remaining: Number(response.counts.remaining ?? 0) + omittedRows,
+      },
+      snapshot: { ...snapshot, has_more: continuation !== undefined },
+      ...(optionalDetailOmitted + omittedRows > 0
+        ? omissionMetadata(response.command, optionalDetailOmitted + omittedRows, entries)
+        : {}),
     } as StateListResponse;
-    if (responseBytes(withMetadata, measurementFormat) <= policy.maxUtf8Bytes) return withMetadata;
-    bounded = withMetadata;
+    delete bounded.next_cursor;
+    if (continuation) bounded.next_cursor = continuation;
+    return bounded;
+  };
+
+  for (let retainedCount = entriesWithoutOptionalDetails.length; retainedCount > 0; retainedCount -= 1) {
+    const entries = entriesWithoutOptionalDetails.slice(0, retainedCount);
+    const omittedRows = entriesWithoutOptionalDetails.length - retainedCount;
+    const bounded = boundedPage(entries, omittedRows);
+    if (responseBytes(bounded, format) <= policy.maxUtf8Bytes) return bounded;
   }
 
-  const originalCount = entries.length;
-  while (entries.length > 0 && responseBytes(bounded, measurementFormat) > policy.maxUtf8Bytes) {
-    entries = entries.slice(0, -1);
-    bounded = { ...response, entries } as StateListResponse;
-  }
-  const omittedCount = originalCount - entries.length;
-  const metadata = omissionMetadata(response.command, omittedCount + optionalDetailOmitted, entries as JsonObject[]);
-  const snapshot = response.snapshot;
-  const artifactId = String(response.source.artifact ?? "state");
-  const candidateMax = Number(snapshot.candidate_max ?? 0);
-  const candidateCount = Number(snapshot.candidate_count ?? response.counts.total ?? 0);
-  const lastNumber = entries.length > 0 ? positiveNumber(String((entries.at(-1) as JsonObject).entry_number)) : null;
-  const remaining = Number(response.counts.remaining ?? 0) + omittedCount;
-  const continuation = remaining > 0 || omittedCount > 0
-    ? encodeCursor(
-        {
-          version: CURSOR_VERSION,
-          artifact_id: artifactId,
-          filters: response.filters,
-          order: LIST_ORDER,
-          snapshot_id: String(snapshot.id),
-          candidate_count: candidateCount,
-          candidate_max: candidateMax,
-          after: lastNumber ?? candidateMax + 1,
-        },
-        projectRoot,
-        sourceRoot,
-      )
-    : undefined;
-  bounded = {
-    ...bounded,
-    status: "degraded",
-    counts: { ...response.counts, returned: entries.length, remaining },
-    snapshot: { ...snapshot, has_more: continuation !== undefined },
-    ...(continuation ? { next_cursor: continuation } : {}),
-    ...metadata,
-  } as StateListResponse;
-  if (entries.length > 0 && responseBytes(bounded, measurementFormat) <= policy.maxUtf8Bytes) return bounded;
-
-  const fallbackCandidateCount = Number((bounded.snapshot as JsonObject).candidate_count ?? bounded.counts.total ?? 0);
-  const fallbackCandidateMax = Number((bounded.snapshot as JsonObject).candidate_max ?? 0);
-  const fallbackAfter = Number((bounded.snapshot as JsonObject).page_start ?? fallbackCandidateMax + 1);
-  const fallbackCursor = fallbackCandidateCount > 0
-    ? encodeCursor(
-        {
-          version: CURSOR_VERSION,
-          artifact_id: String(bounded.source.artifact ?? "state"),
-          filters: bounded.filters,
-          order: LIST_ORDER,
-          snapshot_id: String((bounded.snapshot as JsonObject).id),
-          candidate_count: fallbackCandidateCount,
-          candidate_max: fallbackCandidateMax,
-          after: fallbackAfter,
-        },
-        projectRoot,
-        sourceRoot,
-      )
-    : undefined;
-  const minimal = {
-    command: bounded.command,
-    status: "degraded",
-    entries: [],
-    counts: {
-      ...(bounded.counts as JsonObject),
-      returned: 0,
-      remaining: Number((bounded.counts as JsonObject).remaining ?? 0) + Number((bounded.counts as JsonObject).returned ?? 0),
-    },
-    source: bounded.source,
-    filters: bounded.filters,
-    snapshot: { ...(bounded.snapshot as JsonObject), has_more: fallbackCursor !== undefined },
-    source_contract: bounded.source_contract,
-    ...omissionMetadata(bounded.command, Number((bounded.counts as JsonObject).returned ?? 0), []),
-  } as StateListResponse;
-  if (fallbackCursor) minimal.next_cursor = fallbackCursor;
-  if (responseBytes(minimal, measurementFormat) > policy.maxUtf8Bytes) {
-    throw listFailure(1, "unsupported_state", `list output required fields exceed the ${policy.maxUtf8Bytes}-byte authority budget`, String(response.source.artifact ?? "state"), "Reduce the requested output to a supported state artifact or repair the authority budget before retrying.");
-  }
-  return minimal;
+  throw listFailure(
+    1,
+    "unsupported_state",
+    `list output cannot emit an advancing row page within the ${policy.maxUtf8Bytes}-byte ${format} authority budget`,
+    String(response.source.artifact ?? "state"),
+    "Reduce the requested output to a supported state artifact or repair the authority budget before retrying; no continuation cursor was issued.",
+    { format, candidate_count: Number(response.snapshot.candidate_count ?? response.counts.total ?? 0) },
+  );
 }
 
 export function renderStateListText(response: StateListResponse): string {
