@@ -491,6 +491,7 @@ export function stateDurabilityContract(
   return loadAuthority(sourceRoot).durability;
 }
 
+
 export function stateCurrentProjectionPath(
   projectRoot: string,
   artifactId: string,

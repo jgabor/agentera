@@ -125,6 +125,20 @@ describe("state storage authority", () => {
       remote_contact: "forbidden",
       writes_independent: true,
     });
+    expect(api.backfill).toMatchObject({
+      command: expect.stringContaining("agentera state backfill"),
+      default_limit: 100,
+      maximum_limit: 100,
+      maximum_commits: 500,
+      reachable_refs: ["HEAD", "refs/heads", "refs/tags"],
+      excluded_refs: ["refs/remotes", "custom_refs"],
+    });
+    expect(api.backfill.guarantees).toMatchObject({
+      apply_requires_force: true,
+      remote_contact: "forbidden",
+      projection_writes: "forbidden",
+      immutable_conflicts: "refuse_without_overwrite",
+    });
   });
 
   it("rejects an API that loses snapshot stability or has an invalid limit", () => {

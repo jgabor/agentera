@@ -17,6 +17,7 @@ export type InvalidInputErrorClass =
   | "mutually_exclusive"
   | "invalid_int"
   | "invalid_format"
+  | "invalid_request"
   | "unsupported_target"
   | "schema_violation"
   | "conflict";

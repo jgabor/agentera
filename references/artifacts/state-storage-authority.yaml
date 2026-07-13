@@ -13,8 +13,10 @@ authority:
     archive paths, API verbs, compatibility classes, mutable overlay fields,
     failure classes, or byte limits.
   implementation_boundary: >-
-    This contract does not publish archive files, hydrate records, migrate
-    legacy state, scan Git, or change existing plan and vision archive behavior.
+    This contract does not migrate legacy state or change existing plan and
+    vision archive behavior. The maintenance-only Git backfill surface declared
+    by api.backfill may inventory reachable local history and publish only an
+    exact immutable archive record after explicit apply intent.
 
 scope:
   supported_artifacts:
@@ -301,6 +303,53 @@ api:
       deterministic: >-
         With unchanged local files and reachable refs, repeated checks emit the
         same ordered result and do not create state or contact a remote.
+  backfill:
+    command: >-
+      agentera state backfill [--project PATH] [--artifact ARTIFACT]
+      [--number N] [--commit HASH] [--path PATH] [--limit N]
+      [--dry-run|--apply --force] --format {text,json,yaml}
+    formats: [text, json, yaml]
+    default_limit: 100
+    maximum_limit: 100
+    maximum_commits: 500
+    maximum_history_bytes: 16777216
+    supported_artifacts: [progress, decisions, health]
+    reachable_refs: [HEAD, refs/heads, refs/tags]
+    excluded_refs: [refs/remotes, custom_refs]
+    modes:
+      inventory: >-
+        The default read-only mode reports every reachable legacy occurrence
+        with commit, path, blob identity, stable entry ID, canonical content
+        hash, and an explicit ambiguity reason.
+      preview: >-
+        --dry-run is read-only and shows proposed immutable archive bytes only
+        for an exact unique candidate, together with every matching provenance.
+      apply: >-
+        --apply --force is the only mutation mode. It requires one artifact and
+        entry number, revalidates HEAD, reachability, path, blob, and canonical
+        content immediately before publication, and never overwrites conflicts.
+    ambiguity_reasons:
+      - none
+      - conflicting_versions
+      - shallow_history
+      - history_rewritten
+      - missing_history
+      - corrupt_history
+      - changed_head
+      - scan_bounded
+      - git_unavailable
+      - immutable_conflict
+      - candidate_changed
+    guarantees:
+      read_only_inventory_and_preview: true
+      apply_requires_force: true
+      remote_contact: forbidden
+      custom_refs: forbidden
+      commit_fields_in_archive_records: forbidden
+      projection_writes: forbidden
+      immutable_conflicts: refuse_without_overwrite
+      retry: identical_publication_is_idempotent
+      failure_projection_rule: active_projections_remain_byte_identical
   cursor:
     syntax: opaque TOKEN returned as response.next_cursor
     first_page: omit --cursor to establish a snapshot

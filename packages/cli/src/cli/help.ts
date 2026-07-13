@@ -114,6 +114,30 @@ export function printDoctorHelp(): string {
 }
 
 export function printStateHelp(sub?: string): string {
+  if (sub === "backfill") {
+    return [
+      "usage: agentera state backfill [-h] [--project PATH] [--artifact ARTIFACT]",
+      "                              [--number N] [--commit HASH] [--path PATH] [--limit N]",
+      "                              [--dry-run|--apply --force] --format {text,json,yaml}",
+      "",
+      "Inventory exact legacy records from reachable local Git history.",
+      "Default inventory and --dry-run are read-only; --apply --force publishes one immutable archive record.",
+      "No remote, remote-tracking ref, custom ref, projection, or archive overwrite is allowed.",
+      "",
+      "options:",
+      "  -h, --help            show this help message and exit",
+      "  --project PATH        Project directory to inspect",
+      "  --artifact ARTIFACT   progress, decisions, or health",
+      "  --number N            Positive legacy entry number; requires --artifact",
+      "  --commit HASH         Pin one reachable provenance occurrence",
+      "  --path PATH           Pin one historical projection path",
+      "  --limit N             Bound returned entries (maximum 100)",
+      "  --dry-run             Preview exact unique immutable archive bytes without writing",
+      "  --apply               Request publication; requires --force",
+      "  --force               Confirm the explicit immutable archive publication",
+      "  --format FORMAT       Output format: text, json, or yaml",
+    ].join("\n");
+  }
   if (sub) {
     const verbs = verbsForArtifact(sub);
     return [
@@ -135,7 +159,7 @@ export function printStateHelp(sub?: string): string {
     ].join("\n");
   }
   return [
-    "usage: agentera state [-h] {plan,progress,health,todo,decisions,docs,objective,experiments,query} ...",
+    "usage: agentera state [-h] {plan,progress,health,todo,decisions,docs,objective,experiments,backfill,query} ...",
     "",
     "Routine artifact reads, writes, and advanced artifact query.",
     "Discover typed writes: agentera state <artifact> explain --format json",

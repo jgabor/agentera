@@ -21,6 +21,11 @@ export interface ArchivePublicationResult {
   replay: boolean;
 }
 
+export interface NumberedArchiveBytes {
+  bytes: string;
+  recordSha256: string;
+}
+
 export interface ArchivePublicationFileSystem {
   mkdir(directory: string): void;
   openExclusive(stage: string): number;
@@ -231,16 +236,8 @@ export function publishNumberedArchive(
   const sourceRoot = options.sourceRoot ?? resolveSourceRoot();
   const fileSystem = options.fileSystem ?? nodeFileSystem;
   const location = archivePath(projectRoot, artifactId, entryNumber, sourceRoot);
-  const canonical = validateRecord(sourceRoot, location.contract, entryNumber, record);
-  const recordSha256 = createHash("sha256").update(canonical, "utf8").digest("hex");
-  const bytes = dumpYamlMapping({
-    schemaVersion: location.contract.entrySchemaVersion,
-    artifact_id: artifactId,
-    entry_number: entryNumber,
-    record,
-    record_sha256: recordSha256,
-  });
-  const published = publishImmutableFile(location.target, bytes, {
+  const serialized = serializeNumberedArchive(artifactId, entryNumber, record, sourceRoot);
+  const published = publishImmutableFile(location.target, serialized.bytes, {
     fileSystem,
     afterDirectorySync: options.afterDirectorySync,
     onExisting: () => {
@@ -253,5 +250,31 @@ export function publishNumberedArchive(
       );
     },
   });
-  return { path: location.target, stableId: location.stableId, recordSha256, replay: !published };
+  return {
+    path: location.target,
+    stableId: location.stableId,
+    recordSha256: serialized.recordSha256,
+    replay: !published,
+  };
+}
+
+export function serializeNumberedArchive(
+  artifactId: string,
+  entryNumber: number,
+  record: JsonObject,
+  sourceRoot: string = resolveSourceRoot(),
+): NumberedArchiveBytes {
+  const contract = numberedArchiveContract(artifactId, sourceRoot);
+  const canonical = validateRecord(sourceRoot, contract, entryNumber, record);
+  const recordSha256 = createHash("sha256").update(canonical, "utf8").digest("hex");
+  return {
+    bytes: dumpYamlMapping({
+      schemaVersion: contract.entrySchemaVersion,
+      artifact_id: artifactId,
+      entry_number: entryNumber,
+      record,
+      record_sha256: recordSha256,
+    }),
+    recordSha256,
+  };
 }

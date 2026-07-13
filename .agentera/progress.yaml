@@ -1,4 +1,53 @@
 cycles:
+  - number: 768
+    timestamp: 2026-07-13 18:22
+    type: feat
+    phase: build
+    what: "Implemented Task14 Git legacy backfill as agentera state backfill:
+      bounded read-only local-history inventory, exact unique dry-run
+      archive-byte previews, explicit apply --force with before/apply
+      revalidation, immutable conflict refusal, idempotent retry, and projection
+      byte-preservation guards."
+    inspiration: "Active Agentera plan Task14: backfill exactly recoverable legacy
+      records from Git without changing the normal decision source contract."
+    discovered: Git evidence is restricted to HEAD plus local refs/heads and
+      refs/tags; remote-tracking and custom refs are excluded. Shallow,
+      rewritten, missing, ambiguous, corrupt, changed-head, bounded, and
+      conflicting history remain explicit refusals or degraded evidence. Git
+      provenance is output-only and never enters archive record fields.
+    verified: "Focused: pnpm -C packages/cli exec vp test run
+      test/state/gitBackfill.test.ts test/state/archiveAuthority.test.ts
+      test/state/archivePublication.test.ts, 3 files and 22 tests passed.
+      Non-packaging: pnpm -C packages/cli exec vp test run --exclude
+      test/packaging/prepack.test.ts, 171 files and 1705 tests passed. Full:
+      pnpm -C packages/cli test, 172 files and 1709 of 1714 tests passed;
+      exactly 5 pre-existing npm 12 npm pack --dry-run --json parsing failures
+      remain in test/packaging/prepack.test.ts. pnpm -C packages/cli run
+      typecheck, pnpm -C packages/cli run build, pnpm -C packages/cli lint (102
+      warnings, 0 errors), capability-contract validation, progress artifact
+      validation, and check compact all passed."
+    next: Task14 remains pending and must not be marked complete. Do not implement
+      Task13 migration or Task15 integration. Preserve Task9 blocked metadata
+      and Task12 pass/status metadata. Do not update health, vision, profile,
+      decisions, TODO, version, publish, push, tag, or remote state.
+    context:
+      intent: Execute only active Agentera plan Task14 on feat/v3 and commit the
+        implementation with exact verification evidence.
+      constraints: Maintenance backfill only; no normal reconstruction, migration
+        integration, remote contact, custom refs, automatic commits, projection
+        writes, active overlay writes, or immutable archive overwrite. npm 12
+        packaging caveat remains pre-existing.
+      scope: references/artifacts/state-storage-authority.yaml;
+        packages/cli/src/state/archiveDiscovery.ts;
+        packages/cli/src/state/archivePublication.ts;
+        packages/cli/src/state/gitBackfill.ts;
+        packages/cli/src/state/gitBackfillAuthority.ts;
+        packages/cli/src/state/gitBackfillOutput.ts;
+        packages/cli/src/cli/commands/backfill.ts;
+        packages/cli/src/cli/dispatch/index.ts; packages/cli/src/cli/errors.ts;
+        packages/cli/src/cli/help.ts;
+        packages/cli/test/state/archiveAuthority.test.ts;
+        packages/cli/test/state/gitBackfill.test.ts; .agentera/plan.yaml
   - number: 767
     timestamp: 2026-07-13 17:36
     type: fix
@@ -480,43 +529,6 @@ cycles:
         packages/cli/src/cli/help.ts;
         packages/cli/test/state/directRetrieval.test.ts;
         .agentera/progress.yaml; .agentera/plan.yaml
-  - number: 758
-    timestamp: 2026-07-13 14:49
-    type: fix
-    phase: build
-    what: Fixed Task 7 attempt-1 audit findings for legacy summary bounds,
-      byte-budget fallbacks, and retrieval provenance.
-    inspiration: Task 7 audit failure recorded in .agentera/plan.yaml and
-      references/artifacts/state-storage-authority.yaml.
-    discovered: Legacy inline summaries now stay bounded with explicit degraded
-      incomplete provenance; required/source field overflow returns a measured
-      minimal envelope; only progress, decisions, and health expose numbered get
-      pointers.
-    verified: "Focused: pnpm -C packages/cli exec vp test run
-      test/state/projectionPolicy.test.ts test/state/archiveAuthority.test.ts
-      test/hooks/compaction.test.ts test/state/decisionOverlay.test.ts
-      test/cli/compactParity.test.ts test/state/write/stateWrite.test.ts: 6
-      files and 107 tests passed. Non-packaging full: pnpm -C packages/cli exec
-      vp test run --exclude test/packaging/prepack.test.ts: 167 files and 1634
-      tests passed. Typecheck, pnpm -C packages/cli build, capability-contract
-      validation, progress/decisions/health artifact validation, and check
-      compact passed."
-    next: Task 7 remains pending after retry; preserve attempt-1 failure metadata
-      and do not mark the task complete. Task 8 owns direct get/list retrieval
-      and Task 10 owns prime/orientation integration.
-    context:
-      intent: Retry Task 7 after evaluation attempt 1 without marking the task
-        complete or broadening into get/list, consumers, migration, Git,
-        release, or packaging work.
-      constraints: Preserve Task 7 attempt-1 failure evaluation in plan.yaml. Do not
-        modify health, vision, profile, decisions, TODO, changelog, version,
-        publish, push, tag, or packaging state.
-      unknowns: The excluded npm12 packaging failures remain pre-existing and outside
-        this retry; no packaging files were changed.
-      scope: references/artifacts/state-storage-authority.yaml;
-        packages/cli/src/state/projectionPolicy.ts;
-        packages/cli/src/hooks/compaction/apply.ts; projection and authority
-        tests; .agentera/progress.yaml; .agentera/plan.yaml
   - number: 749
     timestamp: 2026-07-13 10:58
     type: feat
@@ -634,6 +646,8 @@ cycles:
       intent: Complete active plan Task 7 without changing decisions or unrelated
         capabilities.
 archive:
+  - summary: "Cycle 758 (2026-07-13): Fixed Task 7 attempt-1 audit findings for
+      legacy summary bounds, byte-budget fallbacks, and retrieval provenance."
   - summary: "Cycle 757 (2026-07-13): Replaced numbered-state retention limits with
       lossless projection defaults and deterministic omission metadata."
   - summary: "Cycle 756 (2026-07-13): Corrected Cycle 755 Task 6 test counts through
@@ -737,15 +751,18 @@ archive:
       apply locking after audit."
   - summary: "Cycle 711 (2026-07-11): Integrated lifecycle repair and convergence
       into the upgrade namespace."
-  - summary: "Cycle 710 (2026-07-11): Removed production lifecycle evidence
-      injection and split synthetic parity from real CLI coverage."
 omitted: true
-omitted_count: 5
+omitted_count: 6
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded

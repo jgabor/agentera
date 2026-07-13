@@ -1,0 +1,287 @@
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
+import { spawnSync } from "node:child_process";
+
+import { afterEach, describe, expect, it } from "vitest";
+
+import { dumpYamlMapping } from "../../src/core/yaml.js";
+import { main } from "../../src/cli/dispatch/index.js";
+import { publishNumberedArchive } from "../../src/state/archivePublication.js";
+import {
+  applyGitBackfill,
+  inspectGitBackfill,
+  previewGitBackfill,
+} from "../../src/state/gitBackfill.js";
+
+const sourceRoot = path.resolve(import.meta.dirname, "../../../..");
+const roots: string[] = [];
+
+function project(prefix = "agentera-git-backfill-"): string {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), prefix));
+  roots.push(root);
+  return root;
+}
+
+function git(root: string, args: string[]): string {
+  const result = spawnSync("git", args, { cwd: root, encoding: "utf8", shell: false });
+  if (result.status !== 0) throw new Error(`git ${args.join(" ")} failed: ${result.stderr}`);
+  return String(result.stdout ?? "").trim();
+}
+
+function init(root: string): void {
+  git(root, ["init", "--quiet"]);
+  git(root, ["config", "user.email", "backfill-test@example.invalid"]);
+  git(root, ["config", "user.name", "Backfill Test"]);
+  git(root, ["config", "commit.gpgsign", "false"]);
+}
+
+function progress(number: number, what: string): Record<string, unknown> {
+  return {
+    number,
+    timestamp: "2026-07-13 18:00",
+    type: "test",
+    phase: "build",
+    what,
+    context: { intent: "Exercise exact Git backfill" },
+  };
+}
+
+function writeProgress(root: string, records: Record<string, unknown>[], file = ".agentera/progress.yaml"): void {
+  const target = path.join(root, file);
+  fs.mkdirSync(path.dirname(target), { recursive: true });
+  fs.writeFileSync(target, dumpYamlMapping({ cycles: records }));
+}
+
+function commit(root: string, message: string): string {
+  git(root, ["add", "."]);
+  git(root, ["commit", "--quiet", "-m", message]);
+  return git(root, ["rev-parse", "HEAD"]);
+}
+
+function readProjection(root: string): string {
+  return fs.readFileSync(path.join(root, ".agentera/progress.yaml"), "utf8");
+}
+
+function realGitRunner(args: string[], cwd: string) {
+  const result = spawnSync("git", args, { cwd, encoding: "utf8", shell: false });
+  return {
+    status: result.status,
+    stdout: String(result.stdout ?? ""),
+    timedOut: false,
+  };
+}
+
+afterEach(() => {
+  for (const root of roots.splice(0)) fs.rmSync(root, { recursive: true, force: true });
+});
+
+describe("Git legacy backfill", () => {
+  it("inventories provenance and previews immutable bytes without writing", () => {
+    const root = project();
+    init(root);
+    writeProgress(root, [progress(1, "Recover this exact cycle")]);
+    const commitHash = commit(root, "legacy cycle");
+    const projectionBefore = readProjection(root);
+
+    const inventory = inspectGitBackfill(root, { artifact: "progress", number: 1 }, { sourceRoot, runGit: realGitRunner });
+    expect(inventory.entries[0]).toMatchObject({
+      entry_id: "progress:1",
+      commit: commitHash,
+      path: ".agentera/progress.yaml",
+      ambiguity_reason: "none",
+      eligible: true,
+      reachable: true,
+    });
+    expect(inventory.entries[0]?.blob_id).toMatch(/^[0-9a-f]{40}$/);
+    expect(inventory.entries[0]?.content_hash).toMatch(/^[0-9a-f]{64}$/);
+
+    const preview = previewGitBackfill(root, { artifact: "progress", number: 1 }, { sourceRoot, runGit: realGitRunner });
+    expect(preview).toMatchObject({ mode: "preview", status: "complete", read_only: true });
+    expect(preview.entries[0]?.proposed_archive_bytes).toContain("schemaVersion: agentera.stateArchiveEntry.v1");
+    expect(fs.existsSync(path.join(root, ".agentera/archive/progress/1.yaml"))).toBe(false);
+    expect(readProjection(root)).toBe(projectionBefore);
+  });
+
+  it("applies only after explicit intent and converges to replay without projection changes", () => {
+    const root = project();
+    init(root);
+    writeProgress(root, [progress(2, "Publish exactly once")]);
+    commit(root, "legacy cycle");
+    const projectionBefore = readProjection(root);
+
+    const first = applyGitBackfill(
+      root,
+      { artifact: "progress", number: 2 },
+      { sourceRoot, runGit: realGitRunner },
+    );
+    expect(first.status).toBe("complete");
+    expect(first.counts.applied).toBe(1);
+    const archivePath = path.join(root, ".agentera/archive/progress/2.yaml");
+    const archiveBefore = fs.readFileSync(archivePath, "utf8");
+
+    const retry = applyGitBackfill(
+      root,
+      { artifact: "progress", number: 2 },
+      { sourceRoot, runGit: realGitRunner },
+    );
+    expect(retry.status).toBe("complete");
+    expect(retry.counts.replayed).toBe(1);
+    expect(fs.readFileSync(archivePath, "utf8")).toBe(archiveBefore);
+    expect(readProjection(root)).toBe(projectionBefore);
+  });
+
+  it("refuses conflicting versions and preserves projections and immutable bytes", () => {
+    const root = project();
+    init(root);
+    writeProgress(root, [progress(3, "First version")]);
+    commit(root, "first version");
+    writeProgress(root, [progress(3, "Second version")]);
+    commit(root, "second version");
+    const projectionBefore = readProjection(root);
+
+    const preview = previewGitBackfill(root, { artifact: "progress", number: 3 }, { sourceRoot, runGit: realGitRunner });
+    expect(preview.entries[0]?.ambiguity_reason).toBe("conflicting_versions");
+    expect(preview.entries[0]?.proposed_archive_bytes).toBeUndefined();
+
+    const applied = applyGitBackfill(
+      root,
+      { artifact: "progress", number: 3 },
+      { sourceRoot, runGit: realGitRunner },
+    );
+    expect(applied.status).toBe("blocked");
+    expect(applied.counts.applied).toBe(0);
+    expect(fs.existsSync(path.join(root, ".agentera/archive/progress/3.yaml"))).toBe(false);
+    expect(readProjection(root)).toBe(projectionBefore);
+  });
+
+  it("reports shallow history as degraded and never applies it", () => {
+    const origin = project("agentera-git-backfill-origin-");
+    init(origin);
+    writeProgress(origin, [progress(4, "Older cycle")]);
+    commit(origin, "older cycle");
+    writeProgress(origin, [progress(4, "Older cycle"), progress(5, "Newest cycle")]);
+    commit(origin, "newest cycle");
+
+    const shallow = project("agentera-git-backfill-shallow-");
+    git(shallow, ["clone", "--quiet", "--depth", "1", "--no-local", origin, "."]);
+    git(shallow, ["config", "user.email", "backfill-test@example.invalid"]);
+    git(shallow, ["config", "user.name", "Backfill Test"]);
+    const preview = previewGitBackfill(shallow, { artifact: "progress", number: 5 }, { sourceRoot, runGit: realGitRunner });
+    expect(preview.status).toBe("degraded");
+    expect(preview.entries[0]?.ambiguity_reason).toBe("shallow_history");
+
+    const applied = applyGitBackfill(
+      shallow,
+      { artifact: "progress", number: 5 },
+      { sourceRoot, runGit: realGitRunner },
+    );
+    expect(applied.status).toBe("blocked");
+    expect(fs.existsSync(path.join(shallow, ".agentera/archive/progress/5.yaml"))).toBe(false);
+  });
+
+  it("distinguishes rewritten, missing, and historical paths", () => {
+    const rewritten = project();
+    init(rewritten);
+    writeProgress(rewritten, [progress(6, "Rewritten full record")]);
+    const oldCommit = commit(rewritten, "full record later rewritten");
+    git(rewritten, ["checkout", "--quiet", "--orphan", "replacement"]);
+    git(rewritten, ["branch", "-D", "main"]);
+    fs.rmSync(path.join(rewritten, ".agentera"), { recursive: true, force: true });
+    writeProgress(rewritten, [{ number: 6, summary: "Legacy summary only" }]);
+    commit(rewritten, "replacement summary");
+    const rewrittenResult = inspectGitBackfill(
+      rewritten,
+      { artifact: "progress", number: 6 },
+      { sourceRoot, runGit: realGitRunner },
+    );
+    expect(rewrittenResult.entries.some((entry) => entry.ambiguity_reason === "history_rewritten")).toBe(true);
+    expect(rewrittenResult.entries.some((entry) => entry.commit === oldCommit && !entry.reachable)).toBe(true);
+
+    const missing = project();
+    init(missing);
+    writeProgress(missing, [progress(7, "Uncommitted only")]);
+    const missingResult = inspectGitBackfill(
+      missing,
+      { artifact: "progress", number: 7 },
+      { sourceRoot, runGit: realGitRunner },
+    );
+    expect(missingResult.entries[0]?.ambiguity_reason).toBe("missing_history");
+
+    const renamed = project();
+    init(renamed);
+    writeProgress(renamed, [progress(8, "Path history")]);
+    commit(renamed, "old path");
+    fs.copyFileSync(
+      path.join(renamed, ".agentera/progress.yaml"),
+      path.join(renamed, ".agentera/progress-legacy.yaml"),
+    );
+    commit(renamed, "copy projection path history");
+    const pathResult = inspectGitBackfill(
+      renamed,
+      { artifact: "progress", number: 8 },
+      { sourceRoot, runGit: realGitRunner },
+    );
+    expect(pathResult.entries.some((entry) => entry.path?.startsWith(".agentera/progress"))).toBe(true);
+  });
+
+  it("refuses immutable conflicts and changed HEAD before publication", () => {
+    const root = project();
+    init(root);
+    const record = progress(9, "Original immutable content");
+    writeProgress(root, [record]);
+    commit(root, "legacy cycle");
+    publishNumberedArchive(root, "progress", 9, progress(9, "Different archive content"), { sourceRoot });
+    const archivePath = path.join(root, ".agentera/archive/progress/9.yaml");
+    const archiveBefore = fs.readFileSync(archivePath, "utf8");
+    const projectionBefore = readProjection(root);
+    const conflict = applyGitBackfill(
+      root,
+      { artifact: "progress", number: 9 },
+      { sourceRoot, runGit: realGitRunner },
+    );
+    expect(conflict.status).toBe("blocked");
+    expect(conflict.entries[0]?.ambiguity_reason).toBe("immutable_conflict");
+    expect(fs.readFileSync(archivePath, "utf8")).toBe(archiveBefore);
+    expect(readProjection(root)).toBe(projectionBefore);
+
+    const changed = project();
+    init(changed);
+    writeProgress(changed, [progress(10, "Changed head guard")]);
+    commit(changed, "legacy cycle");
+    let headReads = 0;
+    const changedHeadRunner = (args: string[], cwd: string) => {
+      const result = realGitRunner(args, cwd);
+      if (args[0] === "rev-parse" && args[1] === "--verify" && args[2] === "HEAD^{commit}") {
+        headReads += 1;
+        if (headReads === 2) return { ...result, stdout: `${result.stdout.trim()}changed\n` };
+      }
+      return result;
+    };
+    const changedResult = applyGitBackfill(
+      changed,
+      { artifact: "progress", number: 10 },
+      { sourceRoot, runGit: changedHeadRunner },
+    );
+    expect(changedResult.status).toBe("blocked");
+    expect(changedResult.head.status).toBe("changed");
+    expect(fs.existsSync(path.join(changed, ".agentera/archive/progress/10.yaml"))).toBe(false);
+  });
+
+  it("exposes the authority namespace and rejects implicit apply", () => {
+    let out = "";
+    const rc = main(["node", "agentera", "state", "backfill", "--apply", "--format", "json"], {
+      out: (text) => (out += text),
+      err: () => undefined,
+    });
+    expect(rc).toBe(2);
+    expect(JSON.parse(out)).toMatchObject({
+      schemaVersion: "agentera.invalidInputEnvelope.v2",
+      error: {
+        class: "invalid_request",
+        message: "--apply requires explicit --force intent",
+        syntax: expect.stringContaining("agentera state backfill"),
+      },
+    });
+  });
+});

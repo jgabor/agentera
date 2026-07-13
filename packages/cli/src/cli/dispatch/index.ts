@@ -1,4 +1,5 @@
 import { isPortedStateCommand } from "../commands/state/index.js";
+import { runBackfill } from "../commands/backfill.js";
 import { CAPABILITY_ROUTING_NAMES } from "../commands/capability.js";
 import { printCommandHelp, printTopLevelHelp, splitHelpArgs } from "../help.js";
 import { compactModeOf, runCompact, runDurability, runLint, runSchema, runValidate } from "./check.js";
@@ -135,6 +136,7 @@ export function main(argv: string[], io: Io = {}): number {
         });
       }
       if (sub === "query") return runQuery(rest.slice(1), io, "agentera state query");
+      if (sub === "backfill") return runBackfill(rest.slice(1), io);
       if (isPortedStateCommand(sub) || isWriteVerb(rest[1]) || rest[1] === "get") return runState(sub, rest.slice(1), io, `agentera state ${sub}`);
       return emitInvalidInput(io, {
         format: "text",
@@ -148,6 +150,7 @@ export function main(argv: string[], io: Io = {}): number {
             "docs",
             "objective",
             "experiments",
+            "backfill",
             "todo",
             "decisions",
             "query",

@@ -1,0 +1,18 @@
+schemaVersion: agentera.stateArchiveEntry.v1
+artifact_id: progress
+entry_number: 768
+record:
+  number: 768
+  timestamp: 2026-07-13 18:22
+  type: feat
+  phase: build
+  what: "Implemented Task14 Git legacy backfill as agentera state backfill: bounded read-only local-history inventory, exact unique dry-run archive-byte previews, explicit apply --force with before/apply revalidation, immutable conflict refusal, idempotent retry, and projection byte-preservation guards."
+  inspiration: "Active Agentera plan Task14: backfill exactly recoverable legacy records from Git without changing the normal decision source contract."
+  discovered: Git evidence is restricted to HEAD plus local refs/heads and refs/tags; remote-tracking and custom refs are excluded. Shallow, rewritten, missing, ambiguous, corrupt, changed-head, bounded, and conflicting history remain explicit refusals or degraded evidence. Git provenance is output-only and never enters archive record fields.
+  verified: "Focused: pnpm -C packages/cli exec vp test run test/state/gitBackfill.test.ts test/state/archiveAuthority.test.ts test/state/archivePublication.test.ts, 3 files and 22 tests passed. Non-packaging: pnpm -C packages/cli exec vp test run --exclude test/packaging/prepack.test.ts, 171 files and 1705 tests passed. Full: pnpm -C packages/cli test, 172 files and 1709 of 1714 tests passed; exactly 5 pre-existing npm 12 npm pack --dry-run --json parsing failures remain in test/packaging/prepack.test.ts. pnpm -C packages/cli run typecheck, pnpm -C packages/cli run build, pnpm -C packages/cli lint (102 warnings, 0 errors), capability-contract validation, progress artifact validation, and check compact all passed."
+  next: Task14 remains pending and must not be marked complete. Do not implement Task13 migration or Task15 integration. Preserve Task9 blocked metadata and Task12 pass/status metadata. Do not update health, vision, profile, decisions, TODO, version, publish, push, tag, or remote state.
+  context:
+    intent: Execute only active Agentera plan Task14 on feat/v3 and commit the implementation with exact verification evidence.
+    constraints: Maintenance backfill only; no normal reconstruction, migration integration, remote contact, custom refs, automatic commits, projection writes, active overlay writes, or immutable archive overwrite. npm 12 packaging caveat remains pre-existing.
+    scope: references/artifacts/state-storage-authority.yaml; packages/cli/src/state/archiveDiscovery.ts; packages/cli/src/state/archivePublication.ts; packages/cli/src/state/gitBackfill.ts; packages/cli/src/state/gitBackfillAuthority.ts; packages/cli/src/state/gitBackfillOutput.ts; packages/cli/src/cli/commands/backfill.ts; packages/cli/src/cli/dispatch/index.ts; packages/cli/src/cli/errors.ts; packages/cli/src/cli/help.ts; packages/cli/test/state/archiveAuthority.test.ts; packages/cli/test/state/gitBackfill.test.ts; .agentera/plan.yaml
+record_sha256: 220a196e43ca3367cf325b31c7bbca2c005c86e6536ee5a3f263b04afde37aab
