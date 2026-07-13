@@ -1,4 +1,36 @@
 cycles:
+  - number: 751
+    timestamp: 2026-07-13 11:39
+    type: fix
+    phase: build
+    what: Corrected Cycle 750's focused-test count through an append-only
+      supersession record.
+    inspiration: Task 3 evaluation identified an inaccurate focused-test count in
+      immutable Cycle 750.
+    discovered: The current progress contract has no correction verb or supersedes
+      field; a newer typed cycle is the existing contract-consistent correction
+      mechanism. Cycle 751 supersedes only Cycle 750's focused-test count, while
+      Cycle 750 bytes remain unchanged.
+    verified: "Exact focused command pnpm -C packages/cli exec vp test run
+      test/state/archivePublication.test.ts test/state/write/stateWrite.test.ts
+      passed: 57 tests across 2 files. Full-suite evidence remains 1,606 tests
+      across 165 files as recorded by Cycle 750."
+    next: Task 3 evaluator review should use progress cycle 751 and
+      archive/progress/751.yaml; Task 3 remains pending and Task 4 remains
+      pending.
+    context:
+      intent: Make durable verification evidence truthful without rewriting immutable
+        Cycle 750.
+      constraints: Append-only correction only. Do not mutate or delete immutable
+        archive progress/750.yaml. Preserve the failed Task 3 evaluation in
+        .agentera/plan.yaml. No implementation, health, decisions, vision,
+        overlays, satisfaction, versions, publish, tag, push, or Task 3
+        completion changes.
+      unknowns: Task 3 evaluation attempt 1 remains failed until the evaluator retries
+        against the corrected durable pointer; no task status is changed by this
+        correction.
+      scope: .agentera/progress.yaml; .agentera/archive/progress/751.yaml;
+        .agentera/plan.yaml
   - number: 750
     timestamp: 2026-07-13 11:28
     type: feat
@@ -205,24 +237,11 @@ cycles:
       unknowns: none
       scope: Plan publication, prose lint, regression tests, hook revert, and
         changelog.
-  - number: 741
-    timestamp: 2026-07-12 22:45
-    type: fix
-    phase: build
-    what: Updated packages/cli/src/state/write/transaction.ts so plan create/archive
-      publication validates final bytes and retries converge after
-      interruptions.
-    verified: 1,559 CLI tests; typecheck; lint; build; capability-contract
-      validation; compact; built CLI lint smoke.
-    next: "Task 6: repair execution eligibility and orchestration retry semantics
-      only."
-    context:
-      intent: Implement Task 5 validated crash-consistent plan publication.
-      constraints: Plan publication only; preserved Task 4 lifecycle authority and did
-        not change decisions.
-      unknowns: none
-      scope: Plan writer, lint helper, regression tests, and changelog.
 archive:
+  - summary: "Cycle 741 (2026-07-12): Updated
+      packages/cli/src/state/write/transaction.ts so plan create/archive
+      publication validates final bytes and retries converge after
+      interruptions."
   - summary: "Cycle 740 (2026-07-12): Separated plan lifecycle writes from task
       status writes and enforced canonical open or complete serialization."
   - summary: "Cycle 739 (2026-07-12): Added
@@ -327,5 +346,3 @@ archive:
   - summary: "Cycle 702 (2026-07-11): Implemented authority-bound lifecycle adapters
       for OpenCode, Codex, Cursor, and Copilot with explicit eight-category
       surface reports,..."
-  - summary: "Cycle 701 (2026-07-11): Hardened the shared lifecycle engine against
-      publication-time target and parent substitution."

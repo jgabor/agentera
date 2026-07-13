@@ -71,6 +71,16 @@ tasks:
       - GIVEN an identical retry or an archive left before projection publication WHEN replay occurs THEN the original number is recovered and no duplicate logical entry is created.
       - GIVEN the same ID with different canonical content WHEN publication is attempted THEN the immutable conflict is rejected without replacing bytes.
       - GIVEN pass, replay, orphan-recovery, collision, disk-full, and boundary cases WHEN tests run THEN every outcome is deterministic.
+    evaluation:
+      attempt_count: 1
+      failure_count: 1
+      last_verdict: fail
+      last_failure_evidence: Progress Cycle 750 records 63 focused tests, but the reproducible focused command passes 57; immutable evidence is inaccurate.
+      provenance:
+        attempt_id: task-3-attempt-1
+        source: audit-task-3-a25f5adb
+        recorded_at: 2026-07-13 11:37
+        writer_command: agentera state plan record-evaluation
   - number: 4
     name: Unify state mutation under one crash-consistent transaction
     depends_on:

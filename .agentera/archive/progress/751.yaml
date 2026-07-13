@@ -1,0 +1,19 @@
+schemaVersion: agentera.stateArchiveEntry.v1
+artifact_id: progress
+entry_number: 751
+record:
+  number: 751
+  timestamp: 2026-07-13 11:39
+  type: fix
+  phase: build
+  what: Corrected Cycle 750's focused-test count through an append-only supersession record.
+  inspiration: Task 3 evaluation identified an inaccurate focused-test count in immutable Cycle 750.
+  discovered: The current progress contract has no correction verb or supersedes field; a newer typed cycle is the existing contract-consistent correction mechanism. Cycle 751 supersedes only Cycle 750's focused-test count, while Cycle 750 bytes remain unchanged.
+  verified: "Exact focused command pnpm -C packages/cli exec vp test run test/state/archivePublication.test.ts test/state/write/stateWrite.test.ts passed: 57 tests across 2 files. Full-suite evidence remains 1,606 tests across 165 files as recorded by Cycle 750."
+  next: Task 3 evaluator review should use progress cycle 751 and archive/progress/751.yaml; Task 3 remains pending and Task 4 remains pending.
+  context:
+    intent: Make durable verification evidence truthful without rewriting immutable Cycle 750.
+    constraints: Append-only correction only. Do not mutate or delete immutable archive progress/750.yaml. Preserve the failed Task 3 evaluation in .agentera/plan.yaml. No implementation, health, decisions, vision, overlays, satisfaction, versions, publish, tag, push, or Task 3 completion changes.
+    unknowns: Task 3 evaluation attempt 1 remains failed until the evaluator retries against the corrected durable pointer; no task status is changed by this correction.
+    scope: .agentera/progress.yaml; .agentera/archive/progress/751.yaml; .agentera/plan.yaml
+record_sha256: 10f538dbe364d86d536567b762b95efa9f80e0bedf03837a4cb407eef992e64d
