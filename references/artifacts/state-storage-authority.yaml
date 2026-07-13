@@ -1,0 +1,424 @@
+schema_version: agentera.stateStorageAuthority.v1
+status: active_authority
+purpose: >-
+  Define the lossless archive, project path, direct state API, compatibility,
+  projection, and serialized-output contracts before archive-backed storage is
+  implemented. This file is the single schema authority for the numbered
+  progress, decisions, and health state records described below.
+authority:
+  source: references/artifacts/state-storage-authority.yaml
+  single_source_rule: >-
+    Runtime readers, writers, validators, tests, help, and capability source
+    contracts may project this authority but must not create a second map of
+    archive paths, API verbs, compatibility classes, mutable overlay fields,
+    failure classes, or byte limits.
+  implementation_boundary: >-
+    This contract does not publish archive files, hydrate records, migrate
+    legacy state, scan Git, or change existing plan and vision archive behavior.
+
+scope:
+  supported_artifacts:
+    - artifact_id: progress
+      current_projection_path: .agentera/progress.yaml
+      entry_collection: cycles
+      entry_number_field: number
+      entry_kind: cycle
+    - artifact_id: decisions
+      current_projection_path: .agentera/decisions.yaml
+      entry_collection: decisions
+      entry_number_field: number
+      entry_kind: decision
+    - artifact_id: health
+      current_projection_path: .agentera/health.yaml
+      entry_collection: audits
+      entry_number_field: number
+      entry_kind: audit
+  excluded_from_numbered_archive:
+    - plan
+    - vision
+    - todo
+    - changelog
+    - docs
+    - design
+    - objective
+    - experiments
+  unchanged_archive_conventions:
+    plan:
+      location: .agentera/archive/plan-*.yaml
+      role: existing plan lifecycle archive
+      numbered_entry_discovery: forbidden
+      execution: archived plans remain historical and non-executable
+    vision:
+      location: .agentera/archive/vision-*.yaml
+      role: existing replace-mode vision archive
+      numbered_entry_discovery: forbidden
+      format: unchanged
+
+storage:
+  project_root:
+    fixed: true
+    resolution: >-
+      The caller's selected project root. The archive is project-local and is
+      never resolved through AGENTERA_HOME, a profile directory, XDG data, or a
+      docs.yaml path override.
+    archive_root: .agentera/archive
+    archive_path_template: .agentera/archive/<artifact-id>/<entry-number>.yaml
+    path_override: forbidden
+    project_boundary: >-
+      The resolved archive path and every parent must remain beneath the
+      selected project root. URI paths, traversal segments, encoded traversal,
+      and symlink escapes are invalid.
+  archive:
+    record_type: immutable_numbered_entry
+    supported_artifact_directories: [progress, decisions, health]
+    filename:
+      entry_number: positive_integer
+      canonical_form: base-10 decimal without a leading plus sign or leading zero
+      accepted_pattern: '^[1-9][0-9]*$'
+      directory_name: artifact_id
+      extension: .yaml
+    publication_order: archive_before_projection
+    mutation_policy: no_overwrite_after_publication
+    retry_policy: >-
+      An identical artifact_id, entry_number, and canonical record is an
+      idempotent replay. The same identity with different canonical content is
+      an immutable conflict and must not replace existing bytes.
+    discovery_policy: >-
+      Only the exact supported path template is eligible. Malformed names,
+      unsupported artifact directories, symlinks, duplicate logical identities,
+      invalid envelopes, and hash mismatches are not valid records.
+
+identity:
+  stable_id:
+    format: <artifact-id>:<entry-number>
+    accepted_pattern: '^(progress|decisions|health):[1-9][0-9]*$'
+    example: decisions:53
+  components:
+    artifact_id: one of scope.supported_artifacts.artifact_id
+    entry_number: positive integer from the artifact's entry_number_field
+  uniqueness: stable_id is unique within one project archive
+  ordering:
+    list: entry_number descending, numerically rather than lexicographically
+    tie_breaker: stable_id ascending (defensive only; numbers are unique per artifact)
+    get: exact stable_id match; no topic or summary scan is a substitute
+
+envelope:
+  schema_version: agentera.stateArchiveEntry.v1
+  required_fields:
+    - schemaVersion
+    - artifact_id
+    - entry_number
+    - record
+    - record_sha256
+  field_contract:
+    schemaVersion: exact string agentera.stateArchiveEntry.v1
+    artifact_id: supported artifact ID matching the archive directory
+    entry_number: positive integer matching the filename and record identity field
+    record: complete pre-projection entry, not a compact summary
+    record_sha256: lowercase SHA-256 of the canonical record bytes
+  canonical_record:
+    encoding: UTF-8
+    serialization: canonical JSON with recursively sorted object keys and no whitespace
+    arrays: preserve source order
+    hash_input: record only, excluding the envelope
+  identity_checks:
+    - envelope.artifact_id matches the parent artifact directory
+    - envelope.entry_number matches the filename
+    - envelope.entry_number matches record.<artifact entry_number_field>
+    - record_sha256 matches canonical_record
+  forbidden_fields:
+    - commit
+    - commit_hash
+    - git_commit
+    - git_ref
+    - parent_commit
+  provenance_rule: >-
+    Git provenance is durability evidence returned by a later diagnostic
+    surface, never per-entry commit bookkeeping and never part of immutable
+    record identity.
+
+overlays:
+  location: .agentera/overlays/decisions.yaml
+  project_root_fixed: true
+  docs_yaml_override: forbidden
+  schema_version: agentera.decisionOverlay.v1
+  supported_artifact: decisions
+  identity_key: decisions:<decision-number>
+  storage_shape: >-
+    A mapping keyed by stable decision ID. Each value contains only the
+    authority-declared mutable paths and never replaces the immutable archive
+    record.
+  mutable_paths:
+    - satisfaction.state
+    - satisfaction.evidence
+    - satisfaction.user_confirmation.confirmed_by
+    - satisfaction.user_confirmation.confirmed_at
+  derived_paths:
+    - satisfaction.review_needed
+    - satisfaction.source
+    - satisfaction.caveats
+  immutable_paths:
+    - number
+    - date
+    - question
+    - context
+    - alternatives
+    - choice
+    - reasoning
+    - confidence
+    - feeds_into
+  state_values: [open, provisionally_satisfied, user_confirmed_satisfied]
+  transition_rules:
+    open:
+      allowed_next: [open, provisionally_satisfied, user_confirmed_satisfied]
+      provisional_requires: non_empty_satisfaction.evidence
+      confirmed_requires: explicit_current_user_confirmation_metadata
+    provisionally_satisfied:
+      allowed_next: [open, provisionally_satisfied, user_confirmed_satisfied]
+      provisional_requires: non_empty_satisfaction.evidence
+      confirmed_requires: explicit_current_user_confirmation_metadata
+    user_confirmed_satisfied:
+      allowed_next: [user_confirmed_satisfied]
+      downgrade: forbidden_without_explicit_current_user_confirmation
+  decision_53_rules:
+    missing_satisfaction: valid legacy state; derive review_needed=true
+    open: review_needed=true
+    provisional: review_needed=true until explicit user confirmation
+    confirmed: review_needed=false only with confirmed_by and confirmed_at
+    inference: forbidden from commits, downstream references, summaries, or Git history
+    protected_review: unresolved decisions remain visible and never block archive storage
+
+projections:
+  archive:
+    role: complete immutable historical detail
+    source_of_truth_for: historical_record_fields
+    omission: never omit fields from an archive record
+  current:
+    role: bounded active projection for current artifact consumers
+    paths:
+      progress: .agentera/progress.yaml
+      decisions: .agentera/decisions.yaml
+      health: .agentera/health.yaml
+    source_of_truth_for: current_projection_and_legacy_compatibility_state
+    archive_relationship: >-
+      A current entry may be full, summary-only, or absent from the projection;
+      archive presence and hash verification determine whether full detail is
+      available. Current mutable decision overlay values are composed at read
+      time and do not rewrite archive bytes.
+  summary:
+    role: bounded list and startup representation
+    required_item_fields: [stable_id, artifact_id, entry_number, detail_availability, source]
+    detail_availability: [full, summary, unavailable]
+    source_values: [archive, current_projection, legacy_full, legacy_summary]
+    omission: >-
+      Omitted detail is represented by omitted=true, omitted_count,
+      omission_reason, and a get command pointer. It is never silently
+      truncated, represented as a fabricated summary, or treated as missing
+      history without provenance.
+  startup:
+    role: bounded orientation and capability-startup projection
+    required_fields: [command, status, source, source_contract]
+    allowed_payload: >-
+      Counts, bounded summaries, actionable stable IDs, detail availability,
+      omission metadata, compatibility classification, and retrieval pointers.
+    forbidden_payload: [raw_archive_records, raw_yaml, unbounded_entry_arrays, Git_history_scan]
+    incomplete_state: >-
+      Preserve degraded or blocked compatibility and omission metadata in
+      source_contract; do not fall back to raw archive traversal merely to fill
+      an omitted field.
+
+api:
+  namespace: agentera state
+  artifact_syntax: agentera state <artifact-id>
+  formats: [text, json, yaml]
+  direct_get:
+    command: agentera state <artifact-id> get --number N --format json
+    examples:
+      progress: agentera state progress get --number 747 --format json
+      decisions: agentera state decisions get --number 53 --format json
+      health: agentera state health get --number 29 --format json
+    required_selector: --number N
+    result: >-
+      One complete record composed from the immutable archive and only the
+      authority-declared current overlay fields, with stable_id, source,
+      detail_availability, compatibility, and provenance metadata.
+    archive_only: direct retrieval reads the exact numbered record without scanning unrelated records
+  list:
+    command: agentera state <artifact-id> list [--limit N] [--cursor TOKEN] --format json
+    examples:
+      progress: agentera state progress list --limit 20 --format json
+      decisions_next_page: agentera state decisions list --limit 20 --cursor TOKEN --format json
+    default_limit: 20
+    minimum_limit: 1
+    maximum_limit: 100
+    ordering: identity.ordering.list
+    response_fields:
+      required: [command, status, entries, counts, source, filters, snapshot, source_contract]
+      entry: [stable_id, artifact_id, entry_number, detail_availability, source]
+      optional_entry: [summary, current_status, overlay_applied, retrieval]
+    empty_result: status=ok with entries=[] and counts.total=0; absence is not an error
+  cursor:
+    syntax: opaque TOKEN returned as response.next_cursor
+    first_page: omit --cursor to establish a snapshot
+    snapshot_identity: deterministic hash of ordered candidate IDs, archive hashes, filters, and overlay revision
+    snapshot_scope: artifact and filters are bound to the cursor; limit may change between pages
+    append_behavior: >-
+      Entries appended after the first page are excluded from that cursor's
+      snapshot. They appear only in a new listing without the old cursor.
+    continuation: >-
+      Continue strictly after the last emitted numeric entry number. Never
+      restart from page one, skip an entry, or duplicate an entry.
+    unavailable: return cursor_snapshot_unavailable rather than silently creating a new snapshot
+    opacity: callers must not parse, construct, or compare token internals
+  filters:
+    allowed: artifact-specific existing filters plus --limit and --cursor
+    filter_binding: every filter value is included in snapshot identity
+    invalid_filters: structured failure with syntax, valid values, and example
+
+failures:
+  schema_version: agentera.stateFailure.v1
+  envelope:
+    required_fields: [schemaVersion, status, error]
+    status: fail
+    error_required_fields: [class, message, syntax, example, recovery]
+    error_optional_fields: [artifact_id, entry_number, stable_id, details, valid_values]
+  exit_codes:
+    invalid_input: 2
+    operational_failure: 1
+  classes:
+    invalid_request:
+      exit_class: invalid_input
+      use_for: malformed syntax, missing selector, invalid limit, or invalid cursor format
+    unsupported_artifact:
+      exit_class: invalid_input
+      use_for: artifact outside scope.supported_artifacts
+    not_found:
+      exit_class: operational_failure
+      use_for: requested stable ID has no available current or archive record
+    ambiguous:
+      exit_class: operational_failure
+      use_for: multiple legacy candidates or conflicting identities prevent safe selection
+    corrupt:
+      exit_class: operational_failure
+      use_for: malformed YAML, invalid envelope, hash mismatch, unsafe path, symlink, or duplicate identity
+    incomplete:
+      exit_class: operational_failure
+      use_for: a requested complete record is represented only by an irrecoverable legacy summary
+    immutable_conflict:
+      exit_class: operational_failure
+      use_for: same stable ID has different canonical content; existing bytes remain untouched
+    cursor_invalid:
+      exit_class: invalid_input
+      use_for: token is malformed, bound to another artifact, or bound to different filters
+    cursor_snapshot_unavailable:
+      exit_class: operational_failure
+      use_for: the original snapshot cannot be reproduced exactly
+    project_boundary:
+      exit_class: invalid_input
+      use_for: path resolution would leave the selected project root
+    unsupported_state:
+      exit_class: operational_failure
+      use_for: state format is outside the declared compatibility authority
+  guidance_rule: >-
+    Every failure includes the valid command syntax, a concrete example, and a
+    recovery action. A failure must not silently downgrade a complete record,
+    retry an invalid cursor as a fresh listing, or invent missing history.
+
+compatibility:
+  classifications: [complete, degraded, blocked, unsupported]
+  dimensions:
+    local_read: local project state and numbered archive availability
+    detail: whether full record fields are available without inference
+    git_durability: optional committed-history evidence only; never a write prerequisite
+  cases:
+    new:
+      classification: complete
+      local_read: complete
+      detail: complete
+      git_durability: optional
+      behavior: numbered archive is canonical; current projection is bounded
+    legacy_full:
+      classification: degraded
+      local_read: complete
+      detail: complete
+      git_durability: unavailable_until_migrated
+      behavior: full inline current/legacy entry is usable, but provenance declares noncanonical storage and migration-needed
+    legacy_summary:
+      classification: degraded
+      local_read: complete
+      detail: incomplete
+      git_durability: optional
+      behavior: summary and retained fields are usable; missing fields stay missing and are never reconstructed
+    non_git:
+      classification: complete
+      local_read: complete
+      detail: based_on_local_records
+      git_durability: unavailable
+      behavior: local archive reads and writes remain supported; no Git operation is attempted
+    shallow:
+      classification: degraded
+      local_read: complete_when_local_records_validate
+      detail: based_on_local_records
+      git_durability: history_unavailable
+      behavior: do not claim historical recovery beyond reachable local records
+    ambiguous:
+      classification: blocked
+      local_read: affected_identity_blocked
+      detail: not_safe_to_select
+      git_durability: not_evaluated
+      behavior: preserve candidates and require explicit disambiguation; never choose by recency or Git guess
+    corrupt:
+      classification: blocked
+      local_read: affected_record_blocked
+      detail: not_trusted
+      git_durability: not_evaluated
+      behavior: reject the affected record, preserve its bytes for diagnostics, and continue only with independently valid records
+    unsupported:
+      classification: unsupported
+      local_read: unsupported
+      detail: unavailable
+      git_durability: not_evaluated
+      behavior: identify the unsupported artifact or format and return valid supported values
+  precedence: corrupt > ambiguous > unsupported > degraded > complete
+  no_reconstruction: >-
+    Compatibility reports provenance and availability only. It does not
+    reconstruct missing decision fields, promote summaries to full records, or
+    use Git history to satisfy a current source contract.
+
+budgets:
+  schema_version: agentera.stateOutputBudget.v1
+  measurement:
+    encoding: UTF-8
+    bytes: serialized byte length after encoding, including the final newline
+    json_serializer: JSON.stringify(value, null, 2) plus newline
+    yaml_serializer: YAML.stringify(value) as emitted by the CLI
+    measure_before_emit: true
+  projection:
+    max_utf8_bytes: 32768
+    applies_to: current and summary state projection responses
+    required_when_over_budget: [omitted, omitted_count, omission_reason, retrieval]
+    omission_semantics: >-
+      Remove optional detail entries in deterministic numeric order from the
+      response, retain required identity/count/source fields, and expose a next
+      retrieval pointer. Never split UTF-8, truncate a scalar, or silently drop
+      an entry.
+  startup:
+    source_manifest: scripts/json_output_surface_manifest.yaml
+    surfaces:
+      prime_briefing:
+        manifest_id: prime-briefing
+        max_utf8_bytes: 35000
+      prime_dashboard:
+        manifest_id: prime-dashboard
+        max_utf8_bytes: 35000
+      prime_sparse:
+        manifest_id: prime-fields-sparse
+        max_utf8_bytes: 28000
+    required_when_over_budget: [omitted, omitted_count, omission_reason, retrieval]
+    omission_semantics: >-
+      Omit optional historical detail and retain counts, actionable IDs,
+      compatibility, source_contract, and exact get/list command pointers. The
+      caller must be able to distinguish omitted detail from unavailable detail.
+  validation:
+    authority: this file plus the referenced JSON surface manifest
+    drift_rule: tests fail if manifest IDs or byte values disagree with this contract

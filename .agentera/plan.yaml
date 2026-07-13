@@ -1,0 +1,265 @@
+header:
+  level: full
+  created: 2026-07-13
+  status: open
+  reviewed: 2026-07-13
+  critic_issues: 15 found, 15 addressed, 0 dismissed
+  revised: Split transaction, read, consumer, migration, and closeout work into bounded cycles; made schema, path, API, overlay, replay, byte-budget, compatibility, and failure contracts precede implementation; deferred experiments; made Git recovery optional; and moved final release gates after state synchronization.
+  title: "Plan: Lossless archive-backed state storage"
+what: Replace destructive artifact retention with validated file-per-entry records under `.agentera/archive/<artifact-id>/<entry-number>.yaml`, while current artifacts remain bounded active and summary projections with direct, stable-ID access to complete state.
+why: Preserve complete project memory without unbounded startup payloads, remove retention ceilings that can block valid work, and extend Agentera's existing archive convention instead of adding SQLite, custom Git refs, or a parallel history namespace.
+constraints: Preserve typed-writer validation, retry safety, Decision 53 user-confirmed satisfaction authority, existing plan and vision archives, non-Git operation, project-boundary safety, and bounded prime output. Agentera must not create commits, contact remotes, infer missing state, overwrite immutable history, or promise recovery that available evidence cannot prove.
+overall_acceptance: GIVEN newly archived numbered state WHEN callers append, list, retrieve, migrate, or audit it THEN complete records remain directly recoverable, current mutable state remains authoritative, outputs stay within declared byte budgets, and legacy or incomplete history reports explicit provenance without destructive loss or fabricated detail.
+scope:
+  included:
+    - Canonical immutable records under `.agentera/archive/<artifact-id>/<entry-number>.yaml`
+    - Progress cycles, decisions, and health audits
+    - Decision current-state overlays keyed by stable decision ID
+    - Archive-before-projection publication, replay identity, locking, and crash consistency
+    - Direct get, bounded list, projection, prime, and capability source contracts
+    - Local-versus-Git durability diagnostics and best-effort historical recovery
+    - Legacy inline-summary compatibility, migration, schemas, fixtures, docs, and release
+  excluded:
+    - SQLite or another database
+    - A `.agentera/history` namespace
+    - Custom Git refs, automatic commits, pushes, tags, remote reads, or remote mutation
+    - Changing existing plan or vision archive formats
+    - Inferring decision satisfaction or absent historical content
+  deferred:
+    - Objective-scoped experiment archives until experiments have typed writer ownership and collision-free identity
+    - Archive support for unnumbered Markdown artifacts
+    - A persistent index unless measured archive enumeration exceeds the accepted response budget
+design: Make the established project archive namespace the durable record layer and current artifacts bounded projections over it. Define identity, schema, API, compatibility, and serialized-output budgets before implementation. Publish complete records through one locked, retry-safe transaction boundary before projections may summarize them. Keep mutable decision review state in an explicit ID-keyed overlay and compose it at read time. Treat Git as optional durability evidence and legacy-recovery input, never as a prerequisite for local correctness. Migrate incrementally, preserve old reads during a declared compatibility window, and run release gates only after final state synchronization.
+unknowns:
+  - question: Which decision fields remain mutable after archival and what overlay transitions are legal?
+    affects_task: 1
+    resolve_by: Inventory every typed decision mutation and satisfaction invariant before publishing the authority contract.
+  - question: Which exact get/list command shape best fits the existing state namespace and standard CLI vocabulary?
+    affects_task: 1
+    resolve_by: Compare current dispatch grammar with get/list conventions and lock one discoverable syntax in the authority contract.
+  - question: How much pre-migration full detail remains exactly recoverable from reachable Git history?
+    affects_task: 14
+    resolve_by: Run a read-only inventory against representative real and shallow histories before enabling publication.
+tasks:
+  - number: 1
+    name: Publish the storage, path, API, and compatibility authority
+    depends_on:
+      []
+    status: pending
+    acceptance:
+      - GIVEN progress, decisions, and health WHEN the authority is inspected THEN archive identity, envelope, fixed project-root location, mutable overlays, projection roles, and error classes are explicit.
+      - GIVEN direct retrieval and listing WHEN callers inspect the contract THEN command syntax, ordering, cursor snapshot behavior, limits, and structured failures are unambiguous.
+      - GIVEN new, legacy-full, legacy-summary, non-Git, shallow, ambiguous, and corrupt state WHEN compatibility is evaluated THEN each outcome is classified as complete, degraded, blocked, or unsupported.
+      - GIVEN projection and startup responses WHEN budgets are inspected THEN serialized byte limits and omission semantics are measurable and schema-owned.
+  - number: 2
+    name: Deliver archive discovery and entry validation
+    depends_on:
+      - "1"
+    status: pending
+    acceptance:
+      - GIVEN valid numbered archive records WHEN discovered THEN they are parsed, validated, numerically ordered, and attributed to one supported artifact.
+      - GIVEN malformed names, envelopes, hashes, duplicate IDs, unsafe paths, symlinks, or unrelated root archives WHEN discovery runs THEN each is rejected or ignored according to the authority.
+      - GIVEN existing plan and vision archives WHEN numbered-entry discovery runs THEN their behavior and catalog remain unchanged.
+      - GIVEN each discovery unit WHEN tests run THEN one passing and one rejecting fixture prove it.
+  - number: 3
+    name: Publish immutable archives with deterministic replay identity
+    depends_on:
+      - "2"
+    status: pending
+    acceptance:
+      - GIVEN a valid full entry WHEN archived THEN one validated record is durably published at its deterministic artifact-and-number identity.
+      - GIVEN an identical retry or an archive left before projection publication WHEN replay occurs THEN the original number is recovered and no duplicate logical entry is created.
+      - GIVEN the same ID with different canonical content WHEN publication is attempted THEN the immutable conflict is rejected without replacing bytes.
+      - GIVEN pass, replay, orphan-recovery, collision, disk-full, and boundary cases WHEN tests run THEN every outcome is deterministic.
+  - number: 4
+    name: Unify state mutation under one crash-consistent transaction
+    depends_on:
+      - "3"
+    status: pending
+    acceptance:
+      - GIVEN writer append, automatic projection, or explicit projection repair WHEN state mutates THEN one lock and publication protocol governs every changed file.
+      - GIVEN failure after any staged write, archive publication, projection publication, or directory sync WHEN retry runs THEN state converges without summary-only loss or duplicate identity.
+      - GIVEN concurrent mutation attempts WHEN they overlap THEN one succeeds or callers receive a retryable conflict without partial publication.
+      - GIVEN injected failures at each boundary WHEN tests run THEN recovery and cleanup behavior is proven.
+  - number: 5
+    name: Store and compose current decision review state
+    depends_on:
+      - "1"
+      - "3"
+      - "4"
+    status: pending
+    acceptance:
+      - GIVEN an archived decision WHEN current satisfaction or review state changes THEN the immutable decision record remains unchanged and the ID-keyed overlay updates atomically.
+      - GIVEN hydration WHEN historical and overlay values differ THEN only authority-declared mutable fields come from the overlay.
+      - GIVEN missing, open, provisional, confirmed, or invalid satisfaction WHEN read or updated THEN Decision 53 authority is preserved without inference.
+      - GIVEN review-required decisions exceed projection defaults WHEN another decision is appended THEN storage remains available while bounded review pressure remains visible.
+  - number: 6
+    name: Gate projection changes on verified archive recovery
+    depends_on:
+      - "4"
+      - "5"
+    status: pending
+    acceptance:
+      - GIVEN a full entry selected for summarization WHEN its archive record and hash are verified THEN projection publication may proceed.
+      - GIVEN an absent, corrupt, conflicting, or unsupported archive WHEN projection runs THEN full detail is retained and a structured reason is reported.
+      - GIVEN publication is interrupted WHEN recovery runs THEN no caller can observe a summary whose full record is unavailable.
+      - GIVEN each recoverability state WHEN tests run THEN one successful and one refusal path are covered.
+  - number: 7
+    name: Replace retention limits with lossless projection policy
+    depends_on:
+      - "6"
+    status: pending
+    acceptance:
+      - GIVEN entries exceed active or summary projection defaults WHEN projection runs THEN archive records remain complete and no logical entry is deleted.
+      - GIVEN unresolved decisions exceed display capacity WHEN projection runs THEN storage does not fail solely because review pressure is high.
+      - GIVEN oversized entries or responses WHEN byte budgets apply THEN deterministic omission metadata replaces unbounded output or silent truncation.
+      - GIVEN below, at, above, oversized, and protected-review fixtures WHEN projection checks run THEN results match the authority contract.
+  - number: 8
+    name: Expose complete state retrieval by stable ID
+    depends_on:
+      - "3"
+      - "5"
+      - "7"
+    status: pending
+    acceptance:
+      - GIVEN an active ID WHEN requested THEN the current full entry and complete provenance are returned.
+      - GIVEN an archive-only ID WHEN requested THEN immutable detail and current mutable overlays are composed without scanning unrelated records.
+      - GIVEN absent, malformed, unsupported, incomplete, or corrupt state WHEN requested THEN structured diagnostics include valid syntax and recovery guidance.
+      - GIVEN every supported family WHEN tests run THEN active, archived, overlaid, missing, and corrupt retrieval cases pass.
+  - number: 9
+    name: Provide snapshot-stable bounded listing
+    depends_on:
+      - "2"
+      - "7"
+      - "8"
+    status: pending
+    acceptance:
+      - GIVEN more entries than one response permits WHEN listing begins THEN deterministic ordering and an opaque snapshot cursor permit traversal without duplication or omission.
+      - GIVEN entries append after the first page WHEN the original cursor continues THEN results obey the authority's declared snapshot semantics.
+      - GIVEN active, summary, and archive-only entries WHEN listed THEN identity, current status, detail availability, and provenance remain distinguishable.
+      - GIVEN representative small and large archives WHEN benchmarks run THEN latency, memory, and response bytes satisfy declared thresholds or trigger the deferred-index decision.
+  - number: 10
+    name: Bound prime and orientation state at the source
+    depends_on:
+      - "7"
+      - "8"
+      - "9"
+    status: pending
+    acceptance:
+      - GIVEN large archive-backed state WHEN prime or orientation runs THEN only declared summaries, counts, actionable IDs, and retrieval pointers fit within serialized byte budgets.
+      - GIVEN omitted historical detail WHEN startup output is consumed THEN omission counts and explicit retrieval routes replace embedded unbounded arrays.
+      - GIVEN maximum-sized valid entries WHEN startup tests run THEN payload limits hold without corrupting Unicode, identity, or status.
+      - GIVEN incomplete archive state WHEN orientation runs THEN degraded provenance is visible without raw traversal.
+  - number: 11
+    name: Migrate capability consumers and decision source contracts
+    depends_on:
+      - "8"
+      - "9"
+      - "10"
+    status: pending
+    acceptance:
+      - GIVEN a capability needs one historical entry WHEN startup context omits it THEN the capability uses the state interface rather than raw archive or Git traversal.
+      - GIVEN archived decisions are recoverable WHEN decision context is emitted THEN completeness and provenance replace the current permanent-unavailability claim.
+      - GIVEN legacy summaries remain irrecoverable WHEN consumed THEN missing fields and satisfaction caveats remain explicit and are never inferred.
+      - GIVEN each consuming capability's representative fixture WHEN contract tests run THEN bounded startup and fallback behavior remain truthful.
+  - number: 12
+    name: Report local and Git durability without coupling writes to Git
+    depends_on:
+      - "3"
+      - "7"
+    status: pending
+    acceptance:
+      - GIVEN an archive exists locally WHEN durability is checked THEN output distinguishes verified local recovery from reachable committed recovery.
+      - GIVEN a non-Git project, dirty archive, shallow clone, rewritten history, changed head, or missing commit WHEN checked THEN the result degrades honestly without blocking local writes.
+      - GIVEN repeated checks WHEN repository state is unchanged THEN results are deterministic, read-only, and make no remote contact.
+      - GIVEN each repository condition WHEN tests run THEN successful, degraded, and unavailable diagnostics are covered.
+  - number: 13
+    name: Support legacy projects without requiring Git recovery
+    depends_on:
+      - "7"
+      - "8"
+      - "9"
+      - "11"
+    status: pending
+    acceptance:
+      - GIVEN inline archive summaries and no entry files WHEN the new runtime reads them THEN state remains usable with explicit incomplete provenance.
+      - GIVEN migration is previewed, applied, interrupted, or retried WHEN locally available full entries are archived THEN publication is monotonic and unrelated state remains unchanged.
+      - GIVEN non-Git, partial, complete, conflicting, and summary-only projects WHEN migration runs THEN each receives a deterministic result without rollback claims.
+      - GIVEN old and new fixtures WHEN validation and lifecycle commands run THEN both work through the declared compatibility window.
+  - number: 14
+    name: Backfill exactly recoverable legacy records from Git
+    depends_on:
+      - "3"
+      - "8"
+      - "12"
+    status: pending
+    acceptance:
+      - GIVEN read-only inventory WHEN reachable history is scanned THEN candidates record commit, path, blob identity, entry ID, content hash, and ambiguity reason.
+      - GIVEN an exact unique candidate WHEN backfill is previewed THEN proposed immutable bytes and provenance are shown without writing.
+      - GIVEN explicit application and a still-valid candidate WHEN publication runs THEN retries converge while active projections remain unchanged on failure.
+      - GIVEN shallow, rewritten, missing, ambiguous, or conflicting history WHEN backfill runs THEN no detail is invented or overwritten.
+  - number: 15
+    name: Integrate optional Git recovery with legacy migration
+    depends_on:
+      - "13"
+      - "14"
+    status: pending
+    acceptance:
+      - GIVEN a legacy project with recoverable and irrecoverable IDs WHEN migration uses Git enrichment THEN verified records publish and unresolved summaries retain explicit caveats.
+      - GIVEN Git recovery is unavailable or declined WHEN migration runs THEN local migration still completes to its declared compatibility state.
+      - GIVEN partial enrichment is retried WHEN prior archives exist THEN immutable equality prevents duplicate or conflicting publication.
+      - GIVEN mixed-history fixtures WHEN end-to-end tests run THEN counts and per-ID outcomes remain deterministic.
+  - number: 16
+    name: Align documentation, generated surfaces, and quality budgets
+    depends_on:
+      - "7"
+      - "8"
+      - "9"
+      - "10"
+      - "11"
+      - "12"
+      - "13"
+      - "14"
+      - "15"
+    status: pending
+    acceptance:
+      - GIVEN users inspect schemas, help, and documentation WHEN the model ships THEN archive, overlay, projection, API, durability, migration, and compatibility behavior agree.
+      - GIVEN growing artifacts exceed obsolete whole-history word budgets WHEN lint runs THEN schema-owned entry and serialized-output quality checks apply without contradictory constants.
+      - GIVEN live surfaces and bundled package data WHEN parity checks run THEN no current wording claims destructive history deletion or permanent unavailability for recoverable records.
+      - GIVEN generated and source authorities WHEN drift tests run THEN examples, versions, and contracts remain mechanically aligned.
+  - number: 17
+    name: Prepare the governed development release boundary
+    depends_on:
+      - "16"
+    status: pending
+    acceptance:
+      - GIVEN user-visible feature and fix work WHEN release metadata is prepared THEN only permitted development and governed release surfaces change consistently.
+      - GIVEN release notes are read cold WHEN users upgrade THEN compatibility, durability states, recovery limits, and migration commands are actionable.
+      - GIVEN package contents are inspected WHEN dry-run packaging runs THEN archive schemas, capability contracts, and documentation are present and aligned.
+  - number: 18
+    name: Synchronize final state and run release gates
+    depends_on:
+      - "1"
+      - "2"
+      - "3"
+      - "4"
+      - "5"
+      - "6"
+      - "7"
+      - "8"
+      - "9"
+      - "10"
+      - "11"
+      - "12"
+      - "13"
+      - "14"
+      - "15"
+      - "16"
+      - "17"
+    status: pending
+    acceptance:
+      - GIVEN all prior outcomes are verified WHEN closeout runs THEN plan, progress, TODO, health, docs, and changelog state agree without manufacturing audit evidence.
+      - GIVEN the synchronized final tree WHEN full tests, typecheck, build, schema validation, projection checks, migration fixtures, and package dry-run run THEN every gate passes.
+      - GIVEN final evaluation succeeds WHEN the plan is completed and archived THEN immutable plan lineage remains and no active plan survives.
+surprises:
+  []

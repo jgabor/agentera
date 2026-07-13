@@ -23,6 +23,7 @@ guides — not under `docs/`.
 | Human vocabulary index | `references/cli/vocabulary.md` |
 | Benchmark contract | `references/analysis/startup-measurement-contract.yaml` |
 | Benchmark runbook | `references/analysis/benchmark.md` |
+| State storage, path, API, compatibility, and output authority | `references/artifacts/state-storage-authority.yaml` |
 | JSON surface budgets | `scripts/json_output_surface_manifest.yaml` |
 | Project drafts | `docs/` (gitignored except `docs/README.md`, `docs/packaging/`, `docs/consolidation/`) |
 

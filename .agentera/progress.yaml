@@ -1,4 +1,39 @@
 cycles:
+  - number: 748
+    timestamp: 2026-07-13 10:36
+    type: docs
+    phase: build
+    what: Published the state-storage authority for numbered progress, decisions,
+      and health archives, fixed project-root paths, decision overlays,
+      projection roles, direct get/list API, compatibility classes, structured
+      failures, and byte budgets; added contract tests and the authority
+      inventory pointer.
+    inspiration: Active plan Task 1 and the existing artifact registry, typed
+      writer, state namespace, decision satisfaction schema, JSON output
+      manifest, and archive conventions.
+    discovered: The mutable decision surface is limited to satisfaction.state,
+      satisfaction.evidence, and explicit user_confirmation fields;
+      review_needed and caveats are derived. Existing plan and vision archives
+      use separate filename conventions and remain outside numbered-entry
+      discovery.
+    verified: "Focused authority run and full pnpm -C packages/cli test: 1,587 tests
+      passed across 163 files; pnpm -C packages/cli run typecheck; pnpm -C
+      packages/cli build; check validate capability-contract --format json;
+      check compact --format json; git diff --check."
+    next: "Task 2: implement archive discovery and entry validation from this
+      authority; do not change the active plan task status in this cycle."
+    context:
+      intent: Publish Task 1's storage, path, API, compatibility, projection, and
+        output-budget authority before implementation.
+      constraints: Task 1 contract only. No archive writes, hydration, migration, Git
+        scanning, remote access, plan or vision archive changes, decision
+        satisfaction changes, health writes, version bump, publish, tag, or
+        push.
+      unknowns: "Task 1 unknowns resolved by current writer and CLI evidence: decision
+        overlay fields/transitions and exact state get/list command shape."
+      scope: references/artifacts/state-storage-authority.yaml;
+        packages/cli/test/state/archiveAuthority.test.ts;
+        references/meta/documentation-inventory.md
   - number: 747
     timestamp: 2026-07-13 09:46
     type: fix
@@ -156,31 +191,10 @@ cycles:
       unknowns: none
       scope: CLI lifecycle migration, archive discovery, upgrade tests, plan task
         evidence, and progress.
-  - number: 738
-    timestamp: 2026-07-12 21:29
-    type: fix
-    phase: build
-    what: packages/cli/src/cli/planArtifacts.ts now reports legacy lifecycle input
-      and malformed plan diagnostics to state and orientation consumers.
-    inspiration: Plan Lifecycle Clarity and Validated Publication Task 2.
-    discovered: The prior reader treated malformed current plans as absent and
-      reduced invalid archive state to unclassified paths.
-    verified: Focused and full CLI tests, typecheck, lint, build,
-      capability-contract validation, compact gate, and built CLI state-plan
-      smoke passed.
-    next: Task 3 deterministic migration remains pending; do not implement canonical
-      write enforcement or publication changes.
-    context:
-      intent: Complete active plan Task 2 with bounded read compatibility and no
-        persisted migration.
-      constraints: Read compatibility only; no migration writes, writer enforcement,
-        routing/retry changes, prose cleanup, decision satisfaction changes,
-        vision edits, push, or publication.
-      unknowns: Legacy values remain persisted until Task 3; canonical write
-        enforcement belongs to Task 4.
-      scope: packages/cli plan readers and tests; plan, progress, TODO, and changelog
-        artifacts.
 archive:
+  - summary: "Cycle 738 (2026-07-12): packages/cli/src/cli/planArtifacts.ts now
+      reports legacy lifecycle input and malformed plan diagnostics to state and
+      orientation consumers."
   - summary: "Cycle 737 (2026-07-12): Added behavioral lifecycle-scan safety
       coverage for every claimed traversal boundary."
   - summary: "Cycle 736 (2026-07-12): Repaired lifecycle inventory classification
@@ -284,5 +298,3 @@ archive:
       filesystem actions,..."
   - summary: "Cycle 699 (2026-07-11): Established Decision 92 runtime lifecycle
       authority for four active identities with explicit Cursor CLI and..."
-  - summary: "Cycle 698 (2026-07-11): Eliminated the CLI test suite's shared dist
-      race by building package output once in Vitest..."
