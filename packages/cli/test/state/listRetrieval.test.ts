@@ -57,6 +57,17 @@ function writeProjection(root: string, cycles: Array<Record<string, unknown>>, a
   fs.writeFileSync(target, YAML.stringify({ cycles, archive }));
 }
 
+function writeSummaryProjection(root: string, count: number): void {
+  writeProjection(
+    root,
+    [],
+    Array.from({ length: count }, (_, index) => ({
+      summary: `Cycle ${index + 1} (2026-07-13): compact legacy summary`,
+      compacted: true,
+    })),
+  );
+}
+
 function archive(root: string, number: number, what?: string): void {
   publishNumberedArchive(root, "progress", number, cycle(number, what), { sourceRoot });
 }
@@ -214,6 +225,94 @@ describe("snapshot-stable state listing", () => {
       archive: { available: true, verified: true },
       current_projection: { present: false, representation: "missing" },
     });
+  });
+
+  it("includes live-style legacy summary mappings in authoritative counts", () => {
+    const root = project();
+    writeSummaryProjection(root, 4);
+
+    const response = directList(root, 10);
+    expect(response.counts).toMatchObject({ total: 4, returned: 4, summary: 4 });
+    expect(response.entries.map((entry) => (entry as Record<string, unknown>).stable_id)).toEqual([
+      "progress:4",
+      "progress:3",
+      "progress:2",
+      "progress:1",
+    ]);
+    expect(response.entries.every((entry) => (entry as Record<string, unknown>).source === "legacy_summary")).toBe(true);
+    expect(response.entries.every((entry) => (entry as Record<string, unknown>).detail_availability === "summary")).toBe(true);
+  });
+
+  it("ignores unrelated archive directories when listing one artifact", () => {
+    const root = project();
+    archive(root, 1);
+    const unrelated = path.join(root, ".agentera", "archive", "unrelated");
+    fs.mkdirSync(unrelated, { recursive: true });
+    fs.writeFileSync(path.join(unrelated, "1.yaml"), "not: an archive envelope\n");
+    const unrelatedSupported = path.join(root, ".agentera", "archive", "decisions");
+    fs.mkdirSync(unrelatedSupported, { recursive: true });
+    fs.writeFileSync(path.join(unrelatedSupported, "1.yaml"), "not: an archive envelope\n");
+
+    const response = directList(root, 10);
+    expect(response.status).toBe("ok");
+    expect(response.source.archive).toMatchObject({ rejected_count: 0 });
+    expect(response.entries).toHaveLength(1);
+  });
+
+  it("preserves a continuation cursor when a 100-row page falls back to an empty bounded response", () => {
+    const root = project();
+    for (let number = 1; number <= 100; number += 1) writeArchiveFixture(root, number);
+    const response = directList(root, 100);
+    for (const raw of response.entries) {
+      const entry = raw as Record<string, any>;
+      entry.provenance.archive.path = "archive-path-".repeat(2000);
+      entry.provenance.current_projection.path = "projection-path-".repeat(2000);
+    }
+
+    const bounded = boundStateList(response, "json", sourceRoot, root);
+    expect(Buffer.byteLength(JSON.stringify(bounded, null, 2) + "\n", "utf8")).toBeLessThanOrEqual(32768);
+    expect(bounded.entries).toEqual([]);
+    expect(bounded.snapshot).toMatchObject({ has_more: true });
+    expect(bounded.next_cursor).toEqual(expect.any(String));
+    const continued = directList(root, 100, bounded.next_cursor);
+    expect(continued.entries).toHaveLength(100);
+    expect(continued.entries[0]).toMatchObject({ stable_id: "progress:100" });
+  });
+
+  it("bounds the requested YAML serialization rather than only the JSON estimate", () => {
+    const entries = [{
+      stable_id: "progress:1",
+      artifact_id: "progress",
+      entry_number: 1,
+      current_status: "summary",
+      detail_availability: "summary",
+      source: "legacy_summary",
+      compatibility: "degraded",
+      summary: ("x\n").repeat(9000),
+      provenance: {
+        archive: { path: "x", available: false, verified: false },
+        current_projection: { path: "x", present: true, representation: "summary" },
+      },
+    }];
+    const response = {
+      command: "state progress list",
+      status: "ok" as const,
+      entries,
+      counts: { total: entries.length, returned: entries.length, remaining: 0, active: 0, summary: entries.length, archive_only: 0 },
+      source: { artifact: "progress", current_projection: { path: "x", exists: true }, archive: { root: "x", validated_entries: 0, rejected_count: 0 } },
+      filters: { topic: null, status: null },
+      snapshot: { id: "a".repeat(64), first_page: true, order: "entry_number_desc", has_more: false, candidate_count: entries.length, candidate_max: entries.length, page_start: entries.length + 1 },
+      source_contract: { authority: "references/artifacts/state-storage-authority.yaml", compatibility: "degraded", detail: "summary", retrieval: "agentera state progress get --number N --format json", cursor: "opaque" },
+    };
+    const rawJsonBytes = Buffer.byteLength(JSON.stringify(response, null, 2) + "\n", "utf8");
+    const rawYamlBytes = Buffer.byteLength(YAML.stringify(response), "utf8");
+    expect(rawJsonBytes).toBeLessThanOrEqual(32768);
+    expect(rawYamlBytes).toBeGreaterThan(32768);
+
+    const bounded = boundStateList(response, "yaml", sourceRoot, project());
+    const yamlBytes = Buffer.byteLength(YAML.stringify(bounded), "utf8");
+    expect(yamlBytes).toBeLessThanOrEqual(32768);
+    expect(bounded).toMatchObject({ status: "degraded", omitted: true });
   });
 
   it("binds decision overlay status and revision into list provenance", () => {

@@ -112,7 +112,15 @@ function positiveNumber(value: unknown): number | null {
 }
 
 function summaryNumber(value: unknown): number | null {
-  if (isMapping(value)) return positiveNumber(value.number);
+  if (isMapping(value)) {
+    const explicit = positiveNumber(value.number);
+    if (explicit !== null) return explicit;
+    for (const child of Object.values(value)) {
+      const parsed = summaryNumber(child);
+      if (parsed !== null) return parsed;
+    }
+    return null;
+  }
   if (typeof value !== "string") return null;
   const match = /^(?:Cycle|Decision|Audit)\s+([1-9][0-9]*)\b/.exec(value.trim());
   return match ? positiveNumber(match[1]) : null;
@@ -589,10 +597,10 @@ function textList(value: JsonObject): string {
   return lines.join("\n") + "\n";
 }
 
-function responseBytes(value: StateListResponse, format: "json" | "text"): number {
+function responseBytes(value: StateListResponse, format: "json" | "yaml" | "text"): number {
   return format === "text"
     ? Buffer.byteLength(textList(value as unknown as JsonObject), "utf8")
-    : serializedProjectionBytes(value, "json");
+    : serializedProjectionBytes(value, format);
 }
 
 function copyEntryWithoutOptionalDetails(entry: JsonObject): JsonObject {
@@ -729,6 +737,7 @@ export function listStateEntries(
       has_more: remaining > 0,
       candidate_count: snapshotCandidates.length,
       candidate_max: snapshotCandidates[0]?.entryNumber ?? 0,
+      page_start: parsed?.payload.after ?? (snapshotCandidates[0]?.entryNumber ?? 0) + 1,
       append_behavior: "entries appended after this snapshot are excluded",
     },
     source_contract: {
@@ -749,7 +758,7 @@ export function boundStateList(
   projectRoot: string = process.cwd(),
 ): StateListResponse {
   const policy = loadProjectionPolicy(sourceRoot);
-  const measurementFormat = format === "text" ? "text" : "json";
+  const measurementFormat = format;
   if (responseBytes(response, measurementFormat) <= policy.maxUtf8Bytes) return response;
 
   const originalEntries = response.entries.map((entry) => entry as JsonObject);
@@ -804,20 +813,43 @@ export function boundStateList(
     ...(continuation ? { next_cursor: continuation } : {}),
     ...metadata,
   } as StateListResponse;
-  if (responseBytes(bounded, measurementFormat) <= policy.maxUtf8Bytes) return bounded;
+  if (entries.length > 0 && responseBytes(bounded, measurementFormat) <= policy.maxUtf8Bytes) return bounded;
 
+  const fallbackCandidateCount = Number((bounded.snapshot as JsonObject).candidate_count ?? bounded.counts.total ?? 0);
+  const fallbackCandidateMax = Number((bounded.snapshot as JsonObject).candidate_max ?? 0);
+  const fallbackAfter = Number((bounded.snapshot as JsonObject).page_start ?? fallbackCandidateMax + 1);
+  const fallbackCursor = fallbackCandidateCount > 0
+    ? encodeCursor(
+        {
+          version: CURSOR_VERSION,
+          artifact_id: String(bounded.source.artifact ?? "state"),
+          filters: bounded.filters,
+          order: LIST_ORDER,
+          snapshot_id: String((bounded.snapshot as JsonObject).id),
+          candidate_count: fallbackCandidateCount,
+          candidate_max: fallbackCandidateMax,
+          after: fallbackAfter,
+        },
+        projectRoot,
+        sourceRoot,
+      )
+    : undefined;
   const minimal = {
-    command: response.command,
+    command: bounded.command,
     status: "degraded",
     entries: [],
-    counts: { ...(response.counts as JsonObject), returned: 0, remaining: Number((response.counts as JsonObject).total ?? 0) },
-    source: response.source,
-    filters: response.filters,
-    snapshot: response.snapshot,
-    source_contract: response.source_contract,
-    ...omissionMetadata(response.command, Number((response.counts as JsonObject).returned ?? 0), []),
+    counts: {
+      ...(bounded.counts as JsonObject),
+      returned: 0,
+      remaining: Number((bounded.counts as JsonObject).remaining ?? 0) + Number((bounded.counts as JsonObject).returned ?? 0),
+    },
+    source: bounded.source,
+    filters: bounded.filters,
+    snapshot: { ...(bounded.snapshot as JsonObject), has_more: fallbackCursor !== undefined },
+    source_contract: bounded.source_contract,
+    ...omissionMetadata(bounded.command, Number((bounded.counts as JsonObject).returned ?? 0), []),
   } as StateListResponse;
-  if (response.next_cursor) minimal.next_cursor = response.next_cursor;
+  if (fallbackCursor) minimal.next_cursor = fallbackCursor;
   if (responseBytes(minimal, measurementFormat) > policy.maxUtf8Bytes) {
     throw listFailure(1, "unsupported_state", `list output required fields exceed the ${policy.maxUtf8Bytes}-byte authority budget`, String(response.source.artifact ?? "state"), "Reduce the requested output to a supported state artifact or repair the authority budget before retrying.");
   }

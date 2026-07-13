@@ -857,11 +857,11 @@ export function discoverNumberedArchives(
       result.ignored.push(rootPath);
       continue;
     }
-    const artifact = authority.supportedArtifacts.get(rootEntry.name);
-    if (options.artifactId && artifact && rootEntry.name !== options.artifactId) {
+    if (options.artifactId && rootEntry.name !== options.artifactId) {
       result.ignored.push(rootPath);
       continue;
     }
+    const artifact = authority.supportedArtifacts.get(rootEntry.name);
     if (!rootEntry.isDirectory()) {
       if (artifact) {
         const reason = rootEntry.isSymbolicLink() ? "symlink" : "unsafe_path";
