@@ -69,6 +69,12 @@ export interface NumberedArchiveContract {
   entrySchemaVersion: string;
 }
 
+export interface NumberedArchiveLookup {
+  path: string;
+  entry?: NumberedArchiveEntry;
+  rejection?: ArchiveRejection;
+}
+
 export interface StateProjectionPolicy {
   activeEntries: number;
   summaryEntries: number;
@@ -96,6 +102,7 @@ interface ArchiveAuthority {
   forbiddenEnvelopeFields: Set<string>;
   entrySchemaVersion: string;
   supportedArtifacts: Map<string, SupportedArtifact>;
+  currentProjectionPaths: Map<string, string>;
   ignoredRootNames: Set<string>;
   decisionOverlay: DecisionOverlayContract;
   projection: StateProjectionPolicy;
@@ -262,6 +269,23 @@ function loadAuthority(sourceRoot: string): ArchiveAuthority {
   };
 
   const currentProjection = mapping(mapping(authority.projections).current);
+  const currentProjectionPaths = new Map<string, string>();
+  const declaredProjectionPaths = mapping(currentProjection.paths);
+  for (const artifact of supportedArtifacts.values()) {
+    const projectionPath = requiredString(
+      declaredProjectionPaths[artifact.artifactId],
+      `projections.current.paths.${artifact.artifactId}`,
+    );
+    if (
+      path.isAbsolute(projectionPath) ||
+      projectionPath.split(/[\\/]/).some((part) => part === "..")
+    ) {
+      throw new Error(
+        `state storage authority current projection path for ${artifact.artifactId} must be project-relative`,
+      );
+    }
+    currentProjectionPaths.set(artifact.artifactId, projectionPath);
+  }
   const capacity = mapping(currentProjection.default_capacity);
   const activeEntries = requiredPositiveInteger(
     capacity.active_entries,
@@ -292,6 +316,7 @@ function loadAuthority(sourceRoot: string): ArchiveAuthority {
     forbiddenEnvelopeFields,
     entrySchemaVersion,
     supportedArtifacts,
+    currentProjectionPaths,
     ignoredRootNames,
     decisionOverlay,
     projection: { activeEntries, summaryEntries, totalEntries, maxUtf8Bytes },
@@ -410,16 +435,45 @@ export function numberedArchiveContract(
   };
 }
 
+export function numberedArchiveArtifacts(sourceRoot: string = resolveSourceRoot()): string[] {
+  return [...loadAuthority(sourceRoot).supportedArtifacts.keys()];
+}
+
 export function stateProjectionPolicy(
   sourceRoot: string = resolveSourceRoot(),
 ): StateProjectionPolicy {
   return loadAuthority(sourceRoot).projection;
 }
 
+export function stateCurrentProjectionPath(
+  projectRoot: string,
+  artifactId: string,
+  sourceRoot: string = resolveSourceRoot(),
+): string {
+  const authority = loadAuthority(sourceRoot);
+  if (!authority.supportedArtifacts.has(artifactId)) {
+    throw new Error(`unsupported numbered archive artifact '${artifactId}'`);
+  }
+  const relative = authority.currentProjectionPaths.get(artifactId);
+  if (!relative) throw new Error(`current projection path is undeclared for '${artifactId}'`);
+  return path.resolve(projectRoot, relative);
+}
+
 export function decisionOverlayContract(
   sourceRoot: string = resolveSourceRoot(),
 ): DecisionOverlayContract {
   return loadAuthority(sourceRoot).decisionOverlay;
+}
+
+export function validateStateRecord(
+  sourceRoot: string,
+  artifactId: string,
+  record: JsonObject,
+): string[] {
+  const authority = loadAuthority(sourceRoot);
+  const artifact = authority.supportedArtifacts.get(artifactId);
+  if (!artifact) throw new Error(`unsupported numbered archive artifact '${artifactId}'`);
+  return validateRecordSchema(sourceRoot, artifact, record);
 }
 
 function positiveEntryNumber(value: unknown): number | null {
@@ -565,6 +619,68 @@ function validateCandidate(
     record,
     recordSha256: envelope.record_sha256,
   };
+}
+
+/**
+ * Read one canonical archive path. Direct retrieval intentionally does not
+ * enumerate the archive directory or inspect unrelated historical records.
+ */
+export function readNumberedArchiveEntry(
+  projectRoot: string,
+  artifactId: string,
+  entryNumber: number,
+  options: { sourceRoot?: string } = {},
+): NumberedArchiveLookup {
+  const sourceRoot = options.sourceRoot ?? resolveSourceRoot();
+  const authority = loadAuthority(sourceRoot);
+  const artifact = authority.supportedArtifacts.get(artifactId);
+  if (!artifact) throw new Error(`unsupported numbered archive artifact '${artifactId}'`);
+  const resolvedProjectRoot = path.resolve(projectRoot);
+  const target = path.join(
+    resolvedProjectRoot,
+    authority.archiveRoot,
+    artifactId,
+    `${entryNumber}${authority.archiveExtension}`,
+  );
+  const issue = pathIssue(resolvedProjectRoot, target, "file");
+  if (issue) return { path: target, rejection: rejection(target, issue.reason, issue.message) };
+
+  let stat: fs.Stats;
+  try {
+    stat = fs.lstatSync(target);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return { path: target };
+    return {
+      path: target,
+      rejection: rejection(target, "read_failure", `cannot read archive record: ${(error as Error).message}`),
+    };
+  }
+  if (!stat.isFile()) {
+    return {
+      path: target,
+      rejection: rejection(target, "unsafe_path", "archive record path is not a regular file"),
+    };
+  }
+
+  let bytes: string;
+  try {
+    bytes = fs.readFileSync(target, "utf8");
+  } catch (error) {
+    return {
+      path: target,
+      rejection: rejection(target, "read_failure", `cannot read archive record: ${(error as Error).message}`),
+    };
+  }
+  const result = validateCandidate(
+    target,
+    artifact,
+    entryNumber,
+    bytes,
+    authority,
+    sourceRoot,
+    new Set<string>(),
+  );
+  return "record" in result ? { path: target, entry: result } : { path: target, rejection: result };
 }
 
 function scanArtifactDirectory(

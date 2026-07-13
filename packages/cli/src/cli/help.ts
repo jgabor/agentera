@@ -118,6 +118,7 @@ export function printStateHelp(sub?: string): string {
     const verbs = verbsForArtifact(sub);
     return [
       `usage: agentera state ${sub} [-h] [--format {text,json,yaml}] [filters]`,
+      "       agentera state <artifact> get --number N --format {text,json,yaml}",
       ...(verbs.length ? [`       agentera state ${sub} {${verbs.join(",")}} [write flags]`] : []),
       ...(verbs.length
         ? [

@@ -1,4 +1,97 @@
 cycles:
+  - number: 760
+    timestamp: 2026-07-13 15:21
+    type: fix
+    phase: build
+    what: Corrected Task 8 verification counts after adding unsupported-state
+      archive fixtures; Cycle 759 evidence remains immutable and is superseded
+      only for final counts.
+    inspiration: Final Task 8 verification rerun after separating unsupported
+      archive schemas from corrupt archive bytes.
+    discovered: The final DTC matrix has 32 focused tests across the three supported
+      families; the adjacent state suite has 109 tests, and the non-packaging
+      full suite has 1666 tests.
+    verified: "Focused: pnpm -C packages/cli exec vp test run
+      test/state/directRetrieval.test.ts: 1 file and 32 tests passed. Adjacent:
+      pnpm -C packages/cli exec vp test run test/state/directRetrieval.test.ts
+      test/state/archiveDiscovery.test.ts test/state/archiveRecovery.test.ts
+      test/state/archiveAuthority.test.ts test/state/decisionOverlay.test.ts
+      test/state/projectionPolicy.test.ts test/cli/state.test.ts: 7 files and
+      109 tests passed. Non-packaging full: pnpm -C packages/cli exec vp test
+      run --exclude test/packaging/prepack.test.ts: 168 files and 1666 tests
+      passed. Full: pnpm -C packages/cli test: 169 files, 1670 of 1675 tests
+      passed; exactly 5 pre-existing npm pack --dry-run --json parsing failures
+      in test/packaging/prepack.test.ts. pnpm -C packages/cli run typecheck
+      passed; pnpm -C packages/cli build passed; capability-contract and
+      progress/decisions/health artifact validation passed; node
+      packages/cli/dist/bin/agentera.js check compact --format json passed with
+      zero over-limit, protected-overflow, and error counts, retaining five
+      degraded recovery refusals for unarchived progress cycles 745-749."
+    next: Task 8 remains pending for evaluator review; Task 9 listing, Task 10 prime
+      consumers, migration, Git durability, and release work remain out of
+      scope.
+    context:
+      intent: Publish append-only final verification evidence without rewriting Cycle
+        759, closing Task 8, or changing unrelated state.
+      constraints: Do not implement paginated list, prime consumers, migration, Git
+        durability, health, vision, profile, decisions, TODO, version, publish,
+        push, or tag changes.
+      unknowns: The five npm12 packaging JSON parsing failures remain pre-existing and
+        outside this change.
+      scope: packages/cli/src/state/directRetrieval.ts;
+        packages/cli/src/state/archiveDiscovery.ts;
+        packages/cli/src/cli/commands/state/get.ts;
+        packages/cli/src/cli/dispatch/{index,state}.ts;
+        packages/cli/src/cli/help.ts;
+        packages/cli/test/state/directRetrieval.test.ts;
+        .agentera/progress.yaml; .agentera/plan.yaml
+  - number: 759
+    timestamp: 2026-07-13 15:18
+    type: feat
+    phase: build
+    what: Exposed stable-ID direct retrieval for progress, decisions, and health
+      with exact archive lookup, provenance, overlay composition, and structured
+      diagnostics.
+    inspiration: Active Agentera plan Task 8 and
+      references/artifacts/state-storage-authority.yaml.
+    discovered: Direct archive lookup validates only the requested numbered path;
+      legacy full, legacy summary, archive-backed, and decision-overlay states
+      require distinct provenance. Decision overlays apply only
+      authority-declared mutable paths.
+    verified: "Focused: pnpm -C packages/cli exec vp test run
+      test/state/directRetrieval.test.ts: 1 file and 29 tests passed. Adjacent:
+      pnpm -C packages/cli exec vp test run test/state/directRetrieval.test.ts
+      test/state/archiveDiscovery.test.ts test/state/archiveRecovery.test.ts
+      test/state/archiveAuthority.test.ts test/state/decisionOverlay.test.ts
+      test/state/projectionPolicy.test.ts test/cli/state.test.ts: 7 files and
+      105 tests passed. Non-packaging full: pnpm -C packages/cli exec vp test
+      run --exclude test/packaging/prepack.test.ts: 168 files and 1663 tests
+      passed. Full: pnpm -C packages/cli test: 169 files, 1667 of 1672 tests
+      passed; 5 pre-existing npm pack --dry-run --json parsing failures in
+      test/packaging/prepack.test.ts. pnpm -C packages/cli run typecheck passed;
+      pnpm -C packages/cli build passed; capability-contract and
+      progress/decisions/health artifact validation passed; node
+      packages/cli/dist/bin/agentera.js check compact --format json passed with
+      zero over-limit and protected-overflow counts, while existing unarchived
+      progress cycles 747-750 retained recovery refusals."
+    next: Task 8 remains pending for evaluator review; Task 9 listing, Task 10 prime
+      consumers, migration, Git durability, and release work remain out of
+      scope.
+    context:
+      intent: Implement only the authority-defined stable-ID get read path and its DTC
+        fixture matrix without closing Task 8.
+      constraints: Do not implement paginated list, prime consumers, migration, Git
+        durability, health, vision, profile, decisions, TODO, version, publish,
+        push, or tag changes.
+      unknowns: The five npm12 packaging JSON parsing failures remain pre-existing and
+        outside this change.
+      scope: packages/cli/src/state/directRetrieval.ts;
+        packages/cli/src/state/archiveDiscovery.ts;
+        packages/cli/src/cli/commands/state/get.ts;
+        packages/cli/src/cli/dispatch/{index,state}.ts;
+        packages/cli/src/cli/help.ts;
+        packages/cli/test/state/directRetrieval.test.ts;
+        .agentera/progress.yaml; .agentera/plan.yaml
   - number: 758
     timestamp: 2026-07-13 14:49
     type: fix
@@ -268,43 +361,6 @@ cycles:
         correction.
       scope: .agentera/progress.yaml; .agentera/archive/progress/751.yaml;
         .agentera/plan.yaml
-  - number: 750
-    timestamp: 2026-07-13 11:28
-    type: feat
-    phase: build
-    what: Published immutable numbered progress, decisions, and health archives with
-      deterministic replay and orphan recovery.
-    inspiration: The state-storage authority and the proven immutable plan archive
-      publication primitive.
-    discovered: Canonical record hashing must sort object keys recursively while
-      preserving array order; hard-link publication preserves existing bytes on
-      immutable identity collisions; an archive can safely remain orphaned when
-      projection publication fails because retry searches validated archives by
-      caller payload.
-    verified: "Focused archivePublication and stateWrite tests: 63 tests passed.
-      Full pnpm -C packages/cli test: 1,606 tests passed across 165 files. pnpm
-      -C packages/cli run typecheck passed. pnpm -C packages/cli build passed.
-      capability-contract validation, build capability validation, and check
-      compact --format json passed with zero over-limit artifacts."
-    next: Task 3 evaluator review; Task 4 remains pending and must unify broader
-      writer transactions separately.
-    context:
-      intent: Preserve complete state records before bounded projections without
-        duplicate logical entries.
-      constraints: Task 3 only. Existing plan and vision archive behavior is
-        unchanged. Decision satisfaction and caveats, overlays, health, vision,
-        versions, TODO, publishing, Git behavior, projection reads, migration,
-        and experiments were not changed.
-      unknowns: Task 3 remains pending in the active plan for evaluator ownership;
-        later transaction, overlay, projection, migration, and durability tasks
-        remain unimplemented.
-      scope: packages/cli/src/state/archiveDiscovery.ts;
-        packages/cli/src/state/archivePublication.ts;
-        packages/cli/src/state/archiveReplay.ts;
-        packages/cli/src/state/write/transaction.ts;
-        packages/cli/test/state/archivePublication.test.ts;
-        packages/cli/test/state/write/stateWrite.test.ts; .agentera/plan.yaml;
-        .agentera/progress.yaml
   - number: 749
     timestamp: 2026-07-13 10:58
     type: feat
@@ -422,6 +478,9 @@ cycles:
       intent: Complete active plan Task 7 without changing decisions or unrelated
         capabilities.
 archive:
+  - summary: "Cycle 750 (2026-07-13): Published immutable numbered progress,
+      decisions, and health archives with deterministic replay and orphan
+      recovery."
   - summary: "Cycle 741 (2026-07-12): Updated
       packages/cli/src/state/write/transaction.ts so plan create/archive
       publication validates final bytes and retries converge after

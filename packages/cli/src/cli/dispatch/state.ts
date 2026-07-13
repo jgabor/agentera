@@ -5,6 +5,7 @@ import { makeArgvValueReader } from "./argvParser.js";
 import { asEnvelopeFormat, classifyParseError, type Io } from "./shared.js";
 import { emitInvalidInput } from "../errors.js";
 import { runStateWrite } from "../commands/state/write.js";
+import { runStateGet } from "../commands/state/get.js";
 
 export function parseStateArgs(command: string, argv: string[]): StateArgs | { error: string } {
   const args: StateArgs = {
@@ -48,6 +49,9 @@ export function parseStateArgs(command: string, argv: string[]): StateArgs | { e
 }
 
 export function runState(command: string, argv: string[], io: Io, prog: string): number {
+  if (argv[0] === "get") {
+    return runStateGet(command, argv.slice(1), io);
+  }
   if (argv[0] && !argv[0].startsWith("--")) {
     return runStateWrite(command, argv, io);
   }
