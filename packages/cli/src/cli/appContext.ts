@@ -104,6 +104,19 @@ export function discoverSchemasDir(model: ActiveAppModel = activeAppModel()): st
   return path.join(modelPath(model, "skillRoot"), "schemas", "artifacts");
 }
 
+/**
+ * Resolve the artifact-registry model backing a discovered schemas directory.
+ * Prefers a co-located model beside the skills root (so checkout/bundle/managed
+ * apps each load their own model); falls back to the production default when no
+ * co-located model is present.
+ */
+export function resolveRegistryModelPath(schemasDir: string): string {
+  const root = path.resolve(schemasDir, "..", "..", "..", "..");
+  const candidate = path.join(root, "references", "artifacts", "artifact-registry-interface-model.yaml");
+  if (isFileSafe(candidate)) return candidate;
+  return registryModelPath();
+}
+
 const FIELD_SKIP = new Set([
   "meta",
   "GROUP_PREFIXES",
@@ -131,13 +144,8 @@ export function discoverFields(schema: Record<string, any>): Record<string, any>
 }
 
 export function loadRegistryForSchemas(schemasDir: string): Map<string, ArtifactRecord> {
-  const root = path.resolve(schemasDir, "..", "..", "..", "..");
-  let modelPathArg = path.join(root, "references", "artifacts", "artifact-registry-interface-model.yaml");
-  if (!isFileSafe(modelPathArg)) {
-    modelPathArg = registryModelPath();
-  }
   try {
-    return loadArtifactRegistry(schemasDir, modelPathArg);
+    return loadArtifactRegistry(schemasDir, resolveRegistryModelPath(schemasDir));
   } catch (exc) {
     process.stderr.write(`warning: failed to load artifact registry for schemas: ${(exc as Error).message}\n`);
     return new Map();

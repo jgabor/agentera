@@ -98,6 +98,11 @@ describe("self-contained doctor/upgrade semantics", () => {
       path.join(root, ".agentera-npx-bundle.json"),
       JSON.stringify({ kind: "agentera-npx-bundle", suiteVersion: version }),
     );
+    fs.cpSync(
+      path.join(REPO_ROOT, "skills", "agentera", "schemas"),
+      path.join(root, "skills", "agentera", "schemas"),
+      { recursive: true },
+    );
     fs.cpSync(path.join(REPO_ROOT, "references"), path.join(root, "references"), { recursive: true });
   }
   beforeEach(() => {

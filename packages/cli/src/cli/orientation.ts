@@ -3,12 +3,13 @@ import path from "node:path";
 
 import {
   ArtifactRecord,
+  loadArtifactRecord,
   resolveArtifactPath,
 } from "../registries/artifactRegistry.js";
 import {
   activeObjectiveName,
   artifactPath,
-  loadRegistryForSchemas,
+  resolveRegistryModelPath,
   SchemaInfo,
 } from "./appContext.js";
 import {
@@ -139,9 +140,20 @@ export function registryArtifactPath(
   schemasDir: string,
   env: Record<string, string | undefined> = process.env,
 ): string {
-  const record = loadRegistryForSchemas(schemasDir).get(artifactId);
+  // Targeted lookup: resolving a single identity (e.g. `profile` against a
+  // v2-shaped install) must not walk the full registry and warn about every
+  // required schema that happens to be absent from this install. Only the
+  // requested identity is inspected; model/schemas authority is shared with the
+  // full loader via `resolveRegistryModelPath`.
+  let record: ArtifactRecord | undefined;
+  try {
+    record = loadArtifactRecord(artifactId, schemasDir, resolveRegistryModelPath(schemasDir));
+  } catch (exc) {
+    process.stderr.write(`warning: failed to load artifact registry for schemas: ${(exc as Error).message}\n`);
+    record = undefined;
+  }
   if (record === undefined) throw new Error(`artifact registry does not define '${artifactId}'`);
-  return resolveArtifactPath(record as ArtifactRecord, process.cwd(), activeObjectiveName(), env);
+  return resolveArtifactPath(record, process.cwd(), activeObjectiveName(), env);
 }
 
 // ── staleness ───────────────────────────────────────────────────────

@@ -7,6 +7,8 @@ import YAML from "yaml";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
+  EXPECTED_ARTIFACT_SCHEMA_VERSION,
+  loadArtifactRecord,
   loadArtifactRegistry,
   loadDocsPathOverrides,
   resolveArtifactPath,
@@ -319,5 +321,160 @@ describe("artifact registry module", () => {
     expect(plan).toBeTruthy();
     const resolved = resolveArtifactPath(plan!, REPO_ROOT);
     expect(resolved.startsWith(REPO_ROOT)).toBe(true);
+  });
+});
+
+describe("artifact registry loader diagnostics", () => {
+  let tmp: string;
+  let tmpSchemas: string;
+  let tmpModel: string;
+
+  function writeYaml(p: string, data: any): void {
+    fs.mkdirSync(path.dirname(p), { recursive: true });
+    fs.writeFileSync(p, YAML.stringify(data));
+  }
+
+  /** Minimal registry model containing exactly the required identities passed
+   *  in. Synthetic diagnostics tests validate loader behavior against a known
+   *  small identity set instead of the full production list. */
+  function minimalModel(
+    identities: { artifact_id: string; display_name: string; default_path: string }[],
+    specialCases: any[] = [],
+  ): any {
+    return {
+      interface: "ArtifactRegistry",
+      status: "design_contract",
+      required_artifact_identities: { project_agent_state: identities },
+      explicit_special_cases: specialCases,
+    };
+  }
+
+  function profileSpecialCase(): any {
+    // Profile is an `explicit_special_cases` identity, not a schema-backed
+    // required identity — the targeted loader must resolve it without walking
+    // or warning about any required schemas.
+    return {
+      artifact_id: "profile",
+      display_name: "PROFILE.md",
+      artifact_type: "global_user_state",
+      scope: "global_user_state",
+      default_path: "$AGENTERA_PROFILE_DIR/PROFILE.md",
+      path_template: { env_precedence: ["AGENTERA_PROFILE_DIR"] },
+      docs_yaml_can_override_path: false,
+    };
+  }
+
+  function schemaMeta(artifactId: string, p: string, producer: string, consumers: string[]): any {
+    return {
+      meta: {
+        name: artifactId,
+        version: EXPECTED_ARTIFACT_SCHEMA_VERSION,
+        path: p,
+        producer,
+        consumers,
+        artifact_type: "agent_facing",
+      },
+    };
+  }
+
+  function captureStderr<T>(fn: () => T): { result: T; written: string } {
+    const spy = vi.spyOn(process.stderr, "write").mockImplementation(() => true);
+    try {
+      const result = fn();
+      const written = spy.mock.calls.map((c) => String(c[0])).join("");
+      return { result, written };
+    } finally {
+      spy.mockRestore();
+    }
+  }
+
+  beforeEach(() => {
+    tmp = fs.mkdtempSync(path.join(os.tmpdir(), "ar-diag-"));
+    tmpSchemas = path.join(tmp, "schemas");
+    tmpModel = path.join(tmp, "model.yaml");
+  });
+  afterEach(() => {
+    fs.rmSync(tmp, { recursive: true, force: true });
+  });
+
+  it("full load warns for every required identity when schemas dir is absent", () => {
+    writeYaml(tmpModel, minimalModel([
+      { artifact_id: "plan", display_name: "PLAN.md", default_path: ".agentera/plan.yaml" },
+      { artifact_id: "health", display_name: "HEALTH.md", default_path: ".agentera/health.yaml" },
+    ]));
+    // tmpSchemas is never created — the schemas directory is absent.
+    const { result, written } = captureStderr(() => loadArtifactRegistry(tmpSchemas, tmpModel));
+    expect(result.size).toBe(0);
+    expect(written).toContain("required artifact identity 'plan'");
+    expect(written).toContain("required artifact identity 'health'");
+  });
+
+  it("full partial load warns for omitted required identities only", () => {
+    writeYaml(tmpModel, minimalModel([
+      { artifact_id: "plan", display_name: "PLAN.md", default_path: ".agentera/plan.yaml" },
+      { artifact_id: "health", display_name: "HEALTH.md", default_path: ".agentera/health.yaml" },
+    ]));
+    // Only plan.yaml is present; health is omitted.
+    writeYaml(path.join(tmpSchemas, "plan.yaml"), schemaMeta("plan", ".agentera/plan.yaml", "plan", ["build"]));
+    const { result, written } = captureStderr(() => loadArtifactRegistry(tmpSchemas, tmpModel));
+    expect(result.has("plan")).toBe(true);
+    expect(result.has("health")).toBe(false);
+    expect(written).not.toContain("required artifact identity 'plan'");
+    expect(written).toContain("required artifact identity 'health'");
+  });
+
+  it("targeted special-case lookup emits no unrelated identity warnings", () => {
+    // Profile co-exists with a required identity (plan) that has no schema —
+    // resolving profile must not walk or warn about plan's absent schema.
+    writeYaml(tmpModel, minimalModel(
+      [{ artifact_id: "plan", display_name: "PLAN.md", default_path: ".agentera/plan.yaml" }],
+      [profileSpecialCase()],
+    ));
+    const { result, written } = captureStderr(() => loadArtifactRecord("profile", tmpSchemas, tmpModel));
+    expect(result).toBeDefined();
+    expect(result!.artifactId).toBe("profile");
+    expect(written).not.toContain("required artifact identity");
+  });
+
+  it("targeted required identity lookup warns and returns undefined when its schema is missing", () => {
+    writeYaml(tmpModel, minimalModel([
+      { artifact_id: "plan", display_name: "PLAN.md", default_path: ".agentera/plan.yaml" },
+      { artifact_id: "health", display_name: "HEALTH.md", default_path: ".agentera/health.yaml" },
+    ]));
+    // tmpSchemas is absent; plan is a required identity, so its missing schema
+    // must warn — but health (also missing) must not, because only plan was
+    // requested.
+    const { result, written } = captureStderr(() => loadArtifactRecord("plan", tmpSchemas, tmpModel));
+    expect(result).toBeUndefined();
+    expect(written).toContain("required artifact identity 'plan'");
+    expect(written).not.toContain("required artifact identity 'health'");
+  });
+
+  it("targeted required identity lookup ignores malformed unrelated schemas", () => {
+    writeYaml(tmpModel, minimalModel([
+      { artifact_id: "plan", display_name: "PLAN.md", default_path: ".agentera/plan.yaml" },
+    ]));
+    fs.mkdirSync(tmpSchemas, { recursive: true });
+    fs.writeFileSync(path.join(tmpSchemas, "unrelated.yaml"), "meta: [\n");
+
+    const { result, written } = captureStderr(() => loadArtifactRecord("plan", tmpSchemas, tmpModel));
+    expect(result).toBeUndefined();
+    expect(written).toContain("required artifact identity 'plan'");
+    expect(written).not.toContain("unrelated.yaml");
+  });
+
+  it("targeted required identity lookup resolves when its schema is present", () => {
+    writeYaml(tmpModel, minimalModel([
+      { artifact_id: "plan", display_name: "PLAN.md", default_path: ".agentera/plan.yaml" },
+      { artifact_id: "health", display_name: "HEALTH.md", default_path: ".agentera/health.yaml" },
+    ]));
+    writeYaml(path.join(tmpSchemas, "plan.yaml"), schemaMeta("plan", ".agentera/plan.yaml", "plan", ["build"]));
+    // health schema is intentionally absent; resolving plan must not warn about
+    // health because only plan was requested.
+    const { result, written } = captureStderr(() => loadArtifactRecord("plan", tmpSchemas, tmpModel));
+    expect(result).toBeDefined();
+    expect(result!.artifactId).toBe("plan");
+    expect(result!.displayName).toBe("PLAN.md");
+    expect(written).not.toContain("required artifact identity");
   });
 });

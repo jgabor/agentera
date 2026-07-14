@@ -97,37 +97,159 @@ function projectPath(projectRoot: string, artifactPath: string, artifactId: stri
 
 export const EXPECTED_ARTIFACT_SCHEMA_VERSION = "1.0.0";
 
-function schemaMetas(dir: string): Map<string, Record<string, unknown>> {
-  const metas = new Map<string, Record<string, unknown>>();
-  if (!fs.existsSync(dir) || !fs.statSync(dir).isDirectory()) {
-    return metas;
+function readSchemaMeta(file: string): Record<string, unknown> | null {
+  const meta = loadYaml(file).meta;
+  if (!meta || typeof meta !== "object" || Array.isArray(meta)) {
+    return null;
   }
-  const files = fs
+  return meta as Record<string, unknown>;
+}
+
+function warnMalformedSchemaMeta(name: string): void {
+  process.stderr.write(
+    `warning: artifact schema ${name} is missing meta; expected v3 schema version ${EXPECTED_ARTIFACT_SCHEMA_VERSION}\n`,
+  );
+}
+
+function warnSchemaVersionMismatch(meta: Record<string, unknown>, name: string): void {
+  const version = String(meta.version ?? "").trim();
+  if (!version || version !== EXPECTED_ARTIFACT_SCHEMA_VERSION) {
+    const reported = version || "(missing)";
+    process.stderr.write(
+      `warning: artifact schema ${name} version ${reported} does not match expected v3 schema version ${EXPECTED_ARTIFACT_SCHEMA_VERSION}\n`,
+    );
+  }
+}
+
+function listSchemaFiles(dir: string): string[] {
+  if (!fs.existsSync(dir) || !fs.statSync(dir).isDirectory()) {
+    return [];
+  }
+  return fs
     .readdirSync(dir)
     .filter((name) => name.endsWith(".yaml"))
     .sort();
-  for (const name of files) {
-    const meta = loadYaml(path.join(dir, name)).meta;
-    if (!meta || typeof meta !== "object" || Array.isArray(meta)) {
-      process.stderr.write(
-        `warning: artifact schema ${name} is missing meta; expected v3 schema version ${EXPECTED_ARTIFACT_SCHEMA_VERSION}\n`,
-      );
+}
+
+/**
+ * Full schema-meta index over an artifact schemas directory. Emits malformed-meta
+ * and version-mismatch warnings for every schema file; the full loader relies on
+ * this strict coverage to surface drift across the whole identity set.
+ */
+function schemaMetas(dir: string): Map<string, Record<string, unknown>> {
+  const metas = new Map<string, Record<string, unknown>>();
+  for (const name of listSchemaFiles(dir)) {
+    const meta = readSchemaMeta(path.join(dir, name));
+    if (!meta) {
+      warnMalformedSchemaMeta(name);
       continue;
     }
-    const m = meta as Record<string, unknown>;
-    const version = String(m.version ?? "").trim();
-    if (!version || version !== EXPECTED_ARTIFACT_SCHEMA_VERSION) {
-      const reported = version || "(missing)";
-      process.stderr.write(
-        `warning: artifact schema ${name} version ${reported} does not match expected v3 schema version ${EXPECTED_ARTIFACT_SCHEMA_VERSION}\n`,
-      );
-    }
-    const artifactId = String(m.name ?? "").trim();
+    warnSchemaVersionMismatch(meta, name);
+    const artifactId = String(meta.name ?? "").trim();
     if (artifactId) {
-      metas.set(artifactId, m);
+      metas.set(artifactId, meta);
     }
   }
   return metas;
+}
+
+/**
+ * Targeted schema-meta lookup for a single artifact identity. Walks the schemas
+ * directory only to find the file whose `meta.name` matches `artifactId`, and
+ * emits warnings only for that schema. Unrelated malformed or version-mismatched
+ * schemas in the same directory stay silent so callers resolving a single
+ * identity (e.g. `profile`) don't fan out noise across the required-identity set.
+ */
+function loadSchemaMetaForArtifact(
+  dir: string,
+  artifactId: string,
+): Record<string, unknown> | null {
+  for (const name of listSchemaFiles(dir)) {
+    let meta: Record<string, unknown> | null;
+    try {
+      meta = readSchemaMeta(path.join(dir, name));
+    } catch {
+      continue;
+    }
+    if (!meta) continue;
+    if (String(meta.name ?? "").trim() !== artifactId) continue;
+    warnSchemaVersionMismatch(meta, name);
+    return meta;
+  }
+  return null;
+}
+
+function findRequiredIdentity(
+  model: Record<string, unknown>,
+  artifactId: string,
+): { scope: string; identity: Record<string, unknown> } | null {
+  const identities = (model.required_artifact_identities ?? {}) as Record<string, unknown>;
+  for (const [scope, identityList] of Object.entries(identities)) {
+    if (!Array.isArray(identityList)) continue;
+    for (const identity of identityList) {
+      if (!identity || typeof identity !== "object" || Array.isArray(identity)) continue;
+      const id = identity as Record<string, unknown>;
+      if (String(id.artifact_id ?? "").trim() === artifactId) {
+        return { scope, identity: id };
+      }
+    }
+  }
+  return null;
+}
+
+function findSpecialCase(
+  model: Record<string, unknown>,
+  artifactId: string,
+): Record<string, unknown> | null {
+  const specialCases = (model.explicit_special_cases ?? []) as unknown[];
+  for (const special of specialCases) {
+    if (!special || typeof special !== "object" || Array.isArray(special)) continue;
+    const sp = special as Record<string, unknown>;
+    if (String(sp.artifact_id ?? "").trim() === artifactId) {
+      return sp;
+    }
+  }
+  return null;
+}
+
+function buildRequiredRecord(
+  scope: string,
+  identity: Record<string, unknown>,
+  meta: Record<string, unknown>,
+): ArtifactRecord {
+  const template = identity.path_template;
+  return {
+    artifactId: String(identity.artifact_id ?? "").trim(),
+    displayName: String(identity.display_name ?? "").trim(),
+    defaultPath: normalizePath(String(identity.default_path ?? meta.path ?? "")),
+    producers: asSet(meta.producer),
+    consumers: asSet(meta.consumers),
+    artifactType: String(meta.artifact_type ?? "").trim(),
+    scope: String(scope),
+    pathTemplate:
+      template && typeof template === "object" && !Array.isArray(template)
+        ? (template as Record<string, unknown>)
+        : null,
+    docsYamlCanOverridePath: true,
+  };
+}
+
+function buildSpecialCaseRecord(sp: Record<string, unknown>): ArtifactRecord {
+  const template = sp.path_template;
+  return {
+    artifactId: String(sp.artifact_id ?? "").trim(),
+    displayName: String(sp.display_name ?? "").trim(),
+    defaultPath: normalizePath(String(sp.default_path ?? "")),
+    producers: asSet(sp.producers),
+    consumers: asSet(sp.consumers),
+    artifactType: String(sp.artifact_type ?? "").trim(),
+    scope: String(sp.scope ?? "").trim(),
+    pathTemplate:
+      template && typeof template === "object" && !Array.isArray(template)
+        ? (template as Record<string, unknown>)
+        : null,
+    docsYamlCanOverridePath: Boolean(sp.docs_yaml_can_override_path),
+  };
 }
 
 export function loadArtifactRegistry(
@@ -159,21 +281,7 @@ export function loadArtifactRegistry(
         );
         continue;
       }
-      const template = id.path_template;
-      records.set(artifactId, {
-        artifactId,
-        displayName: String(id.display_name ?? "").trim(),
-        defaultPath: normalizePath(String(id.default_path ?? meta.path ?? "")),
-        producers: asSet(meta.producer),
-        consumers: asSet(meta.consumers),
-        artifactType: String(meta.artifact_type ?? "").trim(),
-        scope: String(scope),
-        pathTemplate:
-          template && typeof template === "object" && !Array.isArray(template)
-            ? (template as Record<string, unknown>)
-            : null,
-        docsYamlCanOverridePath: true,
-      });
+      records.set(artifactId, buildRequiredRecord(scope, id, meta));
     }
   }
 
@@ -187,24 +295,42 @@ export function loadArtifactRegistry(
     if (!artifactId) {
       continue;
     }
-    const template = sp.path_template;
-    records.set(artifactId, {
-      artifactId,
-      displayName: String(sp.display_name ?? "").trim(),
-      defaultPath: normalizePath(String(sp.default_path ?? "")),
-      producers: asSet(sp.producers),
-      consumers: asSet(sp.consumers),
-      artifactType: String(sp.artifact_type ?? "").trim(),
-      scope: String(sp.scope ?? "").trim(),
-      pathTemplate:
-        template && typeof template === "object" && !Array.isArray(template)
-          ? (template as Record<string, unknown>)
-          : null,
-      docsYamlCanOverridePath: Boolean(sp.docs_yaml_can_override_path),
-    });
+    records.set(artifactId, buildSpecialCaseRecord(sp));
   }
 
   return records;
+}
+
+/**
+ * Targeted lookup of a single artifact record. Resolves against the same
+ * model/schema authority as `loadArtifactRegistry` but inspects only the
+ * requested identity, so a special case such as `profile` loads without
+ * walking or warning about unrelated required schemas. A requested required
+ * identity still warns and returns `undefined` when its matching schema file is
+ * missing from the schemas directory.
+ */
+export function loadArtifactRecord(
+  artifactId: string,
+  artifactSchemasDirPath: string = artifactSchemasDir(),
+  registryModelPathArg: string = registryModelPath(),
+): ArtifactRecord | undefined {
+  const model = loadYaml(registryModelPathArg);
+  const specialCase = findSpecialCase(model, artifactId);
+  if (specialCase) {
+    return buildSpecialCaseRecord(specialCase);
+  }
+  const required = findRequiredIdentity(model, artifactId);
+  if (!required) {
+    return undefined;
+  }
+  const meta = loadSchemaMetaForArtifact(artifactSchemasDirPath, artifactId);
+  if (!meta) {
+    process.stderr.write(
+      `warning: required artifact identity '${artifactId}' has no matching schema file in ${artifactSchemasDirPath}\n`,
+    );
+    return undefined;
+  }
+  return buildRequiredRecord(required.scope, required.identity, meta);
 }
 
 export function loadDocsPathOverrides(projectRoot: string, strict = false): Record<string, string> {

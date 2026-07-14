@@ -8,6 +8,7 @@ import {
   ArtifactRecord,
   artifactSchemasDir as defaultArtifactSchemasDir,
   loadArtifactRegistry,
+  registryModelPath as defaultRegistryModelPath,
 } from "../registries/artifactRegistry.js";
 
 /**
@@ -40,9 +41,10 @@ function loadYaml(p: string): JsonObject {
 
 export function loadCanonicalArtifacts(
   artifactSchemasDir: string = defaultArtifactSchemasDir(),
+  registryModelPathArg: string = defaultRegistryModelPath(),
 ): Map<string, CanonicalArtifact> {
   const out = new Map<string, CanonicalArtifact>();
-  for (const [artifactId, record] of loadArtifactRegistry(artifactSchemasDir)) {
+  for (const [artifactId, record] of loadArtifactRegistry(artifactSchemasDir, registryModelPathArg)) {
     out.set(artifactId, {
       artifactId: record.artifactId,
       displayName: record.displayName,
@@ -146,9 +148,13 @@ function sortedListRepr(s: Set<string>): string {
 export function validateGraph(
   artifactSchemasDir: string = defaultArtifactSchemasDir(),
   capabilitiesDir: string = capabilitiesDirDefault(),
+  registryModelPathArg: string = defaultRegistryModelPath(),
 ): string[] {
-  const registry = loadArtifactRegistry(artifactSchemasDir);
-  const canonical = loadCanonicalArtifacts(artifactSchemasDir);
+  // Thread the same model path into both registry loads so a synthetic
+  // test fixture (or a non-default install) resolves the same identity set in
+  // the canonical map and the dependency-graph walk below.
+  const registry = loadArtifactRegistry(artifactSchemasDir, registryModelPathArg);
+  const canonical = loadCanonicalArtifacts(artifactSchemasDir, registryModelPathArg);
   const capabilityArtifacts = loadCapabilityArtifacts(capabilitiesDir);
   const capabilityNames = new Set(listCapabilityDirs(capabilitiesDir));
   const errors: string[] = [];

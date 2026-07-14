@@ -5,7 +5,7 @@ import YAML from "yaml";
 
 import { isFile, pathExists, resolvePath } from "../core/paths.js";
 import { loadYamlMapping } from "../core/yaml.js";
-import { loadArtifactRegistry, resolveArtifactPath } from "../registries/artifactRegistry.js";
+import { loadArtifactRecord, resolveArtifactPath } from "../registries/artifactRegistry.js";
 import { BUNDLE_MARKER } from "../state/installRoot.js";
 import { doctorRoots } from "./appModel.js";
 import {
@@ -201,7 +201,7 @@ function lifecyclePlanArtifacts(project: string): MigrationPhaseItem[] {
   const root = resolvePath(project);
   let activePath: string;
   try {
-    const record = loadArtifactRegistry().get("plan");
+    const record = loadArtifactRecord("plan");
     if (!record) throw new Error("plan artifact is not registered");
     activePath = resolveArtifactPath(record, root, { strictWrite: true });
   } catch (error) {

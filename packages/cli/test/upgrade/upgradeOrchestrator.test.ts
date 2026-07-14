@@ -182,6 +182,11 @@ describe("buildUpgradePlan", () => {
       path.join(bundle, ".agentera-npx-bundle.json"),
       JSON.stringify({ kind: "agentera-npx-bundle", suiteVersion: "3.0.0-next.1" }),
     );
+    fs.cpSync(
+      path.join(REPO_ROOT, "skills", "agentera", "schemas"),
+      path.join(bundle, "skills", "agentera", "schemas"),
+      { recursive: true },
+    );
     fs.cpSync(path.join(REPO_ROOT, "references"), path.join(bundle, "references"), { recursive: true });
 
     const project = path.join(tmp, "cursor-project");
