@@ -413,9 +413,9 @@ describe("bounded non-Git legacy migration", () => {
           kind: "optional_git_enrichment",
           requested: false,
           stable_id: "progress:12",
-          selectors: { artifact: "progress", number: 12 },
-          dry_run: "agentera state backfill --artifact progress --number 12 --dry-run --format json",
-          apply: "agentera state backfill --artifact progress --number 12 --apply --force --format json",
+           selectors: { project: root, artifact: "progress", number: 12 },
+           dry_run: `agentera state backfill --project '${root}' --artifact progress --number 12 --dry-run --format json`,
+           apply: `agentera state backfill --project '${root}' --artifact progress --number 12 --apply --force --preview-token TOKEN --format json`,
           remote_contact: false,
         },
       });

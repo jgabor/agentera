@@ -3,7 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { dumpYamlMapping } from "../../src/core/yaml.js";
 import { runBackfill } from "../../src/cli/commands/backfill.js";
@@ -14,8 +14,16 @@ import {
   inspectGitBackfill,
   previewGitBackfill,
 } from "../../src/state/gitBackfill.js";
+import { PREVIEW_TOKEN_TTL_MS } from "../../src/state/gitBackfillReceipt.js";
 
 const sourceRoot = path.resolve(import.meta.dirname, "../../../..");
+const gitEvidence = JSON.parse(
+  fs.readFileSync(path.join(import.meta.dirname, "../fixtures/git-backfill-real-repository-evidence.json"), "utf8"),
+) as {
+  expected_total_calls: number;
+  expected_categories: Record<string, number>;
+  forbidden_operations: string[];
+};
 const roots: string[] = [];
 
 function project(prefix = "agentera-git-backfill-"): string {
@@ -58,6 +66,23 @@ function commit(root: string, message: string): string {
   git(root, ["add", "."]);
   git(root, ["commit", "--quiet", "-m", message]);
   return git(root, ["rev-parse", "HEAD"]);
+}
+
+function addRefFixtures(root: string): void {
+  git(root, ["branch", "fixture-head"]);
+  git(root, ["tag", "fixture-tag"]);
+  git(root, ["update-ref", "refs/remotes/origin/fixture", "HEAD"]);
+  git(root, ["update-ref", "refs/custom/fixture", "HEAD"]);
+}
+
+function previewToken(root: string, number: number, runGit = realGitRunner): string {
+  const preview = previewGitBackfill(
+    root,
+    { artifact: "progress", number },
+    { sourceRoot, runGit },
+  );
+  expect(preview.preview_token).toEqual(expect.any(String));
+  return preview.preview_token as string;
 }
 
 function readProjection(root: string): string {
@@ -104,6 +129,112 @@ describe("Git legacy backfill", () => {
     expect(readProjection(root)).toBe(projectionBefore);
   });
 
+  it("persists real-repository Git call evidence and scans only allowed refs", () => {
+    const root = project("agentera-git-backfill-real-refs-");
+    init(root);
+    writeProgress(root, [progress(15, "Real ref evidence")]);
+    commit(root, "real ref evidence");
+    addRefFixtures(root);
+    const calls: string[][] = [];
+    const runner = (args: string[], cwd: string) => {
+      calls.push([...args]);
+      return realGitRunner(args, cwd);
+    };
+
+    const result = previewGitBackfill(
+      root,
+      { artifact: "progress", number: 15 },
+      { sourceRoot, runGit: runner },
+    );
+    expect(result.status).toBe("complete");
+    expect(result.scan.reachable_refs).toEqual(
+      expect.arrayContaining(["HEAD", "refs/heads/fixture-head", "refs/tags/fixture-tag"]),
+    );
+    expect(result.scan.reachable_refs).not.toEqual(expect.arrayContaining(["refs/remotes/origin/fixture", "refs/custom/fixture"]));
+    expect(git(root, ["show-ref", "refs/remotes/origin/fixture"])).toMatch(/[0-9a-f]+/);
+    expect(git(root, ["show-ref", "refs/custom/fixture"])).toMatch(/[0-9a-f]+/);
+    expect(calls.length).toBe(gitEvidence.expected_total_calls);
+    const categories = Object.fromEntries(
+      [...new Set(calls.map((args) => args[0] ?? ""))]
+        .sort()
+        .map((command) => [command, calls.filter((args) => args[0] === command).length]),
+    );
+    expect(categories).toEqual(gitEvidence.expected_categories);
+    expect(
+      calls.some((args) => args.some((value) => gitEvidence.forbidden_operations.some((forbidden) => value.includes(forbidden)))),
+    ).toBe(false);
+    expect(
+      calls.filter((args) => args[0] === "for-each-ref").every(
+        (args) => args.includes("refs/heads") && args.includes("refs/tags") && !args.includes("refs/remotes"),
+      ),
+    ).toBe(true);
+    expect(calls.filter((args) => args[0] === "log").every((args) =>
+      args.some((value) => value.startsWith("refs/heads/")) &&
+      args.some((value) => value.startsWith("refs/tags/")) &&
+      !args.some((value) => value.startsWith("refs/remotes/")),
+    )).toBe(true);
+  });
+
+  it("requires an unexpired matching receipt and refuses tampering, cross-project, and changed candidates", () => {
+    const root = project("agentera-git-backfill-receipt-");
+    init(root);
+    writeProgress(root, [progress(16, "Receipt guard")]);
+    commit(root, "receipt guard");
+    const token = previewToken(root, 16);
+    const missing = applyGitBackfill(root, { artifact: "progress", number: 16 }, { sourceRoot, runGit: realGitRunner });
+    expect(missing).toMatchObject({ status: "blocked", preview_receipt: { status: "required" } });
+    expect(fs.existsSync(path.join(root, ".agentera/archive/progress/16.yaml"))).toBe(false);
+
+    const tampered = `${token.slice(0, -1)}${token.endsWith("A") ? "B" : "A"}`;
+    const tamperedResult = applyGitBackfill(
+      root,
+      { artifact: "progress", number: 16, previewToken: tampered },
+      { sourceRoot, runGit: realGitRunner },
+    );
+    expect(tamperedResult).toMatchObject({ status: "blocked", preview_receipt: { status: "invalid" } });
+
+    const other = project("agentera-git-backfill-receipt-other-");
+    init(other);
+    writeProgress(other, [progress(16, "Receipt guard")]);
+    commit(other, "receipt guard");
+    const crossProject = applyGitBackfill(
+      other,
+      { artifact: "progress", number: 16, previewToken: token },
+      { sourceRoot, runGit: realGitRunner },
+    );
+    expect(crossProject).toMatchObject({ status: "blocked", preview_receipt: { status: "project_mismatch" } });
+
+    let catFiles = 0;
+    const changedCandidateRunner = (args: string[], cwd: string) => {
+      const result = realGitRunner(args, cwd);
+      if (args[0] === "cat-file" && args[1] === "-p") {
+        catFiles += 1;
+        if (catFiles === 2) return { ...result, stdout: dumpYamlMapping({ cycles: [progress(16, "Changed candidate")] }) };
+      }
+      return result;
+    };
+    const changedCandidate = applyGitBackfill(
+      root,
+      { artifact: "progress", number: 16, previewToken: token },
+      { sourceRoot, runGit: changedCandidateRunner },
+    );
+    expect(changedCandidate).toMatchObject({ status: "blocked", preview_receipt: { status: "candidate_changed" } });
+    expect(fs.existsSync(path.join(root, ".agentera/archive/progress/16.yaml"))).toBe(false);
+
+    vi.useFakeTimers();
+    try {
+      vi.setSystemTime(Date.now() + PREVIEW_TOKEN_TTL_MS + 1);
+      const expired = applyGitBackfill(
+        root,
+        { artifact: "progress", number: 16, previewToken: token },
+        { sourceRoot, runGit: realGitRunner },
+      );
+      expect(expired).toMatchObject({ status: "blocked", preview_receipt: { status: "expired" } });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("applies only after explicit intent and converges to replay without projection changes", () => {
     const root = project();
     init(root);
@@ -113,7 +244,7 @@ describe("Git legacy backfill", () => {
 
     const first = applyGitBackfill(
       root,
-      { artifact: "progress", number: 2 },
+      { artifact: "progress", number: 2, previewToken: previewToken(root, 2) },
       { sourceRoot, runGit: realGitRunner },
     );
     expect(first.status).toBe("complete");
@@ -123,7 +254,7 @@ describe("Git legacy backfill", () => {
 
     const retry = applyGitBackfill(
       root,
-      { artifact: "progress", number: 2 },
+      { artifact: "progress", number: 2, previewToken: previewToken(root, 2) },
       { sourceRoot, runGit: realGitRunner },
     );
     expect(retry.status).toBe("complete");
@@ -295,7 +426,7 @@ describe("Git legacy backfill", () => {
     };
     const result = applyGitBackfill(
       root,
-      { artifact: "progress", number: 14 },
+      { artifact: "progress", number: 14, previewToken: previewToken(root, 14) },
       { sourceRoot, runGit: interruptedRunner },
     );
     expect(result).toMatchObject({ status: "blocked", remote_contact: false });
@@ -370,7 +501,7 @@ describe("Git legacy backfill", () => {
     const projectionBefore = readProjection(root);
     const conflict = applyGitBackfill(
       root,
-      { artifact: "progress", number: 9 },
+      { artifact: "progress", number: 9, previewToken: previewToken(root, 9) },
       { sourceRoot, runGit: realGitRunner },
     );
     expect(conflict.status).toBe("blocked");
@@ -393,7 +524,7 @@ describe("Git legacy backfill", () => {
     };
     const changedResult = applyGitBackfill(
       changed,
-      { artifact: "progress", number: 10 },
+      { artifact: "progress", number: 10, previewToken: previewToken(changed, 10) },
       { sourceRoot, runGit: changedHeadRunner },
     );
     expect(changedResult.status).toBe("blocked");
@@ -415,6 +546,19 @@ describe("Git legacy backfill", () => {
         message: "--apply requires explicit --force intent",
         syntax: expect.stringContaining("agentera state backfill"),
       },
+    });
+
+    const root = project("agentera-git-backfill-no-receipt-");
+    let forcedOut = "";
+    const forcedRc = runBackfill(
+      ["--project", root, "--artifact", "progress", "--number", "1", "--apply", "--force", "--format", "json"],
+      { out: (text) => (forcedOut += text), err: () => undefined },
+      sourceRoot,
+    );
+    expect(forcedRc).toBe(2);
+    expect(JSON.parse(forcedOut)).toMatchObject({
+      schemaVersion: "agentera.invalidInputEnvelope.v2",
+      error: { message: "--apply requires a matching prior --dry-run --preview-token" },
     });
   });
 

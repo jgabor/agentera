@@ -19,7 +19,7 @@ import {
 import { renderGitBackfillText } from "../../state/gitBackfillOutput.js";
 
 const BACKFILL_SYNTAX =
-  "agentera state backfill [--project PATH] [--artifact ARTIFACT] [--number N] [--commit HASH] [--path PATH] [--limit N] [--dry-run|--apply --force] --format {text,json,yaml}";
+  "agentera state backfill [--project PATH] [--artifact ARTIFACT] [--number N] [--commit HASH] [--path PATH] [--limit N] [--dry-run|--apply --force --preview-token TOKEN] --format {text,json,yaml}";
 
 export function requestedBackfillFormat(argv: string[]): "text" | "json" | "yaml" {
   for (let index = 0; index < argv.length; index += 1) {
@@ -47,7 +47,7 @@ function failure(
       class: "invalid_request",
       message,
       syntax,
-      example: "agentera state backfill --artifact progress --number 1 --dry-run --format json",
+      example: "agentera state backfill --project PATH --artifact progress --number 1 --dry-run --format json",
       ...(validValues ? { valid_values: validValues } : {}),
     },
   };
@@ -61,7 +61,7 @@ function authorityFailure(error: unknown): StateRetrievalFailure {
       class: "unsupported_state",
       message: `Git backfill authority could not be loaded: ${(error as Error).message}`,
       syntax: BACKFILL_SYNTAX,
-      example: "agentera state backfill --artifact progress --number 1 --dry-run --format json",
+      example: "agentera state backfill --project PATH --artifact progress --number 1 --dry-run --format json",
       recovery: "Repair references/artifacts/state-storage-authority.yaml and retry; no state was changed.",
       details: { authority: "references/artifacts/state-storage-authority.yaml" },
     },
@@ -79,7 +79,7 @@ function emitAuthorityFailure(failure: StateRetrievalFailure, format: "text" | "
 
 export function parseBackfillArgs(argv: string[]): GitBackfillArgs | { error: string } {
   const args: GitBackfillArgs = { project: null, artifact: null, format: "text" };
-  const valueFlags = ["--project", "--artifact", "--number", "--limit", "--commit", "--path", "--format"];
+  const valueFlags = ["--project", "--artifact", "--number", "--limit", "--commit", "--path", "--preview-token", "--format"];
   for (let index = 0; index < argv.length; index += 1) {
     const token = argv[index];
     const flag = valueFlags.find((candidate) => token === candidate || token.startsWith(`${candidate}=`));
@@ -91,6 +91,7 @@ export function parseBackfillArgs(argv: string[]): GitBackfillArgs | { error: st
       else if (flag === "--artifact") args.artifact = parsed;
       else if (flag === "--commit") args.commit = parsed;
       else if (flag === "--path") args.path = parsed;
+      else if (flag === "--preview-token") args.previewToken = parsed;
       else if (flag === "--format") {
         if (parsed !== "text" && parsed !== "json" && parsed !== "yaml") {
           return { error: `argument --format: invalid choice: '${parsed}'` };
@@ -130,9 +131,11 @@ function validateBackfillArgs(args: GitBackfillArgs, sourceRoot: string): string
   if (args.apply && args.dryRun) return "--apply and --dry-run are mutually exclusive";
   if (args.apply && !args.force) return "--apply requires explicit --force intent";
   if (args.force && !args.apply) return "--force requires --apply";
+  if (args.previewToken && !args.apply) return "--preview-token requires --apply";
   if (args.apply && (!args.artifact || args.number === undefined)) {
     return "--apply requires exactly one --artifact and --number selector";
   }
+  if (args.apply && !args.previewToken) return "--apply requires a matching prior --dry-run --preview-token";
   return null;
 }
 

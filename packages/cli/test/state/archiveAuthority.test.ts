@@ -126,7 +126,7 @@ describe("state storage authority", () => {
       writes_independent: true,
     });
     expect(api.backfill).toMatchObject({
-      command: expect.stringContaining("agentera state backfill"),
+      command: expect.stringContaining("--preview-token TOKEN"),
       default_limit: 100,
       maximum_limit: 100,
       maximum_commits: 500,
@@ -135,6 +135,7 @@ describe("state storage authority", () => {
     });
     expect(api.backfill.guarantees).toMatchObject({
       apply_requires_force: true,
+      apply_requires_preview_token: true,
       remote_contact: "forbidden",
       projection_writes: "forbidden",
       immutable_conflicts: "refuse_without_overwrite",

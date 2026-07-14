@@ -422,7 +422,7 @@ api:
     command: >-
       agentera state backfill [--project PATH] [--artifact ARTIFACT]
       [--number N] [--commit HASH] [--path PATH] [--limit N]
-      [--dry-run|--apply --force] --format {text,json,yaml}
+      [--dry-run|--apply --force --preview-token TOKEN] --format {text,json,yaml}
     formats: [text, json, yaml]
     default_limit: 100
     maximum_limit: 100
@@ -440,9 +440,12 @@ api:
         --dry-run is read-only and shows proposed immutable archive bytes only
         for an exact unique candidate, together with every matching provenance.
       apply: >-
-        --apply --force is the only mutation mode. It requires one artifact and
-        entry number, revalidates HEAD, reachability, path, blob, and canonical
-        content immediately before publication, and never overwrites conflicts.
+         --apply --force is the only mutation mode. It requires one project,
+         artifact, and entry number plus a matching bounded token from the exact
+         prior dry-run. The token binds project identity, HEAD, candidate
+         provenance, and immutable archive bytes; apply revalidates HEAD,
+         reachability, path, blob, and canonical content immediately before
+         publication, and never overwrites conflicts.
     ambiguity_reasons:
       - none
       - conflicting_versions
@@ -459,6 +462,12 @@ api:
     guarantees:
       read_only_inventory_and_preview: true
       apply_requires_force: true
+      apply_requires_preview_token: true
+      preview_token: >-
+        The exact dry-run emits a bounded, expiring caller-carried receipt. It
+        is project-local and read-only; apply refuses missing, expired, tampered,
+        cross-project, changed-HEAD, or changed-candidate receipts before
+        publication.
       remote_contact: forbidden
       custom_refs: forbidden
       commit_fields_in_archive_records: forbidden

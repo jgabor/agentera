@@ -26,6 +26,12 @@ import {
   sortedGroups,
 } from "./gitBackfillOutput.js";
 import {
+  createPreviewToken,
+  receiptMatchesPreview,
+  validatePreviewToken,
+  type PreviewReceiptStatus,
+} from "./gitBackfillReceipt.js";
+import {
   publishNumberedArchive,
 } from "./archivePublication.js";
 import { collectGitHistory } from "./gitBackfillHistory.js";
@@ -60,6 +66,7 @@ export interface GitBackfillArgs {
   dryRun?: boolean;
   apply?: boolean;
   force?: boolean;
+  previewToken?: string | null;
   format?: BackfillFormat;
 }
 
@@ -211,6 +218,11 @@ export interface GitBackfillResponse {
   active_projection_hashes: Record<string, string>;
   entries: EntryOutput[];
   diagnostics: string[];
+  preview_token?: string;
+  preview_receipt?: {
+    status: PreviewReceiptStatus;
+    message?: string;
+  };
   source_contract: {
     syntax: string;
     authority: string;
@@ -671,6 +683,30 @@ function revalidate(
   return { ok: true, afterHead: after.value };
 }
 
+function attachPreviewToken(
+  response: GitBackfillResponse,
+  scan: ScanResult,
+  args: GitBackfillArgs,
+  group: CandidateGroup | undefined,
+): GitBackfillResponse {
+  if (!group || !args.artifact || args.number === undefined || scan.headStatus !== "stable") return response;
+  const candidate = selectedOccurrence(scan, group, args);
+  const entry = response.entries[0];
+  if (!candidate || !entry?.proposed_archive_bytes || !entry.record_sha256 || !entry.eligible) return response;
+  response.preview_token = createPreviewToken(
+    scan,
+    args,
+    candidate,
+    entry.proposed_archive_bytes,
+    entry.record_sha256,
+  );
+  response.preview_receipt = {
+    status: "accepted",
+    message: "exact dry-run receipt issued; pass it to --preview-token for apply",
+  };
+  return response;
+}
+
 export function inspectGitBackfill(
   project: string,
   args: Omit<GitBackfillArgs, "project" | "format" | "dryRun" | "apply" | "force"> = {},
@@ -731,7 +767,12 @@ export function previewGitBackfill(
           ? "degraded"
           : "blocked"
         : "unavailable";
-  return buildResponse(scan, "preview", entries, scan.diagnostics, status);
+  return attachPreviewToken(
+    buildResponse(scan, "preview", entries, scan.diagnostics, status),
+    scan,
+    args,
+    groups.length === 1 ? groups[0] : undefined,
+  );
 }
 
 export function applyGitBackfill(
@@ -757,26 +798,66 @@ export function applyGitBackfill(
   }
   const candidate = selectedOccurrence(scan, group, args);
   const entry = buildEntryOutput(scan, group, args, true);
+  if (!args.previewToken) {
+    entry.eligible = false;
+    entry.operation = "refused";
+    entry.refusal = "apply requires a matching --dry-run preview token";
+    entries.push(entry);
+    const response = buildResponse(scan, "apply", entries, scan.diagnostics, "blocked");
+    response.preview_receipt = { status: "required", message: entry.refusal };
+    response.active_projections_unchanged = true;
+    return response;
+  }
+  const receipt = validatePreviewToken(args.previewToken, scan.projectRoot, scan.sourceRoot);
+  if (!receipt.ok) {
+    entry.eligible = false;
+    entry.operation = "refused";
+    entry.refusal = receipt.message;
+    entries.push(entry);
+    const response = buildResponse(scan, "apply", entries, scan.diagnostics, "blocked");
+    response.preview_receipt = { status: receipt.status, message: receipt.message };
+    response.active_projections_unchanged = true;
+    return response;
+  }
   if (!candidate || !entry.eligible) {
     entry.operation = "refused";
     entry.refusal = entry.ambiguity_reason;
     entries.push(entry);
     const response = buildResponse(scan, "apply", entries, scan.diagnostics, "blocked");
+    response.preview_receipt = { status: "accepted" };
+    response.active_projections_unchanged = true;
+    return response;
+  }
+  if (!entry.proposed_archive_bytes || !entry.record_sha256) {
+    entry.eligible = false;
+    entry.operation = "refused";
+    entry.refusal = "matching dry-run did not contain immutable archive bytes";
+    entries.push(entry);
+    const response = buildResponse(scan, "apply", entries, scan.diagnostics, "blocked");
+    response.preview_receipt = { status: "candidate_changed", message: entry.refusal };
+    response.active_projections_unchanged = true;
+    return response;
+  }
+  const receiptMatch = receiptMatchesPreview(
+    receipt.payload,
+    scan,
+    args,
+    candidate,
+    entry.proposed_archive_bytes,
+    entry.record_sha256,
+  );
+  if (!receiptMatch.ok) {
+    entry.eligible = false;
+    entry.operation = "refused";
+    entry.ambiguity_reason = receiptMatch.status;
+    entry.refusal = receiptMatch.message;
+    entries.push(entry);
+    const response = buildResponse(scan, "apply", entries, scan.diagnostics, "blocked");
+    response.preview_receipt = { status: receiptMatch.status, message: receiptMatch.message };
     response.active_projections_unchanged = true;
     return response;
   }
   const run = options.runGit ?? defaultGitRunner;
-  const valid = revalidate(scan, run, candidate);
-  if (!valid.ok) {
-    entry.eligible = false;
-    entry.operation = "refused";
-    entry.ambiguity_reason = valid.reason ?? "candidate_changed";
-    entry.refusal = valid.reason ?? "candidate_changed";
-    entries.push(entry);
-    const response = buildResponse(scan, "apply", entries, scan.diagnostics, "blocked");
-    response.active_projections_unchanged = true;
-    return response;
-  }
   const archiveStatus = archiveState(scan.projectRoot, scan.sourceRoot, group);
   if (archiveStatus === "conflict") {
     entry.eligible = false;
@@ -785,6 +866,22 @@ export function applyGitBackfill(
     entry.refusal = "immutable archive content differs; existing bytes were preserved";
     entries.push(entry);
     const response = buildResponse(scan, "apply", entries, scan.diagnostics, "blocked");
+    response.preview_receipt = { status: "accepted" };
+    response.active_projections_unchanged = true;
+    return response;
+  }
+  const valid = revalidate(scan, run, candidate);
+  if (!valid.ok) {
+    entry.eligible = false;
+    entry.operation = "refused";
+    entry.ambiguity_reason = valid.reason ?? "candidate_changed";
+    entry.refusal = valid.reason ?? "candidate_changed";
+    entries.push(entry);
+    const response = buildResponse(scan, "apply", entries, scan.diagnostics, "blocked");
+    response.preview_receipt = {
+      status: valid.reason === "changed_head" ? "changed_head" : "candidate_changed",
+      message: entry.refusal,
+    };
     response.active_projections_unchanged = true;
     return response;
   }
@@ -811,6 +908,7 @@ export function applyGitBackfill(
       scan.diagnostics,
       scan.headStatus === "stable" ? "complete" : "degraded",
     );
+    response.preview_receipt = { status: "accepted" };
     response.active_projection_hashes = projectionHashes(scan.projectRoot, scan.sourceRoot);
     response.active_projections_unchanged = JSON.stringify(beforeHashes) === JSON.stringify(response.active_projection_hashes);
     return response;

@@ -84,6 +84,16 @@ tasks:
       - GIVEN local migration runs WHEN enrichment is not separately requested THEN it never invokes Git or backfill; declined or unavailable Git remains a non-blocking, actionable outcome for later tasks.
       - GIVEN enrichment is explicitly selected WHEN exact artifact and number selectors dry-run before forced apply THEN only exact reachable local candidates publish through the existing immutable contract.
       - GIVEN shallow, rewritten, ambiguous, interrupted, or retried history WHEN evaluated THEN bounded traversal, head revalidation, and equality prevent remote access, duplicates, and conflicts.
+    evaluation:
+      attempt_count: 1
+      failure_count: 1
+      last_verdict: fail
+      last_failure_evidence: Enrichment handoff omits the project selector; apply does not mechanically require a matching prior dry-run; Git call-count evidence is not asserted; remote-tracking and custom-ref exclusions lack real repository fixtures.
+      provenance:
+        attempt_id: continuation-task3-audit-1
+        source: "Independent orchestration evaluator: optional Git handoff and evidence audit"
+        recorded_at: 2026-07-14 11:13
+        writer_command: agentera state plan record-evaluation
   - number: 4
     name: Align schemas, help, documentation, and bundles
     depends_on:

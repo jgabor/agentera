@@ -1,0 +1,19 @@
+schemaVersion: agentera.stateArchiveEntry.v1
+artifact_id: progress
+entry_number: 787
+record:
+  number: 787
+  timestamp: 2026-07-14 11:33
+  type: fix
+  phase: build
+  what: "Closed the optional Git handoff and guard gaps from the Task 3 audit: generated commands now carry exact project, artifact, and number selectors; exact dry-run output carries a bounded project-local receipt token; forced apply requires and validates that receipt before final HEAD and candidate revalidation; and real-ref Git evidence is persisted."
+  inspiration: Retry continuation plan Task 3 after independent orchestration audit failure continuation-task3-audit-1.
+  discovered: Cycle 786's 68-Git-call trace had no persisted assertion. A real temporary repository fixture now persists an 18-call preview assertion with command categories and forbidden-operation checks while local heads/tags plus remote-tracking and custom refs are present.
+  verified: "Focused real-repository migration/backfill command: 5 files, 72 tests passed. Non-packaging boundary: 175 files, 1781 tests passed. Full suite: 176 files, 1785 passed and exactly 5 known npm packaging JSON-parser tests failed. Typecheck, build, bundle:data, capability build validation, capability-contract validation, artifact progress/plan/decisions/health validation, and compact passed; compact reported error_count=0, over_limit_count=0, protected_overflow_count=0, changed_count=0 while preserving 5 existing archive-recovery refusals. Temp CLI smoke: preview complete with a 1135-byte token, apply complete with applied=1, retry complete with replayed=1, and remote_contact=false for all three."
+  next: Leave Task 3 pending with failure_count 1 and do not record an evaluation or completion. Preserve migration zero-Git behavior, bounded history, HEAD revalidation, equality, archive idempotence, no custom refs, no remote, Decision 53, projection policy, startup caveats, known npm failures, and the prior plan failure record. Do not begin Task 4 or release/publication work.
+  context:
+    intent: Retry Agentera continuation Task 3 after the independent optional Git handoff, preview-guard, and evidence audit failure without evaluating or completing Task 3.
+    constraints: Migration remains non-Git and non-backfill by default; Git enrichment is explicit, exact-selector, dry-run-first, local-only, and non-blocking when unavailable or declined. Apply requires --apply --force and the matching caller-carried preview token; no remote state, fetch, network, tag, push, or publication is allowed.
+    unknowns: Task 3 remains pending for independent evaluation; failure_count remains 1. The 5 known npm packaging JSON-parser failures, 5 existing archive-recovery refusals, malformed formatting fixture caveat, and stale or missing startup caveats remain unchanged.
+    scope: packages/cli/src/state/gitBackfillReceipt.ts; packages/cli/src/state/gitBackfill.ts; packages/cli/src/state/gitBackfillOutput.ts; packages/cli/src/state/migrationEnrichment.ts; packages/cli/src/state/legacyMigration.ts; packages/cli/src/cli/commands/backfill.ts; packages/cli/src/cli/help.ts; references/artifacts/state-storage-authority.yaml; packages/cli/test/state/gitBackfill.test.ts; packages/cli/test/state/legacyMigration.test.ts; packages/cli/test/state/archiveAuthority.test.ts; packages/cli/test/fixtures/git-backfill-real-repository-evidence.json; .agentera/plan.yaml
+record_sha256: 07f533457696242f960c28c131b1b5e2d9b14beaf36cc9eda156c97a3b274023

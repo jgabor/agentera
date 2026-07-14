@@ -1,0 +1,22 @@
+{
+  "scenario": "real-local-heads-tags-with-remote-tracking-and-custom-refs",
+  "expected_total_calls": 18,
+  "expected_categories": {
+    "cat-file": 1,
+    "diff-tree": 3,
+    "for-each-ref": 1,
+    "log": 3,
+    "ls-tree": 4,
+    "reflog": 1,
+    "rev-parse": 5
+  },
+  "forbidden_operations": [
+    "fetch",
+    "pull",
+    "push",
+    "ls-remote",
+    "remote",
+    "refs/remotes",
+    "refs/custom"
+  ]
+}
