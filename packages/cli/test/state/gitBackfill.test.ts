@@ -3,7 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { dumpYamlMapping } from "../../src/core/yaml.js";
 import { runBackfill } from "../../src/cli/commands/backfill.js";
@@ -631,6 +631,29 @@ describe("Git legacy backfill", () => {
       },
     });
 
+    const missingProjectRoot = project("agentera-git-backfill-missing-project-");
+    const cwd = vi.spyOn(process, "cwd").mockReturnValue(missingProjectRoot);
+    let missingProjectOut = "";
+    try {
+      const missingProjectRc = runBackfill(
+        ["--artifact", "progress", "--number", "1", "--apply", "--force", "--format", "json"],
+        { out: (text) => (missingProjectOut += text), err: () => undefined },
+        sourceRoot,
+      );
+      expect(missingProjectRc).toBe(2);
+      expect(JSON.parse(missingProjectOut)).toMatchObject({
+        schemaVersion: "agentera.invalidInputEnvelope.v2",
+        error: {
+          class: "invalid_request",
+          message: "--apply requires explicit --project PATH",
+          example: "agentera state backfill --project PATH --artifact progress --number 1 --apply --force --format json",
+        },
+      });
+      expect(fs.existsSync(path.join(missingProjectRoot, ".agentera", "archive"))).toBe(false);
+    } finally {
+      cwd.mockRestore();
+    }
+
     const root = project("agentera-git-backfill-cli-direct-apply-");
     init(root);
     writeProgress(root, [progress(1, "CLI direct apply")]);
@@ -646,6 +669,9 @@ describe("Git legacy backfill", () => {
       mode: "apply",
       status: "complete",
       counts: { applied: 1 },
+      source_contract: {
+        apply_requires: ["--apply", "--force", "--project PATH", "--artifact ARTIFACT", "--number N"],
+      },
     });
     expect(JSON.parse(forcedOut)).not.toHaveProperty("preview_token");
     expect(JSON.parse(forcedOut)).not.toHaveProperty("preview_receipt");

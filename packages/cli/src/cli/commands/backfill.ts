@@ -20,6 +20,10 @@ import { renderGitBackfillText } from "../../state/gitBackfillOutput.js";
 
 const BACKFILL_SYNTAX =
   "agentera state backfill [--project PATH] [--artifact ARTIFACT] [--number N] [--commit HASH] [--path PATH] [--limit N] [--dry-run|--apply --force] --format {text,json,yaml}";
+const BACKFILL_DRY_RUN_EXAMPLE =
+  "agentera state backfill --project PATH --artifact progress --number 1 --dry-run --format json";
+const BACKFILL_APPLY_EXAMPLE =
+  "agentera state backfill --project PATH --artifact progress --number 1 --apply --force --format json";
 
 export function requestedBackfillFormat(argv: string[]): "text" | "json" | "yaml" {
   for (let index = 0; index < argv.length; index += 1) {
@@ -40,6 +44,7 @@ function failure(
   format: "text" | "json",
   syntax = BACKFILL_SYNTAX,
   validValues?: string[],
+  example = BACKFILL_DRY_RUN_EXAMPLE,
 ): { format: "text" | "json"; body: InvalidInputErrorBody } {
   return {
     format,
@@ -47,7 +52,7 @@ function failure(
       class: "invalid_request",
       message,
       syntax,
-      example: "agentera state backfill --project PATH --artifact progress --number 1 --dry-run --format json",
+      example,
       ...(validValues ? { valid_values: validValues } : {}),
     },
   };
@@ -61,7 +66,7 @@ function authorityFailure(error: unknown): StateRetrievalFailure {
       class: "unsupported_state",
       message: `Git backfill authority could not be loaded: ${(error as Error).message}`,
       syntax: BACKFILL_SYNTAX,
-      example: "agentera state backfill --project PATH --artifact progress --number 1 --dry-run --format json",
+      example: BACKFILL_DRY_RUN_EXAMPLE,
       recovery: "Repair references/artifacts/state-storage-authority.yaml and retry; no state was changed.",
       details: { authority: "references/artifacts/state-storage-authority.yaml" },
     },
@@ -130,6 +135,9 @@ function validateBackfillArgs(args: GitBackfillArgs, sourceRoot: string): string
   if (args.apply && args.dryRun) return "--apply and --dry-run are mutually exclusive";
   if (args.apply && !args.force) return "--apply requires explicit --force intent";
   if (args.force && !args.apply) return "--force requires --apply";
+  if (args.apply && contract.applyRequires.includes("--project PATH") && !args.project) {
+    return "--apply requires explicit --project PATH";
+  }
   if (args.apply && (!args.artifact || args.number === undefined)) {
     return "--apply requires exactly one --artifact and --number selector";
   }
@@ -157,7 +165,13 @@ export function runBackfill(argv: string[], io: Io, sourceRootOverride?: string)
     return emitAuthorityFailure(authorityFailure(error), format, io);
   }
   if (validation) {
-    const invalid = failure(validation, format === "yaml" ? "text" : format, contract.command, numberedArchiveArtifacts(sourceRoot));
+    const invalid = failure(
+      validation,
+      format === "yaml" ? "text" : format,
+      contract.command,
+      numberedArchiveArtifacts(sourceRoot),
+      parsed.apply ? BACKFILL_APPLY_EXAMPLE : undefined,
+    );
     return emitInvalidInput(io, invalid);
   }
   const mode = parsed.apply ? "apply" : parsed.dryRun ? "preview" : "inventory";
@@ -170,7 +184,13 @@ export function runBackfill(argv: string[], io: Io, sourceRootOverride?: string)
     else response = inspectGitBackfill(project, parsed, options);
   } catch (error) {
     if (error instanceof StateRetrievalFailure) return emitAuthorityFailure(error, format, io);
-    const invalid = failure((error as Error).message, format === "yaml" ? "text" : format, contract.command);
+    const invalid = failure(
+      (error as Error).message,
+      format === "yaml" ? "text" : format,
+      contract.command,
+      undefined,
+      parsed.apply ? BACKFILL_APPLY_EXAMPLE : undefined,
+    );
     return emitInvalidInput(io, invalid);
   }
   const out = io.out ?? ((text: string) => process.stdout.write(text));

@@ -3,6 +3,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { printStateHelp } from "../../src/cli/help.js";
+import { buildExplain } from "../../src/state/write/explain.js";
 import { migrationEnrichmentContract } from "../../src/state/migrationEnrichment.js";
 import {
   gitBackfillContractProjection,
@@ -32,6 +33,7 @@ describe("simplified migration and enrichment parity", () => {
       "skills/agentera/schemas/artifacts/progress.yaml",
       "skills/agentera/schemas/artifacts/decisions.yaml",
       "skills/agentera/schemas/artifacts/health.yaml",
+      "skills/agentera/references/contract.md",
     ];
     for (const surface of surfaces) {
       expect(fs.readFileSync(path.join(BUNDLE_ROOT, surface), "utf8"), surface).toBe(read(surface));
@@ -63,6 +65,33 @@ describe("simplified migration and enrichment parity", () => {
 
     for (const term of ["receipt", "hmac", "preview-token", "preview_token", "expiry", "daemon", "service"]) {
       expect(live, term).not.toContain(term);
+    }
+  });
+
+  it("keeps numbered projection guidance lossless in source, bundle, and explain output", () => {
+    const source = read("skills/agentera/references/contract.md");
+    const bundled = fs.readFileSync(path.join(BUNDLE_ROOT, "skills/agentera/references/contract.md"), "utf8");
+    const start = source.indexOf("### Compaction thresholds");
+    const end = source.indexOf("**EXPERIMENTS.md**", start);
+    expect(start).toBeGreaterThanOrEqual(0);
+    expect(end).toBeGreaterThan(start);
+    const sourceProjection = source.slice(start, end).toLowerCase().replace(/\s+/g, " ");
+    const bundleProjection = bundled.slice(start, end).toLowerCase().replace(/\s+/g, " ");
+    const explain = JSON.stringify(buildExplain("progress", REPO_ROOT, "append"))
+      .toLowerCase()
+      .replace(/\s+/g, " ");
+    const required = [
+      "uniform_10_40_50",
+      "bounded active/archive projections",
+      "verified numbered archives remain authoritative",
+      "no destructive deletion",
+      "recovery refuses to omit entries when archive evidence is missing",
+    ];
+    const stale = ["drop beyond 50", "removed entirely", "older than 50", "drop the oldest"];
+
+    for (const surface of [sourceProjection, bundleProjection, explain]) {
+      for (const phrase of required) expect(surface, phrase).toContain(phrase);
+      for (const phrase of stale) expect(surface, phrase).not.toContain(phrase);
     }
   });
 });

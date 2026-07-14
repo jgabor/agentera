@@ -204,7 +204,9 @@ npx -y agentera@next state migrate --project "$PWD" --artifact progress --number
 ```
 
 Git enrichment is optional. A preview is useful but not required before direct
-apply. Apply revalidates the selected project, current `HEAD`, allowed-ref
+apply. Inventory and preview may use the current working directory when
+`--project` is omitted; direct apply must name `--project PATH` explicitly.
+Apply revalidates the selected project, current `HEAD`, allowed-ref
 reachability, candidate provenance and content, and the immutable archive target
 immediately before publication:
 

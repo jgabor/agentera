@@ -184,7 +184,7 @@ export function printStateHelp(sub?: string): string {
       "",
       "options:",
       "  -h, --help            show this help message and exit",
-      "  --project PATH        Project directory to inspect",
+      "  --project PATH        Project directory; optional for inventory/preview, required for apply",
       `  --artifact ARTIFACT   ${backfill.supportedArtifacts.join(", ")}`,
       "  --number N            Positive legacy entry number; requires --artifact",
       "  --commit HASH         Pin one reachable provenance occurrence",

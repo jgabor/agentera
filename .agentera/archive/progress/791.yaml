@@ -1,0 +1,18 @@
+schemaVersion: agentera.stateArchiveEntry.v1
+artifact_id: progress
+entry_number: 791
+record:
+  number: 791
+  timestamp: 2026-07-14 15:12
+  type: fix
+  phase: build
+  what: "Fixed the two audited simplified Task 2 contract drift defects: explicit project is now required for Git backfill apply, and numbered projection guidance is lossless across live explain, help, docs, and bundle inputs."
+  inspiration: "Task 2 independent audit failure: backfill apply used cwd fallback and projection guidance described destructive history loss."
+  discovered: The canonical authority already declared --project PATH in apply_requires and already defined verified numbered archives as authoritative; the runtime and help were the drift. Inventory and preview remain cwd-convenient, while experiments and TODO retain their separate owning compaction contracts.
+  verified: "Focused suite: 7 files and 126 tests passed. Non-packaging boundary: 176 files and 1789 tests passed. Full suite: 177 files and 1798 tests, 1793 passed with 5 known npm-pack JSON parser failures in packaging regressions. Typecheck and build passed; bundle:data passed; capability-contract validation passed 2/2; py-ts parity reported drift none; markdownlint passed; check compact passed with progress recovery refusal preserved; schema, help, prime, migration preview, and explicit-project backfill preview smokes passed."
+  next: Keep Plan Task 2 pending with its recorded single failure; do not record a new evaluation or completion state. Preserve the known npm 12 packaging parser caveat and the five progress entries whose numbered archive evidence is missing.
+  context:
+    intent: Retry simplified Agentera Task 2 without adding security machinery or changing unrelated artifact contracts.
+    constraints: Preserved direct --apply --force with explicit project/artifact/number, apply-time revalidation, bounds, local-only Git, Decision 53, archived plan/progress evidence, vision/profile/version/release state, and known caveats. Added no receipt, HMAC, token, secret, ledger, hostile-local defense, remote access, or unrelated contract retirement.
+    scope: packages/cli backfill parser/help/explain/tests; skills/agentera references/contract.md; UPGRADE.md; generated ignored CLI bundle; typed progress cycle
+record_sha256: e0cd794535f7f41713529a0a89004887f8ed856a35df208ad9e0d8995fe87396

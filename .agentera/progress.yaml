@@ -1,4 +1,42 @@
 cycles:
+  - number: 791
+    timestamp: 2026-07-14 15:12
+    type: fix
+    phase: build
+    what: "Fixed the two audited simplified Task 2 contract drift defects: explicit
+      project is now required for Git backfill apply, and numbered projection
+      guidance is lossless across live explain, help, docs, and bundle inputs."
+    inspiration: "Task 2 independent audit failure: backfill apply used cwd fallback
+      and projection guidance described destructive history loss."
+    discovered: The canonical authority already declared --project PATH in
+      apply_requires and already defined verified numbered archives as
+      authoritative; the runtime and help were the drift. Inventory and preview
+      remain cwd-convenient, while experiments and TODO retain their separate
+      owning compaction contracts.
+    verified: "Focused suite: 7 files and 126 tests passed. Non-packaging boundary:
+      176 files and 1789 tests passed. Full suite: 177 files and 1798 tests,
+      1793 passed with 5 known npm-pack JSON parser failures in packaging
+      regressions. Typecheck and build passed; bundle:data passed;
+      capability-contract validation passed 2/2; py-ts parity reported drift
+      none; markdownlint passed; check compact passed with progress recovery
+      refusal preserved; schema, help, prime, migration preview, and
+      explicit-project backfill preview smokes passed."
+    next: Keep Plan Task 2 pending with its recorded single failure; do not record a
+      new evaluation or completion state. Preserve the known npm 12 packaging
+      parser caveat and the five progress entries whose numbered archive
+      evidence is missing.
+    context:
+      intent: Retry simplified Agentera Task 2 without adding security machinery or
+        changing unrelated artifact contracts.
+      constraints: Preserved direct --apply --force with explicit
+        project/artifact/number, apply-time revalidation, bounds, local-only
+        Git, Decision 53, archived plan/progress evidence,
+        vision/profile/version/release state, and known caveats. Added no
+        receipt, HMAC, token, secret, ledger, hostile-local defense, remote
+        access, or unrelated contract retirement.
+      scope: packages/cli backfill parser/help/explain/tests; skills/agentera
+        references/contract.md; UPGRADE.md; generated ignored CLI bundle; typed
+        progress cycle
   - number: 790
     timestamp: 2026-07-14 14:28
     type: fix
@@ -544,64 +582,6 @@ cycles:
         packages/cli/src/cli/commands/schema.ts; packages/cli/src/cli/help.ts;
         packages/cli/test/state/migrationAuthority.test.ts; TODO.md; corrected
         Cycle 781 actual path packages/cli/src/cli/errors.ts
-  - number: 781
-    timestamp: 2026-07-14 06:10
-    type: fix
-    phase: build
-    what: Retried Task 2 after the independent authority audit by removing
-      duplicated migration parser values, deriving parser/help/schema surfaces
-      from the canonical authority, preserving structured YAML invalid-input
-      envelopes, and adding bounded authority and dispatch coverage without
-      implementing migration execution.
-    inspiration: Plan Task 2 retry after independent migration authority and
-      envelope audit failure; user-confirmed agentera state migrate namespace
-      and bounded project-local custom-name inventory.
-    discovered: The authority needed machine-readable selector metadata for the
-      candidate filename pattern and format selector so parser and boundary
-      checks could consume source-owned values without a second registry. The
-      existing npm 12 packaging harness retains five known JSON parsing failures
-      outside this scope.
-    verified: "Focused migration/state/help/schema tests passed: 4 files, 63 tests.
-      Non-packaging CLI suite passed: 174 files, 1,754 tests. Typecheck, build,
-      and bundle:data passed. Migration source/bundle authority parity passed.
-      Capability-contract and capability status validation passed. Plan,
-      progress, decisions, and health artifact validation passed. check compact
-      --format json passed with error_count=0, over_limit_count=0,
-      protected_overflow_count=0, and changed_count=0; the five pre-existing
-      progress archive-recovery refusals remained unchanged. CLI smoke checks
-      passed for state migrate help, schema JSON, inventory JSON/YAML, dry-run,
-      apply-force dispatch, invalid apply-without-force, and bare state
-      guidance. JSON and YAML invalid-input envelopes parsed equivalently and
-      text guidance retained syntax/example repair fields."
-    next: Leave Task 2 pending with failure_count 1 for re-audit; do not record
-      another evaluation or complete it. Task 3 remains deferred and may later
-      implement bounded non-Git scanning and publication from this authority. Do
-      not add migration execution, Git enrichment, release work, vision changes,
-      or remote access.
-    context:
-      intent: Repair only the authority, help, schema, parser, error-envelope, and
-        state-command self-correction defects identified by
-        task2-independent-audit-1, then verify and publish the retry evidence
-        while keeping Task 2 pending.
-      constraints: Only authority/help/schema/parser/error-envelope/dispatch
-        corrections and tests were in scope. Preserve Decision 53 no-inference
-        rules, archive immutability, archive-before-projection and
-        projection-failure policy, startup caveats, Git-independent publication,
-        and known npm 12 failures. Do not modify the Task 2 evaluation state
-        beyond committing its existing failure record; do not push.
-      unknowns: Stale profile state and existing prime startup caveats for missing
-        decision, vision, and profile state remain unchanged; independent
-        re-audit remains required.
-      scope: references/artifacts/state-storage-authority.yaml;
-        packages/cli/src/state/migrationAuthority.ts;
-        packages/cli/src/cli/commands/migrate.ts;
-        packages/cli/src/cli/commands/errors.ts;
-        packages/cli/src/cli/commands/schema.ts;
-        packages/cli/src/cli/commands/help.ts;
-        packages/cli/src/cli/dispatch/index.ts;
-        packages/cli/test/state/migrationAuthority.test.ts;
-        packages/cli/test/cli/state.test.ts; generated dist and bundle parity;
-        .agentera/plan.yaml
   - number: 749
     timestamp: 2026-07-13 10:58
     type: feat
@@ -719,6 +699,8 @@ cycles:
       intent: Complete active plan Task 7 without changing decisions or unrelated
         capabilities.
 archive:
+  - summary: "Cycle 781 (2026-07-14): Retried Task 2 after the independent authority
+      audit by removing duplicated migration parser values, deriving..."
   - summary: "Cycle 780 (2026-07-14): Published the schema-backed local migration
       authority and the confirmed agentera state migrate discovery surface;
       valid..."
@@ -818,16 +800,18 @@ archive:
   - summary: "Cycle 734 (2026-07-12): Repaired Task 1 lifecycle inventory
       completeness with scan-enforced classification patterns in
       skills/agentera/schemas/artifacts/plan.yaml."
-  - summary: "Cycle 733 (2026-07-12): Defined the canonical plan lifecycle contract
-      in skills/agentera/schemas/artifacts/plan.yaml and enforced its
-      seven-family inventory in planLifecycleContract.test.ts."
 omitted: true
-omitted_count: 28
+omitted_count: 29
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded

@@ -78,7 +78,7 @@ export function buildExplain(
   };
   if (spec.compacts) {
     result.compaction =
-      "uniform_10_40_50 (10 full, 40 archive, drop beyond 50); runs automatically on append";
+      "uniform_10_40_50 (bounded active/archive projections: 10 active full-detail and 40 archive entries; verified numbered archives remain authoritative; no destructive deletion; recovery refuses to omit entries when archive evidence is missing); runs automatically on append";
   }
   if (spec.inputRoot) {
     result.fields = [];

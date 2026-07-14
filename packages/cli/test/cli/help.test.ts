@@ -67,6 +67,7 @@ describe("cli help", () => {
     const backfill = printStateHelp("backfill");
     expect(backfill).toContain("[--dry-run|--apply --force]");
     expect(backfill).toContain("Direct --apply --force publishes one immutable archive record after fresh checks.");
+    expect(backfill).toContain("optional for inventory/preview, required for apply");
     expect(backfill).toContain("Result limit: 100; history limit: 500 units and 16777216 bytes (16 MiB).");
     expect(backfill).toContain("Reads only HEAD, refs/heads, refs/tags; excludes refs/remotes, custom_refs.");
     expect(backfill).toContain("Traceability: commit, path, blob_id, entry_id, content_hash, reachable.");

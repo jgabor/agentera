@@ -281,7 +281,7 @@ describe("state writer discovery and progress", () => {
         }),
       ]),
     );
-    expect(result.json?.compaction).toContain("10 full, 40 archive");
+    expect(result.json?.compaction).toContain("10 active full-detail and 40 archive entries");
     const health = run(root, ["health", "explain", "--verb", "append", "--format", "json"]);
     expect(health.json?.input_schema).toMatchObject({
       root: "one audit entry",

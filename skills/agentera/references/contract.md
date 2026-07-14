@@ -252,19 +252,32 @@ The test: if a reader can reconstruct the information from the project's current
 
 ### Compaction thresholds
 
-Growing artifacts are compacted to cap read cost for consuming skills. Compaction runs when the producing skill writes a new entry. All growing artifacts follow a uniform 10/40/50 rule: 10 full-detail entries, 40 one-line archive entries, drop beyond 50 total.
+Numbered state artifacts use `uniform_10_40_50` as projection capacity to cap
+read cost for consuming skills: 10 active full-detail entries and 40 archive
+projection entries. These are bounded active/archive projections, not retention
+or deletion limits. Verified numbered archives remain authoritative; projection
+compaction performs no destructive deletion. Recovery refuses to omit entries
+when archive evidence is missing and retains full entries with metadata.
+Compaction runs when the producing skill writes a new entry. Other artifacts
+retain their owning artifact-specific compaction rules below.
 
 **CHANGELOG.md is exempt**: it is the public version-level history and is not compacted.
 
 **PROGRESS.md**, compacted by realisera when writing a new cycle entry:
 
-| Tier             | Entries               | Format                                   |
-| ---------------- | --------------------- | ---------------------------------------- |
-| Full detail      | 10 most recent cycles | Standard cycle entry format              |
-| One-line archive | Cycles 11 through 50  | `Cycle N (YYYY-MM-DD): ≤15-word summary` |
-| Dropped          | Cycles older than 50  | Removed entirely                         |
+| Tier                | Entries               | Format                                   |
+| ------------------- | --------------------- | ---------------------------------------- |
+| Active full detail  | 10 most recent cycles | Standard cycle entry format              |
+| Archive projection  | Cycles 11 through 50  | `Cycle N (YYYY-MM-DD): ≤15-word summary` |
+| Outside projection  | Older cycles          | Omission metadata; numbered archive      |
 
-When writing a new cycle: if >10 full-detail entries exist, collapse the oldest to one-line format under an `## Archived Cycles` heading (below the recent cycles). If >40 one-line entries exist, drop the oldest. One-line summaries preserve cycle number, date, and work-type, enough for trend analysis by consuming skills.
+When writing a new cycle: if >10 full-detail entries exist and their numbered
+archives verify, collapse the oldest to one-line format under an `## Archived
+Cycles` heading (below the recent cycles). If >40 one-line entries exist, omit
+the oldest from this bounded projection with metadata; if archive evidence is
+missing, retain the full entry and refuse the projection change. One-line
+summaries preserve cycle number, date, and work-type, enough for trend analysis
+by consuming skills.
 
 Active cycle entries are stored newest-first: descending by cycle number. Insert the newest full-detail cycle before older active cycles so `agentera state progress list --limit 1 --format json` reads the current cycle through the bounded state interface.
 
@@ -276,17 +289,24 @@ Active cycle entries are stored newest-first: descending by cycle number. Insert
 | One-line archive | Experiments 11 through 50  | `EXP-N: ≤15-word result summary` |
 | Dropped          | Experiments older than 50  | Removed entirely                 |
 
-Same logic: collapse oldest full-detail to one-line when >10 exist. Drop oldest one-line when >40 one-line entries exist. Archive section sits below recent experiments under an `## Archived Experiments` heading.
+Same logic: collapse oldest full-detail to one-line when >10 exist. Drop oldest
+one-line when >40 one-line entries exist. Archive section sits below recent
+experiments under an `## Archived Experiments` heading.
 
 **DECISIONS.md**, compacted by resonera when writing a new decision:
 
-| Tier             | Entries                  | Format                                                 |
-| ---------------- | ------------------------ | ------------------------------------------------------ |
-| Full detail      | 10 most recent decisions | Standard decision entry format                         |
-| One-line archive | Decisions 11 through 50  | `Decision N (YYYY-MM-DD): [Choice] — ≤15-word summary` |
-| Dropped          | Decisions older than 50  | Removed entirely                                       |
+| Tier                | Entries                  | Format                                                 |
+| ------------------- | ------------------------ | ------------------------------------------------------ |
+| Active full detail  | 10 most recent decisions | Standard decision entry format                         |
+| Archive projection  | Decisions 11 through 50  | `Decision N (YYYY-MM-DD): [Choice] — ≤15-word summary` |
+| Outside projection  | Older decisions          | Omission metadata; numbered archive                   |
 
-Same logic: collapse oldest full-detail to one-line when >10 exist. Drop oldest one-line when >40 one-line entries exist. Archive section sits below recent decisions under an `## Archived Decisions` heading. One-line summaries preserve decision number, date, and the chosen alternative.
+Same logic: collapse oldest full-detail to one-line when >10 exist and their
+numbered archives verify. If >40 one-line entries exist, omit the oldest from
+this bounded projection with metadata; if archive evidence is missing, retain
+the full entry and refuse the projection change. Archive section sits below
+recent decisions under an `## Archived Decisions` heading. One-line summaries
+preserve decision number, date, and the chosen alternative.
 
 When writing a new decision, choose `N` as one greater than the highest decision number in active and archived entries. Insert the new full entry in the active section immediately before `## Archived Decisions`; if no archive exists, append it at the end of the file. Active decision entries must have unique numbers and remain ascending by decision number. Do not reuse or renumber decisions except when repairing artifact corruption.
 
@@ -294,13 +314,18 @@ When writing a new decision, choose `N` as one greater than the highest decision
 
 **HEALTH.md**, compacted by inspektera when writing a new audit:
 
-| Tier             | Entries               | Format                                             |
-| ---------------- | --------------------- | -------------------------------------------------- |
-| Full detail      | 10 most recent audits | Standard audit entry format                        |
-| One-line archive | Audits 11 through 50  | `Audit N (YYYY-MM-DD): [grade] — ≤15-word summary` |
-| Dropped          | Audits older than 50  | Removed entirely                                   |
+| Tier                | Entries               | Format                                             |
+| ------------------- | --------------------- | -------------------------------------------------- |
+| Active full detail  | 10 most recent audits | Standard audit entry format                        |
+| Archive projection  | Audits 11 through 50  | `Audit N (YYYY-MM-DD): [grade] — ≤15-word summary` |
+| Outside projection  | Older audits          | Omission metadata; numbered archive                |
 
-Same logic: collapse oldest full-detail to one-line when >10 exist. Drop oldest one-line when >40 one-line entries exist. Archive section sits below recent audits under an `## Archived Audits` heading. One-line summaries preserve audit number, date, overall grade, and trajectory.
+Same logic: collapse oldest full-detail to one-line when >10 exist and their
+numbered archives verify. If >40 one-line entries exist, omit the oldest from
+this bounded projection with metadata; if archive evidence is missing, retain
+the full entry and refuse the projection change. Archive section sits below
+recent audits under an `## Archived Audits` heading. One-line summaries preserve
+audit number, date, overall grade, and trajectory.
 
 **TODO.md Resolved section**, compacted by realisera when marking an item resolved:
 

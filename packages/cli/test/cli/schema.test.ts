@@ -37,6 +37,7 @@ describe("cli schema", () => {
       reachable_refs: ["HEAD", "refs/heads", "refs/tags"],
       excluded_refs: ["refs/remotes", "custom_refs"],
       consent: { preview: "optional_read_only", apply: "--apply --force" },
+      apply_requires: ["--apply", "--force", "--project PATH", "--artifact ARTIFACT", "--number N"],
     });
     const backfill = (payload.commands as Array<{ name: string; kind: string; structured_fields: string[] }>).find(
       (command) => command.name === "backfill",
