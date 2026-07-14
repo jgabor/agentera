@@ -48,19 +48,19 @@ tasks:
     name: Align contracts, help, documentation, and bundles
     depends_on:
       - "1"
-    status: pending
+    status: complete
     acceptance:
       - GIVEN the completed local migration and simplified enrichment model WHEN current runtime, schema, help, output, upgrade guidance, references, bundles, and tests are compared THEN commands, limits, consent, revalidation, failures, recovery, and traceability agree without live receipt requirements, while archived plans and progress remain unchanged.
       - GIVEN Decision 53 and bounded projections WHEN validation runs THEN missing or unconfirmed state is never inferred and projection capacity is not described as destructive retention.
     evaluation:
-      attempt_count: 1
+      attempt_count: 2
       failure_count: 1
-      last_verdict: fail
+      last_verdict: pass
       last_failure_evidence: Backfill apply accepts cwd fallback despite authority requiring explicit --project; live explain and contract guidance still describe dropping or removing history beyond projection capacity.
       provenance:
-        attempt_id: simplified-task2-audit-1
-        source: "Independent orchestration evaluator: migration surface and lossless projection wording audit"
-        recorded_at: 2026-07-14 14:55
+        attempt_id: simplified-task2-audit-2
+        source: "Independent orchestration evaluator: simple migration surface parity, explicit project consent, Decision 53, and lossless projection audit"
+        recorded_at: 2026-07-14 15:38
         writer_command: agentera state plan record-evaluation
   - number: 3
     name: Audit only the declared rollout requirements
