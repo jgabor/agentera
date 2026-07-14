@@ -124,6 +124,188 @@ function candidatePathError(
   return null;
 }
 
+export interface MigrationInventory {
+  project: string;
+  entries: Array<Record<string, unknown>>;
+  omittedCount: number;
+  status: string;
+}
+
+class MigrationInventoryError extends Error {
+  constructor(
+    message: string,
+    readonly failureClass: string,
+  ) {
+    super(message);
+    this.name = "MigrationInventoryError";
+  }
+}
+
+interface CandidateObservation {
+  relativePath: string;
+  sizeBytes: number;
+  symbolicLink: boolean;
+  regularFile: boolean;
+}
+
+function normalizedRelativePath(value: string): string {
+  return value.replaceAll("\\", "/").replace(/^\.\//, "");
+}
+
+function pathIsExcluded(relativePath: string, contract: StateMigrationContract): boolean {
+  return contract.inventory.excludedRelativePaths.some(
+    (excluded) => relativePath === excluded || relativePath.startsWith(`${excluded}/`),
+  );
+}
+
+function inventoryEntry(
+  observation: CandidateObservation,
+  project: string,
+  contract: StateMigrationContract,
+): Record<string, unknown> {
+  const artifactId = contract.fixedNames[observation.relativePath] ?? null;
+  const entry: Record<string, unknown> = {
+    candidate_id: observation.relativePath,
+    path: observation.relativePath,
+    artifact_id: artifactId,
+    entry_number: null,
+    classification: "unaddressable",
+    detail_availability: "candidate_metadata_only",
+    compatibility: "legacy",
+    source: "project_local",
+    addressable: false,
+    size_bytes: observation.sizeBytes,
+  };
+  const pathError = candidatePathError(observation.relativePath, contract, project);
+  if (observation.symbolicLink || pathError?.includes("boundary")) {
+    entry.classification = "blocked";
+    entry.compatibility = "blocked";
+    entry.rejection = observation.symbolicLink ? "symlink_escape" : "outside_project";
+  } else if (!observation.regularFile || pathError) {
+    entry.classification = "unsupported";
+    entry.compatibility = "unsupported";
+    entry.rejection = observation.regularFile ? "unsupported_path" : "non_regular";
+  }
+  return entry;
+}
+
+function inventoryStatus(
+  entries: Array<Record<string, unknown>>,
+  omittedCount: number,
+  contract: StateMigrationContract,
+): string {
+  const preferred = omittedCount > 0
+    ? "degraded"
+    : entries.some((entry) => entry.rejection !== undefined)
+      ? "blocked"
+      : "complete";
+  return contract.resultStatuses.includes(preferred) ? preferred : contract.resultStatuses[0];
+}
+
+/** Inventory candidate metadata only; this function never reads bytes or mutates state. */
+export function inventoryCandidates(
+  selectedProject: string,
+  contract: StateMigrationContract,
+): MigrationInventory {
+  let project: string;
+  try {
+    project = fs.realpathSync(selectedProject);
+    if (!fs.statSync(project).isDirectory()) throw new Error("not a directory");
+  } catch {
+    throw new MigrationInventoryError(
+      "selected project must resolve to an existing project directory",
+      "project_boundary",
+    );
+  }
+
+  const observations: CandidateObservation[] = [];
+  const seen = new Set<string>();
+  const candidatePattern = new RegExp(contract.candidatePattern);
+  const collect = (rootPath: string, rootRelative: string, maximumDepth: number, depth: number): void => {
+    let directoryEntries: fs.Dirent[];
+    try {
+      directoryEntries = fs.readdirSync(rootPath, { withFileTypes: true });
+    } catch {
+      return;
+    }
+    for (const directoryEntry of directoryEntries) {
+      const relativePath = normalizedRelativePath(
+        path.join(rootRelative, directoryEntry.name),
+      );
+      if (pathIsExcluded(relativePath, contract)) continue;
+      const absolutePath = path.join(project, relativePath);
+      if (directoryEntry.isDirectory()) {
+        if (depth + 1 < maximumDepth) collect(absolutePath, relativePath, maximumDepth, depth + 1);
+        continue;
+      }
+      if (!candidatePattern.test(directoryEntry.name) || seen.has(relativePath)) continue;
+      seen.add(relativePath);
+      let sizeBytes = 0;
+      try {
+        sizeBytes = fs.lstatSync(absolutePath).size;
+      } catch {
+        sizeBytes = 0;
+      }
+      observations.push({
+        relativePath,
+        sizeBytes,
+        symbolicLink: directoryEntry.isSymbolicLink(),
+        regularFile: directoryEntry.isFile(),
+      });
+    }
+  };
+
+  for (const root of contract.inventory.roots) {
+    const rootRelative = normalizedRelativePath(root.path === "." ? "" : root.path);
+    const rootPath = path.resolve(project, rootRelative || ".");
+    try {
+      const rootStat = fs.lstatSync(rootPath);
+      if (rootStat.isSymbolicLink()) {
+        throw new MigrationInventoryError(
+          `declared scan root '${root.path}' violates the project boundary: symlink roots are forbidden`,
+          "project_boundary",
+        );
+      }
+      if (!rootStat.isDirectory()) continue;
+    } catch (error) {
+      if (error instanceof MigrationInventoryError) throw error;
+      continue;
+    }
+    collect(rootPath, rootRelative, root.maximumDepth, 0);
+  }
+
+  observations.sort((left, right) =>
+    left.relativePath < right.relativePath ? -1 : left.relativePath > right.relativePath ? 1 : 0,
+  );
+
+  const entries: Array<Record<string, unknown>> = [];
+  let omittedCount = 0;
+  let totalBytes = 0;
+  for (const [index, observation] of observations.entries()) {
+    if (index >= contract.inventory.maximumCandidateFiles) {
+      omittedCount += 1;
+      continue;
+    }
+    if (observation.sizeBytes > contract.inventory.maximumFileBytes) {
+      omittedCount += 1;
+      continue;
+    }
+    if (totalBytes + observation.sizeBytes > contract.inventory.maximumTotalBytes) {
+      omittedCount += 1;
+      continue;
+    }
+    totalBytes += observation.sizeBytes;
+    entries.push(inventoryEntry(observation, project, contract));
+  }
+
+  return {
+    project,
+    entries,
+    omittedCount,
+    status: inventoryStatus(entries, omittedCount, contract),
+  };
+}
+
 export function parseMigrateArgs(
   argv: string[],
   contract: StateMigrationContract = stateMigrationContract(),
@@ -304,17 +486,23 @@ export function projectedEntries(
 ): { entries: Array<Record<string, unknown>>; omittedCount: number } {
   const allowedFields = new Set(contract.resultEntryFields);
   const normalized = entries
-    .map((entry) =>
-      Object.fromEntries(
+    .map((entry) => {
+      const projected = Object.fromEntries(
         Object.entries(entry).filter(([field]) => allowedFields.has(field)),
-      ),
-    )
+      );
+      for (const field of ["path", "candidate_id"]) {
+        if (typeof projected[field] === "string") {
+          projected[field] = normalizedRelativePath(projected[field] as string);
+        }
+      }
+      return projected;
+    })
     .sort((left, right) => {
       const leftPath = String(left.path ?? "").replaceAll("\\", "/");
       const rightPath = String(right.path ?? "").replaceAll("\\", "/");
       return leftPath < rightPath ? -1 : leftPath > rightPath ? 1 : 0;
     });
-  const limit = args.limit ?? contract.maximumLimit;
+  const limit = args.limit ?? contract.defaultLimit;
   return {
     entries: normalized.slice(0, limit),
     omittedCount: Math.max(0, normalized.length - limit),
@@ -326,61 +514,85 @@ export function resultCounts(
   omittedCount: number,
   contract: StateMigrationContract,
 ): Record<string, number | null> {
+  const matches = (
+    entry: Record<string, unknown>,
+    predicates: Array<{ field: string; equals?: unknown; notEquals?: unknown }>,
+  ): boolean => predicates.every((predicate) => {
+    if ("equals" in predicate) return entry[predicate.field] === predicate.equals;
+    return entry[predicate.field] !== predicate.notEquals;
+  });
   const counts: Record<string, number | null> = {};
-  const visibleEntries = entries;
-  const count = (predicate: (entry: Record<string, unknown>) => boolean): number =>
-    visibleEntries.filter(predicate).length;
-  const distinct = (field: string): number =>
-    new Set(
-      visibleEntries
-        .map((entry) => entry[field])
-        .filter((value): value is string | number => typeof value === "string" || typeof value === "number"),
-    ).size;
   for (const field of contract.resultCountFields) {
-    if (field === "omitted") counts[field] = omittedCount;
-    else if (entries.length === 0) counts[field] = null;
-    else if (field === "physical") counts[field] = entries.length + omittedCount;
-    else if (field === "addressable") counts[field] = count((entry) => entry.addressable === true);
-    else if (field === "addressable_ids") counts[field] = distinct("candidate_id");
-    else if (field === "unaddressable")
-      counts[field] = count((entry) => entry.addressable === false && entry.classification !== "ambiguous");
-    else if (field === "ambiguous") counts[field] = count((entry) => entry.classification === "ambiguous");
-    else if (field === "mirrored") counts[field] = count((entry) => entry.classification === "mirrored");
-    else if (field === "duplicate") counts[field] = count((entry) => entry.classification === "duplicate");
-    else if (field === "conflict") counts[field] = count((entry) => entry.classification === "conflict");
-    else counts[field] = null;
+    const rule = contract.resultCountRules[field];
+    const sourceEntries = rule.source === "visible_entries" ? entries : [];
+    if (rule.operation === "value" && rule.source === "omitted_count") {
+      counts[field] = omittedCount;
+    } else if (rule.operation === "count" && rule.source === "all_candidates" && rule.predicates.length === 0) {
+      counts[field] = entries.length + omittedCount;
+    } else if (rule.operation === "count" && rule.source === "visible_entries") {
+      counts[field] = sourceEntries.filter((entry) => matches(entry, rule.predicates)).length;
+    } else if (rule.operation === "distinct" && rule.source === "visible_entries" && rule.field) {
+      counts[field] = new Set(
+        sourceEntries
+          .filter((entry) => matches(entry, rule.predicates))
+          .map((entry) => entry[rule.field as string])
+          .filter((value): value is string | number => typeof value === "string" || typeof value === "number"),
+      ).size;
+    } else {
+      counts[field] = null;
+    }
   }
   return counts;
+}
+
+function omissionValues(
+  contract: StateMigrationContract,
+  omittedCount: number,
+): Record<string, unknown> {
+  const sourceValues: Record<string, unknown> = {
+    has_omissions: omittedCount > 0,
+    omitted_count: omittedCount,
+    omission_reason: omittedCount > 0 ? contract.omission.boundedReason : contract.omission.completeReason,
+    retrieval: {
+      command: contract.omission.retrieval,
+      retry: contract.omission.retry,
+    },
+  };
+  return Object.fromEntries(
+    contract.omission.fields.map((field) => {
+      const source = contract.omission.fieldSources[field];
+      if (!(source in sourceValues)) {
+        throw new Error(`state migration omission source '${source}' is unavailable`);
+      }
+      return [field, sourceValues[source]];
+    }),
+  );
 }
 
 export function deferredResponse(
   args: MigrateArgs,
   contract: StateMigrationContract,
   entries: Array<Record<string, unknown>> = [],
+  inventory?: MigrationInventory,
 ): Record<string, unknown> {
   const mode = args.apply ? "apply" : args.dryRun ? "preview" : "inventory";
   const projected = projectedEntries(entries, args, contract);
+  const omittedCount = (inventory?.omittedCount ?? 0) + projected.omittedCount;
+  const omission = omissionValues(contract, omittedCount);
   const values: Record<string, unknown> = {
     schemaVersion: contract.resultSchemaVersion,
     command: contract.command,
-    status: contract.resultStatuses[contract.resultStatuses.length - 1],
+    status: inventory?.status ?? contract.resultStatuses[0],
     mode,
-    project: args.project ?? process.cwd(),
+    project: inventory?.project ?? args.project ?? process.cwd(),
     read_only: !args.apply,
     mutation_intent: args.apply,
     mutation_performed: false,
     remote_contact: false,
-    inventory_performed: false,
+    inventory_performed: inventory !== undefined,
     entries: projected.entries,
-    counts: resultCounts(projected.entries, projected.omittedCount, contract),
-    omitted: projected.omittedCount > 0,
-    omitted_count: projected.omittedCount,
-    omission_reason:
-      projected.omittedCount > 0 ? contract.omission.boundedReason : contract.omission.completeReason,
-    retrieval: {
-      command: contract.omission.retrieval,
-      retry: contract.omission.retry,
-    },
+    counts: resultCounts(projected.entries, omittedCount, contract),
+    ...omission,
     diagnostics: [
       {
         class: "implementation_deferred",
@@ -395,6 +607,7 @@ export function deferredResponse(
         required_fields: contract.resultRequiredFields,
         entry_fields: contract.resultEntryFields,
         count_fields: contract.resultCountFields,
+        count_rules: contract.resultCountRules,
         omission: contract.omission,
       },
       inventory: contract.inventory,
@@ -463,7 +676,23 @@ export function runMigrate(argv: string[], io: Io, sourceRootOverride?: string):
     );
   }
 
-  const response = deferredResponse(parsed, contract);
+  let inventory: MigrationInventory;
+  try {
+    inventory = inventoryCandidates(parsed.project ?? process.cwd(), contract);
+  } catch (error) {
+    const inventoryError = error as MigrationInventoryError;
+    return emitInvalidInput(
+      io,
+      invalid(
+        inventoryError.message,
+        format,
+        contract,
+        undefined,
+        inventoryError.failureClass ?? "project_boundary",
+      ),
+    );
+  }
+  const response = deferredResponse(parsed, contract, inventory.entries, inventory);
   const out = io.out ?? ((text: string) => process.stdout.write(text));
   if (format === "text") renderText(response, out);
   else emitStructured(response, format, out);

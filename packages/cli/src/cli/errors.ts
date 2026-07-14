@@ -32,12 +32,15 @@ export interface InvalidInputErrorBody {
   syntax?: string;
   example?: string;
   violations?: string[];
+  recovery?: string;
 }
+
+type EmittedInvalidInputError = InvalidInputErrorBody & { recovery: string };
 
 export interface InvalidInputEnvelope {
   schemaVersion: "agentera.invalidInputEnvelope.v2";
   status: "fail";
-  error: InvalidInputErrorBody;
+  error: EmittedInvalidInputError;
 }
 
 export interface EmitInvalidInputOptions {
@@ -46,6 +49,8 @@ export interface EmitInvalidInputOptions {
 }
 
 export const INVALID_INPUT_EXIT_CODE = 2;
+
+const DEFAULT_RECOVERY = "Correct the input and retry; no state was changed.";
 
 const TEXT_GUIDANCE_LINES = [
   "What happened: {message}",
@@ -65,7 +70,10 @@ export function emitInvalidInput(
     const envelope: InvalidInputEnvelope = {
       schemaVersion: "agentera.invalidInputEnvelope.v2",
       status: "fail",
-      error: opts.body,
+      error: {
+        ...opts.body,
+        recovery: opts.body.recovery ?? DEFAULT_RECOVERY,
+      },
     };
     if (opts.format === "json") out(JSON.stringify(envelope) + "\n");
     else out(YAML.stringify(envelope));
@@ -92,6 +100,8 @@ export function emitInvalidInput(
     lines.push("Example:");
     lines.push(`  ${opts.body.example}`);
   }
+  lines.push("");
+  lines.push(`Recovery: ${opts.body.recovery ?? DEFAULT_RECOVERY}`);
   err(lines.join("\n") + "\n");
   return INVALID_INPUT_EXIT_CODE;
 }

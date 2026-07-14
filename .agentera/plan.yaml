@@ -44,6 +44,16 @@ tasks:
       - GIVEN authority-defined roots, depth, exclusions, 256-file, 1-MiB-file, 16-MiB-total, and limit bounds WHEN contract surfaces are exercised THEN normalized ordering, boundary and symlink rejection, truncation, omission counts, omission reasons, and retry guidance are equivalent across text, JSON, and YAML.
       - GIVEN preview and apply requests WHEN Task 1 tests validation and dispatch THEN pass and reject cases prove explicit force, compatibility, backups, retry, and Git independence while asserting no filesystem migration occurs.
       - GIVEN Cycle 781 contains inaccurate count and path claims WHEN correction is published THEN a new immutable progress cycle records the exact independently rerun command, observed count, and actual changed path, marks 781 superseded, and leaves 781 unchanged.
+    evaluation:
+      attempt_count: 1
+      failure_count: 1
+      last_verdict: fail
+      last_failure_evidence: Count and omission semantics remain hardcoded, duplicate authority invalid combinations are accepted, required recovery metadata is absent, and read-only inventory does not exercise the authority's candidate/file/total byte bounds.
+      provenance:
+        attempt_id: continuation-task1-audit-1
+        source: "Independent orchestration evaluator: executable migration authority and bounded inventory audit"
+        recorded_at: 2026-07-14 07:53
+        writer_command: agentera state plan record-evaluation
   - number: 2
     name: Execute bounded non-Git legacy migration
     depends_on:

@@ -478,9 +478,10 @@ api:
       infer missing records, contact Git, contact a remote, or remove legacy
       source files.
     implementation_boundary: >-
-       Task 1 publishes the contract and parser/help/schema discovery only.
-       Legacy candidate scanning, archive publication, backup creation, and
-       projection writes belong to Task 2 and remain deferred here.
+      Task 1 owns bounded, project-local, read-only candidate inventory and
+      parser/help/schema discovery. Task 2 owns all archive publication,
+      backup creation, projection writes, and mutation/application. Inventory
+      never reads Git or writes archives, backups, or projections.
     formats: [text, json, yaml]
     default_limit: 20
     maximum_limit: 100
@@ -674,10 +675,52 @@ api:
       schema_version: agentera.stateMigrationResult.v1
       statuses: [complete, degraded, blocked, unavailable]
       required_fields: [schemaVersion, command, status, mode, project, read_only, mutation_intent, mutation_performed, remote_contact, inventory_performed, entries, counts, diagnostics, source_contract, omitted, omitted_count, omission_reason, retrieval]
-      entry_fields: [candidate_id, path, artifact_id, entry_number, classification, detail_availability, compatibility, source, addressable]
+      entry_fields: [candidate_id, path, artifact_id, entry_number, classification, detail_availability, compatibility, source, addressable, size_bytes, rejection]
       count_fields: [physical, addressable, addressable_ids, unaddressable, ambiguous, mirrored, duplicate, conflict, omitted]
+      count_rules:
+        physical:
+          source: all_candidates
+          operation: count
+        addressable:
+          source: visible_entries
+          operation: count
+          predicates: [{field: addressable, equals: true}]
+        addressable_ids:
+          source: visible_entries
+          operation: distinct
+          field: candidate_id
+        unaddressable:
+          source: visible_entries
+          operation: count
+          predicates:
+            - {field: addressable, equals: false}
+            - {field: classification, not_equals: ambiguous}
+        ambiguous:
+          source: visible_entries
+          operation: count
+          predicates: [{field: classification, equals: ambiguous}]
+        mirrored:
+          source: visible_entries
+          operation: count
+          predicates: [{field: classification, equals: mirrored}]
+        duplicate:
+          source: visible_entries
+          operation: count
+          predicates: [{field: classification, equals: duplicate}]
+        conflict:
+          source: visible_entries
+          operation: count
+          predicates: [{field: classification, equals: conflict}]
+        omitted:
+          source: omitted_count
+          operation: value
       omission:
         fields: [omitted, omitted_count, omission_reason, retrieval]
+        field_sources:
+          omitted: has_omissions
+          omitted_count: omitted_count
+          omission_reason: omission_reason
+          retrieval: retrieval
         complete_reason: none
         bounded_reason: scan_bounded
         retry: >-

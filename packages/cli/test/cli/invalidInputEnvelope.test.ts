@@ -61,6 +61,7 @@ describe("invalid-input envelope (oracle parity)", () => {
       expect(envelope.status).toBe("fail");
       expect(envelope.error.class).toBe("missing_argument");
       expect(envelope.error.message).toBe("validate_family");
+      expect(envelope.error.recovery).toBeTruthy();
     });
 
     it("writes the four-question template to stderr in text mode and returns rc 2", () => {
@@ -88,9 +89,10 @@ describe("invalid-input envelope (oracle parity)", () => {
       expect(err).toContain("Syntax: --format {text|json}");
       expect(err).toContain("Example:");
       expect(err).toContain("agentera --format json state plan");
+      expect(err).toContain("Recovery:");
     });
 
-    it("emits no optional sections in text mode when the body omits them", () => {
+    it("keeps recovery guidance in text mode when the body omits optional fields", () => {
       const { err } = capture((io) =>
         emitInvalidInput(io, {
           format: "text",
@@ -100,6 +102,7 @@ describe("invalid-input envelope (oracle parity)", () => {
       expect(err).not.toContain("Valid values:");
       expect(err).not.toContain("Syntax:");
       expect(err).not.toContain("Example:");
+      expect(err).toContain("Recovery:");
     });
   });
 
@@ -168,7 +171,11 @@ describe("invalid-input envelope (oracle parity)", () => {
       const sample: InvalidInputEnvelope = {
         schemaVersion: "agentera.invalidInputEnvelope.v2",
         status: "fail",
-        error: { class: "missing_argument", message: "x" },
+        error: {
+          class: "missing_argument",
+          message: "x",
+          recovery: "Correct the input and retry; no state was changed.",
+        },
       };
       for (const k of ORACLE.requiredTopLevelKeys) {
         expect(sample).toHaveProperty(k);

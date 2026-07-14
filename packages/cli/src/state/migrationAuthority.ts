@@ -17,11 +17,19 @@ export interface StateMigrationInvalidCombination {
 
 export interface StateMigrationOmissionContract {
   fields: string[];
+  fieldSources: Record<string, string>;
   completeReason: string;
   boundedReason: string;
   retry: string;
   retrieval: string;
   semantics: string;
+}
+
+export interface StateMigrationCountRule {
+  source: string;
+  operation: string;
+  field?: string;
+  predicates: Array<{ field: string; equals?: unknown; notEquals?: unknown }>;
 }
 
 export interface StateMigrationInventoryContract {
@@ -49,12 +57,14 @@ export interface StateMigrationContract {
   invalidCombinations: StateMigrationInvalidCombination[];
   requiredSelectors: Record<string, string[]>;
   inventory: StateMigrationInventoryContract;
+  fixedNames: Record<string, string>;
   candidatePattern: string;
   numberPattern: string;
   selectorValidValues: Record<string, string[]>;
   resultRequiredFields: string[];
   resultEntryFields: string[];
   resultCountFields: string[];
+  resultCountRules: Record<string, StateMigrationCountRule>;
   omission: StateMigrationOmissionContract;
   failureClasses: Record<string, StateMigrationMapping>;
   resultSchemaVersion: string;
@@ -256,7 +266,15 @@ export function stateMigrationContract(
   const result = mapping(migration.result, "api.migrate.result");
   requireKeys(
     result,
-    ["schema_version", "statuses", "required_fields", "entry_fields", "count_fields", "omission"],
+    [
+      "schema_version",
+      "statuses",
+      "required_fields",
+      "entry_fields",
+      "count_fields",
+      "count_rules",
+      "omission",
+    ],
     "api.migrate.result",
   );
   const failures = mapping(migration.failures, "api.migrate.failures");
@@ -309,6 +327,48 @@ export function stateMigrationContract(
       ),
     };
   });
+  requireUnique(
+    scanRoots.map((root) => root.path),
+    "api.migrate.inventory.bounded_scan.roots.path",
+  );
+  const excludedRelativePaths = requiredList(
+    boundedScan.excluded_relative_paths,
+    "api.migrate.inventory.bounded_scan.excluded_relative_paths",
+  );
+  requireUnique(
+    excludedRelativePaths,
+    "api.migrate.inventory.bounded_scan.excluded_relative_paths",
+  );
+  const fixedNamesValue = inventory.fixed_names;
+  if (!Array.isArray(fixedNamesValue) || fixedNamesValue.length === 0) {
+    throw new Error("state storage authority field 'api.migrate.inventory.fixed_names' must be a non-empty list");
+  }
+  const fixedNames: Record<string, string> = {};
+  const fixedArtifacts: string[] = [];
+  for (const [index, value] of fixedNamesValue.entries()) {
+    const fixed = mapping(value, `api.migrate.inventory.fixed_names[${index}]`);
+    const fixedPath = requiredString(
+      fixed.path,
+      `api.migrate.inventory.fixed_names[${index}].path`,
+    );
+    const artifact = requiredString(
+      fixed.artifact,
+      `api.migrate.inventory.fixed_names[${index}].artifact`,
+    );
+    if (fixedNames[fixedPath] !== undefined) {
+      throw new Error("state storage authority field 'api.migrate.inventory.fixed_names.path' must not contain duplicates");
+    }
+    if (fixedArtifacts.includes(artifact)) {
+      throw new Error("state storage authority field 'api.migrate.inventory.fixed_names.artifact' must not contain duplicates");
+    }
+    if (!migrationArtifacts.includes(artifact)) {
+      throw new Error(
+        `state storage authority fixed name references unsupported artifact '${artifact}'`,
+      );
+    }
+    fixedNames[fixedPath] = artifact;
+    fixedArtifacts.push(artifact);
+  }
   const candidatePattern = requiredString(
     selectorContracts.path.pattern,
     "api.migrate.selectors.path.pattern",
@@ -374,6 +434,11 @@ export function stateMigrationContract(
       ),
     };
   });
+  const invalidCombinationKeys = invalidCombinations.map((combination) => {
+    requireUnique(combination.flags, "api.migrate.modes.invalid_combinations.*.flags");
+    return [...combination.flags].sort().join("\u0000");
+  });
+  requireUnique(invalidCombinationKeys, "api.migrate.modes.invalid_combinations.*.flags");
 
   const resultRequiredFields = requiredList(
     result.required_fields,
@@ -384,6 +449,62 @@ export function stateMigrationContract(
   requireUnique(resultRequiredFields, "api.migrate.result.required_fields");
   requireUnique(resultEntryFields, "api.migrate.result.entry_fields");
   requireUnique(resultCountFields, "api.migrate.result.count_fields");
+  const countRulesMapping = mapping(result.count_rules, "api.migrate.result.count_rules");
+  const countRuleNames = Object.keys(countRulesMapping);
+  if (
+    countRuleNames.length !== resultCountFields.length ||
+    resultCountFields.some((field) => !countRuleNames.includes(field))
+  ) {
+    throw new Error("state storage authority count rules must classify every count field exactly once");
+  }
+  const resultCountRules: Record<string, StateMigrationCountRule> = {};
+  for (const field of resultCountFields) {
+    const rule = mapping(countRulesMapping[field], `api.migrate.result.count_rules.${field}`);
+    const source = requiredString(rule.source, `api.migrate.result.count_rules.${field}.source`);
+    const operation = requiredString(
+      rule.operation,
+      `api.migrate.result.count_rules.${field}.operation`,
+    );
+    if (!new Set(["all_candidates", "visible_entries", "omitted_count"]).has(source)) {
+      throw new Error(`state storage authority count rule '${field}' has an unsupported source`);
+    }
+    if (!new Set(["count", "distinct", "value"]).has(operation)) {
+      throw new Error(`state storage authority count rule '${field}' has an unsupported operation`);
+    }
+    const predicatesValue = rule.predicates ?? [];
+    if (!Array.isArray(predicatesValue)) {
+      throw new Error(`state storage authority count rule '${field}' predicates must be a list`);
+    }
+    const predicates = predicatesValue.map((value, index) => {
+      const predicate = mapping(
+        value,
+        `api.migrate.result.count_rules.${field}.predicates[${index}]`,
+      );
+      const predicateField = requiredString(
+        predicate.field,
+        `api.migrate.result.count_rules.${field}.predicates[${index}].field`,
+      );
+      const hasEquals = "equals" in predicate;
+      const hasNotEquals = "not_equals" in predicate;
+      if (hasEquals === hasNotEquals) {
+        throw new Error(
+          `state storage authority count rule '${field}' predicates must declare exactly one comparison`,
+        );
+      }
+      return hasEquals
+        ? { field: predicateField, equals: predicate.equals }
+        : { field: predicateField, notEquals: predicate.not_equals };
+    });
+    if (operation === "distinct") {
+      const distinctField = requiredString(
+        rule.field,
+        `api.migrate.result.count_rules.${field}.field`,
+      );
+      resultCountRules[field] = { source, operation, field: distinctField, predicates };
+    } else {
+      resultCountRules[field] = { source, operation, predicates };
+    }
+  }
   const omission = mapping(result.omission, "api.migrate.result.omission");
   requireKeys(
     omission,
@@ -392,8 +513,32 @@ export function stateMigrationContract(
   );
   const omissionFields = requiredList(omission.fields, "api.migrate.result.omission.fields");
   requireUnique(omissionFields, "api.migrate.result.omission.fields");
+  const omissionFieldSourcesMapping = mapping(
+    omission.field_sources,
+    "api.migrate.result.omission.field_sources",
+  );
+  const omissionFieldSourceNames = Object.keys(omissionFieldSourcesMapping);
+  if (
+    omissionFieldSourceNames.length !== omissionFields.length ||
+    omissionFields.some((field) => !omissionFieldSourceNames.includes(field))
+  ) {
+    throw new Error("state storage authority omission sources must classify every omission field exactly once");
+  }
+  const omissionFieldSources: Record<string, string> = {};
+  for (const field of omissionFields) {
+    omissionFieldSources[field] = requiredString(
+      omissionFieldSourcesMapping[field],
+      `api.migrate.result.omission.field_sources.${field}`,
+    );
+    if (!new Set(["has_omissions", "omitted_count", "omission_reason", "retrieval"]).has(omissionFieldSources[field])) {
+      throw new Error(
+        `state storage authority omission field '${field}' has an unsupported source`,
+      );
+    }
+  }
   const omissionContract: StateMigrationOmissionContract = {
     fields: omissionFields,
+    fieldSources: omissionFieldSources,
     completeReason: requiredString(
       omission.complete_reason,
       "api.migrate.result.omission.complete_reason",
@@ -460,10 +605,7 @@ export function stateMigrationContract(
     requiredSelectors,
     inventory: {
       roots: scanRoots,
-      excludedRelativePaths: requiredList(
-        boundedScan.excluded_relative_paths,
-        "api.migrate.inventory.bounded_scan.excluded_relative_paths",
-      ),
+      excludedRelativePaths,
       maximumCandidateFiles: requiredPositiveInteger(
         boundedScan.maximum_candidate_files,
         "api.migrate.inventory.bounded_scan.maximum_candidate_files",
@@ -481,12 +623,14 @@ export function stateMigrationContract(
         "api.migrate.inventory.bounded_scan.ordering",
       ),
     },
+    fixedNames,
     candidatePattern,
     numberPattern,
     selectorValidValues,
     resultRequiredFields,
     resultEntryFields,
     resultCountFields,
+    resultCountRules,
     omission: omissionContract,
     failureClasses,
     resultSchemaVersion,

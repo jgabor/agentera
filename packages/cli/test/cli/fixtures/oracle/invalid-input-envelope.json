@@ -4,7 +4,7 @@
   "format": "json",
   "exitCode": 2,
   "requiredTopLevelKeys": ["schemaVersion", "status", "error"],
-  "requiredErrorKeys": ["class", "message"],
+  "requiredErrorKeys": ["class", "message", "recovery"],
   "optionalErrorKeys": ["valid_values", "syntax", "example", "violations"],
   "statusValue": "fail",
   "errorClassUnion": [
@@ -28,6 +28,7 @@
       "What it will not do: edit your project files, run live commands, or change unknown state."
     ],
     "optionalSectionOrder": ["valid_values", "syntax", "example"],
+    "recoveryRenderedAsRequiredFooter": true,
     "validValuesRenderedAsBullets": true,
     "syntaxRenderedAsInline": true,
     "exampleRenderedAsIndentedBlock": true

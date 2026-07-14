@@ -9,12 +9,14 @@ import { afterEach, describe, expect, it } from "vitest";
 import { buildSchemaPayload } from "../../src/cli/commands/schema.js";
 import {
   deferredResponse,
+  inventoryCandidates,
   parseMigrateArgs,
   projectedEntries,
   renderText,
   resultCounts,
   runMigrate,
   validateMigrateArgs,
+  type MigrateArgs,
 } from "../../src/cli/commands/migrate.js";
 import { main } from "../../src/cli/dispatch.js";
 import { migrationModeFlags, stateMigrationContract } from "../../src/state/migrationAuthority.js";
@@ -289,15 +291,35 @@ describe("local migration authority", () => {
     delete authority.api.migrate.result.omission.bounded_reason;
     fs.writeFileSync(malformedPath, YAML.stringify(authority));
     expect(() => stateMigrationContract(malformedRoot)).toThrow("bounded_reason");
+
+    const duplicateCombinationRoot = project();
+    const duplicateCombinationPath = path.join(duplicateCombinationRoot, AUTHORITY_RELATIVE_PATH);
+    fs.mkdirSync(path.dirname(duplicateCombinationPath), { recursive: true });
+    const duplicateCombinationAuthority = loadAuthority(path.join(REPO_ROOT, AUTHORITY_RELATIVE_PATH));
+    duplicateCombinationAuthority.api.migrate.modes.invalid_combinations.push(
+      duplicateCombinationAuthority.api.migrate.modes.invalid_combinations[0],
+    );
+    fs.writeFileSync(duplicateCombinationPath, YAML.stringify(duplicateCombinationAuthority));
+    expect(() => stateMigrationContract(duplicateCombinationRoot)).toThrow(
+      "invalid_combinations.*.flags",
+    );
   });
 
   it("consumes changed authority result fields instead of a handwritten envelope registry", () => {
     const authority = loadAuthority(path.join(REPO_ROOT, AUTHORITY_RELATIVE_PATH));
     authority.api.migrate.result.count_fields.push("authority_defined_count");
+    authority.api.migrate.result.count_rules.authority_defined_count = {
+      source: "visible_entries",
+      operation: "count",
+      predicates: [],
+    };
     authority.api.migrate.result.omission.complete_reason = "authority_complete";
     authority.api.migrate.result.omission.bounded_reason = "authority_bounded";
     authority.api.migrate.result.omission.retry = "authority retry guidance";
     authority.api.migrate.result.omission.retrieval = "authority retrieval pointer";
+    authority.api.migrate.result.required_fields.push("authority_omission");
+    authority.api.migrate.result.omission.fields.push("authority_omission");
+    authority.api.migrate.result.omission.field_sources.authority_omission = "omission_reason";
     const root = project();
     const authorityPath = path.join(root, AUTHORITY_RELATIVE_PATH);
     fs.mkdirSync(path.dirname(authorityPath), { recursive: true });
@@ -316,8 +338,9 @@ describe("local migration authority", () => {
       },
       contract,
     );
-    expect((response.counts as Record<string, unknown>).authority_defined_count).toBeNull();
+    expect((response.counts as Record<string, unknown>).authority_defined_count).toBe(0);
     expect(response.omission_reason).toBe("authority_complete");
+    expect(response.authority_omission).toBe("authority_complete");
     expect(response.retrieval).toEqual({
       command: "authority retrieval pointer",
       retry: "authority retry guidance",
@@ -364,6 +387,149 @@ describe("local migration authority", () => {
     expect(YAML.parse(JSON.stringify(response))).toEqual(YAML.parse(YAML.stringify(response)));
   });
 
+  it("enforces the 256-candidate bound before the output limit", () => {
+    const root = project();
+    const contract = stateMigrationContract(REPO_ROOT);
+    for (let index = 0; index < 257; index += 1) {
+      fs.writeFileSync(path.join(root, `candidate-${String(index).padStart(3, "0")}.yaml`), "");
+    }
+
+    const inventory = inventoryCandidates(root, contract);
+    expect(inventory.entries).toHaveLength(contract.inventory.maximumCandidateFiles);
+    expect(inventory.omittedCount).toBe(1);
+    expect(inventory.status).toBe("degraded");
+    const response = deferredResponse(
+      {
+        project: root,
+        artifact: null,
+        dryRun: false,
+        apply: false,
+        force: false,
+        format: "json",
+        limit: 100,
+      },
+      contract,
+      inventory.entries,
+      inventory,
+    );
+    expect(response.entries).toHaveLength(100);
+    expect(response.omitted_count).toBe(157);
+    expect(response.counts).toMatchObject({ physical: 257, omitted: 157 });
+  });
+
+  it("omits a single file over the authority file-byte bound without reading or writing it", () => {
+    const root = project();
+    const contract = stateMigrationContract(REPO_ROOT);
+    const before = fs.readdirSync(root);
+    fs.writeFileSync(
+      path.join(root, "oversized.yaml"),
+      Buffer.alloc(contract.inventory.maximumFileBytes + 1),
+    );
+    const inventory = inventoryCandidates(root, contract);
+    expect(inventory.entries).toEqual([]);
+    expect(inventory.omittedCount).toBe(1);
+    expect(inventory.status).toBe("degraded");
+    expect(fs.readdirSync(root)).toEqual([...before, "oversized.yaml"]);
+  });
+
+  it("stops deterministic inventory at the authority total-byte bound", () => {
+    const root = project();
+    const contract = stateMigrationContract(REPO_ROOT);
+    const megabyte = Buffer.alloc(1024 * 1024);
+    for (let index = 0; index < 17; index += 1) {
+      fs.writeFileSync(path.join(root, `total-${String(index).padStart(2, "0")}.yaml`), megabyte);
+    }
+    const inventory = inventoryCandidates(root, contract);
+    expect(inventory.entries).toHaveLength(16);
+    expect(inventory.omittedCount).toBe(1);
+    expect(inventory.entries.map((entry) => entry.path)).toEqual(
+      inventory.entries.map((entry) => entry.path).sort(),
+    );
+    expect(inventory.entries.at(-1)?.path).toBe("total-15.yaml");
+  });
+
+  it("rejects symlink escapes, boundary paths, and preserves custom names in normalized order", () => {
+    const root = project();
+    const outside = project();
+    const contract = stateMigrationContract(REPO_ROOT);
+    fs.mkdirSync(path.join(root, ".agentera"));
+    fs.writeFileSync(path.join(root, "z-custom.yaml"), "");
+    fs.writeFileSync(path.join(root, "a-custom.yaml"), "");
+    fs.writeFileSync(path.join(root, ".agentera", "PROGRESS.md"), "");
+    fs.writeFileSync(path.join(outside, "outside.yaml"), "");
+    fs.symlinkSync(path.join(outside, "outside.yaml"), path.join(root, "escape.yaml"));
+
+    const inventory = inventoryCandidates(root, contract);
+    expect(inventory.entries.map((entry) => entry.path)).toEqual([
+      ".agentera/PROGRESS.md",
+      "a-custom.yaml",
+      "escape.yaml",
+      "z-custom.yaml",
+    ]);
+    expect(inventory.entries.find((entry) => entry.path === "escape.yaml")).toMatchObject({
+      classification: "blocked",
+      rejection: "symlink_escape",
+      addressable: false,
+    });
+    expect(validateMigrateArgs(
+      {
+        project: root,
+        artifact: null,
+        number: undefined,
+        path: "../outside.yaml",
+        limit: 1,
+        dryRun: true,
+        apply: false,
+        force: false,
+        format: "json",
+      },
+      contract,
+    )).toContain("project boundary");
+
+    const symlinkRoot = project();
+    const outsideRoot = project();
+    fs.symlinkSync(outsideRoot, path.join(symlinkRoot, ".agentera"));
+    expect(() => inventoryCandidates(symlinkRoot, contract)).toThrow(
+      "symlink roots are forbidden",
+    );
+  });
+
+  it("keeps limit boundaries and omission recovery equivalent across text, JSON, and YAML", () => {
+    const root = project();
+    const contract = stateMigrationContract(REPO_ROOT);
+    fs.writeFileSync(path.join(root, "a.yaml"), "");
+    fs.writeFileSync(path.join(root, "b.yaml"), "");
+    expect((parseMigrateArgs(["--limit", "1"], contract) as MigrateArgs).limit).toBe(1);
+    expect((parseMigrateArgs(["--limit", "100"], contract) as MigrateArgs).limit).toBe(100);
+    expect(validateMigrateArgs({
+      ...(parseMigrateArgs(["--limit", "1"], contract) as MigrateArgs),
+      limit: 0,
+    }, contract)).toContain("between 1 and 100");
+    expect(validateMigrateArgs({
+      ...(parseMigrateArgs(["--limit", "1"], contract) as MigrateArgs),
+      limit: 101,
+    }, contract)).toContain("between 1 and 100");
+
+    const args = ["--project", root, "--limit", "1"];
+    const json = capture((io) => runMigrate([...args, "--format", "json"], io, REPO_ROOT));
+    const yaml = capture((io) => runMigrate([...args, "--format", "yaml"], io, REPO_ROOT));
+    const text = capture((io) => runMigrate([...args, "--format", "text"], io, REPO_ROOT));
+    const jsonValue = JSON.parse(json.out) as Record<string, any>;
+    const yamlValue = YAML.parse(yaml.out) as Record<string, any>;
+    expect(jsonValue).toEqual(yamlValue);
+    expect(jsonValue).toMatchObject({
+      inventory_performed: true,
+      omitted: true,
+      omitted_count: 1,
+      omission_reason: contract.omission.boundedReason,
+      retrieval: { command: contract.omission.retrieval, retry: contract.omission.retry },
+    });
+    expect(text.out).toContain("omitted: true");
+    expect(text.out).toContain("omitted_count: 1");
+    expect(text.out).toContain(contract.omission.boundedReason);
+    expect(text.out).toContain(contract.omission.retry);
+  });
+
   it("exposes help/schema/dispatch and leaves valid invocations filesystem-free", () => {
     const root = project();
     const help = capture((io) => main(["node", "agentera", "state", "migrate", "--help"], io));
@@ -404,13 +570,13 @@ describe("local migration authority", () => {
     expect(inventory.rc).toBe(1);
     expect(JSON.parse(inventory.out)).toMatchObject({
       schemaVersion: "agentera.stateMigrationResult.v1",
-      status: "unavailable",
+      status: "complete",
       mode: "inventory",
       read_only: true,
       mutation_intent: false,
       mutation_performed: false,
       remote_contact: false,
-      inventory_performed: false,
+      inventory_performed: true,
     });
     expect(fs.existsSync(path.join(root, ".agentera", "migration-backups"))).toBe(false);
 

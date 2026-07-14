@@ -1,4 +1,67 @@
 cycles:
+  - number: 783
+    timestamp: 2026-07-14 08:11
+    type: fix
+    phase: build
+    what: "Closed the continuation-task1-audit-1 gaps: bounded project-local
+      read-only inventory now exercises authority roots, depth, exclusions,
+      normalized ordering, symlink and boundary rejection, custom names,
+      candidate/file/total-byte limits, and deterministic omission metadata;
+      count rules and omission field sources are authority-driven; duplicate
+      invalid-combination records fail closed; and every structured
+      invalid-input envelope carries recovery guidance. Preview and apply still
+      validate intent only with mutation_performed=false, no archives, backups,
+      projections, or Git. Cycle 781 remains byte-unchanged and Cycle 782
+      remains the prior superseding correction."
+    inspiration: Active plan Task 1 continuation after independent orchestration
+      evaluator attempt continuation-task1-audit-1.
+    discovered: Inventory can exercise the byte bounds from lstat metadata without
+      reading candidate contents or invoking Git. The full Vitest suite must run
+      serially because concurrent global setup races copy-bundle. The existing
+      malformed invalid-progress-yaml fixture still blocks repository
+      formatting, and the five known npm 12 packaging JSON-parser failures
+      remain outside this fix.
+    verified: "Focused command: pnpm -C packages/cli exec vp test run
+      test/state/migrationAuthority.test.ts
+      test/cli/invalidInputEnvelope.test.ts test/cli/schema.test.ts; 3 files, 35
+      tests passed. Adversarial coverage includes 257 candidates, 1-MiB-plus
+      file, 17-MiB total, symlink and boundary escapes, normalized ordering,
+      limits 1/100/out-of-range, duplicate authority combinations, and
+      text/JSON/YAML omission and recovery parity. Non-packaging command: pnpm
+      -C packages/cli exec vp test run --exclude test/packaging/prepack.test.ts;
+      174 files, 1762 tests passed. Full command: pnpm -C packages/cli test; 174
+      files passed, 1766 tests passed, 5 known npm 12 packaging JSON-parser
+      tests failed. pnpm -C packages/cli run typecheck, pnpm -C packages/cli run
+      build, and pnpm -C packages/cli run bundle:data passed. Capability status
+      and capability-contract validation passed; artifact progress and plan
+      validation passed; check compact --format json passed with error_count=0,
+      over_limit_count=0, protected_overflow_count=0, changed_count=0 and the
+      five existing archive-recovery refusals preserved. Source and bundle
+      authority comparison passed. Bounded CLI smokes passed for migrate help,
+      schema JSON, inventory JSON/YAML, dry-run, apply-force, and invalid apply
+      without force; valid apply reported mutation_performed=false and
+      remote_contact=false."
+    next: Leave Task 1 pending with failure_count 1 for independent re-audit; do not
+      record an evaluation or begin Task 2 mutation/application. Preserve
+      Decision 53, archive immutability, projection policy, no remote, startup
+      caveats, known npm failures, and the malformed fixture caveat.
+    context:
+      intent: Retry Task 1 after the independent executable migration authority and
+        bounded inventory audit failure without evaluating or completing Task 1.
+      constraints: Do not alter Cycle 781, do not append another correction solely to
+        restate Cycle 782, do not evaluate or complete Task 1, do not implement
+        Task 2 archive/backup/projection mutation, do not edit vision or
+        profile, and do not publish, tag, or push.
+      unknowns: Independent re-audit remains. Stale profile and missing decision,
+        vision, and profile startup caveats remain unchanged.
+      scope: references/artifacts/state-storage-authority.yaml;
+        packages/cli/src/state/migrationAuthority.ts;
+        packages/cli/src/cli/commands/migrate.ts;
+        packages/cli/src/cli/errors.ts;
+        packages/cli/test/state/migrationAuthority.test.ts;
+        packages/cli/test/cli/invalidInputEnvelope.test.ts;
+        packages/cli/test/cli/fixtures/oracle/invalid-input-envelope.json;
+        .agentera/plan.yaml; generated dist and bundle parity
   - number: 782
     timestamp: 2026-07-14 07:35
     type: fix
@@ -393,44 +456,6 @@ cycles:
         packages/cli/test/state/archiveAuthority.test.ts;
         references/artifacts/state-storage-authority.yaml;
         .agentera/progress.yaml
-  - number: 773
-    timestamp: 2026-07-13 21:31
-    type: fix
-    phase: build
-    what: Retried Task2 attempt1 by centralizing leading-only legacy identity
-      parsing, making explicit Dnn decision shorthand rows directly retrievable
-      as degraded summaries, preserving canonical legacy summaries as
-      incomplete, rejecting incidental and compound references, adding list/get
-      parity regressions, and asserting byte-exact health duplicate repair.
-    inspiration: Task2 evaluation attempt1 recorded in the active plan after Cycle 772.
-    discovered: Direct get must distinguish explicit Dnn shorthand from canonical
-      legacy summaries; a summary-only record is addressable only when its
-      identity is explicit and unambiguous.
-    verified: Focused list, direct-get, and writer suites passed 132/132; CLI
-      typecheck and build passed; capability-contract validation passed; check
-      compact reported 0 errors, 0 over-limit, 0 protected-overflow, and 0
-      changed counts. Full CLI suite remains 171 files passed and 1 packaging
-      file failed with the five known npm 12 npm pack --dry-run --json parser
-      incompatibilities.
-    next: Keep Task2 pending for evaluation. Review the retry diff, commit it with
-      the preserved failed evaluation and progress evidence, then do not begin
-      Task3 or alter vision, profile, decisions, TODO, version, publish, push,
-      or tag state.
-    context:
-      intent: Resolve the recorded Task2 parity failure without closing Task2 or
-        changing unrelated project state.
-      constraints: Preserve Task1 completion, stable numeric get selectors, archive
-        immutability, no inferred identity, byte-exact unrelated health
-        evidence, and the recorded failed attempt1 metadata.
-      unknowns: none for this retry; Task3 source-work bounds remains unresolved by
-        design.
-      scope: packages/cli/src/state/legacyIdentity.ts;
-        packages/cli/src/state/listRetrieval.ts;
-        packages/cli/src/state/directRetrieval.ts;
-        packages/cli/test/state/listRetrieval.test.ts;
-        packages/cli/test/state/directRetrieval.test.ts;
-        packages/cli/test/state/write/stateWrite.test.ts; .agentera/plan.yaml;
-        .agentera/progress.yaml
   - number: 749
     timestamp: 2026-07-13 10:58
     type: feat
@@ -548,6 +573,9 @@ cycles:
       intent: Complete active plan Task 7 without changing decisions or unrelated
         capabilities.
 archive:
+  - summary: "Cycle 773 (2026-07-13): Retried Task2 attempt1 by centralizing
+      leading-only legacy identity parsing, making explicit Dnn decision
+      shorthand rows..."
   - summary: "Cycle 772 (2026-07-13): Made legacy state listing identity-safe and
       physically truthful: explicit canonical numbers and decisions Dnn
       shorthand..."
@@ -649,16 +677,18 @@ archive:
   - summary: "Cycle 726 (2026-07-12): Completed the final Task 5 audit repair:
       blocker-only lifecycle output now suppresses generic project-integration
       guidance..."
-  - summary: "Cycle 725 (2026-07-12): Completed the final Task 5 audit repair in
-      packages/cli/src/cli/orientation/attention.ts: blocker-only lifecycle
-      states no longer compose..."
 omitted: true
-omitted_count: 20
+omitted_count: 21
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded
