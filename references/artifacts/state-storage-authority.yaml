@@ -433,12 +433,15 @@ api:
     excluded_refs: [refs/remotes, custom_refs]
     modes:
       inventory: >-
-        The default read-only mode reports every reachable legacy occurrence
-        with commit, path, blob identity, stable entry ID, canonical content
-        hash, and an explicit ambiguity reason.
+        The default read-only mode reports up to maximum_limit final rows after
+        combining reachable and rewritten-history occurrences. Omitted rows
+        carry explicit omission metadata; returned rows include commit, path,
+        blob identity, stable entry ID, canonical content hash, and an explicit
+        ambiguity reason.
       preview: >-
         --dry-run is read-only and shows proposed immutable archive bytes only
-        for an exact unique candidate, together with every matching provenance.
+        for a returned exact unique candidate, together with every matching
+        provenance.
       apply: >-
          --apply --force is the only mutation mode. It requires one project,
          artifact, and entry number. A prior --dry-run is optional. Apply
@@ -473,6 +476,13 @@ api:
       immutable_conflicts: refuse_without_overwrite
       retry: identical_publication_is_idempotent
       failure_projection_rule: active_projections_remain_byte_identical
+    omission:
+      fields: [omitted, omitted_count, omission_reason, continuation]
+      complete_reason: none
+      bounded_reason: result_limit
+      continuation: >-
+        No cursor is issued. Use --artifact ARTIFACT --number N to retrieve an
+        omitted entry because --limit cannot exceed maximum_limit (100).
   migrate:
     namespace: agentera state migrate
     command: >-

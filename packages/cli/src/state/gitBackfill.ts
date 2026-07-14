@@ -127,6 +127,7 @@ export interface ScanResult {
   gitReason?: string;
   bounded: boolean;
   boundedReasons: string[];
+  historyWork: number;
   historyBytes: number;
   targets: Map<string, ProjectionTarget>;
   groups: Map<string, CandidateGroup>;
@@ -175,6 +176,15 @@ export interface EntryOutput {
   refusal?: string;
 }
 
+export interface BackfillOmission {
+  omitted_count: number;
+  omission_reason: "none" | "result_limit";
+  continuation: {
+    available: boolean;
+    guidance: string;
+  };
+}
+
 export interface GitBackfillResponse {
   command: string;
   mode: BackfillMode;
@@ -192,6 +202,7 @@ export interface GitBackfillResponse {
     shallow: boolean;
     bounded: boolean;
     commits_limit: number;
+    commits_used: number;
     history_bytes_limit: number;
     history_bytes_used: number;
     bounded_reasons: string[];
@@ -209,6 +220,13 @@ export interface GitBackfillResponse {
   };
   active_projections_unchanged: boolean;
   active_projection_hashes: Record<string, string>;
+  omitted: boolean;
+  omitted_count: number;
+  omission_reason: "none" | "result_limit";
+  continuation: {
+    available: boolean;
+    guidance: string;
+  };
   entries: EntryOutput[];
   diagnostics: string[];
   source_contract: {
@@ -533,6 +551,17 @@ function markBounded(scan: ScanResult, reason: string): void {
   if (!scan.boundedReasons.includes(reason)) scan.boundedReasons.push(reason);
 }
 
+function consumeHistoryWork(scan: ScanResult): boolean {
+  if (scan.historyWork >= scan.contract.maximumCommits) {
+    markBounded(scan, "commit_count");
+    const diagnostic = "history commit/probe budget exhausted; remaining Git history was not inspected";
+    if (!scan.diagnostics.includes(diagnostic)) scan.diagnostics.push(diagnostic);
+    return false;
+  }
+  scan.historyWork += 1;
+  return true;
+}
+
 function chargeHistoryBytes(scan: ScanResult, bytes: string): boolean {
   const size = Buffer.byteLength(bytes, "utf8");
   if (scan.historyBytes + size > scan.contract.maximumHistoryBytes) {
@@ -569,6 +598,7 @@ function scanBackfill(
     shallow: context.shallow,
     bounded: false,
     boundedReasons: [],
+    historyWork: 0,
     historyBytes: 0,
     targets: targetState.targets,
     groups: new Map(),
@@ -594,6 +624,7 @@ function scanBackfill(
       occurrenceFromProjection,
       addGroup,
       markBounded,
+      consumeHistoryWork,
       chargeHistoryBytes,
     });
   }
@@ -678,12 +709,12 @@ export function inspectGitBackfill(
 ): GitBackfillResponse {
   const scan = scanBackfill(project, args, options);
   const groups = sortedGroups(scan, args);
-  const entries: EntryOutput[] = [];
-  for (const group of groups.slice(0, args.limit ?? scan.contract.defaultLimit)) {
-    entries.push(buildEntryOutput(scan, group, args, false));
+  const allEntries: EntryOutput[] = [];
+  for (const group of groups) {
+    allEntries.push(buildEntryOutput(scan, group, args, false));
     for (const rewritten of scan.rewritten.get(group.entryId) ?? []) {
       if (group.versions.size === 0) {
-        entries.push({
+        allEntries.push({
           entry_id: group.entryId,
           artifact_id: group.artifactId,
           entry_number: group.entryNumber,
@@ -700,14 +731,17 @@ export function inspectGitBackfill(
       }
     }
   }
+  const limit = Math.min(args.limit ?? scan.contract.defaultLimit, scan.contract.maximumLimit);
+  const entries = allEntries.slice(0, limit);
+  const omittedCount = allEntries.length - entries.length;
   const status: BackfillStatus = !scan.gitRoot
     ? "unavailable"
     : entries.some((entry) => entry.ambiguity_reason === "no_matching_pin")
       ? "blocked"
-      : scan.headStatus !== "stable" || scan.bounded || entries.some((entry) => entry.ambiguity_reason !== "none")
+      : omittedCount > 0 || scan.headStatus !== "stable" || scan.bounded || entries.some((entry) => entry.ambiguity_reason !== "none")
       ? "degraded"
       : "complete";
-  return buildResponse(scan, "inventory", entries, scan.diagnostics, status);
+  return buildResponse(scan, "inventory", entries, scan.diagnostics, status, omittedCount);
 }
 
 export function previewGitBackfill(
@@ -717,21 +751,24 @@ export function previewGitBackfill(
 ): GitBackfillResponse {
   const scan = scanBackfill(project, args, options);
   const groups = sortedGroups(scan, args);
-  const entries = groups
-    .slice(0, args.limit ?? scan.contract.defaultLimit)
-    .map((group) => buildEntryOutput(scan, group, args, true));
+  const allEntries = groups.map((group) => buildEntryOutput(scan, group, args, true));
+  const limit = Math.min(args.limit ?? scan.contract.defaultLimit, scan.contract.maximumLimit);
+  const entries = allEntries.slice(0, limit);
+  const omittedCount = allEntries.length - entries.length;
   const status: BackfillStatus = entries.some((entry) => entry.ambiguity_reason === "no_matching_pin")
     ? "blocked"
-    : entries.some((entry) => entry.proposed_archive_bytes !== undefined)
+    : omittedCount > 0
+      ? "degraded"
+      : entries.some((entry) => entry.proposed_archive_bytes !== undefined)
       ? entries.some((entry) => !entry.eligible) || scan.headStatus !== "stable" || scan.bounded
         ? "degraded"
         : "complete"
-      : scan.gitRoot
-        ? entries.some((entry) => entry.ambiguity_reason !== "none")
-          ? "degraded"
-          : "blocked"
-        : "unavailable";
-  return buildResponse(scan, "preview", entries, scan.diagnostics, status);
+        : scan.gitRoot
+          ? entries.some((entry) => entry.ambiguity_reason !== "none")
+            ? "degraded"
+            : "blocked"
+          : "unavailable";
+  return buildResponse(scan, "preview", entries, scan.diagnostics, status, omittedCount);
 }
 
 export function applyGitBackfill(

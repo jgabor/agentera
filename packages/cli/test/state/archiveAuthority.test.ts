@@ -140,6 +140,11 @@ describe("state storage authority", () => {
       projection_writes: "forbidden",
       immutable_conflicts: "refuse_without_overwrite",
     });
+    expect(api.backfill.omission).toMatchObject({
+      fields: ["omitted", "omitted_count", "omission_reason", "continuation"],
+      complete_reason: "none",
+      bounded_reason: "result_limit",
+    });
     expect(api.backfill.command).not.toContain("preview-token");
     expect(api.backfill.guarantees).not.toHaveProperty("apply_requires_preview_token");
     expect(api.backfill.guarantees).not.toHaveProperty("preview_token");

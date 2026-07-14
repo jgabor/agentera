@@ -320,6 +320,105 @@ describe("Git legacy backfill", () => {
     expect(pathResult.entries.some((entry) => entry.path?.startsWith(".agentera/progress"))).toBe(true);
   });
 
+  it("bounds the final combined result when every target has rewritten provenance", () => {
+    const root = project("agentera-git-backfill-result-bound-");
+    init(root);
+    writeProgress(root, Array.from({ length: 100 }, (_, index) => progress(index + 1, "Original full record")));
+    const oldCommit = commit(root, "original full records");
+    git(root, ["checkout", "--quiet", "--orphan", "replacement"]);
+    git(root, ["branch", "-D", "main"]);
+    fs.rmSync(path.join(root, ".agentera"), { recursive: true, force: true });
+    writeProgress(
+      root,
+      Array.from({ length: 100 }, (_, index) => ({ number: index + 1, summary: "Replacement summary only" })),
+    );
+    commit(root, "replacement summaries");
+    const calls: string[][] = [];
+    const runner = (args: string[], cwd: string) => {
+      calls.push([...args]);
+      return realGitRunner(args, cwd);
+    };
+
+    const first = inspectGitBackfill(root, { artifact: "progress" }, { sourceRoot, runGit: runner });
+    const second = inspectGitBackfill(root, { artifact: "progress" }, { sourceRoot, runGit: runner });
+
+    expect(first.entries).toHaveLength(100);
+    expect(first.entries.every((entry) => entry.commit === oldCommit && !entry.reachable)).toBe(true);
+    expect(first).toMatchObject({
+      status: "degraded",
+      omitted: true,
+      omitted_count: 100,
+      omission_reason: "result_limit",
+      continuation: {
+        available: false,
+        guidance: expect.stringContaining("--artifact ARTIFACT --number N"),
+      },
+      counts: { targets: 100 },
+    });
+    expect(second.entries).toEqual(first.entries);
+    expect(second.omitted_count).toBe(first.omitted_count);
+    expect(
+      calls.some((args) => args.some((value) => gitEvidence.forbidden_operations.some((forbidden) => value.includes(forbidden)))),
+    ).toBe(false);
+  });
+
+  it("shares the 500-commit budget with rewritten probes and keeps classification deterministic", () => {
+    const root = project("agentera-git-backfill-history-budget-");
+    init(root);
+    writeProgress(root, [progress(14, "Current projection")]);
+    const head = "f".repeat(40);
+    const reachable = Array.from({ length: 499 }, (_, index) => (index + 1).toString(16).padStart(40, "0"));
+    const rewritten = "e".repeat(40);
+    const truncated = "d".repeat(40);
+    const blob = "c".repeat(40);
+    const reachableLog = reachable.map((commitHash) => `${commitHash}\nM\t.agentera/progress.yaml`).join("\n");
+
+    function runnerFixture(): { calls: string[][]; runner: typeof realGitRunner } {
+      const calls: string[][] = [];
+      let logCalls = 0;
+      const runner = (args: string[], cwd: string) => {
+        calls.push([...args]);
+        if (args[0] === "rev-parse" && args[1] === "--is-inside-work-tree") return { status: 0, stdout: "true\n", timedOut: false };
+        if (args[0] === "rev-parse" && args[1] === "--show-toplevel") return { status: 0, stdout: `${root}\n`, timedOut: false };
+        if (args[0] === "rev-parse" && args[1] === "--verify") return { status: 0, stdout: `${head}\n`, timedOut: false };
+        if (args[0] === "rev-parse" && args[1] === "--is-shallow-repository") return { status: 0, stdout: "false\n", timedOut: false };
+        if (args[0] === "for-each-ref") return { status: 0, stdout: "refs/heads/main\n", timedOut: false };
+        if (args[0] === "log") {
+          logCalls += 1;
+          return { status: 0, stdout: logCalls === 1 ? reachableLog : "", timedOut: false };
+        }
+        if (args[0] === "reflog") return { status: 0, stdout: `${rewritten}\n${truncated}\n`, timedOut: false };
+        if (args[0] === "ls-tree" && args.includes(rewritten)) {
+          return { status: 0, stdout: `100644 blob ${blob}\t.agentera/progress.yaml\0`, timedOut: false };
+        }
+        if (args[0] === "cat-file" && args[1] === "-p") {
+          return { status: 0, stdout: dumpYamlMapping({ cycles: [progress(14, "Rewritten projection")] }), timedOut: false };
+        }
+        return { status: 0, stdout: "", timedOut: false };
+      };
+      return { calls, runner };
+    }
+
+    const firstFixture = runnerFixture();
+    const first = inspectGitBackfill(root, { artifact: "progress", number: 14 }, { sourceRoot, runGit: firstFixture.runner });
+    const secondFixture = runnerFixture();
+    const second = inspectGitBackfill(root, { artifact: "progress", number: 14 }, { sourceRoot, runGit: secondFixture.runner });
+
+    expect(first.scan).toMatchObject({ commits_limit: 500, commits_used: 500, bounded: true });
+    expect(first.scan.bounded_reasons).toContain("commit_count");
+    expect(first.entries.filter((entry) => entry.ambiguity_reason === "history_rewritten")).toHaveLength(2);
+    expect(first.entries).toEqual(second.entries);
+    expect(firstFixture.calls.find((args) => args[0] === "reflog")).toEqual(
+      expect.arrayContaining(["--max-count", "1"]),
+    );
+    expect(firstFixture.calls.some((args) => args.includes(truncated))).toBe(false);
+    for (const calls of [firstFixture.calls, secondFixture.calls]) {
+      expect(
+        calls.some((args) => args.some((value) => gitEvidence.forbidden_operations.some((forbidden) => value.includes(forbidden)))),
+      ).toBe(false);
+    }
+  });
+
   it("does not let an unreachable reflog occurrence satisfy a pin", () => {
     const root = project();
     init(root);

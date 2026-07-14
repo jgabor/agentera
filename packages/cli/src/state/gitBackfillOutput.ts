@@ -9,6 +9,7 @@ import {
 import { serializeNumberedArchive } from "./archivePublication.js";
 import type {
   BackfillReason,
+  BackfillOmission,
   CandidateGroup,
   EntryOutput,
   GitBackfillArgs,
@@ -179,6 +180,7 @@ export function buildResponse(
   entries: EntryOutput[],
   diagnostics: string[],
   status: "complete" | "degraded" | "blocked" | "unavailable",
+  omittedCount = 0,
 ): GitBackfillResponse {
   const uniqueCandidates = entries.filter((entry) => entry.ambiguity_reason === "none").length;
   const conflicting = entries.filter((entry) => entry.ambiguity_reason === "conflicting_versions").length;
@@ -204,6 +206,7 @@ export function buildResponse(
       shallow: scan.shallow,
       bounded: scan.bounded,
       commits_limit: scan.contract.maximumCommits,
+      commits_used: scan.historyWork,
       history_bytes_limit: scan.contract.maximumHistoryBytes,
       history_bytes_used: scan.historyBytes,
       bounded_reasons: scan.boundedReasons,
@@ -221,6 +224,15 @@ export function buildResponse(
     },
     active_projections_unchanged: true,
     active_projection_hashes: scan.projectionHashes,
+    omitted: omittedCount > 0,
+    omitted_count: omittedCount,
+    omission_reason: omittedCount > 0 ? "result_limit" : "none",
+    continuation: {
+      available: false,
+      guidance: omittedCount > 0
+        ? "No cursor is issued; use --artifact ARTIFACT --number N to retrieve an omitted entry because --limit is capped at 100."
+        : "No continuation is required.",
+    } satisfies BackfillOmission["continuation"],
     entries,
     diagnostics,
     source_contract: {
@@ -248,6 +260,10 @@ export function renderGitBackfillText(response: GitBackfillResponse, out: (text:
       `- ${entry.entry_id} | ${entry.operation ?? "candidate"} | ` +
         `reason=${entry.ambiguity_reason} | commit=${entry.commit ?? "-"} | path=${entry.path ?? "-"}\n`,
     );
+  }
+  if (response.omitted) {
+    out(`omitted=${response.omitted_count} | reason=${response.omission_reason}\n`);
+    out(`continuation=${response.continuation.guidance}\n`);
   }
   for (const diagnostic of response.diagnostics) out(`diagnostic=${diagnostic}\n`);
 }

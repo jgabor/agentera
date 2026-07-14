@@ -30,6 +30,7 @@ export interface GitBackfillHistoryCallbacks {
   ) => void;
   addGroup: (groups: ScanResult["groups"], occurrence: Occurrence) => void;
   markBounded: (scan: ScanResult, reason: string) => void;
+  consumeHistoryWork: (scan: ScanResult) => boolean;
   chargeHistoryBytes: (scan: ScanResult, bytes: string) => boolean;
 }
 
@@ -81,7 +82,7 @@ function historyLog(
       "--date-order",
       "--format=%H",
       "--name-status",
-      `--max-count=${maxCommits + 1}`,
+      `--max-count=${maxCommits}`,
       ...context.refs,
       "--",
       path.posix.dirname(gitPath),
@@ -109,7 +110,7 @@ function historyLog(
     }
   }
   flush();
-  return { commits: commits.slice(0, maxCommits), bounded: commits.length > maxCommits };
+  return { commits: commits.slice(0, maxCommits), bounded: commits.length >= maxCommits };
 }
 
 function projectionPathFamily(gitPath: string, candidate: string): boolean {
@@ -182,13 +183,12 @@ function collectReachable(
     gitPath: callbacks.projectionGitPath(scan, context.root as string, artifactId),
   }));
   const seenOccurrences = new Set<string>();
-  let commitsSeen = 0;
   for (const item of artifactPaths) {
     if (!item.gitPath) {
       scan.diagnostics.push(`${item.artifactId} projection is outside the selected Git project`);
       continue;
     }
-    const remainingCommits = scan.contract.maximumCommits - commitsSeen;
+    const remainingCommits = scan.contract.maximumCommits - scan.historyWork;
     if (remainingCommits <= 0) {
       callbacks.markBounded(scan, "commit_count");
       break;
@@ -201,11 +201,10 @@ function collectReachable(
     }
     if (log.bounded) callbacks.markBounded(scan, "commit_count");
     for (const commit of log.commits) {
-      if (commitsSeen >= scan.contract.maximumCommits) {
+      if (!callbacks.consumeHistoryWork(scan)) {
         callbacks.markBounded(scan, "commit_count");
         break;
       }
-      commitsSeen += 1;
       scan.reachableCommits.add(commit.commit);
       const paths = [...new Set([
         ...commit.paths,
@@ -262,8 +261,13 @@ function collectRewritten(
 ): void {
   if (!context.root || scan.targets.size === 0) return;
   const historicalRun = boundedGitRunner(scan, run, callbacks);
+  const remainingCommits = scan.contract.maximumCommits - scan.historyWork;
+  if (remainingCommits <= 0) {
+    callbacks.markBounded(scan, "commit_count");
+    return;
+  }
   const reflog = historicalRun(
-    ["reflog", "show", "--format=%H", "--max-count", "32", "HEAD"],
+    ["reflog", "show", "--format=%H", "--max-count", String(remainingCommits), "HEAD"],
     context.root,
   );
   if (!successful(reflog) || scan.boundedReasons.includes("history_bytes")) return;
@@ -272,8 +276,14 @@ function collectRewritten(
     artifactId,
     gitPath: callbacks.projectionGitPath(scan, context.root as string, artifactId),
   }));
-  for (const commit of reflog.stdout.split(/\r?\n/).map((value) => value.trim())) {
+  const commits = reflog.stdout
+    .split(/\r?\n/)
+    .map((value) => value.trim())
+    .filter((value) => /^[0-9a-f]{40,64}$/.test(value));
+  if (commits.length >= remainingCommits) callbacks.markBounded(scan, "commit_count");
+  for (const commit of commits) {
     if (!/^[0-9a-f]{40,64}$/.test(commit) || scan.reachableCommits.has(commit)) continue;
+    if (!callbacks.consumeHistoryWork(scan)) return;
     for (const item of paths) {
       if (!item.gitPath) continue;
       const historicalPaths = [...new Set([
@@ -314,6 +324,10 @@ function collectRewritten(
           },
         );
       }
+    }
+    if (scan.historyWork >= scan.contract.maximumCommits) {
+      callbacks.markBounded(scan, "commit_count");
+      return;
     }
   }
 }
