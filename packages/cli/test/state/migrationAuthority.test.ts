@@ -412,9 +412,48 @@ describe("local migration authority", () => {
       inventory.entries,
       inventory,
     );
-    expect(response.entries).toHaveLength(100);
-    expect(response.omitted_count).toBe(157);
-    expect(response.counts).toMatchObject({ physical: 257, omitted: 157 });
+    expect(response.entries.length).toBeLessThanOrEqual(100);
+    expect(response.omitted_count).toBeGreaterThanOrEqual(157);
+    expect(response.counts).toMatchObject({ physical: 257, omitted: response.omitted_count });
+    const verboseEntries = inventory.entries.map((entry) => ({
+      ...entry,
+      source: "x".repeat(400),
+      provenance: { reason: "x".repeat(400) },
+    }));
+    for (const format of ["json", "yaml", "text"] as const) {
+      const bounded = deferredResponse(
+        {
+          project: root,
+          artifact: null,
+          dryRun: false,
+          apply: false,
+          force: false,
+          format,
+          limit: 100,
+        },
+        contract,
+        verboseEntries,
+        inventory,
+      );
+      const serialized =
+        format === "json"
+          ? JSON.stringify(bounded, null, 2) + "\n"
+          : format === "yaml"
+            ? YAML.stringify(bounded, { sortMapEntries: false })
+            : (() => {
+                let output = "";
+                renderText(bounded, (value) => (output += value));
+                return output;
+              })();
+      expect(Buffer.byteLength(serialized, "utf8")).toBeLessThanOrEqual(contract.outputMaxUtf8Bytes);
+      expect(bounded).toMatchObject({
+        omitted: true,
+        omission_reason: contract.omission.outputBoundedReason,
+        retrieval: { retry: expect.stringContaining("--limit") },
+      });
+      if (format === "json") expect(() => JSON.parse(serialized)).not.toThrow();
+      if (format === "yaml") expect(() => YAML.parse(serialized)).not.toThrow();
+    }
   });
 
   it("omits a single file over the authority file-byte bound without reading or writing it", () => {
@@ -467,7 +506,7 @@ describe("local migration authority", () => {
       "z-custom.yaml",
     ]);
     expect(inventory.entries.find((entry) => entry.path === "escape.yaml")).toMatchObject({
-      classification: "blocked",
+      classification: "project_boundary",
       rejection: "symlink_escape",
       addressable: false,
     });

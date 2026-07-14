@@ -78,6 +78,60 @@ function number(value: unknown): number | null {
   return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : null;
 }
 
+function entryClassification(failureClass: string): string {
+  if (failureClass === "ambiguous_candidate") return "ambiguous";
+  if (failureClass === "corrupt_candidate") return "corrupt";
+  if (failureClass === "unsupported_candidate") return "unsupported";
+  if (failureClass === "project_boundary") return "project_boundary";
+  return "unaddressable";
+}
+
+function rejectionFailureClass(rejection: string): string {
+  if (
+    [
+      "ambiguous_candidate",
+      "corrupt_candidate",
+      "project_boundary",
+      "unsupported_candidate",
+      "changed_candidate",
+      "backup_conflict",
+      "immutable_conflict",
+      "projection_failure",
+      "interrupted",
+      "invalid_selector",
+    ].includes(rejection)
+  )
+    return rejection;
+  if (rejection === "conflicting_identity") return "immutable_conflict";
+  if (rejection === "shorthand_collision" || rejection === "multiple_explicit_identities")
+    return "ambiguous_candidate";
+  if (rejection === "corrupt_record" || rejection === "record_schema") return "corrupt_candidate";
+  if (rejection === "symlink_escape" || rejection === "outside_project") return "project_boundary";
+  if (rejection === "unsupported_candidate" || rejection === "unsupported_artifact_shape")
+    return "unsupported_candidate";
+  if (rejection === "no_matching_identity") return "invalid_selector";
+  if (rejection === "custom_requires_path_artifact_number") return "invalid_selector";
+  return "unsupported_candidate";
+}
+
+function rejectionProvenance(
+  candidate: ParsedCandidate,
+  artifactId: unknown,
+  entryNumber: unknown,
+  failureClass: string,
+  reason: string,
+): Record<string, unknown> {
+  return {
+    failure_class: failureClass,
+    reason,
+    source: candidate.source,
+    candidate_id: candidate.path,
+    path: candidate.path,
+    artifact_id: artifactId,
+    entry_number: entryNumber,
+  };
+}
+
 function groupRecords(candidates: ParsedCandidate[]): Map<string, CandidateIdentityGroup> {
   const groups = new Map<string, CandidateIdentityGroup>();
   for (const candidate of candidates) {
@@ -138,13 +192,28 @@ function candidateEntry(
     addressable: false,
   };
   if (candidate.rejection) {
-    result.classification = candidate.rejection.classification;
+    const failureClass = candidate.rejection.classification;
+    result.classification = entryClassification(failureClass);
     result.rejection = candidate.rejection.reason;
     result.detail_availability = "unavailable";
+    result.provenance = rejectionProvenance(
+      candidate,
+      result.artifact_id,
+      result.entry_number,
+      failureClass,
+      candidate.rejection.reason,
+    );
     return result;
   }
   if (candidate.requiresPin && !(args.path && args.artifact && args.number !== undefined)) {
     result.rejection = "custom_requires_path_artifact_number";
+    result.provenance = rejectionProvenance(
+      candidate,
+      result.artifact_id,
+      result.entry_number,
+      "invalid_selector",
+      "custom_requires_path_artifact_number",
+    );
     return result;
   }
   if (matching.length === 0) {
@@ -159,6 +228,13 @@ function candidateEntry(
     } else {
       result.rejection = "multiple_identities_require_number";
     }
+    result.provenance = rejectionProvenance(
+      candidate,
+      result.artifact_id,
+      result.entry_number,
+      rejectionFailureClass(String(result.rejection)),
+      String(result.rejection),
+    );
     return result;
   }
   const selectedGroup =
@@ -181,6 +257,13 @@ function candidateEntry(
     result.classification = "ambiguous";
     result.rejection = "ambiguous_identity";
     result.entry_number = null;
+    result.provenance = rejectionProvenance(
+      candidate,
+      result.artifact_id,
+      result.entry_number,
+      "ambiguous_candidate",
+      "ambiguous_identity",
+    );
     return result;
   }
   const selected = matching[0];
@@ -190,12 +273,32 @@ function candidateEntry(
   if (selected.detail !== "full" || !selected.record || selected.number === null) {
     result.classification = selected.number === null ? "ambiguous" : "unaddressable";
     result.rejection = selected.detail === "summary" ? "summary_only" : "corrupt_record";
+    result.provenance = rejectionProvenance(
+      candidate,
+      result.artifact_id,
+      result.entry_number,
+      selected.number === null
+        ? "ambiguous_candidate"
+        : selected.detail === "summary"
+          ? "unsupported_candidate"
+          : "corrupt_candidate",
+      String(result.rejection),
+    );
     return result;
   }
   const group = groups.get(`${selected.artifactId}:${selected.number}`);
   result.classification = group?.classification ?? "canonical";
   result.addressable = true;
-  if (group?.classification === "conflict") result.rejection = "conflicting_identity";
+  if (group?.classification === "conflict") {
+    result.rejection = "conflicting_identity";
+    result.provenance = rejectionProvenance(
+      candidate,
+      result.artifact_id,
+      result.entry_number,
+      "immutable_conflict",
+      "conflicting_identity",
+    );
+  }
   return result;
 }
 
@@ -203,7 +306,7 @@ function statusFor(entries: Array<Record<string, unknown>>, omittedCount: number
   if (omittedCount > 0) return "degraded";
   if (
     entries.some((entry) =>
-      ["blocked", "corrupt", "ambiguous", "conflict", "unsupported"].includes(
+      ["blocked", "project_boundary", "corrupt", "ambiguous", "conflict", "unsupported"].includes(
         String(entry.classification),
       ),
     )
@@ -402,6 +505,12 @@ function findSelectedRecord(
   const selectedEntries = inspection.entries.filter(
     (entry) => !args.path || entry.path === args.path,
   );
+  const rejectedCandidate = candidates.find((candidate) => candidate.rejection);
+  if (rejectedCandidate?.rejection)
+    throw new LegacyMigrationFailure(
+      rejectedCandidate.rejection.classification,
+      `${rejectedCandidate.rejection.message}; no state was changed`,
+    );
   if (selectedEntries.some((entry) => entry.classification === "conflict"))
     throw new LegacyMigrationFailure(
       "immutable_conflict",
@@ -437,6 +546,11 @@ function findSelectedRecord(
           record.detail !== "full",
       ),
     );
+    if (summaries.some((record) => record.source === "unavailable" && record.summary === undefined))
+      throw new LegacyMigrationFailure(
+        "corrupt_candidate",
+        "a selected legacy record failed artifact parsing; source bytes were preserved",
+      );
     if (summaries.length > 0)
       throw new LegacyMigrationFailure(
         "unsupported_candidate",
@@ -485,8 +599,15 @@ export function inspectLegacyMigration(
   const diagnostics: Array<Record<string, unknown>> = entries
     .filter((entry) => entry.rejection)
     .map((entry) => ({
-      class: entry.rejection,
+      class:
+        (entry.provenance as Record<string, unknown> | undefined)?.failure_class ??
+        rejectionFailureClass(String(entry.rejection)),
       candidate_id: entry.candidate_id,
+      provenance: entry.provenance ?? {
+        candidate_id: entry.candidate_id,
+        path: entry.path,
+        reason: entry.rejection,
+      },
       message: `candidate '${entry.path}' is not apply-eligible: ${entry.rejection}`,
     }));
   const operations: Array<Record<string, unknown>> = [];
@@ -547,8 +668,12 @@ export function applyLegacyMigration(
   let backupPublished = false;
   let projectionPublished = false;
   let operation: Record<string, unknown> | undefined;
+  let selectedCandidate: ParsedCandidate | undefined = inspection.candidates.find(
+    (candidate) => candidate.path === args.path,
+  );
   try {
     const selected = findSelectedRecord(inspection, args);
+    selectedCandidate = selected.candidate;
     if (!selected.record.record || selected.record.number === null)
       throw new LegacyMigrationFailure(
         "corrupt_candidate",
@@ -645,19 +770,30 @@ export function applyLegacyMigration(
       error.name === "InjectedMutationFailure"
     )
       throw error;
+    const failureClass =
+      error instanceof LegacyMigrationFailure
+        ? error.failureClass
+        : error instanceof Error && error.name === "InjectedMutationFailure"
+          ? "interrupted"
+          : "projection_failure";
+    const failureMessage = error instanceof Error ? error.message : String(error);
     return {
       status: "blocked",
       mutationPerformed:
         archivePublished || backupPublished || projectionPublished || Boolean(operation),
       diagnostics: [
         {
-          class:
-            error instanceof LegacyMigrationFailure
-              ? error.failureClass
-              : error instanceof Error && error.name === "InjectedMutationFailure"
-                ? "interrupted"
-                : "projection_failure",
-          message: error instanceof Error ? error.message : String(error),
+          class: failureClass,
+          message: failureMessage,
+          provenance: {
+            failure_class: failureClass,
+            reason: failureMessage,
+            candidate_id: selectedCandidate?.path ?? args.path ?? null,
+            path: selectedCandidate?.path ?? args.path ?? null,
+            artifact_id: args.artifact,
+            entry_number: args.number,
+            source: selectedCandidate?.source ?? "unavailable",
+          },
         },
       ],
       operations: operation ? [operation] : [],

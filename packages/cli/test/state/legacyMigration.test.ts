@@ -201,7 +201,7 @@ describe("bounded non-Git legacy migration", () => {
     expect(inspected.entries).toContainEqual(
       expect.objectContaining({
         path: "SYMLINK.yaml",
-        classification: "blocked",
+        classification: "project_boundary",
         rejection: "symlink_escape",
       }),
     );
@@ -211,7 +211,12 @@ describe("bounded non-Git legacy migration", () => {
       { sourceRoot: REPO_ROOT },
     );
     expect(summary.status).toBe("blocked");
-    expect(summary.diagnostics[0]).toMatchObject({ class: "unsupported_candidate" });
+    expect(summary.diagnostics).toContainEqual(
+      expect.objectContaining({
+        class: "unsupported_candidate",
+        provenance: expect.objectContaining({ path: ".agentera/PROGRESS.md" }),
+      }),
+    );
 
     const custom = inventory(root, { artifact: "progress", number: 2, path: "CUSTOM.yaml" });
     expect(custom.entries).toContainEqual(
@@ -291,6 +296,11 @@ describe("bounded non-Git legacy migration", () => {
     fs.writeFileSync(source, YAML.stringify({ cycles: [progress(1, "changed")] }));
     const changed = applyLegacyMigration(inspected, args, { sourceRoot: REPO_ROOT });
     expect(changed.diagnostics[0]).toMatchObject({ class: "changed_candidate" });
+    expect(changed.diagnostics[0].provenance).toMatchObject({
+      path: "CUSTOM.yaml",
+      artifact_id: "progress",
+      entry_number: 1,
+    });
     expect(fs.existsSync(path.join(root, ".agentera", "archive"))).toBe(false);
 
     fs.writeFileSync(source, YAML.stringify({ cycles: [progress(1)] }));
@@ -300,7 +310,34 @@ describe("bounded non-Git legacy migration", () => {
     fs.writeFileSync(path.join(root, operation.backup), "different bytes\n");
     const conflict = applyLegacyMigration(replayInspection, args, { sourceRoot: REPO_ROOT });
     expect(conflict.diagnostics[0]).toMatchObject({ class: "backup_conflict" });
+    expect(conflict.diagnostics[0].provenance).toMatchObject({
+      path: "CUSTOM.yaml",
+      artifact_id: "progress",
+      entry_number: 1,
+    });
     expect(fs.existsSync(path.join(root, ".agentera", "archive"))).toBe(false);
+  });
+
+  it("refuses an immutable archive target conflict with precise provenance", () => {
+    const root = project();
+    const source = path.join(root, "CUSTOM.yaml");
+    const args = { artifact: "progress", number: 1, path: "CUSTOM.yaml" } as const;
+    fs.writeFileSync(source, YAML.stringify({ cycles: [progress(1)] }));
+    fs.mkdirSync(path.join(root, ".agentera", "archive", "progress"), { recursive: true });
+    fs.writeFileSync(
+      path.join(root, ".agentera", "archive", "progress", "1.yaml"),
+      YAML.stringify({ record: progress(1, "different immutable content") }),
+    );
+    const result = applyLegacyMigration(inventory(root, args), args, { sourceRoot: REPO_ROOT });
+    expect(result.diagnostics[0]).toMatchObject({
+      class: "immutable_conflict",
+      provenance: expect.objectContaining({
+        path: "CUSTOM.yaml",
+        artifact_id: "progress",
+        entry_number: 1,
+      }),
+    });
+    expect(fs.existsSync(path.join(root, ".agentera", "migration-backups"))).toBe(false);
   });
 
   it("routes CLI preview and explicit apply through the same bounded local contract", () => {
@@ -344,5 +381,147 @@ describe("bounded non-Git legacy migration", () => {
     expect(result.diagnostics[0]).toMatchObject({ class: "projection_failure" });
     expect(fs.existsSync(path.join(root, ".agentera", "archive"))).toBe(false);
     expect(fs.existsSync(path.join(root, ".agentera", "migration-backups"))).toBe(false);
+  });
+
+  it("never lets selectors erase multiple explicit Markdown or YAML identities", () => {
+    const root = project();
+    const markdown = [
+      "## Cycle 1 · 2026-07-14 09:00 · fix: cycle identity",
+      "",
+      "**Phase**: build",
+      "**What**: cycle identity",
+      "**Context**: intent: preserve ambiguity",
+      "",
+      "## Decision 2 · 2026-07-14",
+      "",
+      "**Question**: Which identity is selected?",
+      "**Context**: Both identities are explicit.",
+      "**Alternatives**:",
+      "- [Keep Cycle], chosen: preserve both",
+      "- [Keep Decision], rejected: erase one",
+      "**Choice**: Keep Cycle",
+      "**Reasoning**: A selector cannot change source identity.",
+      "**Confidence**: firm",
+      "",
+    ].join("\n");
+    fs.writeFileSync(path.join(root, "MIXED.md"), markdown);
+    fs.writeFileSync(
+      path.join(root, "MIXED.yaml"),
+      YAML.stringify({ cycles: [progress(1)], decisions: [{ ...progress(2), date: "2026-07-14", question: "q", context: "c", alternatives: [{ name: "a", status: "chosen" }], choice: "a", reasoning: "r", confidence: "firm" }] }),
+    );
+
+    for (const pathName of ["MIXED.md", "MIXED.yaml"]) {
+      for (const artifact of ["progress", "decisions", "health"] as const) {
+        for (const entryNumber of [1, 2]) {
+          const args = { artifact, number: entryNumber, path: pathName } as const;
+          const inspected = inventory(root, args);
+          expect(inspected.entries).toContainEqual(
+            expect.objectContaining({
+              path: pathName,
+              classification: "ambiguous",
+              rejection: pathName.endsWith(".yaml")
+                ? "multiple_artifact_identities"
+                : "multiple_explicit_identities",
+              addressable: false,
+              provenance: expect.objectContaining({ failure_class: "ambiguous_candidate" }),
+            }),
+          );
+          const applied = applyLegacyMigration(inspected, args, { sourceRoot: REPO_ROOT });
+          expect(applied.diagnostics[0]).toMatchObject({
+            class: "ambiguous_candidate",
+            provenance: expect.objectContaining({ path: pathName }),
+          });
+          expect(fs.existsSync(path.join(root, ".agentera", "archive"))).toBe(false);
+        }
+      }
+    }
+  });
+
+  it("preserves shorthand-collision, corrupt, unsupported, and boundary refusal classes", () => {
+    const root = project();
+    fs.writeFileSync(path.join(root, "SHORTHAND.md"), "## Archived Decisions\n- D1 + D2\n");
+    fs.writeFileSync(path.join(root, "MALFORMED.md"), "## Cycle 1 · 2026-07-14 09:00 · fix: malformed\n\n**Phase**: build\n");
+    fs.writeFileSync(path.join(root, "CORRUPT.yaml"), "cycles: [\n");
+    fs.writeFileSync(path.join(root, "UNSUPPORTED.yaml"), "notes: true\n");
+    const outside = path.join(os.tmpdir(), `agentera-legacy-boundary-${process.pid}.yaml`);
+    fs.writeFileSync(outside, "notes: true\n");
+    roots.push(outside);
+    fs.symlinkSync(outside, path.join(root, "ESCAPE.yaml"));
+
+    const shorthand = inventory(root, { artifact: "decisions", number: 1, path: "SHORTHAND.md" });
+    expect(shorthand.entries).toContainEqual(
+      expect.objectContaining({
+        classification: "ambiguous",
+        rejection: "shorthand_collision",
+        provenance: expect.objectContaining({ failure_class: "ambiguous_candidate" }),
+      }),
+    );
+    expect(
+      applyLegacyMigration(
+        shorthand,
+        { artifact: "decisions", number: 1, path: "SHORTHAND.md" },
+        { sourceRoot: REPO_ROOT },
+      ).diagnostics[0],
+    ).toMatchObject({ class: "ambiguous_candidate" });
+    const malformed = inventory(root, { artifact: "progress", number: 1, path: "MALFORMED.md" });
+    expect(malformed.entries).toContainEqual(
+      expect.objectContaining({
+        rejection: "corrupt_record",
+        provenance: expect.objectContaining({ failure_class: "corrupt_candidate" }),
+      }),
+    );
+    expect(
+      applyLegacyMigration(
+        malformed,
+        { artifact: "progress", number: 1, path: "MALFORMED.md" },
+        { sourceRoot: REPO_ROOT },
+      ).diagnostics[0],
+    ).toMatchObject({ class: "corrupt_candidate" });
+    const corrupt = inventory(root, { artifact: "progress", number: 1, path: "CORRUPT.yaml" });
+    expect(corrupt.entries).toContainEqual(
+      expect.objectContaining({
+        classification: "corrupt",
+        rejection: "invalid_yaml",
+        provenance: expect.objectContaining({ failure_class: "corrupt_candidate" }),
+      }),
+    );
+    expect(
+      applyLegacyMigration(
+        corrupt,
+        { artifact: "progress", number: 1, path: "CORRUPT.yaml" },
+        { sourceRoot: REPO_ROOT },
+      ).diagnostics[0],
+    ).toMatchObject({ class: "corrupt_candidate" });
+    const unsupported = inventory(root, { artifact: "progress", number: 1, path: "UNSUPPORTED.yaml" });
+    expect(unsupported.entries).toContainEqual(
+      expect.objectContaining({
+        classification: "unsupported",
+        rejection: "unsupported_artifact_shape",
+        provenance: expect.objectContaining({ failure_class: "unsupported_candidate" }),
+      }),
+    );
+    expect(
+      applyLegacyMigration(
+        unsupported,
+        { artifact: "progress", number: 1, path: "UNSUPPORTED.yaml" },
+        { sourceRoot: REPO_ROOT },
+      ).diagnostics[0],
+    ).toMatchObject({ class: "unsupported_candidate" });
+    expect(inventory(root).entries).toContainEqual(
+      expect.objectContaining({
+        path: "ESCAPE.yaml",
+        classification: "project_boundary",
+        rejection: "symlink_escape",
+        provenance: expect.objectContaining({ failure_class: "project_boundary" }),
+      }),
+    );
+    const boundary = inventory(root, { artifact: "progress", number: 1, path: "ESCAPE.yaml" });
+    expect(
+      applyLegacyMigration(
+        boundary,
+        { artifact: "progress", number: 1, path: "ESCAPE.yaml" },
+        { sourceRoot: REPO_ROOT },
+      ).diagnostics[0],
+    ).toMatchObject({ class: "project_boundary" });
   });
 });

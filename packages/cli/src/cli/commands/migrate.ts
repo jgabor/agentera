@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 
+import YAML from "yaml";
 import { emitInvalidInput, type InvalidInputErrorBody } from "../errors.js";
 import { emitStructured } from "../structured.js";
 import type { Io } from "../dispatch/shared.js";
@@ -184,7 +185,7 @@ function inventoryEntry(
   };
   const pathError = candidatePathError(observation.relativePath, contract, project);
   if (observation.symbolicLink || pathError?.includes("boundary")) {
-    entry.classification = "blocked";
+    entry.classification = "project_boundary";
     entry.compatibility = "blocked";
     entry.rejection = observation.symbolicLink ? "symlink_escape" : "outside_project";
   } else if (!observation.regularFile || pathError) {
@@ -580,15 +581,20 @@ export function resultCounts(
 function omissionValues(
   contract: StateMigrationContract,
   omittedCount: number,
+  outputBounded = false,
 ): Record<string, unknown> {
   const sourceValues: Record<string, unknown> = {
     has_omissions: omittedCount > 0,
     omitted_count: omittedCount,
     omission_reason:
-      omittedCount > 0 ? contract.omission.boundedReason : contract.omission.completeReason,
+      omittedCount > 0
+        ? outputBounded
+          ? contract.omission.outputBoundedReason
+          : contract.omission.boundedReason
+        : contract.omission.completeReason,
     retrieval: {
       command: contract.omission.retrieval,
-      retry: contract.omission.retry,
+      retry: outputBounded ? contract.omission.outputRetry : contract.omission.retry,
     },
   };
   return Object.fromEntries(
@@ -599,6 +605,95 @@ function omissionValues(
       }
       return [field, sourceValues[source]];
     }),
+  );
+}
+
+function textResponse(response: Record<string, unknown>): string {
+  const diagnostics = response.diagnostics as Array<{ message: string }>;
+  const valueText = (value: unknown): string =>
+    value !== null && typeof value === "object" ? JSON.stringify(value) : String(value);
+  return (
+    [
+      ...Object.entries(response)
+        .filter(([field]) => field !== "diagnostics")
+        .map(([field, value]) => `${field}: ${valueText(value)}`),
+      `diagnostic: ${diagnostics[0]?.message ?? "none"}`,
+      `authority: ${(response.source_contract as { authority: string }).authority}`,
+      "",
+    ].join("\n")
+  );
+}
+
+function serializedResponseBytes(response: Record<string, unknown>, format: MigrateFormat): number {
+  const serialized =
+    format === "text"
+      ? textResponse(response)
+      : format === "yaml"
+        ? YAML.stringify(response, { sortMapEntries: false })
+        : JSON.stringify(response, null, 2) + "\n";
+  return Buffer.byteLength(serialized, "utf8");
+}
+
+function boundedDiagnostics(
+  diagnostics: unknown,
+  entries: Array<Record<string, unknown>>,
+  contract: StateMigrationContract,
+): Array<Record<string, unknown>> {
+  if (!Array.isArray(diagnostics)) return [];
+  const retainedIds = new Set(entries.map((entry) => String(entry.candidate_id ?? "")));
+  const retained: Array<Record<string, unknown>> = [];
+  const omitted = new Map<string, number>();
+  for (const value of diagnostics) {
+    if (value === null || typeof value !== "object" || Array.isArray(value)) continue;
+    const diagnostic = value as Record<string, unknown>;
+    const candidateId = diagnostic.candidate_id;
+    if (candidateId === undefined || retainedIds.has(String(candidateId))) {
+      retained.push(diagnostic);
+      continue;
+    }
+    const failureClass = String(diagnostic.class ?? "unsupported_candidate");
+    omitted.set(failureClass, (omitted.get(failureClass) ?? 0) + 1);
+  }
+  for (const [failureClass, count] of [...omitted.entries()].sort(([left], [right]) =>
+    left.localeCompare(right),
+  )) {
+    retained.push({
+      class: failureClass,
+      message: `${count} candidate diagnostic(s) were omitted by the serialized output budget`,
+      provenance: {
+        failure_class: failureClass,
+        reason: contract.omission.outputBoundedReason,
+        omitted_count: count,
+      },
+    });
+  }
+  return retained;
+}
+
+function boundMigrationResponse(
+  response: Record<string, unknown>,
+  format: MigrateFormat,
+  contract: StateMigrationContract,
+): Record<string, unknown> {
+  if (serializedResponseBytes(response, format) <= contract.outputMaxUtf8Bytes) return response;
+  const entries = Array.isArray(response.entries)
+    ? (response.entries as Array<Record<string, unknown>>)
+    : [];
+  const initialOmitted = Number(response.omitted_count ?? 0);
+  for (let retainedCount = entries.length; retainedCount >= 0; retainedCount -= 1) {
+    const retained = entries.slice(0, retainedCount);
+    const omittedCount = initialOmitted + entries.length - retainedCount;
+    const bounded = {
+      ...response,
+      entries: retained,
+      diagnostics: boundedDiagnostics(response.diagnostics, retained, contract),
+      counts: resultCounts(retained, omittedCount, contract),
+      ...omissionValues(contract, omittedCount, true),
+    };
+    if (serializedResponseBytes(bounded, format) <= contract.outputMaxUtf8Bytes) return bounded;
+  }
+  throw new Error(
+    `migration output requires more than the authority ${contract.outputMaxUtf8Bytes}-byte ${format} budget after required omission metadata`,
   );
 }
 
@@ -648,6 +743,7 @@ export function deferredResponse(
         count_fields: contract.resultCountFields,
         count_rules: contract.resultCountRules,
         omission: contract.omission,
+        max_utf8_bytes: contract.outputMaxUtf8Bytes,
       },
       inventory: contract.inventory,
       git_required: false,
@@ -658,23 +754,11 @@ export function deferredResponse(
     contract.resultRequiredFields.map((field) => [field, values[field] ?? null]),
   );
   if (options.operations !== undefined) response.operations = options.operations;
-  return response;
+  return boundMigrationResponse(response, args.format, contract);
 }
 
 export function renderText(response: Record<string, unknown>, out: (text: string) => void): void {
-  const diagnostics = response.diagnostics as Array<{ message: string }>;
-  const valueText = (value: unknown): string =>
-    value !== null && typeof value === "object" ? JSON.stringify(value) : String(value);
-  out(
-    [
-      ...Object.entries(response)
-        .filter(([field]) => field !== "diagnostics")
-        .map(([field, value]) => `${field}: ${valueText(value)}`),
-      `diagnostic: ${diagnostics[0]?.message ?? "none"}`,
-      `authority: ${(response.source_contract as { authority: string }).authority}`,
-      "",
-    ].join("\n"),
-  );
+  out(textResponse(response));
 }
 
 export function runMigrate(argv: string[], io: Io, sourceRootOverride?: string): number {

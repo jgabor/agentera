@@ -46,9 +46,9 @@ export function legacyIdentity(
   if (typeof value !== "string") return { number: null, kind: "unaddressable" };
   const text = value.trim();
   if (artifactId === "decisions") {
+    if (LEADING_DECISION_COMPOUND.test(text)) return { number: null, kind: "ambiguous" };
     const shorthand = LEADING_DECISION_SHORTHAND.exec(text);
     if (shorthand) return { number: positiveNumber(shorthand[1]), kind: "explicit_decision_shorthand" };
-    if (LEADING_DECISION_COMPOUND.test(text)) return { number: null, kind: "ambiguous" };
   }
   const label = artifactId === "progress" ? "Cycle" : artifactId === "decisions" ? "Decision" : "Audit";
   const match = new RegExp(`^${label}\\s+([1-9][0-9]*)\\b`).exec(text);

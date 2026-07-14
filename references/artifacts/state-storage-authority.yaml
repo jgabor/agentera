@@ -675,7 +675,7 @@ api:
       schema_version: agentera.stateMigrationResult.v1
       statuses: [complete, degraded, blocked, unavailable]
       required_fields: [schemaVersion, command, status, mode, project, read_only, mutation_intent, mutation_performed, remote_contact, inventory_performed, entries, counts, diagnostics, source_contract, omitted, omitted_count, omission_reason, retrieval]
-      entry_fields: [candidate_id, path, artifact_id, entry_number, classification, detail_availability, compatibility, source, addressable, size_bytes, rejection]
+      entry_fields: [candidate_id, path, artifact_id, entry_number, classification, detail_availability, compatibility, source, addressable, size_bytes, rejection, provenance]
       count_fields: [physical, addressable, addressable_ids, unaddressable, ambiguous, mirrored, duplicate, conflict, omitted]
       count_rules:
         physical:
@@ -723,9 +723,14 @@ api:
           retrieval: retrieval
         complete_reason: none
         bounded_reason: scan_bounded
+        output_bounded_reason: serialized_output_byte_budget
         retry: >-
           Retry with narrower project or selectors, or use the bounded list
           pointer to continue from the same normalized snapshot.
+        output_retry: >-
+          Retry with a smaller --limit or narrower selectors; use --path with
+          --artifact and --number to address one omitted candidate. The omitted
+          records remain accounted for and no state was changed by output bounding.
         retrieval: >-
           agentera state migrate --project PATH [selectors] --limit N
         semantics: >-
@@ -941,7 +946,7 @@ budgets:
         latency, heap, or response threshold on a reproducible authority test.
   projection:
     max_utf8_bytes: 32768
-    applies_to: current and summary state projection responses
+    applies_to: current, summary, and migration result responses
     required_when_over_budget: [omitted, omitted_count, omission_reason, retrieval]
     omission_semantics: >-
       Remove optional detail entries in deterministic numeric order from the

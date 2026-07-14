@@ -20,7 +20,9 @@ export interface StateMigrationOmissionContract {
   fieldSources: Record<string, string>;
   completeReason: string;
   boundedReason: string;
+  outputBoundedReason: string;
   retry: string;
+  outputRetry: string;
   retrieval: string;
   semantics: string;
 }
@@ -65,6 +67,7 @@ export interface StateMigrationContract {
   resultEntryFields: string[];
   resultCountFields: string[];
   resultCountRules: Record<string, StateMigrationCountRule>;
+  outputMaxUtf8Bytes: number;
   omission: StateMigrationOmissionContract;
   failureClasses: Record<string, StateMigrationMapping>;
   resultSchemaVersion: string;
@@ -508,7 +511,16 @@ export function stateMigrationContract(
   const omission = mapping(result.omission, "api.migrate.result.omission");
   requireKeys(
     omission,
-    ["fields", "complete_reason", "bounded_reason", "retry", "retrieval", "semantics"],
+    [
+      "fields",
+      "complete_reason",
+      "bounded_reason",
+      "output_bounded_reason",
+      "retry",
+      "output_retry",
+      "retrieval",
+      "semantics",
+    ],
     "api.migrate.result.omission",
   );
   const omissionFields = requiredList(omission.fields, "api.migrate.result.omission.fields");
@@ -547,7 +559,12 @@ export function stateMigrationContract(
       omission.bounded_reason,
       "api.migrate.result.omission.bounded_reason",
     ),
+    outputBoundedReason: requiredString(
+      omission.output_bounded_reason,
+      "api.migrate.result.omission.output_bounded_reason",
+    ),
     retry: requiredString(omission.retry, "api.migrate.result.omission.retry"),
+    outputRetry: requiredString(omission.output_retry, "api.migrate.result.omission.output_retry"),
     retrieval: requiredString(omission.retrieval, "api.migrate.result.omission.retrieval"),
     semantics: requiredString(omission.semantics, "api.migrate.result.omission.semantics"),
   };
@@ -631,6 +648,10 @@ export function stateMigrationContract(
     resultEntryFields,
     resultCountFields,
     resultCountRules,
+    outputMaxUtf8Bytes: requiredPositiveInteger(
+      mapping(mapping(authority.budgets, "budgets").projection, "budgets.projection").max_utf8_bytes,
+      "budgets.projection.max_utf8_bytes",
+    ),
     omission: omissionContract,
     failureClasses,
     resultSchemaVersion,

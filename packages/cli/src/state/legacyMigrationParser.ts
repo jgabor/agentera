@@ -9,7 +9,7 @@ import {
   stateCurrentProjectionPath,
   validateStateRecord,
 } from "./archiveDiscovery.js";
-import { legacyIdentity } from "./legacyIdentity.js";
+import { legacyIdentity, type LegacyIdentityKind } from "./legacyIdentity.js";
 import type { StateMigrationContract } from "./migrationAuthority.js";
 
 export type ArtifactId = "progress" | "decisions" | "health";
@@ -23,6 +23,7 @@ export type CandidateSource =
 export interface ParsedLegacyRecord {
   artifactId: ArtifactId;
   number: number | null;
+  identityKind?: LegacyIdentityKind;
   detail: DetailAvailability;
   source: CandidateSource;
   record?: JsonObject;
@@ -208,7 +209,7 @@ function parseMarkdownRecord(
   };
 }
 
-function markdownRecords(text: string, forcedArtifact?: ArtifactId): ParsedLegacyRecord[] {
+function markdownRecords(text: string): ParsedLegacyRecord[] {
   const records: ParsedLegacyRecord[] = [];
   for (const section of text.split(/(?=^##\s+)/m)) {
     const heading =
@@ -219,15 +220,6 @@ function markdownRecords(text: string, forcedArtifact?: ArtifactId): ParsedLegac
     const artifactId: ArtifactId =
       heading[1] === "Cycle" ? "progress" : heading[1] === "Decision" ? "decisions" : "health";
     const entryNumber = Number(heading[2]);
-    if (forcedArtifact && forcedArtifact !== artifactId) {
-      records.push({
-        artifactId,
-        number: entryNumber,
-        detail: "unavailable",
-        source: "unavailable",
-      });
-      continue;
-    }
     const parsed = parseMarkdownRecord(
       section,
       heading[1],
@@ -240,25 +232,25 @@ function markdownRecords(text: string, forcedArtifact?: ArtifactId): ParsedLegac
         ? {
             artifactId,
             number: entryNumber,
+            identityKind: "canonical_number",
             detail: "full",
             source: "legacy_full",
             record: parsed,
             hash: recordHash(parsed),
           }
-        : { artifactId, number: entryNumber, detail: "unavailable", source: "unavailable" },
+        : {
+            artifactId,
+            number: entryNumber,
+            identityKind: "canonical_number",
+            detail: "unavailable",
+            source: "unavailable",
+          },
     );
   }
-  const archiveName =
-    forcedArtifact === "progress"
-      ? "Cycles"
-      : forcedArtifact === "decisions"
-        ? "Decisions"
-        : forcedArtifact === "health"
-          ? "Audits"
-          : "(?:Cycles|Decisions|Audits)";
-  const header = new RegExp(`^##\\s+Archived\\s+${archiveName}\\s*$`, "m").exec(text);
-  if (!header) return records;
-  const start = header.index + header[0].length;
+  const archiveName = "(?:Cycles|Decisions|Audits)";
+  const headers = [...text.matchAll(new RegExp(`^##\\s+Archived\\s+${archiveName}\\s*$`, "gm"))];
+  for (const header of headers) {
+  const start = (header.index ?? 0) + header[0].length;
   const nextHeading = /^##\s+/gm;
   nextHeading.lastIndex = start;
   const end = nextHeading.exec(text)?.index ?? text.length;
@@ -272,16 +264,18 @@ function markdownRecords(text: string, forcedArtifact?: ArtifactId): ParsedLegac
         ? "progress"
         : match[1]?.toLowerCase() === "audit"
           ? "health"
-          : "decisions";
+      : "decisions";
     const identity = legacyIdentity(line.replace(/^\s*-\s*/, ""), artifactId, "number");
     const shorthand = /^\s*-\s*D[1-9]/i.test(line);
     records.push({
       artifactId,
       number: shorthand && identity.kind !== "ambiguous" ? Number(match[1]) : identity.number,
+      identityKind: identity.kind,
       detail: identity.kind === "ambiguous" ? "unavailable" : "summary",
       source: "legacy_summary",
       summary: line.trim(),
     });
+  }
   }
   return records;
 }
@@ -305,7 +299,7 @@ function yamlRecords(
     return {
       records: [],
       rejection: {
-        classification: "corrupt",
+        classification: "corrupt_candidate",
         reason: "invalid_yaml",
         message: `candidate YAML cannot be parsed: ${(error as Error).message}`,
       },
@@ -322,54 +316,46 @@ function yamlRecords(
     return {
       records: [],
       rejection: {
-        classification: "ambiguous",
+        classification: "ambiguous_candidate",
         reason: "multiple_artifact_identities",
         message: "candidate contains multiple supported artifact collections",
       },
     };
-  if (forcedArtifact && artifacts.length > 0 && artifacts[0] !== forcedArtifact)
-    return {
-      records: [],
-      rejection: {
-        classification: "ambiguous",
-        reason: "artifact_shape_conflict",
-        message: `candidate does not contain the requested ${forcedArtifact} collection`,
-      },
-    };
-  const artifact = forcedArtifact ?? artifacts[0];
+  const artifact = artifacts[0];
   if (!artifact) {
     if (forcedArtifact) {
       const candidate = root as JsonObject;
       const entryNumber = positive(candidate[NUMBER_FIELDS[forcedArtifact]]);
       if (entryNumber !== null) {
         const violations = validateStateRecord(sourceRoot, forcedArtifact, candidate);
-        if (violations.length === 0)
-          return {
-            records: [
-              {
-                artifactId: forcedArtifact,
-                number: entryNumber,
-                detail: "full",
-                source,
-                record: candidate,
-                hash: recordHash(candidate),
+        return violations.length === 0
+          ? {
+              records: [
+                {
+                  artifactId: forcedArtifact,
+                  number: entryNumber,
+                  identityKind: "canonical_number",
+                  detail: "full",
+                  source,
+                  record: candidate,
+                  hash: recordHash(candidate),
+                },
+              ],
+            }
+          : {
+              records: [],
+              rejection: {
+                classification: "corrupt_candidate",
+                reason: "record_schema",
+                message: violations.join("; "),
               },
-            ],
-          };
-        return {
-          records: [],
-          rejection: {
-            classification: "corrupt",
-            reason: "record_schema",
-            message: violations.join("; "),
-          },
-        };
+            };
       }
     }
     return {
       records: [],
       rejection: {
-        classification: "unsupported",
+        classification: "unsupported_candidate",
         reason: "unsupported_artifact_shape",
         message: "candidate does not contain one supported numbered artifact collection",
       },
@@ -380,7 +366,7 @@ function yamlRecords(
     return {
       records: [],
       rejection: {
-        classification: "corrupt",
+        classification: "corrupt_candidate",
         reason: "collection_not_array",
         message: `candidate collection '${COLLECTIONS[artifact]}' must be an array`,
       },
@@ -393,6 +379,7 @@ function yamlRecords(
       records.push({
         artifactId: artifact,
         number: identity.kind === "ambiguous" ? null : identity.number,
+        identityKind: identity.kind,
         detail: identity.kind === "ambiguous" ? "unavailable" : "summary",
         source: "legacy_summary",
         summary: typeof value === "string" ? value : undefined,
@@ -406,6 +393,7 @@ function yamlRecords(
       records.push({
         artifactId: artifact,
         number: identity.number,
+        identityKind: identity.kind,
         detail: summary ? "summary" : "unavailable",
         source: summary ? "legacy_summary" : "unavailable",
         summary,
@@ -415,18 +403,20 @@ function yamlRecords(
     const violations = validateStateRecord(sourceRoot, artifact, item);
     records.push(
       violations.length === 0
-        ? {
-            artifactId: artifact,
-            number: entryNumber,
-            detail: "full",
+          ? {
+              artifactId: artifact,
+              number: entryNumber,
+              identityKind: "canonical_number",
+              detail: "full",
             source,
             record: item,
             hash: recordHash(item),
           }
-        : {
-            artifactId: artifact,
-            number: entryNumber,
-            detail: "unavailable",
+          : {
+              artifactId: artifact,
+              number: entryNumber,
+              identityKind: "canonical_number",
+              detail: "unavailable",
             source: "unavailable",
           },
     );
@@ -439,6 +429,7 @@ function yamlRecords(
       records.push({
         artifactId: artifact,
         number: identity.kind === "ambiguous" ? null : identity.number,
+        identityKind: identity.kind,
         detail:
           identity.kind === "ambiguous" || identity.number === null ? "unavailable" : "summary",
         source: "legacy_summary",
@@ -466,6 +457,30 @@ function sourceKind(
   return contract.fixedNames[relativePath] ? "legacy_full" : "legacy_full";
 }
 
+function identityRejection(
+  records: ParsedLegacyRecord[],
+  requiresPin: boolean,
+): ParsedCandidate["rejection"] | undefined {
+  if (records.some((record) => record.identityKind === "ambiguous")) {
+    return {
+      classification: "ambiguous_candidate",
+      reason: "shorthand_collision",
+      message: "candidate contains an ambiguous decision shorthand identity",
+    };
+  }
+  const explicit = records.filter((record) => record.number !== null);
+  const artifactIds = new Set(explicit.map((record) => record.artifactId));
+  const identities = new Set(explicit.map((record) => `${record.artifactId}:${record.number}`));
+  if (artifactIds.size > 1 || (requiresPin && identities.size > 1)) {
+    return {
+      classification: "ambiguous_candidate",
+      reason: "multiple_explicit_identities",
+      message: "candidate contains multiple explicit supported identities; selectors cannot erase the ambiguity",
+    };
+  }
+  return undefined;
+}
+
 export function parseCandidate(
   project: string,
   relativePath: string,
@@ -476,7 +491,7 @@ export function parseCandidate(
   const absolutePath = path.join(project, relativePath);
   const source = sourceKind(relativePath, project, sourceRoot, contract);
   const requiresPin =
-    source !== "current_projection" && !Boolean(contract.fixedNames[relativePath]);
+    source !== "current_projection" && !contract.fixedNames[relativePath];
   let bytes: Buffer;
   try {
     bytes = fs.readFileSync(absolutePath);
@@ -491,7 +506,7 @@ export function parseCandidate(
       records: [],
       duplicateKeys: new Set(),
       rejection: {
-        classification: "corrupt",
+        classification: "corrupt_candidate",
         reason: "read_failure",
         message: `candidate cannot be read: ${(error as Error).message}`,
       },
@@ -508,7 +523,7 @@ export function parseCandidate(
       records: [],
       duplicateKeys: new Set(),
       rejection: {
-        classification: "unsupported",
+        classification: "unsupported_candidate",
         reason: "invalid_encoding",
         message: "candidate is not valid UTF-8",
       },
@@ -516,7 +531,7 @@ export function parseCandidate(
   const text = bytes.toString("utf8");
   const parsed =
     path.extname(relativePath).toLowerCase() === ".md"
-      ? { records: markdownRecords(text, forcedArtifact) }
+      ? { records: markdownRecords(text) }
       : yamlRecords(text, source, sourceRoot, forcedArtifact);
   const duplicateKeys = new Set<string>();
   const seen = new Set<string>();
@@ -526,6 +541,7 @@ export function parseCandidate(
       if (seen.has(key)) duplicateKeys.add(key);
       seen.add(key);
     }
+  const rejection = parsed.rejection ?? identityRejection(parsed.records, requiresPin);
   return {
     path: relativePath,
     absolutePath,
@@ -535,7 +551,7 @@ export function parseCandidate(
     requiresPin,
     records: parsed.records,
     duplicateKeys,
-    ...(parsed.rejection ? { rejection: parsed.rejection } : {}),
+    ...(rejection ? { rejection } : {}),
   };
 }
 
@@ -546,7 +562,13 @@ export function metadataRejectedCandidate(
   const relativePath = String(entry.path);
   const rejection = String(entry.rejection ?? "unsupported_candidate");
   const classification =
-    rejection === "symlink_escape" || rejection === "outside_project" ? "blocked" : "unsupported";
+    rejection === "symlink_escape" || rejection === "outside_project"
+      ? "project_boundary"
+      : rejection === "invalid_yaml" || rejection === "record_schema" || rejection === "collection_not_array"
+        ? "corrupt_candidate"
+        : rejection === "multiple_artifact_identities" || rejection === "shorthand_collision"
+          ? "ambiguous_candidate"
+          : "unsupported_candidate";
   return {
     path: relativePath,
     absolutePath: path.join(project, relativePath),
