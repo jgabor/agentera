@@ -6,6 +6,18 @@
 
 - Added a canonical runtime lifecycle projection with deterministic snapshot identity, applicability, ownership, action classes, counts, and command eligibility for OpenCode, Codex, Cursor, and Copilot.
 - Added bounded prime/status lifecycle attention rows with runtime-scoped repair previews, exact manual procedures, and doctor diagnostics for non-executable blockers.
+- Added runtime lifecycle schemas and adapters for skills, plugins, hooks, agents, configuration, enablement, trust, and native actions across all four active runtimes.
+- Added append-only ownership-journal recovery, exact operation dependencies, Linux secure directory-relative publication, and outcomes `applied`, `noop`, `failed`, `blocked_unowned`, `skipped_dependency`, and `action_required`.
+- Added explicit retired cleanup through `agentera upgrade --legacy-cleanup claude --dry-run|--yes`; it can remove only the ledger-owned legacy Agentera skill link and excludes user data.
+- Added typed artifact writes under `agentera state`: progress/decision/audit appends, decision satisfaction updates, plan create/task/status/archive lifecycle operations, schema-derived `explain`, server-assigned identifiers, exact retry replay, dry-run diffs, project locking, strict mapped-path safety, staged 10/40/50 compaction, final-byte validation, and atomic publication.
+- Added `install_track` to `prime --format json` (`app_home.install_track`) and `doctor --format json`. Values are `v2`, `v3`, `source`, and `unknown`.
+- Added the native TypeScript CLI on the npm development channel (`npx -y agentera@next`), bundling app data at pack time via `prepack` (`tsc` + `scripts/copy-bundle.mjs`) and the `.agentera-npx-bundle.json` sentinel checked by `packages/cli/test/packaging/prepack.test.ts`.
+- Added `bash scripts/single-binary.sh` and the packaging contract in `docs/packaging/v3-packaging.md` for Bun `--compile` single-binary delivery alongside the npm tarball.
+- Added `packages/cli/src/migrate/v2HandoffManifest.ts` to read `v3-handoff.json` during v2→v3 cleanup preflight per `references/cli/v3-handoff-manifest.schema.yaml`.
+- Added v3 `agentera doctor` coexistence detection in `packages/cli/src/upgrade/coexistenceProbe.ts` with regression coverage in `packages/cli/test/cli/coexistenceProbe.test.ts`.
+- Added maintainer gates under `agentera check` (`validate`, `verify`, `lint`, `compact`) with JSON parity oracles for validate families, verify eval targets, invalid-input envelopes, and `source_contract` emissions on `prime`, `prime --context`, `state plan`, and `state query --list-artifacts`.
+- Added per-channel `next_major` metadata in `references/cli/update-channels.yaml` and a six-line successor advisory at the head of `agentera doctor` on the stable channel, sourced from `packages/cli/src/upgrade/nextMajorDoctor.ts`.
+- Added a 1000-line monolith lint regression in `packages/cli/test/lint/monolithLint.test.ts` after splitting the eight largest `packages/cli/src/**/*.ts` modules by responsibility.
 
 ### Changed
 
@@ -34,6 +46,16 @@
 - Changed lifecycle repair to fail closed on incomplete ownership provenance, isolate narrowed runtime selectors, and count explicit Claude cleanup separately from active-runtime work.
 - Changed corrupt or disconnected ownership-journal blockers to report stable causes without volatile event filenames across preview and apply.
 - Synchronized lifecycle projections across prime, status, project integration, and doctor while keeping Cursor CLI required, IDE conditional, and Claude cleanup explicit.
+- Changed lifecycle apply so native installation, update, authentication, enablement, and trust are always user-owned `action_required` steps. Automatic filesystem apply is Linux-only; other platforms retain complete preview and diagnosis.
+- Changed the npm package to include every declared OpenCode, Codex, Cursor, and GitHub Copilot manifest/hook/agent source and to reject package, documentation, runtime-ID, or version parity drift during validation.
+- Renamed the top-level `bundle` field to `app` in `prime --format json`. Nested names are now `activeAppRoot`, `cliApp`, and `legacyAppRoot`; this is a breaking JSON output change.
+- Added v2/v3 coexistence warning to the orientation attention list when a v2 managed app is detected at the app home alongside a v3 CLI runtime. Uses the existing "pick one line" contract message from `references/cli/coexistence-probe.yaml`.
+- Promoted English names to canonical v3 capability IDs (`status`, `vision`, `discuss`, `research`, `plan`, `build`, `optimize`, `audit`, `document`, `profile`, `design`, `orchestrate`) and retired Swedish `-era` IDs from the active command surface.
+- Removed top-level `hej`, `describe`, `gate`, and routine-state names from the v3 command tree; use `prime`, `schema`, `check`, and `state` namespaces.
+- Replaced the Python managed-app entrypoint on the development channel with the npm self-contained model; `upgrade --channel development` rewires runtime hooks to `npx -y agentera@next` and runs irreversible v2→v3 cleanup when previewed with `--dry-run` and applied with `--yes`.
+- Enforced the single-name protocol boundary: capability instructions live in `packages/cli/src/capabilities/<name>/instructions.ts` (`instruction_module` in the capability contract), startup JSON is `agentera prime --context <name> --format json`, and storage paths use canonical `.agentera/*.yaml` names instead of legacy Markdown artifact filenames in protocol surfaces.
+- Split `capabilityContext`, `startupAnalysis`, `extractCorpus`, `doctor`, `state`, `codex`, `compaction`, and `validateArtifact` into focused submodules so every `packages/cli/src/**/*.ts` file stays at or under 1000 lines.
+- Grouped CLI help and dispatch under audience namespaces (`state`, `report`, `check`) with `prime` as the default orientation entry; `agentera --help` lists only canonical top-level commands while legacy invocations still delegate with stderr deprecation.
 
 ### Fixed
 
@@ -42,81 +64,11 @@
 - Fixed `agentera state plan create` and `archive` publication to use stable archive identities across retries, validate final serialized bytes with strict prose lint and schema checks, and retain canonical `overall acceptance` vocabulary.
 - Fixed `agentera state plan`: `set-status --task` accepts task values, and `set-plan-status` accepts `open` or `complete`.
 - Fixed plan discovery to derive activity from canonical paths: archive-only history returns a complete empty current-plan state with a bounded history catalog, cannot trigger a Build completion sweep, and no longer degrades into omitted current tasks without a retrieval route; next work is dependency-ready, lifecycle diagnostics are shared, and evaluator state is retry-safe through `state plan record-evaluation`.
-
-## [3.0.0] · 2026-07-12
-
-### Key highlights
-
-- **One runtime lifecycle contract**: OpenCode, Codex, Cursor, and GitHub Copilot now share one authority, one canonical skill at `~/.agents/skills/agentera`, one eight-category diagnosis model, and one ownership-safe operation engine.
-- **Bounded status, detailed diagnosis**: `agentera prime` exposes a compact four-runtime summary while `agentera doctor` reports complete evidence, support-floor gaps, ownership state, and exact host-native actions from the same snapshot.
-- **Previewable, convergent repair**: `agentera upgrade --runtime all|opencode|codex|cursor|copilot --dry-run` is side-effect free; rerunning the selection with `--yes` applies only declared Agentera-owned resources and safely resumes partial work.
-- **Claude retirement and one Cursor identity**: Claude Code active support and package manifests are removed. Cursor Agent CLI is required and Cursor IDE is conditional beneath the single `cursor` runtime identity.
-
-### Added
-
-- Added runtime lifecycle schemas and adapters for skills, plugins, hooks, agents, configuration, enablement, trust, and native actions across all four active runtimes.
-- Added append-only ownership-journal recovery, exact operation dependencies, Linux secure directory-relative publication, and outcomes `applied`, `noop`, `failed`, `blocked_unowned`, `skipped_dependency`, and `action_required`.
-- Added explicit retired cleanup through `agentera upgrade --legacy-cleanup claude --dry-run|--yes`; it can remove only the ledger-owned legacy Agentera skill link and excludes user data.
-- Added typed artifact writes under `agentera state`: progress/decision/audit appends, decision satisfaction updates, plan create/task/status/archive lifecycle operations, schema-derived `explain`, server-assigned identifiers, exact retry replay, dry-run diffs, project locking, strict mapped-path safety, staged 10/40/50 compaction, final-byte validation, and atomic publication.
-- Added `install_track` to `prime --format json` (`app_home.install_track`) and `doctor --format json`. Values are `v2`, `v3`, `source`, and `unknown`.
-
-### Removed
-
-- Removed Claude Code as an active runtime, runtime selector, installation target, plugin marketplace, and default analytics source. Historical transcript parsing remains available only with explicit `--import-source claude` consent and inactive provenance.
-- Removed `cursor-agent` as an independent runtime identity. Its binary and corpus source now map to the single `cursor` identity.
-- Removed `rootStatus` from public JSON output (`prime --format json` and `doctor --format json`). The field remains internal for classifier logic but is no longer exposed in diagnostic output.
-
-### Changed
-
-- Changed lifecycle apply so native installation, update, authentication, enablement, and trust are always user-owned `action_required` steps. Automatic filesystem apply is Linux-only; other platforms retain complete preview and diagnosis.
-- Changed the npm package to include every declared OpenCode, Codex, Cursor, and GitHub Copilot manifest/hook/agent source and to reject package, documentation, runtime-ID, or version parity drift during validation.
-- Renamed the top-level `bundle` field to `app` in `prime --format json`. Nested names are now `activeAppRoot`, `cliApp`, and `legacyAppRoot`; this is a breaking JSON output change.
-- Added v2/v3 coexistence warning to the orientation attention list when a v2 managed app is detected at the app home alongside a v3 CLI runtime. Uses the existing "pick one line" contract message from `references/cli/coexistence-probe.yaml`.
-- Promoted English names to canonical v3 capability IDs (`status`, `vision`, `discuss`, `research`, `plan`, `build`, `optimize`, `audit`, `document`, `profile`, `design`, `orchestrate`) and retired Swedish `-era` IDs from the active command surface.
-- Removed top-level `hej`, `describe`, `gate`, and routine-state names from the v3 command tree; use `prime`, `schema`, `check`, and `state` namespaces.
-
-### Fixed
-
 - Fixed lifecycle retries after partial writes, stale locks, ownership-journal publication interruption, malformed/forked history, and dependency failures so completed operations remain safe and pending operations converge without adopting user-owned files.
 - Fixed state writes rejecting legacy scalar health archives, accepting missing or circular plan dependencies, following symlinked lock/archive directories outside the project, and advertising invalid plan mutation examples.
 - Fixed `cliDistributionMajor` silently defaulting to v2 when `registry.json` version-authority was missing or corrupted. The function now reads `package.json#version` as a secondary signal before falling back to 2, and emits a one-time stderr diagnostic when both primary and secondary signals miss — preventing v3 installs with corrupted registry assets from being misclassified as v2 in runtime inference, cross-major boundary detection, channel resolution, and next-major doctor rendering.
 - Fixed `pnpm install` failing on hosts with a system-wide `vips` (Arch, Fedora, Nix with vips overlay, Homebrew on macOS): sharp's `useGlobalLibvips()` check returned true and the install hook fell through to a `node-gyp` source build that needed `node-addon-api`. Migrated the deprecated `pnpm.onlyBuiltDependencies` and `pnpm.overrides` from `package.json#pnpm` to `pnpm-workspace.yaml` (pnpm 10+ ignores the legacy key) and added a `preinstall` hook that re-execs `pnpm install` with `SHARP_IGNORE_GLOBAL_LIBVIPS=true` so sharp's prebuilt binary is always used.
 - Fixed `pnpm install` emitting `Failed to replace env in config: ${NPM_TOKEN}` on every invocation: scoped the npm auth config from repo root to `packages/cli/.npmrc`. Both publishing packages (the `agentera` 3.0 CLI on `@next` and the `agentera` 0.0.x shim on `@latest`) find the auth via npm's parent-directory walk; `pnpm install` from the repo root no longer reads any auth-bearing `.npmrc`.
-
-### Migration notes
-
-- **npm shim 0.0.2 v3 deprecation hint**: the `agentera@0.0.2` npm shim on `@latest` now emits a three-line stderr banner on every invocation pointing users to `npx -y agentera@next prime` for the v3 TypeScript CLI. `--help` lists the `@next` command; the install-help failure path leads with the `@next` pointer; `--version` stays banner-free so `--json` and pipe consumers stay clean. Set `AGENTERA_NO_V3_HINT=1` to suppress for CI and scripted invocations.
-- **npm shim 0.0.0 cwd preservation**: the `agentera@0.0.0` npm shim on `@latest` now forwards the user's working directory to the installed Python CLI for the `app-home` backend, so `npx -y agentera` state and prime reads resolve the project's `.agentera/` artifacts instead of the app home. The shim remains the 2.x transitional entry point; the native TypeScript CLI is `npx -y agentera@next` until the 3.0 cutover graduates `@latest`.
-
-## [3.0.0-dev.0] · 2026-06-04
-
-### Key highlights
-
-- **npm TypeScript CLI**: `npx -y agentera@next` ships a self-contained package (`dist/bin/agentera.js` plus `bundle/` with skills, schemas, and `registry.json`) with no repo checkout, no Python, and no `AGENTERA_HOME` for normal use; `agentera prime`, `agentera state <name>`, `agentera check validate`, `agentera doctor`, and `agentera upgrade` run from the published tarball.
-- **Audience-namespace command tree**: top-level `--help` groups `prime`, `schema`, `state`, eleven capability routing commands, `upgrade`, `doctor`, `report`, and `check`; legacy top-level names (`hej`, `describe`, `plan`, `validate`, …) still forward with a one-line stderr alias to the canonical command.
-- **v2→v3 migration preflight**: v3 `upgrade --channel development` reads `{app_home}/v3-handoff.json` when present (written by the stable v2 CLI) to classify preserved user state in under 100ms, with a full app-home scan fallback when the manifest is missing or invalid.
-- **Coexistence doctor warnings**: `agentera doctor` prepends a `Coexistence` section when a v2 managed app home sits beside a v3 npm install (and the stable v2 CLI emits the symmetric warning when npm `@next` is present); both use `references/cli/coexistence-probe.yaml` with three resolution choices.
-- **Bun single-binary build**: `bash scripts/single-binary.sh` compiles `packages/cli/dist/bin/agentera.js` into `packages/cli/dist/bin/agentera-single-binary` after `pnpm -C packages/cli build` and `bundle:data`, for drop-in executables without a Node install.
-
-### Added
-
-- Added the native TypeScript CLI on the npm development channel (`npx -y agentera@next`), bundling app data at pack time via `prepack` (`tsc` + `scripts/copy-bundle.mjs`) and the `.agentera-npx-bundle.json` sentinel checked by `packages/cli/test/packaging/prepack.test.ts`.
-- Added `bash scripts/single-binary.sh` and the packaging contract in `docs/packaging/v3-packaging.md` for Bun `--compile` single-binary delivery alongside the npm tarball.
-- Added `packages/cli/src/migrate/v2HandoffManifest.ts` to read `v3-handoff.json` during v2→v3 cleanup preflight per `references/cli/v3-handoff-manifest.schema.yaml`.
-- Added v3 `agentera doctor` coexistence detection in `packages/cli/src/upgrade/coexistenceProbe.ts` with regression coverage in `packages/cli/test/cli/coexistenceProbe.test.ts`.
-- Added maintainer gates under `agentera check` (`validate`, `verify`, `lint`, `compact`) with JSON parity oracles for validate families, verify eval targets, invalid-input envelopes, and `source_contract` emissions on `prime`, `prime --context`, `state plan`, and `state query --list-artifacts`.
-- Added per-channel `next_major` metadata in `references/cli/update-channels.yaml` and a six-line successor advisory at the head of `agentera doctor` on the stable channel, sourced from `packages/cli/src/upgrade/nextMajorDoctor.ts`.
-- Added a 1000-line monolith lint regression in `packages/cli/test/lint/monolithLint.test.ts` after splitting the eight largest `packages/cli/src/**/*.ts` modules by responsibility.
-
-### Changed
-
-- Replaced the Python managed-app entrypoint on the development channel with the npm self-contained model; `upgrade --channel development` rewires runtime hooks to `npx -y agentera@next` and runs irreversible v2→v3 cleanup when previewed with `--dry-run` and applied with `--yes`.
-- Enforced the single-name protocol boundary: capability instructions live in `packages/cli/src/capabilities/<name>/instructions.ts` (`instruction_module` in the capability contract), startup JSON is `agentera prime --context <name> --format json`, and storage paths use canonical `.agentera/*.yaml` names instead of legacy Markdown artifact filenames in protocol surfaces.
-- Split `capabilityContext`, `startupAnalysis`, `extractCorpus`, `doctor`, `state`, `codex`, `compaction`, and `validateArtifact` into focused submodules so every `packages/cli/src/**/*.ts` file stays at or under 1000 lines.
-- Grouped CLI help and dispatch under audience namespaces (`state`, `report`, `check`) with `prime` as the default orientation entry; `agentera --help` lists only canonical top-level commands while legacy invocations still delegate with stderr deprecation.
-
-### Fixed
-
 - Fixed v3 `agentera upgrade` skipping in-tree `.cursor/agents/*.md` copy-agent steps when the project already uses v3 capability instruction modules, so managed Cursor agents keep `Run agentera prime --context <name> --format json` instead of regressing to `Read …/capabilities/<name>/instructions.md`.
 - Fixed `agentera prime --context orkestrera --format json` returning empty `dependency_ready_tasks` when plan `depends_on` references were complete but normalized differently from task numbers.
 - Fixed v2→v3 migration tests leaking OpenCode skill symlinks into the developer's real home by requiring `MigrationContext.env` in `planRuntimeMigrationItems` and adding `noHomeLeak.test.ts`.
@@ -124,9 +76,17 @@
 
 ### Removed
 
+- Removed Claude Code as an active runtime, runtime selector, installation target, plugin marketplace, and default analytics source. Historical transcript parsing remains available only with explicit `--import-source claude` consent and inactive provenance.
+- Removed `cursor-agent` as an independent runtime identity. Its binary and corpus source now map to the single `cursor` identity.
+- Removed `rootStatus` from public JSON output (`prime --format json` and `doctor --format json`). The field remains internal for classifier logic but is no longer exposed in diagnostic output.
 - Removed v1 legacy migration paths, standalone skill bundle wording, and obsolete v1 fixture assumptions from the 3.x tree after the 3.0 boundary (`packages/cli/test/cli/v1LegacyCruft.test.ts` guards against reintroduction).
 - Removed `hej`, `describe`, and `gate` from top-level `agentera --help`; use `agentera prime`, `agentera schema`, and `agentera check compact` instead (legacy names still run with a stderr alias).
 - Removed the requirement for `uv` or a git checkout on the development channel; `uvx --from git+https://github.com/jgabor/agentera@main agentera` remains the stable 2.x Python line only.
+
+### Migration notes
+
+- **npm shim 0.0.2 v3 deprecation hint**: the `agentera@0.0.2` npm shim on `@latest` now emits a three-line stderr banner on every invocation pointing users to `npx -y agentera@next prime` for the v3 TypeScript CLI. `--help` lists the `@next` command; the install-help failure path leads with the `@next` pointer; `--version` stays banner-free so `--json` and pipe consumers stay clean. Set `AGENTERA_NO_V3_HINT=1` to suppress for CI and scripted invocations.
+- **npm shim 0.0.0 cwd preservation**: the `agentera@0.0.0` npm shim on `@latest` now forwards the user's working directory to the installed Python CLI for the `app-home` backend, so `npx -y agentera` state and prime reads resolve the project's `.agentera/` artifacts instead of the app home. The shim remains the 2.x transitional entry point; the native TypeScript CLI is `npx -y agentera@next` until the 3.0 cutover graduates `@latest`.
 
 ## [2.7.7] · 2026-06-03
 
@@ -468,7 +428,7 @@
 - 2.3.4 patch release readiness is recorded locally without publication, installed app refresh, tag, or remote push; version-bearing package, plugin, registry, lockfile, OpenCode marker, and skill frontmatter surfaces are aligned.
 - PLAN artifact fallback closeout is synchronized without a selected release target:
   focused CLI/contract tests passed with 88 selected tests, `agentera plan
-  --format json --fields source_contract` reports
+--format json --fields source_contract` reports
   `complete_for_plan_artifact=true` and `raw_artifact_reads_required=false`, the
   mixed-window benchmark recorded `245` estimated redundant tokens saved versus
   the previous row, and a clean post-fix probe produced zero raw/redundant
