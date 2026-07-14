@@ -114,6 +114,29 @@ export function printDoctorHelp(): string {
 }
 
 export function printStateHelp(sub?: string): string {
+  if (sub === "migrate") {
+    return [
+      "usage: agentera state migrate [-h] [--project PATH] [--artifact ARTIFACT]",
+      "                              [--number N] [--path PATH] [--limit N]",
+      "                              [--dry-run|--apply --force] --format {text,json,yaml}",
+      "",
+      "Inventory bounded, project-local legacy state under the state-storage authority.",
+      "Default inventory and --dry-run are read-only; --apply --force is the only mutation intent.",
+      "This surface publishes authority and dispatch only; migration execution never contacts Git or a remote.",
+      "",
+      "options:",
+      "  -h, --help            show this help message and exit",
+      "  --project PATH        Project directory whose local candidates are inspected",
+      "  --artifact ARTIFACT   progress, decisions, or health",
+      "  --number N            Positive legacy entry number; requires --artifact",
+      "  --path PATH           Project-local candidate path; required for custom apply",
+      "  --limit N             Bound returned candidates (maximum 100)",
+      "  --dry-run             Preview exact operations without writing",
+      "  --apply               Request publication; requires --force",
+      "  --force               Confirm explicit mutation intent",
+      "  --format FORMAT       Output format: text, json, or yaml",
+    ].join("\n");
+  }
   if (sub === "backfill") {
     return [
       "usage: agentera state backfill [-h] [--project PATH] [--artifact ARTIFACT]",
@@ -159,7 +182,7 @@ export function printStateHelp(sub?: string): string {
     ].join("\n");
   }
   return [
-    "usage: agentera state [-h] {plan,progress,health,todo,decisions,docs,objective,experiments,backfill,query} ...",
+    "usage: agentera state [-h] {plan,progress,health,todo,decisions,docs,objective,experiments,migrate,backfill,query} ...",
     "",
     "Routine artifact reads, writes, and advanced artifact query.",
     "Discover typed writes: agentera state <artifact> explain --format json",
@@ -193,7 +216,12 @@ export function printCheckHelp(sub?: string): string {
     ].join("\n");
   }
   if (sub) {
-    return [`usage: agentera check ${sub} [-h] [options]`, "", "options:", "  -h, --help            show this help message and exit"].join("\n");
+    return [
+      `usage: agentera check ${sub} [-h] [options]`,
+      "",
+      "options:",
+      "  -h, --help            show this help message and exit",
+    ].join("\n");
   }
   return [
     "usage: agentera check [-h] {validate,verify,lint,compact,durability} ...",

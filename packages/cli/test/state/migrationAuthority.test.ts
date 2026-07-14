@@ -1,0 +1,302 @@
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+import YAML from "yaml";
+import { afterEach, describe, expect, it } from "vitest";
+
+import { buildSchemaPayload } from "../../src/cli/commands/schema.js";
+import {
+  parseMigrateArgs,
+  runMigrate,
+  validateMigrateArgs,
+} from "../../src/cli/commands/migrate.js";
+import { main } from "../../src/cli/dispatch.js";
+import { stateMigrationContract } from "../../src/state/migrationAuthority.js";
+
+const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..");
+const AUTHORITY_RELATIVE_PATH = "references/artifacts/state-storage-authority.yaml";
+const BUNDLE_AUTHORITY_PATH = path.join("packages", "cli", "bundle", AUTHORITY_RELATIVE_PATH);
+const temporaryRoots: string[] = [];
+
+function loadAuthority(filePath: string): Record<string, any> {
+  return YAML.parse(fs.readFileSync(filePath, "utf8")) as Record<string, any>;
+}
+
+function capture(
+  fn: (io: { out: (text: string) => void; err: (text: string) => void }) => number,
+): {
+  rc: number;
+  out: string;
+  err: string;
+} {
+  let out = "";
+  let err = "";
+  const rc = fn({ out: (text) => (out += text), err: (text) => (err += text) });
+  return { rc, out, err };
+}
+
+function project(): string {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-migration-authority-"));
+  temporaryRoots.push(root);
+  return root;
+}
+
+afterEach(() => {
+  for (const root of temporaryRoots.splice(0)) fs.rmSync(root, { recursive: true, force: true });
+});
+
+describe("local migration authority", () => {
+  it("publishes the confirmed namespace and bounded custom-name inventory contract", () => {
+    const authority = loadAuthority(path.join(REPO_ROOT, AUTHORITY_RELATIVE_PATH));
+    const migration = authority.api.migrate;
+
+    expect(migration.namespace).toBe("agentera state migrate");
+    expect(migration.formats).toEqual(["text", "json", "yaml"]);
+    expect(migration.default_limit).toBe(20);
+    expect(migration.maximum_limit).toBe(100);
+    expect(migration.supported_artifacts).toEqual(["progress", "decisions", "health"]);
+    expect(migration.selectors).toMatchObject({
+      artifact: { flag: "--artifact ARTIFACT", required_for_apply: true },
+      number: { flag: "--number N", pattern: "^[1-9][0-9]*$" },
+      path: { flag: "--path PATH", relative_to: "selected_project_root" },
+      limit: { minimum: 1, maximum: 100 },
+    });
+    expect(migration.modes).toMatchObject({
+      inventory: { read_only: true },
+      preview: { selector: "--dry-run", read_only: true },
+      apply: { selector: "--apply --force", mutation_intent: "explicit_apply_and_force" },
+    });
+    expect(migration.modes.invalid_combinations).toEqual([
+      "--apply with --dry-run",
+      "--apply without --force",
+      "--force without --apply",
+    ]);
+    expect(migration.inventory.bounded_scan).toMatchObject({
+      maximum_candidate_files: 256,
+      maximum_file_bytes: 1048576,
+      maximum_total_bytes: 16777216,
+      ordering: "normalized_relative_path_ascending",
+    });
+    expect(migration.inventory.custom_name_rule).toContain("--path pins it");
+    expect(migration.inventory.custom_name_rule).toContain("exactly one supported stable identity");
+    expect(migration.project_boundary.reject).toEqual(
+      expect.arrayContaining([
+        "traversal",
+        "encoded_traversal",
+        "symlink_escape",
+        "outside_project",
+      ]),
+    );
+  });
+
+  it("schema-backs compatibility, backup, retry, and Git-independent publication guarantees", () => {
+    const migration = loadAuthority(path.join(REPO_ROOT, AUTHORITY_RELATIVE_PATH)).api.migrate;
+
+    expect(migration.compatibility_window).toMatchObject({
+      name: "v2_to_v3_local_state",
+      classifications: ["complete", "degraded", "blocked", "unsupported"],
+      cases: {
+        legacy_full: { classification: "degraded" },
+        legacy_summary: { classification: "degraded" },
+        non_git: { classification: "complete" },
+        ambiguous: { classification: "blocked" },
+        corrupt: { classification: "blocked" },
+      },
+    });
+    expect(migration.compatibility_window.no_reconstruction).toContain("Decision 53");
+    expect(migration.backups).toMatchObject({
+      required_for_apply: true,
+      project_local: true,
+      root: ".agentera/migration-backups",
+      publication: "exclusive_immutable_file",
+      cleanup: "forbidden",
+    });
+    expect(migration.publication).toMatchObject({
+      order: [
+        "validate_candidate_and_selector",
+        "publish_immutable_archive_record",
+        "publish_immutable_backup",
+        "publish_current_projection",
+      ],
+      archive_before_projection: true,
+      monotonic_states: [
+        "inventory",
+        "previewed",
+        "archive_published",
+        "backup_published",
+        "projection_published",
+      ],
+    });
+    expect(migration.publication.retry).toContain("idempotent replay");
+    expect(migration.git).toMatchObject({
+      required: false,
+      reads: "forbidden",
+      remote_contact: "forbidden",
+      completion_independent: true,
+    });
+    expect(migration.guarantees).toMatchObject({
+      read_only_inventory_and_preview: true,
+      apply_requires_force: true,
+      archive_before_projection: true,
+      backups_before_projection: true,
+      monotonic_retry: true,
+      archive_immutability: true,
+      project_local: true,
+      remote_contact: "forbidden",
+      git_independent: true,
+    });
+    expect(migration.failures.classes).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          class: "project_boundary",
+          example: expect.stringContaining("../"),
+        }),
+        expect.objectContaining({ class: "ambiguous_candidate" }),
+        expect.objectContaining({ class: "unsupported_candidate" }),
+        expect.objectContaining({ class: "backup_conflict" }),
+        expect.objectContaining({ class: "immutable_conflict" }),
+        expect.objectContaining({ class: "changed_candidate" }),
+        expect.objectContaining({ class: "scan_bounded" }),
+      ]),
+    );
+  });
+
+  it("loads the authority from the source root and rejects selector drift", () => {
+    const contract = stateMigrationContract(REPO_ROOT);
+    expect(contract.command).toContain("agentera state migrate");
+    expect(contract.formats).toEqual(["text", "json", "yaml"]);
+    expect(contract.supportedArtifacts).toEqual(["progress", "decisions", "health"]);
+
+    const brokenRoot = project();
+    const authorityPath = path.join(brokenRoot, AUTHORITY_RELATIVE_PATH);
+    fs.mkdirSync(path.dirname(authorityPath), { recursive: true });
+    const authority = loadAuthority(path.join(REPO_ROOT, AUTHORITY_RELATIVE_PATH));
+    authority.api.migrate.formats = ["json"];
+    fs.writeFileSync(authorityPath, YAML.stringify(authority));
+    expect(() => stateMigrationContract(brokenRoot)).toThrow(
+      "migrate formats must be text, json, yaml",
+    );
+  });
+
+  it("parses the default, preview, and explicit mutation modes without executing migration", () => {
+    const contract = stateMigrationContract(REPO_ROOT);
+    const inventory = parseMigrateArgs([]);
+    expect(inventory).toMatchObject({ dryRun: false, apply: false, force: false, format: "text" });
+    const preview = parseMigrateArgs([
+      "--artifact",
+      "progress",
+      "--number",
+      "1",
+      "--dry-run",
+      "--format",
+      "yaml",
+    ]);
+    expect(preview).not.toHaveProperty("error");
+    expect(validateMigrateArgs(preview as any, contract)).toBeNull();
+    const apply = parseMigrateArgs([
+      "--artifact",
+      "progress",
+      "--number",
+      "1",
+      "--apply",
+      "--force",
+      "--format",
+      "json",
+    ]);
+    expect(apply).not.toHaveProperty("error");
+    expect(validateMigrateArgs(apply as any, contract)).toBeNull();
+    expect(
+      validateMigrateArgs({ ...(apply as any), apply: true, force: false }, contract),
+    ).toContain("--force");
+    expect(
+      validateMigrateArgs(
+        { ...(preview as any), apply: true, dryRun: true, force: true },
+        contract,
+      ),
+    ).toContain("mutually exclusive");
+    expect(
+      validateMigrateArgs({ ...(preview as any), path: "../outside.yaml" }, contract),
+    ).toContain("project boundary");
+    expect(
+      validateMigrateArgs({ ...(preview as any), path: ".agentera/state.txt" }, contract),
+    ).toContain("unsupported");
+  });
+
+  it("exposes help/schema/dispatch and leaves valid invocations filesystem-free", () => {
+    const root = project();
+    const help = capture((io) => main(["node", "agentera", "state", "migrate", "--help"], io));
+    expect(help.rc).toBe(0);
+    expect(help.out).toContain("agentera state migrate");
+    expect(help.out).toContain("--apply --force");
+    expect(help.out).toContain("project-local");
+
+    const schema = buildSchemaPayload("schema");
+    expect(schema.state_migration).toMatchObject({
+      authority: AUTHORITY_RELATIVE_PATH,
+      namespace: "agentera state migrate",
+      formats: ["text", "json", "yaml"],
+      guarantees: expect.objectContaining({ git_independent: true }),
+    });
+    expect(schema.commands).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ name: "migrate", kind: "state_migration" }),
+      ]),
+    );
+
+    const inventory = capture((io) =>
+      runMigrate(["--project", root, "--format", "json"], io, REPO_ROOT),
+    );
+    expect(inventory.rc).toBe(1);
+    expect(JSON.parse(inventory.out)).toMatchObject({
+      schemaVersion: "agentera.stateMigrationResult.v1",
+      status: "unavailable",
+      mode: "inventory",
+      read_only: true,
+      mutation_intent: false,
+      mutation_performed: false,
+      remote_contact: false,
+      inventory_performed: false,
+    });
+    expect(fs.readdirSync(root)).toEqual([]);
+
+    const apply = capture((io) =>
+      runMigrate(
+        [
+          "--project",
+          root,
+          "--artifact",
+          "progress",
+          "--number",
+          "1",
+          "--apply",
+          "--force",
+          "--format",
+          "json",
+        ],
+        io,
+        REPO_ROOT,
+      ),
+    );
+    expect(apply.rc).toBe(1);
+    expect(JSON.parse(apply.out)).toMatchObject({
+      mutation_intent: true,
+      mutation_performed: false,
+      read_only: false,
+    });
+    expect(fs.readdirSync(root)).toEqual([]);
+
+    const invalid = capture((io) =>
+      main(["node", "agentera", "state", "migrate", "--apply", "--format", "json"], io),
+    );
+    expect(invalid.rc).toBe(2);
+    expect(JSON.parse(invalid.out).error.message).toContain("--force");
+  });
+
+  it("keeps the bundled authority byte-equivalent to the source authority", () => {
+    const source = fs.readFileSync(path.join(REPO_ROOT, AUTHORITY_RELATIVE_PATH), "utf8");
+    const bundle = fs.readFileSync(path.join(REPO_ROOT, BUNDLE_AUTHORITY_PATH), "utf8");
+    expect(YAML.parse(bundle)).toEqual(YAML.parse(source));
+  });
+});

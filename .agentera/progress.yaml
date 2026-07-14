@@ -1,4 +1,49 @@
 cycles:
+  - number: 780
+    timestamp: 2026-07-14 05:37
+    type: feat
+    phase: build
+    what: Published the schema-backed local migration authority and the confirmed
+      agentera state migrate discovery surface; valid invocations remain
+      explicitly non-mutating until the later migration implementation.
+    inspiration: Plan Task 2 and the user-confirmed namespace agentera state migrate
+      plus bounded project-local custom-name inventory decision.
+    discovered: The existing npm 12 packaging harness still has five known JSON
+      parsing failures in test/packaging/prepack.test.ts; the migration
+      authority can be bundled through the existing references copy path without
+      adding a second authority.
+    verified: "migrationAuthority.test.ts: 6/6; non-packaging CLI suite: 174 files,
+      1751 tests passed; pnpm -C packages/cli run typecheck passed; pnpm -C
+      packages/cli run build passed; capability-contract, capability status, and
+      progress/decisions/health artifact validation passed; check compact
+      --format json reported status pass and over_limit_count 0 with existing
+      recovery refusals preserved; bundle:data passed; vp fmt --check passed;
+      CLI help, schema, JSON/YAML inventory and preview envelopes, explicit
+      apply-force dispatch, and invalid apply-without-force checks passed. Full
+      suite retains only the five known npm 12 packaging parser failures."
+    next: Leave Task 2 pending for independent evaluation; Task 3 may implement
+      bounded non-Git candidate scanning, archive-before-projection publication,
+      backups, and projection mutation from this authority. Do not infer missing
+      decisions, satisfaction, profile state, or vision state.
+    context:
+      intent: Make local migration selectors, bounded custom-name discovery, safety
+        guarantees, output envelopes, and mutation intent mechanically
+        discoverable before Task 3 implementation.
+      constraints: Only Task 2 authority, parser, help, schema, dispatch, focused
+        tests, and governed progress publication were in scope. No legacy
+        migration execution, Git enrichment, release bump, remote access, vision
+        edit, satisfaction update, or plan evaluation was performed.
+      unknowns: Stale profile state remains a caveat. Prime startup caveats for
+        missing decision, vision, and profile state remain unchanged. Known npm
+        12 packaging failures remain intentionally preserved for the later
+        release boundary.
+      scope: references/artifacts/state-storage-authority.yaml;
+        packages/cli/src/state/migrationAuthority.ts;
+        packages/cli/src/cli/commands/migrate.ts;
+        packages/cli/src/cli/commands/schema.ts;
+        packages/cli/src/cli/dispatch/index.ts; packages/cli/src/cli/help.ts;
+        packages/cli/test/state/migrationAuthority.test.ts; generated
+        packages/cli/bundle parity
   - number: 779
     timestamp: 2026-07-14 01:13
     type: fix
@@ -368,41 +413,6 @@ cycles:
         packages/cli/test/state/listRetrieval.test.ts; .agentera/plan.yaml;
         .agentera/archive/PLAN-2026-07-13-lossless-archive-backed-state-storage-a0d04027191c6dc0.yaml;
         .agentera/progress.yaml
-  - number: 770
-    timestamp: 2026-07-13 19:53
-    type: fix
-    phase: build
-    what: Allowed forced plan archive and replacement to preserve exact schema-valid
-      predecessors whose only full-file overflow is CLI-owned lineage or
-      evaluation metadata; kept new candidates strict and added rejection,
-      immutability, and interruption-retry coverage.
-    discovered: The predecessor is 2760 words with only strict full-file verbosity
-      failing; removing CLI-owned lifecycle and evaluation fields makes the
-      historical attribution pass, while user-authored overflow remains
-      rejected.
-    verified: pnpm -C packages/cli exec vp test run
-      test/state/write/stateWrite.test.ts (60/60); pnpm -C packages/cli exec vp
-      test run --exclude 'test/packaging/**' (1712/1712); pnpm -C packages/cli
-      test (1716/1721, five known npm 12 packaging parser failures in
-      test/packaging/prepack.test.ts); pnpm -C packages/cli run typecheck; pnpm
-      -C packages/cli build; node packages/cli/dist/bin/agentera.js check
-      validate capability plan --format json; node
-      packages/cli/dist/bin/agentera.js check validate capability-contract
-      --format json; node packages/cli/dist/bin/agentera.js check compact
-      --format json; node packages/cli/dist/bin/agentera.js state plan create
-      --input /tmp/opencode/storage-continuation-plan.yaml --force --dry-run
-      --format json (pass); node packages/cli/dist/bin/agentera.js state plan
-      archive --force --dry-run --format json (pass).
-    next: Return control to the plan capability; do not publish the reviewed
-      continuation plan.
-    context:
-      intent: Unblock the approved continuation without rewriting failed-attempt
-        lineage.
-      constraints: Do not modify health, decisions, vision, profile, TODO, versions,
-        publish, push, or tag state.
-      scope: packages/cli/src/state/write/planPublication.ts;
-        packages/cli/src/state/write/transaction.ts;
-        packages/cli/test/state/write/stateWrite.test.ts; .agentera/plan.yaml
   - number: 749
     timestamp: 2026-07-13 10:58
     type: feat
@@ -520,6 +530,8 @@ cycles:
       intent: Complete active plan Task 7 without changing decisions or unrelated
         capabilities.
 archive:
+  - summary: "Cycle 770 (2026-07-13): Allowed forced plan archive and replacement to
+      preserve exact schema-valid predecessors whose only full-file overflow..."
   - summary: "Cycle 769 (2026-07-13): Retried Task14 Git legacy backfill: bounded
       all historical Git reads by the shared commit and..."
   - summary: "Cycle 768 (2026-07-13): Implemented Task14 Git legacy backfill as
@@ -624,15 +636,18 @@ archive:
       regression refinement in
       packages/cli/test/cli/primeProjectIntegration.test.ts: the full suite
       and..."
-  - summary: "Cycle 722 (2026-07-12): Revalidated the typed Task 5 closeout after
-      the full-suite audit repair: cycle 721 retains the..."
 omitted: true
-omitted_count: 17
+omitted_count: 18
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded

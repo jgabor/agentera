@@ -2,12 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 import { parseYaml } from "../../core/yaml.js";
-import {
-  activeAppModel,
-  discoverSchemasDir,
-  loadSchemas,
-  SchemaInfo,
-} from "../appContext.js";
+import { activeAppModel, discoverSchemasDir, loadSchemas, SchemaInfo } from "../appContext.js";
 import { emitStructured } from "../structured.js";
 import {
   appModelPayload,
@@ -17,10 +12,7 @@ import {
 } from "../stateQuery.js";
 import { artifactLocationContract } from "./query.js";
 import type { JsonObject } from "../../core/jsonValue.js";
-import {
-  stateWriterArtifactContract,
-  stateWriterContract,
-} from "../../state/write/operations.js";
+import { stateWriterArtifactContract, stateWriterContract } from "../../state/write/operations.js";
 import {
   LIFECYCLE_ACTION_CLASS_VALUES,
   LIFECYCLE_APPLICABILITY_VALUES,
@@ -38,28 +30,72 @@ import {
   ACTIVE_RUNTIME_SELECTORS,
   LIFECYCLE_UPGRADE_SCHEMA,
 } from "../../upgrade/lifecycleUpgrade.js";
+import { stateMigrationContract } from "../../state/migrationAuthority.js";
 
 /** Port of scripts/agentera cmd_schema / _build_schema_payload. */
 
 type Io = { out?: (t: string) => void; err?: (t: string) => void };
 
 const CAPABILITY_NAMES = [
-  "status", "vision", "discuss", "research", "plan", "build",
-  "optimize", "audit", "document", "profile", "design", "orchestrate",
+  "status",
+  "vision",
+  "discuss",
+  "research",
+  "plan",
+  "build",
+  "optimize",
+  "audit",
+  "document",
+  "profile",
+  "design",
+  "orchestrate",
 ];
 const ROUTINE_STATE_COMMANDS = [
-  "status", "plan", "progress", "health", "todo", "decisions", "docs", "objective", "experiments",
+  "status",
+  "plan",
+  "progress",
+  "health",
+  "todo",
+  "decisions",
+  "docs",
+  "objective",
+  "experiments",
 ];
 const DOCTOR_SIGNAL_KINDS = [
-  "missing_bundle", "invalid_install_root", "unmanaged_install_root", "invalid_bundle",
-  "missing_marker", "version_mismatch", "corrupt_bundle_marker",
+  "missing_bundle",
+  "invalid_install_root",
+  "unmanaged_install_root",
+  "invalid_bundle",
+  "missing_marker",
+  "version_mismatch",
+  "corrupt_bundle_marker",
 ];
 const STATUS_STRUCTURED_FIELDS = [
-  "command", "status", "app_home", "app", "mode", "profile", "v1_migration", "health",
-  "todo", "plan", "docs", "progress", "objective", "state_presence", "attention",
+  "command",
+  "status",
+  "app_home",
+  "app",
+  "mode",
+  "profile",
+  "v1_migration",
+  "health",
+  "todo",
+  "plan",
+  "docs",
+  "progress",
+  "objective",
+  "state_presence",
+  "attention",
   "runtime_lifecycle",
-  "decision_attention", "next_action", "orchestration_context", "closeout_context",
-  "evidence_context", "benchmark_context", "execution_context", "source", "source_contract",
+  "decision_attention",
+  "next_action",
+  "orchestration_context",
+  "closeout_context",
+  "evidence_context",
+  "benchmark_context",
+  "execution_context",
+  "source",
+  "source_contract",
 ];
 const COMMAND_DESCRIPTIONS: Record<string, string> = {
   prime: "Composite orientation briefing and capability startup context.",
@@ -77,7 +113,9 @@ const COMMAND_DESCRIPTIONS: Record<string, string> = {
   lint: "Deprecated alias for check lint. Optional draft prose preview; typed writers validate published bytes.",
   gate: "Deprecated alias for check compact. Run check-only repository gates.",
   compact: "Deprecated alias for check compact. Check or fix artifact compaction budgets.",
-  upgrade: "Preview or apply app migration plus explicitly selected Agentera-owned runtime lifecycle repair.",
+  upgrade:
+    "Preview or apply app migration plus explicitly selected Agentera-owned runtime lifecycle repair.",
+  migrate: "Publish the bounded local legacy-state inventory and mutation authority.",
   doctor: "Check Agentera CLI, app, and runtime status.",
   describe: "Deprecated alias for schema.",
 };
@@ -111,7 +149,29 @@ const COMMAND_FILTERS_ALL: Record<string, string[]> = {
   gate: ["project", "format"],
   compact: ["project", "mode", "format"],
   doctor: ["install_root", "home", "project", "expected_version", "expect_command"],
-  upgrade: ["project", "install_root", "home", "runtime", "legacy_cleanup", "only", "dry_run", "yes", "force", "channel"],
+  upgrade: [
+    "project",
+    "install_root",
+    "home",
+    "runtime",
+    "legacy_cleanup",
+    "only",
+    "dry_run",
+    "yes",
+    "force",
+    "channel",
+  ],
+  migrate: [
+    "project",
+    "artifact",
+    "number",
+    "path",
+    "limit",
+    "dry_run",
+    "apply",
+    "force",
+    "format",
+  ],
   describe: ["format"],
   schema: ["format"],
 };
@@ -150,13 +210,26 @@ function schemaFieldDescription(entry: JsonObject): JsonObject {
 }
 
 const FIELD_SKIP = new Set([
-  "meta", "GROUP_PREFIXES", "BUDGET", "COMPACTION", "VALIDATION", "ARCHIVE", "CONVENTION", "CONVENTIONS",
+  "meta",
+  "GROUP_PREFIXES",
+  "BUDGET",
+  "COMPACTION",
+  "VALIDATION",
+  "ARCHIVE",
+  "CONVENTION",
+  "CONVENTIONS",
 ]);
 
 function describeSchemaFields(schema: JsonObject): JsonObject[] {
   const fields: JsonObject[] = [];
   for (const [groupKey, groupVal] of Object.entries(schema)) {
-    if (FIELD_SKIP.has(groupKey) || !groupVal || typeof groupVal !== "object" || Array.isArray(groupVal)) continue;
+    if (
+      FIELD_SKIP.has(groupKey) ||
+      !groupVal ||
+      typeof groupVal !== "object" ||
+      Array.isArray(groupVal)
+    )
+      continue;
     // cast: groupVal is a parsed artifact schema field group (YAML IO boundary)
     for (const entry of Object.values(groupVal as JsonObject)) {
       if (entry && typeof entry === "object" && !Array.isArray(entry) && "field" in entry) {
@@ -170,7 +243,11 @@ function describeSchemaFields(schema: JsonObject): JsonObject[] {
   return fields;
 }
 
-function commandDescription(name: string, kind: string, fields: string[] | null = null): JsonObject {
+function commandDescription(
+  name: string,
+  kind: string,
+  fields: string[] | null = null,
+): JsonObject {
   let outputFormats = ["text", "json", "yaml"];
   if (name === "lint") outputFormats = ["text", "json"];
   else if (name === "compact" || name === "gate") outputFormats = ["text", "json"];
@@ -201,12 +278,44 @@ function describeCommands(): JsonObject[] {
   }
   commands.push(
     commandDescription("query", "advanced_artifact_query"),
-    commandDescription("lint", "artifact_lint", ["command", "status", "artifact", "checks", "summary"]),
-    commandDescription("compact", "artifact_compaction", ["command", "status", "project", "summary", "operations"]),
+    commandDescription("lint", "artifact_lint", [
+      "command",
+      "status",
+      "artifact",
+      "checks",
+      "summary",
+    ]),
+    commandDescription("compact", "artifact_compaction", [
+      "command",
+      "status",
+      "project",
+      "summary",
+      "operations",
+    ]),
     commandDescription("schema", "runtime_introspection"),
     commandDescription("upgrade", "upgrade", [
-      "schemaVersion", "mode", "status", "phases", "lifecycle", "summary",
-      "dryRunCommand", "applyCommand",
+      "schemaVersion",
+      "mode",
+      "status",
+      "phases",
+      "lifecycle",
+      "summary",
+      "dryRunCommand",
+      "applyCommand",
+    ]),
+    commandDescription("migrate", "state_migration", [
+      "schemaVersion",
+      "command",
+      "status",
+      "mode",
+      "project",
+      "read_only",
+      "mutation_intent",
+      "remote_contact",
+      "entries",
+      "counts",
+      "diagnostics",
+      "source_contract",
     ]),
     commandDescription("doctor", "self_check"),
   );
@@ -217,7 +326,11 @@ function contractSection(contract: JsonObject | null, key: string, gaps: JsonObj
   if (contract && typeof contract === "object" && !Array.isArray(contract) && key in contract) {
     return contract[key];
   }
-  gaps.push({ scope: key, status: "unknown", message: `Decision 45 contract section '${key}' is unavailable` });
+  gaps.push({
+    scope: key,
+    status: "unknown",
+    message: `Decision 45 contract section '${key}' is unavailable`,
+  });
   return null;
 }
 
@@ -249,7 +362,7 @@ function describeArtifactSchemas(
     // cast: schema.meta is read from a parsed artifact schema (YAML IO boundary)
     const meta = (schema.meta ?? {}) as JsonObject;
     const schemaFile = path.join(schemasDir, `${name}.yaml`);
-    const location = artifactLocations ? artifactLocations[name] ?? null : null;
+    const location = artifactLocations ? (artifactLocations[name] ?? null) : null;
     const hasMeta = meta && Object.keys(meta).length > 0;
     const writeInterface = stateWriterArtifactContract(name);
     artifacts.push({
@@ -266,7 +379,11 @@ function describeArtifactSchemas(
       fields: describeSchemaFields(schema),
     });
     if (!hasMeta) {
-      gaps.push({ scope: `artifact_schemas.${name}`, status: "unknown", message: "schema metadata is absent or unreadable" });
+      gaps.push({
+        scope: `artifact_schemas.${name}`,
+        status: "unknown",
+        message: "schema metadata is absent or unreadable",
+      });
     }
   }
   return [artifacts, gaps];
@@ -298,11 +415,18 @@ export function buildSchemaPayload(command = "schema"): JsonObject {
   const artifactLocationsPayload = artifactLocationContract(schemasDir, schemas);
   const artifactLocations: Record<string, JsonObject> = {};
   // cast: artifacts payload is built by query.ts over on-disk schemas/registry (IO boundary)
-  for (const entry of artifactLocationsPayload.artifacts as JsonObject[]) artifactLocations[String(entry.name)] = entry;
-  const [artifactSchemas, schemaGaps] = describeArtifactSchemas(schemasDir, schemas, appModel, artifactLocations);
+  for (const entry of artifactLocationsPayload.artifacts as JsonObject[])
+    artifactLocations[String(entry.name)] = entry;
+  const [artifactSchemas, schemaGaps] = describeArtifactSchemas(
+    schemasDir,
+    schemas,
+    appModel,
+    artifactLocations,
+  );
   gaps.push(...schemaGaps);
   const lifecycleAuthority = loadLifecycleAuthority();
   const retiredRuntimeCleanup = loadRetiredRuntimeCleanupContract();
+  const migrationAuthority = stateMigrationContract();
 
   const slashAliases = contractSection(contract, "slash_route_aliases", gaps);
   const doctorContract = contractSection(contract, "doctor", gaps);
@@ -326,6 +450,10 @@ export function buildSchemaPayload(command = "schema"): JsonObject {
     },
     commands: describeCommands(),
     state_writer: stateWriterContract(),
+    state_migration: {
+      authority: migrationAuthority.authorityPath,
+      ...migrationAuthority.migration,
+    } as JsonObject,
     runtime_lifecycle: {
       authority: lifecycleAuthority.sourcePath,
       snapshot_schema_version: LIFECYCLE_SNAPSHOT_SCHEMA_VERSION,
@@ -341,27 +469,34 @@ export function buildSchemaPayload(command = "schema"): JsonObject {
       },
       projections: {
         prime: "bounded summary without category evidence or native command lists",
-        doctor: "detailed surfaces, eight categories, evidence, precedence, and user-owned native steps",
+        doctor:
+          "detailed surfaces, eight categories, evidence, precedence, and user-owned native steps",
         upgrade: "explicitly selected read-only preview or approved Agentera-owned lifecycle apply",
       },
       upgrade: {
         schema_version: LIFECYCLE_UPGRADE_SCHEMA,
         command: "agentera upgrade --runtime <all|runtime> --dry-run|--yes",
         selectors: ["all", ...ACTIVE_RUNTIME_SELECTORS],
-        projection: "lifecycle.projection is the canonical runtime lifecycle snapshot shared with doctor, prime, status, and project integration",
+        projection:
+          "lifecycle.projection is the canonical runtime lifecycle snapshot shared with doctor, prime, status, and project integration",
         default_without_runtime_selector: "app_upgrade_only",
         preview: "strictly_read_only",
         apply_requires: "--yes",
         approval_scope: "declared_agentera_owned_operations_only",
         native_actions: "reported_action_required_never_executed",
         trust_actions: "reported_action_required_never_approved",
-        ownership_journal: ".agentera/runtime-lifecycle/ownership-journal-v1 under the selected app home",
+        ownership_journal:
+          ".agentera/runtime-lifecycle/ownership-journal-v1 under the selected app home",
         journal_states: ["absent", "clean", "recoverable_terminal_tail", "corrupt"],
-        journal_chain: "strict_contiguous_sequence_and_digest_chain; only_one_incomplete_terminal_final_is_read_recoverable_but_mutation_blocking",
-        journal_publication: "fsynced_unique_temporary_then_atomic_exclusive_final_link_and_directory_fsync",
+        journal_chain:
+          "strict_contiguous_sequence_and_digest_chain; only_one_incomplete_terminal_final_is_read_recoverable_but_mutation_blocking",
+        journal_publication:
+          "fsynced_unique_temporary_then_atomic_exclusive_final_link_and_directory_fsync",
         lock: "live_preparation_blocks_contenders; atomic_complete_record_with_token_pid_linux_boot_id_and_proc_start_ticks; malformed_final_fails_closed",
-        recovery: "non_authoritative_temporaries_ignored;_middle_gap_fork_digest_or_disconnection_blocks_all_mutation",
-        retired_cleanup: "--legacy-cleanup claude (legacy-only, explicit, never active runtime identity)",
+        recovery:
+          "non_authoritative_temporaries_ignored;_middle_gap_fork_digest_or_disconnection_blocks_all_mutation",
+        retired_cleanup:
+          "--legacy-cleanup claude (legacy-only, explicit, never active runtime identity)",
         exits: { success: 0, non_success: 1, usage: 2 },
       },
       support_floor: {
@@ -394,26 +529,33 @@ export function buildSchemaPayload(command = "schema"): JsonObject {
           active_runtime: false,
           default_view: "excluded",
           all_sources_view: "--sources all",
-          sensitivity_warning: "Transcripts can contain secrets, file contents, and command output; import is local and read-only.",
+          sensitivity_warning:
+            "Transcripts can contain secrets, file contents, and command output; import is local and read-only.",
         },
       })),
     },
     routine_state_commands: ROUTINE_STATE_COMMANDS,
     structured_output: {
-      formats: isDict(structuredOutput) ? structuredOutput.formats ?? ["json", "yaml"] : "unknown",
+      formats: isDict(structuredOutput)
+        ? (structuredOutput.formats ?? ["json", "yaml"])
+        : "unknown",
       fields_by_command: {
         routine_state_commands: ROUTINE_STRUCTURED_FIELDS,
         status: STATUS_STRUCTURED_FIELDS,
       },
     },
     field_selection: {
-      syntax: isDict(fieldSelection) ? fieldSelection.syntax ?? "--fields FIELD[,FIELD...]" : "unknown",
+      syntax: isDict(fieldSelection)
+        ? (fieldSelection.syntax ?? "--fields FIELD[,FIELD...]")
+        : "unknown",
       retained_context: REQUIRED_SPARSE_CONTEXT_FIELDS,
-      applies_to: isDict(fieldSelection) ? fieldSelection.applies_to ?? ROUTINE_STATE_COMMANDS : "unknown",
+      applies_to: isDict(fieldSelection)
+        ? (fieldSelection.applies_to ?? ROUTINE_STATE_COMMANDS)
+        : "unknown",
     },
     slash_route_aliases: {
-      status: isDict(slashAliases) ? slashAliases.status ?? "unknown" : "unknown",
-      aliases: isDict(slashAliases) ? slashAliases.aliases ?? {} : {},
+      status: isDict(slashAliases) ? (slashAliases.status ?? "unknown") : "unknown",
+      aliases: isDict(slashAliases) ? (slashAliases.aliases ?? {}) : {},
       cli_commands_added: true,
       note: "Decision 43 slash-route aliases map to direct capability-name routing guidance commands in Agentera 3.0.",
     },
@@ -421,11 +563,19 @@ export function buildSchemaPayload(command = "schema"): JsonObject {
     artifact_locations: artifactLocationsPayload,
     doctor: {
       command: "doctor",
-      removed_command: isDict(doctorContract) ? doctorContract.removed_command ?? "unknown" : "unknown",
-      compatibility_alias: isDict(doctorContract) ? doctorContract.compatibility_alias ?? "unknown" : "unknown",
-      self_check_categories: isDict(doctorContract) ? doctorContract.owns ?? "unknown" : "unknown",
-      excludes: isDict(doctorContract) ? doctorContract.excludes ?? "unknown" : "unknown",
-      adjacent_surfaces: isDict(doctorContract) ? doctorContract.adjacent_surfaces ?? "unknown" : "unknown",
+      removed_command: isDict(doctorContract)
+        ? (doctorContract.removed_command ?? "unknown")
+        : "unknown",
+      compatibility_alias: isDict(doctorContract)
+        ? (doctorContract.compatibility_alias ?? "unknown")
+        : "unknown",
+      self_check_categories: isDict(doctorContract)
+        ? (doctorContract.owns ?? "unknown")
+        : "unknown",
+      excludes: isDict(doctorContract) ? (doctorContract.excludes ?? "unknown") : "unknown",
+      adjacent_surfaces: isDict(doctorContract)
+        ? (doctorContract.adjacent_surfaces ?? "unknown")
+        : "unknown",
       signal_kinds: DOCTOR_SIGNAL_KINDS,
       runtime_lifecycle_field: "runtime_lifecycle",
       runtime_lifecycle_mode: "read_only_detailed_diagnosis",

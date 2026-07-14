@@ -1,0 +1,19 @@
+schemaVersion: agentera.stateArchiveEntry.v1
+artifact_id: progress
+entry_number: 780
+record:
+  number: 780
+  timestamp: 2026-07-14 05:37
+  type: feat
+  phase: build
+  what: Published the schema-backed local migration authority and the confirmed agentera state migrate discovery surface; valid invocations remain explicitly non-mutating until the later migration implementation.
+  inspiration: Plan Task 2 and the user-confirmed namespace agentera state migrate plus bounded project-local custom-name inventory decision.
+  discovered: The existing npm 12 packaging harness still has five known JSON parsing failures in test/packaging/prepack.test.ts; the migration authority can be bundled through the existing references copy path without adding a second authority.
+  verified: "migrationAuthority.test.ts: 6/6; non-packaging CLI suite: 174 files, 1751 tests passed; pnpm -C packages/cli run typecheck passed; pnpm -C packages/cli run build passed; capability-contract, capability status, and progress/decisions/health artifact validation passed; check compact --format json reported status pass and over_limit_count 0 with existing recovery refusals preserved; bundle:data passed; vp fmt --check passed; CLI help, schema, JSON/YAML inventory and preview envelopes, explicit apply-force dispatch, and invalid apply-without-force checks passed. Full suite retains only the five known npm 12 packaging parser failures."
+  next: Leave Task 2 pending for independent evaluation; Task 3 may implement bounded non-Git candidate scanning, archive-before-projection publication, backups, and projection mutation from this authority. Do not infer missing decisions, satisfaction, profile state, or vision state.
+  context:
+    intent: Make local migration selectors, bounded custom-name discovery, safety guarantees, output envelopes, and mutation intent mechanically discoverable before Task 3 implementation.
+    constraints: Only Task 2 authority, parser, help, schema, dispatch, focused tests, and governed progress publication were in scope. No legacy migration execution, Git enrichment, release bump, remote access, vision edit, satisfaction update, or plan evaluation was performed.
+    unknowns: Stale profile state remains a caveat. Prime startup caveats for missing decision, vision, and profile state remain unchanged. Known npm 12 packaging failures remain intentionally preserved for the later release boundary.
+    scope: references/artifacts/state-storage-authority.yaml; packages/cli/src/state/migrationAuthority.ts; packages/cli/src/cli/commands/migrate.ts; packages/cli/src/cli/commands/schema.ts; packages/cli/src/cli/dispatch/index.ts; packages/cli/src/cli/help.ts; packages/cli/test/state/migrationAuthority.test.ts; generated packages/cli/bundle parity
+record_sha256: b4024e01a5f1b99f308c5a3e8fe4767a5bdcbab14cd19f0e4e800d7ab32ee96a

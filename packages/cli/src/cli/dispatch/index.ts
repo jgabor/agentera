@@ -1,11 +1,29 @@
 import { isPortedStateCommand } from "../commands/state/index.js";
 import { runBackfill } from "../commands/backfill.js";
+import { runMigrate } from "../commands/migrate.js";
 import { CAPABILITY_ROUTING_NAMES } from "../commands/capability.js";
 import { printCommandHelp, printTopLevelHelp, splitHelpArgs } from "../help.js";
-import { compactModeOf, runCompact, runDurability, runLint, runSchema, runValidate } from "./check.js";
+import {
+  compactModeOf,
+  runCompact,
+  runDurability,
+  runLint,
+  runSchema,
+  runValidate,
+} from "./check.js";
 import { runQuery, runState } from "./state.js";
 import { runCapability, runPrime } from "./prime.js";
-import { runAppHome, runDoctor, runGate, runHook, runReport, runUpgrade, runUsage, runVerify, runVersion } from "./lifecycle.js";
+import {
+  runAppHome,
+  runDoctor,
+  runGate,
+  runHook,
+  runReport,
+  runUpgrade,
+  runUsage,
+  runVerify,
+  runVersion,
+} from "./lifecycle.js";
 import { emitDeprecationAlias, type Io } from "./shared.js";
 import { emitInvalidInput } from "../errors.js";
 import { isWriteVerb } from "../../state/write/operations.js";
@@ -96,7 +114,8 @@ export function main(argv: string[], io: Io = {}): number {
       }
       if (sub === "validate") return runValidate(rest.slice(1), io, "agentera check validate");
       if (sub === "verify") return runVerify(rest.slice(1), io, "agentera check verify");
-      if (sub === "durability") return runDurability(rest.slice(1), io, "agentera check durability");
+      if (sub === "durability")
+        return runDurability(rest.slice(1), io, "agentera check durability");
       if (sub === "lint") return runLint(rest.slice(1), io, "agentera check lint");
       if (sub === "compact") {
         const subArgs = rest.slice(1);
@@ -136,8 +155,10 @@ export function main(argv: string[], io: Io = {}): number {
         });
       }
       if (sub === "query") return runQuery(rest.slice(1), io, "agentera state query");
+      if (sub === "migrate") return runMigrate(rest.slice(1), io);
       if (sub === "backfill") return runBackfill(rest.slice(1), io);
-      if (isPortedStateCommand(sub) || isWriteVerb(rest[1]) || rest[1] === "get") return runState(sub, rest.slice(1), io, `agentera state ${sub}`);
+      if (isPortedStateCommand(sub) || isWriteVerb(rest[1]) || rest[1] === "get")
+        return runState(sub, rest.slice(1), io, `agentera state ${sub}`);
       return emitInvalidInput(io, {
         format: "text",
         body: {
@@ -150,6 +171,7 @@ export function main(argv: string[], io: Io = {}): number {
             "docs",
             "objective",
             "experiments",
+            "migrate",
             "backfill",
             "todo",
             "decisions",
