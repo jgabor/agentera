@@ -39,6 +39,7 @@ import {
   gitBackfillContractProjection,
   stateGitBackfillContract,
 } from "../../state/gitBackfillAuthority.js";
+import { loadStateRetrievalAuthority } from "../../state/retrievalAuthority.js";
 
 /** Port of scripts/agentera cmd_schema / _build_schema_payload. */
 
@@ -440,6 +441,7 @@ export function buildSchemaPayload(command = "schema"): JsonObject {
   const retiredRuntimeCleanup = loadRetiredRuntimeCleanupContract();
   const migrationAuthority = stateMigrationContract();
   const backfillAuthority = stateGitBackfillContract();
+  const retrievalAuthority = loadStateRetrievalAuthority();
 
   const slashAliases = contractSection(contract, "slash_route_aliases", gaps);
   const doctorContract = contractSection(contract, "doctor", gaps);
@@ -463,6 +465,10 @@ export function buildSchemaPayload(command = "schema"): JsonObject {
     },
     commands: describeCommands(migrationAuthority, backfillAuthority),
     state_writer: stateWriterContract(),
+    state_retrieval: {
+      authority: retrievalAuthority.authority,
+      ...retrievalAuthority.retrieval,
+    },
     state_migration: {
       authority: migrationAuthority.authorityPath,
       ...migrationAuthority.migration,

@@ -4,6 +4,7 @@
 
 ### Added
 
+- Added an executable bounded-retrieval authority and reserved CLI grammar for plan tasks, plans, and objective-scoped experiments, including stable and legacy identity rules, experiment `0`, opaque cursors, explicit omissions, and structured compatibility errors; retrieval execution remains staged for subsequent tasks.
 - Added a canonical runtime lifecycle projection with deterministic snapshot identity, applicability, ownership, action classes, counts, and command eligibility for OpenCode, Codex, Cursor, and Copilot.
 - Added bounded prime/status lifecycle attention rows with runtime-scoped repair previews, exact manual procedures, and doctor diagnostics for non-executable blockers.
 - Added runtime lifecycle schemas and adapters for skills, plugins, hooks, agents, configuration, enablement, trust, and native actions across all four active runtimes.

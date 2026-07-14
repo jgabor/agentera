@@ -558,6 +558,7 @@ LIFECYCLE_CONTRACT:
     adapters:
       - references/**/*.yaml
       - packages/cli/src/registries/*.ts
+      - packages/cli/src/state/retrievalAuthority.ts
       - packages/cli/src/state/startupAnalysis/*.ts
       - packages/cli/src/cli/commands/schema.ts
       - packages/cli/src/cli/commands/validate.ts

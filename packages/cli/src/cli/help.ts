@@ -6,6 +6,7 @@ import {
   stateMigrationContract,
 } from "../state/migrationAuthority.js";
 import { stateGitBackfillContract } from "../state/gitBackfillAuthority.js";
+import { stateRetrievalCommands } from "../state/retrievalAuthority.js";
 
 const TOP_LEVEL = [
   "prime",
@@ -121,6 +122,7 @@ export function printDoctorHelp(): string {
 
 export function printStateHelp(sub?: string): string {
   const migration = stateMigrationContract();
+  const retrievalCommands = stateRetrievalCommands() as Record<string, Record<string, string>>;
   const migrationName = migration.namespace.split(/\s+/).at(-1) as string;
   const stateCommands = stateCommandNames(migration);
   if (sub === migrationName) {
@@ -194,6 +196,33 @@ export function printStateHelp(sub?: string): string {
       "  --apply               Request publication; requires --force",
       "  --force               Confirm the explicit immutable archive publication",
       "  --format FORMAT       Output format: text, json, or yaml",
+    ].join("\n");
+  }
+  if (sub === "plan") {
+    return [
+      "usage: agentera state plan [-h] [--format {text,json,yaml}] [filters]",
+      `       ${retrievalCommands.plan_tasks.list}`,
+      `       ${retrievalCommands.plan_tasks.get}`,
+      `       ${retrievalCommands.plans.list}`,
+      `       ${retrievalCommands.plans.get}`,
+      `       agentera state plan {${verbsForArtifact("plan").join(",")}} [write flags]`,
+      "",
+      "Retrieval grammar is declared by the state-retrieval authority; execution lands in later plan tasks.",
+      "Task list defaults to the active plan; task get requires --plan and a positive --task.",
+      "Legacy plan identity collisions return a structured ambiguous error.",
+      "",
+      "Discover writes: agentera state plan explain --format json",
+    ].join("\n");
+  }
+  if (sub === "experiments") {
+    return [
+      "usage: agentera state experiments [-h] [--format {text,json,yaml}] [filters]",
+      `       ${retrievalCommands.experiments.list}`,
+      `       ${retrievalCommands.experiments.get}`,
+      "",
+      "Retrieval grammar is declared by the state-retrieval authority; execution lands in later plan tasks.",
+      "Both verbs require --objective; experiment --number accepts 0 and later integers.",
+      "Legacy objective/path collisions return a structured ambiguous error.",
     ].join("\n");
   }
   if (sub) {

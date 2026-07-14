@@ -1,10 +1,11 @@
 schema_version: agentera.stateStorageAuthority.v1
 status: active_authority
 purpose: >-
-  Define the lossless archive, project path, direct state API, compatibility,
-  projection, and serialized-output contracts before archive-backed storage is
-  implemented. This file is the single schema authority for the numbered
-  progress, decisions, and health state records described below.
+  Define the public bounded-retrieval vocabulary for every state collection
+  while keeping each collection's storage authority explicit. It also defines
+  the lossless numbered-archive, project path, direct state API, compatibility,
+  projection, and serialized-output contracts for progress, decisions, and
+  health.
 authority:
   source: references/artifacts/state-storage-authority.yaml
   single_source_rule: >-
@@ -44,6 +45,301 @@ scope:
     - design
     - objective
     - experiments
+
+retrieval:
+  schema_version: agentera.stateRetrievalAuthority.v1
+  status: grammar_declared_implementation_pending
+  authority_boundary: >-
+    This group owns public list/get envelopes, cursors, selectors, identities,
+    omissions, and structured retrieval failures. It does not replace storage
+    ownership: numbered archives remain authoritative for progress, decisions,
+    and health; immutable plan files remain authoritative for plan history; and
+    objective directories remain authoritative for experiments.
+  envelope:
+    schema_version: agentera.stateRetrieval.v1
+    required_fields:
+      - schemaVersion
+      - command
+      - status
+      - entries
+      - counts
+      - order
+      - filters
+      - snapshot
+      - source
+      - source_contract
+    entry_required_fields:
+      - stable_id
+      - addressable
+      - detail_availability
+      - compatibility
+      - provenance
+      - retrieval
+    counts_required_fields: [total, returned, remaining, omitted]
+    status_values: [ok, degraded]
+  cursor:
+    vocabulary: opaque_snapshot_cursor
+    first_page: omit --cursor
+    response_field: next_cursor
+    binding: [collection, selectors, filters, order, snapshot]
+    append_behavior: records added after the first page are excluded from that cursor snapshot
+    invalid_behavior: cursor_invalid
+    unavailable_behavior: cursor_snapshot_unavailable
+    caller_rules: [do_not_parse, do_not_construct, do_not_compare_internals]
+  omission:
+    required_when_any_entry_is_not_returned:
+      - omitted
+      - omitted_count
+      - omission_reason
+      - retrieval
+    semantics: >-
+      Omission is explicit in both text and structured output. A response never
+      silently slices a collection, truncates a scalar, or claims omitted detail
+      is unavailable. Every omitted addressable item has an advancing cursor or
+      exact get command; unaddressable legacy items retain compatibility
+      diagnostics and are never assigned fabricated history.
+  identity:
+    plan:
+      canonical_format: 'plan:<lowercase-rfc9562-uuid>'
+      persistence: stored in header.id when a plan is first published
+      transition: the identical ID is copied unchanged into the immutable archive file
+      legacy_format: 'legacy-plan:<sha256>'
+      legacy_derivation: >-
+        SHA-256 over RFC 8785 canonical JSON of the complete plan after the
+        existing read-compatibility normalization of legacy status and task
+        shape. The archive transition computes identity from the same normalized
+        document before publication. Derivation is read-only and never rewrites
+        active or archived bytes; a legacy identity may change while an active
+        legacy plan is edited because no persisted historical identity exists.
+      test_vectors:
+        - canonical_json: '{"header":{"created":"2026-07-14","status":"open","title":"Plan: Complete bounded retrieval"},"tasks":[]}'
+          stable_id: legacy-plan:b6f93d6fc5a0ac3ada017670ac311794ad92800fb436703f8f09e25ddce8b89a
+          mirrored_example_paths: [.agentera/archive/PLAN-copy-a.yaml, .agentera/archive/PLAN-copy-b.yaml]
+          identical_result: mirrored_provenance
+      collision: >-
+        Byte-equivalent normalized legacy plans are one logical identity with
+        every physical path retained as mirrored provenance. Different plan
+        documents carrying the same persisted ID, or a detected digest collision,
+        are unaddressable; list reports compatibility=degraded and get returns
+        ambiguous with every candidate provenance path. The CLI never chooses by
+        mtime, archive filename, or discovery order.
+    task:
+      format: '<plan-id>/task:<positive-integer>'
+      selector: --task N
+      scope: task numbers are unique only inside one plan identity
+    objective:
+      canonical_format: 'objective:<lowercase-rfc9562-uuid>'
+      persistence: stored in header.id and unchanged by title or directory rename
+      canonical_root: .agentera/optimize/<objective-slug>
+      legacy_root: .agentera/optimera/<objective-slug>
+      legacy_format: 'legacy-objective:<sha256>'
+      legacy_derivation: >-
+        SHA-256 over RFC 8785 canonical JSON of the legacy objective's description,
+        measurement, metric, baseline, gates, constraints, and scope; title,
+        status, closure fields, directory root, and directory slug are excluded.
+        This preserves identity across a title/path-only rename without rewriting
+        history. Editing identity inputs may change a legacy identity and is
+        reported as degraded compatibility.
+      test_vectors:
+        - canonical_json: '{"baseline":{"description":"100 ms"},"constraints":[],"description":"Reduce latency","gates":{},"measurement":"p95","metric":{"direction":"minimize","unit":"ms"},"scope":{"excluded":[],"included":["CLI"]}}'
+          title_variants: [CLI latency, Faster CLI]
+          root_variants: [.agentera/optimize/cli-latency, .agentera/optimera/faster-cli]
+          stable_id: legacy-objective:aa987d92dadce65b8b2d8f54c741a10f5d024d864cb0ef309b4321b4e19e4ceb
+      path_compatibility: >-
+        Read both optimize and optimera roots. Identical records carrying one
+        persisted objective ID are mirrored provenance. Different records with
+        the same persisted or derived ID, or unresolved candidates in both roots,
+        return ambiguous; canonical-root preference must not hide a collision.
+    experiment:
+      format: '<objective-id>/experiment:<non-negative-integer>'
+      scope: experiment numbers are unique only within one objective identity
+      zero: experiment 0 is valid and is normally the baseline
+      collision: duplicate numbers inside one objective are ambiguous and never resolved by array order
+  commands:
+    plan_tasks:
+      list: agentera state plan tasks list [--plan PLAN_ID] [--limit N] [--cursor TOKEN] --format json
+      get: agentera state plan tasks get --plan PLAN_ID --task N --format json
+      selectors:
+        plan:
+          list_required: false
+          list_default: active plan resolved once and returned as filters.plan
+          get_required: true
+          pattern: '^(plan:[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}|legacy-plan:[0-9a-f]{64})$'
+        task:
+          get_required: true
+          pattern: '^[1-9][0-9]*$'
+    plans:
+      list: agentera state plan list [--limit N] [--cursor TOKEN] --format json
+      get: agentera state plan get --plan PLAN_ID --format json
+      selectors:
+        plan:
+          get_required: true
+          pattern: '^(plan:[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}|legacy-plan:[0-9a-f]{64})$'
+    experiments:
+      list: agentera state experiments list --objective OBJECTIVE_ID [--limit N] [--cursor TOKEN] --format json
+      get: agentera state experiments get --objective OBJECTIVE_ID --number N --format json
+      selectors:
+        objective:
+          list_required: true
+          get_required: true
+          pattern: '^(objective:[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}|legacy-objective:[0-9a-f]{64})$'
+        number:
+          get_required: true
+          pattern: '^(0|[1-9][0-9]*)$'
+  failures:
+    schema_version: agentera.stateFailure.v1
+    required_fields: [class, message, syntax, example, recovery]
+    classes:
+      invalid_request: malformed, duplicate, missing, or incompatible selector
+      unsupported_artifact: collection is not exposed by the requested grammar
+      not_found: a valid exact identity has no matching record
+      ambiguous: legacy derivation, duplicate identity, or path compatibility has multiple candidates
+      corrupt: selected state cannot be parsed or validated safely
+      incomplete: selected record exists but required detail is unavailable
+      cursor_invalid: cursor is malformed or bound to different selectors, filters, collection, or order
+      cursor_snapshot_unavailable: the exact cursor snapshot cannot be resumed
+      unsupported_state: authority cannot return a safe bounded envelope
+    exit_codes:
+      usage: 2
+      state_or_compatibility_failure: 1
+    legacy_diagnostic_rule: >-
+      Compatibility failures include candidate provenance and a working recovery
+      command but never synthesize an ID, objective scope, task, experiment, or
+      archive event.
+  collections:
+    - collection_id: progress.records
+      artifact_id: progress
+      growth: append_only_unbounded
+      identity: 'progress:<positive-entry-number>'
+      storage_ownership: immutable_numbered_archive_with_bounded_current_projection
+      ordering: entry_number_desc
+      bounds: count_1_to_100_and_serialized_utf8_budget
+      cursor: opaque_snapshot_cursor
+      omission: explicit_with_advancing_cursor_or_exact_get
+      get: agentera state progress get --number N --format json
+    - collection_id: decisions.records
+      artifact_id: decisions
+      growth: append_only_unbounded_with_declared_mutable_overlay
+      identity: 'decisions:<positive-entry-number>'
+      storage_ownership: immutable_numbered_archive_plus_decision_overlay_with_bounded_current_projection
+      ordering: entry_number_desc
+      bounds: count_1_to_100_and_serialized_utf8_budget
+      cursor: opaque_snapshot_cursor
+      omission: explicit_with_advancing_cursor_or_exact_get
+      get: agentera state decisions get --number N --format json
+    - collection_id: health.records
+      artifact_id: health
+      growth: append_only_unbounded
+      identity: 'health:<positive-entry-number>'
+      storage_ownership: immutable_numbered_archive_with_bounded_current_projection
+      ordering: entry_number_desc
+      bounds: count_1_to_100_and_serialized_utf8_budget
+      cursor: opaque_snapshot_cursor
+      omission: explicit_with_advancing_cursor_or_exact_get
+      get: agentera state health get --number N --format json
+    - collection_id: plan.plans
+      artifact_id: plan
+      growth: one_active_plus_append_only_immutable_file_archives
+      identity: retrieval.identity.plan
+      storage_ownership: active_plan_file_and_immutable_plan_archive_files
+      ordering: created_desc_then_plan_id_asc
+      bounds: count_1_to_100_and_serialized_utf8_budget
+      cursor: opaque_snapshot_cursor
+      omission: explicit_with_advancing_cursor_or_exact_get
+      get: retrieval.commands.plans.get
+    - collection_id: plan.tasks
+      artifact_id: plan
+      growth: mutable_while_plan_active_then_immutable_with_archived_plan
+      identity: retrieval.identity.task
+      storage_ownership: owning_active_or_archived_plan_file
+      ordering: task_number_asc
+      bounds: count_1_to_100_and_serialized_utf8_budget
+      cursor: opaque_snapshot_cursor
+      omission: explicit_with_advancing_cursor_or_exact_get
+      get: retrieval.commands.plan_tasks.get
+    - collection_id: experiments.records
+      artifact_id: experiments
+      growth: append_only_objective_scoped_with_10_full_40_summary_50_projection
+      identity: retrieval.identity.experiment
+      storage_ownership: objective_scoped_durable_records_and_bounded_10_40_50_projection
+      ordering: experiment_number_desc
+      bounds: count_1_to_100_serialized_utf8_budget_and_projection_10_40_50
+      cursor: opaque_snapshot_cursor
+      omission: explicit_with_advancing_cursor_or_exact_get_or_legacy_unavailable_diagnostic
+      get: retrieval.commands.experiments.get
+    - collection_id: todo.items
+      artifact_id: todo
+      growth: bounded_current_working_set_with_resolved_compaction
+      identity: absent_legacy_markdown_item_identity
+      storage_ownership: TODO.md
+      ordering: severity_then_document_order
+      bounds: 10_open_40_resolved_summary_50_total_projection
+      cursor: none_not_publicly_pageable
+      omission: current_query_must_report_omission_but_exact_get_is_unavailable
+      get: unsupported_no_stable_identity
+    - collection_id: docs.entries
+      artifact_id: docs
+      growth: bounded_document_inventory
+      identity: canonical_document_path_when_present
+      storage_ownership: .agentera/docs.yaml_or_docs_mapping
+      ordering: document_order
+      bounds: artifact_budget_and_projection_output_budget
+      cursor: none_not_publicly_pageable
+      omission: current_query_must_report_omission_but_exact_get_is_unavailable
+      get: unsupported_no_public_get
+    - collection_id: changelog.entries
+      artifact_id: changelog
+      growth: append_only_public_release_history
+      identity: absent_markdown_entry_identity
+      storage_ownership: CHANGELOG.md
+      ordering: document_order_newest_release_first
+      bounds: no_collection_page_contract
+      cursor: none_not_publicly_pageable
+      omission: query_result_may_be_filtered_but_must_not_claim_exact_retrieval
+      get: unsupported_no_stable_identity
+  non_collections:
+    - artifact_id: vision
+      behavior: singleton_document_no_list_or_get_grammar
+    - artifact_id: design
+      behavior: singleton_document_no_list_or_get_grammar
+    - artifact_id: objective
+      behavior: one_selected_objective_document; identity is only a required experiments selector in this task
+    - artifact_id: plan_archive
+      behavior: storage special case represented publicly by plan.plans
+    - artifact_id: optimize_harness
+      behavior: local harness storage, not public state retrieval
+  current_gap_evidence:
+    - surface: agentera state plan --format json / plans
+      count_gap: PLAN_HISTORY_CATALOG_LIMIT silently caps catalog rows at 10 without cursor or stable identity
+      byte_gap: response has no serialized byte authority
+      recoverability: raw paths are exposed but no public exact plan get exists
+    - surface: agentera state plan --format json / source.archive_paths
+      count_gap: archive paths are capped at 10 with only an omitted count
+      byte_gap: source metadata has no independent serialized byte authority
+      recoverability: omitted paths have neither cursor nor exact plan identity
+    - surface: agentera state plan text / tasks
+      count_gap: tasks.slice(0, 10) omits remaining tasks without an omission marker
+      byte_gap: emitted task scalars are truncated rather than represented by a retrieval envelope
+      recoverability: no public task get exists
+    - surface: agentera state plan --format json / tasks
+      count_gap: all task records are emitted without a count limit
+      byte_gap: response has no serialized byte authority
+      recoverability: task numbers are not scoped by a stable plan identity and no public task get exists
+    - surface: agentera state experiments --format json / entries
+      count_gap: entries.slice(-limit) defaults to 5 without total, omitted count, or cursor
+      byte_gap: retained full experiment records have no serialized byte authority
+      recoverability: experiment number lacks objective identity and no public experiment get exists
+  plan_archive_diagnostics:
+    classification: pre_existing_compatibility_caveat
+    smoke_test_behavior: >-
+      A lifecycle diagnostic on an unrelated archived plan degrades list/catalog
+      status and remains visible, but does not fail exact retrieval of a different
+      valid plan. Exact get fails only when the selected candidate is invalid,
+      corrupt, or ambiguous. Read-only smoke tests assert diagnostics and never
+      repair or rewrite archive history.
+    known_live_diagnostics:
+      - plan-2026-06-04-d56-parity-closeout.yaml
+      - plan-2026-07-08-cliDistributionMajor-secondary-signal.yaml
 
 consumer_matrix:
   status: active_authority

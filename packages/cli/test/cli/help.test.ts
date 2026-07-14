@@ -63,6 +63,18 @@ describe("cli help", () => {
     expect(decisions).toContain("agentera state decisions explain --verb VERB --format json");
   });
 
+  it("declares plan and objective-scoped experiment retrieval grammar without claiming execution", () => {
+    const plan = printStateHelp("plan");
+    expect(plan).toContain("agentera state plan tasks list [--plan PLAN_ID]");
+    expect(plan).toContain("agentera state plan get --plan PLAN_ID --format json");
+    expect(plan).toContain("execution lands in later plan tasks");
+
+    const experiments = printStateHelp("experiments");
+    expect(experiments).toContain("agentera state experiments list --objective OBJECTIVE_ID");
+    expect(experiments).toContain("experiment --number accepts 0");
+    expect(experiments).toContain("structured ambiguous error");
+  });
+
   it("documents optional preview and direct forced backfill without receipt flags", () => {
     const backfill = printStateHelp("backfill");
     expect(backfill).toContain("[--dry-run|--apply --force]");
