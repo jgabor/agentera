@@ -1,7 +1,7 @@
 header:
   level: full
   created: 2026-07-14
-  status: open
+  status: complete
   reviewed: 2026-07-14
   critic_issues: 9 found, 9 addressed, 0 dismissed
   title: "Plan: Finish archive rollout without speculative security"
@@ -106,10 +106,20 @@ tasks:
       - "2"
       - "3"
       - "4"
-    status: pending
+    status: complete
     acceptance:
       - GIVEN prior tasks pass WHEN governed closeout runs THEN plan, progress, the superseded custom-name and receipt TODOs, health, docs, changelog, and the writer-assigned predecessor lineage agree without rewriting immutable evidence.
       - GIVEN synchronized state WHEN full CLI tests, typecheck, build, capability-contract and release-metadata validation, affected artifact validation, compact, migration fixtures, `npm pack --dry-run --json --ignore-scripts`, and `npm publish --tag next --dry-run` run after final changes THEN every gate passes, every task is complete, and only then the plan archives.
+    evaluation:
+      attempt_count: 1
+      failure_count: 0
+      last_verdict: pass
+      last_failure_evidence: null
+      provenance:
+        attempt_id: simplified-task5-audit-1
+        source: "Independent final evaluator: synchronized state, immutable evidence, full release gates, package boundary, and no-publication audit"
+        recorded_at: 2026-07-14 18:05
+        writer_command: agentera state plan record-evaluation
 surprises:
   []
 previous_plan_archived: .agentera/archive/PLAN-2026-07-14-complete-migration-authority-and-archive-rollout-edd71fe9f2b1a7f1.yaml

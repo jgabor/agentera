@@ -1,4 +1,32 @@
 cycles:
+  - number: 794
+    timestamp: 2026-07-14 18:20
+    type: fix
+    phase: build
+    what: Made archived-only plan reads report verified active-plan absence with a
+      bounded history catalog instead of promoting archived tasks into a
+      degraded current projection.
+    inspiration: The completed rollout exposed that state plan promoted the newest
+      archive after active-plan removal.
+    discovered: The primary archive fallback and unbounded archive path/catalog
+      fields jointly caused the misleading current_projection omission response.
+    verified: "Focused state and source-contract tests: 2 files, 61 tests passed.
+      Full CLI suite: 177 files, 1,805 tests passed. Typecheck and build passed.
+      The live post-archive command now returns status=empty, entries=0,
+      active_plan_exists=false, complete_for_plan_artifact=true,
+      archive_count=133, and a bounded 10-entry catalog with 123 declared
+      omissions. Archived plan and changelog validation, compact, and git diff
+      checks passed."
+    next: Commit this fix with the completed plan archive lifecycle changes; no
+      active plan remains.
+    context:
+      intent: Remove the post-archive state plan caveat while preserving immutable
+        plan history and bounded output.
+      constraints: Do not restore archived plans as executable current state or add
+        numbered plan retrieval machinery.
+      unknowns: None.
+      scope: Plan state query semantics, source-contract oracle, archived-only
+        regressions, changelog, progress, and completed plan archive.
   - number: 793
     timestamp: 2026-07-14 17:36
     type: chore
@@ -531,56 +559,10 @@ cycles:
         packages/cli/test/state/migrationAuthority.test.ts;
         references/artifacts/state-storage-authority.yaml; .agentera/plan.yaml;
         .agentera/progress.yaml; generated bundle parity
-  - number: 784
-    timestamp: 2026-07-14 09:20
-    type: feat
-    phase: build
-    what: Implemented bounded non-Git legacy migration with strict local
-      YAML/Markdown parsing, exact immutable archive and backup publication,
-      bounded projection application, conflict refusal, and interruption-safe
-      idempotent retry.
-    inspiration: Active migration rollout plan Task 2 and its confirmed Task 1
-      authority/inventory contract.
-    discovered: Task 2 needed a backup publication boundary and optimistic
-      projection publication check in the existing mutation transaction. Custom
-      candidates require exact path, artifact, and number pins; summary,
-      ambiguous, corrupt, unsupported, unsafe, changed, and conflicting records
-      remain non-addressable. The repository retains five known npm packaging
-      JSON-parser failures and the existing malformed invalid-progress-yaml
-      formatting fixture.
-    verified: "Focused migration/state transaction command:
-      test/state/legacyMigration.test.ts, test/state/migrationAuthority.test.ts,
-      test/state/write/stateWrite.test.ts, and test/lint/monolithLint.test.ts; 4
-      files, 89 tests passed. Lifecycle/read compatibility command:
-      listRetrieval, directRetrieval, archiveDiscovery, archivePublication,
-      projectionPolicy, and lifecycleAdapters; 6 files, 128 tests passed.
-      Non-packaging boundary: 175 files, 1773 tests passed. Typecheck, build,
-      bundle:data, targeted formatting, capability build, capability-contract,
-      artifact progress/plan/decisions/health validation, compact, and
-      temp-project dry-run/apply/retry smoke passed. Full suite retained exactly
-      5 known npm packaging JSON-parser failures."
-    next: Leave Task 2 pending and do not record evaluation; orchestrator owns
-      audit/status. Preserve no Git or remote access, Decision 53 no-inference
-      semantics, archive immutability, projection-failure recovery, startup
-      caveats, and known packaging/formatting caveats. Do not begin Task 3,
-      enrich Git, edit vision/profile, publish, tag, or push.
-    context:
-      intent: Execute continuation plan Task 2 without evaluating or completing it.
-      constraints: Only Task 2 local migration application, its tests, the existing
-        transaction boundary extension, typed progress, and the uncommitted Task
-        1 lifecycle changes are in scope. No Git enrichment, broad docs
-        alignment, health audit, version bump, publish, tag, push, profile
-        refresh, vision edit, or satisfaction mutation.
-      unknowns: Independent orchestration audit and final Task 2 status remain
-        outstanding; historical startup caveats and the known packaging harness
-        failures remain unchanged.
-      scope: packages/cli/src/state/legacyMigration.ts;
-        packages/cli/src/state/legacyMigrationParser.ts;
-        packages/cli/src/state/write/mutation.ts;
-        packages/cli/src/cli/commands/migrate.ts;
-        packages/cli/test/state/legacyMigration.test.ts; .agentera/plan.yaml;
-        .agentera/progress.yaml; generated dist and bundle parity
 archive:
+  - summary: "Cycle 784 (2026-07-14): Implemented bounded non-Git legacy migration
+      with strict local YAML/Markdown parsing, exact immutable archive and
+      backup..."
   - summary: "Cycle 783 (2026-07-14): Closed the continuation-task1-audit-1 gaps:
       bounded project-local read-only inventory now exercises authority roots,
       depth, exclusions, normalized..."
@@ -679,17 +661,18 @@ archive:
   - summary: "Cycle 745 (2026-07-13): Updated
       packages/cli/src/capabilities/plan/instructions.ts so state plan create is
       the final publication gate and its YAML examples..."
-  - summary: "Cycle 741 (2026-07-12): Updated
-      packages/cli/src/state/write/transaction.ts so plan create/archive
-      publication validates final bytes and retries converge after
-      interruptions."
 omitted: true
-omitted_count: 30
+omitted_count: 31
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded

@@ -2,6 +2,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
+import YAML from "yaml";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import {
@@ -367,8 +368,80 @@ describe("cli state plan", () => {
     expect(rc).toBe(0);
     const payload = JSON.parse(out);
     expect(payload.status).toBe("empty");
-    expect(payload.summary.absence_reason).toContain("No plan artifact");
-    expect(payload.source_contract.complete_for_plan_artifact).toBe(false);
+    expect(payload.summary.absence_reason).toContain("No active plan");
+    expect(payload.source_contract.complete_for_plan_artifact).toBe(true);
+    expect(payload.source_contract.complete_for_normal_startup_evaluation).toBe(true);
+  });
+
+  it("keeps archived plans in history when no active plan exists", () => {
+    const p = path.join(tmp, "plan.yaml");
+    const archiveDir = path.join(tmp, "archive");
+    fs.mkdirSync(archiveDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(archiveDir, "PLAN-2026-07-14-complete.yaml"),
+      YAML.stringify({
+        header: { title: "Completed work", status: "complete", created: "2026-07-14" },
+        tasks: Array.from({ length: 20 }, (_, index) => ({
+          number: index + 1,
+          name: `Completed task ${index + 1}`,
+          status: "complete",
+          acceptance: ["GIVEN work WHEN checked THEN complete"],
+        })),
+      }),
+    );
+
+    const { rc, out } = capture((io) =>
+      queryPlan({ command: "plan", format: "json" }, planSchema(p), io),
+    );
+    expect(rc).toBe(0);
+    const payload = JSON.parse(out);
+    expect(payload.status).toBe("empty");
+    expect(payload.entries).toEqual([]);
+    expect(payload.counts.entries).toBe(0);
+    expect(payload.summary.absence_reason).toContain("No active plan");
+    expect(payload.source).toMatchObject({ active: false, archived: false });
+    expect(payload.source_contract).toMatchObject({
+      active_plan_exists: false,
+      archived_plan_count: 1,
+      complete_for_plan_artifact: true,
+      complete_for_normal_startup_evaluation: true,
+    });
+    expect(payload.plans).toEqual([
+      expect.objectContaining({ active: false, archived: true, status: "complete", task_count: 20 }),
+    ]);
+    expect(payload.omitted).not.toBe(true);
+  });
+
+  it("bounds archived plan history without degrading active-plan absence", () => {
+    const p = path.join(tmp, "plan.yaml");
+    for (let index = 1; index <= 30; index += 1) {
+      writeArchivedPlan(
+        p,
+        `PLAN-2026-07-${String(index).padStart(2, "0")}-history.yaml`,
+        `Archived plan ${index}`,
+      );
+    }
+
+    const { rc, out } = capture((io) =>
+      queryPlan({ command: "plan", format: "json" }, planSchema(p), io),
+    );
+    expect(rc).toBe(0);
+    const payload = JSON.parse(out);
+    expect(payload.status).toBe("empty");
+    expect(payload.entries).toEqual([]);
+    expect(payload.plans).toHaveLength(10);
+    expect(payload.plan_catalog).toEqual({
+      total: 30,
+      returned: 10,
+      omitted: true,
+      omitted_count: 20,
+      omission_reason: "archive_catalog_limit",
+    });
+    expect(payload.source.archive_paths).toHaveLength(10);
+    expect(payload.source.archive_paths_omitted_count).toBe(20);
+    expect(payload.source_contract.archive_paths).toHaveLength(10);
+    expect(payload.source_contract.archive_paths_omitted_count).toBe(20);
+    expect(payload.omitted).not.toBe(true);
   });
 
   it("reports a malformed current plan as invalid instead of absent", () => {
@@ -439,7 +512,7 @@ describe("cli state plan", () => {
     );
   });
 
-  it("reads a valid archived plan when no active plan remains", () => {
+  it("reports archived plans as history when no active plan remains", () => {
     const p = path.join(tmp, "plan.yaml");
     const archivePath = writeArchivedPlan(
       p,
@@ -455,26 +528,23 @@ describe("cli state plan", () => {
     );
     expect(rc).toBe(0);
     const payload = JSON.parse(out);
-    expect(payload.status).toBe("ok");
-    expect(payload.summary.status).toBe("complete");
-    expect(payload.entries[0].status).toBe("complete");
-    expect(payload.entries[0].evidence[0].result).toBe("passed");
-    expect(payload.entries[0].evidence_provenance[0].source_family).toBe("plan");
-    expect(payload.entries[0].evidence_provenance[0].artifact_path).toBe(archivePath);
-    expect(payload.source.path).toBe(archivePath);
+    expect(payload.status).toBe("empty");
+    expect(payload.summary.absence_reason).toContain("No active plan");
+    expect(payload.entries).toEqual([]);
+    expect(payload.source.path).toBe(p);
     expect(payload.source.active).toBe(false);
     expect(payload.source_contract.complete_for_plan_artifact).toBe(true);
-    expect(payload.source_contract.complete_for_normal_startup_evaluation).toBe(false);
+    expect(payload.source_contract.complete_for_normal_startup_evaluation).toBe(true);
     expect(payload.source_contract.invalid_archive_paths).toEqual([
       path.join(tmp, "archive", "PLAN-malformed.yaml"),
     ]);
-    expect(payload.source_contract.lifecycle_state.status).toBe("degraded");
+    expect(payload.source_contract.lifecycle_state.status).toBe("unavailable");
     expect(payload.source_contract.lifecycle_state.current_plan_degraded).toBe(false);
     expect(payload.plans).toHaveLength(1);
-    expect(payload.plans[0].archived).toBe(true);
+    expect(payload.plans[0]).toMatchObject({ path: archivePath, archived: true, status: "complete" });
   });
 
-  it("projects deterministic typed-progress evidence for every archived lifecycle task", () => {
+  it("does not project archived lifecycle tasks as current entries", () => {
     const p = path.join(tmp, "plan.yaml");
     const archivePath = writeLifecycleArchive(p);
     const progressPath = writeLifecycleProgress(p);
@@ -484,26 +554,17 @@ describe("cli state plan", () => {
     );
     expect(rc).toBe(0);
     const payload = JSON.parse(out);
-    expect(payload.source.path).toBe(archivePath);
-    expect(payload.summary.evidence_status).toBe("complete");
+    expect(payload.source.path).toBe(p);
+    expect(payload.summary.absence_reason).toContain("No active plan");
     expect(payload.source_contract.complete_for_plan_artifact).toBe(true);
-    expect(payload.entries).toHaveLength(8);
-    expect(
-      payload.entries.map(
-        (task: { evidence_provenance: Array<{ cycle_number: number }> }) =>
-          task.evidence_provenance[0].cycle_number,
-      ),
-    ).toEqual([716, 717, 718, 719, 720, 727, 728, 729]);
-    for (const task of payload.entries) {
-      expect(task.evidence).toHaveLength(1);
-      expect(task.evidence[0].source).toBe("progress");
-      expect(task.evidence_provenance[0].source_family).toBe("progress");
-      expect(task.evidence_provenance[0].artifact_path).toBe(progressPath);
-      expect(task.evidence_status).toBe("present");
-    }
+    expect(payload.entries).toEqual([]);
+    expect(payload.plans).toContainEqual(
+      expect.objectContaining({ path: archivePath, archived: true, status: "complete", task_count: 8 }),
+    );
+    expect(fs.existsSync(progressPath)).toBe(true);
   });
 
-  it("surfaces completed tasks with missing evidence as incomplete", () => {
+  it("does not let missing archived evidence degrade verified active-plan absence", () => {
     const p = path.join(tmp, "plan.yaml");
     const archiveDir = path.join(tmp, "archive");
     fs.mkdirSync(archiveDir, { recursive: true });
@@ -528,13 +589,14 @@ describe("cli state plan", () => {
     );
     expect(rc).toBe(0);
     const payload = JSON.parse(out);
-    expect(payload.status).toBe("incomplete");
-    expect(payload.summary.evidence_status).toBe("incomplete");
-    expect(payload.entries[0].evidence).toEqual([]);
-    expect(payload.entries[0].evidence_status).toBe("missing");
-    expect(payload.entries[0].evidence_provenance).toEqual([]);
-    expect(payload.source_contract.complete_for_plan_artifact).toBe(false);
-    expect(payload.source_contract.missing_state).toContain("task evidence");
+    expect(payload.status).toBe("empty");
+    expect(payload.summary.absence_reason).toContain("No active plan");
+    expect(payload.entries).toEqual([]);
+    expect(payload.source_contract.complete_for_plan_artifact).toBe(true);
+    expect(payload.source_contract.missing_state).not.toContain("task evidence");
+    expect(payload.plans).toContainEqual(
+      expect.objectContaining({ archived: true, status: "complete", task_count: 1 }),
+    );
   });
 
   it("keeps the active plan first and archives in deterministic newest-first order", () => {

@@ -33,6 +33,8 @@ import {
 import { planLifecycleState } from "../../planLifecycleState.js";
 import { resolvePlanTaskEvidence } from "../../planEvidence.js";
 
+const PLAN_HISTORY_CATALOG_LIMIT = 10;
+
 function planArtifactSummary(artifact: PlanArtifact): JsonObject {
   const { data } = artifact;
   const parts = planDocumentParts(data);
@@ -60,10 +62,15 @@ function planArtifactSummary(artifact: PlanArtifact): JsonObject {
 
 function planSource(primary: PlanArtifact | null, discovery: PlanArtifactDiscovery): JsonObject {
   const source = sourceMetadata("plan", primary?.path ?? discovery.activePath);
+  const archivePaths = discovery.archived.map((artifact) => artifact.path);
   source.active = Boolean(discovery.active);
   source.archived = Boolean(primary?.archived);
   source.active_path = discovery.activePath;
-  source.archive_paths = discovery.archived.map((artifact) => artifact.path);
+  source.archive_count = archivePaths.length;
+  source.archive_paths = archivePaths.slice(0, PLAN_HISTORY_CATALOG_LIMIT);
+  if (archivePaths.length > PLAN_HISTORY_CATALOG_LIMIT) {
+    source.archive_paths_omitted_count = archivePaths.length - PLAN_HISTORY_CATALOG_LIMIT;
+  }
   if (discovery.diagnostics.length > 0) source.diagnostics = discovery.diagnostics;
   const activeDiagnostics = discovery.diagnostics.filter(
     (diagnostic) => diagnostic.path === discovery.activePath && diagnostic.category !== "legacy",
@@ -81,7 +88,9 @@ function planCatalog(discovery: PlanArtifactDiscovery): JsonObject[] {
     ...(discovery.active ? [discovery.active] : []),
     ...discovery.archived,
   ];
-  return artifacts.map((artifact) => planCatalogEntry(artifact, discovery.activePath));
+  return artifacts
+    .slice(0, PLAN_HISTORY_CATALOG_LIMIT)
+    .map((artifact) => planCatalogEntry(artifact, discovery.activePath));
 }
 
 function activePlanDiagnostics(discovery: PlanArtifactDiscovery): JsonObject[] {
@@ -98,23 +107,25 @@ function planSourceContract(
   const legacyEntries = Boolean(summary.legacy_entries);
   const evidenceIncomplete = summary.evidence_status === "incomplete";
   const currentDiagnostics = activePlanDiagnostics(discovery);
+  const active = source.active === true;
+  const verifiedAbsence = !active && currentDiagnostics.length === 0;
   const lifecycle = planLifecycleState({
     exists: source.exists,
     active: source.active,
     active_path: source.active_path,
-    diagnostics: discovery.diagnostics,
+    diagnostics: currentDiagnostics,
   });
   const complete =
-    Boolean(source.exists) &&
-    !legacyEntries &&
-    !evidenceIncomplete &&
-    currentDiagnostics.length === 0 &&
-    lifecycle.current_plan_degraded !== true;
-  const active = source.active === true;
-  const startupComplete = complete && active;
+    verifiedAbsence ||
+    (Boolean(source.exists) &&
+      !legacyEntries &&
+      !evidenceIncomplete &&
+      currentDiagnostics.length === 0 &&
+      lifecycle.current_plan_degraded !== true);
+  const startupComplete = complete;
   const missingState: string[] = [];
-  if (!source.exists) missingState.push("plan artifact");
-  else if (!active) missingState.push("active plan artifact");
+  if (!source.exists && !verifiedAbsence) missingState.push("plan artifact");
+  else if (!active && !verifiedAbsence) missingState.push("active plan artifact");
   if (legacyEntries) missingState.push("current plan task artifact shape");
   if (evidenceIncomplete) missingState.push("task evidence");
   if (currentDiagnostics.length > 0) missingState.push("valid current plan artifact");
@@ -137,7 +148,10 @@ function planSourceContract(
     active_plan_path: discovery.activePath,
     active_plan_exists: active,
     archived_plan_count: discovery.archived.length,
-    archive_paths: discovery.archived.map((artifact) => artifact.path),
+    archive_paths: discovery.archived
+      .slice(0, PLAN_HISTORY_CATALOG_LIMIT)
+      .map((artifact) => artifact.path),
+    archive_paths_omitted_count: Math.max(0, discovery.archived.length - PLAN_HISTORY_CATALOG_LIMIT),
     invalid_archive_paths: discovery.invalidArchivePaths,
     lifecycle_state: lifecycle,
     complete_for_plan_artifact: complete,
@@ -201,9 +215,13 @@ export function queryPlan(args: StateArgs, schemas: Record<string, SchemaInfo>, 
   const p = artifactPath(info, "plan");
   const discovery = discoverPlanArtifacts(p);
   const currentDiagnostics = activePlanDiagnostics(discovery);
-  const primary = discovery.active ?? (currentDiagnostics.length === 0 ? discovery.archived[0] ?? null : null);
+  // Archived plans are immutable history, never executable current state.
+  // Keep them in the catalog instead of promoting the newest archive to the
+  // current plan when the active artifact is absent.
+  const primary = discovery.active;
   const format = args.format ?? "text";
   const catalog = planCatalog(discovery);
+  const catalogTotal = (discovery.active ? 1 : 0) + discovery.archived.length;
 
   if (!primary) {
     if (format !== "text") {
@@ -212,7 +230,7 @@ export function queryPlan(args: StateArgs, schemas: Record<string, SchemaInfo>, 
         exists: false,
         active: false,
         active_path: discovery.activePath,
-        diagnostics: discovery.diagnostics,
+        diagnostics: currentDiagnostics,
       });
       const summary: JsonObject = lifecycle.status === "degraded"
         ? {
@@ -220,7 +238,7 @@ export function queryPlan(args: StateArgs, schemas: Record<string, SchemaInfo>, 
             diagnostic: currentDiagnostics[0] ?? discovery.diagnostics.find((diagnostic) => diagnostic.category !== "legacy"),
             absence_reason: "Current plan artifact is invalid.",
           }
-        : { absence_reason: "No plan artifact is available from agentera plan." };
+        : { absence_reason: "No active plan exists." };
       summary.lifecycle_state = lifecycle;
       const payload = structuredState("plan", [], source, {
         filters: { status: args.status ?? null },
@@ -229,6 +247,13 @@ export function queryPlan(args: StateArgs, schemas: Record<string, SchemaInfo>, 
       });
       if (lifecycle.current_plan_degraded === true) payload.status = "incomplete";
       payload.plans = catalog;
+      payload.plan_catalog = {
+        total: catalogTotal,
+        returned: catalog.length,
+        omitted: catalogTotal > catalog.length,
+        omitted_count: Math.max(0, catalogTotal - catalog.length),
+        omission_reason: catalogTotal > catalog.length ? "archive_catalog_limit" : null,
+      };
       return emitStateStructured(
         "plan",
         payload,
@@ -268,7 +293,7 @@ export function queryPlan(args: StateArgs, schemas: Record<string, SchemaInfo>, 
     exists: source.active === true || source.archived === true,
     active: source.active,
     active_path: source.active_path,
-    diagnostics: discovery.diagnostics,
+    diagnostics: currentDiagnostics,
   });
   summary.lifecycle_state = lifecycle;
   if (format !== "text") {
@@ -279,6 +304,13 @@ export function queryPlan(args: StateArgs, schemas: Record<string, SchemaInfo>, 
     });
     if (!evidence.complete || lifecycle.current_plan_degraded === true) payload.status = "incomplete";
     payload.plans = catalog;
+    payload.plan_catalog = {
+      total: catalogTotal,
+      returned: catalog.length,
+      omitted: catalogTotal > catalog.length,
+      omitted_count: Math.max(0, catalogTotal - catalog.length),
+      omission_reason: catalogTotal > catalog.length ? "archive_catalog_limit" : null,
+    };
     return emitStateStructured(
       "plan",
       payload,
