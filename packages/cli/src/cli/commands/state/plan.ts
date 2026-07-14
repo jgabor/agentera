@@ -90,7 +90,11 @@ function planCatalog(discovery: PlanArtifactDiscovery): JsonObject[] {
   ];
   return artifacts
     .slice(0, PLAN_HISTORY_CATALOG_LIMIT)
-    .map((artifact) => planCatalogEntry(artifact, discovery.activePath));
+    .map((artifact) => planCatalogEntry(
+      artifact,
+      discovery.activePath,
+      discovery.identities.find((identity) => identity.artifact.path === artifact.path),
+    ));
 }
 
 function activePlanDiagnostics(discovery: PlanArtifactDiscovery): JsonObject[] {

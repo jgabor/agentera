@@ -3,6 +3,7 @@ import path from "node:path";
 
 import type { JsonObject } from "../core/jsonValue.js";
 import { loadYamlMapping } from "../core/yaml.js";
+import { resolvePlanIdentity } from "../state/planIdentity.js";
 import { asList, firstPresent } from "./stateQuery.js";
 
 /** The immutable filenames produced by the typed plan archive writer. */
@@ -14,7 +15,7 @@ export interface PlanArtifact {
   archived: boolean;
 }
 
-export type PlanDiagnosticCategory = "parse" | "schema" | "lifecycle" | "legacy";
+export type PlanDiagnosticCategory = "parse" | "schema" | "lifecycle" | "identity" | "legacy";
 
 export interface PlanArtifactDiagnostic extends JsonObject {
   path: string;
@@ -29,6 +30,16 @@ export interface PlanArtifactDiscovery {
   archived: PlanArtifact[];
   invalidArchivePaths: string[];
   diagnostics: PlanArtifactDiagnostic[];
+  identities: PlanArtifactIdentity[];
+}
+
+export interface PlanArtifactIdentity {
+  artifact: PlanArtifact;
+  stableId: string;
+  persisted: boolean;
+  canonicalJson: string;
+  ambiguous: boolean;
+  provenancePaths: string[];
 }
 
 export interface PlanDocumentParts {
@@ -210,19 +221,54 @@ export function discoverPlanArtifacts(activePath: string): PlanArtifactDiscovery
     const createdDelta = planDocumentParts(b.data).created.localeCompare(planDocumentParts(a.data).created);
     return createdDelta === 0 ? b.path.localeCompare(a.path) : createdDelta;
   });
-  return { activePath, archiveDirectory, active, archived, invalidArchivePaths, diagnostics };
+  const artifacts = [...(active ? [active] : []), ...archived];
+  const resolved = artifacts.flatMap((artifact) => {
+    try {
+      return [{ artifact, ...resolvePlanIdentity(artifact.data) }];
+    } catch (error) {
+      diagnostics.push(inspectionDiagnostic(artifact.path, "identity", (error as Error).message));
+      return [];
+    }
+  });
+  const identities = resolved.map((identity): PlanArtifactIdentity => {
+    const matching = resolved.filter((candidate) => candidate.stableId === identity.stableId);
+    const provenancePaths = matching.map((candidate) => candidate.artifact.path).sort();
+    const ambiguous = new Set(matching.map((candidate) => candidate.canonicalJson)).size > 1;
+    if (ambiguous) {
+      diagnostics.push(inspectionDiagnostic(
+        identity.artifact.path,
+        "identity",
+        `plan identity ${identity.stableId} is ambiguous across ${provenancePaths.join(", ")}`,
+      ));
+    }
+    return { ...identity, ambiguous, provenancePaths };
+  });
+  return { activePath, archiveDirectory, active, archived, invalidArchivePaths, diagnostics, identities };
 }
 
-export function planCatalogEntry(artifact: PlanArtifact, activePath: string): JsonObject {
+export function planCatalogEntry(
+  artifact: PlanArtifact,
+  activePath: string,
+  identity?: PlanArtifactIdentity,
+): JsonObject {
   const parts = planDocumentParts(artifact.data);
   const active = artifact.path === activePath;
   return {
     path: artifact.path,
+    ...(identity ? { stable_id: identity.stableId } : {}),
+    addressable: identity ? !identity.ambiguous : false,
     active,
     archived: !active,
     title: parts.title,
     status: parts.status,
     created: parts.created,
     task_count: parts.tasks.length,
+    compatibility: identity?.ambiguous ? "degraded" : identity?.persisted ? "complete" : "degraded",
+    provenance: {
+      storage: active ? "active_plan_file" : "immutable_plan_archive",
+      path: artifact.path,
+      lifecycle_position: active ? "active" : "archived",
+      ...(identity && identity.provenancePaths.length > 1 ? { mirrored_paths: identity.provenancePaths } : {}),
+    },
   };
 }

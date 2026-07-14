@@ -1,0 +1,19 @@
+schemaVersion: agentera.stateArchiveEntry.v1
+artifact_id: progress
+entry_number: 800
+record:
+  number: 800
+  timestamp: 2026-07-14 23:34
+  type: feat
+  phase: build
+  what: Established stable plan identity through validated publication, archival, and collision-aware discovery.
+  inspiration: Task 3 acceptance criteria and references/artifacts/state-storage-authority.yaml.
+  discovered: The full suite initially exposed transaction.ts at 1011 lines; moving create-input validation to planPublication.ts restored the 1000-line gate without changing behavior.
+  verified: "AC1: pnpm exec vp test run test/state/planTaskRetrieval.test.ts test/state/write/stateWrite.test.ts test/state/planLifecycleContract.test.ts test/lint/monolithLint.test.ts passed 4 files/81 tests, including stable writer-to-archive identity and active/archived provenance. AC2: the same run proved deterministic read-only legacy derivation, byte-equivalent mirrored paths, and structured ambiguous failure with all collision paths. AC3: transition/collision/legacy fixtures passed. pnpm test passed 179 files/1974 tests; pnpm run typecheck and pnpm build passed; node dist/bin/agentera.js check validate capability-contract --format json passed 2/2."
+  next: Execute Task 4 plan list/get using this identity authority; do not alter file-based archive ownership.
+  context:
+    intent: Complete Plan Task 3 by preserving identity across lifecycle transitions and safely deriving legacy identity without rewriting history.
+    constraints: Preserved file archives, strict publication, crash consistency, legacy bytes, package metadata, experiments, and Task 4 boundaries.
+    unknowns: None for Task 3; plan list/get remains intentionally deferred to Task 4.
+    scope: Plan schema and retrieval authority projection, writer publication, archive discovery, active task collision safety, tests, changelog, progress, and plan status.
+record_sha256: 0dba5ed807997820adfbe78c646d07d590b810267183bc7063f46afec7cbca24

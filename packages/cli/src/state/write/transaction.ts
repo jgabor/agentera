@@ -1,4 +1,4 @@
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { isDeepStrictEqual } from "node:util";
@@ -27,6 +27,7 @@ import { findByNumber, schemaViolation } from "./helpers.js";
 import { validateArtifactBytes } from "./validate.js";
 import {
   planEvaluationViolations,
+  validatePlanCreateInput,
   validatePlanPublicationCandidate,
 } from "./planPublication.js";
 import { dependencyReadyTasks } from "../../cli/capabilityContext/planState.js";
@@ -534,29 +535,6 @@ function latestArchivePath(archiveDirectory: string): string | null {
   return latest ? path.join(archiveDirectory, latest) : null;
 }
 
-function validatePlanCreateInput(input: Record<string, unknown>): void {
-  const tasks = array(input, "tasks");
-  const numbers = tasks.map((task) => Number(task.number));
-  const expected = tasks.map((_, index) => index + 1);
-  if (!isDeepStrictEqual(numbers, expected)) {
-    reject({
-      class: "schema_violation",
-      message: "plan create task numbers must be unique and sequential starting from 1",
-      violations: ["PV1: task numbers must equal 1..N"],
-    });
-  }
-  if (
-    mapping(input.header).status === "complete" &&
-    tasks.some((task) => task.status !== "complete")
-  ) {
-    reject({
-      class: "schema_violation",
-      message: "a complete plan cannot contain incomplete tasks",
-      violations: ["header.status complete requires every task complete"],
-    });
-  }
-}
-
 function canonicalPlanDocumentForWrite(doc: Record<string, unknown>): Record<string, unknown> {
   const header = mapping(doc.header);
   const status = String(header.status ?? "");
@@ -675,6 +653,9 @@ function planLifecycle(
     const oldStatus = String(mapping(existing.doc.header).status ?? existing.doc.status ?? "");
     const existingWithoutLineage = structuredClone(existing.doc);
     delete existingWithoutLineage.previous_plan_archived;
+    const existingHeader = mapping(existingWithoutLineage.header);
+    delete existingHeader.id;
+    existingWithoutLineage.header = existingHeader;
     const sameWithoutLineage = isDeepStrictEqual(existingWithoutLineage, input);
     if (sameWithoutLineage && !legacyLifecycle) {
       const predecessorBytes = req.force ? existing.bytes : dumpYamlMapping(existing.doc);
@@ -710,6 +691,7 @@ function planLifecycle(
       input.previous_plan_archived = path.relative(req.projectRoot, archivePath);
     }
   }
+  input.header = { ...mapping(input.header), id: `plan:${randomUUID()}` };
   const bytes = dumpYamlMapping(input);
   const predecessorValidation = predecessorBytes
     ? validatePlanPublicationCandidate(predecessorBytes, { allowHistoricalBudgetOverflow: req.force })

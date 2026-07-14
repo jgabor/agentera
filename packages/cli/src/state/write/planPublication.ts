@@ -16,6 +16,34 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value && typeof value === "object" && !Array.isArray(value));
 }
 
+export function validatePlanCreateInput(input: Record<string, unknown>): void {
+  const header = isRecord(input.header) ? input.header : {};
+  if (header.id !== undefined) {
+    reject({
+      class: "schema_violation",
+      message: "plan create header.id is CLI-owned and must be omitted",
+      violations: ["header.id is assigned by the validated plan writer"],
+    });
+  }
+  const tasks = Array.isArray(input.tasks) ? input.tasks.filter(isRecord) : [];
+  const numbers = tasks.map((task) => Number(task.number));
+  const expected = tasks.map((_, index) => index + 1);
+  if (numbers.some((number, index) => number !== expected[index])) {
+    reject({
+      class: "schema_violation",
+      message: "plan create task numbers must be unique and sequential starting from 1",
+      violations: ["PV1: task numbers must equal 1..N"],
+    });
+  }
+  if (header.status === "complete" && tasks.some((task) => task.status !== "complete")) {
+    reject({
+      class: "schema_violation",
+      message: "a complete plan cannot contain incomplete tasks",
+      violations: ["header.status complete requires every task complete"],
+    });
+  }
+}
+
 export function planEvaluationViolations(doc: Record<string, unknown>): string[] {
   const tasks = Array.isArray(doc.tasks) ? doc.tasks : [];
   const violations: string[] = [];

@@ -142,6 +142,17 @@ HEADER:
       Format: 'Plan: <descriptive name>'.
     validation:
       - "Non-empty string"
+  8:
+    id: PH8
+    field: id
+    type: string
+    required: false
+    description: >-
+      Stable plan identity assigned by the typed writer at first publication and
+      retained unchanged when the plan moves from active to archived history.
+      Legacy plans without this field derive a read-only identity.
+    validation:
+      - "Must match plan:<lowercase RFC 9562 UUID> when present"
 
 PLAN:
   1:
@@ -413,6 +424,13 @@ VALIDATION:
 LIFECYCLE_CONTRACT:
   authority: this schema
   canonical:
+    identity:
+      field: header.id
+      format: 'plan:<lowercase-rfc9562-uuid>'
+      assignment: The typed create writer assigns identity at first publication.
+      transition: Active and archived positions retain the identical identity.
+      legacy: Missing identity is derived deterministically at read time without rewriting bytes.
+      collision: Different documents with one identity are ambiguous and never selected by path or time.
     persisted_status:
       field: header.status
       values:
@@ -539,6 +557,7 @@ LIFECYCLE_CONTRACT:
       - packages/cli/src/cli/commands/state/plan.ts
       - packages/cli/src/cli/commands/state/planTasks.ts
       - packages/cli/src/state/planTaskRetrieval.ts
+      - packages/cli/src/state/planIdentity.ts
       - packages/cli/src/cli/commands/prime/*.ts
       - packages/cli/src/cli/capabilityContext/*.ts
       - packages/cli/src/cli/contracts/orientationState.ts

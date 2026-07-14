@@ -21,6 +21,7 @@ import { operationSpec } from "../../../src/state/write/operations.js";
 import { StateWriteInputError } from "../../../src/state/write/errors.js";
 import { discoverNumberedArchives } from "../../../src/state/archiveDiscovery.js";
 import { publishNumberedArchive } from "../../../src/state/archivePublication.js";
+import { discoverPlanArtifacts, planCatalogEntry } from "../../../src/cli/planArtifacts.js";
 
 interface Captured {
   rc: number;
@@ -474,6 +475,38 @@ describe("state writer discovery and progress", () => {
     const doc = loadYamlMapping(fs.readFileSync(path.join(dir, "progress.yaml"), "utf8"));
     expect(doc.cycles).toHaveLength(10);
     expect(doc.archive).toHaveLength(1);
+  });
+});
+
+describe("stable plan identity", () => {
+  it("assigns identity at publication and retains it with explicit archived provenance", () => {
+    const root = project();
+    const input = writeInput(root, "plan-input.yaml", lightPlan("Identity transition", "complete"));
+    const created = run(root, ["plan", "create", "--input", input, "--format", "json"]);
+    expect(created.rc).toBe(0);
+
+    const activePath = path.join(root, ".agentera", "plan.yaml");
+    const activeDocument = loadYamlMapping(fs.readFileSync(activePath, "utf8"));
+    const stableId = (activeDocument.header as Record<string, unknown>).id;
+    expect(stableId).toMatch(/^plan:[0-9a-f-]{36}$/);
+    const activeDiscovery = discoverPlanArtifacts(activePath);
+    expect(planCatalogEntry(activeDiscovery.active!, activePath, activeDiscovery.identities[0])).toMatchObject({
+      stable_id: stableId,
+      addressable: true,
+      provenance: { lifecycle_position: "active", storage: "active_plan_file" },
+    });
+
+    const archived = run(root, ["plan", "archive", "--format", "json"]);
+    expect(archived.rc).toBe(0);
+    const archivePath = String(archived.json?.state.archive_path);
+    const archiveDocument = loadYamlMapping(fs.readFileSync(archivePath, "utf8"));
+    expect((archiveDocument.header as Record<string, unknown>).id).toBe(stableId);
+    const archivedDiscovery = discoverPlanArtifacts(activePath);
+    expect(planCatalogEntry(archivedDiscovery.archived[0]!, activePath, archivedDiscovery.identities[0])).toMatchObject({
+      stable_id: stableId,
+      addressable: true,
+      provenance: { lifecycle_position: "archived", storage: "immutable_plan_archive" },
+    });
   });
 });
 

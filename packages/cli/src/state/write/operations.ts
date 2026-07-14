@@ -191,7 +191,7 @@ const SPECS: OperationSpec[] = [
     verb: "create",
     fields: [],
     inputRoot: "complete plan document",
-    cliOwnedFields: ["previous_plan_archived"],
+    cliOwnedFields: ["header.id", "previous_plan_archived"],
     allowForce: true,
   },
   {

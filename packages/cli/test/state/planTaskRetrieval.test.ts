@@ -72,6 +72,52 @@ afterEach(() => {
 });
 
 describe("active plan task retrieval", () => {
+  it("derives deterministic read-only legacy identity and reports byte-equivalent mirrors", () => {
+    const root = project([task(1)]);
+    const activePath = path.join(root, ".agentera", "plan.yaml");
+    const document = YAML.parse(fs.readFileSync(activePath, "utf8"));
+    delete document.header.id;
+    const bytes = YAML.stringify(document);
+    fs.writeFileSync(activePath, bytes);
+    const archivePath = path.join(root, ".agentera", "archive", "PLAN-legacy-copy.yaml");
+    fs.mkdirSync(path.dirname(archivePath), { recursive: true });
+    fs.writeFileSync(archivePath, bytes);
+
+    const first = capture(root, ["get", "--task", "1", "--format", "json"]);
+    const second = capture(root, ["get", "--task", "1", "--format", "json"]);
+    expect(first.rc).toBe(0);
+    expect(second.rc).toBe(0);
+    const firstPayload = JSON.parse(first.out);
+    const secondPayload = JSON.parse(second.out);
+    expect(firstPayload.entry.stable_id).toBe(secondPayload.entry.stable_id);
+    expect(firstPayload.entry.stable_id).toMatch(/^legacy-plan:[0-9a-f]{64}\/task:1$/);
+    expect(firstPayload.entry.compatibility).toBe("degraded");
+    expect(firstPayload.entry.provenance.mirrored_paths).toEqual([activePath, archivePath].sort());
+    expect(fs.readFileSync(activePath, "utf8")).toBe(bytes);
+    expect(fs.readFileSync(archivePath, "utf8")).toBe(bytes);
+  });
+
+  it("fails safely with structured ambiguity when one persisted identity names different plans", () => {
+    const root = project([task(1)]);
+    const archivePath = path.join(root, ".agentera", "archive", "PLAN-collision.yaml");
+    fs.mkdirSync(path.dirname(archivePath), { recursive: true });
+    fs.writeFileSync(archivePath, YAML.stringify({
+      header: { id: planId, title: "Different plan", status: "open", created: "2026-07-14" },
+      tasks: [task(2)],
+    }));
+
+    const result = capture(root, ["get", "--task", "1", "--format", "json"]);
+    expect(result.rc).toBe(1);
+    expect(JSON.parse(result.out)).toMatchObject({
+      status: "fail",
+      error: {
+        class: "ambiguous",
+        stable_id: planId,
+        details: { candidate_paths: [path.join(root, ".agentera", "plan.yaml"), archivePath].sort() },
+      },
+    });
+  });
+
   it("keeps help, authority, and runtime aligned on active-plan task get", () => {
     const grammar = (stateRetrievalCommands().plan_tasks as Record<string, string>).get;
     const help = printStateHelp("plan");

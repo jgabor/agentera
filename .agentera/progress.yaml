@@ -1,4 +1,37 @@
 cycles:
+  - number: 800
+    timestamp: 2026-07-14 23:34
+    type: feat
+    phase: build
+    what: Established stable plan identity through validated publication, archival,
+      and collision-aware discovery.
+    inspiration: Task 3 acceptance criteria and
+      references/artifacts/state-storage-authority.yaml.
+    discovered: The full suite initially exposed transaction.ts at 1011 lines;
+      moving create-input validation to planPublication.ts restored the
+      1000-line gate without changing behavior.
+    verified: "AC1: pnpm exec vp test run test/state/planTaskRetrieval.test.ts
+      test/state/write/stateWrite.test.ts
+      test/state/planLifecycleContract.test.ts test/lint/monolithLint.test.ts
+      passed 4 files/81 tests, including stable writer-to-archive identity and
+      active/archived provenance. AC2: the same run proved deterministic
+      read-only legacy derivation, byte-equivalent mirrored paths, and
+      structured ambiguous failure with all collision paths. AC3:
+      transition/collision/legacy fixtures passed. pnpm test passed 179
+      files/1974 tests; pnpm run typecheck and pnpm build passed; node
+      dist/bin/agentera.js check validate capability-contract --format json
+      passed 2/2."
+    next: Execute Task 4 plan list/get using this identity authority; do not alter
+      file-based archive ownership.
+    context:
+      intent: Complete Plan Task 3 by preserving identity across lifecycle transitions
+        and safely deriving legacy identity without rewriting history.
+      constraints: Preserved file archives, strict publication, crash consistency,
+        legacy bytes, package metadata, experiments, and Task 4 boundaries.
+      unknowns: None for Task 3; plan list/get remains intentionally deferred to Task 4.
+      scope: Plan schema and retrieval authority projection, writer publication,
+        archive discovery, active task collision safety, tests, changelog,
+        progress, and plan status.
   - number: 799
     timestamp: 2026-07-14 23:20
     type: fix
@@ -345,77 +378,10 @@ cycles:
       scope: packages/cli backfill parser/help/explain/tests; skills/agentera
         references/contract.md; UPGRADE.md; generated ignored CLI bundle; typed
         progress cycle
-  - number: 790
-    timestamp: 2026-07-14 14:28
-    type: fix
-    phase: build
-    what: Aligned the live migration and optional local-Git enrichment contract
-      across authority, schema, help, output, upgrade guidance, migration
-      handoff, bundle parity, and regression tests. The authority now derives
-      bounded limits, consent, revalidation, failure recovery, and traceability
-      without changing completed migration behavior.
-    inspiration: Simplified Agentera plan Task 2 and the completed simple
-      migration/enrichment behavior.
-    discovered: The runtime already enforced the requested local behavior, but
-      schema omitted the backfill command, output exposed only partial contract
-      metadata, upgrade guidance omitted the optional handoff, and the authority
-      retained stale task-ownership wording. Decision 53 and projection
-      authorities already expressed non-inference and lossless capacity
-      semantics; parity tests now protect those rules across source and bundle
-      surfaces.
-    verified: "Focused: pnpm -C packages/cli exec vp test run test/cli/help.test.ts
-      test/cli/schema.test.ts test/state/archiveAuthority.test.ts
-      test/state/simpleMigrationParity.test.ts test/state/gitBackfill.test.ts
-      test/state/legacyMigration.test.ts test/state/migrationAuthority.test.ts
-      test/state/projectionPolicy.test.ts (8 files, 98 tests passed).
-      Non-packaging boundary: pnpm -C packages/cli exec vp test run --exclude
-      test/packaging/prepack.test.ts (176 files, 1788 tests passed). Full
-      boundary: pnpm -C packages/cli test (177 files, 1792 tests passed, 5 known
-      npm 12 packaging JSON-parser failures; 1797 total). pnpm -C packages/cli
-      run typecheck passed; pnpm -C packages/cli build passed; pnpm -C
-      packages/cli run bundle:data passed. Capability build validation passed;
-      capability-contract passed with 2/2 checks; PROGRESS.md, PLAN.md,
-      DECISIONS.md, and HEALTH.md artifact validation passed. check compact
-      --format json passed with error_count=0, over_limit_count=0,
-      protected_overflow_count=0, changed_count=0; it preserved the existing
-      five progress archive-recovery refusals. Schema smoke returned status=ok,
-      gaps=0, state_git_backfill fields=18; backfill preview returned rc=0,
-      read_only=true, status=degraded, remote_contact=false, limits
-      100/500/16777216; missing-force apply returned rc=2 with invalid_request
-      and no state changed; migration preview returned rc=1, read_only=true,
-      mutation_performed=false, remote_contact=false, and
-      separate_explicit_operator_invocation. Markdownlint for UPGRADE.md passed;
-      stale-language parity passed with historical plan/progress/TODO evidence
-      excluded."
-    next: Leave simplified-plan Task 2 pending and do not evaluate or complete it.
-      Preserve archived plans, prior progress, Decision 53 satisfaction state,
-      vision, profile, completed migration behavior, version metadata, release
-      state, known npm packaging failures, and existing archive-recovery
-      caveats; do not begin Task 3 or add stronger authorization machinery.
-    context:
-      intent: Align current contracts and guidance with the completed simple migration
-        and optional enrichment behavior.
-      constraints: "Use the local-operator model: optional read-only preview, direct
-        exact-selector --apply --force, apply-time revalidation, bounded
-        100-result/500-history-unit/16-MiB local Git, HEAD/local heads/tags
-        only, no remote or custom refs or operations, immutable equality, and
-        traceable provenance. No receipt, HMAC, token, secret, expiry, ledger,
-        daemon, service, or hostile-local-actor machinery. Historical evidence
-        is exempt from live stale-language checks."
-      unknowns: The five known npm 12 packaging JSON-parser failures and five existing
-        progress archive-recovery refusals remain unchanged. Decision 53 is
-        still represented by a legacy summary, so missing or unconfirmed
-        satisfaction remains review-needed and is never inferred.
-      scope: references/artifacts/state-storage-authority.yaml; UPGRADE.md;
-        packages/cli/src/cli/commands/schema.ts; packages/cli/src/cli/help.ts;
-        packages/cli/src/cli/commands/migrate.ts;
-        packages/cli/src/state/gitBackfillAuthority.ts;
-        packages/cli/src/state/gitBackfill.ts;
-        packages/cli/src/state/gitBackfillOutput.ts;
-        packages/cli/src/state/migrationEnrichment.ts;
-        packages/cli/src/state/legacyMigration.ts; focused parity and contract
-        tests; generated packages/cli/bundle data
 archive:
+  - summary: "Cycle 790 (2026-07-14): Aligned the live migration and optional
+      local-Git enrichment contract across authority, schema, help, output,
+      upgrade..."
   - summary: "Cycle 789 (2026-07-14): Fixed both bounded-history defects in
       simplified Agentera Task 1: inventory and preview now cap the..."
   - summary: "Cycle 788 (2026-07-14): Removed speculative preview receipt security
@@ -512,16 +478,18 @@ archive:
       one crash-consistent mutation transaction."
   - summary: "Cycle 751 (2026-07-13): Corrected Cycle 750's focused-test count
       through an append-only supersession record."
-  - summary: "Cycle 750 (2026-07-13): Published immutable numbered progress,
-      decisions, and health archives with deterministic replay and orphan
-      recovery."
 omitted: true
-omitted_count: 36
+omitted_count: 37
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded

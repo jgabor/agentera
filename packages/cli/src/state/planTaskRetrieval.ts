@@ -4,13 +4,12 @@ import path from "node:path";
 import type { JsonObject, JsonValue } from "../core/jsonValue.js";
 import { canonicalRecordJson } from "./archiveDiscovery.js";
 import { StateRetrievalFailure, type StateFailureBody } from "./directRetrieval.js";
-import { deriveLegacyPlanIdentity } from "./retrievalAuthority.js";
+import { PLAN_ID } from "./planIdentity.js";
 import { discoverPlanArtifacts, planDocumentParts, type PlanArtifact } from "../cli/planArtifacts.js";
 
 const CURSOR_VERSION = 1;
 const ORDER = "task_number_asc";
 const MAX_LIST_BYTES = 32_768;
-const PLAN_ID = /^(plan:[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}|legacy-plan:[0-9a-f]{64})$/;
 
 interface CursorPayload {
   version: number;
@@ -28,6 +27,7 @@ interface LoadedPlan {
   planId: string;
   compatibility: "complete" | "degraded";
   tasks: Array<{ number: number; record: JsonObject }>;
+  provenancePaths: string[];
 }
 
 export interface PlanTaskListResponse {
@@ -50,13 +50,6 @@ export interface PlanTaskListResponse {
 
 function hash(value: unknown): string {
   return createHash("sha256").update(canonicalRecordJson(value), "utf8").digest("hex");
-}
-
-function normalizedPlan(artifact: PlanArtifact): JsonObject {
-  const parts = planDocumentParts(artifact.data);
-  const normalized: JsonObject = { ...artifact.data, header: parts.header, tasks: parts.tasks };
-  delete normalized.entries;
-  return normalized;
 }
 
 function fail(
@@ -114,16 +107,21 @@ function activePlan(activePath: string, selectedPlan: string | undefined, verb: 
   }
   const artifact = discovery.active;
   const parts = planDocumentParts(artifact.data);
-  const persisted = parts.header.id;
-  if (persisted !== undefined && (typeof persisted !== "string" || !PLAN_ID.test(persisted))) {
+  const identity = discovery.identities.find((candidate) => candidate.artifact.path === artifact.path);
+  if (!identity) {
     throw fail(1, "corrupt", "active plan header.id is not a valid plan identity", verb, {
       recovery: "Repair the persisted active-plan identity before listing or fetching its tasks.",
-      details: { path: artifact.path, plan_id: persisted ?? null },
+      details: { path: artifact.path, plan_id: parts.header.id ?? null },
     });
   }
-  const planId = typeof persisted === "string" && PLAN_ID.test(persisted)
-    ? persisted
-    : deriveLegacyPlanIdentity(canonicalRecordJson(normalizedPlan(artifact)));
+  const planId = identity.stableId;
+  if (identity.ambiguous) {
+    throw fail(1, "ambiguous", `plan identity '${planId}' resolves to different plan documents`, verb, {
+      stable_id: planId,
+      recovery: "Repair the identity collision; Agentera will not choose a plan by path, mtime, or discovery order.",
+      details: { candidate_paths: identity.provenancePaths },
+    });
+  }
   if (selectedPlan !== undefined && selectedPlan !== planId) {
     throw fail(1, "not_found", `active plan '${selectedPlan}' was not found`, verb, {
       stable_id: selectedPlan,
@@ -145,8 +143,9 @@ function activePlan(activePath: string, selectedPlan: string | undefined, verb: 
   return {
     artifact,
     planId,
-    compatibility: typeof persisted === "string" && PLAN_ID.test(persisted) ? "complete" : "degraded",
+    compatibility: identity.persisted ? "complete" : "degraded",
     tasks,
+    provenancePaths: identity.provenancePaths,
   };
 }
 
@@ -210,7 +209,13 @@ function taskEntry(plan: LoadedPlan, task: LoadedPlan["tasks"][number]): JsonObj
     task_number: task.number,
     detail_availability: "full",
     compatibility: plan.compatibility,
-    provenance: { storage: "active_plan_file", path: plan.artifact.path, plan_id: plan.planId },
+    provenance: {
+      storage: "active_plan_file",
+      path: plan.artifact.path,
+      lifecycle_position: "active",
+      plan_id: plan.planId,
+      ...(plan.provenancePaths.length > 1 ? { mirrored_paths: plan.provenancePaths } : {}),
+    },
     retrieval: { get },
     record: task.record,
   };
