@@ -1,4 +1,38 @@
 cycles:
+  - number: 797
+    timestamp: 2026-07-14 22:48
+    type: test
+    phase: build
+    what: Closed every retrieval-authority negative-test coverage gap found by the
+      first independent Task 1 evaluation.
+    inspiration: Independent Task 1 evaluation attempt 1 failure recorded in the
+      active plan.
+    discovered: The validator enforces 119 independently exercised rule cases across
+      authority, envelope, identity, grammar, selectors, failures, collections,
+      gap evidence, and archive diagnostics.
+    verified: "AC1: vp test run test/state/retrievalAuthority.test.ts -> 1 file,
+      122/122 tests; matrix covers all 10 collection fields and all 9 collection
+      IDs. AC2: same command covers six plan/task/experiment grammar rules,
+      every selector required/pattern branch, experiment identity format, and
+      experiment zero. AC3: same command proves one canonical passing authority
+      plus 119 uniquely named negative rule fixtures. Broad: pnpm -C
+      packages/cli test -> 178 files, 1962/1962 tests; pnpm -C packages/cli run
+      typecheck -> exit 0; pnpm -C packages/cli build && node
+      packages/cli/dist/bin/agentera.js check validate capability-contract
+      --format json && node packages/cli/dist/bin/agentera.js check compact ->
+      build exit 0, validation 2 passed/0 failed, compact status=pass with 0
+      errors and 0 over-limit artifacts."
+    next: Stop after recommitting Task 1; Task 2 requires a new explicit cycle.
+    context:
+      intent: Prove every enforced retrieval-authority validation rule with an
+        explicit failing contract fixture while retaining a positive canonical
+        authority case.
+      constraints: Retry Task 1 only; preserve evaluation attempt 1 and Cycle 796; do
+        not amend 54cb0c03 or implement retrieval behavior.
+      unknowns: None; the audit identified test and evidence coverage gaps rather than
+        a contract conflict.
+      scope: Retrieval-authority contract tests plus typed plan/progress closeout
+        state.
   - number: 796
     timestamp: 2026-07-14 22:37
     type: feat
@@ -442,63 +476,9 @@ cycles:
         packages/cli/test/state/archiveAuthority.test.ts;
         packages/cli/test/cli/help.test.ts; generated bundle parity; TODO.md;
         .agentera/progress.yaml
-  - number: 787
-    timestamp: 2026-07-14 11:33
-    type: fix
-    phase: build
-    what: "Closed the optional Git handoff and guard gaps from the Task 3 audit:
-      generated commands now carry exact project, artifact, and number
-      selectors; exact dry-run output carries a bounded project-local receipt
-      token; forced apply requires and validates that receipt before final HEAD
-      and candidate revalidation; and real-ref Git evidence is persisted."
-    inspiration: Retry continuation plan Task 3 after independent orchestration
-      audit failure continuation-task3-audit-1.
-    discovered: Cycle 786's 68-Git-call trace had no persisted assertion. A real
-      temporary repository fixture now persists an 18-call preview assertion
-      with command categories and forbidden-operation checks while local
-      heads/tags plus remote-tracking and custom refs are present.
-    verified: "Focused real-repository migration/backfill command: 5 files, 72 tests
-      passed. Non-packaging boundary: 175 files, 1781 tests passed. Full suite:
-      176 files, 1785 passed and exactly 5 known npm packaging JSON-parser tests
-      failed. Typecheck, build, bundle:data, capability build validation,
-      capability-contract validation, artifact progress/plan/decisions/health
-      validation, and compact passed; compact reported error_count=0,
-      over_limit_count=0, protected_overflow_count=0, changed_count=0 while
-      preserving 5 existing archive-recovery refusals. Temp CLI smoke: preview
-      complete with a 1135-byte token, apply complete with applied=1, retry
-      complete with replayed=1, and remote_contact=false for all three."
-    next: Leave Task 3 pending with failure_count 1 and do not record an evaluation
-      or completion. Preserve migration zero-Git behavior, bounded history, HEAD
-      revalidation, equality, archive idempotence, no custom refs, no remote,
-      Decision 53, projection policy, startup caveats, known npm failures, and
-      the prior plan failure record. Do not begin Task 4 or release/publication
-      work.
-    context:
-      intent: Retry Agentera continuation Task 3 after the independent optional Git
-        handoff, preview-guard, and evidence audit failure without evaluating or
-        completing Task 3.
-      constraints: Migration remains non-Git and non-backfill by default; Git
-        enrichment is explicit, exact-selector, dry-run-first, local-only, and
-        non-blocking when unavailable or declined. Apply requires --apply
-        --force and the matching caller-carried preview token; no remote state,
-        fetch, network, tag, push, or publication is allowed.
-      unknowns: Task 3 remains pending for independent evaluation; failure_count
-        remains 1. The 5 known npm packaging JSON-parser failures, 5 existing
-        archive-recovery refusals, malformed formatting fixture caveat, and
-        stale or missing startup caveats remain unchanged.
-      scope: packages/cli/src/state/gitBackfillReceipt.ts;
-        packages/cli/src/state/gitBackfill.ts;
-        packages/cli/src/state/gitBackfillOutput.ts;
-        packages/cli/src/state/migrationEnrichment.ts;
-        packages/cli/src/state/legacyMigration.ts;
-        packages/cli/src/cli/commands/backfill.ts; packages/cli/src/cli/help.ts;
-        references/artifacts/state-storage-authority.yaml;
-        packages/cli/test/state/gitBackfill.test.ts;
-        packages/cli/test/state/legacyMigration.test.ts;
-        packages/cli/test/state/archiveAuthority.test.ts;
-        packages/cli/test/fixtures/git-backfill-real-repository-evidence.json;
-        .agentera/plan.yaml
 archive:
+  - summary: "Cycle 787 (2026-07-14): Closed the optional Git handoff and guard gaps
+      from the Task 3 audit: generated commands..."
   - summary: "Cycle 786 (2026-07-14): Added explicit non-executing optional
       Git-enrichment handoff from completed local migration: exact stable
       artifact:number selectors now..."
@@ -596,16 +576,18 @@ archive:
   - summary: "Cycle 748 (2026-07-13): Published the state-storage authority for
       numbered progress, decisions, and health archives, fixed project-root
       paths, decision..."
-  - summary: "Cycle 747 (2026-07-13): Removed the fixed full-plan task-count ceiling
-      and added coherent lifecycle-boundary guidance with nine-task publication
-      coverage."
 omitted: true
-omitted_count: 33
+omitted_count: 34
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded
