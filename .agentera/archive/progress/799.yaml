@@ -1,0 +1,19 @@
+schemaVersion: agentera.stateArchiveEntry.v1
+artifact_id: progress
+entry_number: 799
+record:
+  number: 799
+  timestamp: 2026-07-14 23:20
+  type: fix
+  phase: build
+  what: Aligned plan-task help with the optional active-plan selector and added help-authority-runtime regression coverage.
+  inspiration: Independent Task 2 acceptance audit attempt 1.
+  discovered: The runtime and authority already defaulted task get to the active plan; only one help sentence contradicted the executable contract.
+  verified: "AC1: `pnpm -C packages/cli exec vp test run planTaskRetrieval` returned Test Files 1 passed (1), Tests 8 passed (8); temporary fixtures covered 120-task ascending order, authority maximum, stable omission counts, cursor continuation, append exclusion, and changed-snapshot failure. AC2: the same exact command returned 8/8 and covered full get without --plan plus structured not_found. AC3: the same exact command returned 8/8 and covered bounded text/JSON omissions with continuation/get recovery and legacy plan projections. Help/schema: `pnpm -C packages/cli exec vp test run help schema retrievalAuthority planTaskRetrieval` returned 6 files and 165 tests passed. Runtime: `node packages/cli/dist/bin/agentera.js state plan --help` printed optional [--plan] grammar and active-plan default; `node packages/cli/dist/bin/agentera.js state plan tasks get --task 2 --format json` returned status=ok, active=true, task_number=2; `node packages/cli/dist/bin/agentera.js state plan tasks get --task 999 --format json; test $? -eq 1` returned class=not_found and confirmed exit 1. `pnpm -C packages/cli run typecheck`, `pnpm -C packages/cli build`, and `node packages/cli/dist/bin/agentera.js check validate capability-contract --format json` passed; validation reported 2 passed, 0 failed."
+  next: Leave Task 2 complete for independent reevaluation; do not start Task 3.
+  context:
+    intent: Correct only the two findings from Task 2 evaluation attempt 1 while preserving Cycle 798 and evaluation history.
+    constraints: Retry Task 2 only; do not alter Cycle 798, evaluation attempt 1, Task 1 history, retrieval behavior, archives, experiments, or prior commit 2aaba648.
+    unknowns: None; the failed audit identified one help contradiction and insufficiently reproducible progress evidence.
+    scope: One help sentence, one cross-surface regression test, typed progress Cycle 799, and typed Task 2 status.
+record_sha256: a6a8a1df8a5ebce3c2082db23659b6413725598162ffba0e8345cbbbc559e424

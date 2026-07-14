@@ -208,7 +208,7 @@ export function printStateHelp(sub?: string): string {
       `       agentera state plan {${verbsForArtifact("plan").join(",")}} [write flags]`,
       "",
       "Plan task list/get reads the active file-based plan; plan archive retrieval lands in later plan tasks.",
-      "Task list defaults to the active plan; task get requires --plan and a positive --task.",
+      "Task list and task get default to the active plan; --plan is optional and task get requires a positive --task.",
       "Legacy plan identity collisions return a structured ambiguous error.",
       "",
       "Discover writes: agentera state plan explain --format json",

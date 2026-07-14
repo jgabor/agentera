@@ -79,6 +79,16 @@ tasks:
       - GIVEN a large active plan WHEN tasks are listed THEN declared task-number order, limits, opaque cursors, and omission counts are stable.
       - GIVEN a task number WHEN fetched THEN one full task or a structured not-found result is returned.
       - GIVEN text or JSON projection limits WHEN tasks are omitted THEN a working continuation or exact command is exposed, with passing and failing tests.
+    evaluation:
+      attempt_count: 1
+      failure_count: 1
+      last_verdict: fail
+      last_failure_evidence: Help incorrectly requires --plan for task get; Cycle 798 lacks exact per-criterion reproducible evidence.
+      provenance:
+        attempt_id: task-2-audit-1-20260714
+        source: independent Task 2 acceptance audit
+        recorded_at: 2026-07-14 23:18
+        writer_command: agentera state plan record-evaluation
   - number: 3
     name: Establish stable plan identity
     depends_on:

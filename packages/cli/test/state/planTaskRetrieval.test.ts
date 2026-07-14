@@ -6,6 +6,8 @@ import YAML from "yaml";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { main } from "../../src/cli/dispatch/index.js";
+import { printStateHelp } from "../../src/cli/help.js";
+import { stateRetrievalCommands } from "../../src/state/retrievalAuthority.js";
 
 const roots: string[] = [];
 const planId = "plan:123e4567-e89b-42d3-a456-426614174000";
@@ -70,6 +72,25 @@ afterEach(() => {
 });
 
 describe("active plan task retrieval", () => {
+  it("keeps help, authority, and runtime aligned on active-plan task get", () => {
+    const grammar = (stateRetrievalCommands().plan_tasks as Record<string, string>).get;
+    const help = printStateHelp("plan");
+    expect(grammar).toBe("agentera state plan tasks get [--plan PLAN_ID] --task N --format json");
+    expect(help).toContain(grammar);
+    expect(help).toContain("Task list and task get default to the active plan; --plan is optional");
+    expect(help).not.toContain("task get requires --plan");
+
+    const root = project([task(1)]);
+    const result = capture(root, ["get", "--task", "1", "--format", "json"]);
+    expect(result.rc).toBe(0);
+    expect(JSON.parse(result.out)).toMatchObject({
+      command: "state plan tasks get",
+      status: "ok",
+      source: { active: true, plan_id: planId },
+      entry: { task_number: 1 },
+    });
+  });
+
   it("bounds a large active plan at the authority maximum without changing declared order", () => {
     const root = project(Array.from({ length: 120 }, (_, index) => task(120 - index)));
     const result = capture(root, ["list", "--limit", "100", "--format", "json"]);

@@ -1,4 +1,43 @@
 cycles:
+  - number: 799
+    timestamp: 2026-07-14 23:20
+    type: fix
+    phase: build
+    what: Aligned plan-task help with the optional active-plan selector and added
+      help-authority-runtime regression coverage.
+    inspiration: Independent Task 2 acceptance audit attempt 1.
+    discovered: The runtime and authority already defaulted task get to the active
+      plan; only one help sentence contradicted the executable contract.
+    verified: "AC1: `pnpm -C packages/cli exec vp test run planTaskRetrieval`
+      returned Test Files 1 passed (1), Tests 8 passed (8); temporary fixtures
+      covered 120-task ascending order, authority maximum, stable omission
+      counts, cursor continuation, append exclusion, and changed-snapshot
+      failure. AC2: the same exact command returned 8/8 and covered full get
+      without --plan plus structured not_found. AC3: the same exact command
+      returned 8/8 and covered bounded text/JSON omissions with continuation/get
+      recovery and legacy plan projections. Help/schema: `pnpm -C packages/cli
+      exec vp test run help schema retrievalAuthority planTaskRetrieval`
+      returned 6 files and 165 tests passed. Runtime: `node
+      packages/cli/dist/bin/agentera.js state plan --help` printed optional
+      [--plan] grammar and active-plan default; `node
+      packages/cli/dist/bin/agentera.js state plan tasks get --task 2 --format
+      json` returned status=ok, active=true, task_number=2; `node
+      packages/cli/dist/bin/agentera.js state plan tasks get --task 999 --format
+      json; test $? -eq 1` returned class=not_found and confirmed exit 1. `pnpm
+      -C packages/cli run typecheck`, `pnpm -C packages/cli build`, and `node
+      packages/cli/dist/bin/agentera.js check validate capability-contract
+      --format json` passed; validation reported 2 passed, 0 failed."
+    next: Leave Task 2 complete for independent reevaluation; do not start Task 3.
+    context:
+      intent: Correct only the two findings from Task 2 evaluation attempt 1 while
+        preserving Cycle 798 and evaluation history.
+      constraints: Retry Task 2 only; do not alter Cycle 798, evaluation attempt 1,
+        Task 1 history, retrieval behavior, archives, experiments, or prior
+        commit 2aaba648.
+      unknowns: None; the failed audit identified one help contradiction and
+        insufficiently reproducible progress evidence.
+      scope: One help sentence, one cross-surface regression test, typed progress
+        Cycle 799, and typed Task 2 status.
   - number: 798
     timestamp: 2026-07-14 23:07
     type: feat
@@ -376,74 +415,9 @@ cycles:
         packages/cli/src/state/migrationEnrichment.ts;
         packages/cli/src/state/legacyMigration.ts; focused parity and contract
         tests; generated packages/cli/bundle data
-  - number: 789
-    timestamp: 2026-07-14 13:46
-    type: fix
-    phase: build
-    what: "Fixed both bounded-history defects in simplified Agentera Task 1:
-      inventory and preview now cap the final combined row list at the authority
-      maximum of 100 with truthful omission metadata and exact-selector
-      continuation guidance, while reachable and rewritten-history collection
-      consumes one shared 500 commit/probe budget. Added adversarial combined
-      reachable and rewritten fixtures, and corrected Cycle 788's help/schema
-      evidence from 24 to the exact current count of 25 without changing prior
-      cycle bytes."
-    inspiration: Simplified Agentera plan Task 1 and independent audit
-      simplified-task1-audit-1.
-    discovered: A 100-target rewritten-history fixture produces 200 deterministic
-      pre-bound rows when base and rewritten provenance rows are combined; the
-      final authority cap must be applied after that expansion. A 499 reachable
-      plus two reflog candidate fixture proves one shared budget processes only
-      500 total commit/probe units, classifies the first rewritten occurrence,
-      and does not probe the second.
-    verified: "Focused command: pnpm -C packages/cli exec vp test run
-      test/state/gitBackfill.test.ts test/state/legacyMigration.test.ts
-      test/state/archiveAuthority.test.ts (3 files, 41 tests passed; includes
-      direct apply, replay, and real-ref no-remote coverage; adversarial result
-      bound is final entries=100, omitted_count=100,
-      omission_reason=result_limit, deterministic repeat; history budget is 499
-      reachable + 1 rewritten = commits_used 500 of 500, reflog --max-count 1,
-      second rewritten hash not probed, no remote/custom operations).
-      Help/schema: pnpm -C packages/cli exec vp test run test/cli/help.test.ts
-      test/cli/schema.test.ts (2 files, 25 tests passed; this supersedes Cycle
-      788's inaccurate 24 claim only). Non-packaging boundary: pnpm -C
-      packages/cli exec vp test run --exclude test/packaging/prepack.test.ts
-      (175 files, 1784 tests passed). Full boundary: pnpm -C packages/cli test
-      (176 files, 1788 passed, 5 known npm 12 packaging JSON-parser failures;
-      1793 total). pnpm -C packages/cli run typecheck passed; pnpm -C
-      packages/cli build passed; pnpm -C packages/cli run bundle:data passed.
-      node packages/cli/dist/bin/agentera.js check validate capability build
-      passed; capability-contract --format json passed with 2/2 checks; artifact
-      validation for progress, plan, decisions, and health passed. node
-      packages/cli/dist/bin/agentera.js check compact --format json passed with
-      error_count=0, over_limit_count=0, protected_overflow_count=0,
-      changed_count=0 and 5 existing archive-recovery refusals."
-    next: Leave simplified-plan Task 1 pending with its one recorded failure; do not
-      evaluate or complete it and do not begin Task 2. Preserve immutable Cycles
-      787 and 788, Decision 53, projection policy, startup caveats, malformed
-      fixture caveat, known npm packaging failures, archive refusals, direct
-      apply/replay, no remote/custom refs, and the no-receipt local-operator
-      model. Do not add security machinery, audit, release, publication, tag,
-      push, vision, profile, or satisfaction changes.
-    context:
-      intent: Retry simplified Agentera Task 1 after the bounded-history audit
-        failure, preserving the simple optional local-Git enrichment model and
-        immutable prior evidence.
-      constraints: No receipt, HMAC, token, secret, expiry, ledger, daemon, service,
-        remote access, hostile-local-actor defense, or speculative compatibility
-        machinery. Fold this typed progress append and the existing one-failure
-        .agentera/plan.yaml state into the substantive commit.
-      unknowns: The five known npm 12 packaging parser failures, five archive-recovery
-        refusals, malformed formatting fixture caveat, and stale or missing
-        startup caveats remain unchanged.
-      scope: packages/cli/src/state/gitBackfill.ts;
-        packages/cli/src/state/gitBackfillHistory.ts;
-        packages/cli/src/state/gitBackfillOutput.ts;
-        packages/cli/test/state/gitBackfill.test.ts;
-        packages/cli/test/state/archiveAuthority.test.ts;
-        references/artifacts/state-storage-authority.yaml; .agentera/plan.yaml;
-        .agentera/progress.yaml
 archive:
+  - summary: "Cycle 789 (2026-07-14): Fixed both bounded-history defects in
+      simplified Agentera Task 1: inventory and preview now cap the..."
   - summary: "Cycle 788 (2026-07-14): Removed speculative preview receipt security
       from optional Git enrichment: --dry-run remains read-only and optional,
       while..."
@@ -541,15 +515,18 @@ archive:
   - summary: "Cycle 750 (2026-07-13): Published immutable numbered progress,
       decisions, and health archives with deterministic replay and orphan
       recovery."
-  - summary: "Cycle 749 (2026-07-13): Delivered read-only numbered archive discovery
-      and entry validation for progress, decisions, and health."
 omitted: true
-omitted_count: 35
+omitted_count: 36
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded
