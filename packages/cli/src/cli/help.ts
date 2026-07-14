@@ -5,6 +5,7 @@ import {
   migrationSelectorFlag,
   stateMigrationContract,
 } from "../state/migrationAuthority.js";
+import { stateGitBackfillContract } from "../state/gitBackfillAuthority.js";
 
 const TOP_LEVEL = [
   "prime",
@@ -161,26 +162,37 @@ export function printStateHelp(sub?: string): string {
     ].join("\n");
   }
   if (sub === "backfill") {
+    const backfill = stateGitBackfillContract();
+    const historyMiB = backfill.maximumHistoryBytes / (1024 * 1024);
+    const historyLimit = Number.isInteger(historyMiB)
+      ? `${backfill.maximumHistoryBytes} bytes (${historyMiB} MiB)`
+      : `${backfill.maximumHistoryBytes} bytes`;
     return [
       "usage: agentera state backfill [-h] [--project PATH] [--artifact ARTIFACT]",
       "                              [--number N] [--commit HASH] [--path PATH] [--limit N]",
-       "                              [--dry-run|--apply --force] --format {text,json,yaml}",
+      "                              [--dry-run|--apply --force] --format {text,json,yaml}",
       "",
-      "Inventory exact legacy records from reachable local Git history.",
-       "Default inventory and --dry-run are read-only; exact --apply --force publishes one immutable archive record after fresh revalidation.",
-      "No remote, remote-tracking ref, custom ref, projection, or archive overwrite is allowed.",
+      `Inventory exact ${backfill.supportedArtifacts.join(", ")} records from bounded local Git history.`,
+      "Default inventory and --dry-run are read-only; preview is optional.",
+      "Direct --apply --force publishes one immutable archive record after fresh checks.",
+      `Revalidation: ${backfill.guarantees.applyRevalidation}`,
+      `Result limit: ${backfill.maximumLimit}; history limit: ${backfill.maximumCommits} units and ${historyLimit}.`,
+      `Reads only ${backfill.reachableRefs.join(", ")}; excludes ${backfill.excludedRefs.join(", ")}.`,
+      `Failure statuses: ${backfill.statusValues.join(", ")}; ${backfill.guarantees.failureProjectionRule.replaceAll("_", " ")}.`,
+      `Recovery: ${backfill.recovery}`,
+      `Traceability: ${backfill.traceabilityFields.join(", ")}.`,
       "",
       "options:",
       "  -h, --help            show this help message and exit",
       "  --project PATH        Project directory to inspect",
-      "  --artifact ARTIFACT   progress, decisions, or health",
+      `  --artifact ARTIFACT   ${backfill.supportedArtifacts.join(", ")}`,
       "  --number N            Positive legacy entry number; requires --artifact",
       "  --commit HASH         Pin one reachable provenance occurrence",
       "  --path PATH           Pin one historical projection path",
-      "  --limit N             Bound returned entries (maximum 100)",
+      `  --limit N             Bound returned entries (maximum ${backfill.maximumLimit})`,
       "  --dry-run             Preview exact unique immutable archive bytes without writing",
       "  --apply               Request publication; requires --force",
-       "  --force               Confirm the explicit immutable archive publication",
+      "  --force               Confirm the explicit immutable archive publication",
       "  --format FORMAT       Output format: text, json, or yaml",
     ].join("\n");
   }

@@ -35,6 +35,10 @@ import {
   migrationSelectorNames,
   stateMigrationContract,
 } from "../../state/migrationAuthority.js";
+import {
+  gitBackfillContractProjection,
+  stateGitBackfillContract,
+} from "../../state/gitBackfillAuthority.js";
 
 /** Port of scripts/agentera cmd_schema / _build_schema_payload. */
 
@@ -120,6 +124,7 @@ const COMMAND_DESCRIPTIONS: Record<string, string> = {
   upgrade:
     "Preview or apply app migration plus explicitly selected Agentera-owned runtime lifecycle repair.",
   migrate: "Publish the bounded local legacy-state inventory and mutation authority.",
+  backfill: "Optionally inspect or publish one immutable archive record from bounded local Git history.",
   doctor: "Check Agentera CLI, app, and runtime status.",
   describe: "Deprecated alias for schema.",
 };
@@ -270,6 +275,7 @@ function migrationFilterNames(contract: ReturnType<typeof stateMigrationContract
 
 function describeCommands(
   migrationContract: ReturnType<typeof stateMigrationContract>,
+  backfillContract: ReturnType<typeof stateGitBackfillContract>,
 ): JsonObject[] {
   const migrationName = migrationContract.namespace.split(/\s+/).at(-1) as string;
   const commands: JsonObject[] = [
@@ -315,6 +321,13 @@ function describeCommands(
       migrationContract.resultRequiredFields,
       migrationContract.formats,
       migrationFilterNames(migrationContract),
+    ),
+    commandDescription(
+      "backfill",
+      "state_git_backfill",
+      backfillContract.responseRequiredFields,
+      backfillContract.formats,
+      ["project", "artifact", "number", "commit", "path", "limit", "dry_run", "apply", "force"],
     ),
     commandDescription("doctor", "self_check"),
   );
@@ -426,6 +439,7 @@ export function buildSchemaPayload(command = "schema"): JsonObject {
   const lifecycleAuthority = loadLifecycleAuthority();
   const retiredRuntimeCleanup = loadRetiredRuntimeCleanupContract();
   const migrationAuthority = stateMigrationContract();
+  const backfillAuthority = stateGitBackfillContract();
 
   const slashAliases = contractSection(contract, "slash_route_aliases", gaps);
   const doctorContract = contractSection(contract, "doctor", gaps);
@@ -447,12 +461,13 @@ export function buildSchemaPayload(command = "schema"): JsonObject {
       schema_count: artifactSchemas.length,
       app_model: appModelPayload(appModel),
     },
-    commands: describeCommands(migrationAuthority),
+    commands: describeCommands(migrationAuthority, backfillAuthority),
     state_writer: stateWriterContract(),
     state_migration: {
       authority: migrationAuthority.authorityPath,
       ...migrationAuthority.migration,
     } as JsonObject,
+    state_backfill: gitBackfillContractProjection(backfillAuthority) as unknown as JsonObject,
     runtime_lifecycle: {
       authority: lifecycleAuthority.sourcePath,
       snapshot_schema_version: LIFECYCLE_SNAPSHOT_SCHEMA_VERSION,

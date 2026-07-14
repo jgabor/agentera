@@ -1,10 +1,17 @@
+import { resolveSourceRoot } from "../core/sourceRoot.js";
+import {
+  gitBackfillContractProjection,
+  stateGitBackfillContract,
+} from "./gitBackfillAuthority.js";
+
 const BACKFILL_COMMAND = "agentera state backfill";
 
 function shellQuote(value: string): string {
   return `'${value.replaceAll("'", "'\\''")}'`;
 }
 
-export function migrationEnrichmentContract(): Record<string, unknown> {
+export function migrationEnrichmentContract(sourceRoot: string = resolveSourceRoot()): Record<string, unknown> {
+  const backfill = stateGitBackfillContract(sourceRoot);
   return {
     requested: false,
     command: BACKFILL_COMMAND,
@@ -12,8 +19,8 @@ export function migrationEnrichmentContract(): Record<string, unknown> {
     dry_run: `${BACKFILL_COMMAND} --project PROJECT --artifact ARTIFACT --number N --dry-run --format json`,
     apply: `${BACKFILL_COMMAND} --project PROJECT --artifact ARTIFACT --number N --apply --force --format json`,
     remote_contact: false,
-    recovery:
-      "Git enrichment is optional. Apply exact selectors directly when wanted; if Git is unavailable or declined, local migration remains complete and this can be retried later.",
+    contract: gitBackfillContractProjection(backfill),
+    recovery: backfill.recovery,
   };
 }
 
@@ -21,9 +28,11 @@ export function migrationEnrichmentFollowUp(
   project: string,
   artifactId: string,
   entryNumber: number,
+  sourceRoot: string = resolveSourceRoot(),
 ): Record<string, unknown> {
   const stableId = `${artifactId}:${entryNumber}`;
   const selectedProject = shellQuote(project);
+  const backfill = stateGitBackfillContract(sourceRoot);
   return {
     kind: "optional_git_enrichment",
     requested: false,
@@ -32,7 +41,6 @@ export function migrationEnrichmentFollowUp(
     dry_run: `${BACKFILL_COMMAND} --project ${selectedProject} --artifact ${artifactId} --number ${entryNumber} --dry-run --format json`,
     apply: `${BACKFILL_COMMAND} --project ${selectedProject} --artifact ${artifactId} --number ${entryNumber} --apply --force --format json`,
     remote_contact: false,
-    recovery:
-      "Review the optional dry-run if useful. Git unavailability or a refusal is non-blocking; retry the same selectors later.",
+    recovery: backfill.recovery,
   };
 }

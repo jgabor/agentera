@@ -29,6 +29,22 @@ describe("cli schema", () => {
     expect(["ok", "incomplete"]).toContain(payload.status);
     expect(Array.isArray(payload.commands)).toBe(true);
     expect(payload.routine_state_commands).toContain("plan");
+    expect(payload.state_backfill).toMatchObject({
+      authority: "references/artifacts/state-storage-authority.yaml",
+      command: expect.stringContaining("agentera state backfill"),
+      supported_artifacts: ["progress", "decisions", "health"],
+      limits: { results: 100, history_units: 500, history_bytes: 16777216 },
+      reachable_refs: ["HEAD", "refs/heads", "refs/tags"],
+      excluded_refs: ["refs/remotes", "custom_refs"],
+      consent: { preview: "optional_read_only", apply: "--apply --force" },
+    });
+    const backfill = (payload.commands as Array<{ name: string; kind: string; structured_fields: string[] }>).find(
+      (command) => command.name === "backfill",
+    );
+    expect(backfill).toMatchObject({
+      kind: "state_git_backfill",
+      structured_fields: expect.arrayContaining(["scan", "entries", "source_contract"]),
+    });
     expect(payload.doctor.signal_kinds).toContain("missing_marker");
     expect(Array.isArray(payload.artifact_schemas)).toBe(true);
     expect(payload.artifact_locations.schemaVersion).toBe("agentera.artifact_locations.v1");

@@ -191,6 +191,42 @@ not select an Agentera runtime identity or limit lifecycle diagnosis. Use
 combined with `--only`. Development-channel dry-runs without `--runtime` still
 observe all active lifecycle runtimes.
 
+## Legacy state and optional Git enrichment
+
+Project-state migration and historical Git enrichment are separate local
+operations. Migration does not read Git, contact a remote, or remove its source
+files. Its default inventory and `--dry-run` are read-only; apply requires the
+exact artifact and entry selectors with `--apply --force`:
+
+```bash
+npx -y agentera@next state migrate --project "$PWD" --artifact progress --number N --dry-run --format json
+npx -y agentera@next state migrate --project "$PWD" --artifact progress --number N --apply --force --format json
+```
+
+Git enrichment is optional. A preview is useful but not required before direct
+apply. Apply revalidates the selected project, current `HEAD`, allowed-ref
+reachability, candidate provenance and content, and the immutable archive target
+immediately before publication:
+
+```bash
+npx -y agentera@next state backfill --project "$PWD" --artifact progress --number N --dry-run --format json
+npx -y agentera@next state backfill --project "$PWD" --artifact progress --number N --apply --force --format json
+```
+
+The backfill contract is bounded to 100 result rows, 500 history units, and
+16 MiB of Git output. It inspects only `HEAD`, local heads, and tags; remote and
+custom refs and operations are excluded. Returned provenance keeps the commit,
+path, blob ID, stable entry ID, content hash, and reachability so a result can
+be traced without adding commit fields to the archive record.
+
+`complete`, `degraded`, `blocked`, and `unavailable` are explicit outcomes.
+Changed, shallow, rewritten, ambiguous, corrupt, missing, bounded, unavailable,
+and immutable-conflict results are reported rather than guessed. Resolve the
+reported local condition and retry the same selectors; refused operations leave
+active projections and existing archives unchanged, and identical publication
+converges as a replay. The full command, limits, failure, recovery, and
+traceability contract is `references/artifacts/state-storage-authority.yaml`.
+
 ## Verification and recovery
 
 After apply:

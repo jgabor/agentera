@@ -431,6 +431,11 @@ api:
     supported_artifacts: [progress, decisions, health]
     reachable_refs: [HEAD, refs/heads, refs/tags]
     excluded_refs: [refs/remotes, custom_refs]
+    apply_requires: [--apply, --force, --project PATH, --artifact ARTIFACT, --number N]
+    status_values: [complete, degraded, blocked, unavailable]
+    response:
+      required_fields: [command, mode, status, project, read_only, remote_contact, head, scan, counts, active_projections_unchanged, active_projection_hashes, omitted, omitted_count, omission_reason, continuation, entries, diagnostics, source_contract]
+      entry_fields: [entry_id, artifact_id, entry_number, commit, path, blob_id, content_hash, ambiguity_reason, eligible, reachable, provenance, operation, refusal]
     modes:
       inventory: >-
         The default read-only mode reports up to maximum_limit final rows after
@@ -483,6 +488,14 @@ api:
       continuation: >-
         No cursor is issued. Use --artifact ARTIFACT --number N to retrieve an
         omitted entry because --limit cannot exceed maximum_limit (100).
+    traceability:
+      provenance_fields: [commit, path, blob_id, entry_id, content_hash, reachable]
+      archive_record_forbids: [commit, commit_hash, git_commit, git_ref]
+    recovery: >-
+      Resolve the reported ambiguity, unavailable Git state, changed candidate,
+      or immutable conflict and retry the same exact selectors. A refused
+      operation leaves active projections and existing archives unchanged;
+      identical publication is an idempotent replay.
   migrate:
     namespace: agentera state migrate
     command: >-
@@ -495,10 +508,10 @@ api:
       infer missing records, contact Git, contact a remote, or remove legacy
       source files.
     implementation_boundary: >-
-      Task 1 owns bounded, project-local, read-only candidate inventory and
-      parser/help/schema discovery. Task 2 owns all archive publication,
-      backup creation, projection writes, and mutation/application. Inventory
-      never reads Git or writes archives, backups, or projections.
+      The runtime owns bounded, project-local candidate inventory and the
+      explicit archive, backup, projection, and mutation flow described here.
+      Inventory never reads Git or writes archives, backups, or projections;
+      migration remains independent of the optional Git backfill surface.
     formats: [text, json, yaml]
     default_limit: 20
     maximum_limit: 100
@@ -547,14 +560,13 @@ api:
         writes: forbidden
         output: exact proposed archive, backup, and projection operations only for addressable candidates
       apply:
-        selector: --apply --force
-        read_only: false
-        mutation_intent: explicit_apply_and_force
-        selectors_required: [--artifact, --number]
-        mutation: >-
-          Task 3 may publish only after revalidating the selected candidate,
-          project boundary, backup identity, and immutable archive identity.
-          This contract alone never performs that mutation.
+         selector: --apply --force
+         read_only: false
+         mutation_intent: explicit_apply_and_force
+         selectors_required: [--artifact, --number]
+         mutation: >-
+           The runtime publishes only after revalidating the selected candidate,
+           project boundary, backup identity, and immutable archive identity.
       invalid_combinations:
         - flags: [--apply, --dry-run]
           failure_class: invalid_selector

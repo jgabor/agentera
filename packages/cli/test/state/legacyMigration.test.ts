@@ -403,6 +403,15 @@ describe("bounded non-Git legacy migration", () => {
             requested: false,
             selection: "separate_explicit_operator_invocation",
             remote_contact: false,
+            contract: {
+              limits: { results: 100, history_units: 500, history_bytes: 16777216 },
+              consent: { preview: "optional_read_only", apply: "--apply --force" },
+              reachable_refs: ["HEAD", "refs/heads", "refs/tags"],
+              excluded_refs: ["refs/remotes", "custom_refs"],
+              traceability: {
+                provenance_fields: ["commit", "path", "blob_id", "entry_id", "content_hash", "reachable"],
+              },
+            },
           },
         },
       });

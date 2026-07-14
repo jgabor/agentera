@@ -6,6 +6,7 @@ import {
   discoverNumberedArchives,
   numberedArchiveContract,
 } from "./archiveDiscovery.js";
+import { gitBackfillContractProjection } from "./gitBackfillAuthority.js";
 import { serializeNumberedArchive } from "./archivePublication.js";
 import type {
   BackfillReason,
@@ -236,14 +237,11 @@ export function buildResponse(
     entries,
     diagnostics,
     source_contract: {
+      ...gitBackfillContractProjection(scan.contract),
       syntax: scan.contract.command,
-      authority: "references/artifacts/state-storage-authority.yaml",
       read_only: mode !== "apply",
       remote_contact: false,
-      reachable_refs: scan.contract.reachableRefs,
-      excluded_refs: scan.contract.excludedRefs,
-      apply_requires: ["--apply", "--force", "--project PATH", "--artifact ARTIFACT", "--number N"],
-      archive_record_forbids: ["commit", "commit_hash", "git_commit", "git_ref"],
+      archive_record_forbids: scan.contract.archiveRecordForbids,
     },
   };
 }

@@ -112,7 +112,28 @@ describe("Git legacy backfill", () => {
     expect(inventory.entries[0]?.content_hash).toMatch(/^[0-9a-f]{64}$/);
 
     const preview = previewGitBackfill(root, { artifact: "progress", number: 1 }, { sourceRoot, runGit: realGitRunner });
-    expect(preview).toMatchObject({ mode: "preview", status: "complete", read_only: true });
+    expect(preview).toMatchObject({
+      mode: "preview",
+      status: "complete",
+      read_only: true,
+      scan: { commits_limit: 500, history_bytes_limit: 16777216 },
+      source_contract: {
+        supported_artifacts: ["progress", "decisions", "health"],
+        limits: { results: 100, history_units: 500, history_bytes: 16777216 },
+        reachable_refs: ["HEAD", "refs/heads", "refs/tags"],
+        excluded_refs: ["refs/remotes", "custom_refs"],
+        consent: { preview: "optional_read_only", apply: "--apply --force" },
+        revalidation: expect.stringContaining("immutable-target"),
+        ambiguity_reasons: expect.arrayContaining(["changed_head", "candidate_changed", "immutable_conflict"]),
+        recovery: {
+          operation: expect.stringContaining("same exact selectors"),
+          retry: "identical_publication_is_idempotent",
+        },
+        traceability: {
+          provenance_fields: ["commit", "path", "blob_id", "entry_id", "content_hash", "reachable"],
+        },
+      },
+    });
     expect(preview.entries[0]?.proposed_archive_bytes).toContain("schemaVersion: agentera.stateArchiveEntry.v1");
     expect(fs.existsSync(path.join(root, ".agentera/archive/progress/1.yaml"))).toBe(false);
     expect(readProjection(root)).toBe(projectionBefore);

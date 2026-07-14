@@ -709,6 +709,7 @@ export function deferredResponse(
     operations?: Array<Record<string, unknown>>;
     mutationPerformed?: boolean;
   } = {},
+  sourceRoot: string = resolveSourceRoot(),
 ): Record<string, unknown> {
   const mode = args.apply ? "apply" : args.dryRun ? "preview" : "inventory";
   const projected = projectedEntries(entries, args, contract);
@@ -749,7 +750,7 @@ export function deferredResponse(
       inventory: contract.inventory,
       git_required: false,
       remote_contact: "forbidden",
-      optional_git_enrichment: migrationEnrichmentContract(),
+      optional_git_enrichment: migrationEnrichmentContract(sourceRoot),
     },
   };
   const response = Object.fromEntries(
@@ -861,6 +862,7 @@ export function runMigrate(argv: string[], io: Io, sourceRootOverride?: string):
       operations: applyResult?.operations ?? inspection.operations,
       mutationPerformed: applyResult?.mutationPerformed ?? false,
     },
+    sourceRoot,
   );
   const out = io.out ?? ((text: string) => process.stdout.write(text));
   if (format === "text") renderText(response, out);

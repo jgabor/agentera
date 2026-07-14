@@ -643,7 +643,7 @@ export function inspectLegacyMigration(
           inventory.project,
           stateCurrentProjectionPath(inventory.project, args.artifact as ArtifactId, sourceRoot),
         ),
-        follow_up: migrationEnrichmentFollowUp(inventory.project, args.artifact, args.number),
+        follow_up: migrationEnrichmentFollowUp(inventory.project, args.artifact, args.number, sourceRoot),
       });
     } catch (error) {
       diagnostics.push({
@@ -725,7 +725,7 @@ export function applyLegacyMigration(
       ),
       backup: relativeTarget(inspection.project, backup),
       projection: relativeTarget(inspection.project, projection.target),
-      follow_up: migrationEnrichmentFollowUp(inspection.project, args.artifact, args.number),
+      follow_up: migrationEnrichmentFollowUp(inspection.project, args.artifact, args.number, options.sourceRoot),
     };
     withStateMutation(
       inspection.project,

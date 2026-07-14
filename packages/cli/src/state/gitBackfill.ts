@@ -236,7 +236,35 @@ export interface GitBackfillResponse {
     remote_contact: false;
     reachable_refs: string[];
     excluded_refs: string[];
+    supported_artifacts: string[];
+    limits: {
+      results: number;
+      history_units: number;
+      history_bytes: number;
+    };
+    status_values: string[];
+    ambiguity_reasons: string[];
+    response: {
+      required_fields: string[];
+      entry_fields: string[];
+    };
     apply_requires: string[];
+    consent: {
+      inventory: string;
+      preview: string;
+      apply: string;
+    };
+    revalidation: string;
+    failure_projection: string;
+    recovery: {
+      operation: string;
+      retry: string;
+      omission: string;
+    };
+    traceability: {
+      provenance_fields: string[];
+      archive_record_forbids: string[];
+    };
     archive_record_forbids: string[];
   };
 }
