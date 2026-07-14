@@ -71,6 +71,16 @@ tasks:
     acceptance:
       - GIVEN the declared local-operator threat model WHEN audit evaluates contract ownership, bounded I/O, integrity, retries, compatibility, durability, and evidence THEN cited findings cover requested behavior and do not require defenses against an actor controlling the process or repository.
       - GIVEN predecessor failures and known caveats WHEN audit reports THEN any open P0 or P1 blocks completion; only non-blocking caveats may carry forward, and no new product requirement is invented.
+    evaluation:
+      attempt_count: 1
+      failure_count: 1
+      last_verdict: fail
+      last_failure_evidence: Health Audit 30 declares 10 informational findings but contains 11 finding records; product requirements pass, but the immutable audit aggregate is inaccurate.
+      provenance:
+        attempt_id: simplified-task3-audit-1
+        source: "Independent orchestration evaluator: Health Audit 30 aggregate evidence audit"
+        recorded_at: 2026-07-14 16:13
+        writer_command: agentera state plan record-evaluation
   - number: 4
     name: Prepare the next development package
     depends_on:
