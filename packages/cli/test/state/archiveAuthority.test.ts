@@ -126,7 +126,7 @@ describe("state storage authority", () => {
       writes_independent: true,
     });
     expect(api.backfill).toMatchObject({
-      command: expect.stringContaining("--preview-token TOKEN"),
+      command: expect.stringContaining("--apply --force"),
       default_limit: 100,
       maximum_limit: 100,
       maximum_commits: 500,
@@ -135,11 +135,14 @@ describe("state storage authority", () => {
     });
     expect(api.backfill.guarantees).toMatchObject({
       apply_requires_force: true,
-      apply_requires_preview_token: true,
+      preview_optional: true,
       remote_contact: "forbidden",
       projection_writes: "forbidden",
       immutable_conflicts: "refuse_without_overwrite",
     });
+    expect(api.backfill.command).not.toContain("preview-token");
+    expect(api.backfill.guarantees).not.toHaveProperty("apply_requires_preview_token");
+    expect(api.backfill.guarantees).not.toHaveProperty("preview_token");
   });
 
   it("rejects an API that loses snapshot stability or has an invalid limit", () => {

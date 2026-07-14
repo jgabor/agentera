@@ -230,7 +230,7 @@ export function buildResponse(
       remote_contact: false,
       reachable_refs: scan.contract.reachableRefs,
       excluded_refs: scan.contract.excludedRefs,
-      apply_requires: ["--apply", "--force", "--project PATH", "--artifact ARTIFACT", "--number N", "--preview-token TOKEN"],
+      apply_requires: ["--apply", "--force", "--project PATH", "--artifact ARTIFACT", "--number N"],
       archive_record_forbids: ["commit", "commit_hash", "git_commit", "git_ref"],
     },
   };

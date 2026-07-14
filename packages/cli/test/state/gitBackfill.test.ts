@@ -3,7 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 
 import { dumpYamlMapping } from "../../src/core/yaml.js";
 import { runBackfill } from "../../src/cli/commands/backfill.js";
@@ -14,7 +14,6 @@ import {
   inspectGitBackfill,
   previewGitBackfill,
 } from "../../src/state/gitBackfill.js";
-import { PREVIEW_TOKEN_TTL_MS } from "../../src/state/gitBackfillReceipt.js";
 
 const sourceRoot = path.resolve(import.meta.dirname, "../../../..");
 const gitEvidence = JSON.parse(
@@ -73,16 +72,6 @@ function addRefFixtures(root: string): void {
   git(root, ["tag", "fixture-tag"]);
   git(root, ["update-ref", "refs/remotes/origin/fixture", "HEAD"]);
   git(root, ["update-ref", "refs/custom/fixture", "HEAD"]);
-}
-
-function previewToken(root: string, number: number, runGit = realGitRunner): string {
-  const preview = previewGitBackfill(
-    root,
-    { artifact: "progress", number },
-    { sourceRoot, runGit },
-  );
-  expect(preview.preview_token).toEqual(expect.any(String));
-  return preview.preview_token as string;
 }
 
 function readProjection(root: string): string {
@@ -175,64 +164,38 @@ describe("Git legacy backfill", () => {
     )).toBe(true);
   });
 
-  it("requires an unexpired matching receipt and refuses tampering, cross-project, and changed candidates", () => {
-    const root = project("agentera-git-backfill-receipt-");
+  it("applies directly with force and revalidates changed candidates", () => {
+    const root = project("agentera-git-backfill-direct-apply-");
     init(root);
-    writeProgress(root, [progress(16, "Receipt guard")]);
-    commit(root, "receipt guard");
-    const token = previewToken(root, 16);
-    const missing = applyGitBackfill(root, { artifact: "progress", number: 16 }, { sourceRoot, runGit: realGitRunner });
-    expect(missing).toMatchObject({ status: "blocked", preview_receipt: { status: "required" } });
-    expect(fs.existsSync(path.join(root, ".agentera/archive/progress/16.yaml"))).toBe(false);
+    writeProgress(root, [progress(16, "Direct apply")]);
+    commit(root, "direct apply");
 
-    const tampered = `${token.slice(0, -1)}${token.endsWith("A") ? "B" : "A"}`;
-    const tamperedResult = applyGitBackfill(
-      root,
-      { artifact: "progress", number: 16, previewToken: tampered },
-      { sourceRoot, runGit: realGitRunner },
-    );
-    expect(tamperedResult).toMatchObject({ status: "blocked", preview_receipt: { status: "invalid" } });
+    const direct = applyGitBackfill(root, { artifact: "progress", number: 16 }, { sourceRoot, runGit: realGitRunner });
+    expect(direct).toMatchObject({ mode: "apply", status: "complete", counts: { applied: 1 } });
+    expect(direct).not.toHaveProperty("preview_token");
+    expect(direct).not.toHaveProperty("preview_receipt");
 
-    const other = project("agentera-git-backfill-receipt-other-");
-    init(other);
-    writeProgress(other, [progress(16, "Receipt guard")]);
-    commit(other, "receipt guard");
-    const crossProject = applyGitBackfill(
-      other,
-      { artifact: "progress", number: 16, previewToken: token },
-      { sourceRoot, runGit: realGitRunner },
-    );
-    expect(crossProject).toMatchObject({ status: "blocked", preview_receipt: { status: "project_mismatch" } });
-
+    const changed = project("agentera-git-backfill-changed-candidate-");
+    init(changed);
+    writeProgress(changed, [progress(17, "Original candidate")]);
+    commit(changed, "changed candidate");
     let catFiles = 0;
     const changedCandidateRunner = (args: string[], cwd: string) => {
       const result = realGitRunner(args, cwd);
       if (args[0] === "cat-file" && args[1] === "-p") {
         catFiles += 1;
-        if (catFiles === 2) return { ...result, stdout: dumpYamlMapping({ cycles: [progress(16, "Changed candidate")] }) };
+        if (catFiles === 2) return { ...result, stdout: dumpYamlMapping({ cycles: [progress(17, "Changed candidate")] }) };
       }
       return result;
     };
     const changedCandidate = applyGitBackfill(
-      root,
-      { artifact: "progress", number: 16, previewToken: token },
+      changed,
+      { artifact: "progress", number: 17 },
       { sourceRoot, runGit: changedCandidateRunner },
     );
-    expect(changedCandidate).toMatchObject({ status: "blocked", preview_receipt: { status: "candidate_changed" } });
-    expect(fs.existsSync(path.join(root, ".agentera/archive/progress/16.yaml"))).toBe(false);
-
-    vi.useFakeTimers();
-    try {
-      vi.setSystemTime(Date.now() + PREVIEW_TOKEN_TTL_MS + 1);
-      const expired = applyGitBackfill(
-        root,
-        { artifact: "progress", number: 16, previewToken: token },
-        { sourceRoot, runGit: realGitRunner },
-      );
-      expect(expired).toMatchObject({ status: "blocked", preview_receipt: { status: "expired" } });
-    } finally {
-      vi.useRealTimers();
-    }
+    expect(changedCandidate).toMatchObject({ status: "blocked", entries: [{ ambiguity_reason: "candidate_changed" }] });
+    expect(changedCandidate).not.toHaveProperty("preview_receipt");
+    expect(fs.existsSync(path.join(changed, ".agentera/archive/progress/17.yaml"))).toBe(false);
   });
 
   it("applies only after explicit intent and converges to replay without projection changes", () => {
@@ -244,7 +207,7 @@ describe("Git legacy backfill", () => {
 
     const first = applyGitBackfill(
       root,
-      { artifact: "progress", number: 2, previewToken: previewToken(root, 2) },
+      { artifact: "progress", number: 2 },
       { sourceRoot, runGit: realGitRunner },
     );
     expect(first.status).toBe("complete");
@@ -254,7 +217,7 @@ describe("Git legacy backfill", () => {
 
     const retry = applyGitBackfill(
       root,
-      { artifact: "progress", number: 2, previewToken: previewToken(root, 2) },
+      { artifact: "progress", number: 2 },
       { sourceRoot, runGit: realGitRunner },
     );
     expect(retry.status).toBe("complete");
@@ -426,7 +389,7 @@ describe("Git legacy backfill", () => {
     };
     const result = applyGitBackfill(
       root,
-      { artifact: "progress", number: 14, previewToken: previewToken(root, 14) },
+      { artifact: "progress", number: 14 },
       { sourceRoot, runGit: interruptedRunner },
     );
     expect(result).toMatchObject({ status: "blocked", remote_contact: false });
@@ -501,7 +464,7 @@ describe("Git legacy backfill", () => {
     const projectionBefore = readProjection(root);
     const conflict = applyGitBackfill(
       root,
-      { artifact: "progress", number: 9, previewToken: previewToken(root, 9) },
+      { artifact: "progress", number: 9 },
       { sourceRoot, runGit: realGitRunner },
     );
     expect(conflict.status).toBe("blocked");
@@ -524,7 +487,7 @@ describe("Git legacy backfill", () => {
     };
     const changedResult = applyGitBackfill(
       changed,
-      { artifact: "progress", number: 10, previewToken: previewToken(changed, 10) },
+      { artifact: "progress", number: 10 },
       { sourceRoot, runGit: changedHeadRunner },
     );
     expect(changedResult.status).toBe("blocked");
@@ -532,7 +495,7 @@ describe("Git legacy backfill", () => {
     expect(fs.existsSync(path.join(changed, ".agentera/archive/progress/10.yaml"))).toBe(false);
   });
 
-  it("exposes the authority namespace and rejects implicit apply", () => {
+  it("exposes the authority namespace and requires explicit force", () => {
     let out = "";
     const rc = main(["node", "agentera", "state", "backfill", "--apply", "--format", "json"], {
       out: (text) => (out += text),
@@ -548,18 +511,24 @@ describe("Git legacy backfill", () => {
       },
     });
 
-    const root = project("agentera-git-backfill-no-receipt-");
+    const root = project("agentera-git-backfill-cli-direct-apply-");
+    init(root);
+    writeProgress(root, [progress(1, "CLI direct apply")]);
+    commit(root, "CLI direct apply");
     let forcedOut = "";
     const forcedRc = runBackfill(
       ["--project", root, "--artifact", "progress", "--number", "1", "--apply", "--force", "--format", "json"],
       { out: (text) => (forcedOut += text), err: () => undefined },
       sourceRoot,
     );
-    expect(forcedRc).toBe(2);
+    expect(forcedRc).toBe(0);
     expect(JSON.parse(forcedOut)).toMatchObject({
-      schemaVersion: "agentera.invalidInputEnvelope.v2",
-      error: { message: "--apply requires a matching prior --dry-run --preview-token" },
+      mode: "apply",
+      status: "complete",
+      counts: { applied: 1 },
     });
+    expect(JSON.parse(forcedOut)).not.toHaveProperty("preview_token");
+    expect(JSON.parse(forcedOut)).not.toHaveProperty("preview_receipt");
   });
 
   it("fails before parsing or scanning when the authority cannot be loaded", () => {

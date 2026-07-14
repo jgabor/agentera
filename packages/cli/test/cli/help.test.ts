@@ -63,6 +63,14 @@ describe("cli help", () => {
     expect(decisions).toContain("agentera state decisions explain --verb VERB --format json");
   });
 
+  it("documents optional preview and direct forced backfill without receipt flags", () => {
+    const backfill = printStateHelp("backfill");
+    expect(backfill).toContain("[--dry-run|--apply --force]");
+    expect(backfill).toContain("exact --apply --force publishes one immutable archive record after fresh revalidation");
+    expect(backfill).not.toContain("preview-token");
+    expect(backfill).not.toContain("receipt");
+  });
+
   it("routes top-level --help through main", () => {
     const { rc, out } = capture((io) => main(["node", "agentera", "--help"], io));
     expect(rc).toBe(0);

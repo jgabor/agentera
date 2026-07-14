@@ -164,10 +164,10 @@ export function printStateHelp(sub?: string): string {
     return [
       "usage: agentera state backfill [-h] [--project PATH] [--artifact ARTIFACT]",
       "                              [--number N] [--commit HASH] [--path PATH] [--limit N]",
-       "                              [--dry-run|--apply --force --preview-token TOKEN] --format {text,json,yaml}",
+       "                              [--dry-run|--apply --force] --format {text,json,yaml}",
       "",
       "Inventory exact legacy records from reachable local Git history.",
-       "Default inventory and --dry-run are read-only; --apply --force with a matching prior --preview-token publishes one immutable archive record.",
+       "Default inventory and --dry-run are read-only; exact --apply --force publishes one immutable archive record after fresh revalidation.",
       "No remote, remote-tracking ref, custom ref, projection, or archive overwrite is allowed.",
       "",
       "options:",
@@ -181,7 +181,6 @@ export function printStateHelp(sub?: string): string {
       "  --dry-run             Preview exact unique immutable archive bytes without writing",
       "  --apply               Request publication; requires --force",
        "  --force               Confirm the explicit immutable archive publication",
-       "  --preview-token TOKEN Receipt emitted by the exact prior dry-run; required for apply",
       "  --format FORMAT       Output format: text, json, or yaml",
     ].join("\n");
   }
