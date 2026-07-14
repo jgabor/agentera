@@ -26,6 +26,7 @@ export interface CompactionStatus {
   archive_count: number | null;
   total_count: number | null;
   over_limit_count: number | null;
+  pending_summarization_count?: number | null;
   reason: string;
   protected_overflow_count: number | null;
   exists: boolean;

@@ -127,3 +127,37 @@ CONVENTION:
       feat/v3 @ <hash>` or dual-branch hash reconciliation; git history
       is the archaeology source. Fold the Resolved move into the
       implementation commit — no follow-up hash-backfill commit.
+  8:
+    id: TC8
+    field: single_resolved_section
+    level: required
+    description: >-
+      Exactly one `## ✓ Resolved` section is permitted. Two or more
+      `## ✓ Resolved` sections hide the trailing entries from parsing
+      (which processes only the first) and from the compaction budget
+      gate. Validation (`validateTodoResolvedPlacement`) and compaction
+      (status + apply) refuse with an actionable diagnostic when more
+      than one is present; merge the duplicates into a single section
+      before compacting. See TC6 for placement and TC9 for recovery.
+  9:
+    id: TC9
+    field: bounded_queue_not_lossless_archive
+    level: required
+    description: >-
+      TODO.md is a bounded human-facing queue, not a lossless numbered
+      archive. It is excluded from the lossless numbered-archive model
+      that governs progress, decisions, and health (those preserve
+      verified numbered archives; TODO does not). Older resolved
+      entries and their detail bodies may be summarized to one-line or
+      removed entirely to stay within the 10/40/50 retention cap;
+      removal is destructive in the working tree. The first ten
+      resolved rows are the recent/full-detail tier even when they have
+      no indented body; rows 11 through 50 are the summary tier; rows
+      beyond 50 are dropped. Git history is the designated archaeology
+      source for dropped resolved entries, and only for previously
+      committed content: inspect prior versions with
+      `git log -p -- :/TODO.md` (the `:/` pathspec is project-root-safe
+      regardless of the current working directory). Non-Git projects
+      have no historical recovery for dropped entries. Compaction
+      diagnostics MUST report removed entries as `dropped` and MUST NOT
+      describe TODO compaction as a lossless projection.

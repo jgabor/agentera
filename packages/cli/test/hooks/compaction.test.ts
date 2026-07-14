@@ -53,12 +53,17 @@ function writeProgressYaml(dir: string, cycleCount: number, archiveCount = 0): s
 }
 
 describe("checkCompaction (repo-state fixtures)", () => {
-  it("flags 46 full Resolved entries as 16 over the full-entry limit", () => {
+  it("flags 56 Resolved entries as 6 over the 10/40/50 total limit", () => {
     const root = useFixtureProject("todo-resolved-over-limit");
     fixtureRoots.push(root);
     const op = checkCompaction(root).find((o) => o.status.artifact === "todo#Resolved");
     expect(op?.action).toBe("over_limit");
-    expect(op?.status.over_limit_count).toBe(16);
+    // Positional tiering per TC9: first min(N,10)=10 are full, rest are oneline.
+    // over_limit_count = max(0, max(46-40,0), max(56-50,0)) = 6.
+    expect(op?.status.over_limit_count).toBe(6);
+    expect(op?.status.active_count).toBe(10);
+    expect(op?.status.archive_count).toBe(46);
+    expect(op?.status.total_count).toBe(56);
   });
 
   it("reports ok for all compactable artifacts within uniform_10_40_50", () => {

@@ -8,22 +8,18 @@
 import { parseTodoMarkdownListItem } from "../../cli/todoMarkdown.js";
 import {
   classifyTodoSectionHeading,
+  countTodoResolvedSectionHeadings,
   isLegacyStrikethroughTodoLine,
 } from "../compaction/parse.js";
 import { isMapping, isEmptyRequired } from "./schema.js";
 
-const TODO_RESOLVED_HEADING_RE = /^##\s*(?:✓\s+)?Resolved\s*$/im;
-
 function validateTodoResolvedPlacement(content: string, name: string): string[] {
   const violations: string[] = [];
   let section: "severity" | "resolved" | "other" = "other";
-  let hasResolvedHeading = TODO_RESOLVED_HEADING_RE.test(content);
-  let hasResolvedItems = false;
 
   for (const line of content.split(/\r\n|\r|\n/)) {
     const kind = classifyTodoSectionHeading(line);
     if (kind === "resolved") {
-      hasResolvedHeading = true;
       section = "resolved";
       continue;
     }
@@ -41,7 +37,6 @@ function validateTodoResolvedPlacement(content: string, name: string): string[] 
 
     const parsed = parseTodoMarkdownListItem(trimmed);
     if (parsed?.status === "resolved") {
-      hasResolvedItems = true;
       if (section === "severity") {
         violations.push(
           `${name}: resolved checkbox item must live under '## ✓ Resolved', not in severity bands`,
@@ -51,7 +46,6 @@ function validateTodoResolvedPlacement(content: string, name: string): string[] 
     }
 
     if (isLegacyStrikethroughTodoLine(trimmed)) {
-      hasResolvedItems = true;
       violations.push(
         `${name}: legacy strikethrough resolved items are not allowed; use '- [x]' under '## ✓ Resolved'`,
       );
@@ -59,8 +53,15 @@ function validateTodoResolvedPlacement(content: string, name: string): string[] 
     }
   }
 
-  if (hasResolvedItems && !hasResolvedHeading) {
-    violations.push(`${name}: missing '## ✓ Resolved' section for resolved items`);
+  // Exactly one section keeps parsing and compaction unambiguous, including
+  // before the first item is resolved. See todo.yaml TC8.
+  const resolvedHeadingCount = countTodoResolvedSectionHeadings(content);
+  if (resolvedHeadingCount === 0) {
+    violations.push(`${name}: missing required '## ✓ Resolved' section`);
+  } else if (resolvedHeadingCount > 1) {
+    violations.push(
+      `${name}: ${resolvedHeadingCount} '## ✓ Resolved' sections found; merge into exactly one (duplicate sections hide entries from the compaction gate and parsing processes only the first).`,
+    );
   }
 
   return violations;

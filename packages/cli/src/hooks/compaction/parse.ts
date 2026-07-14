@@ -10,13 +10,29 @@
  */
 
 import { parseTodoMarkdownListItem } from "../../cli/todoMarkdown.js";
-import { ArtifactSpec, SPECS, escapeRe } from "./dryRun.js";
+import { MAX_FULL_ENTRIES, MAX_TOTAL_ENTRIES } from "../common.js";
+import { ArtifactSpec, SPECS, escapeRe, formatTodoOneline } from "./dryRun.js";
 
 import type { JsonObject } from "../../core/jsonValue.js";
 type TodoSectionKind = "severity" | "resolved" | "other";
 
 const SEVERITY_HEADING_RE = /^##\s*(⇶|⇉|→|⇢)\s/m;
 const STRIKETHROUGH_ITEM_RE = /^(\s*)-\s+~~(.+?)~~\s*(.*)$/;
+// Shared case-insensitive resolved-heading matcher. Duplicate detection
+// (countTodoResolvedSectionHeadings), validation (markdown.ts), classification
+// (isTodoResolvedSectionHeading), and extraction (extractResolvedSection) all
+// use these so they accept the same variants: `## ✓ Resolved`, `## Resolved`,
+// `## resolved`, `## RESOLVED`. Formerly extractResolvedSection used `\s+`
+// (requiring a space after ##) without the `i` flag, silently rejecting
+// case variants and `##Resolved`; now unified.
+const TODO_RESOLVED_HEADING_RE = /^##\s*(?:✓\s+)?Resolved\s*$/im;
+const TODO_RESOLVED_HEADING_GLOBAL_RE = /^##\s*(?:✓\s+)?Resolved\s*$/gim;
+// TODO.md is a bounded human-facing queue, not a lossless numbered archive:
+// dropped resolved entries are recoverable only via project history (Git),
+// and only if previously committed. Surfaced in compaction diagnostics
+// alongside the `dropped` count.
+export const TODO_DROPPED_RECOVERY_GUIDANCE =
+  "dropped resolved entries are not retained in a lossless archive; recover previously committed content via Git: `git log -p -- :/TODO.md` (non-Git projects have no historical recovery)";
 
 export function splitArchive(text: string, archiveHeading: string): [string, string] {
   if (!archiveHeading) return [text, ""];
@@ -74,7 +90,7 @@ export function parseOnelineEntries(text: string, spec: ArtifactSpec): JsonObjec
 }
 
 export function extractResolvedSection(text: string): [number, number, string] {
-  const m = /^##\s+(?:✓\s+)?Resolved\s*$/m.exec(text);
+  const m = TODO_RESOLVED_HEADING_RE.exec(text);
   if (!m) return [-1, -1, ""];
   const bodyStart = m.index + m[0].length + 1;
   const nextSection = /^##\s/m.exec(text.slice(bodyStart));
@@ -125,7 +141,18 @@ export function isTodoSeveritySectionHeading(line: string): boolean {
 }
 
 export function isTodoResolvedSectionHeading(line: string): boolean {
-  return /^##\s*(?:✓\s+)?Resolved\s*$/im.test(line.trim());
+  return TODO_RESOLVED_HEADING_RE.test(line.trim());
+}
+
+/**
+ * Count `## ✓ Resolved` section headings in a TODO.md. A well-formed queue has
+ * exactly one; duplicates make parsing silently process only the first and
+ * hide the remaining entries from the compaction budget. Callers (validation,
+ * compaction status, compaction apply) refuse when this returns a value > 1.
+ */
+export function countTodoResolvedSectionHeadings(text: string): number {
+  const matches = text.match(TODO_RESOLVED_HEADING_GLOBAL_RE);
+  return matches ? matches.length : 0;
 }
 
 export function classifyTodoSectionHeading(line: string): TodoSectionKind {
@@ -171,10 +198,46 @@ export function countTodoResolvedEntries(content: string): { full: number; oneli
   const spec = SPECS["todo-resolved"];
   const resolvedSection = parseTodoResolved(content, spec);
   const misplaced = countTodoResolvedInSeverityBands(content);
+  const total = resolvedSection.length + misplaced;
+  // Positional tiering per TC9: the first ten resolved rows are the
+  // recent/full-detail tier even when they have no indented body; rows
+  // 11+ are the summary tier. This keeps status reporting consistent
+  // with how compactTodoEntries assigns tiers (positional, not
+  // body-presence-based), so a compacted file with 10 header-only rows
+  // + 40 summaries reports 10/40 (not 0/50).
   return {
-    full: resolvedSection.filter((e) => e.kind === "full").length,
-    oneline: resolvedSection.filter((e) => e.kind === "oneline").length + misplaced,
+    full: Math.min(total, MAX_FULL_ENTRIES),
+    oneline: Math.max(0, total - MAX_FULL_ENTRIES),
   };
+}
+
+/**
+ * Count resolved entries in positions 11-50 that need ≤15-word summarization
+ * but are not yet summaries. An entry needs summarization when:
+ *   - it has an indented body (should be stripped), or
+ *   - its kind is "full" (should be demoted to the summary tier), or
+ *   - its header differs from what `formatTodoOneline` would produce (i.e.
+ *     it is a long verbatim header, not a ≤15-word summary).
+ *
+ * Returns 0 when the Resolved section is already compacted (idempotent).
+ * `check compact` uses this to detect in-budget (≤50) TODOs that still need
+ * a formatting rewrite, so `--mode fix` is triggered before entries overflow.
+ */
+export function countTodoPendingSummarization(content: string): number {
+  const spec = SPECS["todo-resolved"];
+  const entries = parseTodoResolved(content, spec);
+  if (entries.length <= MAX_FULL_ENTRIES) return 0;
+  const summaryTier = entries.slice(MAX_FULL_ENTRIES, MAX_TOTAL_ENTRIES);
+  let count = 0;
+  for (const entry of summaryTier) {
+    if (entry.body as string) { count++; continue; }
+    if (entry.kind === "full") { count++; continue; }
+    // kind=oneline, no body: check if header matches the summary format
+    // by forcing kind="full" through formatTodoOneline (truncation path).
+    const expected = formatTodoOneline({ ...entry, kind: "full" });
+    if ((entry.header as string).trim() !== expected.trim()) count++;
+  }
+  return count;
 }
 
 /**

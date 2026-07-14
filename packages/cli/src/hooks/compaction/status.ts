@@ -21,7 +21,13 @@ import {
 } from "./retention.js";
 import { CompactResult, CompactionOperation, CompactionStatus } from "./types.js";
 import { compactFile, compactYamlBytes, compactYamlFile } from "./apply.js";
-import { countTodoResolvedEntries, parseEntries } from "./parse.js";
+import {
+  countTodoResolvedEntries,
+  countTodoResolvedSectionHeadings,
+  countTodoPendingSummarization,
+  parseEntries,
+  TODO_DROPPED_RECOVERY_GUIDANCE,
+} from "./parse.js";
 import { YAML_SPEC_BY_ARTIFACT } from "./dryRun.js";
 import {
   InjectedMutationFailure,
@@ -145,8 +151,53 @@ export function computeCompactionStatus(projectRoot: string): CompactionStatus[]
 
   const todoPath = paths.todo;
   if (fs.existsSync(todoPath)) {
-    const counts = countTodoResolvedEntries(fs.readFileSync(todoPath, "utf8"));
-    statuses.push(countStatus("todo#Resolved", todoPath, counts.full, counts.oneline));
+    const todoText = fs.readFileSync(todoPath, "utf8");
+    const headingCount = countTodoResolvedSectionHeadings(todoText);
+    if (headingCount > 1) {
+      // Refuse rather than silently process only the first `## ✓ Resolved`
+      // section: duplicates hide the trailing entries from the budget and
+      // from fix-mode migration. TODO has no lossless numbered archive, so
+      // recovery once entries are dropped is Git-only.
+      statuses.push({
+        artifact: "todo#Resolved",
+        path: todoPath,
+        classification: "error",
+        active_count: null,
+        archive_count: null,
+        total_count: null,
+        over_limit_count: null,
+        reason:
+          `TODO.md has ${headingCount} '## ✓ Resolved' sections; merge into exactly one before compacting. ` +
+          `Compaction drops oldest resolved entries and is destructive (no lossless archive); ` +
+          TODO_DROPPED_RECOVERY_GUIDANCE,
+        protected_overflow_count: 0,
+        exists: true,
+      });
+    } else if (headingCount === 0) {
+      statuses.push({
+        artifact: "todo#Resolved",
+        path: todoPath,
+        classification: "error",
+        active_count: null,
+        archive_count: null,
+        total_count: null,
+        over_limit_count: null,
+        reason: "TODO.md has no required '## ✓ Resolved' section; add exactly one before compacting.",
+        protected_overflow_count: 0,
+        exists: true,
+      });
+    } else {
+      const counts = countTodoResolvedEntries(todoText);
+      const status = countStatus("todo#Resolved", todoPath, counts.full, counts.oneline);
+      // Detect in-budget (≤50) TODOs that still need a formatting rewrite:
+      // rows 11-50 that are long verbatim headers instead of ≤15-word
+      // summaries. This triggers `--mode fix` before entries overflow.
+      const pendingSummarization = countTodoPendingSummarization(todoText);
+      if (pendingSummarization > 0) {
+        status.pending_summarization_count = pendingSummarization;
+      }
+      statuses.push(status);
+    }
   } else {
     statuses.push(missingStatus("todo#Resolved", todoPath, "compactable"));
   }
@@ -271,7 +322,7 @@ function operationForStatus(status: CompactionStatus, mode: string): CompactionO
       "projection exceeds display defaults; archive history remains lossless",
     );
   }
-  if (!status.over_limit_count) {
+  if (!status.over_limit_count && !status.pending_summarization_count) {
     return base(
       "ok",
       status.projection_state === "within_defaults"
@@ -279,9 +330,18 @@ function operationForStatus(status: CompactionStatus, mode: string): CompactionO
         : "within uniform_10_40_50 limits",
     );
   }
+  if (status.over_limit_count) {
+    return base(
+      mode === "check" ? "over_limit" : "pending_fix",
+      `over uniform_10_40_50 limit by ${status.over_limit_count}`,
+    );
+  }
+  // pending_summarization_count > 0 but within budget: rows 11-50 need
+  // ≤15-word summary formatting, not entry removal.
+  const n = status.pending_summarization_count as number;
   return base(
-    mode === "check" ? "over_limit" : "pending_fix",
-    `over uniform_10_40_50 limit by ${status.over_limit_count}`,
+    mode === "check" ? "formatting" : "pending_formatting",
+    `${n} resolved entr${n === 1 ? "y" : "ies"} in summary tier need ≤15-word summarization`,
   );
 }
 
@@ -296,7 +356,11 @@ function fixCompactionUnlocked(
   const operations: CompactionOperation[] = [];
   for (const status of computeCompactionStatus(projectRoot)) {
     const baseline = operationForStatus(status, "fix");
-   if (baseline.action !== "pending_fix" && baseline.action !== "pending_projection") {
+   if (
+     baseline.action !== "pending_fix" &&
+     baseline.action !== "pending_projection" &&
+     baseline.action !== "pending_formatting"
+   ) {
       operations.push(baseline);
       continue;
     }

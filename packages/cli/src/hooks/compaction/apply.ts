@@ -30,7 +30,7 @@ import {
   yamlRecentFullAndOlder,
   yamlSortEntries,
 } from "./retention.js";
-import { normalizeTodoResolvedLayout, parseEntries, parseTodoResolved, extractResolvedSection } from "./parse.js";
+import { normalizeTodoResolvedLayout, parseEntries, parseTodoResolved, extractResolvedSection, countTodoResolvedSectionHeadings, countTodoPendingSummarization, TODO_DROPPED_RECOVERY_GUIDANCE } from "./parse.js";
 
 import type { JsonObject } from "../../core/jsonValue.js";
 import { hydrateDecisionRecords } from "../../state/decisionOverlay.js";
@@ -288,23 +288,31 @@ export function compactEntries(
 }
 
 function compactTodoEntries(entries: JsonObject[]): JsonObject[] {
+  // Positional tiering per TC9: the first ten resolved rows are the
+  // recent/full-detail tier even when they have no indented body; rows
+  // 11-50 are the summary tier; rows beyond 50 are dropped. Using
+  // position (not body presence) ensures: (1) a TODO with 55 bodyless
+  // one-liners retains 50 (10 promoted to full + 40 summary), not 40;
+  // (2) a second compaction is idempotent because a compacted file
+  // with 0 body + 50 headers still reports total=50 (not oneline=50>40).
   const result: JsonObject[] = [];
-  let fullCount = 0;
-  let onelineCount = 0;
-  for (const entry of entries) {
-    if (entry.kind === "full" && fullCount < MAX_FULL_ENTRIES) {
-      result.push(entry);
-      fullCount += 1;
-      continue;
+  for (let i = 0; i < entries.length; i++) {
+    if (i < MAX_FULL_ENTRIES) {
+      // First 10: full-detail tier — preserve body if present, promote
+      // kind to "full" so the writer keeps the header (not formatOneline).
+      result.push(entries[i].kind === "oneline"
+        ? { ...entries[i], kind: "full" }
+        : entries[i]);
+    } else if (i < MAX_TOTAL_ENTRIES) {
+      // Items 11-50: summary tier — force ≤15-word summary formatting
+      // by passing kind="full" to formatTodoOneline so it goes through
+      // the truncation path (strip metadata + truncateWords). This must
+      // NOT use kind="oneline" (passthrough), which preserves long
+      // verbatim headers unchanged.
+      const summary = formatTodoOneline({ ...entries[i], kind: "full" });
+      result.push({ header: summary, body: "", kind: "oneline" });
     }
-    if (onelineCount < MAX_ONELINE_ENTRIES) {
-      if (entry.kind === "full") {
-        result.push({ header: formatTodoOneline(entry), body: "", kind: "oneline" });
-      } else {
-        result.push(entry);
-      }
-      onelineCount += 1;
-    }
+    // Items 51+: dropped entirely.
   }
   return result;
 }
@@ -359,20 +367,42 @@ function extractHeaderPrefix(text: string, spec: any): string {
 function compactTodoResolved(p: string): CompactResult {
   const spec = SPECS["todo-resolved"];
   let text = fs.readFileSync(p, "utf8");
+  // Enforce exactly one `## ✓ Resolved` heading. Multiple headings hide
+  // trailing entries from parsing; zero headings leave placement ambiguous.
+  // The check-mode status path emits the error before reaching here; this
+  // guard protects direct callers (e.g. validate-artifact auto-compact).
+  const headingCount = countTodoResolvedSectionHeadings(text);
+  if (headingCount > 1) {
+    throw new Error(
+      `TODO.md has ${headingCount} '## ✓ Resolved' sections; merge into exactly one before compacting. ` +
+        `Compaction drops oldest resolved entries and is destructive (no lossless archive); ` +
+        TODO_DROPPED_RECOVERY_GUIDANCE,
+    );
+  }
+  if (headingCount === 0) {
+    throw new Error("TODO.md has no required '## ✓ Resolved' section; add exactly one before compacting.");
+  }
+  // headingCount === 1: normalize (migrate misplaced items into existing heading)
   const normalized = normalizeTodoResolvedLayout(text);
   if (normalized.changed) {
     fs.writeFileSync(p, normalized.text);
     text = normalized.text;
   }
-  const [start, end] = extractResolvedSection(text);
+  const [start, end, currentBody] = extractResolvedSection(text);
   if (start < 0) return { full_before: 0, oneline_before: 0, full_after: 0, oneline_after: 0, dropped: 0, changed: normalized.changed };
 
   const entries = parseTodoResolved(text, spec);
-  const fullBefore = entries.filter((e) => e.kind === "full").length;
-  const onelineBefore = entries.filter((e) => e.kind === "oneline").length;
   const totalBefore = entries.length;
+  // Positional tiering per TC9 (consistent with countTodoResolvedEntries and
+  // compactTodoEntries): first min(N,10) = full tier, rest = oneline tier.
+  const fullBefore = Math.min(totalBefore, MAX_FULL_ENTRIES);
+  const onelineBefore = Math.max(0, totalBefore - MAX_FULL_ENTRIES);
 
-  if (totalBefore <= MAX_TOTAL_ENTRIES && fullBefore <= MAX_FULL_ENTRIES && onelineBefore <= MAX_ONELINE_ENTRIES) {
+  // Skip the rewrite when within budget AND no rows 11-50 need reformatting.
+  // This preserves idempotency: a fully-compacted file (10 verbatim + 40
+  // summaries) reports pendingSummarization=0 and returns changed=false.
+  const pendingSummarization = countTodoPendingSummarization(text);
+  if (totalBefore <= MAX_TOTAL_ENTRIES && pendingSummarization === 0) {
     return {
       full_before: fullBefore,
       oneline_before: onelineBefore,
@@ -383,6 +413,9 @@ function compactTodoResolved(p: string): CompactResult {
     };
   }
 
+  // Either total > 50 (entries to drop) or pendingSummarization > 0 (rows
+  // 11-50 need ≤15-word summary formatting). Run compactTodoEntries and
+  // rewrite the Resolved section body.
   const compacted = compactTodoEntries(entries);
   const fullAfter = compacted.filter((e) => e.kind === "full").length;
   const onelineAfter = compacted.filter((e) => e.kind === "oneline").length;
@@ -407,7 +440,12 @@ function compactTodoResolved(p: string): CompactResult {
     full_after: fullAfter,
     oneline_after: onelineAfter,
     dropped,
-    changed: normalized.changed || true,
+    // TODO has no lossless numbered archive: dropped resolved entries are
+    // recoverable only via project history (Git), and only if previously
+    // committed. Surface this honestly in the JSON result rather than
+    // implying a lossless projection.
+    ...(dropped > 0 ? { omission_reason: TODO_DROPPED_RECOVERY_GUIDANCE } : {}),
+    changed: true,
   };
 }
 

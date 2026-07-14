@@ -59,6 +59,9 @@
 
 ### Fixed
 
+- Fixed TODO compaction to require one `## ✓ Resolved` section, retain the
+  newest 10 full-detail and 40 summarized rows before dropping older rows, and
+  clarify that Git recovery applies only to previously committed content.
 - Fixed prime dashboard, sparse, and capability startup output to truncate strings at Unicode code-point boundaries instead of splitting emoji surrogate pairs.
 - Fixed full-plan task guidance and startup metadata to use lifecycle and coherence boundaries instead of a fixed task-count ceiling; typed publication still validates task identity and dependencies.
 - Fixed `agentera state plan create` and `archive` publication to use stable archive identities across retries, validate final serialized bytes with strict prose lint and schema checks, and retain canonical `overall acceptance` vocabulary.

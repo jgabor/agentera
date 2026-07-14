@@ -332,10 +332,27 @@ audit number, date, overall grade, and trajectory.
 | Tier             | Entries                       | Format                                           |
 | ---------------- | ----------------------------- | ------------------------------------------------ |
 | Full detail      | 10 most recent resolved items | Standard resolved entry format                   |
-| One-line archive | Items 11 through 50           | `- [x] [type:train] ≤15-word resolution summary` |
+| One-line summary | Items 11 through 50           | `- [x] [type:train] ≤15-word resolution summary` |
 | Dropped          | Items older than 50           | Removed entirely                                 |
 
-Same logic: collapse oldest full-detail to one-line when >10 exist. Drop oldest one-line when >40 one-line entries exist. Compaction applies only within the `## ✓ Resolved` section; active severity sections are not affected.
+The first ten resolved rows are the recent/full-detail tier even when they have
+no indented body; rows 11 through 50 are the summary tier. Collapse the oldest
+full-detail entries to one line when more than 10 exist. Drop the oldest
+summaries when more than 40 exist. Compaction applies only within the
+`## ✓ Resolved` section; active severity sections are not affected.
+
+TODO.md is a **bounded human-facing queue, not a lossless numbered archive**.
+Unlike progress, decisions, and health—which preserve verified numbered archives
+and perform no destructive deletion—TODO compaction is intentionally destructive.
+Dropped resolved entries are removed from the working tree and are recoverable
+only for previously committed content through project history
+(`git log -p -- :/TODO.md`; the `:/` pathspec is project-root-safe). Non-Git
+projects have no historical recovery for dropped entries. Compaction diagnostics
+MUST report removed entries as `dropped` and MUST NOT describe TODO compaction as
+a lossless projection. Exactly one `## ✓ Resolved` section is permitted;
+parsing, validation, and compaction refuse with an actionable diagnostic when
+duplicates are present because parsing processes only the first section and
+otherwise hides trailing entries from the budget.
 
 ## 5. Artifact Path Resolution
 

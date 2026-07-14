@@ -30,7 +30,10 @@ import {
   extractResolvedSection,
   parseTodoResolved,
   countTodoResolvedEntries,
+  countTodoResolvedSectionHeadings,
+  countTodoPendingSummarization,
   normalizeTodoResolvedLayout,
+  TODO_DROPPED_RECOVERY_GUIDANCE,
 } from "./parse.js";
 import { SPECS, COMPACTABLE_YAML_ARTIFACTS, NON_COMPACTABLE_ARTIFACTS, YAML_SPEC_BY_ARTIFACT, formatTodoOneline } from "./dryRun.js";
 import {
@@ -71,6 +74,9 @@ export {
   YAML_SPEC_BY_ARTIFACT,
   formatTodoOneline,
   countTodoResolvedEntries,
+  countTodoResolvedSectionHeadings,
+  countTodoPendingSummarization,
+  TODO_DROPPED_RECOVERY_GUIDANCE,
   normalizeTodoResolvedLayout,
   overLimitCount,
   stableSortBy,

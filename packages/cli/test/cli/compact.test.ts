@@ -47,6 +47,28 @@ describe("cli compact", () => {
     expect(changelog.active_count).toBeNull();
   });
 
+  it("reports pending TODO summary formatting without calling it over-limit", () => {
+    const rows = Array.from(
+      { length: 50 },
+      (_, i) => `- [x] [fix:3.0.0] resolved item ${i + 1} carries enough inline detail to require summary formatting before the bounded queue can report a clean state`,
+    );
+    fs.writeFileSync(
+      path.join(tmp, "TODO.md"),
+      ["# TODO", "", "## → Normal", "", "## ✓ Resolved", "", ...rows, ""].join("\n"),
+    );
+
+    const { rc, out } = capture((io) => cmdGate({ project: tmp, format: "json" }, io));
+    const payload = JSON.parse(out);
+    const todo = payload.operations.find((o: { artifact: string }) => o.artifact === "todo#Resolved");
+    expect(rc).toBe(1);
+    expect(todo.action).toBe("formatting");
+    expect(todo.over_limit_count).toBe(0);
+    expect(todo.pending_summarization_count).toBe(40);
+    expect(payload.summary.over_limit_count).toBe(0);
+    expect(payload.summary.formatting_count).toBe(1);
+    expect(payload.summary.guidance).toContain("Summary formatting is pending");
+  });
+
   it("validates --mode in the dispatcher", () => {
     const { rc, err } = capture((io) => main(["node", "agentera", "compact", "--mode", "bogus"], io));
     expect(rc).toBe(2);
@@ -100,4 +122,3 @@ function gateJson(project: string): string {
   cmdGate({ project, format: "json" }, { out: (t) => (out += t), err: () => {} });
   return out;
 }
-

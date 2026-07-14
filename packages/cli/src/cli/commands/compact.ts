@@ -13,6 +13,7 @@ interface CompactionSummary {
   mode: string;
   artifact_count: number;
   over_limit_count: number;
+  formatting_count: number;
   protected_overflow_count: number;
   projection_count: number;
   error_count: number;
@@ -55,6 +56,9 @@ function compactionOperationPayload(op: CompactionOperation): JsonObject {
     archive_count: status.archive_count,
     total_count: status.total_count,
     over_limit_count: status.over_limit_count,
+    ...(status.pending_summarization_count !== undefined
+      ? { pending_summarization_count: status.pending_summarization_count }
+      : {}),
     ...(status.projection_state ? { projection_state: status.projection_state } : {}),
     protected_overflow_count: status.protected_overflow_count ?? 0,
     mode: op.mode,
@@ -84,6 +88,7 @@ function compactionOperationPayload(op: CompactionOperation): JsonObject {
 function compactionGuidance(mode: string, operations: CompactionOperation[]): string {
   const over = operations.filter((op) => op.action === "over_limit" || op.action === "pending_fix");
   const projections = operations.filter((op) => op.action === "projection" || op.action === "pending_projection");
+  const formatting = operations.filter((op) => op.action === "formatting" || op.action === "pending_formatting");
   const protectedOps = operations.filter((op) => op.action === "protected_overflow");
   const errors = operations.filter((op) => op.action === "error");
   const refused = operations.filter((op) => op.action === "refused");
@@ -109,6 +114,12 @@ function compactionGuidance(mode: string, operations: CompactionOperation[]): st
   if (mode === "fix" && over.length > 0) {
     return "Some artifacts remain over limit; inspect skipped or unsupported artifacts before manual remediation.";
   }
+  if (formatting.length > 0) {
+    const artifacts = formatting.map((op) => op.status.artifact).join(", ");
+    return mode === "check"
+      ? `Summary formatting is pending for: ${artifacts}. Safe fix: \`${fixCommand}\`.`
+      : `Summary formatting remains pending for: ${artifacts}; inspect the artifact diagnostics.`;
+  }
   if (projections.length > 0) {
     return "Projection defaults are bounded; numbered archive records remain complete and authoritative.";
   }
@@ -120,15 +131,17 @@ function compactionSummary(mode: string, operations: CompactionOperation[]): Com
   for (const op of operations) counts[op.action] = (counts[op.action] ?? 0) + 1;
   const overLimit = operations.filter((op) => op.action === "over_limit" || op.action === "pending_fix").length;
   const projections = operations.filter((op) => op.action === "projection" || op.action === "pending_projection").length;
+  const formatting = operations.filter((op) => op.action === "formatting" || op.action === "pending_formatting").length;
   const protectedOverflow = operations.filter((op) => op.action === "protected_overflow").length;
   const errors = operations.filter((op) => op.action === "error").length;
   const changed = operations.filter((op) => op.changed).length;
-  const status = errors || (mode === "check" && overLimit) ? "fail" : "pass";
+  const status = errors || (mode === "check" && (overLimit || formatting)) ? "fail" : "pass";
   return {
     status,
     mode,
     artifact_count: operations.length,
     over_limit_count: overLimit,
+    formatting_count: formatting,
     protected_overflow_count: protectedOverflow,
     projection_count: projections,
     error_count: errors,
@@ -140,7 +153,10 @@ function compactionSummary(mode: string, operations: CompactionOperation[]): Com
 
 function compactionExitCode(mode: string, operations: CompactionOperation[]): number {
   if (operations.some((op) => op.action === "error")) return 2;
-  if (mode === "check" && operations.some((op) => op.action === "over_limit")) return 1;
+  if (
+    mode === "check" &&
+    operations.some((op) => op.action === "over_limit" || op.action === "formatting")
+  ) return 1;
   return 0;
 }
 
@@ -171,6 +187,7 @@ function emitCompactionPayload(payload: CompactionPayload, mode: string, format:
     "counts=" +
       `artifacts:${summary.artifact_count} ` +
       `over_limit:${summary.over_limit_count} ` +
+      `formatting:${summary.formatting_count} ` +
       `protected_overflow:${summary.protected_overflow_count} ` +
       `errors:${summary.error_count} ` +
       `changed:${summary.changed_count}\n`,
@@ -181,6 +198,7 @@ function emitCompactionPayload(payload: CompactionPayload, mode: string, format:
         `classification=${item.classification} | path=${item.path} | ` +
         `active=${pyStr(item.active_count)} | archive=${pyStr(item.archive_count)} | ` +
         `total=${pyStr(item.total_count)} | over=${pyStr(item.over_limit_count)} | ` +
+        `pending_summarization=${pyStr(item.pending_summarization_count)} | ` +
         `protected_overflow=${item.protected_overflow_count} | ` +
         `message=${item.message}\n`,
     );
