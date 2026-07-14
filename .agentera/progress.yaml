@@ -1,4 +1,53 @@
 cycles:
+  - number: 784
+    timestamp: 2026-07-14 09:20
+    type: feat
+    phase: build
+    what: Implemented bounded non-Git legacy migration with strict local
+      YAML/Markdown parsing, exact immutable archive and backup publication,
+      bounded projection application, conflict refusal, and interruption-safe
+      idempotent retry.
+    inspiration: Active migration rollout plan Task 2 and its confirmed Task 1
+      authority/inventory contract.
+    discovered: Task 2 needed a backup publication boundary and optimistic
+      projection publication check in the existing mutation transaction. Custom
+      candidates require exact path, artifact, and number pins; summary,
+      ambiguous, corrupt, unsupported, unsafe, changed, and conflicting records
+      remain non-addressable. The repository retains five known npm packaging
+      JSON-parser failures and the existing malformed invalid-progress-yaml
+      formatting fixture.
+    verified: "Focused migration/state transaction command:
+      test/state/legacyMigration.test.ts, test/state/migrationAuthority.test.ts,
+      test/state/write/stateWrite.test.ts, and test/lint/monolithLint.test.ts; 4
+      files, 89 tests passed. Lifecycle/read compatibility command:
+      listRetrieval, directRetrieval, archiveDiscovery, archivePublication,
+      projectionPolicy, and lifecycleAdapters; 6 files, 128 tests passed.
+      Non-packaging boundary: 175 files, 1773 tests passed. Typecheck, build,
+      bundle:data, targeted formatting, capability build, capability-contract,
+      artifact progress/plan/decisions/health validation, compact, and
+      temp-project dry-run/apply/retry smoke passed. Full suite retained exactly
+      5 known npm packaging JSON-parser failures."
+    next: Leave Task 2 pending and do not record evaluation; orchestrator owns
+      audit/status. Preserve no Git or remote access, Decision 53 no-inference
+      semantics, archive immutability, projection-failure recovery, startup
+      caveats, and known packaging/formatting caveats. Do not begin Task 3,
+      enrich Git, edit vision/profile, publish, tag, or push.
+    context:
+      intent: Execute continuation plan Task 2 without evaluating or completing it.
+      constraints: Only Task 2 local migration application, its tests, the existing
+        transaction boundary extension, typed progress, and the uncommitted Task
+        1 lifecycle changes are in scope. No Git enrichment, broad docs
+        alignment, health audit, version bump, publish, tag, push, profile
+        refresh, vision edit, or satisfaction mutation.
+      unknowns: Independent orchestration audit and final Task 2 status remain
+        outstanding; historical startup caveats and the known packaging harness
+        failures remain unchanged.
+      scope: packages/cli/src/state/legacyMigration.ts;
+        packages/cli/src/state/legacyMigrationParser.ts;
+        packages/cli/src/state/write/mutation.ts;
+        packages/cli/src/cli/commands/migrate.ts;
+        packages/cli/test/state/legacyMigration.test.ts; .agentera/plan.yaml;
+        .agentera/progress.yaml; generated dist and bundle parity
   - number: 783
     timestamp: 2026-07-14 08:11
     type: fix
@@ -401,61 +450,6 @@ cycles:
         packages/cli/src/state/listRetrieval.ts;
         packages/cli/src/state/startupProjection.ts;
         packages/cli/test/cli/primeTask3Bounds.test.ts
-  - number: 774
-    timestamp: 2026-07-13 22:26
-    type: feat
-    phase: build
-    what: "Bound prime startup source work and output: incrementally scan current
-      projection metadata, validate archives without retaining unrelated full
-      records, emit truthful history counts and get/list routes, and compact all
-      capability startup contexts without touching identity, status, or
-      continuation fields."
-    inspiration: "Active Plan Task3: Bound prime source work and serialized output;
-      Task2 is complete and its uncommitted status/evaluation include is
-      preserved."
-    discovered: Prime source paths previously materialized full current YAML and
-      plan/archive detail before serialization. The schema authority needs a
-      separate capability-context serialized bound because immutable instruction
-      bodies plus pretty JSON exceed the 35,000-byte dashboard surface; corrupt
-      numbered archive files remain addressable with blocked detail while
-      malformed or unaddressable rows retain truthful counts.
-    verified: "DTC fixture test primeTask3Bounds: 1,000 current rows per
-      progress/decisions/health plus 100 corrupt archive files per artifact;
-      source collection 3,507.897 ms, heap delta 127,599,792 bytes, briefing
-      28,677 B, sparse 3,471 B, maximum capability-context selector 39,799 B.
-      The fixture preserves identity/status and get/list routes for maximum
-      Unicode, omitted, unaddressable, ambiguous, and corrupt history. Focused
-      prime/archive/list/direct suites passed 156 tests; non-packaging CLI suite
-      passed 172 files and 1,740 tests; typecheck and build passed;
-      capability-contract validation passed; check compact passed with 0 errors,
-      0 over-limit, 0 protected-overflow, and 0 changed counts; git diff --check
-      passed. The five packaging prepack failures remain the known npm 12 npm
-      pack --dry-run --json parser incompatibility."
-    next: Keep Task3 pending for evaluation and do not begin Task4 consumer
-      migration. Review this implementation, then run the governed final gates;
-      do not update vision, decisions, health, TODO, version, publish, push,
-      tag, or stable release state.
-    context:
-      intent: "Execute continuation Plan Task3 without closing it: keep dashboard,
-        sparse, and all twelve capability prime contexts bounded on large
-        current projections, archive directories, omitted or corrupt history,
-        and maximum Unicode fixtures."
-      constraints: Preserve Task2 plan status/evaluation, archive immutability, source
-        completeness, valid direct retrieval, all source-contract oracle fields,
-        no Task4 prose migration, no protected or unrelated state, no version or
-        publish changes, and no remote access.
-      unknowns: None for this Task3 implementation; evaluator review remains open.
-      scope: packages/cli/src/state/startupProjection.ts;
-        packages/cli/src/state/archiveDiscovery.ts;
-        packages/cli/src/cli/orientation.ts;
-        packages/cli/src/cli/commands/prime/collectOrientationState.ts;
-        packages/cli/src/cli/commands/prime/orientationOutput.ts;
-        packages/cli/src/cli/capabilityContext/{startup,slim,bespoke,evidence}.ts;
-        packages/cli/src/cli/contracts/orientationState.ts;
-        packages/cli/test/cli/primeTask3Bounds.test.ts;
-        packages/cli/test/state/archiveAuthority.test.ts;
-        references/artifacts/state-storage-authority.yaml;
-        .agentera/progress.yaml
   - number: 749
     timestamp: 2026-07-13 10:58
     type: feat
@@ -573,6 +567,9 @@ cycles:
       intent: Complete active plan Task 7 without changing decisions or unrelated
         capabilities.
 archive:
+  - summary: "Cycle 774 (2026-07-13): Bound prime startup source work and output:
+      incrementally scan current projection metadata, validate archives
+      without..."
   - summary: "Cycle 773 (2026-07-13): Retried Task2 attempt1 by centralizing
       leading-only legacy identity parsing, making explicit Dnn decision
       shorthand rows..."
@@ -674,16 +671,18 @@ archive:
   - summary: "Cycle 727 (2026-07-12): Verified runtime lifecycle selectors,
       ownership safety, preview purity, and retry convergence across OpenCode,
       Codex, Cursor,..."
-  - summary: "Cycle 726 (2026-07-12): Completed the final Task 5 audit repair:
-      blocker-only lifecycle output now suppresses generic project-integration
-      guidance..."
 omitted: true
-omitted_count: 21
+omitted_count: 22
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded

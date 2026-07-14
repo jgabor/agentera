@@ -12,6 +12,12 @@ import {
   stateMigrationContract,
   type StateMigrationContract,
 } from "../../state/migrationAuthority.js";
+import {
+  applyLegacyMigration,
+  inspectLegacyMigration,
+  type LegacyMigrationApplyResult,
+  type LegacyMigrationInspection,
+} from "../../state/legacyMigration.js";
 
 export type MigrateFormat = string;
 
@@ -194,11 +200,12 @@ function inventoryStatus(
   omittedCount: number,
   contract: StateMigrationContract,
 ): string {
-  const preferred = omittedCount > 0
-    ? "degraded"
-    : entries.some((entry) => entry.rejection !== undefined)
-      ? "blocked"
-      : "complete";
+  const preferred =
+    omittedCount > 0
+      ? "degraded"
+      : entries.some((entry) => entry.rejection !== undefined)
+        ? "blocked"
+        : "complete";
   return contract.resultStatuses.includes(preferred) ? preferred : contract.resultStatuses[0];
 }
 
@@ -221,7 +228,12 @@ export function inventoryCandidates(
   const observations: CandidateObservation[] = [];
   const seen = new Set<string>();
   const candidatePattern = new RegExp(contract.candidatePattern);
-  const collect = (rootPath: string, rootRelative: string, maximumDepth: number, depth: number): void => {
+  const collect = (
+    rootPath: string,
+    rootRelative: string,
+    maximumDepth: number,
+    depth: number,
+  ): void => {
     let directoryEntries: fs.Dirent[];
     try {
       directoryEntries = fs.readdirSync(rootPath, { withFileTypes: true });
@@ -229,9 +241,7 @@ export function inventoryCandidates(
       return;
     }
     for (const directoryEntry of directoryEntries) {
-      const relativePath = normalizedRelativePath(
-        path.join(rootRelative, directoryEntry.name),
-      );
+      const relativePath = normalizedRelativePath(path.join(rootRelative, directoryEntry.name));
       if (pathIsExcluded(relativePath, contract)) continue;
       const absolutePath = path.join(project, relativePath);
       if (directoryEntry.isDirectory()) {
@@ -414,7 +424,11 @@ export function validateMigrateArgs(
     const requiredSelector = Object.keys(contract.selectors).find(
       (name) => selectorFlag(name) === numberRequires,
     );
-    if (!requiredSelector || selectorValue(requiredSelector) === null || selectorValue(requiredSelector) === undefined) {
+    if (
+      !requiredSelector ||
+      selectorValue(requiredSelector) === null ||
+      selectorValue(requiredSelector) === undefined
+    ) {
       return `argument ${selectorFlag("number")} requires ${numberRequires}`;
     }
   }
@@ -430,8 +444,14 @@ export function validateMigrateArgs(
   }
   const requiredApplySelectors = contract.requiredSelectors.apply ?? [];
   const missingApplySelectors = requiredApplySelectors.filter((required) => {
-    const selectorName = Object.keys(contract.selectors).find((name) => selectorFlag(name) === required);
-    return !selectorName || selectorValue(selectorName) === null || selectorValue(selectorName) === undefined;
+    const selectorName = Object.keys(contract.selectors).find(
+      (name) => selectorFlag(name) === required,
+    );
+    return (
+      !selectorName ||
+      selectorValue(selectorName) === null ||
+      selectorValue(selectorName) === undefined
+    );
   });
   if (args.apply && missingApplySelectors.length > 0) {
     return `${applyFlag} requires ${missingApplySelectors.join(" and ")} selector${missingApplySelectors.length === 1 ? "" : "s"}`;
@@ -451,7 +471,9 @@ function authorityFailure(
 }
 
 function failureClassForMessage(contract: StateMigrationContract, message: string): string {
-  const modeFailure = contract.invalidCombinations.find((combination) => combination.message === message);
+  const modeFailure = contract.invalidCombinations.find(
+    (combination) => combination.message === message,
+  );
   if (modeFailure) return modeFailure.failureClass;
   if (message.includes("project boundary") || message.includes("selected project"))
     return "project_boundary";
@@ -472,7 +494,9 @@ function invalid(
     body: {
       class: message.startsWith("unsupported artifact") ? "invalid_choice" : "invalid_request",
       message,
-      ...(contract ? { syntax: contract.command, example: authorityFailure(contract, failureClass).example } : {}),
+      ...(contract
+        ? { syntax: contract.command, example: authorityFailure(contract, failureClass).example }
+        : {}),
       ...(validValues ? { valid_values: validValues } : {}),
       ...(failure.recovery ? { recovery: failure.recovery } : {}),
     },
@@ -517,17 +541,22 @@ export function resultCounts(
   const matches = (
     entry: Record<string, unknown>,
     predicates: Array<{ field: string; equals?: unknown; notEquals?: unknown }>,
-  ): boolean => predicates.every((predicate) => {
-    if ("equals" in predicate) return entry[predicate.field] === predicate.equals;
-    return entry[predicate.field] !== predicate.notEquals;
-  });
+  ): boolean =>
+    predicates.every((predicate) => {
+      if ("equals" in predicate) return entry[predicate.field] === predicate.equals;
+      return entry[predicate.field] !== predicate.notEquals;
+    });
   const counts: Record<string, number | null> = {};
   for (const field of contract.resultCountFields) {
     const rule = contract.resultCountRules[field];
     const sourceEntries = rule.source === "visible_entries" ? entries : [];
     if (rule.operation === "value" && rule.source === "omitted_count") {
       counts[field] = omittedCount;
-    } else if (rule.operation === "count" && rule.source === "all_candidates" && rule.predicates.length === 0) {
+    } else if (
+      rule.operation === "count" &&
+      rule.source === "all_candidates" &&
+      rule.predicates.length === 0
+    ) {
       counts[field] = entries.length + omittedCount;
     } else if (rule.operation === "count" && rule.source === "visible_entries") {
       counts[field] = sourceEntries.filter((entry) => matches(entry, rule.predicates)).length;
@@ -536,7 +565,10 @@ export function resultCounts(
         sourceEntries
           .filter((entry) => matches(entry, rule.predicates))
           .map((entry) => entry[rule.field as string])
-          .filter((value): value is string | number => typeof value === "string" || typeof value === "number"),
+          .filter(
+            (value): value is string | number =>
+              typeof value === "string" || typeof value === "number",
+          ),
       ).size;
     } else {
       counts[field] = null;
@@ -552,7 +584,8 @@ function omissionValues(
   const sourceValues: Record<string, unknown> = {
     has_omissions: omittedCount > 0,
     omitted_count: omittedCount,
-    omission_reason: omittedCount > 0 ? contract.omission.boundedReason : contract.omission.completeReason,
+    omission_reason:
+      omittedCount > 0 ? contract.omission.boundedReason : contract.omission.completeReason,
     retrieval: {
       command: contract.omission.retrieval,
       retry: contract.omission.retry,
@@ -574,6 +607,12 @@ export function deferredResponse(
   contract: StateMigrationContract,
   entries: Array<Record<string, unknown>> = [],
   inventory?: MigrationInventory,
+  options: {
+    status?: string;
+    diagnostics?: Array<Record<string, unknown>>;
+    operations?: Array<Record<string, unknown>>;
+    mutationPerformed?: boolean;
+  } = {},
 ): Record<string, unknown> {
   const mode = args.apply ? "apply" : args.dryRun ? "preview" : "inventory";
   const projected = projectedEntries(entries, args, contract);
@@ -582,18 +621,18 @@ export function deferredResponse(
   const values: Record<string, unknown> = {
     schemaVersion: contract.resultSchemaVersion,
     command: contract.command,
-    status: inventory?.status ?? contract.resultStatuses[0],
+    status: options.status ?? inventory?.status ?? contract.resultStatuses[0],
     mode,
     project: inventory?.project ?? args.project ?? process.cwd(),
     read_only: !args.apply,
     mutation_intent: args.apply,
-    mutation_performed: false,
+    mutation_performed: options.mutationPerformed ?? false,
     remote_contact: false,
     inventory_performed: inventory !== undefined,
     entries: projected.entries,
     counts: resultCounts(projected.entries, omittedCount, contract),
     ...omission,
-    diagnostics: [
+    diagnostics: options.diagnostics ?? [
       {
         class: "implementation_deferred",
         message: `${String(contract.migration.implementation_boundary)} No state was changed.`,
@@ -615,9 +654,11 @@ export function deferredResponse(
       remote_contact: "forbidden",
     },
   };
-  return Object.fromEntries(
+  const response = Object.fromEntries(
     contract.resultRequiredFields.map((field) => [field, values[field] ?? null]),
   );
+  if (options.operations !== undefined) response.operations = options.operations;
+  return response;
 }
 
 export function renderText(response: Record<string, unknown>, out: (text: string) => void): void {
@@ -692,7 +733,49 @@ export function runMigrate(argv: string[], io: Io, sourceRootOverride?: string):
       ),
     );
   }
-  const response = deferredResponse(parsed, contract, inventory.entries, inventory);
+  let inspection: LegacyMigrationInspection;
+  try {
+    inspection = inspectLegacyMigration(inventory, contract, sourceRoot, parsed);
+  } catch (error) {
+    return emitInvalidInput(
+      io,
+      invalid(
+        `local migration inventory failed: ${(error as Error).message}`,
+        format,
+        contract,
+        undefined,
+        "corrupt_candidate",
+      ),
+    );
+  }
+  let applyResult: LegacyMigrationApplyResult | undefined;
+  if (parsed.apply) {
+    applyResult = applyLegacyMigration(
+      inspection,
+      {
+        artifact: parsed.artifact as string,
+        number: parsed.number as number,
+        path: parsed.path,
+      },
+      { sourceRoot },
+    );
+  }
+  const diagnostics = [...inspection.diagnostics, ...(applyResult?.diagnostics ?? [])].slice(
+    0,
+    parsed.limit ?? contract.defaultLimit,
+  );
+  const response = deferredResponse(
+    parsed,
+    contract,
+    inspection.entries,
+    { ...inventory, status: applyResult?.status ?? inspection.status },
+    {
+      status: applyResult?.status ?? inspection.status,
+      diagnostics,
+      operations: applyResult?.operations ?? inspection.operations,
+      mutationPerformed: applyResult?.mutationPerformed ?? false,
+    },
+  );
   const out = io.out ?? ((text: string) => process.stdout.write(text));
   if (format === "text") renderText(response, out);
   else emitStructured(response, format, out);

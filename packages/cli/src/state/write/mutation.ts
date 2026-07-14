@@ -3,6 +3,7 @@ import path from "node:path";
 
 import type { JsonObject } from "../../core/jsonValue.js";
 import {
+  publishImmutableFile,
   publishNumberedArchive,
   type ArchivePublicationResult,
 } from "../archivePublication.js";
@@ -12,6 +13,7 @@ import { acquireWriterLock } from "./lock.js";
 export const MUTATION_FAILURE_BOUNDARIES = [
   "staged-write",
   "archive-publication",
+  "backup-publication",
   "projection-publication",
   "directory-sync",
 ] as const;
@@ -130,7 +132,24 @@ export class StateMutationTransaction {
     return archive;
   }
 
-  publishProjection(stage: string, target: string): void {
+  publishBackup(target: string, bytes: string, onExisting?: () => void): boolean {
+    const published = publishImmutableFile(target, bytes, {
+      onExisting,
+      afterDirectorySync: () => this.failAfter("directory-sync"),
+    });
+    this.failAfter("backup-publication");
+    return published;
+  }
+
+  publishProjection(stage: string, target: string, expectedBytes?: string): void {
+    if (expectedBytes !== undefined) {
+      const currentBytes = fs.existsSync(target) ? fs.readFileSync(target, "utf8") : "";
+      if (currentBytes !== expectedBytes) {
+        throw new Error(
+          `projection target '${target}' changed before publication; existing bytes were preserved`,
+        );
+      }
+    }
     fs.renameSync(stage, target);
     this.stages.delete(stage);
     this.failAfter("projection-publication");
