@@ -27,6 +27,9 @@ import {
   withStateMutation,
   type MutationFailureBoundary,
 } from "./write/mutation.js";
+import {
+  migrationEnrichmentFollowUp,
+} from "./migrationEnrichment.js";
 
 interface CandidateIdentityGroup {
   artifactId: ArtifactId;
@@ -640,6 +643,7 @@ export function inspectLegacyMigration(
           inventory.project,
           stateCurrentProjectionPath(inventory.project, args.artifact as ArtifactId, sourceRoot),
         ),
+        follow_up: migrationEnrichmentFollowUp(args.artifact, args.number),
       });
     } catch (error) {
       diagnostics.push({
@@ -721,6 +725,7 @@ export function applyLegacyMigration(
       ),
       backup: relativeTarget(inspection.project, backup),
       projection: relativeTarget(inspection.project, projection.target),
+      follow_up: migrationEnrichmentFollowUp(args.artifact, args.number),
     };
     withStateMutation(
       inspection.project,

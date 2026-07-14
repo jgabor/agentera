@@ -58,7 +58,7 @@ tasks:
     name: Execute bounded non-Git legacy migration
     depends_on:
       - "1"
-    status: pending
+    status: complete
     acceptance:
       - GIVEN default and custom legacy candidates WHEN inventory runs THEN project bounds, deterministic order, limits, safe, unsupported, ambiguous, corrupt, duplicate, and conflict classes reconcile without reading unrelated paths.
       - GIVEN exact addressable local records WHEN migration previews, applies, interrupts, or retries THEN validation, immutable archive, exact-byte backup, and compatible projection occur in that order without overwrite, renumbering, duplication, or inferred detail.
@@ -66,14 +66,14 @@ tasks:
       - GIVEN changed candidates, differing existing bytes, backup conflict, or projection failure WHEN apply runs THEN mutation refuses or preserves the prior projection, while identical retries converge.
       - GIVEN old, partial, migrated, and non-Git fixtures WHEN lifecycle and state reads run THEN physical equals addressable plus unaddressable plus ambiguous, while mirrors, duplicates, conflicts, and omissions remain explicitly non-additive.
     evaluation:
-      attempt_count: 1
+      attempt_count: 2
       failure_count: 1
-      last_verdict: fail
+      last_verdict: pass
       last_failure_evidence: Forced custom parsing hides secondary identities and can archive ambiguous multi-identity records; refusal classes collapse into generic provenance; JSON/YAML results are count-bounded but not byte-bounded; Cycle 784 overclaims ambiguous-record safety.
       provenance:
-        attempt_id: continuation-task2-audit-1
-        source: "Independent orchestration evaluator: local migration classification, refusal, bounded-output, and evidence audit"
-        recorded_at: 2026-07-14 09:45
+        attempt_id: continuation-task2-audit-2
+        source: "Independent orchestration evaluator: bounded inventory, immutable migration ordering, refusal provenance, retry safety, byte bounds, and accounting audit"
+        recorded_at: 2026-07-14 10:38
         writer_command: agentera state plan record-evaluation
   - number: 3
     name: Chain optional guarded Git enrichment

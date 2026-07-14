@@ -19,6 +19,7 @@ import {
   type LegacyMigrationApplyResult,
   type LegacyMigrationInspection,
 } from "../../state/legacyMigration.js";
+import { migrationEnrichmentContract } from "../../state/migrationEnrichment.js";
 
 export type MigrateFormat = string;
 
@@ -748,6 +749,7 @@ export function deferredResponse(
       inventory: contract.inventory,
       git_required: false,
       remote_contact: "forbidden",
+      optional_git_enrichment: migrationEnrichmentContract(),
     },
   };
   const response = Object.fromEntries(

@@ -2,9 +2,10 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import childProcess from "node:child_process";
 
 import YAML from "yaml";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { inspectLegacyMigration, applyLegacyMigration } from "../../src/state/legacyMigration.js";
 import { inventoryCandidates, runMigrate } from "../../src/cli/commands/migrate.js";
@@ -370,6 +371,81 @@ describe("bounded non-Git legacy migration", () => {
       mutation_performed: true,
       status: "complete",
     });
+  });
+
+  it("keeps local migration Git-free and hands exact selectors to optional enrichment", () => {
+    const root = project();
+    fs.writeFileSync(path.join(root, "CUSTOM.yaml"), YAML.stringify({ cycles: [progress(12)] }));
+    const spawnSpy = vi.spyOn(childProcess, "spawnSync");
+    try {
+      const result = captureMigration([
+        "--project",
+        root,
+        "--artifact",
+        "progress",
+        "--number",
+        "12",
+        "--path",
+        "CUSTOM.yaml",
+        "--dry-run",
+        "--format",
+        "json",
+      ]);
+      expect(result.rc).toBe(1);
+      expect(spawnSpy).not.toHaveBeenCalled();
+      const response = JSON.parse(result.out) as Record<string, any>;
+      expect(response).toMatchObject({
+        mode: "preview",
+        mutation_performed: false,
+        remote_contact: false,
+        source_contract: {
+          optional_git_enrichment: {
+            requested: false,
+            selection: "separate_explicit_operator_invocation",
+            remote_contact: false,
+          },
+        },
+      });
+      expect(response.operations[0]).toMatchObject({
+        artifact_id: "progress",
+        entry_number: 12,
+        follow_up: {
+          kind: "optional_git_enrichment",
+          requested: false,
+          stable_id: "progress:12",
+          selectors: { artifact: "progress", number: 12 },
+          dry_run: "agentera state backfill --artifact progress --number 12 --dry-run --format json",
+          apply: "agentera state backfill --artifact progress --number 12 --apply --force --format json",
+          remote_contact: false,
+        },
+      });
+      expect(fs.existsSync(path.join(root, ".agentera", "archive"))).toBe(false);
+      const applied = captureMigration([
+        "--project",
+        root,
+        "--artifact",
+        "progress",
+        "--number",
+        "12",
+        "--path",
+        "CUSTOM.yaml",
+        "--apply",
+        "--force",
+        "--format",
+        "json",
+      ]);
+      expect(applied.rc).toBe(1);
+      expect(spawnSpy).not.toHaveBeenCalled();
+      expect(JSON.parse(applied.out)).toMatchObject({
+        mode: "apply",
+        status: "complete",
+        mutation_performed: true,
+        remote_contact: false,
+      });
+      expect(fs.existsSync(path.join(root, ".agentera", "archive", "progress", "12.yaml"))).toBe(true);
+    } finally {
+      spawnSpy.mockRestore();
+    }
   });
 
   it("refuses a deterministic projection target failure before creating immutable evidence", () => {

@@ -251,6 +251,68 @@ describe("Git legacy backfill", () => {
     expect(result.entries[0]?.provenance.some((value) => value.commit === oldCommit && !value.reachable)).toBe(true);
   });
 
+  it("reports unavailable Git as actionable without blocking local state and excludes remote refs", () => {
+    const root = project("agentera-git-backfill-unavailable-");
+    const calls: string[][] = [];
+    const unavailableRunner = (args: string[], cwd: string) => {
+      calls.push(args);
+      return { status: 128, stdout: "", timedOut: false, error: "not_repository" };
+    };
+    const result = previewGitBackfill(
+      root,
+      { artifact: "progress", number: 13 },
+      { sourceRoot, runGit: unavailableRunner },
+    );
+    expect(result).toMatchObject({
+      status: "unavailable",
+      read_only: true,
+      remote_contact: false,
+      active_projections_unchanged: true,
+    });
+    expect(result.entries[0]).toMatchObject({
+      entry_id: "progress:13",
+      ambiguity_reason: "git_unavailable",
+      eligible: false,
+    });
+    expect(calls.some((args) => args.some((value) => /remote|custom|fetch|pull|push|ls-remote/.test(value)))).toBe(false);
+    expect(fs.existsSync(path.join(root, ".agentera", "archive"))).toBe(false);
+  });
+
+  it("refuses an interrupted exact apply before publication and only probes allowed refs", () => {
+    const root = project("agentera-git-backfill-interrupted-");
+    init(root);
+    writeProgress(root, [progress(14, "Interrupted recovery")]);
+    commit(root, "interrupted recovery");
+    const calls: string[][] = [];
+    let refEnumeration = 0;
+    const interruptedRunner = (args: string[], cwd: string) => {
+      calls.push(args);
+      if (args[0] === "for-each-ref") {
+        refEnumeration += 1;
+        if (refEnumeration === 2) return { status: null, stdout: "", timedOut: true, error: "ETIMEDOUT" };
+      }
+      return realGitRunner(args, cwd);
+    };
+    const result = applyGitBackfill(
+      root,
+      { artifact: "progress", number: 14 },
+      { sourceRoot, runGit: interruptedRunner },
+    );
+    expect(result).toMatchObject({ status: "blocked", remote_contact: false });
+    expect(result.entries[0]).toMatchObject({
+      entry_id: "progress:14",
+      ambiguity_reason: "candidate_changed",
+      operation: "refused",
+    });
+    expect(fs.existsSync(path.join(root, ".agentera", "archive", "progress", "14.yaml"))).toBe(false);
+    expect(
+      calls
+        .filter((args) => args[0] === "for-each-ref")
+        .every((args) => args.includes("refs/heads") && args.includes("refs/tags") && !args.includes("refs/remotes")),
+    ).toBe(true);
+    expect(calls.some((args) => args.some((value) => /fetch|pull|push|ls-remote|refs\/remotes|custom_refs/.test(value)))).toBe(false);
+  });
+
   it("retains provenance for malformed historical content", () => {
     const root = project();
     init(root);
