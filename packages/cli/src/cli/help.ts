@@ -126,6 +126,13 @@ export function printStateHelp(sub?: string): string {
     const selector = (name: string): string => migration.selectors[name].flag as string;
     const dryRunFlag = migrationModeFlags(migration, "preview")[0];
     const applyFlags = migrationModeFlags(migration, "apply");
+    const inventory = migration.migration.inventory as Record<string, unknown>;
+    const boundedScan = inventory.bounded_scan as Record<string, unknown>;
+    const boundary = migration.migration.project_boundary as Record<string, unknown>;
+    const exclusions = (boundedScan.excluded_relative_paths as string[]).join(", ");
+    const roots = migration.inventory.roots
+      .map((root) => `${root.path} (depth ${root.maximumDepth})`)
+      .join(", ");
     return [
       `usage: ${migration.command}`,
       "",
@@ -136,14 +143,21 @@ export function printStateHelp(sub?: string): string {
       "options:",
       "  -h, --help            show this help message and exit",
       `  ${selector("project").padEnd(21)}Project directory whose local candidates are inspected`,
-      `  ${selector("artifact").padEnd(21)}${migration.supportedArtifacts.join(", ")}`,
-      `  ${selector("number").padEnd(21)}Positive legacy entry number; requires ${migrationSelectorFlag(migration, "artifact")}`,
-      `  ${selector("path").padEnd(21)}Project-local candidate path; required for custom apply`,
+      `  ${selector("artifact").padEnd(21)}Valid values: ${migration.selectorValidValues.artifact.join(", ")}`,
+      `  ${selector("number").padEnd(21)}Positive legacy entry number; requires ${migration.selectors.number.required_with}`,
+      `  ${selector("path").padEnd(21)}${migration.selectors.path.required_for_custom_apply ? "Required for custom apply" : "Optional candidate path pin"}`,
       `  ${selector("limit").padEnd(21)}Bound returned candidates (maximum ${migration.maximumLimit})`,
       `  ${dryRunFlag.padEnd(21)}Preview exact operations without writing`,
-      `  ${applyFlags[0].padEnd(21)}Request publication; requires ${applyFlags[1] ?? "explicit confirmation"}`,
-      ...(applyFlags[1] ? [`  ${applyFlags[1].padEnd(21)}Confirm explicit mutation intent`] : []),
-      `  ${selector("format").padEnd(21)}Output format: ${migration.formats.join(", ")}`,
+      `  ${applyFlags.join(" ").padEnd(21)}Request publication with explicit mutation intent`,
+      `  ${selector("format").padEnd(21)}Output format: ${migration.selectorValidValues.format.join(", ")}`,
+      `apply selectors: ${migration.requiredSelectors.apply.join(", ")}`,
+      "",
+      `scan roots: ${roots}`,
+      `scan exclusions: ${exclusions}`,
+      `scan bounds: ${boundedScan.maximum_candidate_files} files, ${boundedScan.maximum_file_bytes} bytes/file, ${boundedScan.maximum_total_bytes} total bytes`,
+      `ordering: ${migration.inventory.ordering}`,
+      `boundary rejects: ${(boundary.reject as string[]).join(", ")}`,
+      `invalid combinations: ${migration.invalidCombinations.map((item) => item.message).join("; ")}`,
     ].join("\n");
   }
   if (sub === "backfill") {

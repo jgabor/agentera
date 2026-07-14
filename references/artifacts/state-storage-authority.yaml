@@ -478,9 +478,9 @@ api:
       infer missing records, contact Git, contact a remote, or remove legacy
       source files.
     implementation_boundary: >-
-      Task 2 publishes the contract and parser/help/schema discovery only.
-      Legacy candidate scanning, archive publication, backup creation, and
-      projection writes remain a later implementation surface.
+       Task 1 publishes the contract and parser/help/schema discovery only.
+       Legacy candidate scanning, archive publication, backup creation, and
+       projection writes belong to Task 2 and remain deferred here.
     formats: [text, json, yaml]
     default_limit: 20
     maximum_limit: 100
@@ -517,6 +517,7 @@ api:
         meaning: maximum returned candidate summaries, not a scan escape hatch
       format:
         flag: --format FORMAT
+        valid_values: [text, json, yaml]
     modes:
       inventory:
         selector: default when neither --dry-run nor --apply is present
@@ -537,9 +538,17 @@ api:
           project boundary, backup identity, and immutable archive identity.
           This contract alone never performs that mutation.
       invalid_combinations:
-        - --apply with --dry-run
-        - --apply without --force
-        - --force without --apply
+        - flags: [--apply, --dry-run]
+          failure_class: invalid_selector
+          message: --apply and --dry-run are mutually exclusive
+        - flags: [--apply]
+          requires: --force
+          failure_class: invalid_selector
+          message: --apply requires explicit --force intent
+        - flags: [--force]
+          requires: --apply
+          failure_class: invalid_selector
+          message: --force requires --apply
     inventory:
       project_local: true
       bounded_scan:
@@ -664,13 +673,22 @@ api:
     result:
       schema_version: agentera.stateMigrationResult.v1
       statuses: [complete, degraded, blocked, unavailable]
-      required_fields: [schemaVersion, command, status, mode, project, read_only, mutation_intent, remote_contact, entries, counts, diagnostics, source_contract]
+      required_fields: [schemaVersion, command, status, mode, project, read_only, mutation_intent, mutation_performed, remote_contact, inventory_performed, entries, counts, diagnostics, source_contract, omitted, omitted_count, omission_reason, retrieval]
       entry_fields: [candidate_id, path, artifact_id, entry_number, classification, detail_availability, compatibility, source, addressable]
       count_fields: [physical, addressable, addressable_ids, unaddressable, ambiguous, mirrored, duplicate, conflict, omitted]
-      omission: >-
-        Omitted candidates are represented by omitted=true, omitted_count,
-        omission_reason, and a bounded retry/list pointer. Text, JSON, and YAML
-        are projections of the same envelope and never contain unbounded records.
+      omission:
+        fields: [omitted, omitted_count, omission_reason, retrieval]
+        complete_reason: none
+        bounded_reason: scan_bounded
+        retry: >-
+          Retry with narrower project or selectors, or use the bounded list
+          pointer to continue from the same normalized snapshot.
+        retrieval: >-
+          agentera state migrate --project PATH [selectors] --limit N
+        semantics: >-
+          Omitted candidates are represented by omitted=true, omitted_count,
+          omission_reason, and a bounded retry/list pointer. Text, JSON, and YAML
+          are projections of the same envelope and never contain unbounded records.
     failures:
       schema_version: agentera.stateFailure.v1
       deterministic: >-

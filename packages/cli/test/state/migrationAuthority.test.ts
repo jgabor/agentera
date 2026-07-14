@@ -8,12 +8,16 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import { buildSchemaPayload } from "../../src/cli/commands/schema.js";
 import {
+  deferredResponse,
   parseMigrateArgs,
+  projectedEntries,
+  renderText,
+  resultCounts,
   runMigrate,
   validateMigrateArgs,
 } from "../../src/cli/commands/migrate.js";
 import { main } from "../../src/cli/dispatch.js";
-import { stateMigrationContract } from "../../src/state/migrationAuthority.js";
+import { migrationModeFlags, stateMigrationContract } from "../../src/state/migrationAuthority.js";
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..");
 const AUTHORITY_RELATIVE_PATH = "references/artifacts/state-storage-authority.yaml";
@@ -69,9 +73,9 @@ describe("local migration authority", () => {
       apply: { selector: "--apply --force", mutation_intent: "explicit_apply_and_force" },
     });
     expect(migration.modes.invalid_combinations).toEqual([
-      "--apply with --dry-run",
-      "--apply without --force",
-      "--force without --apply",
+      expect.objectContaining({ flags: ["--apply", "--dry-run"], failure_class: "invalid_selector" }),
+      expect.objectContaining({ flags: ["--apply"], requires: "--force" }),
+      expect.objectContaining({ flags: ["--force"], requires: "--apply" }),
     ]);
     expect(migration.inventory.bounded_scan).toMatchObject({
       maximum_candidate_files: 256,
@@ -178,6 +182,8 @@ describe("local migration authority", () => {
     authority.api.migrate.maximum_limit = 3;
     authority.api.migrate.selectors.artifact.flag = "--kind ARTIFACT";
     authority.api.migrate.selectors.format.flag = "--output FORMAT";
+    authority.api.migrate.selectors.format.valid_values = ["yaml", "json"];
+    authority.api.migrate.modes.apply.selectors_required = ["--kind", "--number"];
     authority.api.migrate.selectors.path.pattern = "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}\\.txt$";
     authority.api.migrate.selectors.limit.maximum = 3;
     authority.api.migrate.command = authority.api.migrate.command
@@ -260,11 +266,102 @@ describe("local migration authority", () => {
     expect(parserSource).not.toMatch(/value\s*!==\s*[\"'](?:text|json|yaml)/);
 
     const migration = loadAuthority(path.join(REPO_ROOT, AUTHORITY_RELATIVE_PATH)).api.migrate;
-    expect(migration.result.omission).toContain("omitted=true");
-    expect(migration.result.omission).toContain("bounded retry/list pointer");
+    expect(migration.result.omission.semantics).toContain("omitted=true");
+    expect(migration.result.omission.semantics).toContain("bounded retry/list pointer");
     expect(migration.inventory.bounded_scan.ordering).toBe("normalized_relative_path_ascending");
     expect(migration.inventory.bounded_scan.maximum_candidate_files).toBe(256);
     expect(migration.inventory.bounded_scan.maximum_total_bytes).toBe(16777216);
+  });
+
+  it("rejects duplicate selector authority and malformed bounded omission metadata", () => {
+    const authority = loadAuthority(path.join(REPO_ROOT, AUTHORITY_RELATIVE_PATH));
+    const duplicateRoot = project();
+    const duplicatePath = path.join(duplicateRoot, AUTHORITY_RELATIVE_PATH);
+    fs.mkdirSync(path.dirname(duplicatePath), { recursive: true });
+    authority.api.migrate.selectors.format.flag = authority.api.migrate.selectors.artifact.flag;
+    fs.writeFileSync(duplicatePath, YAML.stringify(authority));
+    expect(() => stateMigrationContract(duplicateRoot)).toThrow("must not contain duplicates");
+
+    const malformedRoot = project();
+    const malformedPath = path.join(malformedRoot, AUTHORITY_RELATIVE_PATH);
+    fs.mkdirSync(path.dirname(malformedPath), { recursive: true });
+    authority.api.migrate.selectors.format.flag = "--format FORMAT";
+    delete authority.api.migrate.result.omission.bounded_reason;
+    fs.writeFileSync(malformedPath, YAML.stringify(authority));
+    expect(() => stateMigrationContract(malformedRoot)).toThrow("bounded_reason");
+  });
+
+  it("consumes changed authority result fields instead of a handwritten envelope registry", () => {
+    const authority = loadAuthority(path.join(REPO_ROOT, AUTHORITY_RELATIVE_PATH));
+    authority.api.migrate.result.count_fields.push("authority_defined_count");
+    authority.api.migrate.result.omission.complete_reason = "authority_complete";
+    authority.api.migrate.result.omission.bounded_reason = "authority_bounded";
+    authority.api.migrate.result.omission.retry = "authority retry guidance";
+    authority.api.migrate.result.omission.retrieval = "authority retrieval pointer";
+    const root = project();
+    const authorityPath = path.join(root, AUTHORITY_RELATIVE_PATH);
+    fs.mkdirSync(path.dirname(authorityPath), { recursive: true });
+    fs.writeFileSync(authorityPath, YAML.stringify(authority));
+
+    const contract = stateMigrationContract(root);
+    const response = deferredResponse(
+      {
+        project: root,
+        artifact: null,
+        dryRun: false,
+        apply: false,
+        force: false,
+        format: "json",
+        limit: contract.defaultLimit,
+      },
+      contract,
+    );
+    expect((response.counts as Record<string, unknown>).authority_defined_count).toBeNull();
+    expect(response.omission_reason).toBe("authority_complete");
+    expect(response.retrieval).toEqual({
+      command: "authority retrieval pointer",
+      retry: "authority retry guidance",
+    });
+  });
+
+  it("projects normalized bounded results from authority-defined fields", () => {
+    const contract = stateMigrationContract(REPO_ROOT);
+    const args = {
+      project: project(),
+      artifact: null,
+      dryRun: true,
+      apply: false,
+      force: false,
+      format: "json",
+      limit: 2,
+    } as const;
+    const entries = [
+      { path: "z.yaml", candidate_id: "z", addressable: true, classification: "canonical" },
+      { path: ".agentera/a.yaml", candidate_id: "a", addressable: false, classification: "unaddressable" },
+      { path: "a.yaml", candidate_id: "a2", addressable: true, classification: "canonical" },
+    ];
+    const projected = projectedEntries(entries, args, contract);
+    expect(projected.entries.map((entry) => entry.path)).toEqual([".agentera/a.yaml", "a.yaml"]);
+    expect(projected.omittedCount).toBe(1);
+    const counts = resultCounts(projected.entries, projected.omittedCount, contract);
+    expect(Object.keys(counts)).toEqual(contract.resultCountFields);
+    expect(counts).toMatchObject({ physical: 3, addressable: 1, unaddressable: 1, omitted: 1 });
+
+    const response = deferredResponse(args, contract, entries);
+    expect(response).toMatchObject({
+      omitted: true,
+      omitted_count: 1,
+      omission_reason: contract.omission.boundedReason,
+      mutation_performed: false,
+      retrieval: { command: contract.omission.retrieval, retry: contract.omission.retry },
+    });
+    expect(Object.keys(response.counts as Record<string, unknown>)).toEqual(contract.resultCountFields);
+    let text = "";
+    renderText(response, (value) => (text += value));
+    expect(text).toContain(`omitted_count: ${response.omitted_count}`);
+    expect(text).toContain(`omission_reason: ${response.omission_reason}`);
+    expect(text).toContain(contract.omission.retry);
+    expect(YAML.parse(JSON.stringify(response))).toEqual(YAML.parse(YAML.stringify(response)));
   });
 
   it("exposes help/schema/dispatch and leaves valid invocations filesystem-free", () => {
@@ -276,6 +373,7 @@ describe("local migration authority", () => {
     expect(help.out).toContain("project-local");
 
     const schema = buildSchemaPayload("schema");
+    const migrationContract = stateMigrationContract(REPO_ROOT);
     expect(schema.state_migration).toMatchObject({
       authority: AUTHORITY_RELATIVE_PATH,
       namespace: "agentera state migrate",
@@ -284,7 +382,19 @@ describe("local migration authority", () => {
     });
     expect(schema.commands).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ name: "migrate", kind: "state_migration" }),
+        expect.objectContaining({
+          name: "migrate",
+          kind: "state_migration",
+          filters: [
+            ...Object.keys(migrationContract.selectors),
+            ...new Set(
+              [...migrationModeFlags(migrationContract, "preview"), ...migrationModeFlags(migrationContract, "apply")].map(
+                (flag) => flag.replace(/^--/, "").replaceAll("-", "_"),
+              ),
+            ),
+          ],
+          structured_fields: migrationContract.resultRequiredFields,
+        }),
       ]),
     );
 
@@ -302,7 +412,25 @@ describe("local migration authority", () => {
       remote_contact: false,
       inventory_performed: false,
     });
-    expect(fs.readdirSync(root)).toEqual([]);
+    expect(fs.existsSync(path.join(root, ".agentera", "migration-backups"))).toBe(false);
+
+    fs.mkdirSync(path.join(root, ".agentera", "archive"), { recursive: true });
+    fs.writeFileSync(path.join(root, "target.yaml"), "target: true\n");
+    fs.symlinkSync(path.join(root, "target.yaml"), path.join(root, "link.yaml"));
+    const symlink = capture((io) =>
+      runMigrate(["--project", root, "--path", "link.yaml", "--format", "json"], io, REPO_ROOT),
+    );
+    expect(symlink.rc).toBe(2);
+    expect(JSON.parse(symlink.out).error.message).toContain("symlink");
+    const excluded = capture((io) =>
+      runMigrate(
+        ["--project", root, "--path", ".agentera/archive/legacy.yaml", "--format", "json"],
+        io,
+        REPO_ROOT,
+      ),
+    );
+    expect(excluded.rc).toBe(2);
+    expect(JSON.parse(excluded.out).error.message).toContain("excluded");
 
     const apply = capture((io) =>
       runMigrate(
@@ -328,7 +456,7 @@ describe("local migration authority", () => {
       mutation_performed: false,
       read_only: false,
     });
-    expect(fs.readdirSync(root)).toEqual([]);
+    expect(fs.existsSync(path.join(root, ".agentera", "migration-backups"))).toBe(false);
 
     const invalid = capture((io) =>
       main(["node", "agentera", "state", "migrate", "--apply", "--format", "json"], io),
@@ -352,6 +480,7 @@ describe("local migration authority", () => {
       error: {
         syntax: expect.stringContaining("agentera state migrate"),
         example: expect.stringContaining("agentera state migrate"),
+        recovery: expect.stringContaining("no state was changed"),
       },
     });
     expect(text.rc).toBe(2);

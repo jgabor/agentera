@@ -30,7 +30,11 @@ import {
   ACTIVE_RUNTIME_SELECTORS,
   LIFECYCLE_UPGRADE_SCHEMA,
 } from "../../upgrade/lifecycleUpgrade.js";
-import { stateMigrationContract } from "../../state/migrationAuthority.js";
+import {
+  migrationModeFlags,
+  migrationSelectorNames,
+  stateMigrationContract,
+} from "../../state/migrationAuthority.js";
 
 /** Port of scripts/agentera cmd_schema / _build_schema_payload. */
 
@@ -161,17 +165,6 @@ const COMMAND_FILTERS_ALL: Record<string, string[]> = {
     "force",
     "channel",
   ],
-  migrate: [
-    "project",
-    "artifact",
-    "number",
-    "path",
-    "limit",
-    "dry_run",
-    "apply",
-    "force",
-    "format",
-  ],
   describe: ["format"],
   schema: ["format"],
 };
@@ -248,6 +241,7 @@ function commandDescription(
   kind: string,
   fields: string[] | null = null,
   outputFormats?: string[],
+  filters?: string[],
 ): JsonObject {
   let formats = outputFormats ?? ["text", "json", "yaml"];
   if (!outputFormats && name === "lint") formats = ["text", "json"];
@@ -260,13 +254,24 @@ function commandDescription(
     name,
     kind,
     description: COMMAND_DESCRIPTIONS[name] ?? "unknown",
-    filters: COMMAND_FILTERS_ALL[name] ?? [],
+    filters: filters ?? COMMAND_FILTERS_ALL[name] ?? [],
     output_formats: formats,
     structured_fields: fields ?? [],
   };
 }
 
-function describeCommands(migrationName: string, migrationFormats: string[]): JsonObject[] {
+function migrationFilterNames(contract: ReturnType<typeof stateMigrationContract>): string[] {
+  const modeFlags = [
+    ...migrationModeFlags(contract, "preview"),
+    ...migrationModeFlags(contract, "apply"),
+  ].map((flag) => flag.replace(/^--/, "").replaceAll("-", "_"));
+  return [...new Set([...migrationSelectorNames(contract), ...modeFlags])];
+}
+
+function describeCommands(
+  migrationContract: ReturnType<typeof stateMigrationContract>,
+): JsonObject[] {
+  const migrationName = migrationContract.namespace.split(/\s+/).at(-1) as string;
   const commands: JsonObject[] = [
     commandDescription("prime", "orientation", availableStructuredFields("prime")),
   ];
@@ -307,21 +312,9 @@ function describeCommands(migrationName: string, migrationFormats: string[]): Js
     commandDescription(
       migrationName,
       "state_migration",
-      [
-        "schemaVersion",
-        "command",
-        "status",
-        "mode",
-        "project",
-        "read_only",
-        "mutation_intent",
-        "remote_contact",
-        "entries",
-        "counts",
-        "diagnostics",
-        "source_contract",
-      ],
-      migrationFormats,
+      migrationContract.resultRequiredFields,
+      migrationContract.formats,
+      migrationFilterNames(migrationContract),
     ),
     commandDescription("doctor", "self_check"),
   );
@@ -454,10 +447,7 @@ export function buildSchemaPayload(command = "schema"): JsonObject {
       schema_count: artifactSchemas.length,
       app_model: appModelPayload(appModel),
     },
-    commands: describeCommands(
-      migrationAuthority.namespace.split(/\s+/).at(-1) as string,
-      migrationAuthority.formats,
-    ),
+    commands: describeCommands(migrationAuthority),
     state_writer: stateWriterContract(),
     state_migration: {
       authority: migrationAuthority.authorityPath,

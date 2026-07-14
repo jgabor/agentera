@@ -8,6 +8,31 @@ const AUTHORITY_RELATIVE_PATH = "references/artifacts/state-storage-authority.ya
 
 export type StateMigrationMapping = Record<string, unknown>;
 
+export interface StateMigrationInvalidCombination {
+  flags: string[];
+  requires?: string;
+  failureClass: string;
+  message: string;
+}
+
+export interface StateMigrationOmissionContract {
+  fields: string[];
+  completeReason: string;
+  boundedReason: string;
+  retry: string;
+  retrieval: string;
+  semantics: string;
+}
+
+export interface StateMigrationInventoryContract {
+  roots: Array<{ path: string; maximumDepth: number }>;
+  excludedRelativePaths: string[];
+  maximumCandidateFiles: number;
+  maximumFileBytes: number;
+  maximumTotalBytes: number;
+  ordering: string;
+}
+
 export interface StateMigrationContract {
   authorityPath: string;
   schemaVersion: string;
@@ -21,9 +46,17 @@ export interface StateMigrationContract {
   supportedArtifacts: string[];
   selectors: Record<string, StateMigrationMapping>;
   modes: Record<string, StateMigrationMapping>;
+  invalidCombinations: StateMigrationInvalidCombination[];
+  requiredSelectors: Record<string, string[]>;
+  inventory: StateMigrationInventoryContract;
   candidatePattern: string;
   numberPattern: string;
-  scanRoots: Array<{ path: string; maximumDepth: number }>;
+  selectorValidValues: Record<string, string[]>;
+  resultRequiredFields: string[];
+  resultEntryFields: string[];
+  resultCountFields: string[];
+  omission: StateMigrationOmissionContract;
+  failureClasses: Record<string, StateMigrationMapping>;
   resultSchemaVersion: string;
   resultStatuses: string[];
 }
@@ -55,11 +88,22 @@ function requiredList(value: unknown, field: string): string[] {
   return [...value] as string[];
 }
 
+function requireUnique(values: string[], field: string): void {
+  if (new Set(values).size !== values.length) {
+    throw new Error(`state storage authority field '${field}' must not contain duplicates`);
+  }
+}
+
 function requiredPositiveInteger(value: unknown, field: string): number {
   if (typeof value !== "number" || !Number.isSafeInteger(value) || value < 1) {
     throw new Error(`state storage authority field '${field}' must be a positive integer`);
   }
   return value;
+}
+
+function optionalString(value: unknown, field: string): string | undefined {
+  if (value === undefined) return undefined;
+  return requiredString(value, field);
 }
 
 function requireKeys(value: StateMigrationMapping, keys: string[], field: string): void {
@@ -104,6 +148,7 @@ export function stateMigrationContract(
     throw new Error("state storage authority migrate command must begin with its namespace");
   }
   const formats = requiredList(migration.formats, "api.migrate.formats");
+  requireUnique(formats, "api.migrate.formats");
   const defaultLimit = requiredPositiveInteger(
     migration.default_limit,
     "api.migrate.default_limit",
@@ -119,17 +164,39 @@ export function stateMigrationContract(
     migration.supported_artifacts,
     "api.migrate.supported_artifacts",
   );
+  requireUnique(migrationArtifacts, "api.migrate.supported_artifacts");
   if (JSON.stringify(migrationArtifacts) !== JSON.stringify(artifactIds)) {
     throw new Error("state storage authority migrate artifacts must match scope artifacts");
   }
 
   const selectors = mapping(migration.selectors, "api.migrate.selectors");
   const selectorContracts: Record<string, StateMigrationMapping> = {};
+  const selectorValidValues: Record<string, string[]> = {};
   for (const name of ["project", "artifact", "number", "path", "limit", "format"]) {
     const selector = mapping(selectors[name], `api.migrate.selectors.${name}`);
     requiredString(selector.flag, `api.migrate.selectors.${name}.flag`);
+    if (name === "artifact" || name === "format") {
+      selectorValidValues[name] = requiredList(
+        selector.valid_values,
+        `api.migrate.selectors.${name}.valid_values`,
+      );
+      requireUnique(
+        selectorValidValues[name],
+        `api.migrate.selectors.${name}.valid_values`,
+      );
+    }
     selectorContracts[name] = selector;
   }
+  if (JSON.stringify(selectorValidValues.artifact) !== JSON.stringify(migrationArtifacts)) {
+    throw new Error("state storage authority artifact valid values must match supported artifacts");
+  }
+  if (JSON.stringify(selectorValidValues.format) !== JSON.stringify(formats)) {
+    throw new Error("state storage authority format valid values must match formats");
+  }
+  const selectorFlags = Object.entries(selectorContracts).map(([name, selector]) =>
+    requiredString(selector.flag, `api.migrate.selectors.${name}.flag`).split(/\s+/, 1)[0],
+  );
+  requireUnique(selectorFlags, "api.migrate.selectors.*.flag");
   const modes = mapping(migration.modes, "api.migrate.modes");
   requireKeys(
     modes,
@@ -212,6 +279,18 @@ export function stateMigrationContract(
   );
 
   const boundedScan = mapping(inventory.bounded_scan, "api.migrate.inventory.bounded_scan");
+  requireKeys(
+    boundedScan,
+    [
+      "roots",
+      "excluded_relative_paths",
+      "maximum_candidate_files",
+      "maximum_file_bytes",
+      "maximum_total_bytes",
+      "ordering",
+    ],
+    "api.migrate.inventory.bounded_scan",
+  );
   if (!Array.isArray(boundedScan.roots) || boundedScan.roots.length === 0) {
     throw new Error(
       "state storage authority field 'api.migrate.inventory.bounded_scan.roots' must be a non-empty list",
@@ -255,9 +334,113 @@ export function stateMigrationContract(
   );
   const resultStatuses = requiredList(result.statuses, "api.migrate.result.statuses");
   const modeContracts: Record<string, StateMigrationMapping> = {};
+  const requiredSelectors: Record<string, string[]> = {};
   for (const name of ["inventory", "preview", "apply"]) {
     modeContracts[name] = mapping(modes[name], `api.migrate.modes.${name}`);
     requiredString(modeContracts[name].selector, `api.migrate.modes.${name}.selector`);
+    if (name === "apply") {
+      requiredSelectors[name] = requiredList(
+        modeContracts[name].selectors_required,
+        `api.migrate.modes.${name}.selectors_required`,
+      );
+    } else {
+      requiredSelectors[name] = [];
+    }
+  }
+  if (!Array.isArray(modes.invalid_combinations)) {
+    throw new Error("state storage authority field 'api.migrate.modes.invalid_combinations' must be a list");
+  }
+  const invalidCombinations = modes.invalid_combinations.map((value, index) => {
+    const combination = mapping(value, `api.migrate.modes.invalid_combinations[${index}]`);
+    const flags = requiredList(
+      combination.flags,
+      `api.migrate.modes.invalid_combinations[${index}].flags`,
+    );
+    return {
+      flags,
+      ...(optionalString(
+        combination.requires,
+        `api.migrate.modes.invalid_combinations[${index}].requires`,
+      )
+        ? { requires: optionalString(combination.requires, "requires") }
+        : {}),
+      failureClass: requiredString(
+        combination.failure_class,
+        `api.migrate.modes.invalid_combinations[${index}].failure_class`,
+      ),
+      message: requiredString(
+        combination.message,
+        `api.migrate.modes.invalid_combinations[${index}].message`,
+      ),
+    };
+  });
+
+  const resultRequiredFields = requiredList(
+    result.required_fields,
+    "api.migrate.result.required_fields",
+  );
+  const resultEntryFields = requiredList(result.entry_fields, "api.migrate.result.entry_fields");
+  const resultCountFields = requiredList(result.count_fields, "api.migrate.result.count_fields");
+  requireUnique(resultRequiredFields, "api.migrate.result.required_fields");
+  requireUnique(resultEntryFields, "api.migrate.result.entry_fields");
+  requireUnique(resultCountFields, "api.migrate.result.count_fields");
+  const omission = mapping(result.omission, "api.migrate.result.omission");
+  requireKeys(
+    omission,
+    ["fields", "complete_reason", "bounded_reason", "retry", "retrieval", "semantics"],
+    "api.migrate.result.omission",
+  );
+  const omissionFields = requiredList(omission.fields, "api.migrate.result.omission.fields");
+  requireUnique(omissionFields, "api.migrate.result.omission.fields");
+  const omissionContract: StateMigrationOmissionContract = {
+    fields: omissionFields,
+    completeReason: requiredString(
+      omission.complete_reason,
+      "api.migrate.result.omission.complete_reason",
+    ),
+    boundedReason: requiredString(
+      omission.bounded_reason,
+      "api.migrate.result.omission.bounded_reason",
+    ),
+    retry: requiredString(omission.retry, "api.migrate.result.omission.retry"),
+    retrieval: requiredString(omission.retrieval, "api.migrate.result.omission.retrieval"),
+    semantics: requiredString(omission.semantics, "api.migrate.result.omission.semantics"),
+  };
+  if (omissionFields.some((field) => !resultRequiredFields.includes(field))) {
+    throw new Error("state storage authority omission fields must be required result fields");
+  }
+
+  if (!Array.isArray(failures.classes)) {
+    throw new Error("state storage authority field 'api.migrate.failures.classes' must be a list");
+  }
+  const failureClasses: Record<string, StateMigrationMapping> = {};
+  for (const [index, value] of failures.classes.entries()) {
+    const failure = mapping(value, `api.migrate.failures.classes[${index}]`);
+    const name = requiredString(failure.class, `api.migrate.failures.classes[${index}].class`);
+    requireKeys(
+      failure,
+      ["message", "example", "recovery"],
+      `api.migrate.failures.classes[${index}]`,
+    );
+    requiredString(failure.message, `api.migrate.failures.classes[${index}].message`);
+    requiredString(failure.example, `api.migrate.failures.classes[${index}].example`);
+    requiredString(failure.recovery, `api.migrate.failures.classes[${index}].recovery`);
+    failureClasses[name] = failure;
+  }
+  for (const combination of invalidCombinations) {
+    if (!failureClasses[combination.failureClass]) {
+      throw new Error(
+        `state storage authority invalid combination references unknown failure class '${combination.failureClass}'`,
+      );
+    }
+  }
+  const selectorFlagSet = new Set(selectorFlags);
+  for (const required of requiredSelectors.apply) {
+    if (!selectorFlagSet.has(required)) {
+      throw new Error(
+        `state storage authority apply selector requirement '${required}' is not a selector flag`,
+      );
+    }
   }
 
   return {
@@ -273,9 +456,39 @@ export function stateMigrationContract(
     supportedArtifacts: migrationArtifacts,
     selectors: selectorContracts,
     modes: modeContracts,
+    invalidCombinations,
+    requiredSelectors,
+    inventory: {
+      roots: scanRoots,
+      excludedRelativePaths: requiredList(
+        boundedScan.excluded_relative_paths,
+        "api.migrate.inventory.bounded_scan.excluded_relative_paths",
+      ),
+      maximumCandidateFiles: requiredPositiveInteger(
+        boundedScan.maximum_candidate_files,
+        "api.migrate.inventory.bounded_scan.maximum_candidate_files",
+      ),
+      maximumFileBytes: requiredPositiveInteger(
+        boundedScan.maximum_file_bytes,
+        "api.migrate.inventory.bounded_scan.maximum_file_bytes",
+      ),
+      maximumTotalBytes: requiredPositiveInteger(
+        boundedScan.maximum_total_bytes,
+        "api.migrate.inventory.bounded_scan.maximum_total_bytes",
+      ),
+      ordering: requiredString(
+        boundedScan.ordering,
+        "api.migrate.inventory.bounded_scan.ordering",
+      ),
+    },
     candidatePattern,
     numberPattern,
-    scanRoots,
+    selectorValidValues,
+    resultRequiredFields,
+    resultEntryFields,
+    resultCountFields,
+    omission: omissionContract,
+    failureClasses,
     resultSchemaVersion,
     resultStatuses,
   };
@@ -293,4 +506,17 @@ export function migrationModeFlags(contract: StateMigrationContract, mode: strin
   return requiredString(value.selector, `api.migrate.modes.${mode}.selector`)
     .split(/\s+/)
     .filter((token) => token.startsWith("--"));
+}
+
+export function migrationFailure(
+  contract: StateMigrationContract,
+  failureClass: string,
+): StateMigrationMapping {
+  const failure = contract.failureClasses[failureClass];
+  if (!failure) throw new Error(`state migration failure class '${failureClass}' is unavailable`);
+  return failure;
+}
+
+export function migrationSelectorNames(contract: StateMigrationContract): string[] {
+  return Object.keys(contract.selectors);
 }

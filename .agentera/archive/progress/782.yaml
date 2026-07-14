@@ -1,0 +1,19 @@
+schemaVersion: agentera.stateArchiveEntry.v1
+artifact_id: progress
+entry_number: 782
+record:
+  number: 782
+  timestamp: 2026-07-14 07:35
+  type: fix
+  phase: build
+  what: "Corrected Cycle 781 evidence and implemented Task 1 migration authority consumption: schema no longer keeps a migration filter registry; runtime derives selectors, invalid combinations, result/count/omission fields, bounds, and recovery from the canonical authority; deferred inventory and apply remain filesystem-free. Cycle 781 is superseded by this correction and remains byte-unchanged."
+  inspiration: Active plan Task 1 and prior evaluator findings for Cycle 781 authority duplication, unconsumed result metadata, missing truncation tests, and inaccurate count/path claims.
+  discovered: The exact final focused command passed 61 tests across 4 files. The earlier 58/63 claims were not reused. The actual existing error helper path is packages/cli/src/cli/errors.ts, not packages/cli/src/cli/commands/errors.ts. Task 1 can validate symlink and exclusion paths read-only while Task 2 retains all candidate scanning and mutation. The repository formatter remains blocked by the existing intentionally malformed invalid-progress-yaml fixture.
+  verified: "Exact focused rerun: pnpm -C packages/cli exec vp test run test/state/migrationAuthority.test.ts test/cli/state.test.ts test/cli/schema.test.ts test/cli/invalidInputEnvelope.test.ts -> 4 files, 61 tests passed. Non-packaging: pnpm -C packages/cli exec vp test run --exclude test/packaging/prepack.test.ts -> 174 files, 1,757 tests passed. Full suite: pnpm -C packages/cli test -> 174 files passed, 1,761 tests passed, 5 known npm 12 packaging JSON-parser tests failed. Typecheck, build, bundle:data, capability/status, capability-contract, artifact/progress, compact, source scans, authority bundle parity, and text/JSON/YAML migration smokes passed; valid apply reported mutation_performed=false."
+  next: Leave Task 1 pending and do not record an evaluation; the orchestrator owns independent audit and status. Keep Task 2 filesystem inventory, archive, backup, projection, and mutation deferred. Do not change Cycle 781, run migration, enrich Git, alter vision/profile/decision satisfaction, publish, tag, or push.
+  context:
+    intent: "Execute Task 1: make migration authority executable, prove truthful bounded contracts, and publish corrected independent evidence without starting filesystem migration."
+    constraints: Preserve archive immutability, Decision 53 no-inference, uniform_10_40_50, non-Git completion, no remote access, stale profile and missing startup caveats, known npm 12 failures, and the confirmed agentera state migrate namespace. Fold this progress correction into the substantive implementation commit.
+    unknowns: Independent orchestration audit remains. Stale profile and missing decision, vision, and profile startup caveats remain unchanged.
+    scope: references/artifacts/state-storage-authority.yaml; packages/cli/src/state/migrationAuthority.ts; packages/cli/src/cli/commands/migrate.ts; packages/cli/src/cli/commands/schema.ts; packages/cli/src/cli/help.ts; packages/cli/test/state/migrationAuthority.test.ts; TODO.md; corrected Cycle 781 actual path packages/cli/src/cli/errors.ts
+record_sha256: bb0243c663903e2ac5724bb096ccc46063482b0785114851db024a51e744533c
