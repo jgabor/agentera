@@ -98,6 +98,16 @@ tasks:
       - GIVEN a current plan WHEN archived THEN its identity remains unchanged and lifecycle provenance changes explicitly.
       - GIVEN legacy plans WHEN identity is derived THEN results are deterministic without rewriting history; collisions return structured ambiguity.
       - GIVEN valid transition and collision fixtures WHEN tested THEN identity continuity passes and ambiguous identity fails safely.
+    evaluation:
+      attempt_count: 1
+      failure_count: 1
+      last_verdict: fail
+      last_failure_evidence: Cycle 800 verification commands omit required packages/cli working-directory context and are not independently runnable from repository root.
+      provenance:
+        attempt_id: task-3-audit-1-20260714
+        source: independent Task 3 acceptance audit
+        recorded_at: 2026-07-14 23:42
+        writer_command: agentera state plan record-evaluation
   - number: 4
     name: Deliver active and archived plan retrieval
     depends_on:

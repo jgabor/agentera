@@ -1,4 +1,34 @@
 cycles:
+  - number: 801
+    timestamp: 2026-07-14 23:43
+    type: test
+    phase: audit
+    what: Reproduced Task 3 acceptance evidence with exact commands runnable from
+      the repository root.
+    inspiration: Independent Task 3 evidence audit attempt 1.
+    discovered: No product defect was exposed; the failure was limited to missing
+      working-directory context in Cycle 800 commands.
+    verified: "AC1: pnpm -C packages/cli exec vp test run
+      test/state/planTaskRetrieval.test.ts test/state/write/stateWrite.test.ts
+      test/state/planLifecycleContract.test.ts test/lint/monolithLint.test.ts
+      passed 4 files/81 tests; the stateWrite transition fixture proves
+      persisted identity continuity and active-to-archived provenance. AC2: the
+      same command passed deterministic read-only legacy identity,
+      byte-preserving mirrored provenance, and structured ambiguity with every
+      collision path. AC3: all transition/collision/legacy fixtures passed. pnpm
+      -C packages/cli run typecheck exited 0; pnpm -C packages/cli build exited
+      0; node packages/cli/dist/bin/agentera.js check validate
+      capability-contract --format json passed 2/2; node
+      packages/cli/dist/bin/agentera.js check compact returned status=pass with
+      over_limit=0, formatting=0, protected_overflow=0, errors=0, changed=0."
+    next: Task 3 evidence is reproducible; leave Tasks 4 and 5 untouched.
+    context:
+      intent: Correct Cycle 800's non-root-runnable command evidence without changing
+        its record or Task 3 product behavior.
+      constraints: Preserve Cycle 800, evaluation attempt 1, production code, Task 2
+        audit state, package metadata, and all later tasks.
+      unknowns: None; proportional reproduction exposed no product defect.
+      scope: Progress evidence and Task 3 plan state only.
   - number: 800
     timestamp: 2026-07-14 23:34
     type: feat
@@ -340,45 +370,9 @@ cycles:
       scope: packages/cli/test/packaging/prepack.test.ts; packages/cli/package.json;
         .agentera/plan.yaml; .agentera/progress.yaml; generated ignored
         packages/cli/dist and packages/cli/bundle
-  - number: 791
-    timestamp: 2026-07-14 15:12
-    type: fix
-    phase: build
-    what: "Fixed the two audited simplified Task 2 contract drift defects: explicit
-      project is now required for Git backfill apply, and numbered projection
-      guidance is lossless across live explain, help, docs, and bundle inputs."
-    inspiration: "Task 2 independent audit failure: backfill apply used cwd fallback
-      and projection guidance described destructive history loss."
-    discovered: The canonical authority already declared --project PATH in
-      apply_requires and already defined verified numbered archives as
-      authoritative; the runtime and help were the drift. Inventory and preview
-      remain cwd-convenient, while experiments and TODO retain their separate
-      owning compaction contracts.
-    verified: "Focused suite: 7 files and 126 tests passed. Non-packaging boundary:
-      176 files and 1789 tests passed. Full suite: 177 files and 1798 tests,
-      1793 passed with 5 known npm-pack JSON parser failures in packaging
-      regressions. Typecheck and build passed; bundle:data passed;
-      capability-contract validation passed 2/2; py-ts parity reported drift
-      none; markdownlint passed; check compact passed with progress recovery
-      refusal preserved; schema, help, prime, migration preview, and
-      explicit-project backfill preview smokes passed."
-    next: Keep Plan Task 2 pending with its recorded single failure; do not record a
-      new evaluation or completion state. Preserve the known npm 12 packaging
-      parser caveat and the five progress entries whose numbered archive
-      evidence is missing.
-    context:
-      intent: Retry simplified Agentera Task 2 without adding security machinery or
-        changing unrelated artifact contracts.
-      constraints: Preserved direct --apply --force with explicit
-        project/artifact/number, apply-time revalidation, bounds, local-only
-        Git, Decision 53, archived plan/progress evidence,
-        vision/profile/version/release state, and known caveats. Added no
-        receipt, HMAC, token, secret, ledger, hostile-local defense, remote
-        access, or unrelated contract retirement.
-      scope: packages/cli backfill parser/help/explain/tests; skills/agentera
-        references/contract.md; UPGRADE.md; generated ignored CLI bundle; typed
-        progress cycle
 archive:
+  - summary: "Cycle 791 (2026-07-14): Fixed the two audited simplified Task 2
+      contract drift defects: explicit project is now required..."
   - summary: "Cycle 790 (2026-07-14): Aligned the live migration and optional
       local-Git enrichment contract across authority, schema, help, output,
       upgrade..."
@@ -476,15 +470,18 @@ archive:
       preserve..."
   - summary: "Cycle 752 (2026-07-13): Unify state append and projection repair under
       one crash-consistent mutation transaction."
-  - summary: "Cycle 751 (2026-07-13): Corrected Cycle 750's focused-test count
-      through an append-only supersession record."
 omitted: true
-omitted_count: 37
+omitted_count: 38
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded
