@@ -4,7 +4,13 @@ import path from "node:path";
 
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import { queryDecisions, queryHealth, queryPlan, queryProgress, queryTodo } from "../../src/cli/commands/state/index.js";
+import {
+  queryDecisions,
+  queryHealth,
+  queryPlan,
+  queryProgress,
+  queryTodo,
+} from "../../src/cli/commands/state/index.js";
 import { main } from "../../src/cli/dispatch.js";
 import type { SchemaInfo } from "../../src/cli/appContext.js";
 
@@ -64,7 +70,9 @@ function seedProgress(): string {
 describe("cli state progress", () => {
   it("renders recent cycles as text (newest first)", () => {
     const p = seedProgress();
-    const { rc, out } = capture((io) => queryProgress({ command: "progress" }, progressSchema(p), io));
+    const { rc, out } = capture((io) =>
+      queryProgress({ command: "progress" }, progressSchema(p), io),
+    );
     expect(rc).toBe(0);
     const lines = out.trim().split("\n");
     expect(lines[0]).toContain("number=2");
@@ -74,14 +82,18 @@ describe("cli state progress", () => {
 
   it("limits the number of entries", () => {
     const p = seedProgress();
-    const { out } = capture((io) => queryProgress({ command: "progress", limit: 1 }, progressSchema(p), io));
+    const { out } = capture((io) =>
+      queryProgress({ command: "progress", limit: 1 }, progressSchema(p), io),
+    );
     expect(out).toContain("number=2");
     expect(out).not.toContain("number=1");
   });
 
   it("emits a structured JSON payload", () => {
     const p = seedProgress();
-    const { rc, out } = capture((io) => queryProgress({ command: "progress", format: "json" }, progressSchema(p), io));
+    const { rc, out } = capture((io) =>
+      queryProgress({ command: "progress", format: "json" }, progressSchema(p), io),
+    );
     expect(rc).toBe(0);
     const payload = JSON.parse(out);
     expect(payload.command).toBe("progress");
@@ -105,7 +117,9 @@ describe("cli state progress", () => {
         "",
       ].join("\n"),
     );
-    const { rc, out } = capture((io) => queryProgress({ command: "progress", format: "json" }, progressSchema(p), io));
+    const { rc, out } = capture((io) =>
+      queryProgress({ command: "progress", format: "json" }, progressSchema(p), io),
+    );
     expect(rc).toBe(0);
     const payload = JSON.parse(out);
     expect(payload.entries[0].what).toBe("Shipped a change.");
@@ -115,7 +129,11 @@ describe("cli state progress", () => {
   it("supports --fields selection with sparse context", () => {
     const p = seedProgress();
     const { rc, out } = capture((io) =>
-      queryProgress({ command: "progress", format: "json", fields: "entries" }, progressSchema(p), io),
+      queryProgress(
+        { command: "progress", format: "json", fields: "entries" },
+        progressSchema(p),
+        io,
+      ),
     );
     expect(rc).toBe(0);
     const payload = JSON.parse(out);
@@ -125,7 +143,11 @@ describe("cli state progress", () => {
   it("rejects an unsupported --fields value", () => {
     const p = seedProgress();
     const { rc, err } = capture((io) =>
-      queryProgress({ command: "progress", format: "json", fields: "bogus" }, progressSchema(p), io),
+      queryProgress(
+        { command: "progress", format: "json", fields: "bogus" },
+        progressSchema(p),
+        io,
+      ),
     );
     expect(rc).toBe(1);
     expect(err).toContain("unsupported field 'bogus'");
@@ -137,6 +159,17 @@ describe("cli dispatch: state routing", () => {
     const { rc, err } = capture((io) => main(["node", "agentera", "state"], io));
     expect(rc).toBe(2);
     expect(err).toContain("state_command");
+    expect(err).toContain("migrate");
+    expect(err).toContain("Syntax: agentera state");
+    expect(err).toContain("Example:");
+  });
+
+  it("includes migration in unknown state-command repair values", () => {
+    const { rc, err } = capture((io) => main(["node", "agentera", "state", "unknown"], io));
+    expect(rc).toBe(2);
+    expect(err).toContain("migrate");
+    expect(err).toContain("Syntax: agentera state");
+    expect(err).toContain("agentera state migrate");
   });
 
   it("rejects removed top-level progress with the unknown-command envelope", () => {
@@ -148,8 +181,10 @@ describe("cli dispatch: state routing", () => {
   });
 });
 
-
-function planSchema(absPath: string, progressPath = path.join(path.dirname(absPath), "progress.yaml")): Record<string, SchemaInfo> {
+function planSchema(
+  absPath: string,
+  progressPath = path.join(path.dirname(absPath), "progress.yaml"),
+): Record<string, SchemaInfo> {
   return {
     plan: { path: absPath, record: undefined, schema: {}, fields: { title: { type: "string" } } },
     progress: { path: progressPath, record: undefined, schema: {}, fields: {} },
@@ -185,7 +220,12 @@ function seedPlan(): string {
   return p;
 }
 
-function writeArchivedPlan(planPath: string, filename: string, title: string, status = "complete"): string {
+function writeArchivedPlan(
+  planPath: string,
+  filename: string,
+  title: string,
+  status = "complete",
+): string {
   const archiveDir = path.join(path.dirname(planPath), "archive");
   fs.mkdirSync(archiveDir, { recursive: true });
   const archivePath = path.join(archiveDir, filename);
@@ -245,17 +285,31 @@ function writeLifecycleArchive(planPath: string): string {
     "tasks:",
   ];
   for (const [index, name] of LIFECYCLE_TASK_NAMES.entries()) {
-    lines.push(`  - number: ${index + 1}`, "    status: complete", `    name: ${name}`, "    acceptance:", "      - GIVEN verified behavior THEN retain it");
+    lines.push(
+      `  - number: ${index + 1}`,
+      "    status: complete",
+      `    name: ${name}`,
+      "    acceptance:",
+      "      - GIVEN verified behavior THEN retain it",
+    );
   }
   fs.writeFileSync(archivePath, lines.concat("").join("\n"));
   return archivePath;
 }
 
-function writeLifecycleProgress(planPath: string, summaries = LIFECYCLE_PROGRESS_SUMMARIES): string {
+function writeLifecycleProgress(
+  planPath: string,
+  summaries = LIFECYCLE_PROGRESS_SUMMARIES,
+): string {
   const progressPath = path.join(path.dirname(planPath), "progress.yaml");
   fs.writeFileSync(
     progressPath,
-    ["cycles: []", "archive:", ...summaries.map((summary) => `  - summary: ${JSON.stringify(summary)}`), ""].join("\n"),
+    [
+      "cycles: []",
+      "archive:",
+      ...summaries.map((summary) => `  - summary: ${JSON.stringify(summary)}`),
+      "",
+    ].join("\n"),
   );
   return progressPath;
 }
@@ -272,14 +326,18 @@ describe("cli state plan", () => {
 
   it("filters tasks by status", () => {
     const p = seedPlan();
-    const { out } = capture((io) => queryPlan({ command: "plan", status: "done" }, planSchema(p), io));
+    const { out } = capture((io) =>
+      queryPlan({ command: "plan", status: "done" }, planSchema(p), io),
+    );
     expect(out).toContain("name=Foundation");
     expect(out).not.toContain("State commands");
   });
 
   it("emits a structured payload with summary and source_contract", () => {
     const p = seedPlan();
-    const { rc, out } = capture((io) => queryPlan({ command: "plan", format: "json" }, planSchema(p), io));
+    const { rc, out } = capture((io) =>
+      queryPlan({ command: "plan", format: "json" }, planSchema(p), io),
+    );
     expect(rc).toBe(0);
     const payload = JSON.parse(out);
     expect(payload.command).toBe("plan");
@@ -288,7 +346,11 @@ describe("cli state plan", () => {
     expect(payload.plans[0].status).toBe("open");
     expect(payload.source.legacy_input).toBe(true);
     expect(payload.source.diagnostics).toContainEqual(
-      expect.objectContaining({ path: p, category: "legacy", message: "legacy plan status active normalized to open" }),
+      expect.objectContaining({
+        path: p,
+        category: "legacy",
+        message: "legacy plan status active normalized to open",
+      }),
     );
     expect(payload.source_contract.complete_for_plan_artifact).toBe(true);
     expect(payload.counts.entries).toBe(2);
@@ -296,7 +358,11 @@ describe("cli state plan", () => {
 
   it("reports an absence payload when no plan artifact exists", () => {
     const { rc, out } = capture((io) =>
-      queryPlan({ command: "plan", format: "json" }, planSchema(path.join(tmp, "missing.yaml")), io),
+      queryPlan(
+        { command: "plan", format: "json" },
+        planSchema(path.join(tmp, "missing.yaml")),
+        io,
+      ),
     );
     expect(rc).toBe(0);
     const payload = JSON.parse(out);
@@ -313,7 +379,9 @@ describe("cli state plan", () => {
     expect(text.rc).toBe(0);
     expect(text.out).toContain(`Plan: invalid | path=${p} | category=parse | diagnostic=`);
 
-    const { rc, out } = capture((io) => queryPlan({ command: "plan", format: "json" }, planSchema(p), io));
+    const { rc, out } = capture((io) =>
+      queryPlan({ command: "plan", format: "json" }, planSchema(p), io),
+    );
     expect(rc).toBe(0);
     const payload = JSON.parse(out);
     expect(payload.status).toBe("incomplete");
@@ -323,13 +391,18 @@ describe("cli state plan", () => {
       diagnostic: { path: p, category: "parse" },
     });
     expect(payload.source).toMatchObject({ invalid_path: p });
-    expect(payload.source.diagnostics).toContainEqual(expect.objectContaining({ path: p, category: "parse" }));
+    expect(payload.source.diagnostics).toContainEqual(
+      expect.objectContaining({ path: p, category: "parse" }),
+    );
     expect(payload.source_contract.complete_for_plan_artifact).toBe(false);
   });
 
   it("categorizes archive diagnostics without excluding readable legacy history", () => {
     const p = path.join(tmp, "plan.yaml");
-    fs.writeFileSync(p, ["header:", "  title: Current", "  status: open", "tasks: []", ""].join("\n"));
+    fs.writeFileSync(
+      p,
+      ["header:", "  title: Current", "  status: open", "tasks: []", ""].join("\n"),
+    );
     const archiveDir = path.join(tmp, "archive");
     fs.mkdirSync(archiveDir, { recursive: true });
     fs.writeFileSync(path.join(archiveDir, "PLAN-parse.yaml"), "header: [broken\n");
@@ -346,30 +419,40 @@ describe("cli state plan", () => {
       ["header:", "  title: Legacy", "  status: active", "tasks: []", ""].join("\n"),
     );
 
-    const { rc, out } = capture((io) => queryPlan({ command: "plan", format: "json" }, planSchema(p), io));
+    const { rc, out } = capture((io) =>
+      queryPlan({ command: "plan", format: "json" }, planSchema(p), io),
+    );
     expect(rc).toBe(0);
     const payload = JSON.parse(out);
-    expect(payload.source.diagnostics.map((diagnostic: { category: string }) => diagnostic.category).sort()).toEqual([
-      "legacy",
-      "lifecycle",
-      "parse",
-      "schema",
-    ]);
+    expect(
+      payload.source.diagnostics
+        .map((diagnostic: { category: string }) => diagnostic.category)
+        .sort(),
+    ).toEqual(["legacy", "lifecycle", "parse", "schema"]);
     expect(payload.source.invalid_archive_paths).toEqual([
       path.join(archiveDir, "PLAN-lifecycle.yaml"),
       path.join(archiveDir, "PLAN-parse.yaml"),
       path.join(archiveDir, "PLAN-schema.yaml"),
     ]);
-    expect(payload.plans).toContainEqual(expect.objectContaining({ path: path.join(archiveDir, "PLAN-legacy.yaml"), status: "open" }));
+    expect(payload.plans).toContainEqual(
+      expect.objectContaining({ path: path.join(archiveDir, "PLAN-legacy.yaml"), status: "open" }),
+    );
   });
 
   it("reads a valid archived plan when no active plan remains", () => {
     const p = path.join(tmp, "plan.yaml");
-    const archivePath = writeArchivedPlan(p, "PLAN-2026-07-12-lifecycle.yaml", "Archived lifecycle", "complete");
+    const archivePath = writeArchivedPlan(
+      p,
+      "PLAN-2026-07-12-lifecycle.yaml",
+      "Archived lifecycle",
+      "complete",
+    );
     fs.writeFileSync(path.join(tmp, "archive", "PLAN-malformed.yaml"), "header: [broken\n");
     fs.writeFileSync(path.join(tmp, "archive", "notes.yaml"), "notes: unrelated\n");
 
-    const { rc, out } = capture((io) => queryPlan({ command: "plan", format: "json" }, planSchema(p), io));
+    const { rc, out } = capture((io) =>
+      queryPlan({ command: "plan", format: "json" }, planSchema(p), io),
+    );
     expect(rc).toBe(0);
     const payload = JSON.parse(out);
     expect(payload.status).toBe("ok");
@@ -382,7 +465,9 @@ describe("cli state plan", () => {
     expect(payload.source.active).toBe(false);
     expect(payload.source_contract.complete_for_plan_artifact).toBe(true);
     expect(payload.source_contract.complete_for_normal_startup_evaluation).toBe(false);
-    expect(payload.source_contract.invalid_archive_paths).toEqual([path.join(tmp, "archive", "PLAN-malformed.yaml")]);
+    expect(payload.source_contract.invalid_archive_paths).toEqual([
+      path.join(tmp, "archive", "PLAN-malformed.yaml"),
+    ]);
     expect(payload.source_contract.lifecycle_state.status).toBe("degraded");
     expect(payload.source_contract.lifecycle_state.current_plan_degraded).toBe(false);
     expect(payload.plans).toHaveLength(1);
@@ -394,16 +479,21 @@ describe("cli state plan", () => {
     const archivePath = writeLifecycleArchive(p);
     const progressPath = writeLifecycleProgress(p);
 
-    const { rc, out } = capture((io) => queryPlan({ command: "plan", format: "json" }, planSchema(p, progressPath), io));
+    const { rc, out } = capture((io) =>
+      queryPlan({ command: "plan", format: "json" }, planSchema(p, progressPath), io),
+    );
     expect(rc).toBe(0);
     const payload = JSON.parse(out);
     expect(payload.source.path).toBe(archivePath);
     expect(payload.summary.evidence_status).toBe("complete");
     expect(payload.source_contract.complete_for_plan_artifact).toBe(true);
     expect(payload.entries).toHaveLength(8);
-    expect(payload.entries.map((task: { evidence_provenance: Array<{ cycle_number: number }> }) => task.evidence_provenance[0].cycle_number)).toEqual([
-      716, 717, 718, 719, 720, 727, 728, 729,
-    ]);
+    expect(
+      payload.entries.map(
+        (task: { evidence_provenance: Array<{ cycle_number: number }> }) =>
+          task.evidence_provenance[0].cycle_number,
+      ),
+    ).toEqual([716, 717, 718, 719, 720, 727, 728, 729]);
     for (const task of payload.entries) {
       expect(task.evidence).toHaveLength(1);
       expect(task.evidence[0].source).toBe("progress");
@@ -430,8 +520,12 @@ describe("cli state plan", () => {
         "",
       ].join("\n"),
     );
-    const progressPath = writeLifecycleProgress(p, ["Cycle 999 (2026-07-12): Unrelated verification only."]);
-    const { rc, out } = capture((io) => queryPlan({ command: "plan", format: "json" }, planSchema(p, progressPath), io));
+    const progressPath = writeLifecycleProgress(p, [
+      "Cycle 999 (2026-07-12): Unrelated verification only.",
+    ]);
+    const { rc, out } = capture((io) =>
+      queryPlan({ command: "plan", format: "json" }, planSchema(p, progressPath), io),
+    );
     expect(rc).toBe(0);
     const payload = JSON.parse(out);
     expect(payload.status).toBe("incomplete");
@@ -448,7 +542,9 @@ describe("cli state plan", () => {
     const older = writeArchivedPlan(p, "PLAN-2026-07-10-older.yaml", "Older archive");
     const newer = writeArchivedPlan(p, "PLAN-2026-07-11-newer.yaml", "Newer archive");
 
-    const { rc, out } = capture((io) => queryPlan({ command: "plan", format: "json" }, planSchema(p), io));
+    const { rc, out } = capture((io) =>
+      queryPlan({ command: "plan", format: "json" }, planSchema(p), io),
+    );
     expect(rc).toBe(0);
     const payload = JSON.parse(out);
     expect(payload.plans.map((plan: { path: string }) => plan.path)).toEqual([p, newer, older]);
@@ -481,13 +577,18 @@ describe("cli state plan", () => {
     const archive = writeArchivedPlan(p, "PLAN-2026-07-12-history.yaml", "History", "open");
     fs.appendFileSync(archive, "active: true\narchived: false\n");
 
-    const { out } = capture((io) => queryPlan({ command: "plan", format: "json" }, planSchema(p), io));
+    const { out } = capture((io) =>
+      queryPlan({ command: "plan", format: "json" }, planSchema(p), io),
+    );
     const payload = JSON.parse(out);
-    expect(payload.plans).toContainEqual(expect.objectContaining({ path: p, active: true, archived: false }));
-    expect(payload.plans).toContainEqual(expect.objectContaining({ path: archive, active: false, archived: true }));
+    expect(payload.plans).toContainEqual(
+      expect.objectContaining({ path: p, active: true, archived: false }),
+    );
+    expect(payload.plans).toContainEqual(
+      expect.objectContaining({ path: archive, active: false, archived: true }),
+    );
   });
 });
-
 
 function healthSchema(absPath: string): Record<string, SchemaInfo> {
   return { health: { path: absPath, record: undefined, schema: {}, fields: {} } };
@@ -526,14 +627,18 @@ describe("cli state health", () => {
 
   it("filters by dimension substring", () => {
     const p = seedHealth();
-    const { out } = capture((io) => queryHealth({ command: "health", dimension: "coupling" }, healthSchema(p), io));
+    const { out } = capture((io) =>
+      queryHealth({ command: "health", dimension: "coupling" }, healthSchema(p), io),
+    );
     expect(out).toContain("coupling_health: A");
     expect(out).not.toContain("test_health");
   });
 
   it("emits a latest-only structured payload", () => {
     const p = seedHealth();
-    const { rc, out } = capture((io) => queryHealth({ command: "health", format: "json" }, healthSchema(p), io));
+    const { rc, out } = capture((io) =>
+      queryHealth({ command: "health", format: "json" }, healthSchema(p), io),
+    );
     expect(rc).toBe(0);
     const payload = JSON.parse(out);
     expect(payload.command).toBe("health");
@@ -542,7 +647,6 @@ describe("cli state health", () => {
     expect(payload.entries[0].number).toBe(2);
   });
 });
-
 
 function todoSchema(absPath: string): Record<string, SchemaInfo> {
   return { todo: { path: absPath, record: undefined, schema: {}, fields: {} } };
@@ -572,8 +676,13 @@ describe("cli state todo", () => {
 
   it("filters YAML todo entries by severity (json)", () => {
     const p = path.join(tmp, "todo.yaml");
-    fs.writeFileSync(p, "todos:\n  - severity: critical\n    status: open\n    description: A\n  - severity: info\n    status: open\n    description: B\n");
-    const { rc, out } = capture((io) => queryTodo({ command: "todo", severity: "critical", format: "json" }, todoSchema(p), io));
+    fs.writeFileSync(
+      p,
+      "todos:\n  - severity: critical\n    status: open\n    description: A\n  - severity: info\n    status: open\n    description: B\n",
+    );
+    const { rc, out } = capture((io) =>
+      queryTodo({ command: "todo", severity: "critical", format: "json" }, todoSchema(p), io),
+    );
     expect(rc).toBe(0);
     const payload = JSON.parse(out);
     expect(payload.counts.entries).toBe(1);
@@ -628,7 +737,6 @@ describe("cli state todo", () => {
   });
 });
 
-
 function decisionsSchema(absPath: string): Record<string, SchemaInfo> {
   return {
     decisions: {
@@ -654,7 +762,9 @@ describe("cli state decisions", () => {
         "",
       ].join("\n"),
     );
-    const { rc, out } = capture((io) => queryDecisions({ command: "decisions" }, decisionsSchema(p), io));
+    const { rc, out } = capture((io) =>
+      queryDecisions({ command: "decisions" }, decisionsSchema(p), io),
+    );
     expect(rc).toBe(0);
     expect(out).toContain("number=1");
     expect(out).toContain("date=2026-05-29");
@@ -673,7 +783,9 @@ describe("cli state decisions", () => {
         "",
       ].join("\n"),
     );
-    const { rc, out } = capture((io) => queryDecisions({ command: "decisions", format: "json" }, decisionsSchema(p), io));
+    const { rc, out } = capture((io) =>
+      queryDecisions({ command: "decisions", format: "json" }, decisionsSchema(p), io),
+    );
     expect(rc).toBe(0);
     const payload = JSON.parse(out);
     expect(payload.command).toBe("decisions");
@@ -691,7 +803,9 @@ describe("cli state decisions", () => {
       p,
       ["decisions: []", "archive:", "  - 'Decision 5 (2026-01-02): chose X'", ""].join("\n"),
     );
-    const { out } = capture((io) => queryDecisions({ command: "decisions", format: "json" }, decisionsSchema(p), io));
+    const { out } = capture((io) =>
+      queryDecisions({ command: "decisions", format: "json" }, decisionsSchema(p), io),
+    );
     const payload = JSON.parse(out);
     const entry = payload.entries[0];
     expect(entry.compacted).toBe(true);

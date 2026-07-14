@@ -58,6 +58,16 @@ tasks:
     status: pending
     acceptance:
       - GIVEN command namespace and custom-name discovery remain undecided WHEN design begins THEN the operator confirms both before parser or schema changes, and the resulting authority tests schema-backed selectors, project bounds, formats, preview/apply/force, compatibility, backups, deterministic failures, monotonic retry, and Git-independent publication.
+    evaluation:
+      attempt_count: 1
+      failure_count: 1
+      last_verdict: fail
+      last_failure_evidence: Migration parser rules duplicate authority-owned values; YAML failures downgrade to text; bare state valid-values omit migrate; tests do not prove text/YAML parity, deterministic omission/truncation, or schema-driven parser behavior.
+      provenance:
+        attempt_id: task2-independent-audit-1
+        source: "Independent orchestration evaluator: migration authority ownership and envelope audit"
+        recorded_at: 2026-07-14 05:50
+        writer_command: agentera state plan record-evaluation
   - number: 3
     name: Execute non-Git legacy migration
     depends_on:

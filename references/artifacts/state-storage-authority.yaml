@@ -505,6 +505,7 @@ api:
         meaning: exact positive legacy entry number; never a positional offset
       path:
         flag: --path PATH
+        pattern: '^[A-Za-z0-9][A-Za-z0-9._-]{0,63}\.(md|yaml|yml)$'
         relative_to: selected_project_root
         required_for_custom_apply: true
         meaning: exact candidate path pin; inventory may omit it to enumerate candidates
@@ -514,6 +515,8 @@ api:
         minimum: 1
         maximum: 100
         meaning: maximum returned candidate summaries, not a scan escape hatch
+      format:
+        flag: --format FORMAT
     modes:
       inventory:
         selector: default when neither --dry-run nor --apply is present

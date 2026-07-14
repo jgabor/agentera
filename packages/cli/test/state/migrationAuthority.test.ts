@@ -163,7 +163,7 @@ describe("local migration authority", () => {
     );
   });
 
-  it("loads the authority from the source root and rejects selector drift", () => {
+  it("loads parser values from the authority without a second value registry", () => {
     const contract = stateMigrationContract(REPO_ROOT);
     expect(contract.command).toContain("agentera state migrate");
     expect(contract.formats).toEqual(["text", "json", "yaml"]);
@@ -173,38 +173,52 @@ describe("local migration authority", () => {
     const authorityPath = path.join(brokenRoot, AUTHORITY_RELATIVE_PATH);
     fs.mkdirSync(path.dirname(authorityPath), { recursive: true });
     const authority = loadAuthority(path.join(REPO_ROOT, AUTHORITY_RELATIVE_PATH));
-    authority.api.migrate.formats = ["json"];
+    authority.api.migrate.formats = ["yaml", "json"];
+    authority.api.migrate.default_limit = 2;
+    authority.api.migrate.maximum_limit = 3;
+    authority.api.migrate.selectors.artifact.flag = "--kind ARTIFACT";
+    authority.api.migrate.selectors.format.flag = "--output FORMAT";
+    authority.api.migrate.selectors.path.pattern = "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}\\.txt$";
+    authority.api.migrate.selectors.limit.maximum = 3;
+    authority.api.migrate.command = authority.api.migrate.command
+      .replace("{text,json,yaml}", "{yaml,json}")
+      .replace("--artifact ARTIFACT", "--kind ARTIFACT")
+      .replace("--format", "--output");
     fs.writeFileSync(authorityPath, YAML.stringify(authority));
-    expect(() => stateMigrationContract(brokenRoot)).toThrow(
-      "migrate formats must be text, json, yaml",
+    const mutated = stateMigrationContract(brokenRoot);
+    expect(mutated.formats).toEqual(["yaml", "json"]);
+    expect(parseMigrateArgs([], mutated)).toMatchObject({ format: "yaml", limit: 2 });
+    const schemaDriven = parseMigrateArgs(
+      ["--kind", "progress", "--output", "yaml", "--path", "custom.txt", "--limit", "3"],
+      mutated,
     );
+    expect(schemaDriven).not.toHaveProperty("error");
+    expect(validateMigrateArgs(schemaDriven as any, mutated)).toBeNull();
+    expect(parseMigrateArgs(["--output", "text"], mutated)).toMatchObject({
+      error: expect.stringContaining("invalid choice"),
+    });
   });
 
   it("parses the default, preview, and explicit mutation modes without executing migration", () => {
     const contract = stateMigrationContract(REPO_ROOT);
-    const inventory = parseMigrateArgs([]);
-    expect(inventory).toMatchObject({ dryRun: false, apply: false, force: false, format: "text" });
-    const preview = parseMigrateArgs([
-      "--artifact",
-      "progress",
-      "--number",
-      "1",
-      "--dry-run",
-      "--format",
-      "yaml",
-    ]);
+    const inventory = parseMigrateArgs([], contract);
+    expect(inventory).toMatchObject({
+      dryRun: false,
+      apply: false,
+      force: false,
+      format: contract.formats[0],
+      limit: contract.defaultLimit,
+    });
+    const preview = parseMigrateArgs(
+      ["--artifact", "progress", "--number", "1", "--dry-run", "--format", "yaml"],
+      contract,
+    );
     expect(preview).not.toHaveProperty("error");
     expect(validateMigrateArgs(preview as any, contract)).toBeNull();
-    const apply = parseMigrateArgs([
-      "--artifact",
-      "progress",
-      "--number",
-      "1",
-      "--apply",
-      "--force",
-      "--format",
-      "json",
-    ]);
+    const apply = parseMigrateArgs(
+      ["--artifact", "progress", "--number", "1", "--apply", "--force", "--format", "json"],
+      contract,
+    );
     expect(apply).not.toHaveProperty("error");
     expect(validateMigrateArgs(apply as any, contract)).toBeNull();
     expect(
@@ -222,6 +236,35 @@ describe("local migration authority", () => {
     expect(
       validateMigrateArgs({ ...(preview as any), path: ".agentera/state.txt" }, contract),
     ).toContain("unsupported");
+    expect(validateMigrateArgs({ ...(preview as any), limit: 101 }, contract)).toContain(
+      "between 1 and 100",
+    );
+  });
+
+  it("keeps source-owned parser rules and deterministic bounded omission metadata visible", () => {
+    const authoritySource = fs.readFileSync(path.join(REPO_ROOT, AUTHORITY_RELATIVE_PATH), "utf8");
+    const authorityRuntime = fs.readFileSync(
+      path.join(REPO_ROOT, "packages/cli/src/state/migrationAuthority.ts"),
+      "utf8",
+    );
+    const parserSource = fs.readFileSync(
+      path.join(REPO_ROOT, "packages/cli/src/cli/commands/migrate.ts"),
+      "utf8",
+    );
+    expect(authoritySource).toContain("single_source_rule:");
+    expect(authorityRuntime).not.toMatch(/EXPECTED_(AUTHORITY_SCHEMA|ARTIFACTS|FORMATS)/);
+    expect(authorityRuntime).not.toMatch(/namespace\s*!==/);
+    expect(authorityRuntime).not.toMatch(/formats\.join/);
+    expect(authorityRuntime).not.toMatch(/migrationArtifacts\.join/);
+    expect(parserSource).not.toContain("MIGRATE_SYNTAX");
+    expect(parserSource).not.toMatch(/value\s*!==\s*[\"'](?:text|json|yaml)/);
+
+    const migration = loadAuthority(path.join(REPO_ROOT, AUTHORITY_RELATIVE_PATH)).api.migrate;
+    expect(migration.result.omission).toContain("omitted=true");
+    expect(migration.result.omission).toContain("bounded retry/list pointer");
+    expect(migration.inventory.bounded_scan.ordering).toBe("normalized_relative_path_ascending");
+    expect(migration.inventory.bounded_scan.maximum_candidate_files).toBe(256);
+    expect(migration.inventory.bounded_scan.maximum_total_bytes).toBe(16777216);
   });
 
   it("exposes help/schema/dispatch and leaves valid invocations filesystem-free", () => {
@@ -292,6 +335,30 @@ describe("local migration authority", () => {
     );
     expect(invalid.rc).toBe(2);
     expect(JSON.parse(invalid.out).error.message).toContain("--force");
+  });
+
+  it("keeps invalid envelopes equivalent across JSON and YAML and gives text repair guidance", () => {
+    const args = ["--artifact", "progress", "--apply"];
+    const json = capture((io) => runMigrate([...args, "--format", "json"], io, REPO_ROOT));
+    const yaml = capture((io) => runMigrate([...args, "--format", "yaml"], io, REPO_ROOT));
+    const text = capture((io) => runMigrate([...args, "--format", "text"], io, REPO_ROOT));
+
+    expect(json.rc).toBe(2);
+    expect(yaml.rc).toBe(2);
+    expect(JSON.parse(json.out)).toEqual(YAML.parse(yaml.out));
+    expect(YAML.parse(yaml.out)).toMatchObject({
+      schemaVersion: "agentera.invalidInputEnvelope.v2",
+      status: "fail",
+      error: {
+        syntax: expect.stringContaining("agentera state migrate"),
+        example: expect.stringContaining("agentera state migrate"),
+      },
+    });
+    expect(text.rc).toBe(2);
+    expect(text.out).toBe("");
+    expect(text.err).toContain("Syntax: agentera state migrate");
+    expect(text.err).toContain("Example:");
+    expect(text.err).toContain("--force");
   });
 
   it("keeps the bundled authority byte-equivalent to the source authority", () => {

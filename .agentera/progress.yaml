@@ -1,4 +1,62 @@
 cycles:
+  - number: 781
+    timestamp: 2026-07-14 06:10
+    type: fix
+    phase: build
+    what: Retried Task 2 after the independent authority audit by removing
+      duplicated migration parser values, deriving parser/help/schema surfaces
+      from the canonical authority, preserving structured YAML invalid-input
+      envelopes, and adding bounded authority and dispatch coverage without
+      implementing migration execution.
+    inspiration: Plan Task 2 retry after independent migration authority and
+      envelope audit failure; user-confirmed agentera state migrate namespace
+      and bounded project-local custom-name inventory.
+    discovered: The authority needed machine-readable selector metadata for the
+      candidate filename pattern and format selector so parser and boundary
+      checks could consume source-owned values without a second registry. The
+      existing npm 12 packaging harness retains five known JSON parsing failures
+      outside this scope.
+    verified: "Focused migration/state/help/schema tests passed: 4 files, 63 tests.
+      Non-packaging CLI suite passed: 174 files, 1,754 tests. Typecheck, build,
+      and bundle:data passed. Migration source/bundle authority parity passed.
+      Capability-contract and capability status validation passed. Plan,
+      progress, decisions, and health artifact validation passed. check compact
+      --format json passed with error_count=0, over_limit_count=0,
+      protected_overflow_count=0, and changed_count=0; the five pre-existing
+      progress archive-recovery refusals remained unchanged. CLI smoke checks
+      passed for state migrate help, schema JSON, inventory JSON/YAML, dry-run,
+      apply-force dispatch, invalid apply-without-force, and bare state
+      guidance. JSON and YAML invalid-input envelopes parsed equivalently and
+      text guidance retained syntax/example repair fields."
+    next: Leave Task 2 pending with failure_count 1 for re-audit; do not record
+      another evaluation or complete it. Task 3 remains deferred and may later
+      implement bounded non-Git scanning and publication from this authority. Do
+      not add migration execution, Git enrichment, release work, vision changes,
+      or remote access.
+    context:
+      intent: Repair only the authority, help, schema, parser, error-envelope, and
+        state-command self-correction defects identified by
+        task2-independent-audit-1, then verify and publish the retry evidence
+        while keeping Task 2 pending.
+      constraints: Only authority/help/schema/parser/error-envelope/dispatch
+        corrections and tests were in scope. Preserve Decision 53 no-inference
+        rules, archive immutability, archive-before-projection and
+        projection-failure policy, startup caveats, Git-independent publication,
+        and known npm 12 failures. Do not modify the Task 2 evaluation state
+        beyond committing its existing failure record; do not push.
+      unknowns: Stale profile state and existing prime startup caveats for missing
+        decision, vision, and profile state remain unchanged; independent
+        re-audit remains required.
+      scope: references/artifacts/state-storage-authority.yaml;
+        packages/cli/src/state/migrationAuthority.ts;
+        packages/cli/src/cli/commands/migrate.ts;
+        packages/cli/src/cli/commands/errors.ts;
+        packages/cli/src/cli/commands/schema.ts;
+        packages/cli/src/cli/commands/help.ts;
+        packages/cli/src/cli/dispatch/index.ts;
+        packages/cli/test/state/migrationAuthority.test.ts;
+        packages/cli/test/cli/state.test.ts; generated dist and bundle parity;
+        .agentera/plan.yaml
   - number: 780
     timestamp: 2026-07-14 05:37
     type: feat
@@ -370,49 +428,6 @@ cycles:
         packages/cli/test/state/write/stateWrite.test.ts;
         references/artifacts/state-storage-authority.yaml;
         .agentera/health.yaml; .agentera/plan.yaml; .agentera/progress.yaml
-  - number: 771
-    timestamp: 2026-07-13 20:22
-    type: fix
-    phase: build
-    what: "Repaired bounded snapshot cursor traversal: serializer-aware pages now
-      retain an advancing row prefix or fail truthfully instead of issuing a
-      cursor at the already-emitted page boundary. Added exhaustive bounded CLI
-      traversal coverage across JSON, YAML, and text, append exclusion, repeated
-      cursors, tampering, over-budget advancement, and terminal oversized-page
-      behavior."
-    inspiration: Active continuation plan Task1 and the blocked listing evaluations
-      from commits 121719c6 and c4f5061e.
-    discovered: An empty fallback cursor at snapshot.page_start replays the full
-      page because page_start is the boundary before the first emitted row.
-      Required-row budget failure must be terminal; omitted rows may continue
-      only after a retained row.
-    verified: "Focused listRetrieval suite: 22/22 tests passed. Non-packaging CLI
-      suite: 171 files and 1722/1722 tests passed. Full CLI suite: 171 files and
-      1726/1731 tests passed; the five failures are the known npm 12 npm pack
-      --dry-run --json parser incompatibilities in
-      test/packaging/prepack.test.ts. Typecheck and build passed. Capability
-      plan validation and capability-contract validation passed. check compact
-      passed with 0 over-limit and 0 protected-overflow counts. Authority
-      benchmark: 100 entries 190.420868 ms, 0 B heap delta, 22527 B response;
-      1000 entries 1419.994652 ms, 64538608 B heap delta, 22658 B response;
-      no-index thresholds remain satisfied."
-    next: Keep Task1 pending for evaluation. Task2 owns legacy identity and count
-      semantics; do not implement it in this cycle. Do not update health,
-      vision, profile, decisions, TODO, version, publish, push, or tag state.
-    context:
-      intent: Execute Task1 of the active continuation plan without closing Task1 or
-        implementing Task2 legacy identity and count semantics.
-      constraints: Use the canonical authority, preserve existing list semantics, keep
-        bounded CLI traversal truthful, include the active continuation plan and
-        predecessor archive in the substantive implementation commit, and leave
-        Task1 status pending.
-      unknowns: none for the repaired traversal; reevaluate the deferred
-        persistent-index decision only if a reproducible authority benchmark
-        exceeds a declared threshold.
-      scope: packages/cli/src/state/listRetrieval.ts;
-        packages/cli/test/state/listRetrieval.test.ts; .agentera/plan.yaml;
-        .agentera/archive/PLAN-2026-07-13-lossless-archive-backed-state-storage-a0d04027191c6dc0.yaml;
-        .agentera/progress.yaml
   - number: 749
     timestamp: 2026-07-13 10:58
     type: feat
@@ -530,6 +545,8 @@ cycles:
       intent: Complete active plan Task 7 without changing decisions or unrelated
         capabilities.
 archive:
+  - summary: "Cycle 771 (2026-07-13): Repaired bounded snapshot cursor traversal:
+      serializer-aware pages now retain an advancing row prefix or fail..."
   - summary: "Cycle 770 (2026-07-13): Allowed forced plan archive and replacement to
       preserve exact schema-valid predecessors whose only full-file overflow..."
   - summary: "Cycle 769 (2026-07-13): Retried Task14 Git legacy backfill: bounded
@@ -632,17 +649,18 @@ archive:
   - summary: "Cycle 724 (2026-07-12): Closed the Task 5 audit repair in
       packages/cli/src/cli/orientation/attention.ts and its dashboard
       regressions: bounded both manual..."
-  - summary: "Cycle 723 (2026-07-12): Final Task 5 read-back after the blocker
-      regression refinement in
-      packages/cli/test/cli/primeProjectIntegration.test.ts: the full suite
-      and..."
 omitted: true
-omitted_count: 18
+omitted_count: 19
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded

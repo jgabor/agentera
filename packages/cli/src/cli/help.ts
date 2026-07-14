@@ -1,5 +1,10 @@
 import { CAPABILITY_ROUTING_NAMES } from "./commands/capability.js";
 import { verbsForArtifact } from "../state/write/operations.js";
+import {
+  migrationModeFlags,
+  migrationSelectorFlag,
+  stateMigrationContract,
+} from "../state/migrationAuthority.js";
 
 const TOP_LEVEL = [
   "prime",
@@ -114,27 +119,31 @@ export function printDoctorHelp(): string {
 }
 
 export function printStateHelp(sub?: string): string {
-  if (sub === "migrate") {
+  const migration = stateMigrationContract();
+  const migrationName = migration.namespace.split(/\s+/).at(-1) as string;
+  const stateCommands = stateCommandNames(migration);
+  if (sub === migrationName) {
+    const selector = (name: string): string => migration.selectors[name].flag as string;
+    const dryRunFlag = migrationModeFlags(migration, "preview")[0];
+    const applyFlags = migrationModeFlags(migration, "apply");
     return [
-      "usage: agentera state migrate [-h] [--project PATH] [--artifact ARTIFACT]",
-      "                              [--number N] [--path PATH] [--limit N]",
-      "                              [--dry-run|--apply --force] --format {text,json,yaml}",
+      `usage: ${migration.command}`,
       "",
       "Inventory bounded, project-local legacy state under the state-storage authority.",
-      "Default inventory and --dry-run are read-only; --apply --force is the only mutation intent.",
+      `Default inventory and ${dryRunFlag} are read-only; ${applyFlags.join(" ")} is the only mutation intent.`,
       "This surface publishes authority and dispatch only; migration execution never contacts Git or a remote.",
       "",
       "options:",
       "  -h, --help            show this help message and exit",
-      "  --project PATH        Project directory whose local candidates are inspected",
-      "  --artifact ARTIFACT   progress, decisions, or health",
-      "  --number N            Positive legacy entry number; requires --artifact",
-      "  --path PATH           Project-local candidate path; required for custom apply",
-      "  --limit N             Bound returned candidates (maximum 100)",
-      "  --dry-run             Preview exact operations without writing",
-      "  --apply               Request publication; requires --force",
-      "  --force               Confirm explicit mutation intent",
-      "  --format FORMAT       Output format: text, json, or yaml",
+      `  ${selector("project").padEnd(21)}Project directory whose local candidates are inspected`,
+      `  ${selector("artifact").padEnd(21)}${migration.supportedArtifacts.join(", ")}`,
+      `  ${selector("number").padEnd(21)}Positive legacy entry number; requires ${migrationSelectorFlag(migration, "artifact")}`,
+      `  ${selector("path").padEnd(21)}Project-local candidate path; required for custom apply`,
+      `  ${selector("limit").padEnd(21)}Bound returned candidates (maximum ${migration.maximumLimit})`,
+      `  ${dryRunFlag.padEnd(21)}Preview exact operations without writing`,
+      `  ${applyFlags[0].padEnd(21)}Request publication; requires ${applyFlags[1] ?? "explicit confirmation"}`,
+      ...(applyFlags[1] ? [`  ${applyFlags[1].padEnd(21)}Confirm explicit mutation intent`] : []),
+      `  ${selector("format").padEnd(21)}Output format: ${migration.formats.join(", ")}`,
     ].join("\n");
   }
   if (sub === "backfill") {
@@ -182,11 +191,28 @@ export function printStateHelp(sub?: string): string {
     ].join("\n");
   }
   return [
-    "usage: agentera state [-h] {plan,progress,health,todo,decisions,docs,objective,experiments,migrate,backfill,query} ...",
+    `usage: agentera state [-h] {${stateCommands.join(",")}} ...`,
     "",
     "Routine artifact reads, writes, and advanced artifact query.",
     "Discover typed writes: agentera state <artifact> explain --format json",
   ].join("\n");
+}
+
+export function stateCommandNames(migration = stateMigrationContract()): string[] {
+  const migrationName = migration.namespace.split(/\s+/).at(-1) as string;
+  return [
+    "progress",
+    "plan",
+    "health",
+    "docs",
+    "objective",
+    "experiments",
+    "todo",
+    "decisions",
+    migrationName,
+    "backfill",
+    "query",
+  ];
 }
 
 export function printCheckHelp(sub?: string): string {

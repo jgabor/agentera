@@ -247,25 +247,26 @@ function commandDescription(
   name: string,
   kind: string,
   fields: string[] | null = null,
+  outputFormats?: string[],
 ): JsonObject {
-  let outputFormats = ["text", "json", "yaml"];
-  if (name === "lint") outputFormats = ["text", "json"];
-  else if (name === "compact" || name === "gate") outputFormats = ["text", "json"];
-  else if (name === "doctor") outputFormats = ["text", "json"];
-  else if (name === "upgrade") outputFormats = ["text", "json"];
-  else if (name === "describe" || name === "schema") outputFormats = ["json", "yaml"];
-  else if (name === "prime") outputFormats = ["text", "json", "yaml"];
+  let formats = outputFormats ?? ["text", "json", "yaml"];
+  if (!outputFormats && name === "lint") formats = ["text", "json"];
+  else if (!outputFormats && (name === "compact" || name === "gate")) formats = ["text", "json"];
+  else if (!outputFormats && name === "doctor") formats = ["text", "json"];
+  else if (!outputFormats && name === "upgrade") formats = ["text", "json"];
+  else if (!outputFormats && (name === "describe" || name === "schema")) formats = ["json", "yaml"];
+  else if (!outputFormats && name === "prime") formats = ["text", "json", "yaml"];
   return {
     name,
     kind,
     description: COMMAND_DESCRIPTIONS[name] ?? "unknown",
     filters: COMMAND_FILTERS_ALL[name] ?? [],
-    output_formats: outputFormats,
+    output_formats: formats,
     structured_fields: fields ?? [],
   };
 }
 
-function describeCommands(): JsonObject[] {
+function describeCommands(migrationName: string, migrationFormats: string[]): JsonObject[] {
   const commands: JsonObject[] = [
     commandDescription("prime", "orientation", availableStructuredFields("prime")),
   ];
@@ -303,20 +304,25 @@ function describeCommands(): JsonObject[] {
       "dryRunCommand",
       "applyCommand",
     ]),
-    commandDescription("migrate", "state_migration", [
-      "schemaVersion",
-      "command",
-      "status",
-      "mode",
-      "project",
-      "read_only",
-      "mutation_intent",
-      "remote_contact",
-      "entries",
-      "counts",
-      "diagnostics",
-      "source_contract",
-    ]),
+    commandDescription(
+      migrationName,
+      "state_migration",
+      [
+        "schemaVersion",
+        "command",
+        "status",
+        "mode",
+        "project",
+        "read_only",
+        "mutation_intent",
+        "remote_contact",
+        "entries",
+        "counts",
+        "diagnostics",
+        "source_contract",
+      ],
+      migrationFormats,
+    ),
     commandDescription("doctor", "self_check"),
   );
   return commands;
@@ -448,7 +454,10 @@ export function buildSchemaPayload(command = "schema"): JsonObject {
       schema_count: artifactSchemas.length,
       app_model: appModelPayload(appModel),
     },
-    commands: describeCommands(),
+    commands: describeCommands(
+      migrationAuthority.namespace.split(/\s+/).at(-1) as string,
+      migrationAuthority.formats,
+    ),
     state_writer: stateWriterContract(),
     state_migration: {
       authority: migrationAuthority.authorityPath,

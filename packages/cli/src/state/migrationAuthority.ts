@@ -5,27 +5,34 @@ import { loadYamlMapping } from "../core/yaml.js";
 import { resolveSourceRoot } from "../core/sourceRoot.js";
 
 const AUTHORITY_RELATIVE_PATH = "references/artifacts/state-storage-authority.yaml";
-const EXPECTED_AUTHORITY_SCHEMA = "agentera.stateStorageAuthority.v1";
-const EXPECTED_ARTIFACTS = ["progress", "decisions", "health"];
-const EXPECTED_FORMATS = ["text", "json", "yaml"];
 
-type Mapping = Record<string, unknown>;
+export type StateMigrationMapping = Record<string, unknown>;
 
 export interface StateMigrationContract {
   authorityPath: string;
-  migration: Mapping;
+  schemaVersion: string;
+  migration: StateMigrationMapping;
+  namespace: string;
   command: string;
   formats: string[];
   defaultLimit: number;
+  minimumLimit: number;
   maximumLimit: number;
   supportedArtifacts: string[];
+  selectors: Record<string, StateMigrationMapping>;
+  modes: Record<string, StateMigrationMapping>;
+  candidatePattern: string;
+  numberPattern: string;
+  scanRoots: Array<{ path: string; maximumDepth: number }>;
+  resultSchemaVersion: string;
+  resultStatuses: string[];
 }
 
-function mapping(value: unknown, field: string): Mapping {
+function mapping(value: unknown, field: string): StateMigrationMapping {
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error(`state storage authority field '${field}' must be a mapping`);
   }
-  return value as Mapping;
+  return value as StateMigrationMapping;
 }
 
 function requiredString(value: unknown, field: string): string {
@@ -42,6 +49,9 @@ function requiredList(value: unknown, field: string): string[] {
   ) {
     throw new Error(`state storage authority field '${field}' must be a list of non-empty strings`);
   }
+  if (value.length === 0) {
+    throw new Error(`state storage authority field '${field}' must not be empty`);
+  }
   return [...value] as string[];
 }
 
@@ -52,7 +62,7 @@ function requiredPositiveInteger(value: unknown, field: string): number {
   return value;
 }
 
-function requireKeys(value: Mapping, keys: string[], field: string): void {
+function requireKeys(value: StateMigrationMapping, keys: string[], field: string): void {
   for (const key of keys) {
     if (!(key in value))
       throw new Error(`state storage authority field '${field}.${key}' is required`);
@@ -65,9 +75,7 @@ export function stateMigrationContract(
 ): StateMigrationContract {
   const authorityPath = path.join(sourceRoot, AUTHORITY_RELATIVE_PATH);
   const authority = loadYamlMapping(fs.readFileSync(authorityPath, "utf8"));
-  if (authority.schema_version !== EXPECTED_AUTHORITY_SCHEMA) {
-    throw new Error("state storage authority schema_version is unsupported");
-  }
+  const schemaVersion = requiredString(authority.schema_version, "schema_version");
   if (authority.status !== "active_authority") {
     throw new Error("state storage authority must be active_authority");
   }
@@ -83,25 +91,19 @@ export function stateMigrationContract(
       "state storage authority field 'scope.supported_artifacts' must be a list of mappings",
     );
   }
-  const supportedArtifacts = scope.supported_artifacts as Array<Mapping>;
-  const artifactIds = supportedArtifacts.map((artifact) => artifact.artifact_id);
-  if (artifactIds.join(",") !== EXPECTED_ARTIFACTS.join(",")) {
-    throw new Error(
-      "state storage authority supported artifacts must be progress, decisions, health",
-    );
-  }
+  const supportedArtifacts = scope.supported_artifacts as Array<StateMigrationMapping>;
+  const artifactIds = supportedArtifacts.map((artifact, index) =>
+    requiredString(artifact.artifact_id, `scope.supported_artifacts[${index}].artifact_id`),
+  );
 
   const api = mapping(authority.api, "api");
   const migration = mapping(api.migrate, "api.migrate");
   const namespace = requiredString(migration.namespace, "api.migrate.namespace");
-  if (namespace !== "agentera state migrate") {
-    throw new Error("state storage authority migrate namespace must be agentera state migrate");
-  }
   const command = requiredString(migration.command, "api.migrate.command");
-  const formats = requiredList(migration.formats, "api.migrate.formats");
-  if (formats.join(",") !== EXPECTED_FORMATS.join(",")) {
-    throw new Error("state storage authority migrate formats must be text, json, yaml");
+  if (!command.startsWith(`${namespace} `)) {
+    throw new Error("state storage authority migrate command must begin with its namespace");
   }
+  const formats = requiredList(migration.formats, "api.migrate.formats");
   const defaultLimit = requiredPositiveInteger(
     migration.default_limit,
     "api.migrate.default_limit",
@@ -117,18 +119,17 @@ export function stateMigrationContract(
     migration.supported_artifacts,
     "api.migrate.supported_artifacts",
   );
-  if (migrationArtifacts.join(",") !== EXPECTED_ARTIFACTS.join(",")) {
-    throw new Error(
-      "state storage authority migrate artifacts must be progress, decisions, health",
-    );
+  if (JSON.stringify(migrationArtifacts) !== JSON.stringify(artifactIds)) {
+    throw new Error("state storage authority migrate artifacts must match scope artifacts");
   }
 
   const selectors = mapping(migration.selectors, "api.migrate.selectors");
-  requireKeys(
-    selectors,
-    ["project", "artifact", "number", "path", "limit"],
-    "api.migrate.selectors",
-  );
+  const selectorContracts: Record<string, StateMigrationMapping> = {};
+  for (const name of ["project", "artifact", "number", "path", "limit", "format"]) {
+    const selector = mapping(selectors[name], `api.migrate.selectors.${name}`);
+    requiredString(selector.flag, `api.migrate.selectors.${name}.flag`);
+    selectorContracts[name] = selector;
+  }
   const modes = mapping(migration.modes, "api.migrate.modes");
   requireKeys(
     modes,
@@ -210,13 +211,86 @@ export function stateMigrationContract(
     "api.migrate.guarantees",
   );
 
+  const boundedScan = mapping(inventory.bounded_scan, "api.migrate.inventory.bounded_scan");
+  if (!Array.isArray(boundedScan.roots) || boundedScan.roots.length === 0) {
+    throw new Error(
+      "state storage authority field 'api.migrate.inventory.bounded_scan.roots' must be a non-empty list",
+    );
+  }
+  const scanRoots = boundedScan.roots.map((root, index) => {
+    const rootMapping = mapping(root, `api.migrate.inventory.bounded_scan.roots[${index}]`);
+    return {
+      path: requiredString(
+        rootMapping.path,
+        `api.migrate.inventory.bounded_scan.roots[${index}].path`,
+      ),
+      maximumDepth: requiredPositiveInteger(
+        rootMapping.maximum_depth,
+        `api.migrate.inventory.bounded_scan.roots[${index}].maximum_depth`,
+      ),
+    };
+  });
+  const candidatePattern = requiredString(
+    selectorContracts.path.pattern,
+    "api.migrate.selectors.path.pattern",
+  );
+  const numberPattern = requiredString(
+    selectorContracts.number.pattern,
+    "api.migrate.selectors.number.pattern",
+  );
+  const minimumLimit = requiredPositiveInteger(
+    selectorContracts.limit.minimum,
+    "api.migrate.selectors.limit.minimum",
+  );
+  const selectorMaximumLimit = requiredPositiveInteger(
+    selectorContracts.limit.maximum,
+    "api.migrate.selectors.limit.maximum",
+  );
+  if (selectorMaximumLimit !== maximumLimit) {
+    throw new Error("state storage authority selector maximum must match migrate maximum limit");
+  }
+  const resultSchemaVersion = requiredString(
+    result.schema_version,
+    "api.migrate.result.schema_version",
+  );
+  const resultStatuses = requiredList(result.statuses, "api.migrate.result.statuses");
+  const modeContracts: Record<string, StateMigrationMapping> = {};
+  for (const name of ["inventory", "preview", "apply"]) {
+    modeContracts[name] = mapping(modes[name], `api.migrate.modes.${name}`);
+    requiredString(modeContracts[name].selector, `api.migrate.modes.${name}.selector`);
+  }
+
   return {
     authorityPath: AUTHORITY_RELATIVE_PATH,
+    schemaVersion,
     migration,
+    namespace,
     command,
     formats,
     defaultLimit,
+    minimumLimit,
     maximumLimit,
     supportedArtifacts: migrationArtifacts,
+    selectors: selectorContracts,
+    modes: modeContracts,
+    candidatePattern,
+    numberPattern,
+    scanRoots,
+    resultSchemaVersion,
+    resultStatuses,
   };
+}
+
+export function migrationSelectorFlag(contract: StateMigrationContract, selector: string): string {
+  const value = contract.selectors[selector];
+  if (!value) throw new Error(`state migration selector '${selector}' is unavailable`);
+  return requiredString(value.flag, `api.migrate.selectors.${selector}.flag`).split(/\s+/, 1)[0];
+}
+
+export function migrationModeFlags(contract: StateMigrationContract, mode: string): string[] {
+  const value = contract.modes[mode];
+  if (!value) throw new Error(`state migration mode '${mode}' is unavailable`);
+  return requiredString(value.selector, `api.migrate.modes.${mode}.selector`)
+    .split(/\s+/)
+    .filter((token) => token.startsWith("--"));
 }

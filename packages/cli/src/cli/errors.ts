@@ -1,8 +1,11 @@
+import YAML from "yaml";
+
 /**
  * Canonical invalid-input error envelope for all CLI surfaces.
  *
- * Two output modes:
+ * Three output modes:
  *   - json: writes the canonical envelope to stdout, returns rc 2.
+ *   - yaml: writes the canonical envelope to stdout, returns rc 2.
  *   - text: writes the four-question guidance template to stderr, returns rc 2.
  *
  * Exit code 2 is reserved for invalid input (per existing CLI convention).
@@ -38,7 +41,7 @@ export interface InvalidInputEnvelope {
 }
 
 export interface EmitInvalidInputOptions {
-  format: "text" | "json";
+  format: "text" | "json" | "yaml";
   body: InvalidInputErrorBody;
 }
 
@@ -58,13 +61,14 @@ export function emitInvalidInput(
   const out = io.out ?? ((t: string) => process.stdout.write(t));
   const err = io.err ?? ((t: string) => process.stderr.write(t));
 
-  if (opts.format === "json") {
+  if (opts.format === "json" || opts.format === "yaml") {
     const envelope: InvalidInputEnvelope = {
       schemaVersion: "agentera.invalidInputEnvelope.v2",
       status: "fail",
       error: opts.body,
     };
-    out(JSON.stringify(envelope) + "\n");
+    if (opts.format === "json") out(JSON.stringify(envelope) + "\n");
+    else out(YAML.stringify(envelope));
     return INVALID_INPUT_EXIT_CODE;
   }
 

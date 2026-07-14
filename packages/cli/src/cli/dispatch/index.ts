@@ -2,7 +2,13 @@ import { isPortedStateCommand } from "../commands/state/index.js";
 import { runBackfill } from "../commands/backfill.js";
 import { runMigrate } from "../commands/migrate.js";
 import { CAPABILITY_ROUTING_NAMES } from "../commands/capability.js";
-import { printCommandHelp, printTopLevelHelp, splitHelpArgs } from "../help.js";
+import {
+  printCommandHelp,
+  printStateHelp,
+  printTopLevelHelp,
+  splitHelpArgs,
+  stateCommandNames,
+} from "../help.js";
 import {
   compactModeOf,
   runCompact,
@@ -27,6 +33,7 @@ import {
 import { emitDeprecationAlias, type Io } from "./shared.js";
 import { emitInvalidInput } from "../errors.js";
 import { isWriteVerb } from "../../state/write/operations.js";
+import { stateMigrationContract } from "../../state/migrationAuthority.js";
 
 export function main(argv: string[], io: Io = {}): number {
   const err = io.err ?? ((t: string) => process.stderr.write(t));
@@ -134,28 +141,27 @@ export function main(argv: string[], io: Io = {}): number {
     }
     case "state": {
       const sub = rest[0];
+      const migration = stateMigrationContract();
+      const stateCommands = stateCommandNames(migration);
+      const migrationCommand = migration.namespace.split(/\s+/).at(-1);
+      const stateSyntax = printStateHelp()
+        .split("\n", 1)[0]
+        .replace(/^usage:\s*/, "");
+      const stateExample = `${migration.namespace} --format ${migration.formats[1] ?? migration.formats[0]}`;
       if (!sub) {
         return emitInvalidInput(io, {
           format: "text",
           body: {
             class: "missing_argument",
             message: "the following arguments are required: state_command",
-            valid_values: [
-              "progress",
-              "plan",
-              "health",
-              "docs",
-              "objective",
-              "experiments",
-              "todo",
-              "decisions",
-              "query",
-            ],
+            valid_values: stateCommands,
+            syntax: stateSyntax,
+            example: stateExample,
           },
         });
       }
       if (sub === "query") return runQuery(rest.slice(1), io, "agentera state query");
-      if (sub === "migrate") return runMigrate(rest.slice(1), io);
+      if (sub === migrationCommand) return runMigrate(rest.slice(1), io);
       if (sub === "backfill") return runBackfill(rest.slice(1), io);
       if (isPortedStateCommand(sub) || isWriteVerb(rest[1]) || rest[1] === "get")
         return runState(sub, rest.slice(1), io, `agentera state ${sub}`);
@@ -164,19 +170,9 @@ export function main(argv: string[], io: Io = {}): number {
         body: {
           class: "unsupported_target",
           message: `unknown or not-yet-ported state subcommand: ${sub}`,
-          valid_values: [
-            "progress",
-            "plan",
-            "health",
-            "docs",
-            "objective",
-            "experiments",
-            "migrate",
-            "backfill",
-            "todo",
-            "decisions",
-            "query",
-          ],
+          valid_values: stateCommands,
+          syntax: stateSyntax,
+          example: stateExample,
         },
       });
     }

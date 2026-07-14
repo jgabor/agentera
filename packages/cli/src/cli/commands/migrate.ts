@@ -5,14 +5,13 @@ import { emitStructured } from "../structured.js";
 import type { Io } from "../dispatch/shared.js";
 import { resolveSourceRoot } from "../../core/sourceRoot.js";
 import {
+  migrationModeFlags,
+  migrationSelectorFlag,
   stateMigrationContract,
   type StateMigrationContract,
 } from "../../state/migrationAuthority.js";
 
-const MIGRATE_SYNTAX =
-  "agentera state migrate [--project PATH] [--artifact ARTIFACT] [--number N] [--path PATH] [--limit N] [--dry-run|--apply --force] --format {text,json,yaml}";
-
-export type MigrateFormat = "text" | "json" | "yaml";
+export type MigrateFormat = string;
 
 export interface MigrateArgs {
   project: string | null;
@@ -26,27 +25,35 @@ export interface MigrateArgs {
   format: MigrateFormat;
 }
 
-function requestedFormat(argv: string[]): MigrateFormat {
+type MigrationOutputFormat = "text" | "json" | "yaml";
+
+function requestedFormat(
+  argv: string[],
+  formats?: string[],
+  formatFlag = "--format",
+): MigrationOutputFormat {
+  let requested: string | undefined;
   for (let index = 0; index < argv.length; index += 1) {
-    if (argv[index] === "--format") {
-      const value = argv[index + 1];
-      if (value === "json" || value === "yaml") return value;
+    if (argv[index] === formatFlag) {
+      requested = argv[index + 1];
     }
-    if (argv[index].startsWith("--format=")) {
-      const value = argv[index].slice("--format=".length);
-      if (value === "json" || value === "yaml") return value;
+    if (argv[index].startsWith(`${formatFlag}=`)) {
+      requested = argv[index].slice(formatFlag.length + 1);
     }
   }
-  return "text";
+  if (!requested || (formats && !formats.includes(requested))) return "text";
+  return requested as MigrationOutputFormat;
 }
 
-function parsePositiveInteger(flag: string, value: string): number | string {
-  if (!/^[1-9][0-9]*$/.test(value)) return `argument ${flag}: invalid int value: '${value}'`;
+function parseInteger(flag: string, value: string, pattern?: string): number | string {
+  if (pattern && !new RegExp(pattern).test(value)) {
+    return `argument ${flag}: invalid int value: '${value}'`;
+  }
   const parsed = Number(value);
   return Number.isSafeInteger(parsed) ? parsed : `argument ${flag}: invalid int value: '${value}'`;
 }
 
-function candidatePathError(candidate: string): string | null {
+function candidatePathError(candidate: string, contract: StateMigrationContract): string | null {
   if (
     candidate.includes("\0") ||
     candidate.includes("\\") ||
@@ -70,29 +77,48 @@ function candidatePathError(candidate: string): string | null {
   ) {
     return "candidate path violates the project boundary: traversal and URI paths are forbidden";
   }
-  if (parts.length === 0 || parts.length > 2 || (parts.length === 2 && parts[0] !== ".agentera")) {
-    return "candidate path must be a direct project file or a direct .agentera file";
-  }
-  if (!/^[A-Za-z0-9][A-Za-z0-9._-]{0,63}\.(md|yaml|yml)$/.test(parts[parts.length - 1])) {
-    return "candidate path is unsupported: use an ASCII .md, .yaml, or .yml candidate";
+  const inScanRoot = contract.scanRoots.some((root) => {
+    const rootParts = root.path === "." ? [] : root.path.split("/").filter(Boolean);
+    const relativeParts = parts.slice(rootParts.length);
+    return (
+      rootParts.every((part, index) => parts[index] === part) &&
+      relativeParts.length > 0 &&
+      relativeParts.length <= root.maximumDepth
+    );
+  });
+  if (!inScanRoot) return "candidate path must remain within a declared project-local scan root";
+  if (!new RegExp(contract.candidatePattern).test(parts[parts.length - 1])) {
+    return "candidate path is unsupported by the authority candidate pattern";
   }
   return null;
 }
 
-export function parseMigrateArgs(argv: string[]): MigrateArgs | { error: string } {
+export function parseMigrateArgs(
+  argv: string[],
+  contract: StateMigrationContract = stateMigrationContract(),
+): MigrateArgs | { error: string } {
+  const selectorFlags = new Map(
+    Object.keys(contract.selectors).map((name) => [migrationSelectorFlag(contract, name), name]),
+  );
+  const formatFlag = migrationSelectorFlag(contract, "format");
+  const previewFlags = migrationModeFlags(contract, "preview");
+  const applyFlags = migrationModeFlags(contract, "apply");
+  const dryRunFlag = previewFlags[0];
+  const applyFlag = applyFlags.find((flag) => !previewFlags.includes(flag)) ?? applyFlags[0];
+  const forceFlag = applyFlags.find((flag) => flag !== applyFlag);
   const args: MigrateArgs = {
     project: null,
     artifact: null,
     dryRun: false,
     apply: false,
     force: false,
-    format: "text",
+    format: contract.formats[0],
+    limit: contract.defaultLimit,
   };
-  const valueFlags = ["--project", "--artifact", "--number", "--path", "--limit", "--format"];
   const seen = new Set<string>();
   for (let index = 0; index < argv.length; index += 1) {
     const token = argv[index];
-    const flag = valueFlags.find(
+    const flag = [...selectorFlags.keys()].find(
       (candidate) => token === candidate || token.startsWith(`${candidate}=`),
     );
     if (flag) {
@@ -103,30 +129,32 @@ export function parseMigrateArgs(argv: string[]): MigrateArgs | { error: string 
       if (value === undefined || value === "" || (!inline && value.startsWith("--"))) {
         return { error: `argument ${flag}: expected a value` };
       }
-      if (flag === "--project") args.project = value;
-      else if (flag === "--artifact") args.artifact = value;
-      else if (flag === "--path") args.path = value;
-      else if (flag === "--format") {
-        if (value !== "text" && value !== "json" && value !== "yaml") {
+      const selector = selectorFlags.get(flag);
+      if (selector === "format") {
+        if (!contract.formats.includes(value)) {
           return {
-            error: `argument --format: invalid choice: '${value}' (choose from 'text', 'json', 'yaml')`,
+            error: `argument ${formatFlag}: invalid choice: '${value}' (choose from ${contract.formats.map((item) => `'${item}'`).join(", ")})`,
           };
         }
         args.format = value;
-      } else {
-        const parsed = parsePositiveInteger(flag, value);
+      } else if (selector === "project") args.project = value;
+      else if (selector === "artifact") args.artifact = value;
+      else if (selector === "path") args.path = value;
+      else {
+        const pattern = selector === "number" ? contract.numberPattern : undefined;
+        const parsed = parseInteger(flag, value, pattern);
         if (typeof parsed === "string") return { error: parsed };
-        if (flag === "--number") args.number = parsed;
-        else args.limit = parsed;
+        if (selector === "number") args.number = parsed;
+        else if (selector === "limit") args.limit = parsed;
       }
-    } else if (token === "--dry-run") {
-      if (args.dryRun) return { error: "--dry-run may only be supplied once" };
+    } else if (token === dryRunFlag) {
+      if (args.dryRun) return { error: `${dryRunFlag} may only be supplied once` };
       args.dryRun = true;
-    } else if (token === "--apply") {
-      if (args.apply) return { error: "--apply may only be supplied once" };
+    } else if (token === applyFlag) {
+      if (args.apply) return { error: `${applyFlag} may only be supplied once` };
       args.apply = true;
-    } else if (token === "--force") {
-      if (args.force) return { error: "--force may only be supplied once" };
+    } else if (token === forceFlag) {
+      if (args.force) return { error: `${forceFlag} may only be supplied once` };
       args.force = true;
     } else {
       return { error: `unrecognized arguments: ${token}` };
@@ -139,38 +167,63 @@ export function validateMigrateArgs(
   args: MigrateArgs,
   contract: StateMigrationContract,
 ): string | null {
+  const artifactFlag = migrationSelectorFlag(contract, "artifact");
+  const numberFlag = migrationSelectorFlag(contract, "number");
+  const limitFlag = migrationSelectorFlag(contract, "limit");
+  const dryRunFlag = migrationModeFlags(contract, "preview")[0];
+  const applyFlags = migrationModeFlags(contract, "apply");
+  const applyFlag = applyFlags.find((flag) => ![dryRunFlag].includes(flag)) ?? applyFlags[0];
+  const forceFlag = applyFlags.find((flag) => flag !== applyFlag);
   if (args.artifact && !contract.supportedArtifacts.includes(args.artifact)) {
     return `unsupported artifact '${args.artifact}'`;
   }
-  if (args.number !== undefined && !args.artifact) return "argument --number requires --artifact";
-  if (args.limit !== undefined && (args.limit < 1 || args.limit > contract.maximumLimit)) {
-    return `argument --limit must be between 1 and ${contract.maximumLimit}`;
+  if (args.number !== undefined && !args.artifact) {
+    return `argument ${numberFlag} requires ${artifactFlag}`;
+  }
+  if (
+    args.limit !== undefined &&
+    (args.limit < contract.minimumLimit || args.limit > contract.maximumLimit)
+  ) {
+    return `argument ${limitFlag} must be between ${contract.minimumLimit} and ${contract.maximumLimit}`;
   }
   if (args.path) {
-    const pathError = candidatePathError(args.path);
+    const pathError = candidatePathError(args.path, contract);
     if (pathError) return pathError;
   }
-  if (args.apply && args.dryRun) return "--apply and --dry-run are mutually exclusive";
-  if (args.apply && !args.force) return "--apply requires explicit --force intent";
-  if (args.force && !args.apply) return "--force requires --apply";
+  if (args.apply && args.dryRun) return `${applyFlag} and ${dryRunFlag} are mutually exclusive`;
+  if (args.apply && !args.force) return `${applyFlag} requires explicit ${forceFlag} intent`;
+  if (args.force && !args.apply) return `${forceFlag} requires ${applyFlag}`;
   if (args.apply && (args.artifact === null || args.number === undefined)) {
-    return "--apply requires exactly one --artifact and --number selector";
+    return `${applyFlag} requires exactly one ${artifactFlag} and ${numberFlag} selector`;
   }
   return null;
 }
 
+function authorityExample(contract: StateMigrationContract): string | undefined {
+  const failures = contract.migration.failures as { classes?: unknown };
+  if (!Array.isArray(failures.classes)) return undefined;
+  const example = failures.classes.find(
+    (failure): failure is { example: string } =>
+      failure !== null &&
+      typeof failure === "object" &&
+      !Array.isArray(failure) &&
+      typeof (failure as { example?: unknown }).example === "string",
+  );
+  return example?.example;
+}
+
 function invalid(
   message: string,
-  format: MigrateFormat,
+  format: MigrationOutputFormat,
+  contract?: StateMigrationContract,
   validValues?: string[],
-): { format: "text" | "json"; body: InvalidInputErrorBody } {
+): { format: MigrationOutputFormat; body: InvalidInputErrorBody } {
   return {
-    format: format === "yaml" ? "text" : format,
+    format,
     body: {
       class: message.startsWith("unsupported artifact") ? "invalid_choice" : "invalid_request",
       message,
-      syntax: MIGRATE_SYNTAX,
-      example: "agentera state migrate --artifact progress --number 1 --dry-run --format json",
+      ...(contract ? { syntax: contract.command, example: authorityExample(contract) } : {}),
       ...(validValues ? { valid_values: validValues } : {}),
     },
   };
@@ -182,9 +235,9 @@ function deferredResponse(
 ): Record<string, unknown> {
   const mode = args.apply ? "apply" : args.dryRun ? "preview" : "inventory";
   return {
-    schemaVersion: "agentera.stateMigrationResult.v1",
+    schemaVersion: contract.resultSchemaVersion,
     command: contract.command,
-    status: "unavailable",
+    status: contract.resultStatuses[contract.resultStatuses.length - 1],
     mode,
     project: args.project ?? process.cwd(),
     read_only: !args.apply,
@@ -213,7 +266,7 @@ function deferredResponse(
     ],
     source_contract: {
       authority: contract.authorityPath,
-      schema_version: "agentera.stateStorageAuthority.v1",
+      schema_version: contract.schemaVersion,
       execution: "authority_and_dispatch_only",
       git_required: false,
       remote_contact: "forbidden",
@@ -240,7 +293,7 @@ function renderText(response: Record<string, unknown>, out: (text: string) => vo
 }
 
 export function runMigrate(argv: string[], io: Io, sourceRootOverride?: string): number {
-  const format = requestedFormat(argv);
+  let format = requestedFormat(argv);
   const sourceRoot = sourceRootOverride ?? resolveSourceRoot();
   let contract: StateMigrationContract;
   try {
@@ -251,11 +304,13 @@ export function runMigrate(argv: string[], io: Io, sourceRootOverride?: string):
       invalid(`Local migration authority could not be loaded: ${(error as Error).message}`, format),
     );
   }
-  const parsed = parseMigrateArgs(argv);
-  if ("error" in parsed) return emitInvalidInput(io, invalid(parsed.error, format));
+  format = requestedFormat(argv, contract.formats, migrationSelectorFlag(contract, "format"));
+  const parsed = parseMigrateArgs(argv, contract);
+  if ("error" in parsed) return emitInvalidInput(io, invalid(parsed.error, format, contract));
   const validation = validateMigrateArgs(parsed, contract);
-  if (validation)
-    return emitInvalidInput(io, invalid(validation, format, contract.supportedArtifacts));
+  if (validation) {
+    return emitInvalidInput(io, invalid(validation, format, contract, contract.supportedArtifacts));
+  }
 
   const response = deferredResponse(parsed, contract);
   const out = io.out ?? ((text: string) => process.stdout.write(text));
