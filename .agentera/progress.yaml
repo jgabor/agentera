@@ -1,4 +1,72 @@
 cycles:
+  - number: 793
+    timestamp: 2026-07-14 17:36
+    type: chore
+    phase: audit
+    what: "Synchronized the simplified archive-rollout closeout: folded the
+      independent Task 4 pass into the open plan, resolved the superseded
+      six-pair custom-name TODO, retained the approved local-operator receipt
+      resolution, refreshed documentation freshness and user-facing
+      migration/backfill notes, and appended final gate evidence without
+      changing immutable historical records."
+    inspiration: Task 5 acceptance, the Task 4 development-package pass, bounded
+      custom-name migration behavior, the approved local-operator enrichment
+      model, accurate Audit 31 state, and the no-publication release boundary.
+    discovered: "The bounded agentera state migrate contract supersedes the stale
+      six-pair note without widening the legacy Markdown parser: current tests
+      cover arbitrary custom names, normalized ordering, project boundaries,
+      256-file/1 MiB/16 MiB bounds, and exact selectors. Audit 31 remains the
+      accurate immutable health entry; its historical pre-Task-4 caveats are
+      preserved, while Cycle 792 remains byte-unchanged as the predecessor."
+    verified: "pnpm -C packages/cli test: 177 files and 1803 tests passed, 0
+      failures. pnpm -C packages/cli exec vp test run
+      test/state/gitBackfill.test.ts test/state/archiveRecovery.test.ts
+      test/state/archivePublication.test.ts test/state/durability.test.ts
+      test/state/legacyMigration.test.ts test/state/migrationAuthority.test.ts
+      test/state/simpleMigrationParity.test.ts test/cli/help.test.ts
+      test/cli/schema.test.ts test/cli/primeTask3Bounds.test.ts: 10 files and
+      111 tests passed. pnpm -C packages/cli exec vp test run
+      test/state/migrationAuthority.test.ts test/state/legacyMigration.test.ts
+      test/state/gitBackfill.test.ts test/state/archivePublication.test.ts
+      test/state/archiveAuthority.test.ts
+      test/state/simpleMigrationParity.test.ts
+      test/upgrade/migrateArtifactsV2ToV3.test.ts: 7 files and 77 tests passed.
+      pnpm -C packages/cli run typecheck, pnpm -C packages/cli build, and pnpm
+      -C packages/cli run bundle:data passed. node
+      packages/cli/dist/bin/agentera.js check validate capability-contract
+      --format json passed 2/2; node packages/cli/dist/bin/agentera.js check
+      validate release-metadata --format json passed. Artifact validation passed
+      for PLAN.md, PROGRESS.md, HEALTH.md, TODO.md, DOCS.md, and CHANGELOG.md
+      with node packages/cli/dist/bin/agentera.js check validate artifact
+      --artifact ... --file ... --format json. node
+      packages/cli/dist/bin/agentera.js check compact --format json passed with
+      error_count=0, over_limit_count=0, protected_overflow_count=0,
+      changed_count=0; five existing loss-preserving progress archive refusals
+      remained. From packages/cli, npx --yes npm@12.0.0 pack --dry-run --json
+      --ignore-scripts passed for agentera@3.0.0-dev.21 with 642 files; the
+      package content leak scan found no forbidden paths or
+      credential/test-token content. npx --yes npm@12.0.1 publish --tag next
+      --dry-run passed with no publication. git diff --check passed; no tag or
+      push was performed."
+    next: Leave Task 5 pending for independent audit; keep the plan open and do not
+      archive it. The orchestrator owns final Task 5 evaluation, completion,
+      plan status, and archival after independent evaluation. Do not publish,
+      tag, or push.
+    context:
+      intent: Execute simplified Agentera plan Task 5 closeout while leaving Task 5
+        pending for independent audit and keeping the plan open.
+      constraints: Preserve historical blocked plans, failed evaluations, Audit 31,
+        Cycles 781, 784, 787, 788, corrected cycles, and Cycle 792 predecessor
+        bytes. Do not edit vision, profile, decisions, satisfaction, or release
+        provenance; do not add feature or security machinery; do not publish,
+        tag, or push.
+      unknowns: Independent Task 5 evaluation remains. Existing loss-preserving
+        progress archive recovery refusals remain explicit and unchanged; npm
+        12.0.1 dry-run is the successful local publication check.
+      scope: .agentera/plan.yaml; .agentera/progress.yaml; .agentera/docs.yaml;
+        TODO.md; CHANGELOG.md; .agentera/health.yaml validation only; migration
+        and backfill fixtures; package metadata and generated ignored
+        dist/bundle
   - number: 792
     timestamp: 2026-07-14 16:57
     type: fix
@@ -512,186 +580,10 @@ cycles:
         packages/cli/src/cli/commands/migrate.ts;
         packages/cli/test/state/legacyMigration.test.ts; .agentera/plan.yaml;
         .agentera/progress.yaml; generated dist and bundle parity
-  - number: 783
-    timestamp: 2026-07-14 08:11
-    type: fix
-    phase: build
-    what: "Closed the continuation-task1-audit-1 gaps: bounded project-local
-      read-only inventory now exercises authority roots, depth, exclusions,
-      normalized ordering, symlink and boundary rejection, custom names,
-      candidate/file/total-byte limits, and deterministic omission metadata;
-      count rules and omission field sources are authority-driven; duplicate
-      invalid-combination records fail closed; and every structured
-      invalid-input envelope carries recovery guidance. Preview and apply still
-      validate intent only with mutation_performed=false, no archives, backups,
-      projections, or Git. Cycle 781 remains byte-unchanged and Cycle 782
-      remains the prior superseding correction."
-    inspiration: Active plan Task 1 continuation after independent orchestration
-      evaluator attempt continuation-task1-audit-1.
-    discovered: Inventory can exercise the byte bounds from lstat metadata without
-      reading candidate contents or invoking Git. The full Vitest suite must run
-      serially because concurrent global setup races copy-bundle. The existing
-      malformed invalid-progress-yaml fixture still blocks repository
-      formatting, and the five known npm 12 packaging JSON-parser failures
-      remain outside this fix.
-    verified: "Focused command: pnpm -C packages/cli exec vp test run
-      test/state/migrationAuthority.test.ts
-      test/cli/invalidInputEnvelope.test.ts test/cli/schema.test.ts; 3 files, 35
-      tests passed. Adversarial coverage includes 257 candidates, 1-MiB-plus
-      file, 17-MiB total, symlink and boundary escapes, normalized ordering,
-      limits 1/100/out-of-range, duplicate authority combinations, and
-      text/JSON/YAML omission and recovery parity. Non-packaging command: pnpm
-      -C packages/cli exec vp test run --exclude test/packaging/prepack.test.ts;
-      174 files, 1762 tests passed. Full command: pnpm -C packages/cli test; 174
-      files passed, 1766 tests passed, 5 known npm 12 packaging JSON-parser
-      tests failed. pnpm -C packages/cli run typecheck, pnpm -C packages/cli run
-      build, and pnpm -C packages/cli run bundle:data passed. Capability status
-      and capability-contract validation passed; artifact progress and plan
-      validation passed; check compact --format json passed with error_count=0,
-      over_limit_count=0, protected_overflow_count=0, changed_count=0 and the
-      five existing archive-recovery refusals preserved. Source and bundle
-      authority comparison passed. Bounded CLI smokes passed for migrate help,
-      schema JSON, inventory JSON/YAML, dry-run, apply-force, and invalid apply
-      without force; valid apply reported mutation_performed=false and
-      remote_contact=false."
-    next: Leave Task 1 pending with failure_count 1 for independent re-audit; do not
-      record an evaluation or begin Task 2 mutation/application. Preserve
-      Decision 53, archive immutability, projection policy, no remote, startup
-      caveats, known npm failures, and the malformed fixture caveat.
-    context:
-      intent: Retry Task 1 after the independent executable migration authority and
-        bounded inventory audit failure without evaluating or completing Task 1.
-      constraints: Do not alter Cycle 781, do not append another correction solely to
-        restate Cycle 782, do not evaluate or complete Task 1, do not implement
-        Task 2 archive/backup/projection mutation, do not edit vision or
-        profile, and do not publish, tag, or push.
-      unknowns: Independent re-audit remains. Stale profile and missing decision,
-        vision, and profile startup caveats remain unchanged.
-      scope: references/artifacts/state-storage-authority.yaml;
-        packages/cli/src/state/migrationAuthority.ts;
-        packages/cli/src/cli/commands/migrate.ts;
-        packages/cli/src/cli/errors.ts;
-        packages/cli/test/state/migrationAuthority.test.ts;
-        packages/cli/test/cli/invalidInputEnvelope.test.ts;
-        packages/cli/test/cli/fixtures/oracle/invalid-input-envelope.json;
-        .agentera/plan.yaml; generated dist and bundle parity
-  - number: 749
-    timestamp: 2026-07-13 10:58
-    type: feat
-    phase: build
-    what: Delivered read-only numbered archive discovery and entry validation for
-      progress, decisions, and health.
-    inspiration: Task 1 state-storage authority and its fixed project-local archive
-      contract.
-    discovered: The exact path template makes canonical numeric ordering and
-      artifact attribution explicit; symlink checks must use lstat before
-      realpath boundary checks so escaping links are classified as unsafe
-      records.
-    verified: "Focused test/state/archiveDiscovery.test.ts: 12 tests passed. pnpm -C
-      packages/cli test: 1,599 tests passed across 164 files. pnpm -C
-      packages/cli run typecheck passed. pnpm -C packages/cli build passed.
-      Local capability-contract and build capability validation passed. node
-      packages/cli/dist/bin/agentera.js check compact passed with zero
-      over-limit artifacts."
-    next: "Task 3: publish immutable archives with deterministic replay identity;
-      keep Task 2 pending for orchestration evaluation."
-    context:
-      intent: Implement Task 2 from the active lossless archive-backed state storage
-        plan without changing archive publication, projection, migration,
-        retrieval, or plan and vision archive behavior.
-      constraints: Read-only discovery only; no archive publication, transactions,
-        overlays, projection, hydration, migration, Git scanning, get/list CLI
-        behavior, satisfaction inference, profile refresh, or plan task
-        completion.
-      unknowns: Decision satisfaction remains subject to existing review pressure;
-        historical lifecycle diagnostics remain non-executable; no satisfaction
-        or profile state was inferred or updated.
-      scope: packages/cli/src/state/archiveDiscovery.ts;
-        packages/cli/test/state/archiveDiscovery.test.ts;
-        .agentera/progress.yaml; existing uncommitted Task 1 status in
-        .agentera/plan.yaml
-  - number: 748
-    timestamp: 2026-07-13 10:36
-    type: docs
-    phase: build
-    what: Published the state-storage authority for numbered progress, decisions,
-      and health archives, fixed project-root paths, decision overlays,
-      projection roles, direct get/list API, compatibility classes, structured
-      failures, and byte budgets; added contract tests and the authority
-      inventory pointer.
-    inspiration: Active plan Task 1 and the existing artifact registry, typed
-      writer, state namespace, decision satisfaction schema, JSON output
-      manifest, and archive conventions.
-    discovered: The mutable decision surface is limited to satisfaction.state,
-      satisfaction.evidence, and explicit user_confirmation fields;
-      review_needed and caveats are derived. Existing plan and vision archives
-      use separate filename conventions and remain outside numbered-entry
-      discovery.
-    verified: "Focused authority run and full pnpm -C packages/cli test: 1,587 tests
-      passed across 163 files; pnpm -C packages/cli run typecheck; pnpm -C
-      packages/cli build; check validate capability-contract --format json;
-      check compact --format json; git diff --check."
-    next: "Task 2: implement archive discovery and entry validation from this
-      authority; do not change the active plan task status in this cycle."
-    context:
-      intent: Publish Task 1's storage, path, API, compatibility, projection, and
-        output-budget authority before implementation.
-      constraints: Task 1 contract only. No archive writes, hydration, migration, Git
-        scanning, remote access, plan or vision archive changes, decision
-        satisfaction changes, health writes, version bump, publish, tag, or
-        push.
-      unknowns: "Task 1 unknowns resolved by current writer and CLI evidence: decision
-        overlay fields/transitions and exact state get/list command shape."
-      scope: references/artifacts/state-storage-authority.yaml;
-        packages/cli/test/state/archiveAuthority.test.ts;
-        references/meta/documentation-inventory.md
-  - number: 747
-    timestamp: 2026-07-13 09:46
-    type: fix
-    phase: build
-    what: Removed the fixed full-plan task-count ceiling and added coherent
-      lifecycle-boundary guidance with nine-task publication coverage.
-    discovered: The typed writer already accepts arbitrary sequential task counts;
-      the former ceiling was declarative prose, schema, and startup metadata.
-    verified: pnpm -C packages/cli build; pnpm -C packages/cli test (1579 passed).
-    next: Run capability, contract, compact, and npm release gates; publish only the
-      development next channel.
-    context:
-      intent: Allow future coherent plans to exceed eight tasks without weakening task
-        identity, dependency, or publication validation.
-      constraints: Do not modify historical archives, suite version surfaces, or @latest.
-      scope: Plan instructions, validation schema, startup contract, tests, and
-        changelog.
-  - number: 746
-    timestamp: 2026-07-13 00:27
-    type: test
-    phase: build
-    what: Verified packages/cli/test/state/planLifecycleContract.test.ts and closed
-      the plan lifecycle publication rollout.
-    verified: 1,577 CLI tests; typecheck, build, compact, plan and contract
-      validation, lifecycle adapter validation, npm pack/publish dry-runs, and
-      68 lifecycle fixture tests passed.
-    next: Orchestrator-owned post-evaluation archive only.
-    context:
-      intent: Complete Task 8 with behavioral lifecycle fixtures and release gates.
-      constraints: No push, publish, tag, runtime refresh, or decision satisfaction changes.
-      unknowns: Immutable historical archive diagnostics remain.
-      scope: Plan lifecycle state, TODO, and state-writer documentation.
-  - number: 745
-    timestamp: 2026-07-13 00:10
-    type: fix
-    phase: build
-    what: Updated packages/cli/src/capabilities/plan/instructions.ts so state plan
-      create is the final publication gate and its YAML examples pass the typed
-      writer.
-    verified: "pnpm -C packages/cli test: 1,576 tests passed; typecheck, build, plan
-      capability and capability-contract validation, compact, and writer-backed
-      example publication passed."
-    next: "Task 8: synchronize state and verify lifecycle behavior."
-    context:
-      intent: Complete active plan Task 7 without changing decisions or unrelated
-        capabilities.
 archive:
+  - summary: "Cycle 783 (2026-07-14): Closed the continuation-task1-audit-1 gaps:
+      bounded project-local read-only inventory now exercises authority roots,
+      depth, exclusions, normalized..."
   - summary: "Cycle 782 (2026-07-14): Corrected Cycle 781 evidence and implemented
       Task 1 migration authority consumption: schema no longer keeps..."
   - summary: "Cycle 781 (2026-07-14): Retried Task 2 after the independent authority
@@ -773,25 +665,24 @@ archive:
   - summary: "Cycle 750 (2026-07-13): Published immutable numbered progress,
       decisions, and health archives with deterministic replay and orphan
       recovery."
+  - summary: "Cycle 749 (2026-07-13): Delivered read-only numbered archive discovery
+      and entry validation for progress, decisions, and health."
+  - summary: "Cycle 748 (2026-07-13): Published the state-storage authority for
+      numbered progress, decisions, and health archives, fixed project-root
+      paths, decision..."
+  - summary: "Cycle 747 (2026-07-13): Removed the fixed full-plan task-count ceiling
+      and added coherent lifecycle-boundary guidance with nine-task publication
+      coverage."
+  - summary: "Cycle 746 (2026-07-13): Verified
+      packages/cli/test/state/planLifecycleContract.test.ts and closed the plan
+      lifecycle publication rollout."
+  - summary: "Cycle 745 (2026-07-13): Updated
+      packages/cli/src/capabilities/plan/instructions.ts so state plan create is
+      the final publication gate and its YAML examples..."
   - summary: "Cycle 741 (2026-07-12): Updated
       packages/cli/src/state/write/transaction.ts so plan create/archive
       publication validates final bytes and retries converge after
       interruptions."
-  - summary: "Cycle 740 (2026-07-12): Separated plan lifecycle writes from task
-      status writes and enforced canonical open or complete serialization."
-  - summary: "Cycle 739 (2026-07-12): Added
-      packages/cli/src/upgrade/migrateArtifactsV2ToV3.ts migration for legacy
-      plan lifecycle values in docs-mapped current plans and archives."
-  - summary: "Cycle 738 (2026-07-12): packages/cli/src/cli/planArtifacts.ts now
-      reports legacy lifecycle input and malformed plan diagnostics to state and
-      orientation consumers."
-  - summary: "Cycle 737 (2026-07-12): Added behavioral lifecycle-scan safety
-      coverage for every claimed traversal boundary."
-  - summary: "Cycle 736 (2026-07-12): Repaired lifecycle inventory classification
-      for OpenCode plan projections and generated-output pruning."
-  - summary: "Cycle 735 (2026-07-12): Completed Task 1 lifecycle classification with
-      a safely pruned repository-root scan in
-      skills/agentera/schemas/artifacts/plan.yaml."
 omitted: true
 omitted_count: 30
 omission_reason: projection_capacity

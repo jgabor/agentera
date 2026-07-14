@@ -9,6 +9,13 @@
 
 ### Changed
 
+- Changed `agentera state migrate` to inventory legacy project state locally within
+  bounded file and byte limits, retain custom names with explicit provenance, and
+  require exact selectors plus `--apply --force` before immutable archive, backup,
+  and projection publication.
+- Changed `agentera state backfill` to remain optional local-Git enrichment: direct
+  `--apply --force` revalidates the project, `HEAD`, candidate, reachability, and
+  immutable target, while bounded history and no-remote behavior remain explicit.
 - Changed `agentera upgrade --only artifacts` to preview and apply deterministic
   plan lifecycle migration for docs-mapped current plans and archives. Legacy
   `active` and `completed` plan statuses become `open` and `complete` without
