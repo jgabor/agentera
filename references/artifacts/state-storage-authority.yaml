@@ -48,7 +48,7 @@ scope:
 
 retrieval:
   schema_version: agentera.stateRetrievalAuthority.v1
-  status: grammar_declared_implementation_pending
+  status: plan_task_retrieval_implemented_other_collections_pending
   authority_boundary: >-
     This group owns public list/get envelopes, cursors, selectors, identities,
     omissions, and structured retrieval failures. It does not replace storage
@@ -158,12 +158,13 @@ retrieval:
   commands:
     plan_tasks:
       list: agentera state plan tasks list [--plan PLAN_ID] [--limit N] [--cursor TOKEN] --format json
-      get: agentera state plan tasks get --plan PLAN_ID --task N --format json
+      get: agentera state plan tasks get [--plan PLAN_ID] --task N --format json
       selectors:
         plan:
           list_required: false
           list_default: active plan resolved once and returned as filters.plan
-          get_required: true
+          get_required: false
+          get_default: active plan resolved once and returned in the response source
           pattern: '^(plan:[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}|legacy-plan:[0-9a-f]{64})$'
         task:
           get_required: true
@@ -318,13 +319,13 @@ retrieval:
       byte_gap: source metadata has no independent serialized byte authority
       recoverability: omitted paths have neither cursor nor exact plan identity
     - surface: agentera state plan text / tasks
-      count_gap: tasks.slice(0, 10) omits remaining tasks without an omission marker
-      byte_gap: emitted task scalars are truncated rather than represented by a retrieval envelope
-      recoverability: no public task get exists
+      count_gap: legacy projection remains capped at 10 and must expose its omitted count
+      byte_gap: task-list text output emits whole task rows without truncating task scalars
+      recoverability: agentera state plan tasks list/get provides cursor and exact retrieval
     - surface: agentera state plan --format json / tasks
-      count_gap: all task records are emitted without a count limit
-      byte_gap: response has no serialized byte authority
-      recoverability: task numbers are not scoped by a stable plan identity and no public task get exists
+      count_gap: legacy projection must omit whole task records deterministically when over budget
+      byte_gap: task-list JSON is bounded to budgets.list.max_utf8_bytes
+      recoverability: task identities are plan-scoped and list/get is public
     - surface: agentera state experiments --format json / entries
       count_gap: entries.slice(-limit) defaults to 5 without total, omitted count, or cursor
       byte_gap: retained full experiment records have no serialized byte authority

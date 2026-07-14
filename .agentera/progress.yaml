@@ -1,4 +1,36 @@
 cycles:
+  - number: 798
+    timestamp: 2026-07-14 23:07
+    type: feat
+    phase: build
+    what: Shipped bounded active-plan task list/get with numeric ordering, opaque
+      snapshot cursors, exact task retrieval, structured failures, and explicit
+      omission recovery.
+    inspiration: Approved Plan Task 2 and the executable state-storage retrieval authority.
+    discovered: The active plan still uses a deterministic legacy identity;
+      persisted identity continuity remains Task 3. A parallel build initially
+      removed dist during full-test setup, so the full suite was rerun alone and
+      passed.
+    verified: pnpm -C packages/cli exec vp test run planLifecycleContract
+      planTaskRetrieval retrievalAuthority projectionPolicy help schema
+      state.test passed 9 files and 217 tests; pnpm -C packages/cli test passed
+      179 files and 1970 tests; pnpm -C packages/cli run typecheck and pnpm -C
+      packages/cli build passed; live state plan tasks list --limit 2 and get
+      --task 2 succeeded, while get --task 999 returned structured not_found
+      with exit 1; capability-contract and plan capability validation passed;
+      check compact passed with error_count=0 and over_limit_count=0; git diff
+      --check passed.
+    next: Task 3 may establish persisted plan identity; plan archives and
+      experiments remain deferred.
+    context:
+      intent: Deliver Plan Task 2 without adding plan archive or experiment retrieval.
+      constraints: Active file-based plan tasks only; no plan archive retrieval,
+        experiments, broad omission cleanup, metadata, publication, push, or
+        prior-history rewrite.
+      unknowns: None for Task 2; Task 3 owns persisted active-to-archive identity.
+      scope: Plan task retrieval runtime and dispatch, projection recovery, retrieval
+        authority/validator, plan lifecycle inventory, help, tests, changelog,
+        progress, and plan status.
   - number: 797
     timestamp: 2026-07-14 22:48
     type: test
@@ -411,72 +443,10 @@ cycles:
         packages/cli/test/state/archiveAuthority.test.ts;
         references/artifacts/state-storage-authority.yaml; .agentera/plan.yaml;
         .agentera/progress.yaml
-  - number: 788
-    timestamp: 2026-07-14 12:45
-    type: fix
-    phase: build
-    what: "Removed speculative preview receipt security from optional Git
-      enrichment: --dry-run remains read-only and optional, while exact --apply
-      --force applies without a prior preview after independent project, HEAD,
-      candidate provenance/content/reachability, and immutable-target
-      revalidation. Preserved bounded local history, allowed refs, equality,
-      idempotent retry, and local migration independence."
-    inspiration: Simplified Agentera plan Task 1 and the explicit local-operator
-      simplicity decision rejecting cryptographic prior-preview proof.
-    discovered: Cycle 787's real temporary-repository 18-call assertion remains
-      valid for allowed local heads/tags and forbidden remote/custom operations,
-      but its receipt-integrity, token, expiry, and prior-preview claims are not
-      part of the accepted model. Current evidence did not justify changing the
-      separate open v1 custom-artifact-pair TODO.
-    verified: "Focused command: pnpm -C packages/cli exec vp test run
-      test/state/gitBackfill.test.ts test/state/legacyMigration.test.ts
-      test/state/archiveAuthority.test.ts (3 files, 39 tests passed);
-      help/schema: pnpm -C packages/cli exec vp test run test/cli/help.test.ts
-      test/cli/schema.test.ts (2 files, 24 tests passed); non-packaging
-      boundary: pnpm -C packages/cli exec vp test run --exclude
-      test/packaging/prepack.test.ts (175 files, 1782 tests passed); full
-      boundary: pnpm -C packages/cli test (176 files, 1786 passed, exactly 5
-      known npm 12 packaging JSON-parser failures). pnpm -C packages/cli run
-      typecheck, build, and bundle:data passed. Capability build/contract and
-      progress/plan/decisions/health validations passed. check compact --format
-      json passed with error_count=0, over_limit_count=0,
-      protected_overflow_count=0, changed_count=0 and 5 existing
-      archive-recovery refusals. Temp CLI smoke: direct apply without preview
-      complete with applied=1, retry complete with replayed=1, optional preview
-      read_only=true and unchanged=true, remote_contact=false, and reachable
-      refs only HEAD/local heads/tags; the persisted real-ref fixture asserted
-      18 Git calls and no remote/custom operations."
-    next: Leave simplified-plan Task 1 pending; do not evaluate or complete it and
-      do not begin Task 2. Preserve Decision 53, archive immutability,
-      projection policy, stale/missing startup caveats, malformed formatting
-      fixture caveat, known npm packaging failures, the separate open
-      custom-artifact TODO, and the prior plan failure record. Do not add
-      security machinery, audit, release, publication, tag, push, vision,
-      profile, or satisfaction changes.
-    context:
-      intent: Correct Cycle 787 with immutable, truthful, reconstructable evidence
-        while executing only simplified-plan Task 1.
-      constraints: No receipt, HMAC, token, secret, expiry, ledger, daemon, service,
-        remote access, or hostile-local-actor defense. Fold this typed progress
-        append into the substantive implementation commit; leave Task 1 pending
-        and preserve all prior progress bytes.
-      unknowns: The separate v1 custom-artifact-pair migration TODO remains open
-        because this task did not change that code. The five known npm 12
-        packaging parser failures, five archive-recovery refusals, malformed
-        formatting fixture caveat, and stale or missing startup caveats remain
-        unchanged.
-      scope: packages/cli/src/state/gitBackfillReceipt.ts (deleted);
-        packages/cli/src/state/gitBackfill.ts;
-        packages/cli/src/state/gitBackfillOutput.ts;
-        packages/cli/src/state/migrationEnrichment.ts;
-        packages/cli/src/cli/commands/backfill.ts; packages/cli/src/cli/help.ts;
-        references/artifacts/state-storage-authority.yaml;
-        packages/cli/test/state/gitBackfill.test.ts;
-        packages/cli/test/state/legacyMigration.test.ts;
-        packages/cli/test/state/archiveAuthority.test.ts;
-        packages/cli/test/cli/help.test.ts; generated bundle parity; TODO.md;
-        .agentera/progress.yaml
 archive:
+  - summary: "Cycle 788 (2026-07-14): Removed speculative preview receipt security
+      from optional Git enrichment: --dry-run remains read-only and optional,
+      while..."
   - summary: "Cycle 787 (2026-07-14): Closed the optional Git handoff and guard gaps
       from the Task 3 audit: generated commands..."
   - summary: "Cycle 786 (2026-07-14): Added explicit non-executing optional
@@ -573,16 +543,18 @@ archive:
       recovery."
   - summary: "Cycle 749 (2026-07-13): Delivered read-only numbered archive discovery
       and entry validation for progress, decisions, and health."
-  - summary: "Cycle 748 (2026-07-13): Published the state-storage authority for
-      numbered progress, decisions, and health archives, fixed project-root
-      paths, decision..."
 omitted: true
-omitted_count: 34
+omitted_count: 35
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded

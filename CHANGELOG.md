@@ -4,6 +4,8 @@
 
 ### Added
 
+- Added `agentera state plan tasks list` and `agentera state plan tasks get --task N` for bounded active-plan task retrieval with declared task-number order, opaque snapshot cursors, structured not-found and compatibility errors, and exact omission recovery in text and JSON plan output.
+
 - Added an executable bounded-retrieval authority and reserved CLI grammar for plan tasks, plans, and objective-scoped experiments, including stable and legacy identity rules, experiment `0`, opaque cursors, explicit omissions, and structured compatibility errors; retrieval execution remains staged for subsequent tasks.
 - Added a canonical runtime lifecycle projection with deterministic snapshot identity, applicability, ownership, action classes, counts, and command eligibility for OpenCode, Codex, Cursor, and Copilot.
 - Added bounded prime/status lifecycle attention rows with runtime-scoped repair previews, exact manual procedures, and doctor diagnostics for non-executable blockers.

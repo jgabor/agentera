@@ -49,7 +49,7 @@ const EXPECTED_FAILURES = [
 const EXPECTED_COMMANDS = {
   plan_tasks: {
     list: "agentera state plan tasks list [--plan PLAN_ID] [--limit N] [--cursor TOKEN] --format json",
-    get: "agentera state plan tasks get --plan PLAN_ID --task N --format json",
+    get: "agentera state plan tasks get [--plan PLAN_ID] --task N --format json",
   },
   plans: {
     list: "agentera state plan list [--limit N] [--cursor TOKEN] --format json",
@@ -181,8 +181,11 @@ export function validateStateRetrievalAuthority(value: Record<string, unknown>):
   }
   const planTaskSelectors = mapping(mapping(commands.plan_tasks).selectors);
   const planTaskPlanSelector = mapping(planTaskSelectors.plan);
-  if (planTaskPlanSelector.list_required !== false || planTaskPlanSelector.get_required !== true) {
+  if (planTaskPlanSelector.list_required !== false || planTaskPlanSelector.get_required !== false) {
     errors.push("retrieval.commands.plan_tasks.selectors.plan.required");
+  }
+  for (const field of ["list_default", "get_default"]) {
+    requireNonEmpty(planTaskPlanSelector, field, "retrieval.commands.plan_tasks.selectors.plan", errors);
   }
   patternAccepts(
     planTaskPlanSelector.pattern,

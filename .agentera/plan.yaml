@@ -61,20 +61,20 @@ tasks:
       - GIVEN plan tasks, plans, and experiments WHEN commands are specified THEN grammar, selectors, experiment zero, and structured errors are unambiguous.
       - GIVEN valid and invalid contract examples WHEN tested THEN at least one passing and failing case covers each rule.
     evaluation:
-      attempt_count: 1
+      attempt_count: 2
       failure_count: 1
-      last_verdict: fail
+      last_verdict: pass
       last_failure_evidence: Negative fixtures do not cover every enforced authority rule; Cycle 796 verification lacks reproducible commands and criterion mapping.
       provenance:
-        attempt_id: task-1-audit-1-20260714
-        source: independent Task 1 acceptance audit
-        recorded_at: 2026-07-14 22:44
+        attempt_id: task-1-audit-2-20260714
+        source: independent Task 1 corrective acceptance audit
+        recorded_at: 2026-07-14 22:52
         writer_command: agentera state plan record-evaluation
   - number: 2
     name: Deliver plan task list and get
     depends_on:
       - "1"
-    status: pending
+    status: complete
     acceptance:
       - GIVEN a large active plan WHEN tasks are listed THEN declared task-number order, limits, opaque cursors, and omission counts are stable.
       - GIVEN a task number WHEN fetched THEN one full task or a structured not-found result is returned.

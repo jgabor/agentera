@@ -69,10 +69,10 @@ describe("cli schema", () => {
     expect(payload.state_retrieval).toMatchObject({
       authority: "references/artifacts/state-storage-authority.yaml",
       schema_version: "agentera.stateRetrievalAuthority.v1",
-      status: "grammar_declared_implementation_pending",
+      status: "plan_task_retrieval_implemented_other_collections_pending",
       commands: {
         plan_tasks: {
-          get: "agentera state plan tasks get --plan PLAN_ID --task N --format json",
+          get: "agentera state plan tasks get [--plan PLAN_ID] --task N --format json",
         },
         plans: {
           get: "agentera state plan get --plan PLAN_ID --format json",

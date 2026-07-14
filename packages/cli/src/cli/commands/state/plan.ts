@@ -332,9 +332,15 @@ export function queryPlan(args: StateArgs, schemas: Record<string, SchemaInfo>, 
     if (value) o(`${key}: ${truncate(value)}\n`);
   }
   printStatusCounts("Task status", statusCounts(tasks), o);
-  for (const task of tasks.slice(0, 10)) {
+  const visibleTasks = tasks.slice(0, 10);
+  for (const task of visibleTasks) {
     const line = formatEntry(task, ["number", "status", "name", "title"]);
     if (line) o(`Task: ${line}\n`);
+  }
+  if (tasks.length > visibleTasks.length) {
+    o(`Tasks omitted: ${tasks.length - visibleTasks.length} | reason=text_projection_limit\n`);
+    o("Continue: agentera state plan tasks list --format json\n");
+    o("Get one: agentera state plan tasks get --task N --format json\n");
   }
   return 0;
 }

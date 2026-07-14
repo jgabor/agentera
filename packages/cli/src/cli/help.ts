@@ -207,7 +207,7 @@ export function printStateHelp(sub?: string): string {
       `       ${retrievalCommands.plans.get}`,
       `       agentera state plan {${verbsForArtifact("plan").join(",")}} [write flags]`,
       "",
-      "Retrieval grammar is declared by the state-retrieval authority; execution lands in later plan tasks.",
+      "Plan task list/get reads the active file-based plan; plan archive retrieval lands in later plan tasks.",
       "Task list defaults to the active plan; task get requires --plan and a positive --task.",
       "Legacy plan identity collisions return a structured ambiguous error.",
       "",

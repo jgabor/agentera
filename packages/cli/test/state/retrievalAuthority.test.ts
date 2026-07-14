@@ -132,7 +132,8 @@ const negativeCases: NegativeCase[] = [
     mutate: (value) => { value.retrieval.commands[command][verb] = "agentera invalid"; },
   }))),
   { rule: "plan-task list selector optional", expected: "retrieval.commands.plan_tasks.selectors.plan.required", mutate: (value) => { value.retrieval.commands.plan_tasks.selectors.plan.list_required = true; } },
-  { rule: "plan-task get plan selector required", expected: "retrieval.commands.plan_tasks.selectors.plan.required", mutate: (value) => { value.retrieval.commands.plan_tasks.selectors.plan.get_required = false; } },
+  { rule: "plan-task get defaults to active plan", expected: "retrieval.commands.plan_tasks.selectors.plan.required", mutate: (value) => { value.retrieval.commands.plan_tasks.selectors.plan.get_required = true; } },
+  { rule: "plan-task get default is declared", expected: "retrieval.commands.plan_tasks.selectors.plan.get_default", mutate: (value) => { delete value.retrieval.commands.plan_tasks.selectors.plan.get_default; } },
   ...patternCases("retrieval.commands.plan_tasks.selectors.plan", (value) => value.retrieval.commands.plan_tasks.selectors.plan),
   { rule: "plan-task get task selector required", expected: "retrieval.commands.plan_tasks.selectors.task.get_required", mutate: (value) => { value.retrieval.commands.plan_tasks.selectors.task.get_required = false; } },
   ...patternCases("retrieval.commands.plan_tasks.selectors.task", (value) => value.retrieval.commands.plan_tasks.selectors.task),
@@ -179,7 +180,7 @@ describe("state retrieval authority", () => {
   });
 
   it("has one uniquely named negative fixture for every enforced rule", () => {
-    expect(negativeCases).toHaveLength(119);
+    expect(negativeCases).toHaveLength(120);
     expect(new Set(negativeCases.map(({ rule }) => rule)).size).toBe(negativeCases.length);
   });
 

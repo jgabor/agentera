@@ -537,6 +537,8 @@ LIFECYCLE_CONTRACT:
       - packages/cli/src/cli/orientation.ts
       - packages/cli/src/cli/appContext.ts
       - packages/cli/src/cli/commands/state/plan.ts
+      - packages/cli/src/cli/commands/state/planTasks.ts
+      - packages/cli/src/state/planTaskRetrieval.ts
       - packages/cli/src/cli/commands/prime/*.ts
       - packages/cli/src/cli/capabilityContext/*.ts
       - packages/cli/src/cli/contracts/orientationState.ts
@@ -559,6 +561,7 @@ LIFECYCLE_CONTRACT:
       - references/**/*.yaml
       - packages/cli/src/registries/*.ts
       - packages/cli/src/state/retrievalAuthority.ts
+      - packages/cli/src/state/projectionPolicy.ts
       - packages/cli/src/state/startupAnalysis/*.ts
       - packages/cli/src/cli/commands/schema.ts
       - packages/cli/src/cli/commands/validate.ts

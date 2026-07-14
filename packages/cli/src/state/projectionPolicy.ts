@@ -83,6 +83,13 @@ export function projectionRetrieval(command: string): JsonObject {
   if (NUMBERED_ARTIFACTS.has(command)) {
     return { available: true, command: `agentera state ${command} get --number N --format json` };
   }
+  if (command === "plan") {
+    return {
+      available: true,
+      list: "agentera state plan tasks list --format json",
+      get: "agentera state plan tasks get --task N --format json",
+    };
+  }
   return {
     available: false,
     reason: "unsupported_numbered_retrieval",
