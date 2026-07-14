@@ -1,4 +1,50 @@
 cycles:
+  - number: 792
+    timestamp: 2026-07-14 16:57
+    type: fix
+    phase: build
+    what: Repaired npm 12 npm-pack JSON parsing at the packaging test boundary,
+      prepared the development package as 3.0.0-dev.21, pinned its immutable
+      source reference, and folded the pre-existing Task 3 pass/status change
+      into the release-preparation commit.
+    inspiration: Task 4 acceptance, the five npm 12 package-output parser failures,
+      the release metadata authority, and the required no-publish
+      development-channel hold.
+    discovered: npm 12.0.0 emits npm pack --dry-run --json as an object keyed by
+      package name rather than the older one-item array; both shapes are now
+      covered. Empty, malformed, unsupported, and multi-entry output receive
+      actionable parser errors. The system npm publish dry-run cannot load
+      sigstore, while npm 12.0.1 through npx completes the prescribed dry-run
+      successfully.
+    verified: "pnpm -C packages/cli test: 177 files and 1803 tests passed.
+      Typecheck, build, and bundle:data passed. Release-metadata validation
+      passed; capability-contract passed 2/2; plan and progress artifact
+      validation passed before this append; check compact passed with
+      error_count=0, over_limit_count=0, protected_overflow_count=0, and
+      changed_count=0 while retaining the five known loss-preserving progress
+      archive refusals. npm 12.0.0 npm pack --dry-run --json --ignore-scripts
+      passed with agentera@3.0.0-dev.21 and 642 files; required entrypoints were
+      present and no .env, .npmrc, repository-local state, private-key, AWS-key,
+      GitHub-token, or test-token leaks were found. npm 12.0.1 npx npm publish
+      --tag next --dry-run passed with + agentera@3.0.0-dev.21 and no
+      publication."
+    next: Leave Plan Task 4 pending and do not evaluate or complete it. Keep Task 5
+      pending; after this append, revalidate progress and compact, review the
+      intended diff, commit once, and do not publish, tag, or push.
+    context:
+      intent: Execute simplified Agentera plan Task 4 without broadening packaging
+        semantics or closing the task.
+      constraints: Only packages/cli/package.json version advances from dev.20 to
+        dev.21; suite and development-channel surfaces remain 3.0.0. Keep
+        CHANGELOG under Unreleased, exclude unrelated packaging work, preserve
+        the selected parent source SHA rather than self-referencing the release
+        commit, and perform no real publication, tag, or push.
+      unknowns: No Task 4 implementation unknowns remain. The system npm sigstore
+        failure is an environment caveat covered by a successful npm 12.0.1
+        dry-run fallback.
+      scope: packages/cli/test/packaging/prepack.test.ts; packages/cli/package.json;
+        .agentera/plan.yaml; .agentera/progress.yaml; generated ignored
+        packages/cli/dist and packages/cli/bundle
   - number: 791
     timestamp: 2026-07-14 15:12
     type: fix
@@ -529,59 +575,6 @@ cycles:
         packages/cli/test/cli/invalidInputEnvelope.test.ts;
         packages/cli/test/cli/fixtures/oracle/invalid-input-envelope.json;
         .agentera/plan.yaml; generated dist and bundle parity
-  - number: 782
-    timestamp: 2026-07-14 07:35
-    type: fix
-    phase: build
-    what: "Corrected Cycle 781 evidence and implemented Task 1 migration authority
-      consumption: schema no longer keeps a migration filter registry; runtime
-      derives selectors, invalid combinations, result/count/omission fields,
-      bounds, and recovery from the canonical authority; deferred inventory and
-      apply remain filesystem-free. Cycle 781 is superseded by this correction
-      and remains byte-unchanged."
-    inspiration: Active plan Task 1 and prior evaluator findings for Cycle 781
-      authority duplication, unconsumed result metadata, missing truncation
-      tests, and inaccurate count/path claims.
-    discovered: The exact final focused command passed 61 tests across 4 files. The
-      earlier 58/63 claims were not reused. The actual existing error helper
-      path is packages/cli/src/cli/errors.ts, not
-      packages/cli/src/cli/commands/errors.ts. Task 1 can validate symlink and
-      exclusion paths read-only while Task 2 retains all candidate scanning and
-      mutation. The repository formatter remains blocked by the existing
-      intentionally malformed invalid-progress-yaml fixture.
-    verified: "Exact focused rerun: pnpm -C packages/cli exec vp test run
-      test/state/migrationAuthority.test.ts test/cli/state.test.ts
-      test/cli/schema.test.ts test/cli/invalidInputEnvelope.test.ts -> 4 files,
-      61 tests passed. Non-packaging: pnpm -C packages/cli exec vp test run
-      --exclude test/packaging/prepack.test.ts -> 174 files, 1,757 tests passed.
-      Full suite: pnpm -C packages/cli test -> 174 files passed, 1,761 tests
-      passed, 5 known npm 12 packaging JSON-parser tests failed. Typecheck,
-      build, bundle:data, capability/status, capability-contract,
-      artifact/progress, compact, source scans, authority bundle parity, and
-      text/JSON/YAML migration smokes passed; valid apply reported
-      mutation_performed=false."
-    next: Leave Task 1 pending and do not record an evaluation; the orchestrator
-      owns independent audit and status. Keep Task 2 filesystem inventory,
-      archive, backup, projection, and mutation deferred. Do not change Cycle
-      781, run migration, enrich Git, alter vision/profile/decision
-      satisfaction, publish, tag, or push.
-    context:
-      intent: "Execute Task 1: make migration authority executable, prove truthful
-        bounded contracts, and publish corrected independent evidence without
-        starting filesystem migration."
-      constraints: Preserve archive immutability, Decision 53 no-inference,
-        uniform_10_40_50, non-Git completion, no remote access, stale profile
-        and missing startup caveats, known npm 12 failures, and the confirmed
-        agentera state migrate namespace. Fold this progress correction into the
-        substantive implementation commit.
-      unknowns: Independent orchestration audit remains. Stale profile and missing
-        decision, vision, and profile startup caveats remain unchanged.
-      scope: references/artifacts/state-storage-authority.yaml;
-        packages/cli/src/state/migrationAuthority.ts;
-        packages/cli/src/cli/commands/migrate.ts;
-        packages/cli/src/cli/commands/schema.ts; packages/cli/src/cli/help.ts;
-        packages/cli/test/state/migrationAuthority.test.ts; TODO.md; corrected
-        Cycle 781 actual path packages/cli/src/cli/errors.ts
   - number: 749
     timestamp: 2026-07-13 10:58
     type: feat
@@ -699,6 +692,8 @@ cycles:
       intent: Complete active plan Task 7 without changing decisions or unrelated
         capabilities.
 archive:
+  - summary: "Cycle 782 (2026-07-14): Corrected Cycle 781 evidence and implemented
+      Task 1 migration authority consumption: schema no longer keeps..."
   - summary: "Cycle 781 (2026-07-14): Retried Task 2 after the independent authority
       audit by removing duplicated migration parser values, deriving..."
   - summary: "Cycle 780 (2026-07-14): Published the schema-backed local migration
@@ -797,16 +792,18 @@ archive:
   - summary: "Cycle 735 (2026-07-12): Completed Task 1 lifecycle classification with
       a safely pruned repository-root scan in
       skills/agentera/schemas/artifacts/plan.yaml."
-  - summary: "Cycle 734 (2026-07-12): Repaired Task 1 lifecycle inventory
-      completeness with scan-enforced classification patterns in
-      skills/agentera/schemas/artifacts/plan.yaml."
 omitted: true
-omitted_count: 29
+omitted_count: 30
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded

@@ -68,6 +68,72 @@ function scrubbedEnv(extra: Record<string, string> = {}): NodeJS.ProcessEnv {
   return { ...env, ...extra };
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isPackFile(value: unknown): value is PackFile {
+  return (
+    isRecord(value) &&
+    typeof value.path === "string" &&
+    typeof value.size === "number" &&
+    typeof value.mode === "number"
+  );
+}
+
+function isPackEntry(value: unknown): value is PackEntry {
+  return (
+    isRecord(value) &&
+    typeof value.id === "string" &&
+    typeof value.name === "string" &&
+    typeof value.version === "string" &&
+    typeof value.size === "number" &&
+    typeof value.unpackedSize === "number" &&
+    typeof value.shasum === "string" &&
+    typeof value.filename === "string" &&
+    Array.isArray(value.files) &&
+    value.files.every(isPackFile)
+  );
+}
+
+/**
+ * npm 12 changed --json output from a one-item array to an object keyed by
+ * package name. Keep the compatibility boundary in the test harness rather
+ * than changing the packaging contract being tested.
+ */
+function parsePackManifest(stdout: string): PackEntry {
+  const output = stdout.trim();
+  if (output.length === 0) {
+    throw new Error("npm pack --dry-run --json produced empty stdout");
+  }
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(output);
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error);
+    throw new Error(`npm pack --dry-run --json produced invalid JSON: ${detail}`);
+  }
+
+  const entries = Array.isArray(parsed) ? parsed : isRecord(parsed) ? Object.values(parsed) : null;
+  if (entries === null) {
+    throw new Error(
+      "npm pack --dry-run --json must return a JSON array or package-name object",
+    );
+  }
+  if (entries.length !== 1) {
+    throw new Error(
+      `npm pack --dry-run --json returned ${entries.length} package entries; expected exactly one`,
+    );
+  }
+  if (!isPackEntry(entries[0])) {
+    throw new Error(
+      "npm pack --dry-run --json returned a package entry without the required manifest fields",
+    );
+  }
+  return entries[0];
+}
+
 /**
  * Read the `npm pack --dry-run --json` manifest from the package output built
  * once by Vitest global setup. Worker tests never rebuild shared dist/ or
@@ -83,16 +149,51 @@ function packManifestDirect(): PackEntry {
   expect(r.status, `npm pack --ignore-scripts must succeed; stderr=${r.stderr.slice(0, 800)}`).toBe(
     0,
   );
-  const start = r.stdout.indexOf("[");
-  expect(start, "npm pack --json must emit a JSON array").toBeGreaterThanOrEqual(0);
-  const parsed = JSON.parse(r.stdout.slice(start)) as PackEntry[];
-  expect(parsed.length).toBe(1);
-  return parsed[0];
+  return parsePackManifest(r.stdout);
 }
 
 function paths(manifest: PackEntry): Set<string> {
   return new Set(manifest.files.map((f) => f.path));
 }
+
+describe("npm pack JSON manifest parser", () => {
+  const entry: PackEntry = {
+    id: "agentera@3.0.0-dev.21",
+    name: "agentera",
+    version: "3.0.0-dev.21",
+    size: 1,
+    unpackedSize: 2,
+    shasum: "deadbeef",
+    filename: "agentera-3.0.0-dev.21.tgz",
+    files: [{ path: "dist/bin/agentera.js", size: 1, mode: 420 }],
+  };
+
+  it("accepts the legacy one-item array output", () => {
+    expect(parsePackManifest(JSON.stringify([entry]))).toEqual(entry);
+  });
+
+  it("accepts the npm 12 package-name-keyed object output", () => {
+    expect(parsePackManifest(JSON.stringify({ agentera: entry }))).toEqual(entry);
+  });
+
+  it("rejects empty output with an actionable error", () => {
+    expect(() => parsePackManifest("\n")).toThrow(
+      "npm pack --dry-run --json produced empty stdout",
+    );
+  });
+
+  it("rejects malformed JSON with an actionable error", () => {
+    expect(() => parsePackManifest("{not-json")).toThrow(
+      "npm pack --dry-run --json produced invalid JSON",
+    );
+  });
+
+  it("rejects output without exactly one valid package entry", () => {
+    expect(() => parsePackManifest("{}")).toThrow(
+      "npm pack --dry-run --json returned 0 package entries; expected exactly one",
+    );
+  });
+});
 
 describe("v3 packaging (T1)", () => {
   describe("npm-tarball surface (npm pack --dry-run --json)", () => {
@@ -163,9 +264,7 @@ describe("v3 packaging (T1)", () => {
           env: scrubbedEnv({ npm_config_ignore_scripts: "true" }),
         });
         expect(r.status, "npm pack must succeed").toBe(0);
-        const start = r.stdout.indexOf("[");
-        const parsed = JSON.parse(r.stdout.slice(start)) as PackEntry[];
-        const filePaths = new Set(parsed[0]?.files.map((f) => f.path) ?? []);
+        const filePaths = paths(parsePackManifest(r.stdout));
         expect(filePaths.has("bundle/.agentera-npx-bundle.json")).toBe(false);
         expect(filePaths.has("bundle/registry.json")).toBe(false);
         expect(filePaths.has("bundle/skills/agentera/SKILL.md")).toBe(false);
@@ -187,9 +286,7 @@ describe("v3 packaging (T1)", () => {
           env: scrubbedEnv({ npm_config_ignore_scripts: "true" }),
         });
         expect(r.status, "npm pack must succeed").toBe(0);
-        const start = r.stdout.indexOf("[");
-        const parsed = JSON.parse(r.stdout.slice(start)) as PackEntry[];
-        const filePaths = new Set(parsed[0]?.files.map((f) => f.path) ?? []);
+        const filePaths = paths(parsePackManifest(r.stdout));
         expect(filePaths.has("dist/bin/agentera.js")).toBe(false);
       } finally {
         fs.rmSync(tmp, { recursive: true, force: true });
