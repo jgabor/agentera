@@ -46,8 +46,8 @@ import type { JsonObject } from "../core/jsonValue.js";
  *
  * The validator returns a list of error strings. The CLI surface in
  * `cli/commands/validate.ts` renders them as a non-zero exit so the
- * `check validate release-metadata` family can gate the doctor/upgrade
- * flow and the lefthook pre-commit hook.
+ * `check validate release-metadata` family can gate release readiness without
+ * making ordinary tests depend on an uncommitted checkout identifying itself.
  */
 
 export interface ReleaseMetadataSnapshot {

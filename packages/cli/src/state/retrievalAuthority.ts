@@ -110,7 +110,43 @@ export function deriveLegacyObjectiveIdentity(canonicalJson: string): string {
   return `legacy-objective:${sha256(canonicalJson)}`;
 }
 
-/** Validate the executable retrieval section without interpreting storage internals. */
+export function validateExperimentPublicationParity(value: Record<string, unknown>): string[] {
+  const errors: string[] = [];
+  const publication = mapping(mapping(mapping(value.retrieval).identity).experiment);
+  const publicationContract = mapping(publication.publication);
+  const archive = mapping(value.experiment_archival);
+  const archiveLayout = mapping(archive.layout);
+  const archivePublication = mapping(archive.publication);
+  const archiveProjection = mapping(archive.projection);
+
+  if (publicationContract.authority !== "typed_state_writer") {
+    errors.push("retrieval.identity.experiment.publication.authority");
+  }
+  if (publicationContract.archive_ownership !== "experiment_archival" || archive.status !== "implemented") {
+    errors.push("retrieval.identity.experiment.publication.archive_ownership");
+  }
+  if (
+    publicationContract.storage_scope !== "objective_directory"
+    || publicationContract.storage_scope !== archiveLayout.ownership
+  ) {
+    errors.push("retrieval.identity.experiment.publication.storage_scope");
+  }
+  if (
+    publicationContract.publication_order !== "archive_before_projection"
+    || archivePublication.archive_before_projection !== true
+  ) {
+    errors.push("retrieval.identity.experiment.publication.publication_order");
+  }
+  if (
+    publicationContract.projection_policy !== "uniform_10_40_50"
+    || publicationContract.projection_policy !== archiveProjection.policy
+  ) {
+    errors.push("retrieval.identity.experiment.publication.projection_policy");
+  }
+  return errors;
+}
+
+/** Validate executable retrieval fields and their declared publication/storage seams. */
 export function validateStateRetrievalAuthority(value: Record<string, unknown>): string[] {
   const errors: string[] = [];
   const retrieval = mapping(value.retrieval);
@@ -192,6 +228,7 @@ export function validateStateRetrievalAuthority(value: Record<string, unknown>):
   for (const field of ["scope", "collision", "compatibility", "publication_validation"]) {
     requireNonEmpty(experimentIdentity, field, "retrieval.identity.experiment", errors);
   }
+  errors.push(...validateExperimentPublicationParity(value));
 
   const commands = mapping(retrieval.commands);
   for (const [name, grammar] of Object.entries(EXPECTED_COMMANDS)) {

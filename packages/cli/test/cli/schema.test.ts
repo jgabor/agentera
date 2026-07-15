@@ -119,6 +119,17 @@ describe("cli schema", () => {
           get: "agentera state experiments get --objective OBJECTIVE_ID --number N --format json",
         },
       },
+      identity: {
+        experiment: {
+          publication: {
+            authority: "typed_state_writer",
+            archive_ownership: "experiment_archival",
+            storage_scope: "objective_directory",
+            publication_order: "archive_before_projection",
+            projection_policy: "uniform_10_40_50",
+          },
+        },
+      },
     });
     expect(payload.runtime_lifecycle.active_runtime_ids).toEqual(["opencode", "codex", "cursor", "copilot"]);
     expect(payload.runtime_lifecycle).toMatchObject({

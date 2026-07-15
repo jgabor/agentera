@@ -185,6 +185,10 @@ retrieval:
       publication:
         command: agentera state experiments publish --objective OBJECTIVE_ID --number N --input EXPERIMENT.yaml --format json
         authority: typed_state_writer
+        archive_ownership: experiment_archival
+        storage_scope: objective_directory
+        publication_order: archive_before_projection
+        projection_policy: uniform_10_40_50
         input: one schema-valid experiment entry without the CLI-owned number field
         identity_assignment: the CLI assigns the validated --number to the published entry
         collision_rule: >-
@@ -201,8 +205,9 @@ retrieval:
           may report failure after publication; retrying the same command must
           return the already-published entry without duplication.
         scope_boundary: >-
-          Publication preserves the existing 10/40/50 projection contract but
-          does not introduce the durable archival policy owned by the next plan task.
+          Publication preserves the existing 10/40/50 projection contract and
+          durably publishes its objective-scoped immutable archive before
+          replacing the projection, as owned by experiment_archival.
   commands:
     plan_tasks:
       list: agentera state plan tasks list [--plan PLAN_ID] [--limit N] [--cursor TOKEN] --format json

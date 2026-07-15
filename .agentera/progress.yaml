@@ -1,4 +1,41 @@
 cycles:
+  - number: 822
+    timestamp: 2026-07-15 14:36
+    type: fix
+    phase: build
+    what: Reconciled experiment publication and archival authority.
+    inspiration: Audit 32 finding and active plan Task 1.
+    discovered: The schema projection exposes the full publication declaration;
+      optimize startup introspection loads and validates the authority but does
+      not project publication semantics, so no startup projection required
+      synchronization. The full live-repo suite's sole failure is the expected
+      stale agentera.gitRef owned by unstarted Task 2.
+    verified: Focused retrieval-authority, archive-authority,
+      experiment-publication, schema, and prepack tests passed 192/192. Broad
+      suite excluding release metadata passed 2049/2049; the full suite passed
+      2068/2069 with only the expected Task 2 gitRef drift failure. Typecheck
+      and build passed. Capability contract validation passed 2/2. Compact
+      passed with over_limit=0 and changed=0. Canonical and bundled authority
+      bytes match at SHA-256
+      f84cbfad718d7c11c4dbe7f4afb9f081af6507e3919b15887d3a3c4bf9fdd0fb. Built
+      schema reports typed_state_writer, experiment_archival,
+      objective_directory, archive_before_projection, and uniform_10_40_50.
+      Runtime publication tests remain green; git diff --check passed.
+    next: Stop after Task 1. Task 2 may pin immutable remediation provenance in a
+      separate cycle.
+    context:
+      intent: Complete Audit 32 remediation Plan Task 1 by removing the
+        release-blocking authority contradiction and enforcing structured
+        semantic parity.
+      constraints: Preserved runtime publication/archive/retrieval behavior, archive
+        layout, 10/40/50 policy, versions, gitRef, unrelated docs, historical
+        evidence, and the approved plan.
+      unknowns: "Resolved: only agentera schema directly projects publication
+        semantics; optimize startup introspection validates the authority but
+        does not expose those fields, so no startup projection bytes changed."
+      scope: Canonical state-storage authority, retrieval semantic validator,
+        authority/schema tests, changelog, active plan Task 1 evidence/status,
+        and progress.
   - number: 821
     timestamp: 2026-07-15 13:36
     type: test
@@ -355,46 +392,6 @@ cycles:
       scope: Archive-only plan catalog recovery, selector-first task cursor
         validation, whole-row legacy plan text bounding, authority closure
         evidence, regressions, changelog, progress, and plan evaluation/status.
-  - number: 812
-    timestamp: 2026-07-15 10:42
-    type: fix
-    phase: build
-    what: Closed evidenced plan and experiment cursor and omission gaps.
-    inspiration: Replacement Plan Task 10 and the Task 1 retrieval coverage matrix.
-    discovered: Plan-task YAML lacked serialized-byte bounding; legacy plan catalog
-      and archive-path caps lacked public recovery; plan cursors did not bind
-      diagnostic state. The legacy experiment projection is explicitly out of
-      scope because objective-scoped experiments list/get owns retrieval.
-    verified: "AC1: focused JSON/YAML/text tests prove omitted, omitted_count,
-      omission_reason, cursor/list/get recovery, and no scalar truncation. AC2:
-      malformed, wrong-family, wrong-objective, mutated-entry, and
-      changed-diagnostic tests prove cursor_invalid or
-      cursor_snapshot_unavailable. AC3: 276 focused tests and existing
-      progress/decisions/health list/get regression tests passed; typecheck,
-      build, capability-contract validation, and live CLI smoke passed. Root
-      commands: pnpm -C packages/cli exec vp test run
-      test/cli/sourceContractOracles.test.ts
-      test/state/retrievalAuthority.test.ts test/state/projectionPolicy.test.ts
-      test/state/planTaskRetrieval.test.ts test/state/planRetrieval.test.ts
-      test/state/experimentRetrieval.test.ts test/state/listRetrieval.test.ts
-      test/state/directRetrieval.test.ts; pnpm -C packages/cli test; pnpm -C
-      packages/cli run typecheck; pnpm -C packages/cli build; node
-      packages/cli/dist/bin/agentera.js check validate capability-contract
-      --format json; node packages/cli/dist/bin/agentera.js check compact."
-    next: Task 11 may perform the broad public-contract documentation sweep; do not
-      begin Task 12 or Task 13 in this cycle.
-    context:
-      intent: Complete Plan Task 10 without extending bounded retrieval to unrelated
-        state families.
-      constraints: Preserved numbered families, objective-scoped experiments, 10/40/50
-        retention, suite metadata, Task 9 audit evidence, and the closed
-        evidence-repair TODO text; no publication, tag, push, or unrelated
-        family work.
-      unknowns: The Task 9 audit resolved the only gating unknown; no Task 10 unknown
-        remains.
-      scope: Retrieval authority, plan projections/cursors, plan-task YAML bounds,
-        plan/experiment tests, source-contract oracle, changelog, and state
-        closeout.
   - number: 793
     timestamp: 2026-07-14 17:36
     type: chore
@@ -464,6 +461,8 @@ cycles:
         and backfill fixtures; package metadata and generated ignored
         dist/bundle
 archive:
+  - summary: "Cycle 812 (2026-07-15): Closed evidenced plan and experiment cursor
+      and omission gaps."
   - summary: "Cycle 811 (2026-07-15): Added root-runnable deterministic Task 4
       retrieval evidence and a separate read-only live YAML inequality smoke..."
   - summary: "Cycle 810 (2026-07-15): Corrected Task 8 experiment cursors across
@@ -562,15 +561,18 @@ archive:
   - summary: "Cycle 772 (2026-07-13): Made legacy state listing identity-safe and
       physically truthful: explicit canonical numbers and decisions Dnn
       shorthand..."
-  - summary: "Cycle 771 (2026-07-13): Repaired bounded snapshot cursor traversal:
-      serializer-aware pages now retain an advancing row prefix or fail..."
 omitted: true
-omitted_count: 57
+omitted_count: 58
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded

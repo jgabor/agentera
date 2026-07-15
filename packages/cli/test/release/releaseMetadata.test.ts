@@ -2,7 +2,6 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
-import { fileURLToPath } from "node:url";
 
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
@@ -13,9 +12,6 @@ import {
   releaseMetadataMain,
   validateReleaseMetadata,
 } from "../../src/release/releaseMetadata.js";
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const REPO_ROOT = path.resolve(__dirname, "../../../..");
 
 const VALID_REGISTRY = (version: string) => ({
   version: "1",
@@ -391,23 +387,5 @@ describe("releaseMetadataMain", () => {
     expect(joined).toContain("release-metadata validation failed:");
     expect(joined).toContain("release-metadata divergence");
     expect(joined).toContain("40-character hex SHA");
-  });
-});
-
-describe("release-metadata live repo", () => {
-  it("validates the current feat/v3 working tree without drift", () => {
-    if (!fs.existsSync(path.join(REPO_ROOT, "packages/cli/package.json"))) {
-      return;
-    }
-    const errors = validateReleaseMetadata(REPO_ROOT);
-    // The released package.json is 3.0.0 and registry.json
-    // skills[0].version is 3.0.0; if this test fails after a future bump
-    // the divergence is a real release-metadata regression.
-    if (errors.length > 0) {
-      throw new Error(
-        `release-metadata drift in live repo: ${errors.join("; ")}. ` +
-          `Bump registry.json skills[0].version and re-run \`pnpm -C packages/cli run bundle:data\`.`,
-      );
-    }
   });
 });

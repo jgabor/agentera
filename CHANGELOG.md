@@ -4,6 +4,7 @@
 
 ### Changed
 
+- Corrected packaged experiment-publication authority to declare validated objective-scoped archive-before-projection ownership and reject contradictory structured scope metadata.
 - Synchronized bounded plan, plan-task, and experiment retrieval across help, schema introspection, capability guidance, operator docs, packaged contracts, output bounds, archive ownership, and structured recovery errors.
 
 ### Added

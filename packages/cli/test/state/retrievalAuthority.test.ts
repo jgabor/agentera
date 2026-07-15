@@ -9,6 +9,7 @@ import { describe, expect, it } from "vitest";
 import {
   loadStateRetrievalAuthority,
   STATE_RETRIEVAL_AUTHORITY_PATH,
+  validateExperimentPublicationParity,
   validateStateRetrievalAuthority,
 } from "../../src/state/retrievalAuthority.js";
 
@@ -135,6 +136,13 @@ const negativeCases: NegativeCase[] = [
     expected: `retrieval.identity.experiment.${field}`,
     mutate: (value) => { delete value.retrieval.identity.experiment[field]; },
   })),
+  { rule: "experiment publication uses typed validation", expected: "retrieval.identity.experiment.publication.authority", mutate: (value) => { value.retrieval.identity.experiment.publication.authority = "documentation_only"; } },
+  { rule: "experiment publication owns implemented archival", expected: "retrieval.identity.experiment.publication.archive_ownership", mutate: (value) => { value.retrieval.identity.experiment.publication.archive_ownership = "numbered_archive"; } },
+  { rule: "experiment archival is implemented", expected: "retrieval.identity.experiment.publication.archive_ownership", mutate: (value) => { value.experiment_archival.status = "planned"; } },
+  { rule: "experiment publication is objective-scoped", expected: "retrieval.identity.experiment.publication.storage_scope", mutate: (value) => { value.retrieval.identity.experiment.publication.storage_scope = "project_archive"; } },
+  { rule: "experiment publication archives before projection", expected: "retrieval.identity.experiment.publication.publication_order", mutate: (value) => { value.retrieval.identity.experiment.publication.publication_order = "projection_before_archive"; } },
+  { rule: "experiment archive declares archive before projection", expected: "retrieval.identity.experiment.publication.publication_order", mutate: (value) => { value.experiment_archival.publication.archive_before_projection = false; } },
+  { rule: "experiment publication preserves projection policy", expected: "retrieval.identity.experiment.publication.projection_policy", mutate: (value) => { value.retrieval.identity.experiment.publication.projection_policy = "unbounded"; } },
   ...(["plan_tasks", "plans", "experiments"] as const).flatMap((command) => (["list", "get"] as const).map((verb): NegativeCase => ({
     rule: `${command} ${verb} grammar`,
     expected: `retrieval.commands.${command}.${verb}`,
@@ -193,7 +201,7 @@ describe("state retrieval authority", () => {
   });
 
   it("has one uniquely named negative fixture for every enforced rule", () => {
-    expect(negativeCases).toHaveLength(132);
+    expect(negativeCases).toHaveLength(139);
     expect(new Set(negativeCases.map(({ rule }) => rule)).size).toBe(negativeCases.length);
   });
 
@@ -201,6 +209,20 @@ describe("state retrieval authority", () => {
     const value = structuredClone(authority());
     mutate(value);
     expect(validateStateRetrievalAuthority(value)).toContain(expected);
+  });
+
+  it("accepts structured publication and archival declarations with semantic parity", () => {
+    expect(validateExperimentPublicationParity(authority())).toEqual([]);
+  });
+
+  it("rejects a contradictory structured publication scope without matching prose", () => {
+    const value = authority();
+    value.retrieval.identity.experiment.publication.storage_scope = "project_archive";
+    value.retrieval.identity.experiment.publication.scope_boundary = "Any prose remains irrelevant.";
+
+    expect(validateExperimentPublicationParity(value)).toContain(
+      "retrieval.identity.experiment.publication.storage_scope",
+    );
   });
 
   it("keeps deterministic positive identity vectors and experiment zero", () => {

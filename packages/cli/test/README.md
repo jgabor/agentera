@@ -14,7 +14,7 @@ and lefthook — not duplicated as vitest assertions against this checkout's `.a
 | Vitest | Hook/CLI behavior from fixtures and tmp project trees | `pnpm -C packages/cli test` |
 | Repo-state fixtures | Pinned `.agentera/` + `TODO.md` variants via `useFixtureProject(name)` | `packages/cli/test/fixtures/repo-state/` |
 | Repo gate | Committed `.agentera/*` and `TODO.md` within `uniform_10_40_50` | `pnpm -C packages/cli build && node packages/cli/dist/bin/agentera.js check compact` |
-| Release gate | Version-bearing surfaces aligned (registry, package.json, bundle sentinel) | `releaseMetadata.test.ts` live-repo describe (gate-deferred) |
+| Release gate | Version-bearing surfaces and governed provenance aligned in the live checkout | `agentera check validate release-metadata --format json` |
 
 ## Classification key
 
@@ -40,11 +40,11 @@ No other vitest file reads live `.agentera/*` or `TODO.md` from `REPO_ROOT` (gre
 2026-06-18). Tests that mention artifact paths only inside tmp dirs, inline strings, or
 oracle JSON are not couplings.
 
-## Gate-deferred couplings (keep; not tasks 2–5)
+## Explicit live-checkout gates
 
-| File | Live coupling | Notes |
-| ---- | ------------- | ----- |
-| `release/releaseMetadata.test.ts` | `validateReleaseMetadata(REPO_ROOT)` in "live repo" describe | Static version-surface alignment, not session ledger churn |
+| Entry point | Live coupling | Notes |
+| ----------- | ------------- | ----- |
+| `agentera check validate release-metadata --format json` | Validates version surfaces and `agentera.gitRef` against governed checkout inputs | Run explicitly for release readiness; fixture-level validator tests remain in ordinary vitest |
 
 ## Static-contract REPO_ROOT couplings (documented; no migration)
 
