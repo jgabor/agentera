@@ -1,4 +1,40 @@
 cycles:
+  - number: 834
+    timestamp: 2026-07-15 20:42
+    type: feat
+    phase: build
+    what: Migrated all four bounded analytics consumers (usage analytics, report
+      status, prime corpus coverage, startup analysis benchmark) from monolithic
+      corpus.json to bounded evidence tiers via new tierReader.ts module. Added
+      iterTierRecords streaming generator, readTierCorpusMetadata, and
+      corpus_metadata in the tier manifest. Added tier-aware bounded-read tests
+      covering all consumers, oversized-record retention (Task 2 audit gap), and
+      degraded-state recovery.
+    inspiration: "Plan Task 3 (depends on Task 2 tier publication). Task 2 audit
+      identified non-blocking gap: oversized single-record shard retention was
+      untested."
+    verified: pnpm -C packages/cli run typecheck (clean); pnpm -C packages/cli test
+      (2156 passed, 189 files); pnpm -C packages/cli build (clean); agentera
+      check compact (pass)
+    next: "Task 4: Move current profile synthesis to bounded signals (out of scope
+      here)."
+    context:
+      intent: Restore bounded analytics consumers so usage, report status, prime
+        coverage, and startup analysis produce bounded analysis at real scale
+        instead of degrading solely because total evidence is large.
+      constraints: Profile synthesis is Task 4 and was not migrated. No profile
+        levels, glossary, remote storage, release, publish, or suite metadata
+        above 3.0.0.
+      unknowns: none
+      scope: "packages/cli/src/analytics/extractCorpus/tierReader.ts,
+        evidenceTiers.ts, index.ts, cli.ts;
+        packages/cli/src/analytics/usageStats.ts;
+        packages/cli/src/cli/commands/report.ts;
+        packages/cli/src/cli/orientation/corpusCoverage.ts;
+        packages/cli/src/state/startupAnalysis/benchmark.ts; test files:
+        tierReader.test.ts, evidenceTiers.test.ts, usageStats.test.ts,
+        report.test.ts, orientationCorpusCoverage.test.ts,
+        startupAnalysisBenchmark.test.ts"
   - number: 833
     timestamp: 2026-07-15 20:09
     type: feat
@@ -222,41 +258,6 @@ cycles:
         remediation blocker.
       scope: .agentera/health.yaml and archive/health/33.yaml; typed progress and plan
         closeout state; pre-existing Task 2 evaluation preserved.
-  - number: 824
-    timestamp: 2026-07-15 15:26
-    type: test
-    phase: build
-    what: Proved Audit 32 replacement Task 2 release readiness without publication.
-    inspiration: Audit 32 replacement Plan Task 2 and the passing Task 1 independent audit.
-    discovered: The direct pnpm exec vitest attempt lacked a vitest binary and one
-      artifact command omitted the required flag; corrected documented
-      invocations passed. Token-substitution, npm config, SQLite, and fixture
-      warnings were non-blocking environment, tool, or fixture diagnostics, not
-      product defects.
-    verified: Focused five-file authority, archive, experiment-publication, schema,
-      and prepack suite passed 192/192; full CLI passed 185 files and 2068/2068.
-      Typecheck, build, release metadata, capability contract 2/2, compact, and
-      PLAN/PROGRESS validation passed. Canonical and bundled authority matched
-      SHA-256 f84cbfad718d7c11c4dbe7f4afb9f081af6507e3919b15887d3a3c4bf9fdd0fb;
-      gitRef fdd67cd9eacdd43fdbb755158f0d8e405bee1e1c matched governed inputs;
-      package stayed 3.0.0-dev.21 and all suite surfaces stayed 3.0.0. npm pack
-      dry-run contained 664 files including corrected authority, sentinel, bin,
-      and package manifest; publish --tag next --dry-run reported +
-      agentera@3.0.0-dev.21. Registry remained @next 3.0.0-dev.20 with exact
-      dev.21 absent; pre/post npm tracked diff hash matched
-      acdd88b75b9d7eed24e95af293ee7738367f59c620e63a2f6261ff09b8db79af.
-    next: Stop after Task 2. Task 3 remains pending; do not update health or begin
-      independent closeout.
-    context:
-      intent: Verify corrected authority, bundle parity, provenance, package payload,
-        and all release gates while preserving Task 1 audit state and external
-        registry state.
-      constraints: Verification-only; no product edits, health update, amend, external
-        publication, tag, push, reset, stash, clean, or unrelated state change.
-      unknowns: None. Registry absence was rechecked after both dry-runs; environment
-        and tool warnings were classified separately from product results.
-      scope: Approved Task 1 evaluation, Task 2 evidence/status, and appended progress
-        cycle only; dist and bundle regeneration remained ignored outputs.
   - number: 793
     timestamp: 2026-07-14 17:36
     type: chore
@@ -326,6 +327,8 @@ cycles:
         and backfill fixtures; package metadata and generated ignored
         dist/bundle
 archive:
+  - summary: "Cycle 824 (2026-07-15): Proved Audit 32 replacement Task 2 release
+      readiness without publication."
   - summary: "Cycle 823 (2026-07-15): Made immutable release provenance non-circular."
   - summary: "Cycle 822 (2026-07-15): Reconciled experiment publication and archival
       authority."
@@ -418,16 +421,18 @@ archive:
   - summary: "Cycle 784 (2026-07-14): Implemented bounded non-Git legacy migration
       with strict local YAML/Markdown parsing, exact immutable archive and
       backup..."
-  - summary: "Cycle 783 (2026-07-14): Closed the continuation-task1-audit-1 gaps:
-      bounded project-local read-only inventory now exercises authority roots,
-      depth, exclusions, normalized..."
 omitted: true
-omitted_count: 69
+omitted_count: 70
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded

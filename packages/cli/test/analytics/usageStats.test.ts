@@ -17,6 +17,9 @@ import {
   pairInvocations,
   renderMarkdown,
 } from "../../src/analytics/usageStats.js";
+import { ADAPTER_VERSION } from "../../src/analytics/extractCorpus/core.js";
+import { publishEvidenceTiers } from "../../src/analytics/extractCorpus/evidenceTiers.js";
+import { tiersDirForCorpusPath } from "../../src/analytics/extractCorpus/tierReader.js";
 
 let tmp: string;
 beforeEach(() => {
@@ -268,5 +271,103 @@ describe("usageMain engine", () => {
     expect(parsed.extracted_at).toBe("2026-01-02T03:04:05Z");
     expect(typeof parsed.generated_at).toBe("string");
     expect(typeof parsed.skills).toBe("object");
+  });
+});
+
+describe("usageMain tier-aware path", () => {
+  let tmp: string;
+  beforeEach(() => {
+    tmp = fs.mkdtempSync(path.join(os.tmpdir(), "usage-tier-"));
+  });
+  afterEach(() => {
+    fs.rmSync(tmp, { recursive: true, force: true });
+  });
+
+  it("analyzes from bounded tiers without reading the monolithic corpus", () => {
+    const corpusPath = path.join(tmp, "corpus.json");
+    const records = [
+      {
+        source_id: "c1",
+        source_kind: "conversation_turn",
+        session_id: "s1",
+        project_id: "agentera",
+        timestamp: "2026-01-01T00:00:00.000Z",
+        runtime: "opencode",
+        source_class: "active_runtime",
+        source_product: "opencode",
+        active_runtime: true,
+        adapter_version: ADAPTER_VERSION,
+        data: { actor: "user", content: "/build go" },
+      },
+      {
+        source_id: "a1",
+        source_kind: "conversation_turn",
+        session_id: "s1",
+        project_id: "agentera",
+        timestamp: "2026-01-01T00:00:01.000Z",
+        runtime: "opencode",
+        source_class: "active_runtime",
+        source_product: "opencode",
+        active_runtime: true,
+        adapter_version: ADAPTER_VERSION,
+        data: { actor: "assistant", content: "done" },
+      },
+    ];
+    const runtimeStatuses = [
+      { runtime: "opencode", source_product: "opencode", source_class: "active_runtime", active_runtime: true, status: "available", reason: "candidate_files_found" },
+    ];
+    publishEvidenceTiers(records, {
+      tiersDir: tiersDirForCorpusPath(corpusPath),
+      adapterVersion: ADAPTER_VERSION,
+      runtimeStatuses,
+      publishedAt: "2026-01-15T00:00:00.000Z",
+      corpusMetadata: {
+        extracted_at: "2026-01-15T00:00:00Z",
+        runtime_statuses: runtimeStatuses,
+        coverage_envelope: {
+          available_runtimes: ["opencode"],
+          selected_runtimes: ["opencode"],
+          available_but_not_selected: [],
+        },
+      },
+    });
+
+    let out = "";
+    const rc = usageMain(["--corpus", corpusPath, "--json"], {
+      out: (t) => (out += t),
+      err: () => {},
+      env: {},
+    });
+    expect(rc).toBe(0);
+    const parsed = JSON.parse(out);
+    expect(parsed.extracted_at).toBe("2026-01-15T00:00:00Z");
+  });
+
+  it("falls back to legacy corpus when no tiers are published", () => {
+    const corpusPath = path.join(tmp, "corpus.json");
+    fs.writeFileSync(
+      corpusPath,
+      JSON.stringify({
+        metadata: { extracted_at: "2026-01-02T03:04:05Z" },
+        records: [
+          {
+            source_kind: "conversation_turn",
+            project_id: "agentera",
+            role: "assistant",
+            timestamp: "2026-01-01T00:00:00Z",
+            text: "hello",
+          },
+        ],
+      }),
+    );
+    let out = "";
+    const rc = usageMain(["--corpus", corpusPath, "--json"], {
+      out: (t) => (out += t),
+      err: () => {},
+      env: {},
+    });
+    expect(rc).toBe(0);
+    const parsed = JSON.parse(out);
+    expect(parsed.extracted_at).toBe("2026-01-02T03:04:05Z");
   });
 });

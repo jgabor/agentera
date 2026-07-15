@@ -6,6 +6,7 @@ import { pyJsonIndentSorted } from "../../core/pyjson.js";
 import { writeFileAtomic } from "../../core/atomicWriter.js";
 import { stableId, defaultProfileDir, type Env } from "./core.js";
 import { evidenceTierBounds, loadEvidenceTierContract } from "../../registries/evidenceTierContract.js";
+import type { CorpusEnvelopeCoverage } from "./coverageAudit.js";
 
 /**
  * Bounded tier publication and direct retrieval (plan Task 2).
@@ -66,6 +67,19 @@ export interface SignalSelectionReport {
   per_family: Array<{ family: string; total: number; retained: number }>;
 }
 
+/**
+ * Corpus metadata retained in the tier manifest so bounded metadata consumers
+ * (report status, prime coverage) reconstruct the corpus envelope without reading
+ * full evidence. The coverage envelope is the audit-derived source of truth for
+ * available/selected/skipped runtimes; `runtime_statuses` carry per-source
+ * extraction outcomes. Projected from the publication writer, not duplicated.
+ */
+export interface TierCorpusMetadata {
+  extracted_at?: string;
+  runtime_statuses?: JsonObject[];
+  coverage_envelope?: CorpusEnvelopeCoverage;
+}
+
 export interface EvidenceTierManifest {
   schema_version: string;
   generation: string;
@@ -87,6 +101,8 @@ export interface EvidenceTierManifest {
     selected: string[];
     skipped: Array<{ runtime: string | null; reason: string; store_path?: string }>;
   };
+  /** Corpus envelope retained for bounded metadata consumers (Task 3). */
+  corpus_metadata?: TierCorpusMetadata;
 }
 
 export interface PublicationResult {
@@ -111,6 +127,12 @@ export interface PublishEvidenceTiersOpts {
   publishedAt?: string;
   env?: Env;
   platform?: NodeJS.Platform;
+  /**
+   * Corpus envelope retained for bounded metadata consumers. When supplied, the
+   * coverage-truth `corpus_metadata` block is stored in the manifest so report
+   * status and prime coverage reconstruct the envelope without full records.
+   */
+  corpusMetadata?: TierCorpusMetadata;
 }
 
 /** Default tier directory co-located with the legacy corpus path. */
@@ -356,16 +378,26 @@ function coverageFromStatuses(runtimeStatuses: JsonObject[] | undefined): Eviden
   const available: string[] = [];
   const selected: string[] = [];
   const skipped: Array<{ runtime: string | null; reason: string; store_path?: string }> = [];
+  // Post-extraction statuses use "ok" for a cleanly extracted source; discovery
+  // statuses use "available". Both mean the source was discovered and extracted,
+  // so a bounded consumer treats them as available. Sparse/missing/skipped/degraded
+  // are coverage gaps (the contract's incomplete state), so they surface in skipped
+  // rather than being silently absent from coverage.
+  const AVAILABLE = new Set(["ok", "available"]);
+  const GAP = new Set(["skipped", "sparse", "missing", "degraded"]);
   for (const s of runtimeStatuses ?? []) {
     const runtime = typeof s.runtime === "string" ? s.runtime : null;
     const product = typeof s.source_product === "string" ? s.source_product : (runtime ?? "unknown");
     const status = typeof s.status === "string" ? s.status : "";
     const reason = typeof s.reason === "string" ? s.reason : "";
     if (product && !families.includes(product)) families.push(product);
-    if (status === "available") available.push(product);
-    if (status === "available" && s.source_class === "active_runtime" && s.active_runtime !== false) selected.push(product);
-    if (status === "skipped" || status === "sparse" || status === "missing") {
-      const entry: { runtime: string | null; reason: string; store_path?: string } = { runtime, reason };
+    const isActiveRuntime = s.source_class === "active_runtime" && s.active_runtime !== false;
+    if (AVAILABLE.has(status)) {
+      available.push(product);
+      if (isActiveRuntime) selected.push(product);
+    }
+    if (GAP.has(status)) {
+      const entry: { runtime: string | null; reason: string; store_path?: string } = { runtime, reason: reason || status };
       if (typeof s.store_path === "string") entry.store_path = s.store_path;
       skipped.push(entry);
     }
@@ -438,6 +470,7 @@ export function publishEvidenceTiers(
     shards: shardDescriptors,
     signal: { path: signalRel, record_count: selectedSignals.length, bytes: signalBytes, selection },
     coverage: coverageFromStatuses(opts.runtimeStatuses),
+    corpus_metadata: opts.corpusMetadata,
   };
   writeFileAtomic(path.join(stageDir, "manifest.json"), encodeSorted(manifest) + "\n");
 
@@ -618,4 +651,48 @@ export function evidenceTierCompatibility(tiersDir: string, corpusPath?: string)
     };
   }
   return { state: "current", generation: pointer.generation };
+}
+
+/**
+ * Yield every full-evidence record across the current generation, reading one
+ * bounded shard at a time. No consumer observes a partially published generation
+ * (the atomic pointer swap already guarantees this), and no single read exceeds
+ * `shard_byte_cap` for a current/incomplete tier. Used by full-record consumers
+ * (usage analytics, startup analysis) so they analyze real scale without
+ * materializing the monolithic corpus envelope. Returns `null` when no current
+ * generation exists; callers then report the matching compatibility state.
+ */
+export function* iterTierRecords(tiersDir: string): Generator<JsonObject> {
+  const gen = readCurrentGeneration(tiersDir);
+  if (!gen) return;
+  for (const shard of gen.manifest.shards) {
+    const shardPath = path.join(gen.dir, shard.path);
+    if (!fs.existsSync(shardPath)) continue;
+    let data: { records?: JsonObject[] };
+    try {
+      data = JSON.parse(fs.readFileSync(shardPath, "utf-8")) as { records?: JsonObject[] };
+    } catch {
+      // A single corrupt shard cannot crash the whole tier read; the
+      // compatibility surface flags it separately. Skip the unreadable shard.
+      continue;
+    }
+    if (!data || !Array.isArray(data.records)) continue;
+    for (const record of data.records) {
+      if (record && typeof record === "object" && !Array.isArray(record)) {
+        yield record as JsonObject;
+      }
+    }
+  }
+}
+
+/**
+ * Read the retained corpus metadata block for bounded metadata consumers
+ * (report status, prime coverage). Returns `null` when no current generation
+ * exists or the manifest predates the metadata block; callers fall back to the
+ * compatibility state and the signal tier.
+ */
+export function readTierCorpusMetadata(tiersDir: string): TierCorpusMetadata | null {
+  const gen = readCurrentGeneration(tiersDir);
+  if (!gen) return null;
+  return gen.manifest.corpus_metadata ?? null;
 }

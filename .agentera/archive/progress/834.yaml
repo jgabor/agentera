@@ -1,0 +1,18 @@
+schemaVersion: agentera.stateArchiveEntry.v1
+artifact_id: progress
+entry_number: 834
+record:
+  number: 834
+  timestamp: 2026-07-15 20:42
+  type: feat
+  phase: build
+  what: Migrated all four bounded analytics consumers (usage analytics, report status, prime corpus coverage, startup analysis benchmark) from monolithic corpus.json to bounded evidence tiers via new tierReader.ts module. Added iterTierRecords streaming generator, readTierCorpusMetadata, and corpus_metadata in the tier manifest. Added tier-aware bounded-read tests covering all consumers, oversized-record retention (Task 2 audit gap), and degraded-state recovery.
+  inspiration: "Plan Task 3 (depends on Task 2 tier publication). Task 2 audit identified non-blocking gap: oversized single-record shard retention was untested."
+  verified: pnpm -C packages/cli run typecheck (clean); pnpm -C packages/cli test (2156 passed, 189 files); pnpm -C packages/cli build (clean); agentera check compact (pass)
+  next: "Task 4: Move current profile synthesis to bounded signals (out of scope here)."
+  context:
+    intent: Restore bounded analytics consumers so usage, report status, prime coverage, and startup analysis produce bounded analysis at real scale instead of degrading solely because total evidence is large.
+    constraints: Profile synthesis is Task 4 and was not migrated. No profile levels, glossary, remote storage, release, publish, or suite metadata above 3.0.0.
+    unknowns: none
+    scope: "packages/cli/src/analytics/extractCorpus/tierReader.ts, evidenceTiers.ts, index.ts, cli.ts; packages/cli/src/analytics/usageStats.ts; packages/cli/src/cli/commands/report.ts; packages/cli/src/cli/orientation/corpusCoverage.ts; packages/cli/src/state/startupAnalysis/benchmark.ts; test files: tierReader.test.ts, evidenceTiers.test.ts, usageStats.test.ts, report.test.ts, orientationCorpusCoverage.test.ts, startupAnalysisBenchmark.test.ts"
+record_sha256: d6181384ee0ed2a21ec13aafadc38194040dfee46c3f351a51b47b866fd7a96a

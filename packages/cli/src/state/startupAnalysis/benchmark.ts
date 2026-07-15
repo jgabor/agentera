@@ -12,6 +12,12 @@ import { boundedRuntimeStatus } from "./threshold.js";
 import { classifyStartupRecords } from "./records.js";
 import { aggregateStartupMetrics } from "./metrics.js";
 import { renderStartupReport } from "./report.js";
+import {
+  tiersDirForCorpusPath,
+  assessTiers,
+  readBoundedMetadata,
+  iterBoundedRecords,
+} from "../../analytics/extractCorpus/index.js";
 
 export const STARTUP_INTERMEDIATE_ENVELOPE = "startup_state_analysis_v1";
 export const BENCHMARK_HISTORY_JSONL = "runs.jsonl";
@@ -362,18 +368,58 @@ export function extractStartupIntermediateFromCorpusFile(
   corpusPath: string,
   opts: { salt: string; outputPath?: string | null; contract?: JsonObject | null },
 ): JsonObject {
+  const tiersDir = tiersDirForCorpusPath(corpusPath);
+  const assessment = assessTiers(tiersDir, corpusPath);
   let corpus: JsonObject;
-  try {
-    corpus = JSON.parse(fs.readFileSync(corpusPath, "utf8"));
-  } catch {
+  if (assessment.analyzable) {
+    // Bounded tier read: assemble the corpus envelope from bounded evidence
+    // shards (read one at a time, each under the reader cap) plus the retained
+    // manifest metadata, then run the multi-pass startup classification. The
+    // monolithic corpus envelope is never read whole at real scale.
+    const meta = readBoundedMetadata(tiersDir);
+    const records = Array.from(iterBoundedRecords(tiersDir) ?? []);
+    corpus = {
+      metadata: {
+        runtime_statuses: (meta.corpusMetadata?.runtime_statuses as JsonObject[] | undefined) ?? [],
+        adapter_version: (meta.manifest?.adapter_version as string | undefined) ?? null,
+        extracted_at:
+          (meta.corpusMetadata?.extracted_at as string | undefined) ??
+          (meta.manifest?.published_at as string | undefined) ??
+          null,
+      },
+      records,
+    };
+  } else if (assessment.state === "corrupt" || assessment.state === "oversized") {
+    // Tier-level failure: degrade truthfully. The recovery guidance is
+    // contract-projected; surfaced to the caller via the assessment.
     corpus = {
       metadata: {
         runtime_statuses: [
-          { runtime: "local-corpus", status: "degraded", reason: "schema_divergent", error_count: 1 },
+          {
+            runtime: "local-corpus",
+            status: "degraded",
+            reason: assessment.state === "corrupt" ? "schema_divergent" : "oversized",
+            error_count: 1,
+            recovery: assessment.recovery ?? null,
+          },
         ],
       },
       records: [],
     };
+  } else {
+    // Legacy monolithic envelope or missing state: preserve the existing path.
+    try {
+      corpus = JSON.parse(fs.readFileSync(corpusPath, "utf8"));
+    } catch {
+      corpus = {
+        metadata: {
+          runtime_statuses: [
+            { runtime: "local-corpus", status: "degraded", reason: "schema_divergent", error_count: 1 },
+          ],
+        },
+        records: [],
+      };
+    }
   }
   const intermediate = buildStartupIntermediate(corpus, { salt: opts.salt, contract: opts.contract ?? null });
   if (opts.outputPath) {

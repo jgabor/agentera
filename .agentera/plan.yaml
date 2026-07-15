@@ -55,7 +55,7 @@ tasks:
     name: Restore bounded analytics consumers
     depends_on:
       - "2"
-    status: pending
+    status: complete
     acceptance:
       - GIVEN real-scale extraction WHEN usage, report status, prime coverage, and startup analysis run THEN each produces bounded analysis instead of degrading solely because total evidence is large.
       - GIVEN available bounded tiers WHEN coverage is reported THEN the result truthfully represents supported sources and selected evidence.

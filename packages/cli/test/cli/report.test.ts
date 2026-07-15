@@ -6,6 +6,9 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { cmdReport, statsCorpusPath, statsExistingCorpusStatus, ReportArgs } from "../../src/cli/commands/report.js";
 import { MAX_CORPUS_READ_BYTES, usageMain } from "../../src/analytics/usageStats.js";
+import { ADAPTER_VERSION } from "../../src/analytics/extractCorpus/core.js";
+import { publishEvidenceTiers } from "../../src/analytics/extractCorpus/evidenceTiers.js";
+import { tiersDirForCorpusPath } from "../../src/analytics/extractCorpus/tierReader.js";
 
 function run(args: ReportArgs): { rc: number; out: string; err: string } {
   let out = "";
@@ -59,6 +62,52 @@ describe("statsExistingCorpusStatus", () => {
     expect(s.status).toBe("ready");
     expect(s.extracted_at).toBe("2026-01-02T03:04:05Z");
     expect(s.total_records).toBe(1);
+  });
+
+  it("reports tier-aware ready status with tier_path when tiers are published", () => {
+    const corpusPath = path.join(tmp, "corpus.json");
+    const records = [
+      {
+        source_id: "c1",
+        source_kind: "conversation_turn",
+        timestamp: "2026-01-01T00:00:00.000Z",
+        project_id: "demo",
+        runtime: "opencode",
+        source_class: "active_runtime",
+        source_product: "opencode",
+        active_runtime: true,
+        adapter_version: ADAPTER_VERSION,
+        data: { actor: "user", text: "hi" },
+      },
+    ];
+    const runtimeStatuses = [
+      { runtime: "opencode", source_product: "opencode", source_class: "active_runtime", active_runtime: true, status: "available", reason: "candidate_files_found" },
+    ];
+    publishEvidenceTiers(records, {
+      tiersDir: tiersDirForCorpusPath(corpusPath),
+      adapterVersion: ADAPTER_VERSION,
+      runtimeStatuses,
+      publishedAt: "2026-01-15T00:00:00.000Z",
+      corpusMetadata: {
+        extracted_at: "2026-01-15T00:00:00Z",
+        runtime_statuses: runtimeStatuses,
+        coverage_envelope: {
+          available_runtimes: ["opencode"],
+          selected_runtimes: ["opencode"],
+          available_but_not_selected: [],
+        },
+      },
+    });
+    const s = statsExistingCorpusStatus(corpusPath);
+    expect(s.status).toBe("ready");
+    expect(s.tier_state).toBe("current");
+    expect(s.tier_path).toBeTruthy();
+    expect(s.total_records).toBe(1);
+  });
+
+  it("reports tier-aware missing status when tiers are missing and no legacy corpus", () => {
+    const s = statsExistingCorpusStatus(path.join(tmp, "missing.json"));
+    expect(s.status).toBe("missing");
   });
 });
 

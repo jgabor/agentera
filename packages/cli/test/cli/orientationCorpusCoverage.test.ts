@@ -12,6 +12,9 @@ import {
 } from "../../src/cli/orientation/corpusCoverage.js";
 import type { OrientationState } from "../../src/cli/contracts/orientationState.js";
 import { projectIntegrationAttention } from "../../src/upgrade/projectIntegration.js";
+import { ADAPTER_VERSION } from "../../src/analytics/extractCorpus/core.js";
+import { publishEvidenceTiers } from "../../src/analytics/extractCorpus/evidenceTiers.js";
+import { tiersDirForCorpusPath } from "../../src/analytics/extractCorpus/tierReader.js";
 import type {
   LifecycleProjectedAction,
   RuntimeLifecycleSnapshot,
@@ -196,6 +199,39 @@ describe("corpus coverage attention", () => {
     expect(summary.status).toBe("loaded");
     expect(summary.available_but_not_selected).toEqual([
       { runtime: "opencode", reason: "disabled_by_flag", store_path: "/tmp/opencode.db" },
+    ]);
+  });
+
+  it("loads coverage envelope from bounded tiers when published", () => {
+    const profileDir = path.join(tmp, "profile-tier");
+    const corpusPath = path.join(profileDir, "intermediate", "corpus.json");
+    fs.mkdirSync(path.dirname(corpusPath), { recursive: true });
+    const records: Record<string, unknown>[] = [
+      { source_id: "c1", source_kind: "conversation_turn", timestamp: "2026-01-01T00:00:00.000Z", project_id: "demo", runtime: "opencode", source_class: "active_runtime", source_product: "opencode", active_runtime: true, adapter_version: ADAPTER_VERSION, data: { actor: "user", text: "hi" } },
+    ];
+    const runtimeStatuses = [
+      { runtime: "opencode", source_product: "opencode", source_class: "active_runtime", active_runtime: true, status: "available", reason: "candidate_files_found" },
+    ];
+    publishEvidenceTiers(records, {
+      tiersDir: tiersDirForCorpusPath(corpusPath),
+      adapterVersion: ADAPTER_VERSION,
+      runtimeStatuses,
+      publishedAt: "2026-01-15T00:00:00.000Z",
+      corpusMetadata: {
+        extracted_at: "2026-01-15T00:00:00Z",
+        runtime_statuses: runtimeStatuses,
+        coverage_envelope: {
+          available_runtimes: ["opencode", "codex"],
+          selected_runtimes: ["opencode"],
+          available_but_not_selected: [{ runtime: "codex", reason: "disabled_by_flag", store_path: "/codex.db" }],
+        },
+      },
+    });
+    const summary = corpusCoverageSummary({ AGENTERA_PROFILE_DIR: profileDir }, "linux");
+    expect(summary.status).toBe("loaded");
+    expect(summary.available_runtimes).toEqual(["opencode", "codex"]);
+    expect(summary.available_but_not_selected).toEqual([
+      { runtime: "codex", reason: "disabled_by_flag", store_path: "/codex.db" },
     ]);
   });
 

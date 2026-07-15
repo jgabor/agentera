@@ -11,6 +11,9 @@ import {
   persistStartupBenchmark,
   previousBenchmarkWatermark,
 } from "../../src/state/startupAnalysis.js";
+import { ADAPTER_VERSION } from "../../src/analytics/extractCorpus/core.js";
+import { publishEvidenceTiers } from "../../src/analytics/extractCorpus/evidenceTiers.js";
+import { tiersDirForCorpusPath } from "../../src/analytics/extractCorpus/tierReader.js";
 
 const CONTRACT = {
   version: "vT",
@@ -74,6 +77,36 @@ describe("extractStartupIntermediateFromCorpusFile", () => {
     const inter = extractStartupIntermediateFromCorpusFile(corpusPath, { salt: "SALT", contract: CONTRACT });
     expect(inter.total_records_read).toBe(0);
     expect(inter.runtime_coverage[0].runtime).toBe("local-corpus");
+  });
+
+  it("reads from bounded tiers when published, without reading the monolithic corpus", () => {
+    const corpusPath = path.join(tmp, "corpus.json");
+    const records = [
+      { source_kind: "conversation_turn", source_id: "u1", session_id: "c1", project_id: "agentera", timestamp: "2026-02-01T00:00:00.000Z", runtime: "codex", source_class: "active_runtime", source_product: "codex", active_runtime: true, adapter_version: ADAPTER_VERSION, data: { actor: "user", content: "/build build it" } },
+      { source_kind: "tool_call", source_id: "t1", session_id: "c1", project_id: "agentera", timestamp: "2026-02-01T00:00:01.000Z", runtime: "codex", source_class: "active_runtime", source_product: "codex", active_runtime: true, adapter_version: ADAPTER_VERSION, data: { tool: "bash", arguments: { command: "echo hello" } } },
+    ];
+    const runtimeStatuses = [
+      { runtime: "codex", source_product: "codex", source_class: "active_runtime", active_runtime: true, status: "available", reason: "candidate_files_found" },
+    ];
+    publishEvidenceTiers(records, {
+      tiersDir: tiersDirForCorpusPath(corpusPath),
+      adapterVersion: ADAPTER_VERSION,
+      runtimeStatuses,
+      publishedAt: "2026-01-15T00:00:00.000Z",
+      corpusMetadata: {
+        extracted_at: "2026-01-15T00:00:00Z",
+        runtime_statuses: runtimeStatuses,
+        coverage_envelope: {
+          available_runtimes: ["codex"],
+          selected_runtimes: ["codex"],
+          available_but_not_selected: [],
+        },
+      },
+    });
+    const outPath = path.join(tmp, "out", "intermediate.json");
+    const inter = extractStartupIntermediateFromCorpusFile(corpusPath, { salt: "SALT", contract: CONTRACT, outputPath: outPath });
+    expect(inter.total_records_read).toBe(2);
+    expect(fs.existsSync(outPath)).toBe(true);
   });
 });
 

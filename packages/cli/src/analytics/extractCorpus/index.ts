@@ -73,6 +73,8 @@ export {
   getFullRecord,
   resolveEvidenceAnchor,
   evidenceTierCompatibility,
+  iterTierRecords,
+  readTierCorpusMetadata,
   type SignalRecord,
   type FullEvidenceShard,
   type SignalSelectionReport,
@@ -82,7 +84,20 @@ export {
   type CurrentPointer,
   type GenerationDir,
   type EvidenceTierCompatibilityState,
+  type TierCorpusMetadata,
 } from "./evidenceTiers.js";
+export {
+  tiersDirForCorpusPath,
+  resolveTiersDir,
+  isAnalyzable,
+  recoveryForState,
+  assessTiers,
+  readBoundedMetadata,
+  iterBoundedRecords,
+  legacyCorpusReadable,
+  type TierAssessment,
+  type BoundedMetadata,
+} from "./tierReader.js";
 export {
   EXTRACT_CORPUS_PARITY_SCHEMA,
   buildExtractCorpusParityManifest,

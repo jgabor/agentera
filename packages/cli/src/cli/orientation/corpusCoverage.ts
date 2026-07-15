@@ -2,6 +2,11 @@ import fs from "node:fs";
 
 import { corpusTooLargeReason } from "../../analytics/usageStats.js";
 import { statsCorpusPath } from "../commands/report.js";
+import {
+  tiersDirForCorpusPath,
+  assessTiers,
+  readBoundedMetadata,
+} from "../../analytics/extractCorpus/index.js";
 
 type Env = Record<string, string | undefined>;
 
@@ -17,6 +22,10 @@ export interface CorpusCoverageSummary {
   available_runtimes: string[];
   selected_runtimes: string[];
   available_but_not_selected: CorpusCoverageGap[];
+  /** Tiers directory when coverage was read from bounded tiers (documented). */
+  tier_path?: string;
+  /** Compatibility state of the evidence tier (documented tier status). */
+  tier_state?: string;
 }
 
 function emptyCoverageSummary(path: string, status: CorpusCoverageSummary["status"]): CorpusCoverageSummary {
@@ -42,6 +51,36 @@ function parseCoverageGap(value: unknown): CorpusCoverageGap | null {
 
 export function corpusCoverageSummary(env: Env = process.env, platform: NodeJS.Platform = process.platform): CorpusCoverageSummary {
   const corpusPath = statsCorpusPath(env, platform);
+  const tiersDir = tiersDirForCorpusPath(corpusPath);
+  const assessment = assessTiers(tiersDir, corpusPath);
+
+  // Bounded tier coverage: when tiers are published, the manifest's coverage
+  // envelope truthfully reports the audit's available/selected/skipped runtimes
+  // without reading full evidence. The signal tier (bounded) remains usable even
+  // when a full-evidence shard is oversized, per the authority contract.
+  if (assessment.state !== "legacy" && assessment.state !== "missing") {
+    const meta = readBoundedMetadata(tiersDir);
+    const envelope = meta.corpusMetadata?.coverage_envelope;
+    if (meta.signal && envelope) {
+      return {
+        path: corpusPath,
+        tier_path: tiersDir,
+        status: "loaded",
+        tier_state: assessment.state,
+        available_runtimes: [...envelope.available_runtimes],
+        selected_runtimes: [...envelope.selected_runtimes],
+        available_but_not_selected: envelope.available_but_not_selected.map((g) => ({
+          runtime: g.runtime,
+          reason: g.reason,
+          ...(typeof g.store_path === "string" ? { store_path: g.store_path } : {}),
+        })),
+      };
+    }
+    if (assessment.state === "oversized") return emptyCoverageSummary(corpusPath, "too_large");
+    if (assessment.state === "corrupt") return emptyCoverageSummary(corpusPath, "unreadable");
+  }
+
+  // Legacy monolithic envelope: small state preserved for compatibility.
   if (!fs.existsSync(corpusPath)) return emptyCoverageSummary(corpusPath, "missing");
   const tooLarge = corpusTooLargeReason(corpusPath);
   if (tooLarge) return emptyCoverageSummary(corpusPath, "too_large");
@@ -71,6 +110,7 @@ export function corpusCoverageSummary(env: Env = process.env, platform: NodeJS.P
   return {
     path: corpusPath,
     status: "loaded",
+    tier_state: "legacy",
     available_runtimes: availableRuntimes,
     selected_runtimes: selectedRuntimes,
     available_but_not_selected: skipped,

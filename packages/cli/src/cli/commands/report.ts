@@ -7,6 +7,11 @@ import { expanduser } from "../../core/paths.js";
 
 import { usageMain, corpusTooLargeReason } from "../../analytics/usageStats.js";
 import { extractCorpusMain } from "../../analytics/extractCorpus.js";
+import {
+  tiersDirForCorpusPath,
+  assessTiers,
+  readBoundedMetadata,
+} from "../../analytics/extractCorpus/index.js";
 import type { JsonObject } from "../../core/jsonValue.js";
 
 type Io = { out?: (t: string) => void; err?: (t: string) => void };
@@ -93,30 +98,62 @@ export function statsCorpusPath(env: Env = process.env, platform: NodeJS.Platfor
 
 /** Faithful port of `_stats_existing_corpus_status`. */
 export function statsExistingCorpusStatus(corpusPath: string): JsonObject {
+  // Bounded tier path: when tiers are published, report readiness from the
+  // manifest + retained corpus metadata without reading full evidence. The
+  // documented `tier_state`/`tier_path` fields extend the legacy shape;
+  // existing `status`/`reason`/`extracted_at`/`total_records` are preserved.
+  const tiersDir = tiersDirForCorpusPath(corpusPath);
+  const assessment = assessTiers(tiersDir, corpusPath);
+  if (assessment.analyzable) {
+    const meta = readBoundedMetadata(tiersDir);
+    const manifest = meta.manifest;
+    const extractedAt = meta.corpusMetadata?.extracted_at ?? null;
+    return {
+      status: "ready",
+      path: corpusPath,
+      tier_path: tiersDir,
+      tier_state: assessment.state,
+      reason: "bounded evidence tier published",
+      extracted_at: extractedAt ?? (manifest?.published_at ?? null),
+      total_records: manifest?.total_records ?? 0,
+    };
+  }
+  if (assessment.state === "oversized" || assessment.state === "corrupt") {
+    return {
+      status: "stale",
+      path: corpusPath,
+      tier_path: tiersDir,
+      tier_state: assessment.state,
+      reason: assessment.recovery ?? `${assessment.state} evidence tier`,
+      ...(assessment.artifact ? { artifact: assessment.artifact } : {}),
+    };
+  }
+  // Legacy or missing: preserve the corpus-envelope status behavior.
   if (!fs.existsSync(corpusPath)) {
     return { status: "missing", path: corpusPath, reason: "corpus file does not exist" };
   }
   const tooLarge = corpusTooLargeReason(corpusPath);
   if (tooLarge) {
-    return { status: "stale", path: corpusPath, reason: tooLarge };
+    return { status: "stale", path: corpusPath, tier_state: "legacy", reason: tooLarge };
   }
   let data: any;
   try {
     data = JSON.parse(fs.readFileSync(corpusPath, "utf8"));
   } catch (exc) {
-    return { status: "stale", path: corpusPath, reason: `corpus is not readable JSON: ${(exc as Error).message}` };
+    return { status: "stale", path: corpusPath, tier_state: "legacy", reason: `corpus is not readable JSON: ${(exc as Error).message}` };
   }
   const records = data && typeof data === "object" && !Array.isArray(data) ? data.records ?? [] : [];
   const hasTurn =
     Array.isArray(records) &&
     records.some((r: any) => r && typeof r === "object" && r.source_kind === "conversation_turn");
   if (!hasTurn) {
-    return { status: "stale", path: corpusPath, reason: "corpus has no conversation_turn records" };
+    return { status: "stale", path: corpusPath, tier_state: "legacy", reason: "corpus has no conversation_turn records" };
   }
   const metadata = data.metadata && typeof data.metadata === "object" ? data.metadata : {};
   return {
     status: "ready",
     path: corpusPath,
+    tier_state: "legacy",
     reason: "existing corpus has conversation_turn records",
     extracted_at: metadata.extracted_at ?? null,
     total_records: (records as any[]).length,

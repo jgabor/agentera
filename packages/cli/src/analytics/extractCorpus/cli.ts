@@ -195,6 +195,15 @@ export function extractCorpusMain(argv: string[], io: ExtractMainIo = {}): numbe
     runtimeStatuses: corpus.metadata.runtime_statuses as JsonObject[],
     env,
     platform,
+    corpusMetadata: {
+      extracted_at: corpus.metadata.extracted_at,
+      runtime_statuses: corpus.metadata.runtime_statuses as JsonObject[],
+      coverage_envelope: {
+        available_runtimes: corpus.metadata.available_runtimes,
+        selected_runtimes: corpus.metadata.selected_runtimes,
+        available_but_not_selected: corpus.metadata.available_but_not_selected,
+      },
+    },
   });
   out(
     `published tiers: ${tiersDir} (generation ${publication.generation}; ` +

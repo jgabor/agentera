@@ -5,6 +5,7 @@ import path from "node:path";
 import { resolveProfileDirOverride, resolveXdgDataHome } from "../core/envPaths.js";
 import { expanduser } from "../core/paths.js";
 import type { JsonObject } from "../core/jsonValue.js";
+import { tiersDirForCorpusPath, assessTiers, iterBoundedRecords, readTierCorpusMetadata } from "./extractCorpus/index.js";
 
 /**
  * Suite usage analytics: detect skill invocations from a Section 22 corpus.
@@ -282,24 +283,60 @@ export function analyzeCorpus(
   projectFilter: string | null = null,
   sourceView: "active" | "all" = "active",
 ): CorpusAnalysis {
-  const rawRecords = (isMapping(corpus) ? (corpus.records ?? []) : []) as unknown as JsonObject[]; // cast: corpus records from JSON.parse IO boundary
-  const viewedRecords = sourceView === "all" ? rawRecords : rawRecords.filter(activeAnalyticsRecord);
-  const records = filterRecordsByProject(viewedRecords, projectFilter);
+  const rawRecords = (isMapping(corpus) ? (corpus.records ?? []) : []) as unknown as Iterable<JsonObject>; // cast: corpus records from JSON.parse IO boundary
+  return analyzeRecords(rawRecords, projectFilter, sourceView);
+}
+
+/**
+ * Single-pass analysis over a record iterable. Bounded consumers feed the
+ * tiered shard iterator here so non-conversation records (instruction documents,
+ * project config signals, tool calls) are counted for provenance and discarded
+ * rather than materialized; only conversation turns are retained as the analysis
+ * working set. Mirrors `analyzeCorpus` exactly when given the full record array.
+ */
+export function analyzeRecords(
+  records: Iterable<JsonObject>,
+  projectFilter: string | null = null,
+  sourceView: "active" | "all" = "active",
+): CorpusAnalysis {
   const provenanceCounts = new Map<string, { source_class: string; source_product: string; active_runtime: boolean; records: number }>();
+  const userTurnsByConv = new Map<string, JsonObject[]>();
+  const assistantByConv = new Map<string, JsonObject[]>();
   for (const record of records) {
-    const sourceClass = String(record.source_class ?? (activeAnalyticsRecord(record) ? "active_runtime" : "historical_import"));
+    if (!isMapping(record)) continue;
+    const isActive = activeAnalyticsRecord(record);
+    if (sourceView === "active" && !isActive) continue;
+    if (projectFilter !== null) {
+      const pid = record.project_id ?? "";
+      if (!(typeof pid === "string" && projectMatch(pid, projectFilter))) continue;
+    }
+    const sourceClass = String(record.source_class ?? (isActive ? "active_runtime" : "historical_import"));
     const sourceProduct = String(record.source_product ?? record.runtime ?? "unknown");
-    const activeRuntime = activeAnalyticsRecord(record);
+    const activeRuntime = isActive;
     const key = `${sourceClass}\0${sourceProduct}\0${activeRuntime}`;
     const current = provenanceCounts.get(key) ?? { source_class: sourceClass, source_product: sourceProduct, active_runtime: activeRuntime, records: 0 };
     current.records += 1;
     provenanceCounts.set(key, current);
-  }
 
-  const userTurnsByConv = userTurnsByConversation(records);
-  const grouped = groupByConversation(records);
+    if (record.source_kind !== "conversation_turn") continue;
+    const data = record.data;
+    if (!isMapping(data)) continue;
+    const ckey = conversationKey(record);
+    if (ckey === null) continue;
+    const actor = data.actor;
+    if (actor === "user") {
+      if (!userTurnsByConv.has(ckey)) userTurnsByConv.set(ckey, []);
+      userTurnsByConv.get(ckey)!.push(record);
+    } else if (actor === "assistant") {
+      if (!assistantByConv.has(ckey)) assistantByConv.set(ckey, []);
+      assistantByConv.get(ckey)!.push(record);
+    }
+  }
+  for (const items of userTurnsByConv.values()) stableSortByTimestamp(items);
+  for (const items of assistantByConv.values()) stableSortByTimestamp(items);
+
   const invocations: Invocation[] = [];
-  for (const [sid, turns] of grouped) {
+  for (const [sid, turns] of assistantByConv) {
     const tsToProject = new Map<string, string>();
     for (const t of turns) {
       tsToProject.set(String(t.timestamp ?? ""), String(t.project_id ?? ""));
@@ -609,22 +646,52 @@ export function usageMain(argv: string[], io: UsageMainIo = {}): number {
   }
 
   const corpusPath = corpus ?? defaultCorpusPath(env, platform);
-  let corpusData: JsonObject;
-  try {
-    corpusData = loadCorpusOrRaise(corpusPath);
-  } catch (e) {
-    if (e instanceof CorpusUnavailable) {
-      err(String(e.message));
+
+  // Bounded tier path: analyze real-scale evidence by streaming one bounded
+  // shard at a time instead of materializing the monolithic corpus envelope.
+  // Falls back to the legacy corpus.json read only when no tiers were published
+  // (legacy state) so existing small-envelope consumers keep working.
+  const tiersDir = tiersDirForCorpusPath(corpusPath);
+  const assessment = assessTiers(tiersDir, corpusPath);
+
+  let analysis: CorpusAnalysis;
+  let extractedAt: string | null = null;
+
+  if (assessment.analyzable) {
+    const records = iterBoundedRecords(tiersDir);
+    if (records === null) {
+      err(tierUnavailableMessage(assessment, corpusPath));
       return 2;
     }
-    throw e;
+    analysis = analyzeRecords(records, project, sourceView);
+    const metadata = readTierCorpusMetadata(tiersDir);
+    extractedAt = metadata?.extracted_at ?? null;
+  } else if (assessment.state === "corrupt" || assessment.state === "oversized") {
+    // Tier-level failure: the published tier is unreadable or a shard exceeds the
+    // reader cap. Project actionable recovery from the authority contract rather
+    // than silently falling back to the corpus envelope.
+    err(tierUnavailableMessage(assessment, corpusPath));
+    return 2;
+  } else {
+    // Legacy or missing: delegate to the corpus-envelope reader, which preserves
+    // the existing too-large / not-found degradation and message contract.
+    let corpusData: JsonObject;
+    try {
+      corpusData = loadCorpusOrRaise(corpusPath);
+    } catch (e) {
+      if (e instanceof CorpusUnavailable) {
+        err(String(e.message));
+        return 2;
+      }
+      throw e;
+    }
+    analysis = analyzeCorpus(corpusData, project, sourceView);
+    const md = (corpusData as JsonObject).metadata;
+    extractedAt =
+      md && typeof md === "object" && !Array.isArray(md) ? ((md.extracted_at as string) ?? null) : null;
   }
 
-  const analysis = analyzeCorpus(corpusData, project, sourceView);
   const generatedAt = nowIso();
-  const md = (corpusData as JsonObject).metadata;
-  const extractedAt =
-    md && typeof md === "object" && !Array.isArray(md) ? ((md.extracted_at as string) ?? null) : null;
 
   if (emitJson) {
     out(renderJson(analysis, { generatedAt, extractedAt }));
@@ -635,4 +702,17 @@ export function usageMain(argv: string[], io: UsageMainIo = {}): number {
   const outPath = writeMarkdown(analysis, { generatedAt, extractedAt, outputDir });
   out(renderStdoutSummary(analysis, { generatedAt, extractedAt, reportPath: outPath }));
   return 0;
+}
+
+/** Compose the degrade message for a non-analyzable tier state. */
+function tierUnavailableMessage(assessment: ReturnType<typeof assessTiers>, corpusPath: string): string {
+  const recovery = assessment.recovery;
+  const where = `tiers at ${assessment.tiersDir}${corpusPath ? ` (corpus=${corpusPath})` : ""}`;
+  if (assessment.state === "oversized") {
+    return `evidence tier is oversized at ${assessment.artifact ?? where}. ${recovery ?? ""}`.trim();
+  }
+  if (assessment.state === "corrupt") {
+    return `evidence tier is unreadable at ${where}. ${recovery ?? ""}`.trim();
+  }
+  return `evidence tier is ${assessment.state} at ${where}. ${recovery ?? ""}`.trim();
 }
