@@ -1,4 +1,34 @@
 cycles:
+  - number: 818
+    timestamp: 2026-07-15 12:57
+    type: chore
+    phase: build
+    what: Verified npm development metadata and package contents for the next
+      available prerelease without publication.
+    inspiration: Replacement Plan Task 13 and the repository release contract.
+    discovered: npm agentera@next is 3.0.0-dev.20; the checkout had already prepared
+      the available 3.0.0-dev.21, so no package or lockfile byte change was
+      required.
+    verified: npm current 3.0.0-dev.20; next available and local 3.0.0-dev.21; suite
+      surfaces 3.0.0; CHANGELOG.md retained Unreleased. Focused
+      metadata/registry/prepack tests passed 41/41; full CLI tests passed 185
+      files and 2058/2058. Typecheck, build, bundle:data, release-metadata,
+      capability-contract 2/2, compact, and git diff --check passed. npm pack
+      dry-run reported 664 files and included dist/bin/agentera.js, the bundle
+      sentinel, registry.json, and current state-storage-authority.yaml. pnpm -C
+      packages/cli exec npm publish --tag next --dry-run completed with +
+      agentera@3.0.0-dev.21; no publication, tag, or push occurred.
+    next: Proceed to dependency-ready Plan Task 14 only on a new explicit cycle.
+    context:
+      intent: Complete replacement Plan Task 13 under the v3 cutover hold.
+      constraints: Changed no suite version, plugin manifest, skill version, registry
+        suite metadata, stable shim, gitRef, or changelog boundary; preserved
+        and included the pre-existing Task 12 pass and TODO resolution.
+      unknowns: Decision satisfaction review caveats remain unchanged and are
+        unrelated to package metadata.
+      scope: Release verification plus plan, progress, and pre-existing TODO state;
+        package.json remained byte-identical because 3.0.0-dev.21 was already
+        prepared.
   - number: 817
     timestamp: 2026-07-15 12:44
     type: fix
@@ -312,48 +342,6 @@ cycles:
       unknowns: None for Task 8; Task 9 retains broader retrieval-gap ownership.
       scope: Experiment list/get runtime, tests, retrieval authority status,
         help/schema parity, changelog, plan, and progress.
-  - number: 808
-    timestamp: 2026-07-15 09:13
-    type: fix
-    phase: build
-    what: Corrected Task 7 archive durability by parent-syncing every new directory
-      entry and reconstructing missing archives from exact retained full
-      records.
-    inspiration: Independent Task 7 audit attempt 1 and the existing immutable-file
-      publication abstraction.
-    discovered: Durable retry must sync known archive path parents even when an
-      earlier interrupted attempt left their directory names visible.
-    verified: "AC1: pnpm -C packages/cli exec vp test run
-      test/state/write/experimentPublication.test.ts -t 'keeps reconstructed
-      full detail recoverable after later projection compaction without
-      duplicates' => 1 passed, 13 skipped. AC2-order: pnpm -C packages/cli exec
-      vp test run test/state/archivePublication.test.ts -t 'publishes each newly
-      created directory entry before the archive file' => 1 passed, 7 skipped.
-      AC2-fault: pnpm -C packages/cli exec vp test run
-      test/state/archivePublication.test.ts -t 'stops before archive-file
-      publication when a new directory entry sync fails' => 1 passed, 7 skipped.
-      AC3: pnpm -C packages/cli exec vp test run
-      test/state/write/experimentPublication.test.ts => 14 passed. Focused: pnpm
-      -C packages/cli exec vp test run test/state/archivePublication.test.ts
-      test/state/write/experimentPublication.test.ts
-      test/state/archiveAuthority.test.ts test/hooks/compaction.test.ts
-      test/state/experimentIdentity.test.ts => 55 passed. Full: pnpm -C
-      packages/cli test => 182 files, 2011 tests passed. pnpm -C packages/cli
-      run typecheck; pnpm -C packages/cli build; node
-      packages/cli/dist/bin/agentera.js check validate capability-contract
-      --format json; node packages/cli/dist/bin/agentera.js check compact =>
-      passed."
-    next: Task 7 awaits corrective audit; do not start Task 8 in this cycle.
-    context:
-      intent: Repair the failed Task 7 audit without changing projection policy or
-        starting experiment retrieval.
-      constraints: Preserved Cycle 807 and audit attempt 1; no retrieval, migration,
-        metadata, broad cleanup, vision, or objective-state changes.
-      unknowns: Independent corrective audit remains pending; summary-only and dropped
-        legacy detail intentionally remain unavailable.
-      scope: Shared immutable directory publication, experiment replay recovery,
-        authority/schema, fault and loss fixtures, Task 7 plan evidence,
-        progress, and changelog.
   - number: 793
     timestamp: 2026-07-14 17:36
     type: chore
@@ -423,6 +411,9 @@ cycles:
         and backfill fixtures; package metadata and generated ignored
         dist/bundle
 archive:
+  - summary: "Cycle 808 (2026-07-15): Corrected Task 7 archive durability by
+      parent-syncing every new directory entry and reconstructing missing
+      archives..."
   - summary: "Cycle 807 (2026-07-15): Added objective-scoped immutable full-detail
       experiment archives before projection replacement, preserving 10/40/50
       compaction and byte-equivalent retry..."
@@ -521,15 +512,18 @@ archive:
   - summary: "Cycle 768 (2026-07-13): Implemented Task14 Git legacy backfill as
       agentera state backfill: bounded read-only local-history inventory, exact
       unique..."
-  - summary: "Cycle 767 (2026-07-13): Retried Task 12 after evaluator failure. Fixed
-      durability Git probing so absent .git metadata skips..."
 omitted: true
-omitted_count: 53
+omitted_count: 54
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded
