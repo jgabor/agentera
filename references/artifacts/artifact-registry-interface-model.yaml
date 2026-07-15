@@ -89,7 +89,7 @@ record:
       owns:
         - global profile artifact
         - plan archive artifact
-        - optimera harness path
+        - optimize harness path with optimera read compatibility
         - objective-scoped path placeholders
         - global/local/project-root/project-agent-state distinctions
       required_fields:
@@ -185,7 +185,7 @@ required_artifact_identities:
   objective_scoped:
     - artifact_id: objective
       display_name: OBJECTIVE.md
-      default_path: .agentera/optimera/<name>/objective.yaml
+      default_path: .agentera/optimize/<name>/objective.yaml
       path_template:
         placeholder: <name>
         meaning: active objective directory name
@@ -193,7 +193,7 @@ required_artifact_identities:
           - <objective-name>
     - artifact_id: experiments
       display_name: EXPERIMENTS.md
-      default_path: .agentera/optimera/<name>/experiments.yaml
+      default_path: .agentera/optimize/<name>/experiments.yaml
       path_template:
         placeholder: <name>
         meaning: active objective directory name

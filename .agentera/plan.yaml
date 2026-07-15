@@ -112,26 +112,26 @@ tasks:
     name: Deliver active and archived plan retrieval
     depends_on:
       - "3"
-    status: complete
+    status: blocked
     acceptance:
       - GIVEN active and archived plans WHEN listed THEN deterministic recency, stable identity, lifecycle state, cursor, and omissions are returned.
       - GIVEN a plan identity WHEN fetched THEN the intended full plan is returned without caller-side file traversal.
       - GIVEN legacy, invalid, or missing archives WHEN tested THEN compatibility diagnostics and not-found behavior are explicit.
     evaluation:
-      attempt_count: 1
-      failure_count: 1
+      attempt_count: 2
+      failure_count: 2
       last_verdict: fail
-      last_failure_evidence: Plan list entries omit detail_availability; YAML exceeds the 32 KiB serialized budget; schema retrieval status still says plan retrieval pending.
+      last_failure_evidence: Cycle 803 records a live YAML byte count that changed by two bytes at audit; use deterministic fixture evidence and a live under-budget assertion.
       provenance:
-        attempt_id: task-4-audit-1-20260715
-        source: independent Task 4 acceptance audit
-        recorded_at: 2026-07-15 07:32
+        attempt_id: task-4-audit-2-20260715
+        source: independent Task 4 corrective acceptance audit
+        recorded_at: 2026-07-15 07:45
         writer_command: agentera state plan record-evaluation
   - number: 5
     name: Establish objective-scoped experiment identity
     depends_on:
       - "1"
-    status: pending
+    status: complete
     acceptance:
       - GIVEN experiment zero or later numbers WHEN identified THEN identity is unique within stable objective scope and survives objective rename.
       - GIVEN legacy missing or duplicate identity WHEN read THEN retained data remains visible with explicit ambiguity or compatibility caveats.

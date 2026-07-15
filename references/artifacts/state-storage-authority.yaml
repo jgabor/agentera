@@ -159,6 +159,17 @@ retrieval:
       scope: experiment numbers are unique only within one objective identity
       zero: experiment 0 is valid and is normally the baseline
       collision: duplicate numbers inside one objective are ambiguous and never resolved by array order
+      compatibility: >-
+        Legacy full-detail or 10/40/50 summary entries with a missing or
+        duplicate number remain visible in reads with addressable=false and an
+        explicit compatibility caveat. Reads do not assign a number, choose a
+        duplicate by array order, migrate a root, or rewrite retained bytes.
+      publication_validation: >-
+        Before any publication effect, require one unambiguous objective
+        identity, a non-negative integer number, and no retained full-detail or
+        summary entry with that number. Ambiguous canonical/legacy objective
+        candidates, missing objective identity, and duplicate experiment
+        identity fail validation without changing bytes.
   commands:
     plan_tasks:
       list: agentera state plan tasks list [--plan PLAN_ID] [--limit N] [--cursor TOKEN] --format json

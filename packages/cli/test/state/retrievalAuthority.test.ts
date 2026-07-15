@@ -126,6 +126,11 @@ const negativeCases: NegativeCase[] = [
   { rule: "objective vector stable ID", expected: "retrieval.identity.objective.test_vectors[0].stable_id", mutate: (value) => { value.retrieval.identity.objective.test_vectors[0].stable_id = "legacy-objective:wrong"; } },
   { rule: "experiment identity format", expected: "retrieval.identity.experiment.format", mutate: (value) => { value.retrieval.identity.experiment.format = "positive-only"; } },
   { rule: "experiment zero", expected: "retrieval.identity.experiment.zero", mutate: (value) => { value.retrieval.identity.experiment.zero = "experiment 1 starts the sequence"; } },
+  ...["scope", "collision", "compatibility", "publication_validation"].map((field): NegativeCase => ({
+    rule: `experiment identity requires ${field}`,
+    expected: `retrieval.identity.experiment.${field}`,
+    mutate: (value) => { delete value.retrieval.identity.experiment[field]; },
+  })),
   ...(["plan_tasks", "plans", "experiments"] as const).flatMap((command) => (["list", "get"] as const).map((verb): NegativeCase => ({
     rule: `${command} ${verb} grammar`,
     expected: `retrieval.commands.${command}.${verb}`,
@@ -180,7 +185,7 @@ describe("state retrieval authority", () => {
   });
 
   it("has one uniquely named negative fixture for every enforced rule", () => {
-    expect(negativeCases).toHaveLength(120);
+    expect(negativeCases).toHaveLength(124);
     expect(new Set(negativeCases.map(({ rule }) => rule)).size).toBe(negativeCases.length);
   });
 

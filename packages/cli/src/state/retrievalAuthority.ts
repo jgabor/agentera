@@ -183,6 +183,9 @@ export function validateStateRetrievalAuthority(value: Record<string, unknown>):
   const experimentIdentity = mapping(identities.experiment);
   if (!String(experimentIdentity.format ?? "").includes("non-negative-integer")) errors.push("retrieval.identity.experiment.format");
   if (!String(experimentIdentity.zero ?? "").includes("0 is valid")) errors.push("retrieval.identity.experiment.zero");
+  for (const field of ["scope", "collision", "compatibility", "publication_validation"]) {
+    requireNonEmpty(experimentIdentity, field, "retrieval.identity.experiment", errors);
+  }
 
   const commands = mapping(retrieval.commands);
   for (const [name, grammar] of Object.entries(EXPECTED_COMMANDS)) {

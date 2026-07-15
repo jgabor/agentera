@@ -1,4 +1,42 @@
 cycles:
+  - number: 804
+    timestamp: 2026-07-15 07:55
+    type: feat
+    phase: build
+    what: Established stable objective UUID and objective-scoped experiment identity
+      with legacy compatibility diagnostics.
+    inspiration: Approved bounded-retrieval authority and completed retrieval Task 1
+      identity decisions.
+    discovered: Canonical objective schema paths still pointed at the legacy
+      optimera root; aligned schema and registry authority to optimize while
+      retaining optimera read compatibility.
+    verified: "AC1: objective:<UUID>/experiment:<non-negative integer> scopes
+      experiment 0 and later numbers and rename fixtures preserve objective
+      identity. AC2: missing/duplicate legacy entries remain visible but
+      unaddressable with caveats; conflicting optimize/optimera candidates are
+      structured ambiguity and fixture bytes remain unchanged. AC3: pnpm -C
+      packages/cli exec vp test run test/registries/artifactRegistry.test.ts
+      test/state/experimentIdentity.test.ts
+      test/state/retrievalAuthority.test.ts (146 passed); pnpm -C packages/cli
+      test (181 files, 1993 tests passed); pnpm -C packages/cli run typecheck
+      (passed); pnpm -C packages/cli run build (passed); node
+      packages/cli/dist/bin/agentera.js check validate capability-contract
+      --format json (2 passed)."
+    next: Task 6 may add validated atomic experiment publication; Task 4 remains
+      blocked for evidence-only repair. Do not begin Task 7 archive publication
+      or Task 8 list/get.
+    context:
+      intent: Complete Plan Task 5 identity and compatibility acceptance without
+        implementing experiment publication, archival, or retrieval.
+      constraints: Preserved experiment 10/40/50 projection and legacy bytes; deferred
+        Tasks 6-8, broad omission work, package metadata, publication, tagging,
+        and pushing.
+      unknowns: None for Task 5 identity; Task 6 still owns UUID assignment and
+        publication side effects.
+      scope: Retrieval authority, objective/experiment schemas, registry path
+        authority, experiment identity/discovery/preflight code, focused
+        fixtures, changelog, progress, plan, and the unchanged pre-existing Task
+        4 TODO/plan evaluation state.
   - number: 803
     timestamp: 2026-07-15 07:38
     type: fix
@@ -310,34 +348,6 @@ cycles:
       scope: TODO compaction parser, validator, status and CLI diagnostics, apply
         logic, regression fixtures, TODO schema/contract, live TODO
         normalization, changelog, and progress evidence.
-  - number: 794
-    timestamp: 2026-07-14 18:20
-    type: fix
-    phase: build
-    what: Made archived-only plan reads report verified active-plan absence with a
-      bounded history catalog instead of promoting archived tasks into a
-      degraded current projection.
-    inspiration: The completed rollout exposed that state plan promoted the newest
-      archive after active-plan removal.
-    discovered: The primary archive fallback and unbounded archive path/catalog
-      fields jointly caused the misleading current_projection omission response.
-    verified: "Focused state and source-contract tests: 2 files, 61 tests passed.
-      Full CLI suite: 177 files, 1,805 tests passed. Typecheck and build passed.
-      The live post-archive command now returns status=empty, entries=0,
-      active_plan_exists=false, complete_for_plan_artifact=true,
-      archive_count=133, and a bounded 10-entry catalog with 123 declared
-      omissions. Archived plan and changelog validation, compact, and git diff
-      checks passed."
-    next: Commit this fix with the completed plan archive lifecycle changes; no
-      active plan remains.
-    context:
-      intent: Remove the post-archive state plan caveat while preserving immutable
-        plan history and bounded output.
-      constraints: Do not restore archived plans as executable current state or add
-        numbered plan retrieval machinery.
-      unknowns: None.
-      scope: Plan state query semantics, source-contract oracle, archived-only
-        regressions, changelog, progress, and completed plan archive.
   - number: 793
     timestamp: 2026-07-14 17:36
     type: chore
@@ -407,6 +417,8 @@ cycles:
         and backfill fixtures; package metadata and generated ignored
         dist/bundle
 archive:
+  - summary: "Cycle 794 (2026-07-14): Made archived-only plan reads report verified
+      active-plan absence with a bounded history catalog instead of..."
   - summary: "Cycle 792 (2026-07-14): Repaired npm 12 npm-pack JSON parsing at the
       packaging test boundary, prepared the development package..."
   - summary: "Cycle 791 (2026-07-14): Fixed the two audited simplified Task 2
@@ -503,16 +515,18 @@ archive:
   - summary: "Cycle 754 (2026-07-13): Corrected Task 5 review-pressure consistency
       by hydrating decision overlays before append overflow calculations,
       compaction selection,..."
-  - summary: "Cycle 753 (2026-07-13): Stored and composed current decision review
-      state through an authority-derived ID-keyed overlay; decision updates
-      preserve..."
 omitted: true
-omitted_count: 39
+omitted_count: 40
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded

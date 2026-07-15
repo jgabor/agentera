@@ -2,7 +2,7 @@
 #
 # Experiment log maintained by optimize. Each experiment records hypothesis,
 # method, metric results, kept/discarded status, and conclusions. Lives
-# alongside OBJECTIVE.md in .agentera/optimera/<name>/.
+# alongside OBJECTIVE.md in .agentera/optimize/<name>/.
 #
 # Structural pattern: UPPER_CASE groups with numbered entries and stable IDs,
 # following capability_schema_contract.yaml and protocol.yaml conventions.
@@ -41,9 +41,9 @@ meta:
   version: "1.0.0"
   description: >-
     Experiment log for optimize objectives. Produced and consumed by optimize.
-    Lives in .agentera/optimera/<name>/ alongside the objective.
+    Lives in .agentera/optimize/<name>/ alongside the objective.
   artifact_type: agent_facing
-  path: ".agentera/optimera/<name>/experiments.yaml"
+  path: ".agentera/optimize/<name>/experiments.yaml"
   producer: optimize
   consumers: [status, optimize]
   format: yaml
@@ -133,6 +133,7 @@ EXPERIMENT:
     validation:
       - "Must be a non-negative integer"
       - "Must be unique across active and archived entries"
+      - "Identity is <objective-id>/experiment:<number>"
   2:
     id: EX2
     field: date
@@ -371,3 +372,17 @@ VALIDATION:
       and serve as the reference measurement.
     checks:
       - "Experiment 0 has status 'baseline'"
+  6:
+    id: EV6
+    rule: identity_compatibility
+    severity: error
+    description: >-
+      Experiment identity is objective-scoped. Reads retain legacy entries with
+      missing or duplicate numbers as unaddressable data with explicit caveats;
+      a new publication must reject ambiguous objective or experiment identity
+      before changing objective, experiment, or archive bytes.
+    checks:
+      - "Objective identity is stable across title and directory rename"
+      - "Experiment 0 and later non-negative numbers are addressable"
+      - "Duplicate or missing experiment numbers remain visible but unaddressable"
+      - "Publication rejects ambiguity before effects"
