@@ -58,6 +58,7 @@ const EXPECTED_COMMANDS = {
   experiments: {
     list: "agentera state experiments list --objective OBJECTIVE_ID [--limit N] [--cursor TOKEN] --format json",
     get: "agentera state experiments get --objective OBJECTIVE_ID --number N --format json",
+    publish: "agentera state experiments publish --objective OBJECTIVE_ID --number N --input EXPERIMENT.yaml --format json",
   },
 } as const;
 
@@ -136,6 +137,11 @@ export function validateStateRetrievalAuthority(value: Record<string, unknown>):
     }
   }
   requireNonEmpty(omission, "semantics", "retrieval.omission", errors);
+  const outputBounds = mapping(retrieval.output_bounds);
+  if (outputBounds.maximum_limit !== 100) errors.push("retrieval.output_bounds.maximum_limit");
+  if (outputBounds.max_serialized_utf8_bytes !== 32_768) errors.push("retrieval.output_bounds.max_serialized_utf8_bytes");
+  if (outputBounds.scalar_truncation !== "forbidden") errors.push("retrieval.output_bounds.scalar_truncation");
+  if (outputBounds.omission_unit !== "whole_entries") errors.push("retrieval.output_bounds.omission_unit");
 
   const identities = mapping(retrieval.identity);
   for (const name of ["plan", "task", "objective", "experiment"]) {
@@ -192,6 +198,7 @@ export function validateStateRetrievalAuthority(value: Record<string, unknown>):
     const command = mapping(commands[name]);
     if (command.list !== grammar.list) errors.push(`retrieval.commands.${name}.list`);
     if (command.get !== grammar.get) errors.push(`retrieval.commands.${name}.get`);
+    if ("publish" in grammar && command.publish !== grammar.publish) errors.push(`retrieval.commands.${name}.publish`);
   }
   const planTaskSelectors = mapping(mapping(commands.plan_tasks).selectors);
   const planTaskPlanSelector = mapping(planTaskSelectors.plan);

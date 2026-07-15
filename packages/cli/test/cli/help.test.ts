@@ -71,7 +71,7 @@ describe("cli help", () => {
     expect(plan).toContain("Plan list/get returns active and archived file-based plans");
     expect(plan).toContain("plan get requires --plan and returns the full selected document");
     expect(plan).toContain("Invalid historical archives remain non-fatal compatibility diagnostics unless selected");
-    expect(plan).toContain("Plan task list/get reads the active file-based plan");
+    expect(plan).toContain("Plan task list/get reads the active plan only");
 
     const experiments = printStateHelp("experiments");
     expect(experiments).toContain("agentera state experiments list --objective OBJECTIVE_ID");

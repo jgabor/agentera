@@ -93,6 +93,23 @@ agentera state query --list-artifacts
 agentera state progress explain --verb append --format json
 ```
 
+Bounded collection retrieval uses stable identities, opaque snapshot cursors,
+explicit omissions, and exact detail commands. The runtime contract is
+[`references/artifacts/state-storage-authority.yaml`](./references/artifacts/state-storage-authority.yaml).
+
+```bash
+agentera state plan list --format json
+agentera state plan get --plan PLAN_ID --format json
+agentera state plan tasks list --limit 20 --format json
+agentera state experiments list --objective OBJECTIVE_ID --format json
+agentera state experiments get --objective OBJECTIVE_ID --number N --format json
+```
+
+Plan list/get spans the active plan and immutable plan archives. Plan task
+list/get is active-plan-only. Experiment retrieval merges its bounded projection
+with objective-owned immutable archives and reports detail as full, summary-only,
+or unavailable.
+
 The standard project state is:
 
 - `.agentera/vision.yaml` — product direction

@@ -128,12 +128,17 @@ function artifactOrReject(raw: string): WritableArtifact {
 
 function specOrReject(artifact: WritableArtifact, verb: string): OperationSpec {
   const spec = operationSpec(artifact, verb);
-  if (!spec)
+  if (!spec) {
+    const retrievalVerbs = artifact === "plan" ? ["list", "get", "tasks"] : artifact === "experiments" ? ["list", "get"] : [];
     invalid({
       class: "invalid_choice",
       message: `verb "${verb}" does not apply to ${artifact}`,
-      valid_values: verbsForArtifact(artifact),
+      valid_values: [...retrievalVerbs, ...verbsForArtifact(artifact)],
+      example: artifact === "experiments"
+        ? "agentera state experiments list --objective OBJECTIVE_ID --format json"
+        : `agentera state ${artifact} ${artifact === "plan" ? "list --format json" : "explain --format json"}`,
     });
+  }
   return spec;
 }
 

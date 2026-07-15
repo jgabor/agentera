@@ -32,6 +32,9 @@ function failure(message: string, verb: "list" | "get"): StateRetrievalFailure {
         ? "agentera state plan list --limit 20 --format json"
         : "agentera state plan get --plan plan:123e4567-e89b-42d3-a456-426614174000 --format json",
       recovery: "Correct the command using one of the valid forms and retry; no state was changed.",
+      valid_values: list
+        ? ["list", "--limit 1..100", "--cursor TOKEN", "--format text|json|yaml"]
+        : ["get", "--plan PLAN_ID", "--format text|json|yaml"],
     },
   }, 2);
 }
@@ -82,7 +85,13 @@ function emitFailure(error: StateRetrievalFailure, format: Format, io: Io): numb
   if (format === "json" || format === "yaml") emitStructured(error.body, format, io.out ?? ((text) => process.stdout.write(text)));
   else {
     const detail = error.body.error;
-    (io.err ?? ((text) => process.stderr.write(text)))(`Error: ${detail.message}\nClass: ${detail.class}\nRecovery: ${detail.recovery}\n`);
+    (io.err ?? ((text) => process.stderr.write(text)))([
+      `Error: ${detail.message}`,
+      `Class: ${detail.class}`,
+      `Valid forms: ${(detail.valid_values ?? [detail.syntax]).join("; ")}`,
+      `Example: ${detail.example}`,
+      `Recovery: ${detail.recovery}`,
+    ].join("\n") + "\n");
   }
   return error.exitCode;
 }

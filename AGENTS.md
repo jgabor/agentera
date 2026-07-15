@@ -93,6 +93,14 @@ agentera state plan explain --verb create --format json
 agentera state health explain --verb append --format json
 ```
 
+Bounded retrieval is governed by
+`references/artifacts/state-storage-authority.yaml`; do not duplicate its
+identity, cursor, omission, compatibility, archive-ownership, or output-bound
+rules. Inspect it through `agentera schema --format json`. Public reads include
+`agentera state plan list`, active-only `agentera state plan tasks list`, and
+`agentera state experiments list --objective OBJECTIVE_ID`; use their matching
+exact `get` forms for detail.
+
 Use the returned examples and field definitions, and add `--dry-run` when a
 preview is appropriate. Artifacts outside those four families remain governed
 by their owning capability instructions.

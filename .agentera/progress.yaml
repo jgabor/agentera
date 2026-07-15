@@ -1,4 +1,35 @@
 cycles:
+  - number: 814
+    timestamp: 2026-07-15 11:24
+    type: fix
+    phase: build
+    what: Synchronized public bounded-retrieval contracts across runtime, agent,
+      capability, documentation, package, and error surfaces.
+    inspiration: Replacement Plan Task 11 acceptance criteria and
+      references/artifacts/state-storage-authority.yaml.
+    discovered: Optimize still instructed direct experiment append/compaction;
+      plan-task ownership wording implied archive support; plan and experiment
+      parser errors omitted public valid forms or runnable examples.
+    verified: "AC1: focused 217/217 and full 2051/2051 tests passed; typecheck,
+      build, optimize/plan capability validation, and capability-contract 2/2
+      passed. AC2: state plan show, experiments show, invalid plan selector,
+      missing objective, and malformed cursor returned structured <=4096-byte
+      corrections with valid values, examples, and recovery. AC3: the canonical
+      authority passed while 132 intentionally invalid mutations failed.
+      bundle:data, check compact, behavioral assertions, and git diff --check
+      passed."
+    next: Stop after Task 11. Task 12 package metadata and Tasks 13-14 final
+      closeout remain pending.
+    context:
+      intent: Complete replacement Plan Task 11 by making the runtime retrieval
+        authority the single public contract and correcting only observed drift.
+      constraints: Preserved suite 3.0.0 and package 3.0.0-dev.21; did not amend,
+        publish, tag, push, start Task 12, or run final plan closeout.
+      unknowns: None for Task 11; historical plan diagnostics and pre-existing
+        lossless compaction refusals remain visible but non-blocking.
+      scope: Retrieval authority/validator, help/parsers, prime capability context,
+        optimize prose and experiment schema, operator docs/changelog/TODO,
+        parity tests, plan/progress state.
   - number: 813
     timestamp: 2026-07-15 11:01
     type: fix
@@ -303,44 +334,6 @@ cycles:
       unknowns: Durable recovery provenance remains intentionally deferred to Task 7.
       scope: Experiment publication contract, schema, typed writer, compaction seam,
         CLI discovery/help, tests, changelog, plan, and progress.
-  - number: 804
-    timestamp: 2026-07-15 07:55
-    type: feat
-    phase: build
-    what: Established stable objective UUID and objective-scoped experiment identity
-      with legacy compatibility diagnostics.
-    inspiration: Approved bounded-retrieval authority and completed retrieval Task 1
-      identity decisions.
-    discovered: Canonical objective schema paths still pointed at the legacy
-      optimera root; aligned schema and registry authority to optimize while
-      retaining optimera read compatibility.
-    verified: "AC1: objective:<UUID>/experiment:<non-negative integer> scopes
-      experiment 0 and later numbers and rename fixtures preserve objective
-      identity. AC2: missing/duplicate legacy entries remain visible but
-      unaddressable with caveats; conflicting optimize/optimera candidates are
-      structured ambiguity and fixture bytes remain unchanged. AC3: pnpm -C
-      packages/cli exec vp test run test/registries/artifactRegistry.test.ts
-      test/state/experimentIdentity.test.ts
-      test/state/retrievalAuthority.test.ts (146 passed); pnpm -C packages/cli
-      test (181 files, 1993 tests passed); pnpm -C packages/cli run typecheck
-      (passed); pnpm -C packages/cli run build (passed); node
-      packages/cli/dist/bin/agentera.js check validate capability-contract
-      --format json (2 passed)."
-    next: Task 6 may add validated atomic experiment publication; Task 4 remains
-      blocked for evidence-only repair. Do not begin Task 7 archive publication
-      or Task 8 list/get.
-    context:
-      intent: Complete Plan Task 5 identity and compatibility acceptance without
-        implementing experiment publication, archival, or retrieval.
-      constraints: Preserved experiment 10/40/50 projection and legacy bytes; deferred
-        Tasks 6-8, broad omission work, package metadata, publication, tagging,
-        and pushing.
-      unknowns: None for Task 5 identity; Task 6 still owns UUID assignment and
-        publication side effects.
-      scope: Retrieval authority, objective/experiment schemas, registry path
-        authority, experiment identity/discovery/preflight code, focused
-        fixtures, changelog, progress, plan, and the unchanged pre-existing Task
-        4 TODO/plan evaluation state.
   - number: 793
     timestamp: 2026-07-14 17:36
     type: chore
@@ -410,6 +403,9 @@ cycles:
         and backfill fixtures; package metadata and generated ignored
         dist/bundle
 archive:
+  - summary: "Cycle 804 (2026-07-15): Established stable objective UUID and
+      objective-scoped experiment identity with legacy compatibility
+      diagnostics."
   - summary: "Cycle 803 (2026-07-15): Corrected Task 4 plan-list detail metadata,
       YAML byte budgeting, and retrieval implementation introspection after
       independent..."
@@ -505,16 +501,18 @@ archive:
       failed. Fixed bounded-list minimal fallback to preserve a..."
   - summary: "Cycle 764 (2026-07-13): Verified the final text list renderer includes
       explicit provenance and compatibility for every bounded row;..."
-  - summary: "Cycle 763 (2026-07-13): Reverified Task 9 after the final overlay
-      provenance assertion and state synchronization; the list
-      implementation..."
 omitted: true
-omitted_count: 49
+omitted_count: 50
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded

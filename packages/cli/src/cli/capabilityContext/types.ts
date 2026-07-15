@@ -13,7 +13,7 @@ export const STATE_FAMILY_FALLBACK_COMMANDS: Record<string, string> = {
   decisions: "agentera state decisions list --limit 20 --format json",
   changelog: "agentera state query changelog --format json",
   objective: "agentera state objective --format json",
-  experiments: "agentera state experiments --format json",
+  experiments: "agentera state experiments list --objective OBJECTIVE_ID --limit 20 --format json",
 };
 
 export const STATE_FAMILY_LIST_COMMANDS: Record<string, string> = {

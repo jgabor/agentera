@@ -109,6 +109,11 @@ retrieval:
       is unavailable. Every omitted addressable item has an advancing cursor or
       exact get command; unaddressable legacy items retain compatibility
       diagnostics and are never assigned fabricated history.
+  output_bounds:
+    maximum_limit: 100
+    max_serialized_utf8_bytes: 32768
+    scalar_truncation: forbidden
+    omission_unit: whole_entries
   identity:
     plan:
       canonical_format: 'plan:<lowercase-rfc9562-uuid>'
@@ -296,7 +301,7 @@ retrieval:
       artifact_id: plan
       growth: mutable_while_plan_active_then_immutable_with_archived_plan
       identity: retrieval.identity.task
-      storage_ownership: owning_active_or_archived_plan_file
+      storage_ownership: owning_active_plan_file
       ordering: task_number_asc
       bounds: count_1_to_100_and_serialized_utf8_budget
       cursor: opaque_snapshot_cursor

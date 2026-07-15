@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Changed
+
+- Synchronized bounded plan, plan-task, and experiment retrieval across help, schema introspection, capability guidance, operator docs, packaged contracts, output bounds, archive ownership, and structured recovery errors.
+
 ### Added
 
 - Added `agentera state experiments list|get --objective OBJECTIVE_ID` with newest-first bounded pages, snapshot-bound opaque cursors, merged projection/archive identity, verified archive-first detail, explicit provenance and detail availability, and structured compatibility failures.

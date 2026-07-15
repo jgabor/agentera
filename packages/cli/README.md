@@ -48,6 +48,25 @@ It can remove only the exact Agentera-owned legacy link. Historical transcript
 import is also explicit (`agentera report refresh --import-source claude`) and
 is excluded from default active-runtime analytics.
 
+## Bounded state retrieval
+
+The executable contract is
+[`references/artifacts/state-storage-authority.yaml`](../../references/artifacts/state-storage-authority.yaml)
+and is projected by `agentera schema --format json`.
+
+```bash
+agentera state plan list --format json
+agentera state plan get --plan PLAN_ID --format json
+agentera state plan tasks list --limit 20 --format json
+agentera state experiments list --objective OBJECTIVE_ID --format json
+agentera state experiments get --objective OBJECTIVE_ID --number N --format json
+```
+
+Pages use opaque snapshot cursors, explicit omission fields, whole-entry output
+bounds, and exact retrieval. Plan history is owned by active/archive plan files;
+plan task retrieval is active-only. Experiment history is objective-scoped and
+reports full, summary-only, or unavailable detail without fabricating archives.
+
 See [UPGRADE.md](../../UPGRADE.md) for ownership, recovery, and migration
 details and [runtime feature parity](../../references/adapters/runtime-feature-parity.md)
 for host-specific behavior.

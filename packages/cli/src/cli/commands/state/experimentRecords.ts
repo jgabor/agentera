@@ -31,6 +31,9 @@ function failure(message: string, verb: "list" | "get"): StateRetrievalFailure {
         ? "agentera state experiments list --objective objective:123e4567-e89b-42d3-a456-426614174000 --limit 20 --format json"
         : "agentera state experiments get --objective objective:123e4567-e89b-42d3-a456-426614174000 --number 0 --format json",
       recovery: "Correct the command using a valid objective-scoped form and retry; no state was changed.",
+      valid_values: list
+        ? ["list", "--objective OBJECTIVE_ID", "--limit 1..100", "--cursor TOKEN", "--format text|json|yaml"]
+        : ["get", "--objective OBJECTIVE_ID", "--number 0..N", "--format text|json|yaml"],
     },
   }, 2);
 }
@@ -81,7 +84,13 @@ function emitFailure(error: StateRetrievalFailure, format: Format, io: Io): numb
   if (format === "json" || format === "yaml") emitStructured(error.body, format, io.out ?? ((text) => process.stdout.write(text)));
   else {
     const detail = error.body.error;
-    (io.err ?? ((text) => process.stderr.write(text)))(`Error: ${detail.message}\nClass: ${detail.class}\nRecovery: ${detail.recovery}\n`);
+    (io.err ?? ((text) => process.stderr.write(text)))([
+      `Error: ${detail.message}`,
+      `Class: ${detail.class}`,
+      `Valid forms: ${(detail.valid_values ?? [detail.syntax]).join("; ")}`,
+      `Example: ${detail.example}`,
+      `Recovery: ${detail.recovery}`,
+    ].join("\n") + "\n");
   }
   return error.exitCode;
 }

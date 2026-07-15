@@ -18,6 +18,34 @@ import { CAPABILITY_INSTRUCTIONS, capabilityInstructionModulePath } from "../../
 import { isFile, pyRepr, appendUnique } from "./shared.js";
 import type { JsonObject } from "../../core/jsonValue.js";
 import { stateWriterContract } from "../../state/write/operations.js";
+import { loadStateRetrievalAuthority } from "../../state/retrievalAuthority.js";
+
+function stateRetrievalContract(needs: string[]): JsonObject | null {
+  const surfaces = [
+    ...(needs.includes("plan") ? ["plan_tasks", "plans"] : []),
+    ...(needs.includes("experiments") ? ["experiments"] : []),
+  ];
+  if (surfaces.length === 0) return null;
+  const loaded = loadStateRetrievalAuthority();
+  const retrieval = loaded.retrieval as Record<string, any>;
+  const collections = [
+    ...(needs.includes("plan") ? ["plan.plans", "plan.tasks"] : []),
+    ...(needs.includes("experiments") ? ["experiments.records"] : []),
+  ];
+  return {
+    authority: loaded.authority,
+    schema_version: retrieval.schema_version,
+    commands: Object.fromEntries(surfaces.map((surface) => [surface, retrieval.commands[surface]])),
+    cursor: retrieval.cursor,
+    omission: retrieval.omission,
+    output_bounds: retrieval.output_bounds,
+    detail_availability: retrieval.envelope.entry_required_fields.includes("detail_availability"),
+    failures: retrieval.failures,
+    storage_ownership: retrieval.collections
+      .filter((entry: Record<string, unknown>) => collections.includes(String(entry.collection_id)))
+      .map((entry: Record<string, unknown>) => ({ collection_id: entry.collection_id, storage_ownership: entry.storage_ownership })),
+  };
+}
 
 export function capabilityInstructionContractPath(): string {
   const model = activeAppModel();
@@ -189,6 +217,7 @@ export function capabilityContext(capability: string | null): JsonObject | null 
     declared_state_needs: needs,
     declared_write_targets: writeTargets,
     write_contract: stateWriterContract(writeTargets),
+    retrieval_contract: stateRetrievalContract(needs),
     artifact_inventory: inventory,
     included_state_families: needs.filter((name) => STARTUP_ENVELOPE_STATE_FAMILIES.has(name)),
     missing_state_families: missing,

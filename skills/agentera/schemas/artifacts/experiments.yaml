@@ -55,6 +55,7 @@ GROUP_PREFIXES:
   CLOSURE: EC
   ARCHIVE: EA
   PUBLICATION: EP
+  RETRIEVAL: ER
   VALIDATION: EV
 
 BUDGET:
@@ -327,6 +328,35 @@ PUBLICATION:
       First publication durably records every new archive directory entry.
       Replay may recover only the exact full record still present in the
       projection; compacted summaries and dropped rows are not fabricated.
+
+RETRIEVAL:
+  1:
+    id: ER1
+    list: >-
+      agentera state experiments list --objective OBJECTIVE_ID [--limit N]
+      [--cursor TOKEN] --format json
+    get: >-
+      agentera state experiments get --objective OBJECTIVE_ID --number N
+      --format json
+    description: >-
+      List returns newest-first objective-scoped identities from the bounded
+      projection and immutable archive. Get returns one exact identity.
+  2:
+    id: ER2
+    cursor: opaque_snapshot_cursor
+    cursor_binding: [collection, objective, order, snapshot]
+    detail_availability: [full, summary, unavailable]
+    description: >-
+      Cursor tokens are copied, never parsed or constructed. List and get retain
+      compatibility and provenance when legacy detail is summary-only or absent.
+  3:
+    id: ER3
+    maximum_limit: 100
+    max_serialized_utf8_bytes: 32768
+    omission_fields: [omitted, omitted_count, omission_reason, retrieval]
+    description: >-
+      Structured pages omit whole entries rather than truncating scalar values;
+      every addressable omission has continuation or exact-get recovery.
 
 CLOSURE:
   1:

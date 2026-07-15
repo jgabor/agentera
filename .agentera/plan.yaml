@@ -149,7 +149,7 @@ tasks:
     name: Synchronize public retrieval contracts
     depends_on:
       - "10"
-    status: pending
+    status: complete
     acceptance:
       - GIVEN help, schema introspection, agent context, capability prose, and operator docs WHEN inspected THEN commands and semantics agree.
       - GIVEN unsupported forms WHEN invoked THEN errors enumerate valid values and show a working correction.

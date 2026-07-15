@@ -102,6 +102,10 @@ const negativeCases: NegativeCase[] = [
     mutate: (value) => removeListValue(value, ["retrieval", "omission", "required_when_any_entry_is_not_returned"], field),
   })),
   { rule: "omission semantics", expected: "retrieval.omission.semantics", mutate: (value) => { value.retrieval.omission.semantics = ""; } },
+  { rule: "output maximum limit", expected: "retrieval.output_bounds.maximum_limit", mutate: (value) => { value.retrieval.output_bounds.maximum_limit = 101; } },
+  { rule: "output byte budget", expected: "retrieval.output_bounds.max_serialized_utf8_bytes", mutate: (value) => { value.retrieval.output_bounds.max_serialized_utf8_bytes = 0; } },
+  { rule: "scalar truncation forbidden", expected: "retrieval.output_bounds.scalar_truncation", mutate: (value) => { value.retrieval.output_bounds.scalar_truncation = "allowed"; } },
+  { rule: "whole-entry omission", expected: "retrieval.output_bounds.omission_unit", mutate: (value) => { value.retrieval.output_bounds.omission_unit = "scalar"; } },
   ...["plan", "task", "objective", "experiment"].map((identity): NegativeCase => ({
     rule: `identity section ${identity}`,
     expected: `retrieval.identity.${identity}`,
@@ -136,6 +140,7 @@ const negativeCases: NegativeCase[] = [
     expected: `retrieval.commands.${command}.${verb}`,
     mutate: (value) => { value.retrieval.commands[command][verb] = "agentera invalid"; },
   }))),
+  { rule: "experiment publish grammar", expected: "retrieval.commands.experiments.publish", mutate: (value) => { value.retrieval.commands.experiments.publish = "agentera invalid"; } },
   { rule: "plan-task list selector optional", expected: "retrieval.commands.plan_tasks.selectors.plan.required", mutate: (value) => { value.retrieval.commands.plan_tasks.selectors.plan.list_required = true; } },
   { rule: "plan-task get defaults to active plan", expected: "retrieval.commands.plan_tasks.selectors.plan.required", mutate: (value) => { value.retrieval.commands.plan_tasks.selectors.plan.get_required = true; } },
   { rule: "plan-task get default is declared", expected: "retrieval.commands.plan_tasks.selectors.plan.get_default", mutate: (value) => { delete value.retrieval.commands.plan_tasks.selectors.plan.get_default; } },
@@ -188,7 +193,7 @@ describe("state retrieval authority", () => {
   });
 
   it("has one uniquely named negative fixture for every enforced rule", () => {
-    expect(negativeCases).toHaveLength(127);
+    expect(negativeCases).toHaveLength(132);
     expect(new Set(negativeCases.map(({ rule }) => rule)).size).toBe(negativeCases.length);
   });
 
