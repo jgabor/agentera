@@ -28,8 +28,9 @@ import {
   validateFilterValues,
 } from "../stateQuery.js";
 import { displayFields, queryTodo, StateArgs } from "./state/index.js";
-import { STATE_FAMILY_LIST_COMMANDS } from "../capabilityContext/types.js";
+import { STATE_FAMILY_GET_COMMANDS, STATE_FAMILY_LIST_COMMANDS } from "../capabilityContext/types.js";
 import type { JsonObject } from "../../core/jsonValue.js";
+import { stateRetrievalCommands } from "../../state/retrievalAuthority.js";
 
 type Io = { out?: (t: string) => void; err?: (t: string) => void };
 
@@ -83,18 +84,31 @@ function projectRelativeOrAbsolute(p: string): string {
 
 function artifactReadInterfaces(name: string, record: ArtifactRecord | null): JsonObject {
   const artifactId = record !== null ? record.artifactId : name;
-  const routineCommand = STATE_FAMILY_LIST_COMMANDS[artifactId] ?? (STATE_COMMAND_NAMES.has(artifactId) ? `agentera ${artifactId} --format json` : null);
+  const retrieval = stateRetrievalCommands() as Record<string, Record<string, string>>;
+  const experimentList = retrieval.experiments.list
+    .replace(" [--limit N] [--cursor TOKEN]", " --limit 20");
+  const routineCommand = artifactId === "experiments"
+    ? experimentList
+    : STATE_FAMILY_LIST_COMMANDS[artifactId] ?? (STATE_COMMAND_NAMES.has(artifactId) ? `agentera state ${artifactId} --format json` : null);
+  const requiredSelectors = artifactId === "experiments" ? ["--objective OBJECTIVE_ID"] : [];
+  const detailCommand = artifactId === "experiments"
+    ? retrieval.experiments.get
+    : STATE_FAMILY_GET_COMMANDS[artifactId] ?? null;
   let advancedCommand: string | null;
   if (artifactId === "benchmark_context") advancedCommand = BENCHMARK_CONTEXT_COMMAND;
   else if (STATE_COMMAND_NAMES.has(artifactId)) advancedCommand = null;
   else advancedCommand = `agentera query ${artifactId} --format json`;
   let policy: string;
-  if (STATE_FAMILY_LIST_COMMANDS[artifactId]) policy = "Use bounded state list for discovery and exact state get for detail before any raw artifact access.";
+  if (artifactId === "experiments") policy = "Replace OBJECTIVE_ID with one stable objective identity, use the objective-scoped bounded list for discovery, and use exact get for detail; no selector-free normal read exists.";
+  else if (STATE_FAMILY_LIST_COMMANDS[artifactId]) policy = "Use bounded state list for discovery and exact state get for detail before any raw artifact access.";
   else if (routineCommand) policy = "Use the routine state command for normal content reads before any raw artifact access.";
   else if (advancedCommand) policy = "Use the listed CLI discovery/query surface before any last-resort raw artifact access.";
   else policy = "No normal content-read command is registered; raw access is limited to allowed boundary cases.";
   return {
     normal_read_command: routineCommand,
+    normal_read_required_selectors: requiredSelectors,
+    normal_detail_command: detailCommand,
+    normal_read_guidance: policy,
     advanced_query_command: advancedCommand,
     raw_access_boundary: {
       normal_policy: policy,

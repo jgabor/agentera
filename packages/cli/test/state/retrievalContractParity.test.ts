@@ -54,6 +54,50 @@ describe("bounded retrieval public-contract parity", () => {
     ]));
   });
 
+  it("keeps experiment artifact introspection objective-scoped and executable after selector substitution", () => {
+    const schema = buildSchemaPayload("schema") as Record<string, any>;
+    const retrieval = schema.state_retrieval;
+    const experiments = schema.artifact_locations.artifacts.find(
+      (artifact: Record<string, unknown>) => artifact.artifact_id === "experiments",
+    );
+    const expectedList = retrieval.commands.experiments.list
+      .replace(" [--limit N] [--cursor TOKEN]", " --limit 20");
+    expect(experiments).toMatchObject({
+      normal_read_command: expectedList,
+      normal_read_required_selectors: ["--objective OBJECTIVE_ID"],
+      normal_detail_command: retrieval.commands.experiments.get,
+    });
+    expect(experiments.normal_read_guidance).toContain("Replace OBJECTIVE_ID");
+    expect(experiments.normal_read_guidance).not.toContain("agentera experiments");
+    expect(experiments.normal_read_command).not.toBe("agentera experiments --format json");
+
+    const routineExperiment = schema.commands.find(
+      (command: Record<string, unknown>) => command.name === "experiments" && command.kind === "routine_state",
+    );
+    expect(routineExperiment.description).not.toContain("Deprecated alias");
+  });
+
+  it("executes every selector-free normal read and explicitly validates required placeholders", () => {
+    const schema = buildSchemaPayload("schema") as Record<string, any>;
+    for (const artifact of schema.artifact_locations.artifacts) {
+      const command = artifact.normal_read_command as string | null;
+      if (!command) continue;
+      const selectors = artifact.normal_read_required_selectors as string[];
+      expect(Array.isArray(selectors), artifact.artifact_id).toBe(true);
+      const placeholders = command.match(/\b[A-Z][A-Z0-9_]*\b/g) ?? [];
+      if (selectors.length > 0) {
+        expect(placeholders.length, artifact.artifact_id).toBeGreaterThan(0);
+        for (const selector of selectors) expect(command, artifact.artifact_id).toContain(selector);
+        expect(artifact.normal_read_guidance, artifact.artifact_id).toContain("Replace");
+        continue;
+      }
+      expect(placeholders, artifact.artifact_id).toEqual([]);
+      expect(command.startsWith("agentera state "), artifact.artifact_id).toBe(true);
+      const result = capture(command.split(" ").slice(1));
+      expect(result.rc, `${artifact.artifact_id}: ${command}\n${result.err}`).toBe(0);
+    }
+  });
+
   it("keeps help and capability prose on the authority grammar and semantics", () => {
     const retrieval = loadStateRetrievalAuthority(REPO_ROOT).retrieval as Record<string, any>;
     const planHelp = printStateHelp("plan");
@@ -117,10 +161,8 @@ describe("bounded retrieval public-contract parity", () => {
       expect(text, doc).toContain("references/artifacts/state-storage-authority.yaml");
     }
 
-    expect(read("packages/cli/bundle/references/artifacts/state-storage-authority.yaml"))
-      .toBe(read("references/artifacts/state-storage-authority.yaml"));
-    expect(read("packages/cli/bundle/skills/agentera/schemas/artifacts/experiments.yaml"))
-      .toBe(experimentSchema);
+    const setup = read("packages/cli/test/globalSetup.ts");
+    expect(setup).toContain("scripts\", \"copy-bundle.mjs");
   });
 
   it.each([

@@ -1,4 +1,38 @@
 cycles:
+  - number: 815
+    timestamp: 2026-07-15 11:42
+    type: fix
+    phase: build
+    what: Corrected experiment artifact introspection after Task 11 audit failure.
+    inspiration: Task 11 audit attempt 1 and its recorded failure evidence.
+    discovered: artifact_locations synthesized unsupported top-level aliases for
+      routine state reads, and the parity test read ignored bundle output
+      directly despite global setup generating it.
+    verified: "Focused root command: pnpm -C packages/cli exec vp test run
+      test/state/retrievalContractParity.test.ts test/packaging/prepack.test.ts
+      test/cli/schema.test.ts test/cli/query.test.ts; observed 4 files/41 tests
+      passed. Scoped command: pnpm -C packages/cli exec vp test run
+      test/state/retrievalContractParity.test.ts; observed 1 file/11 tests
+      passed, including unsupported-form corrections. Full command: pnpm -C
+      packages/cli test; observed 184 files/2053 tests passed. Commands pnpm -C
+      packages/cli run typecheck and pnpm -C packages/cli build passed. Commands
+      node packages/cli/dist/bin/agentera.js check validate capability optimize
+      --format json, capability plan --format json, and capability-contract
+      --format json passed; contract summary 2/2. Runtime schema plus five
+      unsupported forms passed 6/6. node packages/cli/dist/bin/agentera.js check
+      compact --format json and git diff --check passed."
+    next: Stop after corrective Task 11 commit; Task 12 and final plan closeout
+      remain pending.
+    context:
+      intent: Retry Task 11 only by removing the unsupported selector-free experiment
+        read contract and making package parity evidence pristine-checkout safe.
+      constraints: Preserved commit 5abf4c6a, Cycle 814, and Task 11 audit attempt 1;
+        no amend, push, package metadata change, Task 12 work, publish, or tag.
+      unknowns: None for the corrective scope; pre-existing lossless compaction
+        refusals remain non-blocking.
+      scope: packages/cli/src/cli/commands/query.ts,
+        packages/cli/src/cli/commands/schema.ts, retrieval/schema and
+        pristine-bundle tests, plan/progress state.
   - number: 814
     timestamp: 2026-07-15 11:24
     type: fix
@@ -311,29 +345,6 @@ cycles:
       unknowns: Independent retry audit remains pending.
       scope: Generic writer explain default, exhaustive discovery regression,
         changelog, Task 6 evidence/status, and corrective progress cycle.
-  - number: 805
-    timestamp: 2026-07-15 08:21
-    type: feat
-    phase: build
-    what: Added agentera state experiments publish in
-      packages/cli/src/state/write/experimentPublication.ts with
-      objective-scoped identity and schema preflight, atomic replacement,
-      idempotent retry, collision safety, and 10/40/50 projection.
-    inspiration: Active plan Task 6 and Task 5 objective-scoped identity preflight.
-    verified: AC1-AC3 targeted commands each passed 1 test; pnpm -C packages/cli
-      test passed 182 files and 1998 tests; pnpm -C packages/cli run typecheck
-      passed; pnpm -C packages/cli build passed; capability-contract validation
-      and agentera check compact passed.
-    next: "Task 7: add durable experiment archival without changing publication
-      identity or list/get scope."
-    context:
-      intent: Make the CLI the validated mutation authority for experiment publication
-        without implementing durable archival or retrieval.
-      constraints: Preserve legacy readability and 10/40/50 projection; defer durable
-        archive policy to Task 7 and list/get to Task 8.
-      unknowns: Durable recovery provenance remains intentionally deferred to Task 7.
-      scope: Experiment publication contract, schema, typed writer, compaction seam,
-        CLI discovery/help, tests, changelog, plan, and progress.
   - number: 793
     timestamp: 2026-07-14 17:36
     type: chore
@@ -403,6 +414,9 @@ cycles:
         and backfill fixtures; package metadata and generated ignored
         dist/bundle
 archive:
+  - summary: "Cycle 805 (2026-07-15): Added agentera state experiments publish in
+      packages/cli/src/state/write/experimentPublication.ts with
+      objective-scoped identity and schema preflight, atomic replacement,..."
   - summary: "Cycle 804 (2026-07-15): Established stable objective UUID and
       objective-scoped experiment identity with legacy compatibility
       diagnostics."
@@ -499,15 +513,18 @@ archive:
       the..."
   - summary: "Cycle 765 (2026-07-13): Retried Task 9 after evaluator attempt 1
       failed. Fixed bounded-list minimal fallback to preserve a..."
-  - summary: "Cycle 764 (2026-07-13): Verified the final text list renderer includes
-      explicit provenance and compatibility for every bounded row;..."
 omitted: true
-omitted_count: 50
+omitted_count: 51
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded

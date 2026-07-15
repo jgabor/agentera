@@ -309,6 +309,18 @@ describe("v3 packaging (T1)", () => {
       }
       fs.mkdirSync(path.join(fakeRoot, "references"), { recursive: true });
       fs.writeFileSync(path.join(fakeRoot, "references", "fixture.md"), "# Fixture\n");
+      fs.mkdirSync(path.join(fakeRoot, "references", "artifacts"), { recursive: true });
+      fs.writeFileSync(
+        path.join(fakeRoot, "references", "artifacts", "state-storage-authority.yaml"),
+        "schema_version: fixture.authority.v1\n",
+      );
+      if (!opts.omitSkills) {
+        fs.mkdirSync(path.join(fakeRoot, "skills", "agentera", "schemas", "artifacts"), { recursive: true });
+        fs.writeFileSync(
+          path.join(fakeRoot, "skills", "agentera", "schemas", "artifacts", "experiments.yaml"),
+          "meta:\n  name: experiments\n",
+        );
+      }
       fs.writeFileSync(path.join(fakeRoot, "registry.json"), JSON.stringify({ skills: [] }));
       for (const sourceFile of ["README.md", "UPGRADE.md", "CHANGELOG.md", "DESIGN.md", "LICENSE"]) {
         fs.writeFileSync(path.join(fakeRoot, sourceFile), "fixture\n");
@@ -364,6 +376,14 @@ describe("v3 packaging (T1)", () => {
         expect(fs.existsSync(path.join(bundle, ".agentera-npx-bundle.json"))).toBe(true);
         expect(fs.existsSync(path.join(bundle, "registry.json"))).toBe(true);
         expect(fs.existsSync(path.join(bundle, "skills", "agentera", "SKILL.md"))).toBe(true);
+        expect(fs.readFileSync(
+          path.join(bundle, "references", "artifacts", "state-storage-authority.yaml"),
+          "utf8",
+        )).toBe("schema_version: fixture.authority.v1\n");
+        expect(fs.readFileSync(
+          path.join(bundle, "skills", "agentera", "schemas", "artifacts", "experiments.yaml"),
+          "utf8",
+        )).toBe("meta:\n  name: experiments\n");
         const refs = fs.readdirSync(path.join(bundle, "references"));
         expect(refs.length).toBeGreaterThan(0);
 

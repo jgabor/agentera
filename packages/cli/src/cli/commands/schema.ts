@@ -108,16 +108,7 @@ const STATUS_STRUCTURED_FIELDS = [
 ];
 const COMMAND_DESCRIPTIONS: Record<string, string> = {
   prime: "Composite orientation briefing and capability startup context.",
-  status: "Deprecated alias for prime.",
   schema: "Runtime CLI/schema introspection.",
-  plan: "Deprecated alias for state plan. Plans, archived history, task evidence, and provenance.",
-  progress: "Deprecated alias for state progress. Recent cycle summary.",
-  health: "Deprecated alias for state health. Latest project artifact health audit.",
-  todo: "Deprecated alias for state todo. TODO summary.",
-  decisions: "Deprecated alias for state decisions. Decision log.",
-  docs: "Deprecated alias for state docs. Documentation contract summary.",
-  objective: "Deprecated alias for state objective. Active optimize objective summary.",
-  experiments: "Deprecated alias for state experiments. Active optimize experiments summary.",
   query: "Deprecated alias for state query. Advanced custom artifact query.",
   lint: "Deprecated alias for check lint. Optional draft prose preview; typed writers validate published bytes.",
   gate: "Deprecated alias for check compact. Run check-only repository gates.",
@@ -256,10 +247,15 @@ function commandDescription(
   else if (!outputFormats && name === "upgrade") formats = ["text", "json"];
   else if (!outputFormats && (name === "describe" || name === "schema")) formats = ["json", "yaml"];
   else if (!outputFormats && name === "prime") formats = ["text", "json", "yaml"];
+  const description = kind === "capability_routing"
+    ? `Route to ${name} capability guidance.`
+    : kind === "routine_state"
+      ? `Read ${name} project state through the agentera state namespace.`
+      : COMMAND_DESCRIPTIONS[name] ?? "unknown";
   return {
     name,
     kind,
-    description: COMMAND_DESCRIPTIONS[name] ?? "unknown",
+    description,
     filters: filters ?? COMMAND_FILTERS_ALL[name] ?? [],
     output_formats: formats,
     structured_fields: fields ?? [],

@@ -154,6 +154,16 @@ tasks:
       - GIVEN help, schema introspection, agent context, capability prose, and operator docs WHEN inspected THEN commands and semantics agree.
       - GIVEN unsupported forms WHEN invoked THEN errors enumerate valid values and show a working correction.
       - GIVEN capability and contract validation WHEN run THEN exposed contract examples pass and intentionally invalid examples fail.
+    evaluation:
+      attempt_count: 1
+      failure_count: 1
+      last_verdict: fail
+      last_failure_evidence: Schema artifact introspection advertises unsupported top-level agentera experiments instead of objective-scoped state experiments list/get.
+      provenance:
+        attempt_id: task-11-audit-1-20260715
+        source: independent Task 11 acceptance audit
+        recorded_at: 2026-07-15 11:34
+        writer_command: agentera state plan record-evaluation
   - number: 12
     name: Advance permitted development metadata
     depends_on:
