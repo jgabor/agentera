@@ -23,6 +23,13 @@ development pre-release suffix, but its `X.Y.Z` core must match the suite:
 `.opencode/package.json` is a runtime package manifest but intentionally has no
 suite-version field.
 
+`packages/cli/package.json#agentera.gitRef` identifies the last substantive
+package-source commit, not a later verification-only commit. Repository-local
+release validation requires that commit to exist and compares the package
+contract, compiled-source inputs, scripts, and bundled-data inputs against it.
+Only the package version and `gitRef`, project state, and the release validator
+implementing this check are excluded, avoiding a circular source reference.
+
 ## Active runtime manifests
 
 The runtime manifest set covers exactly OpenCode, Codex, Cursor, and GitHub

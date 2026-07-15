@@ -1,4 +1,38 @@
 cycles:
+  - number: 819
+    timestamp: 2026-07-15 13:09
+    type: fix
+    phase: build
+    what: Corrected dev.21 immutable source provenance and made release validation
+      enforce governed package-tree equivalence.
+    inspiration: Task 13 audit attempt 1 and the repository release-source policy.
+    discovered: adccfc29..1a7495f4 changes only plan, progress, archive, and TODO
+      state; governed package-content diff is empty. The first focused fixture
+      run exposed inherited commit signing, so fixture commits now disable
+      signing per command without changing Git configuration.
+    verified: Set gitRef to adccfc291198a108977a8e77252802db7e8d4c82. Release
+      validation requires that local commit, compares governed package inputs
+      and normalized package contract, permits only version/gitRef plus named
+      release/state metadata, and rejects source, untracked, or dependency
+      drift. Focused release/registry/prepack tests passed 43/43; full CLI tests
+      passed 185 files and 2060/2060. Typecheck, build, bundle:data,
+      release-metadata, capability-contract 2/2, compact, npm pack inspection,
+      and git diff --check passed. npm @next remained 3.0.0-dev.20 and dev.21
+      remained available. Pack and publish dry-runs reported 664 files and +
+      agentera@3.0.0-dev.21; pre/post status matched, proving no mutation,
+      publication, tag, or push.
+    next: Leave Task 14 pending; begin it only in a new explicit cycle.
+    context:
+      intent: Retry Plan Task 13 after its first audit found stale immutable
+        provenance.
+      constraints: Preserved Task 13 audit attempt 1 and Cycle 818; changed no package
+        version, suite surface, lockfile, changelog boundary, stable shim,
+        plugin metadata, registry suite metadata, publication, tag, or remote
+        state.
+      unknowns: Decision satisfaction and existing archive-recovery caveats remain
+        unchanged and unrelated.
+      scope: Package gitRef, repository-local release provenance validation and tests,
+        release policy documentation, plan status, and Cycle 819 state.
   - number: 818
     timestamp: 2026-07-15 12:57
     type: chore
@@ -319,29 +353,6 @@ cycles:
       scope: Task 8 cursor fingerprinting, archive-backed list summaries, rollover and
         stale-safety tests, authority clarification, changelog, plan, and
         progress only.
-  - number: 809
-    timestamp: 2026-07-15 09:37
-    type: feat
-    phase: build
-    what: Delivered objective-scoped experiment list/get over retained projections
-      and immutable archives.
-    discovered: Parallel build and full-test commands raced on generated bundle
-      setup once; sequential rerun passed all 2016 tests.
-    verified: "AC1 targeted paging/snapshot/byte cases: 3 passed, 3 skipped. AC2
-      archive/projection/detail: 1 passed, 5 skipped. AC3 structured
-      failures/legacy: 2 passed, 4 skipped. Focused parity 149 passed; full CLI
-      183 files/2016 tests; typecheck, build, capability-contract, compact,
-      schema parity, and built list/get smoke passed."
-    next: Task 9 may close remaining cross-family cursor and omission gaps; do not
-      perform Task 10 contract cleanup or package metadata early.
-    context:
-      intent: Complete Plan Task 8 with bounded exact experiment retrieval and
-        truthful compatibility state.
-      constraints: Preserved Task 7 corrective audit state, 10/40/50 projection,
-        archive immutability, existing changes, and package metadata.
-      unknowns: None for Task 8; Task 9 retains broader retrieval-gap ownership.
-      scope: Experiment list/get runtime, tests, retrieval authority status,
-        help/schema parity, changelog, plan, and progress.
   - number: 793
     timestamp: 2026-07-14 17:36
     type: chore
@@ -411,6 +422,8 @@ cycles:
         and backfill fixtures; package metadata and generated ignored
         dist/bundle
 archive:
+  - summary: "Cycle 809 (2026-07-15): Delivered objective-scoped experiment list/get
+      over retained projections and immutable archives."
   - summary: "Cycle 808 (2026-07-15): Corrected Task 7 archive durability by
       parent-syncing every new directory entry and reconstructing missing
       archives..."
@@ -509,16 +522,18 @@ archive:
       preserve exact schema-valid predecessors whose only full-file overflow..."
   - summary: "Cycle 769 (2026-07-13): Retried Task14 Git legacy backfill: bounded
       all historical Git reads by the shared commit and..."
-  - summary: "Cycle 768 (2026-07-13): Implemented Task14 Git legacy backfill as
-      agentera state backfill: bounded read-only local-history inventory, exact
-      unique..."
 omitted: true
-omitted_count: 54
+omitted_count: 55
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded

@@ -1,5 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
+import { spawnSync } from "node:child_process";
+import { isDeepStrictEqual } from "node:util";
 
 import { resolvePath } from "../core/paths.js";
 import { resolveSourceRoot } from "../core/sourceRoot.js";
@@ -26,9 +28,10 @@ import type { JsonObject } from "../core/jsonValue.js";
  *      authoritative version; the docs and parity matrix consume this field
  *      when the registry is the only writable artifact.
  *   4. `packages/cli/package.json` `agentera.gitRef` — full 40-character git
- *      SHA the package was published from. A 7+ character short SHA or a
- *      branch name is rejected because the field is supposed to be
- *      reproducible from a single commit.
+ *      SHA for the last substantive package-source commit. Repository-local
+ *      validation compares its governed package inputs with the working tree,
+ *      excluding version/gitRef, state, and this validator's release-only
+ *      implementation so the reference does not become self-referential.
  *   5. `references/cli/update-channels.yaml` `version_resolution.latest_on_channel.offline_defaults`
  *      — what `agentera doctor` and `agentera upgrade` compare the running
  *      version against on each channel. The development default must match
@@ -76,6 +79,37 @@ export const RELEASE_METADATA_ADVISORY_FILES = [
   "packages/cli/bundle/.agentera-npx-bundle.json",
 ] as const;
 
+export const RELEASE_PROVENANCE_PATHS = [
+  "packages/cli/src",
+  "packages/cli/scripts",
+  "packages/cli/tsconfig.json",
+  "skills",
+  "references",
+  "agents",
+  "hooks",
+  ".github/hooks",
+  ".github/plugin/plugin.json",
+  ".codex-plugin",
+  ".cursor-plugin",
+  ".cursor/agents",
+  ".cursor/hooks.json",
+  ".opencode/commands",
+  ".opencode/agents",
+  ".opencode/plugins",
+  ".opencode/package.json",
+  "README.md",
+  "UPGRADE.md",
+  "DESIGN.md",
+  "LICENSE",
+  "registry.json",
+  "plugin.json",
+] as const;
+
+export const RELEASE_PROVENANCE_EXCLUSIONS = [
+  "packages/cli/src/release/releaseMetadata.ts",
+  "references/adapters/package-surface-characterization.md",
+] as const;
+
 const SEMVER_CORE_RE = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/;
 const SEMVER_STRICT_RE = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/;
 const PRE_RELEASE_RE = /-(.+)$/;
@@ -91,6 +125,74 @@ function readJson(pathname: string): JsonObject | null {
   } catch {
     return null;
   }
+}
+
+function runGit(root: string, args: string[]): ReturnType<typeof spawnSync> {
+  return spawnSync("git", ["-C", root, ...args], {
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+}
+
+function normalizedPackageMetadata(value: JsonObject): JsonObject {
+  const normalized = structuredClone(value);
+  delete normalized.version;
+  if (normalized.agentera && typeof normalized.agentera === "object" && !Array.isArray(normalized.agentera)) {
+    delete (normalized.agentera as JsonObject).gitRef;
+  }
+  return normalized;
+}
+
+function validateGitRefProvenance(root: string, gitRef: string): string[] {
+  const inside = runGit(root, ["rev-parse", "--is-inside-work-tree"]);
+  if (inside.status !== 0 || String(inside.stdout).trim() !== "true") return [];
+
+  const commit = runGit(root, ["cat-file", "-e", `${gitRef}^{commit}`]);
+  if (commit.status !== 0) {
+    return [`packages/cli/package.json: agentera.gitRef ${JSON.stringify(gitRef)} is not a commit in the local repository`];
+  }
+
+  const pathspec = [
+    ...RELEASE_PROVENANCE_PATHS,
+    ...RELEASE_PROVENANCE_EXCLUSIONS.map((entry) => `:(exclude)${entry}`),
+  ];
+  const diff = runGit(root, ["diff", "--quiet", gitRef, "--", ...pathspec]);
+  if (diff.status !== 0) {
+    if (diff.status === 1) {
+      return [
+        `packages/cli/package.json: agentera.gitRef ${JSON.stringify(gitRef)} does not match the governed package source tree; ` +
+        "select the last substantive package-source commit, excluding approved release metadata",
+      ];
+    }
+    return [`packages/cli/package.json: unable to compare agentera.gitRef ${JSON.stringify(gitRef)} with the governed package source tree`];
+  }
+
+  const status = runGit(root, ["status", "--porcelain=v1", "--untracked-files=all", "--", ...pathspec]);
+  if (status.status !== 0 || String(status.stdout).trim() !== "") {
+    return [
+      "packages/cli/package.json: governed package source has uncommitted or untracked changes outside approved release metadata",
+    ];
+  }
+
+  const selectedPackage = runGit(root, ["show", `${gitRef}:packages/cli/package.json`]);
+  const currentPackage = readPackageJson(root);
+  try {
+    const selected = JSON.parse(String(selectedPackage.stdout)) as JsonObject;
+    if (
+      selectedPackage.status !== 0 ||
+      currentPackage === null ||
+      !isDeepStrictEqual(normalizedPackageMetadata(selected), normalizedPackageMetadata(currentPackage))
+    ) {
+      return [
+        `packages/cli/package.json: package contract differs from agentera.gitRef ${JSON.stringify(gitRef)} ` +
+        "outside the permitted version and gitRef fields",
+      ];
+    }
+  } catch {
+    return [`packages/cli/package.json: unable to read package contract from agentera.gitRef ${JSON.stringify(gitRef)}`];
+  }
+
+  return [];
 }
 
 function readRegistryVersion(root: string): { version: string | null; source: string } {
@@ -273,7 +375,7 @@ export function validateReleaseMetadata(root: string = rootDefault()): string[] 
       );
     }
 
-    // 2c. `agentera.gitRef` must be a 40-character hex SHA.
+    // 2c. `agentera.gitRef` must identify the governed package source tree.
     if (snap.packageGitRef === null || snap.packageGitRef === "") {
       errors.push("packages/cli/package.json: `agentera.gitRef` is required for release-metadata validation");
     } else if (!GIT_REF_HEX_RE.test(snap.packageGitRef)) {
@@ -281,6 +383,8 @@ export function validateReleaseMetadata(root: string = rootDefault()): string[] 
         `packages/cli/package.json: agentera.gitRef ${JSON.stringify(snap.packageGitRef)} must be a 40-character hex SHA; ` +
           `short SHAs and branch names are not reproducible release references`,
       );
+    } else {
+      errors.push(...validateGitRefProvenance(resolvePath(root), snap.packageGitRef));
     }
   }
 

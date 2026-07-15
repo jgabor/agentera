@@ -159,6 +159,16 @@ tasks:
       - GIVEN the current npm next version WHEN checked THEN only the CLI package advances to the next available 3.0.0-dev.N.
       - GIVEN suite-bearing surfaces WHEN inspected THEN they remain 3.0.0 and changelog work remains Unreleased.
       - GIVEN package validation and dry-run WHEN executed THEN they pass without publishing, tagging, or pushing.
+    evaluation:
+      attempt_count: 1
+      failure_count: 1
+      last_verdict: fail
+      last_failure_evidence: packages/cli agentera.gitRef points 21 commits behind the dev.21 package source and fails immutable provenance policy.
+      provenance:
+        attempt_id: task-13-audit-1-20260715
+        source: independent Task 13 package-readiness audit
+        recorded_at: 2026-07-15 13:03
+        writer_command: agentera state plan record-evaluation
   - number: 14
     name: Verify bounded retrieval end to end
     depends_on:

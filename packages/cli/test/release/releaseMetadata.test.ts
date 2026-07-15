@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -138,6 +139,30 @@ function makeFixtureRoot(): string {
   return tmp;
 }
 
+function git(root: string, ...args: string[]): string {
+  return execFileSync("git", ["-C", root, ...args], { encoding: "utf8" }).trim();
+}
+
+function initializeGitFixture(root: string): string {
+  writeFile(root, "packages/cli/src/index.ts", "export const value = 1;\n");
+  writeFile(root, "packages/cli/src/release/releaseMetadata.ts", "export const validator = 1;\n");
+  git(root, "init", "-q");
+  git(root, "add", ".");
+  git(
+    root,
+    "-c",
+    "user.name=Agentera Test",
+    "-c",
+    "user.email=agentera@example.invalid",
+    "-c",
+    "commit.gpgsign=false",
+    "commit",
+    "-qm",
+    "fixture",
+  );
+  return git(root, "rev-parse", "HEAD");
+}
+
 describe("release-metadata", () => {
   let tmp: string;
 
@@ -242,6 +267,38 @@ describe("release-metadata", () => {
         );
       }
     }
+  });
+
+  it("checks gitRef against governed package content while permitting release metadata", () => {
+    const selected = initializeGitFixture(tmp);
+    const pkg = VALID_PACKAGE();
+    pkg.version = "3.0.0-dev.21";
+    pkg.agentera = { ...(pkg.agentera as Record<string, unknown>), gitRef: selected };
+    writeJson(tmp, "packages/cli/package.json", pkg);
+    writeFile(tmp, ".agentera/plan.yaml", "header: {status: open}\n");
+    writeFile(tmp, "TODO.md", "# TODO\n");
+
+    expect(validateReleaseMetadata(tmp)).toEqual([]);
+
+    writeFile(tmp, "packages/cli/src/release/releaseMetadata.ts", "export const validator = 2;\n");
+    expect(validateReleaseMetadata(tmp)).toEqual([]);
+
+    writeFile(tmp, "packages/cli/src/index.ts", "export const value = 2;\n");
+    expect(validateReleaseMetadata(tmp)).toContainEqual(
+      expect.stringContaining("does not match the governed package source tree"),
+    );
+  });
+
+  it("rejects package contract drift outside version and gitRef", () => {
+    const selected = initializeGitFixture(tmp);
+    const pkg = VALID_PACKAGE();
+    pkg.agentera = { ...(pkg.agentera as Record<string, unknown>), gitRef: selected };
+    pkg.dependencies = { ...pkg.dependencies, unexpected: "1.0.0" };
+    writeJson(tmp, "packages/cli/package.json", pkg);
+
+    expect(validateReleaseMetadata(tmp)).toContainEqual(
+      expect.stringContaining("package contract differs"),
+    );
   });
 
   it("fails when update-channels.yaml development default drifts from registry version", () => {
