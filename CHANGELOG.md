@@ -4,6 +4,7 @@
 
 ### Added
 
+- Added `agentera state plan list` and `agentera state plan get --plan PLAN_ID` for deterministic, cursor-paginated active and archived plan retrieval, full-plan exact reads, lifecycle provenance, and explicit legacy, invalid, missing, and ambiguous archive outcomes.
 - Added persisted plan identity across active-to-archive transitions, deterministic read-only identity for legacy plans, explicit lifecycle provenance, mirrored-path reporting, and structured ambiguity failures for identity collisions.
 - Added `agentera state plan tasks list` and `agentera state plan tasks get --task N` for bounded active-plan task retrieval with declared task-number order, opaque snapshot cursors, structured not-found and compatibility errors, and exact omission recovery in text and JSON plan output.
 

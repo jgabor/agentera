@@ -63,11 +63,14 @@ describe("cli help", () => {
     expect(decisions).toContain("agentera state decisions explain --verb VERB --format json");
   });
 
-  it("documents executable plan-task and reserved experiment retrieval grammar", () => {
+  it("documents executable plan and plan-task retrieval grammar", () => {
     const plan = printStateHelp("plan");
     expect(plan).toContain("agentera state plan tasks list [--plan PLAN_ID]");
     expect(plan).toContain("agentera state plan tasks get [--plan PLAN_ID] --task N");
     expect(plan).toContain("agentera state plan get --plan PLAN_ID --format json");
+    expect(plan).toContain("Plan list/get returns active and archived file-based plans");
+    expect(plan).toContain("plan get requires --plan and returns the full selected document");
+    expect(plan).toContain("Invalid historical archives remain non-fatal compatibility diagnostics unless selected");
     expect(plan).toContain("Plan task list/get reads the active file-based plan");
 
     const experiments = printStateHelp("experiments");

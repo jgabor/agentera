@@ -8,6 +8,7 @@ import { runStateWrite } from "../commands/state/write.js";
 import { runStateGet } from "../commands/state/get.js";
 import { runStateList } from "../commands/state/list.js";
 import { runPlanTasks } from "../commands/state/planTasks.js";
+import { runPlans } from "../commands/state/plans.js";
 
 export function parseStateArgs(command: string, argv: string[]): StateArgs | { error: string } {
   const args: StateArgs = {
@@ -53,6 +54,9 @@ export function parseStateArgs(command: string, argv: string[]): StateArgs | { e
 export function runState(command: string, argv: string[], io: Io, prog: string): number {
   if (command === "plan" && argv[0] === "tasks") {
     return runPlanTasks(argv.slice(1), io);
+  }
+  if (command === "plan" && (argv[0] === "list" || argv[0] === "get")) {
+    return runPlans(argv, io);
   }
   if (argv[0] === "get") {
     return runStateGet(command, argv.slice(1), io);
