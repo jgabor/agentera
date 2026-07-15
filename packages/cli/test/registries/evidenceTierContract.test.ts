@@ -120,6 +120,11 @@ function validContractObject(): Record<string, unknown> {
     },
     signal_semantics: { kinds: semantics },
     compatibility_states: { states },
+    bounds: {
+      reader_byte_cap: 67108864,
+      shard_byte_cap: 67108864,
+      signal_byte_cap: 67108864,
+    },
     decision_55_reconciliation: { decision_number: 55 },
   };
 }

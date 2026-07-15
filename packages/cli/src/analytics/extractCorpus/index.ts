@@ -58,6 +58,32 @@ export {
 } from "./coverageAudit.js";
 export { parseExtractArgs, extractCorpusMain } from "./cli.js";
 export {
+  TIER_SCHEMA_VERSION,
+  CURRENT_POINTER_VERSION,
+  defaultTiersDir,
+  familyOf,
+  deriveSignalRecords,
+  shardFullEvidence,
+  selectSignalsForBound,
+  generationId,
+  publishEvidenceTiers,
+  readCurrentPointer,
+  readCurrentGeneration,
+  readSignalTier,
+  getFullRecord,
+  resolveEvidenceAnchor,
+  evidenceTierCompatibility,
+  type SignalRecord,
+  type FullEvidenceShard,
+  type SignalSelectionReport,
+  type EvidenceTierManifest,
+  type PublicationResult,
+  type PublishEvidenceTiersOpts,
+  type CurrentPointer,
+  type GenerationDir,
+  type EvidenceTierCompatibilityState,
+} from "./evidenceTiers.js";
+export {
   EXTRACT_CORPUS_PARITY_SCHEMA,
   buildExtractCorpusParityManifest,
   opencodeParitySnapshot,

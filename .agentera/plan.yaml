@@ -45,7 +45,7 @@ tasks:
     name: Publish bounded complete evidence and signals
     depends_on:
       - "1"
-    status: pending
+    status: complete
     acceptance:
       - GIVEN accepted extracted evidence WHEN publication completes THEN every full record remains retrievable and no artifact exceeds its declared bound.
       - GIVEN identical inputs WHEN extraction repeats THEN tier membership and ordering remain stable.

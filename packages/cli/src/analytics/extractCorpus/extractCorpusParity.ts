@@ -89,6 +89,7 @@ export function opencodeParitySnapshot(dbPath: string): OpencodeParitySnapshot {
   const audit = runCoverageAudit(
     {
       output: dbPath,
+      tierOutput: null,
       projectRoot: [path.dirname(dbPath)],
       codexSessionsDir: path.join(path.dirname(dbPath), "unused-codex"),
       claudeProjectsDir: null,

@@ -328,10 +328,47 @@ bounds:
   shard_bound_rule: >-
     Each full-evidence shard is independently bounded. A single oversized shard
     is reported and recoverable; it cannot make the whole tier unloadable.
+  shard_byte_cap: 67108864
+  shard_byte_cap_note: >-
+    A full-evidence shard encodes no more than `reader_byte_cap` bytes. Shards
+    are grouped by source family; when a family's encoded records exceed the
+    cap the family is split into numbered sub-shards so no shard exceeds it and
+    no record is dropped. This is the measured bound a bounded reader loads.
   signal_bound_rule: >-
     The signal tier is bounded to fit under the reader cap. Selection must
     preserve representative evidence across all supported sources rather than
     silently truncating one source.
+  signal_byte_cap: 67108864
+  signal_byte_cap_note: >-
+    The whole signal tier encodes no more than `reader_byte_cap` bytes. A signal
+    record carries only the contract's required fields plus `evidence_anchor` and
+    no transcript text, raw tool arguments, or raw store paths; measured
+    per-record size is far below the cap for realistic corpora, so the natural
+    outcome is to retain every derived signal. The selection below is the
+    deterministic safety net that keeps the bound when a real-scale corpus would
+    otherwise exceed it.
+  signal_selection:
+    rule: >-
+      Applied only when the derived signal tier exceeds `signal_byte_cap`. The
+      derivation is otherwise total: identical full evidence yields identical
+      signal membership and ordering.
+    algorithm: >-
+      Group derived signal records by source family. Allocate a per-family record
+      quota proportional to that family's share of the total record count, with a
+      minimum of one record per family so no supported source is silently
+      truncated to zero. Within each family, keep the most recent records first
+      (timestamp descending, then `source_id` ascending as the deterministic
+      tie-break). Reassemble the kept records in the stable tier order
+      (timestamp ascending, then `source_id` ascending). The generation identity
+      is derived from the retained membership so identical input reproduces an
+      identical selected tier.
+    derivation: >-
+      Resolves planning Unknown 1. The bound is the existing reader cap reused as
+      the signal cap because a bounded consumer must load the whole signal tier in
+      one read. Proportional-per-family selection preserves the relative evidence
+      distribution across all supported sources; recency-within-family preserves
+      the most decision-relevant signals; the fixed `(timestamp, source_id)`
+      ordering makes membership and ordering reproducible.
   real_scale_acknowledgement: >-
     Real corpora exceed 500 MB. The goal is useful analysis, not merely
     graceful failure; bounded tiers exist so consumers analyze real scale

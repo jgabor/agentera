@@ -7,6 +7,7 @@ import {
   type Env,
   defaultOutputPath,
 } from "./core.js";
+import { defaultTiersDir, publishEvidenceTiers } from "./evidenceTiers.js";
 import type { JsonObject } from "../../core/jsonValue.js";
 import { buildCorpus } from "./corpus.js";
 import {
@@ -25,6 +26,7 @@ import {
 
 export interface ExtractArgs {
   output: string;
+  tierOutput: string | null;
   projectRoot: string[];
   codexSessionsDir: string;
   claudeProjectsDir: string | null;
@@ -48,6 +50,7 @@ export function parseExtractArgs(argv: string[], env: Env = process.env, platfor
   const home = env.HOME || (platform === "win32" ? env.USERPROFILE : undefined) || os.homedir();
   const args: ExtractArgs = {
     output: defaultOutputPath(env, platform),
+    tierOutput: null,
     projectRoot: [],
     codexSessionsDir: path.join(home, ".codex", "sessions"),
     claudeProjectsDir: path.join(home, ".claude", "projects"),
@@ -74,6 +77,7 @@ export function parseExtractArgs(argv: string[], env: Env = process.env, platfor
     };
     let v: string | null;
     if ((v = val("--output")) !== null) args.output = v;
+    else if ((v = val("--tier-output")) !== null) args.tierOutput = v;
     else if ((v = val("--project-root")) !== null) args.projectRoot.push(v);
     else if ((v = val("--codex-sessions-dir")) !== null) args.codexSessionsDir = v;
     else if ((v = val("--claude-projects-dir")) !== null) {
@@ -180,5 +184,22 @@ export function extractCorpusMain(argv: string[], io: ExtractMainIo = {}): numbe
     .map(([name, summary]) => `${name}=${(summary as JsonObject).count}`)
     .join(", ");
   out(`wrote corpus: ${args.output} (${total} records; ${familyBits})`);
+
+  // Publish bounded tiers as the canonical bounded publication output. The
+  // monolithic corpus.json above remains a transition artifact until Task 3
+  // migrates the usage/report/prime/startup readers to the tiers directory.
+  const tiersDir = args.tierOutput ?? defaultTiersDir(env, platform);
+  const publication = publishEvidenceTiers(corpus.records as JsonObject[], {
+    tiersDir,
+    adapterVersion: corpus.metadata.adapter_version,
+    runtimeStatuses: corpus.metadata.runtime_statuses as JsonObject[],
+    env,
+    platform,
+  });
+  out(
+    `published tiers: ${tiersDir} (generation ${publication.generation}; ` +
+      `${publication.shard_count} shards; ${publication.signal_count} signals; ` +
+      `${publication.signal_bytes} bytes${publication.signal_selection.capped ? "; selection applied" : ""})`,
+  );
   return 0;
 }

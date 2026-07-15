@@ -1,0 +1,13 @@
+schemaVersion: agentera.stateArchiveEntry.v1
+artifact_id: progress
+entry_number: 833
+record:
+  number: 833
+  timestamp: 2026-07-15 20:09
+  type: feat
+  phase: build
+  what: Publish bounded complete evidence as source-family shards plus a content-addressable derived signal tier with atomic generation publication and direct evidence-anchor retrieval.
+  verified: typecheck and build pass; vitest 2130 (new evidenceTiers.test.ts 20 covering AC1-AC4, shard splitting, deterministic selection, interruption atomicity, evidence-anchor resolution); capability-contract validation pass; compaction gate pass (over_limit 0); end-to-end smoke publishes a generation and resolves a signal anchor to its full record.
+  context:
+    intent: "Implement plan Task 2: bounded tier publication and direct retrieval behavior against the Task 1 evidence-tier contract, resolving the deterministic signal bound and selection (planning Unknown 1)."
+record_sha256: 1c0446d6ac918733420a09ba9bf08a23139a99414201b076ebc17903d43f1cd7

@@ -68,6 +68,12 @@ export interface CompatibilityStateDefinition {
   recovery: string;
 }
 
+export interface EvidenceTierBounds {
+  readerByteCap: number;
+  shardByteCap: number;
+  signalByteCap: number;
+}
+
 interface ContractModel {
   schemaVersion: string;
   status: string;
@@ -77,6 +83,7 @@ interface ContractModel {
   deferredConsumers: Map<string, DeferredConsumerDefinition>;
   signalSemantics: Map<string, SignalSemanticDefinition>;
   compatibilityStates: Map<CompatibilityStateId, CompatibilityStateDefinition>;
+  bounds: EvidenceTierBounds;
   decisionNumber: number;
 }
 
@@ -169,6 +176,13 @@ function asStringArray(value: unknown, label: string): string[] {
     throw new EvidenceTierContractError(`${label} must be an array`);
   }
   return value.map((entry, i) => asString(entry, `${label}[${i}]`));
+}
+
+function asPositiveInt(value: unknown, label: string): number {
+  if (typeof value !== "number" || !Number.isFinite(value) || value <= 0 || Math.floor(value) !== value) {
+    throw new EvidenceTierContractError(`${label} must be a positive integer`);
+  }
+  return value;
 }
 
 /**
@@ -313,6 +327,13 @@ export function loadEvidenceTierContract(
 
   const reconciliation = asRecord(raw.decision_55_reconciliation, "decision_55_reconciliation");
 
+  const boundsRoot = asRecord(raw.bounds, "bounds");
+  const bounds: EvidenceTierBounds = {
+    readerByteCap: asPositiveInt(boundsRoot.reader_byte_cap, "bounds.reader_byte_cap"),
+    shardByteCap: asPositiveInt(boundsRoot.shard_byte_cap, "bounds.shard_byte_cap"),
+    signalByteCap: asPositiveInt(boundsRoot.signal_byte_cap, "bounds.signal_byte_cap"),
+  };
+
   return {
     schemaVersion,
     status: asString(raw.status, "status"),
@@ -322,6 +343,7 @@ export function loadEvidenceTierContract(
     deferredConsumers,
     signalSemantics,
     compatibilityStates,
+    bounds,
     decisionNumber: typeof reconciliation.decision_number === "number"
       ? reconciliation.decision_number
       : 0,
@@ -354,6 +376,17 @@ export function compatibilityStates(
   contractPath: string = evidenceTierAuthorityPath(),
 ): CompatibilityStateDefinition[] {
   return [...loadEvidenceTierContract(contractPath).compatibilityStates.values()];
+}
+
+/**
+ * Projected byte caps for full-evidence shards and the signal tier. These are
+ * the bounds the publication writer and direct retriever enforce; they are read
+ * from the authority rather than duplicated in callers.
+ */
+export function evidenceTierBounds(
+  contractPath: string = evidenceTierAuthorityPath(),
+): EvidenceTierBounds {
+  return loadEvidenceTierContract(contractPath).bounds;
 }
 
 /**
