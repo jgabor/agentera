@@ -25,7 +25,10 @@ export interface ReportArgs {
   dryRun?: boolean;
   consent?: string | null;
   projectRoot?: string[];
-  // corpus-refresh passthrough to the extract engine (used by profile)
+  // Resolves the canonical intermediate path used to derive the tiers
+  // directory (`dirname(output)/tiers`) and to display `corpus_path`. The
+  // extract engine writes bounded tiers there; the monolithic corpus is no
+  // longer written. Null falls back to `statsCorpusPath()`.
   output?: string | null;
   codexSessionsDir?: string | null;
   claudeProjectsDir?: string | null;
@@ -43,7 +46,12 @@ export interface ReportArgs {
 }
 
 function buildExtractArgv(args: ReportArgs, corpusPath: string): string[] {
-  const argv: string[] = ["--output", corpusPath];
+  // Refresh publishes bounded evidence tiers to the directory co-located with
+  // the canonical corpus path (`<dir>/tiers`); the extract engine no longer
+  // accepts the monolithic `--output corpusPath` write target (tiers are the
+  // only canonical output). Passing `--tier-output` makes the displayed
+  // `corpus_path`/`tier_path` truthful: tiers land at `dirname(corpusPath)/tiers`.
+  const argv: string[] = ["--tier-output", tiersDirForCorpusPath(corpusPath)];
   for (const root of args.projectRoot ?? []) argv.push("--project-root", root);
   if (args.codexSessionsDir) argv.push("--codex-sessions-dir", args.codexSessionsDir);
   if (args.claudeProjectsDir) argv.push("--claude-projects-dir", args.claudeProjectsDir);
@@ -163,9 +171,9 @@ export function statsExistingCorpusStatus(corpusPath: string): JsonObject {
 /**
  * Faithful port of scripts/agentera `cmd_stats` (canonical command is `report`;
  * `stats` is the deprecated alias and shares this logic). The plain read path
- * reuses the ported usage engine; corpus refresh (which would run the maintainer
- * extractor over local runtime history) is reported as unavailable in the
- * self-contained package.
+ * reuses the ported usage engine over bounded tiers (with a legacy
+ * corpus.json fallback when no tiers are published). `stats refresh` publishes
+ * bounded tiers from local runtime history under explicit consent.
  */
 export function cmdReport(args: ReportArgs, io: Io = {}): number {
   const out = io.out ?? ((t: string) => process.stdout.write(t));
@@ -209,6 +217,7 @@ export function cmdReport(args: ReportArgs, io: Io = {}): number {
           provided_consent: null,
         },
         corpus_path: corpusPath,
+        tier_path: tiersDirForCorpusPath(corpusPath),
         engine: { command: engineCommand },
         diagnostics: [
           "dry-run does not read runtime history or write tier files",
@@ -221,12 +230,12 @@ export function cmdReport(args: ReportArgs, io: Io = {}): number {
       if (outputFormat === "json") {
         out(JSON.stringify(payload, null, 2) + "\n");
       } else {
-        out(`agentera stats refresh: dry_run\ncorpus=${corpusPath}\nengine=${engineCommand.join(" ")}\n`);
+        out(`agentera stats refresh: dry_run\ncorpus=${corpusPath}\ntiers=${tiersDirForCorpusPath(corpusPath)}\nengine=${engineCommand.join(" ")}\n`);
         out("privacy=local_history_read=false, tier_write=false, required_consent=local-history\n");
       }
       return 0;
     }
-    // consent === "local-history": run the corpus extractor over local history.
+    // consent === "local-history": extract local history into bounded tiers.
     let engineOut = "";
     let engineErr = "";
     const rc = extractCorpusMain(engineArgv, {
@@ -250,12 +259,13 @@ export function cmdReport(args: ReportArgs, io: Io = {}): number {
           : null,
       },
       corpus_path: corpusPath,
+      tier_path: tiersDirForCorpusPath(corpusPath),
       engine: { command: engineCommand, exit_code: rc, stdout: engineOut.split("\n").filter((l) => l), stderr: engineErr.split("\n").filter((l) => l) },
     };
     if (outputFormat === "json") {
       out(JSON.stringify(payload, null, 2) + "\n");
     } else {
-      out(`agentera stats refresh: ${payload.status}\ncorpus=${corpusPath}\n`);
+      out(`agentera stats refresh: ${payload.status}\ncorpus=${corpusPath}\ntiers=${tiersDirForCorpusPath(corpusPath)}\n`);
       if (engineOut) out(engineOut);
       if (engineErr) err(engineErr);
     }

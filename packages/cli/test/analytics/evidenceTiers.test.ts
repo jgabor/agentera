@@ -39,18 +39,21 @@ function fullRecord(opts: {
   timestamp?: string;
   sourceProduct?: string;
   runtime?: string | null;
+  sourceClass?: "active_runtime" | "historical_import" | "project";
+  activeRuntime?: boolean;
   data?: JsonObject;
   sessionId?: string;
 }): JsonObjectLocal {
+  const activeRuntime = opts.activeRuntime ?? (opts.runtime == null ? false : true);
   const r: JsonObjectLocal = {
     source_id: opts.sourceId,
     source_kind: opts.sourceKind ?? "conversation_turn",
     timestamp: opts.timestamp ?? "2026-01-01T00:00:00.000Z",
     project_id: "demo",
-    runtime: opts.runtime ?? "opencode",
-    source_class: "active_runtime",
+    runtime: opts.runtime === undefined ? "opencode" : opts.runtime,
+    source_class: opts.sourceClass ?? (activeRuntime ? "active_runtime" : "historical_import"),
     source_product: opts.sourceProduct ?? "opencode",
-    active_runtime: true,
+    active_runtime: activeRuntime,
     adapter_version: ADAPTER_VERSION,
     data: opts.data ?? { actor: "user", text: "hello" },
   };
@@ -70,7 +73,9 @@ function representativeRecords(): JsonObjectLocal[] {
     fullRecord({ sourceId: "c2", sourceKind: "conversation_turn", sourceProduct: "opencode", runtime: "opencode", timestamp: "2026-01-02T10:01:00.000Z", data: { actor: "assistant", text: "because" } }),
     fullRecord({ sourceId: "c3", sourceKind: "conversation_turn", sourceProduct: "codex", runtime: "codex", timestamp: "2026-01-03T09:00:00.000Z", data: { actor: "user", signal_type: "decision", text: "decide to keep it" } }),
     fullRecord({ sourceId: "t1", sourceKind: "tool_call", sourceProduct: "cursor", runtime: "cursor", timestamp: "2026-01-04T12:00:00.000Z", data: { tool_name: "edit", arguments: { file: "x" } } }),
-    fullRecord({ sourceId: "h1", sourceKind: "history_prompt", sourceProduct: "claude-code", runtime: null, timestamp: "2026-01-05T08:00:00.000Z", data: { prompt: "old" } }),
+    // Historical Claude import: source_class=historical_import, active_runtime=false
+    // (runtime null) — the model the JSONL importer emits, not an active runtime.
+    fullRecord({ sourceId: "h1", sourceKind: "history_prompt", sourceProduct: "claude-code", runtime: null, sourceClass: "historical_import", activeRuntime: false, timestamp: "2026-01-05T08:00:00.000Z", data: { prompt: "old" } }),
   ];
 }
 
@@ -93,6 +98,28 @@ describe("AC1 — publication retains every record within declared bounds", () =
       expect((retrieved as JsonObject).source_id).toBe(r.source_id);
     }
     expect(result.total_records).toBe(records.length);
+  });
+
+  it("retains historical Claude-import provenance at the full-evidence tier", () => {
+    // AC: historical Claude-import provenance is strong at the full-evidence tier.
+    // The signal tier intentionally omits active_runtime/source_class (signal
+    // contract fields), so those fields are asserted only on the full shard.
+    const records = representativeRecords();
+    publish(records);
+    const claude = getFullRecord("h1", tmp) as JsonObject | null;
+    expect(claude, "claude full record retrievable").not.toBeNull();
+    expect(claude!.source_product).toBe("claude-code");
+    expect(claude!.source_class).toBe("historical_import");
+    expect(claude!.active_runtime).toBe(false);
+    expect(claude!.runtime).toBeNull();
+    // The signal-tier view labels claude-code provenance without the
+    // active-runtime fields the signal contract intentionally omits.
+    const signal = readSignalTier(tmp)!.records.find((r) => r.source_id === "h1");
+    expect(signal).toBeDefined();
+    expect(signal!.source_product).toBe("claude-code");
+    expect(signal!.runtime).toBeNull();
+    expect(signal).not.toHaveProperty("active_runtime");
+    expect(signal).not.toHaveProperty("source_class");
   });
 
   it("no full-evidence shard or signal tier exceeds its declared bound", () => {

@@ -5,11 +5,15 @@ VALIDATION:
     description: >-
       Every profile entry MUST be grounded in observed evidence from session
       history, memory files, configs, or conversation data. Fabricated
-      decision patterns are never acceptable.
+      decision patterns are never acceptable. Synthesis reads the bounded
+      signal tier; a claim's source identity is verified by resolving its
+      evidence_anchor to a retained full-evidence shard rather than re-scanning
+      unbounded history.
     severity: critical
     checks:
       - "Each profile entry traces to a source record"
       - "No profile entry is fabricated without evidence"
+      - "Each claim's evidence_anchor resolves to a retained full-evidence shard"
   2:
     id: V2
     rule: confidence_calibration
@@ -17,11 +21,13 @@ VALIDATION:
       Confidence scores MUST match the evidence tier (protocol CS1-CS5).
       A single data point is 30-49 (CS4), not 70+. Bias check: confidence
       is earned through evidence, not assigned by how insightful the
-      decision sounds.
+      decision sounds. When bounded_signals.sufficiency is insufficient,
+      affected categories are capped to CS4 (30-49) or below.
     severity: critical
     checks:
       - "Confidence values fall within protocol tier boundaries"
       - "Single-source entries are capped at CS4 (30-49)"
+      - "Insufficient families cap affected categories to CS4 or below"
   3:
     id: V3
     rule: tension_honesty
@@ -39,11 +45,17 @@ VALIDATION:
     description: >-
       Profile MUST NOT modify session history, memory files, or config
       files. It reads these sources for extraction but never writes to them.
-      The only artifact profile produces is PROFILE.md.
+      The only artifact profile produces is PROFILE.md. Profile MUST NOT
+      load the monolithic corpus.json whole: synthesis reads the bounded
+      signal tier and retrieves full evidence one shard at a time via
+      evidence_anchor. Legacy/missing tiers require a refresh to publish
+      bounded tiers first, never a whole-corpus load.
     severity: critical
     checks:
       - "No writes to session history files"
       - "No writes to memory or config files"
+      - "Monolithic corpus.json is never loaded whole"
+      - "Full-evidence records are retrieved one shard at a time"
   5:
     id: V5
     rule: prediction_accuracy
@@ -55,3 +67,19 @@ VALIDATION:
     checks:
       - "5 predictions tested against held-out prompts"
       - "Accuracy below 3/5 is flagged in profile header"
+  6:
+    id: V6
+    rule: bounded_signal_sufficiency
+    description: >-
+      Profile synthesis MUST consume the bounded signal tier published by
+      extraction, not all full evidence. The sufficiency gate reports
+      underrepresented source families with their retained and intended
+      counts and surfaces the limitation in the profile output and exit
+      signal rather than silently reducing confidence. Sufficiency is
+      assessed per family against the contract minimum_family_retention
+      threshold; a family with zero intended signals is not a violation.
+    severity: warning
+    checks:
+      - "Signal tier state, count, and sufficiency are read before synthesizing"
+      - "Underrepresented families are surfaced with retained and intended counts"
+      - "No high-confidence claims are fabricated from sparse or missing evidence"

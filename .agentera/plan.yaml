@@ -30,7 +30,7 @@ unknowns:
   - question: Does bounded profile synthesis preserve useful evidence distribution compared with the current full-corpus intent?
     affects_task: 4
     resolve_by: Compare representative synthesis evidence and surface insufficiency instead of silently reducing confidence.
-    resolution: "Resolved. The profile_sufficiency section of evidence-tier-authority.yaml defines minimum_family_retention=0.5; assessProfileSufficiency projects the contract threshold, compares per-family retention between bounded signals and the selection report's intended distribution, and flags insufficient families. Capped tiers with zero retained profile signals are flagged insufficient — no fabricated confidence. Uncapped tiers trivially meet the threshold (retained==intended). Tests verify uncapped sufficient, capped below threshold insufficient, zero-intended not a violation, and word-boundary insufficiency reporting."
+    resolution: Resolved. The profile_sufficiency section of evidence-tier-authority.yaml defines minimum_family_retention=0.5; assessProfileSufficiency projects the contract threshold, compares per-family retention between bounded signals and the selection report's intended distribution, and flags insufficient families. Capped tiers with zero retained profile signals are flagged insufficient — no fabricated confidence. Uncapped tiers trivially meet the threshold (retained==intended). Tests verify uncapped sufficient, capped below threshold insufficient, zero-intended not a violation, and word-boundary insufficiency reporting.
 tasks:
   - number: 1
     name: Define and verify the tier contract
@@ -81,7 +81,7 @@ tasks:
       - "2"
       - "3"
       - "4"
-    status: pending
+    status: complete
     acceptance:
       - GIVEN the behavior is complete WHEN contracts, help, profile instructions, TODO, changelog when warranted, and progress are checked THEN they agree.
       - GIVEN the final tree WHEN focused and full tests, typecheck, build, capability validation, and compaction run THEN every required gate passes.

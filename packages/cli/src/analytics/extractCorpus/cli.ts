@@ -74,6 +74,10 @@ export function parseExtractArgs(argv: string[], env: Env = process.env, platfor
       return null;
     };
     let v: string | null;
+    // `--output` is a deprecated no-op for back-compat: it targeted the
+    // eliminated monolithic corpus.json write. Refresh now publishes bounded
+    // tiers via `--tier-output` (default: `defaultTiersDir`). `--output` is
+    // accepted to keep older callers from hard-crashing but has no effect.
     if ((v = val("--output")) !== null) args.output = v;
     else if ((v = val("--tier-output")) !== null) args.tierOutput = v;
     else if ((v = val("--project-root")) !== null) args.projectRoot.push(v);

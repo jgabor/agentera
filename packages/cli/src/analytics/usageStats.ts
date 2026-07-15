@@ -381,7 +381,7 @@ export function analyzeRecords(
 
 // --- Paths -----------------------------------------------------------------
 
-export const CORPUS_GUIDANCE = "Provide --corpus <path> to an existing corpus.json.";
+export const CORPUS_GUIDANCE = "Publish bounded tiers with `agentera stats refresh --consent local-history`; `--corpus PATH` points at a legacy corpus.json whose sibling `tiers/` is preferred when published.";
 
 function homeDir(env: Env): string {
   return env.HOME ?? os.homedir();
@@ -430,7 +430,7 @@ export function corpusTooLargeReason(corpusPath: string): string | null {
   try {
     const size = fs.statSync(corpusPath).size;
     if (size <= MAX_CORPUS_READ_BYTES) return null;
-    return `corpus is too large to load (${size} bytes; max ${MAX_CORPUS_READ_BYTES}). Rebuild with agentera stats refresh --consent local-history or pass --corpus PATH to a smaller extract.`;
+    return `corpus is too large to load (${size} bytes; max ${MAX_CORPUS_READ_BYTES}). Refresh bounded tiers with agentera stats refresh --consent local-history, or pass --corpus PATH to a smaller legacy extract (its sibling tiers/ is preferred when published).`;
   } catch {
     return null;
   }
