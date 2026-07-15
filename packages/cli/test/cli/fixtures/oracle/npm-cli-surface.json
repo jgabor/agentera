@@ -24,7 +24,7 @@
       "argv": ["check", "compact", "--format", "json"],
       "exitCode": 0,
       "requiredKeys": ["command", "summary"],
-      "commandValue": "gate"
+      "commandValue": "check compact"
     },
     "report_refresh_dry_run": {
       "argv": ["report", "refresh", "--dry-run", "--format", "json"],

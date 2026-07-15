@@ -28,7 +28,6 @@ interface CompactionPayload {
   project: string;
   summary: CompactionSummary;
   operations: JsonObject[];
-  gate?: string;
 }
 
 function pyStr(value: unknown): string {
@@ -92,8 +91,8 @@ function compactionGuidance(mode: string, operations: CompactionOperation[]): st
   const protectedOps = operations.filter((op) => op.action === "protected_overflow");
   const errors = operations.filter((op) => op.action === "error");
   const refused = operations.filter((op) => op.action === "refused");
-  const checkCommand = "npx -y agentera compact --mode check --format json";
-  const fixCommand = "npx -y agentera compact --mode fix --format json";
+  const checkCommand = "npx -y agentera check compact --mode check --format json";
+  const fixCommand = "npx -y agentera check compact --mode fix --format json";
   if (errors.length > 0) {
     return `Inspect the reported errors, repair invalid artifacts, then rerun \`${checkCommand}\`.`;
   }
@@ -211,7 +210,7 @@ export function cmdCompact(args: CompactArgs, io: Io = {}): number {
   const mode = args.mode ?? "check";
   const project = resolvePath(args.project ?? process.cwd());
   const operations = runCompaction(project, mode);
-  const payload = compactionPayload("compact", project, mode, operations);
+  const payload = compactionPayload("check compact", project, mode, operations);
   emitCompactionPayload(payload, mode, args.format ?? "text", out);
   return compactionExitCode(mode, operations);
 }
@@ -220,8 +219,7 @@ export function cmdGate(args: CompactArgs, io: Io = {}): number {
   const out = io.out ?? ((t: string) => process.stdout.write(t));
   const project = resolvePath(args.project ?? process.cwd());
   const operations = runCompaction(project, "check");
-  const payload = compactionPayload("gate", project, "check", operations);
-  payload.gate = "compaction";
+  const payload = compactionPayload("check compact", project, "check", operations);
   emitCompactionPayload(payload, "check", args.format ?? "text", out);
   return compactionExitCode("check", operations);
 }

@@ -64,17 +64,15 @@
       "forbiddenSubstrings": ["validate_capability.py is missing", "internal compiler error"]
     },
     "compaction": {
-      "description": "`check compact` apply + dry-run + retention caps (10/40/50 from hooks/common). T3 closes this row; dry-run gate and apply paths match the Python oracle pin.",
+      "description": "`check compact` apply + check-only + retention caps (10/40/50 from hooks/common). The npm 3.x namespace command reports its canonical command identity.",
       "python_commit": "b54a10a6bf4dfca5097101e60e18d5eaec7e5026",
       "argv": ["check", "compact", "--format", "json"],
       "exitCode": 0,
       "expectedShape": {
         "command": "string",
-        "command_value": "gate",
+        "command_value": "check compact",
         "status": "string",
         "project": "string",
-        "gate": "string",
-        "gate_value": "compaction",
         "operations": "array",
         "summary": "object",
         "summaryRequiredKeys": [

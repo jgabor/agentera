@@ -1,0 +1,19 @@
+schemaVersion: agentera.stateArchiveEntry.v1
+artifact_id: progress
+entry_number: 817
+record:
+  number: 817
+  timestamp: 2026-07-15 12:44
+  type: fix
+  phase: build
+  what: Retried Task 12 after audit attempt 1. Removed Build's remaining retired gate command expectation, made canonical and transitional compaction output report command check compact without a gate field, and added live discovery/startup/runtime retirement coverage.
+  inspiration: Independent Task 12 audit attempt 1 recorded in the active plan.
+  discovered: The compaction compatibility oracle still pinned the retired Python gate envelope, and compaction guidance recommended the transitional compact alias. Both were live npm 3.x vocabulary drift rather than compatibility requirements.
+  verified: "AC1: bounded searches of packages/cli source/tests, references, skills, web src, mobile, and root live docs found no semantic agentera gate advertising; Build prime expected_commands contains agentera check compact. AC2: pnpm exec vp test run on alias/compact/prime/help targets => 5 files, 59 tests passed; compact alias JSON byte-matched canonical check compact JSON. AC3: retired gate returned rc 2 with valid_values [check compact] and executable agentera check compact --format json correction. AC4: Cycles 814-816, audit attempt 1 failure metadata, and the open TODO remain preserved. pnpm -C packages/cli test => 185 files, 2058 tests passed; typecheck, build, git diff --check, and check compact passed."
+  next: Stop after Task 12 retry. Leave TODO open for audit attempt 2; do not start Task 13.
+  context:
+    intent: Correct only the two Task 12 audit failures while preserving the failed audit record and prior cycle evidence.
+    constraints: No amend of 76b78a58, push, package version change, metadata work, or unrelated gate concepts. Preserve audit attempt 1 and Cycles 814-816.
+    unknowns: Independent audit attempt 2 has not run, so the degraded TODO remains open.
+    scope: Build execution context, compaction command vocabulary and guidance, parity fixtures/tests, changelog, plan status, and Cycle 817 evidence.
+record_sha256: acfde472bf18dc1cb0d1981821ddf1d05a86ccd36679061a47c78a22f6aa51d6

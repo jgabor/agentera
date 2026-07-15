@@ -1,4 +1,38 @@
 cycles:
+  - number: 817
+    timestamp: 2026-07-15 12:44
+    type: fix
+    phase: build
+    what: Retried Task 12 after audit attempt 1. Removed Build's remaining retired
+      gate command expectation, made canonical and transitional compaction
+      output report command check compact without a gate field, and added live
+      discovery/startup/runtime retirement coverage.
+    inspiration: Independent Task 12 audit attempt 1 recorded in the active plan.
+    discovered: The compaction compatibility oracle still pinned the retired Python
+      gate envelope, and compaction guidance recommended the transitional
+      compact alias. Both were live npm 3.x vocabulary drift rather than
+      compatibility requirements.
+    verified: "AC1: bounded searches of packages/cli source/tests, references,
+      skills, web src, mobile, and root live docs found no semantic agentera
+      gate advertising; Build prime expected_commands contains agentera check
+      compact. AC2: pnpm exec vp test run on alias/compact/prime/help targets =>
+      5 files, 59 tests passed; compact alias JSON byte-matched canonical check
+      compact JSON. AC3: retired gate returned rc 2 with valid_values [check
+      compact] and executable agentera check compact --format json correction.
+      AC4: Cycles 814-816, audit attempt 1 failure metadata, and the open TODO
+      remain preserved. pnpm -C packages/cli test => 185 files, 2058 tests
+      passed; typecheck, build, git diff --check, and check compact passed."
+    next: Stop after Task 12 retry. Leave TODO open for audit attempt 2; do not
+      start Task 13.
+    context:
+      intent: Correct only the two Task 12 audit failures while preserving the failed
+        audit record and prior cycle evidence.
+      constraints: No amend of 76b78a58, push, package version change, metadata work,
+        or unrelated gate concepts. Preserve audit attempt 1 and Cycles 814-816.
+      unknowns: Independent audit attempt 2 has not run, so the degraded TODO remains
+        open.
+      scope: Build execution context, compaction command vocabulary and guidance,
+        parity fixtures/tests, changelog, plan status, and Cycle 817 evidence.
   - number: 816
     timestamp: 2026-07-15 12:29
     type: fix
@@ -320,35 +354,6 @@ cycles:
       scope: Shared immutable directory publication, experiment replay recovery,
         authority/schema, fault and loss fixtures, Task 7 plan evidence,
         progress, and changelog.
-  - number: 807
-    timestamp: 2026-07-15 08:48
-    type: feat
-    phase: build
-    what: Added objective-scoped immutable full-detail experiment archives before
-      projection replacement, preserving 10/40/50 compaction and byte-equivalent
-      retry safety.
-    inspiration: Active bounded plan and experiment retrieval plan Task 7; existing
-      immutable-file publication primitives.
-    discovered: The generic artifact validator targets the absent root experiments
-      path when no active objective exists; focused schema and publication tests
-      validate the objective-scoped contract.
-    verified: Focused archive success, conflict, staged failure, archive
-      interruption, projection interruption, and retry cases passed; focused
-      suite 40/40; full CLI 182 files and 2002 tests passed; typecheck, build,
-      capability contract, and compact passed.
-    next: Task 8 may add experiment list/get over projection and archive records; do
-      not add retrieval in this cycle.
-    context:
-      intent: Complete Plan Task 7 by making newly published experiment detail durably
-        recoverable before compaction.
-      constraints: Kept experiment archives outside numbered archive authority; no
-        migration, retrieval, broad omission cleanup, metadata, vision, or
-        objective-state changes.
-      unknowns: Legacy dropped detail remains unavailable by design; no history was
-        fabricated.
-      scope: Experiment archive authority/schema, publication ordering, immutable
-        archive serialization, transaction boundary, focused fixtures,
-        plan/progress/changelog state.
   - number: 793
     timestamp: 2026-07-14 17:36
     type: chore
@@ -418,6 +423,9 @@ cycles:
         and backfill fixtures; package metadata and generated ignored
         dist/bundle
 archive:
+  - summary: "Cycle 807 (2026-07-15): Added objective-scoped immutable full-detail
+      experiment archives before projection replacement, preserving 10/40/50
+      compaction and byte-equivalent retry..."
   - summary: "Cycle 806 (2026-07-15): Fixed packages/cli/src/state/write/explain.ts
       so generic experiments writer discovery selects publish, and added a
       schema test that..."
@@ -515,16 +523,18 @@ archive:
       unique..."
   - summary: "Cycle 767 (2026-07-13): Retried Task 12 after evaluator failure. Fixed
       durability Git probing so absent .git metadata skips..."
-  - summary: "Cycle 766 (2026-07-13): Implemented Task 12 read-only durability
-      diagnostics under agentera check durability. The authority now publishes
-      the..."
 omitted: true
-omitted_count: 52
+omitted_count: 53
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded

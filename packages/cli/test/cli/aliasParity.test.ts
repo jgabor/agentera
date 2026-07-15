@@ -7,7 +7,9 @@ import YAML from "yaml";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { buildSchemaPayload } from "../../src/cli/commands/schema.js";
+import { cmdPrime } from "../../src/cli/commands/prime.js";
 import { main } from "../../src/cli/dispatch.js";
+import { printTopLevelHelp } from "../../src/cli/help.js";
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..");
 const AUTHORITY_PATH = path.join(REPO_ROOT, "references/cli/audience-namespace-cli-migration.yaml");
@@ -130,4 +132,50 @@ describe("schema-advertised alias/runtime parity", () => {
       parseStructured(corrected, payload.error.example);
     }
   });
+
+  it("keeps retired gate out of live discovery, startup context, and structured command identity", () => {
+    const schemaCommands = buildSchemaPayload("schema").commands as Array<Record<string, unknown>>;
+    for (const command of schemaCommands) {
+      expect(command.name).not.toBe("gate");
+      expect(command.alias_for).not.toBe("gate");
+      expect(command.structured_example_argv).not.toEqual(expect.arrayContaining(["gate"]));
+    }
+    expect(printTopLevelHelp()).not.toContain("  gate ");
+
+    const prime = capturePrimeBuild();
+    expect(prime.execution_context.verification_expectations.expected_commands).toContain(
+      "agentera check compact",
+    );
+    expect(JSON.stringify(prime)).not.toContain("agentera gate");
+
+    const project = fs.mkdtempSync(path.join(os.tmpdir(), "gate-retirement-"));
+    temporaryProjects.push(project);
+    fs.mkdirSync(path.join(project, ".agentera"));
+    const canonical = capture(["check", "compact", "--project", project, "--format", "json"]);
+    const transitional = capture(["compact", "--project", project, "--format", "json"]);
+    const canonicalPayload = parseStructured(canonical, "check compact");
+    expect(canonicalPayload.command).toBe("check compact");
+    expect(canonicalPayload).not.toHaveProperty("gate");
+    expect(parseStructured(transitional, "compact")).toEqual(canonicalPayload);
+
+    const retired = capture(["gate", "--format", "json"]);
+    expect(retired.rc).toBe(2);
+    expect(parseStructured(retired, "retired gate")).toMatchObject({
+      status: "fail",
+      error: {
+        valid_values: ["check compact"],
+        example: "agentera check compact --format json",
+      },
+    });
+  });
 });
+
+function capturePrimeBuild(): Record<string, any> {
+  let out = "";
+  const rc = cmdPrime(
+    { command: "prime", context: "build", format: "json" },
+    { out: (text) => { out += text; }, err: () => {} },
+  );
+  expect(rc).toBe(0);
+  return JSON.parse(out).capability_context.context;
+}

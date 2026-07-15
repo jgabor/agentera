@@ -160,7 +160,7 @@ export function buildExecutionContext(
     scope_boundary: scopeBoundary,
     verification_expectations: {
       latest_progress_verification: progressVerification,
-      expected_commands: ["focused pytest targets", "Build capability validation", "self-validation", "agentera gate", "compaction check", "git diff --check"],
+      expected_commands: ["focused pytest targets", "Build capability validation", "self-validation", "agentera check compact", "compaction check", "git diff --check"],
       source_provenance: sourceProvenance("plan", "agentera plan --format json", "entries.acceptance"),
     },
     artifact_update_requirements: buildArtifactUpdateRequirements(plan, docs),

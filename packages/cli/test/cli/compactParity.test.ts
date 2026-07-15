@@ -82,7 +82,7 @@ describe("compaction parity (D56 T3)", () => {
     expect(isGapClosed(GAP_IDS.COMPACTION_FAMILY)).toBe(true);
   });
 
-  it("dry-run gate envelope matches the compaction oracle pin (pass)", () => {
+  it("check envelope matches the compaction oracle pin (pass)", () => {
     const { rc, out } = capture(COMPACTION_SPEC.argv);
     expect(rc).toBe(COMPACTION_SPEC.exitCode);
     const payload = JSON.parse(out) as Record<string, unknown>;
@@ -94,8 +94,8 @@ describe("compaction parity (D56 T3)", () => {
       COMPACTION_SPEC.forbiddenSubstrings,
     );
     expect(classification.direction).toBe("equal");
-    expect(payload.command).toBe("gate");
-    expect(payload.gate).toBe("compaction");
+    expect(payload.command).toBe("check compact");
+    expect(payload).not.toHaveProperty("gate");
     expect((payload.summary as Record<string, unknown>).mode).toBe("check");
   });
 
@@ -113,7 +113,7 @@ describe("compaction parity (D56 T3)", () => {
     const { rc, out } = capture(["check", "compact", "--project", project, "--format", "json"]);
     expect(rc).toBe(0);
     const payload = JSON.parse(out) as Record<string, unknown>;
-    expect(payload.command).toBe("gate");
+    expect(payload.command).toBe("check compact");
     const summary = payload.summary as Record<string, unknown>;
     expect(summary.mode).toBe("check");
     expect(summary.over_limit_count).toBe(0);
@@ -130,7 +130,7 @@ describe("compaction parity (D56 T3)", () => {
     const { rc, out } = capture(["check", "compact", "--apply", "--project", project, "--format", "json"]);
     expect(rc).toBe(0);
     const payload = JSON.parse(out) as Record<string, unknown>;
-    expect(payload.command).toBe("compact");
+    expect(payload.command).toBe("check compact");
     const summary = payload.summary as Record<string, unknown>;
     expect(summary.mode).toBe("fix");
     expect(summary.over_limit_count).toBe(0);
@@ -166,6 +166,6 @@ describe("compaction parity (D56 T3)", () => {
     expect(rc).toBe(0);
     const combined = out + err;
     expect(combined).not.toContain("Cannot create a string longer than 0x1fffffe8");
-    expect(JSON.parse(out).command).toBe("gate");
+    expect(JSON.parse(out).command).toBe("check compact");
   });
 });

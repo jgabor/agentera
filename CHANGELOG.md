@@ -72,7 +72,7 @@
 
 ### Fixed
 
-- Fixed schema/runtime alias parity: introspection now advertises exactly the six Phase 3 transitional aliases, top-level `compact` delegates to canonical `check compact` semantics, and removed names such as `gate` return structured runnable corrections.
+- Fixed schema/runtime alias parity: introspection now advertises exactly the six Phase 3 transitional aliases, Build startup and compaction guidance use canonical `agentera check compact`, check/fix output reports `command: "check compact"`, top-level `compact` remains behavior-compatible, and removed names such as `gate` return structured runnable corrections.
 - Fixed archive-only plan catalogs to expose executable list/get recovery, plan-task cursors to validate explicit plan selectors before lookup, and legacy plan text to omit oversized whole rows instead of truncating Unicode scalars.
 - Fixed bounded plan and experiment retrieval to declare legacy projection omissions with public recovery, enforce plan-task YAML byte limits, reject wrong-family and wrong-objective cursors, and fail closed when plan snapshot diagnostics change.
 - Fixed experiment snapshot cursors to survive append-driven 10/40/50 full-to-summary and summary-to-drop rollover when immutable archives prove original identities unchanged, while still rejecting mutations, deletion, archive damage, and unsubstantiated rollover.
