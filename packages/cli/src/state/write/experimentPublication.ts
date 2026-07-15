@@ -7,6 +7,11 @@ import { dumpYamlMapping, loadYamlMapping } from "../../core/yaml.js";
 import { compactYamlFile, type CompactResult } from "../../hooks/compaction/index.js";
 import { assertRealpathBoundary } from "../../registries/artifactRegistry.js";
 import {
+  assertExperimentArchiveReplay,
+  prepareExperimentArchive,
+  type ExperimentArchivePublication,
+} from "../experimentArchive.js";
+import {
   ExperimentIdentityError,
   discoverObjectiveArtifacts,
   inspectExperimentIdentities,
@@ -64,6 +69,7 @@ function envelope(
   assigned: Record<string, unknown>,
   replay: boolean,
   compaction: CompactResult | null,
+  archive?: ExperimentArchivePublication & { replay: boolean; legacyProjectionOnly?: boolean },
   preview?: { diff: string; before: Record<string, unknown>; after: Record<string, unknown> },
 ): StateWriteEnvelope {
   return {
@@ -81,6 +87,16 @@ function envelope(
     },
     validation: { status: "pass", violations: [] },
     compaction,
+    ...(archive ? {
+      archive: {
+        path: archive.target,
+        stable_id: archive.stableId,
+        record_sha256: archive.recordSha256,
+        provenance: archive.provenance,
+        idempotent_replay: archive.replay,
+        ...(archive.legacyProjectionOnly ? { compatibility: "legacy_projection_without_archive" } : {}),
+      },
+    } : {}),
     ...(preview ?? {}),
   };
 }
@@ -135,8 +151,27 @@ export function executeExperimentPublication(
   const assigned = { objective: objectiveId, number, stable_id: stableId };
   const retained = projection.entries.filter((entry) => entry.stableId === stableId);
   if (retained.length === 1 && retained[0].addressable && isDeepStrictEqual(retained[0].data, written)) {
+    const archive = prepareExperimentArchive(
+      req.projectRoot,
+      objectivePath,
+      objectiveId,
+      number,
+      written as JsonObject,
+    );
+    const archiveExists = fs.existsSync(archive.target);
+    if (archiveExists) assertExperimentArchiveReplay(archive);
     const preview = req.dryRun ? { diff: "", before: existing.doc, after: existing.doc } : undefined;
-    return envelope(req, target, existing.doc, written, assigned, true, null, preview);
+    return envelope(
+      req,
+      target,
+      existing.doc,
+      written,
+      assigned,
+      true,
+      null,
+      { ...archive, replay: archiveExists, legacyProjectionOnly: !archiveExists },
+      preview,
+    );
   }
   try {
     validateExperimentPublicationIdentity(discovery, projection, objectiveId, number);
@@ -152,6 +187,13 @@ export function executeExperimentPublication(
   const candidateBytes = dumpYamlMapping(candidate);
   const candidateViolations = validateArtifactBytes("experiments", candidateBytes);
   if (candidateViolations.length) schemaViolation(candidateViolations);
+  const archive = prepareExperimentArchive(
+    req.projectRoot,
+    objectivePath,
+    objectiveId,
+    number,
+    written as JsonObject,
+  );
 
   const stage = req.dryRun
     ? path.join(path.dirname(target), `.${path.basename(target)}.writer.${process.pid}.${Date.now()}.tmp`)
@@ -171,9 +213,35 @@ export function executeExperimentPublication(
       : undefined;
     if (!req.dryRun) {
       transaction?.syncStaged(stage);
+      const published = transaction?.publishExperimentArchive(
+        archive,
+        () => assertExperimentArchiveReplay(archive),
+      );
+      if (published === undefined) throw new Error("state mutation transaction is unavailable");
       transaction?.publishProjection(stage, target, existing.bytes);
+      return envelope(
+        req,
+        target,
+        finalDoc,
+        written,
+        assigned,
+        false,
+        compaction,
+        { ...archive, replay: !published },
+        preview,
+      );
     }
-    return envelope(req, target, finalDoc, written, assigned, false, compaction, preview);
+    return envelope(
+      req,
+      target,
+      finalDoc,
+      written,
+      assigned,
+      false,
+      compaction,
+      { ...archive, replay: false },
+      preview,
+    );
   } finally {
     try {
       if (req.dryRun) fs.unlinkSync(stage);

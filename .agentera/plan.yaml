@@ -157,24 +157,25 @@ tasks:
       - GIVEN a retry after interruption WHEN tested THEN publication is idempotent, with passing success and failing atomicity cases.
     evidence: "Discovery PASS: pnpm -C packages/cli exec vp test run test/cli/schema.test.ts -t 'executes every emitted writer discovery command' (1 passed, 7 skipped). AC1 PASS: pnpm -C packages/cli exec vp test run test/state/write/experimentPublication.test.ts -t 'validates input and assigns objective-scoped identity before publication'. AC2 PASS: same file -t 'preserves active and archive bytes on identity, schema, collision, and staged publication failures'. AC3 PASS: same file -t 'retries idempotently after interruption following atomic publication'. Each AC returned 1 passed, 4 skipped; audit attempt 1 remains recorded."
     evaluation:
-      attempt_count: 1
+      attempt_count: 2
       failure_count: 1
-      last_verdict: fail
+      last_verdict: pass
       last_failure_evidence: Typed-writer discovery advertises generic state experiments explain, but that command defaults to invalid append and exits 2.
       provenance:
-        attempt_id: task-6-audit-1-20260715
-        source: independent Task 6 acceptance audit
-        recorded_at: 2026-07-15 08:31
+        attempt_id: task-6-audit-2-20260715
+        source: independent Task 6 corrective acceptance audit
+        recorded_at: 2026-07-15 08:40
         writer_command: agentera state plan record-evaluation
   - number: 7
     name: Add durable experiment archival
     depends_on:
       - "6"
-    status: pending
+    status: complete
     acceptance:
       - GIVEN projection retention is crossed WHEN publication succeeds THEN newly published full detail is durably recoverable before compaction.
       - GIVEN 10/40/50 projection compaction WHEN run THEN projection policy is unchanged and archive provenance remains explicit.
       - GIVEN archive success, failure, and retry fixtures WHEN tested THEN no detail is silently lost or duplicated.
+    evidence: "AC1 PASS: publication retention-crossing test (1 passed, 7 skipped). AC2 PASS: objective-scoped authority test (1 passed, 10 skipped); focused compaction/publication/identity/authority suite 41 passed. AC3 PASS: archive-before-projection retry, immutable conflict, projection-interruption retry, and rename-stable provenance tests (each 1 passed, 7 skipped). Commands: pnpm -C packages/cli exec vp test run test/state/write/experimentPublication.test.ts -t '<test name>'; authority uses test/state/archiveAuthority.test.ts. Full CLI: 182 files, 2003 tests passed; typecheck, build, capability contract, and compact passed."
   - number: 8
     name: Deliver experiment list and get
     depends_on:

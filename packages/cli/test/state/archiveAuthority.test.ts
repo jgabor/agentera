@@ -88,6 +88,42 @@ describe("state storage authority", () => {
     ]);
   });
 
+  it("keeps experiment archives objective-scoped and separate from numbered archives", () => {
+    const archive = loadYaml(AUTHORITY_PATH).experiment_archival;
+
+    expect(archive).toMatchObject({
+      status: "implemented",
+      layout: {
+        path_template: ".agentera/<objective-root>/<objective>/archive/experiments/<experiment-number>.yaml",
+        canonical_objective_root: "optimize",
+        readable_legacy_objective_roots: ["optimera"],
+        ownership: "objective_directory",
+      },
+      identity: {
+        stable_id: "<objective-id>/experiment:<non-negative-integer>",
+        path_selector: "experiment_number",
+      },
+      envelope: {
+        schema_version: "agentera.experimentArchive.v1",
+        authority: "references/artifacts/state-storage-authority.yaml",
+      },
+      publication: { archive_before_projection: true },
+      projection: { policy: "uniform_10_40_50", full_entries: 10, summary_entries: 40, total_entries: 50 },
+      compatibility: { pre_feature_dropped_detail: "unavailable_and_never_fabricated" },
+    });
+    expect(archive.envelope.required_fields).toEqual([
+      "schemaVersion", "stable_id", "objective_id", "experiment_number", "record", "record_sha256", "provenance",
+    ]);
+    expect(archive.publication.order).toEqual([
+      "validate_objective_identity",
+      "validate_full_experiment_record",
+      "validate_archive_envelope",
+      "stage_and_compact_projection",
+      "publish_and_fsync_immutable_archive",
+      "replace_and_fsync_projection",
+    ]);
+  });
+
   it("rejects an authority with a wrong archive path or missing envelope", () => {
     const authority = loadYaml(AUTHORITY_PATH);
     authority.storage.project_root.archive_path_template = ".agentera/history/<artifact-id>/<entry-number>.yaml";

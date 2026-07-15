@@ -292,10 +292,32 @@ PUBLICATION:
   3:
     id: EP3
     projection: uniform_10_40_50
-    durable_archive: deferred
+    durable_archive: objective_scoped_immutable_full_detail
     description: >-
-      Publication preserves current projection behavior. Durable archival is a
-      separate policy and is not introduced by this operation.
+      Publication validates and durably publishes the full experiment under
+      the objective directory before replacing the compacted projection. The
+      projection still retains 10 full entries and 40 one-line summaries.
+  4:
+    id: EP4
+    archive_path: '.agentera/<objective-root>/<objective>/archive/experiments/<experiment-number>.yaml'
+    canonical_objective_root: optimize
+    readable_legacy_objective_roots: [optimera]
+    envelope_schema: agentera.experimentArchive.v1
+    required_fields:
+      - schemaVersion
+      - stable_id
+      - objective_id
+      - experiment_number
+      - record
+      - record_sha256
+      - provenance
+    provenance_fields: [authority, objective_id, experiment_id, storage_scope, publication_order]
+    retry: byte_equivalent_envelope_is_idempotent
+    collision: same_identity_with_different_bytes_fails
+    description: >-
+      Archive identity binds stable objective and experiment identity to the
+      immutable full record. Legacy projection entries remain readable without
+      fabricating archive history that predates this publication contract.
 
 CLOSURE:
   1:
@@ -427,3 +449,15 @@ VALIDATION:
       - "Objective and experiment identity validate before staging"
       - "Final experiments.yaml bytes validate before atomic replacement"
       - "A byte-equivalent retry returns the existing experiment without duplication"
+  8:
+    id: EV8
+    rule: durable_archive_before_projection
+    severity: error
+    description: >-
+      Newly published full detail must be validated, immutably archived, and
+      directory-synced before the compacted projection is replaced.
+    checks:
+      - "Archive envelope identity and provenance validate before publication"
+      - "Archive publication succeeds before projection replacement"
+      - "Conflicting immutable archive bytes preserve archive and projection"
+      - "Retry after archive or projection interruption does not duplicate detail"

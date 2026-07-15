@@ -1,4 +1,33 @@
 cycles:
+  - number: 807
+    timestamp: 2026-07-15 08:48
+    type: feat
+    phase: build
+    what: Added objective-scoped immutable full-detail experiment archives before
+      projection replacement, preserving 10/40/50 compaction and byte-equivalent
+      retry safety.
+    inspiration: Active bounded plan and experiment retrieval plan Task 7; existing
+      immutable-file publication primitives.
+    discovered: The generic artifact validator targets the absent root experiments
+      path when no active objective exists; focused schema and publication tests
+      validate the objective-scoped contract.
+    verified: Focused archive success, conflict, staged failure, archive
+      interruption, projection interruption, and retry cases passed; focused
+      suite 40/40; full CLI 182 files and 2002 tests passed; typecheck, build,
+      capability contract, and compact passed.
+    next: Task 8 may add experiment list/get over projection and archive records; do
+      not add retrieval in this cycle.
+    context:
+      intent: Complete Plan Task 7 by making newly published experiment detail durably
+        recoverable before compaction.
+      constraints: Kept experiment archives outside numbered archive authority; no
+        migration, retrieval, broad omission cleanup, metadata, vision, or
+        objective-state changes.
+      unknowns: Legacy dropped detail remains unavailable by design; no history was
+        fabricated.
+      scope: Experiment archive authority/schema, publication ordering, immutable
+        archive serialization, transaction boundary, focused fixtures,
+        plan/progress/changelog state.
   - number: 806
     timestamp: 2026-07-15 08:35
     type: fix
@@ -312,40 +341,6 @@ cycles:
       scope: Plan task retrieval runtime and dispatch, projection recovery, retrieval
         authority/validator, plan lifecycle inventory, help, tests, changelog,
         progress, and plan status.
-  - number: 797
-    timestamp: 2026-07-14 22:48
-    type: test
-    phase: build
-    what: Closed every retrieval-authority negative-test coverage gap found by the
-      first independent Task 1 evaluation.
-    inspiration: Independent Task 1 evaluation attempt 1 failure recorded in the
-      active plan.
-    discovered: The validator enforces 119 independently exercised rule cases across
-      authority, envelope, identity, grammar, selectors, failures, collections,
-      gap evidence, and archive diagnostics.
-    verified: "AC1: vp test run test/state/retrievalAuthority.test.ts -> 1 file,
-      122/122 tests; matrix covers all 10 collection fields and all 9 collection
-      IDs. AC2: same command covers six plan/task/experiment grammar rules,
-      every selector required/pattern branch, experiment identity format, and
-      experiment zero. AC3: same command proves one canonical passing authority
-      plus 119 uniquely named negative rule fixtures. Broad: pnpm -C
-      packages/cli test -> 178 files, 1962/1962 tests; pnpm -C packages/cli run
-      typecheck -> exit 0; pnpm -C packages/cli build && node
-      packages/cli/dist/bin/agentera.js check validate capability-contract
-      --format json && node packages/cli/dist/bin/agentera.js check compact ->
-      build exit 0, validation 2 passed/0 failed, compact status=pass with 0
-      errors and 0 over-limit artifacts."
-    next: Stop after recommitting Task 1; Task 2 requires a new explicit cycle.
-    context:
-      intent: Prove every enforced retrieval-authority validation rule with an
-        explicit failing contract fixture while retaining a positive canonical
-        authority case.
-      constraints: Retry Task 1 only; preserve evaluation attempt 1 and Cycle 796; do
-        not amend 54cb0c03 or implement retrieval behavior.
-      unknowns: None; the audit identified test and evidence coverage gaps rather than
-        a contract conflict.
-      scope: Retrieval-authority contract tests plus typed plan/progress closeout
-        state.
   - number: 793
     timestamp: 2026-07-14 17:36
     type: chore
@@ -415,6 +410,8 @@ cycles:
         and backfill fixtures; package metadata and generated ignored
         dist/bundle
 archive:
+  - summary: "Cycle 797 (2026-07-14): Closed every retrieval-authority negative-test
+      coverage gap found by the first independent Task 1 evaluation."
   - summary: "Cycle 796 (2026-07-14): Defined executable bounded-retrieval authority
       and reserved plan, task, and experiment command grammar."
   - summary: "Cycle 795 (2026-07-14): Made TODO resolved compaction require one
@@ -510,15 +507,18 @@ archive:
       legacy summary bounds, byte-budget fallbacks, and retrieval provenance."
   - summary: "Cycle 757 (2026-07-13): Replaced numbered-state retention limits with
       lossless projection defaults and deterministic omission metadata."
-  - summary: "Cycle 756 (2026-07-13): Corrected Cycle 755 Task 6 test counts through
-      an append-only supersession record"
 omitted: true
-omitted_count: 42
+omitted_count: 43
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded

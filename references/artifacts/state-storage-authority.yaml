@@ -5,7 +5,8 @@ purpose: >-
   while keeping each collection's storage authority explicit. It also defines
   the lossless numbered-archive, project path, direct state API, compatibility,
   projection, and serialized-output contracts for progress, decisions, and
-  health.
+  health, plus objective-scoped immutable archival for newly published
+  experiments.
 authority:
   source: references/artifacts/state-storage-authority.yaml
   single_source_rule: >-
@@ -471,6 +472,66 @@ consumer_matrix:
       role: existing replace-mode vision archive
       numbered_entry_discovery: forbidden
       format: unchanged
+
+experiment_archival:
+  status: implemented
+  authority_boundary: >-
+    This is an objective-scoped full-detail publication archive for new
+    experiments. It is not part of the numbered archive authority, does not
+    migrate experiments into .agentera/archive, and does not reconstruct
+    detail already dropped by legacy projection compaction.
+  layout:
+    path_template: .agentera/<objective-root>/<objective>/archive/experiments/<experiment-number>.yaml
+    canonical_objective_root: optimize
+    readable_legacy_objective_roots: [optimera]
+    ownership: objective_directory
+    path_override: forbidden
+  identity:
+    stable_id: '<objective-id>/experiment:<non-negative-integer>'
+    path_selector: experiment_number
+    objective_binding: envelope.objective_id must equal the resolved objective header.id
+    content_binding: record.number must equal envelope.experiment_number
+  envelope:
+    schema_version: agentera.experimentArchive.v1
+    required_fields:
+      - schemaVersion
+      - stable_id
+      - objective_id
+      - experiment_number
+      - record
+      - record_sha256
+      - provenance
+    provenance_required_fields: [authority, objective_id, experiment_id, storage_scope, publication_order]
+    authority: references/artifacts/state-storage-authority.yaml
+    hash: sha256_of_canonical_record_json
+  publication:
+    order:
+      - validate_objective_identity
+      - validate_full_experiment_record
+      - validate_archive_envelope
+      - stage_and_compact_projection
+      - publish_and_fsync_immutable_archive
+      - replace_and_fsync_projection
+    archive_before_projection: true
+    mutation_policy: no_overwrite_after_publication
+    retry_policy: >-
+      Byte-equivalent envelope bytes at the same stable identity are an
+      idempotent replay. Different bytes at that identity are an immutable
+      conflict and preserve both archive and projection bytes.
+    interruption_policy: >-
+      Failure before archive publication leaves archive and projection
+      unchanged. Failure after durable archive publication may leave the new
+      archive with the old projection; retry reuses that archive and publishes
+      the projection without duplicating detail.
+  projection:
+    policy: uniform_10_40_50
+    full_entries: 10
+    summary_entries: 40
+    total_entries: 50
+    archive_effect: none
+  compatibility:
+    legacy_projection_records: readable_without_archive
+    pre_feature_dropped_detail: unavailable_and_never_fabricated
 
 storage:
   project_root:

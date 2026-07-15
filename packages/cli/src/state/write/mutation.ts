@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 import type { JsonObject } from "../../core/jsonValue.js";
+import type { ExperimentArchivePublication } from "../experimentArchive.js";
 import {
   publishImmutableFile,
   publishNumberedArchive,
@@ -130,6 +131,18 @@ export class StateMutationTransaction {
     });
     this.failAfter("archive-publication");
     return archive;
+  }
+
+  publishExperimentArchive(
+    publication: ExperimentArchivePublication,
+    onExisting: () => void,
+  ): boolean {
+    const published = publishImmutableFile(publication.target, publication.bytes, {
+      onExisting,
+      afterDirectorySync: () => this.failAfter("directory-sync"),
+    });
+    this.failAfter("archive-publication");
+    return published;
   }
 
   publishBackup(target: string, bytes: string, onExisting?: () => void): boolean {

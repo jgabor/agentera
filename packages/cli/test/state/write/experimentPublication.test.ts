@@ -31,12 +31,15 @@ function experiment(label = "cache keys"): Record<string, unknown> {
 function project(existing: Record<string, unknown> | null = null): {
   root: string;
   experimentsPath: string;
+  objectivePath: string;
+  archivePath: (number: number) => string;
 } {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-experiment-publication-"));
   roots.push(root);
   const directory = path.join(root, ".agentera", "optimize", "latency");
   fs.mkdirSync(directory, { recursive: true });
-  fs.writeFileSync(path.join(directory, "objective.yaml"), dumpYamlMapping({
+  const objectivePath = path.join(directory, "objective.yaml");
+  fs.writeFileSync(objectivePath, dumpYamlMapping({
     header: { id: objectiveId, title: "Latency", status: "open" },
     objective: { description: "Reduce latency", measurement: "p95", constraints: [] },
     metric: { direction: "minimize", unit: "ms" },
@@ -46,7 +49,12 @@ function project(existing: Record<string, unknown> | null = null): {
   }));
   const experimentsPath = path.join(directory, "experiments.yaml");
   if (existing) fs.writeFileSync(experimentsPath, dumpYamlMapping(existing));
-  return { root, experimentsPath };
+  return {
+    root,
+    experimentsPath,
+    objectivePath,
+    archivePath: (number) => path.join(directory, "archive", "experiments", `${number}.yaml`),
+  };
 }
 
 function run(root: string, args: string[], input: Record<string, unknown>): {
@@ -104,7 +112,7 @@ describe("validated experiment publication", () => {
   });
 
   it("validates input and assigns objective-scoped identity before publication", () => {
-    const { root, experimentsPath } = project();
+    const { root, experimentsPath, archivePath } = project();
     const result = run(root, [
       "publish", "--objective", objectiveId, "--number", "0", "--input", "-", "--format", "json",
     ], experiment("baseline"));
@@ -120,11 +128,26 @@ describe("validated experiment publication", () => {
     expect(loadYamlMapping(fs.readFileSync(experimentsPath, "utf8")).experiments).toEqual([
       { number: 0, ...experiment("baseline") },
     ]);
+    expect(loadYamlMapping(fs.readFileSync(archivePath(0), "utf8"))).toMatchObject({
+      schemaVersion: "agentera.experimentArchive.v1",
+      stable_id: `${objectiveId}/experiment:0`,
+      objective_id: objectiveId,
+      experiment_number: 0,
+      record: { number: 0, ...experiment("baseline") },
+      record_sha256: expect.stringMatching(/^[0-9a-f]{64}$/),
+      provenance: {
+        authority: "references/artifacts/state-storage-authority.yaml",
+        objective_id: objectiveId,
+        experiment_id: `${objectiveId}/experiment:0`,
+        storage_scope: "objective_directory",
+        publication_order: "archive_before_projection",
+      },
+    });
   });
 
   it("preserves the 10/40/50 projection while publishing", () => {
     const existing = Array.from({ length: 10 }, (_, number) => ({ number, ...experiment(`experiment ${number}`) }));
-    const { root, experimentsPath } = project({ experiments: existing });
+    const { root, experimentsPath, archivePath } = project({ experiments: existing });
 
     const result = run(root, [
       "publish", "--objective", objectiveId, "--number", "10", "--input", "-", "--format", "json",
@@ -136,11 +159,14 @@ describe("validated experiment publication", () => {
     expect(document.archive).toEqual([
       expect.objectContaining({ number: 0, summary: expect.any(String) }),
     ]);
+    const archived = loadYamlMapping(fs.readFileSync(archivePath(10), "utf8"));
+    expect(archived.record).toEqual({ number: 10, ...experiment("experiment 10") });
+    expect(archived.provenance).toMatchObject({ publication_order: "archive_before_projection" });
   });
 
   it("preserves active and archive bytes on identity, schema, collision, and staged publication failures", () => {
     const initial = { experiments: [{ number: 0, ...experiment("baseline") }], archive: [{ number: 9, summary: "older" }] };
-    const { root, experimentsPath } = project(initial);
+    const { root, experimentsPath, archivePath } = project(initial);
     const before = fs.readFileSync(experimentsPath);
 
     const invalidIdentity = run(root, [
@@ -182,19 +208,74 @@ describe("validated experiment publication", () => {
       expect.objectContaining<Partial<InjectedMutationFailure>>({ boundary: "staged-write" }),
     );
     expect(fs.readFileSync(experimentsPath)).toEqual(before);
+    expect(fs.existsSync(archivePath(1))).toBe(false);
   });
 
   it("retries idempotently after interruption following atomic publication", () => {
-    const { root, experimentsPath } = project();
+    const { root, experimentsPath, archivePath } = project();
     const publication = request(root, 0, experiment("baseline"));
 
     expect(() => executeStateWrite(publication, { failAfter: "projection-publication" })).toThrowError(
       expect.objectContaining<Partial<InjectedMutationFailure>>({ boundary: "projection-publication" }),
     );
+    const archiveBytes = fs.readFileSync(archivePath(0));
     expect((loadYamlMapping(fs.readFileSync(experimentsPath, "utf8")).experiments as unknown[])).toHaveLength(1);
 
     const retry = executeStateWrite(publication);
     expect(retry.operation).toMatchObject({ idempotent_replay: true });
+    expect(fs.readFileSync(archivePath(0))).toEqual(archiveBytes);
     expect((loadYamlMapping(fs.readFileSync(experimentsPath, "utf8")).experiments as unknown[])).toHaveLength(1);
+  });
+
+  it("keeps archive identity and provenance stable across objective directory rename", () => {
+    const { root, archivePath } = project();
+    const args = [
+      "publish", "--objective", objectiveId, "--number", "0", "--input", "-", "--format", "json",
+    ];
+    expect(run(root, args, experiment("baseline"))).toMatchObject({ rc: 0, err: "" });
+    const archiveBytes = fs.readFileSync(archivePath(0));
+    fs.renameSync(
+      path.join(root, ".agentera", "optimize", "latency"),
+      path.join(root, ".agentera", "optimize", "renamed"),
+    );
+
+    const retry = run(root, args, experiment("baseline"));
+    expect(retry).toMatchObject({ rc: 0, err: "" });
+    expect(retry.json?.operation).toMatchObject({ idempotent_replay: true });
+    expect(fs.readFileSync(path.join(root, ".agentera", "optimize", "renamed", "archive", "experiments", "0.yaml"))).toEqual(archiveBytes);
+  });
+
+  it("leaves a durable archive before projection replacement and reuses it on retry", () => {
+    const { root, experimentsPath, archivePath } = project({
+      experiments: [{ number: 0, ...experiment("baseline") }],
+    });
+    const beforeProjection = fs.readFileSync(experimentsPath);
+    const publication = request(root, 1, experiment("candidate"));
+
+    expect(() => executeStateWrite(publication, { failAfter: "archive-publication" })).toThrowError(
+      expect.objectContaining<Partial<InjectedMutationFailure>>({ boundary: "archive-publication" }),
+    );
+    const archiveBytes = fs.readFileSync(archivePath(1));
+    expect(fs.readFileSync(experimentsPath)).toEqual(beforeProjection);
+
+    const retry = executeStateWrite(publication);
+    expect(retry.operation).toMatchObject({ idempotent_replay: false });
+    expect(fs.readFileSync(archivePath(1))).toEqual(archiveBytes);
+    expect((loadYamlMapping(fs.readFileSync(experimentsPath, "utf8")).experiments as unknown[])).toHaveLength(2);
+    expect(fs.readdirSync(path.dirname(archivePath(1)))).toEqual(["1.yaml"]);
+  });
+
+  it("rejects conflicting immutable archive content without changing projection", () => {
+    const { root, experimentsPath, archivePath } = project({
+      experiments: [{ number: 0, ...experiment("baseline") }],
+    });
+    fs.mkdirSync(path.dirname(archivePath(1)), { recursive: true });
+    fs.writeFileSync(archivePath(1), "conflicting: bytes\n");
+    const beforeProjection = fs.readFileSync(experimentsPath);
+    const beforeArchive = fs.readFileSync(archivePath(1));
+
+    expect(() => executeStateWrite(request(root, 1, experiment("candidate")))).toThrow(/immutable experiment archive/);
+    expect(fs.readFileSync(experimentsPath)).toEqual(beforeProjection);
+    expect(fs.readFileSync(archivePath(1))).toEqual(beforeArchive);
   });
 });
