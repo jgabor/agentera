@@ -1,0 +1,33 @@
+header:
+  level: light
+  created: 2026-07-15
+  status: open
+  title: "Plan: Extract lifecycle validation orchestration"
+  id: plan:c2ac07d2-f3eb-4ea8-bfb7-2017b31b57b6
+what: Separate lifecycle-validation orchestration and parity checks from the public validation facade while preserving existing CLI behavior, imports, output, exit codes, and validation semantics.
+why: The facade mixes re-export responsibility with procedural logic. Separating those concerns resolves the structural-debt TODO, reduces import and lint noise, and improves navigability without introducing new behavior.
+constraints: Keep the work within one build cycle; preserve the lifecycleMain CLI contract, legacy-parity gating, public barrel imports, and existing diagnostics; do not modify the unrelated runtime adapter matrix or add new validation rules.
+overall_acceptance: GIVEN the refactor is complete WHEN lifecycle validation and the repository quality gates run THEN existing behavior is preserved and all required checks pass.
+scope:
+  included:
+    - Lifecycle-validation orchestration and parity extraction
+    - Public validation facade exports
+    - Focused regression verification and repository quality gates
+  excluded:
+    - Runtime lifecycle behavior or adapter-matrix changes
+    - New validation rules or schema changes
+    - Unrelated cleanup
+tasks:
+  - number: 1
+    name: Extract and verify lifecycle orchestration
+    depends_on:
+      []
+    status: pending
+    acceptance:
+      - GIVEN existing consumers import lifecycle validation symbols from the public surface WHEN the refactor is complete THEN those imports remain available with the same behavior.
+      - GIVEN lifecycle validation runs against the repository WHEN the command completes THEN its exit code and success output match the current behavior.
+      - GIVEN legacy Python parity is disabled or enabled explicitly WHEN lifecycle validation runs THEN the parity checks remain skipped or invoked exactly as before.
+      - GIVEN runtime-ID and consumer-wiring parity inputs WHEN valid and invalid cases are evaluated THEN the existing results and diagnostics are preserved.
+      - GIVEN the CLI test, typecheck, build, and compaction gates run after the refactor WHEN they finish THEN all pass without introducing new lint-baseline entries.
+surprises:
+  []
