@@ -1,0 +1,110 @@
+schemaVersion: agentera.stateArchiveEntry.v1
+artifact_id: health
+entry_number: 36
+record:
+  number: 36
+  date: 2026-07-15
+  dimensions:
+    - architecture_alignment
+    - pattern_consistency
+    - coupling_health
+    - complexity_hotspots
+    - test_health
+    - version_health
+    - artifact_freshness
+    - security_hygiene
+  findings_summary:
+    critical: 0
+    warning: 0
+    info: 4
+    filtered_by_confidence: 0
+  trajectory: "stable vs Audit 35: clean tiered-extraction subsystem landed with no new warnings; remaining notes are pre-existing design considerations, not degradation."
+  grades:
+    architecture_alignment: A
+    pattern_consistency: A
+    coupling_health: A
+    complexity_hotspots: A
+    test_health: A
+    version_health: A
+    artifact_freshness: A
+    security_hygiene: A
+  dimension_details:
+    - name: architecture_alignment
+      grade: A
+      summary: Contract-authority-loader-publisher-consumer chain is unidirectional; evidenceTierContract projects families, bounds, compatibility states, and sufficiency from one source; evidenceTiers, tierReader, and profileSignals do not re-declare owned invariants.
+      findings:
+        []
+    - name: pattern_consistency
+      grade: A
+      summary: All four consumers (usage, report, prime coverage, startup analysis) use the assessTiers then isAnalyzable then bounded-read pattern; recovery projected from contract, not duplicated; legacyCorpusReadable gates legacy fallback consistently.
+      findings:
+        []
+    - name: coupling_health
+      grade: A
+      summary: Consumers depend on tierReader and evidenceTierContract; profileSignals reads both evidenceTiers and tierReader; no circular imports; the contract loader is the shared dependency root.
+      findings:
+        []
+    - name: complexity_hotspots
+      grade: A
+      summary: "evidenceTiers.ts is large but sectioned: derivation, proportional selection, staged-write then atomic-reveal publication, and retrieval. assessProfileSufficiency has three documented branches (uncapped, capped-with-retained, capped-zero-retained)."
+      findings:
+        []
+    - name: test_health
+      grade: A
+      summary: "2183 tests pass. oversizedRegression.test.ts records declared shard/signal/reader bounds (64 MiB) and degradation outcomes across all consumers. tierReader, evidenceTiers, and profileSignals tests cover bounded reads, compatibility states, and sufficiency. Six prior task-evaluation caveats assessed: three are real design considerations, three are non-issues."
+      findings:
+        - heading: "⇢ Startup analysis materializes bounded records in memory, info (confidence: 70)"
+          severity: info
+          confidence: 70
+          location: packages/cli/src/state/startupAnalysis/benchmark.ts:403
+          evidence: Array.from(iterBoundedRecords(tiersDir) ?? []) materializes the generator after shard-by-shard I/O; multi-pass classification requires all records in memory.
+          impact: No single file read exceeds shard_byte_cap, but in-memory array holds all records. The code comment is truthful about I/O bounds but does not note memory materialization.
+          suggested_action: No fix needed; consider documenting that I/O-bounded is not memory-bounded for multi-pass consumers.
+        - heading: "⇢ readBoundedMetadata resolves current generation twice, info (confidence: 75)"
+          severity: info
+          confidence: 75
+          location: packages/cli/src/analytics/extractCorpus/tierReader.ts:116-124
+          evidence: readSignalTier and readTierCorpusMetadata each call readCurrentGeneration independently; a concurrent publication swap between them could mix signal records and corpus metadata from different generations. The oversized check at line 120 is post-read.
+          impact: Unlikely in practice; all callers gate on assessTiers first, which validates shard and signal sizes against caps via evidenceTierCompatibility.
+          suggested_action: Resolve the current generation once and pass it to both reads to eliminate the gap.
+        - heading: "⇢ Profile sufficiency threshold (0.5) lacks empirical validation, info (confidence: 65)"
+          severity: info
+          confidence: 65
+          location: references/analysis/evidence-tier-authority.yaml:346-354
+          evidence: minimum_family_retention=0.5 is documented as deliberately lenient; no sensitivity analysis against real corpora validates the floor.
+          impact: Threshold may under- or over-flag at scale; the sufficiency logic is tested but the floor value is a heuristic.
+          suggested_action: Validate against real corpora when available; sensitivity analysis can follow.
+        - heading: "⇢ Pre-existing: usage command does not expose the --sources flag, info (confidence: 80)"
+          severity: info
+          confidence: 80
+          location: packages/cli/src/cli/dispatch/lifecycle.ts:222-233
+          evidence: runUsage parses --format, --corpus, --project but not --sources. usageMain (usageStats.ts:638) supports it and the stats alias (report.ts:313) forwards it. Not introduced by this change.
+          impact: agentera usage --sources active is rejected as unrecognized. The usage command is otherwise dispatched and tier-aware.
+          suggested_action: Add --sources to runUsage or document its availability only via the stats alias.
+    - name: version_health
+      grade: A
+      summary: v3 cutover hold intact; suite metadata at 3.0.0; no release occurred. Six feat/fix commits on plan day; dev version at 3.0.0-dev.21. Docs version files unavailable in CLI compact context.
+      findings:
+        []
+    - name: artifact_freshness
+      grade: A
+      summary: Plan/progress/docs/changelog/TODO/profile instructions updated on the plan creation day. Bundle references/analysis/evidence-tier-authority.yaml matches source. Profile validation.yaml synced (V1 evidence_anchor, V2 sufficiency cap, V4 no-whole-corpus, V6 bounded_signal_sufficiency).
+      findings:
+        []
+    - name: security_hygiene
+      grade: A
+      summary: No hardcoded secrets, eval, or injection in changed paths. spawnSync uses fixed git args with a 5s timeout. writeFileSync targets configured output paths. Lightweight regex scan only — dedicated security tools recommended for production.
+      findings:
+        []
+  trends:
+    improved: Monolithic corpus.json replaced by bounded tiered extraction; coverage truthfulness fixed (ok/degraded states); atomic generation publication prevents partial reads; no whole-file oversized loads.
+    degraded: None.
+    stable: Schema-owned policy resolved through fail-closed registries remains the pattern. uniform_10_40_50 compaction unchanged.
+    new_findings: "No new warnings or criticals. Four info notes: two on defense ordering and memory, one on threshold validation, one pre-existing command surface gap."
+    resolved: None required; Audit 35 was clean.
+    carried_forward: Profile stale (32 days, pre-existing); evidence_context empty in compact context; no selected plan task (archived); docs version files unavailable in CLI context; publication and push evidence requires manual verification; installed app state unchanged.
+  patterns:
+    - Evidence tiers separate bounded I/O (shard-by-shard reads under cap) from bounded metadata (signal tier); multi-pass consumers materialize records after bounded I/O.
+    - Contract authority YAML is the single source for families, bounds, compatibility states, recovery, and sufficiency thresholds; the TypeScript loader projects it without duplication.
+    - Atomic generation pointer swap ensures no consumer observes a partially published tier; legacy monolithic state degrades with contract-projected recovery, never loaded whole.
+record_sha256: de49ce333968220029a6b1621ca56fa580a0aabb4ccb09c11eebd429971728c3
