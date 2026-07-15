@@ -1,4 +1,31 @@
 cycles:
+  - number: 826
+    timestamp: 2026-07-15 15:53
+    type: test
+    phase: audit
+    what: Recorded post-plan closure Audit 34 after preserving the completed
+      immutable plan archive.
+    inspiration: Audit 33, Cycle 825, and Task 3 PASS archival handoff.
+    discovered: Audit 33's remediation conclusion remains accurate; Audit 34 updates
+      artifact freshness for the now-archived plan. Historical plan lifecycle
+      and health archive-recovery diagnostics remain unrelated.
+    verified: Audit 34 records six A grades and zero findings. Exact archived plan
+      list/get returned full three-task lineage with Task 3 PASS; no active plan
+      remains. Full CLI passed 2068/2068, typecheck, release metadata,
+      capability contract, health validation, and compact passed. Canonical and
+      bundled authority remain byte-identical; package and suite versions and
+      npm next state are unchanged.
+    next: Audit 32 remediation has no release blocker. Resolve runtime host
+      enablement and trust evidence separately before release.
+    context:
+      intent: Verify Audit 32 remediation remains closed after archival and
+        distinguish unrelated host and historical caveats.
+      constraints: No product fixes, TODO or changelog edits, version changes,
+        publication, tag, push, reset, stash, or historical archive repair.
+      unknowns: Runtime-lifecycle host readiness remains manually blocked and separate
+        from Audit 32 remediation.
+      scope: .agentera/health.yaml, archive/health/34.yaml, typed progress state, and
+        preserved plan archival changes.
   - number: 825
     timestamp: 2026-07-15 15:40
     type: test
@@ -351,46 +378,6 @@ cycles:
         open.
       scope: Build execution context, compaction command vocabulary and guidance,
         parity fixtures/tests, changelog, plan status, and Cycle 817 evidence.
-  - number: 816
-    timestamp: 2026-07-15 12:29
-    type: fix
-    phase: build
-    what: Repaired Plan Task 12 alias authority and runtime parity. Removed stale
-      gate advertising, projected the six active transitional aliases into
-      schema introspection, aligned compact delegation with check compact, and
-      added exhaustive positive, negative, and retired-correction execution
-      coverage.
-    inspiration: Replacement bounded-retrieval Plan Task 12 and
-      references/cli/audience-namespace-cli-migration.yaml Phase 3.
-    discovered: The Phase 3 authority still carried an older gate delegation and
-      pre-D70 plan routing prose; the active runtime instead owns six
-      transitional aliases and English plan capability routing. The first
-      attempted direct vitest command failed because vitest is provided through
-      vp; repository verification then passed through the documented pnpm test
-      script.
-    verified: "Root commands: pnpm -C packages/cli test => 185 files and 2057 tests
-      passed; pnpm -C packages/cli run typecheck => passed; pnpm -C packages/cli
-      build => passed; git diff --check => passed. Focused vp run => 6 files and
-      81 tests passed. node packages/cli/dist/bin/agentera.js schema --format
-      json | jq ... => query→state query, compact→check compact, verify→check
-      verify, stats→report, lint→check lint, validate→check validate. node
-      packages/cli/dist/bin/agentera.js gate --format json => rc 2 structured
-      valid_values/check compact correction; node
-      packages/cli/dist/bin/agentera.js check compact --format json => pass."
-    next: Stop after Task 12. Leave the degraded Task 11 TODO open for independent
-      audit; do not start Task 13 metadata or final tasks.
-    context:
-      intent: Restore trust that every schema-advertised alias executes with
-        structured behavior matching canonical authority without reintroducing
-        the retired gate command.
-      constraints: Preserved Cycles 814–815, package versions, replacement plan,
-        archived predecessor, and open degraded TODO. No amend, publish, tag,
-        push, metadata task, or unrelated alias was added.
-      unknowns: Independent audit has not yet passed, so the degraded
-        bounded-retrieval TODO remains open as required.
-      scope: Alias migration authority, schema introspection, bounded dispatch/error
-        parity, exhaustive CLI parity tests, changelog, replacement plan status,
-        and progress evidence.
   - number: 793
     timestamp: 2026-07-14 17:36
     type: chore
@@ -460,6 +447,8 @@ cycles:
         and backfill fixtures; package metadata and generated ignored
         dist/bundle
 archive:
+  - summary: "Cycle 816 (2026-07-15): Repaired Plan Task 12 alias authority and
+      runtime parity. Removed stale gate advertising, projected the..."
   - summary: "Cycle 815 (2026-07-15): Corrected experiment artifact introspection
       after Task 11 audit failure."
   - summary: "Cycle 814 (2026-07-15): Synchronized public bounded-retrieval
@@ -555,16 +544,18 @@ archive:
   - summary: "Cycle 776 (2026-07-13): Made every bounded prime-path string
       truncation code-point safe and added adversarial emoji coverage across
       all..."
-  - summary: "Cycle 775 (2026-07-13): Retried bounded prime startup projections:
-      shared list classification now drives startup conflict, duplicate, mirror,
-      ambiguity,..."
 omitted: true
-omitted_count: 61
+omitted_count: 62
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded
