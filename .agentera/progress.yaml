@@ -1,4 +1,39 @@
 cycles:
+  - number: 824
+    timestamp: 2026-07-15 15:26
+    type: test
+    phase: build
+    what: Proved Audit 32 replacement Task 2 release readiness without publication.
+    inspiration: Audit 32 replacement Plan Task 2 and the passing Task 1 independent audit.
+    discovered: The direct pnpm exec vitest attempt lacked a vitest binary and one
+      artifact command omitted the required flag; corrected documented
+      invocations passed. Token-substitution, npm config, SQLite, and fixture
+      warnings were non-blocking environment, tool, or fixture diagnostics, not
+      product defects.
+    verified: Focused five-file authority, archive, experiment-publication, schema,
+      and prepack suite passed 192/192; full CLI passed 185 files and 2068/2068.
+      Typecheck, build, release metadata, capability contract 2/2, compact, and
+      PLAN/PROGRESS validation passed. Canonical and bundled authority matched
+      SHA-256 f84cbfad718d7c11c4dbe7f4afb9f081af6507e3919b15887d3a3c4bf9fdd0fb;
+      gitRef fdd67cd9eacdd43fdbb755158f0d8e405bee1e1c matched governed inputs;
+      package stayed 3.0.0-dev.21 and all suite surfaces stayed 3.0.0. npm pack
+      dry-run contained 664 files including corrected authority, sentinel, bin,
+      and package manifest; publish --tag next --dry-run reported +
+      agentera@3.0.0-dev.21. Registry remained @next 3.0.0-dev.20 with exact
+      dev.21 absent; pre/post npm tracked diff hash matched
+      acdd88b75b9d7eed24e95af293ee7738367f59c620e63a2f6261ff09b8db79af.
+    next: Stop after Task 2. Task 3 remains pending; do not update health or begin
+      independent closeout.
+    context:
+      intent: Verify corrected authority, bundle parity, provenance, package payload,
+        and all release gates while preserving Task 1 audit state and external
+        registry state.
+      constraints: Verification-only; no product edits, health update, amend, external
+        publication, tag, push, reset, stash, clean, or unrelated state change.
+      unknowns: None. Registry absence was rechecked after both dry-runs; environment
+        and tool warnings were classified separately from product results.
+      scope: Approved Task 1 evaluation, Task 2 evidence/status, and appended progress
+        cycle only; dist and bundle regeneration remained ignored outputs.
   - number: 823
     timestamp: 2026-07-15 15:08
     type: fix
@@ -357,37 +392,6 @@ cycles:
       scope: packages/cli/src/cli/commands/query.ts,
         packages/cli/src/cli/commands/schema.ts, retrieval/schema and
         pristine-bundle tests, plan/progress state.
-  - number: 814
-    timestamp: 2026-07-15 11:24
-    type: fix
-    phase: build
-    what: Synchronized public bounded-retrieval contracts across runtime, agent,
-      capability, documentation, package, and error surfaces.
-    inspiration: Replacement Plan Task 11 acceptance criteria and
-      references/artifacts/state-storage-authority.yaml.
-    discovered: Optimize still instructed direct experiment append/compaction;
-      plan-task ownership wording implied archive support; plan and experiment
-      parser errors omitted public valid forms or runnable examples.
-    verified: "AC1: focused 217/217 and full 2051/2051 tests passed; typecheck,
-      build, optimize/plan capability validation, and capability-contract 2/2
-      passed. AC2: state plan show, experiments show, invalid plan selector,
-      missing objective, and malformed cursor returned structured <=4096-byte
-      corrections with valid values, examples, and recovery. AC3: the canonical
-      authority passed while 132 intentionally invalid mutations failed.
-      bundle:data, check compact, behavioral assertions, and git diff --check
-      passed."
-    next: Stop after Task 11. Task 12 package metadata and Tasks 13-14 final
-      closeout remain pending.
-    context:
-      intent: Complete replacement Plan Task 11 by making the runtime retrieval
-        authority the single public contract and correcting only observed drift.
-      constraints: Preserved suite 3.0.0 and package 3.0.0-dev.21; did not amend,
-        publish, tag, push, start Task 12, or run final plan closeout.
-      unknowns: None for Task 11; historical plan diagnostics and pre-existing
-        lossless compaction refusals remain visible but non-blocking.
-      scope: Retrieval authority/validator, help/parsers, prime capability context,
-        optimize prose and experiment schema, operator docs/changelog/TODO,
-        parity tests, plan/progress state.
   - number: 793
     timestamp: 2026-07-14 17:36
     type: chore
@@ -457,6 +461,9 @@ cycles:
         and backfill fixtures; package metadata and generated ignored
         dist/bundle
 archive:
+  - summary: "Cycle 814 (2026-07-15): Synchronized public bounded-retrieval
+      contracts across runtime, agent, capability, documentation, package, and
+      error surfaces."
   - summary: "Cycle 813 (2026-07-15): Corrected all three findings from Task 10
       audit attempt 1."
   - summary: "Cycle 812 (2026-07-15): Closed evidenced plan and experiment cursor
@@ -553,16 +560,18 @@ archive:
   - summary: "Cycle 774 (2026-07-13): Bound prime startup source work and output:
       incrementally scan current projection metadata, validate archives
       without..."
-  - summary: "Cycle 773 (2026-07-13): Retried Task2 attempt1 by centralizing
-      leading-only legacy identity parsing, making explicit Dnn decision
-      shorthand rows..."
 omitted: true
-omitted_count: 59
+omitted_count: 60
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded
