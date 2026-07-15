@@ -79,23 +79,90 @@ describe("cli lint: payload", () => {
 });
 
 describe("cli lint: command output", () => {
-  it("emits human text and returns 0 on pass", () => {
+  it.each([false, true])("emits human text and returns 0 on pass (strict=%s)", (strict) => {
     const { rc, out } = capture((io) =>
-      cmdLint({ artifact: "PLAN.md", text: "wrote scripts/agentera at line 42" }, io),
+      cmdLint({ artifact: "PLAN.md", text: "wrote scripts/agentera at line 42", strict }, io),
     );
     expect(rc).toBe(0);
     expect(out).toContain("lint pass: PLAN.md (text)");
     expect(out).toContain("all self-audit checks passed");
   });
 
-  it("emits JSON and returns 1 on fail", () => {
-    const { rc, out } = capture((io) =>
-      cmdLint({ artifact: "PLAN.md", text: "we should probably improve things", format: "json" }, io),
+  it("keeps finding payloads identical while only strict mode exits nonzero", () => {
+    const args = {
+      artifact: "PLAN.md",
+      text: "we should probably improve things",
+      format: "json",
+    };
+    const advisory = capture((io) => cmdLint(args, io));
+    const strict = capture((io) => cmdLint({ ...args, strict: true }, io));
+    expect(advisory.rc).toBe(0);
+    expect(strict.rc).toBe(1);
+
+    const advisoryPayload = JSON.parse(advisory.out);
+    const strictPayload = JSON.parse(strict.out);
+    expect(advisoryPayload.status).toBe("fail");
+    expect(strictPayload.status).toBe("fail");
+    expect(advisoryPayload.checks).toEqual(strictPayload.checks);
+    expect(advisoryPayload.summary.failed).toBeGreaterThan(0);
+    expect(advisoryPayload.summary.failed).toBe(strictPayload.summary.failed);
+    expect(advisoryPayload.strict).toBe(false);
+    expect(advisoryPayload.summary.advisory).toBe(true);
+    expect(strictPayload.strict).toBe(true);
+    expect(strictPayload.summary.advisory).toBe(false);
+  });
+
+  it.each([false, true])("returns nonzero for authority-loading failures (strict=%s)", (strict) => {
+    const previous = process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT;
+    process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT = tmp;
+    try {
+      const { rc, out } = capture((io) =>
+        cmdLint(
+          {
+            artifact: "PLAN.md",
+            text: "wrote scripts/agentera at line 42",
+            strict,
+            format: "json",
+          },
+          io,
+        ),
+      );
+      expect(rc).toBe(1);
+      const payload = JSON.parse(out);
+      expect(payload.status).toBe("fail");
+      expect(payload.checks).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            name: "verbosity",
+            status: "fail",
+            detail: expect.stringContaining("verbosity authority error"),
+            action: expect.stringContaining("Repair the verbosity budget authority"),
+          }),
+        ]),
+      );
+    } finally {
+      if (previous === undefined) delete process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT;
+      else process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT = previous;
+    }
+  });
+
+  it.each([false, true])("returns nonzero with recovery guidance for invalid input (strict=%s)", (strict) => {
+    const argv = ["node", "agentera", "check", "lint", "--text", "draft"];
+    if (strict) argv.push("--strict");
+    const { rc, err } = capture((io) => main(argv, io));
+    expect(rc).toBe(2);
+    expect(err).toContain("the following arguments are required: --artifact");
+    expect(err).toContain("Recovery: Correct the input and retry; no state was changed.");
+  });
+
+  it("keeps internal full-artifact lint strict for publication callers", () => {
+    const payload = lintFullArtifactPayload(
+      "plan",
+      "In summary, we should probably improve the system somehow",
     );
-    expect(rc).toBe(1);
-    const parsed = JSON.parse(out);
-    expect(parsed.command).toBe("lint");
-    expect(parsed.status).toBe("fail");
+    expect(payload.strict).toBe(true);
+    expect(payload.summary.advisory).toBe(false);
+    expect(payload.status).toBe("fail");
   });
 });
 
@@ -104,7 +171,7 @@ describe("cli dispatch: lint routing", () => {
     const f = path.join(tmp, "d.yaml");
     fs.writeFileSync(f, "x");
     const ok = capture((io) => main(["node", "agentera", "check", "lint", "--artifact", "PLAN.md", "--file", f], io));
-    expect(ok.rc === 0 || ok.rc === 1).toBe(true);
+    expect(ok.rc).toBe(0);
     const missing = capture((io) => main(["node", "agentera", "check", "lint", "--file", f], io));
     expect(missing.rc).toBe(2);
     expect(missing.err).toContain("--artifact");

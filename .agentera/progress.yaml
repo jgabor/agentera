@@ -1,4 +1,55 @@
 cycles:
+  - number: 830
+    timestamp: 2026-07-15 18:24
+    type: fix
+    phase: build
+    what: Verified authoritative verbosity budgets and advisory lint exits.
+    discovered: No product defect. Compaction still safely reports degraded
+      historical progress and health archive recovery.
+    verified: Focused authority and command suites passed 10/10 and 16/16; full CLI
+      passed 2085/2085; typecheck, build, capability contract 2/2, and
+      compaction passed. The uniform_10_40_50 authority SHA-256 remained
+      f84cbfad718d7c11c4dbe7f4afb9f081af6507e3919b15887d3a3c4bf9fdd0fb and
+      implementation paths were unchanged.
+    next: Orchestrate should run the post-delivery audit and own plan archival.
+    context:
+      intent: Close Plan Task 4 only after focused and broad delivery verification
+        passed.
+      constraints: Verification and state closeout only; no product changes, plan
+        archival, caveat repair, or profile refresh.
+      unknowns: Decision 93 remains review-needed; omitted state and stale profile
+        remain caveats.
+      scope: Plan Task 4, progress evidence, TODO/changelog agreement, and local
+        commit closeout.
+  - number: 829
+    timestamp: 2026-07-15 18:11
+    type: fix
+    phase: build
+    what: Corrected advisory lint exits while preserving strict operational and
+      publication failures.
+    inspiration: Active plan Task 3 and the advisory-by-default lint contract.
+    discovered: The first focused lint invocation used repository-relative paths
+      from the package working directory and selected zero files; rerunning with
+      package-relative paths passed.
+    verified: Focused Vitest passed 78/78; full CLI Vitest passed 2085/2085;
+      typecheck and build passed; focused vp lint passed with 0 warnings and 0
+      errors; capability-contract validation passed 2/2; check compact passed
+      with 0 over-limit artifacts; built CLI smoke checks confirmed default
+      finding exit 0, strict finding exit 1, clean exits 0 in both modes, and
+      invalid or unsupported-authority input exits nonzero; stateWrite
+      publication regressions passed.
+    next: "Execute only active plan Task 4: verify delivery and synchronize final
+      plan state."
+    context:
+      intent: Complete Task 3 by separating advisory findings from blocking lint
+        failures without changing finding payload semantics.
+      constraints: Kept lint findings, check statuses, overall status, strict plan
+        publication, and uniform_10_40_50 behavior unchanged; did not refresh
+        omitted or stale state.
+      unknowns: Decision 93 still requires user review; historical plan and progress
+        archive recovery remains degraded.
+      scope: Lint command exit selection, focused CLI regressions, changelog, TODO,
+        progress, and Task 3 plan status.
   - number: 828
     timestamp: 2026-07-15 17:57
     type: fix
@@ -283,93 +334,6 @@ cycles:
       scope: .agentera/docs.yaml, .agentera/plan.yaml, typed progress Cycle 821 and
         its numbered archive; TODO.md and CHANGELOG.md were verified
         byte-identical.
-  - number: 820
-    timestamp: 2026-07-15 13:23
-    type: test
-    phase: build
-    what: Verified bounded plan and experiment retrieval end to end without changing
-      product behavior.
-    inspiration: Plan Task 14 and references/artifacts/state-storage-authority.yaml.
-    discovered: "Two initial live-smoke harness assertions were too strict: help
-      uses lowercase usage, and the live plan catalog has 14 pre-existing
-      diagnostics rather than only the 2 lifecycle diagnostics surfaced by
-      prime. Corrected assertions passed; no product defect was found."
-    verified: "Focused command: pnpm -C packages/cli exec vp test run
-      test/state/planTaskRetrieval.test.ts test/state/planRetrieval.test.ts
-      test/state/experimentRetrieval.test.ts
-      test/state/write/experimentPublication.test.ts
-      test/state/write/stateWrite.test.ts
-      test/state/retrievalContractParity.test.ts test/cli/aliasParity.test.ts; 7
-      files and 133 tests passed. Matrix rows: plan tasks covered cursors,
-      omissions, exact gets, active mutations, and text/JSON/YAML count-byte
-      pressure; plans covered active/archive identity and transitions, exact
-      get, wrong-family/stale cursors, and legacy mirrors/caveats; experiments
-      covered objective filters, experiment 0, list/get, stale and
-      full-summary-drop rollover, legacy full/summary/unavailable cases, and all
-      output formats; publication/writer fixtures covered validation atomicity,
-      durable archive-before-projection, interruption boundaries, retries,
-      10/40/50, and plan archive/list/get; parity fixtures executed all
-      advertised aliases, retired corrections, authority/schema/prime/help
-      surfaces. Full pnpm -C packages/cli test passed 185 files and 2060 tests.
-      Typecheck and build passed. Plan and optimize capability validation
-      passed; capability-contract passed 2/2. Compact passed 10 artifacts with
-      over_limit=0, errors=0, changed=0. Release-metadata passed. npm pack
-      --dry-run --json --ignore-scripts and npm publish --dry-run --tag next
-      passed with 664 files and + agentera@3.0.0-dev.21. gitRef
-      adccfc291198a108977a8e77252802db7e8d4c82 resolved to adccfc29; npm @next
-      is 3.0.0-dev.20 and dev.21 remains available. Live read-only smoke passed
-      task list/get, plan list/get, publish explain, schema authority,
-      plan/optimize prime, and 3 help surfaces; 14 diagnostics were classified
-      as 12 pre-existing legacy normalizations and 2 known lifecycle caveats,
-      with no repair. Non-blocking environment diagnostics were unresolved
-      NPM_TOKEN substitution and Node SQLite experimental warnings; compact
-      retained progress/health entries pending archive recovery without
-      mutation."
-    next: Leave Task 15 pending for a separate explicit closeout cycle; do not
-      archive the plan in this cycle.
-    context:
-      intent: Execute replacement Plan Task 14 as a verification-only cycle against
-        the canonical state-storage authority.
-      constraints: Verification only; preserve Task 13 evaluation; no behavior
-        changes, hidden repair, Task 15 closeout, amend, push, publication, or
-        tag.
-      unknowns: None; every Task 14 acceptance criterion passed.
-      scope: Temporary test fixtures, read-only live CLI surfaces, release/package
-        dry-runs, and plan/progress state only.
-  - number: 819
-    timestamp: 2026-07-15 13:09
-    type: fix
-    phase: build
-    what: Corrected dev.21 immutable source provenance and made release validation
-      enforce governed package-tree equivalence.
-    inspiration: Task 13 audit attempt 1 and the repository release-source policy.
-    discovered: adccfc29..1a7495f4 changes only plan, progress, archive, and TODO
-      state; governed package-content diff is empty. The first focused fixture
-      run exposed inherited commit signing, so fixture commits now disable
-      signing per command without changing Git configuration.
-    verified: Set gitRef to adccfc291198a108977a8e77252802db7e8d4c82. Release
-      validation requires that local commit, compares governed package inputs
-      and normalized package contract, permits only version/gitRef plus named
-      release/state metadata, and rejects source, untracked, or dependency
-      drift. Focused release/registry/prepack tests passed 43/43; full CLI tests
-      passed 185 files and 2060/2060. Typecheck, build, bundle:data,
-      release-metadata, capability-contract 2/2, compact, npm pack inspection,
-      and git diff --check passed. npm @next remained 3.0.0-dev.20 and dev.21
-      remained available. Pack and publish dry-runs reported 664 files and +
-      agentera@3.0.0-dev.21; pre/post status matched, proving no mutation,
-      publication, tag, or push.
-    next: Leave Task 14 pending; begin it only in a new explicit cycle.
-    context:
-      intent: Retry Plan Task 13 after its first audit found stale immutable
-        provenance.
-      constraints: Preserved Task 13 audit attempt 1 and Cycle 818; changed no package
-        version, suite surface, lockfile, changelog boundary, stable shim,
-        plugin metadata, registry suite metadata, publication, tag, or remote
-        state.
-      unknowns: Decision satisfaction and existing archive-recovery caveats remain
-        unchanged and unrelated.
-      scope: Package gitRef, repository-local release provenance validation and tests,
-        release policy documentation, plan status, and Cycle 819 state.
   - number: 793
     timestamp: 2026-07-14 17:36
     type: chore
@@ -439,6 +403,10 @@ cycles:
         and backfill fixtures; package metadata and generated ignored
         dist/bundle
 archive:
+  - summary: "Cycle 820 (2026-07-15): Verified bounded plan and experiment retrieval
+      end to end without changing product behavior."
+  - summary: "Cycle 819 (2026-07-15): Corrected dev.21 immutable source provenance
+      and made release validation enforce governed package-tree equivalence."
   - summary: "Cycle 818 (2026-07-15): Verified npm development metadata and package
       contents for the next available prerelease without publication."
   - summary: "Cycle 817 (2026-07-15): Retried Task 12 after audit attempt 1. Removed
@@ -531,17 +499,23 @@ archive:
   - summary: "Cycle 780 (2026-07-14): Published the schema-backed local migration
       authority and the confirmed agentera state migrate discovery surface;
       valid..."
-  - summary: "Cycle 779 (2026-07-14): Enforced bounded state discovery in all source
-      capability instructions and the checked-in consumer matrix."
-  - summary: "Cycle 778 (2026-07-14): Repaired bounded orchestration verification
-      projection and completed the independent audit for Task 1."
 omitted: true
-omitted_count: 64
+omitted_count: 66
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded

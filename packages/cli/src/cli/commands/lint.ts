@@ -101,6 +101,10 @@ function isFileSafe(p: string): boolean {
   }
 }
 
+function isVerbosityAuthorityError(detail: string): boolean {
+  return detail.startsWith("verbosity authority error");
+}
+
 function lintChecks(text: string, artifact: string, fullArtifact: boolean): Array<Record<string, string>> {
   const verbosityCheck = fullArtifact ? checkFullFileVerbosity(text, artifact) : checkVerbosity(text, artifact);
   const raw: Record<string, [boolean, string]> = {
@@ -118,7 +122,7 @@ function lintChecks(text: string, artifact: string, fullArtifact: boolean): Arra
       detail,
       action: passed
         ? ""
-        : name === "verbosity" && detail.startsWith("verbosity authority error")
+        : name === "verbosity" && isVerbosityAuthorityError(detail)
           ? "Repair the verbosity budget authority or its owning artifact schema, then retry lint."
           : actions[name],
     });
@@ -187,5 +191,8 @@ export function cmdLint(
   } else {
     emitLintText(payload, out);
   }
-  return payload.status === "fail" ? 1 : 0;
+  const operationalFailure = (payload.checks as Array<Record<string, string>>).some(
+    (check) => check.status === "fail" && isVerbosityAuthorityError(check.detail),
+  );
+  return operationalFailure || (args.strict && payload.status === "fail") ? 1 : 0;
 }

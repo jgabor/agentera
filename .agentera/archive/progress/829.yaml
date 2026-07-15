@@ -1,0 +1,19 @@
+schemaVersion: agentera.stateArchiveEntry.v1
+artifact_id: progress
+entry_number: 829
+record:
+  number: 829
+  timestamp: 2026-07-15 18:11
+  type: fix
+  phase: build
+  what: Corrected advisory lint exits while preserving strict operational and publication failures.
+  inspiration: Active plan Task 3 and the advisory-by-default lint contract.
+  discovered: The first focused lint invocation used repository-relative paths from the package working directory and selected zero files; rerunning with package-relative paths passed.
+  verified: Focused Vitest passed 78/78; full CLI Vitest passed 2085/2085; typecheck and build passed; focused vp lint passed with 0 warnings and 0 errors; capability-contract validation passed 2/2; check compact passed with 0 over-limit artifacts; built CLI smoke checks confirmed default finding exit 0, strict finding exit 1, clean exits 0 in both modes, and invalid or unsupported-authority input exits nonzero; stateWrite publication regressions passed.
+  next: "Execute only active plan Task 4: verify delivery and synchronize final plan state."
+  context:
+    intent: Complete Task 3 by separating advisory findings from blocking lint failures without changing finding payload semantics.
+    constraints: Kept lint findings, check statuses, overall status, strict plan publication, and uniform_10_40_50 behavior unchanged; did not refresh omitted or stale state.
+    unknowns: Decision 93 still requires user review; historical plan and progress archive recovery remains degraded.
+    scope: Lint command exit selection, focused CLI regressions, changelog, TODO, progress, and Task 3 plan status.
+record_sha256: 68cc05dcf5d42fdeb8cd024cafe705f9f464cfed3bfb058414456bab50692a90

@@ -1,0 +1,18 @@
+schemaVersion: agentera.stateArchiveEntry.v1
+artifact_id: progress
+entry_number: 830
+record:
+  number: 830
+  timestamp: 2026-07-15 18:24
+  type: fix
+  phase: build
+  what: Verified authoritative verbosity budgets and advisory lint exits.
+  discovered: No product defect. Compaction still safely reports degraded historical progress and health archive recovery.
+  verified: Focused authority and command suites passed 10/10 and 16/16; full CLI passed 2085/2085; typecheck, build, capability contract 2/2, and compaction passed. The uniform_10_40_50 authority SHA-256 remained f84cbfad718d7c11c4dbe7f4afb9f081af6507e3919b15887d3a3c4bf9fdd0fb and implementation paths were unchanged.
+  next: Orchestrate should run the post-delivery audit and own plan archival.
+  context:
+    intent: Close Plan Task 4 only after focused and broad delivery verification passed.
+    constraints: Verification and state closeout only; no product changes, plan archival, caveat repair, or profile refresh.
+    unknowns: Decision 93 remains review-needed; omitted state and stale profile remain caveats.
+    scope: Plan Task 4, progress evidence, TODO/changelog agreement, and local commit closeout.
+record_sha256: 0a98163813311ebf55f607c5a4ae4027f737cddc0e5dc9c0c85f2d24d2b48776
