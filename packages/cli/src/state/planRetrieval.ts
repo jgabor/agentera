@@ -2,6 +2,7 @@ import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { deflateRawSync, inflateRawSync } from "node:zlib";
+import YAML from "yaml";
 
 import type { JsonObject, JsonValue } from "../core/jsonValue.js";
 import { loadYamlMapping } from "../core/yaml.js";
@@ -120,6 +121,7 @@ function logicalPlans(discovery: PlanArtifactDiscovery): LogicalPlan[] {
 
 function catalogEntry(plan: LogicalPlan): JsonObject {
   const entry = planCatalogEntry(plan.artifact, plan.active ? plan.artifact.path : "", plan.identity);
+  entry.detail_availability = plan.identity.ambiguous ? "unavailable" : "full";
   entry.active = plan.active;
   entry.archived = plan.archived;
   entry.provenance = {
@@ -256,6 +258,13 @@ function withPage(plans: LogicalPlan[], diagnostics: PlanArtifactDiagnostic[], s
   return response;
 }
 
+function serializedListBytes(response: PlanListResponse, format: "json" | "yaml"): number {
+  const text = format === "json"
+    ? JSON.stringify(response, null, 2) + "\n"
+    : YAML.stringify(response, { sortMapEntries: false });
+  return Buffer.byteLength(text, "utf8");
+}
+
 export function listPlans(
   projectRoot: string,
   activePath: string,
@@ -272,12 +281,12 @@ export function listPlans(
   if (start > plans.length) throw fail(2, "cursor_invalid", "cursor position is outside its plan snapshot", "list");
   const requested = Math.min(options.limit, plans.length - start);
   let response = withPage(plans, diagnostics, start, requested, projectRoot, "page_limit");
-  if (options.format === "json") {
-    for (let retained = requested; retained > 0 && Buffer.byteLength(JSON.stringify(response, null, 2) + "\n", "utf8") > MAX_LIST_BYTES; retained -= 1) {
+  if (options.format === "json" || options.format === "yaml") {
+    for (let retained = requested; retained > 0 && serializedListBytes(response, options.format) > MAX_LIST_BYTES; retained -= 1) {
       response = withPage(plans, diagnostics, start, retained - 1, projectRoot, "serialized_output_byte_budget");
     }
-    if (Buffer.byteLength(JSON.stringify(response, null, 2) + "\n", "utf8") > MAX_LIST_BYTES || (plans.length > start && response.entries.length === 0)) {
-      throw fail(1, "unsupported_state", `one plan cannot fit within the ${MAX_LIST_BYTES}-byte JSON list budget`, "list", {
+    if (serializedListBytes(response, options.format) > MAX_LIST_BYTES || (plans.length > start && response.entries.length === 0)) {
+      throw fail(1, "unsupported_state", `one plan cannot fit within the ${MAX_LIST_BYTES}-byte ${options.format.toUpperCase()} list budget`, "list", {
         recovery: "Fetch a plan directly with agentera state plan get --plan PLAN_ID --format json.",
       });
     }

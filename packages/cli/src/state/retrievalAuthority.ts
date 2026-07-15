@@ -61,6 +61,12 @@ const EXPECTED_COMMANDS = {
   },
 } as const;
 
+const EXPECTED_IMPLEMENTATION = {
+  plan_tasks: "implemented",
+  plans: "implemented",
+  experiments: "pending",
+} as const;
+
 function mapping(value: unknown): Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value)
     ? (value as Record<string, unknown>)
@@ -108,6 +114,11 @@ export function validateStateRetrievalAuthority(value: Record<string, unknown>):
   const errors: string[] = [];
   const retrieval = mapping(value.retrieval);
   if (retrieval.schema_version !== STATE_RETRIEVAL_SCHEMA_VERSION) errors.push("retrieval.schema_version");
+  if (retrieval.status !== "plan_task_and_plan_retrieval_implemented_experiments_pending") errors.push("retrieval.status");
+  const implementation = mapping(retrieval.implementation);
+  for (const [surface, status] of Object.entries(EXPECTED_IMPLEMENTATION)) {
+    if (implementation[surface] !== status) errors.push(`retrieval.implementation.${surface}`);
+  }
   requireNonEmpty(retrieval, "authority_boundary", "retrieval", errors);
 
   const envelope = mapping(retrieval.envelope);

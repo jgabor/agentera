@@ -6,6 +6,9 @@ import YAML from "yaml";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { main } from "../../src/cli/dispatch/index.js";
+import { buildSchemaPayload } from "../../src/cli/commands/schema.js";
+import { printStateHelp } from "../../src/cli/help.js";
+import { loadStateRetrievalAuthority } from "../../src/state/retrievalAuthority.js";
 
 const roots: string[] = [];
 const activeId = "plan:123e4567-e89b-42d3-a456-426614174000";
@@ -57,8 +60,8 @@ describe("active and archived plan retrieval", () => {
     expect(payload.command).toBe("state plan list");
     expect(payload.order).toBe("created_desc_then_plan_id_asc");
     expect(payload.entries.map((entry: any) => entry.stable_id)).toEqual([activeId, archiveId]);
-    expect(payload.entries[0]).toMatchObject({ active: true, archived: false, status: "open" });
-    expect(payload.entries[1]).toMatchObject({ active: false, archived: true, status: "complete" });
+    expect(payload.entries[0]).toMatchObject({ active: true, archived: false, status: "open", detail_availability: "full" });
+    expect(payload.entries[1]).toMatchObject({ active: false, archived: true, status: "complete", detail_availability: "full" });
     expect(payload.entries[1].retrieval.get).toBe(`agentera state plan get --plan ${archiveId} --format json`);
     expect(payload.omitted).toBe(false);
     expect(payload.omitted_count).toBe(0);
@@ -104,6 +107,36 @@ describe("active and archived plan retrieval", () => {
     expect(payload.omitted_count).toBe(81);
   });
 
+  it("enforces the UTF-8 list budget for YAML with whole-entry omissions and usable continuation", () => {
+    const root = project();
+    for (let index = 0; index < 30; index += 1) {
+      const suffix = index.toString(16).padStart(12, "0");
+      const id = `plan:323e4567-e89b-42d3-a456-${suffix}`;
+      fs.writeFileSync(
+        path.join(root, ".agentera", "archive", `PLAN-yaml-pressure-${index}.yaml`),
+        YAML.stringify(plan(id, `YAML ${index} ${"é🙂漢字".repeat(180)}`, "2026-07-13")),
+      );
+    }
+    const first = capture(root, ["list", "--limit", "32", "--format", "yaml"]);
+    expect(first.rc).toBe(0);
+    expect(Buffer.byteLength(first.out, "utf8")).toBeLessThanOrEqual(32768);
+    const payload = YAML.parse(first.out);
+    expect(payload.omitted).toBe(true);
+    expect(payload.omitted_count).toBeGreaterThan(0);
+    expect(payload.omission_reason).toBe("serialized_output_byte_budget");
+    expect(payload.entries.every((entry: any) => entry.detail_availability === "full")).toBe(true);
+    const wholeTitle = (title: string) => title === "Active" || title === "Archive" || title.endsWith("é🙂漢字".repeat(180));
+    expect(payload.entries.every((entry: any) => wholeTitle(entry.title))).toBe(true);
+    expect(payload.retrieval.continue).toContain(`--cursor ${payload.next_cursor}`);
+
+    const continued = capture(root, ["list", "--limit", "32", "--cursor", payload.next_cursor, "--format", "yaml"]);
+    expect(continued.rc).toBe(0);
+    expect(Buffer.byteLength(continued.out, "utf8")).toBeLessThanOrEqual(32768);
+    const continuedPayload = YAML.parse(continued.out);
+    expect(continuedPayload.entries.length).toBeGreaterThan(0);
+    expect(continuedPayload.entries.every((entry: any) => wholeTitle(entry.title))).toBe(true);
+  });
+
   it("returns the full selected plan without caller-side archive traversal", () => {
     const root = project();
     const result = capture(root, ["get", "--plan", archiveId, "--format", "json"]);
@@ -128,6 +161,7 @@ describe("active and archived plan retrieval", () => {
     const legacyEntries = listed.entries.filter((entry: any) => entry.stable_id.startsWith("legacy-plan:"));
     expect(legacyEntries).toHaveLength(1);
     expect(legacyEntries[0].compatibility).toBe("degraded");
+    expect(legacyEntries[0].detail_availability).toBe("full");
     expect(legacyEntries[0].provenance.mirrored_paths).toEqual([firstPath, secondPath].sort());
     const fetched = JSON.parse(capture(root, ["get", "--plan", legacyEntries[0].stable_id, "--format", "json"]).out);
     expect(fetched.plan.what).toBe("Deliver Legacy");
@@ -175,5 +209,29 @@ describe("active and archived plan retrieval", () => {
     expect(ambiguous.rc).toBe(1);
     expect(JSON.parse(ambiguous.out).error).toMatchObject({ class: "ambiguous", stable_id: activeId });
     expect(JSON.parse(ambiguous.out).error.details.candidate_paths).toHaveLength(2);
+  });
+
+  it("keeps authority, schema, help, and runtime implementation status in parity", () => {
+    const expected = {
+      plan_tasks: "implemented",
+      plans: "implemented",
+      experiments: "pending",
+    };
+    const authority = loadStateRetrievalAuthority().retrieval as any;
+    const schema = buildSchemaPayload("schema").state_retrieval as any;
+    expect(authority.status).toBe("plan_task_and_plan_retrieval_implemented_experiments_pending");
+    expect(authority.implementation).toEqual(expected);
+    expect(schema.status).toBe(authority.status);
+    expect(schema.implementation).toEqual(expected);
+    expect(printStateHelp("plan")).toContain("Plan list/get returns active and archived file-based plans");
+    expect(printStateHelp("experiments")).toContain("execution lands in later plan tasks");
+
+    const root = project();
+    const listed = capture(root, ["list", "--format", "json"]);
+    expect(listed.rc).toBe(0);
+    expect(JSON.parse(listed.out).command).toBe("state plan list");
+    const fetched = capture(root, ["get", "--plan", archiveId, "--format", "json"]);
+    expect(fetched.rc).toBe(0);
+    expect(JSON.parse(fetched.out).command).toBe("state plan get");
   });
 });
