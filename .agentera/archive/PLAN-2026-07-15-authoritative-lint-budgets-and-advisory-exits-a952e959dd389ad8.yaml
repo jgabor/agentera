@@ -1,7 +1,7 @@
 header:
   level: full
   created: 2026-07-15
-  status: open
+  status: complete
   reviewed: 2026-07-15
   critic_issues: 11 found, 10 addressed, 1 dismissed
   title: "Plan: Authoritative lint budgets and advisory exits"
