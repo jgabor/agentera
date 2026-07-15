@@ -1,4 +1,23 @@
 cycles:
+  - number: 832
+    timestamp: 2026-07-15 19:42
+    type: feat
+    phase: build
+    what: Define and verify the authoritative evidence-tier contract
+    discovered: Existing signalType taxonomy and FAMILIES constants align with
+      reserved signal semantics; cursor family covers cursor + cursor-agent
+      products.
+    verified: "Full vitest suite 2110/2110 passed; tsc typecheck clean; build green;
+      capability-contract validation 2/2 0 violations; check compact status=pass
+      over_limit=0. Contract loader smoke: 2 tiers, 5 source families, 5
+      consumers, 8 signal semantics, 5 compatibility states, Decision 55
+      reconciled, validation errors=NONE."
+    next: "Task 2: publish bounded complete evidence shards and derived signal tier
+      against this contract."
+    context:
+      intent: Replace the monolithic corpus.json dump with bounded tiers so consumers
+        analyze real-scale corpora instead of degrading solely because complete
+        local evidence is oversized.
   - number: 831
     timestamp: 2026-07-15 18:49
     type: fix
@@ -259,43 +278,6 @@ cycles:
       scope: Release test boundary, accepted authority correction and tests,
         predecessor archive, package gitRef, active plan Task 1, and appended
         progress evidence.
-  - number: 822
-    timestamp: 2026-07-15 14:36
-    type: fix
-    phase: build
-    what: Reconciled experiment publication and archival authority.
-    inspiration: Audit 32 finding and active plan Task 1.
-    discovered: The schema projection exposes the full publication declaration;
-      optimize startup introspection loads and validates the authority but does
-      not project publication semantics, so no startup projection required
-      synchronization. The full live-repo suite's sole failure is the expected
-      stale agentera.gitRef owned by unstarted Task 2.
-    verified: Focused retrieval-authority, archive-authority,
-      experiment-publication, schema, and prepack tests passed 192/192. Broad
-      suite excluding release metadata passed 2049/2049; the full suite passed
-      2068/2069 with only the expected Task 2 gitRef drift failure. Typecheck
-      and build passed. Capability contract validation passed 2/2. Compact
-      passed with over_limit=0 and changed=0. Canonical and bundled authority
-      bytes match at SHA-256
-      f84cbfad718d7c11c4dbe7f4afb9f081af6507e3919b15887d3a3c4bf9fdd0fb. Built
-      schema reports typed_state_writer, experiment_archival,
-      objective_directory, archive_before_projection, and uniform_10_40_50.
-      Runtime publication tests remain green; git diff --check passed.
-    next: Stop after Task 1. Task 2 may pin immutable remediation provenance in a
-      separate cycle.
-    context:
-      intent: Complete Audit 32 remediation Plan Task 1 by removing the
-        release-blocking authority contradiction and enforcing structured
-        semantic parity.
-      constraints: Preserved runtime publication/archive/retrieval behavior, archive
-        layout, 10/40/50 policy, versions, gitRef, unrelated docs, historical
-        evidence, and the approved plan.
-      unknowns: "Resolved: only agentera schema directly projects publication
-        semantics; optimize startup introspection validates the authority but
-        does not expose those fields, so no startup projection bytes changed."
-      scope: Canonical state-storage authority, retrieval semantic validator,
-        authority/schema tests, changelog, active plan Task 1 evidence/status,
-        and progress.
   - number: 793
     timestamp: 2026-07-14 17:36
     type: chore
@@ -365,6 +347,8 @@ cycles:
         and backfill fixtures; package metadata and generated ignored
         dist/bundle
 archive:
+  - summary: "Cycle 822 (2026-07-15): Reconciled experiment publication and archival
+      authority."
   - summary: "Cycle 821 (2026-07-15): Closed bounded-retrieval state after
       independent verification while leaving the completed active plan available
       for Task..."
@@ -459,15 +443,18 @@ archive:
       depth, exclusions, normalized..."
   - summary: "Cycle 782 (2026-07-14): Corrected Cycle 781 evidence and implemented
       Task 1 migration authority consumption: schema no longer keeps..."
-  - summary: "Cycle 781 (2026-07-14): Retried Task 2 after the independent authority
-      audit by removing duplicated migration parser values, deriving..."
 omitted: true
-omitted_count: 67
+omitted_count: 68
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded

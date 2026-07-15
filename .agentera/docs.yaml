@@ -242,6 +242,10 @@ index:
   path: references/analysis/startup-measurement-contract.yaml
   last_updated: '2026-05-13'
   status: current
+- document: Evidence tier authority
+  path: references/analysis/evidence-tier-authority.yaml
+  last_updated: '2026-07-15'
+  status: current
 - document: Startup analysis report generator
   path: scripts/startup_analysis_contract.py
   last_updated: '2026-05-15'

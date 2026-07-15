@@ -10,6 +10,7 @@
 
 ### Added
 
+- Added an authoritative evidence-tier contract (`references/analysis/evidence-tier-authority.yaml`) and contract-model loader (`packages/cli/src/registries/evidenceTierContract.ts`) fixing the bounded full-evidence and signal tiers, supported Codex, Cursor, OpenCode, Copilot, and historical Claude source coverage, the consumer field-supply map including the latent startup-analysis reader, reserved signal semantics for the deferred glossary, and deterministic recovery outcomes for oversized, legacy, missing, corrupt, and incomplete state.
 - Added a schema-owned verbosity-budget authority that classifies numeric word limits, explicit no-limit declarations, and token-only budgets while rejecting malformed, ambiguous, unreadable, and unsupported ownership without fallback limits.
 - Added `agentera state experiments list|get --objective OBJECTIVE_ID` with newest-first bounded pages, snapshot-bound opaque cursors, merged projection/archive identity, verified archive-first detail, explicit provenance and detail availability, and structured compatibility failures.
 - Added objective-scoped immutable full-detail archives under `.agentera/optimize/<objective>/archive/experiments/<number>.yaml` before 10/40/50 projection replacement, with explicit provenance, conflict rejection, and crash-consistent idempotent retries.

@@ -1,0 +1,429 @@
+schema_version: agentera.evidenceTierAuthority.v1
+status: active_authority
+purpose: >-
+  Define the authoritative tier model for local agent-history evidence so that
+  bounded consumers receive useful analysis at realistic corpus scale instead
+  of degrading solely because complete local evidence exceeds a single-reader
+  limit. The contract fixes the tiers, supported source families, the consumer
+  map, the required signal semantics, and the deterministic compatibility
+  outcomes for oversized, legacy, missing, corrupt, and incomplete state. It is
+  the single source of truth for what every bounded input contract must supply.
+
+authority:
+  source: references/analysis/evidence-tier-authority.yaml
+  single_source_rule: >-
+    Extraction, readers, validators, tests, help, and capability source
+    contracts may project this authority but must not create a second map of
+    tiers, source families, consumer required fields, signal semantics,
+    compatibility outcomes, or evidence bounds. A consumer that needs a field
+    declares it here; a field declared here is the only name a consumer may
+    require from a bounded tier.
+  implementation_boundary: >-
+    This contract defines and verifies the tier model, source coverage, signal
+    semantics, consumer field supply, and compatibility outcomes. It does not
+    implement the complete extraction writer, migrate consumers to bounded
+    tiers, change profile levels, generate a glossary, or alter suite version
+    metadata. Tasks 2 through 4 of the approved plan implement publication,
+    consumer migration, and bounded profile synthesis against this contract.
+
+decision_55_reconciliation:
+  decision_number: 55
+  date: 2026-05-17
+  preserved_intent: >-
+    Decision 55 established `agentera stats` as the user-facing analytics
+    workflow, forbade a top-level `agentera corpus` command, bound local
+    history to explicit consent, and wrote the internal corpus to a single
+    `$AGENTERA_PROFILE_DIR/intermediate/corpus.json` envelope. The intent
+    survives: analytics remain behind `agentera stats`/`agentera usage`, no
+    `agentera corpus` namespace is introduced, and local-history extraction
+    remains consent-bound and read-only.
+  superseded_surface: >-
+    The single monolithic `corpus.json` envelope is superseded by the tier
+    model below. Complete local evidence is retained as independently bounded
+    shards; a derived bounded signal view replaces the monolithic record array
+    as the analytic input. Decision history itself is not rewritten: the
+    decision record stands as adopted, and this reconciliation is recorded in
+    the tier authority rather than by editing the decision.
+  non_goal: >-
+    Do not rewrite, renumber, or restate Decision 55's adopted text. Do not
+    introduce `agentera corpus` or any new top-level analytics command.
+
+tiers:
+  full_evidence:
+    tier_id: full_evidence
+    rank: 1
+    definition: >-
+      Complete local evidence retained as independently bounded shards. Every
+      record ever extracted from a supported source is addressable here; nothing
+      is dropped to fit a reader limit. Each shard is independently bounded so a
+      single oversized shard cannot poison the whole tier.
+    stored_fields:
+      required:
+        - source_id
+        - source_kind
+        - timestamp
+        - project_id
+        - runtime
+        - source_class
+        - source_product
+        - active_runtime
+        - adapter_version
+        - data
+      optional:
+        - project_path
+        - session_id
+        - conversation_key
+    source_identity_rule: >-
+      `source_id` is the stable, content-addressable identity of one full
+      record. It is derived deterministically from source kind and source parts
+      and must resolve to exactly one retained full-evidence shard. No other
+      tier may invent identities that do not resolve here.
+    completeness_rule: >-
+      The union of full-evidence shards is the lossless local history for the
+      selected source scope. Consumers that need an entire record read it here;
+      consumers that need only a derived view read the signal tier instead.
+  signal:
+    tier_id: signal
+    rank: 2
+    definition: >-
+      A reproducible, bounded, derived view of the full-evidence tier. It
+      carries only the fields each declared consumer needs plus a resolvable
+      evidence anchor back to full evidence. It is small enough to load under
+      the reader bound even when the full-evidence tier is hundreds of
+      megabytes.
+    stored_fields:
+      required:
+        - source_id
+        - source_kind
+        - signal_type
+        - timestamp
+        - project_id
+        - runtime
+        - source_product
+        - evidence_anchor
+      optional:
+        - conversation_key
+        - session_id
+    derivation_rule: >-
+      The signal tier is a pure function of the full-evidence tier: identical
+      inputs produce identical signal membership and ordering. It never stores
+      transcript text, raw tool arguments, raw store paths, or raw session ids
+      beyond what a declared consumer requires with provenance visible.
+    evidence_anchor_rule: >-
+      Every signal record carries `evidence_anchor` resolving to the
+      `source_id` of exactly one retained full-evidence shard. A bounded
+      consumer that needs the full record follows the anchor; it must not
+      re-scan unbounded history.
+
+source_families:
+  coverage_rule: >-
+    The supported source families are fixed. A source family is either supplied
+    by an active runtime or imported as historical Claude history. No supported
+    family may be silently omitted from the contract, the coverage audit, or
+    the compatibility evaluation. An unavailable family reports a deterministic
+    discovery status; it is never absent from the map.
+  families:
+    codex:
+      source_class: active_runtime
+      source_product: codex
+      active_runtime: true
+      accepted_input: JSONL session/turn/response_item and tool_call records
+      store_glob: "*.jsonl"
+    cursor:
+      source_class: active_runtime
+      source_products:
+        - cursor
+        - cursor-agent
+      active_runtime: true
+      accepted_input: >-
+        Cursor project JSONL sessions and Cursor Agent CLI store.db SQLite
+        conversations. cursor-agent is a Cursor source product, never a
+        separate runtime identity.
+      store_glob: "*.jsonl"
+    opencode:
+      source_class: active_runtime
+      source_product: opencode
+      active_runtime: true
+      accepted_input: SQLite opencode.db with session, message, and part tables
+      store_glob: opencode.db
+    copilot:
+      source_class: active_runtime
+      source_product: github-copilot
+      active_runtime: true
+      accepted_input: SQLite session-store.db with conversation message rows
+      store_glob: session-store.db
+    claude-code:
+      source_class: historical_import
+      source_product: claude-code
+      active_runtime: false
+      inclusion_rule: >-
+        Explicit `--import-source claude` only. Excluded from default
+        active-runtime metrics and never described as runtime health, Claude
+        support, or active-runtime coverage.
+      accepted_input: JSONL project session files with user/assistant and tool_use events
+      store_glob: "*.jsonl"
+  filesystem_substrate:
+    note: >-
+      instruction_document and project_config_signal records are extracted
+      from the project filesystem (AGENTS.md, package manifests, config files).
+      They are source kinds, not runtime families, and follow source identity
+      and bounds rules like any other record.
+
+signal_semantics:
+  fixed_taxonomy_rule: >-
+    The signal semantics below are fixed. Current consumers and the deferred
+    glossary consumer depend on their meaning; the contract must preserve that
+    meaning even though glossary implementation and profile levels remain out
+    of scope. A semantic kind present here must remain derivable from a bounded
+    signal record without restoring unbounded transcript content.
+  kinds:
+    correction:
+      meaning: >-
+        A user signal that revises a prior position ("no", "not quite",
+        "actually", "instead"). Used to detect decision drift and overrides.
+      derivable_from: history_prompt and conversation_turn records
+      deferred_consumer: glossary
+    decision:
+      meaning: >-
+        A decision-bearing signal (decide, prefer, trade-off, scope, approve,
+        reject). The primary profile-synthesis input.
+      derivable_from: history_prompt and conversation_turn records
+      deferred_consumer: glossary
+      current_consumer: profile_synthesis
+    question:
+      meaning: >-
+        An interrogative signal ("why", "how", "should", or a "?"). Surfaces
+        uncertainty and information-gathering intent.
+      derivable_from: history_prompt and conversation_turn records
+      deferred_consumer: glossary
+    instruction:
+      meaning: >-
+        Explicit user-authored instructions (AGENTS.md and project memory
+        documents). The highest-signal, most durable evidence.
+      derivable_from: instruction_document records
+      deferred_consumer: glossary
+      current_consumer: profile_synthesis
+    configuration:
+      meaning: >-
+        Recurring config patterns across projects (manifest names, scripts,
+        dependencies, build/tool config). Objective evidence of what shipped.
+      derivable_from: project_config_signal records
+      deferred_consumer: glossary
+      current_consumer: profile_synthesis
+    record_identity:
+      meaning: >-
+        The stable, addressable identity (`source_id`) of one full record. Lets
+        any consumer cite evidence without retaining its content.
+      derivable_from: every record's source_id
+      deferred_consumer: glossary
+    date:
+      meaning: >-
+        The record timestamp anchoring evidence in time. Drives decay,
+        recency, and watermark windows.
+      derivable_from: every record's timestamp field
+      deferred_consumer: glossary
+    evidence_anchor:
+      meaning: >-
+        The resolvable link from a bounded signal record back to exactly one
+        retained full-evidence shard. Guarantees that bounded analysis never
+        severs the citation chain.
+      derivable_from: signal record evidence_anchor -> full_evidence source_id
+      deferred_consumer: glossary
+  preservation_rule: >-
+    Fixing the contract must not remove the required meaning of any kind above
+    from current or declared deferred consumers. A deferred consumer (glossary)
+    is named here so the contract reserves the fields and semantics it will
+    need, even though its implementation is out of scope.
+
+consumer_map:
+  supply_rule: >-
+    Each supported consumer maps to exactly one bounded input contract that
+    supplies every required field with source identity. The input tier is the
+    smallest sufficient tier; consumers that need full records read
+    full_evidence, others read signal. No consumer may require a field not
+    declared in its input contract.
+  consumers:
+    usage_stats:
+      tier: signal
+      purpose: Skill-invocation analytics and USAGE.md reporting
+      required_fields:
+        - source_kind
+        - timestamp
+        - project_id
+        - runtime
+        - source_product
+      source_identity: source_id with source_product provenance
+      input_contract: signal tier conversation_turn projection
+    report_status:
+      tier: signal
+      purpose: Truthful corpus/coverage status (missing, stale, available)
+      required_fields:
+        - source_kind
+        - source_product
+      source_identity: tier presence and discovery status per source family
+      input_contract: signal tier metadata projection
+    prime_coverage:
+      tier: signal
+      purpose: Prime startup coverage of supported sources and selected scope
+      required_fields:
+        - runtime
+        - source_product
+        - source_class
+        - active_runtime
+      source_identity: available/selected/skipped per source family
+      input_contract: signal tier coverage projection
+    startup_analysis:
+      tier: signal
+      purpose: >-
+        Latent startup-analysis reader measuring state-gathering overhead. Reads
+        conversation_turn and tool_call signals; full tool arguments stay in
+        full_evidence.
+      required_fields:
+        - source_kind
+        - timestamp
+        - runtime
+        - source_class
+        - source_product
+        - evidence_anchor
+      source_identity: source_id and evidence_anchor to full evidence
+      input_contract: signal tier conversation_turn + tool_call projection
+    profile_synthesis:
+      tier: signal
+      purpose: Current profile synthesis (PROFILE.md) from bounded signals
+      required_fields:
+        - source_kind
+        - signal_type
+        - timestamp
+        - project_id
+        - runtime
+        - source_product
+        - evidence_anchor
+      source_identity: source_id and evidence_anchor for every synthesized claim
+      input_contract: signal tier instruction/decision/question/config projection
+  deferred_consumers:
+    glossary:
+      tier: signal
+      status: declared_deferred
+      required_semantics:
+        - correction
+        - decision
+        - question
+        - instruction
+        - configuration
+        - record_identity
+        - date
+        - evidence_anchor
+      rule: >-
+        The glossary is out of scope to implement, but its required semantics
+        are fixed here so the signal contract reserves them. Implementation must
+        not drop a reserved semantic or remove the field that carries it.
+
+bounds:
+  reader_byte_cap: 67108864
+  reader_byte_cap_note: >-
+    64 MiB. Existing bounded readers cap monolithic reads at this size and
+    safely degrade. The tier model replaces "safely degrade" with "useful
+    analysis" by feeding consumers bounded tiers that fit under this cap even
+    when complete local evidence is hundreds of megabytes.
+  shard_bound_rule: >-
+    Each full-evidence shard is independently bounded. A single oversized shard
+    is reported and recoverable; it cannot make the whole tier unloadable.
+  signal_bound_rule: >-
+    The signal tier is bounded to fit under the reader cap. Selection must
+    preserve representative evidence across all supported sources rather than
+    silently truncating one source.
+  real_scale_acknowledgement: >-
+    Real corpora exceed 500 MB. The goal is useful analysis, not merely
+    graceful failure; bounded tiers exist so consumers analyze real scale
+    rather than reporting unavailable or stale results.
+
+compatibility_states:
+  determinism_rule: >-
+    Every compatibility state has a fixed status, reason, recovery action, and
+    outcome. Recovery is actionable: it names the command or correction that
+    restores useful analysis. outcomes are limited to `recover` and `degrade`;
+    a `degrade` outcome must keep provenance visible and never fabricate
+    coverage. These outcomes are covered by passing and failing checks.
+  states:
+    oversized:
+      trigger: A full-evidence shard or legacy monolithic corpus exceeds the reader cap.
+      status: stale
+      reason: oversized
+      outcome: degrade
+      recovery: >-
+        Refresh bounded tiers with `agentera stats refresh --consent
+        local-history` or read the signal tier, which is bounded to fit. Do not
+        attempt to load the oversized artifact whole.
+      determinism: >-
+        Size is computed before read; the artifact is never partially loaded.
+        The signal tier remains usable.
+    legacy:
+      trigger: >-
+        A pre-tiering monolithic corpus.json exists but no bounded tiers have
+        been published.
+      status: stale
+      reason: legacy_monolithic_state
+      outcome: degrade
+      recovery: >-
+        Emit deterministic refresh guidance: run `agentera stats refresh
+        --consent local-history` to publish bounded tiers. Legacy monolithic
+        state receives refresh guidance rather than indefinite read
+        compatibility.
+      determinism: >-
+        Legacy state is detected by envelope shape and missing tier markers; it
+        is never silently treated as current.
+    missing:
+      trigger: No evidence artifact or tier exists at the resolved path.
+      status: missing
+      reason: no_evidence
+      outcome: degrade
+      recovery: >-
+        Report `agentera stats refresh --consent local-history` and the
+        `--corpus PATH` override. Must not auto-build, scan home directories, or
+        run live extraction without consent.
+      determinism: >-
+        Missing is reported as a concrete status with a path, never as an empty
+        success.
+    corrupt:
+      trigger: An artifact exists but is not readable JSON or fails schema validation.
+      status: stale
+      reason: unreadable_or_schema_divergent
+      outcome: degrade
+      recovery: >-
+        Refresh from source history. If a single shard is corrupt, the other
+        shards and the signal tier remain usable; only the corrupt shard is
+        flagged.
+      determinism: >-
+        Parse errors are caught per artifact/shard and reported with the
+        failing reason; one corrupt shard cannot crash tier reads.
+    incomplete:
+      trigger: >-
+        Tiers exist but a supported source family is unavailable, skipped
+        without acceptance, or extracted zero records.
+      status: flagged
+      reason: coverage_gap_or_sparse
+      outcome: degrade
+      recovery: >-
+        Surface the skipped/sparse family with its reason. Available skipped
+        sources require explicit `--accept-coverage-gap`; sparse (zero-record)
+        extraction is distinct from schema divergence.
+      determinism: >-
+        Coverage gaps and sparse extraction are reported per family with
+        discovery status; none is silently omitted.
+
+scope:
+  in_scope:
+    - Tier contract definition, source coverage, consumer field supply.
+    - Signal semantics reservation for current and deferred consumers.
+    - Compatibility state definitions and deterministic recovery outcomes.
+    - Small contract-model code and focused tests making invariants executable.
+  out_of_scope:
+    - Complete extraction writer implementation.
+    - Migration of all consumers to bounded tiers.
+    - Bounded profile synthesis runtime.
+    - Glossary implementation.
+    - Profile level selection.
+    - Suite version bump, release, or publish.
+  version_constraint: >-
+    Suite and version metadata remain at 3.0.0. This contract does not bump,
+    release, or publish anything.

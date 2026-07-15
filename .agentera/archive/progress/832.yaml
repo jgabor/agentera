@@ -1,0 +1,15 @@
+schemaVersion: agentera.stateArchiveEntry.v1
+artifact_id: progress
+entry_number: 832
+record:
+  number: 832
+  timestamp: 2026-07-15 19:42
+  type: feat
+  phase: build
+  what: Define and verify the authoritative evidence-tier contract
+  discovered: Existing signalType taxonomy and FAMILIES constants align with reserved signal semantics; cursor family covers cursor + cursor-agent products.
+  verified: "Full vitest suite 2110/2110 passed; tsc typecheck clean; build green; capability-contract validation 2/2 0 violations; check compact status=pass over_limit=0. Contract loader smoke: 2 tiers, 5 source families, 5 consumers, 8 signal semantics, 5 compatibility states, Decision 55 reconciled, validation errors=NONE."
+  next: "Task 2: publish bounded complete evidence shards and derived signal tier against this contract."
+  context:
+    intent: Replace the monolithic corpus.json dump with bounded tiers so consumers analyze real-scale corpora instead of degrading solely because complete local evidence is oversized.
+record_sha256: c9e36a998a9254d01e9d434859ffcce653c57b269d995540cb9333cc7a4d1fd3
