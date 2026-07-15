@@ -68,6 +68,7 @@
 
 ### Fixed
 
+- Fixed experiment snapshot cursors to survive append-driven 10/40/50 full-to-summary and summary-to-drop rollover when immutable archives prove original identities unchanged, while still rejecting mutations, deletion, archive damage, and unsubstantiated rollover.
 - Fixed `packages/cli/src/state/archivePublication.ts` to fsync each newly created archive directory entry and reconstruct missing experiment archives from exact full projection replays before success.
 - Fixed generic `agentera state experiments explain --format json` discovery to return the valid `publish` operation instead of rejecting an invalid `append` default.
 - Fixed plan-list entries to declare full-detail availability, enforced the 32 KiB serialized output budget for YAML as well as JSON, and synchronized retrieval implementation status across authority, schema introspection, help, and runtime behavior.

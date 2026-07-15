@@ -57,6 +57,13 @@ function writeArchive(root: string, objectivePath: string, id: string, record: R
   return publication.target;
 }
 
+function writeProjection(experimentsPath: string, records: Record<string, unknown>[]): void {
+  fs.writeFileSync(experimentsPath, dumpYamlMapping({
+    experiments: records.slice(-10),
+    archive: records.slice(-50, -10).map((record) => ({ number: record.number, summary: record.conclusion })),
+  }));
+}
+
 function capture(root: string, args: string[]) {
   const previous = process.cwd();
   let out = "";
@@ -118,6 +125,99 @@ describe("objective-scoped experiment list and get", () => {
     const stale = capture(fixture.root, ["list", "--objective", objectiveId, "--cursor", first.next_cursor, "--format", "json"]);
     expect(stale.rc).toBe(1);
     expect(stale.json.error.class).toBe("cursor_snapshot_unavailable");
+  });
+
+  it("continues across append-driven full-to-summary rollover when archives prove original detail", () => {
+    const fixture = project();
+    const original = Array.from({ length: 10 }, (_, number) => experiment(number));
+    writeProjection(fixture.experimentsPath, original);
+    for (const record of original) writeArchive(fixture.root, fixture.objectivePath, objectiveId, record);
+
+    const first = capture(fixture.root, ["list", "--objective", objectiveId, "--limit", "1", "--format", "json"]).json;
+    expect(first.entries.map((entry: any) => entry.experiment_number)).toEqual([9]);
+
+    const appended = [...original, experiment(10)];
+    writeProjection(fixture.experimentsPath, appended);
+    writeArchive(fixture.root, fixture.objectivePath, objectiveId, appended[10]);
+    const continued = capture(fixture.root, ["list", "--objective", objectiveId, "--limit", "20", "--cursor", first.next_cursor, "--format", "json"]);
+
+    expect(continued.rc).toBe(0);
+    expect(continued.json.entries.map((entry: any) => entry.experiment_number)).toEqual([8, 7, 6, 5, 4, 3, 2, 1, 0]);
+    expect(continued.json.entries.some((entry: any) => entry.experiment_number === 10)).toBe(false);
+    expect(continued.json.entries.at(-1)).toMatchObject({ experiment_number: 0, detail_availability: "full", source: "archive_and_projection" });
+  });
+
+  it("continues across summary-to-drop rollover and traverses the original snapshot exactly once", () => {
+    const fixture = project();
+    const original = Array.from({ length: 50 }, (_, number) => experiment(number));
+    writeProjection(fixture.experimentsPath, original);
+    for (const record of original) writeArchive(fixture.root, fixture.objectivePath, objectiveId, record);
+
+    const seen: number[] = [];
+    let page = capture(fixture.root, ["list", "--objective", objectiveId, "--limit", "7", "--format", "json"]).json;
+    seen.push(...page.entries.map((entry: any) => entry.experiment_number));
+
+    const appended = [...original, experiment(50)];
+    writeProjection(fixture.experimentsPath, appended);
+    writeArchive(fixture.root, fixture.objectivePath, objectiveId, appended[50]);
+    while (page.next_cursor) {
+      const result = capture(fixture.root, ["list", "--objective", objectiveId, "--limit", "7", "--cursor", page.next_cursor, "--format", "json"]);
+      expect(result.rc).toBe(0);
+      page = result.json;
+      seen.push(...page.entries.map((entry: any) => entry.experiment_number));
+    }
+
+    expect(seen).toEqual(Array.from({ length: 50 }, (_, index) => 49 - index));
+    expect(new Set(seen).size).toBe(50);
+    expect(seen).not.toContain(50);
+  });
+
+  it("rejects rollover without archive proof plus mutation, archive corruption, and deletion", () => {
+    const withoutArchive = project();
+    const original = Array.from({ length: 10 }, (_, number) => experiment(number));
+    writeProjection(withoutArchive.experimentsPath, original);
+    const unsupported = capture(withoutArchive.root, ["list", "--objective", objectiveId, "--limit", "1", "--format", "json"]).json;
+    writeProjection(withoutArchive.experimentsPath, [...original, experiment(10)]);
+    const unsubstantiated = capture(withoutArchive.root, ["list", "--objective", objectiveId, "--cursor", unsupported.next_cursor, "--format", "json"]);
+    expect(unsubstantiated.rc).toBe(1);
+    expect(unsubstantiated.json.error.class).toBe("cursor_snapshot_unavailable");
+
+    const droppedSummary = project();
+    const fifty = Array.from({ length: 50 }, (_, number) => experiment(number));
+    writeProjection(droppedSummary.experimentsPath, fifty);
+    const dropCursor = capture(droppedSummary.root, ["list", "--objective", objectiveId, "--limit", "1", "--format", "json"]).json.next_cursor;
+    writeProjection(droppedSummary.experimentsPath, [...fifty, experiment(50)]);
+    const unprovableDrop = capture(droppedSummary.root, ["list", "--objective", objectiveId, "--cursor", dropCursor, "--format", "json"]);
+    expect(unprovableDrop.rc).toBe(1);
+    expect(unprovableDrop.json.error.class).toBe("cursor_snapshot_unavailable");
+
+    const mutated = project();
+    writeProjection(mutated.experimentsPath, original);
+    for (const record of original) writeArchive(mutated.root, mutated.objectivePath, objectiveId, record);
+    const mutationCursor = capture(mutated.root, ["list", "--objective", objectiveId, "--limit", "1", "--format", "json"]).json.next_cursor;
+    writeProjection(mutated.experimentsPath, original.map((record) => record.number === 5 ? experiment(5, { label: "mutated" }) : record));
+    const mutation = capture(mutated.root, ["list", "--objective", objectiveId, "--cursor", mutationCursor, "--format", "json"]);
+    expect(mutation.rc).toBe(1);
+    expect(mutation.json.error.class).toBe("cursor_snapshot_unavailable");
+
+    const corrupted = project();
+    writeProjection(corrupted.experimentsPath, original);
+    for (const record of original) writeArchive(corrupted.root, corrupted.objectivePath, objectiveId, record);
+    const corruptionCursor = capture(corrupted.root, ["list", "--objective", objectiveId, "--limit", "1", "--format", "json"]).json.next_cursor;
+    fs.writeFileSync(path.join(corrupted.directory, "archive", "experiments", "0.yaml"), "schemaVersion: wrong\n");
+    const corruption = capture(corrupted.root, ["list", "--objective", objectiveId, "--cursor", corruptionCursor, "--format", "json"]);
+    expect(corruption.rc).toBe(1);
+    expect(corruption.json.error.class).toBe("cursor_snapshot_unavailable");
+
+    const deleted = project();
+    writeProjection(deleted.experimentsPath, original);
+    for (const record of original) writeArchive(deleted.root, deleted.objectivePath, objectiveId, record);
+    const deletionCursor = capture(deleted.root, ["list", "--objective", objectiveId, "--limit", "1", "--format", "json"]).json.next_cursor;
+    writeProjection(deleted.experimentsPath, original.slice(1));
+    fs.rmSync(path.join(deleted.directory, "archive", "experiments", "0.yaml"));
+    const deletion = capture(deleted.root, ["list", "--objective", objectiveId, "--cursor", deletionCursor, "--format", "json"]);
+    expect(deletion.rc).toBe(1);
+    expect(deletion.json.error.class).toBe("cursor_snapshot_unavailable");
   });
 
   it("prefers verified immutable archive detail and exposes retained and summary-only compatibility", () => {
@@ -216,5 +316,32 @@ describe("objective-scoped experiment list and get", () => {
     expect(result.json.omitted_count).toBeGreaterThan(0);
     expect(result.json.next_cursor).toBeTruthy();
     expect(result.json.retrieval.continue).toContain(result.json.next_cursor);
+  });
+
+  it("keeps byte-limited traversal snapshot-bound across retention rollover", () => {
+    const fixture = project();
+    const original = Array.from({ length: 50 }, (_, number) => experiment(number, { conclusion: `${number}:${"x".repeat(1200)}` }));
+    writeProjection(fixture.experimentsPath, original);
+    for (const record of original) writeArchive(fixture.root, fixture.objectivePath, objectiveId, record);
+
+    const seen: number[] = [];
+    let page = capture(fixture.root, ["list", "--objective", objectiveId, "--limit", "100", "--format", "json"]);
+    expect(page.rc).toBe(0);
+    expect(Buffer.byteLength(page.out, "utf8")).toBeLessThanOrEqual(32_768);
+    expect(page.json.omission_reason).toBe("serialized_output_byte_budget");
+    seen.push(...page.json.entries.map((entry: any) => entry.experiment_number));
+
+    const appended = [...original, experiment(50, { conclusion: `50:${"x".repeat(1200)}` })];
+    writeProjection(fixture.experimentsPath, appended);
+    writeArchive(fixture.root, fixture.objectivePath, objectiveId, appended[50]);
+    while (page.json.next_cursor) {
+      page = capture(fixture.root, ["list", "--objective", objectiveId, "--limit", "100", "--cursor", page.json.next_cursor, "--format", "json"]);
+      expect(page.rc).toBe(0);
+      expect(Buffer.byteLength(page.out, "utf8")).toBeLessThanOrEqual(32_768);
+      seen.push(...page.json.entries.map((entry: any) => entry.experiment_number));
+    }
+
+    expect(seen).toEqual(Array.from({ length: 50 }, (_, index) => 49 - index));
+    expect(new Set(seen).size).toBe(50);
   });
 });

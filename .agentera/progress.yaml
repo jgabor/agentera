@@ -1,4 +1,33 @@
 cycles:
+  - number: 810
+    timestamp: 2026-07-15 09:52
+    type: fix
+    phase: build
+    what: Corrected Task 8 experiment cursors across 10/40/50 retention rollover.
+    discovered: The failed cursor fingerprint encoded projection collection and
+      array index even when an immutable archive already owned experiment
+      detail.
+    verified: "AC1 root commands: pnpm -C packages/cli exec vp test run
+      test/state/experimentRetrieval.test.ts -t 'full-to-summary rollover' => 1
+      passed, 9 skipped; -t 'summary-to-drop rollover|byte-limited traversal' =>
+      2 passed, 8 skipped; -t 'rejects rollover without archive proof' => 1
+      passed, 9 skipped. Audit fixture: node /tmp/opencode/audit809.mjs => 14
+      pages, 125 unique identities, 13 byte-bound pages, rollover resumed.
+      AC2/AC3 parity: retrievalAuthority, planRetrieval, schema => 143 passed.
+      Full CLI 183 files/2020 tests; typecheck, build, capability-contract,
+      compact, diff-check passed."
+    next: Task 8 awaits corrective audit; do not start Task 9 in this cycle.
+    context:
+      intent: Make append-only experiment snapshots independent of mutable projection
+        placement while failing closed without immutable proof.
+      constraints: Preserved Cycle 809, Task 8 audit attempt 1 failure, Task 7 state,
+        immutable archives, 10/40/50 retention, package metadata, and all user
+        changes.
+      unknowns: Independent corrective audit remains pending; cursor continuation
+        intentionally fails when original detail cannot be substantiated.
+      scope: Task 8 cursor fingerprinting, archive-backed list summaries, rollover and
+        stale-safety tests, authority clarification, changelog, plan, and
+        progress only.
   - number: 809
     timestamp: 2026-07-15 09:37
     type: feat
@@ -302,39 +331,6 @@ cycles:
         audit state, package metadata, and all later tasks.
       unknowns: None; proportional reproduction exposed no product defect.
       scope: Progress evidence and Task 3 plan state only.
-  - number: 800
-    timestamp: 2026-07-14 23:34
-    type: feat
-    phase: build
-    what: Established stable plan identity through validated publication, archival,
-      and collision-aware discovery.
-    inspiration: Task 3 acceptance criteria and
-      references/artifacts/state-storage-authority.yaml.
-    discovered: The full suite initially exposed transaction.ts at 1011 lines;
-      moving create-input validation to planPublication.ts restored the
-      1000-line gate without changing behavior.
-    verified: "AC1: pnpm exec vp test run test/state/planTaskRetrieval.test.ts
-      test/state/write/stateWrite.test.ts
-      test/state/planLifecycleContract.test.ts test/lint/monolithLint.test.ts
-      passed 4 files/81 tests, including stable writer-to-archive identity and
-      active/archived provenance. AC2: the same run proved deterministic
-      read-only legacy derivation, byte-equivalent mirrored paths, and
-      structured ambiguous failure with all collision paths. AC3:
-      transition/collision/legacy fixtures passed. pnpm test passed 179
-      files/1974 tests; pnpm run typecheck and pnpm build passed; node
-      dist/bin/agentera.js check validate capability-contract --format json
-      passed 2/2."
-    next: Execute Task 4 plan list/get using this identity authority; do not alter
-      file-based archive ownership.
-    context:
-      intent: Complete Plan Task 3 by preserving identity across lifecycle transitions
-        and safely deriving legacy identity without rewriting history.
-      constraints: Preserved file archives, strict publication, crash consistency,
-        legacy bytes, package metadata, experiments, and Task 4 boundaries.
-      unknowns: None for Task 3; plan list/get remains intentionally deferred to Task 4.
-      scope: Plan schema and retrieval authority projection, writer publication,
-        archive discovery, active task collision safety, tests, changelog,
-        progress, and plan status.
   - number: 793
     timestamp: 2026-07-14 17:36
     type: chore
@@ -404,6 +400,8 @@ cycles:
         and backfill fixtures; package metadata and generated ignored
         dist/bundle
 archive:
+  - summary: "Cycle 800 (2026-07-14): Established stable plan identity through
+      validated publication, archival, and collision-aware discovery."
   - summary: "Cycle 799 (2026-07-14): Aligned plan-task help with the optional
       active-plan selector and added help-authority-runtime regression
       coverage."
@@ -500,16 +498,18 @@ archive:
   - summary: "Cycle 760 (2026-07-13): Corrected Task 8 verification counts after
       adding unsupported-state archive fixtures; Cycle 759 evidence remains
       immutable..."
-  - summary: "Cycle 759 (2026-07-13): Exposed stable-ID direct retrieval for
-      progress, decisions, and health with exact archive lookup, provenance,
-      overlay..."
 omitted: true
-omitted_count: 45
+omitted_count: 46
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded

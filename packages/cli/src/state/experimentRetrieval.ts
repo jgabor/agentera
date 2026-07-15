@@ -246,12 +246,19 @@ function logicalExperiment(objectiveId: string, number: number, projection: Proj
   const source = archives.length > 0
     ? projection.length > 0 ? "archive_and_projection" : "immutable_archive"
     : fullProjection.length > 0 ? "retained_projection" : "legacy_summary_projection";
-  const fingerprint = hash({
-    stable_id: stableId,
-    projection: projection.map((item) => ({ path: item.path, collection: item.collection, index: item.index, hash: hash(item.record) })),
-    archives: archives.map((item) => ({ path: item.path, hash: item.recordSha256 })),
-    compatibility,
-  });
+  const fingerprint = hash(archives.length > 0
+    ? {
+        stable_id: stableId,
+        evidence: "immutable_archive",
+        record_hashes: [...archiveHashes].sort(),
+        compatibility,
+      }
+    : {
+        stable_id: stableId,
+        evidence: fullProjection.length > 0 ? "retained_full" : summaryDetail ? "legacy_summary" : "unavailable",
+        record_hashes: [...projectionHashes].sort(),
+        compatibility,
+      });
   return { key: stableId, stableId, number, projection, archives, addressable: !immutableConflict && !duplicate, compatibility, detailAvailability, source, fingerprint };
 }
 
@@ -311,7 +318,7 @@ function provenance(experiment: LogicalExperiment, objective: ObjectiveArtifactC
 }
 
 function summaryRecord(experiment: LogicalExperiment): JsonObject | undefined {
-  const source = experiment.projection[0]?.record ?? experiment.archives[0]?.record;
+  const source = experiment.archives[0]?.record ?? experiment.projection[0]?.record;
   if (!source) return undefined;
   const summary: JsonObject = {};
   for (const field of ["date", "label", "status", "summary", "conclusion"]) if (source[field] !== undefined) summary[field] = source[field]!;

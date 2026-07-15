@@ -87,7 +87,13 @@ retrieval:
     first_page: omit --cursor
     response_field: next_cursor
     binding: [collection, selectors, filters, order, snapshot]
-    append_behavior: records added after the first page are excluded from that cursor snapshot
+    append_behavior: >-
+      Records added after the first page are excluded from that cursor snapshot.
+      Experiment cursors bind each original stable identity to immutable archive
+      content when available, so unchanged full-to-summary or summary-to-drop
+      projection rollover does not invalidate continuation. Without sufficient
+      immutable or retained detail to prove an original identity unchanged, the
+      cursor fails with cursor_snapshot_unavailable.
     invalid_behavior: cursor_invalid
     unavailable_behavior: cursor_snapshot_unavailable
     caller_rules: [do_not_parse, do_not_construct, do_not_compare_internals]
