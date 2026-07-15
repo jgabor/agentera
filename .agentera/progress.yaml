@@ -1,4 +1,40 @@
 cycles:
+  - number: 806
+    timestamp: 2026-07-15 08:35
+    type: fix
+    phase: build
+    what: Fixed packages/cli/src/state/write/explain.ts so generic experiments
+      writer discovery selects publish, and added a schema test that executes
+      every emitted generic and per-verb explain command.
+    inspiration: Independent Task 6 audit attempt task-6-audit-1-20260715.
+    verified: "Discovery PASS: pnpm -C packages/cli exec vp test run
+      test/cli/schema.test.ts -t 'executes every emitted writer discovery
+      command' returned 1 passed, 7 skipped. Generic smoke PASS: node
+      packages/cli/dist/bin/agentera.js state experiments explain --format json.
+      Per-verb smoke PASS: node packages/cli/dist/bin/agentera.js state
+      experiments explain --verb publish --format json. AC1 PASS: pnpm -C
+      packages/cli exec vp test run
+      test/state/write/experimentPublication.test.ts -t 'validates input and
+      assigns objective-scoped identity before publication'. AC2 PASS: pnpm -C
+      packages/cli exec vp test run
+      test/state/write/experimentPublication.test.ts -t 'preserves active and
+      archive bytes on identity, schema, collision, and staged publication
+      failures'. AC3 PASS: pnpm -C packages/cli exec vp test run
+      test/state/write/experimentPublication.test.ts -t 'retries idempotently
+      after interruption following atomic publication'. Each AC returned 1
+      passed, 4 skipped. pnpm -C packages/cli test passed 182 files and 1999
+      tests; typecheck, build, capability-contract validation, check compact,
+      and git diff --check passed."
+    next: Re-audit Task 6; do not begin Task 7 durable archival or Task 8 list/get
+      in this cycle.
+    context:
+      intent: Correct Task 6's failed discovery-contract audit without changing
+        experiment publication, archival, or retrieval scope.
+      constraints: Preserve Cycle 805, audit attempt 1, publication semantics, and
+        pending Task 7-8 scope.
+      unknowns: Independent retry audit remains pending.
+      scope: Generic writer explain default, exhaustive discovery regression,
+        changelog, Task 6 evidence/status, and corrective progress cycle.
   - number: 805
     timestamp: 2026-07-15 08:21
     type: feat
@@ -310,37 +346,6 @@ cycles:
         a contract conflict.
       scope: Retrieval-authority contract tests plus typed plan/progress closeout
         state.
-  - number: 796
-    timestamp: 2026-07-14 22:37
-    type: feat
-    phase: build
-    what: Defined executable bounded-retrieval authority and reserved plan, task,
-      and experiment command grammar.
-    inspiration: Approved plan Task 1 and Decision 93 CLI authority.
-    discovered: "The live catalog has 134 physical valid plans and 133 logical
-      identities: one byte-equivalent mirrored pair and no ambiguous identities.
-      Two invalid historical archives remain compatibility caveats. No objective
-      directories currently exist under optimize or optimera."
-    verified: Focused 87 tests and full 1883-test suite passed. Typecheck, build,
-      capability-contract validation, compact gate, schema introspection, help
-      smoke checks, and live identity scan passed.
-    next: Begin Task 2 only after a new explicit cycle; implement plan task list/get
-      against this grammar.
-    context:
-      intent: Complete Task 1 by making collection classification, identity,
-        selectors, cursors, omissions, and structured failures authoritative
-        before retrieval implementation.
-      constraints: Contracts and grammar only; preserved numbered archives, file plan
-        archives, objective scope, experiment 10/40/50, suite 3.0.0 metadata,
-        and legacy bytes.
-      unknowns: "Resolved: normalized-document legacy plan IDs produce one mirrored
-        duplicate and no ambiguity live; persisted objective UUID survives
-        rename, optimera is read-compatible legacy, experiment 0 is valid; five
-        current plan/experiment count or byte gaps are named; degraded plan
-        archives are non-fatal compatibility caveats unless selected."
-      scope: State retrieval authority, validator/registry projection, plan/experiment
-        help and schema introspection, contract tests, changelog, plan status,
-        and progress evidence.
   - number: 793
     timestamp: 2026-07-14 17:36
     type: chore
@@ -410,6 +415,8 @@ cycles:
         and backfill fixtures; package metadata and generated ignored
         dist/bundle
 archive:
+  - summary: "Cycle 796 (2026-07-14): Defined executable bounded-retrieval authority
+      and reserved plan, task, and experiment command grammar."
   - summary: "Cycle 795 (2026-07-14): Made TODO resolved compaction require one
       section, keep a positional 10/40/50 newest-first queue, summarize rows..."
   - summary: "Cycle 794 (2026-07-14): Made archived-only plan reads report verified
@@ -505,15 +512,18 @@ archive:
       lossless projection defaults and deterministic omission metadata."
   - summary: "Cycle 756 (2026-07-13): Corrected Cycle 755 Task 6 test counts through
       an append-only supersession record"
-  - summary: "Cycle 755 (2026-07-13): Gated automatic and explicit projection
-      summaries on verified numbered archives"
 omitted: true
-omitted_count: 41
+omitted_count: 42
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded

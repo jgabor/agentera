@@ -155,7 +155,17 @@ tasks:
       - GIVEN a new experiment WHEN published THEN the CLI validates and assigns or enforces identity before side effects.
       - GIVEN invalid identity or publication failure WHEN attempted THEN active and archived bytes remain unchanged.
       - GIVEN a retry after interruption WHEN tested THEN publication is idempotent, with passing success and failing atomicity cases.
-    evidence: "AC1 PASS: pnpm -C packages/cli exec vp test run test/state/write/experimentPublication.test.ts -t 'validates input and assigns objective-scoped identity before publication'. AC2 PASS: pnpm -C packages/cli exec vp test run test/state/write/experimentPublication.test.ts -t 'preserves active and archive bytes on identity, schema, collision, and staged publication failures'. AC3 PASS: pnpm -C packages/cli exec vp test run test/state/write/experimentPublication.test.ts -t 'retries idempotently after interruption following atomic publication'. Each returned 1 passed, 4 skipped."
+    evidence: "Discovery PASS: pnpm -C packages/cli exec vp test run test/cli/schema.test.ts -t 'executes every emitted writer discovery command' (1 passed, 7 skipped). AC1 PASS: pnpm -C packages/cli exec vp test run test/state/write/experimentPublication.test.ts -t 'validates input and assigns objective-scoped identity before publication'. AC2 PASS: same file -t 'preserves active and archive bytes on identity, schema, collision, and staged publication failures'. AC3 PASS: same file -t 'retries idempotently after interruption following atomic publication'. Each AC returned 1 passed, 4 skipped; audit attempt 1 remains recorded."
+    evaluation:
+      attempt_count: 1
+      failure_count: 1
+      last_verdict: fail
+      last_failure_evidence: Typed-writer discovery advertises generic state experiments explain, but that command defaults to invalid append and exits 2.
+      provenance:
+        attempt_id: task-6-audit-1-20260715
+        source: independent Task 6 acceptance audit
+        recorded_at: 2026-07-15 08:31
+        writer_command: agentera state plan record-evaluation
   - number: 7
     name: Add durable experiment archival
     depends_on:

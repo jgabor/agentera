@@ -9,6 +9,7 @@ import { main } from "../../src/cli/dispatch.js";
 
 const packageRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const cliBin = path.join(packageRoot, "dist", "bin", "agentera.js");
+const projectRoot = path.resolve(packageRoot, "..", "..");
 
 function capture(fn: (io: { out: (t: string) => void; err: (t: string) => void }) => number): {
   rc: number;
@@ -22,6 +23,31 @@ function capture(fn: (io: { out: (t: string) => void; err: (t: string) => void }
 }
 
 describe("cli schema", () => {
+  it("executes every emitted writer discovery command", () => {
+    const payload = buildSchemaPayload("schema");
+    const artifacts = payload.state_writer.artifacts as Array<{
+      artifact: string;
+      explain_command: string;
+      explain_by_verb: Record<string, string>;
+    }>;
+
+    expect(artifacts.length).toBeGreaterThan(0);
+    for (const artifact of artifacts) {
+      for (const command of [artifact.explain_command, ...Object.values(artifact.explain_by_verb)]) {
+        const argv = command.split(" ").slice(1);
+        const result = capture((io) => main(
+          ["node", "agentera", ...argv, "--project", projectRoot],
+          io,
+        ));
+        expect(result, command).toMatchObject({ rc: 0, err: "" });
+        expect(JSON.parse(result.out), command).toMatchObject({
+          artifact: artifact.artifact,
+          requested_verb: expect.any(String),
+        });
+      }
+    }
+  });
+
   it("builds a schema payload against the repo", () => {
     const payload = buildSchemaPayload("schema");
     expect(payload.schemaVersion).toBe("agentera.schema.v1");

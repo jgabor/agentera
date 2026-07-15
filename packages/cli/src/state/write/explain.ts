@@ -20,7 +20,7 @@ function liveDoc(p: string): Record<string, unknown> {
 }
 
 function defaultVerb(artifact: WritableArtifact): Exclude<WriteVerb, "explain"> {
-  return artifact === "plan" ? "append" : "append";
+  return artifact === "experiments" ? "publish" : "append";
 }
 
 export function buildExplain(
