@@ -1,4 +1,34 @@
 cycles:
+  - number: 828
+    timestamp: 2026-07-15 17:57
+    type: fix
+    phase: build
+    what: Made lint consume owning schema verbosity declarations without runtime
+      tables or fallback constants.
+    inspiration: Active authoritative lint budgets and advisory exits Plan Task 2;
+      Task 1 contract commit e3d11738.
+    discovered: The existing per-entry checker invented full-file/5 and 500-word
+      fallbacks, while full-file lint assigned word budgets to decisions,
+      design, changelog, and todo contrary to their declarations.
+    verified: Focused pnpm test targets passed 38/38 across 3 files; broad CLI suite
+      passed 2079/2079 across 186 files; pnpm typecheck and pnpm build passed;
+      capability-contract validation passed 2/2; compiled CLI observed progress
+      501/500 and 3001/3000 failures, decisions/design 5001-word passes, and
+      actionable unsupported-authority failure; vp lint exited 0 with 112
+      pre-existing warnings and 0 errors; git diff --check passed.
+    next: Stop after Task 2. Task 3 remains pending and exclusively owns
+      advisory/strict interactive exit semantics.
+    context:
+      intent: Complete Plan Task 2 by enforcing only authoritative numeric word limits
+        while preserving no-limit, token-only, non-verbosity, and strict
+        publication behavior.
+      constraints: Preserved cmdLint exit behavior, strict publication linting,
+        uniform_10_40_50 compaction, vision/objective/profile/decision state,
+        and all unrelated lint classifications.
+      unknowns: None for Task 2. Decision 93 remains review-needed and historical plan
+        lifecycle/profile caveats remain unchanged.
+      scope: packages/cli lint authority consumption and focused tests, plus Task 2
+        plan/progress/TODO/changelog closeout.
   - number: 827
     timestamp: 2026-07-15 17:43
     type: feat
@@ -340,36 +370,6 @@ cycles:
         unchanged and unrelated.
       scope: Package gitRef, repository-local release provenance validation and tests,
         release policy documentation, plan status, and Cycle 819 state.
-  - number: 818
-    timestamp: 2026-07-15 12:57
-    type: chore
-    phase: build
-    what: Verified npm development metadata and package contents for the next
-      available prerelease without publication.
-    inspiration: Replacement Plan Task 13 and the repository release contract.
-    discovered: npm agentera@next is 3.0.0-dev.20; the checkout had already prepared
-      the available 3.0.0-dev.21, so no package or lockfile byte change was
-      required.
-    verified: npm current 3.0.0-dev.20; next available and local 3.0.0-dev.21; suite
-      surfaces 3.0.0; CHANGELOG.md retained Unreleased. Focused
-      metadata/registry/prepack tests passed 41/41; full CLI tests passed 185
-      files and 2058/2058. Typecheck, build, bundle:data, release-metadata,
-      capability-contract 2/2, compact, and git diff --check passed. npm pack
-      dry-run reported 664 files and included dist/bin/agentera.js, the bundle
-      sentinel, registry.json, and current state-storage-authority.yaml. pnpm -C
-      packages/cli exec npm publish --tag next --dry-run completed with +
-      agentera@3.0.0-dev.21; no publication, tag, or push occurred.
-    next: Proceed to dependency-ready Plan Task 14 only on a new explicit cycle.
-    context:
-      intent: Complete replacement Plan Task 13 under the v3 cutover hold.
-      constraints: Changed no suite version, plugin manifest, skill version, registry
-        suite metadata, stable shim, gitRef, or changelog boundary; preserved
-        and included the pre-existing Task 12 pass and TODO resolution.
-      unknowns: Decision satisfaction review caveats remain unchanged and are
-        unrelated to package metadata.
-      scope: Release verification plus plan, progress, and pre-existing TODO state;
-        package.json remained byte-identical because 3.0.0-dev.21 was already
-        prepared.
   - number: 793
     timestamp: 2026-07-14 17:36
     type: chore
@@ -439,6 +439,8 @@ cycles:
         and backfill fixtures; package metadata and generated ignored
         dist/bundle
 archive:
+  - summary: "Cycle 818 (2026-07-15): Verified npm development metadata and package
+      contents for the next available prerelease without publication."
   - summary: "Cycle 817 (2026-07-15): Retried Task 12 after audit attempt 1. Removed
       Build's remaining retired gate command expectation, made..."
   - summary: "Cycle 816 (2026-07-15): Repaired Plan Task 12 alias authority and
@@ -533,15 +535,18 @@ archive:
       capability instructions and the checked-in consumer matrix."
   - summary: "Cycle 778 (2026-07-14): Repaired bounded orchestration verification
       projection and completed the independent audit for Task 1."
-  - summary: "Cycle 777 (2026-07-14): Validated the repaired Unicode surfaces and
-      migrated the complete bounded state consumer matrix across all..."
 omitted: true
-omitted_count: 63
+omitted_count: 64
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded

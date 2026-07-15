@@ -116,7 +116,11 @@ function lintChecks(text: string, artifact: string, fullArtifact: boolean): Arra
       name,
       status: passed ? "pass" : "fail",
       detail,
-      action: passed ? "" : actions[name],
+      action: passed
+        ? ""
+        : name === "verbosity" && detail.startsWith("verbosity authority error")
+          ? "Repair the verbosity budget authority or its owning artifact schema, then retry lint."
+          : actions[name],
     });
   }
   return checks;

@@ -21,10 +21,11 @@ describe("checkVerbosity", () => {
     expect(detail).toContain("500");
   });
 
-  it("uses the 500-word fallback for unknown artifacts", () => {
+  it("reports unsupported artifacts as authority errors without a fallback", () => {
     const [passed, detail] = checkVerbosity("word ".repeat(100), "UNKNOWN.md");
-    expect(passed).toBe(true);
-    expect(detail).toBe("");
+    expect(passed).toBe(false);
+    expect(detail).toContain("verbosity authority error");
+    expect(detail).toContain("unsupported artifact");
   });
 });
 

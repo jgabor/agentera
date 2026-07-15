@@ -1,0 +1,19 @@
+schemaVersion: agentera.stateArchiveEntry.v1
+artifact_id: progress
+entry_number: 828
+record:
+  number: 828
+  timestamp: 2026-07-15 17:57
+  type: fix
+  phase: build
+  what: Made lint consume owning schema verbosity declarations without runtime tables or fallback constants.
+  inspiration: Active authoritative lint budgets and advisory exits Plan Task 2; Task 1 contract commit e3d11738.
+  discovered: The existing per-entry checker invented full-file/5 and 500-word fallbacks, while full-file lint assigned word budgets to decisions, design, changelog, and todo contrary to their declarations.
+  verified: Focused pnpm test targets passed 38/38 across 3 files; broad CLI suite passed 2079/2079 across 186 files; pnpm typecheck and pnpm build passed; capability-contract validation passed 2/2; compiled CLI observed progress 501/500 and 3001/3000 failures, decisions/design 5001-word passes, and actionable unsupported-authority failure; vp lint exited 0 with 112 pre-existing warnings and 0 errors; git diff --check passed.
+  next: Stop after Task 2. Task 3 remains pending and exclusively owns advisory/strict interactive exit semantics.
+  context:
+    intent: Complete Plan Task 2 by enforcing only authoritative numeric word limits while preserving no-limit, token-only, non-verbosity, and strict publication behavior.
+    constraints: Preserved cmdLint exit behavior, strict publication linting, uniform_10_40_50 compaction, vision/objective/profile/decision state, and all unrelated lint classifications.
+    unknowns: None for Task 2. Decision 93 remains review-needed and historical plan lifecycle/profile caveats remain unchanged.
+    scope: packages/cli lint authority consumption and focused tests, plus Task 2 plan/progress/TODO/changelog closeout.
+record_sha256: 48475a223b05888101523716704ae674403c9426839418cf951a28e657306562

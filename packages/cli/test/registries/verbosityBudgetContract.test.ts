@@ -12,6 +12,10 @@ import {
   validateVerbosityBudgetContract,
   VerbosityBudgetContractError,
 } from "../../src/registries/verbosityBudgetContract.js";
+import {
+  checkFullFileVerbosity,
+  checkVerbosity,
+} from "../../src/validate/selfAudit.js";
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..");
 const PRODUCTION_CONTRACT = path.join(REPO_ROOT, "references", "artifacts", "verbosity-budget-authority.yaml");
@@ -122,5 +126,53 @@ describe("verbosity budget owner resolution", () => {
       VerbosityBudgetContractError,
     );
     expect(() => resolveVerbosityBudgetOwner("notes.md", PRODUCTION_CONTRACT)).toThrow("unsupported artifact");
+  });
+});
+
+describe("lint verbosity budget consumption", () => {
+  it("enforces governed dimensions while skipping explicit no-limit and non-word dimensions", () => {
+    const contract = writeFixture(
+      [
+        { artifact_id: "progress", schema: "progress.yaml" },
+        { artifact_id: "decisions", schema: "decisions.yaml" },
+        { artifact_id: "design", schema: "design.yaml" },
+      ],
+      {
+        "progress.yaml": {
+          BUDGET: {
+            1: { id: "PB1", scope: "per_cycle_entry", max_words: 2 },
+            2: { id: "PB2", scope: "full_file", max_words: 3 },
+          },
+        },
+        "decisions.yaml": { BUDGET: { 1: { id: "DB1", scope: "full_file", max_words: null } } },
+        "design.yaml": { BUDGET: { 1: { id: "DS1", scope: "full_file", token_budget: 1 } } },
+      },
+    );
+
+    expect(checkVerbosity("one two three", "PROGRESS.md", contract)[1]).toContain("exceeds 2 budget");
+    expect(checkFullFileVerbosity("one two three four", ".agentera/progress.yaml", contract)[1])
+      .toContain("exceeds 3 full-file budget");
+    expect(checkFullFileVerbosity("word ".repeat(100), "decisions", contract)).toEqual([true, ""]);
+    expect(checkFullFileVerbosity("word ".repeat(100), "DESIGN.md", contract)).toEqual([true, ""]);
+  });
+
+  it("returns actionable authority errors for malformed or unavailable required data", () => {
+    const malformedContract = writeFixture(
+      [{ artifact_id: "progress", schema: "progress.yaml" }],
+      { "progress.yaml": { BUDGET: { 1: { id: "PB1", scope: "full_file", max_words: -1 } } } },
+    );
+    const [passed, detail] = checkFullFileVerbosity("one", "progress", malformedContract);
+    expect(passed).toBe(false);
+    expect(detail).toContain("verbosity authority error");
+    expect(detail).toContain("max_words must be a positive number or null");
+    expect(detail).toContain("repair the declared owner");
+
+    const unavailableContract = writeFixture(
+      [{ artifact_id: "progress", schema: "missing.yaml" }],
+      {},
+    );
+    const [, unavailableDetail] = checkFullFileVerbosity("one", "progress", unavailableContract);
+    expect(unavailableDetail).toContain("verbosity authority error");
+    expect(unavailableDetail).toContain("missing.yaml is unreadable or malformed");
   });
 });

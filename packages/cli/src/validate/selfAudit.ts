@@ -3,34 +3,10 @@
  * `scripts/self_audit.py`. Advisory only — report but do not block writes.
  */
 
-import { normalizeArtifactProtocolId } from "../registries/artifactProtocolIds.js";
-
-const FULL_FILE_BUDGETS: Record<string, number> = {
-  progress: 3000,
-  experiments: 2500,
-  health: 2000,
-  decisions: 5000,
-  todo: 5000,
-  changelog: 5000,
-  plan: 2500,
-  vision: 1500,
-  design: 2000,
-  docs: 2000,
-};
-
-const PER_ENTRY_BUDGETS: Record<string, number> = {
-  progress: 500,
-  experiments: 300,
-  health: 150,
-  decisions: 200,
-  todo: 100,
-  changelog: 300,
-  plan: 100,
-};
-
-function resolveBudgetArtifact(artifact: string): string {
-  return normalizeArtifactProtocolId(artifact) ?? artifact.toLowerCase();
-}
+import {
+  inspectArtifactVerbosityBudget,
+  type VerbosityBudgetDimension,
+} from "../registries/verbosityBudgetContract.js";
 
 const FILE_PATH_RE = /\b(?:[A-Za-z0-9_.-]+\/)+[A-Za-z0-9_.-]+\.[A-Za-z]{1,10}\b/;
 const REPO_PATH_RE =
@@ -69,29 +45,70 @@ function wordCount(text: string): number {
 export function checkVerbosity(
   text: string,
   artifact: string,
-  budgets: Record<string, number> | null = null,
+  contractPath?: string,
 ): [boolean, string] {
-  const count = wordCount(text);
-  const table = budgets ?? PER_ENTRY_BUDGETS;
-  const resolved = resolveBudgetArtifact(artifact);
-  let perEntryBudget = table[resolved];
-  if (perEntryBudget === undefined) {
-    const fullBudget = FULL_FILE_BUDGETS[resolved];
-    perEntryBudget = fullBudget !== undefined ? Math.floor(fullBudget / 5) : 500;
-  }
-  if (count <= perEntryBudget) {
-    return [true, ""];
-  }
-  return [false, `verbosity mismatch: ${count} words exceeds ${perEntryBudget} budget`];
+  return checkAuthoritativeWordBudget(text, artifact, false, contractPath);
 }
 
-export function checkFullFileVerbosity(text: string, artifact: string): [boolean, string] {
-  const count = wordCount(text);
-  const budget = FULL_FILE_BUDGETS[resolveBudgetArtifact(artifact)] ?? 2500;
-  if (count <= budget) {
+export function checkFullFileVerbosity(
+  text: string,
+  artifact: string,
+  contractPath?: string,
+): [boolean, string] {
+  return checkAuthoritativeWordBudget(text, artifact, true, contractPath);
+}
+
+function authorityError(artifact: string, detail: string): [false, string] {
+  return [
+    false,
+    `verbosity authority error for ${JSON.stringify(artifact)}: ${detail}; ` +
+      "repair the declared owner in references/artifacts/verbosity-budget-authority.yaml",
+  ];
+}
+
+function applicableDimensions(
+  dimensions: VerbosityBudgetDimension[],
+  fullArtifact: boolean,
+): VerbosityBudgetDimension[] {
+  return dimensions.filter((dimension) =>
+    fullArtifact ? dimension.scope === "full_file" : dimension.scope !== "full_file",
+  );
+}
+
+function checkAuthoritativeWordBudget(
+  text: string,
+  artifact: string,
+  fullArtifact: boolean,
+  contractPath?: string,
+): [boolean, string] {
+  let dimensions: VerbosityBudgetDimension[];
+  try {
+    dimensions = inspectArtifactVerbosityBudget(artifact, contractPath).dimensions;
+  } catch (error) {
+    return authorityError(artifact, (error as Error).message);
+  }
+  const invalid = dimensions.filter((dimension) => dimension.classification === "invalid_declaration");
+  if (invalid.length > 0) {
+    return authorityError(
+      artifact,
+      invalid.map((dimension) => `${dimension.scope}: ${dimension.error ?? "invalid declaration"}`).join("; "),
+    );
+  }
+  const applicable = applicableDimensions(dimensions, fullArtifact);
+  if (applicable.length > 1) {
+    const kind = fullArtifact ? "full-file" : "per-entry";
+    return authorityError(artifact, `multiple ${kind} declarations apply: ${applicable.map((d) => d.scope).join(", ")}`);
+  }
+  const dimension = applicable[0];
+  if (!dimension || dimension.classification !== "numeric_limit") {
     return [true, ""];
   }
-  return [false, `verbosity mismatch: ${count} words exceeds ${budget} full-file budget`];
+  const count = wordCount(text);
+  if (count <= dimension.limit!) {
+    return [true, ""];
+  }
+  const qualifier = fullArtifact ? " full-file" : "";
+  return [false, `verbosity mismatch: ${count} words exceeds ${dimension.limit}${qualifier} budget`];
 }
 
 export function checkAbstraction(text: string): [boolean, string] {
@@ -130,9 +147,6 @@ export function checkFiller(text: string): [boolean, string] {
 /** Smoke-validate that self-audit conventions and budgets are wired. */
 export function validateSelfAuditConventions(): string[] {
   const errors: string[] = [];
-  if (Object.keys(FULL_FILE_BUDGETS).length === 0 || Object.keys(PER_ENTRY_BUDGETS).length === 0) {
-    errors.push("self-audit: budget tables must be non-empty");
-  }
   const sample = "concrete anchor `scripts/agentera` at line 42 with 12 words total here";
   const [verbosityOk] = checkVerbosity(sample, "progress");
   if (!verbosityOk) {

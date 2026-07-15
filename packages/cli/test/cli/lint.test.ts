@@ -4,7 +4,7 @@ import path from "node:path";
 
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import { cmdLint, lintPayload } from "../../src/cli/commands/lint.js";
+import { cmdLint, lintFullArtifactPayload, lintPayload } from "../../src/cli/commands/lint.js";
 import { main } from "../../src/cli/dispatch.js";
 import { hasControlChars, pathStem, validatePathValue } from "../../src/cli/argvalidate.js";
 
@@ -53,6 +53,21 @@ describe("cli lint: payload", () => {
       (c) => c.name === "abstraction",
     );
     expect(abstraction?.status).toBe("fail");
+  });
+
+  it("preserves non-verbosity findings when full-file word lint is unlimited", () => {
+    const payload = lintFullArtifactPayload(
+      "DECISIONS.md",
+      "In summary, we should probably improve the system somehow",
+    );
+    const checks = Object.fromEntries(
+      (payload.checks as Array<{ name: string; status: string; detail: string }>).map((check) => [check.name, check]),
+    );
+    expect(checks.verbosity.status).toBe("pass");
+    expect(checks.abstraction.status).toBe("fail");
+    expect(checks.abstraction.detail).toContain("abstraction creep");
+    expect(checks.filler.status).toBe("fail");
+    expect(checks.filler.detail).toContain("summary preambles");
   });
 
   it("reads from a file and reports it as the source (full-artifact budget)", () => {

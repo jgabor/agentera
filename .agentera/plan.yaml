@@ -47,7 +47,7 @@ tasks:
     name: Make lint consume authoritative budgets
     depends_on:
       - "1"
-    status: pending
+    status: complete
     acceptance:
       - GIVEN a numeric full-file or per-entry verbosity limit WHEN lint evaluates the artifact THEN the declared authority value governs without a duplicate runtime table.
       - GIVEN an explicit no-limit or non-word-only declaration WHEN lint evaluates that dimension THEN no word-budget finding is invented.
