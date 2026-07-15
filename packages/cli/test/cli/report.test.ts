@@ -7,7 +7,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { cmdReport, statsCorpusPath, statsExistingCorpusStatus, ReportArgs } from "../../src/cli/commands/report.js";
 import { MAX_CORPUS_READ_BYTES, usageMain } from "../../src/analytics/usageStats.js";
 import { ADAPTER_VERSION } from "../../src/analytics/extractCorpus/core.js";
-import { publishEvidenceTiers } from "../../src/analytics/extractCorpus/evidenceTiers.js";
+import { publishEvidenceTiers, readSignalTier } from "../../src/analytics/extractCorpus/evidenceTiers.js";
 import { tiersDirForCorpusPath } from "../../src/analytics/extractCorpus/tierReader.js";
 
 function run(args: ReportArgs): { rc: number; out: string; err: string } {
@@ -190,13 +190,13 @@ describe("cmdReport", () => {
     expect(payload.privacy).toEqual({
       local_history_read: false,
       local_history_write: false,
-      corpus_write: false,
+      tier_write: false,
       required_consent: "local-history",
       provided_consent: null,
     });
     expect(payload.diagnostics).toEqual([
-      "dry-run does not read runtime history or write corpus files",
-      "generated corpus is internal state for stats at $AGENTERA_PROFILE_DIR/intermediate/corpus.json",
+      "dry-run does not read runtime history or write tier files",
+      "published tiers are internal state for stats at $AGENTERA_PROFILE_DIR/intermediate/tiers",
     ]);
     expect(fs.existsSync(outp)).toBe(false); // dry-run writes nothing
   });
@@ -224,9 +224,13 @@ describe("cmdReport", () => {
     const payload = JSON.parse(out);
     expect(payload.command).toBe("stats refresh");
     expect(payload.status).toBe("pass");
-    expect(fs.existsSync(outp)).toBe(true);
-    const corpus = JSON.parse(fs.readFileSync(outp, "utf-8"));
-    expect(corpus.metadata.families.instruction_document.count).toBe(1);
+    expect(payload.privacy.tier_write).toBe(true);
+    // No monolithic corpus.json written — tiers are the canonical output.
+    expect(fs.existsSync(outp)).toBe(false);
+    const tiersDir = path.join(tmp, "intermediate", "tiers");
+    const tier = readSignalTier(tiersDir);
+    expect(tier).not.toBeNull();
+    expect(tier!.manifest.total_records).toBeGreaterThanOrEqual(1);
   });
 
   it("rejects an unknown action", () => {

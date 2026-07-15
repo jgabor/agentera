@@ -16,6 +16,7 @@ import {
   EvidenceTierContractError,
   evidenceTierAuthorityPath,
   loadEvidenceTierContract,
+  PROFILE_SYNTHESIS_CONSUMER,
   REQUIRED_COMPATIBILITY_STATES,
   REQUIRED_SIGNAL_KINDS,
   REQUIRED_SOURCE_FAMILIES,
@@ -82,6 +83,13 @@ function validContractObject(): Record<string, unknown> {
       source_identity: "source_id",
       input_contract: "signal projection",
     },
+    [PROFILE_SYNTHESIS_CONSUMER]: {
+      tier: "signal",
+      purpose: "profile synthesis",
+      required_fields: ["source_kind", "signal_type", "timestamp", "evidence_anchor"],
+      source_identity: "source_id and evidence_anchor",
+      input_contract: "signal instruction/decision/question/config projection",
+    },
   };
 
   const semantics: Record<string, unknown> = {};
@@ -124,6 +132,10 @@ function validContractObject(): Record<string, unknown> {
       reader_byte_cap: 67108864,
       shard_byte_cap: 67108864,
       signal_byte_cap: 67108864,
+    },
+    profile_sufficiency: {
+      profile_signal_types: ["decision", "question", "correction", "instruction", "configuration"],
+      minimum_family_retention: 0.5,
     },
     decision_55_reconciliation: { decision_number: 55 },
   };

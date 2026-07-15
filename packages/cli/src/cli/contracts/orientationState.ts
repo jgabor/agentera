@@ -16,6 +16,8 @@ export interface ProfileSummary {
   stale_threshold_days?: number;
   generated_date?: string;
   validated_date?: string;
+  /** Bounded profile-synthesis signals status (Task 4). */
+  bounded_signals?: JsonObject;
 }
 
 export interface V1MigrationSummary {

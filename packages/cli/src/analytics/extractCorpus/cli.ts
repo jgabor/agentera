@@ -1,8 +1,6 @@
-import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
-import { pyJsonIndent } from "../../core/pyjson.js";
 import {
   type Env,
   defaultOutputPath,
@@ -175,19 +173,18 @@ export function extractCorpusMain(argv: string[], io: ExtractMainIo = {}): numbe
     coverage: corpusEnvelopeCoverage(audit),
     sqliteCaps,
   });
-  fs.mkdirSync(path.dirname(args.output), { recursive: true });
-  fs.writeFileSync(args.output, pyJsonIndent(corpus) + "\n", "utf-8");
   const truncationWarning = formatTruncationWarnings(corpus.metadata.runtime_statuses as JsonObject[]);
   if (truncationWarning) err(truncationWarning);
   const total = corpus.metadata.total_records;
   const familyBits = Object.entries(corpus.metadata.families)
     .map(([name, summary]) => `${name}=${(summary as JsonObject).count}`)
     .join(", ");
-  out(`wrote corpus: ${args.output} (${total} records; ${familyBits})`);
 
-  // Publish bounded tiers as the canonical bounded publication output. The
-  // monolithic corpus.json above remains a transition artifact until Task 3
-  // migrates the usage/report/prime/startup readers to the tiers directory.
+  // Publish bounded evidence tiers as the canonical bounded publication output.
+  // The monolithic corpus envelope write is eliminated: all bounded consumers
+  // (usage, report, prime coverage, startup analysis, profile synthesis) read
+  // the signal tier and full-evidence shards directly. Legacy monolithic state
+  // receives deterministic refresh guidance rather than read compatibility.
   const tiersDir = args.tierOutput ?? defaultTiersDir(env, platform);
   const publication = publishEvidenceTiers(corpus.records as JsonObject[], {
     tiersDir,
@@ -208,7 +205,7 @@ export function extractCorpusMain(argv: string[], io: ExtractMainIo = {}): numbe
   out(
     `published tiers: ${tiersDir} (generation ${publication.generation}; ` +
       `${publication.shard_count} shards; ${publication.signal_count} signals; ` +
-      `${publication.signal_bytes} bytes${publication.signal_selection.capped ? "; selection applied" : ""})`,
+      `${publication.signal_bytes} bytes${publication.signal_selection.capped ? "; selection applied" : ""}) [${total} records; ${familyBits}]`,
   );
   return 0;
 }

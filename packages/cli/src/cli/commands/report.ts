@@ -204,15 +204,15 @@ export function cmdReport(args: ReportArgs, io: Io = {}): number {
         privacy: {
           local_history_read: false,
           local_history_write: false,
-          corpus_write: false,
+          tier_write: false,
           required_consent: "local-history",
           provided_consent: null,
         },
         corpus_path: corpusPath,
         engine: { command: engineCommand },
         diagnostics: [
-          "dry-run does not read runtime history or write corpus files",
-          "generated corpus is internal state for stats at $AGENTERA_PROFILE_DIR/intermediate/corpus.json",
+          "dry-run does not read runtime history or write tier files",
+          "published tiers are internal state for stats at $AGENTERA_PROFILE_DIR/intermediate/tiers",
           ...(args.importSources?.includes("claude")
             ? ["Claude historical import can contain secrets, file contents, and command output; apply stays local and read-only"]
             : []),
@@ -222,7 +222,7 @@ export function cmdReport(args: ReportArgs, io: Io = {}): number {
         out(JSON.stringify(payload, null, 2) + "\n");
       } else {
         out(`agentera stats refresh: dry_run\ncorpus=${corpusPath}\nengine=${engineCommand.join(" ")}\n`);
-        out("privacy=local_history_read=false, corpus_write=false, required_consent=local-history\n");
+        out("privacy=local_history_read=false, tier_write=false, required_consent=local-history\n");
       }
       return 0;
     }
@@ -241,7 +241,7 @@ export function cmdReport(args: ReportArgs, io: Io = {}): number {
       privacy: {
         local_history_read: true,
         local_history_write: false,
-        corpus_write: rc === 0,
+        tier_write: rc === 0,
         required_consent: "local-history",
         provided_consent: "local-history",
         historical_imports: args.importSources ?? [],

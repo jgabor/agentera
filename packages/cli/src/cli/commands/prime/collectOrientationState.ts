@@ -27,6 +27,7 @@ import {
 } from "../../orientation.js";
 import { buildOrientationAttention } from "../../orientation/attention.js";
 import { corpusCoverageSummary } from "../../orientation/corpusCoverage.js";
+import { profileSignalsStatus } from "../../../analytics/profileSignals.js";
 import type { NextAction, OrientationState, ProfileSummary, ReadinessHint, StartupHistorySummary } from "../../contracts/orientationState.js";
 import { statusBundleStatus } from "./bundleStatus.js";
 import type { PrimeOpts } from "./types.js";
@@ -72,6 +73,8 @@ export function collectOrientationState(opts: PrimeOpts): OrientationState {
     }
     if (isStale) profileDict.suggested_action = "Run profile to refresh PROFILE.md";
   }
+  const boundedSignals = profileSignalsStatus(env, process.platform);
+  profileDict.bounded_signals = boundedSignals as unknown as ProfileSummary["bounded_signals"];
   const v1Artifacts = detectV1ArtifactPairs(process.cwd());
   const v1Migration = v1MigrationSummary(v1Artifacts, { sourceRoot, home, env });
   const plan = planSummary(schemas);

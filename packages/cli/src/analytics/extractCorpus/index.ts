@@ -106,3 +106,13 @@ export {
   type OpencodeParitySnapshot,
   type OpencodeProbeShape,
 } from "./extractCorpusParity.js";
+export {
+  readProfileSignals,
+  resolveProfileEvidence,
+  profileSignalsStatus,
+  assessProfileSufficiency,
+  type ProfileSignalsRead,
+  type ProfileSignalsStatus,
+  type ProfileSufficiencyAssessment,
+  type ProfileFamilyRetention,
+} from "../profileSignals.js";

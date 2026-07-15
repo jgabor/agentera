@@ -1,4 +1,52 @@
 cycles:
+  - number: 836
+    timestamp: 2026-07-15 21:41
+    type: feat
+    phase: build
+    what: "Moved profile synthesis from monolithic corpus.json to bounded signal
+      tiers. Created profileSignals.ts module (assessProfileSufficiency,
+      readProfileSignals, resolveProfileEvidence, profileSignalsStatus) that
+      reads only the signal tier, never full evidence. Added profile_sufficiency
+      section to evidence-tier-authority.yaml resolving Unknown 2:
+      minimum_family_retention=0.5 threshold,
+      profile_signal_types=[decision,question,correction,instruction,configurat\
+      ion]. Eliminated monolithic corpus.json write from extract CLI — tiers are
+      the only canonical output. Updated report command: corpus_write renamed to
+      tier_write. Surfaced bounded_signals in prime --context profile output.
+      Updated profile instructions to use bounded signals with sufficiency gate
+      and evidence anchor resolution."
+    inspiration: Plan Task 4; Depends on Task 2 (bounded evidence tier publication)
+      and Task 3 (analytics reader migration)
+    discovered: The assessProfileSufficiency function must iterate over the
+      selection report's per_family entries, not just retained profile signals,
+      to detect complete-capping scenarios where all signals are lost to the
+      selection cap.
+    verified: pnpm -C packages/cli build (exit 0); pnpm -C packages/cli test
+      (2176/2176 passed, 0 failed); agentera check compact (status=pass);
+      agentera prime --context profile --format json shows
+      bounded_signals.state=legacy with refresh guidance
+    next: "Task 5: synchronize contracts, help, profile instructions, TODO,
+      changelog, and progress; run full release-readiness gates."
+    context:
+      intent: "Plan Task 4: move current profile synthesis to bounded signals,
+        eliminating the monolithic corpus.json write that was retained solely
+        because profile depended on it."
+      constraints: No profile levels, glossary, remote storage, release, or suite
+        version above 3.0.0. Task 5 owns final broad synchronization.
+      unknowns: none
+      scope: packages/cli/src/analytics/profileSignals.ts (new);
+        packages/cli/src/registries/evidenceTierContract.ts;
+        packages/cli/src/analytics/extractCorpus/cli.ts;
+        packages/cli/src/cli/commands/report.ts;
+        packages/cli/src/cli/commands/prime/collectOrientationState.ts;
+        packages/cli/src/cli/capabilityContext/shared.ts;
+        packages/cli/src/cli/contracts/orientationState.ts;
+        packages/cli/src/capabilities/profile/instructions.ts;
+        references/analysis/evidence-tier-authority.yaml;
+        packages/cli/test/analytics/profileSignals.test.ts (new);
+        packages/cli/test/analytics/extractCorpus.test.ts;
+        packages/cli/test/registries/evidenceTierContract.test.ts;
+        packages/cli/test/cli/report.test.ts
   - number: 835
     timestamp: 2026-07-15 21:04
     type: fix
@@ -235,33 +283,6 @@ cycles:
         result was inferred from that missing state.
       scope: Budget authority reference, CLI registry loader, contract tests, and
         token-budget scope metadata.
-  - number: 826
-    timestamp: 2026-07-15 15:53
-    type: test
-    phase: audit
-    what: Recorded post-plan closure Audit 34 after preserving the completed
-      immutable plan archive.
-    inspiration: Audit 33, Cycle 825, and Task 3 PASS archival handoff.
-    discovered: Audit 33's remediation conclusion remains accurate; Audit 34 updates
-      artifact freshness for the now-archived plan. Historical plan lifecycle
-      and health archive-recovery diagnostics remain unrelated.
-    verified: Audit 34 records six A grades and zero findings. Exact archived plan
-      list/get returned full three-task lineage with Task 3 PASS; no active plan
-      remains. Full CLI passed 2068/2068, typecheck, release metadata,
-      capability contract, health validation, and compact passed. Canonical and
-      bundled authority remain byte-identical; package and suite versions and
-      npm next state are unchanged.
-    next: Audit 32 remediation has no release blocker. Resolve runtime host
-      enablement and trust evidence separately before release.
-    context:
-      intent: Verify Audit 32 remediation remains closed after archival and
-        distinguish unrelated host and historical caveats.
-      constraints: No product fixes, TODO or changelog edits, version changes,
-        publication, tag, push, reset, stash, or historical archive repair.
-      unknowns: Runtime-lifecycle host readiness remains manually blocked and separate
-        from Audit 32 remediation.
-      scope: .agentera/health.yaml, archive/health/34.yaml, typed progress state, and
-        preserved plan archival changes.
   - number: 793
     timestamp: 2026-07-14 17:36
     type: chore
@@ -331,6 +352,8 @@ cycles:
         and backfill fixtures; package metadata and generated ignored
         dist/bundle
 archive:
+  - summary: "Cycle 826 (2026-07-15): Recorded post-plan closure Audit 34 after
+      preserving the completed immutable plan archive."
   - summary: "Cycle 825 (2026-07-15): Closed Audit 32 remediation with independent
       Audit 33 and synchronized replacement Task 3 state."
   - summary: "Cycle 824 (2026-07-15): Proved Audit 32 replacement Task 2 release
@@ -422,15 +445,18 @@ archive:
   - summary: "Cycle 786 (2026-07-14): Added explicit non-executing optional
       Git-enrichment handoff from completed local migration: exact stable
       artifact:number selectors now..."
-  - summary: "Cycle 785 (2026-07-14): Corrected Task 2 migration safety and output
-      evidence: Markdown and YAML identities are parsed before..."
 omitted: true
-omitted_count: 71
+omitted_count: 72
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded

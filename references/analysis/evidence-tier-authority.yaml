@@ -318,6 +318,56 @@ consumer_map:
         are fixed here so the signal contract reserves them. Implementation must
         not drop a reserved semantic or remove the field that carries it.
 
+profile_sufficiency:
+  question: >-
+    Does bounded profile synthesis preserve useful evidence distribution
+    compared with the current full-corpus intent? (planning Unknown 2)
+  profile_signal_types:
+    - decision
+    - question
+    - correction
+    - instruction
+    - configuration
+  prior_intended_distribution: >-
+    The prior intended distribution is the complete set of profile-relevant
+    signals (the profile_signal_types above) across all supported source
+    families, mirroring what a full-corpus read would have surfaced before
+    tiering. The signal tier's derivation is total when no cap is applied:
+    every full-evidence record yields exactly one signal, so the bounded and
+    intended distributions are identical. The comparison below is the safety
+    net that detects when signal selection reduces a family below a useful
+    threshold.
+  threshold_rule: >-
+    Profile synthesis is sufficient when the signal tier is uncapped (retained
+    == total) or every profile-relevant source family retains at least the
+    minimum representative fraction of its intended decision-bearing signals.
+    A family with zero intended signals is not a sufficiency violation; a
+    family with intended signals that retains none is.
+  minimum_family_retention: 0.5
+  minimum_family_retention_note: >-
+    The minimum per-family retention is 0.5 (half of the family's intended
+    profile-relevant signals). Below this, a family is underrepresented and
+    profile synthesis must surface the limitation rather than silently reduce
+    confidence for that family's contributions. The threshold is deliberately
+    lenient because proportional-per-family selection already preserves the
+    relative distribution; the check exists to catch a cap severe enough to
+    distort a family's evidence below a useful floor.
+  insufficiency_rule: >-
+    When insufficient, profile synthesis surfaces the underrepresented families
+    with their retained and intended counts, caps confidence for affected
+    categories to the single-signal band (CS4, 30-49) or below, and never
+    fabricates high-confidence claims from sparse or missing evidence. The
+    limitation is reported in the profile output and exit signal, not silently
+    absorbed.
+  derivation: >-
+    Resolves planning Unknown 2. The comparison is reproducible: identical
+    full evidence yields an identical sufficiency assessment because signal
+    derivation and selection are deterministic (Unknown 1). The prior
+    intended distribution is reconstructed from the signal tier's selection
+    report (total per family) and the retained distribution from the published
+    signal records (retained per family), so the comparison needs no separate
+    full-corpus read.
+
 bounds:
   reader_byte_cap: 67108864
   reader_byte_cap_note: >-

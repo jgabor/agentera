@@ -74,6 +74,12 @@ export interface EvidenceTierBounds {
   signalByteCap: number;
 }
 
+/** Profile-synthesis sufficiency threshold (resolves planning Unknown 2). */
+export interface ProfileSufficiencyDefinition {
+  profileSignalTypes: string[];
+  minimumFamilyRetention: number;
+}
+
 interface ContractModel {
   schemaVersion: string;
   status: string;
@@ -84,6 +90,7 @@ interface ContractModel {
   signalSemantics: Map<string, SignalSemanticDefinition>;
   compatibilityStates: Map<CompatibilityStateId, CompatibilityStateDefinition>;
   bounds: EvidenceTierBounds;
+  profileSufficiency: ProfileSufficiencyDefinition;
   decisionNumber: number;
 }
 
@@ -126,6 +133,18 @@ export const REQUIRED_COMPATIBILITY_STATES = [
 
 /** Latent startup-analysis reader that must appear in the consumer map. */
 export const STARTUP_ANALYSIS_CONSUMER = "startup_analysis";
+
+/** Profile-synthesis consumer that must appear in the consumer map. */
+export const PROFILE_SYNTHESIS_CONSUMER = "profile_synthesis";
+
+/** Signal types the profile_synthesis consumer reads for bounded synthesis. */
+export const PROFILE_SIGNAL_TYPES = [
+  "decision",
+  "question",
+  "correction",
+  "instruction",
+  "configuration",
+] as const;
 
 export function evidenceTierAuthorityPath(root: string = resolveSourceRoot()): string {
   return path.join(root, "references", "analysis", "evidence-tier-authority.yaml");
@@ -181,6 +200,13 @@ function asStringArray(value: unknown, label: string): string[] {
 function asPositiveInt(value: unknown, label: string): number {
   if (typeof value !== "number" || !Number.isFinite(value) || value <= 0 || Math.floor(value) !== value) {
     throw new EvidenceTierContractError(`${label} must be a positive integer`);
+  }
+  return value;
+}
+
+function asPositiveNumber(value: unknown, label: string): number {
+  if (typeof value !== "number" || !Number.isFinite(value) || value <= 0 || value > 1) {
+    throw new EvidenceTierContractError(`${label} must be a positive number in (0, 1]`);
   }
   return value;
 }
@@ -334,6 +360,18 @@ export function loadEvidenceTierContract(
     signalByteCap: asPositiveInt(boundsRoot.signal_byte_cap, "bounds.signal_byte_cap"),
   };
 
+  const suffRoot = asRecord(raw.profile_sufficiency, "profile_sufficiency");
+  const profileSufficiency: ProfileSufficiencyDefinition = {
+    profileSignalTypes: asStringArray(
+      suffRoot.profile_signal_types,
+      "profile_sufficiency.profile_signal_types",
+    ),
+    minimumFamilyRetention: asPositiveNumber(
+      suffRoot.minimum_family_retention,
+      "profile_sufficiency.minimum_family_retention",
+    ),
+  };
+
   return {
     schemaVersion,
     status: asString(raw.status, "status"),
@@ -344,6 +382,7 @@ export function loadEvidenceTierContract(
     signalSemantics,
     compatibilityStates,
     bounds,
+    profileSufficiency,
     decisionNumber: typeof reconciliation.decision_number === "number"
       ? reconciliation.decision_number
       : 0,
@@ -387,6 +426,18 @@ export function evidenceTierBounds(
   contractPath: string = evidenceTierAuthorityPath(),
 ): EvidenceTierBounds {
   return loadEvidenceTierContract(contractPath).bounds;
+}
+
+/**
+ * Profile-synthesis sufficiency threshold (resolves planning Unknown 2). The
+ * profile_signal_types and minimum_family_retention are the authority a bounded
+ * profile reader projects when comparing the retained signal distribution
+ * against the intended distribution. Callers must not re-declare these.
+ */
+export function profileSufficiency(
+  contractPath: string = evidenceTierAuthorityPath(),
+): ProfileSufficiencyDefinition {
+  return loadEvidenceTierContract(contractPath).profileSufficiency;
 }
 
 /**
@@ -462,6 +513,21 @@ export function validateEvidenceTierContract(
     }
     if (!def.recovery) {
       errors.push(`compatibility state ${state} has no actionable recovery`);
+    }
+  }
+
+  // Profile-synthesis sufficiency (Unknown 2): the consumer must appear, the
+  // sufficiency model must declare profile signal types, and each declared
+  // type must be a recognized signal semantic so the comparison is meaningful.
+  if (!model.consumers.has(PROFILE_SYNTHESIS_CONSUMER)) {
+    errors.push(`consumer map omits ${PROFILE_SYNTHESIS_CONSUMER} consumer`);
+  }
+  if (model.profileSufficiency.profileSignalTypes.length === 0) {
+    errors.push("profile_sufficiency declares no profile_signal_types");
+  }
+  for (const kind of model.profileSufficiency.profileSignalTypes) {
+    if (!model.signalSemantics.has(kind)) {
+      errors.push(`profile_sufficiency references unknown signal semantic ${kind}`);
     }
   }
 

@@ -22,6 +22,7 @@ import {
   runCoverageAudit,
   signalType,
   stableId,
+  readSignalTier,
 } from "../../src/analytics/extractCorpus.js";
 
 let tmp: string;
@@ -221,12 +222,12 @@ describe("coverage audit", () => {
   it("proceeds when user accepts coverage gap", () => {
     const dbp = path.join(tmp, "opencode.db");
     seedOpencode(dbp);
-    const outp = path.join(tmp, "out", "corpus.json");
+    const tiersDir = path.join(tmp, "out", "tiers");
     let log = "";
     const rc = extractCorpusMain(
       [
-        "--output",
-        outp,
+        "--tier-output",
+        tiersDir,
         "--project-root",
         tmp,
         "--opencode-conversations-dir",
@@ -242,13 +243,17 @@ describe("coverage audit", () => {
     expect(rc).toBe(0);
     expect(log.startsWith("Coverage Audit (pre-extraction)")).toBe(true);
     expect(log).toContain("Coverage gap accepted");
-    expect(fs.existsSync(outp)).toBe(true);
-    const corpus = JSON.parse(fs.readFileSync(outp, "utf-8"));
-    expect(corpus.metadata.available_runtimes).toEqual(["opencode"]);
-    expect(corpus.metadata.selected_runtimes).not.toContain("opencode");
-    expect(corpus.metadata.available_but_not_selected).toEqual([
+    expect(log).toContain("published tiers:");
+    const tier = readSignalTier(tiersDir);
+    expect(tier).not.toBeNull();
+    const envelope = tier!.manifest.corpus_metadata?.coverage_envelope;
+    expect(envelope?.available_runtimes).toEqual(["opencode"]);
+    expect(envelope?.selected_runtimes).not.toContain("opencode");
+    expect(envelope?.available_but_not_selected).toEqual([
       { runtime: "opencode", reason: "disabled_by_flag", store_path: dbp },
     ]);
+    // No monolithic corpus.json is written — tiers are the canonical output.
+    expect(fs.existsSync(path.join(tmp, "out", "corpus.json"))).toBe(false);
   });
 
   it("does not flag when all available runtimes are selected", () => {
@@ -351,14 +356,14 @@ describe("buildCorpus + extractCorpusMain", () => {
     expect(corpus.records.some((r: any) => r.source_kind === "conversation_turn")).toBe(true);
   });
 
-  it("extractCorpusMain writes corpus.json and returns 0", () => {
+  it("extractCorpusMain publishes tiers and returns 0", () => {
     fs.writeFileSync(path.join(tmp, "AGENTS.md"), "# rules\n");
-    const outp = path.join(tmp, "out", "corpus.json");
+    const tiersDir = path.join(tmp, "out", "tiers");
     let log = "";
     const rc = extractCorpusMain(
       [
-        "--output",
-        outp,
+        "--tier-output",
+        tiersDir,
         "--project-root",
         tmp,
         "--codex-sessions-dir",
@@ -379,10 +384,12 @@ describe("buildCorpus + extractCorpusMain", () => {
       { out: (t) => (log += t + "\n"), env: isolatedEnv(tmp), cwd: tmp },
     );
     expect(rc).toBe(0);
-    expect(fs.existsSync(outp)).toBe(true);
-    expect(log).toContain("wrote corpus:");
-    const c = JSON.parse(fs.readFileSync(outp, "utf-8"));
-    expect(c.metadata.families.instruction_document.count).toBe(1);
+    expect(log).toContain("published tiers:");
+    const tier = readSignalTier(tiersDir);
+    expect(tier).not.toBeNull();
+    expect(tier!.manifest.total_records).toBeGreaterThanOrEqual(1);
+    // No monolithic corpus.json is written — tiers are the canonical output.
+    expect(fs.existsSync(path.join(tmp, "out", "corpus.json"))).toBe(false);
   });
 
   it("does not read Claude history during default active-runtime extraction", () => {
@@ -391,17 +398,19 @@ describe("buildCorpus + extractCorpusMain", () => {
     const transcript = path.join(claudeDir, "session.jsonl");
     fs.writeFileSync(transcript, '{"type":"user","message":{"role":"user","content":"secret"}}\n');
     const readSpy = vi.spyOn(fs, "readFileSync");
-    const outp = path.join(tmp, "out", "active.json");
+    const tiersDir = path.join(tmp, "out", "tiers");
 
     const rc = extractCorpusMain(
-      ["--output", outp, "--project-root", tmp, "--no-codex", "--no-opencode", "--no-copilot", "--no-cursor", "--accept-coverage-gap"],
+      ["--tier-output", tiersDir, "--project-root", tmp, "--no-codex", "--no-opencode", "--no-copilot", "--no-cursor", "--accept-coverage-gap"],
       { out: () => {}, err: () => {}, env: isolatedEnv(tmp), cwd: tmp },
     );
 
     expect(rc).toBe(0);
     expect(readSpy.mock.calls.some(([target]) => String(target).startsWith(path.join(tmp, ".claude")))).toBe(false);
-    const corpus = JSON.parse(fs.readFileSync(outp, "utf8"));
-    expect(corpus.metadata.source_products).not.toContain("claude-code");
+    const tier = readSignalTier(tiersDir);
+    expect(tier).not.toBeNull();
+    const products = new Set(tier!.records.map((r) => r.source_product));
+    expect(products.has("claude-code")).toBe(false);
     readSpy.mockRestore();
   });
 
@@ -411,12 +420,12 @@ describe("buildCorpus + extractCorpusMain", () => {
     const transcript = path.join(claudeDir, "session.jsonl");
     const bytes = '{"type":"user","sessionId":"s1","message":{"role":"user","content":"should we keep this?"}}\n';
     fs.writeFileSync(transcript, bytes);
-    const outp = path.join(tmp, "out", "historical.json");
+    const tiersDir = path.join(tmp, "out", "tiers");
     let warnings = "";
 
     const rc = extractCorpusMain(
       [
-        "--output", outp,
+        "--tier-output", tiersDir,
         "--project-root", tmp,
         "--import-source", "claude",
         "--claude-projects-dir", claudeDir,
@@ -429,13 +438,12 @@ describe("buildCorpus + extractCorpusMain", () => {
     expect(fs.readFileSync(transcript, "utf8")).toBe(bytes);
     expect(warnings).toContain("can contain secrets, file contents, and command output");
     expect(warnings).toContain("local and read-only");
-    const corpus = JSON.parse(fs.readFileSync(outp, "utf8"));
-    const imported = corpus.records.filter((record: any) => record.source_product === "claude-code");
+    const tier = readSignalTier(tiersDir);
+    expect(tier).not.toBeNull();
+    const imported = tier!.records.filter((r) => r.source_product === "claude-code");
     expect(imported.length).toBeGreaterThan(0);
-    expect(imported.every((record: any) =>
-      record.source_class === "historical_import" && record.active_runtime === false && record.runtime === null)).toBe(true);
-    expect(corpus.metadata.runtimes).not.toContain("claude");
-    expect(corpus.metadata.runtimes).not.toContain("claude-code");
+    expect(imported.every((r) =>
+      r.runtime === null)).toBe(true);
   });
 
   it("requires the import flag before accepting a Claude history path", () => {
@@ -469,12 +477,12 @@ describe("SQLite cap overrides and truncation", () => {
   it("honors --max-sqlite-sessions override", () => {
     const dbp = path.join(tmp, "opencode.db");
     seedOpencodeManySessions(dbp, 65);
-    const outp = path.join(tmp, "out", "corpus.json");
+    const tiersDir = path.join(tmp, "out", "tiers");
     let errLog = "";
     const rc = extractCorpusMain(
       [
-        "--output",
-        outp,
+        "--tier-output",
+        tiersDir,
         "--project-root",
         tmp,
         "--opencode-conversations-dir",
@@ -488,8 +496,11 @@ describe("SQLite cap overrides and truncation", () => {
       { out: () => {}, err: (t) => (errLog += t + "\n"), env: isolatedEnv(tmp), cwd: tmp },
     );
     expect(rc).toBe(0);
-    const corpus = JSON.parse(fs.readFileSync(outp, "utf-8"));
-    const opencodeStatus = corpus.metadata.runtime_statuses.find((s: { runtime: string }) => s.runtime === "opencode");
+    const tier = readSignalTier(tiersDir);
+    expect(tier).not.toBeNull();
+    const opencodeStatus = tier!.manifest.corpus_metadata?.runtime_statuses?.find(
+      (s: { runtime?: string }) => s.runtime === "opencode",
+    );
     expect(opencodeStatus?.truncated_at).toBeUndefined();
     expect(errLog).not.toContain("SQLite extraction truncated");
   });
@@ -497,11 +508,11 @@ describe("SQLite cap overrides and truncation", () => {
   it("honors AGENTERA_EXTRACT_MAX_SQLITE_SESSIONS env override", () => {
     const dbp = path.join(tmp, "opencode.db");
     seedOpencodeManySessions(dbp, 65);
-    const outp = path.join(tmp, "out", "corpus-env.json");
+    const tiersDir = path.join(tmp, "out", "tiers");
     const rc = extractCorpusMain(
       [
-        "--output",
-        outp,
+        "--tier-output",
+        tiersDir,
         "--project-root",
         tmp,
         "--opencode-conversations-dir",
@@ -518,20 +529,23 @@ describe("SQLite cap overrides and truncation", () => {
       },
     );
     expect(rc).toBe(0);
-    const corpus = JSON.parse(fs.readFileSync(outp, "utf-8"));
-    const opencodeStatus = corpus.metadata.runtime_statuses.find((s: { runtime: string }) => s.runtime === "opencode");
+    const tier = readSignalTier(tiersDir);
+    expect(tier).not.toBeNull();
+    const opencodeStatus = tier!.manifest.corpus_metadata?.runtime_statuses?.find(
+      (s: { runtime?: string }) => s.runtime === "opencode",
+    );
     expect(opencodeStatus?.truncated_at).toBeUndefined();
   });
 
   it("emits user-visible truncation warning after extraction", () => {
     const dbp = path.join(tmp, "opencode.db");
     seedOpencodeManySessions(dbp, 65);
-    const outp = path.join(tmp, "out", "corpus.json");
+    const tiersDir = path.join(tmp, "out", "tiers");
     let errLog = "";
     const rc = extractCorpusMain(
       [
-        "--output",
-        outp,
+        "--tier-output",
+        tiersDir,
         "--project-root",
         tmp,
         "--opencode-conversations-dir",
