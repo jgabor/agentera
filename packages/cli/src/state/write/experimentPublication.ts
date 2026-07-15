@@ -69,7 +69,7 @@ function envelope(
   assigned: Record<string, unknown>,
   replay: boolean,
   compaction: CompactResult | null,
-  archive?: ExperimentArchivePublication & { replay: boolean; legacyProjectionOnly?: boolean },
+  archive?: ExperimentArchivePublication & { replay: boolean },
   preview?: { diff: string; before: Record<string, unknown>; after: Record<string, unknown> },
 ): StateWriteEnvelope {
   return {
@@ -94,7 +94,6 @@ function envelope(
         record_sha256: archive.recordSha256,
         provenance: archive.provenance,
         idempotent_replay: archive.replay,
-        ...(archive.legacyProjectionOnly ? { compatibility: "legacy_projection_without_archive" } : {}),
       },
     } : {}),
     ...(preview ?? {}),
@@ -159,7 +158,17 @@ export function executeExperimentPublication(
       written as JsonObject,
     );
     const archiveExists = fs.existsSync(archive.target);
-    if (archiveExists) assertExperimentArchiveReplay(archive);
+    let archiveReplay = archiveExists;
+    if (archiveExists) {
+      assertExperimentArchiveReplay(archive);
+    } else if (!req.dryRun) {
+      const published = transaction?.publishExperimentArchive(
+        archive,
+        () => assertExperimentArchiveReplay(archive),
+      );
+      if (published === undefined) throw new Error("state mutation transaction is unavailable");
+      archiveReplay = !published;
+    }
     const preview = req.dryRun ? { diff: "", before: existing.doc, after: existing.doc } : undefined;
     return envelope(
       req,
@@ -169,7 +178,7 @@ export function executeExperimentPublication(
       assigned,
       true,
       null,
-      { ...archive, replay: archiveExists, legacyProjectionOnly: !archiveExists },
+      { ...archive, replay: archiveReplay },
       preview,
     );
   }

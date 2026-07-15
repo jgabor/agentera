@@ -13,6 +13,7 @@ import { acquireWriterLock } from "./lock.js";
 
 export const MUTATION_FAILURE_BOUNDARIES = [
   "staged-write",
+  "archive-directory-publication",
   "archive-publication",
   "backup-publication",
   "projection-publication",
@@ -138,7 +139,9 @@ export class StateMutationTransaction {
     onExisting: () => void,
   ): boolean {
     const published = publishImmutableFile(publication.target, publication.bytes, {
+      directoryDurabilityRoot: publication.directoryDurabilityRoot,
       onExisting,
+      afterDirectoryEntrySync: () => this.failAfter("archive-directory-publication"),
       afterDirectorySync: () => this.failAfter("directory-sync"),
     });
     this.failAfter("archive-publication");

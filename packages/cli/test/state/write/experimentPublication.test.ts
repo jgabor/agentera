@@ -265,6 +265,118 @@ describe("validated experiment publication", () => {
     expect(fs.readdirSync(path.dirname(archivePath(1)))).toEqual(["1.yaml"]);
   });
 
+  it("converges across first-publication directory-sync interruptions before replacing projection", () => {
+    const { root, experimentsPath, archivePath } = project({
+      experiments: [{ number: 0, ...experiment("baseline") }],
+    });
+    const beforeProjection = fs.readFileSync(experimentsPath);
+    const publication = request(root, 1, experiment("candidate"));
+    const archiveDirectory = path.dirname(path.dirname(archivePath(1)));
+    const experimentsDirectory = path.dirname(archivePath(1));
+
+    expect(() => executeStateWrite(publication, { failAfter: "archive-directory-publication" })).toThrowError(
+      expect.objectContaining<Partial<InjectedMutationFailure>>({ boundary: "archive-directory-publication" }),
+    );
+    expect(fs.readFileSync(experimentsPath)).toEqual(beforeProjection);
+    expect(fs.existsSync(archiveDirectory)).toBe(true);
+    expect(fs.existsSync(experimentsDirectory)).toBe(false);
+
+    expect(() => executeStateWrite(publication, { failAfter: "archive-directory-publication" })).toThrowError(
+      expect.objectContaining<Partial<InjectedMutationFailure>>({ boundary: "archive-directory-publication" }),
+    );
+    expect(fs.readFileSync(experimentsPath)).toEqual(beforeProjection);
+    expect(fs.existsSync(experimentsDirectory)).toBe(true);
+    expect(fs.existsSync(archivePath(1))).toBe(false);
+
+    const retry = executeStateWrite(publication);
+    expect(retry.archive).toMatchObject({ idempotent_replay: false });
+    expect(fs.existsSync(archivePath(1))).toBe(true);
+    expect((loadYamlMapping(fs.readFileSync(experimentsPath, "utf8")).experiments as unknown[])).toHaveLength(2);
+  });
+
+  it("reconstructs a missing archive from an exact full projection replay before success", () => {
+    const { root, experimentsPath, archivePath } = project({
+      experiments: [{ number: 0, ...experiment("baseline") }],
+    });
+    const beforeProjection = fs.readFileSync(experimentsPath);
+
+    const replay = executeStateWrite(request(root, 0, experiment("baseline")));
+
+    expect(replay.operation).toMatchObject({ idempotent_replay: true });
+    expect(replay.archive).toMatchObject({ idempotent_replay: false });
+    expect(fs.readFileSync(experimentsPath)).toEqual(beforeProjection);
+    expect(loadYamlMapping(fs.readFileSync(archivePath(0), "utf8")).record).toEqual({
+      number: 0,
+      ...experiment("baseline"),
+    });
+  });
+
+  it("retries interrupted exact-full reconstruction without duplicating archive detail", () => {
+    const { root, experimentsPath, archivePath } = project({
+      experiments: [{ number: 0, ...experiment("baseline") }],
+    });
+    const beforeProjection = fs.readFileSync(experimentsPath);
+    const publication = request(root, 0, experiment("baseline"));
+
+    expect(() => executeStateWrite(publication, { failAfter: "archive-publication" })).toThrowError(
+      expect.objectContaining<Partial<InjectedMutationFailure>>({ boundary: "archive-publication" }),
+    );
+    const archiveBytes = fs.readFileSync(archivePath(0));
+    expect(fs.readFileSync(experimentsPath)).toEqual(beforeProjection);
+
+    const retry = executeStateWrite(publication);
+    expect(retry.operation).toMatchObject({ idempotent_replay: true });
+    expect(retry.archive).toMatchObject({ idempotent_replay: true });
+    expect(fs.readFileSync(archivePath(0))).toEqual(archiveBytes);
+    expect(fs.readdirSync(path.dirname(archivePath(0)))).toEqual(["0.yaml"]);
+  });
+
+  it("rejects conflicting archive bytes during exact-full reconstruction", () => {
+    const { root, experimentsPath, archivePath } = project({
+      experiments: [{ number: 0, ...experiment("baseline") }],
+    });
+    fs.mkdirSync(path.dirname(archivePath(0)), { recursive: true });
+    fs.writeFileSync(archivePath(0), "conflicting: bytes\n");
+    const beforeProjection = fs.readFileSync(experimentsPath);
+    const beforeArchive = fs.readFileSync(archivePath(0));
+
+    expect(() => executeStateWrite(request(root, 0, experiment("baseline")))).toThrow(/immutable experiment archive/);
+    expect(fs.readFileSync(experimentsPath)).toEqual(beforeProjection);
+    expect(fs.readFileSync(archivePath(0))).toEqual(beforeArchive);
+  });
+
+  it("keeps reconstructed full detail recoverable after later projection compaction without duplicates", () => {
+    const { root, experimentsPath, archivePath } = project({
+      experiments: [{ number: 0, ...experiment("baseline") }],
+    });
+    executeStateWrite(request(root, 0, experiment("baseline")));
+    for (let number = 1; number <= 10; number += 1) {
+      executeStateWrite(request(root, number, experiment(`candidate ${number}`)));
+    }
+
+    const projection = loadYamlMapping(fs.readFileSync(experimentsPath, "utf8"));
+    expect(projection.experiments).toHaveLength(10);
+    expect(projection.archive).toEqual([expect.objectContaining({ number: 0 })]);
+    expect(loadYamlMapping(fs.readFileSync(archivePath(0), "utf8")).record).toEqual({
+      number: 0,
+      ...experiment("baseline"),
+    });
+    expect(fs.readdirSync(path.dirname(archivePath(0))).sort()).toEqual(
+      Array.from({ length: 11 }, (_, number) => `${number}.yaml`).sort(),
+    );
+  });
+
+  it("does not fabricate a full archive from a legacy summary-only projection row", () => {
+    const { root, experimentsPath, archivePath } = project({
+      archive: [{ number: 0, summary: "baseline result" }],
+    });
+    const beforeProjection = fs.readFileSync(experimentsPath);
+
+    expect(() => executeStateWrite(request(root, 0, experiment("baseline")))).toThrow();
+    expect(fs.readFileSync(experimentsPath)).toEqual(beforeProjection);
+    expect(fs.existsSync(archivePath(0))).toBe(false);
+  });
+
   it("rejects conflicting immutable archive content without changing projection", () => {
     const { root, experimentsPath, archivePath } = project({
       experiments: [{ number: 0, ...experiment("baseline") }],

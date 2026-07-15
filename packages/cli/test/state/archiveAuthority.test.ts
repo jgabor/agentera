@@ -119,9 +119,13 @@ describe("state storage authority", () => {
       "validate_full_experiment_record",
       "validate_archive_envelope",
       "stage_and_compact_projection",
+      "create_and_fsync_each_missing_archive_directory_entry",
       "publish_and_fsync_immutable_archive",
       "replace_and_fsync_projection",
     ]);
+    expect(archive.publication.directory_durability).toContain("fsync of the archive directory");
+    expect(archive.publication.exact_full_replay_recovery).toContain("byte-equivalent full record");
+    expect(archive.publication.exact_full_replay_recovery).toContain("never inferred");
   });
 
   it("rejects an authority with a wrong archive path or missing envelope", () => {

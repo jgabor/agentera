@@ -67,6 +67,7 @@
 
 ### Fixed
 
+- Fixed `packages/cli/src/state/archivePublication.ts` to fsync each newly created archive directory entry and reconstruct missing experiment archives from exact full projection replays before success.
 - Fixed generic `agentera state experiments explain --format json` discovery to return the valid `publish` operation instead of rejecting an invalid `append` default.
 - Fixed plan-list entries to declare full-detail availability, enforced the 32 KiB serialized output budget for YAML as well as JSON, and synchronized retrieval implementation status across authority, schema introspection, help, and runtime behavior.
 - Fixed `agentera state plan --help` to match task-get authority and runtime behavior: `--plan` is optional and omission defaults retrieval to the active plan.

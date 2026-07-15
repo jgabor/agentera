@@ -27,6 +27,7 @@ export interface NumberedArchiveBytes {
 }
 
 export interface ArchivePublicationFileSystem {
+  exists(path: string): boolean;
   mkdir(directory: string): void;
   openExclusive(stage: string): number;
   write(fd: number, bytes: string): void;
@@ -39,12 +40,15 @@ export interface ArchivePublicationFileSystem {
 
 export interface ImmutableFilePublicationOptions {
   fileSystem?: ArchivePublicationFileSystem;
+  directoryDurabilityRoot?: string;
   onExisting?: () => void;
+  afterDirectoryEntrySync?: (createdDirectory: string) => void;
   afterDirectorySync?: () => void;
 }
 
 const nodeFileSystem: ArchivePublicationFileSystem = {
-  mkdir: (directory) => fs.mkdirSync(directory, { recursive: true }),
+  exists: (candidate) => fs.existsSync(candidate),
+  mkdir: (directory) => fs.mkdirSync(directory),
   openExclusive: (stage) => fs.openSync(stage, "wx"),
   write: (fd, bytes) => fs.writeFileSync(fd, bytes, "utf8"),
   syncFile: (fd) => fs.fsyncSync(fd),
@@ -61,6 +65,48 @@ const nodeFileSystem: ArchivePublicationFileSystem = {
   },
 };
 
+function nearestExistingDirectory(
+  directory: string,
+  fileSystem: ArchivePublicationFileSystem,
+): string {
+  let cursor = path.resolve(directory);
+  while (!fileSystem.exists(cursor)) {
+    const parent = path.dirname(cursor);
+    if (parent === cursor) return cursor;
+    cursor = parent;
+  }
+  return cursor;
+}
+
+function ensureDurableDirectory(
+  directory: string,
+  fileSystem: ArchivePublicationFileSystem,
+  options: ImmutableFilePublicationOptions,
+): void {
+  const root = path.resolve(
+    options.directoryDurabilityRoot ?? nearestExistingDirectory(directory, fileSystem),
+  );
+  const relative = path.relative(root, path.resolve(directory));
+  if (relative.startsWith("..") || path.isAbsolute(relative))
+    throw new Error(`directory durability root '${root}' does not contain '${directory}'`);
+  let parent = root;
+  for (const segment of relative.split(path.sep).filter(Boolean)) {
+    const child = path.join(parent, segment);
+    let created = false;
+    if (!fileSystem.exists(child)) {
+      try {
+        fileSystem.mkdir(child);
+        created = true;
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error;
+      }
+    }
+    fileSystem.syncDirectory(parent);
+    if (created) options.afterDirectoryEntrySync?.(child);
+    parent = child;
+  }
+}
+
 let stageSequence = 0;
 
 export function publishImmutableFile(
@@ -70,7 +116,7 @@ export function publishImmutableFile(
 ): boolean {
   const fileSystem = options.fileSystem ?? nodeFileSystem;
   const directory = path.dirname(target);
-  fileSystem.mkdir(directory);
+  ensureDurableDirectory(directory, fileSystem, options);
   const stage = stagePath(directory, path.basename(target));
   let stageCreated = false;
   let fd: number | undefined;
@@ -239,6 +285,7 @@ export function publishNumberedArchive(
   const serialized = serializeNumberedArchive(artifactId, entryNumber, record, sourceRoot);
   const published = publishImmutableFile(location.target, serialized.bytes, {
     fileSystem,
+    directoryDurabilityRoot: projectRoot,
     afterDirectorySync: options.afterDirectorySync,
     onExisting: () => {
       existingArchiveMatches(

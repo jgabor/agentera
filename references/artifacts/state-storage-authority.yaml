@@ -510,6 +510,7 @@ experiment_archival:
       - validate_full_experiment_record
       - validate_archive_envelope
       - stage_and_compact_projection
+      - create_and_fsync_each_missing_archive_directory_entry
       - publish_and_fsync_immutable_archive
       - replace_and_fsync_projection
     archive_before_projection: true
@@ -523,6 +524,16 @@ experiment_archival:
       unchanged. Failure after durable archive publication may leave the new
       archive with the old projection; retry reuses that archive and publishes
       the projection without duplicating detail.
+    directory_durability: >-
+      Each newly created archive path component is followed by fsync of its
+      parent before publication advances. In particular, creating the
+      experiments directory requires fsync of the archive directory before an
+      experiment record can be considered durably published.
+    exact_full_replay_recovery: >-
+      If the projection already contains the byte-equivalent full record but
+      its required archive is absent, publication reconstructs that one archive
+      from the exact retained detail before returning replay success. Summary-
+      only and dropped legacy detail remain unavailable and are never inferred.
   projection:
     policy: uniform_10_40_50
     full_entries: 10

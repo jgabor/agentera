@@ -7,6 +7,7 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import type { JsonObject } from "../../src/core/jsonValue.js";
 import {
+  publishImmutableFile,
   publishNumberedArchive,
   type ArchivePublicationFileSystem,
 } from "../../src/state/archivePublication.js";
@@ -60,7 +61,8 @@ function record(artifact: "progress" | "decisions" | "health", number: number): 
 
 function fileSystem(overrides: Partial<ArchivePublicationFileSystem> = {}): ArchivePublicationFileSystem {
   return {
-    mkdir: (directory) => fs.mkdirSync(directory, { recursive: true }),
+    exists: (candidate) => fs.existsSync(candidate),
+    mkdir: (directory) => fs.mkdirSync(directory),
     openExclusive: (stage) => fs.openSync(stage, "wx"),
     write: (fd, bytes) => fs.writeFileSync(fd, bytes, "utf8"),
     syncFile: (fd) => fs.fsyncSync(fd),
@@ -80,6 +82,72 @@ function fileSystem(overrides: Partial<ArchivePublicationFileSystem> = {}): Arch
 }
 
 describe("numbered archive publication", () => {
+  it("publishes each newly created directory entry before the archive file", () => {
+    const calls: string[] = [];
+    const target = "/project/.agentera/optimize/latency/archive/experiments/0.yaml";
+    const archive = path.dirname(path.dirname(target));
+    const experiments = path.dirname(target);
+    const objective = path.dirname(archive);
+    const existing = new Set([objective]);
+    publishImmutableFile(target, "record\n", {
+      directoryDurabilityRoot: objective,
+      fileSystem: {
+        exists: (candidate) => existing.has(candidate),
+        mkdir: (directory) => { calls.push(`mkdir:${directory}`); existing.add(directory); },
+        openExclusive: () => { calls.push("open-stage"); return 7; },
+        write: () => { calls.push("write-stage"); },
+        syncFile: () => { calls.push("sync-stage"); },
+        close: () => { calls.push("close-stage"); },
+        link: () => { calls.push("link-target"); },
+        unlink: () => { calls.push("unlink-stage"); },
+        syncDirectory: (directory) => { calls.push(`sync-dir:${directory}`); },
+      },
+    });
+
+    expect(calls).toEqual([
+      `mkdir:${archive}`,
+      `sync-dir:${objective}`,
+      `mkdir:${experiments}`,
+      `sync-dir:${archive}`,
+      "open-stage",
+      "write-stage",
+      "sync-stage",
+      "close-stage",
+      "link-target",
+      `sync-dir:${experiments}`,
+      "unlink-stage",
+      `sync-dir:${experiments}`,
+    ]);
+  });
+
+  it("stops before archive-file publication when a new directory entry sync fails", () => {
+    const calls: string[] = [];
+    const target = "/project/objective/archive/experiments/0.yaml";
+    const archive = path.dirname(path.dirname(target));
+    const experiments = path.dirname(target);
+    const objective = path.dirname(archive);
+    const existing = new Set([objective]);
+    expect(() => publishImmutableFile(target, "record\n", {
+      directoryDurabilityRoot: objective,
+      fileSystem: {
+        exists: (candidate) => existing.has(candidate),
+        mkdir: (directory) => { existing.add(directory); },
+        openExclusive: () => { calls.push("open-stage"); return 7; },
+        write: () => { calls.push("write-stage"); },
+        syncFile: () => { calls.push("sync-stage"); },
+        close: () => { calls.push("close-stage"); },
+        link: () => { calls.push("link-target"); },
+        unlink: () => { calls.push("unlink-stage"); },
+        syncDirectory: (directory) => {
+          calls.push(`sync-dir:${directory}`);
+          if (directory === archive) throw new Error("injected archive parent sync failure");
+        },
+      },
+    })).toThrow("injected archive parent sync failure");
+    expect(calls).not.toContain("open-stage");
+    expect(calls).not.toContain("link-target");
+  });
+
   it.each(["progress", "decisions", "health"] as const)(
     "publishes one validated %s record at its stable identity and replays it",
     (artifact) => {

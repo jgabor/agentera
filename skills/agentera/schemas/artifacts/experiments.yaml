@@ -318,6 +318,15 @@ PUBLICATION:
       Archive identity binds stable objective and experiment identity to the
       immutable full record. Legacy projection entries remain readable without
       fabricating archive history that predates this publication contract.
+  5:
+    id: EP5
+    directory_durability: fsync_each_new_child_parent_before_advancing
+    exact_full_replay: reconstruct_missing_archive_before_success
+    summary_only_replay: never_reconstruct_without_full_detail
+    description: >-
+      First publication durably records every new archive directory entry.
+      Replay may recover only the exact full record still present in the
+      projection; compacted summaries and dropped rows are not fabricated.
 
 CLOSURE:
   1:
@@ -458,6 +467,8 @@ VALIDATION:
       directory-synced before the compacted projection is replaced.
     checks:
       - "Archive envelope identity and provenance validate before publication"
+      - "Every newly created archive directory entry is parent-synced in order"
       - "Archive publication succeeds before projection replacement"
+      - "Exact full replay reconstructs a missing archive before success"
       - "Conflicting immutable archive bytes preserve archive and projection"
       - "Retry after archive or projection interruption does not duplicate detail"

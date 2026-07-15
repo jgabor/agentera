@@ -12,6 +12,7 @@ const AUTHORITY = "references/artifacts/state-storage-authority.yaml";
 
 export interface ExperimentArchivePublication {
   target: string;
+  directoryDurabilityRoot: string;
   bytes: string;
   stableId: string;
   recordSha256: string;
@@ -53,7 +54,14 @@ export function prepareExperimentArchive(
     record_sha256: recordSha256,
     provenance,
   };
-  return { target, bytes: dumpYamlMapping(envelope), stableId, recordSha256, provenance };
+  return {
+    target,
+    directoryDurabilityRoot: path.dirname(objectivePath),
+    bytes: dumpYamlMapping(envelope),
+    stableId,
+    recordSha256,
+    provenance,
+  };
 }
 
 export function assertExperimentArchiveReplay(publication: ExperimentArchivePublication): void {
