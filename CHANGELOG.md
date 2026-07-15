@@ -4,6 +4,7 @@
 
 ### Added
 
+- Added `agentera state experiments list|get --objective OBJECTIVE_ID` with newest-first bounded pages, snapshot-bound opaque cursors, merged projection/archive identity, verified archive-first detail, explicit provenance and detail availability, and structured compatibility failures.
 - Added objective-scoped immutable full-detail archives under `.agentera/optimize/<objective>/archive/experiments/<number>.yaml` before 10/40/50 projection replacement, with explicit provenance, conflict rejection, and crash-consistent idempotent retries.
 - Added `agentera state experiments publish --objective OBJECTIVE_ID --number N --input EXPERIMENT.yaml` with schema and identity preflight, atomic projection replacement, idempotent interruption retry, collision safety, and existing 10/40/50 projection behavior.
 - Added stable objective UUID and objective-scoped experiment identity validation, including experiment `0`, rename continuity, canonical `optimize` plus legacy `optimera` discovery, readable missing/duplicate legacy entries, and effect-free ambiguity rejection for future publication.

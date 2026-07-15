@@ -49,11 +49,11 @@ scope:
 
 retrieval:
   schema_version: agentera.stateRetrievalAuthority.v1
-  status: plan_task_and_plan_retrieval_implemented_experiments_pending
+  status: plan_task_plan_and_experiment_retrieval_implemented
   implementation:
     plan_tasks: implemented
     plans: implemented
-    experiments: pending
+    experiments: implemented
   authority_boundary: >-
     This group owns public list/get envelopes, cursors, selectors, identities,
     omissions, and structured retrieval failures. It does not replace storage
@@ -364,10 +364,6 @@ retrieval:
       count_gap: legacy projection must omit whole task records deterministically when over budget
       byte_gap: task-list JSON is bounded to budgets.list.max_utf8_bytes
       recoverability: task identities are plan-scoped and list/get is public
-    - surface: agentera state experiments --format json / entries
-      count_gap: entries.slice(-limit) defaults to 5 without total, omitted count, or cursor
-      byte_gap: retained full experiment records have no serialized byte authority
-      recoverability: experiment number lacks objective identity and no public experiment get exists
   plan_archive_diagnostics:
     classification: pre_existing_compatibility_caveat
     smoke_test_behavior: >-

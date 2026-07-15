@@ -171,7 +171,6 @@ const negativeCases: NegativeCase[] = [
     mutate: (value) => { value.retrieval.collections = value.retrieval.collections.filter((item: Authority) => item.collection_id !== collectionId); },
   })),
   { rule: "plan gap evidence", expected: "retrieval.current_gap_evidence.plan", mutate: (value) => { value.retrieval.current_gap_evidence = value.retrieval.current_gap_evidence.filter((item: Authority) => !item.surface.includes("plan")); } },
-  { rule: "experiment gap evidence", expected: "retrieval.current_gap_evidence.experiments", mutate: (value) => { value.retrieval.current_gap_evidence = value.retrieval.current_gap_evidence.filter((item: Authority) => !item.surface.includes("experiments")); } },
   { rule: "archive diagnostic classification", expected: "retrieval.plan_archive_diagnostics.classification", mutate: (value) => { value.retrieval.plan_archive_diagnostics.classification = "fail_all_reads"; } },
   { rule: "archive diagnostic smoke behavior", expected: "retrieval.plan_archive_diagnostics.smoke_test_behavior", mutate: (value) => { delete value.retrieval.plan_archive_diagnostics.smoke_test_behavior; } },
 ];
@@ -185,7 +184,7 @@ describe("state retrieval authority", () => {
   });
 
   it("has one uniquely named negative fixture for every enforced rule", () => {
-    expect(negativeCases).toHaveLength(124);
+    expect(negativeCases).toHaveLength(123);
     expect(new Set(negativeCases.map(({ rule }) => rule)).size).toBe(negativeCases.length);
   });
 

@@ -177,24 +177,25 @@ tasks:
       - GIVEN archive success, failure, and retry fixtures WHEN tested THEN no detail is silently lost or duplicated.
     evidence: "Corrective verification: AC1 exact-full reconstruction remains recoverable after compaction (1 passed, 13 skipped). AC2 deterministic directory syscall order and sync-fault tests (each 1 passed, 7 skipped); archive durability precedes projection replacement. AC3 publication success/failure/interruption/replay/conflict/summary-only suite (14 passed). Full CLI 182 files/2011 tests; typecheck, build, capability-contract, compact passed. Exact root commands and counts: Cycle 808. Audit attempt 1 failure remains preserved."
     evaluation:
-      attempt_count: 1
+      attempt_count: 2
       failure_count: 1
-      last_verdict: fail
+      last_verdict: pass
       last_failure_evidence: Fresh archive creation does not fsync the new archive parent; replay can retain projection detail without reconstructing the missing archive; Cycle 807 evidence is stale.
       provenance:
-        attempt_id: task-7-audit-1-20260715
-        source: independent Task 7 acceptance audit
-        recorded_at: 2026-07-15 09:03
+        attempt_id: task-7-audit-2-20260715
+        source: independent Task 7 corrective acceptance audit
+        recorded_at: 2026-07-15 09:23
         writer_command: agentera state plan record-evaluation
   - number: 8
     name: Deliver experiment list and get
     depends_on:
       - "7"
-    status: pending
+    status: complete
     acceptance:
       - GIVEN an objective with many experiments WHEN listed THEN newest-first pages, opaque continuation, omissions, and no duplicate or skipped identities result.
       - GIVEN experiment identity WHEN fetched THEN retained or archived detail, provenance, and detail availability are explicit.
       - GIVEN wrong objective, experiment zero, summary-only legacy, malformed cursor, and not-found cases WHEN tested THEN behavior is structured.
+    evidence: "AC1 PASS: experimentRetrieval targeted paging, snapshot, and byte-bound cases (3 passed, 3 skipped). AC2 PASS: archive/projection/detail case (1 passed, 5 skipped). AC3 PASS: structured failure and legacy compatibility cases (2 passed, 4 skipped). Focused parity: 149 passed. Full CLI: 183 files, 2016 tests passed. Typecheck, build, capability-contract, compact, schema parity, and built list/get smoke passed. Task 7 corrective audit change preserved."
   - number: 9
     name: Close evidenced cursor and omission gaps
     depends_on:

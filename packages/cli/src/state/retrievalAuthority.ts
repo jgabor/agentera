@@ -64,7 +64,7 @@ const EXPECTED_COMMANDS = {
 const EXPECTED_IMPLEMENTATION = {
   plan_tasks: "implemented",
   plans: "implemented",
-  experiments: "pending",
+  experiments: "implemented",
 } as const;
 
 function mapping(value: unknown): Record<string, unknown> {
@@ -114,7 +114,7 @@ export function validateStateRetrievalAuthority(value: Record<string, unknown>):
   const errors: string[] = [];
   const retrieval = mapping(value.retrieval);
   if (retrieval.schema_version !== STATE_RETRIEVAL_SCHEMA_VERSION) errors.push("retrieval.schema_version");
-  if (retrieval.status !== "plan_task_and_plan_retrieval_implemented_experiments_pending") errors.push("retrieval.status");
+  if (retrieval.status !== "plan_task_plan_and_experiment_retrieval_implemented") errors.push("retrieval.status");
   const implementation = mapping(retrieval.implementation);
   for (const [surface, status] of Object.entries(EXPECTED_IMPLEMENTATION)) {
     if (implementation[surface] !== status) errors.push(`retrieval.implementation.${surface}`);
@@ -257,7 +257,7 @@ export function validateStateRetrievalAuthority(value: Record<string, unknown>):
   }
 
   const gaps = Array.isArray(retrieval.current_gap_evidence) ? retrieval.current_gap_evidence : [];
-  for (const surface of ["plan", "experiments"]) {
+  for (const surface of ["plan"]) {
     if (!gaps.some((value) => String(mapping(value).surface ?? "").includes(surface))) {
       errors.push(`retrieval.current_gap_evidence.${surface}`);
     }

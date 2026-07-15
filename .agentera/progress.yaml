@@ -1,4 +1,27 @@
 cycles:
+  - number: 809
+    timestamp: 2026-07-15 09:37
+    type: feat
+    phase: build
+    what: Delivered objective-scoped experiment list/get over retained projections
+      and immutable archives.
+    discovered: Parallel build and full-test commands raced on generated bundle
+      setup once; sequential rerun passed all 2016 tests.
+    verified: "AC1 targeted paging/snapshot/byte cases: 3 passed, 3 skipped. AC2
+      archive/projection/detail: 1 passed, 5 skipped. AC3 structured
+      failures/legacy: 2 passed, 4 skipped. Focused parity 149 passed; full CLI
+      183 files/2016 tests; typecheck, build, capability-contract, compact,
+      schema parity, and built list/get smoke passed."
+    next: Task 9 may close remaining cross-family cursor and omission gaps; do not
+      perform Task 10 contract cleanup or package metadata early.
+    context:
+      intent: Complete Plan Task 8 with bounded exact experiment retrieval and
+        truthful compatibility state.
+      constraints: Preserved Task 7 corrective audit state, 10/40/50 projection,
+        archive immutability, existing changes, and package metadata.
+      unknowns: None for Task 8; Task 9 retains broader retrieval-gap ownership.
+      scope: Experiment list/get runtime, tests, retrieval authority status,
+        help/schema parity, changelog, plan, and progress.
   - number: 808
     timestamp: 2026-07-15 09:13
     type: fix
@@ -312,45 +335,6 @@ cycles:
       scope: Plan schema and retrieval authority projection, writer publication,
         archive discovery, active task collision safety, tests, changelog,
         progress, and plan status.
-  - number: 799
-    timestamp: 2026-07-14 23:20
-    type: fix
-    phase: build
-    what: Aligned plan-task help with the optional active-plan selector and added
-      help-authority-runtime regression coverage.
-    inspiration: Independent Task 2 acceptance audit attempt 1.
-    discovered: The runtime and authority already defaulted task get to the active
-      plan; only one help sentence contradicted the executable contract.
-    verified: "AC1: `pnpm -C packages/cli exec vp test run planTaskRetrieval`
-      returned Test Files 1 passed (1), Tests 8 passed (8); temporary fixtures
-      covered 120-task ascending order, authority maximum, stable omission
-      counts, cursor continuation, append exclusion, and changed-snapshot
-      failure. AC2: the same exact command returned 8/8 and covered full get
-      without --plan plus structured not_found. AC3: the same exact command
-      returned 8/8 and covered bounded text/JSON omissions with continuation/get
-      recovery and legacy plan projections. Help/schema: `pnpm -C packages/cli
-      exec vp test run help schema retrievalAuthority planTaskRetrieval`
-      returned 6 files and 165 tests passed. Runtime: `node
-      packages/cli/dist/bin/agentera.js state plan --help` printed optional
-      [--plan] grammar and active-plan default; `node
-      packages/cli/dist/bin/agentera.js state plan tasks get --task 2 --format
-      json` returned status=ok, active=true, task_number=2; `node
-      packages/cli/dist/bin/agentera.js state plan tasks get --task 999 --format
-      json; test $? -eq 1` returned class=not_found and confirmed exit 1. `pnpm
-      -C packages/cli run typecheck`, `pnpm -C packages/cli build`, and `node
-      packages/cli/dist/bin/agentera.js check validate capability-contract
-      --format json` passed; validation reported 2 passed, 0 failed."
-    next: Leave Task 2 complete for independent reevaluation; do not start Task 3.
-    context:
-      intent: Correct only the two findings from Task 2 evaluation attempt 1 while
-        preserving Cycle 798 and evaluation history.
-      constraints: Retry Task 2 only; do not alter Cycle 798, evaluation attempt 1,
-        Task 1 history, retrieval behavior, archives, experiments, or prior
-        commit 2aaba648.
-      unknowns: None; the failed audit identified one help contradiction and
-        insufficiently reproducible progress evidence.
-      scope: One help sentence, one cross-surface regression test, typed progress
-        Cycle 799, and typed Task 2 status.
   - number: 793
     timestamp: 2026-07-14 17:36
     type: chore
@@ -420,6 +404,9 @@ cycles:
         and backfill fixtures; package metadata and generated ignored
         dist/bundle
 archive:
+  - summary: "Cycle 799 (2026-07-14): Aligned plan-task help with the optional
+      active-plan selector and added help-authority-runtime regression
+      coverage."
   - summary: "Cycle 798 (2026-07-14): Shipped bounded active-plan task list/get with
       numeric ordering, opaque snapshot cursors, exact task retrieval,
       structured..."
@@ -516,15 +503,18 @@ archive:
   - summary: "Cycle 759 (2026-07-13): Exposed stable-ID direct retrieval for
       progress, decisions, and health with exact archive lookup, provenance,
       overlay..."
-  - summary: "Cycle 758 (2026-07-13): Fixed Task 7 attempt-1 audit findings for
-      legacy summary bounds, byte-budget fallbacks, and retrieval provenance."
 omitted: true
-omitted_count: 44
+omitted_count: 45
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded

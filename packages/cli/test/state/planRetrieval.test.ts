@@ -215,16 +215,16 @@ describe("active and archived plan retrieval", () => {
     const expected = {
       plan_tasks: "implemented",
       plans: "implemented",
-      experiments: "pending",
+      experiments: "implemented",
     };
     const authority = loadStateRetrievalAuthority().retrieval as any;
     const schema = buildSchemaPayload("schema").state_retrieval as any;
-    expect(authority.status).toBe("plan_task_and_plan_retrieval_implemented_experiments_pending");
+    expect(authority.status).toBe("plan_task_plan_and_experiment_retrieval_implemented");
     expect(authority.implementation).toEqual(expected);
     expect(schema.status).toBe(authority.status);
     expect(schema.implementation).toEqual(expected);
     expect(printStateHelp("plan")).toContain("Plan list/get returns active and archived file-based plans");
-    expect(printStateHelp("experiments")).toContain("execution lands in later plan tasks");
+    expect(printStateHelp("experiments")).toContain("List merges retained projection and immutable archive identities");
 
     const root = project();
     const listed = capture(root, ["list", "--format", "json"]);
