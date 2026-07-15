@@ -353,23 +353,27 @@ retrieval:
       behavior: storage special case represented publicly by plan.plans
     - artifact_id: optimize_harness
       behavior: local harness storage, not public state retrieval
-  current_gap_evidence:
+  gap_closure_evidence:
     - surface: agentera state plan --format json / plans
-      count_gap: PLAN_HISTORY_CATALOG_LIMIT silently caps catalog rows at 10 without cursor or stable identity
-      byte_gap: response has no serialized byte authority
-      recoverability: raw paths are exposed but no public exact plan get exists
+      declared_gap: PLAN_HISTORY_CATALOG_LIMIT capped catalog rows without collection-level omission recovery
+      outcome: closed
+      closure: plan_catalog reports omitted, omitted_count, omission_reason, and public list/get recovery; the plan list surface owns count and serialized-byte continuation
     - surface: agentera state plan --format json / source.archive_paths
-      count_gap: archive paths are capped at 10 with only an omitted count
-      byte_gap: source metadata has no independent serialized byte authority
-      recoverability: omitted paths have neither cursor nor exact plan identity
+      declared_gap: archive paths were capped at 10 with only an omitted count and no stable recovery
+      outcome: closed
+      closure: source reports archive_paths_omitted, archive_paths_omitted_count, archive_paths_omission_reason, and plan list/get recovery instead of requiring path traversal
     - surface: agentera state plan text / tasks
-      count_gap: legacy projection remains capped at 10 and must expose its omitted count
-      byte_gap: task-list text output emits whole task rows without truncating task scalars
-      recoverability: agentera state plan tasks list/get provides cursor and exact retrieval
+      declared_gap: legacy text projection capped tasks at 10 and needed explicit whole-record omission recovery
+      outcome: closed
+      closure: text reports omitted count and reason plus task list/get recovery; bounded task rows contain identity and commands without scalar truncation
     - surface: agentera state plan --format json / tasks
-      count_gap: legacy projection must omit whole task records deterministically when over budget
-      byte_gap: task-list JSON is bounded to budgets.list.max_utf8_bytes
-      recoverability: task identities are plan-scoped and list/get is public
+      declared_gap: structured plan projection needed deterministic whole-task byte omission and public recovery
+      outcome: closed
+      closure: JSON and YAML report omitted, omitted_count, omission_reason, and task list/get recovery; task list JSON/YAML enforce budgets.list.max_utf8_bytes
+    - surface: legacy agentera state experiments projection
+      declared_gap: the pre-list/get projection is objective-selected rather than a stable cross-objective collection
+      outcome: out_of_scope
+      closure: objective-scoped experiments list/get is the supported retrieval surface; adding identity or pagination to the legacy projection would duplicate that contract
   plan_archive_diagnostics:
     classification: pre_existing_compatibility_caveat
     smoke_test_behavior: >-

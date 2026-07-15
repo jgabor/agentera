@@ -47,6 +47,22 @@ function capture(root: string, args: string[]): { rc: number; out: string; err: 
   }
 }
 
+function capturePlanTasks(root: string, args: string[]): { rc: number; out: string; err: string } {
+  const previous = process.cwd();
+  let out = "";
+  let err = "";
+  process.chdir(root);
+  try {
+    const rc = main(["node", "agentera", "state", "plan", "tasks", ...args], {
+      out: (text) => (out += text),
+      err: (text) => (err += text),
+    });
+    return { rc, out, err };
+  } finally {
+    process.chdir(previous);
+  }
+}
+
 afterEach(() => {
   for (const root of roots.splice(0)) fs.rmSync(root, { recursive: true, force: true });
 });
@@ -89,6 +105,31 @@ describe("active and archived plan retrieval", () => {
     const unavailable = capture(root, ["list", "--cursor", first.next_cursor, "--format", "json"]);
     expect(unavailable.rc).toBe(1);
     expect(JSON.parse(unavailable.out).error.class).toBe("cursor_snapshot_unavailable");
+  });
+
+  it("fails closed when plan diagnostics change inside a cursor snapshot", () => {
+    const root = project();
+    const first = JSON.parse(capture(root, ["list", "--limit", "1", "--format", "json"]).out);
+    fs.writeFileSync(path.join(root, ".agentera", "archive", "PLAN-broken.yaml"), "header: [broken\n");
+    const continued = capture(root, ["list", "--cursor", first.next_cursor, "--format", "json"]);
+    expect(continued.rc).toBe(1);
+    expect(JSON.parse(continued.out).error.class).toBe("cursor_snapshot_unavailable");
+  });
+
+  it("rejects malformed and wrong-family cursors with structured validation errors", () => {
+    const root = project();
+    const malformed = capture(root, ["list", "--cursor", "not+a+cursor", "--format", "json"]);
+    expect(malformed.rc).toBe(2);
+    expect(JSON.parse(malformed.out).error.class).toBe("cursor_invalid");
+
+    const activePath = path.join(root, ".agentera", "plan.yaml");
+    const active = YAML.parse(fs.readFileSync(activePath, "utf8"));
+    active.tasks.push({ number: 2, name: "Second", status: "pending" });
+    fs.writeFileSync(activePath, YAML.stringify(active));
+    const taskCursor = JSON.parse(capturePlanTasks(root, ["list", "--limit", "1", "--format", "json"]).out).next_cursor;
+    const wrongFamily = capture(root, ["list", "--cursor", taskCursor, "--format", "json"]);
+    expect(wrongFamily.rc).toBe(2);
+    expect(JSON.parse(wrongFamily.out).error.class).toBe("cursor_invalid");
   });
 
   it("keeps a large archive snapshot cursor inside the JSON list budget", () => {

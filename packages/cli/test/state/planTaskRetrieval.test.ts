@@ -246,6 +246,15 @@ describe("active plan task retrieval", () => {
     expect(payload.omitted_count).toBeGreaterThan(0);
     expect(payload.omission_reason).toBe("serialized_output_byte_budget");
     expect(payload.retrieval.continue).toContain(`--cursor ${payload.next_cursor}`);
+
+    const yaml = capture(root, ["list", "--limit", "12", "--format", "yaml"]);
+    expect(yaml.rc).toBe(0);
+    expect(Buffer.byteLength(yaml.out, "utf8")).toBeLessThanOrEqual(32768);
+    const yamlPayload = YAML.parse(yaml.out);
+    expect(yamlPayload.omitted).toBe(true);
+    expect(yamlPayload.omitted_count).toBeGreaterThan(0);
+    expect(yamlPayload.omission_reason).toBe("serialized_output_byte_budget");
+    expect(yamlPayload.retrieval.continue).toContain(`--cursor ${yamlPayload.next_cursor}`);
   });
 
   it("adds task list/get recovery when the legacy plan projection omits tasks", () => {
@@ -266,6 +275,51 @@ describe("active plan task retrieval", () => {
       available: true,
       list: "agentera state plan tasks list --format json",
       get: "agentera state plan tasks get --task N --format json",
+      plans_list: "agentera state plan list --format json",
+      plans_get: "agentera state plan get --plan PLAN_ID --format json",
+    });
+    expect(payload.plan_catalog).toMatchObject({
+      omitted: false,
+      omitted_count: 0,
+      omission_reason: null,
+      retrieval: {
+        list: "agentera state plan list --format json",
+        get: "agentera state plan get --plan PLAN_ID --format json",
+      },
+    });
+  });
+
+  it("declares legacy plan catalog and archive-path omissions with public recovery", () => {
+    const root = project([task(1)]);
+    const archiveRoot = path.join(root, ".agentera", "archive");
+    fs.mkdirSync(archiveRoot, { recursive: true });
+    for (let index = 0; index < 12; index += 1) {
+      const suffix = index.toString(16).padStart(12, "0");
+      fs.writeFileSync(path.join(archiveRoot, `PLAN-${index}.yaml`), YAML.stringify({
+        header: { id: `plan:223e4567-e89b-42d3-a456-${suffix}`, title: `Archive ${index}`, status: "complete", created: `2026-06-${String(index + 1).padStart(2, "0")}` },
+        tasks: [{ ...task(1), status: "complete" }],
+      }));
+    }
+    const result = capturePlan(root, ["--format", "json"]);
+    expect(result.rc).toBe(0);
+    const payload = JSON.parse(result.out);
+    expect(payload.plan_catalog).toMatchObject({
+      omitted: true,
+      omitted_count: 3,
+      omission_reason: "archive_catalog_limit",
+      retrieval: {
+        list: "agentera state plan list --format json",
+        get: "agentera state plan get --plan PLAN_ID --format json",
+      },
+    });
+    expect(payload.source).toMatchObject({
+      archive_paths_omitted: true,
+      archive_paths_omitted_count: 2,
+      archive_paths_omission_reason: "archive_path_catalog_limit",
+      archive_paths_retrieval: {
+        list: "agentera state plan list --format json",
+        get: "agentera state plan get --plan PLAN_ID --format json",
+      },
     });
   });
 

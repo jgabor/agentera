@@ -113,6 +113,16 @@ tasks:
       - GIVEN committed deterministic retrieval evidence WHEN its root-runnable command is repeated THEN stable serialized bytes and a serialized-byte count below 32768 map explicitly to the Task 4 criteria.
       - GIVEN the live YAML response WHEN checked without mutation THEN the assertion is serialized bytes < 32768 rather than equality with Cycle 803.
       - GIVEN the evidence repair WHEN independently audited THEN Cycle 803 remains immutable and the blocked TODO repair item closes only after a passing verdict.
+    evaluation:
+      attempt_count: 1
+      failure_count: 0
+      last_verdict: pass
+      last_failure_evidence: null
+      provenance:
+        attempt_id: task-9-audit-1-20260715
+        source: independent deterministic retrieval evidence audit
+        recorded_at: 2026-07-15 10:23
+        writer_command: agentera state plan record-evaluation
   - number: 10
     name: Close evidenced cursor and omission gaps
     depends_on:
@@ -120,7 +130,7 @@ tasks:
       - "4"
       - "8"
       - "9"
-    status: pending
+    status: complete
     acceptance:
       - GIVEN any Task 1 plan or experiment gap WHEN bounded by count or bytes THEN omissions and usable recovery are explicit.
       - GIVEN stale, wrong-family, wrong-filter, or malformed cursors WHEN reused THEN deterministic snapshot or validation errors result.

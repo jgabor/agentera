@@ -88,6 +88,8 @@ export function projectionRetrieval(command: string): JsonObject {
       available: true,
       list: "agentera state plan tasks list --format json",
       get: "agentera state plan tasks get --task N --format json",
+      plans_list: "agentera state plan list --format json",
+      plans_get: "agentera state plan get --plan PLAN_ID --format json",
     };
   }
   return {
@@ -190,7 +192,7 @@ function minimalBudgetedProjection(
       syntax: `agentera state ${command} --format json`,
       example: `agentera state ${command} --format json`,
       recovery: omission.retrieval.available === true
-        ? String(omission.retrieval.command)
+        ? String(omission.retrieval.command ?? omission.retrieval.list)
         : "No direct retrieval route is declared for this artifact; use its supported state command.",
     },
   };

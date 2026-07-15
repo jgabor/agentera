@@ -68,9 +68,14 @@ function planSource(primary: PlanArtifact | null, discovery: PlanArtifactDiscove
   source.active_path = discovery.activePath;
   source.archive_count = archivePaths.length;
   source.archive_paths = archivePaths.slice(0, PLAN_HISTORY_CATALOG_LIMIT);
-  if (archivePaths.length > PLAN_HISTORY_CATALOG_LIMIT) {
-    source.archive_paths_omitted_count = archivePaths.length - PLAN_HISTORY_CATALOG_LIMIT;
-  }
+  const archivePathsOmitted = Math.max(0, archivePaths.length - PLAN_HISTORY_CATALOG_LIMIT);
+  source.archive_paths_omitted = archivePathsOmitted > 0;
+  source.archive_paths_omitted_count = archivePathsOmitted;
+  source.archive_paths_omission_reason = archivePathsOmitted > 0 ? "archive_path_catalog_limit" : null;
+  source.archive_paths_retrieval = {
+    list: "agentera state plan list --format json",
+    get: "agentera state plan get --plan PLAN_ID --format json",
+  };
   if (discovery.diagnostics.length > 0) source.diagnostics = discovery.diagnostics;
   const activeDiagnostics = discovery.diagnostics.filter(
     (diagnostic) => diagnostic.path === discovery.activePath && diagnostic.category !== "legacy",
@@ -155,7 +160,13 @@ function planSourceContract(
     archive_paths: discovery.archived
       .slice(0, PLAN_HISTORY_CATALOG_LIMIT)
       .map((artifact) => artifact.path),
+    archive_paths_omitted: discovery.archived.length > PLAN_HISTORY_CATALOG_LIMIT,
     archive_paths_omitted_count: Math.max(0, discovery.archived.length - PLAN_HISTORY_CATALOG_LIMIT),
+    archive_paths_omission_reason: discovery.archived.length > PLAN_HISTORY_CATALOG_LIMIT ? "archive_path_catalog_limit" : null,
+    archive_paths_retrieval: {
+      list: "agentera state plan list --format json",
+      get: "agentera state plan get --plan PLAN_ID --format json",
+    },
     invalid_archive_paths: discovery.invalidArchivePaths,
     lifecycle_state: lifecycle,
     complete_for_plan_artifact: complete,
@@ -314,6 +325,10 @@ export function queryPlan(args: StateArgs, schemas: Record<string, SchemaInfo>, 
       omitted: catalogTotal > catalog.length,
       omitted_count: Math.max(0, catalogTotal - catalog.length),
       omission_reason: catalogTotal > catalog.length ? "archive_catalog_limit" : null,
+      retrieval: {
+        list: "agentera state plan list --format json",
+        get: "agentera state plan get --plan PLAN_ID --format json",
+      },
     };
     return emitStateStructured(
       "plan",

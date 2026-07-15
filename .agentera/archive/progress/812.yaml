@@ -1,0 +1,19 @@
+schemaVersion: agentera.stateArchiveEntry.v1
+artifact_id: progress
+entry_number: 812
+record:
+  number: 812
+  timestamp: 2026-07-15 10:42
+  type: fix
+  phase: build
+  what: Closed evidenced plan and experiment cursor and omission gaps.
+  inspiration: Replacement Plan Task 10 and the Task 1 retrieval coverage matrix.
+  discovered: Plan-task YAML lacked serialized-byte bounding; legacy plan catalog and archive-path caps lacked public recovery; plan cursors did not bind diagnostic state. The legacy experiment projection is explicitly out of scope because objective-scoped experiments list/get owns retrieval.
+  verified: "AC1: focused JSON/YAML/text tests prove omitted, omitted_count, omission_reason, cursor/list/get recovery, and no scalar truncation. AC2: malformed, wrong-family, wrong-objective, mutated-entry, and changed-diagnostic tests prove cursor_invalid or cursor_snapshot_unavailable. AC3: 276 focused tests and existing progress/decisions/health list/get regression tests passed; typecheck, build, capability-contract validation, and live CLI smoke passed. Root commands: pnpm -C packages/cli exec vp test run test/cli/sourceContractOracles.test.ts test/state/retrievalAuthority.test.ts test/state/projectionPolicy.test.ts test/state/planTaskRetrieval.test.ts test/state/planRetrieval.test.ts test/state/experimentRetrieval.test.ts test/state/listRetrieval.test.ts test/state/directRetrieval.test.ts; pnpm -C packages/cli test; pnpm -C packages/cli run typecheck; pnpm -C packages/cli build; node packages/cli/dist/bin/agentera.js check validate capability-contract --format json; node packages/cli/dist/bin/agentera.js check compact."
+  next: Task 11 may perform the broad public-contract documentation sweep; do not begin Task 12 or Task 13 in this cycle.
+  context:
+    intent: Complete Plan Task 10 without extending bounded retrieval to unrelated state families.
+    constraints: Preserved numbered families, objective-scoped experiments, 10/40/50 retention, suite metadata, Task 9 audit evidence, and the closed evidence-repair TODO text; no publication, tag, push, or unrelated family work.
+    unknowns: The Task 9 audit resolved the only gating unknown; no Task 10 unknown remains.
+    scope: Retrieval authority, plan projections/cursors, plan-task YAML bounds, plan/experiment tests, source-contract oracle, changelog, and state closeout.
+record_sha256: 35a3bf9d87964daaaa568d93a74a70b3b77f66c478eccdca1861f89d3826c3f7

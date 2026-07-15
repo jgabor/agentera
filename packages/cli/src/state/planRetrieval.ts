@@ -37,6 +37,7 @@ interface CursorPayload {
   snapshot_id: string;
   candidate_ids: string[];
   diagnostics: PlanArtifactDiagnostic[];
+  diagnostic_hash: string;
   after: number;
 }
 
@@ -180,11 +181,17 @@ function parseCursor(token: string, projectRoot: string): CursorPayload {
   if (unsigned.version !== CURSOR_VERSION || unsigned.collection !== "plan.plans" || unsigned.order !== ORDER) invalid("cursor is bound to a different collection or order");
   if (!Number.isSafeInteger(unsigned.after) || Number(unsigned.after) < 1 || !Array.isArray(unsigned.candidate_ids) || !Array.isArray(unsigned.diagnostics)) invalid("cursor payload is invalid");
   if ((unsigned.candidate_ids as unknown[]).some((candidate) => typeof candidate !== "string" || !PLAN_ID.test(candidate))) invalid("cursor candidate snapshot is invalid");
-  if (typeof unsigned.snapshot_id !== "string" || !/^[0-9a-f]{64}$/.test(unsigned.snapshot_id)) invalid("cursor snapshot is invalid");
+  if (typeof unsigned.snapshot_id !== "string" || !/^[0-9a-f]{64}$/.test(unsigned.snapshot_id) || typeof unsigned.diagnostic_hash !== "string" || !/^[0-9a-f]{64}$/.test(unsigned.diagnostic_hash)) invalid("cursor snapshot is invalid");
   return unsigned as unknown as CursorPayload;
 }
 
 function plansFromSnapshot(discovery: PlanArtifactDiscovery, payload: CursorPayload): LogicalPlan[] {
+  if (hash(discovery.diagnostics) !== payload.diagnostic_hash) {
+    throw fail(1, "cursor_snapshot_unavailable", "the plan catalog diagnostics changed and the snapshot cannot be resumed exactly", "list", {
+      recovery: "Start a new plan listing without --cursor to establish the current snapshot.",
+      details: { snapshot_id: payload.snapshot_id },
+    });
+  }
   const current = logicalPlans(discovery);
   const plans = payload.candidate_ids.map((stableId) => {
     const match = current.find((candidate) => candidate.stableId === stableId);
@@ -244,6 +251,7 @@ function withPage(plans: LogicalPlan[], diagnostics: PlanArtifactDiagnostic[], s
       snapshot_id: snapshotId(snapshotRefs),
       candidate_ids: plans.map((plan) => plan.stableId),
       diagnostics,
+      diagnostic_hash: hash(diagnostics),
       after: start + selected.length,
     }, projectRoot);
     response.next_cursor = token;

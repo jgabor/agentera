@@ -1,4 +1,44 @@
 cycles:
+  - number: 812
+    timestamp: 2026-07-15 10:42
+    type: fix
+    phase: build
+    what: Closed evidenced plan and experiment cursor and omission gaps.
+    inspiration: Replacement Plan Task 10 and the Task 1 retrieval coverage matrix.
+    discovered: Plan-task YAML lacked serialized-byte bounding; legacy plan catalog
+      and archive-path caps lacked public recovery; plan cursors did not bind
+      diagnostic state. The legacy experiment projection is explicitly out of
+      scope because objective-scoped experiments list/get owns retrieval.
+    verified: "AC1: focused JSON/YAML/text tests prove omitted, omitted_count,
+      omission_reason, cursor/list/get recovery, and no scalar truncation. AC2:
+      malformed, wrong-family, wrong-objective, mutated-entry, and
+      changed-diagnostic tests prove cursor_invalid or
+      cursor_snapshot_unavailable. AC3: 276 focused tests and existing
+      progress/decisions/health list/get regression tests passed; typecheck,
+      build, capability-contract validation, and live CLI smoke passed. Root
+      commands: pnpm -C packages/cli exec vp test run
+      test/cli/sourceContractOracles.test.ts
+      test/state/retrievalAuthority.test.ts test/state/projectionPolicy.test.ts
+      test/state/planTaskRetrieval.test.ts test/state/planRetrieval.test.ts
+      test/state/experimentRetrieval.test.ts test/state/listRetrieval.test.ts
+      test/state/directRetrieval.test.ts; pnpm -C packages/cli test; pnpm -C
+      packages/cli run typecheck; pnpm -C packages/cli build; node
+      packages/cli/dist/bin/agentera.js check validate capability-contract
+      --format json; node packages/cli/dist/bin/agentera.js check compact."
+    next: Task 11 may perform the broad public-contract documentation sweep; do not
+      begin Task 12 or Task 13 in this cycle.
+    context:
+      intent: Complete Plan Task 10 without extending bounded retrieval to unrelated
+        state families.
+      constraints: Preserved numbered families, objective-scoped experiments, 10/40/50
+        retention, suite metadata, Task 9 audit evidence, and the closed
+        evidence-repair TODO text; no publication, tag, push, or unrelated
+        family work.
+      unknowns: The Task 9 audit resolved the only gating unknown; no Task 10 unknown
+        remains.
+      scope: Retrieval authority, plan projections/cursors, plan-task YAML bounds,
+        plan/experiment tests, source-contract oracle, changelog, and state
+        closeout.
   - number: 811
     timestamp: 2026-07-15 10:17
     type: test
@@ -301,47 +341,6 @@ cycles:
       scope: Plan list response metadata and budgeting, retrieval
         authority/introspection, parity and pressure tests, changelog, progress,
         and Task 4 status.
-  - number: 802
-    timestamp: 2026-07-15 07:24
-    type: feat
-    phase: build
-    what: Delivered deterministic active and archived plan list/get retrieval with
-      snapshot cursors, full-plan exact reads, lifecycle provenance, and
-      structured compatibility failures.
-    inspiration: Task 4 and references/artifacts/state-storage-authority.yaml.
-    discovered: The 133-plan live catalog made full snapshot references exceed the
-      list byte budget; compact candidate-ID snapshots plus a signed compressed
-      cursor preserve exactness within budget.
-    verified: "AC1: pnpm -C packages/cli exec vp test run
-      test/state/planLifecycleContract.test.ts test/state/planRetrieval.test.ts
-      test/state/planTaskRetrieval.test.ts test/cli/help.test.ts passed 4
-      files/44 tests; pnpm -C packages/cli test passed 180 files/1981 tests;
-      node packages/cli/dist/bin/agentera.js state plan list --limit 2 --format
-      json returned 2/133 in created_desc_then_plan_id_asc order with 131
-      omissions, cursor, lifecycle provenance, and diagnostics. AC2: node
-      packages/cli/dist/bin/agentera.js state plan get --plan
-      legacy-plan:3c1a4ccd1c5670e0825805f277d84ed9d03dda6ffe08179424a214dd62790\
-      16f --format json returned the full archived plan and detail provenance.
-      AC3: focused tests passed legacy mirrors and invalid, missing, malformed,
-      ambiguous outcomes; live list retained both known invalid-archive
-      diagnostics. pnpm -C packages/cli run typecheck; pnpm -C packages/cli
-      build; node packages/cli/dist/bin/agentera.js check validate
-      capability-contract --format json (2/2); node
-      packages/cli/dist/bin/agentera.js check compact (0 over limit) all
-      passed."
-    next: Task 5 may implement objective-scoped experiment identity; do not begin
-      without a new cycle.
-    context:
-      intent: Complete Plan Task 4 by exposing bounded file-based plan history without
-        caller-side archive traversal.
-      constraints: Task 4 only; preserved file archives and existing Task 3 audit
-        state; no experiments, package metadata, broad omission cleanup,
-        publish, push, or archive repair.
-      unknowns: Resolved plan retrieval compatibility behavior; unrelated invalid
-        archives degrade list diagnostics but only a selected invalid plan fails
-        exact get.
-      scope: Plan retrieval state/CLI, dispatch, help, lifecycle inventory, focused
-        tests, changelog, progress, and Task 4 state.
   - number: 793
     timestamp: 2026-07-14 17:36
     type: chore
@@ -411,6 +410,9 @@ cycles:
         and backfill fixtures; package metadata and generated ignored
         dist/bundle
 archive:
+  - summary: "Cycle 802 (2026-07-15): Delivered deterministic active and archived
+      plan list/get retrieval with snapshot cursors, full-plan exact reads,
+      lifecycle..."
   - summary: "Cycle 801 (2026-07-14): Reproduced Task 3 acceptance evidence with
       exact commands runnable from the repository root."
   - summary: "Cycle 800 (2026-07-14): Established stable plan identity through
@@ -506,15 +508,18 @@ archive:
   - summary: "Cycle 762 (2026-07-13): Implemented snapshot-stable bounded state
       listing for progress, decisions, and health with numeric ordering, opaque
       signed..."
-  - summary: "Cycle 761 (2026-07-13): Retried Task 8 after evaluation failure:
-      direct decision get now preserves absent outcome metadata, and..."
 omitted: true
-omitted_count: 47
+omitted_count: 48
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded

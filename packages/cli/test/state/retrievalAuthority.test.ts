@@ -170,7 +170,11 @@ const negativeCases: NegativeCase[] = [
     expected: `retrieval.collections.missing.${collectionId}`,
     mutate: (value) => { value.retrieval.collections = value.retrieval.collections.filter((item: Authority) => item.collection_id !== collectionId); },
   })),
-  { rule: "plan gap evidence", expected: "retrieval.current_gap_evidence.plan", mutate: (value) => { value.retrieval.current_gap_evidence = value.retrieval.current_gap_evidence.filter((item: Authority) => !item.surface.includes("plan")); } },
+  { rule: "plan gap closure evidence", expected: "retrieval.gap_closure_evidence.plan", mutate: (value) => { value.retrieval.gap_closure_evidence = value.retrieval.gap_closure_evidence.filter((item: Authority) => !item.surface.includes("plan")); } },
+  { rule: "experiment gap closure evidence", expected: "retrieval.gap_closure_evidence.experiments", mutate: (value) => { value.retrieval.gap_closure_evidence = value.retrieval.gap_closure_evidence.filter((item: Authority) => !item.surface.includes("experiments")); } },
+  { rule: "gap closure declared gap", expected: "retrieval.gap_closure_evidence[0].declared_gap", mutate: (value) => { delete value.retrieval.gap_closure_evidence[0].declared_gap; } },
+  { rule: "gap closure evidence", expected: "retrieval.gap_closure_evidence[0].closure", mutate: (value) => { delete value.retrieval.gap_closure_evidence[0].closure; } },
+  { rule: "gap closure outcome", expected: "retrieval.gap_closure_evidence[0].outcome", mutate: (value) => { value.retrieval.gap_closure_evidence[0].outcome = "pending"; } },
   { rule: "archive diagnostic classification", expected: "retrieval.plan_archive_diagnostics.classification", mutate: (value) => { value.retrieval.plan_archive_diagnostics.classification = "fail_all_reads"; } },
   { rule: "archive diagnostic smoke behavior", expected: "retrieval.plan_archive_diagnostics.smoke_test_behavior", mutate: (value) => { delete value.retrieval.plan_archive_diagnostics.smoke_test_behavior; } },
 ];
@@ -184,7 +188,7 @@ describe("state retrieval authority", () => {
   });
 
   it("has one uniquely named negative fixture for every enforced rule", () => {
-    expect(negativeCases).toHaveLength(123);
+    expect(negativeCases).toHaveLength(127);
     expect(new Set(negativeCases.map(({ rule }) => rule)).size).toBe(negativeCases.length);
   });
 

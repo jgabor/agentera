@@ -1,6 +1,8 @@
 import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 import path from "node:path";
 
+import YAML from "yaml";
+
 import type { JsonObject, JsonValue } from "../core/jsonValue.js";
 import { canonicalRecordJson } from "./archiveDiscovery.js";
 import { StateRetrievalFailure, type StateFailureBody } from "./directRetrieval.js";
@@ -296,12 +298,16 @@ export function listPlanTasks(
   const candidates = snapshotTasks.filter((task) => task.number > (parsed?.after ?? 0));
   const requested = Math.min(options.limit, candidates.length);
   let response = withPage(plan, snapshotTasks, candidates, requested, projectRoot, "page_limit");
-  if (options.format === "json") {
-    for (let retained = requested; retained > 0 && Buffer.byteLength(JSON.stringify(response, null, 2) + "\n", "utf8") > MAX_LIST_BYTES; retained -= 1) {
+  if (options.format === "json" || options.format === "yaml") {
+    const serializedBytes = (value: PlanTaskListResponse): number => Buffer.byteLength(
+      options.format === "yaml" ? YAML.stringify(value) : JSON.stringify(value, null, 2) + "\n",
+      "utf8",
+    );
+    for (let retained = requested; retained > 0 && serializedBytes(response) > MAX_LIST_BYTES; retained -= 1) {
       response = withPage(plan, snapshotTasks, candidates, retained - 1, projectRoot, "serialized_output_byte_budget");
     }
-    if (Buffer.byteLength(JSON.stringify(response, null, 2) + "\n", "utf8") > MAX_LIST_BYTES || (candidates.length > 0 && response.entries.length === 0)) {
-      throw fail(1, "unsupported_state", `one task cannot fit within the ${MAX_LIST_BYTES}-byte JSON list budget`, "list", {
+    if (serializedBytes(response) > MAX_LIST_BYTES || (candidates.length > 0 && response.entries.length === 0)) {
+      throw fail(1, "unsupported_state", `one task cannot fit within the ${MAX_LIST_BYTES}-byte ${options.format.toUpperCase()} list budget`, "list", {
         recovery: "Fetch the task directly with agentera state plan tasks get --task N --format json.",
       });
     }

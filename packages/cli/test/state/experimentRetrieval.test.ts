@@ -2,6 +2,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
+import YAML from "yaml";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { main } from "../../src/cli/dispatch/index.js";
@@ -316,6 +317,40 @@ describe("objective-scoped experiment list and get", () => {
     expect(result.json.omitted_count).toBeGreaterThan(0);
     expect(result.json.next_cursor).toBeTruthy();
     expect(result.json.retrieval.continue).toContain(result.json.next_cursor);
+  });
+
+  it.each(["yaml", "text"] as const)("keeps bounded %s omission explicit and recoverable", (format) => {
+    const fixture = project();
+    const records = Array.from({ length: 100 }, (_, number) => experiment(number, { conclusion: `${number}:${"x".repeat(1200)}` }));
+    fs.writeFileSync(fixture.experimentsPath, dumpYamlMapping({ experiments: records }));
+    const result = capture(fixture.root, ["list", "--objective", objectiveId, "--limit", format === "text" ? "20" : "100", "--format", format]);
+    expect(result.rc).toBe(0);
+    expect(Buffer.byteLength(result.out, "utf8")).toBeLessThanOrEqual(32_768);
+    if (format === "yaml") {
+      const payload = YAML.parse(result.out);
+      expect(payload.omitted).toBe(true);
+      expect(payload.omitted_count).toBeGreaterThan(0);
+      expect(payload.omission_reason).toBe("serialized_output_byte_budget");
+      expect(payload.retrieval.continue).toContain(payload.next_cursor);
+    } else {
+      expect(result.out).toContain("Omitted:");
+      expect(result.out).toContain("reason=page_limit");
+      expect(result.out).toContain("Continue: agentera state experiments list");
+      expect(result.out).toContain("Get one: agentera state experiments get");
+    }
+  });
+
+  it("rejects a cursor reused with a different objective filter", () => {
+    const first = project(objectiveId, "optimize", "first");
+    const secondDirectory = path.join(first.root, ".agentera", "optimize", "second");
+    fs.mkdirSync(secondDirectory, { recursive: true });
+    fs.writeFileSync(path.join(secondDirectory, "objective.yaml"), dumpYamlMapping(objective(otherObjectiveId, "Other")));
+    fs.writeFileSync(first.experimentsPath, dumpYamlMapping({ experiments: [experiment(0), experiment(1)] }));
+    fs.writeFileSync(path.join(secondDirectory, "experiments.yaml"), dumpYamlMapping({ experiments: [experiment(0), experiment(1)] }));
+    const cursor = capture(first.root, ["list", "--objective", objectiveId, "--limit", "1", "--format", "json"]).json.next_cursor;
+    const wrongFilter = capture(first.root, ["list", "--objective", otherObjectiveId, "--cursor", cursor, "--format", "json"]);
+    expect(wrongFilter.rc).toBe(2);
+    expect(wrongFilter.json.error.class).toBe("cursor_invalid");
   });
 
   it("keeps byte-limited traversal snapshot-bound across retention rollover", () => {

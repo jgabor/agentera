@@ -256,12 +256,21 @@ export function validateStateRetrievalAuthority(value: Record<string, unknown>):
     if (!collectionIds.includes(id)) errors.push(`retrieval.collections.missing.${id}`);
   }
 
-  const gaps = Array.isArray(retrieval.current_gap_evidence) ? retrieval.current_gap_evidence : [];
-  for (const surface of ["plan"]) {
+  const gaps = Array.isArray(retrieval.gap_closure_evidence) ? retrieval.gap_closure_evidence : [];
+  for (const surface of ["plan", "experiments"]) {
     if (!gaps.some((value) => String(mapping(value).surface ?? "").includes(surface))) {
-      errors.push(`retrieval.current_gap_evidence.${surface}`);
+      errors.push(`retrieval.gap_closure_evidence.${surface}`);
     }
   }
+  gaps.forEach((value, index) => {
+    const gap = mapping(value);
+    for (const field of ["surface", "declared_gap", "closure"]) {
+      requireNonEmpty(gap, field, `retrieval.gap_closure_evidence[${index}]`, errors);
+    }
+    if (gap.outcome !== "closed" && gap.outcome !== "out_of_scope") {
+      errors.push(`retrieval.gap_closure_evidence[${index}].outcome`);
+    }
+  });
   const diagnostics = mapping(retrieval.plan_archive_diagnostics);
   if (diagnostics.classification !== "pre_existing_compatibility_caveat") {
     errors.push("retrieval.plan_archive_diagnostics.classification");
