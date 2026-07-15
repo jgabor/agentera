@@ -1,4 +1,41 @@
 cycles:
+  - number: 823
+    timestamp: 2026-07-15 15:08
+    type: fix
+    phase: build
+    what: Made immutable release provenance non-circular.
+    inspiration: The failed Cycle 822 commit exposed a circular ordinary-suite
+      dependency between uncommitted governed inputs and agentera.gitRef.
+    discovered: Repository test policy already classified live release checks as
+      gate-deferred, while the fixture suite comprehensively exercises
+      provenance validation. Removing only the live REPO_ROOT test aligns
+      implementation with that policy; the explicit release-metadata command
+      still invokes the unchanged validator.
+    verified: "Supersedes Cycle 822's 2068/2069 ordinary-suite result: focused
+      authority, publication, schema, prepack, and release tests passed 211/211;
+      the ordinary full suite passed 2068/2068. Typecheck and build passed. The
+      first normal hooked commit fdd67cd9eacdd43fdbb755158f0d8e405bee1e1c passed
+      build, compact, docs, parity, and full-test hooks. Explicit release
+      metadata passed after pinning gitRef to that substantive commit. Package
+      remains 3.0.0-dev.21, suite and registry remain 3.0.0. Canonical and
+      bundled authority bytes match at SHA-256
+      f84cbfad718d7c11c4dbe7f4afb9f081af6507e3919b15887d3a3c4bf9fdd0fb."
+    next: Stop after replacement Task 1. Task 2 remains pending and must not begin
+      in this cycle.
+    context:
+      intent: Complete replacement Plan Task 1 with a normal two-commit authority and
+        provenance sequence while keeping live-checkout enforcement explicit and
+        strong.
+      constraints: No reset, unstage, amend, hook bypass, publication, tag, push,
+        version movement, lockfile change, runtime behavior change, or
+        predecessor archive rewrite.
+      unknowns: "Resolved: fixture tests own validator logic; the explicit check
+        validate release-metadata gate alone owns live-checkout governed
+        equivalence, avoiding pre-commit self-reference without weakening
+        release enforcement."
+      scope: Release test boundary, accepted authority correction and tests,
+        predecessor archive, package gitRef, active plan Task 1, and appended
+        progress evidence.
   - number: 822
     timestamp: 2026-07-15 14:36
     type: fix
@@ -351,47 +388,6 @@ cycles:
       scope: Retrieval authority/validator, help/parsers, prime capability context,
         optimize prose and experiment schema, operator docs/changelog/TODO,
         parity tests, plan/progress state.
-  - number: 813
-    timestamp: 2026-07-15 11:01
-    type: fix
-    phase: build
-    what: Corrected all three findings from Task 10 audit attempt 1.
-    inspiration: Independent Task 10 acceptance audit attempt 1.
-    discovered: Archive-only state plan used a separate catalog envelope without
-      retrieval; task cursor parsing occurred after selector resolution; legacy
-      plan text reused scalar truncation helpers instead of whole-row output
-      bounding.
-    verified: 'AC1: a 12-archive/no-active fixture returned plan_catalog
-      omitted_count=2 and executable list returned 12 while exact get returned
-      the selected stable ID; all five Task 1 gap rows are asserted closed or
-      out_of_scope. AC2: fixture and live CLI return cursor_invalid for a reused
-      cursor with a different explicit --plan, while the same selector without
-      --cursor remains not_found. AC3: Unicode, oversized task, oversized
-      plan-field, ten-row count, 32768-byte, plan/experiment, and numbered
-      progress/decisions/health regressions pass with no scalar ellipsis.
-      Focused 316/316; full 2037/2037; targeted corrective 6/6. Live plan
-      text=1692 bytes. Root commands: pnpm -C packages/cli exec vp test run
-      test/cli/state.test.ts test/cli/sourceContractOracles.test.ts
-      test/state/retrievalAuthority.test.ts test/state/projectionPolicy.test.ts
-      test/state/planTaskRetrieval.test.ts test/state/planRetrieval.test.ts
-      test/state/experimentRetrieval.test.ts test/state/listRetrieval.test.ts
-      test/state/directRetrieval.test.ts; pnpm -C packages/cli test; pnpm -C
-      packages/cli run typecheck; pnpm -C packages/cli build; node
-      packages/cli/dist/bin/agentera.js check validate capability-contract
-      --format json; node packages/cli/dist/bin/agentera.js check compact; pnpm
-      -C packages/cli exec vp test run test/state/planTaskRetrieval.test.ts -t
-      "archive-only|Unicode|oversized|ten-row|cursor plan selector".'
-    next: Stop after Task 10 corrective commit; Task 11 remains pending.
-    context:
-      intent: Retry Task 10 only, preserve its failed first evaluation and Cycle 812,
-        and close the evidenced retrieval gaps without starting Task 11.
-      constraints: Did not amend 7802cd79, alter numbered-family retention, start Task
-        11, publish, tag, or push. Preserved Cycle 812 and evaluation attempt 1
-        failure evidence.
-      unknowns: None after the corrective Task 1 matrix audit.
-      scope: Archive-only plan catalog recovery, selector-first task cursor
-        validation, whole-row legacy plan text bounding, authority closure
-        evidence, regressions, changelog, progress, and plan evaluation/status.
   - number: 793
     timestamp: 2026-07-14 17:36
     type: chore
@@ -461,6 +457,8 @@ cycles:
         and backfill fixtures; package metadata and generated ignored
         dist/bundle
 archive:
+  - summary: "Cycle 813 (2026-07-15): Corrected all three findings from Task 10
+      audit attempt 1."
   - summary: "Cycle 812 (2026-07-15): Closed evidenced plan and experiment cursor
       and omission gaps."
   - summary: "Cycle 811 (2026-07-15): Added root-runnable deterministic Task 4
@@ -558,16 +556,18 @@ archive:
   - summary: "Cycle 773 (2026-07-13): Retried Task2 attempt1 by centralizing
       leading-only legacy identity parsing, making explicit Dnn decision
       shorthand rows..."
-  - summary: "Cycle 772 (2026-07-13): Made legacy state listing identity-safe and
-      physically truthful: explicit canonical numbers and decisions Dnn
-      shorthand..."
 omitted: true
-omitted_count: 58
+omitted_count: 59
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded
