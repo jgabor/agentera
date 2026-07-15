@@ -1,0 +1,19 @@
+schemaVersion: agentera.stateArchiveEntry.v1
+artifact_id: progress
+entry_number: 813
+record:
+  number: 813
+  timestamp: 2026-07-15 11:01
+  type: fix
+  phase: build
+  what: Corrected all three findings from Task 10 audit attempt 1.
+  inspiration: Independent Task 10 acceptance audit attempt 1.
+  discovered: Archive-only state plan used a separate catalog envelope without retrieval; task cursor parsing occurred after selector resolution; legacy plan text reused scalar truncation helpers instead of whole-row output bounding.
+  verified: 'AC1: a 12-archive/no-active fixture returned plan_catalog omitted_count=2 and executable list returned 12 while exact get returned the selected stable ID; all five Task 1 gap rows are asserted closed or out_of_scope. AC2: fixture and live CLI return cursor_invalid for a reused cursor with a different explicit --plan, while the same selector without --cursor remains not_found. AC3: Unicode, oversized task, oversized plan-field, ten-row count, 32768-byte, plan/experiment, and numbered progress/decisions/health regressions pass with no scalar ellipsis. Focused 316/316; full 2037/2037; targeted corrective 6/6. Live plan text=1692 bytes. Root commands: pnpm -C packages/cli exec vp test run test/cli/state.test.ts test/cli/sourceContractOracles.test.ts test/state/retrievalAuthority.test.ts test/state/projectionPolicy.test.ts test/state/planTaskRetrieval.test.ts test/state/planRetrieval.test.ts test/state/experimentRetrieval.test.ts test/state/listRetrieval.test.ts test/state/directRetrieval.test.ts; pnpm -C packages/cli test; pnpm -C packages/cli run typecheck; pnpm -C packages/cli build; node packages/cli/dist/bin/agentera.js check validate capability-contract --format json; node packages/cli/dist/bin/agentera.js check compact; pnpm -C packages/cli exec vp test run test/state/planTaskRetrieval.test.ts -t "archive-only|Unicode|oversized|ten-row|cursor plan selector".'
+  next: Stop after Task 10 corrective commit; Task 11 remains pending.
+  context:
+    intent: Retry Task 10 only, preserve its failed first evaluation and Cycle 812, and close the evidenced retrieval gaps without starting Task 11.
+    constraints: Did not amend 7802cd79, alter numbered-family retention, start Task 11, publish, tag, or push. Preserved Cycle 812 and evaluation attempt 1 failure evidence.
+    unknowns: None after the corrective Task 1 matrix audit.
+    scope: Archive-only plan catalog recovery, selector-first task cursor validation, whole-row legacy plan text bounding, authority closure evidence, regressions, changelog, progress, and plan evaluation/status.
+record_sha256: e43389554987029c05af3ce101714b03fafd6794c4cc698bc573e847599369b0

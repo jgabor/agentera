@@ -357,7 +357,7 @@ retrieval:
     - surface: agentera state plan --format json / plans
       declared_gap: PLAN_HISTORY_CATALOG_LIMIT capped catalog rows without collection-level omission recovery
       outcome: closed
-      closure: plan_catalog reports omitted, omitted_count, omission_reason, and public list/get recovery; the plan list surface owns count and serialized-byte continuation
+      closure: active and archive-only plan_catalog responses report omitted, omitted_count, omission_reason, and executable public list/get recovery; the plan list surface owns count and serialized-byte continuation
     - surface: agentera state plan --format json / source.archive_paths
       declared_gap: archive paths were capped at 10 with only an omitted count and no stable recovery
       outcome: closed
@@ -365,7 +365,7 @@ retrieval:
     - surface: agentera state plan text / tasks
       declared_gap: legacy text projection capped tasks at 10 and needed explicit whole-record omission recovery
       outcome: closed
-      closure: text reports omitted count and reason plus task list/get recovery; bounded task rows contain identity and commands without scalar truncation
+      closure: text retains complete scalar values and whole task rows only, caps rows at 10 and total output at budgets.list.max_utf8_bytes, and reports count/byte omissions with task list/get or exact-plan recovery without ellipsis
     - surface: agentera state plan --format json / tasks
       declared_gap: structured plan projection needed deterministic whole-task byte omission and public recovery
       outcome: closed

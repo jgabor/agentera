@@ -135,6 +135,16 @@ tasks:
       - GIVEN any Task 1 plan or experiment gap WHEN bounded by count or bytes THEN omissions and usable recovery are explicit.
       - GIVEN stale, wrong-family, wrong-filter, or malformed cursors WHEN reused THEN deterministic snapshot or validation errors result.
       - GIVEN text, JSON, and existing numbered-family regressions WHEN tested THEN no targeted surface silently slices or regresses.
+    evaluation:
+      attempt_count: 2
+      failure_count: 1
+      last_verdict: pass
+      last_failure_evidence: Archive-only plan catalog lacks retrieval; wrong plan-selector cursor reuse returns not_found before cursor validation; legacy plan text silently truncates long task scalars.
+      provenance:
+        attempt_id: task-10-audit-2-corrective-20260715
+        source: "corrective Task 1 gap-matrix audit: 316 focused and 2037 full tests plus live and archive-only fixtures"
+        recorded_at: 2026-07-15 11:00
+        writer_command: agentera state plan record-evaluation
   - number: 11
     name: Synchronize public retrieval contracts
     depends_on:

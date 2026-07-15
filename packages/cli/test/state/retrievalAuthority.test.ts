@@ -208,4 +208,16 @@ describe("state retrieval authority", () => {
     expect(["0", "1", "42"].every((value) => experimentNumber.test(value))).toBe(true);
     expect(["-1", "01", "1.0"].every((value) => !experimentNumber.test(value))).toBe(true);
   });
+
+  it("accounts for every declared Task 1 plan and experiment gap", () => {
+    const gaps = authority().retrieval.gap_closure_evidence;
+    expect(gaps.map((gap: Authority) => [gap.surface, gap.outcome])).toEqual([
+      ["agentera state plan --format json / plans", "closed"],
+      ["agentera state plan --format json / source.archive_paths", "closed"],
+      ["agentera state plan text / tasks", "closed"],
+      ["agentera state plan --format json / tasks", "closed"],
+      ["legacy agentera state experiments projection", "out_of_scope"],
+    ]);
+    expect(gaps.every((gap: Authority) => typeof gap.declared_gap === "string" && typeof gap.closure === "string")).toBe(true);
+  });
 });

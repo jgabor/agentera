@@ -323,6 +323,109 @@ describe("active plan task retrieval", () => {
     });
   });
 
+  it("keeps archive-only catalog omissions recoverable through executable list/get commands", () => {
+    const root = project([task(1)]);
+    const activePath = path.join(root, ".agentera", "plan.yaml");
+    const archiveRoot = path.join(root, ".agentera", "archive");
+    fs.mkdirSync(archiveRoot, { recursive: true });
+    const ids: string[] = [];
+    for (let index = 0; index < 12; index += 1) {
+      const suffix = index.toString(16).padStart(12, "0");
+      const id = `plan:323e4567-e89b-42d3-a456-${suffix}`;
+      ids.push(id);
+      fs.writeFileSync(path.join(archiveRoot, `PLAN-only-${index}.yaml`), YAML.stringify({
+        header: { id, title: `Archive only ${index}`, status: "complete", created: `2026-05-${String(index + 1).padStart(2, "0")}` },
+        tasks: [{ ...task(1), status: "complete" }],
+      }));
+    }
+    fs.rmSync(activePath);
+
+    const legacy = capturePlan(root, ["--format", "json"]);
+    expect(legacy.rc).toBe(0);
+    const payload = JSON.parse(legacy.out);
+    expect(payload.plan_catalog).toMatchObject({
+      omitted: true,
+      omitted_count: 2,
+      omission_reason: "archive_catalog_limit",
+      retrieval: {
+        list: "agentera state plan list --format json",
+        get: "agentera state plan get --plan PLAN_ID --format json",
+      },
+    });
+    const listed = capturePlan(root, ["list", "--format", "json"]);
+    expect(listed.rc).toBe(0);
+    expect(JSON.parse(listed.out).entries).toHaveLength(12);
+    const fetched = capturePlan(root, ["get", "--plan", ids[0]!, "--format", "json"]);
+    expect(fetched.rc).toBe(0);
+    expect(JSON.parse(fetched.out).entry.stable_id).toBe(ids[0]);
+  });
+
+  it("validates a cursor plan selector before ordinary selector resolution", () => {
+    const root = project([task(1), task(2)]);
+    const first = JSON.parse(capture(root, ["list", "--limit", "1", "--format", "json"]).out);
+    const wrongPlan = "plan:923e4567-e89b-42d3-a456-426614174000";
+    const wrongCursorSelector = capture(root, ["list", "--plan", wrongPlan, "--cursor", first.next_cursor, "--format", "json"]);
+    expect(wrongCursorSelector.rc).toBe(2);
+    expect(JSON.parse(wrongCursorSelector.out).error.class).toBe("cursor_invalid");
+
+    const ordinaryNotFound = capture(root, ["list", "--plan", wrongPlan, "--format", "json"]);
+    expect(ordinaryNotFound.rc).toBe(1);
+    expect(JSON.parse(ordinaryNotFound.out).error.class).toBe("not_found");
+  });
+
+  it("renders complete Unicode task scalars without ellipsis when the whole row fits", () => {
+    const longName = `Boundary ${"🙂漢字é".repeat(300)}`;
+    const root = project([{ ...task(1), name: longName, title: "Complete title" }]);
+    const result = capturePlan(root, []);
+    expect(result.rc).toBe(0);
+    expect(result.out).toContain(`name=${longName}`);
+    expect(result.out).toContain("title=Complete title");
+    expect(result.out).not.toContain("...");
+    expect(Buffer.byteLength(result.out, "utf8")).toBeLessThanOrEqual(32768);
+  });
+
+  it("omits an entire oversized text row with recovery instead of truncating a scalar", () => {
+    const oversizedName = `Oversized ${"🙂漢字é".repeat(5000)}`;
+    const root = project([{ ...task(1), name: oversizedName }]);
+    const result = capturePlan(root, []);
+    expect(result.rc).toBe(0);
+    expect(Buffer.byteLength(result.out, "utf8")).toBeLessThanOrEqual(32768);
+    expect(result.out).not.toContain("Oversized");
+    expect(result.out).not.toContain("...");
+    expect(result.out).toContain("Tasks omitted: 1 | reason=text_output_byte_budget");
+    expect(result.out).toContain("Continue: agentera state plan tasks list --format json");
+    expect(result.out).toContain("Get one: agentera state plan tasks get --task N --format json");
+  });
+
+  it("omits an oversized non-task scalar with exact plan recovery", () => {
+    const root = project([task(1)]);
+    const planPath = path.join(root, ".agentera", "plan.yaml");
+    const plan = YAML.parse(fs.readFileSync(planPath, "utf8"));
+    plan.what = `Whole plan scalar ${"🙂漢字é".repeat(5000)}`;
+    fs.writeFileSync(planPath, YAML.stringify(plan));
+    const result = capturePlan(root, []);
+    expect(result.rc).toBe(0);
+    expect(Buffer.byteLength(result.out, "utf8")).toBeLessThanOrEqual(32768);
+    expect(result.out).not.toContain("Whole plan scalar");
+    expect(result.out).not.toContain("...");
+    expect(result.out).toContain("Plan fields omitted: 1 | reason=text_output_byte_budget");
+    expect(result.out).toContain(`Get plan: agentera state plan get --plan ${planId} --format json`);
+  });
+
+  it("combines the ten-row count limit with the total text byte bound", () => {
+    const tasks = Array.from({ length: 12 }, (_, index) => ({
+      ...task(index + 1),
+      name: index === 9 ? `Large ${"é🙂漢字".repeat(3500)}` : `Whole task ${index + 1}`,
+    }));
+    const root = project(tasks);
+    const result = capturePlan(root, []);
+    expect(result.rc).toBe(0);
+    expect(Buffer.byteLength(result.out, "utf8")).toBeLessThanOrEqual(32768);
+    expect(result.out).not.toContain("name=Large ");
+    expect(result.out).not.toContain("...");
+    expect(result.out).toContain("Tasks omitted: 3 | reason=text_projection_limit_and_output_byte_budget");
+  });
+
   it("invalidates a continuation when an existing task changes but excludes later appends", () => {
     const root = project([task(1), task(2), task(3)]);
     const first = JSON.parse(capture(root, ["list", "--limit", "1", "--format", "json"]).out);

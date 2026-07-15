@@ -10,13 +10,10 @@
 import {
   emitStateStructured,
   filterByFieldValue,
-  formatEntry,
   missingSchemaError,
-  printStatusCounts,
   sourceMetadata,
   statusCounts,
   structuredState,
-  truncate,
 } from "../../stateQuery.js";
 import { SchemaInfo } from "../../appContext.js";
 import { artifactPath } from "../../appContext.js";
@@ -34,6 +31,97 @@ import { planLifecycleState } from "../../planLifecycleState.js";
 import { resolvePlanTaskEvidence } from "../../planEvidence.js";
 
 const PLAN_HISTORY_CATALOG_LIMIT = 10;
+const PLAN_TEXT_TASK_LIMIT = 10;
+const PLAN_TEXT_MAX_UTF8_BYTES = 32_768;
+
+function planCatalogRetrieval(): JsonObject {
+  return {
+    list: "agentera state plan list --format json",
+    get: "agentera state plan get --plan PLAN_ID --format json",
+  };
+}
+
+function textScalar(value: unknown): string {
+  return String(value).replace(/\r/g, "\\r").replace(/\n/g, "\\n");
+}
+
+function taskTextRow(task: JsonObject): string {
+  const parts: string[] = [];
+  for (const field of ["number", "status", "name", "title"]) {
+    const value = task[field];
+    if (value !== null && value !== undefined && value !== "" && !Array.isArray(value) && typeof value !== "object") {
+      parts.push(`${field}=${textScalar(value)}`);
+    }
+  }
+  return `Task: ${parts.join(" | ")}\n`;
+}
+
+function renderPlanText(
+  data: JsonObject,
+  tasks: JsonObject[],
+  summary: JsonObject,
+  evidenceComplete: boolean,
+  planId: string,
+  diagnostics: JsonObject[],
+): string {
+  type Row = { kind: "plan" | "task"; text: string };
+  const rows: Row[] = [{
+    kind: "plan",
+    text: `Plan: status=${textScalar(summary.status ?? "unknown")} | title=${textScalar(summary.title ?? "")} | created=${textScalar(summary.created ?? "-")}\n`,
+  }];
+  if (!evidenceComplete) rows.push({ kind: "plan", text: "Evidence: incomplete | missing authoritative task evidence\n" });
+  for (const diagnostic of diagnostics) {
+    rows.push({
+      kind: "plan",
+      text: `Plan diagnostic: path=${textScalar(diagnostic.path)} | category=${textScalar(diagnostic.category)} | diagnostic=${textScalar(diagnostic.message)}\n`,
+    });
+  }
+  for (const key of ["what", "why"]) {
+    if (data[key] !== null && data[key] !== undefined && data[key] !== "") {
+      rows.push({ kind: "plan", text: `${key}: ${textScalar(data[key])}\n` });
+    }
+  }
+  const counts = statusCounts(tasks);
+  if (Object.keys(counts).length > 0) {
+    rows.push({
+      kind: "plan",
+      text: `Task status: ${Object.keys(counts).sort().map((name) => `${name}=${counts[name]}`).join(", ")}\n`,
+    });
+  }
+  rows.push(...tasks.slice(0, PLAN_TEXT_TASK_LIMIT).map((task) => ({ kind: "task" as const, text: taskTextRow(task) })));
+
+  const retained: Row[] = [];
+  const countOmitted = Math.max(0, tasks.length - PLAN_TEXT_TASK_LIMIT);
+  let byteTaskOmitted = 0;
+  let bytePlanOmitted = 0;
+  const output = (): string => {
+    const lines = retained.map((row) => row.text);
+    const taskOmitted = countOmitted + byteTaskOmitted;
+    if (taskOmitted > 0) {
+      const reason = countOmitted > 0 && byteTaskOmitted > 0
+        ? "text_projection_limit_and_output_byte_budget"
+        : byteTaskOmitted > 0 ? "text_output_byte_budget" : "text_projection_limit";
+      lines.push(`Tasks omitted: ${taskOmitted} | reason=${reason}\n`);
+      lines.push("Continue: agentera state plan tasks list --format json\n");
+      lines.push("Get one: agentera state plan tasks get --task N --format json\n");
+    }
+    if (bytePlanOmitted > 0) {
+      lines.push(`Plan fields omitted: ${bytePlanOmitted} | reason=text_output_byte_budget\n`);
+      lines.push(`Get plan: agentera state plan get --plan ${planId} --format json\n`);
+    }
+    return lines.join("");
+  };
+  for (const row of rows) {
+    retained.push(row);
+    while (Buffer.byteLength(output(), "utf8") > PLAN_TEXT_MAX_UTF8_BYTES) {
+      const omitted = retained.pop();
+      if (!omitted) break;
+      if (omitted.kind === "task") byteTaskOmitted += 1;
+      else bytePlanOmitted += 1;
+    }
+  }
+  return output();
+}
 
 function planArtifactSummary(artifact: PlanArtifact): JsonObject {
   const { data } = artifact;
@@ -268,6 +356,7 @@ export function queryPlan(args: StateArgs, schemas: Record<string, SchemaInfo>, 
         omitted: catalogTotal > catalog.length,
         omitted_count: Math.max(0, catalogTotal - catalog.length),
         omission_reason: catalogTotal > catalog.length ? "archive_catalog_limit" : null,
+        retrieval: planCatalogRetrieval(),
       };
       return emitStateStructured(
         "plan",
@@ -297,9 +386,6 @@ export function queryPlan(args: StateArgs, schemas: Record<string, SchemaInfo>, 
   }
   summary.evidence_status = evidence.complete ? "complete" : "incomplete";
   summary.evidence_sources = evidence.sources;
-  const title = summary.title ?? "";
-  const status = summary.status ?? "";
-  const created = summary.created ?? "";
   let tasks = evidence.tasks;
   const statusFilter = args.status ?? null;
   if (statusFilter) tasks = filterByFieldValue(tasks, "status", statusFilter);
@@ -325,10 +411,7 @@ export function queryPlan(args: StateArgs, schemas: Record<string, SchemaInfo>, 
       omitted: catalogTotal > catalog.length,
       omitted_count: Math.max(0, catalogTotal - catalog.length),
       omission_reason: catalogTotal > catalog.length ? "archive_catalog_limit" : null,
-      retrieval: {
-        list: "agentera state plan list --format json",
-        get: "agentera state plan get --plan PLAN_ID --format json",
-      },
+      retrieval: planCatalogRetrieval(),
     };
     return emitStateStructured(
       "plan",
@@ -339,27 +422,7 @@ export function queryPlan(args: StateArgs, schemas: Record<string, SchemaInfo>, 
       e,
     );
   }
-  if (primary.archived) o(`Plan source: archived | path=${primary.path}\n`);
-  if (currentDiagnostics.length > 0) {
-    const diagnostic = currentDiagnostics[0]!;
-    o(`Plan diagnostic: path=${diagnostic.path} | category=${diagnostic.category} | diagnostic=${diagnostic.message}\n`);
-  }
-  o(`Plan: status=${status || "unknown"} | title=${truncate(title)} | created=${created || "-"}\n`);
-  if (!evidence.complete) o("Evidence: incomplete | missing authoritative task evidence\n");
-  for (const key of ["what", "why"]) {
-    const value = dataDict[key];
-    if (value) o(`${key}: ${truncate(value)}\n`);
-  }
-  printStatusCounts("Task status", statusCounts(tasks), o);
-  const visibleTasks = tasks.slice(0, 10);
-  for (const task of visibleTasks) {
-    const line = formatEntry(task, ["number", "status", "name", "title"]);
-    if (line) o(`Task: ${line}\n`);
-  }
-  if (tasks.length > visibleTasks.length) {
-    o(`Tasks omitted: ${tasks.length - visibleTasks.length} | reason=text_projection_limit\n`);
-    o("Continue: agentera state plan tasks list --format json\n");
-    o("Get one: agentera state plan tasks get --task N --format json\n");
-  }
+  const identity = discovery.identities.find((candidate) => candidate.artifact.path === primary.path);
+  o(renderPlanText(dataDict, tasks, summary, evidence.complete, identity?.stableId ?? "PLAN_ID", currentDiagnostics));
   return 0;
 }

@@ -436,6 +436,10 @@ describe("cli state plan", () => {
       omitted: true,
       omitted_count: 20,
       omission_reason: "archive_catalog_limit",
+      retrieval: {
+        list: "agentera state plan list --format json",
+        get: "agentera state plan get --plan PLAN_ID --format json",
+      },
     });
     expect(payload.source.archive_paths).toHaveLength(10);
     expect(payload.source.archive_paths_omitted_count).toBe(20);

@@ -167,7 +167,7 @@ function encodeCursor(payload: CursorPayload, projectRoot: string): string {
   return Buffer.from(JSON.stringify({ ...payload, signature: sign(payload, projectRoot) }), "utf8").toString("base64url");
 }
 
-function parseCursor(token: string, projectRoot: string, planId: string): CursorPayload {
+function parseCursor(token: string, projectRoot: string, selectedPlan?: string): CursorPayload {
   const invalid = (message: string): never => {
     throw fail(2, "cursor_invalid", message, "list", {
       recovery: "Copy response.next_cursor exactly, or omit --cursor to establish a new active-plan snapshot.",
@@ -194,12 +194,15 @@ function parseCursor(token: string, projectRoot: string, planId: string): Cursor
   if (!timingSafeEqual(Buffer.from(signatureString, "hex"), Buffer.from(expected, "hex"))) invalid("cursor signature is invalid");
   const parsed = payload as unknown as CursorPayload;
   if (
-    parsed.version !== CURSOR_VERSION || parsed.collection !== "plan.tasks" || parsed.plan_id !== planId ||
+    parsed.version !== CURSOR_VERSION || parsed.collection !== "plan.tasks" || !PLAN_ID.test(parsed.plan_id) ||
     parsed.order !== ORDER || !/^[0-9a-f]{64}$/.test(parsed.snapshot_id) ||
     !Number.isSafeInteger(parsed.candidate_count) || parsed.candidate_count < 1 ||
     !Number.isSafeInteger(parsed.candidate_max) || parsed.candidate_max < 1 ||
     !Number.isSafeInteger(parsed.after) || parsed.after < 1 || parsed.after > parsed.candidate_max
   ) invalid("cursor is bound to a different plan task list or has an invalid payload");
+  if (selectedPlan !== undefined && parsed.plan_id !== selectedPlan) {
+    invalid("cursor is bound to a different explicit plan selector");
+  }
   return parsed;
 }
 
@@ -286,8 +289,14 @@ export function listPlanTasks(
       valid_values: ["1..100"],
     });
   }
+  const parsed = options.cursor ? parseCursor(options.cursor, projectRoot, options.plan) : undefined;
   const plan = activePlan(activePath, options.plan, "list");
-  const parsed = options.cursor ? parseCursor(options.cursor, projectRoot, plan.planId) : undefined;
+  if (parsed && parsed.plan_id !== plan.planId) {
+    throw fail(1, "cursor_snapshot_unavailable", "the cursor plan identity is no longer the active plan snapshot", "list", {
+      recovery: "Start a new task listing without --cursor to establish the current active-plan snapshot.",
+      details: { cursor_plan_id: parsed.plan_id, current_plan_id: plan.planId },
+    });
+  }
   const snapshotTasks = parsed ? plan.tasks.filter((task) => task.number <= parsed.candidate_max) : plan.tasks;
   if (parsed && (snapshotTasks.length !== parsed.candidate_count || snapshotId(plan.planId, snapshotTasks) !== parsed.snapshot_id)) {
     throw fail(1, "cursor_snapshot_unavailable", "the active plan task snapshot changed and cannot be resumed exactly", "list", {

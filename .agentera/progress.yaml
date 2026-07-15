@@ -1,4 +1,45 @@
 cycles:
+  - number: 813
+    timestamp: 2026-07-15 11:01
+    type: fix
+    phase: build
+    what: Corrected all three findings from Task 10 audit attempt 1.
+    inspiration: Independent Task 10 acceptance audit attempt 1.
+    discovered: Archive-only state plan used a separate catalog envelope without
+      retrieval; task cursor parsing occurred after selector resolution; legacy
+      plan text reused scalar truncation helpers instead of whole-row output
+      bounding.
+    verified: 'AC1: a 12-archive/no-active fixture returned plan_catalog
+      omitted_count=2 and executable list returned 12 while exact get returned
+      the selected stable ID; all five Task 1 gap rows are asserted closed or
+      out_of_scope. AC2: fixture and live CLI return cursor_invalid for a reused
+      cursor with a different explicit --plan, while the same selector without
+      --cursor remains not_found. AC3: Unicode, oversized task, oversized
+      plan-field, ten-row count, 32768-byte, plan/experiment, and numbered
+      progress/decisions/health regressions pass with no scalar ellipsis.
+      Focused 316/316; full 2037/2037; targeted corrective 6/6. Live plan
+      text=1692 bytes. Root commands: pnpm -C packages/cli exec vp test run
+      test/cli/state.test.ts test/cli/sourceContractOracles.test.ts
+      test/state/retrievalAuthority.test.ts test/state/projectionPolicy.test.ts
+      test/state/planTaskRetrieval.test.ts test/state/planRetrieval.test.ts
+      test/state/experimentRetrieval.test.ts test/state/listRetrieval.test.ts
+      test/state/directRetrieval.test.ts; pnpm -C packages/cli test; pnpm -C
+      packages/cli run typecheck; pnpm -C packages/cli build; node
+      packages/cli/dist/bin/agentera.js check validate capability-contract
+      --format json; node packages/cli/dist/bin/agentera.js check compact; pnpm
+      -C packages/cli exec vp test run test/state/planTaskRetrieval.test.ts -t
+      "archive-only|Unicode|oversized|ten-row|cursor plan selector".'
+    next: Stop after Task 10 corrective commit; Task 11 remains pending.
+    context:
+      intent: Retry Task 10 only, preserve its failed first evaluation and Cycle 812,
+        and close the evidenced retrieval gaps without starting Task 11.
+      constraints: Did not amend 7802cd79, alter numbered-family retention, start Task
+        11, publish, tag, or push. Preserved Cycle 812 and evaluation attempt 1
+        failure evidence.
+      unknowns: None after the corrective Task 1 matrix audit.
+      scope: Archive-only plan catalog recovery, selector-first task cursor
+        validation, whole-row legacy plan text bounding, authority closure
+        evidence, regressions, changelog, progress, and plan evaluation/status.
   - number: 812
     timestamp: 2026-07-15 10:42
     type: fix
@@ -300,47 +341,6 @@ cycles:
         authority, experiment identity/discovery/preflight code, focused
         fixtures, changelog, progress, plan, and the unchanged pre-existing Task
         4 TODO/plan evaluation state.
-  - number: 803
-    timestamp: 2026-07-15 07:38
-    type: fix
-    phase: build
-    what: Corrected Task 4 plan-list detail metadata, YAML byte budgeting, and
-      retrieval implementation introspection after independent audit.
-    inspiration: Independent Task 4 audit attempt task-4-audit-1-20260715.
-    discovered: JSON and YAML serialize the same plan page to different sizes, so
-      byte-pressure retention must measure the requested encoder rather than
-      reuse JSON sizing.
-    verified: "AC1: pnpm -C packages/cli exec vp test run
-      test/state/planRetrieval.test.ts test/state/planTaskRetrieval.test.ts
-      test/state/retrievalAuthority.test.ts
-      test/state/planLifecycleContract.test.ts test/cli/schema.test.ts
-      test/cli/help.test.ts passed 6 files/176 tests; active, archived, legacy,
-      and mirrored entries require detail_availability. node
-      packages/cli/dist/bin/agentera.js state plan list --limit 100 --format
-      json measured 31757 UTF-8 bytes, returned 10, omitted 123,
-      reason=serialized_output_byte_budget, required_fields=true, cursor=true.
-      The same command with --format yaml measured 32319 bytes, returned 13,
-      omitted 120, required_fields=true, cursor=true; focused YAML continuation
-      exited 0 at 32671 bytes, returned 14, omitted 106. node
-      packages/cli/dist/bin/agentera.js schema --format json reported
-      plan_tasks=implemented, plans=implemented, experiments=pending. AC2:
-      focused exact-get regressions returned full selected plans. AC3: focused
-      legacy mirror, invalid, missing, malformed, and ambiguous tests passed.
-      pnpm -C packages/cli test passed 180 files/1983 tests; pnpm -C
-      packages/cli run typecheck; pnpm -C packages/cli build; capability and
-      capability-contract validation; check compact; git diff --check all
-      passed."
-    next: Task 5 remains pending and must not begin without a new cycle.
-    context:
-      intent: Resolve every Task 4 audit-attempt-1 finding without changing plan
-        storage or beginning experiment work.
-      constraints: Task 4 corrections only; preserve Cycle 802 and audit attempt 1; no
-        experiments, package metadata, archive repair, amend, push, or publish.
-      unknowns: None for Task 4; requested-format serialization now owns each
-        structured byte measurement.
-      scope: Plan list response metadata and budgeting, retrieval
-        authority/introspection, parity and pressure tests, changelog, progress,
-        and Task 4 status.
   - number: 793
     timestamp: 2026-07-14 17:36
     type: chore
@@ -410,6 +410,9 @@ cycles:
         and backfill fixtures; package metadata and generated ignored
         dist/bundle
 archive:
+  - summary: "Cycle 803 (2026-07-15): Corrected Task 4 plan-list detail metadata,
+      YAML byte budgeting, and retrieval implementation introspection after
+      independent..."
   - summary: "Cycle 802 (2026-07-15): Delivered deterministic active and archived
       plan list/get retrieval with snapshot cursors, full-plan exact reads,
       lifecycle..."
@@ -505,16 +508,18 @@ archive:
   - summary: "Cycle 763 (2026-07-13): Reverified Task 9 after the final overlay
       provenance assertion and state synchronization; the list
       implementation..."
-  - summary: "Cycle 762 (2026-07-13): Implemented snapshot-stable bounded state
-      listing for progress, decisions, and health with numeric ordering, opaque
-      signed..."
 omitted: true
-omitted_count: 48
+omitted_count: 49
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded
