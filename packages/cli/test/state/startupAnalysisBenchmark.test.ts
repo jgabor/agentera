@@ -14,6 +14,7 @@ import {
 import { ADAPTER_VERSION } from "../../src/analytics/extractCorpus/core.js";
 import { publishEvidenceTiers } from "../../src/analytics/extractCorpus/evidenceTiers.js";
 import { tiersDirForCorpusPath } from "../../src/analytics/extractCorpus/tierReader.js";
+import { evidenceTierBounds } from "../../src/registries/evidenceTierContract.js";
 
 const CONTRACT = {
   version: "vT",
@@ -77,6 +78,50 @@ describe("extractStartupIntermediateFromCorpusFile", () => {
     const inter = extractStartupIntermediateFromCorpusFile(corpusPath, { salt: "SALT", contract: CONTRACT });
     expect(inter.total_records_read).toBe(0);
     expect(inter.runtime_coverage[0].runtime).toBe("local-corpus");
+  });
+
+  it("degrades with contract-projected reason and recovery on a corrupt legacy corpus", () => {
+    const corpusPath = path.join(tmp, "bad.json");
+    fs.writeFileSync(corpusPath, "not json{");
+    const inter = extractStartupIntermediateFromCorpusFile(corpusPath, { salt: "SALT", contract: CONTRACT });
+    const cov = inter.runtime_coverage[0];
+    expect(cov.reason).toBe("unreadable_or_schema_divergent");
+    expect(cov.recovery).toBeTruthy();
+  });
+
+  it("never loads an oversized legacy corpus whole and degrades with oversized reason", () => {
+    const corpusPath = path.join(tmp, "huge.json");
+    const bounds = evidenceTierBounds();
+    const fd = fs.openSync(corpusPath, "w");
+    fs.ftruncateSync(fd, bounds.readerByteCap + 1);
+    fs.closeSync(fd);
+    const inter = extractStartupIntermediateFromCorpusFile(corpusPath, { salt: "SALT", contract: CONTRACT });
+    expect(inter.total_records_read).toBe(0);
+    const cov = inter.runtime_coverage[0];
+    expect(cov.runtime).toBe("local-corpus");
+    expect(cov.reason).toBe("oversized");
+    expect(cov.recovery).toBeTruthy();
+    // Recovery guidance must say "do not load" not "try harder".
+    expect(cov.recovery).toMatch(/do not/i);
+  });
+
+  it("degrades with no_evidence reason and recovery when no corpus and no tiers exist", () => {
+    const corpusPath = path.join(tmp, "never-existed.json");
+    const inter = extractStartupIntermediateFromCorpusFile(corpusPath, { salt: "SALT", contract: CONTRACT });
+    expect(inter.total_records_read).toBe(0);
+    const cov = inter.runtime_coverage[0];
+    expect(cov.runtime).toBe("local-corpus");
+    expect(cov.reason).toBe("no_evidence");
+    expect(cov.recovery).toBeTruthy();
+  });
+
+  it("preserves recovery guidance through boundedRuntimeStatus in the intermediate", () => {
+    const corpusPath = path.join(tmp, "missing.json");
+    const inter = extractStartupIntermediateFromCorpusFile(corpusPath, { salt: "SALT", contract: CONTRACT });
+    const cov = inter.runtime_coverage[0];
+    // The recovery field survives the boundedRuntimeStatus normalization.
+    expect(typeof cov.recovery).toBe("string");
+    expect(cov.recovery!.length).toBeGreaterThan(0);
   });
 
   it("reads from bounded tiers when published, without reading the monolithic corpus", () => {

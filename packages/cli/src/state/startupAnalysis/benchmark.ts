@@ -17,6 +17,8 @@ import {
   assessTiers,
   readBoundedMetadata,
   iterBoundedRecords,
+  legacyCorpusReadable,
+  recoveryForState,
 } from "../../analytics/extractCorpus/index.js";
 
 export const STARTUP_INTERMEDIATE_ENVELOPE = "startup_state_analysis_v1";
@@ -364,6 +366,27 @@ export function buildNoRuntimeStartupIntermediate(
   };
 }
 
+/**
+ * Build a degraded corpus envelope for a tier-compatibility state. The
+ * local-corpus pseudo-runtime carries the contract-projected reason and
+ * recovery so a caller can self-service. `reason` must be a value from the
+ * evidence-tier authority's compatibility states (oversized,
+ * no_evidence, unreadable_or_schema_divergent, legacy_monolithic_state).
+ */
+function degradeEnvelope(reason: string, recovery?: string): JsonObject {
+  const status: JsonObject = {
+    runtime: "local-corpus",
+    status: "degraded",
+    reason,
+    error_count: 1,
+  };
+  if (recovery) status.recovery = recovery;
+  return {
+    metadata: { runtime_statuses: [status] },
+    records: [],
+  };
+}
+
 export function extractStartupIntermediateFromCorpusFile(
   corpusPath: string,
   opts: { salt: string; outputPath?: string | null; contract?: JsonObject | null },
@@ -390,35 +413,32 @@ export function extractStartupIntermediateFromCorpusFile(
       records,
     };
   } else if (assessment.state === "corrupt" || assessment.state === "oversized") {
-    // Tier-level failure: degrade truthfully. The recovery guidance is
-    // contract-projected; surfaced to the caller via the assessment.
-    corpus = {
-      metadata: {
-        runtime_statuses: [
-          {
-            runtime: "local-corpus",
-            status: "degraded",
-            reason: assessment.state === "corrupt" ? "schema_divergent" : "oversized",
-            error_count: 1,
-            recovery: assessment.recovery ?? null,
-          },
-        ],
-      },
-      records: [],
-    };
+    // Tier-level failure: degrade truthfully with the contract-projected
+    // reason and recovery guidance. The boundedRuntimeStatus normalizer
+    // preserves compatibility-state reasons (no_evidence, oversized,
+    // unreadable_or_schema_divergent, legacy_monolithic_state) and passes
+    // through the recovery field for self-service correction.
+    corpus = degradeEnvelope(assessment.state === "corrupt"
+      ? "unreadable_or_schema_divergent"
+      : "oversized", assessment.recovery);
+  } else if (assessment.state === "missing") {
+    // No evidence artifact or tier exists at the resolved path. Degrade with
+    // the contract's missing reason and recovery; never auto-build or scan.
+    corpus = degradeEnvelope("no_evidence", assessment.recovery);
   } else {
-    // Legacy monolithic envelope or missing state: preserve the existing path.
-    try {
-      corpus = JSON.parse(fs.readFileSync(corpusPath, "utf8"));
-    } catch {
-      corpus = {
-        metadata: {
-          runtime_statuses: [
-            { runtime: "local-corpus", status: "degraded", reason: "schema_divergent", error_count: 1 },
-          ],
-        },
-        records: [],
-      };
+    // Legacy monolithic corpus.json exists but no bounded tiers published.
+    // Size-check before reading — an oversized legacy corpus is never loaded
+    // whole, matching the contract's oversized compatibility state.
+    if (!legacyCorpusReadable(corpusPath)) {
+      corpus = degradeEnvelope("oversized", recoveryForState("oversized") ?? undefined);
+    } else {
+      // Small legacy corpus: backward-compat bounded read.
+      try {
+        corpus = JSON.parse(fs.readFileSync(corpusPath, "utf8"));
+      } catch {
+        // Corrupt legacy corpus: report the contract's corrupt reason.
+        corpus = degradeEnvelope("unreadable_or_schema_divergent", recoveryForState("corrupt") ?? undefined);
+      }
     }
   }
   const intermediate = buildStartupIntermediate(corpus, { salt: opts.salt, contract: opts.contract ?? null });

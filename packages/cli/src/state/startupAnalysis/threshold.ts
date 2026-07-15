@@ -64,6 +64,14 @@ export const BOUNDED_RUNTIME_REASONS = new Set([
   "store_locked",
   "store_not_directory",
   "store_unreadable",
+  // Compatibility-state reasons projected from the evidence-tier authority
+  // contract. The local-corpus pseudo-runtime reports these when a tier
+  // compatibility state prevents analysis; they must survive normalization
+  // rather than collapsing to schema_divergent.
+  "no_evidence",
+  "legacy_monolithic_state",
+  "unreadable_or_schema_divergent",
+  "oversized",
 ]);
 
 export function boundedRuntimeStatus(status: JsonObject): JsonObject {
@@ -81,6 +89,11 @@ export function boundedRuntimeStatus(status: JsonObject): JsonObject {
   }
   if (Array.isArray(status.remediation_labels)) {
     item.remediation_labels = status.remediation_labels.map((l: unknown) => String(l));
+  }
+  // Contract-projected recovery guidance for tier compatibility states. Passes
+  // through only when present; extraction-time runtime statuses omit it.
+  if (typeof status.recovery === "string" && status.recovery.length > 0) {
+    item.recovery = status.recovery;
   }
   return item;
 }
