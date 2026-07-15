@@ -35,6 +35,7 @@ export const PRIME_BLOB =
     "  agentera state decisions append|update ...    # Record decisions or satisfaction",
     "  agentera state plan append|update|set-status|set-plan-status|record-evaluation|archive|create ...",
     "  agentera state health append --input PATH     # Record one complete audit",
+    "  agentera state experiments publish --objective ID --number N --input PATH  # Publish one validated experiment",
     "  Add --dry-run to preview any mutation without publishing it.",
     "",
     "When to use agentera:",

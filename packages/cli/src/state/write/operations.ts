@@ -1,6 +1,6 @@
 import type { JsonObject } from "../../core/jsonValue.js";
 
-export const WRITABLE_ARTIFACTS = ["progress", "decisions", "plan", "health"] as const;
+export const WRITABLE_ARTIFACTS = ["progress", "decisions", "plan", "health", "experiments"] as const;
 export type WritableArtifact = (typeof WRITABLE_ARTIFACTS)[number];
 
 export const WRITE_VERBS = [
@@ -12,6 +12,7 @@ export const WRITE_VERBS = [
   "repair",
   "archive",
   "create",
+  "publish",
   "explain",
 ] as const;
 export type WriteVerb = (typeof WRITE_VERBS)[number];
@@ -32,7 +33,7 @@ export interface OperationSpec {
   artifact: WritableArtifact;
   verb: Exclude<WriteVerb, "explain">;
   fields: OperationField[];
-  inputRoot?: "one audit entry" | "complete plan document";
+  inputRoot?: "one audit entry" | "complete plan document" | "one experiment entry";
   cliOwnedFields?: string[];
   allowForce?: boolean;
   compacts?: boolean;
@@ -210,6 +211,29 @@ const SPECS: OperationSpec[] = [
       { flag: "--keep", field: "keep", kind: "string", required: false, validValues: ["first", "last"] },
     ],
     allowForce: true,
+  },
+  {
+    artifact: "experiments",
+    verb: "publish",
+    fields: [
+      {
+        flag: "--objective",
+        field: "objective",
+        kind: "string",
+        required: true,
+        description: "Stable objective identity owning the experiment.",
+      },
+      {
+        flag: "--number",
+        field: "number",
+        kind: "integer",
+        required: true,
+        description: "Non-negative experiment number, including baseline 0.",
+      },
+    ],
+    inputRoot: "one experiment entry",
+    cliOwnedFields: ["number"],
+    compacts: true,
   },
 ];
 

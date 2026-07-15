@@ -54,6 +54,7 @@ GROUP_PREFIXES:
   EXPERIMENT: EX
   CLOSURE: EC
   ARCHIVE: EA
+  PUBLICATION: EP
   VALIDATION: EV
 
 BUDGET:
@@ -268,6 +269,34 @@ EXPERIMENT:
       Harness refinement log for baseline experiments. Each entry
       records a run number, issue encountered, and fix applied.
 
+PUBLICATION:
+  1:
+    id: EP1
+    operation: publish
+    command: >-
+      agentera state experiments publish --objective OBJECTIVE_ID --number N
+      --input EXPERIMENT.yaml --format json
+    description: >-
+      The typed state writer is the mutation authority. It validates the
+      objective, identity, caller entry, existing projection, and final bytes
+      before assigning number and atomically publishing one experiment.
+  2:
+    id: EP2
+    identity: '<objective-id>/experiment:<non-negative-integer>'
+    cli_owned_fields: [number]
+    retry: byte_equivalent_identity_is_idempotent
+    collision: same_identity_with_different_content_fails
+    description: >-
+      Retry never duplicates an experiment. Invalid identity, collisions, and
+      pre-publication failures preserve active and archive projection bytes.
+  3:
+    id: EP3
+    projection: uniform_10_40_50
+    durable_archive: deferred
+    description: >-
+      Publication preserves current projection behavior. Durable archival is a
+      separate policy and is not introduced by this operation.
+
 CLOSURE:
   1:
     id: EC1
@@ -386,3 +415,15 @@ VALIDATION:
       - "Experiment 0 and later non-negative numbers are addressable"
       - "Duplicate or missing experiment numbers remain visible but unaddressable"
       - "Publication rejects ambiguity before effects"
+  7:
+    id: EV7
+    rule: validated_publication
+    severity: error
+    description: >-
+      New experiments are published only through the typed writer after pure
+      identity and schema preflight, with atomic replacement and idempotent retry.
+    checks:
+      - "Caller input omits the CLI-owned number field"
+      - "Objective and experiment identity validate before staging"
+      - "Final experiments.yaml bytes validate before atomic replacement"
+      - "A byte-equivalent retry returns the existing experiment without duplication"

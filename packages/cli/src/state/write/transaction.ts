@@ -47,6 +47,7 @@ import {
   updateDecisionOverlay,
 } from "../decisionOverlay.js";
 import { repairHealthDuplicates, repairHealthProjectionBytes } from "../healthRepair.js";
+import { executeExperimentPublication } from "./experimentPublication.js";
 
 export interface StateWriteRequest {
   artifact: WritableArtifact;
@@ -442,6 +443,8 @@ function activeKey(artifact: WritableArtifact): string {
       ? "decisions"
       : artifact === "health"
         ? "audits"
+        : artifact === "experiments"
+          ? "experiments"
         : "tasks";
 }
 
@@ -794,6 +797,8 @@ function executeStateWriteUnlocked(
   req: StateWriteRequest,
   transaction?: StateMutationTransaction,
 ): StateWriteEnvelope {
+  if (req.artifact === "experiments" && req.spec.verb === "publish")
+    return executeExperimentPublication(req, transaction);
   const record = loadArtifactRegistry().get(req.artifact);
   if (!record) throw new Error(`artifact '${req.artifact}' is not registered`);
   let target: string;

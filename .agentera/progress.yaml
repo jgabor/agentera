@@ -1,4 +1,27 @@
 cycles:
+  - number: 805
+    timestamp: 2026-07-15 08:21
+    type: feat
+    phase: build
+    what: Added agentera state experiments publish in
+      packages/cli/src/state/write/experimentPublication.ts with
+      objective-scoped identity and schema preflight, atomic replacement,
+      idempotent retry, collision safety, and 10/40/50 projection.
+    inspiration: Active plan Task 6 and Task 5 objective-scoped identity preflight.
+    verified: AC1-AC3 targeted commands each passed 1 test; pnpm -C packages/cli
+      test passed 182 files and 1998 tests; pnpm -C packages/cli run typecheck
+      passed; pnpm -C packages/cli build passed; capability-contract validation
+      and agentera check compact passed.
+    next: "Task 7: add durable experiment archival without changing publication
+      identity or list/get scope."
+    context:
+      intent: Make the CLI the validated mutation authority for experiment publication
+        without implementing durable archival or retrieval.
+      constraints: Preserve legacy readability and 10/40/50 projection; defer durable
+        archive policy to Task 7 and list/get to Task 8.
+      unknowns: Durable recovery provenance remains intentionally deferred to Task 7.
+      scope: Experiment publication contract, schema, typed writer, compaction seam,
+        CLI discovery/help, tests, changelog, plan, and progress.
   - number: 804
     timestamp: 2026-07-15 07:55
     type: feat
@@ -318,36 +341,6 @@ cycles:
       scope: State retrieval authority, validator/registry projection, plan/experiment
         help and schema introspection, contract tests, changelog, plan status,
         and progress evidence.
-  - number: 795
-    timestamp: 2026-07-14 21:01
-    type: fix
-    phase: build
-    what: Made TODO resolved compaction require one section, keep a positional
-      10/40/50 newest-first queue, summarize rows 11-50, and report Git-only
-      recovery without implying lossless archival.
-    inspiration: The archive-backed storage review identified TODO Resolved as the
-      remaining destructive compaction path and the user chose explicit Git
-      archaeology over new archive machinery.
-    discovered: The duplicate sections were not globally newest-first, body-based
-      tier classification retained only 40 inline rows, and in-budget long rows
-      were counted as summaries without being reformatted.
-    verified: "Full CLI suite passed: 177 files, 1,833 tests. Typecheck and build
-      passed. TODO validation passed with one Resolved section; check compact
-      passed with active=10, archive=40, total=50, over_limit=0; rows 11-50 are
-      at most 15 words and fix mode is idempotent. Bundle parity and git diff
-      checks passed."
-    next: No TODO archive machinery is planned; previously committed dropped rows
-      remain available through git log -p -- :/TODO.md.
-    context:
-      intent: Keep TODO.md intentionally bounded and non-archived while making
-        destructive compaction explicit, deterministic, and safe against
-        duplicate-section blind spots.
-      constraints: Do not add stable TODO IDs, archive files, retrieval commands,
-        migration machinery, or claim non-Git recovery.
-      unknowns: None.
-      scope: TODO compaction parser, validator, status and CLI diagnostics, apply
-        logic, regression fixtures, TODO schema/contract, live TODO
-        normalization, changelog, and progress evidence.
   - number: 793
     timestamp: 2026-07-14 17:36
     type: chore
@@ -417,6 +410,8 @@ cycles:
         and backfill fixtures; package metadata and generated ignored
         dist/bundle
 archive:
+  - summary: "Cycle 795 (2026-07-14): Made TODO resolved compaction require one
+      section, keep a positional 10/40/50 newest-first queue, summarize rows..."
   - summary: "Cycle 794 (2026-07-14): Made archived-only plan reads report verified
       active-plan absence with a bounded history catalog instead of..."
   - summary: "Cycle 792 (2026-07-14): Repaired npm 12 npm-pack JSON parsing at the
@@ -512,16 +507,18 @@ archive:
       an append-only supersession record"
   - summary: "Cycle 755 (2026-07-13): Gated automatic and explicit projection
       summaries on verified numbered archives"
-  - summary: "Cycle 754 (2026-07-13): Corrected Task 5 review-pressure consistency
-      by hydrating decision overlays before append overflow calculations,
-      compaction selection,..."
 omitted: true
-omitted_count: 40
+omitted_count: 41
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded

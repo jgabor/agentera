@@ -136,15 +136,26 @@ tasks:
       - GIVEN experiment zero or later numbers WHEN identified THEN identity is unique within stable objective scope and survives objective rename.
       - GIVEN legacy missing or duplicate identity WHEN read THEN retained data remains visible with explicit ambiguity or compatibility caveats.
       - GIVEN scoped, renamed, zero, duplicate, and missing fixtures WHEN tested THEN valid identities pass and ambiguous publication fails.
+    evaluation:
+      attempt_count: 1
+      failure_count: 0
+      last_verdict: pass
+      last_failure_evidence: null
+      provenance:
+        attempt_id: task-5-audit-1-20260715
+        source: independent Task 5 acceptance audit
+        recorded_at: 2026-07-15 08:03
+        writer_command: agentera state plan record-evaluation
   - number: 6
     name: Add validated experiment publication
     depends_on:
       - "5"
-    status: pending
+    status: complete
     acceptance:
       - GIVEN a new experiment WHEN published THEN the CLI validates and assigns or enforces identity before side effects.
       - GIVEN invalid identity or publication failure WHEN attempted THEN active and archived bytes remain unchanged.
       - GIVEN a retry after interruption WHEN tested THEN publication is idempotent, with passing success and failing atomicity cases.
+    evidence: "AC1 PASS: pnpm -C packages/cli exec vp test run test/state/write/experimentPublication.test.ts -t 'validates input and assigns objective-scoped identity before publication'. AC2 PASS: pnpm -C packages/cli exec vp test run test/state/write/experimentPublication.test.ts -t 'preserves active and archive bytes on identity, schema, collision, and staged publication failures'. AC3 PASS: pnpm -C packages/cli exec vp test run test/state/write/experimentPublication.test.ts -t 'retries idempotently after interruption following atomic publication'. Each returned 1 passed, 4 skipped."
   - number: 7
     name: Add durable experiment archival
     depends_on:

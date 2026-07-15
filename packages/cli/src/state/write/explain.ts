@@ -40,10 +40,14 @@ export function buildExplain(
   const record = loadArtifactRegistry().get(artifact);
   if (!record)
     reject({ class: "unsupported_target", message: `artifact "${artifact}" is not registered` });
-  const resolved = resolveArtifactPath(record, projectRoot, { strictWrite: true });
-  const doc = liveDoc(resolved);
+  const resolved = artifact === "experiments"
+    ? path.join(projectRoot, ".agentera", "optimize", "<objective>", "experiments.yaml")
+    : resolveArtifactPath(record, projectRoot, { strictWrite: true });
+  const doc = artifact === "experiments" ? {} : liveDoc(resolved);
   const next =
-    artifact === "plan"
+    artifact === "experiments"
+      ? {}
+      : artifact === "plan"
       ? { task_number: nextTaskNumber(doc) }
       : {
           number: nextEntryNumber(
@@ -77,11 +81,11 @@ export function buildExplain(
     fields,
   };
   if (spec.compacts) {
-    result.compaction =
-      "uniform_10_40_50 (bounded active/archive projections: 10 active full-detail and 40 archive entries; verified numbered archives remain authoritative; no destructive deletion; recovery refuses to omit entries when archive evidence is missing); runs automatically on append";
+    result.compaction = artifact === "experiments"
+      ? "uniform_10_40_50 (10 active full-detail and 40 one-line archive entries); runs automatically on publication; durable archival is deferred"
+      : "uniform_10_40_50 (bounded active/archive projections: 10 active full-detail and 40 archive entries; verified numbered archives remain authoritative; no destructive deletion; recovery refuses to omit entries when archive evidence is missing); runs automatically on append";
   }
   if (spec.inputRoot) {
-    result.fields = [];
     result.input_schema = {
       flag: "--input",
       sources: ["file path", "- (stdin)"],
@@ -93,7 +97,9 @@ export function buildExplain(
       groups:
         artifact === "health"
           ? ["AUDIT", "DIMENSION", "FINDING", "TRENDS"]
-          : ["HEADER", "PLAN", "SCOPE", "TASK"],
+          : artifact === "experiments"
+            ? ["EXPERIMENT"]
+            : ["HEADER", "PLAN", "SCOPE", "TASK"],
     };
   }
   result.guidance = [
@@ -101,9 +107,11 @@ export function buildExplain(
       ? "supply sequential task numbers and valid dependencies; previous_plan_archived is assigned by the CLI"
       : artifact === "plan"
         ? "task numbers are assigned by the CLI for append"
-      : artifact === "health" && verb === "repair"
-        ? "repair is a destructive projection edit; select an existing duplicate audit and pass --force"
-        : "number is assigned by the CLI; do not pass --number",
+        : artifact === "health" && verb === "repair"
+          ? "repair is a destructive projection edit; select an existing duplicate audit and pass --force"
+          : artifact === "experiments"
+            ? "pass the intended non-negative --number; the CLI validates and assigns it to the entry"
+            : "number is assigned by the CLI; do not pass --number",
     "do not embed commit hashes; evidence belongs in the commit message (Decision 66)",
     "fold the artifact write into the implementation commit per AGENTS.md",
   ];
@@ -129,6 +137,8 @@ export function exampleFor(artifact: WritableArtifact, verb: string): string {
     return "agentera state plan set-plan-status --status complete --format json";
   if (verb === "record-evaluation")
     return 'agentera state plan record-evaluation --task 1 --attempt-id audit-1 --verdict pass --provenance "audit report" --format json';
+  if (verb === "publish")
+    return "agentera state experiments publish --objective OBJECTIVE_ID --number 0 --input experiment.yaml --format json";
   return `agentera state plan ${verb} --name "..."`;
 }
 
@@ -159,7 +169,8 @@ export function renderExplainText(explain: Record<string, unknown>): string {
         );
       }
     }
-  } else if (explain.input_schema) {
+  }
+  if (explain.input_schema) {
     lines.push("", "Required:", "  --input PATH             YAML/JSON document; use - for stdin");
   }
   if (explain.compaction) lines.push("", `Compaction: ${explain.compaction}`);

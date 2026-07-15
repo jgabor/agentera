@@ -4,6 +4,7 @@
 
 ### Added
 
+- Added `agentera state experiments publish --objective OBJECTIVE_ID --number N --input EXPERIMENT.yaml` with schema and identity preflight, atomic projection replacement, idempotent interruption retry, collision safety, and existing 10/40/50 projection behavior.
 - Added stable objective UUID and objective-scoped experiment identity validation, including experiment `0`, rename continuity, canonical `optimize` plus legacy `optimera` discovery, readable missing/duplicate legacy entries, and effect-free ambiguity rejection for future publication.
 - Added `agentera state plan list` and `agentera state plan get --plan PLAN_ID` for deterministic, cursor-paginated active and archived plan retrieval, full-plan exact reads, lifecycle provenance, and explicit legacy, invalid, missing, and ambiguous archive outcomes.
 - Added persisted plan identity across active-to-archive transitions, deterministic read-only identity for legacy plans, explicit lifecycle provenance, mirrored-path reporting, and structured ambiguity failures for identity collisions.

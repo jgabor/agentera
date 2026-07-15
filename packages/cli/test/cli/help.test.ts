@@ -75,6 +75,9 @@ describe("cli help", () => {
 
     const experiments = printStateHelp("experiments");
     expect(experiments).toContain("agentera state experiments list --objective OBJECTIVE_ID");
+    expect(experiments).toContain("agentera state experiments publish --objective OBJECTIVE_ID --number N --input EXPERIMENT.yaml");
+    expect(experiments).toContain("agentera state experiments explain --verb publish --format json");
+    expect(experiments).toContain("byte-equivalent identity retry is idempotent");
     expect(experiments).toContain("experiment --number accepts 0");
     expect(experiments).toContain("structured ambiguous error");
   });

@@ -172,7 +172,23 @@ export function compactYamlBytes(
     [recentFull, olderActive] = yamlRecentFullAndOlder(rawActive, specName, policy.activeEntries);
   }
   const projectionRoot = projectRoot ?? process.cwd();
-  const gated = gateProjectionEntries(projectionRoot, specName, olderActive as JsonObject[]);
+  // Experiment summaries are the pre-existing 10/40/50 projection itself.
+  // Durable experiment archives are introduced separately; publication must
+  // not silently disable the current projection while that policy is pending.
+  const gated = specName === "experiments"
+    ? {
+        verified: olderActive as JsonObject[],
+        refused: [],
+        recovery: {
+          status: "unsupported" as const,
+          attempted: olderActive.length,
+          verified: 0,
+          retained_full: 0,
+          refused_count: 0,
+          refusals: [],
+        },
+      }
+    : gateProjectionEntries(projectionRoot, specName, olderActive as JsonObject[]);
   const compactedFromActive = gated.verified.map((entry) => yamlArchiveEntry(specName, entry));
   const retainedFull = gated.refused.map(({ entry }) => entry);
   recentFull = yamlSortEntries([...recentFull, ...retainedFull], specName);

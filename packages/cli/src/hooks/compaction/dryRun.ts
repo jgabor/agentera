@@ -185,12 +185,14 @@ export const COMPACTABLE_YAML_ARTIFACTS: Record<string, [string, string]> = {
   progress: ["cycles", "archive"],
   decisions: ["decisions", "archive"],
   health: ["audits", "archive"],
+  experiments: ["experiments", "archive"],
 };
 
 export const YAML_SPEC_BY_ARTIFACT: Record<string, string> = {
   progress: "progress",
   decisions: "decisions",
   health: "health",
+  experiments: "experiments",
 };
 
 export const NON_COMPACTABLE_ARTIFACTS: Record<string, [string, string]> = {

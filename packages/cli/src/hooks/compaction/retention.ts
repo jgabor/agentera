@@ -114,6 +114,9 @@ export function yamlArchiveEntry(specName: string, entry: unknown): JsonObject {
     const summary = yamlSummaryText(e, "trajectory", "grades");
     return { summary: `Audit ${number}${datePart}: ${summary}` };
   }
+  if (specName === "experiments") {
+    return { number: e.number, summary: yamlSummaryText(e, "conclusion", "label") };
+  }
   if (specName === "session") {
     return { timestamp: String(e.timestamp ?? ""), summary: yamlSummaryText(e, "summary") };
   }
@@ -121,7 +124,7 @@ export function yamlArchiveEntry(specName: string, entry: unknown): JsonObject {
 }
 
 export function yamlSortEntries(entries: any[], specName: string): any[] {
-  if (specName === "decisions" || specName === "health") {
+  if (specName === "decisions" || specName === "health" || specName === "experiments") {
     return stableSortBy(entries, yamlEntryNumber);
   }
   if (specName === "session") {

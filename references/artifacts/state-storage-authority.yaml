@@ -170,6 +170,27 @@ retrieval:
         summary entry with that number. Ambiguous canonical/legacy objective
         candidates, missing objective identity, and duplicate experiment
         identity fail validation without changing bytes.
+      publication:
+        command: agentera state experiments publish --objective OBJECTIVE_ID --number N --input EXPERIMENT.yaml --format json
+        authority: typed_state_writer
+        input: one schema-valid experiment entry without the CLI-owned number field
+        identity_assignment: the CLI assigns the validated --number to the published entry
+        collision_rule: >-
+          An existing matching identity and byte-equivalent experiment is an
+          idempotent replay; the same identity with different content is a
+          collision and leaves the projection unchanged.
+        transaction: >-
+          Validate objective identity, canonical/legacy ambiguity, experiment
+          identity, existing projection schema, caller input schema, and final
+          projection bytes before atomically replacing experiments.yaml.
+        failure_atomicity: >-
+          Validation, staging, and pre-publication failures preserve both active
+          and one-line archive bytes. An interruption after atomic replacement
+          may report failure after publication; retrying the same command must
+          return the already-published entry without duplication.
+        scope_boundary: >-
+          Publication preserves the existing 10/40/50 projection contract but
+          does not introduce the durable archival policy owned by the next plan task.
   commands:
     plan_tasks:
       list: agentera state plan tasks list [--plan PLAN_ID] [--limit N] [--cursor TOKEN] --format json
@@ -194,6 +215,7 @@ retrieval:
     experiments:
       list: agentera state experiments list --objective OBJECTIVE_ID [--limit N] [--cursor TOKEN] --format json
       get: agentera state experiments get --objective OBJECTIVE_ID --number N --format json
+      publish: agentera state experiments publish --objective OBJECTIVE_ID --number N --input EXPERIMENT.yaml --format json
       selectors:
         objective:
           list_required: true

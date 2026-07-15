@@ -64,6 +64,13 @@ describe("cli schema", () => {
             update: "agentera state decisions explain --verb update --format json",
           },
         }),
+        expect.objectContaining({
+          artifact: "experiments",
+          mutations: ["publish"],
+          explain_by_verb: {
+            publish: "agentera state experiments explain --verb publish --format json",
+          },
+        }),
       ]),
     );
     expect(payload.state_retrieval).toMatchObject({
@@ -142,6 +149,13 @@ describe("cli schema", () => {
     expect(decisions?.write_interface).toMatchObject({
       artifact: "decisions",
       explain_command: "agentera state decisions explain --format json",
+    });
+    const experiments = (
+      payload.artifact_schemas as Array<{ name: string; write_interface: unknown }>
+    ).find((artifact) => artifact.name === "experiments");
+    expect(experiments?.write_interface).toMatchObject({
+      artifact: "experiments",
+      mutations: ["publish"],
     });
   });
 

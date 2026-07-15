@@ -222,10 +222,15 @@ export function printStateHelp(sub?: string): string {
       "usage: agentera state experiments [-h] [--format {text,json,yaml}] [filters]",
       `       ${retrievalCommands.experiments.list}`,
       `       ${retrievalCommands.experiments.get}`,
+      "       agentera state experiments publish --objective OBJECTIVE_ID --number N --input EXPERIMENT.yaml [--dry-run] [--format {text,json}]",
       "",
-      "Retrieval grammar is declared by the state-retrieval authority; execution lands in later plan tasks.",
+      "Publish is the validated mutation authority and atomically writes one schema-valid experiment.",
+      "A byte-equivalent identity retry is idempotent; collisions and pre-publication failures preserve current bytes.",
+      "List/get retrieval grammar is declared by the state-retrieval authority; execution lands in later plan tasks.",
       "Both verbs require --objective; experiment --number accepts 0 and later integers.",
       "Legacy objective/path collisions return a structured ambiguous error.",
+      "",
+      "Discover writes: agentera state experiments explain --verb publish --format json",
     ].join("\n");
   }
   if (sub) {
