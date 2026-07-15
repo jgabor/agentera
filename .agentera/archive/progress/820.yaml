@@ -1,0 +1,19 @@
+schemaVersion: agentera.stateArchiveEntry.v1
+artifact_id: progress
+entry_number: 820
+record:
+  number: 820
+  timestamp: 2026-07-15 13:23
+  type: test
+  phase: build
+  what: Verified bounded plan and experiment retrieval end to end without changing product behavior.
+  inspiration: Plan Task 14 and references/artifacts/state-storage-authority.yaml.
+  discovered: "Two initial live-smoke harness assertions were too strict: help uses lowercase usage, and the live plan catalog has 14 pre-existing diagnostics rather than only the 2 lifecycle diagnostics surfaced by prime. Corrected assertions passed; no product defect was found."
+  verified: "Focused command: pnpm -C packages/cli exec vp test run test/state/planTaskRetrieval.test.ts test/state/planRetrieval.test.ts test/state/experimentRetrieval.test.ts test/state/write/experimentPublication.test.ts test/state/write/stateWrite.test.ts test/state/retrievalContractParity.test.ts test/cli/aliasParity.test.ts; 7 files and 133 tests passed. Matrix rows: plan tasks covered cursors, omissions, exact gets, active mutations, and text/JSON/YAML count-byte pressure; plans covered active/archive identity and transitions, exact get, wrong-family/stale cursors, and legacy mirrors/caveats; experiments covered objective filters, experiment 0, list/get, stale and full-summary-drop rollover, legacy full/summary/unavailable cases, and all output formats; publication/writer fixtures covered validation atomicity, durable archive-before-projection, interruption boundaries, retries, 10/40/50, and plan archive/list/get; parity fixtures executed all advertised aliases, retired corrections, authority/schema/prime/help surfaces. Full pnpm -C packages/cli test passed 185 files and 2060 tests. Typecheck and build passed. Plan and optimize capability validation passed; capability-contract passed 2/2. Compact passed 10 artifacts with over_limit=0, errors=0, changed=0. Release-metadata passed. npm pack --dry-run --json --ignore-scripts and npm publish --dry-run --tag next passed with 664 files and + agentera@3.0.0-dev.21. gitRef adccfc291198a108977a8e77252802db7e8d4c82 resolved to adccfc29; npm @next is 3.0.0-dev.20 and dev.21 remains available. Live read-only smoke passed task list/get, plan list/get, publish explain, schema authority, plan/optimize prime, and 3 help surfaces; 14 diagnostics were classified as 12 pre-existing legacy normalizations and 2 known lifecycle caveats, with no repair. Non-blocking environment diagnostics were unresolved NPM_TOKEN substitution and Node SQLite experimental warnings; compact retained progress/health entries pending archive recovery without mutation."
+  next: Leave Task 15 pending for a separate explicit closeout cycle; do not archive the plan in this cycle.
+  context:
+    intent: Execute replacement Plan Task 14 as a verification-only cycle against the canonical state-storage authority.
+    constraints: Verification only; preserve Task 13 evaluation; no behavior changes, hidden repair, Task 15 closeout, amend, push, publication, or tag.
+    unknowns: None; every Task 14 acceptance criterion passed.
+    scope: Temporary test fixtures, read-only live CLI surfaces, release/package dry-runs, and plan/progress state only.
+record_sha256: 93250b174338d4f6a1d926ba245bc5c88fcd1c2ac2af8026188ae84cfab525b7

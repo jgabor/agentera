@@ -160,14 +160,14 @@ tasks:
       - GIVEN suite-bearing surfaces WHEN inspected THEN they remain 3.0.0 and changelog work remains Unreleased.
       - GIVEN package validation and dry-run WHEN executed THEN they pass without publishing, tagging, or pushing.
     evaluation:
-      attempt_count: 1
+      attempt_count: 2
       failure_count: 1
-      last_verdict: fail
+      last_verdict: pass
       last_failure_evidence: packages/cli agentera.gitRef points 21 commits behind the dev.21 package source and fails immutable provenance policy.
       provenance:
-        attempt_id: task-13-audit-1-20260715
-        source: independent Task 13 package-readiness audit
-        recorded_at: 2026-07-15 13:03
+        attempt_id: task-13-audit-2-20260715
+        source: independent dev package provenance audit
+        recorded_at: 2026-07-15 13:16
         writer_command: agentera state plan record-evaluation
   - number: 14
     name: Verify bounded retrieval end to end
@@ -185,7 +185,7 @@ tasks:
       - "11"
       - "12"
       - "13"
-    status: pending
+    status: complete
     acceptance:
       - GIVEN focused boundary fixtures WHEN run THEN cursors, omissions, exact gets, transitions, experiment zero, atomicity, retries, legacy caveats, and alias parity pass.
       - GIVEN full repository gates WHEN run THEN tests, typecheck, build, capability contract, compaction, and package dry-run pass.

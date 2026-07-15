@@ -1,4 +1,57 @@
 cycles:
+  - number: 820
+    timestamp: 2026-07-15 13:23
+    type: test
+    phase: build
+    what: Verified bounded plan and experiment retrieval end to end without changing
+      product behavior.
+    inspiration: Plan Task 14 and references/artifacts/state-storage-authority.yaml.
+    discovered: "Two initial live-smoke harness assertions were too strict: help
+      uses lowercase usage, and the live plan catalog has 14 pre-existing
+      diagnostics rather than only the 2 lifecycle diagnostics surfaced by
+      prime. Corrected assertions passed; no product defect was found."
+    verified: "Focused command: pnpm -C packages/cli exec vp test run
+      test/state/planTaskRetrieval.test.ts test/state/planRetrieval.test.ts
+      test/state/experimentRetrieval.test.ts
+      test/state/write/experimentPublication.test.ts
+      test/state/write/stateWrite.test.ts
+      test/state/retrievalContractParity.test.ts test/cli/aliasParity.test.ts; 7
+      files and 133 tests passed. Matrix rows: plan tasks covered cursors,
+      omissions, exact gets, active mutations, and text/JSON/YAML count-byte
+      pressure; plans covered active/archive identity and transitions, exact
+      get, wrong-family/stale cursors, and legacy mirrors/caveats; experiments
+      covered objective filters, experiment 0, list/get, stale and
+      full-summary-drop rollover, legacy full/summary/unavailable cases, and all
+      output formats; publication/writer fixtures covered validation atomicity,
+      durable archive-before-projection, interruption boundaries, retries,
+      10/40/50, and plan archive/list/get; parity fixtures executed all
+      advertised aliases, retired corrections, authority/schema/prime/help
+      surfaces. Full pnpm -C packages/cli test passed 185 files and 2060 tests.
+      Typecheck and build passed. Plan and optimize capability validation
+      passed; capability-contract passed 2/2. Compact passed 10 artifacts with
+      over_limit=0, errors=0, changed=0. Release-metadata passed. npm pack
+      --dry-run --json --ignore-scripts and npm publish --dry-run --tag next
+      passed with 664 files and + agentera@3.0.0-dev.21. gitRef
+      adccfc291198a108977a8e77252802db7e8d4c82 resolved to adccfc29; npm @next
+      is 3.0.0-dev.20 and dev.21 remains available. Live read-only smoke passed
+      task list/get, plan list/get, publish explain, schema authority,
+      plan/optimize prime, and 3 help surfaces; 14 diagnostics were classified
+      as 12 pre-existing legacy normalizations and 2 known lifecycle caveats,
+      with no repair. Non-blocking environment diagnostics were unresolved
+      NPM_TOKEN substitution and Node SQLite experimental warnings; compact
+      retained progress/health entries pending archive recovery without
+      mutation."
+    next: Leave Task 15 pending for a separate explicit closeout cycle; do not
+      archive the plan in this cycle.
+    context:
+      intent: Execute replacement Plan Task 14 as a verification-only cycle against
+        the canonical state-storage authority.
+      constraints: Verification only; preserve Task 13 evaluation; no behavior
+        changes, hidden repair, Task 15 closeout, amend, push, publication, or
+        tag.
+      unknowns: None; every Task 14 acceptance criterion passed.
+      scope: Temporary test fixtures, read-only live CLI surfaces, release/package
+        dry-runs, and plan/progress state only.
   - number: 819
     timestamp: 2026-07-15 13:09
     type: fix
@@ -324,35 +377,6 @@ cycles:
       unknowns: Independent audit verdict remains pending.
       scope: Root evidence verifier, replacement plan and predecessor archive, Task 9
         status, and progress evidence.
-  - number: 810
-    timestamp: 2026-07-15 09:52
-    type: fix
-    phase: build
-    what: Corrected Task 8 experiment cursors across 10/40/50 retention rollover.
-    discovered: The failed cursor fingerprint encoded projection collection and
-      array index even when an immutable archive already owned experiment
-      detail.
-    verified: "AC1 root commands: pnpm -C packages/cli exec vp test run
-      test/state/experimentRetrieval.test.ts -t 'full-to-summary rollover' => 1
-      passed, 9 skipped; -t 'summary-to-drop rollover|byte-limited traversal' =>
-      2 passed, 8 skipped; -t 'rejects rollover without archive proof' => 1
-      passed, 9 skipped. Audit fixture: node /tmp/opencode/audit809.mjs => 14
-      pages, 125 unique identities, 13 byte-bound pages, rollover resumed.
-      AC2/AC3 parity: retrievalAuthority, planRetrieval, schema => 143 passed.
-      Full CLI 183 files/2020 tests; typecheck, build, capability-contract,
-      compact, diff-check passed."
-    next: Task 8 awaits corrective audit; do not start Task 9 in this cycle.
-    context:
-      intent: Make append-only experiment snapshots independent of mutable projection
-        placement while failing closed without immutable proof.
-      constraints: Preserved Cycle 809, Task 8 audit attempt 1 failure, Task 7 state,
-        immutable archives, 10/40/50 retention, package metadata, and all user
-        changes.
-      unknowns: Independent corrective audit remains pending; cursor continuation
-        intentionally fails when original detail cannot be substantiated.
-      scope: Task 8 cursor fingerprinting, archive-backed list summaries, rollover and
-        stale-safety tests, authority clarification, changelog, plan, and
-        progress only.
   - number: 793
     timestamp: 2026-07-14 17:36
     type: chore
@@ -422,6 +446,8 @@ cycles:
         and backfill fixtures; package metadata and generated ignored
         dist/bundle
 archive:
+  - summary: "Cycle 810 (2026-07-15): Corrected Task 8 experiment cursors across
+      10/40/50 retention rollover."
   - summary: "Cycle 809 (2026-07-15): Delivered objective-scoped experiment list/get
       over retained projections and immutable archives."
   - summary: "Cycle 808 (2026-07-15): Corrected Task 7 archive durability by
@@ -520,15 +546,18 @@ archive:
       serializer-aware pages now retain an advancing row prefix or fail..."
   - summary: "Cycle 770 (2026-07-13): Allowed forced plan archive and replacement to
       preserve exact schema-valid predecessors whose only full-file overflow..."
-  - summary: "Cycle 769 (2026-07-13): Retried Task14 Git legacy backfill: bounded
-      all historical Git reads by the shared commit and..."
 omitted: true
-omitted_count: 55
+omitted_count: 56
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded
