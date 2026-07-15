@@ -1,0 +1,82 @@
+header:
+  level: full
+  created: 2026-07-15
+  status: open
+  reviewed: 2026-07-15
+  critic_issues: 11 found, 10 addressed, 1 dismissed
+  title: "Plan: Authoritative lint budgets and advisory exits"
+  id: plan:2bf39370-dc8e-4bf1-92ea-3c8f8515fc60
+what: Move full-file and per-entry verbosity budgets into machine-readable owning authorities, remove duplicate and fallback budget constants, and make interactive lint advisory unless strict enforcement is requested.
+why: Prevent schema and runtime drift while allowing automation to consume lint findings without false command failures.
+constraints: Keep the CLI as validation authority, preserve strict publication validation, leave compaction retention behavior unchanged, and preserve finding payloads except for mode metadata and process exit behavior.
+overall_acceptance: GIVEN an artifact lint finding WHEN lint runs interactively THEN default mode exits zero and strict mode exits nonzero, AND every enforced full-file or per-entry verbosity threshold comes from its machine-readable owner, AND internal strict validation remains blocking.
+scope:
+  included:
+    - Machine-readable full-file and per-entry verbosity-budget authority
+    - Runtime consumption without duplicate or fallback budget constants
+    - Advisory and strict command exit semantics
+    - Focused regressions and project-state synchronization
+  excluded:
+    - Compaction thresholds and the uniform_10_40_50 retention policy
+    - Unrelated lint checks
+    - Broad artifact prose rewrites
+    - Release or version changes
+  deferred:
+    []
+design: First distinguish authoritative budget states and validate their ownership. Then make lint derive verbosity behavior from those authorities while independently aligning interactive exits with advisory and strict modes. Finally verify both workstreams together and synchronize project state.
+unknowns:
+  - question: Do all supported artifact authorities distinguish numeric word limits, explicit no-limit declarations, and non-word units without ambiguity?
+    affects_task: 1
+    resolve_by: Inventory supported authorities before migration. Numeric limits are enforceable, explicit no-limit or non-word-only declarations receive no word lint, and ambiguous declarations block migration pending an owner decision.
+rejected:
+  - issue: Add a version-bump task for the fix-shaped work.
+    rationale: Planning context exposes no documentation versioning block, so the plan must not infer speculative release scope.
+tasks:
+  - number: 1
+    name: Define the authoritative budget contract
+    depends_on:
+      []
+    status: complete
+    acceptance:
+      - GIVEN a supported artifact WHEN its authority is inspected THEN each verbosity dimension is classified as a numeric limit, explicit no-limit, non-word unit, or invalid declaration.
+      - GIVEN malformed, unreadable, or ambiguous authority data WHEN the contract is validated THEN validation fails explicitly without applying a fallback limit.
+      - GIVEN equivalent supported artifact identifiers WHEN their budget owner is resolved THEN they resolve to the same authority.
+      - GIVEN an unsupported artifact identifier WHEN budget ownership is requested THEN validation fails rather than applying a generic limit.
+      - GIVEN contract tests are added WHEN they are reviewed THEN each contract rule has at least one passing and one failing case.
+  - number: 2
+    name: Make lint consume authoritative budgets
+    depends_on:
+      - "1"
+    status: pending
+    acceptance:
+      - GIVEN a numeric full-file or per-entry verbosity limit WHEN lint evaluates the artifact THEN the declared authority value governs without a duplicate runtime table.
+      - GIVEN an explicit no-limit or non-word-only declaration WHEN lint evaluates that dimension THEN no word-budget finding is invented.
+      - GIVEN required authority data is malformed or unavailable WHEN lint evaluates the artifact THEN it returns an actionable authority error without fallback constants.
+      - GIVEN non-verbosity lint checks WHEN budget consumption changes THEN their findings and classifications remain unchanged.
+      - GIVEN governed, unlimited, non-word, malformed, and alias cases WHEN focused tests run THEN each behavior is covered without redundant fixtures.
+  - number: 3
+    name: Correct advisory command exits
+    depends_on:
+      []
+    status: pending
+    acceptance:
+      - GIVEN lint findings in default mode WHEN the command completes THEN it reports the findings and exits zero.
+      - GIVEN the same lint findings with strict mode WHEN the command completes THEN it reports the same findings and exits nonzero.
+      - GIVEN no lint findings WHEN either mode completes THEN the command exits zero.
+      - GIVEN invalid input or an authority-loading failure WHEN either mode runs THEN it exits nonzero with an actionable diagnostic.
+      - GIVEN a publication candidate containing a lint finding WHEN the validated publication path evaluates it THEN publication remains rejected regardless of the interactive advisory default.
+  - number: 4
+    name: Verify delivery and synchronize state
+    depends_on:
+      - "1"
+      - "2"
+      - "3"
+    status: pending
+    acceptance:
+      - GIVEN the focused authority tests WHEN they run THEN numeric, no-limit, non-word, malformed, and alias behavior passes.
+      - GIVEN command regressions WHEN they run THEN findings and no-findings in default and strict modes, operational errors, and strict publication behavior pass.
+      - GIVEN the full change WHEN repository checks run THEN CLI tests, type checking, build, capability-contract validation, and the compaction gate pass.
+      - GIVEN compaction is out of scope WHEN verification completes THEN uniform_10_40_50 behavior is unchanged.
+      - GIVEN implementation and verification are complete WHEN project records are updated THEN PLAN, TODO, and progress state agree through supported state writers.
+surprises:
+  []

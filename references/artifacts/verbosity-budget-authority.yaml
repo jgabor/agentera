@@ -1,0 +1,42 @@
+schema_version: agentera.verbosityBudgetAuthority.v1
+status: active_authority
+purpose: >-
+  Define which artifact schema owns each verbosity budget. Budget values stay
+  in the owning schema so validators and future consumers cannot introduce a
+  second value table.
+authority:
+  source: references/artifacts/verbosity-budget-authority.yaml
+  schema_directory: ../../skills/agentera/schemas/artifacts
+  single_source_rule: >-
+    Each supported artifact resolves to exactly one schema BUDGET group.
+    Missing, unreadable, duplicate, or malformed declarations are authority
+    errors; consumers must not substitute generic or historical limits.
+classification:
+  numeric_limit: A positive max_words value.
+  explicit_no_limit: A null max_words value.
+  non_word_unit: A positive token_budget value; it does not authorize word lint.
+  invalid_declaration: A missing, duplicate, ambiguous, or malformed declaration.
+scope:
+  supported_artifacts:
+    - artifact_id: changelog
+      schema: changelog.yaml
+    - artifact_id: decisions
+      schema: decisions.yaml
+    - artifact_id: design
+      schema: design.yaml
+    - artifact_id: docs
+      schema: docs.yaml
+    - artifact_id: experiments
+      schema: experiments.yaml
+    - artifact_id: health
+      schema: health.yaml
+    - artifact_id: objective
+      schema: objective.yaml
+    - artifact_id: plan
+      schema: plan.yaml
+    - artifact_id: progress
+      schema: progress.yaml
+    - artifact_id: todo
+      schema: todo.yaml
+    - artifact_id: vision
+      schema: vision.yaml

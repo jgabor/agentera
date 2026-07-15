@@ -29,6 +29,7 @@ GROUP_PREFIXES:
 BUDGET:
   1:
     id: TB1
+    scope: full_file
     token_budget: 5000
     description: >-
       Maximum tokens for TODO.md content. Exceeding triggers compaction.

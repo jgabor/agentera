@@ -1,4 +1,30 @@
 cycles:
+  - number: 827
+    timestamp: 2026-07-15 17:43
+    type: feat
+    phase: build
+    what: Defined schema-owned verbosity authority in
+      references/artifacts/verbosity-budget-authority.yaml with fail-closed
+      classification.
+    inspiration: Approved Plan Task 1 and firm Decision 93.
+    discovered: Vision's BUDGET group also contains a non-verbosity compaction
+      declaration; the loader excludes rule-only entries while rejecting
+      malformed verbosity declarations.
+    verified: packages/cli/test/registries/verbosityBudgetContract.test.ts passed
+      within the full 2076-test CLI suite; typecheck, build, capability-contract
+      validation, lint (0 errors), and check compact passed with no compaction
+      changes.
+    next: Task 2 may make lint consume this authority; lint runtime behavior and
+      advisory exit semantics remain unchanged.
+    context:
+      intent: Complete approved Plan Task 1 by making artifact budget ownership and
+        declaration states explicit without changing lint consumption or exits.
+      constraints: Only Task 1; no selfAudit/lint consumption, exit-semantic,
+        retention, profile, vision, or missing-state changes.
+      unknowns: Decision 93 satisfaction remains legacy review-needed; no authority
+        result was inferred from that missing state.
+      scope: Budget authority reference, CLI registry loader, contract tests, and
+        token-budget scope metadata.
   - number: 826
     timestamp: 2026-07-15 15:53
     type: test
@@ -344,40 +370,6 @@ cycles:
       scope: Release verification plus plan, progress, and pre-existing TODO state;
         package.json remained byte-identical because 3.0.0-dev.21 was already
         prepared.
-  - number: 817
-    timestamp: 2026-07-15 12:44
-    type: fix
-    phase: build
-    what: Retried Task 12 after audit attempt 1. Removed Build's remaining retired
-      gate command expectation, made canonical and transitional compaction
-      output report command check compact without a gate field, and added live
-      discovery/startup/runtime retirement coverage.
-    inspiration: Independent Task 12 audit attempt 1 recorded in the active plan.
-    discovered: The compaction compatibility oracle still pinned the retired Python
-      gate envelope, and compaction guidance recommended the transitional
-      compact alias. Both were live npm 3.x vocabulary drift rather than
-      compatibility requirements.
-    verified: "AC1: bounded searches of packages/cli source/tests, references,
-      skills, web src, mobile, and root live docs found no semantic agentera
-      gate advertising; Build prime expected_commands contains agentera check
-      compact. AC2: pnpm exec vp test run on alias/compact/prime/help targets =>
-      5 files, 59 tests passed; compact alias JSON byte-matched canonical check
-      compact JSON. AC3: retired gate returned rc 2 with valid_values [check
-      compact] and executable agentera check compact --format json correction.
-      AC4: Cycles 814-816, audit attempt 1 failure metadata, and the open TODO
-      remain preserved. pnpm -C packages/cli test => 185 files, 2058 tests
-      passed; typecheck, build, git diff --check, and check compact passed."
-    next: Stop after Task 12 retry. Leave TODO open for audit attempt 2; do not
-      start Task 13.
-    context:
-      intent: Correct only the two Task 12 audit failures while preserving the failed
-        audit record and prior cycle evidence.
-      constraints: No amend of 76b78a58, push, package version change, metadata work,
-        or unrelated gate concepts. Preserve audit attempt 1 and Cycles 814-816.
-      unknowns: Independent audit attempt 2 has not run, so the degraded TODO remains
-        open.
-      scope: Build execution context, compaction command vocabulary and guidance,
-        parity fixtures/tests, changelog, plan status, and Cycle 817 evidence.
   - number: 793
     timestamp: 2026-07-14 17:36
     type: chore
@@ -447,6 +439,8 @@ cycles:
         and backfill fixtures; package metadata and generated ignored
         dist/bundle
 archive:
+  - summary: "Cycle 817 (2026-07-15): Retried Task 12 after audit attempt 1. Removed
+      Build's remaining retired gate command expectation, made..."
   - summary: "Cycle 816 (2026-07-15): Repaired Plan Task 12 alias authority and
       runtime parity. Removed stale gate advertising, projected the..."
   - summary: "Cycle 815 (2026-07-15): Corrected experiment artifact introspection
@@ -541,16 +535,18 @@ archive:
       projection and completed the independent audit for Task 1."
   - summary: "Cycle 777 (2026-07-14): Validated the repaired Unicode surfaces and
       migrated the complete bounded state consumer matrix across all..."
-  - summary: "Cycle 776 (2026-07-13): Made every bounded prime-path string
-      truncation code-point safe and added adversarial emoji coverage across
-      all..."
 omitted: true
-omitted_count: 62
+omitted_count: 63
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded

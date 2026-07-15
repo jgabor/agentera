@@ -27,6 +27,7 @@ GROUP_PREFIXES:
 BUDGET:
   1:
     id: DB1
+    scope: full_file
     token_budget: 2000
     description: >-
       Maximum tokens for DESIGN.md content. Exceeding triggers compaction.
