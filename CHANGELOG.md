@@ -72,6 +72,7 @@
 
 ### Fixed
 
+- Fixed schema/runtime alias parity: introspection now advertises exactly the six Phase 3 transitional aliases, top-level `compact` delegates to canonical `check compact` semantics, and removed names such as `gate` return structured runnable corrections.
 - Fixed archive-only plan catalogs to expose executable list/get recovery, plan-task cursors to validate explicit plan selectors before lookup, and legacy plan text to omit oversized whole rows instead of truncating Unicode scalars.
 - Fixed bounded plan and experiment retrieval to declare legacy projection omissions with public recovery, enforce plan-task YAML byte limits, reject wrong-family and wrong-objective cursors, and fail closed when plan snapshot diagnostics change.
 - Fixed experiment snapshot cursors to survive append-driven 10/40/50 full-to-summary and summary-to-drop rollover when immutable archives prove original identities unchanged, while still rejecting mutations, deletion, archive damage, and unsubstantiated rollover.
@@ -103,7 +104,7 @@
 - Removed `cursor-agent` as an independent runtime identity. Its binary and corpus source now map to the single `cursor` identity.
 - Removed `rootStatus` from public JSON output (`prime --format json` and `doctor --format json`). The field remains internal for classifier logic but is no longer exposed in diagnostic output.
 - Removed v1 legacy migration paths, standalone skill bundle wording, and obsolete v1 fixture assumptions from the 3.x tree after the 3.0 boundary (`packages/cli/test/cli/v1LegacyCruft.test.ts` guards against reintroduction).
-- Removed `hej`, `describe`, and `gate` from top-level `agentera --help`; use `agentera prime`, `agentera schema`, and `agentera check compact` instead (legacy names still run with a stderr alias).
+- Removed `hej`, `describe`, and `gate` from top-level `agentera --help` and dispatch; unsupported structured requests return runnable corrections to `agentera prime`, `agentera schema`, and `agentera check compact`.
 - Removed the requirement for `uv` or a git checkout on the development channel; `uvx --from git+https://github.com/jgabor/agentera@main agentera` remains the stable 2.x Python line only.
 
 ### Migration notes

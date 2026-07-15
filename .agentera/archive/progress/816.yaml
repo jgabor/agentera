@@ -1,0 +1,19 @@
+schemaVersion: agentera.stateArchiveEntry.v1
+artifact_id: progress
+entry_number: 816
+record:
+  number: 816
+  timestamp: 2026-07-15 12:29
+  type: fix
+  phase: build
+  what: Repaired Plan Task 12 alias authority and runtime parity. Removed stale gate advertising, projected the six active transitional aliases into schema introspection, aligned compact delegation with check compact, and added exhaustive positive, negative, and retired-correction execution coverage.
+  inspiration: Replacement bounded-retrieval Plan Task 12 and references/cli/audience-namespace-cli-migration.yaml Phase 3.
+  discovered: The Phase 3 authority still carried an older gate delegation and pre-D70 plan routing prose; the active runtime instead owns six transitional aliases and English plan capability routing. The first attempted direct vitest command failed because vitest is provided through vp; repository verification then passed through the documented pnpm test script.
+  verified: "Root commands: pnpm -C packages/cli test => 185 files and 2057 tests passed; pnpm -C packages/cli run typecheck => passed; pnpm -C packages/cli build => passed; git diff --check => passed. Focused vp run => 6 files and 81 tests passed. node packages/cli/dist/bin/agentera.js schema --format json | jq ... => query→state query, compact→check compact, verify→check verify, stats→report, lint→check lint, validate→check validate. node packages/cli/dist/bin/agentera.js gate --format json => rc 2 structured valid_values/check compact correction; node packages/cli/dist/bin/agentera.js check compact --format json => pass."
+  next: Stop after Task 12. Leave the degraded Task 11 TODO open for independent audit; do not start Task 13 metadata or final tasks.
+  context:
+    intent: Restore trust that every schema-advertised alias executes with structured behavior matching canonical authority without reintroducing the retired gate command.
+    constraints: Preserved Cycles 814–815, package versions, replacement plan, archived predecessor, and open degraded TODO. No amend, publish, tag, push, metadata task, or unrelated alias was added.
+    unknowns: Independent audit has not yet passed, so the degraded bounded-retrieval TODO remains open as required.
+    scope: Alias migration authority, schema introspection, bounded dispatch/error parity, exhaustive CLI parity tests, changelog, replacement plan status, and progress evidence.
+record_sha256: 22be5325b83e2add252a0df107fe089f9d76a55eca5833f993204e2be8404078

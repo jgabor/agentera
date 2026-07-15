@@ -3,30 +3,34 @@ header:
   created: 2026-07-15
   status: open
   reviewed: 2026-07-15
-  critic_issues: 3 found, 3 addressed, 0 dismissed
-  revised: Separated completed retrieval-contract synchronization from alias-wide parity, bounded alias changes to canonical authority, and ordered metadata, verification, and closeout behind an independent audit.
-  title: "Plan: Close bounded retrieval after alias parity repair"
-what: Complete the bounded plan and experiment retrieval delivery by preserving predecessor Tasks 1-11 as completed outcomes, repairing the remaining schema-advertised alias/runtime mismatch, and then completing development metadata, end-to-end verification, and state closeout.
-why: Retrieval behavior and its public retrieval surfaces are complete, but the predecessor cannot continue because schema introspection advertises a nonexistent gate alias whose runtime failure is unstructured. A narrow authority-led parity repair restores trust in introspection without reopening completed retrieval work.
-constraints: Preserve predecessor lineage and detailed evaluator history in its immutable archive; preserve Cycles 814-815; close the degraded bounded-retrieval TODO only after an independent audit passes; keep suite-bearing metadata at 3.0.0; permit only the next available CLI 3.0.0-dev.N metadata; do not publish, tag, push, migrate archives, change retention, add unrelated aliases, or touch unrelated state families. New testable units use at least one passing and one failing case.
-overall_acceptance: GIVEN completed bounded-retrieval outcomes and canonical alias authority WHEN remaining work closes THEN every schema-advertised alias agrees with runtime structured behavior, retired aliases provide runnable correction, verification passes, and current state records the delivery without reopening or losing predecessor evidence.
+  critic_issues: 2 found, 2 addressed, 0 dismissed
+  revised: Preserved completed product outcomes, isolated volatile Task 4 evidence repair, and rebased remaining delivery behind an independent audit gate.
+  title: "Plan: Complete bounded retrieval after evidence repair"
+what: Complete bounded plan and experiment retrieval by preserving the verified product outcomes, repairing only the blocked Task 4 evidence path, and then finishing the already-scoped contract, metadata, verification, and state synchronization work.
+why: Task 4 behavior satisfies its acceptance criteria, but downstream work is blocked because its recorded live YAML byte count changed after plan state changed. Deterministic fixture evidence plus a live inequality can establish the same bound without rewriting Cycle 803 or changing retrieval behavior.
+constraints: Preserve numbered archives for progress, decisions, and health; preserve file-based plan archives; keep experiments objective-scoped; preserve legacy readability without fabricating history; retain experiment 10/40/50 projections; do not migrate numbered archives, change retention policy, touch unrelated state families, publish, tag, or push; keep suite metadata at 3.0.0. The archived predecessor owns full evaluator history. New testable units use one passing and one failing check unless no new unit is introduced.
+overall_acceptance: GIVEN the predecessor outcomes and repaired Task 4 evidence WHEN bounded retrieval closes THEN plan and experiment identities, ordering, omissions, continuation, exact retrieval, detail availability, archive provenance, public contracts, verification gates, and current state agree without a retrieval behavior change or scope expansion.
 scope:
   included:
-    - Completed bounded-retrieval outcomes from predecessor Tasks 1-11
-    - Schema-advertised alias and runtime structured-output parity
-    - Independent acceptance audit and bounded-retrieval TODO closure
-    - Permitted CLI development metadata, end-to-end verification, and final state synchronization
+    - Completed bounded-retrieval product outcomes from predecessor Tasks 1-8
+    - Deterministic Task 4 retrieval evidence and independent acceptance audit
+    - Remaining plan and experiment cursor and omission gap closure
+    - Help, schema introspection, agent context, capability prose, docs, and tests
+    - Permitted CLI development metadata and state closeout
   excluded:
-    - New aliases or compatibility behavior without an active canonical contract
-    - Changes to unrelated commands, state families, archive models, or retention policy
-    - Suite metadata beyond 3.0.0, publication, tags, or remote pushes
+    - Migrating plans or experiments into numbered archives
+    - Changing experiment 10/40/50 projection retention
+    - Repairing unrelated degraded historical archives
+    - Adding bounded retrieval to unrelated state families
+    - Retrieval behavior changes solely to repair evidence
+    - Runtime-specific adapters, publication, tags, or remote pushes
   deferred:
     - Search beyond identity, objective filters, and cursor traversal
-design: Preserve completed retrieval outcomes while the predecessor archive remains the detailed record of its failed audits. Resolve canonical alias authority before changing behavior, prefer removing stale advertising when compatibility is not required, and prove every advertised alias against runtime structured behavior. Allow metadata and final verification only after independent parity acceptance, then synchronize state and close the plan.
+design: "Treat predecessor Tasks 1-8 as completed product outcomes and preserve their detailed evaluator history in the archived predecessor. Place one evidence- only gate before all remaining work: deterministic evidence proves the byte boundary, a live assertion checks the current response remains below it, and independent audit controls unblocking and TODO closure. Continue the original delivery sequence only after that gate passes."
 unknowns:
-  - question: Does an active canonical compatibility contract require the gate alias to remain runnable?
-    affects_task: 12
-    resolve_by: Inspect canonical alias authority before repair; remove stale advertising when no active contract requires compatibility, otherwise require a structured alias to the canonical command.
+  - question: Will independent audit accept the deterministic fixture evidence and live inequality without requesting a retrieval behavior change?
+    affects_task: 10
+    resolve_by: Task 9 records criterion-mapped evidence and independent audit; if it fails for product behavior rather than evidence quality, re-invoke plan before Task 10.
 tasks:
   - number: 1
     name: Define retrieval authority and command grammar
@@ -107,8 +111,18 @@ tasks:
     status: complete
     acceptance:
       - GIVEN committed deterministic retrieval evidence WHEN its root-runnable command is repeated THEN stable serialized bytes and a serialized-byte count below 32768 map explicitly to the Task 4 criteria.
-      - GIVEN the live YAML response WHEN checked without mutation THEN the assertion is serialized bytes below 32768 rather than equality with Cycle 803.
+      - GIVEN the live YAML response WHEN checked without mutation THEN the assertion is serialized bytes < 32768 rather than equality with Cycle 803.
       - GIVEN the evidence repair WHEN independently audited THEN Cycle 803 remains immutable and the blocked TODO repair item closes only after a passing verdict.
+    evaluation:
+      attempt_count: 1
+      failure_count: 0
+      last_verdict: pass
+      last_failure_evidence: null
+      provenance:
+        attempt_id: task-9-audit-1-20260715
+        source: independent deterministic retrieval evidence audit
+        recorded_at: 2026-07-15 10:23
+        writer_command: agentera state plan record-evaluation
   - number: 10
     name: Close evidenced cursor and omission gaps
     depends_on:
@@ -121,35 +135,45 @@ tasks:
       - GIVEN any Task 1 plan or experiment gap WHEN bounded by count or bytes THEN omissions and usable recovery are explicit.
       - GIVEN stale, wrong-family, wrong-filter, or malformed cursors WHEN reused THEN deterministic snapshot or validation errors result.
       - GIVEN text, JSON, and existing numbered-family regressions WHEN tested THEN no targeted surface silently slices or regresses.
+    evaluation:
+      attempt_count: 2
+      failure_count: 1
+      last_verdict: pass
+      last_failure_evidence: Archive-only plan catalog lacks retrieval; wrong plan-selector cursor reuse returns not_found before cursor validation; legacy plan text silently truncates long task scalars.
+      provenance:
+        attempt_id: task-10-audit-2-corrective-20260715
+        source: "corrective Task 1 gap-matrix audit: 316 focused and 2037 full tests plus live and archive-only fixtures"
+        recorded_at: 2026-07-15 11:00
+        writer_command: agentera state plan record-evaluation
   - number: 11
-    name: Synchronize bounded-retrieval public contracts
+    name: Synchronize public retrieval contracts
     depends_on:
       - "10"
-    status: complete
+    status: blocked
     acceptance:
-      - GIVEN retrieval help, schema introspection, agent context, capability prose, and operator docs WHEN inspected THEN bounded-retrieval commands and semantics agree.
-      - GIVEN experiment introspection WHEN queried THEN supported operations and corrections match runnable retrieval behavior.
-      - GIVEN retrieval capability and contract validation WHEN run THEN exposed retrieval examples pass and intentionally invalid retrieval examples fail.
+      - GIVEN help, schema introspection, agent context, capability prose, and operator docs WHEN inspected THEN commands and semantics agree.
+      - GIVEN unsupported forms WHEN invoked THEN errors enumerate valid values and show a working correction.
+      - GIVEN capability and contract validation WHEN run THEN exposed contract examples pass and intentionally invalid examples fail.
+    evaluation:
+      attempt_count: 2
+      failure_count: 2
+      last_verdict: fail
+      last_failure_evidence: Schema introspection still advertises nonexistent agentera gate alias, which returns unstructured stderr despite --format json.
+      provenance:
+        attempt_id: task-11-audit-2-20260715
+        source: independent Task 11 corrective acceptance audit
+        recorded_at: 2026-07-15 11:50
+        writer_command: agentera state plan record-evaluation
   - number: 12
-    name: Repair schema-advertised alias and runtime parity
-    depends_on:
-      - "11"
-    status: complete
-    acceptance:
-      - GIVEN canonical alias authority WHEN gate is assessed THEN stale advertising is removed unless an active compatibility contract requires a structured alias to the canonical command.
-      - GIVEN every schema-advertised alias WHEN exhaustively executed with structured output THEN each advertised command returns structured runnable behavior consistent with its description.
-      - GIVEN retired or unsupported aliases WHEN checked THEN each structured result names valid values and a correction that runs successfully; passing and failing parity cases cover every advertised alias.
-      - GIVEN the parity repair WHEN independently audited THEN Cycles 814-815 remain unchanged and the degraded bounded-retrieval TODO closes only after a passing verdict.
-  - number: 13
     name: Advance permitted development metadata
     depends_on:
-      - "12"
+      - "11"
     status: pending
     acceptance:
       - GIVEN the current npm next version WHEN checked THEN only the CLI package advances to the next available 3.0.0-dev.N.
       - GIVEN suite-bearing surfaces WHEN inspected THEN they remain 3.0.0 and changelog work remains Unreleased.
       - GIVEN package validation and dry-run WHEN executed THEN they pass without publishing, tagging, or pushing.
-  - number: 14
+  - number: 13
     name: Verify bounded retrieval end to end
     depends_on:
       - "1"
@@ -164,13 +188,12 @@ tasks:
       - "10"
       - "11"
       - "12"
-      - "13"
     status: pending
     acceptance:
-      - GIVEN focused boundary fixtures WHEN run THEN cursors, omissions, exact gets, transitions, experiment zero, atomicity, retries, legacy caveats, and alias parity pass.
+      - GIVEN focused boundary fixtures WHEN run THEN cursors, omissions, exact gets, transitions, experiment zero, atomicity, retries, and legacy caveats pass.
       - GIVEN full repository gates WHEN run THEN tests, typecheck, build, capability contract, compaction, and package dry-run pass.
-      - GIVEN live read-only smoke tests WHEN run THEN advertised commands and corrections execute with structured results and pre-existing diagnostics remain classified.
-  - number: 15
+      - GIVEN live read-only smoke tests WHEN run THEN pre-existing diagnostics follow Task 1 classification without hidden repair.
+  - number: 14
     name: Synchronize current state and close the plan
     depends_on:
       - "1"
@@ -186,12 +209,11 @@ tasks:
       - "11"
       - "12"
       - "13"
-      - "14"
     status: pending
     acceptance:
-      - GIVEN final verification and the independent Task 12 audit WHEN work closes THEN docs, TODO, progress, and plan state agree, the bounded-retrieval degraded item is closed, and Cycles 814-815 remain preserved.
-      - GIVEN typed writer support WHEN state changes are recorded THEN owning interfaces validate final bytes and preserve predecessor lineage.
+      - GIVEN verification evidence WHEN work closes THEN docs, TODO, progress, and plan state agree with shipped behavior.
+      - GIVEN typed writer support WHEN state changes are recorded THEN owning interfaces validate final bytes and preserve lineage.
       - GIVEN final state queries WHEN run THEN no completed task, unresolved in-scope omission, or required closeout remains.
 surprises:
   []
-previous_plan_archived: .agentera/archive/PLAN-2026-07-15-complete-bounded-retrieval-after-evidence-repair-c61a548f3bc6f39d.yaml
+previous_plan_archived: .agentera/archive/PLAN-2026-07-14-complete-bounded-plan-and-experiment-retrieval-769b0b94abaa4d68.yaml

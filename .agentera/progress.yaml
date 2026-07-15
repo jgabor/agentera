@@ -1,4 +1,44 @@
 cycles:
+  - number: 816
+    timestamp: 2026-07-15 12:29
+    type: fix
+    phase: build
+    what: Repaired Plan Task 12 alias authority and runtime parity. Removed stale
+      gate advertising, projected the six active transitional aliases into
+      schema introspection, aligned compact delegation with check compact, and
+      added exhaustive positive, negative, and retired-correction execution
+      coverage.
+    inspiration: Replacement bounded-retrieval Plan Task 12 and
+      references/cli/audience-namespace-cli-migration.yaml Phase 3.
+    discovered: The Phase 3 authority still carried an older gate delegation and
+      pre-D70 plan routing prose; the active runtime instead owns six
+      transitional aliases and English plan capability routing. The first
+      attempted direct vitest command failed because vitest is provided through
+      vp; repository verification then passed through the documented pnpm test
+      script.
+    verified: "Root commands: pnpm -C packages/cli test => 185 files and 2057 tests
+      passed; pnpm -C packages/cli run typecheck => passed; pnpm -C packages/cli
+      build => passed; git diff --check => passed. Focused vp run => 6 files and
+      81 tests passed. node packages/cli/dist/bin/agentera.js schema --format
+      json | jq ... => query→state query, compact→check compact, verify→check
+      verify, stats→report, lint→check lint, validate→check validate. node
+      packages/cli/dist/bin/agentera.js gate --format json => rc 2 structured
+      valid_values/check compact correction; node
+      packages/cli/dist/bin/agentera.js check compact --format json => pass."
+    next: Stop after Task 12. Leave the degraded Task 11 TODO open for independent
+      audit; do not start Task 13 metadata or final tasks.
+    context:
+      intent: Restore trust that every schema-advertised alias executes with
+        structured behavior matching canonical authority without reintroducing
+        the retired gate command.
+      constraints: Preserved Cycles 814–815, package versions, replacement plan,
+        archived predecessor, and open degraded TODO. No amend, publish, tag,
+        push, metadata task, or unrelated alias was added.
+      unknowns: Independent audit has not yet passed, so the degraded
+        bounded-retrieval TODO remains open as required.
+      scope: Alias migration authority, schema introspection, bounded dispatch/error
+        parity, exhaustive CLI parity tests, changelog, replacement plan status,
+        and progress evidence.
   - number: 815
     timestamp: 2026-07-15 11:42
     type: fix
@@ -309,42 +349,6 @@ cycles:
       scope: Experiment archive authority/schema, publication ordering, immutable
         archive serialization, transaction boundary, focused fixtures,
         plan/progress/changelog state.
-  - number: 806
-    timestamp: 2026-07-15 08:35
-    type: fix
-    phase: build
-    what: Fixed packages/cli/src/state/write/explain.ts so generic experiments
-      writer discovery selects publish, and added a schema test that executes
-      every emitted generic and per-verb explain command.
-    inspiration: Independent Task 6 audit attempt task-6-audit-1-20260715.
-    verified: "Discovery PASS: pnpm -C packages/cli exec vp test run
-      test/cli/schema.test.ts -t 'executes every emitted writer discovery
-      command' returned 1 passed, 7 skipped. Generic smoke PASS: node
-      packages/cli/dist/bin/agentera.js state experiments explain --format json.
-      Per-verb smoke PASS: node packages/cli/dist/bin/agentera.js state
-      experiments explain --verb publish --format json. AC1 PASS: pnpm -C
-      packages/cli exec vp test run
-      test/state/write/experimentPublication.test.ts -t 'validates input and
-      assigns objective-scoped identity before publication'. AC2 PASS: pnpm -C
-      packages/cli exec vp test run
-      test/state/write/experimentPublication.test.ts -t 'preserves active and
-      archive bytes on identity, schema, collision, and staged publication
-      failures'. AC3 PASS: pnpm -C packages/cli exec vp test run
-      test/state/write/experimentPublication.test.ts -t 'retries idempotently
-      after interruption following atomic publication'. Each AC returned 1
-      passed, 4 skipped. pnpm -C packages/cli test passed 182 files and 1999
-      tests; typecheck, build, capability-contract validation, check compact,
-      and git diff --check passed."
-    next: Re-audit Task 6; do not begin Task 7 durable archival or Task 8 list/get
-      in this cycle.
-    context:
-      intent: Correct Task 6's failed discovery-contract audit without changing
-        experiment publication, archival, or retrieval scope.
-      constraints: Preserve Cycle 805, audit attempt 1, publication semantics, and
-        pending Task 7-8 scope.
-      unknowns: Independent retry audit remains pending.
-      scope: Generic writer explain default, exhaustive discovery regression,
-        changelog, Task 6 evidence/status, and corrective progress cycle.
   - number: 793
     timestamp: 2026-07-14 17:36
     type: chore
@@ -414,6 +418,9 @@ cycles:
         and backfill fixtures; package metadata and generated ignored
         dist/bundle
 archive:
+  - summary: "Cycle 806 (2026-07-15): Fixed packages/cli/src/state/write/explain.ts
+      so generic experiments writer discovery selects publish, and added a
+      schema test that..."
   - summary: "Cycle 805 (2026-07-15): Added agentera state experiments publish in
       packages/cli/src/state/write/experimentPublication.ts with
       objective-scoped identity and schema preflight, atomic replacement,..."
@@ -511,15 +518,18 @@ archive:
   - summary: "Cycle 766 (2026-07-13): Implemented Task 12 read-only durability
       diagnostics under agentera check durability. The authority now publishes
       the..."
-  - summary: "Cycle 765 (2026-07-13): Retried Task 9 after evaluator attempt 1
-      failed. Fixed bounded-list minimal fallback to preserve a..."
 omitted: true
-omitted_count: 51
+omitted_count: 52
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded

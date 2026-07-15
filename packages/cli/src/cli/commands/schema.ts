@@ -41,6 +41,61 @@ import {
 } from "../../state/gitBackfillAuthority.js";
 import { loadStateRetrievalAuthority } from "../../state/retrievalAuthority.js";
 
+export interface TransitionalTopLevelAlias {
+  legacy: string;
+  canonical: string;
+  structuredExampleArgv: string[];
+}
+
+export const TRANSITIONAL_TOP_LEVEL_ALIASES: TransitionalTopLevelAlias[] = [
+  {
+    legacy: "query",
+    canonical: "state query",
+    structuredExampleArgv: ["query", "--list-artifacts", "--format", "json"],
+  },
+  {
+    legacy: "compact",
+    canonical: "check compact",
+    structuredExampleArgv: ["compact", "--project", "PROJECT", "--format", "json"],
+  },
+  {
+    legacy: "verify",
+    canonical: "check verify",
+    structuredExampleArgv: ["verify", "eval", "skills", "--dry-run", "--format", "json"],
+  },
+  {
+    legacy: "stats",
+    canonical: "report",
+    structuredExampleArgv: ["stats", "refresh", "--dry-run", "--format", "json"],
+  },
+  {
+    legacy: "lint",
+    canonical: "check lint",
+    structuredExampleArgv: [
+      "lint", "--artifact", "progress", "--text", "alias-parity", "--format", "json",
+    ],
+  },
+  {
+    legacy: "validate",
+    canonical: "check validate",
+    structuredExampleArgv: ["validate", "capability-contract", "--format", "json"],
+  },
+];
+
+export const REMOVED_TOP_LEVEL_CORRECTIONS: Record<string, string> = {
+  status: "prime",
+  hej: "prime",
+  describe: "schema",
+  gate: "check compact",
+  progress: "state progress",
+  health: "state health",
+  todo: "state todo",
+  decisions: "state decisions",
+  docs: "state docs",
+  objective: "state objective",
+  experiments: "state experiments",
+};
+
 /** Port of scripts/agentera cmd_schema / _build_schema_payload. */
 
 type Io = { out?: (t: string) => void; err?: (t: string) => void };
@@ -111,22 +166,16 @@ const COMMAND_DESCRIPTIONS: Record<string, string> = {
   schema: "Runtime CLI/schema introspection.",
   query: "Deprecated alias for state query. Advanced custom artifact query.",
   lint: "Deprecated alias for check lint. Optional draft prose preview; typed writers validate published bytes.",
-  gate: "Deprecated alias for check compact. Run check-only repository gates.",
   compact: "Deprecated alias for check compact. Check or fix artifact compaction budgets.",
+  verify: "Deprecated alias for check verify. Run bounded verification families.",
+  stats: "Deprecated alias for report. Read or refresh privacy-gated usage analytics.",
+  validate: "Deprecated alias for check validate. Validate capabilities and repository contracts.",
   upgrade:
     "Preview or apply app migration plus explicitly selected Agentera-owned runtime lifecycle repair.",
   migrate: "Publish the bounded local legacy-state inventory and mutation authority.",
   backfill: "Optionally inspect or publish one immutable archive record from bounded local Git history.",
   doctor: "Check Agentera CLI, app, and runtime status.",
-  describe: "Deprecated alias for schema.",
 };
-const COMMAND_FILTERS_SCHEMA: Record<string, string[]> = {
-  prime: [],
-  status: [],
-  schema: ["format"],
-  describe: ["format"],
-};
-
 function availableStructuredFields(command: string): string[] {
   if (command === "prime") return [...STATUS_STRUCTURED_FIELDS, "capability_context"];
   if (command === "status") return STATUS_STRUCTURED_FIELDS;
@@ -147,7 +196,6 @@ const COMMAND_FILTERS_ALL: Record<string, string[]> = {
   experiments: ["topic", "status", "limit"],
   query: ["list_artifacts", "topic", "severity", "dimension", "status", "limit"],
   lint: ["artifact", "file", "text", "strict", "format"],
-  gate: ["project", "format"],
   compact: ["project", "mode", "format"],
   doctor: ["install_root", "home", "project", "expected_version", "expect_command"],
   upgrade: [
@@ -162,7 +210,6 @@ const COMMAND_FILTERS_ALL: Record<string, string[]> = {
     "force",
     "channel",
   ],
-  describe: ["format"],
   schema: ["format"],
 };
 
@@ -242,16 +289,17 @@ function commandDescription(
 ): JsonObject {
   let formats = outputFormats ?? ["text", "json", "yaml"];
   if (!outputFormats && name === "lint") formats = ["text", "json"];
-  else if (!outputFormats && (name === "compact" || name === "gate")) formats = ["text", "json"];
+  else if (!outputFormats && name === "compact") formats = ["text", "json"];
   else if (!outputFormats && name === "doctor") formats = ["text", "json"];
   else if (!outputFormats && name === "upgrade") formats = ["text", "json"];
-  else if (!outputFormats && (name === "describe" || name === "schema")) formats = ["json", "yaml"];
+  else if (!outputFormats && name === "schema") formats = ["json", "yaml"];
   else if (!outputFormats && name === "prime") formats = ["text", "json", "yaml"];
   const description = kind === "capability_routing"
     ? `Route to ${name} capability guidance.`
     : kind === "routine_state"
       ? `Read ${name} project state through the agentera state namespace.`
       : COMMAND_DESCRIPTIONS[name] ?? "unknown";
+  const alias = TRANSITIONAL_TOP_LEVEL_ALIASES.find((entry) => entry.legacy === name);
   return {
     name,
     kind,
@@ -259,6 +307,10 @@ function commandDescription(
     filters: filters ?? COMMAND_FILTERS_ALL[name] ?? [],
     output_formats: formats,
     structured_fields: fields ?? [],
+    ...(alias ? {
+      alias_for: alias.canonical,
+      structured_example_argv: alias.structuredExampleArgv,
+    } : {}),
   };
 }
 
@@ -287,13 +339,6 @@ function describeCommands(
   }
   commands.push(
     commandDescription("query", "advanced_artifact_query"),
-    commandDescription("lint", "artifact_lint", [
-      "command",
-      "status",
-      "artifact",
-      "checks",
-      "summary",
-    ]),
     commandDescription("compact", "artifact_compaction", [
       "command",
       "status",
@@ -301,6 +346,24 @@ function describeCommands(
       "summary",
       "operations",
     ]),
+    commandDescription("verify", "verification", [
+      "command",
+      "status",
+      "family",
+      "target",
+      "engine",
+      "diagnostics",
+      "safety",
+    ]),
+    commandDescription("stats", "usage_analytics"),
+    commandDescription("lint", "artifact_lint", [
+      "command",
+      "status",
+      "artifact",
+      "checks",
+      "summary",
+    ]),
+    commandDescription("validate", "validation"),
     commandDescription("schema", "runtime_introspection"),
     commandDescription("upgrade", "upgrade", [
       "schemaVersion",

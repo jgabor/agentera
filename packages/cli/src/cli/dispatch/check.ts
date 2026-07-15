@@ -11,7 +11,7 @@ import {
 } from "../commands/validate.js";
 import { LEGACY_PYTHON_PARITY_FLAG } from "../../validate/lifecycleAdapters.js";
 import { makeArgvValueReader } from "./argvParser.js";
-import { asEnvelopeFormat, classifyParseError, type Io } from "./shared.js";
+import { asEnvelopeFormat, classifyParseError, detectTopLevelFormat, type Io } from "./shared.js";
 import { emitInvalidInput } from "../errors.js";
 import { StateWriteInputError } from "../../state/write/errors.js";
 import {
@@ -65,7 +65,7 @@ export function runLint(argv: string[], io: Io, prog = "agentera lint"): number 
   const parsed = parseLintArgs(argv);
   if ("error" in parsed) {
     return emitInvalidInput(io, {
-      format: "text",
+      format: detectTopLevelFormat(argv),
       body: classifyParseError(parsed.error),
     });
   }
@@ -195,6 +195,7 @@ export function runDurability(argv: string[], io: Io, prog: string): number {
 }
 
 export function runValidate(argv: string[], io: Io, prog: string): number {
+  const requestedFormat = detectTopLevelFormat(argv);
   let family: string | null = null;
   let capabilityTarget: string | null = null;
   let artifactFlag: string | null = null;
@@ -240,7 +241,7 @@ export function runValidate(argv: string[], io: Io, prog: string): number {
       cwdFlag = a === "--cwd" ? argv[++i] : a.slice("--cwd=".length);
     } else if (a.startsWith("--")) {
       return emitInvalidInput(io, {
-        format,
+        format: requestedFormat,
         body: {
           class: "unrecognized_argument",
           message: `unrecognized arguments: ${a}`,
@@ -252,7 +253,7 @@ export function runValidate(argv: string[], io: Io, prog: string): number {
       capabilityTarget = a;
     } else {
       return emitInvalidInput(io, {
-        format,
+        format: requestedFormat,
         body: {
           class: "unrecognized_argument",
           message: `unrecognized arguments: ${a}`,

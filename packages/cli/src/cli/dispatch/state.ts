@@ -2,7 +2,7 @@ import { cmdState, StateArgs } from "../commands/state/index.js";
 import { COMMAND_FILTERS } from "../stateQuery.js";
 import { cmdQuery, QueryArgs } from "../commands/query.js";
 import { makeArgvValueReader } from "./argvParser.js";
-import { asEnvelopeFormat, classifyParseError, type Io } from "./shared.js";
+import { asEnvelopeFormat, classifyParseError, detectTopLevelFormat, type Io } from "./shared.js";
 import { emitInvalidInput } from "../errors.js";
 import { runStateWrite } from "../commands/state/write.js";
 import { runStateGet } from "../commands/state/get.js";
@@ -74,7 +74,7 @@ export function runState(command: string, argv: string[], io: Io, prog: string):
   const parsed = parseStateArgs(command, argv);
   if ("error" in parsed) {
     return emitInvalidInput(io, {
-      format: "text",
+      format: detectTopLevelFormat(argv),
       body: classifyParseError(parsed.error),
     });
   }
@@ -133,7 +133,7 @@ export function runQuery(argv: string[], io: Io, prog: string): number {
   const parsed = parseQueryArgs(argv);
   if ("error" in parsed) {
     return emitInvalidInput(io, {
-      format: "text",
+      format: detectTopLevelFormat(argv),
       body: classifyParseError(parsed.error),
     });
   }

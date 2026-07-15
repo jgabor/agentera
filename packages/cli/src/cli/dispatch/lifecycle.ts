@@ -18,7 +18,7 @@ import { validatePathValue } from "../argvalidate.js";
 import { printAppHomeHelp, printDoctorHelp, printUpgradeHelp, wantsHelp } from "../help.js";
 import { makeArgvValueReader } from "./argvParser.js";
 import { parseCompactArgs } from "./check.js";
-import { asEnvelopeFormat, classifyParseError, emitDeprecationAlias, type Io } from "./shared.js";
+import { asEnvelopeFormat, classifyParseError, detectTopLevelFormat, emitDeprecationAlias, type Io } from "./shared.js";
 import { emitInvalidInput } from "../errors.js";
 
 function rejectUnsupportedUpgradeFlag(
@@ -36,7 +36,7 @@ export function runGate(argv: string[], io: Io, prog: string): number {
   const parsed = parseCompactArgs(argv);
   if ("error" in parsed) {
     return emitInvalidInput(io, {
-      format: "text",
+      format: detectTopLevelFormat(argv),
       body: classifyParseError(parsed.error),
     });
   }
@@ -456,7 +456,7 @@ export function runVerify(argv: string[], io: Io, prog: string): number {
     else if (a === "--dry-run") args.dryRun = true;
     else if (a.startsWith("--")) {
       return emitInvalidInput(io, {
-        format: asEnvelopeFormat(args.format),
+        format: detectTopLevelFormat(argv),
         body: { class: "unrecognized_argument", message: `unrecognized arguments: ${a}` },
       });
     } else {
@@ -548,7 +548,7 @@ export function runReport(argv: string[], io: Io, prog: string): number {
     else if (a === "--dry-run") args.dryRun = true;
     else if (a.startsWith("--")) {
       return emitInvalidInput(io, {
-        format: asEnvelopeFormat(args.format),
+        format: detectTopLevelFormat(argv),
         body: { class: "unrecognized_argument", message: `unrecognized arguments: ${a}` },
       });
     } else {

@@ -30,10 +30,11 @@ import {
   runVerify,
   runVersion,
 } from "./lifecycle.js";
-import { emitDeprecationAlias, type Io } from "./shared.js";
+import { detectTopLevelFormat, emitDeprecationAlias, type Io } from "./shared.js";
 import { emitInvalidInput } from "../errors.js";
 import { isWriteVerb } from "../../state/write/operations.js";
 import { stateMigrationContract } from "../../state/migrationAuthority.js";
+import { REMOVED_TOP_LEVEL_CORRECTIONS } from "../commands/schema.js";
 
 export function main(argv: string[], io: Io = {}): number {
   const err = io.err ?? ((t: string) => process.stderr.write(t));
@@ -181,13 +182,30 @@ export function main(argv: string[], io: Io = {}): number {
       return runQuery(rest, io, "agentera query");
     case "compact":
       emitDeprecationAlias("compact", "check compact", err);
-      return runCompact(rest, io, "agentera compact");
+      return compactModeOf(rest) === "fix"
+        ? runCompact(rest, io, "agentera compact")
+        : runGate(rest, io, "agentera compact");
     case "validate":
       emitDeprecationAlias("validate", "check validate", err);
       return runValidate(rest, io, "agentera validate");
     default:
       if (command && CAPABILITY_ROUTING_NAMES.includes(command)) {
         return runCapability(command, rest, io, `agentera ${command}`);
+      }
+      if (command && REMOVED_TOP_LEVEL_CORRECTIONS[command]) {
+        const canonical = REMOVED_TOP_LEVEL_CORRECTIONS[command];
+        const example = `agentera ${canonical} --format json`;
+        return emitInvalidInput(io, {
+          format: detectTopLevelFormat(rest),
+          body: {
+            class: "unsupported_target",
+            message: `unknown or not-yet-ported command: ${command}; this top-level name was removed, use '${canonical}'`,
+            valid_values: [canonical],
+            syntax: `agentera ${canonical} [options]`,
+            example,
+            recovery: `Run ${example}; no state was changed by the rejected command.`,
+          },
+        });
       }
       return emitInvalidInput(io, {
         format: "text",

@@ -186,16 +186,17 @@ audience_namespaces:
         canonical_shape: agentera check compact [--project PATH] [--mode check|fix] [--format text|json]
         delegates_from:
           - compact
-          - gate
         notes: >-
-          `check compact` in default check-only mode matches today's `agentera gate`.
-          Artifact compaction budget checks remain on `check compact`.
-    legacy_top_level_aliases:
-      - validate
-      - verify
-      - lint
-      - gate
+          `check compact` owns check-only and fix modes. Top-level `gate` was
+          removed in Phase 3; artifact compaction budget checks remain on
+          `check compact`.
+    transitional_top_level_aliases:
+      - query
       - compact
+      - verify
+      - stats
+      - lint
+      - validate
 help_grouping:
   agent: [prime, state, schema, capabilities]
   user: [upgrade, doctor, report]
@@ -263,25 +264,25 @@ plan_routing_distinction:
   state_read:
     invocation: agentera state plan
     legacy_alias: >-
-      Top-level `agentera plan` was removed on the npm 3.x CLI in Phase 3; use
-      `agentera state plan`.
+      Top-level `agentera plan` is capability routing, not a state-read alias;
+      use `agentera state plan` for project state.
     surface: CLI routine state read
     meaning: >-
       Read-only access to the active plan artifact summary, tasks, acceptance
       criteria, evidence, and source_contract. Does not invoke Planera workflow
       execution.
   capability_top:
-    invocation: agentera planera
+    invocation: agentera plan
     surface: CLI top-level capability routing command
     meaning: >-
-      Emits Planera routing guidance prose/schemas pointers. Does not replace
+      Emits plan capability routing guidance prose/schemas pointers. Does not replace
       `state plan` reads or `/agentera plan` slash routing. Capability startup JSON
-      for Planera remains `agentera prime --context planera --format json`.
+      remains `agentera prime --context plan --format json`.
   agent_guidance: >-
     Use `/agentera plan` when the user wants planning work routed to Planera; use
     `agentera state plan` when the agent needs plan artifact state; use
-    `agentera planera` for capability routing guidance; use
-    `agentera prime --context planera` for bounded Planera startup context.
+    `agentera plan` for capability routing guidance; use
+    `agentera prime --context plan` for bounded plan startup context.
 migration_phases:
   phase_1:
     name: add_namespaces_and_delegate
@@ -344,9 +345,9 @@ command_tree_target:
 removed_top_level_commands:
   # Phase 3 on npm 3.x: removed from help and dispatch (unsupported_target)
   - hej
+  - status
   - describe
   - gate
-  - plan
   - progress
   - health
   - todo
@@ -354,6 +355,20 @@ removed_top_level_commands:
   - docs
   - objective
   - experiments
+
+removed_top_level_corrections:
+  # Unsupported Phase 3 names return these canonical runnable corrections.
+  - { legacy: hej, canonical: prime }
+  - { legacy: status, canonical: prime }
+  - { legacy: describe, canonical: schema }
+  - { legacy: gate, canonical: "check compact" }
+  - { legacy: progress, canonical: "state progress" }
+  - { legacy: health, canonical: "state health" }
+  - { legacy: todo, canonical: "state todo" }
+  - { legacy: decisions, canonical: "state decisions" }
+  - { legacy: docs, canonical: "state docs" }
+  - { legacy: objective, canonical: "state objective" }
+  - { legacy: experiments, canonical: "state experiments" }
 
 transitional_stderr_aliases:
   # Still delegate with one-line stderr deprecation on npm 3.x
