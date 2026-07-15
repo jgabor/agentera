@@ -1,7 +1,7 @@
 header:
   level: full
   created: 2026-07-15
-  status: open
+  status: complete
   reviewed: 2026-07-15
   critic_issues: 3 found, 3 addressed, 0 dismissed
   revised: Separated completed retrieval-contract synchronization from alias-wide parity, bounded alias changes to canonical authority, and ordered metadata, verification, and closeout behind an independent audit.
@@ -37,6 +37,7 @@ tasks:
       - GIVEN each state collection WHEN classified THEN growth, identity, storage ownership, ordering, bounds, cursor, omission, and get behavior are explicit.
       - GIVEN plan tasks, plans, and experiments WHEN commands are specified THEN grammar, selectors, experiment zero, and structured errors are unambiguous.
       - GIVEN valid and invalid contract examples WHEN tested THEN at least one passing and failing case covers each rule.
+    evidence: Accepted outcome and audit lineage are preserved in predecessor plan legacy-plan:c09cc7bb849dc5fe96b814a2cde3146cc21bfc65135024c62569f437777016f8 task 1.
   - number: 2
     name: Deliver plan task list and get
     depends_on:
@@ -46,6 +47,7 @@ tasks:
       - GIVEN a large active plan WHEN tasks are listed THEN declared task-number order, limits, opaque cursors, and omission counts are stable.
       - GIVEN a task number WHEN fetched THEN one full task or a structured not-found result is returned.
       - GIVEN text or JSON projection limits WHEN tasks are omitted THEN a working continuation or exact command is exposed, with passing and failing tests.
+    evidence: Accepted outcome and audit lineage are preserved in predecessor plan legacy-plan:c09cc7bb849dc5fe96b814a2cde3146cc21bfc65135024c62569f437777016f8 task 2.
   - number: 3
     name: Establish stable plan identity
     depends_on:
@@ -55,6 +57,7 @@ tasks:
       - GIVEN a current plan WHEN archived THEN its identity remains unchanged and lifecycle provenance changes explicitly.
       - GIVEN legacy plans WHEN identity is derived THEN results are deterministic without rewriting history; collisions return structured ambiguity.
       - GIVEN valid transition and collision fixtures WHEN tested THEN identity continuity passes and ambiguous identity fails safely.
+    evidence: Accepted outcome and audit lineage are preserved in predecessor plan legacy-plan:c09cc7bb849dc5fe96b814a2cde3146cc21bfc65135024c62569f437777016f8 task 3.
   - number: 4
     name: Deliver active and archived plan retrieval
     depends_on:
@@ -64,6 +67,7 @@ tasks:
       - GIVEN active and archived plans WHEN listed THEN deterministic recency, stable identity, lifecycle state, cursor, and omissions are returned.
       - GIVEN a plan identity WHEN fetched THEN the intended full plan is returned without caller-side file traversal.
       - GIVEN legacy, invalid, or missing archives WHEN tested THEN compatibility diagnostics and not-found behavior are explicit.
+    evidence: Accepted outcome and audit lineage are preserved in predecessor plan legacy-plan:c09cc7bb849dc5fe96b814a2cde3146cc21bfc65135024c62569f437777016f8 task 4.
   - number: 5
     name: Establish objective-scoped experiment identity
     depends_on:
@@ -73,6 +77,7 @@ tasks:
       - GIVEN experiment zero or later numbers WHEN identified THEN identity is unique within stable objective scope and survives objective rename.
       - GIVEN legacy missing or duplicate identity WHEN read THEN retained data remains visible with explicit ambiguity or compatibility caveats.
       - GIVEN scoped, renamed, zero, duplicate, and missing fixtures WHEN tested THEN valid identities pass and ambiguous publication fails.
+    evidence: Accepted outcome and audit lineage are preserved in predecessor plan legacy-plan:c09cc7bb849dc5fe96b814a2cde3146cc21bfc65135024c62569f437777016f8 task 5.
   - number: 6
     name: Add validated experiment publication
     depends_on:
@@ -82,6 +87,7 @@ tasks:
       - GIVEN a new experiment WHEN published THEN the CLI validates and assigns or enforces identity before side effects.
       - GIVEN invalid identity or publication failure WHEN attempted THEN active and archived bytes remain unchanged.
       - GIVEN a retry after interruption WHEN tested THEN publication is idempotent, with passing success and failing atomicity cases.
+    evidence: Accepted outcome and audit lineage are preserved in predecessor plan legacy-plan:c09cc7bb849dc5fe96b814a2cde3146cc21bfc65135024c62569f437777016f8 task 6.
   - number: 7
     name: Add durable experiment archival
     depends_on:
@@ -91,6 +97,7 @@ tasks:
       - GIVEN projection retention is crossed WHEN publication succeeds THEN newly published full detail is durably recoverable before compaction.
       - GIVEN 10/40/50 projection compaction WHEN run THEN projection policy is unchanged and archive provenance remains explicit.
       - GIVEN archive success, failure, and retry fixtures WHEN tested THEN no detail is silently lost or duplicated.
+    evidence: Accepted outcome and audit lineage are preserved in predecessor plan legacy-plan:c09cc7bb849dc5fe96b814a2cde3146cc21bfc65135024c62569f437777016f8 task 7.
   - number: 8
     name: Deliver experiment list and get
     depends_on:
@@ -100,6 +107,7 @@ tasks:
       - GIVEN an objective with many experiments WHEN listed THEN newest-first pages, opaque continuation, omissions, and no duplicate or skipped identities result.
       - GIVEN experiment identity WHEN fetched THEN retained or archived detail, provenance, and detail availability are explicit.
       - GIVEN wrong objective, experiment zero, summary-only legacy, malformed cursor, and not-found cases WHEN tested THEN behavior is structured.
+    evidence: Accepted outcome and audit lineage are preserved in predecessor plan legacy-plan:c09cc7bb849dc5fe96b814a2cde3146cc21bfc65135024c62569f437777016f8 task 8.
   - number: 9
     name: Repair Task 4 retrieval evidence
     depends_on:
@@ -109,6 +117,7 @@ tasks:
       - GIVEN committed deterministic retrieval evidence WHEN its root-runnable command is repeated THEN stable serialized bytes and a serialized-byte count below 32768 map explicitly to the Task 4 criteria.
       - GIVEN the live YAML response WHEN checked without mutation THEN the assertion is serialized bytes below 32768 rather than equality with Cycle 803.
       - GIVEN the evidence repair WHEN independently audited THEN Cycle 803 remains immutable and the blocked TODO repair item closes only after a passing verdict.
+    evidence: Accepted outcome and audit lineage are preserved in predecessor plan legacy-plan:2dceb8a6c4ce17d4775e7340ec387dfa0fe6d30c8785ff4b262236c631930caf task 9.
   - number: 10
     name: Close evidenced cursor and omission gaps
     depends_on:
@@ -121,6 +130,7 @@ tasks:
       - GIVEN any Task 1 plan or experiment gap WHEN bounded by count or bytes THEN omissions and usable recovery are explicit.
       - GIVEN stale, wrong-family, wrong-filter, or malformed cursors WHEN reused THEN deterministic snapshot or validation errors result.
       - GIVEN text, JSON, and existing numbered-family regressions WHEN tested THEN no targeted surface silently slices or regresses.
+    evidence: Accepted outcome and audit lineage are preserved in predecessor plan legacy-plan:2dceb8a6c4ce17d4775e7340ec387dfa0fe6d30c8785ff4b262236c631930caf task 10.
   - number: 11
     name: Synchronize bounded-retrieval public contracts
     depends_on:
@@ -130,6 +140,7 @@ tasks:
       - GIVEN retrieval help, schema introspection, agent context, capability prose, and operator docs WHEN inspected THEN bounded-retrieval commands and semantics agree.
       - GIVEN experiment introspection WHEN queried THEN supported operations and corrections match runnable retrieval behavior.
       - GIVEN retrieval capability and contract validation WHEN run THEN exposed retrieval examples pass and intentionally invalid retrieval examples fail.
+    evidence: Cycles 814-815 and replacement Task 12 audit PASS close the predecessor contract-parity finding.
   - number: 12
     name: Repair schema-advertised alias and runtime parity
     depends_on:
@@ -150,6 +161,7 @@ tasks:
         source: independent alias schema-runtime parity audit
         recorded_at: 2026-07-15 12:52
         writer_command: agentera state plan record-evaluation
+    evidence: Independent audit task-12-audit-2-20260715 passed after preserving its first failed attempt.
   - number: 13
     name: Advance permitted development metadata
     depends_on:
@@ -169,6 +181,7 @@ tasks:
         source: independent dev package provenance audit
         recorded_at: 2026-07-15 13:16
         writer_command: agentera state plan record-evaluation
+    evidence: Independent audit task-13-audit-2-20260715 passed after preserving its first failed attempt.
   - number: 14
     name: Verify bounded retrieval end to end
     depends_on:
@@ -190,6 +203,17 @@ tasks:
       - GIVEN focused boundary fixtures WHEN run THEN cursors, omissions, exact gets, transitions, experiment zero, atomicity, retries, legacy caveats, and alias parity pass.
       - GIVEN full repository gates WHEN run THEN tests, typecheck, build, capability contract, compaction, and package dry-run pass.
       - GIVEN live read-only smoke tests WHEN run THEN advertised commands and corrections execute with structured results and pre-existing diagnostics remain classified.
+    evaluation:
+      attempt_count: 1
+      failure_count: 0
+      last_verdict: pass
+      last_failure_evidence: null
+      provenance:
+        attempt_id: task-14-audit-1-20260715
+        source: independent bounded retrieval end-to-end audit
+        recorded_at: 2026-07-15 13:30
+        writer_command: agentera state plan record-evaluation
+    evidence: Independent audit task-14-audit-1-20260715 passed with Cycle 820 verification.
   - number: 15
     name: Synchronize current state and close the plan
     depends_on:
@@ -207,11 +231,12 @@ tasks:
       - "12"
       - "13"
       - "14"
-    status: pending
+    status: complete
     acceptance:
       - GIVEN final verification and the independent Task 12 audit WHEN work closes THEN docs, TODO, progress, and plan state agree, the bounded-retrieval degraded item is closed, and Cycles 814-815 remain preserved.
       - GIVEN typed writer support WHEN state changes are recorded THEN owning interfaces validate final bytes and preserve predecessor lineage.
       - GIVEN final state queries WHEN run THEN no completed task, unresolved in-scope omission, or required closeout remains.
+    evidence: Final typed progress cycle records exact closeout queries, immutable lineage hashes, and validation evidence.
 surprises:
   []
 previous_plan_archived: .agentera/archive/PLAN-2026-07-15-complete-bounded-retrieval-after-evidence-repair-c61a548f3bc6f39d.yaml
