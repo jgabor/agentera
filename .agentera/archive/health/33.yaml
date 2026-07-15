@@ -1,0 +1,67 @@
+schemaVersion: agentera.stateArchiveEntry.v1
+artifact_id: health
+entry_number: 33
+record:
+  number: 33
+  date: 2026-07-15
+  dimensions:
+    - architecture_alignment
+    - pattern_consistency
+    - coupling_health
+    - test_health
+    - version_health
+    - artifact_freshness
+  findings_summary:
+    critical: 0
+    warning: 0
+    info: 0
+    filtered_by_confidence: 0
+  trajectory: "improving vs Audit 32: its sole warning and remediation-specific release block are resolved."
+  grades:
+    architecture_alignment: A
+    pattern_consistency: A
+    coupling_health: A
+    test_health: A
+    version_health: A
+    artifact_freshness: A
+  dimension_details:
+    - name: architecture_alignment
+      grade: A
+      summary: "references/artifacts/state-storage-authority.yaml:185-210 now agrees with experiment_archival: archive-before-projection, objective scope, and 10/40/50."
+      findings:
+        []
+    - name: pattern_consistency
+      grade: A
+      summary: Parsed semantic parity rejects structured publication drift independently of prose.
+      findings:
+        []
+    - name: coupling_health
+      grade: A
+      summary: No runtime publication, archive, retrieval, or compaction implementation changed since Audit 32.
+      findings:
+        []
+    - name: test_health
+      grade: A
+      summary: Focused 192/192 and full 2068/2068 tests passed.
+      findings:
+        []
+    - name: version_health
+      grade: A
+      summary: Release metadata passed at package 3.0.0-dev.21 and suite 3.0.0; gitRef governed equivalence holds.
+      findings:
+        []
+    - name: artifact_freshness
+      grade: A
+      summary: Cycles 823-824 supersede Cycle 822 and support Task 3 closeout; active plan remains for evaluation.
+      findings:
+        []
+  trends:
+    improved: Audit 32 publication contradiction and its remediation-specific release block are resolved.
+    degraded: None.
+    stable: Runtime/storage policy, versions, npm registry state, and unrelated runtime-lifecycle manual-evidence blockers.
+    new_findings: None.
+    resolved: "Audit 32 warning: Experiment publication authority still denies implemented durability."
+    carried_forward: Historical archive-recovery and lifecycle diagnostics remain unrelated caveats.
+  patterns:
+    - Structured authority drives schema, tests, and bundled package data.
+record_sha256: 03d0588dd4257e26f6abe2f670109cffb75d3299b84f0c29a042e9f6f04c38fe

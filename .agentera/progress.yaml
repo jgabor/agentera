@@ -1,4 +1,37 @@
 cycles:
+  - number: 825
+    timestamp: 2026-07-15 15:40
+    type: test
+    phase: audit
+    what: Closed Audit 32 remediation with independent Audit 33 and synchronized
+      replacement Task 3 state.
+    inspiration: Replacement Plan Task 3, Audit 32, and Cycles 822-824.
+    discovered: The Audit 32 contradiction is resolved. Audit draft lint cannot
+      target an input file, and live health lint remains advisory-failed because
+      retained historical entries exceed the full-file prose budget while
+      health:20-21 lack archives; writer validation still passed without unsafe
+      compaction.
+    verified: Audit 33 grades all six selected dimensions A with no findings.
+      Focused authority/archive/publication/schema/prepack tests passed 192/192;
+      full CLI passed 2068/2068; typecheck, build, release metadata, capability
+      contract 2/2, pack and next publish dry-runs passed. Canonical and bundled
+      authority bytes matched SHA-256
+      f84cbfad718d7c11c4dbe7f4afb9f081af6507e3919b15887d3a3c4bf9fdd0fb. npm
+      remained next dev.20 with dev.21 absent.
+    next: Orchestrator independently evaluates Task 3 and archives the active
+      completed plan only after PASS.
+    context:
+      intent: Verify the publication-authority correction independently, preserve
+        runtime and storage policy, and leave the completed active plan
+        available for orchestrator evaluation.
+      constraints: No product fixes, runtime/storage changes, TODO or changelog edits,
+        docs inventory drift edits, version changes, publication, tag, push,
+        amend, reset, stash, or clean.
+      unknowns: Unrelated runtime-lifecycle host enablement/trust evidence remains
+        manual and release-blocking; it does not reinstate Audit 32's resolved
+        remediation blocker.
+      scope: .agentera/health.yaml and archive/health/33.yaml; typed progress and plan
+        closeout state; pre-existing Task 2 evaluation preserved.
   - number: 824
     timestamp: 2026-07-15 15:26
     type: test
@@ -358,40 +391,6 @@ cycles:
       scope: Alias migration authority, schema introspection, bounded dispatch/error
         parity, exhaustive CLI parity tests, changelog, replacement plan status,
         and progress evidence.
-  - number: 815
-    timestamp: 2026-07-15 11:42
-    type: fix
-    phase: build
-    what: Corrected experiment artifact introspection after Task 11 audit failure.
-    inspiration: Task 11 audit attempt 1 and its recorded failure evidence.
-    discovered: artifact_locations synthesized unsupported top-level aliases for
-      routine state reads, and the parity test read ignored bundle output
-      directly despite global setup generating it.
-    verified: "Focused root command: pnpm -C packages/cli exec vp test run
-      test/state/retrievalContractParity.test.ts test/packaging/prepack.test.ts
-      test/cli/schema.test.ts test/cli/query.test.ts; observed 4 files/41 tests
-      passed. Scoped command: pnpm -C packages/cli exec vp test run
-      test/state/retrievalContractParity.test.ts; observed 1 file/11 tests
-      passed, including unsupported-form corrections. Full command: pnpm -C
-      packages/cli test; observed 184 files/2053 tests passed. Commands pnpm -C
-      packages/cli run typecheck and pnpm -C packages/cli build passed. Commands
-      node packages/cli/dist/bin/agentera.js check validate capability optimize
-      --format json, capability plan --format json, and capability-contract
-      --format json passed; contract summary 2/2. Runtime schema plus five
-      unsupported forms passed 6/6. node packages/cli/dist/bin/agentera.js check
-      compact --format json and git diff --check passed."
-    next: Stop after corrective Task 11 commit; Task 12 and final plan closeout
-      remain pending.
-    context:
-      intent: Retry Task 11 only by removing the unsupported selector-free experiment
-        read contract and making package parity evidence pristine-checkout safe.
-      constraints: Preserved commit 5abf4c6a, Cycle 814, and Task 11 audit attempt 1;
-        no amend, push, package metadata change, Task 12 work, publish, or tag.
-      unknowns: None for the corrective scope; pre-existing lossless compaction
-        refusals remain non-blocking.
-      scope: packages/cli/src/cli/commands/query.ts,
-        packages/cli/src/cli/commands/schema.ts, retrieval/schema and
-        pristine-bundle tests, plan/progress state.
   - number: 793
     timestamp: 2026-07-14 17:36
     type: chore
@@ -461,6 +460,8 @@ cycles:
         and backfill fixtures; package metadata and generated ignored
         dist/bundle
 archive:
+  - summary: "Cycle 815 (2026-07-15): Corrected experiment artifact introspection
+      after Task 11 audit failure."
   - summary: "Cycle 814 (2026-07-15): Synchronized public bounded-retrieval
       contracts across runtime, agent, capability, documentation, package, and
       error surfaces."
@@ -557,16 +558,18 @@ archive:
   - summary: "Cycle 775 (2026-07-13): Retried bounded prime startup projections:
       shared list classification now drives startup conflict, duplicate, mirror,
       ambiguity,..."
-  - summary: "Cycle 774 (2026-07-13): Bound prime startup source work and output:
-      incrementally scan current projection metadata, validate archives
-      without..."
 omitted: true
-omitted_count: 60
+omitted_count: 61
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded
