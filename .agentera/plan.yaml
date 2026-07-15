@@ -1,24 +1,20 @@
 header:
   level: full
-  created: 2026-07-14
+  created: 2026-07-15
   status: open
-  reviewed: 2026-07-14
-  critic_issues: 13 found, 10 addressed, 3 dismissed
-  revised: Separated retrieval envelopes from storage authority, resolved command grammar, split lifecycle boundaries, narrowed collection coverage, and made legacy and experiment durability limits explicit.
-  title: "Plan: Complete bounded plan and experiment retrieval"
-what: Make growing plan and experiment collections bounded, stably addressable, and recoverable through CLI list/get flows instead of silent slicing or raw artifact traversal.
-why: Bounded startup projections are safe only when retained records have stable identities and every omission has a documented continuation or exact retrieval path. Decision 93 requires the CLI to own that state contract.
-constraints: Preserve numbered archives for progress, decisions, and health; preserve file-based plan archives; keep experiments objective-scoped; keep the CLI authoritative; preserve legacy readability without fabricating history; retain experiment 10/40/50 projections; keep suite metadata at 3.0.0; do not publish, tag, or add unrelated state families.
-overall_acceptance: GIVEN newly published or retained plan and experiment records WHEN any collection is bounded THEN identities, ordering, omissions, continuation, exact retrieval, detail availability, and archive provenance are explicit; active-to-archive plan identity remains stable; experiment zero and objective scope remain valid; legacy ambiguity is reported rather than invented; public contracts and verification gates agree.
+  reviewed: 2026-07-15
+  critic_issues: 2 found, 2 addressed, 0 dismissed
+  revised: Preserved completed product outcomes, isolated volatile Task 4 evidence repair, and rebased remaining delivery behind an independent audit gate.
+  title: "Plan: Complete bounded retrieval after evidence repair"
+what: Complete bounded plan and experiment retrieval by preserving the verified product outcomes, repairing only the blocked Task 4 evidence path, and then finishing the already-scoped contract, metadata, verification, and state synchronization work.
+why: Task 4 behavior satisfies its acceptance criteria, but downstream work is blocked because its recorded live YAML byte count changed after plan state changed. Deterministic fixture evidence plus a live inequality can establish the same bound without rewriting Cycle 803 or changing retrieval behavior.
+constraints: Preserve numbered archives for progress, decisions, and health; preserve file-based plan archives; keep experiments objective-scoped; preserve legacy readability without fabricating history; retain experiment 10/40/50 projections; do not migrate numbered archives, change retention policy, touch unrelated state families, publish, tag, or push; keep suite metadata at 3.0.0. The archived predecessor owns full evaluator history. New testable units use one passing and one failing check unless no new unit is introduced.
+overall_acceptance: GIVEN the predecessor outcomes and repaired Task 4 evidence WHEN bounded retrieval closes THEN plan and experiment identities, ordering, omissions, continuation, exact retrieval, detail availability, archive provenance, public contracts, verification gates, and current state agree without a retrieval behavior change or scope expansion.
 scope:
   included:
-    - Shared bounded-retrieval envelope and cursor vocabulary
-    - Plan task list/get
-    - Stable active-plan and file-archive identity and retrieval
-    - Objective-scoped experiment identity and validated publication
-    - Durable experiment detail archival before projection compaction
-    - Experiment list/get across retained and archived records
-    - Plan and experiment cursor and omission coverage
+    - Completed bounded-retrieval product outcomes from predecessor Tasks 1-8
+    - Deterministic Task 4 retrieval evidence and independent acceptance audit
+    - Remaining plan and experiment cursor and omission gap closure
     - Help, schema introspection, agent context, capability prose, docs, and tests
     - Permitted CLI development metadata and state closeout
   excluded:
@@ -26,30 +22,15 @@ scope:
     - Changing experiment 10/40/50 projection retention
     - Repairing unrelated degraded historical archives
     - Adding bounded retrieval to unrelated state families
+    - Retrieval behavior changes solely to repair evidence
     - Runtime-specific adapters, publication, tags, or remote pushes
   deferred:
     - Search beyond identity, objective filters, and cursor traversal
-design: "Define one public retrieval-envelope and cursor vocabulary while preserving separate storage authorities: numbered archives for existing numbered families, file archives for plans, and objective-scoped durable experiment records. Establish identity and publication guarantees before retrieval, then close only evidenced plan and experiment omission gaps. Dependent work pauses for replanning if compatibility evidence invalidates its acceptance."
+design: "Treat predecessor Tasks 1-8 as completed product outcomes and preserve their detailed evaluator history in the archived predecessor. Place one evidence- only gate before all remaining work: deterministic evidence proves the byte boundary, a live assertion checks the current response remains below it, and independent audit controls unblocking and TODO closure. Continue the original delivery sequence only after that gate passes."
 unknowns:
-  - question: Can legacy plan archives receive deterministic identities that survive active-to-archive transition without rewriting history or collisions?
-    affects_task: 3
-    resolve_by: Task 1 proves uniqueness over fixtures and the live catalog; otherwise re-plan Task 3 before execution.
-  - question: What canonical objective identity preserves experiment identity across objective renames and legacy optimera/optimize path variants?
-    affects_task: 5
-    resolve_by: Task 1 selects and validates the namespace, experiment-zero behavior, and compatibility mapping before Task 5.
-  - question: Which plan or experiment outputs can currently exceed count or byte budgets without recoverable identity?
-    affects_task: 9
-    resolve_by: Task 1 records an evidence-backed matrix; Task 9 closes only those named gaps and triggers replanning for other families.
-  - question: Should existing degraded plan-archive diagnostics fail live retrieval smoke tests or remain reported compatibility caveats?
-    affects_task: 12
-    resolve_by: Task 1 classifies pre-existing diagnostics; Task 12 verifies retrieval without silently repairing out-of-scope history.
-rejected:
-  - issue: Plan and experiments must migrate into numbered archives to support list/get.
-    rationale: Compatible retrieval envelopes do not require one storage model; existing authority deliberately keeps plan history file-based.
-  - issue: This feature requires suite metadata above 3.0.0.
-    rationale: The cutover hold forbids that; only the CLI development package may advance.
-  - issue: Existing degraded archive diagnostics must be repaired in this plan.
-    rationale: They require explicit smoke-test treatment, but repair is unrelated unless retrieval correctness depends on it.
+  - question: Will independent audit accept the deterministic fixture evidence and live inequality without requesting a retrieval behavior change?
+    affects_task: 10
+    resolve_by: Task 9 records criterion-mapped evidence and independent audit; if it fails for product behavior rather than evidence quality, re-invoke plan before Task 10.
 tasks:
   - number: 1
     name: Define retrieval authority and command grammar
@@ -60,16 +41,6 @@ tasks:
       - GIVEN each state collection WHEN classified THEN growth, identity, storage ownership, ordering, bounds, cursor, omission, and get behavior are explicit.
       - GIVEN plan tasks, plans, and experiments WHEN commands are specified THEN grammar, selectors, experiment zero, and structured errors are unambiguous.
       - GIVEN valid and invalid contract examples WHEN tested THEN at least one passing and failing case covers each rule.
-    evaluation:
-      attempt_count: 2
-      failure_count: 1
-      last_verdict: pass
-      last_failure_evidence: Negative fixtures do not cover every enforced authority rule; Cycle 796 verification lacks reproducible commands and criterion mapping.
-      provenance:
-        attempt_id: task-1-audit-2-20260714
-        source: independent Task 1 corrective acceptance audit
-        recorded_at: 2026-07-14 22:52
-        writer_command: agentera state plan record-evaluation
   - number: 2
     name: Deliver plan task list and get
     depends_on:
@@ -79,16 +50,6 @@ tasks:
       - GIVEN a large active plan WHEN tasks are listed THEN declared task-number order, limits, opaque cursors, and omission counts are stable.
       - GIVEN a task number WHEN fetched THEN one full task or a structured not-found result is returned.
       - GIVEN text or JSON projection limits WHEN tasks are omitted THEN a working continuation or exact command is exposed, with passing and failing tests.
-    evaluation:
-      attempt_count: 2
-      failure_count: 1
-      last_verdict: pass
-      last_failure_evidence: Help incorrectly requires --plan for task get; Cycle 798 lacks exact per-criterion reproducible evidence.
-      provenance:
-        attempt_id: task-2-audit-2-20260714
-        source: independent Task 2 corrective acceptance audit
-        recorded_at: 2026-07-14 23:25
-        writer_command: agentera state plan record-evaluation
   - number: 3
     name: Establish stable plan identity
     depends_on:
@@ -98,35 +59,15 @@ tasks:
       - GIVEN a current plan WHEN archived THEN its identity remains unchanged and lifecycle provenance changes explicitly.
       - GIVEN legacy plans WHEN identity is derived THEN results are deterministic without rewriting history; collisions return structured ambiguity.
       - GIVEN valid transition and collision fixtures WHEN tested THEN identity continuity passes and ambiguous identity fails safely.
-    evaluation:
-      attempt_count: 2
-      failure_count: 1
-      last_verdict: pass
-      last_failure_evidence: Cycle 800 verification commands omit required packages/cli working-directory context and are not independently runnable from repository root.
-      provenance:
-        attempt_id: task-3-audit-2-20260714
-        source: independent Task 3 corrective evidence audit
-        recorded_at: 2026-07-14 23:46
-        writer_command: agentera state plan record-evaluation
   - number: 4
     name: Deliver active and archived plan retrieval
     depends_on:
       - "3"
-    status: blocked
+    status: complete
     acceptance:
       - GIVEN active and archived plans WHEN listed THEN deterministic recency, stable identity, lifecycle state, cursor, and omissions are returned.
       - GIVEN a plan identity WHEN fetched THEN the intended full plan is returned without caller-side file traversal.
       - GIVEN legacy, invalid, or missing archives WHEN tested THEN compatibility diagnostics and not-found behavior are explicit.
-    evaluation:
-      attempt_count: 2
-      failure_count: 2
-      last_verdict: fail
-      last_failure_evidence: Cycle 803 records a live YAML byte count that changed by two bytes at audit; use deterministic fixture evidence and a live under-budget assertion.
-      provenance:
-        attempt_id: task-4-audit-2-20260715
-        source: independent Task 4 corrective acceptance audit
-        recorded_at: 2026-07-15 07:45
-        writer_command: agentera state plan record-evaluation
   - number: 5
     name: Establish objective-scoped experiment identity
     depends_on:
@@ -136,16 +77,6 @@ tasks:
       - GIVEN experiment zero or later numbers WHEN identified THEN identity is unique within stable objective scope and survives objective rename.
       - GIVEN legacy missing or duplicate identity WHEN read THEN retained data remains visible with explicit ambiguity or compatibility caveats.
       - GIVEN scoped, renamed, zero, duplicate, and missing fixtures WHEN tested THEN valid identities pass and ambiguous publication fails.
-    evaluation:
-      attempt_count: 1
-      failure_count: 0
-      last_verdict: pass
-      last_failure_evidence: null
-      provenance:
-        attempt_id: task-5-audit-1-20260715
-        source: independent Task 5 acceptance audit
-        recorded_at: 2026-07-15 08:03
-        writer_command: agentera state plan record-evaluation
   - number: 6
     name: Add validated experiment publication
     depends_on:
@@ -155,17 +86,6 @@ tasks:
       - GIVEN a new experiment WHEN published THEN the CLI validates and assigns or enforces identity before side effects.
       - GIVEN invalid identity or publication failure WHEN attempted THEN active and archived bytes remain unchanged.
       - GIVEN a retry after interruption WHEN tested THEN publication is idempotent, with passing success and failing atomicity cases.
-    evidence: "Discovery PASS: pnpm -C packages/cli exec vp test run test/cli/schema.test.ts -t 'executes every emitted writer discovery command' (1 passed, 7 skipped). AC1 PASS: pnpm -C packages/cli exec vp test run test/state/write/experimentPublication.test.ts -t 'validates input and assigns objective-scoped identity before publication'. AC2 PASS: same file -t 'preserves active and archive bytes on identity, schema, collision, and staged publication failures'. AC3 PASS: same file -t 'retries idempotently after interruption following atomic publication'. Each AC returned 1 passed, 4 skipped; audit attempt 1 remains recorded."
-    evaluation:
-      attempt_count: 2
-      failure_count: 1
-      last_verdict: pass
-      last_failure_evidence: Typed-writer discovery advertises generic state experiments explain, but that command defaults to invalid append and exits 2.
-      provenance:
-        attempt_id: task-6-audit-2-20260715
-        source: independent Task 6 corrective acceptance audit
-        recorded_at: 2026-07-15 08:40
-        writer_command: agentera state plan record-evaluation
   - number: 7
     name: Add durable experiment archival
     depends_on:
@@ -175,17 +95,6 @@ tasks:
       - GIVEN projection retention is crossed WHEN publication succeeds THEN newly published full detail is durably recoverable before compaction.
       - GIVEN 10/40/50 projection compaction WHEN run THEN projection policy is unchanged and archive provenance remains explicit.
       - GIVEN archive success, failure, and retry fixtures WHEN tested THEN no detail is silently lost or duplicated.
-    evidence: "Corrective verification: AC1 exact-full reconstruction remains recoverable after compaction (1 passed, 13 skipped). AC2 deterministic directory syscall order and sync-fault tests (each 1 passed, 7 skipped); archive durability precedes projection replacement. AC3 publication success/failure/interruption/replay/conflict/summary-only suite (14 passed). Full CLI 182 files/2011 tests; typecheck, build, capability-contract, compact passed. Exact root commands and counts: Cycle 808. Audit attempt 1 failure remains preserved."
-    evaluation:
-      attempt_count: 2
-      failure_count: 1
-      last_verdict: pass
-      last_failure_evidence: Fresh archive creation does not fsync the new archive parent; replay can retain projection detail without reconstructing the missing archive; Cycle 807 evidence is stale.
-      provenance:
-        attempt_id: task-7-audit-2-20260715
-        source: independent Task 7 corrective acceptance audit
-        recorded_at: 2026-07-15 09:23
-        writer_command: agentera state plan record-evaluation
   - number: 8
     name: Deliver experiment list and get
     depends_on:
@@ -195,66 +104,47 @@ tasks:
       - GIVEN an objective with many experiments WHEN listed THEN newest-first pages, opaque continuation, omissions, and no duplicate or skipped identities result.
       - GIVEN experiment identity WHEN fetched THEN retained or archived detail, provenance, and detail availability are explicit.
       - GIVEN wrong objective, experiment zero, summary-only legacy, malformed cursor, and not-found cases WHEN tested THEN behavior is structured.
-    evidence: "Corrective AC1 PASS: full-to-summary rollover (1 passed, 9 skipped), summary-to-drop plus byte traversal (2 passed, 8 skipped), and unsubstantiated/mutation/corruption/deletion failures (1 passed, 9 skipped). Audit fixture node /tmp/opencode/audit809.mjs: 14 pages, 125 unique identities, 13 byte-bound pages, rollover resumed. AC2/AC3 remain covered; focused parity 143 passed and full CLI 183 files/2020 tests passed. Typecheck, build, capability-contract, compact, and diff-check passed. Cycle 809 and audit failure preserved."
-    evaluation:
-      attempt_count: 1
-      failure_count: 1
-      last_verdict: fail
-      last_failure_evidence: Append across the 10-full retention boundary changes projection placement and falsely invalidates an existing cursor instead of preserving its original snapshot.
-      provenance:
-        attempt_id: task-8-audit-1-20260715
-        source: independent Task 8 acceptance audit
-        recorded_at: 2026-07-15 09:46
-        writer_command: agentera state plan record-evaluation
   - number: 9
+    name: Repair Task 4 retrieval evidence
+    depends_on:
+      - "4"
+    status: complete
+    acceptance:
+      - GIVEN committed deterministic retrieval evidence WHEN its root-runnable command is repeated THEN stable serialized bytes and a serialized-byte count below 32768 map explicitly to the Task 4 criteria.
+      - GIVEN the live YAML response WHEN checked without mutation THEN the assertion is serialized bytes < 32768 rather than equality with Cycle 803.
+      - GIVEN the evidence repair WHEN independently audited THEN Cycle 803 remains immutable and the blocked TODO repair item closes only after a passing verdict.
+  - number: 10
     name: Close evidenced cursor and omission gaps
     depends_on:
       - "2"
       - "4"
       - "8"
+      - "9"
     status: pending
     acceptance:
       - GIVEN any Task 1 plan or experiment gap WHEN bounded by count or bytes THEN omissions and usable recovery are explicit.
       - GIVEN stale, wrong-family, wrong-filter, or malformed cursors WHEN reused THEN deterministic snapshot or validation errors result.
       - GIVEN text, JSON, and existing numbered-family regressions WHEN tested THEN no targeted surface silently slices or regresses.
-  - number: 10
+  - number: 11
     name: Synchronize public retrieval contracts
     depends_on:
-      - "9"
+      - "10"
     status: pending
     acceptance:
       - GIVEN help, schema introspection, agent context, capability prose, and operator docs WHEN inspected THEN commands and semantics agree.
       - GIVEN unsupported forms WHEN invoked THEN errors enumerate valid values and show a working correction.
       - GIVEN capability and contract validation WHEN run THEN exposed contract examples pass and intentionally invalid examples fail.
-  - number: 11
+  - number: 12
     name: Advance permitted development metadata
     depends_on:
-      - "10"
+      - "11"
     status: pending
     acceptance:
       - GIVEN the current npm next version WHEN checked THEN only the CLI package advances to the next available 3.0.0-dev.N.
       - GIVEN suite-bearing surfaces WHEN inspected THEN they remain 3.0.0 and changelog work remains Unreleased.
       - GIVEN package validation and dry-run WHEN executed THEN they pass without publishing, tagging, or pushing.
-  - number: 12
-    name: Verify bounded retrieval end to end
-    depends_on:
-      - "2"
-      - "3"
-      - "4"
-      - "5"
-      - "6"
-      - "7"
-      - "8"
-      - "9"
-      - "10"
-      - "11"
-    status: pending
-    acceptance:
-      - GIVEN focused boundary fixtures WHEN run THEN cursors, omissions, exact gets, transitions, experiment zero, atomicity, retries, and legacy caveats pass.
-      - GIVEN full repository gates WHEN run THEN tests, typecheck, build, capability contract, compaction, and package dry-run pass.
-      - GIVEN live read-only smoke tests WHEN run THEN pre-existing diagnostics follow Task 1 classification without hidden repair.
   - number: 13
-    name: Synchronize current state and close the plan
+    name: Verify bounded retrieval end to end
     depends_on:
       - "1"
       - "2"
@@ -270,8 +160,30 @@ tasks:
       - "12"
     status: pending
     acceptance:
+      - GIVEN focused boundary fixtures WHEN run THEN cursors, omissions, exact gets, transitions, experiment zero, atomicity, retries, and legacy caveats pass.
+      - GIVEN full repository gates WHEN run THEN tests, typecheck, build, capability contract, compaction, and package dry-run pass.
+      - GIVEN live read-only smoke tests WHEN run THEN pre-existing diagnostics follow Task 1 classification without hidden repair.
+  - number: 14
+    name: Synchronize current state and close the plan
+    depends_on:
+      - "1"
+      - "2"
+      - "3"
+      - "4"
+      - "5"
+      - "6"
+      - "7"
+      - "8"
+      - "9"
+      - "10"
+      - "11"
+      - "12"
+      - "13"
+    status: pending
+    acceptance:
       - GIVEN verification evidence WHEN work closes THEN docs, TODO, progress, and plan state agree with shipped behavior.
       - GIVEN typed writer support WHEN state changes are recorded THEN owning interfaces validate final bytes and preserve lineage.
       - GIVEN final state queries WHEN run THEN no completed task, unresolved in-scope omission, or required closeout remains.
 surprises:
   []
+previous_plan_archived: .agentera/archive/PLAN-2026-07-14-complete-bounded-plan-and-experiment-retrieval-769b0b94abaa4d68.yaml

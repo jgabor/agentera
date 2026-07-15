@@ -1,4 +1,45 @@
 cycles:
+  - number: 811
+    timestamp: 2026-07-15 10:17
+    type: test
+    phase: build
+    what: Added root-runnable deterministic Task 4 retrieval evidence and a separate
+      read-only live YAML inequality smoke assertion.
+    inspiration: Replacement Plan Task 9 and independent Task 4 audit attempt
+      task-4-audit-2-20260715.
+    discovered: A package-local test inventory scans lifecycle markers, so the
+      evidence verifier belongs under the already-classified root scripts
+      surface.
+    verified: "AC1: pnpm -C packages/cli build && node
+      scripts/verify-task4-retrieval-evidence.mjs repeated byte-identically at
+      30407 UTF-8 YAML bytes, SHA-256
+      059edafd2c706967e1fb322741dfddd7fea2d34dc5788a5d2d84728c7756de75, with 11
+      returned, 22 omitted, reason serialized_output_byte_budget, required
+      envelope and entry fields, opaque cursor continuation without duplicates,
+      and exact recovery. AC2: the same command fetched
+      plan:223e4567-e89b-42d3-a456-426614174000 as a full archived plan with
+      provenance and no caller traversal. AC3: it verified deterministic legacy
+      compatibility identity, explicit invalid-archive diagnostics, and
+      structured not_found. node scripts/verify-task4-retrieval-evidence.mjs
+      --live passed assertion serialized_bytes < 32768 at 32519; no Cycle 803
+      equality is asserted. pnpm -C packages/cli exec vp test run
+      test/state/planRetrieval.test.ts test/state/planTaskRetrieval.test.ts
+      test/state/retrievalAuthority.test.ts
+      test/state/planLifecycleContract.test.ts passed 4 files/153 tests;
+      typecheck, build, lint (0 errors, 112 pre-existing warnings),
+      capability-contract (2 checks), Cycle 803 HEAD/worktree SHA-256 equality
+      20d769da224a47c6fe2e0b1ccc2c6ca0d01d5ad241636e9a7a653c5b89922e30, and git
+      diff --check passed. TODO remains open for independent audit."
+    next: Independently audit Task 9 evidence; only a passing verdict may close the
+      blocked TODO repair item. Do not rewrite Cycle 803.
+    context:
+      intent: Repair volatile Task 4 evidence without changing plan retrieval behavior
+        or rewriting Cycle 803.
+      constraints: Evidence only; no retrieval behavior, Cycle 803, TODO closure,
+        metadata, publication, tag, push, or unrelated state changes.
+      unknowns: Independent audit verdict remains pending.
+      scope: Root evidence verifier, replacement plan and predecessor archive, Task 9
+        status, and progress evidence.
   - number: 810
     timestamp: 2026-07-15 09:52
     type: fix
@@ -301,36 +342,6 @@ cycles:
         exact get.
       scope: Plan retrieval state/CLI, dispatch, help, lifecycle inventory, focused
         tests, changelog, progress, and Task 4 state.
-  - number: 801
-    timestamp: 2026-07-14 23:43
-    type: test
-    phase: audit
-    what: Reproduced Task 3 acceptance evidence with exact commands runnable from
-      the repository root.
-    inspiration: Independent Task 3 evidence audit attempt 1.
-    discovered: No product defect was exposed; the failure was limited to missing
-      working-directory context in Cycle 800 commands.
-    verified: "AC1: pnpm -C packages/cli exec vp test run
-      test/state/planTaskRetrieval.test.ts test/state/write/stateWrite.test.ts
-      test/state/planLifecycleContract.test.ts test/lint/monolithLint.test.ts
-      passed 4 files/81 tests; the stateWrite transition fixture proves
-      persisted identity continuity and active-to-archived provenance. AC2: the
-      same command passed deterministic read-only legacy identity,
-      byte-preserving mirrored provenance, and structured ambiguity with every
-      collision path. AC3: all transition/collision/legacy fixtures passed. pnpm
-      -C packages/cli run typecheck exited 0; pnpm -C packages/cli build exited
-      0; node packages/cli/dist/bin/agentera.js check validate
-      capability-contract --format json passed 2/2; node
-      packages/cli/dist/bin/agentera.js check compact returned status=pass with
-      over_limit=0, formatting=0, protected_overflow=0, errors=0, changed=0."
-    next: Task 3 evidence is reproducible; leave Tasks 4 and 5 untouched.
-    context:
-      intent: Correct Cycle 800's non-root-runnable command evidence without changing
-        its record or Task 3 product behavior.
-      constraints: Preserve Cycle 800, evaluation attempt 1, production code, Task 2
-        audit state, package metadata, and all later tasks.
-      unknowns: None; proportional reproduction exposed no product defect.
-      scope: Progress evidence and Task 3 plan state only.
   - number: 793
     timestamp: 2026-07-14 17:36
     type: chore
@@ -400,6 +411,8 @@ cycles:
         and backfill fixtures; package metadata and generated ignored
         dist/bundle
 archive:
+  - summary: "Cycle 801 (2026-07-14): Reproduced Task 3 acceptance evidence with
+      exact commands runnable from the repository root."
   - summary: "Cycle 800 (2026-07-14): Established stable plan identity through
       validated publication, archival, and collision-aware discovery."
   - summary: "Cycle 799 (2026-07-14): Aligned plan-task help with the optional
@@ -495,16 +508,18 @@ archive:
       signed..."
   - summary: "Cycle 761 (2026-07-13): Retried Task 8 after evaluation failure:
       direct decision get now preserves absent outcome metadata, and..."
-  - summary: "Cycle 760 (2026-07-13): Corrected Task 8 verification counts after
-      adding unsupported-state archive fixtures; Cycle 759 evidence remains
-      immutable..."
 omitted: true
-omitted_count: 46
+omitted_count: 47
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded
