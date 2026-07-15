@@ -157,10 +157,25 @@ test("findAppHomeScript returns null when agenteraHome is undefined or empty", (
   assert.equal(findAppHomeScript(""), null);
 });
 
-test("findAppHomeScript returns null when the script file is missing", () => {
+test("findAppHomeScript returns null and logs the missing-script diagnostic when the file is absent", () => {
   const tmp = mktmp();
   try {
-    assert.equal(findAppHomeScript(tmp), null);
+    const messages = [];
+    const scriptPath = findAppHomeScript(tmp, {
+      logStderr: (msg) => messages.push(msg),
+    });
+
+    assert.equal(scriptPath, null);
+    assert.equal(messages.length, 1);
+    assert.equal(
+      messages[0],
+      `agentera: AGENTERA_HOME is set but no managed script at ${path.join(
+        tmp,
+        "app",
+        "scripts",
+        "agentera",
+      )}`,
+    );
   } finally {
     clean(tmp);
   }
@@ -326,6 +341,69 @@ test("resolveBackend logs mismatch and returns uvx when app-home is corrupt and 
   } finally {
     clean(appHome);
     clean(uvDir);
+  }
+});
+
+test("resolveBackend logs missing-script diagnostic and returns repo when AGENTERA_HOME has no script and repo is available", () => {
+  const appHome = mktmp("shim-app-home-");
+  const repoRoot = mktmp("shim-repo-");
+  const binDir = mktmp("shim-bin-");
+  try {
+    // AGENTERA_HOME is set but $AGENTERA_HOME/app/scripts/agentera is absent.
+    writeRepoScript(repoRoot, [
+      "#!/usr/bin/env -S uv run --script",
+      "# /// script",
+      "# ///",
+      "pass",
+      "",
+    ].join("\n"));
+    const uvPath = path.join(binDir, "uv");
+    fs.writeFileSync(uvPath, "#!/bin/sh\nexit 0\n");
+    fs.chmodSync(uvPath, 0o755);
+
+    const messages = [];
+    const result = withPath(binDir, () =>
+      resolveBackend({
+        cwd: repoRoot,
+        env: { AGENTERA_HOME: appHome },
+        logStderr: (msg) => messages.push(msg),
+      }),
+    );
+
+    assert.equal(result.kind, "repo");
+    assert.equal(result.repoRoot, repoRoot);
+    assert.equal(messages.length, 1);
+    assert.equal(
+      messages[0],
+      `agentera: AGENTERA_HOME is set but no managed script at ${path.join(
+        appHome,
+        "app",
+        "scripts",
+        "agentera",
+      )}`,
+    );
+  } finally {
+    clean(appHome);
+    clean(repoRoot);
+    clean(binDir);
+  }
+});
+
+test("resolveBackend stays silent when excludeAppHome is set even if AGENTERA_HOME has no script", () => {
+  const appHome = mktmp("shim-app-home-");
+  try {
+    const messages = [];
+    const result = resolveBackend({
+      cwd: appHome,
+      env: { AGENTERA_HOME: appHome, PATH: "" },
+      excludeAppHome: true,
+      logStderr: (msg) => messages.push(msg),
+    });
+
+    assert.notEqual(result.kind, "app-home");
+    assert.equal(messages.length, 0);
+  } finally {
+    clean(appHome);
   }
 });
 

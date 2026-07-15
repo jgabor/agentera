@@ -7,6 +7,7 @@ const REPO_SCRIPT_REL = path.join("scripts", "agentera");
 
 const HEAD_READ_BYTES = 2048;
 const APP_HOME_MISMATCH_PREFIX = "agentera: app-home backend unavailable: shebang/content mismatch";
+const APP_HOME_MISSING_PREFIX = "agentera: AGENTERA_HOME is set but no managed script";
 
 /**
  * @typedef {'app-home' | 'repo' | 'uvx' | 'none'} BackendKind
@@ -203,6 +204,8 @@ export function findAppHomeScript(agenteraHome, options = {}) {
   }
   const scriptPath = path.join(path.resolve(agenteraHome), APP_SCRIPT_REL);
   if (!isRunnableFile(scriptPath)) {
+    const log = options.logStderr ?? ((msg) => console.error(msg));
+    log(`${APP_HOME_MISSING_PREFIX} at ${scriptPath}`);
     return null;
   }
   const mismatch = detectShebangContentMismatch(scriptPath);

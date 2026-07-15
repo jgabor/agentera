@@ -1,4 +1,25 @@
 cycles:
+  - number: 831
+    timestamp: 2026-07-15 18:49
+    type: fix
+    phase: build
+    what: Diagnosed unavailable AGENTERA_HOME managed scripts before fallback.
+    inspiration: Highest-priority degraded TODO selected through status.
+    discovered: A production-shaped legacy-shim smoke reached the expected fallback,
+      then failed because the pinned source is no longer a Python project; this
+      transitional condition is outside the selected diagnostic fix.
+    verified: pnpm -C packages/cli/shim test passed 28/28; pnpm -C packages/cli test
+      passed 2085/2085; typecheck and build passed; live shim emitted the exact
+      diagnostic.
+    next: Address tiered corpus extraction or another explicitly selected cycle.
+    context:
+      intent: Make configured but invalid app-home state visible without changing
+        resolution precedence.
+      constraints: Preserve silent unset and excluded app-home paths plus repository
+        and uvx fallback precedence.
+      unknowns: None.
+      scope: packages/cli/shim/lib/resolve.mjs, resolver regression tests, TODO,
+        changelog, and progress.
   - number: 830
     timestamp: 2026-07-15 18:24
     type: fix
@@ -275,65 +296,6 @@ cycles:
       scope: Canonical state-storage authority, retrieval semantic validator,
         authority/schema tests, changelog, active plan Task 1 evidence/status,
         and progress.
-  - number: 821
-    timestamp: 2026-07-15 13:36
-    type: test
-    phase: build
-    what: Closed bounded-retrieval state after independent verification while
-      leaving the completed active plan available for Task 15 audit.
-    inspiration: Replacement Plan Task 15, Task 12 and Task 14 PASS evaluations, and
-      the state-storage authority.
-    discovered: The aggregate plan query initially reported incomplete because
-      replacement Tasks 1-15 lacked explicit evidence fields even though
-      statuses and evaluation lineage were present. Typed plan update calls
-      added concise predecessor/audit pointers; the final query now reports
-      status ok, evidence_status complete, and missing_state empty. Pre-existing
-      unrelated progress:793 and health:20-21 archive-recovery refusals remain
-      safely retained and out of scope.
-    verified: "Exact closeout queries: agentera state plan tasks list --limit 20
-      --format json returned total=15, returned=15, remaining=0, omitted=0,
-      complete=15, evidenced=15; agentera state plan --format json returned
-      status=ok, plan status=complete, evidence_status=complete, active=true,
-      current_plan_degraded=false, missing_state=[] and explicit list/get
-      recovery for its bounded aggregate projection. agentera state plan get
-      --plan
-      legacy-plan:2dceb8a6c4ce17d4775e7340ec387dfa0fe6d30c8785ff4b262236c631930\
-      caf and --plan
-      legacy-plan:c09cc7bb849dc5fe96b814a2cde3146cc21bfc65135024c62569f43777701\
-      6f8 returned full immutable archives with 14- and 13-task lineage; SHA-256
-      files are c61a548f3bc6f39dcb4a4670edf86d1f941456962c5fb2e60cf5e3b192fb8ddd
-      and 769b0b94abaa4d68ac09409c2b4e0a10c2fa57042f7de0d5084b0b93ca8f3890.
-      agentera state progress get --number 814 and --number 815 returned archive
-      available=true, verified=true, record SHA-256
-      aa3ab0314daa3017cd72d88e9756c30c3337b3c98170f2e8d4da62c002b94c1b and
-      ee69243045772202afa723621c326c74dd3572c0a25cd0fc937e3aa4aebcec64;
-      archive-file SHA-256 are
-      76b2ca325b06a5632a6d64f8a5b903128ecf77275ae781b41d754b8c5536b4c4 and
-      f39725d5f374c043fba761e4c45b8d38b74cbd89592ccfa00efa4bed2fd1c640. agentera
-      state todo --format json found 0 open scoped items; agentera state docs
-      --format json reported stale=none and synchronized
-      bounded-retrieval/release metadata; agentera state query changelog
-      --format json resolved CHANGELOG.md, whose Unreleased entries inventory
-      authority, plan-task/plan/experiment list/get, publication/archive
-      behavior, parity, bounds, omissions, cursors, and corrections. Artifact
-      validation passed for TODO, docs, changelog, and plan. check validate
-      release-metadata passed: package 3.0.0-dev.21, suite/registry 3.0.0,
-      gitRef adccfc291198a108977a8e77252802db7e8d4c82. check compact passed with
-      over_limit=0 and changed=0; git diff --check passed."
-    next: Run the independent Task 15 audit against the completed active plan; only
-      the orchestrator may archive it after PASS.
-    context:
-      intent: Execute replacement Plan Task 15 as the final pre-archive closeout cycle
-        and reconcile docs, TODO, changelog, progress, plan, lineage, and
-        release provenance.
-      constraints: No product behavior, archive migration, unrelated TODO cleanup,
-        active-plan archival/removal, amend, push, publish, or tag. Preserve
-        Task 14 PASS evaluation and predecessor bytes.
-      unknowns: Independent Task 15 audit verdict is pending; the completed active
-        plan intentionally remains available.
-      scope: .agentera/docs.yaml, .agentera/plan.yaml, typed progress Cycle 821 and
-        its numbered archive; TODO.md and CHANGELOG.md were verified
-        byte-identical.
   - number: 793
     timestamp: 2026-07-14 17:36
     type: chore
@@ -403,6 +365,9 @@ cycles:
         and backfill fixtures; package metadata and generated ignored
         dist/bundle
 archive:
+  - summary: "Cycle 821 (2026-07-15): Closed bounded-retrieval state after
+      independent verification while leaving the completed active plan available
+      for Task..."
   - summary: "Cycle 820 (2026-07-15): Verified bounded plan and experiment retrieval
       end to end without changing product behavior."
   - summary: "Cycle 819 (2026-07-15): Corrected dev.21 immutable source provenance
@@ -496,16 +461,18 @@ archive:
       Task 1 migration authority consumption: schema no longer keeps..."
   - summary: "Cycle 781 (2026-07-14): Retried Task 2 after the independent authority
       audit by removing duplicated migration parser values, deriving..."
-  - summary: "Cycle 780 (2026-07-14): Published the schema-backed local migration
-      authority and the confirmed agentera state migrate discovery surface;
-      valid..."
 omitted: true
-omitted_count: 66
+omitted_count: 67
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded
