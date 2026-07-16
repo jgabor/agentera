@@ -1,4 +1,45 @@
 cycles:
+  - number: 871
+    timestamp: 2026-07-16 23:50
+    type: feat
+    phase: build
+    what: Added an explicit read-only entity-migration preview under agentera state
+      migrate entities. It inventories all declared entity families and
+      structured links, classifies complete, degraded, summary-only, mirrored,
+      conflicting, corrupt, and unsupported sources, allocates deterministic
+      preview-only target IDs, emits bounded source/preview digests, and refuses
+      stale apply binding before effects.
+    inspiration: Decision 94, Task 1 authority, and PLAN Task 3 acceptance criteria.
+    discovered: The current repository contains 90 irrecoverable summary-only
+      identities, 17 corrupt candidates, and 125 unresolved structured
+      relationships in the pre-closeout preview; these are preserved as explicit
+      Task 13 blockers rather than reconstructed. The existing plan-lifecycle
+      inventory also required the new migration reader to be classified as a
+      migrator.
+    verified: "Focused migration/entity regression: 4 files, 40 tests passed. Full
+      CLI suite: 203 files, 2,371 tests passed. Typecheck passed. Build passed.
+      check validate state passed with 0 issues. capability-contract validation
+      passed 2/2 checks. check compact passed for 10 artifacts with 0
+      over-limit, formatting, protected-overflow, or errors. Repeated repository
+      previews produced identical source fingerprint and preview digest; JSON
+      was 30,178 bytes and YAML 24,718 bytes, both below 32,768 bytes.
+      Zero-write fixtures covered empty, valid, malformed, and stale-apply
+      projects."
+    next: Proceed to Task 4 only in a separate cycle. Keep durable
+      apply/resume/rollback and cutover in Task 10; preserve Task 13 blockers
+      for explicit recovery.
+    context:
+      intent: Complete PLAN Task 3 without implementing entity publication, durable
+        mapping, snapshots, resume, rollback, or family cutover.
+      constraints: "Task 3 only: no entity publication, mapping or snapshot
+        persistence, migration lock, Git operation, family cutover, vision
+        change, release, push, or publish."
+      unknowns: Repository summary-only, corrupt, and unresolved relationship blockers
+        remain intentionally unresolved for Task 13; none blocks completion of
+        the read-only inventory contract.
+      scope: State-storage authority; state migrate entities CLI/help; pure entity
+        migration preview and binding; focused tests; plan lifecycle inventory;
+        progress and Task 3 status.
   - number: 870
     timestamp: 2026-07-16 22:59
     type: fix
@@ -298,45 +339,6 @@ cycles:
         plan tasks.
       scope: references/artifacts/state-storage-authority.yaml;
         packages/cli/test/state/entityAuthority.test.ts
-  - number: 861
-    timestamp: 2026-07-16 17:48
-    type: chore
-    phase: audit
-    what: Completed post-plan Audit 37 for compact, self-contained prime startup;
-      recorded all-A grades, improving trajectory, zero blocking findings, and
-      preserved the archived plan closeout.
-    inspiration: Orchestration-authorized post-plan health audit for Make prime
-      startup compact and self-contained.
-    discovered: No product defect blocks closeout. Live status has 869 bytes and
-      bare prime 858 bytes of budget headroom; the known progress:793 archive
-      recovery caveat remains preserved. The first concurrent context
-      measurement raced packaging tests that temporarily rebuilt dist; a clean
-      rerun passed every context and is classified as an environment/tool
-      concurrency failure.
-    verified: "Audit 37: all six dimensions A, improving, 0 critical/warning/info
-      findings. Full CLI: 200 files and 2326 tests passed. Focused
-      startup/contract/archive suite: 7 files and 102 tests passed. Typecheck,
-      build, bundle:data, status capability validation, capability-contract 2/2,
-      git diff check, and compact gate passed. Live pretty JSON: bare
-      11142/12000 bytes; status 24131/25000 bytes. All 12 capability contexts
-      parsed with rc 0 and fit authority: status 24131/25000; generic range
-      25056-51194/55000. Named recovery commands returned structured JSON;
-      nonzero lifecycle/no-active-plan results were domain states, not syntax
-      failures. TODO recommendations 4-7 remain open."
-    next: Close out the archived plan and Audit 37 in one local state-only commit;
-      do not modify product code, implement deferred recommendations, repair
-      inherited archive gaps, push, tag, or publish.
-    context:
-      intent: Independently assess commits 798820a2 through 4a25c5f1 and current
-        behavior for correctness, regressions, architecture, security, tests,
-        contract synchronization, and startup efficiency.
-      constraints: Only typed health/progress writes and the already-generated typed
-        plan archive may change tracked state. Preserve progress:793 archive
-        recovery caveat and all deferred recommendations.
-      unknowns: none
-      scope: .agentera/health.yaml; .agentera/archive/health/37.yaml;
-        .agentera/progress.yaml; .agentera/archive/progress/861.yaml;
-        .agentera/plan.yaml archive transition
   - number: 793
     timestamp: 2026-07-14 17:36
     type: chore
@@ -406,6 +408,9 @@ cycles:
         and backfill fixtures; package metadata and generated ignored
         dist/bundle
 archive:
+  - summary: "Cycle 861 (2026-07-16): Completed post-plan Audit 37 for compact,
+      self-contained prime startup; recorded all-A grades, improving trajectory,
+      zero..."
   - summary: "Cycle 860 (2026-07-16): Append immutable Cycle 860 to correct Cycle
       859: Cycle 859 inaccurately claimed prior failure_count 2..."
   - summary: "Cycle 859 (2026-07-16): Corrected the reopened Plan Task 5 evidence
@@ -501,16 +506,18 @@ archive:
   - summary: "Cycle 823 (2026-07-15): Made immutable release provenance non-circular."
   - summary: "Cycle 822 (2026-07-15): Reconciled experiment publication and archival
       authority."
-  - summary: "Cycle 821 (2026-07-15): Closed bounded-retrieval state after
-      independent verification while leaving the completed active plan available
-      for Task..."
 omitted: true
-omitted_count: 106
+omitted_count: 107
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded

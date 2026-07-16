@@ -53,12 +53,13 @@ tasks:
     depends_on:
       - "1"
       - "18"
-    status: pending
+    status: complete
     acceptance:
       - GIVEN migration dry-run WHEN it completes THEN no lock, mapping, snapshot, directory, cache, or state file is written.
       - GIVEN legacy state WHEN inventoried THEN every source identity, structured relationship, provenance class, and proposed target is accounted for.
       - GIVEN verified, projection-only, summary-only, duplicate, corrupt, or conflicting inputs WHEN classified THEN exact counts and actionable recovery are reported without fabricated detail.
       - GIVEN source state changes after preview WHEN apply is requested THEN publication is refused before effects.
+    evidence: Read-only entity migration preview is exposed at agentera state migrate entities. Focused migration/entity tests passed 40/40; full CLI passed 2,371/2,371; typecheck and build passed; state validation reported 0 issues; capability-contract validation passed 2/2; compact passed 10 artifacts with 0 errors. Empty, valid, malformed, deterministic repeat, stale-binding-before-effect, classification/relationship, bounded omission, and CLI apply-preflight cases pass. Repository preview preserved summary-only, corrupt, and unresolved sources as explicit blockers.
   - number: 4
     name: Cut progress over to entities
     depends_on:

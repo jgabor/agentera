@@ -233,7 +233,7 @@ entity_target:
       never truncate bytes, omit required identity, or fabricate detail.
 
 entity_migration:
-  status: declared_not_implemented
+  status: inventory_preview_implemented
   decision: 94
   kind: single_explicit_project_cutover
   invocation:
@@ -242,6 +242,17 @@ entity_migration:
     ordinary_reads_migrate: false
     ordinary_writes_migrate: false
     invokes_git: false
+    read_only_command: >-
+      agentera state migrate entities [--project PATH] [--limit N] --dry-run
+      --format {text,json,yaml}
+    apply_preflight_command: >-
+      agentera state migrate entities --project PATH --apply --force
+      --source-fingerprint SHA256 --preview-digest SHA256 --format {text,json,yaml}
+    apply_boundary: >-
+      Task 3 implements only source binding. A matching apply request reports
+      apply_not_implemented without effects; a changed source is refused before
+      a supplied effect can run. Durable mapping, snapshot, journal, publication,
+      resume, rollback, and cutover remain Task 10.
   source_scope:
     included_entities: entity_target.entities
     included_structured_relationships: entity_target.relationships.declarations
@@ -250,6 +261,41 @@ entity_migration:
       Current canonical files, verified immutable archives, overlays, revisions,
       and validated reachable recovery evidence are inventoried together without
       changing their pre-cutover authority.
+  read_only_preview:
+    implementation: implemented
+    ordering: artifact_then_boundary_then_source_identity_then_source_path
+    source_fingerprint: >-
+      SHA-256 over canonical JSON containing every declared source path's
+      project-relative name, presence, byte length, and byte SHA-256. Missing
+      declared roots are represented explicitly. No mtime, Git value, cache, or
+      runtime-local value participates.
+    proposed_id: >-
+      Preview-only ten-letter candidates are deterministically allocated from a
+      domain-separated SHA-256 of the complete source fingerprint and canonical
+      source key. This is allocation of a new opaque target candidate, not
+      reconstruction of a missing source ID. A collision is a blocker. Task 10
+      must persist the approved mapping before publication and must not
+      regenerate candidates during apply or resume.
+    preview_digest: >-
+      SHA-256 over canonical JSON of the complete unbounded inventory, proposed
+      mapping, relationship rewrite map, counts, blockers, and source
+      fingerprint before output omission.
+    output:
+      max_utf8_bytes: 32768
+      default_limit: 100
+      maximum_limit: 1000
+      omission: whole entries and diagnostics only
+      scalar_truncation: forbidden
+      required_omission_fields: [omitted, omitted_count, omission_reason, retrieval]
+    zero_write: >-
+      Inventory, preview, malformed-input handling, and source-binding checks
+      open no writer or upgrade lock and create no directory, temporary file,
+      mapping, snapshot, journal, cache, or state file.
+    binding: >-
+      Before any apply effect, recompute the complete preview and require both
+      source_fingerprint and preview_digest to equal the approved values.
+      Mismatch is source_changed and includes the same dry-run command as the
+      recovery action.
   source_outcomes:
     valid_full:
       outcome: ready

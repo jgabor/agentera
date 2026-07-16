@@ -155,7 +155,7 @@ describe("Decision 94 entity authority", () => {
     const measurement = authority.entity_target.measurement_contract;
 
     expect(migration).toMatchObject({
-      status: "declared_not_implemented",
+      status: "inventory_preview_implemented",
       decision: 94,
       kind: "single_explicit_project_cutover",
       invocation: {
@@ -164,6 +164,15 @@ describe("Decision 94 entity authority", () => {
         ordinary_reads_migrate: false,
         ordinary_writes_migrate: false,
         invokes_git: false,
+        apply_boundary: expect.stringContaining("Task 10"),
+      },
+      read_only_preview: {
+        implementation: "implemented",
+        ordering: "artifact_then_boundary_then_source_identity_then_source_path",
+        output: {
+          max_utf8_bytes: 32768,
+          scalar_truncation: "forbidden",
+        },
       },
       non_fabrication: { partial_cutover_success: "forbidden" },
       resume: {

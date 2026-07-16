@@ -20,6 +20,7 @@ import {
   type LegacyMigrationInspection,
 } from "../../state/legacyMigration.js";
 import { migrationEnrichmentContract } from "../../state/migrationEnrichment.js";
+import { runEntityMigrate } from "./entityMigrate.js";
 
 export type MigrateFormat = string;
 
@@ -765,6 +766,9 @@ export function renderText(response: Record<string, unknown>, out: (text: string
 }
 
 export function runMigrate(argv: string[], io: Io, sourceRootOverride?: string): number {
+  if (argv[0] === "entities") {
+    return runEntityMigrate(argv.slice(1), io, process.cwd(), sourceRootOverride ?? resolveSourceRoot());
+  }
   let format: MigrationOutputFormat = "text";
   const sourceRoot = sourceRootOverride ?? resolveSourceRoot();
   let contract: StateMigrationContract;

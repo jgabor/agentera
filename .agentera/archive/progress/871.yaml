@@ -1,0 +1,19 @@
+schemaVersion: agentera.stateArchiveEntry.v1
+artifact_id: progress
+entry_number: 871
+record:
+  number: 871
+  timestamp: 2026-07-16 23:50
+  type: feat
+  phase: build
+  what: Added an explicit read-only entity-migration preview under agentera state migrate entities. It inventories all declared entity families and structured links, classifies complete, degraded, summary-only, mirrored, conflicting, corrupt, and unsupported sources, allocates deterministic preview-only target IDs, emits bounded source/preview digests, and refuses stale apply binding before effects.
+  inspiration: Decision 94, Task 1 authority, and PLAN Task 3 acceptance criteria.
+  discovered: The current repository contains 90 irrecoverable summary-only identities, 17 corrupt candidates, and 125 unresolved structured relationships in the pre-closeout preview; these are preserved as explicit Task 13 blockers rather than reconstructed. The existing plan-lifecycle inventory also required the new migration reader to be classified as a migrator.
+  verified: "Focused migration/entity regression: 4 files, 40 tests passed. Full CLI suite: 203 files, 2,371 tests passed. Typecheck passed. Build passed. check validate state passed with 0 issues. capability-contract validation passed 2/2 checks. check compact passed for 10 artifacts with 0 over-limit, formatting, protected-overflow, or errors. Repeated repository previews produced identical source fingerprint and preview digest; JSON was 30,178 bytes and YAML 24,718 bytes, both below 32,768 bytes. Zero-write fixtures covered empty, valid, malformed, and stale-apply projects."
+  next: Proceed to Task 4 only in a separate cycle. Keep durable apply/resume/rollback and cutover in Task 10; preserve Task 13 blockers for explicit recovery.
+  context:
+    intent: Complete PLAN Task 3 without implementing entity publication, durable mapping, snapshots, resume, rollback, or family cutover.
+    constraints: "Task 3 only: no entity publication, mapping or snapshot persistence, migration lock, Git operation, family cutover, vision change, release, push, or publish."
+    unknowns: Repository summary-only, corrupt, and unresolved relationship blockers remain intentionally unresolved for Task 13; none blocks completion of the read-only inventory contract.
+    scope: State-storage authority; state migrate entities CLI/help; pure entity migration preview and binding; focused tests; plan lifecycle inventory; progress and Task 3 status.
+record_sha256: fc5f5cf4b9cba48c8546940f6e528870139a3fddec0c739d35c43e49db6cd27b
