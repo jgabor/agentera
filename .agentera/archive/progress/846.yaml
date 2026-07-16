@@ -1,0 +1,19 @@
+schemaVersion: agentera.stateArchiveEntry.v1
+artifact_id: progress
+entry_number: 846
+record:
+  number: 846
+  timestamp: 2026-07-16 10:51
+  type: fix
+  phase: plan
+  what: "Retried plan Task 1 after independent evaluation failed commit 798820a2. Reconciled the documented/runtime capability-context contract: runtime emits capability_context.instructions (capabilityContext/startup.ts:250), never prose; updated .opencode/agents and .cursor/agents (plus bundle copies) and the policy consumed_fields from the stale prose to capability_context.instructions. Added the omitted packaging_distribution_gate consumer (docs/packaging/v3-packaging.md:130-139). Added the missing capability_context field_classification entry (conditional, --context-only). Replaced YAML-vs-YAML-only positive fixtures with executable consumer-contract assertions against real prime payloads, including nested capability_context.instructions presence, prose absence, app_home.source, and missing-vs-empty conditional fields; kept the genuine retired bundle fail-visible test. Fixed test env isolation to restore prior HOME/AGENTERA_HOME/bootstrap values instead of deleting them."
+  inspiration: plan:634c092e-a7bc-48f4-80ee-2c91940e54f1 task 1 (evaluation attempt 1 = fail; retry)
+  discovered: The bare-agentera route and status_dashboard_renderer depend on source_contract.capability_context (a pointer), not a top-level capability_context field; capability_context is emitted only on the --context surface. Fresh-project prime payloads legitimately omit health.grade, plan.first_pending.name, and progress.latest (missing-vs-empty), so executable assertions must distinguish always-present structural nested fields from data-dependent ones.
+  verified: "vitest primeCompatibilityBoundary: 14 tests pass (8 to 14; 5 executable consumer-contract assertions plus reconciliation plus bundle fail-visible). Full suite pnpm -C packages/cli test: 196 files / 2280 tests pass. typecheck pass. build pass. check compact: over_limit=0 errors=0. Runtime reconciliation: prime --context build --format json emits capability_context.instructions (non-empty) and no prose; bare prime omits top-level capability_context and carries source_contract.capability_context pointer."
+  next: "Task 2: publish one non-redundant prime contract; reconcile schema.ts STATUS_STRUCTURED_FIELDS, the text-briefing hardcoded list, and agent-ready-state-contract.yaml hej.fields to the emitted authority per the approved public_output_policy; preserve the issues deprecated transition alias and the fail-visible --fields contract; honor the new packaging_distribution_gate stability requirement."
+  context:
+    intent: "Plan Task 1 retry: give Tasks 2-4 an unambiguous, runtime-verified compatibility boundary correcting all five evaluation findings before any prime payload change."
+    constraints: "Plan exclusions preserved: no structured attention records, no stable artifact identities or reference routing, no summary-vs-diagnostic projection modes, no compiled or cached capability instructions, no broad payload changes (deferred to Task 2). Did not modify vision. No remote push, release, tag, or publication."
+    unknowns: Whether the independent evaluator agrees the prose-to-instructions reconciliation and executable assertions satisfy the contract; the complete task is ready for reevaluation.
+    scope: references/cli/prime-consumer-compatibility.yaml, packages/cli/test/cli/primeCompatibilityBoundary.test.ts, .opencode/agents/agentera.md, .cursor/agents/agentera.md, packages/cli/bundle/.opencode/agents/agentera.md, packages/cli/bundle/.cursor/agents/agentera.md, .agentera/plan.yaml (task 1 to complete), .agentera/progress.yaml (cycle 846).
+record_sha256: a467bbac018cede487b1502e43683604f459fef492c604a67c267ed573ddce56

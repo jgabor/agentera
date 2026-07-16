@@ -11,10 +11,25 @@ import { cmdPrime } from "../../src/cli/commands/prime.js";
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..");
 const POLICY_PATH = path.join(REPO_ROOT, "references/cli/prime-consumer-compatibility.yaml");
 
+interface Assert {
+  path: string;
+  equals: unknown;
+}
+interface ConditionalNestedField {
+  path: string;
+  /** Dotted path whose truthiness/non-null governs whether `path` is required. */
+  present_when: string;
+}
 interface ConsumerFixture {
   consumer: string;
   depends_on: string[];
   rationale?: string;
+  // Executable-contract metadata consumed by the runtime-assertion tests:
+  executable_command?: string;
+  nested_fields?: string[];
+  absent_fields?: string[];
+  conditional_nested_fields?: ConditionalNestedField[];
+  asserts?: Assert[];
 }
 
 interface Policy {
@@ -40,10 +55,52 @@ function boundaryViolations(dependsOn: string[], declared: string[]): string[] {
   return dependsOn.map(topLevel).filter((field) => !declaredSet.has(field));
 }
 
+/** Read a dotted path from a JSON payload. Returns `undefined` when any segment
+ *  is absent, mirroring how a consumer experiences a missing field. */
+function getPath(payload: unknown, dotted: string): unknown {
+  let cur: unknown = payload;
+  for (const segment of dotted.split(".")) {
+    if (cur && typeof cur === "object" && segment in (cur as Record<string, unknown>)) {
+      cur = (cur as Record<string, unknown>)[segment];
+    } else {
+      return undefined;
+    }
+  }
+  return cur;
+}
+
+/** `present_when` is truthy when the gate path exists and is neither null nor
+ *  false (e.g. health.exists===true, plan.first_pending!==null). */
+function isTruthy(payload: unknown, dotted: string): boolean {
+  const value = getPath(payload, dotted);
+  return value !== undefined && value !== null && value !== false;
+}
+
+/** Parse a documented prime startup command into cmdPrime args. Supports the
+ *  shapes the inventory declares: `agentera prime [--context <cap>] [--format json]
+ *  [--fields <field>]`. Keeps the test honest against the documented command
+ *  string rather than a separately-maintained args object. */
+function parsePrimeCommand(cmd: string): Parameters<typeof cmdPrime>[0] {
+  const tokens = cmd.trim().split(/\s+/);
+  const args: Parameters<typeof cmdPrime>[0] = { command: "prime" };
+  for (let i = 0; i < tokens.length; i++) {
+    const token = tokens[i];
+    if (token === "agentera" || token === "prime") continue;
+    if (token === "--context") args.context = tokens[++i];
+    else if (token === "--format") args.format = tokens[++i];
+    else if (token === "--fields") args.fields = tokens[++i];
+    else if (token === "--dashboard" || token === "--orientation") args.dashboard = true;
+  }
+  return args;
+}
+
 let tmp: string;
 let home: string;
 let appHome: string;
 let prevCwd: string;
+let prevHome: string | undefined;
+let prevAgenteraHome: string | undefined;
+let prevBootstrapSourceRoot: string | undefined;
 
 beforeEach(() => {
   tmp = fs.mkdtempSync(path.join(os.tmpdir(), "prime-compat-"));
@@ -51,6 +108,11 @@ beforeEach(() => {
   appHome = path.join(home, "agentera");
   fs.mkdirSync(appHome, { recursive: true });
   prevCwd = process.cwd();
+  // Capture prior values so afterEach restores (not deletes) the environment,
+  // so this suite never leaks env state into sibling tests or the contributor shell.
+  prevHome = process.env.HOME;
+  prevAgenteraHome = process.env.AGENTERA_HOME;
+  prevBootstrapSourceRoot = process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT;
   process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT = REPO_ROOT;
   process.env.HOME = home;
   process.env.AGENTERA_HOME = appHome;
@@ -61,9 +123,13 @@ beforeEach(() => {
 
 afterEach(() => {
   process.chdir(prevCwd);
-  delete process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT;
-  delete process.env.HOME;
-  delete process.env.AGENTERA_HOME;
+  // Restore prior env values rather than deleting them.
+  if (prevHome === undefined) delete process.env.HOME;
+  else process.env.HOME = prevHome;
+  if (prevAgenteraHome === undefined) delete process.env.AGENTERA_HOME;
+  else process.env.AGENTERA_HOME = prevAgenteraHome;
+  if (prevBootstrapSourceRoot === undefined) delete process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT;
+  else process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT = prevBootstrapSourceRoot;
   fs.rmSync(tmp, { recursive: true, force: true });
 });
 
@@ -77,10 +143,19 @@ function capture(args: Parameters<typeof cmdPrime>[0]): { rc: number; out: strin
   return { rc, out, err };
 }
 
+/** Run a documented prime startup command against the real runtime and return
+ *  the parsed JSON payload. Fails the test loudly if the command does not exit 0. */
+function runPrimePayload(cmd: string): { rc: number; out: string; err: string; payload: unknown } {
+  const result = capture(parsePrimeCommand(cmd));
+  expect(result.rc, `prime command \`${cmd}\` must exit 0`).toBe(0);
+  expect(result.out, `prime command \`${cmd}\` must emit JSON on stdout`).not.toBe("");
+  return { ...result, payload: JSON.parse(result.out) };
+}
+
 describe("prime consumer compatibility boundary (Plan Task 1)", () => {
   const policy = loadPolicy();
 
-  describe("acceptance 1 + 3: every documented consumer passes the policy", () => {
+  describe("acceptance 1 + 3: every documented consumer is declared against the boundary", () => {
     it.each(policy.fixtures.pass)(
       "pass fixture: $consumer depends only on declared fields",
       (fixture: ConsumerFixture) => {
@@ -100,16 +175,67 @@ describe("prime consumer compatibility boundary (Plan Task 1)", () => {
     );
 
     it("retired field `bundle` fails visibly via --fields with a correction listing the canonical replacement", () => {
+      // Genuine fail-visible test: runs the real `prime --fields bundle` command
+      // and asserts the runtime rejects the retired field with an Available-fields
+      // correction surfacing the v3 canonical replacements (app_home, app).
       const { rc, err, out } = capture({ command: "prime", format: "json", fields: "bundle" });
       expect(rc).toBe(1);
       expect(err).toContain("unsupported field 'bundle'");
       expect(err).toContain("Available fields:");
-      // The correction must surface the v3 canonical replacements for `bundle`.
       expect(err).toContain("app_home");
       expect(err).toContain("app");
       // The retired field must not be silently emitted.
       expect(out).toBe("");
     });
+  });
+
+  describe("acceptance 1 + 4 (executable): every pass consumer's contract holds against the real runtime payload", () => {
+    // Replaces YAML-vs-YAML-only verification: each documented consumer's real
+    // startup command is executed and its consumed fields (including nested
+    // capability-context requirements) are asserted against the emitted JSON.
+    it.each(policy.fixtures.pass.filter((f) => f.executable_command))(
+      "executable consumer: $consumer",
+      (fixture: ConsumerFixture) => {
+        const { payload } = runPrimePayload(fixture.executable_command!);
+
+        // 1. Every depended-on top-level field is present in the emitted payload.
+        for (const field of fixture.depends_on) {
+          expect(getPath(payload, topLevel(field)), `${fixture.consumer}: missing top-level field ${field}`).not.toBeUndefined();
+        }
+
+        // 2. Always-present nested structural fields are emitted (e.g. the
+        //    capability_context pointer, app_home.source, instructions).
+        for (const nested of fixture.nested_fields ?? []) {
+          const value = getPath(payload, nested);
+          expect(value, `${fixture.consumer}: missing nested field ${nested}`).not.toBeUndefined();
+          if (nested === "capability_context.instructions") {
+            expect(typeof value).toBe("string");
+            expect((value as string).length, `${fixture.consumer}: instructions must be non-empty`).toBeGreaterThan(0);
+          }
+        }
+
+        // 3. Documented-but-not-emitted fields stay absent (reconciliation guard:
+        //    the runtime emits `instructions`, never the stale `prose`).
+        for (const absent of fixture.absent_fields ?? []) {
+          expect(getPath(payload, absent), `${fixture.consumer}: ${absent} must not be emitted`).toBeUndefined();
+        }
+
+        // 4. Conditional nested fields preserve missing-versus-empty semantics:
+        //    present exactly when their governing parent is active/non-null.
+        for (const cond of fixture.conditional_nested_fields ?? []) {
+          if (isTruthy(payload, cond.present_when)) {
+            expect(getPath(payload, cond.path), `${fixture.consumer}: ${cond.path} must be present when ${cond.present_when}`).not.toBeUndefined();
+          } else {
+            expect(getPath(payload, cond.path), `${fixture.consumer}: ${cond.path} must be absent when ${cond.present_when} is inactive`).toBeUndefined();
+          }
+        }
+
+        // 5. Explicit value assertions (e.g. packaging gate: command="prime", status="ok").
+        for (const assertion of fixture.asserts ?? []) {
+          expect(getPath(payload, assertion.path), `${fixture.consumer}: ${assertion.path}`).toBe(assertion.equals);
+        }
+      },
+    );
   });
 
   describe("runtime reconciliation: the policy stays honest against the CLI", () => {
