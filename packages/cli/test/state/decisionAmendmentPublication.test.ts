@@ -230,6 +230,44 @@ describe("amendment apply yields agreeing evidence, effective detail, and projec
     expect(entry.record.confidence).toBe("firm");
     expect(entry.provenance.revision).toMatchObject({ applied: true, base_provenance: "degraded_projection" });
   });
+
+  it("leaves the decisions projection bytes byte-for-byte unchanged after a successful apply", () => {
+    // The design contract is "the decisions projection is never rewritten by
+    // an amendment; effective detail composes base→revisions→overlay." A
+    // successful apply must touch only the revision document, leaving every
+    // byte of `.agentera/decisions.yaml` identical — including any unrelated
+    // observer record carried alongside the amended decision.
+    const root = project();
+    archive(root, 7, baseRecord(7));
+    writeProjection(root, [
+      baseRecord(7),
+      { ...baseRecord(8, "provisional"), reasoning: "unrelated observer record" },
+    ]);
+    const projectionPath = path.join(root, ".agentera", "decisions.yaml");
+    const beforeProjection = fs.readFileSync(projectionPath, "utf8");
+    const beforeRevisions = fs.existsSync(revisionPath(root))
+      ? fs.readFileSync(revisionPath(root), "utf8")
+      : "";
+
+    const result = executeStateWrite(
+      amendRequest(root, 7, { choice: "byte-stable apply", confidence: "firm" }),
+    );
+
+    expect(result.status).toBe("pass");
+    // The decisions projection is byte-for-byte unchanged — not reserialized.
+    expect(fs.readFileSync(projectionPath, "utf8")).toBe(beforeProjection);
+    // Only the revision document grows with immutable amendment evidence.
+    const afterRevisions = fs.readFileSync(revisionPath(root), "utf8");
+    expect(afterRevisions.length).toBeGreaterThan(beforeRevisions.length);
+    const revisionDoc = loadYamlMapping(afterRevisions);
+    expect(revisionDoc["decisions:7"]).toEqual([
+      expect.objectContaining({ choice: "byte-stable apply", confidence: "firm" }),
+    ]);
+    // The unrelated observer record is never referenced by the amendment.
+    expect(revisionDoc["decisions:8"]).toBeUndefined();
+    // And the amended content never lands in the projection bytes.
+    expect(fs.readFileSync(projectionPath, "utf8")).not.toContain("byte-stable apply");
+  });
 });
 
 /* ============================================================ *

@@ -238,6 +238,40 @@ describe("revision-backed effective decision reads", () => {
     expect(failure.body.error.details).toMatchObject({ path: revisionPath });
   });
 
+  it("degrades consistently for startup and compaction consumers when the revision document is corrupt", () => {
+    // Passive projection consumers (prime startup attention and 10/40/50
+    // compaction) must degrade to base values without revision annotation so
+    // a corrupt amendment ledger never blocks orientation or maintenance.
+    // Detail consumers (exact/get, list) surface the same corruption as a
+    // bounded `corrupt` failure (covered by the prior test and
+    // `decisionAmendmentPublication` refusal contract); amend refuses with
+    // explicit recovery guidance. The startup/compaction silent-degradation
+    // path is the consistency contract asserted here.
+    const root = project();
+    const record = baseRecord(1);
+    archive(root, 1, record);
+    writeProjection(root, [record]);
+    const revisionPath = REVISION_PATH(root);
+    fs.mkdirSync(path.dirname(revisionPath), { recursive: true });
+    fs.writeFileSync(revisionPath, "this: [is: malformed\n", "utf8");
+
+    // Startup consumer degrades silently: it returns the bounded decision row
+    // with no revision annotation rather than blocking prime.
+    const history = startupHistorySummary(root, "decisions", sourceRoot);
+    const historyEntry = (history.entries as unknown as Record<string, unknown>[])[0];
+    expect(historyEntry).toMatchObject({ entry_number: 1, addressable: true });
+    expect((historyEntry.provenance as Record<string, unknown>)?.revision).toBeUndefined();
+
+    // Compaction consumer degrades silently: plain overlay hydration never
+    // throws on a corrupt revision document, so the active record keeps its
+    // base bytes through a 10/40/50 pass rather than reconstructing detail.
+    const decisionsOnDisk = loadYamlMapping(
+      fs.readFileSync(path.join(root, ".agentera", "decisions.yaml"), "utf8"),
+    ).decisions as unknown[];
+    const hydrated = hydrateDecisionEntries(decisionsOnDisk, root);
+    expect(hydrated[0]).toMatchObject({ choice: record.choice, confidence: record.confidence });
+  });
+
   it("reflects revised content in the bounded list summary and revision provenance", () => {
     const root = project();
     const record = baseRecord(1);

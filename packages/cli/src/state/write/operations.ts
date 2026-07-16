@@ -40,6 +40,22 @@ export interface OperationSpec {
   compacts?: boolean;
 }
 
+export interface StateWriteRequest {
+  artifact: WritableArtifact;
+  spec: OperationSpec;
+  projectRoot: string;
+  dryRun: boolean;
+  force: boolean;
+  values: Record<string, unknown>;
+  callerPayload: Record<string, unknown>;
+  input: Record<string, unknown> | null;
+}
+
+export interface StateWriteEnvelope extends Record<string, unknown> {
+  schemaVersion: "agentera.stateWrite.v1";
+  status: "pass";
+}
+
 /** Caller-selected existing decision number (update/amend). Never CLI-assigned. */
 const EXISTING_DECISION_NUMBER_DESCRIPTION =
   "Existing decision number to update or amend. Caller-selected: it must match a numbered decision in the active projection or numbered archive and is never assigned by the CLI.";

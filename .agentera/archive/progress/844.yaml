@@ -1,0 +1,17 @@
+schemaVersion: agentera.stateArchiveEntry.v1
+artifact_id: progress
+entry_number: 844
+record:
+  number: 844
+  timestamp: 2026-07-16 09:31
+  type: feat
+  phase: build
+  what: "Close decision amend review gaps: dead-Set removal, byte-equality and corrupt-revision degradation coverage, transaction module headroom restored."
+  verified: pnpm -C packages/cli test -> 195 files / 2266 tests passing (2 new tests covering decisions projection byte-equality after apply and bounded startup/compaction corrupt-revision degradation); typecheck zero errors; build exit 0; check validate capability-contract -> 2/2 pass; check compact -> errors=0 over_limit=0; transaction.ts 997->620 lines with candidateBuilder extracted to candidateMutation.ts; state decisions explain --verb amend advertises --alternative-rejected and the current confidence vocabulary; TODO amended fix item moved to Resolved.
+  next: "Orchestrator closure: run the plan-completion sweep, archive the amendment plan, and re-validate the post-archive state."
+  context:
+    intent: "Plan Task 5 contract synchronization: help, explain, schema, storage authority, recovery guidance, and CHANGELOG agree on the amendment surface; suite metadata stays at 3.0.0 with no release, publication, tag, or push."
+    constraints: Amend leaves decisions projection bytes byte-for-byte unchanged; passive startup/compaction consumers degrade silently on a corrupt revision document while detail/exact and amend consumers refuse with bounded recoverable failures; suite version surfaces stay 3.0.0; no remote push, release, tag, or publication.
+    unknowns: None - all six gates green and the amend contract surfaces agree.
+    scope: Split transaction candidate-builder into candidateMutation.ts, drop dead Set/amendable no-op from decisionRevision.ts, add focused tests in decisionAmendmentPublication.test.ts and decisionRevisionReads.test.ts, mark plan tasks 4 and 5 complete with header.status=open for orchestrator closure, append CHANGELOG entry for the amend command, resolve originating amendment TODO.
+record_sha256: 5300f24ac377648f051b3f428d8d12725431f4b2a5f9d123147ce787cd4f2909

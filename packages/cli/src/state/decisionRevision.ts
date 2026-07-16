@@ -423,7 +423,6 @@ export function composeDecisionRevision(
   options: { contract?: DecisionRevisionContract; baseSha256?: string } = {},
 ): RevisionComposition {
   const contract = options.contract ?? decisionRevisionContract();
-  const amendable = new Set(contract.amendablePaths);
   if (!revisions || revisions.length === 0) {
     return { record: structuredClone(entry), applied: false, fields: [], revisions: [], broken_hash: false };
   }
@@ -455,7 +454,6 @@ export function composeDecisionRevision(
       ...(typeof revision.base_sha256 === "string" ? { base_sha256: revision.base_sha256 } : {}),
     });
   }
-  void amendable;
   return {
     record: effective,
     applied: touched.size > 0,

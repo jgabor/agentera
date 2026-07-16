@@ -1,7 +1,7 @@
 header:
   level: full
   created: 2026-07-16
-  status: open
+  status: complete
   reviewed: 2026-07-16
   critic_issues: 11 found, 11 addressed, 0 dismissed
   title: "Plan: Add safe decision-content amendments"
@@ -71,7 +71,7 @@ tasks:
     depends_on:
       - "1"
       - "3"
-    status: pending
+    status: complete
     acceptance:
       - GIVEN untouched inherited unsupported confidence labels WHEN append, satisfaction update, or amend processes the artifact THEN the labels remain unchanged and are reported as legacy caveats rather than blocking the operation.
       - GIVEN an unsupported confidence label on new or amended content WHEN validation runs THEN the operation fails before side effects.
@@ -85,7 +85,7 @@ tasks:
       - "2"
       - "3"
       - "4"
-    status: pending
+    status: complete
     acceptance:
       - GIVEN amendment behavior is complete WHEN command help, explain output, schemas, storage authority, recovery guidance, and contributor documentation are compared THEN terminology and examples agree.
       - GIVEN the final tree WHEN focused tests, the full CLI suite, typecheck, build, capability-contract validation, and compaction run THEN every required gate passes.
