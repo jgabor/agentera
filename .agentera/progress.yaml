@@ -1,4 +1,43 @@
 cycles:
+  - number: 861
+    timestamp: 2026-07-16 17:48
+    type: chore
+    phase: audit
+    what: Completed post-plan Audit 37 for compact, self-contained prime startup;
+      recorded all-A grades, improving trajectory, zero blocking findings, and
+      preserved the archived plan closeout.
+    inspiration: Orchestration-authorized post-plan health audit for Make prime
+      startup compact and self-contained.
+    discovered: No product defect blocks closeout. Live status has 869 bytes and
+      bare prime 858 bytes of budget headroom; the known progress:793 archive
+      recovery caveat remains preserved. The first concurrent context
+      measurement raced packaging tests that temporarily rebuilt dist; a clean
+      rerun passed every context and is classified as an environment/tool
+      concurrency failure.
+    verified: "Audit 37: all six dimensions A, improving, 0 critical/warning/info
+      findings. Full CLI: 200 files and 2326 tests passed. Focused
+      startup/contract/archive suite: 7 files and 102 tests passed. Typecheck,
+      build, bundle:data, status capability validation, capability-contract 2/2,
+      git diff check, and compact gate passed. Live pretty JSON: bare
+      11142/12000 bytes; status 24131/25000 bytes. All 12 capability contexts
+      parsed with rc 0 and fit authority: status 24131/25000; generic range
+      25056-51194/55000. Named recovery commands returned structured JSON;
+      nonzero lifecycle/no-active-plan results were domain states, not syntax
+      failures. TODO recommendations 4-7 remain open."
+    next: Close out the archived plan and Audit 37 in one local state-only commit;
+      do not modify product code, implement deferred recommendations, repair
+      inherited archive gaps, push, tag, or publish.
+    context:
+      intent: Independently assess commits 798820a2 through 4a25c5f1 and current
+        behavior for correctness, regressions, architecture, security, tests,
+        contract synchronization, and startup efficiency.
+      constraints: Only typed health/progress writes and the already-generated typed
+        plan archive may change tracked state. Preserve progress:793 archive
+        recovery caveat and all deferred recommendations.
+      unknowns: none
+      scope: .agentera/health.yaml; .agentera/archive/health/37.yaml;
+        .agentera/progress.yaml; .agentera/archive/progress/861.yaml;
+        .agentera/plan.yaml archive transition
   - number: 860
     timestamp: 2026-07-16 17:33
     type: fix
@@ -310,40 +349,6 @@ cycles:
       scope: packages/cli/src/cli/commands/prime/orientationOutput.ts;
         packages/cli/test/cli/primeTask3Brief.test.ts; .agentera/plan.yaml;
         .agentera/progress.yaml; TODO.md
-  - number: 851
-    timestamp: 2026-07-16 13:42
-    type: fix
-    phase: build
-    what: "Retry Plan Task 3: bound degraded prime envelopes and gate final UTF-8
-      output"
-    inspiration: "Independent audit failure: degraded state_presence/source_contract
-      envelope was unbounded and the configured 7000-byte gate was not
-      enforced."
-    discovered: The degraded envelope needs its own bounded
-      state-presence/source-contract projection and a final gate after
-      self-measured utf8_bytes. Compact and irreducible fallback envelopes make
-      smaller configured budgets deterministic; budgets below the irreducible
-      envelope fail explicitly.
-    verified: "Focused and full CLI Vitest: 197 files and 2313 tests passed. Added
-      integrated adversarial state_presence/source_contract coverage at a
-      configured 7000-byte gate, exact stdout/newline accounting,
-      missing-vs-empty projection assertions, and tiny-budget explicit failure
-      coverage. Typecheck passed; build passed; check compact passed with
-      over_limit=0 and errors=0; capability-contract validation passed 2/2."
-    next: "Task 4: make status startup self-contained. Keep this cycle scoped to
-      Task 3; no dashboard, fields, or context projection changes."
-    context:
-      intent: Make every bare prime brief output fit its effective byte budget under
-        adversarial caller data while preserving routing semantics, exact stdout
-        accounting, and full-fidelity non-brief surfaces.
-      constraints: Preserved --dashboard, --fields, and --context full fidelity and
-        plan exclusions; no vision changes, release changes, push, or
-        publication.
-      unknowns: none
-      scope: packages/cli/src/cli/commands/prime/briefOrientation.ts;
-        packages/cli/src/cli/commands/prime/orientationOutput.ts;
-        packages/cli/test/cli/primeTask3Brief.test.ts;
-        references/cli/prime-consumer-compatibility.yaml
   - number: 793
     timestamp: 2026-07-14 17:36
     type: chore
@@ -413,6 +418,8 @@ cycles:
         and backfill fixtures; package metadata and generated ignored
         dist/bundle
 archive:
+  - summary: "Cycle 851 (2026-07-16): Retry Plan Task 3: bound degraded prime
+      envelopes and gate final UTF-8 output"
   - summary: "Cycle 850 (2026-07-16): Deliver bounded default decision brief for
       bare prime --format json (Plan Task 3)"
   - summary: "Cycle 849 (2026-07-16): Omit inactive default-only top-level
@@ -507,15 +514,18 @@ archive:
       audit attempt 1."
   - summary: "Cycle 812 (2026-07-15): Closed evidenced plan and experiment cursor
       and omission gaps."
-  - summary: "Cycle 811 (2026-07-15): Added root-runnable deterministic Task 4
-      retrieval evidence and a separate read-only live YAML inequality smoke..."
 omitted: true
-omitted_count: 96
+omitted_count: 97
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded

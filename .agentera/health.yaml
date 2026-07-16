@@ -2221,6 +2221,63 @@ audits:
       - Atomic generation pointer swap ensures no consumer observes a partially
         published tier; legacy monolithic state degrades with contract-projected
         recovery, never loaded whole.
+  - number: 37
+    date: 2026-07-16
+    dimensions:
+      - architecture_alignment
+      - pattern_consistency
+      - coupling_health
+      - complexity_hotspots
+      - test_health
+      - security_hygiene
+    findings_summary:
+      critical: 0
+      warning: 0
+      info: 0
+      filtered_by_confidence: 0
+    trajectory: "improving vs Audit 36: startup now uses bounded decision briefs and
+      one self-contained status call without contract or test regression."
+    grades:
+      architecture_alignment: A
+      pattern_consistency: A
+      coupling_health: A
+      complexity_hotspots: A
+      test_health: A
+      security_hygiene: A
+    dimension_details:
+      - name: architecture_alignment
+        grade: A
+        summary: Prime projection, status capsule, authority, manifest, help,
+          descriptors, and bundle use one synchronized contract.
+      - name: pattern_consistency
+        grade: A
+        summary: Bare and status surfaces preserve missing-state semantics and named CLI
+          recovery.
+      - name: coupling_health
+        grade: A
+        summary: Status adapts canonical instructions and reuses the bounded brief
+          instead of duplicating dashboard logic.
+      - name: complexity_hotspots
+        grade: A
+        summary: Projection stages are bounded and retain full-fidelity dashboard and
+          explicit-field paths.
+      - name: test_health
+        grade: A
+        summary: Full and focused suites cover compatibility, adversarial UTF-8 bounds,
+          contexts, and executable recovery.
+      - name: security_hygiene
+        grade: A
+        summary: Changed paths add no secret, eval, shell-concatenation, or
+          unbounded-input execution pattern; lightweight review only.
+    trends:
+      improved: Live bare prime is 11142/12000 bytes; one-call status is 24131/25000
+        bytes.
+      degraded: None.
+      new_findings: None.
+      carried_forward: Missing archive recovery for progress:793 remains preserved.
+    patterns:
+      - Authority and manifest bind budgets; runtime projections enforce them;
+        fixtures exercise accumulated and adversarial state.
 archive:
   - Audit 1 · 2026-03-30 (first audit (no prior baseline))
   - Audit 2 · 2026-03-31 (improving vs Audit 1)
