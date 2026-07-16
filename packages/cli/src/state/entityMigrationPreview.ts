@@ -120,14 +120,21 @@ function relative(root: string, target: string): string {
 }
 
 function inspectPath(root: string, relativePath: string): SourceFile {
-  const absolute = path.join(root, relativePath);
-  let stat: fs.Stats;
-  try {
-    stat = fs.lstatSync(absolute);
-  } catch (error) {
-    return { relative: relativePath, bytes: null, kind: (error as NodeJS.ErrnoException).code === "ENOENT" ? "missing" : "unsafe" };
+  let absolute = root;
+  const segments = relativePath.split("/");
+  for (const [index, segment] of segments.entries()) {
+    absolute = path.join(absolute, segment);
+    let stat: fs.Stats;
+    try {
+      stat = fs.lstatSync(absolute);
+    } catch (error) {
+      return { relative: relativePath, bytes: null, kind: (error as NodeJS.ErrnoException).code === "ENOENT" ? "missing" : "unsafe" };
+    }
+    const leaf = index === segments.length - 1;
+    if (stat.isSymbolicLink() || (leaf ? !stat.isFile() : !stat.isDirectory())) {
+      return { relative: relativePath, bytes: null, kind: "unsafe" };
+    }
   }
-  if (stat.isSymbolicLink() || !stat.isFile()) return { relative: relativePath, bytes: null, kind: "unsafe" };
   try {
     return { relative: relativePath, bytes: fs.readFileSync(absolute), kind: "file" };
   } catch {

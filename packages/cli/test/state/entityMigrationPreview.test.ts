@@ -52,6 +52,7 @@ const EXACT_SOURCE_FIXTURES = {
 } as const;
 
 const EXACT_SOURCE_PATHS = Object.keys(EXACT_SOURCE_FIXTURES) as Array<keyof typeof EXACT_SOURCE_FIXTURES>;
+const NESTED_EXACT_SOURCE_PATHS = EXACT_SOURCE_PATHS.filter((relative) => relative.includes("/"));
 
 function project(): string {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-entity-preview-"));
@@ -191,6 +192,34 @@ describe("entity migration read-only preview", () => {
     expect(observations).toHaveLength(1);
     expect(observations[0]).toMatchObject({ classification: "corrupt", content_sha256: null, proposed_target: null });
     expect(observations[0].recovery).toContain(`Repair '${relative}'`);
+    expect(readSpy.mock.calls.some(([candidate]) => typeof candidate === "string" && path.resolve(candidate) === target)).toBe(false);
+    expect(tree(root)).toEqual(before);
+  });
+
+  it.each(NESTED_EXACT_SOURCE_PATHS)("accounts for symlink traversal above exact source %s without reading its target", (relative) => {
+    const root = project();
+    const external = project();
+    const target = path.join(root, relative);
+    const targetParent = path.dirname(target);
+    const externalParent = path.join(external, "external-parent");
+    write(externalParent, path.basename(target), EXACT_SOURCE_FIXTURES[relative]);
+    fs.mkdirSync(path.dirname(targetParent), { recursive: true });
+    fs.symlinkSync(externalParent, targetParent, "dir");
+    const before = tree(root);
+    const readSpy = vi.spyOn(fs, "readFileSync");
+
+    const first = previewEntityMigration(root, REPO_ROOT, { limit: 1000 });
+    fs.appendFileSync(path.join(externalParent, path.basename(target)), "\nexternal_identity: must-not-enter-inventory\n");
+    const second = previewEntityMigration(root, REPO_ROOT, { limit: 1000 });
+    const observations = second.entries.filter((entry) => entry.source_paths.includes(relative));
+
+    expect(observations).toHaveLength(1);
+    expect(observations[0]).toMatchObject({ classification: "corrupt", content_sha256: null, proposed_target: null });
+    expect(second.source_fingerprint).toBe(first.source_fingerprint);
+    expect(second.preview_digest).toBe(first.preview_digest);
+    expect(second.counts).toEqual(first.counts);
+    expect(second.entries).toEqual(first.entries);
+    expect(JSON.stringify(second)).not.toContain("must-not-enter-inventory");
     expect(readSpy.mock.calls.some(([candidate]) => typeof candidate === "string" && path.resolve(candidate) === target)).toBe(false);
     expect(tree(root)).toEqual(before);
   });
