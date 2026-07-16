@@ -29,6 +29,7 @@ function publicationProcess(
   resultPath: string,
   readyPath: string,
   startPath: string,
+  controls: { preparedPath?: string; continuePath?: string; waitingPath?: string } = {},
 ): Promise<void> {
   return new Promise((resolve, reject) => {
     const child = spawn(process.execPath, [publicationWorker], {
@@ -41,6 +42,9 @@ function publicationProcess(
         AGENTERA_ENTITY_TEST_RESULT: resultPath,
         AGENTERA_ENTITY_TEST_READY: readyPath,
         AGENTERA_ENTITY_TEST_START: startPath,
+        AGENTERA_ENTITY_TEST_PREPARED: controls.preparedPath,
+        AGENTERA_ENTITY_TEST_CONTINUE: controls.continuePath,
+        AGENTERA_ENTITY_TEST_WAITING: controls.waitingPath,
       },
       stdio: "pipe",
     });
@@ -189,8 +193,60 @@ describe("entity discovery and publication", () => {
     expect(fs.existsSync(path.join(root, ".agentera/.writer.lock"))).toBe(false);
   }, 30_000);
 
+  it("waits on a live preparation through canonical publication and reports the duplicate-ID loser", async () => {
+    const root = project();
+    const healthResult = path.join(root, "health-live-result.json");
+    const healthReady = path.join(root, "health-live.ready");
+    const healthStart = path.join(root, "health-live.start");
+    const preparedPath = path.join(root, "health-live.prepared");
+    const continuePath = path.join(root, "health-live.continue");
+    const first = publicationProcess(
+      root,
+      "health",
+      "health_audit",
+      healthResult,
+      healthReady,
+      healthStart,
+      { preparedPath, continuePath },
+    );
+    await waitForFiles([healthReady]);
+    fs.writeFileSync(healthStart, "start\n");
+    await waitForFiles([preparedPath]);
+
+    const decisionsResult = path.join(root, "decisions-live-result.json");
+    const decisionsReady = path.join(root, "decisions-live.ready");
+    const decisionsStart = path.join(root, "decisions-live.start");
+    const waitingPath = path.join(root, "decisions-live.waiting");
+    const second = publicationProcess(
+      root,
+      "decisions",
+      "decision",
+      decisionsResult,
+      decisionsReady,
+      decisionsStart,
+      { waitingPath },
+    );
+    await waitForFiles([decisionsReady]);
+    fs.writeFileSync(decisionsStart, "start\n");
+    try {
+      await waitForFiles([waitingPath], 2_000);
+      expect(fs.existsSync(healthResult)).toBe(false);
+      expect(fs.existsSync(decisionsResult)).toBe(false);
+    } finally {
+      fs.writeFileSync(continuePath, "continue\n");
+    }
+    await Promise.all([first, second]);
+    const results = [healthResult, decisionsResult].map((file) => JSON.parse(fs.readFileSync(file, "utf8")) as { published: boolean; error?: string });
+    expect(results.filter(({ published }) => published)).toHaveLength(1);
+    expect(results.filter(({ published }) => !published)).toEqual([
+      expect.objectContaining({ published: false, error: expect.stringMatching(/entity ID 'zzzzzzzzzz' already exists.*owned by boundary/) }),
+    ]);
+    expect(discoverEntities(root).entities.filter(({ id }) => id === "zzzzzzzzzz")).toHaveLength(1);
+    expect(fs.readdirSync(path.join(root, ".agentera")).filter((name) => name.startsWith(".writer."))).toEqual([]);
+  }, 30_000);
+
   it("repeatedly gives simultaneous stale-lock reclaimers one publisher and one explicit loser", async () => {
-    for (const repeat of [1, 2, 3]) {
+    for (const repeat of Array.from({ length: 12 }, (_, index) => index + 1)) {
       const root = project();
       const lockPath = path.join(root, ".agentera/.writer.lock");
       fs.mkdirSync(lockPath, { recursive: true });
@@ -202,7 +258,7 @@ describe("entity discovery and publication", () => {
       const results = await concurrentPublication(root, `-stale-${repeat}`);
       expect(results.filter(({ published }) => published), `repeat ${repeat}`).toHaveLength(1);
       expect(results.filter(({ published }) => !published), `repeat ${repeat}`).toEqual([
-        expect.objectContaining({ published: false, error: expect.stringMatching(/already exists.*owned by boundary/) }),
+        expect.objectContaining({ published: false, error: expect.stringMatching(/entity ID 'zzzzzzzzzz' already exists.*owned by boundary/) }),
       ]);
       expect(discoverEntities(root).entities.filter(({ id }) => id === "zzzzzzzzzz"), `repeat ${repeat}`).toHaveLength(1);
       expect(fs.existsSync(lockPath), `repeat ${repeat}`).toBe(false);
@@ -211,7 +267,7 @@ describe("entity discovery and publication", () => {
         `repeat ${repeat}`,
       ).toEqual([]);
     }
-  }, 30_000);
+  }, 60_000);
 
   it("cleans the project-wide claim after publication fails and permits recovery", () => {
     const root = project();

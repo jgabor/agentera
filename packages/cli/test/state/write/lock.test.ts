@@ -10,6 +10,7 @@ import { StateWriteInputError } from "../../../src/state/write/errors.js";
 
 const roots: string[] = [];
 const crashWorker = fileURLToPath(new URL("./lockCrashWorker.mjs", import.meta.url));
+const livePreparationWorker = fileURLToPath(new URL("./livePreparationWorker.mjs", import.meta.url));
 const privateToken = "11111111-1111-4111-8111-111111111111";
 
 afterEach(() => {
@@ -50,6 +51,35 @@ function crashAt(project: string, point: string): Promise<number | null> {
   });
 }
 
+function removableLivePreparation(project: string, readyPath: string, removePath: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const child = spawn(process.execPath, [livePreparationWorker], {
+      env: {
+        ...process.env,
+        AGENTERA_LIVE_PREPARATION_ROOT: project,
+        AGENTERA_LIVE_PREPARATION_READY: readyPath,
+        AGENTERA_LIVE_PREPARATION_REMOVE: removePath,
+      },
+      stdio: "pipe",
+    });
+    let stderr = "";
+    child.stderr.setEncoding("utf8");
+    child.stderr.on("data", (chunk) => { stderr += chunk; });
+    child.on("error", reject);
+    child.on("exit", (code) => code === 0
+      ? resolve()
+      : reject(new Error(`live preparation worker exited ${code}: ${stderr}`)));
+  });
+}
+
+async function waitForFile(file: string, timeoutMs = 5_000): Promise<void> {
+  const deadline = Date.now() + timeoutMs;
+  while (!fs.existsSync(file)) {
+    if (Date.now() >= deadline) throw new Error(`timed out waiting for '${file}'`);
+    await new Promise((resolve) => setTimeout(resolve, 10));
+  }
+}
+
 function privateDirectory(project: string, token: string, pid?: number): string {
   return path.join(project, ".agentera", `.writer.${pid === undefined ? "" : `${pid}.`}${token}.tmp`);
 }
@@ -68,7 +98,9 @@ function expectPrivateResidueFailure(project: string): StateWriteInputError {
     expect(error).toBeInstanceOf(StateWriteInputError);
     const failure = error as StateWriteInputError;
     expect(failure.body).toMatchObject({ class: "conflict" });
-    expect(failure.message).toMatch(/private writer preparation.*active writer.*remove.*retry/i);
+    expect(failure.message).toMatch(/private writer preparation residue.*unknown or unverifiable ownership/i);
+    expect(failure.message).toMatch(/verify no Agentera writer.*remove.*retry/i);
+    expect(failure.message).not.toMatch(/writer lock timeout/i);
     return failure;
   }
 }
@@ -196,7 +228,7 @@ describe("project writer lock", () => {
       const result = Reflect.apply(originalLink, fs, args);
       if (!paused && String(args[1]).endsWith("/.reclaim.json")) {
         paused = true;
-        expectPrivateResidueFailure(project);
+        expect(() => acquireWriterLock(project, 50)).toThrow(/writer lock timeout.*retry/i);
         expect(JSON.parse(fs.readFileSync(path.join(lockPath, ".reclaim.json"), "utf8"))).toMatchObject({
           pid: process.pid,
         });
@@ -227,7 +259,7 @@ describe("project writer lock", () => {
     fs.rmSync(parked, { recursive: true });
   });
 
-  it("preserves a live creator paused beyond initialization grace and gives it sole ownership", () => {
+  it("fails closed on a creator paused with stale malformed metadata and gives it sole ownership", () => {
     const project = root();
     const originalWrite = fs.writeFileSync;
     let contenderFailure: StateWriteInputError | undefined;
@@ -257,6 +289,36 @@ describe("project writer lock", () => {
       creator?.release();
     }
     expect(fs.existsSync(path.join(project, ".agentera/.writer.lock"))).toBe(false);
+  });
+
+  it("retries and acquires when a positively live preparation disappears without publication", async () => {
+    const project = root();
+    const readyPath = path.join(project, "live-preparation.ready");
+    const removePath = path.join(project, "live-preparation.remove");
+    const worker = removableLivePreparation(project, readyPath, removePath);
+    await waitForFile(readyPath);
+
+    const originalWait = Atomics.wait;
+    let waits = 0;
+    const wait = vi.spyOn(Atomics, "wait").mockImplementation(((...args: Parameters<typeof Atomics.wait>) => {
+      waits += 1;
+      fs.writeFileSync(removePath, "remove\n");
+      return Reflect.apply(originalWait, Atomics, args);
+    }) as typeof Atomics.wait);
+
+    try {
+      const lock = acquireWriterLock(project, 500);
+      expect(waits).toBeGreaterThan(0);
+      expect(JSON.parse(fs.readFileSync(path.join(lock.path, "owner.json"), "utf8"))).toMatchObject({
+        pid: process.pid,
+      });
+      lock.release();
+    } finally {
+      wait.mockRestore();
+      if (!fs.existsSync(removePath)) fs.writeFileSync(removePath, "remove\n");
+      await worker;
+    }
+    expect(fs.readdirSync(path.join(project, ".agentera")).filter((name) => name.startsWith(".writer."))).toEqual([]);
   });
 
   it("removes the lock directory when writing owner metadata fails", () => {
@@ -321,7 +383,7 @@ describe("project writer lock", () => {
     lock.release();
   });
 
-  it("cleans private directories only with demonstrably dead PID or owner proof", () => {
+  it("cleans private directories only with demonstrably dead named PID or transition proof", () => {
     const project = root();
     const agenteraDirectory = path.join(project, ".agentera");
     fs.mkdirSync(agenteraDirectory);
@@ -333,27 +395,19 @@ describe("project writer lock", () => {
     fs.mkdirSync(malformed);
     fs.writeFileSync(path.join(malformed, "owner.json"), "not json\n");
 
-    const dead = privateDirectory(project, "44444444-4444-4444-8444-444444444444");
-    fs.mkdirSync(dead);
-    fs.writeFileSync(path.join(dead, "owner.json"), `${JSON.stringify({
-      pid: 999_999_999,
-      token: "44444444-4444-4444-8444-444444444444",
-      created_at: "2020-01-01T00:00:00Z",
-    })}\n`);
-
     const lock = acquireWriterLock(project, 500);
     lock.release();
 
-    for (const recovered of [namedDead, malformed, dead]) expect(fs.existsSync(recovered)).toBe(false);
+    for (const recovered of [namedDead, malformed]) expect(fs.existsSync(recovered)).toBe(false);
   });
 
-  it("preserves an aged empty private directory whose PID is live", () => {
+  it("times out on a persistent live preparation without deleting it", () => {
     const project = root();
     const residue = privateDirectory(project, "22222222-2222-4222-8222-222222222222", process.pid);
     fs.mkdirSync(residue, { recursive: true });
     makeOld(residue);
 
-    expectPrivateResidueFailure(project);
+    expect(() => acquireWriterLock(project, 50)).toThrow(/writer lock timeout.*retry/i);
     expect(fs.existsSync(residue)).toBe(true);
   });
 
@@ -402,6 +456,23 @@ describe("project writer lock", () => {
     const failure = expectPrivateResidueFailure(project);
     expect(failure.message.length).toBeLessThan(1_024);
     expect(fs.readFileSync(path.join(residue, "foreign"), "utf8")).toBe("preserve\n");
+  });
+
+  it("fails closed on PID-less residue even when its owner record names a dead process", () => {
+    const project = root();
+    const token = "44444444-4444-4444-8444-444444444444";
+    const residue = privateDirectory(project, token);
+    fs.mkdirSync(residue, { recursive: true });
+    const ownerPath = path.join(residue, "owner.json");
+    fs.writeFileSync(ownerPath, `${JSON.stringify({
+      pid: 999_999_999,
+      token,
+      created_at: "2020-01-01T00:00:00Z",
+    })}\n`);
+
+    expectPrivateResidueFailure(project);
+    expect(fs.existsSync(residue)).toBe(true);
+    expect(fs.readFileSync(ownerPath, "utf8")).toContain(token);
   });
 
   it("rejects a legacy lock file with structured actionable recovery", () => {

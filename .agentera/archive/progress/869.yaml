@@ -1,0 +1,19 @@
+schemaVersion: agentera.stateArchiveEntry.v1
+artifact_id: progress
+entry_number: 869
+record:
+  number: 869
+  timestamp: 2026-07-16 22:23
+  type: fix
+  phase: build
+  what: Treated positively live private writer preparations as bounded contention while preserving fail-closed recovery for unknown residue, with deterministic and repeated multiprocess regressions.
+  inspiration: PLAN Task 18 after Task 17 exhausted two retries and its final audit isolated live peer preparations in the unknown-residue path.
+  discovered: Preparation recovery needed three outcomes rather than a boolean, and PID liveness needed a tri-state so permission-denied probes remain indeterminate instead of being treated as live.
+  verified: "PASS: pnpm -C packages/cli exec vp test run test/state/write/lock.test.ts test/state/entityStorage.test.ts (2 files, 36 tests; 12/12 stale-lock repetitions each produced one publisher, one canonical duplicate-ID loser, one entity, and zero residue); pnpm -C packages/cli test (202 files, 2362 tests); pnpm -C packages/cli run typecheck; pnpm -C packages/cli build; node packages/cli/dist/bin/agentera.js check validate state --format json (0 issues); node packages/cli/dist/bin/agentera.js check validate capability-contract --format json (2/2 checks); node packages/cli/dist/bin/agentera.js check compact (10 artifacts, 0 over-limit, formatting, protected-overflow, or errors)."
+  next: Task 3 remains pending and depends on completed Task 18; do not begin Task 3 or family cutovers in this cycle.
+  context:
+    intent: Complete PLAN Task 18 by removing timing-dependent residue failures from same-ID concurrent publication without weakening Task 17 writer-lock safety.
+    constraints: Preserved no-age deletion, exact token/inode ownership, deterministic reclamation, six crash transitions, atomic publication, successor-safe and idempotent release, legacy structured failure, project boundaries, and fsync durability.
+    unknowns: None; the forced live-preparation handoff reached canonical duplicate-ID handling and all 12 stale-lock repetitions had invariant outcomes.
+    scope: Writer-lock preparation classification/acquisition plus lock and entity publication workers/tests; pre-existing Task 18 replanning; progress and Task 18 status only.
+record_sha256: 10c135486861d3f5592b24b0290da615ce836449f2a9b03aa2264322f738770e
