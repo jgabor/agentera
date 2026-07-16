@@ -191,6 +191,7 @@ describe("entity discovery and publication", () => {
     ]);
     expect(discoverEntities(root).entities.filter(({ id }) => id === "zzzzzzzzzz")).toHaveLength(1);
     expect(fs.existsSync(lockPath)).toBe(false);
+    expect(fs.readdirSync(path.join(root, ".agentera")).filter((name) => name.startsWith(".writer."))).toEqual([]);
   }, 15_000);
 
   it("cleans the project-wide claim after publication fails and permits recovery", () => {

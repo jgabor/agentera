@@ -1,4 +1,33 @@
 cycles:
+  - number: 866
+    timestamp: 2026-07-16 20:49
+    type: fix
+    phase: build
+    what: Hardened writer-lock initialization with atomic publication,
+      descriptor-pinned exact-owner reclamation, and actionable legacy-file
+      conflicts.
+    inspiration: Replanned Task 17 and the independent audit of commit 255d4c08.
+    discovered: Publishing a fully initialized private directory makes the owner
+      file immutable before canonical visibility; hard-link claims then permit
+      exact inspected-owner replacement without pathname cleanup of a successor.
+    verified: "packages/cli/test/state/write/lock.test.ts covered the paused
+      initialization window, legacy-file replacement, successor tokens,
+      inspected malformed owners, and ownerless/dead/live/reentrant locks.
+      Focused lock/entity/state-writer/CLI validation: 159 passed. Full CLI:
+      2,351 passed, 1 skipped. Typecheck, build, check validate state,
+      capability-contract validation, targeted lint, and compact check passed."
+    next: Task 3 may proceed with Task 17 complete; retain the recorded historical
+      state caveats without unrelated repair.
+    context:
+      intent: Close Task 17 by eliminating the audit-reproduced ownerless canonical
+        lock race while preserving writer durability and state semantics.
+      constraints: Kept the project-local lock, fsync durability, bounded timeout,
+        symlink boundary checks, idempotent release, and existing state-writer
+        API.
+      unknowns: None within Task 17; legacy regular-file locks intentionally fail with
+        a structured manual correction instead of unsafe automatic unlink.
+      scope: packages/cli/src/state/write/lock.ts plus adversarial lock,
+        entity-publication, and state-writer regression tests.
   - number: 865
     timestamp: 2026-07-16 20:13
     type: fix
@@ -285,34 +314,6 @@ cycles:
         references/cli/agent-ready-state-contract.yaml;
         packages/cli/test/cli/agentDescriptorVocabulary.test.ts;
         packages/cli/test/cli/startupCompletenessContract.test.ts
-  - number: 856
-    timestamp: 2026-07-16 15:48
-    type: fix
-    phase: build
-    what: "Closed the compact-prime plan through the typed state writers after final
-      verification: Task 5 evaluation recorded pass, Task 5 marked complete, and
-      the plan lifecycle marked complete. Recommendations 4 through 7 remain
-      open in TODO.md."
-    inspiration: Final Plan Task 5 state synchronization.
-    discovered: The post-write plan catalog reports five complete tasks and no
-      pending task; progress compaction continues to preserve the known missing
-      progress:793 archive caveat instead of summarizing it away.
-    verified: Typed plan evaluation and status writes returned pass; post-write
-      check compact returned status=pass with over_limit=0, formatting=0,
-      protected_overflow=0, errors=0; state plan reports complete=5 and no
-      pending task; state todo reports the four requested recommendation entries
-      open.
-    next: Commit the verified implementation and state changes locally; no push or
-      publication. Future work remains limited to the open TODO items and the
-      preserved progress archive recovery caveat.
-    context:
-      intent: Persist the verified Task 5 closeout without erasing earlier evaluation
-        failures or recovery caveats.
-      constraints: Do not implement deferred recommendations, modify vision/objective,
-        erase prior progress/evaluation history, or push.
-      unknowns: none
-      scope: .agentera/plan.yaml; .agentera/progress.yaml;
-        .agentera/archive/progress/856.yaml; TODO.md state read
   - number: 793
     timestamp: 2026-07-14 17:36
     type: chore
@@ -382,6 +383,8 @@ cycles:
         and backfill fixtures; package metadata and generated ignored
         dist/bundle
 archive:
+  - summary: "Cycle 856 (2026-07-16): Closed the compact-prime plan through the
+      typed state writers after final verification: Task 5 evaluation..."
   - summary: "Cycle 855 (2026-07-16): Synchronized Plan Task 5 startup contracts and
       final verification: current English capability budget rows now..."
   - summary: "Cycle 854 (2026-07-16): Retried Plan Task 4: keep status mode and
@@ -477,15 +480,18 @@ archive:
       contents for the next available prerelease without publication."
   - summary: "Cycle 817 (2026-07-15): Retried Task 12 after audit attempt 1. Removed
       Build's remaining retired gate command expectation, made..."
-  - summary: "Cycle 816 (2026-07-15): Repaired Plan Task 12 alias authority and
-      runtime parity. Removed stale gate advertising, projected the..."
 omitted: true
-omitted_count: 101
+omitted_count: 102
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded

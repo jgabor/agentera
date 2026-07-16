@@ -1244,9 +1244,12 @@ describe("decisions, health, and plan operations", () => {
     expect(run(archiveRoot, ["plan", "create", "--input", archiveInput, "--format", "json"]).rc).toBe(0);
     const archiveTarget = path.join(archiveRoot, ".agentera", "plan.yaml");
     const archiveBefore = fs.readFileSync(archiveTarget, "utf8");
-    const link = vi.spyOn(fs, "linkSync").mockImplementation(() => {
-      throw Object.assign(new Error("injected archive interruption"), { code: "ENOSPC" });
-    });
+    const originalLink = fs.linkSync.bind(fs);
+    const link = vi.spyOn(fs, "linkSync").mockImplementation(((from, to) => {
+      if (String(to).includes("/.agentera/archive/PLAN-"))
+        throw Object.assign(new Error("injected archive interruption"), { code: "ENOSPC" });
+      return originalLink(from, to);
+    }) as typeof fs.linkSync);
     try {
       expect(run(archiveRoot, ["plan", "archive", "--format", "json"]).rc).toBe(1);
       expect(fs.readFileSync(archiveTarget, "utf8")).toBe(archiveBefore);
@@ -1701,7 +1704,7 @@ describe("closed rejection catalog and mutation safety", () => {
     const root = project();
     const originalRename = fs.renameSync.bind(fs);
     const rename = vi.spyOn(fs, "renameSync").mockImplementation(((from, to) => {
-      if (String(from).includes(".writer.")) {
+      if (String(from).includes(".progress.yaml.writer.")) {
         throw Object.assign(new Error("injected rename ENOSPC"), { code: "ENOSPC" });
       }
       return originalRename(from, to);
