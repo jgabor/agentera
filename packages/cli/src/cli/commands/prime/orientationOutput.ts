@@ -35,6 +35,61 @@ const STATUS_STRUCTURED_FIELDS = PRIME_STRUCTURED_FIELDS;
 const ISSUES_FIELD_DEPRECATION_MESSAGE =
   "Deprecation: prime JSON field 'issues' is deprecated; use 'todo'. The 'issues' field will be removed at the 3.0.0 stable cut.\n";
 
+/** Top-level conditional fields whose default/inactive payload is omitted from
+ *  the default bare briefing so startup does not carry default-only adjective
+ *  noise. They remain declared in PRIME_STRUCTURED_FIELDS (selectable via
+ *  `--fields` and advertised in `source_contract.fields`) and are recovered
+ *  through `state_presence` (missing-vs-empty semantics) plus a named
+ *  authoritative command. The full payload kept by `buildOrientationJsonPayload`
+ *  still populates them, so explicit `--fields <name>` selection, the text
+ *  briefing, and downstream state consumers are unaffected. See
+ *  references/cli/prime-consumer-compatibility.yaml
+ *  default_emission_omission_contract for the published contract. */
+const OMITTABLE_DEFAULT_CONDITIONAL_TOP_FIELDS: readonly string[] = [
+  "v1_migration",
+  "docs",
+  "objective",
+];
+
+/** Whether a conditional top-level field carries present/active payload (not the
+ *  default-only state that should be omitted from the default briefing). The
+ *  activity predicate mirrors each summary's "default" branch so absence stays
+ *  non-ambiguous: a survivor key is present exactly when the field is active. */
+function isConditionalFieldPresent(field: string, payload: Record<string, unknown>): boolean {
+  const value = payload[field];
+  if (value === null || value === undefined) return false;
+  if (typeof value !== "object" || Array.isArray(value)) return true;
+  const obj = value as Record<string, unknown>;
+  // v1_migration: present when v1 artifacts are detected (detected !== true is
+  // the default state; recover via `agentera upgrade --dry-run`).
+  if (field === "v1_migration") return obj.detected === true;
+  // docs: present when a docs mapping artifact exists (exists !== true is the
+  // absent state; recover via `agentera state docs`).
+  if (field === "docs") return obj.exists === true;
+  // objective: present when an objective is active (active !== true is the
+  // none-active state; state_presence.active.objective disambiguates).
+  if (field === "objective") return obj.active === true;
+  return true;
+}
+
+/** Return a default-briefing copy of `payload` with inactive conditional
+ *  top-level fields removed. Required fields and `state_presence` (the
+ *  missing-vs-empty authority) are always retained. Used only by the default
+ *  bare emission path; explicit `--fields` selection keeps the full payload. */
+function omitInactiveConditionalDefaults(payload: Record<string, unknown>): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(payload)) {
+    if (
+      OMITTABLE_DEFAULT_CONDITIONAL_TOP_FIELDS.includes(key) &&
+      !isConditionalFieldPresent(key, payload)
+    ) {
+      continue;
+    }
+    out[key] = value;
+  }
+  return out;
+}
+
 function shouldEmitIssuesDeprecation(requested: string[], payload: Record<string, unknown>): boolean {
   if (!("issues" in payload)) return false;
   if (requested.length === 0) return true;
@@ -147,9 +202,15 @@ export function emitPrime(
   err: (t: string) => void,
 ): number {
   const requested = requestedFields(fieldsArg);
-  emitIssuesFieldDeprecationWarning(requested, payload, err);
+  // The default bare briefing omits inactive conditional top-level fields so
+  // startup does not carry default-only payload; explicit `--fields` selection
+  // keeps the full payload so a consumer recovering a named field is never
+  // confused by omission (see default_emission_omission_contract).
+  const effectivePayload =
+    requested.length === 0 ? omitInactiveConditionalDefaults(payload) : payload;
+  emitIssuesFieldDeprecationWarning(requested, effectivePayload, err);
   if (requested.length === 0) {
-    emitStructured(payload, format, out);
+    emitStructured(effectivePayload, format, out);
     return 0;
   }
   const available = availablePrimeFields(command);

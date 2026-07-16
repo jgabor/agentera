@@ -145,9 +145,12 @@ consumers:
 # (public_output_policy.canonical_field_set). Each list below now derives from
 # that authority, so schema discovery, the emitted JSON source_contract.fields,
 # the text-mode fields line, and the agent-ready-state contract advertise the
-# same canonical 27-field set. The `issues` deprecated transition alias stays a
-# selector-only surface (kept until the 3.0.0 stable cut); it is not a member of
-# the canonical set and is not advertised as a structured field.
+# same canonical 27-field set. The `issues` deprecated transition alias is
+# emitted by default as a duplicate of `todo` (with a stderr deprecation warning)
+# and kept until the 3.0.0 stable cut; it is excluded only from the canonical
+# advertised `source_contract.fields` set (one canonical representation — `todo`
+# is canonical). It is NOT selector-only: it ships in the default bare briefing
+# for the opencode_compaction_context consumer that still reads it.
 # ---------------------------------------------------------------------------
 field_authorities:
   - id: orientation_output_emission
@@ -223,7 +226,8 @@ field_classification:
     status: conditional
     rationale: >-
       Default-only when detected=false. No documented consumer reads it in the
-      default startup path. Task 2 may omit when not detected; recovery via
+      default startup path. Task 2 omits it from the default bare briefing when
+      not detected (see default_emission_omission_contract); recovery via
       `agentera upgrade --dry-run`.
   - field: health
     status: required
@@ -236,13 +240,20 @@ field_classification:
     rationale: opencode reads exists/status/title/first_pending; status dashboard glyph.
   - field: docs
     status: conditional
-    rationale: Default-only when no docs state. Recovery via `agentera state docs`.
+    rationale: >-
+      Default-only when no docs state. Task 2 omits it from the default bare
+      briefing when docs.exists is false (see default_emission_omission_contract);
+      recovery via `agentera state docs`.
   - field: progress
     status: required
     rationale: opencode reads progress.latest; status brief references shipped work.
   - field: objective
     status: conditional
-    rationale: Default-only when none active. Status derives "none active" from state_presence.
+    rationale: >-
+      Default-only when none active. Task 2 omits it from the default bare
+      briefing when objective.active is false (see
+      default_emission_omission_contract); status derives "none active" from
+      state_presence.active.objective. Recovery via `agentera state objective`.
   - field: state_presence
     status: required
     rationale: Owns missing-versus-empty semantics; must not be omitted.
@@ -361,6 +372,62 @@ public_output_policy:
     contract after any field-set change.
 
 # ---------------------------------------------------------------------------
+# Default-emission conditional omission contract. Advertised selectable fields
+# (declared_available_fields / PRIME_STRUCTURED_FIELDS) may be broader than the
+# keys present in a given bare prime response: the declaration is the union of
+# fields a consumer may select, not a promise that every one is emitted on every
+# call. The following conditional top-level fields are OMITTED from the default
+# bare briefing when they carry only default/inactive payload so startup does not
+# carry adjective noise. Their omission is unambiguous because (a) the field
+# stays declared in source_contract.fields as a selectable surface, (b)
+# state_presence carries the missing-vs-empty signal for the artifact families
+# it owns, and (c) a named authoritative command returns the live detail.
+# Required consumers and missing-vs-empty semantics are preserved: explicit
+# `--fields <name>` selection and the `--context` capsule keep the full payload,
+# so a consumer recovering an omitted field is never confused by its absence.
+# The emitted `issues` deprecated transition alias is NOT conditional: it ships
+# by default (excluded only from the canonical advertised set) until the stable
+# cut; see deprecated_alias_rule.
+# ---------------------------------------------------------------------------
+default_emission_omission_contract:
+  implemented_by: packages/cli/src/cli/commands/prime/orientationOutput.ts:omitInactiveConditionalDefaults
+  applies_to: default bare prime (requested fields empty)
+  does_not_apply_to: explicit `--fields <name>` selection; `--context <capability>` capsule
+  omitted_when_default:
+    - field: v1_migration
+      omitted_when: v1_migration.detected !== true
+      recovery_command: agentera upgrade --dry-run
+      disambiguated_by: >-
+        source_contract.fields declares v1_migration as a selectable field; the
+        named recovery command returns the live migration preview. state_presence
+        does not carry v1_migration (it is not an artifact family); the field is
+        the sole v1 signal.
+    - field: docs
+      omitted_when: docs.exists !== true
+      recovery_command: agentera state docs
+      disambiguated_by: >-
+        state_presence.available.docs and state_presence.absence.docs carry the
+        missing-vs-empty signal for the docs artifact family.
+    - field: objective
+      omitted_when: objective.active !== true
+      recovery_command: agentera state objective
+      disambiguated_by: >-
+        state_presence.active.objective is false; status derives "none active"
+        from state_presence rather than from an emitted default-only objective
+        blob.
+  never_omitted:
+    - state_presence
+    - next_action
+    - health
+    - todo
+    - plan
+    - progress
+    - profile
+    - source
+    - source_contract
+    - attention
+
+# ---------------------------------------------------------------------------
 # Fixtures used by packages/cli/test/cli/primeCompatibilityBoundary.test.ts.
 # Pass fixtures are the documented consumers; their consumed_fields must be a
 # subset of declared_available_fields. Fail fixtures depend on retired or
@@ -431,7 +498,6 @@ fixtures:
         - health
         - todo
         - plan
-        - objective
         - profile
         - next_action
         - attention
@@ -442,6 +508,14 @@ fixtures:
         - source_contract.capability_context.fetch_command
         - profile.status
         - next_action.object
+      conditional_nested_fields:
+        # objective is a conditional top-level field (see
+        # default_emission_omission_contract): emitted when an objective is
+        # active, omitted (and rendered "none active") otherwise. The dashboard
+        # derives the active/none-active signal from state_presence, so it does
+        # not declare objective as an always-present dependency.
+        - path: objective
+          present_when: state_presence.active.objective
     - consumer: capability_context_dispatcher
       executable_command: agentera prime --context build --format json
       depends_on:

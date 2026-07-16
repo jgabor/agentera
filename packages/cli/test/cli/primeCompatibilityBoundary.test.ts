@@ -49,10 +49,20 @@ interface DocumentationDrift {
   scanned_documents: DriftDocument[];
 }
 
+interface OmissionEntry {
+  field: string;
+  omitted_when: string;
+  recovery_command: string;
+}
+interface DefaultEmissionOmissionContract {
+  omitted_when_default: OmissionEntry[];
+  never_omitted: string[];
+}
 interface Policy {
   declared_available_fields: string[];
   fixtures: { pass: ConsumerFixture[]; fail: ConsumerFixture[] };
   documentation_drift?: DocumentationDrift;
+  default_emission_omission_contract?: DefaultEmissionOmissionContract;
 }
 
 function loadPolicy(): Policy {
@@ -275,14 +285,33 @@ describe("prime consumer compatibility boundary (Plan Task 1)", () => {
       expect(capture({ command: "prime", format: "json", fields: "not_a_real_field" }).rc).toBe(1);
     });
 
-    it("default bare prime emits every declared field except the --context-only capability_context", () => {
+    it("default bare prime emits every required field and omits inactive conditional defaults", () => {
+      // Advertised selectable fields (declared_available_fields) may be broader
+      // than the keys present in a given bare prime response: the declaration is
+      // the union of selectable surfaces, not a promise every one is emitted on
+      // every call. Required fields are always present; conditional top-level
+      // fields documented in default_emission_omission_contract are omitted
+      // when they carry only default/inactive payload (recovered via
+      // state_presence + a named command). Explicit `--fields <name>` keeps the
+      // full payload (see the AC3 explicit-recovery test).
       const { rc, out } = capture({ command: "prime", format: "json" });
       expect(rc).toBe(0);
-      const emitted = new Set(Object.keys(JSON.parse(out)));
-      const missing = policy.declared_available_fields.filter(
-        (field) => field !== "capability_context" && !emitted.has(field),
+      const payload = JSON.parse(out);
+      const emitted = new Set(Object.keys(payload));
+      const omittable = (policy.default_emission_omission_contract?.omitted_when_default ?? []).map(
+        (e: { field: string }) => e.field,
       );
-      expect(missing, "declared fields absent from default emission").toEqual([]);
+      // Required fields must be present.
+      const missingRequired = policy.declared_available_fields.filter(
+        (field) => field !== "capability_context" && !omittable.includes(field) && !emitted.has(field),
+      );
+      expect(missingRequired, "required fields absent from default emission").toEqual([]);
+      // state_presence is never omitted — it owns missing-vs-empty semantics.
+      expect(emitted, "state_presence must always be emitted").toContain("state_presence");
+      // On fresh state every omittable conditional field is in its default state,
+      // so each must be omitted from the default briefing.
+      const leakedDefaults = omittable.filter((field) => emitted.has(field));
+      expect(leakedDefaults, "inactive conditional defaults must be omitted on fresh state").toEqual([]);
     });
   });
 
@@ -368,7 +397,7 @@ describe("prime consumer compatibility boundary (Plan Task 1)", () => {
   });
 
   describe("Task 2 AC2: semantically duplicate startup values emit one canonical representation", () => {
-    it("the deprecated `issues` alias is a selector-only duplicate of `todo`, not a canonical field", () => {
+    it("the deprecated `issues` alias is emitted by default as a duplicate of `todo`, not a canonical field", () => {
       const { payload, err } = runPrimePayload("agentera prime --format json");
       const fields = (getPath(payload, "source_contract.fields") as string[]) ?? [];
       // `todo` is the canonical representation; `issues` is not a published field.
@@ -418,7 +447,9 @@ describe("prime consumer compatibility boundary (Plan Task 1)", () => {
         );
         // The retired `bundle` field must not survive in the documented contract.
         expect(hejFields).not.toContain("bundle");
-        // The deprecated `issues` alias is selector-only; it is not a documented field.
+        // The deprecated `issues` alias is not a documented canonical field: it
+        // is emitted by default as a transition alias (excluded only from the
+        // advertised set), but the agent-ready-state contract documents `todo`.
         expect(hejFields).not.toContain("issues");
       }
     });
@@ -447,6 +478,111 @@ describe("prime consumer compatibility boundary (Plan Task 1)", () => {
       if (!isTruthy(payload, "plan.first_pending")) {
         expect(getPath(payload, "plan.first_pending.name"), "plan.first_pending.name omitted when no pending task").toBeUndefined();
       }
+    });
+
+    // ----- Top-level omission (fresh/empty/inactive) -----
+    // The audit found AC3 only covered nested omission. These fixtures prove the
+    // top-level default-only payloads (v1_migration, docs, objective) are omitted
+    // on a fresh project and that state_presence keeps the absence unambiguous.
+    it("fresh state omits the top-level v1_migration, docs, and objective default-only payloads", () => {
+      const { payload } = runPrimePayload("agentera prime --format json");
+      // Fresh project: no v1 artifacts, no docs mapping file, no objective dir.
+      expect(getPath(payload, "v1_migration"), "v1_migration omitted when no migration detected").toBeUndefined();
+      expect(getPath(payload, "docs"), "docs omitted when no docs mapping exists").toBeUndefined();
+      expect(getPath(payload, "objective"), "objective omitted when none active").toBeUndefined();
+    });
+
+    it("omitted top-level conditional fields stay selectable and advertised (absence is not ambiguous)", () => {
+      const { payload } = runPrimePayload("agentera prime --format json");
+      // The fields are declared in source_contract.fields — a consumer knows the
+      // field is a valid selectable surface even though it was omitted.
+      const fields = (getPath(payload, "source_contract.fields") as string[]) ?? [];
+      expect(fields, "v1_migration stays advertised even when omitted").toContain("v1_migration");
+      expect(fields, "docs stays advertised even when omitted").toContain("docs");
+      expect(fields, "objective stays advertised even when omitted").toContain("objective");
+      // state_presence carries the missing-vs-empty signals for the families it owns.
+      const presence = getPath(payload, "state_presence") as Record<string, unknown>;
+      const available = presence.available as Record<string, boolean>;
+      expect(available.docs, "state_presence.available.docs=false disambiguates the docs omission").toBe(false);
+      const active = presence.active as Record<string, boolean>;
+      expect(active.objective, "state_presence.active.objective=false disambiguates the objective omission").toBe(false);
+    });
+
+    it("omitted conditional fields are recoverable via the policy's named recovery commands", () => {
+      const contract = policy.default_emission_omission_contract;
+      expect(contract, "policy must document the default_emission_omission_contract").toBeDefined();
+      for (const entry of contract!.omitted_when_default) {
+        expect(typeof entry.recovery_command, `${entry.field} needs a named recovery command`).toBe("string");
+        expect(entry.recovery_command as string).toMatch(/agentera/);
+      }
+    });
+
+    it("explicit `--fields <omitted>` selection still returns the field (default omission never confuses recovery)", () => {
+      // The default briefing omits inactive conditional fields, but a consumer
+      // that explicitly selects one must get the full payload entry (not an
+      // absence). This binds the omission contract to the recovery path.
+      for (const field of ["v1_migration", "docs", "objective"]) {
+        const { rc, out } = capture({ command: "prime", format: "json", fields: field });
+        expect(rc, `--fields ${field} must exit 0`).toBe(0);
+        const selected = JSON.parse(out);
+        expect(selected, `--fields ${field} must return the field even when default`).toHaveProperty(field);
+        expect(selected, `--fields ${field} always carries command`).toHaveProperty("command");
+        expect(selected, `--fields ${field} always carries status`).toHaveProperty("status");
+      }
+    });
+
+    // ----- Present-state fixtures -----
+    // The inverse contract: when a conditional field IS present/active, it must
+    // appear in the default briefing (not be over-omitted).
+    function writeV1Artifact(): void {
+      const agenteraDir = path.join(process.cwd(), ".agentera");
+      fs.mkdirSync(agenteraDir, { recursive: true });
+      fs.writeFileSync(path.join(agenteraDir, "PROGRESS.md"), "# progress\n");
+    }
+    function writeDocsMapping(): void {
+      const agenteraDir = path.join(process.cwd(), ".agentera");
+      fs.mkdirSync(agenteraDir, { recursive: true });
+      fs.writeFileSync(
+        path.join(agenteraDir, "docs.yaml"),
+        "version: 1\nlast_audit: '2026-07-01'\nmapping: []\n",
+      );
+    }
+    function writeActiveObjective(): void {
+      const objectiveDir = path.join(process.cwd(), ".agentera", "optimize", "reliability");
+      fs.mkdirSync(objectiveDir, { recursive: true });
+      fs.writeFileSync(
+        path.join(objectiveDir, "objective.yaml"),
+        "header:\n  title: reliability\n  status: active\nobjective:\n  measurement: p99 latency\n  target: '<70ms'\n",
+      );
+    }
+
+    it("present v1 migration is emitted (detected=true) and state recovers it directly", () => {
+      writeV1Artifact();
+      const { payload } = runPrimePayload("agentera prime --format json");
+      const v1 = getPath(payload, "v1_migration") as Record<string, unknown>;
+      expect(v1, "v1_migration emitted when detected").toBeDefined();
+      expect(v1.detected, "v1_migration.detected is true when v1 artifacts present").toBe(true);
+    });
+
+    it("present docs mapping is emitted (exists=true) and available.docs disambiguates", () => {
+      writeDocsMapping();
+      const { payload } = runPrimePayload("agentera prime --format json");
+      const docs = getPath(payload, "docs") as Record<string, unknown>;
+      expect(docs, "docs emitted when mapping exists").toBeDefined();
+      expect(docs.exists, "docs.exists is true when a docs mapping is present").toBe(true);
+      const presence = getPath(payload, "state_presence") as Record<string, unknown>;
+      expect((presence.available as Record<string, boolean>).docs, "state_presence.available.docs=true").toBe(true);
+    });
+
+    it("active objective is emitted (active=true) and state_presence.active.objective is true", () => {
+      writeActiveObjective();
+      const { payload } = runPrimePayload("agentera prime --format json");
+      const objective = getPath(payload, "objective") as Record<string, unknown>;
+      expect(objective, "objective emitted when active").toBeDefined();
+      expect(objective.active, "objective.active is true when an objective is running").toBe(true);
+      expect(objective.name, "active objective carries its name").toBe("reliability");
+      const presence = getPath(payload, "state_presence") as Record<string, unknown>;
+      expect((presence.active as Record<string, boolean>).objective, "state_presence.active.objective=true").toBe(true);
     });
   });
 

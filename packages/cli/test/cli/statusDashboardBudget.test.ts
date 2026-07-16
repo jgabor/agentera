@@ -20,7 +20,6 @@ function renderStatusContractBriefing(payload: Record<string, unknown>): string 
   const todo = payload.todo as Record<string, number>;
   const plan = payload.plan as Record<string, unknown>;
   const profile = payload.profile as Record<string, unknown>;
-  const objective = payload.objective as Record<string, unknown>;
   const next = payload.next_action as Record<string, string>;
   const attention = payload.attention as string[];
 
@@ -29,7 +28,10 @@ function renderStatusContractBriefing(payload: Record<string, unknown>): string 
     `⇶ todo ${todo.critical} critical · ${todo.degraded} degraded · ${todo.annoying} annoying`,
     `≡ plan ${plan.complete ?? 0}/${plan.total ?? 0} tasks`,
     `♾ profile ${profile.status ?? "unknown"}`,
-    `⎘ objective ${objective.active ? String(objective.name ?? "active") : "none active"}`,
+    // objective is a conditional top-level field, omitted from the default
+    // briefing when no objective is active (state_presence.active.objective is
+    // the missing-vs-empty signal). Treat its absence as "none active".
+    `⎘ objective ${payload.objective && (payload.objective as Record<string, unknown>).active ? String((payload.objective as Record<string, unknown>).name ?? "active") : "none active"}`,
     "Lifecycle repair needs preview plus host verification before safety work.",
     "attention:",
     ...attention.map((item) => `→ ${item}`),

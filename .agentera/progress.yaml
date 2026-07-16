@@ -1,4 +1,36 @@
 cycles:
+  - number: 849
+    timestamp: 2026-07-16 12:31
+    type: fix
+    phase: build
+    what: Omit inactive default-only top-level v1_migration, docs, and objective
+      from the default bare prime briefing; correct the issues selector-only
+      language to default-emitted transition alias; add
+      default_emission_omission_contract and AC3 top-level omission plus
+      present-state fixtures.
+    inspiration: Plan plan:634c092e (Make prime startup compact) Task 2; audit-1
+      failure ses_09597baa6ffe7pTK0e71IS8zay;
+      references/cli/prime-consumer-compatibility.yaml
+      default_emission_omission_contract.
+    discovered: "Advertised selectable fields (source_contract.fields) are broader
+      than keys present in a given response: the declaration is a union of
+      selectable surfaces, not an emission promise. The
+      status_dashboard_renderer consumes objective conditionally via
+      state_presence.active.objective, so it tolerates the omission rather than
+      depending on it always-present."
+    verified: pnpm -C packages/cli test (2298 pass); pnpm -C packages/cli run
+      typecheck (0 errors); pnpm -C packages/cli build (ok); agentera check
+      validate capability-contract (2/2 pass); agentera check compact (exit 0).
+      Fresh-state prime omits v1_migration/docs/objective and keeps
+      state_presence; present-state
+      (PROGRESS.md/docs.yaml/optimize/objective.yaml) emits each; explicit
+      --fields recovers omitted fields; issues still emitted by default with
+      stderr deprecation.
+    context:
+      intent: "Retry Plan Task 2 after audit failure: fresh-state bare prime emitted
+        inactive/default-only top-level v1_migration, docs, and objective, AC3
+        tests only covered nested omission, and policy language incorrectly
+        called issues selector-only."
   - number: 848
     timestamp: 2026-07-16 12:06
     type: feat
@@ -353,22 +385,6 @@ cycles:
       intent: "Implement Task 2 of the decision-amendment plan: revision-backed
         effective decision reads with selection, bootstrap, refusal, and replay
         paths."
-  - number: 839
-    timestamp: 2026-07-16 05:57
-    type: feat
-    phase: build
-    what: "Defined decision amendment authority contracts and CLI discovery:
-      revision authority in storage-authority YAML, amend verb with
-      caller-selected --number, amend execution refusal, and legacy
-      confidence-label coexistence classifier"
-    verified: typecheck clean; 2197 tests pass (192 files) including 14 new contract
-      tests; build clean; check compact PASS; capability-contract validation
-      PASS; live CLI smoke confirms amend refusal, update --number contradiction
-      fixed, and invalid confidence rejected
-    next: "Task 2: revision-backed effective decision reads"
-    context:
-      intent: "Task 1 of the decision-content amendments plan: contracts only, no
-        revision-backed reads or amendment publication yet"
   - number: 793
     timestamp: 2026-07-14 17:36
     type: chore
@@ -438,6 +454,9 @@ cycles:
         and backfill fixtures; package metadata and generated ignored
         dist/bundle
 archive:
+  - summary: "Cycle 839 (2026-07-16): Defined decision amendment authority contracts
+      and CLI discovery: revision authority in storage-authority YAML, amend
+      verb..."
   - summary: "Cycle 838 (2026-07-16): Moved lifecycle validation orchestration and
       parity checks out of the public lifecycleAdapters.ts barrel into a..."
   - summary: "Cycle 837 (2026-07-15): Synchronized contracts and verified v3
@@ -530,16 +549,18 @@ archive:
       exact commands runnable from the repository root."
   - summary: "Cycle 800 (2026-07-14): Established stable plan identity through
       validated publication, archival, and collision-aware discovery."
-  - summary: "Cycle 799 (2026-07-14): Aligned plan-task help with the optional
-      active-plan selector and added help-authority-runtime regression
-      coverage."
 omitted: true
-omitted_count: 84
+omitted_count: 85
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded

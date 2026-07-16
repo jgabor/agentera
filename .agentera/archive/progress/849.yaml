@@ -1,0 +1,15 @@
+schemaVersion: agentera.stateArchiveEntry.v1
+artifact_id: progress
+entry_number: 849
+record:
+  number: 849
+  timestamp: 2026-07-16 12:31
+  type: fix
+  phase: build
+  what: Omit inactive default-only top-level v1_migration, docs, and objective from the default bare prime briefing; correct the issues selector-only language to default-emitted transition alias; add default_emission_omission_contract and AC3 top-level omission plus present-state fixtures.
+  inspiration: Plan plan:634c092e (Make prime startup compact) Task 2; audit-1 failure ses_09597baa6ffe7pTK0e71IS8zay; references/cli/prime-consumer-compatibility.yaml default_emission_omission_contract.
+  discovered: "Advertised selectable fields (source_contract.fields) are broader than keys present in a given response: the declaration is a union of selectable surfaces, not an emission promise. The status_dashboard_renderer consumes objective conditionally via state_presence.active.objective, so it tolerates the omission rather than depending on it always-present."
+  verified: pnpm -C packages/cli test (2298 pass); pnpm -C packages/cli run typecheck (0 errors); pnpm -C packages/cli build (ok); agentera check validate capability-contract (2/2 pass); agentera check compact (exit 0). Fresh-state prime omits v1_migration/docs/objective and keeps state_presence; present-state (PROGRESS.md/docs.yaml/optimize/objective.yaml) emits each; explicit --fields recovers omitted fields; issues still emitted by default with stderr deprecation.
+  context:
+    intent: "Retry Plan Task 2 after audit failure: fresh-state bare prime emitted inactive/default-only top-level v1_migration, docs, and objective, AC3 tests only covered nested omission, and policy language incorrectly called issues selector-only."
+record_sha256: 5ab3fadd3d3f76870f78ef84ed3a6859e60b81afddcf4c6cb2e043f2e08d6ed4
