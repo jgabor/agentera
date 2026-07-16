@@ -1,4 +1,22 @@
 cycles:
+  - number: 840
+    timestamp: 2026-07-16 06:59
+    type: feat
+    phase: build
+    what: Wired revision-backed effective decision reads across exact get, list,
+      startup, and compaction consumers with truthful provenance; added
+      amendment preparation that selects an amenable target, bootstraps a
+      hash-verified degraded_projection base from a complete legacy projection,
+      and refuses summary-only/conflicting/ambiguous/broken-hash/incomplete
+      targets with working corrections; preserved Task 1 immutability, separate
+      revision authority, and amend publication refusal (Task 3). Added
+      decisionRevisionReads tests covering composition, selection, bootstrap,
+      replay, malformed, and conflict paths.
+    inspiration: Plan task 2 acceptance criteria
+    context:
+      intent: "Implement Task 2 of the decision-amendment plan: revision-backed
+        effective decision reads with selection, bootstrap, refusal, and replay
+        paths."
   - number: 839
     timestamp: 2026-07-16 05:57
     type: feat
@@ -269,28 +287,6 @@ cycles:
       unknowns: None.
       scope: packages/cli/shim/lib/resolve.mjs, resolver regression tests, TODO,
         changelog, and progress.
-  - number: 830
-    timestamp: 2026-07-15 18:24
-    type: fix
-    phase: build
-    what: Verified authoritative verbosity budgets and advisory lint exits.
-    discovered: No product defect. Compaction still safely reports degraded
-      historical progress and health archive recovery.
-    verified: Focused authority and command suites passed 10/10 and 16/16; full CLI
-      passed 2085/2085; typecheck, build, capability contract 2/2, and
-      compaction passed. The uniform_10_40_50 authority SHA-256 remained
-      f84cbfad718d7c11c4dbe7f4afb9f081af6507e3919b15887d3a3c4bf9fdd0fb and
-      implementation paths were unchanged.
-    next: Orchestrate should run the post-delivery audit and own plan archival.
-    context:
-      intent: Close Plan Task 4 only after focused and broad delivery verification
-        passed.
-      constraints: Verification and state closeout only; no product changes, plan
-        archival, caveat repair, or profile refresh.
-      unknowns: Decision 93 remains review-needed; omitted state and stale profile
-        remain caveats.
-      scope: Plan Task 4, progress evidence, TODO/changelog agreement, and local
-        commit closeout.
   - number: 793
     timestamp: 2026-07-14 17:36
     type: chore
@@ -360,6 +356,8 @@ cycles:
         and backfill fixtures; package metadata and generated ignored
         dist/bundle
 archive:
+  - summary: "Cycle 830 (2026-07-15): Verified authoritative verbosity budgets and
+      advisory lint exits."
   - summary: "Cycle 829 (2026-07-15): Corrected advisory lint exits while preserving
       strict operational and publication failures."
   - summary: "Cycle 828 (2026-07-15): Made lint consume owning schema verbosity
@@ -450,15 +448,18 @@ archive:
   - summary: "Cycle 790 (2026-07-14): Aligned the live migration and optional
       local-Git enrichment contract across authority, schema, help, output,
       upgrade..."
-  - summary: "Cycle 789 (2026-07-14): Fixed both bounded-history defects in
-      simplified Agentera Task 1: inventory and preview now cap the..."
 omitted: true
-omitted_count: 75
+omitted_count: 76
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded

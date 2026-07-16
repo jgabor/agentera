@@ -16,6 +16,13 @@ import {
   type NumberedArchiveContract,
 } from "./archiveDiscovery.js";
 import { composeDecisionOverlay, decisionOverlayPath, loadDecisionOverlay } from "./decisionOverlay.js";
+import {
+  composeDecisionRevision,
+  decisionRevisionContract,
+  decisionRevisionPath,
+  loadDecisionRevision,
+  type DecisionRevisionList,
+} from "./decisionRevision.js";
 import { decisionContextEntry } from "../cli/commands/state/decisions.js";
 import { assertRealpathBoundary } from "../registries/artifactRegistry.js";
 import { legacyEntryNumber, legacyIdentity, type LegacyIdentityKind } from "./legacyIdentity.js";
@@ -70,6 +77,52 @@ interface OverlayResult {
   applied: boolean;
   fields: string[];
   path: string;
+}
+
+interface RevisionResult {
+  record: JsonObject;
+  applied: boolean;
+  fields: string[];
+  path: string;
+  revisions: number;
+  broken_hash: boolean;
+}
+
+function revisionFor(
+  projectRoot: string,
+  sourceRoot: string,
+  artifactId: string,
+  entryNumber: number,
+  record: JsonObject,
+  baseSha256: string | undefined,
+): RevisionResult {
+  if (artifactId !== "decisions") {
+    return { record, applied: false, fields: [], path: "", revisions: 0, broken_hash: false };
+  }
+  const contract = decisionRevisionContract(sourceRoot);
+  const revisionPath = decisionRevisionPath(projectRoot, sourceRoot);
+  let document: Record<string, DecisionRevisionList>;
+  try {
+    document = loadDecisionRevision(projectRoot, sourceRoot);
+  } catch (error) {
+    throw failure(1, "corrupt", `cannot read decision revision document: ${(error as Error).message}`, {
+      artifactId,
+      entryNumber,
+      recovery: "Preserve the decision revision document for diagnostics, repair its YAML and amendable content paths, then retry.",
+      details: { path: revisionPath },
+    });
+  }
+  const stableId = `decisions:${entryNumber}`;
+  const revisions = document[stableId] ?? [];
+  const composed = composeDecisionRevision(record, revisions, { contract, baseSha256 });
+  return {
+    record: composed.record,
+    applied: composed.applied,
+    fields: composed.fields,
+    path: revisionPath,
+    revisions: revisions.length,
+    broken_hash: composed.broken_hash,
+  };
 }
 
 export interface RetrievedStateEntry {
@@ -316,16 +369,26 @@ function compose(
     });
   }
   const complete = archiveRecord !== undefined || current.state === "full";
-  const overlay = complete ? overlayFor(projectRoot, sourceRoot, artifactId, entryNumber, record) : { record, applied: false, fields: [], path: "" };
+  // Revision composition runs in the content authority (base→revisions), before
+  // and separate from the satisfaction overlay. Broken-hash lineage degrades
+  // detail rather than reconstructing; the satisfaction overlay composes after.
+  const revision = complete
+    ? revisionFor(projectRoot, sourceRoot, artifactId, entryNumber, record, archiveHash)
+    : { record, applied: false, fields: [], path: "", revisions: 0, broken_hash: false };
+  const overlay = complete ? overlayFor(projectRoot, sourceRoot, artifactId, entryNumber, revision.record) : { record, applied: false, fields: [], path: "" };
   const source = archiveRecord ? "archive" : current.state === "summary" ? "legacy_summary" : "legacy_full";
-  const compatibility = archiveRecord ? "complete" : "degraded";
+  const compatibility = archiveRecord
+    ? revision.broken_hash
+      ? "degraded"
+      : "complete"
+    : "degraded";
   return {
     stable_id: `${artifactId}:${entryNumber}`,
     artifact_id: artifactId,
     entry_number: entryNumber,
     record: overlay.record,
     source,
-    detail_availability: complete ? "full" : "summary",
+    detail_availability: complete ? (revision.broken_hash ? "summary" : "full") : "summary",
     compatibility,
     provenance: {
       archive: {
@@ -340,7 +403,17 @@ function compose(
         representation: current.state,
       },
       ...(artifactId === "decisions" && complete
-        ? { overlay: { path: overlay.path, applied: overlay.applied, fields: overlay.fields } }
+        ? {
+            revision: {
+              path: revision.path,
+              applied: revision.applied,
+              fields: revision.fields,
+              revisions: revision.revisions,
+              broken_hash: revision.broken_hash,
+              base_provenance: archiveRecord ? "historical_archive" : "degraded_projection",
+            },
+            overlay: { path: overlay.path, applied: overlay.applied, fields: overlay.fields },
+          }
         : {}),
     },
   };

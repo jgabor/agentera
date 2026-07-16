@@ -18,6 +18,13 @@ import {
 } from "./archiveDiscovery.js";
 import { legacyIdentity, type LegacyIdentity } from "./legacyIdentity.js";
 import { classifyStateRows, type StateClassification, type StateClassificationRow } from "./listClassification.js";
+import {
+  composeDecisionRevision,
+  decisionRevisionContract,
+  decisionRevisionPath,
+  loadDecisionRevision,
+  type DecisionRevisionList,
+} from "./decisionRevision.js";
 
 const READ_CHUNK_BYTES = 64 * 1024;
 const MAX_CAPTURED_VALUE_CHARS = 512;
@@ -527,6 +534,61 @@ function sourceRows(current: StartupSourceEntry[], archives: NumberedArchiveEntr
   return rows.sort((left, right) => Number(right.entry_number ?? 0) - Number(left.entry_number ?? 0)).slice(0, 2);
 }
 
+/**
+ * Annotate bounded decision startup entries that carry revisions with amendment
+ * provenance. The bounded summary reflects the latest effective content record
+ * (base→revisions) where the captured summary fields overlap amendable paths;
+ * satisfaction composes after, separately, at get time. A missing or corrupt
+ * revision document degrades to no annotation rather than blocking startup.
+ */
+function applyDecisionRevisionProvenance(entries: JsonValue[], projectRoot: string, sourceRoot: string): JsonValue[] {
+  let document: Record<string, DecisionRevisionList>;
+  try {
+    document = loadDecisionRevision(projectRoot, sourceRoot);
+  } catch {
+    return entries;
+  }
+  if (!document || Object.keys(document).length === 0) return entries;
+  const contract = decisionRevisionContract(sourceRoot);
+  const revisionPath = decisionRevisionPath(projectRoot, sourceRoot);
+  return entries.map((entry) => {
+    if (!entry || typeof entry !== "object" || Array.isArray(entry)) return entry;
+    const objectEntry = entry as JsonObject;
+    const stableId = typeof objectEntry.stable_id === "string" ? (objectEntry.stable_id as string) : null;
+    if (!stableId) return entry;
+    const revisions = document[stableId];
+    if (!revisions || revisions.length === 0) return entry;
+    const fields = new Set<string>();
+    for (const revision of revisions) {
+      for (const amendable of contract.amendablePaths) {
+        if (amendable in revision && revision[amendable] !== undefined) fields.add(amendable);
+      }
+    }
+    // Reflect amended content fields in the bounded summary where present.
+    const summary = isMapping(objectEntry.summary) ? { ...(objectEntry.summary as JsonObject) } : undefined;
+    const provenance = isMapping(objectEntry.provenance) ? { ...(objectEntry.provenance as JsonObject) } : {};
+    provenance.revision = {
+      path: revisionPath,
+      applied: fields.size > 0,
+      fields: [...fields],
+      revisions: revisions.length,
+    } as unknown as JsonValue;
+    // Compose amendments into the bounded summary summary block for any
+    // amendable field that the scanner also captured (e.g. choice, confidence).
+    if (summary) {
+      const composed = composeDecisionRevision(summary, revisions, { contract }).record;
+      for (const amendable of contract.amendablePaths) {
+        if (amendable in composed) {
+          summary[amendable] = composed[amendable] as JsonValue;
+        }
+      }
+    }
+    const next: JsonObject = { ...objectEntry, provenance: provenance as unknown as JsonObject };
+    if (summary) next.summary = summary as unknown as JsonValue;
+    return next as unknown as JsonValue;
+  });
+}
+
 export function startupHistorySummary(
   projectRoot: string,
   artifactId: "progress" | "decisions" | "health",
@@ -543,6 +605,11 @@ export function startupHistorySummary(
   const rejected = discovery.rejected;
   const entries = sourceRows(scan.entries, discovery.entries, rejected, artifactId);
   const counts = countsFor(artifactId, scan.entries, discovery.entries, rejected, entries.length);
+  // The startup projection is bounded; decision amendments compose at read time.
+  // Annotate decision entries that carry revisions with amendment provenance so
+  // the startup consumer sees the latest effective record pointer without
+  // reconstructing full detail. The satisfaction overlay composes separately.
+  const revisedEntries = artifactId === "decisions" ? applyDecisionRevisionProvenance(entries, projectRoot, sourceRoot) : entries;
   const retrieval: JsonObject = {
     list: `agentera state ${artifactId} list --limit 20 --format json`,
     get: `agentera state ${artifactId} get --number N --format json`,
@@ -556,7 +623,7 @@ export function startupHistorySummary(
     artifact: artifactId,
     status,
     counts,
-    entries,
+    entries: revisedEntries,
     source: {
       current_projection: { path: currentPath, present: scan.exists, entries: scan.entries.length },
       archive: { root: discovery.archiveRoot, validated_entries: discovery.entries.length, rejected_count: rejected.length },

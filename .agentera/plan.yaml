@@ -47,7 +47,7 @@ tasks:
     name: Establish revision-backed effective decision reads
     depends_on:
       - "1"
-    status: pending
+    status: complete
     acceptance:
       - GIVEN a verified base and valid ordered revisions WHEN exact, list, startup, and compaction consumers read the decision THEN they receive one latest effective record with base and amendment provenance.
       - GIVEN a complete legacy projection record without a numbered archive WHEN amendment preparation runs THEN its exact values may seed a hash-verified base marked with degraded projection provenance, never historical archive provenance.

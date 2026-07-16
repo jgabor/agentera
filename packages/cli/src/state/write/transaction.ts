@@ -786,7 +786,7 @@ export function executeStateWrite(
     reject({
       class: "unsupported_target",
       message:
-        "decisions amend publication is not implemented yet; the revision authority and amend command plumbing are defined, and revision-backed reads (plan task 2) and amendment publication (plan task 3) land later",
+        "decisions amend publication is not implemented yet; revision-backed effective reads are now live (base→revisions→overlay) and amendment preparation selects a hash-verified base, but writing a revision record lands in plan task 3",
       syntax:
         "agentera state decisions amend --number N [--question ... --choice ... --reasoning ... --confidence firm ...] [--dry-run] --format json",
       example:

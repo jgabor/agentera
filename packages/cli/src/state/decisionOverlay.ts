@@ -10,6 +10,12 @@ import {
   decisionOverlayContract,
   type DecisionOverlayContract,
 } from "./archiveDiscovery.js";
+import {
+  composeDecisionRevision,
+  decisionRevisionContract,
+  loadDecisionRevision,
+  type DecisionRevisionList,
+} from "./decisionRevision.js";
 import type { StateMutationTransaction } from "./write/mutation.js";
 import { reject } from "./write/errors.js";
 
@@ -164,12 +170,35 @@ export function hydrateDecisionRecords(
 ): JsonObject[] {
   const overlay = typeof source === "string" ? loadDecisionOverlay(source) : source;
   const contract = decisionOverlayContract();
+  // Revisions (content authority) compose over the base before and separately
+  // from the satisfaction overlay. When the source is a project root, load the
+  // revision document once so the compaction consumer sees one latest effective
+  // record per decision. Skipped for explicit overlay documents (decision-only
+  // callers) where no project root is available.
+  const revisionDocument: Record<string, unknown> =
+    typeof source === "string" ? loadRevisionDocument(source) : {};
+  const revisionContract = revisionDocument ? decisionRevisionContract() : null;
   return entries.map((entry) => {
     const number = entry.number;
     const stableId =
       typeof number === "number" || typeof number === "string" ? `decisions:${number}` : null;
-    return composeDecisionOverlay(entry, stableId ? overlay[stableId] : undefined, contract);
+    const effective = stableId && revisionContract && revisionDocument[stableId]
+      ? composeDecisionRevision(entry, revisionDocument[stableId] as DecisionRevisionList, { contract: revisionContract }).record
+      : entry;
+    return composeDecisionOverlay(effective, stableId ? overlay[stableId] : undefined, contract);
   });
+}
+
+function loadRevisionDocument(projectRoot: string): Record<string, unknown> {
+  try {
+    return loadDecisionRevision(projectRoot) as unknown as Record<string, unknown>;
+  } catch {
+    // A missing revision document is the common case (no amendments yet). A
+    // corrupt document surfaces at read time via the focused read consumers;
+    // compaction degrades rather than forcing amendment awareness for plain
+    // overlay composition paths.
+    return {};
+  }
 }
 
 export function composeDecisionOverlay(

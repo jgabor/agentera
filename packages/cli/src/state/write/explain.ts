@@ -134,7 +134,7 @@ function decisionsGuidance(artifact: WritableArtifact, verb: string): string[] {
       "select an existing decision number with --number; it is caller-supplied and never assigned by the CLI",
       "supply at least one amendable content field (--question, --context, --alternative-chosen, --choice, --reasoning, --confidence, --feeds-into)",
       "confidence must be current vocabulary (firm, provisional, exploratory); unsupported inherited labels on untouched records stay legacy",
-      "dry-run reports the proposed revision and effective-record effects without writing; apply publishes immutable revision evidence separate from the original archive",
+      "dry-run reports the proposed revision and effective-record effects without writing; revision-backed reads already compose base→revisions→overlay with truthful provenance",
       "amend publication is not implemented yet; execution refuses before side effects",
     ];
   return ["number is assigned by the CLI; do not pass --number", ...base];

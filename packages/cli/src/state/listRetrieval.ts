@@ -18,6 +18,13 @@ import {
   type ArchiveRejection,
 } from "./archiveDiscovery.js";
 import { decisionOverlayPath, loadDecisionOverlay } from "./decisionOverlay.js";
+import {
+  decisionRevisionPath,
+  loadDecisionRevisionSnapshot,
+  decisionRevisionFields,
+  composedRevisionRecord,
+  type DecisionRevisionSnapshot,
+} from "./decisionRevision.js";
 import { loadProjectionPolicy, serializedProjectionBytes } from "./projectionPolicy.js";
 import { StateRetrievalFailure, type StateFailureClass } from "./directRetrieval.js";
 import { physicalCounts, provenanceCounts } from "./listAccounting.js";
@@ -82,6 +89,12 @@ interface OverlayState {
   revision: string;
   document: Record<string, JsonObject>;
   mutablePaths: string[];
+}
+
+interface RevisionState {
+  path: string;
+  revision: string;
+  snapshot: DecisionRevisionSnapshot;
 }
 
 interface CursorPayload {
@@ -398,6 +411,17 @@ function overlayState(projectRoot: string, artifactId: string, sourceRoot: strin
   };
 }
 
+function revisionState(projectRoot: string, artifactId: string, sourceRoot: string): RevisionState | null {
+  if (artifactId !== "decisions") return null;
+  let snapshot: DecisionRevisionSnapshot | null;
+  try {
+    snapshot = loadDecisionRevisionSnapshot(projectRoot, sourceRoot);
+  } catch (error) {
+    throw listFailure(1, "corrupt", (error as Error).message, artifactId, "Repair the decision revision document, then retry the list command.", { path: decisionRevisionPath(projectRoot, sourceRoot) });
+  }
+  return snapshot ? { path: snapshot.path, revision: hashValue(snapshot.document as unknown as JsonObject), snapshot } : null;
+}
+
 function rejectionNumber(rejected: ArchiveRejection, artifactId: string): number | null {
   const expected = path.join(`${path.sep}${artifactId}`, "");
   if (!rejected.path.includes(expected)) return null;
@@ -567,12 +591,13 @@ function validateListFilters(artifactId: string, filters: StateListFilters): voi
   }
 }
 
-function snapshotId(candidates: ListCandidate[], artifactId: string, filters: JsonObject, overlayRevision: string): string {
+function snapshotId(candidates: ListCandidate[], artifactId: string, filters: JsonObject, overlayRevision: string, revisionRevision: string): string {
   const identity = {
     artifact_id: artifactId,
     order: LIST_ORDER,
     filters,
     overlay_revision: overlayRevision,
+    revision_revision: revisionRevision,
     candidates: candidates.map((candidate) => ({
       stable_id: candidate.stableId,
       sort_key: candidate.sortKey,
@@ -618,13 +643,14 @@ function recordStatus(candidate: ListCandidate, overlay: OverlayState | null): s
   return "unknown";
 }
 
-function listEntry(candidate: ListCandidate, overlay: OverlayState | null, projectRoot: string, contract: NumberedArchiveContract): JsonObject {
+function listEntry(candidate: ListCandidate, overlay: OverlayState | null, revision: RevisionState | null, projectRoot: string, contract: NumberedArchiveContract): JsonObject {
   const archivePath = candidate.archive?.path ?? candidate.corruptArchive?.path ?? path.join(path.resolve(projectRoot), contract.archiveRoot, candidate.artifactId, `${candidate.entryNumber ?? "unaddressable"}${contract.archiveExtension}`);
   const hasArchive = candidate.archive !== undefined;
   const currentStatus = candidate.current ? (candidate.current.representation === "full" ? "active" : "summary") : "archive_only";
   const source = hasArchive ? "archive" : candidate.corruptArchive ? "archive" : candidate.current?.representation === "full" ? "legacy_full" : "legacy_summary";
   const detailAvailability = hasArchive ? "full" : candidate.current?.representation === "full" ? "full" : candidate.current ? "summary" : candidate.rows[0]?.representation ?? "unavailable";
-  const fields = overlayFields(overlay, candidate.stableId ?? "");
+  const overlayFieldsForEntry = overlayFields(overlay, candidate.stableId ?? "");
+  const revisionForEntry = decisionRevisionFields(revision?.snapshot ?? null, candidate.stableId ?? "");
   const addressable = candidate.stableId !== null;
   const physicalRows = candidate.rows.map((row) => ({
     row_id: row.rowKey,
@@ -672,14 +698,28 @@ function listEntry(candidate: ListCandidate, overlay: OverlayState | null, proje
       : { retrieval: { available: false, reason: "unaddressable", message: "No stable ID was inferred from this physical row; list output is the only supported view." } }),
   };
   if (overlay && addressable) {
-    entry.overlay_applied = fields.length > 0;
+    entry.overlay_applied = overlayFieldsForEntry.length > 0;
     entry.provenance = {
       ...(entry.provenance as JsonObject),
-      overlay: { path: overlay.path, applied: fields.length > 0, fields, revision: overlay.revision },
+      overlay: { path: overlay.path, applied: overlayFieldsForEntry.length > 0, fields: overlayFieldsForEntry, revision: overlay.revision },
     };
   }
-  const sourceValue = candidate.current?.summary ?? candidate.archive?.record ?? candidate.current?.record;
-  const summary = compactSummary(sourceValue);
+  if (revision && addressable) {
+    entry.revision_applied = revisionForEntry.applied;
+    entry.provenance = {
+      ...(entry.provenance as JsonObject),
+      revision: {
+        path: revision.path,
+        applied: revisionForEntry.applied,
+        fields: revisionForEntry.fields,
+        revisions: revisionForEntry.count,
+        base_provenance: hasArchive && !candidate.corruptArchive ? "historical_archive" : "degraded_projection",
+      },
+    };
+  }
+  const baseSourceValue = candidate.current?.summary ?? candidate.archive?.record ?? candidate.current?.record;
+  const effectiveSourceValue = revisionForEntry.applied && baseSourceValue && candidate.stableId ? composedRevisionRecord(revision?.snapshot ?? null, candidate.stableId, baseSourceValue as JsonObject) : baseSourceValue;
+  const summary = compactSummary(effectiveSourceValue);
   if (summary !== undefined) entry.summary = summary;
   return entry;
 }
@@ -766,16 +806,18 @@ export function listStateEntries(
   const parsed = cursor !== undefined ? parseCursor(artifactId, cursor, normalizedFilters, projectRoot, sourceRoot) : null;
   const built = buildCandidates(projectRoot, artifactId, contract, sourceRoot);
   const overlay = overlayState(projectRoot, artifactId, sourceRoot);
+  const revision = revisionState(projectRoot, artifactId, sourceRoot);
   const allCandidates = built.candidates.filter((candidate) => matchesFilter(candidate, filters));
   const overlayRevision = overlay?.revision ?? "not_applicable";
-  const currentSnapshotId = snapshotId(allCandidates, artifactId, normalizedFilters, overlayRevision);
+  const revisionRevision = revision?.revision ?? "not_applicable";
+  const currentSnapshotId = snapshotId(allCandidates, artifactId, normalizedFilters, overlayRevision, revisionRevision);
   let snapshotCandidates = allCandidates;
   let firstPage = parsed === null;
   if (parsed) {
     const oldCandidates = allCandidates.filter(
       (candidate) => candidate.sortKey >= parsed.payload.candidate_start_key && candidate.sortKey <= parsed.payload.candidate_end_key,
     );
-    const oldSnapshotId = snapshotId(oldCandidates, artifactId, normalizedFilters, overlayRevision);
+    const oldSnapshotId = snapshotId(oldCandidates, artifactId, normalizedFilters, overlayRevision, revisionRevision);
     if (
       oldSnapshotId !== parsed.payload.snapshot_id ||
       oldCandidates.length !== parsed.payload.candidate_count ||
@@ -789,10 +831,10 @@ export function listStateEntries(
     snapshotCandidates = oldCandidates;
     firstPage = false;
   }
-  const snapshot = snapshotId(snapshotCandidates, artifactId, normalizedFilters, overlayRevision);
+  const snapshot = snapshotId(snapshotCandidates, artifactId, normalizedFilters, overlayRevision, revisionRevision);
   const pageCandidates = parsed ? snapshotCandidates.filter((candidate) => candidate.sortKey > parsed.payload.after_key) : snapshotCandidates;
   const selected = pageCandidates.slice(0, limit);
-  const rows = selected.map((candidate) => listEntry(candidate, overlay, projectRoot, contract));
+  const rows = selected.map((candidate) => listEntry(candidate, overlay, revision, projectRoot, contract));
   const remaining = pageCandidates.length - selected.length;
   const nextAfterCandidate = selected.at(-1);
   const nextAfterKey = nextAfterCandidate?.sortKey ?? parsed?.payload.after_key ?? "";
