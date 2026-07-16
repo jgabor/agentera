@@ -1,0 +1,369 @@
+schema_version: agentera.prime_consumer_compatibility.v1
+status: approved_boundary
+plan: plan:634c092e-a7bc-48f4-80ee-2c91940e54f1
+plan_task: 1
+purpose: >-
+  Task 1 compatibility boundary for the "Make prime startup compact and
+  self-contained" plan. Inventory every documented prime consumer, classify
+  every field proposed for omission as removable, conditional, or
+  transition-required, and record the approved public-output policy that Tasks 2
+  through 4 must satisfy. This file is the consumer-facing contract boundary; it
+  does not consolidate the emitted field authority (Task 2) and does not define
+  byte budgets (json_output_surface_manifest.yaml owns those).
+exclusions:
+  - Structured attention records (attention stays delimiter-encoded string[]).
+  - Stable artifact identities and reference-based routing.
+  - New summary-versus-diagnostic projection modes.
+  - Compiled or cached capability instructions.
+
+# ---------------------------------------------------------------------------
+# Consumer inventory. Each consumer names its startup command and the concrete
+# fields it reads, with a file:line evidence pointer into the current tree.
+# Tasks 2-4 MUST keep every consumed field resolvable from a declared surface.
+# ---------------------------------------------------------------------------
+consumers:
+  - id: opencode_compaction_context
+    startup_command: agentera prime --format json
+    evidence: .opencode/plugins/agentera.js:502-517
+    consumed_fields:
+      - mode
+      - profile.status
+      - profile
+      - health.grade
+      - health.trajectory
+      - health
+      - issues
+      - plan
+      - plan.exists
+      - plan.status
+      - plan.title
+      - plan.first_pending.name
+      - progress
+      - progress.latest
+      - progress.latest.number
+      - progress.latest.what
+      - progress.latest.next
+      - next_action
+      - next_action.object
+      - attention
+    notes: >-
+      Reads the deprecated `issues` alias instead of `todo` (lines 480-486).
+      This is the only documented runtime consumer of the deprecated alias, so
+      `issues` is transition-required until the stable cut.
+  - id: status_dashboard_renderer
+    startup_command: agentera prime --format json
+    secondary_command: agentera prime --context status --format json
+    evidence: skills/agentera/SKILL.md:68
+    dashboard_evidence: packages/cli/src/capabilities/status/instructions.ts
+    fetch_command_evidence: packages/cli/src/cli/commands/prime/orientationOutput.ts:78
+    consumed_fields:
+      - health
+      - todo
+      - plan
+      - objective
+      - profile
+      - next_action
+      - attention
+      - state_presence
+      - source_contract
+      - source_contract.capability_context
+    notes: >-
+      Bare `/agentera` route runs `prime --format json` for state, then follows
+      `source_contract.capability_context.fetch_command` for rendering
+      instructions. The dashboard glyphs (health/todo/plan/objective/profile/
+      next_action/attention) define the minimum required state families.
+  - id: capability_context_dispatcher
+    startup_command: agentera prime --context <capability> --format json
+    evidence: .opencode/agents/agentera.md:12
+    alt_evidence: .cursor/agents/agentera.md:7
+    consumed_fields:
+      - command
+      - status
+      - capability_context
+      - capability_context.prose
+    notes: >-
+      Per-capability startup capsule. Reads `prose` and dispatches a subagent.
+      This consumer governs the `--context` surface, not the bare briefing; the
+      bounded decision brief (Task 3) must not break the `--context` contract.
+  - id: json_output_surface_manifest
+    startup_command: agentera prime [ --dashboard | --context <capability> ] --format json
+    evidence: scripts/json_output_surface_manifest.yaml:47-161
+    consumed_fields: declared_surfaces
+    notes: >-
+      Measurement/budget authority, not a runtime consumer. Declares four prime
+      surfaces: prime-dashboard, prime-briefing, prime-fields-sparse, and
+      prime-capability-context. Owns byte/token budgets; Task 3 (<=12000) and
+      Task 4 (<=25000) budgets are reconciled against it.
+
+# ---------------------------------------------------------------------------
+# Field-authority drift. Four lists currently describe the prime field surface
+# and disagree. This is the evidence Task 2 must reconcile to one authority.
+# Task 1 documents the drift; it does not consolidate it.
+# ---------------------------------------------------------------------------
+field_authorities:
+  - id: orientation_output_emission
+    location: packages/cli/src/cli/commands/prime/orientationOutput.ts:33-40
+    field_count: 27
+    role: actual_emission_authority
+    notes: STATUS_STRUCTURED_FIELDS; the keys actually serialized by buildOrientationJsonPayload.
+  - id: schema_advertised
+    location: packages/cli/src/cli/commands/schema.ts:137-163
+    field_count: 25
+    role: schema_discovery_drift
+    drift: missing project_integration and history vs the emission authority.
+  - id: text_briefing_hardcoded
+    location: packages/cli/src/cli/commands/prime/orientationOutput.ts:262
+    field_count: 21
+    role: text_briefing_drift
+    drift: omits command, status, app, app_home, history, source, source_contract.
+  - id: agent_ready_state_contract
+    location: references/cli/agent-ready-state-contract.yaml:221-245
+    field_count: 23
+    role: documented_consumer_contract_drift
+    drift: >-
+      Lists retired `bundle` instead of `app`/`app_home`; omits
+      project_integration, runtime_lifecycle, history, app_home, app.
+
+# ---------------------------------------------------------------------------
+# Field classification. Every field proposed for omission is classified with a
+# rationale and the task that consumes the decision.
+#   required: always present in bare prime; consumers depend on it.
+#   conditional: default-only; Task 2 may omit when in default state, preserving
+#     missing-vs-empty semantics and named-command recovery.
+#   diagnostic: lifecycle/history detail; omitted from default startup unless
+#     status declares it necessary (Task 4 decision).
+#   deprecated_transition: emitted alias; removable at the 3.0.0 stable cut only.
+#   retired: not emitted; a consumer depending on it must fail visibly.
+# ---------------------------------------------------------------------------
+field_classification:
+  - field: command
+    status: required
+    rationale: REQUIRED_SPARSE_CONTEXT_FIELDS; emitted on every structured payload.
+  - field: status
+    status: required
+    rationale: REQUIRED_SPARSE_CONTEXT_FIELDS; every consumer gates on status=ok.
+  - field: app_home
+    status: required
+    rationale: Install/v1/profile safety; status text briefing prints app_home.
+  - field: app
+    status: required
+    rationale: publicDoctorStatus projection; app/v1/profile safety per source_contract.access.
+  - field: mode
+    status: required
+    rationale: Fresh-vs-returning routing; opencode and status consumers read it.
+  - field: profile
+    status: required
+    rationale: opencode reads profile.status; status dashboard glyph.
+  - field: v1_migration
+    status: conditional
+    rationale: >-
+      Default-only when detected=false. No documented consumer reads it in the
+      default startup path. Task 2 may omit when not detected; recovery via
+      `agentera upgrade --dry-run`.
+  - field: health
+    status: required
+    rationale: opencode reads grade/trajectory; status dashboard glyph.
+  - field: todo
+    status: required
+    rationale: Status dashboard glyph; canonical replacement for the issues alias.
+  - field: plan
+    status: required
+    rationale: opencode reads exists/status/title/first_pending; status dashboard glyph.
+  - field: docs
+    status: conditional
+    rationale: Default-only when no docs state. Recovery via `agentera state docs`.
+  - field: progress
+    status: required
+    rationale: opencode reads progress.latest; status brief references shipped work.
+  - field: objective
+    status: conditional
+    rationale: Default-only when none active. Status derives "none active" from state_presence.
+  - field: state_presence
+    status: required
+    rationale: Owns missing-versus-empty semantics; must not be omitted.
+  - field: project_integration
+    status: conditional
+    rationale: >-
+      Default-only when no recommendation. Status briefing prints it
+      unconditionally today; Task 2 may gate emission on a non-default
+      recommendation. NOTE: schema.ts omits this field (drift); Task 2 must add
+      it to the schema-advertised set.
+  - field: attention
+    status: required
+    rationale: Bounded; opencode and status dashboard consume it.
+  - field: history
+    status: diagnostic
+    rationale: >-
+      Startup history. Omitted from default startup unless status declares it
+      necessary (Task 4). NOTE: schema.ts omits this field (drift); Task 2 must
+      add it to the schema-advertised set or remove it from emission.
+  - field: runtime_lifecycle
+    status: conditional
+    rationale: >-
+      Diagnostic. Plan constraint: unrelated lifecycle diagnostics are omitted
+      unless status declares them necessary for the current brief (Task 4).
+  - field: decision_attention
+    status: conditional
+    rationale: Null unless returned decisions require satisfaction review.
+  - field: next_action
+    status: required
+    rationale: opencode and status routing; SKILL.md bare /agentera route follows it.
+  - field: orchestration_context
+    status: conditional
+    rationale: >-
+      Always null in bare prime; meaningful only in --context orkestrera. Task 2
+      may omit null bespoke contexts from the bare briefing without breaking
+      documented consumers.
+  - field: closeout_context
+    status: conditional
+    rationale: Always null in bare prime; meaningful only in --context dokumentera.
+  - field: evidence_context
+    status: conditional
+    rationale: Always null in bare prime; meaningful only in --context inspektera.
+  - field: benchmark_context
+    status: conditional
+    rationale: Always null in bare prime; meaningful only in --context optimera.
+  - field: execution_context
+    status: conditional
+    rationale: Always null in bare prime; meaningful only in --context realisera.
+  - field: source
+    status: required
+    rationale: Provenance; artifacts_present drives fresh-vs-returning dashboard.
+  - field: source_contract
+    status: required
+    rationale: Declares fields, capability_startup, capability_context, artifact_writes.
+  - field: issues
+    status: deprecated_transition
+    rationale: >-
+      Deprecated alias of `todo`. opencode_compaction_context reads it
+      (.opencode/plugins/agentera.js:480-486). Removable at the 3.0.0 stable cut
+      only; tracked in TODO.md [fix:3.0.0]. Tasks 2-4 must keep the alias and
+      the stderr deprecation warning.
+  - field: bundle
+    status: retired
+    rationale: >-
+      v2-era field renamed to `app`/`app_home` in v3. agent-ready-state-contract
+      still documents it (drift); it is not emitted. A consumer depending on it
+      must fail visibly (see fail fixtures).
+
+# ---------------------------------------------------------------------------
+# Approved public-output policy for Tasks 2-4. Unambiguous so each later task
+# can make emission decisions without re-litigating compatibility.
+# ---------------------------------------------------------------------------
+public_output_policy:
+  canonical_field_set: >-
+    The emitted STATUS_STRUCTURED_FIELDS (27) is the single consumer-facing
+    authority for the bare prime briefing. Task 2 reconciles schema.ts, the text
+    briefing hardcoded list, and agent-ready-state-contract.yaml hej.fields to
+    this set, removing the four-way drift documented above.
+  deprecated_alias_rule: >-
+    `issues` remains a transition alias of `todo` with a stderr deprecation
+    warning until the 3.0.0 stable cut. No task in this plan may remove it.
+  default_only_omission_rule: >-
+    Fields classified conditional or diagnostic may be omitted by Task 2 when
+    they are in their default/empty state, provided missing-versus-empty
+    semantics stay distinguishable and a named authoritative command returns the
+    current detail (`agentera state <artifact>`, `agentera schema`,
+    `agentera upgrade --dry-run`). Null bespoke contexts
+    (orchestration/closeout/evidence/benchmark/execution) may be omitted from
+    the bare briefing; they remain declared on the `--context` surface.
+  bounded_brief_rule: >-
+    Task 3 produces a bounded default decision brief (<=12000 bytes pretty
+    UTF-8 JSON + trailing newline; diagnostics on stderr) that retains every
+    required field plus any active conditional field, and never collapses
+    missing versus present-but-empty.
+  self_contained_status_rule: >-
+    Task 4 folds the bounded state into one `agentera prime --context status
+    --format json` response (<=25000 bytes) so the status dashboard needs no
+    separate bare-prime call or raw artifact read. The `--context` capsule
+    contract (command/status/capability_context) is unchanged.
+  fail_visible_rule: >-
+    Undeclared or retired field dependencies must fail visibly: selecting an
+    undeclared field via `--fields` returns nonzero exit code 1 and a correction
+    listing the declared available fields. Tasks 2-4 must preserve this
+    contract after any field-set change.
+
+# ---------------------------------------------------------------------------
+# Fixtures used by packages/cli/test/cli/primeCompatibilityBoundary.test.ts.
+# Pass fixtures are the documented consumers; their consumed_fields must be a
+# subset of declared_available_fields. Fail fixtures depend on retired or
+# undeclared fields and must fail visibly through the fail_visible_rule.
+# ---------------------------------------------------------------------------
+declared_available_fields:
+  - command
+  - status
+  - app_home
+  - app
+  - mode
+  - profile
+  - v1_migration
+  - health
+  - todo
+  - plan
+  - docs
+  - progress
+  - objective
+  - state_presence
+  - project_integration
+  - attention
+  - history
+  - runtime_lifecycle
+  - decision_attention
+  - next_action
+  - orchestration_context
+  - closeout_context
+  - evidence_context
+  - benchmark_context
+  - execution_context
+  - source
+  - source_contract
+  - capability_context
+  - issues
+fixtures:
+  pass:
+    - consumer: opencode_compaction_context
+      depends_on:
+        - mode
+        - profile
+        - health
+        - issues
+        - plan
+        - progress
+        - next_action
+        - attention
+    - consumer: status_dashboard_renderer
+      depends_on:
+        - health
+        - todo
+        - plan
+        - objective
+        - profile
+        - next_action
+        - attention
+        - state_presence
+        - source_contract
+    - consumer: capability_context_dispatcher
+      depends_on:
+        - command
+        - status
+        - capability_context
+    - consumer: bare_agentera_route
+      depends_on:
+        - next_action
+        - source_contract.capability_context
+        - source_contract
+  fail:
+    - consumer: v2_bundle_consumer
+      depends_on:
+        - bundle
+      rationale: >-
+        `bundle` was renamed to `app`/`app_home` in v3 and is not emitted.
+        Selecting it via `--fields bundle` must return exit code 1 with a
+        correction listing the declared available fields.
+
+approval:
+  recorded_for_tasks: [2, 3, 4]
+  decision: >-
+    The compatibility boundary above is approved. Tasks 2-4 implement emission
+    changes within this policy without re-deriving consumer compatibility.
+  recorded_at: 2026-07-16

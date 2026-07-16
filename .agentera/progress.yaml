@@ -1,4 +1,38 @@
 cycles:
+  - number: 845
+    timestamp: 2026-07-16 10:27
+    type: test
+    phase: plan
+    what: "Established the prime consumer compatibility boundary: inventoried every
+      documented prime consumer with field-level evidence, classified each field
+      proposed for omission as
+      required/conditional/diagnostic/deprecated-transition/retired with
+      rationale, recorded an approved public-output policy for Tasks 2-4, and
+      added a policy-verified pass/fail fixture test."
+    inspiration: plan:634c092e-a7bc-48f4-80ee-2c91940e54f1 task 1
+    verified: "vitest: packages/cli/test/cli/primeCompatibilityBoundary.test.ts (8
+      tests, pass) — every documented consumer fixture's fields are a subset of
+      declared_available_fields; retired field 'bundle' fails visibly via
+      --fields (rc=1 + 'Available fields:' correction listing app_home/app);
+      policy declared_available_fields reconciled against emitPrime selector and
+      default bare-prime emission. Full suite pnpm -C packages/cli test: 196
+      files / 2274 tests pass. typecheck pass. build pass. check compact:
+      status=pass over_limit=0 errors=0."
+    next: "Task 2: publish one non-redundant prime contract — reconcile schema.ts
+      STATUS_STRUCTURED_FIELDS, the text-briefing hardcoded list, and
+      agent-ready-state-contract.yaml hej.fields to the emitted authority per
+      the approved public_output_policy; preserve the 'issues' deprecated
+      transition alias and the fail-visible --fields contract."
+    context:
+      intent: "Plan Task 1: give Tasks 2-4 an unambiguous compatibility boundary
+        before any prime payload change."
+      constraints: "Plan exclusions preserved: no structured attention records, no
+        stable artifact identities/reference routing, no summary-vs-diagnostic
+        projection modes, no compiled/cached capability instructions. Did not
+        perform broad payload changes (deferred to Task 2)."
+      scope: references/cli/prime-consumer-compatibility.yaml (new),
+        packages/cli/test/cli/primeCompatibilityBoundary.test.ts (new),
+        .agentera/plan.yaml (task 1 -> complete)
   - number: 844
     timestamp: 2026-07-16 09:31
     type: feat
@@ -327,43 +361,6 @@ cycles:
         packages/cli/test/analytics/extractCorpus.test.ts;
         packages/cli/test/registries/evidenceTierContract.test.ts;
         packages/cli/test/cli/report.test.ts
-  - number: 835
-    timestamp: 2026-07-15 21:04
-    type: fix
-    phase: build
-    what: "Fixed Criterion 3 audit failure: wired legacyCorpusReadable into
-      extractStartupIntermediateFromCorpusFile so oversized legacy corpus.json
-      is never read whole; extended BOUNDED_RUNTIME_REASONS to accept
-      contract-projected compatibility reasons (no_evidence,
-      legacy_monolithic_state, unreadable_or_schema_divergent, oversized) so
-      degrade reasons survive boundedRuntimeStatus normalization instead of
-      collapsing to schema_divergent; passed recovery guidance through
-      boundedRuntimeStatus; added degradeEnvelope helper projecting contract
-      reasons+recovery for missing, legacy/oversized, legacy/corrupt, and
-      tier-level corrupt/oversized states."
-    inspiration: Task 3 independent evaluation Criterion 3 failed. The
-      legacyCorpusReadable helper existed but was unwired;
-      BOUNDED_RUNTIME_REASONS collapsed contract reasons to schema_divergent.
-    verified: pnpm -C packages/cli run typecheck (clean); pnpm -C packages/cli test
-      (2160 passed, 189 files); pnpm -C packages/cli build (clean); agentera
-      check compact (pass)
-    next: "Task 4: Move current profile synthesis to bounded signals (out of scope)."
-    context:
-      intent: "Address Criterion 3 audit failure: startup-analysis benchmark fell back
-        to unguarded JSON.parse(fs.readFileSync) for legacy/missing tiers,
-        allowing oversized legacy corpus to be loaded whole, and degraded
-        missing/legacy state misleadingly as schema_divergent."
-      constraints: Profile synthesis is Task 4; corpus.json transition artifact
-        retained for profile path. No suite version bump, release, or publish.
-      unknowns: none
-      scope: "packages/cli/src/state/startupAnalysis/benchmark.ts
-        (legacyCorpusReadable wired, degradeEnvelope helper, contract-projected
-        reasons+recovery); packages/cli/src/state/startupAnalysis/threshold.ts
-        (BOUNDED_RUNTIME_REASONS extended, recovery passthrough in
-        boundedRuntimeStatus);
-        packages/cli/test/state/startupAnalysisBenchmark.test.ts (4 new
-        regression tests: oversized legacy, missing, corrupt legacy
-        reason+recovery, recovery preservation)"
   - number: 793
     timestamp: 2026-07-14 17:36
     type: chore
@@ -433,6 +430,9 @@ cycles:
         and backfill fixtures; package metadata and generated ignored
         dist/bundle
 archive:
+  - summary: "Cycle 835 (2026-07-15): Fixed Criterion 3 audit failure: wired
+      legacyCorpusReadable into extractStartupIntermediateFromCorpusFile so
+      oversized legacy corpus.json is never..."
   - summary: "Cycle 834 (2026-07-15): Migrated all four bounded analytics consumers
       (usage analytics, report status, prime corpus coverage, startup
       analysis..."
@@ -524,15 +524,18 @@ archive:
       coverage gap found by the first independent Task 1 evaluation."
   - summary: "Cycle 796 (2026-07-14): Defined executable bounded-retrieval authority
       and reserved plan, task, and experiment command grammar."
-  - summary: "Cycle 795 (2026-07-14): Made TODO resolved compaction require one
-      section, keep a positional 10/40/50 newest-first queue, summarize rows..."
 omitted: true
-omitted_count: 80
+omitted_count: 81
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded
