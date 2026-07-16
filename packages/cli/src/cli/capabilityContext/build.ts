@@ -139,7 +139,7 @@ export function buildExecutionContext(
       status: acceptance.length > 0 ? "available" : "incomplete",
       items: acceptance,
       count: acceptance.length,
-      source_provenance: sourceProvenance("plan", "agentera plan --format json", "entries.acceptance"),
+      source_provenance: sourceProvenance("plan", STATE_FAMILY_FALLBACK_COMMANDS.plan, "entries.acceptance"),
     },
     constraints: {
       plan_constraints_present: hasRecordedValue(planContextField(plan, "constraints")),
@@ -155,13 +155,13 @@ export function buildExecutionContext(
         "no commit/push/tag/publication without explicit approval",
       ],
       unsupported_cli_command_policy: "Do not introduce capability-name or slash-alias CLI commands for Build.",
-      source_provenance: sourceProvenance("plan", "agentera plan --format json", "summary.constraints"),
+      source_provenance: sourceProvenance("plan", STATE_FAMILY_FALLBACK_COMMANDS.plan, "summary.constraints"),
     },
     scope_boundary: scopeBoundary,
     verification_expectations: {
       latest_progress_verification: progressVerification,
       expected_commands: ["focused pytest targets", "Build capability validation", "self-validation", "agentera check compact", "compaction check", "git diff --check"],
-      source_provenance: sourceProvenance("plan", "agentera plan --format json", "entries.acceptance"),
+      source_provenance: sourceProvenance("plan", STATE_FAMILY_FALLBACK_COMMANDS.plan, "entries.acceptance"),
     },
     artifact_update_requirements: buildArtifactUpdateRequirements(plan, docs),
     progress_logging_requirements: {

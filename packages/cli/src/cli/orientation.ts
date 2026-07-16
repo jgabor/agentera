@@ -368,7 +368,7 @@ export function planSummary(schemas: Record<string, SchemaInfo>): PlanSummary {
       status: "absent",
       title: "",
       active_path: "",
-      absence_reason: "No active plan artifact is available from agentera plan.",
+      absence_reason: "No active plan artifact is available from agentera state plan.",
     };
     summary.lifecycle_state = planLifecycleState(summary as unknown as JsonObject);
     return summary;
@@ -391,7 +391,7 @@ export function planSummary(schemas: Record<string, SchemaInfo>): PlanSummary {
           ? "Current plan artifact is invalid; see diagnostics."
           : archivedPlans.length > 0
           ? "No active plan artifact is available; archived plan state is history only."
-          : "No active plan artifact is available from agentera plan.",
+          : "No active plan artifact is available from agentera state plan.",
       complete: 0,
       total: 0,
       complete_plan: false,
@@ -506,7 +506,7 @@ export function docsSummary(
 ): DocsSummary {
   const info = schemas.docs;
   if (!info) {
-    return { exists: false, status: "absent", absence_reason: "No docs mapping artifact is available from agentera docs." };
+    return { exists: false, status: "absent", absence_reason: "No docs mapping artifact is available from agentera state docs." };
   }
   const docsPath = artifactPath(info, "docs");
   const mapping = scanYamlCollection(docsPath, "mapping", "docs", "artifact");

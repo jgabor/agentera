@@ -1,5 +1,5 @@
 import type { JsonObject } from "../core/jsonValue.js";
-import { STATE_FAMILY_LIST_COMMANDS } from "./capabilityContext/types.js";
+import { STATE_FAMILY_FALLBACK_COMMANDS, STATE_FAMILY_LIST_COMMANDS } from "./capabilityContext/types.js";
 
 export interface StartupCompletenessInput {
   schemaError?: string | null;
@@ -35,8 +35,8 @@ export const STARTUP_COMPLETENESS_CONFIDENCE_CAVEATS = [
 ] as const;
 
 export const STARTUP_COMPLETENESS_CLI_FALLBACK = [
-  "agentera plan --format json",
-  "agentera docs --format json",
+  STATE_FAMILY_FALLBACK_COMMANDS.plan,
+  STATE_FAMILY_FALLBACK_COMMANDS.docs,
   STATE_FAMILY_LIST_COMMANDS.progress,
 ] as const;
 

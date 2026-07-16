@@ -3,7 +3,7 @@ import { CAPABILITY_INSTRUCTIONS } from "../../capabilities/index.js";
 import { asList } from "../stateQuery.js";
 import { capabilityContext } from "./contract.js";
 import { bespokeCapabilityContexts, slimBespokeContext } from "./bespoke.js";
-import { STATE_FAMILY_GET_COMMANDS, STATE_FAMILY_LIST_COMMANDS } from "./types.js";
+import { STATE_FAMILY_FALLBACK_COMMANDS, STATE_FAMILY_GET_COMMANDS, STATE_FAMILY_LIST_COMMANDS } from "./types.js";
 import {
   capabilityContextAppSummary,
   capabilityContextProfileSummary,
@@ -29,7 +29,7 @@ export function slimPlanState(plan: JsonObject): JsonObject {
     first_pending: firstPending && typeof firstPending === "object" && !Array.isArray(firstPending) ? taskRef(firstPending) : null,
     diagnostics: asList(plan.diagnostics),
     invalid_path: plan.invalid_path ?? null,
-    source_provenance: sourceProvenance("plan", "agentera plan --format json"),
+    source_provenance: sourceProvenance("plan", STATE_FAMILY_FALLBACK_COMMANDS.plan),
   };
 }
 
@@ -43,7 +43,7 @@ export function slimDocsState(docs: JsonObject): JsonObject {
       version_files: asList(conventions.version_files),
       semver_policy: conventions.semver_policy && typeof conventions.semver_policy === "object" && !Array.isArray(conventions.semver_policy) ? conventions.semver_policy : {},
     },
-    source_provenance: sourceProvenance("docs", "agentera docs --format json", "summary"),
+    source_provenance: sourceProvenance("docs", STATE_FAMILY_FALLBACK_COMMANDS.docs, "summary"),
   };
 }
 
@@ -103,7 +103,7 @@ export function slimTodoState(todoItems: Array<Record<string, string>>): JsonObj
   return {
     open_count: todoItems.length,
     severity_counts: severityCounts,
-    source_provenance: sourceProvenance("todo", "agentera todo --format json"),
+    source_provenance: sourceProvenance("todo", STATE_FAMILY_FALLBACK_COMMANDS.todo),
   };
 }
 

@@ -16,7 +16,7 @@ export function closeoutArtifactMappings(docs: JsonObject): JsonObject {
   const ok = Boolean(docs.exists) && mapping.length > 0;
   return {
     status: ok ? "available" : "unavailable",
-    source_provenance: sourceProvenance("docs", "agentera docs --format json", "summary.mapping"),
+    source_provenance: sourceProvenance("docs", STATE_FAMILY_FALLBACK_COMMANDS.docs, "summary.mapping"),
     entries: mapping,
     mapping_entries: mapping.length,
     caveats: ok ? [] : ["Docs artifact mappings are unavailable or empty in CLI docs state."],
@@ -31,7 +31,7 @@ export function closeoutVersionPolicy(docs: JsonObject): JsonObject {
   const available = Object.keys(semverPolicy).length > 0;
   return {
     status: available ? "available" : "unavailable",
-    source_provenance: sourceProvenance("docs", "agentera docs --format json", "summary.conventions"),
+    source_provenance: sourceProvenance("docs", STATE_FAMILY_FALLBACK_COMMANDS.docs, "summary.conventions"),
     version_files: versionFiles,
     version_files_registry: registry,
     semver_policy: semverPolicy,
@@ -44,7 +44,7 @@ export function closeoutTodoBlockers(schemas: Record<string, SchemaInfo>, todoIt
   const exists = fs.existsSync(artifactPath(info, "todo"));
   return {
     status: exists ? "available" : "unavailable",
-    source_provenance: sourceProvenance("todo", "agentera todo --format json"),
+    source_provenance: sourceProvenance("todo", STATE_FAMILY_FALLBACK_COMMANDS.todo),
     open_count: todoItems.length,
     items: todoItems,
     caveats: exists ? [] : ["TODO state is unavailable in CLI state."],
@@ -57,7 +57,7 @@ export function closeoutBenchmarkEvidence(docs: JsonObject): JsonObject {
   if (testsSummary && testsSummary.toLowerCase().includes("benchmark")) {
     return {
       status: "available",
-      source_provenance: sourceProvenance("docs", "agentera docs --format json", "summary.coverage.tests"),
+      source_provenance: sourceProvenance("docs", STATE_FAMILY_FALLBACK_COMMANDS.docs, "summary.coverage.tests"),
       summary_present: true,
       non_empty_evidence_present: true,
       history_scope: "cli_visible_summary",
@@ -68,7 +68,7 @@ export function closeoutBenchmarkEvidence(docs: JsonObject): JsonObject {
   }
   return {
     status: "unavailable",
-    source_provenance: sourceProvenance("docs", "agentera docs --format json", "summary.coverage.tests"),
+    source_provenance: sourceProvenance("docs", STATE_FAMILY_FALLBACK_COMMANDS.docs, "summary.coverage.tests"),
     summary_present: false,
     non_empty_evidence_present: false,
     history_scope: "not_exposed_by_supported_cli_state",

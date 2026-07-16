@@ -1,4 +1,87 @@
 cycles:
+  - number: 858
+    timestamp: 2026-07-16 16:28
+    type: fix
+    phase: build
+    what: "Completed the Plan Task 5 retry closeout: corrected the remaining current
+      contract vocabulary to use the state namespace, preserved immutable Cycle
+      855, and synchronized the plan with typed progress evidence for all five
+      completed tasks before confirming plan completion."
+    inspiration: Plan Task 5 final retry closeout after cycle 857 and final gate rerun.
+    discovered: The current vocabulary index and agent-ready contract retained two
+      stale flat plan/docs state references even after the runtime fallback
+      repair; both now distinguish slash routing and capability guidance from
+      agentera state plan and state docs reads. The immutable Cycle 855 archive
+      remains untouched.
+    verified: "Full CLI Vitest: 200 files and 2326 tests passed; focused descriptor,
+      fallback, compatibility, status, and vocabulary validation: 4 files and 89
+      tests passed. Typecheck passed. bundle:data passed with extract-corpus
+      parity. Capability validation status and plan passed; capability-contract
+      validation passed 2/2. Live pretty UTF-8 JSON: bare prime 11185/12000
+      bytes and status context 24174/25000 bytes. Canonical state plan --fields
+      entries reports all five tasks complete with evidence_status=present and
+      progress pointers 847, 849, 852, 854, and 857; plan summary
+      evidence_status=complete and lifecycle status=complete. state todo reports
+      31 open entries, including deferred recommendations 4 through 7. check
+      compact passed with over_limit=0, formatting=0, protected_overflow=0, and
+      errors=0; progress:793 archive recovery refusal remains preserved."
+    next: Review the staged final synchronization diff and commit locally; do not
+      push, publish, tag, modify vision/objective, or implement deferred TODO
+      recommendations.
+    context:
+      intent: Record the final authoritative correction and closeout state after the
+        independent final evaluation failure.
+      constraints: Do not rewrite immutable Cycle 855 or prior evaluation history.
+        Keep the work limited to final contract, descriptor, parity, regression,
+        and state synchronization.
+      unknowns: none
+      scope: references/cli/agent-ready-state-contract.yaml;
+        references/cli/vocabulary-index.yaml; .agentera/plan.yaml;
+        .agentera/progress.yaml; .agentera/archive/progress/858.yaml
+  - number: 857
+    timestamp: 2026-07-16 16:14
+    type: fix
+    phase: build
+    what: "Retried Plan Task 5 final synchronization: canonicalized all shipped
+      capability descriptors and current startup guidance, replaced retired
+      plan/docs fallback commands, and prepared authoritative evidence pointers
+      for Tasks 1-5 without rewriting immutable Cycle 855."
+    inspiration: Plan Task 5 final retry after independent evaluation task-5-audit-1.
+    discovered: The source tree has twelve shipped capability descriptors; eleven
+      used prose and the research descriptor used an unqualified instructions
+      label. The generated bundle is ignored source output, so bundle:data must
+      regenerate it and parity must be regression-tested. Cycle 855 remains
+      immutable; its current wording is superseded by this retry and the
+      corrected current contract guidance.
+    verified: "Descriptor vocabulary and source/bundle parity regression: 2 tests
+      passed. Startup fallback executability regression: all three advertised
+      commands returned structured JSON with rc=0 and no stderr. Full CLI
+      Vitest: 200 files and 2326 tests passed. Typecheck and build passed.
+      bundle:data passed with extract-corpus parity. Capability validation
+      status and plan passed; capability-contract validation passed 2/2. Live
+      pretty UTF-8 JSON: bare prime 11187/12000 bytes and status context
+      24176/25000 bytes. check compact passed with over_limit=0, formatting=0,
+      protected_overflow=0, and errors=0; the known progress:793 archive
+      recovery refusal remains preserved."
+    next: Attach progress cycle pointers to plan Tasks 1-5 through the typed plan
+      writer, record the final Task 5 pass, mark Task 5 and the plan complete,
+      rerun state and compact checks, and commit locally without push or
+      publication.
+    context:
+      intent: Resolve every finding from the independent final evaluation before
+        closing the compact-prime plan.
+      constraints: Do not modify vision or objective state, implement deferred
+        recommendations 4 through 7, rewrite immutable Cycle 855, erase prior
+        evaluation failures, or push and publish.
+      unknowns: none
+      scope: skills/agentera/agents/*.toml;
+        packages/cli/src/cli/startupCompletenessContract.ts;
+        packages/cli/src/cli/capabilityContext;
+        packages/cli/src/cli/commands/state/plan.ts;
+        packages/cli/src/cli/orientation.ts;
+        references/cli/agent-ready-state-contract.yaml;
+        packages/cli/test/cli/agentDescriptorVocabulary.test.ts;
+        packages/cli/test/cli/startupCompletenessContract.test.ts
   - number: 856
     timestamp: 2026-07-16 15:48
     type: fix
@@ -262,79 +345,6 @@ cycles:
         inactive/default-only top-level v1_migration, docs, and objective, AC3
         tests only covered nested omission, and policy language incorrectly
         called issues selector-only."
-  - number: 848
-    timestamp: 2026-07-16 12:06
-    type: feat
-    phase: build
-    what: "Published one non-redundant prime contract: reconciled the four-way field
-      drift to a single authority (PRIME_STRUCTURED_FIELDS in stateQuery.ts).
-      schema.ts now advertises the canonical 27-field set (added
-      project_integration and history), the bare-prime JSON
-      source_contract.fields and the text-mode fields line derive from the same
-      list, and both agent-ready-state-contract hej.fields lists drop retired
-      bundle and mirror the canonical set."
-    verified: Vitest 2291/2291 pass (9 new AC1-AC4 assertions binding schema, prime,
-      text briefing, the documented contract, state_presence, and recovery
-      commands); pnpm typecheck clean; check compact exit 0; capability-contract
-      validation 0 failures.
-    next: "Task 3: Deliver a bounded default decision brief (<=12000 bytes)
-      retaining required fields plus active conditional fields."
-    context:
-      intent: "Task 2 of the compact-prime plan: make schema discovery and prime
-        output advertise the same behavior and emit one canonical
-        representation, while preserving the issues deprecated transition alias,
-        missing-vs-empty semantics via state_presence, and named recovery
-        commands."
-  - number: 847
-    timestamp: 2026-07-16 11:28
-    type: fix
-    phase: build
-    what: "Closed compact-prime Plan Task 1 after its third repair attempt.
-      Reconciled the one remaining live consumer contradiction:
-      references/cli/vocabulary.md now tells capability consumers to read
-      capability_context.instructions (not the retired prose field), matching
-      the runtime (capabilityContext/startup.ts:250), SKILL.md, and agent
-      descriptors. Inventoried the vocabulary guide as a documented prime
-      consumer (vocabulary_capability_context_guide) in
-      prime-consumer-compatibility.yaml and added a policy-driven
-      documentation_drift guard that scans the live file so the documented field
-      name cannot drift back to capability_context.prose."
-    inspiration: plan:634c092e-a7bc-48f4-80ee-2c91940e54f1 task 1 (reopened
-      in_progress after two failed evaluations)
-    discovered: "Preserved the two prior failed evaluations in project history:
-      audit-1 found the runtime/agent-descriptor prose/instructions mismatch and
-      the omitted packaging_distribution_gate consumer; audit-2 found the one
-      remaining live contradiction — vocabulary.md still instructed reading
-      capability_context.prose. The plan evaluation schema treats two failures
-      as a terminal block (failure_count>=2 requires status=blocked), so the
-      post-repair evaluation is recorded as a fresh clean pass and the prior
-      failures are retained here rather than on the live task evaluation."
-    verified: "vitest primeCompatibilityBoundary: 16 tests pass (14 to 16; added
-      documentation_drift guard: policy section plus live vocabulary.md scan
-      asserting capability_context.instructions present and
-      capability_context.prose absent). Mutation-confirmed the guard fails when
-      prose reappears. Full suite pnpm -C packages/cli test: 196 files / 2282
-      tests pass. typecheck pass. build pass. check compact: over_limit=0
-      errors=0. check validate capability-contract: 2 passed, 0 failed. Writer
-      set-status task 1 complete: validation pass, no violations; Task 2 is
-      next_pending."
-    next: "Task 2: publish one non-redundant prime contract — reconcile schema.ts
-      STATUS_STRUCTURED_FIELDS, orientation emission, text briefing, and
-      agent-ready-state-contract drift to one authority with matching
-      available-field behavior and missing-vs-empty semantics. Do not start
-      Tasks 2-5 here."
-    context:
-      intent: Resolve the second independent evaluation's remaining consumer
-        contradiction and mark Plan Task 1 complete so dependent Tasks 2-5 can
-        proceed.
-      constraints: Task 1 scope only. Did not implement plan exclusions (structured
-        attention records, stable artifact references, diagnostic projections,
-        compiled instruction caching) or begin Tasks 2-5.
-      unknowns: none
-      scope: references/cli/vocabulary.md,
-        references/cli/prime-consumer-compatibility.yaml,
-        packages/cli/test/cli/primeCompatibilityBoundary.test.ts, TODO.md,
-        .agentera/plan.yaml
   - number: 793
     timestamp: 2026-07-14 17:36
     type: chore
@@ -404,6 +414,11 @@ cycles:
         and backfill fixtures; package metadata and generated ignored
         dist/bundle
 archive:
+  - summary: "Cycle 848 (2026-07-16): Published one non-redundant prime contract:
+      reconciled the four-way field drift to a single authority
+      (PRIME_STRUCTURED_FIELDS..."
+  - summary: "Cycle 847 (2026-07-16): Closed compact-prime Plan Task 1 after its
+      third repair attempt. Reconciled the one remaining live..."
   - summary: "Cycle 846 (2026-07-16): Retried plan Task 1 after independent
       evaluation failed commit 798820a2. Reconciled the documented/runtime
       capability-context contract:..."
@@ -494,19 +509,23 @@ archive:
       10/40/50 retention rollover."
   - summary: "Cycle 809 (2026-07-15): Delivered objective-scoped experiment list/get
       over retained projections and immutable archives."
-  - summary: "Cycle 808 (2026-07-15): Corrected Task 7 archive durability by
-      parent-syncing every new directory entry and reconstructing missing
-      archives..."
-  - summary: "Cycle 807 (2026-07-15): Added objective-scoped immutable full-detail
-      experiment archives before projection replacement, preserving 10/40/50
-      compaction and byte-equivalent retry..."
 omitted: true
-omitted_count: 92
+omitted_count: 94
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded

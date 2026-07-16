@@ -62,7 +62,7 @@ slash_route_aliases:
     Decision 43 aliases are exact `/agentera <alias>` routes, not CLI state
     commands. Teaching `status`, `build`, `audit`, or `document` as CLI commands
     would blur route vocabulary with state access; the shared word `plan` keeps
-    separate meanings as `/agentera plan` routing and `agentera plan` state.
+     separate meanings as `/agentera plan` routing and `agentera state plan` state.
 doctor:
   status: implemented_hard_rename
   command: doctor
@@ -170,7 +170,7 @@ structured_output:
             - summary_fields
             - entry_fields
           complete_semantics: >-
-            When `complete_for_plan_artifact` is true, `agentera plan --format
+            When `complete_for_plan_artifact` is true, `agentera state plan --format
             json` includes plan summary metadata, tasks, dependencies, acceptance
             criteria, evidence, overall acceptance, surprises, and previous-plan
             archive references needed for normal read-only startup/evaluation
@@ -363,7 +363,7 @@ startup_completeness:
     before any raw artifact read. Complete startup state must never require raw
     artifact reads for normal capability startup.
   current_cli_fallback:
-    - agentera plan --format json
+     - agentera state plan --format json
   state_families_added:
     - plan task details, dependencies, acceptance criteria, and evidence summaries
     - docs artifact mapping and source-contract completeness metadata
@@ -410,7 +410,7 @@ evidence_context_target_contract:
         caveats:
           - profile-derived state is stale and must not trigger profile refresh
           - orchestration_context is incomplete for missing decisions, vision, and profile state
-      - command: agentera plan --format json
+      - command: agentera state plan --format json
         included_state:
           - active plan header and summary
           - task dependencies
@@ -420,7 +420,7 @@ evidence_context_target_contract:
           - previous_plan_archived pointer
         missing_state: []
         raw_artifact_reads_required: false
-      - command: agentera docs --format json
+      - command: agentera state docs --format json
         included_state:
           - artifact mapping
           - version files
@@ -428,7 +428,7 @@ evidence_context_target_contract:
           - indexed document freshness
         missing_state: []
         raw_artifact_reads_required: false
-      - command: agentera todo --format json
+      - command: agentera state todo --format json
         included_state:
           - open 2.3.10 evidence-context TODO
           - deferred 2.3.11 and 2.3.12 source-contract TODOs
@@ -485,22 +485,22 @@ evidence_context_target_contract:
     required_for_normal_task_evaluation:
       - family: evaluation_target
         source: plan/orchestration CLI state
-        fallback: agentera plan --format json
+        fallback: agentera state plan --format json
       - family: plan_criteria
-        source: agentera plan --format json entries.acceptance
+        source: agentera state plan --format json entries.acceptance
         fallback: none when complete_for_plan_artifact is true
       - family: progress_verification
         source: agentera state progress list --limit 20 --format json latest verification
         fallback: agentera state progress get --number N --format json
       - family: docs_state
-        source: agentera docs --format json summary and entries
-        fallback: agentera docs --format json
+        source: agentera state docs --format json summary and entries
+        fallback: agentera state docs --format json
       - family: health_state
         source: agentera state health list --limit 20 --format json latest audit
         fallback: agentera state health get --number N --format json
       - family: todo_state
-        source: agentera todo --format json known issues and source-contract TODOs
-        fallback: agentera todo --format json
+        source: agentera state todo --format json known issues and source-contract TODOs
+        fallback: agentera state todo --format json
       - family: source_contract
         source: evidence_context.source_contract
         fallback: listed existing CLI commands before raw reads

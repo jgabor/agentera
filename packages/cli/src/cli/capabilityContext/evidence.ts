@@ -44,7 +44,7 @@ export function evidenceDocsState(docs: JsonObject): JsonObject {
   const [currentState, currentStateCaveat] = currentStateStatus(docs.last_audit, "Docs");
   return {
     status: available ? "available" : "unavailable",
-    source_provenance: sourceProvenance("docs", "agentera docs --format json"),
+    source_provenance: sourceProvenance("docs", STATE_FAMILY_FALLBACK_COMMANDS.docs),
     mapping_entries: docs.mapping_entries ?? 0,
     indexed_documents: docs.indexed_documents ?? 0,
     last_audit: docs.last_audit ?? null,
@@ -88,7 +88,7 @@ export function evidenceTodoState(schemas: Record<string, SchemaInfo>, todoItems
   const exists = fs.existsSync(artifactPath(info, "todo"));
   return {
     status: exists ? "available" : "unavailable",
-    source_provenance: sourceProvenance("todo", "agentera todo --format json"),
+    source_provenance: sourceProvenance("todo", STATE_FAMILY_FALLBACK_COMMANDS.todo),
     open_count: todoItems.length,
     items: todoItems,
     non_empty_evidence_present: todoItems.length > 0,
@@ -129,7 +129,7 @@ export function evidenceVersionChecks(docs: JsonObject): JsonObject {
   const conventions = docsConventions(docs);
   const versionFiles = asList(conventions.version_files);
   const semverPolicy = conventions.semver_policy && typeof conventions.semver_policy === "object" && !Array.isArray(conventions.semver_policy) ? conventions.semver_policy : {};
-  const source = sourceProvenance("docs", "agentera docs --format json", "summary.conventions");
+  const source = sourceProvenance("docs", STATE_FAMILY_FALLBACK_COMMANDS.docs, "summary.conventions");
   const ec = (field: string) => sourceProvenance("evidence_context", "agentera prime --context audit --format json", field);
   const checks: JsonObject[] = [
     {
@@ -192,7 +192,7 @@ export function evidencePlanCriteria(plan: JsonObject, target: JsonObject): Json
   const criteria = selected && typeof selected === "object" ? asList(selected.acceptance) : [];
   return {
     status: criteria.length > 0 ? "available" : "incomplete",
-    source_provenance: sourceProvenance("plan", "agentera plan --format json", "entries.acceptance"),
+    source_provenance: sourceProvenance("plan", STATE_FAMILY_FALLBACK_COMMANDS.plan, "entries.acceptance"),
     target: taskRefObj,
     criteria,
     criteria_count: criteria.length,

@@ -41,9 +41,9 @@ normalization_rules:
   - rule: The CLI source and rendered dashboard are different.
     use: agentera prime source data, status dashboard rendered briefing
     avoid: Treating raw CLI labels as the user-facing dashboard.
-  - rule: Routine state uses flat commands.
-    use: agentera plan, agentera docs, agentera health
-    avoid: agentera query plan for routine state.
+  - rule: Routine state uses the state namespace.
+    use: agentera state plan, agentera state docs, agentera state health
+    avoid: agentera plan, agentera docs, or agentera health as routine state commands.
   - rule: query is advanced access.
     use: agentera query --list-artifacts, agentera query <artifact>
     avoid: Calling it the normal state interface.

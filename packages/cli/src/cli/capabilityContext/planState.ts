@@ -12,6 +12,7 @@ import {
 } from "./shared.js";
 import type { JsonObject } from "../../core/jsonValue.js";
 import type { JsonValue } from "../../core/jsonValue.js";
+import { STATE_FAMILY_FALLBACK_COMMANDS } from "./types.js";
 
 export function orchestrationTaskSummary(task: JsonObject): JsonObject {
   const evidence = task.evidence;
@@ -101,7 +102,7 @@ export function selectEvidenceTarget(plan: JsonObject): JsonObject {
     target_type: "repository",
     task: null,
     selection_reason: "no_plan_task_target",
-    source_provenance: sourceProvenance("plan", "agentera plan --format json", "entries"),
+    source_provenance: sourceProvenance("plan", STATE_FAMILY_FALLBACK_COMMANDS.plan, "entries"),
     caveats: ["No plan task target was selected; evaluate repository-level evidence only."],
   };
   if (!plan.exists || tasks.length === 0) return noTarget;
@@ -112,7 +113,7 @@ export function selectEvidenceTarget(plan: JsonObject): JsonObject {
       target_type: "plan_task",
       task: taskRef(inProgress),
       selection_reason: "in_progress_task",
-      source_provenance: sourceProvenance("plan", "agentera plan --format json", "entries.status"),
+      source_provenance: sourceProvenance("plan", STATE_FAMILY_FALLBACK_COMMANDS.plan, "entries.status"),
       caveats: [],
     };
   }
@@ -123,7 +124,7 @@ export function selectEvidenceTarget(plan: JsonObject): JsonObject {
       target_type: "plan_task",
       task: taskRef(ready[0]),
       selection_reason: "first_dependency_ready_pending_task",
-      source_provenance: sourceProvenance("plan", "agentera plan --format json", "entries.depends_on"),
+      source_provenance: sourceProvenance("plan", STATE_FAMILY_FALLBACK_COMMANDS.plan, "entries.depends_on"),
       caveats: [],
     };
   }
@@ -136,7 +137,7 @@ export function selectEvidenceTarget(plan: JsonObject): JsonObject {
       target_type: "plan_task",
       task: taskRef(completedWithEvidence),
       selection_reason: "latest_completed_task_with_evidence",
-      source_provenance: sourceProvenance("plan", "agentera plan --format json", "entries.evidence"),
+      source_provenance: sourceProvenance("plan", STATE_FAMILY_FALLBACK_COMMANDS.plan, "entries.evidence"),
       caveats: [],
     };
   }
@@ -192,7 +193,7 @@ export function buildArtifactUpdateRequirements(plan: JsonObject, docs: JsonObje
     policy: archiveOnly
       ? "Archived plan history is non-executable and requires no execution artifact updates."
       : "Update execution artifacts during the cycle; do not mutate protected state without explicit approval.",
-    source_provenance: sourceProvenance("docs", "agentera docs --format json", "summary.mapping"),
+    source_provenance: sourceProvenance("docs", STATE_FAMILY_FALLBACK_COMMANDS.docs, "summary.mapping"),
   };
 }
 
@@ -208,7 +209,7 @@ export function buildPlanCompletionSweep(plan: JsonObject): JsonObject {
       : plan.active === false && plan.exists
         ? ["Archived plan history is non-executable and cannot trigger a completion sweep."]
         : ["Plan completion sweep is not eligible until every plan task is complete."],
-    source_provenance: sourceProvenance("plan", "agentera plan --format json", "summary.status"),
+    source_provenance: sourceProvenance("plan", STATE_FAMILY_FALLBACK_COMMANDS.plan, "summary.status"),
   };
 }
 

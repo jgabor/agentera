@@ -129,7 +129,7 @@ export function planStartupContract(): JsonObject {
     },
     cli_first_orientation: {
       use_startup_state_first: true,
-      current_plan_command: "agentera plan --format json",
+      current_plan_command: STATE_FAMILY_FALLBACK_COMMANDS.plan,
       complete_plan_contract_key: "source_contract.complete_for_plan_artifact",
       fallback_policy:
         "Use CLI-provided fallback commands for missing or incomplete state families " +
@@ -137,11 +137,11 @@ export function planStartupContract(): JsonObject {
     },
     artifact_access_boundaries: {
       skip_raw_plan_artifact_when:
-        "`agentera plan --format json` reports source_contract.complete_for_plan_artifact=true " +
+        `\`${STATE_FAMILY_FALLBACK_COMMANDS.plan}\` reports source_contract.complete_for_plan_artifact=true ` +
         "during normal read-only startup or evaluation.",
       raw_plan_artifact_allowed_for: PLAN_RAW_PLAN_ACCESS_ALLOWED_FOR,
       completed_plan_archive_confirmation: PLAN_COMPLETED_PLAN_ARCHIVE_CONFIRMATION,
-      artifact_mapping_source: "agentera docs/query artifact mapping before writes or closeout",
+      artifact_mapping_source: STATE_FAMILY_FALLBACK_COMMANDS.docs,
     },
     handoff_expectations: [
       "skip level suggests ⧉ build and waits for confirmation unless the user already asked to implement now",
@@ -152,7 +152,7 @@ export function planStartupContract(): JsonObject {
       capability_cli_commands_added: true,
       forbidden_examples: [],
       route_boundary:
-        "Use `/agentera plan` for routing, `agentera plan` for plan state, " +
+        "Use `/agentera plan` for routing, `agentera state plan` for plan state, " +
         "and `agentera plan` for capability routing guidance only.",
     },
     seam_decision: {

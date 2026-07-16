@@ -53,6 +53,7 @@ tasks:
         source: user-authorized compact-prime Task 1 repair verification
         recorded_at: 2026-07-16 11:27
         writer_command: agentera state plan record-evaluation
+    evidence: agentera state progress get --number 847 --format json
   - number: 2
     name: Publish one non-redundant prime contract
     depends_on:
@@ -74,6 +75,7 @@ tasks:
         source: "Retry after audit-1 failure: default bare prime now omits inactive top-level v1_migration (detected=false), docs (exists=false), and objective (active=false) via omitInactiveConditionalDefaults in orientationOutput.ts; state_presence preserved as missing-vs-empty authority; explicit --fields selection keeps full payload. Corrected issues selector-only language to default-emitted transition alias excluded only from canonical advertised set. Added default_emission_omission_contract + AC3 top-level omission and present-state fixtures. Vitest 2298 pass; typecheck/build/check compact/capability-contract 0 failures."
         recorded_at: 2026-07-16 12:30
         writer_command: agentera state plan record-evaluation
+    evidence: agentera state progress get --number 849 --format json
   - number: 3
     name: Deliver a bounded default decision brief
     depends_on:
@@ -95,6 +97,7 @@ tasks:
         source: User-authorized reopen; Task 3 dashboard repair verified by focused and full repository gates
         recorded_at: 2026-07-16 14:18
         writer_command: agentera state plan record-evaluation
+    evidence: agentera state progress get --number 852 --format json
   - number: 4
     name: Make status startup self-contained
     depends_on:
@@ -116,6 +119,7 @@ tasks:
         source: "Focused status-context retry verification after task-4-audit-1: canonical nested mode, conditional upgrade commands, strict status_context fixtures, executable decisions fallback, and all repository gates passed."
         recorded_at: 2026-07-16 15:19
         writer_command: agentera state plan record-evaluation
+    evidence: agentera state progress get --number 854 --format json
   - number: 5
     name: Synchronize contracts and verify current state
     depends_on:
@@ -131,14 +135,15 @@ tasks:
       - GIVEN the completed change WHEN full CLI tests, typecheck, build, capability-contract validation, and compact validation run THEN all pass.
       - GIVEN recommendations outside this plan WHEN project state is reviewed THEN recommendations 4 through 7 remain discoverable as open TODO items.
     evaluation:
-      attempt_count: 1
-      failure_count: 0
+      attempt_count: 3
+      failure_count: 1
       last_verdict: pass
-      last_failure_evidence: null
+      last_failure_evidence: Shipped skills/agentera/agents descriptors still name nonexistent prose; startup fallbacks advertise retired agentera plan/docs commands; completed tasks lack authoritative evidence pointers so canonical plan retrieval is incomplete. Cycle 855 also misnames status_context.instructions.
       provenance:
-        attempt_id: task-5-final-20260716
-        source: "Final contract synchronization verification: full CLI tests, typecheck, build, bundle-data parity, capability validation, capability-contract validation, compact validation, live and accumulated-state byte measurements"
-        recorded_at: 2026-07-16 15:47
+        attempt_id: task-5-final-retry-20260716
+        source: "Independent final retry verification recorded in progress cycle 857: descriptors, fallback recovery, current guidance, bytes, tests, typecheck, build, capability validation, bundle parity, and compact gates passed."
+        recorded_at: 2026-07-16 16:16
         writer_command: agentera state plan record-evaluation
+    evidence: agentera state progress get --number 858 --format json
 surprises:
   []

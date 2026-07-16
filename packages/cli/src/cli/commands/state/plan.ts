@@ -29,6 +29,7 @@ import {
 } from "../../planArtifacts.js";
 import { planLifecycleState } from "../../planLifecycleState.js";
 import { resolvePlanTaskEvidence } from "../../planEvidence.js";
+import { STATE_FAMILY_FALLBACK_COMMANDS } from "../../capabilityContext/types.js";
 
 const PLAN_HISTORY_CATALOG_LIMIT = 10;
 const PLAN_TEXT_TASK_LIMIT = 10;
@@ -298,9 +299,9 @@ function planSourceContract(
       ],
     },
     missing_state: missingState,
-    fallback: complete ? [] : ["agentera docs --format json"],
+    fallback: complete ? [] : [STATE_FAMILY_FALLBACK_COMMANDS.docs],
     fallback_policy:
-      "When plan CLI output is missing or incomplete, use supported CLI state such as `agentera docs --format json` " +
+      `When plan CLI output is missing or incomplete, use supported CLI state such as \`${STATE_FAMILY_FALLBACK_COMMANDS.docs}\` ` +
       "for artifact mapping before any last-resort raw plan artifact read.",
     summary_fields: summaryFields,
     entry_fields: entryFields,
