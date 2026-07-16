@@ -272,55 +272,51 @@ function recoverPrivateDirectory(
   token: string,
   pid: number | undefined,
   transitionedTokens: ReadonlySet<string>,
-): void {
+): boolean {
+  // Preparation may pause indefinitely; only positive owner-death evidence permits mutation.
   const privatePath = fdPath(parentFd, name);
   let directoryFd: number | undefined;
   try {
     directoryFd = fs.openSync(privatePath, DIRECTORY_FLAGS);
     const names = fs.readdirSync(fdPath(directoryFd));
     if (names.length === 0) {
-      const stat = fs.fstatSync(directoryFd, { bigint: true });
-      if (
-        transitionedTokens.has(token)
-        || (pid !== undefined && pidIsDead(pid))
-        || Date.now() - Number(stat.mtimeMs) >= INITIALIZATION_GRACE_MS
-      ) {
-        removePinnedDirectory(parentFd, name, directoryFd);
-      }
-      return;
+      if (!transitionedTokens.has(token) && (pid === undefined || !pidIsDead(pid))) return false;
+      return removePinnedDirectory(parentFd, name, directoryFd);
     }
     if (
       names.length > MAX_RECOVERY_ENTRIES
       || names.some((entry) => entry !== OWNER_NAME && !LEGACY_CLAIM_NAME.test(entry))
-    ) return;
+    ) return false;
 
     const records = names.map((entry) => ({ entry, inspection: inspectRecord(directoryFd!, entry) }));
     try {
-      if (records.some(({ inspection }) => !inspection.file || inspection.fd === undefined)) return;
+      if (records.some(({ inspection }) => !inspection.file || inspection.fd === undefined)) return false;
       if (records.some(({ inspection }) => inspection.state === "valid" && inspection.record!.token !== token)) {
-        return;
+        return false;
       }
       if (
         pid !== undefined
         && records.some(({ inspection }) => inspection.state === "valid" && inspection.record!.pid !== pid)
-      ) return;
-      if (records.some(({ inspection }) => inspection.state === "valid" && !ownerIsDead(inspection.record!))) {
-        return;
-      }
-      if (
-        !transitionedTokens.has(token)
-        && (pid === undefined || !pidIsDead(pid))
-        && records.some(({ inspection }) => inspection.state === "malformed" && !inspection.stale)
-      ) return;
+      ) return false;
+      const validOwners = records
+        .map(({ inspection }) => inspection)
+        .filter((inspection) => inspection.state === "valid");
+      const deadOwners = validOwners.filter((inspection) => ownerIsDead(inspection.record!));
+      if (deadOwners.length !== validOwners.length) return false;
+      const namedPidIsDead = pid !== undefined && pidIsDead(pid);
+      if (!transitionedTokens.has(token) && !namedPidIsDead && deadOwners.length === 0) return false;
       for (const { entry, inspection } of records) {
         unlinkPinnedFile(directoryFd, entry, inspection.fd!);
       }
-      removePinnedDirectory(parentFd, name, directoryFd);
+      return removePinnedDirectory(parentFd, name, directoryFd);
     } finally {
       for (const { inspection } of records) closeRecord(inspection);
     }
   } catch (error) {
-    if (!["ENOENT", "ENOTDIR", "ELOOP"].includes((error as NodeJS.ErrnoException).code ?? "")) throw error;
+    const code = (error as NodeJS.ErrnoException).code;
+    if (code === "ENOENT") return true;
+    if (code === "ENOTDIR" || code === "ELOOP") return false;
+    throw error;
   } finally {
     if (directoryFd !== undefined) fs.closeSync(directoryFd);
   }
@@ -352,19 +348,24 @@ function recoverPreparedLocks(parentFd: number, lockPath: string): void {
     .map((entry) => ({ entry, match: PRIVATE_NAME.exec(entry.name) }))
     .filter(({ match }) => match !== null);
   if (candidates.length > MAX_RECOVERY_ENTRIES) {
-    unsupportedLock(lockPath, `${candidates.length} private preparation entries`);
+    privateResidue(lockPath, candidates.map(({ entry }) => entry.name));
   }
   const transitionedTokens = staleTransitionTokens(parentFd);
+  const unresolved: string[] = [];
   for (const { entry, match } of candidates) {
-    if (!entry.isDirectory() || entry.isSymbolicLink()) continue;
-    recoverPrivateDirectory(
-      parentFd,
-      entry.name,
-      match![2]!,
-      match![1] === undefined ? undefined : Number(match![1]),
-      transitionedTokens,
-    );
+    if (
+      !entry.isDirectory()
+      || entry.isSymbolicLink()
+      || !recoverPrivateDirectory(
+        parentFd,
+        entry.name,
+        match![2]!,
+        match![1] === undefined ? undefined : Number(match![1]),
+        transitionedTokens,
+      )
+    ) unresolved.push(entry.name);
   }
+  if (unresolved.length > 0) privateResidue(lockPath, unresolved);
 }
 
 function prepareLock(parentFd: number): PreparedLock {
@@ -718,6 +719,18 @@ function timeout(lockPath: string): never {
     message: `writer lock timeout at '${lockPath}'; retry the command after the active writer finishes`,
     syntax: "agentera state <artifact-id> <verb> ... --format json",
     example: "retry the same command after the active writer finishes",
+  });
+}
+
+function privateResidue(lockPath: string, names: string[]): never {
+  const directory = path.dirname(lockPath);
+  const listed = names.slice(0, 3).map((name) => `'${path.join(directory, name)}'`).join(", ");
+  const omitted = names.length > 3 ? `, and ${names.length - 3} more` : "";
+  reject({
+    class: "conflict",
+    message: `private writer preparation residue at ${listed}${omitted} cannot be reclaimed safely; an active writer may still own it or ownership is unknown. Retry after the active writer finishes; if the residue remains, verify no Agentera writer is running, remove the listed residue, and retry`,
+    syntax: "agentera state <artifact-id> <verb> ... --format json",
+    example: `after verifying no Agentera writer is running, remove '${path.join(directory, names[0]!)}' and retry the same command`,
   });
 }
 

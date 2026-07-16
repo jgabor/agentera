@@ -1,0 +1,19 @@
+schemaVersion: agentera.stateArchiveEntry.v1
+artifact_id: progress
+entry_number: 868
+record:
+  number: 868
+  timestamp: 2026-07-16 21:59
+  type: fix
+  phase: build
+  what: "Made private writer-preparation reclamation proof-based: only a demonstrably dead PID, matching dead owner, or verified dead transition token authorizes deletion; live, indeterminate, PID-less, and unknown residue is preserved with bounded structured recovery."
+  inspiration: Final retry 2 followed audit evidence that an acquisition deleted aged empty and malformed private directories whose embedded PID was still live.
+  discovered: The private cleanup path treated the 250 ms initialization grace as abandonment proof. PID liveness errors other than ESRCH are not positive death evidence and must fail closed.
+  verified: "pnpm exec vp test run test/state/write/lock.test.ts test/state/entityStorage.test.ts test/state/write/stateWrite.test.ts test/cli/validate.test.ts test/cli/validateParity.test.ts test/cli/validateVerifyOracles.test.ts --reporter=dot: 6 files, 165 tests passed. Its lock suite exercised all six injected crash points: private-created, claim-created, claim-published, owner-transitioned, private-removed, and claim-removed. pnpm exec vp test run test/state/entityStorage.test.ts --reporter=dot: 1 file, 12 tests passed; its stale-reclaimer case completed three repeats with one publisher, one explicit loser, and no lock residue per repeat. pnpm test: 202 files, 2359 tests passed. pnpm run typecheck && pnpm run build: both passed. node packages/cli/dist/bin/agentera.js check validate state --format json: pass, 0 issues. node packages/cli/dist/bin/agentera.js check validate capability-contract --format json: pass, 2/2 checks. node packages/cli/dist/bin/agentera.js check compact: status pass, 10 artifacts, 0 over limit, 0 errors, 0 changed; progress, decisions, and health retained projections because verified archive recovery is required."
+  next: Keep Task 17 complete and Task 3 pending; do not start family cutover in this cycle.
+  context:
+    intent: Close the final Task 17 audit defect so age alone can never delete a live or unknown private preparation and a paused creator resumes without raw ENOENT or overlapping ownership.
+    constraints: Preserved deterministic stale claims, six crash transitions, old hard-link recovery, structured legacy-file failure, successor/token checks, fsync durability, project boundaries, bounded timeout, idempotent release, entity uniqueness, and state-writer behavior. No vision, release, publication, Task 3, or family-cutover work.
+    unknowns: None within the remaining private-preparation defect; live and indeterminate PID-qualified state now fails closed regardless of age.
+    scope: packages/cli/src/state/write/lock.ts; packages/cli/test/state/write/lock.test.ts; progress Cycle 868 only.
+record_sha256: 675d29007b0107818f6cbb990bb949ee3b6ab84392c2db7829657545a3bee430

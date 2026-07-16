@@ -1,4 +1,51 @@
 cycles:
+  - number: 868
+    timestamp: 2026-07-16 21:59
+    type: fix
+    phase: build
+    what: "Made private writer-preparation reclamation proof-based: only a
+      demonstrably dead PID, matching dead owner, or verified dead transition
+      token authorizes deletion; live, indeterminate, PID-less, and unknown
+      residue is preserved with bounded structured recovery."
+    inspiration: Final retry 2 followed audit evidence that an acquisition deleted
+      aged empty and malformed private directories whose embedded PID was still
+      live.
+    discovered: The private cleanup path treated the 250 ms initialization grace as
+      abandonment proof. PID liveness errors other than ESRCH are not positive
+      death evidence and must fail closed.
+    verified: "pnpm exec vp test run test/state/write/lock.test.ts
+      test/state/entityStorage.test.ts test/state/write/stateWrite.test.ts
+      test/cli/validate.test.ts test/cli/validateParity.test.ts
+      test/cli/validateVerifyOracles.test.ts --reporter=dot: 6 files, 165 tests
+      passed. Its lock suite exercised all six injected crash points:
+      private-created, claim-created, claim-published, owner-transitioned,
+      private-removed, and claim-removed. pnpm exec vp test run
+      test/state/entityStorage.test.ts --reporter=dot: 1 file, 12 tests passed;
+      its stale-reclaimer case completed three repeats with one publisher, one
+      explicit loser, and no lock residue per repeat. pnpm test: 202 files, 2359
+      tests passed. pnpm run typecheck && pnpm run build: both passed. node
+      packages/cli/dist/bin/agentera.js check validate state --format json:
+      pass, 0 issues. node packages/cli/dist/bin/agentera.js check validate
+      capability-contract --format json: pass, 2/2 checks. node
+      packages/cli/dist/bin/agentera.js check compact: status pass, 10
+      artifacts, 0 over limit, 0 errors, 0 changed; progress, decisions, and
+      health retained projections because verified archive recovery is
+      required."
+    next: Keep Task 17 complete and Task 3 pending; do not start family cutover in
+      this cycle.
+    context:
+      intent: Close the final Task 17 audit defect so age alone can never delete a
+        live or unknown private preparation and a paused creator resumes without
+        raw ENOENT or overlapping ownership.
+      constraints: Preserved deterministic stale claims, six crash transitions, old
+        hard-link recovery, structured legacy-file failure, successor/token
+        checks, fsync durability, project boundaries, bounded timeout,
+        idempotent release, entity uniqueness, and state-writer behavior. No
+        vision, release, publication, Task 3, or family-cutover work.
+      unknowns: None within the remaining private-preparation defect; live and
+        indeterminate PID-qualified state now fails closed regardless of age.
+      scope: packages/cli/src/state/write/lock.ts;
+        packages/cli/test/state/write/lock.test.ts; progress Cycle 868 only.
   - number: 867
     timestamp: 2026-07-16 21:25
     type: fix
@@ -274,45 +321,6 @@ cycles:
       unknowns: none
       scope: .agentera/plan.yaml; .agentera/progress.yaml;
         .agentera/archive/progress/859.yaml; TODO.md
-  - number: 858
-    timestamp: 2026-07-16 16:28
-    type: fix
-    phase: build
-    what: "Completed the Plan Task 5 retry closeout: corrected the remaining current
-      contract vocabulary to use the state namespace, preserved immutable Cycle
-      855, and synchronized the plan with typed progress evidence for all five
-      completed tasks before confirming plan completion."
-    inspiration: Plan Task 5 final retry closeout after cycle 857 and final gate rerun.
-    discovered: The current vocabulary index and agent-ready contract retained two
-      stale flat plan/docs state references even after the runtime fallback
-      repair; both now distinguish slash routing and capability guidance from
-      agentera state plan and state docs reads. The immutable Cycle 855 archive
-      remains untouched.
-    verified: "Full CLI Vitest: 200 files and 2326 tests passed; focused descriptor,
-      fallback, compatibility, status, and vocabulary validation: 4 files and 89
-      tests passed. Typecheck passed. bundle:data passed with extract-corpus
-      parity. Capability validation status and plan passed; capability-contract
-      validation passed 2/2. Live pretty UTF-8 JSON: bare prime 11185/12000
-      bytes and status context 24174/25000 bytes. Canonical state plan --fields
-      entries reports all five tasks complete with evidence_status=present and
-      progress pointers 847, 849, 852, 854, and 857; plan summary
-      evidence_status=complete and lifecycle status=complete. state todo reports
-      31 open entries, including deferred recommendations 4 through 7. check
-      compact passed with over_limit=0, formatting=0, protected_overflow=0, and
-      errors=0; progress:793 archive recovery refusal remains preserved."
-    next: Review the staged final synchronization diff and commit locally; do not
-      push, publish, tag, modify vision/objective, or implement deferred TODO
-      recommendations.
-    context:
-      intent: Record the final authoritative correction and closeout state after the
-        independent final evaluation failure.
-      constraints: Do not rewrite immutable Cycle 855 or prior evaluation history.
-        Keep the work limited to final contract, descriptor, parity, regression,
-        and state synchronization.
-      unknowns: none
-      scope: references/cli/agent-ready-state-contract.yaml;
-        references/cli/vocabulary-index.yaml; .agentera/plan.yaml;
-        .agentera/progress.yaml; .agentera/archive/progress/858.yaml
   - number: 793
     timestamp: 2026-07-14 17:36
     type: chore
@@ -382,6 +390,8 @@ cycles:
         and backfill fixtures; package metadata and generated ignored
         dist/bundle
 archive:
+  - summary: "Cycle 858 (2026-07-16): Completed the Plan Task 5 retry closeout:
+      corrected the remaining current contract vocabulary to use..."
   - summary: "Cycle 857 (2026-07-16): Retried Plan Task 5 final synchronization:
       canonicalized all shipped capability descriptors and current startup
       guidance,..."
@@ -478,15 +488,18 @@ archive:
       end to end without changing product behavior."
   - summary: "Cycle 819 (2026-07-15): Corrected dev.21 immutable source provenance
       and made release validation enforce governed package-tree equivalence."
-  - summary: "Cycle 818 (2026-07-15): Verified npm development metadata and package
-      contents for the next available prerelease without publication."
 omitted: true
-omitted_count: 103
+omitted_count: 104
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded
