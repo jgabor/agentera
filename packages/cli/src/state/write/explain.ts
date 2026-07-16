@@ -102,21 +102,42 @@ export function buildExplain(
             : ["HEADER", "PLAN", "SCOPE", "TASK"],
     };
   }
-  result.guidance = [
-    artifact === "plan" && verb === "create"
-      ? "supply sequential task numbers and valid dependencies; previous_plan_archived is assigned by the CLI"
-      : artifact === "plan"
-        ? "task numbers are assigned by the CLI for append"
-        : artifact === "health" && verb === "repair"
-          ? "repair is a destructive projection edit; select an existing duplicate audit and pass --force"
-          : artifact === "experiments"
-            ? "pass the intended non-negative --number; the CLI validates and assigns it to the entry"
-            : "number is assigned by the CLI; do not pass --number",
+  result.guidance = decisionsGuidance(artifact, verb);
+  result.example = exampleFor(artifact, verb);
+  return result;
+}
+
+function decisionsGuidance(artifact: WritableArtifact, verb: string): string[] {
+  const base = [
     "do not embed commit hashes; evidence belongs in the commit message (Decision 66)",
     "fold the artifact write into the implementation commit per AGENTS.md",
   ];
-  result.example = exampleFor(artifact, verb);
-  return result;
+  if (artifact === "plan" && verb === "create")
+    return [
+      "supply sequential task numbers and valid dependencies; previous_plan_archived is assigned by the CLI",
+      ...base,
+    ];
+  if (artifact === "plan")
+    return ["task numbers are assigned by the CLI for append", ...base];
+  if (artifact === "health" && verb === "repair")
+    return ["repair is a destructive projection edit; select an existing duplicate audit and pass --force", ...base];
+  if (artifact === "experiments")
+    return ["pass the intended non-negative --number; the CLI validates and assigns it to the entry", ...base];
+  if (artifact === "decisions" && verb === "update")
+    return [
+      "select an existing decision number with --number; it is caller-supplied and never assigned by the CLI",
+      "update writes only satisfaction overlay fields; decision content is amended, not updated",
+      ...base,
+    ];
+  if (artifact === "decisions" && verb === "amend")
+    return [
+      "select an existing decision number with --number; it is caller-supplied and never assigned by the CLI",
+      "supply at least one amendable content field (--question, --context, --alternative-chosen, --choice, --reasoning, --confidence, --feeds-into)",
+      "confidence must be current vocabulary (firm, provisional, exploratory); unsupported inherited labels on untouched records stay legacy",
+      "dry-run reports the proposed revision and effective-record effects without writing; apply publishes immutable revision evidence separate from the original archive",
+      "amend publication is not implemented yet; execution refuses before side effects",
+    ];
+  return ["number is assigned by the CLI; do not pass --number", ...base];
 }
 
 export function exampleFor(artifact: WritableArtifact, verb: string): string {
@@ -124,6 +145,8 @@ export function exampleFor(artifact: WritableArtifact, verb: string): string {
     return 'agentera state progress append --type fix --phase build --what "..." --intent "..." --format json';
   if (artifact === "decisions" && verb === "update")
     return 'agentera state decisions update --number 1 --satisfaction-state provisionally_satisfied --satisfaction-evidence "..."';
+  if (artifact === "decisions" && verb === "amend")
+    return 'agentera state decisions amend --number 53 --choice "..." --reasoning "..." --confidence firm --dry-run --format json';
   if (artifact === "decisions")
     return 'agentera state decisions append --question "..." --context "..." --alternative-chosen "..." --choice "..." --reasoning "..." --confidence firm';
   if (artifact === "health" && verb === "repair") return "agentera state health repair --number 14 --keep first --force --format json";

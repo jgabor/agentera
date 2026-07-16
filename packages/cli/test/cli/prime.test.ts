@@ -79,7 +79,7 @@ describe("cli prime", () => {
       expect.arrayContaining([
         expect.objectContaining({
           artifact: "decisions",
-          mutations: ["append", "update"],
+          mutations: ["append", "update", "amend"],
           explain_command: "agentera state decisions explain --format json",
         }),
       ]),

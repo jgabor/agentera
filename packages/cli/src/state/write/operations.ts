@@ -6,6 +6,7 @@ export type WritableArtifact = (typeof WRITABLE_ARTIFACTS)[number];
 export const WRITE_VERBS = [
   "append",
   "update",
+  "amend",
   "set-status",
   "set-plan-status",
   "record-evaluation",
@@ -38,6 +39,10 @@ export interface OperationSpec {
   allowForce?: boolean;
   compacts?: boolean;
 }
+
+/** Caller-selected existing decision number (update/amend). Never CLI-assigned. */
+const EXISTING_DECISION_NUMBER_DESCRIPTION =
+  "Existing decision number to update or amend. Caller-selected: it must match a numbered decision in the active projection or numbered archive and is never assigned by the CLI.";
 
 const progressAppend: OperationField[] = [
   {
@@ -90,7 +95,13 @@ const decisionAppend: OperationField[] = [
 ];
 
 const decisionUpdate: OperationField[] = [
-  { flag: "--number", field: "number", kind: "integer", required: true },
+  {
+    flag: "--number",
+    field: "number",
+    kind: "integer",
+    required: true,
+    description: EXISTING_DECISION_NUMBER_DESCRIPTION,
+  },
   {
     flag: "--satisfaction-state",
     field: "satisfaction.state",
@@ -101,6 +112,44 @@ const decisionUpdate: OperationField[] = [
   { flag: "--satisfaction-evidence", field: "satisfaction.evidence", kind: "string" },
   { flag: "--confirmed-by", field: "satisfaction.user_confirmation.confirmed_by", kind: "string" },
   { flag: "--confirmed-at", field: "satisfaction.user_confirmation.confirmed_at", kind: "string" },
+];
+
+/**
+ * Amending decision content fields. `--number` is caller-selected (an existing
+ * decision). At least one amendable content field must be supplied; individual
+ * fields are optional so the writer can validate the union requirement.
+ * Confidence values must be current vocabulary (firm|provisional|exploratory).
+ * Amendment publication is not implemented in Task 1; execution refuses with
+ * an actionable error consistent with the explain output.
+ */
+const decisionAmend: OperationField[] = [
+  {
+    flag: "--number",
+    field: "number",
+    kind: "integer",
+    required: true,
+    description: EXISTING_DECISION_NUMBER_DESCRIPTION,
+  },
+  { flag: "--question", field: "question", kind: "string", required: false },
+  { flag: "--context", field: "context", kind: "string", required: false },
+  { flag: "--alternative-chosen", field: "alternatives.chosen", kind: "string", required: false },
+  {
+    flag: "--alternative-rejected",
+    field: "alternatives.rejected",
+    kind: "string_list",
+    repeatable: true,
+    required: false,
+  },
+  { flag: "--choice", field: "choice", kind: "string", required: false },
+  { flag: "--reasoning", field: "reasoning", kind: "string", required: false },
+  {
+    flag: "--confidence",
+    field: "confidence",
+    kind: "string",
+    required: false,
+    validValues: ["firm", "provisional", "exploratory"],
+  },
+  { flag: "--feeds-into", field: "feeds_into", kind: "string", required: false },
 ];
 
 const planTaskFields: OperationField[] = [
@@ -142,6 +191,7 @@ const SPECS: OperationSpec[] = [
   { artifact: "progress", verb: "append", fields: progressAppend, compacts: true },
   { artifact: "decisions", verb: "append", fields: decisionAppend, compacts: true },
   { artifact: "decisions", verb: "update", fields: decisionUpdate },
+  { artifact: "decisions", verb: "amend", fields: decisionAmend },
   { artifact: "plan", verb: "append", fields: planTaskFields },
   {
     artifact: "plan",

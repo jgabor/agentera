@@ -84,10 +84,11 @@ describe("cli schema", () => {
       expect.arrayContaining([
         expect.objectContaining({
           artifact: "decisions",
-          mutations: ["append", "update"],
+          mutations: ["append", "update", "amend"],
           explain_by_verb: {
             append: "agentera state decisions explain --verb append --format json",
             update: "agentera state decisions explain --verb update --format json",
+            amend: "agentera state decisions explain --verb amend --format json",
           },
         }),
         expect.objectContaining({

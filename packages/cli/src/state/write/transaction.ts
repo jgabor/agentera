@@ -782,6 +782,19 @@ export function executeStateWrite(
   req: StateWriteRequest,
   options: StateMutationOptions = {},
 ): StateWriteEnvelope {
+  if (req.artifact === "decisions" && req.spec.verb === "amend") {
+    reject({
+      class: "unsupported_target",
+      message:
+        "decisions amend publication is not implemented yet; the revision authority and amend command plumbing are defined, and revision-backed reads (plan task 2) and amendment publication (plan task 3) land later",
+      syntax:
+        "agentera state decisions amend --number N [--question ... --choice ... --reasoning ... --confidence firm ...] [--dry-run] --format json",
+      example:
+        'agentera state decisions amend --number 53 --choice "..." --reasoning "..." --confidence firm --dry-run --format json',
+      recovery:
+        "discover the amend contract with `agentera state decisions explain --verb amend --format json`; no files were changed",
+    });
+  }
   assertWriterBoundary(req.projectRoot, path.join(req.projectRoot, ".agentera"), "writer lock");
   const planPublication =
     req.artifact === "plan" && ["archive", "create"].includes(req.spec.verb);

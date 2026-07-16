@@ -1,0 +1,96 @@
+header:
+  level: full
+  created: 2026-07-16
+  status: open
+  reviewed: 2026-07-16
+  critic_issues: 11 found, 11 addressed, 0 dismissed
+  title: "Plan: Add safe decision-content amendments"
+  id: plan:423f4b76-0937-49a8-97cd-9cddd90fe5a6
+what: Add an explicit typed amendment operation that corrects one numbered decision while preserving its original history, synchronizing effective archive and projection state, and leaving unrelated legacy records semantically untouched.
+why: Decision-content corrections currently require bypassing the typed writer. Whole-artifact validation and serialization can also reject or rewrite unrelated inherited semantics, preventing safe correction without an unintended migration.
+constraints: Keep satisfaction updates separate from content amendments. Preserve every original numbered archive and record amendments as additional immutable evidence. Never coerce unsupported inherited confidence labels or claim stronger provenance than exists. Require current schema values for new or amended content. Keep the CLI as the sole write authority, make retries idempotent, preserve unrelated values always and unrelated bytes whenever a safe record-local edit is possible, retain suite metadata at 3.0.0, and do not publish, tag, or push.
+overall_acceptance: GIVEN a numbered decision with correctable full content and unrelated legacy labels WHEN a user dry-runs and applies an amendment THEN only that decision's effective content changes, original history remains verifiable, exact reads and bounded projections agree, interrupted writes recover safely, and no unrelated semantic migration is implied or performed.
+scope:
+  included:
+    - Amendment command, field, validation, discovery, help, and error contracts.
+    - Immutable amendment revisions and effective decision composition.
+    - Explicitly degraded bootstrapping for complete legacy projection records.
+    - Record-local projection updates, dry-run and apply behavior, replay, and recovery.
+    - Scoped legacy-label coexistence across all typed decision mutations.
+    - Focused and full regression coverage, contract synchronization, and project-state closeout.
+  excluded:
+    - Bulk migration or automatic normalization of existing decisions.
+    - Reconstructing full decisions from summaries or downstream references.
+    - Redesigning satisfaction overlays or cascading changes through feeds_into references.
+    - A general-purpose YAML formatting engine.
+    - Release, publication, tagging, pushing, or suite metadata beyond 3.0.0.
+  deferred:
+    - Bulk archival backfill for legacy decisions unrelated to a requested amendment.
+design: Introduce a separately identified immutable revision ledger for amendable decision-content paths while retaining the original numbered archive as historical evidence. Compose the latest valid revision with the base record before applying the independent satisfaction overlay. A complete legacy projection may seed a base only with explicit degraded provenance; summaries and ambiguous records remain unamendable. Publish revision evidence before exposing a record-local projection change, and make retries detect and converge partial publication. Validate amendment inputs strictly while allowing untouched inherited labels to remain explicit legacy state. Refuse an amendment rather than reserialize unrelated records when the target boundary or unchanged-record proof is unsafe.
+unknowns:
+  - question: Can every supported full-detail legacy projection shape expose an unambiguous target-record byte boundary for record-local replacement?
+    affects_task: 3
+    resolve_by: Exercise representative comments, quoting, block scalars, mixed legacy labels, and compacted shapes; use record-local replacement only when identity and unchanged-byte proofs hold, otherwise refuse without side effects.
+tasks:
+  - number: 1
+    name: Define amendment authority and CLI behavior
+    depends_on:
+      []
+    status: complete
+    acceptance:
+      - GIVEN decision storage authority WHEN amendment behavior is inspected THEN original content remains immutable historical evidence and only declared content paths may receive separately identified revisions.
+      - GIVEN command discovery WHEN decision verbs are explained THEN amend identity, editable fields, input requirements, dry-run behavior, examples, and actionable errors agree across help, schema, and introspection.
+      - GIVEN update and append discovery WHEN number ownership is described THEN update and amend require a caller-selected existing number while append remains CLI-numbered without contradictory guidance.
+      - GIVEN unsupported inherited labels WHEN compatibility rules are evaluated THEN untouched values are classified as explicit legacy state while new and amended values require the current vocabulary.
+      - GIVEN each new contract rule WHEN focused validation runs THEN at least one accepted and one rejected case prove its boundary.
+  - number: 2
+    name: Establish revision-backed effective decision reads
+    depends_on:
+      - "1"
+    status: pending
+    acceptance:
+      - GIVEN a verified base and valid ordered revisions WHEN exact, list, startup, and compaction consumers read the decision THEN they receive one latest effective record with base and amendment provenance.
+      - GIVEN a complete legacy projection record without a numbered archive WHEN amendment preparation runs THEN its exact values may seed a hash-verified base marked with degraded projection provenance, never historical archive provenance.
+      - GIVEN a summary-only, conflicting, ambiguous, broken-hash, or incomplete target WHEN preparation or reading runs THEN detail is degraded or amendment is refused with a working correction rather than reconstructed.
+      - GIVEN both a content revision and satisfaction overlay WHEN decision state is read THEN each is composed within its separate authority and neither rewrites the other's evidence.
+      - GIVEN revision selection, bootstrap, and composition behavior WHEN focused tests run THEN each path has passing, malformed, conflict, and replay coverage.
+  - number: 3
+    name: Publish record-local amendments with recovery
+    depends_on:
+      - "2"
+    status: pending
+    acceptance:
+      - GIVEN a valid amendment WHEN dry-run runs THEN it reports the exact revision, effective-record, and projection effects without changing any file.
+      - GIVEN apply succeeds WHEN the decision is reread THEN immutable revision evidence, effective detail, and any full or summary projection representation agree.
+      - GIVEN unrelated records with comments, formatting, or unsupported labels WHEN one full decision is amended THEN their canonical values remain identical and their bytes remain identical; if a safe target-only change cannot be proven, apply refuses without side effects.
+      - GIVEN interruption after staging, base or revision publication, projection publication, or directory synchronization WHEN the command retries THEN stable revision identity and publication evidence converge without duplicates or mixed effective state.
+      - GIVEN concurrent projection change, stale base hash, duplicate revision conflict, or unsafe target identity WHEN publication begins THEN existing bytes remain preserved and the error provides a working retry or repair action.
+      - GIVEN every publication boundary WHEN recovery tests run THEN each boundary has pre-publication, partial-publication, retry, idempotent replay, and conflict assertions.
+  - number: 4
+    name: Enforce legacy coexistence across decision mutations
+    depends_on:
+      - "1"
+      - "3"
+    status: pending
+    acceptance:
+      - GIVEN untouched inherited unsupported confidence labels WHEN append, satisfaction update, or amend processes the artifact THEN the labels remain unchanged and are reported as legacy caveats rather than blocking the operation.
+      - GIVEN an unsupported confidence label on new or amended content WHEN validation runs THEN the operation fails before side effects.
+      - GIVEN any implicit normalization or unrelated semantic change WHEN unchanged-record proofs run THEN publication fails and identifies the affected decision.
+      - GIVEN a current-valid decisions artifact WHEN append and satisfaction update run THEN their established behavior, archive ordering, overlay separation, and machine-readable outputs remain compatible.
+      - GIVEN legacy and current records across each decision mutation WHEN focused tests run THEN whole-artifact prevalidation, target validation, compaction, and read composition interactions have both successful and rejected cases.
+  - number: 5
+    name: Synchronize contracts and verify current state
+    depends_on:
+      - "1"
+      - "2"
+      - "3"
+      - "4"
+    status: pending
+    acceptance:
+      - GIVEN amendment behavior is complete WHEN command help, explain output, schemas, storage authority, recovery guidance, and contributor documentation are compared THEN terminology and examples agree.
+      - GIVEN the final tree WHEN focused tests, the full CLI suite, typecheck, build, capability-contract validation, and compaction run THEN every required gate passes.
+      - GIVEN the originating TODO WHEN all behavioral evidence is verified THEN it is resolved and plan and progress state record concrete verification in the same implementation commit.
+      - GIVEN feeds_into references outside the amended record WHEN closeout runs THEN no cascading rewrite occurs and that exclusion remains documented.
+      - GIVEN the v3 cutover hold WHEN work closes THEN suite surfaces remain at 3.0.0 and no release, publication, tag, or push occurs.
+surprises:
+  []

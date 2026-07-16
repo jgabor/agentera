@@ -13,7 +13,8 @@ authority:
     Runtime readers, writers, validators, tests, help, and capability source
     contracts may project this authority but must not create a second map of
     archive paths, API verbs, compatibility classes, mutable overlay fields,
-    failure classes, or byte limits.
+    amendment revision paths, legacy label coexistence rules, failure classes,
+    or byte limits.
   implementation_boundary: >-
     This contract does not migrate legacy state or change existing plan and
     vision archive behavior. The maintenance-only Git backfill surface declared
@@ -716,6 +717,60 @@ overlays:
     inference: forbidden from commits, downstream references, summaries, or Git history
     protected_review: unresolved decisions remain visible and never block archive storage
 
+revisions:
+  location: .agentera/revisions/decisions.yaml
+  project_root_fixed: true
+  docs_yaml_override: forbidden
+  schema_version: agentera.decisionRevision.v1
+  supported_artifact: decisions
+  identity_key: decisions:<decision-number>
+  storage_shape: >-
+    A mapping keyed by stable decision ID. Each value is an ordered list of
+    immutable revision records carrying only authority-declared amendable
+    content paths plus revision provenance. A revision never replaces the
+    immutable numbered archive record and never replaces the satisfaction
+    overlay; it is additional immutable evidence composed at read time.
+  amendable_paths:
+    - question
+    - context
+    - alternatives
+    - choice
+    - reasoning
+    - confidence
+    - feeds_into
+  identity_paths:
+    - number
+  temporal_paths:
+    - date
+  separation_from_overlay: >-
+    Amendments never touch satisfaction overlay paths. Satisfaction updates
+    remain under overlays; content amendments remain under revisions. Each
+    authority composes its own evidence and neither rewrites the other.
+  immutability: >-
+    Original numbered archive records remain immutable historical evidence.
+    Revisions are additional immutable evidence appended in declared order;
+    no revision overwrites, reorders, or deletes a prior revision. A revision
+    is byte-stable after publication and an identical revision is an
+    idempotent replay.
+  provenance: >-
+    Revision evidence carries revision provenance only. It is never labeled
+    as historical archive provenance. A revision bootstrapped from a complete
+    legacy projection record may carry degraded_projection provenance and
+    never historical_archive provenance.
+  publication_order:
+    - validate_target_identity
+    - validate_amendment_vocabulary
+    - stage_revision
+    - publish_revision
+    - update_effective_projection
+  apply_state: not_implemented
+  apply_state_note: >-
+    The revision authority and amend command plumbing are defined here;
+    revision-backed reads and amendment publication with recovery are not
+    implemented yet. Amend execution refuses before side effects with an
+    actionable error pointing to
+    `agentera state decisions explain --verb amend --format json`.
+
 projections:
   archive:
     role: complete immutable historical detail
@@ -1369,6 +1424,26 @@ compatibility:
     Compatibility reports provenance and availability only. It does not
     reconstruct missing decision fields, promote summaries to full records, or
     use Git history to satisfy a current source contract.
+  legacy_label_coexistence:
+    dimensions:
+      - confidence
+    current_vocabulary: [firm, provisional, exploratory]
+    current_vocabulary_ref: protocol.yaml DECISION_LABELS (DL1-DL3)
+    known_legacy_examples: [high, medium, low]
+    classification_rule: >-
+      A label value is unsupported when it is not in current_vocabulary. An
+      unsupported inherited label on a record the caller did not touch is
+      explicit legacy state: it is preserved byte- and value-semantically,
+      reported as a legacy caveat, never coerced to the current vocabulary,
+      and never blocks an append, satisfaction update, or amend on a
+      different target. A confidence label supplied by append or amend is new
+      or amended content and must be a current_vocabulary value; otherwise the
+      operation rejects before side effects.
+    no_silent_normalization: >-
+      Unsupported inherited labels are never rewritten to current values
+      without explicit user migration consent. Reads classify them as legacy
+      and never silently promote them to current vocabulary or claim stronger
+      provenance than exists.
 
 budgets:
   schema_version: agentera.stateOutputBudget.v1

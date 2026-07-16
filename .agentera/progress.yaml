@@ -1,4 +1,20 @@
 cycles:
+  - number: 839
+    timestamp: 2026-07-16 05:57
+    type: feat
+    phase: build
+    what: "Defined decision amendment authority contracts and CLI discovery:
+      revision authority in storage-authority YAML, amend verb with
+      caller-selected --number, amend execution refusal, and legacy
+      confidence-label coexistence classifier"
+    verified: typecheck clean; 2197 tests pass (192 files) including 14 new contract
+      tests; build clean; check compact PASS; capability-contract validation
+      PASS; live CLI smoke confirms amend refusal, update --number contradiction
+      fixed, and invalid confidence rejected
+    next: "Task 2: revision-backed effective decision reads"
+    context:
+      intent: "Task 1 of the decision-content amendments plan: contracts only, no
+        revision-backed reads or amendment publication yet"
   - number: 838
     timestamp: 2026-07-16 02:16
     type: refactor
@@ -275,35 +291,6 @@ cycles:
         remain caveats.
       scope: Plan Task 4, progress evidence, TODO/changelog agreement, and local
         commit closeout.
-  - number: 829
-    timestamp: 2026-07-15 18:11
-    type: fix
-    phase: build
-    what: Corrected advisory lint exits while preserving strict operational and
-      publication failures.
-    inspiration: Active plan Task 3 and the advisory-by-default lint contract.
-    discovered: The first focused lint invocation used repository-relative paths
-      from the package working directory and selected zero files; rerunning with
-      package-relative paths passed.
-    verified: Focused Vitest passed 78/78; full CLI Vitest passed 2085/2085;
-      typecheck and build passed; focused vp lint passed with 0 warnings and 0
-      errors; capability-contract validation passed 2/2; check compact passed
-      with 0 over-limit artifacts; built CLI smoke checks confirmed default
-      finding exit 0, strict finding exit 1, clean exits 0 in both modes, and
-      invalid or unsupported-authority input exits nonzero; stateWrite
-      publication regressions passed.
-    next: "Execute only active plan Task 4: verify delivery and synchronize final
-      plan state."
-    context:
-      intent: Complete Task 3 by separating advisory findings from blocking lint
-        failures without changing finding payload semantics.
-      constraints: Kept lint findings, check statuses, overall status, strict plan
-        publication, and uniform_10_40_50 behavior unchanged; did not refresh
-        omitted or stale state.
-      unknowns: Decision 93 still requires user review; historical plan and progress
-        archive recovery remains degraded.
-      scope: Lint command exit selection, focused CLI regressions, changelog, TODO,
-        progress, and Task 3 plan status.
   - number: 793
     timestamp: 2026-07-14 17:36
     type: chore
@@ -373,6 +360,8 @@ cycles:
         and backfill fixtures; package metadata and generated ignored
         dist/bundle
 archive:
+  - summary: "Cycle 829 (2026-07-15): Corrected advisory lint exits while preserving
+      strict operational and publication failures."
   - summary: "Cycle 828 (2026-07-15): Made lint consume owning schema verbosity
       declarations without runtime tables or fallback constants."
   - summary: "Cycle 827 (2026-07-15): Defined schema-owned verbosity authority in
@@ -463,16 +452,18 @@ archive:
       upgrade..."
   - summary: "Cycle 789 (2026-07-14): Fixed both bounded-history defects in
       simplified Agentera Task 1: inventory and preview now cap the..."
-  - summary: "Cycle 788 (2026-07-14): Removed speculative preview receipt security
-      from optional Git enrichment: --dry-run remains read-only and optional,
-      while..."
 omitted: true
-omitted_count: 74
+omitted_count: 75
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded

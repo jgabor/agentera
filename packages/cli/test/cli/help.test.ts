@@ -58,7 +58,7 @@ describe("cli help", () => {
       "agentera state <artifact> explain --format json",
     );
     const decisions = printStateHelp("decisions");
-    expect(decisions).toContain("{append,update,explain}");
+    expect(decisions).toContain("{append,update,amend,explain}");
     expect(decisions).toContain("agentera state decisions explain --format json");
     expect(decisions).toContain("agentera state decisions explain --verb VERB --format json");
   });
