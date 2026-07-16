@@ -1,4 +1,36 @@
 cycles:
+  - number: 874
+    timestamp: 2026-07-17 01:37
+    type: fix
+    phase: build
+    what: Closed exact-source migration boundary escapes by reusing inspected
+      active-plan bytes and explicitly classifying unsafe active-plan,
+      decision-overlay, and decision-revision paths without following them.
+    inspiration: Replanned PLAN Task 19, Decision 94, and the final Task 3 retry audit.
+    discovered: Active-plan archive discovery needed a pinned inspected-byte seam so
+      safe archives remain discoverable without rereading an unsafe active path.
+    verified: Focused migration/entity tests passed 4 files and 77 tests. Full CLI
+      passed 203 files and 2,408 tests. Typecheck and build passed. State
+      validation found 0 issues; capability contract passed 2/2; compact checked
+      10 artifacts with 0 errors. A repeated pre-publication preview produced
+      1,282 verified, 55 projection-only, 90 summary-only, 17 corrupt, 66
+      unresolved relationships, 173 blocked, 1,444 logical entries, 1,465
+      physical records, 21 mirrors, 2,118 relationships, source fingerprint
+      7809c0c8c6d0ac3b23092949eeffb98581fbf489cc1b7509ad843e459be919eb, and
+      preview digest
+      581692f3f1f53ce8068932dee7aef47a64232400fe747af97fac5ad60539427d.
+    next: Keep Tasks 4-9 pending; do not begin any family cutover or durable apply
+      in this cycle.
+    context:
+      intent: Complete only replanned Task 19 after Task 3's audit escalation while
+        preserving the read-only migration boundary.
+      constraints: No family cutover, durable apply, apply effects, vision change,
+        unrelated repair, release, push, publish, or amend.
+      unknowns: Task 13 still owns recovery or disposition of the 173 blocked logical
+        identities; this task does not resolve them.
+      scope: Exact-source inspection reuse, plan discovery's pinned-byte seam,
+        decision overlay/revision corrupt accounting, boundary regressions, and
+        Task 19 state.
   - number: 873
     timestamp: 2026-07-17 01:00
     type: fix
@@ -333,31 +365,6 @@ cycles:
       scope: packages/cli/src/state/write/lock.ts;
         packages/cli/test/state/write/lock.test.ts;
         packages/cli/test/state/entityStorage.test.ts; progress cycle 865.
-  - number: 864
-    timestamp: 2026-07-16 19:53
-    type: fix
-    phase: build
-    what: Audit retry 1 fixed PLAN Task 2 entity publication races and logical
-      replay equality.
-    inspiration: Independent audit failure of PLAN Task 2.
-    discovered: The first full-suite invocation ran before dist existed and failed
-      only two packaging preconditions; build restored dist and the complete
-      suite passed.
-    verified: Focused entity storage passed 11/11; entity authority and validation
-      CLI passed 29/29; full CLI suite passed 202 files with 1 skipped and 2343
-      tests with 1 skipped after build; typecheck and build passed; state
-      validation passed with zero issues; capability-contract passed 2/2;
-      compact gate reported zero over-limit artifacts or errors.
-    next: Return Task 2 audit retry 1 for independent review; preserve completed
-      Task 2 and do not begin Task 3 or family cutovers.
-    context:
-      intent: Close the independent audit's cross-artifact race and byte-order replay
-        defects without beginning Task 3 or family cutovers.
-      constraints: Task 2 remains complete; no vision, Task 3, family cutover,
-        publish, push, or unrelated caveat changes.
-      unknowns: None.
-      scope: Shared entity storage authority, publication primitive, and race/replay
-        regression tests.
   - number: 793
     timestamp: 2026-07-14 17:36
     type: chore
@@ -427,6 +434,8 @@ cycles:
         and backfill fixtures; package metadata and generated ignored
         dist/bundle
 archive:
+  - summary: "Cycle 864 (2026-07-16): Audit retry 1 fixed PLAN Task 2 entity
+      publication races and logical replay equality."
   - summary: "Cycle 863 (2026-07-16): Added authority-driven entity storage,
       project-wide ID allocation, safe discovery and publication, graph
       validation, and agentera..."
@@ -525,15 +534,18 @@ archive:
       preserving the completed immutable plan archive."
   - summary: "Cycle 825 (2026-07-15): Closed Audit 32 remediation with independent
       Audit 33 and synchronized replacement Task 3 state."
-  - summary: "Cycle 824 (2026-07-15): Proved Audit 32 replacement Task 2 release
-      readiness without publication."
 omitted: true
-omitted_count: 109
+omitted_count: 110
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded

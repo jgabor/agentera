@@ -121,12 +121,17 @@ function relative(root: string, target: string): string {
 
 function inspectPath(root: string, relativePath: string): SourceFile {
   const absolute = path.join(root, relativePath);
+  let stat: fs.Stats;
   try {
-    const stat = fs.lstatSync(absolute);
-    if (stat.isSymbolicLink() || !stat.isFile()) return { relative: relativePath, bytes: null, kind: "unsafe" };
+    stat = fs.lstatSync(absolute);
+  } catch (error) {
+    return { relative: relativePath, bytes: null, kind: (error as NodeJS.ErrnoException).code === "ENOENT" ? "missing" : "unsafe" };
+  }
+  if (stat.isSymbolicLink() || !stat.isFile()) return { relative: relativePath, bytes: null, kind: "unsafe" };
+  try {
     return { relative: relativePath, bytes: fs.readFileSync(absolute), kind: "file" };
   } catch {
-    return { relative: relativePath, bytes: null, kind: "missing" };
+    return { relative: relativePath, bytes: null, kind: "unsafe" };
   }
 }
 
@@ -223,6 +228,10 @@ function recovery(project: string, pathName: string): string {
   return `Repair '${pathName}', then run agentera state migrate entities --project '${project.replaceAll("'", "'\\''")}' --dry-run --format json.`;
 }
 
+function unsafeSourceMessage(pathName: string): string {
+  return `source path '${pathName}' is a symbolic link, non-file, or unreadable; replace it with a readable regular file inside the project`;
+}
+
 function numberedObservations(root: string, sourceRoot: string, files: SourceFile[], observations: Observation[]): void {
   for (const [artifact, declaration] of Object.entries(NUMBERED)) {
     const current = files.find((source) => source.relative === declaration.file);
@@ -248,7 +257,7 @@ function numberedObservations(root: string, sourceRoot: string, files: SourceFil
         observations.push({ key: `${artifact}:projection`, artifact, boundary: declaration.boundary, path: declaration.file, provenance: "current_projection", record: null, detail: "corrupt", relationships: [], message: (error as Error).message });
       }
     } else if (current?.kind === "unsafe") {
-      observations.push({ key: `${artifact}:projection`, artifact, boundary: declaration.boundary, path: declaration.file, provenance: "current_projection", record: null, detail: "corrupt", relationships: [], message: "source path is unsafe" });
+      observations.push({ key: `${artifact}:projection`, artifact, boundary: declaration.boundary, path: declaration.file, provenance: "current_projection", record: null, detail: "corrupt", relationships: [], message: unsafeSourceMessage(declaration.file) });
     }
 
     for (const source of files.filter((candidate) => candidate.relative.startsWith(`.agentera/archive/${artifact}/`))) {
@@ -288,6 +297,8 @@ function decisionEvidence(sourceRoot: string, files: SourceFile[], observations:
     } catch (error) {
       observations.push({ key: "decision_satisfaction:overlay", artifact: "decisions", boundary: "decision_satisfaction", path: overlay.relative, provenance: "overlay", record: null, detail: "corrupt", relationships: [{ field: "decision", target: null }], message: (error as Error).message });
     }
+  } else if (overlay?.kind === "unsafe") {
+    observations.push({ key: "decision_satisfaction:overlay", artifact: "decisions", boundary: "decision_satisfaction", path: overlay.relative, provenance: "overlay", record: null, detail: "corrupt", relationships: [], message: unsafeSourceMessage(overlay.relative) });
   }
   const revisions = files.find((source) => source.relative === ".agentera/revisions/decisions.yaml");
   if (revisions?.kind === "file") {
@@ -309,13 +320,19 @@ function decisionEvidence(sourceRoot: string, files: SourceFile[], observations:
     } catch (error) {
       observations.push({ key: "decision_revision:document", artifact: "decisions", boundary: "decision_revision", path: revisions.relative, provenance: "revision", record: null, detail: "corrupt", relationships: [{ field: "decision", target: null }], message: (error as Error).message });
     }
+  } else if (revisions?.kind === "unsafe") {
+    observations.push({ key: "decision_revision:document", artifact: "decisions", boundary: "decision_revision", path: revisions.relative, provenance: "revision", record: null, detail: "corrupt", relationships: [], message: unsafeSourceMessage(revisions.relative) });
   }
 }
 
 function planObservations(root: string, files: SourceFile[], observations: Observation[]): void {
   const active = path.join(root, ".agentera", "plan.yaml");
-  const discovery = discoverPlanArtifacts(active);
+  const activeSource = files.find((source) => source.relative === ".agentera/plan.yaml");
+  const discovery = discoverPlanArtifacts(active, { activeBytes: activeSource?.kind === "file" ? activeSource.bytes : null });
   const seen = new Set<string>();
+  if (activeSource?.kind === "unsafe") {
+    observations.push({ key: "plan:document", artifact: "plan", boundary: "plan", path: activeSource.relative, provenance: "current_canonical", record: null, detail: "corrupt", relationships: [], message: unsafeSourceMessage(activeSource.relative) });
+  }
   for (const identity of discovery.identities) {
     const marker = `${identity.stableId}\0${identity.artifact.path}`;
     if (seen.has(marker)) continue;
@@ -395,7 +412,7 @@ function todoAndDocs(root: string, files: SourceFile[], observations: Observatio
       observations.push({ key: `TODO.md:line:${index + 1}`, artifact: "todo", boundary: "todo_item", path: "TODO.md", provenance: "current_canonical", record: { status: item.status, description: item.description }, detail: "full", relationships: [] });
     });
   } else if (todo?.kind === "unsafe") {
-    observations.push({ key: "todo:document", artifact: "todo", boundary: "todo_item", path: "TODO.md", provenance: "current_canonical", record: null, detail: "corrupt", relationships: [], message: "TODO path is unsafe" });
+    observations.push({ key: "todo:document", artifact: "todo", boundary: "todo_item", path: "TODO.md", provenance: "current_canonical", record: null, detail: "corrupt", relationships: [], message: unsafeSourceMessage("TODO.md") });
   }
   const docs = files.find((source) => source.relative === ".agentera/docs.yaml");
   if (docs?.kind === "file") {
@@ -411,7 +428,7 @@ function todoAndDocs(root: string, files: SourceFile[], observations: Observatio
       observations.push({ key: "docs:document", artifact: "docs", boundary: "documentation_inventory_entry", path: docs.relative, provenance: "current_canonical", record: null, detail: "corrupt", relationships: [], message: (error as Error).message });
     }
   } else if (docs?.kind === "unsafe") {
-    observations.push({ key: "docs:document", artifact: "docs", boundary: "documentation_inventory_entry", path: docs.relative, provenance: "current_canonical", record: null, detail: "corrupt", relationships: [], message: "docs path is unsafe" });
+    observations.push({ key: "docs:document", artifact: "docs", boundary: "documentation_inventory_entry", path: docs.relative, provenance: "current_canonical", record: null, detail: "corrupt", relationships: [], message: unsafeSourceMessage(docs.relative) });
   }
 }
 

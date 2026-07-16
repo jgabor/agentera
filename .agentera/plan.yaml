@@ -65,6 +65,7 @@ tasks:
     depends_on:
       - "2"
       - "3"
+      - "19"
     status: pending
     acceptance:
       - GIVEN progress writes and exact reads WHEN exercised THEN each cycle uses canonical entity authority and bare IDs.
@@ -75,6 +76,7 @@ tasks:
     depends_on:
       - "2"
       - "3"
+      - "19"
     status: pending
     acceptance:
       - GIVEN decisions, satisfaction, revisions, and amendments WHEN written or read THEN each independent mutation uses canonical entity authority.
@@ -86,6 +88,7 @@ tasks:
     depends_on:
       - "2"
       - "3"
+      - "19"
     status: pending
     acceptance:
       - GIVEN health audit and repair operations WHEN exercised THEN each audit uses canonical entity authority and bare IDs.
@@ -96,6 +99,7 @@ tasks:
     depends_on:
       - "2"
       - "3"
+      - "19"
     status: pending
     acceptance:
       - GIVEN plans and tasks WHEN created or updated THEN each independently mutable entity uses the shared identity and writer contract.
@@ -107,6 +111,7 @@ tasks:
     depends_on:
       - "2"
       - "3"
+      - "19"
     status: pending
     acceptance:
       - GIVEN objectives and experiments WHEN published or retrieved THEN UUID, composite, and numeric identities are replaced by bare project-wide IDs.
@@ -118,6 +123,7 @@ tasks:
     depends_on:
       - "2"
       - "3"
+      - "19"
     status: pending
     acceptance:
       - GIVEN TODO items and documentation inventory entries WHEN mutated THEN each independent item uses the shared identity and writer contract.
@@ -241,7 +247,18 @@ tasks:
       - GIVEN indeterminate, PID-less, malformed unknown, or foreign preparation residue WHEN acquisition inspects it THEN the writer fails closed with actionable recovery and never deletes it by age.
       - GIVEN repeated simultaneous stale-lock publishers targeting one ID WHEN they run THEN every repetition yields one publication, one canonical duplicate-ID loser, one entity, and zero writer residue.
       - GIVEN lock crash, legacy, successor, timeout, reentrant, boundary, durability, entity, and state-writer suites WHEN rerun THEN all prior safety properties remain green.
+  - number: 19
+    name: Close exact-source migration boundary escapes
+    status: complete
+    depends_on:
+      - "3"
+    acceptance:
+      - GIVEN an active plan path is symlinked or non-file WHEN preview runs THEN external bytes are never read and one deterministic corrupt observation reports actionable recovery.
+      - GIVEN decision overlay or revision exact paths are unsafe WHEN inventoried THEN each is explicitly accounted for as corrupt rather than followed or silently omitted.
+      - GIVEN external targets change WHEN preview, continuation, or apply preflight reruns THEN fingerprint, digest, entries, and counts remain project-bound and all paths remain zero-write.
+      - GIVEN all declared recursive and exact source paths WHEN boundary fixtures run THEN no external content enters inventory and valid in-project sources retain complete parity.
 surprises: |-
   Final audit after retry 2 found an initialization-grace race and legacy lock-file recovery defect; Task 17 now gates Task 3 and downstream migration work.
   Final retry audit found positively live peer preparations were failed as unknown residue rather than retried as bounded contention; Task 18 now gates Task 3.
   The required progress Cycle 872 is itself a newly inventoried verified source, so a post-evidence preview has one additional logical entry while the implementation-evidence snapshot remains the requested 1,441-entry graph.
+  Final retry audit found exact-path symlink handling could follow an external active plan and silently omit unsafe decision overlay/revision paths; Task 19 now gates every family cutover.

@@ -1,0 +1,19 @@
+schemaVersion: agentera.stateArchiveEntry.v1
+artifact_id: progress
+entry_number: 874
+record:
+  number: 874
+  timestamp: 2026-07-17 01:37
+  type: fix
+  phase: build
+  what: Closed exact-source migration boundary escapes by reusing inspected active-plan bytes and explicitly classifying unsafe active-plan, decision-overlay, and decision-revision paths without following them.
+  inspiration: Replanned PLAN Task 19, Decision 94, and the final Task 3 retry audit.
+  discovered: Active-plan archive discovery needed a pinned inspected-byte seam so safe archives remain discoverable without rereading an unsafe active path.
+  verified: Focused migration/entity tests passed 4 files and 77 tests. Full CLI passed 203 files and 2,408 tests. Typecheck and build passed. State validation found 0 issues; capability contract passed 2/2; compact checked 10 artifacts with 0 errors. A repeated pre-publication preview produced 1,282 verified, 55 projection-only, 90 summary-only, 17 corrupt, 66 unresolved relationships, 173 blocked, 1,444 logical entries, 1,465 physical records, 21 mirrors, 2,118 relationships, source fingerprint 7809c0c8c6d0ac3b23092949eeffb98581fbf489cc1b7509ad843e459be919eb, and preview digest 581692f3f1f53ce8068932dee7aef47a64232400fe747af97fac5ad60539427d.
+  next: Keep Tasks 4-9 pending; do not begin any family cutover or durable apply in this cycle.
+  context:
+    intent: Complete only replanned Task 19 after Task 3's audit escalation while preserving the read-only migration boundary.
+    constraints: No family cutover, durable apply, apply effects, vision change, unrelated repair, release, push, publish, or amend.
+    unknowns: Task 13 still owns recovery or disposition of the 173 blocked logical identities; this task does not resolve them.
+    scope: Exact-source inspection reuse, plan discovery's pinned-byte seam, decision overlay/revision corrupt accounting, boundary regressions, and Task 19 state.
+record_sha256: 69f34d4c60889a466a0599ec42d63a2baec3b6d58e47965ad89b3f4cc2291ffb

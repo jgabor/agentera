@@ -18,6 +18,41 @@ import {
 const REPO_ROOT = path.resolve(import.meta.dirname, "../../../..");
 const roots: string[] = [];
 
+const VALID_PLAN = `header:
+  level: light
+  created: 2026-07-16
+  status: open
+  title: exact source fixture
+  id: plan:123e4567-e89b-42d3-a456-426614174000
+what: test exact source inspection
+why: preserve the project boundary
+constraints: none
+overall_acceptance: pass
+scope:
+  included: [test]
+  excluded: []
+tasks:
+  - number: 1
+    name: one
+    depends_on: []
+    status: pending
+    acceptance: [pass]
+surprises: []
+`;
+
+const EXACT_SOURCE_FIXTURES = {
+  "TODO.md": "# TODO\n\n## → Normal\n- [ ] Preserve this exact item.\n",
+  ".agentera/docs.yaml": "index:\n  - path: README.md\n",
+  ".agentera/progress.yaml": "cycles:\n  - number: 1\n    timestamp: 2026-07-16 10:00\n    type: feat\n    phase: build\n    what: complete\n    inspiration: test\n    discovered: none\n    verified: passed\n    next: done\n    context:\n      intent: test\n      constraints: none\n      unknowns: none\n      scope: fixture\n",
+  ".agentera/decisions.yaml": "decisions:\n  - number: 7\n    date: 2026-07-16\n    question: Question?\n    context: Test exact source inspection.\n    alternatives:\n      - name: Preserve project boundaries\n        status: chosen\n      - name: Follow external paths\n        status: rejected\n    choice: Preserve project boundaries.\n    reasoning: External bytes cannot define project state.\n    confidence: firm\n    feeds_into: Task 19\n",
+  ".agentera/health.yaml": "audits:\n  - number: 1\n    date: 2026-07-16\n    dimensions: [architecture_alignment]\n    findings_summary:\n      critical: 0\n      warning: 0\n      info: 0\n      filtered_by_confidence: 0\n    trajectory: stable\n    grades:\n      architecture_alignment: A\n",
+  ".agentera/plan.yaml": VALID_PLAN,
+  ".agentera/overlays/decisions.yaml": "decisions:7:\n  satisfaction:\n    state: provisionally_satisfied\n    evidence: exact source fixture\n",
+  ".agentera/revisions/decisions.yaml": "decisions:7:\n  - date: 2026-07-17\n    choice: Revised choice.\n    provenance: historical_revision\n",
+} as const;
+
+const EXACT_SOURCE_PATHS = Object.keys(EXACT_SOURCE_FIXTURES) as Array<keyof typeof EXACT_SOURCE_FIXTURES>;
+
 function project(): string {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-entity-preview-"));
   roots.push(root);
@@ -41,6 +76,7 @@ function tree(root: string): string[] {
 }
 
 afterEach(() => {
+  vi.restoreAllMocks();
   for (const root of roots.splice(0)) fs.rmSync(root, { recursive: true, force: true });
 });
 
@@ -99,6 +135,96 @@ describe("entity migration read-only preview", () => {
     expect(revisions.slice(0, 2).every((entry) => entry.classification === "verified_full")).toBe(true);
     expect(revisions.slice(0, 2).map((entry) => entry.provenance)).toEqual([["revision"], ["revision"]]);
     expect(revisions.slice(2).every((entry) => entry.classification === "corrupt")).toBe(true);
+  });
+
+  it("retains complete parity for every safe exact source path", () => {
+    const root = project();
+    for (const [relative, bytes] of Object.entries(EXACT_SOURCE_FIXTURES)) write(root, relative, bytes);
+
+    const preview = previewEntityMigration(root, REPO_ROOT, { limit: 1000 });
+    const inventoriedPaths = new Set(preview.entries.flatMap((entry) => entry.source_paths));
+    expect([...inventoriedPaths]).toEqual(expect.arrayContaining(EXACT_SOURCE_PATHS));
+    for (const relative of EXACT_SOURCE_PATHS) {
+      expect(preview.entries.some((entry) => entry.source_paths.includes(relative))).toBe(true);
+    }
+    expect(preview.entries.filter((entry) => entry.source_paths.some((sourcePath) => EXACT_SOURCE_PATHS.includes(sourcePath as keyof typeof EXACT_SOURCE_FIXTURES)) && entry.classification === "corrupt")).toEqual([]);
+  });
+
+  it.each(EXACT_SOURCE_PATHS)("accounts for a symlinked exact source %s without reading its target", (relative) => {
+    const root = project();
+    const external = project();
+    const target = path.join(root, relative);
+    const externalTarget = path.join(external, "external-source");
+    write(external, "external-source", EXACT_SOURCE_FIXTURES[relative]);
+    fs.mkdirSync(path.dirname(target), { recursive: true });
+    fs.symlinkSync(externalTarget, target, "file");
+    const before = tree(root);
+    const readSpy = vi.spyOn(fs, "readFileSync");
+
+    const first = previewEntityMigration(root, REPO_ROOT, { limit: 1000 });
+    fs.appendFileSync(externalTarget, "\nexternal_identity: must-not-enter-inventory\n");
+    const second = previewEntityMigration(root, REPO_ROOT, { limit: 1000 });
+    const observations = second.entries.filter((entry) => entry.source_paths.includes(relative));
+
+    expect(observations).toHaveLength(1);
+    expect(observations[0]).toMatchObject({ classification: "corrupt", content_sha256: null, proposed_target: null });
+    expect(observations[0].recovery).toContain(`Repair '${relative}'`);
+    expect(second.source_fingerprint).toBe(first.source_fingerprint);
+    expect(second.preview_digest).toBe(first.preview_digest);
+    expect(second.counts).toEqual(first.counts);
+    expect(second.entries).toEqual(first.entries);
+    expect(JSON.stringify(second)).not.toContain("must-not-enter-inventory");
+    expect(readSpy.mock.calls.some(([candidate]) => typeof candidate === "string" && path.resolve(candidate) === target)).toBe(false);
+    expect(tree(root)).toEqual(before);
+  });
+
+  it.each(EXACT_SOURCE_PATHS)("accounts for a non-file exact source %s without reading it", (relative) => {
+    const root = project();
+    const target = path.join(root, relative);
+    fs.mkdirSync(target, { recursive: true });
+    const before = tree(root);
+    const readSpy = vi.spyOn(fs, "readFileSync");
+
+    const preview = previewEntityMigration(root, REPO_ROOT, { limit: 1000 });
+    const observations = preview.entries.filter((entry) => entry.source_paths.includes(relative));
+
+    expect(observations).toHaveLength(1);
+    expect(observations[0]).toMatchObject({ classification: "corrupt", content_sha256: null, proposed_target: null });
+    expect(observations[0].recovery).toContain(`Repair '${relative}'`);
+    expect(readSpy.mock.calls.some(([candidate]) => typeof candidate === "string" && path.resolve(candidate) === target)).toBe(false);
+    expect(tree(root)).toEqual(before);
+  });
+
+  it("keeps active-plan preview, continuation, and apply preflight bound to the unsafe project path", () => {
+    const root = project();
+    const external = project();
+    const externalPlan = path.join(external, "plan.yaml");
+    write(external, "plan.yaml", VALID_PLAN);
+    write(root, "TODO.md", "# TODO\n\n## → Normal\n- [ ] One.\n- [ ] Two.\n");
+    fs.mkdirSync(path.join(root, ".agentera"), { recursive: true });
+    fs.symlinkSync(externalPlan, path.join(root, ".agentera", "plan.yaml"), "file");
+    const before = tree(root);
+
+    const first = previewEntityMigration(root, REPO_ROOT, { limit: 1 });
+    expect(first.next_after).not.toBeNull();
+    const continuation = { limit: 1, after: first.next_after as string, sourceFingerprint: first.source_fingerprint, previewDigest: first.preview_digest };
+    const continued = previewEntityMigration(root, REPO_ROOT, continuation);
+    fs.writeFileSync(externalPlan, VALID_PLAN.replace("123e4567-e89b-42d3-a456-426614174000", "223e4567-e89b-42d3-a456-426614174000"));
+
+    const repeated = previewEntityMigration(root, REPO_ROOT, { limit: 1 });
+    const continuedAgain = previewEntityMigration(root, REPO_ROOT, continuation);
+    expect(repeated.source_fingerprint).toBe(first.source_fingerprint);
+    expect(repeated.preview_digest).toBe(first.preview_digest);
+    expect(repeated.counts).toEqual(first.counts);
+    expect(repeated.entries).toEqual(first.entries);
+    expect(continuedAgain).toEqual(continued);
+
+    let out = "";
+    const rc = main(["node", "agentera", "state", "migrate", "entities", "--project", root, "--apply", "--force", "--source-fingerprint", first.source_fingerprint, "--preview-digest", first.preview_digest, "--format", "json"], { out: (value) => (out += value), err: () => undefined }, process.cwd(), REPO_ROOT);
+    expect(rc).toBe(1);
+    expect(JSON.parse(out)).toMatchObject({ mutation_performed: false, error: { class: "apply_not_implemented" } });
+    expect(out).not.toContain("223e4567-e89b-42d3-a456-426614174000");
+    expect(tree(root)).toEqual(before);
   });
 
   it.each(["archive", "optimize", "optimera"])("rejects a symlinked %s inventory root without traversing or writing", (name) => {

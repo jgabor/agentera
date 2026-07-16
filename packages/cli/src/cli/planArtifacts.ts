@@ -107,10 +107,11 @@ function inspectionDiagnostic(path: string, category: PlanDiagnosticCategory, me
 function inspectPlanArtifact(
   artifactPath: string,
   archived: boolean,
+  bytes?: Buffer,
 ): { artifact: PlanArtifact | null; diagnostics: PlanArtifactDiagnostic[] } {
   let data: unknown;
   try {
-    data = loadYamlMapping(fs.readFileSync(artifactPath, "utf8"));
+    data = loadYamlMapping(bytes !== undefined ? bytes.toString("utf8") : fs.readFileSync(artifactPath, "utf8"));
   } catch (error) {
     const message = (error as Error).message;
     const category = message === "YAML root must be a mapping" ? "schema" : "parse";
@@ -181,13 +182,18 @@ export function planDocumentParts(data: JsonObject): PlanDocumentParts {
 /**
  * Discover the active plan and typed-writer archives. The active path is
  * schema-resolved; its sibling `archive/` directory is the writer-owned
- * history location. Discovery is deterministic and resilient to bad files.
+ * history location. Callers with an inspected active source can pin its bytes,
+ * or pass null to exclude an unsafe path without following it.
  */
-export function discoverPlanArtifacts(activePath: string): PlanArtifactDiscovery {
+export function discoverPlanArtifacts(activePath: string, options?: { activeBytes: Buffer | null }): PlanArtifactDiscovery {
   const archiveDirectory = path.join(path.dirname(activePath), "archive");
-  const activeInspection = fs.existsSync(activePath)
-    ? inspectPlanArtifact(activePath, false)
-    : { artifact: null, diagnostics: [] };
+  const activeInspection = options
+    ? options.activeBytes === null
+      ? { artifact: null, diagnostics: [] }
+      : inspectPlanArtifact(activePath, false, options.activeBytes)
+    : fs.existsSync(activePath)
+      ? inspectPlanArtifact(activePath, false)
+      : { artifact: null, diagnostics: [] };
   const active = activeInspection.artifact;
   const archived: PlanArtifact[] = [];
   const invalidArchivePaths: string[] = [];
