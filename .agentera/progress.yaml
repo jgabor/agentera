@@ -1,4 +1,27 @@
 cycles:
+  - number: 848
+    timestamp: 2026-07-16 12:06
+    type: feat
+    phase: build
+    what: "Published one non-redundant prime contract: reconciled the four-way field
+      drift to a single authority (PRIME_STRUCTURED_FIELDS in stateQuery.ts).
+      schema.ts now advertises the canonical 27-field set (added
+      project_integration and history), the bare-prime JSON
+      source_contract.fields and the text-mode fields line derive from the same
+      list, and both agent-ready-state-contract hej.fields lists drop retired
+      bundle and mirror the canonical set."
+    verified: Vitest 2291/2291 pass (9 new AC1-AC4 assertions binding schema, prime,
+      text briefing, the documented contract, state_presence, and recovery
+      commands); pnpm typecheck clean; check compact exit 0; capability-contract
+      validation 0 failures.
+    next: "Task 3: Deliver a bounded default decision brief (<=12000 bytes)
+      retaining required fields plus active conditional fields."
+    context:
+      intent: "Task 2 of the compact-prime plan: make schema discovery and prime
+        output advertise the same behavior and emit one canonical
+        representation, while preserving the issues deprecated transition alias,
+        missing-vs-empty semantics via state_presence, and named recovery
+        commands."
   - number: 847
     timestamp: 2026-07-16 11:28
     type: fix
@@ -346,38 +369,6 @@ cycles:
     context:
       intent: "Task 1 of the decision-content amendments plan: contracts only, no
         revision-backed reads or amendment publication yet"
-  - number: 838
-    timestamp: 2026-07-16 02:16
-    type: refactor
-    phase: build
-    what: Moved lifecycle validation orchestration and parity checks out of the
-      public lifecycleAdapters.ts barrel into a dedicated lifecycleMain module,
-      preserved the historical export surface, and removed three obsolete
-      lint-baseline entries.
-    inspiration: "Plan Task 1: Extract and verify lifecycle orchestration; Audit 24
-      structural-debt finding."
-    discovered: The TODO's historical 107-line and line 61-107 references were
-      stale; the current validation barrel had grown to 237 lines and included
-      additional parity logic.
-    verified: "pnpm -C packages/cli test passed: 191 files and 2183 tests; pnpm -C
-      packages/cli run typecheck passed; pnpm -C packages/cli build passed; node
-      packages/cli/dist/bin/agentera.js check compact passed with over_limit=0,
-      formatting=0, errors=0; node packages/cli/dist/bin/agentera.js check
-      validate lifecycle-adapters --format json passed with exit_code=0 and
-      lifecycle adapter metadata ok; pnpm -C packages/cli lint passed with 0
-      errors and 113 pre-existing warnings."
-    next: Plan Task 1 is complete; archive the completed plan, then select the next
-      independent TODO item in a later build cycle.
-    context:
-      intent: Complete Plan Task 1 with a behavior-preserving separation of lifecycle
-        validation orchestration from its public re-export facade.
-      constraints: No runtime adapter-matrix changes, new validation behavior, schema
-        changes, version bump, push, tag, or publication.
-      unknowns: none
-      scope: packages/cli/src/validate/lifecycleAdapters.ts;
-        packages/cli/src/validate/lifecycleAdapters/lifecycleMain.ts;
-        packages/cli/.lint-baseline.txt; TODO.md; CHANGELOG.md;
-        .agentera/plan.yaml; .agentera/progress.yaml
   - number: 793
     timestamp: 2026-07-14 17:36
     type: chore
@@ -447,6 +438,8 @@ cycles:
         and backfill fixtures; package metadata and generated ignored
         dist/bundle
 archive:
+  - summary: "Cycle 838 (2026-07-16): Moved lifecycle validation orchestration and
+      parity checks out of the public lifecycleAdapters.ts barrel into a..."
   - summary: "Cycle 837 (2026-07-15): Synchronized contracts and verified v3
       closeout: cleaned vestigial --output/corpus_path surfaces in
       report/usageStats/extractCorpus (tier-output flag, tier_path..."
@@ -540,16 +533,18 @@ archive:
   - summary: "Cycle 799 (2026-07-14): Aligned plan-task help with the optional
       active-plan selector and added help-authority-runtime regression
       coverage."
-  - summary: "Cycle 798 (2026-07-14): Shipped bounded active-plan task list/get with
-      numeric ordering, opaque snapshot cursors, exact task retrieval,
-      structured..."
 omitted: true
-omitted_count: 83
+omitted_count: 84
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded

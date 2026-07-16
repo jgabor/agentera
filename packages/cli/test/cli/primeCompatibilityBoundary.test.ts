@@ -7,6 +7,8 @@ import YAML from "yaml";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { cmdPrime } from "../../src/cli/commands/prime.js";
+import { buildSchemaPayload } from "../../src/cli/commands/schema.js";
+import { PRIME_STRUCTURED_FIELDS } from "../../src/cli/stateQuery.js";
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..");
 const POLICY_PATH = path.join(REPO_ROOT, "references/cli/prime-consumer-compatibility.yaml");
@@ -314,5 +316,156 @@ describe("prime consumer compatibility boundary (Plan Task 1)", () => {
         ).not.toContain(doc.must_not_contain);
       },
     );
+  });
+
+  // -------------------------------------------------------------------------
+  // Task 2: publish one non-redundant prime contract. These tests bind the
+  // acceptance criteria to the live runtime so the four-way drift documented by
+  // Task 1 cannot recur: schema discovery, the emitted JSON source_contract,
+  // the text briefing, and the agent-ready-state contract all derive from one
+  // authority (PRIME_STRUCTURED_FIELDS in stateQuery.ts).
+  // -------------------------------------------------------------------------
+  describe("Task 2 AC1: schema discovery and prime output derive from one authority", () => {
+    it("prime output source_contract.fields equals the canonical authority set", () => {
+      const { payload } = runPrimePayload("agentera prime --format json");
+      const fields = (getPath(payload, "source_contract.fields") as string[]) ?? [];
+      expect([...fields].sort(), "emitted source_contract.fields must equal PRIME_STRUCTURED_FIELDS").toEqual(
+        [...PRIME_STRUCTURED_FIELDS].sort(),
+      );
+    });
+
+    it("schema discovery advertises the canonical prime set plus the context-only pointer only", () => {
+      const schema = buildSchemaPayload("schema") as Record<string, unknown>;
+      const commands = schema.commands as Array<{ name: string; structured_fields: string[] }>;
+      const prime = commands.find((c) => c.name === "prime");
+      const advertised = prime?.structured_fields ?? [];
+      // Every canonical field is advertised for discovery.
+      for (const field of PRIME_STRUCTURED_FIELDS) {
+        expect(advertised, `schema must advertise canonical field ${field}`).toContain(field);
+      }
+      // The sole advertised addition is the context-only capability_context
+      // pointer; the deprecated `issues` alias is NOT advertised as a structured
+      // field (one canonical representation — `todo` is canonical).
+      const extras = advertised.filter((f) => !PRIME_STRUCTURED_FIELDS.includes(f));
+      expect(extras).toEqual(["capability_context"]);
+      // fields_by_command.status derives from the same authority.
+      const statusFbc = getPath(schema, "structured_output.fields_by_command.status") as string[];
+      expect([...statusFbc].sort()).toEqual([...PRIME_STRUCTURED_FIELDS].sort());
+    });
+
+    it("schema discovery and prime output advertise the same canonical set", () => {
+      const { payload } = runPrimePayload("agentera prime --format json");
+      const emitted = ((getPath(payload, "source_contract.fields") as string[]) ?? []).slice().sort();
+      const schema = buildSchemaPayload("schema") as Record<string, unknown>;
+      const commands = schema.commands as Array<{ name: string; structured_fields: string[] }>;
+      const prime = commands.find((c) => c.name === "prime");
+      const advertised = (prime?.structured_fields ?? [])
+        .filter((f) => f !== "capability_context")
+        .slice()
+        .sort();
+      expect(advertised, "schema discovery and prime output must advertise the same canonical set").toEqual(emitted);
+    });
+  });
+
+  describe("Task 2 AC2: semantically duplicate startup values emit one canonical representation", () => {
+    it("the deprecated `issues` alias is a selector-only duplicate of `todo`, not a canonical field", () => {
+      const { payload, err } = runPrimePayload("agentera prime --format json");
+      const fields = (getPath(payload, "source_contract.fields") as string[]) ?? [];
+      // `todo` is the canonical representation; `issues` is not a published field.
+      expect(fields).toContain("todo");
+      expect(fields).not.toContain("issues");
+      // `issues` is still emitted as a transition alias with a stderr deprecation warning.
+      expect(getPath(payload, "issues")).toEqual(getPath(payload, "todo"));
+      expect(err).toContain("deprecated");
+      expect(err).toContain("3.0.0 stable cut");
+    });
+
+    it("the text briefing advertises the same canonical field set as the JSON contract", () => {
+      const { rc, out } = capture({ command: "prime", format: "text" });
+      expect(rc).toBe(0);
+      const fieldsLine = out.split("\n").find((l) => l.startsWith("- fields="));
+      expect(fieldsLine, "text briefing must print a source_contract fields line").toBeDefined();
+      const advertised = fieldsLine!.replace("- fields=", "").split(",").map((s) => s.trim()).filter(Boolean);
+      expect(advertised.sort(), "text and JSON must advertise one canonical representation").toEqual(
+        [...PRIME_STRUCTURED_FIELDS].sort(),
+      );
+    });
+
+    it("the agent-ready-state contract hej.fields mirror the canonical authority set", () => {
+      // The documented consumer contract must not drift from the runtime authority.
+      const contractPath = path.join(REPO_ROOT, "references/cli/agent-ready-state-contract.yaml");
+      const parsed = YAML.parse(fs.readFileSync(contractPath, "utf8")) as unknown;
+      // Recursively collect every hej.fields list (the contract documents hej
+      // under both structured_output.envelope and field_selection.fields_by_command).
+      const hejFieldLists: string[][] = [];
+      (function collect(node: unknown): void {
+        if (Array.isArray(node)) {
+          for (const child of node) collect(child);
+          return;
+        }
+        if (node && typeof node === "object") {
+          const obj = node as Record<string, unknown>;
+          if (obj.hej && typeof obj.hej === "object" && Array.isArray((obj.hej as Record<string, unknown>).fields)) {
+            hejFieldLists.push((obj.hej as Record<string, unknown>).fields as string[]);
+          }
+          for (const child of Object.values(obj)) collect(child);
+        }
+      })(parsed);
+      expect(hejFieldLists.length, "contract must document at least one hej.fields list").toBeGreaterThan(0);
+      for (const hejFields of hejFieldLists) {
+        expect([...hejFields].sort(), "hej.fields must mirror PRIME_STRUCTURED_FIELDS").toEqual(
+          [...PRIME_STRUCTURED_FIELDS].sort(),
+        );
+        // The retired `bundle` field must not survive in the documented contract.
+        expect(hejFields).not.toContain("bundle");
+        // The deprecated `issues` alias is selector-only; it is not a documented field.
+        expect(hejFields).not.toContain("issues");
+      }
+    });
+  });
+
+  describe("Task 2 AC3: absent/inactive optional state omits default-only payload without ambiguity", () => {
+    it("state_presence is always emitted and owns missing-vs-empty semantics", () => {
+      const { payload } = runPrimePayload("agentera prime --format json");
+      expect(payload, "state_presence must always be present (never omitted)").toHaveProperty("state_presence");
+      const presence = getPath(payload, "state_presence") as Record<string, unknown>;
+      expect(presence, "state_presence.any_active carries the active signal").toHaveProperty("any_active");
+      expect(presence, "state_presence.absence carries the missing-vs-empty signal").toHaveProperty("absence");
+    });
+
+    it("conditional nested detail is omitted (not a default blob) when its governing parent is inactive", () => {
+      const { payload } = runPrimePayload("agentera prime --format json");
+      // progress.latest.* is gated on progress.latest; omitted when inactive.
+      if (!isTruthy(payload, "progress.latest")) {
+        expect(getPath(payload, "progress.latest.number"), "progress.latest.number omitted when progress.latest inactive").toBeUndefined();
+      }
+      // health.* diagnostic detail is gated on health.exists; grade omitted when absent.
+      if (!isTruthy(payload, "health.exists")) {
+        expect(getPath(payload, "health.grade"), "health.grade omitted when health absent").toBeUndefined();
+      }
+      // plan.first_pending.name is gated on plan.first_pending; omitted when no pending task.
+      if (!isTruthy(payload, "plan.first_pending")) {
+        expect(getPath(payload, "plan.first_pending.name"), "plan.first_pending.name omitted when no pending task").toBeUndefined();
+      }
+    });
+  });
+
+  describe("Task 2 AC4: omitted diagnostic/writer detail has a named authoritative recovery command", () => {
+    it("source_contract names the recovery commands for omitted context, writer, and startup detail", () => {
+      const { payload } = runPrimePayload("agentera prime --format json");
+      const sc = getPath(payload, "source_contract") as Record<string, unknown>;
+      // Omitted capability-context detail: fetch_command.
+      const cc = sc.capability_context as Record<string, unknown>;
+      expect(typeof cc.fetch_command, "capability_context.fetch_command names the recovery command").toBe("string");
+      expect(cc.fetch_command as string).toContain("agentera prime --context");
+      // Omitted writer detail: artifact_writes discovery/explain commands.
+      const aw = sc.artifact_writes as Record<string, unknown>;
+      expect(typeof aw.discovery_command, "artifact_writes.discovery_command names the recovery command").toBe("string");
+      expect(aw.discovery_command as string).toContain("agentera schema");
+      // Omitted startup detail: cli_fallback commands.
+      const cs = sc.capability_startup as Record<string, unknown>;
+      expect(Array.isArray(cs.cli_fallback), "capability_startup.cli_fallback is a named recovery command list").toBe(true);
+      expect((cs.cli_fallback as string[]).join(" ")).toMatch(/agentera/);
+    });
   });
 });

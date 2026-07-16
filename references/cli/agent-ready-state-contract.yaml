@@ -222,7 +222,8 @@ structured_output:
       fields:
         - command
         - status
-        - bundle
+        - app_home
+        - app
         - mode
         - profile
         - v1_migration
@@ -233,7 +234,10 @@ structured_output:
         - progress
         - objective
         - state_presence
+        - project_integration
         - attention
+        - history
+        - runtime_lifecycle
         - decision_attention
         - next_action
         - orchestration_context
@@ -556,7 +560,8 @@ field_selection:
       fields:
         - command
         - status
-        - bundle
+        - app_home
+        - app
         - mode
         - profile
         - v1_migration
@@ -567,7 +572,10 @@ field_selection:
         - progress
         - objective
         - state_presence
+        - project_integration
         - attention
+        - history
+        - runtime_lifecycle
         - decision_attention
         - next_action
         - orchestration_context

@@ -1,7 +1,7 @@
 import { publicDoctorStatus } from "../../../upgrade/doctor.js";
 import { projectInstallTrack } from "../../../upgrade/compatibility.js";
 import { formatNextAction, startupPlanSummary } from "../../orientation.js";
-import { requestedFields, REQUIRED_SPARSE_CONTEXT_FIELDS } from "../../stateQuery.js";
+import { requestedFields, REQUIRED_SPARSE_CONTEXT_FIELDS, PRIME_STRUCTURED_FIELDS, availablePrimeFields } from "../../stateQuery.js";
 import { emitStructured } from "../../structured.js";
 import type { JsonObject } from "../../../core/jsonValue.js";
 import type { BundleStatus } from "../../contracts/bundleStatus.js";
@@ -30,17 +30,7 @@ function nextActionPayload(state: OrientationState): Record<string, unknown> {
   };
 }
 
-const STATUS_STRUCTURED_FIELDS = [
-  "command", "status", "app_home", "app", "mode", "profile", "v1_migration", "health",
-  "todo", "plan", "docs", "progress", "objective", "state_presence", "project_integration", "attention",
-  "history",
-  "runtime_lifecycle",
-  "decision_attention", "next_action", "orchestration_context", "closeout_context",
-  "evidence_context", "benchmark_context", "execution_context", "source", "source_contract",
-];
-
-/** Deprecated JSON field selectors kept for pre-3.0.0 consumers; not listed in source_contract.fields. */
-const DEPRECATED_PRIME_FIELD_ALIASES = ["issues"] as const;
+const STATUS_STRUCTURED_FIELDS = PRIME_STRUCTURED_FIELDS;
 
 const ISSUES_FIELD_DEPRECATION_MESSAGE =
   "Deprecation: prime JSON field 'issues' is deprecated; use 'todo'. The 'issues' field will be removed at the 3.0.0 stable cut.\n";
@@ -148,11 +138,6 @@ export function buildOrientationJsonPayload(
   };
 }
 
-function availablePrimeFields(command: string): string[] {
-  const base = command === "prime" ? [...STATUS_STRUCTURED_FIELDS, "capability_context"] : STATUS_STRUCTURED_FIELDS;
-  return [...base, ...DEPRECATED_PRIME_FIELD_ALIASES];
-}
-
 export function emitPrime(
   command: string,
   payload: Record<string, unknown>,
@@ -258,9 +243,7 @@ export function printOrientationTextBriefing(state: OrientationState, command: s
     out(`- alt: ${formatNextAction(alt)}\n`);
   }
   out("source_contract:\n");
-  out(
-    "- fields=app_home,mode,profile,v1_migration,project_integration,runtime_lifecycle,health,todo,plan,docs,progress,objective,state_presence,attention,decision_attention,next_action,orchestration_context,closeout_context,evidence_context,benchmark_context,execution_context\n",
-  );
+  out(`- fields=${PRIME_STRUCTURED_FIELDS.join(", ")}\n`);
   out(`- render=caller-owned README-style ${dashboardLabel}\n`);
   out("- access=single installed CLI call; app/v1/profile safety included; no preflight glob/read/import/doctor calls\n");
   const startup = startupCompletenessContract({ profileStatus: state.profile_status });

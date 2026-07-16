@@ -8,6 +8,7 @@ import {
   appModelPayload,
   REQUIRED_SPARSE_CONTEXT_FIELDS,
   ROUTINE_STRUCTURED_FIELDS,
+  PRIME_STRUCTURED_FIELDS,
   surfaceMissingMessage,
 } from "../stateQuery.js";
 import { artifactLocationContract } from "./query.js";
@@ -134,33 +135,7 @@ const DOCTOR_SIGNAL_KINDS = [
   "version_mismatch",
   "corrupt_bundle_marker",
 ];
-const STATUS_STRUCTURED_FIELDS = [
-  "command",
-  "status",
-  "app_home",
-  "app",
-  "mode",
-  "profile",
-  "v1_migration",
-  "health",
-  "todo",
-  "plan",
-  "docs",
-  "progress",
-  "objective",
-  "state_presence",
-  "attention",
-  "runtime_lifecycle",
-  "decision_attention",
-  "next_action",
-  "orchestration_context",
-  "closeout_context",
-  "evidence_context",
-  "benchmark_context",
-  "execution_context",
-  "source",
-  "source_contract",
-];
+const STATUS_STRUCTURED_FIELDS = PRIME_STRUCTURED_FIELDS;
 const COMMAND_DESCRIPTIONS: Record<string, string> = {
   prime: "Composite orientation briefing and capability startup context.",
   schema: "Runtime CLI/schema introspection.",

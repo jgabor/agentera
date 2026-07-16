@@ -25,6 +25,47 @@ export const ROUTINE_STRUCTURED_FIELDS = [
   "source_contract",
 ];
 
+/** Canonical structured field set for the bare prime orientation briefing.
+ *  Single consumer-facing authority: `agentera schema` discovery, the emitted
+ *  prime JSON `source_contract.fields`, the text-mode source_contract line, and
+ *  the agent-ready-state contract all derive from this list so the four-way drift
+ *  documented in references/cli/prime-consumer-compatibility.yaml cannot recur.
+ *  See public_output_policy.canonical_field_set. The published bare-prime shape
+ *  stays stable: omission of default-only conditional payload is governed by
+ *  `state_presence` (missing-vs-empty) and named recovery commands, not by
+ *  trimming this set. */
+export const PRIME_STRUCTURED_FIELDS = [
+  "command", "status", "app_home", "app", "mode", "profile", "v1_migration", "health",
+  "todo", "plan", "docs", "progress", "objective", "state_presence", "project_integration", "attention",
+  "history",
+  "runtime_lifecycle",
+  "decision_attention", "next_action", "orchestration_context", "closeout_context",
+  "evidence_context", "benchmark_context", "execution_context", "source", "source_contract",
+];
+
+/** Deprecated JSON field selectors kept for pre-3.0.0 consumers; selectable
+ *  through `--fields` and emitted as aliases, but not part of the published
+ *  `source_contract.fields` set. `issues` aliases `todo` with a stderr
+ *  deprecation warning. Removable at the 3.0.0 stable cut (TODO [fix:3.0.0]). */
+export const DEPRECATED_PRIME_FIELD_ALIASES = ["issues"] as const;
+
+/** Field declared available on the prime selector but emitted only by the
+ *  `prime --context <capability>` surface, not by the bare default briefing.
+ *  The bare briefing carries it as a `source_contract.capability_context`
+ *  pointer with a `fetch_command`. */
+export const PRIME_CONTEXT_ONLY_FIELDS = ["capability_context"] as const;
+
+/** Fields selectable via `prime [--context <cap>] --fields`. Derives the
+ *  canonical structured set, the context-only `capability_context` pointer, and
+ *  the deprecated transition aliases from one authority, so schema discovery and
+ *  the prime selector cannot drift. */
+export function availablePrimeFields(command: string): string[] {
+  const base = command === "prime"
+    ? [...PRIME_STRUCTURED_FIELDS, ...PRIME_CONTEXT_ONLY_FIELDS]
+    : [...PRIME_STRUCTURED_FIELDS];
+  return [...base, ...DEPRECATED_PRIME_FIELD_ALIASES];
+}
+
 export const COMMAND_FILTERS: Record<string, string[]> = {
   prime: [],
   plan: ["status"],

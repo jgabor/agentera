@@ -139,33 +139,55 @@ consumers:
       back to `prose`; it does not execute a prime command.
 
 # ---------------------------------------------------------------------------
-# Field-authority drift. Four lists currently describe the prime field surface
-# and disagree. This is the evidence Task 2 must reconcile to one authority.
-# Task 1 documents the drift; it does not consolidate it.
+# Field-authority reconciliation. The four lists that described the prime field
+# surface used to disagree (Task 1 documented the drift). Task 2 reconciled them
+# to one authority: PRIME_STRUCTURED_FIELDS in packages/cli/src/cli/stateQuery.ts
+# (public_output_policy.canonical_field_set). Each list below now derives from
+# that authority, so schema discovery, the emitted JSON source_contract.fields,
+# the text-mode fields line, and the agent-ready-state contract advertise the
+# same canonical 27-field set. The `issues` deprecated transition alias stays a
+# selector-only surface (kept until the 3.0.0 stable cut); it is not a member of
+# the canonical set and is not advertised as a structured field.
 # ---------------------------------------------------------------------------
 field_authorities:
   - id: orientation_output_emission
-    location: packages/cli/src/cli/commands/prime/orientationOutput.ts:33-40
+    location: packages/cli/src/cli/commands/prime/orientationOutput.ts
+    authority: packages/cli/src/cli/stateQuery.ts:PRIME_STRUCTURED_FIELDS
     field_count: 27
     role: actual_emission_authority
-    notes: STATUS_STRUCTURED_FIELDS; the keys actually serialized by buildOrientationJsonPayload.
+    notes: >-
+      Emits PRIME_STRUCTURED_FIELDS as source_contract.fields; the keys actually
+      serialized by buildOrientationJsonPayload. `issues` is emitted as a
+      deprecated alias of `todo` with a stderr warning, not as a member of the
+      canonical set.
   - id: schema_advertised
-    location: packages/cli/src/cli/commands/schema.ts:137-163
-    field_count: 25
-    role: schema_discovery_drift
-    drift: missing project_integration and history vs the emission authority.
+    location: packages/cli/src/cli/commands/schema.ts
+    authority: packages/cli/src/cli/stateQuery.ts:PRIME_STRUCTURED_FIELDS
+    field_count: 27
+    role: schema_discovery
+    notes: >-
+      Reconciled by Task 2: availableStructuredFields for the prime selector
+      advertises PRIME_STRUCTURED_FIELDS plus the context-only capability_context
+      pointer (28 declared); fields_by_command.status advertises the 27-field
+      set. Previously drifted (missing project_integration and history).
   - id: text_briefing_hardcoded
-    location: packages/cli/src/cli/commands/prime/orientationOutput.ts:262
-    field_count: 21
-    role: text_briefing_drift
-    drift: omits command, status, app, app_home, history, source, source_contract.
+    location: packages/cli/src/cli/commands/prime/orientationOutput.ts
+    authority: packages/cli/src/cli/stateQuery.ts:PRIME_STRUCTURED_FIELDS
+    field_count: 27
+    role: text_briefing
+    notes: >-
+      Reconciled by Task 2: the text-mode source_contract fields line is now
+      derived from PRIME_STRUCTURED_FIELDS.join so text and JSON advertise one
+      canonical representation. Previously hardcoded a 21-field subset.
   - id: agent_ready_state_contract
-    location: references/cli/agent-ready-state-contract.yaml:221-245
-    field_count: 23
-    role: documented_consumer_contract_drift
-    drift: >-
-      Lists retired `bundle` instead of `app`/`app_home`; omits
-      project_integration, runtime_lifecycle, history, app_home, app.
+    location: references/cli/agent-ready-state-contract.yaml
+    authority: packages/cli/src/cli/stateQuery.ts:PRIME_STRUCTURED_FIELDS
+    field_count: 27
+    role: documented_consumer_contract
+    notes: >-
+      Reconciled by Task 2: both hej.fields lists now mirror the canonical
+      27-field set (retired `bundle` dropped; app, app_home, project_integration,
+      runtime_lifecycle, and history added).
 
 # ---------------------------------------------------------------------------
 # Field classification. Every field proposed for omission is classified with a

@@ -57,13 +57,23 @@ tasks:
     name: Publish one non-redundant prime contract
     depends_on:
       - "1"
-    status: pending
+    status: complete
     acceptance:
       - GIVEN schema discovery and prime output WHEN their field sets are compared THEN both derive from one authority and advertise the same behavior.
       - GIVEN semantically duplicate startup values WHEN prime serializes them THEN the approved contract emits one canonical representation.
       - GIVEN optional state is absent or inactive WHEN prime serializes it THEN default-only payload is omitted without making absence ambiguous.
       - GIVEN diagnostic or writer detail is omitted WHEN an agent needs it THEN a named authoritative command returns the current detail.
       - GIVEN compatibility pass and fail fixtures WHEN focused tests run THEN supported output remains readable and retired dependencies fail with a documented correction.
+    evaluation:
+      attempt_count: 1
+      failure_count: 0
+      last_verdict: pass
+      last_failure_evidence: null
+      provenance:
+        attempt_id: task-2-reconcile-1-20260716
+        source: Reconciled four-way prime field drift to PRIME_STRUCTURED_FIELDS; schema discovery, prime JSON source_contract.fields, text briefing, and agent-ready-state hej.fields advertise one canonical 27-field set. Vitest 2291 pass; check compact exit 0; capability-contract validation 0 failures.
+        recorded_at: 2026-07-16 12:06
+        writer_command: agentera state plan record-evaluation
   - number: 3
     name: Deliver a bounded default decision brief
     depends_on:
