@@ -1,4 +1,40 @@
 cycles:
+  - number: 843
+    timestamp: 2026-07-16 09:03
+    type: fix
+    phase: build
+    what: "Enforced legacy coexistence across decision mutations so untouched
+      inherited unsupported confidence labels (e.g. high) no longer block
+      append, satisfaction update, or amend. Extracted gateExistingDecisions,
+      gateCandidateDecisions, and gateCompactedDecisions into
+      decisionLegacyValidation.ts to partition violations at three validation
+      points: whole-artifact prevalidation, candidate validation, and
+      post-compaction invariant. Each gate tolerates only legacy confidence
+      labels on untouched records while blocking all other violations.
+      New/amended content stays strict via touched-number tracking. Updated
+      decisionRevision.legacyFullProjectionFor to tolerate legacy labels so
+      amend can proceed over a legacy base. Added amend envelope
+      compatibility.legacy_caveats reporting in decisionRevisionPublication."
+    verified: pnpm run typecheck passes. pnpm run build passes. npx vitest run —
+      2264 tests pass across 195 files (including 18 new tests in
+      decisionLegacyCoexistence.test.ts). node packages/cli/dist/bin/agentera.js
+      check compact passes. Monolith lint gate passes (transaction.ts 997 lines,
+      under 1000 limit).
+    next: Task 5 owns plan/TODO synchronization and progress evidence consolidation.
+      Do not close Task 4 status or its originating TODO from this cycle.
+    context:
+      intent: Remove a blocking strict-validation gate that prevented decision
+        mutations when an unrelated inherited record carried a legacy confidence
+        label outside the current vocabulary, while keeping new/amended content
+        strict and preserving legacy labels byte-stable.
+      constraints: Do not modify vision. Do not push. Do not close the originating
+        TODO or plan — Task 5 owns synchronization. Never coerce high or other
+        inherited labels.
+      scope: packages/cli/src/state/decisionLegacyValidation.ts (new),
+        packages/cli/src/state/write/transaction.ts,
+        packages/cli/src/state/decisionRevision.ts,
+        packages/cli/src/state/decisionRevisionPublication.ts,
+        packages/cli/test/state/decisionLegacyCoexistence.test.ts (new)
   - number: 842
     timestamp: 2026-07-16 08:19
     type: feat
@@ -330,22 +366,6 @@ cycles:
         tierReader.test.ts, evidenceTiers.test.ts, usageStats.test.ts,
         report.test.ts, orientationCorpusCoverage.test.ts,
         startupAnalysisBenchmark.test.ts"
-  - number: 833
-    timestamp: 2026-07-15 20:09
-    type: feat
-    phase: build
-    what: Publish bounded complete evidence as source-family shards plus a
-      content-addressable derived signal tier with atomic generation publication
-      and direct evidence-anchor retrieval.
-    verified: typecheck and build pass; vitest 2130 (new evidenceTiers.test.ts 20
-      covering AC1-AC4, shard splitting, deterministic selection, interruption
-      atomicity, evidence-anchor resolution); capability-contract validation
-      pass; compaction gate pass (over_limit 0); end-to-end smoke publishes a
-      generation and resolves a signal anchor to its full record.
-    context:
-      intent: "Implement plan Task 2: bounded tier publication and direct retrieval
-        behavior against the Task 1 evidence-tier contract, resolving the
-        deterministic signal bound and selection (planning Unknown 1)."
   - number: 793
     timestamp: 2026-07-14 17:36
     type: chore
@@ -415,6 +435,9 @@ cycles:
         and backfill fixtures; package metadata and generated ignored
         dist/bundle
 archive:
+  - summary: "Cycle 833 (2026-07-15): Publish bounded complete evidence as
+      source-family shards plus a content-addressable derived signal tier with
+      atomic..."
   - summary: "Cycle 832 (2026-07-15): Define and verify the authoritative
       evidence-tier contract"
   - summary: "Cycle 831 (2026-07-15): Diagnosed unavailable AGENTERA_HOME managed
@@ -504,15 +527,18 @@ archive:
       section, keep a positional 10/40/50 newest-first queue, summarize rows..."
   - summary: "Cycle 794 (2026-07-14): Made archived-only plan reads report verified
       active-plan absence with a bounded history catalog instead of..."
-  - summary: "Cycle 792 (2026-07-14): Repaired npm 12 npm-pack JSON parsing at the
-      packaging test boundary, prepared the development package..."
 omitted: true
-omitted_count: 78
+omitted_count: 79
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded

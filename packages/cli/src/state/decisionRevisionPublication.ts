@@ -55,6 +55,10 @@ import {
   type StateMutationTransaction,
 } from "./write/mutation.js";
 import type { StateWriteEnvelope, StateWriteRequest } from "./write/transaction.js";
+import {
+  decisionLegacyCoexistence,
+  legacyConfidenceCaveat,
+} from "./decisionLegacyValidation.js";
 
 const AMEND_RECOVERY_SYNTAX =
   "agentera state decisions amend --number N [--question ... --choice ... --reasoning ... --confidence firm ...] [--dry-run] --format json";
@@ -615,6 +619,18 @@ function executeDecisionAmendment(
     transaction,
     dryRun: req.dryRun,
   });
+  // Amendment never rewrites the projection, so an untouched inherited legacy
+  // confidence label on the base survives byte-stable in the composed read.
+  // Surface it as a truthful compatibility caveat when the amendment did not
+  // amend confidence. A confidence the caller amended is current vocabulary
+  // (enforced at preparation) and produces no caveat.
+  const confidenceTouched = preparation.provenance.amended_fields.includes("confidence");
+  const amendCaveat = legacyConfidenceCaveat(
+    preparation.effective,
+    decisionLegacyCoexistence(resolveSourceRoot()),
+    confidenceTouched,
+    preparation.provenance.base === "historical_archive" ? "archive" : "active",
+  );
   const result: StateWriteEnvelope = {
     schemaVersion: "agentera.stateWrite.v1",
     command: "state decisions amend",
@@ -637,6 +653,7 @@ function executeDecisionAmendment(
       revision_count: publication.after ? Object.keys(publication.after).length : 0,
     },
     validation: { status: "pass", violations: [] },
+    ...(amendCaveat ? { compatibility: { legacy_caveats: [amendCaveat] } } : {}),
     compaction: null,
     amendment: {
       number: publication.number,

@@ -47,6 +47,12 @@ import {
   updateDecisionOverlay,
 } from "../decisionOverlay.js";
 import { dispatchDecisionAmendment } from "../decisionRevisionPublication.js";
+import {
+  decisionLegacyCoexistence,
+  gateCandidateDecisions,
+  gateCompactedDecisions,
+  gateExistingDecisions,
+} from "../decisionLegacyValidation.js";
 import { repairHealthDuplicates, repairHealthProjectionBytes } from "../healthRepair.js";
 import { executeExperimentPublication } from "./experimentPublication.js";
 
@@ -739,6 +745,7 @@ function envelope(
     archivePath?: string;
     protectedOverflowCount?: number;
     validationDiagnostics?: string[];
+    compatibilityCaveats?: ReturnType<typeof gateExistingDecisions>;
     diff?: string;
     before?: Record<string, unknown>;
     after?: Record<string, unknown>;
@@ -766,6 +773,8 @@ function envelope(
         ? { diagnostics: extra.validationDiagnostics }
         : {}),
     },
+    ...(extra.compatibilityCaveats?.length
+      ? { compatibility: { legacy_caveats: extra.compatibilityCaveats } } : {}),
     compaction:
       compaction && req.artifact === "decisions"
         ? { ...compaction, protected_overflow_count: extra.protectedOverflowCount ?? 0 }
@@ -817,14 +826,12 @@ function executeStateWriteUnlocked(
   const legacyLifecycle =
     req.artifact === "plan" && ["active", "completed"].includes(String(mapping(existing.doc.header).status ?? ""));
   if (legacyLifecycle) existing.doc = canonicalPlanDocumentForWrite(existing.doc);
+  const decisionCoexistence = req.artifact === "decisions" ? decisionLegacyCoexistence() : null;
+  let decisionLegacyCaveats: ReturnType<typeof gateExistingDecisions> = [];
   if (existing.bytes) {
     const validationBytes = req.artifact === "plan" ? dumpYamlMapping(existing.doc) : existing.bytes;
     const violations = validateArtifactBytes(req.artifact, validationBytes);
-    if (violations.length) {
-      throw new Error(
-        `existing artifact '${target}' is schema-invalid: ${violations.join("; ")}; repair it before retrying`,
-      );
-    }
+    if (violations.length) decisionLegacyCaveats = gateExistingDecisions(violations, existing.doc, decisionCoexistence, target);
     if (req.artifact === "plan") {
       const evaluationViolations = planEvaluationViolations(existing.doc);
       if (evaluationViolations.length > 0)
@@ -871,7 +878,7 @@ function executeStateWriteUnlocked(
       { number },
       update.replay,
       null,
-      { diff: diffText(before, after, update.path), before: update.before, after: update.after },
+      { diff: diffText(before, after, update.path), before: update.before, after: update.after, compatibilityCaveats: decisionLegacyCaveats },
     );
   }
   if (req.artifact === "plan" && ["archive", "create"].includes(req.spec.verb))
@@ -914,6 +921,7 @@ function executeStateWriteUnlocked(
       {
         ...(archive ? { archivePath: archive.path } : {}),
         ...(req.dryRun ? { diff: "", before: existing.doc, after: mutated.candidate } : {}),
+        compatibilityCaveats: decisionLegacyCaveats,
       },
     );
   }
@@ -924,7 +932,7 @@ function executeStateWriteUnlocked(
     reject({ class: "unsupported_target", message: `health audit ${Number(req.values.number)} has no duplicate current-history rows to repair` });
   const candidateBytes = repairedBytes?.bytes ?? dumpYamlMapping(mutated.candidate);
   const candidateViolations = validateArtifactBytes(req.artifact, candidateBytes);
-  if (candidateViolations.length) schemaViolation(candidateViolations);
+  decisionLegacyCaveats = gateCandidateDecisions(candidateViolations, mutated.candidate, decisionCoexistence, Number(mutated.written.number), schemaViolation);
   const stage = req.dryRun
     ? stagingPath(req, target)
     : transaction?.stageProjection(target, candidateBytes);
@@ -944,10 +952,9 @@ function executeStateWriteUnlocked(
     }
     const finalBytes = fs.readFileSync(stage, "utf8");
     const finalViolations = validateArtifactBytes(req.artifact, finalBytes);
-    if (finalViolations.length)
-      throw new Error(`writer/compactor invariant failure: ${finalViolations.join("; ")}`);
-    if (!req.dryRun) transaction?.syncStaged(stage);
     const finalDoc = loadYamlMapping(finalBytes);
+    decisionLegacyCaveats = gateCompactedDecisions(finalViolations, finalDoc, decisionCoexistence, Number(mutated.written.number));
+    if (!req.dryRun) transaction?.syncStaged(stage);
     const diff = diffText(existing.bytes, finalBytes, target);
     if (req.dryRun) {
       return envelope(
@@ -958,7 +965,7 @@ function executeStateWriteUnlocked(
         mutated.assigned,
         false,
         compaction,
-        { diff, before: existing.doc, after: finalDoc, protectedOverflowCount },
+        { diff, before: existing.doc, after: finalDoc, protectedOverflowCount, compatibilityCaveats: decisionLegacyCaveats },
       );
     }
     const archive = numberedAppend
@@ -977,7 +984,7 @@ function executeStateWriteUnlocked(
       mutated.assigned,
       mutated.replay,
       compaction,
-      { ...(archive ? { archivePath: archive.path } : {}), protectedOverflowCount },
+      { ...(archive ? { archivePath: archive.path } : {}), protectedOverflowCount, compatibilityCaveats: decisionLegacyCaveats },
     );
   } finally {
     try {

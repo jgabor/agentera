@@ -17,6 +17,12 @@ import { legacyEntryNumber } from "./legacyIdentity.js";
 import { localDate } from "./write/assign.js";
 import type { StateMutationTransaction } from "./write/mutation.js";
 import { reject } from "./write/errors.js";
+// partitionDecisionViolations lives in decisionLegacyValidation.js, which in
+// turn imports the coexistence primitives declared below. Both modules
+// reference each other only inside functions, so the circular binding is
+// resolved by the time either is called (same pattern as the
+// decisionRevisionPublication.js re-export at the end of this file).
+import { partitionDecisionViolations } from "./decisionLegacyValidation.js";
 
 /**
  * Focused accessor for the decision-content amendment contract declared in
@@ -799,10 +805,22 @@ export function legacyFullProjectionFor(
     return { kind: "absent" };
   }
   // A complete legacy projection record validates against the decision schema;
-  // otherwise the entry is summary-only and must not be reconstructed.
+  // otherwise the entry is summary-only and must not be reconstructed. An
+  // untouched inherited legacy confidence label is explicit legacy state under
+  // the authority's coexistence rule: it does not degrade a complete record to
+  // summary, so the base remains hash-verifiable and amend proceeds (the label
+  // is reported as a compatibility caveat by the amendment path). Tolerance is
+  // confidence-only — every other violation still degrades to summary.
   try {
     const violations = validateStateRecord(sourceRoot, "decisions", match);
-    return violations.length === 0 ? { kind: "full", record: match } : { kind: "summary" };
+    if (violations.length === 0) return { kind: "full", record: match };
+    const partition = partitionDecisionViolations(
+      violations,
+      { decisions: [match] },
+      legacyLabelCoexistence(sourceRoot),
+      new Set(),
+    );
+    return partition.blocking.length === 0 ? { kind: "full", record: match } : { kind: "summary" };
   } catch {
     return { kind: "summary" };
   }
