@@ -32,9 +32,25 @@ interface ConsumerFixture {
   asserts?: Assert[];
 }
 
+interface DriftDocument {
+  /** Repo-relative path to a documentation file that governs a consumer field name. */
+  path: string;
+  /** The canonical field name the document must keep pointing consumers at. */
+  must_contain: string;
+  /** A retired field name the document must no longer send consumers to. */
+  must_not_contain: string;
+}
+
+interface DocumentationDrift {
+  canonical_field: string;
+  retired_field: string;
+  scanned_documents: DriftDocument[];
+}
+
 interface Policy {
   declared_available_fields: string[];
   fixtures: { pass: ConsumerFixture[]; fail: ConsumerFixture[] };
+  documentation_drift?: DocumentationDrift;
 }
 
 function loadPolicy(): Policy {
@@ -266,5 +282,37 @@ describe("prime consumer compatibility boundary (Plan Task 1)", () => {
       );
       expect(missing, "declared fields absent from default emission").toEqual([]);
     });
+  });
+
+  describe("documentation drift guard: active consumer guidance cannot drift back to `prose`", () => {
+    // The capability_context_dispatcher executable fixture proves the runtime
+    // emits a non-empty `capability_context.instructions` and never `prose`.
+    // This block guards the other half of the contract: the human-facing
+    // consumer guidance that tells consumers which field to read. It must keep
+    // pointing at `instructions` so a future doc edit cannot silently resurrect
+    // the retired `prose` field name the runtime does not emit.
+    const drift = policy.documentation_drift;
+    it("the policy declares a documentation drift guard over the canonical and retired field names", () => {
+      expect(drift, "policy must declare a documentation_drift section").toBeDefined();
+      expect(drift!.canonical_field).toBe("capability_context.instructions");
+      expect(drift!.retired_field).toBe("capability_context.prose");
+      expect(drift!.scanned_documents.length, "at least one document must be guarded").toBeGreaterThan(0);
+    });
+
+    it.each(drift?.scanned_documents ?? [])(
+      "documentation: $path keeps the canonical field and drops the retired field",
+      (doc: DriftDocument) => {
+        const file = path.join(REPO_ROOT, doc.path);
+        const content = fs.readFileSync(file, "utf8");
+        expect(
+          content,
+          `${doc.path} must document the canonical ${doc.must_contain} field`,
+        ).toContain(doc.must_contain);
+        expect(
+          content,
+          `${doc.path} must not send consumers to the retired ${doc.must_not_contain} field`,
+        ).not.toContain(doc.must_not_contain);
+      },
+    );
   });
 });

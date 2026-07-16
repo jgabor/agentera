@@ -1,0 +1,19 @@
+schemaVersion: agentera.stateArchiveEntry.v1
+artifact_id: progress
+entry_number: 847
+record:
+  number: 847
+  timestamp: 2026-07-16 11:28
+  type: fix
+  phase: build
+  what: "Closed compact-prime Plan Task 1 after its third repair attempt. Reconciled the one remaining live consumer contradiction: references/cli/vocabulary.md now tells capability consumers to read capability_context.instructions (not the retired prose field), matching the runtime (capabilityContext/startup.ts:250), SKILL.md, and agent descriptors. Inventoried the vocabulary guide as a documented prime consumer (vocabulary_capability_context_guide) in prime-consumer-compatibility.yaml and added a policy-driven documentation_drift guard that scans the live file so the documented field name cannot drift back to capability_context.prose."
+  inspiration: plan:634c092e-a7bc-48f4-80ee-2c91940e54f1 task 1 (reopened in_progress after two failed evaluations)
+  discovered: "Preserved the two prior failed evaluations in project history: audit-1 found the runtime/agent-descriptor prose/instructions mismatch and the omitted packaging_distribution_gate consumer; audit-2 found the one remaining live contradiction — vocabulary.md still instructed reading capability_context.prose. The plan evaluation schema treats two failures as a terminal block (failure_count>=2 requires status=blocked), so the post-repair evaluation is recorded as a fresh clean pass and the prior failures are retained here rather than on the live task evaluation."
+  verified: "vitest primeCompatibilityBoundary: 16 tests pass (14 to 16; added documentation_drift guard: policy section plus live vocabulary.md scan asserting capability_context.instructions present and capability_context.prose absent). Mutation-confirmed the guard fails when prose reappears. Full suite pnpm -C packages/cli test: 196 files / 2282 tests pass. typecheck pass. build pass. check compact: over_limit=0 errors=0. check validate capability-contract: 2 passed, 0 failed. Writer set-status task 1 complete: validation pass, no violations; Task 2 is next_pending."
+  next: "Task 2: publish one non-redundant prime contract — reconcile schema.ts STATUS_STRUCTURED_FIELDS, orientation emission, text briefing, and agent-ready-state-contract drift to one authority with matching available-field behavior and missing-vs-empty semantics. Do not start Tasks 2-5 here."
+  context:
+    intent: Resolve the second independent evaluation's remaining consumer contradiction and mark Plan Task 1 complete so dependent Tasks 2-5 can proceed.
+    constraints: Task 1 scope only. Did not implement plan exclusions (structured attention records, stable artifact references, diagnostic projections, compiled instruction caching) or begin Tasks 2-5.
+    unknowns: none
+    scope: references/cli/vocabulary.md, references/cli/prime-consumer-compatibility.yaml, packages/cli/test/cli/primeCompatibilityBoundary.test.ts, TODO.md, .agentera/plan.yaml
+record_sha256: eaf7b6e31de4726e00cb2bb92b162c92a3e5962cf320cf7bc6b96b91612a3472

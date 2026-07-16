@@ -99,11 +99,11 @@ enforcement boundary promoted to `true` in D65.
 
 Use this prose as guidance only: the default is that the first capability
 invocation shells out to `agentera prime --context <name> --format json` and
-reads the returned `prose` field. Today, capability directories carry the
-`schemas/` files only, the prose module lives at
+reads the returned `instructions` field. Today, capability directories carry
+the `schemas/` files only, the instructions module lives at
 `packages/cli/src/capabilities/<name>/instructions.ts`, runtime descriptors
 invoke the prime command, and the `agentera prime --context <name> --format
-json` response emits `capability_context.prose` plus
+json` response emits `capability_context.instructions` plus
 `first_invocation_read` metadata.
 
 Do not replace this with a parallel Markdown table of read modes or migration
