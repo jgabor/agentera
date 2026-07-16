@@ -57,7 +57,15 @@ export interface EntityMigrationPreview {
   preview_digest: string;
   entries: EntityMigrationEntry[];
   counts: Record<EntityMigrationClassification | "total" | "physical_records" | "logical_identities" | "mirrors" | "duplicates" | "conflicts" | "relationships" | "unresolved_relationships" | "blockers", number>;
-  diagnostics: Array<{ classification: EntityMigrationClassification; path: string; source_identity: string; message: string; recovery: string }>;
+  diagnostics: Array<{
+    classification: EntityMigrationClassification | "unresolved_relationship";
+    path: string;
+    source_identity: string;
+    relationship_field?: string;
+    target_source_identity?: string | null;
+    message: string;
+    recovery: string;
+  }>;
   omitted: boolean;
   omitted_count: number;
   diagnostics_omitted_count: number;
@@ -95,6 +103,8 @@ const NUMBERED = {
   health: { file: ".agentera/health.yaml", collection: "audits", boundary: "health_audit" },
 } as const;
 const BLOCKING = new Set<EntityMigrationClassification>(["irrecoverable_summary_only", "duplicate", "conflict", "corrupt", "unsupported"]);
+const INVENTORY_ORDER = "artifact_then_boundary_then_source_identity_then_source_path";
+const INVENTORY_FILTER = "complete_declared_inventory";
 const AUTHORITY_PATH = "references/artifacts/state-storage-authority.yaml";
 
 function mapping(value: unknown): JsonObject | null {
@@ -124,17 +134,26 @@ function directoryFiles(root: string, relativeRoot: string, accept: (relativePat
   const absoluteRoot = path.join(root, relativeRoot);
   const files: SourceFile[] = [];
   const visit = (directory: string): void => {
+    let stat: fs.Stats;
+    try {
+      stat = fs.lstatSync(directory);
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === "ENOENT") return;
+      throw error;
+    }
+    if (stat.isSymbolicLink()) throw new Error(`inventory root '${directory}' is a symbolic link; replace it with a real directory inside project '${root}' and retry`);
+    if (!stat.isDirectory()) throw new Error(`inventory root '${directory}' is not a directory; replace it with a real directory inside project '${root}' and retry`);
     let entries: fs.Dirent[];
     try {
       entries = fs.readdirSync(directory, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name));
-    } catch {
-      return;
+    } catch (error) {
+      throw new Error(`inventory root '${directory}' cannot be read inside project '${root}': ${(error as Error).message}`);
     }
     for (const entry of entries) {
       const absolute = path.join(directory, entry.name);
       const candidate = relative(root, absolute);
       if (entry.isSymbolicLink()) {
-        if (accept(candidate)) files.push({ relative: candidate, bytes: null, kind: "unsafe" });
+        throw new Error(`inventory root '${absolute}' is a symbolic link; replace it with a real directory or file inside project '${root}' and retry`);
       } else if (entry.isDirectory()) visit(absolute);
       else if (entry.isFile() && accept(candidate)) files.push({ relative: candidate, bytes: fs.readFileSync(absolute), kind: "file" });
     }
@@ -459,7 +478,7 @@ function buildEntries(project: string, fingerprint: string, observations: Observ
   }).sort((a, b) => `${a.artifact}\0${a.boundary}\0${a.source_identity}\0${a.source_paths[0]}`.localeCompare(`${b.artifact}\0${b.boundary}\0${b.source_identity}\0${b.source_paths[0]}`));
 }
 
-export function previewEntityMigration(projectRoot: string, sourceRoot: string, options: { limit?: number; after?: string } = {}): EntityMigrationPreview {
+export function previewEntityMigration(projectRoot: string, sourceRoot: string, options: { limit?: number; after?: string; sourceFingerprint?: string; previewDigest?: string } = {}): EntityMigrationPreview {
   const project = path.resolve(projectRoot);
   validateProjectRoot(project);
   const authority = authorityBinding(sourceRoot);
@@ -483,10 +502,28 @@ export function previewEntityMigration(projectRoot: string, sourceRoot: string, 
   counts.relationships = completeEntries.reduce((total, entry) => total + entry.relationships.length, 0);
   counts.unresolved_relationships = completeEntries.reduce((total, entry) => total + entry.relationships.filter((relationship) => relationship.status === "unresolved").length, 0);
   counts.blockers = completeEntries.filter((entry) => BLOCKING.has(entry.classification) || entry.relationships.some((relationship) => relationship.status === "unresolved")).length;
-  const diagnostics = completeEntries.filter((entry) => BLOCKING.has(entry.classification)).map((entry) => ({ classification: entry.classification, path: entry.source_paths[0], source_identity: entry.source_identity, message: observations.find((item) => item.key === entry.source_identity)?.message ?? `${entry.classification} source requires explicit recovery`, recovery: entry.recovery }));
-  const digestBody = { source_fingerprint: fingerprint, authority, entries: completeEntries, counts, diagnostics };
+  const diagnostics: EntityMigrationPreview["diagnostics"] = completeEntries.flatMap((entry) => [
+    ...(BLOCKING.has(entry.classification) ? [{ classification: entry.classification, path: entry.source_paths[0], source_identity: entry.source_identity, message: observations.find((item) => item.key === entry.source_identity)?.message ?? `${entry.classification} source requires explicit recovery`, recovery: entry.recovery }] : []),
+    ...entry.relationships.filter((relationship) => relationship.status === "unresolved").map((relationship) => {
+      const target = relationship.target_source_identity ?? "missing structured reference";
+      return {
+        classification: "unresolved_relationship" as const,
+        path: entry.source_paths[0],
+        source_identity: entry.source_identity,
+        relationship_field: relationship.field,
+        target_source_identity: relationship.target_source_identity,
+        message: `source '${entry.source_identity}' relationship '${relationship.field}' references unresolved target '${target}'`,
+        recovery: `Repair relationship '${relationship.field}' on '${entry.source_identity}' to reference an inventoried source identity instead of '${target}', then run agentera state migrate entities --project '${project.replaceAll("'", "'\\''")}' --dry-run --format json.`,
+      };
+    }),
+  ]);
+  const digestBody = { source_fingerprint: fingerprint, authority, selectors: { project, filter: INVENTORY_FILTER, order: INVENTORY_ORDER }, entries: completeEntries, counts, diagnostics };
   const previewDigest = hash(canonicalRecordJson(digestBody));
   const requestedLimit = Math.max(1, Math.min(options.limit ?? DEFAULT_LIMIT, MAX_LIMIT));
+  const restartCommand = `agentera state migrate entities --project '${project.replaceAll("'", "'\\''")}' --limit ${requestedLimit} --dry-run --format json`;
+  if (options.after !== undefined && (options.sourceFingerprint !== fingerprint || options.previewDigest !== previewDigest)) {
+    throw new EntityMigrationContinuationError(restartCommand);
+  }
   const start = options.after === undefined ? 0 : completeEntries.findIndex((entry) => entry.source_identity === options.after) + 1;
   if (options.after !== undefined && start === 0) throw new Error(`pagination cursor '${options.after}' is not a source identity in the bound inventory; restart without --after`);
   let entries = completeEntries.slice(start, start + requestedLimit);
@@ -500,7 +537,7 @@ export function previewEntityMigration(projectRoot: string, sourceRoot: string, 
   const serializedBytes = (): number => {
     const pageDiagnostics = diagnosticsForEntries();
     const nextAfter = start + entries.length < completeEntries.length ? entries.at(-1)?.source_identity ?? null : null;
-    const command = nextAfter ? `agentera state migrate entities --project '${quotedProject}' --after '${nextAfter.replaceAll("'", "'\\''")}' --limit ${requestedLimit} --dry-run --format json` : `agentera state migrate entities --project '${quotedProject}' --limit ${requestedLimit} --dry-run --format json`;
+    const command = nextAfter ? `agentera state migrate entities --project '${quotedProject}' --after '${nextAfter.replaceAll("'", "'\\''")}' --source-fingerprint ${fingerprint} --preview-digest ${previewDigest} --limit ${requestedLimit} --dry-run --format json` : restartCommand;
     const body = { ...base, entries, diagnostics: pageDiagnostics, omitted: start > 0 || entries.length < completeEntries.length, omitted_count: completeEntries.length - entries.length, diagnostics_omitted_count: diagnostics.length - pageDiagnostics.length, omission_reason: omissionReason, page_after: options.after ?? null, next_after: nextAfter, retrieval: { command } };
     return Math.max(Buffer.byteLength(JSON.stringify(body, null, 2), "utf8"), Buffer.byteLength(YAML.stringify(body), "utf8"));
   };
@@ -511,8 +548,16 @@ export function previewEntityMigration(projectRoot: string, sourceRoot: string, 
   if (entries.length === 0 && start < completeEntries.length) throw new Error("the next whole migration entry exceeds the 32768-byte output budget; repair that source before retrying");
   const outputDiagnostics = diagnosticsForEntries();
   const nextAfter = start + entries.length < completeEntries.length ? entries.at(-1)?.source_identity ?? null : null;
-  const retrieval = { command: nextAfter ? `agentera state migrate entities --project '${quotedProject}' --after '${nextAfter.replaceAll("'", "'\\''")}' --limit ${requestedLimit} --dry-run --format json` : `agentera state migrate entities --project '${quotedProject}' --limit ${requestedLimit} --dry-run --format json` };
+  const retrieval = { command: nextAfter ? `agentera state migrate entities --project '${quotedProject}' --after '${nextAfter.replaceAll("'", "'\\''")}' --source-fingerprint ${fingerprint} --preview-digest ${previewDigest} --limit ${requestedLimit} --dry-run --format json` : restartCommand };
   return { ...base, status: base.status as "ready" | "blocked", mode: "preview", entries, diagnostics: outputDiagnostics, omitted: start > 0 || entries.length < completeEntries.length, omitted_count: completeEntries.length - entries.length, diagnostics_omitted_count: diagnostics.length - outputDiagnostics.length, omission_reason: omissionReason, page_after: options.after ?? null, next_after: nextAfter, retrieval };
+}
+
+export class EntityMigrationContinuationError extends Error {
+  readonly classification = "continuation_changed";
+  constructor(readonly restartCommand: string) {
+    super(`entity migration continuation no longer matches its source, migration authority, selectors, or order; restart with ${restartCommand}`);
+    this.name = "EntityMigrationContinuationError";
+  }
 }
 
 export class EntityMigrationBindingError extends Error {

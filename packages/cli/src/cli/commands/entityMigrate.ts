@@ -5,6 +5,7 @@ import type { Io } from "../dispatch/shared.js";
 import { resolveSourceRoot } from "../../core/sourceRoot.js";
 import {
   EntityMigrationBindingError,
+  EntityMigrationContinuationError,
   assertEntityMigrationBinding,
   previewEntityMigration,
 } from "../../state/entityMigrationPreview.js";
@@ -23,7 +24,7 @@ interface Args {
   format: Format;
 }
 
-const SYNTAX = "agentera state migrate entities [--project PATH] [--after SOURCE_IDENTITY] [--limit 1..1000] --dry-run [--format {text,json,yaml}]";
+const SYNTAX = "agentera state migrate entities [--project PATH] [--after SOURCE_IDENTITY --source-fingerprint SHA256 --preview-digest SHA256] [--limit 1..1000] --dry-run [--format {text,json,yaml}]";
 
 export function entityMigrateHelp(): string {
   return [
@@ -35,7 +36,8 @@ export function entityMigrateHelp(): string {
     "options:",
     "  -h, --help                 Show this dedicated help message and exit",
     "  --project PATH             Existing real project directory to inventory",
-    "  --after SOURCE_IDENTITY    Continue after the last identity returned by the prior page",
+    "  --after SOURCE_IDENTITY --source-fingerprint SHA256 --preview-digest SHA256",
+    "                              Continue the bound snapshot from a prior page",
     "  --limit 1..1000            Bound logical identities returned on one preview page (default 100)",
     "  --dry-run                  Read-only inventory and preview",
     "  --apply --force            Binding preflight only; durable apply is not implemented",
@@ -83,6 +85,8 @@ function parse(argv: string[], cwd: string): Args | string {
   if (args.apply && !args.force) return "--apply requires --force";
   if (args.force && !args.apply) return "--force requires --apply";
   if (args.after && args.apply) return "--after is only valid with --dry-run";
+  if (args.dryRun && args.after && (!/^[a-f0-9]{64}$/.test(args.sourceFingerprint ?? "") || !/^[a-f0-9]{64}$/.test(args.previewDigest ?? ""))) return "--after requires the prior page's --source-fingerprint SHA256 and --preview-digest SHA256";
+  if (args.dryRun && !args.after && (args.sourceFingerprint || args.previewDigest)) return "--source-fingerprint and --preview-digest are only valid with --after or --apply";
   if (args.apply && (!/^[a-f0-9]{64}$/.test(args.sourceFingerprint ?? "") || !/^[a-f0-9]{64}$/.test(args.previewDigest ?? ""))) return "--apply requires --source-fingerprint SHA256 and --preview-digest SHA256";
   return args;
 }
@@ -127,8 +131,13 @@ export function runEntityMigrate(argv: string[], io: Io, cwd = process.cwd(), so
   }
   let preview;
   try {
-    preview = previewEntityMigration(path.resolve(parsed.project), sourceRoot, { limit: parsed.limit, after: parsed.after });
+    preview = previewEntityMigration(path.resolve(parsed.project), sourceRoot, { limit: parsed.limit, after: parsed.after, sourceFingerprint: parsed.sourceFingerprint, previewDigest: parsed.previewDigest });
   } catch (error) {
+    if (error instanceof EntityMigrationContinuationError) {
+      const body = { schemaVersion: "agentera.entityMigrationFailure.v1", command: "state migrate entities", status: "fail", read_only: true, mutation_performed: false, error: { class: error.classification, message: error.message, recovery: error.restartCommand } };
+      output(body, parsed.format, io);
+      return 1;
+    }
     const body = { schemaVersion: "agentera.entityMigrationFailure.v1", command: "state migrate entities", status: "fail", read_only: true, mutation_performed: false, error: { class: "inventory_failed", message: (error as Error).message, recovery: "Choose an existing, real directory inside the intended checkout, repair any reported source, then rerun agentera state migrate entities --project PATH --dry-run --format json; no state was changed." } };
     output(body, parsed.format, io);
     return 1;

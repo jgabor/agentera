@@ -12,6 +12,7 @@ import { canonicalRecordJson } from "../../src/state/archiveDiscovery.js";
 import {
   assertEntityMigrationBinding,
   previewEntityMigration,
+  type EntityMigrationPreview,
 } from "../../src/state/entityMigrationPreview.js";
 
 const REPO_ROOT = path.resolve(import.meta.dirname, "../../../..");
@@ -82,10 +83,10 @@ describe("entity migration read-only preview", () => {
     expect(effect).not.toHaveBeenCalled();
   });
 
-  it("inventories keyed ordered decision revisions and classifies malformed records", () => {
+  it("inventories authority-valid ordered decision revisions and classifies malformed provenance separately", () => {
     const root = project();
     write(root, ".agentera/decisions.yaml", `decisions:\n  - number: 7\n    date: 2026-07-16\n    question: Question?\n    choice: Choice.\n    reasoning: Reason.\n    confidence: high\n    status: decided\n    feeds_into: []\n`);
-    write(root, ".agentera/revisions/decisions.yaml", `decisions:7:\n  - date: 2026-07-16\n    choice: First revision.\n    provenance: revision\n  - date: 2026-07-17\n    reasoning: Second revision.\n    provenance: revision\ndecisions:8:\n  - provenance: revision\ndecisions:bad: not-a-list\n`);
+    write(root, ".agentera/revisions/decisions.yaml", `decisions:7:\n  - date: 2026-07-16\n    choice: First revision.\n    provenance: historical_revision\n  - date: 2026-07-17\n    reasoning: Second revision.\n    provenance: degraded_projection\ndecisions:8:\n  - choice: Invalid provenance.\n    provenance: revision\ndecisions:bad: not-a-list\n`);
     const preview = previewEntityMigration(root, REPO_ROOT, { limit: 1000 });
     const revisions = preview.entries.filter((entry) => entry.boundary === "decision_revision");
     expect(revisions.map((entry) => entry.source_identity)).toEqual([
@@ -95,7 +96,38 @@ describe("entity migration read-only preview", () => {
       "decision_revision:decisions:bad",
     ]);
     expect(revisions.slice(0, 2).every((entry) => entry.relationships.some((relation) => relation.field === "decision" && relation.target_source_identity === "decisions:7" && relation.status === "resolved"))).toBe(true);
+    expect(revisions.slice(0, 2).every((entry) => entry.classification === "verified_full")).toBe(true);
+    expect(revisions.slice(0, 2).map((entry) => entry.provenance)).toEqual([["revision"], ["revision"]]);
     expect(revisions.slice(2).every((entry) => entry.classification === "corrupt")).toBe(true);
+  });
+
+  it.each(["archive", "optimize", "optimera"])("rejects a symlinked %s inventory root without traversing or writing", (name) => {
+    const root = project();
+    const external = project();
+    const relativeRoot = `.agentera/${name}`;
+    if (name === "archive") write(external, "progress/999.yaml", "external-marker: archive\n");
+    else write(external, "escape/objective.yaml", `id: objective:123e4567-e89b-42d3-a456-426614174000\nexternal-marker: ${name}\n`);
+    fs.mkdirSync(path.join(root, ".agentera"), { recursive: true });
+    fs.symlinkSync(external, path.join(root, relativeRoot), "dir");
+    const beforeProject = tree(root);
+    const beforeExternal = tree(external);
+    let out = "";
+    const rc = main(["node", "agentera", "state", "migrate", "entities", "--project", root, "--dry-run", "--format", "json"], { out: (text) => (out += text), err: () => undefined });
+    expect(rc).toBe(1);
+    const failure = JSON.parse(out);
+    expect(failure).toMatchObject({ status: "fail", mutation_performed: false, error: { class: "inventory_failed" } });
+    expect(failure.error.message).toContain(`inventory root '${path.join(root, relativeRoot)}' is a symbolic link`);
+    expect(out).not.toContain("external-marker");
+    expect(tree(root)).toEqual(beforeProject);
+    expect(tree(external)).toEqual(beforeExternal);
+  });
+
+  it.each(["archive", "optimize", "optimera"])("rejects a non-directory %s inventory root without writes", (name) => {
+    const root = project();
+    write(root, `.agentera/${name}`, "not a directory\n");
+    const before = tree(root);
+    expect(() => previewEntityMigration(root, REPO_ROOT)).toThrow(`inventory root '${path.join(root, `.agentera/${name}`)}' is not a directory`);
+    expect(tree(root)).toEqual(before);
   });
 
   it.each(["missing", "file", "symlink"])("rejects a %s project root without writes", (kind) => {
@@ -143,20 +175,93 @@ describe("entity migration read-only preview", () => {
     expect(preview.entries[0].source_identity).toContain("TODO.md:line:");
   });
 
-  it("uses advancing whole-entry pagination to recover every output-bounded item", () => {
+  it("uses snapshot-bound whole-entry pagination to recover every entry without gaps or duplicates", () => {
     const root = project();
     write(root, "TODO.md", `# TODO\n\n## → Normal\n${Array.from({ length: 400 }, (_, index) => `- [ ] Item ${index} ${"x".repeat(200)}`).join("\n")}\n`);
     const recovered: string[] = [];
     let after: string | undefined;
+    let sourceFingerprint: string | undefined;
+    let previewDigest: string | undefined;
     do {
-      const page = previewEntityMigration(root, REPO_ROOT, { limit: 1000, after });
+      const page = previewEntityMigration(root, REPO_ROOT, { limit: 1000, after, sourceFingerprint, previewDigest });
       expect(Buffer.byteLength(JSON.stringify(page, null, 2), "utf8")).toBeLessThanOrEqual(32_768);
       recovered.push(...page.entries.map((entry) => entry.source_identity));
       after = page.next_after ?? undefined;
-      if (page.next_after) expect(page.retrieval.command).toContain(`--after '${after?.replaceAll("'", "'\\''")}'`);
+      sourceFingerprint = page.source_fingerprint;
+      previewDigest = page.preview_digest;
+      if (page.next_after) {
+        expect(page.retrieval.command).toContain(`--after '${after?.replaceAll("'", "'\\''")}'`);
+        expect(page.retrieval.command).toContain(`--source-fingerprint ${sourceFingerprint}`);
+        expect(page.retrieval.command).toContain(`--preview-digest ${previewDigest}`);
+      }
     } while (after);
     expect(new Set(recovered).size).toBe(400);
     expect(recovered).toHaveLength(400);
+  });
+
+  it.each(["source", "authority", "filter", "order", "project"])("refuses a continuation after %s binding mutation with restart guidance", (mutation) => {
+    const root = project();
+    const sourceRoot = project();
+    fs.cpSync(path.join(REPO_ROOT, "references"), path.join(sourceRoot, "references"), { recursive: true });
+    write(root, "TODO.md", "# TODO\n- [ ] one\n- [ ] two\n");
+    const first = previewEntityMigration(root, sourceRoot, { limit: 1 });
+    const continuation = { limit: 1, after: first.next_after as string, sourceFingerprint: first.source_fingerprint, previewDigest: first.preview_digest };
+    let selectedRoot = root;
+    if (mutation === "source") write(root, "TODO.md", "# TODO\n- [ ] changed\n- [ ] two\n");
+    if (mutation === "project") {
+      selectedRoot = project();
+      write(selectedRoot, "TODO.md", "# TODO\n- [ ] one\n- [ ] two\n");
+    }
+    if (mutation === "authority" || mutation === "filter" || mutation === "order") {
+      const authority = path.join(sourceRoot, "references/artifacts/state-storage-authority.yaml");
+      if (mutation === "filter") {
+        const bytes = fs.readFileSync(authority, "utf8");
+        fs.writeFileSync(authority, bytes.replace("filter: complete_declared_inventory", "filter: changed_inventory_filter"));
+      } else if (mutation === "order") {
+        const bytes = fs.readFileSync(authority, "utf8");
+        fs.writeFileSync(authority, bytes.replace("ordering: artifact_then_boundary_then_source_identity_then_source_path", "ordering: changed_inventory_order"));
+      } else fs.appendFileSync(authority, "\n# authority binding mutation\n");
+    }
+    expect(() => previewEntityMigration(selectedRoot, sourceRoot, continuation)).toThrow(/continuation no longer matches.*restart with agentera state migrate entities --project/s);
+    if (mutation === "source") {
+      let out = "";
+      expect(main(["node", "agentera", "state", "migrate", "entities", "--project", selectedRoot, "--after", continuation.after, "--source-fingerprint", continuation.sourceFingerprint, "--preview-digest", continuation.previewDigest, "--limit", "1", "--dry-run", "--format", "json"], { out: (value) => (out += value), err: () => undefined }, process.cwd(), sourceRoot)).toBe(1);
+      expect(JSON.parse(out)).toMatchObject({ status: "fail", mutation_performed: false, error: { class: "continuation_changed", recovery: expect.not.stringContaining("--after") } });
+    }
+  });
+
+  it("emits exact unresolved-relationship diagnostics and recovers omitted diagnostics through continuation", () => {
+    const root = project();
+    write(root, ".agentera/plan.yaml", `header:\n  level: light\n  created: 2026-07-16\n  status: open\n  title: test\n  id: plan:123e4567-e89b-42d3-a456-426614174000\nwhat: test\nwhy: test\nconstraints: none\noverall_acceptance: pass\nscope:\n  included: [test]\n  excluded: []\ntasks:\n${Array.from({ length: 8 }, (_, index) => `  - number: ${index + 1}\n    name: task ${index + 1}\n    depends_on: [\"${index + 20}\"]\n    status: pending\n    acceptance: [pass]`).join("\n")}\nsurprises: []\n`);
+    const diagnostics: EntityMigrationPreview["diagnostics"] = [];
+    let page = previewEntityMigration(root, REPO_ROOT, { limit: 2 });
+    do {
+      diagnostics.push(...page.diagnostics);
+      if (!page.next_after) break;
+      page = previewEntityMigration(root, REPO_ROOT, { limit: 2, after: page.next_after, sourceFingerprint: page.source_fingerprint, previewDigest: page.preview_digest });
+    } while (true);
+    const unresolved = diagnostics.filter((diagnostic) => diagnostic.classification === "unresolved_relationship");
+    expect(unresolved).toHaveLength(8);
+    expect(unresolved[0]).toMatchObject({
+      source_identity: "plan:123e4567-e89b-42d3-a456-426614174000/task:1",
+      relationship_field: "depends_on",
+      target_source_identity: "plan:123e4567-e89b-42d3-a456-426614174000/task:20",
+    });
+    expect(unresolved[0].recovery).toContain("Repair relationship 'depends_on'");
+    expect(unresolved[0].recovery).toContain("task:20");
+    expect(new Set(unresolved.map((diagnostic) => diagnostic.source_identity)).size).toBe(8);
+
+    for (const format of ["json", "yaml"] as const) {
+      let structured = "";
+      expect(main(["node", "agentera", "state", "migrate", "entities", "--project", root, "--limit", "1000", "--dry-run", "--format", format], { out: (value) => (structured += value), err: () => undefined })).toBe(1);
+      const body = format === "json" ? JSON.parse(structured) : YAML.parse(structured);
+      expect(body.diagnostics.find((diagnostic: EntityMigrationPreview["diagnostics"][number]) => diagnostic.classification === "unresolved_relationship")?.recovery).toContain("Repair relationship 'depends_on'");
+    }
+    let text = "";
+    expect(main(["node", "agentera", "state", "migrate", "entities", "--project", root, "--limit", "1000", "--dry-run"], { out: (value) => (text += value), err: () => undefined })).toBe(1);
+    expect(text).toContain("blocker unresolved_relationship plan:123e4567-e89b-42d3-a456-426614174000/task:1");
+    expect(text).toContain("Repair relationship 'depends_on'");
+    expect(text).toContain("task:20");
   });
 
   it("renders a complete text summary and dedicated entity help", () => {
@@ -174,7 +279,7 @@ describe("entity migration read-only preview", () => {
     out = "";
     expect(main(["node", "agentera", "state", "migrate", "entities", "--help"], { out: (text) => (out += text), err: () => undefined })).toBe(0);
     expect(out).toContain("usage: agentera state migrate entities");
-    expect(out).toContain("--after SOURCE_IDENTITY");
+    expect(out).toContain("--after SOURCE_IDENTITY --source-fingerprint SHA256 --preview-digest SHA256");
     expect(out).not.toContain("--artifact");
     expect(printStateHelp("migrate")).not.toContain("[--project PATH] [--limit 1..1000]");
   });

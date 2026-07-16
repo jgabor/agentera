@@ -1,4 +1,38 @@
 cycles:
+  - number: 873
+    timestamp: 2026-07-17 01:00
+    type: fix
+    phase: build
+    what: "Fixed the four remaining Task 3 audit defects: recursive inventory roots
+      now fail closed, continuations bind the complete snapshot and selectors,
+      unresolved relationships own actionable diagnostics, and revision fixtures
+      use valid provenance."
+    inspiration: Final audit retry 2 for PLAN Task 3 and Decision 94 state-storage
+      authority.
+    discovered: Unresolved-only relationships accounted for 66 blocker entries but
+      previously owned no diagnostics; bound pagination now carries those
+      diagnostics with their entries.
+    verified: Focused entity migration and authority tests passed 2 files and 30
+      tests. Full CLI passed 203 files and 2,390 tests. Typecheck and build
+      passed. State validation reported 0 issues; capability contract passed
+      2/2; compact passed 10 artifacts with 0 errors. The pre-publication
+      repository preview reproduced 1,280 verified, 55 projection-only, 90
+      summary-only, 17 corrupt, 66 unresolved relationships, 173 blocked, 1,442
+      logical entries, 1,463 physical records, 21 mirrors, source fingerprint
+      f2d1513f96924883f3ebb39455899941cc700f88ca6dc42c8b06f2fb45af3eb8, and
+      preview digest
+      612a01fae3cc4ca7b46ae126fc84a50922d17a063e2db3a294bb4469f4dde579.
+    next: Keep Task 3 complete and Task 4 pending; do not implement apply or cut
+      over any family.
+    context:
+      intent: Close only the final read-only migration inventory audit defects without
+        apply effects or family cutover.
+      constraints: No apply effects, family cutover, vision change, release, push,
+        publish, amend, or unrelated repair.
+      unknowns: Task 13 still owns recovery or disposition of the 173 blocked logical
+        identities.
+      scope: Entity migration preview, CLI help, state-storage authority, focused
+        tests, and this progress cycle.
   - number: 872
     timestamp: 2026-07-17 00:29
     type: fix
@@ -324,31 +358,6 @@ cycles:
       unknowns: None.
       scope: Shared entity storage authority, publication primitive, and race/replay
         regression tests.
-  - number: 863
-    timestamp: 2026-07-16 19:29
-    type: feat
-    phase: build
-    what: Added authority-driven entity storage, project-wide ID allocation, safe
-      discovery and publication, graph validation, and agentera check validate
-      state.
-    inspiration: PLAN Task 2 and Decision 94.
-    discovered: Task 1 declared entity boundaries and relationships but
-      intentionally left the shared canonical path and validation surface for
-      implementation; Task 2 added those details to the same authority.
-    verified: 37 focused tests and 2,340 full CLI tests passed; typecheck, build,
-      agentera check validate state, capability-contract validation, and compact
-      exited 0.
-    next: Task 3 may inventory migration sources in a separate cycle; no family uses
-      entity storage yet.
-    context:
-      intent: Deliver PLAN Task 2 shared entity primitives without cutting any state
-        family over or starting migration inventory.
-      constraints: Kept legacy production readers and writers unchanged; no migration,
-        adapters, cutover, profile repair, or vision changes.
-      unknowns: None within Task 2; migration behavior remains intentionally
-        unimplemented.
-      scope: State storage authority, shared TypeScript entity primitives, check
-        validate state dispatch, and focused tests.
   - number: 793
     timestamp: 2026-07-14 17:36
     type: chore
@@ -418,6 +427,9 @@ cycles:
         and backfill fixtures; package metadata and generated ignored
         dist/bundle
 archive:
+  - summary: "Cycle 863 (2026-07-16): Added authority-driven entity storage,
+      project-wide ID allocation, safe discovery and publication, graph
+      validation, and agentera..."
   - summary: "Cycle 862 (2026-07-16): Declared the Decision 94 entity model and
       explicit migration lifecycle in the single state storage..."
   - summary: "Cycle 861 (2026-07-16): Completed post-plan Audit 37 for compact,
@@ -515,14 +527,18 @@ archive:
       Audit 33 and synchronized replacement Task 3 state."
   - summary: "Cycle 824 (2026-07-15): Proved Audit 32 replacement Task 2 release
       readiness without publication."
-  - summary: "Cycle 823 (2026-07-15): Made immutable release provenance non-circular."
 omitted: true
-omitted_count: 108
+omitted_count: 109
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded
