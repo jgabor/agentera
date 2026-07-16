@@ -132,10 +132,12 @@ function decisionsGuidance(artifact: WritableArtifact, verb: string): string[] {
   if (artifact === "decisions" && verb === "amend")
     return [
       "select an existing decision number with --number; it is caller-supplied and never assigned by the CLI",
-      "supply at least one amendable content field (--question, --context, --alternative-chosen, --choice, --reasoning, --confidence, --feeds-into)",
+      "supply at least one amendable content field (--question, --context, --alternative-chosen, --alternative-rejected, --choice, --reasoning, --confidence, --feeds-into)",
+      "--alternative-rejected is repeatable and appends one rejected alternative each time it is supplied",
       "confidence must be current vocabulary (firm, provisional, exploratory); unsupported inherited labels on untouched records stay legacy",
-      "dry-run reports the proposed revision and effective-record effects without writing; revision-backed reads already compose base→revisions→overlay with truthful provenance",
-      "amend publication is not implemented yet; execution refuses before side effects",
+      "dry-run reports the exact revision, effective record, and projection effect without writing any file",
+      "apply publishes a record-local revision document override with recovery; the decisions projection stays byte-stable and reads compose base→revisions→overlay",
+      "an identical re-submission is an idempotent replay; retry converges on a stable revision identity without duplicates or mixed state",
     ];
   return ["number is assigned by the CLI; do not pass --number", ...base];
 }

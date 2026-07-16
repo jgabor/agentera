@@ -16,6 +16,8 @@ export const MUTATION_FAILURE_BOUNDARIES = [
   "archive-directory-publication",
   "archive-publication",
   "backup-publication",
+  "revision-publication",
+  "projection-consistency",
   "projection-publication",
   "directory-sync",
 ] as const;
@@ -156,6 +158,50 @@ export class StateMutationTransaction {
     this.failAfter("backup-publication");
     return published;
   }
+
+  /**
+   * Atomically stage, fsync, and rename a decision revision document. The
+   * revision document is keyed-by-stable-id immutable evidence: a publication
+   * renames a fully-staged replacement into place, then fsyncs the directory.
+   * `expectedBytes` (the bytes read before staging) guards against a concurrent
+   * change to the revision document between preparation and publication.
+   *
+   * Boundaries (in order): `staged-write`, `revision-publication`,
+   * `directory-sync`. A `projection-consistency` checkpoint follows in the
+   * amendment handler, after the immutable evidence is durable.
+   */
+  publishRevisionDocument(target: string, bytes: string, expectedBytes?: string): void {
+    const stage = this.stageProjection(target, bytes);
+    try {
+      this.syncStaged(stage);
+      if (expectedBytes !== undefined) {
+        const currentBytes = fs.existsSync(target) ? fs.readFileSync(target, "utf8") : "";
+        if (currentBytes !== expectedBytes) {
+          throw new Error(
+            `revision document '${target}' changed before publication; existing bytes were preserved`,
+          );
+        }
+      }
+      fs.renameSync(stage, target);
+      this.stages.delete(stage);
+      this.failAfter("revision-publication");
+      fsyncDirectory(path.dirname(target));
+      this.failAfter("directory-sync");
+    } finally {
+      this.removeStage(stage);
+    }
+  }
+
+  /**
+   * A read-only recovery checkpoint. The amendment handler verifies the
+   * decisions projection base still agrees with the published revision's
+   * `base_sha256`, then marks the checkpoint so a recovery test can inject a
+   * failure after verification but before the operation returns success.
+   */
+  revisionConsistencyCheckpoint(): void {
+    this.failAfter("projection-consistency");
+  }
+
 
   publishProjection(stage: string, target: string, expectedBytes?: string): void {
     if (expectedBytes !== undefined) {

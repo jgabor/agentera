@@ -1,9 +1,10 @@
 import { createHash } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
+import { parseDocument } from "yaml";
 
 import type { JsonObject, JsonValue } from "../core/jsonValue.js";
-import { loadYamlMapping } from "../core/yaml.js";
+import { dumpYamlMapping, loadYamlMapping } from "../core/yaml.js";
 import { resolveSourceRoot } from "../core/sourceRoot.js";
 import { assertRealpathBoundary } from "../registries/artifactRegistry.js";
 import {
@@ -13,6 +14,8 @@ import {
   validateStateRecord,
 } from "./archiveDiscovery.js";
 import { legacyEntryNumber } from "./legacyIdentity.js";
+import { localDate } from "./write/assign.js";
+import type { StateMutationTransaction } from "./write/mutation.js";
 import { reject } from "./write/errors.js";
 
 /**
@@ -764,7 +767,7 @@ type LegacyProjectionResult =
   | { kind: "summary" }
   | { kind: "full"; record: JsonObject };
 
-function legacyFullProjectionFor(
+export function legacyFullProjectionFor(
   projectRoot: string,
   decisionNumber: number,
   projectionPath: string,
@@ -805,6 +808,22 @@ function legacyFullProjectionFor(
   }
 }
 
-function sha256(value: unknown): string {
+export function sha256(value: unknown): string {
   return createHash("sha256").update(canonicalRecordJson(value), "utf8").digest("hex");
 }
+
+
+// Re-export the publication primitives for backward-compatible imports.
+// The implementation lives in decisionRevisionPublication.ts.
+export {
+  buildPublishedRevisionRecord,
+  dispatchDecisionAmendment,
+  type DecisionAmendmentPublication,
+  type AmendmentProjectionEffect,
+  findConflictingRevision,
+  findPublishedRevision,
+  projectRevisionOverride,
+  publishDecisionAmendment,
+  type PublishedRevisionRecord,
+  type RevisionOverrideProjection,
+} from "./decisionRevisionPublication.js";

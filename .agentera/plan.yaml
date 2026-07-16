@@ -58,7 +58,7 @@ tasks:
     name: Publish record-local amendments with recovery
     depends_on:
       - "2"
-    status: pending
+    status: complete
     acceptance:
       - GIVEN a valid amendment WHEN dry-run runs THEN it reports the exact revision, effective-record, and projection effects without changing any file.
       - GIVEN apply succeeds WHEN the decision is reread THEN immutable revision evidence, effective detail, and any full or summary projection representation agree.

@@ -118,9 +118,10 @@ const decisionUpdate: OperationField[] = [
  * Amending decision content fields. `--number` is caller-selected (an existing
  * decision). At least one amendable content field must be supplied; individual
  * fields are optional so the writer can validate the union requirement.
+ * `--alternative-rejected` is repeatable and appends rejected alternatives.
  * Confidence values must be current vocabulary (firm|provisional|exploratory).
- * Amendment publication is not implemented in Task 1; execution refuses with
- * an actionable error consistent with the explain output.
+ * Amendment publication publishes a record-local revision document override
+ * with recovery; the decisions projection is never rewritten.
  */
 const decisionAmend: OperationField[] = [
   {

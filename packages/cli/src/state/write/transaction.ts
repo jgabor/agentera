@@ -46,6 +46,7 @@ import {
   hydrateDecisionRecords,
   updateDecisionOverlay,
 } from "../decisionOverlay.js";
+import { dispatchDecisionAmendment } from "../decisionRevisionPublication.js";
 import { repairHealthDuplicates, repairHealthProjectionBytes } from "../healthRepair.js";
 import { executeExperimentPublication } from "./experimentPublication.js";
 
@@ -783,17 +784,7 @@ export function executeStateWrite(
   options: StateMutationOptions = {},
 ): StateWriteEnvelope {
   if (req.artifact === "decisions" && req.spec.verb === "amend") {
-    reject({
-      class: "unsupported_target",
-      message:
-        "decisions amend publication is not implemented yet; revision-backed effective reads are now live (base→revisions→overlay) and amendment preparation selects a hash-verified base, but writing a revision record lands in plan task 3",
-      syntax:
-        "agentera state decisions amend --number N [--question ... --choice ... --reasoning ... --confidence firm ...] [--dry-run] --format json",
-      example:
-        'agentera state decisions amend --number 53 --choice "..." --reasoning "..." --confidence firm --dry-run --format json',
-      recovery:
-        "discover the amend contract with `agentera state decisions explain --verb amend --format json`; no files were changed",
-    });
+    return dispatchDecisionAmendment(req, options);
   }
   assertWriterBoundary(req.projectRoot, path.join(req.projectRoot, ".agentera"), "writer lock");
   const planPublication =

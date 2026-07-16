@@ -763,12 +763,19 @@ revisions:
     - stage_revision
     - publish_revision
     - update_effective_projection
-  apply_state: not_implemented
+  apply_state: implemented
   apply_state_note: >-
-    The revision authority and amend command plumbing are defined here;
-    revision-backed reads and amendment publication with recovery are not
-    implemented yet. Amend execution refuses before side effects with an
-    actionable error pointing to
+    The revision authority and amend command publish record-local amendments
+    with recovery. A valid dry-run reports the exact revision, effective record,
+    and projection effect without writing any file. Apply writes a
+    record-local override to the revision document only (preserving unrelated
+    entries' bytes), retries converge on a stable revision identity, and an
+    identical re-submission is an idempotent replay. The decisions projection
+    is never rewritten by an amendment; effective detail composes
+    base→revisions→overlay. Amend execution still refuses before side effects
+    for an unsafe target-only change, a duplicate-revision conflict, a stale
+    base hash, or an unsafe target identity, returning an actionable retry or
+    repair action. Discover the contract with
     `agentera state decisions explain --verb amend --format json`.
 
 projections:

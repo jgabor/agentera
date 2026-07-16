@@ -121,7 +121,7 @@ describe("decision amendment revision authority", () => {
     ]);
     expect(contract.identityPaths).toEqual(["number"]);
     expect(contract.temporalPaths).toEqual(["date"]);
-    expect(contract.applyState).toBe("not_implemented");
+    expect(contract.applyState).toBe("implemented");
     expect(contract.immutability).toContain("immutable historical evidence");
     expect(contract.separationFromOverlay).toContain("Satisfaction updates");
     expect(contract.publicationOrder.length).toBeGreaterThan(0);
@@ -197,7 +197,9 @@ describe("decision amend command discovery", () => {
     const guidance = result.json?.guidance as string[];
     expect(guidance.some((g) => g.includes("caller-supplied"))).toBe(true);
     expect(guidance.some((g) => g.includes("dry-run reports"))).toBe(true);
-    expect(guidance.some((g) => g.includes("not implemented yet"))).toBe(true);
+    expect(guidance.some((g) => g.includes("--alternative-rejected"))).toBe(true);
+    expect(guidance.some((g) => g.includes("idempotent replay"))).toBe(true);
+    expect(guidance.some((g) => g.includes("record-local"))).toBe(true);
     expect(result.json?.example).toContain("amend --number 53");
     expect(result.json?.example).toContain("--dry-run");
   });
@@ -220,7 +222,7 @@ describe("decision amend command discovery", () => {
     expect(help.out).toContain("agentera state decisions explain --verb VERB --format json");
   });
 
-  it("refuses amendment publication before side effects with an actionable error", () => {
+  it("refuses to amend a decision that has no numbered archive or projection record before side effects", () => {
     const root = project();
     const result = run(root, [
       "decisions",
@@ -241,8 +243,8 @@ describe("decision amend command discovery", () => {
     expect(result.rc).toBe(2);
     expect(result.json?.status).toBe("fail");
     expect(result.json?.error.class).toBe("unsupported_target");
-    expect(result.json?.error.message).toContain("not implemented");
-    expect(result.json?.error.recovery).toContain("explain --verb amend");
+    expect(result.json?.error.message).toContain("no numbered archive");
+    expect(result.json?.error.recovery).toContain("complete record");
     expect(result.json?.error.example).toContain("amend --number 53");
     // No side effects: no revision store or decision projection is created.
     expect(fs.existsSync(path.join(root, ".agentera", "revisions", "decisions.yaml"))).toBe(false);

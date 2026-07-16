@@ -1,0 +1,17 @@
+schemaVersion: agentera.stateArchiveEntry.v1
+artifact_id: progress
+entry_number: 841
+record:
+  number: 841
+  timestamp: 2026-07-16 07:07
+  type: feat
+  phase: build
+  what: "Ran orchestrator presence verification for Task 2 (revision-backed effective decision reads) after cycle 840 reported verified=null. All gates green: typecheck clean, build clean, check compact status=pass over_limit=0, check validate capability-contract violations=[] passed=2 failed=0, pnpm -C packages/cli test 193 files 2229 tests passed including decisionRevisionReads.test.ts (23 tests covering base→revisions→overlay composition for exact get, list, startup, and compaction consumers; amendment preparation with degraded_projection legacy bootstrap; refusal paths for summary-only/ambiguous/broken-hash/conflicting/incomplete/missing targets; replay detection; authority immutability and separation). Plan task 2 status=complete (complete=2, pending=3)."
+  inspiration: Orchestrator presence evaluation rejected verified=null on cycle 840
+  verified: pnpm -C packages/cli run typecheck (clean); pnpm -C packages/cli build (clean); node packages/cli/dist/bin/agentera.js check compact (status=pass, over_limit=0); node packages/cli/dist/bin/agentera.js check validate capability-contract --format json (violations=[], passed=2, failed=0); pnpm -C packages/cli test (193 files, 2229 tests passed, includes test/state/decisionRevisionReads.test.ts 23 tests); node packages/cli/dist/bin/agentera.js state plan (Task 2 status=complete, complete=2 pending=3)
+  next: "Task 3: publish record-local amendments with recovery. Amend publication remains refused; the refusal message and explain guidance already reflect that reads and preparation are live."
+  context:
+    intent: Substantiate Task 2 orchestrator presence with concrete evidence after cycle 840 omitted the verified field.
+    constraints: Task 3 publication scope unchanged; no standalone bookkeeping commit; typed state changes left for folding into the next substantive implementation commit.
+    scope: packages/cli/test/state/decisionRevisionReads.test.ts, packages/cli/src/state/{decisionRevision,directRetrieval,listRetrieval,startupProjection,decisionOverlay}.ts, packages/cli/src/state/write/{transaction,explain}.ts, .agentera/progress.yaml, .agentera/archive/progress/841.yaml
+record_sha256: ee525979330644a9b996f398c6a18f61f789c375c67643ec43840beb13cde6e2
