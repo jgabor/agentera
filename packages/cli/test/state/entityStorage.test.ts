@@ -1,6 +1,8 @@
+import { spawn } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 import { afterEach, describe, expect, it } from "vitest";
 
@@ -12,10 +14,34 @@ import {
 } from "../../src/state/entityStorage.js";
 
 const roots: string[] = [];
+const publicationWorker = fileURLToPath(new URL("./entityPublicationWorker.test.ts", import.meta.url));
+
 function project(): string {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-entities-"));
   roots.push(root);
   return root;
+}
+
+function publicationProcess(root: string, artifact: string, boundary: string, resultPath: string, startAt: number): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const child = spawn("vp", ["test", "run", publicationWorker, "--reporter=dot"], {
+      cwd: path.resolve(import.meta.dirname, "../.."),
+      env: {
+        ...process.env,
+        AGENTERA_ENTITY_TEST_ROOT: root,
+        AGENTERA_ENTITY_TEST_ARTIFACT: artifact,
+        AGENTERA_ENTITY_TEST_BOUNDARY: boundary,
+        AGENTERA_ENTITY_TEST_RESULT: resultPath,
+        AGENTERA_ENTITY_TEST_START: String(startAt),
+      },
+      stdio: "pipe",
+    });
+    let stderr = "";
+    child.stderr.setEncoding("utf8");
+    child.stderr.on("data", (chunk) => { stderr += chunk; });
+    child.on("error", reject);
+    child.on("exit", (code) => code === 0 ? resolve() : reject(new Error(`publication worker exited ${code}: ${stderr}`)));
+  });
 }
 
 afterEach(() => {
@@ -87,6 +113,71 @@ describe("entity discovery and publication", () => {
     expect(replay.replay).toBe(true);
     expect(() => publishEntity({ projectRoot: root, artifact: "progress", boundary: "progress_cycle", id: "aaaaaaaaaa", record: { what: "changed" } })).toThrow(/divergent content.*aaaaaaaaaa/);
     expect(fs.readFileSync(first.path, "utf8")).toContain("what: one");
+  });
+
+  it("replays recursively reordered mapping keys without changing the published bytes", () => {
+    const root = project();
+    const first = publishEntity({
+      projectRoot: root,
+      artifact: "progress",
+      boundary: "progress_cycle",
+      id: "aaaaaaaaaa",
+      record: { outer: { a: 1, b: 2 }, ordered: [{ c: 3, d: 4 }, "last"] },
+    });
+    const original = fs.readFileSync(first.path, "utf8");
+
+    const replay = publishEntity({
+      projectRoot: root,
+      artifact: "progress",
+      boundary: "progress_cycle",
+      id: "aaaaaaaaaa",
+      record: { ordered: [{ d: 4, c: 3 }, "last"], outer: { b: 2, a: 1 } },
+    });
+
+    expect(replay.replay).toBe(true);
+    expect(fs.readFileSync(first.path, "utf8")).toBe(original);
+    expect(() => publishEntity({
+      projectRoot: root,
+      artifact: "progress",
+      boundary: "progress_cycle",
+      id: "aaaaaaaaaa",
+      record: { ordered: ["last", { c: 3, d: 4 }], outer: { a: 1, b: 2 } },
+    })).toThrow(/divergent content.*aaaaaaaaaa/);
+    expect(fs.readFileSync(first.path, "utf8")).toBe(original);
+  });
+
+  it("serializes multiprocess cross-artifact publication so exactly one writer wins", async () => {
+    const root = project();
+    const healthResult = path.join(root, "health-result.json");
+    const decisionsResult = path.join(root, "decisions-result.json");
+    const startAt = Date.now() + 5_000;
+
+    await Promise.all([
+      publicationProcess(root, "health", "health_audit", healthResult, startAt),
+      publicationProcess(root, "decisions", "decision", decisionsResult, startAt),
+    ]);
+
+    const results = [healthResult, decisionsResult].map((file) => JSON.parse(fs.readFileSync(file, "utf8")) as { published: boolean; error?: string });
+    expect(results.filter(({ published }) => published)).toHaveLength(1);
+    expect(results.filter(({ published }) => !published)).toEqual([
+      expect.objectContaining({ published: false, error: expect.stringMatching(/already exists.*owned by boundary/) }),
+    ]);
+    expect(discoverEntities(root).entities.filter(({ id }) => id === "zzzzzzzzzz")).toHaveLength(1);
+    expect(fs.existsSync(path.join(root, ".agentera/.writer.lock"))).toBe(false);
+  }, 15_000);
+
+  it("cleans the project-wide claim after publication fails and permits recovery", () => {
+    const root = project();
+    const blockingPath = path.join(root, ".agentera/entities/health");
+    fs.mkdirSync(path.dirname(blockingPath), { recursive: true });
+    fs.writeFileSync(blockingPath, "not a directory\n");
+
+    expect(() => publishEntity({ projectRoot: root, artifact: "health", boundary: "health_audit", id: "aaaaaaaaaa", record: {} })).toThrow();
+    expect(fs.existsSync(path.join(root, ".agentera/.writer.lock"))).toBe(false);
+
+    fs.unlinkSync(blockingPath);
+    expect(publishEntity({ projectRoot: root, artifact: "health", boundary: "health_audit", id: "aaaaaaaaaa", record: {} })).toMatchObject({ replay: false });
+    expect(discoverEntities(root).entities.filter(({ id }) => id === "aaaaaaaaaa")).toHaveLength(1);
   });
 
   it("rejects a duplicate ID owned by another artifact", () => {

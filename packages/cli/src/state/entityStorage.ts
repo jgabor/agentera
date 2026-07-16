@@ -5,7 +5,9 @@ import path from "node:path";
 import type { JsonObject } from "../core/jsonValue.js";
 import { resolveSourceRoot } from "../core/sourceRoot.js";
 import { dumpYamlMapping, loadYamlMapping } from "../core/yaml.js";
+import { canonicalRecordJson } from "./archiveDiscovery.js";
 import { publishImmutableFile } from "./archivePublication.js";
+import { acquireWriterLock } from "./write/lock.js";
 
 const MAX_DIAGNOSTICS = 100;
 
@@ -402,21 +404,31 @@ export function publishEntity(request: PublishEntityRequest): PublishEntityResul
   if (owner.artifact !== request.artifact) throw new Error(`boundary '${request.boundary}' is owned by artifact '${owner.artifact}', not '${request.artifact}'`);
   if (!mapping(request.record)) throw new Error("entity record must be a mapping");
   const root = path.resolve(request.projectRoot);
-  const target = path.join(root, model.entityRoot, request.artifact, request.boundary, `${request.id}.yaml`);
-  const symlink = noSymlinkPrefix(root, target);
-  if (symlink) throw new Error(`entity path contains symbolic link '${relative(root, symlink)}'; remove the symbolic link and retry`);
-  const bytes = dumpYamlMapping({ id: request.id, artifact: request.artifact, record: request.record });
-  const matches = discoverEntities(root, request.sourceRoot).entities.filter(({ id }) => id === request.id);
-  const exact = matches.find(({ path: existing }) => existing === target);
-  if (exact) {
-    if (fs.readFileSync(target, "utf8") === bytes) return { id: request.id, artifact: request.artifact, boundary: request.boundary, path: target, replay: true };
-    throw new Error(`divergent content for existing entity ID '${request.id}' at '${exact.relativePath}'; keep the existing ID unchanged or allocate a new ID`);
+  const lock = acquireWriterLock(root);
+  try {
+    const target = path.join(root, model.entityRoot, request.artifact, request.boundary, `${request.id}.yaml`);
+    const symlink = noSymlinkPrefix(root, target);
+    if (symlink) throw new Error(`entity path contains symbolic link '${relative(root, symlink)}'; remove the symbolic link and retry`);
+    const envelope = { id: request.id, artifact: request.artifact, record: request.record };
+    const logicalContent = canonicalRecordJson(envelope);
+    const bytes = dumpYamlMapping(envelope);
+    const matches = discoverEntities(root, request.sourceRoot).entities.filter(({ id }) => id === request.id);
+    const exact = matches.find(({ path: existing }) => existing === target);
+    if (exact && matches.length === 1) {
+      if (exact.record !== null && canonicalRecordJson({ id: exact.id, artifact: exact.artifact, record: exact.record }) === logicalContent) {
+        return { id: request.id, artifact: request.artifact, boundary: request.boundary, path: target, replay: true };
+      }
+      throw new Error(`divergent content for existing entity ID '${request.id}' at '${exact.relativePath}'; keep the existing ID unchanged or allocate a new ID`);
+    }
+    if (matches.length > 0) throw new Error(`entity ID '${request.id}' already exists at '${matches[0].relativePath}' owned by boundary '${matches[0].boundary}'; allocate a new project-wide ID`);
+    const created = publishImmutableFile(target, bytes, { directoryDurabilityRoot: root });
+    if (!created) {
+      const existing = loadYamlMapping(fs.readFileSync(target, "utf8"));
+      if (canonicalRecordJson(existing) === logicalContent) return { id: request.id, artifact: request.artifact, boundary: request.boundary, path: target, replay: true };
+      throw new Error(`divergent content for existing entity ID '${request.id}' at '${relative(root, target)}'; keep the existing ID unchanged or allocate a new ID`);
+    }
+    return { id: request.id, artifact: request.artifact, boundary: request.boundary, path: target, replay: false };
+  } finally {
+    lock.release();
   }
-  if (matches.length > 0) throw new Error(`entity ID '${request.id}' already exists at '${matches[0].relativePath}' owned by boundary '${matches[0].boundary}'; allocate a new project-wide ID`);
-  const created = publishImmutableFile(target, bytes, { directoryDurabilityRoot: root });
-  if (!created) {
-    if (fs.readFileSync(target, "utf8") === bytes) return { id: request.id, artifact: request.artifact, boundary: request.boundary, path: target, replay: true };
-    throw new Error(`divergent content for existing entity ID '${request.id}' at '${relative(root, target)}'; keep the existing ID unchanged or allocate a new ID`);
-  }
-  return { id: request.id, artifact: request.artifact, boundary: request.boundary, path: target, replay: false };
 }

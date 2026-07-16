@@ -71,7 +71,14 @@ entity_target:
       path_components: [artifact, boundary, id]
       extension: .yaml
       publication: exclusive_immutable_file
+      allocation: provisional_candidate_until_publication
+      project_wide_id_claim:
+        synchronization: .agentera/.writer.lock
+        critical_section: final_project_wide_scan_through_durable_publication
+        interrupted_writer_recovery: dead_process_lock_reclamation
+        persistent_reservation: none
       identical_replay: idempotent
+      replay_equality: recursive_key_sorted_logical_content_with_array_order_preserved
       divergent_same_id: reject_without_overwrite
       state_validation:
         canonical_command: agentera check validate state

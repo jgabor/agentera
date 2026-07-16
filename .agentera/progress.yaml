@@ -1,4 +1,29 @@
 cycles:
+  - number: 864
+    timestamp: 2026-07-16 19:53
+    type: fix
+    phase: build
+    what: Audit retry 1 fixed PLAN Task 2 entity publication races and logical
+      replay equality.
+    inspiration: Independent audit failure of PLAN Task 2.
+    discovered: The first full-suite invocation ran before dist existed and failed
+      only two packaging preconditions; build restored dist and the complete
+      suite passed.
+    verified: Focused entity storage passed 11/11; entity authority and validation
+      CLI passed 29/29; full CLI suite passed 202 files with 1 skipped and 2343
+      tests with 1 skipped after build; typecheck and build passed; state
+      validation passed with zero issues; capability-contract passed 2/2;
+      compact gate reported zero over-limit artifacts or errors.
+    next: Return Task 2 audit retry 1 for independent review; preserve completed
+      Task 2 and do not begin Task 3 or family cutovers.
+    context:
+      intent: Close the independent audit's cross-artifact race and byte-order replay
+        defects without beginning Task 3 or family cutovers.
+      constraints: Task 2 remains complete; no vision, Task 3, family cutover,
+        publish, push, or unrelated caveat changes.
+      unknowns: None.
+      scope: Shared entity storage authority, publication primitive, and race/replay
+        regression tests.
   - number: 863
     timestamp: 2026-07-16 19:29
     type: feat
@@ -302,35 +327,6 @@ cycles:
         references/cli/prime-consumer-compatibility.yaml;
         packages/cli/src/cli/help.ts; packages/cli/src/cli/commands/schema.ts;
         packages/cli/README.md; focused contract/budget tests
-  - number: 854
-    timestamp: 2026-07-16 15:19
-    type: fix
-    phase: build
-    what: "Retried Plan Task 4: keep status mode and upgrade commands in the
-      canonical nested status context, and add executable status-context
-      fixtures."
-    inspiration: Plan Task 4 retry after independent audit failure task-4-audit-1.
-    discovered: The bounded projection must retain upgrade dry-run/apply commands
-      only for upgrade recommendations; status fallback coverage is meaningful
-      only when it names a missing family and executes its CLI route.
-    verified: "Focused statusContextStartup: 9 tests passed; full CLI Vitest: 198
-      files and 2323 tests passed; typecheck, build, status capability
-      validation, capability-contract validation, compact check, and live
-      24161-byte status-context smoke passed."
-    next: Proceed to Plan Task 5 contract synchronization and final verification;
-      keep status one-call rendering, lifecycle omission, byte budgets, other
-      contexts, vocabulary, and exclusions unchanged.
-    context:
-      intent: Repair the failed Task 4 status startup audit without changing
-        non-status contexts or excluded behavior.
-      constraints: Scope limited to Task 4 status prime projection and regression
-        fixtures; no push, publication, vision change, or unrelated capability
-        changes.
-      unknowns: none
-      scope: packages/cli/src/cli/commands/prime/briefOrientation.ts;
-        packages/cli/src/cli/commands/prime/orientationOutput.ts;
-        packages/cli/test/cli/statusContextStartup.test.ts; .agentera/plan.yaml;
-        .agentera/progress.yaml
   - number: 793
     timestamp: 2026-07-14 17:36
     type: chore
@@ -400,6 +396,8 @@ cycles:
         and backfill fixtures; package metadata and generated ignored
         dist/bundle
 archive:
+  - summary: "Cycle 854 (2026-07-16): Retried Plan Task 4: keep status mode and
+      upgrade commands in the canonical nested status..."
   - summary: "Cycle 853 (2026-07-16): Made status startup self-contained: prime
       --context status now returns canonical bounded decision state with
       full..."
@@ -495,16 +493,18 @@ archive:
       runtime parity. Removed stale gate advertising, projected the..."
   - summary: "Cycle 815 (2026-07-15): Corrected experiment artifact introspection
       after Task 11 audit failure."
-  - summary: "Cycle 814 (2026-07-15): Synchronized public bounded-retrieval
-      contracts across runtime, agent, capability, documentation, package, and
-      error surfaces."
 omitted: true
-omitted_count: 99
+omitted_count: 100
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded
