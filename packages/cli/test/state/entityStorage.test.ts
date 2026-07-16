@@ -166,6 +166,33 @@ describe("entity discovery and publication", () => {
     expect(fs.existsSync(path.join(root, ".agentera/.writer.lock"))).toBe(false);
   }, 15_000);
 
+  it("serializes two multiprocess stale-lock reclaimers before cross-artifact publication", async () => {
+    const root = project();
+    const lockPath = path.join(root, ".agentera/.writer.lock");
+    fs.mkdirSync(lockPath, { recursive: true });
+    fs.writeFileSync(path.join(lockPath, "owner.json"), JSON.stringify({
+      pid: 999_999_999,
+      token: "seeded-dead-owner",
+      created_at: "2020-01-01T00:00:00Z",
+    }));
+    const healthResult = path.join(root, "health-stale-result.json");
+    const decisionsResult = path.join(root, "decisions-stale-result.json");
+    const startAt = Date.now() + 5_000;
+
+    await Promise.all([
+      publicationProcess(root, "health", "health_audit", healthResult, startAt),
+      publicationProcess(root, "decisions", "decision", decisionsResult, startAt),
+    ]);
+
+    const results = [healthResult, decisionsResult].map((file) => JSON.parse(fs.readFileSync(file, "utf8")) as { published: boolean; error?: string });
+    expect(results.filter(({ published }) => published)).toHaveLength(1);
+    expect(results.filter(({ published }) => !published)).toEqual([
+      expect.objectContaining({ published: false, error: expect.stringMatching(/already exists.*owned by boundary|writer lock timeout/) }),
+    ]);
+    expect(discoverEntities(root).entities.filter(({ id }) => id === "zzzzzzzzzz")).toHaveLength(1);
+    expect(fs.existsSync(lockPath)).toBe(false);
+  }, 15_000);
+
   it("cleans the project-wide claim after publication fails and permits recovery", () => {
     const root = project();
     const blockingPath = path.join(root, ".agentera/entities/health");

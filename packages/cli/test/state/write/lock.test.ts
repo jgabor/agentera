@@ -17,6 +17,13 @@ function root(): string {
   return value;
 }
 
+function seedLock(project: string, owner: unknown): string {
+  const lockPath = path.join(project, ".agentera/.writer.lock");
+  fs.mkdirSync(lockPath, { recursive: true });
+  fs.writeFileSync(path.join(lockPath, "owner.json"), `${JSON.stringify(owner)}\n`);
+  return lockPath;
+}
+
 describe("project writer lock", () => {
   it("times out with retry guidance while a live owner holds the project lock", () => {
     const project = root();
@@ -30,15 +37,13 @@ describe("project writer lock", () => {
 
   it("recovers a demonstrably dead owner and releases in an idempotent way", () => {
     const project = root();
-    const dir = path.join(project, ".agentera");
-    fs.mkdirSync(dir, { recursive: true });
-    const lockPath = path.join(dir, ".writer.lock");
-    fs.writeFileSync(
-      lockPath,
-      JSON.stringify({ pid: 999_999_999, created_at: "2020-01-01T00:00:00Z" }),
-    );
+    const lockPath = seedLock(project, {
+      pid: 999_999_999,
+      token: "dead-owner",
+      created_at: "2020-01-01T00:00:00Z",
+    });
     const lock = acquireWriterLock(project, 100);
-    expect(JSON.parse(fs.readFileSync(lock.path, "utf8")).pid).toBe(process.pid);
+    expect(JSON.parse(fs.readFileSync(path.join(lock.path, "owner.json"), "utf8")).pid).toBe(process.pid);
     lock.release();
     lock.release();
     expect(fs.existsSync(lockPath)).toBe(false);
@@ -46,19 +51,57 @@ describe("project writer lock", () => {
 
   it.each(["", "not json\n"])("recovers stale malformed owner metadata %j", (contents) => {
     const project = root();
-    const dir = path.join(project, ".agentera");
-    fs.mkdirSync(dir, { recursive: true });
-    const lockPath = path.join(dir, ".writer.lock");
-    fs.writeFileSync(lockPath, contents);
+    const lockPath = seedLock(project, {});
+    const ownerPath = path.join(lockPath, "owner.json");
+    fs.writeFileSync(ownerPath, contents);
     const old = new Date(Date.now() - 1_000);
+    fs.utimesSync(ownerPath, old, old);
     fs.utimesSync(lockPath, old, old);
 
     const lock = acquireWriterLock(project, 100);
-    expect(JSON.parse(fs.readFileSync(lock.path, "utf8")).pid).toBe(process.pid);
+    expect(JSON.parse(fs.readFileSync(path.join(lock.path, "owner.json"), "utf8")).pid).toBe(process.pid);
     lock.release();
   });
 
-  it("removes the lock file when writing owner metadata fails", () => {
+  it("does not reclaim a successor that replaced the stale instance it inspected", () => {
+    const project = root();
+    const lockPath = seedLock(project, {
+      pid: 999_999_999,
+      token: "stale-instance",
+      created_at: "2020-01-01T00:00:00Z",
+    });
+    const kill = vi.spyOn(process, "kill").mockImplementationOnce(() => {
+      fs.rmSync(lockPath, { recursive: true });
+      seedLock(project, {
+        pid: process.pid,
+        token: "successor-instance",
+        created_at: new Date().toISOString(),
+      });
+      throw Object.assign(new Error("dead"), { code: "ESRCH" });
+    });
+
+    expect(() => acquireWriterLock(project, 50)).toThrow(/writer lock timeout/);
+    kill.mockRestore();
+    expect(JSON.parse(fs.readFileSync(path.join(lockPath, "owner.json"), "utf8"))).toMatchObject({
+      token: "successor-instance",
+    });
+  });
+
+  it("does not release a successor lock with a different owner token", () => {
+    const project = root();
+    const first = acquireWriterLock(project, 100);
+    const parked = `${first.path}.parked`;
+    fs.renameSync(first.path, parked);
+    const successor = acquireWriterLock(project, 100);
+
+    first.release();
+    expect(fs.existsSync(successor.path)).toBe(true);
+    successor.release();
+    expect(fs.existsSync(successor.path)).toBe(false);
+    fs.rmSync(parked, { recursive: true });
+  });
+
+  it("removes the lock directory when writing owner metadata fails", () => {
     const project = root();
     const write = vi.spyOn(fs, "writeFileSync").mockImplementationOnce(() => {
       throw Object.assign(new Error("injected metadata write failure"), { code: "ENOSPC" });

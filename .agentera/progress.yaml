@@ -1,4 +1,33 @@
 cycles:
+  - number: 865
+    timestamp: 2026-07-16 20:13
+    type: fix
+    phase: build
+    what: Audit retry 2 made project writer-lock stale reclamation and release
+      ownership-safe.
+    inspiration: Independent audit retry 2 of 2 for PLAN Task 2.
+    discovered: A durable token-bearing lock directory lets stale reclaimers unlink
+      owner metadata through the exact inspected directory instance; only the
+      unlink winner can remove that directory, while release refuses successor
+      tokens.
+    verified: Focused lock/entity/state-writer and CLI validation coverage passed 9
+      files and 172 tests, including a genuine two-process seeded-dead-lock
+      publication race, inspected-instance replacement protection, and
+      successor-token release protection; full CLI suite passed 202 files with 1
+      skipped and 2346 tests with 1 skipped; typecheck and build passed; state
+      validation reported zero issues; capability-contract passed 2/2; compact
+      gate reported zero over-limit artifacts or errors.
+    next: Return PLAN Task 2 audit retry 2 for independent review; leave Task 2
+      complete and Task 3 pending.
+    context:
+      intent: Close PLAN Task 2's remaining stale-reclaimer race without starting Task
+        3 or cutting over any state family.
+      constraints: No Task 3 work, state-family cutover, evaluation write, vision
+        change, push, publish, or unrelated caveat change.
+      unknowns: None.
+      scope: packages/cli/src/state/write/lock.ts;
+        packages/cli/test/state/write/lock.test.ts;
+        packages/cli/test/state/entityStorage.test.ts; progress cycle 865.
   - number: 864
     timestamp: 2026-07-16 19:53
     type: fix
@@ -284,49 +313,6 @@ cycles:
       unknowns: none
       scope: .agentera/plan.yaml; .agentera/progress.yaml;
         .agentera/archive/progress/856.yaml; TODO.md state read
-  - number: 855
-    timestamp: 2026-07-16 15:47
-    type: fix
-    phase: build
-    what: "Synchronized Plan Task 5 startup contracts and final verification:
-      current English capability budget rows now match CAPABILITY_NAMES, generic
-      capability capsules use a 55000-byte ceiling, status keeps its dedicated
-      25000-byte one-call budget, and schema/help/package guidance name the
-      12000-byte bare brief, status_context.instructions payload, compatibility
-      boundary, and recovery behavior. Added manifest/authority parity checks
-      and preserved prior evaluation history."
-    inspiration: Plan Task 5 acceptance criteria and the cumulative Task 1-4
-      contract repairs.
-    discovered: The published capability budget map still named removed v2 aliases
-      and retained limits below current v3 instruction capsules; the live status
-      surface already had the correct one-call shape, while help and package
-      guidance still described the old lifecycle payload.
-    verified: "Live pretty UTF-8 JSON measurements: bare prime 11191/12000 bytes;
-      status context 24204/25000; current capability contexts status 24204,
-      vision 31705, discuss 26708, research 25056, plan 44784, build 47665,
-      optimize 44945, audit 51757, document 38855, profile 32348, design 30551,
-      orchestrate 48223, all within the reconciled manifest limits.
-      Representative accumulated-state fixture measured bare prime 11384/12000
-      and status context 24242/25000. Full CLI Vitest passed 198 files/2324
-      tests; typecheck, build, bundle-data/source parity, status and plan
-      capability validation, capability-contract validation 2/2, and check
-      compact passed with over_limit=0 and errors=0."
-    next: Record the final Task 5 pass evaluation, mark Task 5 complete through the
-      typed plan writer, rerun compact/state checks after the state write, and
-      commit locally. Keep deferred recommendations 4-7 open.
-    context:
-      intent: Synchronize all current prime startup contracts and verify
-        accumulated-state bounds before closing the compact-prime plan.
-      constraints: No vision or objective changes, no deferred recommendation
-        implementation, no push or publication; preserve prior
-        evaluation-history caveats and use capability_context.instructions
-        vocabulary.
-      unknowns: none
-      scope: scripts/json_output_surface_manifest.yaml;
-        references/artifacts/state-storage-authority.yaml;
-        references/cli/prime-consumer-compatibility.yaml;
-        packages/cli/src/cli/help.ts; packages/cli/src/cli/commands/schema.ts;
-        packages/cli/README.md; focused contract/budget tests
   - number: 793
     timestamp: 2026-07-14 17:36
     type: chore
@@ -396,6 +382,8 @@ cycles:
         and backfill fixtures; package metadata and generated ignored
         dist/bundle
 archive:
+  - summary: "Cycle 855 (2026-07-16): Synchronized Plan Task 5 startup contracts and
+      final verification: current English capability budget rows now..."
   - summary: "Cycle 854 (2026-07-16): Retried Plan Task 4: keep status mode and
       upgrade commands in the canonical nested status..."
   - summary: "Cycle 853 (2026-07-16): Made status startup self-contained: prime
@@ -491,15 +479,18 @@ archive:
       Build's remaining retired gate command expectation, made..."
   - summary: "Cycle 816 (2026-07-15): Repaired Plan Task 12 alias authority and
       runtime parity. Removed stale gate advertising, projected the..."
-  - summary: "Cycle 815 (2026-07-15): Corrected experiment artifact introspection
-      after Task 11 audit failure."
 omitted: true
-omitted_count: 100
+omitted_count: 101
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded

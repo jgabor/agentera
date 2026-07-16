@@ -1,0 +1,19 @@
+schemaVersion: agentera.stateArchiveEntry.v1
+artifact_id: progress
+entry_number: 865
+record:
+  number: 865
+  timestamp: 2026-07-16 20:13
+  type: fix
+  phase: build
+  what: Audit retry 2 made project writer-lock stale reclamation and release ownership-safe.
+  inspiration: Independent audit retry 2 of 2 for PLAN Task 2.
+  discovered: A durable token-bearing lock directory lets stale reclaimers unlink owner metadata through the exact inspected directory instance; only the unlink winner can remove that directory, while release refuses successor tokens.
+  verified: Focused lock/entity/state-writer and CLI validation coverage passed 9 files and 172 tests, including a genuine two-process seeded-dead-lock publication race, inspected-instance replacement protection, and successor-token release protection; full CLI suite passed 202 files with 1 skipped and 2346 tests with 1 skipped; typecheck and build passed; state validation reported zero issues; capability-contract passed 2/2; compact gate reported zero over-limit artifacts or errors.
+  next: Return PLAN Task 2 audit retry 2 for independent review; leave Task 2 complete and Task 3 pending.
+  context:
+    intent: Close PLAN Task 2's remaining stale-reclaimer race without starting Task 3 or cutting over any state family.
+    constraints: No Task 3 work, state-family cutover, evaluation write, vision change, push, publish, or unrelated caveat change.
+    unknowns: None.
+    scope: packages/cli/src/state/write/lock.ts; packages/cli/test/state/write/lock.test.ts; packages/cli/test/state/entityStorage.test.ts; progress cycle 865.
+record_sha256: 984b728dc66e44ec7b08f54ee979f36d2a49f9fb975d9dc4d8a1557ca51522be
