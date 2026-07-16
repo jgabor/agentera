@@ -1,4 +1,25 @@
 cycles:
+  - number: 862
+    timestamp: 2026-07-16 19:09
+    type: docs
+    phase: build
+    what: Declared the Decision 94 entity model and explicit migration lifecycle in
+      the single state storage authority, with focused contract tests.
+    inspiration: Decision 94 and PLAN Task 1.
+    verified: "Full CLI test suite passed: 201 files and 2329 tests; typecheck and
+      build passed; capability-contract validation passed 2/2; check compact
+      passed with zero over-limit artifacts or errors."
+    next: Begin Task 2 only in a later cycle; implement no shared entity storage in
+      this commit.
+    context:
+      intent: Complete PLAN Task 1 without implementing entity storage or migration
+        behavior.
+      constraints: Authority, contract tests, and required project-state bookkeeping
+        only; suite metadata and vision unchanged.
+      unknowns: Repository cutover recovery remains intentionally deferred to later
+        plan tasks.
+      scope: references/artifacts/state-storage-authority.yaml;
+        packages/cli/test/state/entityAuthority.test.ts
   - number: 861
     timestamp: 2026-07-16 17:48
     type: chore
@@ -316,39 +337,6 @@ cycles:
       scope: packages/cli status prime output and regression tests; prime
         compatibility/state-storage/JSON-surface contracts; Agentera SKILL and
         vocabulary guidance
-  - number: 852
-    timestamp: 2026-07-16 14:18
-    type: fix
-    phase: build
-    what: "Repaired reopened compact-prime Plan Task 3 full-fidelity dashboard
-      emission: conditional top-level omission now applies only to the bare
-      decision brief, and a regression compares the complete dashboard
-      input/output field set and values, including inactive v1_migration, docs,
-      and objective."
-    inspiration: User-authorized reopen after independent evaluation found that
-      --dashboard dropped inactive defaults when no fields were selected.
-    discovered: emitPrime receives no fields for both bare brief and full surfaces;
-      bareBrief is the root discriminator. The dashboard and --context paths
-      must serialize the source payload unchanged, while only bareBrief may omit
-      inactive conditional defaults before bounded projection.
-    verified: "Focused primeTask3Brief verification: 2 files and 30 tests passed.
-      Full CLI Vitest: 197 files and 2314 tests passed. Typecheck passed; build
-      passed; check compact passed with over_limit=0 and errors=0;
-      capability-contract validation passed 2/2. Dashboard regression compares
-      every top-level field and value and explicitly covers inactive defaults."
-    next: "Task 4: make status startup self-contained. Keep this cycle scoped to the
-      authorized Task 3 repair; do not change fields, context, plan exclusions,
-      or unrelated TODO entries."
-    context:
-      intent: Repair the reopened Plan Task 3 dashboard full-fidelity defect and close
-        the task after verified gates.
-      constraints: Preserved prior Task 3 failures in durable progress and git
-        history. Used only the explicit user-authorized reopen for a fresh live
-        evaluation; no vision, release, push, or publication changes.
-      unknowns: none
-      scope: packages/cli/src/cli/commands/prime/orientationOutput.ts;
-        packages/cli/test/cli/primeTask3Brief.test.ts; .agentera/plan.yaml;
-        .agentera/progress.yaml; TODO.md
   - number: 793
     timestamp: 2026-07-14 17:36
     type: chore
@@ -418,6 +406,9 @@ cycles:
         and backfill fixtures; package metadata and generated ignored
         dist/bundle
 archive:
+  - summary: "Cycle 852 (2026-07-16): Repaired reopened compact-prime Plan Task 3
+      full-fidelity dashboard emission: conditional top-level omission now
+      applies only..."
   - summary: "Cycle 851 (2026-07-16): Retry Plan Task 3: bound degraded prime
       envelopes and gate final UTF-8 output"
   - summary: "Cycle 850 (2026-07-16): Deliver bounded default decision brief for
@@ -512,15 +503,18 @@ archive:
       error surfaces."
   - summary: "Cycle 813 (2026-07-15): Corrected all three findings from Task 10
       audit attempt 1."
-  - summary: "Cycle 812 (2026-07-15): Closed evidenced plan and experiment cursor
-      and omission gaps."
 omitted: true
-omitted_count: 97
+omitted_count: 98
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded

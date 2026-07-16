@@ -1,12 +1,10 @@
 schema_version: agentera.stateStorageAuthority.v1
 status: active_authority
 purpose: >-
-  Define the public bounded-retrieval vocabulary for every state collection
-  while keeping each collection's storage authority explicit. It also defines
-  the lossless numbered-archive, project path, direct state API, compatibility,
-  projection, and serialized-output contracts for progress, decisions, and
-  health, plus objective-scoped immutable archival for newly published
-  experiments.
+  Define both the implemented bounded-retrieval contracts for current state and
+  the Decision 94 target entity and cutover contracts. The target declaration is
+  authoritative before its storage, writer, retrieval, and migration behavior is
+  implemented; implementation status is explicit at each boundary.
 authority:
   source: references/artifacts/state-storage-authority.yaml
   single_source_rule: >-
@@ -16,10 +14,293 @@ authority:
     amendment revision paths, legacy label coexistence rules, failure classes,
     or byte limits.
   implementation_boundary: >-
-    This contract does not migrate legacy state or change existing plan and
-    vision archive behavior. The maintenance-only Git backfill surface declared
-    by api.backfill may inventory reachable local history and publish only an
-    exact immutable archive record after explicit apply intent.
+    entity_target and entity_migration declare the required post-cutover state,
+    but do not implement entity storage, writers, retrieval, or migration. The
+    current numbered archive and retrieval groups remain implemented authority
+    until the explicit entity cutover completes. The maintenance-only Git
+    backfill surface declared by api.backfill remains a separate legacy repair
+    operation and is not the Decision 94 cutover.
+
+entity_target:
+  status: declared_not_implemented
+  decision: 94
+  activation: >-
+    This target becomes active persisted and structured state authority only
+    after entity_migration reaches cutover_complete. Until then, existing public
+    contracts below describe current behavior and may retain legacy vocabulary.
+  public_schema:
+    canonical_identity_field: id
+    canonical_classification_field: artifact
+    identity_and_classification_fields: [id, artifact]
+    entity_envelope:
+      required_fields: [id, artifact, record]
+      additional_identity_or_classification_fields: forbidden
+    forbidden_canonical_aliases:
+      - stable_id
+      - artifact_id
+      - entry_number
+      - number
+      - task_number
+      - experiment_number
+      - plan_id
+      - objective_id
+      - type_prefixed_id
+    exemptions:
+      - historical prose and immutable historical evidence
+      - internal TypeScript variable names that are not persisted or public structured output
+      - current pre-cutover contracts explicitly marked as implemented legacy authority
+  identity:
+    scope: project_wide_across_all_entity_artifacts
+    alphabet: abcdefghijklmnopqrstuvwxyz
+    length: 10
+    accepted_pattern: '^[a-z]{10}$'
+    example: qjtrmnpvka
+    allocation: random_from_declared_alphabet
+    collision_rule: retry before publication; an existing ID is never reassigned or overwritten
+    prohibited_components: [prefix, sequence, timestamp, branch, writer, git_reference]
+    meaning_rule: >-
+      The ID is opaque and carries no artifact or entity-boundary information;
+      artifact is the sole public classification field.
+  storage_boundary:
+    rule: one independently mutable entity per writer-owned canonical file
+    aggregate_authority: forbidden
+    same_entity_conflict: >-
+      Concurrent divergent edits to one entity remain an ordinary explicit file
+      conflict or validation conflict; no runtime silently selects a winner.
+    unrelated_entity_merge: >-
+      Independently created or changed entities occupy distinct canonical files
+      so ordinary Git can preserve both changes.
+  entities:
+    - boundary: progress_cycle
+      artifact: progress
+      independently_mutable: true
+      relationships: []
+    - boundary: decision
+      artifact: decisions
+      independently_mutable: true
+      relationships: []
+    - boundary: decision_satisfaction
+      artifact: decisions
+      independently_mutable: true
+      relationships: [decision]
+    - boundary: decision_revision
+      artifact: decisions
+      independently_mutable: true
+      includes: [amendment]
+      relationships: [decision]
+    - boundary: health_audit
+      artifact: health
+      independently_mutable: true
+      relationships: []
+    - boundary: plan
+      artifact: plan
+      independently_mutable: true
+      relationships: []
+    - boundary: plan_task
+      artifact: plan
+      independently_mutable: true
+      relationships: [plan, depends_on_tasks]
+    - boundary: objective
+      artifact: objective
+      independently_mutable: true
+      relationships: []
+    - boundary: experiment
+      artifact: experiments
+      independently_mutable: true
+      relationships: [objective]
+    - boundary: todo_item
+      artifact: todo
+      independently_mutable: true
+      relationships: []
+    - boundary: documentation_inventory_entry
+      artifact: docs
+      independently_mutable: true
+      relationships: []
+  relationships:
+    representation: bare target entity ID in the named record field
+    integrity: every non-null target must resolve to exactly one entity with the declared target boundary
+    unresolved_behavior: whole-state validation and migration cutover fail without creating a target
+    declarations:
+      - source: decision_satisfaction
+        field: decision
+        target: decision
+        cardinality: exactly_one
+      - source: decision_revision
+        field: decision
+        target: decision
+        cardinality: exactly_one
+      - source: plan_task
+        field: plan
+        target: plan
+        cardinality: exactly_one
+      - source: plan_task
+        field: depends_on
+        target: plan_task
+        cardinality: zero_or_many_same_plan
+      - source: experiment
+        field: objective
+        target: objective
+        cardinality: exactly_one
+  views:
+    authority: non_authoritative_cli_rendering
+    mutation: forbidden
+    source: canonical entity files only after cutover
+    requirements:
+      - bounded lists expose id and artifact and provide exact get by id
+      - ordering and cursors bind to an explicit snapshot and never imply identity
+      - omissions expose counts, reasons, and exact retrieval commands
+      - nested plan/task and objective/experiment views are relationship projections
+      - startup views use the same entities and may omit detail only under declared budgets
+  intentional_singletons:
+    exhaustive: true
+    additions_require_authority_amendment: true
+    boundaries:
+      - boundary: vision
+        reason: one project north star; excluded from execution-cycle mutation
+      - boundary: design
+        reason: one project visual identity editorial artifact
+      - boundary: changelog
+        reason: one ordered release-history editorial artifact
+      - boundary: profile
+        reason: one reusable decision-profile document per selected profile
+      - boundary: runtime_local_session_state
+        reason: runtime-local and not canonical project entity state
+      - boundary: docs_mapping
+        reason: one project path and documentation-policy mapping, distinct from documentation inventory entries
+    conflict_rule: concurrent edits remain explicit whole-document conflicts
+  excluded_from_entity_migration:
+    - all intentional_singletons
+    - immutable historical prose and evidence, except structured references explicitly declared for rewrite
+    - genuinely singleton editorial artifacts added by an authority amendment
+  measurement_contract:
+    status: target_gate_not_yet_implemented
+    environment: Linux, Node.js 22 or newer, one cold CLI process per sample
+    fixtures:
+      small: 100 valid entities distributed across every declared entity boundary
+      large: 1000 valid entities distributed across every declared entity boundary
+      relationship_rule: every declared relationship has at least one valid fixture edge
+    sampling:
+      repetitions: 5
+      pass_rule: every repetition stays within every applicable limit
+      elapsed: wall-clock milliseconds from process start through complete serialized output
+      heap: process heapUsed peak minus heapUsed before fixture discovery
+      bytes: UTF-8 byte length of stdout including the trailing newline
+    targets:
+      exact_get:
+        max_latency_ms: 1000
+        max_heap_delta_bytes: 67108864
+        max_utf8_bytes: 1048576
+      bounded_list_small:
+        max_latency_ms: 5000
+        max_heap_delta_bytes: 67108864
+        max_utf8_bytes: 32768
+      bounded_list_large:
+        max_latency_ms: 15000
+        max_heap_delta_bytes: 268435456
+        max_utf8_bytes: 32768
+      startup_small:
+        max_latency_ms: 5000
+        max_heap_delta_bytes: 67108864
+        serialized_limits: budgets.startup.surfaces
+      startup_large:
+        max_latency_ms: 15000
+        max_heap_delta_bytes: 268435456
+        serialized_limits: budgets.startup.surfaces
+    failure_rule: >-
+      Over-budget results fail the target gate. They may return a measured
+      degraded envelope only where the referenced budget permits omission; they
+      never truncate bytes, omit required identity, or fabricate detail.
+
+entity_migration:
+  status: declared_not_implemented
+  decision: 94
+  kind: single_explicit_project_cutover
+  invocation:
+    explicit: required
+    dry_run: required_before_apply
+    ordinary_reads_migrate: false
+    ordinary_writes_migrate: false
+    invokes_git: false
+  source_scope:
+    included_entities: entity_target.entities
+    included_structured_relationships: entity_target.relationships.declarations
+    preserved_singletons: entity_target.intentional_singletons.boundaries
+    sources: >-
+      Current canonical files, verified immutable archives, overlays, revisions,
+      and validated reachable recovery evidence are inventoried together without
+      changing their pre-cutover authority.
+  source_outcomes:
+    valid_full:
+      outcome: ready
+      rule: map one complete validated source entity and every relationship exactly once
+    degraded_recoverable:
+      outcome: ready_with_provenance
+      rule: admit only independently validated full detail and record its recovery provenance
+    summary_only_or_missing_detail:
+      outcome: blocked
+      rule: retain evidence and stop before publication; never reconstruct omitted fields
+    ambiguous_or_duplicate_identity:
+      outcome: blocked
+      rule: retain every candidate and require explicit disposition; never choose by order or recency
+    corrupt_or_unresolved_relationship:
+      outcome: blocked
+      rule: report the exact source and recovery action; never publish a partial graph
+    unsupported:
+      outcome: blocked
+      rule: preserve bytes and report the unsupported source contract
+  non_fabrication:
+    forbidden:
+      - synthetic entities for missing source detail
+      - inferred IDs from order, numbers, paths, timestamps, branches, writers, or Git references
+      - guessed relationship targets
+      - silent dropping, deduplication, or winner selection
+    partial_cutover_success: forbidden
+  durable_evidence:
+    required_before_entity_publication:
+      - source root and source fingerprints
+      - complete old-to-new ID mapping
+      - relationship rewrite map
+      - preview digest and approved apply intent
+      - recovery snapshot and cutover journal
+    durability_rule: the mapping and journal are reused on resume; IDs are never regenerated
+  lifecycle:
+    - phase: inventory
+      mutates: false
+      exit: every source entity and relationship is classified
+    - phase: preview
+      mutates: false
+      exit: proposed graph, mapping, outcomes, blockers, and digest are complete
+    - phase: approve
+      mutates: false
+      exit: project root, clean source fingerprint, preview digest, and explicit apply intent match
+    - phase: prepare_recovery
+      mutates: true
+      exit: durable mapping, recovery snapshot, and journal exist before entity publication
+    - phase: publish_entities
+      mutates: true
+      resumable: true
+      exit: every mapped entity and relationship is staged once using the durable mapping
+    - phase: validate_graph
+      mutates: false
+      exit: source-to-target parity, uniqueness, ownership, relationships, and budgets pass
+    - phase: cutover
+      mutates: true
+      exit: one durable marker activates entity_target and retires writable legacy authority
+    - phase: cutover_complete
+      mutates: false
+      exit: exact reads and bounded views reproduce the validated graph
+  resume:
+    rule: >-
+      Resume reads the durable journal and mapping, revalidates source and
+      published bytes, and continues from the first incomplete phase without
+      allocating IDs again or duplicating entities.
+    changed_source: refuse before further publication
+    replay_after_complete: report idempotent completion without rewriting entities
+  recovery:
+    pre_cutover: remove only journal-recorded staged outputs and preserve source authority
+    post_cutover_without_new_writes: guarded rollback restores the recovery snapshot byte-for-byte
+    post_cutover_with_new_writes: refuse rollback and retain all recovery evidence
+    interrupted_phase: report the phase, durable evidence paths, and exact resume command
 
 scope:
   supported_artifacts:
