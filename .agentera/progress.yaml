@@ -1,4 +1,38 @@
 cycles:
+  - number: 851
+    timestamp: 2026-07-16 13:42
+    type: fix
+    phase: build
+    what: "Retry Plan Task 3: bound degraded prime envelopes and gate final UTF-8
+      output"
+    inspiration: "Independent audit failure: degraded state_presence/source_contract
+      envelope was unbounded and the configured 7000-byte gate was not
+      enforced."
+    discovered: The degraded envelope needs its own bounded
+      state-presence/source-contract projection and a final gate after
+      self-measured utf8_bytes. Compact and irreducible fallback envelopes make
+      smaller configured budgets deterministic; budgets below the irreducible
+      envelope fail explicitly.
+    verified: "Focused and full CLI Vitest: 197 files and 2313 tests passed. Added
+      integrated adversarial state_presence/source_contract coverage at a
+      configured 7000-byte gate, exact stdout/newline accounting,
+      missing-vs-empty projection assertions, and tiny-budget explicit failure
+      coverage. Typecheck passed; build passed; check compact passed with
+      over_limit=0 and errors=0; capability-contract validation passed 2/2."
+    next: "Task 4: make status startup self-contained. Keep this cycle scoped to
+      Task 3; no dashboard, fields, or context projection changes."
+    context:
+      intent: Make every bare prime brief output fit its effective byte budget under
+        adversarial caller data while preserving routing semantics, exact stdout
+        accounting, and full-fidelity non-brief surfaces.
+      constraints: Preserved --dashboard, --fields, and --context full fidelity and
+        plan exclusions; no vision changes, release changes, push, or
+        publication.
+      unknowns: none
+      scope: packages/cli/src/cli/commands/prime/briefOrientation.ts;
+        packages/cli/src/cli/commands/prime/orientationOutput.ts;
+        packages/cli/test/cli/primeTask3Brief.test.ts;
+        references/cli/prime-consumer-compatibility.yaml
   - number: 850
     timestamp: 2026-07-16 13:18
     type: feat
@@ -362,44 +396,6 @@ cycles:
         packages/cli/test/state/{decisionAmendmentPublication,decisionAmendmentContract}.test.ts,
         references/artifacts/state-storage-authority.yaml,
         .agentera/{progress.yaml,archive/progress/841.yaml,plan.yaml}
-  - number: 841
-    timestamp: 2026-07-16 07:07
-    type: feat
-    phase: build
-    what: "Ran orchestrator presence verification for Task 2 (revision-backed
-      effective decision reads) after cycle 840 reported verified=null. All
-      gates green: typecheck clean, build clean, check compact status=pass
-      over_limit=0, check validate capability-contract violations=[] passed=2
-      failed=0, pnpm -C packages/cli test 193 files 2229 tests passed including
-      decisionRevisionReads.test.ts (23 tests covering base→revisions→overlay
-      composition for exact get, list, startup, and compaction consumers;
-      amendment preparation with degraded_projection legacy bootstrap; refusal
-      paths for
-      summary-only/ambiguous/broken-hash/conflicting/incomplete/missing targets;
-      replay detection; authority immutability and separation). Plan task 2
-      status=complete (complete=2, pending=3)."
-    inspiration: Orchestrator presence evaluation rejected verified=null on cycle 840
-    verified: pnpm -C packages/cli run typecheck (clean); pnpm -C packages/cli build
-      (clean); node packages/cli/dist/bin/agentera.js check compact
-      (status=pass, over_limit=0); node packages/cli/dist/bin/agentera.js check
-      validate capability-contract --format json (violations=[], passed=2,
-      failed=0); pnpm -C packages/cli test (193 files, 2229 tests passed,
-      includes test/state/decisionRevisionReads.test.ts 23 tests); node
-      packages/cli/dist/bin/agentera.js state plan (Task 2 status=complete,
-      complete=2 pending=3)
-    next: "Task 3: publish record-local amendments with recovery. Amend publication
-      remains refused; the refusal message and explain guidance already reflect
-      that reads and preparation are live."
-    context:
-      intent: Substantiate Task 2 orchestrator presence with concrete evidence after
-        cycle 840 omitted the verified field.
-      constraints: Task 3 publication scope unchanged; no standalone bookkeeping
-        commit; typed state changes left for folding into the next substantive
-        implementation commit.
-      scope: packages/cli/test/state/decisionRevisionReads.test.ts,
-        packages/cli/src/state/{decisionRevision,directRetrieval,listRetrieval,startupProjection,decisionOverlay}.ts,
-        packages/cli/src/state/write/{transaction,explain}.ts,
-        .agentera/progress.yaml, .agentera/archive/progress/841.yaml
   - number: 793
     timestamp: 2026-07-14 17:36
     type: chore
@@ -469,6 +465,9 @@ cycles:
         and backfill fixtures; package metadata and generated ignored
         dist/bundle
 archive:
+  - summary: "Cycle 841 (2026-07-16): Ran orchestrator presence verification for
+      Task 2 (revision-backed effective decision reads) after cycle 840
+      reported..."
   - summary: "Cycle 840 (2026-07-16): Wired revision-backed effective decision reads
       across exact get, list, startup, and compaction consumers with
       truthful..."
@@ -563,15 +562,18 @@ archive:
   - summary: "Cycle 802 (2026-07-15): Delivered deterministic active and archived
       plan list/get retrieval with snapshot cursors, full-plan exact reads,
       lifecycle..."
-  - summary: "Cycle 801 (2026-07-14): Reproduced Task 3 acceptance evidence with
-      exact commands runnable from the repository root."
 omitted: true
-omitted_count: 86
+omitted_count: 87
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded

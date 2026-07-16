@@ -86,14 +86,14 @@ tasks:
       - GIVEN omitted rich state WHEN an agent follows the named recovery command THEN the current authoritative detail is available without raw artifact access.
       - GIVEN one passing and one over-budget fixture per bounded unit WHEN focused tests run THEN the byte gate accepts the former and rejects the latter.
     evaluation:
-      attempt_count: 1
-      failure_count: 0
+      attempt_count: 3
+      failure_count: 1
       last_verdict: pass
-      last_failure_evidence: null
+      last_failure_evidence: Degraded brief envelope retains unbounded state_presence/source_contract data and has no final byte gate; a 20KB state_presence produces a 22,150-byte degraded response. Integrated over-budget test checks against 12KB rather than the configured gate.
       provenance:
-        attempt_id: task-3-eval-1-20260716
-        source: "Plan Task 3 bounded brief verification: bare default prime --format json now projects to a 12000-byte decision brief (briefOrientation.ts); --dashboard keeps full fidelity. Real repo brief measures 11178 bytes (ok); large fixture (1000 entries × unicode) measures 11517 bytes (ok, 483-byte margin). Over-budget fixture triggers degraded envelope with routing-essential fields preserved. AC1: 5 mode fixtures (returning/fresh/empty/missing/degraded) all report mode/work summary/attention/next_action/startup completeness. AC3: missing-vs-empty distinguishable via state_presence.absence key count. AC4: every omitted_rich_state entry has a named agentera recovery command, no raw artifact reads. AC5: briefByteGate accepts/rejects; briefOrientationPayload returns ok/degraded. sourceContractOracles exact-key set satisfied (available_state preserved in capability_startup). Vitest 551 pass (test/cli/); typecheck clean; check compact pass; capability-contract 2/0."
-        recorded_at: 2026-07-16 13:17
+        attempt_id: task-3-retry-1-20260716
+        source: "Task 3 retry verification: bounded adversarial degraded envelopes and configured-gate regression suite"
+        recorded_at: 2026-07-16 13:42
         writer_command: agentera state plan record-evaluation
   - number: 4
     name: Make status startup self-contained

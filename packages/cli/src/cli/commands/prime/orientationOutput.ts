@@ -202,7 +202,7 @@ export function emitPrime(
   fieldsArg: string | null | undefined,
   out: (t: string) => void,
   err: (t: string) => void,
-  options: { bareBrief?: boolean } = {},
+  options: { bareBrief?: boolean; briefBudgetBytes?: number } = {},
 ): number {
   const requested = requestedFields(fieldsArg);
   // The default bare briefing first omits inactive conditional top-level fields
@@ -214,7 +214,9 @@ export function emitPrime(
   // (see default_emission_omission_contract + brief_omission_contract).
   const conditional = requested.length === 0 ? omitInactiveConditionalDefaults(payload) : payload;
   const effectivePayload =
-    requested.length === 0 && options.bareBrief ? briefOrientationPayload(conditional) : conditional;
+    requested.length === 0 && options.bareBrief
+      ? briefOrientationPayload(conditional, { budgetBytes: options.briefBudgetBytes })
+      : conditional;
   emitIssuesFieldDeprecationWarning(requested, effectivePayload, err);
   if (requested.length === 0) {
     emitStructured(effectivePayload, format, out);

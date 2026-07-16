@@ -23,11 +23,13 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { cmdPrime } from "../../src/cli/commands/prime.js";
 import {
+  BriefBudgetError,
   briefByteGate,
   briefOrientationPayload,
   briefUtf8Bytes,
   PRIME_BRIEF_MAX_UTF8_BYTES,
 } from "../../src/cli/commands/prime/briefOrientation.js";
+import { emitPrime } from "../../src/cli/commands/prime/orientationOutput.js";
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..");
 
@@ -338,15 +340,87 @@ describe("Task 3 AC5: byte gate accepts passing and rejects over-budget fixtures
     const brief = degraded.brief as Record<string, unknown>;
     expect(brief.status, "reduced budget forces degraded").toBe("degraded");
     expect(brief.attempted_utf8_bytes, "attempted bytes recorded").toBeGreaterThan(7000);
-    // The degraded envelope must be within the production budget (12000)
+    // The degraded envelope must satisfy the configured 7000-byte gate, not
+    // merely the production 12000-byte authority.
     const bytes = briefUtf8Bytes(degraded);
-    expect(bytes, "degraded envelope is within production budget").toBeLessThanOrEqual(PRIME_BRIEF_MAX_UTF8_BYTES);
+    expect(bytes, "degraded envelope is within the configured budget").toBeLessThanOrEqual(7000);
+    expect(brief.utf8_bytes, "degraded utf8_bytes matches exact output bytes").toBe(bytes);
     // The degraded envelope keeps routing-essential fields
     expect(degraded, "degraded keeps command").toHaveProperty("command");
     expect(degraded, "degraded keeps status").toHaveProperty("status");
     expect(degraded, "degraded keeps mode").toHaveProperty("mode");
     expect(degraded, "degraded keeps state_presence").toHaveProperty("state_presence");
     expect(degraded, "degraded keeps source_contract").toHaveProperty("source_contract");
+  });
+
+  it("integrated bare emission bounds adversarial state_presence and source_contract projections", () => {
+    const attackerControlled = "x".repeat(20_000);
+    const rawPayload: Record<string, unknown> = {
+      command: "prime",
+      status: "ok",
+      mode: "returning",
+      // This extra field must not survive the bounded presence projection.
+      state_presence: {
+        active: { plan: true, objective: false },
+        available: { plan: true, docs: false, progress: true, health: true, objective: false },
+        any_active: true,
+        absence_explained: true,
+        absence: { docs: "missing docs mapping" },
+        attacker_controlled: attackerControlled,
+      },
+      source_contract: {
+        fields: ["plan", "state_presence", "source_contract"],
+        capability_context: {
+          capability: "status",
+          fetch_command: "agentera prime --context status --format json",
+          required_before_rendering: true,
+          attacker_controlled: attackerControlled,
+        },
+        attacker_controlled: attackerControlled,
+      },
+      // Force the projected body over the configured gate so the integrated
+      // path exercises the degraded envelope rather than only the normal path.
+      source: { attacker_controlled: attackerControlled },
+    };
+    let out = "";
+    let err = "";
+    const rc = emitPrime(
+      "prime",
+      rawPayload,
+      "json",
+      undefined,
+      (text) => (out += text),
+      (text) => (err += text),
+      { bareBrief: true, briefBudgetBytes: 7000 },
+    );
+    expect(rc).toBe(0);
+    expect(err).toBe("");
+    const payload = JSON.parse(out) as Record<string, unknown>;
+    const bytes = Buffer.byteLength(out, "utf8");
+    const brief = payload.brief as Record<string, unknown>;
+    expect(brief.status).toBe("degraded");
+    expect(bytes, "integrated output satisfies its configured gate").toBeLessThanOrEqual(7000);
+    expect(brief.utf8_bytes, "integrated utf8_bytes matches stdout").toBe(bytes);
+    expect(out).not.toContain(attackerControlled);
+    expect(payload.state_presence).toMatchObject({
+      active: { plan: true, objective: false },
+      available: { docs: false },
+      absence: { docs: "missing docs mapping" },
+    });
+    expect(payload.source_contract).toMatchObject({
+      fields: ["plan", "state_presence", "source_contract"],
+      capability_context: { fetch_command: "agentera prime --context status --format json" },
+    });
+  });
+
+  it("fails explicitly when a tiny configured budget cannot contain the irreducible envelope", () => {
+    expect(() => briefOrientationPayload({
+      command: "prime",
+      status: "ok",
+      mode: "fresh",
+      state_presence: { active: {}, available: {}, any_active: false, absence_explained: false, absence: {} },
+      source_contract: {},
+    }, { budgetBytes: 1 })).toThrow(BriefBudgetError);
   });
 });
 

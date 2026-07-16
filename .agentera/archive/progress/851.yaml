@@ -1,0 +1,19 @@
+schemaVersion: agentera.stateArchiveEntry.v1
+artifact_id: progress
+entry_number: 851
+record:
+  number: 851
+  timestamp: 2026-07-16 13:42
+  type: fix
+  phase: build
+  what: "Retry Plan Task 3: bound degraded prime envelopes and gate final UTF-8 output"
+  inspiration: "Independent audit failure: degraded state_presence/source_contract envelope was unbounded and the configured 7000-byte gate was not enforced."
+  discovered: The degraded envelope needs its own bounded state-presence/source-contract projection and a final gate after self-measured utf8_bytes. Compact and irreducible fallback envelopes make smaller configured budgets deterministic; budgets below the irreducible envelope fail explicitly.
+  verified: "Focused and full CLI Vitest: 197 files and 2313 tests passed. Added integrated adversarial state_presence/source_contract coverage at a configured 7000-byte gate, exact stdout/newline accounting, missing-vs-empty projection assertions, and tiny-budget explicit failure coverage. Typecheck passed; build passed; check compact passed with over_limit=0 and errors=0; capability-contract validation passed 2/2."
+  next: "Task 4: make status startup self-contained. Keep this cycle scoped to Task 3; no dashboard, fields, or context projection changes."
+  context:
+    intent: Make every bare prime brief output fit its effective byte budget under adversarial caller data while preserving routing semantics, exact stdout accounting, and full-fidelity non-brief surfaces.
+    constraints: Preserved --dashboard, --fields, and --context full fidelity and plan exclusions; no vision changes, release changes, push, or publication.
+    unknowns: none
+    scope: packages/cli/src/cli/commands/prime/briefOrientation.ts; packages/cli/src/cli/commands/prime/orientationOutput.ts; packages/cli/test/cli/primeTask3Brief.test.ts; references/cli/prime-consumer-compatibility.yaml
+record_sha256: 8cb449685ec52ef75ea48f0cf987152c80233ff3b0c3fa972a6bf8c8c6201f86

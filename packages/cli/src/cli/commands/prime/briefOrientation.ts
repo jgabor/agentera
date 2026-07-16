@@ -35,7 +35,9 @@ export const PRIME_BRIEF_MAX_UTF8_BYTES = 12000;
  *  used by the brief byte gate. Identical to the projection-policy serializer
  *  (serializedProjectionBytes) so measurement is consistent across surfaces. */
 export function briefUtf8Bytes(value: unknown): number {
-  return Buffer.byteLength(JSON.stringify(value, null, 2) + "\n", "utf8");
+  const serialized = JSON.stringify(value, null, 2);
+  if (serialized === undefined) throw new TypeError("brief value is not JSON serializable");
+  return Buffer.byteLength(serialized + "\n", "utf8");
 }
 
 /** Byte-gate primitive: deterministic UTF-8 measurement + budget comparison.
@@ -82,6 +84,19 @@ const BRIEF_NEXT_ACTION_ALTERNATIVES = 3;
  *  state command. */
 const BRIEF_SCALAR_MAX_CHARS = 200;
 
+/** Keys owned by the state-presence contract. Unknown keys are caller data, not
+ * routing signals, so the brief never copies them into a fallback envelope. */
+const STATE_PRESENCE_ACTIVE_KEYS = ["plan", "objective"] as const;
+const STATE_PRESENCE_AVAILABLE_KEYS = ["plan", "docs", "progress", "health", "objective"] as const;
+const STATE_PRESENCE_ABSENCE_KEYS = ["plan", "docs", "progress"] as const;
+
+const BRIEF_SOURCE_FIELDS_MAX = 64;
+const BRIEF_SOURCE_STRING_MAX_CHARS = 256;
+const BRIEF_COMPACT_SOURCE_FIELDS_MAX = 32;
+const BRIEF_COMPACT_SOURCE_STRING_MAX_CHARS = 96;
+const BRIEF_IRREDUCIBLE_SOURCE_FIELDS_MAX = 32;
+const BRIEF_IRREDUCIBLE_SOURCE_STRING_MAX_CHARS = 64;
+
 function isObject(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
@@ -94,6 +109,55 @@ function pick(source: unknown, keys: readonly string[]): Record<string, unknown>
   for (const key of keys) {
     if (key in source) out[key] = source[key];
   }
+  return out;
+}
+
+function boundedString(value: unknown, maxChars: number): string | undefined {
+  return typeof value === "string" ? truncateCodePoints(value, maxChars, "…") : undefined;
+}
+
+function boundedStringList(value: unknown, maxItems: number, maxChars: number): string[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  return value
+    .filter((entry): entry is string => typeof entry === "string")
+    .slice(0, maxItems)
+    .map((entry) => truncateCodePoints(entry, maxChars, "…"));
+}
+
+function boundedBooleanMap(value: unknown, keys: readonly string[]): Record<string, boolean> | undefined {
+  if (!isObject(value)) return undefined;
+  const out: Record<string, boolean> = {};
+  for (const key of keys) {
+    if (typeof value[key] === "boolean") out[key] = value[key] as boolean;
+  }
+  return out;
+}
+
+function boundedStringMap(value: unknown, keys: readonly string[], maxChars: number): Record<string, string> | undefined {
+  if (!isObject(value)) return undefined;
+  const out: Record<string, string> = {};
+  for (const key of keys) {
+    const bounded = boundedString(value[key], maxChars);
+    if (bounded !== undefined) out[key] = bounded;
+  }
+  return out;
+}
+
+/** Project the presence authority to its finite, contract-owned shape. This is
+ * deliberately not a generic object trim: unknown caller keys cannot change
+ * routing, and therefore must not be allowed to consume the fallback budget. */
+function briefStatePresence(value: unknown, maxChars = BRIEF_SCALAR_MAX_CHARS): Record<string, unknown> | null {
+  if (value === null || value === undefined) return value === null ? null : {};
+  if (!isObject(value)) return {};
+  const out: Record<string, unknown> = {};
+  const active = boundedBooleanMap(value.active, STATE_PRESENCE_ACTIVE_KEYS);
+  const available = boundedBooleanMap(value.available, STATE_PRESENCE_AVAILABLE_KEYS);
+  const absence = boundedStringMap(value.absence, STATE_PRESENCE_ABSENCE_KEYS, maxChars);
+  if (active !== undefined) out.active = active;
+  if (available !== undefined) out.available = available;
+  if (typeof value.any_active === "boolean") out.any_active = value.any_active;
+  if (typeof value.absence_explained === "boolean") out.absence_explained = value.absence_explained;
+  if (absence !== undefined) out.absence = absence;
   return out;
 }
 
@@ -244,41 +308,105 @@ function briefNextAction(nextAction: unknown): Record<string, unknown> {
   };
 }
 
-function briefCapabilityStartup(startup: unknown): Record<string, unknown> {
-  // All capability_startup keys are routing-essential (AC1) and pinned by the
-  // sourceContractOracles exact-key set, so this sub-object is a pass-through.
-  // The raw_artifact_read_policy string is a cross-cutting source_contract
-  // oracle contract and must stay present. available_state is already bounded
-  // by Task 2's boundStartupValue 200-cp cap.
-  return pick(startup, [
-    "complete_for_capability_startup",
-    "raw_artifact_reads_required",
-    "raw_artifact_read_policy",
-    "available_state",
-    "missing_state",
-    "confidence_caveats",
-    "cli_fallback",
-  ]);
+function briefCapabilityContext(value: unknown, maxChars: number): Record<string, unknown> {
+  if (!isObject(value)) return {};
+  const out: Record<string, unknown> = {};
+  for (const key of ["capability", "fetch_command", "note"] as const) {
+    const bounded = boundedString(value[key], maxChars);
+    if (bounded !== undefined) out[key] = bounded;
+  }
+  if (typeof value.required_before_rendering === "boolean") {
+    out.required_before_rendering = value.required_before_rendering;
+  }
+  return out;
 }
 
-function briefArtifactWrites(writes: unknown): Record<string, unknown> {
+function briefCapabilityStartup(startup: unknown, maxChars: number): Record<string, unknown> {
+  if (!isObject(startup)) return {};
+  const out: Record<string, unknown> = {};
+  if (typeof startup.complete_for_capability_startup === "boolean") {
+    out.complete_for_capability_startup = startup.complete_for_capability_startup;
+  }
+  if (typeof startup.raw_artifact_reads_required === "boolean") {
+    out.raw_artifact_reads_required = startup.raw_artifact_reads_required;
+  }
+  const policy = boundedString(startup.raw_artifact_read_policy, maxChars);
+  if (policy !== undefined) out.raw_artifact_read_policy = policy;
+  for (const [key, maxItems] of [
+    ["available_state", 64],
+    ["missing_state", 16],
+    ["confidence_caveats", 8],
+    ["cli_fallback", 8],
+  ] as const) {
+    const bounded = boundedStringList(startup[key], maxItems, maxChars);
+    if (bounded !== undefined) out[key] = bounded;
+  }
+  return out;
+}
+
+function briefArtifactWrites(writes: unknown, maxChars: number): Record<string, unknown> {
   // Keep the discovery pointer (required by the compatibility boundary test)
   // and schema identity; the full writer-operation matrix recovers via schema.
-  return pick(writes, ["schemaVersion", "discovery_command"]);
+  if (!isObject(writes)) return {};
+  const out: Record<string, unknown> = {};
+  for (const key of ["schemaVersion", "discovery_command"] as const) {
+    const bounded = boundedString(writes[key], maxChars);
+    if (bounded !== undefined) out[key] = bounded;
+  }
+  return out;
 }
 
-function briefSourceContract(sourceContract: unknown): Record<string, unknown> {
+type SourceContractProjection = "normal" | "compact" | "irreducible";
+
+function briefSourceContract(
+  sourceContract: unknown,
+  projection: SourceContractProjection = "normal",
+): Record<string, unknown> {
   if (!isObject(sourceContract)) return {};
-  const out = pick(sourceContract, ["fields", "render", "access", "empty_state", "capability_context"]);
+  const maxItems = projection === "normal"
+    ? BRIEF_SOURCE_FIELDS_MAX
+    : projection === "compact"
+      ? BRIEF_COMPACT_SOURCE_FIELDS_MAX
+      : BRIEF_IRREDUCIBLE_SOURCE_FIELDS_MAX;
+  const maxChars = projection === "normal"
+    ? BRIEF_SOURCE_STRING_MAX_CHARS
+    : projection === "compact"
+      ? BRIEF_COMPACT_SOURCE_STRING_MAX_CHARS
+      : BRIEF_IRREDUCIBLE_SOURCE_STRING_MAX_CHARS;
+  const out: Record<string, unknown> = {};
+  const fields = boundedStringList(sourceContract.fields, maxItems, maxChars);
+  if (fields !== undefined) out.fields = fields;
+  for (const key of ["render", "access", "empty_state"] as const) {
+    const bounded = boundedString(sourceContract[key], maxChars);
+    if (bounded !== undefined) out[key] = bounded;
+  }
+  if (projection !== "irreducible" && isObject(sourceContract.capability_context)) {
+    out.capability_context = briefCapabilityContext(sourceContract.capability_context, maxChars);
+  } else if (projection === "irreducible" && isObject(sourceContract.capability_context)) {
+    const capabilityContext = briefCapabilityContext(sourceContract.capability_context, maxChars);
+    if ("fetch_command" in capabilityContext) {
+      out.capability_context = { fetch_command: capabilityContext.fetch_command };
+    }
+  }
   if (isObject(sourceContract.capability_startup)) {
-    out.capability_startup = briefCapabilityStartup(sourceContract.capability_startup);
-  } else {
-    out.capability_startup = sourceContract.capability_startup;
+    if (projection === "irreducible") {
+      const startup = sourceContract.capability_startup;
+      const minimalStartup: Record<string, unknown> = {};
+      if (typeof startup.complete_for_capability_startup === "boolean") {
+        minimalStartup.complete_for_capability_startup = startup.complete_for_capability_startup;
+      }
+      if (typeof startup.raw_artifact_reads_required === "boolean") {
+        minimalStartup.raw_artifact_reads_required = startup.raw_artifact_reads_required;
+      }
+      out.capability_startup = minimalStartup;
+    } else {
+      out.capability_startup = briefCapabilityStartup(sourceContract.capability_startup, maxChars);
+    }
   }
   if (isObject(sourceContract.artifact_writes)) {
-    out.artifact_writes = briefArtifactWrites(sourceContract.artifact_writes);
-  } else {
-    out.artifact_writes = sourceContract.artifact_writes;
+    if (projection !== "irreducible") {
+      out.artifact_writes = briefArtifactWrites(sourceContract.artifact_writes, maxChars);
+    }
   }
   return out;
 }
@@ -297,17 +425,20 @@ export function briefOrientationPayload(
   options: { budgetBytes?: number } = {},
 ): Record<string, unknown> {
   const budget = options.budgetBytes ?? PRIME_BRIEF_MAX_UTF8_BYTES;
+  if (!Number.isSafeInteger(budget) || budget < 0) {
+    throw new RangeError("brief budget must be a non-negative safe integer");
+  }
   const projected = projectBriefBody(payload);
   const finalPayload = withBriefMeta(projected, "ok", budget, null);
-  const bytes = briefUtf8Bytes(finalPayload);
-  if (bytes <= budget) {
+  const gate = briefByteGate(finalPayload, budget);
+  if (gate.accepted) {
     return finalPayload;
   }
   // Over-budget brief: reject the projected payload and emit a bounded degraded
   // envelope (never emit an over-budget payload). The envelope keeps
   // command/status/mode/state_presence, a brief source_contract, and the
   // byte-budget error with a recovery command.
-  return degradedBriefEnvelope(payload, budget, bytes);
+  return degradedBriefEnvelope(payload, budget, gate.bytes);
 }
 
 /** Attach the brief meta block and settle `utf8_bytes` to a fixed point so the
@@ -319,26 +450,13 @@ function withBriefMeta(
   budget: number,
   error: JsonObject | null,
 ): Record<string, unknown> {
-  const omitted = OMITTED_RICH_STATE.map((entry) => ({ ...entry }));
   const meta: JsonObject = {
     budget_utf8_bytes: budget,
-    utf8_bytes: 0,
     status,
-    omitted_rich_state: omitted,
+    omitted_rich_state: OMITTED_RICH_STATE.map((entry) => ({ ...entry })),
   };
   if (error) meta.error = error;
-  let payload: Record<string, unknown> = { ...body, brief: meta };
-  // Settle: assign the measured size, re-measure; repeat until stable. The digit
-  // count of a sub-12000 byte count never grows past 5, so this converges fast.
-  let bytes = briefUtf8Bytes(payload);
-  for (let guard = 0; guard < 4; guard += 1) {
-    (meta as JsonObject).utf8_bytes = bytes;
-    payload = { ...body, brief: { ...meta } };
-    const next = briefUtf8Bytes(payload);
-    if (next === bytes) break;
-    bytes = next;
-  }
-  return payload;
+  return settledBriefEnvelope(body, meta);
 }
 
 function projectBriefBody(payload: Record<string, unknown>): Record<string, unknown> {
@@ -378,9 +496,12 @@ function projectBriefBody(payload: Record<string, unknown>): Record<string, unkn
       case "source_contract":
         out[key] = briefSourceContract(value);
         break;
+      case "state_presence":
+        out[key] = briefStatePresence(value);
+        break;
       default:
         // command, status, app_home, app, mode, health, todo, issues, progress,
-        // state_presence, attention, decision_attention, the bespoke context
+        // attention, decision_attention, the bespoke context
         // pointers, and conditional v1_migration/docs/objective pass through at
         // full fidelity (they are either already bounded or routing-essential).
         out[key] = value;
@@ -390,20 +511,56 @@ function projectBriefBody(payload: Record<string, unknown>): Record<string, unkn
   return out;
 }
 
-/** Bounded degraded envelope emitted when the projected brief itself exceeds the
- *  budget. Mirrors projectionPolicy.minimalBudgetedProjection: keep the
- *  top-level contract fields a routing consumer needs plus a byte-budget error
- *  with a recovery command, and stay within the budget by construction. */
+function boundedEnvelopeScalar(value: unknown, fallback: string): string {
+  return boundedString(value, BRIEF_SCALAR_MAX_CHARS) ?? fallback;
+}
+
+function degradedBody(payload: Record<string, unknown>, projection: SourceContractProjection): Record<string, unknown> {
+  return {
+    command: boundedEnvelopeScalar(payload.command, "prime"),
+    status: boundedEnvelopeScalar(payload.status, "ok"),
+    mode: boundedEnvelopeScalar(payload.mode, "unknown"),
+    state_presence: briefStatePresence(payload.state_presence),
+    source_contract: briefSourceContract(payload.source_contract, projection),
+  };
+}
+
+/** Settle the self-measuring byte field and return only at a fixed point. The
+ * serialized value and the reported value therefore use the same pretty UTF-8
+ * plus newline accounting as emitStructured. */
+function settledBriefEnvelope(body: Record<string, unknown>, meta: JsonObject): Record<string, unknown> {
+  let brief: JsonObject = { ...meta, utf8_bytes: 0 };
+  let envelope: Record<string, unknown> = { ...body, brief };
+  for (let guard = 0; guard < 32; guard += 1) {
+    const bytes = briefUtf8Bytes(envelope);
+    if (brief.utf8_bytes === bytes) return envelope;
+    brief = { ...brief, utf8_bytes: bytes };
+    envelope = { ...body, brief };
+  }
+  throw new Error("brief UTF-8 byte measurement did not settle");
+}
+
+export class BriefBudgetError extends Error {
+  readonly budgetBytes: number;
+  readonly minimumBytes: number;
+
+  constructor(budgetBytes: number, minimumBytes: number) {
+    super(
+      `brief budget ${budgetBytes} bytes cannot contain the minimum routing envelope (${minimumBytes} bytes); increase the budget or use --dashboard`,
+    );
+    this.name = "BriefBudgetError";
+    this.budgetBytes = budgetBytes;
+    this.minimumBytes = minimumBytes;
+  }
+}
+
 function degradedBriefEnvelope(
   payload: Record<string, unknown>,
   budget: number,
   attemptedBytes: number,
 ): Record<string, unknown> {
-  // Build the envelope (without the self-referential utf8_bytes), then settle
-  // the size to a fixed point exactly as the ok path does.
-  const meta: JsonObject = {
+  const detailedMeta: JsonObject = {
     budget_utf8_bytes: budget,
-    utf8_bytes: 0,
     status: "degraded",
     attempted_utf8_bytes: attemptedBytes,
     omitted_rich_state: OMITTED_RICH_STATE.map((entry) => ({ ...entry })),
@@ -415,21 +572,41 @@ function degradedBriefEnvelope(
         "Run `agentera prime --dashboard --format json` for the full orientation payload, or `agentera state <artifact> --format json` for a specific family.",
     },
   };
-  const body: Record<string, unknown> = {
-    command: payload.command ?? "prime",
-    status: payload.status ?? "ok",
-    mode: payload.mode,
-    state_presence: payload.state_presence ?? null,
-    source_contract: briefSourceContract(payload.source_contract),
+  const detailed = settledBriefEnvelope(degradedBody(payload, "normal"), detailedMeta);
+  if (briefByteGate(detailed, budget).accepted) return detailed;
+
+  // A smaller deterministic fallback drops the recovery catalog but retains the
+  // bounded state-presence and source-contract projections plus one recovery
+  // command. This is what lets a configured 7KB gate remain enforceable even
+  // when caller data would make the detailed degraded envelope too large.
+  const compactMeta: JsonObject = {
+    budget_utf8_bytes: budget,
+    status: "degraded",
+    attempted_utf8_bytes: attemptedBytes,
+    error: {
+      class: "brief_output_budget",
+      message: "the projected decision brief exceeded the authority byte budget; compact recovery metadata was emitted",
+      recovery: "Run `agentera prime --dashboard --format json` for full orientation detail.",
+    },
   };
-  let envelope: Record<string, unknown> = { ...body, brief: meta };
-  let bytes = briefUtf8Bytes(envelope);
-  for (let guard = 0; guard < 4; guard += 1) {
-    (meta as JsonObject).utf8_bytes = bytes;
-    envelope = { ...body, brief: { ...meta } };
-    const next = briefUtf8Bytes(envelope);
-    if (next === bytes) break;
-    bytes = next;
-  }
-  return envelope;
+  const compact = settledBriefEnvelope(degradedBody(payload, "compact"), compactMeta);
+  if (briefByteGate(compact, budget).accepted) return compact;
+
+  // The irreducible form is intentionally finite and contains only the routing
+  // contract. If even this cannot fit, throwing is explicit: returning an
+  // over-budget JSON document would violate the public output contract.
+  const minimumMeta: JsonObject = {
+    budget_utf8_bytes: budget,
+    status: "degraded",
+    attempted_utf8_bytes: attemptedBytes,
+    error: {
+      class: "brief_output_budget",
+      message: "the configured budget cannot contain the detailed recovery envelope",
+      recovery: "Increase the budget or run `agentera prime --dashboard --format json`.",
+    },
+  };
+  const minimum = settledBriefEnvelope(degradedBody(payload, "irreducible"), minimumMeta);
+  const minimumBytes = briefUtf8Bytes(minimum);
+  if (minimumBytes <= budget) return minimum;
+  throw new BriefBudgetError(budget, minimumBytes);
 }
