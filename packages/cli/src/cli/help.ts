@@ -7,6 +7,7 @@ import {
 } from "../state/migrationAuthority.js";
 import { stateGitBackfillContract } from "../state/gitBackfillAuthority.js";
 import { stateRetrievalCommands } from "../state/retrievalAuthority.js";
+import { entityMigrateHelp } from "./commands/entityMigrate.js";
 
 const TOP_LEVEL = [
   "prime",
@@ -142,9 +143,7 @@ export function printStateHelp(sub?: string): string {
       "Inventory bounded, project-local legacy state under the state-storage authority.",
       `Default inventory and ${dryRunFlag} are read-only; ${applyFlags.join(" ")} is the only mutation intent.`,
       "This surface publishes authority and dispatch only; migration execution never contacts Git or a remote.",
-      "The explicit Decision 94 entity cutover preview is read-only:",
-      "  agentera state migrate entities [--project PATH] [--limit 1..1000] --dry-run --format {text,json,yaml}",
-      "Its --apply --force form performs source binding only; entity publication remains unavailable until Task 10.",
+      "Entity preview has a separate grammar: agentera state migrate entities --help",
       "",
       "options:",
       "  -h, --help            show this help message and exit",
@@ -402,6 +401,7 @@ export function printCapabilityHelp(capability: string): string {
 
 export function printCommandHelp(command: string, rest: string[] = []): string | null {
   const sub = rest.find((a) => !a.startsWith("-") && a !== "--help" && a !== "-h");
+  if (command === "state" && rest.filter((item) => !item.startsWith("-")).slice(0, 2).join(" ") === "migrate entities") return entityMigrateHelp();
   switch (command) {
     case "prime":
       return printPrimeHelp();

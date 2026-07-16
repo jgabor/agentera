@@ -1,0 +1,19 @@
+schemaVersion: agentera.stateArchiveEntry.v1
+artifact_id: progress
+entry_number: 872
+record:
+  number: 872
+  timestamp: 2026-07-17 00:29
+  type: fix
+  phase: build
+  what: "Fixed Task 3 migration preview audit defects: keyed decision revisions, fail-closed project roots, mirror/duplicate accounting, advancing bounded recovery, complete text/help, and migration-authority binding."
+  inspiration: Independent audit retry 1 for PLAN Task 3 and Decision 94 state-storage authority.
+  discovered: The keyed decision revision authority currently contains zero repository records, so adding correct revision inventory changed no final repository count. Cycle 871's 125 unresolved relationships was a pre-closeout snapshot; the reproducible implementation preview has 66.
+  verified: Focused entity/migration tests passed 7 files and 72 tests. Full CLI passed 203 files and 2,378 tests. Typecheck and build passed. check validate state reported 0 issues; capability-contract passed 2/2; check compact passed 10 artifacts with 0 errors. The implementation preview reproduced 1,279 verified, 55 projection-only, 90 summary-only, 17 corrupt, 66 unresolved relationships, 173 blocked, 1,441 logical entries, 1,462 physical records, and 21 mirrors.
+  next: Keep Task 3 complete and Task 4 pending. Do not implement durable apply or begin any family cutover in this retry.
+  context:
+    intent: Make the read-only entity migration inventory complete, recoverable, and approval-bound without implementing apply or cutting over a family.
+    constraints: No apply effects, durable mapping, family cutover, vision change, release, push, publish, amend, or unrelated repair.
+    unknowns: Task 13 still owns recovery or disposition of the 173 blocked logical identities; this retry does not resolve them.
+    scope: packages/cli entity migration preview, CLI text/help, state-storage authority, focused tests, and this progress cycle.
+record_sha256: e587c9dd9d71416b370ef0c20787bc07b934a22c3bcba3eaf1cb47fe6ddfc450

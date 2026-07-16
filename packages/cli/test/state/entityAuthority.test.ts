@@ -169,9 +169,19 @@ describe("Decision 94 entity authority", () => {
       read_only_preview: {
         implementation: "implemented",
         ordering: "artifact_then_boundary_then_source_identity_then_source_path",
+        project_root: expect.stringContaining("symbolic-link"),
+        authority_binding: expect.stringContaining("preview digest"),
         output: {
           max_utf8_bytes: 32768,
           scalar_truncation: "forbidden",
+          recovery: expect.stringContaining("--after SOURCE_IDENTITY"),
+        },
+        counts: {
+          physical_records: expect.any(String),
+          logical_identities: expect.any(String),
+          mirrors: expect.any(String),
+          duplicates: expect.any(String),
+          conflicts: expect.any(String),
         },
       },
       non_fabrication: { partial_cutover_success: "forbidden" },
@@ -186,9 +196,11 @@ describe("Decision 94 entity authority", () => {
       ),
     ).toEqual({
       valid_full: "ready",
+      canonical_mirror: "ready_with_mirrored_provenance",
       degraded_recoverable: "ready_with_provenance",
       summary_only_or_missing_detail: "blocked",
       ambiguous_or_duplicate_identity: "blocked",
+      proposed_target_conflict: "blocked",
       corrupt_or_unresolved_relationship: "blocked",
       unsupported: "blocked",
     });

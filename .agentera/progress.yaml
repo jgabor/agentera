@@ -1,4 +1,35 @@
 cycles:
+  - number: 872
+    timestamp: 2026-07-17 00:29
+    type: fix
+    phase: build
+    what: "Fixed Task 3 migration preview audit defects: keyed decision revisions,
+      fail-closed project roots, mirror/duplicate accounting, advancing bounded
+      recovery, complete text/help, and migration-authority binding."
+    inspiration: Independent audit retry 1 for PLAN Task 3 and Decision 94
+      state-storage authority.
+    discovered: The keyed decision revision authority currently contains zero
+      repository records, so adding correct revision inventory changed no final
+      repository count. Cycle 871's 125 unresolved relationships was a
+      pre-closeout snapshot; the reproducible implementation preview has 66.
+    verified: Focused entity/migration tests passed 7 files and 72 tests. Full CLI
+      passed 203 files and 2,378 tests. Typecheck and build passed. check
+      validate state reported 0 issues; capability-contract passed 2/2; check
+      compact passed 10 artifacts with 0 errors. The implementation preview
+      reproduced 1,279 verified, 55 projection-only, 90 summary-only, 17
+      corrupt, 66 unresolved relationships, 173 blocked, 1,441 logical entries,
+      1,462 physical records, and 21 mirrors.
+    next: Keep Task 3 complete and Task 4 pending. Do not implement durable apply or
+      begin any family cutover in this retry.
+    context:
+      intent: Make the read-only entity migration inventory complete, recoverable, and
+        approval-bound without implementing apply or cutting over a family.
+      constraints: No apply effects, durable mapping, family cutover, vision change,
+        release, push, publish, amend, or unrelated repair.
+      unknowns: Task 13 still owns recovery or disposition of the 173 blocked logical
+        identities; this retry does not resolve them.
+      scope: packages/cli entity migration preview, CLI text/help, state-storage
+        authority, focused tests, and this progress cycle.
   - number: 871
     timestamp: 2026-07-16 23:50
     type: feat
@@ -318,27 +349,6 @@ cycles:
         unimplemented.
       scope: State storage authority, shared TypeScript entity primitives, check
         validate state dispatch, and focused tests.
-  - number: 862
-    timestamp: 2026-07-16 19:09
-    type: docs
-    phase: build
-    what: Declared the Decision 94 entity model and explicit migration lifecycle in
-      the single state storage authority, with focused contract tests.
-    inspiration: Decision 94 and PLAN Task 1.
-    verified: "Full CLI test suite passed: 201 files and 2329 tests; typecheck and
-      build passed; capability-contract validation passed 2/2; check compact
-      passed with zero over-limit artifacts or errors."
-    next: Begin Task 2 only in a later cycle; implement no shared entity storage in
-      this commit.
-    context:
-      intent: Complete PLAN Task 1 without implementing entity storage or migration
-        behavior.
-      constraints: Authority, contract tests, and required project-state bookkeeping
-        only; suite metadata and vision unchanged.
-      unknowns: Repository cutover recovery remains intentionally deferred to later
-        plan tasks.
-      scope: references/artifacts/state-storage-authority.yaml;
-        packages/cli/test/state/entityAuthority.test.ts
   - number: 793
     timestamp: 2026-07-14 17:36
     type: chore
@@ -408,6 +418,8 @@ cycles:
         and backfill fixtures; package metadata and generated ignored
         dist/bundle
 archive:
+  - summary: "Cycle 862 (2026-07-16): Declared the Decision 94 entity model and
+      explicit migration lifecycle in the single state storage..."
   - summary: "Cycle 861 (2026-07-16): Completed post-plan Audit 37 for compact,
       self-contained prime startup; recorded all-A grades, improving trajectory,
       zero..."
@@ -504,15 +516,18 @@ archive:
   - summary: "Cycle 824 (2026-07-15): Proved Audit 32 replacement Task 2 release
       readiness without publication."
   - summary: "Cycle 823 (2026-07-15): Made immutable release provenance non-circular."
-  - summary: "Cycle 822 (2026-07-15): Reconciled experiment publication and archival
-      authority."
 omitted: true
-omitted_count: 107
+omitted_count: 108
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded

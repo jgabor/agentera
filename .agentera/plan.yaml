@@ -59,7 +59,7 @@ tasks:
       - GIVEN legacy state WHEN inventoried THEN every source identity, structured relationship, provenance class, and proposed target is accounted for.
       - GIVEN verified, projection-only, summary-only, duplicate, corrupt, or conflicting inputs WHEN classified THEN exact counts and actionable recovery are reported without fabricated detail.
       - GIVEN source state changes after preview WHEN apply is requested THEN publication is refused before effects.
-    evidence: Read-only entity migration preview is exposed at agentera state migrate entities. Focused migration/entity tests passed 40/40; full CLI passed 2,371/2,371; typecheck and build passed; state validation reported 0 issues; capability-contract validation passed 2/2; compact passed 10 artifacts with 0 errors. Empty, valid, malformed, deterministic repeat, stale-binding-before-effect, classification/relationship, bounded omission, and CLI apply-preflight cases pass. Repository preview preserved summary-only, corrupt, and unresolved sources as explicit blockers.
+    evidence: Audit retry passed 7 focused files/72 tests and full CLI 203 files/2,378 tests, typecheck, build, state validation, capability contract 2/2, and compact. The implementation preview reproduced 1,279 verified, 55 projection-only, 90 summary-only, 17 corrupt, 66 unresolved relationships, 173 blocked, and 1,441 logical entries; keyed revision authority had zero repository records.
   - number: 4
     name: Cut progress over to entities
     depends_on:
@@ -244,3 +244,4 @@ tasks:
 surprises: |-
   Final audit after retry 2 found an initialization-grace race and legacy lock-file recovery defect; Task 17 now gates Task 3 and downstream migration work.
   Final retry audit found positively live peer preparations were failed as unknown residue rather than retried as bounded contention; Task 18 now gates Task 3.
+  The required progress Cycle 872 is itself a newly inventoried verified source, so a post-evidence preview has one additional logical entry while the implementation-evidence snapshot remains the requested 1,441-entry graph.

@@ -269,6 +269,14 @@ entity_migration:
       project-relative name, presence, byte length, and byte SHA-256. Missing
       declared roots are represented explicitly. No mtime, Git value, cache, or
       runtime-local value participates.
+    project_root: >-
+      The selected root must exist, be a directory, and resolve without a
+      symbolic-link root or symbolic-link traversal. Failure is structured and
+      occurs before inventory or effects.
+    authority_binding: >-
+      The preview records the active state-storage authority schema version and
+      byte SHA-256. The complete preview digest includes both values, so any
+      authority-only change invalidates approval before an apply effect.
     proposed_id: >-
       Preview-only ten-letter candidates are deterministically allocated from a
       domain-separated SHA-256 of the complete source fingerprint and canonical
@@ -287,6 +295,16 @@ entity_migration:
       omission: whole entries and diagnostics only
       scalar_truncation: forbidden
       required_omission_fields: [omitted, omitted_count, omission_reason, retrieval]
+      recovery: >-
+        --after SOURCE_IDENTITY advances from the last whole logical identity
+        returned. Diagnostics travel with their owning entry, so repeated use of
+        retrieval.command recovers every later omitted entry and diagnostic.
+    counts:
+      physical_records: every observed record before identity grouping
+      logical_identities: every source identity after grouping
+      mirrors: excess canonical-identical physical records grouped under one logical identity
+      duplicates: excess divergent physical records claiming one logical identity
+      conflicts: logical identities with divergent candidates plus proposed-target collisions
     zero_write: >-
       Inventory, preview, malformed-input handling, and source-binding checks
       open no writer or upgrade lock and create no directory, temporary file,
@@ -300,6 +318,9 @@ entity_migration:
     valid_full:
       outcome: ready
       rule: map one complete validated source entity and every relationship exactly once
+    canonical_mirror:
+      outcome: ready_with_mirrored_provenance
+      rule: group canonical-identical physical records as one logical identity and retain every provenance class
     degraded_recoverable:
       outcome: ready_with_provenance
       rule: admit only independently validated full detail and record its recovery provenance
@@ -309,6 +330,9 @@ entity_migration:
     ambiguous_or_duplicate_identity:
       outcome: blocked
       rule: retain every candidate and require explicit disposition; never choose by order or recency
+    proposed_target_conflict:
+      outcome: blocked
+      rule: retain every colliding logical identity and allocate no winner
     corrupt_or_unresolved_relationship:
       outcome: blocked
       rule: report the exact source and recovery action; never publish a partial graph

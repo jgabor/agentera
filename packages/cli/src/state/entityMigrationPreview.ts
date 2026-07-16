@@ -10,12 +10,13 @@ import { discoverPlanArtifacts, planDocumentParts } from "../cli/planArtifacts.j
 import { parseTodoMarkdownListItem } from "../cli/todoMarkdown.js";
 import { canonicalRecordJson, validateStateRecord } from "./archiveDiscovery.js";
 import { discoverObjectiveArtifacts, inspectExperimentIdentities } from "./experimentIdentity.js";
+import { decisionRevisionContract, decisionRevisionViolations } from "./decisionRevision.js";
 
 export type EntityMigrationClassification =
   | "verified_full"
   | "recoverable_degraded_full_projection"
   | "irrecoverable_summary_only"
-  | "duplicate_mirror"
+  | "duplicate"
   | "conflict"
   | "corrupt"
   | "unsupported";
@@ -36,6 +37,8 @@ export interface EntityMigrationEntry {
   detail_availability: "full" | "summary_only" | "unavailable";
   provenance: string[];
   content_sha256: string | null;
+  content_sha256s: string[];
+  physical_record_count: number;
   proposed_target: { id: string; path: string } | null;
   relationships: EntityMigrationRelationship[];
   recovery: string;
@@ -53,14 +56,16 @@ export interface EntityMigrationPreview {
   source_fingerprint: string;
   preview_digest: string;
   entries: EntityMigrationEntry[];
-  counts: Record<EntityMigrationClassification | "total" | "relationships" | "unresolved_relationships" | "blockers", number>;
+  counts: Record<EntityMigrationClassification | "total" | "physical_records" | "logical_identities" | "mirrors" | "duplicates" | "conflicts" | "relationships" | "unresolved_relationships" | "blockers", number>;
   diagnostics: Array<{ classification: EntityMigrationClassification; path: string; source_identity: string; message: string; recovery: string }>;
   omitted: boolean;
   omitted_count: number;
   diagnostics_omitted_count: number;
   omission_reason: "result_limit" | "output_byte_budget" | null;
+  page_after: string | null;
+  next_after: string | null;
   retrieval: { command: string };
-  source_contract: { authority: string; zero_write: true; scalar_truncation: "forbidden"; apply_implemented: false };
+  source_contract: { authority: string; authority_schema_version: string; authority_sha256: string; zero_write: true; scalar_truncation: "forbidden"; apply_implemented: false };
 }
 
 interface Observation {
@@ -89,7 +94,8 @@ const NUMBERED = {
   decisions: { file: ".agentera/decisions.yaml", collection: "decisions", boundary: "decision" },
   health: { file: ".agentera/health.yaml", collection: "audits", boundary: "health_audit" },
 } as const;
-const BLOCKING = new Set<EntityMigrationClassification>(["irrecoverable_summary_only", "conflict", "corrupt", "unsupported"]);
+const BLOCKING = new Set<EntityMigrationClassification>(["irrecoverable_summary_only", "duplicate", "conflict", "corrupt", "unsupported"]);
+const AUTHORITY_PATH = "references/artifacts/state-storage-authority.yaml";
 
 function mapping(value: unknown): JsonObject | null {
   return value !== null && typeof value === "object" && !Array.isArray(value) ? value as JsonObject : null;
@@ -156,6 +162,28 @@ function collectSources(root: string): SourceFile[] {
     .map((directory): SourceFile => ({ relative: directory, bytes: null, kind: "missing" }));
   const byPath = new Map([...exact, ...archives, ...objectives, ...missingRoots].map((source) => [source.relative, source]));
   return [...byPath.values()].sort((a, b) => a.relative.localeCompare(b.relative));
+}
+
+function validateProjectRoot(project: string): void {
+  let stat: fs.Stats;
+  try {
+    stat = fs.lstatSync(project);
+  } catch {
+    throw new Error(`project root '${project}' does not exist; choose an existing, real directory and retry`);
+  }
+  if (stat.isSymbolicLink()) throw new Error(`project root '${project}' is a symbolic link; choose an existing, real directory and retry`);
+  if (!stat.isDirectory()) throw new Error(`project root '${project}' is not a directory; choose an existing, real directory and retry`);
+  if (fs.realpathSync(project) !== project) throw new Error(`project root '${project}' traverses a symbolic link; choose an existing, real directory and retry`);
+}
+
+function authorityBinding(sourceRoot: string): { authority_schema_version: string; authority_sha256: string } {
+  const authorityPath = path.join(sourceRoot, AUTHORITY_PATH);
+  const bytes = fs.readFileSync(authorityPath);
+  const authority = loadYamlMapping(bytes.toString("utf8"));
+  if (typeof authority.schema_version !== "string" || !mapping(authority.entity_migration)) {
+    throw new Error("active entity migration authority is missing its schema version or entity_migration contract");
+  }
+  return { authority_schema_version: authority.schema_version, authority_sha256: hash(bytes) };
 }
 
 function sourceFingerprint(files: SourceFile[]): string {
@@ -227,7 +255,7 @@ function numberedObservations(root: string, sourceRoot: string, files: SourceFil
   }
 }
 
-function decisionEvidence(files: SourceFile[], observations: Observation[]): void {
+function decisionEvidence(sourceRoot: string, files: SourceFile[], observations: Observation[]): void {
   const overlay = files.find((source) => source.relative === ".agentera/overlays/decisions.yaml");
   if (overlay?.kind === "file") {
     try {
@@ -246,12 +274,19 @@ function decisionEvidence(files: SourceFile[], observations: Observation[]): voi
   if (revisions?.kind === "file") {
     try {
       const document = parseYaml(revisions);
-      const values = Array.isArray(document.revisions) ? document.revisions : [];
-      values.forEach((value, index) => {
-        const record = mapping(value);
-        const target = typeof record?.decision === "string" ? record.decision : typeof record?.number === "number" ? `decisions:${record.number}` : null;
-        observations.push({ key: `decision_revision:${target ?? `index:${index}`}:${index}`, artifact: "decisions", boundary: "decision_revision", path: revisions.relative, provenance: "revision", record, detail: record && target ? "full" : "corrupt", relationships: [{ field: "decision", target }], message: record && target ? undefined : "decision revision lacks a structured decision target" });
-      });
+      const contract = decisionRevisionContract(sourceRoot);
+      for (const [identity, value] of Object.entries(document).sort(([left], [right]) => left.localeCompare(right))) {
+        const target = new RegExp(`^${contract.identityPrefix}:[1-9][0-9]*$`).test(identity) ? identity : null;
+        if (!Array.isArray(value)) {
+          observations.push({ key: `decision_revision:${identity}`, artifact: "decisions", boundary: "decision_revision", path: revisions.relative, provenance: "revision", record: null, detail: "corrupt", relationships: [{ field: "decision", target }], message: `${identity} must be an ordered list of revision records` });
+          continue;
+        }
+        value.forEach((candidate, index) => {
+          const record = mapping(candidate);
+          const violations = decisionRevisionViolations({ [identity]: [candidate] }, contract);
+          observations.push({ key: `decision_revision:${identity}:${index}`, artifact: "decisions", boundary: "decision_revision", path: revisions.relative, provenance: "revision", record, detail: record && violations.length === 0 ? "full" : "corrupt", relationships: [{ field: "decision", target }], message: violations.length === 0 ? undefined : violations.join("; ") });
+        });
+      }
     } catch (error) {
       observations.push({ key: "decision_revision:document", artifact: "decisions", boundary: "decision_revision", path: revisions.relative, provenance: "revision", record: null, detail: "corrupt", relationships: [{ field: "decision", target: null }], message: (error as Error).message });
     }
@@ -372,9 +407,8 @@ function classify(group: Observation[]): EntityMigrationClassification {
   if (group.every((item) => item.detail === "summary")) return "irrecoverable_summary_only";
   const full = group.filter((item) => item.detail === "full" && item.record);
   const bodies = new Set(full.map((item) => canonicalRecordJson(item.record)));
-  if (bodies.size > 1) return "conflict";
+  if (bodies.size > 1) return "duplicate";
   const projections = full.filter((item) => item.provenance === "current_projection");
-  if (projections.length > 1 || group.length > 1 && !group.some((item) => item.provenance.startsWith("verified"))) return "duplicate_mirror";
   if (group.some((item) => item.provenance === "verified_archive" || item.provenance === "verified_plan_archive")) return "verified_full";
   if (group.every((item) => item.provenance === "current_projection" || item.provenance === "experiment_projection")) return "recoverable_degraded_full_projection";
   return "verified_full";
@@ -396,6 +430,8 @@ function buildEntries(project: string, fingerprint: string, observations: Observ
     if (collisions.has(key)) classification = "conflict";
     const primary = group[0];
     const content = group.find((item) => item.record)?.record ?? null;
+    const contentSha256s = [...new Set(group.flatMap((item) => item.record ? [hash(canonicalRecordJson(item.record))] : []))].sort();
+    const mirrored = contentSha256s.length === 1 && group.filter((item) => item.record).length > 1;
     const id = ids.get(key) as string;
     const relationshipSources = new Map(group.flatMap((item) => item.relationships).map((relationship) => [`${relationship.field}\0${relationship.target ?? ""}`, relationship])).values();
     const relationships = [...relationshipSources].map((relationship): EntityMigrationRelationship => ({
@@ -412,8 +448,10 @@ function buildEntries(project: string, fingerprint: string, observations: Observ
       boundary: primary.boundary,
       classification,
       detail_availability: classification === "irrecoverable_summary_only" ? "summary_only" : content ? "full" : "unavailable",
-      provenance: [...new Set(group.map((item) => item.provenance))].sort(),
-      content_sha256: content ? hash(canonicalRecordJson(content)) : null,
+      provenance: [...new Set([...group.map((item) => item.provenance), ...(mirrored ? ["mirrored"] : [])])].sort(),
+      content_sha256: contentSha256s.length === 1 ? contentSha256s[0] : null,
+      content_sha256s: contentSha256s,
+      physical_record_count: group.length,
       proposed_target: blocked ? null : { id, path: `.agentera/entities/${primary.artifact}/${primary.boundary}/${id}.yaml` },
       relationships,
       recovery: blocked ? recovery(project, primary.path) : "none",
@@ -421,46 +459,66 @@ function buildEntries(project: string, fingerprint: string, observations: Observ
   }).sort((a, b) => `${a.artifact}\0${a.boundary}\0${a.source_identity}\0${a.source_paths[0]}`.localeCompare(`${b.artifact}\0${b.boundary}\0${b.source_identity}\0${b.source_paths[0]}`));
 }
 
-export function previewEntityMigration(projectRoot: string, sourceRoot: string, options: { limit?: number } = {}): EntityMigrationPreview {
+export function previewEntityMigration(projectRoot: string, sourceRoot: string, options: { limit?: number; after?: string } = {}): EntityMigrationPreview {
   const project = path.resolve(projectRoot);
+  validateProjectRoot(project);
+  const authority = authorityBinding(sourceRoot);
   const files = collectSources(project);
   const fingerprint = sourceFingerprint(files);
   const observations: Observation[] = [];
   numberedObservations(project, sourceRoot, files, observations);
-  decisionEvidence(files, observations);
+  decisionEvidence(sourceRoot, files, observations);
   planObservations(project, files, observations);
   objectiveObservations(project, observations);
   todoAndDocs(project, files, observations);
   const completeEntries = buildEntries(project, fingerprint, observations);
-  const counts = Object.fromEntries(["verified_full", "recoverable_degraded_full_projection", "irrecoverable_summary_only", "duplicate_mirror", "conflict", "corrupt", "unsupported"].map((classification) => [classification, completeEntries.filter((entry) => entry.classification === classification).length])) as EntityMigrationPreview["counts"];
+  const classes: EntityMigrationClassification[] = ["verified_full", "recoverable_degraded_full_projection", "irrecoverable_summary_only", "duplicate", "conflict", "corrupt", "unsupported"];
+  const counts = Object.fromEntries(classes.map((classification) => [classification, completeEntries.filter((entry) => entry.classification === classification).length])) as EntityMigrationPreview["counts"];
   counts.total = completeEntries.length;
+  counts.logical_identities = completeEntries.length;
+  counts.physical_records = observations.length;
+  counts.mirrors = completeEntries.reduce((total, entry) => total + (entry.provenance.includes("mirrored") ? entry.physical_record_count - 1 : 0), 0);
+  counts.duplicates = completeEntries.reduce((total, entry) => total + (entry.classification === "duplicate" ? entry.physical_record_count - 1 : 0), 0);
+  counts.conflicts = counts.duplicate + counts.conflict;
   counts.relationships = completeEntries.reduce((total, entry) => total + entry.relationships.length, 0);
   counts.unresolved_relationships = completeEntries.reduce((total, entry) => total + entry.relationships.filter((relationship) => relationship.status === "unresolved").length, 0);
   counts.blockers = completeEntries.filter((entry) => BLOCKING.has(entry.classification) || entry.relationships.some((relationship) => relationship.status === "unresolved")).length;
   const diagnostics = completeEntries.filter((entry) => BLOCKING.has(entry.classification)).map((entry) => ({ classification: entry.classification, path: entry.source_paths[0], source_identity: entry.source_identity, message: observations.find((item) => item.key === entry.source_identity)?.message ?? `${entry.classification} source requires explicit recovery`, recovery: entry.recovery }));
-  const digestBody = { source_fingerprint: fingerprint, entries: completeEntries, counts, diagnostics };
+  const digestBody = { source_fingerprint: fingerprint, authority, entries: completeEntries, counts, diagnostics };
   const previewDigest = hash(canonicalRecordJson(digestBody));
   const requestedLimit = Math.max(1, Math.min(options.limit ?? DEFAULT_LIMIT, MAX_LIMIT));
-  let entries = completeEntries.slice(0, requestedLimit);
-  let outputDiagnostics = diagnostics.slice(0, requestedLimit);
-  let omissionReason: EntityMigrationPreview["omission_reason"] = entries.length < completeEntries.length ? "result_limit" : null;
-  const base = { schemaVersion: "agentera.entityMigrationPreview.v1", command: "state migrate entities", status: counts.blockers > 0 ? "blocked" : "ready", mode: "preview", project, read_only: true, mutation_intent: false, mutation_performed: false, source_fingerprint: fingerprint, preview_digest: previewDigest, counts, source_contract: { authority: "references/artifacts/state-storage-authority.yaml", zero_write: true, scalar_truncation: "forbidden", apply_implemented: false }, retrieval: { command: `agentera state migrate entities --project '${project.replaceAll("'", "'\\''")}' --limit ${Math.min(MAX_LIMIT, Math.max(requestedLimit, completeEntries.length))} --dry-run --format json` } } as const;
+  const start = options.after === undefined ? 0 : completeEntries.findIndex((entry) => entry.source_identity === options.after) + 1;
+  if (options.after !== undefined && start === 0) throw new Error(`pagination cursor '${options.after}' is not a source identity in the bound inventory; restart without --after`);
+  let entries = completeEntries.slice(start, start + requestedLimit);
+  const diagnosticsForEntries = (): EntityMigrationPreview["diagnostics"] => {
+    const identities = new Set(entries.map((entry) => entry.source_identity));
+    return diagnostics.filter((diagnostic) => identities.has(diagnostic.source_identity));
+  };
+  let omissionReason: EntityMigrationPreview["omission_reason"] = start > 0 || start + entries.length < completeEntries.length ? "result_limit" : null;
+  const quotedProject = project.replaceAll("'", "'\\''");
+  const base = { schemaVersion: "agentera.entityMigrationPreview.v1", command: "state migrate entities", status: counts.blockers > 0 ? "blocked" : "ready", mode: "preview", project, read_only: true, mutation_intent: false, mutation_performed: false, source_fingerprint: fingerprint, preview_digest: previewDigest, counts, source_contract: { authority: AUTHORITY_PATH, ...authority, zero_write: true, scalar_truncation: "forbidden", apply_implemented: false } } as const;
   const serializedBytes = (): number => {
-    const body = { ...base, entries, diagnostics: outputDiagnostics, omitted: entries.length < completeEntries.length || outputDiagnostics.length < diagnostics.length, omitted_count: completeEntries.length - entries.length, diagnostics_omitted_count: diagnostics.length - outputDiagnostics.length, omission_reason: omissionReason };
+    const pageDiagnostics = diagnosticsForEntries();
+    const nextAfter = start + entries.length < completeEntries.length ? entries.at(-1)?.source_identity ?? null : null;
+    const command = nextAfter ? `agentera state migrate entities --project '${quotedProject}' --after '${nextAfter.replaceAll("'", "'\\''")}' --limit ${requestedLimit} --dry-run --format json` : `agentera state migrate entities --project '${quotedProject}' --limit ${requestedLimit} --dry-run --format json`;
+    const body = { ...base, entries, diagnostics: pageDiagnostics, omitted: start > 0 || entries.length < completeEntries.length, omitted_count: completeEntries.length - entries.length, diagnostics_omitted_count: diagnostics.length - pageDiagnostics.length, omission_reason: omissionReason, page_after: options.after ?? null, next_after: nextAfter, retrieval: { command } };
     return Math.max(Buffer.byteLength(JSON.stringify(body, null, 2), "utf8"), Buffer.byteLength(YAML.stringify(body), "utf8"));
   };
-  while ((entries.length > 0 || outputDiagnostics.length > 0) && serializedBytes() > MAX_OUTPUT_BYTES - 2048) {
-    if (entries.length >= outputDiagnostics.length && entries.length > 0) entries = entries.slice(0, -1);
-    else outputDiagnostics = outputDiagnostics.slice(0, -1);
+  while (entries.length > 0 && serializedBytes() > MAX_OUTPUT_BYTES) {
+    entries = entries.slice(0, -1);
     omissionReason = "output_byte_budget";
   }
-  return { ...base, status: base.status as "ready" | "blocked", mode: "preview", entries, diagnostics: outputDiagnostics, omitted: entries.length < completeEntries.length || outputDiagnostics.length < diagnostics.length, omitted_count: completeEntries.length - entries.length, diagnostics_omitted_count: diagnostics.length - outputDiagnostics.length, omission_reason: omissionReason };
+  if (entries.length === 0 && start < completeEntries.length) throw new Error("the next whole migration entry exceeds the 32768-byte output budget; repair that source before retrying");
+  const outputDiagnostics = diagnosticsForEntries();
+  const nextAfter = start + entries.length < completeEntries.length ? entries.at(-1)?.source_identity ?? null : null;
+  const retrieval = { command: nextAfter ? `agentera state migrate entities --project '${quotedProject}' --after '${nextAfter.replaceAll("'", "'\\''")}' --limit ${requestedLimit} --dry-run --format json` : `agentera state migrate entities --project '${quotedProject}' --limit ${requestedLimit} --dry-run --format json` };
+  return { ...base, status: base.status as "ready" | "blocked", mode: "preview", entries, diagnostics: outputDiagnostics, omitted: start > 0 || entries.length < completeEntries.length, omitted_count: completeEntries.length - entries.length, diagnostics_omitted_count: diagnostics.length - outputDiagnostics.length, omission_reason: omissionReason, page_after: options.after ?? null, next_after: nextAfter, retrieval };
 }
 
 export class EntityMigrationBindingError extends Error {
   readonly classification = "source_changed";
   constructor(readonly current: EntityMigrationPreview) {
-    super(`entity migration source changed after preview; rerun ${current.retrieval.command}`);
+    super(`entity migration source or migration authority changed after preview; rerun ${current.retrieval.command}`);
     this.name = "EntityMigrationBindingError";
   }
 }
