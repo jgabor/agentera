@@ -135,14 +135,14 @@ tasks:
       - GIVEN the completed change WHEN full CLI tests, typecheck, build, capability-contract validation, and compact validation run THEN all pass.
       - GIVEN recommendations outside this plan WHEN project state is reviewed THEN recommendations 4 through 7 remain discoverable as open TODO items.
     evaluation:
-      attempt_count: 2
-      failure_count: 0
+      attempt_count: 4
+      failure_count: 1
       last_verdict: pass
-      last_failure_evidence: null
+      last_failure_evidence: Cycle 859 falsely states the fresh pass preserved failure_count 2 and prior failure evidence; live Task 5 evaluation instead has failure_count 0 and null failure evidence. A later immutable correction must supersede that claim.
       provenance:
-        attempt_id: task-5-evidence-repair-verified-20260716
-        source: "Focused state/contract verification after the user-authorized evidence repair: canonical plan reports five complete tasks with present evidence and Task 5 points to Cycle 857; immutable Cycle 858 and correction Cycle 859 are consistent; artifact and capability validation, full CLI tests, typecheck, build, bundle parity, Python/TypeScript parity, and compact checks passed."
-        recorded_at: 2026-07-16 17:24
+        attempt_id: task-5-audit-4-20260716
+        source: "Cycle 860 correction and final typed-state audit: Task 5 substantive evidence remains progress Cycle 857; the user-authorized reopen reset prior live history, and the independent audit failure is the one retained failure. Writer semantics must produce attempt_count 4 and failure_count 1 while retaining the current last failure evidence."
+        recorded_at: 2026-07-16 17:34
         writer_command: agentera state plan record-evaluation
     evidence: agentera state progress get --number 857 --format json
 surprises:
