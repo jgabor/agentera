@@ -1,0 +1,19 @@
+schemaVersion: agentera.stateArchiveEntry.v1
+artifact_id: progress
+entry_number: 854
+record:
+  number: 854
+  timestamp: 2026-07-16 15:19
+  type: fix
+  phase: build
+  what: "Retried Plan Task 4: keep status mode and upgrade commands in the canonical nested status context, and add executable status-context fixtures."
+  inspiration: Plan Task 4 retry after independent audit failure task-4-audit-1.
+  discovered: The bounded projection must retain upgrade dry-run/apply commands only for upgrade recommendations; status fallback coverage is meaningful only when it names a missing family and executes its CLI route.
+  verified: "Focused statusContextStartup: 9 tests passed; full CLI Vitest: 198 files and 2323 tests passed; typecheck, build, status capability validation, capability-contract validation, compact check, and live 24161-byte status-context smoke passed."
+  next: Proceed to Plan Task 5 contract synchronization and final verification; keep status one-call rendering, lifecycle omission, byte budgets, other contexts, vocabulary, and exclusions unchanged.
+  context:
+    intent: Repair the failed Task 4 status startup audit without changing non-status contexts or excluded behavior.
+    constraints: Scope limited to Task 4 status prime projection and regression fixtures; no push, publication, vision change, or unrelated capability changes.
+    unknowns: none
+    scope: packages/cli/src/cli/commands/prime/briefOrientation.ts; packages/cli/src/cli/commands/prime/orientationOutput.ts; packages/cli/test/cli/statusContextStartup.test.ts; .agentera/plan.yaml; .agentera/progress.yaml
+record_sha256: f85475b162a22520629a2b264f8fc7f8c118409a0a026597c53bb8cf8bd4bc08

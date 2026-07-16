@@ -216,8 +216,10 @@ function briefRuntimeLifecycle(runtime: unknown): Record<string, unknown> {
 function briefProjectIntegration(integration: unknown): Record<string, unknown> {
   // Keep the routing recommendation, message, pending counts, channel,
   // aggregate status, and any major-boundary block (which overrides
-  // next_action). Phase blockers and guidance detail recover via doctor.
-  return pick(integration, [
+  // next_action). Upgrade commands are part of the executable upgrade route;
+  // preserve them only for that recommendation. Phase blockers and guidance
+  // detail recover via doctor.
+  const fields = [
     "recommendation",
     "message",
     "update_channel",
@@ -225,7 +227,11 @@ function briefProjectIntegration(integration: unknown): Record<string, unknown> 
     "pending_artifacts",
     "aggregate_status",
     "major_boundary_block",
-  ]);
+  ];
+  if (isObject(integration) && integration.recommendation === "upgrade") {
+    fields.push("dry_run_command", "apply_command");
+  }
+  return pick(integration, fields);
 }
 
 function briefProfile(profile: unknown): Record<string, unknown> {

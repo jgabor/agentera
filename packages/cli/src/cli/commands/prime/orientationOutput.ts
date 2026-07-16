@@ -214,13 +214,12 @@ export function buildStatusContextState(state: OrientationState, command = "prim
     { budgetBytes: PRIME_BRIEF_MAX_UTF8_BYTES },
   );
   // The canonical brief contains compatibility and source metadata useful to
-  // bare-prime consumers. Status already has its mode in the capsule envelope;
-  // history/source and null bespoke pointers are not dashboard or routing
-  // inputs. Omit only those redundant leaves after applying the shared brief
-  // projection, leaving its recovery catalog and all dashboard fields intact.
+  // bare-prime consumers. History/source and null bespoke pointers are not
+  // dashboard or routing inputs. Omit only those redundant leaves after
+  // applying the shared brief projection, leaving every field named by the
+  // status instructions and its recovery catalog intact.
   for (const field of [
     "app_home",
-    "mode",
     "history",
     "issues",
     "source",

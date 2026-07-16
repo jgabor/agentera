@@ -1,4 +1,33 @@
 cycles:
+  - number: 854
+    timestamp: 2026-07-16 15:19
+    type: fix
+    phase: build
+    what: "Retried Plan Task 4: keep status mode and upgrade commands in the
+      canonical nested status context, and add executable status-context
+      fixtures."
+    inspiration: Plan Task 4 retry after independent audit failure task-4-audit-1.
+    discovered: The bounded projection must retain upgrade dry-run/apply commands
+      only for upgrade recommendations; status fallback coverage is meaningful
+      only when it names a missing family and executes its CLI route.
+    verified: "Focused statusContextStartup: 9 tests passed; full CLI Vitest: 198
+      files and 2323 tests passed; typecheck, build, status capability
+      validation, capability-contract validation, compact check, and live
+      24161-byte status-context smoke passed."
+    next: Proceed to Plan Task 5 contract synchronization and final verification;
+      keep status one-call rendering, lifecycle omission, byte budgets, other
+      contexts, vocabulary, and exclusions unchanged.
+    context:
+      intent: Repair the failed Task 4 status startup audit without changing
+        non-status contexts or excluded behavior.
+      constraints: Scope limited to Task 4 status prime projection and regression
+        fixtures; no push, publication, vision change, or unrelated capability
+        changes.
+      unknowns: none
+      scope: packages/cli/src/cli/commands/prime/briefOrientation.ts;
+        packages/cli/src/cli/commands/prime/orientationOutput.ts;
+        packages/cli/test/cli/statusContextStartup.test.ts; .agentera/plan.yaml;
+        .agentera/progress.yaml
   - number: 853
     timestamp: 2026-07-16 14:54
     type: fix
@@ -329,40 +358,6 @@ cycles:
       scope: references/cli/prime-consumer-compatibility.yaml (new),
         packages/cli/test/cli/primeCompatibilityBoundary.test.ts (new),
         .agentera/plan.yaml (task 1 -> complete)
-  - number: 844
-    timestamp: 2026-07-16 09:31
-    type: feat
-    phase: build
-    what: "Close decision amend review gaps: dead-Set removal, byte-equality and
-      corrupt-revision degradation coverage, transaction module headroom
-      restored."
-    verified: pnpm -C packages/cli test -> 195 files / 2266 tests passing (2 new
-      tests covering decisions projection byte-equality after apply and bounded
-      startup/compaction corrupt-revision degradation); typecheck zero errors;
-      build exit 0; check validate capability-contract -> 2/2 pass; check
-      compact -> errors=0 over_limit=0; transaction.ts 997->620 lines with
-      candidateBuilder extracted to candidateMutation.ts; state decisions
-      explain --verb amend advertises --alternative-rejected and the current
-      confidence vocabulary; TODO amended fix item moved to Resolved.
-    next: "Orchestrator closure: run the plan-completion sweep, archive the
-      amendment plan, and re-validate the post-archive state."
-    context:
-      intent: "Plan Task 5 contract synchronization: help, explain, schema, storage
-        authority, recovery guidance, and CHANGELOG agree on the amendment
-        surface; suite metadata stays at 3.0.0 with no release, publication,
-        tag, or push."
-      constraints: Amend leaves decisions projection bytes byte-for-byte unchanged;
-        passive startup/compaction consumers degrade silently on a corrupt
-        revision document while detail/exact and amend consumers refuse with
-        bounded recoverable failures; suite version surfaces stay 3.0.0; no
-        remote push, release, tag, or publication.
-      unknowns: None - all six gates green and the amend contract surfaces agree.
-      scope: Split transaction candidate-builder into candidateMutation.ts, drop dead
-        Set/amendable no-op from decisionRevision.ts, add focused tests in
-        decisionAmendmentPublication.test.ts and decisionRevisionReads.test.ts,
-        mark plan tasks 4 and 5 complete with header.status=open for
-        orchestrator closure, append CHANGELOG entry for the amend command,
-        resolve originating amendment TODO.
   - number: 793
     timestamp: 2026-07-14 17:36
     type: chore
@@ -432,6 +427,9 @@ cycles:
         and backfill fixtures; package metadata and generated ignored
         dist/bundle
 archive:
+  - summary: "Cycle 844 (2026-07-16): Close decision amend review gaps: dead-Set
+      removal, byte-equality and corrupt-revision degradation coverage,
+      transaction module headroom..."
   - summary: "Cycle 843 (2026-07-16): Enforced legacy coexistence across decision
       mutations so untouched inherited unsupported confidence labels (e.g. high)
       no..."
@@ -525,16 +523,18 @@ archive:
   - summary: "Cycle 805 (2026-07-15): Added agentera state experiments publish in
       packages/cli/src/state/write/experimentPublication.ts with
       objective-scoped identity and schema preflight, atomic replacement,..."
-  - summary: "Cycle 804 (2026-07-15): Established stable objective UUID and
-      objective-scoped experiment identity with legacy compatibility
-      diagnostics."
 omitted: true
-omitted_count: 89
+omitted_count: 90
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded

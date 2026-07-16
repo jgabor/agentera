@@ -14,6 +14,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { cmdPrime } from "../../src/cli/commands/prime.js";
 import { PRIME_STATUS_CONTEXT_MAX_UTF8_BYTES } from "../../src/cli/commands/prime/orientationOutput.js";
+import { runState } from "../../src/cli/dispatch/state.js";
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..");
 
@@ -84,6 +85,19 @@ function statusState(payload: Record<string, any>): Record<string, any> {
   return payload.capability_context.context.status_context;
 }
 
+/** The consumer contract is the nested status_context, not the capability
+ * envelope metadata. Keep this renderer deliberately dependent on that object
+ * alone so fixtures catch accidental cross-boundary reads. */
+function renderStatusDashboard(statusContext: Record<string, any>): Record<string, any> {
+  return {
+    mode: statusContext.mode,
+    plan: statusContext.plan,
+    attention: statusContext.attention,
+    next_action: statusContext.next_action,
+    project_integration: statusContext.project_integration,
+  };
+}
+
 describe("status capability self-contained startup", () => {
   it.each([
     ["fresh", () => undefined],
@@ -133,6 +147,14 @@ describe("status capability self-contained startup", () => {
           ].join("\n"),
         ),
     ],
+    [
+      "upgrade",
+      () =>
+        writeProjectFile(
+          ".agentera/PROGRESS.md",
+          "# Progress\n\n## Cycle 1 · 2026-01-01 00:00 · feat\n\n**What**: fixture\n",
+        ),
+    ],
     ["incomplete-state", () => writeProjectFile(".agentera/progress.yaml", "cycles: []\n")],
   ] as const)("keeps safety rails and routing markers for $0 state", (name, setup) => {
     setup();
@@ -169,26 +191,69 @@ describe("status capability self-contained startup", () => {
     );
     expect(result.payload.runtime_lifecycle).toBeUndefined();
     expect(state.runtime_lifecycle.runtimes).toBeUndefined();
+    expect(state.project_integration).not.toHaveProperty("phases");
+    expect(state.project_integration).not.toHaveProperty("guidance");
+    expect(state.project_integration).not.toHaveProperty("retry");
     if (name === "flagged") expect(state.attention.length).toBeGreaterThan(0);
     if (name === "waiting") expect(state.next_action.object).toBeTruthy();
+    if (name === "upgrade") {
+      expect(state.project_integration.recommendation).toBe("upgrade");
+      expect(state.project_integration.dry_run_command).toContain("upgrade");
+      expect(state.project_integration.dry_run_command).toContain("--dry-run");
+      expect(state.project_integration.apply_command).toContain("upgrade");
+      expect(state.project_integration.apply_command).toContain("--yes");
+    } else {
+      expect(state.project_integration).not.toHaveProperty("dry_run_command");
+      expect(state.project_integration).not.toHaveProperty("apply_command");
+    }
     if (name === "incomplete-state") {
       expect(state.source_contract.capability_startup.complete_for_capability_startup).toBe(false);
       expect(state.source_contract.capability_startup.raw_artifact_reads_required).toBe(false);
-      expect(capsule.state.fallback_commands).toEqual(expect.any(Array));
+      expect(capsule.state.missing).toContain("decisions");
+      const decisionsFallback = "agentera state decisions list --limit 20 --format json";
+      expect(capsule.state.fallback_commands).toContain(decisionsFallback);
+
+      let fallbackOut = "";
+      let fallbackErr = "";
+      const fallbackRc = runState(
+        "decisions",
+        ["list", "--limit", "20", "--format", "json"],
+        { out: (text) => (fallbackOut += text), err: (text) => (fallbackErr += text) },
+        "agentera",
+      );
+      expect(fallbackRc).toBe(0);
+      expect(fallbackErr).toBe("");
+      expect(JSON.parse(fallbackOut)).toMatchObject({ command: "state decisions list" });
     }
   });
 
   it("keeps fresh and returning mode, while incomplete state names CLI-first recovery", () => {
     const fresh = runStatus();
-    expect(fresh.payload.capability_context.mode).toBe("fresh");
+    const freshDashboard = renderStatusDashboard(statusState(fresh.payload));
+    expect(freshDashboard.mode).toBe("fresh");
+    expect(freshDashboard.project_integration).toBeDefined();
     expect(statusState(fresh.payload).state_presence.any_active).toBe(false);
 
     writeProjectFile(".agentera/progress.yaml", "cycles:\n  - number: 1\n    timestamp: 2026-07-16\n    what: returning\n\n");
     const returning = runStatus();
-    expect(returning.payload.capability_context.mode).toBe("returning");
+    const returningDashboard = renderStatusDashboard(statusState(returning.payload));
+    expect(returningDashboard.mode).toBe("returning");
     expect(statusState(returning.payload).state_presence.available.progress).toBe(true);
     expect(returning.payload.capability_context.raw_artifact_read_policy).toContain("included state families");
     expect(returning.payload.capability_context.state.fallback_commands).toEqual(expect.any(Array));
+  });
+
+  it("renders an upgrade recommendation and executable commands strictly from status_context", () => {
+    writeProjectFile(
+      ".agentera/PROGRESS.md",
+      "# Progress\n\n## Cycle 1 · 2026-01-01 00:00 · feat\n\n**What**: fixture\n",
+    );
+    const dashboard = renderStatusDashboard(statusState(runStatus().payload));
+    const integration = dashboard.project_integration as Record<string, unknown>;
+
+    expect(integration.recommendation).toBe("upgrade");
+    expect(integration.dry_run_command).toEqual(expect.stringContaining("--dry-run"));
+    expect(integration.apply_command).toEqual(expect.stringContaining("--yes"));
   });
 
   it("bounds adversarial UTF-8 state without moving diagnostics to stdout", () => {
