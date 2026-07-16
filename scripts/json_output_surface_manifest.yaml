@@ -67,12 +67,17 @@ surfaces:
   - --format
   - json
   inventory_classification: change
-  budget_classification: unbudgeted
+  budget_classification: bounded_brief
   measurement_scope: primary
   fixture: repo_root
   enforcement_tier: enforce
-  byte_budget: 35000
-  token_budget: 8000
+  # Bounded default decision brief (Plan Task 3). The bare default emission
+  # projects the full orientation payload to routing-essential leaves plus named
+  # recovery pointers for omitted rich state; pretty UTF-8 JSON + trailing
+  # newline is measured and an over-budget brief is rejected in favor of a
+  # bounded degraded envelope. prime-dashboard (35000) keeps full fidelity.
+  byte_budget: 12000
+  token_budget: 3000
 - id: prime-fields-sparse
   command: agentera prime
   selector: --format json --fields plan,progress,docs

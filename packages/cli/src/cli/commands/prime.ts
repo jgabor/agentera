@@ -62,12 +62,16 @@ export function cmdPrime(args: PrimeArgs, io: Io = {}): number {
     }
     const state = collectOrientationState(collectOpts);
     const payload = buildOrientationJsonPayload(state, command);
+    // --dashboard keeps full-fidelity payload (prime-dashboard, 35000-byte
+    // budget); only the bare default is projected to the bounded brief.
     return emitPrime(command, payload, format, args.fields, out, err);
   }
   const state = collectOrientationState(collectOpts);
   if (format !== "text") {
     const payload = buildOrientationJsonPayload(state, command);
-    return emitPrime(command, payload, format, args.fields, out, err);
+    // Bare default: project to the bounded decision brief (prime-briefing,
+    // 12000-byte budget). Explicit `--fields` selection keeps full payload.
+    return emitPrime(command, payload, format, args.fields, out, err, { bareBrief: true });
   }
   printOrientationTextBriefing(state, command, out);
   return 0;

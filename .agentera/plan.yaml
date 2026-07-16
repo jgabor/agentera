@@ -78,13 +78,23 @@ tasks:
     name: Deliver a bounded default decision brief
     depends_on:
       - "2"
-    status: pending
+    status: complete
     acceptance:
       - GIVEN returning, fresh, empty, missing, and degraded project fixtures WHEN bare prime runs THEN it reports the mode, work summary, attention, next action, and startup completeness needed for routing.
       - GIVEN accumulated plans, history, and lifecycle findings WHEN bare prime is serialized as pretty UTF-8 JSON with a trailing newline THEN stdout is at most 12000 bytes and diagnostics remain on stderr.
       - GIVEN state is missing versus present-but-empty WHEN an agent reads the brief THEN the two conditions remain behaviorally distinguishable.
       - GIVEN omitted rich state WHEN an agent follows the named recovery command THEN the current authoritative detail is available without raw artifact access.
       - GIVEN one passing and one over-budget fixture per bounded unit WHEN focused tests run THEN the byte gate accepts the former and rejects the latter.
+    evaluation:
+      attempt_count: 1
+      failure_count: 0
+      last_verdict: pass
+      last_failure_evidence: null
+      provenance:
+        attempt_id: task-3-eval-1-20260716
+        source: "Plan Task 3 bounded brief verification: bare default prime --format json now projects to a 12000-byte decision brief (briefOrientation.ts); --dashboard keeps full fidelity. Real repo brief measures 11178 bytes (ok); large fixture (1000 entries × unicode) measures 11517 bytes (ok, 483-byte margin). Over-budget fixture triggers degraded envelope with routing-essential fields preserved. AC1: 5 mode fixtures (returning/fresh/empty/missing/degraded) all report mode/work summary/attention/next_action/startup completeness. AC3: missing-vs-empty distinguishable via state_presence.absence key count. AC4: every omitted_rich_state entry has a named agentera recovery command, no raw artifact reads. AC5: briefByteGate accepts/rejects; briefOrientationPayload returns ok/degraded. sourceContractOracles exact-key set satisfied (available_state preserved in capability_startup). Vitest 551 pass (test/cli/); typecheck clean; check compact pass; capability-contract 2/0."
+        recorded_at: 2026-07-16 13:17
+        writer_command: agentera state plan record-evaluation
   - number: 4
     name: Make status startup self-contained
     depends_on:

@@ -8,8 +8,10 @@ import type { BundleStatus } from "../../contracts/bundleStatus.js";
 import type { NextAction, OrientationState } from "../../contracts/orientationState.js";
 import { startupCompletenessContract } from "../../startupCompletenessContract.js";
 import { stateWriterContract } from "../../../state/write/operations.js";
+import { briefOrientationPayload } from "./briefOrientation.js";
 
 export { startupCompletenessContract } from "../../startupCompletenessContract.js";
+export { briefOrientationPayload, PRIME_BRIEF_MAX_UTF8_BYTES } from "./briefOrientation.js";
 
 /** Project a single {@link NextAction} to its JSON record shape. */
 function nextActionEntry(action: NextAction): Record<string, string> {
@@ -200,14 +202,19 @@ export function emitPrime(
   fieldsArg: string | null | undefined,
   out: (t: string) => void,
   err: (t: string) => void,
+  options: { bareBrief?: boolean } = {},
 ): number {
   const requested = requestedFields(fieldsArg);
-  // The default bare briefing omits inactive conditional top-level fields so
-  // startup does not carry default-only payload; explicit `--fields` selection
-  // keeps the full payload so a consumer recovering a named field is never
-  // confused by omission (see default_emission_omission_contract).
+  // The default bare briefing first omits inactive conditional top-level fields
+  // (v1_migration/docs/objective when default) so startup does not carry
+  // default-only payload, then — for the bare default only — projects the full
+  // payload to a bounded decision brief (Plan Task 3). Explicit `--fields`
+  // selection and `--dashboard` keep the full payload so a consumer recovering
+  // a named field or rendering the full dashboard is never confused by omission
+  // (see default_emission_omission_contract + brief_omission_contract).
+  const conditional = requested.length === 0 ? omitInactiveConditionalDefaults(payload) : payload;
   const effectivePayload =
-    requested.length === 0 ? omitInactiveConditionalDefaults(payload) : payload;
+    requested.length === 0 && options.bareBrief ? briefOrientationPayload(conditional) : conditional;
   emitIssuesFieldDeprecationWarning(requested, effectivePayload, err);
   if (requested.length === 0) {
     emitStructured(effectivePayload, format, out);

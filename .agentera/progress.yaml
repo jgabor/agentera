@@ -1,4 +1,37 @@
 cycles:
+  - number: 850
+    timestamp: 2026-07-16 13:18
+    type: feat
+    phase: build
+    what: Deliver bounded default decision brief for bare prime --format json (Plan
+      Task 3)
+    inspiration: Plan Task 3 acceptance criteria
+    discovered: available_state is pinned by sourceContractOracles assertExactKeys
+      and must be preserved in capability_startup brief projection. Large
+      fixture at 1000 entries fits within 12000 after trimming history counts,
+      capping attention strings, and projecting docs.source_contract.
+    verified: Vitest 551 pass (test/cli/); typecheck clean; check compact pass;
+      capability-contract 2/0. Real repo brief 11178 bytes (ok); large fixture
+      11517 bytes (ok, 483-byte margin). AC1-AC5 all pass in
+      primeTask3Brief.test.ts.
+    next: "Task 4: Make status startup self-contained (pending). Task 5: Synchronize
+      contracts and verify current state (pending)."
+    context:
+      intent: Make bare prime a bounded decision brief at most 12000 bytes with
+        diagnostics on stderr, preserving consumer compatibility,
+        missing-vs-empty semantics, and named recovery for omitted rich state
+      constraints: dashboard, fields, and context paths keep full fidelity (NOT
+        projected). No structured attention records, stable object refs,
+        compiled instructions, or new named summary mode.
+      scope: packages/cli/src/cli/commands/prime/briefOrientation.ts (NEW);
+        packages/cli/src/cli/commands/prime/orientationOutput.ts;
+        packages/cli/src/cli/commands/prime.ts;
+        packages/cli/test/cli/primeTask3Brief.test.ts (NEW);
+        packages/cli/test/cli/prime.test.ts;
+        packages/cli/test/cli/primeTask3Bounds.test.ts;
+        scripts/json_output_surface_manifest.yaml;
+        references/artifacts/state-storage-authority.yaml;
+        references/cli/prime-consumer-compatibility.yaml
   - number: 849
     timestamp: 2026-07-16 12:31
     type: fix
@@ -367,24 +400,6 @@ cycles:
         packages/cli/src/state/{decisionRevision,directRetrieval,listRetrieval,startupProjection,decisionOverlay}.ts,
         packages/cli/src/state/write/{transaction,explain}.ts,
         .agentera/progress.yaml, .agentera/archive/progress/841.yaml
-  - number: 840
-    timestamp: 2026-07-16 06:59
-    type: feat
-    phase: build
-    what: Wired revision-backed effective decision reads across exact get, list,
-      startup, and compaction consumers with truthful provenance; added
-      amendment preparation that selects an amenable target, bootstraps a
-      hash-verified degraded_projection base from a complete legacy projection,
-      and refuses summary-only/conflicting/ambiguous/broken-hash/incomplete
-      targets with working corrections; preserved Task 1 immutability, separate
-      revision authority, and amend publication refusal (Task 3). Added
-      decisionRevisionReads tests covering composition, selection, bootstrap,
-      replay, malformed, and conflict paths.
-    inspiration: Plan task 2 acceptance criteria
-    context:
-      intent: "Implement Task 2 of the decision-amendment plan: revision-backed
-        effective decision reads with selection, bootstrap, refusal, and replay
-        paths."
   - number: 793
     timestamp: 2026-07-14 17:36
     type: chore
@@ -454,6 +469,9 @@ cycles:
         and backfill fixtures; package metadata and generated ignored
         dist/bundle
 archive:
+  - summary: "Cycle 840 (2026-07-16): Wired revision-backed effective decision reads
+      across exact get, list, startup, and compaction consumers with
+      truthful..."
   - summary: "Cycle 839 (2026-07-16): Defined decision amendment authority contracts
       and CLI discovery: revision authority in storage-authority YAML, amend
       verb..."
@@ -547,15 +565,18 @@ archive:
       lifecycle..."
   - summary: "Cycle 801 (2026-07-14): Reproduced Task 3 acceptance evidence with
       exact commands runnable from the repository root."
-  - summary: "Cycle 800 (2026-07-14): Established stable plan identity through
-      validated publication, archival, and collision-aware discovery."
 omitted: true
-omitted_count: 85
+omitted_count: 86
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded

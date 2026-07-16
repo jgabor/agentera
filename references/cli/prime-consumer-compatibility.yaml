@@ -427,6 +427,67 @@ default_emission_omission_contract:
     - source_contract
     - attention
 
+  # Task 3 bounded decision brief. The default bare emission projects the full
+  # orientation payload to a bounded decision brief (<=12000 bytes pretty UTF-8
+  # JSON + trailing newline; diagnostics on stderr). Every required top-level
+  # field stays PRESENT (compatibility_boundary test asserts the key set); only
+  # rich diagnostic/writer detail WITHIN those fields is projected to
+  # routing-essential leaves. Each projected sub-detail carries a named
+  # authoritative recovery command so an agent never needs raw artifact access.
+  # `--dashboard` (full fidelity, 35000-byte budget), `--fields <name>`, and the
+  # `--context` capsule are NOT projected and keep the full payload. The byte
+  # gate is deterministic pretty-JSON UTF-8 measurement; an over-budget brief is
+  # rejected in favor of a bounded degraded envelope (status ok, brief.brief
+  # block signals degraded) that keeps command/status/mode/state_presence/a
+  # brief source_contract and the byte-budget error with a recovery command.
+  brief_omission_contract:
+    implemented_by: packages/cli/src/cli/commands/prime/briefOrientation.ts:briefOrientationPayload
+    applies_to: default bare prime (no --fields, no --dashboard, no --context)
+    does_not_apply_to: "agentera prime --dashboard --format json; --fields <name>; --context <capability>"
+    budget_utf8_bytes: 12000
+    measurement: >-
+      Buffer.byteLength(JSON.stringify(brief, null, 2) + "\n", "utf8"); stdout
+      only; diagnostics measured separately on stderr.
+    retained_top_level_fields: >-
+      Every field in never_omitted plus command, status, app_home, app, mode,
+      history, runtime_lifecycle, project_integration, decision_attention, and
+      the bespoke context pointers (kept null on the bare surface). The
+      conditional v1_migration/docs/objective are retained when active (see
+      omitted_when_default). issues ships as the deprecated transition alias.
+    projected_subdetail:
+      - field: plan.tasks
+        reason: plan_task_detail
+        recovery: agentera state plan tasks list --format json
+      - field: plan.archived_plans
+        reason: archive_catalog
+        recovery: agentera state plan list --format json
+      - field: plan.diagnostics
+        reason: plan_diagnostics
+        recovery: agentera state plan --format json
+      - field: history.{progress,decisions,health}.entries
+        reason: startup_history_entries
+        recovery: agentera state <artifact> list --limit 20 --format json
+      - field: runtime_lifecycle.runtimes
+        reason: lifecycle_runtime_detail
+        recovery: agentera upgrade --dry-run --format json
+      - field: project_integration.phases
+        reason: phase_blockers
+        recovery: agentera doctor --format json
+      - field: source_contract.artifact_writes.artifacts
+        reason: writer_contract_detail
+        recovery: agentera schema --format json
+      - field: source_contract.capability_startup.available_state
+        reason: startup_available_state_listing
+        recovery: agentera schema --format json
+      - field: profile.bounded_signals
+        reason: profile_signal_detail
+        recovery: agentera profile --format json
+    never_collapsed: >-
+      state_presence is retained verbatim so missing versus present-but-empty
+      stays behaviorally distinguishable; plan.first_pending, progress.latest,
+      health.grade/trajectory, todo counts, next_action.object, and attention
+      are retained as the routing-essential leaves consumers read.
+
 # ---------------------------------------------------------------------------
 # Fixtures used by packages/cli/test/cli/primeCompatibilityBoundary.test.ts.
 # Pass fixtures are the documented consumers; their consumed_fields must be a

@@ -71,19 +71,17 @@ describe("cli prime", () => {
     expect(payload.source_contract.capability_context.capability).toBe("status");
     expect(payload.source_contract.capability_context.fetch_command).toBe("agentera prime --context status --format json");
     expect(payload.source_contract.capability_context.required_before_rendering).toBe(true);
+    // The bare default is a bounded decision brief (Plan Task 3): the writer
+    // contract detail (artifact_writes.artifacts) is omitted and recovered via
+    // `agentera schema` or the full --dashboard payload. The discovery pointer
+    // and schema identity stay so consumers can recover without raw access.
     expect(payload.source_contract.artifact_writes).toMatchObject({
       schemaVersion: "agentera.stateWriterDiscovery.v1",
       discovery_command: "agentera schema --format json",
     });
-    expect(payload.source_contract.artifact_writes.artifacts).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          artifact: "decisions",
-          mutations: ["append", "update", "amend"],
-          explain_command: "agentera state decisions explain --format json",
-        }),
-      ]),
-    );
+    expect(payload.source_contract.artifact_writes.artifacts).toBeUndefined();
+    expect(payload.brief.status).toBe("ok");
+    expect(payload.brief.omitted_rich_state.some((e: { field: string }) => e.field === "source_contract.artifact_writes.artifacts")).toBe(true);
     expect(payload.source_contract.fields).toContain("todo");
     expect(payload.source_contract.fields).not.toContain("issues");
     expect(payload.source_contract.fields).toContain("next_action");
@@ -103,6 +101,21 @@ describe("cli prime", () => {
     expect(payload.app_home.install_track).toBeTruthy();
     expect(payload.runtime_lifecycle.activeRuntimeIds).toEqual(["opencode", "codex", "cursor", "copilot"]);
     expect(typeof payload.app.status).toBe("string");
+  });
+
+  it("keeps full-fidelity payload on --dashboard (brief omission is default-only)", () => {
+    const { rc, out } = capture((io) => cmdPrime({ command: "prime", dashboard: true, format: "json" }, io));
+    expect(rc).toBe(0);
+    const payload = JSON.parse(out);
+    // --dashboard is NOT projected: the full writer contract, plan tasks, and
+    // runtime detail remain available without a brief meta block.
+    expect(payload.source_contract.artifact_writes.artifacts).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ artifact: "decisions", mutations: ["append", "update", "amend"] }),
+      ]),
+    );
+    expect(Array.isArray(payload.plan?.tasks)).toBe(true);
+    expect(payload.brief).toBeUndefined();
   });
 
   it("surfaces ranked next_action with alternatives and phase in JSON", () => {

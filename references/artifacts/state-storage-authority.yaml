@@ -1511,7 +1511,13 @@ budgets:
     surfaces:
       prime_briefing:
         manifest_id: prime-briefing
-        max_utf8_bytes: 35000
+        # Bounded default decision brief (Plan Task 3): the bare default
+        # `agentera prime --format json` projects the full orientation payload
+        # to routing-essential leaves plus named recovery pointers for omitted
+        # rich state. Pretty UTF-8 JSON + trailing newline is measured and an
+        # over-budget brief is rejected in favor of a bounded degraded envelope;
+        # diagnostics stay on stderr. prime_dashboard keeps full fidelity.
+        max_utf8_bytes: 12000
       prime_dashboard:
         manifest_id: prime-dashboard
         max_utf8_bytes: 35000
@@ -1523,6 +1529,15 @@ budgets:
       Omit optional historical detail and retain counts, actionable IDs,
       compatibility, source_contract, and exact get/list command pointers. The
       caller must be able to distinguish omitted detail from unavailable detail.
+      The bare default briefing is a bounded decision brief: every required
+      top-level field stays present (content projected to routing-essential
+      leaves), missing versus present-but-empty stays distinguishable through
+      state_presence, and each omitted rich-state family carries a named
+      authoritative recovery command. When even the projected brief exceeds the
+      budget, emit a measured bounded degraded envelope that keeps command,
+      status, mode, state_presence, a brief source_contract, and the
+      byte-budget error with a recovery command; never emit an over-budget
+      payload. Diagnostics are measured on stderr separately.
   validation:
     authority: this file plus the referenced JSON surface manifest
     drift_rule: tests fail if manifest IDs or byte values disagree with this contract

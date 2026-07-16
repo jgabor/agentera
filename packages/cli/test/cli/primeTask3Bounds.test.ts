@@ -9,7 +9,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { CAPABILITY_NAMES } from "../../src/cli/capabilityContext/types.js";
 import { buildPrimeCapabilityContextPayload } from "../../src/cli/capabilityContext.js";
-import { buildOrientationJsonPayload, emitPrime } from "../../src/cli/commands/prime/orientationOutput.js";
+import { buildOrientationJsonPayload, briefOrientationPayload, emitPrime } from "../../src/cli/commands/prime/orientationOutput.js";
 import { cmdPrime, collectOrientationState } from "../../src/cli/commands/prime.js";
 import { publishNumberedArchive } from "../../src/state/archivePublication.js";
 import { boundStartupValue, startupHistorySummary } from "../../src/state/startupProjection.js";
@@ -159,7 +159,17 @@ describe("prime Task3 bounded source projections", () => {
     }
 
     const orientation = buildOrientationJsonPayload(state, "prime");
-    expect(jsonBytes(orientation)).toBeLessThanOrEqual(limits.surfaces.prime_briefing.max_utf8_bytes);
+    // The bare default emits a bounded decision brief (prime-briefing, 12000
+    // bytes); the full payload stays on --dashboard (prime-dashboard). The brief
+    // must fit even with accumulated plans/history/lifecycle findings.
+    const brief = capture((out, err) =>
+      emitPrime("prime", orientation, "json", undefined, out, err, { bareBrief: true }),
+    );
+    expect(brief.rc).toBe(0);
+    expect(Buffer.byteLength(brief.out, "utf8")).toBeLessThanOrEqual(limits.surfaces.prime_briefing.max_utf8_bytes);
+    expect((JSON.parse(brief.out).brief as Record<string, unknown>).status).toBe("ok");
+    // The full dashboard payload stays within its own larger budget.
+    expect(jsonBytes(orientation)).toBeLessThanOrEqual(limits.surfaces.prime_dashboard.max_utf8_bytes);
     const sparse = capture((out, err) =>
       emitPrime("prime", orientation, "json", "plan,progress,docs", out, err),
     );
@@ -282,7 +292,11 @@ describe("prime Task3 bounded source projections", () => {
       latest: { number: 42, status: "open" },
     });
     expect((payload.history as any).progress.retrieval.get).toBe("agentera state progress get --number N --format json");
-    expect(jsonBytes(payload)).toBeLessThanOrEqual(authority().budgets.startup.surfaces.prime_briefing.max_utf8_bytes);
+    // The bare default brief (not the full payload) must fit the briefing
+    // budget; the full payload stays on --dashboard.
+    const brief = briefOrientationPayload(payload);
+    expect(jsonBytes(brief)).toBeLessThanOrEqual(authority().budgets.startup.surfaces.prime_briefing.max_utf8_bytes);
+    expect(hasUnpairedSurrogate(JSON.stringify(brief))).toBe(false);
     expect(JSON.stringify(payload)).not.toContain(unicode);
     const sparse = capture((out, err) => emitPrime("prime", payload, "json", "plan,progress,docs", out, err));
     expect(hasUnpairedSurrogate(sparse.out)).toBe(false);
